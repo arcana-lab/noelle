@@ -15,6 +15,8 @@
 #include "llvm/Analysis/DOTGraphTraitsPass.h"
 #include "llvm/Analysis/PostDominators.h"
 
+#include "PDGAnalysis.hpp"
+
 using namespace llvm;
 
 namespace llvm {
@@ -62,9 +64,6 @@ namespace llvm {
     }
   };
 }
-
-//char PDG::ID = 0;
-//static RegisterPass<PDG> X("PDG", "Program Dependence Calculator");
 
 // Next there is code to register your pass to "opt"
 char PDGPrinter::ID = 0;
