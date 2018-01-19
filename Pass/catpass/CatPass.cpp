@@ -159,7 +159,7 @@ namespace llvm {
           errs() << domTree.dominates(I, I->getSuccessor(i)) << "\n";
         }
       }
-      return DOTPrinter<DominatorTreeWrapperPass, true, DominatorTree*, DominatorTreeWrapperPassAnalysisGraphTraits>::runOnFunction(F);
+      return DOTGraphTraitsPrinter<DominatorTreeWrapperPass, true, DominatorTree*, DominatorTreeWrapperPassAnalysisGraphTraits>::runOnFunction(F);
     }
   };
 }
