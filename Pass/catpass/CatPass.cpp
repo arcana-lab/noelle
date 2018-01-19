@@ -18,7 +18,7 @@
 using namespace llvm;
 
 namespace llvm {
-
+/*
   template <typename AnalysisT, bool IsSimple, typename GraphT = AnalysisT *,
             typename AnalysisGraphTraitsT = DefaultAnalysisGraphTraits<AnalysisT> >
   class DOTPrinter : public FunctionPass {
@@ -69,7 +69,7 @@ namespace llvm {
   private:
     std::string Name;
   };
-
+*/
   /*
 
   class PDTreeWrapperPass : public FunctionPass {
@@ -140,12 +140,10 @@ namespace llvm {
     }
   };
 
-  struct PDGPrinter : public DOTPrinter<DominatorTreeWrapperPass, true, DominatorTree*, DominatorTreeWrapperPassAnalysisGraphTraits> {
-  //struct PDGPrinter : public DOTGraphTraitsPrinter<PDTreeWrapperPass, true, PDTree*, PDTreeWrapperPassAnalysisGraphTraits> {
+  struct PDGPrinter : public DOTGraphTraitsPrinter<DominatorTreeWrapperPass, true, DominatorTree*, DominatorTreeWrapperPassAnalysisGraphTraits> {
     static char ID;
 
-    PDGPrinter() : DOTPrinter<DominatorTreeWrapperPass, true, DominatorTree*, DominatorTreeWrapperPassAnalysisGraphTraits> ("pdg", ID) {}
-    //PDGPrinter() : DOTGraphTraitsPrinter<PDTreeWrapperPass, true, PDTree*, PDTreeWrapperPassAnalysisGraphTraits> ("pdg", ID) {}
+    PDGPrinter() : DOTGraphTraitsPrinter<DominatorTreeWrapperPass, true, DominatorTree*, DominatorTreeWrapperPassAnalysisGraphTraits> ("pdg", ID) {}
 
     bool doInitialization (Module &M) override {
       errs() << "PDGPrinter at \"doInitialization\"\n" ;
