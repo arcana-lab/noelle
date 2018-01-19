@@ -7,7 +7,7 @@ set(CATPassSrc
 set_source_files_properties(${CATPassSrc} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(CATPassName "CAT")
+set(CATPassName "PDGAnalysis")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)

@@ -1,0 +1,74 @@
+#!/bin/bash
+
+pass_cmd="${CAT_PASS_NAME}"
+lib_dir="${CAT_LIB_PATH}"
+
+cmd=""
+options=""
+
+usage="
+Usage: $0 [OPTION] ...
+
+Options:
+  --CAT_LIB_PATH=/path/to/libcat/dir          Set the directory containing libcat.dylib
+  --CAT_PASS=pass-file                        Set the LLVM module name (e.g., ~/H0/build/CAT.dylib)
+
+  Each of above variables can be also set in env. For example,
+  export CAT_PASS=/path/to/clang/dir
+"
+
+if test "$#" == 0 ; then
+  echo "${usage}";
+  exit 1;
+fi
+
+for var in "$@" ; do
+  if test "${var:0:19}" == "--CAT_LIB_PATH=" ; then
+    lib_dir="${var:19}";
+    continue ;
+  fi
+  if test "${var:0:20}" == "--CAT_PASS=" ; then
+    pass_cmd="${var:20}";
+    continue ;
+  fi
+
+  options="$options $var" ;
+done
+if test "$options" == "" ; then
+  echo "$0: error: no input files: $cmd";
+  exit 1;
+fi
+
+
+lib_cmd="-lcat"
+if test "$pass_cmd" == "" ; then
+  if test -f build/CAT.dylib ; then
+    pass_cmd="build/CAT.dylib";
+  elif test -f build/CAT.so ; then
+    pass_cmd="build/CAT.so";
+  else
+    compilerfile=`which cat-c` ;
+    installdir=`dirname $compilerfile` ;
+    if test -f "$installdir/../lib/CAT.dylib" ; then
+      suffixToUse="dylib" ;
+    else
+      suffixToUse="so" ;
+    fi
+    pass_cmd="$installdir/../lib/CAT.${suffixToUse}";
+  fi
+fi
+if test "$lib_dir" != "" ; then
+  lib_cmd="-Wl,-L$lib_dir,$lib_cmd";
+fi
+
+clangToUse="clang-3.8" ;
+which ${clangToUse} &> /dev/null ;
+if test $? -ne 0 ; then
+  clangToUse="clang" ;
+fi
+
+
+lib_cmd=""
+cmd="${clangToUse} -Xclang -load -Xclang $pass_cmd -fPIC $lib_cmd $options"
+
+$cmd
