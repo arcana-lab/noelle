@@ -12,61 +12,78 @@
 
 #include "llvm/Analysis/DomPrinter.h"
 #include "llvm/Support/GraphWriter.h"
+#include "llvm/Support/DOTGraphTraits.h"
 #include "llvm/Analysis/DOTGraphTraitsPass.h"
 #include "llvm/Analysis/PostDominators.h"
 
 #include "PDGAnalysis.hpp"
+#include "PDG.hpp"
 
 using namespace llvm;
 
 namespace llvm {
+
+  template<> struct DOTGraphTraits<PDGNode*> : public DefaultDOTGraphTraits {
+    explicit DOTGraphTraits(bool isSimple=false) : DefaultDOTGraphTraits(isSimple) {}
+    
+  };
+
   template<>
-  struct DOTGraphTraits<DominatorTree*> : public DOTGraphTraits<DomTreeNode*> {
+  struct DOTGraphTraits<PDG*> : public DOTGraphTraits<PDGNode*> {
+    DOTGraphTraits (bool isSimple=false) : DOTGraphTraits<PDGNode*>(isSimple) {}
 
-    DOTGraphTraits (bool isSimple=false)
-      : DOTGraphTraits<DomTreeNode*>(isSimple) {}
-
-    static std::string getGraphName(DominatorTree *DT) {
+    static std::string getGraphName(PDG *pdg) {
       return "PDG tree";
     }
 
-    std::string getNodeLabel(DomTreeNode *Node, DominatorTree *G) {
-      return DOTGraphTraits<DomTreeNode*>::getNodeLabel(Node, G->getRootNode());
+    std::string getNodeLabel(PDGNode *node, PDG *pdg) {
+      return DOTGraphTraits<PDGNode*>::getNodeLabel(node, pdg->getRootNode());
     }
   };
 
-  struct DominatorTreeWrapperPassAnalysisGraphTraits {
-    static DominatorTree *getGraph(DominatorTreeWrapperPass *DTWP) {
-      return &DTWP->getDomTree();
-    }
-  };
-
-  struct PDGPrinter : public DOTGraphTraitsPrinter<DominatorTreeWrapperPass, true, DominatorTree*, DominatorTreeWrapperPassAnalysisGraphTraits> {
+  struct PDGPrinter : public ModulePass {
     static char ID;
 
-    PDGPrinter() : DOTGraphTraitsPrinter<DominatorTreeWrapperPass, true, DominatorTree*, DominatorTreeWrapperPassAnalysisGraphTraits> ("pdg", ID) {}
+    PDGPrinter() : ModulePass{ID} {}
 
     bool doInitialization (Module &M) override {
       errs() << "PDGPrinter at \"doInitialization\"\n" ;
       return false;
     }
 
-    bool runOnFunction (Function &F) override {
-      errs() << "PDGPrinter at \"runOnFunction\"\n" ;
-      DominatorTree domTree = DominatorTree(F);
-      for (auto &B : F) {
-        TerminatorInst *I = B.getTerminator();
-        for (auto i = 0; i < I->getNumSuccessors(); ++i) {
-          errs() << domTree.dominates(I, I->getSuccessor(i)) << "\n";
-        }
-      }
-      return DOTGraphTraitsPrinter<DominatorTreeWrapperPass, true, DominatorTree*, DominatorTreeWrapperPassAnalysisGraphTraits>::runOnFunction(F);
+    bool runOnModule (Module &M) override {
+      errs() << "PDGPrinter at \"runOnModule\"\n";
+      return false;
+
+      PDG *Graph = new PDG(M);
+      std::string Filename = "pdg.dot";
+      std::error_code EC;
+
+      errs() << "Writing '" << Filename << "'...";
+
+      raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
+      std::string Title = DOTGraphTraits<PDG>::getGraphName(Graph);
+
+      if (!EC)
+        WriteGraph(File, Graph, false, Title);
+      else
+        errs() << "  error opening file for writing!";
+      errs() << "\n";
+
+      return false;
+    }
+
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
+      AU.addRequired<PDGAnalysis>();
+      AU.setPreservesAll();
+
+      return ;
     }
   };
 }
 
 // Next there is code to register your pass to "opt"
-char PDGPrinter::ID = 0;
+char llvm::PDGPrinter::ID = 0;
 static RegisterPass<PDGPrinter> X("PDGPrinter", "Program Dependence Graph .dot file printer");
 
 // Next there is code to register your pass to "clang"

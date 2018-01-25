@@ -8,46 +8,40 @@
 
 //#include "llvm/Analysis/CallGraph.h"
 #include "llvm/IR/Dominators.h"
+#include "llvm/Analysis/PostDominators.h"
 //#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
-#include "llvm/Analysis/DomPrinter.h"
-#include "llvm/Support/GraphWriter.h"
-#include "llvm/Analysis/DOTGraphTraitsPass.h"
-#include "llvm/Analysis/PostDominators.h"
+#include "../include/PDGAnalysis.hpp"
 
 using namespace llvm;
 
-namespace llvm {
-  struct PDGAnalysis : public ModulePass {
-    static char ID;
+bool llvm::PDGAnalysis::doInitialization (Module &M) {
+  errs() << "PDGAnalysis at \"doInitialization\"\n" ;
+  return false;
+}
 
-    PDGAnalysis() : ModulePass{ID} {
-    }
+void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.setPreservesAll();
+  return ;
+}
 
-    bool doInitialization (Module &M) override {
-      errs() << "PDGAnalysis at \"doInitialization\"\n" ;
-      return false;
-    }
-
-    bool runOnModule (Module &M) override {
-      errs() << "PDGAnalysis at \"runOnModule\"\n" ;
-      for (auto& F : M){
-        DominatorTree domTree = DominatorTree(F);
-        for (auto &B : F) {
-          TerminatorInst *I = B.getTerminator();
-          for (auto i = 0; i < I->getNumSuccessors(); ++i) {
-            errs() << domTree.dominates(I, I->getSuccessor(i)) << "\n";
-          }
-        }
+bool llvm::PDGAnalysis::runOnModule (Module &M) {
+  errs() << "PDGAnalysis at \"runOnModule\"\n" ;
+  for (auto& F : M){
+    DominatorTree domTree = DominatorTree(F);
+    for (auto &B : F) {
+      TerminatorInst *I = B.getTerminator();
+      for (auto i = 0; i < I->getNumSuccessors(); ++i) {
+        errs() << domTree.dominates(I, I->getSuccessor(i)) << "\n";
       }
-
-      return false;
     }
-  };
+  }
+
+  return false;
 }
 
 // Next there is code to register your pass to "opt"
-char PDGAnalysis::ID = 0;
+char llvm::PDGAnalysis::ID = 0;
 static RegisterPass<PDGAnalysis> X("PDGAnalysis", "Computing the Program Dependence Graph");
 
 // Next there is code to register your pass to "clang"
