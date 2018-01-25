@@ -6,8 +6,7 @@ namespace llvm {
   struct PDGAnalysis : public ModulePass {
     static char ID;
 
-    PDGAnalysis() : ModulePass{ID} {
-    }
+    PDGAnalysis();
 
     bool doInitialization (Module &M) override ;
 

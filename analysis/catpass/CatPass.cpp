@@ -40,6 +40,10 @@ bool llvm::PDGAnalysis::runOnModule (Module &M) {
   return false;
 }
 
+llvm::PDGAnalysis::PDGAnalysis() : ModulePass{ID}{
+  return ;
+}
+
 // Next there is code to register your pass to "opt"
 char llvm::PDGAnalysis::ID = 0;
 static RegisterPass<PDGAnalysis> X("PDGAnalysis", "Computing the Program Dependence Graph");
