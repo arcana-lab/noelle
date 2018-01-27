@@ -1,11 +1,10 @@
 #pragma once
 
-#include "llvm/Support/raw_ostream.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/GraphWriter.h"
-
-// For df_iterator of nodes in graph
-#include "llvm/ADT/DepthFirstIterator.h"
 
 using namespace std;
 using namespace llvm;
@@ -15,12 +14,18 @@ namespace llvm {
 // Template PDG node to abstract node type
 template <class NodeT> class PDGNodeBase {
   NodeT *theNode;
-  std::vector<PDGNodeBase *> children;
+  std::vector<PDGNodeBase *> outgoingNodes;
 
  public:
   PDGNodeBase() { theNode = NULL; }
   PDGNodeBase(NodeT *node) { theNode = node; }
 
+  typename std::vector<PDGNodeBase *>::iterator begin_nodes() { return outgoingNodes.begin(); }
+  typename std::vector<PDGNodeBase *>::iterator end_nodes() { return outgoingNodes.end(); }
+
+  /*
+  Define iterators for outgoing and incoming edges
+  
   using iterator = typename std::vector<PDGNodeBase *>::iterator;
   using const_iterator = typename std::vector<PDGNodeBase *>::const_iterator;
 
@@ -28,114 +33,91 @@ template <class NodeT> class PDGNodeBase {
   iterator end() { return children.end(); }
   const_iterator begin() const { return children.begin(); }
   const_iterator end() const { return children.end(); }
+  */
 
   NodeT *getNode() const { return theNode; }
 
-  void addChild(PDGNodeBase *base) {
-    children.push_back(base);
+  std::string toString() { return "node"; }
+
+  void addNode(PDGNodeBase *base) {
+    outgoingNodes.push_back(base);
   }
 };
 
-using PDGNode = PDGNodeBase<Instruction>;
-
-// Template PDG to be able to use abstract node types
-template <typename NodeT> class PDGBase {
- protected:
-  std::vector<PDGNodeBase<NodeT> *> roots;
-  PDGNodeBase<NodeT> *rootNode;
-
- public:
-  PDGBase();
-
-  PDGNodeBase<NodeT> *getRootNode() {
-    return rootNode;
+template <>
+std::string PDGNodeBase<Instruction>::toString() {
+  if (!theNode) {
+    return "Root (empty) node\n";
   }
-};
+  std::string str;
+  raw_string_ostream ros(str);
+  theNode->print(ros);
+  return str;
+}
 
 // PDG using Instructions as nodes
-class PDG : public PDGBase<Instruction> {
+class PDG {
  private:
-  std::map<Instruction *, PDGNode *> instructionNodes;
+  std::vector<PDGNodeBase<Instruction> *> allNodes;
+  PDGNodeBase<Instruction> *entryNode;
+  std::map<Instruction *, PDGNodeBase<Instruction> *> instructionNodes;
 
  public:
-  PDG();
   PDG(Module &M) {
     constructNodes(M);
-    constructTree(M);
-    attachEmptyRootNode();
+    constructEdges(M);
   }
+  
+  typedef vector<PDGNodeBase<Instruction> *>::iterator nodes_iterator;
+  typedef vector<PDGNodeBase<Instruction> *>::const_iterator nodes_const_iterator;
+
+  nodes_iterator begin_nodes() { allNodes.begin(); }
+  nodes_iterator end_nodes() { allNodes.end(); }
+  nodes_const_iterator begin_nodes() const { allNodes.begin(); }
+  nodes_const_iterator end_nodes() const { allNodes.end(); }
+
+  // Add edge iterator
 
   void constructNodes(Module &M) {
     for (auto &F : M) {
       for (auto &B : F) {
         for (auto &I : B) {
-          errs() << "Printing instruction\n";
-          I.print(errs() << "Instruction: ");
-          errs() << "\n";
-          PDGNode *node = new PDGNode(&I);
+          PDGNodeBase<Instruction> *node = new PDGNodeBase<Instruction>(&I);
+          allNodes.push_back(node);
           instructionNodes[&I] = node;
         }
       }
     }
+    auto mainF = M.getFunction("main");
+    if (mainF == nullptr) {
+      errs() << "ERROR: Main function not found\n";
+      abort();
+    }
+    auto entryInstr = &*(mainF->begin()->begin());
+    entryNode = instructionNodes[entryInstr];
+    assert(entryNode != nullptr);
   }
 
-  void constructTree(Module &M) {
+  void constructEdges(Module &M) {
     for (auto &F : M) {
       for (auto &B : F) {
         for (auto &I : B) {
-          PDGNode *iNode = instructionNodes[&I];
-          if (I.getNumUses() == 0) {
-            roots.push_back(iNode);
+          PDGNodeBase<Instruction> *iNode = instructionNodes[&I];
+          if (I.getNumUses() == 0)
             continue;
-          }
           for (auto& U : I.uses()) {
-            Instruction* user = (Instruction*)(U.getUser());
-            iNode->addChild(instructionNodes[user]);
+            auto user = U.getUser();
+            if (auto userInst = dyn_cast<Instruction>(user)){
+              iNode->addNode(instructionNodes[userInst]);
+            }
           }
         }
       }
     }
   }
 
-  void attachEmptyRootNode() {
-    rootNode = new PDGNode();
-    for (auto root : roots) {
-      rootNode->addChild(root);
-    }
-  }
-};
-
-// Template PDG graph traits for use in graph node iteration
-template <class Node, class ChildIterator> struct PDGGraphTraitsBase {
-  using nodes_iterator = df_iterator<Node*, df_iterator_default_set<Node*>>;
-  using NodeRef = Node *;
-  using ChildIteratorType = ChildIterator;
-
-  static NodeRef getEntryNode(NodeRef N) { return N; }
-  static ChildIteratorType child_begin(NodeRef N) { return N->begin(); }
-  static ChildIteratorType child_end(NodeRef N) { return N->end(); }
-
-  static nodes_iterator nodes_begin(NodeRef N) {
-    return df_begin(getEntryNode(N));
-  }
-  static nodes_iterator nodes_end(NodeRef N) { return df_end(getEntryNode(N)); }
-};
-
-template <> struct GraphTraits<PDGNode *>
-  : public PDGGraphTraitsBase<PDGNode, PDGNode::iterator> {};
-
-template <> struct GraphTraits<const PDGNode *>
-  : public PDGGraphTraitsBase<const PDGNode, PDGNode::const_iterator> {};
-
-template <> struct GraphTraits<PDG*> : public GraphTraits<PDGNode*> {
-  static NodeRef getEntryNode(PDG *pdg) { return pdg->getRootNode(); }
-
-  static nodes_iterator nodes_begin(PDG *pdg) {
-    return df_begin(getEntryNode(pdg));
-  }
-
-  static nodes_iterator nodes_end(PDG *pdg) {
-    return df_end(getEntryNode(pdg));
+  PDGNodeBase<Instruction> *getEntryNode() {
+    return entryNode;
   }
 };
 

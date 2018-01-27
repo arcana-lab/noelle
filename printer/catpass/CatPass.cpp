@@ -2,45 +2,23 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-//#include "llvm/Analysis/CallGraph.h"
-#include "llvm/IR/Dominators.h"
-//#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "PDG.hpp"
+#include "PDGAnalysis.hpp"
+#include "PDGGraphTraits.hpp"
 
+#include "llvm/ADT/GraphTraits.h"
+#include "llvm/Analysis/DOTGraphTraitsPass.h"
 #include "llvm/Analysis/DomPrinter.h"
 #include "llvm/Support/GraphWriter.h"
 #include "llvm/Support/DOTGraphTraits.h"
-#include "llvm/Analysis/DOTGraphTraitsPass.h"
-#include "llvm/Analysis/PostDominators.h"
-
-#include "PDGAnalysis.hpp"
-#include "PDG.hpp"
 
 using namespace llvm;
 
 namespace llvm {
-
-  template<> struct DOTGraphTraits<PDGNode*> : public DefaultDOTGraphTraits {
-    explicit DOTGraphTraits(bool isSimple=false) : DefaultDOTGraphTraits(isSimple) {}
-    
-  };
-
-  template<>
-  struct DOTGraphTraits<PDG*> : public DOTGraphTraits<PDGNode*> {
-    DOTGraphTraits (bool isSimple=false) : DOTGraphTraits<PDGNode*>(isSimple) {}
-
-    static std::string getGraphName(PDG *pdg) {
-      return "PDG tree";
-    }
-
-    std::string getNodeLabel(PDGNode *node, PDG *pdg) {
-      return DOTGraphTraits<PDGNode*>::getNodeLabel(node, pdg->getRootNode());
-    }
-  };
-
   struct PDGPrinter : public ModulePass {
     static char ID;
 
@@ -53,19 +31,18 @@ namespace llvm {
 
     bool runOnModule (Module &M) override {
       errs() << "PDGPrinter at \"runOnModule\"\n";
-      return false;
 
-      PDG *Graph = new PDG(M);
+      PDG *graph = new PDG(M);
       std::string Filename = "pdg.dot";
       std::error_code EC;
 
-      errs() << "Writing '" << Filename << "'...";
+      errs() << "Writing '" << Filename << "'...\n";
 
       raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
-      std::string Title = DOTGraphTraits<PDG>::getGraphName(Graph);
+      std::string Title = DOTGraphTraits<PDG>::getGraphName(graph);
 
       if (!EC)
-        WriteGraph(File, Graph, false, Title);
+        WriteGraph(File, graph, false, Title);
       else
         errs() << "  error opening file for writing!";
       errs() << "\n";
