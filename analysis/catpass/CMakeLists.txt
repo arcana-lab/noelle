@@ -1,6 +1,7 @@
 # Sources
 set(CATPassSrc 
   CatPass.cpp
+  PDG.cpp
 )
 
 # Compilation flags
