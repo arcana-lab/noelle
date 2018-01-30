@@ -17,6 +17,7 @@ using namespace llvm;
 
 bool llvm::PDGAnalysis::doInitialization (Module &M) {
   errs() << "PDGAnalysis at \"doInitialization\"\n" ;
+  this->programDependenceGraph = std::unique_ptr<PDG>(new PDG(M));
   return false;
 }
 
@@ -42,6 +43,10 @@ bool llvm::PDGAnalysis::runOnModule (Module &M) {
 
 llvm::PDGAnalysis::PDGAnalysis() : ModulePass{ID}{
   return ;
+}
+
+llvm::PDG & llvm::PDGAnalysis::getPDG (){
+  return *this->programDependenceGraph;
 }
 
 // Next there is code to register your pass to "opt"

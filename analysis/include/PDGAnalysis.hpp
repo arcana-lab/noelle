@@ -1,17 +1,24 @@
 #pragma once
 
+#include "PDG.hpp"
+
 using namespace llvm;
 
 namespace llvm {
   struct PDGAnalysis : public ModulePass {
-    static char ID;
+    public:
+      static char ID;
+      PDGAnalysis();
 
-    PDGAnalysis();
+      bool doInitialization (Module &M) override ;
 
-    bool doInitialization (Module &M) override ;
+      void getAnalysisUsage(AnalysisUsage &AU) const override ;
 
-    void getAnalysisUsage(AnalysisUsage &AU) const override ;
+      bool runOnModule (Module &M) override ;
 
-    bool runOnModule (Module &M) override ;
+      PDG & getPDG () ;
+
+    private:
+      std::unique_ptr<PDG> programDependenceGraph;
   };
 }
