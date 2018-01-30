@@ -29,4 +29,4 @@ include(AddLLVM)
 add_subdirectory(catpass)
 
 # Install
-install(PROGRAMS bin/cat-c DESTINATION bin)
+install(PROGRAMS DESTINATION)

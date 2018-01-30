@@ -14,41 +14,42 @@ namespace llvm {
   // Template PDG node to abstract node type
   template <class NodeT> 
   class PDGNodeBase {
-    NodeT *theNode;
-    std::vector<PDGNodeBase *> outgoingNodes;
+    public:
+      PDGNodeBase() { theNode = NULL; }
+      PDGNodeBase(NodeT *node) { theNode = node; }
 
-   public:
-    PDGNodeBase() { theNode = NULL; }
-    PDGNodeBase(NodeT *node) { theNode = node; }
+      typename std::vector<PDGNodeBase *>::iterator begin_nodes() { return outgoingNodes.begin(); }
+      typename std::vector<PDGNodeBase *>::iterator end_nodes() { return outgoingNodes.end(); }
 
-    typename std::vector<PDGNodeBase *>::iterator begin_nodes() { return outgoingNodes.begin(); }
-    typename std::vector<PDGNodeBase *>::iterator end_nodes() { return outgoingNodes.end(); }
+      /*
+      Define iterators for outgoing and incoming edges
+      
+      using iterator = typename std::vector<PDGNodeBase *>::iterator;
+      using const_iterator = typename std::vector<PDGNodeBase *>::const_iterator;
 
-    /*
-    Define iterators for outgoing and incoming edges
-    
-    using iterator = typename std::vector<PDGNodeBase *>::iterator;
-    using const_iterator = typename std::vector<PDGNodeBase *>::const_iterator;
+      iterator begin() { return children.begin(); }
+      iterator end() { return children.end(); }
+      const_iterator begin() const { return children.begin(); }
+      const_iterator end() const { return children.end(); }
+      */
 
-    iterator begin() { return children.begin(); }
-    iterator end() { return children.end(); }
-    const_iterator begin() const { return children.begin(); }
-    const_iterator end() const { return children.end(); }
-    */
+      NodeT *getNode() const { return theNode; }
 
-    NodeT *getNode() const { return theNode; }
+      std::string toString() { return "node"; }
 
-    std::string toString() { return "node"; }
+      void addNode(PDGNodeBase *base) {
+        outgoingNodes.push_back(base);
+      }
 
-    void addNode(PDGNodeBase *base) {
-      outgoingNodes.push_back(base);
-    }
+    private:
+      NodeT *theNode;
+      std::vector<PDGNodeBase *> outgoingNodes;
   };
 
   template <>
   inline std::string PDGNodeBase<Instruction>::toString() {
     if (!theNode) {
-      return "Root (empty) node\n";
+      return "Empty node\n";
     }
     std::string str;
     raw_string_ostream ros(str);
