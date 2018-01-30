@@ -1,4 +1,4 @@
-all: printer analysis
+all: printer analysis user
 
 printer:
 	cd $@ ; ./run_me.sh
@@ -6,10 +6,13 @@ printer:
 analysis:
 	cd $@ ; ./run_me.sh
 
+user:
+	cd $@ ; ./run_me.sh
+
 uninstall:
 	rm -rf ~/CAT ;
 
 clean:
-	rm -rf printer/build analysis/build ;
+	rm -rf */build ;
 
-.PHONY: clean analysis printer
+.PHONY: clean analysis printer user
