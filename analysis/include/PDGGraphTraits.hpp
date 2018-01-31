@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PDGBase.hpp"
 #include "PDG.hpp"
 
 using namespace llvm;
@@ -24,6 +25,13 @@ namespace llvm {
     std::string getNodeLabel(PDGNodeBase<Instruction> *node, PDG *pdg) {
       return DOTGraphTraits<PDGNodeBase<Instruction>*>::getNodeLabel(node, pdg->getEntryNode());
     }
+
+    /// getEdgeSourceLabel - If you want to label the edge source itself,
+    /// implement this method.
+    std::string getEdgeSourceLabel(PDGNodeBase<Instruction> *node, std::vector<PDGNodeBase<Instruction> *>::iterator edgeIter) {
+      return node->getCorrespondingEdge(edgeIter)->toString();
+    }
+
   };
 
   template <> struct GraphTraits<PDG*> {
@@ -34,42 +42,19 @@ namespace llvm {
     static PDGNodeBase<Instruction> *getEntryNode(PDG *pdg) { return pdg->getEntryNode(); }
 
     static std::vector<PDGNodeBase<Instruction> *>::iterator nodes_begin(PDG *pdg) {
-      errs() << "Invoked nodes begin on PDG\n";
       return pdg->begin_nodes();
     }
 
     static std::vector<PDGNodeBase<Instruction> *>::iterator nodes_end(PDG *pdg) {
-      errs() << "Invoked nodes end on PDG\n";
       return pdg->end_nodes();
     }
 
-    // GraphTraits requires a child iterator, but for now I'm just using the PDG iterator
-    // TODO: Create an iterator on PDGNodeBase<Instruction> to use here instead of this:
-    static ChildIteratorType child_begin(NodeRef node) { return node->begin_nodes(); }
-    static ChildIteratorType child_end(NodeRef node) { return node->end_nodes(); }
-  };
-
-  /*
-  // Template PDG graph traits for use in graph node iteration
-  template <class Node, class ChildIterator> struct PDGGraphTraitsBase {
-    using nodes_iterator = df_iterator<Node*, df_iterator_default_set<Node*>>;
-    using NodeRef = Node *;
-    using ChildIteratorType = ChildIterator;
-
-    static NodeRef getEntryNode(NodeRef N) { return N; }
-    static ChildIteratorType child_begin(NodeRef N) { return N->begin(); }
-    static ChildIteratorType child_end(NodeRef N) { return N->end(); }
-
-    static nodes_iterator nodes_begin(NodeRef N) {
-      return df_begin(getEntryNode(N));
+    static ChildIteratorType child_begin(NodeRef node) { 
+      return node->begin_outgoing_nodes(); 
     }
-    static nodes_iterator nodes_end(NodeRef N) { return df_end(getEntryNode(N)); }
+
+    static ChildIteratorType child_end(NodeRef node) { 
+      return node->end_outgoing_nodes();
+    }
   };
-
-  template <> struct GraphTraits<PDGNode *>
-    : public PDGGraphTraitsBase<PDGNode, PDGNode::iterator> {};
-
-  template <> struct GraphTraits<const PDGNode *>
-    : public PDGGraphTraitsBase<const PDGNode, PDGNode::const_iterator> {};
-  */
 }

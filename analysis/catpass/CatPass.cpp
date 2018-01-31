@@ -6,11 +6,6 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-//#include "llvm/Analysis/CallGraph.h"
-#include "llvm/IR/Dominators.h"
-#include "llvm/Analysis/PostDominators.h"
-//#include "llvm/Transforms/Utils/BasicBlockUtils.h"
-
 #include "../include/PDGAnalysis.hpp"
 
 using namespace llvm;
@@ -28,16 +23,6 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool llvm::PDGAnalysis::runOnModule (Module &M) {
   errs() << "PDGAnalysis at \"runOnModule\"\n" ;
-  for (auto& F : M){
-    DominatorTree domTree = DominatorTree(F);
-    for (auto &B : F) {
-      TerminatorInst *I = B.getTerminator();
-      for (auto i = 0; i < I->getNumSuccessors(); ++i) {
-        errs() << domTree.dominates(I, I->getSuccessor(i)) << "\n";
-      }
-    }
-  }
-
   return false;
 }
 

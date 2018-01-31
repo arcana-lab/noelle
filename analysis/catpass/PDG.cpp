@@ -43,7 +43,11 @@ void llvm::PDG::constructEdges (Module &M){
         for (auto& U : I.uses()) {
           auto user = U.getUser();
           if (auto userInst = dyn_cast<Instruction>(user)){
-            iNode->addNode(instructionNodes[userInst]);
+            auto targetNode = instructionNodes[userInst];
+            auto edge = new PDGEdge(iNode, targetNode);
+            allEdges.push_back(edge);
+            iNode->addOutgoingNode(targetNode, edge);
+            targetNode->addIncomingNode(iNode, edge);
           }
         }
       }
