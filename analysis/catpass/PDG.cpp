@@ -12,6 +12,10 @@ llvm::PDG::PDG (Module &M){
 }
 
 void llvm::PDG::constructNodes (Module &M){
+
+  /*
+   * Create a node per instruction.
+   */
   for (auto &F : M) {
     for (auto &B : F) {
       for (auto &I : B) {
@@ -21,6 +25,10 @@ void llvm::PDG::constructNodes (Module &M){
       }
     }
   }
+
+  /* 
+   * Set the entry node: the first instruction of the function "main"
+   */
   auto mainF = M.getFunction("main");
   if (mainF == nullptr) {
     errs() << "ERROR: Main function not found\n";
