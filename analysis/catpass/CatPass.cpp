@@ -12,7 +12,6 @@ using namespace llvm;
 
 bool llvm::PDGAnalysis::doInitialization (Module &M) {
   errs() << "PDGAnalysis at \"doInitialization\"\n" ;
-  this->programDependenceGraph = std::unique_ptr<PDG>(new PDG(M));
   return false;
 }
 
@@ -23,6 +22,7 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool llvm::PDGAnalysis::runOnModule (Module &M) {
   errs() << "PDGAnalysis at \"runOnModule\"\n" ;
+  this->programDependenceGraph = std::unique_ptr<PDG>(new PDG(M));
   return false;
 }
 
