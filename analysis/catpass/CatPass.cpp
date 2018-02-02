@@ -24,7 +24,17 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool llvm::PDGAnalysis::runOnModule (Module &M) {
   errs() << "PDGAnalysis at \"runOnModule\"\n" ;
-  this->programDependenceGraph = std::unique_ptr<PDG>(new PDG(M));
+  this->programDependenceGraph = std::unique_ptr<PDG>(new PDG());
+
+  /*
+   * Create AliasInfo for PDG use, then compute the PDG.
+   */
+  auto *aaInfo = new ModuleAliasInfo();
+  for (auto &F : M) {
+    aaInfo->aliasInfo[&F] = new FunctionAliasInfo(&(getAnalysis<AAResultsWrapperPass>(F).getAAResults()));
+  }
+  this->programDependenceGraph->computeGraphFor(M, aaInfo);
+
   return false;
 }
 

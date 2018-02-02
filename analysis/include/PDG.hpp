@@ -26,13 +26,17 @@ namespace llvm {
     std::map<Instruction *, std::set<Instruction *>> mustAliases;
   };
 
+  struct ModuleAliasInfo {
+    std::map<Function *, FunctionAliasInfo *> aliasInfo;
+  };
+
   /*
    * Program Dependence Graph.
    */
   class PDG {
     public:
-      PDG(Module &M) ;
-      
+      PDG() ;
+
       typedef vector<PDGNodeBase<Instruction> *>::iterator nodes_iterator;
       typedef vector<PDGNodeBase<Instruction> *>::const_iterator nodes_const_iterator;
 
@@ -56,13 +60,15 @@ namespace llvm {
         return entryNode;
       }
 
+      void computeGraphFor (Module &, ModuleAliasInfo *);
+
     private:
       std::vector<PDGNodeBase<Instruction> *> allNodes;
       std::vector<PDGEdge *> allEdges;
       PDGNodeBase<Instruction> *entryNode;
       std::map<Instruction *, PDGNodeBase<Instruction> *> instructionNodes;
 
-      std::map<Function *, FunctionAliasInfo *> aliasInfo;
+      ModuleAliasInfo *aaInfo;
 
       void constructNodes (Module &M) ;
       void constructUseDefEdges (Module &M) ;

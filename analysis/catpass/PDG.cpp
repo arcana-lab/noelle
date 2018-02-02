@@ -7,7 +7,9 @@
 
 #include "../include/PDG.hpp"
 
-llvm::PDG::PDG (Module &M){
+void llvm::PDG::computeGraphFor (Module &M, ModuleAliasInfo *aa){
+  aaInfo = aa;
+
   collectAliasPairs(M);
   constructNodes(M);
   constructUseDefEdges(M);
@@ -17,13 +19,6 @@ llvm::PDG::PDG (Module &M){
 }
 
 void llvm::PDG::collectAliasPairs (Module &M){
-  /*
-   * Create FunctionAliasInfo for each function to store collected alias pairs
-   */
-  for (auto &F : M) {
-    aliasInfo[&F] = new FunctionAliasInfo(&(getAnalysis<AAResultsWrapperPass>(F).getAAResults()));
-  }
-
   // TODO:
   /*
    * Iterate over store and loads, collecting may/must alias information between each pair of them
