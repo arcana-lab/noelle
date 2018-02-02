@@ -8,9 +8,7 @@ enable_language(C CXX)
 # Find and link with LLVM
 find_package(LLVM REQUIRED CONFIG)
 
-if(!${APPLE})
-  add_definitions(${LLVM_DEFINITIONS})
-endif()
+add_definitions(${LLVM_DEFINITIONS})
 add_definitions(
 -D__STDC_LIMIT_MACROS
 -D__STDC_CONSTANT_MACROS
