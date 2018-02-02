@@ -5,6 +5,8 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/GraphWriter.h"
+#include "llvm/Analysis/AliasAnalysis.h"
+#include <set>
 
 #include "PDGBase.hpp"
 
@@ -12,6 +14,18 @@ using namespace std;
 using namespace llvm;
 
 namespace llvm {
+
+  /*
+   * Alias information on each function used by the Program Dependence Graph
+   */
+  struct FunctionAliasInfo {
+    FunctionAliasInfo(AAResults *a) { aa = a; }
+
+    AAResults* aa;
+    std::map<Instruction *, std::set<Instruction *>> mayAliases;
+    std::map<Instruction *, std::set<Instruction *>> mustAliases;
+  };
+
   /*
    * Program Dependence Graph.
    */
@@ -48,7 +62,12 @@ namespace llvm {
       PDGNodeBase<Instruction> *entryNode;
       std::map<Instruction *, PDGNodeBase<Instruction> *> instructionNodes;
 
-      void constructNodes (Module &M);
-      void constructEdges (Module &M) ;
+      std::map<Function *, FunctionAliasInfo *> aliasInfo;
+
+      void constructNodes (Module &M) ;
+      void constructUseDefEdges (Module &M) ;
+      void constructAliasingEdges (Module &M) ;
+      void collectAliasPairs (Module &M) ;
+
   };
 }

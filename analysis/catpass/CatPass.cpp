@@ -5,6 +5,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Analysis/AliasAnalysis.h"
 
 #include "../include/PDGAnalysis.hpp"
 
@@ -16,6 +17,7 @@ bool llvm::PDGAnalysis::doInitialization (Module &M) {
 }
 
 void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<AAResultsWrapperPass>();
   AU.setPreservesAll();
   return ;
 }

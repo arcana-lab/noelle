@@ -1,14 +1,33 @@
+#include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/Analysis/AliasAnalysis.h"
+#include <set>
 
 #include "../include/PDG.hpp"
 
 llvm::PDG::PDG (Module &M){
+  collectAliasPairs(M);
   constructNodes(M);
-  constructEdges(M);
+  constructUseDefEdges(M);
+  constructAliasingEdges(M);
 
   return ;
+}
+
+void llvm::PDG::collectAliasPairs (Module &M){
+  /*
+   * Create FunctionAliasInfo for each function to store collected alias pairs
+   */
+  for (auto &F : M) {
+    aliasInfo[&F] = new FunctionAliasInfo(&(getAnalysis<AAResultsWrapperPass>(F).getAAResults()));
+  }
+
+  // TODO:
+  /*
+   * Iterate over store and loads, collecting may/must alias information between each pair of them
+   */
 }
 
 void llvm::PDG::constructNodes (Module &M){
@@ -41,7 +60,7 @@ void llvm::PDG::constructNodes (Module &M){
   return ;
 }
 
-void llvm::PDG::constructEdges (Module &M){
+void llvm::PDG::constructUseDefEdges (Module &M){
   for (auto &F : M) {
     for (auto &B : F) {
       for (auto &I : B) {
@@ -63,4 +82,11 @@ void llvm::PDG::constructEdges (Module &M){
   }
 
   return ;
+}
+
+void llvm::PDG::constructAliasingEdges (Module &M){
+  // TODO:
+  /*
+   * Use alias information on stores and loads to construct edges between pairs of these instructions
+   */
 }
