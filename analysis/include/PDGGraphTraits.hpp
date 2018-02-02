@@ -2,10 +2,12 @@
 
 #include "PDGBase.hpp"
 #include "PDG.hpp"
+#include "PDGPrintState.hpp"
 
 using namespace llvm;
 
 namespace llvm {
+  // Not sure if this is still needed, or if it can be completely replaced by DOTGraphTraits<PDG*> below
   template<> struct DOTGraphTraits<PDGNodeBase<Instruction>*> : public DefaultDOTGraphTraits {
     explicit DOTGraphTraits(bool isSimple=false) : DefaultDOTGraphTraits(isSimple) {}
     
@@ -26,12 +28,19 @@ namespace llvm {
       return DOTGraphTraits<PDGNodeBase<Instruction>*>::getNodeLabel(node, pdg->getEntryNode());
     }
 
-    /// getEdgeSourceLabel - If you want to label the edge source itself,
-    /// implement this method.
     std::string getEdgeSourceLabel(PDGNodeBase<Instruction> *node, std::vector<PDGNodeBase<Instruction> *>::iterator edgeIter) {
       return node->getCorrespondingEdge(edgeIter)->toString();
     }
 
+    bool isNodeHidden(PDGNodeBase<Instruction> *node) {
+      return false;
+      //return node->getPrintState()->isNodeHidden();
+    }
+
+    std::string getNodeDescription(PDGNodeBase<Instruction> *node, PDG *pdg) {
+      return "";
+      //return node->getPrintState()->getNodeDescription();
+    }
   };
 
   template <> struct GraphTraits<PDG*> {

@@ -1,10 +1,7 @@
 #pragma once
 
-#include "llvm/IR/Module.h"
-#include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/GraphWriter.h"
 
 using namespace std;
 using namespace llvm;
@@ -14,8 +11,9 @@ namespace llvm {
    * Program Dependence Graph Node and Edge
    */
 
+  class PDGNodePrintState;
   class PDGEdge;
-
+  
   // Template PDG node to abstract node type
   template <class NodeT> 
   class PDGNodeBase {
@@ -37,23 +35,28 @@ namespace llvm {
       edges_iterator end_incoming_edges() { return incomingEdges.end(); }
 
       NodeT *getNode() const { return theNode; }
-
       std::string toString() { return "node"; }
 
       void addIncomingNode(PDGNodeBase *node, PDGEdge *edge) {
         incomingNodes.push_back(node);
         incomingEdges.push_back(edge);
       }
-
+      
       void addOutgoingNode(PDGNodeBase *node, PDGEdge *edge) {
         outgoingNodes.push_back(node);
         outgoingEdges.push_back(edge);
       }
-
+      
       PDGEdge *getCorrespondingEdge(nodes_iterator target, bool incomingEdge = false) {
         int edgeIndex = target - (incomingEdge ? incomingNodes.begin() : outgoingNodes.begin());
         return incomingEdge ? incomingEdges[edgeIndex] : outgoingEdges[edgeIndex];
       }
+
+      void addPrintState(PDGNodePrintState *state) {
+        printState = state;
+      }
+
+      PDGNodePrintState *getPrintState() { return printState; }
 
     private:
       NodeT *theNode;
@@ -63,6 +66,8 @@ namespace llvm {
       // To iterate connected nodes indirectly by edge 
       std::vector<PDGEdge *> outgoingEdges;
       std::vector<PDGEdge *> incomingEdges;
+      // To represent this node's DOT printing state
+      PDGNodePrintState *printState;
   };
 
   template <>

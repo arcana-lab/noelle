@@ -6,6 +6,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
+#include "PDGBase.hpp"
 #include "PDG.hpp"
 #include "PDGAnalysis.hpp"
 #include "PDGGraphTraits.hpp"
