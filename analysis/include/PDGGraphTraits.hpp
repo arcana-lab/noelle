@@ -28,8 +28,8 @@ namespace llvm {
       return DOTGraphTraits<PDGNodeBase<Instruction>*>::getNodeLabel(node, pdg->getEntryNode());
     }
 
-    std::string getEdgeSourceLabel(PDGNodeBase<Instruction> *node, std::vector<PDGNodeBase<Instruction> *>::iterator edgeIter) {
-      return node->getCorrespondingEdge(edgeIter)->toString();
+    std::string getEdgeSourceLabel(PDGNodeBase<Instruction> *node, std::vector<PDGNodeBase<Instruction> *>::iterator nodeIter) {
+      return node->getEdgeFromNodeIterator(nodeIter)->toString();
     }
 
     bool isNodeHidden(PDGNodeBase<Instruction> *node) {
