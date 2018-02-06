@@ -47,7 +47,8 @@ namespace llvm {
         outgoingEdges.push_back(edge);
       }
       
-      PDGEdge *getCorrespondingEdge(nodes_iterator target, bool incomingEdge = false) {
+      PDGEdge *getEdgeFromNodeIterator(nodes_iterator target, bool incomingEdge = false) {
+        // Index of edge iterator is equivalent to index of node iterator as the node and edge vectors are aligned
         int edgeIndex = target - (incomingEdge ? incomingNodes.begin() : outgoingNodes.begin());
         return incomingEdge ? incomingEdges[edgeIndex] : outgoingEdges[edgeIndex];
       }
@@ -83,7 +84,6 @@ namespace llvm {
 
   class PDGEdge {
    public:
-    PDGEdge() {};
     PDGEdge(PDGNodeBase<Instruction> *src, PDGNodeBase<Instruction> *dst) { from = src; to = dst; }
 
     std::string toString() { return "edge"; }

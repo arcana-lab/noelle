@@ -6,6 +6,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/GraphWriter.h"
 #include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/ADT/iterator_range.h"
 #include <set>
 
 #include "PDGBase.hpp"
@@ -14,21 +15,6 @@ using namespace std;
 using namespace llvm;
 
 namespace llvm {
-
-  /*
-   * Alias information on each function used by the Program Dependence Graph
-   */
-  struct FunctionAliasInfo {
-    FunctionAliasInfo(AAResults *a) { aa = a; }
-
-    AAResults* aa;
-    std::map<Instruction *, std::set<Instruction *>> mayAliases;
-    std::map<Instruction *, std::set<Instruction *>> mustAliases;
-  };
-
-  struct ModuleAliasInfo {
-    std::map<Function *, FunctionAliasInfo *> aliasInfo;
-  };
 
   /*
    * Program Dependence Graph.
@@ -44,7 +30,7 @@ namespace llvm {
       typedef vector<PDGEdge *>::const_iterator edges_const_iterator;
 
       /*
-       * Iterators.
+       * Node and Edge Iterators
        */
       nodes_iterator begin_nodes() { allNodes.begin(); }
       nodes_iterator end_nodes() { allNodes.end(); }
@@ -60,20 +46,20 @@ namespace llvm {
         return entryNode;
       }
 
-      void computeGraphFor (Module &, ModuleAliasInfo *);
+      /*
+       * Instruction Node Pair Iterator
+       */
+      iterator_range<typename std::map<Instruction *, PDGNodeBase<Instruction> *>::iterator>
+      instructionNodePairs() {
+        return make_range(instructionNodes.begin(), instructionNodes.end());
+      }
 
+      void constructNodes(Module &M);
+      void addEdgeFromTo(Instruction *from, Instruction *to);
     private:
       std::vector<PDGNodeBase<Instruction> *> allNodes;
       std::vector<PDGEdge *> allEdges;
       PDGNodeBase<Instruction> *entryNode;
       std::map<Instruction *, PDGNodeBase<Instruction> *> instructionNodes;
-
-      ModuleAliasInfo *aaInfo;
-
-      void constructNodes (Module &M) ;
-      void constructUseDefEdges (Module &M) ;
-      void constructAliasingEdges (Module &M) ;
-      void collectAliasPairs (Module &M) ;
-
   };
 }
