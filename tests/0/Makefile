@@ -1,7 +1,7 @@
 all: pdg.dot
 
 pdg.dot: test.bc
-	opt -load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/PDGPrinter.so -disable-output -PDGPrinter test.bc
+	opt -load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/PDGPrinter.so -basicaa -disable-output -PDGPrinter test.bc
 
 test.bc: test.c
 	clang -emit-llvm -O0 -c $^ -o $@

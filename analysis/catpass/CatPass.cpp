@@ -74,44 +74,43 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
   return ;
 }
 
-void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, Instruction &memI, Instruction &memJ){
-  switch (aaResults[&F]->alias(MemoryLocation::get(&memI), MemoryLocation::get(&memJ))) {
-    case PartialAlias:
-    case MayAlias:
-    case MustAlias:
-      programDependenceGraph->addEdgeFromTo(&memI, &memJ);
-      break;
-  }
-}
-
-void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, Instruction &memI, CallInst &call){
-  switch (aaResults[&F]->getModRefInfo(&call, MemoryLocation::get(&memI))) {
+template <class iType>
+void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, iType *memI, CallInst *call){
+  switch (aaResults[&F]->getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
     case MRI_Mod:
     case MRI_ModRef:
-      programDependenceGraph->addEdgeFromTo(&memI, &call);
+      programDependenceGraph->addEdgeFromTo(memI, call);
       break;
   }
 }
 
-template <class iType>
-void llvm::PDGAnalysis::iterateInstForAliases(Function &F, Instruction &J) {
+template <class iType, class jType>
+void llvm::PDGAnalysis::iterateInstForAliases(Function &F, jType *memJ) {
   for (auto &B : F) {
     for (auto &I : B) {
-      if (dyn_cast<iType>(&I)) {
-        addEdgeFromMemoryAlias(F, I, J);
+      if (auto *memI = dyn_cast<iType>(&I)) {
+	auto memLocI = MemoryLocation::get(memI);
+	auto memLocJ = MemoryLocation::get(memJ);
+        switch (aaResults[&F]->alias(memLocI, memLocJ)) {
+          case PartialAlias:
+          case MayAlias:
+          case MustAlias:
+            programDependenceGraph->addEdgeFromTo(memI, memJ);
+            break;
+        }
       }
     }
   }
 }
 
-void llvm::PDGAnalysis::iterateInstForModRef(Function &F, CallInst &J) {
+void llvm::PDGAnalysis::iterateInstForModRef(Function &F, CallInst *call) {
   for (auto &B : F) {
     for (auto &I : B) {
       if (auto *load = dyn_cast<LoadInst>(&I)) {
-        addEdgeFromFunctionModRef(F, I, J);
+        addEdgeFromFunctionModRef<LoadInst>(F, load, call);
       } else if (auto *store = dyn_cast<StoreInst>(&I)) {
-        addEdgeFromFunctionModRef(F, I, J);
+        addEdgeFromFunctionModRef<StoreInst>(F, store, call);
       }
     }
   }
@@ -125,11 +124,11 @@ void llvm::PDGAnalysis::constructEdgesFromAliases (Module &M){
     for (auto &B : F) {
       for (auto &I : B) {
         if (auto* store = dyn_cast<StoreInst>(&I)) {
-          iterateInstForAliases<LoadInst>(F, I);
+          iterateInstForAliases<LoadInst, StoreInst>(F, store);
         } else if (auto *load = dyn_cast<LoadInst>(&I)) {
-          iterateInstForAliases<StoreInst>(F, I);
+          iterateInstForAliases<StoreInst, LoadInst>(F, load);
         } else if (auto *call = dyn_cast<CallInst>(&I)) {
-          iterateInstForModRef(F, *call);
+          iterateInstForModRef(F, call);
         }
       }
     }

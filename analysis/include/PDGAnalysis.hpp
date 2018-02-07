@@ -30,13 +30,13 @@ namespace llvm {
       std::unique_ptr<PDG> programDependenceGraph;
       std::map<Function *, AAResults *> aaResults;
 
-      void addEdgeFromMemoryAlias(Function &, Instruction &, Instruction &);
-      void addEdgeFromFunctionModRef(Function &, Instruction &, CallInst &);
-
       template <class iType>
-      void iterateInstForAliases(Function &, Instruction &);
+      void addEdgeFromFunctionModRef(Function &, iType *, CallInst *);
 
-      void iterateInstForModRef(Function &, CallInst &);
+      template <class iType, class jType>
+      void iterateInstForAliases(Function &, jType *);
+
+      void iterateInstForModRef(Function &, CallInst *);
 
   };
 }
