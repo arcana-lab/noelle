@@ -28,10 +28,6 @@ namespace llvm {
 
     private:
       std::unique_ptr<PDG> programDependenceGraph;
-      std::map<Function *, AAResults *> aaResults;
-
-      template <class iType>
-      void addEdgeFromFunctionModRef(Function &, iType *, CallInst *);
 
       template <class iType, class jType>
       void iterateInstForAliases(Function &, jType *);
