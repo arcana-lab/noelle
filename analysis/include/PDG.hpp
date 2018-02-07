@@ -46,6 +46,10 @@ namespace llvm {
         return entryNode;
       }
 
+      PDGNodeBase<Instruction> *getNodeOf(Instruction *I) {
+        return instructionNodes[I];
+      }
+
       /*
        * Instruction Node Pair Iterator
        */
@@ -56,6 +60,7 @@ namespace llvm {
 
       void constructNodes(Module &M);
       void addEdgeFromTo(Instruction *from, Instruction *to);
+
     private:
       std::vector<PDGNodeBase<Instruction> *> allNodes;
       std::vector<PDGEdge *> allEdges;

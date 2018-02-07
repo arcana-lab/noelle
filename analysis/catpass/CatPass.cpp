@@ -11,20 +11,7 @@
 
 using namespace llvm;
 
-/*
- * Alias information on each function used by the Program Dependence Graph
- */
-struct FunctionAliasInfo {
-  FunctionAliasInfo(AAResults *a) { aa = a; }
-
-  AAResults* aa;
-};
-
-struct ModuleAliasInfo {
-  std::map<Function *, FunctionAliasInfo *> aliasInfo;
-};
-
-bool llvm::PDGAnalysis::doInitialization (Module &M) {
+bool llvm::PDGAnalysis::doInitialization (Module &M){
   errs() << "PDGAnalysis at \"doInitialization\"\n" ;
   return false;
 }
@@ -35,27 +22,18 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   return ;
 }
 
-void constructEdgesFromUseDefs (Module &M, std::unique_ptr<PDG> &pdg);
-void constructEdgesFromAliases (Module &M, std::unique_ptr<PDG> &pdg, ModuleAliasInfo *aaInfo);
-
-bool llvm::PDGAnalysis::runOnModule (Module &M) {
+bool llvm::PDGAnalysis::runOnModule (Module &M){
   errs() << "PDGAnalysis at \"runOnModule\"\n" ;
   this->programDependenceGraph = std::unique_ptr<PDG>(new PDG());
-  auto *aaInfo = new ModuleAliasInfo();
-
-  /*
-   * Create AliasInfo for PDG use, then compute the PDG.
-   */
   for (auto &F : M) {
     if (F.empty()) continue ;
-    aaInfo->aliasInfo[&F] = new FunctionAliasInfo(&(getAnalysis<AAResultsWrapperPass>(F).getAAResults()));
+    this->aaResults[&F] = &(getAnalysis<AAResultsWrapperPass>(F).getAAResults());
   }
 
   this->programDependenceGraph->constructNodes(M);
-  constructEdgesFromUseDefs(M, this->programDependenceGraph);
-  constructEdgesFromAliases(M, this->programDependenceGraph, aaInfo);
+  constructEdgesFromUseDefs(M);
+  constructEdgesFromAliases(M);
 
-  delete aaInfo;
   return false;
 }
 
@@ -80,15 +58,15 @@ static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
         if(!_PassMaker){ PM.add(_PassMaker = new PDGAnalysis());}});// ** for -O0
 
-void constructEdgesFromUseDefs (Module &M, std::unique_ptr<PDG> &pdg) {
-  for (auto iNodePair : pdg->instructionNodePairs()) {
+void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
+  for (auto iNodePair : programDependenceGraph->instructionNodePairs()) {
     Instruction *I = iNodePair.first;
     if (I->getNumUses() == 0)
       continue;
     for (auto& U : I->uses()) {
       auto user = U.getUser();
       if (auto userInst = dyn_cast<Instruction>(user)) {
-        pdg->addEdgeFromTo(I, userInst);
+        programDependenceGraph->addEdgeFromTo(I, userInst);
       }
     }
   }
@@ -96,9 +74,65 @@ void constructEdgesFromUseDefs (Module &M, std::unique_ptr<PDG> &pdg) {
   return ;
 }
 
-void constructEdgesFromAliases (Module &M, std::unique_ptr<PDG> &pdg, ModuleAliasInfo *aaInfo) {
-  // TODO:
-  /*
-   * Use alias information on stores and loads to construct edges between pairs of these instructions
-   */
+void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, Instruction &memI, Instruction &memJ){
+  switch (aaResults[&F]->alias(MemoryLocation::get(&memI), MemoryLocation::get(&memJ))) {
+    case PartialAlias:
+    case MayAlias:
+    case MustAlias:
+      programDependenceGraph->addEdgeFromTo(&memI, &memJ);
+      break;
+  }
 }
+
+void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, Instruction &memI, CallInst &call){
+  switch (aaResults[&F]->getModRefInfo(&call, MemoryLocation::get(&memI))) {
+    case MRI_Ref:
+    case MRI_Mod:
+    case MRI_ModRef:
+      programDependenceGraph->addEdgeFromTo(&memI, &call);
+      break;
+  }
+}
+
+template <class iType>
+void llvm::PDGAnalysis::iterateInstForAliases(Function &F, Instruction &J) {
+  for (auto &B : F) {
+    for (auto &I : B) {
+      if (dyn_cast<iType>(&I)) {
+        addEdgeFromMemoryAlias(F, I, J);
+      }
+    }
+  }
+}
+
+void llvm::PDGAnalysis::iterateInstForModRef(Function &F, CallInst &J) {
+  for (auto &B : F) {
+    for (auto &I : B) {
+      if (auto *load = dyn_cast<LoadInst>(&I)) {
+        addEdgeFromFunctionModRef(F, I, J);
+      } else if (auto *store = dyn_cast<StoreInst>(&I)) {
+        addEdgeFromFunctionModRef(F, I, J);
+      }
+    }
+  }
+}
+
+void llvm::PDGAnalysis::constructEdgesFromAliases (Module &M){
+  /*
+   * Use alias analysis on stores, loads, and function calls to construct PDG edges
+   */
+  for (auto &F : M) {
+    for (auto &B : F) {
+      for (auto &I : B) {
+        if (auto* store = dyn_cast<StoreInst>(&I)) {
+          iterateInstForAliases<LoadInst>(F, I);
+        } else if (auto *load = dyn_cast<LoadInst>(&I)) {
+          iterateInstForAliases<StoreInst>(F, I);
+        } else if (auto *call = dyn_cast<CallInst>(&I)) {
+          iterateInstForModRef(F, *call);
+        }
+      }
+    }
+  }
+}
+  
