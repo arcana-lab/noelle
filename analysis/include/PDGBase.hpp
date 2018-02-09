@@ -72,12 +72,25 @@ namespace llvm {
 
   template <>
   inline std::string PDGNodeBase<Instruction>::toString() {
-    if (!theNode) {
+    if (!theNode)
       return "Empty node\n";
-    }
+    // Use function and instruction streams to save value printouts
+    std::string funcStr;
+    raw_string_ostream funcStream(funcStr);
     std::string str;
-    raw_string_ostream ros(str);
-    theNode->print(ros);
+    raw_string_ostream instStream(str);
+
+    theNode->getFunction()->print(funcStream);
+
+    // Attempt to parse function name to prepend to instruction stream 
+    std::size_t funcNameStart, funcNameEnd;
+    if ((funcNameStart = funcStr.find("@")) != std::string::npos) {
+      if ((funcNameEnd = funcStr.find(")",funcNameStart)) != std::string::npos) {
+        instStream << funcStr.substr(funcNameStart, funcNameEnd + 1 - funcNameStart);
+      }
+    }
+
+    theNode->print(instStream << ": ");
     return str;
   }
 
