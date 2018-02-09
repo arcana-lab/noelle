@@ -22,6 +22,7 @@ namespace llvm {
   class PDG {
     public:
       PDG() ;
+      ~PDG() ;
 
       typedef vector<PDGNodeBase<Instruction> *>::iterator nodes_iterator;
       typedef vector<PDGNodeBase<Instruction> *>::const_iterator nodes_const_iterator;
@@ -59,7 +60,7 @@ namespace llvm {
       }
 
       void constructNodes(Module &M);
-      void addEdgeFromTo(Instruction *from, Instruction *to);
+      PDGEdge *addEdgeFromTo(Instruction *from, Instruction *to);
 
     private:
       std::vector<PDGNodeBase<Instruction> *> allNodes;

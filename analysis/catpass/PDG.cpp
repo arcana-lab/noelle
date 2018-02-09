@@ -9,6 +9,8 @@
 
 llvm::PDG::PDG() {}
 
+llvm::PDG::~PDG() {}
+
 void llvm::PDG::constructNodes (Module &M) {
   /*
    * Create a node per instruction.
@@ -38,11 +40,12 @@ void llvm::PDG::constructNodes (Module &M) {
   return ;
 }
 
-void llvm::PDG::addEdgeFromTo(Instruction *from, Instruction *to) {
+PDGEdge *llvm::PDG::addEdgeFromTo(Instruction *from, Instruction *to) {
   auto fromNode = instructionNodes[from];
   auto toNode = instructionNodes[to];
   auto edge = new PDGEdge(fromNode, toNode);
   allEdges.push_back(edge);
   fromNode->addOutgoingNode(toNode, edge);
   toNode->addIncomingNode(fromNode, edge);
+  return edge;
 }

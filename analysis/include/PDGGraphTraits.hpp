@@ -32,6 +32,11 @@ namespace llvm {
       return node->getEdgeFromNodeIterator(nodeIter)->toString();
     }
 
+    static std::string getEdgeAttributes(PDGNodeBase<Instruction> *node, std::vector<PDGNodeBase<Instruction> *>::iterator nodeIter, const PDG *Graph) {
+      PDGEdge *edge = node->getEdgeFromNodeIterator(nodeIter);
+      return edge->isMemoryDependence() ? "color=red" : "color=black";
+    }
+
     bool isNodeHidden(PDGNodeBase<Instruction> *node) {
       return false;
       //return node->getPrintState()->isNodeHidden();

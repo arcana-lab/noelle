@@ -3,7 +3,6 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
 
-using namespace std;
 using namespace llvm;
 
 namespace llvm {
@@ -84,12 +83,15 @@ namespace llvm {
 
   class PDGEdge {
    public:
-    PDGEdge(PDGNodeBase<Instruction> *src, PDGNodeBase<Instruction> *dst) { from = src; to = dst; }
+    PDGEdge(PDGNodeBase<Instruction> *src, PDGNodeBase<Instruction> *dst);
 
-    std::string toString() { return "edge"; }
-    
+    std::string toString();
+    bool isMemoryDependence();
+    void setMemMustRaw(bool mem, bool must, bool raw);
+
    private:
     PDGNodeBase<Instruction> *from, *to;
+    bool memory, must, readAfterWrite, writeAfterWrite;
   };
 
 }

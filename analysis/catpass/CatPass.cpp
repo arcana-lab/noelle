@@ -62,7 +62,8 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
     for (auto& U : I->uses()) {
       auto user = U.getUser();
       if (auto userInst = dyn_cast<Instruction>(user)) {
-        programDependenceGraph->addEdgeFromTo(I, userInst);
+        auto *edge = programDependenceGraph->addEdgeFromTo(I, userInst);
+        edge->setMemMustRaw(false, true, true);
       }
     }
   }
@@ -70,46 +71,84 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
   return ;
 }
 
-template <class iType, class jType>
-void llvm::PDGAnalysis::iterateInstForAliases(Function &F, jType *memJ) {
-  auto aaResults = &(getAnalysis<AAResultsWrapperPass>(F).getAAResults());
+void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, Instruction *memI, Instruction *memJ, bool storePair){
+  PDGEdge *edge;
+  switch (aa->alias((Value *)memI,(Value *)memJ)) {
+    case PartialAlias:
+    case MayAlias:
+      edge = programDependenceGraph->addEdgeFromTo(memI, memJ);
+      edge->setMemMustRaw(true, false, !storePair);
+      break;
+    case MustAlias:
+      edge = programDependenceGraph->addEdgeFromTo(memI, memJ);
+      edge->setMemMustRaw(true, true, !storePair);
+      break;
+  }
+}
+
+void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, StoreInst *memI, CallInst *call){
+  PDGEdge *edge;
+  switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
+    case MRI_Ref:
+      edge = programDependenceGraph->addEdgeFromTo(memI, call);
+      edge->setMemMustRaw(true, false, true);
+      break;
+    case MRI_Mod:
+      edge = programDependenceGraph->addEdgeFromTo(memI, call);
+      edge->setMemMustRaw(true, false, false);
+      break;
+    case MRI_ModRef:
+      edge = programDependenceGraph->addEdgeFromTo(memI, call);
+      edge->setMemMustRaw(true, false, true);
+      edge = programDependenceGraph->addEdgeFromTo(memI, call);
+      edge->setMemMustRaw(true, false, false);
+      break;
+  }
+}
+
+void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, LoadInst *memI, CallInst *call){
+  PDGEdge *edge;
+  switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
+    case MRI_Ref:
+      break;
+    case MRI_Mod:
+    case MRI_ModRef:
+      edge = programDependenceGraph->addEdgeFromTo(call, memI);
+      edge->setMemMustRaw(true, false, true);
+      break;
+  }
+}
+
+void llvm::PDGAnalysis::iterateInstForStoreAliases(Function &F, AAResults *aa, Instruction &J) {
   for (auto &B : F) {
     for (auto &I : B) {
-      if (auto *memI = dyn_cast<iType>(&I)) {
-	auto memLocI = MemoryLocation::get(memI);
-	auto memLocJ = MemoryLocation::get(memJ);
-        switch (aaResults->alias(memLocI, memLocJ)) {
-          case PartialAlias:
-          case MayAlias:
-          case MustAlias:
-            programDependenceGraph->addEdgeFromTo(memI, memJ);
-            break;
-        }
+      if (dyn_cast<StoreInst>(&I)) {
+        if (&I != &J)
+          addEdgeFromMemoryAlias(F, aa, &I, &J, true);
+      } else if (dyn_cast<LoadInst>(&I)) {
+        addEdgeFromMemoryAlias(F, aa, &J, &I, false);
       }
     }
   }
 }
 
-void llvm::PDGAnalysis::iterateInstForModRef(Function &F, CallInst *call) {
-  auto aaResults = &(getAnalysis<AAResultsWrapperPass>(F).getAAResults());
+void llvm::PDGAnalysis::iterateInstForLoadAliases(Function &F, AAResults *aa, Instruction &J) {
+  for (auto &B : F) {
+    for (auto &I : B) {
+      if (dyn_cast<StoreInst>(&I)) {
+        addEdgeFromMemoryAlias(F, aa, &I, &J, false);
+      }
+    }
+  }
+}
+
+void llvm::PDGAnalysis::iterateInstForModRef(Function &F, AAResults *aa, CallInst &call) {
   for (auto &B : F) {
     for (auto &I : B) {
       if (auto *load = dyn_cast<LoadInst>(&I)) {
-        switch (aaResults->getModRefInfo(call, MemoryLocation::get(load))) {
-          case MRI_Ref:
-          case MRI_Mod:
-          case MRI_ModRef:
-            programDependenceGraph->addEdgeFromTo(&I, call);
-            break;
-        }
+        addEdgeFromFunctionModRef(F, aa, load, &call);
       } else if (auto *store = dyn_cast<StoreInst>(&I)) {
-        switch (aaResults->getModRefInfo(call, MemoryLocation::get(store))) {
-          case MRI_Ref:
-          case MRI_Mod:
-          case MRI_ModRef:
-            programDependenceGraph->addEdgeFromTo(&I, call);
-            break;
-        }
+        addEdgeFromFunctionModRef(F, aa, store, &call);
       }
     }
   }
@@ -120,14 +159,16 @@ void llvm::PDGAnalysis::constructEdgesFromAliases (Module &M){
    * Use alias analysis on stores, loads, and function calls to construct PDG edges
    */
   for (auto &F : M) {
+    if (F.empty()) continue ;
+    auto aaResults = &(getAnalysis<AAResultsWrapperPass>(F).getAAResults());
     for (auto &B : F) {
       for (auto &I : B) {
         if (auto* store = dyn_cast<StoreInst>(&I)) {
-          iterateInstForAliases<LoadInst, StoreInst>(F, store);
+          iterateInstForStoreAliases(F, aaResults, I);
         } else if (auto *load = dyn_cast<LoadInst>(&I)) {
-          iterateInstForAliases<StoreInst, LoadInst>(F, load);
+          iterateInstForLoadAliases(F, aaResults, I);
         } else if (auto *call = dyn_cast<CallInst>(&I)) {
-          iterateInstForModRef(F, call);
+          iterateInstForModRef(F, aaResults, *call);
         }
       }
     }
