@@ -38,11 +38,11 @@ llvm::PDGAnalysis::PDGAnalysis() : ModulePass{ID}{
 }
 
 llvm::PDGAnalysis::~PDGAnalysis(){
-  //delete this->programDependenceGraph;
+  delete this->programDependenceGraph;
 }
 
-llvm::PDG & llvm::PDGAnalysis::getPDG (){
-  return *this->programDependenceGraph;
+llvm::PDG * llvm::PDGAnalysis::getPDG (){
+  return this->programDependenceGraph;
 }
 
 // Next there is code to register your pass to "opt"

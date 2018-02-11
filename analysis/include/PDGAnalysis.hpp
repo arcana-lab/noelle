@@ -21,7 +21,7 @@ namespace llvm {
 
       bool runOnModule (Module &M) override ;
 
-      PDG & getPDG () ;
+      PDG * getPDG () ;
 
       void constructEdgesFromUseDefs (Module &M);
       

@@ -33,7 +33,7 @@ namespace llvm {
     bool runOnModule (Module &M) override {
       errs() << "PDGPrinter at \"runOnModule\"\n";
 
-      auto graph = getAnalysis<PDGAnalysis>().getPDG();
+      auto *graph = getAnalysis<PDGAnalysis>().getPDG();
 
       std::string Filename = "pdg.dot";
       std::error_code EC;
@@ -41,10 +41,10 @@ namespace llvm {
       errs() << "Writing '" << Filename << "'...\n";
 
       raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
-      std::string Title = DOTGraphTraits<PDG>::getGraphName(&graph);
+      std::string Title = DOTGraphTraits<PDG>::getGraphName(graph);
 
       if (!EC)
-        WriteGraph(File, &graph, false, Title);
+        WriteGraph(File, graph, false, Title);
       else
         errs() << "  error opening file for writing!";
       errs() << "\n";
