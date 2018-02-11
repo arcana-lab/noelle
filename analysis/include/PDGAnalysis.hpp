@@ -13,6 +13,7 @@ namespace llvm {
     public:
       static char ID;
       PDGAnalysis();
+      virtual ~PDGAnalysis();
 
       bool doInitialization (Module &M) override ;
 
@@ -27,7 +28,7 @@ namespace llvm {
       void constructEdgesFromAliases (Module &M);
 
     private:
-      std::unique_ptr<PDG> programDependenceGraph;
+      PDG *programDependenceGraph;
       std::map<Function *, AAResults *> aaResults;
 
       void addEdgeFromMemoryAlias(Function &, AAResults *, Instruction *, Instruction *, bool storePair);

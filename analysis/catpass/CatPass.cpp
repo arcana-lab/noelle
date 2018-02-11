@@ -24,7 +24,7 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool llvm::PDGAnalysis::runOnModule (Module &M){
   errs() << "PDGAnalysis at \"runOnModule\"\n" ;
-  this->programDependenceGraph = std::unique_ptr<PDG>(new PDG());
+  this->programDependenceGraph = new PDG();
 
   this->programDependenceGraph->constructNodes(M);
   constructEdgesFromUseDefs(M);
@@ -35,6 +35,10 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
 
 llvm::PDGAnalysis::PDGAnalysis() : ModulePass{ID}{
   return ;
+}
+
+llvm::PDGAnalysis::~PDGAnalysis(){
+  //delete this->programDependenceGraph;
 }
 
 llvm::PDG & llvm::PDGAnalysis::getPDG (){
