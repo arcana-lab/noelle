@@ -66,7 +66,7 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
     for (auto& U : I->uses()) {
       auto user = U.getUser();
       if (auto userInst = dyn_cast<Instruction>(user)) {
-        auto *edge = programDependenceGraph->addEdgeFromTo(I, userInst);
+        auto *edge = programDependenceGraph->createEdgeFromTo(I, userInst);
         edge->setMemMustRaw(false, true, true);
       }
     }
@@ -80,11 +80,11 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, Inst
   switch (aa->alias((Value *)memI,(Value *)memJ)) {
     case PartialAlias:
     case MayAlias:
-      edge = programDependenceGraph->addEdgeFromTo(memI, memJ);
+      edge = programDependenceGraph->createEdgeFromTo(memI, memJ);
       edge->setMemMustRaw(true, false, !storePair);
       break;
     case MustAlias:
-      edge = programDependenceGraph->addEdgeFromTo(memI, memJ);
+      edge = programDependenceGraph->createEdgeFromTo(memI, memJ);
       edge->setMemMustRaw(true, true, !storePair);
       break;
   }
@@ -94,17 +94,17 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, S
   PDGEdge *edge;
   switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
-      edge = programDependenceGraph->addEdgeFromTo(memI, call);
+      edge = programDependenceGraph->createEdgeFromTo(memI, call);
       edge->setMemMustRaw(true, false, true);
       break;
     case MRI_Mod:
-      edge = programDependenceGraph->addEdgeFromTo(memI, call);
+      edge = programDependenceGraph->createEdgeFromTo(memI, call);
       edge->setMemMustRaw(true, false, false);
       break;
     case MRI_ModRef:
-      edge = programDependenceGraph->addEdgeFromTo(memI, call);
+      edge = programDependenceGraph->createEdgeFromTo(memI, call);
       edge->setMemMustRaw(true, false, true);
-      edge = programDependenceGraph->addEdgeFromTo(memI, call);
+      edge = programDependenceGraph->createEdgeFromTo(memI, call);
       edge->setMemMustRaw(true, false, false);
       break;
   }
@@ -117,7 +117,7 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, L
       break;
     case MRI_Mod:
     case MRI_ModRef:
-      edge = programDependenceGraph->addEdgeFromTo(call, memI);
+      edge = programDependenceGraph->createEdgeFromTo(call, memI);
       edge->setMemMustRaw(true, false, true);
       break;
   }

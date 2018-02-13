@@ -59,8 +59,17 @@ namespace llvm {
         return make_range(instructionNodes.begin(), instructionNodes.end());
       }
 
+      /*
+       * Creating Nodes and Edges
+       */
       void constructNodes(Module &M);
-      PDGEdge *addEdgeFromTo(Instruction *from, Instruction *to);
+      PDGNodeBase<Instruction> *createNodeFrom(Instruction *I);
+      PDGEdge *createEdgeFromTo(Instruction *from, Instruction *to);
+
+      /*
+       * Creating Program Dependence Subgraphs
+       */
+      PDG *createFunctionSubgraph(Function &F);
 
     private:
       std::vector<PDGNodeBase<Instruction> *> allNodes;
@@ -69,3 +78,4 @@ namespace llvm {
       std::map<Instruction *, PDGNodeBase<Instruction> *> instructionNodes;
   };
 }
+

@@ -24,9 +24,7 @@ void llvm::PDG::constructNodes (Module &M) {
   for (auto &F : M) {
     for (auto &B : F) {
       for (auto &I : B) {
-        PDGNodeBase<Instruction> *node = new PDGNodeBase<Instruction>(&I);
-        allNodes.push_back(node);
-        instructionNodes[&I] = node;
+        createNodeFrom(&I);
       }
     }
   }
@@ -46,7 +44,13 @@ void llvm::PDG::constructNodes (Module &M) {
   return ;
 }
 
-PDGEdge *llvm::PDG::addEdgeFromTo(Instruction *from, Instruction *to) {
+PDGNodeBase<Instruction> *llvm::PDG::createNodeFrom(Instruction *I) {
+  auto *node = new PDGNodeBase<Instruction>(I);
+  allNodes.push_back(node);
+  instructionNodes[I] = node;
+}
+
+PDGEdge *llvm::PDG::createEdgeFromTo(Instruction *from, Instruction *to) {
   auto fromNode = instructionNodes[from];
   auto toNode = instructionNodes[to];
   auto edge = new PDGEdge(fromNode, toNode);
@@ -54,4 +58,46 @@ PDGEdge *llvm::PDG::addEdgeFromTo(Instruction *from, Instruction *to) {
   fromNode->addOutgoingNode(toNode, edge);
   toNode->addIncomingNode(fromNode, edge);
   return edge;
+}
+
+PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
+  auto functionPDG = new PDG();
+
+  /*
+   * Create a node per instruction of function F only
+   */
+  for (auto &B : F) {
+    for (auto &I : B) {
+      functionPDG->createNodeFrom(&I);
+    }
+  }
+
+  /* 
+   * Set the entry node: the first instruction of function F
+   */
+
+  functionPDG->entryNode = functionPDG->instructionNodes[&*(F.begin()->begin())];
+  assert(functionPDG->entryNode != nullptr);
+
+  /*
+   * Recreate all edges connected only to nodes of function F
+   */
+   for (auto *oldEdge : allEdges) {
+    if (oldEdge->belongsTo(F)) {
+      /*
+       * Copy edge to new PDG, replacing connected nodes
+       */
+      auto *edge = new PDGEdge(*oldEdge);
+      auto edgeNodePair = oldEdge->getNodePair();
+      auto fromNode = functionPDG->instructionNodes[edgeNodePair.first->getNode()];
+      auto toNode = functionPDG->instructionNodes[edgeNodePair.second->getNode()];
+      edge->setNodePair(fromNode, toNode);
+
+      functionPDG->allEdges.push_back(edge);
+      fromNode->addOutgoingNode(toNode, edge);
+      toNode->addIncomingNode(fromNode, edge);
+    }
+   }
+
+   return functionPDG;
 }

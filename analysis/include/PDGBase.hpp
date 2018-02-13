@@ -97,10 +97,23 @@ namespace llvm {
   class PDGEdge {
    public:
     PDGEdge(PDGNodeBase<Instruction> *src, PDGNodeBase<Instruction> *dst);
+    PDGEdge(const PDGEdge &);
 
-    std::string toString();
-    bool isMemoryDependence();
+    std::pair<PDGNodeBase<Instruction> *, PDGNodeBase<Instruction> *> getNodePair() const {
+      return std::make_pair(from, to);
+    }
+    
+    void setNodePair(PDGNodeBase<Instruction> *from, PDGNodeBase<Instruction> *to) {
+      this->from = from; this->to = to;
+    }
+
+    bool isMemoryDependence() const { return memory; }
+    bool isMustDependence() const { return must; }
+    bool isRAWDependence() const { return readAfterWrite; }
+
     void setMemMustRaw(bool mem, bool must, bool raw);
+    bool belongsTo(Function &F);
+    std::string toString();
 
    private:
     PDGNodeBase<Instruction> *from, *to;

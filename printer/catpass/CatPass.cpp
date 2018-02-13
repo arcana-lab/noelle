@@ -30,24 +30,38 @@ namespace llvm {
       return false;
     }
 
+    void writeGraphTo(const std::string& filename, PDG *graph) {
+      errs() << "Writing '" << filename << "'...\n";
+
+      std::error_code EC;
+      raw_fd_ostream File(filename, EC, sys::fs::F_Text);
+      std::string Title = DOTGraphTraits<PDG>::getGraphName(graph);
+
+      if (!EC) {
+        WriteGraph(File, graph, false, Title);
+        errs() << "\n";
+      } else {
+        errs() << "  error opening file for writing!\n";
+        abort();
+      }
+    }
+
     bool runOnModule (Module &M) override {
       errs() << "PDGPrinter at \"runOnModule\"\n";
 
       auto *graph = getAnalysis<PDGAnalysis>().getPDG();
+      
+      writeGraphTo("pdg-full.dot",graph);
 
-      std::string Filename = "pdg.dot";
-      std::error_code EC;
-
-      errs() << "Writing '" << Filename << "'...\n";
-
-      raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
-      std::string Title = DOTGraphTraits<PDG>::getGraphName(graph);
-
-      if (!EC)
-        WriteGraph(File, graph, false, Title);
-      else
-        errs() << "  error opening file for writing!";
-      errs() << "\n";
+      for (auto &F : M) {
+        if (F.empty()) continue ;
+        auto *subgraph = graph->createFunctionSubgraph(F);
+        std::string filename("pdg-");
+        filename += F.getName();
+        filename += ".dot";
+        writeGraphTo(filename, subgraph);
+        delete subgraph;
+      }
 
       return false;
     }
