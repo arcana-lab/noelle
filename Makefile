@@ -13,6 +13,6 @@ uninstall:
 	rm -rf ~/CAT ;
 
 clean:
-	rm -rf */build ;
+	./scripts/clean.sh ;
 
 .PHONY: clean analysis printer user
