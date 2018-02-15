@@ -3,6 +3,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/Analysis/LoopInfo.h"
 #include <set>
 
 #include "../include/PDG.hpp"
@@ -61,6 +62,7 @@ PDGEdge *llvm::PDG::createEdgeFromTo(Instruction *from, Instruction *to) {
 }
 
 PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
+  if (F.empty()) return nullptr;
   auto functionPDG = new PDG();
 
   /*
@@ -75,18 +77,17 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
   /* 
    * Set the entry node: the first instruction of function F
    */
-
   functionPDG->entryNode = functionPDG->instructionNodes[&*(F.begin()->begin())];
   assert(functionPDG->entryNode != nullptr);
 
   /*
-   * Recreate all edges connected only to nodes of function F
+   * Recreate all edges connected only within nodes of function F
    */
-   for (auto *oldEdge : allEdges) {
+  for (auto *oldEdge : allEdges) {
+    /*
+     * Copy edge to new PDG, replacing connected nodes
+     */
     if (oldEdge->belongsTo(F)) {
-      /*
-       * Copy edge to new PDG, replacing connected nodes
-       */
       auto *edge = new PDGEdge(*oldEdge);
       auto edgeNodePair = oldEdge->getNodePair();
       auto fromNode = functionPDG->instructionNodes[edgeNodePair.first->getNode()];
@@ -100,4 +101,55 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
    }
 
    return functionPDG;
+}
+
+PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
+  if (LI.empty()) return nullptr;
+  auto loopsPDG = new PDG();
+
+  /*
+   * Create a node per instruction within loops of LI only
+   */
+  for (auto i : LI) {
+    Loop *loop = &*i;
+    for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
+      BasicBlock *B = *bbi;
+      for (auto &I : *B) {
+        loopsPDG->createNodeFrom(&I);
+      }
+    }
+  }
+
+  /*
+   * Set the entry node: the first instruction of one of the top level loops (See include/llvm/Analysis/LoopInfo.h:653)
+   */
+  Loop *loopBegin = *(LI.begin());
+  BasicBlock *bbBegin = *(loopBegin->block_begin());
+  loopsPDG->entryNode = loopsPDG->instructionNodes[&*(bbBegin->begin())];
+  assert(loopsPDG->entryNode != nullptr);
+
+  /*
+   * Recreate all edges connected only within nodes of loops of LI
+   */
+  for (auto *oldEdge : allEdges) {
+    auto nodePair = oldEdge->getNodePair();
+    auto fromPair = loopsPDG->instructionNodes.find(nodePair.first->getNode());
+    auto toPair = loopsPDG->instructionNodes.find(nodePair.second->getNode());
+
+    /*
+     * Copy edge to new PDG, replacing connected nodes
+     */
+    if (fromPair != loopsPDG->instructionNodes.end() && toPair != loopsPDG->instructionNodes.end()) {
+      auto *edge = new PDGEdge(*oldEdge);
+      auto fromNode = fromPair->second;
+      auto toNode = toPair->second;
+      edge->setNodePair(fromNode, toNode);
+
+      loopsPDG->allEdges.push_back(edge);
+      fromNode->addOutgoingNode(toNode, edge);
+      toNode->addIncomingNode(fromNode, edge);
+    }
+   }
+
+   return loopsPDG;
 }

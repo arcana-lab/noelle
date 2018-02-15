@@ -6,6 +6,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/GraphWriter.h"
 #include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/Analysis/LoopInfo.h"
 #include "llvm/ADT/iterator_range.h"
 #include <set>
 
@@ -70,6 +71,7 @@ namespace llvm {
        * Creating Program Dependence Subgraphs
        */
       PDG *createFunctionSubgraph(Function &F);
+      PDG *createLoopsSubgraph(LoopInfo &LI);
 
     private:
       std::vector<PDGNodeBase<Instruction> *> allNodes;

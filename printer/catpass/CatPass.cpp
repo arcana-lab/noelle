@@ -5,6 +5,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Analysis/LoopInfo.h"
 
 #include "PDGBase.hpp"
 #include "PDG.hpp"
@@ -54,12 +55,22 @@ namespace llvm {
       writeGraphTo("pdg-full.dot",graph);
 
       for (auto &F : M) {
-        if (F.empty()) continue ;
+        if (F.empty()) continue ;        
+        std::string filename;
+        raw_string_ostream ros(filename);
+        ros << "pdg-" << F.getName() << ".dot";
+
         auto *subgraph = graph->createFunctionSubgraph(F);
-        std::string filename("pdg-");
-        filename += F.getName();
-        filename += ".dot";
-        writeGraphTo(filename, subgraph);
+        writeGraphTo(ros.str(), subgraph);
+        delete subgraph;
+
+        LoopInfo& LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+        if (LI.empty()) continue ;
+        filename.clear();
+        ros << "pdg-" << F.getName() << "-loops.dot";
+
+        subgraph = graph->createLoopsSubgraph(LI);
+        writeGraphTo(ros.str(), subgraph);
         delete subgraph;
       }
 
@@ -67,6 +78,7 @@ namespace llvm {
     }
 
     void getAnalysisUsage(AnalysisUsage &AU) const override {
+      AU.addRequired<LoopInfoWrapperPass>();
       AU.addRequired<PDGAnalysis>();
       AU.setPreservesAll();
 

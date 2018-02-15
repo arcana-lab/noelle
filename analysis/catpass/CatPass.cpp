@@ -6,6 +6,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/Analysis/LoopInfo.h"
 
 #include "../include/PDGAnalysis.hpp"
 
@@ -17,6 +18,7 @@ bool llvm::PDGAnalysis::doInitialization (Module &M){
 }
 
 void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<AAResultsWrapperPass>();
   AU.setPreservesAll();
   return ;
@@ -75,16 +77,25 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
   return ;
 }
 
-void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, Instruction *memI, Instruction *memJ, bool storePair){
+template <class InstI, class InstJ>
+void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, InstI *memI, InstJ *memJ, bool storePair){
   PDGEdge *edge;
-  switch (aa->alias((Value *)memI,(Value *)memJ)) {
+  switch (aa->alias(MemoryLocation::get(memI),MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
-      edge = programDependenceGraph->createEdgeFromTo(memI, memJ);
+      errs() << "May alias:\t";
+      memI->print(errs());
+      memJ->print(errs() << "\t");
+      errs() << "\n";
+      edge = programDependenceGraph->createEdgeFromTo((Instruction*)memI, (Instruction*)memJ);
       edge->setMemMustRaw(true, false, !storePair);
       break;
     case MustAlias:
-      edge = programDependenceGraph->createEdgeFromTo(memI, memJ);
+      errs() << "Must alias:\t";
+      memI->print(errs());
+      memJ->print(errs() << "\t");
+      errs() << "\n";
+      edge = programDependenceGraph->createEdgeFromTo((Instruction*)memI, (Instruction*)memJ);
       edge->setMemMustRaw(true, true, !storePair);
       break;
   }
@@ -123,24 +134,24 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, L
   }
 }
 
-void llvm::PDGAnalysis::iterateInstForStoreAliases(Function &F, AAResults *aa, Instruction &J) {
+void llvm::PDGAnalysis::iterateInstForStoreAliases(Function &F, AAResults *aa, StoreInst *J) {
   for (auto &B : F) {
     for (auto &I : B) {
-      if (dyn_cast<StoreInst>(&I)) {
-        if (&I != &J)
-          addEdgeFromMemoryAlias(F, aa, &I, &J, true);
-      } else if (dyn_cast<LoadInst>(&I)) {
-        addEdgeFromMemoryAlias(F, aa, &J, &I, false);
+      if (auto *store = dyn_cast<StoreInst>(&I)) {
+        if (store != J)
+          addEdgeFromMemoryAlias<StoreInst, StoreInst>(F, aa, store, J, true);
+      } else if (auto *load = dyn_cast<LoadInst>(&I)) {
+        addEdgeFromMemoryAlias<LoadInst, StoreInst>(F, aa, load, J, false);
       }
     }
   }
 }
 
-void llvm::PDGAnalysis::iterateInstForLoadAliases(Function &F, AAResults *aa, Instruction &J) {
+void llvm::PDGAnalysis::iterateInstForLoadAliases(Function &F, AAResults *aa, LoadInst *J) {
   for (auto &B : F) {
     for (auto &I : B) {
-      if (dyn_cast<StoreInst>(&I)) {
-        addEdgeFromMemoryAlias(F, aa, &I, &J, false);
+      if (auto *store = dyn_cast<StoreInst>(&I)) {
+        addEdgeFromMemoryAlias<StoreInst, LoadInst>(F, aa, store, J, false);
       }
     }
   }
@@ -168,9 +179,9 @@ void llvm::PDGAnalysis::constructEdgesFromAliases (Module &M){
     for (auto &B : F) {
       for (auto &I : B) {
         if (auto* store = dyn_cast<StoreInst>(&I)) {
-          iterateInstForStoreAliases(F, aaResults, I);
+          iterateInstForStoreAliases(F, aaResults, store);
         } else if (auto *load = dyn_cast<LoadInst>(&I)) {
-          iterateInstForLoadAliases(F, aaResults, I);
+          iterateInstForLoadAliases(F, aaResults, load);
         } else if (auto *call = dyn_cast<CallInst>(&I)) {
           iterateInstForModRef(F, aaResults, *call);
         }

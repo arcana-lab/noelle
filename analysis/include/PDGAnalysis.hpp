@@ -31,12 +31,14 @@ namespace llvm {
       PDG *programDependenceGraph;
       std::map<Function *, AAResults *> aaResults;
 
-      void addEdgeFromMemoryAlias(Function &, AAResults *, Instruction *, Instruction *, bool storePair);
+      template <class InstI, class InstJ>
+      void addEdgeFromMemoryAlias(Function &, AAResults *, InstI *, InstJ *, bool storePair);
+
       void addEdgeFromFunctionModRef(Function &, AAResults *, StoreInst *, CallInst *);
       void addEdgeFromFunctionModRef(Function &, AAResults *, LoadInst *, CallInst *);
 
-      void iterateInstForStoreAliases(Function &, AAResults *, Instruction &);
-      void iterateInstForLoadAliases(Function &, AAResults *, Instruction &);
+      void iterateInstForStoreAliases(Function &, AAResults *, StoreInst *);
+      void iterateInstForLoadAliases(Function &, AAResults *, LoadInst *);
 
       void iterateInstForModRef(Function &, AAResults *, CallInst &);
 
