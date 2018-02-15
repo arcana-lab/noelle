@@ -7,7 +7,8 @@ int f (int p1){
 
   b++;
   e = *b;
-
+  (*b)++;
+  
   printf("%d\n", e);
  
   return 0; 
