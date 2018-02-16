@@ -7,7 +7,7 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Analysis/LoopInfo.h"
 
-#include "PDGBase.hpp"
+#include "DGBase.hpp"
 #include "PDG.hpp"
 #include "PDGAnalysis.hpp"
 #include "PDGGraphTraits.hpp"

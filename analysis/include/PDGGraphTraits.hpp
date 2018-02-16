@@ -1,66 +1,64 @@
 #pragma once
 
-#include "PDGBase.hpp"
-#include "PDG.hpp"
-#include "PDGPrintState.hpp"
+#include "DGBase.hpp"
 
 using namespace llvm;
 
 namespace llvm {
-  // Not sure if this is still needed, or if it can be completely replaced by DOTGraphTraits<PDG*> below
-  template<> struct DOTGraphTraits<PDGNodeBase<Instruction>*> : public DefaultDOTGraphTraits {
+  // Not sure if this is still needed, or if it can be completely replaced by DOTGraphTraits<DG*> below
+  template<>
+  struct DOTGraphTraits<DGNode<Instruction>*> : public DefaultDOTGraphTraits {
     explicit DOTGraphTraits(bool isSimple=false) : DefaultDOTGraphTraits(isSimple) {}
     
-    std::string getNodeLabel(PDGNodeBase<Instruction> *node, PDGNodeBase<Instruction> *entry) {
+    std::string getNodeLabel(DGNode<Instruction> *node, DGNode<Instruction> *entry) {
       return node->toString();
     }
   };
 
   template<>
-  struct DOTGraphTraits<PDG*> : public DOTGraphTraits<PDGNodeBase<Instruction>*> {
-    DOTGraphTraits (bool isSimple=false) : DOTGraphTraits<PDGNodeBase<Instruction>*>(isSimple) {}
+  struct DOTGraphTraits<PDG *> : public DOTGraphTraits<DGNode<Instruction>*> {
+    DOTGraphTraits (bool isSimple=false) : DOTGraphTraits<DGNode<Instruction>*>(isSimple) {}
 
-    static std::string getGraphName(PDG *pdg) {
+    static std::string getGraphName(PDG *dg) {
       return "Program Dependence Graph";
     }
 
-    std::string getNodeLabel(PDGNodeBase<Instruction> *node, PDG *pdg) {
-      return DOTGraphTraits<PDGNodeBase<Instruction>*>::getNodeLabel(node, pdg->getEntryNode());
+    std::string getNodeLabel(DGNode<Instruction> *node, PDG *dg) {
+      return DOTGraphTraits<DGNode<Instruction>*>::getNodeLabel(node, dg->getEntryNode());
     }
 
-    std::string getEdgeSourceLabel(PDGNodeBase<Instruction> *node, std::vector<PDGNodeBase<Instruction> *>::iterator nodeIter) {
+    std::string getEdgeSourceLabel(DGNode<Instruction> *node, typename std::vector<DGNode<Instruction> *>::iterator nodeIter) {
       return node->getEdgeFromNodeIterator(nodeIter)->toString();
     }
 
-    static std::string getEdgeAttributes(PDGNodeBase<Instruction> *node, std::vector<PDGNodeBase<Instruction> *>::iterator nodeIter, const PDG *Graph) {
-      PDGEdge *edge = node->getEdgeFromNodeIterator(nodeIter);
+    static std::string getEdgeAttributes(DGNode<Instruction> *node, typename std::vector<DGNode<Instruction> *>::iterator nodeIter, const PDG *Graph) {
+      DGEdge<Instruction> *edge = node->getEdgeFromNodeIterator(nodeIter);
       return edge->isMemoryDependence() ? "color=red" : "color=black";
     }
 
-    bool isNodeHidden(PDGNodeBase<Instruction> *node) {
+    bool isNodeHidden(DGNode<Instruction> *node) {
       return false;
-      //return node->getPrintState()->isNodeHidden();
     }
 
-    std::string getNodeDescription(PDGNodeBase<Instruction> *node, PDG *pdg) {
+    std::string getNodeDescription(DGNode<Instruction> *node, PDG *dg) {
       return "";
-      //return node->getPrintState()->getNodeDescription();
     }
   };
 
-  template <> struct GraphTraits<PDG*> {
-    using NodeRef = PDGNodeBase<Instruction> *;
-    using ChildIteratorType = std::vector<PDGNodeBase<Instruction> *>::iterator;
-    using nodes_iterator = std::vector<PDGNodeBase<Instruction> *>::iterator;
+  template<>
+  struct GraphTraits<PDG *> {
+    using NodeRef = DGNode<Instruction> *;
+    using ChildIteratorType = typename std::vector<DGNode<Instruction> *>::iterator;
+    using nodes_iterator = typename std::vector<DGNode<Instruction> *>::iterator;
 
-    static PDGNodeBase<Instruction> *getEntryNode(PDG *pdg) { return pdg->getEntryNode(); }
+    static DGNode<Instruction> *getEntryNode(PDG *dg) { return dg->getEntryNode(); }
 
-    static std::vector<PDGNodeBase<Instruction> *>::iterator nodes_begin(PDG *pdg) {
-      return pdg->begin_nodes();
+    static typename std::vector<DGNode<Instruction> *>::iterator nodes_begin(PDG *dg) {
+      return dg->begin_nodes();
     }
 
-    static std::vector<PDGNodeBase<Instruction> *>::iterator nodes_end(PDG *pdg) {
-      return pdg->end_nodes();
+    static typename std::vector<DGNode<Instruction> *>::iterator nodes_end(PDG *dg) {
+      return dg->end_nodes();
     }
 
     static ChildIteratorType child_begin(NodeRef node) { 

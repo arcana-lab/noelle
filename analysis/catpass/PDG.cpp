@@ -11,7 +11,7 @@
 llvm::PDG::PDG() {}
 
 llvm::PDG::~PDG() {
-  errs() << "Destroying PDG\n";
+  //errs() << "Destroying PDG\n";
   for (auto *edge : allEdges)
     if (edge) delete edge;
   for (auto *node : allNodes)
@@ -39,22 +39,22 @@ void llvm::PDG::constructNodes (Module &M) {
     abort();
   }
   auto entryInstr = &*(mainF->begin()->begin());
-  entryNode = instructionNodes[entryInstr];
+  entryNode = nodeMap[entryInstr];
   assert(entryNode != nullptr);
 
   return ;
 }
 
-PDGNodeBase<Instruction> *llvm::PDG::createNodeFrom(Instruction *I) {
-  auto *node = new PDGNodeBase<Instruction>(I);
+DGNode<Instruction> *llvm::PDG::createNodeFrom(Instruction *I) {
+  auto *node = new DGNode<Instruction>(I);
   allNodes.push_back(node);
-  instructionNodes[I] = node;
+  nodeMap[I] = node;
 }
 
-PDGEdge *llvm::PDG::createEdgeFromTo(Instruction *from, Instruction *to) {
-  auto fromNode = instructionNodes[from];
-  auto toNode = instructionNodes[to];
-  auto edge = new PDGEdge(fromNode, toNode);
+DGEdge<Instruction> *llvm::PDG::createEdgeFromTo(Instruction *from, Instruction *to) {
+  auto fromNode = nodeMap[from];
+  auto toNode = nodeMap[to];
+  auto edge = new DGEdge<Instruction>(fromNode, toNode);
   allEdges.push_back(edge);
   fromNode->addOutgoingNode(toNode, edge);
   toNode->addIncomingNode(fromNode, edge);
@@ -77,7 +77,7 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
   /* 
    * Set the entry node: the first instruction of function F
    */
-  functionPDG->entryNode = functionPDG->instructionNodes[&*(F.begin()->begin())];
+  functionPDG->entryNode = functionPDG->nodeMap[&*(F.begin()->begin())];
   assert(functionPDG->entryNode != nullptr);
 
   /*
@@ -88,10 +88,10 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
      * Copy edge to new PDG, replacing connected nodes
      */
     if (oldEdge->belongsTo(F)) {
-      auto *edge = new PDGEdge(*oldEdge);
+      auto *edge = new DGEdge<Instruction>(*oldEdge);
       auto edgeNodePair = oldEdge->getNodePair();
-      auto fromNode = functionPDG->instructionNodes[edgeNodePair.first->getNode()];
-      auto toNode = functionPDG->instructionNodes[edgeNodePair.second->getNode()];
+      auto fromNode = functionPDG->nodeMap[edgeNodePair.first->getNode()];
+      auto toNode = functionPDG->nodeMap[edgeNodePair.second->getNode()];
       edge->setNodePair(fromNode, toNode);
 
       functionPDG->allEdges.push_back(edge);
@@ -125,7 +125,7 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
    */
   Loop *loopBegin = *(LI.begin());
   BasicBlock *bbBegin = *(loopBegin->block_begin());
-  loopsPDG->entryNode = loopsPDG->instructionNodes[&*(bbBegin->begin())];
+  loopsPDG->entryNode = loopsPDG->nodeMap[&*(bbBegin->begin())];
   assert(loopsPDG->entryNode != nullptr);
 
   /*
@@ -133,14 +133,14 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
    */
   for (auto *oldEdge : allEdges) {
     auto nodePair = oldEdge->getNodePair();
-    auto fromPair = loopsPDG->instructionNodes.find(nodePair.first->getNode());
-    auto toPair = loopsPDG->instructionNodes.find(nodePair.second->getNode());
+    auto fromPair = loopsPDG->nodeMap.find(nodePair.first->getNode());
+    auto toPair = loopsPDG->nodeMap.find(nodePair.second->getNode());
 
     /*
      * Copy edge to new PDG, replacing connected nodes
      */
-    if (fromPair != loopsPDG->instructionNodes.end() && toPair != loopsPDG->instructionNodes.end()) {
-      auto *edge = new PDGEdge(*oldEdge);
+    if (fromPair != loopsPDG->nodeMap.end() && toPair != loopsPDG->nodeMap.end()) {
+      auto *edge = new DGEdge<Instruction>(*oldEdge);
       auto fromNode = fromPair->second;
       auto toNode = toPair->second;
       edge->setNodePair(fromNode, toNode);

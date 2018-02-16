@@ -29,8 +29,11 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   this->programDependenceGraph = new PDG();
 
   this->programDependenceGraph->constructNodes(M);
+  errs() << "Made nodes\n";
   constructEdgesFromUseDefs(M);
+  errs() << "Made edges from use def\n";
   constructEdgesFromAliases(M);
+  errs() << "Made edges from alias\n";
 
   return false;
 }
@@ -61,7 +64,7 @@ static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel
         if(!_PassMaker){ PM.add(_PassMaker = new PDGAnalysis());}});// ** for -O0
 
 void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
-  for (auto iNodePair : programDependenceGraph->instructionNodePairs()) {
+  for (auto iNodePair : programDependenceGraph->nodePairs()) {
     Instruction *I = iNodePair.first;
     if (I->getNumUses() == 0)
       continue;
@@ -79,7 +82,7 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
 
 template <class InstI, class InstJ>
 void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, InstI *memI, InstJ *memJ, bool storePair){
-  PDGEdge *edge;
+  DGEdge<Instruction> *edge;
   switch (aa->alias(MemoryLocation::get(memI),MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
@@ -102,7 +105,7 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, Inst
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, StoreInst *memI, CallInst *call){
-  PDGEdge *edge;
+  DGEdge<Instruction> *edge;
   switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
       edge = programDependenceGraph->createEdgeFromTo(memI, call);
@@ -122,7 +125,7 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, S
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, LoadInst *memI, CallInst *call){
-  PDGEdge *edge;
+  DGEdge<Instruction> *edge;
   switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
       break;
