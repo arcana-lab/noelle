@@ -29,11 +29,8 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   this->programDependenceGraph = new PDG();
 
   this->programDependenceGraph->constructNodes(M);
-  errs() << "Made nodes\n";
   constructEdgesFromUseDefs(M);
-  errs() << "Made edges from use def\n";
   constructEdgesFromAliases(M);
-  errs() << "Made edges from alias\n";
 
   return false;
 }
@@ -86,18 +83,10 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, Inst
   switch (aa->alias(MemoryLocation::get(memI),MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
-      errs() << "May alias:\t";
-      memI->print(errs());
-      memJ->print(errs() << "\t");
-      errs() << "\n";
       edge = programDependenceGraph->createEdgeFromTo((Instruction*)memI, (Instruction*)memJ);
       edge->setMemMustRaw(true, false, !storePair);
       break;
     case MustAlias:
-      errs() << "Must alias:\t";
-      memI->print(errs());
-      memJ->print(errs() << "\t");
-      errs() << "\n";
       edge = programDependenceGraph->createEdgeFromTo((Instruction*)memI, (Instruction*)memJ);
       edge->setMemMustRaw(true, true, !storePair);
       break;

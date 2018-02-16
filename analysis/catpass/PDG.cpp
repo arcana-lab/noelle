@@ -45,22 +45,6 @@ void llvm::PDG::constructNodes (Module &M) {
   return ;
 }
 
-DGNode<Instruction> *llvm::PDG::createNodeFrom(Instruction *I) {
-  auto *node = new DGNode<Instruction>(I);
-  allNodes.push_back(node);
-  nodeMap[I] = node;
-}
-
-DGEdge<Instruction> *llvm::PDG::createEdgeFromTo(Instruction *from, Instruction *to) {
-  auto fromNode = nodeMap[from];
-  auto toNode = nodeMap[to];
-  auto edge = new DGEdge<Instruction>(fromNode, toNode);
-  allEdges.push_back(edge);
-  fromNode->addOutgoingNode(toNode, edge);
-  toNode->addIncomingNode(fromNode, edge);
-  return edge;
-}
-
 PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
   if (F.empty()) return nullptr;
   auto functionPDG = new PDG();

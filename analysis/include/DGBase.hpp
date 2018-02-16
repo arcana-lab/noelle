@@ -54,8 +54,21 @@ namespace llvm {
       /*
        * Creating Nodes and Edges
        */
-      virtual DGNode<T> *createNodeFrom(T *I) = 0;
-      virtual DGEdge<T> *createEdgeFromTo(T *from, T *to) = 0;
+      DGNode<T> *createNodeFrom(T *theT) {
+        auto *node = new DGNode<T>(theT);
+        allNodes.push_back(node);
+        nodeMap[theT] = node;
+      }
+
+      DGEdge<T> *createEdgeFromTo(T *from, T *to) {
+        auto fromNode = nodeMap[from];
+        auto toNode = nodeMap[to];
+        auto edge = new DGEdge<T>(fromNode, toNode);
+        allEdges.push_back(edge);
+        fromNode->addOutgoingNode(toNode, edge);
+        toNode->addIncomingNode(fromNode, edge);
+        return edge;
+      }
 
     protected:
       std::vector<DGNode<T> *> allNodes;

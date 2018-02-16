@@ -11,6 +11,8 @@
 #include "PDG.hpp"
 #include "PDGAnalysis.hpp"
 #include "PDGGraphTraits.hpp"
+#include "SCCDG.hpp"
+#include "SCCDGGraphTraits.hpp"
 
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/Analysis/DOTGraphTraitsPass.h"
@@ -31,12 +33,13 @@ namespace llvm {
       return false;
     }
 
-    void writeGraphTo(const std::string& filename, PDG *graph) {
+    template <class GT>
+    void writeGraph(const std::string& filename, GT *graph) {
       errs() << "Writing '" << filename << "'...\n";
 
       std::error_code EC;
       raw_fd_ostream File(filename, EC, sys::fs::F_Text);
-      std::string Title = DOTGraphTraits<PDG>::getGraphName(graph);
+      std::string Title = DOTGraphTraits<GT *>::getGraphName(graph);
 
       if (!EC) {
         WriteGraph(File, graph, false, Title);
@@ -52,16 +55,23 @@ namespace llvm {
 
       auto *graph = getAnalysis<PDGAnalysis>().getPDG();
       
-      writeGraphTo("pdg-full.dot",graph);
+      writeGraph<PDG>("pdg-full.dot",graph);
 
       for (auto &F : M) {
-        if (F.empty()) continue ;        
+        if (F.empty()) continue ;
         std::string filename;
         raw_string_ostream ros(filename);
         ros << "pdg-" << F.getName() << ".dot";
 
         auto *subgraph = graph->createFunctionSubgraph(F);
-        writeGraphTo(ros.str(), subgraph);
+        writeGraph<PDG>(ros.str(), subgraph);
+
+        filename.clear();
+        ros << "sccdg-" << F.getName() << ".dot";
+        SCCDG sccSubgraph;
+        sccSubgraph.createSCCGraphFrom(subgraph);
+        writeGraph<SCCDG>(ros.str(), &sccSubgraph);
+
         delete subgraph;
 
         LoopInfo& LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
@@ -70,7 +80,7 @@ namespace llvm {
         ros << "pdg-" << F.getName() << "-loops.dot";
 
         subgraph = graph->createLoopsSubgraph(LI);
-        writeGraphTo(ros.str(), subgraph);
+        writeGraph<PDG>(ros.str(), subgraph);
         delete subgraph;
       }
 

@@ -8,6 +8,7 @@
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/ADT/iterator_range.h"
+#include "llvm/ADT/SCCIterator.h"
 #include <set>
 
 #include "DGBase.hpp"
@@ -29,8 +30,6 @@ namespace llvm {
        * Creating Nodes and Edges
        */
       void constructNodes(Module &M);
-      DGNode<Instruction> *createNodeFrom(Instruction *I) override;
-      DGEdge<Instruction> *createEdgeFromTo(Instruction *from, Instruction *to) override;
 
       /*
        * Creating Program Dependence Subgraphs
