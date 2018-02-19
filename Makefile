@@ -12,10 +12,13 @@ user:
 dswp:
 	cd $@ ; ./run_me.sh
 
+download:
+	./scripts/download.sh "/project/marc/repositories/threadpool"
+
 uninstall:
 	rm -rf ~/CAT ;
 
 clean:
 	./scripts/clean.sh ;
 
-.PHONY: clean analysis printer user dswp
+.PHONY: clean analysis printer user dswp download
