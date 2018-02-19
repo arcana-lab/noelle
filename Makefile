@@ -1,4 +1,4 @@
-all: printer analysis user
+all: printer analysis user dswp
 
 printer:
 	cd $@ ; ./run_me.sh
@@ -9,10 +9,13 @@ analysis:
 user:
 	cd $@ ; ./run_me.sh
 
+dswp:
+	cd $@ ; ./run_me.sh
+
 uninstall:
 	rm -rf ~/CAT ;
 
 clean:
 	./scripts/clean.sh ;
 
-.PHONY: clean analysis printer user
+.PHONY: clean analysis printer user dswp
