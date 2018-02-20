@@ -13,7 +13,7 @@
 #include "DGBase.hpp"
 #include "SCC.hpp"
 #include "PDG.hpp"
-#include "PDGGraphTraits.hpp"
+#include "DGGraphTraits.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -23,7 +23,7 @@ namespace llvm {
   /*
    * Program Dependence Graph.
    */
-  class SCCDG : public DG<SCC<DGNode<Instruction>>> {
+  class SCCDG : public DG<SCC> {
     public:
       SCCDG() ;
       ~SCCDG() ;

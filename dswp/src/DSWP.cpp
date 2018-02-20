@@ -66,15 +66,19 @@ namespace llvm {
         /*
          * Fetch the loops.
          */
-        auto loops = getAnalysis<LoopInfoWrapperPass>(entryFunction).getLoopInfo();
+        
+        //auto loops = getAnalysis<LoopInfoWrapperPass>(*entryFunction).getLoopInfo();
 
         /*
          * Choose the loop to parallelize.
          */
+        
+        /*
         for (auto loopIter : loops){
           auto loop = &*loopIter;
           return loop;
         }
+        */
 
         return nullptr;
       }

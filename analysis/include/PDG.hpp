@@ -8,7 +8,6 @@
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/ADT/iterator_range.h"
-#include "llvm/ADT/SCCIterator.h"
 #include <set>
 
 #include "DGBase.hpp"

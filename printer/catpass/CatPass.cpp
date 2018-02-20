@@ -8,11 +8,10 @@
 #include "llvm/Analysis/LoopInfo.h"
 
 #include "DGBase.hpp"
+#include "DGGraphTraits.hpp"
 #include "PDG.hpp"
 #include "PDGAnalysis.hpp"
-#include "PDGGraphTraits.hpp"
 #include "SCCDG.hpp"
-#include "SCCDGGraphTraits.hpp"
 
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/Analysis/DOTGraphTraitsPass.h"
@@ -71,6 +70,14 @@ namespace llvm {
         SCCDG sccSubgraph;
         sccSubgraph.createSCCGraphFrom(subgraph);
         writeGraph<SCCDG>(ros.str(), &sccSubgraph);
+
+        int count = 0;
+        for (auto sccI = sccSubgraph.begin_nodes(); sccI != sccSubgraph.end_nodes(); ++sccI) {
+          auto scc = (*sccI)->getNode();
+          filename.clear();
+          ros << "sccdg-" << F.getName() << "-" << (count++) << ".dot";
+          writeGraph<SCC>(ros.str(), scc);
+        }
 
         delete subgraph;
 

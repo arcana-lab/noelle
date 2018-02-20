@@ -7,8 +7,8 @@
 using namespace llvm;
 
 namespace llvm {
-  using SCCNode = DGNode<SCC<DGNode<Instruction>>>;
-  using SCCEdge = DGEdge<SCC<DGNode<Instruction>>>;
+  using SCCNode = DGNode<SCC>;
+  using SCCEdge = DGEdge<SCC>;
 
   template<>
   struct DOTGraphTraits<SCCNode*> : public DefaultDOTGraphTraits {
