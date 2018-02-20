@@ -31,11 +31,15 @@ namespace llvm {
       return DGDOTNodeTraits<T>::getNodeLabel(node, dg->getEntryNode());
     }
 
+    static std::string getNodeAttributes(DGNode<T> *node, DG *dg) {
+      return dg->isExternalNode(node) ? "color=gray" : "color=black";
+    }
+
     std::string getEdgeSourceLabel(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter) {
       return node->getEdgeFromNodeIterator(nodeIter)->toString();
     }
 
-    static std::string getEdgeAttributes(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter, const DG *Graph) {
+    static std::string getEdgeAttributes(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter, DG *dg) {
       DGEdge<T> *edge = node->getEdgeFromNodeIterator(nodeIter);
       return edge->isMemoryDependence() ? "color=red" : "color=black";
     }

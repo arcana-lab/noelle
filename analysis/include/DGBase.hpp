@@ -39,8 +39,8 @@ namespace llvm {
         return entryNode;
       }
 
-      DGNode<T> *getNodeOf(T *I) {
-        return nodeMap[I];
+      bool isExternalNode(DGNode<T> *node) {
+        return externalNodeMap.find(node->getNode()) != externalNodeMap.end();
       }
 
       /*
@@ -60,6 +60,12 @@ namespace llvm {
         nodeMap[theT] = node;
       }
 
+      DGNode<T> *createExternalNodeFrom(T *theT) {
+        auto *node = new DGNode<T>(theT);
+        allNodes.push_back(node);
+        externalNodeMap[theT] = node;
+      }
+
       DGEdge<T> *createEdgeFromTo(T *from, T *to) {
         auto fromNode = nodeMap[from];
         auto toNode = nodeMap[to];
@@ -75,6 +81,7 @@ namespace llvm {
       std::vector<DGEdge<T> *> allEdges;
       DGNode<T> *entryNode;
       std::map<T *, DGNode<T> *> nodeMap;
+      std::map<T *, DGNode<T> *> externalNodeMap;
   };
 
   // Template DG node to abstract node type
@@ -156,10 +163,6 @@ namespace llvm {
       this->must = must;
       this->readAfterWrite = raw;
       this->writeAfterWrite = !raw;
-    }
-
-    bool belongsTo(Function &F) {
-      return from->getNode()->getFunction() == &F && to->getNode()->getFunction() == &F;
     }
 
     std::string toString() {

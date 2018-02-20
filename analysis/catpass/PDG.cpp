@@ -68,20 +68,48 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
    * Recreate all edges connected only within nodes of function F
    */
   for (auto *oldEdge : allEdges) {
-    /*
-     * Copy edge to new PDG, replacing connected nodes
-     */
-    if (oldEdge->belongsTo(F)) {
-      auto *edge = new DGEdge<Instruction>(*oldEdge);
-      auto edgeNodePair = oldEdge->getNodePair();
-      auto fromNode = functionPDG->nodeMap[edgeNodePair.first->getNode()];
-      auto toNode = functionPDG->nodeMap[edgeNodePair.second->getNode()];
-      edge->setNodePair(fromNode, toNode);
+    auto edgeNodePair = oldEdge->getNodePair();
+    auto fromInst = edgeNodePair.first->getNode();
+    auto toInst = edgeNodePair.second->getNode();
 
-      functionPDG->allEdges.push_back(edge);
-      fromNode->addOutgoingNode(toNode, edge);
-      toNode->addIncomingNode(fromNode, edge);
+    /*
+     * Check whether edge belongs to nodes within function F
+     */
+    bool fromInclusion = fromInst->getFunction() == &F;
+    bool toInclusion = toInst->getFunction() == &F;
+    
+    /*
+     * If edge neither enters or exits F, ignore it
+     */
+    if (!fromInclusion && !toInclusion)
+      continue;
+
+    /*
+     * Create appropriate external nodes and associate edge to them
+     */
+    DGNode<Instruction> *fromNode, *toNode;
+
+    if (fromInclusion) {
+      fromNode = functionPDG->nodeMap[fromInst];
+    } else if (functionPDG->externalNodeMap.find(fromInst) == functionPDG->externalNodeMap.end()) {
+      functionPDG->createExternalNodeFrom(fromInst);
+    } else {
+      fromNode = functionPDG->externalNodeMap[fromInst];
     }
+
+    if (toInclusion) {
+      toNode = functionPDG->nodeMap[toInst];
+    } else if (functionPDG->externalNodeMap.find(toInst) == functionPDG->externalNodeMap.end()) {
+      functionPDG->createExternalNodeFrom(toInst);
+    } else {
+      toNode = functionPDG->externalNodeMap[toInst];
+    }
+
+    auto *edge = new DGEdge<Instruction>(*oldEdge);
+    edge->setNodePair(fromNode, toNode);
+    functionPDG->allEdges.push_back(edge);
+    fromNode->addOutgoingNode(toNode, edge);
+    toNode->addIncomingNode(fromNode, edge);
    }
 
    return functionPDG;
