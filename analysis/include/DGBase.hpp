@@ -58,12 +58,14 @@ namespace llvm {
         auto *node = new DGNode<T>(theT);
         allNodes.push_back(node);
         nodeMap[theT] = node;
+        return node;
       }
 
       DGNode<T> *createExternalNodeFrom(T *theT) {
         auto *node = new DGNode<T>(theT);
         allNodes.push_back(node);
         externalNodeMap[theT] = node;
+        return node;
       }
 
       DGEdge<T> *createEdgeFromTo(T *from, T *to) {
@@ -71,12 +73,16 @@ namespace llvm {
         auto toNode = nodeMap[to];
         auto edge = new DGEdge<T>(fromNode, toNode);
         allEdges.push_back(edge);
-        fromNode->addOutgoingNode(toNode, edge);
-        toNode->addIncomingNode(fromNode, edge);
+        connectNodesVia(edge, fromNode, toNode);
         return edge;
       }
 
     protected:
+      inline void connectNodesVia(DGEdge<T> *edge, DGNode<T> *from, DGNode<T> *to) {
+        from->addOutgoingNode(to, edge);
+        to->addIncomingNode(from, edge);
+      }
+
       std::vector<DGNode<T> *> allNodes;
       std::vector<DGEdge<T> *> allEdges;
       DGNode<T> *entryNode;
