@@ -67,18 +67,18 @@ namespace llvm {
 
         filename.clear();
         ros << "sccdg-" << F.getName() << ".dot";
-        SCCDG sccSubgraph;
-        sccSubgraph.createSCCGraphFrom(subgraph);
-        writeGraph<SCCDG>(ros.str(), &sccSubgraph);
+        SCCDG *sccSubgraph = SCCDG::createSCCGraphFrom(subgraph);
+        writeGraph<SCCDG>(ros.str(), sccSubgraph);
 
         int count = 0;
-        for (auto sccI = sccSubgraph.begin_nodes(); sccI != sccSubgraph.end_nodes(); ++sccI) {
+        for (auto sccI = sccSubgraph->begin_nodes(); sccI != sccSubgraph->end_nodes(); ++sccI) {
           auto scc = (*sccI)->getNode();
           filename.clear();
           ros << "sccdg-" << F.getName() << "-" << (count++) << ".dot";
           writeGraph<SCC>(ros.str(), scc);
         }
 
+        delete sccSubgraph;
         delete subgraph;
 
         LoopInfo& LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();

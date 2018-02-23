@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   DSWP.cpp
+  LoopDependenceInfo.cpp
 )
 
 # Compilation flags

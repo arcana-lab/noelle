@@ -40,6 +40,11 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
         auto sccIter = nodeSCCMap.find(*outgoing);
         if (sccIter == nodeSCCMap.end()) continue;
         sccDG->createEdgeFromTo(scc, sccIter->second);
+        /*
+         * Define edge properties between SCCs: memory/variable, must/may, RAW/WAW
+         */
+        // TODO
+        
       }
     }
 
@@ -50,4 +55,6 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
       nodeSCCMap[node] = scc;
     }
   }
+
+  return sccDG;
 }

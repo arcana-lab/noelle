@@ -30,15 +30,15 @@ namespace llvm {
       nodes_const_iterator begin_nodes() const { allNodes.begin(); }
       nodes_const_iterator end_nodes() const { allNodes.end(); }
 
-      nodes_iterator begin_edges() { allEdges.begin(); }
-      nodes_iterator end_edges() { allEdges.end(); }
-      nodes_const_iterator begin_edges() const { allEdges.begin(); }
-      nodes_const_iterator end_edges() const { allEdges.end(); }
+      edges_iterator begin_edges() { allEdges.begin(); }
+      edges_iterator end_edges() { allEdges.end(); }
+      edges_const_iterator begin_edges() const { allEdges.begin(); }
+      edges_const_iterator end_edges() const { allEdges.end(); }
 
       DGNode<T> *getEntryNode() {
         return entryNode;
       }
-
+      
       bool isExternalNode(DGNode<T> *node) {
         return externalNodeMap.find(node->getNode()) != externalNodeMap.end();
       }

@@ -13,7 +13,6 @@
 #include "DGBase.hpp"
 #include "SCC.hpp"
 #include "PDG.hpp"
-#include "DGGraphTraits.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -28,7 +27,7 @@ namespace llvm {
       SCCDG() ;
       ~SCCDG() ;
 
-      SCCDG *createSCCGraphFrom(PDG *);
+      static SCCDG *createSCCGraphFrom(PDG *);
   };
 }
 
