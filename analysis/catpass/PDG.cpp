@@ -27,7 +27,7 @@ void llvm::PDG::constructNodes (Module &M) {
   for (auto &F : M) {
     for (auto &B : F) {
       for (auto &I : B) {
-        createNodeFrom(&I);
+        createNodeFrom(&I, /*inclusion=*/ true);
       }
     }
   }
@@ -41,7 +41,7 @@ void llvm::PDG::constructNodes (Module &M) {
     abort();
   }
   auto entryInstr = &*(mainF->begin()->begin());
-  entryNode = nodeMap[entryInstr];
+  entryNode = internalNodeMap[entryInstr];
   assert(entryNode != nullptr);
 
   return ;
@@ -56,14 +56,14 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
    */
   for (auto &B : F) {
     for (auto &I : B) {
-      functionPDG->createNodeFrom(&I);
+      functionPDG->createNodeFrom(&I, /*inclusion=*/ true);
     }
   }
 
   /* 
    * Set the entry node: the first instruction of function F
    */
-  functionPDG->entryNode = functionPDG->nodeMap[&*(F.begin()->begin())];
+  functionPDG->entryNode = functionPDG->internalNodeMap[&*(F.begin()->begin())];
   assert(functionPDG->entryNode != nullptr);
 
   /*
@@ -84,25 +84,17 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
     /*
      * Create appropriate external nodes and associate edge to them
      */
-    DGNode<Instruction> *fromNode, *toNode;
+    auto fromNode = functionPDG->fetchOrCreateNodeOf(fromInst, fromInclusion);
+    auto toNode = functionPDG->fetchOrCreateNodeOf(toInst, toInclusion);
 
-    if (fromInclusion) {
-      fromNode = functionPDG->nodeMap[fromInst];
-    } else if (functionPDG->externalNodeMap.find(fromInst) == functionPDG->externalNodeMap.end()) {
-      fromNode = functionPDG->createExternalNodeFrom(fromInst);
-    } else {
-      fromNode = functionPDG->externalNodeMap[fromInst];
-    }
-
-    if (toInclusion) {
-      toNode = functionPDG->nodeMap[toInst];
-    } else if (functionPDG->externalNodeMap.find(toInst) == functionPDG->externalNodeMap.end()) {
-      toNode = functionPDG->createExternalNodeFrom(toInst);
-    } else {
-      toNode = functionPDG->externalNodeMap[toInst];
-    }
-
+    /*
+     * Use edge copy constructor to match old edge properties (mem/var, must/may, RAW/WAW)
+     */
     auto *edge = new DGEdge<Instruction>(*oldEdge);
+
+    /*
+     * Configure new edge/nodes to point to each other 
+     */
     edge->setNodePair(fromNode, toNode);
     functionPDG->allEdges.push_back(edge);
     connectNodesVia(edge, fromNode, toNode);
@@ -123,7 +115,7 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
     for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
       BasicBlock *B = *bbi;
       for (auto &I : *B) {
-        loopsPDG->createNodeFrom(&I);
+        loopsPDG->createNodeFrom(&I, /*inclusion=*/ true);
       }
     }
   }
@@ -133,7 +125,7 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
    */
   Loop *loopBegin = *(LI.begin());
   BasicBlock *bbBegin = *(loopBegin->block_begin());
-  loopsPDG->entryNode = loopsPDG->nodeMap[&*(bbBegin->begin())];
+  loopsPDG->entryNode = loopsPDG->internalNodeMap[&*(bbBegin->begin())];
   assert(loopsPDG->entryNode != nullptr);
 
   /*
@@ -141,34 +133,30 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
    */
   for (auto *oldEdge : allEdges) {
     auto nodePair = oldEdge->getNodePair();
-    auto fromInst = nodePair.first->getNode();
-    auto toInst = nodePair.second->getNode();
-    auto fromNodeI = loopsPDG->nodeMap.find(fromInst);
-    auto toNodeI = loopsPDG->nodeMap.find(toInst);
-
-    bool fromInclusion = fromNodeI != loopsPDG->nodeMap.end();
-    bool toInclusion = toNodeI != loopsPDG->nodeMap.end();
+    auto fromNode = nodePair.first;
+    auto toNode = nodePair.second;
+    
+    /*
+     * Check whether edge belongs to nodes within loops of LI
+     */
+    bool fromInclusion = loopsPDG->isInternalNode(fromNode);
+    bool toInclusion = loopsPDG->isExternalNode(toNode);
     if (!fromInclusion && !toInclusion) continue;
 
-    DGNode<Instruction> *fromNode, *toNode;
+    /*
+     * Create appropriate external nodes and associate edge to them
+     */
+    fromNode = loopsPDG->fetchOrCreateNodeOf(fromNode->getNode(), fromInclusion);
+    toNode = loopsPDG->fetchOrCreateNodeOf(toNode->getNode(), toInclusion);
 
-    if (fromInclusion) {
-      fromNode = fromNodeI->second;
-    } else if (loopsPDG->externalNodeMap.find(fromInst) == loopsPDG->externalNodeMap.end()) {
-      fromNode = loopsPDG->createExternalNodeFrom(fromInst);
-    } else {
-      fromNode = loopsPDG->externalNodeMap[fromInst];
-    }
-
-    if (toInclusion) {
-      toNode = toNodeI->second;      
-    } else if (loopsPDG->externalNodeMap.find(toInst) == loopsPDG->externalNodeMap.end()) {
-      toNode = loopsPDG->createExternalNodeFrom(toInst);
-    } else {
-      toNode = loopsPDG->externalNodeMap[toInst];
-    }
-
+    /*
+     * Use edge copy constructor to match old edge properties (mem/var, must/may, RAW/WAW)
+     */
     auto *edge = new DGEdge<Instruction>(*oldEdge);
+
+    /*
+     * Configure new edge/nodes to point to each other 
+     */
     edge->setNodePair(fromNode, toNode);
     loopsPDG->allEdges.push_back(edge);
     connectNodesVia(edge, fromNode, toNode);

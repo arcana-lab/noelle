@@ -24,16 +24,23 @@ llvm::SCCDG::~SCCDG() {
 SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   auto sccDG = new SCCDG();
 
+
+  for (auto pdgNI = pdg->begin_nodes(); pdgNI != pdg->end_nodes(); ++pdgNI) {
+    for (auto pdgEI = (*pdgNI)->begin_outgoing_edges(); pdgEI != (*pdgNI)->end_outgoing_edges(); ++pdgEI) {
+      auto edgeNodePair = (*pdgEI)->getNodePair();
+    }
+  }
+
   scc_iterator<PDG *> pdgi = scc_begin(pdg);
   auto nodeSCCMap = unordered_map<DGNode<Instruction> *, SCC *>();
   while (!pdgi.isAtEnd()) {
     const std::vector<DGNode<Instruction> *> nodesInSCC = *pdgi;
     auto scc = new SCC(nodesInSCC);
-    sccDG->createNodeFrom(scc);
+    sccDG->createNodeFrom(scc, /*inclusion=*/ true);
     ++pdgi;
 
     /*
-     * Add edges between SCC nodes based on their internal nodes' edges 
+     * Add internal/external edges on SCC nodes 
      */
     for (auto node : nodesInSCC) {
       for (auto outgoing = node->begin_outgoing_nodes(); outgoing != node->end_outgoing_nodes(); ++outgoing) {
@@ -44,7 +51,7 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
          * Define edge properties between SCCs: memory/variable, must/may, RAW/WAW
          */
         // TODO
-        
+
       }
     }
 

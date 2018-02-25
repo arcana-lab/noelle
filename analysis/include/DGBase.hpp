@@ -2,6 +2,7 @@
 
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
+#include <unordered_map>
 
 using namespace std;
 using namespace llvm;
@@ -39,6 +40,10 @@ namespace llvm {
         return entryNode;
       }
       
+      bool isInternalNode(DGNode<T> *node) {
+        return internalNodeMap.find(node->getNode()) != internalNodeMap.end();
+      }
+
       bool isExternalNode(DGNode<T> *node) {
         return externalNodeMap.find(node->getNode()) != externalNodeMap.end();
       }
@@ -46,38 +51,48 @@ namespace llvm {
       /*
        * Instruction Node Pair Iterator
        */
-      iterator_range<typename std::map<T *, DGNode<T> *>::iterator>
-      nodePairs() {
-        return make_range(nodeMap.begin(), nodeMap.end());
+
+      iterator_range<typename unordered_map<T *, DGNode<T> *>::iterator>
+      internalNodePairs() {
+        return make_range(internalNodeMap.begin(), internalNodeMap.end());
       }
 
       /*
-       * Creating Nodes and Edges
+       * Fetching/Creating Nodes and Edges
        */
-      DGNode<T> *createNodeFrom(T *theT) {
+      DGNode<T> *createNodeFrom(T *theT, bool inclusion) {
+        auto &map = inclusion ? internalNodeMap : externalNodeMap;
         auto *node = new DGNode<T>(theT);
         allNodes.push_back(node);
-        nodeMap[theT] = node;
-        return node;
-      }
-
-      DGNode<T> *createExternalNodeFrom(T *theT) {
-        auto *node = new DGNode<T>(theT);
-        allNodes.push_back(node);
-        externalNodeMap[theT] = node;
+        map[theT] = node;
         return node;
       }
 
       DGEdge<T> *createEdgeFromTo(T *from, T *to) {
-        auto fromNode = nodeMap[from];
-        auto toNode = nodeMap[to];
+        auto fromNode = fetchNodeOf(from);
+        auto toNode = fetchNodeOf(to);
         auto edge = new DGEdge<T>(fromNode, toNode);
         allEdges.push_back(edge);
         connectNodesVia(edge, fromNode, toNode);
         return edge;
       }
 
+      DGNode<T> *fetchOrCreateNodeOf(T *theT, bool inclusion) {
+        auto &map = inclusion ? internalNodeMap : externalNodeMap;
+        auto nodeIter = map.find(theT);
+        if (nodeIter == map.end()) return createNodeFrom(theT, inclusion);
+        return map[theT];
+      }
+
     protected:
+      /*
+       * Fetches node assuming it already exists for the T 
+       */
+      DGNode<T> *fetchNodeOf(T *theT) {
+        auto nodeI = internalNodeMap.find(theT);
+        return (nodeI != internalNodeMap.end()) ? nodeI->second : externalNodeMap[theT];
+      }
+
       inline void connectNodesVia(DGEdge<T> *edge, DGNode<T> *from, DGNode<T> *to) {
         from->addOutgoingNode(to, edge);
         to->addIncomingNode(from, edge);
@@ -86,8 +101,8 @@ namespace llvm {
       std::vector<DGNode<T> *> allNodes;
       std::vector<DGEdge<T> *> allEdges;
       DGNode<T> *entryNode;
-      std::map<T *, DGNode<T> *> nodeMap;
-      std::map<T *, DGNode<T> *> externalNodeMap;
+      unordered_map<T *, DGNode<T> *> internalNodeMap;
+      unordered_map<T *, DGNode<T> *> externalNodeMap;
   };
 
   // Template DG node to abstract node type

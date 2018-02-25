@@ -1,5 +1,5 @@
 PASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/DSWP.so
-ANALYSES=-basicaa
+ANALYSES=-basicaa -scalar-evolution -loops -loop-simplify -lcssa -domtree
 
 all: test
 

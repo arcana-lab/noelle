@@ -61,7 +61,7 @@ static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel
         if(!_PassMaker){ PM.add(_PassMaker = new PDGAnalysis());}});// ** for -O0
 
 void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
-  for (auto iNodePair : programDependenceGraph->nodePairs()) {
+  for (auto iNodePair : programDependenceGraph->internalNodePairs()) {
     Instruction *I = iNodePair.first;
     if (I->getNumUses() == 0)
       continue;

@@ -72,13 +72,13 @@ namespace llvm {
          * ASSUMPTION 1: One function in the entire program.
          * Fetch the entry point of the program.
          */
-        Function *entryFunction = M.getFunction("main");
+        auto entryFunction = M.getFunction("main");
 
         /*
          * Fetch the loops.
          */
         
-        LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>(*entryFunction).getLoopInfo();
+        auto &LI = getAnalysis<LoopInfoWrapperPass>(*entryFunction).getLoopInfo();
 
         /*
          * ASSUMPTION 2: One loop in the entire function 
@@ -96,16 +96,16 @@ namespace llvm {
       bool applyDSWP (Module &M, LoopDependenceInfo *LDI){
         errs() << "Applying DSWP on loop\n";
 
-        auto *loop = LDI->loop;
-        auto *sccSubgraph = LDI->sccDG;
-        //auto& SE = getAnalysis<ScalarEvolutionWrapperPass>().getSE();
-        //auto tripCount = SE.getSmallConstantTripCount(loop);
+        auto loop = LDI->loop;
+        auto sccSubgraph = LDI->sccDG;
+        auto& SE = getAnalysis<ScalarEvolutionWrapperPass>().getSE();
+        auto tripCount = SE.getSmallConstantTripCount(loop);
 
         /*
          * ASSUMPTION 3: Loop trip count is known.
          * ASSUMPTION 4: Loop trip count is 1000 or less.
          */
-        //if (tripCount <= 0 || tripCount > 1000) return false;
+        if (tripCount <= 0 || tripCount > 1000) return false;
 
         /*
          * ASSUMPTION 5: There are only 2 SCC within the loop
@@ -119,7 +119,7 @@ namespace llvm {
         if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) > 1) return false;
 
         errs() << "Grabbing single edge between the two SCCs\n";
-        
+
         DGEdge<SCC> *edge = *(sccSubgraph->begin_edges());
 
         /*
