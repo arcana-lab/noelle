@@ -24,13 +24,6 @@ llvm::SCCDG::~SCCDG() {
 SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   auto sccDG = new SCCDG();
 
-
-  for (auto pdgNI = pdg->begin_nodes(); pdgNI != pdg->end_nodes(); ++pdgNI) {
-    for (auto pdgEI = (*pdgNI)->begin_outgoing_edges(); pdgEI != (*pdgNI)->end_outgoing_edges(); ++pdgEI) {
-      auto edgeNodePair = (*pdgEI)->getNodePair();
-    }
-  }
-
   scc_iterator<PDG *> pdgi = scc_begin(pdg);
   auto nodeSCCMap = unordered_map<DGNode<Instruction> *, SCC *>();
   while (!pdgi.isAtEnd()) {
@@ -40,27 +33,48 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
     ++pdgi;
 
     /*
-     * Add internal/external edges on SCC nodes 
-     */
-    for (auto node : nodesInSCC) {
-      for (auto outgoing = node->begin_outgoing_nodes(); outgoing != node->end_outgoing_nodes(); ++outgoing) {
-        auto sccIter = nodeSCCMap.find(*outgoing);
-        if (sccIter == nodeSCCMap.end()) continue;
-        sccDG->createEdgeFromTo(scc, sccIter->second);
-        /*
-         * Define edge properties between SCCs: memory/variable, must/may, RAW/WAW
-         */
-        // TODO
-
-      }
-    }
-
-    /*
      * Maintain association of each internal node to its SCC node
      */
     for (auto node : nodesInSCC) {
       nodeSCCMap[node] = scc;
     }
+  }
+
+  /*
+   * Add internal/external edges on SCC nodes 
+   */
+  for (auto pdgEI = pdg->begin_edges(); pdgEI != pdg->end_edges(); ++pdgEI) {
+    auto edge = *pdgEI;
+    auto nodePair = edge->getNodePair();
+    auto fromNode = nodePair.first;
+    auto toNode = nodePair.second;
+
+    /*
+     * If both nodes are external or contained within the same SCC, ignore 
+     */
+    if (nodeSCCMap.find(fromNode) == nodeSCCMap.find(toNode)) continue;
+
+    /*if (fromSCC == nodeSCCMap.end() || toSCC == nodeSCCMap.end()) {
+      //errs() << "SCCDG Construction: Node encountered not in a SCC\n";
+      //abort();
+    }*/
+    auto fetchOrCreateSCC = [&nodeSCCMap, sccDG](DGNode<Instruction> *node) -> SCC* {
+      auto sccI = nodeSCCMap.find(node);
+      if (sccI == nodeSCCMap.end()) {
+        vector<DGNode<Instruction> *> sccNodes = { node };
+        auto scc = new SCC(sccNodes);
+        sccDG->createNodeFrom(scc, /*inclusion=*/ false);
+        nodeSCCMap[node] = scc;
+        return scc;
+      }
+      return sccI->second;
+    };
+
+    /*
+     * Create edge between SCCs with same properties as the edge between instructions within the SCCs
+     */
+    auto sccEdge = sccDG->createEdgeFromTo(fetchOrCreateSCC(fromNode), fetchOrCreateSCC(toNode));
+    sccEdge->setMemMustRaw(edge->isMemoryDependence(), edge->isMustDependence(), edge->isRAWDependence());
   }
 
   return sccDG;
