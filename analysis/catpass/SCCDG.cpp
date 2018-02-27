@@ -24,56 +24,65 @@ llvm::SCCDG::~SCCDG() {
 SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   auto sccDG = new SCCDG();
 
-  scc_iterator<PDG *> pdgi = scc_begin(pdg);
   auto nodeSCCMap = unordered_map<DGNode<Instruction> *, SCC *>();
-  while (!pdgi.isAtEnd()) {
-    const std::vector<DGNode<Instruction> *> nodesInSCC = *pdgi;
+
+  /*
+  errs() << "Internal nodes in calculation:\n";
+  for (auto nodeI = pdg->begin_nodes(); nodeI != pdg->end_nodes(); nodeI++) {
+    (*nodeI)->getNode()->print(errs() << "\t");
+    errs() << "\n";
+  }
+  */
+
+  for (scc_iterator<PDG *> pdgI = scc_begin(pdg); pdgI != scc_end(pdg); ++pdgI) {
+    const std::vector<DGNode<Instruction> *> nodesInSCC = *pdgI;
     auto scc = new SCC(nodesInSCC);
     sccDG->createNodeFrom(scc, /*inclusion=*/ true);
-    ++pdgi;
 
     /*
-     * Maintain association of each internal node to its SCC node
+     * Maintain association of each internal node to its SCC
      */
+    //errs() << "SCC:\n";
     for (auto node : nodesInSCC) {
+      //node->getNode()->print(errs() << "\t");
+      //errs() << "\n";
       nodeSCCMap[node] = scc;
     }
   }
 
   /*
-   * Add internal/external edges on SCC nodes 
+   * Helper function to find or create an SCC from a node
+   */
+  auto fetchOrCreateSCC = [&nodeSCCMap, sccDG](DGNode<Instruction> *node) -> SCC* {
+    auto sccI = nodeSCCMap.find(node);
+    if (sccI == nodeSCCMap.end()) {
+      vector<DGNode<Instruction> *> sccNodes = { node };
+      auto scc = new SCC(sccNodes);
+      sccDG->createNodeFrom(scc, /*inclusion=*/ false);
+      nodeSCCMap[node] = scc;
+      return scc;
+    }
+    return sccI->second;
+  };
+
+  /*
+   * Add internal/external edges between SCCs
    */
   for (auto pdgEI = pdg->begin_edges(); pdgEI != pdg->end_edges(); ++pdgEI) {
     auto edge = *pdgEI;
     auto nodePair = edge->getNodePair();
-    auto fromNode = nodePair.first;
-    auto toNode = nodePair.second;
+    auto fromSCC = fetchOrCreateSCC(nodePair.first);
+    auto toSCC = fetchOrCreateSCC(nodePair.second);
 
     /*
-     * If both nodes are external or contained within the same SCC, ignore 
+     * If the edge points to external SCCs or is contained in a single SCC, ignore 
      */
-    if (nodeSCCMap.find(fromNode) == nodeSCCMap.find(toNode)) continue;
-
-    /*if (fromSCC == nodeSCCMap.end() || toSCC == nodeSCCMap.end()) {
-      //errs() << "SCCDG Construction: Node encountered not in a SCC\n";
-      //abort();
-    }*/
-    auto fetchOrCreateSCC = [&nodeSCCMap, sccDG](DGNode<Instruction> *node) -> SCC* {
-      auto sccI = nodeSCCMap.find(node);
-      if (sccI == nodeSCCMap.end()) {
-        vector<DGNode<Instruction> *> sccNodes = { node };
-        auto scc = new SCC(sccNodes);
-        sccDG->createNodeFrom(scc, /*inclusion=*/ false);
-        nodeSCCMap[node] = scc;
-        return scc;
-      }
-      return sccI->second;
-    };
+    if ((sccDG->isExternal(fromSCC) && sccDG->isExternal(toSCC)) || fromSCC == toSCC) continue;
 
     /*
      * Create edge between SCCs with same properties as the edge between instructions within the SCCs
      */
-    auto sccEdge = sccDG->createEdgeFromTo(fetchOrCreateSCC(fromNode), fetchOrCreateSCC(toNode));
+    auto sccEdge = sccDG->createEdgeFromTo(fromSCC, toSCC);
     sccEdge->setMemMustRaw(edge->isMemoryDependence(), edge->isMustDependence(), edge->isRAWDependence());
   }
 

@@ -9,6 +9,9 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
+#include "llvm/IR/Dominators.h"
+#include "llvm/Analysis/AssumptionCache.h"
+
 #include "llvm/IR/IRBuilder.h"
 
 #include "../include/LoopDependenceInfo.hpp"
@@ -59,9 +62,10 @@ namespace llvm {
 
       void getAnalysisUsage(AnalysisUsage &AU) const override {
         AU.addRequired<PDGAnalysis>();
+        AU.addRequired<AssumptionCacheTracker>();
+        AU.addRequired<DominatorTreeWrapperPass>();
         AU.addRequired<LoopInfoWrapperPass>();
         AU.addRequired<ScalarEvolutionWrapperPass>();
-
         return ;
       }
 
@@ -87,35 +91,54 @@ namespace llvm {
         
         for (auto loopIter : LI){
           auto loop = &*loopIter;
-          return new LoopDependenceInfo(LI, loop, graph->createLoopsSubgraph(LI));
+          return new LoopDependenceInfo(entryFunction, LI, loop, graph->createLoopsSubgraph(LI));
         }
 
         return nullptr;
       }
 
       bool applyDSWP (Module &M, LoopDependenceInfo *LDI){
-        errs() << "Applying DSWP on loop\n";
-
         auto loop = LDI->loop;
         auto sccSubgraph = LDI->sccDG;
-        auto& SE = getAnalysis<ScalarEvolutionWrapperPass>().getSE();
-        auto tripCount = SE.getSmallConstantTripCount(loop);
+        
+        /*
+        errs() << "Applying DSWP on loop\n";
+        for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
+          for (auto &I : **bbi) {
+            I.print(errs());
+            errs() << "\n";
+          }
+        }
+        for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
+          sccI->first->print(errs());
+        }
+        errs() << sccSubgraph->numInternalNodes() << "\n";
+        */
+
+        auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*(LDI->func)).getSE();
+        //auto tripCount = SE.getSmallConstantTripCount(loop);
+        //auto maxTripCount = SE.getSmallConstantMaxTripCount(loop);
 
         /*
          * ASSUMPTION 3: Loop trip count is known.
-         * ASSUMPTION 4: Loop trip count is 1000 or less.
+         * ASSUMPTION 4: Loop trip count is 1000.
          */
-        if (tripCount <= 0 || tripCount > 1000) return false;
+        //errs() << "Trip count:\t" << tripCount << "\nMax trip count:\t" << maxTripCount << "\n";
+        // if (tripCount != 10000) return false;
 
         /*
          * ASSUMPTION 5: There are only 2 SCC within the loop
          */
-        std::pair<SCC *, SCC *> outInSCC;
-        
+        // if (sccSubgraph->numInternalNodes() != 2) return false;
+
         /*
-         * ASSUMPTION 6: You only have one variable across SCCs
-         * ASSUMPTION 7: You have no dependencies from outside instructions 
+         * ASSUMPTION 7: You only have one variable across SCCs
          */
+        for (auto edgeI = sccSubgraph->begin_edges(); edgeI != sccSubgraph->end_edges(); ++edgeI) {
+          (*edgeI)->print(errs());
+        }
+        errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
+
         if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) > 1) return false;
 
         errs() << "Grabbing single edge between the two SCCs\n";
@@ -134,6 +157,11 @@ namespace llvm {
         auto outSCC = sccPair.first->getNode();
         auto inSCC = sccPair.second->getNode();
 
+        /* 
+         * ASSUMPTION 6: You have no dependencies from outside instructions 
+         */
+        //TODO on edge
+
         /*
          * Attribute instructions to their SCCs
          */
@@ -148,14 +176,15 @@ namespace llvm {
 
         /*
          * ASSUMPTION 9: No function in the module is named "outSCC" or "inSCC"
+         * ASSUMPTION 10: Buffer variable is of type integer 32
          * TODO: Identify scc edge variable, add AttributeList to function creation for the variable
          */
-        Function *outF = static_cast<Function *>(M.getOrInsertFunction("outSCC",IntegerType::get(M.getContext(), 8)));
-        Function *inF = static_cast<Function *>(M.getOrInsertFunction("outSCC",IntegerType::get(M.getContext(), 8)));
+        auto stage0Pipeline = static_cast<Function *>(M.getOrInsertFunction("outSCC",IntegerType::get(M.getContext(), 8)));
+        auto stage1Pipeline = static_cast<Function *>(M.getOrInsertFunction("inSCC",IntegerType::get(M.getContext(), 8)));
   
-        BasicBlock* outBB= BasicBlock::Create(M.getContext(), "entry", outF);
+        BasicBlock* outBB= BasicBlock::Create(M.getContext(), "entry", stage0Pipeline);
         IRBuilder<> outBuilder(outBB);
-        BasicBlock* inBB= BasicBlock::Create(M.getContext(), "entry", inF);
+        BasicBlock* inBB= BasicBlock::Create(M.getContext(), "entry", stage1Pipeline);
         IRBuilder<> inBuilder(inBB);
 
         /*
@@ -176,6 +205,18 @@ namespace llvm {
         }
 
         return true;
+      }
+
+      Function *createPipelineStageFromSCC(LoopDependenceInfo *LDI, SCC *scc) {
+        return nullptr;
+      }
+
+      Function * createPipelineFromSCCDG(LoopDependenceInfo *LDI, std::vector<Function *> &stages) {
+        //TODO: Return a function that carries out the pipeline
+      }
+
+      void linkParallelizedLoop(LoopDependenceInfo *LDI, Function *parallelizedLoop) {
+        //TODO: Alter loop header to call parallelized loop and redirect terminator inst to exit bb
       }
   };
 

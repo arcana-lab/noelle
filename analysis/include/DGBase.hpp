@@ -19,42 +19,73 @@ namespace llvm {
     public:
       typedef typename vector<DGNode<T> *>::iterator nodes_iterator;
       typedef typename vector<DGNode<T> *>::const_iterator nodes_const_iterator;
-
+      
       typedef typename vector<DGEdge<T> *>::iterator edges_iterator;
       typedef typename vector<DGEdge<T> *>::const_iterator edges_const_iterator;
+
+      typedef typename unordered_map<T *, DGNode<T> *>::iterator node_map_iterator;
 
       /*
        * Node and Edge Iterators
        */
+
       nodes_iterator begin_nodes() { allNodes.begin(); }
       nodes_iterator end_nodes() { allNodes.end(); }
       nodes_const_iterator begin_nodes() const { allNodes.begin(); }
       nodes_const_iterator end_nodes() const { allNodes.end(); }
+
+      node_map_iterator begin_internal_node_map() { internalNodeMap.begin(); }
+      node_map_iterator end_internal_node_map() { internalNodeMap.end(); }
+      node_map_iterator begin_external_node_map() { externalNodeMap.begin(); }
+      node_map_iterator end_external_node_map() { externalNodeMap.end(); }
 
       edges_iterator begin_edges() { allEdges.begin(); }
       edges_iterator end_edges() { allEdges.end(); }
       edges_const_iterator begin_edges() const { allEdges.begin(); }
       edges_const_iterator end_edges() const { allEdges.end(); }
 
+      /*
+       * Node and Edge Properties
+       */
+
       DGNode<T> *getEntryNode() {
         return entryNode;
       }
       
+      bool isInternal(T *theT) {
+        return internalNodeMap.find(theT) != internalNodeMap.end(); 
+      }
+
       bool isInternalNode(DGNode<T> *node) {
-        return internalNodeMap.find(node->getNode()) != internalNodeMap.end();
+        return isInternal(node->getNode());
+      }
+
+      bool isExternal(T *theT) {
+        return externalNodeMap.find(theT) != externalNodeMap.end();
       }
 
       bool isExternalNode(DGNode<T> *node) {
-        return externalNodeMap.find(node->getNode()) != externalNodeMap.end();
+        return isExternal(node->getNode());
+      }
+
+      unsigned numInternalNodes() {
+        return std::distance(internalNodeMap.begin(), internalNodeMap.end());
+      }
+
+      unsigned numExternalNodes() {
+        return std::distance(externalNodeMap.begin(), externalNodeMap.end());
       }
 
       /*
        * Instruction Node Pair Iterator
        */
 
-      iterator_range<typename unordered_map<T *, DGNode<T> *>::iterator>
-      internalNodePairs() {
+      iterator_range<node_map_iterator> internalNodePairs() {
         return make_range(internalNodeMap.begin(), internalNodeMap.end());
+      }
+
+      iterator_range<node_map_iterator> externalNodePairs() {
+        return make_range(externalNodeMap.begin(), externalNodeMap.end());
       }
 
       /*
@@ -126,7 +157,18 @@ namespace llvm {
       edges_iterator end_incoming_edges() { return incomingEdges.end(); }
 
       T *getNode() const { return theNode; }
-      std::string toString() { return "node"; }
+
+      std::string toString() {
+        std::string nodeStr;
+        raw_string_ostream ros(nodeStr);
+        theNode->print(ros);
+        return nodeStr;
+      }
+
+      void print(raw_ostream &stream) { 
+        theNode->print(stream);
+        stream << "\n";
+      }
 
       void addIncomingNode(DGNode<T> *node, DGEdge<T> *edge) {
         incomingNodes.push_back(node);
@@ -193,6 +235,12 @@ namespace llvm {
       ros << (must ? "(must) " : "(may) ");
       ros << (memory ? "from memory " : "") << "\n";
       return edgeStr;
+    }
+    
+    void print(raw_ostream &stream) {
+      from->print(stream << "From:\n");
+      to->print(stream << "To:\n");
+      stream << "\n";
     }
 
    protected:

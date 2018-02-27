@@ -11,8 +11,9 @@ using namespace llvm;
 namespace llvm {
 
 	struct LoopDependenceInfo {
-		LoopDependenceInfo(LoopInfo &li, Loop *l, PDG *dg);
+		LoopDependenceInfo(Function *f, LoopInfo &li, Loop *l, PDG *dg);
 
+		Function *func;
 		LoopInfo &LI;
 		Loop *loop;
 		PDG *loopDG;

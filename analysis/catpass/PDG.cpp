@@ -140,7 +140,7 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
      * Check whether edge belongs to nodes within loops of LI
      */
     bool fromInclusion = loopsPDG->isInternalNode(fromNode);
-    bool toInclusion = loopsPDG->isExternalNode(toNode);
+    bool toInclusion = loopsPDG->isInternalNode(toNode);
     if (!fromInclusion && !toInclusion) continue;
 
     /*

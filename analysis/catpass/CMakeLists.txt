@@ -3,6 +3,7 @@ set(CATPassSrc
   CatPass.cpp
   PDG.cpp
   SCCDG.cpp
+  SCC.cpp
 )
 
 # Compilation flags

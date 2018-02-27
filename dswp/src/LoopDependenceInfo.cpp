@@ -7,6 +7,6 @@
 using namespace std;
 using namespace llvm;
 
-llvm::LoopDependenceInfo::LoopDependenceInfo(LoopInfo &li, Loop *l, PDG *dg) : LI{li}, loop{l}, loopDG{dg} {
+llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, LoopInfo &li, Loop *l, PDG *dg) : func{f}, LI{li}, loop{l}, loopDG{dg} {
 	sccDG = SCCDG::createSCCGraphFrom(loopDG);
 };
