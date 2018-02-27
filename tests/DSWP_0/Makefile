@@ -16,4 +16,4 @@ test.bc: test.c
 	llvm-dis $@
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o test
