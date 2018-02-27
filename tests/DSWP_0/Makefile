@@ -7,7 +7,7 @@ test: test_dswp.bc
 	clang -O0 $^ -o $@
 
 test_dswp.bc: test.bc
-	opt $(PASSES) $(ANALYSIS) -DSWP $^ -o $@
+	opt $(PASSES) $(ANALYSES) -DSWP $^ -o $@
 	llvm-dis $@
 
 test.bc: test.c
