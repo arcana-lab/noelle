@@ -165,9 +165,9 @@ namespace llvm {
         return nodeStr;
       }
 
-      void print(raw_ostream &stream) { 
+      raw_ostream &print(raw_ostream &stream) { 
         theNode->print(stream);
-        stream << "\n";
+        return stream;
       }
 
       void addIncomingNode(DGNode<T> *node, DGEdge<T> *edge) {
@@ -237,10 +237,10 @@ namespace llvm {
       return edgeStr;
     }
     
-    void print(raw_ostream &stream) {
-      from->print(stream << "From:\n");
-      to->print(stream << "To:\n");
-      stream << "\n";
+    raw_ostream &print(raw_ostream &stream) {
+      from->print(stream << "From:\n") << "\n";
+      to->print(stream << "To:\n") << "\n";
+      return stream;
     }
 
    protected:

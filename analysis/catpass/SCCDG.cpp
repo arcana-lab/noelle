@@ -27,14 +27,20 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   auto nodeSCCMap = unordered_map<DGNode<Instruction> *, SCC *>();
 
   /*
-  errs() << "Internal nodes in calculation:\n";
+  errs() << "All nodes in calculation:\n";
   for (auto nodeI = pdg->begin_nodes(); nodeI != pdg->end_nodes(); nodeI++) {
-    (*nodeI)->getNode()->print(errs() << "\t");
+    (*nodeI)->getNode()->print(errs());
+    errs() << "\n";
+  }
+  errs() << "All edges in calculation:\n";
+  for (auto edgeI = pdg->begin_edges(); edgeI != pdg->end_edges(); edgeI++) {
+    (*edgeI)->print(errs());
     errs() << "\n";
   }
   */
 
-  for (scc_iterator<PDG *> pdgI = scc_begin(pdg); pdgI != scc_end(pdg); ++pdgI) {
+  scc_iterator<PDG *> pdgI = scc_begin(pdg);
+  while (!pdgI.isAtEnd()) {
     const std::vector<DGNode<Instruction> *> nodesInSCC = *pdgI;
     auto scc = new SCC(nodesInSCC);
     sccDG->createNodeFrom(scc, /*inclusion=*/ true);
@@ -43,12 +49,14 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
      * Maintain association of each internal node to its SCC
      */
     //errs() << "SCC:\n";
-    for (auto node : nodesInSCC) {
-      //node->getNode()->print(errs() << "\t");
+    for (auto nodeI = scc->begin_nodes(); nodeI != scc->end_nodes(); nodeI++) {
+      //(*nodeI)->getNode()->print(errs());
       //errs() << "\n";
-      nodeSCCMap[node] = scc;
+      nodeSCCMap[(*nodeI)] = scc;
     }
+    ++pdgI;
   }
+  //errs() << "\n";
 
   /*
    * Helper function to find or create an SCC from a node

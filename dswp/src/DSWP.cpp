@@ -101,7 +101,6 @@ namespace llvm {
         auto loop = LDI->loop;
         auto sccSubgraph = LDI->sccDG;
         
-        /*
         errs() << "Applying DSWP on loop\n";
         for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
           for (auto &I : **bbi) {
@@ -109,21 +108,20 @@ namespace llvm {
             errs() << "\n";
           }
         }
+        errs() << "Internal SCCs\n";
         for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
           sccI->first->print(errs());
         }
         errs() << sccSubgraph->numInternalNodes() << "\n";
-        */
 
         auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*(LDI->func)).getSE();
-        //auto tripCount = SE.getSmallConstantTripCount(loop);
-        //auto maxTripCount = SE.getSmallConstantMaxTripCount(loop);
+        auto tripCount = SE.getSmallConstantTripCount(loop);
 
         /*
          * ASSUMPTION 3: Loop trip count is known.
          * ASSUMPTION 4: Loop trip count is 1000.
          */
-        //errs() << "Trip count:\t" << tripCount << "\nMax trip count:\t" << maxTripCount << "\n";
+        errs() << "Trip count:\t" << tripCount << "\n";
         // if (tripCount != 10000) return false;
 
         /*
@@ -139,7 +137,7 @@ namespace llvm {
         }
         errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
 
-        if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) > 1) return false;
+        if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) != 1) return false;
 
         errs() << "Grabbing single edge between the two SCCs\n";
 
@@ -161,6 +159,9 @@ namespace llvm {
          * ASSUMPTION 6: You have no dependencies from outside instructions 
          */
         //TODO on edge
+
+        errs() << "No dependencies from outside, and no memory dependencies\n";
+        return false;
 
         /*
          * Attribute instructions to their SCCs
