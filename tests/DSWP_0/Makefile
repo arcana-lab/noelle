@@ -18,7 +18,7 @@ test_dswp.bc: test.bc
 	llvm-dis $@
 
 test.bc: test.c
-	clang -emit-llvm -O0 -c $^ -o $@
+	clang -emit-llvm -O0 -Xclang -disable-O0-optnone -c $^ -o $@
 	opt -mem2reg $@ -o $@
 	llvm-dis $@
 

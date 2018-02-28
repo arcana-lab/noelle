@@ -10,6 +10,7 @@ int main (){
     v2 = v1 + 5;
   }
 
+  printf("%d, %d\n", v1, v2);
   return 0;
 }
 
