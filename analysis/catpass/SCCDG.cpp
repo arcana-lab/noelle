@@ -49,10 +49,9 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
      * Maintain association of each internal node to its SCC
      */
     //errs() << "SCC:\n";
-    for (auto nodeI = scc->begin_nodes(); nodeI != scc->end_nodes(); nodeI++) {
-      //(*nodeI)->getNode()->print(errs());
-      //errs() << "\n";
-      nodeSCCMap[(*nodeI)] = scc;
+    for (auto nodeI = scc->begin_internal_node_map(); nodeI != scc->end_internal_node_map(); nodeI++) {
+      //nodeI->first->print(errs()) << "\n";
+      nodeSCCMap[nodeI->second] = scc;
     }
     ++pdgI;
   }
@@ -86,6 +85,9 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
      * If the edge points to external SCCs or is contained in a single SCC, ignore 
      */
     if ((sccDG->isExternal(fromSCC) && sccDG->isExternal(toSCC)) || fromSCC == toSCC) continue;
+
+    fromSCC->print(errs() << "Making edge from:\n") << "\n";
+    toSCC->print(errs() << "to:\n") << "\n";
 
     /*
      * Create edge between SCCs with same properties as the edge between instructions within the SCCs

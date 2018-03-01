@@ -17,6 +17,6 @@ namespace llvm {
 		SCC(std::vector<DGNode<Instruction> *> nodes) ;
 		~SCC() ;
 
-		void print(raw_ostream &stream) ;
+		raw_ostream &print(raw_ostream &stream) ;
 	};
 }

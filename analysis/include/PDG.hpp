@@ -35,6 +35,10 @@ namespace llvm {
        */
       PDG *createFunctionSubgraph(Function &F);
       PDG *createLoopsSubgraph(LoopInfo &LI);
+      PDG *createInstListSubgraph(std::vector<Instruction *> &instList);
+      
+    private:
+      void copyEdgesInto(PDG *newPDG);
   };
 }
 

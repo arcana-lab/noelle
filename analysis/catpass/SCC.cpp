@@ -60,16 +60,16 @@ llvm::SCC::SCC(std::vector<DGNode<Instruction> *> nodes) {
 
 llvm::SCC::~SCC() {}
 
-void llvm::SCC::print(raw_ostream &stream) {
-	stream << "Internal nodes:\n";
+raw_ostream &llvm::SCC::print(raw_ostream &stream) {
+	stream << "\tInternal nodes:\n";
 	for (auto nodePair : internalNodePairs()) {
-		nodePair.first->print(stream);
+		nodePair.first->print(stream << "\t");
 		stream << "\n";
 	}
-	stream << "External nodes:\n";
+	stream << "\tExternal nodes:\n";
 	for (auto nodePair : externalNodePairs()) {
-		nodePair.first->print(stream);
+		nodePair.first->print(stream << "\t");
 		stream << "\n";
 	}
-	stream << "\n";
+	return stream;
 }

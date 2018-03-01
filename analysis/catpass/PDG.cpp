@@ -67,40 +67,11 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
   assert(functionPDG->entryNode != nullptr);
 
   /*
-   * Recreate all edges connected only within nodes of function F
+   * Recreate all edges connected to internal nodes of function
    */
-  for (auto *oldEdge : allEdges) {
-    auto edgeNodePair = oldEdge->getNodePair();
-    auto fromInst = edgeNodePair.first->getNode();
-    auto toInst = edgeNodePair.second->getNode();
+  copyEdgesInto(functionPDG);
 
-    /*
-     * Check whether edge belongs to nodes within function F
-     */
-    bool fromInclusion = fromInst->getFunction() == &F;
-    bool toInclusion = toInst->getFunction() == &F;
-    if (!fromInclusion && !toInclusion) continue;
-
-    /*
-     * Create appropriate external nodes and associate edge to them
-     */
-    auto fromNode = functionPDG->fetchOrCreateNodeOf(fromInst, fromInclusion);
-    auto toNode = functionPDG->fetchOrCreateNodeOf(toInst, toInclusion);
-
-    /*
-     * Use edge copy constructor to match old edge properties (mem/var, must/may, RAW/WAW)
-     */
-    auto *edge = new DGEdge<Instruction>(*oldEdge);
-
-    /*
-     * Configure new edge/nodes to point to each other 
-     */
-    edge->setNodePair(fromNode, toNode);
-    functionPDG->allEdges.push_back(edge);
-    connectNodesVia(edge, fromNode, toNode);
-   }
-
-   return functionPDG;
+  return functionPDG;
 }
 
 PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
@@ -112,9 +83,8 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
    */
   for (auto i : LI) {
     Loop *loop = &*i;
-    for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
-      BasicBlock *B = *bbi;
-      for (auto &I : *B) {
+    for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi) {
+      for (auto &I : **bbi) {
         loopsPDG->createNodeFrom(&I, /*inclusion=*/ true);
       }
     }
@@ -129,25 +99,47 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
   assert(loopsPDG->entryNode != nullptr);
 
   /*
-   * Recreate all edges connected only within nodes of loops of LI
+   * Recreate all edges connected to internal nodes of loop
    */
+  copyEdgesInto(loopsPDG);
+
+  return loopsPDG;
+}
+
+PDG *llvm::PDG::createInstListSubgraph(std::vector<Instruction *> &instList) {
+  if (instList.empty()) return nullptr;
+  auto instPDG = new PDG();
+
+  for (auto &I : instList) {
+    instPDG->createNodeFrom(I, /*inclusion=*/ true);
+  }
+
+  instPDG->entryNode = instPDG->internalNodeMap[*(instList.begin())];
+  assert(instPDG->entryNode != nullptr);
+
+  copyEdgesInto(instPDG);
+
+  return instPDG;
+}
+
+void llvm::PDG::copyEdgesInto(PDG *newPDG) {
   for (auto *oldEdge : allEdges) {
     auto nodePair = oldEdge->getNodePair();
     auto fromNode = nodePair.first;
     auto toNode = nodePair.second;
-    
+
     /*
-     * Check whether edge belongs to nodes within loops of LI
+     * Check whether edge belongs to nodes within function F
      */
-    bool fromInclusion = loopsPDG->isInternalNode(fromNode);
-    bool toInclusion = loopsPDG->isInternalNode(toNode);
+    bool fromInclusion = newPDG->isInternalNode(fromNode);
+    bool toInclusion = newPDG->isInternalNode(toNode);
     if (!fromInclusion && !toInclusion) continue;
 
     /*
      * Create appropriate external nodes and associate edge to them
      */
-    fromNode = loopsPDG->fetchOrCreateNodeOf(fromNode->getNode(), fromInclusion);
-    toNode = loopsPDG->fetchOrCreateNodeOf(toNode->getNode(), toInclusion);
+    auto newFromNode = newPDG->fetchOrCreateNodeOf(fromNode->getNode(), fromInclusion);
+    auto newToNode = newPDG->fetchOrCreateNodeOf(toNode->getNode(), toInclusion);
 
     /*
      * Use edge copy constructor to match old edge properties (mem/var, must/may, RAW/WAW)
@@ -157,10 +149,8 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
     /*
      * Configure new edge/nodes to point to each other 
      */
-    edge->setNodePair(fromNode, toNode);
-    loopsPDG->allEdges.push_back(edge);
-    connectNodesVia(edge, fromNode, toNode);
+    edge->setNodePair(newFromNode, newToNode);
+    newPDG->allEdges.push_back(edge);
+    connectNodesVia(edge, newFromNode, newToNode);
    }
-
-   return loopsPDG;
 }
