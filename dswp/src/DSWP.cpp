@@ -155,7 +155,6 @@ namespace llvm {
           (*edgeI)->print(errs());
         }
         errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
-        return false;
 
         /*
          * ASSUMPTION 3: Loop trip count is known.
@@ -229,12 +228,34 @@ namespace llvm {
          * TODO: Clone loop and it's basic blocks as well
          * TODO: Through a clone map, bind cloned instructions to each other
          */
+        unordered_map<Instruction *, Instruction *> cloneMap;
         for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
           auto I = sccI->first;
-          I->print(errs() << "\tOld inst:\t");
-          errs() << "\n";
           auto newI = I->clone();
           newI->insertBefore(retI);
+          cloneMap[I] = newI;
+          cloneMap[newI] = I;
+          //I->print(errs() << "\tOld inst:\t");
+          //errs() << "\n";
+        }
+
+        for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
+          auto I = sccI->first;
+          auto cloneI = cloneMap[I];
+          I->print(errs() << "Value:\t");
+          errs() << "\n";
+          for (auto &op : cloneI->operands()) {
+            auto opV = op.get();
+            opV->print(errs() << "Operand:\t");
+            errs() << "\n";
+            if (auto opI = dyn_cast<Instruction>(opV)) op.set(cloneMap[opI]);
+          }
+        }
+
+        for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
+          auto cloneI = cloneMap[sccI->first];
+          cloneI->print(errs() << "Clone Value:\t");
+          errs() << "\n";
         }
 
         pipelineStage->print(errs() << "Function printout:\n");
