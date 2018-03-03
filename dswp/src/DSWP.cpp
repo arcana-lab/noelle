@@ -53,7 +53,7 @@ namespace llvm {
         /*
          * Parallelize the loop
          */
-        auto modified = applyDSWP(M, loopDI);
+        auto modified = applyDSWP(loopDI);
 
         delete loopDI;
 
@@ -83,6 +83,7 @@ namespace llvm {
          */
         
         auto &LI = getAnalysis<LoopInfoWrapperPass>(*entryFunction).getLoopInfo();
+        auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*entryFunction).getSE();
 
         /*
          * ASSUMPTION 2: One loop in the entire function 
@@ -91,97 +92,89 @@ namespace llvm {
         
         for (auto loopIter : LI){
           auto loop = &*loopIter;
-          auto loopPDG = fetchLoopBodyPDG(graph, loop);
-          return new LoopDependenceInfo(entryFunction, LI, loop, loopPDG);
+          auto loopPDG = graph->createLoopsSubgraph(LI);
+          auto instPair = divideLoopInstructions(loop);
+          return new LoopDependenceInfo(entryFunction, LI, SE, loop, loopPDG, instPair.first, instPair.second);
         }
 
         return nullptr;
       }
 
-      PDG *fetchLoopBodyPDG(PDG *graph, Loop *loop) {
+      std::pair<std::vector<Instruction *>, std::vector<Instruction *>>
+      divideLoopInstructions(Loop *loop) {
+        std::vector<Instruction *> bodyInst, otherInst;
+
         /*
          * ASSUMPTION: Canonical induction variable
          */
         auto phiIV = loop->getCanonicalInductionVariable();
-        phiIV->print(errs() << "IV:\t");
-        errs() << "\n";
         assert(phiIV != nullptr);
+        //phiIV->print(errs() << "IV:\t"); errs() << "\n";
 
-        std::vector<Instruction *> bodyInst;
+        bool nonBodyBB = false;
         for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi) {
           BasicBlock *bb = *bbi;
-          if (loop->isLoopLatch(bb) || loop->isLoopExiting(bb)) continue;
+          nonBodyBB = loop->isLoopLatch(bb);
+
           /*
-           * Ignore branch, conditional, and induction variable instructions
+           * Categorize all instructions in latch or exit basic blocks as 'other' instructions
+           * Categorize branch, conditional, and induction variable instructions as 'other' instructions
            */
-          for (auto ii = bb->begin(); ii != --(bb->end()); ++ii) {
+          for (auto ii = bb->begin(); ii != bb->end(); ++ii) {
             Instruction *i = &*ii;
-            if (CmpInst::classof(i) || phiIV == i) continue;
-            bodyInst.push_back(i);
+            if (nonBodyBB || TerminatorInst::classof(i) || CmpInst::classof(i) || phiIV == i) {
+              otherInst.push_back(i);
+            } else {
+              bodyInst.push_back(i);
+            }
           }
         }
-        return graph->createInstListSubgraph(bodyInst);
+
+        /*
+         * ASSUMPTION: One exiting block only; excluding exit block instructions
+         */
+        for (auto &I : *(loop->getUniqueExitBlock())) {
+          otherInst.push_back(&I);
+        }
+        return make_pair(bodyInst, otherInst);
       }
 
-      bool applyDSWP (Module &M, LoopDependenceInfo *LDI){
+      bool applyDSWP (LoopDependenceInfo *LDI){
         auto loop = LDI->loop;
-        auto sccSubgraph = LDI->sccDG;
+        auto sccSubgraph = LDI->sccBodyDG;
         
         /*
          * Loop and SCC debug printouts
          */
-        errs() << "Applying DSWP on loop\n";
-        for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
-          if (loop->getHeader() == *bbi) {
-            errs() << "Header:\n";
-          } else if (loop->isLoopLatch(*bbi)) {
-            errs() << "Loop latch:\n";
-          } else if (loop->isLoopExiting(*bbi)) {
-            errs() << "Loop exiting:\n";
-          } else {
-            errs() << "Loop body:\n";
-          }
-          for (auto &I : **bbi) {
-            I.print(errs());
-            errs() << "\n";
-          }
-        }
-        errs() << "\nInternal SCCs\n";
-        for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
-          sccI->first->print(errs());
-        }
-        errs() << "Number of SCCs: " << sccSubgraph->numInternalNodes() << "\n";
-        for (auto edgeI = sccSubgraph->begin_edges(); edgeI != sccSubgraph->end_edges(); ++edgeI) {
-          (*edgeI)->print(errs());
-        }
-        errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
+        //printLoop(loop);
+        //printSCCs(sccSubgraph);
 
         /*
          * ASSUMPTION 3: Loop trip count is known.
          * ASSUMPTION 4: Loop trip count is 10000.
          */
-        auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*(LDI->func)).getSE();
-        //auto tripCount = SE.getSmallConstantTripCount(loop);
+        auto tripCount = LDI->SE.getSmallConstantTripCount(loop);
         //errs() << "Trip count:\t" << tripCount << "\n";
-        //if (tripCount != 10001) return false;
+        if (tripCount != 10001) return false;
 
         /*
          * ASSUMPTION 5: There are only 2 SCC within the loop's body
          */
-        //if (sccSubgraph->numInternalNodes() != 2) return false;
+        errs() << "Num nodes: " << sccSubgraph->numInternalNodes() << "\n";
+        if (sccSubgraph->numInternalNodes() != 2) return false;
 
         /*
          * ASSUMPTION 6: You only have one variable across the two SCCs
          */
-        //if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) != 1) return false;
-
-        errs() << "Grabbing single edge between the two SCCs\n";
+        errs() << "Num edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
+        if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) != 1) return false;
         DGEdge<SCC> *edge = *(sccSubgraph->begin_edges());
 
         /*
          * ASSUMPTION 7: There aren't memory data dependences
          */
-        //if (edge->isMemoryDependence()) return false;
+        errs() << "Mem dep: " << edge->isMemoryDependence() << "\n";
+        if (edge->isMemoryDependence()) return false;
 
         /*
          * Build functions from each SCC
@@ -200,65 +193,95 @@ namespace llvm {
          * ASSUMPTION 9: Buffer variable is of type integer 32
          * TODO: Identify scc edge variable, add AttributeList to function creation for the variable
          */
-        auto stage0Pipeline = createPipelineStageFromSCC(M, LDI, outSCC, false);
-        auto stage1Pipeline = createPipelineStageFromSCC(M, LDI, inSCC, true);
+
+        auto stage0Pipeline = createPipelineStageFromSCC(LDI, outSCC, false);
+        auto stage1Pipeline = createPipelineStageFromSCC(LDI, inSCC, true);
         
-        //stage0Pipeline->print(errs() << "Function 1:\n");
-        //stage1Pipeline->print(errs() << "Function 2:\n");
-
-        /*
-         * Add instructions to appropriate SCC basic blocks
-         * TODO: Add push and pop instructions for the variable
-         */
-
         return true;
       }
 
-      Function *createPipelineStageFromSCC(Module &M, LoopDependenceInfo *LDI, SCC *scc, bool incoming) {
-        auto pipelineStage = static_cast<Function *>(M.getOrInsertFunction(incoming ? "sccStage1" : "sccStage0", IntegerType::get(M.getContext(), 32)));
-        BasicBlock* bb = BasicBlock::Create(M.getContext(), "entry", pipelineStage);
-        IRBuilder<> builder(bb);
+      Function *createPipelineStageFromSCC(LoopDependenceInfo *LDI, SCC *scc, bool incoming) {
+        auto M = LDI->func->getParent();
+        auto loop = LDI->loop;
+        auto int32 = IntegerType::get(M->getContext(), 32);
+        auto funcConst = incoming ? M->getOrInsertFunction("sccStage1", int32, int32) : M->getOrInsertFunction("sccStage0", int32);
+        Function * pipelineStage = static_cast<Function *>(funcConst);
+
+        BasicBlock* entryBB = BasicBlock::Create(M->getContext(), "entry", pipelineStage);
+        IRBuilder<> entryBuilder(entryBB);
+        BasicBlock* exitBB = BasicBlock::Create(M->getContext(), "exit", pipelineStage);
+        IRBuilder<> exitBuilder(exitBB);
 
         /*
-         * TODO: Replace with the variable this stage computes
+         * ASSUMPTION: Variable computed is stored in a PHI node
          */
-        auto retI = builder.CreateRetVoid();
+        ReturnInst *retI;
+        for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
+          if (auto phiI = dyn_cast<PHINode>(sccI->first)) {
+            retI = exitBuilder.CreateRet((Value*)phiI);
+            break;
+          }
+        }
 
         /*
-         * TODO: Clone loop and it's basic blocks as well
-         * TODO: Through a clone map, bind cloned instructions to each other
+         * Clone loop instructions in given SCC or non-loop-body 
          */
         unordered_map<Instruction *, Instruction *> cloneMap;
         for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
           auto I = sccI->first;
           auto newI = I->clone();
-          newI->insertBefore(retI);
           cloneMap[I] = newI;
-          cloneMap[newI] = I;
-          //I->print(errs() << "\tOld inst:\t");
-          //errs() << "\n";
         }
 
-        for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
-          auto I = sccI->first;
-          auto cloneI = cloneMap[I];
-          I->print(errs() << "Value:\t");
-          errs() << "\n";
-          for (auto &op : cloneI->operands()) {
+        for (auto &I : LDI->otherInstOfLoop) {
+          auto newI = I->clone();
+          cloneMap[I] = newI;
+        }
+
+        if (incoming) {
+          auto edge = *(scc->begin_edges());
+          auto I = edge->getNodePair().first->getNode();
+          // TODO: Change the clone to a pop call from the buffer (Threadpool API)
+          auto newI = I->clone();
+          cloneMap[I] = newI;
+        }
+
+        /*
+         * Clone loop basic blocks that are used by given SCC / non-loop-body basic blocks
+         */
+        unordered_map<BasicBlock*, BasicBlock*> bbCloneMap;
+        for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi) {
+          auto bb = *bbi;
+          auto cloneBB = BasicBlock::Create(M->getContext(), bb->getName(), pipelineStage);
+          IRBuilder<> builder(cloneBB);
+
+          for (auto &I : *bb) {
+            auto cloneI = cloneMap.find(&I);
+            if (cloneI == cloneMap.end()) {
+              //I.print(errs() << "DID NOT ADD:\t"); errs() << "\n";
+              continue;
+            }
+            cloneMap[&I] = builder.Insert(cloneI->second);
+          }
+
+          bbCloneMap[bb] = cloneBB;
+        }
+
+        /*
+         * Replace each clone's operand with the cloned instruction's version of the operand
+         */
+        for (auto ii = cloneMap.begin(); ii != cloneMap.end(); ++ii) {
+          for (auto &op : ii->second->operands()) {
             auto opV = op.get();
-            opV->print(errs() << "Operand:\t");
-            errs() << "\n";
-            if (auto opI = dyn_cast<Instruction>(opV)) op.set(cloneMap[opI]);
+            if (auto opI = dyn_cast<Instruction>(opV)) {
+              op.set(cloneMap[opI]);
+            } else if (auto opB = dyn_cast<BasicBlock>(opV)) {
+              op.set(bbCloneMap[opB]);
+            }
           }
         }
 
-        for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
-          auto cloneI = cloneMap[sccI->first];
-          cloneI->print(errs() << "Clone Value:\t");
-          errs() << "\n";
-        }
-
-        pipelineStage->print(errs() << "Function printout:\n");
+        pipelineStage->print(errs() << "Function printout:\n"); errs() << "\n";
         return pipelineStage;
       }
 
@@ -268,6 +291,40 @@ namespace llvm {
 
       void linkParallelizedLoop(LoopDependenceInfo *LDI, Function *parallelizedLoop) {
         //TODO: Alter loop header to call parallelized loop and redirect terminator inst to exit bb
+      }
+
+      void printLoop(Loop *loop) {
+        errs() << "Applying DSWP on loop\n";
+        auto header = loop->getHeader();
+        errs() << "Number of bbs: " << std::distance(loop->block_begin(), loop->block_end()) << "\n";
+        for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
+          auto bb = *bbi;
+          if (header == bb) {
+            errs() << "Header:\n";
+          } else if (loop->isLoopLatch(bb)) {
+            errs() << "Loop latch:\n";
+          } else if (loop->isLoopExiting(bb)) {
+            errs() << "Loop exiting:\n";
+          } else {
+            errs() << "Loop body:\n";
+          }
+          for (auto &I : *bb) {
+            I.print(errs());
+            errs() << "\n";
+          }
+        }
+      }
+
+      void printSCCs(SCCDG *sccSubgraph) {
+        errs() << "\nInternal SCCs\n";
+        for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
+          sccI->first->print(errs());
+        }
+        errs() << "Number of SCCs: " << sccSubgraph->numInternalNodes() << "\n";
+        for (auto edgeI = sccSubgraph->begin_edges(); edgeI != sccSubgraph->end_edges(); ++edgeI) {
+          (*edgeI)->print(errs());
+        }
+        errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
       }
   };
 

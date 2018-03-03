@@ -86,8 +86,8 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
      */
     if ((sccDG->isExternal(fromSCC) && sccDG->isExternal(toSCC)) || fromSCC == toSCC) continue;
 
-    fromSCC->print(errs() << "Making edge from:\n") << "\n";
-    toSCC->print(errs() << "to:\n") << "\n";
+    //fromSCC->print(errs() << "Making edge from:\n") << "\n";
+    //toSCC->print(errs() << "to:\n") << "\n";
 
     /*
      * Create edge between SCCs with same properties as the edge between instructions within the SCCs

@@ -117,12 +117,12 @@ PDG *llvm::PDG::createInstListSubgraph(std::vector<Instruction *> &instList) {
   instPDG->entryNode = instPDG->internalNodeMap[*(instList.begin())];
   assert(instPDG->entryNode != nullptr);
 
-  copyEdgesInto(instPDG);
+  copyEdgesInto(instPDG, /*linkToExternal=*/ false);
 
   return instPDG;
 }
 
-void llvm::PDG::copyEdgesInto(PDG *newPDG) {
+void llvm::PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal) {
   for (auto *oldEdge : allEdges) {
     auto nodePair = oldEdge->getNodePair();
     auto fromNode = nodePair.first;
@@ -134,6 +134,7 @@ void llvm::PDG::copyEdgesInto(PDG *newPDG) {
     bool fromInclusion = newPDG->isInternalNode(fromNode);
     bool toInclusion = newPDG->isInternalNode(toNode);
     if (!fromInclusion && !toInclusion) continue;
+    if (linkToExternal && (!fromInclusion || !toInclusion)) continue;
 
     /*
      * Create appropriate external nodes and associate edge to them

@@ -38,7 +38,7 @@ namespace llvm {
       PDG *createInstListSubgraph(std::vector<Instruction *> &instList);
       
     private:
-      void copyEdgesInto(PDG *newPDG);
+      void copyEdgesInto(PDG *newPDG, bool linkToExternal = true);
   };
 }
 
