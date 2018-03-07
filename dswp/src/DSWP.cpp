@@ -18,6 +18,10 @@
 #include "PDG.hpp"
 #include "PDGAnalysis.hpp"
 
+//#include "ThreadPool.hpp"
+//#include "ThreadSafeQueue.hpp"
+//#include "TaskFuture.hpp"
+
 #include <unordered_map>
 
 using namespace llvm;
@@ -146,7 +150,7 @@ namespace llvm {
         /*
          * Loop and SCC debug printouts
          */
-        //printLoop(loop);
+        printLoop(loop);
         //printSCCs(sccSubgraph);
 
         /*
@@ -160,20 +164,20 @@ namespace llvm {
         /*
          * ASSUMPTION 5: There are only 2 SCC within the loop's body
          */
-        errs() << "Num nodes: " << sccSubgraph->numInternalNodes() << "\n";
+        // errs() << "Num nodes: " << sccSubgraph->numInternalNodes() << "\n";
         if (sccSubgraph->numInternalNodes() != 2) return false;
 
         /*
          * ASSUMPTION 6: You only have one variable across the two SCCs
          */
-        errs() << "Num edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
+        // errs() << "Num edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
         if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) != 1) return false;
         DGEdge<SCC> *edge = *(sccSubgraph->begin_edges());
 
         /*
          * ASSUMPTION 7: There aren't memory data dependences
          */
-        errs() << "Mem dep: " << edge->isMemoryDependence() << "\n";
+        // errs() << "Mem dep: " << edge->isMemoryDependence() << "\n";
         if (edge->isMemoryDependence()) return false;
 
         /*
@@ -208,20 +212,18 @@ namespace llvm {
         Function * pipelineStage = static_cast<Function *>(funcConst);
 
         BasicBlock* entryBB = BasicBlock::Create(M->getContext(), "entry", pipelineStage);
-        IRBuilder<> entryBuilder(entryBB);
         BasicBlock* exitBB = BasicBlock::Create(M->getContext(), "exit", pipelineStage);
-        IRBuilder<> exitBuilder(exitBB);
+
+        CallInst *queueCall;
+        Instruction *popStorage;
+        LoadInst *loadStorage;
 
         /*
-         * ASSUMPTION: Variable computed is stored in a PHI node
+         * ASSUMPTION: Only one instruction references the incoming SCC edge's variable from the previous stage
+         * ASSUMPTION: Only one instruction computes the outgoing SCC edge's variable used in the next stage 
          */
-        ReturnInst *retI;
-        for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
-          if (auto phiI = dyn_cast<PHINode>(sccI->first)) {
-            retI = exitBuilder.CreateRet((Value*)phiI);
-            break;
-          }
-        }
+        Instruction *popMatchingInstruction;
+        Instruction *pushMatchingInstruction;
 
         /*
          * Clone loop instructions in given SCC or non-loop-body 
@@ -238,12 +240,51 @@ namespace llvm {
           cloneMap[I] = newI;
         }
 
+        /*
+         * ASSUMPTION: Variable computed is stored in a PHI node
+         */
+        ReturnInst *retI;
+        IRBuilder<> entryBuilder(entryBB);
+        IRBuilder<> exitBuilder(exitBB);
+        for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
+          if (auto phiI = dyn_cast<PHINode>(sccI->first)) {
+            retI = exitBuilder.CreateRet((Value*)cloneMap[phiI]);
+
+            /*
+             * Locate instruction computing outgoing variable and create queue push call
+             */
+            if (!incoming) {
+              for (auto &op : phiI->incoming_values()) {
+                if (auto opI = dyn_cast<Instruction>(op)) {
+                  auto cloneOp = cloneMap[opI];
+                  pushMatchingInstruction = cloneOp;
+                  queueCall = entryBuilder.CreateCall(M->getOrInsertFunction("queuePush", Type::getVoidTy(M->getContext()), int32), ArrayRef<Value*>(cloneOp));
+                }
+              }
+            }
+            break;
+          }
+        }
+
+        /*
+         * Locate instruction using incoming variable, create queue pop call and load, and point instruction to the load
+         */
         if (incoming) {
-          auto edge = *(scc->begin_edges());
-          auto I = edge->getNodePair().first->getNode();
-          // TODO: Change the clone to a pop call from the buffer (Threadpool API)
-          auto newI = I->clone();
-          cloneMap[I] = newI;
+          popStorage = entryBuilder.CreateAlloca(int32);
+          loadStorage = entryBuilder.CreateLoad(popStorage);
+          queueCall = entryBuilder.CreateCall(M->getOrInsertFunction("queuePop", int32, int32), ArrayRef<Value*>(popStorage));
+
+          auto nodePair = (*scc->begin_edges())->getNodePair();
+          auto outgoingI = nodePair.first->getNode();
+          auto incomingI = nodePair.second->getNode();
+          popMatchingInstruction = cloneMap[incomingI];
+          for (auto useI = incomingI->op_begin(); useI != incomingI->op_end(); ++useI) {
+            if (auto opI = dyn_cast<Instruction>(useI->get())) {
+              if (opI == outgoingI) {
+                popMatchingInstruction->setOperand(useI->getOperandNo(), loadStorage);
+              }
+            }
+          }
         }
 
         /*
@@ -256,27 +297,50 @@ namespace llvm {
           IRBuilder<> builder(cloneBB);
 
           for (auto &I : *bb) {
-            auto cloneI = cloneMap.find(&I);
-            if (cloneI == cloneMap.end()) {
-              //I.print(errs() << "DID NOT ADD:\t"); errs() << "\n";
+            auto cloneIter = cloneMap.find(&I);
+            if (cloneIter == cloneMap.end()) {
               continue;
             }
-            cloneMap[&I] = builder.Insert(cloneI->second);
+            cloneMap[&I] = builder.Insert(cloneIter->second);
           }
 
           bbCloneMap[bb] = cloneBB;
         }
 
         /*
-         * Replace each clone's operand with the cloned instruction's version of the operand
+         * Branch from entry of function to the header of the loop 
+         */
+        entryBuilder.CreateBr(bbCloneMap[loop->getHeader()]);
+
+        /*
+         * Insert queue push or queue pop + load
+         */
+        if (incoming) {
+          queueCall->moveBefore(popMatchingInstruction);
+          loadStorage->moveBefore(popMatchingInstruction);
+        } else {
+          queueCall->moveBefore(pushMatchingInstruction->getParent()->getTerminator());
+        }
+
+        /*
+         * Replace the rest of the clone's operand with the cloned instruction's version of the operand
          */
         for (auto ii = cloneMap.begin(); ii != cloneMap.end(); ++ii) {
           for (auto &op : ii->second->operands()) {
             auto opV = op.get();
             if (auto opI = dyn_cast<Instruction>(opV)) {
-              op.set(cloneMap[opI]);
+              auto iCloneIter = cloneMap.find(opI);
+              if (iCloneIter != cloneMap.end()) {
+                op.set(cloneMap[opI]);
+              }
             } else if (auto opB = dyn_cast<BasicBlock>(opV)) {
-              op.set(bbCloneMap[opB]);
+              auto bbCloneIter = bbCloneMap.find(opB);
+              if (bbCloneIter != bbCloneMap.end()) {
+                op.set(bbCloneIter->second);
+              } else {
+                // Operand pointed to original exiting block
+                op.set(exitBB);
+              }
             }
           }
         }
