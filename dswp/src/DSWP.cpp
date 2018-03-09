@@ -3,6 +3,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
@@ -12,15 +13,12 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/Analysis/AssumptionCache.h"
 
+#include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
 
 #include "../include/LoopDependenceInfo.hpp"
 #include "PDG.hpp"
 #include "PDGAnalysis.hpp"
-
-//#include "ThreadPool.hpp"
-//#include "ThreadSafeQueue.hpp"
-//#include "TaskFuture.hpp"
 
 #include <unordered_map>
 
@@ -32,6 +30,8 @@ namespace llvm {
     public:
       static char ID;
 
+      Function *queuePushTemporary, *queuePopTemporary, *stageHandler;
+
       DSWP() : ModulePass{ID} {}
 
       bool doInitialization (Module &M) override {
@@ -40,6 +40,20 @@ namespace llvm {
 
       bool runOnModule (Module &M) override {
         errs() << "DSWP for " << M.getName() << "\n";
+        std::string str;
+        raw_string_ostream fStr(str);
+        Mangler::getNameWithPrefix(fStr, "queuePush", M.getDataLayout());
+        fStr.flush();
+        queuePushTemporary = M.getFunction(str);
+        str.clear();
+        Mangler::getNameWithPrefix(fStr, "queuePop", M.getDataLayout());
+        fStr.flush();
+        queuePopTemporary = M.getFunction(str);
+        str.clear();
+
+        queuePushTemporary = M.getFunction("_Z9queuePushP15ThreadSafeQueueIiEi");
+        queuePopTemporary = M.getFunction("_Z8queuePopP15ThreadSafeQueueIiE");
+        stageHandler = M.getFunction("_Z18parallelizeHandlerPFiP15ThreadSafeQueueIiEES3_");
 
         /*
          * Fetch the PDG.
@@ -159,7 +173,7 @@ namespace llvm {
          */
         auto tripCount = LDI->SE.getSmallConstantTripCount(loop);
         //errs() << "Trip count:\t" << tripCount << "\n";
-        if (tripCount != 10001) return false;
+        if (tripCount == 0) return false;
 
         /*
          * ASSUMPTION 5: There are only 2 SCC within the loop's body
@@ -201,6 +215,30 @@ namespace llvm {
         auto stage0Pipeline = createPipelineStageFromSCC(LDI, outSCC, false);
         auto stage1Pipeline = createPipelineStageFromSCC(LDI, inSCC, true);
         
+        std::vector<Value *> stages = { (Value*)stage0Pipeline, (Value*)stage1Pipeline };
+        auto pipelineBB = createParallelizedFunctionExecution(LDI, stages);
+
+        /*
+         * Link pipeline basic block to function, unlink loop
+         */
+        auto header = loop->getHeader();
+        auto rerouteLoopPredecessor = [header, pipelineBB](BasicBlock *bb) -> void {          
+          for (auto &op : bb->getTerminator()->operands()) {
+            if (auto opB = dyn_cast<BasicBlock>(op.get())) {
+              if (opB == header) op.set(pipelineBB);
+            }
+          }
+        };
+
+        for(auto bbI = pred_begin(header); bbI != pred_end(header); ++bbI) {
+          if (loop->isLoopLatch(*(bbI))) continue;
+          (*bbI)->print(errs() << "A pred bb:\n");
+          rerouteLoopPredecessor(*bbI);
+        }
+        rerouteLoopPredecessor(&(LDI->func->getEntryBlock()));
+
+        LDI->func->print(errs() << "Final function:\n");
+        errs() << "\n";
         return true;
       }
 
@@ -208,7 +246,8 @@ namespace llvm {
         auto M = LDI->func->getParent();
         auto loop = LDI->loop;
         auto int32 = IntegerType::get(M->getContext(), 32);
-        auto funcConst = incoming ? M->getOrInsertFunction("sccStage1", int32, int32) : M->getOrInsertFunction("sccStage0", int32);
+        auto vptr = PointerType::getUnqual(IntegerType::get(M->getContext(), 8));
+        auto funcConst = incoming ? M->getOrInsertFunction("sccStage1", int32, vptr) : M->getOrInsertFunction("sccStage0", int32, vptr);
         Function * pipelineStage = static_cast<Function *>(funcConst);
 
         BasicBlock* entryBB = BasicBlock::Create(M->getContext(), "entry", pipelineStage);
@@ -258,7 +297,7 @@ namespace llvm {
                 if (auto opI = dyn_cast<Instruction>(op)) {
                   auto cloneOp = cloneMap[opI];
                   pushMatchingInstruction = cloneOp;
-                  queueCall = entryBuilder.CreateCall(M->getOrInsertFunction("queuePush", Type::getVoidTy(M->getContext()), int32), ArrayRef<Value*>(cloneOp));
+                  queueCall = entryBuilder.CreateCall(queuePushTemporary, ArrayRef<Value*>(cloneOp));
                 }
               }
             }
@@ -272,7 +311,7 @@ namespace llvm {
         if (incoming) {
           popStorage = entryBuilder.CreateAlloca(int32);
           loadStorage = entryBuilder.CreateLoad(popStorage);
-          queueCall = entryBuilder.CreateCall(M->getOrInsertFunction("queuePop", int32, int32), ArrayRef<Value*>(popStorage));
+          queueCall = entryBuilder.CreateCall(queuePopTemporary, ArrayRef<Value*>(popStorage));
 
           auto nodePair = (*scc->begin_edges())->getNodePair();
           auto outgoingI = nodePair.first->getNode();
@@ -349,6 +388,20 @@ namespace llvm {
         return pipelineStage;
       }
 
+      BasicBlock *createParallelizedFunctionExecution(LoopDependenceInfo *LDI, std::vector<Value *> &stages) {
+        auto M = LDI->func->getParent();
+        BasicBlock* pipelineBB = BasicBlock::Create(M->getContext(), "parallel", LDI->func);
+        IRBuilder<> builder(pipelineBB);
+        builder.CreateCall(stageHandler, ArrayRef<Value*>(stages));
+
+        /*
+         * ASSUMPTION: Only one unique exiting basic block from the loop
+         */
+        builder.CreateBr(LDI->loop->getExitBlock());
+        return pipelineBB;
+      }
+
+      /*
       Function * createPipelineFromSCCDG(LoopDependenceInfo *LDI, std::vector<Function *> &stages) {
         //TODO: Return a function that carries out the pipeline
       }
@@ -356,6 +409,7 @@ namespace llvm {
       void linkParallelizedLoop(LoopDependenceInfo *LDI, Function *parallelizedLoop) {
         //TODO: Alter loop header to call parallelized loop and redirect terminator inst to exit bb
       }
+      */
 
       void printLoop(Loop *loop) {
         errs() << "Applying DSWP on loop\n";
