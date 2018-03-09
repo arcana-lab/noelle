@@ -690,16 +690,16 @@ int queuePop(ThreadSafeQueue<int> *queue){
 }
 
 int main (){
-  int v1, v2;
-  v1 = 0;
+  int v2;
   v2 = 0;
 
   for (int i = 0; i < 10000; ++i) {
-    v1 = v2 + 1;
-    v2 = v1 + 5;
+
+    v2 = v2 + 5;
+
+    printf("%d\n", v2);
   }
 
-  printf("%d, %d\n", v1, v2);
   return 0;
 }
 
