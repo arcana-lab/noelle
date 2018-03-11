@@ -9,8 +9,8 @@
 using namespace std;
 using namespace llvm;
 
-llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, LoopInfo &li, ScalarEvolution &se, Loop *l, PDG *loopG, std::vector<Instruction *> bodyInst, std::vector<Instruction *> otherInst)
-		: func{f}, LI{li}, SE{se}, loop{l}, loopDG{loopG}, bodyInstOfLoop{bodyInst}, otherInstOfLoop{otherInst} {
+llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, LoopInfo &li, DominatorTree &dt, ScalarEvolution &se, Loop *l, PDG *loopG, std::vector<Instruction *> bodyInst, std::vector<Instruction *> otherInst)
+		: func{f}, LI{li}, DT{dt}, SE{se}, loop{l}, loopDG{loopG}, bodyInstOfLoop{bodyInst}, otherInstOfLoop{otherInst} {
 	loopBodyDG = loopDG->createInstListSubgraph(bodyInst);
 	sccBodyDG = SCCDG::createSCCGraphFrom(loopBodyDG);
 };

@@ -7,6 +7,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
+#include "llvm/Transforms/Utils/LoopUtils.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
@@ -31,6 +32,7 @@ namespace llvm {
       static char ID;
 
       Function *queuePushTemporary, *queuePopTemporary, *stageHandler;
+      FunctionType *stageType;
 
       DSWP() : ModulePass{ID} {}
 
@@ -40,21 +42,12 @@ namespace llvm {
 
       bool runOnModule (Module &M) override {
         errs() << "DSWP for " << M.getName() << "\n";
-        std::string str;
-        raw_string_ostream fStr(str);
-        Mangler::getNameWithPrefix(fStr, "queuePush", M.getDataLayout());
-        fStr.flush();
-        queuePushTemporary = M.getFunction(str);
-        str.clear();
-        Mangler::getNameWithPrefix(fStr, "queuePop", M.getDataLayout());
-        fStr.flush();
-        queuePopTemporary = M.getFunction(str);
-        str.clear();
+        queuePushTemporary = M.getFunction("queuePush"); // M.getFunction("_Z9queuePushP15ThreadSafeQueueIiEi");
+        queuePopTemporary = M.getFunction("queuePop"); // M.getFunction("_Z8queuePopP15ThreadSafeQueueIiE");
+        stageHandler = M.getFunction("parallelizeHandler"); // M.getFunction("_Z18parallelizeHandlerPFiP15ThreadSafeQueueIiEES3_");
 
-        queuePushTemporary = M.getFunction("_Z9queuePushP15ThreadSafeQueueIiEi");
-        queuePopTemporary = M.getFunction("_Z8queuePopP15ThreadSafeQueueIiE");
-        stageHandler = M.getFunction("_Z18parallelizeHandlerPFiP15ThreadSafeQueueIiEES3_");
-
+        stageType = cast<FunctionType>(cast<PointerType>(stageHandler->arg_begin()->getType())->getElementType());
+        stageType->print(errs() << "sT:\t"); errs() << "\n";
         /*
          * Fetch the PDG.
          */
@@ -101,6 +94,7 @@ namespace llvm {
          */
         
         auto &LI = getAnalysis<LoopInfoWrapperPass>(*entryFunction).getLoopInfo();
+        auto &DT = getAnalysis<DominatorTreeWrapperPass>(*entryFunction).getDomTree();
         auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*entryFunction).getSE();
 
         /*
@@ -112,7 +106,7 @@ namespace llvm {
           auto loop = &*loopIter;
           auto loopPDG = graph->createLoopsSubgraph(LI);
           auto instPair = divideLoopInstructions(loop);
-          return new LoopDependenceInfo(entryFunction, LI, SE, loop, loopPDG, instPair.first, instPair.second);
+          return new LoopDependenceInfo(entryFunction, LI, DT, SE, loop, loopPDG, instPair.first, instPair.second);
         }
 
         return nullptr;
@@ -158,6 +152,7 @@ namespace llvm {
       }
 
       bool applyDSWP (LoopDependenceInfo *LDI){
+        auto M = LDI->func->getParent();
         auto loop = LDI->loop;
         auto sccSubgraph = LDI->sccBodyDG;
         
@@ -221,24 +216,24 @@ namespace llvm {
         /*
          * Link pipeline basic block to function, unlink loop
          */
-        auto header = loop->getHeader();
-        auto rerouteLoopPredecessor = [header, pipelineBB](BasicBlock *bb) -> void {          
-          for (auto &op : bb->getTerminator()->operands()) {
-            if (auto opB = dyn_cast<BasicBlock>(op.get())) {
-              if (opB == header) op.set(pipelineBB);
-            }
-          }
-        };
 
-        for(auto bbI = pred_begin(header); bbI != pred_end(header); ++bbI) {
-          if (loop->isLoopLatch(*(bbI))) continue;
-          (*bbI)->print(errs() << "A pred bb:\n");
-          rerouteLoopPredecessor(*bbI);
-        }
-        rerouteLoopPredecessor(&(LDI->func->getEntryBlock()));
+        auto preheader = loop->getLoopPreheader();
+        preheader->getTerminator()->eraseFromParent();
+        IRBuilder<> preheaderBuilder(preheader);
 
-        LDI->func->print(errs() << "Final function:\n");
-        errs() << "\n";
+        auto int32 = IntegerType::get(M->getContext(), 32);
+        auto globalBool = new GlobalVariable(*M, int32, /*isConstant=*/ false, GlobalValue::ExternalLinkage, Constant::getNullValue(int32));
+        auto const0 = ConstantInt::get(int32, APInt(32, 0, false));
+        auto loadBool = preheaderBuilder.CreateLoad(globalBool);
+        auto compareInstruction = preheaderBuilder.CreateICmpEQ(loadBool, const0);
+        auto conditionalBranch = preheaderBuilder.CreateCondBr(compareInstruction, pipelineBB, loop->getHeader());
+        
+        //globalBool->print(errs() << "gbool:\t"); errs() << "\n";
+        //const0->print(errs() << "const0:\t"); errs() << "\n";
+        //compareInstruction->print(errs() << "cmp:\t"); errs() << "\n";
+
+        formLCSSA(*loop, LDI->DT, &LDI->LI, &LDI->SE);
+        LDI->func->print(errs() << "Final function:\n"); errs() << "\n";
         return true;
       }
 
@@ -246,10 +241,13 @@ namespace llvm {
         auto M = LDI->func->getParent();
         auto loop = LDI->loop;
         auto int32 = IntegerType::get(M->getContext(), 32);
-        auto vptr = PointerType::getUnqual(IntegerType::get(M->getContext(), 8));
-        auto funcConst = incoming ? M->getOrInsertFunction("sccStage1", int32, vptr) : M->getOrInsertFunction("sccStage0", int32, vptr);
+        //auto vptr = PointerType::getUnqual(IntegerType::get(M->getContext(), 8));
+        auto funcConst = incoming ? M->getOrInsertFunction("sccStage1", stageType) : M->getOrInsertFunction("sccStage0", stageType);
         Function * pipelineStage = static_cast<Function *>(funcConst);
 
+        /*
+         * TODO: Remove naming of basic blocks to avoid collisions
+         */
         BasicBlock* entryBB = BasicBlock::Create(M->getContext(), "entry", pipelineStage);
         BasicBlock* exitBB = BasicBlock::Create(M->getContext(), "exit", pipelineStage);
 
@@ -274,6 +272,9 @@ namespace llvm {
           cloneMap[I] = newI;
         }
 
+        /*
+         * ASSUMPTION: All instructions outside of SCCs are related to the loop's induction variable that controls the loop
+         */
         for (auto &I : LDI->otherInstOfLoop) {
           auto newI = I->clone();
           cloneMap[I] = newI;
@@ -281,6 +282,7 @@ namespace llvm {
 
         /*
          * ASSUMPTION: Variable computed is stored in a PHI node
+         * FIX: Look at outgoing edges of current SCC to identify variables to push to the queue
          */
         ReturnInst *retI;
         IRBuilder<> entryBuilder(entryBB);
@@ -317,6 +319,10 @@ namespace llvm {
           auto outgoingI = nodePair.first->getNode();
           auto incomingI = nodePair.second->getNode();
           popMatchingInstruction = cloneMap[incomingI];
+          /*
+           * ASSUMPTION: Incoming instruction was a PHI.
+           * FIX: Use edge to identify dependent operand, and replace with the load instruction
+           */
           for (auto useI = incomingI->op_begin(); useI != incomingI->op_end(); ++useI) {
             if (auto opI = dyn_cast<Instruction>(useI->get())) {
               if (opI == outgoingI) {
@@ -330,8 +336,17 @@ namespace llvm {
          * Clone loop basic blocks that are used by given SCC / non-loop-body basic blocks
          */
         unordered_map<BasicBlock*, BasicBlock*> bbCloneMap;
+
+        /*
+         * Map loop preheader to the entry block of the pipeline stage
+         */
+        bbCloneMap[loop->getLoopPreheader()] = entryBB;
+
         for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi) {
           auto bb = *bbi;
+          /*
+           * FIX: Create basic blocks for induction variables and the SCC in question instead of all the loop's basic blocks
+           */
           auto cloneBB = BasicBlock::Create(M->getContext(), bb->getName(), pipelineStage);
           IRBuilder<> builder(cloneBB);
 
@@ -358,21 +373,59 @@ namespace llvm {
           queueCall->moveBefore(popMatchingInstruction);
           loadStorage->moveBefore(popMatchingInstruction);
         } else {
+          /*
+           * IMPROVEMENT: Find the successor of the producing instruction; add the queue push before this instruction
+           */
           queueCall->moveBefore(pushMatchingInstruction->getParent()->getTerminator());
         }
 
         /*
-         * Replace the rest of the clone's operand with the cloned instruction's version of the operand
+         * Replace the rest of the clones' operands with the cloned instructions' versions of the operand
+         * IMPROVEMENT: Ignore special cases upfront. If a clone of a general case is not found, abort with a corresponding error 
          */
         for (auto ii = cloneMap.begin(); ii != cloneMap.end(); ++ii) {
-          for (auto &op : ii->second->operands()) {
+          auto cloneInstruction = ii->second;
+
+          /*
+           * Replacing operands/basic block pointers of PHINode with clones
+           */
+          if (auto phiI = dyn_cast<PHINode>(cloneInstruction)) {
+            for (auto &op : phiI->operands()) {
+
+              /*
+               * Handle replacing operands
+               */
+              if (auto opI = dyn_cast<Instruction>(op)) {
+                auto iCloneIter = cloneMap.find(opI);
+                if (iCloneIter != cloneMap.end()) {
+                  op.set(cloneMap[opI]);
+                }
+                continue;
+              }
+              // Check for constants etc... abort
+            }
+
+            for (auto &bb : phiI->blocks()) {
+
+              /*
+               * Handle replacing basic blocks
+               */
+              auto basicBlockIndex = phiI->getBasicBlockIndex(bb);
+              phiI->setIncomingBlock(basicBlockIndex, bbCloneMap[bb]);
+            }
+            continue;
+          }
+
+          for (auto &op : cloneInstruction->operands()) {
             auto opV = op.get();
             if (auto opI = dyn_cast<Instruction>(opV)) {
               auto iCloneIter = cloneMap.find(opI);
               if (iCloneIter != cloneMap.end()) {
                 op.set(cloneMap[opI]);
               }
-            } else if (auto opB = dyn_cast<BasicBlock>(opV)) {
+              continue;
+            }
+            if (auto opB = dyn_cast<BasicBlock>(opV)) {
               auto bbCloneIter = bbCloneMap.find(opB);
               if (bbCloneIter != bbCloneMap.end()) {
                 op.set(bbCloneIter->second);
@@ -380,11 +433,13 @@ namespace llvm {
                 // Operand pointed to original exiting block
                 op.set(exitBB);
               }
+              continue;
             }
+            // Add cases such as constants where no clone needs to exist. Abort with an error if no such type is found
           }
         }
 
-        pipelineStage->print(errs() << "Function printout:\n"); errs() << "\n";
+        //pipelineStage->print(errs() << "Function printout:\n"); errs() << "\n";
         return pipelineStage;
       }
 

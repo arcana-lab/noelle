@@ -13,12 +13,13 @@ using namespace llvm;
 namespace llvm {
 
 	struct LoopDependenceInfo {
-		LoopDependenceInfo(Function *f, LoopInfo &li, ScalarEvolution &se, Loop *l, PDG *loopG, std::vector<Instruction *> bodyInst, std::vector<Instruction *> otherInst);
+		LoopDependenceInfo(Function *f, LoopInfo &li, DominatorTree &dt, ScalarEvolution &se, Loop *l, PDG *loopG, std::vector<Instruction *> bodyInst, std::vector<Instruction *> otherInst);
 		~LoopDependenceInfo();
 
 		Function *func;
 		LoopInfo &LI;
 		ScalarEvolution &SE;
+		DominatorTree &DT;
 		Loop *loop;
 		PDG *loopDG;
 

@@ -679,31 +679,17 @@ private:
 };
 
 
-void queuePush(ThreadSafeQueue<int> *queue, int val){
+extern "C" void queuePush(ThreadSafeQueue<int> *queue, int val){
   queue->push(val);
 }
 
-int queuePop(ThreadSafeQueue<int> *queue){
+extern "C" int queuePop(ThreadSafeQueue<int> *queue){
   int val;
   queue->waitPop(val);
   return val;
 }
 
-int main (){
-  int v2;
-  v2 = 0;
-
-  for (int i = 0; i < 10000; ++i) {
-
-    v2 = v2 + 5;
-
-    printf("%d\n", v2);
-  }
-
-  return 0;
-}
-
-int parallelizeHandler(int (*f1)(ThreadSafeQueue<int> *), int (*f2)(ThreadSafeQueue<int> *)){
+extern "C" int parallelizeHandler(int (*f1)(ThreadSafeQueue<int> *), int (*f2)(ThreadSafeQueue<int> *)){
   /*
    * Create a thread pool with 2 threads
    */
@@ -721,3 +707,16 @@ int parallelizeHandler(int (*f1)(ThreadSafeQueue<int> *), int (*f2)(ThreadSafeQu
   return 0;
 }
 
+int main (){
+  int v1, v2;
+  v1 = 0;
+  v2 = 0;
+
+  for (int i = 0; i < 10000; ++i) {
+    v1 = v2 + 1;
+    v2 = v1 + 5;
+  }
+
+  printf("%d, %d\n", v1, v2);
+  return 0;
+}
