@@ -11,7 +11,7 @@ ANALYSES=$(AA) -scalar-evolution -loops -loop-simplify -lcssa -domtree
 all: test
 
 test: test_dswp.bc
-	clang -O0 $^ -o $@
+	clang++ -std=c++14 -pthreads -O0 $^ -o $@
 
 test_dswp.bc: test.bc
 	opt $(PASSES) $(ANALYSES) -DSWP $^ -o $@

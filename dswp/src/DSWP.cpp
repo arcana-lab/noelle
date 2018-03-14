@@ -18,6 +18,7 @@
 #include "llvm/IR/IRBuilder.h"
 
 #include "../include/LoopDependenceInfo.hpp"
+#include "../include/PipelineInfo.hpp"
 #include "PDG.hpp"
 #include "PDGAnalysis.hpp"
 
@@ -42,9 +43,9 @@ namespace llvm {
 
       bool runOnModule (Module &M) override {
         errs() << "DSWP for " << M.getName() << "\n";
-        queuePushTemporary = M.getFunction("queuePush"); // M.getFunction("_Z9queuePushP15ThreadSafeQueueIiEi");
-        queuePopTemporary = M.getFunction("queuePop"); // M.getFunction("_Z8queuePopP15ThreadSafeQueueIiE");
-        stageHandler = M.getFunction("parallelizeHandler"); // M.getFunction("_Z18parallelizeHandlerPFiP15ThreadSafeQueueIiEES3_");
+        queuePushTemporary = M.getFunction("queuePush");
+        queuePopTemporary = M.getFunction("queuePop");
+        stageHandler = M.getFunction("parallelizeHandler");
 
         stageType = cast<FunctionType>(cast<PointerType>(stageHandler->arg_begin()->getType())->getElementType());
         stageType->print(errs() << "sT:\t"); errs() << "\n";
@@ -97,6 +98,8 @@ namespace llvm {
         auto &DT = getAnalysis<DominatorTreeWrapperPass>(*entryFunction).getDomTree();
         auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*entryFunction).getSE();
 
+        auto funcPDG = graph->createFunctionSubgraph(*entryFunction);
+
         /*
          * ASSUMPTION 2: One loop in the entire function 
          * Choose the loop to parallelize.
@@ -104,9 +107,8 @@ namespace llvm {
         
         for (auto loopIter : LI){
           auto loop = &*loopIter;
-          auto loopPDG = graph->createLoopsSubgraph(LI);
           auto instPair = divideLoopInstructions(loop);
-          return new LoopDependenceInfo(entryFunction, LI, DT, SE, loop, loopPDG, instPair.first, instPair.second);
+          return new LoopDependenceInfo(entryFunction, LI, DT, SE, loop, funcPDG, instPair.first, instPair.second);
         }
 
         return nullptr;
@@ -181,34 +183,55 @@ namespace llvm {
          */
         // errs() << "Num edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
         if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) != 1) return false;
-        DGEdge<SCC> *edge = *(sccSubgraph->begin_edges());
+        DGEdge<SCC> *sccEdge = *(sccSubgraph->begin_edges());
+
+        auto sccPair = sccEdge->getNodePair();
+        auto outSCC = sccPair.first->getNode();
+        auto inSCC = sccPair.second->getNode();
+
+        if (outSCC->numExternalNodes() != 1 || inSCC->numExternalNodes() != 1) return false;
+
+        DGEdge<Instruction> *instEdge = *(outSCC->begin_external_node_map()->second->begin_incoming_edges());
+        assert(instEdge == *(inSCC->begin_external_node_map()->second->begin_outgoing_edges()));
+
+        std::vector<DGEdge<Instruction> *> outSCCEdges = {instEdge};
+        std::vector<DGEdge<Instruction> *> inSCCEdges = {instEdge};
+        std::vector<DGEdge<Instruction> *> noEdges;
+        
 
         /*
          * ASSUMPTION 7: There aren't memory data dependences
          */
         // errs() << "Mem dep: " << edge->isMemoryDependence() << "\n";
-        if (edge->isMemoryDependence()) return false;
-
-        /*
-         * Build functions from each SCC
-         */
-        auto sccPair = edge->getNodePair();
-        auto outSCC = sccPair.first->getNode();
-        auto inSCC = sccPair.second->getNode();
+        if (instEdge->isMemoryDependence()) return false;
 
         /* 
-         * ASSUMPTION 8: You have no dependencies from outside instructions
+         * ASSUMPTION 8: You only have one dependency per SCC from inside to outside the loop
          */
-        //TODO on edge
-        //errs() << "No dependencies from outside, and no memory dependencies\n";
+        std::vector<Instruction *> outSCCOutgoingDependencies, inSCCOutgoingDependencies;
+        std::vector<Instruction *> noIncomingDependencies;
+
+        for (auto nodeI : LDI->loopDG->externalNodePairs()) {
+          auto externalNode = nodeI.second;
+          for (auto sccNodeI : make_range(externalNode->begin_incoming_nodes(), externalNode->end_incoming_nodes())) {
+            if (outSCC->isInternal(sccNodeI->getNode())) {
+              outSCCOutgoingDependencies.push_back(externalNode->getNode());
+            }
+            if (inSCC->isInternal(sccNodeI->getNode())) {
+              inSCCOutgoingDependencies.push_back(externalNode->getNode());
+            }
+          }
+        }
+
+        if (outSCCOutgoingDependencies.size() != 1 || inSCCOutgoingDependencies.size() != 1) return false;
 
         /*
          * ASSUMPTION 9: Buffer variable is of type integer 32
          * TODO: Identify scc edge variable, add AttributeList to function creation for the variable
          */
 
-        auto stage0Pipeline = createPipelineStageFromSCC(LDI, outSCC, false);
-        auto stage1Pipeline = createPipelineStageFromSCC(LDI, inSCC, true);
+        auto stage0Pipeline = createPipelineStageFromSCC(LDI, outSCC, noEdges, outSCCEdges, noIncomingDependencies, outSCCOutgoingDependencies);
+        auto stage1Pipeline = createPipelineStageFromSCC(LDI, inSCC, inSCCEdges, noEdges, noIncomingDependencies, inSCCOutgoingDependencies);
         
         std::vector<Value *> stages = { (Value*)stage0Pipeline, (Value*)stage1Pipeline };
         auto pipelineBB = createParallelizedFunctionExecution(LDI, stages);
@@ -218,49 +241,45 @@ namespace llvm {
          */
 
         auto preheader = loop->getLoopPreheader();
-        preheader->getTerminator()->eraseFromParent();
-        IRBuilder<> preheaderBuilder(preheader);
+        auto loopSwitch = BasicBlock::Create(M->getContext(), "", LDI->func, preheader);
+        IRBuilder<> loopSwitchBuilder(loopSwitch);
 
         auto int32 = IntegerType::get(M->getContext(), 32);
         auto globalBool = new GlobalVariable(*M, int32, /*isConstant=*/ false, GlobalValue::ExternalLinkage, Constant::getNullValue(int32));
         auto const0 = ConstantInt::get(int32, APInt(32, 0, false));
-        auto loadBool = preheaderBuilder.CreateLoad(globalBool);
-        auto compareInstruction = preheaderBuilder.CreateICmpEQ(loadBool, const0);
-        auto conditionalBranch = preheaderBuilder.CreateCondBr(compareInstruction, pipelineBB, loop->getHeader());
+        auto loadBool = loopSwitchBuilder.CreateLoad(globalBool);
+        auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(loadBool, const0);
+        auto conditionalBranch = loopSwitchBuilder.CreateCondBr(compareInstruction, pipelineBB, preheader);
         
         //globalBool->print(errs() << "gbool:\t"); errs() << "\n";
         //const0->print(errs() << "const0:\t"); errs() << "\n";
         //compareInstruction->print(errs() << "cmp:\t"); errs() << "\n";
 
-        formLCSSA(*loop, LDI->DT, &LDI->LI, &LDI->SE);
+        //formLCSSA(*loop, LDI->DT, &LDI->LI, &LDI->SE);
         LDI->func->print(errs() << "Final function:\n"); errs() << "\n";
         return true;
       }
 
-      Function *createPipelineStageFromSCC(LoopDependenceInfo *LDI, SCC *scc, bool incoming) {
+      Function *createPipelineStageFromSCC(LoopDependenceInfo *LDI, SCC *scc, 
+          std::vector<DGEdge<Instruction> *> incomingStageSCCs, 
+          std::vector<DGEdge<Instruction> *> outgoingStageSCCs,
+          std::vector<Instruction *> incomingDependencies,
+          std::vector<Instruction *> outgoingDependencies) {
         auto M = LDI->func->getParent();
         auto loop = LDI->loop;
         auto int32 = IntegerType::get(M->getContext(), 32);
-        //auto vptr = PointerType::getUnqual(IntegerType::get(M->getContext(), 8));
-        auto funcConst = incoming ? M->getOrInsertFunction("sccStage1", stageType) : M->getOrInsertFunction("sccStage0", stageType);
-        Function * pipelineStage = static_cast<Function *>(funcConst);
+        auto pipelineStage = static_cast<Function *>(M->getOrInsertFunction("", stageType));
 
-        /*
-         * TODO: Remove naming of basic blocks to avoid collisions
-         */
-        BasicBlock* entryBB = BasicBlock::Create(M->getContext(), "entry", pipelineStage);
-        BasicBlock* exitBB = BasicBlock::Create(M->getContext(), "exit", pipelineStage);
+        BasicBlock* entryBB = BasicBlock::Create(M->getContext(), "", pipelineStage);
+        BasicBlock* exitBB = BasicBlock::Create(M->getContext(), "", pipelineStage);
 
-        CallInst *queueCall;
-        Instruction *popStorage;
-        LoadInst *loadStorage;
+        std::vector<OutgoingPipelineInfo *> valuePushQueues;
+        std::map<Instruction *, IncomingPipelineInfo *> valuePopQueuesMap;
 
         /*
          * ASSUMPTION: Only one instruction references the incoming SCC edge's variable from the previous stage
          * ASSUMPTION: Only one instruction computes the outgoing SCC edge's variable used in the next stage 
          */
-        Instruction *popMatchingInstruction;
-        Instruction *pushMatchingInstruction;
 
         /*
          * Clone loop instructions in given SCC or non-loop-body 
@@ -284,41 +303,41 @@ namespace llvm {
          * ASSUMPTION: Variable computed is stored in a PHI node
          * FIX: Look at outgoing edges of current SCC to identify variables to push to the queue
          */
-        ReturnInst *retI;
         IRBuilder<> entryBuilder(entryBB);
         IRBuilder<> exitBuilder(exitBB);
-        for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
-          if (auto phiI = dyn_cast<PHINode>(sccI->first)) {
-            retI = exitBuilder.CreateRet((Value*)cloneMap[phiI]);
+        ReturnInst *retI = exitBuilder.CreateRetVoid();
 
-            /*
-             * Locate instruction computing outgoing variable and create queue push call
-             */
-            if (!incoming) {
-              for (auto &op : phiI->incoming_values()) {
-                if (auto opI = dyn_cast<Instruction>(op)) {
-                  auto cloneOp = cloneMap[opI];
-                  pushMatchingInstruction = cloneOp;
-                  queueCall = entryBuilder.CreateCall(queuePushTemporary, ArrayRef<Value*>(cloneOp));
-                }
-              }
-            }
-            break;
-          }
+        /*
+         * Locate clone of outgoing instruction, create queue push call
+         */
+        for (auto edge : outgoingStageSCCs) {
+          auto outgoingI = edge->getNodePair().first->getNode();
+          auto valuePush = new OutgoingPipelineInfo();
+          valuePushQueues.push_back(valuePush);
+          valuePush->valueInstruction = cloneMap[outgoingI];
+          valuePush->pushQueueCall = entryBuilder.CreateCall(queuePushTemporary, ArrayRef<Value*>(valuePush->valueInstruction));
         }
 
         /*
-         * Locate instruction using incoming variable, create queue pop call and load, and point instruction to the load
+         * Locate clone of incoming instruction, create queue pop call and load, and point instruction to the load
          */
-        if (incoming) {
-          popStorage = entryBuilder.CreateAlloca(int32);
-          loadStorage = entryBuilder.CreateLoad(popStorage);
-          queueCall = entryBuilder.CreateCall(queuePopTemporary, ArrayRef<Value*>(popStorage));
+        for (auto edge : incomingStageSCCs) {
+          auto outgoingI = edge->getNodePair().first->getNode();
+          auto incomingI = edge->getNodePair().second->getNode();
+          auto valuePopIter = valuePopQueuesMap.find(outgoingI);
+          IncomingPipelineInfo *valuePop;
+          if (valuePopIter == valuePopQueuesMap.end()) {
+            valuePop = new IncomingPipelineInfo();
+            valuePopQueuesMap[outgoingI] = valuePop;
+            valuePop->popStorage = entryBuilder.CreateAlloca(int32);
+            valuePop->loadStorage = entryBuilder.CreateLoad(valuePop->popStorage);
+            valuePop->popQueueCall = entryBuilder.CreateCall(queuePopTemporary, ArrayRef<Value*>(valuePop->popStorage));
+          } else {
+            valuePop = valuePopIter->second;
+          }
+          auto userInstruction = cloneMap[incomingI];
+          valuePop->userInstructions.push_back(userInstruction);
 
-          auto nodePair = (*scc->begin_edges())->getNodePair();
-          auto outgoingI = nodePair.first->getNode();
-          auto incomingI = nodePair.second->getNode();
-          popMatchingInstruction = cloneMap[incomingI];
           /*
            * ASSUMPTION: Incoming instruction was a PHI.
            * FIX: Use edge to identify dependent operand, and replace with the load instruction
@@ -326,7 +345,7 @@ namespace llvm {
           for (auto useI = incomingI->op_begin(); useI != incomingI->op_end(); ++useI) {
             if (auto opI = dyn_cast<Instruction>(useI->get())) {
               if (opI == outgoingI) {
-                popMatchingInstruction->setOperand(useI->getOperandNo(), loadStorage);
+                userInstruction->setOperand(useI->getOperandNo(), valuePop->loadStorage);
               }
             }
           }
@@ -367,16 +386,24 @@ namespace llvm {
         entryBuilder.CreateBr(bbCloneMap[loop->getHeader()]);
 
         /*
-         * Insert queue push or queue pop + load
+         * Insert queue pops + loads at start of loop header
          */
-        if (incoming) {
-          queueCall->moveBefore(popMatchingInstruction);
-          loadStorage->moveBefore(popMatchingInstruction);
-        } else {
-          /*
-           * IMPROVEMENT: Find the successor of the producing instruction; add the queue push before this instruction
-           */
-          queueCall->moveBefore(pushMatchingInstruction->getParent()->getTerminator());
+        auto cloneHeader = bbCloneMap[loop->getHeader()];
+        auto beginInstructionIter = cloneHeader->begin();
+        for (auto valuePopIter : valuePopQueuesMap) {
+          auto valuePop = valuePopIter.second;
+          valuePop->popQueueCall->moveBefore(&*beginInstructionIter);
+          valuePop->loadStorage->moveBefore(&*beginInstructionIter);
+        }
+
+        /*
+         * Insert queue pushes right after instruction that computes the pushed variable
+         */
+        for (auto valuePush : valuePushQueues) {
+          auto valInst = valuePush->valueInstruction;
+          auto valueBBIter = valInst->getParent()->end();
+          while (&*valueBBIter != valInst) --valueBBIter;
+          valuePush->pushQueueCall->moveBefore(&*(++valueBBIter));
         }
 
         /*
@@ -439,7 +466,7 @@ namespace llvm {
           }
         }
 
-        //pipelineStage->print(errs() << "Function printout:\n"); errs() << "\n";
+        pipelineStage->print(errs() << "Function printout:\n"); errs() << "\n";
         return pipelineStage;
       }
 

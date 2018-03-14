@@ -134,8 +134,8 @@ void llvm::PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal) {
     bool fromInclusion = newPDG->isInternalNode(fromNode);
     bool toInclusion = newPDG->isInternalNode(toNode);
     if (!fromInclusion && !toInclusion) continue;
-    if (linkToExternal && (!fromInclusion || !toInclusion)) continue;
-
+    if (!linkToExternal && (!fromInclusion || !toInclusion)) continue;
+    
     /*
      * Create appropriate external nodes and associate edge to them
      */
