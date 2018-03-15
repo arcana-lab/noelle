@@ -34,6 +34,7 @@ namespace llvm {
 
       Function *queuePushTemporary, *queuePopTemporary, *stageHandler;
       FunctionType *stageType;
+      IntegerType *int32;
 
       DSWP() : ModulePass{ID} {}
 
@@ -43,12 +44,13 @@ namespace llvm {
 
       bool runOnModule (Module &M) override {
         errs() << "DSWP for " << M.getName() << "\n";
+        int32 = IntegerType::get(M.getContext(), 32);
         queuePushTemporary = M.getFunction("queuePush");
         queuePopTemporary = M.getFunction("queuePop");
         stageHandler = M.getFunction("parallelizeHandler");
-
         stageType = cast<FunctionType>(cast<PointerType>(stageHandler->arg_begin()->getType())->getElementType());
-        stageType->print(errs() << "sT:\t"); errs() << "\n";
+        //stageType->print(errs() << "sT:\t"); errs() << "\n";
+
         /*
          * Fetch the PDG.
          */
@@ -147,9 +149,9 @@ namespace llvm {
         /*
          * ASSUMPTION: One exiting block only; excluding exit block instructions
          */
-        for (auto &I : *(loop->getUniqueExitBlock())) {
+        /*for (auto &I : *(loop->getUniqueExitBlock())) {
           otherInst.push_back(&I);
-        }
+        }*/
         return make_pair(bodyInst, otherInst);
       }
 
@@ -161,7 +163,7 @@ namespace llvm {
         /*
          * Loop and SCC debug printouts
          */
-        printLoop(loop);
+        //printLoop(loop);
         //printSCCs(sccSubgraph);
 
         /*
@@ -210,15 +212,19 @@ namespace llvm {
          */
         std::vector<Instruction *> outSCCOutgoingDependencies, inSCCOutgoingDependencies;
         std::vector<Instruction *> noIncomingDependencies;
+        std::vector<Value *> outgoingDependents;
 
         for (auto nodeI : LDI->loopDG->externalNodePairs()) {
           auto externalNode = nodeI.second;
           for (auto sccNodeI : make_range(externalNode->begin_incoming_nodes(), externalNode->end_incoming_nodes())) {
-            if (outSCC->isInternal(sccNodeI->getNode())) {
-              outSCCOutgoingDependencies.push_back(externalNode->getNode());
+            auto internalInst = sccNodeI->getNode();
+            if (outSCC->isInternal(internalInst)) {
+              outSCCOutgoingDependencies.push_back(internalInst);
+              outgoingDependents.insert(outgoingDependents.begin(), static_cast<Value*>(externalNode->getNode()));
             }
-            if (inSCC->isInternal(sccNodeI->getNode())) {
-              inSCCOutgoingDependencies.push_back(externalNode->getNode());
+            if (inSCC->isInternal(internalInst)) {
+              inSCCOutgoingDependencies.push_back(internalInst);
+              outgoingDependents.push_back(static_cast<Value*>(externalNode->getNode()));
             }
           }
         }
@@ -233,8 +239,14 @@ namespace llvm {
         auto stage0Pipeline = createPipelineStageFromSCC(LDI, outSCC, noEdges, outSCCEdges, noIncomingDependencies, outSCCOutgoingDependencies);
         auto stage1Pipeline = createPipelineStageFromSCC(LDI, inSCC, inSCCEdges, noEdges, noIncomingDependencies, inSCCOutgoingDependencies);
         
-        std::vector<Value *> stages = { (Value*)stage0Pipeline, (Value*)stage1Pipeline };
-        auto pipelineBB = createParallelizedFunctionExecution(LDI, stages);
+        std::vector<Value *> stages = { static_cast<Value*>(stage0Pipeline), static_cast<Value*>(stage1Pipeline) };
+        auto pipelineBB = createParallelizedFunctionExecution(LDI, stages, outgoingDependents);
+
+        if (pipelineBB == nullptr) {
+          stage0Pipeline->eraseFromParent();
+          stage1Pipeline->eraseFromParent();
+          return false;
+        }
 
         /*
          * Link pipeline basic block to function, unlink loop
@@ -244,7 +256,6 @@ namespace llvm {
         auto loopSwitch = BasicBlock::Create(M->getContext(), "", LDI->func, preheader);
         IRBuilder<> loopSwitchBuilder(loopSwitch);
 
-        auto int32 = IntegerType::get(M->getContext(), 32);
         auto globalBool = new GlobalVariable(*M, int32, /*isConstant=*/ false, GlobalValue::ExternalLinkage, Constant::getNullValue(int32));
         auto const0 = ConstantInt::get(int32, APInt(32, 0, false));
         auto loadBool = loopSwitchBuilder.CreateLoad(globalBool);
@@ -267,8 +278,14 @@ namespace llvm {
           std::vector<Instruction *> outgoingDependencies) {
         auto M = LDI->func->getParent();
         auto loop = LDI->loop;
-        auto int32 = IntegerType::get(M->getContext(), 32);
+        
+        /*
+         * ASSUMPTION: Function signature is: void (QueueType *, int *)
+         */
         auto pipelineStage = static_cast<Function *>(M->getOrInsertFunction("", stageType));
+        auto argIter = pipelineStage->arg_begin();
+        auto queueArg = &*argIter;
+        auto resultArg = &*(++argIter);
 
         BasicBlock* entryBB = BasicBlock::Create(M->getContext(), "", pipelineStage);
         BasicBlock* exitBB = BasicBlock::Create(M->getContext(), "", pipelineStage);
@@ -300,11 +317,11 @@ namespace llvm {
         }
 
         /*
-         * ASSUMPTION: Variable computed is stored in a PHI node
-         * FIX: Look at outgoing edges of current SCC to identify variables to push to the queue
+         * ASSUMPTION: Single variable computed & used outside of loop
          */
         IRBuilder<> entryBuilder(entryBB);
         IRBuilder<> exitBuilder(exitBB);
+        StoreInst *storeOutgoingDependency = exitBuilder.CreateStore(cloneMap[outgoingDependencies[0]], resultArg);
         ReturnInst *retI = exitBuilder.CreateRetVoid();
 
         /*
@@ -315,7 +332,8 @@ namespace llvm {
           auto valuePush = new OutgoingPipelineInfo();
           valuePushQueues.push_back(valuePush);
           valuePush->valueInstruction = cloneMap[outgoingI];
-          valuePush->pushQueueCall = entryBuilder.CreateCall(queuePushTemporary, ArrayRef<Value*>(valuePush->valueInstruction));
+          auto queueCallArgs = ArrayRef<Value*>({ static_cast<Value *>(queueArg), static_cast<Value *>(valuePush->valueInstruction) });
+          valuePush->pushQueueCall = entryBuilder.CreateCall(queuePushTemporary, queueCallArgs);
         }
 
         /*
@@ -331,7 +349,8 @@ namespace llvm {
             valuePopQueuesMap[outgoingI] = valuePop;
             valuePop->popStorage = entryBuilder.CreateAlloca(int32);
             valuePop->loadStorage = entryBuilder.CreateLoad(valuePop->popStorage);
-            valuePop->popQueueCall = entryBuilder.CreateCall(queuePopTemporary, ArrayRef<Value*>(valuePop->popStorage));
+            auto queueCallArgs = ArrayRef<Value*>({ static_cast<Value *>(queueArg), static_cast<Value *>(valuePop->popStorage) });
+            valuePop->popQueueCall = entryBuilder.CreateCall(queuePopTemporary, queueCallArgs);
           } else {
             valuePop = valuePopIter->second;
           }
@@ -386,10 +405,14 @@ namespace llvm {
         entryBuilder.CreateBr(bbCloneMap[loop->getHeader()]);
 
         /*
-         * Insert queue pops + loads at start of loop header
+         * Insert queue pops + loads at start of loop header, AFTER all PHINodes
          */
         auto cloneHeader = bbCloneMap[loop->getHeader()];
         auto beginInstructionIter = cloneHeader->begin();
+        while (auto isPhi = dyn_cast<PHINode>(&*beginInstructionIter)) {
+          ++beginInstructionIter;
+        }
+
         for (auto valuePopIter : valuePopQueuesMap) {
           auto valuePop = valuePopIter.second;
           valuePop->popQueueCall->moveBefore(&*beginInstructionIter);
@@ -470,11 +493,26 @@ namespace llvm {
         return pipelineStage;
       }
 
-      BasicBlock *createParallelizedFunctionExecution(LoopDependenceInfo *LDI, std::vector<Value *> &stages) {
+      BasicBlock *createParallelizedFunctionExecution(LoopDependenceInfo *LDI, std::vector<Value *> &stages, std::vector<Value *> &dependents) {
         auto M = LDI->func->getParent();
-        BasicBlock* pipelineBB = BasicBlock::Create(M->getContext(), "parallel", LDI->func);
+        BasicBlock* pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->func);
         IRBuilder<> builder(pipelineBB);
-        builder.CreateCall(stageHandler, ArrayRef<Value*>(stages));
+
+        std::vector<Value *> dependentPntrs = { builder.CreateAlloca(int32), builder.CreateAlloca(int32) };
+        builder.CreateCall(stageHandler, ArrayRef<Value*>({ stages[0], dependentPntrs[0], stages[1], dependentPntrs[1] }));
+        std::vector<Value *> dependentLoads = { builder.CreateLoad(dependentPntrs[0]), builder.CreateLoad(dependentPntrs[1]) };
+        
+        /*
+         * ASSUMPTION: Dependents are PHI Nodes
+         */
+        for (auto i = 0; i < dependents.size(); ++i) {
+          if (auto depPHI = dyn_cast<PHINode>(dependents[i])) {
+            depPHI->addIncoming(dependentLoads[i], pipelineBB);
+            continue;
+          }
+          pipelineBB->eraseFromParent();
+          return nullptr;
+        }
 
         /*
          * ASSUMPTION: Only one unique exiting basic block from the loop

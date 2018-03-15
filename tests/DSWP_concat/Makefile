@@ -7,8 +7,12 @@ AA2=-globals-aa
 AA1=-basicaa
 AA=$(AA1) $(AA2) $(AA3) $(AA4) $(AA5) $(AA6)
 ANALYSES=$(AA) -scalar-evolution -loops -loop-simplify -lcssa -domtree
+THREADER=threadpooler
 
-all: test
+all: $(THREADER).bc test
+
+$(THREADER).bc: $(THREADER).c
+	clang++ -std=c++14 -emit-llvm -O3 -c $^ -o $@
 
 test: test_dswp.bc
 	clang++ -std=c++14 -pthreads -O0 $^ -o $@
@@ -21,6 +25,7 @@ test.bc: test.c
 	clang++ -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $^ -o $@
 	opt -mem2reg $@ -o $@
 	llvm-dis $@
+	llvm-link $@ $(THREADER).bc -o $@
 
 show_passes: test.bc
 	opt $(PASSES) $(ANALYSES) -DSWP $^ --debug-pass=Structure -disable-output
