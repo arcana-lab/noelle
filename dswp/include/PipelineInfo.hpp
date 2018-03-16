@@ -10,6 +10,20 @@ using namespace std;
 using namespace llvm;
 
 namespace llvm {
+
+	struct IncomingPipelineInfo {
+		CallInst * popQueueCall;
+        Instruction * popStorage;
+        LoadInst * loadStorage;
+
+        std::vector<Instruction *> userInstructions;
+	};
+
+	struct OutgoingPipelineInfo {
+		CallInst * pushQueueCall;
+
+        Instruction * valueInstruction;
+	};
 	
 	struct StageInfo {
 		SCC *scc;
@@ -24,19 +38,8 @@ namespace llvm {
 		 * Maps internal, external pair of instructions for incoming/outgoing loop dependencies 
 		 */
         unordered_map<Instruction *, Instruction *> incomingDependentMap, outgoingDependentMap;
-	};
 
-	struct IncomingPipelineInfo {
-		CallInst * popQueueCall;
-        Instruction * popStorage;
-        LoadInst * loadStorage;
-
-        std::vector<Instruction *> userInstructions;
-	};
-
-	struct OutgoingPipelineInfo {
-		CallInst * pushQueueCall;
-
-        Instruction * valueInstruction;
+        std::vector<OutgoingPipelineInfo *> valuePushQueues;
+        std::map<Instruction *, IncomingPipelineInfo *> valuePopQueuesMap;
 	};
 }

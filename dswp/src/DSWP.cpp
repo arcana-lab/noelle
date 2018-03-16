@@ -126,28 +126,22 @@ namespace llvm {
 
       std::pair<std::vector<Instruction *>, std::vector<Instruction *>> divideLoopInstructions(Loop *loop)
       {
-        std::vector<Instruction *> bodyInst, otherInst;
-
-        /*
-         * ASSUMPTION: Canonical induction variable
-         */
         auto phiIV = loop->getCanonicalInductionVariable();
         assert(phiIV != nullptr);
 
-        bool nonBodyBB = false;
+        std::vector<Instruction *> bodyInst, otherInst;
         for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi)
         {
           BasicBlock *bb = *bbi;
-          nonBodyBB = loop->isLoopLatch(bb);
+          auto isLatchBB = loop->isLoopLatch(bb);
 
           /*
-           * Categorize all instructions in latch or exit basic blocks as 'other' instructions
            * Categorize branch, conditional, and induction variable instructions as 'other' instructions
            */
           for (auto ii = bb->begin(); ii != bb->end(); ++ii)
           {
             Instruction *i = &*ii;
-            if (nonBodyBB || TerminatorInst::classof(i) || CmpInst::classof(i) || phiIV == i)
+            if (isLatchBB || TerminatorInst::classof(i) || CmpInst::classof(i) || phiIV == i)
             {
               otherInst.push_back(i);
               continue;
@@ -178,21 +172,36 @@ namespace llvm {
 
       bool applyDSWP (LoopDependenceInfo *LDI)
       {
-        auto M = LDI->func->getParent();
+        StageInfo outSCCStage, inSCCStage;
+        std::vector<StageInfo *> stages = { &outSCCStage, &inSCCStage };
+        
+        if (!locateTwoSCCStageLoop(LDI, stages)) return false;
+
+        createPipelineStageFromSCC(LDI, stages[0]);
+        createPipelineStageFromSCC(LDI, stages[1]);
+
+        auto pipelineBB = createParallelizedFunctionExecution(LDI, stages);
+        if (pipelineBB == nullptr) {
+          stages[0]->sccStage->eraseFromParent();
+          stages[1]->sccStage->eraseFromParent();
+          return false;
+        }
+
+        linkParallelizedLoop(LDI, pipelineBB);
+        LDI->func->print(errs() << "Final function:\n"); errs() << "\n";
+
+        return true;
+      }
+
+      bool locateTwoSCCStageLoop(LoopDependenceInfo *LDI, std::vector<StageInfo *> &stages)
+      {
         auto loop = LDI->loop;
         auto sccSubgraph = LDI->sccBodyDG;
-        
-        /*
-         * Loop and SCC debug printouts
-         */
-        // printLoop(loop);
-        // printSCCs(sccSubgraph);
 
         /*
          * ASSUMPTION 3: Loop trip count is known.
          */
-        auto tripCount = LDI->SE.getSmallConstantTripCount(loop);
-        if (tripCount == 0) return false;
+        if (LDI->SE.getSmallConstantTripCount(loop) == 0) return false;
 
         /*
          * ASSUMPTION 4: There are only 2 SCC within the loop's body
@@ -203,13 +212,11 @@ namespace llvm {
          * ASSUMPTION 5: You only have one variable across the two SCCs
          */
         if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) != 1) return false;
-        DGEdge<SCC> *sccEdge = *(sccSubgraph->begin_edges());
 
-        StageInfo outSCCStage, inSCCStage;
-        std::vector<StageInfo *> stages = { &outSCCStage, &inSCCStage };
+        DGEdge<SCC> *sccEdge = *(sccSubgraph->begin_edges());
         auto sccPair = sccEdge->getNodePair();
-        auto outSCC = outSCCStage.scc = sccPair.first->getNode();
-        auto inSCC = inSCCStage.scc = sccPair.second->getNode();
+        auto outSCC = stages[0]->scc = sccPair.first->getNode();
+        auto inSCC = stages[1]->scc = sccPair.second->getNode();
 
         /*
          * ASSUMPTION 6: You only have one dependency for the variable across the two SCCs 
@@ -224,67 +231,22 @@ namespace llvm {
          */
         if (instEdge->isMemoryDependence()) return false;
 
-        outSCCStage.outgoingSCCEdges = {instEdge};
-        inSCCStage.incomingSCCEdges = {instEdge};
-
+        stages[0]->outgoingSCCEdges = {instEdge};
+        stages[1]->incomingSCCEdges = {instEdge};
         collectLoopExternalDependents(LDI, stages);
 
         /* 
          * ASSUMPTION 8: You only have one dependency per SCC from inside to outside the loop
          */
-        if (outSCCStage.outgoingDependentMap.size() != 1 || inSCCStage.outgoingDependentMap.size() != 1) return false;
+        if (stages[0]->outgoingDependentMap.size() != 1 || stages[1]->outgoingDependentMap.size() != 1) return false;
 
-        for (auto stage : stages)
-        {
-          createPipelineStageFromSCC(LDI, stage);
-        }
-
-        auto pipelineBB = createParallelizedFunctionExecution(LDI, stages);
-        if (pipelineBB == nullptr) {
-          for (auto stage : stages) stage->sccStage->eraseFromParent();
-          return false;
-        }
-
-        /*
-         * Link pipeline basic block to function, unlink loop
-         */
-        auto preheader = loop->getLoopPreheader();
-        auto loopSwitch = BasicBlock::Create(M->getContext(), "", LDI->func, preheader);
-        IRBuilder<> loopSwitchBuilder(loopSwitch);
-
-        auto globalBool = new GlobalVariable(*M, int32, /*isConstant=*/ false, GlobalValue::ExternalLinkage, Constant::getNullValue(int32));
-        auto const0 = ConstantInt::get(int32, APInt(32, 0, false));
-        auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(loopSwitchBuilder.CreateLoad(globalBool), const0);
-        loopSwitchBuilder.CreateCondBr(compareInstruction, pipelineBB, preheader);
-        
-        LDI->func->print(errs() << "Final function:\n"); errs() << "\n";
         return true;
       }
 
-      void createPipelineStageFromSCC(LoopDependenceInfo *LDI, StageInfo *stageInfo)
+      void cloneLoopInstForStage(LoopDependenceInfo *LDI, StageInfo *stageInfo, unordered_map<Instruction *, Instruction *> &cloneMap)
       {
-        auto M = LDI->func->getParent();
-        auto loop = LDI->loop;
-        
-        /*
-         * ASSUMPTION: Function signature is: void (QueueType *, int *)
-         */
-        auto pipelineStage = static_cast<Function *>(M->getOrInsertFunction("", stageType));
-        auto argIter = pipelineStage->arg_begin();
-        auto queueArg = &*argIter;
-        auto resultArg = &*(++argIter);
-
-        BasicBlock* entryBB = BasicBlock::Create(M->getContext(), "", pipelineStage);
-        BasicBlock* exitBB = BasicBlock::Create(M->getContext(), "", pipelineStage);
-
-        std::vector<OutgoingPipelineInfo *> valuePushQueues;
-        std::map<Instruction *, IncomingPipelineInfo *> valuePopQueuesMap;
-
-        /*
-         * Clone loop instructions in given SCC or non-loop-body 
-         */
-        unordered_map<Instruction *, Instruction *> cloneMap;
-        for (auto sccI = stageInfo->scc->begin_internal_node_map(); sccI != stageInfo->scc->end_internal_node_map(); ++sccI) {
+        for (auto sccI = stageInfo->scc->begin_internal_node_map(); sccI != stageInfo->scc->end_internal_node_map(); ++sccI)
+        {
           auto I = sccI->first;
           auto newI = I->clone();
           cloneMap[I] = newI;
@@ -293,102 +255,96 @@ namespace llvm {
         /*
          * ASSUMPTION: All instructions outside of SCCs are related to the loop's induction variable that controls the loop
          */
-        for (auto &I : LDI->otherInstOfLoop) {
+        for (auto &I : LDI->otherInstOfLoop)
+        {
           auto newI = I->clone();
           cloneMap[I] = newI;
         }
+      }
 
-        /*
-         * ASSUMPTION: Single variable computed & used outside of loop
-         */
-        IRBuilder<> entryBuilder(entryBB);
-        IRBuilder<> exitBuilder(exitBB);
-        auto outgoingDependency = cloneMap[stageInfo->outgoingDependentMap.begin()->first];
-        StoreInst *storeOutgoingDependency = exitBuilder.CreateStore(outgoingDependency, resultArg);
-        ReturnInst *retI = exitBuilder.CreateRetVoid();
+      void createPipelineQueueing(StageInfo *stageInfo, Value *queueArg, unordered_map<Instruction *, Instruction *> &cloneMap, IRBuilder<> entryBuilder)
+      {
 
         /*
          * Locate clone of outgoing instruction, create queue push call
          */
-        for (auto edge : stageInfo->outgoingSCCEdges) {
+        for (auto edge : stageInfo->outgoingSCCEdges)
+        {
           auto outgoingI = edge->getNodePair().first->getNode();
           auto valuePush = new OutgoingPipelineInfo();
-          valuePushQueues.push_back(valuePush);
+          stageInfo->valuePushQueues.push_back(valuePush);
           valuePush->valueInstruction = cloneMap[outgoingI];
-          auto queueCallArgs = ArrayRef<Value*>({ static_cast<Value *>(queueArg), static_cast<Value *>(valuePush->valueInstruction) });
+          auto queueCallArgs = ArrayRef<Value*>({ queueArg, static_cast<Value *>(valuePush->valueInstruction) });
           valuePush->pushQueueCall = entryBuilder.CreateCall(queuePushTemporary, queueCallArgs);
         }
 
         /*
          * Locate clone of incoming instruction, create queue pop call and load, and point instruction to the load
          */
-        for (auto edge : stageInfo->incomingSCCEdges) {
+        for (auto edge : stageInfo->incomingSCCEdges)
+        {
           auto outgoingI = edge->getNodePair().first->getNode();
           auto incomingI = edge->getNodePair().second->getNode();
-          auto valuePopIter = valuePopQueuesMap.find(outgoingI);
+
+          auto valuePopIter = stageInfo->valuePopQueuesMap.find(outgoingI);
           IncomingPipelineInfo *valuePop;
-          if (valuePopIter == valuePopQueuesMap.end()) {
+          if (valuePopIter == stageInfo->valuePopQueuesMap.end())
+          {
             valuePop = new IncomingPipelineInfo();
-            valuePopQueuesMap[outgoingI] = valuePop;
+            stageInfo->valuePopQueuesMap[outgoingI] = valuePop;
             valuePop->popStorage = entryBuilder.CreateAlloca(int32);
             valuePop->loadStorage = entryBuilder.CreateLoad(valuePop->popStorage);
-            auto queueCallArgs = ArrayRef<Value*>({ static_cast<Value *>(queueArg), static_cast<Value *>(valuePop->popStorage) });
+            auto queueCallArgs = ArrayRef<Value*>({ queueArg, static_cast<Value *>(valuePop->popStorage) });
             valuePop->popQueueCall = entryBuilder.CreateCall(queuePopTemporary, queueCallArgs);
-          } else {
+          }
+          else
+          {
             valuePop = valuePopIter->second;
           }
+
           auto userInstruction = cloneMap[incomingI];
           valuePop->userInstructions.push_back(userInstruction);
 
           /*
-           * ASSUMPTION: Incoming instruction was a PHI.
-           * FIX: Use edge to identify dependent operand, and replace with the load instruction
+           * FIX: Use edge to identify dependent operand
            */
-          for (auto useI = incomingI->op_begin(); useI != incomingI->op_end(); ++useI) {
-            if (auto opI = dyn_cast<Instruction>(useI->get())) {
-              if (opI == outgoingI) {
-                userInstruction->setOperand(useI->getOperandNo(), valuePop->loadStorage);
-              }
+          for (auto useI = incomingI->op_begin(); useI != incomingI->op_end(); ++useI)
+          {
+            if (auto opI = dyn_cast<Instruction>(useI->get()))
+            {
+              if (opI != outgoingI) continue;
+              userInstruction->setOperand(useI->getOperandNo(), valuePop->loadStorage);
             }
           }
         }
+      }
 
-        /*
-         * Clone loop basic blocks that are used by given SCC / non-loop-body basic blocks
-         */
-        unordered_map<BasicBlock*, BasicBlock*> bbCloneMap;
-
-        /*
-         * Map loop preheader to the entry block of the pipeline stage
-         */
-        bbCloneMap[loop->getLoopPreheader()] = entryBB;
-
-        for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi) {
+      void createAndPopulateLoopBBForStage(LoopDependenceInfo *LDI, StageInfo *stageInfo,
+        unordered_map<Instruction *, Instruction *> &cloneMap,
+        unordered_map<BasicBlock*, BasicBlock*> &bbCloneMap)
+      {
+        auto M = LDI->func->getParent();
+        for (auto bbi = LDI->loop->block_begin(); bbi != LDI->loop->block_end(); ++bbi) {
           auto bb = *bbi;
           /*
            * FIX: Create basic blocks for induction variables and the SCC in question instead of all the loop's basic blocks
            */
-          auto cloneBB = BasicBlock::Create(M->getContext(), bb->getName(), pipelineStage);
+          auto cloneBB = BasicBlock::Create(M->getContext(), bb->getName(), stageInfo->sccStage);
           IRBuilder<> builder(cloneBB);
 
           for (auto &I : *bb) {
             auto cloneIter = cloneMap.find(&I);
-            if (cloneIter == cloneMap.end()) {
-              continue;
-            }
+            if (cloneIter == cloneMap.end()) continue;
             cloneMap[&I] = builder.Insert(cloneIter->second);
           }
 
           bbCloneMap[bb] = cloneBB;
         }
+      }
 
+      void mapClonedOperands(unordered_map<Instruction *, Instruction *> cloneMap, unordered_map<BasicBlock*, BasicBlock*> bbCloneMap, BasicBlock *exitBB)
+      {
         /*
-         * Branch from entry of function to the header of the loop 
-         */
-        entryBuilder.CreateBr(bbCloneMap[loop->getHeader()]);
-
-        /*
-         * Replace the rest of the clones' operands with the cloned instructions' versions of the operand
          * IMPROVEMENT: Ignore special cases upfront. If a clone of a general case is not found, abort with a corresponding error 
          */
         for (auto ii = cloneMap.begin(); ii != cloneMap.end(); ++ii) {
@@ -446,19 +402,23 @@ namespace llvm {
             // Add cases such as constants where no clone needs to exist. Abort with an error if no such type is found
           }
         }
+      }
 
+      void insertPipelineQueueing(StageInfo *stageInfo, unordered_map<Instruction *, Instruction *> &cloneMap,
+        unordered_map<BasicBlock*, BasicBlock*> bbCloneMap,
+        BasicBlock *headerBB, BasicBlock *exitBB)
+      {
         /*
          * Insert queue pops + loads at start of loop body
          */
-        auto cloneHeader = bbCloneMap[loop->getHeader()];
         Instruction *popBeforeInst;
-        for (auto succToHeader : make_range(succ_begin(cloneHeader), succ_end(cloneHeader))) {
+        for (auto succToHeader : make_range(succ_begin(headerBB), succ_end(headerBB))) {
           if (exitBB != succToHeader) {
             popBeforeInst = &*succToHeader->begin();
           }
         }
 
-        for (auto valuePopIter : valuePopQueuesMap) {
+        for (auto valuePopIter : stageInfo->valuePopQueuesMap) {
           auto valuePop = valuePopIter.second;
           valuePop->popQueueCall->moveBefore(popBeforeInst);
           valuePop->loadStorage->moveBefore(popBeforeInst);
@@ -467,19 +427,69 @@ namespace llvm {
         /*
          * Insert queue pushes right after instruction that computes the pushed variable
          */
-        for (auto valuePush : valuePushQueues) {
+        for (auto valuePush : stageInfo->valuePushQueues) {
           auto valInst = valuePush->valueInstruction;
           auto valueBBIter = valInst->getParent()->end();
           while (&*valueBBIter != valInst) --valueBBIter;
           valuePush->pushQueueCall->moveBefore(&*(++valueBBIter));
         }
+      }
 
-        //auto terminator = exitBB->getTerminator();
-        //auto reachedIterCall = exitBuilder.CreateCall(printReachedIter, ArrayRef<Value*>({ static_cast<Value *>(outgoingDependency) }));
-        //reachedIterCall->moveBefore(terminator);
+      void createPipelineStageFromSCC(LoopDependenceInfo *LDI, StageInfo *stageInfo)
+      {
+        auto M = LDI->func->getParent();
+        auto loop = LDI->loop;
+        
+        /*
+         * ASSUMPTION: Function signature is: void (QueueType *, int *)
+         */
+        auto pipelineStage = static_cast<Function *>(M->getOrInsertFunction("", stageType));
+        stageInfo->sccStage = pipelineStage;
+        auto argIter = pipelineStage->arg_begin();
+        auto queueArg = &*argIter;
+        auto resultArg = &*(++argIter);
+
+        BasicBlock* entryBB = BasicBlock::Create(M->getContext(), "", pipelineStage);
+        BasicBlock* exitBB = BasicBlock::Create(M->getContext(), "", pipelineStage);
+
+        /*
+         * Clone loop instructions in given SCC or non-loop-body 
+         */
+        unordered_map<Instruction *, Instruction *> cloneMap;
+        cloneLoopInstForStage(LDI, stageInfo, cloneMap);
+
+        /*
+         * ASSUMPTION: Single variable computed & used outside of loop
+         */
+        IRBuilder<> entryBuilder(entryBB);
+        IRBuilder<> exitBuilder(exitBB);
+        auto outgoingDependency = cloneMap[stageInfo->outgoingDependentMap.begin()->first];
+        // exitBuilder.CreateCall(printReachedIter, ArrayRef<Value*>({ static_cast<Value *>(outgoingDependency) }));
+        exitBuilder.CreateStore(outgoingDependency, resultArg);
+        exitBuilder.CreateRetVoid();
+
+        createPipelineQueueing(stageInfo, static_cast<Value *>(queueArg), cloneMap, entryBuilder);
+
+        /*
+         * Clone loop basic blocks that are used by given SCC / non-loop-body basic blocks
+         */
+        unordered_map<BasicBlock*, BasicBlock*> bbCloneMap;
+        bbCloneMap[loop->getLoopPreheader()] = entryBB;
+        createAndPopulateLoopBBForStage(LDI, stageInfo, cloneMap, bbCloneMap);
+        
+        /*
+         * Map and branch loop preheader to entry block
+         */
+        auto headerBB = bbCloneMap[loop->getHeader()];
+        entryBuilder.CreateBr(headerBB);
+
+        /*
+         * Map clones' operands to cloned versions of those operands
+         */
+        mapClonedOperands(cloneMap, bbCloneMap, exitBB);
+        insertPipelineQueueing(stageInfo, cloneMap, bbCloneMap, headerBB, exitBB);
 
         pipelineStage->print(errs() << "Function printout:\n"); errs() << "\n";
-        stageInfo->sccStage = pipelineStage;
       }
 
       BasicBlock *createParallelizedFunctionExecution(LoopDependenceInfo *LDI, std::vector<StageInfo *> stages)
@@ -531,15 +541,17 @@ namespace llvm {
         return pipelineBB;
       }
 
-      /*
-      Function * createPipelineFromSCCDG(LoopDependenceInfo *LDI, std::vector<Function *> &stages) {
-        //TODO: Return a function that carries out the pipeline
-      }
+      void linkParallelizedLoop(LoopDependenceInfo *LDI, BasicBlock *pipelineBB) {
+        auto M = LDI->func->getParent();
+        auto preheader = LDI->loop->getLoopPreheader();
+        auto loopSwitch = BasicBlock::Create(M->getContext(), "", LDI->func, preheader);
+        IRBuilder<> loopSwitchBuilder(loopSwitch);
 
-      void linkParallelizedLoop(LoopDependenceInfo *LDI, Function *parallelizedLoop) {
-        //TODO: Alter loop header to call parallelized loop and redirect terminator inst to exit bb
+        auto globalBool = new GlobalVariable(*M, int32, /*isConstant=*/ false, GlobalValue::ExternalLinkage, Constant::getNullValue(int32));
+        auto const0 = ConstantInt::get(int32, APInt(32, 0, false));
+        auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(loopSwitchBuilder.CreateLoad(globalBool), const0);
+        loopSwitchBuilder.CreateCondBr(compareInstruction, pipelineBB, preheader);
       }
-      */
 
       void printLoop(Loop *loop) {
         errs() << "Applying DSWP on loop\n";
