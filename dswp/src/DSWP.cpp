@@ -174,19 +174,27 @@ namespace llvm {
       {
         StageInfo outSCCStage, inSCCStage;
         std::vector<StageInfo *> stages = { &outSCCStage, &inSCCStage };
-        
-        if (!locateTwoSCCStageLoop(LDI, stages)) return false;
 
+        /*
+         * Create the pipeline stages.
+         */
+        if (!locateTwoSCCStageLoop(LDI, stages)) return false;
         createPipelineStageFromSCC(LDI, stages[0]);
         createPipelineStageFromSCC(LDI, stages[1]);
 
-        auto pipelineBB = createParallelizedFunctionExecution(LDI, stages);
+        /*
+         * Create the switcher that will decide whether or not we will execute the parallelized loop.
+         */
+        auto pipelineBB = createTheLoopSwitcher(LDI, stages);
         if (pipelineBB == nullptr) {
           stages[0]->sccStage->eraseFromParent();
           stages[1]->sccStage->eraseFromParent();
           return false;
         }
 
+        /*
+         * Link the parallelized loop within the original function that includes the sequential loop.
+         */
         linkParallelizedLoop(LDI, pipelineBB);
         LDI->func->print(errs() << "Final function:\n"); errs() << "\n";
 
@@ -494,7 +502,7 @@ namespace llvm {
         pipelineStage->print(errs() << "Function printout:\n"); errs() << "\n";
       }
 
-      BasicBlock *createParallelizedFunctionExecution(LoopDependenceInfo *LDI, std::vector<StageInfo *> stages)
+      BasicBlock * createTheLoopSwitcher (LoopDependenceInfo *LDI, std::vector<StageInfo *> stages)
       {
         auto M = LDI->func->getParent();
         auto pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->func);
