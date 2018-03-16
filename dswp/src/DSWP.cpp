@@ -442,6 +442,8 @@ namespace llvm {
         
         /*
          * ASSUMPTION: Function signature is: void (QueueType *, int *)
+         * SIMONE: You need to be sure that a function (or something else) doesn't exist with that name.
+         * SIMONE: you cannot use "static_cast" within LLVM. You need to use LLVM-specific casting: cast, dyn_cast, isa
          */
         auto pipelineStage = static_cast<Function *>(M->getOrInsertFunction("", stageType));
         stageInfo->sccStage = pipelineStage;
