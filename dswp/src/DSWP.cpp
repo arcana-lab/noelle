@@ -20,6 +20,8 @@
 #include "../include/LoopDependenceInfo.hpp"
 #include "../include/PipelineInfo.hpp"
 #include "PDG.hpp"
+#include "SCC.hpp"
+#include "SCCDG.hpp"
 #include "PDGAnalysis.hpp"
 
 #include <unordered_map>
@@ -38,12 +40,18 @@ namespace llvm {
 
       DSWP() : ModulePass{ID} {}
 
-      bool doInitialization (Module &M) override {
+      bool doInitialization (Module &M) override
+      {
         return false;
       }
 
-      bool runOnModule (Module &M) override {
+      bool runOnModule (Module &M) override
+      {
         errs() << "DSWP for " << M.getName() << "\n";
+
+        /*
+         * Helpers for pipeline stage generation
+         */
         int32 = IntegerType::get(M.getContext(), 32);
         queuePushTemporary = M.getFunction("queuePush");
         queuePopTemporary = M.getFunction("queuePop");
@@ -51,7 +59,6 @@ namespace llvm {
         printReached = M.getFunction("printReached");
         printReachedIter = M.getFunction("printReachedIter");
         stageType = cast<FunctionType>(cast<PointerType>(stageHandler->arg_begin()->getType())->getElementType());
-        //stageType->print(errs() << "sT:\t"); errs() << "\n";
 
         /*
          * Fetch the PDG.
@@ -72,11 +79,11 @@ namespace llvm {
         auto modified = applyDSWP(loopDI);
 
         delete loopDI;
-
         return modified;
       }
 
-      void getAnalysisUsage(AnalysisUsage &AU) const override {
+      void getAnalysisUsage(AnalysisUsage &AU) const override
+      {
         AU.addRequired<PDGAnalysis>();
         AU.addRequired<AssumptionCacheTracker>();
         AU.addRequired<DominatorTreeWrapperPass>();
@@ -86,8 +93,8 @@ namespace llvm {
       }
 
     private:
-      LoopDependenceInfo *fetchLoopToParallelize (Module &M, PDG *graph){
-
+      LoopDependenceInfo *fetchLoopToParallelize (Module &M, PDG *graph)
+      {
         /* 
          * ASSUMPTION 1: One function in the entire program.
          * Fetch the entry point of the program.
@@ -97,7 +104,6 @@ namespace llvm {
         /*
          * Fetch the loops.
          */
-        
         auto &LI = getAnalysis<LoopInfoWrapperPass>(*entryFunction).getLoopInfo();
         auto &DT = getAnalysis<DominatorTreeWrapperPass>(*entryFunction).getDomTree();
         auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*entryFunction).getSE();
@@ -108,8 +114,8 @@ namespace llvm {
          * ASSUMPTION 2: One loop in the entire function 
          * Choose the loop to parallelize.
          */
-        
-        for (auto loopIter : LI){
+        for (auto loopIter : LI)
+        {
           auto loop = &*loopIter;
           auto instPair = divideLoopInstructions(loop);
           return new LoopDependenceInfo(entryFunction, LI, DT, SE, loop, funcPDG, instPair.first, instPair.second);
@@ -118,8 +124,8 @@ namespace llvm {
         return nullptr;
       }
 
-      std::pair<std::vector<Instruction *>, std::vector<Instruction *>>
-      divideLoopInstructions(Loop *loop) {
+      std::pair<std::vector<Instruction *>, std::vector<Instruction *>> divideLoopInstructions(Loop *loop)
+      {
         std::vector<Instruction *> bodyInst, otherInst;
 
         /*
@@ -127,10 +133,10 @@ namespace llvm {
          */
         auto phiIV = loop->getCanonicalInductionVariable();
         assert(phiIV != nullptr);
-        //phiIV->print(errs() << "IV:\t"); errs() << "\n";
 
         bool nonBodyBB = false;
-        for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi) {
+        for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi)
+        {
           BasicBlock *bb = *bbi;
           nonBodyBB = loop->isLoopLatch(bb);
 
@@ -138,20 +144,40 @@ namespace llvm {
            * Categorize all instructions in latch or exit basic blocks as 'other' instructions
            * Categorize branch, conditional, and induction variable instructions as 'other' instructions
            */
-          for (auto ii = bb->begin(); ii != bb->end(); ++ii) {
+          for (auto ii = bb->begin(); ii != bb->end(); ++ii)
+          {
             Instruction *i = &*ii;
-            if (nonBodyBB || TerminatorInst::classof(i) || CmpInst::classof(i) || phiIV == i) {
+            if (nonBodyBB || TerminatorInst::classof(i) || CmpInst::classof(i) || phiIV == i)
+            {
               otherInst.push_back(i);
-            } else {
-              bodyInst.push_back(i);
+              continue;
             }
+            bodyInst.push_back(i);
           }
         }
 
         return make_pair(bodyInst, otherInst);
       }
 
-      bool applyDSWP (LoopDependenceInfo *LDI){
+      void collectLoopExternalDependents(LoopDependenceInfo *LDI, std::vector<StageInfo *> &stages)
+      {
+        for (auto nodeI : LDI->loopDG->externalNodePairs())
+        {
+          auto externalNode = nodeI.second;
+          for (auto sccNodeI : make_range(externalNode->begin_incoming_nodes(), externalNode->end_incoming_nodes()))
+          {
+            auto internalInst = sccNodeI->getNode();
+            for (auto stage : stages)
+            {
+              if (!stage->scc->isInternal(internalInst)) continue;
+              stage->outgoingDependentMap[internalInst] = externalNode->getNode();
+            }
+          }
+        }
+      }
+
+      bool applyDSWP (LoopDependenceInfo *LDI)
+      {
         auto M = LDI->func->getParent();
         auto loop = LDI->loop;
         auto sccSubgraph = LDI->sccBodyDG;
@@ -159,119 +185,84 @@ namespace llvm {
         /*
          * Loop and SCC debug printouts
          */
-        //printLoop(loop);
-        //printSCCs(sccSubgraph);
+        // printLoop(loop);
+        // printSCCs(sccSubgraph);
 
         /*
          * ASSUMPTION 3: Loop trip count is known.
-         * ASSUMPTION 4: Loop trip count is 10000.
          */
         auto tripCount = LDI->SE.getSmallConstantTripCount(loop);
-        //errs() << "Trip count:\t" << tripCount << "\n";
         if (tripCount == 0) return false;
 
         /*
-         * ASSUMPTION 5: There are only 2 SCC within the loop's body
+         * ASSUMPTION 4: There are only 2 SCC within the loop's body
          */
-        // errs() << "Num nodes: " << sccSubgraph->numInternalNodes() << "\n";
         if (sccSubgraph->numInternalNodes() != 2) return false;
 
         /*
-         * ASSUMPTION 6: You only have one variable across the two SCCs
+         * ASSUMPTION 5: You only have one variable across the two SCCs
          */
-        // errs() << "Num edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
         if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) != 1) return false;
         DGEdge<SCC> *sccEdge = *(sccSubgraph->begin_edges());
 
+        StageInfo outSCCStage, inSCCStage;
+        std::vector<StageInfo *> stages = { &outSCCStage, &inSCCStage };
         auto sccPair = sccEdge->getNodePair();
-        auto outSCC = sccPair.first->getNode();
-        auto inSCC = sccPair.second->getNode();
+        auto outSCC = outSCCStage.scc = sccPair.first->getNode();
+        auto inSCC = inSCCStage.scc = sccPair.second->getNode();
 
+        /*
+         * ASSUMPTION 6: You only have one dependency for the variable across the two SCCs 
+         */
         if (outSCC->numExternalNodes() != 1 || inSCC->numExternalNodes() != 1) return false;
 
         DGEdge<Instruction> *instEdge = *(outSCC->begin_external_node_map()->second->begin_incoming_edges());
         assert(instEdge == *(inSCC->begin_external_node_map()->second->begin_outgoing_edges()));
 
-        std::vector<DGEdge<Instruction> *> outSCCEdges = {instEdge};
-        std::vector<DGEdge<Instruction> *> inSCCEdges = {instEdge};
-        std::vector<DGEdge<Instruction> *> noEdges;
-        
-
         /*
          * ASSUMPTION 7: There aren't memory data dependences
          */
-        // errs() << "Mem dep: " << edge->isMemoryDependence() << "\n";
         if (instEdge->isMemoryDependence()) return false;
+
+        outSCCStage.outgoingSCCEdges = {instEdge};
+        inSCCStage.incomingSCCEdges = {instEdge};
+
+        collectLoopExternalDependents(LDI, stages);
 
         /* 
          * ASSUMPTION 8: You only have one dependency per SCC from inside to outside the loop
          */
-        std::vector<Instruction *> outSCCOutgoingDependencies, inSCCOutgoingDependencies;
-        std::vector<Instruction *> noIncomingDependencies;
-        std::vector<Value *> outgoingDependents;
+        if (outSCCStage.outgoingDependentMap.size() != 1 || inSCCStage.outgoingDependentMap.size() != 1) return false;
 
-        for (auto nodeI : LDI->loopDG->externalNodePairs()) {
-          auto externalNode = nodeI.second;
-          for (auto sccNodeI : make_range(externalNode->begin_incoming_nodes(), externalNode->end_incoming_nodes())) {
-            auto internalInst = sccNodeI->getNode();
-            if (outSCC->isInternal(internalInst)) {
-              outSCCOutgoingDependencies.push_back(internalInst);
-              outgoingDependents.insert(outgoingDependents.begin(), static_cast<Value*>(externalNode->getNode()));
-            }
-            if (inSCC->isInternal(internalInst)) {
-              inSCCOutgoingDependencies.push_back(internalInst);
-              outgoingDependents.push_back(static_cast<Value*>(externalNode->getNode()));
-            }
-          }
+        for (auto stage : stages)
+        {
+          createPipelineStageFromSCC(LDI, stage);
         }
 
-        if (outSCCOutgoingDependencies.size() != 1 || inSCCOutgoingDependencies.size() != 1) return false;
-
-        /*
-         * ASSUMPTION 9: Buffer variable is of type integer 32
-         * TODO: Identify scc edge variable, add AttributeList to function creation for the variable
-         */
-
-        auto stage0Pipeline = createPipelineStageFromSCC(LDI, outSCC, noEdges, outSCCEdges, noIncomingDependencies, outSCCOutgoingDependencies);
-        auto stage1Pipeline = createPipelineStageFromSCC(LDI, inSCC, inSCCEdges, noEdges, noIncomingDependencies, inSCCOutgoingDependencies);
-        
-        std::vector<Value *> stages = { static_cast<Value*>(stage0Pipeline), static_cast<Value*>(stage1Pipeline) };
-        auto pipelineBB = createParallelizedFunctionExecution(LDI, stages, outgoingDependents);
-
+        auto pipelineBB = createParallelizedFunctionExecution(LDI, stages);
         if (pipelineBB == nullptr) {
-          stage0Pipeline->eraseFromParent();
-          stage1Pipeline->eraseFromParent();
+          for (auto stage : stages) stage->sccStage->eraseFromParent();
           return false;
         }
 
         /*
          * Link pipeline basic block to function, unlink loop
          */
-
         auto preheader = loop->getLoopPreheader();
         auto loopSwitch = BasicBlock::Create(M->getContext(), "", LDI->func, preheader);
         IRBuilder<> loopSwitchBuilder(loopSwitch);
 
         auto globalBool = new GlobalVariable(*M, int32, /*isConstant=*/ false, GlobalValue::ExternalLinkage, Constant::getNullValue(int32));
         auto const0 = ConstantInt::get(int32, APInt(32, 0, false));
-        auto loadBool = loopSwitchBuilder.CreateLoad(globalBool);
-        auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(loadBool, const0);
-        auto conditionalBranch = loopSwitchBuilder.CreateCondBr(compareInstruction, pipelineBB, preheader);
+        auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(loopSwitchBuilder.CreateLoad(globalBool), const0);
+        loopSwitchBuilder.CreateCondBr(compareInstruction, pipelineBB, preheader);
         
-        //globalBool->print(errs() << "gbool:\t"); errs() << "\n";
-        //const0->print(errs() << "const0:\t"); errs() << "\n";
-        //compareInstruction->print(errs() << "cmp:\t"); errs() << "\n";
-
-        //formLCSSA(*loop, LDI->DT, &LDI->LI, &LDI->SE);
         LDI->func->print(errs() << "Final function:\n"); errs() << "\n";
         return true;
       }
 
-      Function *createPipelineStageFromSCC(LoopDependenceInfo *LDI, SCC *scc, 
-          std::vector<DGEdge<Instruction> *> incomingStageSCCs, 
-          std::vector<DGEdge<Instruction> *> outgoingStageSCCs,
-          std::vector<Instruction *> incomingDependencies,
-          std::vector<Instruction *> outgoingDependencies) {
+      void createPipelineStageFromSCC(LoopDependenceInfo *LDI, StageInfo *stageInfo)
+      {
         auto M = LDI->func->getParent();
         auto loop = LDI->loop;
         
@@ -290,15 +281,10 @@ namespace llvm {
         std::map<Instruction *, IncomingPipelineInfo *> valuePopQueuesMap;
 
         /*
-         * ASSUMPTION: Only one instruction references the incoming SCC edge's variable from the previous stage
-         * ASSUMPTION: Only one instruction computes the outgoing SCC edge's variable used in the next stage 
-         */
-
-        /*
          * Clone loop instructions in given SCC or non-loop-body 
          */
         unordered_map<Instruction *, Instruction *> cloneMap;
-        for (auto sccI = scc->begin_internal_node_map(); sccI != scc->end_internal_node_map(); ++sccI) {
+        for (auto sccI = stageInfo->scc->begin_internal_node_map(); sccI != stageInfo->scc->end_internal_node_map(); ++sccI) {
           auto I = sccI->first;
           auto newI = I->clone();
           cloneMap[I] = newI;
@@ -317,14 +303,14 @@ namespace llvm {
          */
         IRBuilder<> entryBuilder(entryBB);
         IRBuilder<> exitBuilder(exitBB);
-        StoreInst *storeOutgoingDependency = exitBuilder.CreateStore(cloneMap[outgoingDependencies[0]], resultArg);
-        exitBuilder.CreateCall(printReached);
+        auto outgoingDependency = cloneMap[stageInfo->outgoingDependentMap.begin()->first];
+        StoreInst *storeOutgoingDependency = exitBuilder.CreateStore(outgoingDependency, resultArg);
         ReturnInst *retI = exitBuilder.CreateRetVoid();
 
         /*
          * Locate clone of outgoing instruction, create queue push call
          */
-        for (auto edge : outgoingStageSCCs) {
+        for (auto edge : stageInfo->outgoingSCCEdges) {
           auto outgoingI = edge->getNodePair().first->getNode();
           auto valuePush = new OutgoingPipelineInfo();
           valuePushQueues.push_back(valuePush);
@@ -336,7 +322,7 @@ namespace llvm {
         /*
          * Locate clone of incoming instruction, create queue pop call and load, and point instruction to the load
          */
-        for (auto edge : incomingStageSCCs) {
+        for (auto edge : stageInfo->incomingSCCEdges) {
           auto outgoingI = edge->getNodePair().first->getNode();
           auto incomingI = edge->getNodePair().second->getNode();
           auto valuePopIter = valuePopQueuesMap.find(outgoingI);
@@ -488,29 +474,50 @@ namespace llvm {
           valuePush->pushQueueCall->moveBefore(&*(++valueBBIter));
         }
 
-        auto terminator = exitBB->getTerminator();
-        auto reachedIterCall = exitBuilder.CreateCall(printReachedIter, ArrayRef<Value*>({ static_cast<Value *>(cloneMap[outgoingDependencies[0]]) }));
-        reachedIterCall->moveBefore(terminator);
+        //auto terminator = exitBB->getTerminator();
+        //auto reachedIterCall = exitBuilder.CreateCall(printReachedIter, ArrayRef<Value*>({ static_cast<Value *>(outgoingDependency) }));
+        //reachedIterCall->moveBefore(terminator);
 
         pipelineStage->print(errs() << "Function printout:\n"); errs() << "\n";
-        return pipelineStage;
+        stageInfo->sccStage = pipelineStage;
       }
 
-      BasicBlock *createParallelizedFunctionExecution(LoopDependenceInfo *LDI, std::vector<Value *> &stages, std::vector<Value *> &dependents) {
+      BasicBlock *createParallelizedFunctionExecution(LoopDependenceInfo *LDI, std::vector<StageInfo *> stages)
+      {
         auto M = LDI->func->getParent();
-        BasicBlock* pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->func);
+        auto pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->func);
         IRBuilder<> builder(pipelineBB);
 
-        std::vector<Value *> dependentPntrs = { builder.CreateAlloca(int32), builder.CreateAlloca(int32) };
-        builder.CreateCall(stageHandler, ArrayRef<Value*>({ stages[0], dependentPntrs[0], stages[1], dependentPntrs[1] }));
-        std::vector<Value *> dependentLoads = { builder.CreateLoad(dependentPntrs[0]), builder.CreateLoad(dependentPntrs[1]) };
+        std::vector<Value *> dependentPntrs, dependentLoads, handlerArgs;
+        
+        for (auto i = 0; i < stages.size(); ++i)
+        {
+          dependentPntrs.push_back(builder.CreateAlloca(int32));
+        }
+
+        auto ptrIndex = 0;
+        for (auto stage : stages)
+        {
+          handlerArgs.push_back(static_cast<Value *>(stage->sccStage));
+          handlerArgs.push_back(static_cast<Value *>(dependentPntrs[ptrIndex++]));
+        } 
+
+        builder.CreateCall(stageHandler, ArrayRef<Value*>(handlerArgs));
+        
+        for (auto i = 0; i < stages.size(); ++i)
+        {
+          dependentLoads.push_back(builder.CreateLoad(dependentPntrs[i]));
+        }
         
         /*
-         * ASSUMPTION: Dependents are PHI Nodes
+         * ASSUMPTION: Dependents are PHI Nodes, one dependent per stage
          */
-        for (auto i = 0; i < dependents.size(); ++i) {
-          if (auto depPHI = dyn_cast<PHINode>(dependents[i])) {
-            depPHI->addIncoming(dependentLoads[i], pipelineBB);
+        auto loadIndex = 0;
+        for (auto stage : stages)
+        {
+          if (auto depPHI = dyn_cast<PHINode>(stage->outgoingDependentMap.begin()->second))
+          {
+            depPHI->addIncoming(dependentLoads[loadIndex++], pipelineBB);
             continue;
           }
           pipelineBB->eraseFromParent();

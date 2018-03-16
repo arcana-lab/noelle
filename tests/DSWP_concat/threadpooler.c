@@ -688,13 +688,11 @@ extern "C" void printReachedIter(int iter){
 
 extern "C" void queuePush(ThreadSafeQueue<int> *queue, int val){
   queue->push(val);
-  printf("Pushed value:\t%d\n", val);
 }
 
 extern "C" void queuePop(ThreadSafeQueue<int> *queue, int &val){
   while (!queue->waitPop(val))
-    printf("Failed to pop value\n");
-  printf("Popped value:\t%d\n", val);
+    printf("Spurious pop\n");
 }
 
 extern "C" int parallelizeHandler(void (*f1)(ThreadSafeQueue<int> *, int *), int &res1, void (*f2)(ThreadSafeQueue<int> *, int *), int &res2){
