@@ -32,7 +32,7 @@ namespace llvm {
     public:
       static char ID;
 
-      Function *queuePushTemporary, *queuePopTemporary, *stageHandler;
+      Function *queuePushTemporary, *queuePopTemporary, *stageHandler, *printReached, *printReachedIter;
       FunctionType *stageType;
       IntegerType *int32;
 
@@ -48,6 +48,8 @@ namespace llvm {
         queuePushTemporary = M.getFunction("queuePush");
         queuePopTemporary = M.getFunction("queuePop");
         stageHandler = M.getFunction("parallelizeHandler");
+        printReached = M.getFunction("printReached");
+        printReachedIter = M.getFunction("printReachedIter");
         stageType = cast<FunctionType>(cast<PointerType>(stageHandler->arg_begin()->getType())->getElementType());
         //stageType->print(errs() << "sT:\t"); errs() << "\n";
 
@@ -146,12 +148,6 @@ namespace llvm {
           }
         }
 
-        /*
-         * ASSUMPTION: One exiting block only; excluding exit block instructions
-         */
-        /*for (auto &I : *(loop->getUniqueExitBlock())) {
-          otherInst.push_back(&I);
-        }*/
         return make_pair(bodyInst, otherInst);
       }
 
@@ -322,6 +318,7 @@ namespace llvm {
         IRBuilder<> entryBuilder(entryBB);
         IRBuilder<> exitBuilder(exitBB);
         StoreInst *storeOutgoingDependency = exitBuilder.CreateStore(cloneMap[outgoingDependencies[0]], resultArg);
+        exitBuilder.CreateCall(printReached);
         ReturnInst *retI = exitBuilder.CreateRetVoid();
 
         /*
@@ -405,31 +402,6 @@ namespace llvm {
         entryBuilder.CreateBr(bbCloneMap[loop->getHeader()]);
 
         /*
-         * Insert queue pops + loads at start of loop header, AFTER all PHINodes
-         */
-        auto cloneHeader = bbCloneMap[loop->getHeader()];
-        auto beginInstructionIter = cloneHeader->begin();
-        while (auto isPhi = dyn_cast<PHINode>(&*beginInstructionIter)) {
-          ++beginInstructionIter;
-        }
-
-        for (auto valuePopIter : valuePopQueuesMap) {
-          auto valuePop = valuePopIter.second;
-          valuePop->popQueueCall->moveBefore(&*beginInstructionIter);
-          valuePop->loadStorage->moveBefore(&*beginInstructionIter);
-        }
-
-        /*
-         * Insert queue pushes right after instruction that computes the pushed variable
-         */
-        for (auto valuePush : valuePushQueues) {
-          auto valInst = valuePush->valueInstruction;
-          auto valueBBIter = valInst->getParent()->end();
-          while (&*valueBBIter != valInst) --valueBBIter;
-          valuePush->pushQueueCall->moveBefore(&*(++valueBBIter));
-        }
-
-        /*
          * Replace the rest of the clones' operands with the cloned instructions' versions of the operand
          * IMPROVEMENT: Ignore special cases upfront. If a clone of a general case is not found, abort with a corresponding error 
          */
@@ -488,6 +460,37 @@ namespace llvm {
             // Add cases such as constants where no clone needs to exist. Abort with an error if no such type is found
           }
         }
+
+        /*
+         * Insert queue pops + loads at start of loop body
+         */
+        auto cloneHeader = bbCloneMap[loop->getHeader()];
+        Instruction *popBeforeInst;
+        for (auto succToHeader : make_range(succ_begin(cloneHeader), succ_end(cloneHeader))) {
+          if (exitBB != succToHeader) {
+            popBeforeInst = &*succToHeader->begin();
+          }
+        }
+
+        for (auto valuePopIter : valuePopQueuesMap) {
+          auto valuePop = valuePopIter.second;
+          valuePop->popQueueCall->moveBefore(popBeforeInst);
+          valuePop->loadStorage->moveBefore(popBeforeInst);
+        }
+
+        /*
+         * Insert queue pushes right after instruction that computes the pushed variable
+         */
+        for (auto valuePush : valuePushQueues) {
+          auto valInst = valuePush->valueInstruction;
+          auto valueBBIter = valInst->getParent()->end();
+          while (&*valueBBIter != valInst) --valueBBIter;
+          valuePush->pushQueueCall->moveBefore(&*(++valueBBIter));
+        }
+
+        auto terminator = exitBB->getTerminator();
+        auto reachedIterCall = exitBuilder.CreateCall(printReachedIter, ArrayRef<Value*>({ static_cast<Value *>(cloneMap[outgoingDependencies[0]]) }));
+        reachedIterCall->moveBefore(terminator);
 
         pipelineStage->print(errs() << "Function printout:\n"); errs() << "\n";
         return pipelineStage;

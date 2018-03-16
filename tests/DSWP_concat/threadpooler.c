@@ -678,6 +678,13 @@ private:
   ThreadSafeQueue<std::function<void ()>> codeToExecuteByTheDeconstructor;
 };
 
+extern "C" void printReached(){
+  printf("Reached\n");
+}
+
+extern "C" void printReachedIter(int iter){
+  printf("Iter:\t%d\n", iter);
+}
 
 extern "C" void queuePush(ThreadSafeQueue<int> *queue, int val){
   queue->push(val);
@@ -685,11 +692,12 @@ extern "C" void queuePush(ThreadSafeQueue<int> *queue, int val){
 }
 
 extern "C" void queuePop(ThreadSafeQueue<int> *queue, int &val){
-  queue->waitPop(val);
+  while (!queue->waitPop(val))
+    printf("Failed to pop value\n");
   printf("Popped value:\t%d\n", val);
 }
 
-extern "C" int parallelizeHandler(void (*f1)(ThreadSafeQueue<int> *, int &), int &res1, void (*f2)(ThreadSafeQueue<int> *, int &), int &res2){
+extern "C" int parallelizeHandler(void (*f1)(ThreadSafeQueue<int> *, int *), int &res1, void (*f2)(ThreadSafeQueue<int> *, int *), int &res2){
   /*
    * Create a thread pool with 2 threads
    */
@@ -702,11 +710,13 @@ extern "C" int parallelizeHandler(void (*f1)(ThreadSafeQueue<int> *, int &), int
   ThreadSafeQueue<int> *queueP = &queue; 
   int s, t; 
   printf("Submitting stages:\n");
-  pool.submit(f1, queueP, s).get();
-  pool.submit(f2, queueP, t).get();
+  auto sFuture = pool.submit(f1, queueP, &s);
+  auto tFuture = pool.submit(f2, queueP, &t);
   printf("Submitted stages:\n");
 
-  printf("%d, %d\n", s, t);
+  sFuture.get();
+  tFuture.get();
+
   res1 = s;
   res2 = t;
   return 0;
