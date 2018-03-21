@@ -125,22 +125,22 @@ PDG *llvm::PDG::createInstListSubgraph(std::vector<Instruction *> &instList) {
 void llvm::PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal) {
   for (auto *oldEdge : allEdges) {
     auto nodePair = oldEdge->getNodePair();
-    auto fromNode = nodePair.first;
-    auto toNode = nodePair.second;
+    auto fromT = nodePair.first->getT();
+    auto toT = nodePair.second->getT();
 
     /*
      * Check whether edge belongs to nodes within function F
      */
-    bool fromInclusion = newPDG->isInternalNode(fromNode);
-    bool toInclusion = newPDG->isInternalNode(toNode);
+    bool fromInclusion = newPDG->isInternal(fromT);
+    bool toInclusion = newPDG->isInternal(toT);
     if (!fromInclusion && !toInclusion) continue;
     if (!linkToExternal && (!fromInclusion || !toInclusion)) continue;
     
     /*
      * Create appropriate external nodes and associate edge to them
      */
-    auto newFromNode = newPDG->fetchOrCreateNodeOf(fromNode->getNode(), fromInclusion);
-    auto newToNode = newPDG->fetchOrCreateNodeOf(toNode->getNode(), toInclusion);
+    auto newFromNode = newPDG->fetchOrCreateNodeOf(fromT, fromInclusion);
+    auto newToNode = newPDG->fetchOrCreateNodeOf(toT, toInclusion);
 
     /*
      * Use edge copy constructor to match old edge properties (mem/var, must/may, RAW/WAW)

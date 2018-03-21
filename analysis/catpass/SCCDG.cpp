@@ -24,38 +24,30 @@ llvm::SCCDG::~SCCDG() {
 SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   auto sccDG = new SCCDG();
 
-  auto nodeSCCMap = unordered_map<DGNode<Instruction> *, SCC *>();
+  for (auto pdgI = scc_begin(pdg); pdgI != scc_end(pdg); ++pdgI)
+  {
+    std::vector<DGNode<Instruction> *> nodes;
+    for (auto node : *pdgI) nodes.push_back(node);
+
+    errs() << "SCC of size: " << nodes.size() << "\n";
+    auto scc = new SCC(nodes);
+    sccDG->createNodeFrom(scc, /*inclusion=*/ true);
+  }
+
+  pdg->print(errs() << "PDG working with:\n") << "\n";
 
   /*
-  errs() << "All nodes in calculation:\n";
-  for (auto nodeI = pdg->begin_nodes(); nodeI != pdg->end_nodes(); nodeI++) {
-    (*nodeI)->getNode()->print(errs());
-    errs() << "\n";
-  }
-  errs() << "All edges in calculation:\n";
-  for (auto edgeI = pdg->begin_edges(); edgeI != pdg->end_edges(); edgeI++) {
-    (*edgeI)->print(errs());
-    errs() << "\n";
-  }
-  */
-
-  scc_iterator<PDG *> pdgI = scc_begin(pdg);
-  while (!pdgI.isAtEnd()) {
-    const std::vector<DGNode<Instruction> *> nodesInSCC = *pdgI;
-    auto scc = new SCC(nodesInSCC);
-    sccDG->createNodeFrom(scc, /*inclusion=*/ true);
-
-    /*
-     * Maintain association of each internal node to its SCC
-     */
-    //errs() << "SCC:\n";
-    for (auto nodeI = scc->begin_internal_node_map(); nodeI != scc->end_internal_node_map(); nodeI++) {
-      //nodeI->first->print(errs()) << "\n";
-      nodeSCCMap[nodeI->second] = scc;
+   * Maintain association of each internal node to its SCC
+   */
+  auto nodeSCCMap = unordered_map<DGNode<Instruction> *, SCC *>();
+  for (auto sccNode : make_range(sccDG->begin_nodes(), sccDG->end_nodes()))
+  {
+    auto scc = sccNode->getT();
+    for (auto nodePair : scc->internalNodePairs())
+    {
+      nodeSCCMap[nodePair.second] = scc;
     }
-    ++pdgI;
   }
-  //errs() << "\n";
 
   /*
    * Helper function to find or create an SCC from a node
@@ -86,15 +78,46 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
      */
     if ((sccDG->isExternal(fromSCC) && sccDG->isExternal(toSCC)) || fromSCC == toSCC) continue;
 
-    //fromSCC->print(errs() << "Making edge from:\n") << "\n";
-    //toSCC->print(errs() << "to:\n") << "\n";
-
     /*
      * Create edge between SCCs with same properties as the edge between instructions within the SCCs
      */
     auto sccEdge = sccDG->createEdgeFromTo(fromSCC, toSCC);
     sccEdge->setMemMustRaw(edge->isMemoryDependence(), edge->isMustDependence(), edge->isRAWDependence());
+    sccEdge->addSubEdge(edge);
   }
 
   return sccDG;
+}
+
+SCCDG *llvm::SCCDG::extractSCCIntoGraph(DGNode<SCC> *sccNode)
+{
+  SCCDG *sccDG = new SCCDG();
+  std::vector<DGNode<SCC> *> sccNodes = { sccNode };
+  extractNodesFromSelfInto(*cast<DG<SCC>>(sccDG), sccNodes, sccNode);
+  return sccDG;
+}
+
+bool llvm::SCCDG::isPipeline()
+{
+  /*
+   * Traverse from arbitrary SCC to the top, if one exists
+   */
+  auto topOfPipeline = *begin_nodes();
+  while (topOfPipeline->numIncomingEdges() != 0)
+  {
+    if (topOfPipeline->numIncomingEdges() > 1) return false;
+    topOfPipeline = *topOfPipeline->begin_incoming_nodes();
+  }
+
+  /*
+   * Traverse from top SCC to the bottom, if one exists
+   */
+  unsigned visitedNodes = 1;
+  while (topOfPipeline->numOutgoingEdges() != 0)
+  {
+    if (topOfPipeline->numOutgoingEdges() > 1) return false;
+    topOfPipeline = *topOfPipeline->begin_outgoing_nodes();
+    ++visitedNodes;
+  }
+  return visitedNodes == numNodes();
 }

@@ -28,6 +28,8 @@ namespace llvm {
       ~SCCDG() ;
 
       static SCCDG *createSCCGraphFrom(PDG *);
+      SCCDG *extractSCCIntoGraph(DGNode<SCC> *);
+      bool isPipeline();
   };
 }
 

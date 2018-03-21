@@ -7,14 +7,15 @@ llvm::SCC::SCC(std::vector<DGNode<Instruction> *> nodes) {
 	/*
 	 * Arbitrarily choose entry node from all nodes
 	 */
-	allNodes = nodes;
+	allNodes.assign(nodes.begin(), nodes.end());
 	entryNode = allNodes[0];
 
 	/*
 	 * Register nodes in node map
 	 */
-	for (auto *node : allNodes) {
-		internalNodeMap[node->getNode()] = node;
+	for (auto node : allNodes)
+	{
+		internalNodeMap[node->getT()] = node;
 	}
 
 	/*
@@ -22,10 +23,10 @@ llvm::SCC::SCC(std::vector<DGNode<Instruction> *> nodes) {
 	 */
 	std::vector<DGNode<Instruction> *> newNodes;
 	auto addNode = [this](DGNode<Instruction> *node, std::vector<DGNode<Instruction> *> &newNodes) -> bool {
-		bool newExternalNode = !isInternalNode(node) && !isExternalNode(node);
+		bool newExternalNode = !isInGraph(node->getT());
 		if (newExternalNode) {
 			newNodes.push_back(node);
-			externalNodeMap[node->getNode()] = node;
+			externalNodeMap[node->getT()] = node;
 			return true;
 		}
 		return false;
@@ -62,14 +63,14 @@ llvm::SCC::~SCC() {}
 
 raw_ostream &llvm::SCC::print(raw_ostream &stream) {
 	stream << "\tInternal nodes:\n";
-	for (auto nodePair : internalNodePairs()) {
-		nodePair.first->print(stream << "\t");
-		stream << "\n";
+	for (auto nodePair : internalNodePairs())
+	{
+		nodePair.second->print(stream << "\t") << "\n";
 	}
 	stream << "\tExternal nodes:\n";
-	for (auto nodePair : externalNodePairs()) {
-		nodePair.first->print(stream << "\t");
-		stream << "\n";
+	for (auto nodePair : externalNodePairs())
+	{
+		nodePair.second->print(stream << "\t") << "\n";
 	}
 	return stream;
 }

@@ -19,4 +19,10 @@ namespace llvm {
 
 		raw_ostream &print(raw_ostream &stream) ;
 	};
+
+	template<> class DGEdge<SCC> : public DGEdgeBase<SCC, Instruction> {
+	public:
+		DGEdge(DGNode<SCC> *src, DGNode<SCC> *dst) : DGEdgeBase<SCC, Instruction>(src, dst) {}
+		DGEdge(const DGEdge<SCC> &oldEdge) : DGEdgeBase<SCC, Instruction>(oldEdge) {}
+	};
 }

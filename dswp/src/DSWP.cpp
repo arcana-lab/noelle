@@ -126,14 +126,10 @@ namespace llvm {
 
       std::pair<std::vector<Instruction *>, std::vector<Instruction *>> divideLoopInstructions(Loop *loop)
       {
-        auto phiIV = loop->getCanonicalInductionVariable();
-        assert(phiIV != nullptr);
-
         std::vector<Instruction *> bodyInst, otherInst;
         for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi)
         {
           BasicBlock *bb = *bbi;
-          auto isLatchBB = loop->isLoopLatch(bb);
 
           /*
            * Categorize branch, conditional, and induction variable instructions as 'other' instructions
@@ -141,7 +137,7 @@ namespace llvm {
           for (auto ii = bb->begin(); ii != bb->end(); ++ii)
           {
             Instruction *i = &*ii;
-            if (isLatchBB || TerminatorInst::classof(i) || CmpInst::classof(i) || phiIV == i)
+            if (TerminatorInst::classof(i) || CmpInst::classof(i))
             {
               otherInst.push_back(i);
               continue;
@@ -157,17 +153,55 @@ namespace llvm {
       {
         for (auto nodeI : LDI->loopDG->externalNodePairs())
         {
-          auto externalNode = nodeI.second;
-          for (auto sccNodeI : make_range(externalNode->begin_incoming_nodes(), externalNode->end_incoming_nodes()))
+          auto node = nodeI.second;
+
+          /*
+           * Check if loop-external instruction has incoming/outgoing nodes within one of the stages
+           */
+          for (auto incomingNode : make_range(node->begin_incoming_nodes(), node->end_incoming_nodes()))
           {
-            auto internalInst = sccNodeI->getNode();
+            auto incomingInst = incomingNode->getT();
             for (auto stage : stages)
             {
-              if (!stage->scc->isInternal(internalInst)) continue;
-              stage->outgoingDependentMap[internalInst] = externalNode->getNode();
+              if (!stage->scc->isInternal(incomingInst)) continue;
+              stage->outgoingDependentMap[incomingInst] = node->getT();
+            }
+          }
+          for (auto outgoingNode : make_range(node->begin_outgoing_nodes(), node->end_outgoing_nodes()))
+          {
+            auto outgoingInst = outgoingNode->getT();
+            for (auto stage : stages)
+            {
+              if (!stage->scc->isInternal(outgoingInst)) continue;
+              stage->incomingDependentMap[outgoingInst] = node->getT();
             }
           }
         }
+      }
+
+      SCCDG *extractLoopIterationSCCDG(LoopDependenceInfo *LDI)
+      {
+        auto loop = LDI->loop;
+        auto sccSubgraph = LDI->sccBodyDG;
+
+        Instruction *iterationInst = nullptr;
+        auto headerBr = cast<BranchInst>(loop->getHeader()->getTerminator());
+        for (auto &op : cast<Instruction>(headerBr->getCondition())->operands())
+        {
+          if (auto opI = dyn_cast<Instruction>(op))
+          {
+            iterationInst = opI;
+            break;
+          }
+        }
+        assert(iterationInst != nullptr);
+
+        for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
+        {
+          if (sccNode->getT()->isInGraph(iterationInst)) return sccSubgraph->extractSCCIntoGraph(sccNode);
+        }
+        assert(1 == 2);
+        return nullptr;
       }
 
       bool applyDSWP (LoopDependenceInfo *LDI)
@@ -175,20 +209,28 @@ namespace llvm {
         StageInfo outSCCStage, inSCCStage;
         std::vector<StageInfo *> stages = { &outSCCStage, &inSCCStage };
 
+        printSCCs(LDI->sccBodyDG);
+
+        /*
+         * Extract loop SCC directly concerned with loop iteration
+         */
+        LDI->loopIterationSCCDG = extractLoopIterationSCCDG(LDI);
+
+        printSCCs(LDI->loopIterationSCCDG);
+
         /*
          * Create the pipeline stages.
          */
         if (!locateTwoSCCStageLoop(LDI, stages)) return false;
-        createPipelineStageFromSCC(LDI, stages[0]);
-        createPipelineStageFromSCC(LDI, stages[1]);
+        for (auto stage : stages) createPipelineStageFromSCC(LDI, stage);
 
         /*
          * Create the switcher that will decide whether or not we will execute the parallelized loop.
          */
         auto pipelineBB = createTheLoopSwitcher(LDI, stages);
-        if (pipelineBB == nullptr) {
-          stages[0]->sccStage->eraseFromParent();
-          stages[1]->sccStage->eraseFromParent();
+        if (pipelineBB == nullptr)
+        {
+          for (auto stage : stages) stage->sccStage->eraseFromParent();
           return false;
         }
 
@@ -212,9 +254,9 @@ namespace llvm {
         if (LDI->SE.getSmallConstantTripCount(loop) == 0) return false;
 
         /*
-         * ASSUMPTION 4: There are only 2 SCC within the loop's body
+         * ASSUMPTION 4: The pipeline is 2 SCCs with one variable across them
          */
-        if (sccSubgraph->numInternalNodes() != 2) return false;
+        if (!sccSubgraph->isPipeline() || sccSubgraph->numInternalNodes() != 2) return false;
 
         /*
          * ASSUMPTION 5: You only have one variable across the two SCCs
@@ -223,16 +265,17 @@ namespace llvm {
 
         DGEdge<SCC> *sccEdge = *(sccSubgraph->begin_edges());
         auto sccPair = sccEdge->getNodePair();
-        auto outSCC = stages[0]->scc = sccPair.first->getNode();
-        auto inSCC = stages[1]->scc = sccPair.second->getNode();
+        auto outSCC = stages[0]->scc = sccPair.first->getT();
+        auto inSCC = stages[1]->scc = sccPair.second->getT();
 
         /*
          * ASSUMPTION 6: You only have one dependency for the variable across the two SCCs 
          */
         if (outSCC->numExternalNodes() != 1 || inSCC->numExternalNodes() != 1) return false;
 
-        DGEdge<Instruction> *instEdge = *(outSCC->begin_external_node_map()->second->begin_incoming_edges());
-        assert(instEdge == *(inSCC->begin_external_node_map()->second->begin_outgoing_edges()));
+        DGEdge<Instruction> *instEdge = *sccEdge->begin_sub_edges();
+        //DGEdge<Instruction> *instEdge = *(outSCC->begin_external_node_map()->second->begin_incoming_edges());
+        //assert(instEdge == *(inSCC->begin_external_node_map()->second->begin_outgoing_edges()));
 
         /*
          * ASSUMPTION 7: There aren't memory data dependences
@@ -256,17 +299,22 @@ namespace llvm {
         for (auto sccI = stageInfo->scc->begin_internal_node_map(); sccI != stageInfo->scc->end_internal_node_map(); ++sccI)
         {
           auto I = sccI->first;
-          auto newI = I->clone();
-          cloneMap[I] = newI;
+          cloneMap[I] = I->clone();
+        }
+
+        auto loopIterationSCC = LDI->loopIterationSCCDG->getEntryNode()->getT();
+        for (auto node : make_range(loopIterationSCC->begin_nodes(), loopIterationSCC->end_nodes()))
+        {
+          auto I = node->getT();
+          cloneMap[I] = I->clone();
         }
 
         /*
-         * ASSUMPTION: All instructions outside of SCCs are related to the loop's induction variable that controls the loop
+         * IMPROVEMENT: Do not copy every compare and branch present in the original loop
          */
         for (auto &I : LDI->otherInstOfLoop)
         {
-          auto newI = I->clone();
-          cloneMap[I] = newI;
+          cloneMap[I] = I->clone();
         }
       }
 
@@ -278,7 +326,7 @@ namespace llvm {
          */
         for (auto edge : stageInfo->outgoingSCCEdges)
         {
-          auto outgoingI = edge->getNodePair().first->getNode();
+          auto outgoingI = edge->getNodePair().first->getT();
           auto valuePush = new OutgoingPipelineInfo();
           stageInfo->valuePushQueues.push_back(valuePush);
           valuePush->valueInstruction = cloneMap[outgoingI];
@@ -291,8 +339,8 @@ namespace llvm {
          */
         for (auto edge : stageInfo->incomingSCCEdges)
         {
-          auto outgoingI = edge->getNodePair().first->getNode();
-          auto incomingI = edge->getNodePair().second->getNode();
+          auto outgoingI = edge->getNodePair().first->getT();
+          auto incomingI = edge->getNodePair().second->getT();
 
           auto valuePopIter = stageInfo->valuePopQueuesMap.find(outgoingI);
           IncomingPipelineInfo *valuePop;
@@ -588,6 +636,10 @@ namespace llvm {
       void printSCCs(SCCDG *sccSubgraph) {
         errs() << "\nInternal SCCs\n";
         for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
+          sccI->first->print(errs());
+        }
+        errs() << "\nExternal SCCs\n";
+        for (auto sccI = sccSubgraph->begin_external_node_map(); sccI != sccSubgraph->end_external_node_map(); ++sccI) {
           sccI->first->print(errs());
         }
         errs() << "Number of SCCs: " << sccSubgraph->numInternalNodes() << "\n";
