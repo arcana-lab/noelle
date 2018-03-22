@@ -3,6 +3,8 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
 #include <unordered_map>
+#include <queue>
+#include <set>
 
 using namespace std;
 using namespace llvm;
@@ -78,7 +80,8 @@ namespace llvm {
       /*
        * Merging/Extracting Graphs
        */
-      void extractNodesFromSelfInto(DG<T> &emptyDG, std::vector<DGNode<T> *> nodesToExtract, DGNode<T> *entry);
+      std::vector<std::vector<DGNode<T> *> *> collectConnectedComponents();
+      void extractNodesFromSelfInto(DG<T> &emptyDG, std::vector<DGNode<T> *> nodesToExtract, DGNode<T> *entry, bool removeFromSelf);
 
       raw_ostream & print(raw_ostream &stream);
 
@@ -234,7 +237,44 @@ namespace llvm {
   }
 
   template <class T>
-  void DG<T>::extractNodesFromSelfInto(DG<T> &emptyDG, std::vector<DGNode<T> *> nodesToExtract, DGNode<T> *entry)
+  std::vector<std::vector<DGNode<T> *> *> DG<T>::collectConnectedComponents()
+  {
+    std::vector<std::vector<DGNode<T> *> *> connectedComponents;
+    std::set<DGNode<T> *> visitedNodes;
+
+    for (auto node : allNodes)
+    {
+      if (visitedNodes.find(node) != visitedNodes.end()) continue;
+
+      /*
+       * Perform BFS to find the connected component this node belongs to
+       */
+      auto component = new std::vector<DGNode<T> *>();
+      std::queue<DGNode<T> *> connectedNodes;
+      connectedNodes.push(node);
+      visitedNodes.insert(node);
+      while (!connectedNodes.empty())
+      {
+        auto currentNode = connectedNodes.front();
+        connectedNodes.pop();
+        component->push_back(currentNode);
+
+        for (auto outgoingNode : make_range(currentNode->begin_outgoing_nodes(), currentNode->end_outgoing_nodes()))
+        {
+          if (visitedNodes.find(outgoingNode) != visitedNodes.end()) continue;
+          visitedNodes.insert(outgoingNode);
+          connectedNodes.push(outgoingNode);
+        }
+      }
+
+      connectedComponents.push_back(component);
+    }
+
+    return connectedComponents;
+  }
+
+  template <class T>
+  void DG<T>::extractNodesFromSelfInto(DG<T> &emptyDG, std::vector<DGNode<T> *> nodesToExtract, DGNode<T> *entry, bool removeFromSelf)
   {
     emptyDG.entryNode = entry;
     for (auto node : nodesToExtract)
@@ -248,14 +288,19 @@ namespace llvm {
       emptyDGMap[theT] = node;
       emptyDG.allNodes.push_back(node);
 
-      map.erase(theT);
-      allNodes.erase(std::find(allNodes.begin(), allNodes.end(), node));
+      if (removeFromSelf)
+      {
+        map.erase(theT);
+        allNodes.erase(std::find(allNodes.begin(), allNodes.end(), node));
+      }
 
       auto checkToExtractNode = [&](DGNode<T> *node) -> void {
         if (emptyDG.isInGraph(node->getT())) return;
         emptyDG.allNodes.push_back(node);
 
+        if (!removeFromSelf) return;
         bool canRemoveFromSelfDG = true;
+
         for (auto outgoingNode : make_range(node->begin_outgoing_nodes(), node->end_outgoing_nodes()))
         {
           canRemoveFromSelfDG &= !isInGraph(outgoingNode->getT());

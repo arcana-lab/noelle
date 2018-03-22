@@ -24,18 +24,24 @@ llvm::SCCDG::~SCCDG() {
 SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   auto sccDG = new SCCDG();
 
-  for (auto pdgI = scc_begin(pdg); pdgI != scc_end(pdg); ++pdgI)
-  {
-    std::vector<DGNode<Instruction> *> nodes;
-    for (auto node : *pdgI) nodes.push_back(node);
+  // pdg->print(errs() << "PDG working with:\n") << "\n";
+  auto components = pdg->collectConnectedComponents();
 
-    errs() << "SCC of size: " << nodes.size() << "\n";
-    auto scc = new SCC(nodes);
-    sccDG->createNodeFrom(scc, /*inclusion=*/ true);
+  for (auto componentNodes : components) {
+    auto componentPDG = new PDG();
+    pdg->extractNodesFromSelfInto(*cast<DG<Instruction>>(componentPDG), *componentNodes, *componentNodes->begin(), false);
+    delete componentNodes;
+
+    for (auto pdgI = scc_begin(componentPDG); pdgI != scc_end(componentPDG); ++pdgI)
+    {
+      std::vector<DGNode<Instruction> *> nodes;
+      for (auto node : *pdgI) nodes.push_back(node);
+
+      errs() << "SCC of size: " << nodes.size() << "\n";
+      auto scc = new SCC(nodes);
+      sccDG->createNodeFrom(scc, /*inclusion=*/ true);
+    }
   }
-
-  pdg->print(errs() << "PDG working with:\n") << "\n";
-
   /*
    * Maintain association of each internal node to its SCC
    */
@@ -93,7 +99,7 @@ SCCDG *llvm::SCCDG::extractSCCIntoGraph(DGNode<SCC> *sccNode)
 {
   SCCDG *sccDG = new SCCDG();
   std::vector<DGNode<SCC> *> sccNodes = { sccNode };
-  extractNodesFromSelfInto(*cast<DG<SCC>>(sccDG), sccNodes, sccNode);
+  extractNodesFromSelfInto(*cast<DG<SCC>>(sccDG), sccNodes, sccNode, /*removeFromSelf=*/ true);
   return sccDG;
 }
 
