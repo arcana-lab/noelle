@@ -24,7 +24,6 @@ llvm::SCCDG::~SCCDG() {
 SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   auto sccDG = new SCCDG();
 
-  // pdg->print(errs() << "PDG working with:\n") << "\n";
   auto components = pdg->collectConnectedComponents();
 
   for (auto componentNodes : components) {
@@ -37,7 +36,6 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
       std::vector<DGNode<Instruction> *> nodes;
       for (auto node : *pdgI) nodes.push_back(node);
 
-      errs() << "SCC of size: " << nodes.size() << "\n";
       auto scc = new SCC(nodes);
       sccDG->createNodeFrom(scc, /*inclusion=*/ true);
     }

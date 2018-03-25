@@ -695,7 +695,7 @@ extern "C" void queuePop(ThreadSafeQueue<int> *queue, int &val){
     printf("Spurious pop\n");
 }
 
-extern "C" int parallelizeHandler(void (*f1)(ThreadSafeQueue<int> *, int *), int &res1, void (*f2)(ThreadSafeQueue<int> *, int *), int &res2){
+extern "C" int parallelizeHandler(void *env, void (*f1)(void *, ThreadSafeQueue<int> *), void (*f2)(void *, ThreadSafeQueue<int> *)){
   /*
    * Create a thread pool with 2 threads
    */
@@ -706,16 +706,12 @@ extern "C" int parallelizeHandler(void (*f1)(ThreadSafeQueue<int> *, int *), int
    */
   ThreadSafeQueue<int> queue;
   ThreadSafeQueue<int> *queueP = &queue; 
-  int s, t; 
   printf("Submitting stages:\n");
-  auto sFuture = pool.submit(f1, queueP, &s);
-  auto tFuture = pool.submit(f2, queueP, &t);
+  auto future1 = pool.submit(f1, env, queueP);
+  auto future2 = pool.submit(f2, env, queueP);
   printf("Submitted stages:\n");
 
-  sFuture.get();
-  tFuture.get();
-
-  res1 = s;
-  res2 = t;
+  future1.get();
+  future2.get();
   return 0;
 }

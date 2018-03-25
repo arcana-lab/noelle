@@ -29,5 +29,7 @@ namespace llvm {
 		
 		std::vector<Instruction *> bodyInstOfLoop;
 		std::vector<Instruction *> otherInstOfLoop;
+
+		int externalDependentInstCount;
 	};
 }

@@ -35,9 +35,14 @@ namespace llvm {
 		std::vector<DGEdge<Instruction> *> incomingSCCEdges, outgoingSCCEdges;
 
 		/*
-		 * Maps internal, external pair of instructions for incoming/outgoing loop dependencies 
+		 * Maps internal, external pair of instructions for incoming/outgoing loop dependencies
 		 */
         unordered_map<Instruction *, Instruction *> incomingDependentMap, outgoingDependentMap;
+
+        /*
+         * Maps external dependency to its location in the environment used by the stage handler
+         */
+        unordered_map<Instruction *, int> dependencyToEnvironmentMap;
 
         std::vector<OutgoingPipelineInfo *> valuePushQueues;
         std::map<Instruction *, IncomingPipelineInfo *> valuePopQueuesMap;
