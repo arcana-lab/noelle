@@ -60,6 +60,7 @@ namespace llvm {
       unsigned numNodes() { return std::distance(allNodes.begin(), allNodes.end()); }
       unsigned numInternalNodes() { return std::distance(internalNodeMap.begin(), internalNodeMap.end()); }
       unsigned numExternalNodes() { return std::distance(externalNodeMap.begin(), externalNodeMap.end()); }
+      unsigned numEdges() { return std::distance(allEdges.begin(), allEdges.end()); }
 
       /*
        * Instruction Node Pair Iterator

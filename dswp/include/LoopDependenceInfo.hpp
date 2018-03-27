@@ -31,5 +31,6 @@ namespace llvm {
 		std::vector<Instruction *> otherInstOfLoop;
 
 		int externalDependentInstCount;
+		int internalDependentInstCount;
 	};
 }

@@ -28,6 +28,13 @@ namespace llvm {
 	struct StageInfo {
 		SCC *scc;
 		Function *sccStage;
+		BasicBlock *entryBlock, *exitBlock;
+
+		/*
+		 * Maps instructions from original instructions in the function to the stages' clones 
+		 */
+		unordered_map<Instruction *, Instruction *> * iCloneMap;
+		unordered_map<BasicBlock*, BasicBlock*> * bbCloneMap;
 
 		/*
 		 * Stores incoming/outgoing edges from other strongly connected components
@@ -42,7 +49,12 @@ namespace llvm {
         /*
          * Maps external dependency to its location in the environment used by the stage handler
          */
-        unordered_map<Instruction *, int> dependencyToEnvironmentMap;
+        unordered_map<Instruction *, int> externalDependencyToEnvMap;
+
+        /*
+         * Maps internal dependency to its queue
+         */
+        unordered_map<DGEdge<Instruction> *, int> edgeToQueueMap;
 
         std::vector<OutgoingPipelineInfo *> valuePushQueues;
         std::map<Instruction *, IncomingPipelineInfo *> valuePopQueuesMap;

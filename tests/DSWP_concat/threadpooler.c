@@ -695,23 +695,15 @@ extern "C" void queuePop(ThreadSafeQueue<int> *queue, int &val){
     printf("Spurious pop\n");
 }
 
-extern "C" int parallelizeHandler(void *env, void (*f1)(void *, ThreadSafeQueue<int> *), void (*f2)(void *, ThreadSafeQueue<int> *)){
-  /*
-   * Create a thread pool with 2 threads
-   */
-  ThreadPool pool(2);
+extern "C" void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
-  /*
-   * Submit and detach the two jobs
-   */
-  ThreadSafeQueue<int> queue;
-  ThreadSafeQueue<int> *queueP = &queue; 
-  printf("Submitting stages:\n");
-  auto future1 = pool.submit(f1, env, queueP);
-  auto future2 = pool.submit(f2, env, queueP);
-  printf("Submitted stages:\n");
+extern "C" void stageHandler(void **stages, int numberOfStages, void *env, void *queues, int numberOfQueues){
+  ThreadSafeQueue<int> localQueues[numberOfQueues];
+  queues = &localQueues;
 
-  future1.get();
-  future2.get();
-  return 0;
+  ThreadPool pool(numberOfStages);
+  for (int i = 0; i < numberOfStages; ++i)
+  {
+    pool.submitAndDetach( (void (*)(void *, void *)) stages[i], env, queues);
+  }
 }

@@ -34,8 +34,9 @@ namespace llvm {
     public:
       static char ID;
 
-      Function *queuePushTemporary, *queuePopTemporary, *stageHandler, *printReached, *printReachedIter;
+      Function *stageHandler, *queuePushTemporary, *queuePopTemporary, *printReachedIter;
       FunctionType *stageType;
+      Type *queueType;
       IntegerType *int8, *int32, *int64;
 
       DSWP() : ModulePass{ID} {}
@@ -57,12 +58,15 @@ namespace llvm {
         int64 = IntegerType::get(M.getContext(), 64);
         queuePushTemporary = M.getFunction("queuePush");
         queuePopTemporary = M.getFunction("queuePop");
-        stageHandler = M.getFunction("parallelizeHandler");
-        printReached = M.getFunction("printReached");
+        stageHandler = M.getFunction("stageHandler");
         printReachedIter = M.getFunction("printReachedIter");
 
-        auto stageArgs = stageHandler->arg_begin();
-        stageType = cast<FunctionType>(cast<PointerType>((++stageArgs)->getType())->getElementType());
+        auto stageFunction = M.getFunction("stageExecuter");
+        //stageType = cast<FunctionType>(cast<PointerType>(stageFunction->arg_begin()->getType())->getElementType());
+        auto stageArgType = stageFunction->arg_begin()->getType();
+        stageType = cast<FunctionType>(cast<PointerType>(stageArgType)->getElementType());
+
+        auto queueType = queuePushTemporary->arg_begin()->getType();
 
         /*
          * Fetch the PDG.
@@ -153,37 +157,6 @@ namespace llvm {
         return make_pair(bodyInst, otherInst);
       }
 
-      void collectLoopExternalDependents(LoopDependenceInfo *LDI, std::vector<StageInfo *> &stages)
-      {
-        LDI->externalDependentInstCount = 0;
-        for (auto nodeI : LDI->loopDG->externalNodePairs())
-        {
-          auto externalNode = nodeI.second;
-
-          auto addDependentStagesWith = [&](Instruction *internalInst) -> void {
-            for (auto stage : stages)
-            {
-              if (!stage->scc->isInternal(internalInst)) continue;
-              auto externalInst = externalNode->getT();
-              stage->dependencyToEnvironmentMap[externalInst] = LDI->externalDependentInstCount++;
-              stage->outgoingDependentMap[internalInst] = externalInst;
-            }
-          };
-
-          /*
-           * Check if loop-external instruction has incoming/outgoing nodes within one of the stages
-           */
-          for (auto incomingNode : make_range(externalNode->begin_incoming_nodes(), externalNode->end_incoming_nodes()))
-          {
-            addDependentStagesWith(incomingNode->getT());
-          }
-          for (auto outgoingNode : make_range(externalNode->begin_outgoing_nodes(), externalNode->end_outgoing_nodes()))
-          {
-            addDependentStagesWith(outgoingNode->getT());
-          }
-        }
-      }
-
       SCCDG *extractLoopIterationSCCDG(LoopDependenceInfo *LDI)
       {
         auto loop = LDI->loop;
@@ -211,8 +184,7 @@ namespace llvm {
 
       bool applyDSWP (LoopDependenceInfo *LDI)
       {
-        StageInfo outSCCStage, inSCCStage;
-        std::vector<StageInfo *> stages = { &outSCCStage, &inSCCStage };
+        std::vector<StageInfo *> stages;
 
         printSCCs(LDI->sccBodyDG);
 
@@ -226,7 +198,7 @@ namespace llvm {
         /*
          * Create the pipeline stages.
          */
-        if (!locateTwoSCCStageLoop(LDI, stages)) return false;
+        if (!locateNStageSCCLoop(LDI, stages)) return false;
         for (auto stage : stages) createPipelineStageFromSCC(LDI, stage);
 
         /*
@@ -248,70 +220,108 @@ namespace llvm {
         return true;
       }
 
-      bool locateTwoSCCStageLoop(LoopDependenceInfo *LDI, std::vector<StageInfo *> &stages)
+      bool collectLoopInternalDependents(LoopDependenceInfo *LDI, std::vector<StageInfo *> &stages, unordered_map<SCC *, StageInfo *> &sccToStage)
+      {
+        LDI->internalDependentInstCount = 0;
+        for (auto scc : make_range(LDI->sccBodyDG->begin_nodes(), LDI->sccBodyDG->end_nodes()))
+        {
+          for (auto sccEdge : make_range(scc->begin_outgoing_edges(), scc->end_outgoing_edges()))
+          {
+            auto sccPair = sccEdge->getNodePair();
+            auto fromSCC = sccPair.first->getT();
+            auto toSCC = sccPair.second->getT();
+
+            for (auto instructionEdge : make_range(sccEdge->begin_sub_edges(), sccEdge->end_sub_edges()))
+            {
+              /*
+               * ASSUMPTION 3: There aren't memory data dependences
+               */
+              if (instructionEdge->isMemoryDependence()) return false;
+
+              auto fromStage = sccToStage[fromSCC];
+              auto toStage = sccToStage[toSCC];
+
+              fromStage->outgoingSCCEdges.push_back(instructionEdge);
+              toStage->incomingSCCEdges.push_back(instructionEdge);
+              fromStage->edgeToQueueMap[instructionEdge] = LDI->internalDependentInstCount;
+              toStage->edgeToQueueMap[instructionEdge] = LDI->internalDependentInstCount++;
+            }
+          }
+        }
+        return true;
+      }
+
+      bool collectLoopExternalDependents(LoopDependenceInfo *LDI, std::vector<StageInfo *> &stages)
+      {
+        LDI->externalDependentInstCount = 0;
+        for (auto nodeI : LDI->loopDG->externalNodePairs())
+        {
+          auto externalNode = nodeI.second;
+
+          auto addDependentStagesWith = [&](Instruction *internalInst) -> void {
+            for (auto stage : stages)
+            {
+              if (!stage->scc->isInternal(internalInst)) continue;
+              auto externalInst = externalNode->getT();
+              stage->externalDependencyToEnvMap[externalInst] = LDI->externalDependentInstCount++;
+              stage->outgoingDependentMap[internalInst] = externalInst;
+            }
+          };
+
+          /*
+           * Check if loop-external instruction has incoming/outgoing nodes within one of the stages
+           */
+          for (auto incomingNode : make_range(externalNode->begin_incoming_nodes(), externalNode->end_incoming_nodes()))
+          {
+            addDependentStagesWith(incomingNode->getT());
+          }
+          for (auto outgoingNode : make_range(externalNode->begin_outgoing_nodes(), externalNode->end_outgoing_nodes()))
+          {
+            addDependentStagesWith(outgoingNode->getT());
+          }
+        }
+        return true;
+      }
+
+      bool locateNStageSCCLoop(LoopDependenceInfo *LDI, std::vector<StageInfo *> &stages)
       {
         auto loop = LDI->loop;
         auto sccSubgraph = LDI->sccBodyDG;
 
-        /*
-         * ASSUMPTION 3: Loop trip count is known.
-         */
-        if (LDI->SE.getSmallConstantTripCount(loop) == 0) return false;
+        if (!sccSubgraph->isPipeline()) return false;
 
-        /*
-         * ASSUMPTION 4: The pipeline is 2 SCCs with one variable across them
-         */
-        if (!sccSubgraph->isPipeline() || sccSubgraph->numInternalNodes() != 2) return false;
+        unordered_map<SCC *, StageInfo *> sccToStage;
+        for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
+        {
+          auto scc = sccNode->getT();
+          auto stage = new StageInfo();
+          stage->scc = scc;
+          sccToStage[scc] = stage;
+          stages.push_back(stage);
+        }
 
-        /*
-         * ASSUMPTION 5: You only have one variable across the two SCCs
-         */
-        if (std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) != 1) return false;
-
-        DGEdge<SCC> *sccEdge = *(sccSubgraph->begin_edges());
-        auto sccPair = sccEdge->getNodePair();
-        auto outSCC = stages[0]->scc = sccPair.first->getT();
-        auto inSCC = stages[1]->scc = sccPair.second->getT();
-
-        /*
-         * ASSUMPTION 6: You only have one dependency for the variable across the two SCCs 
-         */
-        if (outSCC->numExternalNodes() != 1 || inSCC->numExternalNodes() != 1) return false;
-
-        DGEdge<Instruction> *instEdge = *sccEdge->begin_sub_edges();
-        //DGEdge<Instruction> *instEdge = *(outSCC->begin_external_node_map()->second->begin_incoming_edges());
-        //assert(instEdge == *(inSCC->begin_external_node_map()->second->begin_outgoing_edges()));
-
-        /*
-         * ASSUMPTION 7: There aren't memory data dependences
-         */
-        if (instEdge->isMemoryDependence()) return false;
-
-        stages[0]->outgoingSCCEdges = {instEdge};
-        stages[1]->incomingSCCEdges = {instEdge};
-        collectLoopExternalDependents(LDI, stages);
-
-        /* 
-         * ASSUMPTION 8: You only have one dependency per SCC from inside to outside the loop
-         */
-        if (stages[0]->outgoingDependentMap.size() != 1 || stages[1]->outgoingDependentMap.size() != 1) return false;
-
+        if (collectLoopInternalDependents(LDI, stages, sccToStage) && collectLoopExternalDependents(LDI, stages))
+        {
+          // CLEANUP
+          return false;
+        }
         return true;
       }
 
-      void cloneLoopInstForStage(LoopDependenceInfo *LDI, StageInfo *stageInfo, unordered_map<Instruction *, Instruction *> &cloneMap)
+      void cloneLoopInstForStage(LoopDependenceInfo *LDI, StageInfo *stageInfo)
       {
+        auto &iCloneMap = *stageInfo->iCloneMap;
         for (auto sccI = stageInfo->scc->begin_internal_node_map(); sccI != stageInfo->scc->end_internal_node_map(); ++sccI)
         {
           auto I = sccI->first;
-          cloneMap[I] = I->clone();
+          iCloneMap[I] = I->clone();
         }
 
         auto loopIterationSCC = LDI->loopIterationSCCDG->getEntryNode()->getT();
         for (auto node : make_range(loopIterationSCC->begin_nodes(), loopIterationSCC->end_nodes()))
         {
           auto I = node->getT();
-          cloneMap[I] = I->clone();
+          iCloneMap[I] = I->clone();
         }
 
         /*
@@ -319,12 +329,64 @@ namespace llvm {
          */
         for (auto &I : LDI->otherInstOfLoop)
         {
-          cloneMap[I] = I->clone();
+          iCloneMap[I] = I->clone();
         }
       }
 
-      void createPipelineQueueing(StageInfo *stageInfo, Value *queueArg, unordered_map<Instruction *, Instruction *> &cloneMap, IRBuilder<> entryBuilder)
+      void storeAndLoadExternalDependents(LoopDependenceInfo *LDI, StageInfo *stageInfo)
       {
+        IRBuilder<> entryBuilder(stageInfo->entryBlock);
+        IRBuilder<> exitBuilder(stageInfo->exitBlock);
+        auto envArg = &*(stageInfo->sccStage->arg_begin());
+        auto arrayPtrType = PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(int8), LDI->externalDependentInstCount));
+        auto arrayIndexValue = cast<Value>(ConstantInt::get(int64, 0));
+        auto envAlloca = entryBuilder.CreateBitCast(envArg, arrayPtrType);
+
+        auto createEnvPtrFromDep = [&](Instruction *externalDependency, IRBuilder<> builder) -> Value * {
+          auto envIndex = stageInfo->externalDependencyToEnvMap[externalDependency];
+          auto envIndexValue = cast<Value>(ConstantInt::get(int64, envIndex));
+          return builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ arrayIndexValue, envIndexValue }));
+        };
+
+        for (auto dependencyPair : stageInfo->outgoingDependentMap)
+        {
+          auto envPtr = createEnvPtrFromDep(dependencyPair.second, exitBuilder);
+          auto envVarPtr = exitBuilder.CreateLoad(envPtr);
+          auto envVarCast = exitBuilder.CreateBitCast(envVarPtr, PointerType::getUnqual(int32));
+          auto outgoingDependency = (*stageInfo->iCloneMap)[dependencyPair.first];
+          exitBuilder.CreateStore(outgoingDependency, envVarCast);
+        }
+
+        for (auto dependencyPair : stageInfo->incomingDependentMap)
+        {
+          auto envPtr = createEnvPtrFromDep(dependencyPair.second, entryBuilder);
+          auto envVarCast = entryBuilder.CreateBitCast(entryBuilder.CreateLoad(envPtr), PointerType::getUnqual(int32));
+          auto incomingValue = entryBuilder.CreateLoad(envVarCast);
+
+          Value *originalDepValue = cast<Value>(dependencyPair.first);
+          for (auto &depOp : (*stageInfo->iCloneMap)[dependencyPair.first]->operands())
+          {
+            if (depOp != originalDepValue) continue;
+            depOp.set(incomingValue);
+          }
+        }
+      }
+
+      void createPipelineQueueing(LoopDependenceInfo *LDI, StageInfo *stageInfo)
+      {
+        IRBuilder<> entryBuilder(stageInfo->entryBlock);
+        auto argIter = stageInfo->sccStage->arg_begin();
+        auto queueArg = cast<Value>(&*(++argIter));
+        
+        auto arrayPtrType = PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(int8), LDI->internalDependentInstCount));
+        auto arrayIndexValue = cast<Value>(ConstantInt::get(int64, 0));
+
+        auto getQueuePtrFromEdge = [&](DGEdge<Instruction> *edge) -> Value * {
+          auto queueIndex = stageInfo->edgeToQueueMap[edge];
+          auto queueIndexValue = cast<Value>(ConstantInt::get(int64, queueIndex));
+          auto depInEnvPtr = entryBuilder.CreateInBoundsGEP(queueArg, ArrayRef<Value*>({ arrayIndexValue, queueIndexValue }));
+          return entryBuilder.CreateLoad(queueType, depInEnvPtr);
+        };
 
         /*
          * Locate clone of outgoing instruction, create queue push call
@@ -332,38 +394,41 @@ namespace llvm {
         for (auto edge : stageInfo->outgoingSCCEdges)
         {
           auto outgoingI = edge->getNodePair().first->getT();
+          auto outgoingClone = (*stageInfo->iCloneMap)[outgoingI];
+          auto queueCallArgs = ArrayRef<Value*>({ getQueuePtrFromEdge(edge), cast<Value>(outgoingClone) });
+
           auto valuePush = new OutgoingPipelineInfo();
           stageInfo->valuePushQueues.push_back(valuePush);
-          valuePush->valueInstruction = cloneMap[outgoingI];
-          auto queueCallArgs = ArrayRef<Value*>({ queueArg, cast<Value>(valuePush->valueInstruction) });
+          valuePush->valueInstruction = outgoingClone;
           valuePush->pushQueueCall = entryBuilder.CreateCall(queuePushTemporary, queueCallArgs);
         }
 
         /*
-         * Locate clone of incoming instruction, create queue pop call and load, and point instruction to the load
+         * Create a queue pop and load for each unique dependent in previous SCCs
          */
         for (auto edge : stageInfo->incomingSCCEdges)
         {
           auto outgoingI = edge->getNodePair().first->getT();
-          auto incomingI = edge->getNodePair().second->getT();
+          if (stageInfo->valuePopQueuesMap.find(outgoingI) != stageInfo->valuePopQueuesMap.end()) continue;
 
-          auto valuePopIter = stageInfo->valuePopQueuesMap.find(outgoingI);
-          IncomingPipelineInfo *valuePop;
-          if (valuePopIter == stageInfo->valuePopQueuesMap.end())
-          {
-            valuePop = new IncomingPipelineInfo();
-            stageInfo->valuePopQueuesMap[outgoingI] = valuePop;
-            valuePop->popStorage = entryBuilder.CreateAlloca(int32);
-            valuePop->loadStorage = entryBuilder.CreateLoad(valuePop->popStorage);
-            auto queueCallArgs = ArrayRef<Value*>({ queueArg, cast<Value>(valuePop->popStorage) });
-            valuePop->popQueueCall = entryBuilder.CreateCall(queuePopTemporary, queueCallArgs);
-          }
-          else
-          {
-            valuePop = valuePopIter->second;
-          }
+          auto valuePop = new IncomingPipelineInfo();
+          stageInfo->valuePopQueuesMap[outgoingI] = valuePop;
+          valuePop->popStorage = entryBuilder.CreateAlloca(int32);
+          valuePop->loadStorage = entryBuilder.CreateLoad(valuePop->popStorage);
+          auto queueCallArgs = ArrayRef<Value*>({ getQueuePtrFromEdge(edge), cast<Value>(valuePop->popStorage) });
+          valuePop->popQueueCall = entryBuilder.CreateCall(queuePopTemporary, queueCallArgs);
+        }
 
-          auto userInstruction = cloneMap[incomingI];
+        /*
+         * Replace use of dependents in previous SCCs with the appropriate queue pop and load 
+         */
+        for (auto edge : stageInfo->incomingSCCEdges)
+        {
+          auto nodePair = edge->getNodePair();
+          auto outgoingI = nodePair.first->getT();
+          auto incomingI = nodePair.second->getT();
+          auto userInstruction = (*stageInfo->iCloneMap)[incomingI];
+          auto valuePop = stageInfo->valuePopQueuesMap[outgoingI];
           valuePop->userInstructions.push_back(userInstruction);
 
           /*
@@ -380,35 +445,42 @@ namespace llvm {
         }
       }
 
-      void createAndPopulateLoopBBForStage(LoopDependenceInfo *LDI, StageInfo *stageInfo,
-        unordered_map<Instruction *, Instruction *> &cloneMap,
-        unordered_map<BasicBlock*, BasicBlock*> &bbCloneMap)
+      void createAndPopulateLoopBBForStage(LoopDependenceInfo *LDI, StageInfo *stageInfo)
       {
         auto M = LDI->func->getParent();
+        auto &iCloneMap = *stageInfo->iCloneMap;
+
         for (auto bbi = LDI->loop->block_begin(); bbi != LDI->loop->block_end(); ++bbi) {
           auto bb = *bbi;
           /*
            * FIX: Create basic blocks for induction variables and the SCC in question instead of all the loop's basic blocks
            */
-          auto cloneBB = BasicBlock::Create(M->getContext(), bb->getName(), stageInfo->sccStage);
+          auto cloneBB = BasicBlock::Create(M->getContext(), "", stageInfo->sccStage);
           IRBuilder<> builder(cloneBB);
 
           for (auto &I : *bb) {
-            auto cloneIter = cloneMap.find(&I);
-            if (cloneIter == cloneMap.end()) continue;
-            cloneMap[&I] = builder.Insert(cloneIter->second);
+            auto cloneIter = iCloneMap.find(&I);
+            if (cloneIter == iCloneMap.end()) continue;
+            iCloneMap[&I] = builder.Insert(cloneIter->second);
           }
 
-          bbCloneMap[bb] = cloneBB;
+          (*stageInfo->bbCloneMap)[bb] = cloneBB;
         }
       }
 
-      void mapClonedOperands(unordered_map<Instruction *, Instruction *> cloneMap, unordered_map<BasicBlock*, BasicBlock*> bbCloneMap, BasicBlock *exitBB)
+      void mapClonedOperands(LoopDependenceInfo *LDI, StageInfo *stageInfo)
       {
+        auto &iCloneMap = *stageInfo->iCloneMap;
+        auto &bbCloneMap = *stageInfo->bbCloneMap;
+        
+        bbCloneMap[LDI->loop->getLoopPreheader()] = stageInfo->entryBlock;
+        IRBuilder<> entryBuilder(stageInfo->entryBlock);
+        entryBuilder.CreateBr(bbCloneMap[LDI->loop->getHeader()]);
+
         /*
          * IMPROVEMENT: Ignore special cases upfront. If a clone of a general case is not found, abort with a corresponding error 
          */
-        for (auto ii = cloneMap.begin(); ii != cloneMap.end(); ++ii) {
+        for (auto ii = iCloneMap.begin(); ii != iCloneMap.end(); ++ii) {
           auto cloneInstruction = ii->second;
 
           /*
@@ -421,9 +493,9 @@ namespace llvm {
                * Handle replacing operands
                */
               if (auto opI = dyn_cast<Instruction>(op)) {
-                auto iCloneIter = cloneMap.find(opI);
-                if (iCloneIter != cloneMap.end()) {
-                  op.set(cloneMap[opI]);
+                auto iCloneIter = iCloneMap.find(opI);
+                if (iCloneIter != iCloneMap.end()) {
+                  op.set(iCloneMap[opI]);
                 }
                 continue;
               }
@@ -435,8 +507,7 @@ namespace llvm {
               /*
                * Handle replacing basic blocks
                */
-              auto basicBlockIndex = phiI->getBasicBlockIndex(bb);
-              phiI->setIncomingBlock(basicBlockIndex, bbCloneMap[bb]);
+              phiI->setIncomingBlock(phiI->getBasicBlockIndex(bb), bbCloneMap[bb]);
             }
             continue;
           }
@@ -444,9 +515,9 @@ namespace llvm {
           for (auto &op : cloneInstruction->operands()) {
             auto opV = op.get();
             if (auto opI = dyn_cast<Instruction>(opV)) {
-              auto iCloneIter = cloneMap.find(opI);
-              if (iCloneIter != cloneMap.end()) {
-                op.set(cloneMap[opI]);
+              auto iCloneIter = iCloneMap.find(opI);
+              if (iCloneIter != iCloneMap.end()) {
+                op.set(iCloneMap[opI]);
               }
               continue;
             }
@@ -456,7 +527,7 @@ namespace llvm {
                 op.set(bbCloneIter->second);
               } else {
                 // Operand pointed to original exiting block
-                op.set(exitBB);
+                op.set(stageInfo->exitBlock);
               }
               continue;
             }
@@ -465,16 +536,15 @@ namespace llvm {
         }
       }
 
-      void insertPipelineQueueing(StageInfo *stageInfo, unordered_map<Instruction *, Instruction *> &cloneMap,
-        unordered_map<BasicBlock*, BasicBlock*> bbCloneMap,
-        BasicBlock *headerBB, BasicBlock *exitBB)
+      void insertPipelineQueueing(LoopDependenceInfo *LDI, StageInfo *stageInfo)
       {
         /*
          * Insert queue pops + loads at start of loop body
          */
         Instruction *popBeforeInst;
+        auto headerBB = (*stageInfo->bbCloneMap)[LDI->loop->getHeader()];
         for (auto succToHeader : make_range(succ_begin(headerBB), succ_end(headerBB))) {
-          if (exitBB != succToHeader) {
+          if (stageInfo->exitBlock != succToHeader) {
             popBeforeInst = &*succToHeader->begin();
           }
         }
@@ -499,85 +569,39 @@ namespace llvm {
       void createPipelineStageFromSCC(LoopDependenceInfo *LDI, StageInfo *stageInfo)
       {
         auto M = LDI->func->getParent();
-        auto loop = LDI->loop;
         
-        /*
-         * ASSUMPTION: Function signature is: void (void *, QueueType *)
-         */
-        auto pipelineStage = cast<Function>(M->getOrInsertFunction("", stageType));
-        stageInfo->sccStage = pipelineStage;
-        auto argIter = pipelineStage->arg_begin();
-        auto envArg = &*argIter;
-        auto queueArg = &*(++argIter);
-
-        BasicBlock* entryBB = BasicBlock::Create(M->getContext(), "", pipelineStage);
-        BasicBlock* exitBB = BasicBlock::Create(M->getContext(), "", pipelineStage);
+        stageInfo->sccStage = cast<Function>(M->getOrInsertFunction("", stageType));
+        stageInfo->entryBlock = BasicBlock::Create(M->getContext(), "", stageInfo->sccStage);
+        stageInfo->exitBlock = BasicBlock::Create(M->getContext(), "", stageInfo->sccStage);
 
         /*
          * Clone loop instructions in given SCC or non-loop-body 
          */
         unordered_map<Instruction *, Instruction *> cloneMap;
-        cloneLoopInstForStage(LDI, stageInfo, cloneMap);
+        stageInfo->iCloneMap = &cloneMap;
 
-        IRBuilder<> entryBuilder(entryBB);
-        IRBuilder<> exitBuilder(exitBB);
-
-        auto arrayPtrType = PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(int8), LDI->externalDependentInstCount));
-        auto arrayIndexValue = cast<Value>(ConstantInt::get(int64, 0));
-        auto envAlloca = entryBuilder.CreateBitCast(envArg, arrayPtrType);
-
-        for (auto dependencyPair : stageInfo->outgoingDependentMap)
-        {
-          auto envIndex = stageInfo->dependencyToEnvironmentMap[dependencyPair.second];
-          auto envIndexValue = cast<Value>(ConstantInt::get(int64, envIndex));
-          auto depInEnvPtr = exitBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ arrayIndexValue, envIndexValue }));
-          auto envVarPtr = exitBuilder.CreateLoad(depInEnvPtr);
-          auto envVarCast = exitBuilder.CreateBitCast(envVarPtr, PointerType::getUnqual(int32));
-          auto outgoingDependency = cloneMap[dependencyPair.first];
-          exitBuilder.CreateStore(outgoingDependency, envVarCast);
-        }
-
-        for (auto dependencyPair : stageInfo->incomingDependentMap)
-        {
-          auto envIndex = stageInfo->dependencyToEnvironmentMap[dependencyPair.second];
-          auto envIndexValue = cast<Value>(ConstantInt::get(int64, envIndex));
-          auto depInEnvPtr = entryBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ arrayIndexValue, envIndexValue }));
-          auto envVarCast = entryBuilder.CreateBitCast(entryBuilder.CreateLoad(depInEnvPtr), PointerType::getUnqual(int32));
-          auto incomingValue = entryBuilder.CreateLoad(envVarCast);
-
-          Value *originalDepValue = cast<Value>(dependencyPair.first);
-          for (auto &depOp : cloneMap[dependencyPair.first]->operands())
-          {
-            if (depOp != originalDepValue) continue;
-            depOp.set(incomingValue);
-          }
-        }
-
-        // exitBuilder.CreateCall(printReachedIter, ArrayRef<Value*>({ cast<Value>(outgoingDependency) }));
-        exitBuilder.CreateRetVoid();
-
-        createPipelineQueueing(stageInfo, cast<Value>(queueArg), cloneMap, entryBuilder);
+        cloneLoopInstForStage(LDI, stageInfo);
+        storeAndLoadExternalDependents(LDI, stageInfo);
+        createPipelineQueueing(LDI, stageInfo);
 
         /*
          * Clone loop basic blocks that are used by given SCC / non-loop-body basic blocks
          */
         unordered_map<BasicBlock*, BasicBlock*> bbCloneMap;
-        bbCloneMap[loop->getLoopPreheader()] = entryBB;
-        createAndPopulateLoopBBForStage(LDI, stageInfo, cloneMap, bbCloneMap);
-        
-        /*
-         * Map and branch loop preheader to entry block
-         */
-        auto headerBB = bbCloneMap[loop->getHeader()];
-        entryBuilder.CreateBr(headerBB);
+        stageInfo->bbCloneMap = &bbCloneMap;
 
+        createAndPopulateLoopBBForStage(LDI, stageInfo);
+        
         /*
          * Map clones' operands to cloned versions of those operands
          */
-        mapClonedOperands(cloneMap, bbCloneMap, exitBB);
-        insertPipelineQueueing(stageInfo, cloneMap, bbCloneMap, headerBB, exitBB);
+        mapClonedOperands(LDI, stageInfo);
+        insertPipelineQueueing(LDI, stageInfo);
 
-        pipelineStage->print(errs() << "Function printout:\n"); errs() << "\n";
+        IRBuilder<> exitBuilder(stageInfo->exitBlock);
+        // exitBuilder.CreateCall(printReachedIter, ArrayRef<Value*>({ cast<Value>(outgoingDependency) }));
+        exitBuilder.CreateRetVoid();
+        stageInfo->sccStage->print(errs() << "Function printout:\n"); errs() << "\n";
       }
 
       BasicBlock * createTheLoopSwitcher (LoopDependenceInfo *LDI, std::vector<StageInfo *> stages)
@@ -586,37 +610,34 @@ namespace llvm {
         auto pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->func);
         IRBuilder<> builder(pipelineBB);
 
-        /*
-         * Create the environment array
-         */
-        auto arrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->externalDependentInstCount);
-        auto arrayIndexValue = cast<Value>(ConstantInt::get(int64, 0));
-        auto envAlloca = cast<Value>(builder.CreateAlloca(arrayType));
-        auto envPtr = cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(int8)));
+        auto baseArrayIndex = cast<Value>(ConstantInt::get(int64, 0));
 
         /*
+         * Create empty environment array
          * ASSUMPTION: All the types of environment variables are int32
          */
+        auto envArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->externalDependentInstCount);
+        auto envAlloca = cast<Value>(builder.CreateAlloca(envArrayType));
         std::vector<Value*> envVarPtrs;
         for (int i = 0; i < LDI->externalDependentInstCount; ++i)
         {
           auto envVarPtr = builder.CreateAlloca(int32);
           envVarPtrs.push_back(envVarPtr);
-          auto envIndexValue = cast<Value>(ConstantInt::get(int64, i));
-          auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ arrayIndexValue, envIndexValue }));
+          auto envIndex = cast<Value>(ConstantInt::get(int64, i));
+          auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ baseArrayIndex, envIndex }));
           auto depCast = builder.CreateBitCast(depInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(int32)));
           builder.CreateStore(envVarPtr, depCast);
         }
 
         /*
-         * Insert the incoming dependents for each stage
+         * Insert incoming dependents for stages into the environment array
          */
         for (auto stage : stages)
         {
           for (auto dependencyPair : stage->incomingDependentMap)
           {
             auto externalDependency = dependencyPair.second;
-            auto envIndex = stage->dependencyToEnvironmentMap[externalDependency];
+            auto envIndex = stage->externalDependencyToEnvMap[externalDependency];
             builder.CreateStore(externalDependency, envVarPtrs[envIndex]);
           }
         }
@@ -624,13 +645,34 @@ namespace llvm {
         /*
          * Pass the environment and stage function pointers to the stage handler
          */
-        std::vector<Value *> handlerArgs;
-        handlerArgs.push_back(envPtr);
-        for (auto stage : stages)
+        auto stagesArrayType = ArrayType::get(PointerType::getUnqual(int8), stages.size());
+        auto stagesAlloca = cast<Value>(builder.CreateAlloca(stagesArrayType));
+        auto stagePtrType = PointerType::getUnqual(stages[0]->sccStage->getType());
+        for (int i = 0; i < stages.size(); ++i)
         {
-          handlerArgs.push_back(cast<Value>(stage->sccStage));
+          auto stage = stages[i];
+          auto stageIndex = cast<Value>(ConstantInt::get(int64, i));
+          auto stagePtr = builder.CreateInBoundsGEP(stagesAlloca, ArrayRef<Value*>({ baseArrayIndex, stageIndex }));
+          auto stageCast = builder.CreateBitCast(stagePtr, stagePtrType);
+          builder.CreateStore(stage->sccStage, stageCast);
         }
-        builder.CreateCall(stageHandler, ArrayRef<Value*>(handlerArgs));
+
+        /*
+         * Create empty queues array to be used by stages
+         * ASSUMPTION: All the queues hold int32 variables
+         */
+        auto queuesArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->internalDependentInstCount);
+        auto queuesAlloca = cast<Value>(builder.CreateAlloca(queuesArrayType));
+        auto queuesPtr = cast<Value>(builder.CreateBitCast(queuesAlloca, PointerType::getUnqual(int8)));
+        auto queuesCount = cast<Value>(ConstantInt::get(int64, LDI->internalDependentInstCount));
+
+        /*
+         * Call the stage handler with the environment, queues array, and stages array
+         */
+        auto envPtr = cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(int8)));
+        auto stagesPtr = cast<Value>(builder.CreateBitCast(stagesAlloca, PointerType::getUnqual(int8)));
+        auto stagesCount = cast<Value>(ConstantInt::get(int64, stages.size()));
+        builder.CreateCall(stageHandler, ArrayRef<Value*>({ envPtr, queuesPtr, stagesPtr, stagesCount, queuesCount }));
 
         /*
          * Extract the outgoing dependents for each stage
@@ -640,9 +682,8 @@ namespace llvm {
           for (auto dependencyPair : stage->outgoingDependentMap)
           {
             auto externalDependency = dependencyPair.second;
-            auto envIndex = stage->dependencyToEnvironmentMap[externalDependency];
-            auto envIndexValue = cast<Value>(ConstantInt::get(int64, envIndex));
-            auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ arrayIndexValue, envIndexValue }));
+            auto envIndex = cast<Value>(ConstantInt::get(int64, stage->externalDependencyToEnvMap[externalDependency]));
+            auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ baseArrayIndex, envIndex }));
             auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(int32));
             auto envVar = builder.CreateLoad(envVarCast);
 
