@@ -678,32 +678,48 @@ private:
   ThreadSafeQueue<std::function<void ()>> codeToExecuteByTheDeconstructor;
 };
 
-extern "C" void printReached(){
-  printf("Reached\n");
-}
-
 extern "C" void printReachedIter(int iter){
   printf("Iter:\t%d\n", iter);
 }
 
 extern "C" void queuePush(ThreadSafeQueue<int> *queue, int val){
+  //printf("Pushing val:%d\n", val);
   queue->push(val);
+  //printf("Pushed val:%d\n", val);
 }
 
 extern "C" void queuePop(ThreadSafeQueue<int> *queue, int &val){
+  //printf("Popping val\n");
   while (!queue->waitPop(val))
     printf("Spurious pop\n");
+  //printf("Popped val:%d\n", val);
 }
 
 extern "C" void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
-extern "C" void stageHandler(void **stages, int numberOfStages, void *env, void *queues, int numberOfQueues){
-  ThreadSafeQueue<int> localQueues[numberOfQueues];
-  queues = &localQueues;
+extern "C" void stageHandler(void *env, void *queues, void *stages, int numberOfStages, int numberOfQueues){
+  ThreadSafeQueue<int> *localQueues[numberOfQueues];
+  for (int i = 0; i < numberOfQueues; ++i)
+  {
+    localQueues[i] = new ThreadSafeQueue<int>();
+  }
+  queues = localQueues;
 
   ThreadPool pool(numberOfStages);
+  auto localFutures = (TaskFuture<void> *)malloc(numberOfStages * sizeof(TaskFuture<void>));
   for (int i = 0; i < numberOfStages; ++i)
   {
-    pool.submitAndDetach( (void (*)(void *, void *)) stages[i], env, queues);
+    auto stage = ((void (**)(void *, void *)) stages)[i];
+    localFutures[i] = std::move(pool.submit(stage, env, queues));
+  }
+
+  for (int i = 0; i < numberOfStages; ++i)
+  {
+    localFutures[i].get();
+  }
+
+  for (int i = 0; i < numberOfQueues; ++i)
+  {
+    delete localQueues[i];
   }
 }

@@ -62,11 +62,10 @@ namespace llvm {
         printReachedIter = M.getFunction("printReachedIter");
 
         auto stageFunction = M.getFunction("stageExecuter");
-        //stageType = cast<FunctionType>(cast<PointerType>(stageFunction->arg_begin()->getType())->getElementType());
         auto stageArgType = stageFunction->arg_begin()->getType();
         stageType = cast<FunctionType>(cast<PointerType>(stageArgType)->getElementType());
 
-        auto queueType = queuePushTemporary->arg_begin()->getType();
+        queueType = queuePushTemporary->arg_begin()->getType();
 
         /*
          * Fetch the PDG.
@@ -300,7 +299,7 @@ namespace llvm {
           stages.push_back(stage);
         }
 
-        if (collectLoopInternalDependents(LDI, stages, sccToStage) && collectLoopExternalDependents(LDI, stages))
+        if (!collectLoopInternalDependents(LDI, stages, sccToStage) || !collectLoopExternalDependents(LDI, stages))
         {
           // CLEANUP
           return false;
@@ -378,14 +377,16 @@ namespace llvm {
         auto argIter = stageInfo->sccStage->arg_begin();
         auto queueArg = cast<Value>(&*(++argIter));
         
-        auto arrayPtrType = PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(int8), LDI->internalDependentInstCount));
+        auto queuesPtrType = PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(int8), LDI->internalDependentInstCount));
         auto arrayIndexValue = cast<Value>(ConstantInt::get(int64, 0));
+        auto queuesArray = entryBuilder.CreateBitCast(queueArg, queuesPtrType);
 
         auto getQueuePtrFromEdge = [&](DGEdge<Instruction> *edge) -> Value * {
           auto queueIndex = stageInfo->edgeToQueueMap[edge];
           auto queueIndexValue = cast<Value>(ConstantInt::get(int64, queueIndex));
-          auto depInEnvPtr = entryBuilder.CreateInBoundsGEP(queueArg, ArrayRef<Value*>({ arrayIndexValue, queueIndexValue }));
-          return entryBuilder.CreateLoad(queueType, depInEnvPtr);
+          auto queuePtr = entryBuilder.CreateInBoundsGEP(queuesArray, ArrayRef<Value*>({ arrayIndexValue, queueIndexValue }));
+          auto queueCast = entryBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(queueType));
+          return entryBuilder.CreateLoad(queueCast);
         };
 
         /*
@@ -449,7 +450,13 @@ namespace llvm {
       {
         auto M = LDI->func->getParent();
         auto &iCloneMap = *stageInfo->iCloneMap;
+        auto &bbCloneMap = *stageInfo->bbCloneMap;
 
+        /*
+         * Assign stage entry block as "clone" of loop header
+         */
+        bbCloneMap[LDI->loop->getLoopPreheader()] = stageInfo->entryBlock;
+        
         for (auto bbi = LDI->loop->block_begin(); bbi != LDI->loop->block_end(); ++bbi) {
           auto bb = *bbi;
           /*
@@ -464,7 +471,9 @@ namespace llvm {
             iCloneMap[&I] = builder.Insert(cloneIter->second);
           }
 
-          (*stageInfo->bbCloneMap)[bb] = cloneBB;
+          bbCloneMap[bb] = cloneBB;
+          bb->print(errs() << "BB\t"); errs() << "\n";
+          bbCloneMap[bb]->print(errs() << "BB clone:\t"); errs() << "\n";
         }
       }
 
@@ -473,7 +482,6 @@ namespace llvm {
         auto &iCloneMap = *stageInfo->iCloneMap;
         auto &bbCloneMap = *stageInfo->bbCloneMap;
         
-        bbCloneMap[LDI->loop->getLoopPreheader()] = stageInfo->entryBlock;
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
         entryBuilder.CreateBr(bbCloneMap[LDI->loop->getHeader()]);
 
@@ -502,11 +510,14 @@ namespace llvm {
               // Check for constants etc... abort
             }
 
+            phiI->print(errs() << "PHI:\t"); errs() << "\n";
             for (auto &bb : phiI->blocks()) {
 
               /*
                * Handle replacing basic blocks
                */
+              bb->print(errs() << "PHI BB:\t"); errs() << "\n";
+
               phiI->setIncomingBlock(phiI->getBasicBlockIndex(bb), bbCloneMap[bb]);
             }
             continue;
@@ -664,14 +675,14 @@ namespace llvm {
         auto queuesArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->internalDependentInstCount);
         auto queuesAlloca = cast<Value>(builder.CreateAlloca(queuesArrayType));
         auto queuesPtr = cast<Value>(builder.CreateBitCast(queuesAlloca, PointerType::getUnqual(int8)));
-        auto queuesCount = cast<Value>(ConstantInt::get(int64, LDI->internalDependentInstCount));
+        auto queuesCount = cast<Value>(ConstantInt::get(int32, LDI->internalDependentInstCount));
 
         /*
          * Call the stage handler with the environment, queues array, and stages array
          */
         auto envPtr = cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(int8)));
         auto stagesPtr = cast<Value>(builder.CreateBitCast(stagesAlloca, PointerType::getUnqual(int8)));
-        auto stagesCount = cast<Value>(ConstantInt::get(int64, stages.size()));
+        auto stagesCount = cast<Value>(ConstantInt::get(int32, stages.size()));
         builder.CreateCall(stageHandler, ArrayRef<Value*>({ envPtr, queuesPtr, stagesPtr, stagesCount, queuesCount }));
 
         /*
