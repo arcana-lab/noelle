@@ -25,7 +25,7 @@ namespace llvm {
 		PDG *loopDG;
 
 		PDG *loopBodyDG;
-		SCCDG *sccBodyDG, *loopIterationSCCDG;
+		SCCDG *loopBodySCCDG, *loopIterationSCCDG;
 		
 		std::vector<Instruction *> bodyInstOfLoop;
 		std::vector<Instruction *> otherInstOfLoop;

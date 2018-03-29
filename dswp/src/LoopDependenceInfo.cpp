@@ -13,11 +13,11 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, LoopInfo &li, Dominato
 		: func{f}, LI{li}, DT{dt}, SE{se}, loop{l}, functionDG{fG}, bodyInstOfLoop{bodyInst}, otherInstOfLoop{otherInst} {
 	loopDG = functionDG->createLoopsSubgraph(LI);
 	loopBodyDG = loopDG->createInstListSubgraph(bodyInst);
-	sccBodyDG = SCCDG::createSCCGraphFrom(loopBodyDG);
+	loopBodySCCDG = SCCDG::createSCCGraphFrom(loopBodyDG);
 };
 
 llvm::LoopDependenceInfo::~LoopDependenceInfo() {
 	delete loopDG;
 	delete loopBodyDG;
-	delete sccBodyDG;
+	delete loopBodySCCDG;
 }

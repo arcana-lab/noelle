@@ -11,7 +11,7 @@ THREADER=threadpooler
 
 all: $(THREADER).bc test
 
-$(THREADER).bc: $(THREADER).c
+$(THREADER).bc: $(THREADER).cpp
 	clang++ -std=c++14 -emit-llvm -O3 -c $^ -o $@
 
 test: test_dswp.bc
@@ -21,7 +21,7 @@ test_dswp.bc: test.bc
 	opt $(PASSES) $(ANALYSES) -DSWP $^ -o $@
 	llvm-dis $@
 
-test.bc: test.c
+test.bc: test.cpp
 	clang++ -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $^ -o $@
 	opt -mem2reg $@ -o $@
 	llvm-dis $@

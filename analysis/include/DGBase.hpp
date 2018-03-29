@@ -282,7 +282,6 @@ namespace llvm {
     {
       auto theT = node->getT();
       auto internal = isInternal(theT);
-      errs() << "Is: " << isInternal(theT) << ", " << isExternal(theT) << "\n"; 
       auto &map = internal ? internalNodeMap : externalNodeMap;
       auto &emptyDGMap = internal ? emptyDG.internalNodeMap : emptyDG.externalNodeMap;
       

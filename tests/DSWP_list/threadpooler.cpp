@@ -678,44 +678,48 @@ private:
   ThreadSafeQueue<std::function<void ()>> codeToExecuteByTheDeconstructor;
 };
 
-extern "C" void printReached(){
-  printf("Reached\n");
-}
-
 extern "C" void printReachedIter(int iter){
   printf("Iter:\t%d\n", iter);
 }
 
 extern "C" void queuePush(ThreadSafeQueue<int> *queue, int val){
+  //printf("Pushing val:%d\n", val);
   queue->push(val);
+  //printf("Pushed val:%d\n", val);
 }
 
 extern "C" void queuePop(ThreadSafeQueue<int> *queue, int &val){
+  //printf("Popping val\n");
   while (!queue->waitPop(val))
     printf("Spurious pop\n");
+  //printf("Popped val:%d\n", val);
 }
 
-extern "C" int parallelizeHandler(void (*f1)(ThreadSafeQueue<int> *, int *), int &res1, void (*f2)(ThreadSafeQueue<int> *, int *), int &res2){
-  /*
-   * Create a thread pool with 2 threads
-   */
-  ThreadPool pool(2);
+extern "C" void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
-  /*
-   * Submit and detach the two jobs
-   */
-  ThreadSafeQueue<int> queue;
-  ThreadSafeQueue<int> *queueP = &queue; 
-  int s, t; 
-  printf("Submitting stages:\n");
-  auto sFuture = pool.submit(f1, queueP, &s);
-  auto tFuture = pool.submit(f2, queueP, &t);
-  printf("Submitted stages:\n");
+extern "C" void stageHandler(void *env, void *queues, void *stages, int numberOfStages, int numberOfQueues){
+  ThreadSafeQueue<int> *localQueues[numberOfQueues];
+  for (int i = 0; i < numberOfQueues; ++i)
+  {
+    localQueues[i] = new ThreadSafeQueue<int>();
+  }
+  queues = localQueues;
 
-  sFuture.get();
-  tFuture.get();
+  ThreadPool pool(numberOfStages);
+  auto localFutures = (TaskFuture<void> *)malloc(numberOfStages * sizeof(TaskFuture<void>));
+  for (int i = 0; i < numberOfStages; ++i)
+  {
+    auto stage = ((void (**)(void *, void *)) stages)[i];
+    localFutures[i] = std::move(pool.submit(stage, env, queues));
+  }
 
-  res1 = s;
-  res2 = t;
-  return 0;
+  for (int i = 0; i < numberOfStages; ++i)
+  {
+    localFutures[i].get();
+  }
+
+  for (int i = 0; i < numberOfQueues; ++i)
+  {
+    delete localQueues[i];
+  }
 }

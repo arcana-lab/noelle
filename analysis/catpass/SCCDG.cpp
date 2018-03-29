@@ -34,7 +34,12 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
     for (auto pdgI = scc_begin(componentPDG); pdgI != scc_end(componentPDG); ++pdgI)
     {
       std::vector<DGNode<Instruction> *> nodes;
-      for (auto node : *pdgI) nodes.push_back(node);
+      errs() << "SCC:\n";
+      for (auto node : *pdgI) 
+      {
+        node->print(errs() << "Node of SCC:\n") << "\n";
+        nodes.push_back(node);
+      }
 
       auto scc = new SCC(nodes);
       sccDG->createNodeFrom(scc, /*inclusion=*/ true);
