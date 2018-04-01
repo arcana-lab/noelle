@@ -27,8 +27,8 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   auto components = pdg->collectConnectedComponents();
 
   for (auto componentNodes : components) {
-    errs() << "Connected component:\n";
-    for (auto node : *componentNodes) node->print(errs()) << "\n";
+    // errs() << "Connected component:\n";
+    // for (auto node : *componentNodes) node->print(errs()) << "\n";
 
     auto componentPDG = new PDG();
     pdg->extractNodesFromSelfInto(*cast<DG<Instruction>>(componentPDG), *componentNodes, *componentNodes->begin(), false);
@@ -38,7 +38,6 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
     for (auto topLevelNode : componentPDG->getTopLevelNodes())
     {
       componentPDG->setEntryNode(topLevelNode);
-      topLevelNode->print(errs() << "Top level node:\t") << "\n"; 
       for (auto pdgI = scc_begin(componentPDG); pdgI != scc_end(componentPDG); ++pdgI)
       {
         std::vector<DGNode<Instruction> *> nodes;
@@ -55,8 +54,8 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
         }
 
         if (!uniqueSCC) continue;
-        errs() << "SCC:\n";
-        for (auto node : nodes) node->print(errs()) << "\n";
+        // errs() << "SCC:\n";
+        // for (auto node : nodes) node->print(errs()) << "\n";
         auto scc = new SCC(nodes);
         sccDG->createNodeFrom(scc, /*inclusion=*/ true);
       }
@@ -125,25 +124,39 @@ SCCDG *llvm::SCCDG::extractSCCIntoGraph(DGNode<SCC> *sccNode)
 
 bool llvm::SCCDG::isPipeline()
 {
+  std::queue<DGNode<SCC> *> visiting;
+  std::set<DGNode<SCC> *> visited;
+
   /*
    * Traverse from arbitrary SCC to the top, if one exists
    */
   auto topOfPipeline = *begin_nodes();
   while (topOfPipeline->numIncomingEdges() != 0)
   {
-    if (topOfPipeline->numIncomingEdges() > 1) return false;
+    if (visited.find(topOfPipeline) != visited.end()) return false;
+    visited.insert(topOfPipeline);
     topOfPipeline = *topOfPipeline->begin_incoming_nodes();
   }
 
   /*
-   * Traverse from top SCC to the bottom, if one exists
+   * Traverse from top SCC to all nodes to confirm full coverage and no cycles
    */
-  unsigned visitedNodes = 1;
-  while (topOfPipeline->numOutgoingEdges() != 0)
+  visited.clear();
+  visiting.push(topOfPipeline);
+  unsigned numNodesReached = 0;
+  while (!visiting.empty())
   {
-    if (topOfPipeline->numOutgoingEdges() > 1) return false;
-    topOfPipeline = *topOfPipeline->begin_outgoing_nodes();
-    ++visitedNodes;
+    auto currentNode = visiting.front();
+    visiting.pop();
+    if (visited.find(currentNode) != visited.end()) return false;
+    visited.insert(currentNode);
+    ++numNodesReached;
+
+    for (auto node : make_range(currentNode->begin_outgoing_nodes(), currentNode->end_outgoing_nodes()))
+    {
+      visiting.push(node);
+    }
   }
-  return visitedNodes == numNodes();
+
+  return numNodesReached == this->numNodes();
 }
