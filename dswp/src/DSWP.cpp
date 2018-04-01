@@ -185,14 +185,14 @@ namespace llvm {
       {
         std::vector<std::unique_ptr<StageInfo>> stages;
 
-        printSCCs(LDI->loopBodySCCDG);
+        // printSCCs(LDI->loopBodySCCDG);
 
         /*
          * Extract loop SCC directly concerned with loop iteration
          */
         LDI->loopIterationSCCDG = extractLoopIterationSCCDG(LDI);
 
-        printSCCs(LDI->loopIterationSCCDG);
+        //printSCCs(LDI->loopIterationSCCDG);
 
         /*
          * Create the pipeline stages.
@@ -230,8 +230,10 @@ namespace llvm {
             auto fromSCC = sccPair.first->getT();
             auto toSCC = sccPair.second->getT();
 
+            // sccEdge->print(errs() << "SCC edge:\n") << "\n";
             for (auto instructionEdge : make_range(sccEdge->begin_sub_edges(), sccEdge->end_sub_edges()))
             {
+              // instructionEdge->print(errs() << "Instruction edge:\n") << "\n";
               /*
                * ASSUMPTION 3: There aren't memory data dependences
                */
