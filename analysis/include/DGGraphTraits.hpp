@@ -32,7 +32,7 @@ namespace llvm {
     }
 
     static std::string getNodeAttributes(DGNode<T> *node, DG *dg) {
-      return dg->isExternalNode(node) ? "color=gray" : "color=black";
+      return dg->isExternal(node->getT()) ? "color=gray" : "color=black";
     }
 
     std::string getEdgeSourceLabel(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter) {

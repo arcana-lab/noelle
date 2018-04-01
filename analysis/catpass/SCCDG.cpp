@@ -27,22 +27,39 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   auto components = pdg->collectConnectedComponents();
 
   for (auto componentNodes : components) {
+    errs() << "Connected component:\n";
+    for (auto node : *componentNodes) node->print(errs()) << "\n";
+
     auto componentPDG = new PDG();
     pdg->extractNodesFromSelfInto(*cast<DG<Instruction>>(componentPDG), *componentNodes, *componentNodes->begin(), false);
     delete componentNodes;
 
-    for (auto pdgI = scc_begin(componentPDG); pdgI != scc_end(componentPDG); ++pdgI)
+    std::set<DGNode<Instruction> *> nodesInSCCs;
+    for (auto topLevelNode : componentPDG->getTopLevelNodes())
     {
-      std::vector<DGNode<Instruction> *> nodes;
-      errs() << "SCC:\n";
-      for (auto node : *pdgI) 
+      componentPDG->setEntryNode(topLevelNode);
+      topLevelNode->print(errs() << "Top level node:\t") << "\n"; 
+      for (auto pdgI = scc_begin(componentPDG); pdgI != scc_end(componentPDG); ++pdgI)
       {
-        node->print(errs() << "Node of SCC:\n") << "\n";
-        nodes.push_back(node);
-      }
+        std::vector<DGNode<Instruction> *> nodes;
+        bool uniqueSCC = true;
+        for (auto node : *pdgI)
+        {
+          if (nodesInSCCs.find(node) != nodesInSCCs.end())
+          {
+            uniqueSCC = false;
+            break;
+          }
+          nodes.push_back(node);
+          nodesInSCCs.insert(node);
+        }
 
-      auto scc = new SCC(nodes);
-      sccDG->createNodeFrom(scc, /*inclusion=*/ true);
+        if (!uniqueSCC) continue;
+        errs() << "SCC:\n";
+        for (auto node : nodes) node->print(errs()) << "\n";
+        auto scc = new SCC(nodes);
+        sccDG->createNodeFrom(scc, /*inclusion=*/ true);
+      }
     }
   }
   /*

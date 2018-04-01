@@ -52,6 +52,7 @@ namespace llvm {
        * Node and Edge Properties
        */
       DGNode<T> *getEntryNode() { return entryNode; }
+      void setEntryNode(DGNode<T> *node) { entryNode = node; }
 
       bool isInternal(T *theT) { return internalNodeMap.find(theT) != internalNodeMap.end(); }
       bool isExternal(T *theT) { return externalNodeMap.find(theT) != externalNodeMap.end(); }
@@ -81,6 +82,7 @@ namespace llvm {
       /*
        * Merging/Extracting Graphs
        */
+      std::vector<DGNode<T> *> getTopLevelNodes();
       std::vector<std::vector<DGNode<T> *> *> collectConnectedComponents();
       void extractNodesFromSelfInto(DG<T> &emptyDG, std::vector<DGNode<T> *> nodesToExtract, DGNode<T> *entry, bool removeFromSelf);
 
@@ -107,6 +109,11 @@ namespace llvm {
       typedef typename std::vector<DGNode<T> *>::iterator nodes_iterator;
       typedef typename std::vector<DGEdge<T> *>::iterator edges_iterator;
 
+      nodes_iterator begin_nodes() { return connectedNodes.begin(); }
+      nodes_iterator end_nodes() { return connectedNodes.end(); }
+      edges_iterator begin_edges() { return connectedEdges.begin(); }
+      edges_iterator end_edges() { return connectedEdges.end(); }
+
       nodes_iterator begin_outgoing_nodes() { return outgoingNodes.begin(); }
       nodes_iterator end_outgoing_nodes() { return outgoingNodes.end(); }
       nodes_iterator begin_incoming_nodes() { return incomingNodes.begin(); }
@@ -129,9 +136,13 @@ namespace llvm {
       void addOutgoingNode(DGNode<T> *node, DGEdge<T> *edge);
       
       DGEdge<T> *getEdgeFromNodeIterator(nodes_iterator target, bool incomingEdge = false);
+      DGEdge<T> *getEdgeFromConnectedNodeIterator(nodes_iterator target);
 
     protected:
       T *theT;
+      // To iterate all connected nodes/edges
+      std::vector<DGNode<T> *> connectedNodes;
+      std::vector<DGEdge<T> *> connectedEdges;
       // To iterate connected nodes directly by node 
       std::vector<DGNode<T> *> outgoingNodes;
       std::vector<DGNode<T> *> incomingNodes;
@@ -238,6 +249,36 @@ namespace llvm {
   }
 
   template <class T>
+  std::vector<DGNode<T> *> DG<T>::getTopLevelNodes()
+  {
+    std::vector<DGNode<T> *> topLevelNodes;
+    std::set<DGNode<T> *> visitedNodes;
+    std::queue<DGNode<T> *> connectedNodes;
+    auto node = *allNodes.begin();
+
+    visitedNodes.insert(node);
+    connectedNodes.push(node);
+    while (!connectedNodes.empty())
+    {
+      bool topLevel = true;
+      auto currentNode = connectedNodes.front();
+      connectedNodes.pop();
+
+      for (auto node : make_range(currentNode->begin_incoming_nodes(), currentNode->end_incoming_nodes()))
+      {
+        if (visitedNodes.find(node) != visitedNodes.end()) continue;
+        topLevel = false;
+        visitedNodes.insert(node);
+        connectedNodes.push(node);
+      }
+
+      if (topLevel) topLevelNodes.push_back(currentNode);
+    }
+
+    return topLevelNodes;
+  }
+
+  template <class T>
   std::vector<std::vector<DGNode<T> *> *> DG<T>::collectConnectedComponents()
   {
     std::vector<std::vector<DGNode<T> *> *> connectedComponents;
@@ -252,20 +293,23 @@ namespace llvm {
        */
       auto component = new std::vector<DGNode<T> *>();
       std::queue<DGNode<T> *> connectedNodes;
-      connectedNodes.push(node);
+
       visitedNodes.insert(node);
+      connectedNodes.push(node);
       while (!connectedNodes.empty())
       {
         auto currentNode = connectedNodes.front();
         connectedNodes.pop();
         component->push_back(currentNode);
 
-        for (auto outgoingNode : make_range(currentNode->begin_outgoing_nodes(), currentNode->end_outgoing_nodes()))
-        {
-          if (visitedNodes.find(outgoingNode) != visitedNodes.end()) continue;
-          visitedNodes.insert(outgoingNode);
-          connectedNodes.push(outgoingNode);
-        }
+        auto checkToVisitNode = [&](DGNode<T> *node) -> void {
+          if (visitedNodes.find(node) != visitedNodes.end()) return;
+          visitedNodes.insert(node);
+          connectedNodes.push(node);
+        };
+
+        for (auto node : make_range(currentNode->begin_outgoing_nodes(), currentNode->end_outgoing_nodes())) checkToVisitNode(node);
+        for (auto node : make_range(currentNode->begin_incoming_nodes(), currentNode->end_incoming_nodes())) checkToVisitNode(node);
       }
 
       connectedComponents.push_back(component);
@@ -363,6 +407,8 @@ namespace llvm {
   {
     incomingNodes.push_back(node);
     incomingEdges.push_back(edge);
+    connectedNodes.push_back(node);
+    connectedEdges.push_back(edge);
   }
   
   template <class T>
@@ -370,6 +416,8 @@ namespace llvm {
   {
     outgoingNodes.push_back(node);
     outgoingEdges.push_back(edge);
+    connectedNodes.push_back(node);
+    connectedEdges.push_back(edge);
   }
   
   template <class T>
@@ -378,6 +426,12 @@ namespace llvm {
     // Index of edge iterator is equivalent to index of node iterator as the node and edge vectors are aligned
     int edgeIndex = target - (incomingEdge ? incomingNodes.begin() : outgoingNodes.begin());
     return incomingEdge ? incomingEdges[edgeIndex] : outgoingEdges[edgeIndex];
+  }
+
+  template <class T>
+  DGEdge<T> * DGNode<T>::getEdgeFromConnectedNodeIterator(nodes_iterator target)
+  {
+    return connectedEdges[target - connectedNodes.begin()];
   }
 
   /*

@@ -72,7 +72,7 @@ namespace llvm {
 
         int count = 0;
         for (auto sccI = sccSubgraph->begin_nodes(); sccI != sccSubgraph->end_nodes(); ++sccI) {
-          auto scc = (*sccI)->getNode();
+          auto scc = (*sccI)->getT();
           filename.clear();
           ros << "scc-" << F.getName() << "-" << (count++) << ".dot";
           writeGraph<SCC>(ros.str(), scc);
