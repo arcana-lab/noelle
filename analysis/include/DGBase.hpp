@@ -88,6 +88,8 @@ namespace llvm {
 
       raw_ostream & print(raw_ostream &stream);
 
+      void clear();
+
     protected:
       DGNode<T> *fetchNodeOf(T *theT);
       inline void connectNodesVia(DGEdge<T> *edge, DGNode<T> *from, DGNode<T> *to);
@@ -101,7 +103,8 @@ namespace llvm {
 
   // Template DG node to abstract node type
   template <class T> 
-  class DGNode {
+  class DGNode
+  {
     public:
       DGNode() : theT(nullptr) {}
       DGNode(T *node) : theT(node) {}
@@ -151,14 +154,17 @@ namespace llvm {
       std::vector<DGEdge<T> *> incomingEdges;
   };
 
-  template <class T> class DGEdge : public DGEdgeBase<T, T> {
+  template <class T>
+  class DGEdge : public DGEdgeBase<T, T>
+  {
    public:
     DGEdge(DGNode<T> *src, DGNode<T> *dst) : DGEdgeBase<T, T>(src, dst) {}
     DGEdge(const DGEdge<T> &oldEdge) : DGEdgeBase<T, T>(oldEdge) {}
   };
 
   template <class T, class SubT>
-  class DGEdgeBase {
+  class DGEdgeBase
+  {
    public:
     DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
       : from(src), to(dst), memory(false), must(false), readAfterWrite(false), writeAfterWrite(false) {}
@@ -371,6 +377,16 @@ namespace llvm {
         checkToExtractNode(edge->getNodePair().second);
       }
     }
+  }
+
+  template <class T>
+  void DG<T>::clear()
+  {
+    allNodes.clear();
+    allEdges.clear();
+    entryNode = nullptr;
+    internalNodeMap.clear();
+    externalNodeMap.clear();
   }
 
   /*

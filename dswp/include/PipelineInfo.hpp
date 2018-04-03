@@ -56,7 +56,7 @@ namespace llvm {
          */
         unordered_map<DGEdge<Instruction> *, int> edgeToQueueMap;
 
-        std::vector<OutgoingPipelineInfo *> valuePushQueues;
-        std::map<Instruction *, IncomingPipelineInfo *> valuePopQueuesMap;
+        std::vector<std::unique_ptr<OutgoingPipelineInfo>> valuePushQueues;
+        std::map<Instruction *, std::unique_ptr<IncomingPipelineInfo>> valuePopQueuesMap;
 	};
 }

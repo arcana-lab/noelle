@@ -24,12 +24,12 @@ llvm::SCCDG::~SCCDG() {
 SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   auto sccDG = new SCCDG();
 
+  /*
+   * Iterate over all connected components of the PDG and calculate strongly connected components
+   */
   auto components = pdg->collectConnectedComponents();
-
-  for (auto componentNodes : components) {
-    // errs() << "Connected component:\n";
-    // for (auto node : *componentNodes) node->print(errs()) << "\n";
-
+  for (auto componentNodes : components)
+  {
     auto componentPDG = new PDG();
     pdg->extractNodesFromSelfInto(*cast<DG<Instruction>>(componentPDG), *componentNodes, *componentNodes->begin(), false);
     delete componentNodes;
@@ -54,13 +54,18 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
         }
 
         if (!uniqueSCC) continue;
-        // errs() << "SCC:\n";
-        // for (auto node : nodes) node->print(errs()) << "\n";
         auto scc = new SCC(nodes);
         sccDG->createNodeFrom(scc, /*inclusion=*/ true);
       }
     }
+
+    /*
+     * Delete just the component holder, not the nodes; the nodes are references to those of the pdg passed in
+     */
+    componentPDG->clear();
+    delete componentPDG;
   }
+
   /*
    * Maintain association of each internal node to its SCC
    */
