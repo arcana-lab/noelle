@@ -27,7 +27,10 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   /*
    * Iterate over all connected components of the PDG and calculate strongly connected components
    */
+
+  // RENAME: Get disconnected subgraphs
   auto components = pdg->collectConnectedComponents();
+  
   for (auto componentNodes : components)
   {
     auto componentPDG = new PDG();
@@ -129,39 +132,5 @@ SCCDG *llvm::SCCDG::extractSCCIntoGraph(DGNode<SCC> *sccNode)
 
 bool llvm::SCCDG::isPipeline()
 {
-  std::queue<DGNode<SCC> *> visiting;
-  std::set<DGNode<SCC> *> visited;
-
-  /*
-   * Traverse from arbitrary SCC to the top, if one exists
-   */
-  auto topOfPipeline = *begin_nodes();
-  while (topOfPipeline->numIncomingEdges() != 0)
-  {
-    if (visited.find(topOfPipeline) != visited.end()) return false;
-    visited.insert(topOfPipeline);
-    topOfPipeline = *topOfPipeline->begin_incoming_nodes();
-  }
-
-  /*
-   * Traverse from top SCC to all nodes to confirm full coverage and no cycles
-   */
-  visited.clear();
-  visiting.push(topOfPipeline);
-  unsigned numNodesReached = 0;
-  while (!visiting.empty())
-  {
-    auto currentNode = visiting.front();
-    visiting.pop();
-    if (visited.find(currentNode) != visited.end()) return false;
-    visited.insert(currentNode);
-    ++numNodesReached;
-
-    for (auto node : make_range(currentNode->begin_outgoing_nodes(), currentNode->end_outgoing_nodes()))
-    {
-      visiting.push(node);
-    }
-  }
-
-  return numNodesReached == this->numNodes();
+  return this->numNodes() > 1;
 }

@@ -697,7 +697,7 @@ extern "C" void queuePop(ThreadSafeQueue<int> *queue, int &val){
 
 extern "C" void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
-extern "C" void stageHandler(void *env, void *queues, void *stages, int numberOfStages, int numberOfQueues){
+extern "C" void stageDispatcher(void *env, void *queues, void *stages, int numberOfStages, int numberOfQueues){
   ThreadSafeQueue<int> *localQueues[numberOfQueues];
   for (int i = 0; i < numberOfQueues; ++i)
   {

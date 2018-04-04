@@ -34,7 +34,7 @@ namespace llvm {
     public:
       static char ID;
 
-      Function *stageHandler, *queuePushTemporary, *queuePopTemporary;
+      Function *stageDispatcher, *queuePushTemporary, *queuePopTemporary;
       FunctionType *stageType;
       Type *queueType;
       IntegerType *int8, *int32, *int64;
@@ -79,9 +79,9 @@ namespace llvm {
         queueType = queuePushTemporary->arg_begin()->getType();
 
         /*
-         * Signature: void stageHandler(void *env, void *queues, void *stages, int numberOfStages, int numberOfQueues)
+         * Signature: void stageDispatcher(void *env, void *queues, void *stages, int numberOfStages, int numberOfQueues)
          */
-        stageHandler = M.getFunction("stageHandler");
+        stageDispatcher = M.getFunction("stageDispatcher");
 
         /*
          * Method: void stageExecuter(void (*stage)(void *, void *), void *env, void *queues) { return stage(env, queues); }
@@ -186,20 +186,25 @@ namespace llvm {
          * Extract loop SCC directly concerned with loop iteration
          */
         LDI->loopIterationSCCDG = extractLoopIterationSCCDG(LDI);
-        // printSCCs(LDI->loopBodySCCDG);
-        // printSCCs(LDI->loopIterationSCCDG);
+        printSCCs(LDI->loopBodySCCDG);
+        printSCCs(LDI->loopIterationSCCDG);
 
         /*
          * Create the pipeline stages.
          */
         std::vector<std::unique_ptr<StageInfo>> stages;
-        if (!locateNStageSCCLoop(LDI, stages)) return false;
+        if (!isWorthParallelizing(LDI, stages)) return false;
         for (auto &stage : stages) createPipelineStageFromSCC(LDI, stage);
+
+        /*
+         * Create the pipeline (connecting the stages (remove this functionality from createTheLoopSwitcher)) 
+         */
+        // TODO
 
         /*
          * Create the switcher that will decide whether or not we will execute the parallelized loop.
          */
-        auto pipelineBB = createTheLoopSwitcher(LDI, stages);
+        auto pipelineBB = createPipelineFromStages(LDI, stages);
         if (pipelineBB == nullptr)
         {
           for (auto &stage : stages) stage->sccStage->eraseFromParent();
@@ -232,7 +237,11 @@ namespace llvm {
               /*
                * ASSUMPTION: There aren't memory data dependences
                */
-              if (instructionEdge->isMemoryDependence()) return false;
+              if (instructionEdge->isMemoryDependence()) 
+                {
+                  errs() << "Memory dependence\n";
+                  return false;
+                }
 
               auto fromStage = sccToStage[fromSCC];
               auto toStage = sccToStage[toSCC];
@@ -279,12 +288,13 @@ namespace llvm {
         return true;
       }
 
-      bool locateNStageSCCLoop (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages)
+      bool isWorthParallelizing (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages)
       {
         auto loop = LDI->loop;
         auto sccSubgraph = LDI->loopBodySCCDG;
 
-        if (!sccSubgraph->isPipeline()) return false;
+        if (!sccSubgraph->isPipeline())
+          { errs() << "Isn't a pipeline\n"; return false; }
 
         unordered_map<SCC *, StageInfo *> sccToStage;
         for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
@@ -299,7 +309,7 @@ namespace llvm {
         return collectLoopInternalDependents(LDI, stages, sccToStage) && collectLoopExternalDependents(LDI, stages);
       }
 
-      void cloneLoopInstExecutedByStage (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void cloneLoopInstWithinStage (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         auto &iCloneMap = *stageInfo->iCloneMap;
         for (auto sccI = stageInfo->scc->begin_internal_node_map(); sccI != stageInfo->scc->end_internal_node_map(); ++sccI)
@@ -324,7 +334,10 @@ namespace llvm {
         }
       }
 
-      void storeAndLoadExternalDependents (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      /*
+       * OPTIMIZATION: Have only one location in environment for every unique incoming dependency
+       */
+      void linkStageWithEnvironment (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
         IRBuilder<> exitBuilder(stageInfo->exitBlock);
@@ -406,13 +419,17 @@ namespace llvm {
         for (auto edge : stageInfo->incomingSCCEdges)
         {
           auto outgoingI = edge->getNodePair().first->getT();
+
+          /*
+           * Only create one pop per incoming dependency. Multiple instructions can access the value of this pop
+           */
           if (stageInfo->valuePopQueuesMap.find(outgoingI) != stageInfo->valuePopQueuesMap.end()) continue;
 
           auto valuePop = std::make_unique<IncomingPipelineInfo>();
           valuePop->popStorage = entryBuilder.CreateAlloca(int32);
-          valuePop->loadStorage = entryBuilder.CreateLoad(valuePop->popStorage);
           auto queueCallArgs = ArrayRef<Value*>({ getQueuePtrFromEdge(edge), cast<Value>(valuePop->popStorage) });
           valuePop->popQueueCall = entryBuilder.CreateCall(queuePopTemporary, queueCallArgs);
+          valuePop->loadStorage = entryBuilder.CreateLoad(valuePop->popStorage);
           stageInfo->valuePopQueuesMap[outgoingI] = std::move(valuePop);
         }
 
@@ -429,8 +446,12 @@ namespace llvm {
           valuePop->userInstructions.push_back(userInstruction);
 
           /*
-           * FIX: Use edge to identify dependent operand
+           * FIX: Use edge to determine whether mem/var dependence.
+           * If mem, do nothing because queue pop took care of synchronization with previous stage. There is no need to pop a value; it's loaded from mem 
+           * If var, query edge for operand source
            */
+          // if (is mem) continue;
+
           for (auto useI = incomingI->op_begin(); useI != incomingI->op_end(); ++useI)
           {
             if (auto opI = dyn_cast<Instruction>(useI->get()))
@@ -474,6 +495,7 @@ namespace llvm {
         }
       }
 
+      // Decouple mapping instruction operands and linking basic blocks into two functions (Link first, then remap operands)
       void remapOperandsOfClones (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         auto &iCloneMap = *stageInfo->iCloneMap;
@@ -541,13 +563,15 @@ namespace llvm {
         }
       }
 
-      void insertQueuePushAndPops (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void scheduleQueuePushAndPops (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         /*
          * Insert queue pops + loads at start of loop body
          */
         Instruction *popBeforeInst;
         auto headerBB = (*stageInfo->bbCloneMap)[LDI->loop->getHeader()];
+
+        // FIX: Insert queue pops after PHI nodes of the cloned header instead of a non-exiting successor to the header
         for (auto succToHeader : make_range(succ_begin(headerBB), succ_end(headerBB)))
         {
           if (stageInfo->exitBlock != succToHeader)
@@ -564,7 +588,7 @@ namespace llvm {
         }
 
         /*
-         * Insert queue pushes right after instruction that computes the pushed variable
+         * Insert queue pushes right after the instruction which computes the variable to be pushed
          */
         for (auto &valuePush : stageInfo->valuePushQueues)
         {
@@ -588,8 +612,8 @@ namespace llvm {
         unordered_map<Instruction *, Instruction *> cloneMap;
         stageInfo->iCloneMap = &cloneMap;
 
-        cloneLoopInstExecutedByStage(LDI, stageInfo);
-        storeAndLoadExternalDependents(LDI, stageInfo);
+        cloneLoopInstWithinStage(LDI, stageInfo);
+        linkStageWithEnvironment(LDI, stageInfo);
         createQueuePushAndPops(LDI, stageInfo);
 
         /*
@@ -600,14 +624,14 @@ namespace llvm {
 
         createAndPopulateStageBB(LDI, stageInfo);
         remapOperandsOfClones(LDI, stageInfo);
-        insertQueuePushAndPops(LDI, stageInfo);
+        scheduleQueuePushAndPops(LDI, stageInfo);
 
         IRBuilder<> exitBuilder(stageInfo->exitBlock);
         exitBuilder.CreateRetVoid();
         stageInfo->sccStage->print(errs() << "Function printout:\n"); errs() << "\n";
       }
 
-      BasicBlock * createTheLoopSwitcher (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages)
+      BasicBlock * createPipelineFromStages (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages)
       {
         auto M = LDI->func->getParent();
         auto pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->func);
@@ -617,7 +641,7 @@ namespace llvm {
 
         /*
          * Create empty environment array
-         * ASSUMPTION: All the types of environment variables are int32
+         * ASSUMPTION: All the types of environment variables are int32 <- change to void pointers
          */
         auto envArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->externalDependentInstCount);
         auto envAlloca = cast<Value>(builder.CreateAlloca(envArrayType));
@@ -646,7 +670,7 @@ namespace llvm {
         }
 
         /*
-         * Pass the environment and stage function pointers to the stage handler
+         * Pass the environment and stage function pointers to the stage dispatcher
          */
         auto stagesArrayType = ArrayType::get(PointerType::getUnqual(int8), stages.size());
         auto stagesAlloca = cast<Value>(builder.CreateAlloca(stagesArrayType));
@@ -661,7 +685,7 @@ namespace llvm {
         }
 
         /*
-         * Create empty queues array to be used by stages
+         * Create empty queues array to be used by the stage dispatcher
          */
         auto queuesArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->internalDependentInstCount);
         auto queuesAlloca = cast<Value>(builder.CreateAlloca(queuesArrayType));
@@ -669,12 +693,12 @@ namespace llvm {
         auto queuesCount = cast<Value>(ConstantInt::get(int32, LDI->internalDependentInstCount));
 
         /*
-         * Call the stage handler with the environment, queues array, and stages array
+         * Call the stage dispatcher with the environment, queues array, and stages array
          */
         auto envPtr = cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(int8)));
         auto stagesPtr = cast<Value>(builder.CreateBitCast(stagesAlloca, PointerType::getUnqual(int8)));
         auto stagesCount = cast<Value>(ConstantInt::get(int32, stages.size()));
-        builder.CreateCall(stageHandler, ArrayRef<Value*>({ envPtr, queuesPtr, stagesPtr, stagesCount, queuesCount }));
+        builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queuesPtr, stagesPtr, stagesCount, queuesCount }));
 
         /*
          * Extract the outgoing dependents for each stage
@@ -706,7 +730,7 @@ namespace llvm {
         return pipelineBB;
       }
 
-      void linkParallelizedLoop(LoopDependenceInfo *LDI, BasicBlock *pipelineBB)
+      void linkParallelizedLoop (LoopDependenceInfo *LDI, BasicBlock *pipelineBB)
       {
         auto M = LDI->func->getParent();
         auto preheader = LDI->loop->getLoopPreheader();

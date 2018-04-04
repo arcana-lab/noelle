@@ -486,8 +486,9 @@ namespace llvm {
   template <class T, class SubT>
   raw_ostream & DGEdgeBase<T, SubT>::print(raw_ostream &stream)
   {
-    from->print(stream << "From:\t") << "\n";
-    to->print(stream << "To:\t");
+    from->print(stream << "From:\n");
+    to->print(stream << "To:\n");
+    stream << this->toString() << "\n";
     return stream;
   }
 }
