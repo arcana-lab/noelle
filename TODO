@@ -1,9 +1,5 @@
 Simplifcations:
-1) there is only one function in the whole program
-2) there is only one loop in the whole program
-3) you know at compile time how many iterations of the loop you will have at run time
-4) there are < 1000 number of iterations
-5) you know that there are only 2 SCC
-6) you know you have only one variable across SCCs
-7) no dependences from outside instructions to inside the loop
-8) there is no memory data dependences
+- there is only one function in the whole program
+  TODO: do not change what you are iterating over (i.e., cache the list of functions before modifying them)
+
+- there is no memory data dependences (pop for synchronization is missing)
