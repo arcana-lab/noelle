@@ -19,7 +19,7 @@ int main (){
     v3 = v2 + 17;
     v4 = v3 - 23;
 
-    printVar = printf("Iteration\n");
+    printVar += printf("Iteration\n");
   }
 
   printf("Number of bytes printed out in total:%d\n", printVar);
