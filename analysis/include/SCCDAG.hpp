@@ -22,14 +22,16 @@ namespace llvm {
   /*
    * Program Dependence Graph.
    */
-  class SCCDG : public DG<SCC> {
+  class SCCDAG : public DG<SCC> {
     public:
-      SCCDG() ;
-      ~SCCDG() ;
+      SCCDAG() ;
+      ~SCCDAG() ;
 
-      static SCCDG *createSCCGraphFrom(PDG *);
-      SCCDG *extractSCCIntoGraph(DGNode<SCC> *);
-      bool isPipeline();
+      static SCCDAG *createSCCDAGFrom(PDG *);
+
+      //TODO remove it
+      //TODO implement "removeNode" in DG
+      SCCDAG *extractSCCIntoGraph(DGNode<SCC> *); 
   };
 }
 

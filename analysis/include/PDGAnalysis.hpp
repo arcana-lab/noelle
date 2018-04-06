@@ -23,10 +23,6 @@ namespace llvm {
 
       PDG * getPDG () ;
 
-      void constructEdgesFromUseDefs (Module &M);
-      
-      void constructEdgesFromAliases (Module &M);
-
     private:
       PDG *programDependenceGraph;
       std::map<Function *, AAResults *> aaResults;
@@ -41,6 +37,10 @@ namespace llvm {
       void iterateInstForLoadAliases(Function &, AAResults *, LoadInst *);
 
       void iterateInstForModRef(Function &, AAResults *, CallInst &);
+
+      void constructEdgesFromUseDefs (Module &M);
+      
+      void constructEdgesFromAliases (Module &M);
 
   };
 }

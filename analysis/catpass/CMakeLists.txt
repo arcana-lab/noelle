@@ -2,7 +2,7 @@
 set(CATPassSrc 
   CatPass.cpp
   PDG.cpp
-  SCCDG.cpp
+  SCCDAG.cpp
   SCC.cpp
 )
 

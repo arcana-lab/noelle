@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PDG.hpp"
-#include "SCCDG.hpp"
+#include "SCCDAG.hpp"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
@@ -25,7 +25,7 @@ namespace llvm {
 		PDG *loopDG;
 
 		PDG *loopBodyDG;
-		SCCDG *loopBodySCCDG, *loopIterationSCCDG;
+		SCCDAG *loopBodySCCDAG, *loopIterationSCCDAG;
 		
 		/*
 		 * Separates control flow instructions (within otherInstOfLoop) from the rest of the loop

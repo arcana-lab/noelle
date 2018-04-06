@@ -1,10 +1,10 @@
 #include "PDG.hpp"
-#include "SCCDG.hpp"
+#include "SCCDAG.hpp"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
-#include "../include/LoopDependenceInfo.hpp"
+#include "LoopDependenceInfo.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -13,11 +13,11 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, LoopInfo &li, Dominato
 		: func{f}, LI{li}, DT{dt}, SE{se}, loop{l}, functionDG{fG}, bodyInstOfLoop{bodyInst}, otherInstOfLoop{otherInst} {
 	loopDG = functionDG->createLoopsSubgraph(LI);
 	loopBodyDG = loopDG->createInstListSubgraph(bodyInst);
-	loopBodySCCDG = SCCDG::createSCCGraphFrom(loopBodyDG);
+	loopBodySCCDAG = SCCDAG::createSCCDAGFrom(loopBodyDG);
 };
 
 llvm::LoopDependenceInfo::~LoopDependenceInfo() {
 	delete loopDG;
 	delete loopBodyDG;
-	delete loopBodySCCDG;
+	delete loopBodySCCDAG;
 }

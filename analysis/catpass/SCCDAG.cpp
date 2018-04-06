@@ -9,11 +9,11 @@
 #include <unordered_map>
 
 #include "../include/DGGraphTraits.hpp"
-#include "../include/SCCDG.hpp"
+#include "../include/SCCDAG.hpp"
 
-llvm::SCCDG::SCCDG() {}
+llvm::SCCDAG::SCCDAG() {}
 
-llvm::SCCDG::~SCCDG() {
+llvm::SCCDAG::~SCCDAG() {
   for (auto *edge : allEdges)
     if (edge) delete edge;
   for (auto *node : allNodes)
@@ -21,8 +21,8 @@ llvm::SCCDG::~SCCDG() {
 }
 
 
-SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
-  auto sccDG = new SCCDG();
+SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
+  auto sccDG = new SCCDAG();
 
   /*
    * Iterate over all connected components of the PDG and calculate strongly connected components
@@ -122,15 +122,10 @@ SCCDG *llvm::SCCDG::createSCCGraphFrom(PDG *pdg) {
   return sccDG;
 }
 
-SCCDG *llvm::SCCDG::extractSCCIntoGraph(DGNode<SCC> *sccNode)
+SCCDAG *llvm::SCCDAG::extractSCCIntoGraph(DGNode<SCC> *sccNode)
 {
-  SCCDG *sccDG = new SCCDG();
+  SCCDAG *sccDG = new SCCDAG();
   std::vector<DGNode<SCC> *> sccNodes = { sccNode };
   extractNodesFromSelfInto(*cast<DG<SCC>>(sccDG), sccNodes, sccNode, /*removeFromSelf=*/ true);
   return sccDG;
-}
-
-bool llvm::SCCDG::isPipeline()
-{
-  return this->numNodes() > 1;
 }

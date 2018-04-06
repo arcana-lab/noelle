@@ -17,11 +17,11 @@
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
 
-#include "../include/LoopDependenceInfo.hpp"
-#include "../include/PipelineInfo.hpp"
+#include "LoopDependenceInfo.hpp"
+#include "PipelineInfo.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
-#include "SCCDG.hpp"
+#include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
 
 #include <unordered_map>
@@ -151,10 +151,10 @@ namespace llvm {
         return make_pair(bodyInst, otherInst);
       }
 
-      SCCDG *extractLoopIterationSCCDG (LoopDependenceInfo *LDI)
+      SCCDAG *extractLoopIterationSCCDAG (LoopDependenceInfo *LDI)
       {
         auto loop = LDI->loop;
-        auto sccSubgraph = LDI->loopBodySCCDG;
+        auto sccSubgraph = LDI->loopBodySCCDAG;
 
         Instruction *iterationInst = nullptr;
         auto headerBr = cast<BranchInst>(loop->getHeader()->getTerminator());
@@ -185,9 +185,9 @@ namespace llvm {
         /*
          * Extract loop SCC directly concerned with loop iteration
          */
-        LDI->loopIterationSCCDG = extractLoopIterationSCCDG(LDI);
-        printSCCs(LDI->loopBodySCCDG);
-        printSCCs(LDI->loopIterationSCCDG);
+        LDI->loopIterationSCCDAG = extractLoopIterationSCCDAG(LDI);
+        printSCCs(LDI->loopBodySCCDAG);
+        printSCCs(LDI->loopIterationSCCDAG);
 
         /*
          * Create the pipeline stages.
@@ -197,12 +197,7 @@ namespace llvm {
         for (auto &stage : stages) createPipelineStageFromSCC(LDI, stage);
 
         /*
-         * Create the pipeline (connecting the stages (remove this functionality from createTheLoopSwitcher)) 
-         */
-        // TODO
-
-        /*
-         * Create the switcher that will decide whether or not we will execute the parallelized loop.
+         * Create the pipeline (connecting the stages)
          */
         createPipelineFromStages(LDI, stages);
         if (LDI->pipelineBB == nullptr)
@@ -214,15 +209,14 @@ namespace llvm {
         /*
          * Link the parallelized loop within the original function that includes the sequential loop.
          */
-        linkParallelizedLoop(LDI);
-        // LDI->func->print(errs() << "Final function:\n"); errs() << "\n";
+        linkParallelizedLoopToOriginalFunction(LDI);
 
         return true;
       }
 
       bool collectLoopInternalDependents (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages, unordered_map<SCC *, StageInfo *> &sccToStage)
       {
-        for (auto scc : make_range(LDI->loopBodySCCDG->begin_nodes(), LDI->loopBodySCCDG->end_nodes()))
+        for (auto scc : make_range(LDI->loopBodySCCDAG->begin_nodes(), LDI->loopBodySCCDAG->end_nodes()))
         {
           for (auto sccEdge : make_range(scc->begin_outgoing_edges(), scc->end_outgoing_edges()))
           {
@@ -304,9 +298,9 @@ namespace llvm {
       bool isWorthParallelizing (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages)
       {
         auto loop = LDI->loop;
-        auto sccSubgraph = LDI->loopBodySCCDG;
+        auto sccSubgraph = LDI->loopBodySCCDAG;
 
-        if (!sccSubgraph->isPipeline()) return false;
+        if (sccSubgraph->numNodes() <= 1) return false;
 
         unordered_map<SCC *, StageInfo *> sccToStage;
         for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
@@ -332,7 +326,7 @@ namespace llvm {
           iCloneMap[I] = I->clone();
         }
 
-        auto loopIterationSCC = LDI->loopIterationSCCDG->getEntryNode()->getT();
+        auto loopIterationSCC = LDI->loopIterationSCCDAG->getEntryNode()->getT();
         for (auto node : make_range(loopIterationSCC->begin_nodes(), loopIterationSCC->end_nodes()))
         {
           auto I = node->getT();
@@ -769,7 +763,7 @@ namespace llvm {
         builder.CreateBr(LDI->loop->getExitBlock());
       }
 
-      void linkParallelizedLoop (LoopDependenceInfo *LDI)
+      void linkParallelizedLoopToOriginalFunction (LoopDependenceInfo *LDI)
       {
         auto M = LDI->func->getParent();
         auto preheader = LDI->loop->getLoopPreheader();
@@ -805,7 +799,7 @@ namespace llvm {
         }
       }
 
-      void printSCCs(SCCDG *sccSubgraph)
+      void printSCCs(SCCDAG *sccSubgraph)
       {
         errs() << "\nInternal SCCs\n";
         for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {

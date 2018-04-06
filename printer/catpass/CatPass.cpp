@@ -11,7 +11,7 @@
 #include "DGGraphTraits.hpp"
 #include "PDG.hpp"
 #include "PDGAnalysis.hpp"
-#include "SCCDG.hpp"
+#include "SCCDAG.hpp"
 
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/Analysis/DOTGraphTraitsPass.h"
@@ -67,8 +67,8 @@ namespace llvm {
 
         filename.clear();
         ros << "sccdg-" << F.getName() << ".dot";
-        SCCDG *sccSubgraph = SCCDG::createSCCGraphFrom(subgraph);
-        writeGraph<SCCDG>(ros.str(), sccSubgraph);
+        SCCDAG *sccSubgraph = SCCDAG::createSCCDAGFrom(subgraph);
+        writeGraph<SCCDAG>(ros.str(), sccSubgraph);
 
         int count = 0;
         for (auto sccI = sccSubgraph->begin_nodes(); sccI != sccSubgraph->end_nodes(); ++sccI) {

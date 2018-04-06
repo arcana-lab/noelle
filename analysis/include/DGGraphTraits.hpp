@@ -3,7 +3,7 @@
 #include "DGBase.hpp"
 #include "SCC.hpp"
 #include "PDG.hpp"
-#include "SCCDG.hpp"
+#include "SCCDAG.hpp"
 
 using namespace llvm;
 
@@ -81,10 +81,10 @@ namespace llvm {
    * Strongly Connected Components Graph DOTGraphTraits specialization
    */
   template<>
-  struct DOTGraphTraits<SCCDG *>  : DGDOTGraphTraits<SCCDG, SCC> {
-    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<SCCDG, SCC>(isSimple) {}
+  struct DOTGraphTraits<SCCDAG *>  : DGDOTGraphTraits<SCCDAG, SCC> {
+    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<SCCDAG, SCC>(isSimple) {}
 
-    static std::string getGraphName(SCCDG *dg) {
+    static std::string getGraphName(SCCDAG *dg) {
       return "Strongly Connected Component Graph";
     }
   };
@@ -118,9 +118,9 @@ namespace llvm {
   };
 
   /*
-   * DGGraphTraits specializations for PDG, SCC, and SCCDG
+   * DGGraphTraits specializations for PDG, SCC, and SCCDAG
    */
   template<> struct GraphTraits<PDG *> : DGGraphTraits<PDG, Instruction> {};
   template<> struct GraphTraits<SCC *> : DGGraphTraits<SCC, Instruction> {};
-  template<> struct GraphTraits<SCCDG *> : DGGraphTraits<SCCDG, SCC> {};
+  template<> struct GraphTraits<SCCDAG *> : DGGraphTraits<SCCDAG, SCC> {};
 }
