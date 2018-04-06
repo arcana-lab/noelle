@@ -34,6 +34,11 @@ namespace llvm {
 		std::vector<Instruction *> otherInstOfLoop;
 
 		/*
+		 * Stores new pipeline execution
+		 */
+		BasicBlock *pipelineBB;
+
+		/*
 		 * Tracks Type of value used by dependents inside/outside of the loop
 		 */
 		std::vector<Type *> internalDependentTypes;
@@ -43,5 +48,11 @@ namespace llvm {
 		 * Tracks byte lengths of the internal types stored above.
 		 */
 		std::vector<int> internalDependentByteLengths;
+
+		/*
+		 * Types for arrays storing dependencies and stages
+		 */
+		ArrayType *envArrayType, *queueArrayType, *stageArrayType;
+		Value *zeroIndexForBaseArray;
 	};
 }
