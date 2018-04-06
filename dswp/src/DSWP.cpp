@@ -222,7 +222,6 @@ namespace llvm {
 
       bool collectLoopInternalDependents (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages, unordered_map<SCC *, StageInfo *> &sccToStage)
       {
-        LDI->internalDependentInstCount = 0;
         for (auto scc : make_range(LDI->loopBodySCCDG->begin_nodes(), LDI->loopBodySCCDG->end_nodes()))
         {
           for (auto sccEdge : make_range(scc->begin_outgoing_edges(), scc->end_outgoing_edges()))
@@ -237,19 +236,24 @@ namespace llvm {
               /*
                * ASSUMPTION: There aren't memory data dependences
                */
-              if (instructionEdge->isMemoryDependence()) 
-                {
-                  errs() << "Memory dependence\n";
-                  return false;
-                }
+              if (instructionEdge->isMemoryDependence()) return false;
 
               auto fromStage = sccToStage[fromSCC];
               auto toStage = sccToStage[toSCC];
 
               fromStage->outgoingSCCEdges.push_back(instructionEdge);
               toStage->incomingSCCEdges.push_back(instructionEdge);
-              fromStage->edgeToQueueMap[instructionEdge] = LDI->internalDependentInstCount;
-              toStage->edgeToQueueMap[instructionEdge] = LDI->internalDependentInstCount++;
+
+              auto index = LDI->internalDependentByteLengths.size();
+              fromStage->edgeToQueueMap[instructionEdge] = index;
+              toStage->edgeToQueueMap[instructionEdge] = index;
+              
+              auto dependentInstType = instructionEdge->getNodePair().first->getT()->getType();
+              LDI->internalDependentTypes.push_back(dependentInstType);
+
+              auto bitSize = dependentInstType->getPrimitiveSizeInBits();
+              if (bitSize % 8 != 0) return false;
+              LDI->internalDependentByteLengths.push_back(bitSize / 8);
             }
           }
         }
@@ -258,18 +262,18 @@ namespace llvm {
 
       bool collectLoopExternalDependents (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages)
       {
-        LDI->externalDependentInstCount = 0;
         for (auto nodeI : LDI->loopDG->externalNodePairs())
         {
           auto externalNode = nodeI.second;
-
-          auto addDependentStagesWith = [&](Instruction *internalInst) -> void {
+          auto externalInst = externalNode->getT();
+          auto addDependentStagesWith = [&](Instruction *internalInst, Type *dependencyType) -> void {
             for (auto &stage : stages)
             {
               if (!stage->scc->isInternal(internalInst)) continue;
-              auto externalInst = externalNode->getT();
-              stage->externalDependencyToEnvMap[externalInst] = LDI->externalDependentInstCount++;
+              stage->externalDependencyToEnvMap[externalInst] = LDI->externalDependentTypes.size();
               stage->outgoingDependentMap[internalInst] = externalInst;
+
+              LDI->externalDependentTypes.push_back(dependencyType);
             }
           };
 
@@ -278,11 +282,11 @@ namespace llvm {
            */
           for (auto incomingNode : make_range(externalNode->begin_incoming_nodes(), externalNode->end_incoming_nodes()))
           {
-            addDependentStagesWith(incomingNode->getT());
+            addDependentStagesWith(incomingNode->getT(), incomingNode->getT()->getType());
           }
           for (auto outgoingNode : make_range(externalNode->begin_outgoing_nodes(), externalNode->end_outgoing_nodes()))
           {
-            addDependentStagesWith(outgoingNode->getT());
+            addDependentStagesWith(outgoingNode->getT(), externalNode->getT()->getType());
           }
         }
         return true;
@@ -293,8 +297,7 @@ namespace llvm {
         auto loop = LDI->loop;
         auto sccSubgraph = LDI->loopBodySCCDG;
 
-        if (!sccSubgraph->isPipeline())
-          { errs() << "Isn't a pipeline\n"; return false; }
+        if (!sccSubgraph->isPipeline()) return false;
 
         unordered_map<SCC *, StageInfo *> sccToStage;
         for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
@@ -342,14 +345,16 @@ namespace llvm {
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
         IRBuilder<> exitBuilder(stageInfo->exitBlock);
         auto arrayIndexValue = cast<Value>(ConstantInt::get(int64, 0));
-        auto arrayPtrType = PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(int8), LDI->externalDependentInstCount));
+        auto arrayPtrType = PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(int8), LDI->externalDependentTypes.size()));
         auto envArg = &*(stageInfo->sccStage->arg_begin());
         auto envAlloca = entryBuilder.CreateBitCast(envArg, arrayPtrType);
 
-        auto createEnvPtrFromDep = [&](Instruction *externalDependency, IRBuilder<> builder) -> Value * {
+        auto accessEnvVarFromDep = [&](Instruction *externalDependency, IRBuilder<> builder) -> Value * {
           auto envIndex = stageInfo->externalDependencyToEnvMap[externalDependency];
           auto envIndexValue = cast<Value>(ConstantInt::get(int64, envIndex));
-          return builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ arrayIndexValue, envIndexValue }));
+          auto envPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ arrayIndexValue, envIndexValue }));
+          auto envType = LDI->externalDependentTypes[envIndex];
+          return builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(envType));
         };
 
         /*
@@ -357,10 +362,9 @@ namespace llvm {
          */
         for (auto dependencyPair : stageInfo->outgoingDependentMap)
         {
-          auto envPtr = createEnvPtrFromDep(dependencyPair.second, exitBuilder);
-          auto envVarCast = exitBuilder.CreateBitCast(exitBuilder.CreateLoad(envPtr), PointerType::getUnqual(int32));
+          auto envVar = accessEnvVarFromDep(dependencyPair.second, exitBuilder);
           auto outgoingDependency = (*stageInfo->iCloneMap)[dependencyPair.first];
-          exitBuilder.CreateStore(outgoingDependency, envVarCast);
+          exitBuilder.CreateStore(outgoingDependency, envVar);
         }
 
         /*
@@ -368,9 +372,8 @@ namespace llvm {
          */
         for (auto dependencyPair : stageInfo->incomingDependentMap)
         {
-          auto envPtr = createEnvPtrFromDep(dependencyPair.second, entryBuilder);
-          auto envVarCast = entryBuilder.CreateBitCast(entryBuilder.CreateLoad(envPtr), PointerType::getUnqual(int32));
-          auto incomingValue = entryBuilder.CreateLoad(envVarCast);
+          auto envVar = accessEnvVarFromDep(dependencyPair.second, entryBuilder);
+          auto incomingValue = entryBuilder.CreateLoad(envVar);
 
           Value *originalDepValue = cast<Value>(dependencyPair.first);
           for (auto &depOp : (*stageInfo->iCloneMap)[dependencyPair.first]->operands())
@@ -385,7 +388,7 @@ namespace llvm {
       {
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
         auto arrayIndexValue = cast<Value>(ConstantInt::get(int64, 0));
-        auto queuesPtrType = PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(int8), LDI->internalDependentInstCount));
+        auto queuesPtrType = PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(int8), LDI->internalDependentTypes.size()));
         auto argIter = stageInfo->sccStage->arg_begin();
         auto queueArg = cast<Value>(&*(++argIter));
         auto queuesArray = entryBuilder.CreateBitCast(queueArg, queuesPtrType);
@@ -405,10 +408,19 @@ namespace llvm {
         {
           auto outgoingI = edge->getNodePair().first->getT();
           auto outgoingClone = (*stageInfo->iCloneMap)[outgoingI];
-          auto queueCallArgs = ArrayRef<Value*>({ getQueuePtrFromEdge(edge), cast<Value>(outgoingClone) });
+          auto queueIndex = stageInfo->edgeToQueueMap[edge];
+          auto byteLength = cast<Value>(ConstantInt::get(int64, LDI->internalDependentByteLengths[queueIndex]));
+          auto outgoingType = LDI->internalDependentTypes[queueIndex];
+
+          auto outgoingPtr = entryBuilder.CreateAlloca(outgoingType);
+          auto outgoingStore = entryBuilder.CreateStore(outgoingClone, outgoingPtr);
+          auto outgoingCast = cast<Value>(entryBuilder.CreateBitCast(outgoingPtr, PointerType::getUnqual(int8)));
+          auto queueCallArgs = ArrayRef<Value*>({ getQueuePtrFromEdge(edge), outgoingCast, byteLength });
 
           auto valuePush = std::make_unique<OutgoingPipelineInfo>();
           valuePush->valueInstruction = outgoingClone;
+          valuePush->valueIntoPtrStore = outgoingStore;
+          valuePush->ptrToValueCast = outgoingCast;
           valuePush->pushQueueCall = entryBuilder.CreateCall(queuePushTemporary, queueCallArgs);
           stageInfo->valuePushQueues.push_back(std::move(valuePush));
         }
@@ -426,8 +438,13 @@ namespace llvm {
           if (stageInfo->valuePopQueuesMap.find(outgoingI) != stageInfo->valuePopQueuesMap.end()) continue;
 
           auto valuePop = std::make_unique<IncomingPipelineInfo>();
-          valuePop->popStorage = entryBuilder.CreateAlloca(int32);
-          auto queueCallArgs = ArrayRef<Value*>({ getQueuePtrFromEdge(edge), cast<Value>(valuePop->popStorage) });
+          auto queueIndex = stageInfo->edgeToQueueMap[edge];
+          auto byteLength = cast<Value>(ConstantInt::get(int64, LDI->internalDependentByteLengths[queueIndex]));
+          auto outgoingType = LDI->internalDependentTypes[queueIndex];
+
+          valuePop->popStorage = entryBuilder.CreateAlloca(outgoingType);
+          valuePop->popCast = cast<Value>(entryBuilder.CreateBitCast(valuePop->popStorage, PointerType::getUnqual(int8)));
+          auto queueCallArgs = ArrayRef<Value*>({ getQueuePtrFromEdge(edge), valuePop->popCast, byteLength });
           valuePop->popQueueCall = entryBuilder.CreateCall(queuePopTemporary, queueCallArgs);
           valuePop->loadStorage = entryBuilder.CreateLoad(valuePop->popStorage);
           stageInfo->valuePopQueuesMap[outgoingI] = std::move(valuePop);
@@ -446,11 +463,9 @@ namespace llvm {
           valuePop->userInstructions.push_back(userInstruction);
 
           /*
-           * FIX: Use edge to determine whether mem/var dependence.
            * If mem, do nothing because queue pop took care of synchronization with previous stage. There is no need to pop a value; it's loaded from mem 
-           * If var, query edge for operand source
            */
-          // if (is mem) continue;
+          if (edge->isMemoryDependence()) continue;
 
           for (auto useI = incomingI->op_begin(); useI != incomingI->op_end(); ++useI)
           {
@@ -583,6 +598,7 @@ namespace llvm {
         for (auto &valuePopIter : stageInfo->valuePopQueuesMap)
         {
           auto &valuePop = valuePopIter.second;
+          cast<Instruction>(valuePop->popCast)->moveBefore(popBeforeInst);
           valuePop->popQueueCall->moveBefore(popBeforeInst);
           valuePop->loadStorage->moveBefore(popBeforeInst);
         }
@@ -595,7 +611,10 @@ namespace llvm {
           auto valInst = valuePush->valueInstruction;
           auto valueBBIter = valInst->getParent()->end();
           while (&*valueBBIter != valInst) --valueBBIter;
-          valuePush->pushQueueCall->moveBefore(&*(++valueBBIter));
+          auto afterValInst = &*(++valueBBIter);
+          cast<Instruction>(valuePush->valueIntoPtrStore)->moveBefore(afterValInst);
+          cast<Instruction>(valuePush->ptrToValueCast)->moveBefore(afterValInst);
+          valuePush->pushQueueCall->moveBefore(afterValInst);
         }
       }
 
@@ -641,18 +660,18 @@ namespace llvm {
 
         /*
          * Create empty environment array
-         * ASSUMPTION: All the types of environment variables are int32 <- change to void pointers
          */
-        auto envArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->externalDependentInstCount);
+        auto envArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->externalDependentTypes.size());
         auto envAlloca = cast<Value>(builder.CreateAlloca(envArrayType));
         std::vector<Value*> envVarPtrs;
-        for (int i = 0; i < LDI->externalDependentInstCount; ++i)
+        for (int i = 0; i < LDI->externalDependentTypes.size(); ++i)
         {
-          auto envVarPtr = builder.CreateAlloca(int32);
+          Type *envType = LDI->externalDependentTypes[i];
+          auto envVarPtr = builder.CreateAlloca(envType);
           envVarPtrs.push_back(envVarPtr);
           auto envIndex = cast<Value>(ConstantInt::get(int64, i));
           auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ baseArrayIndex, envIndex }));
-          auto depCast = builder.CreateBitCast(depInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(int32)));
+          auto depCast = builder.CreateBitCast(depInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
           builder.CreateStore(envVarPtr, depCast);
         }
 
@@ -687,18 +706,19 @@ namespace llvm {
         /*
          * Create empty queues array to be used by the stage dispatcher
          */
-        auto queuesArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->internalDependentInstCount);
+        auto queuesArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->internalDependentTypes.size());
         auto queuesAlloca = cast<Value>(builder.CreateAlloca(queuesArrayType));
         auto queuesPtr = cast<Value>(builder.CreateBitCast(queuesAlloca, PointerType::getUnqual(int8)));
-        auto queuesCount = cast<Value>(ConstantInt::get(int32, LDI->internalDependentInstCount));
+        auto queuesCount = cast<Value>(ConstantInt::get(int64, LDI->internalDependentTypes.size()));
 
         /*
          * Call the stage dispatcher with the environment, queues array, and stages array
          */
         auto envPtr = cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(int8)));
         auto stagesPtr = cast<Value>(builder.CreateBitCast(stagesAlloca, PointerType::getUnqual(int8)));
-        auto stagesCount = cast<Value>(ConstantInt::get(int32, stages.size()));
+        auto stagesCount = cast<Value>(ConstantInt::get(int64, stages.size()));
         builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queuesPtr, stagesPtr, stagesCount, queuesCount }));
+
 
         /*
          * Extract the outgoing dependents for each stage
@@ -708,9 +728,11 @@ namespace llvm {
           for (auto dependencyPair : stage->outgoingDependentMap)
           {
             auto externalDependency = dependencyPair.second;
-            auto envIndex = cast<Value>(ConstantInt::get(int64, stage->externalDependencyToEnvMap[externalDependency]));
+            auto depIndex = stage->externalDependencyToEnvMap[externalDependency];
+            auto envIndex = cast<Value>(ConstantInt::get(int64, depIndex));
+            auto envType = LDI->externalDependentTypes[depIndex];
             auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ baseArrayIndex, envIndex }));
-            auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(int32));
+            auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(envType));
             auto envVar = builder.CreateLoad(envVarCast);
 
             if (auto depPHI = dyn_cast<PHINode>(externalDependency))

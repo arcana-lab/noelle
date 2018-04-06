@@ -1,8 +1,10 @@
 #include <stdio.h>
 
 int main (){
-  int v1, v2, v3, v4, printVar;
-  v1 = 111;
+  double v1, v2;
+  int v3, v4;
+  int printVar;
+  v1 = 111.0;
   v2 = 3;
   v3 = 7;
   v4 = 11;
@@ -21,6 +23,6 @@ int main (){
   }
 
   printf("Number of bytes printed out in total:%d\n", printVar);
-  printf("%d, %d, %d, %d\n", v1, v2, v3, v4);
+  printf("%1f, %1f, %d, %d\n", v1, v2, v3, v4);
   return 0;
 }

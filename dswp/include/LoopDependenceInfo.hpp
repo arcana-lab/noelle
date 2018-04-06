@@ -27,10 +27,21 @@ namespace llvm {
 		PDG *loopBodyDG;
 		SCCDG *loopBodySCCDG, *loopIterationSCCDG;
 		
+		/*
+		 * Separates control flow instructions (within otherInstOfLoop) from the rest of the loop
+		 */
 		std::vector<Instruction *> bodyInstOfLoop;
 		std::vector<Instruction *> otherInstOfLoop;
 
-		int externalDependentInstCount;
-		int internalDependentInstCount;
+		/*
+		 * Tracks Type of value used by dependents inside/outside of the loop
+		 */
+		std::vector<Type *> internalDependentTypes;
+		std::vector<Type *> externalDependentTypes;
+
+		/*
+		 * Tracks byte lengths of the internal types stored above.
+		 */
+		std::vector<int> internalDependentByteLengths;
 	};
 }

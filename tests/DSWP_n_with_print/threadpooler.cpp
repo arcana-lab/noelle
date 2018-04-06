@@ -682,26 +682,31 @@ extern "C" void printReachedIter(int iter){
   printf("Iter:\t%d\n", iter);
 }
 
-extern "C" void queuePush(ThreadSafeQueue<int> *queue, int val){
-  //printf("Pushing val:%d\n", val);
-  queue->push(val);
-  //printf("Pushed val:%d\n", val);
+extern "C" void queuePush(ThreadSafeQueue<char> *queue, char *val, int64_t byteLength){
+  char *oldVal = val;
+  for (int i = 0; i < byteLength; ++i, ++val) 
+  {
+    queue->push(*val);
+  }
+  val = oldVal;
 }
 
-extern "C" void queuePop(ThreadSafeQueue<int> *queue, int &val){
-  //printf("Popping val\n");
-  while (!queue->waitPop(val))
-    printf("Spurious pop\n");
-  //printf("Popped val:%d\n", val);
+extern "C" void queuePop(ThreadSafeQueue<char> *queue, char *val, int64_t byteLength){
+  char *oldVal = val;
+  for (int i = 0; i < byteLength; ++i, ++val)
+  {
+    while (!queue->waitPop(*val)) printf("Spurious pop\n");
+  }
+  val = oldVal;
 }
 
 extern "C" void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
-extern "C" void stageDispatcher(void *env, void *queues, void *stages, int numberOfStages, int numberOfQueues){
-  ThreadSafeQueue<int> *localQueues[numberOfQueues];
+extern "C" void stageDispatcher(void *env, void *queues, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
+  ThreadSafeQueue<char> *localQueues[numberOfQueues];
   for (int i = 0; i < numberOfQueues; ++i)
   {
-    localQueues[i] = new ThreadSafeQueue<int>();
+    localQueues[i] = new ThreadSafeQueue<char>();
   }
   queues = localQueues;
 

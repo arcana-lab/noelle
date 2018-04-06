@@ -12,17 +12,36 @@ using namespace llvm;
 namespace llvm {
 
 	struct IncomingPipelineInfo {
-		CallInst * popQueueCall;
+		/*
+		 * Storage and cast of the incoming value
+		 */
         Instruction * popStorage;
+        Value * popCast;
+
+        /*
+         * Queue pop followed by load of pop storage's value
+         */
+		CallInst * popQueueCall;
         LoadInst * loadStorage;
 
+        /*
+         * List of instructions using the pop storage's value
+         */
         std::vector<Instruction *> userInstructions;
 	};
 
 	struct OutgoingPipelineInfo {
-		CallInst * pushQueueCall;
-
+		/*
+		 * Calculation, store, and cast of the outgoing value and a pointer to it
+		 */
         Instruction * valueInstruction;
+        Value * valueIntoPtrStore;
+        Value * ptrToValueCast;
+
+        /*
+         * Queue push of value
+         */
+		CallInst * pushQueueCall;
 	};
 	
 	struct StageInfo {
