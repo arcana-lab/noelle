@@ -21,6 +21,10 @@
 
 using namespace MARC;
 
+extern "C" void printReachedIter(int iter){
+  printf("Iter:\t%d\n", iter);
+}
+
 extern "C" void queuePush(ThreadSafeQueue<char> *queue, char *val, int64_t byteLength){
   char *oldVal = val;
   for (int i = 0; i < byteLength; ++i, ++val) 

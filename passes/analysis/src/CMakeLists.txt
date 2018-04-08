@@ -1,5 +1,5 @@
 # Sources
-set(CATPassSrc 
+set(Srcs 
   CatPass.cpp
   PDG.cpp
   SCCDAG.cpp
@@ -7,10 +7,10 @@ set(CATPassSrc
 )
 
 # Compilation flags
-set_source_files_properties(${CATPassSrc} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
+set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(CATPassName "PDGAnalysis")
+set(PassName "PDGAnalysis")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -26,6 +26,5 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS})
 
-
 # Declare the LLVM pass to compile
-add_llvm_loadable_module(${CATPassName} ${CATPassSrc})
+add_llvm_loadable_module(${PassName} ${Srcs})
