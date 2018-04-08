@@ -9,9 +9,6 @@ analysis:
 dswp:
 	cd $@ ; ./run_me.sh
 
-download:
-	../scripts/download.sh "/project/marc/repositories/threadpool"
-
 uninstall:
 	rm -rf ~/CAT ;
 
