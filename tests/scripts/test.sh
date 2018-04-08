@@ -16,26 +16,30 @@ for i in `ls`; do
   checked_tests=`echo "$checked_tests + 1" | bc` ;
 
   cd $i ;
+  echo -n "Testing `basename $i` " ;
+
+  # Compile
+  make >> compiler_output.txt 2>&1 ;
 
   # Baseline
-  make baseline ;
   ./baseline &> output_baseline.txt ;
 
   # Transformation
-  make clean ;
-  make ;
   ./parallelized &> output_parallelized.txt ;
 
   # Check the output ;
   cmp output_baseline.txt output_parallelized.txt &> /dev/null ;
   if test $? -ne 0 ; then
+    echo "Failed" ;
     dirs_of_failed_tests="${i} ${dirs_of_failed_tests}" ;
   else
     passed_tests=`echo "$passed_tests + 1" | bc` ;
+    echo "Passed" ;
   fi
 
   cd ../ ;
 done
+echo "" ;
 
 # Print the results
 echo "Tests passed: ${passed_tests} / ${checked_tests}" ;
