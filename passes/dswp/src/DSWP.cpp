@@ -46,8 +46,11 @@ namespace llvm {
       bool runOnModule (Module &M) override
       {
         errs() << "DSWP for " << M.getName() << "\n";
-
-        collectThreadPoolHelperFunctionsAndTypes(M);
+        if (!collectThreadPoolHelperFunctionsAndTypes(M))
+        {
+          errs() << "DSWP utils not included!\n";
+          return false;
+        }
 
         auto graph = getAnalysis<PDGAnalysis>().getPDG();
 
@@ -65,29 +68,28 @@ namespace llvm {
         return modified;
       }
 
-      void collectThreadPoolHelperFunctionsAndTypes (Module &M)
+      bool collectThreadPoolHelperFunctionsAndTypes (Module &M)
       {
         int8 = IntegerType::get(M.getContext(), 8);
         int32 = IntegerType::get(M.getContext(), 32);
         int64 = IntegerType::get(M.getContext(), 64);
 
-        /*
-         * ASSUMPTION: Queue helpers take ThreadSafeQueue<int> queues as argument 
-         */
         queuePushTemporary = M.getFunction("queuePush");
         queuePopTemporary = M.getFunction("queuePop");
+        if (queuePushTemporary == nullptr || queuePopTemporary == nullptr) return false;
         queueType = queuePushTemporary->arg_begin()->getType();
 
         /*
          * Signature: void stageDispatcher(void *env, void *queues, void *stages, int numberOfStages, int numberOfQueues)
-         */
-        stageDispatcher = M.getFunction("stageDispatcher");
-
-        /*
          * Method: void stageExecuter(void (*stage)(void *, void *), void *env, void *queues) { return stage(env, queues); }
          */
-        auto stageArgType = M.getFunction("stageExecuter")->arg_begin()->getType();
+        stageDispatcher = M.getFunction("stageDispatcher");
+        auto stageExecuter = M.getFunction("stageExecuter");
+        if (stageDispatcher == nullptr || stageExecuter == nullptr) return false;
+
+        auto stageArgType = stageExecuter->arg_begin()->getType();
         stageType = cast<FunctionType>(cast<PointerType>(stageArgType)->getElementType());
+        return true;
       }
 
       void getAnalysisUsage (AnalysisUsage &AU) const override
@@ -378,8 +380,11 @@ namespace llvm {
           auto incomingValue = entryBuilder.CreateLoad(envVar);
 
           Value *originalDepValue = cast<Value>(dependencyPair.first);
-          for (auto &depOp : (*stageInfo->iCloneMap)[dependencyPair.first]->operands())
+          auto cloneOfDepInst = (*stageInfo->iCloneMap)[dependencyPair.first];
+          cloneOfDepInst->print(errs() << "\t"); errs() << "\n";
+          for (auto &depOp : cloneOfDepInst->operands())
           {
+            depOp->print(errs() << "\t Op:"); errs() << "\n";
             if (depOp != originalDepValue) continue;
             depOp.set(incomingValue);
           }
