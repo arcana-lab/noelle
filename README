@@ -1,0 +1,4 @@
+== PREREQUISITES ==
+LLVM 5.0.0
+
+To enable it on the Zythos cluster: source /project/llvm/5.0.0/enable

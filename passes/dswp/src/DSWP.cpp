@@ -185,11 +185,16 @@ namespace llvm {
       {
 
         /*
-         * Extract loop SCC directly concerned with loop iteration
+         * Compute the SCCDAG of the loop given as input.
          */
         LDI->loopIterationSCCDAG = extractLoopIterationSCCDAG(LDI);
         printSCCs(LDI->loopBodySCCDAG);
         printSCCs(LDI->loopIterationSCCDAG);
+
+        /*
+         * Merge SCCs of the SCCDAG.
+         */
+        mergeSCCs(LDI);
 
         /*
          * Create the pipeline stages.
@@ -214,6 +219,16 @@ namespace llvm {
         linkParallelizedLoopToOriginalFunction(LDI);
 
         return true;
+      }
+
+      void mergeSCCs (LoopDependenceInfo *LDI){
+
+        /*
+         * Merge the SCC related to a single PHI node and its use if there is only one.
+         */
+        //TODO
+
+        return ;
       }
 
       bool collectLoopInternalDependents (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages, unordered_map<SCC *, StageInfo *> &sccToStage)
