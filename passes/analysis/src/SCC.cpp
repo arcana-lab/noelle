@@ -3,7 +3,7 @@
 
 using namespace llvm;
 
-llvm::SCC::SCC(std::vector<DGNode<Instruction> *> nodes) {
+llvm::SCC::SCC(std::vector<DGNode<Value> *> nodes) {
 	/*
 	 * Arbitrarily choose entry node from all nodes
 	 */
@@ -21,8 +21,8 @@ llvm::SCC::SCC(std::vector<DGNode<Instruction> *> nodes) {
 	/*
 	 * Adds external nodes not encountered before to a temporary list
 	 */
-	std::vector<DGNode<Instruction> *> newNodes;
-	auto addNode = [this](DGNode<Instruction> *node, std::vector<DGNode<Instruction> *> &newNodes) -> bool {
+	std::vector<DGNode<Value> *> newNodes;
+	auto addNode = [this](DGNode<Value> *node, std::vector<DGNode<Value> *> &newNodes) -> bool {
 		bool newExternalNode = !isInGraph(node->getT());
 		if (newExternalNode) {
 			newNodes.push_back(node);

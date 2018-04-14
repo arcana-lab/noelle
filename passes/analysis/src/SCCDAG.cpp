@@ -34,16 +34,16 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
   for (auto componentNodes : components)
   {
     auto componentPDG = new PDG();
-    pdg->extractNodesFromSelfInto(*cast<DG<Instruction>>(componentPDG), *componentNodes, *componentNodes->begin(), false);
+    pdg->extractNodesFromSelfInto(*cast<DG<Value>>(componentPDG), *componentNodes, *componentNodes->begin(), false);
     delete componentNodes;
 
-    std::set<DGNode<Instruction> *> nodesInSCCs;
+    std::set<DGNode<Value> *> nodesInSCCs;
     for (auto topLevelNode : componentPDG->getTopLevelNodes())
     {
       componentPDG->setEntryNode(topLevelNode);
       for (auto pdgI = scc_begin(componentPDG); pdgI != scc_end(componentPDG); ++pdgI)
       {
-        std::vector<DGNode<Instruction> *> nodes;
+        std::vector<DGNode<Value> *> nodes;
         bool uniqueSCC = true;
         for (auto node : *pdgI)
         {
@@ -72,7 +72,7 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
   /*
    * Maintain association of each internal node to its SCC
    */
-  auto nodeSCCMap = unordered_map<DGNode<Instruction> *, SCC *>();
+  auto nodeSCCMap = unordered_map<DGNode<Value> *, SCC *>();
   for (auto sccNode : make_range(sccDG->begin_nodes(), sccDG->end_nodes()))
   {
     auto scc = sccNode->getT();
@@ -85,10 +85,10 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
   /*
    * Helper function to find or create an SCC from a node
    */
-  auto fetchOrCreateSCC = [&nodeSCCMap, sccDG](DGNode<Instruction> *node) -> SCC* {
+  auto fetchOrCreateSCC = [&nodeSCCMap, sccDG](DGNode<Value> *node) -> SCC* {
     auto sccI = nodeSCCMap.find(node);
     if (sccI == nodeSCCMap.end()) {
-      vector<DGNode<Instruction> *> sccNodes = { node };
+      vector<DGNode<Value> *> sccNodes = { node };
       auto scc = new SCC(sccNodes);
       sccDG->createNodeFrom(scc, /*inclusion=*/ false);
       nodeSCCMap[node] = scc;
@@ -112,7 +112,7 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
     if ((sccDG->isExternal(fromSCC) && sccDG->isExternal(toSCC)) || fromSCC == toSCC) continue;
 
     /*
-     * Create edge between SCCs with same properties as the edge between instructions within the SCCs
+     * Create edge between SCCs with same properties as the edge between values within the SCCs
      */
     auto sccEdge = sccDG->createEdgeFromTo(fromSCC, toSCC);
     sccEdge->setMemMustRaw(edge->isMemoryDependence(), edge->isMustDependence(), edge->isRAWDependence());

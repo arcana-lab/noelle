@@ -20,7 +20,7 @@ namespace llvm {
   /*
    * Program Dependence Graph.
    */
-  class PDG : public DG<Instruction> {
+  class PDG : public DG<Value> {
     public:
       PDG() ;
       ~PDG() ;
@@ -35,7 +35,7 @@ namespace llvm {
        */
       PDG *createFunctionSubgraph(Function &F);
       PDG *createLoopsSubgraph(LoopInfo &LI);
-      PDG *createInstListSubgraph(std::vector<Instruction *> &instList);
+      PDG *createSubgraphFromValues(std::vector<Value *> &valueList);
       
     private:
       void copyEdgesInto(PDG *newPDG, bool linkToExternal = true);

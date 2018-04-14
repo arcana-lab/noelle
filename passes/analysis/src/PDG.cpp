@@ -22,12 +22,17 @@ llvm::PDG::~PDG() {
 
 void llvm::PDG::constructNodes (Module &M) {
   /*
-   * Create a node per instruction.
+   * Create a node per instruction and function argument
    */
-  for (auto &F : M) {
-    for (auto &B : F) {
-      for (auto &I : B) {
-        createNodeFrom(&I, /*inclusion=*/ true);
+  for (auto &F : M)
+  {
+    for (auto &arg : F.args()) createNodeFrom(cast<Value>(&arg), /*inclusion=*/ true);
+
+    for (auto &B : F)
+    {
+      for (auto &I : B)
+      {
+        createNodeFrom(cast<Value>(&I), /*inclusion=*/ true);
       }
     }
   }
@@ -52,11 +57,15 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
   auto functionPDG = new PDG();
 
   /*
-   * Create a node per instruction of function F only
+   * Create a node per instruction and argument of the function
    */
-  for (auto &B : F) {
-    for (auto &I : B) {
-      functionPDG->createNodeFrom(&I, /*inclusion=*/ true);
+  for (auto &arg : F.args()) createNodeFrom(cast<Value>(&arg), /*inclusion=*/ true);
+
+  for (auto &B : F)
+  {
+    for (auto &I : B)
+    {
+      functionPDG->createNodeFrom(cast<Value>(&I), /*inclusion=*/ true);
     }
   }
 
@@ -85,7 +94,7 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
     Loop *loop = &*i;
     for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi) {
       for (auto &I : **bbi) {
-        loopsPDG->createNodeFrom(&I, /*inclusion=*/ true);
+        loopsPDG->createNodeFrom(cast<Value>(&I), /*inclusion=*/ true);
       }
     }
   }
@@ -106,20 +115,20 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
   return loopsPDG;
 }
 
-PDG *llvm::PDG::createInstListSubgraph(std::vector<Instruction *> &instList) {
-  if (instList.empty()) return nullptr;
-  auto instPDG = new PDG();
+PDG *llvm::PDG::createSubgraphFromValues(std::vector<Value *> &valueList) {
+  if (valueList.empty()) return nullptr;
+  auto newPDG = new PDG();
 
-  for (auto &I : instList) {
-    instPDG->createNodeFrom(I, /*inclusion=*/ true);
+  for (auto &V : valueList) {
+    newPDG->createNodeFrom(V, /*inclusion=*/ true);
   }
 
-  instPDG->entryNode = instPDG->internalNodeMap[*(instList.begin())];
-  assert(instPDG->entryNode != nullptr);
+  newPDG->entryNode = newPDG->internalNodeMap[*(valueList.begin())];
+  assert(newPDG->entryNode != nullptr);
 
-  copyEdgesInto(instPDG, /*linkToExternal=*/ false);
+  copyEdgesInto(newPDG, /*linkToExternal=*/ false);
 
-  return instPDG;
+  return newPDG;
 }
 
 void llvm::PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal) {
@@ -145,7 +154,7 @@ void llvm::PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal) {
     /*
      * Use edge copy constructor to match old edge properties (mem/var, must/may, RAW/WAW)
      */
-    auto *edge = new DGEdge<Instruction>(*oldEdge);
+    auto *edge = new DGEdge<Value>(*oldEdge);
 
     /*
      * Configure new edge/nodes to point to each other 

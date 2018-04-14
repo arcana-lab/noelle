@@ -57,8 +57,8 @@ namespace llvm {
    * Program Dependence Graph DOTGraphTraits specialization
    */
   template<>
-  struct DOTGraphTraits<PDG *> : DGDOTGraphTraits<PDG, Instruction> {
-    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<PDG, Instruction>(isSimple) {}
+  struct DOTGraphTraits<PDG *> : DGDOTGraphTraits<PDG, Value> {
+    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<PDG, Value>(isSimple) {}
 
     static std::string getGraphName(PDG *dg) {
       return "Program Dependence Graph";
@@ -69,8 +69,8 @@ namespace llvm {
    * Strongly Connected Component DOTGraphTraits specialization
    */
   template<>
-  struct DOTGraphTraits<SCC *> : DGDOTGraphTraits<SCC, Instruction> {
-    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<SCC, Instruction>(isSimple) {}
+  struct DOTGraphTraits<SCC *> : DGDOTGraphTraits<SCC, Value> {
+    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<SCC, Value>(isSimple) {}
 
     static std::string getGraphName(SCC *dg) {
       return "Strongly Connected Component";
@@ -120,7 +120,7 @@ namespace llvm {
   /*
    * DGGraphTraits specializations for PDG, SCC, and SCCDAG
    */
-  template<> struct GraphTraits<PDG *> : DGGraphTraits<PDG, Instruction> {};
-  template<> struct GraphTraits<SCC *> : DGGraphTraits<SCC, Instruction> {};
+  template<> struct GraphTraits<PDG *> : DGGraphTraits<PDG, Value> {};
+  template<> struct GraphTraits<SCC *> : DGGraphTraits<SCC, Value> {};
   template<> struct GraphTraits<SCCDAG *> : DGGraphTraits<SCCDAG, SCC> {};
 }

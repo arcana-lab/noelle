@@ -12,17 +12,17 @@ namespace llvm {
 	/*
 	* Strongly Connected Component
 	*/
-	class SCC : public DG<Instruction> {
+	class SCC : public DG<Value> {
 	public:
-		SCC(std::vector<DGNode<Instruction> *> nodes) ;
+		SCC(std::vector<DGNode<Value> *> nodes) ;
 		~SCC() ;
 
 		raw_ostream &print(raw_ostream &stream) ;
 	};
 
-	template<> class DGEdge<SCC> : public DGEdgeBase<SCC, Instruction> {
+	template<> class DGEdge<SCC> : public DGEdgeBase<SCC, Value> {
 	public:
-		DGEdge(DGNode<SCC> *src, DGNode<SCC> *dst) : DGEdgeBase<SCC, Instruction>(src, dst) {}
-		DGEdge(const DGEdge<SCC> &oldEdge) : DGEdgeBase<SCC, Instruction>(oldEdge) {}
+		DGEdge(DGNode<SCC> *src, DGNode<SCC> *dst) : DGEdgeBase<SCC, Value>(src, dst) {}
+		DGEdge(const DGEdge<SCC> &oldEdge) : DGEdgeBase<SCC, Value>(oldEdge) {}
 	};
 }

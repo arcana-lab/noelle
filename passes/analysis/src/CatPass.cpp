@@ -62,13 +62,19 @@ static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel
 
 void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
   for (auto iNodePair : programDependenceGraph->internalNodePairs()) {
-    Instruction *I = iNodePair.first;
-    if (I->getNumUses() == 0)
+    Value *V = iNodePair.first;
+    if (V->getNumUses() == 0)
       continue;
-    for (auto& U : I->uses()) {
+    for (auto& U : V->uses()) {
       auto user = U.getUser();
-      if (auto userInst = dyn_cast<Instruction>(user)) {
-        auto *edge = programDependenceGraph->createEdgeFromTo(I, userInst);
+      if (auto userInst = dyn_cast<Instruction>(user))
+      {
+        auto *edge = programDependenceGraph->createEdgeFromTo(V, user);
+        edge->setMemMustRaw(false, true, true);
+      }
+      else if (auto userArg = dyn_cast<Argument>(user))
+      {
+        auto *edge = programDependenceGraph->createEdgeFromTo(V, user);
         edge->setMemMustRaw(false, true, true);
       }
     }
@@ -79,16 +85,16 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
 
 template <class InstI, class InstJ>
 void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, InstI *memI, InstJ *memJ, bool storePair){
-  DGEdge<Instruction> *edge;
+  DGEdge<Value> *edge;
   switch (aa->alias(MemoryLocation::get(memI),MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
-      edge = programDependenceGraph->createEdgeFromTo((Instruction*)memI, (Instruction*)memJ);
+      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)memJ);
       //if (F.getName() == "main") edge->print(errs() << "May:\t") << "\n";
       edge->setMemMustRaw(true, false, !storePair);
       break;
     case MustAlias:
-      edge = programDependenceGraph->createEdgeFromTo((Instruction*)memI, (Instruction*)memJ);
+      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)memJ);
       //if (F.getName() == "main") edge->print(errs() << "Must:\t") << "\n";
       edge->setMemMustRaw(true, true, !storePair);
       break;
@@ -96,36 +102,36 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, Inst
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, StoreInst *memI, CallInst *call){
-  DGEdge<Instruction> *edge;
+  DGEdge<Value> *edge;
   switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
-      edge = programDependenceGraph->createEdgeFromTo(memI, call);
+      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)call);
       edge->setMemMustRaw(true, false, true);
       //if (F.getName() == "main") edge->print(errs() << "Ref:\t") << "\n";
       break;
     case MRI_Mod:
-      edge = programDependenceGraph->createEdgeFromTo(memI, call);
+      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)call);
       edge->setMemMustRaw(true, false, false);
       //if (F.getName() == "main") edge->print(errs() << "Mod:\t") << "\n";
       break;
     case MRI_ModRef:
-      edge = programDependenceGraph->createEdgeFromTo(memI, call);
+      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)call);
       edge->setMemMustRaw(true, false, true);
       //if (F.getName() == "main") edge->print(errs() << "ModRef:\t") << "\n";
-      edge = programDependenceGraph->createEdgeFromTo(memI, call);
+      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)call);
       edge->setMemMustRaw(true, false, false);
       break;
   }
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, LoadInst *memI, CallInst *call){
-  DGEdge<Instruction> *edge;
+  DGEdge<Value> *edge;
   switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
       break;
     case MRI_Mod:
     case MRI_ModRef:
-      edge = programDependenceGraph->createEdgeFromTo(call, memI);
+      edge = programDependenceGraph->createEdgeFromTo((Value*)call, (Value*)memI);
       //if (F.getName() == "main") edge->print(errs() << "ModRef:\t") << "\n";
       edge->setMemMustRaw(true, false, true);
       break;
