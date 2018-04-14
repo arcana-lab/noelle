@@ -64,10 +64,23 @@ namespace llvm {
         }
         for (auto F : funcToModify)
         {
-          auto loopDI = fetchLoopToParallelize(*F, graph);
-          if (loopDI == nullptr) return false;
 
+          /* 
+           * Check if there is a loop to parallelize within the current function.
+           */
+          auto loopDI = fetchLoopToParallelize(*F, graph);
+          if (loopDI == nullptr) {
+            continue ;
+          }
+
+          /*
+           * Parallelize the current loop with DSWP.
+           */
           modified |= applyDSWP(loopDI);
+
+          /*
+           * Free the memory.
+           */
           delete loopDI;
         }
         return modified;
@@ -120,12 +133,29 @@ namespace llvm {
         auto funcPDG = graph->createFunctionSubgraph(function);
 
         /*
-         * ASSUMPTION 1: One loop in the entire function 
+         * ASSUMPTION: One outermost loop for the function.
+         *
+         * We have to have one single outermost loop.
+         */
+        if (std::distance(LI.begin(), LI.end()) != 1){
+          return nullptr;
+        }
+
+        /*
          * Choose the loop to parallelize.
          */
         for (auto loopIter : LI)
         {
           auto loop = &*loopIter;
+
+          /* 
+           * ASSUMPTION: No sub-loops.
+           */
+          auto subLoops = loop->getSubLoops();
+          if (subLoops.size() > 0){
+            continue ;
+          }
+
           auto instPair = divideLoopInstructions(loop);
           return new LoopDependenceInfo(&function, LI, DT, SE, loop, funcPDG, instPair.first, instPair.second);
         }
