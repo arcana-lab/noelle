@@ -5,6 +5,7 @@
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include <set>
+#include <queue>
 
 #include "llvm/Support/raw_ostream.h"
 
@@ -50,6 +51,24 @@ void llvm::PDG::constructNodes (Module &M) {
   assert(entryNode != nullptr);
 
   return ;
+}
+
+void llvm::PDG::constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree) {
+  /*std::queue<BasicBlock*> succBBQueue;
+  for (auto &B : F)
+  {
+    succBBQueue.clear();
+    succBBQueue.push(B);
+    while (!succBBQueue.empty())
+    {
+      BasicBlock *bb = succBBQueue.front();
+      succBBQueue.pop();
+
+      if (postDomTree.dominates(B))
+      for (bb)
+    }
+  }
+  */
 }
 
 PDG *llvm::PDG::createFunctionSubgraph(Function &F) {

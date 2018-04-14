@@ -39,8 +39,9 @@ namespace llvm {
       void iterateInstForModRef(Function &, AAResults *, CallInst &);
 
       void constructEdgesFromUseDefs (Module &M);
-      
+
       void constructEdgesFromAliases (Module &M);
 
+      void constructEdgesFromControl (Module &M);
   };
 }

@@ -7,6 +7,7 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/PostDominators.h"
 
 #include "../include/PDGAnalysis.hpp"
 
@@ -20,6 +21,7 @@ bool llvm::PDGAnalysis::doInitialization (Module &M){
 void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<AAResultsWrapperPass>();
+  AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.setPreservesAll();
   return ;
 }
@@ -31,6 +33,7 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   this->programDependenceGraph->constructNodes(M);
   constructEdgesFromUseDefs(M);
   constructEdgesFromAliases(M);
+  constructEdgesFromControl(M);
 
   return false;
 }
@@ -193,4 +196,11 @@ void llvm::PDGAnalysis::constructEdgesFromAliases (Module &M){
     }
   }
 }
-  
+
+void llvm::PDGAnalysis::constructEdgesFromControl (Module &M){
+  for (auto &F : M) {
+    if (F.empty()) continue ;
+    auto postDomTree = &getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
+    this->programDependenceGraph->constructControlEdgesForFunction(F, *postDomTree);
+  }
+}

@@ -25,6 +25,8 @@
 #include "PDGAnalysis.hpp"
 
 #include <unordered_map>
+#include <set>
+#include <queue>
 
 using namespace llvm;
 
@@ -53,15 +55,32 @@ namespace llvm {
         }
 
         auto graph = getAnalysis<PDGAnalysis>().getPDG();
+        auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
 
         auto modified = false;
-        std::vector<Function *> funcToModify;
-        for (auto &F : M)
+        std::set<Function *> funcToModify;
+        std::queue<Function *> funcToTraverse;
+
+        /*
+         * Collect functions through call graph starting at function "main"
+         */
+        funcToTraverse.push(M.getFunction("main"));
+        while (!funcToTraverse.empty())
         {
-          if (F.empty()) continue;
-          if (&F == stageDispatcher || &F == queuePushTemporary || &F == queuePopTemporary) continue;
-          funcToModify.push_back(&F);
+          auto func = funcToTraverse.front();
+          funcToTraverse.pop();
+          if (funcToModify.find(func) != funcToModify.end()) continue;
+          funcToModify.insert(func);
+
+          auto funcCGNode = callGraph[func];
+          for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end()))
+          {
+            auto F = callRecord.second->getFunction();
+            if (F->empty()) continue;
+            funcToTraverse.push(F);
+          }
         }
+
         for (auto F : funcToModify)
         {
 
@@ -117,6 +136,7 @@ namespace llvm {
         AU.addRequired<DominatorTreeWrapperPass>();
         AU.addRequired<LoopInfoWrapperPass>();
         AU.addRequired<ScalarEvolutionWrapperPass>();
+        AU.addRequired<CallGraphWrapperPass>();
         return ;
       }
 

@@ -7,6 +7,8 @@
 #include "llvm/Support/GraphWriter.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/PostDominators.h"
+#include "llvm/Analysis/CallGraph.h"
 #include "llvm/ADT/iterator_range.h"
 #include <set>
 
@@ -29,7 +31,7 @@ namespace llvm {
        * Creating Nodes and Edges
        */
       void constructNodes(Module &M);
-
+      void constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree);
       /*
        * Creating Program Dependence Subgraphs
        */
