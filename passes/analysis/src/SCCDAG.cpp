@@ -34,7 +34,7 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
   for (auto componentNodes : components)
   {
     auto componentPDG = new PDG();
-    pdg->extractNodesFromSelfInto(*cast<DG<Value>>(componentPDG), *componentNodes, *componentNodes->begin(), false);
+    pdg->partitionNodesIntoNewGraph(*cast<DG<Value>>(componentPDG), *componentNodes, *componentNodes->begin());
     delete componentNodes;
 
     std::set<DGNode<Value> *> nodesInSCCs;
@@ -119,13 +119,5 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
     sccEdge->addSubEdge(edge);
   }
 
-  return sccDG;
-}
-
-SCCDAG *llvm::SCCDAG::extractSCCIntoGraph(DGNode<SCC> *sccNode)
-{
-  SCCDAG *sccDG = new SCCDAG();
-  std::vector<DGNode<SCC> *> sccNodes = { sccNode };
-  extractNodesFromSelfInto(*cast<DG<SCC>>(sccDG), sccNodes, sccNode, /*removeFromSelf=*/ true);
   return sccDG;
 }

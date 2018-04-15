@@ -28,10 +28,5 @@ namespace llvm {
       ~SCCDAG() ;
 
       static SCCDAG *createSCCDAGFrom(PDG *);
-
-      //TODO remove it
-      //TODO implement "removeNode" in DG
-      SCCDAG *extractSCCIntoGraph(DGNode<SCC> *); 
   };
 }
-

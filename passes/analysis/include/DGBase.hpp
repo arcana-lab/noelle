@@ -84,7 +84,8 @@ namespace llvm {
        */
       std::vector<DGNode<T> *> getTopLevelNodes();
       std::vector<std::vector<DGNode<T> *> *> collectConnectedComponents();
-      void extractNodesFromSelfInto(DG<T> &emptyDG, std::vector<DGNode<T> *> nodesToExtract, DGNode<T> *entry, bool removeFromSelf);
+      void removeNodesFromSelf(std::vector<DGNode<T> *> nodesToRemove);
+      void partitionNodesIntoNewGraph(DG<T> &newGraph, std::vector<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode);
 
       raw_ostream & print(raw_ostream &stream);
 
@@ -167,7 +168,7 @@ namespace llvm {
   {
    public:
     DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
-      : from(src), to(dst), memory(false), must(false), readAfterWrite(false), writeAfterWrite(false) {}
+      : from(src), to(dst), memory(false), must(false), readAfterWrite(false), writeAfterWrite(false), isControl(false) {}
     DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
     typedef typename std::vector<DGEdge<SubT> *>::iterator edges_iterator;
@@ -181,7 +182,9 @@ namespace llvm {
     bool isMemoryDependence() const { return memory; }
     bool isMustDependence() const { return must; }
     bool isRAWDependence() const { return readAfterWrite; }
+    bool isControlDependence() const { return isControl; }
 
+    void setControl(bool ctrl) { isControl = ctrl; }
     void setMemMustRaw(bool mem, bool must, bool raw);
 
     void addSubEdge(DGEdge<SubT> *edge) { subEdges.push_back(edge); }
@@ -192,7 +195,7 @@ namespace llvm {
    protected:
     DGNode<T> *from, *to;
     std::vector<DGEdge<SubT> *> subEdges;
-    bool memory, must, readAfterWrite, writeAfterWrite;
+    bool memory, must, readAfterWrite, writeAfterWrite, isControl;
   };
 
   /*
@@ -325,56 +328,74 @@ namespace llvm {
   }
 
   template <class T>
-  void DG<T>::extractNodesFromSelfInto(DG<T> &emptyDG, std::vector<DGNode<T> *> nodesToExtract, DGNode<T> *entry, bool removeFromSelf)
+  void DG<T>::removeNodesFromSelf(std::vector<DGNode<T> *> nodesToRemove)
   {
-    emptyDG.entryNode = entry;
-    for (auto node : nodesToExtract)
+    auto checkToRemoveEdge = [&](DGEdge<T> *edge) -> void {
+      auto edgeIter = std::find(allEdges.begin(), allEdges.end(), edge);
+      if (edgeIter == allEdges.end()) return ;
+      allEdges.erase(edgeIter);
+    };
+
+    /*
+     * Remove nodes and all their edges
+     */
+    for (auto node : nodesToRemove)
+    {
+      auto theT = node->getT();
+      auto &map = isInternal(theT) ? internalNodeMap : externalNodeMap;
+      map.erase(theT);
+      allNodes.erase(std::find(allNodes.begin(), allNodes.end(), node));
+
+      for (auto edge : make_range(node->begin_outgoing_edges(), node->end_outgoing_edges()))
+      {
+        checkToRemoveEdge(edge);
+      }
+      for (auto edge: make_range(node->begin_incoming_edges(), node->end_incoming_edges()))
+      {
+        checkToRemoveEdge(edge);
+      }
+    }
+  }
+
+  template <class T>
+  void DG<T>::partitionNodesIntoNewGraph(DG<T> &newGraph, std::vector<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode)
+  {
+    newGraph.entryNode = entryNode;
+
+    auto checkToPartitionEdge = [&](DGEdge<T> *edge) -> void {
+      auto edgeIter = std::find(allEdges.begin(), allEdges.end(), edge);
+      if (edgeIter == allEdges.end()) return ;
+      allEdges.erase(edgeIter);
+      newGraph.allEdges.push_back(edge);
+    };
+
+    /*
+     * Remove node partition and its edges
+     * Preserve internal edges of the node partition inside the new graph
+     */
+    for (auto node : nodesToPartition)
     {
       auto theT = node->getT();
       auto internal = isInternal(theT);
       auto &map = internal ? internalNodeMap : externalNodeMap;
-      auto &emptyDGMap = internal ? emptyDG.internalNodeMap : emptyDG.externalNodeMap;
+      auto &newMap = internal ? newGraph.internalNodeMap : newGraph.externalNodeMap;
       
-      emptyDGMap[theT] = node;
-      emptyDG.allNodes.push_back(node);
-
-      if (removeFromSelf)
-      {
-        map.erase(theT);
-        allNodes.erase(std::find(allNodes.begin(), allNodes.end(), node));
-      }
-
-      auto checkToExtractNode = [&](DGNode<T> *node) -> void {
-        if (emptyDG.isInGraph(node->getT())) return;
-        emptyDG.allNodes.push_back(node);
-
-        if (!removeFromSelf) return;
-        bool canRemoveFromSelfDG = true;
-
-        for (auto outgoingNode : make_range(node->begin_outgoing_nodes(), node->end_outgoing_nodes()))
-        {
-          canRemoveFromSelfDG &= !isInGraph(outgoingNode->getT());
-        }
-        for (auto incomingNode : make_range(node->begin_incoming_nodes(), node->end_incoming_nodes()))
-        {
-          canRemoveFromSelfDG &= !isInGraph(incomingNode->getT());
-        }
-
-        if (canRemoveFromSelfDG)
-        {
-          allNodes.erase(std::find(allNodes.begin(), allNodes.end(), node));
-        }
-      };
+      map[theT] = node;
+      newGraph.allNodes.push_back(node);
+      newMap.erase(theT);
+      allNodes.erase(std::find(allNodes.begin(), allNodes.end(), node));
 
       for (auto edge : make_range(node->begin_outgoing_edges(), node->end_outgoing_edges()))
       {
-        emptyDG.allEdges.push_back(new DGEdge<T>(*edge));
-        checkToExtractNode(edge->getNodePair().second);
+        auto outgoingT = edge->getNodePair().second->getT();
+        if (!newGraph.isInGraph(outgoingT)) continue ;
+        checkToPartitionEdge(edge);
       }
       for (auto edge: make_range(node->begin_incoming_edges(), node->end_incoming_edges()))
       {
-        emptyDG.allEdges.push_back(new DGEdge<T>(*edge));
-        checkToExtractNode(edge->getNodePair().second);
+        auto incomingT = edge->getNodePair().first->getT();
+        if (!newGraph.isInGraph(incomingT)) continue ;
+        checkToPartitionEdge(edge);
       }
     }
   }
@@ -475,6 +496,7 @@ namespace llvm {
   template <class T, class SubT>
   std::string DGEdgeBase<T, SubT>::toString()
   {
+    if (isControl) return "CTRL";
     std::string edgeStr;
     raw_string_ostream ros(edgeStr);
     ros << (readAfterWrite ? "RAW " : (writeAfterWrite ? "WAW " : ""));

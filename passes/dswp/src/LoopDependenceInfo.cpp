@@ -9,18 +9,13 @@
 using namespace std;
 using namespace llvm;
 
-llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, LoopInfo &li, DominatorTree &dt, ScalarEvolution &se, Loop *l, PDG *fG, std::vector<Instruction *> bodyInst, std::vector<Instruction *> otherInst)
-		: func{f}, LI{li}, DT{dt}, SE{se}, loop{l}, functionDG{fG}, bodyInstOfLoop{bodyInst}, otherInstOfLoop{otherInst} {
+llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, ScalarEvolution &se)
+		: func{f}, LI{li}, DT{dt}, SE{se}, loop{l}, functionDG{fG} {
 	loopDG = functionDG->createLoopsSubgraph(LI);
-	std::vector<Value*> bodyVals(bodyInst.begin(), bodyInst.end()); 
-	for (auto bodyI : bodyInst)
-		{ bodyI->print(errs()); errs() << "\n"; }
-	loopBodyDG = loopDG->createSubgraphFromValues(bodyVals);
-	loopBodySCCDAG = SCCDAG::createSCCDAGFrom(loopBodyDG);
+	loopSCCDAG = SCCDAG::createSCCDAGFrom(loopDG);
 };
 
 llvm::LoopDependenceInfo::~LoopDependenceInfo() {
 	delete loopDG;
-	delete loopBodyDG;
-	delete loopBodySCCDAG;
+	delete loopSCCDAG;
 }

@@ -13,7 +13,7 @@ using namespace llvm;
 namespace llvm {
 
 	struct LoopDependenceInfo {
-		LoopDependenceInfo(Function *f, LoopInfo &li, DominatorTree &dt, ScalarEvolution &se, Loop *l, PDG *fG, std::vector<Instruction *> bodyInst, std::vector<Instruction *> otherInst);
+		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, ScalarEvolution &se);
 		~LoopDependenceInfo();
 
 		Function *func;
@@ -23,16 +23,8 @@ namespace llvm {
 		Loop *loop;
 		PDG *functionDG;
 		PDG *loopDG;
-
-		PDG *loopBodyDG;
-		SCCDAG *loopBodySCCDAG, *loopIterationSCCDAG;
+		SCCDAG *loopSCCDAG;
 		
-		/*
-		 * Separates control flow instructions (within otherInstOfLoop) from the rest of the loop
-		 */
-		std::vector<Instruction *> bodyInstOfLoop;
-		std::vector<Instruction *> otherInstOfLoop;
-
 		/*
 		 * Stores new pipeline execution
 		 */

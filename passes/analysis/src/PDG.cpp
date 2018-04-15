@@ -74,6 +74,7 @@ void llvm::PDG::constructControlEdgesForFunction(Function &F, PostDominatorTree 
         {
           // if (!isInGraph(&I)) { I.print(errs() << "BASIC BLOCK INSTRUCTION NOT IN GRAPH!\t"); errs() << "\n"; continue; }
           auto edge = createEdgeFromTo((Value*)controlTerminator, (Value*)&I);
+          edge->setControl(true);
           // edge->print(errs() << "Control edge:\n") << "\n";
         }
       }

@@ -83,10 +83,6 @@ namespace llvm {
 
         for (auto F : funcToModify)
         {
-
-          /* 
-           * Check if there is a loop to parallelize within the current function.
-           */
           auto loopDI = fetchLoopToParallelize(*F, graph);
           if (loopDI == nullptr) {
             continue ;
@@ -96,10 +92,6 @@ namespace llvm {
            * Parallelize the current loop with DSWP.
            */
           modified |= applyDSWP(loopDI);
-
-          /*
-           * Free the memory.
-           */
           delete loopDI;
         }
         return modified;
@@ -157,9 +149,7 @@ namespace llvm {
          *
          * We have to have one single outermost loop.
          */
-        if (std::distance(LI.begin(), LI.end()) != 1){
-          return nullptr;
-        }
+        if (std::distance(LI.begin(), LI.end()) != 1) return nullptr;
 
         /*
          * Choose the loop to parallelize.
@@ -172,84 +162,23 @@ namespace llvm {
            * ASSUMPTION: No sub-loops.
            */
           auto subLoops = loop->getSubLoops();
-          if (subLoops.size() > 0){
-            continue ;
-          }
-
-          auto instPair = divideLoopInstructions(loop);
-          return new LoopDependenceInfo(&function, LI, DT, SE, loop, funcPDG, instPair.first, instPair.second);
+          if (subLoops.size() > 0) continue ;
+          return new LoopDependenceInfo(&function, funcPDG, loop, LI, DT, SE);
         }
 
-        return nullptr;
-      }
-
-      std::pair<std::vector<Instruction *>, std::vector<Instruction *>> divideLoopInstructions (Loop *loop)
-      {
-        std::vector<Instruction *> bodyInst, otherInst;
-        for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi)
-        {
-          BasicBlock *bb = *bbi;
-
-          /*
-           * Categorize branch and conditional variable instructions as 'other' instructions
-           */
-          for (auto ii = bb->begin(); ii != bb->end(); ++ii)
-          {
-            Instruction *i = &*ii;
-            if (TerminatorInst::classof(i) || CmpInst::classof(i))
-            {
-              otherInst.push_back(i);
-              continue;
-            }
-            bodyInst.push_back(i);
-          }
-        }
-
-        return make_pair(bodyInst, otherInst);
-      }
-
-      SCCDAG *extractLoopIterationSCCDAG (LoopDependenceInfo *LDI)
-      {
-        auto loop = LDI->loop;
-        auto sccSubgraph = LDI->loopBodySCCDAG;
-
-        Instruction *iterationInst = nullptr;
-        auto headerBr = cast<BranchInst>(loop->getHeader()->getTerminator());
-        for (auto &op : cast<Instruction>(headerBr->getCondition())->operands())
-        {
-          if (auto opI = dyn_cast<Instruction>(op))
-          {
-            iterationInst = opI;
-            break;
-          }
-        }
-        assert(iterationInst != nullptr);
-
-        for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
-        {
-          if (sccNode->getT()->isInGraph(iterationInst))
-          {
-            return sccSubgraph->extractSCCIntoGraph(sccNode);
-          }
-        }
-        assert(1 == 2);
         return nullptr;
       }
 
       bool applyDSWP (LoopDependenceInfo *LDI)
       {
-
-        /*
-         * Compute the SCCDAG of the loop given as input.
-         */
-        LDI->loopIterationSCCDAG = extractLoopIterationSCCDAG(LDI);
-        printSCCs(LDI->loopBodySCCDAG);
-        printSCCs(LDI->loopIterationSCCDAG);
+        errs() << "Applying DSWP\n";
 
         /*
          * Merge SCCs of the SCCDAG.
          */
         mergeSCCs(LDI);
+        printSCCs(LDI->loopSCCDAG);
+        return false;
 
         /*
          * Create the pipeline stages.
@@ -283,12 +212,31 @@ namespace llvm {
          */
         //TODO
 
+        /*
+         * Remove SCCs consisting solely of trailing branches or LCCSA PHINode
+         */
+        auto sccSubgraph = LDI->loopSCCDAG;
+        std::vector<DGNode<SCC> *> nodesToRemove; 
+        for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
+        {
+          auto scc = sccNode->getT();
+          if (scc->numInternalNodes() > 1) continue ;
+
+          auto singleInstrNode = *scc->begin_nodes();
+          if (auto branch = dyn_cast<TerminatorInst>(singleInstrNode->getT()))
+          {
+            scc->print(errs() << "Removing SCC because of trailing branch:\n") << "\n";
+            nodesToRemove.push_back(sccNode);
+          }
+        }
+        sccSubgraph->removeNodesFromSelf(nodesToRemove);
+
         return ;
       }
 
       bool collectLoopInternalDependents (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages, unordered_map<SCC *, StageInfo *> &sccToStage)
       {
-        for (auto scc : make_range(LDI->loopBodySCCDAG->begin_nodes(), LDI->loopBodySCCDAG->end_nodes()))
+        for (auto scc : make_range(LDI->loopSCCDAG->begin_nodes(), LDI->loopSCCDAG->end_nodes()))
         {
           for (auto sccEdge : make_range(scc->begin_outgoing_edges(), scc->end_outgoing_edges()))
           {
@@ -302,9 +250,6 @@ namespace llvm {
                * ASSUMPTION: There aren't memory data dependences
                */
               if (instructionEdge->isMemoryDependence()) return false;
-
-              errs() << "Adding internal dependency:\n";
-              instructionEdge->print(errs()); errs() << "\n";
 
               auto fromStage = sccToStage[fromSCC];
               auto toStage = sccToStage[toSCC];
@@ -338,9 +283,6 @@ namespace llvm {
             for (auto &stage : stages)
             {
               if (!stage->scc->isInternal(cast<Value>(internalInst))) continue;
-              errs() << "Adding external dependency:\n";
-              externalValue->print(errs() << "External val:\t"); errs() << "\n";
-              internalInst->print(errs() << "Internal val:\t"); errs() << "\n";
               stage->externalDependencyToEnvMap[externalValue] = LDI->externalDependentTypes.size();
               auto &map = outgoing ? stage->outgoingDependentMap : stage->incomingDependentMap;
               map[internalInst] = externalValue;
@@ -376,7 +318,7 @@ namespace llvm {
       bool isWorthParallelizing (LoopDependenceInfo *LDI, std::vector<std::unique_ptr<StageInfo>> &stages)
       {
         auto loop = LDI->loop;
-        auto sccSubgraph = LDI->loopBodySCCDAG;
+        auto sccSubgraph = LDI->loopSCCDAG;
 
         if (sccSubgraph->numNodes() <= 1) return false;
 
@@ -404,6 +346,7 @@ namespace llvm {
           iCloneMap[I] = I->clone();
         }
 
+/*
         auto loopIterationSCC = LDI->loopIterationSCCDAG->getEntryNode()->getT();
         for (auto node : make_range(loopIterationSCC->begin_nodes(), loopIterationSCC->end_nodes()))
         {
@@ -411,13 +354,11 @@ namespace llvm {
           iCloneMap[I] = I->clone();
         }
 
-        /*
-         * IMPROVEMENT: Do not copy every compare and branch present in the original loop
-         */
         for (auto &I : LDI->otherInstOfLoop)
         {
           iCloneMap[I] = I->clone();
         }
+*/
       }
 
       /*
