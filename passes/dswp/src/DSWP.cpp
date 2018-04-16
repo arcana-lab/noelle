@@ -225,7 +225,7 @@ namespace llvm {
           auto singleInstrNode = *scc->begin_nodes();
           if (auto branch = dyn_cast<TerminatorInst>(singleInstrNode->getT()))
           {
-            scc->print(errs() << "Removing SCC because of trailing branch:\n") << "\n";
+            // scc->print(errs() << "Removing SCC because of trailing branch:\n") << "\n";
             nodesToRemove.push_back(sccNode);
           }
         }
@@ -241,8 +241,8 @@ namespace llvm {
           for (auto sccEdge : make_range(scc->begin_outgoing_edges(), scc->end_outgoing_edges()))
           {
             auto sccPair = sccEdge->getNodePair();
-            auto fromSCC = sccPair.first->getT();
-            auto toSCC = sccPair.second->getT();
+            auto fromStage = sccToStage[sccPair.first->getT()];
+            auto toStage = sccToStage[sccPair.second->getT()];
 
             for (auto instructionEdge : make_range(sccEdge->begin_sub_edges(), sccEdge->end_sub_edges()))
             {
@@ -251,22 +251,22 @@ namespace llvm {
                */
               if (instructionEdge->isMemoryDependence()) return false;
 
-              auto fromStage = sccToStage[fromSCC];
-              auto toStage = sccToStage[toSCC];
-
               fromStage->outgoingSCCEdges.push_back(instructionEdge);
               toStage->incomingSCCEdges.push_back(instructionEdge);
-
-              auto index = LDI->internalDependentByteLengths.size();
-              fromStage->edgeToQueueMap[instructionEdge] = index;
-              toStage->edgeToQueueMap[instructionEdge] = index;
               
               auto dependentInstType = instructionEdge->getNodePair().first->getT()->getType();
               LDI->internalDependentTypes.push_back(dependentInstType);
 
+              // Allow data types that are < 1 byte OR byte aligned
               auto bitSize = dependentInstType->getPrimitiveSizeInBits();
-              if (bitSize % 8 != 0) return false;
-              LDI->internalDependentByteLengths.push_back(bitSize / 8);
+              if (bitSize % 8 != 0 && bitSize > 8) return false;
+              auto byteSize = bitSize / 8;
+              if (byteSize == 0) byteSize = 1;
+
+              auto index = LDI->internalDependentByteLengths.size();
+              LDI->internalDependentByteLengths.push_back(byteSize);
+              fromStage->edgeToQueueMap[instructionEdge] = index;
+              toStage->edgeToQueueMap[instructionEdge] = index;
             }
           }
         }
@@ -345,20 +345,6 @@ namespace llvm {
           auto I = cast<Instruction>(sccI->first);
           iCloneMap[I] = I->clone();
         }
-
-/*
-        auto loopIterationSCC = LDI->loopIterationSCCDAG->getEntryNode()->getT();
-        for (auto node : make_range(loopIterationSCC->begin_nodes(), loopIterationSCC->end_nodes()))
-        {
-          auto I = cast<Instruction>(node->getT());
-          iCloneMap[I] = I->clone();
-        }
-
-        for (auto &I : LDI->otherInstOfLoop)
-        {
-          iCloneMap[I] = I->clone();
-        }
-*/
       }
 
       /*
@@ -398,11 +384,8 @@ namespace llvm {
 
           Value *originalDepValue = cast<Value>(dependencyPair.first);
           auto cloneOfDepInst = (*stageInfo->iCloneMap)[dependencyPair.first];
-          errs() << "Replacing external dependency operands of:\n";
-          cloneOfDepInst->print(errs() << "\t"); errs() << "\n";
           for (auto &depOp : cloneOfDepInst->operands())
           {
-            depOp->print(errs() << "\t Op:"); errs() << "\n";
             if (depOp != originalDepValue) continue;
             depOp.set(incomingValue);
           }

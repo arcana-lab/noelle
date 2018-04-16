@@ -78,6 +78,7 @@ namespace llvm {
       DGNode<T> *createNodeFrom(T *theT, bool inclusion);
       DGEdge<T> *createEdgeFromTo(T *from, T *to);
       DGNode<T> *fetchOrCreateNodeOf(T *theT, bool inclusion);
+      DGNode<T> *fetchNodeOf(T *theT);
 
       /*
        * Merging/Extracting Graphs
@@ -92,7 +93,6 @@ namespace llvm {
       void clear();
 
     protected:
-      DGNode<T> *fetchNodeOf(T *theT);
       inline void connectNodesVia(DGEdge<T> *edge, DGNode<T> *from, DGNode<T> *to);
 
       std::vector<DGNode<T> *> allNodes;
@@ -138,7 +138,9 @@ namespace llvm {
 
       void addIncomingNode(DGNode<T> *node, DGEdge<T> *edge);
       void addOutgoingNode(DGNode<T> *node, DGEdge<T> *edge);
-      
+
+      nodes_iterator connectedNodeIterTo(DGNode<T> *node);
+
       DGEdge<T> *getEdgeFromNodeIterator(nodes_iterator target, bool incomingEdge = false);
       DGEdge<T> *getEdgeFromConnectedNodeIterator(nodes_iterator target);
 
@@ -458,6 +460,12 @@ namespace llvm {
   }
   
   template <class T>
+  typename DGNode<T>::nodes_iterator DGNode<T>::connectedNodeIterTo(DGNode<T> *node)
+  {
+    return std::find(connectedNodes.begin(), connectedNodes.end(), node);
+  }
+
+  template <class T>
   DGEdge<T> * DGNode<T>::getEdgeFromNodeIterator(nodes_iterator target, bool incomingEdge)
   {
     // Index of edge iterator is equivalent to index of node iterator as the node and edge vectors are aligned
@@ -468,6 +476,7 @@ namespace llvm {
   template <class T>
   DGEdge<T> * DGNode<T>::getEdgeFromConnectedNodeIterator(nodes_iterator target)
   {
+    if (target == connectedNodes.end()) return nullptr;
     return connectedEdges[target - connectedNodes.begin()];
   }
 

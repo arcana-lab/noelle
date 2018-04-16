@@ -72,29 +72,28 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
   /*
    * Maintain association of each internal node to its SCC
    */
-  auto nodeSCCMap = unordered_map<DGNode<Value> *, SCC *>();
+  auto valueNodeToSCCNode = unordered_map<DGNode<Value> *, DGNode<SCC> *>();
   for (auto sccNode : make_range(sccDG->begin_nodes(), sccDG->end_nodes()))
   {
-    auto scc = sccNode->getT();
-    for (auto nodePair : scc->internalNodePairs())
+    for (auto instPair : sccNode->getT()->internalNodePairs())
     {
-      nodeSCCMap[nodePair.second] = scc;
+      valueNodeToSCCNode[instPair.second] = sccNode;
     }
   }
 
   /*
    * Helper function to find or create an SCC from a node
    */
-  auto fetchOrCreateSCC = [&nodeSCCMap, sccDG](DGNode<Value> *node) -> SCC* {
-    auto sccI = nodeSCCMap.find(node);
-    if (sccI == nodeSCCMap.end()) {
+  auto fetchOrCreateSCCNode = [&](DGNode<Value> *node) -> DGNode<SCC> * {
+    auto sccNodeI = valueNodeToSCCNode.find(node);
+    if (sccNodeI == valueNodeToSCCNode.end()) {
       vector<DGNode<Value> *> sccNodes = { node };
       auto scc = new SCC(sccNodes);
-      sccDG->createNodeFrom(scc, /*inclusion=*/ false);
-      nodeSCCMap[node] = scc;
-      return scc;
+      auto sccNode = sccDG->createNodeFrom(scc, /*inclusion=*/ false);
+      valueNodeToSCCNode[node] = sccNode;
+      return sccNode;
     }
-    return sccI->second;
+    return sccNodeI->second;
   };
 
   /*
@@ -103,8 +102,10 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
   for (auto pdgEI = pdg->begin_edges(); pdgEI != pdg->end_edges(); ++pdgEI) {
     auto edge = *pdgEI;
     auto nodePair = edge->getNodePair();
-    auto fromSCC = fetchOrCreateSCC(nodePair.first);
-    auto toSCC = fetchOrCreateSCC(nodePair.second);
+    auto fromSCCNode = fetchOrCreateSCCNode(nodePair.first);
+    auto toSCCNode = fetchOrCreateSCCNode(nodePair.second);
+    auto fromSCC = fromSCCNode->getT();
+    auto toSCC = toSCCNode->getT();
 
     /*
      * If the edge points to external SCCs or is contained in a single SCC, ignore 
@@ -112,10 +113,15 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
     if ((sccDG->isExternal(fromSCC) && sccDG->isExternal(toSCC)) || fromSCC == toSCC) continue;
 
     /*
-     * Create edge between SCCs with same properties as the edge between values within the SCCs
+     * Find or create edge between SCCs
+     * Add instruction subedge to it
      */
-    auto sccEdge = sccDG->createEdgeFromTo(fromSCC, toSCC);
-    sccEdge->setMemMustRaw(edge->isMemoryDependence(), edge->isMustDependence(), edge->isRAWDependence());
+    auto sccNodeIter = fromSCCNode->connectedNodeIterTo(toSCCNode);
+    auto sccEdge = fromSCCNode->getEdgeFromConnectedNodeIterator(sccNodeIter);
+    if (sccEdge == nullptr)
+    {
+      sccEdge = sccDG->createEdgeFromTo(fromSCC, toSCC);
+    }
     sccEdge->addSubEdge(edge);
   }
 
