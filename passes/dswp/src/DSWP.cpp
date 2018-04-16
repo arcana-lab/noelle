@@ -142,6 +142,9 @@ namespace llvm {
         auto &DT = getAnalysis<DominatorTreeWrapperPass>(function).getDomTree();
         auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(function).getSE();
 
+        /*
+         * Fetch the PDG.
+         */
         auto funcPDG = graph->createFunctionSubgraph(function);
 
         /*
