@@ -76,7 +76,7 @@ namespace llvm {
        * Fetching/Creating Nodes and Edges
        */
       DGNode<T> *createNodeFrom(T *theT, bool inclusion);
-      DGEdge<T> *createEdgeFromTo(T *from, T *to);
+      DGEdge<T> *addEdge(T *from, T *to);
       DGNode<T> *fetchOrCreateNodeOf(T *theT, bool inclusion);
       DGNode<T> *fetchNodeOf(T *theT);
 
@@ -226,7 +226,7 @@ namespace llvm {
   }
 
   template <class T>
-  DGEdge<T> *DG<T>::createEdgeFromTo(T *from, T *to)
+  DGEdge<T> *DG<T>::addEdge(T *from, T *to)
   {
     auto fromNode = fetchNodeOf(from);
     auto toNode = fetchNodeOf(to);

@@ -120,7 +120,7 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
     auto sccEdge = fromSCCNode->getEdgeFromConnectedNodeIterator(sccNodeIter);
     if (sccEdge == nullptr)
     {
-      sccEdge = sccDG->createEdgeFromTo(fromSCC, toSCC);
+      sccEdge = sccDG->addEdge(fromSCC, toSCC);
     }
     sccEdge->addSubEdge(edge);
   }

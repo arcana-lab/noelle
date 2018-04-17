@@ -28,9 +28,15 @@ namespace llvm {
       ~PDG() ;
 
       /*
-       * Creating Nodes and Edges
+       * Add all instructions included in the module M as nodes to the PDG.
        */
       void addNodes(Module &M);
+
+      /*
+       * Add the edge from "from" to "to" to the PDG.
+       */
+      DGEdge<Value> * addEdge (Value *from, Value *to) { this->DG<Value>::addEdge(from, to); };
+
       void constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree);
 
       /*

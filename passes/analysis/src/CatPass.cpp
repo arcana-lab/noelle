@@ -72,12 +72,12 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
       auto user = U.getUser();
       if (auto userInst = dyn_cast<Instruction>(user))
       {
-        auto *edge = programDependenceGraph->createEdgeFromTo(V, user);
+        auto *edge = programDependenceGraph->addEdge(V, user);
         edge->setMemMustRaw(false, true, true);
       }
       else if (auto userArg = dyn_cast<Argument>(user))
       {
-        auto *edge = programDependenceGraph->createEdgeFromTo(V, user);
+        auto *edge = programDependenceGraph->addEdge(V, user);
         edge->setMemMustRaw(false, true, true);
       }
     }
@@ -92,12 +92,12 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, Inst
   switch (aa->alias(MemoryLocation::get(memI),MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
-      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)memJ);
+      edge = programDependenceGraph->addEdge((Value*)memI, (Value*)memJ);
       //if (F.getName() == "main") edge->print(errs() << "May:\t") << "\n";
       edge->setMemMustRaw(true, false, !storePair);
       break;
     case MustAlias:
-      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)memJ);
+      edge = programDependenceGraph->addEdge((Value*)memI, (Value*)memJ);
       //if (F.getName() == "main") edge->print(errs() << "Must:\t") << "\n";
       edge->setMemMustRaw(true, true, !storePair);
       break;
@@ -108,20 +108,20 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, S
   DGEdge<Value> *edge;
   switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
-      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)call);
+      edge = programDependenceGraph->addEdge((Value*)memI, (Value*)call);
       edge->setMemMustRaw(true, false, true);
       //if (F.getName() == "main") edge->print(errs() << "Ref:\t") << "\n";
       break;
     case MRI_Mod:
-      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)call);
+      edge = programDependenceGraph->addEdge((Value*)memI, (Value*)call);
       edge->setMemMustRaw(true, false, false);
       //if (F.getName() == "main") edge->print(errs() << "Mod:\t") << "\n";
       break;
     case MRI_ModRef:
-      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)call);
+      edge = programDependenceGraph->addEdge((Value*)memI, (Value*)call);
       edge->setMemMustRaw(true, false, true);
       //if (F.getName() == "main") edge->print(errs() << "ModRef:\t") << "\n";
-      edge = programDependenceGraph->createEdgeFromTo((Value*)memI, (Value*)call);
+      edge = programDependenceGraph->addEdge((Value*)memI, (Value*)call);
       edge->setMemMustRaw(true, false, false);
       break;
   }
@@ -134,7 +134,7 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, L
       break;
     case MRI_Mod:
     case MRI_ModRef:
-      edge = programDependenceGraph->createEdgeFromTo((Value*)call, (Value*)memI);
+      edge = programDependenceGraph->addEdge((Value*)call, (Value*)memI);
       //if (F.getName() == "main") edge->print(errs() << "ModRef:\t") << "\n";
       edge->setMemMustRaw(true, false, true);
       break;
