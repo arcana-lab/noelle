@@ -35,7 +35,7 @@ namespace llvm {
       /*
        * Add the edge from "from" to "to" to the PDG.
        */
-      DGEdge<Value> * addEdge (Value *from, Value *to) { this->DG<Value>::addEdge(from, to); };
+      DGEdge<Value> * addEdge (Value *from, Value *to);
 
       void constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree);
 

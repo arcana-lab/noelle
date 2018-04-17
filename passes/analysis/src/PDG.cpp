@@ -22,6 +22,7 @@ llvm::PDG::~PDG() {
 }
 
 void llvm::PDG::addNodes (Module &M) {
+
   /*
    * Create a node per instruction and function argument
    */
@@ -51,6 +52,10 @@ void llvm::PDG::addNodes (Module &M) {
   assert(entryNode != nullptr);
 
   return ;
+}
+
+llvm::DGEdge<Value> * llvm::PDG::addEdge (Value *from, Value *to) { 
+  return this->DG<Value>::addEdge(from, to); 
 }
 
 void llvm::PDG::constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree) {
