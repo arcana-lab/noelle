@@ -21,7 +21,7 @@ llvm::PDG::~PDG() {
     if (node) delete node;
 }
 
-void llvm::PDG::constructNodes (Module &M) {
+void llvm::PDG::addNodes (Module &M) {
   /*
    * Create a node per instruction and function argument
    */

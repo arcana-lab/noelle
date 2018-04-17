@@ -30,7 +30,7 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   errs() << "PDGAnalysis at \"runOnModule\"\n" ;
   this->programDependenceGraph = new PDG();
 
-  this->programDependenceGraph->constructNodes(M);
+  this->programDependenceGraph->addNodes(M);
   constructEdgesFromUseDefs(M);
   constructEdgesFromAliases(M);
   constructEdgesFromControl(M);

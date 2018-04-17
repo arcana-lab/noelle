@@ -30,8 +30,9 @@ namespace llvm {
       /*
        * Creating Nodes and Edges
        */
-      void constructNodes(Module &M);
+      void addNodes(Module &M);
       void constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree);
+
       /*
        * Creating Program Dependence Subgraphs
        */
