@@ -43,5 +43,6 @@ namespace llvm {
       void constructEdgesFromAliases (Module &M);
 
       void constructEdgesFromControl (Module &M);
+      void constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree);
   };
 }

@@ -37,8 +37,6 @@ namespace llvm {
        */
       DGEdge<Value> * addEdge (Value *from, Value *to);
 
-      void constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree);
-
       /*
        * Creating Program Dependence Subgraphs
        */

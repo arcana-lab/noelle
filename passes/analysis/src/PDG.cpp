@@ -58,35 +58,6 @@ llvm::DGEdge<Value> * llvm::PDG::addEdge (Value *from, Value *to) {
   return this->DG<Value>::addEdge(from, to); 
 }
 
-void llvm::PDG::constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree) {
-  for (auto &B : F)
-  {
-    SmallVector<BasicBlock *, 10> dominatedBBs;
-    postDomTree.getDescendants(&B, dominatedBBs);
-
-    /*
-     * For each basic block that B post dominates, check if B doesn't stricly post dominate its predecessor
-     * If it does not, then there is a control dependency from the predecessor to B 
-     */
-    for (auto dominatedBB : dominatedBBs)
-    {
-      for (auto predBB : make_range(pred_begin(dominatedBB), pred_end(dominatedBB)))
-      {
-        if (postDomTree.properlyDominates(&B, predBB)) continue;
-        auto controlTerminator = predBB->getTerminator();
-        // if (!isInGraph(controlTerminator)) { controlTerminator->print(errs() << "TERMINATOR NOT IN GRAPH!\t"); errs() << "\n"; continue; }
-        for (auto &I : B)
-        {
-          // if (!isInGraph(&I)) { I.print(errs() << "BASIC BLOCK INSTRUCTION NOT IN GRAPH!\t"); errs() << "\n"; continue; }
-          auto edge = addEdge((Value*)controlTerminator, (Value*)&I);
-          edge->setControl(true);
-          // edge->print(errs() << "Control edge:\n") << "\n";
-        }
-      }
-    }
-  }
-}
-
 PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
   if (F.empty()) return nullptr;
   auto functionPDG = new PDG();
