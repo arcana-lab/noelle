@@ -1,4 +1,5 @@
 PARALLELIZATION=DSWP
+PDGPRINTER=PDGPrinter
 CC=clang++
 AA6=-cfl-anders-aa
 AA5=-scev-aa
@@ -13,7 +14,8 @@ LIBS=-lm
 INCLUDES=-I../include/threadpool/include
 OPTIMIZED=parallelized
 
-PASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PARALLELIZATION).so
+PRINTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PDGPRINTER).so
+OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PARALLELIZATION).so
 
 all: $(OPTIMIZED) baseline
 
@@ -26,8 +28,11 @@ $(THREADER).bc: $(THREADER).cpp
 $(OPTIMIZED): test_dswp.bc
 	$(CC) -std=c++14 -pthreads -O0 $^ $(LIBS) -o $@
 
+test_pdgdot.bc: test.bc
+	opt $(PRINTPASSES) $(ANALYSES) -$(PDGPRINTER) $^ -o $@
+
 test_dswp.bc: test.bc
-	opt $(PASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -o $@
+	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -o $@
 	llvm-dis $@
 
 test.bc: test.cpp $(THREADER).bc
@@ -37,10 +42,10 @@ test.bc: test.cpp $(THREADER).bc
 	llvm-link $@ $(THREADER).bc -o $@
 
 show_passes: test.bc
-	opt $(PASSES) $(ANALYSES) -$(PARALLELIZATION) $^ --debug-pass=Structure -disable-output
+	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ --debug-pass=Structure -disable-output
 
 show_time: test.bc
-	opt $(PASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -time-passes -disable-output
+	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -time-passes -disable-output
 
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline $(OPTIMIZED)

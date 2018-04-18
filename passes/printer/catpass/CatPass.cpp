@@ -6,6 +6,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/CallGraph.h"
 
 #include "DGBase.hpp"
 #include "DGGraphTraits.hpp"
@@ -19,10 +20,14 @@
 #include "llvm/Support/GraphWriter.h"
 #include "llvm/Support/DOTGraphTraits.h"
 
+#include <set>
+#include <queue>
+
 using namespace llvm;
 
 namespace llvm {
   struct PDGPrinter : public ModulePass {
+  public:
     static char ID;
 
     PDGPrinter() : ModulePass{ID} {}
@@ -32,6 +37,33 @@ namespace llvm {
       return false;
     }
 
+    bool runOnModule (Module &M) override {
+      errs() << "PDGPrinter at \"runOnModule\"\n";
+
+      /*
+       * Collect functions through call graph starting at function "main"
+       */
+      std::set<Function *> funcToGraph;
+      collectAllFunctionsInCallGraph(M, funcToGraph);
+
+      auto *graph = getAnalysis<PDGAnalysis>().getPDG();
+      writeGraph<PDG>("pdg-full.dot", graph);
+      for (auto F : funcToGraph) {
+        printGraphsForFunction(*F, graph);
+      }
+
+      return false;
+    }
+
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
+      AU.addRequired<LoopInfoWrapperPass>();
+      AU.addRequired<CallGraphWrapperPass>();
+      AU.addRequired<PDGAnalysis>();
+      AU.setPreservesAll();
+      return ;
+    }
+
+  private:
     template <class GT>
     void writeGraph(const std::string& filename, GT *graph) {
       errs() << "Writing '" << filename << "'...\n";
@@ -49,57 +81,72 @@ namespace llvm {
       }
     }
 
-    bool runOnModule (Module &M) override {
-      errs() << "PDGPrinter at \"runOnModule\"\n";
+    void collectAllFunctionsInCallGraph (Module &M, std::set<Function *> &funcSet)
+    {
+      auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
+      std::queue<Function *> funcToTraverse;
+      funcToTraverse.push(M.getFunction("main"));
+      while (!funcToTraverse.empty())
+      {
+        auto func = funcToTraverse.front();
+        funcToTraverse.pop();
+        if (funcSet.find(func) != funcSet.end()) return;
+        funcSet.insert(func);
 
-      auto *graph = getAnalysis<PDGAnalysis>().getPDG();
-      
-      writeGraph<PDG>("pdg-full.dot",graph);
-
-      for (auto &F : M) {
-        if (F.empty()) continue ;
-        std::string filename;
-        raw_string_ostream ros(filename);
-        ros << "pdg-" << F.getName() << ".dot";
-
-        auto *subgraph = graph->createFunctionSubgraph(F);
-        writeGraph<PDG>(ros.str(), subgraph);
-
-        filename.clear();
-        ros << "sccdg-" << F.getName() << ".dot";
-        SCCDAG *sccSubgraph = SCCDAG::createSCCDAGFrom(subgraph);
-        writeGraph<SCCDAG>(ros.str(), sccSubgraph);
-
-        int count = 0;
-        for (auto sccI = sccSubgraph->begin_nodes(); sccI != sccSubgraph->end_nodes(); ++sccI) {
-          auto scc = (*sccI)->getT();
-          filename.clear();
-          ros << "scc-" << F.getName() << "-" << (count++) << ".dot";
-          writeGraph<SCC>(ros.str(), scc);
+        auto funcCGNode = callGraph[func];
+        for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end()))
+        {
+          auto F = callRecord.second->getFunction();
+          if (F->empty()) return;
+          funcToTraverse.push(F);
         }
-
-        delete sccSubgraph;
-        delete subgraph;
-
-        LoopInfo& LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
-        if (LI.empty()) continue ;
-        filename.clear();
-        ros << "pdg-" << F.getName() << "-loops.dot";
-
-        subgraph = graph->createLoopsSubgraph(LI);
-        writeGraph<PDG>(ros.str(), subgraph);
-        delete subgraph;
       }
-
-      return false;
     }
 
-    void getAnalysisUsage(AnalysisUsage &AU) const override {
-      AU.addRequired<LoopInfoWrapperPass>();
-      AU.addRequired<PDGAnalysis>();
-      AU.setPreservesAll();
+    void printGraphsForFunction(Function &F, PDG *graph)
+    {
+      /*
+       * Name and graph the function's DG
+       */
+      std::string filename;
+      raw_string_ostream ros(filename);
+      ros << "pdg-" << F.getName() << ".dot";
+      auto *subgraph = graph->createFunctionSubgraph(F);
+      writeGraph<PDG>(ros.str(), subgraph);
 
-      return ;
+      /*
+       * Name and graph the function's SCCDAG
+       */
+      filename.clear();
+      ros << "sccdg-" << F.getName() << ".dot";
+      SCCDAG *sccSubgraph = SCCDAG::createSCCDAGFrom(subgraph);
+      writeGraph<SCCDAG>(ros.str(), sccSubgraph);
+
+      /*
+       * Name and graph each SCC within the function's SCCDAG
+       */
+      int count = 0;
+      for (auto sccI = sccSubgraph->begin_nodes(); sccI != sccSubgraph->end_nodes(); ++sccI) {
+        auto scc = (*sccI)->getT();
+        filename.clear();
+        ros << "scc-" << F.getName() << "-" << (count++) << ".dot";
+        writeGraph<SCC>(ros.str(), scc);
+      }
+
+      delete sccSubgraph;
+      delete subgraph;
+
+      /*
+       * Name and graph the loop DG of the function
+       */
+      LoopInfo& LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+      if (LI.empty()) return ;
+      filename.clear();
+      ros << "pdg-" << F.getName() << "-loops.dot";
+
+      subgraph = graph->createLoopsSubgraph(LI);
+      writeGraph<PDG>(ros.str(), subgraph);
+      delete subgraph;
     }
   };
 }

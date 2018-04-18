@@ -41,7 +41,10 @@ namespace llvm {
 
     static std::string getEdgeAttributes(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter, DG *dg) {
       DGEdge<T> *edge = node->getEdgeFromNodeIterator(nodeIter);
-      return edge->isMemoryDependence() ? "color=red" : "color=black";
+      const std::string cntColor = "color=blue";
+      const std::string memColor = "color=red";
+      const std::string varColor = "color=black";
+      return edge->isControlDependence() ? cntColor : (edge->isMemoryDependence() ? memColor : varColor);
     }
 
     bool isNodeHidden(DGNode<T> *node) {

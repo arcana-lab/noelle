@@ -505,12 +505,13 @@ namespace llvm {
   template <class T, class SubT>
   std::string DGEdgeBase<T, SubT>::toString()
   {
-    if (isControl) return "CTRL";
+    if (this->isControlDependence()) return "CTRL";
     std::string edgeStr;
     raw_string_ostream ros(edgeStr);
     ros << (readAfterWrite ? "RAW " : (writeAfterWrite ? "WAW " : ""));
     ros << (must ? "(must) " : "(may) ");
     ros << (memory ? "from memory " : "") << "\n";
+    ros.flush();
     return edgeStr;
   }
   
