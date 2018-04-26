@@ -128,6 +128,15 @@ namespace llvm {
       edges_iterator begin_incoming_edges() { return incomingEdges.begin(); }
       edges_iterator end_incoming_edges() { return incomingEdges.end(); }
 
+      inline iterator_range<nodes_iterator>
+      getConnectedNodes() { return make_range(connectedNodes.begin(), connectedNodes.end()); }
+
+      inline iterator_range<nodes_iterator>
+      getOutgoingNodes() { return make_range(outgoingNodes.begin(), outgoingNodes.end()); }
+
+      inline iterator_range<nodes_iterator>
+      getIncomingNodes() { return make_range(incomingNodes.begin(), incomingNodes.end()); }
+
       T *getT() const { return theT; }
 
       std::string toString();
@@ -273,13 +282,13 @@ namespace llvm {
     {
       bool topLevel = true;
       auto currentNode = connectedNodes.front();
+      visitedNodes.insert(currentNode);
       connectedNodes.pop();
 
       for (auto node : make_range(currentNode->begin_incoming_nodes(), currentNode->end_incoming_nodes()))
       {
         if (visitedNodes.find(node) != visitedNodes.end()) continue;
         topLevel = false;
-        visitedNodes.insert(node);
         connectedNodes.push(node);
       }
 
