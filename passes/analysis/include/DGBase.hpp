@@ -499,6 +499,7 @@ namespace llvm {
     from = nodePair.first;
     to = nodePair.second;
     setMemMustRaw(oldEdge.isMemoryDependence(), oldEdge.isMustDependence(), oldEdge.isRAWDependence());
+    setControl(oldEdge.isControlDependence());
     for (auto subEdge : oldEdge.subEdges) addSubEdge(subEdge);
   }
 
@@ -529,7 +530,7 @@ namespace llvm {
   {
     from->print(stream << "From:\n");
     to->print(stream << "To:\n");
-    stream << this->toString() << "\n";
+    stream << "\n" << this->toString() << "\n";
     return stream;
   }
 }
