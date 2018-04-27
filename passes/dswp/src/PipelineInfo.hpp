@@ -48,9 +48,20 @@ namespace llvm {
 	};
 
 	struct StageInfo {
-		int order;
-		SCC *scc;
 		Function *sccStage;
+		int order;
+
+		/*
+		 * Original loops' scc and basic blocks
+		 */
+		SCC *scc;
+		unordered_map<BasicBlock *, std::set<Instruction *>> bbToSCCInstsMap;
+		std::set<BasicBlock *> sccBBs;
+		std::set<BasicBlock *> sccEntries;
+
+		/*
+		 * New basic blocks for the stage function
+		 */
 		BasicBlock *entryBlock, *exitBlock;
 		BasicBlock *prologueBlock, *epilogueBlock;
 		BasicBlock *switcherBlock;

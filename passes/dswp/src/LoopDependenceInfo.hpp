@@ -34,6 +34,7 @@ namespace llvm {
 		 */
 		BasicBlock *pipelineBB;
 		unordered_map<SCC *, StageInfo *> sccToStage;
+		unordered_map<BasicBlock *, std::set<StageInfo *>> bbToStage;
 		std::vector<std::unique_ptr<StageInfo>> stages;
 		std::vector<std::unique_ptr<QueueInfo>> queues;
 		std::unique_ptr<EnvInfo> environment;

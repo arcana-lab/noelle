@@ -194,6 +194,7 @@ namespace llvm {
          * Create the pipeline stages.
          */
         if (!isWorthParallelizing(LDI)) return false;
+        printStageSCCs(LDI);
         printStageQueues(LDI);
         return false;
         
@@ -321,42 +322,38 @@ namespace llvm {
 
       bool createSwitchQueues (LoopDependenceInfo *LDI)
       {
-        for (auto &stage : LDI->stages)
+        for (auto &toStage : LDI->stages)
         {
-          for (auto consumerQueues : stage->consumerToQueuesMap)
+          for (auto entryBB : toStage->sccEntries)
           {
-            auto &queues = consumerQueues.second;
-            if (auto consumerPHI = dyn_cast<PHINode>(consumerQueues.first))
+            /*
+             * Do not create switch queues where only one entry point exists
+             */
+            int entryPoints = 0;
+            for (auto predBBIter = pred_begin(entryBB); predBBIter != pred_end(entryBB); ++predBBIter)
             {
-              for (auto queueIndex : queues)
+              if (toStage->sccBBs.find(*predBBIter) != toStage->sccBBs.end()) continue;
+              ++entryPoints;
+            }
+            if (entryPoints == 1) continue;
+
+            auto instInEntryBB = *toStage->bbToSCCInstsMap[entryBB].begin();
+
+            /*
+             * Create a switch queue from each predecessors' controls to the entry
+             */
+            for (auto predBBIter = pred_begin(entryBB); predBBIter != pred_end(entryBB); ++predBBIter)
+            {
+              auto predBB = *predBBIter;
+              for (auto fromStage : LDI->bbToStage[predBB])
               {
-                if (stage->popValueQueues.find(queueIndex) == stage->popValueQueues.end()) continue;
+                auto instInPredBB = *fromStage->bbToSCCInstsMap[predBB].begin();
+                auto iNode = fromStage->scc->fetchNode(instInPredBB);
 
-                auto queueInfo = LDI->queues[queueIndex].get();
-                auto fromStage = LDI->stages[queueInfo->fromStage].get();
-                auto toStage = LDI->stages[queueInfo->toStage].get();
-                auto producerNode = fromStage->scc->fetchNode(queueInfo->producer);
-
-                auto createQueueFromProducer = [&](Instruction *producer) -> void {
-                  auto queueIndex = fetchOrCreateSwitchQueue(LDI, fromStage, producer, consumerPHI);
-                  fromStage->pushSwitchQueues.insert(queueIndex);
-                  toStage->popSwitchQueues.insert(queueIndex);
-                };
-
-                /*
-                 * Find all scc S that the producer control depends on, including self if applicable
-                 * Create a queue from the stage of S to the stage of the consumer PHI
-                 */
-                bool isControlled = false;
-                for (auto incomingEdge : make_range(producerNode->begin_incoming_edges(), producerNode->end_incoming_edges()))
-                {
-                  if (!incomingEdge->isControlDependence()) continue;
-                  isControlled = true;
-                  auto control = incomingEdge->getNodePair().first->getT();
-                  createQueueFromProducer(cast<Instruction>(control));
-                }
-                
-                if (!isControlled) createQueueFromProducer(queueInfo->producer);
+                auto queueIndex = fetchOrCreateSwitchQueue(LDI, fromStage, instInPredBB, instInEntryBB);
+                fromStage->producerToSwitchQueueMap[instInPredBB] = queueIndex;
+                fromStage->pushSwitchQueues.insert(queueIndex);
+                toStage->popSwitchQueues.insert(queueIndex);
               }
             }
           }
@@ -422,12 +419,6 @@ namespace llvm {
          */
         std::set<DGNode<SCC> *> nodesFound(topLevelSCCNodes.begin(), topLevelSCCNodes.end());
         std::deque<DGNode<SCC> *> nodesToTraverse(topLevelSCCNodes.begin(), topLevelSCCNodes.end());
-        for (auto node : topLevelSCCNodes)
-        {
-          node->print(errs() << "Node: \t") << "\n";
-        }
-        errs() << "Init size of nodes found: " << nodesFound.size() <<"\n";
-        errs() << "Init size of nodes to traverse: " << nodesToTraverse.size() <<"\n";
 
         int order = 0;
         while (!nodesToTraverse.empty())
@@ -452,7 +443,6 @@ namespace llvm {
           for (auto outgoingNode : outgoingNodes)
           {
             if (nodesFound.find(outgoingNode) != nodesFound.end()) continue;
-            outgoingNode->print(errs() << "Newly found node:\t") << "\n";
             bool isNextDepth = true;
             for (auto incomingE : outgoingNode->getIncomingEdges())
             {
@@ -465,10 +455,40 @@ namespace llvm {
         }
       }
 
+      void computeEntriesIntoStageSCCs (LoopDependenceInfo *LDI)
+      {
+        for (auto &stage : LDI->stages)
+        {
+          for (auto nodePair : stage->scc->internalNodePairs())
+          {
+            auto I = cast<Instruction>(nodePair.first);
+            stage->bbToSCCInstsMap[I->getParent()].insert(I);
+            stage->sccBBs.insert(I->getParent());
+          }
+
+          for (auto BB : stage->sccBBs)
+          {
+            /*
+             * Tag stages' basic blocks for reference when generating switch queues
+             */
+            LDI->bbToStage[BB].insert(stage.get());
+
+            /*
+             * Locate all stages' basic blocks that are entry blocks
+             */
+            for (auto predBBIter = pred_begin(BB); predBBIter != pred_end(BB); ++predBBIter)
+            {
+              if (stage->sccBBs.find(*predBBIter) == stage->sccBBs.end()) stage->sccEntries.insert(BB);
+            }
+          }
+        }
+      }
+
       bool isWorthParallelizing (LoopDependenceInfo *LDI)
       {
         if (LDI->loopSCCDAG->numNodes() <= 1) return false;
         collectSCCIntoStages(LDI);
+        computeEntriesIntoStageSCCs(LDI);
         return collectQueueInfo(LDI) && collectEnvInfo(LDI) && configureDependencyStorage(LDI);
       }
 
@@ -479,12 +499,13 @@ namespace llvm {
         /*
          * Clone instructions within the stage's scc, and their basic blocks
          */
-        for (auto sccI : stageInfo->scc->internalNodePairs())
+        for (auto nodePair : stageInfo->scc->internalNodePairs())
         {
-          auto I = cast<Instruction>(sccI.first);
+          auto I = cast<Instruction>(nodePair.first);
           stageInfo->iCloneMap[I] = I->clone();
-          auto B = I->getParent();
-          if (stageInfo->sccBBCloneMap.find(B) != stageInfo->sccBBCloneMap.end()) continue;
+        }
+        for (auto B : stageInfo->sccBBs)
+        {
           stageInfo->sccBBCloneMap[B] = BasicBlock::Create(context, "", stageInfo->sccStage);
         }
 
@@ -651,6 +672,15 @@ namespace llvm {
           (*edgeI)->print(errs());
         }
         errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
+      }
+
+      void printStageSCCs(LoopDependenceInfo *LDI)
+      {
+        for (auto &stage : LDI->stages)
+        {
+          errs() << "Stage: " << stage->order << "\n";
+          stage->scc->print(errs() << "SCC:\n") << "\n";
+        }
       }
 
       void printStageQueues(LoopDependenceInfo *LDI)
