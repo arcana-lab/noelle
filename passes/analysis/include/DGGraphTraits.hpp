@@ -36,23 +36,15 @@ namespace llvm {
     }
 
     std::string getEdgeSourceLabel(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter) {
-      return node->getEdgeFromNodeIterator(nodeIter)->toString();
+      return node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes())->toString();
     }
 
     static std::string getEdgeAttributes(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter, DG *dg) {
-      DGEdge<T> *edge = node->getEdgeFromNodeIterator(nodeIter);
+      auto edge = node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes());
       const std::string cntColor = "color=blue";
       const std::string memColor = "color=red";
       const std::string varColor = "color=black";
       return edge->isControlDependence() ? cntColor : (edge->isMemoryDependence() ? memColor : varColor);
-    }
-
-    bool isNodeHidden(DGNode<T> *node) {
-      return false;
-    }
-
-    std::string getNodeDescription(DGNode<T> *node, DG *dg) {
-      return "";
     }
   };
   
@@ -99,15 +91,15 @@ namespace llvm {
   struct DGGraphTraits {
     using NodeRef = DGNode<T> *;
     using ChildIteratorType = typename std::vector<DGNode<T> *>::iterator;
-    using nodes_iterator = typename std::vector<DGNode<T> *>::iterator;
+    using nodes_iterator = typename std::set<DGNode<T> *>::iterator;
 
     static DGNode<T> *getEntryNode(DG *dg) { return dg->getEntryNode(); }
 
-    static typename std::vector<DGNode<T> *>::iterator nodes_begin(DG *dg) {
+    static nodes_iterator nodes_begin(DG *dg) {
       return dg->begin_nodes();
     }
 
-    static typename std::vector<DGNode<T> *>::iterator nodes_end(DG *dg) {
+    static nodes_iterator nodes_end(DG *dg) {
       return dg->end_nodes();
     }
 
@@ -121,7 +113,7 @@ namespace llvm {
   };
 
   /*
-   * DGGraphTraits specializations for PDG, SCC, and SCCDAG
+   * GraphTraits specializations for PDG, SCC, and SCCDAG
    */
   template<> struct GraphTraits<PDG *> : DGGraphTraits<PDG, Value> {};
   template<> struct GraphTraits<SCC *> : DGGraphTraits<SCC, Value> {};

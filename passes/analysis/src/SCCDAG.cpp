@@ -22,62 +22,64 @@ llvm::SCCDAG::~SCCDAG() {
 
 
 SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
-  auto sccDG = new SCCDAG();
+  auto sccDAG = new SCCDAG();
 
   /*
-   * Iterate over all connected components of the PDG and calculate strongly connected components
+   * Iterate over all disconnected subgraphs of the PDG and calculate their strongly connected components
    */
-
-  // RENAME: Get disconnected subgraphs
-  auto components = pdg->collectConnectedComponents();
-  
-  for (auto componentNodes : components)
+  auto subgraphs = pdg->getDisconnectedSubgraphs();
+  for (auto subgraphNodeset : subgraphs)
   {
-    auto componentPDG = new PDG();
-    pdg->partitionNodesIntoNewGraph(*cast<DG<Value>>(componentPDG), *componentNodes, *componentNodes->begin());
-    delete componentNodes;
+    auto subgraphPDG = new PDG();
+    pdg->addNodesIntoNewGraph(*cast<DG<Value>>(subgraphPDG), *subgraphNodeset, *subgraphNodeset->begin());
+    delete subgraphNodeset;
 
-    std::set<DGNode<Value> *> nodesInSCCs;
-    for (auto topLevelNode : componentPDG->getTopLevelNodes())
+    std::set<Value *> valuesInSCCs;
+    for (auto topLevelNode : subgraphPDG->getTopLevelNodes())
     {
-      componentPDG->setEntryNode(topLevelNode);
-      for (auto pdgI = scc_begin(componentPDG); pdgI != scc_end(componentPDG); ++pdgI)
+      topLevelNode->print(errs() << "Top level node:\n") << "\n";
+
+      subgraphPDG->setEntryNode(topLevelNode);
+      std::set<DGNode<Value> *> nodes;
+      for (auto pdgI = scc_begin(subgraphPDG); pdgI != scc_end(subgraphPDG); ++pdgI)
       {
-        std::vector<DGNode<Value> *> nodes;
+        nodes.clear();
         bool uniqueSCC = true;
         for (auto node : *pdgI)
         {
-          if (nodesInSCCs.find(node) != nodesInSCCs.end())
+          if (valuesInSCCs.find(node->getT()) != valuesInSCCs.end())
           {
             uniqueSCC = false;
             break;
           }
-          nodes.push_back(node);
-          nodesInSCCs.insert(node);
+          nodes.insert(node);
+          valuesInSCCs.insert(node->getT());
         }
 
         if (!uniqueSCC) continue;
+        errs() << "SCC:\n";
+        for (auto node : nodes) node->print(errs()) << "\n";
         auto scc = new SCC(nodes);
-        sccDG->createNodeFrom(scc, /*inclusion=*/ true);
+        sccDAG->addNode(scc, /*inclusion=*/ true);
       }
     }
 
     /*
-     * Delete just the component holder, not the nodes; the nodes are references to those of the pdg passed in
+     * Delete just the subgraph holder, not the nodes/edges which belong to the pdg input
      */
-    componentPDG->clear();
-    delete componentPDG;
+    subgraphPDG->clear();
+    delete subgraphPDG;
   }
 
   /*
    * Maintain association of each internal node to its SCC
    */
-  auto valueNodeToSCCNode = unordered_map<DGNode<Value> *, DGNode<SCC> *>();
-  for (auto sccNode : make_range(sccDG->begin_nodes(), sccDG->end_nodes()))
+  auto valueToSCCNode = unordered_map<Value *, DGNode<SCC> *>();
+  for (auto sccNode : sccDAG->getNodes())
   {
     for (auto instPair : sccNode->getT()->internalNodePairs())
     {
-      valueNodeToSCCNode[instPair.second] = sccNode;
+      valueToSCCNode[instPair.first] = sccNode;
     }
   }
 
@@ -85,12 +87,12 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
    * Helper function to find or create an SCC from a node
    */
   auto fetchOrCreateSCCNode = [&](DGNode<Value> *node) -> DGNode<SCC> * {
-    auto sccNodeI = valueNodeToSCCNode.find(node);
-    if (sccNodeI == valueNodeToSCCNode.end()) {
-      vector<DGNode<Value> *> sccNodes = { node };
+    auto sccNodeI = valueToSCCNode.find(node->getT());
+    if (sccNodeI == valueToSCCNode.end()) {
+      set<DGNode<Value> *> sccNodes = { node };
       auto scc = new SCC(sccNodes);
-      auto sccNode = sccDG->createNodeFrom(scc, /*inclusion=*/ false);
-      valueNodeToSCCNode[node] = sccNode;
+      auto sccNode = sccDAG->addNode(scc, /*inclusion=*/ false);
+      valueToSCCNode[node->getT()] = sccNode;
       return sccNode;
     }
     return sccNodeI->second;
@@ -99,8 +101,8 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
   /*
    * Add internal/external edges between SCCs
    */
-  for (auto pdgEI = pdg->begin_edges(); pdgEI != pdg->end_edges(); ++pdgEI) {
-    auto edge = *pdgEI;
+  for (auto edge : pdg->getEdges())
+  {
     auto nodePair = edge->getNodePair();
     auto fromSCCNode = fetchOrCreateSCCNode(nodePair.first);
     auto toSCCNode = fetchOrCreateSCCNode(nodePair.second);
@@ -110,20 +112,25 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
     /*
      * If the edge points to external SCCs or is contained in a single SCC, ignore 
      */
-    if ((sccDG->isExternal(fromSCC) && sccDG->isExternal(toSCC)) || fromSCC == toSCC) continue;
+    if ((sccDAG->isExternal(fromSCC) && sccDAG->isExternal(toSCC)) || fromSCC == toSCC) continue;
 
     /*
      * Find or create edge between SCCs
      * Add instruction subedge to it
      */
-    auto sccNodeIter = fromSCCNode->connectedNodeIterTo(toSCCNode);
-    auto sccEdge = fromSCCNode->getEdgeFromConnectedNodeIterator(sccNodeIter);
-    if (sccEdge == nullptr)
+    DGEdge<SCC> *sccEdge;
+    auto edgeSet = fromSCCNode->getEdgesToAndFromNode(toSCCNode);
+    if (edgeSet.empty())
     {
-      sccEdge = sccDG->addEdge(fromSCC, toSCC);
+      sccEdge = sccDAG->addEdge(fromSCC, toSCC);
     }
+    else
+    {
+      sccEdge = (*edgeSet.begin());
+    }
+
     sccEdge->addSubEdge(edge);
   }
 
-  return sccDG;
+  return sccDAG;
 }

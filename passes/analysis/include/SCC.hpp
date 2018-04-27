@@ -14,7 +14,7 @@ namespace llvm {
 	*/
 	class SCC : public DG<Value> {
 	public:
-		SCC(std::vector<DGNode<Value> *> nodes) ;
+		SCC(std::set<DGNode<Value> *> nodes) ;
 		~SCC() ;
 
 		raw_ostream &print(raw_ostream &stream) ;
