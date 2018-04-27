@@ -7,39 +7,36 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "PipelineInfo.hpp"
+
 using namespace std;
 using namespace llvm;
 
 namespace llvm {
 
 	struct LoopDependenceInfo {
-		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, ScalarEvolution &se);
+		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se);
 		~LoopDependenceInfo();
 
-		Function *func;
+		Function *function;
 		LoopInfo &LI;
 		ScalarEvolution &SE;
 		DominatorTree &DT;
+		PostDominatorTree &PDT;
 		Loop *loop;
 		PDG *functionDG;
 		PDG *loopDG;
+		PDG *loopInternalDG;
 		SCCDAG *loopSCCDAG;
 		
 		/*
 		 * Stores new pipeline execution
 		 */
 		BasicBlock *pipelineBB;
-
-		/*
-		 * Tracks Type of value used by dependents inside/outside of the loop
-		 */
-		std::vector<Type *> internalDependentTypes;
-		std::vector<Type *> externalDependentTypes;
-
-		/*
-		 * Tracks byte lengths of the internal types stored above.
-		 */
-		std::vector<int> internalDependentByteLengths;
+		unordered_map<SCC *, StageInfo *> sccToStage;
+		std::vector<std::unique_ptr<StageInfo>> stages;
+		std::vector<std::unique_ptr<QueueInfo>> queues;
+		std::unique_ptr<EnvInfo> environment;
 
 		/*
 		 * Types for arrays storing dependencies and stages

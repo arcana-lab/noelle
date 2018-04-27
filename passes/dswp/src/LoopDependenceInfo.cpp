@@ -9,13 +9,21 @@
 using namespace std;
 using namespace llvm;
 
-llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, ScalarEvolution &se)
-		: func{f}, LI{li}, DT{dt}, SE{se}, loop{l}, functionDG{fG} {
+llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se)
+		: function{f}, LI{li}, DT{dt}, PDT{pdt}, SE{se}, loop{l}, functionDG{fG} {
 	loopDG = functionDG->createLoopsSubgraph(LI);
-	loopSCCDAG = SCCDAG::createSCCDAGFrom(loopDG);
+
+	/*
+	 * Build a SCCDAG of loop-internal instructions
+	 */
+	std::vector<Value *> loopInternals;
+	for (auto internalNode : loopDG->internalNodePairs()) loopInternals.push_back(internalNode.first);
+	loopInternalDG = loopDG->createSubgraphFromValues(loopInternals);
+	loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
 };
 
 llvm::LoopDependenceInfo::~LoopDependenceInfo() {
 	delete loopDG;
+	delete loopInternalDG;
 	delete loopSCCDAG;
 }

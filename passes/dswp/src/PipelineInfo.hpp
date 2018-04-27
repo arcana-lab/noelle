@@ -11,71 +11,80 @@ using namespace llvm;
 
 namespace llvm {
 
-	struct IncomingPipelineInfo {
-		/*
-		 * Storage and cast of the incoming value
-		 */
-        Instruction * popStorage;
-        Value * popCast;
-
-        /*
-         * Queue pop followed by load of pop storage's value
-         */
-		CallInst * popQueueCall;
-        LoadInst * loadStorage;
-
-        /*
-         * List of instructions using the pop storage's value
-         */
-        std::vector<Instruction *> userInstructions;
+	struct EnvInfo {
+		std::vector<Value *> externalDependents;
 	};
 
-	struct OutgoingPipelineInfo {
-		/*
-		 * Calculation, store, and cast of the outgoing value and a pointer to it
-		 */
-        Instruction * valueInstruction;
-        Value * valueIntoPtrStore;
-        Value * ptrToValueCast;
+	struct QueueInfo {
+		int fromStage, toStage;
+		bool isControl;
+		Type *dependentType;
+		int dependentBitSize;
+		int byteLength;
 
-        /*
-         * Queue push of value
-         */
-		CallInst * pushQueueCall;
+        Instruction * producer;
+        std::set<Instruction *> consumers;
+
+        QueueInfo(Instruction *p, Instruction *c) : producer{p}
+        {
+            consumers.insert(c);
+			isControl = isa<TerminatorInst>(p);
+			dependentType = isControl ? IntegerType::get(cast<Value>(p)->getContext(), 1) : p->getType();
+			calculateByteReqs();
+        }
+
+        QueueInfo(Instruction *p, Instruction *c, Type *type, bool control) : producer{p}, dependentType{type}, isControl{control}
+        {
+            consumers.insert(c);
+        	calculateByteReqs();
+        }
+
+        void calculateByteReqs()
+        {
+			// Calculates number of bytes needed to fit the number of bits
+			dependentBitSize = dependentType->getPrimitiveSizeInBits();
+			byteLength = (dependentBitSize + (8 - (dependentBitSize % 8))) / 8;
+        }
 	};
-	
+
 	struct StageInfo {
+		int order;
 		SCC *scc;
 		Function *sccStage;
 		BasicBlock *entryBlock, *exitBlock;
+		BasicBlock *prologueBlock, *epilogueBlock;
+		BasicBlock *switcherBlock;
 
 		/*
-		 * Maps instructions from original instructions in the function to the stages' clones 
+		 * Maps original loop instructions to clones 
 		 */
-		unordered_map<Instruction *, Instruction *> * iCloneMap;
-		unordered_map<BasicBlock*, BasicBlock*> * bbCloneMap;
+		unordered_map<Instruction *, Instruction *> iCloneMap;
 
 		/*
-		 * Stores incoming/outgoing edges from other strongly connected components
+		 * Map original to clone basic blocks for: scc execution, predecessors, and successors
 		 */
-		std::vector<DGEdge<Value> *> incomingSCCEdges, outgoingSCCEdges;
+		unordered_map<BasicBlock*, BasicBlock*> sccBBCloneMap;
 
 		/*
-		 * Maps internal instructions to external values for incoming/outgoing loop dependencies
+		 * Maps from instructions within loop to environment indices
 		 */
-        unordered_map<Instruction *, Value *> incomingDependentMap, outgoingDependentMap;
+        unordered_map<Instruction *, int> incomingToEnvMap, outgoingToEnvMap;
 
         /*
-         * Maps external dependency to its location in the environment used by the stage handler
+         * Maps from producer to the queue they push to
+         * Maps from consumer to their producers
          */
-        unordered_map<Value *, int> externalDependencyToEnvMap;
-
+        std::map<Instruction *, int> producerToValueOrControlQueueMap;
+        std::map<Instruction *, int> producerToSwitchQueueMap;
+        unordered_map<Instruction *, set<int>> consumerToQueuesMap;
         /*
-         * Maps internal dependency to its queue
+         * Stores queue indices and pointers for the stage
          */
-        unordered_map<DGEdge<Value> *, int> edgeToQueueMap;
+        std::set<int> pushValueQueues, popValueQueues;
+        std::set<int> pushSwitchQueues, popSwitchQueues;
+        std::set<int> pushControlQueues, popControlQueues;
 
-        std::vector<std::unique_ptr<OutgoingPipelineInfo>> valuePushQueues;
-        std::map<Instruction *, std::unique_ptr<IncomingPipelineInfo>> valuePopQueuesMap;
+        unordered_map<int, Value *> queueIndexToPointer;
+        unordered_map<int, Value *> queueIndexToPopLoad;
 	};
 }
