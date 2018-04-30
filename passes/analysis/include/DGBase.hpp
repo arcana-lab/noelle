@@ -185,9 +185,14 @@ namespace llvm {
 
     edges_iterator begin_sub_edges() { return subEdges.begin(); }
     edges_iterator end_sub_edges() { return subEdges.end(); }
+  
+    inline iterator_range<edges_iterator>
+    getSubEdges() { return make_range(subEdges.begin(), subEdges.end()); }
 
     std::pair<DGNode<T> *, DGNode<T> *> getNodePair() const { return std::make_pair(from, to); }
     void setNodePair(DGNode<T> *from, DGNode<T> *to) { this->from = from; this->to = to; }
+    DGNode<T> * getOutgoingNode() const { return from; }
+    DGNode<T> * getIncomingNode() const { return to; }
 
     bool isMemoryDependence() const { return memory; }
     bool isMustDependence() const { return must; }
@@ -280,7 +285,7 @@ namespace llvm {
       bool noOtherIncoming = true;
       for (auto incomingE : node->getIncomingEdges())
       {
-        noOtherIncoming &= (incomingE->getNodePair().first == node);
+        noOtherIncoming &= (incomingE->getOutgoingNode() == node);
       }
       if (noOtherIncoming) topLevelNodes.insert(node);
     }
@@ -296,7 +301,7 @@ namespace llvm {
       visitedNodes.insert(node);
       for (auto incomingE : node->getIncomingEdges())
       {
-        auto incomingNode = incomingE->getNodePair().first;
+        auto incomingNode = incomingE->getOutgoingNode();
         if (incomingNode == node) continue;
         node = incomingNode;
         break;
@@ -337,8 +342,8 @@ namespace llvm {
           connectedNodes.push(node);
         };
 
-        for (auto edge : currentNode->getOutgoingEdges()) checkToVisitNode(edge->getNodePair().second);
-        for (auto edge : currentNode->getIncomingEdges()) checkToVisitNode(edge->getNodePair().first);
+        for (auto edge : currentNode->getOutgoingEdges()) checkToVisitNode(edge->getIncomingNode());
+        for (auto edge : currentNode->getIncomingEdges()) checkToVisitNode(edge->getOutgoingNode());
       }
 
       connectedComponents.push_back(component);
@@ -355,8 +360,8 @@ namespace llvm {
     map.erase(theT);
     allNodes.erase(node);
 
-    for (auto edge : node->getIncomingEdges()) edge->getNodePair().first->removeConnectedNode(node);
-    for (auto edge : node->getOutgoingEdges()) edge->getNodePair().second->removeConnectedNode(node);
+    for (auto edge : node->getIncomingEdges()) edge->getOutgoingNode()->removeConnectedNode(node);
+    for (auto edge : node->getOutgoingEdges()) edge->getIncomingNode()->removeConnectedNode(node);
     for (auto edge : node->getAllConnectedEdges()) allEdges.erase(edge);
   }
 
@@ -378,8 +383,8 @@ namespace llvm {
     {
       for (auto edgeToCopy : node->getOutgoingEdges())
       {
-        auto outgoingT = edgeToCopy->getNodePair().second->getT();
-        if (!newGraph.isInGraph(outgoingT)) continue;
+        auto incomingT = edgeToCopy->getIncomingNode()->getT();
+        if (!newGraph.isInGraph(incomingT)) continue;
         newGraph.copyAddEdge(*edgeToCopy);
       }
     }
@@ -415,7 +420,7 @@ namespace llvm {
   {
     incomingEdges.insert(edge);
     allConnectedEdges.insert(edge);
-    auto node = edge->getNodePair().first;
+    auto node = edge->getOutgoingNode();
     nodeToEdgesMap[node].insert(edge);
   }
   
@@ -424,7 +429,7 @@ namespace llvm {
   {
     outgoingEdges.insert(edge);
     allConnectedEdges.insert(edge);
-    auto node = edge->getNodePair().second;
+    auto node = edge->getIncomingNode();
     outgoingNodeInstances.push_back(node);
     outgoingEdgeInstances.push_back(edge);
     nodeToEdgesMap[node].insert(edge);
@@ -457,13 +462,13 @@ namespace llvm {
     if (outgoingEdges.find(edge) != outgoingEdges.end())
     {
       outgoingEdges.erase(edge);
-      node = edge->getNodePair().second;
+      node = edge->getIncomingNode();
       removeInstance(edge);
     }
     else
     {
       incomingEdges.erase(edge);
-      node = edge->getNodePair().first;
+      node = edge->getOutgoingNode();
     }
 
     allConnectedEdges.erase(edge);
