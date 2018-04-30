@@ -42,7 +42,7 @@ namespace llvm {
        */
       PDG *createFunctionSubgraph(Function &F);
       PDG *createLoopsSubgraph(LoopInfo &LI);
-      PDG *createSubgraphFromValues(std::vector<Value *> &valueList);
+      PDG *createSubgraphFromValues(std::vector<Value *> &valueList, bool linkToExternal);
       
     private:
       void copyEdgesInto(PDG *newPDG, bool linkToExternal = true);

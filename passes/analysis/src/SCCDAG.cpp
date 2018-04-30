@@ -21,7 +21,8 @@ llvm::SCCDAG::~SCCDAG() {
 }
 
 
-SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
+SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg)
+{
   auto sccDAG = new SCCDAG();
 
   /*
@@ -37,8 +38,6 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
     std::set<Value *> valuesInSCCs;
     for (auto topLevelNode : subgraphPDG->getTopLevelNodes())
     {
-      topLevelNode->print(errs() << "Top level node:\n") << "\n";
-
       subgraphPDG->setEntryNode(topLevelNode);
       std::set<DGNode<Value> *> nodes;
       for (auto pdgI = scc_begin(subgraphPDG); pdgI != scc_end(subgraphPDG); ++pdgI)
@@ -57,8 +56,8 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
         }
 
         if (!uniqueSCC) continue;
-        errs() << "SCC:\n";
-        for (auto node : nodes) node->print(errs()) << "\n";
+        // errs() << "SCC:\n";
+        // for (auto node : nodes) node->print(errs()) << "\n";
         auto scc = new SCC(nodes);
         sccDAG->addNode(scc, /*inclusion=*/ true);
       }
@@ -71,66 +70,120 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg) {
     delete subgraphPDG;
   }
 
+  sccDAG->markValuesInSCC();
+  sccDAG->markEdgesAndSubEdges();
+  return sccDAG;
+}
+
+void llvm::SCCDAG::markValuesInSCC()
+{
   /*
    * Maintain association of each internal node to its SCC
    */
-  auto valueToSCCNode = unordered_map<Value *, DGNode<SCC> *>();
-  for (auto sccNode : sccDAG->getNodes())
+  for (auto sccNode : this->getNodes())
   {
     for (auto instPair : sccNode->getT()->internalNodePairs())
     {
-      valueToSCCNode[instPair.first] = sccNode;
+      this->valueToSCCNode[instPair.first] = sccNode;
     }
   }
+}
 
+void llvm::SCCDAG::markEdgesAndSubEdges()
+{
   /*
-   * Helper function to find or create an SCC from a node
+   * Add edges between SCCs by looking at each SCC's outgoing edges
    */
-  auto fetchOrCreateSCCNode = [&](DGNode<Value> *node) -> DGNode<SCC> * {
-    auto sccNodeI = valueToSCCNode.find(node->getT());
-    if (sccNodeI == valueToSCCNode.end()) {
-      set<DGNode<Value> *> sccNodes = { node };
-      auto scc = new SCC(sccNodes);
-      auto sccNode = sccDAG->addNode(scc, /*inclusion=*/ false);
-      valueToSCCNode[node->getT()] = sccNode;
-      return sccNode;
-    }
-    return sccNodeI->second;
-  };
-
-  /*
-   * Add internal/external edges between SCCs
-   */
-  for (auto edge : pdg->getEdges())
+  for (auto outgoingSCCNode : this->getNodes())
   {
-    auto nodePair = edge->getNodePair();
-    auto fromSCCNode = fetchOrCreateSCCNode(nodePair.first);
-    auto toSCCNode = fetchOrCreateSCCNode(nodePair.second);
-    auto fromSCC = fromSCCNode->getT();
-    auto toSCC = toSCCNode->getT();
-
-    /*
-     * If the edge points to external SCCs or is contained in a single SCC, ignore 
-     */
-    if ((sccDAG->isExternal(fromSCC) && sccDAG->isExternal(toSCC)) || fromSCC == toSCC) continue;
-
-    /*
-     * Find or create edge between SCCs
-     * Add instruction subedge to it
-     */
-    DGEdge<SCC> *sccEdge;
-    auto edgeSet = fromSCCNode->getEdgesToAndFromNode(toSCCNode);
-    if (edgeSet.empty())
+    auto outgoingSCC = outgoingSCCNode->getT();
+    for (auto externalNodePair : outgoingSCC->externalNodePairs())
     {
-      sccEdge = sccDAG->addEdge(fromSCC, toSCC);
-    }
-    else
-    {
-      sccEdge = (*edgeSet.begin());
-    }
+      auto incomingNode = externalNodePair.second;
+      if (incomingNode->numIncomingEdges() == 0) continue;
 
-    sccEdge->addSubEdge(edge);
+      auto incomingSCCNode = this->valueToSCCNode[externalNodePair.first];
+      auto incomingSCC = incomingSCCNode->getT();
+
+      /*
+       * Mark each subedge from internals to externals
+       */
+      auto edgeSet = outgoingSCCNode->getEdgesToAndFromNode(incomingSCCNode);
+      auto sccEdge = edgeSet.empty() ? this->addEdge(outgoingSCC, incomingSCC) : (*edgeSet.begin());
+      for (auto edge : incomingNode->getIncomingEdges()) sccEdge->addSubEdge(edge);
+    }
   }
+}
 
-  return sccDAG;
+void llvm::SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
+{
+  if (sccSet.size() < 2) return;
+  
+  std::set<DGNode<Value> *> mergeNodes;
+  for (auto sccNode : sccSet)
+  {
+    for (auto internalNodePair : sccNode->getT()->internalNodePairs())
+    {
+      mergeNodes.insert(internalNodePair.second);
+    }
+  }
+  auto mergeSCC = new SCC(mergeNodes);
+
+  /*
+   * Add the new SCC and remove the old ones
+   * Reassign values to the SCC they are now in
+   * Recreate all edges from SCCs to the newly merged SCC
+   */
+  auto mergeSCCNode = this->addNode(mergeSCC, /*inclusion=*/ true);
+  for (auto sccNode : sccSet) this->removeNode(sccNode);
+  this->markValuesInSCC();
+  this->markEdgesAndSubEdges();
+}
+
+std::set<DGNode<SCC> *> llvm::SCCDAG::previousDepthNodes(DGNode<SCC> *node)
+{
+  std::set<DGNode<SCC> *> outgoingNodes;
+  for (auto edge : node->getIncomingEdges()) outgoingNodes.insert(edge->getOutgoingNode());
+
+  std::set<DGNode<SCC> *> previousDepthNodes;
+  for (auto outgoing : outgoingNodes)
+  {
+    /*
+     * Check if edge exists from this previous to another previous node;
+     * If so, it isn't the previous depth
+     */
+    bool isPrevDepth = true;
+    for (auto outgoingE : outgoing->getOutgoingEdges())
+    {
+      isPrevDepth &= (outgoingNodes.find(outgoingE->getIncomingNode()) == outgoingNodes.end());
+    }
+
+    if (!isPrevDepth) continue;
+    previousDepthNodes.insert(outgoing);
+  }
+  return previousDepthNodes;
+}
+
+std::set<DGNode<SCC> *> llvm::SCCDAG::nextDepthNodes(DGNode<SCC> *node)
+{
+  std::set<DGNode<SCC> *> incomingNodes;
+  for (auto edge : node->getOutgoingEdges()) incomingNodes.insert(edge->getIncomingNode());
+
+  std::set<DGNode<SCC> *> nextDepthNodes;
+  for (auto incoming : incomingNodes)
+  {
+    /*
+     * Check if edge exists from another next to this next node;
+     * If so, it isn't the next depth
+     */
+    bool isNextDepth = true;
+    for (auto incomingE : incoming->getIncomingEdges())
+    {
+      isNextDepth &= (incomingNodes.find(incomingE->getOutgoingNode()) == incomingNodes.end());
+    }
+
+    if (!isNextDepth) continue;
+    nextDepthNodes.insert(incoming);
+  }
+  return nextDepthNodes;
 }

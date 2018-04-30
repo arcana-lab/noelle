@@ -19,16 +19,16 @@ llvm::SCC::SCC(std::set<DGNode<Value> *> nodes) {
 		auto theT = node->getT();
 		for (auto edge : node->getOutgoingEdges())
 		{
-			auto outgoingT = edge->getNodePair().second->getT();
-			fetchOrAddNode(outgoingT, /*internal=*/ false);
-			addEdge(theT, outgoingT);
+			auto incomingT = edge->getIncomingNode()->getT();
+			fetchOrAddNode(incomingT, /*internal=*/ false);
+			addEdge(theT, incomingT);
 		}
 		for (auto edge : node->getIncomingEdges())
 		{
-			auto incomingT = edge->getNodePair().first->getT();
-			if (isInGraph(incomingT)) continue;
-			fetchOrAddNode(incomingT, /*internal=*/ false);
-			addEdge(theT, incomingT);
+			auto outgoingT = edge->getOutgoingNode()->getT();
+			if (isInGraph(outgoingT)) continue;
+			fetchOrAddNode(outgoingT, /*internal=*/ false);
+			addEdge(outgoingT, theT);
 		}
 	}
 }

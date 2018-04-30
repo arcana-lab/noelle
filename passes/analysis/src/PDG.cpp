@@ -121,7 +121,7 @@ PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
   return loopsPDG;
 }
 
-PDG *llvm::PDG::createSubgraphFromValues(std::vector<Value *> &valueList) {
+PDG *llvm::PDG::createSubgraphFromValues(std::vector<Value *> &valueList, bool linkToExternal) {
   if (valueList.empty()) return nullptr;
   auto newPDG = new PDG();
 
@@ -130,7 +130,7 @@ PDG *llvm::PDG::createSubgraphFromValues(std::vector<Value *> &valueList) {
   newPDG->entryNode = newPDG->internalNodeMap[*(valueList.begin())];
   assert(newPDG->entryNode != nullptr);
 
-  copyEdgesInto(newPDG, /*linkToExternal=*/ false);
+  copyEdgesInto(newPDG, linkToExternal);
 
   return newPDG;
 }
