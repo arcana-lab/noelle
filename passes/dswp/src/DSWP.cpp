@@ -188,7 +188,8 @@ namespace llvm {
          * Merge SCCs of the SCCDAG.
          */
         mergeSCCs(LDI);
-        // printSCCs(LDI->loopSCCDAG);
+        printSCCs(LDI->loopSCCDAG);
+        return false;
 
         /*
          * Create the pipeline stages.
@@ -218,36 +219,43 @@ namespace llvm {
         return true;
       }
 
+      void mergeTailBranches (LoopDependenceInfo *LDI)
+      {
+        auto &sccSubgraph = LDI->loopSCCDAG;
+        std::vector<DGNode<SCC> *> tailBranches;
+        for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
+        {
+          auto scc = sccNode->getT();
+          if (scc->numInternalNodes() > 1) continue ;
+          if (sccNode->numOutgoingEdges() > 0) continue ;
+          
+          auto singleInstrNode = *scc->begin_nodes();
+          if (auto branch = dyn_cast<TerminatorInst>(singleInstrNode->getT())) tailBranches.push_back(sccNode);
+        }
+
+        /*
+         * Merge trailing branch nodes into previous depth scc
+         */
+        for (auto tailBranch : tailBranches)
+        {
+          std::set<DGNode<SCC> *> nodesToMerge = { tailBranch };
+          nodesToMerge.insert(*sccSubgraph->previousDepthNodes(tailBranch).begin());
+          sccSubgraph->mergeSCCs(nodesToMerge);
+        }
+      }
+
       void mergeSCCs (LoopDependenceInfo *LDI)
       {
+        errs() << "Number of unmerged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
 
         /*
          * Merge the SCC related to a single PHI node and its use if there is only one.
          */
         //TODO
 
-        /*
-         * Remove SCCs consisting solely of trailing branches or LCCSA PHINode
-         */
-        auto &sccSubgraph = LDI->loopSCCDAG;
-        errs() << "Number of unmerged nodes: " << sccSubgraph->numNodes() << "\n";
+        mergeTailBranches(LDI);
 
-        std::set<DGNode<SCC> *> nodesToRemove;
-        for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
-        {
-          auto scc = sccNode->getT();
-          if (scc->numInternalNodes() > 1) continue ;
-          auto singleInstrNode = *scc->begin_nodes();
-          if (singleInstrNode->numOutgoingEdges() > 0) continue ;
-          if (auto branch = dyn_cast<TerminatorInst>(singleInstrNode->getT()))
-          {
-            scc->print(errs() << "Removing SCC because of trailing branch:\n") << "\n";
-            nodesToRemove.insert(sccNode);
-          }
-        }
-        for (auto node : nodesToRemove) sccSubgraph->removeNode(node);
-        errs() << "Number of merged nodes: " << sccSubgraph->numNodes() << "\n";
-
+        errs() << "Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
         return ;
       }
 
@@ -391,11 +399,11 @@ namespace llvm {
            */
           for (auto incomingEdge : externalNode->getIncomingEdges())
           {
-            addExternalDependentToStagesWithInst(cast<Instruction>(incomingEdge->getNodePair().first->getT()), true);
+            addExternalDependentToStagesWithInst(cast<Instruction>(incomingEdge->getOutgoingNode()->getT()), true);
           }
           for (auto outgoingEdge : externalNode->getOutgoingEdges())
           {
-            addExternalDependentToStagesWithInst(cast<Instruction>(outgoingEdge->getNodePair().second->getT()), false);
+            addExternalDependentToStagesWithInst(cast<Instruction>(outgoingEdge->getIncomingNode()->getT()), false);
           }
         }
         return true;
@@ -437,20 +445,11 @@ namespace llvm {
           /*
            * Add all unvisited, next depth nodes to the traversal queue 
            */
-          std::set<DGNode<SCC> *> outgoingNodes;
-          for (auto edge : sccNode->getOutgoingEdges()) outgoingNodes.insert(edge->getNodePair().second);
-
-          for (auto outgoingNode : outgoingNodes)
+          auto nextNodes = LDI->loopSCCDAG->nextDepthNodes(sccNode);
+          for (auto next : nextNodes)
           {
-            if (nodesFound.find(outgoingNode) != nodesFound.end()) continue;
-            bool isNextDepth = true;
-            for (auto incomingE : outgoingNode->getIncomingEdges())
-            {
-              isNextDepth &= (outgoingNodes.find(incomingE->getNodePair().first) == outgoingNodes.end());
-            }
-            if (!isNextDepth) continue;
-
-            nodesToTraverse.push_back(outgoingNode);
+            if (nodesFound.find(next) != nodesFound.end()) continue;
+            nodesToTraverse.push_back(next);
           }
         }
       }
