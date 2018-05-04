@@ -35,7 +35,8 @@ namespace llvm {
         {
 			// Calculates number of bytes needed to fit the number of bits
 			dependentBitSize = dependentType->getPrimitiveSizeInBits();
-			byteLength = (dependentBitSize + (8 - (dependentBitSize % 8))) / 8;
+			if (dependentBitSize % 8 == 0) byteLength = dependentBitSize / 8;
+			else byteLength = (dependentBitSize + (8 - (dependentBitSize % 8))) / 8;
         }
 	};
 
@@ -51,6 +52,8 @@ namespace llvm {
 	struct LocalSwitch
 	{
 		unordered_map<Instruction *, int> producerToPushIndex;
+		int defaultEntry;
+		Value *indexTracker;
 	};
 
 	struct StageInfo {
@@ -69,9 +72,11 @@ namespace llvm {
 		/*
 		 * New basic blocks for the stage function
 		 */
-		BasicBlock *entryBlock, *exitBlock;
+		BasicBlock *entryBlock, *exitBlock, *abortBlock;
 		BasicBlock *prologueBlock, *epilogueBlock;
-		BasicBlock *switcherBlock;
+		unordered_map<int, BasicBlock *> controlToSwitchBlock;
+		unordered_map<BasicBlock *, BasicBlock *> switchToSCCEntry;
+		unordered_map<BasicBlock *, std::set<BasicBlock *>> switchToIntermediates;
 
 		/*
 		 * Maps original loop instructions to clones 
