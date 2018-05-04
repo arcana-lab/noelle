@@ -197,7 +197,7 @@ namespace llvm {
         if (!isWorthParallelizing(LDI)) return false;
         // printStageSCCs(LDI);
         // printStageQueues(LDI);
-        printLocalSwitches(LDI);
+        // printLocalSwitches(LDI);
         
         for (auto &stage : LDI->stages) createPipelineStageFromSCC(LDI, stage);
         return false;
@@ -934,6 +934,25 @@ namespace llvm {
         }
       }
 
+      void remapValueConsumerOperands (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      {
+        for (auto queueIndex : stageInfo->popValueQueues)
+        {
+          auto queueInfo = LDI->queues[queueIndex].get();
+          auto producer = cast<Value>(queueInfo->producer);
+          auto load = stageInfo->queueInstrMap[queueIndex]->load;
+          for (auto consumer : queueInfo->consumers)
+          {
+            for (auto &op : stageInfo->iCloneMap[consumer]->operands())
+            {
+              auto opV = op.get();
+              if (opV != producer) continue;
+              op.set(load);
+            }
+          }
+        }
+      }
+
       void pushControlQueues (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         IRBuilder<> prologueBuilder(stageInfo->prologueBlock);
@@ -1023,14 +1042,14 @@ namespace llvm {
 
         for (auto BB : scanBBs)
         {
-          BB->print(errs() << "Scanning\n"); errs() << "\n";
+          // BB->print(errs() << "Scanning\n"); errs() << "\n";
           std::vector<Instruction *> instToMove;
           TerminatorInst *terminator; 
           for (auto instIter = BB->begin(); instIter != BB->end(); ++instIter)
           {
             if (terminator = dyn_cast<TerminatorInst>(&*instIter))
             {
-              terminator->print(errs() << "Inserting\t"); errs() << "\n";
+              // terminator->print(errs() << "Inserting\t"); errs() << "\n";
               for (auto moveIter = ++instIter; moveIter != BB->end(); ++moveIter)
               {
                 instToMove.push_back(&*moveIter);
@@ -1041,7 +1060,7 @@ namespace llvm {
 
           for (auto I : instToMove)
           {
-            I->print(errs() << "Moving\t"); errs() << "\n";
+            // I->print(errs() << "Moving\t"); errs() << "\n";
             I->removeFromParent();
             I->insertBefore(terminator);
           }
@@ -1135,10 +1154,13 @@ namespace llvm {
          */
         loadAllQueuePointersInEntry(LDI, stageInfo);
         loadLocalSwitchIndices(LDI, stageInfo);
+
         popControlAndSwitchQueuesInPrologue(LDI, stageInfo);
         branchOnControls(LDI, stageInfo);
         branchOnSwitches(LDI, stageInfo);
+
         popValueQueuesInSCCOrEpilogue(LDI, stageInfo);
+        remapValueConsumerOperands(LDI, stageInfo);
 
         /*
          * Preparation for next iteration
