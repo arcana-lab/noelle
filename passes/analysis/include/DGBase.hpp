@@ -229,9 +229,8 @@ namespace llvm {
   template <class T>
   DGNode<T> *DG<T>::fetchOrAddNode(T *theT, bool inclusion)
   {
-    auto &map = inclusion ? internalNodeMap : externalNodeMap;
-    if (map.find(theT) == map.end()) return addNode(theT, inclusion);
-    return map[theT];
+    if (isInGraph(theT)) return fetchNode(theT);
+    return addNode(theT, inclusion);
   }
 
   template <class T>

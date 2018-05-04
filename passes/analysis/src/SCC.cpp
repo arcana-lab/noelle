@@ -21,14 +21,14 @@ llvm::SCC::SCC(std::set<DGNode<Value> *> nodes) {
 		{
 			auto incomingT = edge->getIncomingNode()->getT();
 			fetchOrAddNode(incomingT, /*internal=*/ false);
-			addEdge(theT, incomingT);
+			copyAddEdge(*edge);
 		}
 		for (auto edge : node->getIncomingEdges())
 		{
 			auto outgoingT = edge->getOutgoingNode()->getT();
 			if (isInGraph(outgoingT)) continue;
 			fetchOrAddNode(outgoingT, /*internal=*/ false);
-			addEdge(outgoingT, theT);
+			copyAddEdge(*edge);
 		}
 	}
 }

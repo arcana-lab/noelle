@@ -188,8 +188,7 @@ namespace llvm {
          * Merge SCCs of the SCCDAG.
          */
         mergeSCCs(LDI);
-        printSCCs(LDI->loopSCCDAG);
-        return false;
+        // printSCCs(LDI->loopSCCDAG);
 
         /*
          * Create the pipeline stages.
@@ -259,14 +258,98 @@ namespace llvm {
         return ;
       }
 
-      int fetchOrCreateValueOrControlQueue (LoopDependenceInfo *LDI, StageInfo *fromStage, Instruction *producer, Instruction *consumer)
+      void collectSCCIntoStages (LoopDependenceInfo *LDI)
       {
-        int queueIndex = LDI->queues.size();
-        auto prodQueueIter = fromStage->producerToValueOrControlQueueMap.find(producer);
-        if (prodQueueIter != fromStage->producerToValueOrControlQueueMap.end()) return prodQueueIter->second;
+        auto topLevelSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
 
-        LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer)));
-        return queueIndex;
+        /*
+         * TODO: Check if all entries to the loop are into top level nodes
+         */
+        std::set<DGNode<SCC> *> nodesFound(topLevelSCCNodes.begin(), topLevelSCCNodes.end());
+        std::deque<DGNode<SCC> *> nodesToTraverse(topLevelSCCNodes.begin(), topLevelSCCNodes.end());
+
+        int order = 0;
+        while (!nodesToTraverse.empty())
+        {
+          auto sccNode = nodesToTraverse.front();
+          nodesToTraverse.pop_front();
+          nodesFound.insert(sccNode);
+
+          /*
+           * Add all unvisited, next depth nodes to the traversal queue 
+           */
+          auto nextNodes = LDI->loopSCCDAG->nextDepthNodes(sccNode);
+          for (auto next : nextNodes)
+          {
+            if (nodesFound.find(next) != nodesFound.end()) continue;
+            nodesToTraverse.push_back(next);
+          }
+
+          auto scc = sccNode->getT();
+          auto stage = std::make_unique<StageInfo>();
+          stage->order = order++;
+          stage->scc = scc;
+          LDI->stages.push_back(std::move(stage));
+          LDI->sccToStage[scc] = LDI->stages[order - 1].get();
+        }
+      }
+
+      void computeStageEntriesAndExits (LoopDependenceInfo *LDI)
+      {
+        /*
+         * TODO: Build entirely from CDG instead of CFG!!!
+         */
+
+        for (auto &stage : LDI->stages)
+        {
+          /*
+           * Log all basic blocks partially or fully executed by this stage
+           */
+          for (auto nodePair : stage->scc->internalNodePairs())
+          {
+            auto I = cast<Instruction>(nodePair.first);
+            stage->sccBBs.insert(I->getParent());
+          }
+
+          for (auto BB : stage->sccBBs)
+          {
+            /*
+             * Tag stages' basic blocks for reference
+             */
+            LDI->bbToStage[BB].insert(stage.get());
+
+            /*
+             * Log all entry blocks to this stage's basic block
+             */
+            for (auto predBBIter = pred_begin(BB); predBBIter != pred_end(BB); ++predBBIter)
+            {
+              if (stage->sccBBs.find(*predBBIter) != stage->sccBBs.end()) continue;
+              stage->sccEntries.insert(*predBBIter);
+            }
+
+            /*
+             * If this stage holds the terminator of the basic block, log all exit blocks
+             */
+            if (!stage->scc->isInternal((Value*)BB->getTerminator())) continue;
+            for (auto succBBIter = succ_begin(BB); succBBIter != succ_end(BB); ++succBBIter)
+            {
+              auto succBB = *succBBIter;
+              if (stage->sccBBs.find(succBB) != stage->sccBBs.end()) continue;
+              stage->sccExits.insert(succBB);
+              
+              /*
+               * Index the entry point taken by the exiting block of this stage
+               */
+              int index = 0;
+              for (auto predOfSuccIter = pred_begin(succBB); predOfSuccIter != pred_end(succBB); ++predOfSuccIter, ++index)
+              {
+                if (*predOfSuccIter != BB) continue;
+                stage->exitBBToIndex[succBB] = index;
+                break;
+              }
+            }
+          }
+        }
       }
 
       bool createControlAndValueQueues (LoopDependenceInfo *LDI)
@@ -278,6 +361,7 @@ namespace llvm {
             auto sccPair = sccEdge->getNodePair();
             auto fromStage = LDI->sccToStage[sccPair.first->getT()];
             auto toStage = LDI->sccToStage[sccPair.second->getT()];
+            if (fromStage == toStage) continue;
 
             /*
              * Create value and control queues for each dependency of the form: producer -> consumers
@@ -292,9 +376,27 @@ namespace llvm {
               auto pcPair = instructionEdge->getNodePair();
               auto producer = cast<Instruction>(pcPair.first->getT());
               auto consumer = cast<Instruction>(pcPair.second->getT());
-              auto queueIndex = fetchOrCreateValueOrControlQueue(LDI, fromStage, producer, consumer);
+              
+              auto isControl = instructionEdge->isControlDependence();
+              errs() << isControl << "\n";
+              auto dependentType = isControl ? IntegerType::get(producer->getContext(), 1) : producer->getType();
 
-              if (instructionEdge->isControlDependence())
+              int queueIndex = LDI->queues.size();
+              for (auto queueI : fromStage->producerToQueues[producer])
+              {
+                if (LDI->queues[queueI]->toStage != toStage->order) continue;
+                queueIndex = queueI;
+                break;
+              }
+
+              if (queueIndex == LDI->queues.size())
+              {
+                LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, dependentType)));
+                fromStage->producerToQueues[producer].insert(queueIndex);
+              }
+              toStage->consumerToQueues[consumer].insert(queueIndex);
+
+              if (isControl)
               {
                 fromStage->pushControlQueues.insert(queueIndex);
                 toStage->popControlQueues.insert(queueIndex);
@@ -309,57 +411,60 @@ namespace llvm {
               queueInfo->consumers.insert(consumer);
               queueInfo->fromStage = fromStage->order;
               queueInfo->toStage = toStage->order;
-
-              fromStage->producerToValueOrControlQueueMap[producer] = queueIndex;
-              toStage->consumerToQueuesMap[consumer].insert(queueIndex);
             }
           }
         }
         return true;
       }
 
-      int fetchOrCreateSwitchQueue (LoopDependenceInfo *LDI, StageInfo *fromStage, Instruction *producer, Instruction *consumer)
+      void addToLocalSwitch (StageInfo *fromStage, Instruction *producer, Instruction *consumer, int opInd)
       {
-        int queueIndex = LDI->queues.size();
-        auto prodQueueIter = fromStage->producerToSwitchQueueMap.find(producer);
-        if (prodQueueIter != fromStage->producerToSwitchQueueMap.end()) return prodQueueIter->second;
+        auto localSwitchI = fromStage->consumerToLocalSwitches.find(consumer);
+        if (localSwitchI != fromStage->consumerToLocalSwitches.end())
+        {
+          (*localSwitchI).second->producerToPushIndex[producer] = opInd;
+          return;
+        }
 
-        LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, int32, false)));
-        return queueIndex;
+        auto localSwitch = std::make_unique<LocalSwitch>();
+        localSwitch->producerToPushIndex[producer] = opInd;
+        fromStage->consumerToLocalSwitches[consumer] = std::move(localSwitch);
       }
 
       bool createSwitchQueues (LoopDependenceInfo *LDI)
       {
         for (auto &toStage : LDI->stages)
         {
-          for (auto entryBB : toStage->sccEntries)
+          for (auto queueIndex : toStage->popValueQueues)
           {
-            /*
-             * Do not create switch queues where only one entry point exists
-             */
-            int entryPoints = 0;
-            for (auto predBBIter = pred_begin(entryBB); predBBIter != pred_end(entryBB); ++predBBIter)
-            {
-              if (toStage->sccBBs.find(*predBBIter) != toStage->sccBBs.end()) continue;
-              ++entryPoints;
-            }
-            if (entryPoints == 1) continue;
+            auto queueInfo = LDI->queues[queueIndex].get();
+            auto producer = queueInfo->producer;
+            auto producerBB = producer->getParent();
+            auto &fromStage = LDI->stages[queueInfo->fromStage];
 
-            auto instInEntryBB = *toStage->bbToSCCInstsMap[entryBB].begin();
-
-            /*
-             * Create a switch queue from each predecessors' controls to the entry
-             */
-            for (auto predBBIter = pred_begin(entryBB); predBBIter != pred_end(entryBB); ++predBBIter)
+            for (auto consumer : queueInfo->consumers)
             {
-              auto predBB = *predBBIter;
-              for (auto fromStage : LDI->bbToStage[predBB])
+              /*
+               * For each PHINode consumer, create switch queues from all producers to consumerPHI (via predecessor producer dominates)
+               */
+              if (auto consumerPHI = dyn_cast<PHINode>(consumer))
               {
-                auto instInPredBB = *fromStage->bbToSCCInstsMap[predBB].begin();
-                auto iNode = fromStage->scc->fetchNode(instInPredBB);
+                auto prodV = cast<Value>(producer);
+                int opInd = 0;
+                for (; opInd < consumerPHI->getNumOperands(); ++opInd)
+                {
+                  if (prodV == consumerPHI->getOperand(opInd)) break;
+                }
 
-                auto queueIndex = fetchOrCreateSwitchQueue(LDI, fromStage, instInPredBB, instInEntryBB);
-                fromStage->producerToSwitchQueueMap[instInPredBB] = queueIndex;
+                if (fromStage == toStage)
+                {
+                  addToLocalSwitch(fromStage.get(), producer, consumer, opInd);
+                  continue;
+                }
+
+                auto queueIndex = LDI->queues.size();
+                LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumerPHI, int32)));
+                LDI->queues[queueIndex]->consumerToPushIndex[consumerPHI] = opInd;
                 fromStage->pushSwitchQueues.insert(queueIndex);
                 toStage->popSwitchQueues.insert(queueIndex);
               }
@@ -418,76 +523,12 @@ namespace llvm {
         return true;
       }
 
-      void collectSCCIntoStages (LoopDependenceInfo *LDI)
-      {
-        auto topLevelSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
-
-        /*
-         * TODO: Check if all entries to the loop are into top level nodes
-         */
-        std::set<DGNode<SCC> *> nodesFound(topLevelSCCNodes.begin(), topLevelSCCNodes.end());
-        std::deque<DGNode<SCC> *> nodesToTraverse(topLevelSCCNodes.begin(), topLevelSCCNodes.end());
-
-        int order = 0;
-        while (!nodesToTraverse.empty())
-        {
-          auto sccNode = nodesToTraverse.front();
-          nodesToTraverse.pop_front();
-          nodesFound.insert(sccNode);
-
-          auto scc = sccNode->getT();
-          auto stage = std::make_unique<StageInfo>();
-          stage->order = order++;
-          stage->scc = scc;
-          LDI->stages.push_back(std::move(stage));
-          LDI->sccToStage[scc] = LDI->stages[order - 1].get();
-
-          /*
-           * Add all unvisited, next depth nodes to the traversal queue 
-           */
-          auto nextNodes = LDI->loopSCCDAG->nextDepthNodes(sccNode);
-          for (auto next : nextNodes)
-          {
-            if (nodesFound.find(next) != nodesFound.end()) continue;
-            nodesToTraverse.push_back(next);
-          }
-        }
-      }
-
-      void computeEntriesIntoStageSCCs (LoopDependenceInfo *LDI)
-      {
-        for (auto &stage : LDI->stages)
-        {
-          for (auto nodePair : stage->scc->internalNodePairs())
-          {
-            auto I = cast<Instruction>(nodePair.first);
-            stage->bbToSCCInstsMap[I->getParent()].insert(I);
-            stage->sccBBs.insert(I->getParent());
-          }
-
-          for (auto BB : stage->sccBBs)
-          {
-            /*
-             * Tag stages' basic blocks for reference when generating switch queues
-             */
-            LDI->bbToStage[BB].insert(stage.get());
-
-            /*
-             * Locate all stages' basic blocks that are entry blocks
-             */
-            for (auto predBBIter = pred_begin(BB); predBBIter != pred_end(BB); ++predBBIter)
-            {
-              if (stage->sccBBs.find(*predBBIter) == stage->sccBBs.end()) stage->sccEntries.insert(BB);
-            }
-          }
-        }
-      }
-
       bool isWorthParallelizing (LoopDependenceInfo *LDI)
       {
         if (LDI->loopSCCDAG->numNodes() <= 1) return false;
         collectSCCIntoStages(LDI);
-        computeEntriesIntoStageSCCs(LDI);
+        // computeStageEntriesAndExits(LDI);
+        //printStageEntriesAndExits(LDI);
         return collectQueueInfo(LDI) && collectEnvInfo(LDI) && configureDependencyStorage(LDI);
       }
 
@@ -592,6 +633,67 @@ namespace llvm {
         }
       }
 
+      void loadAllQueuePointersInEntry (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      {
+        IRBuilder<> entryBuilder(stageInfo->entryBlock);
+        auto argIter = stageInfo->sccStage->arg_begin();
+        auto queuesArray = entryBuilder.CreateBitCast(&*(++argIter), PointerType::getUnqual(LDI->queueArrayType));
+
+        /*
+         * Load this stage's relevant queues
+         */
+        auto loadQueuePtrFromIndex = [&](int queueIndex) -> void {
+          auto queueInfo = LDI->queues[queueIndex].get();
+          auto queueIndexValue = cast<Value>(ConstantInt::get(int64, queueIndex));
+          auto queuePtr = entryBuilder.CreateInBoundsGEP(queuesArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, queueIndexValue }));
+          auto queueCast = entryBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(queueType));
+
+          auto queueInstrs = std::make_unique<QueueInstrs>();
+          queueInstrs->queuePtr = entryBuilder.CreateLoad(queueCast);
+          queueInstrs->alloca = entryBuilder.CreateAlloca(queueInfo->dependentType);
+          queueInstrs->allocaCast = entryBuilder.CreateBitCast(queueInstrs->alloca, PointerType::getUnqual(int8));
+          stageInfo->queueInstrMap[queueIndex] = std::move(queueInstrs);
+        };
+
+        for (auto queueIndex : stageInfo->pushValueQueues) loadQueuePtrFromIndex(queueIndex);
+        for (auto queueIndex : stageInfo->popValueQueues) loadQueuePtrFromIndex(queueIndex);
+        for (auto queueIndex : stageInfo->pushControlQueues) loadQueuePtrFromIndex(queueIndex);
+        for (auto queueIndex : stageInfo->popControlQueues) loadQueuePtrFromIndex(queueIndex);
+        for (auto queueIndex : stageInfo->pushSwitchQueues) loadQueuePtrFromIndex(queueIndex);
+        for (auto queueIndex : stageInfo->popSwitchQueues) loadQueuePtrFromIndex(queueIndex);
+      }
+
+      void popControlAndSwitchQueuesInPrologue (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      {
+        IRBuilder<> prologueBuilder(stageInfo->prologueBlock);
+
+        auto createQueueLoad = [&](int queueIndex) -> void {
+          auto queueInfo = LDI->queues[queueIndex].get();
+          auto queueInstrs = stageInfo->queueInstrMap[queueIndex].get();
+          auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast, ConstantInt::get(int32, queueInfo->byteLength) });
+          queueInstrs->queueCall = prologueBuilder.CreateCall(queuePopTemporary, queueCallArgs);
+          queueInstrs->load = prologueBuilder.CreateLoad(queueInstrs->alloca);
+        };
+
+        for (auto queueIndex : stageInfo->popControlQueues) createQueueLoad(queueIndex);
+        for (auto queueIndex : stageInfo->popSwitchQueues) createQueueLoad(queueIndex);
+
+        // TOOD: Alloca local switches
+      }
+
+      void branchOnControls (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      {
+        // TODO: Sum over controls
+        /*
+        Value *controlResult = ConstantInt::get(int8, 0);
+        for (auto queueIndex : stageInfo->popControlQueues)
+        {
+          auto popLoad = queueLoadFromIndex(queueIndex);
+          controlResult = prologueBuilder.CreateAdd(controlResult, prologueBuilder.CreateBitCast(popLoad, int8));
+        }
+        */
+      }
+
       void createPipelineStageFromSCC (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         auto M = LDI->function->getParent();
@@ -612,16 +714,18 @@ namespace llvm {
         /*
          * Preparation for current iteration
          */
-        //loadAllQueuesInEntry(LDI, stageInfo);
-        //createControlAndSwitchIndicatorVariables(LDI, stageInfo);
-        //popFromQueuesInPrologue(LDI, stageInfo);
-        //enterSCCUsingSwitchQueues(LDI, stageInfo);
+        loadAllQueuePointersInEntry(LDI, stageInfo);
+        //popControlAndSwitchQueuesInPrologue(LDI, stageInfo);
+        //branchOnControls(LDI, stageInfo);
+        //branchOnSwitches(LDI, stageInfo);
+        //popValueQueuesInSCC(LDI, stageInfo);
 
         /*
          * Preparation for next iteration
          */
-        //pushToSwitchAndControlQueuesAfterSCC(LDI, stageInfo);
-        //pushToSwitchAndControlQueuesAfterContinue(LDI, stageInfo);
+        //pushControlAndSwitchQueuesInContinue(LDI, stageInfo);
+        //popValueQueuesInContinue(LDI, stageInfo);
+        //pushControlAndSwitchQueuesInEpilogue(LDI, stageInfo);
         //pushValueQueuesInEpilogue(LDI, stageInfo);
 
         /*
@@ -673,7 +777,23 @@ namespace llvm {
         errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
       }
 
-      void printStageSCCs(LoopDependenceInfo *LDI)
+      void printStageEntriesAndExits (LoopDependenceInfo *LDI)
+      {
+        for (auto &stage : LDI->stages)
+        {
+          errs() << "Stage:\t" << stage->order << "\n";
+          for (auto entry : stage->sccEntries)
+          {
+            entry->print(errs() << "Entry:\n"); errs() << "\n";
+          }
+          for (auto exit : stage->sccExits)
+          {
+            exit->print(errs() << "Exit:\n"); errs() << "\n";
+          }
+        }
+      }
+
+      void printStageSCCs (LoopDependenceInfo *LDI)
       {
         for (auto &stage : LDI->stages)
         {
