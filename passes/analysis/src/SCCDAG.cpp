@@ -80,6 +80,7 @@ void llvm::SCCDAG::markValuesInSCC()
   /*
    * Maintain association of each internal node to its SCC
    */
+  this->valueToSCCNode.clear();
   for (auto sccNode : this->getNodes())
   {
     for (auto instPair : sccNode->getT()->internalNodePairs())
@@ -94,6 +95,7 @@ void llvm::SCCDAG::markEdgesAndSubEdges()
   /*
    * Add edges between SCCs by looking at each SCC's outgoing edges
    */
+  std::set<DGEdge<SCC> *> clearedEdges;
   for (auto outgoingSCCNode : this->getNodes())
   {
     auto outgoingSCC = outgoingSCCNode->getT();
@@ -106,10 +108,19 @@ void llvm::SCCDAG::markEdgesAndSubEdges()
       auto incomingSCC = incomingSCCNode->getT();
 
       /*
-       * Mark each subedge from internals to externals
+       * Find or create unique edge between the two connected SCC
        */
       auto edgeSet = outgoingSCCNode->getEdgesToAndFromNode(incomingSCCNode);
       auto sccEdge = edgeSet.empty() ? this->addEdge(outgoingSCC, incomingSCC) : (*edgeSet.begin());
+
+      /*
+       * Clear out subedges if not already done once; add all currently existing subedges
+       */
+      if (clearedEdges.find(sccEdge) == clearedEdges.end())
+      {
+        sccEdge->clearSubEdges();
+        clearedEdges.insert(sccEdge);
+      }
       for (auto edge : incomingNode->getIncomingEdges()) sccEdge->addSubEdge(edge);
     }
   }
@@ -140,7 +151,7 @@ void llvm::SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
   this->markEdgesAndSubEdges();
 }
 
-std::set<DGNode<SCC> *> llvm::SCCDAG::previousDepthNodes(DGNode<SCC> *node)
+std::set<DGNode<SCC> *> llvm::SCCDAG::previousDepthNodes(DGNode<SCC> *node) const
 {
   std::set<DGNode<SCC> *> outgoingNodes;
   for (auto edge : node->getIncomingEdges()) outgoingNodes.insert(edge->getOutgoingNode());
@@ -164,7 +175,7 @@ std::set<DGNode<SCC> *> llvm::SCCDAG::previousDepthNodes(DGNode<SCC> *node)
   return previousDepthNodes;
 }
 
-std::set<DGNode<SCC> *> llvm::SCCDAG::nextDepthNodes(DGNode<SCC> *node)
+std::set<DGNode<SCC> *> llvm::SCCDAG::nextDepthNodes(DGNode<SCC> *node) const
 {
   std::set<DGNode<SCC> *> incomingNodes;
   for (auto edge : node->getOutgoingEdges()) incomingNodes.insert(edge->getIncomingNode());

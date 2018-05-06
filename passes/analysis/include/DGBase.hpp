@@ -193,6 +193,8 @@ namespace llvm {
     void setNodePair(DGNode<T> *from, DGNode<T> *to) { this->from = from; this->to = to; }
     DGNode<T> * getOutgoingNode() const { return from; }
     DGNode<T> * getIncomingNode() const { return to; }
+    T * getOutgoingT() const { return from->getT(); }
+    T * getIncomingT() const { return to->getT(); }
 
     bool isMemoryDependence() const { return memory; }
     bool isMustDependence() const { return must; }
@@ -203,6 +205,8 @@ namespace llvm {
     void setMemMustRaw(bool mem, bool must, bool raw);
 
     void addSubEdge(DGEdge<SubT> *edge) { subEdges.insert(edge); }
+    void removeSubEdge(DGEdge<SubT> *edge) { subEdges.erase(edge); }
+    void clearSubEdges() { subEdges.clear(); }
 
     std::string toString();
     raw_ostream &print(raw_ostream &stream);
@@ -553,9 +557,9 @@ namespace llvm {
   template <class T, class SubT>
   raw_ostream & DGEdgeBase<T, SubT>::print(raw_ostream &stream)
   {
-    from->print(stream << "From:\n");
-    to->print(stream << "To:\n");
-    stream << "\n" << this->toString() << "\n";
+    from->print(stream << "From:\t") << "\n";
+    to->print(stream << "To:\t") << "\n";
+    stream << this->toString();
     return stream;
   }
 }
