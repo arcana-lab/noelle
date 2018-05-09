@@ -196,9 +196,8 @@ namespace llvm {
          */
         if (!isWorthParallelizing(LDI)) return false;
         collectStageAndQueueInfo(LDI);
-        // printStageSCCs(LDI);
-        // printStageQueues(LDI);
-        // printLocalSwitches(LDI);
+        printStageSCCs(LDI);
+        printStageQueues(LDI);
         
         for (auto &stage : LDI->stages) createPipelineStageFromSCC(LDI, stage);
 
@@ -215,7 +214,8 @@ namespace llvm {
         /*
          * Link the parallelized loop within the original function that includes the sequential loop.
          */
-        //linkParallelizedLoopToOriginalFunction(LDI);
+        linkParallelizedLoopToOriginalFunction(LDI);
+        LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
 
         return true;
       }
@@ -626,7 +626,7 @@ namespace llvm {
           auto pCloneBB = pClone->getParent();
           IRBuilder<> builder(pCloneBB);
           auto store = builder.CreateStore(pClone, queueInstrs->alloca);
-          queueInstrs->queueCall = builder.CreateCall(queuePopTemporary, queueCallArgs);
+          queueInstrs->queueCall = builder.CreateCall(queuePushTemporary, queueCallArgs);
 
           bool pastProducer = false;
           for (auto &I : *pCloneBB)
@@ -837,10 +837,18 @@ namespace llvm {
         storeOutgoingDependentsIntoExternalValues(LDI, builder, envAlloca);
 
         /*
-         * ASSUMPTION: Only one unique exiting basic block from the loop
+         * Branch from pipeline to the correct loop exit block
          */
-        builder.CreateBr(LDI->loop->getExitBlock());
-        LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
+        auto envIndex = cast<Value>(ConstantInt::get(int64, LDI->environment->envSize() - 1));
+        auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+        auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(int32));
+        auto envVar = builder.CreateLoad(envVarCast);
+
+        auto exitSwitch = builder.CreateSwitch(envVar, LDI->loopExitBlocks[0]);
+        for (int i = 1; i < LDI->loopExitBlocks.size(); ++i)
+        {
+          exitSwitch->addCase(ConstantInt::get(int32, i), LDI->loopExitBlocks[i]);
+        }
       }
 
       void linkParallelizedLoopToOriginalFunction (LoopDependenceInfo *LDI)
@@ -919,14 +927,6 @@ namespace llvm {
           for (auto qInd : stage->pushValueQueues) errs() << qInd << " ";
           errs() << "\nPop value queues: ";
           for (auto qInd : stage->popValueQueues) errs() << qInd << " ";
-          errs() << "\nPush control queues: ";
-          for (auto qInd : stage->pushControlQueues) errs() << qInd << " ";
-          errs() << "\nPop control queues: ";
-          for (auto qInd : stage->popControlQueues) errs() << qInd << " ";
-          errs() << "\nPush value switch queues: ";
-          for (auto qInd : stage->pushSwitchQueues) errs() << qInd << " ";
-          errs() << "\nPop value switch queues: ";
-          for (auto qInd : stage->popSwitchQueues) errs() << qInd << " ";
           errs() << "\n";
         }
 
@@ -938,22 +938,6 @@ namespace llvm {
           for (auto consumer : queue->consumers)
           {
             consumer->print(errs() << "Consumer:\t"); errs() << "\n";
-          }
-        }
-      }
-
-      void printLocalSwitches (LoopDependenceInfo *LDI)
-      {
-        for (auto &stage : LDI->stages)
-        {
-          for (auto &cSwitch : stage->consumerToLocalSwitches)
-          {
-            errs() << "Local Switch:\tDefault index: " << cSwitch.second->defaultEntry << "\n";
-            cSwitch.first->print(errs() << "Consumer PHI:\t"); errs() << "\n";
-            for (auto &prodInd : cSwitch.second->producerToPushIndex)
-            {
-              prodInd.first->print(errs() << "Producer:\t"); errs() << "\tIndex: " << prodInd.second << "\n";
-            }
           }
         }
       }
