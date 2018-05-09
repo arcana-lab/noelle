@@ -20,6 +20,8 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
 	for (auto internalNode : loopDG->internalNodePairs()) loopInternals.push_back(internalNode.first);
 	loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
 	loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
+
+	loop->getExitBlocks(loopExitBlocks);
 };
 
 llvm::LoopDependenceInfo::~LoopDependenceInfo() {

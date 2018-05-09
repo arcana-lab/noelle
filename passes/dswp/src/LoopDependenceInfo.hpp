@@ -28,7 +28,9 @@ namespace llvm {
 		PDG *loopDG;
 		PDG *loopInternalDG;
 		SCCDAG *loopSCCDAG;
-		
+
+		SmallVector<BasicBlock *, 10> loopExitBlocks;
+
 		/*
 		 * Stores new pipeline execution
 		 */

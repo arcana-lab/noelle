@@ -13,6 +13,13 @@ namespace llvm {
 
 	struct EnvInfo {
 		std::vector<Value *> externalDependents;
+		std::set<int> preLoopExternals;
+		std::set<int> postLoopExternals;
+
+		/*
+		 * One for each external dependent + one for the exit block tracking value
+		 */
+		int envSize() { return externalDependents.size() + 1; }
 	};
 
 	struct QueueInfo {
@@ -65,14 +72,12 @@ namespace llvm {
 		 */
 		SCC *scc;
 		std::set<BasicBlock *> sccBBs;
-		std::set<BasicBlock *> sccEntries;
-		std::set<BasicBlock *> sccExits;
-		unordered_map<BasicBlock *, int> exitBBToIndex;
 
 		/*
 		 * New basic blocks for the stage function
 		 */
-		BasicBlock *entryBlock, *exitBlock, *abortBlock;
+		BasicBlock *entryBlock, *abortBlock, *exitBlock;
+		std::vector<BasicBlock *> loopExitBlocks;
 		BasicBlock *prologueBlock, *epilogueBlock;
 		unordered_map<int, BasicBlock *> controlToSwitchBlock;
 		unordered_map<BasicBlock *, BasicBlock *> switchToSCCEntry;
@@ -92,7 +97,6 @@ namespace llvm {
 		 * Maps from instructions within loop to environment indices
 		 */
         unordered_map<Instruction *, int> incomingToEnvMap, outgoingToEnvMap;
-
         /*
          * Maps from producer to the queues they push to
          * Maps from consumer to the queues they pop from
