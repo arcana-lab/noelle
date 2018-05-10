@@ -39,6 +39,7 @@ namespace llvm {
       static char ID;
 
       Function *stageDispatcher, *queuePushTemporary, *queuePopTemporary;
+      Function *printReachedI;
       FunctionType *stageType;
       Type *queueType;
       IntegerType *int1, *int8, *int32, *int64;
@@ -123,6 +124,7 @@ namespace llvm {
         int32 = IntegerType::get(M.getContext(), 32);
         int64 = IntegerType::get(M.getContext(), 64);
 
+        printReachedI = M.getFunction("printReachedI");
         queuePushTemporary = M.getFunction("queuePush");
         queuePopTemporary = M.getFunction("queuePop");
         if (queuePushTemporary == nullptr || queuePopTemporary == nullptr) return false;
@@ -188,6 +190,7 @@ namespace llvm {
         /*
          * Merge SCCs of the SCCDAG.
          */
+        // printSCCs(LDI->loopSCCDAG);
         mergeSCCs(LDI);
         // printSCCs(LDI->loopSCCDAG);
 
@@ -196,8 +199,8 @@ namespace llvm {
          */
         if (!isWorthParallelizing(LDI)) return false;
         collectStageAndQueueInfo(LDI);
-        printStageSCCs(LDI);
-        printStageQueues(LDI);
+        // printStageSCCs(LDI);
+        // printStageQueues(LDI);
         
         for (auto &stage : LDI->stages) createPipelineStageFromSCC(LDI, stage);
 
@@ -634,8 +637,15 @@ namespace llvm {
             if (&I == pClone) pastProducer = true;
             else if (pastProducer)
             {
-              cast<Instruction>(queueInstrs->queueCall)->moveBefore(&I);
               store->moveBefore(&I);
+              cast<Instruction>(queueInstrs->queueCall)->moveBefore(&I);
+              
+              if (pClone->getType() == int32)
+              {
+                //auto printCall = builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(pClone) }));
+                //printCall->moveBefore(&I);
+              }
+              
               break;
             }
           }
