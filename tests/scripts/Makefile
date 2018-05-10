@@ -26,7 +26,7 @@ $(THREADER).bc: $(THREADER).cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O3 -c $^ -o $@
 
 $(OPTIMIZED): test_dswp.bc
-	$(CC) -std=c++14 -pthreads -O0 $^ $(LIBS) -o $@
+	$(CC) -std=c++14 -pthreads -O3 $^ $(LIBS) -o $@
 
 test_pdgdot.bc: test.bc
 	opt $(PRINTPASSES) $(ANALYSES) -$(PDGPRINTER) $^ -o $@
