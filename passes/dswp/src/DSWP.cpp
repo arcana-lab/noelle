@@ -883,13 +883,14 @@ namespace llvm {
       {
         auto M = LDI->function->getParent();
         auto preheader = LDI->loop->getLoopPreheader();
-        auto loopSwitch = BasicBlock::Create(M->getContext(), "", LDI->function, preheader);
-        IRBuilder<> loopSwitchBuilder(loopSwitch);
+        auto originalTerminator = preheader->getTerminator();
+        IRBuilder<> loopSwitchBuilder(originalTerminator);
 
         auto globalBool = new GlobalVariable(*M, int32, /*isConstant=*/ false, GlobalValue::ExternalLinkage, Constant::getNullValue(int32));
         auto const0 = ConstantInt::get(int32, APInt(32, 0, false));
         auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(loopSwitchBuilder.CreateLoad(globalBool), const0);
-        loopSwitchBuilder.CreateCondBr(compareInstruction, LDI->pipelineBB, preheader);
+        loopSwitchBuilder.CreateCondBr(compareInstruction, LDI->pipelineBB, LDI->loop->getHeader());
+        originalTerminator->eraseFromParent();
       }
 
       /*
