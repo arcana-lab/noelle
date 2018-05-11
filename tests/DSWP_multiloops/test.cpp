@@ -8,11 +8,18 @@ typedef struct _N {
 } N;
 
 int heavyComputation (int v){
-  double d = (double)v;
-  d += 0.143;
-  d = sqrt(d);
 
-  v = (int)d;
+  for (int i=0; i < 1000; i++){
+    for (int j=0; j < 1000; j++){
+      double d = (double)v;
+      d += 0.143;
+      for (int z=0; z < 10; z++){
+        d = sqrt(d);
+      }
+
+      v = (int)d;
+    }
+  }
 
   return v;
 }
@@ -37,7 +44,6 @@ int main (){
 
   appendNode(n0, 42, 99);
 
-  int vSum = 0;
   N *tmpN = n0;
   while (tmpN != NULL){
     int v = tmpN->v;
@@ -46,12 +52,10 @@ int main (){
       v = heavyComputation(v);
     }
 
-    vSum += v;
+    printf("%d\n", v);
 
     tmpN = tmpN->next;
   }
-
-  printf("%d\n", vSum);
 
   return 0;
 }
