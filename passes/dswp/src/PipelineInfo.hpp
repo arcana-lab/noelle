@@ -25,8 +25,7 @@ namespace llvm {
 	struct QueueInfo {
 		int fromStage, toStage;
 		Type *dependentType;
-		int dependentBitSize;
-		int byteLength;
+		int bitLength;
 
         Instruction * producer;
         std::set<Instruction *> consumers;
@@ -35,15 +34,7 @@ namespace llvm {
         QueueInfo(Instruction *p, Instruction *c, Type *type) : producer{p}, dependentType{type}
         {
             consumers.insert(c);
-        	calculateByteReqs();
-        }
-
-        void calculateByteReqs()
-        {
-			// Calculates number of bytes needed to fit the number of bits
-			dependentBitSize = dependentType->getPrimitiveSizeInBits();
-			if (dependentBitSize % 8 == 0) byteLength = dependentBitSize / 8;
-			else byteLength = (dependentBitSize + (8 - (dependentBitSize % 8))) / 8;
+            bitLength = dependentType->getPrimitiveSizeInBits();
         }
 	};
 

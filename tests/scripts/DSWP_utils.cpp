@@ -21,53 +21,91 @@
 
 using namespace MARC;
 
-// extern "C" void printReachedI(int i){
-//   printf("%d\n",i);
-// }
+extern "C" {
 
-extern "C" void queuePush(ThreadSafeQueue<char> *queue, char *val, int64_t byteLength){
-  char *oldVal = val;
-  for (int i = 0; i < byteLength; ++i, ++val) 
-  {
-    queue->push(*val);
-  }
-  val = oldVal;
-}
+  // void printReachedI(int i){
+  //   printf("%d\n",i);
+  // }
 
-extern "C" void queuePop(ThreadSafeQueue<char> *queue, char *val, int64_t byteLength){
-  char *oldVal = val;
-  for (int i = 0; i < byteLength; ++i, ++val)
-  {
-    while (!queue->waitPop(*val)) printf("Spurious pop\n");
-  }
-  val = oldVal;
-}
+  void queuePush1(ThreadSafeQueue<bool> *queue, bool *val) { queue->push(*val); }
+  void queuePop1(ThreadSafeQueue<bool> *queue, bool *val) { queue->waitPop(*val); }
+  void queuePush8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { queue->push(*val); }
+  void queuePop8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { queue->waitPop(*val); }
+  void queuePush16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { queue->push(*val); }
+  void queuePop16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { queue->waitPop(*val); }
+  void queuePush32(ThreadSafeQueue<int32_t> *queue, int32_t *val) { queue->push(*val); }
+  void queuePop32(ThreadSafeQueue<int32_t> *queue, int32_t *val) { queue->waitPop(*val); }
+  void queuePush64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { queue->push(*val); }
+  void queuePop64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { queue->waitPop(*val); }
 
-extern "C" void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
-
-extern "C" void stageDispatcher(void *env, void *queues, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
-  ThreadSafeQueue<char> *localQueues[numberOfQueues];
-  for (int i = 0; i < numberOfQueues; ++i)
-  {
-    localQueues[i] = new ThreadSafeQueue<char>();
-  }
-  queues = localQueues;
-
-  ThreadPool pool(numberOfStages);
-  auto localFutures = (TaskFuture<void> *)malloc(numberOfStages * sizeof(TaskFuture<void>));
-  for (int i = 0; i < numberOfStages; ++i)
-  {
-    auto stage = ((void (**)(void *, void *)) stages)[i];
-    localFutures[i] = std::move(pool.submit(stage, env, queues));
+  void queuePush(ThreadSafeQueue<char> *queue, char *val, int64_t byteLength){
+    char *oldVal = val;
+    for (int i = 0; i < byteLength; ++i, ++val) 
+    {
+      queue->push(*val);
+    }
+    val = oldVal;
   }
 
-  for (int i = 0; i < numberOfStages; ++i)
-  {
-    localFutures[i].get();
+  void queuePop(ThreadSafeQueue<char> *queue, char *val, int64_t byteLength){
+    char *oldVal = val;
+    for (int i = 0; i < byteLength; ++i, ++val)
+    {
+      while (!queue->waitPop(*val)) printf("Spurious pop\n");
+    }
+    val = oldVal;
   }
 
-  for (int i = 0; i < numberOfQueues; ++i)
-  {
-    delete localQueues[i];
+  void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
+
+  void stageDispatcher(void *env, void *queues, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
+    void *localQueues[numberOfQueues];
+    for (int i = 0; i < numberOfQueues; ++i)
+    {
+      switch (queueSizes[i])
+      {
+        case 1:
+          localQueues[i] = new ThreadSafeQueue<bool>();
+        case 8:
+          localQueues[i] = new ThreadSafeQueue<int8_t>();
+        case 16:
+          localQueues[i] = new ThreadSafeQueue<int16_t>();
+        case 32:
+          localQueues[i] = new ThreadSafeQueue<int32_t>();
+        case 64:
+          localQueues[i] = new ThreadSafeQueue<int64_t>();
+      }
+    }
+    queues = localQueues;
+
+    ThreadPool pool(numberOfStages);
+    auto localFutures = (TaskFuture<void> *)malloc(numberOfStages * sizeof(TaskFuture<void>));
+    for (int i = 0; i < numberOfStages; ++i)
+    {
+      auto stage = ((void (**)(void *, void *)) stages)[i];
+      localFutures[i] = std::move(pool.submit(stage, env, queues));
+    }
+
+    for (int i = 0; i < numberOfStages; ++i)
+    {
+      localFutures[i].get();
+    }
+
+    for (int i = 0; i < numberOfQueues; ++i)
+    {
+      switch (queueSizes[i])
+      {
+        case 1:
+          delete (ThreadSafeQueue<bool> *)(localQueues[i]);
+        case 8:
+          delete (ThreadSafeQueue<int8_t> *)(localQueues[i]);
+        case 16:
+          delete (ThreadSafeQueue<int16_t> *)(localQueues[i]);
+        case 32:
+          delete (ThreadSafeQueue<int32_t> *)(localQueues[i]);
+        case 64:
+          delete (ThreadSafeQueue<int64_t> *)(localQueues[i]);
+      }
+    }
   }
 }
