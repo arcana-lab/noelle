@@ -17,3 +17,5 @@
 - Optimization 2: prune the CFG of the generated functions as much as we can
 
 - Optimization 3: exploit induction variables to avoid unnecessary synchronizations
+
+- Optimization 4: packing/unpacking pushes and pops
