@@ -1,4 +1,19 @@
-Simplifcations:
-- parallelize only one loop per function
+- add the normalization from do-while to while loops
 
-- assume while loops
+- move all alloca to the first BB of the function
+
+- set and unset the global variable (mutex)
+
+- fix bugs highlighted by the current tests
+
+- add tests related to control flows
+
+- add tests for pushing and popping float/double variables
+
+- test DSWP on real workloads using the autotuning exploration
+
+- Optimization 1: push and pop within sub-loops only once per iteration
+
+- Optimization 2: prune the CFG of the generated functions as much as we can
+
+- Optimization 3: exploit induction variables to avoid unnecessary synchronizations
