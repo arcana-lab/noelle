@@ -13,38 +13,41 @@ THREADER=DSWP_utils
 LIBS=-lm
 INCLUDES=-I../include/threadpool/include
 OPTIMIZED=parallelized
+OPT_LEVEL=-O3
 
 PRINTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PDGPRINTER).so
 OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PARALLELIZATION).so
 
 all: $(OPTIMIZED) baseline
 
-baseline: test.cpp
-	$(CC) -std=c++14 -O3 $^ -o $@
+baseline: test.bc
+	$(CC) -std=c++14 $(OPT_LEVEL) $^ -o $@
 
 $(THREADER).bc: $(THREADER).cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O3 -c $^ -o $@
 
 $(OPTIMIZED): test_dswp.bc
-	$(CC) -std=c++14 -pthreads -O3 $^ $(LIBS) -o $@
+	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
-test_pdgdot.bc: test.bc
+test_pdgdot.bc: test_seq.bc
 	opt $(PRINTPASSES) $(ANALYSES) -$(PDGPRINTER) $^ -o $@
 
-test_dswp.bc: test.bc
+test_dswp.bc: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -o $@
 	llvm-dis $@
 
-test.bc: test.cpp $(THREADER).bc
+test.bc: test.cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
 	opt -mem2reg $@ -o $@
 	llvm-dis $@
-	llvm-link $@ $(THREADER).bc -o $@
 
-show_passes: test.bc
+test_seq.bc: test.bc $(THREADER).bc
+	llvm-link $^ -o $@
+
+show_passes: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ --debug-pass=Structure -disable-output
 
-show_time: test.bc
+show_time: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -time-passes -disable-output
 
 clean:
