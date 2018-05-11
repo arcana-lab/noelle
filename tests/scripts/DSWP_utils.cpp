@@ -27,8 +27,6 @@ extern "C" {
   //   printf("%d\n",i);
   // }
 
-  void queuePush1(ThreadSafeQueue<bool> *queue, bool *val) { queue->push(*val); }
-  void queuePop1(ThreadSafeQueue<bool> *queue, bool *val) { queue->waitPop(*val); }
   void queuePush8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { queue->push(*val); }
   void queuePop8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { queue->waitPop(*val); }
   void queuePush16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { queue->push(*val); }
@@ -65,15 +63,20 @@ extern "C" {
       switch (queueSizes[i])
       {
         case 1:
-          localQueues[i] = new ThreadSafeQueue<bool>();
+          localQueues[i] = new ThreadSafeQueue<int8_t>();
+          break;
         case 8:
           localQueues[i] = new ThreadSafeQueue<int8_t>();
+          break;
         case 16:
           localQueues[i] = new ThreadSafeQueue<int16_t>();
+          break;
         case 32:
           localQueues[i] = new ThreadSafeQueue<int32_t>();
+          break;
         case 64:
           localQueues[i] = new ThreadSafeQueue<int64_t>();
+          break;
       }
     }
     queues = localQueues;
@@ -96,15 +99,20 @@ extern "C" {
       switch (queueSizes[i])
       {
         case 1:
-          delete (ThreadSafeQueue<bool> *)(localQueues[i]);
+          delete (ThreadSafeQueue<int8_t> *)(localQueues[i]);
+          break;
         case 8:
           delete (ThreadSafeQueue<int8_t> *)(localQueues[i]);
+          break;
         case 16:
           delete (ThreadSafeQueue<int16_t> *)(localQueues[i]);
+          break;
         case 32:
           delete (ThreadSafeQueue<int32_t> *)(localQueues[i]);
+          break;
         case 64:
           delete (ThreadSafeQueue<int64_t> *)(localQueues[i]);
+          break;
       }
     }
   }
