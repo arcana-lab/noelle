@@ -1,9 +1,4 @@
 Simplifcations:
-- there is only one function in the whole program
-  TODO: do not change what you are iterating over (i.e., cache the list of functions before modifying them)
+- parallelize only one loop per function
 
-- there is no memory data dependences (pop for synchronization is missing)
-
-- assume straight line of code within the loop body
-
-- assume single basic block as header
+- assume while loops
