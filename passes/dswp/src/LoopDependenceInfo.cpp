@@ -17,7 +17,11 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
 	 * Build a SCCDAG of loop-internal instructions
 	 */
 	std::vector<Value *> loopInternals;
-	for (auto internalNode : loopDG->internalNodePairs()) loopInternals.push_back(internalNode.first);
+	for (auto internalNode : loopDG->internalNodePairs())
+	{
+		loopInternals.push_back(internalNode.first);
+		internalNode.first->print(errs()); errs() << "\n";
+	}
 	loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
 	loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
 

@@ -298,20 +298,33 @@ namespace llvm {
      * Add a node in the top cycle of the graph
      */
     std::set<DGNode<T> *> visitedNodes;
-    auto node = *allNodes.begin();
-    while (visitedNodes.find(node) == visitedNodes.end())
+    for (auto node : allNodes)
     {
-      visitedNodes.insert(node);
-      for (auto incomingE : node->getIncomingEdges())
+      if (visitedNodes.find(node) != visitedNodes.end()) continue;
+
+      std::queue<DGNode<T> *> nodeToTraverse;
+      nodeToTraverse.push(node);
+      while (!nodeToTraverse.empty())
       {
-        auto incomingNode = incomingE->getOutgoingNode();
-        if (incomingNode == node) continue;
-        node = incomingNode;
+        auto traverseN = nodeToTraverse.front();
+        visitedNodes.insert(traverseN);
+        nodeToTraverse.pop();
+
+        for (auto outgoingE : traverseN->getOutgoingEdges())
+        {
+          auto incomingN = outgoingE->getIncomingNode();
+          if (visitedNodes.find(incomingN) != visitedNodes.end()) continue;
+          nodeToTraverse.push(incomingN);
+        }
+      }
+
+      if (visitedNodes.size() == allNodes.size())
+      {
+        topLevelNodes.insert(node);
         break;
       }
     }
 
-    topLevelNodes.insert(node);
     return topLevelNodes;
   }
 

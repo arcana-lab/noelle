@@ -370,6 +370,7 @@ namespace llvm {
         for (auto brStage : branchStageMap)
         {
           auto consumer = brStage.first;
+          consumer->print(errs() << "CONSUMER BR:\t"); errs() << "\n";
           auto stage = brStage.second;
           auto brNode = stage->scc->fetchNode(consumer);
           for (auto edge : brNode->getIncomingEdges())
@@ -412,7 +413,7 @@ namespace llvm {
             envUsed = true;
             for (auto &stage : LDI->stages)
             {
-              if (!stage->scc->isInternal(cast<Value>(internalInst))) continue;
+              if (!stage->scc->isInternal(cast<Value>(internalInst)) && !isa<TerminatorInst>(internalInst)) continue;
               auto &envMap = outgoing ? stage->outgoingToEnvMap : stage->incomingToEnvMap;
               envMap[internalInst] = envIndex;
             }
