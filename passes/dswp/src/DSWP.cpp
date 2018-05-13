@@ -200,7 +200,7 @@ namespace llvm {
         if (!collectStageAndQueueInfo(LDI)) return false;
         // printStageSCCs(LDI);
         // printStageQueues(LDI);
-        
+
         for (auto &stage : LDI->stages) createPipelineStageFromSCC(LDI, stage);
 
         /*
@@ -306,7 +306,6 @@ namespace llvm {
 
       bool collectValueQueueInfo (LoopDependenceInfo *LDI)
       {
-        std::map<Instruction *, StageInfo *> branchStageMap;
         for (auto scc : LDI->loopSCCDAG->getNodes())
         {
           for (auto sccEdge : scc->getOutgoingEdges())
@@ -322,17 +321,12 @@ namespace llvm {
             for (auto instructionEdge : sccEdge->getSubEdges())
             {
               assert(!instructionEdge->isMemoryDependence());
+              if (instructionEdge->isControlDependence()) continue;
 
               auto pcPair = instructionEdge->getNodePair();
               auto producer = cast<Instruction>(pcPair.first->getT());
               auto consumer = cast<Instruction>(pcPair.second->getT());
 
-              if (instructionEdge->isControlDependence())
-              {
-                branchStageMap[producer] = fromStage;
-                continue;
-              }
-              
               int queueIndex = LDI->queues.size();
               for (auto queueI : fromStage->producerToQueues[producer])
               {
@@ -358,6 +352,18 @@ namespace llvm {
 
               if (queueSizeToIndex.find(queueInfo->bitLength) == queueSizeToIndex.end()) return false;
             }
+          }
+        }
+
+        std::map<Instruction *, StageInfo *> branchStageMap;
+        for (auto bb : LDI->loop->blocks())
+        {
+          auto terminator = cast<Value>(bb->getTerminator());
+          for (auto &stage : LDI->stages)
+          {
+            if (!stage->scc->isInternal(terminator)) continue;
+            branchStageMap[cast<Instruction>(terminator)] = stage.get();
+            break;
           }
         }
 
@@ -400,8 +406,10 @@ namespace llvm {
           auto externalValue = externalNode->getT();
           auto envIndex = externalDeps.size();
           externalDeps.push_back(externalValue);
+          bool envUsed = false;
 
           auto addExternalDependentToStagesWithInst = [&](Instruction *internalInst, bool outgoing) -> void {
+            envUsed = true;
             for (auto &stage : LDI->stages)
             {
               if (!stage->scc->isInternal(cast<Value>(internalInst))) continue;
@@ -417,12 +425,15 @@ namespace llvm {
            */
           for (auto incomingEdge : externalNode->getIncomingEdges())
           {
+            if (incomingEdge->isMemoryDependence()) continue;
             addExternalDependentToStagesWithInst(cast<Instruction>(incomingEdge->getOutgoingT()), true);
           }
           for (auto outgoingEdge : externalNode->getOutgoingEdges())
           {
+            if (outgoingEdge->isMemoryDependence()) continue;
             addExternalDependentToStagesWithInst(cast<Instruction>(outgoingEdge->getIncomingT()), false);
           }
+          if (!envUsed) externalDeps.pop_back();
         }
       }
 
@@ -529,11 +540,11 @@ namespace llvm {
           auto envVar = accessEnvVarFromIndex(incomingEnvPair.second, entryBuilder);
           auto envLoad = entryBuilder.CreateLoad(envVar);
 
-          Value *incomingDepValue = cast<Value>(incomingEnvPair.first);
           auto incomingDepClone = stageInfo->iCloneMap[incomingEnvPair.first];
+          auto external = LDI->environment->externalDependents[incomingEnvPair.second];
           for (auto &depOp : incomingDepClone->operands())
           {
-            if (depOp != incomingDepValue) continue;
+            if (depOp != external) continue;
             depOp.set(envLoad);
           }
         }
@@ -610,6 +621,7 @@ namespace llvm {
           for (auto &I : *bb)
           {
             if (&I == queueInfo->producer) pastProducer = true;
+            else if (auto phi = dyn_cast<PHINode>(&I)) continue;
             else if (pastProducer && stageInfo->iCloneMap.find(&I) != stageInfo->iCloneMap.end())
             {
               cast<Instruction>(queueInstrs->queueCall)->moveBefore(stageInfo->iCloneMap[&I]);
@@ -933,6 +945,7 @@ namespace llvm {
         errs() << "Number of SCCs: " << sccSubgraph->numInternalNodes() << "\n";
         for (auto edgeI = sccSubgraph->begin_edges(); edgeI != sccSubgraph->end_edges(); ++edgeI) {
           (*edgeI)->print(errs());
+          for (auto subEdge : (*edgeI)->getSubEdges()) subEdge->print(errs());
         }
         errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
       }
