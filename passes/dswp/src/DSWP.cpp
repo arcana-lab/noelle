@@ -756,7 +756,7 @@ namespace llvm {
         stageF->print(errs() << "Function printout:\n"); errs() << "\n";
       }
 
-      Value * createEnvArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> builder, Value *envAlloca)
+      Value * createEnvArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Value *envAlloca)
       {
         /*
          * Create empty environment array with slots for external values dependent on loop values
@@ -766,23 +766,23 @@ namespace llvm {
         for (int i = 0; i < extDepSize; ++i)
         {
           Type *envType = LDI->environment->externalDependents[i]->getType();
-          auto envVarPtr = builder.CreateAlloca(envType);
+          auto envVarPtr = funcBuilder.CreateAlloca(envType);
           envPtrsForDep.push_back(envVarPtr);
           auto envIndex = cast<Value>(ConstantInt::get(int64, i));
-          auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+          auto depInEnvPtr = funcBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
 
-          auto depCast = builder.CreateBitCast(depInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
-          builder.CreateStore(envVarPtr, depCast);
+          auto depCast = funcBuilder.CreateBitCast(depInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
+          funcBuilder.CreateStore(envVarPtr, depCast);
         }
 
         /*
          * Add exit block tracking variable to env
          */
-        auto exitVarPtr = builder.CreateAlloca(int32);
+        auto exitVarPtr = funcBuilder.CreateAlloca(int32);
         auto envIndex = cast<Value>(ConstantInt::get(int64, extDepSize));
-        auto varInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
-        auto depCast = builder.CreateBitCast(varInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(int32)));
-        builder.CreateStore(exitVarPtr, depCast);
+        auto varInEnvPtr = funcBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+        auto depCast = funcBuilder.CreateBitCast(varInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(int32)));
+        funcBuilder.CreateStore(exitVarPtr, depCast);
 
         /*
          * Insert incoming dependents for stages into the environment array
@@ -795,33 +795,33 @@ namespace llvm {
         return cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(int8)));
       }
 
-      Value * createQueueSizesArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> builder)
+      Value * createStagesArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder)
       {
-        auto queuesAlloca = cast<Value>(builder.CreateAlloca(ArrayType::get(int64, LDI->queues.size())));
-        for (int i = 0; i < LDI->queues.size(); ++i)
-        {
-          auto &queue = LDI->queues[i];
-          auto queueIndex = cast<Value>(ConstantInt::get(int64, i));
-          auto queuePtr = builder.CreateInBoundsGEP(queuesAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, queueIndex }));
-          auto queueCast = builder.CreateBitCast(queuePtr, PointerType::getUnqual(int64));
-          builder.CreateStore(ConstantInt::get(int64, queue->bitLength), queueCast);
-        }
-        return cast<Value>(builder.CreateBitCast(queuesAlloca, PointerType::getUnqual(int64)));
-      }
-
-      Value * createStagesArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> builder)
-      {
-        auto stagesAlloca = cast<Value>(builder.CreateAlloca(LDI->stageArrayType));
+        auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->stageArrayType));
         auto stageCastType = PointerType::getUnqual(LDI->stages[0]->sccStage->getType());
         for (int i = 0; i < LDI->stages.size(); ++i)
         {
           auto &stage = LDI->stages[i];
           auto stageIndex = cast<Value>(ConstantInt::get(int64, i));
-          auto stagePtr = builder.CreateInBoundsGEP(stagesAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, stageIndex }));
-          auto stageCast = builder.CreateBitCast(stagePtr, stageCastType);
-          builder.CreateStore(stage->sccStage, stageCast);
+          auto stagePtr = funcBuilder.CreateInBoundsGEP(stagesAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, stageIndex }));
+          auto stageCast = funcBuilder.CreateBitCast(stagePtr, stageCastType);
+          funcBuilder.CreateStore(stage->sccStage, stageCast);
         }
-        return cast<Value>(builder.CreateBitCast(stagesAlloca, PointerType::getUnqual(int8)));
+        return cast<Value>(funcBuilder.CreateBitCast(stagesAlloca, PointerType::getUnqual(int8)));
+      }
+
+      Value * createQueueSizesArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder)
+      {
+        auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(int64, LDI->queues.size())));
+        for (int i = 0; i < LDI->queues.size(); ++i)
+        {
+          auto &queue = LDI->queues[i];
+          auto queueIndex = cast<Value>(ConstantInt::get(int64, i));
+          auto queuePtr = funcBuilder.CreateInBoundsGEP(queuesAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, queueIndex }));
+          auto queueCast = funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(int64));
+          funcBuilder.CreateStore(ConstantInt::get(int64, queue->bitLength), queueCast);
+        }
+        return cast<Value>(funcBuilder.CreateBitCast(queuesAlloca, PointerType::getUnqual(int64)));
       }
 
       void storeOutgoingDependentsIntoExternalValues (LoopDependenceInfo *LDI, IRBuilder<> builder, Value *envAlloca)
@@ -853,20 +853,23 @@ namespace llvm {
         auto M = LDI->function->getParent();
         LDI->pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->function);
         IRBuilder<> builder(LDI->pipelineBB);
+        
+        auto firstBB = &*LDI->function->begin();
+        IRBuilder<> funcBuilder(firstBB->getTerminator());
 
         /*
          * Create and populate the environment and stages arrays
          */
-        auto envAlloca = cast<Value>(builder.CreateAlloca(LDI->envArrayType));
-        auto envPtr = createEnvArrayFromStages(LDI, builder, envAlloca);
-        auto stagesPtr = createStagesArrayFromStages(LDI, builder);
+        auto envAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->envArrayType));
+        auto envPtr = createEnvArrayFromStages(LDI, funcBuilder, builder, envAlloca);
+        auto stagesPtr = createStagesArrayFromStages(LDI, funcBuilder);
 
         /*
          * Create empty queues array to be used by the stage dispatcher
          */
-        auto queuesAlloca = cast<Value>(builder.CreateAlloca(LDI->queueArrayType));
+        auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->queueArrayType));
         auto queuesPtr = cast<Value>(builder.CreateBitCast(queuesAlloca, PointerType::getUnqual(int8)));
-        auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, builder);
+        auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, funcBuilder);
 
         /*
          * Call the stage dispatcher with the environment, queues array, and stages array
@@ -900,10 +903,20 @@ namespace llvm {
         IRBuilder<> loopSwitchBuilder(originalTerminator);
 
         auto globalBool = new GlobalVariable(*M, int32, /*isConstant=*/ false, GlobalValue::ExternalLinkage, Constant::getNullValue(int32));
-        auto const0 = ConstantInt::get(int32, APInt(32, 0, false));
-        auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(loopSwitchBuilder.CreateLoad(globalBool), const0);
+        auto const0 = ConstantInt::get(int32, 0);
+        auto const1 = ConstantInt::get(int32, 1);
+        auto globalLoad = loopSwitchBuilder.CreateLoad(globalBool);
+        auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(globalLoad, const0);
         loopSwitchBuilder.CreateCondBr(compareInstruction, LDI->pipelineBB, LDI->loop->getHeader());
         originalTerminator->eraseFromParent();
+
+        /*
+         * Set/Reset global variable so only one loop is run in parallel at a time
+         */
+        IRBuilder<> pipelineBuilder(&*LDI->pipelineBB->begin());
+        pipelineBuilder.CreateStore(const1, globalBool);
+        pipelineBuilder.SetInsertPoint(LDI->pipelineBB->getTerminator());
+        pipelineBuilder.CreateStore(const0, globalBool);
       }
 
       /*

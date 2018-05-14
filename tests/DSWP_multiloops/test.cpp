@@ -19,6 +19,7 @@ int heavyComputation (int v){
 
       v = (int)d;
     }
+    printf("Progress: %d\n", v);
   }
 
   return v;
