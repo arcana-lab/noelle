@@ -22,10 +22,10 @@ for i in `ls`; do
   make >> compiler_output.txt 2>&1 ;
 
   # Baseline
-  ./baseline &> output_baseline.txt ;
+  ./baseline 2 2 2 &> output_baseline.txt ;
 
   # Transformation
-  ./parallelized &> output_parallelized.txt ;
+  ./parallelized 2 2 2 &> output_parallelized.txt ;
 
   # Check the output ;
   cmp output_baseline.txt output_parallelized.txt &> /dev/null ;

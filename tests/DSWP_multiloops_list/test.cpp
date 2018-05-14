@@ -9,28 +9,17 @@ typedef struct _N {
 
 int heavyComputation (int v){
 
-  double d = (double)v;
-  d += 0.143;
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
-  d = sqrt(d);
+  for (int i=0; i < 1000; i++){
+    for (int j=0; j < 1000; j++){
+      double d = (double)v;
+      d += 0.143;
+      for (int z=0; z < 10; z++){
+        d = sqrt(d);
+      }
 
-  v = (int)d;
+      v = (int)d;
+    }
+  }
 
   return v;
 }
