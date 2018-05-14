@@ -6,7 +6,7 @@ int main (int argc, char *argv[]){
   v1 = argc;
   v2 = ((argc * 5) / 2) + 1;
 
-  for (uint32_t i = 0; i < (UINT32_MAX / 2); ++i) {
+  for (uint32_t i = 0; i < 100; ++i) {
 
     // SCC 1
     v1_temp = v1;
