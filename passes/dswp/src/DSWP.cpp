@@ -217,7 +217,7 @@ namespace llvm {
          * Link the parallelized loop within the original function that includes the sequential loop.
          */
         linkParallelizedLoopToOriginalFunction(LDI);
-        LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
+        // LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
 
         return true;
       }
@@ -283,7 +283,6 @@ namespace llvm {
         {
           auto sccNode = nodesToTraverse.front();
           nodesToTraverse.pop_front();
-          nodesFound.insert(sccNode);
 
           /*
            * Add all unvisited, next depth nodes to the traversal queue 
@@ -292,6 +291,7 @@ namespace llvm {
           for (auto next : nextNodes)
           {
             if (nodesFound.find(next) != nodesFound.end()) continue;
+            nodesFound.insert(next);
             nodesToTraverse.push_back(next);
           }
 
@@ -340,7 +340,8 @@ namespace llvm {
                 LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType())));
                 fromStage->producerToQueues[producer].insert(queueIndex);
               }
-
+              // errs() << "Stage pair: " << fromStage->order << ", " << toStage->order << "\n";
+              // producer->print(errs() << "P-C Pair:\t"); consumer->print(errs() << "\t"); errs() << "\n";
               toStage->consumerToQueues[consumer].insert(queueIndex);
               fromStage->pushValueQueues.insert(queueIndex);
               toStage->popValueQueues.insert(queueIndex);
@@ -471,6 +472,7 @@ namespace llvm {
         {
           auto I = cast<Instruction>(nodePair.first);
           stageInfo->iCloneMap[I] = I->clone();
+          // I->print(errs() << "Orig I:\t"); stageInfo->iCloneMap[I]->print(errs() << "\tInternal I:\t"); errs() << "\n";
         }
 
         for (auto B : LDI->loop->blocks())
@@ -575,10 +577,21 @@ namespace llvm {
               auto iCloneIter = iCloneMap.find(opI);
               if (iCloneIter != iCloneMap.end()) {
                 op.set(iCloneMap[opI]);
+                // op->print(errs() << "Set operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
+              } else {
+                opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
               }
               continue;
+            } else if (auto opC = dyn_cast<ConstantData>(opV)) {
+              continue;
+            } else if (auto opB = dyn_cast<BasicBlock>(opV)) {
+              continue;
+            } else if (auto opF = dyn_cast<Function>(opV)) {
+              continue;
+            } else {
+              opV->print(errs() << "Unknown what to do with operand\t"); cloneInstruction->print(errs() << ", for instruction:\t"); errs() << "\n";
+              abort();
             }
-            // Add cases such as constants where no clone needs to exist. Abort with an error if no such type is found
           }
         }
       }
@@ -682,8 +695,10 @@ namespace llvm {
           auto queueInfo = LDI->queues[queueIndex].get();
           auto producer = cast<Value>(queueInfo->producer);
           auto load = stageInfo->queueInstrMap[queueIndex]->load;
+          // producer->print(errs() << "Producer\t"); errs() << "\n";
           for (auto consumer : queueInfo->consumers)
           {
+            // stageInfo->iCloneMap[consumer]->print(errs() << "Consumer\t"); errs() << "\n";
             for (auto &op : stageInfo->iCloneMap[consumer]->operands())
             {
               auto opV = op.get();
@@ -735,17 +750,18 @@ namespace llvm {
         stageInfo->sccBBCloneMap[LDI->loop->getLoopPreheader()] = stageInfo->entryBlock;
         for (auto exitBB : LDI->loopExitBlocks) stageInfo->loopExitBlocks.push_back(BasicBlock::Create(context, "", stageF));
 
+        errs() << "Stage:\t" << stageInfo->order << "\n";
         /*
          * SCC iteration
          */
         createInstAndBBForSCC(LDI, stageInfo);
-        remapLocalAndEnvOperandsOfInstClones(LDI, stageInfo);
-
         loadAllQueuePointersInEntry(LDI, stageInfo);
         popValueQueues(LDI, stageInfo);
-        remapValueConsumerOperands(LDI, stageInfo);
         pushValueQueues(LDI, stageInfo);
+
+        remapValueConsumerOperands(LDI, stageInfo);
         remapControlFlow(LDI, stageInfo);
+        remapLocalAndEnvOperandsOfInstClones(LDI, stageInfo);
 
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
         entryBuilder.CreateBr(stageInfo->sccBBCloneMap[LDI->loop->getHeader()]);
@@ -760,7 +776,7 @@ namespace llvm {
         }
         IRBuilder<> exitBuilder(stageInfo->exitBlock);
         exitBuilder.CreateRetVoid();
-        stageF->print(errs() << "Function printout:\n"); errs() << "\n";
+        // stageF->print(errs() << "Function printout:\n"); errs() << "\n";
       }
 
       Value * createEnvArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Value *envAlloca)
@@ -966,7 +982,7 @@ namespace llvm {
         }
         errs() << "Number of SCCs: " << sccSubgraph->numInternalNodes() << "\n";
         for (auto edgeI = sccSubgraph->begin_edges(); edgeI != sccSubgraph->end_edges(); ++edgeI) {
-          (*edgeI)->print(errs());
+          // (*edgeI)->print(errs());
           for (auto subEdge : (*edgeI)->getSubEdges()) subEdge->print(errs());
         }
         errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
