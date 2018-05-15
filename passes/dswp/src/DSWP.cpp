@@ -355,41 +355,46 @@ namespace llvm {
           }
         }
 
-        std::map<Instruction *, StageInfo *> branchStageMap;
         for (auto bb : LDI->loop->blocks())
         {
-          auto terminator = cast<Value>(bb->getTerminator());
+          auto consumer = cast<Instruction>(bb->getTerminator());
+          auto cV = cast<Value>(consumer);
+          // consumer->print(errs() << "CONSUMER BR:\t"); errs() << "\n";
+          StageInfo *brStage;
           for (auto &stage : LDI->stages)
           {
-            if (!stage->scc->isInternal(terminator)) continue;
-            branchStageMap[cast<Instruction>(terminator)] = stage.get();
+            if (!stage->scc->isInternal(cV)) continue;
+            brStage = stage.get();
             break;
           }
-        }
 
-        for (auto brStage : branchStageMap)
-        {
-          auto consumer = brStage.first;
-          consumer->print(errs() << "CONSUMER BR:\t"); errs() << "\n";
-          auto stage = brStage.second;
-          auto brNode = stage->scc->fetchNode(consumer);
+          auto brNode = brStage->scc->fetchNode(cV);
           for (auto edge : brNode->getIncomingEdges())
           {
             if (edge->isControlDependence()) continue;
             auto producer = cast<Instruction>(edge->getOutgoingT());
+            auto pV = cast<Value>(producer);
+            StageInfo *prodStage;            
+            for (auto &stage : LDI->stages)
+            {
+              if (!stage->scc->isInternal(pV)) continue;
+              prodStage = stage.get();
+              break;
+            }
+
             for (auto &otherStage : LDI->stages)
             {
-              if (otherStage.get() == stage) continue;
+              if (otherStage.get() == prodStage) continue;
               int queueIndex = LDI->queues.size();
               LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType())));
-              stage->producerToQueues[producer].insert(queueIndex);
+              prodStage->producerToQueues[producer].insert(queueIndex);
               otherStage->consumerToQueues[consumer].insert(queueIndex);
-              stage->pushValueQueues.insert(queueIndex);
+              prodStage->pushValueQueues.insert(queueIndex);
               otherStage->popValueQueues.insert(queueIndex);
 
               auto queueInfo = LDI->queues[queueIndex].get();
               queueInfo->consumers.insert(consumer);
-              queueInfo->fromStage = stage->order;
+              queueInfo->fromStage = prodStage->order;
               queueInfo->toStage = otherStage->order;
             }
           }
@@ -426,12 +431,12 @@ namespace llvm {
            */
           for (auto incomingEdge : externalNode->getIncomingEdges())
           {
-            if (incomingEdge->isMemoryDependence()) continue;
+            if (incomingEdge->isMemoryDependence() || incomingEdge->isControlDependence()) continue;
             addExternalDependentToStagesWithInst(cast<Instruction>(incomingEdge->getOutgoingT()), true);
           }
           for (auto outgoingEdge : externalNode->getOutgoingEdges())
           {
-            if (outgoingEdge->isMemoryDependence()) continue;
+            if (outgoingEdge->isMemoryDependence() || outgoingEdge->isControlDependence()) continue;
             addExternalDependentToStagesWithInst(cast<Instruction>(outgoingEdge->getIncomingT()), false);
           }
           if (!envUsed) externalDeps.pop_back();
@@ -500,7 +505,7 @@ namespace llvm {
       void linkEnvironmentDependencies (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
-        IRBuilder<> exitBuilder(stageInfo->exitBlock);
+
         auto envArg = &*(stageInfo->sccStage->arg_begin());
         auto envAlloca = entryBuilder.CreateBitCast(envArg, PointerType::getUnqual(LDI->envArrayType));
 
@@ -516,9 +521,11 @@ namespace llvm {
          */
         for (auto outgoingEnvPair : stageInfo->outgoingToEnvMap)
         {
-          auto envVar = accessEnvVarFromIndex(outgoingEnvPair.second, exitBuilder);
           auto outgoingDepClone = stageInfo->iCloneMap[outgoingEnvPair.first];
-          exitBuilder.CreateStore(outgoingDepClone, envVar);
+          auto outgoingDepBB = outgoingDepClone->getParent();
+          IRBuilder<> outgoingBuilder(outgoingDepBB->getTerminator());
+          auto envVar = accessEnvVarFromIndex(outgoingEnvPair.second, outgoingBuilder);
+          outgoingBuilder.CreateStore(outgoingDepClone, envVar);
         }
 
         /*
@@ -651,6 +658,7 @@ namespace llvm {
           for (auto &I : *pCloneBB)
           {
             if (&I == pClone) pastProducer = true;
+            else if (auto phi = dyn_cast<PHINode>(&I)) continue;
             else if (pastProducer)
             {
               store->moveBefore(&I);
@@ -661,7 +669,6 @@ namespace llvm {
                 //auto printCall = builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(pClone) }));
                 //printCall->moveBefore(&I);
               }
-              
               break;
             }
           }
@@ -843,6 +850,7 @@ namespace llvm {
             continue;
           }
           LDI->pipelineBB->eraseFromParent();
+          depI->print(errs() << "Dep I:\t"); errs() << "\n";
           errs() << "Loop not in LCSSA!\n";
           abort();
         }
