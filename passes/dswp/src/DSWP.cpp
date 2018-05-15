@@ -250,7 +250,7 @@ namespace llvm {
 
       void mergeSCCs (LoopDependenceInfo *LDI)
       {
-        errs() << "Number of unmerged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
+        // errs() << "Number of unmerged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
 
         /*
          * Merge the SCC related to a single PHI node and its use if there is only one.
@@ -259,7 +259,7 @@ namespace llvm {
 
         mergeBranchesWithoutOutgoingEdges(LDI);
 
-        errs() << "Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
+        // errs() << "Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
         return ;
       }
 
@@ -579,7 +579,7 @@ namespace llvm {
                 op.set(iCloneMap[opI]);
                 // op->print(errs() << "Set operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
               } else {
-                opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
+                // opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
               }
               continue;
             } else if (auto opC = dyn_cast<ConstantData>(opV)) {
@@ -750,7 +750,8 @@ namespace llvm {
         stageInfo->sccBBCloneMap[LDI->loop->getLoopPreheader()] = stageInfo->entryBlock;
         for (auto exitBB : LDI->loopExitBlocks) stageInfo->loopExitBlocks.push_back(BasicBlock::Create(context, "", stageF));
 
-        errs() << "Stage:\t" << stageInfo->order << "\n";
+        // errs() << "Stage:\t" << stageInfo->order << "\n";
+
         /*
          * SCC iteration
          */

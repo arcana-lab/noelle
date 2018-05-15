@@ -33,8 +33,6 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg)
   {
     auto subgraphPDG = new PDG();
     pdg->addNodesIntoNewGraph(*cast<DG<Value>>(subgraphPDG), *subgraphNodeset, *subgraphNodeset->begin());
-    errs () << "Subgraph nodes:\n";
-    for (auto node : *subgraphNodeset) node->print(errs()) << "\n";
     delete subgraphNodeset;
 
     std::set<Value *> valuesInSCCs;
@@ -58,8 +56,8 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg)
         }
 
         if (!uniqueSCC) continue;
-        errs() << "SCC:\n";
-        for (auto node : nodes) node->print(errs()) << "\n";
+        // errs() << "SCC:\n";
+        // for (auto node : nodes) node->print(errs()) << "\n";
         auto scc = new SCC(nodes);
         sccDAG->addNode(scc, /*inclusion=*/ true);
       }

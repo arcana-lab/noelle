@@ -421,11 +421,11 @@ namespace llvm {
   {
     stream << "Total nodes: " << allNodes.size() << "\n";
     stream << "Internal nodes: " << internalNodeMap.size() << "\n";
-    for (auto pair : internalNodePairs()) pair.second->print(errs()) << "\n";
+    for (auto pair : internalNodePairs()) pair.second->print(stream) << "\n";
     stream << "External nodes: " << externalNodeMap.size() << "\n";
-    for (auto pair : externalNodePairs()) pair.second->print(errs()) << "\n";
+    for (auto pair : externalNodePairs()) pair.second->print(stream) << "\n";
     stream << "All edges: " << allEdges.size() << "\n";
-    for (auto edge : allEdges) edge->print(errs()) << "\n";
+    for (auto edge : allEdges) edge->print(stream) << "\n";
   }
 
   /*
