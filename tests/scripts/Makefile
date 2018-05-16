@@ -34,6 +34,7 @@ test_pdgdot.bc: test_seq.bc
 
 test_dswp.bc: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -o $@
+	$(CC) -O3 -c -emit-llvm $@ -o $@
 	llvm-dis $@
 
 test.bc: test.cpp
