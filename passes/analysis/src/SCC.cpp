@@ -45,6 +45,7 @@ raw_ostream &llvm::SCC::print(raw_ostream &stream) {
 
 	stream << "\tExternal nodes:\n";
 	for (auto nodePair : externalNodePairs()) nodePair.second->print(stream << "\t") << "\n";
+    stream << "\n";
 
 	return stream;
 }

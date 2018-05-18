@@ -185,7 +185,7 @@ namespace llvm {
          */
         // printSCCs(LDI->loopSCCDAG);
         mergeSCCs(LDI);
-        // printSCCs(LDI->loopSCCDAG);
+        printSCCs(LDI->loopSCCDAG);
 
         /*
          * Create the pipeline stages.
@@ -940,17 +940,32 @@ namespace llvm {
       {
         errs() << "\nInternal SCCs\n";
         for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
-          sccI->first->print(errs());
+
+          /*
+           * Fetch the current SCC.
+           */
+          auto scc = sccI->first;
+
+          /*
+           * Print the SCC.
+           */
+          scc->print(errs());
         }
+        errs() << "\n";
+
         errs() << "\nExternal SCCs\n";
         for (auto sccI = sccSubgraph->begin_external_node_map(); sccI != sccSubgraph->end_external_node_map(); ++sccI) {
           sccI->first->print(errs());
         }
+        errs() << "\n";
+
         errs() << "Number of SCCs: " << sccSubgraph->numInternalNodes() << "\n";
         for (auto edgeI = sccSubgraph->begin_edges(); edgeI != sccSubgraph->end_edges(); ++edgeI) {
           // (*edgeI)->print(errs());
           for (auto subEdge : (*edgeI)->getSubEdges()) subEdge->print(errs());
         }
+        errs() << "\n";
+
         errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
       }
 
