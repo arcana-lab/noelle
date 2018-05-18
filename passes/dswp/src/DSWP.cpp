@@ -165,13 +165,6 @@ namespace llvm {
         auto funcPDG = graph->createFunctionSubgraph(function);
 
         /*
-         * ASSUMPTION: One outermost loop for the function.
-         *
-         * We have to have one single outermost loop.
-         */
-        // if (std::distance(LI.begin(), LI.end()) != 1) return nullptr;
-
-        /*
          * Choose the loop to parallelize.
          */
         for (auto loopIter : LI)
@@ -307,6 +300,36 @@ namespace llvm {
         }
       }
 
+      bool registerQueue (LoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer)
+      {
+        int queueIndex = LDI->queues.size();
+        for (auto queueI : fromStage->producerToQueues[producer])
+        {
+          if (LDI->queues[queueI]->toStage != toStage->order) continue;
+          queueIndex = queueI;
+          break;
+        }
+
+        if (queueIndex == LDI->queues.size())
+        {
+          LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType())));
+          fromStage->producerToQueues[producer].insert(queueIndex);
+        }
+
+        // errs() << "Stage pair: " << fromStage->order << ", " << toStage->order << "\n";
+        // producer->print(errs() << "P-C Pair:\t"); consumer->print(errs() << "\t"); errs() << "\n";
+        fromStage->pushValueQueues.insert(queueIndex);
+        toStage->popValueQueues.insert(queueIndex);
+        toStage->producedPopQueue[producer] = queueIndex;
+
+        auto queueInfo = LDI->queues[queueIndex].get();
+        queueInfo->consumers.insert(consumer);
+        queueInfo->fromStage = fromStage->order;
+        queueInfo->toStage = toStage->order;
+
+        return queueSizeToIndex.find(queueInfo->bitLength) != queueSizeToIndex.end();
+      }
+
       bool collectValueQueueInfo (LoopDependenceInfo *LDI)
       {
         for (auto scc : LDI->loopSCCDAG->getNodes())
@@ -330,76 +353,33 @@ namespace llvm {
               auto producer = cast<Instruction>(pcPair.first->getT());
               auto consumer = cast<Instruction>(pcPair.second->getT());
 
-              int queueIndex = LDI->queues.size();
-              for (auto queueI : fromStage->producerToQueues[producer])
-              {
-                if (LDI->queues[queueI]->toStage != toStage->order) continue;
-                queueIndex = queueI;
-                break;
-              }
-
-              if (queueIndex == LDI->queues.size())
-              {
-                LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType())));
-                fromStage->producerToQueues[producer].insert(queueIndex);
-              }
-              // errs() << "Stage pair: " << fromStage->order << ", " << toStage->order << "\n";
-              // producer->print(errs() << "P-C Pair:\t"); consumer->print(errs() << "\t"); errs() << "\n";
-              fromStage->pushValueQueues.insert(queueIndex);
-              toStage->popValueQueues.insert(queueIndex);
-              toStage->producedPopQueue[producer] = queueIndex;
-
-              auto queueInfo = LDI->queues[queueIndex].get();
-              queueInfo->consumers.insert(consumer);
-              queueInfo->fromStage = fromStage->order;
-              queueInfo->toStage = toStage->order;
-
-              if (queueSizeToIndex.find(queueInfo->bitLength) == queueSizeToIndex.end()) return false;
+              registerQueue(LDI, fromStage, toStage, producer, consumer);
             }
           }
         }
 
+        auto findStageContaining = [&](Value *val) -> StageInfo * {
+          for (auto &stage : LDI->stages) if (stage->scc->isInternal(val)) return stage.get();
+          return nullptr;
+        };
+
         for (auto bb : LDI->loop->blocks())
         {
           auto consumer = cast<Instruction>(bb->getTerminator());
-          auto cV = cast<Value>(consumer);
           // consumer->print(errs() << "CONSUMER BR:\t"); errs() << "\n";
-          StageInfo *brStage;
-          for (auto &stage : LDI->stages)
-          {
-            if (!stage->scc->isInternal(cV)) continue;
-            brStage = stage.get();
-            break;
-          }
+          StageInfo *brStage = findStageContaining(cast<Value>(consumer));
 
-          auto brNode = brStage->scc->fetchNode(cV);
+          auto brNode = brStage->scc->fetchNode(cast<Value>(consumer));
           for (auto edge : brNode->getIncomingEdges())
           {
             if (edge->isControlDependence()) continue;
             auto producer = cast<Instruction>(edge->getOutgoingT());
-            auto pV = cast<Value>(producer);
-            StageInfo *prodStage;            
-            for (auto &stage : LDI->stages)
-            {
-              if (!stage->scc->isInternal(pV)) continue;
-              prodStage = stage.get();
-              break;
-            }
+            StageInfo *prodStage = findStageContaining(cast<Value>(producer));
 
             for (auto &otherStage : LDI->stages)
             {
               if (otherStage.get() == prodStage) continue;
-              int queueIndex = LDI->queues.size();
-              LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType())));
-              prodStage->producerToQueues[producer].insert(queueIndex);
-              prodStage->pushValueQueues.insert(queueIndex);
-              otherStage->popValueQueues.insert(queueIndex);
-              otherStage->producedPopQueue[producer] = queueIndex;
-
-              auto queueInfo = LDI->queues[queueIndex].get();
-              queueInfo->consumers.insert(consumer);
-              queueInfo->fromStage = prodStage->order;
-              queueInfo->toStage = otherStage->order;
+              registerQueue(LDI, prodStage, otherStage.get(), producer, consumer);
             }
           }
         }
@@ -740,9 +720,6 @@ namespace llvm {
 
         // errs() << "Stage:\t" << stageInfo->order << "\n";
 
-        /*
-         * SCC iteration
-         */
         createInstAndBBForSCC(LDI, stageInfo);
         loadAllQueuePointersInEntry(LDI, stageInfo);
         popValueQueues(LDI, stageInfo);
