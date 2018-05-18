@@ -2,6 +2,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/DerivedUser.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Support/raw_ostream.h"
@@ -342,9 +343,9 @@ namespace llvm {
               }
               // errs() << "Stage pair: " << fromStage->order << ", " << toStage->order << "\n";
               // producer->print(errs() << "P-C Pair:\t"); consumer->print(errs() << "\t"); errs() << "\n";
-              toStage->consumerToQueues[consumer].insert(queueIndex);
               fromStage->pushValueQueues.insert(queueIndex);
               toStage->popValueQueues.insert(queueIndex);
+              toStage->producedPopQueue[producer] = queueIndex;
 
               auto queueInfo = LDI->queues[queueIndex].get();
               queueInfo->consumers.insert(consumer);
@@ -389,9 +390,9 @@ namespace llvm {
               int queueIndex = LDI->queues.size();
               LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType())));
               prodStage->producerToQueues[producer].insert(queueIndex);
-              otherStage->consumerToQueues[consumer].insert(queueIndex);
               prodStage->pushValueQueues.insert(queueIndex);
               otherStage->popValueQueues.insert(queueIndex);
+              otherStage->producedPopQueue[producer] = queueIndex;
 
               auto queueInfo = LDI->queues[queueIndex].get();
               queueInfo->consumers.insert(consumer);
@@ -422,6 +423,7 @@ namespace llvm {
               if (!stage->scc->isInternal(cast<Value>(internalInst)) && !isa<TerminatorInst>(internalInst)) continue;
               auto &envMap = outgoing ? stage->outgoingToEnvMap : stage->incomingToEnvMap;
               envMap[internalInst] = envIndex;
+              stage->externalToEnvMap[externalValue] = envIndex;
             }
             auto &envSet = outgoing ? LDI->environment->postLoopExternals : LDI->environment->preLoopExternals;
             envSet.insert(envIndex);
@@ -504,7 +506,7 @@ namespace llvm {
         }
       }
 
-      void linkEnvironmentDependencies (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void loadAndStoreEnv (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
 
@@ -549,50 +551,7 @@ namespace llvm {
         {
           auto envVar = accessEnvVarFromIndex(incomingEnvPair.second, entryBuilder);
           auto envLoad = entryBuilder.CreateLoad(envVar);
-
-          auto incomingDepClone = stageInfo->iCloneMap[incomingEnvPair.first];
-          auto external = LDI->environment->externalDependents[incomingEnvPair.second];
-          for (auto &depOp : incomingDepClone->operands())
-          {
-            if (depOp != external) continue;
-            depOp.set(envLoad);
-          }
-        }
-      }
-
-      void remapLocalAndEnvOperandsOfInstClones (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
-      {
-        linkEnvironmentDependencies(LDI, stageInfo);
-
-        /*
-         * IMPROVEMENT: Ignore special cases upfront. If a clone of a general case is not found, abort with a corresponding error 
-         */
-        auto &iCloneMap = stageInfo->iCloneMap;
-        for (auto ii = iCloneMap.begin(); ii != iCloneMap.end(); ++ii) {
-          auto cloneInstruction = ii->second;
-
-          for (auto &op : cloneInstruction->operands()) {
-            auto opV = op.get();
-            if (auto opI = dyn_cast<Instruction>(opV)) {
-              auto iCloneIter = iCloneMap.find(opI);
-              if (iCloneIter != iCloneMap.end()) {
-                op.set(iCloneMap[opI]);
-                // op->print(errs() << "Set operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
-              } else {
-                // opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
-              }
-              continue;
-            } else if (auto opC = dyn_cast<ConstantData>(opV)) {
-              continue;
-            } else if (auto opB = dyn_cast<BasicBlock>(opV)) {
-              continue;
-            } else if (auto opF = dyn_cast<Function>(opV)) {
-              continue;
-            } else {
-              opV->print(errs() << "Unknown what to do with operand\t"); cloneInstruction->print(errs() << ", for instruction:\t"); errs() << "\n";
-              abort();
-            }
-          }
+          stageInfo->envLoadMap[incomingEnvPair.second] = cast<Instruction>(envLoad);
         }
       }
 
@@ -688,22 +647,49 @@ namespace llvm {
         }
       }
 
-      void remapValueConsumerOperands (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void remapOperandsOfInstClones (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
-        for (auto queueIndex : stageInfo->popValueQueues)
-        {
-          auto queueInfo = LDI->queues[queueIndex].get();
-          auto producer = cast<Value>(queueInfo->producer);
-          auto load = stageInfo->queueInstrMap[queueIndex]->load;
-          // producer->print(errs() << "Producer\t"); errs() << "\n";
-          for (auto consumer : queueInfo->consumers)
-          {
-            // stageInfo->iCloneMap[consumer]->print(errs() << "Consumer\t"); errs() << "\n";
-            for (auto &op : stageInfo->iCloneMap[consumer]->operands())
-            {
-              auto opV = op.get();
-              if (opV != producer) continue;
-              op.set(load);
+        auto &iCloneMap = stageInfo->iCloneMap;
+        for (auto ii = iCloneMap.begin(); ii != iCloneMap.end(); ++ii) {
+          auto cloneInstruction = ii->second;
+
+          for (auto &op : cloneInstruction->operands()) {
+            auto opV = op.get();
+            if (auto opI = dyn_cast<Instruction>(opV)) {
+              if (iCloneMap.find(opI) != iCloneMap.end()) {
+                op.set(iCloneMap[opI]);
+                // opV->print(errs() << "Set in op\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
+              } else if (stageInfo->externalToEnvMap.find(opV) != stageInfo->externalToEnvMap.end()) {
+                op.set(stageInfo->envLoadMap[stageInfo->externalToEnvMap[opV]]);
+                // opV->print(errs() << "Set env op\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
+              } else if (stageInfo->producedPopQueue.find(opI) != stageInfo->producedPopQueue.end()) {
+                op.set(stageInfo->queueInstrMap[stageInfo->producedPopQueue[opI]]->load);
+                // opV->print(errs() << "Set pop op\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
+              } else {
+                opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
+                abort();
+              }
+              continue;
+            } else if (auto opA = dyn_cast<Argument>(opV)) {
+              if (stageInfo->externalToEnvMap.find(opV) != stageInfo->externalToEnvMap.end()) {
+                op.set(stageInfo->envLoadMap[stageInfo->externalToEnvMap[opV]]);
+                // opV->print(errs() << "Set env op\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
+              } else {
+                opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
+                abort();
+              }
+            } else if (auto opC = dyn_cast<Constant>(opV)) {
+              continue;
+            } else if (auto opB = dyn_cast<BasicBlock>(opV)) {
+              continue;
+            } else if (auto opF = dyn_cast<Function>(opV)) {
+              continue;
+            } else if (auto opDU = dyn_cast<DerivedUser>(opV)) {
+              continue;
+            } else {
+              opV->print(errs() << "Unknown what to do with operand\n"); opV->getType()->print(errs() << "\tType:\t");
+              cloneInstruction->print(errs() << "\nfor instruction:\n"); errs() << "\n";
+              abort();
             }
           }
         }
@@ -759,10 +745,10 @@ namespace llvm {
         loadAllQueuePointersInEntry(LDI, stageInfo);
         popValueQueues(LDI, stageInfo);
         pushValueQueues(LDI, stageInfo);
+        loadAndStoreEnv(LDI, stageInfo);
 
-        remapValueConsumerOperands(LDI, stageInfo);
         remapControlFlow(LDI, stageInfo);
-        remapLocalAndEnvOperandsOfInstClones(LDI, stageInfo);
+        remapOperandsOfInstClones(LDI, stageInfo);
 
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
         entryBuilder.CreateBr(stageInfo->sccBBCloneMap[LDI->loop->getHeader()]);

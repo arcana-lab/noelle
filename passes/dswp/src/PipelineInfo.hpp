@@ -47,13 +47,6 @@ namespace llvm {
 		Value *load;
 	};
 
-	struct LocalSwitch
-	{
-		unordered_map<Instruction *, int> producerToPushIndex;
-		int defaultEntry;
-		Value *indexTracker;
-	};
-
 	struct StageInfo {
 		Function *sccStage;
 		int order;
@@ -88,24 +81,31 @@ namespace llvm {
 		 * Maps from instructions within loop to environment indices
 		 */
         unordered_map<Instruction *, int> incomingToEnvMap, outgoingToEnvMap;
+
+        /*
+         * Maps from instructions outside of loop to environment indices
+         */
+        unordered_map<Value *, int> externalToEnvMap;
+
         /*
          * Maps from producer to the queues they push to
-         * Maps from consumer to the queues they pop from
          */
         unordered_map<Instruction *, std::set<int>> producerToQueues;
-        unordered_map<Instruction *, std::set<int>> consumerToQueues;
+
+        /*
+         * Maps from other stage's producer to the pop value queue of this stage
+         */
+        unordered_map<Instruction *, int> producedPopQueue;
 
         /*
          * Stores queue indices and pointers for the stage
          */
         std::set<int> pushValueQueues, popValueQueues;
-        std::set<int> pushSwitchQueues, popSwitchQueues;
-        std::set<int> pushControlQueues, popControlQueues;
 
         /*
-         * Stores information on queue/switch usage within stage
+         * Stores information on queue/env usage within stage
          */
         unordered_map<int, std::unique_ptr<QueueInstrs>> queueInstrMap;
-        unordered_map<Instruction *, std::unique_ptr<LocalSwitch>> consumerToLocalSwitches;
+        unordered_map<int, Instruction *> envLoadMap;
 	};
 }
