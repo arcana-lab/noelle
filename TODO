@@ -8,10 +8,8 @@
 
 - test DSWP on real workloads using the autotuning exploration
 
-- Optimization 1: push and pop within sub-loops only once per iteration
+- Optimization 1: exploit induction variables to avoid unnecessary synchronizations
 
 - Optimization 2: prune the CFG of the generated functions as much as we can
 
-- Optimization 3: exploit induction variables to avoid unnecessary synchronizations
-
-- Optimization 4: packing/unpacking pushes and pops
+- Optimization 3: packing/unpacking pushes and pops
