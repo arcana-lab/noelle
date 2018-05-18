@@ -33,12 +33,18 @@ llvm::SCC::SCC(std::set<DGNode<Value> *> nodes) {
 	}
 }
 
-llvm::SCC::~SCC() {}
+llvm::SCC::~SCC() {
+  return ;
+}
 
 raw_ostream &llvm::SCC::print(raw_ostream &stream) {
+
 	stream << "\tInternal nodes:\n";
 	for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << "\t") << "\n";
+    stream << "\n";
+
 	stream << "\tExternal nodes:\n";
 	for (auto nodePair : externalNodePairs()) nodePair.second->print(stream << "\t") << "\n";
+
 	return stream;
 }
