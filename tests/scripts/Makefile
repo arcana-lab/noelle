@@ -13,6 +13,7 @@ THREADER=DSWP_utils
 LIBS=-lm
 INCLUDES=-I../include/threadpool/include
 OPTIMIZED=parallelized
+TRANSFORMATIONS_BEFORE_PARALLELIZATION=-basicaa -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
 OPT_LEVEL=-O3
 
 PRINTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PDGPRINTER).so
@@ -34,11 +35,12 @@ test_pdgdot.bc: test_seq.bc
 
 test_dswp.bc: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -o $@
+	$(CC) -O3 -c -emit-llvm $@ -o $@
 	llvm-dis $@
 
 test.bc: test.cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
-	opt -mem2reg $@ -o $@
+	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
 	llvm-dis $@
 
 test_seq.bc: test.bc $(THREADER).bc
