@@ -1,3 +1,5 @@
+- Print internal nodes of an SCC (the print method of the class SCC) following their dependences
+
 - add the normalization from do-while to while loops
 
 - fix bugs highlighted by the current tests
