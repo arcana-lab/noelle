@@ -22,7 +22,7 @@ namespace llvm {
 
       std::vector<Function *> * getModuleFunctionsReachableFrom (Module *module, Function *startingPoint);
 
-      std::vector<Loop *> * getModuleLoops (void);
+      std::vector<Loop *> * getModuleLoops (Module *module, std::unordered_map<Function *, LoopInfo *> &loopsInformation);
 
       Function * createFunctionForTheLoopBody ();
   };

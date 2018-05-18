@@ -14,7 +14,6 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/Analysis/AssumptionCache.h"
-#include "llvm/Analysis/CallGraph.h"
 
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
@@ -72,18 +71,36 @@ namespace llvm {
         auto& parallelizationFramework = getAnalysis<Parallelization>();
 
         /*
-         * Collect functions through call graph starting at function "main"
+         * Cache the required information.
          */
-        auto mainFunction = M.getFunction("main");
-        auto funcToModify = parallelizationFramework.getModuleFunctionsReachableFrom(&M, mainFunction);
+        auto functions = parallelizationFramework.getModuleFunctionsReachableFrom(&M, M.getFunction("main"));
+        std::unordered_map<Function *, LoopInfo *> loopInfo;
+        std::unordered_map<Function *, DominatorTree *> domTree;
+        std::unordered_map<Function *, PostDominatorTree *> postDomTree;
+        std::unordered_map<Function *, ScalarEvolution *> scalarEvolution;
+        for (auto f : *functions){
+          loopInfo[f] = &getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
+          domTree[f] = &getAnalysis<DominatorTreeWrapperPass>(*f).getDomTree();
+          postDomTree[f] = &getAnalysis<PostDominatorTreeWrapperPass>(*f).getPostDomTree();
+          scalarEvolution[f] = &getAnalysis<ScalarEvolutionWrapperPass>(*f).getSE();
+        }
 
+        /*
+         * Fetch all the loops we want to parallelize.
+         */
+        auto loopsToParallelize = this->getLoopsToParallelize(M, loopInfo);
+
+        /*
+         * Parallelize the loops selected.
+         */
         auto modified = false;
-        for (auto F : *funcToModify)
-        {
-          auto loopDI = fetchLoopToParallelize(*F, graph);
-          if (loopDI == nullptr) {
-            continue ;
-          }
+        for (auto loop : loopsToParallelize){
+
+          /*
+           * Create the loop dependence interface.
+           */
+          auto loopDI = fetchLoopToParallelize(graph, loop, loopInfo, domTree, postDomTree, scalarEvolution);
+          assert(loopDI != nullptr);
 
           /*
            * Parallelize the current loop with DSWP.
@@ -91,6 +108,7 @@ namespace llvm {
           modified |= applyDSWP(loopDI);
           delete loopDI;
         }
+
         return modified;
       }
 
@@ -102,13 +120,45 @@ namespace llvm {
         AU.addRequired<PostDominatorTreeWrapperPass>();
         AU.addRequired<LoopInfoWrapperPass>();
         AU.addRequired<ScalarEvolutionWrapperPass>();
-        AU.addRequired<CallGraphWrapperPass>();
         AU.addRequired<Parallelization>();
 
         return ;
       }
 
     private:
+      std::vector<Loop *> getLoopsToParallelize (Module &M, std::unordered_map<Function *, LoopInfo *> &loopInfo){
+        std::vector<Loop *> loopsToParallelize;
+
+        /*
+         * Collect all loops included in the module.
+         */
+        auto& parallelizationFramework = getAnalysis<Parallelization>();
+        auto allLoops = parallelizationFramework.getModuleLoops(&M, loopInfo);
+
+        /*
+         * Consider to parallelize only one loop per function.
+         */
+        std::set<Function *> functionsSeen;
+        for (auto loop : *allLoops){
+          auto header = loop->getHeader();
+          auto function = header->getParent();
+
+          if (functionsSeen.find(function) != functionsSeen.end()){
+            continue ;
+          }
+
+          functionsSeen.insert(function);
+          loopsToParallelize.push_back(loop);
+        }
+
+        /*
+         * Free the memory.
+         */
+        delete allLoops;
+
+        return loopsToParallelize;
+      }
+
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M)
       {
         int1 = IntegerType::get(M.getContext(), 1);
@@ -134,43 +184,46 @@ namespace llvm {
         return true;
       }
 
-      LoopDependenceInfo *fetchLoopToParallelize (Function &function, PDG *graph)
-      {
+      LoopDependenceInfo * fetchLoopToParallelize (
+        PDG *graph, 
+        Loop *loop, 
+        std::unordered_map<Function *, LoopInfo *> &loopInfo,
+        std::unordered_map<Function *, DominatorTree *> &domTree,
+        std::unordered_map<Function *, PostDominatorTree *> &postDomTree,
+        std::unordered_map<Function *, ScalarEvolution *> &scalarEvolution
+        ) {
+
+        /*
+         * Fetch the function that contains the loop.
+         */
+        auto function = loop->getHeader()->getParent();
+
         /*
          * Fetch the loops.
          */
-        auto &LI = getAnalysis<LoopInfoWrapperPass>(function).getLoopInfo();
-        auto &DT = getAnalysis<DominatorTreeWrapperPass>(function).getDomTree();
-        auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(function).getPostDomTree();
-        auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(function).getSE();
+        auto LI = loopInfo[function];
+        auto DT = domTree[function];
+        auto PDT = postDomTree[function];
+        auto SE = scalarEvolution[function];
 
         /*
          * Fetch the PDG.
          */
-        auto funcPDG = graph->createFunctionSubgraph(function);
+        auto funcPDG = graph->createFunctionSubgraph(*function);
+        auto LDI = new LoopDependenceInfo(function, funcPDG, loop, *LI, *DT, *PDT, *SE);
 
-        /*
-         * Choose the loop to parallelize.
-         */
-        for (auto loopIter : LI)
-        {
-          auto loop = &*loopIter;
-          return new LoopDependenceInfo(&function, funcPDG, loop, LI, DT, PDT, SE);
-        }
-
-        return nullptr;
+        return LDI;
       }
 
-      bool applyDSWP (LoopDependenceInfo *LDI)
-      {
-        errs() << "Applying DSWP\n";
+      bool applyDSWP (LoopDependenceInfo *LDI) {
+        errs() << "DSWP: Check if we can parallelize the loop " << *LDI->loop->getHeader()->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
 
         /*
          * Merge SCCs of the SCCDAG.
          */
         // printSCCs(LDI->loopSCCDAG);
         mergeSCCs(LDI);
-        printSCCs(LDI->loopSCCDAG);
+        // printSCCs(LDI->loopSCCDAG);
 
         /*
          * Create the pipeline stages.
@@ -180,11 +233,15 @@ namespace llvm {
         // printStageSCCs(LDI);
         // printStageQueues(LDI);
 
-        for (auto &stage : LDI->stages) createPipelineStageFromSCC(LDI, stage);
+        errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
+        for (auto &stage : LDI->stages) {
+          createPipelineStageFromSCC(LDI, stage);
+        }
 
         /*
          * Create the pipeline (connecting the stages)
          */
+        errs() << "DSWP:  Link pipeline stages\n";
         createPipelineFromStages(LDI);
         if (LDI->pipelineBB == nullptr)
         {
@@ -195,8 +252,8 @@ namespace llvm {
         /*
          * Link the parallelized loop within the original function that includes the sequential loop.
          */
+        errs() << "DSWP:  Link the parallelize loop\n";
         linkParallelizedLoopToOriginalFunction(LDI);
-        // LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
 
         return true;
       }

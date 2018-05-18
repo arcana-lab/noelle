@@ -26,6 +26,7 @@ bool llvm::Parallelization::doInitialization (Module &M) {
 
 void llvm::Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
+  AU.addRequired<LoopInfoWrapperPass>();
 
   return ;
 }
@@ -49,7 +50,7 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
   auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
 
   /* 
-   * Compute the set of functions reachable from main.
+   * Compute the set of functions reachable from the starting point.
    */
   std::set<Function *> funcSet ;
   std::queue<Function *> funcToTraverse;
@@ -69,7 +70,7 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
   }
 
   /*
-   * Iterate over functions of the module and add to the vector only the ones that are reachable from "main".
+   * Iterate over functions of the module and add to the vector only the ones that are reachable from the starting point.
    * This will enforce that the order of the functions returned follows the one of the module.
    */
   for (auto &f : *module){
@@ -82,8 +83,42 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
   return functions;
 }
 
-std::vector<Loop *> * llvm::Parallelization::getModuleLoops (void){
+std::vector<Loop *> * llvm::Parallelization::getModuleLoops (Module *module, std::unordered_map<Function *, LoopInfo *> &loopsInformation){
+  auto allLoops = new std::vector<Loop *>();
 
+  /*
+   * Fetch the list of functions of the module.
+   */
+  auto mainFunction = module->getFunction("main");
+  auto functions = this->getModuleFunctionsReachableFrom(module, mainFunction);
+
+  /*
+   * Append loops of each function.
+   */
+  for (auto function : *functions){
+
+    /*
+     * Fetch the loop analysis.
+     */
+    auto LI = loopsInformation[function];
+
+    /*
+     * Fetch all loops of the current function.
+     */
+    if (std::distance(LI->begin(), LI->end()) == 0){
+      continue ;
+    }
+    auto loops = LI->getLoopsInPreorder();
+
+    /*
+     * Append these loops.
+     */
+    for (auto loop : loops){
+      allLoops->push_back(loop);
+    }
+  }
+
+  return allLoops;
 }
 
 llvm::Function * llvm::Parallelization::createFunctionForTheLoopBody (){
