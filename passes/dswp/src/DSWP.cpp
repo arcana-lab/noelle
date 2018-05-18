@@ -226,25 +226,27 @@ namespace llvm {
       void mergeBranchesWithoutOutgoingEdges (LoopDependenceInfo *LDI)
       {
         auto &sccSubgraph = LDI->loopSCCDAG;
-        std::vector<DGNode<SCC> *> tailBranches;
+        std::vector<DGNode<SCC> *> tailCmpBrs;
         for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
         {
           auto scc = sccNode->getT();
-          if (scc->numInternalNodes() > 1) continue ;
-          if (sccNode->numIncomingEdges() == 0) continue ;
-          if (sccNode->numOutgoingEdges() > 0) continue ;
-          
-          auto singleInstrNode = *scc->begin_nodes();
-          if (auto branch = dyn_cast<TerminatorInst>(singleInstrNode->getT())) tailBranches.push_back(sccNode);
+          if (sccNode->numIncomingEdges() == 0 || sccNode->numOutgoingEdges() > 0) continue ;
+
+          bool allCmpOrBr = true;
+          for (auto node : scc->getNodes())
+          {
+            allCmpOrBr &= (isa<TerminatorInst>(node->getT()) || isa<CmpInst>(node->getT()));
+          }
+          if (allCmpOrBr) tailCmpBrs.push_back(sccNode);
         }
 
         /*
-         * Merge trailing branch nodes into previous depth scc
+         * Merge trailing compare/branch scc into previous depth scc
          */
-        for (auto tailBranch : tailBranches)
+        for (auto tailSCC : tailCmpBrs)
         {
-          std::set<DGNode<SCC> *> nodesToMerge = { tailBranch };
-          nodesToMerge.insert(*sccSubgraph->previousDepthNodes(tailBranch).begin());
+          std::set<DGNode<SCC> *> nodesToMerge = { tailSCC };
+          nodesToMerge.insert(*sccSubgraph->previousDepthNodes(tailSCC).begin());
           sccSubgraph->mergeSCCs(nodesToMerge);
         }
       }
