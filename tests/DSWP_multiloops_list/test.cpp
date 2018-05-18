@@ -42,7 +42,7 @@ void appendNode (N* tail, int newValue, int howManyMore){
 int main (){
   N *n0 = (N *) malloc(sizeof(N));
 
-  appendNode(n0, 42, 99);
+  appendNode(n0, 42, 3);
 
   N *tmpN = n0;
   while (tmpN != NULL){
