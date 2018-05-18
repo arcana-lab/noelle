@@ -74,7 +74,8 @@ namespace llvm {
         /*
          * Collect functions through call graph starting at function "main"
          */
-        auto funcToModify = parallelizationFramework.getModuleFunctions(&M);
+        auto mainFunction = M.getFunction("main");
+        auto funcToModify = parallelizationFramework.getModuleFunctionsReachableFrom(&M, mainFunction);
 
         auto modified = false;
         for (auto F : *funcToModify)

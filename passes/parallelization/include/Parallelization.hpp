@@ -20,7 +20,7 @@ namespace llvm {
 
       bool runOnModule (Module &M) override ;
 
-      std::vector<Function *> * getModuleFunctions (Module *module);
+      std::vector<Function *> * getModuleFunctionsReachableFrom (Module *module, Function *startingPoint);
 
       std::vector<Loop *> * getModuleLoops (void);
 

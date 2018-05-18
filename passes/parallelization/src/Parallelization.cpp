@@ -40,7 +40,7 @@ llvm::Parallelization::Parallelization() : ModulePass{ID}{
   return ;
 }
 
-std::vector<Function *> * llvm::Parallelization::getModuleFunctions (Module *module){
+std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom (Module *module, Function *startingPoint){
   auto functions = new std::vector<Function *>();
 
   /*
@@ -53,7 +53,7 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctions (Module *mod
    */
   std::set<Function *> funcSet ;
   std::queue<Function *> funcToTraverse;
-  funcToTraverse.push(module->getFunction("main"));
+  funcToTraverse.push(startingPoint);
   while (!funcToTraverse.empty()) {
     auto func = funcToTraverse.front();
     funcToTraverse.pop();
