@@ -25,6 +25,7 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
+#include "Parallelization.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -65,6 +66,7 @@ namespace llvm {
         }
 
         auto graph = getAnalysis<PDGAnalysis>().getPDG();
+        auto & parallelizationFramework = getAnalysis<Parallelization>();
 
         /*
          * Collect functions through call graph starting at function "main"
@@ -98,6 +100,8 @@ namespace llvm {
         AU.addRequired<LoopInfoWrapperPass>();
         AU.addRequired<ScalarEvolutionWrapperPass>();
         AU.addRequired<CallGraphWrapperPass>();
+        AU.addRequired<Parallelization>();
+
         return ;
       }
 

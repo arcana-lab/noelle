@@ -1,14 +1,13 @@
 # Sources
 set(Srcs 
-  DSWP.cpp
-  LoopDependenceInfo.cpp
+  Parallelization.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "DSWP")
+set(PassName "Parallelization")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -22,7 +21,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../analysis/include ../../threadpool/include ../../parallelization/include)
+include_directories(${LLVM_INCLUDE_DIRS} ../include)
 
 # Declare the LLVM pass to compile
 add_llvm_loadable_module(${PassName} ${Srcs})

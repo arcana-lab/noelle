@@ -8,7 +8,7 @@ AA3=-cfl-steens-aa
 AA2=-globals-aa
 AA1=-basicaa
 AA=$(AA1) $(AA2) $(AA3) $(AA4) $(AA5) $(AA6)
-ANALYSES=$(AA) -scalar-evolution -loops -loop-simplify -lcssa -domtree
+ANALYSES=$(AA) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization
 THREADER=DSWP_utils
 LIBS=-lm
 INCLUDES=-I../include/threadpool/include
@@ -17,7 +17,7 @@ TRANSFORMATIONS_BEFORE_PARALLELIZATION=-basicaa -mem2reg -simplifycfg -instcombi
 OPT_LEVEL=-O3
 
 PRINTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PDGPRINTER).so
-OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PARALLELIZATION).so
+OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/$(PARALLELIZATION).so
 
 all: $(OPTIMIZED) baseline
 
