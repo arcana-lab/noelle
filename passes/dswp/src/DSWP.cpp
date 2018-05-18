@@ -65,17 +65,19 @@ namespace llvm {
           return false;
         }
 
+        /*
+         * Fetch the outputs of the passes we rely on.
+         */
         auto graph = getAnalysis<PDGAnalysis>().getPDG();
-        auto & parallelizationFramework = getAnalysis<Parallelization>();
+        auto& parallelizationFramework = getAnalysis<Parallelization>();
 
         /*
          * Collect functions through call graph starting at function "main"
          */
-        std::set<Function *> funcToModify;
-        collectAllFunctionsInCallGraph(M, funcToModify);
+        auto funcToModify = parallelizationFramework.getModuleFunctions(&M);
 
         auto modified = false;
-        for (auto F : funcToModify)
+        for (auto F : *funcToModify)
         {
           auto loopDI = fetchLoopToParallelize(*F, graph);
           if (loopDI == nullptr) {
@@ -106,28 +108,6 @@ namespace llvm {
       }
 
     private:
-      void collectAllFunctionsInCallGraph (Module &M, std::set<Function *> &funcSet)
-      {
-        auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
-        std::queue<Function *> funcToTraverse;
-        funcToTraverse.push(M.getFunction("main"));
-        while (!funcToTraverse.empty())
-        {
-          auto func = funcToTraverse.front();
-          funcToTraverse.pop();
-          if (funcSet.find(func) != funcSet.end()) continue;
-          funcSet.insert(func);
-
-          auto funcCGNode = callGraph[func];
-          for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end()))
-          {
-            auto F = callRecord.second->getFunction();
-            if (F->empty()) continue;
-            funcToTraverse.push(F);
-          }
-        }
-      }
-
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M)
       {
         int1 = IntegerType::get(M.getContext(), 1);

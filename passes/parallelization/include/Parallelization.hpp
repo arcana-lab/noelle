@@ -10,6 +10,7 @@ namespace llvm {
   struct Parallelization : public ModulePass {
     public:
       static char ID;
+
       Parallelization();
       virtual ~Parallelization();
 
@@ -18,6 +19,10 @@ namespace llvm {
       void getAnalysisUsage(AnalysisUsage &AU) const override ;
 
       bool runOnModule (Module &M) override ;
+
+      std::vector<Function *> * getModuleFunctions (Module *module);
+
+      std::vector<Loop *> * getModuleLoops (void);
 
       Function * createFunctionForTheLoopBody ();
   };
