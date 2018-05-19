@@ -84,6 +84,17 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
     functions->push_back(&f);
   }
 
+  /*
+   * Sort the functions.
+   */
+  auto compareFunctions = [] (Function *f1, Function *f2) -> bool {
+    auto f1Name = f1->getName();
+    auto f2Name = f2->getName();
+    return (f1Name.compare(f2Name) < 0) ? true : false;
+  };
+
+  std::sort(functions->begin(), functions->end(), compareFunctions);
+
   return functions;
 }
 
@@ -138,11 +149,15 @@ std::vector<Loop *> * llvm::Parallelization::getModuleLoops (Module *module, std
     auto LI = loopsInformation[function];
 
     /*
-     * Fetch all loops of the current function.
+     * Check if the function has loops.
      */
     if (std::distance(LI->begin(), LI->end()) == 0){
       continue ;
     }
+
+    /*
+     * Fetch all loops of the current function.
+     */
     auto loops = LI->getLoopsInPreorder();
 
     /*
