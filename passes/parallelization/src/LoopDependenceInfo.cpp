@@ -26,10 +26,14 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
 	loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
 
 	loop->getExitBlocks(loopExitBlocks);
+
+    return ;
 };
 
 llvm::LoopDependenceInfo::~LoopDependenceInfo() {
 	delete loopDG;
 	delete loopInternalDG;
 	delete loopSCCDAG;
+
+    return ;
 }

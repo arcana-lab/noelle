@@ -15,6 +15,7 @@
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/Analysis/CallGraph.h"
 
+#include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
 
 using namespace llvm;
@@ -36,6 +37,7 @@ void llvm::Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
+  AU.addRequired<PDGAnalysis>();
 
   return ;
 }
@@ -103,39 +105,20 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
   return functions;
 }
 
-void llvm::Parallelization::cacheInformation (
-        Module *module,
-        std::unordered_map<Function *, LoopInfo *> &loopInfo,
-        std::unordered_map<Function *, DominatorTree *> &domTree,
-        std::unordered_map<Function *, PostDominatorTree *> &postDomTree,
-        std::unordered_map<Function *, ScalarEvolution *> &scalarEvolution
-        ){
+std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
+  Module *module, 
+  std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &, DominatorTree &, PostDominatorTree &, ScalarEvolution &)> allocationFunction
+  ){
+
+  /* 
+   * Fetch the PDG.
+   */
+  auto graph = getAnalysis<PDGAnalysis>().getPDG();
 
   /*
-   * Fetch the functions.
+   * Allocate the vector of loops.
    */
-  auto functions = this->getModuleFunctionsReachableFrom(module, module->getFunction("main"));
-
-  /*
-   * Cache the information.
-   */
-  for (auto f : *functions){
-    loopInfo[f] = &getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-    domTree[f] = &getAnalysis<DominatorTreeWrapperPass>(*f).getDomTree();
-    postDomTree[f] = &getAnalysis<PostDominatorTreeWrapperPass>(*f).getPostDomTree();
-    scalarEvolution[f] = &getAnalysis<ScalarEvolutionWrapperPass>(*f).getSE();
-  }
-
-  /*
-   * Free the memory.
-   */
-  delete functions ;
-
-  return ;
-}
-  
-std::vector<Loop *> * llvm::Parallelization::getModuleLoops (Module *module, std::unordered_map<Function *, LoopInfo *> &loopsInformation){
-  auto allLoops = new std::vector<Loop *>();
+  auto allLoops = new std::vector<LoopDependenceInfo *>();
 
   /*
    * Fetch the list of functions of the module.
@@ -151,25 +134,38 @@ std::vector<Loop *> * llvm::Parallelization::getModuleLoops (Module *module, std
     /*
      * Fetch the loop analysis.
      */
-    auto LI = loopsInformation[function];
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
 
     /*
      * Check if the function has loops.
      */
-    if (std::distance(LI->begin(), LI->end()) == 0){
+    if (std::distance(LI.begin(), LI.end()) == 0){
       continue ;
     }
 
     /*
+     * Fetch the function dependence graph.
+     */
+    auto funcPDG = graph->createFunctionSubgraph(*function);
+
+    /*
+     * Fetch the dominators.
+     */
+    auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
+    auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
+    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+
+    /*
      * Fetch all loops of the current function.
      */
-    auto loops = LI->getLoopsInPreorder();
+    auto loops = LI.getLoopsInPreorder();
 
     /*
      * Append these loops.
      */
     for (auto loop : loops){
-      allLoops->push_back(loop);
+      auto ldi = allocationFunction(function, funcPDG, loop, LI, DT, PDT, SE);
+      allLoops->push_back(ldi);
     }
   }
 
@@ -213,10 +209,6 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (Module *modu
   pipelineBuilder.CreateStore(const0, globalBool);
 
   return ;
-}
-
-llvm::Function * llvm::Parallelization::createFunctionForTheLoopBody (){
-
 }
 
 llvm::Parallelization::~Parallelization(){

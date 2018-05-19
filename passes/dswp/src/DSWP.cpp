@@ -18,7 +18,7 @@
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
 
-#include "LoopDependenceInfo.hpp"
+#include "DSWPLoopDependenceInfo.hpp"
 #include "PipelineInfo.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
@@ -59,7 +59,6 @@ namespace llvm {
         /*
          * Fetch the outputs of the passes we rely on.
          */
-        auto graph = getAnalysis<PDGAnalysis>().getPDG();
         auto& parallelizationFramework = getAnalysis<Parallelization>();
 
         /*
@@ -72,18 +71,9 @@ namespace llvm {
         }
 
         /*
-         * Cache the required information.
-         */
-        std::unordered_map<Function *, LoopInfo *> loopInfo;
-        std::unordered_map<Function *, DominatorTree *> domTree;
-        std::unordered_map<Function *, PostDominatorTree *> postDomTree;
-        std::unordered_map<Function *, ScalarEvolution *> scalarEvolution;
-        parallelizationFramework.cacheInformation(&M, loopInfo, domTree, postDomTree, scalarEvolution);
-
-        /*
          * Fetch all the loops we want to parallelize.
          */
-        auto loopsToParallelize = this->getLoopsToParallelize(M, loopInfo, parallelizationFramework);
+        auto loopsToParallelize = this->getLoopsToParallelize(M, parallelizationFramework);
         errs() << "DSWP:  There are " << loopsToParallelize.size() << " loops to parallelize\n";
 
         /*
@@ -93,20 +83,14 @@ namespace llvm {
         for (auto loop : loopsToParallelize){
 
           /*
-           * Create the loop dependence interface.
-           */
-          auto loopDI = fetchLoopToParallelize(graph, loop, loopInfo, domTree, postDomTree, scalarEvolution);
-          assert(loopDI != nullptr);
-
-          /*
            * Parallelize the current loop with DSWP.
            */
-          modified |= applyDSWP(loopDI, parallelizationFramework);
+          modified |= applyDSWP(loop, parallelizationFramework);
 
           /*
            * Free the memory.
            */
-          delete loopDI;
+          delete loop;
         }
 
         return modified;
@@ -120,28 +104,37 @@ namespace llvm {
       }
 
     private:
-      std::vector<Loop *> getLoopsToParallelize (Module &M, std::unordered_map<Function *, LoopInfo *> &loopInfo, Parallelization &par){
-        std::vector<Loop *> loopsToParallelize;
+      std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par){
+        std::vector<DSWPLoopDependenceInfo *> loopsToParallelize;
+
+        /*
+         * Define the allocator of loop structures.
+         */
+        auto allocatorOfLoopStructures = [] (Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se) -> LoopDependenceInfo * {
+          auto ldi = new DSWPLoopDependenceInfo(f, fG, l, li, dt, pdt, se);
+          return ldi;
+        };
 
         /*
          * Collect all loops included in the module.
          */
-        auto allLoops = par.getModuleLoops(&M, loopInfo);
+        auto allLoops = par.getModuleLoops(&M, allocatorOfLoopStructures);
 
         /*
          * Consider to parallelize only one loop per function.
          */
         std::set<Function *> functionsSeen;
         for (auto loop : *allLoops){
-          auto header = loop->getHeader();
-          auto function = header->getParent();
+          auto header = loop->loop->getHeader();
+          auto function = loop->function;
 
           if (functionsSeen.find(function) != functionsSeen.end()){
             continue ;
           }
 
           functionsSeen.insert(function);
-          loopsToParallelize.push_back(loop);
+          auto dswpLoop = (DSWPLoopDependenceInfo *)(loop);
+          loopsToParallelize.push_back(dswpLoop);
         }
 
         /*
@@ -170,38 +163,7 @@ namespace llvm {
         return true;
       }
 
-      LoopDependenceInfo * fetchLoopToParallelize (
-        PDG *graph, 
-        Loop *loop, 
-        std::unordered_map<Function *, LoopInfo *> &loopInfo,
-        std::unordered_map<Function *, DominatorTree *> &domTree,
-        std::unordered_map<Function *, PostDominatorTree *> &postDomTree,
-        std::unordered_map<Function *, ScalarEvolution *> &scalarEvolution
-        ) {
-
-        /*
-         * Fetch the function that contains the loop.
-         */
-        auto function = loop->getHeader()->getParent();
-
-        /*
-         * Fetch the loops.
-         */
-        auto LI = loopInfo[function];
-        auto DT = domTree[function];
-        auto PDT = postDomTree[function];
-        auto SE = scalarEvolution[function];
-
-        /*
-         * Fetch the PDG.
-         */
-        auto funcPDG = graph->createFunctionSubgraph(*function);
-        auto LDI = new LoopDependenceInfo(function, funcPDG, loop, *LI, *DT, *PDT, *SE);
-
-        return LDI;
-      }
-
-      bool applyDSWP (LoopDependenceInfo *LDI, Parallelization &par) {
+      bool applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
         errs() << "DSWP: Check if we can parallelize the loop " << *LDI->loop->getHeader()->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
 
         /*
@@ -249,7 +211,7 @@ namespace llvm {
         return true;
       }
 
-      void mergeBranchesWithoutOutgoingEdges (LoopDependenceInfo *LDI)
+      void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI)
       {
         auto &sccSubgraph = LDI->loopSCCDAG;
         std::vector<DGNode<SCC> *> tailCmpBrs;
@@ -277,7 +239,7 @@ namespace llvm {
         }
       }
 
-      void mergeSCCs (LoopDependenceInfo *LDI)
+      void mergeSCCs (DSWPLoopDependenceInfo *LDI)
       {
         // errs() << "Number of unmerged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
 
@@ -292,12 +254,12 @@ namespace llvm {
         return ;
       }
 
-      bool isWorthParallelizing (LoopDependenceInfo *LDI)
+      bool isWorthParallelizing (DSWPLoopDependenceInfo *LDI)
       {
         return LDI->loopSCCDAG->numNodes() > 1;
       }
 
-      void collectSCCIntoStages (LoopDependenceInfo *LDI)
+      void collectSCCIntoStages (DSWPLoopDependenceInfo *LDI)
       {
         auto topLevelSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
 
@@ -333,7 +295,7 @@ namespace llvm {
         }
       }
 
-      bool registerQueue (LoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer)
+      bool registerQueue (DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer)
       {
         int queueIndex = LDI->queues.size();
         for (auto queueI : fromStage->producerToQueues[producer])
@@ -363,7 +325,7 @@ namespace llvm {
         return queueSizeToIndex.find(queueInfo->bitLength) != queueSizeToIndex.end();
       }
 
-      bool collectValueQueueInfo (LoopDependenceInfo *LDI)
+      bool collectValueQueueInfo (DSWPLoopDependenceInfo *LDI)
       {
         for (auto scc : LDI->loopSCCDAG->getNodes())
         {
@@ -419,7 +381,7 @@ namespace llvm {
         return true;
       }
 
-      void collectEnvInfo (LoopDependenceInfo *LDI)
+      void collectEnvInfo (DSWPLoopDependenceInfo *LDI)
       {
         LDI->environment = std::make_unique<EnvInfo>();
         auto &externalDeps = LDI->environment->externalDependents;
@@ -461,7 +423,7 @@ namespace llvm {
         }
       }
 
-      void configureDependencyStorage (LoopDependenceInfo *LDI, Parallelization &par)
+      void configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par)
       {
         LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
         LDI->envArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->environment->envSize());
@@ -469,7 +431,7 @@ namespace llvm {
         LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->stages.size());
       }
 
-      bool collectStageAndQueueInfo (LoopDependenceInfo *LDI, Parallelization &par)
+      bool collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par)
       {
         collectSCCIntoStages(LDI);
         if (!collectValueQueueInfo(LDI)) return false;
@@ -478,7 +440,7 @@ namespace llvm {
         return true;
       }
 
-      void createInstAndBBForSCC (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void createInstAndBBForSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         auto &context = LDI->function->getParent()->getContext();
 
@@ -521,7 +483,7 @@ namespace llvm {
         }
       }
 
-      void loadAndStoreEnv (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
+      void loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
       {
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
 
@@ -570,7 +532,7 @@ namespace llvm {
         }
       }
 
-      void loadAllQueuePointersInEntry (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
+      void loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
         auto argIter = stageInfo->sccStage->arg_begin();
         auto queuesArray = entryBuilder.CreateBitCast(&*(++argIter), PointerType::getUnqual(LDI->queueArrayType));
@@ -595,7 +557,7 @@ namespace llvm {
         for (auto queueIndex : stageInfo->popValueQueues) loadQueuePtrFromIndex(queueIndex);
       }
 
-      void popValueQueues (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         for (auto queueIndex : stageInfo->popValueQueues)
         {
@@ -626,7 +588,7 @@ namespace llvm {
         }
       }
 
-      void pushValueQueues (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
+      void pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
       {
         for (auto queueIndex : stageInfo->pushValueQueues)
         {
@@ -661,7 +623,7 @@ namespace llvm {
         }
       }
 
-      void remapOperandsOfInstClones (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         auto &iCloneMap = stageInfo->iCloneMap;
         for (auto ii = iCloneMap.begin(); ii != iCloneMap.end(); ++ii) {
@@ -709,7 +671,7 @@ namespace llvm {
         }
       }
 
-      void remapControlFlow (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void remapControlFlow (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         auto &context = LDI->function->getContext();
         auto stageF = stageInfo->sccStage;
@@ -739,7 +701,7 @@ namespace llvm {
         }
       }
 
-      void createPipelineStageFromSCC (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
+      void createPipelineStageFromSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
       {
         auto M = LDI->function->getParent();
         auto stageF = cast<Function>(M->getOrInsertFunction("", stageType));
@@ -777,7 +739,7 @@ namespace llvm {
         // stageF->print(errs() << "Function printout:\n"); errs() << "\n";
       }
 
-      Value * createEnvArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
+      Value * createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
       {
         /*
          * Create empty environment array with slots for external values dependent on loop values
@@ -816,7 +778,7 @@ namespace llvm {
         return cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(par.int8)));
       }
 
-      Value * createStagesArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par)
+      Value * createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par)
       {
         auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->stageArrayType));
         auto stageCastType = PointerType::getUnqual(LDI->stages[0]->sccStage->getType());
@@ -831,7 +793,7 @@ namespace llvm {
         return cast<Value>(funcBuilder.CreateBitCast(stagesAlloca, PointerType::getUnqual(par.int8)));
       }
 
-      Value * createQueueSizesArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par)
+      Value * createQueueSizesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par)
       {
         auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(par.int64, LDI->queues.size())));
         for (int i = 0; i < LDI->queues.size(); ++i)
@@ -845,7 +807,7 @@ namespace llvm {
         return cast<Value>(funcBuilder.CreateBitCast(queuesAlloca, PointerType::getUnqual(par.int64)));
       }
 
-      void storeOutgoingDependentsIntoExternalValues (LoopDependenceInfo *LDI, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
+      void storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LDI, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
       {
         /*
          * Extract the outgoing dependents for each stage
@@ -870,7 +832,7 @@ namespace llvm {
         }
       }
 
-      void createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &par)
+      void createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par)
       {
         auto M = LDI->function->getParent();
         LDI->pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->function);
@@ -977,7 +939,7 @@ namespace llvm {
         errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
       }
 
-      void printStageSCCs (LoopDependenceInfo *LDI)
+      void printStageSCCs (DSWPLoopDependenceInfo *LDI)
       {
         for (auto &stage : LDI->stages)
         {
@@ -987,7 +949,7 @@ namespace llvm {
         }
       }
 
-      void printStageQueues (LoopDependenceInfo *LDI)
+      void printStageQueues (DSWPLoopDependenceInfo *LDI)
       {
         for (auto &stage : LDI->stages)
         {

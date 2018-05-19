@@ -7,6 +7,7 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "LoopDependenceInfo.hpp"
 #include "PipelineInfo.hpp"
 
 using namespace std;
@@ -14,22 +15,8 @@ using namespace llvm;
 
 namespace llvm {
 
-	struct LoopDependenceInfo {
-		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se);
-		~LoopDependenceInfo();
-
-		Function *function;
-		LoopInfo &LI;
-		ScalarEvolution &SE;
-		DominatorTree &DT;
-		PostDominatorTree &PDT;
-		Loop *loop;
-		PDG *functionDG;
-		PDG *loopDG;
-		PDG *loopInternalDG;
-		SCCDAG *loopSCCDAG;
-
-		SmallVector<BasicBlock *, 10> loopExitBlocks;
+	class DSWPLoopDependenceInfo : public LoopDependenceInfo {
+      public:
 
 		/*
 		 * Stores new pipeline execution
@@ -45,5 +32,9 @@ namespace llvm {
 		 */
 		ArrayType *envArrayType, *queueArrayType, *stageArrayType;
 		Value *zeroIndexForBaseArray;
+
+		DSWPLoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se);
+
+		~DSWPLoopDependenceInfo();
 	};
 }

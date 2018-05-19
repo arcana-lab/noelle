@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   Parallelization.cpp
+  LoopDependenceInfo.cpp
 )
 
 # Compilation flags
@@ -21,7 +22,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../include)
+include_directories(${LLVM_INCLUDE_DIRS} ../../analysis/include ../include)
 
 # Declare the LLVM pass to compile
 add_llvm_loadable_module(${PassName} ${Srcs})

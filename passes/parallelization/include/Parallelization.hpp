@@ -10,6 +10,8 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/Analysis/AssumptionCache.h"
 
+#include "LoopDependenceInfo.hpp"
+
 using namespace llvm;
 
 namespace llvm {
@@ -28,21 +30,20 @@ namespace llvm {
 
       bool runOnModule (Module &M) override ;
 
-      void cacheInformation (
-        Module *module,
-        std::unordered_map<Function *, LoopInfo *> &loopInfo,
-        std::unordered_map<Function *, DominatorTree *> &domTree,
-        std::unordered_map<Function *, PostDominatorTree *> &postDomTree,
-        std::unordered_map<Function *, ScalarEvolution *> &scalarEvolution
+      std::vector<Function *> * getModuleFunctionsReachableFrom (
+        Module *module, 
+        Function *startingPoint
         );
 
-      std::vector<Function *> * getModuleFunctionsReachableFrom (Module *module, Function *startingPoint);
+      std::vector<LoopDependenceInfo *> * getModuleLoops (
+        Module *module, 
+        std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &, DominatorTree &, PostDominatorTree &, ScalarEvolution &)> allocationFunction
+        );
 
-      std::vector<Loop *> * getModuleLoops (Module *module, std::unordered_map<Function *, LoopInfo *> &loopsInformation);
-
-      void linkParallelizedLoopToOriginalFunction (Module *module, BasicBlock *originalPreHeader, BasicBlock *startOfParallelizedLoopWithinOriginalFunction);
-
-      // TODO
-      Function * createFunctionForTheLoopBody ();
+      void linkParallelizedLoopToOriginalFunction (
+        Module *module, 
+        BasicBlock *originalPreHeader, 
+        BasicBlock *startOfParallelizedLoopWithinOriginalFunction
+        );
   };
 }
