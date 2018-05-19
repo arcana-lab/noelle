@@ -2,8 +2,6 @@
 
 - add the normalization from do-while to while loops
 
-- fix bugs highlighted by the current tests
-
 - add tests related to control flows
 
 - test DSWP on real workloads using the autotuning exploration
