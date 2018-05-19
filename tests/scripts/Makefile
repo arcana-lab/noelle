@@ -45,6 +45,7 @@ test.bc: test.cpp
 
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
+	llvm-dis $@
 
 show_passes: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ --debug-pass=Structure -disable-output

@@ -65,7 +65,7 @@ namespace llvm {
         /*
          * Collect some information.
          */
-        errs() << "DSWP for " << M.getName() << "\n";
+        errs() << "DSWP: Analyzing the module " << M.getName() << "\n";
         if (!collectThreadPoolHelperFunctionsAndTypes(M, parallelizationFramework)) {
           errs() << "DSWP utils not included!\n";
           return false;
@@ -84,6 +84,7 @@ namespace llvm {
          * Fetch all the loops we want to parallelize.
          */
         auto loopsToParallelize = this->getLoopsToParallelize(M, loopInfo, parallelizationFramework);
+        errs() << "DSWP:  There are " << loopsToParallelize.size() << " loops to parallelize\n";
 
         /*
          * Parallelize the loops selected.
@@ -213,8 +214,13 @@ namespace llvm {
         /*
          * Create the pipeline stages.
          */
-        if (!isWorthParallelizing(LDI)) return false;
-        if (!collectStageAndQueueInfo(LDI, par)) return false;
+        if (!isWorthParallelizing(LDI)) {
+          errs() << "DSWP:  Not enough TLP can be extracted\n";
+          return false;
+        }
+        if (!collectStageAndQueueInfo(LDI, par)) {
+          return false;
+        }
         // printStageSCCs(LDI);
         // printStageQueues(LDI);
 
