@@ -128,6 +128,11 @@ namespace llvm {
           auto function = loop->function;
 
           if (functionsSeen.find(function) != functionsSeen.end()){
+
+            /*
+             * Free the memory.
+             */
+            delete loop;
             continue ;
           }
 
@@ -195,11 +200,7 @@ namespace llvm {
          */
         errs() << "DSWP:  Link pipeline stages\n";
         createPipelineFromStages(LDI, par);
-        if (LDI->pipelineBB == nullptr)
-        {
-          for (auto &stage : LDI->stages) stage->sccStage->eraseFromParent();
-          return false;
-        }
+        assert(LDI->pipelineBB != nullptr);
 
         /*
          * Link the parallelized loop within the original function that includes the sequential loop.
