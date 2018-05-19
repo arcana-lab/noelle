@@ -83,7 +83,7 @@ namespace llvm {
         /*
          * Fetch all the loops we want to parallelize.
          */
-        auto loopsToParallelize = this->getLoopsToParallelize(M, loopInfo);
+        auto loopsToParallelize = this->getLoopsToParallelize(M, loopInfo, parallelizationFramework);
 
         /*
          * Parallelize the loops selected.
@@ -119,14 +119,13 @@ namespace llvm {
       }
 
     private:
-      std::vector<Loop *> getLoopsToParallelize (Module &M, std::unordered_map<Function *, LoopInfo *> &loopInfo){
+      std::vector<Loop *> getLoopsToParallelize (Module &M, std::unordered_map<Function *, LoopInfo *> &loopInfo, Parallelization &par){
         std::vector<Loop *> loopsToParallelize;
 
         /*
          * Collect all loops included in the module.
          */
-        auto& parallelizationFramework = getAnalysis<Parallelization>();
-        auto allLoops = parallelizationFramework.getModuleLoops(&M, loopInfo);
+        auto allLoops = par.getModuleLoops(&M, loopInfo);
 
         /*
          * Consider to parallelize only one loop per function.
