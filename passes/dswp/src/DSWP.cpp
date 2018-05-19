@@ -106,14 +106,8 @@ namespace llvm {
         return modified;
       }
 
-      void getAnalysisUsage (AnalysisUsage &AU) const override
-      {
+      void getAnalysisUsage (AnalysisUsage &AU) const override {
         AU.addRequired<PDGAnalysis>();
-        AU.addRequired<AssumptionCacheTracker>();
-        AU.addRequired<DominatorTreeWrapperPass>();
-        AU.addRequired<PostDominatorTreeWrapperPass>();
-        AU.addRequired<LoopInfoWrapperPass>();
-        AU.addRequired<ScalarEvolutionWrapperPass>();
         AU.addRequired<Parallelization>();
 
         return ;
