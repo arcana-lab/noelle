@@ -100,6 +100,10 @@ namespace llvm {
            * Parallelize the current loop with DSWP.
            */
           modified |= applyDSWP(loopDI);
+
+          /*
+           * Free the memory.
+           */
           delete loopDI;
         }
 
