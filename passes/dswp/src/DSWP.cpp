@@ -49,26 +49,27 @@ namespace llvm {
       unordered_map<int, int> queueSizeToIndex;
 
       FunctionType *stageType;
-      IntegerType *int1, *int8, *int16, *int32, *int64;
 
       DSWP() : ModulePass{ID} {}
 
       bool doInitialization (Module &M) override { return false; }
 
-      bool runOnModule (Module &M) override
-      {
-        errs() << "DSWP for " << M.getName() << "\n";
-        if (!collectThreadPoolHelperFunctionsAndTypes(M))
-        {
-          errs() << "DSWP utils not included!\n";
-          return false;
-        }
+      bool runOnModule (Module &M) override {
 
         /*
          * Fetch the outputs of the passes we rely on.
          */
         auto graph = getAnalysis<PDGAnalysis>().getPDG();
         auto& parallelizationFramework = getAnalysis<Parallelization>();
+
+        /*
+         * Collect some information.
+         */
+        errs() << "DSWP for " << M.getName() << "\n";
+        if (!collectThreadPoolHelperFunctionsAndTypes(M, parallelizationFramework)) {
+          errs() << "DSWP utils not included!\n";
+          return false;
+        }
 
         /*
          * Cache the required information.
@@ -99,7 +100,7 @@ namespace llvm {
           /*
            * Parallelize the current loop with DSWP.
            */
-          modified |= applyDSWP(loopDI);
+          modified |= applyDSWP(loopDI, parallelizationFramework);
 
           /*
            * Free the memory.
@@ -151,14 +152,7 @@ namespace llvm {
         return loopsToParallelize;
       }
 
-      bool collectThreadPoolHelperFunctionsAndTypes (Module &M)
-      {
-        int1 = IntegerType::get(M.getContext(), 1);
-        int8 = IntegerType::get(M.getContext(), 8);
-        int16 = IntegerType::get(M.getContext(), 16);
-        int32 = IntegerType::get(M.getContext(), 32);
-        int64 = IntegerType::get(M.getContext(), 64);
-
+      bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) {
         printReachedI = M.getFunction("printReachedI");
         std::string pushers[4] = { "queuePush8", "queuePush16", "queuePush32", "queuePush64" };
         std::string poppers[4] = { "queuePop8", "queuePop16", "queuePop32", "queuePop64" };
@@ -166,7 +160,7 @@ namespace llvm {
         for (auto popper : poppers) queuePops.push_back(M.getFunction(popper));
         for (auto queueF : queuePushes) queueTypes.push_back(queueF->arg_begin()->getType());
         queueSizeToIndex = unordered_map<int, int>({ { 1, 0 }, { 8, 0 }, { 16, 1 }, { 32, 2 }, { 64, 3 }});
-        queueElementTypes = std::vector<Type *>({ int8, int16, int32, int64 });
+        queueElementTypes = std::vector<Type *>({ par.int8, par.int16, par.int32, par.int64 });
 
         stageDispatcher = M.getFunction("stageDispatcher");
         auto stageExecuter = M.getFunction("stageExecuter");
@@ -207,7 +201,7 @@ namespace llvm {
         return LDI;
       }
 
-      bool applyDSWP (LoopDependenceInfo *LDI) {
+      bool applyDSWP (LoopDependenceInfo *LDI, Parallelization &par) {
         errs() << "DSWP: Check if we can parallelize the loop " << *LDI->loop->getHeader()->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
 
         /*
@@ -221,20 +215,20 @@ namespace llvm {
          * Create the pipeline stages.
          */
         if (!isWorthParallelizing(LDI)) return false;
-        if (!collectStageAndQueueInfo(LDI)) return false;
+        if (!collectStageAndQueueInfo(LDI, par)) return false;
         // printStageSCCs(LDI);
         // printStageQueues(LDI);
 
         errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
         for (auto &stage : LDI->stages) {
-          createPipelineStageFromSCC(LDI, stage);
+          createPipelineStageFromSCC(LDI, stage, par);
         }
 
         /*
          * Create the pipeline (connecting the stages)
          */
         errs() << "DSWP:  Link pipeline stages\n";
-        createPipelineFromStages(LDI);
+        createPipelineFromStages(LDI, par);
         if (LDI->pipelineBB == nullptr)
         {
           for (auto &stage : LDI->stages) stage->sccStage->eraseFromParent();
@@ -245,7 +239,7 @@ namespace llvm {
          * Link the parallelized loop within the original function that includes the sequential loop.
          */
         errs() << "DSWP:  Link the parallelize loop\n";
-        linkParallelizedLoopToOriginalFunction(LDI);
+        par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->loop->getLoopPreheader(), LDI->pipelineBB);
 
         return true;
       }
@@ -462,20 +456,20 @@ namespace llvm {
         }
       }
 
-      void configureDependencyStorage (LoopDependenceInfo *LDI)
+      void configureDependencyStorage (LoopDependenceInfo *LDI, Parallelization &par)
       {
-        LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(int64, 0));
-        LDI->envArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->environment->envSize());
-        LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->queues.size());
-        LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(int8), LDI->stages.size());
+        LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
+        LDI->envArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->environment->envSize());
+        LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
+        LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->stages.size());
       }
 
-      bool collectStageAndQueueInfo (LoopDependenceInfo *LDI)
+      bool collectStageAndQueueInfo (LoopDependenceInfo *LDI, Parallelization &par)
       {
         collectSCCIntoStages(LDI);
         if (!collectValueQueueInfo(LDI)) return false;
         collectEnvInfo(LDI);
-        configureDependencyStorage(LDI);
+        configureDependencyStorage(LDI, par);
         return true;
       }
 
@@ -522,7 +516,7 @@ namespace llvm {
         }
       }
 
-      void loadAndStoreEnv (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void loadAndStoreEnv (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
       {
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
 
@@ -530,7 +524,7 @@ namespace llvm {
         auto envAlloca = entryBuilder.CreateBitCast(envArg, PointerType::getUnqual(LDI->envArrayType));
 
         auto accessEnvVarFromIndex = [&](int envIndex, IRBuilder<> builder) -> Value * {
-          auto envIndexValue = cast<Value>(ConstantInt::get(int64, envIndex));
+          auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
           auto envPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
           auto envType = LDI->environment->externalDependents[envIndex]->getType();
           return builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(envType));
@@ -554,10 +548,10 @@ namespace llvm {
         for (int i = 0; i < stageInfo->loopExitBlocks.size(); ++i)
         {
           IRBuilder<> builder(stageInfo->loopExitBlocks[i]);
-          auto envIndexValue = cast<Value>(ConstantInt::get(int64, LDI->environment->externalDependents.size()));
+          auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, LDI->environment->externalDependents.size()));
           auto envPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
-          auto envVar = builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(int32));
-          builder.CreateStore(ConstantInt::get(int32, i), envVar);
+          auto envVar = builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(par.int32));
+          builder.CreateStore(ConstantInt::get(par.int32, i), envVar);
         }
 
         /*
@@ -571,8 +565,7 @@ namespace llvm {
         }
       }
 
-      void loadAllQueuePointersInEntry (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
-      {
+      void loadAllQueuePointersInEntry (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
         auto argIter = stageInfo->sccStage->arg_begin();
         auto queuesArray = entryBuilder.CreateBitCast(&*(++argIter), PointerType::getUnqual(LDI->queueArrayType));
@@ -582,7 +575,7 @@ namespace llvm {
          */
         auto loadQueuePtrFromIndex = [&](int queueIndex) -> void {
           auto queueInfo = LDI->queues[queueIndex].get();
-          auto queueIndexValue = cast<Value>(ConstantInt::get(int64, queueIndex));
+          auto queueIndexValue = cast<Value>(ConstantInt::get(par.int64, queueIndex));
           auto queuePtr = entryBuilder.CreateInBoundsGEP(queuesArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, queueIndexValue }));
           auto queueCast = entryBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(queueTypes[queueSizeToIndex[queueInfo->bitLength]]));
 
@@ -628,7 +621,7 @@ namespace llvm {
         }
       }
 
-      void pushValueQueues (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void pushValueQueues (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
       {
         for (auto queueIndex : stageInfo->pushValueQueues)
         {
@@ -652,7 +645,7 @@ namespace llvm {
               store->moveBefore(&I);
               cast<Instruction>(queueInstrs->queueCall)->moveBefore(&I);
               
-              if (pClone->getType() == int32)
+              if (pClone->getType() == par.int32)
               {
                 //auto printCall = builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(pClone) }));
                 //printCall->moveBefore(&I);
@@ -741,7 +734,7 @@ namespace llvm {
         }
       }
 
-      void createPipelineStageFromSCC (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void createPipelineStageFromSCC (LoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
       {
         auto M = LDI->function->getParent();
         auto stageF = cast<Function>(M->getOrInsertFunction("", stageType));
@@ -755,10 +748,10 @@ namespace llvm {
         // errs() << "Stage:\t" << stageInfo->order << "\n";
 
         createInstAndBBForSCC(LDI, stageInfo);
-        loadAllQueuePointersInEntry(LDI, stageInfo);
+        loadAllQueuePointersInEntry(LDI, stageInfo, par);
         popValueQueues(LDI, stageInfo);
-        pushValueQueues(LDI, stageInfo);
-        loadAndStoreEnv(LDI, stageInfo);
+        pushValueQueues(LDI, stageInfo, par);
+        loadAndStoreEnv(LDI, stageInfo, par);
 
         remapControlFlow(LDI, stageInfo);
         remapOperandsOfInstClones(LDI, stageInfo);
@@ -779,7 +772,7 @@ namespace llvm {
         // stageF->print(errs() << "Function printout:\n"); errs() << "\n";
       }
 
-      Value * createEnvArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Value *envAlloca)
+      Value * createEnvArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
       {
         /*
          * Create empty environment array with slots for external values dependent on loop values
@@ -791,7 +784,7 @@ namespace llvm {
           Type *envType = LDI->environment->externalDependents[i]->getType();
           auto envVarPtr = funcBuilder.CreateAlloca(envType);
           envPtrsForDep.push_back(envVarPtr);
-          auto envIndex = cast<Value>(ConstantInt::get(int64, i));
+          auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
           auto depInEnvPtr = funcBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
 
           auto depCast = funcBuilder.CreateBitCast(depInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
@@ -801,10 +794,10 @@ namespace llvm {
         /*
          * Add exit block tracking variable to env
          */
-        auto exitVarPtr = funcBuilder.CreateAlloca(int32);
-        auto envIndex = cast<Value>(ConstantInt::get(int64, extDepSize));
+        auto exitVarPtr = funcBuilder.CreateAlloca(par.int32);
+        auto envIndex = cast<Value>(ConstantInt::get(par.int64, extDepSize));
         auto varInEnvPtr = funcBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
-        auto depCast = funcBuilder.CreateBitCast(varInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(int32)));
+        auto depCast = funcBuilder.CreateBitCast(varInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(par.int32)));
         funcBuilder.CreateStore(exitVarPtr, depCast);
 
         /*
@@ -815,39 +808,39 @@ namespace llvm {
           builder.CreateStore(LDI->environment->externalDependents[envIndex], envPtrsForDep[envIndex]);
         }
         
-        return cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(int8)));
+        return cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(par.int8)));
       }
 
-      Value * createStagesArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder)
+      Value * createStagesArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par)
       {
         auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->stageArrayType));
         auto stageCastType = PointerType::getUnqual(LDI->stages[0]->sccStage->getType());
         for (int i = 0; i < LDI->stages.size(); ++i)
         {
           auto &stage = LDI->stages[i];
-          auto stageIndex = cast<Value>(ConstantInt::get(int64, i));
+          auto stageIndex = cast<Value>(ConstantInt::get(par.int64, i));
           auto stagePtr = funcBuilder.CreateInBoundsGEP(stagesAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, stageIndex }));
           auto stageCast = funcBuilder.CreateBitCast(stagePtr, stageCastType);
           funcBuilder.CreateStore(stage->sccStage, stageCast);
         }
-        return cast<Value>(funcBuilder.CreateBitCast(stagesAlloca, PointerType::getUnqual(int8)));
+        return cast<Value>(funcBuilder.CreateBitCast(stagesAlloca, PointerType::getUnqual(par.int8)));
       }
 
-      Value * createQueueSizesArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder)
+      Value * createQueueSizesArrayFromStages (LoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par)
       {
-        auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(int64, LDI->queues.size())));
+        auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(par.int64, LDI->queues.size())));
         for (int i = 0; i < LDI->queues.size(); ++i)
         {
           auto &queue = LDI->queues[i];
-          auto queueIndex = cast<Value>(ConstantInt::get(int64, i));
+          auto queueIndex = cast<Value>(ConstantInt::get(par.int64, i));
           auto queuePtr = funcBuilder.CreateInBoundsGEP(queuesAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, queueIndex }));
-          auto queueCast = funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(int64));
-          funcBuilder.CreateStore(ConstantInt::get(int64, queue->bitLength), queueCast);
+          auto queueCast = funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(par.int64));
+          funcBuilder.CreateStore(ConstantInt::get(par.int64, queue->bitLength), queueCast);
         }
-        return cast<Value>(funcBuilder.CreateBitCast(queuesAlloca, PointerType::getUnqual(int64)));
+        return cast<Value>(funcBuilder.CreateBitCast(queuesAlloca, PointerType::getUnqual(par.int64)));
       }
 
-      void storeOutgoingDependentsIntoExternalValues (LoopDependenceInfo *LDI, IRBuilder<> builder, Value *envAlloca)
+      void storeOutgoingDependentsIntoExternalValues (LoopDependenceInfo *LDI, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
       {
         /*
          * Extract the outgoing dependents for each stage
@@ -855,7 +848,7 @@ namespace llvm {
         for (int envInd : LDI->environment->postLoopExternals)
         {
           auto depI = LDI->environment->externalDependents[envInd];
-          auto envIndex = cast<Value>(ConstantInt::get(int64, envInd));
+          auto envIndex = cast<Value>(ConstantInt::get(par.int64, envInd));
           auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
           auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(depI->getType()));
           auto envVar = builder.CreateLoad(envVarCast);
@@ -872,7 +865,7 @@ namespace llvm {
         }
       }
 
-      void createPipelineFromStages (LoopDependenceInfo *LDI)
+      void createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &par)
       {
         auto M = LDI->function->getParent();
         LDI->pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->function);
@@ -885,62 +878,38 @@ namespace llvm {
          * Create and populate the environment and stages arrays
          */
         auto envAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->envArrayType));
-        auto envPtr = createEnvArrayFromStages(LDI, funcBuilder, builder, envAlloca);
-        auto stagesPtr = createStagesArrayFromStages(LDI, funcBuilder);
+        auto envPtr = createEnvArrayFromStages(LDI, funcBuilder, builder, envAlloca, par);
+        auto stagesPtr = createStagesArrayFromStages(LDI, funcBuilder, par);
 
         /*
          * Create empty queues array to be used by the stage dispatcher
          */
         auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->queueArrayType));
-        auto queuesPtr = cast<Value>(builder.CreateBitCast(queuesAlloca, PointerType::getUnqual(int8)));
-        auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, funcBuilder);
+        auto queuesPtr = cast<Value>(builder.CreateBitCast(queuesAlloca, PointerType::getUnqual(par.int8)));
+        auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, funcBuilder, par);
 
         /*
          * Call the stage dispatcher with the environment, queues array, and stages array
          */
-        auto queuesCount = cast<Value>(ConstantInt::get(int64, LDI->queues.size()));
-        auto stagesCount = cast<Value>(ConstantInt::get(int64, LDI->stages.size()));
+        auto queuesCount = cast<Value>(ConstantInt::get(par.int64, LDI->queues.size()));
+        auto stagesCount = cast<Value>(ConstantInt::get(par.int64, LDI->stages.size()));
         builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queuesPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
 
-        storeOutgoingDependentsIntoExternalValues(LDI, builder, envAlloca);
+        storeOutgoingDependentsIntoExternalValues(LDI, builder, envAlloca, par);
 
         /*
          * Branch from pipeline to the correct loop exit block
          */
-        auto envIndex = cast<Value>(ConstantInt::get(int64, LDI->environment->envSize() - 1));
+        auto envIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->envSize() - 1));
         auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
-        auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(int32));
+        auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(par.int32));
         auto envVar = builder.CreateLoad(envVarCast);
 
         auto exitSwitch = builder.CreateSwitch(envVar, LDI->loopExitBlocks[0]);
         for (int i = 1; i < LDI->loopExitBlocks.size(); ++i)
         {
-          exitSwitch->addCase(ConstantInt::get(int32, i), LDI->loopExitBlocks[i]);
+          exitSwitch->addCase(ConstantInt::get(par.int32, i), LDI->loopExitBlocks[i]);
         }
-      }
-
-      void linkParallelizedLoopToOriginalFunction (LoopDependenceInfo *LDI)
-      {
-        auto M = LDI->function->getParent();
-        auto preheader = LDI->loop->getLoopPreheader();
-        auto originalTerminator = preheader->getTerminator();
-        IRBuilder<> loopSwitchBuilder(originalTerminator);
-
-        auto globalBool = new GlobalVariable(*M, int32, /*isConstant=*/ false, GlobalValue::ExternalLinkage, Constant::getNullValue(int32));
-        auto const0 = ConstantInt::get(int32, 0);
-        auto const1 = ConstantInt::get(int32, 1);
-        auto globalLoad = loopSwitchBuilder.CreateLoad(globalBool);
-        auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(globalLoad, const0);
-        loopSwitchBuilder.CreateCondBr(compareInstruction, LDI->pipelineBB, LDI->loop->getHeader());
-        originalTerminator->eraseFromParent();
-
-        /*
-         * Set/Reset global variable so only one loop is run in parallel at a time
-         */
-        IRBuilder<> pipelineBuilder(&*LDI->pipelineBB->begin());
-        pipelineBuilder.CreateStore(const1, globalBool);
-        pipelineBuilder.SetInsertPoint(LDI->pipelineBB->getTerminator());
-        pipelineBuilder.CreateStore(const0, globalBool);
       }
 
       /*

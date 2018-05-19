@@ -16,8 +16,10 @@ namespace llvm {
   struct Parallelization : public ModulePass {
     public:
       static char ID;
+      IntegerType *int1, *int8, *int16, *int32, *int64;
 
       Parallelization();
+
       virtual ~Parallelization();
 
       bool doInitialization (Module &M) override ;
@@ -37,6 +39,8 @@ namespace llvm {
       std::vector<Function *> * getModuleFunctionsReachableFrom (Module *module, Function *startingPoint);
 
       std::vector<Loop *> * getModuleLoops (Module *module, std::unordered_map<Function *, LoopInfo *> &loopsInformation);
+
+      void linkParallelizedLoopToOriginalFunction (Module *module, BasicBlock *originalPreHeader, BasicBlock *startOfParallelizedLoopWithinOriginalFunction);
 
       // TODO
       Function * createFunctionForTheLoopBody ();

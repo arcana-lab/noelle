@@ -20,6 +20,11 @@
 using namespace llvm;
 
 bool llvm::Parallelization::doInitialization (Module &M) {
+  int1 = IntegerType::get(M.getContext(), 1);
+  int8 = IntegerType::get(M.getContext(), 8);
+  int16 = IntegerType::get(M.getContext(), 16);
+  int32 = IntegerType::get(M.getContext(), 32);
+  int64 = IntegerType::get(M.getContext(), 64);
 
   return false;
 }
@@ -128,7 +133,7 @@ void llvm::Parallelization::cacheInformation (
 
   return ;
 }
-
+  
 std::vector<Loop *> * llvm::Parallelization::getModuleLoops (Module *module, std::unordered_map<Function *, LoopInfo *> &loopsInformation){
   auto allLoops = new std::vector<Loop *>();
 
@@ -169,6 +174,45 @@ std::vector<Loop *> * llvm::Parallelization::getModuleLoops (Module *module, std
   }
 
   return allLoops;
+}
+
+void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (Module *module, BasicBlock *originalPreHeader, BasicBlock *startOfParallelizedLoopWithinOriginalFunction){
+
+  /*
+   * Create the global variable for the parallelized loop.
+   */
+  auto globalBool = new GlobalVariable(*module, int32, /*isConstant=*/ false, GlobalValue::ExternalLinkage, Constant::getNullValue(int32));
+  auto const0 = ConstantInt::get(int32, 0);
+  auto const1 = ConstantInt::get(int32, 1);
+
+  /*
+   * Fetch the terminator of the preheader.
+   */
+  auto originalTerminator = originalPreHeader->getTerminator();
+
+  /*
+   * Fetch the header of the original loop.
+   */
+  auto originalHeader = originalTerminator->getSuccessor(0);
+
+  /*
+   * Check if another invocation of the loop is running in parallel.
+   */
+  IRBuilder<> loopSwitchBuilder(originalTerminator);
+  auto globalLoad = loopSwitchBuilder.CreateLoad(globalBool);
+  auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(globalLoad, const0);
+  loopSwitchBuilder.CreateCondBr(compareInstruction, startOfParallelizedLoopWithinOriginalFunction, originalHeader);
+  originalTerminator->eraseFromParent();
+
+  /*
+   * Set/Reset global variable so only one invocation of the loop is run in parallel at a time.
+   */
+  IRBuilder<> pipelineBuilder(&*startOfParallelizedLoopWithinOriginalFunction->begin());
+  pipelineBuilder.CreateStore(const1, globalBool);
+  pipelineBuilder.SetInsertPoint(startOfParallelizedLoopWithinOriginalFunction->getTerminator());
+  pipelineBuilder.CreateStore(const0, globalBool);
+
+  return ;
 }
 
 llvm::Function * llvm::Parallelization::createFunctionForTheLoopBody (){
