@@ -18,9 +18,6 @@ namespace llvm {
         BasicBlock *header;
         BasicBlock *preHeader;
         std::vector<BasicBlock *> loopBBs;
-		ScalarEvolution &SE;
-		DominatorTree &DT;
-		PostDominatorTree &PDT;
 		PDG *functionDG;
 		PDG *loopDG;
 		PDG *loopInternalDG;

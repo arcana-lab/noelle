@@ -10,7 +10,7 @@ using namespace std;
 using namespace llvm;
 
 llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se)
-		: function{f}, DT{dt}, PDT{pdt}, SE{se}, functionDG{fG} {
+		: function{f}, functionDG{fG} {
 
     /*
      * Set the headers.
