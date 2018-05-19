@@ -10,22 +10,39 @@ using namespace std;
 using namespace llvm;
 
 llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se)
-		: function{f}, LI{li}, DT{dt}, PDT{pdt}, SE{se}, loop{l}, functionDG{fG} {
-	loopDG = functionDG->createLoopsSubgraph(LI);
+		: function{f}, DT{dt}, PDT{pdt}, SE{se}, functionDG{fG} {
+
+    /*
+     * Set the headers.
+     */
+    this->header = l->getHeader();
+    this->preHeader = l->getLoopPreheader();
+
+    /*
+     * Set the loop body.
+     */
+    for (auto bb : l->blocks()){
+      this->loopBBs.push_back(&*bb);
+    }
+
+    /*
+     * Set the loop dependence graph.
+     */
+	this->loopDG = functionDG->createLoopsSubgraph(li);
 
 	/*
 	 * Build a SCCDAG of loop-internal instructions
 	 */
 	std::vector<Value *> loopInternals;
-	for (auto internalNode : loopDG->internalNodePairs())
-	{
+	for (auto internalNode : loopDG->internalNodePairs()) {
 		loopInternals.push_back(internalNode.first);
-		internalNode.first->print(errs()); errs() << "\n";
+		internalNode.first->print(errs()); 
+        errs() << "\n";
 	}
 	loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
 	loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
 
-	loop->getExitBlocks(loopExitBlocks);
+	l->getExitBlocks(loopExitBlocks);
 
     return ;
 };

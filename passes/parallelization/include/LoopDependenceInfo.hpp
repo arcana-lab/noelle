@@ -15,11 +15,12 @@ namespace llvm {
 	class LoopDependenceInfo {
       public:
 		Function *function;
-		LoopInfo &LI;
+        BasicBlock *header;
+        BasicBlock *preHeader;
+        std::vector<BasicBlock *> loopBBs;
 		ScalarEvolution &SE;
 		DominatorTree &DT;
 		PostDominatorTree &PDT;
-		Loop *loop;
 		PDG *functionDG;
 		PDG *loopDG;
 		PDG *loopInternalDG;

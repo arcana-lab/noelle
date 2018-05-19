@@ -125,7 +125,6 @@ namespace llvm {
          */
         std::set<Function *> functionsSeen;
         for (auto loop : *allLoops){
-          auto header = loop->loop->getHeader();
           auto function = loop->function;
 
           if (functionsSeen.find(function) != functionsSeen.end()){
@@ -164,7 +163,7 @@ namespace llvm {
       }
 
       bool applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
-        errs() << "DSWP: Check if we can parallelize the loop " << *LDI->loop->getHeader()->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
+        errs() << "DSWP: Check if we can parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
 
         /*
          * Merge SCCs of the SCCDAG.
@@ -206,7 +205,7 @@ namespace llvm {
          * Link the parallelized loop within the original function that includes the sequential loop.
          */
         errs() << "DSWP:  Link the parallelize loop\n";
-        par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->loop->getLoopPreheader(), LDI->pipelineBB);
+        par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->preHeader, LDI->pipelineBB);
 
         return true;
       }
@@ -358,8 +357,7 @@ namespace llvm {
           return nullptr;
         };
 
-        for (auto bb : LDI->loop->blocks())
-        {
+        for (auto bb : LDI->loopBBs){
           auto consumer = cast<Instruction>(bb->getTerminator());
           // consumer->print(errs() << "CONSUMER BR:\t"); errs() << "\n";
           StageInfo *brStage = findStageContaining(cast<Value>(consumer));
@@ -454,8 +452,7 @@ namespace llvm {
           // I->print(errs() << "Orig I:\t"); stageInfo->iCloneMap[I]->print(errs() << "\tInternal I:\t"); errs() << "\n";
         }
 
-        for (auto B : LDI->loop->blocks())
-        {
+        for (auto B : LDI->loopBBs) {
           stageInfo->sccBBCloneMap[B] = BasicBlock::Create(context, "", stageInfo->sccStage);
           auto terminator = cast<Instruction>(B->getTerminator());
           if (stageInfo->iCloneMap.find(terminator) == stageInfo->iCloneMap.end())
@@ -471,8 +468,7 @@ namespace llvm {
         /*
          * Attach SCC instructions to their basic blocks in correct relative order
          */
-        for (auto B : LDI->loop->blocks())
-        {
+        for (auto B : LDI->loopBBs) {
           IRBuilder<> builder(stageInfo->sccBBCloneMap[B]);
           for (auto &I : *B)
           {
@@ -709,7 +705,7 @@ namespace llvm {
         stageInfo->sccStage = stageF;
         stageInfo->entryBlock = BasicBlock::Create(context, "", stageF);
         stageInfo->exitBlock = BasicBlock::Create(context, "", stageF);
-        stageInfo->sccBBCloneMap[LDI->loop->getLoopPreheader()] = stageInfo->entryBlock;
+        stageInfo->sccBBCloneMap[LDI->preHeader] = stageInfo->entryBlock;
         for (auto exitBB : LDI->loopExitBlocks) stageInfo->loopExitBlocks.push_back(BasicBlock::Create(context, "", stageF));
 
         // errs() << "Stage:\t" << stageInfo->order << "\n";
@@ -724,7 +720,7 @@ namespace llvm {
         remapOperandsOfInstClones(LDI, stageInfo);
 
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
-        entryBuilder.CreateBr(stageInfo->sccBBCloneMap[LDI->loop->getHeader()]);
+        entryBuilder.CreateBr(stageInfo->sccBBCloneMap[LDI->header]);
 
         /*
          * Cleanup
