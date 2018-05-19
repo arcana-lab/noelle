@@ -27,6 +27,10 @@ bool llvm::Parallelization::doInitialization (Module &M) {
 void llvm::Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<AssumptionCacheTracker>();
+  AU.addRequired<DominatorTreeWrapperPass>();
+  AU.addRequired<PostDominatorTreeWrapperPass>();
+  AU.addRequired<ScalarEvolutionWrapperPass>();
 
   return ;
 }
@@ -81,6 +85,37 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
   }
 
   return functions;
+}
+
+void llvm::Parallelization::cacheInformation (
+        Module *module,
+        std::unordered_map<Function *, LoopInfo *> &loopInfo,
+        std::unordered_map<Function *, DominatorTree *> &domTree,
+        std::unordered_map<Function *, PostDominatorTree *> &postDomTree,
+        std::unordered_map<Function *, ScalarEvolution *> &scalarEvolution
+        ){
+
+  /*
+   * Fetch the functions.
+   */
+  auto functions = this->getModuleFunctionsReachableFrom(module, module->getFunction("main"));
+
+  /*
+   * Cache the information.
+   */
+  for (auto f : *functions){
+    loopInfo[f] = &getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
+    domTree[f] = &getAnalysis<DominatorTreeWrapperPass>(*f).getDomTree();
+    postDomTree[f] = &getAnalysis<PostDominatorTreeWrapperPass>(*f).getPostDomTree();
+    scalarEvolution[f] = &getAnalysis<ScalarEvolutionWrapperPass>(*f).getSE();
+  }
+
+  /*
+   * Free the memory.
+   */
+  delete functions ;
+
+  return ;
 }
 
 std::vector<Loop *> * llvm::Parallelization::getModuleLoops (Module *module, std::unordered_map<Function *, LoopInfo *> &loopsInformation){

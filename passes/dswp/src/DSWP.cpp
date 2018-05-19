@@ -73,17 +73,11 @@ namespace llvm {
         /*
          * Cache the required information.
          */
-        auto functions = parallelizationFramework.getModuleFunctionsReachableFrom(&M, M.getFunction("main"));
         std::unordered_map<Function *, LoopInfo *> loopInfo;
         std::unordered_map<Function *, DominatorTree *> domTree;
         std::unordered_map<Function *, PostDominatorTree *> postDomTree;
         std::unordered_map<Function *, ScalarEvolution *> scalarEvolution;
-        for (auto f : *functions){
-          loopInfo[f] = &getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-          domTree[f] = &getAnalysis<DominatorTreeWrapperPass>(*f).getDomTree();
-          postDomTree[f] = &getAnalysis<PostDominatorTreeWrapperPass>(*f).getPostDomTree();
-          scalarEvolution[f] = &getAnalysis<ScalarEvolutionWrapperPass>(*f).getSE();
-        }
+        parallelizationFramework.cacheInformation(&M, loopInfo, domTree, postDomTree, scalarEvolution);
 
         /*
          * Fetch all the loops we want to parallelize.
