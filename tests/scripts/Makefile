@@ -9,7 +9,7 @@ AA2=-globals-aa
 AA1=-basicaa
 AA=$(AA1) $(AA2) $(AA3) $(AA4) $(AA5) $(AA6)
 ANALYSES=$(AA) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization
-THREADER=DSWP_utils
+THREADER=$(PARALLELIZATION)_utils
 LIBS=-lm
 INCLUDES=-I../include/threadpool/include
 OPTIMIZED=parallelized
@@ -19,7 +19,7 @@ OPT_LEVEL=-O3
 PRINTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PDGPRINTER).so
 OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/$(PARALLELIZATION).so
 
-all: $(OPTIMIZED) baseline
+all: baseline $(OPTIMIZED)
 
 baseline: test.bc
 	$(CC) -std=c++14 $(OPT_LEVEL) $^ -o $@
