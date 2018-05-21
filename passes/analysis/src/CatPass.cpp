@@ -118,8 +118,16 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, S
       break;
   }
 
-  if (makeRefEdge) programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustRaw(true, false, true);
-  if (makeModEdge) programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustRaw(true, false, false);
+  if (makeRefEdge)
+  {
+    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustRaw(true, false, true);
+    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustRaw(true, false, false);
+  }
+  if (makeModEdge)
+  {
+    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustRaw(true, false, false);
+    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustRaw(true, false, false);
+  }
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, LoadInst *memI, CallInst *call){
@@ -133,7 +141,11 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, L
       break;
   }
 
-  if (makeRefEdge) programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustRaw(true, false, true);
+  if (makeRefEdge)
+  {
+    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustRaw(true, false, true);
+    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustRaw(true, false, false);
+  }
 }
 
 void llvm::PDGAnalysis::iterateInstForStoreAliases(Function &F, AAResults *aa, StoreInst *store) {

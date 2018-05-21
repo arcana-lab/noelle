@@ -207,6 +207,7 @@ namespace llvm {
          */
         errs() << "DSWP:  Link the parallelize loop\n";
         par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->preHeader, LDI->pipelineBB);
+        LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
 
         return true;
       }
@@ -608,12 +609,6 @@ namespace llvm {
             {
               store->moveBefore(&I);
               cast<Instruction>(queueInstrs->queueCall)->moveBefore(&I);
-              
-              if (pClone->getType() == par.int32)
-              {
-                //auto printCall = builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(pClone) }));
-                //printCall->moveBefore(&I);
-              }
               break;
             }
           }
@@ -733,7 +728,7 @@ namespace llvm {
         }
         IRBuilder<> exitBuilder(stageInfo->exitBlock);
         exitBuilder.CreateRetVoid();
-        // stageF->print(errs() << "Function printout:\n"); errs() << "\n";
+        stageF->print(errs() << "Function printout:\n"); errs() << "\n";
       }
 
       Value * createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
@@ -857,7 +852,11 @@ namespace llvm {
          */
         auto queuesCount = cast<Value>(ConstantInt::get(par.int64, LDI->queues.size()));
         auto stagesCount = cast<Value>(ConstantInt::get(par.int64, LDI->stages.size()));
+
+        auto debugInd = LDI->function->getName().size();
+        builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd)) }));
         builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queuesPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
+        builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd + 1)) }));
 
         storeOutgoingDependentsIntoExternalValues(LDI, builder, envAlloca, par);
 
