@@ -854,9 +854,9 @@ namespace llvm {
         auto stagesCount = cast<Value>(ConstantInt::get(par.int64, LDI->stages.size()));
 
         auto debugInd = LDI->function->getName().size();
-        builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd)) }));
+        // builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd)) }));
         builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queuesPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
-        builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd + 1)) }));
+        // builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd + 1)) }));
 
         storeOutgoingDependentsIntoExternalValues(LDI, builder, envAlloca, par);
 

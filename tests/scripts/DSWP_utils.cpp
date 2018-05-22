@@ -23,9 +23,15 @@ using namespace MARC;
 
 extern "C" {
 
-  // void printReachedI(int i){
-  //   printf("%d\n",i);
-  // }
+  void printReachedS(std::string s)
+  {
+    auto outS = "Reached: " + s;
+    printf("%s\n",outS.c_str());
+  }
+
+  void printReachedI(int i){
+    printf("Reached: %d\n",i);
+  }
 
   void queuePush8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { queue->push(*val); }
   void queuePop8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { queue->waitPop(*val); }
@@ -57,6 +63,8 @@ extern "C" {
   void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
   void stageDispatcher(void *env, void *queues, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
+    // printf("Starting dispatcher\n");
+
     void *localQueues[numberOfQueues];
     for (int i = 0; i < numberOfQueues; ++i)
     {
@@ -79,20 +87,26 @@ extern "C" {
           break;
       }
     }
-    queues = localQueues;
+    // printf("Made queues\n");
 
     ThreadPool pool(numberOfStages);
+    // printf("Made pool\n");
+    
     auto localFutures = (TaskFuture<void> *)malloc(numberOfStages * sizeof(TaskFuture<void>));
+    // printf("Malloced space for %ld futures\n", numberOfStages);
     for (int i = 0; i < numberOfStages; ++i)
     {
       auto stage = ((void (**)(void *, void *)) stages)[i];
-      localFutures[i] = std::move(pool.submit(stage, env, queues));
+      localFutures[i] = std::move(pool.submit(stage, env, (void*)localQueues));
+      // printf("Submitted stage\n");
     }
+    // printf("Submitted pool\n");
 
     for (int i = 0; i < numberOfStages; ++i)
     {
       localFutures[i].get();
     }
+    // printf("Got futures\n");
 
     for (int i = 0; i < numberOfQueues; ++i)
     {
@@ -115,5 +129,6 @@ extern "C" {
           break;
       }
     }
+    // printf("Deleted queues\n");
   }
 }
