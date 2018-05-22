@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-void f (double *v1, double *v2){
+void f (double *v1, double v2){
 
   for (uint32_t i = 0; i < 100; ++i) {
 
@@ -12,10 +12,10 @@ void f (double *v1, double *v2){
     }
 
     // SCC 2
-    *v2 = *v2 + *v1;
+    v2 = v2 + *v1;
   }
 
-  printf("%f, %f\n", *v1, *v2);
+  printf("%f, %f\n", *v1, v2);
   return ;
 }
 
@@ -25,6 +25,6 @@ int main (int argc, char *argv[]){
   v2 = ((argc * 5) / 2) + 1.5324;
   int reset = argc > 100 ? 0 : 1;
 
-  f(&v1, &v2);
+  f(&v1, v2);
   return 0;
 }
