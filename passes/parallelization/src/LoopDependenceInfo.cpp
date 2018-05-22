@@ -42,6 +42,9 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
 	loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
 
 	l->getExitBlocks(loopExitBlocks);
+    for (auto &bb : this->loopBBs) {
+        if (auto retI = dyn_cast<ReturnInst>(bb->getTerminator())) this->loopReturnInsts.insert(retI);
+    }
 
     return ;
 };

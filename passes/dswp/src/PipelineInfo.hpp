@@ -16,10 +16,16 @@ namespace llvm {
 		std::set<int> preLoopExternals;
 		std::set<int> postLoopExternals;
 
+		bool hasRetValue;
+		Type *retType;
+
 		/*
-		 * One for each external dependent + one for the exit block tracking value
+		 * One per external dependent + one to track exit block (+ one if has loop-internal returns)
 		 */
-		int envSize() { return externalDependents.size() + 1; }
+		int envSize() { return externalDependents.size() + 1 + (hasRetValue ? 1 : 0); }
+
+		int indexOfExitBlock() { return externalDependents.size(); }
+		int indexOfRetVal() { return externalDependents.size() + 1; }
 	};
 
 	struct QueueInfo {
@@ -107,5 +113,6 @@ namespace llvm {
          */
         unordered_map<int, std::unique_ptr<QueueInstrs>> queueInstrMap;
         unordered_map<int, Instruction *> envLoadMap;
+		Value *envAlloca;
 	};
 }
