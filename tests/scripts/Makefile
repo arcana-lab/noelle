@@ -41,6 +41,7 @@ test_dswp.bc: test_seq.bc
 test.bc: test.cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
 	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	opt -dot-cfg $@
 	llvm-dis $@
 
 test_seq.bc: test.bc $(THREADER).bc
