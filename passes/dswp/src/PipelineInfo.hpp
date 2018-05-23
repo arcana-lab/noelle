@@ -12,20 +12,45 @@ using namespace llvm;
 namespace llvm {
 
 	struct EnvInfo {
-		std::vector<Value *> externalDependents;
-		std::set<int> preLoopExternals;
-		std::set<int> postLoopExternals;
+		std::vector<Value *> envProducers;
+		unordered_map<Value *, int> producerIndexMap;
+		unordered_map<Value *, set<Value *>> prodConsumers;
+		std::set<int> preLoopEnv;
+		std::set<int> postLoopEnv;
 
 		bool hasRetValue;
 		Type *retType;
+		Type *exitBlockType;
 
 		/*
 		 * One per external dependent + one to track exit block (+ one if has loop-internal returns)
 		 */
-		int envSize() { return externalDependents.size() + 1 + (hasRetValue ? 1 : 0); }
+		int envSize () { return envProducers.size() + 1 + (hasRetValue ? 1 : 0); }
+		int indexOfExitBlock () { return envProducers.size(); }
+		int indexOfRetVal () { return envProducers.size() + 1; }
 
-		int indexOfExitBlock() { return externalDependents.size(); }
-		int indexOfRetVal() { return externalDependents.size() + 1; }
+		Type *typeOfEnv (int index)
+		{
+			if (index < envProducers.size()) return envProducers[index]->getType();
+			if (index == envProducers.size()) return exitBlockType;
+			return retType;
+		}
+
+		void addProducer (Value *producer, bool preLoop)
+		{
+			auto envIndex = envProducers.size();
+			envProducers.push_back(producer);
+			producerIndexMap[producer] = envIndex;
+			if (preLoop) preLoopEnv.insert(envIndex);
+			else postLoopEnv.insert(envIndex);
+		}
+		void addPreLoopProducer (Value *producer) { addProducer(producer, true); }
+		void addPostLoopProducer (Value *producer) { addProducer(producer, false); }
+
+		bool isPreLoopEnv(Value *val)
+		{
+			return producerIndexMap.find(val) != producerIndexMap.end() && preLoopEnv.find(producerIndexMap[val]) != preLoopEnv.end();
+		}
 	};
 
 	struct QueueInfo {
@@ -86,12 +111,12 @@ namespace llvm {
 		/*
 		 * Maps from instructions within loop to environment indices
 		 */
-        unordered_map<Instruction *, int> incomingToEnvMap, outgoingToEnvMap;
+		unordered_map<Instruction *, int> outgoingEnvs;
 
-        /*
-         * Maps from instructions outside of loop to environment indices
-         */
-        unordered_map<Value *, int> externalToEnvMap;
+		/*
+		 * Stores incoming environment indices
+		 */
+		set<int> incomingEnvs;
 
         /*
          * Maps from producer to the queues they push to

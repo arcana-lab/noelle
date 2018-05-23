@@ -189,6 +189,7 @@ namespace llvm {
         }
         // printStageSCCs(LDI);
         // printStageQueues(LDI);
+        printEnv(LDI);
 
         errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
         for (auto &stage : LDI->stages) {
@@ -381,45 +382,63 @@ namespace llvm {
         return true;
       }
 
-      void collectEnvInfo (DSWPLoopDependenceInfo *LDI)
+      void collectEnvInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par)
       {
         LDI->environment = std::make_unique<EnvInfo>();
-        auto &externalDeps = LDI->environment->externalDependents;
+        LDI->environment->exitBlockType = par.int32;
+
         for (auto nodeI : LDI->loopDG->externalNodePairs())
         {
           auto externalNode = nodeI.second;
           auto externalValue = externalNode->getT();
-          auto envIndex = externalDeps.size();
-          externalDeps.push_back(externalValue);
-          bool envUsed = false;
 
-          auto addExternalDependentToStagesWithInst = [&](Instruction *internalInst, bool outgoing) -> void {
-            envUsed = true;
-            for (auto &stage : LDI->stages)
-            {
-              if (!stage->scc->isInternal(cast<Value>(internalInst)) && !isa<TerminatorInst>(internalInst)) continue;
-              auto &envMap = outgoing ? stage->outgoingToEnvMap : stage->incomingToEnvMap;
-              envMap[internalInst] = envIndex;
-              stage->externalToEnvMap[externalValue] = envIndex;
-            }
-            auto &envSet = outgoing ? LDI->environment->postLoopExternals : LDI->environment->preLoopExternals;
-            envSet.insert(envIndex);
-          };
+          auto envIndex = LDI->environment->envProducers.size();
 
           /*
-           * Check if loop-external instruction has incoming/outgoing nodes within one of the stages
+           * Determine whether the external value is a producer to loop-internal values
+           */
+          bool isPreLoop = false;
+          for (auto outgoingEdge : externalNode->getOutgoingEdges())
+          {
+            if (outgoingEdge->isMemoryDependence() || outgoingEdge->isControlDependence()) continue;
+            isPreLoop = true;
+            auto internalValue = outgoingEdge->getIncomingT();
+            auto internalInst = cast<Instruction>(internalValue);
+            for (auto &stage : LDI->stages)
+            {
+              if (!stage->scc->isInternal(internalInst) && !isa<TerminatorInst>(internalInst)) continue;
+              stage->incomingEnvs.insert(envIndex);
+            }
+          }
+          if (isPreLoop) LDI->environment->addPreLoopProducer(externalValue);
+
+          /*
+           * Determine whether the external value is a consumer of loop-internal values
            */
           for (auto incomingEdge : externalNode->getIncomingEdges())
           {
             if (incomingEdge->isMemoryDependence() || incomingEdge->isControlDependence()) continue;
-            addExternalDependentToStagesWithInst(cast<Instruction>(incomingEdge->getOutgoingT()), true);
+            auto internalValue = incomingEdge->getOutgoingT();
+            auto internalInst = cast<Instruction>(internalValue);
+            LDI->environment->prodConsumers[internalInst].insert(externalValue);
+
+            if (LDI->environment->producerIndexMap.find(internalValue) != LDI->environment->producerIndexMap.end())
+            {
+              envIndex = LDI->environment->producerIndexMap[internalValue];
+            }
+            else
+            {
+              envIndex = LDI->environment->envProducers.size();
+              LDI->environment->addPostLoopProducer(internalValue);
+            }
+
+            for (auto &stage : LDI->stages)
+            {
+              if (!stage->scc->isInternal(internalInst) && !isa<TerminatorInst>(internalInst)) continue;
+              stage->outgoingEnvs[internalInst] = envIndex;
+              break;
+            }
           }
-          for (auto outgoingEdge : externalNode->getOutgoingEdges())
-          {
-            if (outgoingEdge->isMemoryDependence() || outgoingEdge->isControlDependence()) continue;
-            addExternalDependentToStagesWithInst(cast<Instruction>(outgoingEdge->getIncomingT()), false);
-          }
-          if (!envUsed) externalDeps.pop_back();
         }
       }
 
@@ -447,7 +466,7 @@ namespace llvm {
       {
         collectSCCIntoStages(LDI);
         if (!collectValueQueueInfo(LDI)) return false;
-        collectEnvInfo(LDI);
+        collectEnvInfo(LDI, par);
         collectEnvInfoForReturns(LDI);
         configureDependencyStorage(LDI, par);
         return true;
@@ -501,22 +520,24 @@ namespace llvm {
         auto envArg = &*(stageInfo->sccStage->arg_begin());
         stageInfo->envAlloca = entryBuilder.CreateBitCast(envArg, PointerType::getUnqual(LDI->envArrayType));
 
-        auto accessEnvVarFromIndex = [&](int envIndex, IRBuilder<> builder) -> Value * {
+        auto accessProducerFromIndex = [&](int envIndex, IRBuilder<> builder) -> Value * {
           auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
           auto envPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
-          auto envType = LDI->environment->externalDependents[envIndex]->getType();
+          auto envType = LDI->environment->envProducers[envIndex]->getType();
           return builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(envType));
         };
 
         /*
          * Store (SCC -> outside of loop) dependencies within the environment array
          */
-        for (auto outgoingEnvPair : stageInfo->outgoingToEnvMap)
+        errs() << "Stage: " << stageInfo->order << "\n";
+        for (auto outgoingEnvPair : stageInfo->outgoingEnvs)
         {
+          errs() << "Storing for spot: " << outgoingEnvPair.second << "\n";
           auto outgoingDepClone = stageInfo->iCloneMap[outgoingEnvPair.first];
           auto outgoingDepBB = outgoingDepClone->getParent();
           IRBuilder<> outgoingBuilder(outgoingDepBB->getTerminator());
-          auto envVar = accessEnvVarFromIndex(outgoingEnvPair.second, outgoingBuilder);
+          auto envVar = accessProducerFromIndex(outgoingEnvPair.second, outgoingBuilder);
           outgoingBuilder.CreateStore(outgoingDepClone, envVar);
         }
 
@@ -535,11 +556,11 @@ namespace llvm {
         /*
          * Load (outside of loop -> SCC) dependencies from the environment array 
          */
-        for (auto incomingEnvPair : stageInfo->incomingToEnvMap)
+        for (auto envIndex : stageInfo->incomingEnvs)
         {
-          auto envVar = accessEnvVarFromIndex(incomingEnvPair.second, entryBuilder);
+          auto envVar = accessProducerFromIndex(envIndex, entryBuilder);
           auto envLoad = entryBuilder.CreateLoad(envVar);
-          stageInfo->envLoadMap[incomingEnvPair.second] = cast<Instruction>(envLoad);
+          stageInfo->envLoadMap[envIndex] = cast<Instruction>(envLoad);
         }
       }
 
@@ -631,6 +652,9 @@ namespace llvm {
       void remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
       {
         auto &iCloneMap = stageInfo->iCloneMap;
+        auto &envMap = LDI->environment->producerIndexMap;
+        auto &queueMap = stageInfo->producedPopQueue;
+
         for (auto ii = iCloneMap.begin(); ii != iCloneMap.end(); ++ii) {
           auto cloneInstruction = ii->second;
 
@@ -640,11 +664,11 @@ namespace llvm {
               if (iCloneMap.find(opI) != iCloneMap.end()) {
                 op.set(iCloneMap[opI]);
                 // opV->print(errs() << "Set in op\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
-              } else if (stageInfo->externalToEnvMap.find(opV) != stageInfo->externalToEnvMap.end()) {
-                op.set(stageInfo->envLoadMap[stageInfo->externalToEnvMap[opV]]);
+              } else if (LDI->environment->isPreLoopEnv(opV)) {
+                op.set(stageInfo->envLoadMap[envMap[opV]]);
                 // opV->print(errs() << "Set env op\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
-              } else if (stageInfo->producedPopQueue.find(opI) != stageInfo->producedPopQueue.end()) {
-                op.set(stageInfo->queueInstrMap[stageInfo->producedPopQueue[opI]]->load);
+              } else if (queueMap.find(opI) != queueMap.end()) {
+                op.set(stageInfo->queueInstrMap[queueMap[opI]]->load);
                 // opV->print(errs() << "Set pop op\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
               } else {
                 opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
@@ -652,8 +676,8 @@ namespace llvm {
               }
               continue;
             } else if (auto opA = dyn_cast<Argument>(opV)) {
-              if (stageInfo->externalToEnvMap.find(opV) != stageInfo->externalToEnvMap.end()) {
-                op.set(stageInfo->envLoadMap[stageInfo->externalToEnvMap[opV]]);
+              if (LDI->environment->isPreLoopEnv(opV)) {
+                op.set(stageInfo->envLoadMap[envMap[opV]]);
                 // opV->print(errs() << "Set env op\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
               } else {
                 opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
@@ -782,37 +806,26 @@ namespace llvm {
       Value * createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
       {
         /*
-         * Create empty environment array with slots for external values dependent on loop values
+         * Create empty environment array for producers, exit block tracking, and return value tracking
          */
-        std::vector<Value*> envPtrsForDep;
-        auto extDepSize = LDI->environment->externalDependents.size();
-        for (int i = 0; i < extDepSize; ++i)
+        std::vector<Value*> envPtrs;
+        for (int i = 0; i < LDI->environment->envSize(); ++i)
         {
-          Type *envType = LDI->environment->externalDependents[i]->getType();
-          auto envVarPtr = funcBuilder.CreateAlloca(envType);
-          envPtrsForDep.push_back(envVarPtr);
+          Type *envType = LDI->environment->typeOfEnv(i);
+          auto varAlloca = funcBuilder.CreateAlloca(envType);
+          envPtrs.push_back(varAlloca);
           auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
-          auto depInEnvPtr = funcBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
-
-          auto depCast = funcBuilder.CreateBitCast(depInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
-          funcBuilder.CreateStore(envVarPtr, depCast);
+          auto envPtr = funcBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+          auto depCast = funcBuilder.CreateBitCast(envPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
+          funcBuilder.CreateStore(varAlloca, depCast);
         }
 
         /*
-         * Add exit block tracking variable to env
+         * Insert pre-loop producers into the environment array
          */
-        auto exitVarPtr = funcBuilder.CreateAlloca(par.int32);
-        auto envIndex = cast<Value>(ConstantInt::get(par.int64, extDepSize));
-        auto varInEnvPtr = funcBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
-        auto depCast = funcBuilder.CreateBitCast(varInEnvPtr, PointerType::getUnqual(PointerType::getUnqual(par.int32)));
-        funcBuilder.CreateStore(exitVarPtr, depCast);
-
-        /*
-         * Insert incoming dependents for stages into the environment array
-         */
-        for (int envIndex : LDI->environment->preLoopExternals)
+        for (int envIndex : LDI->environment->preLoopEnv)
         {
-          builder.CreateStore(LDI->environment->externalDependents[envIndex], envPtrsForDep[envIndex]);
+          builder.CreateStore(LDI->environment->envProducers[envIndex], envPtrs[envIndex]);
         }
         
         return cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(par.int8)));
@@ -852,23 +865,26 @@ namespace llvm {
         /*
          * Extract the outgoing dependents for each stage
          */
-        for (int envInd : LDI->environment->postLoopExternals)
+        for (int envInd : LDI->environment->postLoopEnv)
         {
-          auto depI = LDI->environment->externalDependents[envInd];
+          auto prod = LDI->environment->envProducers[envInd];
           auto envIndex = cast<Value>(ConstantInt::get(par.int64, envInd));
           auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
-          auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(depI->getType()));
+          auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(prod->getType()));
           auto envVar = builder.CreateLoad(envVarCast);
 
-          if (auto depPHI = dyn_cast<PHINode>(depI))
+          for (auto consumer : LDI->environment->prodConsumers[prod])
           {
-            depPHI->addIncoming(envVar, LDI->pipelineBB);
-            continue;
+            if (auto depPHI = dyn_cast<PHINode>(consumer))
+            {
+              depPHI->addIncoming(envVar, LDI->pipelineBB);
+              continue;
+            }
+            LDI->pipelineBB->eraseFromParent();
+            prod->print(errs() << "Producer of environment variable:\t"); errs() << "\n";
+            errs() << "Loop not in LCSSA!\n";
+            abort();
           }
-          LDI->pipelineBB->eraseFromParent();
-          depI->print(errs() << "Dep I:\t"); errs() << "\n";
-          errs() << "Loop not in LCSSA!\n";
-          abort();
         }
       }
 
@@ -1038,6 +1054,16 @@ namespace llvm {
             consumer->print(errs() << "Consumer:\t"); errs() << "\n";
           }
         }
+      }
+
+      void printEnv (DSWPLoopDependenceInfo *LDI)
+      {
+        int count = 1;
+        for (auto prod : LDI->environment->envProducers)
+        {
+          prod->print(errs() << "Env producer" << count++ << ":\t"); errs() << "\n";
+        }
+        errs() << "Has return value? " << (LDI->environment->hasRetValue ? "true" : "false") << "\n";
       }
   };
 
