@@ -25,7 +25,7 @@ baseline: test.bc
 	$(CC) -std=c++14 $(OPT_LEVEL) $^ -o $@
 
 $(THREADER).bc: $(THREADER).cpp
-	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O3 -c $^ -o $@
+	$(CC) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
 
 $(OPTIMIZED): test_dswp.bc
 	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
@@ -35,7 +35,7 @@ test_pdgdot.bc: test_seq.bc
 
 test_dswp.bc: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -o $@
-	$(CC) -O3 -c -emit-llvm $@ -o $@
+	$(CC) $(OPT_LEVEL) -c -emit-llvm $@ -o $@
 	llvm-dis $@
 
 test.bc: test.cpp

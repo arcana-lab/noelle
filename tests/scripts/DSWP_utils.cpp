@@ -1,6 +1,4 @@
-#include <stdio.h>
 #include <future>
-#include <unistd.h>
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
@@ -18,6 +16,7 @@
 #include <mutex>
 #include <queue>
 #include <utility>
+#include <iostream>
 
 using namespace MARC;
 
@@ -63,11 +62,12 @@ extern "C" {
   void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
   void stageDispatcher(void *env, void *queues, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
-    // printf("Starting dispatcher\n");
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Starting dispatcher" << std::endl;
+    #endif
 
     void *localQueues[numberOfQueues];
-    for (int i = 0; i < numberOfQueues; ++i)
-    {
+    for (auto i = 0; i < numberOfQueues; ++i) {
       switch (queueSizes[i])
       {
         case 1:
@@ -87,33 +87,33 @@ extern "C" {
           break;
       }
     }
-    // printf("Made queues\n");
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Made queues" << std::endl;
+    #endif
 
     ThreadPool pool(numberOfStages);
-    // printf("Made pool\n");
     
-    auto localFutures = (TaskFuture<void> *)malloc(numberOfStages * sizeof(TaskFuture<void>));
-    // printf("Malloced space for %ld futures\n", numberOfStages);
-    for (int i = 0; i < numberOfStages; ++i)
-    {
+    std::vector<MARC::TaskFuture<void>> localFutures;
+    for (auto i = 0; i < numberOfStages; ++i) {
       auto stage = ((void (**)(void *, void *)) stages)[i];
-      localFutures[i] = std::move(pool.submit(stage, env, (void*)localQueues));
-      // printf("Submitted stage\n");
+      localFutures.push_back(pool.submit(stage, env, (void*)localQueues));
+      #ifdef RUNTIME_PRINT
+      std::cerr << "Submitted stage" << std::endl;
+      #endif
     }
-    // printf("Submitted pool\n");
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Submitted pool" << std::endl;
+    #endif
 
-    for (int i = 0; i < numberOfStages; ++i)
-    {
-      localFutures[i].get();
-      // printf("Got future\n");
+    for (auto& future : localFutures){
+      future.get();
     }
-    free(localFutures);
-    // printf("Deleted futures\n");
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Got all futures" << std::endl;
+    #endif
 
-    for (int i = 0; i < numberOfQueues; ++i)
-    {
-      switch (queueSizes[i])
-      {
+    for (int i = 0; i < numberOfQueues; ++i) {
+      switch (queueSizes[i]) {
         case 1:
           delete (ThreadSafeQueue<int8_t> *)(localQueues[i]);
           break;
@@ -131,6 +131,7 @@ extern "C" {
           break;
       }
     }
-    // printf("Deleted queues\n");
+
+    return ;
   }
 }
