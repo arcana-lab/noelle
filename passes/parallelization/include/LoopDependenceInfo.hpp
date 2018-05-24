@@ -23,7 +23,6 @@ namespace llvm {
 		PDG *loopInternalDG;
 		SCCDAG *loopSCCDAG;
 		SmallVector<BasicBlock *, 10> loopExitBlocks;
-		std::set<ReturnInst *> loopReturnInsts;
 
 		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se);
 		~LoopDependenceInfo();

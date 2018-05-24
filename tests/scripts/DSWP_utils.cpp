@@ -105,8 +105,10 @@ extern "C" {
     for (int i = 0; i < numberOfStages; ++i)
     {
       localFutures[i].get();
+      // printf("Got future\n");
     }
-    // printf("Got futures\n");
+    free(localFutures);
+    // printf("Deleted futures\n");
 
     for (int i = 0; i < numberOfQueues; ++i)
     {

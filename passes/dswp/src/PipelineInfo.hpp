@@ -18,22 +18,18 @@ namespace llvm {
 		std::set<int> preLoopEnv;
 		std::set<int> postLoopEnv;
 
-		bool hasRetValue;
-		Type *retType;
 		Type *exitBlockType;
 
 		/*
-		 * One per external dependent + one to track exit block (+ one if has loop-internal returns)
+		 * One per external dependent + one to track exit block
 		 */
-		int envSize () { return envProducers.size() + 1 + (hasRetValue ? 1 : 0); }
+		int envSize () { return envProducers.size() + 1; }
 		int indexOfExitBlock () { return envProducers.size(); }
-		int indexOfRetVal () { return envProducers.size() + 1; }
 
 		Type *typeOfEnv (int index)
 		{
 			if (index < envProducers.size()) return envProducers[index]->getType();
-			if (index == envProducers.size()) return exitBlockType;
-			return retType;
+			return exitBlockType;
 		}
 
 		void addProducer (Value *producer, bool preLoop)

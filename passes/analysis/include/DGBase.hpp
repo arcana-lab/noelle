@@ -18,6 +18,8 @@ namespace llvm {
   template <class T, class SubT> class DGEdgeBase;
   template <class T> class DGEdge;
 
+  enum DataDependencyType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
+
   template <class T>
   class DG
   {
@@ -178,7 +180,7 @@ namespace llvm {
   {
    public:
     DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
-      : from(src), to(dst), memory(false), must(false), readAfterWrite(false), writeAfterWrite(false), isControl(false) {}
+      : from(src), to(dst), memory(false), must(false), dataDepType(DG_DATA_NONE), isControl(false) {}
     DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
     typedef typename std::set<DGEdge<SubT> *>::iterator edges_iterator;
@@ -198,11 +200,14 @@ namespace llvm {
 
     bool isMemoryDependence() const { return memory; }
     bool isMustDependence() const { return must; }
-    bool isRAWDependence() const { return readAfterWrite; }
+    bool isRAWDependence() const { return dataDepType == DG_DATA_RAW; }
+    bool isWARDependence() const { return dataDepType == DG_DATA_WAR; }
+    bool isWAWDependence() const { return dataDepType == DG_DATA_WAW; }
     bool isControlDependence() const { return isControl; }
+    DataDependencyType dataDependenceType() const { return dataDepType; }
 
     void setControl(bool ctrl) { isControl = ctrl; }
-    void setMemMustRaw(bool mem, bool must, bool raw);
+    void setMemMustType(bool mem, bool must, DataDependencyType dataDepType);
 
     void addSubEdge(DGEdge<SubT> *edge) { subEdges.insert(edge); }
     void removeSubEdge(DGEdge<SubT> *edge) { subEdges.erase(edge); }
@@ -210,11 +215,13 @@ namespace llvm {
 
     std::string toString();
     raw_ostream &print(raw_ostream &stream);
+    std::string dataDepToString();
 
    protected:
     DGNode<T> *from, *to;
     std::set<DGEdge<SubT> *> subEdges;
-    bool memory, must, readAfterWrite, writeAfterWrite, isControl;
+    bool memory, must, isControl;
+    DataDependencyType dataDepType;
   };
 
   /*
@@ -540,18 +547,26 @@ namespace llvm {
     auto nodePair = oldEdge.getNodePair();
     from = nodePair.first;
     to = nodePair.second;
-    setMemMustRaw(oldEdge.isMemoryDependence(), oldEdge.isMustDependence(), oldEdge.isRAWDependence());
+    setMemMustType(oldEdge.isMemoryDependence(), oldEdge.isMustDependence(), oldEdge.dataDependenceType());
     setControl(oldEdge.isControlDependence());
     for (auto subEdge : oldEdge.subEdges) addSubEdge(subEdge);
   }
 
   template <class T, class SubT>
-  void DGEdgeBase<T, SubT>::setMemMustRaw(bool mem, bool must, bool raw)
+  void DGEdgeBase<T, SubT>::setMemMustType(bool mem, bool must, DataDependencyType dataDepType)
   {
     this->memory = mem;
     this->must = must;
-    this->readAfterWrite = raw;
-    this->writeAfterWrite = !raw;
+    this->dataDepType = dataDepType;
+  }
+
+  template <class T, class SubT>
+  std::string DGEdgeBase<T, SubT>::dataDepToString()
+  {
+    if (this->isRAWDependence()) return "RAW";
+    else if (this->isWARDependence()) return "WAR";
+    else if (this->isWAWDependence()) return "WAW";
+    else return "NONE";    
   }
 
   template <class T, class SubT>
@@ -560,9 +575,9 @@ namespace llvm {
     if (this->isControlDependence()) return "CTRL\n";
     std::string edgeStr;
     raw_string_ostream ros(edgeStr);
-    ros << (readAfterWrite ? "RAW " : (writeAfterWrite ? "WAW " : ""));
-    ros << (must ? "(must) " : "(may) ");
-    ros << (memory ? "from memory " : "") << "\n";
+    ros << this->dataDepToString();
+    ros << (must ? " (must)" : " (may)");
+    ros << (memory ? " from memory " : "") << "\n";
     ros.flush();
     return edgeStr;
   }

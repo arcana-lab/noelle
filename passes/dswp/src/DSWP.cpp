@@ -343,6 +343,10 @@ namespace llvm {
              */
             for (auto instructionEdge : sccEdge->getSubEdges())
             {
+              if (instructionEdge->isMemoryDependence())
+              {
+                instructionEdge->print(errs() << "INSTRUCTION EDGE IS MEMORY:\n") << "\n";
+              }
               assert(!instructionEdge->isMemoryDependence());
               if (instructionEdge->isControlDependence()) continue;
 
@@ -422,6 +426,9 @@ namespace llvm {
             auto internalInst = cast<Instruction>(internalValue);
             LDI->environment->prodConsumers[internalInst].insert(externalValue);
 
+            /*
+             * Determine the producer of the edge to the external value
+             */
             if (LDI->environment->producerIndexMap.find(internalValue) != LDI->environment->producerIndexMap.end())
             {
               envIndex = LDI->environment->producerIndexMap[internalValue];
@@ -442,18 +449,6 @@ namespace llvm {
         }
       }
 
-      void collectEnvInfoForReturns (DSWPLoopDependenceInfo *LDI)
-      {
-        for (auto &retI : LDI->loopReturnInsts)
-        {
-          auto retType = retI->getReturnValue()->getType();
-          if (retType->isVoidTy()) continue;
-          LDI->environment->hasRetValue = true;
-          LDI->environment->retType = retType;
-          break;
-        }
-      }
-
       void configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par)
       {
         LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
@@ -467,7 +462,6 @@ namespace llvm {
         collectSCCIntoStages(LDI);
         if (!collectValueQueueInfo(LDI)) return false;
         collectEnvInfo(LDI, par);
-        collectEnvInfoForReturns(LDI);
         configureDependencyStorage(LDI, par);
         return true;
       }
@@ -530,10 +524,8 @@ namespace llvm {
         /*
          * Store (SCC -> outside of loop) dependencies within the environment array
          */
-        errs() << "Stage: " << stageInfo->order << "\n";
         for (auto outgoingEnvPair : stageInfo->outgoingEnvs)
         {
-          errs() << "Storing for spot: " << outgoingEnvPair.second << "\n";
           auto outgoingDepClone = stageInfo->iCloneMap[outgoingEnvPair.first];
           auto outgoingDepBB = outgoingDepClone->getParent();
           IRBuilder<> outgoingBuilder(outgoingDepBB->getTerminator());
@@ -730,40 +722,6 @@ namespace llvm {
         }
       }
 
-      void rerouteAndStoreRetInEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
-      {
-        for (auto &retI : LDI->loopReturnInsts)
-        {
-          auto retClone = cast<ReturnInst>(stageInfo->iCloneMap[retI]);
-          auto retVal = retClone->getReturnValue();
-          IRBuilder<> builder(retClone->getParent());
-
-          /*
-           * If applicable, store the return value in the environment
-           */
-          if (LDI->environment->hasRetValue)
-          {
-            auto retInd = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfRetVal()));
-            auto retEnvPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, retInd }));
-            auto retEnvVar = builder.CreateBitCast(builder.CreateLoad(retEnvPtr), PointerType::getUnqual(LDI->environment->retType));
-            builder.CreateStore(retVal, retEnvVar);
-          }
-
-          /*
-           * Store the return block index in the environment
-           */
-          auto exitInd = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
-          auto exitEnvPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, exitInd }));
-          auto exitEnvVar = builder.CreateBitCast(builder.CreateLoad(exitEnvPtr), PointerType::getUnqual(par.int32));
-          builder.CreateStore(ConstantInt::get(par.int32, LDI->loopExitBlocks.size()), exitEnvVar);
-
-          stageInfo->iCloneMap.erase(retI);
-          retClone->eraseFromParent();
-
-          builder.CreateBr(stageInfo->exitBlock);
-        }
-      }
-
       void createPipelineStageFromSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
       {
         auto M = LDI->function->getParent();
@@ -785,7 +743,6 @@ namespace llvm {
 
         remapControlFlow(LDI, stageInfo);
         remapOperandsOfInstClones(LDI, stageInfo);
-        rerouteAndStoreRetInEnv(LDI, stageInfo, par);
 
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
         entryBuilder.CreateBr(stageInfo->sccBBCloneMap[LDI->header]);
@@ -806,7 +763,7 @@ namespace llvm {
       Value * createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
       {
         /*
-         * Create empty environment array for producers, exit block tracking, and return value tracking
+         * Create empty environment array for producers, exit block tracking
          */
         std::vector<Value*> envPtrs;
         for (int i = 0; i < LDI->environment->envSize(); ++i)
@@ -940,26 +897,6 @@ namespace llvm {
         {
           exitSwitch->addCase(ConstantInt::get(par.int32, i), LDI->loopExitBlocks[i]);
         }
-
-        /*
-         * If applicable, load return value environment variable and switch to return block
-         */
-        if (LDI->loopReturnInsts.size() > 0)
-        {
-          auto returnBlock = BasicBlock::Create(M->getContext(), "", LDI->function);
-          exitSwitch->addCase(ConstantInt::get(par.int32, LDI->loopExitBlocks.size()), returnBlock);
-
-          IRBuilder<> returnBuilder(returnBlock);
-          if (!LDI->environment->hasRetValue) builder.CreateRetVoid();
-          else 
-          {
-            auto retIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfRetVal()));
-            auto retEnvPtr = returnBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, retIndex }));
-            auto retEnvCast = builder.CreateBitCast(builder.CreateLoad(retEnvPtr), PointerType::getUnqual(par.int32));
-            auto envVar = builder.CreateLoad(retEnvCast);
-            builder.CreateRet(envVar);
-          }
-        }
       }
 
       /*
@@ -1063,7 +1000,6 @@ namespace llvm {
         {
           prod->print(errs() << "Env producer" << count++ << ":\t"); errs() << "\n";
         }
-        errs() << "Has return value? " << (LDI->environment->hasRetValue ? "true" : "false") << "\n";
       }
   };
 

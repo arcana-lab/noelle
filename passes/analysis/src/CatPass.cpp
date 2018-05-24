@@ -80,7 +80,7 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
       
       if (!makeEdge) continue;      
       auto *edge = programDependenceGraph->addEdge(pdgValue, user);
-      edge->setMemMustRaw(false, true, true);
+      edge->setMemMustType(false, true, DG_DATA_RAW);
     }
   }
 
@@ -101,7 +101,12 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, Inst
   }
 
   if (!makeEdge) return;
-  programDependenceGraph->addEdge((Value*)memI, (Value*)memJ)->setMemMustRaw(true, must, !WAW);
+  
+  DataDependencyType dataDepType = WAW ? DG_DATA_WAW : DG_DATA_RAW;
+  programDependenceGraph->addEdge((Value*)memI, (Value*)memJ)->setMemMustType(true, must, dataDepType);
+
+  dataDepType = WAW ? DG_DATA_WAW : DG_DATA_WAR;
+  programDependenceGraph->addEdge((Value*)memJ, (Value*)memI)->setMemMustType(true, must, dataDepType);
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, StoreInst *memI, CallInst *call){
@@ -120,13 +125,13 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, S
 
   if (makeRefEdge)
   {
-    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustRaw(true, false, true);
-    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustRaw(true, false, false);
+    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
+    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_WAR);
   }
   if (makeModEdge)
   {
-    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustRaw(true, false, false);
-    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustRaw(true, false, false);
+    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
+    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_WAW);
   }
 }
 
@@ -143,8 +148,8 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, L
 
   if (makeRefEdge)
   {
-    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustRaw(true, false, true);
-    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustRaw(true, false, false);
+    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_RAW);
+    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
   }
 }
 
@@ -155,16 +160,6 @@ void llvm::PDGAnalysis::iterateInstForStoreAliases(Function &F, AAResults *aa, S
         if (store != otherStore)
           addEdgeFromMemoryAlias<StoreInst, StoreInst>(F, aa, store, otherStore, true);
       } else if (auto *load = dyn_cast<LoadInst>(&I)) {
-        addEdgeFromMemoryAlias<StoreInst, LoadInst>(F, aa, store, load, false);
-      }
-    }
-  }
-}
-
-void llvm::PDGAnalysis::iterateInstForLoadAliases(Function &F, AAResults *aa, LoadInst *load) {
-  for (auto &B : F) {
-    for (auto &I : B) {
-      if (auto *store = dyn_cast<StoreInst>(&I)) {
         addEdgeFromMemoryAlias<StoreInst, LoadInst>(F, aa, store, load, false);
       }
     }
@@ -194,8 +189,6 @@ void llvm::PDGAnalysis::constructEdgesFromAliases (Module &M){
       for (auto &I : B) {
         if (auto* store = dyn_cast<StoreInst>(&I)) {
           iterateInstForStoreAliases(F, aaResults, store);
-        } else if (auto *load = dyn_cast<LoadInst>(&I)) {
-          iterateInstForLoadAliases(F, aaResults, load);
         } else if (auto *call = dyn_cast<CallInst>(&I)) {
           iterateInstForModRef(F, aaResults, *call);
         }

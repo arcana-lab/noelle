@@ -157,7 +157,7 @@ void llvm::PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal) {
     auto newToNode = newPDG->fetchOrAddNode(toT, toInclusion);
 
     /*
-     * Copy edge to match properties (mem/var, must/may, RAW/WAW)
+     * Copy edge to match properties (mem/var, must/may, RAW/WAW/WAR/control)
      */
     newPDG->copyAddEdge(*oldEdge);
    }
