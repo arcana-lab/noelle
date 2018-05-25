@@ -99,7 +99,7 @@ namespace llvm {
       void getAnalysisUsage (AnalysisUsage &AU) const override {
         AU.addRequired<PDGAnalysis>();
         AU.addRequired<Parallelization>();
-
+        AU.addRequired<ScalarEvolutionWrapperPass>();
         return ;
       }
 
@@ -110,8 +110,8 @@ namespace llvm {
         /*
          * Define the allocator of loop structures.
          */
-        auto allocatorOfLoopStructures = [] (Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se) -> LoopDependenceInfo * {
-          auto ldi = new DSWPLoopDependenceInfo(f, fG, l, li, dt, pdt, se);
+        auto allocatorOfLoopStructures = [] (Function *f, PDG *fG, Loop *l, LoopInfo &li) -> LoopDependenceInfo * {
+          auto ldi = new DSWPLoopDependenceInfo(f, fG, l, li);
           return ldi;
         };
 
@@ -175,6 +175,7 @@ namespace llvm {
          */
         // printSCCs(LDI->loopSCCDAG);
         mergeSCCs(LDI);
+        collectParallelStages(LDI);
         // printSCCs(LDI->loopSCCDAG);
 
         /*
@@ -254,6 +255,53 @@ namespace llvm {
 
         // errs() << "Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
         return ;
+      }
+
+      void collectParallelStages (DSWPLoopDependenceInfo *LDI)
+      {
+        auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
+        auto &sccSubgraph = LDI->loopSCCDAG;
+        for (auto sccNode : sccSubgraph->getNodes())
+        {
+          auto scc = sccNode->getT();
+          bool isScalarSCC = true;
+          for (auto iNodePair : scc->internalNodePairs())
+          {
+            auto V = iNodePair.first;
+            if (isa<CmpInst>(V) || isa<TerminatorInst>(V)) continue;
+
+            auto scev = SE.getSCEV(V);
+            switch (scev->getSCEVType()) {
+            case scConstant:
+            case scTruncate:
+            case scZeroExtend:
+            case scSignExtend:
+            case scAddExpr:
+            case scMulExpr:
+            case scUDivExpr:
+            case scAddRecExpr:
+            case scSMaxExpr:
+            case scUMaxExpr:
+              continue;
+            case scUnknown:
+            case scCouldNotCompute:
+              isScalarSCC = false;
+              // V->print(errs() << "Is not a scalar:\t"); errs() << "\n";
+              continue;
+            default:
+             llvm_unreachable("Unknown SCEV type!");
+            }
+          }
+
+          if (isScalarSCC)
+          {
+            // scc->print(errs() << "IS SCALAR SCC:\n") << "\n";
+          }
+          else
+          {
+            // scc->print(errs() << "IS NOT SCALAR SCC:\n") << "\n";
+          }
+        }
       }
 
       bool isWorthParallelizing (DSWPLoopDependenceInfo *LDI)
@@ -343,10 +391,6 @@ namespace llvm {
              */
             for (auto instructionEdge : sccEdge->getSubEdges())
             {
-              if (instructionEdge->isMemoryDependence())
-              {
-                instructionEdge->print(errs() << "INSTRUCTION EDGE IS MEMORY:\n") << "\n";
-              }
               assert(!instructionEdge->isMemoryDependence());
               if (instructionEdge->isControlDependence()) continue;
 
@@ -675,13 +719,9 @@ namespace llvm {
                 opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
                 abort();
               }
-            } else if (auto opC = dyn_cast<Constant>(opV)) {
+            } else if (isa<Constant>(opV) || isa<BasicBlock>(opV) || isa<Function>(opV)) {
               continue;
-            } else if (auto opB = dyn_cast<BasicBlock>(opV)) {
-              continue;
-            } else if (auto opF = dyn_cast<Function>(opV)) {
-              continue;
-            } else if (auto opDU = dyn_cast<DerivedUser>(opV)) {
+            } else if (isa<MetadataAsValue>(opV) || isa<InlineAsm>(opV) || isa<DerivedUser>(opV) || isa<Operator>(opV)) {
               continue;
             } else {
               opV->print(errs() << "Unknown what to do with operand\n"); opV->getType()->print(errs() << "\tType:\t");

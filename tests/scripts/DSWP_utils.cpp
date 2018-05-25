@@ -63,7 +63,7 @@ extern "C" {
   void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
   void stageDispatcher(void *env, void *queues, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
-    // printf("Starting dispatcher\n");
+    //printf("Starting dispatcher: num stages %ld, num queues: %ld\n", numberOfStages, numberOfQueues);
 
     void *localQueues[numberOfQueues];
     for (int i = 0; i < numberOfQueues; ++i)
@@ -85,6 +85,10 @@ extern "C" {
         case 64:
           localQueues[i] = new ThreadSafeQueue<int64_t>();
           break;
+        default:
+          printf("QUEUE SIZE INCORRECT!\n");
+          abort();
+          break;
       }
     }
     // printf("Made queues\n");
@@ -96,19 +100,22 @@ extern "C" {
     // printf("Malloced space for %ld futures\n", numberOfStages);
     for (int i = 0; i < numberOfStages; ++i)
     {
+      //printf("Getting stage\n");
       auto stage = ((void (**)(void *, void *)) stages)[i];
-      localFutures[i] = std::move(pool.submit(stage, env, (void*)localQueues));
-      // printf("Submitted stage\n");
+      auto submitFuture = pool.submit(stage, env, (void*)localQueues);
+      //printf("Submitted stage\n");
+      localFutures[i] = std::move(submitFuture);
+      //printf("Moved future\n");
     }
-    // printf("Submitted pool\n");
+    //printf("Submitted pool\n");
 
     for (int i = 0; i < numberOfStages; ++i)
     {
       localFutures[i].get();
-      // printf("Got future\n");
+      //printf("Got future\n");
     }
     free(localFutures);
-    // printf("Deleted futures\n");
+    //printf("Deleted futures\n");
 
     for (int i = 0; i < numberOfQueues; ++i)
     {
@@ -131,6 +138,6 @@ extern "C" {
           break;
       }
     }
-    // printf("Deleted queues\n");
+    //printf("Deleted queues\n");
   }
 }

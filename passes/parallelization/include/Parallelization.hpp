@@ -37,7 +37,7 @@ namespace llvm {
 
       std::vector<LoopDependenceInfo *> * getModuleLoops (
         Module *module, 
-        std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &, DominatorTree &, PostDominatorTree &, ScalarEvolution &)> allocationFunction
+        std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &)> allocationFunction
         );
 
       void linkParallelizedLoopToOriginalFunction (

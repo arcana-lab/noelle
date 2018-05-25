@@ -3,8 +3,6 @@
 #include "PDG.hpp"
 #include "SCCDAG.hpp"
 #include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include "LoopDependenceInfo.hpp"
@@ -33,7 +31,7 @@ namespace llvm {
 		ArrayType *envArrayType, *queueArrayType, *stageArrayType;
 		Value *zeroIndexForBaseArray;
 
-		DSWPLoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se);
+		DSWPLoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li);
 
 		~DSWPLoopDependenceInfo();
 	};

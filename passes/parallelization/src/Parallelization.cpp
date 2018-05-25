@@ -107,7 +107,7 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
 
 std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   Module *module, 
-  std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &, DominatorTree &, PostDominatorTree &, ScalarEvolution &)> allocationFunction
+  std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &)> allocationFunction
   ){
 
   /* 
@@ -151,9 +151,9 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Fetch the dominators.
      */
-    auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
-    auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
-    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+    //auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
+    //auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
+    //auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
     /*
      * Fetch all loops of the current function.
@@ -164,7 +164,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      * Append these loops.
      */
     for (auto loop : loops){
-      auto ldi = allocationFunction(function, funcPDG, loop, LI, DT, PDT, SE);
+      auto ldi = allocationFunction(function, funcPDG, loop, LI);
       allLoops->push_back(ldi);
     }
   }
