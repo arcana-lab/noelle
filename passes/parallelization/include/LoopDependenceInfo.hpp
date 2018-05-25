@@ -3,8 +3,6 @@
 #include "PDG.hpp"
 #include "SCCDAG.hpp"
 #include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace std;
@@ -24,7 +22,7 @@ namespace llvm {
 		SCCDAG *loopSCCDAG;
 		SmallVector<BasicBlock *, 10> loopExitBlocks;
 
-		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se);
+		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li);
 		~LoopDependenceInfo();
 	};
 }

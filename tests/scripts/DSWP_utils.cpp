@@ -65,7 +65,7 @@ extern "C" {
 
   void stageDispatcher(void *env, void *queues, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
     #ifdef RUNTIME_PRINT
-    std::cerr << "Starting dispatcher" << std::endl;
+    std::cerr << "Starting dispatcher: num stages " << numberOfStages << ", num queues: " << numberOfQueues << std::endl;
     #endif
 
     void *localQueues[numberOfQueues];
@@ -87,6 +87,10 @@ extern "C" {
         case 64:
           localQueues[i] = new ThreadSafeQueue<int64_t>();
           break;
+        default:
+          std::cerr << "QUEUE SIZE INCORRECT!\n";
+          abort();
+          break;
       }
     }
     #ifdef RUNTIME_PRINT
@@ -94,7 +98,7 @@ extern "C" {
     #endif
 
     ThreadPool pool(numberOfStages);
-    
+
     std::vector<MARC::TaskFuture<void>> localFutures;
     auto allStages = (void **)stages;
     for (auto i = 0; i < numberOfStages; ++i) {

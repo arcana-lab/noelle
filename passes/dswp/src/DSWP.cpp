@@ -99,7 +99,8 @@ namespace llvm {
       void getAnalysisUsage (AnalysisUsage &AU) const override {
         AU.addRequired<PDGAnalysis>();
         AU.addRequired<Parallelization>();
-
+        AU.addRequired<ScalarEvolutionWrapperPass>();
+        AU.addRequired<LoopInfoWrapperPass>();
         return ;
       }
 
@@ -110,8 +111,8 @@ namespace llvm {
         /*
          * Define the allocator of loop structures.
          */
-        auto allocatorOfLoopStructures = [] (Function *f, PDG *fG, Loop *l, LoopInfo &li, DominatorTree &dt, PostDominatorTree &pdt, ScalarEvolution &se) -> LoopDependenceInfo * {
-          auto ldi = new DSWPLoopDependenceInfo(f, fG, l, li, dt, pdt, se);
+        auto allocatorOfLoopStructures = [] (Function *f, PDG *fG, Loop *l, LoopInfo &li) -> LoopDependenceInfo * {
+          auto ldi = new DSWPLoopDependenceInfo(f, fG, l, li);
           return ldi;
         };
 
@@ -175,6 +176,7 @@ namespace llvm {
          */
         // printSCCs(LDI->loopSCCDAG);
         mergeSCCs(LDI);
+        collectParallelStages(LDI);
         // printSCCs(LDI->loopSCCDAG);
 
         /*
@@ -213,11 +215,46 @@ namespace llvm {
         return true;
       }
 
+      void mergeSubloops (DSWPLoopDependenceInfo *LDI)
+      {
+        auto &LI = getAnalysis<LoopInfoWrapperPass>(*LDI->function).getLoopInfo();
+        auto loop = LI.getLoopFor(LDI->header);
+        auto loopDepth = (int)LI.getLoopDepth(LDI->header);
+
+        unordered_map<Loop *, std::set<DGNode<SCC> *>> loopSets;
+        for (auto sccNode : LDI->loopSCCDAG->getNodes())
+        {
+          for (auto iNodePair : sccNode->getT()->internalNodePairs())
+          {
+            auto bb = cast<Instruction>(iNodePair.first)->getParent();
+            auto loop = LI.getLoopFor(bb);
+            auto subloopDepth = (int)loop->getLoopDepth();
+            if (loopDepth >= subloopDepth) continue;
+
+            if (loopDepth == subloopDepth - 1) loopSets[loop].insert(sccNode);
+            else
+            {
+              while (subloopDepth - 1 > loopDepth)
+              {
+                loop = loop->getParentLoop();
+                subloopDepth--;
+              }
+              loopSets[loop].insert(sccNode);
+            }
+            break;
+          }
+        }
+
+        for (auto loopSetPair : loopSets)
+        {
+          LDI->loopSCCDAG->mergeSCCs(loopSetPair.second);
+        }
+      }
+
       void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI)
       {
-        auto &sccSubgraph = LDI->loopSCCDAG;
         std::vector<DGNode<SCC> *> tailCmpBrs;
-        for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
+        for (auto sccNode : LDI->loopSCCDAG->getNodes())
         {
           auto scc = sccNode->getT();
           if (sccNode->numIncomingEdges() == 0 || sccNode->numOutgoingEdges() > 0) continue ;
@@ -236,8 +273,8 @@ namespace llvm {
         for (auto tailSCC : tailCmpBrs)
         {
           std::set<DGNode<SCC> *> nodesToMerge = { tailSCC };
-          nodesToMerge.insert(*sccSubgraph->previousDepthNodes(tailSCC).begin());
-          sccSubgraph->mergeSCCs(nodesToMerge);
+          nodesToMerge.insert(*LDI->loopSCCDAG->previousDepthNodes(tailSCC).begin());
+          LDI->loopSCCDAG->mergeSCCs(nodesToMerge);
         }
       }
 
@@ -250,10 +287,58 @@ namespace llvm {
          */
         //TODO
 
+        mergeSubloops(LDI);
         mergeBranchesWithoutOutgoingEdges(LDI);
 
         // errs() << "Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
         return ;
+      }
+
+      void collectParallelStages (DSWPLoopDependenceInfo *LDI)
+      {
+        auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
+        auto &sccSubgraph = LDI->loopSCCDAG;
+        for (auto sccNode : sccSubgraph->getNodes())
+        {
+          auto scc = sccNode->getT();
+          bool isScalarSCC = true;
+          for (auto iNodePair : scc->internalNodePairs())
+          {
+            auto V = iNodePair.first;
+            if (isa<CmpInst>(V) || isa<TerminatorInst>(V)) continue;
+
+            auto scev = SE.getSCEV(V);
+            switch (scev->getSCEVType()) {
+            case scConstant:
+            case scTruncate:
+            case scZeroExtend:
+            case scSignExtend:
+            case scAddExpr:
+            case scMulExpr:
+            case scUDivExpr:
+            case scAddRecExpr:
+            case scSMaxExpr:
+            case scUMaxExpr:
+              continue;
+            case scUnknown:
+            case scCouldNotCompute:
+              isScalarSCC = false;
+              // V->print(errs() << "Is not a scalar:\t"); errs() << "\n";
+              continue;
+            default:
+             llvm_unreachable("Unknown SCEV type!");
+            }
+          }
+
+          if (isScalarSCC)
+          {
+            // scc->print(errs() << "IS SCALAR SCC:\n") << "\n";
+          }
+          else
+          {
+            // scc->print(errs() << "IS NOT SCALAR SCC:\n") << "\n";
+          }
+        }
       }
 
       bool isWorthParallelizing (DSWPLoopDependenceInfo *LDI)
@@ -343,10 +428,6 @@ namespace llvm {
              */
             for (auto instructionEdge : sccEdge->getSubEdges())
             {
-              if (instructionEdge->isMemoryDependence())
-              {
-                instructionEdge->print(errs() << "INSTRUCTION EDGE IS MEMORY:\n") << "\n";
-              }
               assert(!instructionEdge->isMemoryDependence());
               if (instructionEdge->isControlDependence()) continue;
 
@@ -414,6 +495,7 @@ namespace llvm {
               stage->incomingEnvs.insert(envIndex);
             }
           }
+          if (isPreLoop) { externalValue->print(errs() << "IS PRE LOOP EXT:\t"); errs() << "\n"; }
           if (isPreLoop) LDI->environment->addPreLoopProducer(externalValue);
 
           /*
@@ -675,13 +757,9 @@ namespace llvm {
                 opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\t"); errs() << "\n";
                 abort();
               }
-            } else if (auto opC = dyn_cast<Constant>(opV)) {
+            } else if (isa<Constant>(opV) || isa<BasicBlock>(opV) || isa<Function>(opV)) {
               continue;
-            } else if (auto opB = dyn_cast<BasicBlock>(opV)) {
-              continue;
-            } else if (auto opF = dyn_cast<Function>(opV)) {
-              continue;
-            } else if (auto opDU = dyn_cast<DerivedUser>(opV)) {
+            } else if (isa<MetadataAsValue>(opV) || isa<InlineAsm>(opV) || isa<DerivedUser>(opV) || isa<Operator>(opV)) {
               continue;
             } else {
               opV->print(errs() << "Unknown what to do with operand\n"); opV->getType()->print(errs() << "\tType:\t");
