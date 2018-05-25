@@ -43,24 +43,6 @@ extern "C" {
   void queuePush64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { queue->push(*val); }
   void queuePop64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { queue->waitPop(*val); }
 
-  void queuePush(ThreadSafeQueue<char> *queue, char *val, int64_t byteLength){
-    char *oldVal = val;
-    for (int i = 0; i < byteLength; ++i, ++val) 
-    {
-      queue->push(*val);
-    }
-    val = oldVal;
-  }
-
-  void queuePop(ThreadSafeQueue<char> *queue, char *val, int64_t byteLength){
-    char *oldVal = val;
-    for (int i = 0; i < byteLength; ++i, ++val)
-    {
-      while (!queue->waitPop(*val)) printf("Spurious pop\n");
-    }
-    val = oldVal;
-  }
-
   void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
   void stageDispatcher(void *env, void *queues, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
