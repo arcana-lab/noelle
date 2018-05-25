@@ -1,0 +1,5 @@
+digraph "CFG for '_Z16heavyComputationi' function" {
+	label="CFG for '_Z16heavyComputationi' function";
+
+	Node0x2121b90 [shape=record,label="{%1:\l  %2 = sitofp i32 %0 to double\l  %3 = fadd double %2, 1.430000e-01\l  %4 = tail call double @sqrt(double %3) #5\l  %5 = tail call double @sqrt(double %4) #5\l  %6 = tail call double @sqrt(double %5) #5\l  %7 = tail call double @sqrt(double %6) #5\l  %8 = tail call double @sqrt(double %7) #5\l  %9 = tail call double @sqrt(double %8) #5\l  %10 = tail call double @sqrt(double %9) #5\l  %11 = tail call double @sqrt(double %10) #5\l  %12 = tail call double @sqrt(double %11) #5\l  %13 = tail call double @sqrt(double %12) #5\l  %14 = tail call double @sqrt(double %13) #5\l  %15 = tail call double @sqrt(double %14) #5\l  %16 = tail call double @sqrt(double %15) #5\l  %17 = tail call double @sqrt(double %16) #5\l  %18 = tail call double @sqrt(double %17) #5\l  %19 = tail call double @sqrt(double %18) #5\l  %20 = tail call double @sqrt(double %19) #5\l  %21 = tail call double @sqrt(double %20) #5\l  %22 = fptosi double %21 to i32\l  ret i32 %22\l}"];
+}

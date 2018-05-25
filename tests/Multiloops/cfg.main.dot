@@ -1,0 +1,17 @@
+digraph "CFG for 'main' function" {
+	label="CFG for 'main' function";
+
+	Node0x37a16c0 [shape=record,label="{%0:\l  %1 = tail call noalias i8* @malloc(i64 16) #4\l  %2 = bitcast i8* %1 to %struct._N*\l  tail call void @_Z10appendNodeP2_Nii(%struct._N* %2, i32 42, i32 99)\l  br label %3\l}"];
+	Node0x37a16c0 -> Node0x37a1890;
+	Node0x37a1890 [shape=record,label="{%3:\l\l  %.01 = phi %struct._N* [ %2, %0 ], [ %14, %11 ]\l  %4 = icmp eq %struct._N* %.01, null\l  br i1 %4, label %15, label %5\l|{<s0>T|<s1>F}}"];
+	Node0x37a1890:s0 -> Node0x37a19d0;
+	Node0x37a1890:s1 -> Node0x37a18e0;
+	Node0x37a18e0 [shape=record,label="{%5:\l\l  %6 = getelementptr inbounds %struct._N, %struct._N* %.01, i64 0, i32 0\l  %7 = load i32, i32* %6, align 8\l  %8 = icmp slt i32 %7, 40\l  br i1 %8, label %9, label %11\l|{<s0>T|<s1>F}}"];
+	Node0x37a18e0:s0 -> Node0x37a1930;
+	Node0x37a18e0:s1 -> Node0x37a1980;
+	Node0x37a1930 [shape=record,label="{%9:\l\l  %10 = tail call i32 @_Z16heavyComputationi(i32 %7)\l  br label %11\l}"];
+	Node0x37a1930 -> Node0x37a1980;
+	Node0x37a1980 [shape=record,label="{%11:\l\l  %.0 = phi i32 [ %10, %9 ], [ %7, %5 ]\l  %12 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8],\l... [4 x i8]* @.str.1, i64 0, i64 0), i32 %.0)\l  %13 = getelementptr inbounds %struct._N, %struct._N* %.01, i64 0, i32 1\l  %14 = load %struct._N*, %struct._N** %13, align 8\l  br label %3\l}"];
+	Node0x37a1980 -> Node0x37a1890;
+	Node0x37a19d0 [shape=record,label="{%15:\l\l  ret i32 0\l}"];
+}

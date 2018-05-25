@@ -1,0 +1,19 @@
+digraph "CFG for 'main' function" {
+	label="CFG for 'main' function";
+
+	Node0x2b729f0 [shape=record,label="{%2:\l  %3 = mul nsw i32 %0, 5\l  %4 = sdiv i32 %3, 2\l  %5 = add nsw i32 %4, 1\l  br label %6\l}"];
+	Node0x2b729f0 -> Node0x2b757b0;
+	Node0x2b757b0 [shape=record,label="{%6:\l\l  %.04 = phi i32 [ %0, %2 ], [ %16, %15 ]\l  %.02 = phi i32 [ %5, %2 ], [ %11, %15 ]\l  %.01 = phi i32 [ 3, %2 ], [ %.02, %15 ]\l  %.0 = phi i32 [ 0, %2 ], [ %17, %15 ]\l  %7 = icmp ult i32 %.0, 100\l  br i1 %7, label %8, label %.loopexit\l|{<s0>T|<s1>F}}"];
+	Node0x2b757b0:s0 -> Node0x2b75800;
+	Node0x2b757b0:s1 -> Node0x2b72a90;
+	Node0x2b75800 [shape=record,label="{%8:\l\l  %9 = sub nsw i32 %.02, %.04\l  %10 = mul nsw i32 %9, 3\l  %11 = sdiv i32 %10, 2\l  %12 = icmp sgt i32 %.04, 6\l  br i1 %12, label %13, label %15\l|{<s0>T|<s1>F}}"];
+	Node0x2b75800:s0 -> Node0x2b75850;
+	Node0x2b75800:s1 -> Node0x2b72a40;
+	Node0x2b75850 [shape=record,label="{%13:\l\l  %.lcssa = phi i32 [ %11, %8 ]\l  %.02.lcssa13 = phi i32 [ %.02, %8 ]\l  %14 = add nsw i32 %.lcssa, -4\l  br label %18\l}"];
+	Node0x2b75850 -> Node0x2b72ae0;
+	Node0x2b72a40 [shape=record,label="{%15:\l\l  %16 = add nsw i32 %.04, 6\l  %17 = add nuw nsw i32 %.0, 1\l  br label %6\l}"];
+	Node0x2b72a40 -> Node0x2b757b0;
+	Node0x2b72a90 [shape=record,label="{.loopexit:                                        \l  %.04.lcssa = phi i32 [ %.04, %6 ]\l  %.02.lcssa = phi i32 [ %.02, %6 ]\l  %.01.lcssa = phi i32 [ %.01, %6 ]\l  br label %18\l}"];
+	Node0x2b72a90 -> Node0x2b72ae0;
+	Node0x2b72ae0 [shape=record,label="{%18:\l\l  %.15 = phi i32 [ %14, %13 ], [ %.04.lcssa, %.loopexit ]\l  %.13 = phi i32 [ %.lcssa, %13 ], [ %.02.lcssa, %.loopexit ]\l  %.1 = phi i32 [ %.02.lcssa13, %13 ], [ %.01.lcssa, %.loopexit ]\l  %19 = add nsw i32 %.13, %.1\l  %20 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([8 x i8],\l... [8 x i8]* @.str, i64 0, i64 0), i32 %.15, i32 %19)\l  ret i32 0\l}"];
+}

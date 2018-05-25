@@ -1,0 +1,26 @@
+digraph "CFG for '_Z16heavyComputationf' function" {
+	label="CFG for '_Z16heavyComputationf' function";
+
+	Node0x24769a0 [shape=record,label="{%1:\l  br label %2\l}"];
+	Node0x24769a0 -> Node0x2479890;
+	Node0x2479890 [shape=record,label="{%2:\l\l  %.01 = phi i32 [ 0, %1 ], [ %16, %15 ]\l  %.0 = phi float [ %0, %1 ], [ %.1.lcssa, %15 ]\l  %exitcond6 = icmp eq i32 %.01, 10\l  br i1 %exitcond6, label %17, label %3\l|{<s0>T|<s1>F}}"];
+	Node0x2479890:s0 -> Node0x2476ae0;
+	Node0x2479890:s1 -> Node0x24798e0;
+	Node0x24798e0 [shape=record,label="{%3:\l\l  br label %4\l}"];
+	Node0x24798e0 -> Node0x2479930;
+	Node0x2479930 [shape=record,label="{%4:\l\l  %.02 = phi i32 [ 0, %3 ], [ %14, %13 ]\l  %.1 = phi float [ %.0, %3 ], [ %.03.lcssa, %13 ]\l  %exitcond5 = icmp eq i32 %.02, 10\l  br i1 %exitcond5, label %15, label %5\l|{<s0>T|<s1>F}}"];
+	Node0x2479930:s0 -> Node0x2476a90;
+	Node0x2479930:s1 -> Node0x2479980;
+	Node0x2479980 [shape=record,label="{%5:\l\l  %6 = fpext float %.1 to double\l  %7 = fadd double %6, 1.430000e-01\l  %8 = fptrunc double %7 to float\l  br label %9\l}"];
+	Node0x2479980 -> Node0x24799d0;
+	Node0x24799d0 [shape=record,label="{%9:\l\l  %.04 = phi i32 [ 0, %5 ], [ %12, %10 ]\l  %.03 = phi float [ %8, %5 ], [ %11, %10 ]\l  %exitcond = icmp eq i32 %.04, 3\l  br i1 %exitcond, label %13, label %10\l|{<s0>T|<s1>F}}"];
+	Node0x24799d0:s0 -> Node0x2476a40;
+	Node0x24799d0:s1 -> Node0x24769f0;
+	Node0x24769f0 [shape=record,label="{%10:\l\l  %11 = tail call float @_ZSt4sqrtf(float %.03)\l  %12 = add nuw nsw i32 %.04, 1\l  br label %9\l}"];
+	Node0x24769f0 -> Node0x24799d0;
+	Node0x2476a40 [shape=record,label="{%13:\l\l  %.03.lcssa = phi float [ %.03, %9 ]\l  %14 = add nuw nsw i32 %.02, 1\l  br label %4\l}"];
+	Node0x2476a40 -> Node0x2479930;
+	Node0x2476a90 [shape=record,label="{%15:\l\l  %.1.lcssa = phi float [ %.1, %4 ]\l  %16 = add nuw nsw i32 %.01, 1\l  br label %2\l}"];
+	Node0x2476a90 -> Node0x2479890;
+	Node0x2476ae0 [shape=record,label="{%17:\l\l  %.0.lcssa = phi float [ %.0, %2 ]\l  ret float %.0.lcssa\l}"];
+}

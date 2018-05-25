@@ -1,0 +1,26 @@
+digraph "CFG for '_Z16heavyComputationd' function" {
+	label="CFG for '_Z16heavyComputationd' function";
+
+	Node0x3ba52e0 [shape=record,label="{%1:\l  br label %2\l}"];
+	Node0x3ba52e0 -> Node0x3ba2190;
+	Node0x3ba2190 [shape=record,label="{%2:\l\l  %.01 = phi i32 [ 0, %1 ], [ %14, %13 ]\l  %.0 = phi double [ %0, %1 ], [ %.1.lcssa, %13 ]\l  %exitcond6 = icmp eq i32 %.01, 10\l  br i1 %exitcond6, label %15, label %3\l|{<s0>T|<s1>F}}"];
+	Node0x3ba2190:s0 -> Node0x3ba5600;
+	Node0x3ba2190:s1 -> Node0x3ba8140;
+	Node0x3ba8140 [shape=record,label="{%3:\l\l  br label %4\l}"];
+	Node0x3ba8140 -> Node0x3ba8190;
+	Node0x3ba8190 [shape=record,label="{%4:\l\l  %.02 = phi i32 [ 0, %3 ], [ %12, %11 ]\l  %.1 = phi double [ %.0, %3 ], [ %.03.lcssa, %11 ]\l  %exitcond5 = icmp eq i32 %.02, 10\l  br i1 %exitcond5, label %13, label %5\l|{<s0>T|<s1>F}}"];
+	Node0x3ba8190:s0 -> Node0x3ba55b0;
+	Node0x3ba8190:s1 -> Node0x3ba81e0;
+	Node0x3ba81e0 [shape=record,label="{%5:\l\l  %6 = fadd double %.1, 1.430000e-01\l  br label %7\l}"];
+	Node0x3ba81e0 -> Node0x3ba54c0;
+	Node0x3ba54c0 [shape=record,label="{%7:\l\l  %.04 = phi i32 [ 0, %5 ], [ %10, %8 ]\l  %.03 = phi double [ %6, %5 ], [ %9, %8 ]\l  %exitcond = icmp eq i32 %.04, 3\l  br i1 %exitcond, label %11, label %8\l|{<s0>T|<s1>F}}"];
+	Node0x3ba54c0:s0 -> Node0x3ba5560;
+	Node0x3ba54c0:s1 -> Node0x3ba5510;
+	Node0x3ba5510 [shape=record,label="{%8:\l\l  %9 = tail call double @sqrt(double %.03) #4\l  %10 = add nuw nsw i32 %.04, 1\l  br label %7\l}"];
+	Node0x3ba5510 -> Node0x3ba54c0;
+	Node0x3ba5560 [shape=record,label="{%11:\l\l  %.03.lcssa = phi double [ %.03, %7 ]\l  %12 = add nuw nsw i32 %.02, 1\l  br label %4\l}"];
+	Node0x3ba5560 -> Node0x3ba8190;
+	Node0x3ba55b0 [shape=record,label="{%13:\l\l  %.1.lcssa = phi double [ %.1, %4 ]\l  %14 = add nuw nsw i32 %.01, 1\l  br label %2\l}"];
+	Node0x3ba55b0 -> Node0x3ba2190;
+	Node0x3ba5600 [shape=record,label="{%15:\l\l  %.0.lcssa = phi double [ %.0, %2 ]\l  ret double %.0.lcssa\l}"];
+}

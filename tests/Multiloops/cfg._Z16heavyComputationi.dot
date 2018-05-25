@@ -1,0 +1,26 @@
+digraph "CFG for '_Z16heavyComputationi' function" {
+	label="CFG for '_Z16heavyComputationi' function";
+
+	Node0x3799540 [shape=record,label="{%1:\l  br label %2\l}"];
+	Node0x3799540 -> Node0x379eab0;
+	Node0x379eab0 [shape=record,label="{%2:\l\l  %.01 = phi i32 [ 0, %1 ], [ %17, %15 ]\l  %.0 = phi i32 [ %0, %1 ], [ %.1.lcssa, %15 ]\l  %exitcond6 = icmp eq i32 %.01, 1000\l  br i1 %exitcond6, label %18, label %3\l|{<s0>T|<s1>F}}"];
+	Node0x379eab0:s0 -> Node0x379b7a0;
+	Node0x379eab0:s1 -> Node0x379eb00;
+	Node0x379eb00 [shape=record,label="{%3:\l\l  br label %4\l}"];
+	Node0x379eb00 -> Node0x379bf10;
+	Node0x379bf10 [shape=record,label="{%4:\l\l  %.02 = phi i32 [ 0, %3 ], [ %14, %12 ]\l  %.1 = phi i32 [ %.0, %3 ], [ %13, %12 ]\l  %exitcond5 = icmp eq i32 %.02, 1000\l  br i1 %exitcond5, label %15, label %5\l|{<s0>T|<s1>F}}"];
+	Node0x379bf10:s0 -> Node0x379c0a0;
+	Node0x379bf10:s1 -> Node0x379bf60;
+	Node0x379bf60 [shape=record,label="{%5:\l\l  %6 = sitofp i32 %.1 to double\l  %7 = fadd double %6, 1.430000e-01\l  br label %8\l}"];
+	Node0x379bf60 -> Node0x379bfb0;
+	Node0x379bfb0 [shape=record,label="{%8:\l\l  %.04 = phi i32 [ 0, %5 ], [ %11, %9 ]\l  %.03 = phi double [ %7, %5 ], [ %10, %9 ]\l  %exitcond = icmp eq i32 %.04, 10\l  br i1 %exitcond, label %12, label %9\l|{<s0>T|<s1>F}}"];
+	Node0x379bfb0:s0 -> Node0x379c050;
+	Node0x379bfb0:s1 -> Node0x379c000;
+	Node0x379c000 [shape=record,label="{%9:\l\l  %10 = tail call double @sqrt(double %.03) #4\l  %11 = add nuw nsw i32 %.04, 1\l  br label %8\l}"];
+	Node0x379c000 -> Node0x379bfb0;
+	Node0x379c050 [shape=record,label="{%12:\l\l  %.03.lcssa = phi double [ %.03, %8 ]\l  %13 = fptosi double %.03.lcssa to i32\l  %14 = add nuw nsw i32 %.02, 1\l  br label %4\l}"];
+	Node0x379c050 -> Node0x379bf10;
+	Node0x379c0a0 [shape=record,label="{%15:\l\l  %.1.lcssa = phi i32 [ %.1, %4 ]\l  %16 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([14 x\l... i8], [14 x i8]* @.str, i64 0, i64 0), i32 %.1.lcssa)\l  %17 = add nuw nsw i32 %.01, 1\l  br label %2\l}"];
+	Node0x379c0a0 -> Node0x379eab0;
+	Node0x379b7a0 [shape=record,label="{%18:\l\l  %.0.lcssa = phi i32 [ %.0, %2 ]\l  ret i32 %.0.lcssa\l}"];
+}

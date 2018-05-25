@@ -1,0 +1,12 @@
+digraph "CFG for 'main' function" {
+	label="CFG for 'main' function";
+
+	Node0x34e7980 [shape=record,label="{%2:\l  %3 = mul nsw i32 %0, 5\l  %4 = sdiv i32 %3, 2\l  %5 = add nsw i32 %4, 1\l  br label %6\l}"];
+	Node0x34e7980 -> Node0x34ea700;
+	Node0x34ea700 [shape=record,label="{%6:\l\l  %.02 = phi i32 [ %0, %2 ], [ %8, %7 ]\l  %.01 = phi i32 [ %5, %2 ], [ %11, %7 ]\l  %.0 = phi i32 [ 0, %2 ], [ %12, %7 ]\l  %exitcond = icmp eq i32 %.0, 100\l  br i1 %exitcond, label %13, label %7\l|{<s0>T|<s1>F}}"];
+	Node0x34ea700:s0 -> Node0x34ea7a0;
+	Node0x34ea700:s1 -> Node0x34ea750;
+	Node0x34ea750 [shape=record,label="{%7:\l\l  %8 = add nsw i32 %.02, -2\l  %9 = sub nsw i32 %.01, %.02\l  %10 = mul nsw i32 %9, 3\l  %11 = sdiv i32 %10, 2\l  %12 = add nuw nsw i32 %.0, 1\l  br label %6\l}"];
+	Node0x34ea750 -> Node0x34ea700;
+	Node0x34ea7a0 [shape=record,label="{%13:\l\l  %.01.lcssa = phi i32 [ %.01, %6 ]\l  %14 = add i32 %0, -200\l  %15 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([8 x i8],\l... [8 x i8]* @.str, i64 0, i64 0), i32 %14, i32 %.01.lcssa)\l  ret i32 0\l}"];
+}

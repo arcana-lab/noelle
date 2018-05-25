@@ -1,0 +1,5 @@
+digraph "CFG for 'main' function" {
+	label="CFG for 'main' function";
+
+	Node0x38479d0 [shape=record,label="{%2:\l  %3 = alloca double, align 8\l  %4 = sitofp i32 %0 to double\l  %5 = fadd double %4, 3.100000e-01\l  store double %5, double* %3, align 8\l  %6 = mul nsw i32 %0, 5\l  %7 = sdiv i32 %6, 2\l  %8 = sitofp i32 %7 to double\l  %9 = fadd double %8, 1.532400e+00\l  call void @_Z1fPdd(double* nonnull %3, double %9)\l  ret i32 0\l}"];
+}
