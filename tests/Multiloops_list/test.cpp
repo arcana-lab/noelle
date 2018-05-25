@@ -41,12 +41,12 @@ void appendNode (N* tail, int newValue, int howManyMore){
 
 int main (){
   N *n0 = (N *) malloc(sizeof(N));
-
+  n0->v = 41;
   appendNode(n0, 42, 3);
 
-  N *tmpN = n0;
+  auto tmpN = n0;
   while (tmpN != NULL){
-    int v = tmpN->v;
+    auto v = tmpN->v;
 
     v = heavyComputation(v);
 

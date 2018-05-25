@@ -34,6 +34,7 @@ void appendNode (N* tail, int newValue, int howManyMore){
 
 int main (){
   N *n0 = (N *) malloc(sizeof(N));
+  n0->v = 41;
 
   appendNode(n0, 42, 99);
 
