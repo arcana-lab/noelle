@@ -22,6 +22,8 @@ using namespace MARC;
 
 extern "C" {
 
+  typedef void (*stageFunctionPtr_t)(void *, void*);
+
   void printReachedS(std::string s)
   {
     auto outS = "Reached: " + s;
@@ -94,9 +96,10 @@ extern "C" {
     ThreadPool pool(numberOfStages);
     
     std::vector<MARC::TaskFuture<void>> localFutures;
+    auto allStages = (void **)stages;
     for (auto i = 0; i < numberOfStages; ++i) {
-      auto stage = ((void (**)(void *, void *)) stages)[i];
-      localFutures.push_back(pool.submit(stage, env, (void*)localQueues));
+      auto stagePtr = reinterpret_cast<stageFunctionPtr_t>(reinterpret_cast<long long>(allStages[i]));
+      localFutures.push_back(pool.submit(stagePtr, env, (void*)localQueues));
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted stage" << std::endl;
       #endif
