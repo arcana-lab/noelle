@@ -1,5 +1,0 @@
-digraph "CFG for '_ZSt4sqrtf' function" {
-	label="CFG for '_ZSt4sqrtf' function";
-
-	Node0x3cef790 [shape=record,label="{%1:\l  %2 = tail call float @sqrtf(float %0) #5\l  ret float %2\l}"];
-}

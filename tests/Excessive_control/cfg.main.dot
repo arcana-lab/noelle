@@ -1,5 +1,0 @@
-digraph "CFG for 'main' function" {
-	label="CFG for 'main' function";
-
-	Node0x3cf1be0 [shape=record,label="{%0:\l  %1 = tail call float @_Z16heavyComputationff(float 0x4041A66660000000, float\l... 0x4038B33340000000)\l  %2 = fpext float %1 to double\l  %3 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8],\l... [4 x i8]* @.str, i64 0, i64 0), double %2)\l  ret i32 0\l}"];
-}

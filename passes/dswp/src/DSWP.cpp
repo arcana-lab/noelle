@@ -100,6 +100,7 @@ namespace llvm {
         AU.addRequired<PDGAnalysis>();
         AU.addRequired<Parallelization>();
         AU.addRequired<ScalarEvolutionWrapperPass>();
+        AU.addRequired<LoopInfoWrapperPass>();
         return ;
       }
 
@@ -214,11 +215,46 @@ namespace llvm {
         return true;
       }
 
+      void mergeSubloops (DSWPLoopDependenceInfo *LDI)
+      {
+        auto &LI = getAnalysis<LoopInfoWrapperPass>(*LDI->function).getLoopInfo();
+        auto loop = LI.getLoopFor(LDI->header);
+        auto loopDepth = (int)LI.getLoopDepth(LDI->header);
+
+        unordered_map<Loop *, std::set<DGNode<SCC> *>> loopSets;
+        for (auto sccNode : LDI->loopSCCDAG->getNodes())
+        {
+          for (auto iNodePair : sccNode->getT()->internalNodePairs())
+          {
+            auto bb = cast<Instruction>(iNodePair.first)->getParent();
+            auto loop = LI.getLoopFor(bb);
+            auto subloopDepth = (int)loop->getLoopDepth();
+            if (loopDepth >= subloopDepth) continue;
+
+            if (loopDepth == subloopDepth - 1) loopSets[loop].insert(sccNode);
+            else
+            {
+              while (subloopDepth - 1 > loopDepth)
+              {
+                loop = loop->getParentLoop();
+                subloopDepth--;
+              }
+              loopSets[loop].insert(sccNode);
+            }
+            break;
+          }
+        }
+
+        for (auto loopSetPair : loopSets)
+        {
+          LDI->loopSCCDAG->mergeSCCs(loopSetPair.second);
+        }
+      }
+
       void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI)
       {
-        auto &sccSubgraph = LDI->loopSCCDAG;
         std::vector<DGNode<SCC> *> tailCmpBrs;
-        for (auto sccNode : make_range(sccSubgraph->begin_nodes(), sccSubgraph->end_nodes()))
+        for (auto sccNode : LDI->loopSCCDAG->getNodes())
         {
           auto scc = sccNode->getT();
           if (sccNode->numIncomingEdges() == 0 || sccNode->numOutgoingEdges() > 0) continue ;
@@ -237,8 +273,8 @@ namespace llvm {
         for (auto tailSCC : tailCmpBrs)
         {
           std::set<DGNode<SCC> *> nodesToMerge = { tailSCC };
-          nodesToMerge.insert(*sccSubgraph->previousDepthNodes(tailSCC).begin());
-          sccSubgraph->mergeSCCs(nodesToMerge);
+          nodesToMerge.insert(*LDI->loopSCCDAG->previousDepthNodes(tailSCC).begin());
+          LDI->loopSCCDAG->mergeSCCs(nodesToMerge);
         }
       }
 
@@ -251,6 +287,7 @@ namespace llvm {
          */
         //TODO
 
+        mergeSubloops(LDI);
         mergeBranchesWithoutOutgoingEdges(LDI);
 
         // errs() << "Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
@@ -458,6 +495,7 @@ namespace llvm {
               stage->incomingEnvs.insert(envIndex);
             }
           }
+          if (isPreLoop) { externalValue->print(errs() << "IS PRE LOOP EXT:\t"); errs() << "\n"; }
           if (isPreLoop) LDI->environment->addPreLoopProducer(externalValue);
 
           /*
