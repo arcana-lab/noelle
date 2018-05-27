@@ -176,7 +176,7 @@ namespace llvm {
          */
         // printSCCs(LDI->loopSCCDAG);
         mergeSCCs(LDI);
-        collectParallelStages(LDI);
+        collectScalarSCCs(LDI);
         // printSCCs(LDI->loopSCCDAG);
 
         /*
@@ -191,7 +191,7 @@ namespace llvm {
         }
         // printStageSCCs(LDI);
         // printStageQueues(LDI);
-        printEnv(LDI);
+        // printEnv(LDI);
 
         errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
         for (auto &stage : LDI->stages) {
@@ -294,7 +294,7 @@ namespace llvm {
         return ;
       }
 
-      void collectParallelStages (DSWPLoopDependenceInfo *LDI)
+      void collectScalarSCCs (DSWPLoopDependenceInfo *LDI)
       {
         auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
         auto &sccSubgraph = LDI->loopSCCDAG;
@@ -330,20 +330,13 @@ namespace llvm {
             }
           }
 
-          if (isScalarSCC)
-          {
-            // scc->print(errs() << "IS SCALAR SCC:\n") << "\n";
-          }
-          else
-          {
-            // scc->print(errs() << "IS NOT SCALAR SCC:\n") << "\n";
-          }
+          if (isScalarSCC) LDI->scalarSCCs.insert(scc);
         }
       }
 
       bool isWorthParallelizing (DSWPLoopDependenceInfo *LDI)
       {
-        return LDI->loopSCCDAG->numNodes() > 1;
+        return LDI->loopSCCDAG->numNodes() - LDI->scalarSCCs.size() > 1;
       }
 
       void collectSCCIntoStages (DSWPLoopDependenceInfo *LDI)
@@ -374,11 +367,14 @@ namespace llvm {
           }
 
           auto scc = sccNode->getT();
-          auto stage = std::make_unique<StageInfo>();
-          stage->order = order++;
-          stage->scc = scc;
-          LDI->stages.push_back(std::move(stage));
-          LDI->sccToStage[scc] = LDI->stages[order - 1].get();
+          if (LDI->scalarSCCs.find(scc) == LDI->scalarSCCs.end())
+          {
+            auto stage = std::make_unique<StageInfo>();
+            stage->order = order++;
+            stage->scc = scc;
+            LDI->stages.push_back(std::move(stage));
+            LDI->sccToStage[scc] = LDI->stages[order - 1].get();
+          }
         }
       }
 
@@ -419,8 +415,13 @@ namespace llvm {
           for (auto sccEdge : scc->getOutgoingEdges())
           {
             auto sccPair = sccEdge->getNodePair();
-            auto fromStage = LDI->sccToStage[sccPair.first->getT()];
-            auto toStage = LDI->sccToStage[sccPair.second->getT()];
+            auto fromSCC = sccPair.first->getT();
+            auto toSCC = sccPair.second->getT();
+            if (LDI->scalarSCCs.find(fromSCC) != LDI->scalarSCCs.end()) continue;
+            if (LDI->scalarSCCs.find(toSCC) != LDI->scalarSCCs.end()) continue;
+
+            auto fromStage = LDI->sccToStage[fromSCC];
+            auto toStage = LDI->sccToStage[toSCC];
             if (fromStage == toStage) continue;
 
             /*
@@ -449,6 +450,7 @@ namespace llvm {
           auto consumer = cast<Instruction>(bb->getTerminator());
           // consumer->print(errs() << "CONSUMER BR:\t"); errs() << "\n";
           StageInfo *brStage = findStageContaining(cast<Value>(consumer));
+          if (brStage == nullptr) continue;
 
           auto brNode = brStage->scc->fetchNode(cast<Value>(consumer));
           for (auto edge : brNode->getIncomingEdges())
@@ -456,6 +458,7 @@ namespace llvm {
             if (edge->isControlDependence()) continue;
             auto producer = cast<Instruction>(edge->getOutgoingT());
             StageInfo *prodStage = findStageContaining(cast<Value>(producer));
+            if (prodStage == nullptr) continue;
 
             for (auto &otherStage : LDI->stages)
             {
@@ -489,13 +492,25 @@ namespace llvm {
             isPreLoop = true;
             auto internalValue = outgoingEdge->getIncomingT();
             auto internalInst = cast<Instruction>(internalValue);
-            for (auto &stage : LDI->stages)
+
+            bool isScalarInst = false;
+            for (auto scc : LDI->scalarSCCs)
             {
-              if (!stage->scc->isInternal(internalInst) && !isa<TerminatorInst>(internalInst)) continue;
-              stage->incomingEnvs.insert(envIndex);
+              if (!scc->isInternal(internalValue)) continue;
+              isScalarInst = true;
+              for (auto &stage : LDI->stages) stage->incomingEnvs.insert(envIndex);
+              break;
+            }
+
+            if (!isScalarInst)
+            {
+              for (auto &stage : LDI->stages)
+              {
+                if (!stage->scc->isInternal(internalInst)) continue;
+                stage->incomingEnvs.insert(envIndex);
+              }
             }
           }
-          if (isPreLoop) { externalValue->print(errs() << "IS PRE LOOP EXT:\t"); errs() << "\n"; }
           if (isPreLoop) LDI->environment->addPreLoopProducer(externalValue);
 
           /*
@@ -521,11 +536,23 @@ namespace llvm {
               LDI->environment->addPostLoopProducer(internalValue);
             }
 
-            for (auto &stage : LDI->stages)
+            bool isScalarInst = false;
+            for (auto scc : LDI->scalarSCCs)
             {
-              if (!stage->scc->isInternal(internalInst) && !isa<TerminatorInst>(internalInst)) continue;
-              stage->outgoingEnvs[internalInst] = envIndex;
+              if (!scc->isInternal(internalValue)) continue;
+              isScalarInst = true;
+              LDI->stages[0]->outgoingEnvs[internalInst] = envIndex;
               break;
+            }
+
+            if (!isScalarInst)
+            {
+              for (auto &stage : LDI->stages)
+              {
+                if (!stage->scc->isInternal(internalInst)) continue;
+                stage->outgoingEnvs[internalInst] = envIndex;
+                break;
+              }
             }
           }
         }
@@ -553,7 +580,7 @@ namespace llvm {
         auto &context = LDI->function->getParent()->getContext();
 
         /*
-         * Clone instructions within the stage's scc, and their basic blocks
+         * Clone instructions within the stage's scc, and scalar sccs
          */
         for (auto nodePair : stageInfo->scc->internalNodePairs())
         {
@@ -561,7 +588,18 @@ namespace llvm {
           stageInfo->iCloneMap[I] = I->clone();
           // I->print(errs() << "Orig I:\t"); stageInfo->iCloneMap[I]->print(errs() << "\tInternal I:\t"); errs() << "\n";
         }
+        for (auto scc : LDI->scalarSCCs)
+        {
+          for (auto nodePair : scc->internalNodePairs())
+          {
+            auto I = cast<Instruction>(nodePair.first);
+            stageInfo->iCloneMap[I] = I->clone();
+          }
+        }
 
+        /*
+         * Clone loop basic blocks and terminators
+         */
         for (auto B : LDI->loopBBs) {
           stageInfo->sccBBCloneMap[B] = BasicBlock::Create(context, "", stageInfo->sccStage);
           auto terminator = cast<Instruction>(B->getTerminator());

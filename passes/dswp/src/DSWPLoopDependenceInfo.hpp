@@ -20,6 +20,7 @@ namespace llvm {
 		 * Stores new pipeline execution
 		 */
 		BasicBlock *pipelineBB;
+		std::set<SCC *> scalarSCCs;
 		unordered_map<SCC *, StageInfo *> sccToStage;
 		std::vector<std::unique_ptr<StageInfo>> stages;
 		std::vector<std::unique_ptr<QueueInfo>> queues;
