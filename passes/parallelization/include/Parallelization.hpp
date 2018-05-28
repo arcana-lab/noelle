@@ -37,7 +37,7 @@ namespace llvm {
 
       std::vector<LoopDependenceInfo *> * getModuleLoops (
         Module *module, 
-        std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &)> allocationFunction
+        std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &)> allocationFunction = defaultLDIAllocator
         );
 
       void linkParallelizedLoopToOriginalFunction (
@@ -45,5 +45,10 @@ namespace llvm {
         BasicBlock *originalPreHeader, 
         BasicBlock *startOfParallelizedLoopWithinOriginalFunction
         );
+
+      static LoopDependenceInfo * defaultLDIAllocator (Function *f, PDG *pdg, Loop *l, LoopInfo &li){
+        auto ldi = new LoopDependenceInfo(f, pdg, l, li);
+        return ldi;
+      }
   };
 }
