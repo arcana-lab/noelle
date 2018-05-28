@@ -215,6 +215,24 @@ namespace llvm {
         return true;
       }
 
+      void mergeSinglePHIs (DSWPLoopDependenceInfo *LDI)
+      {
+        std::vector<std::set<DGNode<SCC> *>> singlePHIs;
+        for (auto sccNode : LDI->loopSCCDAG->getNodes())
+        {
+          auto scc = sccNode->getT();
+          if (scc->numInternalNodes() > 1) continue;
+          if (!isa<PHINode>(scc->begin_internal_node_map()->first)) continue;
+          if (sccNode->numOutgoingEdges() == 1)
+          {
+            std::set<DGNode<SCC> *> nodes = { sccNode, (*sccNode->begin_outgoing_edges())->getIncomingNode() };
+            singlePHIs.push_back(nodes);
+          }
+        }
+
+        for (auto sccNodes : singlePHIs) LDI->loopSCCDAG->mergeSCCs(sccNodes);
+      }
+
       void mergeSubloops (DSWPLoopDependenceInfo *LDI)
       {
         auto &LI = getAnalysis<LoopInfoWrapperPass>(*LDI->function).getLoopInfo();
@@ -285,9 +303,8 @@ namespace llvm {
         /*
          * Merge the SCC related to a single PHI node and its use if there is only one.
          */
-        //TODO
-
         mergeSubloops(LDI);
+        mergeSinglePHIs(LDI);
         mergeBranchesWithoutOutgoingEdges(LDI);
 
         // errs() << "Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
