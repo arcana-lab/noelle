@@ -27,4 +27,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS DESTINATION)
+install(PROGRAMS include/DGBase.hpp include/DGGraphTraits.hpp include/PDG.hpp include/PDGAnalysis.hpp include/SCC.hpp include/SCCDAG.hpp DESTINATION include)
