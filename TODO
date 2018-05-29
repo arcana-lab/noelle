@@ -5,3 +5,7 @@
 - Optimization: prune the CFG of the generated functions as much as we can
 
 - Optimization: packing/unpacking pushes and pops
+
+- Option 1: always parallelize even when #SCCs = 1
+
+- Option 2: do not merge SCCs
