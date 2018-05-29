@@ -1,4 +1,5 @@
 PARALLELIZATION=DSWP
+PARALLELIZATION_OPTIONS=-dswp-force
 PDGPRINTER=PDGPrinter
 CC=clang++
 AA6=-cfl-anders-aa
@@ -34,7 +35,7 @@ test_pdgdot.bc: test_seq.bc
 	opt $(PRINTPASSES) $(ANALYSES) -$(PDGPRINTER) $^ -o $@
 
 test_dswp.bc: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -o $@
+	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $(PARALLELIZATION_OPTIONS) $^ -o $@
 	$(CC) $(OPT_LEVEL) -c -emit-llvm $@ -o $@
 	llvm-dis $@
 
@@ -49,10 +50,10 @@ test_seq.bc: test.bc $(THREADER).bc
 	llvm-dis $@
 
 show_passes: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ --debug-pass=Structure -disable-output
+	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
 
 show_time: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $^ -time-passes -disable-output
+	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline $(OPTIMIZED)

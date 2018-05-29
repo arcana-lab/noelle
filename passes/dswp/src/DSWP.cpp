@@ -35,6 +35,8 @@ using namespace llvm;
 
 namespace llvm {
 
+  static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
+
   struct DSWP : public ModulePass {
     public:
       static char ID;
@@ -50,9 +52,20 @@ namespace llvm {
 
       FunctionType *stageType;
 
-      DSWP() : ModulePass{ID} {}
+      DSWP() : 
+        ModulePass{ID}, 
+        forceParallelization{false} 
+        {
+        return ;
+      }
 
-      bool doInitialization (Module &M) override { return false; }
+      bool doInitialization (Module &M) override { 
+        if (ForceParallelization.getNumOccurrences() > 0){
+          this->forceParallelization = true;
+        }
+
+        return false; 
+      }
 
       bool runOnModule (Module &M) override {
 
@@ -105,6 +118,8 @@ namespace llvm {
       }
 
     private:
+      bool forceParallelization;
+
       std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par){
         std::vector<DSWPLoopDependenceInfo *> loopsToParallelize;
 
@@ -351,8 +366,10 @@ namespace llvm {
         }
       }
 
-      bool isWorthParallelizing (DSWPLoopDependenceInfo *LDI)
-      {
+      bool isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
+        if (this->forceParallelization){
+          return true;
+        }
         return LDI->loopSCCDAG->numNodes() - LDI->scalarSCCs.size() > 1;
       }
 
