@@ -2,6 +2,7 @@
 #include <set>
 #include <queue>
 #include <deque>
+#include <sstream>
 
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
@@ -14,6 +15,7 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/Analysis/CallGraph.h"
+#include "llvm/Support/MemoryBuffer.h"
 
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
@@ -127,8 +129,30 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   auto functions = this->getModuleFunctionsReachableFrom(module, mainFunction);
 
   /*
+   * Check if we should filter out loops.
+   */
+  int32_t loopIndex = -1;
+  auto indexFileName = getenv("INDEX_FILE");
+  if (indexFileName){
+    auto indexBuf = MemoryBuffer::getFileAsStream(indexFileName);
+    if (auto ec = indexBuf.getError()){
+      errs() << "Failed to read \"INDEX_FILE\"\n";
+      abort();
+    }
+    std::stringstream indexString;
+    indexString << indexBuf.get()->getBuffer().str();
+    if (!indexString.rdbuf()->in_avail()) {
+      errs() << "Failed to read \"INDEX_FILE\"\n";
+      abort();
+    }
+    loopIndex = stoi(indexString.str());
+  }
+  auto filterLoops = (loopIndex != -1) ? true : false;
+
+  /*
    * Append loops of each function.
    */
+  auto currentLoopIndex = loopIndex;
   for (auto function : *functions){
 
     /*
@@ -165,7 +189,15 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      */
     for (auto loop : loops){
       auto ldi = allocationFunction(function, funcPDG, loop, LI);
-      allLoops->push_back(ldi);
+      if (filterLoops){
+        if (currentLoopIndex == 0){
+          allLoops->push_back(ldi);
+        }
+        currentLoopIndex--;
+
+      } else {
+        allLoops->push_back(ldi);
+      }
     }
   }
 
