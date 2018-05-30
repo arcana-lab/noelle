@@ -37,18 +37,16 @@ namespace llvm {
 
       std::vector<LoopDependenceInfo *> * getModuleLoops (
         Module *module, 
-        std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &)> allocationFunction = defaultLDIAllocator
+        std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &)> allocationFunction
         );
 
       void linkParallelizedLoopToOriginalFunction (
         Module *module, 
         BasicBlock *originalPreHeader, 
-        BasicBlock *startOfParallelizedLoopWithinOriginalFunction
+        BasicBlock *startOfParallelizedLoopWithinOriginalFunction,
+        Value *envArray,
+        Value *envIndexForExitVariable,
+        SmallVector<BasicBlock *, 10> &loopExitBlocks
         );
-
-      static LoopDependenceInfo * defaultLDIAllocator (Function *f, PDG *pdg, Loop *l, LoopInfo &li){
-        auto ldi = new LoopDependenceInfo(f, pdg, l, li);
-        return ldi;
-      }
   };
 }

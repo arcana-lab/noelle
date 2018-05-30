@@ -204,7 +204,14 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   return allLoops;
 }
 
-void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (Module *module, BasicBlock *originalPreHeader, BasicBlock *startOfParallelizedLoopWithinOriginalFunction){
+void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
+  Module *module,
+  BasicBlock *originalPreHeader,
+  BasicBlock *startOfParallelizedLoopWithinOriginalFunction,
+  Value *envArray,
+  Value *envIndexForExitVariable,
+  SmallVector<BasicBlock *, 10> &loopExitBlocks
+  ){
 
   /*
    * Create the global variable for the parallelized loop.
@@ -232,10 +239,24 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (Module *modu
   loopSwitchBuilder.CreateCondBr(compareInstruction, startOfParallelizedLoopWithinOriginalFunction, originalHeader);
   originalTerminator->eraseFromParent();
 
+  IRBuilder<> pipelineBuilder(startOfParallelizedLoopWithinOriginalFunction);
+
+  /*
+   * Load exit block environment variable and branch to the correct loop exit block
+   */
+  auto exitEnvPtr = pipelineBuilder.CreateInBoundsGEP(envArray, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(int64, 0)), envIndexForExitVariable }));
+  auto exitEnvCast = pipelineBuilder.CreateBitCast(pipelineBuilder.CreateLoad(exitEnvPtr), PointerType::getUnqual(int32));
+  auto envVar = pipelineBuilder.CreateLoad(exitEnvCast);
+  auto exitSwitch = pipelineBuilder.CreateSwitch(envVar, loopExitBlocks[0]);
+  for (int i = 1; i < loopExitBlocks.size(); ++i)
+  {
+    exitSwitch->addCase(ConstantInt::get(int32, i), loopExitBlocks[i]);
+  }
+
   /*
    * Set/Reset global variable so only one invocation of the loop is run in parallel at a time.
    */
-  IRBuilder<> pipelineBuilder(&*startOfParallelizedLoopWithinOriginalFunction->begin());
+  pipelineBuilder.SetInsertPoint(&*startOfParallelizedLoopWithinOriginalFunction->begin());
   pipelineBuilder.CreateStore(const1, globalBool);
   pipelineBuilder.SetInsertPoint(startOfParallelizedLoopWithinOriginalFunction->getTerminator());
   pipelineBuilder.CreateStore(const0, globalBool);

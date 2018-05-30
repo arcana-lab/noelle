@@ -31,6 +31,7 @@ namespace llvm {
 		 */
 		ArrayType *envArrayType, *queueArrayType, *stageArrayType;
 		Value *zeroIndexForBaseArray;
+		Value *envArray;
 
 		DSWPLoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li);
 

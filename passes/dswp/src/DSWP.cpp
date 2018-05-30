@@ -224,7 +224,8 @@ namespace llvm {
          * Link the parallelized loop within the original function that includes the sequential loop.
          */
         errs() << "DSWP:  Link the parallelize loop\n";
-        par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->preHeader, LDI->pipelineBB);
+        auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
+        par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->preHeader, LDI->pipelineBB, LDI->envArray, exitIndex, LDI->loopExitBlocks);
         LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
 
         return true;
@@ -910,7 +911,7 @@ namespace llvm {
         stageF->print(errs() << "Function printout:\n"); errs() << "\n";
       }
 
-      Value * createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
+      Value * createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par)
       {
         /*
          * Create empty environment array for producers, exit block tracking
@@ -922,7 +923,7 @@ namespace llvm {
           auto varAlloca = funcBuilder.CreateAlloca(envType);
           envPtrs.push_back(varAlloca);
           auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
-          auto envPtr = funcBuilder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+          auto envPtr = funcBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
           auto depCast = funcBuilder.CreateBitCast(envPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
           funcBuilder.CreateStore(varAlloca, depCast);
         }
@@ -935,7 +936,7 @@ namespace llvm {
           builder.CreateStore(LDI->environment->envProducers[envIndex], envPtrs[envIndex]);
         }
         
-        return cast<Value>(builder.CreateBitCast(envAlloca, PointerType::getUnqual(par.int8)));
+        return cast<Value>(builder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
       }
 
       Value * createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par)
@@ -967,7 +968,7 @@ namespace llvm {
         return cast<Value>(funcBuilder.CreateBitCast(queuesAlloca, PointerType::getUnqual(par.int64)));
       }
 
-      void storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LDI, IRBuilder<> builder, Value *envAlloca, Parallelization &par)
+      void storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LDI, IRBuilder<> builder, Parallelization &par)
       {
         /*
          * Extract the outgoing dependents for each stage
@@ -976,7 +977,7 @@ namespace llvm {
         {
           auto prod = LDI->environment->envProducers[envInd];
           auto envIndex = cast<Value>(ConstantInt::get(par.int64, envInd));
-          auto depInEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+          auto depInEnvPtr = builder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
           auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(prod->getType()));
           auto envVar = builder.CreateLoad(envVarCast);
 
@@ -1007,8 +1008,8 @@ namespace llvm {
         /*
          * Create and populate the environment and stages arrays
          */
-        auto envAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->envArrayType));
-        auto envPtr = createEnvArrayFromStages(LDI, funcBuilder, builder, envAlloca, par);
+        LDI->envArray = cast<Value>(funcBuilder.CreateAlloca(LDI->envArrayType));
+        auto envPtr = createEnvArrayFromStages(LDI, funcBuilder, builder, par);
         auto stagesPtr = createStagesArrayFromStages(LDI, funcBuilder, par);
 
         /*
@@ -1029,24 +1030,7 @@ namespace llvm {
         builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queuesPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
         // builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd + 1)) }));
 
-        storeOutgoingDependentsIntoExternalValues(LDI, builder, envAlloca, par);
-
-        /*
-         * Load exit block environment variable
-         */
-        auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
-        auto exitEnvPtr = builder.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, exitIndex }));
-        auto exitEnvCast = builder.CreateBitCast(builder.CreateLoad(exitEnvPtr), PointerType::getUnqual(par.int32));
-        auto envVar = builder.CreateLoad(exitEnvCast);
-
-        /*
-         * Branch from pipeline to the correct loop exit block
-         */
-        auto exitSwitch = builder.CreateSwitch(envVar, LDI->loopExitBlocks[0]);
-        for (int i = 1; i < LDI->loopExitBlocks.size(); ++i)
-        {
-          exitSwitch->addCase(ConstantInt::get(par.int32, i), LDI->loopExitBlocks[i]);
-        }
+        storeOutgoingDependentsIntoExternalValues(LDI, builder, par);
       }
 
       /*
