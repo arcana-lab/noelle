@@ -36,6 +36,7 @@ using namespace llvm;
 namespace llvm {
 
   static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
+  static cl::opt<bool> ForceNoSCCMerge("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
 
   struct DSWP : public ModulePass {
     public:
@@ -54,16 +55,15 @@ namespace llvm {
 
       DSWP() : 
         ModulePass{ID}, 
-        forceParallelization{false} 
+        forceParallelization{false},
+        forceNoSCCMerge{false}
         {
         return ;
       }
 
       bool doInitialization (Module &M) override { 
-        if (ForceParallelization.getNumOccurrences() > 0){
-          this->forceParallelization = true;
-        }
-
+        this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
+        this->forceNoSCCMerge |= (ForceNoSCCMerge.getNumOccurrences() > 0);
         return false; 
       }
 
@@ -119,6 +119,7 @@ namespace llvm {
 
     private:
       bool forceParallelization;
+      bool forceNoSCCMerge;
 
       std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par){
         std::vector<DSWPLoopDependenceInfo *> loopsToParallelize;
@@ -315,6 +316,7 @@ namespace llvm {
       void mergeSCCs (DSWPLoopDependenceInfo *LDI)
       {
         // errs() << "Number of unmerged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
+        if (this->forceNoSCCMerge) return ;
 
         /*
          * Merge the SCC related to a single PHI node and its use if there is only one.
