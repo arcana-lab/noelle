@@ -135,17 +135,14 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   auto indexFileName = getenv("INDEX_FILE");
   if (indexFileName){
     auto indexBuf = MemoryBuffer::getFileAsStream(indexFileName);
-    if (auto ec = indexBuf.getError()){
-      errs() << "Failed to read \"INDEX_FILE\"\n";
-      abort();
+    auto ec = indexBuf.getError();
+    if (!ec){
+      std::stringstream indexString;
+      indexString << indexBuf.get()->getBuffer().str();
+      if (indexString.rdbuf()->in_avail()) {
+        loopIndex = stoi(indexString.str());
+      }
     }
-    std::stringstream indexString;
-    indexString << indexBuf.get()->getBuffer().str();
-    if (!indexString.rdbuf()->in_avail()) {
-      errs() << "Failed to read \"INDEX_FILE\"\n";
-      abort();
-    }
-    loopIndex = stoi(indexString.str());
   }
   auto filterLoops = (loopIndex != -1) ? true : false;
 
