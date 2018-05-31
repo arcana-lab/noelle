@@ -77,7 +77,7 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
     auto funcCGNode = callGraph[func];
     for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
       auto F = callRecord.second->getFunction();
-      if (F->empty()) continue;
+      if (F == nullptr || F->empty()) continue;
       funcToTraverse.push(F);
     }
   }
