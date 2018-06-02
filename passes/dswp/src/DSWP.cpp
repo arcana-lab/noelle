@@ -203,6 +203,7 @@ namespace llvm {
           return false;
         }
         if (!collectStageAndQueueInfo(LDI, par)) {
+          errs() << "DSWP:  We couldn't collect stage and queue information\n";
           return false;
         }
         // printStageSCCs(LDI);
