@@ -82,6 +82,7 @@ namespace llvm {
 		 * Original loops' scc and basic blocks
 		 */
 		SCC *scc;
+		std::set<SCC *> scalarSCCs;
 		std::set<BasicBlock *> sccBBs;
 
 		/*
