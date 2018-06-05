@@ -20,6 +20,8 @@
 
 using namespace MARC;
 
+// #define RUNTIME_PRINT
+
 extern "C" {
 
   typedef void (*stageFunctionPtr_t)(void *, void*);
@@ -32,6 +34,14 @@ extern "C" {
 
   void printReachedI(int i){
     printf("Reached: %d\n",i);
+  }
+
+  void printPushedP(int32_t *p){
+    printf("Pushed: %p\n", p);
+  }
+
+  void printPulledP(int32_t *p){
+    printf("Pulled: %p\n", p);
   }
 
   void queuePush8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { queue->push(*val); }

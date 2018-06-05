@@ -1,5 +1,6 @@
 #pragma once
 
+#include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instructions.h"
 #include "PDG.hpp"
 #include "SCC.hpp"
@@ -61,7 +62,11 @@ namespace llvm {
         QueueInfo(Instruction *p, Instruction *c, Type *type) : producer{p}, dependentType{type}
         {
             consumers.insert(c);
-            bitLength = dependentType->getPrimitiveSizeInBits();
+            if (dependentType->isPointerTy()) {
+            	bitLength = DataLayout(p->getModule()).getTypeAllocSize(dependentType) * 8;
+            } else {
+	            bitLength = dependentType->getPrimitiveSizeInBits();
+            }
         }
 	};
 

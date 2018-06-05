@@ -43,7 +43,7 @@ namespace llvm {
       static char ID;
 
       Function *stageDispatcher;
-      Function *printReachedI;
+      Function *printReachedI, *printPushedP, *printPulledP;
 
       std::vector<Function *> queuePushes;
       std::vector<Function *> queuePops;
@@ -168,6 +168,8 @@ namespace llvm {
 
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) {
         printReachedI = M.getFunction("printReachedI");
+        printPushedP = M.getFunction("printPushedP");
+        printPulledP = M.getFunction("printPulledP");
         std::string pushers[4] = { "queuePush8", "queuePush16", "queuePush32", "queuePush64" };
         std::string poppers[4] = { "queuePop8", "queuePop16", "queuePop32", "queuePop64" };
         for (auto pusher : pushers) queuePushes.push_back(M.getFunction(pusher));
@@ -192,7 +194,7 @@ namespace llvm {
          */
         // printSCCs(LDI->loopSCCDAG);
         mergeSCCs(LDI);
-        collectScalarSCCs(LDI);
+        collectNonLeafScalarSCCs(LDI);
         // printSCCs(LDI->loopSCCDAG);
 
         /*
@@ -203,11 +205,12 @@ namespace llvm {
           return false;
         }
         if (!collectStageAndQueueInfo(LDI, par)) {
+          errs() << "DSWP:  Could not construct stages or queues for loop\n";
           return false;
         }
-        // printStageSCCs(LDI);
-        // printStageQueues(LDI);
-        // printEnv(LDI);
+        printStageSCCs(LDI);
+        printStageQueues(LDI);
+        printEnv(LDI);
 
         errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
         for (auto &stage : LDI->stages) {
@@ -360,12 +363,14 @@ namespace llvm {
         return ;
       }
 
-      void collectScalarSCCs (DSWPLoopDependenceInfo *LDI)
+      void collectNonLeafScalarSCCs (DSWPLoopDependenceInfo *LDI)
       {
         auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
         auto &sccSubgraph = LDI->loopSCCDAG;
         for (auto sccNode : sccSubgraph->getNodes())
         {
+          if (sccNode->numOutgoingEdges() == 0) continue;
+
           auto scc = sccNode->getT();
           bool isScalarSCC = true;
           for (auto iNodePair : scc->internalNodePairs())
@@ -456,7 +461,6 @@ namespace llvm {
           
           auto sccNode = LDI->loopSCCDAG->fetchNode(stage->scc);
           dependentSCCNodes.push(sccNode);
-          visitedNodes.insert(sccNode);
 
           while (!dependentSCCNodes.empty())
           {
@@ -546,23 +550,28 @@ namespace llvm {
 
       bool collectBrQueueInfo (DSWPLoopDependenceInfo *LDI)
       {
-        auto findStageContaining = [&](Value *val) -> StageInfo * {
-          for (auto &stage : LDI->stages) if (stage->scc->isInternal(val)) return stage.get();
-          return nullptr;
+        // TODO: UNNECESSARY QUEUES BEING MADE EVEN IF PRODUCER IS IN SCALARS 
+        auto findContaining = [&](Value *val) -> std::pair<StageInfo *, SCC *> {
+          for (auto &stage : LDI->stages)
+          {
+            if (stage->scc->isInternal(val)) return std::make_pair(stage.get(), stage->scc);
+            for (auto scalarSCC : stage->scalarSCCs) if (scalarSCC->isInternal(val)) return std::make_pair(stage.get(), scalarSCC);
+          }
+          return std::make_pair(nullptr, nullptr);
         };
 
         for (auto bb : LDI->loopBBs){
           auto consumer = cast<Instruction>(bb->getTerminator());
-          StageInfo *brStage = findStageContaining(cast<Value>(consumer));
-          if (brStage == nullptr) continue;
+          auto brStageSCC = findContaining(cast<Value>(consumer));
+          assert(brStageSCC.first != nullptr);
 
-          auto brNode = brStage->scc->fetchNode(cast<Value>(consumer));
+          auto brNode = brStageSCC.second->fetchNode(cast<Value>(consumer));
           for (auto edge : brNode->getIncomingEdges())
           {
             if (edge->isControlDependence()) continue;
             auto producer = cast<Instruction>(edge->getOutgoingT());
-            StageInfo *prodStage = findStageContaining(cast<Value>(producer));
-            if (prodStage == nullptr) continue;
+            StageInfo *prodStage = findContaining(cast<Value>(producer)).first;
+            assert(prodStage != nullptr);
 
             for (auto &otherStage : LDI->stages)
             {
@@ -603,6 +612,7 @@ namespace llvm {
             }
           }
         }
+        return true;
       }
 
       void collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI)
@@ -850,7 +860,7 @@ namespace llvm {
         for (auto queueIndex : stageInfo->popValueQueues) loadQueuePtrFromIndex(queueIndex);
       }
 
-      void popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+      void popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
       {
         for (auto queueIndex : stageInfo->popValueQueues)
         {
@@ -873,8 +883,19 @@ namespace llvm {
             else if (auto phi = dyn_cast<PHINode>(&I)) continue;
             else if (pastProducer && stageInfo->iCloneMap.find(&I) != stageInfo->iCloneMap.end())
             {
-              cast<Instruction>(queueInstrs->queueCall)->moveBefore(stageInfo->iCloneMap[&I]);
-              cast<Instruction>(queueInstrs->load)->moveBefore(stageInfo->iCloneMap[&I]);
+              auto iClone = stageInfo->iCloneMap[&I];
+              cast<Instruction>(queueInstrs->queueCall)->moveBefore(iClone);
+              cast<Instruction>(queueInstrs->load)->moveBefore(iClone);
+
+              /*
+              if (queueInstrs->load->getType()->isPointerTy())
+              {
+                auto bitcastPulled = builder.CreateBitCast(queueInstrs->load, PointerType::getUnqual(par.int32));
+                auto pullPrint = builder.CreateCall(printPulledP, ArrayRef<Value*>({ bitcastPulled }));
+                cast<Instruction>(bitcastPulled)->moveBefore(iClone);
+                pullPrint->moveBefore(iClone);
+              }
+              */
               break;
             }
           }
@@ -904,6 +925,16 @@ namespace llvm {
             {
               store->moveBefore(&I);
               cast<Instruction>(queueInstrs->queueCall)->moveBefore(&I);
+
+              /*
+              if (pClone->getType()->isPointerTy())
+              {
+                auto bitcastPushed = builder.CreateBitCast(pClone, PointerType::getUnqual(par.int32));
+                auto pushPrint = builder.CreateCall(printPushedP, ArrayRef<Value*>({ bitcastPushed }));
+                cast<Instruction>(bitcastPushed)->moveBefore(&I);
+                pushPrint->moveBefore(&I);
+              }
+              */
               break;
             }
           }
@@ -1004,7 +1035,7 @@ namespace llvm {
 
         createInstAndBBForSCC(LDI, stageInfo);
         loadAllQueuePointersInEntry(LDI, stageInfo, par);
-        popValueQueues(LDI, stageInfo);
+        popValueQueues(LDI, stageInfo, par);
         pushValueQueues(LDI, stageInfo, par);
         loadAndStoreEnv(LDI, stageInfo, par);
 
