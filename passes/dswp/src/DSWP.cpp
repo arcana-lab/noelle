@@ -208,9 +208,9 @@ namespace llvm {
           errs() << "DSWP:  We couldn't collect stage and queue information\n";
           return false;
         }
-        printStageSCCs(LDI);
-        printStageQueues(LDI);
-        printEnv(LDI);
+        // printStageSCCs(LDI);
+        // printStageQueues(LDI);
+        // printEnv(LDI);
 
         errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
         for (auto &stage : LDI->stages) {
@@ -817,7 +817,7 @@ namespace llvm {
          */
         for (int i = 0; i < stageInfo->loopExitBlocks.size(); ++i)
         {
-          IRBuilder<> builder(stageInfo->loopExitBlocks[i]);
+          IRBuilder<> builder(&*stageInfo->loopExitBlocks[i]->begin());
           auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
           auto envPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
           auto envVar = builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(par.int32));
@@ -1007,7 +1007,6 @@ namespace llvm {
 
         for (auto bbPair : stageInfo->sccBBCloneMap)
         {
-          // ERROR:
           auto iIter = bbPair.second->begin();
           while (auto phi = dyn_cast<PHINode>(&*iIter))
           {
@@ -1029,7 +1028,13 @@ namespace llvm {
         stageInfo->entryBlock = BasicBlock::Create(context, "", stageF);
         stageInfo->exitBlock = BasicBlock::Create(context, "", stageF);
         stageInfo->sccBBCloneMap[LDI->preHeader] = stageInfo->entryBlock;
-        for (auto exitBB : LDI->loopExitBlocks) stageInfo->loopExitBlocks.push_back(BasicBlock::Create(context, "", stageF));
+        for (auto exitBB : LDI->loopExitBlocks)
+        {
+          auto newExitBB = BasicBlock::Create(context, "", stageF);
+          stageInfo->loopExitBlocks.push_back(newExitBB);
+          IRBuilder<> builder(newExitBB);
+          builder.CreateBr(stageInfo->exitBlock);
+        }
 
         // errs() << "Stage:\t" << stageInfo->order << "\n";
 
@@ -1048,11 +1053,6 @@ namespace llvm {
         /*
          * Cleanup
          */
-        for (auto exitBB : stageInfo->loopExitBlocks)
-        {
-          IRBuilder<> builder(exitBB);
-          builder.CreateBr(stageInfo->exitBlock);
-        }
         IRBuilder<> exitBuilder(stageInfo->exitBlock);
         exitBuilder.CreateRetVoid();
         stageF->print(errs() << "Function printout:\n"); errs() << "\n";
