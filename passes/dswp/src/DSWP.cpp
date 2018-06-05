@@ -205,7 +205,7 @@ namespace llvm {
           return false;
         }
         if (!collectStageAndQueueInfo(LDI, par)) {
-          errs() << "DSWP:  Could not construct stages or queues for loop\n";
+          errs() << "DSWP:  We couldn't collect stage and queue information\n";
           return false;
         }
         printStageSCCs(LDI);
