@@ -1007,6 +1007,7 @@ namespace llvm {
 
         for (auto bbPair : stageInfo->sccBBCloneMap)
         {
+          if (bbPair.second->size() == 0) continue;
           auto iIter = bbPair.second->begin();
           while (auto phi = dyn_cast<PHINode>(&*iIter))
           {
