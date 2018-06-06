@@ -196,8 +196,8 @@ namespace llvm {
         mergeSCCs(LDI);
         collectNonLeafScalarSCCs(LDI);
         // printSCCs(LDI->loopSCCDAG);
-
-        /*
+        for (auto bb : LDI->loopBBs) { bb->print(errs() << "LOOP BB:\n"); errs() << "\n"; }
+/*
          * Create the pipeline stages.
          */
         if (!isWorthParallelizing(LDI)) {
@@ -742,10 +742,12 @@ namespace llvm {
         /*
          * Clone instructions within the stage's scc, and scalar sccs
          */
+        std::set<BasicBlock *> allBBs;
         for (auto nodePair : stageInfo->scc->internalNodePairs())
         {
           auto I = cast<Instruction>(nodePair.first);
           stageInfo->iCloneMap[I] = I->clone();
+          allBBs.insert(I->getParent());
         }
         for (auto scc : stageInfo->scalarSCCs)
         {
@@ -753,13 +755,16 @@ namespace llvm {
           {
             auto I = cast<Instruction>(nodePair.first);
             stageInfo->iCloneMap[I] = I->clone();
+            allBBs.insert(I->getParent());
           }
         }
+        for (auto bb : allBBs) { bb->print(errs() << "BB:\n"); }
 
         /*
          * Clone loop basic blocks and terminators
          */
         for (auto B : LDI->loopBBs) {
+          B->print(errs() << "B:\n");
           stageInfo->sccBBCloneMap[B] = BasicBlock::Create(context, "", stageInfo->sccStage);
           auto terminator = cast<Instruction>(B->getTerminator());
           if (stageInfo->iCloneMap.find(terminator) == stageInfo->iCloneMap.end())
@@ -775,15 +780,19 @@ namespace llvm {
         /*
          * Attach SCC instructions to their basic blocks in correct relative order
          */
+        int size = stageInfo->iCloneMap.size();
+        int instrInserted = 0;
         for (auto B : LDI->loopBBs) {
           IRBuilder<> builder(stageInfo->sccBBCloneMap[B]);
           for (auto &I : *B)
           {
             if (stageInfo->iCloneMap.find(&I) == stageInfo->iCloneMap.end()) continue;
-            auto iClone = stageInfo->iCloneMap[&I];
-            builder.Insert(iClone);
+            builder.Insert(stageInfo->iCloneMap[&I]);
+            I.print(errs() << "I inserted:\t"); errs() << "\n";
+            instrInserted++;
           }
         }
+        assert(instrInserted == size);
       }
 
       void loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
@@ -869,6 +878,8 @@ namespace llvm {
           auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
 
           auto bb = queueInfo->producer->getParent();
+	  assert(stageInfo->sccBBCloneMap.find(bb) != stageInfo->sccBBCloneMap.end());
+
           IRBuilder<> builder(stageInfo->sccBBCloneMap[bb]);
           queueInstrs->queueCall = builder.CreateCall(queuePops[queueSizeToIndex[queueInfo->bitLength]], queueCallArgs);
           queueInstrs->load = builder.CreateLoad(queueInstrs->alloca);
@@ -994,14 +1005,16 @@ namespace llvm {
         auto &context = LDI->function->getContext();
         auto stageF = stageInfo->sccStage;
 
-        for (auto bbPair : stageInfo->sccBBCloneMap)
+        for (auto bb : LDI->loopBBs)
         {
-          auto originalT = bbPair.first->getTerminator();
+          auto originalT = bb->getTerminator();
           if (stageInfo->iCloneMap.find(originalT) == stageInfo->iCloneMap.end()) continue;
           auto terminator = cast<TerminatorInst>(stageInfo->iCloneMap[originalT]);
           for (int i = 0; i < terminator->getNumSuccessors(); ++i)
           {
-            terminator->setSuccessor(i, stageInfo->sccBBCloneMap[terminator->getSuccessor(i)]);
+            auto succBB = terminator->getSuccessor(i);
+	    assert(stageInfo->sccBBCloneMap.find(succBB) != stageInfo->sccBBCloneMap.end());
+            terminator->setSuccessor(i, stageInfo->sccBBCloneMap[succBB]);
           }
         }
 
@@ -1029,6 +1042,7 @@ namespace llvm {
         stageInfo->entryBlock = BasicBlock::Create(context, "", stageF);
         stageInfo->exitBlock = BasicBlock::Create(context, "", stageF);
         stageInfo->sccBBCloneMap[LDI->preHeader] = stageInfo->entryBlock;
+
         for (auto exitBB : LDI->loopExitBlocks)
         {
           auto newExitBB = BasicBlock::Create(context, "", stageF);

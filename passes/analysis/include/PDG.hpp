@@ -41,7 +41,7 @@ namespace llvm {
        * Creating Program Dependence Subgraphs
        */
       PDG *createFunctionSubgraph(Function &F);
-      PDG *createLoopsSubgraph(LoopInfo &LI);
+      PDG *createLoopsSubgraph(Loop *loop);
       PDG *createSubgraphFromValues(std::vector<Value *> &valueList, bool linkToExternal);
       
     private:

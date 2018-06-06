@@ -89,27 +89,22 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
   return functionPDG;
 }
 
-PDG *llvm::PDG::createLoopsSubgraph(LoopInfo &LI) {
-  if (LI.empty()) return nullptr;
+PDG *llvm::PDG::createLoopsSubgraph(Loop *loop) {
   auto loopsPDG = new PDG();
 
   /*
    * Create a node per instruction within loops of LI only
    */
-  for (auto i : LI) {
-    Loop *loop = &*i;
-    for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi) {
-      for (auto &I : **bbi) {
-        loopsPDG->addNode(cast<Value>(&I), /*inclusion=*/ true);
-      }
+  for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi) {
+    for (auto &I : **bbi) {
+      loopsPDG->addNode(cast<Value>(&I), /*inclusion=*/ true);
     }
   }
 
   /*
    * Set the entry node: the first instruction of one of the top level loops (See include/llvm/Analysis/LoopInfo.h:653)
    */
-  Loop *loopBegin = *(LI.begin());
-  BasicBlock *bbBegin = *(loopBegin->block_begin());
+  BasicBlock *bbBegin = *(loop->block_begin());
   loopsPDG->entryNode = loopsPDG->internalNodeMap[&*(bbBegin->begin())];
   assert(loopsPDG->entryNode != nullptr);
 

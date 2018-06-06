@@ -26,7 +26,7 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
     /*
      * Set the loop dependence graph.
      */
-	this->loopDG = functionDG->createLoopsSubgraph(li);
+	this->loopDG = functionDG->createLoopsSubgraph(l);
 
 	/*
 	 * Build a SCCDAG of loop-internal instructions

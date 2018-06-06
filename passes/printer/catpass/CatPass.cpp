@@ -142,9 +142,9 @@ namespace llvm {
       LoopInfo& LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
       if (LI.empty()) return ;
       filename.clear();
-      ros << "pdg-" << F.getName() << "-loops.dot";
+      ros << "pdg-" << F.getName() << "-loop1.dot";
 
-      subgraph = graph->createLoopsSubgraph(LI);
+      subgraph = graph->createLoopsSubgraph(*(LI.getLoopsInPreorder().begin()));
       writeGraph<PDG>(ros.str(), subgraph);
       delete subgraph;
     }
