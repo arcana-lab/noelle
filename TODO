@@ -1,7 +1,5 @@
 - Print internal nodes of an SCC (the print method of the class SCC) following their dependences
 
-- test DSWP on real workloads using the autotuning exploration
-
 - Optimization: prune the CFG of the generated functions as much as we can
 
 - Optimization: packing/unpacking pushes and pops
