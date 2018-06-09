@@ -37,6 +37,7 @@ namespace llvm {
 
   static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
   static cl::opt<bool> ForceNoSCCMerge("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
+  static cl::opt<bool> Verbose("dswp-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Enable verbose output"));
 
   struct DSWP : public ModulePass {
     public:
@@ -64,6 +65,7 @@ namespace llvm {
       bool doInitialization (Module &M) override { 
         this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
         this->forceNoSCCMerge |= (ForceNoSCCMerge.getNumOccurrences() > 0);
+        this->verbose |= (Verbose.getNumOccurrences() > 0);
         return false; 
       }
 
@@ -120,6 +122,7 @@ namespace llvm {
     private:
       bool forceParallelization;
       bool forceNoSCCMerge;
+      bool verbose;
 
       std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par){
         std::vector<DSWPLoopDependenceInfo *> loopsToParallelize;
@@ -192,26 +195,36 @@ namespace llvm {
         /*
          * Merge SCCs of the SCCDAG.
          */
-        // printSCCs(LDI->loopSCCDAG);
+        printSCCs(LDI->loopSCCDAG);
         mergeSCCs(LDI);
         collectNonLeafScalarSCCs(LDI);
-        // printSCCs(LDI->loopSCCDAG);
-        for (auto bb : LDI->loopBBs) { bb->print(errs() << "LOOP BB:\n"); errs() << "\n"; }
-/*
-         * Create the pipeline stages.
+        printSCCs(LDI->loopSCCDAG);
+        if (this->verbose){
+          for (auto bb : LDI->loopBBs) { bb->print(errs() << "LOOP BB:\n"); errs() << "\n"; }
+        }
+
+        /*
+         * Check whether it is worth parallelizing the current loop.
          */
         if (!isWorthParallelizing(LDI)) {
           errs() << "DSWP:  Not enough TLP can be extracted\n";
           return false;
         }
+
+        /*
+         * Collect require information to parallelize the current loop.
+         */
         if (!collectStageAndQueueInfo(LDI, par)) {
           errs() << "DSWP:  We couldn't collect stage and queue information\n";
           return false;
         }
-        // printStageSCCs(LDI);
-        // printStageQueues(LDI);
-        // printEnv(LDI);
+        printStageSCCs(LDI);
+        printStageQueues(LDI);
+        printEnv(LDI);
 
+        /*
+         * Create the pipeline stages.
+         */
         errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
         for (auto &stage : LDI->stages) {
           createPipelineStageFromSCC(LDI, stage, par);
@@ -230,7 +243,9 @@ namespace llvm {
         errs() << "DSWP:  Link the parallelize loop\n";
         auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
         par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->preHeader, LDI->pipelineBB, LDI->envArray, exitIndex, LDI->loopExitBlocks);
-        LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
+        if (this->verbose){
+          LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
+        }
 
         return true;
       }
@@ -758,22 +773,24 @@ namespace llvm {
             allBBs.insert(I->getParent());
           }
         }
-        for (auto bb : allBBs) { bb->print(errs() << "BB:\n"); }
+        if (this->verbose){
+          for (auto bb : allBBs) { bb->print(errs() << "BB:\n"); }
+        }
 
         /*
          * Clone loop basic blocks and terminators
          */
         for (auto B : LDI->loopBBs) {
-          B->print(errs() << "B:\n");
+          if (this->verbose){
+            B->print(errs() << "B:\n");
+          }
           stageInfo->sccBBCloneMap[B] = BasicBlock::Create(context, "", stageInfo->sccStage);
           auto terminator = cast<Instruction>(B->getTerminator());
-          if (stageInfo->iCloneMap.find(terminator) == stageInfo->iCloneMap.end())
-          {
+          if (stageInfo->iCloneMap.find(terminator) == stageInfo->iCloneMap.end()) {
             stageInfo->iCloneMap[terminator] = terminator->clone();
           }
         }
-        for (int i = 0; i < LDI->loopExitBlocks.size(); ++i)
-        {
+        for (int i = 0; i < LDI->loopExitBlocks.size(); ++i) {
           stageInfo->sccBBCloneMap[LDI->loopExitBlocks[i]] = stageInfo->loopExitBlocks[i];
         }
 
@@ -788,7 +805,9 @@ namespace llvm {
           {
             if (stageInfo->iCloneMap.find(&I) == stageInfo->iCloneMap.end()) continue;
             builder.Insert(stageInfo->iCloneMap[&I]);
-            I.print(errs() << "I inserted:\t"); errs() << "\n";
+            if (this->verbose){
+              I.print(errs() << "I inserted:\t"); errs() << "\n";
+            }
             instrInserted++;
           }
         }
@@ -1033,8 +1052,7 @@ namespace llvm {
         }
       }
 
-      void createPipelineStageFromSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
-      {
+      void createPipelineStageFromSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
         auto M = LDI->function->getParent();
         auto stageF = cast<Function>(M->getOrInsertFunction("", stageType));
         auto &context = M->getContext();
@@ -1043,15 +1061,12 @@ namespace llvm {
         stageInfo->exitBlock = BasicBlock::Create(context, "", stageF);
         stageInfo->sccBBCloneMap[LDI->preHeader] = stageInfo->entryBlock;
 
-        for (auto exitBB : LDI->loopExitBlocks)
-        {
+        for (auto exitBB : LDI->loopExitBlocks) {
           auto newExitBB = BasicBlock::Create(context, "", stageF);
           stageInfo->loopExitBlocks.push_back(newExitBB);
           IRBuilder<> builder(newExitBB);
           builder.CreateBr(stageInfo->exitBlock);
         }
-
-        // errs() << "Stage:\t" << stageInfo->order << "\n";
 
         createInstAndBBForSCC(LDI, stageInfo);
         loadAllQueuePointersInEntry(LDI, stageInfo, par);
@@ -1070,7 +1085,9 @@ namespace llvm {
          */
         IRBuilder<> exitBuilder(stageInfo->exitBlock);
         exitBuilder.CreateRetVoid();
-        stageF->print(errs() << "Function printout:\n"); errs() << "\n";
+        if (this->verbose){
+          stageF->print(errs() << "Function printout:\n"); errs() << "\n";
+        }
       }
 
       Value * createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par)
@@ -1224,6 +1241,9 @@ namespace llvm {
 
       void printSCCs (SCCDAG *sccSubgraph)
       {
+        if (!this->verbose){
+          return ;
+        }
         errs() << "\nInternal SCCs\n";
         for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
 
@@ -1257,6 +1277,9 @@ namespace llvm {
 
       void printStageSCCs (DSWPLoopDependenceInfo *LDI)
       {
+        if (!this->verbose){
+          return ;
+        }
         for (auto &stage : LDI->stages)
         {
           errs() << "Stage: " << stage->order << "\n";
@@ -1267,6 +1290,9 @@ namespace llvm {
 
       void printStageQueues (DSWPLoopDependenceInfo *LDI)
       {
+        if (!this->verbose){
+          return ;
+        }
         for (auto &stage : LDI->stages)
         {
           errs() << "Stage: " << stage->order << "\n";
@@ -1291,6 +1317,9 @@ namespace llvm {
 
       void printEnv (DSWPLoopDependenceInfo *LDI)
       {
+        if (!this->verbose){
+          return ;
+        }
         int count = 1;
         for (auto prod : LDI->environment->envProducers)
         {
