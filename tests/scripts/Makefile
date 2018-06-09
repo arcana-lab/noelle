@@ -16,17 +16,18 @@ INCLUDES=-I../include/threadpool/include
 OPTIMIZED=parallelized
 TRANSFORMATIONS_BEFORE_PARALLELIZATION=-basicaa -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
 OPT_LEVEL=-O3
+RUNTIME_CFLAGS="-DDSWP_STATS"
 
 PRINTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PDGPRINTER).so
 OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/$(PARALLELIZATION).so
 
 all: baseline $(OPTIMIZED)
 
-baseline: test.bc
-	$(CC) -std=c++14 $(OPT_LEVEL) $^ -o $@
+baseline: baseline.bc
+	$(CC) $(OPT_LEVEL) $^ -o $@
 
 $(THREADER).bc: $(THREADER).cpp
-	$(CC) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
+	$(CC) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
 
 $(OPTIMIZED): test_dswp.bc
 	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
@@ -39,10 +40,14 @@ test_dswp.bc: test_seq.bc
 	$(CC) $(OPT_LEVEL) -c -emit-llvm $@ -o $@
 	llvm-dis $@
 
+baseline.bc: test.bc
+	$(CC) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
+	llvm-dis $@
+
 test.bc: test.cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
 	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
-	opt -dot-cfg $@
+	opt -dot-cfg -disable-output $@
 	llvm-dis $@
 
 test_seq.bc: test.bc $(THREADER).bc

@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include <ThreadSafeQueue.hpp>
+#include <ThreadSafeSpinLockQueue.hpp>
 #include <ThreadPool.hpp>
 
 #include <condition_variable>
@@ -20,7 +20,12 @@
 
 using namespace MARC;
 
-// #define RUNTIME_PRINT
+#ifdef DSWP_STATS
+static int64_t numberOfPushes8 = 0;
+static int64_t numberOfPushes16 = 0;
+static int64_t numberOfPushes32 = 0;
+static int64_t numberOfPushes64 = 0;
+#endif
 
 extern "C" {
 
@@ -44,14 +49,56 @@ extern "C" {
     printf("Pulled: %p\n", p);
   }
 
-  void queuePush8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { queue->push(*val); }
-  void queuePop8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { queue->waitPop(*val); }
-  void queuePush16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { queue->push(*val); }
-  void queuePop16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { queue->waitPop(*val); }
-  void queuePush32(ThreadSafeQueue<int32_t> *queue, int32_t *val) { queue->push(*val); }
-  void queuePop32(ThreadSafeQueue<int32_t> *queue, int32_t *val) { queue->waitPop(*val); }
-  void queuePush64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { queue->push(*val); }
-  void queuePop64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { queue->waitPop(*val); }
+  void queuePush8(ThreadSafeSpinLockQueue<int8_t> *queue, int8_t *val) { 
+    queue->push(*val); 
+
+    #ifdef DSWP_STATS
+    numberOfPushes8++;
+    #endif
+
+    return ;
+  }
+
+  void queuePop8(ThreadSafeSpinLockQueue<int8_t> *queue, int8_t *val) { 
+    queue->waitPop(*val); 
+    return ;
+  }
+
+  void queuePush16(ThreadSafeSpinLockQueue<int16_t> *queue, int16_t *val) { 
+    queue->push(*val); 
+
+    #ifdef DSWP_STATS
+    numberOfPushes16++;
+    #endif
+
+    return ;
+  }
+
+  void queuePop16(ThreadSafeSpinLockQueue<int16_t> *queue, int16_t *val) { queue->waitPop(*val); }
+
+  void queuePush32(ThreadSafeSpinLockQueue<int32_t> *queue, int32_t *val) { 
+    queue->push(*val); 
+
+    #ifdef DSWP_STATS
+    numberOfPushes32++;
+    #endif
+
+    return ;
+  }
+
+  void queuePop32(ThreadSafeSpinLockQueue<int32_t> *queue, int32_t *val) { queue->waitPop(*val); }
+
+  void queuePush64(ThreadSafeSpinLockQueue<int64_t> *queue, int64_t *val) { 
+    queue->push(*val); 
+
+    #ifdef DSWP_STATS
+    numberOfPushes64++;
+    #endif
+
+    return ;
+  }
+
+  void queuePop64(ThreadSafeSpinLockQueue<int64_t> *queue, int64_t *val) { queue->waitPop(*val); }
 
   void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
@@ -65,19 +112,19 @@ extern "C" {
       switch (queueSizes[i])
       {
         case 1:
-          localQueues[i] = new ThreadSafeQueue<int8_t>();
+          localQueues[i] = new ThreadSafeSpinLockQueue<int8_t>();
           break;
         case 8:
-          localQueues[i] = new ThreadSafeQueue<int8_t>();
+          localQueues[i] = new ThreadSafeSpinLockQueue<int8_t>();
           break;
         case 16:
-          localQueues[i] = new ThreadSafeQueue<int16_t>();
+          localQueues[i] = new ThreadSafeSpinLockQueue<int16_t>();
           break;
         case 32:
-          localQueues[i] = new ThreadSafeQueue<int32_t>();
+          localQueues[i] = new ThreadSafeSpinLockQueue<int32_t>();
           break;
         case 64:
-          localQueues[i] = new ThreadSafeQueue<int64_t>();
+          localQueues[i] = new ThreadSafeSpinLockQueue<int64_t>();
           break;
         default:
           std::cerr << "QUEUE SIZE INCORRECT!\n";
@@ -114,22 +161,29 @@ extern "C" {
     for (int i = 0; i < numberOfQueues; ++i) {
       switch (queueSizes[i]) {
         case 1:
-          delete (ThreadSafeQueue<int8_t> *)(localQueues[i]);
+          delete (ThreadSafeSpinLockQueue<int8_t> *)(localQueues[i]);
           break;
         case 8:
-          delete (ThreadSafeQueue<int8_t> *)(localQueues[i]);
+          delete (ThreadSafeSpinLockQueue<int8_t> *)(localQueues[i]);
           break;
         case 16:
-          delete (ThreadSafeQueue<int16_t> *)(localQueues[i]);
+          delete (ThreadSafeSpinLockQueue<int16_t> *)(localQueues[i]);
           break;
         case 32:
-          delete (ThreadSafeQueue<int32_t> *)(localQueues[i]);
+          delete (ThreadSafeSpinLockQueue<int32_t> *)(localQueues[i]);
           break;
         case 64:
-          delete (ThreadSafeQueue<int64_t> *)(localQueues[i]);
+          delete (ThreadSafeSpinLockQueue<int64_t> *)(localQueues[i]);
           break;
       }
     }
+
+    #ifdef DSWP_STATS
+    std::cout << "DSWP: 1 Byte pushes = " << numberOfPushes8 << std::endl;
+    std::cout << "DSWP: 2 Bytes pushes = " << numberOfPushes16 << std::endl;
+    std::cout << "DSWP: 4 Bytes pushes = " << numberOfPushes32 << std::endl;
+    std::cout << "DSWP: 8 Bytes pushes = " << numberOfPushes64 << std::endl;
+    #endif
 
     return ;
   }
