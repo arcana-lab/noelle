@@ -409,7 +409,7 @@ namespace llvm {
             case scUnknown:
             case scCouldNotCompute:
               isScalarSCC = false;
-              // V->print(errs() << "Is not a scalar:\t"); errs() << "\n";
+              V->print(errs() << "Is not a scalar:\t"); errs() << "\n";
               continue;
             default:
              llvm_unreachable("Unknown SCEV type!");
@@ -417,7 +417,7 @@ namespace llvm {
           }
 
           if (isScalarSCC) LDI->scalarSCCs.insert(scc);
-          // if (isScalarSCC) scc->print(errs() << "SCALAR SCC:\n") << "\n";
+          if (isScalarSCC) scc->print(errs() << "SCALAR SCC:\n") << "\n";
         }
       }
 
@@ -577,6 +577,7 @@ namespace llvm {
 
         for (auto bb : LDI->loopBBs){
           auto consumer = cast<Instruction>(bb->getTerminator());
+          auto consumerBB = consumer->getParent();
           auto brStageSCC = findContaining(cast<Value>(consumer));
           assert(brStageSCC.first != nullptr);
 
@@ -585,12 +586,15 @@ namespace llvm {
           {
             if (edge->isControlDependence()) continue;
             auto producer = cast<Instruction>(edge->getOutgoingT());
-            StageInfo *prodStage = findContaining(cast<Value>(producer)).first;
+            auto prodStageSCC = findContaining(cast<Value>(producer));
+            StageInfo *prodStage = prodStageSCC.first;
+            SCC *prodSCC = prodStageSCC.second;
             assert(prodStage != nullptr);
 
             for (auto &otherStage : LDI->stages)
             {
               if (otherStage.get() == prodStage) continue;
+              if (otherStage->scalarSCCs.find(prodSCC) != otherStage->scalarSCCs.end()) continue;
               if (!registerQueue(LDI, prodStage, otherStage.get(), producer, consumer)) return false;
             }
           }
@@ -1265,14 +1269,14 @@ namespace llvm {
         }
         errs() << "\n";
 
-        errs() << "Number of SCCs: " << sccSubgraph->numInternalNodes() << "\n";
-        for (auto edgeI = sccSubgraph->begin_edges(); edgeI != sccSubgraph->end_edges(); ++edgeI) {
+        //errs() << "Number of SCCs: " << sccSubgraph->numInternalNodes() << "\n";
+        //errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
+        //for (auto edgeI = sccSubgraph->begin_edges(); edgeI != sccSubgraph->end_edges(); ++edgeI) {
           // (*edgeI)->print(errs());
-          for (auto subEdge : (*edgeI)->getSubEdges()) subEdge->print(errs());
-        }
-        errs() << "\n";
+        //  for (auto subEdge : (*edgeI)->getSubEdges()) subEdge->print(errs());
+        //}
+        //errs() << "\n";
 
-        errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
       }
 
       void printStageSCCs (DSWPLoopDependenceInfo *LDI)
@@ -1284,7 +1288,7 @@ namespace llvm {
         {
           errs() << "Stage: " << stage->order << "\n";
           stage->scc->print(errs() << "SCC:\n") << "\n";
-          for (auto edge : stage->scc->getEdges()) edge->print(errs()) << "\n";
+          // for (auto edge : stage->scc->getEdges()) edge->print(errs()) << "\n";
         }
       }
 
