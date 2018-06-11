@@ -1,5 +1,5 @@
 PARALLELIZATION=DSWP
-PARALLELIZATION_OPTIONS=-dswp-force -dswp-no-scc-merge
+PARALLELIZATION_OPTIONS=-dswp-force
 PDGPRINTER=PDGPrinter
 CC=clang++
 AA6=-cfl-anders-aa
