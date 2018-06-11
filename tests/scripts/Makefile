@@ -17,6 +17,7 @@ OPTIMIZED=parallelized
 TRANSFORMATIONS_BEFORE_PARALLELIZATION=-basicaa -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
 OPT_LEVEL=-O3
 RUNTIME_CFLAGS="-DDSWP_STATS"
+RUNTIME_CFLAGS=""
 
 PRINTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PDGPRINTER).so
 OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/$(PARALLELIZATION).so
