@@ -7,7 +7,7 @@
 using namespace std;
 using namespace llvm;
 
-llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li)
+llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt)
 		: function{f}, functionDG{fG} {
 
     /*
@@ -21,6 +21,7 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
      */
     for (auto bb : l->blocks()){
       this->loopBBs.push_back(&*bb);
+      loopBBtoPD[&*bb] = pdt.getNode(&*bb)->getIDom()->getBlock();
     }
 
     /*

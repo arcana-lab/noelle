@@ -16,13 +16,14 @@ namespace llvm {
         BasicBlock *header;
         BasicBlock *preHeader;
         std::vector<BasicBlock *> loopBBs;
+        unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
 		PDG *functionDG;
 		PDG *loopDG;
 		PDG *loopInternalDG;
 		SCCDAG *loopSCCDAG;
 		SmallVector<BasicBlock *, 10> loopExitBlocks;
 
-		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li);
+		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
 		~LoopDependenceInfo();
 	};
 }

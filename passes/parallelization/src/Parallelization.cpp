@@ -77,7 +77,7 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
     auto funcCGNode = callGraph[func];
     for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
       auto F = callRecord.second->getFunction();
-      if (F == nullptr || F->empty()) continue;
+      if (F->empty()) continue;
       funcToTraverse.push(F);
     }
   }
@@ -109,7 +109,7 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
 
 std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   Module *module, 
-  std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &)> allocationFunction
+  std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &, PostDominatorTree &)> allocationFunction
   ){
 
   /* 
@@ -135,14 +135,17 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   auto indexFileName = getenv("INDEX_FILE");
   if (indexFileName){
     auto indexBuf = MemoryBuffer::getFileAsStream(indexFileName);
-    auto ec = indexBuf.getError();
-    if (!ec){
-      std::stringstream indexString;
-      indexString << indexBuf.get()->getBuffer().str();
-      if (indexString.rdbuf()->in_avail()) {
-        loopIndex = stoi(indexString.str());
-      }
+    if (auto ec = indexBuf.getError()){
+      errs() << "Failed to read \"INDEX_FILE\"\n";
+      abort();
     }
+    std::stringstream indexString;
+    indexString << indexBuf.get()->getBuffer().str();
+    if (!indexString.rdbuf()->in_avail()) {
+      errs() << "Failed to read \"INDEX_FILE\"\n";
+      abort();
+    }
+    loopIndex = stoi(indexString.str());
   }
   auto filterLoops = (loopIndex != -1) ? true : false;
 
@@ -173,7 +176,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      * Fetch the dominators.
      */
     //auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
-    //auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
+    auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
     //auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
     /*
@@ -185,7 +188,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      * Append these loops.
      */
     for (auto loop : loops){
-      auto ldi = allocationFunction(function, funcPDG, loop, LI);
+      auto ldi = allocationFunction(function, funcPDG, loop, LI, PDT);
       if (filterLoops){
         if (currentLoopIndex == 0){
           allLoops->push_back(ldi);

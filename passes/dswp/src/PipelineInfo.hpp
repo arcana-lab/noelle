@@ -80,15 +80,17 @@ namespace llvm {
 	};
 
 	struct StageInfo {
+		StageInfo(int ord, SCC *initSCC) : order{ord} { stageSCCs.insert(initSCC); }
+
 		Function *sccStage;
 		int order;
 
 		/*
-		 * Original loops' scc and basic blocks
+		 * Original loops' relevant structures
 		 */
-		SCC *scc;
+		std::set<SCC *> stageSCCs;
 		std::set<SCC *> scalarSCCs;
-		std::set<BasicBlock *> sccBBs;
+		std::set<TerminatorInst *> usedCondBrs;
 
 		/*
 		 * New basic blocks for the stage function

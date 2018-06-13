@@ -16,11 +16,17 @@ namespace llvm {
 	class DSWPLoopDependenceInfo : public LoopDependenceInfo {
       public:
 
+      	/*
+      	 * Stores characterizations of Loop SCCDAG
+      	 */
+		std::set<SCC *> scalarSCCs;
+		unordered_map<SCC *, int> sccToPartition;
+		int nextPartitionID;
+
 		/*
 		 * Stores new pipeline execution
 		 */
 		BasicBlock *pipelineBB;
-		std::set<SCC *> scalarSCCs;
 		unordered_map<SCC *, StageInfo *> sccToStage;
 		std::vector<std::unique_ptr<StageInfo>> stages;
 		std::vector<std::unique_ptr<QueueInfo>> queues;
@@ -33,7 +39,7 @@ namespace llvm {
 		Value *zeroIndexForBaseArray;
 		Value *envArray;
 
-		DSWPLoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li);
+		DSWPLoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
 
 		~DSWPLoopDependenceInfo();
 	};
