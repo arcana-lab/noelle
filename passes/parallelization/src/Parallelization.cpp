@@ -77,7 +77,12 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
     auto funcCGNode = callGraph[func];
     for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
       auto F = callRecord.second->getFunction();
-      if (F->empty()) continue;
+      if (!F) {
+        continue ;
+      }
+      if (F->empty()) {
+        continue;
+      }
       funcToTraverse.push(F);
     }
   }
@@ -136,16 +141,14 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   if (indexFileName){
     auto indexBuf = MemoryBuffer::getFileAsStream(indexFileName);
     if (auto ec = indexBuf.getError()){
-      errs() << "Failed to read \"INDEX_FILE\"\n";
+      errs() << "Failed to read INDEX_FILE = \"" << indexFileName << "\":" << ec.message() << "\n";
       abort();
     }
     std::stringstream indexString;
     indexString << indexBuf.get()->getBuffer().str();
-    if (!indexString.rdbuf()->in_avail()) {
-      errs() << "Failed to read \"INDEX_FILE\"\n";
-      abort();
+    if (indexString.rdbuf()->in_avail()) {
+      loopIndex = stoi(indexString.str());
     }
-    loopIndex = stoi(indexString.str());
   }
   auto filterLoops = (loopIndex != -1) ? true : false;
 
