@@ -1,3 +1,7 @@
+- Fix the DSWP code to use the correct terminology
+
+- Fix the DSWP dispatcher to use only one threadpool
+
 - Print internal nodes of an SCC (the print method of the class SCC) following their dependences
 
 - Optimization: prune the CFG of the generated functions as much as we can
