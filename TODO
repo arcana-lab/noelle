@@ -7,3 +7,5 @@
 - Optimization: prune the CFG of the generated functions as much as we can
 
 - Optimization: packing/unpacking pushes and pops
+
+- Optimization: implement PS-DSWP
