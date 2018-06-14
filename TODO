@@ -8,4 +8,8 @@
 
 - Optimization: packing/unpacking pushes and pops
 
+- Optimization: inline calls to queues as much as possible
+
+- Optimization: implement the lock-free version of ThreadSafeSpinLockQueue
+
 - Optimization: implement PS-DSWP
