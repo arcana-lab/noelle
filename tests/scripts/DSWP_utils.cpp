@@ -27,6 +27,8 @@ static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
 
+static ThreadPool pool{std::thread::hardware_concurrency(), true};
+
 extern "C" {
 
   typedef void (*stageFunctionPtr_t)(void *, void*);
@@ -135,8 +137,6 @@ extern "C" {
     #ifdef RUNTIME_PRINT
     std::cerr << "Made queues" << std::endl;
     #endif
-
-    ThreadPool pool(numberOfStages);
 
     std::vector<MARC::TaskFuture<void>> localFutures;
     auto allStages = (void **)stages;
