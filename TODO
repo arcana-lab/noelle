@@ -2,6 +2,8 @@
 
 - Print internal nodes of an SCC (the print method of the class SCC) following their dependences
 
+- Stop DSWP when there is only one partition of the SCCDAG
+
 - Optimization: inline calls involved in an SCC and rerun the PDG analysis
 
 - Optimization: packing/unpacking pushes and pops
