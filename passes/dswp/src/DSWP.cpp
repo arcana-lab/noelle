@@ -690,7 +690,7 @@ namespace llvm {
         }
       }
 
-      bool collectBrQueueInfo (DSWPLoopDependenceInfo *LDI)
+      bool collectControlQueueInfo (DSWPLoopDependenceInfo *LDI)
       {
         auto findContaining = [&](Value *val) -> std::pair<StageInfo *, SCC *> {
           for (auto &stage : LDI->stages)
@@ -877,7 +877,7 @@ namespace llvm {
 
         if (!collectNonScalarSCCQueueInfo(LDI)) return false;
         trimCFGOfStages(LDI);
-        if (!collectBrQueueInfo(LDI)) return false;
+        if (!collectControlQueueInfo(LDI)) return false;
         if (!collectTransitiveScalarSCCQueueInfo(LDI)) return false;
 
         LDI->environment = std::make_unique<EnvInfo>();
