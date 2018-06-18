@@ -19,7 +19,7 @@ namespace llvm {
       	/*
       	 * Stores characterizations of Loop SCCDAG
       	 */
-		std::set<SCC *> scalarSCCs;
+		std::set<SCC *> removableSCCs;
 		unordered_map<SCC *, int> sccToPartition;
 		int nextPartitionID;
 

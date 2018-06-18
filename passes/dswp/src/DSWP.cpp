@@ -198,7 +198,9 @@ namespace llvm {
          */
         // printSCCs(LDI->loopSCCDAG);
         mergeSCCs(LDI);
-        collectNonLeafScalarSCCs(LDI);
+        // collectParallelizableSingleInstrNodes(LDI);
+        collectRemovableSCCsByInductionVars(LDI);
+        // collectClonableSCCs(LDI);
         // printSCCs(LDI->loopSCCDAG);
         if (this->verbose){
           errs() << "USING VERBOSE\n";
@@ -386,7 +388,7 @@ namespace llvm {
         return ;
       }
 
-      void collectNonLeafScalarSCCs (DSWPLoopDependenceInfo *LDI)
+      void collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI)
       {
         auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
         auto &sccSubgraph = LDI->loopSCCDAG;
@@ -395,11 +397,11 @@ namespace llvm {
           auto scc = sccNode->getT();
           if (sccNode->numOutgoingEdges() == 0) continue;
 
-          bool isNonLeafScalarSCC = true;
+          bool isRemovableSCC = true;
           for (auto iNodePair : scc->internalNodePairs())
           {
             auto V = iNodePair.first;
-            bool canBePartOfScalarSCC = isa<CmpInst>(V) || isa<TerminatorInst>(V);
+            bool canBePartOfRemovableSCC = isa<CmpInst>(V) || isa<TerminatorInst>(V);
 
             auto scev = SE.getSCEV(V);
             switch (scev->getSCEVType()) {
@@ -416,16 +418,16 @@ namespace llvm {
               continue;
             case scUnknown:
             case scCouldNotCompute:
-              isNonLeafScalarSCC &= canBePartOfScalarSCC;
-              // V->print(errs() << "Is not a scalar:\t"); errs() << "\n";
+              isRemovableSCC &= canBePartOfRemovableSCC;
+              // V->print(errs() << "Is not a removable instruction:\t"); errs() << "\n";
               continue;
             default:
              llvm_unreachable("Unknown SCEV type!");
             }
           }
 
-          if (isNonLeafScalarSCC) LDI->scalarSCCs.insert(scc);
-          if (isNonLeafScalarSCC) scc->print(errs() << "SCALAR SCC:\n") << "\n";
+          if (isRemovableSCC) LDI->removableSCCs.insert(scc);
+          // if (isRemovableSCC) scc->print(errs() << "REMOVABLE SCC:\n") << "\n";
         }
       }
 
@@ -433,10 +435,10 @@ namespace llvm {
         if (this->forceParallelization){
           return true;
         }
-        return LDI->loopSCCDAG->numNodes() - LDI->scalarSCCs.size() > 1;
+        return LDI->loopSCCDAG->numNodes() - LDI->removableSCCs.size() > 1;
       }
 
-      void collectSCCIntoStages (DSWPLoopDependenceInfo *LDI)
+      void createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI)
       {
         auto topLevelSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
         unordered_map<int, StageInfo *> partitionToStage;
@@ -465,7 +467,7 @@ namespace llvm {
           }
 
           auto scc = sccNode->getT();
-          if (LDI->scalarSCCs.find(scc) == LDI->scalarSCCs.end())
+          if (LDI->removableSCCs.find(scc) == LDI->removableSCCs.end())
           {
             StageInfo *stage;
             int sccPartition = LDI->sccToPartition[scc];
@@ -484,7 +486,7 @@ namespace llvm {
         }
       }
 
-      void collectScalarsForStages (DSWPLoopDependenceInfo *LDI)
+      void addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI)
       {
         for (auto &stage : LDI->stages)
         {
@@ -506,9 +508,9 @@ namespace llvm {
               auto fromSCCNode = sccEdge->getOutgoingNode();
               auto fromSCC = fromSCCNode->getT();
               if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
-              if (LDI->scalarSCCs.find(fromSCC) == LDI->scalarSCCs.end()) continue;
+              if (LDI->removableSCCs.find(fromSCC) == LDI->removableSCCs.end()) continue;
 
-              stage->scalarSCCs.insert(fromSCC);
+              stage->removableSCCs.insert(fromSCC);
               dependentSCCNodes.push(fromSCCNode);
               visitedNodes.insert(fromSCCNode);
             }
@@ -550,7 +552,7 @@ namespace llvm {
         return byteSize;
       }
 
-      bool collectNonScalarSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
+      bool collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
       {
         for (auto scc : LDI->loopSCCDAG->getNodes())
         {
@@ -559,8 +561,8 @@ namespace llvm {
             auto sccPair = sccEdge->getNodePair();
             auto fromSCC = sccPair.first->getT();
             auto toSCC = sccPair.second->getT();
-            if (LDI->scalarSCCs.find(fromSCC) != LDI->scalarSCCs.end()) continue;
-            if (LDI->scalarSCCs.find(toSCC) != LDI->scalarSCCs.end()) continue;
+            if (LDI->removableSCCs.find(fromSCC) != LDI->removableSCCs.end()) continue;
+            if (LDI->removableSCCs.find(toSCC) != LDI->removableSCCs.end()) continue;
 
             auto fromStage = LDI->sccToStage[fromSCC];
             auto toStage = LDI->sccToStage[toSCC];
@@ -580,6 +582,39 @@ namespace llvm {
           }
         }
         return true;
+      }
+
+      void collectTransitiveCondBrs (DSWPLoopDependenceInfo *LDI,
+        std::set<TerminatorInst *> &bottomLevelBrs,
+        std::set<TerminatorInst *> &descendantCondBrs)
+      {
+        std::queue<DGNode<Value> *> queuedBrs;
+        std::set<TerminatorInst *> visitedBrs;
+        for (auto br : bottomLevelBrs)
+        {
+          queuedBrs.push(LDI->loopInternalDG->fetchNode(cast<Value>(br)));
+          visitedBrs.insert(br);
+        }
+
+        while (!queuedBrs.empty())
+        {
+          auto brNode = queuedBrs.front();
+          auto term = cast<TerminatorInst>(brNode->getT());
+          queuedBrs.pop();
+          if (term->getNumSuccessors() > 1) descendantCondBrs.insert(term);
+
+          for (auto edge : brNode->getIncomingEdges())
+          {
+            if (auto termI = dyn_cast<TerminatorInst>(edge->getOutgoingT()))
+            {
+              if (visitedBrs.find(termI) == visitedBrs.end())
+              {
+                queuedBrs.push(edge->getOutgoingNode());
+                visitedBrs.insert(termI);
+              }
+            }
+          }
+        }
       }
 
       void trimCFGOfStages (DSWPLoopDependenceInfo *LDI)
@@ -608,35 +643,8 @@ namespace llvm {
         /*
          * Collect conditional branches necessary to capture loop iteration tail branches
          */
-        std::queue<DGNode<Value> *> queuedBrs;
-        std::set<TerminatorInst *> visitedBrs;
         std::set<TerminatorInst *> minNecessaryCondBrs;
-        for (auto br : iterEndBrs)
-        {
-          queuedBrs.push(LDI->loopInternalDG->fetchNode(cast<Value>(br)));
-          visitedBrs.insert(br);
-        }
-
-        while (!queuedBrs.empty())
-        {
-          auto brNode = queuedBrs.front();
-          auto term = cast<TerminatorInst>(brNode->getT());
-          queuedBrs.pop();
-          if (term->getNumSuccessors() > 1) minNecessaryCondBrs.insert(term);
-
-          for (auto edge : brNode->getIncomingEdges())
-          {
-            if (auto termI = dyn_cast<TerminatorInst>(edge->getOutgoingT()))
-            {
-              if (visitedBrs.find(termI) == visitedBrs.end())
-              {
-                queuedBrs.push(edge->getOutgoingNode());
-                visitedBrs.insert(termI);
-              }
-            }
-          }
-        }
-
+        collectTransitiveCondBrs(LDI, iterEndBrs, minNecessaryCondBrs);
         for (auto br : minNecessaryCondBrs) { br->print(errs() << "MIN BR:\t"); errs() << "\n"; }
 
         /*
@@ -659,34 +667,7 @@ namespace llvm {
             stageBrs.insert(LDI->queues[queueIndex]->producer->getParent()->getTerminator());
           }
 
-          std::queue<DGNode<Value> *> queuedStageBrs;
-          std::set<TerminatorInst *> visitedStageBrs;
-          for (auto stageBr : stageBrs)
-          {
-            queuedStageBrs.push(LDI->loopInternalDG->fetchNode(cast<Value>(stageBr)));
-            visitedStageBrs.insert(stageBr);
-          }
-
-          while (!queuedStageBrs.empty())
-          {
-            auto brNode = queuedStageBrs.front();
-            auto term = cast<TerminatorInst>(brNode->getT());
-            queuedStageBrs.pop();
-            if (term->getNumSuccessors() > 1) { stage->usedCondBrs.insert(term);
-              term->print(errs() << "Stage " << stage->order << " used BR:\t"); errs() << "\n"; }
-
-            for (auto edge : brNode->getIncomingEdges())
-            {
-              if (auto termI = dyn_cast<TerminatorInst>(edge->getOutgoingT()))
-              {
-                if (visitedStageBrs.find(termI) == visitedBrs.end())
-                {
-                  queuedBrs.push(edge->getOutgoingNode());
-                  visitedBrs.insert(termI);
-                }
-              }
-            }
-          }
+          collectTransitiveCondBrs(LDI, stageBrs, stage->usedCondBrs);
         }
       }
 
@@ -696,7 +677,7 @@ namespace llvm {
           for (auto &stage : LDI->stages)
           {
             for (auto scc : stage->stageSCCs) if (scc->isInternal(val)) return std::make_pair(stage.get(), scc);
-            for (auto scc : stage->scalarSCCs) if (scc->isInternal(val)) return std::make_pair(stage.get(), scc);
+            for (auto scc : stage->removableSCCs) if (scc->isInternal(val)) return std::make_pair(stage.get(), scc);
           }
           return std::make_pair(nullptr, nullptr);
         };
@@ -723,7 +704,7 @@ namespace llvm {
                * Register a queue if the producer isn't in the stage and the consumer is used
                */
               if (otherStage.get() == prodStage) continue;
-              if (otherStage->scalarSCCs.find(prodSCC) != otherStage->scalarSCCs.end()) continue;
+              if (otherStage->removableSCCs.find(prodSCC) != otherStage->removableSCCs.end()) continue;
               if (otherStage->usedCondBrs.find(consumerTerm) == otherStage->usedCondBrs.end()) continue;
               if (!registerQueue(LDI, prodStage, otherStage.get(), producer, consumerI)) return false;
             }
@@ -732,19 +713,17 @@ namespace llvm {
         return true;
       }
 
-      bool collectTransitiveScalarSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
+      bool collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
       {
-        // Go through non-scalar SCC -> scalar SCC data dependencies
-        // Add queues to stages replicating that scalar SCC
         for (auto &stage : LDI->stages)
         {
           auto toStage = stage.get();
-          for (auto scalarSCC : stage->scalarSCCs)
+          for (auto removableSCC : stage->removableSCCs)
           {
-            for (auto sccEdge : LDI->loopSCCDAG->fetchNode(scalarSCC)->getIncomingEdges())
+            for (auto sccEdge : LDI->loopSCCDAG->fetchNode(removableSCC)->getIncomingEdges())
             {
               auto fromSCC = sccEdge->getOutgoingT();
-              if (LDI->scalarSCCs.find(fromSCC) != LDI->scalarSCCs.end()) continue;
+              if (LDI->removableSCCs.find(fromSCC) != LDI->removableSCCs.end()) continue;
               auto fromStage = LDI->sccToStage[fromSCC];
 
               /*
@@ -782,16 +761,16 @@ namespace llvm {
             isPreLoop = true;
             auto internalValue = outgoingEdge->getIncomingT();
 
-            bool isScalarInst = false;
-            for (auto scc : LDI->scalarSCCs)
+            bool isSharedInst = false;
+            for (auto scc : LDI->removableSCCs)
             {
               if (!scc->isInternal(internalValue)) continue;
-              isScalarInst = true;
+              isSharedInst = true;
               for (auto &stage : LDI->stages) stage->incomingEnvs.insert(envIndex);
               break;
             }
 
-            if (!isScalarInst)
+            if (!isSharedInst)
             {
               for (auto &stage : LDI->stages)
               {
@@ -836,16 +815,16 @@ namespace llvm {
               LDI->environment->addPostLoopProducer(internalValue);
             }
 
-            bool isScalarInst = false;
-            for (auto scc : LDI->scalarSCCs)
+            bool isSharedInst = false;
+            for (auto scc : LDI->removableSCCs)
             {
               if (!scc->isInternal(internalValue)) continue;
-              isScalarInst = true;
+              isSharedInst = true;
               LDI->stages[0]->outgoingEnvs[internalInst] = envIndex;
               break;
             }
 
-            if (!isScalarInst)
+            if (!isSharedInst)
             {
               for (auto &stage : LDI->stages)
               {
@@ -872,13 +851,13 @@ namespace llvm {
 
       bool collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par)
       {
-        collectSCCIntoStages(LDI);
-        collectScalarsForStages(LDI);
+        createStagesfromPartitionedSCCs(LDI);
+        addRemovableSCCsToStages(LDI);
 
-        if (!collectNonScalarSCCQueueInfo(LDI)) return false;
+        if (!collectPartitionedSCCQueueInfo(LDI)) return false;
         trimCFGOfStages(LDI);
         if (!collectControlQueueInfo(LDI)) return false;
-        if (!collectTransitiveScalarSCCQueueInfo(LDI)) return false;
+        if (!collectRemovableSCCQueueInfo(LDI)) return false;
 
         LDI->environment = std::make_unique<EnvInfo>();
         LDI->environment->exitBlockType = par.int32;
@@ -894,7 +873,7 @@ namespace llvm {
         auto &context = LDI->function->getParent()->getContext();
 
         /*
-         * Clone instructions within the stage's scc, and scalar sccs
+         * Clone instructions within the stage's scc, and removable sccs
          */
         std::set<BasicBlock *> allBBs;
         auto cloneInstructionsOf = [&](SCC *scc) -> void {
@@ -907,7 +886,7 @@ namespace llvm {
         };
 
         for (auto scc : stageInfo->stageSCCs) cloneInstructionsOf(scc);
-        for (auto scc : stageInfo->scalarSCCs) cloneInstructionsOf(scc);
+        for (auto scc : stageInfo->removableSCCs) cloneInstructionsOf(scc);
 
         if (this->verbose){
           //for (auto bb : allBBs) { bb->print(errs() << "BB:\n"); }

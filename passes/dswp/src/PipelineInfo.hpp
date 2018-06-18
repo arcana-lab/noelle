@@ -89,7 +89,7 @@ namespace llvm {
 		 * Original loops' relevant structures
 		 */
 		std::set<SCC *> stageSCCs;
-		std::set<SCC *> scalarSCCs;
+		std::set<SCC *> removableSCCs;
 		std::set<TerminatorInst *> usedCondBrs;
 
 		/*
