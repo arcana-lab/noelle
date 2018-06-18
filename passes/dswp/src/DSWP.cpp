@@ -199,7 +199,7 @@ namespace llvm {
          */
         if (this->verbose) errs() << "DSWP:  Before merge\n";
         printSCCs(LDI->loopSCCDAG);
-        mergeSCCs(LDI);
+        partitionSCCDAG(LDI);
         // collectParallelizableSingleInstrNodes(LDI);
         collectRemovableSCCsByInductionVars(LDI);
         // collectClonableSCCs(LDI);
@@ -221,10 +221,7 @@ namespace llvm {
         /*
          * Collect require information to parallelize the current loop.
          */
-        if (!collectStageAndQueueInfo(LDI, par)) {
-          errs() << "DSWP:  We couldn't collect stage and queue information\n";
-          return false;
-        }
+        collectStageAndQueueInfo(LDI, par);
         printStageSCCs(LDI);
         printStageQueues(LDI);
         printEnv(LDI);
@@ -372,7 +369,7 @@ namespace llvm {
         }
       }
 
-      void mergeSCCs (DSWPLoopDependenceInfo *LDI)
+      void partitionSCCDAG (DSWPLoopDependenceInfo *LDI)
       {
         // errs() << "Number of unmerged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
         if (this->forceNoSCCMerge) return ;
@@ -438,6 +435,7 @@ namespace llvm {
         if (this->forceParallelization){
           return true;
         }
+        errs() << "WORTH PAR: " << (LDI->loopSCCDAG->numNodes() - LDI->removableSCCs.size()) << "\n";
         return LDI->loopSCCDAG->numNodes() - LDI->removableSCCs.size() > 1;
       }
 
@@ -521,7 +519,7 @@ namespace llvm {
         }
       }
 
-      bool registerQueue (DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer)
+      void registerQueue (DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer)
       {
         int queueIndex = LDI->queues.size();
         for (auto queueI : fromStage->producerToQueues[producer])
@@ -551,11 +549,11 @@ namespace llvm {
         { 
           errs() << "NOT BYTE SIZE (" << queueInfo->bitLength << "): "; producer->getType()->print(errs()); errs() <<  "\n";
           producer->print(errs() << "Producer: "); errs() << "\n";
+          abort();
         }
-        return byteSize;
       }
 
-      bool collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
+      void collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
       {
         for (auto scc : LDI->loopSCCDAG->getNodes())
         {
@@ -580,11 +578,10 @@ namespace llvm {
               if (instructionEdge->isControlDependence()) continue;
               auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
               auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
-              if (!registerQueue(LDI, fromStage, toStage, producer, consumer)) return false;
+              registerQueue(LDI, fromStage, toStage, producer, consumer);
             }
           }
         }
-        return true;
       }
 
       void collectTransitiveCondBrs (DSWPLoopDependenceInfo *LDI,
@@ -673,7 +670,7 @@ namespace llvm {
         }
       }
 
-      bool collectControlQueueInfo (DSWPLoopDependenceInfo *LDI)
+      void collectControlQueueInfo (DSWPLoopDependenceInfo *LDI)
       {
         auto findContaining = [&](Value *val) -> std::pair<StageInfo *, SCC *> {
           for (auto &stage : LDI->stages)
@@ -708,14 +705,13 @@ namespace llvm {
               if (otherStage.get() == prodStage) continue;
               if (otherStage->removableSCCs.find(prodSCC) != otherStage->removableSCCs.end()) continue;
               if (otherStage->usedCondBrs.find(consumerTerm) == otherStage->usedCondBrs.end()) continue;
-              if (!registerQueue(LDI, prodStage, otherStage.get(), producer, consumerI)) return false;
+              registerQueue(LDI, prodStage, otherStage.get(), producer, consumerI);
             }
           }
         }
-        return true;
       }
 
-      bool collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
+      void collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
       {
         for (auto &stage : LDI->stages)
         {
@@ -737,12 +733,11 @@ namespace llvm {
                 if (instructionEdge->isControlDependence()) continue;
                 auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
                 auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
-                if (!registerQueue(LDI, fromStage, toStage, producer, consumer)) return false;
+                registerQueue(LDI, fromStage, toStage, producer, consumer);
               }
             }
           }
         }
-        return true;
       }
 
       void collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI)
@@ -851,15 +846,15 @@ namespace llvm {
         LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->stages.size());
       }
 
-      bool collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par)
+      void collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par)
       {
         createStagesfromPartitionedSCCs(LDI);
         addRemovableSCCsToStages(LDI);
 
-        if (!collectPartitionedSCCQueueInfo(LDI)) return false;
+        collectPartitionedSCCQueueInfo(LDI);
         trimCFGOfStages(LDI);
-        if (!collectControlQueueInfo(LDI)) return false;
-        if (!collectRemovableSCCQueueInfo(LDI)) return false;
+        collectControlQueueInfo(LDI);
+        collectRemovableSCCQueueInfo(LDI);
 
         LDI->environment = std::make_unique<EnvInfo>();
         LDI->environment->exitBlockType = par.int32;
@@ -867,7 +862,6 @@ namespace llvm {
         collectPostLoopEnvInfo(LDI);
 
         configureDependencyStorage(LDI, par);
-        return true;
       }
 
       void createInstAndBBForSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
@@ -1186,6 +1180,9 @@ namespace llvm {
           auto queueValType = cast<AllocaInst>(queueInstr->alloca)->getAllocatedType();
           auto call = cast<CallInst>(queueInstr->queueCall);
           callsToInline.push(std::make_pair(call, queueValType));
+            call->print(errs() << "From queue (" << queueInstrPair.first << ") Will incline call: \t");
+
+            queueValType->print(errs() << "\tType: "); errs() << "\n";
         }
 
         while (!callsToInline.empty()) {
@@ -1201,12 +1198,16 @@ namespace llvm {
 
             auto callToInline = callPair.first;
             auto queueValType = callPair.second;
-            for (auto &B : *callToInline->getCalledFunction()) {
+
+            auto F = callToInline->getCalledFunction();
+            for (auto &B : *F) {
               for (auto &I : B) {
                 if (auto call = dyn_cast<CallInst>(&I)) {
                   for (int i = 0; i < call->getNumArgOperands(); ++i) {
                     if (call->getArgOperand(i)->getType() == queueValType) {
                       auto func = call->getCalledFunction();
+                      call->print(errs() << "Checking call \t"); errs() << "\n";
+                      if (func == nullptr || func->empty()) { errs() << "FUNCTION NIL OR BODY EMPTY\n"; break; }
                       funcToInline.insert(func);
                       funcToQueueValType[func] = queueValType;
                       break;
@@ -1228,6 +1229,9 @@ namespace llvm {
               if (auto call = dyn_cast<CallInst>(&I)) {
                 if (funcToInline.find(call->getCalledFunction()) != funcToInline.end()) {
                   callsToInline.push(std::make_pair(call, funcToQueueValType[call->getCalledFunction()]));
+
+            call->print(errs() << "Will incline call: \t");
+            funcToQueueValType[call->getCalledFunction()]->print(errs() << "\tType: "); errs() << "\n";
                 }
               }
             }
@@ -1265,7 +1269,7 @@ namespace llvm {
         IRBuilder<> exitBuilder(stageInfo->exitBlock);
         exitBuilder.CreateRetVoid();
 
-        // inlineQueueCalls(LDI, stageInfo);
+        inlineQueueCalls(LDI, stageInfo);
 
         if (this->verbose){
           stageF->print(errs() << "Function printout:\n"); errs() << "\n";
