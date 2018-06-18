@@ -39,13 +39,11 @@ llvm::SCC::~SCC() {
 
 raw_ostream &llvm::SCC::print(raw_ostream &stream) {
 
-	stream << "\tInternal nodes:\n";
+    stream << "Internal nodes: " << internalNodeMap.size() << "\n";
 	for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << "\t") << "\n";
-    stream << "\n";
-
-	stream << "\tExternal nodes:\n";
+    stream << "External nodes: " << externalNodeMap.size() << "\n";
 	for (auto nodePair : externalNodePairs()) nodePair.second->print(stream << "\t") << "\n";
-    stream << "\n";
-
+    stream << "Edges: " << allEdges.size() << "\n";
+    for (auto edge : allEdges) edge->print(stream, /*linePrefix=*/"\t") << "\n";
 	return stream;
 }

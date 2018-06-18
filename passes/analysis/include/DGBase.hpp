@@ -92,6 +92,7 @@ namespace llvm {
        * Merging/Extracting Graphs
        */
       std::set<DGNode<T> *> getTopLevelNodes();
+      std::set<DGNode<T> *> getLeafNodes();
       std::vector<std::set<DGNode<T> *> *> getDisconnectedSubgraphs();
       void removeNode(DGNode<T> *node);
       void addNodesIntoNewGraph(DG<T> &newGraph, std::set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode);
@@ -214,7 +215,7 @@ namespace llvm {
     void clearSubEdges() { subEdges.clear(); }
 
     std::string toString();
-    raw_ostream &print(raw_ostream &stream);
+    raw_ostream &print(raw_ostream &stream, std::string linePrefix = "");
     std::string dataDepToString();
 
    protected:
@@ -336,6 +337,14 @@ namespace llvm {
   }
 
   template <class T>
+  std::set<DGNode<T> *> DG<T>::getLeafNodes()
+  {
+    std::set<DGNode<T> *> leafNodes;
+    for (auto node : allNodes) if (node->numOutgoingEdges() == 0) leafNodes.insert(node);
+    return leafNodes;
+  }
+
+  template <class T>
   std::vector<std::set<DGNode<T> *> *> DG<T>::getDisconnectedSubgraphs()
   {
     std::vector<std::set<DGNode<T> *> *> connectedComponents;
@@ -431,7 +440,7 @@ namespace llvm {
     for (auto pair : internalNodePairs()) pair.second->print(stream) << "\n";
     stream << "External nodes: " << externalNodeMap.size() << "\n";
     for (auto pair : externalNodePairs()) pair.second->print(stream) << "\n";
-    stream << "All edges: " << allEdges.size() << "\n";
+    stream << "Edges: " << allEdges.size() << "\n";
     for (auto edge : allEdges) edge->print(stream) << "\n";
   }
 
@@ -524,7 +533,7 @@ namespace llvm {
   template <>
   inline std::string DGNode<Instruction>::toString()
   {
-    if (!theT) return "Empty node\n";
+    if (!theT) return "Empty node";
     std::string str;
     raw_string_ostream instStream(str);
     theT->print(instStream << theT->getFunction()->getName() << ": ");
@@ -572,22 +581,22 @@ namespace llvm {
   template <class T, class SubT>
   std::string DGEdgeBase<T, SubT>::toString()
   {
-    if (this->isControlDependence()) return "CTRL\n";
+    if (this->isControlDependence()) return "CTRL";
     std::string edgeStr;
     raw_string_ostream ros(edgeStr);
     ros << this->dataDepToString();
     ros << (must ? " (must)" : " (may)");
-    ros << (memory ? " from memory " : "") << "\n";
+    ros << (memory ? " from memory " : "");
     ros.flush();
     return edgeStr;
   }
   
   template <class T, class SubT>
-  raw_ostream & DGEdgeBase<T, SubT>::print(raw_ostream &stream)
+  raw_ostream & DGEdgeBase<T, SubT>::print(raw_ostream &stream, std::string linePrefix)
   {
-    from->print(stream << "From:\t") << "\n";
-    to->print(stream << "To:\t") << "\n";
-    stream << this->toString();
+    from->print(stream << linePrefix << "From:\t") << "\n";
+    to->print(stream << linePrefix << "To:\t") << "\n";
+    stream << linePrefix << this->toString();
     return stream;
   }
 }

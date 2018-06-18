@@ -1,5 +1,3 @@
-- Fix the DSWP code to use the correct terminology
-
 - Print internal nodes of an SCC (the print method of the class SCC) following their dependences
 
 - Stop DSWP when there is only one partition of the SCCDAG

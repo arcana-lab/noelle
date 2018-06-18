@@ -8,6 +8,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
+#include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/LoopUtils.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
@@ -196,14 +197,16 @@ namespace llvm {
         /*
          * Merge SCCs of the SCCDAG.
          */
-        // printSCCs(LDI->loopSCCDAG);
+        if (this->verbose) errs() << "DSWP:  Before merge\n";
+        printSCCs(LDI->loopSCCDAG);
         mergeSCCs(LDI);
         // collectParallelizableSingleInstrNodes(LDI);
         collectRemovableSCCsByInductionVars(LDI);
         // collectClonableSCCs(LDI);
-        // printSCCs(LDI->loopSCCDAG);
+        if (this->verbose) errs() << "DSWP:  After merge\n";
+        printSCCs(LDI->loopSCCDAG);
         if (this->verbose){
-          errs() << "USING VERBOSE\n";
+          errs() << "DSWP:  USING VERBOSE\n";
           // for (auto bb : LDI->loopBBs) { bb->print(errs() << "LOOP BB:\n"); errs() << "\n"; }
         }
 
@@ -645,7 +648,6 @@ namespace llvm {
          */
         std::set<TerminatorInst *> minNecessaryCondBrs;
         collectTransitiveCondBrs(LDI, iterEndBrs, minNecessaryCondBrs);
-        for (auto br : minNecessaryCondBrs) { br->print(errs() << "MIN BR:\t"); errs() << "\n"; }
 
         /*
          * Collect conditional branches necessary to capture stage execution
@@ -926,7 +928,7 @@ namespace llvm {
             if (stageInfo->iCloneMap.find(&I) == stageInfo->iCloneMap.end()) continue;
             builder.Insert(stageInfo->iCloneMap[&I]);
             if (this->verbose){
-              I.print(errs() << "I inserted:\t"); errs() << "\n";
+              // I.print(errs() << "I inserted:\t"); errs() << "\n";
             }
             instrInserted++;
           }
@@ -1172,6 +1174,67 @@ namespace llvm {
         }
       }
 
+      void inlineQueueCalls (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo) {
+        /*
+         * Recursively inline queue push/pop functions in DSWP Utils and ThreadPool API
+         */
+
+        // Keep track of function calls in functions you inline that take in the initial type to be pushed/popped
+        std::queue<std::pair<CallInst *, Type *>> callsToInline;
+        for (auto &queueInstrPair : stageInfo->queueInstrMap) {
+          auto &queueInstr = queueInstrPair.second;
+          auto queueValType = cast<AllocaInst>(queueInstr->alloca)->getAllocatedType();
+          auto call = cast<CallInst>(queueInstr->queueCall);
+          callsToInline.push(std::make_pair(call, queueValType));
+        }
+
+        while (!callsToInline.empty()) {
+
+          /*
+           * Empty the queue, inlining each site
+           */
+          std::set<Function *> funcToInline;
+          unordered_map<Function *, Type *> funcToQueueValType;
+          while (!callsToInline.empty()) {
+            auto callPair = callsToInline.front();
+            callsToInline.pop();
+
+            auto callToInline = callPair.first;
+            auto queueValType = callPair.second;
+            for (auto &B : *callToInline->getCalledFunction()) {
+              for (auto &I : B) {
+                if (auto call = dyn_cast<CallInst>(&I)) {
+                  for (int i = 0; i < call->getNumArgOperands(); ++i) {
+                    if (call->getArgOperand(i)->getType() == queueValType) {
+                      auto func = call->getCalledFunction();
+                      funcToInline.insert(func);
+                      funcToQueueValType[func] = queueValType;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+
+            InlineFunctionInfo IFI;
+            InlineFunction(callToInline, IFI);
+          }
+
+          /*
+           * Collect next level of queue push/pop calls to inline
+           */
+          for (auto &B : *stageInfo->sccStage) {
+            for (auto &I : B) {
+              if (auto call = dyn_cast<CallInst>(&I)) {
+                if (funcToInline.find(call->getCalledFunction()) != funcToInline.end()) {
+                  callsToInline.push(std::make_pair(call, funcToQueueValType[call->getCalledFunction()]));
+                }
+              }
+            }
+          }
+        }
+      }
+
       void createPipelineStageFromSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
         auto M = LDI->function->getParent();
         auto stageF = cast<Function>(M->getOrInsertFunction("", stageType));
@@ -1199,12 +1262,11 @@ namespace llvm {
 
         IRBuilder<> entryBuilder(stageInfo->entryBlock);
         entryBuilder.CreateBr(stageInfo->sccBBCloneMap[LDI->header]);
-
-        /*
-         * Cleanup
-         */
         IRBuilder<> exitBuilder(stageInfo->exitBlock);
         exitBuilder.CreateRetVoid();
+
+        // inlineQueueCalls(LDI, stageInfo);
+
         if (this->verbose){
           stageF->print(errs() << "Function printout:\n"); errs() << "\n";
         }
@@ -1364,35 +1426,14 @@ namespace llvm {
         if (!this->verbose){
           return ;
         }
-        errs() << "\nInternal SCCs\n";
+        errs() << "DSWP:  Print SCCDAG\nInternal SCCs\n";
         for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
 
           /*
-           * Fetch the current SCC.
+           * Fetch and print the current SCC.
            */
-          auto scc = sccI->first;
-
-          /*
-           * Print the SCC.
-           */
-          scc->print(errs());
-        }
-        errs() << "\n";
-
-        errs() << "\nExternal SCCs\n";
-        for (auto sccI = sccSubgraph->begin_external_node_map(); sccI != sccSubgraph->end_external_node_map(); ++sccI) {
           sccI->first->print(errs());
         }
-        errs() << "\n";
-
-        //errs() << "Number of SCCs: " << sccSubgraph->numInternalNodes() << "\n";
-        //errs() << "Number of edges: " << std::distance(sccSubgraph->begin_edges(), sccSubgraph->end_edges()) << "\n";
-        //for (auto edgeI = sccSubgraph->begin_edges(); edgeI != sccSubgraph->end_edges(); ++edgeI) {
-          // (*edgeI)->print(errs());
-        //  for (auto subEdge : (*edgeI)->getSubEdges()) subEdge->print(errs());
-        //}
-        //errs() << "\n";
-
       }
 
       void printStageSCCs (DSWPLoopDependenceInfo *LDI)
