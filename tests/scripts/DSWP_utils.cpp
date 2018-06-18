@@ -27,7 +27,7 @@ static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
 
-static ThreadPool pool{std::thread::hardware_concurrency(), true};
+static ThreadPool pool{true, std::thread::hardware_concurrency()};
 
 extern "C" {
 
