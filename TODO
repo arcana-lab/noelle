@@ -2,8 +2,6 @@
 
 - Stop DSWP when there is only one partition of the SCCDAG
 
-- Make "collectStageAndQueueInfo" returning void (abort inside when something goes wrong).
-
 - Optimization: inline calls involved in an SCC and rerun the PDG analysis
 
 - Optimization: packing/unpacking pushes and pops
