@@ -384,6 +384,16 @@ namespace llvm {
         // WARNING: Uses LI to determine subloop information
         clusterSubloops(LDI);
 
+        /*
+         * Separate remaining unpartitioned nodes into their own partitions
+         */
+        for (auto nodePair : LDI->loopSCCDAG->internalNodePairs()) {
+          if (LDI->removableSCCs.find(nodePair.first) != LDI->removableSCCs.end()) continue;
+          if (LDI->sccToPartition.find(nodePair.first) == LDI->sccToPartition.end()) {
+            LDI->sccToPartition[nodePair.first] = LDI->nextPartitionID++;
+          }
+        }
+
         // errs() << "Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
         return ;
       }
@@ -436,7 +446,7 @@ namespace llvm {
           return true;
         }
         errs() << "WORTH PAR: " << (LDI->loopSCCDAG->numNodes() - LDI->removableSCCs.size()) << "\n";
-        return LDI->loopSCCDAG->numNodes() - LDI->removableSCCs.size() > 1;
+        return LDI->nextPartitionID > 1;
       }
 
       void createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI)
