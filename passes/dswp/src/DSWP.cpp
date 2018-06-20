@@ -194,21 +194,19 @@ namespace llvm {
       bool applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
         errs() << "DSWP: Check if we can parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
 
-        /*
-         * Merge SCCs of the SCCDAG.
-         */
         if (this->verbose) errs() << "DSWP:  Before merge\n";
         printSCCs(LDI->loopSCCDAG);
+
+        /*
+         * Partition SCCs of the SCCDAG.
+         */
         partitionSCCDAG(LDI);
-        // collectParallelizableSingleInstrNodes(LDI);
+        collectParallelizableSingleInstrNodes(LDI);
         collectRemovableSCCsByInductionVars(LDI);
         // collectClonableSCCs(LDI);
+        
         if (this->verbose) errs() << "DSWP:  After merge\n";
         printSCCs(LDI->loopSCCDAG);
-        if (this->verbose){
-          errs() << "DSWP:  USING VERBOSE\n";
-          // for (auto bb : LDI->loopBBs) { bb->print(errs() << "LOOP BB:\n"); errs() << "\n"; }
-        }
 
         /*
          * Check whether it is worth parallelizing the current loop.
@@ -438,6 +436,14 @@ namespace llvm {
 
           if (isRemovableSCC) LDI->removableSCCs.insert(scc);
           // if (isRemovableSCC) scc->print(errs() << "REMOVABLE SCC:\n") << "\n";
+        }
+      }
+
+      void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI)
+      {
+        for (auto sccNode : LDI->loopSCCDAG->getNodes())
+        {
+          if (sccNode->getT()->numInternalNodes() == 1) LDI->singleInstrNodes.insert(sccNode->getT());
         }
       }
 
@@ -894,17 +900,10 @@ namespace llvm {
         for (auto scc : stageInfo->stageSCCs) cloneInstructionsOf(scc);
         for (auto scc : stageInfo->removableSCCs) cloneInstructionsOf(scc);
 
-        if (this->verbose){
-          //for (auto bb : allBBs) { bb->print(errs() << "BB:\n"); }
-        }
-
         /*
          * Clone loop basic blocks and terminators
          */
         for (auto B : LDI->loopBBs) {
-          if (this->verbose){
-            //B->print(errs() << "B:\n");
-          }
           stageInfo->sccBBCloneMap[B] = BasicBlock::Create(context, "", stageInfo->sccStage);
           auto terminator = cast<Instruction>(B->getTerminator());
           if (stageInfo->iCloneMap.find(terminator) == stageInfo->iCloneMap.end()) {
@@ -931,9 +930,6 @@ namespace llvm {
           {
             if (stageInfo->iCloneMap.find(&I) == stageInfo->iCloneMap.end()) continue;
             builder.Insert(stageInfo->iCloneMap[&I]);
-            if (this->verbose){
-              // I.print(errs() << "I inserted:\t"); errs() << "\n";
-            }
             instrInserted++;
           }
         }
@@ -1042,16 +1038,6 @@ namespace llvm {
               auto iClone = stageInfo->iCloneMap[&I];
               cast<Instruction>(queueInstrs->queueCall)->moveBefore(iClone);
               cast<Instruction>(queueInstrs->load)->moveBefore(iClone);
-
-              /*
-              if (queueInstrs->load->getType()->isPointerTy())
-              {
-                auto bitcastPulled = builder.CreateBitCast(queueInstrs->load, PointerType::getUnqual(par.int32));
-                auto pullPrint = builder.CreateCall(printPulledP, ArrayRef<Value*>({ bitcastPulled }));
-                cast<Instruction>(bitcastPulled)->moveBefore(iClone);
-                pullPrint->moveBefore(iClone);
-              }
-              */
               break;
             }
           }
@@ -1081,16 +1067,6 @@ namespace llvm {
             {
               store->moveBefore(&I);
               cast<Instruction>(queueInstrs->queueCall)->moveBefore(&I);
-
-              /*
-              if (pClone->getType()->isPointerTy())
-              {
-                auto bitcastPushed = builder.CreateBitCast(pClone, PointerType::getUnqual(par.int32));
-                auto pushPrint = builder.CreateCall(printPushedP, ArrayRef<Value*>({ bitcastPushed }));
-                cast<Instruction>(bitcastPushed)->moveBefore(&I);
-                pushPrint->moveBefore(&I);
-              }
-              */
               break;
             }
           }
@@ -1178,21 +1154,14 @@ namespace llvm {
         }
       }
 
+      /*
+       * Recursively inline queue push/pop functions in DSWP Utils and ThreadPool API
+       */
       void inlineQueueCalls (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo) {
-        /*
-         * Recursively inline queue push/pop functions in DSWP Utils and ThreadPool API
-         */
-
-        // Keep track of function calls in functions you inline that take in the initial type to be pushed/popped
-        std::queue<std::pair<CallInst *, Type *>> callsToInline;
+        std::queue<CallInst *> callsToInline;
         for (auto &queueInstrPair : stageInfo->queueInstrMap) {
           auto &queueInstr = queueInstrPair.second;
-          auto queueValType = cast<AllocaInst>(queueInstr->alloca)->getAllocatedType();
-          auto call = cast<CallInst>(queueInstr->queueCall);
-          callsToInline.push(std::make_pair(call, queueValType));
-            call->print(errs() << "From queue (" << queueInstrPair.first << ") Will incline call: \t");
-
-            queueValType->print(errs() << "\tType: "); errs() << "\n";
+          callsToInline.push(cast<CallInst>(queueInstr->queueCall));
         }
 
         while (!callsToInline.empty()) {
@@ -1201,28 +1170,17 @@ namespace llvm {
            * Empty the queue, inlining each site
            */
           std::set<Function *> funcToInline;
-          unordered_map<Function *, Type *> funcToQueueValType;
           while (!callsToInline.empty()) {
-            auto callPair = callsToInline.front();
+            auto callToInline = callsToInline.front();
             callsToInline.pop();
-
-            auto callToInline = callPair.first;
-            auto queueValType = callPair.second;
 
             auto F = callToInline->getCalledFunction();
             for (auto &B : *F) {
               for (auto &I : B) {
                 if (auto call = dyn_cast<CallInst>(&I)) {
-                  for (int i = 0; i < call->getNumArgOperands(); ++i) {
-                    if (call->getArgOperand(i)->getType() == queueValType) {
-                      auto func = call->getCalledFunction();
-                      call->print(errs() << "Checking call \t"); errs() << "\n";
-                      if (func == nullptr || func->empty()) { errs() << "FUNCTION NIL OR BODY EMPTY\n"; break; }
-                      funcToInline.insert(func);
-                      funcToQueueValType[func] = queueValType;
-                      break;
-                    }
-                  }
+                  auto func = call->getCalledFunction();
+                  if (func == nullptr || func->empty()) continue;
+                  funcToInline.insert(func);
                 }
               }
             }
@@ -1238,10 +1196,7 @@ namespace llvm {
             for (auto &I : B) {
               if (auto call = dyn_cast<CallInst>(&I)) {
                 if (funcToInline.find(call->getCalledFunction()) != funcToInline.end()) {
-                  callsToInline.push(std::make_pair(call, funcToQueueValType[call->getCalledFunction()]));
-
-            call->print(errs() << "Will incline call: \t");
-            funcToQueueValType[call->getCalledFunction()]->print(errs() << "\tType: "); errs() << "\n";
+                  callsToInline.push(call);
                 }
               }
             }
