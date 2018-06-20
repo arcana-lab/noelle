@@ -9,7 +9,8 @@
 #include <utility>
 #include <vector>
 
-#include <ThreadSafeSpinLockQueue.hpp>
+#include <ThreadSafeQueue.hpp>
+#include <ThreadSafeLockFreeQueue.hpp>
 #include <ThreadPool.hpp>
 
 #include <condition_variable>
@@ -51,7 +52,7 @@ extern "C" {
     printf("Pulled: %p\n", p);
   }
 
-  void queuePush8(ThreadSafeSpinLockQueue<int8_t> *queue, int8_t *val) { 
+  void queuePush8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { 
     queue->push(*val); 
 
     #ifdef DSWP_STATS
@@ -61,12 +62,12 @@ extern "C" {
     return ;
   }
 
-  void queuePop8(ThreadSafeSpinLockQueue<int8_t> *queue, int8_t *val) { 
+  void queuePop8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { 
     queue->waitPop(*val); 
     return ;
   }
 
-  void queuePush16(ThreadSafeSpinLockQueue<int16_t> *queue, int16_t *val) { 
+  void queuePush16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { 
     queue->push(*val); 
 
     #ifdef DSWP_STATS
@@ -76,9 +77,9 @@ extern "C" {
     return ;
   }
 
-  void queuePop16(ThreadSafeSpinLockQueue<int16_t> *queue, int16_t *val) { queue->waitPop(*val); }
+  void queuePop16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { queue->waitPop(*val); }
 
-  void queuePush32(ThreadSafeSpinLockQueue<int32_t> *queue, int32_t *val) { 
+  void queuePush32(ThreadSafeQueue<int32_t> *queue, int32_t *val) { 
     queue->push(*val); 
 
     #ifdef DSWP_STATS
@@ -88,9 +89,9 @@ extern "C" {
     return ;
   }
 
-  void queuePop32(ThreadSafeSpinLockQueue<int32_t> *queue, int32_t *val) { queue->waitPop(*val); }
+  void queuePop32(ThreadSafeQueue<int32_t> *queue, int32_t *val) { queue->waitPop(*val); }
 
-  void queuePush64(ThreadSafeSpinLockQueue<int64_t> *queue, int64_t *val) { 
+  void queuePush64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { 
     queue->push(*val); 
 
     #ifdef DSWP_STATS
@@ -100,7 +101,7 @@ extern "C" {
     return ;
   }
 
-  void queuePop64(ThreadSafeSpinLockQueue<int64_t> *queue, int64_t *val) { queue->waitPop(*val); }
+  void queuePop64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { queue->waitPop(*val); }
 
   void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ return stage(env, queues); }
 
@@ -114,19 +115,19 @@ extern "C" {
       switch (queueSizes[i])
       {
         case 1:
-          localQueues[i] = new ThreadSafeSpinLockQueue<int8_t>();
+          localQueues[i] = new ThreadSafeLockFreeQueue<int8_t>();
           break;
         case 8:
-          localQueues[i] = new ThreadSafeSpinLockQueue<int8_t>();
+          localQueues[i] = new ThreadSafeLockFreeQueue<int8_t>();
           break;
         case 16:
-          localQueues[i] = new ThreadSafeSpinLockQueue<int16_t>();
+          localQueues[i] = new ThreadSafeLockFreeQueue<int16_t>();
           break;
         case 32:
-          localQueues[i] = new ThreadSafeSpinLockQueue<int32_t>();
+          localQueues[i] = new ThreadSafeLockFreeQueue<int32_t>();
           break;
         case 64:
-          localQueues[i] = new ThreadSafeSpinLockQueue<int64_t>();
+          localQueues[i] = new ThreadSafeLockFreeQueue<int64_t>();
           break;
         default:
           std::cerr << "QUEUE SIZE INCORRECT!\n";
@@ -161,19 +162,19 @@ extern "C" {
     for (int i = 0; i < numberOfQueues; ++i) {
       switch (queueSizes[i]) {
         case 1:
-          delete (ThreadSafeSpinLockQueue<int8_t> *)(localQueues[i]);
+          delete (ThreadSafeLockFreeQueue<int8_t> *)(localQueues[i]);
           break;
         case 8:
-          delete (ThreadSafeSpinLockQueue<int8_t> *)(localQueues[i]);
+          delete (ThreadSafeLockFreeQueue<int8_t> *)(localQueues[i]);
           break;
         case 16:
-          delete (ThreadSafeSpinLockQueue<int16_t> *)(localQueues[i]);
+          delete (ThreadSafeLockFreeQueue<int16_t> *)(localQueues[i]);
           break;
         case 32:
-          delete (ThreadSafeSpinLockQueue<int32_t> *)(localQueues[i]);
+          delete (ThreadSafeLockFreeQueue<int32_t> *)(localQueues[i]);
           break;
         case 64:
-          delete (ThreadSafeSpinLockQueue<int64_t> *)(localQueues[i]);
+          delete (ThreadSafeLockFreeQueue<int64_t> *)(localQueues[i]);
           break;
       }
     }
