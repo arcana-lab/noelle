@@ -1,13 +1,18 @@
-- Print internal nodes of an SCC (the print method of the class SCC) following their dependences
+- Add multiple levels of verbosity
 
-- Stop DSWP when there is only one partition of the SCCDAG
+- Extract mergeSCC from partitionSCCDAG
+
+- Create a new abstraction for partitions
+
+- Modify DSWP to be able to parallelize multiple loops at the same time
 
 - Optimization: inline calls involved in an SCC and rerun the PDG analysis
 
 - Optimization: packing/unpacking pushes and pops
 
-- Optimization: inline calls to queues as much as possible
-
 - Optimization: implement the lock-free version of ThreadSafeSpinLockQueue
 
 - Optimization: implement PS-DSWP
+
+- Optimization: create a new pass to map memory locations to variables as much as possible
+  This removes the overly conservative memory loop-carried data dependences
