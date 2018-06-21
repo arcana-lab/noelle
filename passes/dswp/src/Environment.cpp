@@ -100,3 +100,51 @@ void DSWP::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI)
   }
 }
 
+void DSWP::loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
+{
+  IRBuilder<> entryBuilder(stageInfo->entryBlock);
+
+  auto envArg = &*(stageInfo->sccStage->arg_begin());
+  stageInfo->envAlloca = entryBuilder.CreateBitCast(envArg, PointerType::getUnqual(LDI->envArrayType));
+
+  auto accessProducerFromIndex = [&](int envIndex, IRBuilder<> builder) -> Value * {
+    auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
+    auto envPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
+    auto envType = LDI->environment->envProducers[envIndex]->getType();
+    return builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(envType));
+  };
+
+  /*
+   * Store (SCC -> outside of loop) dependencies within the environment array
+   */
+  for (auto outgoingEnvPair : stageInfo->outgoingEnvs)
+  {
+    auto outgoingDepClone = stageInfo->iCloneMap[outgoingEnvPair.first];
+    auto outgoingDepBB = outgoingDepClone->getParent();
+    IRBuilder<> outgoingBuilder(outgoingDepBB->getTerminator());
+    auto envVar = accessProducerFromIndex(outgoingEnvPair.second, outgoingBuilder);
+    outgoingBuilder.CreateStore(outgoingDepClone, envVar);
+  }
+
+  /*
+   * Store exit index in the exit environment variable
+   */
+  for (int i = 0; i < stageInfo->loopExitBlocks.size(); ++i)
+  {
+    IRBuilder<> builder(&*stageInfo->loopExitBlocks[i]->begin());
+    auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
+    auto envPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
+    auto envVar = builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(par.int32));
+    builder.CreateStore(ConstantInt::get(par.int32, i), envVar);
+  }
+
+  /*
+   * Load (outside of loop -> SCC) dependencies from the environment array 
+   */
+  for (auto envIndex : stageInfo->incomingEnvs)
+  {
+    auto envVar = accessProducerFromIndex(envIndex, entryBuilder);
+    auto envLoad = entryBuilder.CreateLoad(envVar);
+    stageInfo->envLoadMap[envIndex] = cast<Instruction>(envLoad);
+  }
+}
