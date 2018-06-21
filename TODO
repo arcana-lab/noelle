@@ -10,8 +10,6 @@
 
 - Optimization: packing/unpacking pushes and pops
 
-- Optimization: implement the lock-free version of ThreadSafeSpinLockQueue
-
 - Optimization: implement PS-DSWP
 
 - Optimization: create a new pass to map memory locations to variables as much as possible
