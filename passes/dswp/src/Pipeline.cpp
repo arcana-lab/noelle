@@ -51,14 +51,26 @@ void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI)
 }
 
 void DSWP::createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
+
+  /*
+   * Create a function where we will store all the code that will be executed for the current pipeline stage.
+   */
   auto M = LDI->function->getParent();
   auto stageF = cast<Function>(M->getOrInsertFunction("", stageType));
   auto &context = M->getContext();
   stageInfo->sccStage = stageF;
+
+  /*
+   * Create the entry and exit basic blocks of the pipeline-stage function.
+   */
   stageInfo->entryBlock = BasicBlock::Create(context, "", stageF);
   stageInfo->exitBlock = BasicBlock::Create(context, "", stageF);
   stageInfo->sccBBCloneMap[LDI->preHeader] = stageInfo->entryBlock;
 
+  /*
+   * Create one basic block per loop exit.
+   * Also, add unconditional branches from each of these basic blocks to the unique exit block created before.
+   */
   for (auto exitBB : LDI->loopExitBlocks) {
     auto newExitBB = BasicBlock::Create(context, "", stageF);
     stageInfo->loopExitBlocks.push_back(newExitBB);
@@ -66,29 +78,58 @@ void DSWP::createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, 
     builder.CreateBr(stageInfo->exitBlock);
   }
 
+  /*
+   * Add the instructions of the current pipeline stage to the related function.
+   */
   createInstAndBBForSCC(LDI, stageInfo);
+
+  /*
+   * Add code at the entry point of the related function to load pointers of all queues for the current pipeline stage.
+   */
   loadAllQueuePointersInEntry(LDI, stageInfo, par);
+
+  /*
+   * Add code to push values between the current pipeline stage and the connected ones.
+   */
   popValueQueues(LDI, stageInfo, par);
   pushValueQueues(LDI, stageInfo, par);
+
+  /*
+   * Add the required loads and stores to satisfy dependences from the code outside the loop to the code inside it.
+   */
   loadAndStoreEnv(LDI, stageInfo, par);
 
+  /*
+   * Link the cloned basic blocks by following the control flows of the original loop.
+   */
   remapControlFlow(LDI, stageInfo);
+
+  /*
+   * Link the data flows through variables of the cloned instructions following the data flows of the original loop.
+   */
   remapOperandsOfInstClones(LDI, stageInfo);
 
+  /*
+   * Add the unconditional branch from the entry basic block to the header of the loop.
+   */
   IRBuilder<> entryBuilder(stageInfo->entryBlock);
   entryBuilder.CreateBr(stageInfo->sccBBCloneMap[LDI->header]);
+
+  /*
+   * Add the return instruction at the end of the exit basic block.
+   */
   IRBuilder<> exitBuilder(stageInfo->exitBlock);
   exitBuilder.CreateRetVoid();
 
+  /*
+   * Inline recursively calls to queues.
+   */
   inlineQueueCalls(LDI, stageInfo);
 
-  if (this->verbose){
-    stageF->print(errs() << "Function printout:\n"); errs() << "\n";
-  }
+  return ;
 }
 
-void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par)
-{
+void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   auto M = LDI->function->getParent();
   LDI->pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->function);
   IRBuilder<> builder(LDI->pipelineBB);
