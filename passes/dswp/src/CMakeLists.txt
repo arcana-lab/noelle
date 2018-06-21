@@ -4,6 +4,8 @@ set(Srcs
   LoopSelector.cpp
   Pipeline.cpp
   Inliner.cpp
+  Queue.cpp
+  Partition.cpp
   DSWP.cpp
   DSWPLoopDependenceInfo.cpp
 )

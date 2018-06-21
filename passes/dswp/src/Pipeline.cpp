@@ -86,3 +86,40 @@ void DSWP::createPipelineStageFromSCC (DSWPLoopDependenceInfo *LDI, std::unique_
     stageF->print(errs() << "Function printout:\n"); errs() << "\n";
   }
 }
+
+void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par)
+{
+  auto M = LDI->function->getParent();
+  LDI->pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->function);
+  IRBuilder<> builder(LDI->pipelineBB);
+  
+  auto firstBB = &*LDI->function->begin();
+  IRBuilder<> funcBuilder(firstBB->getTerminator());
+
+  /*
+   * Create and populate the environment and stages arrays
+   */
+  LDI->envArray = cast<Value>(funcBuilder.CreateAlloca(LDI->envArrayType));
+  auto envPtr = createEnvArrayFromStages(LDI, funcBuilder, builder, par);
+  auto stagesPtr = createStagesArrayFromStages(LDI, funcBuilder, par);
+
+  /*
+   * Create empty queues array to be used by the stage dispatcher
+   */
+  auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->queueArrayType));
+  auto queuesPtr = cast<Value>(builder.CreateBitCast(queuesAlloca, PointerType::getUnqual(par.int8)));
+  auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, funcBuilder, par);
+
+  /*
+   * Call the stage dispatcher with the environment, queues array, and stages array
+   */
+  auto queuesCount = cast<Value>(ConstantInt::get(par.int64, LDI->queues.size()));
+  auto stagesCount = cast<Value>(ConstantInt::get(par.int64, LDI->stages.size()));
+
+  auto debugInd = LDI->function->getName().size();
+  // builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd)) }));
+  builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queuesPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
+  // builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd + 1)) }));
+
+  storeOutgoingDependentsIntoExternalValues(LDI, builder, par);
+}
