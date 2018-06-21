@@ -2,8 +2,7 @@
 
 using namespace llvm;
 
-void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI)
-{
+void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
   auto topLevelSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
   unordered_map<int, StageInfo *> partitionToStage;
 

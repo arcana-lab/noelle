@@ -2,10 +2,8 @@
 
 using namespace llvm;
 
-void DSWP::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI)
-{
-  for (auto nodeI : LDI->loopDG->externalNodePairs())
-  {
+void DSWP::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
+  for (auto nodeI : LDI->loopDG->externalNodePairs()) {
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
     auto envIndex = LDI->environment->envProducers.size();
@@ -41,12 +39,12 @@ void DSWP::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI)
     }
     if (isPreLoop) LDI->environment->addPreLoopProducer(externalValue);
   }
+
+  return ;
 }
 
-void DSWP::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI)
-{
-  for (auto nodeI : LDI->loopDG->externalNodePairs())
-  {
+void DSWP::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
+  for (auto nodeI : LDI->loopDG->externalNodePairs()) {
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
     auto envIndex = LDI->environment->envProducers.size();

@@ -97,6 +97,8 @@ void DSWP::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelizat
   LDI->envArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->environment->envSize());
   LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
   LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->stages.size());
+
+  return ;
 }
 
 void DSWP::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
@@ -114,6 +116,8 @@ void DSWP::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelizatio
   collectPostLoopEnvInfo(LDI);
 
   configureDependencyStorage(LDI, par);
+
+  return ;
 }
 
 Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par) {
