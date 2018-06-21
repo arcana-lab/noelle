@@ -6,6 +6,9 @@ set(Srcs
   Inliner.cpp
   Queue.cpp
   Partition.cpp
+  CFG.cpp
+  Environment.cpp
+  InductionVariable.cpp
   DSWP.cpp
   DSWPLoopDependenceInfo.cpp
 )
