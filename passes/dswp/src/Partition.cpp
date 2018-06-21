@@ -2,13 +2,68 @@
 
 using namespace llvm;
 
-void DSWP::mergePointerLoadInstructions (DSWPLoopDependenceInfo *LDI)
-{
-  while (true)
-  {
-    bool mergeNodes = false;
-    for (auto sccEdge : LDI->loopSCCDAG->getEdges())
-    {
+void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
+
+  /*
+   * Check if we can cluster SCCs.
+   */
+  if (this->forceNoSCCMerge) return ;
+
+  /*
+   * Merge the SCC related to a single PHI node and its use if there is only one.
+   */
+  if (this->verbose) {
+    errs() << "DSWP:    Number of unmerged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
+  }
+  mergePointerLoadInstructions(LDI);
+  mergeSinglePHIs(LDI);
+  mergeBranchesWithoutOutgoingEdges(LDI);
+
+  // WARNING: Uses LI to determine subloop information
+  clusterSubloops(LDI);
+
+  /*
+   * Assign SCCs that have no partition to their own partitions.
+   */
+  for (auto nodePair : LDI->loopSCCDAG->internalNodePairs()) {
+
+    /*
+     * Fetch the current SCC.
+     */
+    auto currentSCC = nodePair.first;
+
+    /*
+     * Check if the current SCC can be removed (e.g., because it is due to induction variables).
+     * If it is, then this SCC has already been assigned to every partition.
+     */
+    if (LDI->removableSCCs.find(currentSCC) != LDI->removableSCCs.end()) {
+      continue;
+    }
+
+    /*
+     * Check if the current SCC has been already assigned to a partition.
+     */
+    if (LDI->sccToPartition.find(currentSCC) == LDI->sccToPartition.end()) {
+
+      /*
+       * The current SCC does not belong to a partition.
+       * Assign the current SCC to its own partition.
+       */
+      LDI->sccToPartition[nodePair.first] = LDI->nextPartitionID++;
+    }
+  }
+  if (this->verbose) {
+    errs() << "DSWP:    Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
+  }
+
+  return ;
+}
+
+void DSWP::mergePointerLoadInstructions (DSWPLoopDependenceInfo *LDI) {
+
+  while (true) {
+    auto mergeNodes = false;
+    for (auto sccEdge : LDI->loopSCCDAG->getEdges()) {
       auto fromSCCNode = sccEdge->getOutgoingNode();
       auto toSCCNode = sccEdge->getIncomingNode();
       for (auto instructionEdge : sccEdge->getSubEdges())
@@ -115,33 +170,4 @@ void DSWP::mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI)
     nodesToMerge.insert(*LDI->loopSCCDAG->previousDepthNodes(tailSCC).begin());
     LDI->loopSCCDAG->mergeSCCs(nodesToMerge);
   }
-}
-
-void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI)
-{
-  // errs() << "Number of unmerged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
-  if (this->forceNoSCCMerge) return ;
-
-  /*
-   * Merge the SCC related to a single PHI node and its use if there is only one.
-   */
-  mergePointerLoadInstructions(LDI);
-  mergeSinglePHIs(LDI);
-  mergeBranchesWithoutOutgoingEdges(LDI);
-
-  // WARNING: Uses LI to determine subloop information
-  clusterSubloops(LDI);
-
-  /*
-   * Separate remaining unpartitioned nodes into their own partitions
-   */
-  for (auto nodePair : LDI->loopSCCDAG->internalNodePairs()) {
-    if (LDI->removableSCCs.find(nodePair.first) != LDI->removableSCCs.end()) continue;
-    if (LDI->sccToPartition.find(nodePair.first) == LDI->sccToPartition.end()) {
-      LDI->sccToPartition[nodePair.first] = LDI->nextPartitionID++;
-    }
-  }
-
-  // errs() << "Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
-  return ;
 }

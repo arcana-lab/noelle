@@ -15,7 +15,15 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
     printSCCs(LDI->loopSCCDAG);
   }
   partitionSCCDAG(LDI);
+
+  /*
+   * Keep track of which nodes of the SCCDAG are single instructions.
+   */
   collectParallelizableSingleInstrNodes(LDI);
+
+  /*
+   * Keep track of the SCCs that can be removed by exploiting induction variables.
+   */
   collectRemovableSCCsByInductionVars(LDI);
   if (this->verbose) {
     errs() << "DSWP:  After merge\n";

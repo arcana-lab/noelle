@@ -2,18 +2,15 @@
 
 using namespace llvm;
 
-void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI)
-{
+void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
   auto &sccSubgraph = LDI->loopSCCDAG;
-  for (auto sccNode : sccSubgraph->getNodes())
-  {
+  for (auto sccNode : sccSubgraph->getNodes()) {
     auto scc = sccNode->getT();
     if (sccNode->numOutgoingEdges() == 0) continue;
 
     bool isRemovableSCC = true;
-    for (auto iNodePair : scc->internalNodePairs())
-    {
+    for (auto iNodePair : scc->internalNodePairs()) {
       auto V = iNodePair.first;
       bool canBePartOfRemovableSCC = isa<CmpInst>(V) || isa<TerminatorInst>(V);
 
