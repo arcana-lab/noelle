@@ -155,10 +155,9 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
   auto stagesPtr = createStagesArrayFromStages(LDI, funcBuilder, par);
 
   /*
-   * Create empty queues array to be used by the stage dispatcher
+   * Allocate an array of integers.
+   * Each integer represents the bitwidth of each queue that connects pipeline stages.
    */
-  auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->queueArrayType));
-  auto queuesPtr = cast<Value>(builder.CreateBitCast(queuesAlloca, PointerType::getUnqual(par.int8)));
   auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, funcBuilder, par);
 
   /*
@@ -170,7 +169,7 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
   /*
    * Add the call to "stageDispatcher"
    */
-  builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queuesPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
+  builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
 
   /*
    * Satisfy dependences from the code inside the loop to the code outside it.

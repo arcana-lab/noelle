@@ -115,15 +115,14 @@ extern "C" {
     return stage(env, queues);
   }
 
-  void stageDispatcher(void *env, void *queues, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
+  void stageDispatcher (void *env, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
     #ifdef RUNTIME_PRINT
     std::cerr << "Starting dispatcher: num stages " << numberOfStages << ", num queues: " << numberOfQueues << std::endl;
     #endif
 
     void *localQueues[numberOfQueues];
     for (auto i = 0; i < numberOfQueues; ++i) {
-      switch (queueSizes[i])
-      {
+      switch (queueSizes[i]) {
         case 1:
           localQueues[i] = new ThreadSafeLockFreeQueue<int8_t>();
           break;
