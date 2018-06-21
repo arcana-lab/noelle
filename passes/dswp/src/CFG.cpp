@@ -135,3 +135,60 @@ void DSWP::remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_p
     }
   }
 }
+
+void DSWP::createInstAndBBForSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo) {
+  auto &context = LDI->function->getParent()->getContext();
+
+  /*
+   * Clone instructions within the stage's scc, and removable sccs
+   */
+  std::set<BasicBlock *> allBBs;
+  auto cloneInstructionsOf = [&](SCC *scc) -> void {
+    for (auto nodePair : scc->internalNodePairs())
+    {
+      auto I = cast<Instruction>(nodePair.first);
+      stageInfo->iCloneMap[I] = I->clone();
+      allBBs.insert(I->getParent());
+    }
+  };
+
+  for (auto scc : stageInfo->stageSCCs) cloneInstructionsOf(scc);
+  for (auto scc : stageInfo->removableSCCs) cloneInstructionsOf(scc);
+
+  /*
+   * Clone loop basic blocks and terminators
+   */
+  for (auto B : LDI->loopBBs) {
+    stageInfo->sccBBCloneMap[B] = BasicBlock::Create(context, "", stageInfo->sccStage);
+    auto terminator = cast<Instruction>(B->getTerminator());
+    if (stageInfo->iCloneMap.find(terminator) == stageInfo->iCloneMap.end()) {
+      if (stageInfo->usedCondBrs.find(B->getTerminator()) != stageInfo->usedCondBrs.end())
+      {
+        stageInfo->iCloneMap[terminator] = terminator->clone();
+        continue;
+      }
+      stageInfo->iCloneMap[terminator] = BranchInst::Create(LDI->loopBBtoPD[B]);
+    }
+  }
+  for (int i = 0; i < LDI->loopExitBlocks.size(); ++i) {
+    stageInfo->sccBBCloneMap[LDI->loopExitBlocks[i]] = stageInfo->loopExitBlocks[i];
+  }
+
+  /*
+   * Attach SCC instructions to their basic blocks in correct relative order
+   */
+  int size = stageInfo->iCloneMap.size();
+  int instrInserted = 0;
+  for (auto B : LDI->loopBBs) {
+    IRBuilder<> builder(stageInfo->sccBBCloneMap[B]);
+    for (auto &I : *B)
+    {
+      if (stageInfo->iCloneMap.find(&I) == stageInfo->iCloneMap.end()) continue;
+      builder.Insert(stageInfo->iCloneMap[&I]);
+      instrInserted++;
+    }
+  }
+  assert(instrInserted == size);
+
+  return ;
+}

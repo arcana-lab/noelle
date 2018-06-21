@@ -10,6 +10,8 @@ set(Srcs
   Environment.cpp
   InductionVariable.cpp
   Helper.cpp
+  ControlDependence.cpp
+  ParallelSCC.cpp
   DSWP.cpp
   DSWPPass.cpp
   DSWPLoopDependenceInfo.cpp

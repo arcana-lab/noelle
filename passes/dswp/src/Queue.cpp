@@ -164,3 +164,62 @@ void DSWP::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique
   for (auto queueIndex : stageInfo->pushValueQueues) loadQueuePtrFromIndex(queueIndex);
   for (auto queueIndex : stageInfo->popValueQueues) loadQueuePtrFromIndex(queueIndex);
 }
+
+void DSWP::collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
+{
+  for (auto scc : LDI->loopSCCDAG->getNodes())
+  {
+    for (auto sccEdge : scc->getOutgoingEdges())
+    {
+      auto sccPair = sccEdge->getNodePair();
+      auto fromSCC = sccPair.first->getT();
+      auto toSCC = sccPair.second->getT();
+      if (LDI->removableSCCs.find(fromSCC) != LDI->removableSCCs.end()) continue;
+      if (LDI->removableSCCs.find(toSCC) != LDI->removableSCCs.end()) continue;
+
+      auto fromStage = LDI->sccToStage[fromSCC];
+      auto toStage = LDI->sccToStage[toSCC];
+      if (fromStage == toStage) continue;
+
+      /*
+       * Create value queues for each dependency of the form: producer -> consumers
+       */
+      for (auto instructionEdge : sccEdge->getSubEdges())
+      {
+        assert(!instructionEdge->isMemoryDependence());
+        if (instructionEdge->isControlDependence()) continue;
+        auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
+        auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
+        registerQueue(LDI, fromStage, toStage, producer, consumer);
+      }
+    }
+  }
+}
+
+void DSWP::collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI) {
+  for (auto &stage : LDI->stages)
+  {
+    auto toStage = stage.get();
+    for (auto removableSCC : stage->removableSCCs)
+    {
+      for (auto sccEdge : LDI->loopSCCDAG->fetchNode(removableSCC)->getIncomingEdges())
+      {
+        auto fromSCC = sccEdge->getOutgoingT();
+        if (LDI->removableSCCs.find(fromSCC) != LDI->removableSCCs.end()) continue;
+        auto fromStage = LDI->sccToStage[fromSCC];
+
+        /*
+         * Create value queues for each dependency of the form: producer -> consumers
+         */
+        for (auto instructionEdge : sccEdge->getSubEdges())
+        {
+          assert(!instructionEdge->isMemoryDependence());
+          if (instructionEdge->isControlDependence()) continue;
+          auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
+          auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
+          registerQueue(LDI, fromStage, toStage, producer, consumer);
+        }
+      }
+    }
+  }
+}
