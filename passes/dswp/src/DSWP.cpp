@@ -79,48 +79,33 @@ void DSWP::getAnalysisUsage (AnalysisUsage &AU) const {
   return ;
 }
 
-bool DSWP::collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) {
-  printReachedI = M.getFunction("printReachedI");
-  printPushedP = M.getFunction("printPushedP");
-  printPulledP = M.getFunction("printPulledP");
-  std::string pushers[4] = { "queuePush8", "queuePush16", "queuePush32", "queuePush64" };
-  std::string poppers[4] = { "queuePop8", "queuePop16", "queuePop32", "queuePop64" };
-  for (auto pusher : pushers) queuePushes.push_back(M.getFunction(pusher));
-  for (auto popper : poppers) queuePops.push_back(M.getFunction(popper));
-  for (auto queueF : queuePushes) queueTypes.push_back(queueF->arg_begin()->getType());
-  queueSizeToIndex = unordered_map<int, int>({ { 1, 0 }, { 8, 0 }, { 16, 1 }, { 32, 2 }, { 64, 3 }});
-  queueElementTypes = std::vector<Type *>({ par.int8, par.int16, par.int32, par.int64 });
-
-  stageDispatcher = M.getFunction("stageDispatcher");
-  auto stageExecuter = M.getFunction("stageExecuter");
-
-  auto stageArgType = stageExecuter->arg_begin()->getType();
-  stageType = cast<FunctionType>(cast<PointerType>(stageArgType)->getElementType());
-  return true;
-}
-
 bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
-  errs() << "DSWP: Check if we can parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
-
-  if (this->verbose) errs() << "DSWP:  Before merge\n";
-  printSCCs(LDI->loopSCCDAG);
+  if (this->verbose) {
+    errs() << "DSWP: Check if we can parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
+  }
 
   /*
    * Partition SCCs of the SCCDAG.
    */
+  if (this->verbose) {
+    errs() << "DSWP:  Before partition\n";
+    printSCCs(LDI->loopSCCDAG);
+  }
   partitionSCCDAG(LDI);
   collectParallelizableSingleInstrNodes(LDI);
   collectRemovableSCCsByInductionVars(LDI);
-  // collectClonableSCCs(LDI);
-  
-  if (this->verbose) errs() << "DSWP:  After merge\n";
-  printSCCs(LDI->loopSCCDAG);
+  if (this->verbose) {
+    errs() << "DSWP:  After merge\n";
+    printSCCs(LDI->loopSCCDAG);
+  }
 
   /*
    * Check whether it is worth parallelizing the current loop.
    */
   if (!isWorthParallelizing(LDI)) {
-    errs() << "DSWP:  Not enough TLP can be extracted\n";
+    if (this->verbose) {
+      errs() << "DSWP:  Not enough TLP can be extracted\n";
+    }
     return false;
   }
 
@@ -128,14 +113,18 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
    * Collect require information to parallelize the current loop.
    */
   collectStageAndQueueInfo(LDI, par);
-  printStageSCCs(LDI);
-  printStageQueues(LDI);
-  printEnv(LDI);
+  if (this->verbose) {
+    printStageSCCs(LDI);
+    printStageQueues(LDI);
+    printEnv(LDI);
+  }
 
   /*
    * Create the pipeline stages.
    */
-  errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
+  if (this->verbose) {
+    errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
+  }
   for (auto &stage : LDI->stages) {
     createPipelineStageFromSCC(LDI, stage, par);
   }
@@ -143,14 +132,18 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   /*
    * Create the pipeline (connecting the stages)
    */
-  errs() << "DSWP:  Link pipeline stages\n";
+  if (this->verbose) {
+    errs() << "DSWP:  Link pipeline stages\n";
+  }
   createPipelineFromStages(LDI, par);
   assert(LDI->pipelineBB != nullptr);
 
   /*
    * Link the parallelized loop within the original function that includes the sequential loop.
    */
-  errs() << "DSWP:  Link the parallelize loop\n";
+  if (this->verbose) {
+    errs() << "DSWP:  Link the parallelize loop\n";
+  }
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
   par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->preHeader, LDI->pipelineBB, LDI->envArray, exitIndex, LDI->loopExitBlocks);
   if (this->verbose){
@@ -501,39 +494,6 @@ void DSWP::remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_p
         stageInfo->sccStage->print(errs() << "Current function state:\n"); errs() << "\n";
         abort();
       }
-    }
-  }
-}
-
-void DSWP::remapControlFlow (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
-{
-  auto &context = LDI->function->getContext();
-  auto stageF = stageInfo->sccStage;
-
-  for (auto bb : LDI->loopBBs)
-  {
-    auto originalT = bb->getTerminator();
-    if (stageInfo->iCloneMap.find(originalT) == stageInfo->iCloneMap.end()) continue;
-    auto terminator = cast<TerminatorInst>(stageInfo->iCloneMap[originalT]);
-    for (int i = 0; i < terminator->getNumSuccessors(); ++i)
-    {
-      auto succBB = terminator->getSuccessor(i);
-      assert(stageInfo->sccBBCloneMap.find(succBB) != stageInfo->sccBBCloneMap.end());
-      terminator->setSuccessor(i, stageInfo->sccBBCloneMap[succBB]);
-    }
-  }
-
-  for (auto bbPair : stageInfo->sccBBCloneMap)
-  {
-    if (bbPair.second->size() == 0) continue;
-    auto iIter = bbPair.second->begin();
-    while (auto phi = dyn_cast<PHINode>(&*iIter))
-    {
-      for (auto bb : phi->blocks())
-      {
-        phi->setIncomingBlock(phi->getBasicBlockIndex(bb), stageInfo->sccBBCloneMap[bb]);
-      }
-      ++iIter;
     }
   }
 }

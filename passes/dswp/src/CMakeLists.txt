@@ -9,6 +9,7 @@ set(Srcs
   CFG.cpp
   Environment.cpp
   InductionVariable.cpp
+  Helper.cpp
   DSWP.cpp
   DSWPLoopDependenceInfo.cpp
 )
