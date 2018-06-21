@@ -50,7 +50,7 @@ void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI)
   }
 }
 
-void DSWP::createPipelineStageFromSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
+void DSWP::createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
   auto M = LDI->function->getParent();
   auto stageF = cast<Function>(M->getOrInsertFunction("", stageType));
   auto &context = M->getContext();

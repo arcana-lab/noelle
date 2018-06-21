@@ -126,7 +126,7 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
     errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
   }
   for (auto &stage : LDI->stages) {
-    createPipelineStageFromSCC(LDI, stage, par);
+    createPipelineStageFromSCCDAGPartition(LDI, stage, par);
   }
 
   /*

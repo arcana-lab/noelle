@@ -85,7 +85,6 @@ namespace llvm {
       void collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI);
       void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);
       bool isWorthParallelizing (DSWPLoopDependenceInfo *LDI);
-      void createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI);
       void addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI);
       void registerQueue (DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer);
       void collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI);
@@ -104,11 +103,16 @@ namespace llvm {
       void pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par);
       void remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo);
       void remapControlFlow (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo);
-      void createPipelineStageFromSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par);
       Value * createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par) ;
       Value * createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par);
       Value * createQueueSizesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par);
       void storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LDI, IRBuilder<> builder, Parallelization &par);
+
+      /*
+       * Pipeline
+       */
+      void createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par);
+      void createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI);
       void createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par);
 
       /*
