@@ -1,5 +1,9 @@
 # Sources
 set(Srcs 
+  Printer.cpp
+  LoopSelector.cpp
+  Pipeline.cpp
+  Inliner.cpp
   DSWP.cpp
   DSWPLoopDependenceInfo.cpp
 )
