@@ -2,83 +2,6 @@
 
 using namespace llvm;
 
-/*
- * Options of the DSWP pass.
- */
-static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
-static cl::opt<bool> ForceNoSCCMerge("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
-static cl::opt<bool> Verbose("dswp-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Enable verbose output"));
-
-DSWP::DSWP()
-  :
-  ModulePass{ID}, 
-  forceParallelization{false},
-  forceNoSCCMerge{false},
-  verbose{false}
-  {
-
-  return ;
-}
-
-bool DSWP::doInitialization (Module &M) {
-  this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
-  this->forceNoSCCMerge |= (ForceNoSCCMerge.getNumOccurrences() > 0);
-  this->verbose |= (Verbose.getNumOccurrences() > 0);
-
-  return false; 
-}
-
-bool DSWP::runOnModule (Module &M) {
-
-  /*
-   * Fetch the outputs of the passes we rely on.
-   */
-  auto& parallelizationFramework = getAnalysis<Parallelization>();
-
-  /*
-   * Collect some information.
-   */
-  errs() << "DSWP: Analyzing the module " << M.getName() << "\n";
-  if (!collectThreadPoolHelperFunctionsAndTypes(M, parallelizationFramework)) {
-    errs() << "DSWP utils not included!\n";
-    return false;
-  }
-
-  /*
-   * Fetch all the loops we want to parallelize.
-   */
-  auto loopsToParallelize = this->getLoopsToParallelize(M, parallelizationFramework);
-  errs() << "DSWP:  There are " << loopsToParallelize.size() << " loops to parallelize\n";
-
-  /*
-   * Parallelize the loops selected.
-   */
-  auto modified = false;
-  for (auto loop : loopsToParallelize){
-
-    /*
-     * Parallelize the current loop with DSWP.
-     */
-    modified |= applyDSWP(loop, parallelizationFramework);
-
-    /*
-     * Free the memory.
-     */
-    delete loop;
-  }
-
-  return modified;
-}
-
-void DSWP::getAnalysisUsage (AnalysisUsage &AU) const {
-  AU.addRequired<PDGAnalysis>();
-  AU.addRequired<Parallelization>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<LoopInfoWrapperPass>();
-
-  return ;
-}
-
 bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   if (this->verbose) {
     errs() << "DSWP: Check if we can parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
@@ -153,11 +76,11 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   return true;
 }
 
-void DSWP::collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI)
-{
-  for (auto sccNode : LDI->loopSCCDAG->getNodes())
-  {
-    if (sccNode->getT()->numInternalNodes() == 1) LDI->singleInstrNodes.insert(sccNode->getT());
+void DSWP::collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI) {
+  for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
+    if (sccNode->getT()->numInternalNodes() == 1) {
+      LDI->singleInstrNodes.insert(sccNode->getT());
+    }
   }
 }
 
@@ -376,54 +299,6 @@ void DSWP::createInstAndBBForSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<S
   assert(instrInserted == size);
 }
 
-void DSWP::remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
-{
-  auto &iCloneMap = stageInfo->iCloneMap;
-  auto &envMap = LDI->environment->producerIndexMap;
-  auto &queueMap = stageInfo->producedPopQueue;
-
-  auto ignoreOperandAbort = [&](Value *opV, Instruction *cloneInstruction) -> void {
-    opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\nInstr:\t"); errs() << "\n";
-    stageInfo->sccStage->print(errs() << "Current function state:\n"); errs() << "\n";
-    abort();
-  };
-
-  for (auto ii = iCloneMap.begin(); ii != iCloneMap.end(); ++ii) {
-    auto cloneInstruction = ii->second;
-
-    for (auto &op : cloneInstruction->operands()) {
-      auto opV = op.get();
-      if (auto opI = dyn_cast<Instruction>(opV)) {
-        if (iCloneMap.find(opI) != iCloneMap.end()) {
-          op.set(iCloneMap[opI]);
-        } else if (LDI->environment->isPreLoopEnv(opV)) {
-          op.set(stageInfo->envLoadMap[envMap[opV]]);
-        } else if (queueMap.find(opI) != queueMap.end()) {
-          op.set(stageInfo->queueInstrMap[queueMap[opI]]->load);
-        } else {
-          ignoreOperandAbort(opV, cloneInstruction);
-        }
-        continue;
-      } else if (auto opA = dyn_cast<Argument>(opV)) {
-        if (LDI->environment->isPreLoopEnv(opV)) {
-          op.set(stageInfo->envLoadMap[envMap[opV]]);
-        } else {
-          ignoreOperandAbort(opV, cloneInstruction);
-        }
-      } else if (isa<Constant>(opV) || isa<BasicBlock>(opV) || isa<Function>(opV)) {
-        continue;
-      } else if (isa<MetadataAsValue>(opV) || isa<InlineAsm>(opV) || isa<DerivedUser>(opV) || isa<Operator>(opV)) {
-        continue;
-      } else {
-        opV->print(errs() << "Unknown what to do with operand\n"); opV->getType()->print(errs() << "\tType:\t");
-        cloneInstruction->print(errs() << "\nInstr:\t"); errs() << "\n";
-        stageInfo->sccStage->print(errs() << "Current function state:\n"); errs() << "\n";
-        abort();
-      }
-    }
-  }
-}
-
 Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par)
 {
   /*
@@ -508,16 +383,3 @@ void DSWP::storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LD
     }
   }
 }
-
-// Next there is code to register your pass to "opt"
-char llvm::DSWP::ID = 0;
-static RegisterPass<DSWP> X("DSWP", "DSWP parallelization");
-
-// Next there is code to register your pass to "clang"
-static DSWP * _PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new DSWP());}}); // ** for -Ox
-static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new DSWP());}});// ** for -O0

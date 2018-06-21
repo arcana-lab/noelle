@@ -88,3 +88,50 @@ void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI)
   }
 }
 
+void DSWP::remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+{
+  auto &iCloneMap = stageInfo->iCloneMap;
+  auto &envMap = LDI->environment->producerIndexMap;
+  auto &queueMap = stageInfo->producedPopQueue;
+
+  auto ignoreOperandAbort = [&](Value *opV, Instruction *cloneInstruction) -> void {
+    opV->print(errs() << "Ignore operand\t"); cloneInstruction->print(errs() << "\nInstr:\t"); errs() << "\n";
+    stageInfo->sccStage->print(errs() << "Current function state:\n"); errs() << "\n";
+    abort();
+  };
+
+  for (auto ii = iCloneMap.begin(); ii != iCloneMap.end(); ++ii) {
+    auto cloneInstruction = ii->second;
+
+    for (auto &op : cloneInstruction->operands()) {
+      auto opV = op.get();
+      if (auto opI = dyn_cast<Instruction>(opV)) {
+        if (iCloneMap.find(opI) != iCloneMap.end()) {
+          op.set(iCloneMap[opI]);
+        } else if (LDI->environment->isPreLoopEnv(opV)) {
+          op.set(stageInfo->envLoadMap[envMap[opV]]);
+        } else if (queueMap.find(opI) != queueMap.end()) {
+          op.set(stageInfo->queueInstrMap[queueMap[opI]]->load);
+        } else {
+          ignoreOperandAbort(opV, cloneInstruction);
+        }
+        continue;
+      } else if (auto opA = dyn_cast<Argument>(opV)) {
+        if (LDI->environment->isPreLoopEnv(opV)) {
+          op.set(stageInfo->envLoadMap[envMap[opV]]);
+        } else {
+          ignoreOperandAbort(opV, cloneInstruction);
+        }
+      } else if (isa<Constant>(opV) || isa<BasicBlock>(opV) || isa<Function>(opV)) {
+        continue;
+      } else if (isa<MetadataAsValue>(opV) || isa<InlineAsm>(opV) || isa<DerivedUser>(opV) || isa<Operator>(opV)) {
+        continue;
+      } else {
+        opV->print(errs() << "Unknown what to do with operand\n"); opV->getType()->print(errs() << "\tType:\t");
+        cloneInstruction->print(errs() << "\nInstr:\t"); errs() << "\n";
+        stageInfo->sccStage->print(errs() << "Current function state:\n"); errs() << "\n";
+        abort();
+      }
+    }
+  }
+}
