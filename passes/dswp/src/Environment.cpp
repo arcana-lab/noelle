@@ -148,3 +148,28 @@ void DSWP::loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageIn
     stageInfo->envLoadMap[envIndex] = cast<Instruction>(envLoad);
   }
 }
+
+void DSWP::storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LDI, IRBuilder<> builder, Parallelization &par) {
+
+  /*
+   * Extract the outgoing dependents for each stage
+   */
+  for (int envInd : LDI->environment->postLoopEnv) {
+    auto prod = LDI->environment->envProducers[envInd];
+    auto envIndex = cast<Value>(ConstantInt::get(par.int64, envInd));
+    auto depInEnvPtr = builder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+    auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(prod->getType()));
+    auto envVar = builder.CreateLoad(envVarCast);
+
+    for (auto consumer : LDI->environment->prodConsumers[prod]) {
+      if (auto depPHI = dyn_cast<PHINode>(consumer)) {
+        depPHI->addIncoming(envVar, LDI->pipelineBB);
+        continue;
+      }
+      LDI->pipelineBB->eraseFromParent();
+      prod->print(errs() << "Producer of environment variable:\t"); errs() << "\n";
+      errs() << "Loop not in LCSSA!\n";
+      abort();
+    }
+  }
+}

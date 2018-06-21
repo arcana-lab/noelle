@@ -130,17 +130,27 @@ void DSWP::createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, 
 }
 
 void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
-  auto M = LDI->function->getParent();
-  LDI->pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->function);
-  IRBuilder<> builder(LDI->pipelineBB);
-  
-  auto firstBB = &*LDI->function->begin();
-  IRBuilder<> funcBuilder(firstBB->getTerminator());
 
   /*
-   * Create and populate the environment and stages arrays
+   * Fetch the module.
    */
-  LDI->envArray = cast<Value>(funcBuilder.CreateAlloca(LDI->envArrayType));
+  auto M = LDI->function->getParent();
+
+  /*
+   * Allocate the memory where pointers to variables will be stored.
+   * These variables are those involved in dependences from code outside the loop to inside it.
+   * Such variables are read by code inside the loop and updated just after the execution of the parallelized loop and before jumping to the code outside the loop.
+   */
+  auto firstBB = &*LDI->function->begin();
+  IRBuilder<> funcBuilder(firstBB->getTerminator());
+  LDI->envArray = funcBuilder.CreateAlloca(LDI->envArrayType);
+
+  /*
+   * Create a basic block in the original function where the parallelized loop exists.
+   * This basic block will include code needed to execute the parallelized loop.
+   */
+  LDI->pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->function);
+  IRBuilder<> builder(LDI->pipelineBB);
   auto envPtr = createEnvArrayFromStages(LDI, funcBuilder, builder, par);
   auto stagesPtr = createStagesArrayFromStages(LDI, funcBuilder, par);
 
@@ -157,10 +167,15 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
   auto queuesCount = cast<Value>(ConstantInt::get(par.int64, LDI->queues.size()));
   auto stagesCount = cast<Value>(ConstantInt::get(par.int64, LDI->stages.size()));
 
-  auto debugInd = LDI->function->getName().size();
-  // builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd)) }));
+  /*
+   * Add the call to "stageDispatcher"
+   */
   builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queuesPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
-  // builder.CreateCall(printReachedI, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(par.int32, debugInd + 1)) }));
 
+  /*
+   * Satisfy dependences from the code inside the loop to the code outside it.
+   */
   storeOutgoingDependentsIntoExternalValues(LDI, builder, par);
+
+  return ;
 }
