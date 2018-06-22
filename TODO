@@ -1,3 +1,5 @@
+- Bug: loop 36 of streamcluster seg faults if parallelized
+
 - Add multiple levels of verbosity
 
 - Extract mergeSCC from partitionSCCDAG
