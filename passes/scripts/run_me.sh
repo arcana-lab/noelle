@@ -1,4 +1,4 @@
-#!/bin/bash
+t#!/bin/bash
 
 # Set the installation directory
 installDir=$PDG_INSTALL_DIR ;
@@ -13,4 +13,6 @@ cd build ;
 cmake3 -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_BUILD_TYPE=Debug ../ ; 
 make ;
 make install ;
-cd ../ 
+cd ../
+
+ln -s build/compile_commands.json

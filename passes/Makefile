@@ -16,6 +16,6 @@ uninstall:
 	rm -rf ~/CAT ;
 
 clean:
-	rm -rf */build ;
+	rm -rf */build */*.json ; find ./ -name .ycm_extra_conf.py -delete
 
 .PHONY: clean analysis printer dswp download parallelization

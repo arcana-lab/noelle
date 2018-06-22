@@ -14,6 +14,7 @@ add_definitions(
 -D__STDC_CONSTANT_MACROS
 )
 
+set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
