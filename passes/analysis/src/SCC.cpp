@@ -37,13 +37,27 @@ llvm::SCC::~SCC() {
   return ;
 }
 
-raw_ostream &llvm::SCC::print(raw_ostream &stream) {
+raw_ostream &llvm::SCC::print (raw_ostream &stream, std::string prefixToUse) {
 
-    stream << "Internal nodes: " << internalNodeMap.size() << "\n";
-	for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << "\t") << "\n";
-    stream << "External nodes: " << externalNodeMap.size() << "\n";
-	for (auto nodePair : externalNodePairs()) nodePair.second->print(stream << "\t") << "\n";
-    stream << "Edges: " << allEdges.size() << "\n";
-    for (auto edge : allEdges) edge->print(stream, /*linePrefix=*/"\t") << "\n";
+    stream << prefixToUse << "The SCC is composed by the following " << internalNodeMap.size() << " nodes\n";
+	for (auto nodePair : internalNodePairs()) {
+      nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+    }
+
+    stream << prefixToUse << "The SCC is connected via dependences with the following " << externalNodeMap.size() << " external nodes\n";
+	for (auto nodePair : externalNodePairs()) {
+      nodePair.second->print(stream <<  prefixToUse << "\t") << "\n";
+    }
+
+    stream << prefixToUse << "The SCC is connected with outside nodes with the following " << allEdges.size() << " edges\n";
+    for (auto edge : allEdges) {
+      edge->print(stream, prefixToUse + "\t") << "\n";
+      stream << prefixToUse << "\n";
+    }
+
 	return stream;
+}
+
+raw_ostream &llvm::SCC::print (raw_ostream &stream) {
+  return print(stream, "");
 }

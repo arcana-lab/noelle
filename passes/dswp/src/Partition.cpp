@@ -13,7 +13,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
    * Merge the SCC related to a single PHI node and its use if there is only one.
    */
   if (this->verbose) {
-    errs() << "DSWP:    Number of unmerged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
+    errs() << "DSWP:    Number of nodes in the SCCDAG: " << LDI->loopSCCDAG->numNodes() << "\n";
   }
   mergePointerLoadInstructions(LDI);
   mergeSinglePHIs(LDI);
@@ -53,7 +53,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
     }
   }
   if (this->verbose) {
-    errs() << "DSWP:    Number of merged nodes: " << LDI->loopSCCDAG->numNodes() << "\n";
+    errs() << "DSWP:    Number of nodes in the SCCDAG after obvious merging: " << LDI->loopSCCDAG->numNodes() << "\n";
   }
 
   return ;

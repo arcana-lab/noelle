@@ -8,16 +8,29 @@
 #include "DSWP.hpp"
 
 void llvm::DSWP::printSCCs (SCCDAG *sccSubgraph){
+
+  /*
+   * Check if we should print.
+   */
   if (!this->verbose){
     return ;
   }
-  errs() << "DSWP:  Print SCCDAG\nInternal SCCs\n";
+
+  /*
+   * Print the SCCs.
+   */
+  errs() << "DSWP:  Print SCCDAG\n";
   for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
+
+    /*
+     * Fetch the current SCC.
+     */
+    auto scc = sccI->first;
 
     /*
      * Fetch and print the current SCC.
      */
-    sccI->first->print(errs());
+    scc->print(errs(), "DSWP:   ");
   }
 
   return ;
@@ -46,60 +59,84 @@ void llvm::DSWP::printLoop (Loop *loop)
   }
 }
 
-void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI)
-{
+void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) {
   if (!this->verbose){
     return ;
   }
-  errs() << "------------ STAGE'S SCCs PRINTOUT ------------\n";
-  for (auto &stage : LDI->stages)
-  {
-    errs() << "Stage: " << stage->order << "\n";
-    for (auto scc : stage->stageSCCs) scc->print(errs() << "SCC:\n") << "\n";
+
+  errs() << "DSWP:  Pipeline stages\n";
+  for (auto &stage : LDI->stages) {
+    errs() << "DSWP:    Stage: " << stage->order << "\n";
+    for (auto scc : stage->stageSCCs) {
+      scc->print(errs(), "DSWP:     ");
+      errs() << "DSWP:    \n" ;
+    }
   }
-  errs() << "------------ END STAGE'S SCCs PRINTOUT ------------\n\n";
+
+  return ;
 }
 
-void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI)
-{
+void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI) {
+
+  /*
+   * Check if we should print.
+   */
   if (!this->verbose){
     return ;
   }
-  errs() << "------------ STAGE'S QUEUES PRINTOUT ------------\n";
 
-  for (auto &stage : LDI->stages)
-  {
-    errs() << "Stage: " << stage->order << "\n";
-    errs() << "Push value queues: ";
-    for (auto qInd : stage->pushValueQueues) errs() << qInd << " ";
-    errs() << "\nPop value queues: ";
-    for (auto qInd : stage->popValueQueues) errs() << qInd << " ";
+  /*
+   * Print the IDs of the queues.
+   */
+  errs() << "DSWP:  Queues that connect the pipeline stages\n";
+  for (auto &stage : LDI->stages) {
+    errs() << "DSWP:    Stage: " << stage->order << "\n";
+
+    errs() << "DSWP:      Push value queues: ";
+    for (auto qInd : stage->pushValueQueues) {
+      errs() << qInd << " ";
+    }
+    errs() << "\n" ;
+
+    errs() << "DSWP:      Pop value queues: ";
+    for (auto qInd : stage->popValueQueues) {
+      errs() << qInd << " ";
+    }
     errs() << "\n";
   }
 
+  /*
+   * Print the queues.
+   */
   int count = 0;
-  for (auto &queue : LDI->queues)
-  {
-    errs() << "Queue: " << count++ << "\n";
-    queue->producer->print(errs() << "Producer:\t"); errs() << "\n";
-    for (auto consumer : queue->consumers)
-    {
-      consumer->print(errs() << "Consumer:\t"); errs() << "\n";
+  for (auto &queue : LDI->queues) {
+    errs() << "DSWP:    Queue: " << count++ << "\n";
+    queue->producer->print(errs() << "DSWP:     Producer:\t"); errs() << "\n";
+    for (auto consumer : queue->consumers) {
+      consumer->print(errs() << "DSWP:     Consumer:\t"); errs() << "\n";
     }
   }
-  errs() << "------------ END STAGE'S QUEUES PRINTOUT ------------\n\n";
+
+  return ;
 }
 
-void llvm::DSWP::printEnv (DSWPLoopDependenceInfo *LDI)
-{
+void llvm::DSWP::printEnv (DSWPLoopDependenceInfo *LDI) {
+
+  /*
+   * Check if we should print.
+   */
   if (!this->verbose){
     return ;
   }
-  errs() << "------------ ENVIRONMENT PRINTOUT ------------\n";
+
+  /*
+   * Print the environment.
+   */
+  errs() << "DSWP:  Environment\n";
   int count = 1;
-  for (auto prod : LDI->environment->envProducers)
-  {
-    prod->print(errs() << "Env producer" << count++ << ":\t"); errs() << "\n";
+  for (auto prod : LDI->environment->envProducers) {
+    prod->print(errs() << "DSWP:    Outside the loop producer" << count++ << ":\t"); errs() << "\n";
   }
-  errs() << "------------ END ENVIRONMENT PRINTOUT ------------\n\n";
+
+  return ;
 }
