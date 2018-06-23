@@ -6,14 +6,14 @@ using namespace llvm;
  * Options of the DSWP pass.
  */
 static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
-static cl::opt<bool> ForceNoSCCMerge("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
+static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
 static cl::opt<bool> Verbose("dswp-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Enable verbose output"));
 
 DSWP::DSWP()
   :
   ModulePass{ID}, 
   forceParallelization{false},
-  forceNoSCCMerge{false},
+  forceNoSCCPartition{false},
   verbose{false}
   {
 
@@ -22,7 +22,7 @@ DSWP::DSWP()
 
 bool DSWP::doInitialization (Module &M) {
   this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
-  this->forceNoSCCMerge |= (ForceNoSCCMerge.getNumOccurrences() > 0);
+  this->forceNoSCCPartition |= (ForceNoSCCPartition.getNumOccurrences() > 0);
   this->verbose |= (Verbose.getNumOccurrences() > 0);
 
   return false; 

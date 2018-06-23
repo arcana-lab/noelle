@@ -7,9 +7,9 @@ void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
 
     /*
-     * Check if the current node of the SCCDAG is an SCC.
+     * Check if the current node of the SCCDAG is an SCC used by other nodes.
      */
-    if (sccNode->numOutgoingEdges() == 0) {
+    if (sccNode->getT()->numInternalNodes() == 1 || sccNode->numOutgoingEdges() == 0) {
       continue;
     }
 

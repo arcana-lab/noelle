@@ -68,7 +68,7 @@ namespace llvm {
        * Fields
        */
       bool forceParallelization;
-      bool forceNoSCCMerge;
+      bool forceNoSCCPartition;
       bool verbose;
 
       /*
@@ -81,6 +81,7 @@ namespace llvm {
       void mergeSinglePHIs (DSWPLoopDependenceInfo *LDI);
       void clusterSubloops (DSWPLoopDependenceInfo *LDI);
       void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI);
+      void mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI);
       void partitionSCCDAG (DSWPLoopDependenceInfo *LDI);
       void collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI);
       void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);

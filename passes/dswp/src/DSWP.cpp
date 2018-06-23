@@ -8,12 +8,13 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   }
 
   /*
-   * Partition SCCs of the SCCDAG.
+   * Merge and partition SCCs of the SCCDAG.
    */
   if (this->verbose) {
     errs() << "DSWP:  Before partition\n";
     printSCCs(LDI->loopSCCDAG);
   }
+  mergeTrivialNodesInSCCDAG(LDI);
   partitionSCCDAG(LDI);
 
   /*

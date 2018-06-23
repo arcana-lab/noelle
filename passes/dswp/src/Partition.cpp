@@ -7,17 +7,10 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   /*
    * Check if we can cluster SCCs.
    */
-  if (this->forceNoSCCMerge) return ;
-
-  /*
-   * Merge the SCC related to a single PHI node and its use if there is only one.
-   */
+  if (this->forceNoSCCPartition) return ;
   if (this->verbose) {
     errs() << "DSWP:    Number of nodes in the SCCDAG: " << LDI->loopSCCDAG->numNodes() << "\n";
   }
-  mergePointerLoadInstructions(LDI);
-  mergeSinglePHIs(LDI);
-  mergeBranchesWithoutOutgoingEdges(LDI);
 
   // WARNING: Uses LI to determine subloop information
   clusterSubloops(LDI);
@@ -28,14 +21,10 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   for (auto nodePair : LDI->loopSCCDAG->internalNodePairs()) {
 
     /*
-     * Fetch the current SCC.
+     * Check if the current SCC can be removed (e.g., because it is due to induction variables).
+     * If it is, then this SCC has already been assigned to every dependent partition.
      */
     auto currentSCC = nodePair.first;
-
-    /*
-     * Check if the current SCC can be removed (e.g., because it is due to induction variables).
-     * If it is, then this SCC has already been assigned to every partition.
-     */
     if (LDI->removableSCCs.find(currentSCC) != LDI->removableSCCs.end()) {
       continue;
     }
@@ -46,8 +35,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
     if (LDI->sccToPartition.find(currentSCC) == LDI->sccToPartition.end()) {
 
       /*
-       * The current SCC does not belong to a partition.
-       * Assign the current SCC to its own partition.
+       * The current SCC does not belong to a partition. Assign the current SCC to its own partition.
        */
       LDI->sccToPartition[nodePair.first] = LDI->nextPartitionID++;
     }
@@ -57,6 +45,12 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   }
 
   return ;
+}
+
+void DSWP::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
+  mergePointerLoadInstructions(LDI);
+  mergeSinglePHIs(LDI);
+  mergeBranchesWithoutOutgoingEdges(LDI);
 }
 
 void DSWP::mergePointerLoadInstructions (DSWPLoopDependenceInfo *LDI) {

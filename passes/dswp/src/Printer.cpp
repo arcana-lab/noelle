@@ -23,14 +23,10 @@ void llvm::DSWP::printSCCs (SCCDAG *sccSubgraph){
   for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
 
     /*
-     * Fetch the current SCC.
-     */
-    auto scc = sccI->first;
-
-    /*
      * Fetch and print the current SCC.
      */
-    scc->print(errs(), "DSWP:   ");
+    auto scc = sccI->first;
+    scc->print(errs() << "DSWP:   ");
   }
 
   return ;
@@ -68,7 +64,7 @@ void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) {
   for (auto &stage : LDI->stages) {
     errs() << "DSWP:    Stage: " << stage->order << "\n";
     for (auto scc : stage->stageSCCs) {
-      scc->print(errs(), "DSWP:     ");
+      scc->print(errs() << "DSWP:     ");
       errs() << "DSWP:    \n" ;
     }
   }
