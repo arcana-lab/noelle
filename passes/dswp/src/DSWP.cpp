@@ -90,7 +90,7 @@ bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
     return true;
   }
 
-  return LDI->nextPartitionID > 1;
+  return LDI->partitions.partitions.size() > 1;
 }
 
 void DSWP::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par) {

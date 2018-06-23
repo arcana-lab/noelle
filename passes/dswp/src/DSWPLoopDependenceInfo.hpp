@@ -7,6 +7,7 @@
 
 #include "LoopDependenceInfo.hpp"
 #include "PipelineInfo.hpp"
+#include "SCCDAGPartition.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -19,11 +20,8 @@ namespace llvm {
       	/*
       	 * Stores characterizations of Loop SCCDAG
       	 */
-        //SCCDAGPartitions partitions;
+        SCCDAGPartitions partitions;
       	std::set<SCC *> singleInstrNodes;
-		std::set<SCC *> removableSCCs;
-		unordered_map<SCC *, int> sccToPartition;
-		int nextPartitionID;
 
 		/*
 		 * Stores new pipeline execution

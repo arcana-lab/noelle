@@ -20,6 +20,7 @@
 #include "llvm/IR/IRBuilder.h"
 
 #include "DSWPLoopDependenceInfo.hpp"
+#include "SCCDAGPartition.hpp"
 #include "PipelineInfo.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"

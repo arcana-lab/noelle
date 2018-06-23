@@ -4,7 +4,7 @@ using namespace llvm;
 
 void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
   auto topLevelSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
-  unordered_map<int, StageInfo *> partitionToStage;
+  unordered_map<SCCDAGPartition *, StageInfo *> partitionToStage;
 
   /*
    * TODO: Check if all entries to the loop are into top level nodes
@@ -30,10 +30,10 @@ void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
     }
 
     auto scc = sccNode->getT();
-    if (LDI->removableSCCs.find(scc) == LDI->removableSCCs.end())
+    if (!LDI->partitions.isRemovable(scc))
     {
       StageInfo *stage;
-      int sccPartition = LDI->sccToPartition[scc];
+      auto sccPartition = LDI->partitions.partitionOf(scc);
       if (partitionToStage.find(sccPartition) != partitionToStage.end())
       {
         stage = partitionToStage[sccPartition];

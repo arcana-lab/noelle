@@ -48,7 +48,7 @@ void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
     }
 
     if (isRemovableSCC) {
-      LDI->removableSCCs.insert(scc);
+      LDI->partitions.removableNodes.insert(scc);
     }
   }
 
@@ -72,7 +72,7 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
         auto fromSCCNode = sccEdge->getOutgoingNode();
         auto fromSCC = fromSCCNode->getT();
         if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
-        if (LDI->removableSCCs.find(fromSCC) == LDI->removableSCCs.end()) continue;
+        if (!LDI->partitions.isRemovable(fromSCC)) continue;
 
         stage->removableSCCs.insert(fromSCC);
         dependentSCCNodes.push(fromSCCNode);

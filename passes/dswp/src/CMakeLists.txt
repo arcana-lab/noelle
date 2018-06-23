@@ -1,20 +1,21 @@
 # Sources
 set(Srcs 
-  Printer.cpp
-  LoopSelector.cpp
-  Pipeline.cpp
-  Inliner.cpp
-  Queue.cpp
-  Partition.cpp
   CFG.cpp
-  Environment.cpp
-  InductionVariable.cpp
-  Helper.cpp
   ControlDependence.cpp
-  ParallelSCC.cpp
   DSWP.cpp
-  DSWPPass.cpp
   DSWPLoopDependenceInfo.cpp
+  DSWPPass.cpp
+  Environment.cpp
+  Helper.cpp
+  InductionVariable.cpp
+  Inliner.cpp
+  LoopSelector.cpp
+  ParallelSCC.cpp
+  Partition.cpp
+  Pipeline.cpp
+  Printer.cpp
+  Queue.cpp
+  SCCDAGPartition.cpp
 )
 
 # Compilation flags
