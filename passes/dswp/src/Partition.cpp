@@ -5,11 +5,19 @@ using namespace llvm;
 void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
 
   /*
+   * Print the current SCCDAG.
+   */
+  if (this->verbose) {
+    errs() << "DSWP:  Before partitioning the SCCDAG\n";
+    printSCCs(LDI->loopSCCDAG);
+    errs() << "DSWP:    Number of nodes in the SCCDAG: " << LDI->loopSCCDAG->numNodes() << "\n";
+  }
+
+  /*
    * Check if we can cluster SCCs.
    */
-  if (this->forceNoSCCPartition) return ;
-  if (this->verbose) {
-    errs() << "DSWP:    Number of nodes in the SCCDAG: " << LDI->loopSCCDAG->numNodes() << "\n";
+  if (this->forceNoSCCPartition) {
+    return ;
   }
 
   // WARNING: Uses LI to determine subloop information
@@ -34,7 +42,13 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
       LDI->partitions.addPartition(nodePair.first);
     }
   }
+
+  /*
+   * Print the partitioned SCCDAG.
+   */
   if (this->verbose) {
+    errs() << "DSWP:  After partitioning the SCCDAG\n";
+    printSCCs(LDI->loopSCCDAG);
     errs() << "DSWP:    Number of nodes in the SCCDAG after obvious merging: " << LDI->loopSCCDAG->numNodes() << "\n";
   }
 
@@ -42,9 +56,31 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
 }
 
 void DSWP::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
+
+  /*
+   * Print the current SCCDAG.
+   */
+  if (this->verbose) {
+    errs() << "DSWP:  Before merging SCCs\n";
+    printSCCs(LDI->loopSCCDAG);
+  }
+
+  /*
+   * Merge SCCs.
+   */
   mergePointerLoadInstructions(LDI);
   mergeSinglePHIs(LDI);
   mergeBranchesWithoutOutgoingEdges(LDI);
+
+  /*
+   * Print the current SCCDAG.
+   */
+  if (this->verbose) {
+    errs() << "DSWP:  After merging SCCs\n";
+    printSCCs(LDI->loopSCCDAG);
+  }
+
+  return ;
 }
 
 void DSWP::mergePointerLoadInstructions (DSWPLoopDependenceInfo *LDI) {

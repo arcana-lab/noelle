@@ -8,4 +8,6 @@ void DSWP::collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI) {
       LDI->singleInstrNodes.insert(sccNode->getT());
     }
   }
+
+  return ;
 }
