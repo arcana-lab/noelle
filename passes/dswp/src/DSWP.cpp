@@ -19,8 +19,6 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
     errs() << "DSWP:  Before partition\n";
     printSCCs(LDI->loopSCCDAG);
   }
-  mergeTrivialNodesInSCCDAG(LDI);
-  partitionSCCDAG(LDI);
 
   /*
    * Keep track of which nodes of the SCCDAG are single instructions.
@@ -31,6 +29,9 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
    * Keep track of the SCCs that can be removed by exploiting induction variables.
    */
   collectRemovableSCCsByInductionVars(LDI);
+  
+  mergeTrivialNodesInSCCDAG(LDI);
+  partitionSCCDAG(LDI);
   if (this->verbose) {
     errs() << "DSWP:  After merge\n";
     printSCCs(LDI->loopSCCDAG);
