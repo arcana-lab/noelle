@@ -3,17 +3,13 @@
 using namespace llvm;
 
 bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
-  for (auto &loop : LDI->liSummary.loops) {
-    errs() << "Loop with depth: " << loop->depth << "\n";
-  }
-
   if (this->verbose) {
-    auto nonPHI = LDI->header->getFirstNonPHI();
-    errs() << "DSWP: Check if we can parallelize the loop " << *nonPHI << " of function " << LDI->function->getName() << "\n";
+    errs() << "DSWP: Start\n";
+    errs() << "DSWP:  Try to parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
   }
 
   /*
-   * Merge and partition SCCs of the SCCDAG.
+   * Merge SCCs if there cannot be a reason to keep them separate.
    */
   if (this->verbose) {
     errs() << "DSWP:  Before partition\n";
@@ -29,13 +25,12 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
    * Keep track of the SCCs that can be removed by exploiting induction variables.
    */
   collectRemovableSCCsByInductionVars(LDI);
-  
+
+  /*
+   * Partition the SCCDAG
+   */  
   mergeTrivialNodesInSCCDAG(LDI);
   partitionSCCDAG(LDI);
-  if (this->verbose) {
-    errs() << "DSWP:  After merge\n";
-    printSCCs(LDI->loopSCCDAG);
-  }
 
   /*
    * Check whether it is worth parallelizing the current loop.
@@ -43,6 +38,7 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   if (!isWorthParallelizing(LDI)) {
     if (this->verbose) {
       errs() << "DSWP:  Not enough TLP can be extracted\n";
+      errs() << "DSWP: Exit\n";
     }
     return false;
   }
@@ -88,6 +84,12 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
     LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
   }
 
+  /*
+   * Return
+   */
+  if (this->verbose) {
+    errs() << "DSWP: Exit\n";
+  }
   return true;
 }
 
