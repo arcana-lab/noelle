@@ -88,33 +88,31 @@ void DSWP::mergeSinglePHIs (DSWPLoopDependenceInfo *LDI) {
 }
 
 void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
-  auto &LI = getAnalysis<LoopInfoWrapperPass>(*LDI->function).getLoopInfo();
-  auto loop = LI.getLoopFor(LDI->header);
-  auto loopDepth = (int)LI.getLoopDepth(LDI->header);
+  auto &li = LDI->liSummary;
+  auto loop = li.bbToLoop[LDI->header];
+  auto loopDepth = loop->depth;
 
-  unordered_map<Loop *, std::set<SCC *>> loopSets;
+  unordered_map<LoopSummary *, std::set<SCC *>> loopSets;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     for (auto iNodePair : sccNode->getT()->internalNodePairs()) {
       auto bb = cast<Instruction>(iNodePair.first)->getParent();
-      auto loop = LI.getLoopFor(bb);
-      auto subloopDepth = (int)loop->getLoopDepth();
-      if (loopDepth >= subloopDepth) continue;
+      auto subL = li.bbToLoop[bb];
+      auto subDepth = subL->depth;
+      if (loopDepth >= subDepth) continue;
 
-      if (loopDepth == subloopDepth - 1) loopSets[loop].insert(sccNode->getT());
-      else {
-        while (subloopDepth - 1 > loopDepth) {
-          loop = loop->getParentLoop();
-          subloopDepth--;
-        }
-        loopSets[loop].insert(sccNode->getT());
+      while (subDepth - 1 > loopDepth) {
+        subL = subL->parent;
+        subDepth--;
       }
+      loopSets[subL].insert(sccNode->getT());
       break;
     }
   }
 
   /*
-   * WARNING: Should check if SCCs are already in a partition; if so, merge partitions
+   * Basic Heuristic: partition entire sub loops only if there is more than one
    */
+  if (loopSets.size() == 1) return;
   for (auto loopSetPair : loopSets) {
     LDI->partitions.addPartition(loopSetPair.second);
   }
@@ -140,5 +138,32 @@ void DSWP::mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI) {
     std::set<DGNode<SCC> *> nodesToMerge = { tailSCC };
     nodesToMerge.insert(*LDI->loopSCCDAG->previousDepthNodes(tailSCC).begin());
     LDI->loopSCCDAG->mergeSCCs(nodesToMerge);
+  }
+}
+
+void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
+  for (auto &stage : LDI->stages) {
+    std::set<DGNode<SCC> *> visitedNodes;
+    std::queue<DGNode<SCC> *> dependentSCCNodes;
+
+    for (auto scc : stage->stageSCCs) {
+      dependentSCCNodes.push(LDI->loopSCCDAG->fetchNode(scc));
+    }
+
+    while (!dependentSCCNodes.empty()) {
+      auto depSCCNode = dependentSCCNodes.front();
+      dependentSCCNodes.pop();
+
+      for (auto sccEdge : depSCCNode->getIncomingEdges()) {
+        auto fromSCCNode = sccEdge->getOutgoingNode();
+        auto fromSCC = fromSCCNode->getT();
+        if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
+        if (!LDI->partitions.isRemovable(fromSCC)) continue;
+
+        stage->removableSCCs.insert(fromSCC);
+        dependentSCCNodes.push(fromSCCNode);
+        visitedNodes.insert(fromSCCNode);
+      }
+    }
   }
 }

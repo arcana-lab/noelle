@@ -27,6 +27,7 @@
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
+#include "LoopInfoSummary.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -85,6 +86,7 @@ namespace llvm {
       void mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI);
       void partitionSCCDAG (DSWPLoopDependenceInfo *LDI);
       void collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI);
+      void collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
       void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);
       bool isWorthParallelizing (DSWPLoopDependenceInfo *LDI);
       void addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI);

@@ -55,29 +55,13 @@ void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
   return ;
 }
 
-void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
-  for (auto &stage : LDI->stages) {
-    std::set<DGNode<SCC> *> visitedNodes;
-    std::queue<DGNode<SCC> *> dependentSCCNodes;
-
-    for (auto scc : stage->stageSCCs) {
-      dependentSCCNodes.push(LDI->loopSCCDAG->fetchNode(scc));
-    }
-
-    while (!dependentSCCNodes.empty()) {
-      auto depSCCNode = dependentSCCNodes.front();
-      dependentSCCNodes.pop();
-
-      for (auto sccEdge : depSCCNode->getIncomingEdges()) {
-        auto fromSCCNode = sccEdge->getOutgoingNode();
-        auto fromSCC = fromSCCNode->getT();
-        if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
-        if (!LDI->partitions.isRemovable(fromSCC)) continue;
-
-        stage->removableSCCs.insert(fromSCC);
-        dependentSCCNodes.push(fromSCCNode);
-        visitedNodes.insert(fromSCCNode);
-      }
+void DSWP::collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
+  for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
+    auto scc = sccNode->getT();
+    if (scc->numInternalNodes() > 1) continue;
+    auto I = scc->begin_internal_node_map()->first;
+    if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
+      LDI->partitions.removableNodes.insert(scc);
     }
   }
 }

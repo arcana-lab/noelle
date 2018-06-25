@@ -11,6 +11,11 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
 		: function{f}, functionDG{fG} {
 
     /*
+     * Create a LoopInfo summary
+     */
+    this->liSummary.populate(li, l);
+
+    /*
      * Set the headers.
      */
     this->header = l->getHeader();

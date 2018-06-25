@@ -3,8 +3,13 @@
 using namespace llvm;
 
 bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+  for (auto &loop : LDI->liSummary.loops) {
+    errs() << "Loop with depth: " << loop->depth << "\n";
+  }
+
   if (this->verbose) {
-    errs() << "DSWP: Check if we can parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
+    auto nonPHI = LDI->header->getFirstNonPHI();
+    errs() << "DSWP: Check if we can parallelize the loop " << *nonPHI << " of function " << LDI->function->getName() << "\n";
   }
 
   /*

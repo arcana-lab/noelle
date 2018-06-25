@@ -2,6 +2,7 @@
 
 #include "PDG.hpp"
 #include "SCCDAG.hpp"
+#include "LoopInfoSummary.hpp"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -12,6 +13,7 @@ namespace llvm {
 
 	class LoopDependenceInfo {
       public:
+        LoopInfoSummary liSummary;
 		Function *function;
         BasicBlock *header;
         BasicBlock *preHeader;
