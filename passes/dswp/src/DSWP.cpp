@@ -8,6 +8,10 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   }
 
   /*
+   * Merge SCCs if there cannot be a reason to keep them separate.
+   */
+
+  /*
    * Merge and partition SCCs of the SCCDAG.
    */
   if (this->verbose) {
