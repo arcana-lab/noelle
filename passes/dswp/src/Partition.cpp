@@ -25,7 +25,6 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
     clusterSubloops(LDI);
   }
 
-
   /*
    * Assign SCCs that have no partition to their own partitions.
    */
@@ -45,6 +44,11 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
       LDI->partitions.addPartition(nodePair.first);
     }
   }
+
+  /*
+   * Decide the partition by merging the trivial partitions defined above.
+   */
+  //TODO
 
   /*
    * Print the partitioned SCCDAG.
