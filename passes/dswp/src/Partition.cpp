@@ -16,12 +16,15 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   /*
    * Check if we can cluster SCCs.
    */
-  if (this->forceNoSCCPartition) {
-    return ;
+  if (!this->forceNoSCCPartition) {
+
+    /*
+     * Cluster SCCs.
+     * WARNING: Uses LI to determine subloop information
+     */
+    clusterSubloops(LDI);
   }
 
-  // WARNING: Uses LI to determine subloop information
-  clusterSubloops(LDI);
 
   /*
    * Assign SCCs that have no partition to their own partitions.
