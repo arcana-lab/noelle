@@ -153,6 +153,31 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, L
   }
 }
 
+void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, CallInst *otherCall, CallInst *call){
+  bool makeRefEdge = false, makeModEdge = false;
+  switch (aa->getModRefInfo(ImmutableCallSite(call), ImmutableCallSite(otherCall))) {
+    case MRI_Ref:
+      makeRefEdge = true;
+      break;
+    case MRI_Mod:
+      makeModEdge = true;
+      break;
+    case MRI_ModRef:
+      makeRefEdge = makeModEdge = true;
+      break;
+  }
+
+  if (makeRefEdge)
+  {
+    programDependenceGraph->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+    programDependenceGraph->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
+  }
+  if (makeModEdge)
+  {
+    programDependenceGraph->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
+  }
+}
+
 void llvm::PDGAnalysis::iterateInstForStoreAliases(Function &F, AAResults *aa, StoreInst *store) {
   for (auto &B : F) {
     for (auto &I : B) {
@@ -173,6 +198,8 @@ void llvm::PDGAnalysis::iterateInstForModRef(Function &F, AAResults *aa, CallIns
         addEdgeFromFunctionModRef(F, aa, load, &call);
       } else if (auto *store = dyn_cast<StoreInst>(&I)) {
         addEdgeFromFunctionModRef(F, aa, store, &call);
+      } else if (auto *otherCall = dyn_cast<CallInst>(&I)) {
+        addEdgeFromFunctionModRef(F, aa, otherCall, &call);
       }
     }
   }

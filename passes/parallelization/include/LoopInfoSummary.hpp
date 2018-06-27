@@ -22,6 +22,7 @@ namespace llvm {
     };
 
 	struct LoopInfoSummary {
+		LoopSummary *topLoop;
 		std::set<unique_ptr<LoopSummary>> loops;
   		std::unordered_map<BasicBlock *, LoopSummary *> bbToLoop;
 
@@ -46,6 +47,7 @@ namespace llvm {
 			 */
   			loopToSummary[l] = this->createSummary(l);
   			loopToSummary[l]->parent = nullptr;
+  			topLoop = loopToSummary[l];
   			for (auto subLoop : l->getSubLoops()) {
   				loopToSummary[subLoop] = this->createSummary(subLoop);
   			}

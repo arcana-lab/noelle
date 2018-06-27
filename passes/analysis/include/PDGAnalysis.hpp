@@ -32,6 +32,7 @@ namespace llvm {
 
       void addEdgeFromFunctionModRef(Function &, AAResults *, StoreInst *, CallInst *);
       void addEdgeFromFunctionModRef(Function &, AAResults *, LoadInst *, CallInst *);
+      void addEdgeFromFunctionModRef(Function &, AAResults *, CallInst *, CallInst *);
 
       void iterateInstForStoreAliases(Function &, AAResults *, StoreInst *);
       void iterateInstForLoadAliases(Function &, AAResults *, LoadInst *);
