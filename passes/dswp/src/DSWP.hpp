@@ -129,6 +129,7 @@ namespace llvm {
        */
       void printSCCs (SCCDAG *sccSubgraph);
       void printLoop (Loop *loop);
+      void printPartitions (DSWPLoopDependenceInfo *LDI);
       void printStageSCCs (DSWPLoopDependenceInfo *LDI);
       void printStageQueues (DSWPLoopDependenceInfo *LDI);
       void printEnv (DSWPLoopDependenceInfo *LDI);

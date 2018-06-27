@@ -20,7 +20,6 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
 
     /*
      * Cluster SCCs.
-     * WARNING: Uses LI to determine subloop information
      */
     clusterSubloops(LDI);
   }
@@ -40,7 +39,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
     /*
      * Check if the current SCC has been already assigned to a partition; if not, assign it to a new partition.
      */
-    if (LDI->partitions.partitionOf(currentSCC)) {
+    if (LDI->partitions.partitionOf(currentSCC) == nullptr) {
       LDI->partitions.addPartition(nodePair.first);
     }
   }
@@ -55,7 +54,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
    */
   if (this->verbose) {
     errs() << "DSWP:  After partitioning the SCCDAG\n";
-    printSCCs(LDI->loopSCCDAG);
+    printPartitions(LDI);
     errs() << "DSWP:    Number of nodes in the SCCDAG after obvious merging: " << LDI->loopSCCDAG->numNodes() << "\n";
   }
 

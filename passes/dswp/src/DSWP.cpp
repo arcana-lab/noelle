@@ -9,14 +9,6 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   }
 
   /*
-   * Merge SCCs if there cannot be a reason to keep them separate.
-   */
-  if (this->verbose) {
-    errs() << "DSWP:  Before partition\n";
-    printSCCs(LDI->loopSCCDAG);
-  }
-
-  /*
    * Keep track of which nodes of the SCCDAG are single instructions.
    */
   collectParallelizableSingleInstrNodes(LDI);
