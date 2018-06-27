@@ -7,7 +7,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   /*
    * Print the current SCCDAG.
    */
-  if (this->verbose) {
+  if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  Before partitioning the SCCDAG\n";
     printSCCs(LDI->loopSCCDAG);
     errs() << "DSWP:    Number of nodes in the SCCDAG: " << LDI->loopSCCDAG->numNodes() << "\n";
@@ -52,7 +52,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   /*
    * Print the partitioned SCCDAG.
    */
-  if (this->verbose) {
+  if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  After partitioning the SCCDAG\n";
     printPartitions(LDI);
     errs() << "DSWP:    Number of nodes in the SCCDAG after obvious merging: " << LDI->loopSCCDAG->numNodes() << "\n";
@@ -66,7 +66,7 @@ void DSWP::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
   /*
    * Print the current SCCDAG.
    */
-  if (this->verbose) {
+  if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  Before merging SCCs\n";
     printSCCs(LDI->loopSCCDAG);
   }
@@ -81,7 +81,7 @@ void DSWP::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
   /*
    * Print the current SCCDAG.
    */
-  if (this->verbose) {
+  if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  After merging SCCs\n";
     printSCCs(LDI->loopSCCDAG);
   }
@@ -100,7 +100,6 @@ void DSWP::mergePointerLoadInstructions (DSWPLoopDependenceInfo *LDI) {
         bool isPointerLoad = isa<GetElementPtrInst>(producer);
         isPointerLoad |= (isa<LoadInst>(producer) && producer->getType()->isPointerTy());
         if (!isPointerLoad) continue;
-        producer->print(errs() << "INSERTING INTO POINTER LOAD GROUP:\t"); errs() << "\n";
         mergeNodes = true;
       }
 

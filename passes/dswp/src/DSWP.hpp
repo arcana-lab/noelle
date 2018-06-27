@@ -71,7 +71,8 @@ namespace llvm {
        */
       bool forceParallelization;
       bool forceNoSCCPartition;
-      bool verbose;
+      enum class Verbosity { Disabled, Minimal, Pipeline, Maximal };
+      Verbosity verbose;
 
       /*
        * Methods

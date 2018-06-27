@@ -7,14 +7,14 @@ using namespace llvm;
  */
 static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
-static cl::opt<bool> Verbose("dswp-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Enable verbose output"));
+static cl::opt<int> Verbose("dswp-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: stage outline 3: maximal)"));
 
 DSWP::DSWP()
   :
   ModulePass{ID}, 
   forceParallelization{false},
   forceNoSCCPartition{false},
-  verbose{false}
+  verbose{Verbosity::Disabled}
   {
 
   return ;
@@ -23,7 +23,7 @@ DSWP::DSWP()
 bool DSWP::doInitialization (Module &M) {
   this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
   this->forceNoSCCPartition |= (ForceNoSCCPartition.getNumOccurrences() > 0);
-  this->verbose |= (Verbose.getNumOccurrences() > 0);
+  this->verbose = static_cast<Verbosity>(Verbose.getValue());
 
   return false; 
 }

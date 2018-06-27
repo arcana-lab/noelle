@@ -125,6 +125,10 @@ void DSWP::createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, 
    */
   inlineQueueCalls(LDI, stageInfo);
 
+  if (this->verbose >= Verbosity::Pipeline) {
+    stageInfo->sccStage->print(errs() << "Pipeline stage printout:\n"); errs() << "\n";
+  }
+
   return ;
 }
 

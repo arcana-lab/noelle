@@ -3,7 +3,7 @@
 using namespace llvm;
 
 bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
-  if (this->verbose) {
+  if (this->verbose > Verbosity::Disabled) {
     errs() << "DSWP: Start\n";
     errs() << "DSWP:  Try to parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
   }
@@ -28,7 +28,7 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
    * Check whether it is worth parallelizing the current loop.
    */
   if (!isWorthParallelizing(LDI)) {
-    if (this->verbose) {
+    if (this->verbose > Verbosity::Disabled) {
       errs() << "DSWP:  Not enough TLP can be extracted\n";
       errs() << "DSWP: Exit\n";
     }
@@ -39,7 +39,7 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
    * Collect require information to parallelize the current loop.
    */
   collectStageAndQueueInfo(LDI, par);
-  if (this->verbose) {
+  if (this->verbose >= Verbosity::Maximal) {
     printStageSCCs(LDI);
     printStageQueues(LDI);
     printEnv(LDI);
@@ -48,7 +48,7 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   /*
    * Create the pipeline stages.
    */
-  if (this->verbose) {
+  if (this->verbose > Verbosity::Disabled) {
     errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
   }
   for (auto &stage : LDI->stages) {
@@ -58,7 +58,7 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   /*
    * Create the whole pipeline by connecting the stages.
    */
-  if (this->verbose) {
+  if (this->verbose > Verbosity::Disabled) {
     errs() << "DSWP:  Link pipeline stages\n";
   }
   createPipelineFromStages(LDI, par);
@@ -67,19 +67,19 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   /*
    * Link the parallelized loop within the original function that includes the sequential loop.
    */
-  if (this->verbose) {
+  if (this->verbose > Verbosity::Disabled) {
     errs() << "DSWP:  Link the parallelize loop\n";
   }
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
   par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->preHeader, LDI->pipelineBB, LDI->envArray, exitIndex, LDI->loopExitBlocks);
-  if (this->verbose){
+  if (this->verbose >= Verbosity::Pipeline) {
     LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
   }
 
   /*
    * Return
    */
-  if (this->verbose) {
+  if (this->verbose > Verbosity::Disabled) {
     errs() << "DSWP: Exit\n";
   }
   return true;
