@@ -1,4 +1,5 @@
 #include "DSWP.hpp"
+#include "SCCDAGPartition.hpp"
 
 using namespace llvm;
 
@@ -47,7 +48,10 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   /*
    * Decide the partition by merging the trivial partitions defined above.
    */
-  //TODO
+
+  // Iterate over trivial partitions top to bottom
+  // Find outgoing partition that reaches uniform split cost while
+  // minimizing (new outgoing edges - newly encompassed edges)
 
   /*
    * Print the partitioned SCCDAG.
