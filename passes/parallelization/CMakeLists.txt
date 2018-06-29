@@ -29,4 +29,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/LoopDependenceInfo.hpp include/Parallelization.hpp DESTINATION include)
+install(PROGRAMS include/LoopInfoSummary.hpp include/LoopDependenceInfo.hpp include/Parallelization.hpp DESTINATION include)
