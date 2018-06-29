@@ -1,3 +1,7 @@
+- Bug fix: IndipendentIterations has an extra stage due to induction variables that shouldn't exist
+
+- Bug fix: partitioning heuristics doesn't terminate
+
 - Add multiple levels of verbosity
 
 - Modify DSWP to be able to parallelize multiple loops at the same time
