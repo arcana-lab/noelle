@@ -26,7 +26,6 @@
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
-#include "LoopInfoSummary.hpp"
 
 #include <unordered_map>
 #include <set>

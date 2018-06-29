@@ -25,15 +25,16 @@ SCCDAGPartition::SCCDAGPartition (SCCDAGPartition *partA, SCCDAGPartition *partB
 	this->cost = partA->cost + partB->cost;
 }
 
-void SCCDAGPartitions::addPartition (SCC * scc) {
+SCCDAGPartition *SCCDAGPartitions::addPartition (SCC * scc) {
 	std::set<SCC *> sccs = { scc };
-	this->addPartition(sccs);
+	return this->addPartition(sccs);
 }
 
-void SCCDAGPartitions::addPartition (std::set<SCC *> &sccs) {
+SCCDAGPartition *SCCDAGPartitions::addPartition (std::set<SCC *> &sccs) {
 	auto partition = std::make_unique<SCCDAGPartition>(sccs);
 	this->managePartitionInfo(partition.get());
-	this->partitions.insert(std::move(partition));
+	this->totalCost += partition->cost;
+	return this->partitions.insert(std::move(partition)).first->get();
 }
 
 void SCCDAGPartitions::removePartition (SCCDAGPartition *partition) {
@@ -45,13 +46,14 @@ void SCCDAGPartitions::removePartition (SCCDAGPartition *partition) {
 	}
 }
 
-void SCCDAGPartitions::mergePartitions (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB) {
+SCCDAGPartition *SCCDAGPartitions::mergePartitions (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB) {
 	auto partition = std::make_unique<SCCDAGPartition>(partitionA, partitionB);
 	this->managePartitionInfo(partition.get());
-	this->partitions.insert(std::move(partition));
+	auto newPartition = this->partitions.insert(std::move(partition)).first->get();
 
 	this->removePartition(partitionA);
 	this->removePartition(partitionB);
+	return newPartition;
 }
 
 void SCCDAGPartitions::managePartitionInfo (SCCDAGPartition *partition) {
@@ -65,4 +67,27 @@ SCCDAGPartition *SCCDAGPartitions::partitionOf (SCC *scc) {
 
 bool SCCDAGPartitions::isRemovable (SCC *scc) {
 	return (this->removableNodes.find(scc) != this->removableNodes.end());
+}
+
+int SCCDAGPartitions::numEdgesBetween (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB) {
+	int edgeCount = 0;
+	for (auto scc : partitionA->SCCs) {
+		for (auto edge : sccDAG->fetchNode(scc)->getOutgoingEdges()) {
+			if (partitionB->SCCs.find(edge->getIncomingT()) != partitionB->SCCs.end()) {
+				edgeCount++;
+			}
+		}
+	}
+	return edgeCount;
+}
+
+std::set<SCCDAGPartition *> SCCDAGPartitions::descendantsOf (SCCDAGPartition *partition) {
+	std::set<SCCDAGPartition *> descendants;
+	for (auto scc : partition->SCCs) {
+		for (auto edge : sccDAG->fetchNode(scc)->getOutgoingEdges()) {
+			auto childPart = this->partitionOf(edge->getIncomingT());
+			if (childPart != nullptr && childPart != partition) descendants.insert(childPart);
+		}
+	}
+	return descendants;
 }

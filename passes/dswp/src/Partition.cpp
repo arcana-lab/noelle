@@ -48,10 +48,52 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   /*
    * Decide the partition by merging the trivial partitions defined above.
    */
+  std::queue<SCCDAGPartition *> partToCheck;
+  for (auto topLevelSCCNode : LDI->loopSCCDAG->getTopLevelNodes()) {
+    partToCheck.push(LDI->partitions.partitionOf(topLevelSCCNode->getT()));
+  }
 
-  // Iterate over trivial partitions top to bottom
-  // Find outgoing partition that reaches uniform split cost while
-  // minimizing (new outgoing edges - newly encompassed edges)
+  std::set<SCCDAGPartition *> deletedPartitions;
+  while (!partToCheck.empty()) {
+    auto partition = partToCheck.front();
+    partToCheck.pop();
+
+    /*
+     * Confirm a valid partition to check merging on
+     */
+    if (deletedPartitions.find(partition) != deletedPartitions.end()) continue;
+
+    SCCDAGPartition *minPartition = nullptr;
+    int maxNumSquashedEdges = 0;
+
+    /*
+     * Locate best partition to merge with
+     */
+    auto maxCost = LDI->partitions.maxPartitionCost();
+    auto descendants = LDI->partitions.descendantsOf(partition);
+    for (auto childPartition : descendants) {
+      if (childPartition->cost + partition->cost > maxCost) continue;
+
+      auto squashedEdges = LDI->partitions.numEdgesBetween(partition, childPartition);
+      if (squashedEdges > maxNumSquashedEdges) {
+        minPartition = childPartition;
+        maxNumSquashedEdges = squashedEdges;
+      }
+    }
+
+    /*
+     * Merge partition if one is found; iterate over all children partitions
+     */
+    for (auto childPartition : descendants) {
+      if (minPartition == childPartition) {
+        deletedPartitions.insert(partition);
+        deletedPartitions.insert(childPartition);
+        partToCheck.push(LDI->partitions.mergePartitions(partition, childPartition));
+      } else {
+        partToCheck.push(childPartition);
+      }
+    }
+  }
 
   /*
    * Print the partitioned SCCDAG.

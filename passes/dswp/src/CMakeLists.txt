@@ -1,10 +1,11 @@
 # Sources
 set(Srcs 
-  CFG.cpp
-  ControlDependence.cpp
-  DSWP.cpp
+  SCCDAGPartition.cpp
   DSWPLoopDependenceInfo.cpp
   DSWPPass.cpp
+  DSWP.cpp
+  CFG.cpp
+  ControlDependence.cpp
   Environment.cpp
   Helper.cpp
   InductionVariable.cpp
@@ -15,7 +16,6 @@ set(Srcs
   Pipeline.cpp
   Printer.cpp
   Queue.cpp
-  SCCDAGPartition.cpp
 )
 
 # Compilation flags
