@@ -3,6 +3,8 @@
 
 using namespace llvm;
 
+static void partitionHeuristics (DSWPLoopDependenceInfo *LDI);
+
 void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
 
   /*
@@ -46,53 +48,14 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   }
 
   /*
-   * Decide the partition by merging the trivial partitions defined above.
+   * Check if we can cluster SCCs.
    */
-  std::queue<SCCDAGPartition *> partToCheck;
-  for (auto topLevelSCCNode : LDI->loopSCCDAG->getTopLevelNodes()) {
-    partToCheck.push(LDI->partitions.partitionOf(topLevelSCCNode->getT()));
-  }
-
-  std::set<SCCDAGPartition *> deletedPartitions;
-  while (!partToCheck.empty()) {
-    auto partition = partToCheck.front();
-    partToCheck.pop();
+  if (!this->forceNoSCCPartition) {
 
     /*
-     * Confirm a valid partition to check merging on
+     * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
      */
-    if (deletedPartitions.find(partition) != deletedPartitions.end()) continue;
-
-    SCCDAGPartition *minPartition = nullptr;
-    int maxNumSquashedEdges = 0;
-
-    /*
-     * Locate best partition to merge with
-     */
-    auto maxCost = LDI->partitions.maxPartitionCost();
-    auto descendants = LDI->partitions.descendantsOf(partition);
-    for (auto childPartition : descendants) {
-      if (childPartition->cost + partition->cost > maxCost) continue;
-
-      auto squashedEdges = LDI->partitions.numEdgesBetween(partition, childPartition);
-      if (squashedEdges > maxNumSquashedEdges) {
-        minPartition = childPartition;
-        maxNumSquashedEdges = squashedEdges;
-      }
-    }
-
-    /*
-     * Merge partition if one is found; iterate over all children partitions
-     */
-    for (auto childPartition : descendants) {
-      if (minPartition == childPartition) {
-        deletedPartitions.insert(partition);
-        deletedPartitions.insert(childPartition);
-        partToCheck.push(LDI->partitions.mergePartitions(partition, childPartition));
-      } else {
-        partToCheck.push(childPartition);
-      }
-    }
+    partitionHeuristics(LDI);
   }
 
   /*
@@ -253,4 +216,70 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
       }
     }
   }
+}
+
+static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
+
+  /*
+   * Collect all partitions following their dependences (from producers to consumers).
+   */
+  std::queue<SCCDAGPartition *> partToCheck;
+  for (auto topLevelSCCNode : LDI->loopSCCDAG->getTopLevelNodes()) {
+    partToCheck.push(LDI->partitions.partitionOf(topLevelSCCNode->getT()));
+  }
+
+  /*
+   * Merge partitions.
+   */
+  std::set<SCCDAGPartition *> deletedPartitions;
+  while (!partToCheck.empty()) {
+
+    /*
+     * Fetch the current partition.
+     */
+    auto partition = partToCheck.front();
+    partToCheck.pop();
+
+    /*
+     * Check if the current partition has been already tagged to be removed (i.e., merged).
+     */
+    if (deletedPartitions.find(partition) != deletedPartitions.end()) {
+      continue;
+    }
+
+    SCCDAGPartition *minPartition = nullptr;
+    int32_t maxNumSquashedEdges = 0;
+
+    /*
+     * Locate the best partition that the current one should merge with.
+     */
+    auto maxCost = LDI->partitions.maxPartitionCost();
+    auto descendants = LDI->partitions.descendantsOf(partition);
+    for (auto childPartition : descendants) {
+      if ((childPartition->cost + partition->cost) > maxCost) {
+        continue;
+      }
+
+      auto squashedEdges = LDI->partitions.numEdgesBetween(partition, childPartition);
+      if (squashedEdges > maxNumSquashedEdges) {
+        minPartition = childPartition;
+        maxNumSquashedEdges = squashedEdges;
+      }
+    }
+
+    /*
+     * Merge partition if one is found; iterate over all children partitions
+     */
+    for (auto childPartition : descendants) {
+      if (minPartition == childPartition) {
+        deletedPartitions.insert(partition);
+        deletedPartitions.insert(childPartition);
+        partToCheck.push(LDI->partitions.mergePartitions(partition, childPartition));
+      } else {
+        partToCheck.push(childPartition);
+      }
+    }
+  }
+
+  return ;
 }
