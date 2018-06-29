@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-long long int computeSum (int *a, long long int iters){
+long long int computeSum (long long int *a, long long int iters){
   long long int s =0;
 
   for (auto i=0; i < iters; ++i){
@@ -22,7 +22,7 @@ int main (int argc, char *argv[]){
     return -1;
   }
   auto iterations = atoll(argv[1]);
-  int *array = (int *) malloc(sizeof(int) * iterations);
+  long long int *array = (long long int *) malloc(sizeof(long long int) * iterations);
 
   for (auto i=0; i < iterations; i++){
     array[i] = i;
