@@ -224,8 +224,27 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
    * Collect all partitions following their dependences (from producers to consumers).
    */
   std::queue<SCCDAGPartition *> partToCheck;
+  std::set<SCCDAGPartition *> partVisited;
   for (auto topLevelSCCNode : LDI->loopSCCDAG->getTopLevelNodes()) {
-    partToCheck.push(LDI->partitions.partitionOf(topLevelSCCNode->getT()));
+    std::queue<DGNode<SCC> *> sccToCheck;
+    sccToCheck.push(topLevelSCCNode);
+    while (!sccToCheck.empty()) {
+      auto sccNode = sccToCheck.front();
+      sccToCheck.pop();
+
+      auto part = LDI->partitions.partitionOf(sccNode->getT());
+      if (part) {
+        if (partVisited.find(part) == partVisited.end()) {
+          partToCheck.push(part);
+          partVisited.insert(part);
+        }
+        continue;
+      }
+
+      for (auto outEdge : sccNode->getOutgoingEdges()) {
+        sccToCheck.push(outEdge->getIncomingNode());
+      }
+    }
   }
 
   /*

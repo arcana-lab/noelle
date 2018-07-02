@@ -8,6 +8,8 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
     errs() << "DSWP:  Try to parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
   }
 
+  mergeTrivialNodesInSCCDAG(LDI);
+
   /*
    * Keep track of which nodes of the SCCDAG are single instructions.
    */
@@ -21,7 +23,6 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   /*
    * Partition the SCCDAG
    */  
-  mergeTrivialNodesInSCCDAG(LDI);
   partitionSCCDAG(LDI);
 
   /*

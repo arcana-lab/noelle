@@ -37,7 +37,7 @@ llvm::SCC::~SCC() {
   return ;
 }
 
-raw_ostream &llvm::SCC::print(raw_ostream &stream, std::string linePrefix = "") {
+raw_ostream &llvm::SCC::print(raw_ostream &stream, std::string linePrefix) {
 
     stream << linePrefix << "Internal nodes: " << internalNodeMap.size() << "\n";
 	for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << linePrefix << "\t") << "\n";
