@@ -8,6 +8,9 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
     errs() << "DSWP:  Try to parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
   }
 
+  /*
+   * Merge SCCs when there is no reason to keep them separated.
+   */
   mergeTrivialNodesInSCCDAG(LDI);
 
   /*

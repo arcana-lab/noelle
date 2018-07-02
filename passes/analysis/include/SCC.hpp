@@ -17,8 +17,7 @@ namespace llvm {
 		SCC(std::set<DGNode<Value> *> nodes) ;
 		~SCC() ;
 
-		raw_ostream &print(raw_ostream &stream) ;
-		raw_ostream &print(raw_ostream &stream, std::string prefixToUse) ;
+		raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") ;
 	};
 
 	template<> class DGEdge<SCC> : public DGEdgeBase<SCC, Value> {
