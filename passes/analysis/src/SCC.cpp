@@ -47,3 +47,31 @@ raw_ostream &llvm::SCC::print(raw_ostream &stream, std::string prefixToUse) {
     for (auto edge : allEdges) edge->print(stream, prefixToUse + "\t") << "\n";
 	return stream;
 }
+
+bool llvm::SCC::hasCycle () {
+	std::set<DGNode<Value> *> nodesChecked;
+	for (auto node : this->getNodes()) {
+		if (nodesChecked.find(node) != nodesChecked.end()) continue;
+
+		std::set<DGNode<Value> *> nodesSeen;
+		std::queue<DGNode<Value> *> nodesToVisit;
+		nodesChecked.insert(node);
+		nodesSeen.insert(node);
+		nodesToVisit.push(node);
+
+		while (!nodesToVisit.empty()) {
+			auto node = nodesToVisit.front();
+			nodesToVisit.pop();
+			for (auto edge : node->getOutgoingEdges()) {
+				auto otherNode = edge->getIncomingNode();
+				if (nodesSeen.find(otherNode) != nodesSeen.end()) return true;
+				if (nodesChecked.find(otherNode) != nodesChecked.end()) continue;
+
+				nodesChecked.insert(otherNode);
+				nodesSeen.insert(otherNode);
+				nodesToVisit.push(otherNode);
+			}
+		}
+	}
+	return false;
+}

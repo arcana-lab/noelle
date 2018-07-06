@@ -1,20 +1,6 @@
-- Add the new class information SCCInformation
-  - It includes a pointer to the SCC that it refers to
-  
-- Add the following attributes to both SCCInformation and SCCDAGPartition:
-  - Does it contain a loop?
-  - Does it contain a loop-carried data dependence (i.e., is it an actual SCC?)?
-  - SCC cost = the computation cost of that SCC
-
 - Extend the autotuner to parallelize multiple loops
 
 - Extend the autotuner to decide #threads per loop
-
-- Bug fix: IndipendentIterations has an extra stage due to induction variables that shouldn't exist
-
-- Bug fix: partitioning heuristics doesn't terminate
-
-- Add multiple levels of verbosity
 
 - Modify DSWP to be able to parallelize multiple loops at the same time
 

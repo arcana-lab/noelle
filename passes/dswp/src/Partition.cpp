@@ -6,6 +6,10 @@ using namespace llvm;
 static void partitionHeuristics (DSWPLoopDependenceInfo *LDI);
 
 void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
+  /*
+   * Initial the partition structure with the merged SCCDAG
+   */
+  LDI->partitions.initialize(LDI->loopSCCDAG, &LDI->sccdagInfo, &LDI->liSummary, /*idealThreads=*/ 2);
 
   /*
    * Print the current SCCDAG.
@@ -221,7 +225,7 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
 static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
 
   /*
-   * Collect all partitions following their dependences (from producers to consumers).
+   * Collect all top level partitions, following (producer -> consumer) dependencies to pass over removable SCCs.
    */
   std::queue<SCCDAGPartition *> partToCheck;
   std::set<SCCDAGPartition *> partVisited;
@@ -233,11 +237,9 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
       sccToCheck.pop();
 
       auto part = LDI->partitions.partitionOf(sccNode->getT());
-      if (part) {
-        if (partVisited.find(part) == partVisited.end()) {
-          partToCheck.push(part);
-          partVisited.insert(part);
-        }
+      if (part && partVisited.find(part) == partVisited.end()) {
+        partToCheck.push(part);
+        partVisited.insert(part);
         continue;
       }
 

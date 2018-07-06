@@ -2,13 +2,17 @@
 
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
+#include "SCCDAGInfo.hpp"
+#include "LoopInfoSummary.hpp"
 
 class SCCDAGPartition {
   public:
     std::set<SCC *> SCCs;
     int cost;
+    std::set<LoopSummary *> loopsContained;
+    bool hasLoopCarriedDep;
 
-    SCCDAGPartition (std::set<SCC *> &sccs);
+    SCCDAGPartition (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs);
     SCCDAGPartition (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
 };
 
@@ -17,7 +21,7 @@ class SCCDAGPartitions {
     std::set<std::unique_ptr<SCCDAGPartition>> partitions;
     std::set<SCC *> removableNodes;
 
-    SCCDAGPartitions (SCCDAG *dag) : sccDAG{dag}, idealThreads{2}, totalCost{0} {};
+    void initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo, int idealThreads);
 
     SCCDAGPartition *addPartition (SCC *node);
     SCCDAGPartition *addPartition (std::set<SCC *> &partition);
@@ -35,6 +39,8 @@ class SCCDAGPartitions {
     void managePartitionInfo (SCCDAGPartition *partition);
 
     SCCDAG *sccDAG;
+    SCCDAGInfo *sccdagInfo;
+    LoopInfoSummary *loopInfo;
     std::unordered_map<SCC *, SCCDAGPartition *> fromSCCToPartition;
     int totalCost;
     int idealThreads;

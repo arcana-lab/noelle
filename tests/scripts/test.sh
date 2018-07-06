@@ -55,8 +55,8 @@ function runningTests {
   fi
 }
 
-runningTests "Testing the default configuration" "-dswp-verbose=3" ;
-runningTests "Testing with \"-dswp-force\"" "-dswp-verbose=3 -dswp-force" ;
 runningTests "Testing with \"-dswp-force -dswp-no-scc-merge\"" "-dswp-verbose=3 -dswp-force -dswp-no-scc-merge" ;
+runningTests "Testing with \"-dswp-force\"" "-dswp-verbose=3 -dswp-force" ;
+runningTests "Testing the default configuration" "-dswp-verbose=3" ;
 
 exit 0;

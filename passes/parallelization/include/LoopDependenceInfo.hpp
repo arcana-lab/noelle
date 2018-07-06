@@ -3,6 +3,7 @@
 #include "PDG.hpp"
 #include "SCCDAG.hpp"
 #include "LoopInfoSummary.hpp"
+#include "SCCDAGInfo.hpp"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -23,6 +24,7 @@ namespace llvm {
 		PDG *loopDG;
 		PDG *loopInternalDG;
 		SCCDAG *loopSCCDAG;
+		SCCDAGInfo sccdagInfo;
 		SmallVector<BasicBlock *, 10> loopExitBlocks;
 
 		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);

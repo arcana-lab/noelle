@@ -2,20 +2,38 @@
 
 using namespace llvm;
 
-SCCDAGPartition::SCCDAGPartition (std::set<SCC *> &sccs) : SCCs{sccs} {
-	
+SCCDAGPartition::SCCDAGPartition (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs)
+	: SCCs{sccs}, cost{0}, hasLoopCarriedDep{true} {
+
 	/*
-	 * Compute partition cost using heuristic: # instructions
+	 * Collect all potentially fully-contained loops in the partition
 	 */
-	this->cost = 0;
+	std::unordered_map<LoopSummary *, std::set<BasicBlock *>> loopToBBContainedMap;
 	for (auto scc : sccs) {
-		for (auto nodePair : scc->internalNodePairs()) {
-			if (auto call = dyn_cast<CallInst>(nodePair.first)) {
-				this->cost += 100;
-			} else {
-				this->cost++;
-			}
+		for (auto bb : sccdagInfo->sccToInfo[scc]->bbs) {
+			loopToBBContainedMap[loopInfo->bbToLoop[bb]].insert(bb);
 		}
+	}
+
+	/*
+	 * Determine which loops are fully contained
+	 */
+	for (auto loopBBs : loopToBBContainedMap) {
+		bool fullyContained = true;
+		for (auto bb : loopBBs.first->bbs) {
+			fullyContained &= loopBBs.second.find(bb) != loopBBs.second.end();
+		}
+		if (fullyContained) this->loopsContained.insert(loopBBs.first);
+	}
+
+	/*
+	 * Collect total partition cost (TODO: Use info on contained loops to partially determine total cost)
+	 * Determine whether partition is DOALL or SEQuential
+	 */
+	for (auto scc : sccs) {
+		auto &sccInfo = sccdagInfo->sccToInfo[scc];
+		this->cost += sccInfo->cost;
+		this->hasLoopCarriedDep &= sccInfo->hasLoopCarriedDep;
 	}
 }
 
@@ -31,10 +49,18 @@ SCCDAGPartition *SCCDAGPartitions::addPartition (SCC * scc) {
 }
 
 SCCDAGPartition *SCCDAGPartitions::addPartition (std::set<SCC *> &sccs) {
-	auto partition = std::make_unique<SCCDAGPartition>(sccs);
+	auto partition = std::make_unique<SCCDAGPartition>(sccdagInfo, loopInfo, sccs);
 	this->managePartitionInfo(partition.get());
 	this->totalCost += partition->cost;
 	return this->partitions.insert(std::move(partition)).first->get();
+}
+
+void SCCDAGPartitions::initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo, int threads) {
+    sccDAG = dag;
+    sccdagInfo = dagInfo;
+    loopInfo = lInfo;
+    idealThreads = threads;
+    totalCost = 0;
 }
 
 void SCCDAGPartitions::removePartition (SCCDAGPartition *partition) {

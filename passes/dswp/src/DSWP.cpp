@@ -9,23 +9,10 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   }
 
   /*
-   * Merge SCCs when there is no reason to keep them separated.
+   * Merge SCCs where separation is unnecessary, collect info on merged SCCs, then partition them.
    */
   mergeTrivialNodesInSCCDAG(LDI);
-
-  /*
-   * Keep track of which nodes of the SCCDAG are single instructions.
-   */
-  collectParallelizableSingleInstrNodes(LDI);
-
-  /*
-   * Keep track of the SCCs that can be removed by exploiting induction variables.
-   */
-  collectRemovableSCCsByInductionVars(LDI);
-
-  /*
-   * Partition the SCCDAG
-   */  
+  collectSCCDAGInfo(LDI);
   partitionSCCDAG(LDI);
 
   /*
@@ -87,6 +74,21 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
     errs() << "DSWP: Exit\n";
   }
   return true;
+}
+
+void DSWP::collectSCCDAGInfo (DSWPLoopDependenceInfo *LDI) {
+  estimateCostAndExtentOfParallelismOfSCCs(LDI);
+
+  /*
+   * Keep track of which nodes of the SCCDAG are single instructions.
+   */
+  collectParallelizableSingleInstrNodes(LDI);
+
+  /*
+   * Keep track of the SCCs that can be removed.
+   */
+  collectRemovableSCCsBySyntacticSugarInstrs(LDI);
+  collectRemovableSCCsByInductionVars(LDI);
 }
 
 bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {

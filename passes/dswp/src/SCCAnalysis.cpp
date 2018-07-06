@@ -2,6 +2,26 @@
 
 using namespace llvm;
 
+void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI) {
+  LDI->sccdagInfo.populate(LDI->loopSCCDAG);
+
+  /*
+   * Check whether each SCC has a cycle
+   * Estimate each SCC cost
+   */
+  for (auto &sccInfoPair : LDI->sccdagInfo.sccToInfo) {
+    sccInfoPair.second->hasLoopCarriedDep = sccInfoPair.first->hasCycle();
+    
+    for (auto nodePair : sccInfoPair.first->internalNodePairs()) {
+      if (auto call = dyn_cast<CallInst>(nodePair.first)) {
+        sccInfoPair.second->cost += 100;
+      } else {
+        sccInfoPair.second->cost++;
+      }
+    }
+  }
+}
+
 void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
@@ -58,7 +78,7 @@ void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
 void DSWP::collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
-    if (scc->numInternalNodes() > 1) continue;
+    if (scc->numInternalNodes() > 1 || sccNode->numOutgoingEdges() == 0) continue;
     auto I = scc->begin_internal_node_map()->first;
     if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
       LDI->partitions.removableNodes.insert(scc);

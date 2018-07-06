@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   SCCDAGPartition.cpp
+  SCCAnalysis.cpp
   DSWPLoopDependenceInfo.cpp
   DSWPPass.cpp
   DSWP.cpp
@@ -8,7 +9,6 @@ set(Srcs
   ControlDependence.cpp
   Environment.cpp
   Helper.cpp
-  InductionVariable.cpp
   Inliner.cpp
   LoopSelector.cpp
   ParallelSCC.cpp
