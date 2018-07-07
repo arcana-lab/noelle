@@ -14,6 +14,8 @@ class SCCDAGPartition {
 
     SCCDAGPartition (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs);
     SCCDAGPartition (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
+
+    raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
 };
 
 class SCCDAGPartitions {
@@ -30,12 +32,18 @@ class SCCDAGPartitions {
     
     SCCDAGPartition *partitionOf (SCC *scc);
     bool isRemovable (SCC *scc);
-    std::set<SCCDAGPartition *> descendantsOf (SCCDAGPartition *partition);
+    std::set<SCCDAGPartition *> getDependents (SCCDAGPartition *partition);
+    std::set<SCCDAGPartition *> getDependents (std::set<DGNode<SCC> *> &sccs);
+    std::set<SCCDAGPartition *> getAncestors (SCCDAGPartition *partition);
+    std::set<SCCDAGPartition *> getAncestors (std::set<DGNode<SCC> *> &sccs);
 
     int numEdgesBetween (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
     int maxPartitionCost () { return totalCost / idealThreads; }
 
+    raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
+
   private:
+    std::set<SCCDAGPartition *> getRelated (std::set<DGNode<SCC> *> &sccNodes, std::function<void (std::queue<DGNode<SCC> *> &, DGNode<SCC> *)> addKinFunc);
     void managePartitionInfo (SCCDAGPartition *partition);
 
     SCCDAG *sccDAG;

@@ -12,22 +12,9 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   LDI->partitions.initialize(LDI->loopSCCDAG, &LDI->sccdagInfo, &LDI->liSummary, /*idealThreads=*/ 2);
 
   /*
-   * Print the current SCCDAG.
-   */
-  if (this->verbose >= Verbosity::Maximal) {
-    errs() << "DSWP:  Before partitioning the SCCDAG\n";
-    printSCCs(LDI->loopSCCDAG);
-    errs() << "DSWP:    Number of nodes in the SCCDAG: " << LDI->loopSCCDAG->numNodes() << "\n";
-  }
-
-  /*
    * Check if we can cluster SCCs.
    */
   if (!this->forceNoSCCPartition) {
-
-    /*
-     * Cluster SCCs.
-     */
     clusterSubloops(LDI);
   }
 
@@ -52,6 +39,14 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   }
 
   /*
+   * Print the initial partitions.
+   */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "DSWP:  Before partitioning the SCCDAG\n";
+    printPartitions(LDI);
+  }
+
+  /*
    * Check if we can cluster SCCs.
    */
   if (!this->forceNoSCCPartition) {
@@ -68,7 +63,6 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  After partitioning the SCCDAG\n";
     printPartitions(LDI);
-    errs() << "DSWP:    Number of nodes in the SCCDAG after obvious merging: " << LDI->loopSCCDAG->numNodes() << "\n";
   }
 
   return ;
@@ -227,25 +221,14 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
   /*
    * Collect all top level partitions, following (producer -> consumer) dependencies to pass over removable SCCs.
    */
+  std::set<DGNode<SCC> *> topLevelSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
+  for (auto sccNode : topLevelSCCNodes) sccNode->getT()->print(errs() << "DSWP:   TOP LEVEL SCC\n", "DSWP:   ---") << "\n";
+  std::set<SCCDAGPartition *> topLevelParts = LDI->partitions.getDependents(topLevelSCCNodes);
   std::queue<SCCDAGPartition *> partToCheck;
-  std::set<SCCDAGPartition *> partVisited;
-  for (auto topLevelSCCNode : LDI->loopSCCDAG->getTopLevelNodes()) {
-    std::queue<DGNode<SCC> *> sccToCheck;
-    sccToCheck.push(topLevelSCCNode);
-    while (!sccToCheck.empty()) {
-      auto sccNode = sccToCheck.front();
-      sccToCheck.pop();
-
-      auto part = LDI->partitions.partitionOf(sccNode->getT());
-      if (part && partVisited.find(part) == partVisited.end()) {
-        partToCheck.push(part);
-        partVisited.insert(part);
-        continue;
-      }
-
-      for (auto outEdge : sccNode->getOutgoingEdges()) {
-        sccToCheck.push(outEdge->getIncomingNode());
-      }
+  for (auto part : topLevelParts) {
+    if (LDI->partitions.getAncestors(part).size() == 0) {
+      part->print(errs() << "DSWP:   TOP LEVEL PARTITION:\n", "DSWP:   ");
+      partToCheck.push(part);
     }
   }
 
@@ -261,6 +244,8 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
     auto partition = partToCheck.front();
     partToCheck.pop();
 
+    partition->print(errs() << "DSWP:   CHECKING PARTITION:\n", "DSWP:   ");
+
     /*
      * Check if the current partition has been already tagged to be removed (i.e., merged).
      */
@@ -268,36 +253,35 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
       continue;
     }
 
-    SCCDAGPartition *minPartition = nullptr;
-    int32_t maxNumSquashedEdges = 0;
-
     /*
      * Locate the best partition that the current one should merge with.
      */
+    SCCDAGPartition *minPartition = nullptr;
+    int32_t maxNumSquashedEdges = 0;
     auto maxCost = LDI->partitions.maxPartitionCost();
-    auto descendants = LDI->partitions.descendantsOf(partition);
-    for (auto childPartition : descendants) {
-      if ((childPartition->cost + partition->cost) > maxCost) {
+    auto dependents = LDI->partitions.getDependents(partition);
+    for (auto depPartition : dependents) {
+      if ((depPartition->cost + partition->cost) > maxCost) {
         continue;
       }
 
-      auto squashedEdges = LDI->partitions.numEdgesBetween(partition, childPartition);
+      auto squashedEdges = LDI->partitions.numEdgesBetween(partition, depPartition);
       if (squashedEdges > maxNumSquashedEdges) {
-        minPartition = childPartition;
+        minPartition = depPartition;
         maxNumSquashedEdges = squashedEdges;
       }
     }
 
     /*
-     * Merge partition if one is found; iterate over all children partitions
+     * Merge partition if one is found; iterate over all dependent partitions
      */
-    for (auto childPartition : descendants) {
-      if (minPartition == childPartition) {
+    for (auto depPartition : dependents) {
+      if (minPartition == depPartition) {
         deletedPartitions.insert(partition);
-        deletedPartitions.insert(childPartition);
-        partToCheck.push(LDI->partitions.mergePartitions(partition, childPartition));
+        deletedPartitions.insert(depPartition);
+        partToCheck.push(LDI->partitions.mergePartitions(partition, depPartition));
       } else {
-        partToCheck.push(childPartition);
+        partToCheck.push(depPartition);
       }
     }
   }

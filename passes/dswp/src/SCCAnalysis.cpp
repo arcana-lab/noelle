@@ -7,14 +7,42 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
 
   /*
    * Check whether each SCC has a cycle
-   * Estimate each SCC cost
    */
   for (auto &sccInfoPair : LDI->sccdagInfo.sccToInfo) {
     sccInfoPair.second->hasLoopCarriedDep = sccInfoPair.first->hasCycle();
+  }
+
+  /*
+   * Estimate each SCC's cost
+   */
+  auto isSyntacticSugar = [&](Instruction *I) -> bool {
+    return isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I);
+  };
+  std::unordered_map<Function *, int> funcToCost;
+  for (auto &sccInfoPair : LDI->sccdagInfo.sccToInfo) {
     
     for (auto nodePair : sccInfoPair.first->internalNodePairs()) {
-      if (auto call = dyn_cast<CallInst>(nodePair.first)) {
-        sccInfoPair.second->cost += 100;
+      auto I = cast<Instruction>(nodePair.first);
+      if (isSyntacticSugar(I)) continue;
+
+      if (auto call = dyn_cast<CallInst>(I)) {
+        auto F = call->getCalledFunction();
+        
+        /*
+         * Compute function cost as 1-layer deep instruction tally
+         */
+        if (funcToCost.find(F) != funcToCost.end()) {
+          sccInfoPair.second->cost += funcToCost[F];
+        } else {
+          auto instInF = 0;
+          for (auto &B : *F) {
+            for (auto &J : B) {
+              if (!isSyntacticSugar(&J)) instInF++;
+            }
+          }
+          sccInfoPair.second->cost += instInF;
+          funcToCost[F] = instInF;
+        }
       } else {
         sccInfoPair.second->cost++;
       }

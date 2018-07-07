@@ -33,16 +33,7 @@ void llvm::DSWP::printSCCs (SCCDAG *sccSubgraph){
 }
 
 void llvm::DSWP::printPartitions (DSWPLoopDependenceInfo *LDI){
-  for (auto &partition : LDI->partitions.partitions) {
-    errs() << "DSWP:  Partition:\n";
-    for (auto scc : partition->SCCs) {
-      scc->print(errs(), "DSWP:   ");
-    }
-  }
-  errs() << "DSWP:  Removable nodes:\n";
-  for (auto &removableSCC : LDI->partitions.removableNodes) {
-    removableSCC->print(errs(), "DSWP:   ");
-  }
+  LDI->partitions.print(errs(), "DSWP:   ");
 }
 
 void llvm::DSWP::printLoop (Loop *loop)
