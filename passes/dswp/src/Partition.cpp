@@ -223,12 +223,12 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
    * Collect all top level partitions, following (producer -> consumer) dependencies to pass over removable SCCs.
    */
   std::set<DGNode<SCC> *> topLevelSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
-  for (auto sccNode : topLevelSCCNodes) sccNode->getT()->print(errs() << "DSWP:   TOP LEVEL SCC\n", "DSWP:   ---") << "\n";
+  // for (auto sccNode : topLevelSCCNodes) sccNode->getT()->print(errs() << "DSWP:   TOP LEVEL SCC\n", "DSWP:   ---") << "\n";
   std::set<SCCDAGPartition *> topLevelParts = LDI->partitions.getDependents(topLevelSCCNodes);
   std::queue<SCCDAGPartition *> partToCheck;
   for (auto part : topLevelParts) {
     if (LDI->partitions.getAncestors(part).size() == 0) {
-      part->print(errs() << "DSWP:   TOP LEVEL PARTITION:\n", "DSWP:   ");
+      // part->print(errs() << "DSWP:   TOP LEVEL PARTITION:\n", "DSWP:   ");
       partToCheck.push(part);
     }
   }
@@ -245,7 +245,7 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
     auto partition = partToCheck.front();
     partToCheck.pop();
 
-    partition->print(errs() << "DSWP:   CHECKING PARTITION:\n", "DSWP:   ");
+    // partition->print(errs() << "DSWP:   CHECKING PARTITION:\n", "DSWP:   ");
 
     /*
      * Check if the current partition has been already tagged to be removed (i.e., merged).
