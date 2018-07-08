@@ -1,6 +1,6 @@
 # Sources
 set(Srcs 
-  CatPass.cpp
+  AnalysisPass.cpp
   PDG.cpp
   SCCDAG.cpp
   SCC.cpp

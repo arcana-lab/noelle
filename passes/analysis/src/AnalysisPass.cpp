@@ -16,7 +16,6 @@
 using namespace llvm;
 
 bool llvm::PDGAnalysis::doInitialization (Module &M){
-  errs() << "PDGAnalysis at \"doInitialization\"\n" ;
   return false;
 }
 
@@ -29,7 +28,6 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool llvm::PDGAnalysis::runOnModule (Module &M){
-  errs() << "PDGAnalysis at \"runOnModule\"\n" ;
   this->programDependenceGraph = new PDG();
 
   this->programDependenceGraph->addNodes(M);
@@ -51,19 +49,6 @@ llvm::PDGAnalysis::~PDGAnalysis(){
 llvm::PDG * llvm::PDGAnalysis::getPDG (){
   return this->programDependenceGraph;
 }
-
-// Next there is code to register your pass to "opt"
-char llvm::PDGAnalysis::ID = 0;
-static RegisterPass<PDGAnalysis> X("PDGAnalysis", "Computing the Program Dependence Graph");
-
-// Next there is code to register your pass to "clang"
-static PDGAnalysis * _PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new PDGAnalysis());}}); // ** for -Ox
-static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new PDGAnalysis());}});// ** for -O0
 
 void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
   for (auto node : make_range(programDependenceGraph->begin_nodes(), programDependenceGraph->end_nodes())) {
@@ -257,3 +242,16 @@ void llvm::PDGAnalysis::constructControlEdgesForFunction(Function &F, PostDomina
     }
   }
 }
+
+// Next there is code to register your pass to "opt"
+char llvm::PDGAnalysis::ID = 0;
+static RegisterPass<PDGAnalysis> X("PDGAnalysis", "Computing the Program Dependence Graph");
+
+// Next there is code to register your pass to "clang"
+static PDGAnalysis * _PassMaker = NULL;
+static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
+    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
+        if(!_PassMaker){ PM.add(_PassMaker = new PDGAnalysis());}}); // ** for -Ox
+static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
+    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
+        if(!_PassMaker){ PM.add(_PassMaker = new PDGAnalysis());}});// ** for -O0
