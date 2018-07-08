@@ -35,9 +35,13 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
           sccInfoPair.second->cost += funcToCost[F];
         } else {
           auto instInF = 0;
-          for (auto &B : *F) {
-            for (auto &J : B) {
-              if (!isSyntacticSugar(&J)) instInF++;
+          if (!F || F->empty()) {
+            instInF = 10;
+          } else {
+            for (auto &B : *F) {
+              for (auto &J : B) {
+                if (!isSyntacticSugar(&J)) instInF++;
+              }
             }
           }
           sccInfoPair.second->cost += instInF;

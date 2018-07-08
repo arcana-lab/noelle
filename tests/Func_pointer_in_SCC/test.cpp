@@ -13,7 +13,8 @@ int g(int printVar, int v1, int v2, int (*f_f)(int)) {
     v2 += v1 + printVar;
   }
 
-  printf("%d %d %d\n", printVar, v1, v2);
+  printf("Final output: %d %d %d\n", printVar, v1, v2);
+  return 0;
 }
 
 int main (){
