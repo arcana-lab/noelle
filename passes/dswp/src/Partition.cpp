@@ -6,6 +6,7 @@ using namespace llvm;
 static void partitionHeuristics (DSWPLoopDependenceInfo *LDI);
 
 void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
+
   /*
    * Initial the partition structure with the merged SCCDAG
    */
