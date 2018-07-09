@@ -83,7 +83,7 @@ void DSWP::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
    * Merge SCCs.
    */
   mergePointerLoadInstructions(LDI);
-  mergeSinglePHIs(LDI);
+  mergeSingleSyntacticSugarInstrs(LDI);
   mergeBranchesWithoutOutgoingEdges(LDI);
 
   /*
@@ -121,19 +121,29 @@ void DSWP::mergePointerLoadInstructions (DSWPLoopDependenceInfo *LDI) {
   }
 }
 
-void DSWP::mergeSinglePHIs (DSWPLoopDependenceInfo *LDI) {
-  std::vector<std::set<DGNode<SCC> *>> singlePHIs;
+void DSWP::mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
+  std::unordered_map<DGNode<SCC> *, std::set<DGNode<SCC> *> *> mergedToGroup;
+  std::vector<std::set<DGNode<SCC> *>> singles;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
     if (scc->numInternalNodes() > 1) continue;
-    if (!isa<PHINode>(scc->begin_internal_node_map()->first)) continue;
-    if (sccNode->numOutgoingEdges() == 1) {
-      std::set<DGNode<SCC> *> nodes = { sccNode, (*sccNode->begin_outgoing_edges())->getIncomingNode() };
-      singlePHIs.push_back(nodes);
+    auto I = scc->begin_internal_node_map()->first;
+    if (!isa<PHINode>(I) && !isa<GetElementPtrInst>(I) && !isa<CastInst>(I)) continue;
+    if (sccNode->numOutgoingEdges() != 1) continue;
+    auto dependentNode = (*sccNode->begin_outgoing_edges())->getIncomingNode();
+
+    if (mergedToGroup.find(sccNode) != mergedToGroup.end()) {
+      mergedToGroup[sccNode]->insert(dependentNode);
+    } else if (mergedToGroup.find(dependentNode) != mergedToGroup.end()) {
+      mergedToGroup[dependentNode]->insert(sccNode);
+    } else {
+      singles.push_back({ sccNode, dependentNode });
+      mergedToGroup[sccNode] = &singles.back();
+      mergedToGroup[dependentNode] = &singles.back();
     }
   }
 
-  for (auto sccNodes : singlePHIs) LDI->loopSCCDAG->mergeSCCs(sccNodes);
+  for (auto sccNodes : singles) LDI->loopSCCDAG->mergeSCCs(sccNodes);
 }
 
 void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {

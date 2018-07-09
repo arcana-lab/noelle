@@ -79,7 +79,7 @@ namespace llvm {
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
       bool applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) ;
       void mergePointerLoadInstructions (DSWPLoopDependenceInfo *LDI);
-      void mergeSinglePHIs (DSWPLoopDependenceInfo *LDI);
+      void mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
       void clusterSubloops (DSWPLoopDependenceInfo *LDI);
       void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI);
       void mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI);
