@@ -123,27 +123,55 @@ void DSWP::mergePointerLoadInstructions (DSWPLoopDependenceInfo *LDI) {
 
 void DSWP::mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
   std::unordered_map<DGNode<SCC> *, std::set<DGNode<SCC> *> *> mergedToGroup;
-  std::vector<std::set<DGNode<SCC> *>> singles;
+  std::set<std::set<DGNode<SCC> *> *> singles;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
+
+    /*
+     * Determine if node is a single syntactic sugar instruction with only one dependent SCC
+     */
     if (scc->numInternalNodes() > 1) continue;
     auto I = scc->begin_internal_node_map()->first;
     if (!isa<PHINode>(I) && !isa<GetElementPtrInst>(I) && !isa<CastInst>(I)) continue;
     if (sccNode->numOutgoingEdges() != 1) continue;
     auto dependentNode = (*sccNode->begin_outgoing_edges())->getIncomingNode();
 
-    if (mergedToGroup.find(sccNode) != mergedToGroup.end()) {
+    /*
+     * Determine the merged state of the single instruction node and its dependent
+     * Merge the current merged nodes holding both of the above
+     */
+    bool mergedSCCNode = mergedToGroup.find(sccNode) != mergedToGroup.end();
+    bool mergedDepNode = mergedToGroup.find(dependentNode) != mergedToGroup.end();
+    if (mergedSCCNode && mergedDepNode) {
+
+      /*
+       * Combine the dependent node's merged group into that of the single instruction's merged group
+       */
+      auto depSet = mergedToGroup[dependentNode];
+      for (auto node : *depSet) {
+        mergedToGroup[sccNode]->insert(node);
+        mergedToGroup[node] = mergedToGroup[sccNode];
+      }
+      singles.erase(depSet);
+      delete depSet;
+    } else if (mergedSCCNode) {
       mergedToGroup[sccNode]->insert(dependentNode);
-    } else if (mergedToGroup.find(dependentNode) != mergedToGroup.end()) {
+      mergedToGroup[dependentNode] = mergedToGroup[sccNode];
+    } else if (mergedDepNode) {
       mergedToGroup[dependentNode]->insert(sccNode);
+      mergedToGroup[sccNode] = mergedToGroup[dependentNode];
     } else {
-      singles.push_back({ sccNode, dependentNode });
-      mergedToGroup[sccNode] = &singles.back();
-      mergedToGroup[dependentNode] = &singles.back();
+      auto nodes = new std::set<DGNode<SCC> *>({ sccNode, dependentNode });
+      singles.insert(nodes);
+      mergedToGroup[sccNode] = nodes;
+      mergedToGroup[dependentNode] = nodes;
     }
   }
 
-  for (auto sccNodes : singles) LDI->loopSCCDAG->mergeSCCs(sccNodes);
+  for (auto sccNodes : singles) { 
+    LDI->loopSCCDAG->mergeSCCs(*sccNodes);
+    delete sccNodes;
+  }
 }
 
 void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
