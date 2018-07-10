@@ -12,3 +12,5 @@
 
 - Optimization: create a new pass to map memory locations to variables as much as possible
   This removes the overly conservative memory loop-carried data dependences
+
+- Optimization: extend the PDG analysis to tag explicitly loop-carried data dependences. Extend the SCC analysis accordingly
