@@ -46,13 +46,13 @@ function runningTests {
 
     cd ../ ;
   done
-  echo "" ;
 
   # Print the results
   echo "    Tests passed: ${passed_tests} / ${checked_tests}" ;
   if test "${dirs_of_failed_tests}" != "" ; then
     echo "    Tests failed: ${dirs_of_failed_tests}" ;
   fi
+  echo "" ;
 }
 
 runningTests "Testing with \"-dswp-force -dswp-no-scc-merge\"" "-dswp-verbose=3 -dswp-force -dswp-no-scc-merge" ;
