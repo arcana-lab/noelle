@@ -283,50 +283,59 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
     auto partition = partToCheck.front();
     partToCheck.pop();
 
-    // partition->print(errs() << "DSWP:   CHECKING PARTITION:\n", "DSWP:   ");
-
     /*
      * Check if the current partition has been already tagged to be removed (i.e., merged).
      */
     if (deletedPartitions.find(partition) != deletedPartitions.end()) {
       continue;
     }
+    // partition->print(errs() << "DSWP:   CHECKING PARTITION:\n", "DSWP:   ");
 
     /*
-     * TODO: Grab potential merging partitions (children, cousins, etc...), merge with best one
-     * Iterate through immediate dependents only
-     */
-
-    /*
-     * Locate the best partition that the current one should merge with.
+     * Prioritize merge that best lowers overall cost without yielding a too costly partition
      */
     SCCDAGPartition *minPartition = nullptr;
-    int32_t maxNumSquashedEdges = 0;
-    auto maxCost = LDI->partitions.maxPartitionCost();
-    auto dependents = LDI->partitions.getDependents(partition);
-    for (auto depPartition : dependents) {
-      if ((depPartition->cost + partition->cost) > maxCost) {
-        continue;
-      }
+    int32_t maxLoweredCost = 0;
+    auto maxAllowedCost = LDI->partitions.maxPartitionCost();
 
-      auto squashedEdges = LDI->partitions.numEdgesBetween(partition, depPartition);
-      if (squashedEdges > maxNumSquashedEdges) {
-        minPartition = depPartition;
-        maxNumSquashedEdges = squashedEdges;
+    auto checkMergeWith = [&](SCCDAGPartition *part) -> void {
+      if (!LDI->partitions.canMergePartitions(partition, part)) return;
+      // part->print(errs() << "DSWP:   CAN MERGE WITH PARTITION:\n", "DSWP:   ");
+
+      auto demoMerged = LDI->partitions.demoMergePartitions(partition, part);
+      if (demoMerged->cost < maxAllowedCost) return ;
+
+      auto loweredCost = part->cost + partition->cost - demoMerged->cost;
+      // errs() << "DSWP:   Merging yields better cost by: " << loweredCost << "\n";
+      if (loweredCost > maxLoweredCost) {
+        minPartition = part;
+        maxLoweredCost = loweredCost;
       }
+    };
+
+    /*
+     * Check merge criteria on dependents and depth-1 neighbors
+     */
+    auto dependents = LDI->partitions.getDependents(partition);
+    auto cousins = LDI->partitions.getCousins(partition);
+    for (auto part : dependents) checkMergeWith(part);
+    for (auto part : cousins) checkMergeWith(part);
+
+    /*
+     * Merge partition if one is found; reiterate the merge check on it
+     */
+    if (minPartition) {
+      deletedPartitions.insert(partition);
+      deletedPartitions.insert(minPartition);
+      partToCheck.push(LDI->partitions.mergePartitions(partition, minPartition));
     }
 
     /*
-     * Merge partition if one is found; iterate over all dependent partitions
+     * Iterate the merge check on all dependent partitions
      */
-    for (auto depPartition : dependents) {
-      if (minPartition == depPartition) {
-        deletedPartitions.insert(partition);
-        deletedPartitions.insert(depPartition);
-        partToCheck.push(LDI->partitions.mergePartitions(partition, depPartition));
-      } else {
-        partToCheck.push(depPartition);
-      }
+    for (auto part : dependents) {
+      if (minPartition == part) continue;
+      partToCheck.push(part);
     }
   }
 

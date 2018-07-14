@@ -11,22 +11,26 @@ namespace llvm {
   struct SCCInfo {
     SCC *scc;
     std::set<BasicBlock *> bbs;
-    int cost;
+
+    int internalCost;
+    std::unordered_map<SCC *, int> sccToExternalCost;
     bool hasLoopCarriedDep;
 
-    SCCInfo (SCC *s) : scc{s}, cost{0}, hasLoopCarriedDep{0} {
-      for (auto nodePair : scc->internalNodePairs()) {
-        bbs.insert(cast<Instruction>(nodePair.first)->getParent());
+    SCCInfo (SCC *s) : scc{s}, internalCost{0}, hasLoopCarriedDep{0} {
+      for (auto nodePair : this->scc->internalNodePairs()) {
+        this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
       }
     }
   };
 
   struct SCCDAGInfo {
+    SCCDAG *sccdag;
     std::unordered_map<SCC *, std::unique_ptr<SCCInfo>> sccToInfo;
 
     void populate (SCCDAG *loopSCCDAG) {
+      this->sccdag = loopSCCDAG;
       for (auto node : loopSCCDAG->getNodes()) {
-        sccToInfo[node->getT()] = std::move(std::make_unique<SCCInfo>(node->getT()));
+        this->sccToInfo[node->getT()] = std::move(std::make_unique<SCCInfo>(node->getT()));
       }
     }
   };

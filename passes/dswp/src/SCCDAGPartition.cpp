@@ -57,7 +57,7 @@ void SCCDAGPartition::collectPartitionSCCInfo (SCCDAGInfo *sccdagInfo) {
          * Collect scc external cost (through edges)
          */
         for (auto sccCostPair : sccdagInfo->sccToInfo[scc]->sccToExternalCost) {
-            if (SCCs.find(scc) != SCCs.end()) continue;
+            if (SCCs.find(sccCostPair.first) != SCCs.end()) continue;
             this->cost += sccCostPair.second;
         }
     }
@@ -229,7 +229,7 @@ std::set<SCCDAGPartition *> SCCDAGPartitions::getRelated (std::set<DGNode<SCC> *
     return related;
 }
 
-std::set<SCCDAGPartition *> SCCDAGPartitions::getNonDirectNeighbors (SCCDAGPartition *partition) {
+std::set<SCCDAGPartition *> SCCDAGPartitions::getCousins (SCCDAGPartition *partition) {
     auto sccNodes = this->getSCCNodes(partition);
     std::set<SCCDAGPartition *> parts = this->getAncestors(sccNodes);
     if (parts.find(partition) != parts.end()) parts.erase(partition);
@@ -239,6 +239,7 @@ std::set<SCCDAGPartition *> SCCDAGPartitions::getNonDirectNeighbors (SCCDAGParti
         auto partSCCNodes = this->getSCCNodes(part);
         auto otherParts = this->getDependents(partSCCNodes);
         if (otherParts.find(part) != otherParts.end()) otherParts.erase(part);
+        if (otherParts.find(partition) != otherParts.end()) otherParts.erase(partition);
         neighbors.insert(otherParts.begin(), otherParts.end());
     }
     return neighbors;

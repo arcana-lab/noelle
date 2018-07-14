@@ -42,7 +42,7 @@ class SCCDAGPartitions {
     std::set<SCCDAGPartition *> getAncestors (SCCDAGPartition *partition);
     std::set<SCCDAGPartition *> getAncestors (std::set<DGNode<SCC> *> &sccs);
 
-    std::set<SCCDAGPartition *> getNonDirectNeighbors (SCCDAGPartition *partition);
+    std::set<SCCDAGPartition *> getCousins (SCCDAGPartition *partition);
 
     int numEdgesBetween (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
     int maxPartitionCost () { return totalCost / idealThreads; }
