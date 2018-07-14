@@ -293,6 +293,11 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
     }
 
     /*
+     * TODO: Grab potential merging partitions (children, cousins, etc...), merge with best one
+     * Iterate through immediate dependents only
+     */
+
+    /*
      * Locate the best partition that the current one should merge with.
      */
     SCCDAGPartition *minPartition = nullptr;

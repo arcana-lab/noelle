@@ -13,7 +13,7 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
   }
 
   /*
-   * Estimate each SCC's cost
+   * Estimate each SCC's internal cost
    */
   auto isSyntacticSugar = [&](Instruction *I) -> bool {
     return isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I);
@@ -26,14 +26,12 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
       if (isSyntacticSugar(I)) continue;
 
       if (auto call = dyn_cast<CallInst>(I)) {
-        auto F = call->getCalledFunction();
         
         /*
          * Compute function cost as 1-layer deep instruction tally
          */
-        if (funcToCost.find(F) != funcToCost.end()) {
-          sccInfoPair.second->cost += funcToCost[F];
-        } else {
+        auto F = call->getCalledFunction();
+        if (funcToCost.find(F) == funcToCost.end()) {
           auto instInF = 0;
           if (!F || F->empty()) {
             instInF = 10;
@@ -44,12 +42,27 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
               }
             }
           }
-          sccInfoPair.second->cost += instInF;
           funcToCost[F] = instInF;
         }
+
+        sccInfoPair.second->internalCost += funcToCost[F];
       } else {
-        sccInfoPair.second->cost++;
+        sccInfoPair.second->internalCost++;
       }
+    }
+  }
+
+  /*
+   * Estimate SCC's external edge costs (modelling queue costs)
+   */
+  for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
+    auto scc = sccNode->getT();
+    auto &sccInfo = LDI->sccdagInfo.sccToInfo[scc];
+    for (auto edge : sccNode->getOutgoingEdges()) {
+      auto otherSCC = edge->getIncomingT();
+      auto &otherSCCInfo = LDI->sccdagInfo.sccToInfo[otherSCC];
+      sccInfo->sccToExternalCost[otherSCC] = 2;
+      otherSCCInfo->sccToExternalCost[scc] = 2;
     }
   }
 }

@@ -4,12 +4,24 @@ using namespace llvm;
 
 SCCDAGPartition::SCCDAGPartition (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs)
     : SCCs{sccs}, cost{0}, hasLoopCarriedDep{true} {
+    collectPartitionLoopInfo(sccdagInfo, loopInfo);
+    collectPartitionSCCInfo(sccdagInfo);
+}
 
+SCCDAGPartition::SCCDAGPartition (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, SCCDAGPartition *partA, SCCDAGPartition *partB) 
+    : cost{0}, hasLoopCarriedDep{true} {
+    for (auto scc : partA->SCCs) this->SCCs.insert(scc);
+    for (auto scc : partB->SCCs) this->SCCs.insert(scc);
+    collectPartitionLoopInfo(sccdagInfo, loopInfo);
+    collectPartitionSCCInfo(sccdagInfo);
+}
+
+void SCCDAGPartition::collectPartitionLoopInfo (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo) {
     /*
      * Collect all potentially fully-contained loops in the partition
      */
     std::unordered_map<LoopSummary *, std::set<BasicBlock *>> loopToBBContainedMap;
-    for (auto scc : sccs) {
+    for (auto scc : SCCs) {
         for (auto bb : sccdagInfo->sccToInfo[scc]->bbs) {
             loopToBBContainedMap[loopInfo->bbToLoop[bb]].insert(bb);
         }
@@ -25,22 +37,30 @@ SCCDAGPartition::SCCDAGPartition (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopI
         }
         if (fullyContained) this->loopsContained.insert(loopBBs.first);
     }
-
-    /*
-     * Collect total partition cost (TODO: Use info on contained loops to partially determine total cost)
-     * Determine whether partition is DOALL or SEQuential
-     */
-    for (auto scc : sccs) {
-        auto &sccInfo = sccdagInfo->sccToInfo[scc];
-        this->cost += sccInfo->cost;
-        this->hasLoopCarriedDep &= sccInfo->hasLoopCarriedDep;
-    }
 }
 
-SCCDAGPartition::SCCDAGPartition (SCCDAGPartition *partA, SCCDAGPartition *partB) {
-    for (auto scc : partA->SCCs) this->SCCs.insert(scc);
-    for (auto scc : partB->SCCs) this->SCCs.insert(scc);
-    this->cost = partA->cost + partB->cost;
+/*
+ * TODO: Use info on contained loops to partially determine total cost
+ * TODO: Determine whether partition is DOALL or SEQuential
+ */
+void SCCDAGPartition::collectPartitionSCCInfo (SCCDAGInfo *sccdagInfo) {
+    for (auto scc : SCCs) {
+        auto &sccInfo = sccdagInfo->sccToInfo[scc];
+
+        /*
+         * Collect scc internal information 
+         */
+        this->cost += sccInfo->internalCost;
+        this->hasLoopCarriedDep &= sccInfo->hasLoopCarriedDep;
+
+        /*
+         * Collect scc external cost (through edges)
+         */
+        for (auto sccCostPair : sccdagInfo->sccToInfo[scc]->sccToExternalCost) {
+            if (SCCs.find(scc) != SCCs.end()) continue;
+            this->cost += sccCostPair.second;
+        }
+    }
 }
 
 raw_ostream &printMinimalSCCs (raw_ostream &stream, std::string prefixToUse, std::set<SCC *> &sccs) {
@@ -88,13 +108,36 @@ void SCCDAGPartitions::removePartition (SCCDAGPartition *partition) {
 }
 
 SCCDAGPartition *SCCDAGPartitions::mergePartitions (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB) {
-    auto partition = std::make_unique<SCCDAGPartition>(partitionA, partitionB);
+    auto partition = std::make_unique<SCCDAGPartition>(sccdagInfo, loopInfo, partitionA, partitionB);
     this->managePartitionInfo(partition.get());
     auto newPartition = this->partitions.insert(std::move(partition)).first->get();
 
     this->removePartition(partitionA);
     this->removePartition(partitionB);
     return newPartition;
+}
+
+SCCDAGPartition *SCCDAGPartitions::demoMergePartitions (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB) {
+    return new SCCDAGPartition(sccdagInfo, loopInfo, partitionA, partitionB);
+}
+
+bool SCCDAGPartitions::canMergePartitions (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB) {
+    std::set<SCC *> incomingToB;
+    for (auto scc : partitionB->SCCs) {
+        for (auto edge : sccDAG->fetchNode(scc)->getIncomingEdges()) {
+            incomingToB.insert(edge->getOutgoingT());
+        }
+    }
+
+    /*
+     * Check that no cycle would form by merging the partitions
+     */
+    for (auto scc : partitionA->SCCs) {
+        for (auto edge : sccDAG->fetchNode(scc)->getOutgoingEdges()) {
+            if (incomingToB.find(edge->getIncomingT()) != incomingToB.end()) return false;
+        }
+    }
+    return true;
 }
 
 void SCCDAGPartitions::managePartitionInfo (SCCDAGPartition *partition) {
@@ -122,20 +165,42 @@ int SCCDAGPartitions::numEdgesBetween (SCCDAGPartition *partitionA, SCCDAGPartit
     return edgeCount;
 }
 
-std::set<SCCDAGPartition *> SCCDAGPartitions::getDependents (SCCDAGPartition *partition) {
+std::set<DGNode<SCC> *> SCCDAGPartitions::getSCCNodes (SCCDAGPartition *partition) {
     std::set<DGNode<SCC> *> sccNodes;
     for (auto scc : partition->SCCs) sccNodes.insert(this->sccDAG->fetchNode(scc));
-    std::set<SCCDAGPartition *> depParts = this->getDependents(sccNodes);
-    if (depParts.find(partition) != depParts.end()) depParts.erase(partition);
-    return depParts;
+    return sccNodes;    
+}
+
+std::set<SCCDAGPartition *> SCCDAGPartitions::getDependents (SCCDAGPartition *partition) {
+    auto sccNodes = this->getSCCNodes(partition);
+    std::set<SCCDAGPartition *> parts = this->getDependents(sccNodes);
+    if (parts.find(partition) != parts.end()) parts.erase(partition);
+    return parts;
 }
 
 std::set<SCCDAGPartition *> SCCDAGPartitions::getAncestors (SCCDAGPartition *partition) {
-    std::set<DGNode<SCC> *> sccNodes;
-    for (auto scc : partition->SCCs) sccNodes.insert(this->sccDAG->fetchNode(scc));
-    std::set<SCCDAGPartition *> preParts = this->getAncestors(sccNodes);
-    if (preParts.find(partition) != preParts.end()) preParts.erase(partition);
-    return preParts;
+    auto sccNodes = this->getSCCNodes(partition);
+    std::set<SCCDAGPartition *> parts = this->getAncestors(sccNodes);
+    if (parts.find(partition) != parts.end()) parts.erase(partition);
+    return parts;
+}
+
+std::set<SCCDAGPartition *> SCCDAGPartitions::getDependents (std::set<DGNode<SCC> *> &sccNodes) {
+    auto addDependents = [&](std::queue<DGNode<SCC> *> &sccToCheck, DGNode<SCC> *sccNode) -> void {
+        for (auto edge : sccNode->getOutgoingEdges()) {
+            sccToCheck.push(edge->getIncomingNode());
+        }
+    };
+    return getRelated(sccNodes, addDependents);
+}
+
+std::set<SCCDAGPartition *> SCCDAGPartitions::getAncestors (std::set<DGNode<SCC> *> &sccNodes) {
+    auto addAncestors = [&](std::queue<DGNode<SCC> *> &sccToCheck, DGNode<SCC> *sccNode) -> void {
+        for (auto edge : sccNode->getIncomingEdges()) {
+            sccToCheck.push(edge->getOutgoingNode());
+        }
+    };
+    return getRelated(sccNodes, addAncestors);
 }
 
 std::set<SCCDAGPartition *> SCCDAGPartitions::getRelated (std::set<DGNode<SCC> *> &sccNodes,
@@ -164,22 +229,19 @@ std::set<SCCDAGPartition *> SCCDAGPartitions::getRelated (std::set<DGNode<SCC> *
     return related;
 }
 
-std::set<SCCDAGPartition *> SCCDAGPartitions::getDependents (std::set<DGNode<SCC> *> &sccNodes) {
-    auto addDependents = [&](std::queue<DGNode<SCC> *> &sccToCheck, DGNode<SCC> *sccNode) -> void {
-        for (auto edge : sccNode->getOutgoingEdges()) {
-            sccToCheck.push(edge->getIncomingNode());
-        }
-    };
-    return getRelated(sccNodes, addDependents);
-}
-
-std::set<SCCDAGPartition *> SCCDAGPartitions::getAncestors (std::set<DGNode<SCC> *> &sccNodes) {
-    auto addAncestors = [&](std::queue<DGNode<SCC> *> &sccToCheck, DGNode<SCC> *sccNode) -> void {
-        for (auto edge : sccNode->getIncomingEdges()) {
-            sccToCheck.push(edge->getOutgoingNode());
-        }
-    };
-    return getRelated(sccNodes, addAncestors);
+std::set<SCCDAGPartition *> SCCDAGPartitions::getNonDirectNeighbors (SCCDAGPartition *partition) {
+    auto sccNodes = this->getSCCNodes(partition);
+    std::set<SCCDAGPartition *> parts = this->getAncestors(sccNodes);
+    if (parts.find(partition) != parts.end()) parts.erase(partition);
+    
+    std::set<SCCDAGPartition *> neighbors;
+    for (auto part : parts) {
+        auto partSCCNodes = this->getSCCNodes(part);
+        auto otherParts = this->getDependents(partSCCNodes);
+        if (otherParts.find(part) != otherParts.end()) otherParts.erase(part);
+        neighbors.insert(otherParts.begin(), otherParts.end());
+    }
+    return neighbors;
 }
 
 raw_ostream &SCCDAGPartitions::print (raw_ostream &stream, std::string prefixToUse) {
