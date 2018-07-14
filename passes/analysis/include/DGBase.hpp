@@ -95,6 +95,7 @@ namespace llvm {
       std::set<DGNode<T> *> getLeafNodes();
       std::vector<std::set<DGNode<T> *> *> getDisconnectedSubgraphs();
       void removeNode(DGNode<T> *node);
+      void removeEdge(DGEdge<T> *edge);
       void addNodesIntoNewGraph(DG<T> &newGraph, std::set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode);
       void clear();
 
@@ -149,13 +150,14 @@ namespace llvm {
       void removeConnectedNode(DGNode<T> *node);
 
       DGEdge<T> *getEdgeInstance(unsigned nodeInstance) { return outgoingEdgeInstances[nodeInstance]; }
-      void removeInstance(DGEdge<T> *edge);
-      void removeInstances(DGNode<T> *node);
 
       std::string toString();
       raw_ostream &print(raw_ostream &stream);
 
     protected:
+      void removeInstance(DGEdge<T> *edge);
+      void removeInstances(DGNode<T> *node);
+
       T *theT;
       std::set<DGEdge<T> *> allConnectedEdges;
       std::set<DGEdge<T> *> outgoingEdges;
@@ -395,6 +397,14 @@ namespace llvm {
     for (auto edge : node->getIncomingEdges()) edge->getOutgoingNode()->removeConnectedNode(node);
     for (auto edge : node->getOutgoingEdges()) edge->getIncomingNode()->removeConnectedNode(node);
     for (auto edge : node->getAllConnectedEdges()) allEdges.erase(edge);
+  }
+
+  template <class T>
+  void DG<T>::removeEdge(DGEdge<T> *edge)
+  {
+    edge->getOutgoingNode()->removeConnectedEdge(edge);
+    edge->getIncomingNode()->removeConnectedEdge(edge);
+    allEdges.erase(edge);
   }
 
   template <class T>

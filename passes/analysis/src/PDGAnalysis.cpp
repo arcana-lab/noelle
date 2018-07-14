@@ -35,6 +35,8 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   constructEdgesFromAliases(M);
   constructEdgesFromControl(M);
 
+  removeApparentIntraIterationDependencies(M);
+
   return false;
 }
 
@@ -217,7 +219,7 @@ void llvm::PDGAnalysis::constructEdgesFromControl (Module &M){
   }
 }
 
-void llvm::PDGAnalysis::constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree) {
+void llvm::PDGAnalysis::constructControlEdgesForFunction (Function &F, PostDominatorTree &postDomTree) {
   for (auto &B : F)
   {
     SmallVector<BasicBlock *, 10> dominatedBBs;
@@ -241,4 +243,33 @@ void llvm::PDGAnalysis::constructControlEdgesForFunction(Function &F, PostDomina
       }
     }
   }
+}
+
+bool checkLoadStoreAliasOnSameBaseAddr (LoadInst *load, StoreInst *store) {
+
+  return false;
+}
+
+void llvm::PDGAnalysis::removeApparentIntraIterationDependencies (Module &M) {
+  std::set<DGEdge<Value> *> removeEdges;
+  for (auto edge : this->programDependenceGraph->getEdges()) {
+    auto outgoingT = edge->getOutgoingT();
+    auto incomingT = edge->getIncomingT();
+
+    if (auto load = dyn_cast<LoadInst>(outgoingT)) {
+      auto baseOp = load->getPointerOperand();
+      if (auto store = dyn_cast<StoreInst>(incomingT)) {
+        if (baseOp != store->getPointerOperand()) continue;
+        if (checkLoadStoreAliasOnSameBaseAddr(load, store)) removeEdges.insert(edge);
+      }
+    } else if (auto store = dyn_cast<StoreInst>(outgoingT)) {
+      auto baseOp = store->getPointerOperand();
+      if (auto load = dyn_cast<LoadInst>(incomingT)) {
+        if (baseOp != load->getPointerOperand()) continue;
+        if (checkLoadStoreAliasOnSameBaseAddr(load, store)) removeEdges.insert(edge);
+      }
+    }
+  }
+
+  for (auto edge : removeEdges) this->programDependenceGraph->removeEdge(edge);
 }

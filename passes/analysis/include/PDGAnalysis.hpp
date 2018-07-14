@@ -45,5 +45,7 @@ namespace llvm {
 
       void constructEdgesFromControl (Module &M);
       void constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree);
+
+      void removeApparentIntraIterationDependencies (Module &M);
   };
 }
