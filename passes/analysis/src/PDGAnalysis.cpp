@@ -7,6 +7,8 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/PostDominators.h"
 
 #include "llvm/ADT/iterator_range.h"
@@ -23,6 +25,7 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<AAResultsWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
+  AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.setPreservesAll();
   return ;
 }
@@ -245,31 +248,69 @@ void llvm::PDGAnalysis::constructControlEdgesForFunction (Function &F, PostDomin
   }
 }
 
-bool checkLoadStoreAliasOnSameBaseAddr (LoadInst *load, StoreInst *store) {
-
-  return false;
-}
-
 void llvm::PDGAnalysis::removeApparentIntraIterationDependencies (Module &M) {
   std::set<DGEdge<Value> *> removeEdges;
   for (auto edge : this->programDependenceGraph->getEdges()) {
+
+    /*
+     * Remove only WAR dependencies between intra-iteration store and load pairs
+     * TODO: WAR edges only removable if load executes after store && not loop carried
+     * TODO: RAW edges only removable if store executes after load && not loop carried
+     */
+    if (!edge->isMemoryDependence() || !edge->isWARDependence()) continue;
+
     auto outgoingT = edge->getOutgoingT();
     auto incomingT = edge->getIncomingT();
+    
+    if (!isa<StoreInst>(incomingT) || !isa<LoadInst>(outgoingT)) continue;
+    LoadInst *load = (LoadInst*)outgoingT;
+    StoreInst *store = (StoreInst*)incomingT;
 
-    if (auto load = dyn_cast<LoadInst>(outgoingT)) {
-      auto baseOp = load->getPointerOperand();
-      if (auto store = dyn_cast<StoreInst>(incomingT)) {
-        if (baseOp != store->getPointerOperand()) continue;
-        if (checkLoadStoreAliasOnSameBaseAddr(load, store)) removeEdges.insert(edge);
-      }
-    } else if (auto store = dyn_cast<StoreInst>(outgoingT)) {
-      auto baseOp = store->getPointerOperand();
-      if (auto load = dyn_cast<LoadInst>(incomingT)) {
-        if (baseOp != load->getPointerOperand()) continue;
-        if (checkLoadStoreAliasOnSameBaseAddr(load, store)) removeEdges.insert(edge);
+    auto baseOp = load->getPointerOperand();
+    if (load->getPointerOperand() != store->getPointerOperand()) continue;
+    if (auto gep = dyn_cast<GetElementPtrInst>(baseOp)) {
+      if (checkLoadStoreAliasOnSameGEP(load, store, gep)) {
+        // removeEdges.insert(edge);
       }
     }
   }
 
   for (auto edge : removeEdges) this->programDependenceGraph->removeEdge(edge);
+}
+
+/*
+ * Check that all non-constant indices of GEP are those of monotonic induction variables
+ */
+bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (LoadInst *load, StoreInst *store, GetElementPtrInst *gep) {
+  bool notAllConstantIndices = false;
+  for (auto &indexV : gep->indices()) {
+    if (isa<ConstantInt>(indexV)) continue;
+    notAllConstantIndices = true;
+
+    auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*load->getFunction()).getSE();
+    auto scev = SE.getSCEV(indexV);
+    if (scev->getSCEVType() != scAddRecExpr) return false;
+
+    auto &LI = getAnalysis<LoopInfoWrapperPass>(*load->getFunction()).getLoopInfo();
+    auto loop = LI.getLoopFor(cast<Instruction>(indexV)->getParent());
+    for (auto &op : loop->getHeader()->getTerminator()->operands()) {
+      if (auto cmp = dyn_cast<ICmpInst>(op)) {
+        auto lhs = cmp->getOperand(0);
+        auto rhs = cmp->getOperand(1);
+        if (!isa<ConstantInt>(lhs) && !isa<ConstantInt>(rhs)) return false;
+        
+        auto lhsc = SE.getSCEV(lhs);
+        auto rhsc = SE.getSCEV(rhs);
+        
+        // auto pred = cmp->getPredicate();
+        // bool isKnown = SE.isKnownViaInduction(pred, lhs, rhs);
+        bool isKnown = lhsc->getSCEVType() == scAddRecExpr && rhsc->getSCEVType() == scConstant;
+        isKnown |= rhsc->getSCEVType() == scAddRecExpr && lhsc->getSCEVType() == scConstant;
+        if (!isKnown) return false;
+        break;
+      }
+    }
+
+  }
+  return notAllConstantIndices;
 }
