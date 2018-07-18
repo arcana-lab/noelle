@@ -245,6 +245,50 @@ std::set<SCCDAGPartition *> SCCDAGPartitions::getCousins (SCCDAGPartition *parti
     return neighbors;
 }
 
+std::set<SCCDAGPartition *> SCCDAGPartitions::topLevelPartitions () {
+    std::set<SCCDAGPartition *> topLevelParts;
+    auto topLevelNodes = sccDAG->getTopLevelNodes();
+    for (auto node : topLevelNodes) {
+        auto part = this->partitionOf(node->getT());
+        if (part) topLevelParts.insert(part);
+    }
+
+    /*
+     * Should the top level nodes be removable, grab their descendants which belong to partitions
+     */
+    if (topLevelParts.size() == 0) {
+        topLevelParts = this->getDependents(topLevelNodes);
+    }
+
+    std::set<SCCDAGPartition *> rootParts;
+    for (auto part : topLevelParts) {
+        if (this->getAncestors(part).size() > 0) continue;
+        rootParts.insert(part);
+    }
+
+    errs() << "TOP LEVEL PARTITION CHECK:   SIZE OF NODES: " << topLevelNodes.size() << "\n";
+    errs() << "TOP LEVEL PARTITION CHECK:   SIZE OF PARTS: " << topLevelParts.size() << "\n";
+    errs() << "TOP LEVEL PARTITION CHECK:   SIZE OF ROOTS: " << rootParts.size() << "\n";
+    return rootParts;
+}
+
+std::set<SCCDAGPartition *> SCCDAGPartitions::nextLevelPartitions (SCCDAGPartition *partition) {
+    auto parts = this->getDependents(partition);
+    std::set<SCCDAGPartition *> nextParts;
+    for (auto part : parts) {
+        auto prevParts = this->getAncestors(part);
+        bool noPresentAncestors = true;
+        for (auto prevPart : prevParts) {
+            if (parts.find(prevPart) != parts.end()) {
+                noPresentAncestors = false;
+                break;
+            }
+        }
+        if (noPresentAncestors) nextParts.insert(part);
+    }
+    return nextParts;
+}
+
 raw_ostream &SCCDAGPartitions::print (raw_ostream &stream, std::string prefixToUse) {
     for (auto &partition : this->partitions) {
         partition->print(stream << prefixToUse << "Partition:\n", prefixToUse);

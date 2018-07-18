@@ -41,8 +41,9 @@ class SCCDAGPartitions {
     std::set<SCCDAGPartition *> getDependents (std::set<DGNode<SCC> *> &sccs);
     std::set<SCCDAGPartition *> getAncestors (SCCDAGPartition *partition);
     std::set<SCCDAGPartition *> getAncestors (std::set<DGNode<SCC> *> &sccs);
-
     std::set<SCCDAGPartition *> getCousins (SCCDAGPartition *partition);
+    std::set<SCCDAGPartition *> topLevelPartitions ();
+    std::set<SCCDAGPartition *> nextLevelPartitions (SCCDAGPartition *partition);
 
     int numEdgesBetween (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
     int maxPartitionCost () { return totalCost / idealThreads; }
