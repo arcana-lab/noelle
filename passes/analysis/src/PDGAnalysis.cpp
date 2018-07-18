@@ -24,6 +24,7 @@ bool llvm::PDGAnalysis::doInitialization (Module &M){
 void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<AAResultsWrapperPass>();
+  AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.setPreservesAll();
@@ -38,7 +39,7 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   constructEdgesFromAliases(M);
   constructEdgesFromControl(M);
 
-  removeApparentIntraIterationDependencies(M);
+  removeEdgesFromApparentIntraIterationDependencies(M);
 
   return false;
 }
@@ -248,29 +249,45 @@ void llvm::PDGAnalysis::constructControlEdgesForFunction (Function &F, PostDomin
   }
 }
 
-void llvm::PDGAnalysis::removeApparentIntraIterationDependencies (Module &M) {
+/*
+ * Remove dependencies between intra-iteration store and load pairs
+ */
+void llvm::PDGAnalysis::removeEdgesFromApparentIntraIterationDependencies (Module &M) {
   std::set<DGEdge<Value> *> removeEdges;
   for (auto edge : this->programDependenceGraph->getEdges()) {
-
-    /*
-     * Remove only WAR dependencies between intra-iteration store and load pairs
-     * TODO: WAR edges only removable if load executes after store && not loop carried
-     * TODO: RAW edges only removable if store executes after load && not loop carried
-     */
-    if (!edge->isMemoryDependence() || !edge->isWARDependence()) continue;
+    if (!edge->isMemoryDependence() || edge->isWAWDependence()) continue;
 
     auto outgoingT = edge->getOutgoingT();
     auto incomingT = edge->getIncomingT();
-    
-    if (!isa<StoreInst>(incomingT) || !isa<LoadInst>(outgoingT)) continue;
-    LoadInst *load = (LoadInst*)outgoingT;
-    StoreInst *store = (StoreInst*)incomingT;
+    if (isa<CallInst>(outgoingT) || isa<CallInst>(incomingT)) continue;
+
+    /*
+     * Assert: must be a WAR load-store OR a RAW store-load
+     */
+    LoadInst *load;
+    StoreInst *store;
+    if (edge->isWARDependence()) {
+      assert(isa<StoreInst>(incomingT) && isa<LoadInst>(outgoingT));
+      load = (LoadInst*)outgoingT;
+      store = (StoreInst*)incomingT;
+    } else {
+      assert(isa<LoadInst>(incomingT) && isa<StoreInst>(outgoingT));
+      store = (StoreInst*)outgoingT;
+      load = (LoadInst*)incomingT;
+    }
 
     auto baseOp = load->getPointerOperand();
     if (load->getPointerOperand() != store->getPointerOperand()) continue;
     if (auto gep = dyn_cast<GetElementPtrInst>(baseOp)) {
-      if (checkLoadStoreAliasOnSameGEP(load, store, gep)) {
-        // removeEdges.insert(edge);
+
+      /*
+       * Skip if the edge may be intra-iteration
+       */
+      if (instMayPrecede(outgoingT, incomingT)) continue;
+
+      if (checkLoadStoreAliasOnSameGEP(gep)) {
+        edge->print(errs() << "LOADSTORECHECKING:    Removing edge: ") << "\n";
+        removeEdges.insert(edge);
       }
     }
   }
@@ -278,27 +295,65 @@ void llvm::PDGAnalysis::removeApparentIntraIterationDependencies (Module &M) {
   for (auto edge : removeEdges) this->programDependenceGraph->removeEdge(edge);
 }
 
+bool llvm::PDGAnalysis::instMayPrecede (Value *from, Value *to) {
+  auto fromI = (Instruction*)from;
+  auto toI = (Instruction*)to;
+  auto& DT = getAnalysis<DominatorTreeWrapperPass>(*fromI->getFunction()).getDomTree();
+  BasicBlock *fromBB = fromI->getParent();
+
+  if (fromBB == toI->getParent()) {
+    for (auto &I : *fromBB) {
+      if (&I == fromI) return true;
+      if (&I == toI) return false;
+    }
+  }
+
+  std::queue<DGNode<Value> *> controlNodes;
+  std::set<DGNode<Value> *> visitedNodes;
+  auto startNode = this->programDependenceGraph->fetchNode(to);
+  controlNodes.push(startNode);
+  visitedNodes.insert(startNode);
+  while (!controlNodes.empty()) {
+    auto node = controlNodes.front();
+    controlNodes.pop();
+
+    BasicBlock *bb = ((Instruction*)node->getT())->getParent();
+    if (DT.dominates(fromBB, bb)) return true;
+    for (auto edge : node->getIncomingEdges()) {
+      if (!edge->isControlDependence()) continue;
+      auto incomingNode = edge->getOutgoingNode();
+      if (visitedNodes.find(incomingNode) != visitedNodes.end()) continue;
+      controlNodes.push(incomingNode);
+      visitedNodes.insert(incomingNode);
+    }
+  }
+  return false;
+}
+
 /*
  * Check that all non-constant indices of GEP are those of monotonic induction variables
  */
-bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (LoadInst *load, StoreInst *store, GetElementPtrInst *gep) {
+bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep) {
+  Function *gepFunc = gep->getFunction();
+  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*gepFunc).getSE();
+  auto &LI = getAnalysis<LoopInfoWrapperPass>(*gepFunc).getLoopInfo();
+
   bool notAllConstantIndices = false;
   for (auto &indexV : gep->indices()) {
     if (isa<ConstantInt>(indexV)) continue;
+    indexV->print(errs() << "LOADSTORECHECKING:    Non constant index inst: "); errs() << "\n";
     notAllConstantIndices = true;
 
-    auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*load->getFunction()).getSE();
     auto scev = SE.getSCEV(indexV);
     if (scev->getSCEVType() != scAddRecExpr) return false;
 
-    auto &LI = getAnalysis<LoopInfoWrapperPass>(*load->getFunction()).getLoopInfo();
     auto loop = LI.getLoopFor(cast<Instruction>(indexV)->getParent());
     for (auto &op : loop->getHeader()->getTerminator()->operands()) {
       if (auto cmp = dyn_cast<ICmpInst>(op)) {
+        cmp->print(errs() << "LOADSTORECHECKING:    Cmp inst: "); errs() << "\n";
         auto lhs = cmp->getOperand(0);
         auto rhs = cmp->getOperand(1);
         if (!isa<ConstantInt>(lhs) && !isa<ConstantInt>(rhs)) return false;
-        
         auto lhsc = SE.getSCEV(lhs);
         auto rhsc = SE.getSCEV(rhs);
         

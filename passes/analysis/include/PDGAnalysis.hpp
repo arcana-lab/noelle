@@ -46,7 +46,8 @@ namespace llvm {
       void constructEdgesFromControl (Module &M);
       void constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree);
 
-      void removeApparentIntraIterationDependencies (Module &M);
-      bool checkLoadStoreAliasOnSameGEP (LoadInst *load, StoreInst *store, GetElementPtrInst *gep);
+      void removeEdgesFromApparentIntraIterationDependencies (Module &M);
+      bool checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep);
+      bool instMayPrecede (Value *from, Value *to);
   };
 }
