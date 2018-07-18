@@ -181,6 +181,8 @@ void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
 
   unordered_map<LoopSummary *, std::set<SCC *>> loopSets;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
+    if (LDI->partitions.isRemovable(sccNode->getT())) continue;
+
     for (auto iNodePair : sccNode->getT()->internalNodePairs()) {
       auto bb = cast<Instruction>(iNodePair.first)->getParent();
       auto subL = li.bbToLoop[bb];
@@ -258,18 +260,11 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
 static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
 
   /*
-   * Collect all top level partitions, following (producer -> consumer) dependencies to pass over removable SCCs.
+   * Collect all top level partitions
    */
-  std::set<DGNode<SCC> *> topLevelSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
-  // for (auto sccNode : topLevelSCCNodes) sccNode->getT()->print(errs() << "DSWP:   TOP LEVEL SCC\n", "DSWP:   ---") << "\n";
-  std::set<SCCDAGPartition *> topLevelParts = LDI->partitions.getDependents(topLevelSCCNodes);
   std::queue<SCCDAGPartition *> partToCheck;
-  for (auto part : topLevelParts) {
-    if (LDI->partitions.getAncestors(part).size() == 0) {
-      // part->print(errs() << "DSWP:   TOP LEVEL PARTITION:\n", "DSWP:   ");
-      partToCheck.push(part);
-    }
-  }
+  auto topLevelParts = LDI->partitions.topLevelPartitions();
+  for (auto part : topLevelParts) partToCheck.push(part);
 
   /*
    * Merge partitions.

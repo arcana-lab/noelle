@@ -80,7 +80,7 @@ namespace llvm {
 	};
 
 	struct StageInfo {
-		StageInfo(int ord, SCC *initSCC) : order{ord} { stageSCCs.insert(initSCC); }
+		StageInfo(int ord) : order{ord} {}
 
 		Function *sccStage;
 		int order;

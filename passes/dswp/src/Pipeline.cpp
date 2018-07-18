@@ -3,47 +3,31 @@
 using namespace llvm;
 
 void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
-  auto topLevelSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
-  unordered_map<SCCDAGPartition *, StageInfo *> partitionToStage;
-
-  /*
-   * TODO: Check if all entries to the loop are into top level nodes
-   */
-  std::set<DGNode<SCC> *> nodesFound(topLevelSCCNodes.begin(), topLevelSCCNodes.end());
-  std::deque<DGNode<SCC> *> nodesToTraverse(topLevelSCCNodes.begin(), topLevelSCCNodes.end());
+  auto topLevelParts = LDI->partitions.topLevelPartitions();
+  std::set<SCCDAGPartition *> partsFound(topLevelParts.begin(), topLevelParts.end());
+  std::deque<SCCDAGPartition *> partsToTraverse(topLevelParts.begin(), topLevelParts.end());
 
   int order = 0;
-  while (!nodesToTraverse.empty())
+  while (!partsToTraverse.empty())
   {
-    auto sccNode = nodesToTraverse.front();
-    nodesToTraverse.pop_front();
+    auto part = partsToTraverse.front();
+    partsToTraverse.pop_front();
 
     /*
-     * Add all unvisited, next depth nodes to the traversal queue 
+     * Add all unvisited, next depth partitions to the traversal queue 
      */
-    auto nextNodes = LDI->loopSCCDAG->nextDepthNodes(sccNode);
-    for (auto next : nextNodes)
+    auto nextParts = LDI->partitions.nextLevelPartitions(part);
+    for (auto next : nextParts)
     {
-      if (nodesFound.find(next) != nodesFound.end()) continue;
-      nodesFound.insert(next);
-      nodesToTraverse.push_back(next);
+      if (partsFound.find(next) != partsFound.end()) continue;
+      partsFound.insert(next);
+      partsToTraverse.push_back(next);
     }
 
-    auto scc = sccNode->getT();
-    if (!LDI->partitions.isRemovable(scc))
-    {
-      StageInfo *stage;
-      auto sccPartition = LDI->partitions.partitionOf(scc);
-      if (partitionToStage.find(sccPartition) != partitionToStage.end())
-      {
-        stage = partitionToStage[sccPartition];
-        stage->stageSCCs.insert(scc);
-      } else
-      {
-        LDI->stages.push_back(std::move(std::make_unique<StageInfo>(order++, scc)));
-        stage = LDI->stages[order - 1].get();
-        partitionToStage[sccPartition] = stage;
-      }
+    LDI->stages.push_back(std::move(std::make_unique<StageInfo>(order++)));
+    auto stage = LDI->stages[order - 1].get();
+    for (auto scc : part->SCCs) {
+      stage->stageSCCs.insert(scc);
       LDI->sccToStage[scc] = stage;
     }
   }
