@@ -39,6 +39,7 @@ int main (int argc, char *argv[]){
     return -1;
   }
   auto iterations = atoll(argv[1]);
+  if (iterations < 10) iterations = 10;
   long long int *array = (long long int *) malloc(sizeof(long long int) * iterations);
 
   for (auto i=0; i < iterations; i++){

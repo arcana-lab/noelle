@@ -190,8 +190,6 @@ void DSWP::collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
         if (instructionEdge->isControlDependence()) continue;
         auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
         auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
-        producer->print(errs() << "DSWP:   PRODUCER:   "); errs() << "\n";
-        consumer->print(errs() << "DSWP:   CONSUMER:   "); errs() << "\n";
         registerQueue(LDI, fromStage, toStage, producer, consumer);
       }
     }

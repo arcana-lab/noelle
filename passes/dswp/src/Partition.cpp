@@ -82,7 +82,6 @@ void DSWP::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
   /*
    * Merge SCCs.
    */
-  mergePointerLoadInstructions(LDI);
   mergeSingleSyntacticSugarInstrs(LDI);
   mergeBranchesWithoutOutgoingEdges(LDI);
 
@@ -95,30 +94,6 @@ void DSWP::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
   }
 
   return ;
-}
-
-void DSWP::mergePointerLoadInstructions (DSWPLoopDependenceInfo *LDI) {
-  while (true) {
-    auto mergeNodes = false;
-    for (auto sccEdge : LDI->loopSCCDAG->getEdges()) {
-      auto fromSCCNode = sccEdge->getOutgoingNode();
-      auto toSCCNode = sccEdge->getIncomingNode();
-      for (auto instructionEdge : sccEdge->getSubEdges()) {
-        auto producer = instructionEdge->getOutgoingT();
-        bool isPointerLoad = isa<GetElementPtrInst>(producer);
-        isPointerLoad |= (isa<LoadInst>(producer) && producer->getType()->isPointerTy());
-        if (!isPointerLoad) continue;
-        mergeNodes = true;
-      }
-
-      if (mergeNodes) {
-        std::set<DGNode<SCC> *> GEPGroup = { fromSCCNode, toSCCNode };
-        LDI->loopSCCDAG->mergeSCCs(GEPGroup);
-        break;
-      }
-    }
-    if (!mergeNodes) break;
-  }
 }
 
 void DSWP::mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {

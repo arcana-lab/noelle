@@ -39,7 +39,10 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   constructEdgesFromAliases(M);
   constructEdgesFromControl(M);
 
-  removeEdgesFromApparentIntraIterationDependencies(M);
+  /*
+   * TODO: To use, parallelizer must handle synchronizing memory dependencies across partitions 
+   */
+  // removeEdgesFromApparentIntraIterationDependencies(M);
 
   return false;
 }
@@ -127,17 +130,17 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, S
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, LoadInst *memI, CallInst *call){
-  bool makeRefEdge = false;
+  bool makeModEdge = false;
   switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
       break;
     case MRI_Mod:
     case MRI_ModRef:
-      makeRefEdge = true;
+      makeModEdge = true;
       break;
   }
 
-  if (makeRefEdge)
+  if (makeModEdge)
   {
     programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_RAW);
     programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
@@ -286,7 +289,7 @@ void llvm::PDGAnalysis::removeEdgesFromApparentIntraIterationDependencies (Modul
       if (instMayPrecede(outgoingT, incomingT)) continue;
 
       if (checkLoadStoreAliasOnSameGEP(gep)) {
-        edge->print(errs() << "LOADSTORECHECKING:    Removing edge: ") << "\n";
+        // edge->print(errs() << "LOADSTORECHECKING:    Removing edge: ") << "\n";
         removeEdges.insert(edge);
       }
     }
@@ -341,7 +344,7 @@ bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep) {
   bool notAllConstantIndices = false;
   for (auto &indexV : gep->indices()) {
     if (isa<ConstantInt>(indexV)) continue;
-    indexV->print(errs() << "LOADSTORECHECKING:    Non constant index inst: "); errs() << "\n";
+    // indexV->print(errs() << "LOADSTORECHECKING:    Non constant index inst: "); errs() << "\n";
     notAllConstantIndices = true;
 
     auto scev = SE.getSCEV(indexV);
@@ -350,7 +353,7 @@ bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep) {
     auto loop = LI.getLoopFor(cast<Instruction>(indexV)->getParent());
     for (auto &op : loop->getHeader()->getTerminator()->operands()) {
       if (auto cmp = dyn_cast<ICmpInst>(op)) {
-        cmp->print(errs() << "LOADSTORECHECKING:    Cmp inst: "); errs() << "\n";
+        // cmp->print(errs() << "LOADSTORECHECKING:    Cmp inst: "); errs() << "\n";
         auto lhs = cmp->getOperand(0);
         auto rhs = cmp->getOperand(1);
         if (!isa<ConstantInt>(lhs) && !isa<ConstantInt>(rhs)) return false;
