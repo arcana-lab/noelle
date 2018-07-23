@@ -244,7 +244,6 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
   /*
    * Merge partitions.
    */
-  std::set<SCCDAGPartition *> deletedPartitions;
   while (!partToCheck.empty()) {
 
     /*
@@ -256,10 +255,10 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
     /*
      * Check if the current partition has been already tagged to be removed (i.e., merged).
      */
-    if (deletedPartitions.find(partition) != deletedPartitions.end()) {
+    if (!LDI->partitions.isValidPartition(partition)) {
       continue;
     }
-    // partition->print(errs() << "DSWP:   CHECKING PARTITION:\n", "DSWP:   ");
+    partition->print(errs() << "DSWP:   CHECKING PARTITION:\n", "DSWP:   ");
 
     /*
      * Prioritize merge that best lowers overall cost without yielding a too costly partition
@@ -269,15 +268,17 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
     auto maxAllowedCost = LDI->partitions.maxPartitionCost();
 
     auto checkMergeWith = [&](SCCDAGPartition *part) -> void {
-      if (!LDI->partitions.canMergePartitions(partition, part)) return;
-      // part->print(errs() << "DSWP:   CAN MERGE WITH PARTITION:\n", "DSWP:   ");
+      if (!LDI->partitions.canMergePartitions(partition, part)) { errs() << "DSWP:   CANNOT MERGE\n"; return; }
+      part->print(errs() << "DSWP:   CAN MERGE WITH PARTITION:\n", "DSWP:   ");
 
       auto demoMerged = LDI->partitions.demoMergePartitions(partition, part);
-      if (demoMerged->cost < maxAllowedCost) return ;
+      if (demoMerged->cost > maxAllowedCost) return ;
+      errs() << "DSWP:   Max allowed cost: " << maxAllowedCost << "\n";
 
       auto loweredCost = part->cost + partition->cost - demoMerged->cost;
-      // errs() << "DSWP:   Merging yields better cost by: " << loweredCost << "\n";
+      errs() << "DSWP:   Merging (cost " << partition->cost << ", " << part->cost << ") yields cost " << demoMerged->cost << "\n";
       if (loweredCost > maxLoweredCost) {
+        errs() << "DSWP:   WILL MERGE IF BEST\n";
         minPartition = part;
         maxLoweredCost = loweredCost;
       }
@@ -295,9 +296,9 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
      * Merge partition if one is found; reiterate the merge check on it
      */
     if (minPartition) {
-      deletedPartitions.insert(partition);
-      deletedPartitions.insert(minPartition);
-      partToCheck.push(LDI->partitions.mergePartitions(partition, minPartition));
+      auto mergedPart = LDI->partitions.mergePartitions(partition, minPartition);
+      partToCheck.push(mergedPart);
+      mergedPart->print(errs() << "DSWP:   MERGED PART: " << partToCheck.size() << "\n", "DSWP:   ");
     }
 
     /*
@@ -306,6 +307,7 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
     for (auto part : dependents) {
       if (minPartition == part) continue;
       partToCheck.push(part);
+      part->print(errs() << "DSWP:   WILL CHECK: " << partToCheck.size() << "\n", "DSWP:   ");
     }
   }
 

@@ -60,9 +60,23 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
     auto &sccInfo = LDI->sccdagInfo.sccToInfo[scc];
     for (auto edge : sccNode->getOutgoingEdges()) {
       auto otherSCC = edge->getIncomingT();
+      if (otherSCC == scc) continue;
       auto &otherSCCInfo = LDI->sccdagInfo.sccToInfo[otherSCC];
-      sccInfo->sccToExternalCost[otherSCC] = 2;
-      otherSCCInfo->sccToExternalCost[scc] = 2;
+
+      /*
+       * Establish edge information between two SCC
+       */
+      sccInfo->sccToEdgeInfo[otherSCC] = std::move(std::make_unique<SCCEdgeInfo>());
+      otherSCCInfo->sccToEdgeInfo[scc] = std::move(std::make_unique<SCCEdgeInfo>());
+
+      /*
+       * Collect edges representing possible queues
+       */
+      for (auto subEdge : edge->getSubEdges()) {
+        auto queueVal = subEdge->getOutgoingT();
+        sccInfo->sccToEdgeInfo[otherSCC]->edges.insert(queueVal);
+        otherSCCInfo->sccToEdgeInfo[scc]->edges.insert(queueVal);
+      }
     }
   }
 }

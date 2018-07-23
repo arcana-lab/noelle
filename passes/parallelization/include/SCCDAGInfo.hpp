@@ -7,13 +7,20 @@ using namespace std;
 using namespace llvm;
 
 namespace llvm {
-  
+
+  /*
+   * Modelling assumption: Each edge listed may yield potential queue of unit cost
+   */
+  struct SCCEdgeInfo {
+    std::set<Value *> edges;
+  };
+
   struct SCCInfo {
     SCC *scc;
     std::set<BasicBlock *> bbs;
 
     int internalCost;
-    std::unordered_map<SCC *, int> sccToExternalCost;
+    std::unordered_map<SCC *, std::unique_ptr<SCCEdgeInfo>> sccToEdgeInfo;
     bool hasLoopCarriedDep;
 
     SCCInfo (SCC *s) : scc{s}, internalCost{0}, hasLoopCarriedDep{0} {

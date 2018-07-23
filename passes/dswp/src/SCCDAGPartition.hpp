@@ -28,6 +28,7 @@ class SCCDAGPartitions {
 
     void initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo, int idealThreads);
 
+    bool isValidPartition (SCCDAGPartition *partition);
     SCCDAGPartition *addPartition (SCC *node);
     SCCDAGPartition *addPartition (std::set<SCC *> &partition);
     void removePartition (SCCDAGPartition *partition);
@@ -47,17 +48,19 @@ class SCCDAGPartitions {
 
     int numEdgesBetween (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
     int maxPartitionCost () { return totalCost / idealThreads; }
+    int idealThreadCount () { return idealThreads; }
 
     raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
 
   private:
     std::set<SCCDAGPartition *> getRelated (std::set<DGNode<SCC> *> &sccNodes, std::function<void (std::queue<DGNode<SCC> *> &, DGNode<SCC> *)> addKinFunc);
-    void managePartitionInfo (SCCDAGPartition *partition);
+    void manageAddedPartitionInfo (SCCDAGPartition *partition);
     std::set<DGNode<SCC> *> getSCCNodes (SCCDAGPartition *partition);
 
     SCCDAG *sccDAG;
     SCCDAGInfo *sccdagInfo;
     LoopInfoSummary *loopInfo;
+    std::set<SCCDAGPartition *> validPartitions;
     std::unordered_map<SCC *, SCCDAGPartition *> fromSCCToPartition;
     int totalCost;
     int idealThreads;

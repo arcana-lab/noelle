@@ -56,10 +56,13 @@ void SCCDAGPartition::collectPartitionSCCInfo (SCCDAGInfo *sccdagInfo) {
         /*
          * Collect scc external cost (through edges)
          */
-        for (auto sccCostPair : sccdagInfo->sccToInfo[scc]->sccToExternalCost) {
-            if (SCCs.find(sccCostPair.first) != SCCs.end()) continue;
-            this->cost += sccCostPair.second;
+        std::set<Value *> incomingEdges;
+        for (auto &sccEdgesPair : sccdagInfo->sccToInfo[scc]->sccToEdgeInfo) {
+            if (SCCs.find(sccEdgesPair.first) != SCCs.end()) continue;
+            auto &edges = sccEdgesPair.second->edges;
+            incomingEdges.insert(edges.begin(), edges.end());
         }
+        this->cost += incomingEdges.size();
     }
 }
 
@@ -78,6 +81,10 @@ raw_ostream &SCCDAGPartition::print (raw_ostream &stream, std::string prefixToUs
     return printMinimalSCCs(stream, prefixToUse, this->SCCs);
 }
 
+bool SCCDAGPartitions::isValidPartition (SCCDAGPartition *partition) {
+    return validPartitions.find(partition) != validPartitions.end();
+}
+
 SCCDAGPartition *SCCDAGPartitions::addPartition (SCC * scc) {
     std::set<SCC *> sccs = { scc };
     return this->addPartition(sccs);
@@ -85,9 +92,9 @@ SCCDAGPartition *SCCDAGPartitions::addPartition (SCC * scc) {
 
 SCCDAGPartition *SCCDAGPartitions::addPartition (std::set<SCC *> &sccs) {
     auto partition = std::make_unique<SCCDAGPartition>(sccdagInfo, loopInfo, sccs);
-    this->managePartitionInfo(partition.get());
-    this->totalCost += partition->cost;
-    return this->partitions.insert(std::move(partition)).first->get();
+    auto part = this->partitions.insert(std::move(partition)).first->get();
+    this->manageAddedPartitionInfo(part);
+    return part; 
 }
 
 void SCCDAGPartitions::initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo, int threads) {
@@ -101,6 +108,8 @@ void SCCDAGPartitions::initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSum
 void SCCDAGPartitions::removePartition (SCCDAGPartition *partition) {
     for (auto &p : this->partitions) {
         if (p.get() == partition) {
+            validPartitions.erase(partition);
+            this->totalCost -= partition->cost;
             this->partitions.erase(p);
             return;
         }
@@ -109,11 +118,11 @@ void SCCDAGPartitions::removePartition (SCCDAGPartition *partition) {
 
 SCCDAGPartition *SCCDAGPartitions::mergePartitions (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB) {
     auto partition = std::make_unique<SCCDAGPartition>(sccdagInfo, loopInfo, partitionA, partitionB);
-    this->managePartitionInfo(partition.get());
     auto newPartition = this->partitions.insert(std::move(partition)).first->get();
 
     this->removePartition(partitionA);
     this->removePartition(partitionB);
+    this->manageAddedPartitionInfo(newPartition);
     return newPartition;
 }
 
@@ -122,10 +131,10 @@ SCCDAGPartition *SCCDAGPartitions::demoMergePartitions (SCCDAGPartition *partiti
 }
 
 bool SCCDAGPartitions::canMergePartitions (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB) {
-    std::set<SCC *> incomingToB;
+    std::set<SCC *> outgoingToB;
     for (auto scc : partitionB->SCCs) {
         for (auto edge : sccDAG->fetchNode(scc)->getIncomingEdges()) {
-            incomingToB.insert(edge->getOutgoingT());
+            outgoingToB.insert(edge->getOutgoingT());
         }
     }
 
@@ -134,13 +143,16 @@ bool SCCDAGPartitions::canMergePartitions (SCCDAGPartition *partitionA, SCCDAGPa
      */
     for (auto scc : partitionA->SCCs) {
         for (auto edge : sccDAG->fetchNode(scc)->getOutgoingEdges()) {
-            if (incomingToB.find(edge->getIncomingT()) != incomingToB.end()) return false;
+            if (partitionA->SCCs.find(edge->getIncomingT()) != partitionA->SCCs.end()) continue;
+            if (outgoingToB.find(edge->getIncomingT()) != outgoingToB.end()) return false;
         }
     }
     return true;
 }
 
-void SCCDAGPartitions::managePartitionInfo (SCCDAGPartition *partition) {
+void SCCDAGPartitions::manageAddedPartitionInfo (SCCDAGPartition *partition) {
+    this->totalCost += partition->cost;
+    validPartitions.insert(partition);
     for (auto scc : partition->SCCs) this->fromSCCToPartition[scc] = partition;
 }
 
