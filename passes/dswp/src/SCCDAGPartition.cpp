@@ -22,7 +22,7 @@ void SCCDAGPartition::collectPartitionLoopInfo (SCCDAGInfo *sccdagInfo, LoopInfo
      */
     std::unordered_map<LoopSummary *, std::set<BasicBlock *>> loopToBBContainedMap;
     for (auto scc : SCCs) {
-        for (auto bb : sccdagInfo->sccToInfo[scc]->bbs) {
+        for (auto bb : sccdagInfo->getBasicBlocks(scc)){
             loopToBBContainedMap[loopInfo->bbToLoop[bb]].insert(bb);
         }
     }

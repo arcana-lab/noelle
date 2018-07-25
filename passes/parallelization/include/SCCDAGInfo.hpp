@@ -15,30 +15,46 @@ namespace llvm {
     std::set<Value *> edges;
   };
 
-  struct SCCInfo {
-    SCC *scc;
-    std::set<BasicBlock *> bbs;
+  class SCCInfo {
+    public:
 
-    int internalCost;
-    std::unordered_map<SCC *, std::unique_ptr<SCCEdgeInfo>> sccToEdgeInfo;
-    bool hasLoopCarriedDep;
+      /*
+       * Fields
+       */
+      SCC *scc;
+      std::set<BasicBlock *> bbs;
+      int internalCost;
+      bool hasLoopCarriedDep;
+      std::unordered_map<SCC *, std::unique_ptr<SCCEdgeInfo>> sccToEdgeInfo;
 
-    SCCInfo (SCC *s) : scc{s}, internalCost{0}, hasLoopCarriedDep{0} {
-      for (auto nodePair : this->scc->internalNodePairs()) {
-        this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
+      /*
+       * Methods
+       */
+      SCCInfo (SCC *s) : scc{s}, internalCost{0}, hasLoopCarriedDep{0} {
+        for (auto nodePair : this->scc->internalNodePairs()) {
+          this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
+        }
       }
-    }
   };
 
-  struct SCCDAGInfo {
-    SCCDAG *sccdag;
-    std::unordered_map<SCC *, std::unique_ptr<SCCInfo>> sccToInfo;
+  class SCCDAGInfo {
+    public:
 
-    void populate (SCCDAG *loopSCCDAG) {
-      this->sccdag = loopSCCDAG;
-      for (auto node : loopSCCDAG->getNodes()) {
-        this->sccToInfo[node->getT()] = std::move(std::make_unique<SCCInfo>(node->getT()));
-      }
-    }
+      /*
+       * Fields
+       */
+      SCCDAG *sccdag;
+
+      /*
+       * Methods
+       */
+      void setSCCToHaveLoopCarriedDataDependence (SCC *scc, bool doesItHaveLoopCarriedDataDependence);
+
+      std::set<BasicBlock *> & getBasicBlocks (SCC *scc);
+
+      void populate (SCCDAG *loopSCCDAG);
+
+    //private: TODO to add asap
+      std::unordered_map<SCC *, std::unique_ptr<SCCInfo>> sccToInfo;
   };
 }

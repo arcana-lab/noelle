@@ -6,10 +6,19 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
   LDI->sccdagInfo.populate(LDI->loopSCCDAG);
 
   /*
-   * Check whether each SCC has a cycle
+   * Tag the SCCDAG nodes to be sequential or not.
    */
   for (auto &sccInfoPair : LDI->sccdagInfo.sccToInfo) {
-    sccInfoPair.second->hasLoopCarriedDep = sccInfoPair.first->hasCycle();
+
+    /*
+     * Fetch the SCC.
+     */
+    auto scc = sccInfoPair.first ;
+
+    /*
+     * Tag the SCC to be sequential or not.
+     */
+    LDI->sccdagInfo.setSCCToHaveLoopCarriedDataDependence(scc, scc->hasCycle());
   }
 
   /*
@@ -53,14 +62,34 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
   }
 
   /*
-   * Estimate SCC's external edge costs (modelling queue costs)
+   * Add information about the outgoing queues from the current SCC.
    */
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
+
+    /*
+     * Fetch the SCC.
+     */
     auto scc = sccNode->getT();
+
+    /*
+     * Fetch the information about the current SCC.
+     */
     auto &sccInfo = LDI->sccdagInfo.sccToInfo[scc];
+
+    /*
+     * Check all outgoing edges of the current SCC.
+     */
     for (auto edge : sccNode->getOutgoingEdges()) {
+
+      /*
+       * Skip self-dependences.
+       */
       auto otherSCC = edge->getIncomingT();
       if (otherSCC == scc) continue;
+
+      /*
+       * Fetch the information about the SCC that is the destination of the current dependence.
+       */
       auto &otherSCCInfo = LDI->sccdagInfo.sccToInfo[otherSCC];
 
       /*
@@ -79,6 +108,8 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
       }
     }
   }
+
+  return ;
 }
 
 void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {

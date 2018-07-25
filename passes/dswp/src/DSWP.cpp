@@ -9,10 +9,18 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   }
 
   /*
-   * Merge SCCs where separation is unnecessary, collect info on merged SCCs, then partition them.
+   * Merge SCCs where separation is unnecessary.
    */
   mergeTrivialNodesInSCCDAG(LDI);
+
+  /*
+   * Collect information about the SCCs.
+   */
   collectSCCDAGInfo(LDI);
+
+  /*
+   * Partition the SCCDAG.
+   */
   partitionSCCDAG(LDI);
 
   /*
@@ -89,6 +97,8 @@ void DSWP::collectSCCDAGInfo (DSWPLoopDependenceInfo *LDI) {
    */
   collectRemovableSCCsBySyntacticSugarInstrs(LDI);
   collectRemovableSCCsByInductionVars(LDI);
+
+  return ;
 }
 
 bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
