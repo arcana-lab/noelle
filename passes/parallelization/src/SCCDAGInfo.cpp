@@ -2,6 +2,10 @@
 
 using namespace llvm;
 
+bool SCCDAGInfo::doesHaveLoopCarriedDataDependences (void) const {
+  return true; //TODO
+}
+
 void SCCDAGInfo::setSCCToHaveLoopCarriedDataDependence (SCC *scc, bool doesItHaveLoopCarriedDataDependence){
   auto &sccInfo = this->sccToInfo[scc];
   sccInfo->hasLoopCarriedDep = doesItHaveLoopCarriedDataDependence;

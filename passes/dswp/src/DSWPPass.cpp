@@ -60,7 +60,7 @@ bool DSWP::runOnModule (Module &M) {
     /*
      * Parallelize the current loop with DSWP.
      */
-    modified |= applyDSWP(loop, parallelizationFramework, heuristics);
+    modified |= this->parallelizeLoop(loop, parallelizationFramework, heuristics);
 
     /*
      * Free the memory.

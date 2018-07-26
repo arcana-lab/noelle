@@ -48,6 +48,8 @@ namespace llvm {
       /*
        * Methods
        */
+      bool doesHaveLoopCarriedDataDependences (void) const ;
+
       void setSCCToHaveLoopCarriedDataDependence (SCC *scc, bool doesItHaveLoopCarriedDataDependence);
 
       std::set<BasicBlock *> & getBasicBlocks (SCC *scc);

@@ -76,6 +76,7 @@ namespace llvm {
       /*
        * Methods
        */
+      bool parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
       std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
       bool applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;

@@ -4,6 +4,7 @@ set(Srcs
   SCCAnalysis.cpp
   DSWPLoopDependenceInfo.cpp
   DSWPPass.cpp
+  Parallelizer.cpp
   DSWP.cpp
   CFG.cpp
   ControlDependence.cpp
