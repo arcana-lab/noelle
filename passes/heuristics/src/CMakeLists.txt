@@ -1,28 +1,14 @@
 # Sources
 set(Srcs 
-  SCCDAGPartition.cpp
-  SCCAnalysis.cpp
-  DSWPLoopDependenceInfo.cpp
-  DSWPPass.cpp
-  DSWP.cpp
-  CFG.cpp
-  ControlDependence.cpp
-  Environment.cpp
-  Helper.cpp
-  Inliner.cpp
-  LoopSelector.cpp
-  ParallelSCC.cpp
-  Partition.cpp
-  Pipeline.cpp
-  Printer.cpp
-  Queue.cpp
+  HeuristicsPass.cpp
+  Heuristics.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "DSWP")
+set(PassName "Heuristics")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -36,7 +22,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../analysis/include ../../threadpool/include ../../parallelization/include ../../heuristics/include)
+include_directories(${LLVM_INCLUDE_DIRS} ../../analysis/include ../../threadpool/include ../../parallelization/include)
 
 # Declare the LLVM pass to compile
 add_llvm_loadable_module(${PassName} ${Srcs})

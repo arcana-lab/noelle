@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI) {
+void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   LDI->sccdagInfo.populate(LDI->loopSCCDAG);
 
   /*
@@ -22,47 +22,17 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
   }
 
   /*
-   * Estimate each SCC's internal cost
+   * Estimate the latency of an invocation of an SCC.
    */
-  auto isSyntacticSugar = [&](Instruction *I) -> bool {
-    return isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I);
-  };
-  std::unordered_map<Function *, int> funcToCost;
   for (auto &sccInfoPair : LDI->sccdagInfo.sccToInfo) {
-    
     for (auto nodePair : sccInfoPair.first->internalNodePairs()) {
       auto I = cast<Instruction>(nodePair.first);
-      if (isSyntacticSugar(I)) continue;
-
-      if (auto call = dyn_cast<CallInst>(I)) {
-        
-        /*
-         * Compute function cost as 1-layer deep instruction tally
-         */
-        auto F = call->getCalledFunction();
-        if (funcToCost.find(F) == funcToCost.end()) {
-          auto instInF = 0;
-          if (!F || F->empty()) {
-            instInF = 10;
-          } else {
-            for (auto &B : *F) {
-              for (auto &J : B) {
-                if (!isSyntacticSugar(&J)) instInF++;
-              }
-            }
-          }
-          funcToCost[F] = instInF;
-        }
-
-        sccInfoPair.second->internalCost += funcToCost[F];
-      } else {
-        sccInfoPair.second->internalCost++;
-      }
+      sccInfoPair.second->internalCost += h->latencyPerInvocation(I);
     }
   }
 
   /*
-   * Add information about the outgoing queues from the current SCC.
+   * Add information about the queues that the current SCC is connected to.
    */
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
 

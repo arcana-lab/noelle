@@ -26,6 +26,7 @@
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
+#include "HeuristicsPass.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -77,14 +78,14 @@ namespace llvm {
        */
       std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
-      bool applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) ;
+      bool applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
       void mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
       void clusterSubloops (DSWPLoopDependenceInfo *LDI);
       void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI);
       void mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI);
-      void collectSCCDAGInfo (DSWPLoopDependenceInfo *LDI);
+      void collectSCCDAGInfo (DSWPLoopDependenceInfo *LDI, Heuristics *h);
       void partitionSCCDAG (DSWPLoopDependenceInfo *LDI);
-      void estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI);
+      void estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI, Heuristics *h);
       void collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI);
       void collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
       void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);

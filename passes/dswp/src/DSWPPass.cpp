@@ -34,6 +34,7 @@ bool DSWP::runOnModule (Module &M) {
    * Fetch the outputs of the passes we rely on.
    */
   auto& parallelizationFramework = getAnalysis<Parallelization>();
+  auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
 
   /*
    * Collect some information.
@@ -59,7 +60,7 @@ bool DSWP::runOnModule (Module &M) {
     /*
      * Parallelize the current loop with DSWP.
      */
-    modified |= applyDSWP(loop, parallelizationFramework);
+    modified |= applyDSWP(loop, parallelizationFramework, heuristics);
 
     /*
      * Free the memory.
@@ -75,6 +76,7 @@ void DSWP::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<Parallelization>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<HeuristicsPass>();
 
   return ;
 }

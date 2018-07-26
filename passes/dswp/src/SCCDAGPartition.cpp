@@ -3,40 +3,43 @@
 using namespace llvm;
 
 SCCDAGPartition::SCCDAGPartition (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs)
-    : SCCs{sccs}, cost{0}, hasLoopCarriedDep{true} {
-    collectPartitionLoopInfo(sccdagInfo, loopInfo);
-    collectPartitionSCCInfo(sccdagInfo);
+  : SCCs{sccs}, cost{0}, hasLoopCarriedDep{true} {
+  collectPartitionLoopInfo(sccdagInfo, loopInfo);
+  collectPartitionSCCInfo(sccdagInfo);
 }
 
 SCCDAGPartition::SCCDAGPartition (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, SCCDAGPartition *partA, SCCDAGPartition *partB) 
-    : cost{0}, hasLoopCarriedDep{true} {
-    for (auto scc : partA->SCCs) this->SCCs.insert(scc);
-    for (auto scc : partB->SCCs) this->SCCs.insert(scc);
-    collectPartitionLoopInfo(sccdagInfo, loopInfo);
-    collectPartitionSCCInfo(sccdagInfo);
+  : cost{0}, hasLoopCarriedDep{true} {
+  for (auto scc : partA->SCCs) this->SCCs.insert(scc);
+  for (auto scc : partB->SCCs) this->SCCs.insert(scc);
+  collectPartitionLoopInfo(sccdagInfo, loopInfo);
+  collectPartitionSCCInfo(sccdagInfo);
 }
 
 void SCCDAGPartition::collectPartitionLoopInfo (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo) {
-    /*
-     * Collect all potentially fully-contained loops in the partition
-     */
-    std::unordered_map<LoopSummary *, std::set<BasicBlock *>> loopToBBContainedMap;
-    for (auto scc : SCCs) {
-        for (auto bb : sccdagInfo->getBasicBlocks(scc)){
-            loopToBBContainedMap[loopInfo->bbToLoop[bb]].insert(bb);
-        }
-    }
 
-    /*
-     * Determine which loops are fully contained
-     */
-    for (auto loopBBs : loopToBBContainedMap) {
-        bool fullyContained = true;
-        for (auto bb : loopBBs.first->bbs) {
-            fullyContained &= loopBBs.second.find(bb) != loopBBs.second.end();
-        }
-        if (fullyContained) this->loopsContained.insert(loopBBs.first);
-    }
+  /*
+   * Collect all potentially fully-contained loops in the partition
+   */
+  std::unordered_map<LoopSummary *, std::set<BasicBlock *>> loopToBBContainedMap;
+  for (auto scc : SCCs) {
+      for (auto bb : sccdagInfo->getBasicBlocks(scc)){
+          loopToBBContainedMap[loopInfo->bbToLoop[bb]].insert(bb);
+      }
+  }
+
+  /*
+   * Determine which loops are fully contained
+   */
+  for (auto loopBBs : loopToBBContainedMap) {
+      bool fullyContained = true;
+      for (auto bb : loopBBs.first->bbs) {
+          fullyContained &= loopBBs.second.find(bb) != loopBBs.second.end();
+      }
+      if (fullyContained) this->loopsContained.insert(loopBBs.first);
+  }
+
+  return ;
 }
 
 /*

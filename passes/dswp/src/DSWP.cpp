@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
   if (this->verbose > Verbosity::Disabled) {
     errs() << "DSWP: Start\n";
     errs() << "DSWP:  Try to parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
@@ -16,7 +16,7 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   /*
    * Collect information about the SCCs.
    */
-  collectSCCDAGInfo(LDI);
+  collectSCCDAGInfo(LDI, h);
 
   /*
    * Partition the SCCDAG.
@@ -84,8 +84,8 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   return true;
 }
 
-void DSWP::collectSCCDAGInfo (DSWPLoopDependenceInfo *LDI) {
-  estimateCostAndExtentOfParallelismOfSCCs(LDI);
+void DSWP::collectSCCDAGInfo (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
+  estimateCostAndExtentOfParallelismOfSCCs(LDI, h);
 
   /*
    * Keep track of which nodes of the SCCDAG are single instructions.
