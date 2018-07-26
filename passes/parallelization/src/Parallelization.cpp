@@ -136,7 +136,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   /*
    * Check if we should filter out loops.
    */
-  std::set<int32_t> loopIndexes{};
+  std::vector<int32_t> loopThreads{};
   auto indexFileName = getenv("INDEX_FILE");
   if (indexFileName){
 
@@ -160,9 +160,9 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Parse the file
      */
-    int32_t currentIndexRead;
-    while (indexString >> currentIndexRead){
-      loopIndexes.insert(currentIndexRead);
+    int32_t currentValueRead;
+    while (indexString >> currentValueRead){
+      loopThreads.push_back(currentValueRead);
 
       /*
        * Skip separators
@@ -174,7 +174,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       }
     }
   }
-  auto filterLoops = (loopIndexes.size() > 0) ? true : false;
+  auto filterLoops = (loopThreads.size() > 0) ? true : false;
 
   /*
    * Append loops of each function.
@@ -229,9 +229,20 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       /*
        * We have to filter loops.
        *
-       * Check if the current loop index is inside the set of those specified by the user.
+       * Check if more than one thread is assigned to the current loop.
+       * If that's the case, then we have to enable that loop.
        */
-      if (loopIndexes.find(currentLoopIndex) == loopIndexes.end()){
+      if (currentLoopIndex >= loopThreads.size()){
+        errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
+        abort();
+      }
+      auto numberOfThreadsForTheCurrentLoop = loopThreads[currentLoopIndex];
+      if (numberOfThreadsForTheCurrentLoop == 0){
+
+        /*
+         * Only one thread has been assigned to the current loop.
+         * Hence, the current loop will not be parallelized.
+         */
         currentLoopIndex++;
         continue ;
       }
