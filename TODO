@@ -1,3 +1,5 @@
+- Extract all DSWP heuristics from the pass "DSWP" to the pass "heuristics"
+
 - Extend the autotuner to parallelize multiple loops
 
 - Extend the autotuner to decide #threads per loop
