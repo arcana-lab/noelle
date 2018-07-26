@@ -1,5 +1,7 @@
 - Extract all DSWP heuristics from the pass "DSWP" to the pass "heuristics"
 
+- Reconsider all abstractions (e.g., do we need both SCC and SCCInfo? do we need both SCCDAG and SCCDAGInfo?)
+
 - Extend the autotuner to parallelize multiple loops
 
 - Extend the autotuner to decide #threads per loop
