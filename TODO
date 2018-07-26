@@ -4,7 +4,9 @@
 
 - Extend the autotuner to decide #threads per loop
 
-- Modify DSWP to be able to parallelize multiple loops at the same time
+- Modify DSWP to be able to parallelize multiple loops nested to each other at the same time
+
+- Optimization: implement DOALL
 
 - Optimization: inline calls involved in an SCC and rerun the PDG analysis
 
