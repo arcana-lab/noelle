@@ -3,7 +3,7 @@
 
 using namespace llvm;
 
-static void partitionHeuristics (DSWPLoopDependenceInfo *LDI);
+static void partitionHeuristics (SCCDAGPartitions &partitions);
 
 void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
 
@@ -55,7 +55,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
     /*
      * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
      */
-    partitionHeuristics(LDI);
+    partitionHeuristics(LDI->partitions);
   }
 
   /*
@@ -232,14 +232,16 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
   }
 }
 
-static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
+static void partitionHeuristics (SCCDAGPartitions &partitions){
 
   /*
    * Collect all top level partitions
    */
   std::queue<SCCDAGPartition *> partToCheck;
-  auto topLevelParts = LDI->partitions.topLevelPartitions();
-  for (auto part : topLevelParts) partToCheck.push(part);
+  auto topLevelParts = partitions.topLevelPartitions();
+  for (auto part : topLevelParts) {
+    partToCheck.push(part);
+  }
 
   /*
    * Merge partitions.
@@ -255,7 +257,7 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
     /*
      * Check if the current partition has been already tagged to be removed (i.e., merged).
      */
-    if (!LDI->partitions.isValidPartition(partition)) {
+    if (!partitions.isValidPartition(partition)) {
       continue;
     }
     partition->print(errs() << "DSWP:   CHECKING PARTITION:\n", "DSWP:   ");
@@ -265,13 +267,13 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
      */
     SCCDAGPartition *minPartition = nullptr;
     int32_t maxLoweredCost = 0;
-    auto maxAllowedCost = LDI->partitions.maxPartitionCost();
+    auto maxAllowedCost = partitions.maxPartitionCost();
 
     auto checkMergeWith = [&](SCCDAGPartition *part) -> void {
-      if (!LDI->partitions.canMergePartitions(partition, part)) { errs() << "DSWP:   CANNOT MERGE\n"; return; }
+      if (!partitions.canMergePartitions(partition, part)) { errs() << "DSWP:   CANNOT MERGE\n"; return; }
       part->print(errs() << "DSWP:   CAN MERGE WITH PARTITION:\n", "DSWP:   ");
 
-      auto demoMerged = LDI->partitions.demoMergePartitions(partition, part);
+      auto demoMerged = partitions.demoMergePartitions(partition, part);
       if (demoMerged->cost > maxAllowedCost) return ;
       errs() << "DSWP:   Max allowed cost: " << maxAllowedCost << "\n";
 
@@ -287,8 +289,8 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
     /*
      * Check merge criteria on dependents and depth-1 neighbors
      */
-    auto dependents = LDI->partitions.getDependents(partition);
-    auto cousins = LDI->partitions.getCousins(partition);
+    auto dependents = partitions.getDependents(partition);
+    auto cousins = partitions.getCousins(partition);
     for (auto part : dependents) checkMergeWith(part);
     for (auto part : cousins) checkMergeWith(part);
 
@@ -296,7 +298,7 @@ static void partitionHeuristics (DSWPLoopDependenceInfo *LDI) {
      * Merge partition if one is found; reiterate the merge check on it
      */
     if (minPartition) {
-      auto mergedPart = LDI->partitions.mergePartitions(partition, minPartition);
+      auto mergedPart = partitions.mergePartitions(partition, minPartition);
       partToCheck.push(mergedPart);
       mergedPart->print(errs() << "DSWP:   MERGED PART: " << partToCheck.size() << "\n", "DSWP:   ");
     }
