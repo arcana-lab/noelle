@@ -136,26 +136,50 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   /*
    * Check if we should filter out loops.
    */
-  int32_t loopIndex = -1;
+  std::set<int32_t> loopIndexes{};
   auto indexFileName = getenv("INDEX_FILE");
   if (indexFileName){
+
+    /*
+     * We need to filter out loops.
+     *
+     * Open the file that specifies which loops to keep.
+     */
     auto indexBuf = MemoryBuffer::getFileAsStream(indexFileName);
     if (auto ec = indexBuf.getError()){
       errs() << "Failed to read INDEX_FILE = \"" << indexFileName << "\":" << ec.message() << "\n";
       abort();
     }
-    std::stringstream indexString;
-    indexString << indexBuf.get()->getBuffer().str();
-    if (indexString.rdbuf()->in_avail()) {
-      loopIndex = stoi(indexString.str());
+
+    /*
+     * Read the file.
+     */
+    auto fileAsString = indexBuf.get()->getBuffer().str();
+    std::stringstream indexString{fileAsString};
+
+    /*
+     * Parse the file
+     */
+    int32_t currentIndexRead;
+    while (indexString >> currentIndexRead){
+      loopIndexes.insert(currentIndexRead);
+
+      /*
+       * Skip separators
+       */
+      auto peekChar = indexString.peek();
+      if (  (peekChar == ' ')   ||
+            (peekChar == '\n')  ){
+        indexString.ignore();
+      }
     }
   }
-  auto filterLoops = (loopIndex != -1) ? true : false;
+  auto filterLoops = (loopIndexes.size() > 0) ? true : false;
 
   /*
    * Append loops of each function.
    */
-  auto currentLoopIndex = loopIndex;
+  auto currentLoopIndex = 0;
   for (auto function : *functions){
 
     /*
@@ -192,15 +216,31 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      */
     for (auto loop : loops){
       auto ldi = allocationFunction(function, funcPDG, loop, LI, PDT);
-      if (filterLoops){
-        if (currentLoopIndex == 0){
-          allLoops->push_back(ldi);
-        }
-        currentLoopIndex--;
 
-      } else {
+      /*
+       * Check if we have to filter loops.
+       */
+      if (!filterLoops){
         allLoops->push_back(ldi);
+        currentLoopIndex++;
+        continue ;
       }
+
+      /*
+       * We have to filter loops.
+       *
+       * Check if the current loop index is inside the set of those specified by the user.
+       */
+      if (loopIndexes.find(currentLoopIndex) == loopIndexes.end()){
+        currentLoopIndex++;
+        continue ;
+      }
+
+      /*
+       * The current loop needs to be considered as specified by the user.
+       */
+      allLoops->push_back(ldi);
+      currentLoopIndex++;
     }
   }
 
