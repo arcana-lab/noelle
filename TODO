@@ -2,8 +2,6 @@
 
 - Reconsider all abstractions (e.g., do we need both SCC and SCCInfo? do we need both SCCDAG and SCCDAGInfo?)
 
-- Extend the autotuner to parallelize multiple loops
-
 - Extend the autotuner to decide #threads per loop
 
 - Modify DSWP to be able to parallelize multiple loops at the same time
