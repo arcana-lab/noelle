@@ -6,7 +6,7 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
   LDI->sccdagInfo.populate(LDI->loopSCCDAG);
 
   /*
-   * Tag the SCCDAG nodes to be sequential or not.
+   * Tag the SCCDAG nodes to have or not a loop-carried data dependence.
    */
   for (auto &sccInfoPair : LDI->sccdagInfo.sccToInfo) {
 

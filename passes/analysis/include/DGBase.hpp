@@ -21,8 +21,7 @@ namespace llvm {
   enum DataDependencyType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
 
   template <class T>
-  class DG
-  {
+  class DG {
     public:
       typedef typename set<DGNode<T> *>::iterator nodes_iterator;
       typedef typename set<DGNode<T> *>::const_iterator nodes_const_iterator;
