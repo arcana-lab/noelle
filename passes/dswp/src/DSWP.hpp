@@ -80,6 +80,7 @@ namespace llvm {
       std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
       bool applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
+      bool applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
       void mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
       void clusterSubloops (DSWPLoopDependenceInfo *LDI);
       void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI);

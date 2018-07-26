@@ -6,6 +6,7 @@ set(Srcs
   DSWPPass.cpp
   Parallelizer.cpp
   DSWP.cpp
+  DOALL.cpp
   CFG.cpp
   ControlDependence.cpp
   Environment.cpp

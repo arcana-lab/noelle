@@ -28,7 +28,7 @@ bool DSWP::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, H
     /*
      * Apply DOALL.
      */
-    abort(); //TODO
+    codeModified = this->applyDOALL(LDI, par, h);
 
   } else {
 
