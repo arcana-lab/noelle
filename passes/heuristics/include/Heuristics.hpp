@@ -5,6 +5,7 @@
 #include "llvm/IR/Instructions.h"
 
 #include "SCC.hpp"
+#include "SCCDAGPartition.hpp"
 
 using namespace std;
 
@@ -21,6 +22,8 @@ namespace llvm {
       uint64_t latencyPerInvocation (Instruction *inst);
 
       uint64_t queueLatency (Value *queueVal);
+
+      void adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition);
 
     private:
       std::unordered_map<Function *, uint64_t> funcToCost;

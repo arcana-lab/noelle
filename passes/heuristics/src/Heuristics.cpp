@@ -81,3 +81,87 @@ uint64_t Heuristics::queueLatency (Value *queueVal){
   // TODO(angelo): use primitive size of bits of type of value?
   return 100;
 }
+
+void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition){
+
+  /*
+   * Collect all top level partitions
+   */
+  std::queue<SCCDAGSubset *> partToCheck;
+  auto topLevelParts = partition.topLevelSubsets();
+  for (auto part : topLevelParts) {
+    partToCheck.push(part);
+  }
+
+  /*
+   * Merge partitions.
+   */
+  while (!partToCheck.empty()) {
+
+    /*
+     * Fetch the current subset.
+     */
+    auto subset = partToCheck.front();
+    partToCheck.pop();
+
+    /*
+     * Check if the current subset has been already tagged to be removed (i.e., merged).
+     */
+    if (!partition.isValidSubset(subset)) {
+      continue;
+    }
+    // subset->print(errs() << "DSWP:   CHECKING SUBSET:\n", "DSWP:   ");
+
+    /*
+     * Prioritize merge that best lowers overall cost without yielding a too costly partition
+     */
+    SCCDAGSubset *minSubset = nullptr;
+    int32_t maxLoweredCost = 0;
+    auto maxAllowedCost = partition.maxSubsetCost();
+
+    auto checkMergeWith = [&](SCCDAGSubset *part) -> void {
+      if (!partition.canMergeSubsets(subset, part)) { errs() << "DSWP:   CANNOT MERGE\n"; return; }
+      // part->print(errs() << "DSWP:   CAN MERGE WITH PARTITION:\n", "DSWP:   ");
+
+      auto demoMerged = partition.demoMergeSubsets(subset, part);
+      if (demoMerged->cost > maxAllowedCost) return ;
+      // errs() << "DSWP:   Max allowed cost: " << maxAllowedCost << "\n";
+
+      auto loweredCost = part->cost + subset->cost - demoMerged->cost;
+      // errs() << "DSWP:   Merging (cost " << subset->cost << ", " << part->cost << ") yields cost " << demoMerged->cost << "\n";
+      if (loweredCost > maxLoweredCost) {
+        // errs() << "DSWP:   WILL MERGE IF BEST\n";
+        minSubset = part;
+        maxLoweredCost = loweredCost;
+      }
+    };
+
+    /*
+     * Check merge criteria on dependents and depth-1 neighbors
+     */
+    auto dependents = partition.getDependents(subset);
+    auto cousins = partition.getCousins(subset);
+    for (auto part : dependents) checkMergeWith(part);
+    for (auto part : cousins) checkMergeWith(part);
+
+    /*
+     * Merge partition if one is found; reiterate the merge check on it
+     */
+    if (minSubset) {
+      auto mergedPart = partition.mergeSubsets(subset, minSubset);
+      partToCheck.push(mergedPart);
+      mergedPart->print(errs() << "DSWP:   MERGED PART: " << partToCheck.size() << "\n", "DSWP:   ");
+    }
+
+    /*
+     * Iterate the merge check on all dependent partitions
+     */
+    for (auto part : dependents) {
+      if (minSubset == part) continue;
+      partToCheck.push(part);
+      part->print(errs() << "DSWP:   WILL CHECK: " << partToCheck.size() << "\n", "DSWP:   ");
+    }
+  }
+
+  return ;
+}

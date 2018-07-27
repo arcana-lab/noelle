@@ -7,7 +7,7 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heurist
   /*
    * Partition the SCCDAG.
    */
-  partitionSCCDAG(LDI);
+  partitionSCCDAG(LDI, h);
 
   /*
    * Check whether it is worth parallelizing the current loop.
