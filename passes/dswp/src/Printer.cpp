@@ -33,7 +33,7 @@ void llvm::DSWP::printSCCs (SCCDAG *sccSubgraph){
 }
 
 void llvm::DSWP::printPartitions (DSWPLoopDependenceInfo *LDI){
-  LDI->partitions.print(errs(), "DSWP:   ");
+  LDI->partition.print(errs(), "DSWP:   ");
 }
 
 void llvm::DSWP::printLoop (Loop *loop)

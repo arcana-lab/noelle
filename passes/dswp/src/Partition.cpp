@@ -3,14 +3,14 @@
 
 using namespace llvm;
 
-static void partitionHeuristics (SCCDAGPartitions &partitions);
+static void partitionHeuristics (SCCDAGPartition &partition);
 
 void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
 
   /*
    * Initial the partition structure with the merged SCCDAG
    */
-  LDI->partitions.initialize(LDI->loopSCCDAG, &LDI->sccdagInfo, &LDI->liSummary, /*idealThreads=*/ 2);
+  LDI->partition.initialize(LDI->loopSCCDAG, &LDI->sccdagInfo, &LDI->liSummary, /*idealThreads=*/ 2);
 
   /*
    * Check if we can cluster SCCs.
@@ -29,13 +29,13 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
      * If it is, then this SCC has already been assigned to every dependent partition.
      */
     auto currentSCC = nodePair.first;
-    if (LDI->partitions.isRemovable(currentSCC)) continue ;
+    if (LDI->partition.isRemovable(currentSCC)) continue ;
 
     /*
      * Check if the current SCC has been already assigned to a partition; if not, assign it to a new partition.
      */
-    if (LDI->partitions.partitionOf(currentSCC) == nullptr) {
-      LDI->partitions.addPartition(nodePair.first);
+    if (LDI->partition.subsetOf(currentSCC) == nullptr) {
+      LDI->partition.addSubset(nodePair.first);
     }
   }
 
@@ -55,7 +55,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI) {
     /*
      * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
      */
-    partitionHeuristics(LDI->partitions);
+    partitionHeuristics(LDI->partition);
   }
 
   /*
@@ -156,7 +156,7 @@ void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
 
   unordered_map<LoopSummary *, std::set<SCC *>> loopSets;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
-    if (LDI->partitions.isRemovable(sccNode->getT())) continue;
+    if (LDI->partition.isRemovable(sccNode->getT())) continue;
 
     for (auto iNodePair : sccNode->getT()->internalNodePairs()) {
       auto bb = cast<Instruction>(iNodePair.first)->getParent();
@@ -178,7 +178,7 @@ void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
    */
   if (loopSets.size() == 1) return;
   for (auto loopSetPair : loopSets) {
-    LDI->partitions.addPartition(loopSetPair.second);
+    LDI->partition.addSubset(loopSetPair.second);
   }
 }
 
@@ -222,7 +222,7 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
         auto fromSCCNode = sccEdge->getOutgoingNode();
         auto fromSCC = fromSCCNode->getT();
         if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
-        if (!LDI->partitions.isRemovable(fromSCC)) continue;
+        if (!LDI->partition.isRemovable(fromSCC)) continue;
 
         stage->removableSCCs.insert(fromSCC);
         dependentSCCNodes.push(fromSCCNode);
@@ -232,13 +232,13 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
   }
 }
 
-static void partitionHeuristics (SCCDAGPartitions &partitions){
+static void partitionHeuristics (SCCDAGPartition &partition){
 
   /*
    * Collect all top level partitions
    */
-  std::queue<SCCDAGPartition *> partToCheck;
-  auto topLevelParts = partitions.topLevelPartitions();
+  std::queue<SCCDAGSubset *> partToCheck;
+  auto topLevelParts = partition.topLevelSubsets();
   for (auto part : topLevelParts) {
     partToCheck.push(part);
   }
@@ -249,39 +249,39 @@ static void partitionHeuristics (SCCDAGPartitions &partitions){
   while (!partToCheck.empty()) {
 
     /*
-     * Fetch the current partition.
+     * Fetch the current subset.
      */
-    auto partition = partToCheck.front();
+    auto subset = partToCheck.front();
     partToCheck.pop();
 
     /*
-     * Check if the current partition has been already tagged to be removed (i.e., merged).
+     * Check if the current subset has been already tagged to be removed (i.e., merged).
      */
-    if (!partitions.isValidPartition(partition)) {
+    if (!partition.isValidSubset(subset)) {
       continue;
     }
-    partition->print(errs() << "DSWP:   CHECKING PARTITION:\n", "DSWP:   ");
+    // subset->print(errs() << "DSWP:   CHECKING SUBSET:\n", "DSWP:   ");
 
     /*
      * Prioritize merge that best lowers overall cost without yielding a too costly partition
      */
-    SCCDAGPartition *minPartition = nullptr;
+    SCCDAGSubset *minSubset = nullptr;
     int32_t maxLoweredCost = 0;
-    auto maxAllowedCost = partitions.maxPartitionCost();
+    auto maxAllowedCost = partition.maxSubsetCost();
 
-    auto checkMergeWith = [&](SCCDAGPartition *part) -> void {
-      if (!partitions.canMergePartitions(partition, part)) { errs() << "DSWP:   CANNOT MERGE\n"; return; }
-      part->print(errs() << "DSWP:   CAN MERGE WITH PARTITION:\n", "DSWP:   ");
+    auto checkMergeWith = [&](SCCDAGSubset *part) -> void {
+      if (!partition.canMergeSubsets(subset, part)) { errs() << "DSWP:   CANNOT MERGE\n"; return; }
+      // part->print(errs() << "DSWP:   CAN MERGE WITH PARTITION:\n", "DSWP:   ");
 
-      auto demoMerged = partitions.demoMergePartitions(partition, part);
+      auto demoMerged = partition.demoMergeSubsets(subset, part);
       if (demoMerged->cost > maxAllowedCost) return ;
-      errs() << "DSWP:   Max allowed cost: " << maxAllowedCost << "\n";
+      // errs() << "DSWP:   Max allowed cost: " << maxAllowedCost << "\n";
 
-      auto loweredCost = part->cost + partition->cost - demoMerged->cost;
-      errs() << "DSWP:   Merging (cost " << partition->cost << ", " << part->cost << ") yields cost " << demoMerged->cost << "\n";
+      auto loweredCost = part->cost + subset->cost - demoMerged->cost;
+      // errs() << "DSWP:   Merging (cost " << subset->cost << ", " << part->cost << ") yields cost " << demoMerged->cost << "\n";
       if (loweredCost > maxLoweredCost) {
-        errs() << "DSWP:   WILL MERGE IF BEST\n";
-        minPartition = part;
+        // errs() << "DSWP:   WILL MERGE IF BEST\n";
+        minSubset = part;
         maxLoweredCost = loweredCost;
       }
     };
@@ -289,16 +289,16 @@ static void partitionHeuristics (SCCDAGPartitions &partitions){
     /*
      * Check merge criteria on dependents and depth-1 neighbors
      */
-    auto dependents = partitions.getDependents(partition);
-    auto cousins = partitions.getCousins(partition);
+    auto dependents = partition.getDependents(subset);
+    auto cousins = partition.getCousins(subset);
     for (auto part : dependents) checkMergeWith(part);
     for (auto part : cousins) checkMergeWith(part);
 
     /*
      * Merge partition if one is found; reiterate the merge check on it
      */
-    if (minPartition) {
-      auto mergedPart = partitions.mergePartitions(partition, minPartition);
+    if (minSubset) {
+      auto mergedPart = partition.mergeSubsets(subset, minSubset);
       partToCheck.push(mergedPart);
       mergedPart->print(errs() << "DSWP:   MERGED PART: " << partToCheck.size() << "\n", "DSWP:   ");
     }
@@ -307,7 +307,7 @@ static void partitionHeuristics (SCCDAGPartitions &partitions){
      * Iterate the merge check on all dependent partitions
      */
     for (auto part : dependents) {
-      if (minPartition == part) continue;
+      if (minSubset == part) continue;
       partToCheck.push(part);
       part->print(errs() << "DSWP:   WILL CHECK: " << partToCheck.size() << "\n", "DSWP:   ");
     }

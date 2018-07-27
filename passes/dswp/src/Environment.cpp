@@ -19,7 +19,7 @@ void DSWP::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
       auto internalValue = outgoingEdge->getIncomingT();
 
       bool isSharedInst = false;
-      for (auto scc : LDI->partitions.removableNodes)
+      for (auto scc : LDI->partition.removableNodes)
       {
         if (!scc->isInternal(internalValue)) continue;
         isSharedInst = true;
@@ -73,7 +73,7 @@ void DSWP::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
       }
 
       bool isSharedInst = false;
-      for (auto scc : LDI->partitions.removableNodes)
+      for (auto scc : LDI->partition.removableNodes)
       {
         if (!scc->isInternal(internalValue)) continue;
         isSharedInst = true;

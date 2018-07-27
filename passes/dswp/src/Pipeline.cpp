@@ -3,9 +3,9 @@
 using namespace llvm;
 
 void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
-  auto topLevelParts = LDI->partitions.topLevelPartitions();
-  std::set<SCCDAGPartition *> partsFound(topLevelParts.begin(), topLevelParts.end());
-  std::deque<SCCDAGPartition *> partsToTraverse(topLevelParts.begin(), topLevelParts.end());
+  auto topLevelParts = LDI->partition.topLevelSubsets();
+  std::set<SCCDAGSubset *> partsFound(topLevelParts.begin(), topLevelParts.end());
+  std::deque<SCCDAGSubset *> partsToTraverse(topLevelParts.begin(), topLevelParts.end());
 
   int order = 0;
   while (!partsToTraverse.empty())
@@ -16,7 +16,7 @@ void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
     /*
      * Add all unvisited, next depth partitions to the traversal queue 
      */
-    auto nextParts = LDI->partitions.nextLevelPartitions(part);
+    auto nextParts = LDI->partition.nextLevelSubsets(part);
     for (auto next : nextParts)
     {
       if (partsFound.find(next) != partsFound.end()) continue;

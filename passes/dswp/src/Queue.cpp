@@ -174,8 +174,8 @@ void DSWP::collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
       auto sccPair = sccEdge->getNodePair();
       auto fromSCC = sccPair.first->getT();
       auto toSCC = sccPair.second->getT();
-      if (LDI->partitions.isRemovable(fromSCC)) continue;
-      if (LDI->partitions.isRemovable(toSCC)) continue;
+      if (LDI->partition.isRemovable(fromSCC)) continue;
+      if (LDI->partition.isRemovable(toSCC)) continue;
 
       auto fromStage = LDI->sccToStage[fromSCC];
       auto toStage = LDI->sccToStage[toSCC];
@@ -205,7 +205,7 @@ void DSWP::collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI) {
       for (auto sccEdge : LDI->loopSCCDAG->fetchNode(removableSCC)->getIncomingEdges())
       {
         auto fromSCC = sccEdge->getOutgoingT();
-        if (LDI->partitions.isRemovable(fromSCC)) continue;
+        if (LDI->partition.isRemovable(fromSCC)) continue;
         auto fromStage = LDI->sccToStage[fromSCC];
 
         /*

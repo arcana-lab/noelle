@@ -5,63 +5,62 @@
 #include "SCCDAGInfo.hpp"
 #include "LoopInfoSummary.hpp"
 
-class SCCDAGPartition {
+class SCCDAGSubset {
   public:
     std::set<SCC *> SCCs;
     int cost;
     std::set<LoopSummary *> loopsContained;
-    bool hasLoopCarriedDep;
 
-    SCCDAGPartition (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs);
-    SCCDAGPartition (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
+    SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs);
+    SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
 
-    void collectPartitionLoopInfo(SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo);
-    void collectPartitionSCCInfo(SCCDAGInfo *sccdagInfo);
+    void collectSubsetLoopInfo(SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo);
+    void collectSubsetSCCInfo(SCCDAGInfo *sccdagInfo);
 
     raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
 };
 
-class SCCDAGPartitions {
+class SCCDAGPartition {
   public:
-    std::set<std::unique_ptr<SCCDAGPartition>> partitions;
+    std::set<std::unique_ptr<SCCDAGSubset>> subsets;
     std::set<SCC *> removableNodes;
 
     void initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo, int idealThreads);
 
-    bool isValidPartition (SCCDAGPartition *partition);
-    SCCDAGPartition *addPartition (SCC *node);
-    SCCDAGPartition *addPartition (std::set<SCC *> &partition);
-    void removePartition (SCCDAGPartition *partition);
-    SCCDAGPartition *mergePartitions (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
-    bool canMergePartitions (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
-    SCCDAGPartition *demoMergePartitions (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
+    bool isValidSubset (SCCDAGSubset *subset);
+    SCCDAGSubset *addSubset (SCC *node);
+    SCCDAGSubset *addSubset (std::set<SCC *> &subset);
+    void removeSubset (SCCDAGSubset *subset);
+    SCCDAGSubset *mergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
+    bool canMergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
+    SCCDAGSubset *demoMergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
 
-    SCCDAGPartition *partitionOf (SCC *scc);
+    SCCDAGSubset *subsetOf (SCC *scc);
     bool isRemovable (SCC *scc);
-    std::set<SCCDAGPartition *> getDependents (SCCDAGPartition *partition);
-    std::set<SCCDAGPartition *> getDependents (std::set<DGNode<SCC> *> &sccs);
-    std::set<SCCDAGPartition *> getAncestors (SCCDAGPartition *partition);
-    std::set<SCCDAGPartition *> getAncestors (std::set<DGNode<SCC> *> &sccs);
-    std::set<SCCDAGPartition *> getCousins (SCCDAGPartition *partition);
-    std::set<SCCDAGPartition *> topLevelPartitions ();
-    std::set<SCCDAGPartition *> nextLevelPartitions (SCCDAGPartition *partition);
+    std::set<SCCDAGSubset *> getDependents (SCCDAGSubset *subset);
+    std::set<SCCDAGSubset *> getDependents (std::set<DGNode<SCC> *> &sccs);
+    std::set<SCCDAGSubset *> getAncestors (SCCDAGSubset *subset);
+    std::set<SCCDAGSubset *> getAncestors (std::set<DGNode<SCC> *> &sccs);
+    std::set<SCCDAGSubset *> getCousins (SCCDAGSubset *subset);
+    std::set<SCCDAGSubset *> topLevelSubsets ();
+    std::set<SCCDAGSubset *> nextLevelSubsets (SCCDAGSubset *subset);
 
-    int numEdgesBetween (SCCDAGPartition *partitionA, SCCDAGPartition *partitionB);
-    int maxPartitionCost () { return totalCost / idealThreads; }
+    int numEdgesBetween (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
+    int maxSubsetCost () { return totalCost / idealThreads; }
     int idealThreadCount () { return idealThreads; }
 
     raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
 
   private:
-    std::set<SCCDAGPartition *> getRelated (std::set<DGNode<SCC> *> &sccNodes, std::function<void (std::queue<DGNode<SCC> *> &, DGNode<SCC> *)> addKinFunc);
-    void manageAddedPartitionInfo (SCCDAGPartition *partition);
-    std::set<DGNode<SCC> *> getSCCNodes (SCCDAGPartition *partition);
+    std::set<SCCDAGSubset *> getRelated (std::set<DGNode<SCC> *> &sccNodes, std::function<void (std::queue<DGNode<SCC> *> &, DGNode<SCC> *)> addKinFunc);
+    void manageAddedSubsetInfo (SCCDAGSubset *subset);
+    std::set<DGNode<SCC> *> getSCCNodes (SCCDAGSubset *subset);
 
     SCCDAG *sccDAG;
     SCCDAGInfo *sccdagInfo;
     LoopInfoSummary *loopInfo;
-    std::set<SCCDAGPartition *> validPartitions;
-    std::unordered_map<SCC *, SCCDAGPartition *> fromSCCToPartition;
+    std::set<SCCDAGSubset *> validSubsets;
+    std::unordered_map<SCC *, SCCDAGSubset *> fromSCCToSubset;
     int totalCost;
     int idealThreads;
 };

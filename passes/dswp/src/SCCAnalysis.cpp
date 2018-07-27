@@ -128,7 +128,7 @@ void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
     }
 
     if (isRemovableSCC) {
-      LDI->partitions.removableNodes.insert(scc);
+      LDI->partition.removableNodes.insert(scc);
     }
   }
 
@@ -141,7 +141,7 @@ void DSWP::collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *L
     if (scc->numInternalNodes() > 1 || sccNode->numOutgoingEdges() == 0) continue;
     auto I = scc->begin_internal_node_map()->first;
     if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
-      LDI->partitions.removableNodes.insert(scc);
+      LDI->partition.removableNodes.insert(scc);
     }
   }
 }
