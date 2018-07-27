@@ -8,26 +8,22 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
   /*
    * Tag the SCCDAG nodes to have or not a loop-carried data dependence.
    */
-  for (auto &sccInfoPair : LDI->sccdagInfo.sccToInfo) {
+  for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
+    auto scc = sccNode->getT();
 
-    /*
-     * Fetch the SCC.
-     */
-    auto scc = sccInfoPair.first ;
+    auto &sccInfo = LDI->sccdagInfo.getSCCInfo(scc);
 
     /*
      * Tag the SCC to be sequential or not.
      */
     LDI->sccdagInfo.setSCCToHaveLoopCarriedDataDependence(scc, scc->hasCycle());
-  }
 
-  /*
-   * Estimate the latency of an invocation of an SCC.
-   */
-  for (auto &sccInfoPair : LDI->sccdagInfo.sccToInfo) {
-    for (auto nodePair : sccInfoPair.first->internalNodePairs()) {
+    /*
+     * Estimate the latency of an invocation of an SCC.
+     */
+    for (auto nodePair : scc->internalNodePairs()) {
       auto I = cast<Instruction>(nodePair.first);
-      sccInfoPair.second->internalCost += h->latencyPerInvocation(I);
+      sccInfo->internalCost += h->latencyPerInvocation(I);
     }
   }
 
@@ -35,16 +31,12 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
    * Add information about the queues that the current SCC is connected to.
    */
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
-
-    /*
-     * Fetch the SCC.
-     */
     auto scc = sccNode->getT();
 
     /*
      * Fetch the information about the current SCC.
      */
-    auto &sccInfo = LDI->sccdagInfo.sccToInfo[scc];
+    auto &sccInfo = LDI->sccdagInfo.getSCCInfo(scc);
 
     /*
      * Check all outgoing edges of the current SCC.
@@ -60,7 +52,7 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
       /*
        * Fetch the information about the SCC that is the destination of the current dependence.
        */
-      auto &otherSCCInfo = LDI->sccdagInfo.sccToInfo[otherSCC];
+      auto &otherSCCInfo = LDI->sccdagInfo.getSCCInfo(otherSCC);
 
       /*
        * Establish edge information between two SCC
@@ -71,8 +63,14 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
       /*
        * Collect edges representing possible queues
        */
+      std::set<Value *> seenVals;
       for (auto subEdge : edge->getSubEdges()) {
         auto queueVal = subEdge->getOutgoingT();
+        if (seenVals.find(queueVal) == seenVals.end()) {
+          seenVals.insert(queueVal);
+          LDI->sccdagInfo.setQueueableValCost(queueVal, h->queueLatency(queueVal));
+        }
+
         sccInfo->sccToEdgeInfo[otherSCC]->edges.insert(queueVal);
         otherSCCInfo->sccToEdgeInfo[scc]->edges.insert(queueVal);
       }

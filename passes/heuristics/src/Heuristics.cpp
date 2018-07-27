@@ -76,3 +76,8 @@ uint64_t Heuristics::latencyPerInvocation (Instruction *inst){
 
   return latency;
 }
+
+uint64_t Heuristics::queueLatency (Value *queueVal){
+  // TODO(angelo): use primitive size of bits of type of value?
+  return 100;
+}

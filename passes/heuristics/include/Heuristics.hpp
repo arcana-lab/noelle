@@ -20,6 +20,8 @@ namespace llvm {
 
       uint64_t latencyPerInvocation (Instruction *inst);
 
+      uint64_t queueLatency (Value *queueVal);
+
     private:
       std::unordered_map<Function *, uint64_t> funcToCost;
   };
