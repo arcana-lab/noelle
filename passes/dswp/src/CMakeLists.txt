@@ -1,6 +1,5 @@
 # Sources
 set(Srcs 
-  SCCDAGPartition.cpp
   SCCAnalysis.cpp
   DSWPLoopDependenceInfo.cpp
   DSWPPass.cpp
