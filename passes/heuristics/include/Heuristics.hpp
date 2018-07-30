@@ -6,6 +6,7 @@
 
 #include "SCC.hpp"
 #include "SCCDAGPartition.hpp"
+#include "SCCDAGInfo.hpp"
 
 using namespace std;
 
@@ -19,14 +20,17 @@ namespace llvm {
        */
       uint64_t latencyPerInvocation (SCC *scc);
 
+      uint64_t latencyPerInvocation (SCCDAGInfo &sccdagInfo, std::set<SCC *> &sccs);
+
       uint64_t latencyPerInvocation (Instruction *inst);
 
       uint64_t queueLatency (Value *queueVal);
 
-      void adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition);
+      void adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition, SCCDAGInfo &sccdagInfo, uint64_t idealThreads);
 
     private:
       std::unordered_map<Function *, uint64_t> funcToCost;
+      std::unordered_map<Value *, uint64_t> queueValToCost;
   };
 
 }

@@ -49,7 +49,6 @@ namespace llvm {
       bool doesHaveLoopCarriedDataDependences (void) const ;
 
       void setSCCToHaveLoopCarriedDataDependence (SCC *scc, bool doesItHaveLoopCarriedDataDependence);
-      void setQueueableValCost (Value *val, int cost);
 
       std::set<BasicBlock *> & getBasicBlocks (SCC *scc);
 
@@ -61,7 +60,6 @@ namespace llvm {
       void populate (SCCDAG *loopSCCDAG);
 
     private:
-      std::unordered_map<Value *, int> queueableValToCost;
       std::unordered_map<SCC *, std::unique_ptr<SCCInfo>> sccToInfo;
   };
 }

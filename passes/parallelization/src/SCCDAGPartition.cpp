@@ -3,17 +3,14 @@
 using namespace llvm;
 
 SCCDAGSubset::SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs)
-  : SCCs{sccs}, cost{0} {
+  : SCCs{sccs} {
   collectSubsetLoopInfo(sccdagInfo, loopInfo);
-  collectSubsetSCCInfo(sccdagInfo);
 }
 
-SCCDAGSubset::SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, SCCDAGSubset *subsetA, SCCDAGSubset *subsetB) 
-  : cost{0} {
+SCCDAGSubset::SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, SCCDAGSubset *subsetA, SCCDAGSubset *subsetB) {
   for (auto scc : subsetA->SCCs) this->SCCs.insert(scc);
   for (auto scc : subsetB->SCCs) this->SCCs.insert(scc);
   collectSubsetLoopInfo(sccdagInfo, loopInfo);
-  collectSubsetSCCInfo(sccdagInfo);
 }
 
 void SCCDAGSubset::collectSubsetLoopInfo (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo) {
@@ -42,14 +39,6 @@ void SCCDAGSubset::collectSubsetLoopInfo (SCCDAGInfo *sccdagInfo, LoopInfoSummar
   return ;
 }
 
-/*
- * TODO: Use info on contained loops to partially determine total cost
- * TODO: Determine whether subset is DOALL or SEQuential
- */
-void SCCDAGSubset::collectSubsetSCCInfo (SCCDAGInfo *sccdagInfo) {
-    this->cost = sccdagInfo->getSCCSubsetCost(SCCs);
-}
-
 raw_ostream &printMinimalSCCs (raw_ostream &stream, std::string prefixToUse, std::set<SCC *> &sccs) {
     for (auto &removableSCC : sccs) {
         stream << prefixToUse << "Internal nodes: " << "\n";
@@ -65,10 +54,6 @@ raw_ostream &SCCDAGSubset::print (raw_ostream &stream, std::string prefixToUse) 
     return printMinimalSCCs(stream, prefixToUse, this->SCCs);
 }
 
-bool SCCDAGPartition::isValidSubset (SCCDAGSubset *subset) {
-    return validSubsets.find(subset) != validSubsets.end();
-}
-
 SCCDAGSubset *SCCDAGPartition::addSubset (SCC * scc) {
     std::set<SCC *> sccs = { scc };
     return this->addSubset(sccs);
@@ -81,19 +66,15 @@ SCCDAGSubset *SCCDAGPartition::addSubset (std::set<SCC *> &sccs) {
     return subsetPtr; 
 }
 
-void SCCDAGPartition::initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo, int threads) {
+void SCCDAGPartition::initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo) {
     sccDAG = dag;
     sccdagInfo = dagInfo;
     loopInfo = lInfo;
-    idealThreads = threads;
-    totalCost = 0;
 }
 
 void SCCDAGPartition::removeSubset (SCCDAGSubset *subset) {
     for (auto &p : this->subsets) {
         if (p.get() == subset) {
-            validSubsets.erase(subset);
-            this->totalCost -= subset->cost;
             this->subsets.erase(p);
             return;
         }
@@ -135,8 +116,6 @@ bool SCCDAGPartition::canMergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subs
 }
 
 void SCCDAGPartition::manageAddedSubsetInfo (SCCDAGSubset *subset) {
-    this->totalCost += subset->cost;
-    validSubsets.insert(subset);
     for (auto scc : subset->SCCs) this->fromSCCToSubset[scc] = subset;
 }
 

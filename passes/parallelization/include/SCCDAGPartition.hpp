@@ -14,10 +14,10 @@ class SCCDAGSubset {
     SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs);
     SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
 
-    void collectSubsetLoopInfo(SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo);
-    void collectSubsetSCCInfo(SCCDAGInfo *sccdagInfo);
-
     raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
+
+  private:
+    void collectSubsetLoopInfo(SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo);
 };
 
 class SCCDAGPartition {
@@ -25,9 +25,8 @@ class SCCDAGPartition {
     std::set<std::unique_ptr<SCCDAGSubset>> subsets;
     std::set<SCC *> removableNodes;
 
-    void initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo, int idealThreads);
+    void initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo);
 
-    bool isValidSubset (SCCDAGSubset *subset);
     SCCDAGSubset *addSubset (SCC *node);
     SCCDAGSubset *addSubset (std::set<SCC *> &subset);
     void removeSubset (SCCDAGSubset *subset);
@@ -45,22 +44,19 @@ class SCCDAGPartition {
     std::set<SCCDAGSubset *> topLevelSubsets ();
     std::set<SCCDAGSubset *> nextLevelSubsets (SCCDAGSubset *subset);
 
-    int numEdgesBetween (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
-    int maxSubsetCost () { return totalCost / idealThreads; }
-    int idealThreadCount () { return idealThreads; }
-
     raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
 
   private:
     std::set<SCCDAGSubset *> getRelated (std::set<DGNode<SCC> *> &sccNodes, std::function<void (std::queue<DGNode<SCC> *> &, DGNode<SCC> *)> addKinFunc);
+
+    int numEdgesBetween (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
+
     void manageAddedSubsetInfo (SCCDAGSubset *subset);
+
     std::set<DGNode<SCC> *> getSCCNodes (SCCDAGSubset *subset);
 
     SCCDAG *sccDAG;
     SCCDAGInfo *sccdagInfo;
     LoopInfoSummary *loopInfo;
-    std::set<SCCDAGSubset *> validSubsets;
     std::unordered_map<SCC *, SCCDAGSubset *> fromSCCToSubset;
-    int totalCost;
-    int idealThreads;
 };

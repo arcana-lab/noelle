@@ -3,7 +3,39 @@
 using namespace llvm;
 
 uint64_t Heuristics::latencyPerInvocation (SCC *scc){
-  return 0;
+  uint64_t cost = 0;
+  for (auto nodePair : scc->internalNodePairs()) {
+    auto I = cast<Instruction>(nodePair.first);
+    cost += this->latencyPerInvocation(I);
+  }
+  return cost;
+}
+
+uint64_t Heuristics::latencyPerInvocation (SCCDAGInfo &sccdagInfo, std::set<SCC *> &sccs){
+  int cost = 0;
+  for (auto scc : sccs) {
+    auto &sccInfo = sccdagInfo.getSCCInfo(scc);
+
+    /*
+     * Collect scc internal information 
+     */
+    cost += sccInfo->internalCost;
+
+    /*
+     * Collect scc external cost (through edges)
+     */
+    std::set<Value *> incomingEdges;
+    for (auto &sccEdgesPair : sccInfo->sccToEdgeInfo) {
+      if (sccs.find(sccEdgesPair.first) != sccs.end()) continue;
+      auto &edges = sccEdgesPair.second->edges;
+      incomingEdges.insert(edges.begin(), edges.end());
+    }
+
+    for (auto edgeVal : incomingEdges) {
+      cost += this->queueLatency(edgeVal);
+    }
+  }
+  return cost;
 }
 
 uint64_t Heuristics::latencyPerInvocation (Instruction *inst){
@@ -82,7 +114,19 @@ uint64_t Heuristics::queueLatency (Value *queueVal){
   return 100;
 }
 
-void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition){
+void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition, SCCDAGInfo &sccdagInfo, uint64_t idealThreads){
+
+  /*
+   * Estimate initial latency of partition
+   * Track current subsets
+   */
+  uint64_t totalCost = 0;
+  std::set<SCCDAGSubset *> currentSubsets;
+  for (auto &subset : partition.subsets) {
+    currentSubsets.insert(subset.get());
+    subset->cost = this->latencyPerInvocation(sccdagInfo, subset->SCCs);
+    totalCost += subset->cost;
+  }
 
   /*
    * Collect all top level partitions
@@ -107,7 +151,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
     /*
      * Check if the current subset has been already tagged to be removed (i.e., merged).
      */
-    if (!partition.isValidSubset(subset)) {
+    if (currentSubsets.find(subset) == currentSubsets.end()) {
       continue;
     }
     // subset->print(errs() << "DSWP:   CHECKING SUBSET:\n", "DSWP:   ");
@@ -117,21 +161,25 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
      */
     SCCDAGSubset *minSubset = nullptr;
     int32_t maxLoweredCost = 0;
-    auto maxAllowedCost = partition.maxSubsetCost();
+    auto maxAllowedCost = totalCost / idealThreads;
 
-    auto checkMergeWith = [&](SCCDAGSubset *part) -> void {
-      if (!partition.canMergeSubsets(subset, part)) { errs() << "DSWP:   CANNOT MERGE\n"; return; }
+    auto checkMergeWith = [&](SCCDAGSubset *s) -> void {
+      if (!partition.canMergeSubsets(subset, s)) { errs() << "DSWP:   CANNOT MERGE\n"; return; }
       // part->print(errs() << "DSWP:   CAN MERGE WITH PARTITION:\n", "DSWP:   ");
 
-      auto demoMerged = partition.demoMergeSubsets(subset, part);
-      if (demoMerged->cost > maxAllowedCost) return ;
+      /*
+       * Create an example merge of the subsets to determine its worth
+       */
+      auto demoMerged = partition.demoMergeSubsets(subset, s);
+      auto mergedCost = latencyPerInvocation(sccdagInfo, demoMerged->SCCs);
+      if (mergedCost > maxAllowedCost) return ;
       // errs() << "DSWP:   Max allowed cost: " << maxAllowedCost << "\n";
 
-      auto loweredCost = part->cost + subset->cost - demoMerged->cost;
+      auto loweredCost = s->cost + subset->cost - mergedCost;
       // errs() << "DSWP:   Merging (cost " << subset->cost << ", " << part->cost << ") yields cost " << demoMerged->cost << "\n";
       if (loweredCost > maxLoweredCost) {
         // errs() << "DSWP:   WILL MERGE IF BEST\n";
-        minSubset = part;
+        minSubset = s;
         maxLoweredCost = loweredCost;
       }
     };
@@ -141,25 +189,29 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
      */
     auto dependents = partition.getDependents(subset);
     auto cousins = partition.getCousins(subset);
-    for (auto part : dependents) checkMergeWith(part);
-    for (auto part : cousins) checkMergeWith(part);
+    for (auto s : dependents) checkMergeWith(s);
+    for (auto s : cousins) checkMergeWith(s);
 
     /*
      * Merge partition if one is found; reiterate the merge check on it
      */
     if (minSubset) {
-      auto mergedPart = partition.mergeSubsets(subset, minSubset);
-      partToCheck.push(mergedPart);
-      mergedPart->print(errs() << "DSWP:   MERGED PART: " << partToCheck.size() << "\n", "DSWP:   ");
+      auto mergedSub = partition.mergeSubsets(subset, minSubset);
+      totalCost -= maxLoweredCost;
+      currentSubsets.erase(subset);
+      currentSubsets.erase(minSubset);
+      currentSubsets.insert(mergedSub);
+      partToCheck.push(mergedSub);
+      mergedSub->print(errs() << "DSWP:   MERGED PART: " << partToCheck.size() << "\n", "DSWP:   ");
     }
 
     /*
      * Iterate the merge check on all dependent partitions
      */
-    for (auto part : dependents) {
-      if (minSubset == part) continue;
-      partToCheck.push(part);
-      part->print(errs() << "DSWP:   WILL CHECK: " << partToCheck.size() << "\n", "DSWP:   ");
+    for (auto s : dependents) {
+      if (minSubset == s) continue;
+      partToCheck.push(s);
+      s->print(errs() << "DSWP:   WILL CHECK: " << partToCheck.size() << "\n", "DSWP:   ");
     }
   }
 

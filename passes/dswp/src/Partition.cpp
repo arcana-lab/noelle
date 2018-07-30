@@ -1,5 +1,4 @@
 #include "DSWP.hpp"
-#include "SCCDAGPartition.hpp"
 
 using namespace llvm;
 
@@ -8,7 +7,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Initial the partition structure with the merged SCCDAG
    */
-  LDI->partition.initialize(LDI->loopSCCDAG, &LDI->sccdagInfo, &LDI->liSummary, /*idealThreads=*/ 2);
+  LDI->partition.initialize(LDI->loopSCCDAG, &LDI->sccdagInfo, &LDI->liSummary);
 
   /*
    * Check if we can cluster SCCs.
@@ -53,7 +52,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
     /*
      * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
      */
-    h->adjustParallelizationPartitionForDSWP(LDI->partition);
+    h->adjustParallelizationPartitionForDSWP(LDI->partition, LDI->sccdagInfo, /*idealThreads=*/ 2);
   }
 
   /*

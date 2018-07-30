@@ -21,10 +21,7 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
     /*
      * Estimate the latency of an invocation of an SCC.
      */
-    for (auto nodePair : scc->internalNodePairs()) {
-      auto I = cast<Instruction>(nodePair.first);
-      sccInfo->internalCost += h->latencyPerInvocation(I);
-    }
+    sccInfo->internalCost = h->latencyPerInvocation(scc);
   }
 
   /*
@@ -63,13 +60,8 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
       /*
        * Collect edges representing possible queues
        */
-      std::set<Value *> seenVals;
       for (auto subEdge : edge->getSubEdges()) {
         auto queueVal = subEdge->getOutgoingT();
-        if (seenVals.find(queueVal) == seenVals.end()) {
-          seenVals.insert(queueVal);
-          LDI->sccdagInfo.setQueueableValCost(queueVal, h->queueLatency(queueVal));
-        }
 
         sccInfo->sccToEdgeInfo[otherSCC]->edges.insert(queueVal);
         otherSCCInfo->sccToEdgeInfo[scc]->edges.insert(queueVal);
