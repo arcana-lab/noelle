@@ -12,7 +12,7 @@ void llvm::DSWP::printSCCs (SCCDAG *sccSubgraph){
   /*
    * Check if we should print.
    */
-  if (this->verbose == Verbosity::Disabled){
+  if (this->verbose <= Verbosity::Minimal){
     return ;
   }
 
@@ -60,7 +60,7 @@ void llvm::DSWP::printLoop (Loop *loop)
 }
 
 void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) {
-  if (this->verbose == Verbosity::Disabled){
+  if (this->verbose <= Verbosity::Minimal){
     return ;
   }
 
@@ -81,7 +81,7 @@ void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI) {
   /*
    * Check if we should print.
    */
-  if (this->verbose == Verbosity::Disabled){
+  if (this->verbose <= Verbosity::Minimal){
     return ;
   }
 
@@ -125,7 +125,7 @@ void llvm::DSWP::printEnv (DSWPLoopDependenceInfo *LDI) {
   /*
    * Check if we should print.
    */
-  if (this->verbose == Verbosity::Disabled){
+  if (this->verbose <= Verbosity::Minimal){
     return ;
   }
 
