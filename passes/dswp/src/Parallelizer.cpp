@@ -24,14 +24,11 @@ bool DSWP::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, H
    */
   // TODO(angelo): check for no loop carried dependencies EXCLUDING IV SCC
   auto isDOALL = !LDI->sccdagAttrs.doesHaveLoopCarriedDataDependences();
-  errs() << "DSWP:   : Loop Carried Data Dep: " << !LDI->sccdagAttrs.doesHaveLoopCarriedDataDependences() << "\n"; 
   isDOALL &= LDI->loopExitBlocks.size() == 1;
   isDOALL &= !this->hasPostLoopEnvVars(LDI);
 
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
   isDOALL &= LDI->sccdagAttrs.loopHasInductionVariable(SE);
-
-  errs() << "DSWP:   IS DO ALL LOOP: " << isDOALL << " -----------------------------\n";
 
   auto codeModified = false;
   if (isDOALL){
