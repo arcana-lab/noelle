@@ -3,7 +3,7 @@
 using namespace llvm;
 
 void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
-  LDI->sccdagInfo.populate(LDI->loopSCCDAG);
+  LDI->sccdagAttrs.populate(LDI->loopSCCDAG);
 
   /*
    * Tag the SCCDAG nodes to have or not a loop-carried data dependence.
@@ -11,12 +11,12 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
 
-    auto &sccInfo = LDI->sccdagInfo.getSCCInfo(scc);
+    auto &sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
 
     /*
      * Tag the SCC to be sequential or not.
      */
-    LDI->sccdagInfo.setSCCToHaveLoopCarriedDataDependence(scc, scc->hasCycle());
+    LDI->sccdagAttrs.setSCCToHaveLoopCarriedDataDependence(scc, scc->hasCycle());
 
     /*
      * Estimate the latency of an invocation of an SCC.
@@ -33,7 +33,7 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
     /*
      * Fetch the information about the current SCC.
      */
-    auto &sccInfo = LDI->sccdagInfo.getSCCInfo(scc);
+    auto &sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
 
     /*
      * Check all outgoing edges of the current SCC.
@@ -49,13 +49,13 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
       /*
        * Fetch the information about the SCC that is the destination of the current dependence.
        */
-      auto &otherSCCInfo = LDI->sccdagInfo.getSCCInfo(otherSCC);
+      auto &otherSCCAttrs = LDI->sccdagAttrs.getSCCAttrs(otherSCC);
 
       /*
        * Establish edge information between two SCC
        */
       sccInfo->sccToEdgeInfo[otherSCC] = std::move(std::make_unique<SCCEdgeInfo>());
-      otherSCCInfo->sccToEdgeInfo[scc] = std::move(std::make_unique<SCCEdgeInfo>());
+      otherSCCAttrs->sccToEdgeInfo[scc] = std::move(std::make_unique<SCCEdgeInfo>());
 
       /*
        * Collect edges representing possible queues
@@ -64,7 +64,7 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
         auto queueVal = subEdge->getOutgoingT();
 
         sccInfo->sccToEdgeInfo[otherSCC]->edges.insert(queueVal);
-        otherSCCInfo->sccToEdgeInfo[scc]->edges.insert(queueVal);
+        otherSCCAttrs->sccToEdgeInfo[scc]->edges.insert(queueVal);
       }
     }
   }

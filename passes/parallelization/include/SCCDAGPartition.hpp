@@ -2,7 +2,7 @@
 
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
-#include "SCCDAGInfo.hpp"
+#include "SCCDAGAttrs.hpp"
 #include "LoopInfoSummary.hpp"
 
 class SCCDAGSubset {
@@ -11,13 +11,13 @@ class SCCDAGSubset {
     int cost;
     std::set<LoopSummary *> loopsContained;
 
-    SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs);
-    SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
+    SCCDAGSubset (SCCDAGAttrs *sccdagAttrs, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs);
+    SCCDAGSubset (SCCDAGAttrs *sccdagAttrs, LoopInfoSummary *loopInfo, SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
 
     raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
 
   private:
-    void collectSubsetLoopInfo(SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo);
+    void collectSubsetLoopInfo(SCCDAGAttrs *sccdagAttrs, LoopInfoSummary *loopInfo);
 };
 
 class SCCDAGPartition {
@@ -25,7 +25,7 @@ class SCCDAGPartition {
     std::set<std::unique_ptr<SCCDAGSubset>> subsets;
     std::set<SCC *> removableNodes;
 
-    void initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo);
+    void initialize (SCCDAG *dag, SCCDAGAttrs *dagInfo, LoopInfoSummary *lInfo);
 
     SCCDAGSubset *addSubset (SCC *node);
     SCCDAGSubset *addSubset (std::set<SCC *> &subset);
@@ -56,7 +56,7 @@ class SCCDAGPartition {
     std::set<DGNode<SCC> *> getSCCNodes (SCCDAGSubset *subset);
 
     SCCDAG *sccDAG;
-    SCCDAGInfo *sccdagInfo;
+    SCCDAGAttrs *sccdagAttrs;
     LoopInfoSummary *loopInfo;
     std::unordered_map<SCC *, SCCDAGSubset *> fromSCCToSubset;
 };

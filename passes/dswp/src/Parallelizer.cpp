@@ -16,12 +16,12 @@ bool DSWP::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, H
   /*
    * Collect information about the SCCs.
    */
-  collectSCCDAGInfo(LDI, h);
+  collectSCCDAGAttrs(LDI, h);
 
   /*
    * Check the type of loop.
    */
-  auto isDOALL = !LDI->sccdagInfo.doesHaveLoopCarriedDataDependences();
+  auto isDOALL = !LDI->sccdagAttrs.doesHaveLoopCarriedDataDependences();
   auto codeModified = false;
   if (isDOALL){
 
@@ -68,7 +68,7 @@ bool DSWP::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, H
   return true;
 }
 
-void DSWP::collectSCCDAGInfo (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
+void DSWP::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   estimateCostAndExtentOfParallelismOfSCCs(LDI, h);
 
   /*

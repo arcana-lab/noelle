@@ -29,4 +29,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/LoopInfoSummary.hpp include/LoopDependenceInfo.hpp include/Parallelization.hpp include/SCCDAGInfo.hpp include/SCCDAGPartition.hpp DESTINATION include)
+install(PROGRAMS include/LoopInfoSummary.hpp include/LoopDependenceInfo.hpp include/Parallelization.hpp include/SCCDAGAttrs.hpp include/SCCDAGPartition.hpp DESTINATION include)

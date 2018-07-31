@@ -85,7 +85,7 @@ namespace llvm {
       void clusterSubloops (DSWPLoopDependenceInfo *LDI);
       void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI);
       void mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI);
-      void collectSCCDAGInfo (DSWPLoopDependenceInfo *LDI, Heuristics *h);
+      void collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h);
       void partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h);
       void estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI, Heuristics *h);
       void collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI);

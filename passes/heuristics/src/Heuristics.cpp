@@ -11,10 +11,10 @@ uint64_t Heuristics::latencyPerInvocation (SCC *scc){
   return cost;
 }
 
-uint64_t Heuristics::latencyPerInvocation (SCCDAGInfo &sccdagInfo, std::set<SCC *> &sccs){
+uint64_t Heuristics::latencyPerInvocation (SCCDAGAttrs &sccdagAttrs, std::set<SCC *> &sccs){
   int cost = 0;
   for (auto scc : sccs) {
-    auto &sccInfo = sccdagInfo.getSCCInfo(scc);
+    auto &sccInfo = sccdagAttrs.getSCCAttrs(scc);
 
     /*
      * Collect scc internal information 
@@ -114,7 +114,7 @@ uint64_t Heuristics::queueLatency (Value *queueVal){
   return 100;
 }
 
-void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition, SCCDAGInfo &sccdagInfo, uint64_t idealThreads){
+void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition, SCCDAGAttrs &sccdagAttrs, uint64_t idealThreads){
 
   /*
    * Estimate initial latency of partition
@@ -124,7 +124,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
   std::set<SCCDAGSubset *> currentSubsets;
   for (auto &subset : partition.subsets) {
     currentSubsets.insert(subset.get());
-    subset->cost = this->latencyPerInvocation(sccdagInfo, subset->SCCs);
+    subset->cost = this->latencyPerInvocation(sccdagAttrs, subset->SCCs);
     totalCost += subset->cost;
   }
 
@@ -171,7 +171,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
        * Create an example merge of the subsets to determine its worth
        */
       auto demoMerged = partition.demoMergeSubsets(subset, s);
-      auto mergedCost = latencyPerInvocation(sccdagInfo, demoMerged->SCCs);
+      auto mergedCost = latencyPerInvocation(sccdagAttrs, demoMerged->SCCs);
       if (mergedCost > maxAllowedCost) return ;
       // errs() << "DSWP:   Max allowed cost: " << maxAllowedCost << "\n";
 

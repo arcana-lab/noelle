@@ -2,25 +2,25 @@
 
 using namespace llvm;
 
-SCCDAGSubset::SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs)
+SCCDAGSubset::SCCDAGSubset (SCCDAGAttrs *sccdagAttrs, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs)
   : SCCs{sccs} {
-  collectSubsetLoopInfo(sccdagInfo, loopInfo);
+  collectSubsetLoopInfo(sccdagAttrs, loopInfo);
 }
 
-SCCDAGSubset::SCCDAGSubset (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo, SCCDAGSubset *subsetA, SCCDAGSubset *subsetB) {
+SCCDAGSubset::SCCDAGSubset (SCCDAGAttrs *sccdagAttrs, LoopInfoSummary *loopInfo, SCCDAGSubset *subsetA, SCCDAGSubset *subsetB) {
   for (auto scc : subsetA->SCCs) this->SCCs.insert(scc);
   for (auto scc : subsetB->SCCs) this->SCCs.insert(scc);
-  collectSubsetLoopInfo(sccdagInfo, loopInfo);
+  collectSubsetLoopInfo(sccdagAttrs, loopInfo);
 }
 
-void SCCDAGSubset::collectSubsetLoopInfo (SCCDAGInfo *sccdagInfo, LoopInfoSummary *loopInfo) {
+void SCCDAGSubset::collectSubsetLoopInfo (SCCDAGAttrs *sccdagAttrs, LoopInfoSummary *loopInfo) {
 
   /*
    * Collect all potentially fully-contained loops in the subset
    */
   std::unordered_map<LoopSummary *, std::set<BasicBlock *>> loopToBBContainedMap;
   for (auto scc : SCCs) {
-      for (auto bb : sccdagInfo->getBasicBlocks(scc)){
+      for (auto bb : sccdagAttrs->getBasicBlocks(scc)){
           loopToBBContainedMap[loopInfo->bbToLoop[bb]].insert(bb);
       }
   }
@@ -60,15 +60,15 @@ SCCDAGSubset *SCCDAGPartition::addSubset (SCC * scc) {
 }
 
 SCCDAGSubset *SCCDAGPartition::addSubset (std::set<SCC *> &sccs) {
-    auto subset = std::make_unique<SCCDAGSubset>(sccdagInfo, loopInfo, sccs);
+    auto subset = std::make_unique<SCCDAGSubset>(sccdagAttrs, loopInfo, sccs);
     auto subsetPtr = this->subsets.insert(std::move(subset)).first->get();
     this->manageAddedSubsetInfo(subsetPtr);
     return subsetPtr; 
 }
 
-void SCCDAGPartition::initialize (SCCDAG *dag, SCCDAGInfo *dagInfo, LoopInfoSummary *lInfo) {
+void SCCDAGPartition::initialize (SCCDAG *dag, SCCDAGAttrs *dagInfo, LoopInfoSummary *lInfo) {
     sccDAG = dag;
-    sccdagInfo = dagInfo;
+    sccdagAttrs = dagInfo;
     loopInfo = lInfo;
 }
 
@@ -82,7 +82,7 @@ void SCCDAGPartition::removeSubset (SCCDAGSubset *subset) {
 }
 
 SCCDAGSubset *SCCDAGPartition::mergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB) {
-    auto subset = std::make_unique<SCCDAGSubset>(sccdagInfo, loopInfo, subsetA, subsetB);
+    auto subset = std::make_unique<SCCDAGSubset>(sccdagAttrs, loopInfo, subsetA, subsetB);
     auto newSubset = this->subsets.insert(std::move(subset)).first->get();
 
     this->removeSubset(subsetA);
@@ -92,7 +92,7 @@ SCCDAGSubset *SCCDAGPartition::mergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset
 }
 
 SCCDAGSubset *SCCDAGPartition::demoMergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB) {
-    return new SCCDAGSubset(sccdagInfo, loopInfo, subsetA, subsetB);
+    return new SCCDAGSubset(sccdagAttrs, loopInfo, subsetA, subsetB);
 }
 
 bool SCCDAGPartition::canMergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB) {

@@ -12,7 +12,7 @@ namespace llvm {
     std::set<Value *> edges;
   };
 
-  class SCCInfo {
+  class SCCAttrs {
     public:
 
       /*
@@ -27,7 +27,7 @@ namespace llvm {
       /*
        * Methods
        */
-      SCCInfo (SCC *s) : scc{s}, internalCost{0}, hasLoopCarriedDep{0} {
+      SCCAttrs (SCC *s) : scc{s}, internalCost{0}, hasLoopCarriedDep{0} {
         // Collect basic blocks contained within SCC
         for (auto nodePair : this->scc->internalNodePairs()) {
           this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
@@ -35,7 +35,7 @@ namespace llvm {
       }
   };
 
-  class SCCDAGInfo {
+  class SCCDAGAttrs {
     public:
 
       /*
@@ -54,12 +54,12 @@ namespace llvm {
 
       int getSCCSubsetCost (std::set<SCC *> &sccs);
 
-      // TODO(angelo): find better workaround than just a getter for SCCInfo
-      std::unique_ptr<SCCInfo> &getSCCInfo (SCC *scc);
+      // TODO(angelo): find better workaround than just a getter for SCCAttrs
+      std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc);
 
       void populate (SCCDAG *loopSCCDAG);
 
     private:
-      std::unordered_map<SCC *, std::unique_ptr<SCCInfo>> sccToInfo;
+      std::unordered_map<SCC *, std::unique_ptr<SCCAttrs>> sccToInfo;
   };
 }

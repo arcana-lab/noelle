@@ -7,7 +7,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Initial the partition structure with the merged SCCDAG
    */
-  LDI->partition.initialize(LDI->loopSCCDAG, &LDI->sccdagInfo, &LDI->liSummary);
+  LDI->partition.initialize(LDI->loopSCCDAG, &LDI->sccdagAttrs, &LDI->liSummary);
 
   /*
    * Check if we can cluster SCCs.
@@ -52,7 +52,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
     /*
      * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
      */
-    h->adjustParallelizationPartitionForDSWP(LDI->partition, LDI->sccdagInfo, /*idealThreads=*/ 2);
+    h->adjustParallelizationPartitionForDSWP(LDI->partition, LDI->sccdagAttrs, /*idealThreads=*/ 2);
   }
 
   /*
