@@ -19,16 +19,11 @@ std::vector<DSWPLoopDependenceInfo *> DSWP::getLoopsToParallelize (Module &M, Pa
   auto allLoops = par.getModuleLoops(&M, allocatorOfLoopStructures);
 
   /*
-   * Consider to parallelize only top-level loops.
+   * Consider all loops to parallelize.
    */
   std::set<Function *> functionsSeen;
   for (auto loop : *allLoops){
-    if (loop->liSummary.topLoop->depth > 1) {
-      continue;
-    }
-
     auto function = loop->function;
-
     if (functionsSeen.find(function) != functionsSeen.end()){
 
       /*
@@ -37,8 +32,8 @@ std::vector<DSWPLoopDependenceInfo *> DSWP::getLoopsToParallelize (Module &M, Pa
       // delete loop;
       // continue ;
     }
-
     functionsSeen.insert(function);
+
     auto dswpLoop = (DSWPLoopDependenceInfo *)(loop);
     loopsToParallelize.push_back(dswpLoop);
   }
