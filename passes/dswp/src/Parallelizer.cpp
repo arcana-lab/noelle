@@ -30,7 +30,7 @@ bool DSWP::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, H
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
   isDOALL &= LDI->sccdagAttrs.loopHasInductionVariable(SE);
 
-  errs() << "DSWP:   IS DO ALL LOOP: " << isDOALL < " -----------------------------\n";
+  errs() << "DSWP:   IS DO ALL LOOP: " << isDOALL << " -----------------------------\n";
 
   auto codeModified = false;
   if (isDOALL){
