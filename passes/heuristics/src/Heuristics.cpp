@@ -117,8 +117,7 @@ uint64_t Heuristics::queueLatency (Value *queueVal){
 void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition, SCCDAGAttrs &sccdagAttrs, uint64_t idealThreads){
 
   /*
-   * Estimate initial latency of partition
-   * Track current subsets
+   * Estimate the current latency for each subset of the current partition of the SCCDAG.
    */
   uint64_t totalCost = 0;
   std::set<SCCDAGSubset *> currentSubsets;
@@ -129,7 +128,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
   }
 
   /*
-   * Collect all top level partitions
+   * Collect all subsets of the current SCCDAG partition.
    */
   std::queue<SCCDAGSubset *> partToCheck;
   auto topLevelParts = partition.topLevelSubsets();
@@ -138,7 +137,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
   }
 
   /*
-   * Merge partitions.
+   * Merge subsets.
    */
   while (!partToCheck.empty()) {
 
@@ -174,7 +173,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
        * Create an example merge of the subsets to determine its worth
        */
       auto demoMerged = partition.demoMergeSubsets(subset, s);
-      auto mergedCost = latencyPerInvocation(sccdagAttrs, demoMerged->SCCs);
+      auto mergedCost = this->latencyPerInvocation(sccdagAttrs, demoMerged->SCCs);
       if (mergedCost > maxAllowedCost) return ;
       // errs() << "DSWP:   Max allowed cost: " << maxAllowedCost << "\n";
 
