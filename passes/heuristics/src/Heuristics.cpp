@@ -164,7 +164,10 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
     auto maxAllowedCost = totalCost / idealThreads;
 
     auto checkMergeWith = [&](SCCDAGSubset *s) -> void {
-      if (!partition.canMergeSubsets(subset, s)) { errs() << "DSWP:   CANNOT MERGE\n"; return; }
+      if (!partition.canMergeSubsets(subset, s)) { 
+        //errs() << "DSWP:   CANNOT MERGE\n";
+        return;
+      }
       // part->print(errs() << "DSWP:   CAN MERGE WITH PARTITION:\n", "DSWP:   ");
 
       /*
@@ -202,7 +205,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
       currentSubsets.erase(minSubset);
       currentSubsets.insert(mergedSub);
       partToCheck.push(mergedSub);
-      mergedSub->print(errs() << "DSWP:   MERGED PART: " << partToCheck.size() << "\n", "DSWP:   ");
+      //mergedSub->print(errs() << "DSWP:   MERGED PART: " << partToCheck.size() << "\n", "DSWP:   ");
     }
 
     /*
@@ -211,7 +214,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
     for (auto s : dependents) {
       if (minSubset == s) continue;
       partToCheck.push(s);
-      s->print(errs() << "DSWP:   WILL CHECK: " << partToCheck.size() << "\n", "DSWP:   ");
+      //s->print(errs() << "DSWP:   WILL CHECK: " << partToCheck.size() << "\n", "DSWP:   ");
     }
   }
 

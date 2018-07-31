@@ -5,7 +5,8 @@ using namespace llvm;
 bool DSWP::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h){
   if (this->verbose > Verbosity::Disabled) {
     errs() << "DSWP: Start\n";
-    errs() << "DSWP:  Try to parallelize the loop " << *LDI->header->getFirstNonPHI() << " of function " << LDI->function->getName() << "\n";
+    errs() << "DSWP:  Function \"" << LDI->function->getName() << "\"\n";
+    errs() << "DSWP:  Try to parallelize the loop \"" << *LDI->header->getFirstNonPHI() << "\"\n";
   }
 
   /*
