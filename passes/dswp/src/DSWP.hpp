@@ -99,6 +99,7 @@ namespace llvm {
       void trimCFGOfStages (DSWPLoopDependenceInfo *LDI);
       void collectControlQueueInfo (DSWPLoopDependenceInfo *LDI);
       void collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI);
+      bool hasPostLoopEnvVars (DSWPLoopDependenceInfo *LDI);
       void collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI);
       void collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI);
       void configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par);

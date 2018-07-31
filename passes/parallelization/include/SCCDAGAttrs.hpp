@@ -1,6 +1,8 @@
 #pragma once
 
 #include "SCCDAG.hpp"
+#include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace std;
@@ -48,13 +50,16 @@ namespace llvm {
        */
       bool doesHaveLoopCarriedDataDependences (void) const ;
 
+      bool loopHasInductionVariable (ScalarEvolution &SE) const ;
+      bool isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const ;
+
       void setSCCToHaveLoopCarriedDataDependence (SCC *scc, bool doesItHaveLoopCarriedDataDependence);
 
       std::set<BasicBlock *> & getBasicBlocks (SCC *scc);
 
       int getSCCSubsetCost (std::set<SCC *> &sccs);
 
-      // TODO(angelo): find better workaround than just a getter for SCCAttrs
+      // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
       std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc);
 
       void populate (SCCDAG *loopSCCDAG);

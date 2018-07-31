@@ -90,34 +90,7 @@ void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
      * In more detail, this SCC can be removed if the loop-carried data dependence, which has created this SCC in the PDG, is due to updates to induction variables.
      */
     auto scc = sccNode->getT();
-    auto isRemovableSCC = true;
-    for (auto iNodePair : scc->internalNodePairs()) {
-      auto V = iNodePair.first;
-      auto canBePartOfRemovableSCC = isa<CmpInst>(V) || isa<TerminatorInst>(V);
-
-      auto scev = SE.getSCEV(V);
-      switch (scev->getSCEVType()) {
-      case scConstant:
-      case scTruncate:
-      case scZeroExtend:
-      case scSignExtend:
-      case scAddExpr:
-      case scMulExpr:
-      case scUDivExpr:
-      case scAddRecExpr:
-      case scSMaxExpr:
-      case scUMaxExpr:
-        continue;
-      case scUnknown:
-      case scCouldNotCompute:
-        isRemovableSCC &= canBePartOfRemovableSCC;
-        continue;
-      default:
-       llvm_unreachable("DSWP: Unknown SCEV type!");
-      }
-    }
-
-    if (isRemovableSCC) {
+    if (LDI->sccdagAttrs.isInductionVariableSCC(SE, scc)) {
       LDI->partition.removableNodes.insert(scc);
     }
   }
