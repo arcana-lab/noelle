@@ -48,7 +48,7 @@ raw_ostream &llvm::SCC::print(raw_ostream &stream, std::string prefixToUse) {
 	return stream;
 }
 
-bool llvm::SCC::hasCycle () {
+bool llvm::SCC::hasCycle (bool ignoreControlDep) {
 	std::set<DGNode<Value> *> nodesChecked;
 	for (auto node : this->getNodes()) {
 		if (nodesChecked.find(node) != nodesChecked.end()) continue;
@@ -63,6 +63,8 @@ bool llvm::SCC::hasCycle () {
 			auto node = nodesToVisit.front();
 			nodesToVisit.pop();
 			for (auto edge : node->getOutgoingEdges()) {
+        if (ignoreControlDep && edge->isControlDependence()) continue;
+
 				auto otherNode = edge->getIncomingNode();
 				if (nodesSeen.find(otherNode) != nodesSeen.end()) return true;
 				if (nodesChecked.find(otherNode) != nodesChecked.end()) continue;
