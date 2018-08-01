@@ -50,10 +50,16 @@ bool DSWP::runOnModule (Module &M) {
    */
   auto loopsToParallelize = this->getLoopsToParallelize(M, parallelizationFramework);
   errs() << "DSWP:  There are " << loopsToParallelize.size() << " loops to parallelize\n";
+  for (auto loop : loopsToParallelize){
+    errs() << "DSWP:    Function \"" << loop->function->getName() << "\"\n";
+    errs() << "DSWP:    Try to parallelize the loop \"" << *loop->header->getFirstNonPHI() << "\"\n";
+    errs() << "\n";
+  }
 
   /*
    * Parallelize the loops selected.
    */
+  errs() << "DSWP:  Parallelize all " << loopsToParallelize.size() << " loops, one at a time\n";
   auto modified = false;
   for (auto loop : loopsToParallelize){
 
