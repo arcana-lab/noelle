@@ -12,22 +12,22 @@ using namespace llvm;
 
 namespace llvm {
 
-	class LoopDependenceInfo {
-      public:
-        LoopInfoSummary liSummary;
-		Function *function;
-        BasicBlock *header;
-        BasicBlock *preHeader;
-        std::vector<BasicBlock *> loopBBs;
-        unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
-		PDG *functionDG;
-		PDG *loopDG;
-		PDG *loopInternalDG;
-		SCCDAG *loopSCCDAG;
-		SCCDAGAttrs sccdagAttrs;
-		SmallVector<BasicBlock *, 10> loopExitBlocks;
+  class LoopDependenceInfo {
+   public:
+    LoopInfoSummary liSummary;
+    Function *function;
+    BasicBlock *header;
+    BasicBlock *preHeader;
+    std::vector<BasicBlock *> loopBBs;
+    unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
+    PDG *functionDG;
+    PDG *loopDG;
+    PDG *loopInternalDG;
+    SCCDAG *loopSCCDAG;
+    SCCDAGAttrs sccdagAttrs;
+    SmallVector<BasicBlock *, 10> loopExitBlocks;
 
-		LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
-		~LoopDependenceInfo();
-	};
+    LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
+    ~LoopDependenceInfo();
+  };
 }
