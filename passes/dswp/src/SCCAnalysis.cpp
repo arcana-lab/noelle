@@ -16,7 +16,7 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
     /*
      * Tag the SCC to be sequential or not.
      */
-    LDI->sccdagAttrs.setSCCToHaveLoopCarriedDataDependence(scc, scc->hasCycle());
+    LDI->sccdagAttrs.setSCCToHaveLoopCarriedDataDependence(scc, scc->hasCycle(/*ignoreControlDep=*/true));
 
     /*
      * Estimate the latency of an invocation of an SCC.

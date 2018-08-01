@@ -2,11 +2,13 @@
 
 using namespace llvm;
 
-bool SCCDAGAttrs::doesHaveLoopCarriedDataDependences (void) const {
+std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
+  std::set<SCC *> sccs;
   for (auto &sccInfoPair : this->sccToInfo) {
-    if (sccInfoPair.second->hasLoopCarriedDep) return true;
+    if (!sccInfoPair.second->hasLoopCarriedDataDep) continue ;
+    sccs.insert(sccInfoPair.first);
   }
-  return false;
+  return sccs;
 }
 
 bool SCCDAGAttrs::loopHasInductionVariable (ScalarEvolution &SE) const {
@@ -53,7 +55,7 @@ bool SCCDAGAttrs::isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const {
 
 void SCCDAGAttrs::setSCCToHaveLoopCarriedDataDependence (SCC *scc, bool doesItHaveLoopCarriedDataDependence){
   auto &sccInfo = this->sccToInfo[scc];
-  sccInfo->hasLoopCarriedDep = doesItHaveLoopCarriedDataDependence;
+  sccInfo->hasLoopCarriedDataDep = doesItHaveLoopCarriedDataDependence;
 
   return ;
 }

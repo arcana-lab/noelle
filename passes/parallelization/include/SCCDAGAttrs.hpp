@@ -23,13 +23,13 @@ namespace llvm {
       SCC *scc;
       std::set<BasicBlock *> bbs;
       int internalCost;
-      bool hasLoopCarriedDep;
+      bool hasLoopCarriedDataDep;
       std::unordered_map<SCC *, std::unique_ptr<SCCEdgeInfo>> sccToEdgeInfo;
 
       /*
        * Methods
        */
-      SCCAttrs (SCC *s) : scc{s}, internalCost{0}, hasLoopCarriedDep{0} {
+      SCCAttrs (SCC *s) : scc{s}, internalCost{0}, hasLoopCarriedDataDep{0} {
         // Collect basic blocks contained within SCC
         for (auto nodePair : this->scc->internalNodePairs()) {
           this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
@@ -48,7 +48,7 @@ namespace llvm {
       /*
        * Methods
        */
-      bool doesHaveLoopCarriedDataDependences (void) const ;
+      std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
 
       bool loopHasInductionVariable (ScalarEvolution &SE) const ;
       bool isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const ;
