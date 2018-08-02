@@ -1,16 +1,22 @@
 - Reconsider all abstractions (e.g., do we need both SCC and SCCInfo? do we need both SCCDAG and SCCDAGInfo?)
 
+- Rename parallelization into parallelization_utilities
+
+- Split the dswp pass into four passes: parallelizer (the main one), dswp, doall, ps-dswp
+
 - Extend the autotuner to decide #threads per loop
+
+- Extend the autotuner to decide the parallelization-specific parameters (e.g., chunk size for DOALL, SCCDAG partitioning for DSWP)
 
 - Modify DSWP to be able to parallelize multiple loops nested to each other at the same time
 
 - Optimization: implement DOALL
 
+- Optimization: implement PS-DSWP
+
 - Optimization: inline calls involved in an SCC and rerun the PDG analysis
 
 - Optimization: packing/unpacking pushes and pops
-
-- Optimization: implement PS-DSWP
 
 - Optimization: create a new pass to map memory locations to variables as much as possible
   This removes the overly conservative memory loop-carried data dependences
