@@ -1,3 +1,7 @@
+- Bug fix: create a test for loop 19 of streamcluster and fix its bug (the heuristic of partitioning the SCCDAG doesn't converge)
+
+- Add the option to decide the number of threads to target
+
 - Reconsider all abstractions (e.g., do we need both SCC and SCCInfo? do we need both SCCDAG and SCCDAGInfo?)
 
 - Rename parallelization into parallelization_utilities
