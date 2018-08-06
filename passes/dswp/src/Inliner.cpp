@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-void Parallelizer::inlineQueueCalls (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo) {
+void DSWP::inlineQueueCalls (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo) {
   std::queue<CallInst *> callsToInline;
   for (auto &queueInstrPair : stageInfo->queueInstrMap) {
     auto &queueInstr = queueInstrPair.second;

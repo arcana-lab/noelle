@@ -11,15 +11,24 @@
 #include "llvm/Analysis/AssumptionCache.h"
 
 #include "LoopDependenceInfo.hpp"
+#include "Queue.hpp"
 
 using namespace llvm;
 
 namespace llvm {
   struct Parallelization : public ModulePass {
     public:
+
+      /*
+       * Fields.
+       */
       static char ID;
       IntegerType *int1, *int8, *int16, *int32, *int64;
+      Queue queues;
 
+      /*
+       * Methods.
+       */
       Parallelization();
 
       virtual ~Parallelization();

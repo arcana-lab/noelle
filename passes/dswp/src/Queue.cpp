@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-void Parallelizer::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
+void DSWP::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
 {
   for (auto queueIndex : stageInfo->popValueQueues)
   {
@@ -14,7 +14,7 @@ void Parallelizer::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<
     assert(stageInfo->sccBBCloneMap.find(bb) != stageInfo->sccBBCloneMap.end());
 
     IRBuilder<> builder(stageInfo->sccBBCloneMap[bb]);
-    queueInstrs->queueCall = builder.CreateCall(queuePops[queueSizeToIndex[queueInfo->bitLength]], queueCallArgs);
+    queueInstrs->queueCall = builder.CreateCall(par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]], queueCallArgs);
     queueInstrs->load = builder.CreateLoad(queueInstrs->alloca);
 
     /*
@@ -36,7 +36,7 @@ void Parallelizer::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<
   }
 }
 
-void Parallelizer::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
+void DSWP::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
 {
   for (auto queueIndex : stageInfo->pushValueQueues)
   {
@@ -48,7 +48,7 @@ void Parallelizer::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr
     auto pCloneBB = pClone->getParent();
     IRBuilder<> builder(pCloneBB);
     auto store = builder.CreateStore(pClone, queueInstrs->alloca);
-    queueInstrs->queueCall = builder.CreateCall(queuePushes[queueSizeToIndex[queueInfo->bitLength]], queueCallArgs);
+    queueInstrs->queueCall = builder.CreateCall(par.queues.queuePushes[par.queues.queueSizeToIndex[queueInfo->bitLength]], queueCallArgs);
 
     bool pastProducer = false;
     for (auto &I : *pCloneBB)
@@ -65,7 +65,7 @@ void Parallelizer::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr
   }
 }
 
-void Parallelizer::registerQueue (DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer)
+void DSWP::registerQueue (Parallelization &par, DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer)
 {
   int queueIndex = LDI->queues.size();
   for (auto queueI : fromStage->producerToQueues[producer])
@@ -90,16 +90,16 @@ void Parallelizer::registerQueue (DSWPLoopDependenceInfo *LDI, StageInfo *fromSt
   queueInfo->fromStage = fromStage->order;
   queueInfo->toStage = toStage->order;
 
-  bool byteSize = queueSizeToIndex.find(queueInfo->bitLength) != queueSizeToIndex.end();
-  if (!byteSize)
-  { 
+  auto& queueTypes = par.queues.queueSizeToIndex ;
+  bool byteSize = queueTypes.find(queueInfo->bitLength) != queueTypes.end();
+  if (!byteSize) { 
     errs() << "NOT BYTE SIZE (" << queueInfo->bitLength << "): "; producer->getType()->print(errs()); errs() <<  "\n";
     producer->print(errs() << "Producer: "); errs() << "\n";
     abort();
   }
 }
 
-void Parallelizer::collectControlQueueInfo (DSWPLoopDependenceInfo *LDI)
+void DSWP::collectControlQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI)
 {
   auto findContaining = [&](Value *val) -> std::pair<StageInfo *, SCC *> {
     for (auto &stage : LDI->stages)
@@ -134,13 +134,13 @@ void Parallelizer::collectControlQueueInfo (DSWPLoopDependenceInfo *LDI)
         if (otherStage.get() == prodStage) continue;
         if (otherStage->removableSCCs.find(prodSCC) != otherStage->removableSCCs.end()) continue;
         if (otherStage->usedCondBrs.find(consumerTerm) == otherStage->usedCondBrs.end()) continue;
-        registerQueue(LDI, prodStage, otherStage.get(), producer, consumerI);
+        registerQueue(par, LDI, prodStage, otherStage.get(), producer, consumerI);
       }
     }
   }
 }
 
-void Parallelizer::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
+void DSWP::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
   IRBuilder<> entryBuilder(stageInfo->entryBlock);
   auto argIter = stageInfo->sccStage->arg_begin();
   auto queuesArray = entryBuilder.CreateBitCast(&*(++argIter), PointerType::getUnqual(LDI->queueArrayType));
@@ -152,12 +152,12 @@ void Parallelizer::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std
     auto queueInfo = LDI->queues[queueIndex].get();
     auto queueIndexValue = cast<Value>(ConstantInt::get(par.int64, queueIndex));
     auto queuePtr = entryBuilder.CreateInBoundsGEP(queuesArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, queueIndexValue }));
-    auto queueCast = entryBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(queueTypes[queueSizeToIndex[queueInfo->bitLength]]));
+    auto queueCast = entryBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(par.queues.queueTypes[par.queues.queueSizeToIndex[queueInfo->bitLength]]));
 
     auto queueInstrs = std::make_unique<QueueInstrs>();
     queueInstrs->queuePtr = entryBuilder.CreateLoad(queueCast);
     queueInstrs->alloca = entryBuilder.CreateAlloca(queueInfo->dependentType);
-    queueInstrs->allocaCast = entryBuilder.CreateBitCast(queueInstrs->alloca, PointerType::getUnqual(queueElementTypes[queueSizeToIndex[queueInfo->bitLength]]));
+    queueInstrs->allocaCast = entryBuilder.CreateBitCast(queueInstrs->alloca, PointerType::getUnqual(par.queues.queueElementTypes[par.queues.queueSizeToIndex[queueInfo->bitLength]]));
     stageInfo->queueInstrMap[queueIndex] = std::move(queueInstrs);
   };
 
@@ -165,7 +165,7 @@ void Parallelizer::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std
   for (auto queueIndex : stageInfo->popValueQueues) loadQueuePtrFromIndex(queueIndex);
 }
 
-void Parallelizer::collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
+void DSWP::collectPartitionedSCCQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI)
 {
   for (auto scc : LDI->loopSCCDAG->getNodes())
   {
@@ -190,13 +190,13 @@ void Parallelizer::collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
         if (instructionEdge->isControlDependence()) continue;
         auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
         auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
-        registerQueue(LDI, fromStage, toStage, producer, consumer);
+        registerQueue(par, LDI, fromStage, toStage, producer, consumer);
       }
     }
   }
 }
 
-void Parallelizer::collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI) {
+void DSWP::collectRemovableSCCQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI) {
   for (auto &stage : LDI->stages)
   {
     auto toStage = stage.get();
@@ -217,7 +217,7 @@ void Parallelizer::collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI) {
           if (instructionEdge->isControlDependence()) continue;
           auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
           auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
-          registerQueue(LDI, fromStage, toStage, producer, consumer);
+          registerQueue(par, LDI, fromStage, toStage, producer, consumer);
         }
       }
     }

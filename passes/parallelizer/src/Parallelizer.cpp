@@ -1,8 +1,8 @@
-#include "DSWP.hpp"
+#include "Parallelizer.hpp"
 
 using namespace llvm;
   
-bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h){
+bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, Heuristics *h){
   if (this->verbose > Verbosity::Disabled) {
     errs() << "DSWP: Start\n";
     errs() << "DSWP:  Function \"" << LDI->function->getName() << "\"\n";
@@ -51,7 +51,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
     /*
      * Apply DSWP.
      */
-    codeModified = this->applyDSWP(LDI, par, h);
+    codeModified = dswp.apply(LDI, par, h);
   }
 
   /*

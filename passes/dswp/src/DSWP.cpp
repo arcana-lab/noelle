@@ -2,7 +2,34 @@
 
 using namespace llvm;
 
-bool Parallelizer::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
+DSWP::DSWP(Module &module)
+  :
+  module{module},
+  forceParallelization{false},
+  forceNoSCCPartition{false},
+  verbose{Verbosity::Disabled}
+  {
+
+  /*
+   * Fetch the function that dispatch the parallelized loop.
+   */
+  this->stageDispatcher = module.getFunction("stageDispatcher");
+
+  /*
+   * Fetch the function that executes a stage.
+   */
+  auto stageExecuter = module.getFunction("stageExecuter");
+
+  /*
+   * Define its signature.
+   */
+  auto stageArgType = stageExecuter->arg_begin()->getType();
+  this->stageType = cast<FunctionType>(cast<PointerType>(stageArgType)->getElementType());
+
+  return ;
+}
+
+bool DSWP::apply (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
 
   /*
    * Partition the SCCDAG.
@@ -52,7 +79,7 @@ bool Parallelizer::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par,
   return true;
 }
 
-bool Parallelizer::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
+bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
   if (this->forceParallelization){
     return true;
   }
@@ -60,7 +87,7 @@ bool Parallelizer::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
   return LDI->partition.subsets.size() > 1;
 }
 
-void Parallelizer::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+void DSWP::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
   LDI->envArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->environment->envSize());
   LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
@@ -69,14 +96,14 @@ void Parallelizer::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Para
   return ;
 }
 
-void Parallelizer::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+void DSWP::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   createStagesfromPartitionedSCCs(LDI);
   addRemovableSCCsToStages(LDI);
 
-  collectPartitionedSCCQueueInfo(LDI);
+  collectPartitionedSCCQueueInfo(par, LDI);
   trimCFGOfStages(LDI);
-  collectControlQueueInfo(LDI);
-  collectRemovableSCCQueueInfo(LDI);
+  collectControlQueueInfo(par, LDI);
+  collectRemovableSCCQueueInfo(par, LDI);
 
   LDI->environment = std::make_unique<EnvInfo>();
   LDI->environment->exitBlockType = par.int32;
@@ -88,7 +115,7 @@ void Parallelizer::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parall
   return ;
 }
 
-Value * Parallelizer::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par) {
+Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par) {
 
   /*
    * Create empty environment array for producers, exit block tracking
@@ -114,7 +141,7 @@ Value * Parallelizer::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRB
   return cast<Value>(builder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
 }
 
-Value * Parallelizer::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
+Value * DSWP::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
   auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->stageArrayType));
   auto stageCastType = PointerType::getUnqual(LDI->stages[0]->sccStage->getType());
   for (int i = 0; i < LDI->stages.size(); ++i) {
@@ -128,7 +155,7 @@ Value * Parallelizer::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, 
   return cast<Value>(funcBuilder.CreateBitCast(stagesAlloca, PointerType::getUnqual(par.int8)));
 }
 
-Value * Parallelizer::createQueueSizesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
+Value * DSWP::createQueueSizesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
   auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(par.int64, LDI->queues.size())));
   for (int i = 0; i < LDI->queues.size(); ++i) {
     auto &queue = LDI->queues[i];

@@ -1,4 +1,4 @@
-#include "DSWP.hpp"
+#include "Parallelizer.hpp"
 
 using namespace llvm;
 

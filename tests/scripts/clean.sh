@@ -1,5 +1,7 @@
 #!/bin/bash
 
+./scripts/add_symbolic_link.sh ;
+
 for i in `ls`; do
   if ! test -d $i ; then
     continue ;

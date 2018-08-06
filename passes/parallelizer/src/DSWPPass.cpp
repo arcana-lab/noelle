@@ -1,4 +1,4 @@
-#include "DSWP.hpp"
+#include "Parallelizer.hpp"
 
 using namespace llvm;
 
@@ -21,8 +21,6 @@ Parallelizer::Parallelizer()
 }
 
 bool Parallelizer::doInitialization (Module &M) {
-  this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
-  this->forceNoSCCPartition |= (ForceNoSCCPartition.getNumOccurrences() > 0);
   this->verbose = static_cast<Verbosity>(Verbose.getValue());
 
   return false; 
@@ -35,6 +33,7 @@ bool Parallelizer::runOnModule (Module &M) {
    */
   auto& parallelizationFramework = getAnalysis<Parallelization>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
+  DSWP dswp{M};
 
   /*
    * Collect some information.
@@ -66,7 +65,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Parallelize the current loop with Parallelizer.
      */
-    modified |= this->parallelizeLoop(loop, parallelizationFramework, heuristics);
+    modified |= this->parallelizeLoop(loop, parallelizationFramework, dswp, heuristics);
 
     /*
      * Free the memory.
@@ -80,16 +79,16 @@ bool Parallelizer::runOnModule (Module &M) {
 void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<Parallelization>();
+  AU.addRequired<HeuristicsPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<HeuristicsPass>();
 
   return ;
 }
 
 // Next there is code to register your pass to "opt"
 char llvm::Parallelizer::ID = 0;
-static RegisterPass<Parallelizer> X("Parallelizer", "Automatic parallelization of sequential code");
+static RegisterPass<Parallelizer> X("parallelizer", "Automatic parallelization of sequential code");
 
 // Next there is code to register your pass to "clang"
 static Parallelizer * _PassMaker = NULL;

@@ -10,7 +10,11 @@ for i in `ls`; do
   fi
   cd $i ;
   echo "  $i" ;
-  ln -s ../scripts/Parallelizer_utils.cpp ;
-  ln -s ../scripts/Makefile ;
+  if ! test -f Parallelizer_utils.cpp ; then
+    ln -s ../scripts/Parallelizer_utils.cpp ;
+  fi
+  if ! test -f Makefile ; then
+    ln -s ../scripts/Makefile ;
+  fi
   cd ../ ;
 done

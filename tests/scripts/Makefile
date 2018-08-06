@@ -20,7 +20,8 @@ RUNTIME_CFLAGS="-DDSWP_STATS"
 RUNTIME_CFLAGS=""
 
 PRINTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PDGPRINTER).so
-OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so -load ~/CAT/lib/$(PARALLELIZATION).so
+PARALLELIZATION_TECHNIQUES= -load ~/CAT/lib/DSWP.so
+OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/$(PARALLELIZATION).so 
 
 all: baseline $(OPTIMIZED)
 
@@ -37,7 +38,7 @@ test_pdgdot.bc: test_seq.bc
 	opt $(PRINTPASSES) $(ANALYSES) -$(PDGPRINTER) $^ -o $@
 
 test_dswp.bc: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $(PARALLELIZATION_OPTIONS) $^ -o $@
+	opt $(OPTPASSES) $(ANALYSES) -parallelizer $(PARALLELIZATION_OPTIONS) $^ -o $@
 	$(CC) $(OPT_LEVEL) -c -emit-llvm $@ -o $@
 	llvm-dis $@
 

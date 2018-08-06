@@ -35,39 +35,27 @@
 
 namespace llvm {
 
-  struct Parallelizer : public ModulePass {
+  class DSWP {
     public:
-
-      /*
-       * Class fields
-       */
-      static char ID;
 
       /*
        * Object fields
        */
       Function *stageDispatcher;
-      Function *printReachedI, *printPushedP, *printPulledP;
-      std::vector<Function *> queuePushes;
-      std::vector<Function *> queuePops;
-      std::vector<Type *> queueTypes;
-      std::vector<Type *> queueElementTypes;
-      unordered_map<int, int> queueSizeToIndex;
       FunctionType *stageType;
 
       /*
        * Methods
        */
-      Parallelizer();
-      bool doInitialization (Module &M) override ;
-      bool runOnModule (Module &M) override ;
-      void getAnalysisUsage (AnalysisUsage &AU) const override ;
+      DSWP (Module &module);
+      bool apply (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
 
     private:
 
       /*
        * Fields
        */
+      Module& module;
       bool forceParallelization;
       bool forceNoSCCPartition;
       enum class Verbosity { Disabled, Minimal, Pipeline, Maximal };
@@ -76,30 +64,16 @@ namespace llvm {
       /*
        * Methods
        */
-      bool parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
-      std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
-      bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
-      bool applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
-      bool applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
-      void mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
       void clusterSubloops (DSWPLoopDependenceInfo *LDI);
-      void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI);
-      void mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI);
-      void collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h);
       void partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h);
-      void estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI, Heuristics *h);
-      void collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI);
-      void collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
-      void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);
       bool isWorthParallelizing (DSWPLoopDependenceInfo *LDI);
       void addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI);
-      void registerQueue (DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer);
-      void collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI);
+      void registerQueue (Parallelization &par, DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer);
+      void collectPartitionedSCCQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI);
       void collectTransitiveCondBrs (DSWPLoopDependenceInfo *LDI, std::set<TerminatorInst *> &bottomLevelBrs, std::set<TerminatorInst *> &descendantCondBrs);
       void trimCFGOfStages (DSWPLoopDependenceInfo *LDI);
-      void collectControlQueueInfo (DSWPLoopDependenceInfo *LDI);
-      void collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI);
-      bool hasPostLoopEnvVars (DSWPLoopDependenceInfo *LDI);
+      void collectControlQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI);
+      void collectRemovableSCCQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI);
       void collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI);
       void collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI);
       void configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par);
@@ -131,12 +105,10 @@ namespace llvm {
       /*
        * Debug utilities
        */
-      void printSCCs (SCCDAG *sccSubgraph);
-      void printLoop (Loop *loop);
-      void printPartitions (DSWPLoopDependenceInfo *LDI);
       void printStageSCCs (DSWPLoopDependenceInfo *LDI);
       void printStageQueues (DSWPLoopDependenceInfo *LDI);
       void printEnv (DSWPLoopDependenceInfo *LDI);
+      void printPartition (DSWPLoopDependenceInfo *LDI);
   };
 
 }
