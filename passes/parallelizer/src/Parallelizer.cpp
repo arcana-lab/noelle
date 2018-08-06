@@ -2,7 +2,7 @@
 
 using namespace llvm;
   
-bool DSWP::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h){
+bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h){
   if (this->verbose > Verbosity::Disabled) {
     errs() << "DSWP: Start\n";
     errs() << "DSWP:  Function \"" << LDI->function->getName() << "\"\n";
@@ -84,7 +84,7 @@ bool DSWP::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, H
   return true;
 }
 
-void DSWP::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
+void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   estimateCostAndExtentOfParallelismOfSCCs(LDI, h);
 
   /*

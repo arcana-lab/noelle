@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-void DSWP::collectTransitiveCondBrs (DSWPLoopDependenceInfo *LDI,
+void Parallelizer::collectTransitiveCondBrs (DSWPLoopDependenceInfo *LDI,
   std::set<TerminatorInst *> &bottomLevelBrs,
   std::set<TerminatorInst *> &descendantCondBrs
   ) {

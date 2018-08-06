@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
+void Parallelizer::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
 
   /*
    * Initial the partition structure with the merged SCCDAG
@@ -66,7 +66,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   return ;
 }
 
-void DSWP::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
 
   /*
    * Print the current SCCDAG.
@@ -93,7 +93,7 @@ void DSWP::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
   return ;
 }
 
-void DSWP::mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
   std::unordered_map<DGNode<SCC> *, std::set<DGNode<SCC> *> *> mergedToGroup;
   std::set<std::set<DGNode<SCC> *> *> singles;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
@@ -146,7 +146,7 @@ void DSWP::mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
   }
 }
 
-void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
   auto &li = LDI->liSummary;
   auto loop = li.bbToLoop[LDI->header];
   auto loopDepth = loop->depth;
@@ -179,7 +179,7 @@ void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
   }
 }
 
-void DSWP::mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI) {
   std::vector<DGNode<SCC> *> tailCmpBrs;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
@@ -202,7 +202,7 @@ void DSWP::mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI) {
   }
 }
 
-void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
   for (auto &stage : LDI->stages) {
     std::set<DGNode<SCC> *> visitedNodes;
     std::queue<DGNode<SCC> *> dependentSCCNodes;

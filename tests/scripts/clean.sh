@@ -13,5 +13,6 @@ for i in `ls`; do
 
   cd $i ;
   make clean ;
+  rm -f *_utils.cpp Makefile ;
   cd ../ ;
 done

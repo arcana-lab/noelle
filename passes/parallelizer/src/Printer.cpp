@@ -7,7 +7,7 @@
 #include "SCCDAG.hpp"
 #include "DSWP.hpp"
 
-void llvm::DSWP::printSCCs (SCCDAG *sccSubgraph){
+void llvm::Parallelizer::printSCCs (SCCDAG *sccSubgraph){
 
   /*
    * Check if we should print.
@@ -32,11 +32,11 @@ void llvm::DSWP::printSCCs (SCCDAG *sccSubgraph){
   return ;
 }
 
-void llvm::DSWP::printPartitions (DSWPLoopDependenceInfo *LDI){
+void llvm::Parallelizer::printPartitions (DSWPLoopDependenceInfo *LDI){
   LDI->partition.print(errs(), "DSWP:   ");
 }
 
-void llvm::DSWP::printLoop (Loop *loop)
+void llvm::Parallelizer::printLoop (Loop *loop)
 {
   errs() << "Applying DSWP on loop\n";
   auto header = loop->getHeader();
@@ -59,7 +59,7 @@ void llvm::DSWP::printLoop (Loop *loop)
   }
 }
 
-void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) {
+void llvm::Parallelizer::printStageSCCs (DSWPLoopDependenceInfo *LDI) {
   if (this->verbose <= Verbosity::Minimal){
     return ;
   }
@@ -76,7 +76,7 @@ void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) {
   return ;
 }
 
-void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI) {
+void llvm::Parallelizer::printStageQueues (DSWPLoopDependenceInfo *LDI) {
 
   /*
    * Check if we should print.
@@ -120,7 +120,7 @@ void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI) {
   return ;
 }
 
-void llvm::DSWP::printEnv (DSWPLoopDependenceInfo *LDI) {
+void llvm::Parallelizer::printEnv (DSWPLoopDependenceInfo *LDI) {
 
   /*
    * Check if we should print.

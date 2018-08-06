@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-bool DSWP::collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) {
+bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) {
   printReachedI = M.getFunction("printReachedI");
   printPushedP = M.getFunction("printPushedP");
   printPulledP = M.getFunction("printPulledP");

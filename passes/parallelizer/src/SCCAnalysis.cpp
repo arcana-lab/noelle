@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
+void Parallelizer::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   LDI->sccdagAttrs.populate(LDI->loopSCCDAG);
 
   /*
@@ -72,7 +72,7 @@ void DSWP::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI
   return ;
 }
 
-void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
 
@@ -98,7 +98,7 @@ void DSWP::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
   return ;
 }
 
-void DSWP::collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
     if (scc->numInternalNodes() > 1 || sccNode->numOutgoingEdges() == 0) continue;

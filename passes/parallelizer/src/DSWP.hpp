@@ -35,7 +35,7 @@
 
 namespace llvm {
 
-  struct DSWP : public ModulePass {
+  struct Parallelizer : public ModulePass {
     public:
 
       /*
@@ -58,7 +58,7 @@ namespace llvm {
       /*
        * Methods
        */
-      DSWP();
+      Parallelizer();
       bool doInitialization (Module &M) override ;
       bool runOnModule (Module &M) override ;
       void getAnalysisUsage (AnalysisUsage &AU) const override ;

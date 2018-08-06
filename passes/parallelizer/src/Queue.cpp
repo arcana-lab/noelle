@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-void DSWP::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
+void Parallelizer::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
 {
   for (auto queueIndex : stageInfo->popValueQueues)
   {
@@ -36,7 +36,7 @@ void DSWP::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInf
   }
 }
 
-void DSWP::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
+void Parallelizer::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
 {
   for (auto queueIndex : stageInfo->pushValueQueues)
   {
@@ -65,7 +65,7 @@ void DSWP::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageIn
   }
 }
 
-void DSWP::registerQueue (DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer)
+void Parallelizer::registerQueue (DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer)
 {
   int queueIndex = LDI->queues.size();
   for (auto queueI : fromStage->producerToQueues[producer])
@@ -99,7 +99,7 @@ void DSWP::registerQueue (DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, Sta
   }
 }
 
-void DSWP::collectControlQueueInfo (DSWPLoopDependenceInfo *LDI)
+void Parallelizer::collectControlQueueInfo (DSWPLoopDependenceInfo *LDI)
 {
   auto findContaining = [&](Value *val) -> std::pair<StageInfo *, SCC *> {
     for (auto &stage : LDI->stages)
@@ -140,7 +140,7 @@ void DSWP::collectControlQueueInfo (DSWPLoopDependenceInfo *LDI)
   }
 }
 
-void DSWP::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
+void Parallelizer::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
   IRBuilder<> entryBuilder(stageInfo->entryBlock);
   auto argIter = stageInfo->sccStage->arg_begin();
   auto queuesArray = entryBuilder.CreateBitCast(&*(++argIter), PointerType::getUnqual(LDI->queueArrayType));
@@ -165,7 +165,7 @@ void DSWP::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique
   for (auto queueIndex : stageInfo->popValueQueues) loadQueuePtrFromIndex(queueIndex);
 }
 
-void DSWP::collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
+void Parallelizer::collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
 {
   for (auto scc : LDI->loopSCCDAG->getNodes())
   {
@@ -196,7 +196,7 @@ void DSWP::collectPartitionedSCCQueueInfo (DSWPLoopDependenceInfo *LDI)
   }
 }
 
-void DSWP::collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::collectRemovableSCCQueueInfo (DSWPLoopDependenceInfo *LDI) {
   for (auto &stage : LDI->stages)
   {
     auto toStage = stage.get();

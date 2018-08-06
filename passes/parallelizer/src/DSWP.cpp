@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
+bool Parallelizer::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
 
   /*
    * Partition the SCCDAG.
@@ -52,7 +52,7 @@ bool DSWP::applyDSWP (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heurist
   return true;
 }
 
-bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
+bool Parallelizer::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
   if (this->forceParallelization){
     return true;
   }
@@ -60,7 +60,7 @@ bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
   return LDI->partition.subsets.size() > 1;
 }
 
-void DSWP::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+void Parallelizer::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
   LDI->envArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->environment->envSize());
   LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
@@ -69,7 +69,7 @@ void DSWP::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelizat
   return ;
 }
 
-void DSWP::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+void Parallelizer::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   createStagesfromPartitionedSCCs(LDI);
   addRemovableSCCsToStages(LDI);
 
@@ -88,7 +88,7 @@ void DSWP::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelizatio
   return ;
 }
 
-Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par) {
+Value * Parallelizer::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par) {
 
   /*
    * Create empty environment array for producers, exit block tracking
@@ -114,7 +114,7 @@ Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<>
   return cast<Value>(builder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
 }
 
-Value * DSWP::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
+Value * Parallelizer::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
   auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->stageArrayType));
   auto stageCastType = PointerType::getUnqual(LDI->stages[0]->sccStage->getType());
   for (int i = 0; i < LDI->stages.size(); ++i) {
@@ -128,7 +128,7 @@ Value * DSWP::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilde
   return cast<Value>(funcBuilder.CreateBitCast(stagesAlloca, PointerType::getUnqual(par.int8)));
 }
 
-Value * DSWP::createQueueSizesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
+Value * Parallelizer::createQueueSizesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
   auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(par.int64, LDI->queues.size())));
   for (int i = 0; i < LDI->queues.size(); ++i) {
     auto &queue = LDI->queues[i];

@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
   auto topLevelParts = LDI->partition.topLevelSubsets();
   std::set<SCCDAGSubset *> partsFound(topLevelParts.begin(), topLevelParts.end());
   std::deque<SCCDAGSubset *> partsToTraverse(topLevelParts.begin(), topLevelParts.end());
@@ -33,7 +33,7 @@ void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
   }
 }
 
-void DSWP::createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
+void Parallelizer::createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
 
   /*
    * Create a function where we will store all the code that will be executed for the current pipeline stage.
@@ -116,7 +116,7 @@ void DSWP::createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, 
   return ;
 }
 
-void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+void Parallelizer::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
 
   /*
    * Fetch the module.

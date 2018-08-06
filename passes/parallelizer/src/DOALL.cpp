@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-bool DSWP::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
+bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
   //TODO
   errs() << "DSWP:   IS DO ALL LOOP: ----------------------------\n";
 

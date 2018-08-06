@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-std::vector<DSWPLoopDependenceInfo *> DSWP::getLoopsToParallelize (Module &M, Parallelization &par){
+std::vector<DSWPLoopDependenceInfo *> Parallelizer::getLoopsToParallelize (Module &M, Parallelization &par){
   std::vector<DSWPLoopDependenceInfo *> loopsToParallelize;
 
   /*

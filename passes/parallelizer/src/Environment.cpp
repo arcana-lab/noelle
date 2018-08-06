@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-bool DSWP::hasPostLoopEnvVars (DSWPLoopDependenceInfo *LDI) {
+bool Parallelizer::hasPostLoopEnvVars (DSWPLoopDependenceInfo *LDI) {
   for (auto nodeI : LDI->loopDG->externalNodePairs()) {
 
     /*
@@ -15,7 +15,7 @@ bool DSWP::hasPostLoopEnvVars (DSWPLoopDependenceInfo *LDI) {
   return false;
 }
 
-void DSWP::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
   for (auto nodeI : LDI->loopDG->externalNodePairs()) {
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
@@ -56,7 +56,7 @@ void DSWP::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
   return ;
 }
 
-void DSWP::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
   for (auto nodeI : LDI->loopDG->externalNodePairs()) {
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
@@ -111,7 +111,7 @@ void DSWP::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
   }
 }
 
-void DSWP::loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
+void Parallelizer::loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
 {
   IRBuilder<> entryBuilder(stageInfo->entryBlock);
 
@@ -160,7 +160,7 @@ void DSWP::loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageIn
   }
 }
 
-void DSWP::storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LDI, IRBuilder<> builder, Parallelization &par) {
+void Parallelizer::storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LDI, IRBuilder<> builder, Parallelization &par) {
 
   /*
    * Extract the outgoing dependents for each stage

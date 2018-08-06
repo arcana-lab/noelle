@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-void DSWP::remapControlFlow (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+void Parallelizer::remapControlFlow (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
 {
   auto &context = LDI->function->getContext();
   auto stageF = stageInfo->sccStage;
@@ -35,7 +35,7 @@ void DSWP::remapControlFlow (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageI
   }
 }
 
-void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI)
+void Parallelizer::trimCFGOfStages (DSWPLoopDependenceInfo *LDI)
 {
   std::set<BasicBlock *> iterEndBBs;
   iterEndBBs.insert(LDI->header);
@@ -88,7 +88,7 @@ void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI)
   }
 }
 
-void DSWP::remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
+void Parallelizer::remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
 {
   auto &iCloneMap = stageInfo->iCloneMap;
   auto &envMap = LDI->environment->producerIndexMap;
@@ -136,7 +136,7 @@ void DSWP::remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_p
   }
 }
 
-void DSWP::createInstAndBBForSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo) {
+void Parallelizer::createInstAndBBForSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo) {
   auto &context = LDI->function->getParent()->getContext();
 
   /*

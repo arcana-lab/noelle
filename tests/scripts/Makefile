@@ -1,4 +1,4 @@
-PARALLELIZATION=DSWP
+PARALLELIZATION=Parallelizer
 PARALLELIZATION_OPTIONS=-dswp-verbose=3 -dswp-force
 PDGPRINTER=PDGPrinter
 CC=clang++
