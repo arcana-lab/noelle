@@ -2,12 +2,12 @@
 
 using namespace llvm;
 
-DSWP::DSWP(Module &module)
+DSWP::DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Verbosity v)
   :
   module{module},
-  forceParallelization{false},
-  forceNoSCCPartition{false},
-  verbose{Verbosity::Disabled}
+  forceParallelization{forceParallelization},
+  enableMergingSCC{enableSCCMerging},
+  verbose{v}
   {
 
   /*

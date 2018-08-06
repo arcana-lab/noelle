@@ -47,7 +47,7 @@ namespace llvm {
       /*
        * Methods
        */
-      DSWP (Module &module);
+      DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Verbosity v);
       bool apply (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
 
     private:
@@ -57,8 +57,7 @@ namespace llvm {
        */
       Module& module;
       bool forceParallelization;
-      bool forceNoSCCPartition;
-      enum class Verbosity { Disabled, Minimal, Pipeline, Maximal };
+      bool enableMergingSCC;
       Verbosity verbose;
 
       /*

@@ -22,6 +22,8 @@ Parallelizer::Parallelizer()
 
 bool Parallelizer::doInitialization (Module &M) {
   this->verbose = static_cast<Verbosity>(Verbose.getValue());
+  this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
+  this->forceNoSCCPartition |= (ForceNoSCCPartition.getNumOccurrences() > 0);
 
   return false; 
 }
@@ -33,7 +35,7 @@ bool Parallelizer::runOnModule (Module &M) {
    */
   auto& parallelizationFramework = getAnalysis<Parallelization>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
-  DSWP dswp{M};
+  DSWP dswp{M, this->forceParallelization, !this->forceNoSCCPartition, this->verbose};
 
   /*
    * Collect some information.
