@@ -1,9 +1,9 @@
-all: printer analysis dswp parallelization heuristics
+all: printer analysis parallelizer parallelization_utilities heuristics
 
 printer:
 	cd $@ ; ../scripts/run_me.sh
 
-parallelization:
+parallelization_utilities:
 	cd $@ ; ../scripts/run_me.sh
 
 analysis:
@@ -12,7 +12,7 @@ analysis:
 heuristics:
 	cd $@ ; ../scripts/run_me.sh
 
-dswp:
+parallelizer:
 	cd $@ ; ../scripts/run_me.sh
 
 uninstall:
@@ -21,4 +21,4 @@ uninstall:
 clean:
 	rm -rf */build */*.json ; find ./ -name .ycm_extra_conf.py -delete
 
-.PHONY: clean analysis printer dswp download parallelization heuristics
+.PHONY: clean analysis printer parallelizer download parallelization_utilities heuristics
