@@ -99,8 +99,6 @@ namespace llvm {
 		std::vector<BasicBlock *> loopExitBlocks;
 		BasicBlock *prologueBlock, *epilogueBlock;
 		unordered_map<int, BasicBlock *> controlToSwitchBlock;
-		unordered_map<BasicBlock *, BasicBlock *> switchToSCCEntry;
-		unordered_map<BasicBlock *, std::set<BasicBlock *>> switchToIntermediates;
 
 		/*
 		 * Maps original loop instructions to clones 

@@ -7,6 +7,7 @@
 
 #include "LoopDependenceInfo.hpp"
 #include "PipelineInfo.hpp"
+#include "ChunkInfo.hpp"
 #include "SCCDAGPartition.hpp"
 
 using namespace std;
@@ -24,13 +25,22 @@ namespace llvm {
       std::set<SCC *> singleInstrNodes;
 
       /*
+       * Stores parallelization-wide data
+       */
+      std::unique_ptr<EnvInfo> environment;
+
+      /*
+       * Stores DOALL execution
+       */
+      std::unique_ptr<ChunkInfo> doallChunk;
+
+      /*
        * Stores new pipeline execution
        */
       BasicBlock *pipelineBB;
       unordered_map<SCC *, StageInfo *> sccToStage;
       std::vector<std::unique_ptr<StageInfo>> stages;
       std::vector<std::unique_ptr<QueueInfo>> queues;
-      std::unique_ptr<EnvInfo> environment;
 
       /*
        * Types for arrays storing dependencies and stages
