@@ -20,6 +20,7 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
     bool isProducer = false;
     for (auto edge : externalNode->getOutgoingEdges())
     {
+      // check that edge points to internal value
       if (edge->isMemoryDependence() || edge->isControlDependence()) continue;
       isProducer = true;
       LDI->environment->prodConsumers[externalValue].insert(edge->getIncomingT());
@@ -57,7 +58,6 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   auto chHeader = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
   auto chLatch = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
   IRBuilder<> entryB(entryBlock);
-  IRBuilder<> exitB(exitBlock);
 
   /*
    * Collect arguments of chunker function
@@ -78,11 +78,12 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
    */
   LDI->envArrayType = ArrayType::get(ptrType_int8, LDI->environment->envSize());
   auto envAlloca = entryB.CreateBitCast(envVal, PointerType::getUnqual(LDI->envArrayType));
+  auto zeroIndex = cast<Value>(ConstantInt::get(par.int64, 0));
   int envIndex = 0;
   for (auto envProd : LDI->environment->envProducers)
   {
     auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, envIndex++));
-    auto envPtr = entryB.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
+    auto envPtr = entryB.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ zeroIndex, envIndexValue }));
     auto envBitcastPtr = entryB.CreateBitCast(entryB.CreateLoad(envPtr), PointerType::getUnqual(envProd->getType()));
     instrArgMap[cast<Value>(envProd)] = cast<Value>(entryB.CreateLoad(envBitcastPtr));
   }
@@ -92,14 +93,20 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
    */
   unordered_map<BasicBlock *, BasicBlock *> innerBBMap;
   for (auto originBB : LDI->liSummary.topLoop->bbs) {
-    innerBBMap[originBB] = BasicBlock::Create(cxt, "", chunkF);
+    auto cloneBB = BasicBlock::Create(cxt, "", chunkF);
+    IRBuilder<> builder(cloneBB);
+    innerBBMap[originBB] = cloneBB;
     for (auto &I : *originBB) {
-      instrArgMap[&I] = (Value *)(I.clone());
+      auto cloneI = builder.Insert(I.clone());
+      instrArgMap[&I] = (Value *)cloneI;
     }
   }
 
   // Save reference to cloned inner loop header
   auto innerHeader = innerBBMap[LDI->header];
+
+  // Map inner loop preheader to outer loop header
+  innerBBMap[LDI->preHeader] = chHeader;
 
   // Map single exit block of inner loop to outer loop latch
   innerBBMap[LDI->loopExitBlocks[0]] = chLatch;
@@ -109,17 +116,21 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
    */
   for (auto &B : LDI->liSummary.topLoop->bbs) {
     for (auto &I : *B) {
-      if (auto terminator = dyn_cast<TerminatorInst>(&I)) {
+      auto cloneI = cast<Instruction>(instrArgMap[(Value *)&I]);
+      if (auto terminator = dyn_cast<TerminatorInst>(cloneI)) {
         for (int i = 0; i < terminator->getNumSuccessors(); ++i)
         {
           auto succBB = terminator->getSuccessor(i);
           assert(innerBBMap.find(succBB) != innerBBMap.end());
           terminator->setSuccessor(i, innerBBMap[succBB]);
         }
-        continue;
+      } else if (auto phi = dyn_cast<PHINode>(cloneI)) {
+        for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
+          phi->setIncomingBlock(i, innerBBMap[phi->getIncomingBlock(i)]);
+        }
       }
 
-      for (auto &op : I.operands()) {
+      for (auto &op : cloneI->operands()) {
         auto opV = op.get();
         
         if (isa<Instruction>(opV) || isa<Argument>(opV)) {
@@ -166,12 +177,12 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   int stepSizeArgIndex = -1;
   ConstantInt *originStepSize = nullptr;
   for (auto user : originIV->users()) {
-    // user->print(errs() << "ORIGIN IV USER: "); errs() << "\n";
+    user->print(errs() << "ORIGIN IV USER: "); errs() << "\n";
     auto scev = SE.getSCEV((Value *)user);
     switch (scev->getSCEVType()) {
     case scAddExpr:
     case scAddRecExpr:
-      // errs() << "Add inst\n";
+      errs() << "Add inst\n";
       stepIV = user;
       Value *lhs = user->getOperand(0);
       Value *rhs = user->getOperand(1);
@@ -220,7 +231,7 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   chIV->addIncoming(chIVInc, chLatch);
   assert(isa<CmpInst>(originCond));
   auto originCmp = cast<CmpInst>(originCond);
-  auto condIV = CmpInst::Create(originCmp->getOpcode(), originCmp->getPredicate(), chIV, maxIV);
+  auto condIV = CmpInst::Create(originCmp->getOpcode(), originCmp->getPredicate(), chIV, instrArgMap[maxIV]);
   chHeaderB.Insert(condIV);
   chHeaderB.CreateCondBr(condIV, innerHeader, exitBlock);
 
@@ -245,7 +256,11 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   // ASSUMPTION: Monotonically increasing IV
   auto innerOuterIVSum = headerBuilder.CreateAdd(innerIV, chIV);
   auto innerCondIV = (User *)instrArgMap[originCond];
+  // Ensure the add comes before its use in the comparison
   innerCondIV->setOperand(originCondPHIIndex, innerOuterIVSum);
+  auto ivSumInst = cast<Instruction>(innerOuterIVSum);
+  ivSumInst->removeFromParent();
+  ivSumInst->insertBefore(cast<Instruction>(innerCondIV));
 
   auto chunkCondBB = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
   IRBuilder<> chunkCondBBBuilder(chunkCondBB);
@@ -254,12 +269,17 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   auto innerBr = cast<BranchInst>(innerHeader->getTerminator());
   assert(innerBr->getNumSuccessors() == 2);
   auto innerBodySuccIndex = -1;
-  if (innerBr->getSuccessor(0) == LDI->loopExitBlocks[0]) innerBodySuccIndex = 1;
-  if (innerBr->getSuccessor(1) == LDI->loopExitBlocks[0]) innerBodySuccIndex = 0;
+  if (innerBr->getSuccessor(0) == chLatch) innerBodySuccIndex = 1;
+  if (innerBr->getSuccessor(1) == chLatch) innerBodySuccIndex = 0;
   auto innerBodyBB = innerBr->getSuccessor(innerBodySuccIndex);
   innerBr->setSuccessor(innerBodySuccIndex, chunkCondBB);
 
   chunkCondBBBuilder.CreateCondBr(chunkCond, innerBodyBB, chLatch);
+
+  IRBuilder<> exitB(exitBlock);
+  exitB.CreateRetVoid();
+
+  chunkF->print(errs() << "CHUNKING FUNCTION:\n"); errs() << "\n";
 
   return false;
 }
