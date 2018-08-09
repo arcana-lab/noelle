@@ -115,6 +115,32 @@ extern "C" {
     return stage(env, queues);
   }
 
+  void doallDispatcher (void (*chunker)(void *, int64_t, int64_t, int64_t), void *env, int64_t numCores, int64_t chunkSize){
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Starting dispatcher: num cores " << numCores << ", chunk size: " << chunkSize << std::endl;
+    #endif
+
+    std::vector<MARC::TaskFuture<void>> localFutures;
+    for (auto i = 0; i < numCores; ++i) {
+      localFutures.push_back(pool.submit(chunker, env, i, numCores, chunkSize));
+      #ifdef RUNTIME_PRINT
+      std::cerr << "Submitted chunker on core " << i << std::endl;
+      #endif
+    }
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Submitted pool" << std::endl;
+    #endif
+
+    for (auto& future : localFutures){
+      future.get();
+    }
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Got all futures" << std::endl;
+    #endif
+
+    return ;
+  }
+
   void stageDispatcher (void *env, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
     #ifdef RUNTIME_PRINT
     std::cerr << "Starting dispatcher: num stages " << numberOfStages << ", num queues: " << numberOfQueues << std::endl;
