@@ -10,6 +10,12 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
   }
 
   /*
+   * Fetch the function that dispatch the parallelized loop.
+   */
+  auto M = LDI->function->getParent();
+  this->doallDispatcher = M->getFunction("doallDispatcher");
+
+  /*
    * Merge SCCs where separation is unnecessary.
    */
   mergeTrivialNodesInSCCDAG(LDI);

@@ -73,7 +73,6 @@ namespace llvm {
       bool parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, Heuristics *h) ;
       std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
-      bool applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
       void mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
       void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI);
       void mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI);
@@ -83,6 +82,12 @@ namespace llvm {
       void collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
       void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);
       bool hasPostLoopEnvVars (DSWPLoopDependenceInfo *LDI);
+
+      bool applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
+      void collectDOALLPreloopEnvInfo (DSWPLoopDependenceInfo *LDI);
+      void createChunkingFuncAndArgTypes (DSWPLoopDependenceInfo *LDI, Parallelization &par);
+      void addChunkFunctionExecutionAsideOriginalLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h);
+      Value *createEnvArray (DSWPLoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
 
       /*
        * Debug utilities

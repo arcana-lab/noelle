@@ -244,7 +244,103 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   IRBuilder<> exitB(exitBlock);
   exitB.CreateRetVoid();
 
-  chunkF->print(errs() << "CHUNKING FUNCTION:\n"); errs() << "\n";
+  // chunkF->print(errs() << "CHUNKING FUNCTION:\n"); errs() << "\n";
 
-  return false;
+  addChunkFunctionExecutionAsideOriginalLoop(LDI, par, h);
+
+  LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
+  LDI->parBB->print(errs() << "Finalized doall BB\n"); errs() << "\n";
+
+  return true;
+}
+
+void Parallelizer::collectDOALLPreloopEnvInfo (DSWPLoopDependenceInfo *LDI) {
+
+  /*
+   * Collect environment information
+   * For now, use environment variable on LDI structure
+   */
+  LDI->environment = std::make_unique<EnvInfo>();
+  for (auto nodeI : LDI->loopDG->externalNodePairs()) {
+    auto externalNode = nodeI.second;
+    auto externalValue = externalNode->getT();
+    auto envIndex = LDI->environment->envProducers.size();
+
+    bool isProducer = false;
+    for (auto edge : externalNode->getOutgoingEdges())
+    {
+      // check that edge points to internal value
+      if (edge->isMemoryDependence() || edge->isControlDependence()) continue;
+      isProducer = true;
+      LDI->environment->prodConsumers[externalValue].insert(edge->getIncomingT());
+    }
+    if (isProducer) LDI->environment->addPreLoopProducer(externalValue);
+  }
+
+  // for (auto pC : LDI->environment->prodConsumers) {
+  //   pC.first->print(errs() << "Producer: "); errs() << "\n";
+  //   for (auto C : pC.second) {
+  //     C->print(errs() << "\tConsumer: "); errs() << "\n";
+  //   }
+  // }
+}
+
+void Parallelizer::createChunkingFuncAndArgTypes (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+
+  /*
+   * Function: void chunker(void *env, int64 coreInd, int64 numCores, int64 chunkSize)
+   */
+  auto M = LDI->function->getParent();
+  auto &cxt = M->getContext();
+  LDI->doallChunk = std::make_unique<ChunkInfo>();
+
+  auto ptrType_int8 = PointerType::getUnqual(par.int8);
+  auto funcArgTypes = ArrayRef<Type*>({ ptrType_int8, par.int64, par.int64, par.int64 });
+  auto chunkerFuncType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
+  LDI->doallChunk->chunker = cast<Function>(M->getOrInsertFunction("", chunkerFuncType));
+
+  LDI->envArrayType = ArrayType::get(ptrType_int8, LDI->environment->envProducers.size());
+}
+
+void Parallelizer::addChunkFunctionExecutionAsideOriginalLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
+  auto firstBB = &*LDI->function->begin();
+  IRBuilder<> entryBuilder(firstBB->getTerminator());
+  LDI->envArray = entryBuilder.CreateAlloca(LDI->envArrayType);
+
+  LDI->parBB = BasicBlock::Create(LDI->function->getContext(), "", LDI->function);
+  IRBuilder<> doallBuilder(LDI->parBB);
+
+  auto envPtr = createEnvArray(LDI, par, entryBuilder, doallBuilder);
+  // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic
+  auto numCores = ConstantInt::get(par.int64, 2);
+  auto chunkSize = ConstantInt::get(par.int64, 16);
+
+  doallBuilder.CreateCall(doallDispatcher, ArrayRef<Value *>({ (Value *)(LDI->doallChunk->chunker), envPtr, numCores, chunkSize }));
+}
+
+// TODO(angelo): Refactor this near-copy of DSWP createEnvArrayFromStages helper
+Value *Parallelizer::createEnvArray (DSWPLoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder) {
+
+  /*
+   * Create empty environment array for producers, exit block tracking
+   */
+  std::vector<Value*> envPtrs;
+  for (int i = 0; i < LDI->environment->envProducers.size(); ++i) {
+    Type *envType = LDI->environment->typeOfEnv(i);
+    auto varAlloca = entryBuilder.CreateAlloca(envType);
+    envPtrs.push_back(varAlloca);
+    auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
+    auto envPtr = entryBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ ConstantInt::get(par.int64, 0), envIndex }));
+    auto depCast = entryBuilder.CreateBitCast(envPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
+    entryBuilder.CreateStore(varAlloca, depCast);
+  }
+
+  /*
+   * Insert pre-loop producers into the environment array
+   */
+  for (int envIndex : LDI->environment->preLoopEnv) {
+    parBuilder.CreateStore(LDI->environment->envProducers[envIndex], envPtrs[envIndex]);
+  }
+  
+  return cast<Value>(parBuilder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
 }
