@@ -28,6 +28,7 @@ namespace llvm {
        * Stores parallelization-wide data
        */
       std::unique_ptr<EnvInfo> environment;
+      BasicBlock *parBB;
 
       /*
        * Stores DOALL execution
@@ -37,7 +38,6 @@ namespace llvm {
       /*
        * Stores new pipeline execution
        */
-      BasicBlock *pipelineBB;
       unordered_map<SCC *, StageInfo *> sccToStage;
       std::vector<std::unique_ptr<StageInfo>> stages;
       std::vector<std::unique_ptr<QueueInfo>> queues;

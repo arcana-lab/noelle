@@ -47,6 +47,7 @@ namespace llvm {
       /*
        * Object fields
        */
+      Function *doallDispatcher;
       Function *printReachedI, *printPushedP, *printPulledP;
 
       /*

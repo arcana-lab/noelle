@@ -161,10 +161,10 @@ void DSWP::storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LD
 
     for (auto consumer : LDI->environment->prodConsumers[prod]) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
-        depPHI->addIncoming(envVar, LDI->pipelineBB);
+        depPHI->addIncoming(envVar, LDI->parBB);
         continue;
       }
-      LDI->pipelineBB->eraseFromParent();
+      LDI->parBB->eraseFromParent();
       prod->print(errs() << "Producer of environment variable:\t"); errs() << "\n";
       errs() << "Loop not in LCSSA!\n";
       abort();

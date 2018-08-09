@@ -7,52 +7,17 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   //TODO
   errs() << "DSWP:   IS DO ALL LOOP: -------------|| || || || || ||---------------\n";
 
-  /*
-   * Collect environment information
-   * For now, use environment variable on LDI structure
-   */
-  LDI->environment = std::make_unique<EnvInfo>();
-  for (auto nodeI : LDI->loopDG->externalNodePairs()) {
-    auto externalNode = nodeI.second;
-    auto externalValue = externalNode->getT();
-    auto envIndex = LDI->environment->envProducers.size();
+  collectDOALLPreloopEnvInfo(LDI);
 
-    bool isProducer = false;
-    for (auto edge : externalNode->getOutgoingEdges())
-    {
-      // check that edge points to internal value
-      if (edge->isMemoryDependence() || edge->isControlDependence()) continue;
-      isProducer = true;
-      LDI->environment->prodConsumers[externalValue].insert(edge->getIncomingT());
-    }
-    if (isProducer) LDI->environment->addPreLoopProducer(externalValue);
-  }
+  createChunkingFuncAndArgTypes(LDI, par);
 
-  for (auto pC : LDI->environment->prodConsumers) {
-    pC.first->print(errs() << "Producer: "); errs() << "\n";
-    for (auto C : pC.second) {
-      C->print(errs() << "\tConsumer: "); errs() << "\n";
-    }
-  }
+  // TODO(angelo): Refactor rest of DOALL chunking function creation
 
   /*
-   * Function: void chunker(void *env, int64 coreInd, int64 numCores, int64 chunkSize)
-   */
-  auto M = LDI->function->getParent();
-  auto &cxt = M->getContext();
-  LDI->doallChunk = std::make_unique<ChunkInfo>();
-
-  auto ptrType_int8 = PointerType::getUnqual(par.int8);
-  auto funcArgTypes = ArrayRef<Type*>({ ptrType_int8, par.int64, par.int64, par.int64 });
-  auto chunkerFuncType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
-
-  /*
-   * Create chunker function
    * Create entry and exit blocks
    * Create outer loop header and latch
    */
-  auto chunkF = cast<Function>(M->getOrInsertFunction("", chunkerFuncType));
-  LDI->doallChunk->chunker = chunkF;
+  auto &cxt = LDI->function->getContext();
   auto entryBlock = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
   auto exitBlock = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
   auto chHeader = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
@@ -62,6 +27,7 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   /*
    * Collect arguments of chunker function
    */
+  auto chunkF = LDI->doallChunk->chunker;
   auto argIter = chunkF->arg_begin();
   auto envVal = (Value *) &*(argIter++);
   auto coreVal = (Value *) &*(argIter++); 
@@ -76,7 +42,6 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   /*
    * Load environment variables in chunker entry block
    */
-  LDI->envArrayType = ArrayType::get(ptrType_int8, LDI->environment->envSize());
   auto envAlloca = entryB.CreateBitCast(envVal, PointerType::getUnqual(LDI->envArrayType));
   auto zeroIndex = cast<Value>(ConstantInt::get(par.int64, 0));
   int envIndex = 0;
@@ -222,7 +187,7 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   entryB.CreateBr(chHeader);
 
   auto chIV = chHeaderB.CreatePHI(par.int64, /*numReservedValues=*/2);
-  chIV->addIncoming(ConstantInt::get(par.int64, 0), entryBlock);
+  chIV->addIncoming(chIVStart, entryBlock);
 
   // ASSUMPTION: Monotonically increasing IV
   auto chIVInc = chLatchB.CreateAdd(chIV, chIVStepSize);

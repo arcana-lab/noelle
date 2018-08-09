@@ -136,8 +136,8 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
    * Create a basic block in the original function where the parallelized loop exists.
    * This basic block will include code needed to execute the parallelized loop.
    */
-  LDI->pipelineBB = BasicBlock::Create(M->getContext(), "", LDI->function);
-  IRBuilder<> builder(LDI->pipelineBB);
+  LDI->parBB = BasicBlock::Create(M->getContext(), "", LDI->function);
+  IRBuilder<> builder(LDI->parBB);
   auto envPtr = createEnvArrayFromStages(LDI, funcBuilder, builder, par);
   auto stagesPtr = createStagesArrayFromStages(LDI, funcBuilder, par);
 
