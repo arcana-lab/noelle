@@ -218,14 +218,31 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   auto innerStepIV = (User *)instrArgMap[(Value *)stepIV];
   innerStepIV->setOperand(stepSizeArgIndex, ConstantInt::get(stepIV->getType(), 1));
 
+  /*
+   * Create new, composite induction variable for inner loop
+   */
   IRBuilder<> headerBuilder(innerHeader);
   // ASSUMPTION: Monotonically increasing IV
   auto innerOuterIVSum = headerBuilder.CreateAdd(innerIV, chIV);
-  for (auto &use : innerIV->uses()) {
-    auto userV = (Value *)use.getUser();
-    if (userV == innerStepIV || ((Instruction *)userV)->getParent() == innerHeader) continue;
-    use.set(innerOuterIVSum);
+  // for (auto &use : innerIV->uses()) {
+  //   auto userV = (Value *)use.getUser();
+  //   userV->print(errs() << "USER V: "); errs() << "\n";
+  //   if (userV == innerStepIV || ((Instruction *)userV)->getParent() == innerHeader) continue;
+  //   errs() << "--- WAS SET\n";
+  //   use.set(innerOuterIVSum);
+  // }
+  for (auto &use : originIV->uses()) {
+    auto cloneV = instrArgMap[(Value *)use.getUser()];
+    if (cloneV == innerStepIV || ((Instruction *)cloneV)->getParent() == innerHeader) continue;
+    ((User *)cloneV)->replaceUsesOfWith(innerIV, innerOuterIVSum);
   }
+  // innerIV->print(errs() << "INNER V: "); errs() << "\n";
+  // for (auto user : innerIV->users()) {
+  //   user->print(errs() << "INNER USER V: "); errs() << "\n";
+  //   if (user == innerStepIV || ((Instruction *)user)->getParent() == innerHeader) continue;
+  //   errs() << "--- WAS SET\n";
+  //   user->replaceUsesOfWith(innerIV, innerOuterIVSum);
+  // }
 
   /*
    * Replace inner loop original condition with less than total loop size condition
