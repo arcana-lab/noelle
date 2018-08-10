@@ -4,9 +4,7 @@
 
 - Reconsider all abstractions (e.g., do we need both SCC and SCCInfo? do we need both SCCDAG and SCCDAGInfo?)
 
-- Rename parallelization into parallelization_utilities
-
-- Split the dswp pass into four passes: parallelizer (the main one), dswp, doall, ps-dswp
+- Add the doall and ps-dswp passes
 
 - Extend the autotuner to decide #threads per loop
 
