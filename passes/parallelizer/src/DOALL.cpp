@@ -196,7 +196,12 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   chIV->addIncoming(chIVInc, chLatch);
   assert(isa<CmpInst>(originCond));
   auto originCmp = cast<CmpInst>(originCond);
-  auto condIV = CmpInst::Create(originCmp->getOpcode(), originCmp->getPredicate(), chIV, instrArgMap[maxIV]);
+  CmpInst *condIV;
+  if (originCondPHIIndex == 0) {
+    condIV = CmpInst::Create(originCmp->getOpcode(), originCmp->getPredicate(), chIV, instrArgMap[maxIV]);
+  } else {
+    condIV = CmpInst::Create(originCmp->getOpcode(), originCmp->getPredicate(), instrArgMap[maxIV], chIV);
+  }
   chHeaderB.Insert(condIV);
   chHeaderB.CreateCondBr(condIV, innerHeader, exitBlock);
 
@@ -213,13 +218,19 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   auto innerStepIV = (User *)instrArgMap[(Value *)stepIV];
   innerStepIV->setOperand(stepSizeArgIndex, ConstantInt::get(stepIV->getType(), 1));
 
+  IRBuilder<> headerBuilder(innerHeader);
+  // ASSUMPTION: Monotonically increasing IV
+  auto innerOuterIVSum = headerBuilder.CreateAdd(innerIV, chIV);
+  for (auto &use : innerIV->uses()) {
+    auto userV = (Value *)use.getUser();
+    if (userV == innerStepIV || ((Instruction *)userV)->getParent() == innerHeader) continue;
+    use.set(innerOuterIVSum);
+  }
+
   /*
    * Replace inner loop original condition with less than total loop size condition
    * Add a cond to check for less than chunk size
    */
-  IRBuilder<> headerBuilder(innerHeader);
-  // ASSUMPTION: Monotonically increasing IV
-  auto innerOuterIVSum = headerBuilder.CreateAdd(innerIV, chIV);
   auto innerCondIV = (User *)instrArgMap[originCond];
   // Ensure the add comes before its use in the comparison
   innerCondIV->setOperand(originCondPHIIndex, innerOuterIVSum);
@@ -248,8 +259,9 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
 
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par, h);
 
-  LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
-  LDI->parBB->print(errs() << "Finalized doall BB\n"); errs() << "\n";
+  LDI->doallChunk->chunker->print(errs() << "Finalized chunker:\n"); errs() << "\n";
+  // LDI->parBB->print(errs() << "Finalized doall BB\n"); errs() << "\n";
+  // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
 
   return true;
 }
