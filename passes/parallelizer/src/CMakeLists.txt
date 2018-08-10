@@ -1,7 +1,7 @@
 # Sources
 set(Srcs 
   SCCAnalysis.cpp
-  DSWPPass.cpp
+  Pass.cpp
   Parallelizer.cpp
   DOALL.cpp
   Environment.cpp

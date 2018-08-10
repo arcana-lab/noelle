@@ -38,7 +38,7 @@ bool Parallelizer::runOnModule (Module &M) {
   DSWP dswp{M, this->forceParallelization, !this->forceNoSCCPartition, this->verbose};
 
   /*
-   * Collect some information.
+   * Collect information about C++ code we link parallelized loops with.
    */
   errs() << "Parallelizer: Analyzing the module " << M.getName() << "\n";
   if (!collectThreadPoolHelperFunctionsAndTypes(M, parallelizationFramework)) {
