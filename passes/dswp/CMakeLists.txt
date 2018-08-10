@@ -32,4 +32,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/DSWP.hpp include/DSWPLoopDependenceInfo.hpp DESTINATION include)
+install(PROGRAMS include/DSWP.hpp include/DSWPLoopDependenceInfo.hpp include/PipelineInfo.hpp DESTINATION include)
