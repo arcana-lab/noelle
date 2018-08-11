@@ -5,7 +5,7 @@ using namespace llvm;
 
 bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
   //TODO
-  errs() << "DSWP:   IS DO ALL LOOP: -------------|| || || || || ||---------------\n";
+  errs() << "Parallelizer:   IS DO ALL LOOP: -------------|| || || || || ||---------------\n";
 
   collectDOALLPreloopEnvInfo(LDI);
 

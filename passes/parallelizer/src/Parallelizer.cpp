@@ -4,9 +4,9 @@ using namespace llvm;
   
 bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, Heuristics *h){
   if (this->verbose > Verbosity::Disabled) {
-    errs() << "DSWP: Start\n";
-    errs() << "DSWP:  Function \"" << LDI->function->getName() << "\"\n";
-    errs() << "DSWP:  Try to parallelize the loop \"" << *LDI->header->getFirstNonPHI() << "\"\n";
+    errs() << "Parallelizer: Start\n";
+    errs() << "Parallelizer:  Function \"" << LDI->function->getName() << "\"\n";
+    errs() << "Parallelizer:  Try to parallelize the loop \"" << *LDI->header->getFirstNonPHI() << "\"\n";
   }
 
   /*
@@ -40,9 +40,9 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
   }
 
   // DEBUG: Printouts of DOALL requirements
-  // errs() << "DSWP:   : Loop Exit Blocks: " << LDI->loopExitBlocks.size() << "\n";
-  // errs() << "DSWP:   : Has Post Env: " << this->hasPostLoopEnvVars(LDI) << "\n";
-  // errs() << "DSWP:   : # Loop Carried Data Dep SCC: " << nonDOALLSCCs.size() << "\n"; 
+  // errs() << "Parallelizer:   : Loop Exit Blocks: " << LDI->loopExitBlocks.size() << "\n";
+  // errs() << "Parallelizer:   : Has Post Env: " << this->hasPostLoopEnvVars(LDI) << "\n";
+  // errs() << "Parallelizer:   : # Loop Carried Data Dep SCC: " << nonDOALLSCCs.size() << "\n"; 
 
   auto codeModified = false;
   if (isDOALL){
@@ -73,7 +73,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
    * Link the parallelized loop within the original function that includes the sequential loop.
    */
   if (this->verbose > Verbosity::Disabled) {
-    errs() << "DSWP:  Link the parallelize loop\n";
+    errs() << "Parallelizer:  Link the parallelize loop\n";
   }
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
   par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->preHeader, LDI->parBB, LDI->envArray, exitIndex, LDI->loopExitBlocks);
@@ -85,7 +85,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
    * Return
    */
   if (this->verbose > Verbosity::Disabled) {
-    errs() << "DSWP: Exit\n";
+    errs() << "Parallelizer: Exit\n";
   }
   return true;
 }

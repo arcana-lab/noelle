@@ -8,7 +8,7 @@ void Parallelizer::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
    * Print the current SCCDAG.
    */
   if (this->verbose >= Verbosity::Maximal) {
-    errs() << "DSWP:  Before merging SCCs\n";
+    errs() << "Parallelizer:  Before merging SCCs\n";
     printSCCs(LDI->loopSCCDAG);
   }
 
@@ -22,7 +22,7 @@ void Parallelizer::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
    * Print the current SCCDAG.
    */
   if (this->verbose >= Verbosity::Maximal) {
-    errs() << "DSWP:  After merging SCCs\n";
+    errs() << "Parallelizer:  After merging SCCs\n";
     printSCCs(LDI->loopSCCDAG);
   }
 

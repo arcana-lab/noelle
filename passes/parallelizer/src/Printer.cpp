@@ -19,14 +19,14 @@ void llvm::Parallelizer::printSCCs (SCCDAG *sccSubgraph){
   /*
    * Print the SCCs.
    */
-  errs() << "DSWP:  Print SCCDAG\n";
+  errs() << "Parallelizer:  Print SCCDAG\n";
   for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
 
     /*
      * Fetch and print the current SCC.
      */
     auto scc = sccI->first;
-    scc->print(errs(), "DSWP:   ");
+    scc->print(errs(), "Parallelizer:   ");
   }
 
   return ;
@@ -34,7 +34,7 @@ void llvm::Parallelizer::printSCCs (SCCDAG *sccSubgraph){
 
 void llvm::Parallelizer::printLoop (Loop *loop)
 {
-  errs() << "Applying DSWP on loop\n";
+  errs() << "Parallelizing the following loop\n" ;
   auto header = loop->getHeader();
   errs() << "Number of bbs: " << std::distance(loop->block_begin(), loop->block_end()) << "\n";
   for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
