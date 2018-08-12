@@ -2,15 +2,28 @@
 #include <stdlib.h>
 #include <math.h>
 
+long long int alterValue (long long int iters) {
+    long long int x = 0;
+    x += iters;
+    x *= 1.2;
+    x -= iters;
+    return x;
+}
+
 long long int computeSum (long long int *a, long long int iters){
   long long int s =0;
 
-  for (auto i=0; i < iters; ++i){
+  for (auto i=0; i < 10; ++i){
+    // a[i] += alterValue(iters);
     long long int x = 0;
     x += iters;
     x *= i;
     x -= iters;
     a[i] += x;
+  }
+
+  for (auto i=0; i < iters; ++i) {
+    s += a[i];
   }
 
   return s;
