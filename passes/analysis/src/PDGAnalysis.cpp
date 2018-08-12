@@ -42,7 +42,7 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   /*
    * TODO: To use, parallelizer must handle synchronizing memory dependencies across partitions 
    */
-  // removeEdgesFromApparentIntraIterationDependencies(M);
+  removeEdgesFromApparentIntraIterationDependencies(M);
 
   return false;
 }
@@ -350,25 +350,26 @@ bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep) {
     auto scev = SE.getSCEV(indexV);
     if (scev->getSCEVType() != scAddRecExpr) return false;
 
-    auto loop = LI.getLoopFor(cast<Instruction>(indexV)->getParent());
-    for (auto &op : loop->getHeader()->getTerminator()->operands()) {
-      if (auto cmp = dyn_cast<ICmpInst>(op)) {
-        // cmp->print(errs() << "LOADSTORECHECKING:    Cmp inst: "); errs() << "\n";
-        auto lhs = cmp->getOperand(0);
-        auto rhs = cmp->getOperand(1);
-        if (!isa<ConstantInt>(lhs) && !isa<ConstantInt>(rhs)) return false;
-        auto lhsc = SE.getSCEV(lhs);
-        auto rhsc = SE.getSCEV(rhs);
-        
-        // auto pred = cmp->getPredicate();
-        // bool isKnown = SE.isKnownViaInduction(pred, lhs, rhs);
-        bool isKnown = lhsc->getSCEVType() == scAddRecExpr && rhsc->getSCEVType() == scConstant;
-        isKnown |= rhsc->getSCEVType() == scAddRecExpr && lhsc->getSCEVType() == scConstant;
-        if (!isKnown) return false;
-        break;
-      }
-    }
-
+    // Assumption? : All polynomial add recursive expressions are induction variables
+    // auto loop = LI.getLoopFor(cast<Instruction>(indexV)->getParent());
+    // for (auto &op : loop->getHeader()->getTerminator()->operands()) {
+    //   if (auto cmp = dyn_cast<ICmpInst>(op)) {
+    //     // cmp->print(errs() << "LOADSTORECHECKING:    Cmp inst: "); errs() << "\n";
+    //     auto lhs = cmp->getOperand(0);
+    //     auto rhs = cmp->getOperand(1);
+    //     if (!isa<ConstantInt>(lhs) && !isa<ConstantInt>(rhs)) return false;
+    //     auto lhsc = SE.getSCEV(lhs);
+    //     auto rhsc = SE.getSCEV(rhs);
+    //     
+    //     // auto pred = cmp->getPredicate();
+    //     // bool isKnown = SE.isKnownViaInduction(pred, lhs, rhs);
+    //     bool isKnown = lhsc->getSCEVType() == scAddRecExpr && rhsc->getSCEVType() == scConstant;
+    //     isKnown |= rhsc->getSCEVType() == scAddRecExpr && lhsc->getSCEVType() == scConstant;
+    //     if (!isKnown) return false;
+    //     break;
+    //   }
+    // }
   }
+
   return notAllConstantIndices;
 }
