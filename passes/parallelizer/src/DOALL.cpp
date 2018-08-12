@@ -3,6 +3,10 @@
 
 using namespace llvm;
 
+// TODO(angelo): replace with values passed into this library
+#define NUM_CORES 4
+#define CHUNK_SIZE 8
+
 bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
   //TODO
   errs() << "Parallelizer:   IS DO ALL LOOP: -------------|| || || || || ||---------------\n";
@@ -115,7 +119,8 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
    */
   auto originHeaderBr = LDI->header->getTerminator();
   assert(isa<BranchInst>(originHeaderBr));
-  auto originCond = cast<BranchInst>(originHeaderBr)->getCondition();
+  auto originHeaderBrInst = cast<BranchInst>(originHeaderBr);
+  auto originCond = originHeaderBrInst->getCondition();
   PHINode *originIV = nullptr;
   Value *maxIV = nullptr;
   int originCondPHIIndex, originCondMaxIndex;
@@ -193,17 +198,38 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   auto chIVInc = chLatchB.CreateAdd(chIV, chIVStepSize);
   chLatchB.CreateBr(chHeader);
 
+  Value *cloneMaxIV;
+  if (auto constMaxIV = dyn_cast<ConstantInt>(maxIV)) {
+    cloneMaxIV = ConstantInt::get(constMaxIV->getType(), constMaxIV->getValue());
+  } else {
+    cloneMaxIV = instrArgMap[maxIV];
+  }
+
   chIV->addIncoming(chIVInc, chLatch);
   assert(isa<CmpInst>(originCond));
   auto originCmp = cast<CmpInst>(originCond);
   CmpInst *condIV;
+  auto stricterMaxIVCondPredicate = originCmp->getPredicate();
   if (originCondPHIIndex == 0) {
-    condIV = CmpInst::Create(originCmp->getOpcode(), originCmp->getPredicate(), chIV, instrArgMap[maxIV]);
+    // HACK: Make the condition stronger so that chunks don't skip over the equality condition
+    if (stricterMaxIVCondPredicate == CmpInst::Predicate::ICMP_EQ) {
+      stricterMaxIVCondPredicate = CmpInst::Predicate::ICMP_UGE;
+    }
+    condIV = CmpInst::Create(originCmp->getOpcode(), stricterMaxIVCondPredicate, chIV, cloneMaxIV);
   } else {
-    condIV = CmpInst::Create(originCmp->getOpcode(), originCmp->getPredicate(), instrArgMap[maxIV], chIV);
+    // HACK: Make the condition stronger so that chunks don't skip over the equality condition
+    if (stricterMaxIVCondPredicate == CmpInst::Predicate::ICMP_EQ) {
+      stricterMaxIVCondPredicate = CmpInst::Predicate::ICMP_ULE;
+    }
+    condIV = CmpInst::Create(originCmp->getOpcode(), stricterMaxIVCondPredicate, cloneMaxIV, chIV);
   }
+
   chHeaderB.Insert(condIV);
-  chHeaderB.CreateCondBr(condIV, innerHeader, exitBlock);
+  if (originHeaderBrInst->getSuccessor(0) == LDI->loopExitBlocks[0]) {
+    chHeaderB.CreateCondBr(condIV, exitBlock, innerHeader);
+  } else {
+    chHeaderB.CreateCondBr(condIV, innerHeader, exitBlock);
+  }
 
   /*
    *** Alter inner loop to iterate single chunks:
@@ -251,13 +277,16 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   auto innerCondIV = (User *)instrArgMap[originCond];
   // Ensure the add comes before its use in the comparison
   innerCondIV->setOperand(originCondPHIIndex, innerOuterIVSum);
+  ((CmpInst *)innerCondIV)->setPredicate(stricterMaxIVCondPredicate);
+
   auto ivSumInst = cast<Instruction>(innerOuterIVSum);
   ivSumInst->removeFromParent();
   ivSumInst->insertBefore(cast<Instruction>(innerCondIV));
 
   auto chunkCondBB = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
   IRBuilder<> chunkCondBBBuilder(chunkCondBB);
-  auto chunkCond = chunkCondBBBuilder.CreateICmpULT(innerIV, chunkSizeVal);
+
+  Value *chunkCond = chunkCondBBBuilder.CreateICmpULT(innerIV, chunkSizeVal);
 
   auto innerBr = cast<BranchInst>(innerHeader->getTerminator());
   assert(innerBr->getNumSuccessors() == 2);
@@ -267,7 +296,11 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   auto innerBodyBB = innerBr->getSuccessor(innerBodySuccIndex);
   innerBr->setSuccessor(innerBodySuccIndex, chunkCondBB);
 
-  chunkCondBBBuilder.CreateCondBr(chunkCond, innerBodyBB, chLatch);
+  if (originHeaderBrInst->getSuccessor(0) == exitBlock) {
+    chunkCondBBBuilder.CreateCondBr(chunkCond, chLatch, innerBodyBB);
+  } else {
+    chunkCondBBBuilder.CreateCondBr(chunkCond, innerBodyBB, chLatch);
+  }
 
   IRBuilder<> exitB(exitBlock);
   exitB.CreateRetVoid();
@@ -341,8 +374,8 @@ void Parallelizer::addChunkFunctionExecutionAsideOriginalLoop (DSWPLoopDependenc
 
   auto envPtr = createEnvArray(LDI, par, entryBuilder, doallBuilder);
   // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic
-  auto numCores = ConstantInt::get(par.int64, 2);
-  auto chunkSize = ConstantInt::get(par.int64, 16);
+  auto numCores = ConstantInt::get(par.int64, NUM_CORES);
+  auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
 
   doallBuilder.CreateCall(doallDispatcher, ArrayRef<Value *>({ (Value *)(LDI->doallChunk->chunker), envPtr, numCores, chunkSize }));
 }
