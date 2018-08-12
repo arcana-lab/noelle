@@ -119,6 +119,130 @@ void SCCDAGPartition::manageAddedSubsetInfo (SCCDAGSubset *subset) {
     for (auto scc : subset->SCCs) this->fromSCCToSubset[scc] = subset;
 }
 
+/*
+ * Iterate through all subsets, merging them with those they have memory edges with
+ * Then check the SCCDAGPartition until no cycles that may have formed are found
+ */
+void SCCDAGPartition::mergeSubsetsRequiringMemSync () {
+  /*
+   * Track alive subsets to ignore merged ones still in the queue
+   */
+  std::set<SCCDAGSubset *> currentSubsets;
+  for (auto &subset : this->subsets) currentSubsets.insert(subset.get());
+
+  /*
+   * Start traversal from the root of the partition dag
+   */
+  std::queue<SCCDAGSubset *> subToCheck;
+  auto rootSubs = this->topLevelSubsets();
+  for (auto &sub : rootSubs) subToCheck.push(sub);
+
+  while (!subToCheck.empty()) {
+    auto subset = subToCheck.front();
+    subToCheck.pop();
+
+    if (currentSubsets.find(subset) == currentSubsets.end()) {
+      continue;
+    }
+
+    SCCDAGSubset *mergeSubset = nullptr;
+
+    /*
+     * Find the first subset to merge with; end search there
+     */
+    auto sccNodes = this->getSCCNodes(subset);
+    for (auto sccNode : sccNodes) {
+      for (auto edge : sccNode->getOutgoingEdges()) {
+        if (!edge->isMemoryDependence()) continue;
+        auto otherSubset = this->subsetOf(edge->getIncomingT());
+        if (otherSubset == subset) continue;
+        mergeSubset = otherSubset;
+        break;
+      }
+      if (mergeSubset) break;
+    }
+    
+    if (mergeSubset) {
+      currentSubsets.erase(subset);
+      currentSubsets.erase(mergeSubset);
+      auto mergedSub = this->mergeSubsets(subset, mergeSubset);
+      currentSubsets.insert(mergedSub);
+      subToCheck.push(mergedSub);
+    }
+  }
+
+  /*
+   * Remove any potential cycles created from merging
+   */
+  this->mergeSubsetsFormingCycles();
+}
+
+void SCCDAGPartition::mergeSubsetsFormingCycles () {
+  // From each root node, recursively traverse all edges tracking path
+  // When a cycle is encountered, return up the chain, have the top merge subsets in the cyclical path
+  // Do this until all top level nodes traversed all paths and found no cycles
+
+  /*
+   * Start traversal from the root of the partition dag
+   */
+  auto rootSubs = this->topLevelSubsets();
+  for (auto &sub : rootSubs) {
+    std::vector<SCCDAGSubset *> path = { sub };
+    this->traverseAndCheckToMerge(path);
+  }
+}
+
+SCCDAGSubset *SCCDAGPartition::traverseAndCheckToMerge (std::vector<SCCDAGSubset *> &path) {
+  auto depSubs = this->getDependents(path.back());
+  bool merged = true;
+  while (merged) {
+    merged = false;
+    for (auto sub : depSubs) {
+      auto subIter = std::find(path.begin(), path.end(), sub);
+
+      /*
+       * If dependent doesn't form a cycle in our path, recursively try merging
+       * Else, merge the whole cycle contained in our path and return
+       */
+      if (subIter == path.end()) {
+        std::vector<SCCDAGSubset *> nextPath(path.begin(), path.end());
+        nextPath.push_back(sub);
+        auto mergedSub = traverseAndCheckToMerge(nextPath);
+
+        /*
+         * Current subset was merged away, so return the newly merged subset
+         */
+        if (nextPath.size() <= path.size()) {
+          path.erase(path.begin() + nextPath.size(), path.end());
+          path[path.size() - 1] = mergedSub;
+          return mergedSub;
+        }
+
+        /*
+         * Dependent was merged; restart scan through dependents
+         */
+        if (mergedSub) {
+          merged = true;
+          break;
+        }
+      } else {
+        SCCDAGSubset *mergedSub = *(subIter++);
+        while (subIter != path.end()) {
+          auto mergableSub = *subIter;
+          mergedSub = this->mergeSubsets(mergedSub, mergableSub);
+          subIter++;
+        }
+        return mergedSub;
+      }
+    }
+  }
+
+  /*
+   * We did not merge with any other subset
+   */
+  return nullptr;
+}
+
 SCCDAGSubset *SCCDAGPartition::subsetOf (SCC *scc) {
     auto iter = this->fromSCCToSubset.find(scc);
     return (iter == this->fromSCCToSubset.end() ? nullptr : iter->second);

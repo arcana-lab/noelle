@@ -34,6 +34,10 @@ class SCCDAGPartition {
     bool canMergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
     SCCDAGSubset *demoMergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
 
+    void mergeSubsetsRequiringMemSync ();
+    void mergeSubsetsFormingCycles ();
+    SCCDAGSubset *traverseAndCheckToMerge (std::vector<SCCDAGSubset *> &path);
+
     SCCDAGSubset *subsetOf (SCC *scc);
     bool isRemovable (SCC *scc);
     std::set<SCCDAGSubset *> getDependents (SCCDAGSubset *subset);

@@ -117,6 +117,11 @@ uint64_t Heuristics::queueLatency (Value *queueVal){
 void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition, SCCDAGAttrs &sccdagAttrs, uint64_t idealThreads){
 
   /*
+   * Ensure no memory edges go across subsets so no synchronization is necessary
+   */
+  partition.mergeSubsetsRequiringMemSync();
+
+  /*
    * Estimate the current latency for each subset of the current partition of the SCCDAG.
    */
   uint64_t totalCost = 0;
