@@ -338,10 +338,10 @@ bool llvm::PDGAnalysis::instMayPrecede (Value *from, Value *to) {
  */
 bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep) {
   Function *gepFunc = gep->getFunction();
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*gepFunc).getSE();
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*gepFunc).getLoopInfo();
+  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*gepFunc).getSE();
 
-  bool notAllConstantIndices = false;
+  auto notAllConstantIndices = false;
   for (auto &indexV : gep->indices()) {
     if (isa<ConstantInt>(indexV)) continue;
     // indexV->print(errs() << "LOADSTORECHECKING:    Non constant index inst: "); errs() << "\n";
