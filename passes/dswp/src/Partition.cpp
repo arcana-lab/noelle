@@ -37,6 +37,11 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   }
 
   /*
+   * Ensure no memory edges go across subsets so no synchronization is necessary
+   */
+  LDI->partition.mergeSubsetsRequiringMemSync();
+
+  /*
    * Print the initial partitions.
    */
   if (this->verbose >= Verbosity::Maximal) {
