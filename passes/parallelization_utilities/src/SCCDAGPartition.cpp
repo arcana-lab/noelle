@@ -153,7 +153,11 @@ void SCCDAGPartition::mergeSubsetsRequiringMemSync () {
     auto sccNodes = this->getSCCNodes(subset);
     for (auto sccNode : sccNodes) {
       for (auto edge : sccNode->getOutgoingEdges()) {
-        if (!edge->isMemoryDependence()) continue;
+        bool hasMemEdge = false;
+        for (auto subEdge : edge->getSubEdges()) {
+          hasMemEdge |= subEdge->isMemoryDependence();
+        }
+        if (!hasMemEdge) continue;
         auto otherSubset = this->subsetOf(edge->getIncomingT());
         if (otherSubset == subset) continue;
         mergeSubset = otherSubset;
@@ -162,12 +166,26 @@ void SCCDAGPartition::mergeSubsetsRequiringMemSync () {
       if (mergeSubset) break;
     }
     
+    /*
+     * Check the merged subset for more memory edges, or its dependents
+     */
     if (mergeSubset) {
-      currentSubsets.erase(subset);
-      currentSubsets.erase(mergeSubset);
+      bool canMergeWithoutMakingCycle = this->canMergeSubsets(subset, mergeSubset);
       auto mergedSub = this->mergeSubsets(subset, mergeSubset);
-      currentSubsets.insert(mergedSub);
       subToCheck.push(mergedSub);
+
+      if (canMergeWithoutMakingCycle) {
+        currentSubsets.erase(subset);
+        currentSubsets.erase(mergeSubset);
+        currentSubsets.insert(mergedSub);
+      } else {
+        this->mergeSubsetsFormingCycles();
+        this->mergeSubsetsRequiringMemSync();
+        return;
+      }
+    } else {
+      auto dependents = this->getDependents(subset);
+      for (auto depSub : dependents) subToCheck.push(depSub);
     }
   }
 
