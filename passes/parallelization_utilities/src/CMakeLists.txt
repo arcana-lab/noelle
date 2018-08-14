@@ -2,6 +2,7 @@
 set(Srcs 
   Parallelization.cpp
   LoopDependenceInfo.cpp
+  LoopEnvironment.cpp
   SCCDAGAttrs.cpp
   SCCDAGPartition.cpp
 )
