@@ -1,6 +1,4 @@
 ==== SOFTWARE ENGINEERING
-- Change the DOALL interface to take LoopDependenceInfo rather than DSWPLoopDependenceInfo
-
 - Move dswp/src/DOALL to a new pass called "doall"
 
 - Add the option to decide the number of threads to target per loop
