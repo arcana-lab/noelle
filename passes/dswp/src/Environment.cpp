@@ -103,7 +103,7 @@ void DSWP::loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageIn
   IRBuilder<> entryBuilder(stageInfo->entryBlock);
 
   auto envArg = &*(stageInfo->sccStage->arg_begin());
-  stageInfo->envAlloca = entryBuilder.CreateBitCast(envArg, PointerType::getUnqual(LDI->envArrayType));
+  stageInfo->envAlloca = entryBuilder.CreateBitCast(envArg, PointerType::getUnqual(LDI->environment.envArrayType));
 
   auto accessProducerFromIndex = [&](int envIndex, IRBuilder<> builder) -> Value * {
     auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
@@ -155,7 +155,7 @@ void DSWP::storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LD
   for (int envInd : LDI->environment.postLoopEnv) {
     auto prod = LDI->environment.envProducers[envInd];
     auto envIndex = cast<Value>(ConstantInt::get(par.int64, envInd));
-    auto depInEnvPtr = builder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+    auto depInEnvPtr = builder.CreateInBoundsGEP(LDI->environment.envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
     auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(prod->getType()));
     auto envVar = builder.CreateLoad(envVarCast);
 

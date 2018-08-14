@@ -46,7 +46,7 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   /*
    * Load environment variables in chunker entry block
    */
-  auto envAlloca = entryB.CreateBitCast(envVal, PointerType::getUnqual(LDI->envArrayType));
+  auto envAlloca = entryB.CreateBitCast(envVal, PointerType::getUnqual(LDI->environment.envArrayType));
   auto zeroIndex = cast<Value>(ConstantInt::get(par.int64, 0));
   int envIndex = 0;
   for (auto envProd : LDI->environment.envProducers)
@@ -360,13 +360,13 @@ void Parallelizer::createChunkingFuncAndArgTypes (DSWPLoopDependenceInfo *LDI, P
   auto chunkerFuncType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
   LDI->doallChunk->chunker = cast<Function>(M->getOrInsertFunction("", chunkerFuncType));
 
-  LDI->envArrayType = ArrayType::get(ptrType_int8, LDI->environment.envProducers.size());
+  LDI->environment.envArrayType = ArrayType::get(ptrType_int8, LDI->environment.envProducers.size());
 }
 
 void Parallelizer::addChunkFunctionExecutionAsideOriginalLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
   auto firstBB = &*LDI->function->begin();
   IRBuilder<> entryBuilder(firstBB->getTerminator());
-  LDI->envArray = entryBuilder.CreateAlloca(LDI->envArrayType);
+  LDI->environment.envArray = entryBuilder.CreateAlloca(LDI->environment.envArrayType);
 
   LDI->entryPointOfParallelizedLoop = BasicBlock::Create(LDI->function->getContext(), "", LDI->function);
   IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
@@ -391,7 +391,7 @@ Value *Parallelizer::createEnvArray (DSWPLoopDependenceInfo *LDI, Parallelizatio
     auto varAlloca = entryBuilder.CreateAlloca(envType);
     envPtrs.push_back(varAlloca);
     auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
-    auto envPtr = entryBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ ConstantInt::get(par.int64, 0), envIndex }));
+    auto envPtr = entryBuilder.CreateInBoundsGEP(LDI->environment.envArray, ArrayRef<Value*>({ ConstantInt::get(par.int64, 0), envIndex }));
     auto depCast = entryBuilder.CreateBitCast(envPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
     entryBuilder.CreateStore(varAlloca, depCast);
   }
@@ -403,5 +403,5 @@ Value *Parallelizer::createEnvArray (DSWPLoopDependenceInfo *LDI, Parallelizatio
     parBuilder.CreateStore(LDI->environment.envProducers[envIndex], envPtrs[envIndex]);
   }
   
-  return cast<Value>(parBuilder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
+  return cast<Value>(parBuilder.CreateBitCast(LDI->environment.envArray, PointerType::getUnqual(par.int8)));
 }

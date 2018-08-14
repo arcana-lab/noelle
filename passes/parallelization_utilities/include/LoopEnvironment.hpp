@@ -17,6 +17,8 @@ namespace llvm {
       std::set<int> preLoopEnv;
       std::set<int> postLoopEnv;
       Type *exitBlockType;
+      ArrayType *envArrayType;
+      Value *envArray;
 
       /*
        * One per external dependent + one to track exit block

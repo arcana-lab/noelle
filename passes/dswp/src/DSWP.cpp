@@ -89,7 +89,7 @@ bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
 
 void DSWP::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
-  LDI->envArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->environment.envSize());
+  LDI->environment.envArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->environment.envSize());
   LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
   LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->stages.size());
 
@@ -125,7 +125,7 @@ Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<>
     auto varAlloca = funcBuilder.CreateAlloca(envType);
     envPtrs.push_back(varAlloca);
     auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
-    auto envPtr = funcBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+    auto envPtr = funcBuilder.CreateInBoundsGEP(LDI->environment.envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
     auto depCast = funcBuilder.CreateBitCast(envPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
     funcBuilder.CreateStore(varAlloca, depCast);
   }
@@ -137,7 +137,7 @@ Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<>
     builder.CreateStore(LDI->environment.envProducers[envIndex], envPtrs[envIndex]);
   }
   
-  return cast<Value>(builder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
+  return cast<Value>(builder.CreateBitCast(LDI->environment.envArray, PointerType::getUnqual(par.int8)));
 }
 
 Value * DSWP::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {

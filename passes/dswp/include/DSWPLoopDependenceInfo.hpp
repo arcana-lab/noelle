@@ -39,9 +39,9 @@ namespace llvm {
       /*
        * Types for arrays storing dependencies and stages
        */
-      ArrayType *envArrayType, *queueArrayType, *stageArrayType;
+      ArrayType *queueArrayType;
+      ArrayType *stageArrayType;
       Value *zeroIndexForBaseArray;
-      Value *envArray;
 
       DSWPLoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
 
