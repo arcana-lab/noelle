@@ -15,11 +15,15 @@
 
 
 ==== DOALL
+- Understand why the outermost loop of computeSum of IndependentIterations5 isn't parallelized by DOALL
+
 - Promote chunk size to be an option (e.g., --doall-chunksize)
 
 
 ==== OTHER PARALLELIZATION SCHEMES
 - Implement PS-DSWP
+
+- Implement HELIX
 
 
 ==== OPTIMIZATIONS
