@@ -1,24 +1,38 @@
-- Bug fix: create a test for loop 19 of streamcluster and fix its bug (the heuristic of partitioning the SCCDAG doesn't converge)
+==== SOFTWARE ENGINEERING
+- Remove ChunkInfo.hpp
 
-- Add the option to decide the number of threads to target
+- Move the Environment inside LoopDependenceInfo.hpp
 
-- Reconsider all abstractions (e.g., do we need both SCC and SCCInfo? do we need both SCCDAG and SCCDAGInfo?)
+- Change the DOALL interface to take LoopDependenceInfo rather than DSWPLoopDependenceInfo
 
-- Add the doall and ps-dswp passes
+- Move dswp/src/DOALL to a new pass called "doall"
 
+- Add the option to decide the number of threads to target per loop
+
+- Reconsider all abstractions (e.g., do we need all LoopSummary, LoopInfoSummary, and LoopDependenceInfo? do we need SCCEdgeInfo?)
+
+
+==== AUTOTUNER
 - Extend the autotuner to decide #threads per loop
 
 - Extend the autotuner to decide the parallelization-specific parameters (e.g., chunk size for DOALL, SCCDAG partitioning for DSWP)
 
-- Modify DSWP to be able to parallelize multiple loops nested to each other at the same time
+==== Parallelizer
+- Modify parallelizer to be able to parallelize multiple loops nested to each other at the same time
 
-- Optimization: implement DOALL
 
-- Optimization: implement PS-DSWP
+==== DOALL
+- Promote chunk size to be an option (e.g., --doall-chunksize)
 
-- Optimization: inline calls involved in an SCC and rerun the PDG analysis
 
-- Optimization: packing/unpacking pushes and pops
+==== OTHER PARALLELIZATION SCHEMES
+- Implement PS-DSWP
 
-- Optimization: create a new pass to map memory locations to variables as much as possible
+
+==== OPTIMIZATIONS
+- Inline calls involved in an SCC and rerun the PDG analysis
+
+- Packing/unpacking pushes and pops
+
+- Create a new pass to map memory locations to variables as much as possible
   This removes the overly conservative memory loop-carried data dependences
