@@ -6,6 +6,7 @@
 #include "SCCDAGAttrs.hpp"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Support/raw_ostream.h"
+#include "LoopEnvironment.hpp"
 
 using namespace std;
 
@@ -14,20 +15,49 @@ namespace llvm {
   class LoopDependenceInfo {
    public:
     LoopInfoSummary liSummary;
+
+    /*
+     * Context
+     */
     Function *function;
+    LoopEnvironment environment;
+
+    /*
+     * Loop entry and exit points.
+     */
     BasicBlock *header;
     BasicBlock *preHeader;
+    SmallVector<BasicBlock *, 10> loopExitBlocks;
+
+    /*
+     * Loop
+     */
     std::vector<BasicBlock *> loopBBs;
     unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
-    BasicBlock *entryPointOfParallelizedLoop;
+
+    /*
+     * Dependences
+     */
     PDG *functionDG;
     PDG *loopDG;
     PDG *loopInternalDG;
+
+    /*
+     * SCCDAG.
+     */
     SCCDAG *loopSCCDAG;
     SCCDAGAttrs sccdagAttrs;
-    SmallVector<BasicBlock *, 10> loopExitBlocks;
 
-    LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
+    /*
+     * Parallelized loop
+     */
+    BasicBlock *entryPointOfParallelizedLoop;
+
+    /*
+     * Methods
+     */
+    LoopDependenceInfo (Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
     ~LoopDependenceInfo();
   };
+
 }
