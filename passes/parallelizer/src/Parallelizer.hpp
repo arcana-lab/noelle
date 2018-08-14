@@ -82,11 +82,11 @@ namespace llvm {
       void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);
       bool hasPostLoopEnvVars (DSWPLoopDependenceInfo *LDI);
 
-      bool applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
-      void collectDOALLPreloopEnvInfo (DSWPLoopDependenceInfo *LDI);
-      void createChunkingFuncAndArgTypes (DSWPLoopDependenceInfo *LDI, Parallelization &par);
-      void addChunkFunctionExecutionAsideOriginalLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h);
-      Value *createEnvArray (DSWPLoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
+      bool applyDOALL (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
+      void collectDOALLPreloopEnvInfo (LoopDependenceInfo *LDI);
+      Function * createChunkingFuncAndArgTypes (LoopDependenceInfo *LDI, Parallelization &par);
+      void addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, Function *chunker);
+      Value *createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
 
       /*
        * Debug utilities

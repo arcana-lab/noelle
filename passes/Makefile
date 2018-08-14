@@ -1,4 +1,4 @@
-all: printer analysis parallelizer parallelization_utilities heuristics dswp
+all: printer analysis parallelization_utilities parallelizer heuristics dswp
 
 printer:
 	cd $@ ; ../scripts/run_me.sh

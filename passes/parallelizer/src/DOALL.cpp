@@ -1,5 +1,4 @@
 #include "Parallelizer.hpp"
-#include "ChunkInfo.hpp"
 
 using namespace llvm;
 
@@ -7,13 +6,13 @@ using namespace llvm;
 #define NUM_CORES 4
 #define CHUNK_SIZE 8
 
-bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
+bool Parallelizer::applyDOALL (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
   //TODO
   errs() << "Parallelizer:   IS DO ALL LOOP: -------------|| || || || || ||---------------\n";
 
   collectDOALLPreloopEnvInfo(LDI);
 
-  createChunkingFuncAndArgTypes(LDI, par);
+  auto chunker = createChunkingFuncAndArgTypes(LDI, par);
 
   // TODO(angelo): Refactor rest of DOALL chunking function creation
 
@@ -22,16 +21,16 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
    * Create outer loop header and latch
    */
   auto &cxt = LDI->function->getContext();
-  auto entryBlock = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
-  auto exitBlock = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
-  auto chHeader = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
-  auto chLatch = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
+  auto entryBlock = BasicBlock::Create(cxt, "", chunker);
+  auto exitBlock = BasicBlock::Create(cxt, "", chunker);
+  auto chHeader = BasicBlock::Create(cxt, "", chunker);
+  auto chLatch = BasicBlock::Create(cxt, "", chunker);
   IRBuilder<> entryB(entryBlock);
 
   /*
    * Collect arguments of chunker function
    */
-  auto chunkF = LDI->doallChunk->chunker;
+  auto chunkF = chunker;
   auto argIter = chunkF->arg_begin();
   auto envVal = (Value *) &*(argIter++);
   auto coreVal = (Value *) &*(argIter++); 
@@ -283,7 +282,7 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   ivSumInst->removeFromParent();
   ivSumInst->insertBefore(cast<Instruction>(innerCondIV));
 
-  auto chunkCondBB = BasicBlock::Create(cxt, "", LDI->doallChunk->chunker);
+  auto chunkCondBB = BasicBlock::Create(cxt, "", chunker);
   IRBuilder<> chunkCondBBBuilder(chunkCondBB);
 
   Value *chunkCond = chunkCondBBBuilder.CreateICmpULT(innerIV, chunkSizeVal);
@@ -307,16 +306,16 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
 
   // chunkF->print(errs() << "CHUNKING FUNCTION:\n"); errs() << "\n";
 
-  addChunkFunctionExecutionAsideOriginalLoop(LDI, par, h);
+  addChunkFunctionExecutionAsideOriginalLoop(LDI, par, h, chunker);
 
-  LDI->doallChunk->chunker->print(errs() << "Finalized chunker:\n"); errs() << "\n";
+  chunker->print(errs() << "Finalized chunker:\n"); errs() << "\n";
   // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
   // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
 
   return true;
 }
 
-void Parallelizer::collectDOALLPreloopEnvInfo (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::collectDOALLPreloopEnvInfo (LoopDependenceInfo *LDI) {
 
   /*
    * Collect environment information
@@ -346,24 +345,25 @@ void Parallelizer::collectDOALLPreloopEnvInfo (DSWPLoopDependenceInfo *LDI) {
   // }
 }
 
-void Parallelizer::createChunkingFuncAndArgTypes (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+Function * Parallelizer::createChunkingFuncAndArgTypes (LoopDependenceInfo *LDI, Parallelization &par) {
 
   /*
    * Function: void chunker(void *env, int64 coreInd, int64 numCores, int64 chunkSize)
    */
   auto M = LDI->function->getParent();
   auto &cxt = M->getContext();
-  LDI->doallChunk = std::make_unique<ChunkInfo>();
 
   auto ptrType_int8 = PointerType::getUnqual(par.int8);
   auto funcArgTypes = ArrayRef<Type*>({ ptrType_int8, par.int64, par.int64, par.int64 });
   auto chunkerFuncType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
-  LDI->doallChunk->chunker = cast<Function>(M->getOrInsertFunction("", chunkerFuncType));
+  auto chunker = cast<Function>(M->getOrInsertFunction("", chunkerFuncType));
 
   LDI->environment.envArrayType = ArrayType::get(ptrType_int8, LDI->environment.envProducers.size());
+
+  return chunker;
 }
 
-void Parallelizer::addChunkFunctionExecutionAsideOriginalLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
+void Parallelizer::addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, Function *chunker) {
   auto firstBB = &*LDI->function->begin();
   IRBuilder<> entryBuilder(firstBB->getTerminator());
   LDI->environment.envArray = entryBuilder.CreateAlloca(LDI->environment.envArrayType);
@@ -376,11 +376,11 @@ void Parallelizer::addChunkFunctionExecutionAsideOriginalLoop (DSWPLoopDependenc
   auto numCores = ConstantInt::get(par.int64, NUM_CORES);
   auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
 
-  doallBuilder.CreateCall(doallDispatcher, ArrayRef<Value *>({ (Value *)(LDI->doallChunk->chunker), envPtr, numCores, chunkSize }));
+  doallBuilder.CreateCall(doallDispatcher, ArrayRef<Value *>({ (Value *)(chunker), envPtr, numCores, chunkSize }));
 }
 
 // TODO(angelo): Refactor this near-copy of DSWP createEnvArrayFromStages helper
-Value *Parallelizer::createEnvArray (DSWPLoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder) {
+Value *Parallelizer::createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder) {
 
   /*
    * Create empty environment array for producers, exit block tracking

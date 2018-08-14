@@ -7,7 +7,6 @@
 
 #include "LoopDependenceInfo.hpp"
 #include "PipelineInfo.hpp"
-#include "ChunkInfo.hpp"
 #include "SCCDAGPartition.hpp"
 
 using namespace std;
@@ -23,11 +22,6 @@ namespace llvm {
        */
       SCCDAGPartition partition;
       std::set<SCC *> singleInstrNodes;
-
-      /*
-       * Stores DOALL execution
-       */
-      std::unique_ptr<ChunkInfo> doallChunk;
 
       /*
        * Stores new pipeline execution
