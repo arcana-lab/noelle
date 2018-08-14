@@ -310,7 +310,7 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par, h);
 
   LDI->doallChunk->chunker->print(errs() << "Finalized chunker:\n"); errs() << "\n";
-  // LDI->parBB->print(errs() << "Finalized doall BB\n"); errs() << "\n";
+  // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
   // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
 
   return true;
@@ -369,8 +369,8 @@ void Parallelizer::addChunkFunctionExecutionAsideOriginalLoop (DSWPLoopDependenc
   IRBuilder<> entryBuilder(firstBB->getTerminator());
   LDI->envArray = entryBuilder.CreateAlloca(LDI->envArrayType);
 
-  LDI->parBB = BasicBlock::Create(LDI->function->getContext(), "", LDI->function);
-  IRBuilder<> doallBuilder(LDI->parBB);
+  LDI->entryPointOfParallelizedLoop = BasicBlock::Create(LDI->function->getContext(), "", LDI->function);
+  IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
 
   auto envPtr = createEnvArray(LDI, par, entryBuilder, doallBuilder);
   // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic

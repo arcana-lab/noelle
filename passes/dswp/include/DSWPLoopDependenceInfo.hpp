@@ -28,7 +28,6 @@ namespace llvm {
        * Stores parallelization-wide data
        */
       std::unique_ptr<EnvInfo> environment;
-      BasicBlock *parBB;
 
       /*
        * Stores DOALL execution

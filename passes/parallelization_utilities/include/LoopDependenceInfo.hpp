@@ -20,6 +20,7 @@ namespace llvm {
     BasicBlock *preHeader;
     std::vector<BasicBlock *> loopBBs;
     unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
+    BasicBlock *entryPointOfParallelizedLoop;
     PDG *functionDG;
     PDG *loopDG;
     PDG *loopInternalDG;
