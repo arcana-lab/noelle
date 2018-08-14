@@ -2,7 +2,7 @@
 
 using namespace llvm;
   
-bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, Heuristics *h){
+bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, Heuristics *h){
   if (this->verbose > Verbosity::Disabled) {
     errs() << "Parallelizer: Start\n";
     errs() << "Parallelizer:  Function \"" << LDI->function->getName() << "\"\n";
@@ -13,7 +13,6 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
    * Fetch the function that dispatch the parallelized loop.
    */
   auto M = LDI->function->getParent();
-  this->doallDispatcher = M->getFunction("doallDispatcher");
 
   /*
    * Merge SCCs where separation is unnecessary.
@@ -39,18 +38,16 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
     isDOALL &= LDI->sccdagAttrs.isInductionVariableSCC(SE, scc);
   }
 
-  // DEBUG: Printouts of DOALL requirements
-  // errs() << "Parallelizer:   : Loop Exit Blocks: " << LDI->loopExitBlocks.size() << "\n";
-  // errs() << "Parallelizer:   : Has Post Env: " << this->hasPostLoopEnvVars(LDI) << "\n";
-  // errs() << "Parallelizer:   : # Loop Carried Data Dep SCC: " << nonDOALLSCCs.size() << "\n"; 
-
+  /*
+   * Parallelize the loop.
+   */
   auto codeModified = false;
   if (isDOALL){
 
     /*
      * Apply DOALL.
      */
-    codeModified = this->applyDOALL(LDI, par, h);
+    codeModified = doall.apply(LDI, par, h, SE);
 
   } else {
 

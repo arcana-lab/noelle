@@ -35,7 +35,12 @@ bool Parallelizer::runOnModule (Module &M) {
    */
   auto& parallelizationFramework = getAnalysis<Parallelization>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
+
+  /*
+   * Allocate the parallelization techniques.
+   */
   DSWP dswp{M, this->forceParallelization, !this->forceNoSCCPartition, this->verbose};
+  DOALL doall{M, this->verbose};
 
   /*
    * Collect information about C++ code we link parallelized loops with.
@@ -67,7 +72,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Parallelize the current loop with Parallelizer.
      */
-    modified |= this->parallelizeLoop(loop, parallelizationFramework, dswp, heuristics);
+    modified |= this->parallelizeLoop(loop, parallelizationFramework, dswp, doall, heuristics);
 
     /*
      * Free the memory.

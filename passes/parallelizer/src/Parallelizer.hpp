@@ -27,6 +27,7 @@
 #include "Parallelization.hpp"
 #include "HeuristicsPass.hpp"
 #include "DSWP.hpp"
+#include "DOALL.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -46,7 +47,6 @@ namespace llvm {
       /*
        * Object fields
        */
-      Function *doallDispatcher;
       Function *printReachedI, *printPushedP, *printPulledP;
 
       /*
@@ -69,7 +69,7 @@ namespace llvm {
       /*
        * Methods
        */
-      bool parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, Heuristics *h) ;
+      bool parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, Heuristics *h) ;
       std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
       void mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
@@ -81,12 +81,6 @@ namespace llvm {
       void collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
       void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);
       bool hasPostLoopEnvVars (DSWPLoopDependenceInfo *LDI);
-
-      bool applyDOALL (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
-      void collectDOALLPreloopEnvInfo (LoopDependenceInfo *LDI);
-      Function * createChunkingFuncAndArgTypes (LoopDependenceInfo *LDI, Parallelization &par);
-      void addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, Function *chunker);
-      Value *createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
 
       /*
        * Debug utilities

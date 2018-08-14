@@ -1,6 +1,4 @@
 ==== SOFTWARE ENGINEERING
-- Move dswp/src/DOALL to a new pass called "doall"
-
 - Add the option to decide the number of threads to target per loop
 
 - Reconsider all abstractions (e.g., do we need all LoopSummary, LoopInfoSummary, and LoopDependenceInfo? do we need SCCEdgeInfo?)
@@ -10,6 +8,7 @@
 - Extend the autotuner to decide #threads per loop
 
 - Extend the autotuner to decide the parallelization-specific parameters (e.g., chunk size for DOALL, SCCDAG partitioning for DSWP)
+
 
 ==== Parallelizer
 - Modify parallelizer to be able to parallelize multiple loops nested to each other at the same time
