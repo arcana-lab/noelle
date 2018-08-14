@@ -89,7 +89,7 @@ bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
 
 void DSWP::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
-  LDI->envArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->environment->envSize());
+  LDI->envArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->environment.envSize());
   LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
   LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->stages.size());
 
@@ -105,8 +105,7 @@ void DSWP::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelizatio
   collectControlQueueInfo(par, LDI);
   collectRemovableSCCQueueInfo(par, LDI);
 
-  LDI->environment = std::make_unique<EnvInfo>();
-  LDI->environment->exitBlockType = par.int32;
+  LDI->environment.exitBlockType = par.int32;
   collectPreLoopEnvInfo(LDI);
   collectPostLoopEnvInfo(LDI);
 
@@ -121,8 +120,8 @@ Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<>
    * Create empty environment array for producers, exit block tracking
    */
   std::vector<Value*> envPtrs;
-  for (int i = 0; i < LDI->environment->envSize(); ++i) {
-    Type *envType = LDI->environment->typeOfEnv(i);
+  for (int i = 0; i < LDI->environment.envSize(); ++i) {
+    Type *envType = LDI->environment.typeOfEnv(i);
     auto varAlloca = funcBuilder.CreateAlloca(envType);
     envPtrs.push_back(varAlloca);
     auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
@@ -134,8 +133,8 @@ Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<>
   /*
    * Insert pre-loop producers into the environment array
    */
-  for (int envIndex : LDI->environment->preLoopEnv) {
-    builder.CreateStore(LDI->environment->envProducers[envIndex], envPtrs[envIndex]);
+  for (int envIndex : LDI->environment.preLoopEnv) {
+    builder.CreateStore(LDI->environment.envProducers[envIndex], envPtrs[envIndex]);
   }
   
   return cast<Value>(builder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));

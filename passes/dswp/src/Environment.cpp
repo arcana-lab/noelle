@@ -6,7 +6,7 @@ void DSWP::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
   for (auto nodeI : LDI->loopDG->externalNodePairs()) {
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
-    auto envIndex = LDI->environment->envProducers.size();
+    auto envIndex = LDI->environment.envProducers.size();
 
     /*
      * Determine whether the external value is a producer to loop-internal values
@@ -37,7 +37,7 @@ void DSWP::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
         }
       }
     }
-    if (isPreLoop) LDI->environment->addPreLoopProducer(externalValue);
+    if (isPreLoop) LDI->environment.addPreLoopProducer(externalValue);
   }
 
   return ;
@@ -47,7 +47,7 @@ void DSWP::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
   for (auto nodeI : LDI->loopDG->externalNodePairs()) {
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
-    auto envIndex = LDI->environment->envProducers.size();
+    auto envIndex = LDI->environment.envProducers.size();
 
     /*
      * Determine whether the external value is a consumer of loop-internal values
@@ -57,19 +57,19 @@ void DSWP::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
       if (incomingEdge->isMemoryDependence() || incomingEdge->isControlDependence()) continue;
       auto internalValue = incomingEdge->getOutgoingT();
       auto internalInst = cast<Instruction>(internalValue);
-      LDI->environment->prodConsumers[internalInst].insert(externalValue);
+      LDI->environment.prodConsumers[internalInst].insert(externalValue);
 
       /*
        * Determine the producer of the edge to the external value
        */
-      if (LDI->environment->producerIndexMap.find(internalValue) != LDI->environment->producerIndexMap.end())
+      if (LDI->environment.producerIndexMap.find(internalValue) != LDI->environment.producerIndexMap.end())
       {
-        envIndex = LDI->environment->producerIndexMap[internalValue];
+        envIndex = LDI->environment.producerIndexMap[internalValue];
       }
       else
       {
-        envIndex = LDI->environment->envProducers.size();
-        LDI->environment->addPostLoopProducer(internalValue);
+        envIndex = LDI->environment.envProducers.size();
+        LDI->environment.addPostLoopProducer(internalValue);
       }
 
       bool isSharedInst = false;
@@ -108,7 +108,7 @@ void DSWP::loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageIn
   auto accessProducerFromIndex = [&](int envIndex, IRBuilder<> builder) -> Value * {
     auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
     auto envPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
-    auto envType = LDI->environment->envProducers[envIndex]->getType();
+    auto envType = LDI->environment.envProducers[envIndex]->getType();
     return builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(envType));
   };
 
@@ -130,7 +130,7 @@ void DSWP::loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageIn
   for (int i = 0; i < stageInfo->loopExitBlocks.size(); ++i)
   {
     IRBuilder<> builder(&*stageInfo->loopExitBlocks[i]->begin());
-    auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
+    auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, LDI->environment.indexOfExitBlock()));
     auto envPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
     auto envVar = builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(par.int32));
     builder.CreateStore(ConstantInt::get(par.int32, i), envVar);
@@ -152,14 +152,14 @@ void DSWP::storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LD
   /*
    * Extract the outgoing dependents for each stage
    */
-  for (int envInd : LDI->environment->postLoopEnv) {
-    auto prod = LDI->environment->envProducers[envInd];
+  for (int envInd : LDI->environment.postLoopEnv) {
+    auto prod = LDI->environment.envProducers[envInd];
     auto envIndex = cast<Value>(ConstantInt::get(par.int64, envInd));
     auto depInEnvPtr = builder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
     auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(prod->getType()));
     auto envVar = builder.CreateLoad(envVarCast);
 
-    for (auto consumer : LDI->environment->prodConsumers[prod]) {
+    for (auto consumer : LDI->environment.prodConsumers[prod]) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
         depPHI->addIncoming(envVar, LDI->entryPointOfParallelizedLoop);
         continue;

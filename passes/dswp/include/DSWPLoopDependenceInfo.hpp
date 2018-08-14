@@ -25,11 +25,6 @@ namespace llvm {
       std::set<SCC *> singleInstrNodes;
 
       /*
-       * Stores parallelization-wide data
-       */
-      std::unique_ptr<EnvInfo> environment;
-
-      /*
        * Stores DOALL execution
        */
       std::unique_ptr<ChunkInfo> doallChunk;

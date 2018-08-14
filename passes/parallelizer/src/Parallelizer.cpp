@@ -75,7 +75,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
   if (this->verbose > Verbosity::Disabled) {
     errs() << "Parallelizer:  Link the parallelize loop\n";
   }
-  auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
+  auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment.indexOfExitBlock()));
   par.linkParallelizedLoopToOriginalFunction(LDI->function->getParent(), LDI->preHeader, LDI->entryPointOfParallelizedLoop, LDI->envArray, exitIndex, LDI->loopExitBlocks);
   if (this->verbose >= Verbosity::Pipeline) {
     LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";

@@ -49,7 +49,7 @@ bool Parallelizer::applyDOALL (DSWPLoopDependenceInfo *LDI, Parallelization &par
   auto envAlloca = entryB.CreateBitCast(envVal, PointerType::getUnqual(LDI->envArrayType));
   auto zeroIndex = cast<Value>(ConstantInt::get(par.int64, 0));
   int envIndex = 0;
-  for (auto envProd : LDI->environment->envProducers)
+  for (auto envProd : LDI->environment.envProducers)
   {
     auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, envIndex++));
     auto envPtr = entryB.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ zeroIndex, envIndexValue }));
@@ -322,11 +322,10 @@ void Parallelizer::collectDOALLPreloopEnvInfo (DSWPLoopDependenceInfo *LDI) {
    * Collect environment information
    * For now, use environment variable on LDI structure
    */
-  LDI->environment = std::make_unique<EnvInfo>();
   for (auto nodeI : LDI->loopDG->externalNodePairs()) {
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
-    auto envIndex = LDI->environment->envProducers.size();
+    auto envIndex = LDI->environment.envProducers.size();
 
     bool isProducer = false;
     for (auto edge : externalNode->getOutgoingEdges())
@@ -334,9 +333,9 @@ void Parallelizer::collectDOALLPreloopEnvInfo (DSWPLoopDependenceInfo *LDI) {
       // check that edge points to internal value
       if (edge->isMemoryDependence() || edge->isControlDependence()) continue;
       isProducer = true;
-      LDI->environment->prodConsumers[externalValue].insert(edge->getIncomingT());
+      LDI->environment.prodConsumers[externalValue].insert(edge->getIncomingT());
     }
-    if (isProducer) LDI->environment->addPreLoopProducer(externalValue);
+    if (isProducer) LDI->environment.addPreLoopProducer(externalValue);
   }
 
   // for (auto pC : LDI->environment->prodConsumers) {
@@ -361,7 +360,7 @@ void Parallelizer::createChunkingFuncAndArgTypes (DSWPLoopDependenceInfo *LDI, P
   auto chunkerFuncType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
   LDI->doallChunk->chunker = cast<Function>(M->getOrInsertFunction("", chunkerFuncType));
 
-  LDI->envArrayType = ArrayType::get(ptrType_int8, LDI->environment->envProducers.size());
+  LDI->envArrayType = ArrayType::get(ptrType_int8, LDI->environment.envProducers.size());
 }
 
 void Parallelizer::addChunkFunctionExecutionAsideOriginalLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
@@ -387,8 +386,8 @@ Value *Parallelizer::createEnvArray (DSWPLoopDependenceInfo *LDI, Parallelizatio
    * Create empty environment array for producers, exit block tracking
    */
   std::vector<Value*> envPtrs;
-  for (int i = 0; i < LDI->environment->envProducers.size(); ++i) {
-    Type *envType = LDI->environment->typeOfEnv(i);
+  for (int i = 0; i < LDI->environment.envProducers.size(); ++i) {
+    Type *envType = LDI->environment.typeOfEnv(i);
     auto varAlloca = entryBuilder.CreateAlloca(envType);
     envPtrs.push_back(varAlloca);
     auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
@@ -400,8 +399,8 @@ Value *Parallelizer::createEnvArray (DSWPLoopDependenceInfo *LDI, Parallelizatio
   /*
    * Insert pre-loop producers into the environment array
    */
-  for (int envIndex : LDI->environment->preLoopEnv) {
-    parBuilder.CreateStore(LDI->environment->envProducers[envIndex], envPtrs[envIndex]);
+  for (int envIndex : LDI->environment.preLoopEnv) {
+    parBuilder.CreateStore(LDI->environment.envProducers[envIndex], envPtrs[envIndex]);
   }
   
   return cast<Value>(parBuilder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
