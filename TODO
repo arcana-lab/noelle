@@ -1,6 +1,4 @@
 ==== SOFTWARE ENGINEERING
-- Remove ChunkInfo.hpp
-
 - Move the Environment inside LoopDependenceInfo.hpp
 
 - Change the DOALL interface to take LoopDependenceInfo rather than DSWPLoopDependenceInfo
