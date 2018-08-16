@@ -23,6 +23,17 @@ bool SCCDAGAttrs::loopHasInductionVariable (ScalarEvolution &SE) const {
   return this->isInductionVariableSCC(SE, scc);
 }
 
+bool SCCDAGAttrs::isSCCContainedInSubloop (LoopInfoSummary &LIS, SCC *scc) const {
+  bool instInSubloops = true;
+  scc->print(errs() << "Checking SCC:\n") << "\n";
+  for (auto iNodePair : scc->internalNodePairs()) {
+    auto bb = cast<Instruction>(iNodePair.first)->getParent();
+    instInSubloops &= LIS.bbToLoop[bb] != LIS.topLoop;
+  }
+  errs() << "Inst in subloops: " << instInSubloops << "\n";
+  return instInSubloops;
+}
+
 bool SCCDAGAttrs::isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const {
   auto isIvSCC = true;
   for (auto iNodePair : scc->internalNodePairs()) {

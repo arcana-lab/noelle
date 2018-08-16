@@ -30,7 +30,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
 
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
-    isDOALL &= LDI->sccdagAttrs.isInductionVariableSCC(SE, scc);
+    isDOALL &= LDI->sccdagAttrs.isInductionVariableSCC(SE, scc) || LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc);
   }
 
   /*
