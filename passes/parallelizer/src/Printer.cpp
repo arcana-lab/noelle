@@ -24,7 +24,7 @@ void llvm::Parallelizer::printSCCs (SCCDAG *sccSubgraph){
     /*
      * Fetch and print the current SCC.
      */
-    errs() << "Parallelizer:   SCC"
+    errs() << "Parallelizer:   SCC\n" ;
     auto scc = sccI->first;
     scc->print(errs(), "Parallelizer:     ");
   }
