@@ -13,10 +13,10 @@
 ==== Parallelizer
 - Modify parallelizer to be able to parallelize multiple loops nested to each other at the same time
 
+- Implement the reduction as parallel SCC with reduction code
+
 
 ==== DOALL
-- Understand why the outermost loop of computeSum of IndependentIterations5 isn't parallelized by DOALL
-
 - Promote chunk size to be an option (e.g., --doall-chunksize)
 
 
