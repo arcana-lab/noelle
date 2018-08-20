@@ -45,13 +45,17 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
 	loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
 
 	l->getExitBlocks(loopExitBlocks);
-    return ;
+
+  environment = new LoopEnvironment(this->loopDG, this->loopExitBlocks);
+
+  return ;
 };
 
 llvm::LoopDependenceInfo::~LoopDependenceInfo() {
 	delete loopDG;
 	delete loopInternalDG;
 	delete loopSCCDAG;
+  delete environment;
 
     return ;
 }

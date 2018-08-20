@@ -91,7 +91,6 @@ void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI)
 void DSWP::remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
 {
   auto &iCloneMap = stageInfo->iCloneMap;
-  auto &envMap = LDI->environment.producerIndexMap;
   auto &queueMap = stageInfo->producedPopQueue;
 
   auto ignoreOperandAbort = [&](Value *opV, Instruction *cloneInstruction) -> void {
@@ -108,8 +107,8 @@ void DSWP::remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_p
       if (auto opI = dyn_cast<Instruction>(opV)) {
         if (iCloneMap.find(opI) != iCloneMap.end()) {
           op.set(iCloneMap[opI]);
-        } else if (LDI->environment.isPreLoopEnv(opV)) {
-          op.set(stageInfo->envLoadMap[envMap[opV]]);
+        } else if (LDI->environment->isPreLoopEnv(opV)) {
+          op.set(stageInfo->envLoadMap[LDI->environment->indexOfProducer(opV)]);
         } else if (queueMap.find(opI) != queueMap.end()) {
           op.set(stageInfo->queueInstrMap[queueMap[opI]]->load);
         } else {
@@ -117,8 +116,8 @@ void DSWP::remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_p
         }
         continue;
       } else if (auto opA = dyn_cast<Argument>(opV)) {
-        if (LDI->environment.isPreLoopEnv(opV)) {
-          op.set(stageInfo->envLoadMap[envMap[opV]]);
+        if (LDI->environment->isPreLoopEnv(opV)) {
+          op.set(stageInfo->envLoadMap[LDI->environment->indexOfProducer(opV)]);
         } else {
           ignoreOperandAbort(opV, cloneInstruction);
         }

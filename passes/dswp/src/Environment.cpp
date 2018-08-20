@@ -3,95 +3,50 @@
 using namespace llvm;
 
 void DSWP::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
-  for (auto nodeI : LDI->loopDG->externalNodePairs()) {
-    auto externalNode = nodeI.second;
-    auto externalValue = externalNode->getT();
-    auto envIndex = LDI->environment.envProducers.size();
+  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
+    auto producer = LDI->environment->producerAt(envIndex);
 
-    /*
-     * Determine whether the external value is a producer to loop-internal values
-     */
-    bool isPreLoop = false;
-    for (auto outgoingEdge : externalNode->getOutgoingEdges())
-    {
-      if (outgoingEdge->isMemoryDependence() || outgoingEdge->isControlDependence()) continue;
-      isPreLoop = true;
-      auto internalValue = outgoingEdge->getIncomingT();
-
+    for (auto consumer : LDI->environment->consumersOf(producer)) {
       bool isSharedInst = false;
-      for (auto scc : LDI->partition.removableNodes)
-      {
-        if (!scc->isInternal(internalValue)) continue;
+      for (auto scc : LDI->partition.removableNodes) {
+        if (!scc->isInternal(consumer)) continue;
         isSharedInst = true;
         for (auto &stage : LDI->stages) stage->incomingEnvs.insert(envIndex);
         break;
       }
 
-      if (!isSharedInst)
-      {
-        for (auto &stage : LDI->stages)
-        {
+      if (!isSharedInst) {
+        for (auto &stage : LDI->stages) {
           bool isInternal = false;
-          for (auto scc : stage->stageSCCs) isInternal |= scc->isInternal(internalValue);
+          for (auto scc : stage->stageSCCs) isInternal |= scc->isInternal(consumer);
           if (isInternal) stage->incomingEnvs.insert(envIndex);
         }
       }
     }
-    if (isPreLoop) LDI->environment.addPreLoopProducer(externalValue);
   }
-
-  return ;
 }
 
 void DSWP::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
-  for (auto nodeI : LDI->loopDG->externalNodePairs()) {
-    auto externalNode = nodeI.second;
-    auto externalValue = externalNode->getT();
-    auto envIndex = LDI->environment.envProducers.size();
+  for (auto envIndex : LDI->environment->getPostEnvIndices()) {
+    auto producer = LDI->environment->producerAt(envIndex);
+    // TODO(angelo): remove outgoingEnvs structure from StageInfo, then remove producerI
+    auto producerI = cast<Instruction>(producer);
 
-    /*
-     * Determine whether the external value is a consumer of loop-internal values
-     */
-    for (auto incomingEdge : externalNode->getIncomingEdges())
-    {
-      if (incomingEdge->isMemoryDependence() || incomingEdge->isControlDependence()) continue;
-      auto internalValue = incomingEdge->getOutgoingT();
-      auto internalInst = cast<Instruction>(internalValue);
-      LDI->environment.prodConsumers[internalInst].insert(externalValue);
+    bool isSharedInst = false;
+    for (auto scc : LDI->partition.removableNodes) {
+      if (!scc->isInternal(producer)) continue;
+      isSharedInst = true;
+      LDI->stages[0]->outgoingEnvs[producerI] = envIndex;
+      break;
+    }
 
-      /*
-       * Determine the producer of the edge to the external value
-       */
-      if (LDI->environment.producerIndexMap.find(internalValue) != LDI->environment.producerIndexMap.end())
-      {
-        envIndex = LDI->environment.producerIndexMap[internalValue];
-      }
-      else
-      {
-        envIndex = LDI->environment.envProducers.size();
-        LDI->environment.addPostLoopProducer(internalValue);
-      }
-
-      bool isSharedInst = false;
-      for (auto scc : LDI->partition.removableNodes)
-      {
-        if (!scc->isInternal(internalValue)) continue;
-        isSharedInst = true;
-        LDI->stages[0]->outgoingEnvs[internalInst] = envIndex;
-        break;
-      }
-
-      if (!isSharedInst)
-      {
-        for (auto &stage : LDI->stages)
-        {
-          bool isInternal = false;
-          for (auto scc : stage->stageSCCs) isInternal |= scc->isInternal(internalValue);
-          if (isInternal)
-          {
-            stage->outgoingEnvs[internalInst] = envIndex;
-            break;
-          }
+    if (!isSharedInst) {
+      for (auto &stage : LDI->stages) {
+        bool isInternal = false;
+        for (auto scc : stage->stageSCCs) isInternal |= scc->isInternal(producer);
+        if (isInternal) {
+          stage->outgoingEnvs[producerI] = envIndex;
+          break;
         }
       }
     }
@@ -103,12 +58,12 @@ void DSWP::loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageIn
   IRBuilder<> entryBuilder(stageInfo->entryBlock);
 
   auto envArg = &*(stageInfo->sccStage->arg_begin());
-  stageInfo->envAlloca = entryBuilder.CreateBitCast(envArg, PointerType::getUnqual(LDI->environment.envArrayType));
+  stageInfo->envAlloca = entryBuilder.CreateBitCast(envArg, PointerType::getUnqual(LDI->envArrayType));
 
   auto accessProducerFromIndex = [&](int envIndex, IRBuilder<> builder) -> Value * {
     auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
     auto envPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
-    auto envType = LDI->environment.envProducers[envIndex]->getType();
+    auto envType = LDI->environment->typeOfEnv(envIndex);
     return builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(envType));
   };
 
@@ -127,13 +82,14 @@ void DSWP::loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageIn
   /*
    * Store exit index in the exit environment variable
    */
-  for (int i = 0; i < stageInfo->loopExitBlocks.size(); ++i)
-  {
-    IRBuilder<> builder(&*stageInfo->loopExitBlocks[i]->begin());
-    auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, LDI->environment.indexOfExitBlock()));
-    auto envPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
-    auto envVar = builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(par.int32));
-    builder.CreateStore(ConstantInt::get(par.int32, i), envVar);
+  if (stageInfo->loopExitBlocks.size() > 1) {
+    for (int i = 0; i < stageInfo->loopExitBlocks.size(); ++i) {
+      IRBuilder<> builder(&*stageInfo->loopExitBlocks[i]->begin());
+      auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
+      auto envPtr = builder.CreateInBoundsGEP(stageInfo->envAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndexValue }));
+      auto envVar = builder.CreateBitCast(builder.CreateLoad(envPtr), PointerType::getUnqual(par.int32));
+      builder.CreateStore(ConstantInt::get(par.int32, i), envVar);
+    }
   }
 
   /*
@@ -152,14 +108,14 @@ void DSWP::storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LD
   /*
    * Extract the outgoing dependents for each stage
    */
-  for (int envInd : LDI->environment.postLoopEnv) {
-    auto prod = LDI->environment.envProducers[envInd];
+  for (int envInd : LDI->environment->getPostEnvIndices()) {
+    auto prod = LDI->environment->producerAt(envInd);
     auto envIndex = cast<Value>(ConstantInt::get(par.int64, envInd));
-    auto depInEnvPtr = builder.CreateInBoundsGEP(LDI->environment.envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+    auto depInEnvPtr = builder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
     auto envVarCast = builder.CreateBitCast(builder.CreateLoad(depInEnvPtr), PointerType::getUnqual(prod->getType()));
     auto envVar = builder.CreateLoad(envVarCast);
 
-    for (auto consumer : LDI->environment.prodConsumers[prod]) {
+    for (auto consumer : LDI->environment->consumersOf(prod)) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
         depPHI->addIncoming(envVar, LDI->entryPointOfParallelizedLoop);
         continue;

@@ -20,7 +20,7 @@ namespace llvm {
      * Context
      */
     Function *function;
-    LoopEnvironment environment;
+    LoopEnvironment *environment;
 
     /*
      * Loop entry and exit points.
@@ -51,6 +51,8 @@ namespace llvm {
     /*
      * Parallelized loop
      */
+    Value *envArray;
+    ArrayType *envArrayType;
     BasicBlock *entryPointOfParallelizedLoop;
 
     /*

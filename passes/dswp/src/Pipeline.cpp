@@ -130,7 +130,7 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
    */
   auto firstBB = &*LDI->function->begin();
   IRBuilder<> funcBuilder(firstBB->getTerminator());
-  LDI->environment.envArray = funcBuilder.CreateAlloca(LDI->environment.envArrayType);
+  LDI->envArray = funcBuilder.CreateAlloca(LDI->envArrayType);
 
   /*
    * Create a basic block in the original function where the parallelized loop exists.

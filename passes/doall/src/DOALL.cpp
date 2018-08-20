@@ -20,8 +20,6 @@ DOALL::DOALL (Module &module, Verbosity v)
 bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) {
   errs() << "DOALL: Start\n";
 
-  collectDOALLPreloopEnvInfo(LDI);
-
   auto chunker = createChunkingFuncAndArgTypes(LDI, par);
 
   // TODO(angelo): Refactor rest of DOALL chunking function creation
@@ -55,10 +53,10 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
   /*
    * Load environment variables in chunker entry block
    */
-  auto envAlloca = entryB.CreateBitCast(envVal, PointerType::getUnqual(LDI->environment.envArrayType));
+  auto envAlloca = entryB.CreateBitCast(envVal, PointerType::getUnqual(LDI->envArrayType));
   auto zeroIndex = cast<Value>(ConstantInt::get(par.int64, 0));
   int envIndex = 0;
-  for (auto envProd : LDI->environment.envProducers)
+  for (auto envProd : LDI->environment->getProducers())
   {
     auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, envIndex++));
     auto envPtr = entryB.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ zeroIndex, envIndexValue }));
@@ -325,36 +323,6 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
   return true;
 }
 
-void DOALL::collectDOALLPreloopEnvInfo (LoopDependenceInfo *LDI) {
-
-  /*
-   * Collect environment information
-   * For now, use environment variable on LDI structure
-   */
-  for (auto nodeI : LDI->loopDG->externalNodePairs()) {
-    auto externalNode = nodeI.second;
-    auto externalValue = externalNode->getT();
-    auto envIndex = LDI->environment.envProducers.size();
-
-    bool isProducer = false;
-    for (auto edge : externalNode->getOutgoingEdges())
-    {
-      // check that edge points to internal value
-      if (edge->isMemoryDependence() || edge->isControlDependence()) continue;
-      isProducer = true;
-      LDI->environment.prodConsumers[externalValue].insert(edge->getIncomingT());
-    }
-    if (isProducer) LDI->environment.addPreLoopProducer(externalValue);
-  }
-
-  // for (auto pC : LDI->environment->prodConsumers) {
-  //   pC.first->print(errs() << "Producer: "); errs() << "\n";
-  //   for (auto C : pC.second) {
-  //     C->print(errs() << "\tConsumer: "); errs() << "\n";
-  //   }
-  // }
-}
-
 Function * DOALL::createChunkingFuncAndArgTypes (LoopDependenceInfo *LDI, Parallelization &par) {
 
   /*
@@ -368,7 +336,7 @@ Function * DOALL::createChunkingFuncAndArgTypes (LoopDependenceInfo *LDI, Parall
   auto chunkerFuncType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
   auto chunker = cast<Function>(M->getOrInsertFunction("", chunkerFuncType));
 
-  LDI->environment.envArrayType = ArrayType::get(ptrType_int8, LDI->environment.envProducers.size());
+  LDI->envArrayType = ArrayType::get(ptrType_int8, LDI->environment->envSize());
 
   return chunker;
 }
@@ -376,7 +344,7 @@ Function * DOALL::createChunkingFuncAndArgTypes (LoopDependenceInfo *LDI, Parall
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, Function *chunker) {
   auto firstBB = &*LDI->function->begin();
   IRBuilder<> entryBuilder(firstBB->getTerminator());
-  LDI->environment.envArray = entryBuilder.CreateAlloca(LDI->environment.envArrayType);
+  LDI->envArray = entryBuilder.CreateAlloca(LDI->envArrayType);
 
   LDI->entryPointOfParallelizedLoop = BasicBlock::Create(LDI->function->getContext(), "", LDI->function);
   IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
@@ -396,12 +364,12 @@ Value *DOALL::createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRB
    * Create empty environment array for producers, exit block tracking
    */
   std::vector<Value*> envPtrs;
-  for (int i = 0; i < LDI->environment.envProducers.size(); ++i) {
-    Type *envType = LDI->environment.typeOfEnv(i);
+  for (int i = 0; i < LDI->environment->envSize(); ++i) {
+    Type *envType = LDI->environment->typeOfEnv(i);
     auto varAlloca = entryBuilder.CreateAlloca(envType);
     envPtrs.push_back(varAlloca);
     auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
-    auto envPtr = entryBuilder.CreateInBoundsGEP(LDI->environment.envArray, ArrayRef<Value*>({ ConstantInt::get(par.int64, 0), envIndex }));
+    auto envPtr = entryBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ ConstantInt::get(par.int64, 0), envIndex }));
     auto depCast = entryBuilder.CreateBitCast(envPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
     entryBuilder.CreateStore(varAlloca, depCast);
   }
@@ -409,9 +377,9 @@ Value *DOALL::createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRB
   /*
    * Insert pre-loop producers into the environment array
    */
-  for (int envIndex : LDI->environment.preLoopEnv) {
-    parBuilder.CreateStore(LDI->environment.envProducers[envIndex], envPtrs[envIndex]);
+  for (int envIndex : LDI->environment->getPreEnvIndices()) {
+    parBuilder.CreateStore(LDI->environment->producerAt(envIndex), envPtrs[envIndex]);
   }
   
-  return cast<Value>(parBuilder.CreateBitCast(LDI->environment.envArray, PointerType::getUnqual(par.int8)));
+  return cast<Value>(parBuilder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
 }

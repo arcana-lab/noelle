@@ -86,7 +86,7 @@ void llvm::DSWP::printEnv (DSWPLoopDependenceInfo *LDI) {
    */
   errs() << "DSWP:  Environment\n";
   int count = 1;
-  for (auto prod : LDI->environment.envProducers) {
+  for (auto prod : LDI->environment->getProducers()) {
     prod->print(errs() << "DSWP:    Outside the loop producer" << count++ << ":\t"); errs() << "\n";
   }
 

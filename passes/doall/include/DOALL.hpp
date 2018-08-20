@@ -55,7 +55,6 @@ namespace llvm {
       /*
        * Methods
        */
-      void collectDOALLPreloopEnvInfo (LoopDependenceInfo *LDI);
       Function * createChunkingFuncAndArgTypes (LoopDependenceInfo *LDI, Parallelization &par);
       void addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, Function *chunker);
       Value *createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
