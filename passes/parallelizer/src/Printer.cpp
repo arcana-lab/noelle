@@ -19,14 +19,14 @@ void llvm::Parallelizer::printSCCs (SCCDAG *sccSubgraph){
   /*
    * Print the SCCs.
    */
-  errs() << "Parallelizer:  Print SCCDAG\n";
   for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
 
     /*
      * Fetch and print the current SCC.
      */
+    errs() << "Parallelizer:   SCC"
     auto scc = sccI->first;
-    scc->print(errs(), "Parallelizer:   ");
+    scc->print(errs(), "Parallelizer:     ");
   }
 
   return ;
