@@ -261,7 +261,8 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
 void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   Module *module,
   BasicBlock *originalPreHeader,
-  BasicBlock *startOfParallelizedLoopWithinOriginalFunction,
+  BasicBlock *startOfParLoopInOriginalFunc,
+  BasicBlock *endOfParLoopInOriginalFunc,
   Value *envArray,
   Value *envIndexForExitVariable,
   SmallVector<BasicBlock *, 10> &loopExitBlocks
@@ -290,21 +291,34 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   IRBuilder<> loopSwitchBuilder(originalTerminator);
   auto globalLoad = loopSwitchBuilder.CreateLoad(globalBool);
   auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(globalLoad, const0);
-  loopSwitchBuilder.CreateCondBr(compareInstruction, startOfParallelizedLoopWithinOriginalFunction, originalHeader);
+  loopSwitchBuilder.CreateCondBr(
+    compareInstruction,
+    startOfParLoopInOriginalFunc,
+    originalHeader
+  );
   originalTerminator->eraseFromParent();
 
-  IRBuilder<> pipelineBuilder(startOfParallelizedLoopWithinOriginalFunction);
+  IRBuilder<> endBuilder(endOfParLoopInOriginalFunc);
 
   /*
    * Load exit block environment variable and branch to the correct loop exit block
    */
   if (loopExitBlocks.size() == 1) {
-    pipelineBuilder.CreateBr(loopExitBlocks[0]);
+    endBuilder.CreateBr(loopExitBlocks[0]);
   } else {
-    auto exitEnvPtr = pipelineBuilder.CreateInBoundsGEP(envArray, ArrayRef<Value*>({ cast<Value>(ConstantInt::get(int64, 0)), envIndexForExitVariable }));
-    auto exitEnvCast = pipelineBuilder.CreateBitCast(pipelineBuilder.CreateLoad(exitEnvPtr), PointerType::getUnqual(int32));
-    auto envVar = pipelineBuilder.CreateLoad(exitEnvCast);
-    auto exitSwitch = pipelineBuilder.CreateSwitch(envVar, loopExitBlocks[0]);
+    auto exitEnvPtr = endBuilder.CreateInBoundsGEP(
+      envArray,
+      ArrayRef<Value*>({
+        cast<Value>(ConstantInt::get(int64, 0)),
+        envIndexForExitVariable
+      })
+    );
+    auto exitEnvCast = endBuilder.CreateBitCast(
+      endBuilder.CreateLoad(exitEnvPtr),
+      PointerType::getUnqual(int32)
+    );
+    auto envVar = endBuilder.CreateLoad(exitEnvCast);
+    auto exitSwitch = endBuilder.CreateSwitch(envVar, loopExitBlocks[0]);
     for (int i = 1; i < loopExitBlocks.size(); ++i) {
       exitSwitch->addCase(ConstantInt::get(int32, i), loopExitBlocks[i]);
     }
@@ -313,10 +327,15 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   /*
    * Set/Reset global variable so only one invocation of the loop is run in parallel at a time.
    */
-  pipelineBuilder.SetInsertPoint(&*startOfParallelizedLoopWithinOriginalFunction->begin());
-  pipelineBuilder.CreateStore(const1, globalBool);
-  pipelineBuilder.SetInsertPoint(startOfParallelizedLoopWithinOriginalFunction->getTerminator());
-  pipelineBuilder.CreateStore(const0, globalBool);
+  if (startOfParLoopInOriginalFunc == endOfParLoopInOriginalFunc) {
+    endBuilder.SetInsertPoint(&*endOfParLoopInOriginalFunc->begin());
+    endBuilder.CreateStore(const1, globalBool);
+  } else {
+    IRBuilder<> startBuilder(&*startOfParLoopInOriginalFunc->begin());
+    startBuilder.CreateStore(const1, globalBool);
+  }
+  endBuilder.SetInsertPoint(endOfParLoopInOriginalFunc->getTerminator());
+  endBuilder.CreateStore(const0, globalBool);
 
   return ;
 }

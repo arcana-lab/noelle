@@ -53,15 +53,17 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
   /*
    * Load environment variables in chunker entry block
    */
-  auto envAlloca = entryB.CreateBitCast(envVal, PointerType::getUnqual(LDI->envArrayType));
-  auto zeroIndex = cast<Value>(ConstantInt::get(par.int64, 0));
-  int envIndex = 0;
-  for (auto envProd : LDI->environment->getProducers())
-  {
-    auto envIndexValue = cast<Value>(ConstantInt::get(par.int64, envIndex++));
-    auto envPtr = entryB.CreateInBoundsGEP(envAlloca, ArrayRef<Value*>({ zeroIndex, envIndexValue }));
-    auto envBitcastPtr = entryB.CreateBitCast(entryB.CreateLoad(envPtr), PointerType::getUnqual(envProd->getType()));
-    instrArgMap[cast<Value>(envProd)] = cast<Value>(entryB.CreateLoad(envBitcastPtr));
+  LDI->envArray = entryB.CreateBitCast(envVal, PointerType::getUnqual(LDI->envArrayType));
+  auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
+  for (auto envInd : LDI->environment->getPreEnvIndices()) {
+    auto producer = LDI->environment->producerAt(envInd);
+    auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
+    auto envPtr = entryB.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ zeroV, envIndV }));
+    auto prodPtr = entryB.CreateBitCast(
+      entryB.CreateLoad(envPtr),
+      PointerType::getUnqual(producer->getType())
+    );
+    instrArgMap[producer] = cast<Value>(entryB.CreateLoad(prodPtr));
   }
 
   /*
@@ -311,11 +313,37 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
   IRBuilder<> exitB(exitBlock);
   exitB.CreateRetVoid();
 
-  // chunkF->print(errs() << "CHUNKING FUNCTION:\n"); errs() << "\n";
+  /*
+   * Store post environment reducable values
+   */
+  entryB.SetInsertPoint(entryBlock->getTerminator());
+  for (auto envInd : LDI->environment->getPostEnvIndices()) {
+    auto producer = LDI->environment->producerAt(envInd);
+    auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
+    auto envPtr = entryB.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ zeroV, envIndV }));
+    auto reduceArr = entryB.CreateBitCast(
+      entryB.CreateLoad(envPtr),
+      PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES))
+    );
+    auto reduceArrPtr = entryB.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ zeroV, coreVal }));
+    auto reducePtr = entryB.CreateBitCast(
+      entryB.CreateLoad(reduceArrPtr),
+      PointerType::getUnqual(producer->getType())
+    );
 
-  addChunkFunctionExecutionAsideOriginalLoop(LDI, par, h, chunker);
+    // ??? ASSUMPTION(angelo): does only one latch execute upon exiting a loop?
+    auto producerBB = cast<Instruction>(producer)->getParent();
+    auto prodLI = LDI->liSummary.bbToLoop[producerBB];
+    for (auto prodLoopLatch : prodLI->latchBBs) {
+      IRBuilder<> latchBuilder(innerBBMap[prodLoopLatch]->getTerminator());
+      latchBuilder.CreateStore(instrArgMap[producer], reducePtr);
+    }
+  }
+
+  addChunkFunctionExecutionAsideOriginalLoop(LDI, par, chunker);
 
   chunker->print(errs() << "Finalized chunker:\n"); errs() << "\n";
+  // chunkF->print(errs() << "CHUNKING FUNCTION:\n"); errs() << "\n";
   // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
   // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
 
@@ -341,12 +369,14 @@ Function * DOALL::createChunkingFuncAndArgTypes (LoopDependenceInfo *LDI, Parall
   return chunker;
 }
 
-void DOALL::addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, Function *chunker) {
+void DOALL::addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, Function *chunker) {
   auto firstBB = &*LDI->function->begin();
   IRBuilder<> entryBuilder(firstBB->getTerminator());
   LDI->envArray = entryBuilder.CreateAlloca(LDI->envArrayType);
 
-  LDI->entryPointOfParallelizedLoop = BasicBlock::Create(LDI->function->getContext(), "", LDI->function);
+  auto &cxt = LDI->function->getContext();
+  LDI->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+  LDI->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
   IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
 
   auto envPtr = createEnvArray(LDI, par, entryBuilder, doallBuilder);
@@ -354,31 +384,111 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI,
   auto numCores = ConstantInt::get(par.int64, NUM_CORES);
   auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
 
-  doallBuilder.CreateCall(this->doallDispatcher, ArrayRef<Value *>({ (Value *)(chunker), envPtr, numCores, chunkSize }));
+  doallBuilder.CreateCall(this->doallDispatcher, ArrayRef<Value *>({
+    (Value *)chunker,
+    envPtr,
+    numCores,
+    chunkSize
+  }));
+  doallBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
+
+  reducePostEnvironment(LDI, par);
 }
 
-// TODO(angelo): Refactor this near-copy of DSWP createEnvArrayFromStages helper
+void DOALL::reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par) {
+  auto &cxt = LDI->function->getContext();
+  IRBuilder<> reduceBuilder(LDI->exitPointOfParallelizedLoop);
+
+  auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
+  for (auto envInd : LDI->environment->getPostEnvIndices()) {
+    auto producer = LDI->environment->producerAt(envInd);
+    producer->print(errs() << "Producer: "); errs() << "\n";
+    auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
+    auto envPtr = reduceBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ zeroV, envIndV }));
+    auto reduceArr = reduceBuilder.CreateBitCast(
+      reduceBuilder.CreateLoad(envPtr),
+      PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES))
+    );
+
+    auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
+    Instruction::BinaryOps binOp;
+    for (auto nodePair : producerSCC->internalNodePairs()) {
+      auto I = cast<Instruction>(nodePair.first);
+      if (I->isAssociative()) {
+        auto opCode = I->getOpcode();
+        assert(Instruction::isBinaryOp(opCode));
+        binOp = static_cast<Instruction::BinaryOps>(opCode);
+      }
+    }
+
+    Value *accumVal = nullptr;
+    for (auto i = 0; i < NUM_CORES; ++i) {
+      auto indVal = cast<Value>(ConstantInt::get(par.int64, i));
+      auto reduceArrPtr = reduceBuilder.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ zeroV, indVal }));
+      auto reducePtr = reduceBuilder.CreateBitCast(
+        reduceBuilder.CreateLoad(reduceArrPtr),
+        PointerType::getUnqual(producer->getType())
+      );
+      auto reduceVal = reduceBuilder.CreateLoad(reducePtr);
+      accumVal = accumVal 
+        ? reduceBuilder.CreateBinOp(binOp, accumVal, reduceVal)
+        : reduceVal;
+      accumVal->print(errs() << "Accum val after: "); errs() << "\n";
+    }
+
+    for (auto consumer : LDI->environment->consumersOf(producer)) {
+      if (auto depPHI = dyn_cast<PHINode>(consumer)) {
+        depPHI->addIncoming(accumVal, LDI->exitPointOfParallelizedLoop);
+        continue;
+      }
+      producer->print(errs() << "Producer of environment variable:\t"); errs() << "\n";
+      errs() << "Loop not in LCSSA!\n";
+      abort();
+    }
+  }
+}
+
 Value *DOALL::createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder) {
+
+  auto zeroV = ConstantInt::get(par.int64, 0);
+  auto storeEnvAllocaInArray = [&](Value *arr, int envIndex, AllocaInst *alloca) -> void {
+    arr->print(errs() << "Index " << envIndex << ", Array: "); errs() << "\n";
+    alloca->print(errs() << "Alloca "); errs() << "\n";
+    auto indValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
+    auto envPtr = entryBuilder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ zeroV, indValue }));
+    auto depCast = entryBuilder.CreateBitCast(envPtr, PointerType::getUnqual(alloca->getType()));
+    auto store = entryBuilder.CreateStore(alloca, depCast);
+    store->print(errs() << "Store "); errs() << "\n\n";
+  };
 
   /*
    * Create empty environment array for producers, exit block tracking
    */
-  std::vector<Value*> envPtrs;
-  for (int i = 0; i < LDI->environment->envSize(); ++i) {
-    Type *envType = LDI->environment->typeOfEnv(i);
+  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
+    LDI->environment->producerAt(envIndex)->print(errs() << "Producer "); errs() << "\n";
+    Type *envType = LDI->environment->typeOfEnv(envIndex);
     auto varAlloca = entryBuilder.CreateAlloca(envType);
-    envPtrs.push_back(varAlloca);
-    auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
-    auto envPtr = entryBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ ConstantInt::get(par.int64, 0), envIndex }));
-    auto depCast = entryBuilder.CreateBitCast(envPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
-    entryBuilder.CreateStore(varAlloca, depCast);
-  }
 
-  /*
-   * Insert pre-loop producers into the environment array
-   */
-  for (int envIndex : LDI->environment->getPreEnvIndices()) {
-    parBuilder.CreateStore(LDI->environment->producerAt(envIndex), envPtrs[envIndex]);
+    storeEnvAllocaInArray(LDI->envArray, envIndex, varAlloca);
+
+    /*
+     * Insert pre-loop producers into the environment array
+     */
+    parBuilder.CreateStore(LDI->environment->producerAt(envIndex), varAlloca);
+  }
+  for (auto envIndex : LDI->environment->getPostEnvIndices()) {
+    LDI->environment->producerAt(envIndex)->print(errs() << "Producer "); errs() << "\n";
+    auto reduceArrType = ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES);
+    auto reduceArrAlloca = entryBuilder.CreateAlloca(reduceArrType);
+
+    storeEnvAllocaInArray(LDI->envArray, envIndex, reduceArrAlloca);
+
+    Type *envType = LDI->environment->typeOfEnv(envIndex);
+    for (auto i = 0; i < NUM_CORES; ++i) {
+      auto varAlloca = entryBuilder.CreateAlloca(envType);
+
+      storeEnvAllocaInArray(reduceArrAlloca, i, varAlloca);
+    }
   }
   
   return cast<Value>(parBuilder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));

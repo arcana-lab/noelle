@@ -18,7 +18,9 @@ namespace llvm {
 		~SCC() ;
 
 		raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") ;
+
 		bool hasCycle (bool ignoreControlDep = false) ;
+    bool executesAssociatively () ;
 	};
 
 	template<> class DGEdge<SCC> : public DGEdgeBase<SCC, Value> {

@@ -54,6 +54,7 @@ namespace llvm {
     Value *envArray;
     ArrayType *envArrayType;
     BasicBlock *entryPointOfParallelizedLoop;
+    BasicBlock *exitPointOfParallelizedLoop;
 
     /*
      * Methods

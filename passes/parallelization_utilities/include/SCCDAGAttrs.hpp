@@ -15,6 +15,8 @@ namespace llvm {
     std::set<Value *> edges;
   };
 
+  enum class SCCExecutionType { Sequential, Associative, Independent };
+
   class SCCAttrs {
     public:
 
@@ -25,12 +27,15 @@ namespace llvm {
       std::set<BasicBlock *> bbs;
       int internalCost;
       bool hasLoopCarriedDataDep;
+      bool isClonable;
+      SCCExecutionType execType;
       std::unordered_map<SCC *, std::unique_ptr<SCCEdgeInfo>> sccToEdgeInfo;
 
       /*
        * Methods
        */
-      SCCAttrs (SCC *s) : scc{s}, internalCost{0}, hasLoopCarriedDataDep{0} {
+      SCCAttrs (SCC *s)
+        : scc{s}, internalCost{0}, hasLoopCarriedDataDep{0}, isClonable{0} {
         // Collect basic blocks contained within SCC
         for (auto nodePair : this->scc->internalNodePairs()) {
           this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
@@ -54,8 +59,6 @@ namespace llvm {
       bool loopHasInductionVariable (ScalarEvolution &SE) const ;
       bool isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const ;
       bool isSCCContainedInSubloop (LoopInfoSummary &LIS, SCC *scc) const ;
-
-      void setSCCToHaveLoopCarriedDataDependence (SCC *scc, bool doesItHaveLoopCarriedDataDependence);
 
       std::set<BasicBlock *> & getBasicBlocks (SCC *scc);
 

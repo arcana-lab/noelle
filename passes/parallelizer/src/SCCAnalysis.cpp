@@ -6,21 +6,13 @@ void Parallelizer::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceI
   LDI->sccdagAttrs.populate(LDI->loopSCCDAG);
 
   /*
-   * Tag the SCCDAG nodes to have or not a loop-carried data dependence.
+   * Estimate the latency of an invocation of an SCC.
    */
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
 
     auto &sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
 
-    /*
-     * Tag the SCC to be sequential or not.
-     */
-    LDI->sccdagAttrs.setSCCToHaveLoopCarriedDataDependence(scc, scc->hasCycle(/*ignoreControlDep=*/true));
-
-    /*
-     * Estimate the latency of an invocation of an SCC.
-     */
     sccInfo->internalCost = h->latencyPerInvocation(scc);
   }
 
@@ -92,6 +84,7 @@ void Parallelizer::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *
     auto scc = sccNode->getT();
     if (LDI->sccdagAttrs.isInductionVariableSCC(SE, scc)) {
       LDI->partition.removableNodes.insert(scc);
+      LDI->sccdagAttrs.getSCCAttrs(scc)->isClonable = true;
     }
   }
 
@@ -105,6 +98,7 @@ void Parallelizer::collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenc
     auto I = scc->begin_internal_node_map()->first;
     if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
       LDI->partition.removableNodes.insert(scc);
+      LDI->sccdagAttrs.getSCCAttrs(scc)->isClonable = true;
     }
   }
 }

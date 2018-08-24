@@ -74,7 +74,6 @@ bool DSWP::apply (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics 
     errs() << "DSWP:  Link pipeline stages\n";
   }
   createPipelineFromStages(LDI, par);
-  assert(LDI->entryPointOfParallelizedLoop != nullptr);
 
   return true;
 }

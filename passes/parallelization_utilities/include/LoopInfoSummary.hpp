@@ -12,12 +12,18 @@ namespace llvm {
     	int id;
     	LoopSummary *parent;
     	int depth;
+      BasicBlock *header;
     	std::set<BasicBlock *> bbs;
+      std::set<BasicBlock *> latchBBs;
 
     	LoopSummary(int id, Loop *l) {
     		this->id = id;
     		this->depth = l->getLoopDepth();
-    		for (auto bb : l->blocks()) this->bbs.insert(bb);
+        this->header = l->getHeader();
+    		for (auto bb : l->blocks()) {
+          this->bbs.insert(bb);
+          if (l->isLoopLatch(bb)) latchBBs.insert(bb);
+        }
     	}
     };
 

@@ -77,3 +77,29 @@ bool llvm::SCC::hasCycle (bool ignoreControlDep) {
 	}
 	return false;
 }
+
+/*
+ * For the execution of an SCC to be associative:
+ *  1) All computations in the SCC must be of the same type (add, mul)
+ *  2) They must NOT reference their own current values
+ */
+bool llvm::SCC::executesAssociatively () {
+  Instruction *prevVal = nullptr; 
+  for (auto nodePair : this->internalNodePairs())  {
+    Instruction *val = cast<Instruction>(nodePair.first);
+    if (isa<PHINode>(val)) continue;
+    if (val->isAssociative() && val->isBinaryOp()) {
+      if (prevVal && val->getOpcode() != prevVal->getOpcode()) return false;
+      for (auto &op : val->operands()) {
+        auto opV = op.get();
+        if (!this->isInternal(opV) || isa<PHINode>(opV)) continue;
+        if (this->isInternal(opV)) return false;
+      }
+      prevVal = val;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+

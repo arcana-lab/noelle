@@ -2,14 +2,12 @@
 
 using namespace llvm;
 
-bool Parallelizer::hasPostLoopEnvVars (DSWPLoopDependenceInfo *LDI) {
-  for (auto nodeI : LDI->loopDG->externalNodePairs()) {
+bool Parallelizer::hasNonReducablePostLoopEnvVars (DSWPLoopDependenceInfo *LDI) {
+  for (auto envIndex : LDI->environment->getPostEnvIndices()) {
+    auto producer = LDI->environment->producerAt(envIndex);
 
-    /*
-     * Determine whether the external value is a consumer of loop-internal values
-     */
-    for (auto incomingEdge : nodeI.second->getIncomingEdges()) {
-      if (!incomingEdge->isMemoryDependence() && !incomingEdge->isControlDependence()) return true;
+    if (!LDI->loopSCCDAG->sccOfValue(producer)->executesAssociatively()) {
+      return true;
     }
   }
   return false;

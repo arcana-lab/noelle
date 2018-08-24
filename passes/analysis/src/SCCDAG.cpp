@@ -198,3 +198,7 @@ std::set<DGNode<SCC> *> llvm::SCCDAG::nextDepthNodes(DGNode<SCC> *node) const
   }
   return nextDepthNodes;
 }
+
+SCC *llvm::SCCDAG::sccOfValue (Value *val) const {
+  return valueToSCCNode.find(val)->second->getT();
+}

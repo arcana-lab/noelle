@@ -55,7 +55,8 @@ namespace llvm {
       void linkParallelizedLoopToOriginalFunction (
         Module *module, 
         BasicBlock *originalPreHeader, 
-        BasicBlock *startOfParallelizedLoopWithinOriginalFunction,
+        BasicBlock *startOfParLoopInOriginalFunc,
+        BasicBlock *endOfParLoopInOriginalFunc,
         Value *envArray,
         Value *envIndexForExitVariable,
         SmallVector<BasicBlock *, 10> &loopExitBlocks

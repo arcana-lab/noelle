@@ -35,6 +35,7 @@ namespace llvm {
 
       std::set<DGNode<SCC> *> nextDepthNodes(DGNode<SCC> *node) const;
 
+      SCC *sccOfValue (Value *val) const;
       ~SCCDAG() ;
 
 

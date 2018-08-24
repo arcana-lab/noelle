@@ -62,13 +62,6 @@ bool SCCDAGAttrs::isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const {
   return isIvSCC;
 }
 
-void SCCDAGAttrs::setSCCToHaveLoopCarriedDataDependence (SCC *scc, bool doesItHaveLoopCarriedDataDependence){
-  auto &sccInfo = this->sccToInfo[scc];
-  sccInfo->hasLoopCarriedDataDep = doesItHaveLoopCarriedDataDependence;
-
-  return ;
-}
-
 std::set<BasicBlock *> & SCCDAGAttrs::getBasicBlocks (SCC *scc){
   auto &sccInfo = this->sccToInfo[scc];
 
@@ -83,7 +76,20 @@ std::unique_ptr<SCCAttrs> & SCCDAGAttrs::getSCCAttrs (SCC *scc){
 void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG) {
   this->sccdag = loopSCCDAG;
   for (auto node : loopSCCDAG->getNodes()) {
-    this->sccToInfo[node->getT()] = std::move(std::make_unique<SCCAttrs>(node->getT()));
+    auto scc = node->getT();
+
+    this->sccToInfo[scc] = std::move(std::make_unique<SCCAttrs>(scc));
+
+    auto &sccInfo = this->sccToInfo[scc];
+    sccInfo->hasLoopCarriedDataDep = scc->hasCycle(/*ignoreControlDep=*/true);
+
+    if (!sccInfo->hasLoopCarriedDataDep) {
+      sccInfo->execType = SCCExecutionType::Independent;
+    } else if (scc->executesAssociatively()) {
+      sccInfo->execType = SCCExecutionType::Associative;
+    } else {
+      sccInfo->execType = SCCExecutionType::Sequential;
+    }
   }
 
   return ;
