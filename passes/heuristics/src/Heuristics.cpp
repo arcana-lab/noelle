@@ -190,9 +190,9 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
      * Check merge criteria on dependents and depth-1 neighbors
      */
     auto dependents = partition.getDependents(subset);
-    auto cousins = partition.getCousins(subset);
+    auto siblings = partition.getSiblings(subset);
     for (auto s : dependents) tryToMergeWith(s);
-    for (auto s : cousins) tryToMergeWith(s);
+    for (auto s : siblings) tryToMergeWith(s);
 
     /*
      * Merge partition if one is found; reiterate the merge check on it

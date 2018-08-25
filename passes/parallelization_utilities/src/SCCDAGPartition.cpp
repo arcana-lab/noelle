@@ -347,7 +347,7 @@ std::set<SCCDAGSubset *> SCCDAGPartition::getRelated (std::set<DGNode<SCC> *> &s
     return related;
 }
 
-std::set<SCCDAGSubset *> SCCDAGPartition::getCousins (SCCDAGSubset *subset) {
+std::set<SCCDAGSubset *> SCCDAGPartition::getSiblings (SCCDAGSubset *subset) {
     auto sccNodes = this->getSCCNodes(subset);
     std::set<SCCDAGSubset *> subsets = this->getAncestors(sccNodes);
     if (subsets.find(subset) != subsets.end()) subsets.erase(subset);

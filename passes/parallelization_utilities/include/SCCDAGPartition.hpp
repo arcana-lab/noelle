@@ -44,7 +44,7 @@ class SCCDAGPartition {
     std::set<SCCDAGSubset *> getDependents (std::set<DGNode<SCC> *> &sccs);
     std::set<SCCDAGSubset *> getAncestors (SCCDAGSubset *subset);
     std::set<SCCDAGSubset *> getAncestors (std::set<DGNode<SCC> *> &sccs);
-    std::set<SCCDAGSubset *> getCousins (SCCDAGSubset *subset);
+    std::set<SCCDAGSubset *> getSiblings (SCCDAGSubset *subset);
     std::set<SCCDAGSubset *> topLevelSubsets ();
     std::set<SCCDAGSubset *> nextLevelSubsets (SCCDAGSubset *subset);
 
