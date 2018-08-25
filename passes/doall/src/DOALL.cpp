@@ -294,7 +294,11 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
   auto chunkCondBB = BasicBlock::Create(cxt, "", chunker);
   IRBuilder<> chunkCondBBBuilder(chunkCondBB);
 
-  Value *chunkCond = chunkCondBBBuilder.CreateICmpULT(innerIV, chunkSizeVal);
+  auto chunkSizeCast = chunkSizeVal;
+  if (chunkSizeVal->getType() != innerIV->getType()) {
+    chunkSizeCast = chunkCondBBBuilder.CreateIntCast(chunkSizeVal, innerIV->getType(), /*isSigned=*/false);
+  }
+  Value *chunkCond = chunkCondBBBuilder.CreateICmpULT(innerIV, chunkSizeCast);
 
   auto innerBr = cast<BranchInst>(innerHeader->getTerminator());
   assert(innerBr->getNumSuccessors() == 2);
