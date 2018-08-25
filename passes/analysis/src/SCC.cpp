@@ -4,6 +4,12 @@
 using namespace llvm;
 
 llvm::SCC::SCC(std::set<DGNode<Value> *> nodes) {
+
+    /*
+     * Set the type
+     */
+    this->sccType = SCCType::SEQUENTIAL ;
+
 	/*
 	 * Arbitrarily choose entry node from all nodes
 	 */

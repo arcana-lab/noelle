@@ -13,14 +13,25 @@ namespace llvm {
 	* Strongly Connected Component
 	*/
 	class SCC : public DG<Value> {
-	public:
-		SCC(std::set<DGNode<Value> *> nodes) ;
-		~SCC() ;
+      public:
+        enum SCCType {SEQUENTIAL, COMMUTATIVE, INDEPENDENT};
 
-		raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") ;
+        SCC(std::set<DGNode<Value> *> nodes) ;
 
-		bool hasCycle (bool ignoreControlDep = false) ;
-    bool executesAssociatively () ;
+        ~SCC() ;
+
+        raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") ;
+
+        bool hasCycle (bool ignoreControlDep = false) ;
+
+        bool executesAssociatively () ;
+
+        SCCType getType (void) const;
+
+        void setType (SCCType t);
+
+      private:
+        SCCType sccType;
 	};
 
 	template<> class DGEdge<SCC> : public DGEdgeBase<SCC, Value> {
