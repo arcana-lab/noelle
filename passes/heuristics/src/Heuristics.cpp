@@ -162,7 +162,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
     int32_t maxLoweredCost = 0;
     auto maxAllowedCost = totalCost / idealThreads;
 
-    auto checkMergeWith = [&](SCCDAGSubset *s) -> void {
+    auto tryToMergeWith = [&](SCCDAGSubset *s) -> void {
       if (!partition.canMergeSubsets(subset, s)) { 
         //errs() << "DSWP:   CANNOT MERGE\n";
         return;
@@ -191,8 +191,8 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
      */
     auto dependents = partition.getDependents(subset);
     auto cousins = partition.getCousins(subset);
-    for (auto s : dependents) checkMergeWith(s);
-    for (auto s : cousins) checkMergeWith(s);
+    for (auto s : dependents) tryToMergeWith(s);
+    for (auto s : cousins) tryToMergeWith(s);
 
     /*
      * Merge partition if one is found; reiterate the merge check on it
