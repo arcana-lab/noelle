@@ -85,8 +85,8 @@ bool llvm::SCC::hasCycle (bool ignoreControlDep) {
  */
 bool llvm::SCC::executesAssociatively () {
   Instruction *prevVal = nullptr; 
-  for (auto nodePair : this->internalNodePairs())  {
-    Instruction *val = cast<Instruction>(nodePair.first);
+  for (auto node : this->getNodes())  {
+    Instruction *val = cast<Instruction>(node->getT());
     if (isa<PHINode>(val)) continue;
     if (val->isAssociative() && val->isBinaryOp()) {
       if (prevVal && val->getOpcode() != prevVal->getOpcode()) return false;
