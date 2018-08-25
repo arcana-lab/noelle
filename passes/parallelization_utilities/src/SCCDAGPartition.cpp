@@ -40,14 +40,15 @@ void SCCDAGSubset::collectSubsetLoopInfo (SCCDAGAttrs *sccdagAttrs, LoopInfoSumm
 }
 
 raw_ostream &printMinimalSCCs (raw_ostream &stream, std::string prefixToUse, std::set<SCC *> &sccs) {
-    for (auto &removableSCC : sccs) {
-        stream << prefixToUse << "Internal nodes: " << "\n";
-        for (auto nodePair : removableSCC->internalNodePairs()) {
-            nodePair.first->print(stream << prefixToUse << "\t");
-            stream << "\n";
-        }
+  if (sccs.size() == 0) return stream;
+  for (auto &removableSCC : sccs) {
+    stream << prefixToUse << "Internal nodes: " << "\n";
+    for (auto nodePair : removableSCC->internalNodePairs()) {
+      nodePair.first->print(stream << prefixToUse << "\t");
+      stream << "\n";
     }
-    return stream;
+  }
+  return stream;
 }
 
 raw_ostream &SCCDAGSubset::print (raw_ostream &stream, std::string prefixToUse) {
