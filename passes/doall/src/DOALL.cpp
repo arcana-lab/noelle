@@ -331,13 +331,28 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
       PointerType::getUnqual(producer->getType())
     );
 
-    // ??? ASSUMPTION(angelo): does only one latch execute upon exiting a loop?
-    auto producerBB = cast<Instruction>(producer)->getParent();
-    auto prodLI = LDI->liSummary.bbToLoop[producerBB];
-    for (auto prodLoopLatch : prodLI->latchBBs) {
-      IRBuilder<> latchBuilder(innerBBMap[prodLoopLatch]->getTerminator());
-      latchBuilder.CreateStore(instrArgMap[producer], reducePtr);
-    }
+    // Store initial value of accumulation PHI
+    assert(isa<PHINode>(producer));
+    auto prodClone = cast<PHINode>(instrArgMap[producer]);
+    auto initValPHIIndex = prodClone->getBasicBlockIndex(innerBBMap[LDI->preHeader]);
+    auto initVal = prodClone->getIncomingValue(initValPHIIndex);
+    if (auto constVal = dyn_cast<ConstantInt>(initVal)) {
+      initVal = ConstantInt::get(prodClone->getType(), constVal->getValue());
+    } 
+    entryB.CreateStore(initVal, reducePtr);
+
+    // Store final value of accumulation PHI
+    auto innerExitBB = innerBBMap[LDI->loopExitBlocks[0]];
+    IRBuilder<> exitingBuilder(innerExitBB->getTerminator());
+    exitingBuilder.CreateStore(prodClone, reducePtr);
+
+    // Consolidate accumulator in outer loop
+    chHeaderB.SetInsertPoint(&*chHeaderB.GetInsertBlock()->begin());
+    auto accumOuterPHI = chHeaderB.CreatePHI(prodClone->getType(), 2);
+    accumOuterPHI->addIncoming(initVal, entryBlock);
+    accumOuterPHI->addIncoming(prodClone, innerExitBB);
+
+    prodClone->setIncomingValue(initValPHIIndex, accumOuterPHI);
   }
 
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par, chunker);
