@@ -135,7 +135,7 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
   int originCondPHIIndex, originCondMaxIndex;
   int opIndex = 0;
   for (auto &condOp : cast<User>(originCond)->operands()) {
-    condOp->print(errs() << "COND OP: --------- :"); errs() << "\n";
+    // condOp->print(errs() << "COND OP: --------- :"); errs() << "\n";
     bool isPHI = isa<PHINode>(condOp);
     if (isPHI) {
       originCondPHIIndex = opIndex;
@@ -155,12 +155,11 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
   int stepSizeArgIndex = -1;
   ConstantInt *originStepSize = nullptr;
   for (auto user : originIV->users()) {
-    user->print(errs() << "ORIGIN IV USER: "); errs() << "\n";
+    // user->print(errs() << "ORIGIN IV USER: "); errs() << "\n";
     auto scev = SE.getSCEV((Value *)user);
     switch (scev->getSCEVType()) {
     case scAddExpr:
     case scAddRecExpr:
-      errs() << "Add inst\n";
       stepIV = user;
       Value *lhs = user->getOperand(0);
       Value *rhs = user->getOperand(1);
@@ -362,9 +361,6 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par, chunker);
 
   chunker->print(errs() << "Finalized chunker:\n"); errs() << "\n";
-  // chunkF->print(errs() << "CHUNKING FUNCTION:\n"); errs() << "\n";
-  // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
-  // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
 
   errs() << "DOALL: Exit\n";
   return true;
@@ -421,7 +417,6 @@ void DOALL::reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par
   auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
     auto producer = LDI->environment->producerAt(envInd);
-    producer->print(errs() << "Producer: "); errs() << "\n";
     auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
     auto envPtr = reduceBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ zeroV, envIndV }));
     auto reduceArr = reduceBuilder.CreateBitCast(
@@ -452,7 +447,6 @@ void DOALL::reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par
       accumVal = accumVal 
         ? reduceBuilder.CreateBinOp(binOp, accumVal, reduceVal)
         : reduceVal;
-      accumVal->print(errs() << "Accum val after: "); errs() << "\n";
     }
 
     for (auto consumer : LDI->environment->consumersOf(producer)) {
@@ -471,20 +465,18 @@ Value *DOALL::createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRB
 
   auto zeroV = ConstantInt::get(par.int64, 0);
   auto storeEnvAllocaInArray = [&](Value *arr, int envIndex, AllocaInst *alloca) -> void {
-    arr->print(errs() << "Index " << envIndex << ", Array: "); errs() << "\n";
-    alloca->print(errs() << "Alloca "); errs() << "\n";
+    // arr->print(errs() << "Index " << envIndex << ", Array: "); errs() << "\n";
+    // alloca->print(errs() << "Alloca "); errs() << "\n";
     auto indValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
     auto envPtr = entryBuilder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ zeroV, indValue }));
     auto depCast = entryBuilder.CreateBitCast(envPtr, PointerType::getUnqual(alloca->getType()));
     auto store = entryBuilder.CreateStore(alloca, depCast);
-    store->print(errs() << "Store "); errs() << "\n\n";
   };
 
   /*
    * Create empty environment array for producers, exit block tracking
    */
   for (auto envIndex : LDI->environment->getPreEnvIndices()) {
-    LDI->environment->producerAt(envIndex)->print(errs() << "Producer "); errs() << "\n";
     Type *envType = LDI->environment->typeOfEnv(envIndex);
     auto varAlloca = entryBuilder.CreateAlloca(envType);
 
@@ -496,7 +488,6 @@ Value *DOALL::createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRB
     parBuilder.CreateStore(LDI->environment->producerAt(envIndex), varAlloca);
   }
   for (auto envIndex : LDI->environment->getPostEnvIndices()) {
-    LDI->environment->producerAt(envIndex)->print(errs() << "Producer "); errs() << "\n";
     auto reduceArrType = ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES);
     auto reduceArrAlloca = entryBuilder.CreateAlloca(reduceArrType);
 
