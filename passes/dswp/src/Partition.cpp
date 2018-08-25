@@ -12,7 +12,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Check if we can cluster SCCs.
    */
-  if (!this->enableMergingSCC) {
+  if (this->enableMergingSCC) {
     clusterSubloops(LDI);
   }
 
@@ -52,7 +52,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Check if we can cluster SCCs.
    */
-  if (!this->enableMergingSCC) {
+  if (this->enableMergingSCC) {
 
     /*
      * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
