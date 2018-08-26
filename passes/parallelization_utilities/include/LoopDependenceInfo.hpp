@@ -45,6 +45,7 @@ namespace llvm {
     /*
      * SCCDAG.
      */
+    // REFACTOR(angelo): rename loopSCCDAG to loopInternalSCCDAG
     SCCDAG *loopSCCDAG;
     SCCDAGAttrs sccdagAttrs;
 
