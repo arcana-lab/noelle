@@ -135,7 +135,7 @@ void SCCDAGPartition::mergeSubsetsRequiringMemSync () {
    * Start traversal from the root of the partition dag
    */
   std::queue<SCCDAGSubset *> subToCheck;
-  auto rootSubs = this->topLevelSubsets();
+  auto rootSubs = this->getSubsetsWithNoIncomingEdges();
   for (auto &sub : rootSubs) subToCheck.push(sub);
 
   while (!subToCheck.empty()) {
@@ -204,7 +204,7 @@ void SCCDAGPartition::mergeSubsetsFormingCycles () {
   /*
    * Start traversal from the root of the partition dag
    */
-  auto rootSubs = this->topLevelSubsets();
+  auto rootSubs = this->getSubsetsWithNoIncomingEdges();
   for (auto &sub : rootSubs) {
     std::vector<SCCDAGSubset *> path = { sub };
     this->traverseAndCheckToMerge(path);
@@ -363,7 +363,7 @@ std::set<SCCDAGSubset *> SCCDAGPartition::getSiblings (SCCDAGSubset *subset) {
     return neighbors;
 }
 
-std::set<SCCDAGSubset *> SCCDAGPartition::topLevelSubsets () {
+std::set<SCCDAGSubset *> SCCDAGPartition::getSubsetsWithNoIncomingEdges () {
     std::set<SCCDAGSubset *> topLevelSubsets;
     auto topLevelNodes = sccDAG->getTopLevelNodes();
     for (auto node : topLevelNodes) {

@@ -3,7 +3,7 @@
 using namespace llvm;
 
 void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
-  auto topLevelParts = LDI->partition.topLevelSubsets();
+  auto topLevelParts = LDI->partition.getSubsetsWithNoIncomingEdges();
   std::set<SCCDAGSubset *> partsFound(topLevelParts.begin(), topLevelParts.end());
   std::deque<SCCDAGSubset *> partsToTraverse(topLevelParts.begin(), topLevelParts.end());
 
