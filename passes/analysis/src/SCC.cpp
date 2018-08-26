@@ -109,3 +109,12 @@ bool llvm::SCC::executesAssociatively () {
   return true;
 }
 
+llvm::SCC::SCCType llvm::SCC::getType (void) const {
+  return this->sccType;
+}
+
+void llvm::SCC::setType (llvm::SCC::SCCType t) {
+  this->sccType = t;
+
+  return ;
+}
