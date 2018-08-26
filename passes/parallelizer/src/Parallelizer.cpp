@@ -23,17 +23,22 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
    * Check the type of loop.
    */
   auto isDOALL = LDI->loopExitBlocks.size() == 1;
-  isDOALL &= !this->hasNonReducablePostLoopEnvVars(LDI);
+  // errs() << "DOALL CHECKS --------- IS DOALL (loop exit blocks == 1): " << isDOALL << "\n";
+  isDOALL &= this->allPostLoopEnvValuesAreReducable(LDI);
+  // errs() << "DOALL CHECKS --------- IS DOALL (post env reducable): " << isDOALL << "\n";
 
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
   isDOALL &= LDI->sccdagAttrs.loopHasInductionVariable(SE);
+  // errs() << "DOALL CHECKS --------- IS DOALL (has IV): " << isDOALL << "\n";
 
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
+    // scc->print(errs() << "Loop carried dep scc:\n") << "\n";
     auto &sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
-    isDOALL &= sccInfo->execType == SCCExecutionType::Associative
+    isDOALL &= scc->getType() == SCC::SCCType::COMMUTATIVE
       || sccInfo->isClonable
       || LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc);
+    // errs() << "DOALL CHECKS --------- IS DOALL (scc): " << isDOALL << "\n";
   }
 
   /*
@@ -96,6 +101,8 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
 }
 
 void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
+  LDI->sccdagAttrs.populate(LDI->loopSCCDAG);
+
   estimateCostAndExtentOfParallelismOfSCCs(LDI, h);
 
   /*

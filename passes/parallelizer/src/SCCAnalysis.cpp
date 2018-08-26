@@ -3,7 +3,6 @@
 using namespace llvm;
 
 void Parallelizer::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
-  LDI->sccdagAttrs.populate(LDI->loopSCCDAG);
 
   /*
    * Estimate the latency of an invocation of an SCC.

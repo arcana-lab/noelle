@@ -80,7 +80,7 @@ namespace llvm {
       void collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI);
       void collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
       void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);
-      bool hasNonReducablePostLoopEnvVars (DSWPLoopDependenceInfo *LDI);
+      bool allPostLoopEnvValuesAreReducable (DSWPLoopDependenceInfo *LDI);
 
       /*
        * Debug utilities
