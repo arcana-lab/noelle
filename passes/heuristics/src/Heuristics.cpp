@@ -8,6 +8,7 @@ uint64_t Heuristics::latencyPerInvocation (SCC *scc){
     auto I = cast<Instruction>(nodePair.first);
     cost += this->latencyPerInvocation(I);
   }
+
   return cost;
 }
 
@@ -117,105 +118,112 @@ uint64_t Heuristics::queueLatency (Value *queueVal){
 void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition, SCCDAGAttrs &sccdagAttrs, uint64_t idealThreads){
 
   /*
-   * Estimate the current latency for each subset of the current partition of the SCCDAG.
-   */
-  uint64_t totalCost = 0;
-  std::set<SCCDAGSubset *> currentSubsets;
-  for (auto &subset : partition.subsets) {
-    currentSubsets.insert(subset.get());
-    subset->cost = this->latencyPerInvocation(sccdagAttrs, subset->SCCs);
-    totalCost += subset->cost;
-  }
-
-  /*
-   * Collect all subsets of the current SCCDAG partition.
-   */
-  std::queue<SCCDAGSubset *> partToCheck;
-  auto topLevelParts = partition.topLevelSubsets();
-  for (auto part : topLevelParts) {
-    partToCheck.push(part);
-  }
-
-  /*
    * Merge subsets.
    */
-  while (!partToCheck.empty()) {
+  auto modified = false;
+  do {
+    modified = false;
 
     /*
-     * Fetch the current subset.
+     * Estimate the current latency for traversing once the pipeline created by the current partition of the SCCDAG.
      */
-    auto subset = partToCheck.front();
-    partToCheck.pop();
-
-    /*
-     * Check if the current subset has been already tagged to be removed (i.e., merged).
-     */
-    if (currentSubsets.find(subset) == currentSubsets.end()) {
-      continue;
-    }
-    // subset->print(errs() << "DSWP:   CHECKING SUBSET:\n", "DSWP:   ");
-
-    /*
-     * Prioritize merge that best lowers overall cost without yielding a too costly partition
-     */
-    SCCDAGSubset *minSubset = nullptr;
-    int32_t maxLoweredCost = 0;
-    auto maxAllowedCost = totalCost / idealThreads;
-
-    auto tryToMergeWith = [&](SCCDAGSubset *s) -> void {
-      if (!partition.canMergeSubsets(subset, s)) { 
-        //errs() << "DSWP:   CANNOT MERGE\n";
-        return;
+    uint64_t totalCost = 0;
+    uint64_t maxAllowedCost = 0;
+    std::set<SCCDAGSubset *> currentSubsets;
+    for (auto &subset : partition.subsets) {
+      currentSubsets.insert(subset.get());
+      subset->cost = this->latencyPerInvocation(sccdagAttrs, subset->SCCs);
+      if (  (maxAllowedCost == 0)           ||
+            (subset->cost > maxAllowedCost) ){
+        maxAllowedCost = subset->cost;
       }
-      // part->print(errs() << "DSWP:   CAN MERGE WITH PARTITION:\n", "DSWP:   ");
+
+      totalCost += subset->cost;
+    }
+
+    /*
+     * Collect all subsets of the current SCCDAG partition.
+     */
+    std::queue<SCCDAGSubset *> partToCheck;
+    auto topLevelParts = partition.getSubsetsWithNoIncomingEdges();
+    for (auto part : topLevelParts) {
+      partToCheck.push(part);
+    }
+
+    /*
+     * Merge subsets.
+     */
+    std::set<SCCDAGSubset *> alreadyChecked;
+    while (!partToCheck.empty()) {
 
       /*
-       * Create an example merge of the subsets to determine its worth
+       * Fetch the current subset.
        */
-      auto demoMerged = partition.demoMergeSubsets(subset, s);
-      auto mergedCost = this->latencyPerInvocation(sccdagAttrs, demoMerged->SCCs);
-      if (mergedCost > maxAllowedCost) return ;
-      // errs() << "DSWP:   Max allowed cost: " << maxAllowedCost << "\n";
+      auto subset = partToCheck.front();
+      partToCheck.pop();
+      alreadyChecked.insert(subset);
 
-      auto loweredCost = s->cost + subset->cost - mergedCost;
-      // errs() << "DSWP:   Merging (cost " << subset->cost << ", " << part->cost << ") yields cost " << demoMerged->cost << "\n";
-      if (loweredCost > maxLoweredCost) {
-        // errs() << "DSWP:   WILL MERGE IF BEST\n";
-        minSubset = s;
-        maxLoweredCost = loweredCost;
+      /*
+       * Check if the current subset has been already tagged to be removed (i.e., merged).
+       */
+      if (currentSubsets.find(subset) == currentSubsets.end()) {
+        continue;
       }
-    };
 
-    /*
-     * Check merge criteria on dependents and depth-1 neighbors
-     */
-    auto dependents = partition.getDependents(subset);
-    auto siblings = partition.getSiblings(subset);
-    for (auto s : dependents) tryToMergeWith(s);
-    for (auto s : siblings) tryToMergeWith(s);
+      /*
+       * Prioritize merge that best lowers overall cost without yielding a too costly partition
+       */
+      SCCDAGSubset *minSubset = nullptr;
+      int32_t maxLoweredCost = 0;
 
-    /*
-     * Merge partition if one is found; reiterate the merge check on it
-     */
-    if (minSubset) {
-      auto mergedSub = partition.mergeSubsets(subset, minSubset);
-      totalCost -= maxLoweredCost;
-      currentSubsets.erase(subset);
-      currentSubsets.erase(minSubset);
-      currentSubsets.insert(mergedSub);
-      partToCheck.push(mergedSub);
-      //mergedSub->print(errs() << "DSWP:   MERGED PART: " << partToCheck.size() << "\n", "DSWP:   ");
+      auto tryToMergeWith = [&](SCCDAGSubset *s) -> void {
+        if (!partition.canMergeSubsets(subset, s)) { 
+          return;
+        }
+
+        /*
+         * Create an example merge of the subsets to determine its worth
+         */
+        auto demoMerged = partition.demoMergeSubsets(subset, s);
+        auto mergedCost = this->latencyPerInvocation(sccdagAttrs, demoMerged->SCCs);
+        if (mergedCost > maxAllowedCost) {
+          return ;
+        }
+
+        minSubset = s;
+      };
+
+      /*
+       * Check merge criteria on dependents and depth-1 neighbors
+       */
+      auto dependents = partition.getDependents(subset);
+      auto siblings = partition.getSiblings(subset);
+      for (auto s : dependents) tryToMergeWith(s);
+      for (auto s : siblings) tryToMergeWith(s);
+
+      /*
+       * Merge partition if one is found; reiterate the merge check on it
+       */
+      if (minSubset) {
+        auto mergedSub = partition.mergeSubsets(subset, minSubset);
+        currentSubsets.erase(subset);
+        currentSubsets.erase(minSubset);
+        currentSubsets.insert(mergedSub);
+        partToCheck.push(mergedSub);
+
+        /*
+         * Add dependent SCCs as well.
+         */
+        for (auto s : dependents) {
+          if (alreadyChecked.find(s) == alreadyChecked.end()){
+            partToCheck.push(s);
+          }
+        }
+
+        modified = true;
+      }
     }
-
-    /*
-     * Iterate the merge check on all dependent partitions
-     */
-    for (auto s : dependents) {
-      if (minSubset == s) continue;
-      partToCheck.push(s);
-      //s->print(errs() << "DSWP:   WILL CHECK: " << partToCheck.size() << "\n", "DSWP:   ");
-    }
-  }
+  } while (modified);
 
   return ;
 }
