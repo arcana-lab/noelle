@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SCCDAG.hpp"
+#include "SCC.hpp"
 #include "LoopInfoSummary.hpp"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
@@ -15,8 +16,6 @@ namespace llvm {
     std::set<Value *> edges;
   };
 
-  enum class SCCExecutionType { Sequential, Associative, Independent };
-
   class SCCAttrs {
     public:
 
@@ -28,7 +27,6 @@ namespace llvm {
       int internalCost;
       bool hasLoopCarriedDataDep;
       bool isClonable;
-      SCCExecutionType execType;
       std::unordered_map<SCC *, std::unique_ptr<SCCEdgeInfo>> sccToEdgeInfo;
 
       /*
@@ -54,6 +52,7 @@ namespace llvm {
       /*
        * Methods
        */
+      bool executesCommutatively (SCC *scc) const ;
       std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
 
       bool loopHasInductionVariable (ScalarEvolution &SE) const ;

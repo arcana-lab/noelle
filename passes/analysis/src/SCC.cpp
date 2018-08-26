@@ -3,18 +3,20 @@
 
 using namespace llvm;
 
-llvm::SCC::SCC(std::set<DGNode<Value> *> nodes) {
+llvm::SCC::SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues) {
 
-    /*
-     * Set the type
-     */
-    this->sccType = SCCType::SEQUENTIAL ;
+  /*
+   * Set scc type (conservatively)
+   */
+  this->sccType = SCCType::SEQUENTIAL;
 
 	/*
 	 * Arbitrarily choose entry node from all nodes
 	 */
 	for (auto node : nodes) addNode(node->getT(), /*internal=*/ true);
 	entryNode = (*allNodes.begin());
+
+  if (!connectToExternalValues) return ;
 
 	/*
 	 * Add internal/external edges on this SCC's instructions 
@@ -82,31 +84,6 @@ bool llvm::SCC::hasCycle (bool ignoreControlDep) {
 		}
 	}
 	return false;
-}
-
-/*
- * For the execution of an SCC to be associative:
- *  1) All computations in the SCC must be of the same type (add, mul)
- *  2) They must NOT reference their own current values
- */
-bool llvm::SCC::executesAssociatively () {
-  Instruction *prevVal = nullptr; 
-  for (auto node : this->getNodes())  {
-    Instruction *val = cast<Instruction>(node->getT());
-    if (isa<PHINode>(val)) continue;
-    if (val->isAssociative() && val->isBinaryOp()) {
-      if (prevVal && val->getOpcode() != prevVal->getOpcode()) return false;
-      for (auto &op : val->operands()) {
-        auto opV = op.get();
-        if (!this->isInternal(opV) || isa<PHINode>(opV)) continue;
-        if (this->isInternal(opV)) return false;
-      }
-      prevVal = val;
-    } else {
-      return false;
-    }
-  }
-  return true;
 }
 
 llvm::SCC::SCCType llvm::SCC::getType (void) const {

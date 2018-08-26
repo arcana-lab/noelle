@@ -81,16 +81,84 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG) {
     this->sccToInfo[scc] = std::move(std::make_unique<SCCAttrs>(scc));
 
     auto &sccInfo = this->sccToInfo[scc];
-    sccInfo->hasLoopCarriedDataDep = scc->hasCycle(/*ignoreControlDep=*/true);
+    sccInfo->hasLoopCarriedDataDep = scc->hasCycle(/*ignoreControlDep=*/false);
 
     if (!sccInfo->hasLoopCarriedDataDep) {
-      sccInfo->execType = SCCExecutionType::Independent;
-    } else if (scc->executesAssociatively()) {
-      sccInfo->execType = SCCExecutionType::Associative;
+      scc->setType(SCC::SCCType::INDEPENDENT);
+    } else if (this->executesCommutatively(scc)) {
+      scc->setType(SCC::SCCType::COMMUTATIVE);
     } else {
-      sccInfo->execType = SCCExecutionType::Sequential;
+      scc->setType(SCC::SCCType::SEQUENTIAL);
     }
   }
+}
 
-  return ;
+bool SCCDAGAttrs::executesCommutatively (SCC *scc) const {
+  std::set<unsigned> sideEffectFreeBinOps = {
+    Instruction::Add,
+    Instruction::Mul,
+    Instruction::Sub
+  };
+
+  /*
+   * Requirement: SCC has no dependent SCCs
+   */
+  errs() << "Checking for dependent SCCs\n";
+  for (auto iNodePair : scc->externalNodePairs()) {
+    if (iNodePair.second->numIncomingEdges() > 0) {
+      return false;
+    }
+  }
+  errs() << "------------------------------- Phew, isn't dependent\n";
+
+  PHINode *singlePHI = nullptr;
+  std::set<DGNode<Value> *> commValNodes;
+  for (auto iNodePair : scc->internalNodePairs()) {
+    Instruction *val = cast<Instruction>(iNodePair.first);
+    val->print(errs() << "Checking val: "); errs() << "\n";
+
+    /*
+     * Requirement: one unique PHI node
+     */
+    if (isa<PHINode>(val)) {
+      if (singlePHI) return false;
+      singlePHI = (PHINode *)val;
+      continue;
+    }
+
+    /*
+     * Requirement: instructions are side effect free
+     */
+    unsigned opCode = val->getOpcode();
+    if (sideEffectFreeBinOps.find(opCode) == sideEffectFreeBinOps.end()) {
+      return false;
+    }
+    commValNodes.insert(iNodePair.second);
+  }
+  if (commValNodes.size() == 0) return true;
+
+  /*
+   * Requirement: commutative instructions alone do not form a cycle
+   */
+  SCC commValSCC(commValNodes, /*connectToExternalValues=*/false);
+  errs() << "HAS CYCLE!?\n";
+  if (commValSCC.hasCycle()) return false;
+  errs() << "DOES NOT HAVE CYCLE!?\n";
+
+  auto firstCommVal = (*commValNodes.begin())->getT();
+  unsigned opCode = cast<Instruction>(firstCommVal)->getOpcode();
+  bool isFirstMul = opCode == Instruction::Mul;
+  for (auto commValNode : commValNodes) {
+    auto commVal = commValNode->getT();
+
+    /*
+     * Requirement: instructions are all Add/Sub or all Mul
+     */
+    bool isMul = cast<Instruction>(commVal)->getOpcode() == Instruction::Mul;
+    if (isMul ^ isFirstMul) return false;
+    errs() << "Share group of opcode\n";
+  }
+
+  errs() << "SUCCESS THIS IS A COMMUTATIVE SCC!\n";
+  return true;
 }

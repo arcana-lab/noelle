@@ -16,15 +16,13 @@ namespace llvm {
       public:
         enum SCCType {SEQUENTIAL, COMMUTATIVE, INDEPENDENT};
 
-        SCC(std::set<DGNode<Value> *> nodes) ;
+        SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
 
         ~SCC() ;
 
         raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") ;
 
         bool hasCycle (bool ignoreControlDep = false) ;
-
-        bool executesAssociatively () ;
 
         SCCType getType (void) const;
 
