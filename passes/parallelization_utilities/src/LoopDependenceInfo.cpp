@@ -51,11 +51,15 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
   return ;
 };
 
+void LoopDependenceInfo::createPDGs (void){
+  return ;
+}
+
 llvm::LoopDependenceInfo::~LoopDependenceInfo() {
-	delete loopDG;
-	delete loopInternalDG;
-	delete loopSCCDAG;
+  delete loopDG;
+  delete loopInternalDG;
+  delete loopSCCDAG;
   delete environment;
 
-    return ;
+  return ;
 }

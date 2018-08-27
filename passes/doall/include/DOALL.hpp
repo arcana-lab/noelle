@@ -26,6 +26,7 @@
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
 #include "HeuristicsPass.hpp"
+#include "ParallelizationTechnique.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -34,22 +35,21 @@
 
 namespace llvm {
 
-  class DOALL {
+  class DOALL : public ParallelizationTechnique {
     public:
 
       /*
        * Methods
        */
       DOALL (Module &module, Verbosity v);
-      bool apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) ;
+      bool apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
+      bool canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
 
     private:
 
       /*
        * Fields
        */
-      Module& module;
-      Verbosity verbose;
       Function *doallDispatcher;
 
       /*

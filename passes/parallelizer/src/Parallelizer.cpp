@@ -63,7 +63,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
     /*
      * Apply DSWP.
      */
-    codeModified = dswp.apply(LDI, par, h);
+    codeModified = dswp.apply(LDI, par, h, SE);
   }
 
   /*

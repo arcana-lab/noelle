@@ -4,10 +4,9 @@ using namespace llvm;
 
 DSWP::DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Verbosity v)
   :
-  module{module},
+  ParallelizationTechnique{module, v},
   forceParallelization{forceParallelization},
-  enableMergingSCC{enableSCCMerging},
-  verbose{v}
+  enableMergingSCC{enableSCCMerging}
   {
 
   /*
@@ -28,8 +27,20 @@ DSWP::DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Ve
 
   return ;
 }
+      
+bool DSWP::canBeAppliedToLoop (LoopDependenceInfo *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
+  return true;
+}
 
-bool DSWP::apply (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) {
+bool DSWP::apply (LoopDependenceInfo *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) {
+
+  /*
+   * Fetch the LDI.
+   */
+  auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
+  if (LDI == nullptr){
+    return false;
+  }
 
   /*
    * Partition the SCCDAG.

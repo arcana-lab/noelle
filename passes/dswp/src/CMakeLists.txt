@@ -30,7 +30,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../analysis/include ../../threadpool/include ../../parallelization_utilities/include ../../heuristics/include ../include ./)
+include_directories(${LLVM_INCLUDE_DIRS} ../../analysis/include ../../threadpool/include ../../parallelization_utilities/include ../../heuristics/include ../../parallelization_technique/include ../include ./)
 
 # Declare the LLVM pass to compile
 add_llvm_loadable_module(${PassName} ${Srcs})

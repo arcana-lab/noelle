@@ -27,6 +27,7 @@
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
 #include "HeuristicsPass.hpp"
+#include "ParallelizationTechnique.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -35,7 +36,7 @@
 
 namespace llvm {
 
-  class DSWP {
+  class DSWP : public ParallelizationTechnique {
     public:
 
       /*
@@ -48,17 +49,16 @@ namespace llvm {
        * Methods
        */
       DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Verbosity v);
-      bool apply (DSWPLoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) ;
+      bool apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
+      bool canBeAppliedToLoop (LoopDependenceInfo *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
 
     private:
 
       /*
        * Fields
        */
-      Module& module;
       bool forceParallelization;
       bool enableMergingSCC;
-      Verbosity verbose;
 
       /*
        * Methods

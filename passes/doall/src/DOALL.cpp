@@ -8,13 +8,16 @@ using namespace llvm;
 
 DOALL::DOALL (Module &module, Verbosity v)
   :
-  module{module},
-  verbose{v}
+  ParallelizationTechnique{module, v}
   {
 
   this->doallDispatcher = this->module.getFunction("doallDispatcher");
 
   return ;
+}
+      
+bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
+  return true;
 }
 
 bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) {

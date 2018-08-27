@@ -21,7 +21,7 @@ RUNTIME_CFLAGS=""
 
 PRINTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PDGPRINTER).so
 PARALLELIZATION_TECHNIQUES= -load ~/CAT/lib/DSWP.so -load ~/CAT/lib/DOALL.so
-OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/$(PARALLELIZATION).so 
+OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/ParallelizationTechnique.so -load ~/CAT/lib/$(PARALLELIZATION).so 
 
 all: baseline $(OPTIMIZED)
 

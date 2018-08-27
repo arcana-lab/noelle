@@ -61,6 +61,7 @@ namespace llvm {
      * Methods
      */
     LoopDependenceInfo (Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
+    virtual void createPDGs (void) ;
     ~LoopDependenceInfo();
   };
 
