@@ -3,6 +3,12 @@
 using namespace llvm;
   
 bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, Heuristics *h){
+
+  /*
+   * Assertions.
+   */
+  assert(LDI != nullptr);
+  assert(h != nullptr);
   if (this->verbose > Verbosity::Disabled) {
     errs() << "Parallelizer: Start\n";
     errs() << "Parallelizer:  Function \"" << LDI->function->getName() << "\"\n";
