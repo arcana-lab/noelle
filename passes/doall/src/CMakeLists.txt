@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   DOALL.cpp
+  Analysis.cpp
 )
 
 # Compilation flags

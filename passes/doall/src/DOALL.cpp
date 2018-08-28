@@ -15,10 +15,6 @@ DOALL::DOALL (Module &module, Verbosity v)
 
   return ;
 }
-      
-bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
-  return true;
-}
 
 bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) {
   errs() << "DOALL: Start\n";
