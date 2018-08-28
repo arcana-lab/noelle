@@ -366,7 +366,7 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
 
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par, chunker);
 
-  chunker->print(errs() << "Finalized chunker:\n"); errs() << "\n";
+  chunker->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
   // chunkF->print(errs() << "CHUNKING FUNCTION:\n"); errs() << "\n";
   // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
   // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
