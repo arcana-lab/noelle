@@ -68,6 +68,18 @@ std::set<BasicBlock *> & SCCDAGAttrs::getBasicBlocks (SCC *scc){
   return sccInfo->bbs;
 }
 
+bool SCCDAGAttrs::allPostLoopEnvValuesAreReducable (LoopEnvironment *env) const {
+  for (auto envIndex : env->getPostEnvIndices()) {
+    auto producer = env->producerAt(envIndex);
+    auto scc = sccdag->sccOfValue(producer);
+
+    if (scc->getType() != SCC::SCCType::COMMUTATIVE) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
 std::unique_ptr<SCCAttrs> & SCCDAGAttrs::getSCCAttrs (SCC *scc){
   return this->sccToInfo[scc];

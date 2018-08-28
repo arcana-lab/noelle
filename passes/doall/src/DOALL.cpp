@@ -17,7 +17,27 @@ DOALL::DOALL (Module &module, Verbosity v)
 }
       
 bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
-  return true;
+
+  if (LDI->loopExitBlocks.size() > 1) return false;
+
+  // errs() << "DOALL CHECKS --------- IS DOALL (loop exit blocks == 1): " << isDOALL << "\n";
+  if (!LDI->sccdagAttrs.allPostLoopEnvValuesAreReducable(LDI->environment)) return false;
+  // errs() << "DOALL CHECKS --------- IS DOALL (post env reducable): " << isDOALL << "\n";
+
+  if (!LDI->sccdagAttrs.loopHasInductionVariable(SE)) return false;
+  // errs() << "DOALL CHECKS --------- IS DOALL (has IV): " << isDOALL << "\n";
+
+  auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
+  bool allSCCsDOALL = true;
+  for (auto scc : nonDOALLSCCs) {
+    // scc->print(errs() << "Loop carried dep scc:\n") << "\n";
+    auto &sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    allSCCsDOALL &= scc->getType() == SCC::SCCType::COMMUTATIVE
+      || sccInfo->isClonable
+      || LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc);
+    // errs() << "DOALL CHECKS --------- IS DOALL (scc): " << isDOALL << "\n";
+  }
+  return allSCCsDOALL;
 }
 
 bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) {

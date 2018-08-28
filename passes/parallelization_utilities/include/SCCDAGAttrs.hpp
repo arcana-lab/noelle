@@ -3,6 +3,7 @@
 #include "SCCDAG.hpp"
 #include "SCC.hpp"
 #include "LoopInfoSummary.hpp"
+#include "LoopEnvironment.hpp"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Support/raw_ostream.h"
@@ -58,6 +59,7 @@ namespace llvm {
       bool loopHasInductionVariable (ScalarEvolution &SE) const ;
       bool isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const ;
       bool isSCCContainedInSubloop (LoopInfoSummary &LIS, SCC *scc) const ;
+      bool allPostLoopEnvValuesAreReducable (LoopEnvironment *env) const ;
 
       std::set<BasicBlock *> & getBasicBlocks (SCC *scc);
 
