@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Set the installation directory
 installDir=$PDG_INSTALL_DIR ;
