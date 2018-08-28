@@ -3,7 +3,6 @@ set(Srcs
   SCCAnalysis.cpp
   Pass.cpp
   Parallelizer.cpp
-  Environment.cpp
   Helper.cpp
   LoopSelector.cpp
   ParallelSCC.cpp

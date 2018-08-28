@@ -26,23 +26,16 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
   collectSCCDAGAttrs(LDI, h);
 
   /*
-   * Check the type of loop.
-   */
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
-  auto isDOALL = doall.canBeAppliedToLoop(LDI, par, h, SE);
-  isDOALL &= this->allPostLoopEnvValuesAreReducable(LDI);
-
-  /*
    * Parallelize the loop.
    */
+  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
   auto codeModified = false;
-  if (isDOALL){
+  if (doall.canBeAppliedToLoop(LDI, par, h, SE)){
 
     /*
      * Apply DOALL.
      */
     codeModified = doall.apply(LDI, par, h, SE);
-
   } else {
 
     /*
