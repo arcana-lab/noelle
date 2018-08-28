@@ -342,6 +342,8 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
   entryB.SetInsertPoint(entryBlock->getTerminator());
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
     auto producer = LDI->environment->producerAt(envInd);
+    assert(isa<PHINode>(producer));
+
     auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
     auto envPtr = entryB.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ zeroV, envIndV }));
     auto reduceArr = entryB.CreateBitCast(
@@ -354,22 +356,30 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
       PointerType::getUnqual(producer->getType())
     );
 
-    // Store initial value of accumulation PHI
-    assert(isa<PHINode>(producer));
-    auto prodClone = cast<PHINode>(instrArgMap[producer]);
-    auto initValPHIIndex = prodClone->getBasicBlockIndex(innerBBMap[LDI->preHeader]);
-    auto initVal = prodClone->getIncomingValue(initValPHIIndex);
-    if (auto constVal = dyn_cast<ConstantInt>(initVal)) {
-      initVal = ConstantInt::get(prodClone->getType(), constVal->getValue());
-    } 
+    // Ignore initial value of accumulation PHI, use binary op's identity value
+    Value *initVal = nullptr;
+    unordered_map<unsigned, unsigned> binOpToIdentity = {
+      { Instruction::Add, 0 },
+      { Instruction::Sub, 0 },
+      { Instruction::Mul, 1 }
+    };
+    for (auto iNodePair : LDI->loopSCCDAG->sccOfValue(producer)->internalNodePairs()) {
+      auto I = cast<Instruction>(iNodePair.first);
+      if (isa<PHINode>(I)) continue;
+      assert(binOpToIdentity.find(I->getOpcode()) != binOpToIdentity.end());
+      initVal = ConstantInt::get(producer->getType(), binOpToIdentity[I->getOpcode()]);
+      break;
+    }
     entryB.CreateStore(initVal, reducePtr);
 
     // Store final value of accumulation PHI
+    auto prodClone = cast<PHINode>(instrArgMap[producer]);
     auto innerExitBB = innerBBMap[LDI->loopExitBlocks[0]];
     IRBuilder<> exitingBuilder(innerExitBB->getTerminator());
     exitingBuilder.CreateStore(prodClone, reducePtr);
 
     // Consolidate accumulator in outer loop
+    auto initValPHIIndex = prodClone->getBasicBlockIndex(innerBBMap[LDI->preHeader]);
     chHeaderB.SetInsertPoint(&*chHeaderB.GetInsertBlock()->begin());
     auto accumOuterPHI = chHeaderB.CreatePHI(prodClone->getType(), 2);
     accumOuterPHI->addIncoming(initVal, entryBlock);
@@ -448,15 +458,18 @@ void DOALL::reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par
       PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES))
     );
 
+    // REFACTOR(angelo): query for binary operator done in multiple places
     auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
     Instruction::BinaryOps binOp;
-    for (auto nodePair : producerSCC->internalNodePairs()) {
-      auto I = cast<Instruction>(nodePair.first);
-      if (I->isAssociative()) {
-        auto opCode = I->getOpcode();
-        assert(Instruction::isBinaryOp(opCode));
-        binOp = static_cast<Instruction::BinaryOps>(opCode);
-      }
+    for (auto iNodePair : LDI->loopSCCDAG->sccOfValue(producer)->internalNodePairs()) {
+      auto I = cast<Instruction>(iNodePair.first);
+      if (isa<PHINode>(I)) continue;
+      binOp = static_cast<Instruction::BinaryOps>(I->getOpcode());
+      break;
+    }
+    // HACK(angelo): Reducing negation is still done using addition
+    if (binOp == Instruction::Sub) {
+      binOp = Instruction::Add;
     }
 
     Value *accumVal = nullptr;
@@ -473,6 +486,11 @@ void DOALL::reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par
         : reduceVal;
       accumVal->print(errs() << "Accum val after: "); errs() << "\n";
     }
+
+    auto prodPHI = cast<PHINode>(producer);
+    auto initValPHIIndex = prodPHI->getBasicBlockIndex(LDI->preHeader);
+    auto initVal = prodPHI->getIncomingValue(initValPHIIndex);
+    accumVal = reduceBuilder.CreateBinOp(binOp, accumVal, initVal);
 
     for (auto consumer : LDI->environment->consumersOf(producer)) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
