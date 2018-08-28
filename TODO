@@ -20,6 +20,8 @@
 
 
 ==== DOALL
+- Understand why ReductionIterations3 is not parallelized as DOALL
+
 - Promote chunk size to be an option (e.g., --doall-chunksize)
 
 
