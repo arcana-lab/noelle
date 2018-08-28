@@ -1,3 +1,6 @@
+==== BUGS
+- Fix IndependentIterations6
+
 ==== SOFTWARE ENGINEERING
 - Add the option to decide the number of threads to target per loop
 
