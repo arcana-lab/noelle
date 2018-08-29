@@ -85,8 +85,15 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
 }
 
 void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
+
+  /*
+   * Evaluate the SCCs (e.g., which ones are commutative) of the SCCDAG of the loop.
+   */
   LDI->sccdagAttrs.populate(LDI->loopSCCDAG);
 
+  /*
+   * Estimate the latency per invocation of the SCCs.
+   */
   estimateCostAndExtentOfParallelismOfSCCs(LDI, h);
 
   /*
