@@ -182,6 +182,9 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
    */
   auto startValPHIIndex = originIV->getBasicBlockIndex(LDI->preHeader);
   auto startVal = originIV->getIncomingValue(startValPHIIndex);
+  if (!isa<ConstantInt>(startVal)) {
+    startVal = instrArgMap[startVal];
+  }
 
   /*
    * Determine start value and step size for outer chunking loop
