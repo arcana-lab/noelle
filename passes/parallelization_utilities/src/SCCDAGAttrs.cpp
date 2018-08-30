@@ -73,6 +73,7 @@ bool SCCDAGAttrs::allPostLoopEnvValuesAreReducable (LoopEnvironment *env) const 
     auto producer = env->producerAt(envIndex);
     auto scc = sccdag->sccOfValue(producer);
 
+    scc->print(errs() << "SCC that has post env\n") << "\n";
     if (scc->getType() != SCC::SCCType::COMMUTATIVE) {
       return false;
     }
@@ -108,14 +109,18 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG) {
 bool SCCDAGAttrs::executesCommutatively (SCC *scc) const {
   std::set<unsigned> sideEffectFreeBinOps = {
     Instruction::Add,
+    Instruction::FAdd,
     Instruction::Mul,
-    Instruction::Sub
+    Instruction::FMul,
+    Instruction::Sub,
+    Instruction::FSub
   };
 
   /*
    * Requirement: SCC has no dependent SCCs
    */
-  errs() << "Checking for dependent SCCs\n";
+  errs() << "Checking for dependent SCCs of SCC:\n";
+  scc->print(errs()) << "\n";
   for (auto iNodePair : scc->externalNodePairs()) {
     if (iNodePair.second->numIncomingEdges() > 0) {
       return false;
@@ -158,15 +163,17 @@ bool SCCDAGAttrs::executesCommutatively (SCC *scc) const {
   errs() << "DOES NOT HAVE CYCLE!?\n";
 
   auto firstCommVal = (*commValNodes.begin())->getT();
-  unsigned opCode = cast<Instruction>(firstCommVal)->getOpcode();
-  bool isFirstMul = opCode == Instruction::Mul;
+  unsigned firstOpCode = cast<Instruction>(firstCommVal)->getOpcode();
+  bool isFirstMul = firstOpCode == Instruction::Mul
+    || firstOpCode == Instruction::FMul;
   for (auto commValNode : commValNodes) {
     auto commVal = commValNode->getT();
 
     /*
      * Requirement: instructions are all Add/Sub or all Mul
      */
-    bool isMul = cast<Instruction>(commVal)->getOpcode() == Instruction::Mul;
+    auto opCode = cast<Instruction>(commVal)->getOpcode();
+    bool isMul = opCode == Instruction::Mul || opCode == Instruction::FMul;
     if (isMul ^ isFirstMul) return false;
     errs() << "Share group of opcode\n";
   }

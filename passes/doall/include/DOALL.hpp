@@ -28,6 +28,8 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechnique.hpp"
 
+#include "ChunkerInfo.hpp"
+
 #include <unordered_map>
 #include <set>
 #include <queue>
@@ -55,10 +57,18 @@ namespace llvm {
       /*
        * Methods
        */
-      Function * createChunkingFuncAndArgTypes (LoopDependenceInfo *LDI, Parallelization &par);
-      void addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, Function *chunker);
-      void reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par);
-      Value *createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
+      std::unique_ptr<ChunkerInfo> createChunkingFuncAndArgs (LoopDependenceInfo *LDI, Parallelization &par);
+      void reproduceOriginLoop(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void reproducePreEnv(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void mapOriginLoopValueUses(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void collectOriginIVValues(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, ScalarEvolution &SE);
+      void createOuterLoop(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void alterInnerLoopToIterateChunks(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void storePostEnvironment(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+
+      void addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      Value *createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
   };
 
 }

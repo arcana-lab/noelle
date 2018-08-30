@@ -23,13 +23,14 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
   /*
    * Collect information about the SCCs.
    */
-  collectSCCDAGAttrs(LDI, h);
+  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
+  collectSCCDAGAttrs(LDI, h, SE);
 
   /*
    * Parallelize the loop.
    */
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
   auto codeModified = false;
+  errs() << "CHECKING OCCURS NOW...\n";
   if (doall.canBeAppliedToLoop(LDI, par, h, SE)){
 
     /*
@@ -84,7 +85,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
   return true;
 }
 
-void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
+void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h, ScalarEvolution &SE) {
 
   /*
    * Evaluate the SCCs (e.g., which ones are commutative) of the SCCDAG of the loop.
@@ -105,7 +106,7 @@ void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *
    * Keep track of the SCCs that can be removed.
    */
   collectRemovableSCCsBySyntacticSugarInstrs(LDI);
-  collectRemovableSCCsByInductionVars(LDI);
+  collectRemovableSCCsByInductionVars(LDI, SE);
 
   return ;
 }

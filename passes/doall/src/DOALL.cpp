@@ -16,320 +16,438 @@ DOALL::DOALL (Module &module, Verbosity v)
   return ;
 }
       
-bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) {
+bool DOALL::apply (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  Heuristics *h,
+  ScalarEvolution &SE
+) {
   errs() << "DOALL: Start\n";
 
-  auto chunker = createChunkingFuncAndArgTypes(LDI, par);
+  auto chunker = this->createChunkingFuncAndArgs(LDI, par);
 
-  // TODO(angelo): Refactor rest of DOALL chunking function creation
+   /*
+    * Create some utility values
+    */
+  chunker->zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
+
+  this->reproduceOriginLoop(LDI, par, chunker);
+  this->reproducePreEnv(LDI, par, chunker);
+  this->mapOriginLoopValueUses(LDI, par, chunker);
+  // TODO(angelo): this shouldn't need scalar evolution, abstract to SCCAttrs
+  this->collectOriginIVValues(LDI, par, chunker, SE);
+  this->createOuterLoop(LDI, par, chunker);
+  this->alterInnerLoopToIterateChunks(LDI, par, chunker);
+  this->storePostEnvironment(LDI, par, chunker);
+
+  IRBuilder<> exitB(chunker->exitBlock);
+  exitB.CreateRetVoid();
+
+
+  addChunkFunctionExecutionAsideOriginalLoop(LDI, par, chunker);
+
+  chunker->f->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
+  // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
+  // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
+
+  errs() << "DOALL: Exit\n";
+  return true;
+}
+
+std::unique_ptr<ChunkerInfo> DOALL::createChunkingFuncAndArgs (
+  LoopDependenceInfo *LDI,
+  Parallelization &par
+) {
+
+  auto chunker = std::make_unique<ChunkerInfo>();
+  auto M = LDI->function->getParent();
+  auto &cxt = M->getContext();
+
+  auto voidTy = Type::getVoidTy(cxt);
+  auto ptrTy_int8 = PointerType::getUnqual(par.int8);
+  auto funcArgTypes = ArrayRef<Type*>({
+    ptrTy_int8,
+    par.int64,
+    par.int64,
+    par.int64
+  });
+  auto funcTy = FunctionType::get(voidTy, funcArgTypes, false);
+  chunker->f = cast<Function>(M->getOrInsertFunction("", funcTy));
 
   /*
    * Create entry and exit blocks
    * Create outer loop header and latch
    */
-  auto &cxt = LDI->function->getContext();
-  auto entryBlock = BasicBlock::Create(cxt, "", chunker);
-  auto exitBlock = BasicBlock::Create(cxt, "", chunker);
-  auto chHeader = BasicBlock::Create(cxt, "", chunker);
-  auto chLatch = BasicBlock::Create(cxt, "", chunker);
-  IRBuilder<> entryB(entryBlock);
+  chunker->entryBlock = chunker->createChunkerBB();
+  chunker->exitBlock = chunker->createChunkerBB();
+  chunker->chHeader = chunker->createChunkerBB();
+  chunker->chLatch = chunker->createChunkerBB();
 
   /*
    * Collect arguments of chunker function
    */
-  auto chunkF = chunker;
-  auto argIter = chunkF->arg_begin();
-  auto envVal = (Value *) &*(argIter++);
-  auto coreVal = (Value *) &*(argIter++); 
-  auto numCoresVal = (Value *) &*(argIter++);
-  auto chunkSizeVal = (Value *) &*(argIter++);
+  auto argIter = chunker->f->arg_begin();
+  chunker->envArgVal = (Value *) &*(argIter++);
+  chunker->coreArgVal = (Value *) &*(argIter++); 
+  chunker->numCoresArgVal = (Value *) &*(argIter++);
+  chunker->chunkSizeArgVal = (Value *) &*(argIter++);
 
   /*
-   * Instruction map from original to cloned/env instructions
+   * Create environment context within chunking function
    */
-  unordered_map<Value *, Value *> instrArgMap;
+  LDI->envArrayType = ArrayType::get(
+    ptrTy_int8,
+    LDI->environment->envSize()
+  );
+  IRBuilder<> entryB(chunker->entryBlock);
+  LDI->envArray = entryB.CreateBitCast(
+    chunker->envArgVal,
+    PointerType::getUnqual(LDI->envArrayType)
+  );
 
-  /*
-   * Load environment variables in chunker entry block
-   */
-  LDI->envArray = entryB.CreateBitCast(envVal, PointerType::getUnqual(LDI->envArrayType));
-  auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
-  for (auto envInd : LDI->environment->getPreEnvIndices()) {
-    auto producer = LDI->environment->producerAt(envInd);
-    auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
-    auto envPtr = entryB.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ zeroV, envIndV }));
-    auto prodPtr = entryB.CreateBitCast(
-      entryB.CreateLoad(envPtr),
-      PointerType::getUnqual(producer->getType())
-    );
-    instrArgMap[producer] = cast<Value>(entryB.CreateLoad(prodPtr));
-  }
+  return chunker;
+}
+
+void DOALL::reproduceOriginLoop (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  std::unique_ptr<ChunkerInfo> &chunker
+) {
 
   /*
    * Create inner loop
    */
-  unordered_map<BasicBlock *, BasicBlock *> innerBBMap;
   for (auto originBB : LDI->liSummary.topLoop->bbs) {
-    auto cloneBB = BasicBlock::Create(cxt, "", chunkF);
+    auto cloneBB = chunker->createChunkerBB();
     IRBuilder<> builder(cloneBB);
-    innerBBMap[originBB] = cloneBB;
+    chunker->innerBBMap[originBB] = cloneBB;
     for (auto &I : *originBB) {
       auto cloneI = builder.Insert(I.clone());
-      instrArgMap[&I] = (Value *)cloneI;
+      chunker->innerValMap[&I] = cloneI;
     }
   }
-
-  // Save reference to cloned inner loop header
-  auto innerHeader = innerBBMap[LDI->header];
 
   // Map inner loop preheader to outer loop header
-  innerBBMap[LDI->preHeader] = chHeader;
+  chunker->innerBBMap[LDI->preHeader] = chunker->chHeader;
 
   // Map single exit block of inner loop to outer loop latch
-  innerBBMap[LDI->loopExitBlocks[0]] = chLatch;
+  chunker->innerBBMap[LDI->loopExitBlocks[0]] = chunker->chLatch;
+}
 
-  /*
-   * Map original instructions uses to that of clones
-   */
-  for (auto &B : LDI->liSummary.topLoop->bbs) {
-    for (auto &I : *B) {
-      auto cloneI = cast<Instruction>(instrArgMap[(Value *)&I]);
-      if (auto terminator = dyn_cast<TerminatorInst>(cloneI)) {
-        for (int i = 0; i < terminator->getNumSuccessors(); ++i)
-        {
-          auto succBB = terminator->getSuccessor(i);
-          assert(innerBBMap.find(succBB) != innerBBMap.end());
-          terminator->setSuccessor(i, innerBBMap[succBB]);
-        }
-      } else if (auto phi = dyn_cast<PHINode>(cloneI)) {
-        for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
-          phi->setIncomingBlock(i, innerBBMap[phi->getIncomingBlock(i)]);
-        }
+void DOALL::reproducePreEnv (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  std::unique_ptr<ChunkerInfo> &chunker
+) {
+
+  IRBuilder<> entryB(chunker->entryBlock);
+  for (auto envInd : LDI->environment->getPreEnvIndices()) {
+    auto producer = LDI->environment->producerAt(envInd);
+    auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
+    auto envPtr = entryB.CreateInBoundsGEP(
+      LDI->envArray,
+      ArrayRef<Value*>({
+        chunker->zeroV,
+        envIndV
+      })
+    );
+    auto prodPtr = entryB.CreateBitCast(
+      entryB.CreateLoad(envPtr),
+      PointerType::getUnqual(producer->getType())
+    );
+    chunker->preEnvMap[producer] = cast<Value>(entryB.CreateLoad(prodPtr));
+  }
+}
+
+void DOALL::mapOriginLoopValueUses (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  std::unique_ptr<ChunkerInfo> &chunker
+) {
+  for (auto iPair : chunker->innerValMap) {
+    auto cloneI = iPair.second;
+    if (auto terminator = dyn_cast<TerminatorInst>(cloneI)) {
+      for (int i = 0; i < terminator->getNumSuccessors(); ++i) {
+        auto succBB = terminator->getSuccessor(i);
+        assert(chunker->innerBBMap.find(succBB) != chunker->innerBBMap.end());
+        terminator->setSuccessor(i, chunker->innerBBMap[succBB]);
       }
+    }
 
-      for (auto &op : cloneI->operands()) {
-        auto opV = op.get();
-        
-        if (isa<Instruction>(opV) || isa<Argument>(opV)) {
-          if (instrArgMap.find(opV) != instrArgMap.end()) {
-            op.set(instrArgMap[opV]);
-          } else {
-            op->print(errs() << "DOALL: ERROR: Operand ignored:\t"); errs() << "\n";
-            abort();
-          }
+    if (auto phi = dyn_cast<PHINode>(cloneI)) {
+      for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
+        auto cloneBB = chunker->innerBBMap[phi->getIncomingBlock(i)];
+        phi->setIncomingBlock(i, cloneBB);
+      }
+    }
+
+    // TODO(angelo): Add exhaustive search of types to parallelization
+    // utilities for use in DSWP and here in DOALL
+    for (auto &op : cloneI->operands()) {
+      auto opV = op.get();
+      if (chunker->preEnvMap.find(opV) != chunker->preEnvMap.end()) {
+        op.set(chunker->preEnvMap[opV]);
+      } else if (auto opI = dyn_cast<Instruction>(opV)) {
+        if (chunker->innerValMap.find(opI) != chunker->innerValMap.end()) {
+          op.set(chunker->innerValMap[opI]);
         }
       }
     }
   }
+}
+
+
+// TODO(angelo): Have LoopSummary scrape this info from IVs
+void DOALL::collectOriginIVValues (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  std::unique_ptr<ChunkerInfo> &chunker,
+  ScalarEvolution &SE
+) {
 
   /*
    * Find origin loop's induction variable
    */
   auto originHeaderBr = LDI->header->getTerminator();
   assert(isa<BranchInst>(originHeaderBr));
-  auto originHeaderBrInst = cast<BranchInst>(originHeaderBr);
-  auto originCond = originHeaderBrInst->getCondition();
-  PHINode *originIV = nullptr;
-  Value *maxIV = nullptr;
-  int originCondPHIIndex, originCondMaxIndex;
+  chunker->originHeaderBr = cast<BranchInst>(originHeaderBr);
+  auto originCond = chunker->originHeaderBr->getCondition();
+  assert(isa<CmpInst>(originCond));
+  chunker->originCmp = cast<CmpInst>(originCond);
+
   int opIndex = 0;
-  for (auto &condOp : cast<User>(originCond)->operands()) {
-    condOp->print(errs() << "COND OP: --------- :"); errs() << "\n";
+  for (auto &condOp : cast<User>(chunker->originCmp)->operands()) {
     bool isPHI = isa<PHINode>(condOp);
     if (isPHI) {
-      originCondPHIIndex = opIndex;
-      originIV = cast<PHINode>(condOp);
+      chunker->originCmpPHIIndex = opIndex;
+      chunker->originIV = cast<PHINode>(condOp);
     } else {
-      originCondMaxIndex = opIndex;
-      maxIV = condOp;
+      chunker->originCmpMaxIndex = opIndex;
+      chunker->maxIV = condOp;
     }
     opIndex++;
   }
-  assert(originIV != nullptr && maxIV != nullptr);
+  assert(chunker->originIV != nullptr && chunker->maxIV != nullptr);
 
   /*
    * Determine step size of induction variable
    */
-  User *stepIV = nullptr;
-  int stepSizeArgIndex = -1;
-  ConstantInt *originStepSize = nullptr;
-  for (auto user : originIV->users()) {
-    user->print(errs() << "ORIGIN IV USER: "); errs() << "\n";
+  for (auto user : chunker->originIV->users()) {
     auto scev = SE.getSCEV((Value *)user);
     switch (scev->getSCEVType()) {
     case scAddExpr:
     case scAddRecExpr:
-      errs() << "Add inst\n";
-      stepIV = user;
+      chunker->stepperIV = (Value *)user;
       Value *lhs = user->getOperand(0);
       Value *rhs = user->getOperand(1);
-      // lhs->print(errs() << "LHS: "); errs() << "\n";
-      // rhs->print(errs() << "RHS: "); errs() << "\n";
       if (isa<ConstantInt>(lhs)) {
-        originStepSize = cast<ConstantInt>(lhs);
-        stepSizeArgIndex = 0;
+        chunker->originStepSize = cast<ConstantInt>(lhs);
+        chunker->stepSizeIVIndex = 0;
       } else if (isa<ConstantInt>(rhs)) {
-        originStepSize = cast<ConstantInt>(rhs);
-        stepSizeArgIndex = 1;
+        chunker->originStepSize = cast<ConstantInt>(rhs);
+        chunker->stepSizeIVIndex = 1;
       } else continue;
       break;
     }
   }
-  assert(stepIV != nullptr && originStepSize != nullptr);
+  assert(chunker->stepperIV != nullptr && chunker->originStepSize != nullptr);
 
   /*
    * Get start value off of original loop IV
    */
-  auto startValPHIIndex = originIV->getBasicBlockIndex(LDI->preHeader);
-  auto startVal = originIV->getIncomingValue(startValPHIIndex);
-  if (!isa<ConstantInt>(startVal)) {
-    startVal = instrArgMap[startVal];
+  chunker->startValIVIndex = chunker->originIV->getBasicBlockIndex(LDI->preHeader);
+  chunker->starterIV = chunker->originIV->getIncomingValue(chunker->startValIVIndex);
+  if (!isa<ConstantInt>(chunker->starterIV)) {
+    chunker->starterIV = chunker->innerValMap[(Instruction*)chunker->starterIV];
   }
+}
+
+void DOALL::createOuterLoop (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  std::unique_ptr<ChunkerInfo> &chunker
+) {
+  IRBuilder<> entryB(chunker->entryBlock);
+  IRBuilder<> chHeaderB(chunker->chHeader);
+  IRBuilder<> chLatchB(chunker->chLatch);
 
   /*
    * Determine start value and step size for outer chunking loop
    */
-  auto chIVStepSize = entryB.CreateMul(numCoresVal, chunkSizeVal);
-  chIVStepSize = entryB.CreateMul(chIVStepSize, ConstantInt::get(par.int64, originStepSize->getZExtValue()));
-  auto chIVStart = entryB.CreateMul(coreVal, chunkSizeVal);
-  chIVStart = entryB.CreateAdd(chIVStart, startVal); 
-
-  /*
-   * Create outer loop IV
-   */
-  IRBuilder<> chHeaderB(chHeader);
-  IRBuilder<> chLatchB(chLatch);
-  entryB.CreateBr(chHeader);
+  auto cloneStarterIV = chunker->starterIV;
+  if (!isa<ConstantInt>(chunker->starterIV)) {
+    cloneStarterIV = chunker->preEnvMap[chunker->starterIV];
+  }
+  auto chIVStart = entryB.CreateMul(chunker->coreArgVal, chunker->chunkSizeArgVal);
+  chIVStart = entryB.CreateAdd(chIVStart, cloneStarterIV);
 
   auto chIV = chHeaderB.CreatePHI(par.int64, /*numReservedValues=*/2);
-  chIV->addIncoming(chIVStart, entryBlock);
+  chunker->chIV = chIV;
 
   // ASSUMPTION: Monotonically increasing IV
+  auto chIVStepSize = entryB.CreateMul(chunker->numCoresArgVal, chunker->chunkSizeArgVal);
+  chIVStepSize = entryB.CreateMul(chIVStepSize, chunker->originStepSize);
   auto chIVInc = chLatchB.CreateAdd(chIV, chIVStepSize);
-  chLatchB.CreateBr(chHeader);
 
-  Value *cloneMaxIV;
-  if (auto constMaxIV = dyn_cast<ConstantInt>(maxIV)) {
-    cloneMaxIV = ConstantInt::get(constMaxIV->getType(), constMaxIV->getValue());
-  } else {
-    cloneMaxIV = instrArgMap[maxIV];
+  chIV->addIncoming(chIVStart, chunker->entryBlock);
+  chIV->addIncoming(chIVInc, chunker->chLatch);
+
+  entryB.CreateBr(chunker->chHeader);
+  chLatchB.CreateBr(chunker->chHeader);
+
+  auto chIVOnLeft = chunker->originCmpPHIIndex == 0;
+
+  // HACK: Make the condition stronger so that chunks don't skip over the equality condition
+  auto strictMaxIVPredicate = chunker->originCmp->getPredicate();
+  if (strictMaxIVPredicate == CmpInst::Predicate::ICMP_EQ) {
+    strictMaxIVPredicate = chIVOnLeft 
+      ? CmpInst::Predicate::ICMP_UGE
+      : CmpInst::Predicate::ICMP_ULE;
   }
+  chunker->strictPredicate = strictMaxIVPredicate;
 
-  chIV->addIncoming(chIVInc, chLatch);
-  assert(isa<CmpInst>(originCond));
-  auto originCmp = cast<CmpInst>(originCond);
-  CmpInst *condIV;
-  auto stricterMaxIVCondPredicate = originCmp->getPredicate();
-  if (originCondPHIIndex == 0) {
-    // HACK: Make the condition stronger so that chunks don't skip over the equality condition
-    if (stricterMaxIVCondPredicate == CmpInst::Predicate::ICMP_EQ) {
-      stricterMaxIVCondPredicate = CmpInst::Predicate::ICMP_UGE;
+  Value *cloneMaxIV = chunker->maxIV;
+  if (!isa<ConstantInt>(chunker->maxIV)) {
+    if (chunker->preEnvMap.find(chunker->maxIV) != chunker->preEnvMap.end()) {
+      cloneMaxIV = chunker->preEnvMap[chunker->maxIV];
+    } else {
+      cloneMaxIV = chunker->innerValMap[(Instruction*)chunker->maxIV];
     }
-    condIV = CmpInst::Create(originCmp->getOpcode(), stricterMaxIVCondPredicate, chIV, cloneMaxIV);
-  } else {
-    // HACK: Make the condition stronger so that chunks don't skip over the equality condition
-    if (stricterMaxIVCondPredicate == CmpInst::Predicate::ICMP_EQ) {
-      stricterMaxIVCondPredicate = CmpInst::Predicate::ICMP_ULE;
-    }
-    condIV = CmpInst::Create(originCmp->getOpcode(), stricterMaxIVCondPredicate, cloneMaxIV, chIV);
   }
 
-  chHeaderB.Insert(condIV);
-  if (originHeaderBrInst->getSuccessor(0) == LDI->loopExitBlocks[0]) {
-    chHeaderB.CreateCondBr(condIV, exitBlock, innerHeader);
+  CmpInst *chCmp;
+  if (chIVOnLeft) {
+    chCmp = CmpInst::Create(chunker->originCmp->getOpcode(), strictMaxIVPredicate, chIV, cloneMaxIV);
   } else {
-    chHeaderB.CreateCondBr(condIV, innerHeader, exitBlock);
+    chCmp = CmpInst::Create(chunker->originCmp->getOpcode(), strictMaxIVPredicate, cloneMaxIV, chIV);
   }
+
+  chHeaderB.Insert(chCmp);
+  auto innerHeader = chunker->innerBBMap[LDI->header];
+  if (chunker->originHeaderBr->getSuccessor(0) == LDI->loopExitBlocks[0]) {
+    chHeaderB.CreateCondBr(chCmp, chunker->exitBlock, innerHeader);
+  } else {
+    chHeaderB.CreateCondBr(chCmp, innerHeader, chunker->exitBlock);
+  }
+}
+
+void DOALL::alterInnerLoopToIterateChunks (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  std::unique_ptr<ChunkerInfo> &chunker
+) {
 
   /*
-   *** Alter inner loop to iterate single chunks:
+   * Reset start to 0, revise latch to only inc/dec IV
    */
-
-  /*
-   * Reset start to 0
-   * Revise latch to only inc/dec IV
-   */
-  auto innerIV = instrArgMap[originIV];
-  ((PHINode *)innerIV)->setIncomingValue(startValPHIIndex, ConstantInt::get(originIV->getType(), 0));
-  auto innerStepIV = (User *)instrArgMap[(Value *)stepIV];
-  innerStepIV->setOperand(stepSizeArgIndex, ConstantInt::get(stepIV->getType(), 1));
+  auto innerIV = chunker->innerValMap[chunker->originIV];
+  ((PHINode *)innerIV)->setIncomingValue(
+    chunker->startValIVIndex,
+    ConstantInt::get(chunker->originIV->getType(), 0)
+  );
+  auto innerStepIV = (User *)chunker->innerValMap[(Instruction*)chunker->stepperIV];
+  innerStepIV->setOperand(
+    chunker->stepSizeIVIndex,
+    ConstantInt::get(chunker->stepperIV->getType(), 1)
+  );
 
   /*
    * Create new, composite induction variable for inner loop
    */
+  auto innerHeader = chunker->innerBBMap[LDI->header];
   IRBuilder<> headerBuilder(innerHeader);
   // ASSUMPTION: Monotonically increasing IV
-  auto innerOuterIVSum = headerBuilder.CreateAdd(innerIV, chIV);
-  // for (auto &use : innerIV->uses()) {
-  //   auto userV = (Value *)use.getUser();
-  //   userV->print(errs() << "USER V: "); errs() << "\n";
-  //   if (userV == innerStepIV || ((Instruction *)userV)->getParent() == innerHeader) continue;
-  //   errs() << "--- WAS SET\n";
-  //   use.set(innerOuterIVSum);
-  // }
-  for (auto &use : originIV->uses()) {
-    auto cloneV = instrArgMap[(Value *)use.getUser()];
-    if (cloneV == innerStepIV || ((Instruction *)cloneV)->getParent() == innerHeader) continue;
-    ((User *)cloneV)->replaceUsesOfWith(innerIV, innerOuterIVSum);
+  auto innerOuterIVSum = headerBuilder.CreateAdd(innerIV, chunker->chIV);
+  for (auto &use : chunker->originIV->uses()) {
+    auto cloneI = chunker->innerValMap[(Instruction *)use.getUser()];
+    auto cloneU = (User *)cloneI;
+    if (cloneU == innerStepIV || cloneI->getParent() == innerHeader) continue;
+    cloneU->replaceUsesOfWith(innerIV, innerOuterIVSum);
   }
-  // innerIV->print(errs() << "INNER V: "); errs() << "\n";
-  // for (auto user : innerIV->users()) {
-  //   user->print(errs() << "INNER USER V: "); errs() << "\n";
-  //   if (user == innerStepIV || ((Instruction *)user)->getParent() == innerHeader) continue;
-  //   errs() << "--- WAS SET\n";
-  //   user->replaceUsesOfWith(innerIV, innerOuterIVSum);
-  // }
 
   /*
    * Replace inner loop original condition with less than total loop size condition
    * Add a cond to check for less than chunk size
    */
-  auto innerCondIV = (User *)instrArgMap[originCond];
+  auto innerCondIV = (User *)chunker->innerValMap[chunker->originCmp];
   // Ensure the add comes before its use in the comparison
-  innerCondIV->setOperand(originCondPHIIndex, innerOuterIVSum);
-  ((CmpInst *)innerCondIV)->setPredicate(stricterMaxIVCondPredicate);
+  innerCondIV->setOperand(chunker->originCmpPHIIndex, innerOuterIVSum);
+  ((CmpInst *)innerCondIV)->setPredicate(chunker->strictPredicate);
 
   auto ivSumInst = cast<Instruction>(innerOuterIVSum);
   ivSumInst->removeFromParent();
   ivSumInst->insertBefore(cast<Instruction>(innerCondIV));
 
-  auto chunkCondBB = BasicBlock::Create(cxt, "", chunker);
+  auto chunkCondBB = chunker->createChunkerBB();
   IRBuilder<> chunkCondBBBuilder(chunkCondBB);
 
-  Value *chunkCond = chunkCondBBBuilder.CreateICmpULT(innerIV, chunkSizeVal);
+  Value *chunkCond = chunkCondBBBuilder.CreateICmpULT(innerIV, chunker->chunkSizeArgVal);
 
   auto innerBr = cast<BranchInst>(innerHeader->getTerminator());
   assert(innerBr->getNumSuccessors() == 2);
   auto innerBodySuccIndex = -1;
-  if (innerBr->getSuccessor(0) == chLatch) innerBodySuccIndex = 1;
-  if (innerBr->getSuccessor(1) == chLatch) innerBodySuccIndex = 0;
+  if (innerBr->getSuccessor(0) == chunker->chLatch) innerBodySuccIndex = 1;
+  if (innerBr->getSuccessor(1) == chunker->chLatch) innerBodySuccIndex = 0;
   auto innerBodyBB = innerBr->getSuccessor(innerBodySuccIndex);
   innerBr->setSuccessor(innerBodySuccIndex, chunkCondBB);
 
-  if (originHeaderBrInst->getSuccessor(0) == exitBlock) {
-    chunkCondBBBuilder.CreateCondBr(chunkCond, chLatch, innerBodyBB);
+  if (chunker->originHeaderBr->getSuccessor(0) == chunker->exitBlock) {
+    chunkCondBBBuilder.CreateCondBr(chunkCond, chunker->chLatch, innerBodyBB);
   } else {
-    chunkCondBBBuilder.CreateCondBr(chunkCond, innerBodyBB, chLatch);
+    chunkCondBBBuilder.CreateCondBr(chunkCond, innerBodyBB, chunker->chLatch);
   }
 
-  IRBuilder<> exitB(exitBlock);
-  exitB.CreateRetVoid();
+}
 
-  /*
-   * Store post environment reducable values
-   */
-  entryB.SetInsertPoint(entryBlock->getTerminator());
+void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  std::unique_ptr<ChunkerInfo> &chunker
+) {
+  // TODO Check all of these after refactoring
+  auto firstBB = &*LDI->function->begin();
+  IRBuilder<> entryBuilder(firstBB->getTerminator());
+  LDI->envArray = entryBuilder.CreateAlloca(LDI->envArrayType);
+
+  auto &cxt = LDI->function->getContext();
+  LDI->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+  LDI->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+  IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
+
+  auto envPtr = createEnvArray(LDI, par, chunker, entryBuilder, doallBuilder);
+  // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic
+  auto numCores = ConstantInt::get(par.int64, NUM_CORES);
+  auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
+
+  doallBuilder.CreateCall(this->doallDispatcher, ArrayRef<Value *>({
+    (Value *)chunker->f,
+    envPtr,
+    numCores,
+    chunkSize
+  }));
+  doallBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
+
+  reducePostEnvironment(LDI, par, chunker);
+}
+
+void DOALL::storePostEnvironment (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  std::unique_ptr<ChunkerInfo> &chunker
+) {
+
+  IRBuilder<> entryB(chunker->entryBlock->getTerminator());
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
     auto producer = LDI->environment->producerAt(envInd);
     assert(isa<PHINode>(producer));
 
     auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
-    auto envPtr = entryB.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ zeroV, envIndV }));
+    auto envPtr = entryB.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ chunker->zeroV, envIndV }));
     auto reduceArr = entryB.CreateBitCast(
       entryB.CreateLoad(envPtr),
       PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES))
     );
-    auto reduceArrPtr = entryB.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ zeroV, coreVal }));
+    auto reduceArrPtr = entryB.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ chunker->zeroV, chunker->coreArgVal }));
     auto reducePtr = entryB.CreateBitCast(
       entryB.CreateLoad(reduceArrPtr),
       PointerType::getUnqual(producer->getType())
@@ -339,8 +457,11 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
     Value *initVal = nullptr;
     unordered_map<unsigned, unsigned> binOpToIdentity = {
       { Instruction::Add, 0 },
+      { Instruction::FAdd, 0 },
       { Instruction::Sub, 0 },
-      { Instruction::Mul, 1 }
+      { Instruction::FSub, 0 },
+      { Instruction::Mul, 1 },
+      { Instruction::FMul, 1 }
     };
     for (auto iNodePair : LDI->loopSCCDAG->sccOfValue(producer)->internalNodePairs()) {
       auto I = cast<Instruction>(iNodePair.first);
@@ -352,89 +473,47 @@ bool DOALL::apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h,
     entryB.CreateStore(initVal, reducePtr);
 
     // Store final value of accumulation PHI
-    auto prodClone = cast<PHINode>(instrArgMap[producer]);
-    auto innerExitBB = innerBBMap[LDI->loopExitBlocks[0]];
+    auto prodClone = cast<PHINode>(chunker->innerValMap[(Instruction*)producer]);
+    auto innerExitBB = chunker->innerBBMap[LDI->loopExitBlocks[0]];
     IRBuilder<> exitingBuilder(innerExitBB->getTerminator());
     exitingBuilder.CreateStore(prodClone, reducePtr);
 
     // Consolidate accumulator in outer loop
-    auto initValPHIIndex = prodClone->getBasicBlockIndex(innerBBMap[LDI->preHeader]);
+    auto initValPHIIndex = prodClone->getBasicBlockIndex(chunker->innerBBMap[LDI->preHeader]);
+    IRBuilder<> chHeaderB(chunker->chHeader);
     chHeaderB.SetInsertPoint(&*chHeaderB.GetInsertBlock()->begin());
     auto accumOuterPHI = chHeaderB.CreatePHI(prodClone->getType(), 2);
-    accumOuterPHI->addIncoming(initVal, entryBlock);
+    accumOuterPHI->addIncoming(initVal, chunker->entryBlock);
     accumOuterPHI->addIncoming(prodClone, innerExitBB);
 
     prodClone->setIncomingValue(initValPHIIndex, accumOuterPHI);
   }
-
-  addChunkFunctionExecutionAsideOriginalLoop(LDI, par, chunker);
-
-  chunker->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
-  // chunkF->print(errs() << "CHUNKING FUNCTION:\n"); errs() << "\n";
-  // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
-  // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
-
-  errs() << "DOALL: Exit\n";
-  return true;
 }
 
-Function * DOALL::createChunkingFuncAndArgTypes (LoopDependenceInfo *LDI, Parallelization &par) {
+void DOALL::reducePostEnvironment (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  std::unique_ptr<ChunkerInfo> &chunker
+) {
 
-  /*
-   * Function: void chunker(void *env, int64 coreInd, int64 numCores, int64 chunkSize)
-   */
-  auto M = LDI->function->getParent();
-  auto &cxt = M->getContext();
-
-  auto ptrType_int8 = PointerType::getUnqual(par.int8);
-  auto funcArgTypes = ArrayRef<Type*>({ ptrType_int8, par.int64, par.int64, par.int64 });
-  auto chunkerFuncType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
-  auto chunker = cast<Function>(M->getOrInsertFunction("", chunkerFuncType));
-
-  LDI->envArrayType = ArrayType::get(ptrType_int8, LDI->environment->envSize());
-
-  return chunker;
-}
-
-void DOALL::addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, Function *chunker) {
-  auto firstBB = &*LDI->function->begin();
-  IRBuilder<> entryBuilder(firstBB->getTerminator());
-  LDI->envArray = entryBuilder.CreateAlloca(LDI->envArrayType);
-
-  auto &cxt = LDI->function->getContext();
-  LDI->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
-  LDI->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
-  IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
-
-  auto envPtr = createEnvArray(LDI, par, entryBuilder, doallBuilder);
-  // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic
-  auto numCores = ConstantInt::get(par.int64, NUM_CORES);
-  auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
-
-  doallBuilder.CreateCall(this->doallDispatcher, ArrayRef<Value *>({
-    (Value *)chunker,
-    envPtr,
-    numCores,
-    chunkSize
-  }));
-  doallBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
-
-  reducePostEnvironment(LDI, par);
-}
-
-void DOALL::reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par) {
   auto &cxt = LDI->function->getContext();
   IRBuilder<> reduceBuilder(LDI->exitPointOfParallelizedLoop);
 
-  auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
     auto producer = LDI->environment->producerAt(envInd);
     producer->print(errs() << "Producer: "); errs() << "\n";
     auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
-    auto envPtr = reduceBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ zeroV, envIndV }));
+    auto envPtr = reduceBuilder.CreateInBoundsGEP(
+      LDI->envArray,
+      ArrayRef<Value*>({
+        chunker->zeroV,
+        envIndV
+      })
+    );
+    auto ptrTy_int8 = PointerType::getUnqual(par.int8);
     auto reduceArr = reduceBuilder.CreateBitCast(
       reduceBuilder.CreateLoad(envPtr),
-      PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES))
+      PointerType::getUnqual(ArrayType::get(ptrTy_int8, NUM_CORES))
     );
 
     // REFACTOR(angelo): query for binary operator done in multiple places
@@ -449,12 +528,14 @@ void DOALL::reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par
     // HACK(angelo): Reducing negation is still done using addition
     if (binOp == Instruction::Sub) {
       binOp = Instruction::Add;
+    } else if (binOp == Instruction::FSub) {
+      binOp = Instruction::FAdd;
     }
 
     Value *accumVal = nullptr;
     for (auto i = 0; i < NUM_CORES; ++i) {
       auto indVal = cast<Value>(ConstantInt::get(par.int64, i));
-      auto reduceArrPtr = reduceBuilder.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ zeroV, indVal }));
+      auto reduceArrPtr = reduceBuilder.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ chunker->zeroV, indVal }));
       auto reducePtr = reduceBuilder.CreateBitCast(
         reduceBuilder.CreateLoad(reduceArrPtr),
         PointerType::getUnqual(producer->getType())
@@ -483,14 +564,19 @@ void DOALL::reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par
   }
 }
 
-Value *DOALL::createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, IRBuilder<> entryBuilder, IRBuilder<> parBuilder) {
+Value *DOALL::createEnvArray (
+  LoopDependenceInfo *LDI,
+  Parallelization &par,
+  std::unique_ptr<ChunkerInfo> &chunker,
+  IRBuilder<> entryBuilder,
+  IRBuilder<> parBuilder
+) {
 
-  auto zeroV = ConstantInt::get(par.int64, 0);
   auto storeEnvAllocaInArray = [&](Value *arr, int envIndex, AllocaInst *alloca) -> void {
     arr->print(errs() << "Index " << envIndex << ", Array: "); errs() << "\n";
     alloca->print(errs() << "Alloca "); errs() << "\n";
     auto indValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
-    auto envPtr = entryBuilder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ zeroV, indValue }));
+    auto envPtr = entryBuilder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ chunker->zeroV, indValue }));
     auto depCast = entryBuilder.CreateBitCast(envPtr, PointerType::getUnqual(alloca->getType()));
     auto store = entryBuilder.CreateStore(alloca, depCast);
     store->print(errs() << "Store "); errs() << "\n\n";

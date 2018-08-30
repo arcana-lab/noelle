@@ -63,8 +63,7 @@ void Parallelizer::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceI
   return ;
 }
 
-void Parallelizer::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI) {
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
+void Parallelizer::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI, ScalarEvolution &SE) {
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
 
     /*
