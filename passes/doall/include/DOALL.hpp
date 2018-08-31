@@ -35,6 +35,10 @@
 #include <queue>
 #include <deque>
 
+// TODO(angelo): replace with values passed into this library
+#define NUM_CORES 4
+#define CHUNK_SIZE 8
+
 namespace llvm {
 
   class DOALL : public ParallelizationTechnique {

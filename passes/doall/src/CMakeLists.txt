@@ -1,7 +1,9 @@
 # Sources
 set(Srcs 
   DOALL.cpp
-  Analysis.cpp
+  Builder.cpp
+  Environment.cpp
+  IVAnalysis.cpp
 )
 
 # Compilation flags
