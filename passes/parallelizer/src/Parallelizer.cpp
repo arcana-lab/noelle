@@ -90,7 +90,7 @@ void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *
   /*
    * Evaluate the SCCs (e.g., which ones are commutative) of the SCCDAG of the loop.
    */
-  LDI->sccdagAttrs.populate(LDI->loopSCCDAG);
+  LDI->sccdagAttrs.populate(LDI->loopSCCDAG, SE);
 
   /*
    * Estimate the latency per invocation of the SCCs.
@@ -105,8 +105,7 @@ void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *
   /*
    * Keep track of the SCCs that can be removed.
    */
-  collectRemovableSCCsBySyntacticSugarInstrs(LDI);
-  collectRemovableSCCsByInductionVars(LDI, SE);
+  collectRemovableSCCs(LDI);
 
   return ;
 }

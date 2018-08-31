@@ -5,7 +5,7 @@ using namespace llvm;
 std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
   std::set<SCC *> sccs;
   for (auto &sccInfoPair : this->sccToInfo) {
-    if (!sccInfoPair.second->hasLoopCarriedDataDep) continue ;
+    if (!sccInfoPair.second->isIndependent) continue ;
     sccs.insert(sccInfoPair.first);
   }
   return sccs;
@@ -86,19 +86,16 @@ std::unique_ptr<SCCAttrs> & SCCDAGAttrs::getSCCAttrs (SCC *scc){
   return this->sccToInfo[scc];
 }
 
-void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG) {
+void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, ScalarEvolution &SE) {
   this->sccdag = loopSCCDAG;
   for (auto node : loopSCCDAG->getNodes()) {
     auto scc = node->getT();
 
     this->sccToInfo[scc] = std::move(std::make_unique<SCCAttrs>(scc));
 
-    auto &sccInfo = this->sccToInfo[scc];
-    sccInfo->hasLoopCarriedDataDep = scc->hasCycle(/*ignoreControlDep=*/false);
-
-    if (!sccInfo->hasLoopCarriedDataDep) {
+    if (this->checkIfIndependent(scc)) {
       scc->setType(SCC::SCCType::INDEPENDENT);
-    } else if (this->executesCommutatively(scc)) {
+    } else if (this->checkIfCommutative(scc)) {
       scc->setType(SCC::SCCType::COMMUTATIVE);
     } else {
       scc->setType(SCC::SCCType::SEQUENTIAL);
@@ -106,7 +103,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG) {
   }
 }
 
-bool SCCDAGAttrs::executesCommutatively (SCC *scc) const {
+bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
   std::set<unsigned> sideEffectFreeBinOps = {
     Instruction::Add,
     Instruction::FAdd,
@@ -179,5 +176,67 @@ bool SCCDAGAttrs::executesCommutatively (SCC *scc) const {
   }
 
   errs() << "SUCCESS THIS IS A COMMUTATIVE SCC!\n";
+  this->getSCCAttrs(scc)->isReducable = true;
   return true;
 }
+
+bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
+
+  /*
+   * The SCC is independent if it doesn't have loop carried data dependencies
+   */
+  return this->getSCCAttrs(scc)->isIndependent = scc->hasCycle(/*ignoreControlDep=*/false);
+}
+
+void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
+  checkIfClonableByInductionVars(scc, SE);
+  checkIfClonableBySyntacticSugarInstrs(scc);
+}
+
+void SCCDAGAttrs::checkIfClonableByInductionVars (SCC *scc, ScalarEvolution &SE) {
+
+  /*
+   * Check if the current node of the SCCDAG is an SCC used by other nodes.
+   */
+  if (scc->numInternalNodes() == 1 || sccdag->fetchNode(scc)->numOutgoingEdges() == 0) {
+    return ;
+  }
+
+  /*
+   * The current node of the SCCDAG is an SCC.
+   *
+   * Check if this SCC can be removed exploiting induction variables.
+   * In more detail, this SCC can be removed if the loop-carried data dependence, which has created this SCC in the PDG, is due to updates to induction variables.
+   */
+  if (this->isInductionVariableSCC(SE, scc)) {
+    this->getSCCAttrs(scc)->isClonable = true;
+  }
+}
+
+void SCCDAGAttrs::checkIfClonableBySyntacticSugarInstrs (SCC *scc) {
+
+  /*
+   * Check if the current node of the SCCDAG is an SCC used by other nodes.
+   */
+  if (scc->numInternalNodes() > 1 || sccdag->fetchNode(scc)->numOutgoingEdges() == 0) {
+    return ;
+  }
+
+  auto I = scc->begin_internal_node_map()->first;
+  if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
+    this->getSCCAttrs(scc)->isClonable = true;
+  }
+}
+
+bool SCCDAGAttrs::executesCommutatively (SCC *scc) {
+  return this->getSCCAttrs(scc)->isReducable;
+}
+
+bool SCCDAGAttrs::executesIndependently (SCC *scc) {
+  return this->getSCCAttrs(scc)->isIndependent;
+}
+
+bool SCCDAGAttrs::canBeCloned (SCC *scc) {
+  return this->getSCCAttrs(scc)->isClonable;
+}
+

@@ -63,40 +63,12 @@ void Parallelizer::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceI
   return ;
 }
 
-void Parallelizer::collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI, ScalarEvolution &SE) {
-  for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
-
-    /*
-     * Check if the current node of the SCCDAG is an SCC used by other nodes.
-     */
-    if (sccNode->getT()->numInternalNodes() == 1 || sccNode->numOutgoingEdges() == 0) {
-      continue;
-    }
-
-    /*
-     * The current node of the SCCDAG is an SCC.
-     *
-     * Check if this SCC can be removed exploiting induction variables.
-     * In more detail, this SCC can be removed if the loop-carried data dependence, which has created this SCC in the PDG, is due to updates to induction variables.
-     */
-    auto scc = sccNode->getT();
-    if (LDI->sccdagAttrs.isInductionVariableSCC(SE, scc)) {
-      LDI->partition.removableNodes.insert(scc);
-      LDI->sccdagAttrs.getSCCAttrs(scc)->isClonable = true;
-    }
-  }
-
-  return ;
-}
-
-void Parallelizer::collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::collectRemovableSCCs (DSWPLoopDependenceInfo *LDI) {
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
-    if (scc->numInternalNodes() > 1 || sccNode->numOutgoingEdges() == 0) continue;
-    auto I = scc->begin_internal_node_map()->first;
-    if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
+    if (LDI->sccdagAttrs.canBeCloned(scc)) {
       LDI->partition.removableNodes.insert(scc);
-      LDI->sccdagAttrs.getSCCAttrs(scc)->isClonable = true;
     }
   }
 }
+

@@ -26,15 +26,17 @@ namespace llvm {
       SCC *scc;
       std::set<BasicBlock *> bbs;
       int internalCost;
-      bool hasLoopCarriedDataDep;
+      bool isIndependent;
       bool isClonable;
+      bool isReducable;
       std::unordered_map<SCC *, std::unique_ptr<SCCEdgeInfo>> sccToEdgeInfo;
 
       /*
        * Methods
        */
       SCCAttrs (SCC *s)
-        : scc{s}, internalCost{0}, hasLoopCarriedDataDep{0}, isClonable{0} {
+        : scc{s}, internalCost{0}, isIndependent{0},
+          isClonable{0}, isReducable{0} {
         // Collect basic blocks contained within SCC
         for (auto nodePair : this->scc->internalNodePairs()) {
           this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
@@ -53,7 +55,9 @@ namespace llvm {
       /*
        * Methods
        */
-      bool executesCommutatively (SCC *scc) const ;
+      bool executesCommutatively (SCC *scc);
+      bool executesIndependently (SCC *scc);
+      bool canBeCloned (SCC *scc);
       std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
 
       bool loopHasInductionVariable (ScalarEvolution &SE) const ;
@@ -68,9 +72,15 @@ namespace llvm {
       // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
       std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc);
 
-      void populate (SCCDAG *loopSCCDAG);
+      void populate (SCCDAG *loopSCCDAG, ScalarEvolution &SE);
 
     private:
+      bool checkIfCommutative (SCC *scc);
+      bool checkIfIndependent (SCC *scc);
+      void checkIfClonable (SCC *scc, ScalarEvolution &SE);
+      void checkIfClonableByInductionVars (SCC *scc, ScalarEvolution &SE);
+      void checkIfClonableBySyntacticSugarInstrs (SCC *scc);
+
       std::unordered_map<SCC *, std::unique_ptr<SCCAttrs>> sccToInfo;
   };
 }

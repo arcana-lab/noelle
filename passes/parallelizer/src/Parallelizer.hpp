@@ -77,8 +77,7 @@ namespace llvm {
       void mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI);
       void collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h, ScalarEvolution &SE);
       void estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceInfo *LDI, Heuristics *h);
-      void collectRemovableSCCsByInductionVars (DSWPLoopDependenceInfo *LDI, ScalarEvolution &SE);
-      void collectRemovableSCCsBySyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
+      void collectRemovableSCCs (DSWPLoopDependenceInfo *LDI);
       void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);
 
       /*

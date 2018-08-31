@@ -61,7 +61,6 @@ bool DOALL::apply (
   IRBuilder<> exitB(chunker->exitBlock);
   exitB.CreateRetVoid();
 
-
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par, chunker);
 
   chunker->f->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
