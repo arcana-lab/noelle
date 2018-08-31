@@ -31,6 +31,10 @@ namespace llvm {
       bool isReducable;
       std::unordered_map<SCC *, std::unique_ptr<SCCEdgeInfo>> sccToEdgeInfo;
 
+      bool isIVSCC;
+      PHINode *singlePHI;
+      std::set<Instruction *> PHIAccumulators;
+
       /*
        * Methods
        */
