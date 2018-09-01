@@ -24,13 +24,14 @@ bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, H
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
   bool allSCCsDOALL = true;
   for (auto scc : nonDOALLSCCs) {
-    scc->print(errs() << "Loop carried dep scc:\n") << "\n";
+    // scc->print(errs() << "Loop carried dep scc:\n") << "\n";
     auto &sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
     allSCCsDOALL &= scc->getType() == SCC::SCCType::COMMUTATIVE
       || sccInfo->isClonable
       || LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc);
     // errs() << "DOALL CHECKS --------- IS DOALL (scc): " << isDOALL << "\n";
   }
+  errs() << "IS DOALL: " << allSCCsDOALL << "\n";
   return allSCCsDOALL;
 }
       

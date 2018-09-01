@@ -55,6 +55,7 @@ namespace llvm {
        * Fields
        */
       SCCDAG *sccdag;
+      std::set<SCC *> clonableSCCs;
 
       /*
        * Methods
@@ -82,8 +83,8 @@ namespace llvm {
       bool checkIfCommutative (SCC *scc);
       bool checkIfIndependent (SCC *scc);
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);
-      void checkIfClonableByInductionVars (SCC *scc, ScalarEvolution &SE);
-      void checkIfClonableBySyntacticSugarInstrs (SCC *scc);
+      bool checkIfClonableByInductionVars (SCC *scc, ScalarEvolution &SE);
+      bool checkIfClonableBySyntacticSugarInstrs (SCC *scc);
 
       std::unordered_map<SCC *, std::unique_ptr<SCCAttrs>> sccToInfo;
   };

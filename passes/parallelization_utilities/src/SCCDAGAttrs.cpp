@@ -92,6 +92,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, ScalarEvolution &SE) {
     auto scc = node->getT();
 
     this->sccToInfo[scc] = std::move(std::make_unique<SCCAttrs>(scc));
+    this->checkIfClonable(scc, SE);
 
     if (this->checkIfIndependent(scc)) {
       scc->setType(SCC::SCCType::INDEPENDENT);
@@ -154,6 +155,7 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
   /*
    * Requirement: commutative instructions alone do not form a cycle
    */
+  // SOMEHOW this is buggy
   SCC commValSCC(commValNodes, /*connectToExternalValues=*/false);
   errs() << "HAS CYCLE!?\n";
   if (commValSCC.hasCycle()) return false;
@@ -189,17 +191,20 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
 }
 
 void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
-  checkIfClonableByInductionVars(scc, SE);
-  checkIfClonableBySyntacticSugarInstrs(scc);
+  if (checkIfClonableByInductionVars(scc, SE) ||
+      checkIfClonableBySyntacticSugarInstrs(scc)) {
+    this->getSCCAttrs(scc)->isClonable = true;
+    clonableSCCs.insert(scc);
+  }
 }
 
-void SCCDAGAttrs::checkIfClonableByInductionVars (SCC *scc, ScalarEvolution &SE) {
+bool SCCDAGAttrs::checkIfClonableByInductionVars (SCC *scc, ScalarEvolution &SE) {
 
   /*
    * Check if the current node of the SCCDAG is an SCC used by other nodes.
    */
   if (scc->numInternalNodes() == 1 || sccdag->fetchNode(scc)->numOutgoingEdges() == 0) {
-    return ;
+    return false;
   }
 
   /*
@@ -209,23 +214,27 @@ void SCCDAGAttrs::checkIfClonableByInductionVars (SCC *scc, ScalarEvolution &SE)
    * In more detail, this SCC can be removed if the loop-carried data dependence, which has created this SCC in the PDG, is due to updates to induction variables.
    */
   if (this->isInductionVariableSCC(SE, scc)) {
-    this->getSCCAttrs(scc)->isClonable = true;
+    return true;
   }
+
+  return false;
 }
 
-void SCCDAGAttrs::checkIfClonableBySyntacticSugarInstrs (SCC *scc) {
+bool SCCDAGAttrs::checkIfClonableBySyntacticSugarInstrs (SCC *scc) {
 
   /*
    * Check if the current node of the SCCDAG is an SCC used by other nodes.
    */
   if (scc->numInternalNodes() > 1 || sccdag->fetchNode(scc)->numOutgoingEdges() == 0) {
-    return ;
+    return false;
   }
 
   auto I = scc->begin_internal_node_map()->first;
   if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
-    this->getSCCAttrs(scc)->isClonable = true;
+    return true;
   }
+
+  return false;
 }
 
 bool SCCDAGAttrs::executesCommutatively (SCC *scc) {

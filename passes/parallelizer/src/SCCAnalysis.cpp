@@ -63,12 +63,3 @@ void Parallelizer::estimateCostAndExtentOfParallelismOfSCCs (DSWPLoopDependenceI
   return ;
 }
 
-void Parallelizer::collectRemovableSCCs (DSWPLoopDependenceInfo *LDI) {
-  for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
-    auto scc = sccNode->getT();
-    if (LDI->sccdagAttrs.canBeCloned(scc)) {
-      LDI->partition.removableNodes.insert(scc);
-    }
-  }
-}
-

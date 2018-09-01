@@ -129,94 +129,86 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
      */
     uint64_t totalCost = 0;
     uint64_t maxAllowedCost = 0;
-    std::set<SCCDAGSubset *> currentSubsets;
+    std::unordered_map<int, uint64_t> subsetIDToCost;
     for (auto &subset : partition.subsets) {
-      currentSubsets.insert(subset.get());
-      subset->cost = this->latencyPerInvocation(sccdagAttrs, subset->SCCs);
-      if (  (maxAllowedCost == 0)           ||
-            (subset->cost > maxAllowedCost) ){
-        maxAllowedCost = subset->cost;
+      auto subsetID = partition.getSubsetID(subset);
+      auto cost = this->latencyPerInvocation(sccdagAttrs, subset->SCCs);
+      subsetIDToCost[subsetID] = cost;
+      if (maxAllowedCost == 0 || cost > maxAllowedCost) {
+        maxAllowedCost = cost;
       }
 
-      totalCost += subset->cost;
+      totalCost += cost;
     }
 
     /*
      * Collect all subsets of the current SCCDAG partition.
      */
-    std::queue<SCCDAGSubset *> partToCheck;
-    auto topLevelParts = partition.getSubsetsWithNoIncomingEdges();
-    for (auto part : topLevelParts) {
-      partToCheck.push(part);
+    std::queue<int> subIDToCheck;
+    std::set<int> alreadyChecked;
+    auto topLevelSubIDs = partition.getSubsetIDsWithNoIncomingEdges();
+    for (auto subID : topLevelSubIDs) {
+      subIDToCheck.push(subID);
+      alreadyChecked.insert(subID);
     }
 
     /*
      * Merge subsets.
      */
-    std::set<SCCDAGSubset *> alreadyChecked;
-    while (!partToCheck.empty()) {
+    while (!subIDToCheck.empty()) {
 
       /*
        * Fetch the current subset.
        */
-      auto subset = partToCheck.front();
-      partToCheck.pop();
-      alreadyChecked.insert(subset);
+      auto subID = subIDToCheck.front();
+      subIDToCheck.pop();
 
       /*
        * Check if the current subset has been already tagged to be removed (i.e., merged).
        */
-      if (currentSubsets.find(subset) == currentSubsets.end()) {
-        continue;
-      }
+      if (partition.isValidSubset(subID)) continue ;
 
       /*
        * Prioritize merge that best lowers overall cost without yielding a too costly partition
        */
-      SCCDAGSubset *minSubset = nullptr;
+      int minSubsetID = -1;
       int32_t maxLoweredCost = 0;
-
-      auto tryToMergeWith = [&](SCCDAGSubset *s) -> void {
-        if (!partition.canMergeSubsets(subset, s)) { 
-          return;
-        }
+      auto tryToMergeWith = [&](int s) -> void {
+        if (!partition.canMergeSubsets(subID, s)) return ;
 
         /*
          * Create an example merge of the subsets to determine its worth
          */
-        auto demoMerged = partition.demoMergeSubsets(subset, s);
-        auto mergedCost = this->latencyPerInvocation(sccdagAttrs, demoMerged->SCCs);
-        if (mergedCost > maxAllowedCost) {
-          return ;
-        }
+        auto sccsOfSubsets = partition.sccsOfSubsets(subID, s);
+        auto mergedCost = this->latencyPerInvocation(sccdagAttrs, sccsOfSubsets);
+        if (mergedCost > maxAllowedCost || mergedCost < maxLoweredCost) return ;
 
-        minSubset = s;
+        minSubsetID = s;
       };
 
       /*
        * Check merge criteria on dependents and depth-1 neighbors
        */
-      auto dependents = partition.getDependents(subset);
-      auto siblings = partition.getSiblings(subset);
-      for (auto s : dependents) tryToMergeWith(s);
-      for (auto s : siblings) tryToMergeWith(s);
+      auto dependentIDs = partition.getDependentIDs(subID);
+      auto siblingIDs = partition.getSiblingIDs(subID);
+      for (auto s : dependentIDs) tryToMergeWith(s);
+      for (auto s : siblingIDs) tryToMergeWith(s);
 
       /*
        * Merge partition if one is found; reiterate the merge check on it
        */
-      if (minSubset) {
-        auto mergedSub = partition.mergeSubsets(subset, minSubset);
-        currentSubsets.erase(subset);
-        currentSubsets.erase(minSubset);
-        currentSubsets.insert(mergedSub);
-        partToCheck.push(mergedSub);
+      if (minSubsetID != -1) {
+        auto mergedSubID = partition.mergeSubsets(subID, minSubsetID);
+        subIDToCheck.push(mergedSubID);
+        alreadyChecked.insert(mergedSubID);
 
         /*
          * Add dependent SCCs as well.
          */
-        for (auto s : dependents) {
+        for (auto s : dependentIDs) {
           if (alreadyChecked.find(s) == alreadyChecked.end()){
-            partToCheck.push(s);
+            subIDToCheck.push(s);
+            alreadyChecked.insert(s);
           }
         }
 

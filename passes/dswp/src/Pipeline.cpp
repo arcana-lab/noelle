@@ -3,30 +3,30 @@
 using namespace llvm;
 
 void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
-  auto topLevelParts = LDI->partition.getSubsetsWithNoIncomingEdges();
-  std::set<SCCDAGSubset *> partsFound(topLevelParts.begin(), topLevelParts.end());
-  std::deque<SCCDAGSubset *> partsToTraverse(topLevelParts.begin(), topLevelParts.end());
+  auto topLevelSubIDs = LDI->partition.getSubsetIDsWithNoIncomingEdges();
+  std::set<int> subsFound(topLevelSubIDs.begin(), topLevelSubIDs.end());
+  std::deque<int> subsToTraverse(topLevelSubIDs.begin(), topLevelSubIDs.end());
 
   int order = 0;
-  while (!partsToTraverse.empty())
+  while (!subsToTraverse.empty())
   {
-    auto part = partsToTraverse.front();
-    partsToTraverse.pop_front();
+    auto sub = subsToTraverse.front();
+    subsToTraverse.pop_front();
 
     /*
      * Add all unvisited, next depth partitions to the traversal queue 
      */
-    auto nextParts = LDI->partition.nextLevelSubsets(part);
-    for (auto next : nextParts)
+    auto nextSubs = LDI->partition.nextLevelSubsetIDs(sub);
+    for (auto next : nextSubs)
     {
-      if (partsFound.find(next) != partsFound.end()) continue;
-      partsFound.insert(next);
-      partsToTraverse.push_back(next);
+      if (subsFound.find(next) != subsFound.end()) continue;
+      subsFound.insert(next);
+      subsToTraverse.push_back(next);
     }
 
     LDI->stages.push_back(std::move(std::make_unique<StageInfo>(order++)));
     auto stage = LDI->stages[order - 1].get();
-    for (auto scc : part->SCCs) {
+    for (auto scc : LDI->partition.subsetOfID(sub)->SCCs) {
       stage->stageSCCs.insert(scc);
       LDI->sccToStage[scc] = stage;
     }

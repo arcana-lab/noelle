@@ -26,12 +26,12 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
      * If it is, then this SCC has already been assigned to every dependent partition.
      */
     auto currentSCC = nodePair.first;
-    if (LDI->partition.isRemovable(currentSCC)) continue ;
+    if (LDI->sccdagAttrs.canBeCloned(currentSCC)) continue ;
 
     /*
      * Check if the current SCC has been already assigned to a partition; if not, assign it to a new partition.
      */
-    if (LDI->partition.subsetOf(currentSCC) == nullptr) {
+    if (LDI->partition.subsetIDOfSCC(currentSCC) == -1) {
       LDI->partition.addSubset(nodePair.first);
     }
   }
@@ -78,7 +78,7 @@ void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
 
   unordered_map<LoopSummary *, std::set<SCC *>> loopSets;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
-    if (LDI->partition.isRemovable(sccNode->getT())) continue;
+    if (LDI->sccdagAttrs.canBeCloned(sccNode->getT())) continue;
 
     for (auto iNodePair : sccNode->getT()->internalNodePairs()) {
       auto bb = cast<Instruction>(iNodePair.first)->getParent();
@@ -121,7 +121,7 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
         auto fromSCCNode = sccEdge->getOutgoingNode();
         auto fromSCC = fromSCCNode->getT();
         if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
-        if (!LDI->partition.isRemovable(fromSCC)) continue;
+        if (!LDI->sccdagAttrs.canBeCloned(fromSCC)) continue;
 
         stage->removableSCCs.insert(fromSCC);
         dependentSCCNodes.push(fromSCCNode);

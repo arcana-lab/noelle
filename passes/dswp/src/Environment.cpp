@@ -8,7 +8,7 @@ void DSWP::collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
 
     for (auto consumer : LDI->environment->consumersOf(producer)) {
       bool isSharedInst = false;
-      for (auto scc : LDI->partition.removableNodes) {
+      for (auto scc : LDI->sccdagAttrs.clonableSCCs) {
         if (!scc->isInternal(consumer)) continue;
         isSharedInst = true;
         for (auto &stage : LDI->stages) stage->incomingEnvs.insert(envIndex);
@@ -33,7 +33,7 @@ void DSWP::collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI) {
     auto producerI = cast<Instruction>(producer);
 
     bool isSharedInst = false;
-    for (auto scc : LDI->partition.removableNodes) {
+    for (auto scc : LDI->sccdagAttrs.clonableSCCs) {
       if (!scc->isInternal(producer)) continue;
       isSharedInst = true;
       LDI->stages[0]->outgoingEnvs[producerI] = envIndex;

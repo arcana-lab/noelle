@@ -8,11 +8,9 @@
 class SCCDAGSubset {
   public:
     std::set<SCC *> SCCs;
-    int cost;
     std::set<LoopSummary *> loopsContained;
 
     SCCDAGSubset (SCCDAGAttrs *sccdagAttrs, LoopInfoSummary *loopInfo, std::set<SCC *> &sccs);
-    SCCDAGSubset (SCCDAGAttrs *sccdagAttrs, LoopInfoSummary *loopInfo, SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
 
     raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
 
@@ -23,44 +21,45 @@ class SCCDAGSubset {
 class SCCDAGPartition {
   public:
     std::set<std::unique_ptr<SCCDAGSubset>> subsets;
-    std::set<SCC *> removableNodes;
 
     void initialize (SCCDAG *dag, SCCDAGAttrs *dagInfo, LoopInfoSummary *lInfo);
 
-    SCCDAGSubset *addSubset (SCC *node);
-    SCCDAGSubset *addSubset (std::set<SCC *> &subset);
-    void removeSubset (SCCDAGSubset *subset);
-    SCCDAGSubset *mergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
-    bool canMergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
-    SCCDAGSubset *demoMergeSubsets (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
+    raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
+
+    int getSubsetID (const std::unique_ptr<SCCDAGSubset> &subset);
+    int subsetIDOfSCC (SCC *scc);
+    bool isValidSubset (int id);
+    SCCDAGSubset *subsetOfID (int id);
+
+    int addSubset (SCC *node);
+    int addSubset (std::set<SCC *> &subset);
+    void removeSubset (int subsetID);
+    std::set<SCC *> sccsOfSubsets (int subsetA, int subsetB);
+    int mergeSubsets (int subsetA, int subsetB);
+    bool canMergeSubsets (int subsetA, int subsetB);
 
     void mergeSubsetsRequiringMemSync ();
     void mergeSubsetsFormingCycles ();
-    SCCDAGSubset *traverseAndCheckToMerge (std::vector<SCCDAGSubset *> &path);
+    int traverseAndCheckToMerge (std::vector<int> &path);
 
-    SCCDAGSubset *subsetOf (SCC *scc);
-    bool isRemovable (SCC *scc);
-    std::set<SCCDAGSubset *> getDependents (SCCDAGSubset *subset);
-    std::set<SCCDAGSubset *> getDependents (std::set<DGNode<SCC> *> &sccs);
-    std::set<SCCDAGSubset *> getAncestors (SCCDAGSubset *subset);
-    std::set<SCCDAGSubset *> getAncestors (std::set<DGNode<SCC> *> &sccs);
-    std::set<SCCDAGSubset *> getSiblings (SCCDAGSubset *subset);
-    std::set<SCCDAGSubset *> getSubsetsWithNoIncomingEdges ();
-    std::set<SCCDAGSubset *> nextLevelSubsets (SCCDAGSubset *subset);
-
-    raw_ostream &print(raw_ostream &stream, std::string prefixToUse);
+    std::set<int> getDependentIDs (int subsetID);
+    std::set<int> getDependentIDs (std::set<DGNode<SCC> *> &sccs);
+    std::set<int> getAncestorIDs (int subsetID);
+    std::set<int> getAncestorIDs (std::set<DGNode<SCC> *> &sccs);
+    std::set<int> getSiblingIDs (int subsetID);
+    std::set<int> getSubsetIDsWithNoIncomingEdges ();
+    std::set<int> nextLevelSubsetIDs (int subsetID);
 
   private:
-    std::set<SCCDAGSubset *> getRelated (std::set<DGNode<SCC> *> &sccNodes, std::function<void (std::queue<DGNode<SCC> *> &, DGNode<SCC> *)> addKinFunc);
+    std::set<int> getRelatedIDs (std::set<DGNode<SCC> *> &sccNodes, std::function<void (std::queue<DGNode<SCC> *> &, DGNode<SCC> *)> addKinFunc);
 
-    int numEdgesBetween (SCCDAGSubset *subsetA, SCCDAGSubset *subsetB);
-
-    void manageAddedSubsetInfo (SCCDAGSubset *subset);
-
-    std::set<DGNode<SCC> *> getSCCNodes (SCCDAGSubset *subset);
+    std::set<DGNode<SCC> *> getSCCNodes (int subset);
 
     SCCDAG *sccDAG;
     SCCDAGAttrs *sccdagAttrs;
     LoopInfoSummary *loopInfo;
-    std::unordered_map<SCC *, SCCDAGSubset *> fromSCCToSubset;
+
+    std::unordered_map<SCC *, int> SCCToSubsetID;
+    std::unordered_map<int, SCCDAGSubset *> subsetIDToSubset;
+    int subsetCounter;
 };

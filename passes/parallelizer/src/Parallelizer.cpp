@@ -101,11 +101,4 @@ void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *
    * Keep track of which nodes of the SCCDAG are single instructions.
    */
   collectParallelizableSingleInstrNodes(LDI);
-
-  /*
-   * Keep track of the SCCs that can be removed.
-   */
-  collectRemovableSCCs(LDI);
-
-  return ;
 }
