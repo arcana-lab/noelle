@@ -245,8 +245,8 @@ int SCCDAGPartition::traverseAndCheckToMerge (std::vector<int> &path) {
     }
 
     auto depSubIDs = this->getDependentIDs(subsetID);
-    // THIS DAMN DEPENDENTS SLIP FROM UNDER US AND BECOME NULL GARBAGE... DAMN IT
     for (auto subID : depSubIDs) {
+      if (!isValidSubset(subID)) continue ;
       auto subIter = std::find(path.begin(), path.end(), subID);
 
       /*
