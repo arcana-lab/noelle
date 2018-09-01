@@ -16,8 +16,6 @@ llvm::SCC::SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues) {
 	for (auto node : nodes) addNode(node->getT(), /*internal=*/ true);
 	entryNode = (*allNodes.begin());
 
-  if (!connectToExternalValues) return ;
-
 	/*
 	 * Add internal/external edges on this SCC's instructions 
 	 * Note: to avoid edge duplication, ignore incoming edges from internal nodes (they were considered in outgoing edges)
@@ -28,6 +26,7 @@ llvm::SCC::SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues) {
 		for (auto edge : node->getOutgoingEdges())
 		{
 			auto incomingT = edge->getIncomingNode()->getT();
+      if (!connectToExternalValues && !isInternal(incomingT)) continue ;
 			fetchOrAddNode(incomingT, /*internal=*/ false);
 			copyAddEdge(*edge);
 		}
@@ -45,15 +44,23 @@ llvm::SCC::~SCC() {
   return ;
 }
 
-raw_ostream &llvm::SCC::print(raw_ostream &stream, std::string prefixToUse) {
+raw_ostream &llvm::SCC::print (raw_ostream &stream, std::string prefixToUse) {
+  stream << prefixToUse << "Internal nodes: " << internalNodeMap.size() << "\n";
+  for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+  stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
+  for (auto nodePair : externalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+  stream << prefixToUse << "Edges: " << allEdges.size() << "\n";
+  for (auto edge : allEdges) edge->print(stream, prefixToUse + "\t") << "\n";
+  return stream;
+}
 
-    stream << prefixToUse << "Internal nodes: " << internalNodeMap.size() << "\n";
-	for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
-    stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
-	for (auto nodePair : externalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
-    stream << prefixToUse << "Edges: " << allEdges.size() << "\n";
-    for (auto edge : allEdges) edge->print(stream, prefixToUse + "\t") << "\n";
-	return stream;
+raw_ostream &llvm::SCC::printMinimal (raw_ostream &stream, std::string prefixToUse) {
+  stream << prefixToUse << "Internal nodes: " << internalNodeMap.size() << "\n";
+  for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+  stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
+  for (auto nodePair : externalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+  stream << prefixToUse << "Edges: " << allEdges.size() << "\n";
+  return stream;
 }
 
 bool llvm::SCC::hasCycle (bool ignoreControlDep) {

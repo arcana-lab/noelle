@@ -20,7 +20,8 @@ namespace llvm {
 
         ~SCC() ;
 
-        raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") ;
+        raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "") ;
+        raw_ostream &printMinimal (raw_ostream &stream, std::string prefixToUse = "") ;
 
         bool hasCycle (bool ignoreControlDep = false) ;
 
