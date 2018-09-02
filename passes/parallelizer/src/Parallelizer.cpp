@@ -21,7 +21,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
   mergeTrivialNodesInSCCDAG(LDI);
 
   /*
-   * Collect information about the SCCs.
+   * Collect information about the non-trivial SCCs
    */
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
   collectSCCDAGAttrs(LDI, h, SE);

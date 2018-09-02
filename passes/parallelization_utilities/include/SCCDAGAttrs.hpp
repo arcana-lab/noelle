@@ -13,8 +13,37 @@ using namespace llvm;
 
 namespace llvm {
 
+  struct AccumulatorOpInfo {
+    AccumulatorOpInfo ();
+
+    std::set<unsigned> sideEffectFreeOps;
+    std::set<unsigned> accumOps;
+    std::unordered_map<unsigned, unsigned> opIdentities;
+    std::unordered_map<unsigned, unsigned> equivAddOp;
+
+    bool isMulOp (unsigned op);
+    bool isAddOp (unsigned op);
+    bool isSubOp (unsigned op);
+    unsigned equivalentAddOp (unsigned subOp);
+  };
+
   struct SCCEdgeInfo {
     std::set<Value *> edges;
+  };
+
+  /*
+   * TODO(angelo): Fully understand SCEV to render this characterization
+   * of an IV obsolete
+   */
+  struct SimpleIVInfo {
+    CmpInst *cmp;
+    BranchInst *br;
+    Value *start;
+    ConstantInt *step;
+    Value *end;
+
+    SimpleIVInfo () : cmp{nullptr}, br{nullptr}, start{nullptr},
+      step{nullptr}, end{nullptr} {};
   };
 
   class SCCAttrs {
@@ -29,22 +58,30 @@ namespace llvm {
       bool isIndependent;
       bool isClonable;
       bool isReducable;
+      bool isIVSCC;
       std::unordered_map<SCC *, std::unique_ptr<SCCEdgeInfo>> sccToEdgeInfo;
 
-      bool isIVSCC;
-      PHINode *singlePHI;
+      /*
+       * TODO(angelo): allow multiple phis as long as they form a single cycle
+       */
+      PHINode * singlePHI;
       std::set<Instruction *> PHIAccumulators;
+
+      bool isSimpleIV;
+      SimpleIVInfo simpleIVInfo;
 
       /*
        * Methods
        */
       SCCAttrs (SCC *s)
-        : scc{s}, internalCost{0}, isIndependent{0},
-          isClonable{0}, isReducable{0} {
+        : scc{s}, internalCost{0}, isIndependent{0}, isClonable{0},
+          isReducable{0}, isSimpleIV{0}, singlePHI{nullptr} {
+        errs() << "Making\n";
         // Collect basic blocks contained within SCC
         for (auto nodePair : this->scc->internalNodePairs()) {
           this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
         }
+        errs() << "Maked\n";
       }
   };
 
@@ -55,6 +92,7 @@ namespace llvm {
        * Fields
        */
       SCCDAG *sccdag;
+      AccumulatorOpInfo accumOpInfo;
       std::set<SCC *> clonableSCCs;
 
       /*
@@ -63,10 +101,10 @@ namespace llvm {
       bool executesCommutatively (SCC *scc);
       bool executesIndependently (SCC *scc);
       bool canBeCloned (SCC *scc);
+      bool isInductionVariableSCC (SCC *scc);
       std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
 
-      bool loopHasInductionVariable (ScalarEvolution &SE) const ;
-      bool isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const ;
+      bool loopHasInductionVariable ();
       bool isSCCContainedInSubloop (LoopInfoSummary &LIS, SCC *scc) const ;
       bool allPostLoopEnvValuesAreReducable (LoopEnvironment *env) const ;
 
@@ -80,10 +118,13 @@ namespace llvm {
       void populate (SCCDAG *loopSCCDAG, ScalarEvolution &SE);
 
     private:
+      void collectSinglePHIAndAccumulators (SCC *scc);
       bool checkIfCommutative (SCC *scc);
       bool checkIfIndependent (SCC *scc);
+      bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE);
+      bool checkIfSimpleIV (SCC *scc);
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);
-      bool checkIfClonableByInductionVars (SCC *scc, ScalarEvolution &SE);
+      bool checkIfClonableByInductionVars (SCC *scc);
       bool checkIfClonableBySyntacticSugarInstrs (SCC *scc);
 
       std::unordered_map<SCC *, std::unique_ptr<SCCAttrs>> sccToInfo;

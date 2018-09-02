@@ -2,6 +2,47 @@
 
 using namespace llvm;
 
+AccumulatorOpInfo::AccumulatorOpInfo () {
+  this->sideEffectFreeOps = {
+    Instruction::Add,
+    Instruction::FAdd,
+    Instruction::Mul,
+    Instruction::FMul,
+    Instruction::Sub,
+    Instruction::FSub
+  };
+  this->accumOps = std::set<unsigned>(sideEffectFreeOps.begin(), sideEffectFreeOps.end());
+  this->opIdentities = {
+    { Instruction::Add, 0 },
+    { Instruction::FAdd, 0 },
+    { Instruction::Mul, 1 },
+    { Instruction::FMul, 1 },
+    { Instruction::Sub, 0 },
+    { Instruction::FSub, 0 }
+  };
+  this->equivAddOp = {
+    { Instruction::Sub, Instruction::Add },
+    { Instruction::FSub, Instruction::FAdd }
+  };
+}
+
+bool AccumulatorOpInfo::isSubOp (unsigned op) {
+  return Instruction::Sub == op || Instruction::FSub == op;
+}
+
+bool AccumulatorOpInfo::isMulOp (unsigned op) {
+  return Instruction::Mul == op || Instruction::FMul == op;
+}
+
+bool AccumulatorOpInfo::isAddOp (unsigned op) {
+  return Instruction::Add == op || Instruction::FAdd == op;
+}
+
+unsigned AccumulatorOpInfo::equivalentAddOp (unsigned subOp) {
+  if (!isSubOp(subOp)) return subOp;
+  return equivAddOp[subOp];
+}
+
 std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
   std::set<SCC *> sccs;
   for (auto &sccInfoPair : this->sccToInfo) {
@@ -11,7 +52,7 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const
   return sccs;
 }
 
-bool SCCDAGAttrs::loopHasInductionVariable (ScalarEvolution &SE) const {
+bool SCCDAGAttrs::loopHasInductionVariable () {
   
   /*
    * Assumption(angelo): An induction variable will be the root SCC of the loop
@@ -20,7 +61,8 @@ bool SCCDAGAttrs::loopHasInductionVariable (ScalarEvolution &SE) const {
   if (topLevelNodes.size() != 1) return false;
 
   auto scc = (*topLevelNodes.begin())->getT();
-  return this->isInductionVariableSCC(SE, scc);
+
+  return isInductionVariableSCC(scc);
 }
 
 bool SCCDAGAttrs::isSCCContainedInSubloop (LoopInfoSummary &LIS, SCC *scc) const {
@@ -32,7 +74,7 @@ bool SCCDAGAttrs::isSCCContainedInSubloop (LoopInfoSummary &LIS, SCC *scc) const
   return instInSubloops;
 }
 
-bool SCCDAGAttrs::isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const {
+bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
   auto isIvSCC = true;
   for (auto iNodePair : scc->internalNodePairs()) {
     auto V = iNodePair.first;
@@ -44,12 +86,12 @@ bool SCCDAGAttrs::isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const {
     case scTruncate:
     case scZeroExtend:
     case scSignExtend:
-    case scAddExpr:
-    case scMulExpr:
-    case scUDivExpr:
-    case scAddRecExpr:
     case scSMaxExpr:
     case scUMaxExpr:
+    case scUDivExpr:
+    case scAddExpr:
+    case scMulExpr:
+    case scAddRecExpr:
       continue;
     case scUnknown:
     case scCouldNotCompute:
@@ -59,7 +101,51 @@ bool SCCDAGAttrs::isInductionVariableSCC (ScalarEvolution &SE, SCC *scc) const {
      llvm_unreachable("DSWP: Unknown SCEV type!");
     }
   }
-  return isIvSCC;
+
+  return this->getSCCAttrs(scc)->isIVSCC = isIvSCC;
+}
+
+/*
+ * Assumptions:
+ * IV is described by single PHI with a start and recurrence incoming value
+ * Only one accumulator, only one conditional branch and its comparison
+ */
+bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc) {
+  auto &sccInfo = this->getSCCAttrs(scc);
+  if (!sccInfo->singlePHI) return false;
+  if (sccInfo->singlePHI->getNumIncomingValues() != 2) return false;
+  if (sccInfo->PHIAccumulators.size() != 1) return false;
+
+  SimpleIVInfo IVInfo;
+  for (auto iNodePair : scc->internalNodePairs()) {
+    auto V = iNodePair.first;
+    if (auto cmp = dyn_cast<CmpInst>(V)) {
+      if (IVInfo.cmp) return false;
+      IVInfo.cmp = cmp;
+    } else if (auto br = dyn_cast<BranchInst>(V)) {
+      if (br->isUnconditional()) continue;
+      if (IVInfo.br) return false;
+      IVInfo.br = br;
+    }
+  }
+  if (!IVInfo.cmp || !IVInfo.br) return false;
+
+  Instruction *accum = *sccInfo->PHIAccumulators.begin();
+  auto incomingStart = sccInfo->singlePHI->getIncomingValue(0);
+  if (incomingStart == accum) incomingStart = sccInfo->singlePHI->getIncomingValue(1);
+  IVInfo.start = incomingStart;
+
+  auto stepValue = accum->getOperand(0);
+  if (stepValue == sccInfo->singlePHI) stepValue = accum->getOperand(1);
+  if (!isa<ConstantInt>(stepValue)) return false;
+  IVInfo.step = (ConstantInt*)stepValue;
+
+  auto endValue = IVInfo.cmp->getOperand(0);
+  if (endValue == sccInfo->singlePHI) endValue = IVInfo.cmp->getOperand(1);
+  IVInfo.end = endValue;
+
+  sccInfo->simpleIVInfo = IVInfo;
+  return sccInfo->isSimpleIV = true;
 }
 
 std::set<BasicBlock *> & SCCDAGAttrs::getBasicBlocks (SCC *scc){
@@ -73,7 +159,6 @@ bool SCCDAGAttrs::allPostLoopEnvValuesAreReducable (LoopEnvironment *env) const 
     auto producer = env->producerAt(envIndex);
     auto scc = sccdag->sccOfValue(producer);
 
-    scc->print(errs() << "SCC that has post env\n") << "\n";
     if (scc->getType() != SCC::SCCType::COMMUTATIVE) {
       return false;
     }
@@ -90,8 +175,11 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, ScalarEvolution &SE) {
   this->sccdag = loopSCCDAG;
   for (auto node : loopSCCDAG->getNodes()) {
     auto scc = node->getT();
-
     this->sccToInfo[scc] = std::move(std::make_unique<SCCAttrs>(scc));
+
+    this->collectSinglePHIAndAccumulators(scc);
+    this->checkIfInductionVariableSCC(scc, SE);
+    if (isInductionVariableSCC(scc)) this->checkIfSimpleIV(scc);
     this->checkIfClonable(scc, SE);
 
     if (this->checkIfIndependent(scc)) {
@@ -104,15 +192,36 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, ScalarEvolution &SE) {
   }
 }
 
+void SCCDAGAttrs::collectSinglePHIAndAccumulators (SCC *scc) {
+  PHINode *singlePHI = nullptr;
+  std::set<Instruction *> accums;
+  for (auto iNodePair : scc->internalNodePairs()) {
+    auto V = iNodePair.first;
+    if (isa<CmpInst>(V) || isa<TerminatorInst>(V)) continue ;
+    if (isa<GetElementPtrInst>(V) || isa<CastInst>(V)) continue ;
+
+    if (auto phi = dyn_cast<PHINode>(V)) {
+      if (singlePHI) return ;
+      singlePHI = phi;
+      continue;
+    }
+    if (auto I = dyn_cast<Instruction>(V)) {
+      auto binOp = I->getOpcode();
+      if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
+        accums.insert(I);
+      }
+      continue;
+    }
+
+    return ;
+  }
+
+  auto &sccInfo = this->getSCCAttrs(scc);
+  sccInfo->singlePHI = singlePHI;
+  sccInfo->PHIAccumulators = std::set<Instruction *>(accums.begin(), accums.end());
+}
+
 bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
-  std::set<unsigned> sideEffectFreeBinOps = {
-    Instruction::Add,
-    Instruction::FAdd,
-    Instruction::Mul,
-    Instruction::FMul,
-    Instruction::Sub,
-    Instruction::FSub
-  };
 
   /*
    * Requirement: SCC has no dependent SCCs
@@ -126,60 +235,51 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
   }
   errs() << "------------------------------- Phew, isn't dependent\n";
 
-  PHINode *singlePHI = nullptr;
-  std::set<DGNode<Value> *> commValNodes;
-  for (auto iNodePair : scc->internalNodePairs()) {
-    Instruction *val = cast<Instruction>(iNodePair.first);
-    val->print(errs() << "Checking val: "); errs() << "\n";
+  auto &sccInfo = this->getSCCAttrs(scc);
+  if (!sccInfo->singlePHI) return false;
 
-    /*
-     * Requirement: one unique PHI node
-     */
-    if (isa<PHINode>(val)) {
-      if (singlePHI) return false;
-      singlePHI = (PHINode *)val;
-      continue;
-    }
+  // for (auto iNodePair : scc->internalNodePairs()) {
+    // Instruction *val = cast<Instruction>(iNodePair.first);
+  if (sccInfo->PHIAccumulators.size() == 0) return true;
+  for (auto accum : sccInfo->PHIAccumulators) {
+    accum->print(errs() << "Checking accum: "); errs() << "\n";
 
     /*
      * Requirement: instructions are side effect free
      */
-    unsigned opCode = val->getOpcode();
-    if (sideEffectFreeBinOps.find(opCode) == sideEffectFreeBinOps.end()) {
+    unsigned opCode = accum->getOpcode();
+    if (accumOpInfo.sideEffectFreeOps.find(opCode) == accumOpInfo.sideEffectFreeOps.end()) {
       return false;
     }
-    commValNodes.insert(iNodePair.second);
-  }
-  if (commValNodes.size() == 0) return true;
-
-  /*
-   * Requirement: commutative instructions alone do not form a cycle
-   */
-  // SOMEHOW this is buggy
-  SCC commValSCC(commValNodes, /*connectToExternalValues=*/false);
-  errs() << "HAS CYCLE!?\n";
-  if (commValSCC.hasCycle()) return false;
-  errs() << "DOES NOT HAVE CYCLE!?\n";
-
-  auto firstCommVal = (*commValNodes.begin())->getT();
-  unsigned firstOpCode = cast<Instruction>(firstCommVal)->getOpcode();
-  bool isFirstMul = firstOpCode == Instruction::Mul
-    || firstOpCode == Instruction::FMul;
-  for (auto commValNode : commValNodes) {
-    auto commVal = commValNode->getT();
 
     /*
-     * Requirement: instructions are all Add/Sub or all Mul
+     * Requirement: commutative instruction has one use and is used once
      */
-    auto opCode = cast<Instruction>(commVal)->getOpcode();
-    bool isMul = opCode == Instruction::Mul || opCode == Instruction::FMul;
+    auto iNode = scc->fetchNode(accum);
+    if (iNode->numIncomingEdges() != 1 || iNode->numOutgoingEdges() != 1) {
+      return false;
+    }
+  }
+
+  /*
+   * Requirement: instructions are all Add/Sub or all Mul
+   */
+  auto firstAccum = *sccInfo->PHIAccumulators.begin();
+  bool isFirstMul = accumOpInfo.isMulOp(firstAccum->getOpcode());
+  for (auto accum : sccInfo->PHIAccumulators) {
+    bool isMul = accumOpInfo.isMulOp(accum->getOpcode());
     if (isMul ^ isFirstMul) return false;
-    errs() << "Share group of opcode\n";
+
+    /*
+     * Requirement: second operand of subtraction must be external
+     */
+    if (accumOpInfo.isSubOp(accum->getOpcode())) {
+      if (scc->isInternal(accum->getOperand(1))) return false;
+    }
   }
 
   errs() << "SUCCESS THIS IS A COMMUTATIVE SCC!\n";
-  this->getSCCAttrs(scc)->isReducable = true;
-  return true;
+  return this->getSCCAttrs(scc)->isReducable = true;
 }
 
 bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
@@ -191,14 +291,14 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
 }
 
 void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
-  if (checkIfClonableByInductionVars(scc, SE) ||
+  if (checkIfClonableByInductionVars(scc) ||
       checkIfClonableBySyntacticSugarInstrs(scc)) {
     this->getSCCAttrs(scc)->isClonable = true;
     clonableSCCs.insert(scc);
   }
 }
 
-bool SCCDAGAttrs::checkIfClonableByInductionVars (SCC *scc, ScalarEvolution &SE) {
+bool SCCDAGAttrs::checkIfClonableByInductionVars (SCC *scc) {
 
   /*
    * Check if the current node of the SCCDAG is an SCC used by other nodes.
@@ -213,7 +313,7 @@ bool SCCDAGAttrs::checkIfClonableByInductionVars (SCC *scc, ScalarEvolution &SE)
    * Check if this SCC can be removed exploiting induction variables.
    * In more detail, this SCC can be removed if the loop-carried data dependence, which has created this SCC in the PDG, is due to updates to induction variables.
    */
-  if (this->isInductionVariableSCC(SE, scc)) {
+  if (this->isInductionVariableSCC(scc)) {
     return true;
   }
 
@@ -249,3 +349,6 @@ bool SCCDAGAttrs::canBeCloned (SCC *scc) {
   return this->getSCCAttrs(scc)->isClonable;
 }
 
+bool SCCDAGAttrs::isInductionVariableSCC (SCC *scc) {
+  return this->getSCCAttrs(scc)->isIVSCC;
+}
