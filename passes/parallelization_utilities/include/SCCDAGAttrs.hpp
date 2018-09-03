@@ -76,12 +76,10 @@ namespace llvm {
       SCCAttrs (SCC *s)
         : scc{s}, internalCost{0}, isIndependent{0}, isClonable{0},
           isReducable{0}, isSimpleIV{0}, singlePHI{nullptr} {
-        errs() << "Making\n";
         // Collect basic blocks contained within SCC
         for (auto nodePair : this->scc->internalNodePairs()) {
           this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
         }
-        errs() << "Maked\n";
       }
   };
 

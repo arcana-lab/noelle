@@ -240,7 +240,7 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
 
   // for (auto iNodePair : scc->internalNodePairs()) {
     // Instruction *val = cast<Instruction>(iNodePair.first);
-  if (sccInfo->PHIAccumulators.size() == 0) return true;
+  if (sccInfo->PHIAccumulators.size() == 0) return false;
   for (auto accum : sccInfo->PHIAccumulators) {
     accum->print(errs() << "Checking accum: "); errs() << "\n";
 
