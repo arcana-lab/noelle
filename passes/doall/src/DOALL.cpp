@@ -18,7 +18,7 @@ bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, H
   if (!LDI->sccdagAttrs.allPostLoopEnvValuesAreReducable(LDI->environment)) return false;
   errs() << "DOALL CHECKS --------- IS DOALL (post env reducable) \n";
 
-  if (!LDI->sccdagAttrs.loopHasInductionVariable(SE)) return false;
+  if (!LDI->sccdagAttrs.loopHasInductionVariable()) return false;
   errs() << "DOALL CHECKS --------- IS DOALL (has IV) \n";
 
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
@@ -42,19 +42,12 @@ bool DOALL::apply (
   ScalarEvolution &SE
 ) {
   errs() << "DOALL: Start\n";
-
   auto chunker = this->createChunkingFuncAndArgs(LDI, par);
-
-   /*
-    * Create some utility values
-    */
-  chunker->zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
 
   this->reproduceOriginLoop(LDI, par, chunker);
   this->reproducePreEnv(LDI, par, chunker);
   this->mapOriginLoopValueUses(LDI, par, chunker);
-  // TODO(angelo): this shouldn't need scalar evolution, abstract to SCCAttrs
-  this->collectOriginIVValues(LDI, par, chunker, SE);
+  this->reduceOriginIV(LDI, par, chunker);
   this->createOuterLoop(LDI, par, chunker);
   this->alterInnerLoopToIterateChunks(LDI, par, chunker);
   this->storePostEnvironment(LDI, par, chunker);

@@ -65,7 +65,7 @@ namespace llvm {
       void reproduceOriginLoop(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void reproducePreEnv(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void mapOriginLoopValueUses(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      void collectOriginIVValues(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, ScalarEvolution &SE);
+      void reduceOriginIV(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void createOuterLoop(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void alterInnerLoopToIterateChunks(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void storePostEnvironment(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);

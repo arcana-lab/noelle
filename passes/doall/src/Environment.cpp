@@ -13,7 +13,7 @@ void DOALL::reproducePreEnv (
     auto envPtr = entryB.CreateInBoundsGEP(
       LDI->envArray,
       ArrayRef<Value*>({
-        chunker->zeroV,
+        cast<Value>(ConstantInt::get(par.int64, 0)),
         envIndV
       })
     );
@@ -32,39 +32,29 @@ void DOALL::storePostEnvironment (
 ) {
 
   IRBuilder<> entryB(chunker->entryBlock->getTerminator());
+  auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
     auto producer = LDI->environment->producerAt(envInd);
     assert(isa<PHINode>(producer));
 
     auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
-    auto envPtr = entryB.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ chunker->zeroV, envIndV }));
+    auto envPtr = entryB.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ zeroV, envIndV }));
     auto reduceArr = entryB.CreateBitCast(
       entryB.CreateLoad(envPtr),
       PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES))
     );
-    auto reduceArrPtr = entryB.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ chunker->zeroV, chunker->coreArgVal }));
+    auto reduceArrPtr = entryB.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ zeroV, chunker->coreArgVal }));
     auto reducePtr = entryB.CreateBitCast(
       entryB.CreateLoad(reduceArrPtr),
       PointerType::getUnqual(producer->getType())
     );
 
     // Ignore initial value of accumulation PHI, use binary op's identity value
-    Value *initVal = nullptr;
-    unordered_map<unsigned, unsigned> binOpToIdentity = {
-      { Instruction::Add, 0 },
-      { Instruction::FAdd, 0 },
-      { Instruction::Sub, 0 },
-      { Instruction::FSub, 0 },
-      { Instruction::Mul, 1 },
-      { Instruction::FMul, 1 }
-    };
-    for (auto iNodePair : LDI->loopSCCDAG->sccOfValue(producer)->internalNodePairs()) {
-      auto I = cast<Instruction>(iNodePair.first);
-      if (isa<PHINode>(I)) continue;
-      assert(binOpToIdentity.find(I->getOpcode()) != binOpToIdentity.end());
-      initVal = ConstantInt::get(producer->getType(), binOpToIdentity[I->getOpcode()]);
-      break;
-    }
+    auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
+    auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->PHIAccumulators.begin());
+    auto &opToIdentity = LDI->sccdagAttrs.accumOpInfo.opIdentities;
+    auto opIdentity = opToIdentity[firstAccumI->getOpcode()];
+    Value *initVal = ConstantInt::get(producer->getType(), opIdentity);
     entryB.CreateStore(initVal, reducePtr);
 
     // Store final value of accumulation PHI
@@ -94,16 +84,13 @@ void DOALL::reducePostEnvironment (
   auto &cxt = LDI->function->getContext();
   IRBuilder<> reduceBuilder(LDI->exitPointOfParallelizedLoop);
 
+  auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
     auto producer = LDI->environment->producerAt(envInd);
-    producer->print(errs() << "Producer: "); errs() << "\n";
     auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
     auto envPtr = reduceBuilder.CreateInBoundsGEP(
       LDI->envArray,
-      ArrayRef<Value*>({
-        chunker->zeroV,
-        envIndV
-      })
+      ArrayRef<Value*>({ zeroV, envIndV })
     );
     auto ptrTy_int8 = PointerType::getUnqual(par.int8);
     auto reduceArr = reduceBuilder.CreateBitCast(
@@ -111,26 +98,16 @@ void DOALL::reducePostEnvironment (
       PointerType::getUnqual(ArrayType::get(ptrTy_int8, NUM_CORES))
     );
 
-    // REFACTOR(angelo): query for binary operator done in multiple places
     auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
-    Instruction::BinaryOps binOp;
-    for (auto iNodePair : LDI->loopSCCDAG->sccOfValue(producer)->internalNodePairs()) {
-      auto I = cast<Instruction>(iNodePair.first);
-      if (isa<PHINode>(I)) continue;
-      binOp = static_cast<Instruction::BinaryOps>(I->getOpcode());
-      break;
-    }
-    // HACK(angelo): Reducing negation is still done using addition
-    if (binOp == Instruction::Sub) {
-      binOp = Instruction::Add;
-    } else if (binOp == Instruction::FSub) {
-      binOp = Instruction::FAdd;
-    }
+    auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->PHIAccumulators.begin());
+    auto binOpCode = firstAccumI->getOpcode();
+    binOpCode = LDI->sccdagAttrs.accumOpInfo.equivalentAddOp(binOpCode);
+    auto binOp = (Instruction::BinaryOps)binOpCode;
 
     Value *accumVal = nullptr;
     for (auto i = 0; i < NUM_CORES; ++i) {
       auto indVal = cast<Value>(ConstantInt::get(par.int64, i));
-      auto reduceArrPtr = reduceBuilder.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ chunker->zeroV, indVal }));
+      auto reduceArrPtr = reduceBuilder.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ zeroV, indVal }));
       auto reducePtr = reduceBuilder.CreateBitCast(
         reduceBuilder.CreateLoad(reduceArrPtr),
         PointerType::getUnqual(producer->getType())
@@ -167,11 +144,12 @@ Value *DOALL::createEnvArray (
   IRBuilder<> parBuilder
 ) {
 
+  auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
   auto storeEnvAllocaInArray = [&](Value *arr, int envIndex, AllocaInst *alloca) -> void {
     arr->print(errs() << "Index " << envIndex << ", Array: "); errs() << "\n";
     alloca->print(errs() << "Alloca "); errs() << "\n";
     auto indValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
-    auto envPtr = entryBuilder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ chunker->zeroV, indValue }));
+    auto envPtr = entryBuilder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ zeroV, indValue }));
     auto depCast = entryBuilder.CreateBitCast(envPtr, PointerType::getUnqual(alloca->getType()));
     auto store = entryBuilder.CreateStore(alloca, depCast);
     store->print(errs() << "Store "); errs() << "\n\n";

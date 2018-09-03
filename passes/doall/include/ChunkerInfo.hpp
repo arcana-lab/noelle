@@ -33,37 +33,28 @@ namespace llvm {
     unordered_map<BasicBlock *, BasicBlock *> innerBBMap;
 
     /*
-     * Inner loop IV values
+     * Clone of original IV loop, new outer loop
      */
-    BranchInst *originHeaderBr;
-    CmpInst *originCmp;
-    CmpInst::Predicate strictPredicate; 
-    PHINode *originIV;
-    Value *maxIV;
-    int originCmpPHIIndex, originCmpMaxIndex;
-
-    Value *stepperIV;
-    ConstantInt *originStepSize;
-    int stepSizeIVIndex;
-
-    Value *starterIV;
-    int startValIVIndex;
+    SCCAttrs *originIVAttrs;
+    SimpleIVInfo cloneIVInfo;
+    PHINode *cloneIV;
+    PHINode *outerIV;
 
     /*
-     * Outer loop values
+     * Utility functions
      */
-    Value *chIV;
-
-    /*
-     * Utility values/functions
-     */
-    Value *zeroV;
-
     BasicBlock *createChunkerBB () {
       auto &cxt = f->getContext();
       return BasicBlock::Create(cxt, "", f);
     }
 
+    Value *fetchClone (Value *original) {
+      if (isa<ConstantInt>(original)) return original;
+      if (preEnvMap.find(original) != preEnvMap.end()) {
+        return preEnvMap[original];
+      }
+      return innerValMap[cast<Instruction>(original)];
+    }
   };
 }
 

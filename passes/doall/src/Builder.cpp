@@ -129,50 +129,31 @@ void DOALL::createOuterLoop (
   /*
    * Determine start value and step size for outer chunking loop
    */
-  auto cloneStarterIV = chunker->starterIV;
-  if (!isa<ConstantInt>(chunker->starterIV)) {
-    cloneStarterIV = chunker->preEnvMap[chunker->starterIV];
-  }
-  auto chIVStart = entryB.CreateMul(chunker->coreArgVal, chunker->chunkSizeArgVal);
-  chIVStart = entryB.CreateAdd(chIVStart, cloneStarterIV);
+  auto startVal = chunker->cloneIVInfo.start;
+  auto outerIVStart = entryB.CreateBitCast(
+    entryB.CreateMul(chunker->coreArgVal, chunker->chunkSizeArgVal),
+    startVal->getType()
+  );
 
-  auto chIV = chHeaderB.CreatePHI(par.int64, /*numReservedValues=*/2);
-  chunker->chIV = chIV;
+  auto outerIV = chHeaderB.CreatePHI(startVal->getType(), /*numReservedValues=*/2);
+  chunker->outerIV = outerIV;
 
-  // ASSUMPTION: Monotonically increasing IV
-  auto chIVStepSize = entryB.CreateMul(chunker->numCoresArgVal, chunker->chunkSizeArgVal);
-  chIVStepSize = entryB.CreateMul(chIVStepSize, chunker->originStepSize);
-  auto chIVInc = chLatchB.CreateAdd(chIV, chIVStepSize);
+  auto outerIVStepSize = entryB.CreateBitCast(
+    entryB.CreateMul(chunker->numCoresArgVal, chunker->chunkSizeArgVal),
+    startVal->getType()
+  );
+  outerIVStepSize = entryB.CreateMul(outerIVStepSize, chunker->cloneIVInfo.step);
+  auto outerIVInc = chLatchB.CreateAdd(outerIV, outerIVStepSize);
 
-  chIV->addIncoming(chIVStart, chunker->entryBlock);
-  chIV->addIncoming(chIVInc, chunker->chLatch);
+  outerIV->addIncoming(outerIVStart, chunker->entryBlock);
+  outerIV->addIncoming(outerIVInc, chunker->chLatch);
 
   entryB.CreateBr(chunker->chHeader);
   chLatchB.CreateBr(chunker->chHeader);
 
-  Value *cloneMaxIV = chunker->maxIV;
-  if (!isa<ConstantInt>(chunker->maxIV)) {
-    if (chunker->preEnvMap.find(chunker->maxIV) != chunker->preEnvMap.end()) {
-      cloneMaxIV = chunker->preEnvMap[chunker->maxIV];
-    } else {
-      cloneMaxIV = chunker->innerValMap[(Instruction*)chunker->maxIV];
-    }
-  }
-
-  CmpInst *chCmp;
-  if (chunker->originCmpPHIIndex == 0) {
-    chCmp = CmpInst::Create(chunker->originCmp->getOpcode(), chunker->strictPredicate, chIV, cloneMaxIV);
-  } else {
-    chCmp = CmpInst::Create(chunker->originCmp->getOpcode(), chunker->strictPredicate, cloneMaxIV, chIV);
-  }
-
-  chHeaderB.Insert(chCmp);
+  auto outerIVCmp = chHeaderB.CreateICmpULT(outerIV, chunker->cloneIVInfo.end);
   auto innerHeader = chunker->innerBBMap[LDI->header];
-  if (chunker->originHeaderBr->getSuccessor(0) == LDI->loopExitBlocks[0]) {
-    chHeaderB.CreateCondBr(chCmp, chunker->exitBlock, innerHeader);
-  } else {
-    chHeaderB.CreateCondBr(chCmp, innerHeader, chunker->exitBlock);
-  }
+  chHeaderB.CreateCondBr(outerIVCmp, innerHeader, chunker->exitBlock);
 }
 
 void DOALL::alterInnerLoopToIterateChunks (
@@ -182,17 +163,27 @@ void DOALL::alterInnerLoopToIterateChunks (
 ) {
 
   /*
-   * Reset start to 0, revise latch to only inc/dec IV
+   * Reset start to 0, revise latch to only inc
    */
-  auto innerIV = chunker->innerValMap[chunker->originIV];
-  ((PHINode *)innerIV)->setIncomingValue(
-    chunker->startValIVIndex,
-    ConstantInt::get(chunker->originIV->getType(), 0)
+  auto PHIType = chunker->cloneIV->getType();
+  auto startPHIIndex = 0;
+  if (chunker->cloneIV->getIncomingBlock(1) == chunker->chHeader) {
+    startPHIIndex = 1;
+  }
+  chunker->cloneIV->setIncomingValue(
+    startPHIIndex,
+    ConstantInt::get(PHIType, 0)
   );
-  auto innerStepIV = (User *)chunker->innerValMap[(Instruction*)chunker->stepperIV];
-  innerStepIV->setOperand(
-    chunker->stepSizeIVIndex,
-    ConstantInt::get(chunker->stepperIV->getType(), 1)
+
+  auto originStepper = *(chunker->originIVAttrs->PHIAccumulators.begin());
+  auto innerStepper = chunker->innerValMap[originStepper];
+  auto stepValueIndex = 0;
+  if (isa<ConstantInt>(innerStepper->getOperand(1))) {
+    stepValueIndex = 1;
+  }
+  innerStepper->setOperand(
+    stepValueIndex,
+    ConstantInt::get(PHIType, 1)
   );
 
   /*
@@ -200,45 +191,43 @@ void DOALL::alterInnerLoopToIterateChunks (
    */
   auto innerHeader = chunker->innerBBMap[LDI->header];
   IRBuilder<> headerBuilder(innerHeader);
-  // ASSUMPTION: Monotonically increasing IV
-  auto innerOuterIVSum = headerBuilder.CreateAdd(innerIV, chunker->chIV);
-  for (auto &use : chunker->originIV->uses()) {
+  auto sumIV = headerBuilder.CreateAdd(chunker->cloneIV, chunker->outerIV);
+  for (auto &use : chunker->originIVAttrs->singlePHI->uses()) {
     auto cloneI = chunker->innerValMap[(Instruction *)use.getUser()];
     auto cloneU = (User *)cloneI;
-    if (cloneU == innerStepIV || cloneI->getParent() == innerHeader) continue;
-    cloneU->replaceUsesOfWith(innerIV, innerOuterIVSum);
+    if (cloneU == innerStepper || cloneI->getParent() == innerHeader) continue;
+    cloneU->replaceUsesOfWith(chunker->cloneIV, sumIV);
   }
 
   /*
    * Replace inner loop original condition with less than total loop size condition
    * Add a cond to check for less than chunk size
    */
-  auto innerCondIV = (User *)chunker->innerValMap[chunker->originCmp];
-  // Ensure the add comes before its use in the comparison
-  innerCondIV->setOperand(chunker->originCmpPHIIndex, innerOuterIVSum);
-  ((CmpInst *)innerCondIV)->setPredicate(chunker->strictPredicate);
+  auto innerCmp = chunker->cloneIVInfo.cmp;
+  innerCmp->setPredicate(CmpInst::Predicate::ICMP_ULT);
+  innerCmp->setOperand(0, sumIV);
+  innerCmp->setOperand(1, chunker->cloneIVInfo.end);
 
-  auto ivSumInst = cast<Instruction>(innerOuterIVSum);
-  ivSumInst->removeFromParent();
-  ivSumInst->insertBefore(cast<Instruction>(innerCondIV));
+  auto sumIVInst = cast<Instruction>(sumIV);
+  sumIVInst->removeFromParent();
+  sumIVInst->insertBefore(innerCmp);
 
-  auto chunkCondBB = chunker->createChunkerBB();
-  IRBuilder<> chunkCondBBBuilder(chunkCondBB);
-
-  Value *chunkCond = chunkCondBBBuilder.CreateICmpULT(innerIV, chunker->chunkSizeArgVal);
-
-  auto innerBr = cast<BranchInst>(innerHeader->getTerminator());
-  assert(innerBr->getNumSuccessors() == 2);
-  auto innerBodySuccIndex = -1;
-  if (innerBr->getSuccessor(0) == chunker->chLatch) innerBodySuccIndex = 1;
-  if (innerBr->getSuccessor(1) == chunker->chLatch) innerBodySuccIndex = 0;
-  auto innerBodyBB = innerBr->getSuccessor(innerBodySuccIndex);
-  innerBr->setSuccessor(innerBodySuccIndex, chunkCondBB);
-
-  if (chunker->originHeaderBr->getSuccessor(0) == chunker->exitBlock) {
-    chunkCondBBBuilder.CreateCondBr(chunkCond, chunker->chLatch, innerBodyBB);
-  } else {
-    chunkCondBBBuilder.CreateCondBr(chunkCond, innerBodyBB, chunker->chLatch);
+  auto innerBr = chunker->cloneIVInfo.br;
+  auto innerBodySuccIndex = 0;
+  if (innerBr->getSuccessor(0) == chunker->chLatch) {
+    innerBodySuccIndex = 1;
   }
+  auto innerBodyBB = innerBr->getSuccessor(innerBodySuccIndex);
+
+  auto chunkCmpBB = chunker->createChunkerBB();
+  IRBuilder<> chunkCmpBuilder(chunkCmpBB);
+
+  innerBr->setSuccessor(0, chunkCmpBB);
+  innerBr->setSuccessor(1, chunker->chLatch);
+
+  IRBuilder<> entryB(chunker->entryBlock->getTerminator());
+  auto castChunkSize = entryB.CreateBitCast(chunker->chunkSizeArgVal, chunker->cloneIV->getType());
+  Value *chunkCmp = chunkCmpBuilder.CreateICmpULT(chunker->cloneIV, castChunkSize);
+  chunkCmpBuilder.CreateCondBr(chunkCmp, innerBodyBB, chunker->chLatch);
 }
 
