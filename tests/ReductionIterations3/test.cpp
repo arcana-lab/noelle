@@ -38,8 +38,8 @@ int main (int argc, char *argv[]){
   p1.coord = (float *)malloc(sizeof(float) * dims);
   p2.coord = (float *)malloc(sizeof(float) * dims);
   for (auto j=0; j < dims; j++){
-    p1.coord[j] = j;
-    p2.coord[j] = j;
+    p1.coord[j] = j + dims + 1;
+    p2.coord[j] = j + 1;
   }
 
   /*
