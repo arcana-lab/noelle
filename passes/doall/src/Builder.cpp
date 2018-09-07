@@ -130,15 +130,16 @@ void DOALL::createOuterLoop (
    * Determine start value and step size for outer chunking loop
    */
   auto startVal = chunker->cloneIVInfo.start;
-  auto outerIVStart = entryB.CreateBitCast(
-    entryB.CreateMul(chunker->coreArgVal, chunker->chunkSizeArgVal),
+  auto coreOffset = entryB.CreateMul(chunker->coreArgVal, chunker->chunkSizeArgVal);
+  auto outerIVStart = entryB.CreateZExtOrTrunc(
+    entryB.CreateAdd(startVal, coreOffset),
     startVal->getType()
   );
 
   auto outerIV = chHeaderB.CreatePHI(startVal->getType(), /*numReservedValues=*/2);
   chunker->outerIV = outerIV;
 
-  auto outerIVStepSize = entryB.CreateBitCast(
+  auto outerIVStepSize = entryB.CreateZExtOrTrunc(
     entryB.CreateMul(chunker->numCoresArgVal, chunker->chunkSizeArgVal),
     startVal->getType()
   );
@@ -151,7 +152,7 @@ void DOALL::createOuterLoop (
   entryB.CreateBr(chunker->chHeader);
   chLatchB.CreateBr(chunker->chHeader);
 
-  auto outerIVCmp = chHeaderB.CreateICmpULT(outerIV, chunker->cloneIVInfo.end);
+  auto outerIVCmp = chHeaderB.CreateICmpULT(outerIV, chunker->cloneIVInfo.cmpIVTo);
   auto innerHeader = chunker->innerBBMap[LDI->header];
   chHeaderB.CreateCondBr(outerIVCmp, innerHeader, chunker->exitBlock);
 }
@@ -206,7 +207,7 @@ void DOALL::alterInnerLoopToIterateChunks (
   auto innerCmp = chunker->cloneIVInfo.cmp;
   innerCmp->setPredicate(CmpInst::Predicate::ICMP_ULT);
   innerCmp->setOperand(0, sumIV);
-  innerCmp->setOperand(1, chunker->cloneIVInfo.end);
+  innerCmp->setOperand(1, chunker->cloneIVInfo.cmpIVTo);
 
   auto sumIVInst = cast<Instruction>(sumIV);
   sumIVInst->removeFromParent();
@@ -226,7 +227,7 @@ void DOALL::alterInnerLoopToIterateChunks (
   innerBr->setSuccessor(1, chunker->chLatch);
 
   IRBuilder<> entryB(chunker->entryBlock->getTerminator());
-  auto castChunkSize = entryB.CreateBitCast(chunker->chunkSizeArgVal, chunker->cloneIV->getType());
+  auto castChunkSize = entryB.CreateZExtOrTrunc(chunker->chunkSizeArgVal, chunker->cloneIV->getType());
   Value *chunkCmp = chunkCmpBuilder.CreateICmpULT(chunker->cloneIV, castChunkSize);
   chunkCmpBuilder.CreateCondBr(chunkCmp, innerBodyBB, chunker->chLatch);
 }

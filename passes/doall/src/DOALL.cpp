@@ -50,13 +50,13 @@ bool DOALL::apply (
   Heuristics *h,
   ScalarEvolution &SE
 ) {
-  errs() << "DOALL: Start\n";
+  errs() << "DOALL:   Start\n";
   auto chunker = this->createChunkingFuncAndArgs(LDI, par);
 
   this->reproduceOriginLoop(LDI, par, chunker);
   this->reproducePreEnv(LDI, par, chunker);
   this->mapOriginLoopValueUses(LDI, par, chunker);
-  this->reduceOriginIV(LDI, par, chunker);
+  this->reduceOriginIV(LDI, par, chunker, SE);
   this->createOuterLoop(LDI, par, chunker);
   this->alterInnerLoopToIterateChunks(LDI, par, chunker);
   this->storePostEnvironment(LDI, par, chunker);

@@ -4,7 +4,8 @@
 void DOALL::reduceOriginIV (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  std::unique_ptr<ChunkerInfo> &chunker
+  std::unique_ptr<ChunkerInfo> &chunker,
+  ScalarEvolution &SE
 ) {
 
   auto headerBr = LDI->header->getTerminator();
@@ -17,27 +18,25 @@ void DOALL::reduceOriginIV (
   auto IVInfo = attrs->simpleIVInfo;
   chunker->cloneIVInfo.cmp = cast<CmpInst>(chunker->fetchClone(IVInfo.cmp));
   chunker->cloneIVInfo.br = cast<BranchInst>(chunker->fetchClone(IVInfo.br));
-  IVInfo.cmp->print(errs() << "Original compare:\t"); errs() << "\n";
-  IVInfo.br->print(errs() << "Original branch:\t"); errs() << "\n";
-  chunker->cloneIVInfo.cmp->print(errs() << "New compare:\t"); errs() << "\n";
-  chunker->cloneIVInfo.br->print(errs() << "New branch:\t"); errs() << "\n";
 
   auto startClone = chunker->fetchClone(IVInfo.start);
-  auto endClone = chunker->fetchClone(IVInfo.end);
+  auto endClone = chunker->fetchClone(IVInfo.cmpIVTo);
+  auto offsetV = ConstantInt::get(IVInfo.step->getType(), IVInfo.endOffset);
   IRBuilder<> entryB(chunker->entryBlock);
-  auto oneV = ConstantInt::get(IVInfo.step->getType(), 1);
+  endClone = IVInfo.endOffset ? entryB.CreateAdd(endClone, offsetV) : endClone;
 
-  auto stepSize = IVInfo.step->getValue();
+  auto oneV = ConstantInt::get(IVInfo.step->getType(), 1);
+  chunker->cloneIVInfo.step = oneV;
+  int stepSize = IVInfo.step->getValue().getSExtValue();
   if (stepSize == 1) {
     chunker->cloneIVInfo.start = startClone;
-    chunker->cloneIVInfo.step = IVInfo.step;
-    chunker->cloneIVInfo.end = endClone;
-  } else if (stepSize == -1) {
-    chunker->cloneIVInfo.start = entryB.CreateAdd(endClone, oneV);
-    chunker->cloneIVInfo.step = oneV;
-    chunker->cloneIVInfo.end = entryB.CreateAdd(startClone, oneV);
+    chunker->cloneIVInfo.cmpIVTo = endClone;
   } else {
-    errs() << "ERROR: DOALL was not given a loop IV with step value of 1 or -1\n";
-    abort();
+    errs() << "STEP SIZE BACKWARDS:\n";
+    endClone->print(errs() << "End clone: "); errs() << "\n";
+    chunker->cloneIVInfo.start = entryB.CreateAdd(endClone, oneV);
+    chunker->cloneIVInfo.cmpIVTo = entryB.CreateAdd(startClone, oneV);
+    chunker->cloneIVInfo.start->print(errs() << "New start: "); errs() << "\n";
+    chunker->cloneIVInfo.cmpIVTo->print(errs() << "New end: "); errs() << "\n";
   }
 }

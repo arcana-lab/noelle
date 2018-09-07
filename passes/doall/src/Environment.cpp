@@ -54,7 +54,13 @@ void DOALL::storePostEnvironment (
     auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->PHIAccumulators.begin());
     auto &opToIdentity = LDI->sccdagAttrs.accumOpInfo.opIdentities;
     auto opIdentity = opToIdentity[firstAccumI->getOpcode()];
-    Value *initVal = ConstantInt::get(producer->getType(), opIdentity);
+    Value *initVal = nullptr;
+    Type *accumTy = producer->getType();
+    accumTy->print(errs() << "accum type: "); errs() << "\n";
+    if (accumTy->isIntegerTy()) initVal = ConstantInt::get(accumTy, opIdentity);
+    if (accumTy->isFloatTy()) initVal = ConstantFP::get(accumTy, (float)opIdentity);
+    if (accumTy->isDoubleTy()) initVal = ConstantFP::get(accumTy, (double)opIdentity);
+    assert(initVal != nullptr);
     entryB.CreateStore(initVal, reducePtr);
 
     // Store final value of accumulation PHI
@@ -67,7 +73,12 @@ void DOALL::storePostEnvironment (
     auto initValPHIIndex = prodClone->getBasicBlockIndex(chunker->innerBBMap[LDI->preHeader]);
     IRBuilder<> chHeaderB(chunker->chHeader);
     chHeaderB.SetInsertPoint(&*chHeaderB.GetInsertBlock()->begin());
-    auto accumOuterPHI = chHeaderB.CreatePHI(prodClone->getType(), 2);
+    auto accumOuterPHI = chHeaderB.CreatePHI(initVal->getType(), 2);
+
+    producer->print(errs() << "Producer: "); errs() << "\n";
+    accumOuterPHI->print(errs() << "Accum outer phi: "); errs() << "\n";
+    initVal->print(errs() << "Init val: "); errs() << "\n";
+
     accumOuterPHI->addIncoming(initVal, chunker->entryBlock);
     accumOuterPHI->addIncoming(prodClone, innerExitBB);
 

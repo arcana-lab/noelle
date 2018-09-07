@@ -46,7 +46,7 @@ unsigned AccumulatorOpInfo::equivalentAddOp (unsigned subOp) {
 std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
   std::set<SCC *> sccs;
   for (auto &sccInfoPair : this->sccToInfo) {
-    if (!sccInfoPair.second->isIndependent) continue ;
+    if (sccInfoPair.second->isIndependent) continue ;
     sccs.insert(sccInfoPair.first);
   }
   return sccs;
@@ -233,10 +233,12 @@ bool SCCDAGAttrs::allPostLoopEnvValuesAreReducable (LoopEnvironment *env) const 
     auto producer = env->producerAt(envIndex);
     auto scc = sccdag->sccOfValue(producer);
 
-    if (scc->getType() != SCC::SCCType::COMMUTATIVE) {
-      return false;
-    }
+    // TODO(angelo): Implement this if it is legal. Unsure at the moment
+    // if (scc->getType() == SCC::SCCType::INDEPENDENT) continue ;
+    if (scc->getType() == SCC::SCCType::COMMUTATIVE) continue ;
+    return false;
   }
+
   return true;
 }
 
@@ -300,23 +302,19 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
   /*
    * Requirement: SCC has no dependent SCCs
    */
-  errs() << "Checking for dependent SCCs of SCC:\n";
-  scc->print(errs()) << "\n";
+  // scc->printMinimal(errs() << "DOALL:   Checking commutative for scc:\n") << "\n";
   for (auto iNodePair : scc->externalNodePairs()) {
-    if (iNodePair.second->numIncomingEdges() > 0) {
-      return false;
+    if (iNodePair.second->numIncomingEdges() == 0) continue ;
+    for (auto edge : iNodePair.second->getIncomingEdges()) {
+      if (!edge->isControlDependence()) return false;
     }
   }
-  errs() << "------------------------------- Phew, isn't dependent\n";
 
   auto &sccInfo = this->getSCCAttrs(scc);
   if (!sccInfo->singlePHI) return false;
 
-  // for (auto iNodePair : scc->internalNodePairs()) {
-    // Instruction *val = cast<Instruction>(iNodePair.first);
   if (sccInfo->PHIAccumulators.size() == 0) return false;
   for (auto accum : sccInfo->PHIAccumulators) {
-    accum->print(errs() << "Checking accum: "); errs() << "\n";
 
     /*
      * Requirement: instructions are side effect free
@@ -327,13 +325,27 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
     }
 
     /*
-     * Requirement: commutative instruction has one use and is used once
+     * Requirement: commutative instruction has one internal use and is used once internally
      */
+    auto internalUses = 0;
+    auto internalUsers = 0;
     auto iNode = scc->fetchNode(accum);
-    if (iNode->numIncomingEdges() != 1 || iNode->numOutgoingEdges() != 1) {
+    for (auto edge : iNode->getIncomingEdges()) {
+      if (scc->isInternal(edge->getOutgoingT())) {
+        internalUses++;
+      }
+    }
+    for (auto edge : iNode->getOutgoingEdges()) {
+      if (scc->isInternal(edge->getIncomingT())) {
+        internalUsers++;
+      }
+    }
+
+    if (internalUses != 1 || internalUsers != 1) {
       return false;
     }
   }
+  // errs() << "Single chain formed by side effect free accumulators\n";
 
   /*
    * Requirement: instructions are all Add/Sub or all Mul
@@ -352,7 +364,7 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
     }
   }
 
-  errs() << "SUCCESS THIS IS A COMMUTATIVE SCC!\n";
+  // errs() << "DOALL:   IS reducable\n";
   return this->getSCCAttrs(scc)->isReducable = true;
 }
 
@@ -361,7 +373,7 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
   /*
    * The SCC is independent if it doesn't have loop carried data dependencies
    */
-  return this->getSCCAttrs(scc)->isIndependent = scc->hasCycle(/*ignoreControlDep=*/false);
+  return this->getSCCAttrs(scc)->isIndependent = !scc->hasCycle(/*ignoreControlDep=*/false);
 }
 
 void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
