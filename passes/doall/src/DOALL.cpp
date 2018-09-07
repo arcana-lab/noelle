@@ -12,27 +12,36 @@ DOALL::DOALL (Module &module, Verbosity v)
 
 bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
 
-  if (LDI->loopExitBlocks.size() > 1) return false;
+  errs() << "DOALL:   Checking if is a doall loop\n";
 
-  errs() << "DOALL CHECKS --------- IS DOALL (loop exit blocks == 1) \n";
-  if (!LDI->sccdagAttrs.allPostLoopEnvValuesAreReducable(LDI->environment)) return false;
-  errs() << "DOALL CHECKS --------- IS DOALL (post env reducable) \n";
+  bool isDOALL = true;
+  if (LDI->loopExitBlocks.size() > 1) { 
+    isDOALL = false;
+    errs() << "DOALL:   More than 1 loop exit block\n";
+  }
 
-  if (!LDI->sccdagAttrs.loopHasInductionVariable()) return false;
-  errs() << "DOALL CHECKS --------- IS DOALL (has IV) \n";
+  if (!LDI->sccdagAttrs.allPostLoopEnvValuesAreReducable(LDI->environment)) {
+    isDOALL = false;
+    errs() << "DOALL:   Some post environment value is not reducable\n";
+  }
+
+  if (!LDI->sccdagAttrs.loopHasInductionVariable()) {
+    isDOALL = false;
+    errs() << "DOALL:   Loop does not have an IV\n";
+  }
 
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
-  bool allSCCsDOALL = true;
   for (auto scc : nonDOALLSCCs) {
-    // scc->print(errs() << "Loop carried dep scc:\n") << "\n";
     auto &sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
-    allSCCsDOALL &= scc->getType() == SCC::SCCType::COMMUTATIVE
-      || sccInfo->isClonable
-      || LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc);
-    // errs() << "DOALL CHECKS --------- IS DOALL (scc): " << isDOALL << "\n";
+    if (scc->getType() != SCC::SCCType::COMMUTATIVE
+      && !sccInfo->isClonable
+      && !LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
+      isDOALL = false;
+      scc->print(errs() << "DOALL:   Non clonable, non commutative scc at top level of loop:\n") << "\n";
+    }
   }
-  errs() << "IS DOALL: " << allSCCsDOALL << "\n";
-  return allSCCsDOALL;
+  errs() << "DOALL:   Is it? " << isDOALL << "\n";
+  return isDOALL;
 }
       
 bool DOALL::apply (
