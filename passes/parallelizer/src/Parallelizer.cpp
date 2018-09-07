@@ -30,7 +30,6 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
    * Parallelize the loop.
    */
   auto codeModified = false;
-  errs() << "CHECKING OCCURS NOW...\n";
   if (doall.canBeAppliedToLoop(LDI, par, h, SE)){
 
     /*
@@ -90,7 +89,7 @@ void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *
   /*
    * Evaluate the SCCs (e.g., which ones are commutative) of the SCCDAG of the loop.
    */
-  LDI->sccdagAttrs.populate(LDI->loopSCCDAG, SE);
+  LDI->sccdagAttrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
 
   /*
    * Estimate the latency per invocation of the SCCs.

@@ -40,10 +40,13 @@ namespace llvm {
     BranchInst *br;
     Value *start;
     ConstantInt *step;
-    Value *end;
+    Value *cmpIVTo;
+    bool isCmpOnAccum;
+    bool isCmpIVLHS;
+    int endOffset;
 
     SimpleIVInfo () : cmp{nullptr}, br{nullptr}, start{nullptr},
-      step{nullptr}, end{nullptr} {};
+      step{nullptr}, cmpIVTo{nullptr}, endOffset{0} {};
   };
 
   class SCCAttrs {
@@ -113,14 +116,15 @@ namespace llvm {
       // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
       std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc);
 
-      void populate (SCCDAG *loopSCCDAG, ScalarEvolution &SE);
+      void populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvolution &SE);
 
     private:
       void collectSinglePHIAndAccumulators (SCC *scc);
       bool checkIfCommutative (SCC *scc);
       bool checkIfIndependent (SCC *scc);
       bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE);
-      bool checkIfSimpleIV (SCC *scc);
+      bool checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS);
+      bool checkSimpleIVEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LIS);
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);
       bool checkIfClonableByInductionVars (SCC *scc);
       bool checkIfClonableBySyntacticSugarInstrs (SCC *scc);

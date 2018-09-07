@@ -110,7 +110,7 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
  * IV is described by single PHI with a start and recurrence incoming value
  * Only one accumulator, only one conditional branch and its comparison
  */
-bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc) {
+bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
   if (!sccInfo->singlePHI) return false;
   if (sccInfo->singlePHI->getNumIncomingValues() != 2) return false;
@@ -139,13 +139,87 @@ bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc) {
   if (stepValue == sccInfo->singlePHI) stepValue = accum->getOperand(1);
   if (!isa<ConstantInt>(stepValue)) return false;
   IVInfo.step = (ConstantInt*)stepValue;
+  auto stepSize = IVInfo.step->getValue();
+  if (stepSize != 1 && stepSize != -1) return false;
 
-  auto endValue = IVInfo.cmp->getOperand(0);
-  if (endValue == sccInfo->singlePHI) endValue = IVInfo.cmp->getOperand(1);
-  IVInfo.end = endValue;
+  if (!isa<ICmpInst>(IVInfo.cmp)) return false;
+  auto cmpLHS = IVInfo.cmp->getOperand(0);
+  unsigned cmpToInd = cmpLHS == sccInfo->singlePHI || cmpLHS == accum;
+  IVInfo.cmpIVTo = IVInfo.cmp->getOperand(cmpToInd);
+  IVInfo.isCmpOnAccum = IVInfo.cmp->getOperand((cmpToInd + 1) % 2) == accum;
+  IVInfo.isCmpIVLHS = cmpToInd;
+
+  if (!checkSimpleIVEndVal(IVInfo, LIS)) return false;
 
   sccInfo->simpleIVInfo = IVInfo;
   return sccInfo->isSimpleIV = true;
+}
+
+bool SCCDAGAttrs::checkSimpleIVEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LIS) {
+  std::set<BasicBlock *> &loopBBs = LIS.topLoop->bbs; 
+  bool exitOnCmp = loopBBs.find(ivInfo.br->getSuccessor(0)) == loopBBs.end();
+  auto signedPred = ivInfo.cmp->isUnsigned() ? ivInfo.cmp->getSignedPredicate() : ivInfo.cmp->getPredicate();
+  signedPred = ivInfo.isCmpIVLHS ? signedPred : ICmpInst::getSwappedPredicate(signedPred);
+  int stepSize = ivInfo.step->getValue().getSExtValue();
+
+  auto cmpPredAbort = [&]() -> void {
+    errs() << "SCCDAGAttrs:   Error: comparison and branch of top level IV misunderstood\n";
+    abort();
+  };
+
+  errs() << "Is CMP IV on LHS: " << ivInfo.isCmpIVLHS << "\n";
+  errs() << "Signed predicate: " << ICmpInst::getPredicateName(signedPred) << "\n";
+  ivInfo.cmp->print(errs() << "Cmp: "); errs() << "\n";
+  errs() << "Exit on cmp: " << exitOnCmp << "\n";
+  errs() << "step size: " << stepSize << "\n";
+  if (!exitOnCmp) { 
+    if (stepSize == 1) {
+      switch (signedPred) {
+        case CmpInst::Predicate::ICMP_SLE:
+          ivInfo.endOffset = 1;
+        case CmpInst::Predicate::ICMP_NE:
+        case CmpInst::Predicate::ICMP_SLT:
+          break;
+        default:
+          cmpPredAbort();
+      }
+    } else {
+      switch (signedPred) {
+        case CmpInst::Predicate::ICMP_SGE:
+          ivInfo.endOffset = -1;
+        case CmpInst::Predicate::ICMP_NE:
+        case CmpInst::Predicate::ICMP_SGT:
+          break;
+        default:
+          cmpPredAbort();
+      }
+    }
+  } else {
+    if (stepSize == 1) {
+      switch (signedPred) {
+        case CmpInst::Predicate::ICMP_SGT:
+          ivInfo.endOffset = 1;
+        case CmpInst::Predicate::ICMP_SGE:
+        case CmpInst::Predicate::ICMP_EQ:
+          break;
+        default:
+          cmpPredAbort();
+      }
+    } else {
+      switch (signedPred) {
+        case CmpInst::Predicate::ICMP_SLT:
+          ivInfo.endOffset = -1;
+        case CmpInst::Predicate::ICMP_SLE:
+        case CmpInst::Predicate::ICMP_EQ:
+          break;
+        default:
+          cmpPredAbort();
+      }
+    }
+  }
+
+  ivInfo.endOffset -= stepSize * ivInfo.isCmpOnAccum;
+  return true;
 }
 
 std::set<BasicBlock *> & SCCDAGAttrs::getBasicBlocks (SCC *scc){
@@ -171,7 +245,7 @@ std::unique_ptr<SCCAttrs> & SCCDAGAttrs::getSCCAttrs (SCC *scc){
   return this->sccToInfo[scc];
 }
 
-void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, ScalarEvolution &SE) {
+void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvolution &SE) {
   this->sccdag = loopSCCDAG;
   for (auto node : loopSCCDAG->getNodes()) {
     auto scc = node->getT();
@@ -179,7 +253,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, ScalarEvolution &SE) {
 
     this->collectSinglePHIAndAccumulators(scc);
     this->checkIfInductionVariableSCC(scc, SE);
-    if (isInductionVariableSCC(scc)) this->checkIfSimpleIV(scc);
+    if (isInductionVariableSCC(scc)) this->checkIfSimpleIV(scc, LIS);
     this->checkIfClonable(scc, SE);
 
     if (this->checkIfIndependent(scc)) {
