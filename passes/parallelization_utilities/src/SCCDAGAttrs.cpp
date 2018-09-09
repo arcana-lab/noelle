@@ -105,17 +105,20 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
   return this->getSCCAttrs(scc)->isIVSCC = isIvSCC;
 }
 
-/*
- * Assumptions:
- * IV is described by single PHI with a start and recurrence incoming value
- * Only one accumulator, only one conditional branch and its comparison
- */
 bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
+
+  /*
+   * IV is described by single PHI with a start and recurrence incoming value
+   * The IV has one accumulator only
+   */
   auto &sccInfo = this->getSCCAttrs(scc);
   if (!sccInfo->singlePHI) return false;
   if (sccInfo->singlePHI->getNumIncomingValues() != 2) return false;
   if (sccInfo->PHIAccumulators.size() != 1) return false;
 
+  /*
+   * The IV has one condition/conditional branch only
+   */
   SimpleIVInfo IVInfo;
   for (auto iNodePair : scc->internalNodePairs()) {
     auto V = iNodePair.first;
@@ -135,6 +138,9 @@ bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
   if (incomingStart == accum) incomingStart = sccInfo->singlePHI->getIncomingValue(1);
   IVInfo.start = incomingStart;
 
+  /*
+   * The IV recurrence is integer, by +-1 
+   */
   auto stepValue = accum->getOperand(0);
   if (stepValue == sccInfo->singlePHI) stepValue = accum->getOperand(1);
   if (!isa<ConstantInt>(stepValue)) return false;
@@ -142,13 +148,15 @@ bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
   auto stepSize = IVInfo.step->getValue();
   if (stepSize != 1 && stepSize != -1) return false;
 
-  if (!isa<ICmpInst>(IVInfo.cmp)) return false;
   auto cmpLHS = IVInfo.cmp->getOperand(0);
   unsigned cmpToInd = cmpLHS == sccInfo->singlePHI || cmpLHS == accum;
   IVInfo.cmpIVTo = IVInfo.cmp->getOperand(cmpToInd);
   IVInfo.isCmpOnAccum = IVInfo.cmp->getOperand((cmpToInd + 1) % 2) == accum;
   IVInfo.isCmpIVLHS = cmpToInd;
 
+  /*
+   * The last value before the end value reached by the IV can be determined
+   */
   if (!checkSimpleIVEndVal(IVInfo, LIS)) return false;
 
   sccInfo->simpleIVInfo = IVInfo;
@@ -156,8 +164,17 @@ bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
 }
 
 bool SCCDAGAttrs::checkSimpleIVEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LIS) {
-  std::set<BasicBlock *> &loopBBs = LIS.topLoop->bbs; 
-  bool exitOnCmp = loopBBs.find(ivInfo.br->getSuccessor(0)) == loopBBs.end();
+
+  /*
+   * Branch statement has two successors, one in the loop body, one outside the loop
+   */
+  auto loop = LIS.bbToLoop[ivInfo.br->getParent()];
+  auto brLHSInLoop = loop->bbs.find(ivInfo.br->getSuccessor(0)) != loop->bbs.end();
+  auto brRHSInLoop = loop->bbs.find(ivInfo.br->getSuccessor(1)) != loop->bbs.end();
+  errs() << "In LHS: " << brLHSInLoop << ", In RHS: " << brRHSInLoop << "\n";
+  if (!(brLHSInLoop ^ brRHSInLoop)) return false;
+
+  bool exitOnCmp = !brLHSInLoop;
   auto signedPred = ivInfo.cmp->isUnsigned() ? ivInfo.cmp->getSignedPredicate() : ivInfo.cmp->getPredicate();
   signedPred = ivInfo.isCmpIVLHS ? signedPred : ICmpInst::getSwappedPredicate(signedPred);
   int stepSize = ivInfo.step->getValue().getSExtValue();
@@ -170,6 +187,7 @@ bool SCCDAGAttrs::checkSimpleIVEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LI
   errs() << "Is CMP IV on LHS: " << ivInfo.isCmpIVLHS << "\n";
   errs() << "Signed predicate: " << ICmpInst::getPredicateName(signedPred) << "\n";
   ivInfo.cmp->print(errs() << "Cmp: "); errs() << "\n";
+  ivInfo.br->print(errs() << "Br: "); errs() << "\n";
   errs() << "Exit on cmp: " << exitOnCmp << "\n";
   errs() << "step size: " << stepSize << "\n";
   if (!exitOnCmp) { 
