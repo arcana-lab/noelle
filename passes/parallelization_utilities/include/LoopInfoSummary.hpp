@@ -37,12 +37,7 @@ namespace llvm {
   			auto lSummary = std::make_unique<LoopSummary>(id, l);
   			auto lPtr = lSummary.get();
   			for (auto bb : l->blocks()) bbToLoop[bb] = lPtr;
-  			loops.insert(std::move(lSummary));
-
-  			for (auto &loop : loops) {
-  				if (loop->id == id) return loop.get();
-  			}
-  			return nullptr;
+  			return loops.insert(std::move(lSummary)).first->get();
   		}
 
   		void populate(LoopInfo &li, Loop *l) {
@@ -54,6 +49,11 @@ namespace llvm {
   			loopToSummary[l] = this->createSummary(l);
   			loopToSummary[l]->parent = nullptr;
   			topLoop = loopToSummary[l];
+
+        /*
+         * NOTE(angelo): subloops only include 1-level deep loops
+         *  entirely contained within the top level loop
+         */
   			for (auto subLoop : l->getSubLoops()) {
   				loopToSummary[subLoop] = this->createSummary(subLoop);
   			}
