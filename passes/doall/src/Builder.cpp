@@ -130,11 +130,11 @@ void DOALL::createOuterLoop (
    * Determine start value and step size for outer chunking loop
    */
   auto startVal = chunker->cloneIVInfo.start;
-  auto coreOffset = entryB.CreateMul(chunker->coreArgVal, chunker->chunkSizeArgVal);
-  auto outerIVStart = entryB.CreateZExtOrTrunc(
-    entryB.CreateAdd(startVal, coreOffset),
+  auto coreOffset = entryB.CreateZExtOrTrunc(
+    entryB.CreateMul(chunker->coreArgVal, chunker->chunkSizeArgVal),
     startVal->getType()
   );
+  auto outerIVStart = entryB.CreateAdd(startVal, coreOffset);
 
   auto outerIV = chHeaderB.CreatePHI(startVal->getType(), /*numReservedValues=*/2);
   chunker->outerIV = outerIV;
