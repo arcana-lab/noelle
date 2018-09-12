@@ -112,6 +112,7 @@ void SCCDAGPartition::removeSubset (int subsetID) {
         SCCToSubsetID.erase(scc);
       }
       this->subsets.erase(p);
+      subsetIDToSubset.erase(subsetID);
       return;
     }
   }
