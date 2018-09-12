@@ -128,15 +128,11 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
      * Estimate the current latency for traversing once the pipeline created by the current partition of the SCCDAG.
      */
     uint64_t totalCost = 0;
-    uint64_t maxAllowedCost = 0;
     std::unordered_map<int, uint64_t> subsetIDToCost;
     for (auto &subset : partition.subsets) {
       auto subsetID = partition.getSubsetID(subset);
       auto cost = this->latencyPerInvocation(sccdagAttrs, subset->SCCs);
       subsetIDToCost[subsetID] = cost;
-      if (maxAllowedCost == 0 || cost > maxAllowedCost) {
-        maxAllowedCost = cost;
-      }
 
       totalCost += cost;
     }
@@ -166,24 +162,39 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
       /*
        * Check if the current subset has been already tagged to be removed (i.e., merged).
        */
-      if (partition.isValidSubset(subID)) continue ;
+      if (!partition.isValidSubset(subID)) continue ;
 
       /*
        * Prioritize merge that best lowers overall cost without yielding a too costly partition
        */
       int minSubsetID = -1;
       int32_t maxLoweredCost = 0;
+      int32_t chosenMergeCost = 0;
       auto tryToMergeWith = [&](int s) -> void {
         if (!partition.canMergeSubsets(subID, s)) return ;
 
         /*
-         * Create an example merge of the subsets to determine its worth
+         * Determine cost of merge
          */
+        auto currentCost = subsetIDToCost[subID] + subsetIDToCost[s];
         auto sccsOfSubsets = partition.sccsOfSubsets(subID, s);
-        auto mergedCost = this->latencyPerInvocation(sccdagAttrs, sccsOfSubsets);
-        if (mergedCost > maxAllowedCost || mergedCost < maxLoweredCost) return ;
+        auto mergeCost = this->latencyPerInvocation(sccdagAttrs, sccsOfSubsets);
+        auto loweredCost = currentCost - mergeCost;
+
+        /*
+         * Only merge if it doesn't yield an SCC costing more than half the total cost
+         * TODO(angelo): Determine fractional limit based on number of cores available
+         */
+        if (mergeCost > totalCost / 1 || partition.subsets.size() == 2) return ;
+
+        /*
+         * Only merge if it best lowers cost
+         */
+        if (loweredCost < maxLoweredCost) return ;
 
         minSubsetID = s;
+        maxLoweredCost = loweredCost;
+        chosenMergeCost = mergeCost;
       };
 
       /*
@@ -201,6 +212,12 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
         auto mergedSubID = partition.mergeSubsets(subID, minSubsetID);
         subIDToCheck.push(mergedSubID);
         alreadyChecked.insert(mergedSubID);
+
+        /*
+         * Readjust subset cost tracking
+         */
+        subsetIDToCost[mergedSubID] = chosenMergeCost;
+        totalCost -= maxLoweredCost;
 
         /*
          * Add dependent SCCs as well.
