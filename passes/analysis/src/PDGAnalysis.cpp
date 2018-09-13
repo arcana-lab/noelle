@@ -18,6 +18,9 @@
 using namespace llvm;
 
 bool llvm::PDGAnalysis::doInitialization (Module &M){
+  this->memorylessFunctionNames = {
+    "sqrt"
+  };
   return false;
 }
 
@@ -39,10 +42,16 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   constructEdgesFromAliases(M);
   constructEdgesFromControl(M);
 
-  /*
-   * TODO: To use, parallelizer must handle synchronizing memory dependencies across partitions 
-   */
-  removeEdgesFromApparentIntraIterationDependencies(M);
+  collectMemorylessFunctions(M);
+
+  std::set<DGEdge<Value> *> removeEdges;
+  for (auto edge : this->programDependenceGraph->getEdges()) {
+    if (edgeIsApparentIntraIterationDependency(edge)
+        || edgeIsOnKnownMemorylessFunction(edge)) {
+      removeEdges.insert(edge);
+    }
+  }
+  for (auto edge : removeEdges) this->programDependenceGraph->removeEdge(edge);
 
   return false;
 }
@@ -255,47 +264,44 @@ void llvm::PDGAnalysis::constructControlEdgesForFunction (Function &F, PostDomin
 /*
  * Remove dependencies between intra-iteration store and load pairs
  */
-void llvm::PDGAnalysis::removeEdgesFromApparentIntraIterationDependencies (Module &M) {
-  std::set<DGEdge<Value> *> removeEdges;
-  for (auto edge : this->programDependenceGraph->getEdges()) {
-    if (!edge->isMemoryDependence() || edge->isWAWDependence()) continue;
+bool llvm::PDGAnalysis::edgeIsApparentIntraIterationDependency (DGEdge<Value> *edge) {
+  if (!edge->isMemoryDependence() || edge->isWAWDependence()) return false;
 
-    auto outgoingT = edge->getOutgoingT();
-    auto incomingT = edge->getIncomingT();
-    if (isa<CallInst>(outgoingT) || isa<CallInst>(incomingT)) continue;
+  auto outgoingT = edge->getOutgoingT();
+  auto incomingT = edge->getIncomingT();
+  if (isa<CallInst>(outgoingT) || isa<CallInst>(incomingT)) return false;
+
+  /*
+   * Assert: must be a WAR load-store OR a RAW store-load
+   */
+  LoadInst *load;
+  StoreInst *store;
+  if (edge->isWARDependence()) {
+    assert(isa<StoreInst>(incomingT) && isa<LoadInst>(outgoingT));
+    load = (LoadInst*)outgoingT;
+    store = (StoreInst*)incomingT;
+  } else {
+    assert(isa<LoadInst>(incomingT) && isa<StoreInst>(outgoingT));
+    store = (StoreInst*)outgoingT;
+    load = (LoadInst*)incomingT;
+  }
+
+  auto baseOp = load->getPointerOperand();
+  if (load->getPointerOperand() != store->getPointerOperand()) return false;
+  if (auto gep = dyn_cast<GetElementPtrInst>(baseOp)) {
 
     /*
-     * Assert: must be a WAR load-store OR a RAW store-load
+     * Skip if the edge may be intra-iteration
      */
-    LoadInst *load;
-    StoreInst *store;
-    if (edge->isWARDependence()) {
-      assert(isa<StoreInst>(incomingT) && isa<LoadInst>(outgoingT));
-      load = (LoadInst*)outgoingT;
-      store = (StoreInst*)incomingT;
-    } else {
-      assert(isa<LoadInst>(incomingT) && isa<StoreInst>(outgoingT));
-      store = (StoreInst*)outgoingT;
-      load = (LoadInst*)incomingT;
-    }
+    if (instMayPrecede(outgoingT, incomingT)) return false;
 
-    auto baseOp = load->getPointerOperand();
-    if (load->getPointerOperand() != store->getPointerOperand()) continue;
-    if (auto gep = dyn_cast<GetElementPtrInst>(baseOp)) {
-
-      /*
-       * Skip if the edge may be intra-iteration
-       */
-      if (instMayPrecede(outgoingT, incomingT)) continue;
-
-      if (checkLoadStoreAliasOnSameGEP(gep)) {
-        // edge->print(errs() << "LOADSTORECHECKING:    Removing edge: ") << "\n";
-        removeEdges.insert(edge);
-      }
+    if (checkLoadStoreAliasOnSameGEP(gep)) {
+      // edge->print(errs() << "LOADSTORECHECKING:    Removing edge: ") << "\n";
+      return true;
     }
   }
 
-  for (auto edge : removeEdges) this->programDependenceGraph->removeEdge(edge);
+  return false;
 }
 
 bool llvm::PDGAnalysis::instMayPrecede (Value *from, Value *to) {
@@ -373,3 +379,61 @@ bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep) {
 
   return notAllConstantIndices;
 }
+
+void llvm::PDGAnalysis::collectMemorylessFunctions (Module &M) {
+  for (auto &F : M) {
+    if (F.empty()) continue;
+
+    bool isMemoryless = true;
+    for (auto &B : F) {
+      for (auto &I : B) {
+        if (isa<LoadInst>(I) || isa<StoreInst>(I) || isa<CallInst>(I)) {
+          isMemoryless = false;
+          break;
+        }
+      }
+
+      if (!isMemoryless) break;
+    }
+
+    if (isMemoryless) memorylessFunctionNames.insert(F.getName());
+  }
+}
+
+bool llvm::PDGAnalysis::edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge) {
+  if (!edge->isMemoryDependence()) return false;
+
+  auto outgoingT = edge->getOutgoingT();
+  auto incomingT = edge->getIncomingT();
+
+  auto isCallMemoryless = [&](CallInst *call) -> bool {
+    auto func = call->getCalledFunction();
+    if (!func || func->empty()) return false;
+    auto funcName = func->getName();
+    return memorylessFunctionNames.find(funcName) != memorylessFunctionNames.end();
+  };
+
+  if (isa<CallInst>(outgoingT) && isa<CallInst>(incomingT)) {
+    if (!isCallMemoryless(cast<CallInst>(outgoingT))) return false;
+    if (!isCallMemoryless(cast<CallInst>(incomingT))) return false;
+    return true;
+  }
+
+  CallInst *call;
+  Value *mem;
+  if (isa<CallInst>(outgoingT)) {
+    call = cast<CallInst>(outgoingT);
+    mem = incomingT;
+  } else if (isa<CallInst>(incomingT)) {
+    call = cast<CallInst>(incomingT);
+    mem = outgoingT; 
+  } else {
+    return false;
+  }
+
+  for (auto i = 0; i < call->getNumOperands(); ++i) {
+    if (mem == call->getOperand(i)) return false;
+  }
+  return isCallMemoryless(call);
+}
+

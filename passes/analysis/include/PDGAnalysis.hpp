@@ -26,6 +26,7 @@ namespace llvm {
     private:
       PDG *programDependenceGraph;
       std::map<Function *, AAResults *> aaResults;
+      std::set<std::string> memorylessFunctionNames;
 
       template <class InstI, class InstJ>
       void addEdgeFromMemoryAlias(Function &, AAResults *, InstI *, InstJ *, bool storePair);
@@ -46,7 +47,9 @@ namespace llvm {
       void constructEdgesFromControl (Module &M);
       void constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree);
 
-      void removeEdgesFromApparentIntraIterationDependencies (Module &M);
+      void collectMemorylessFunctions (Module &M);
+      bool edgeIsApparentIntraIterationDependency (DGEdge<Value> *edge);
+      bool edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge);
       bool checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep);
       bool instMayPrecede (Value *from, Value *to);
   };
