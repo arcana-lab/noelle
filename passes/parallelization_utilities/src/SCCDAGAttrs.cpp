@@ -20,10 +20,6 @@ AccumulatorOpInfo::AccumulatorOpInfo () {
     { Instruction::Sub, 0 },
     { Instruction::FSub, 0 }
   };
-  this->equivAddOp = {
-    { Instruction::Sub, Instruction::Add },
-    { Instruction::FSub, Instruction::FAdd }
-  };
 }
 
 bool AccumulatorOpInfo::isSubOp (unsigned op) {
@@ -38,9 +34,12 @@ bool AccumulatorOpInfo::isAddOp (unsigned op) {
   return Instruction::Add == op || Instruction::FAdd == op;
 }
 
-unsigned AccumulatorOpInfo::equivalentAddOp (unsigned subOp) {
-  if (!isSubOp(subOp)) return subOp;
-  return equivAddOp[subOp];
+unsigned AccumulatorOpInfo::accumOpForType (unsigned op, Type *type) {
+  if (type->isIntegerTy()) {
+    return isMulOp(op) ? Instruction::Mul : Instruction::Add;
+  } else {
+    return isMulOp(op) ? Instruction::FMul : Instruction::FAdd;
+  }
 }
 
 std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {

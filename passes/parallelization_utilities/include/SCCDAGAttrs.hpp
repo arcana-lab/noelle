@@ -19,12 +19,11 @@ namespace llvm {
     std::set<unsigned> sideEffectFreeOps;
     std::set<unsigned> accumOps;
     std::unordered_map<unsigned, unsigned> opIdentities;
-    std::unordered_map<unsigned, unsigned> equivAddOp;
 
     bool isMulOp (unsigned op);
     bool isAddOp (unsigned op);
     bool isSubOp (unsigned op);
-    unsigned equivalentAddOp (unsigned subOp);
+    unsigned accumOpForType (unsigned op, Type *type);
   };
 
   struct SCCEdgeInfo {

@@ -112,7 +112,7 @@ void DOALL::reducePostEnvironment (
     auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
     auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->PHIAccumulators.begin());
     auto binOpCode = firstAccumI->getOpcode();
-    binOpCode = LDI->sccdagAttrs.accumOpInfo.equivalentAddOp(binOpCode);
+    binOpCode = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
     auto binOp = (Instruction::BinaryOps)binOpCode;
 
     Value *accumVal = nullptr;

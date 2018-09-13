@@ -7,10 +7,22 @@ typedef struct _N {
   _N *next;
 } N;
 
+
+namespace myM {
+  int sqrt (int v) {
+    if (v == 0)
+      return v;
+    return v + 1 / v;
+  }
+}
+
 int heavyComputation (int v){
   double d = (double)v;
-  d += 0.143;
-  d = sqrt(d);
+  for (auto i = 0; i < 10000; i++) {
+    d += 0.143;
+    d = std::sqrt(d);
+    d = myM::sqrt(d);
+  }
 
   v = (int)d;
 
