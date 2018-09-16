@@ -18,13 +18,14 @@ namespace myM {
 
 int heavyComputation (int v){
   double d = (double)v;
+  double c = 0;
   for (auto i = 0; i < 10000; i++) {
     d += 0.143;
     d = std::sqrt(d);
-    d = myM::sqrt(d);
+    c = myM::sqrt(d);
   }
 
-  v = (int)d;
+  v = (int)d + (int)c;
 
   return v;
 }
