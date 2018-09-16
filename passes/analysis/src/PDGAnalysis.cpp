@@ -408,9 +408,19 @@ bool llvm::PDGAnalysis::edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge) {
 
   auto isCallMemoryless = [&](CallInst *call) -> bool {
     auto func = call->getCalledFunction();
-    if (!func || func->empty()) return false;
-    auto funcName = func->getName();
-    return memorylessFunctionNames.find(funcName) != memorylessFunctionNames.end();
+    if (func && !func->empty()) {
+      auto funcName = func->getName();
+      return memorylessFunctionNames.find(funcName) != memorylessFunctionNames.end();
+    }
+
+    auto funcVal = call->getCalledValue();
+    auto funcName = funcVal->getName();
+    if (memorylessFunctionNames.find(funcName) != memorylessFunctionNames.end()) {
+      funcVal->print(errs() << "Func call: "); errs() << "\n";
+      errs() << "Func name: " << funcVal->getName();
+      return true;
+    }
+    return false;
   };
 
   if (isa<CallInst>(outgoingT) && isa<CallInst>(incomingT)) {
