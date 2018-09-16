@@ -149,6 +149,41 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
     }
 
     /*
+     * Prioritize merge that best lowers overall cost without yielding a too costly partition
+     */
+    int minSubsetAID = -1;
+    int minSubsetBID = -1;
+    int32_t maxLoweredCost = 0;
+    int32_t chosenMergeCost = 0;
+    auto checkIfShouldMerge = [&](int sA, int sB) -> void {
+      if (!partition.canMergeSubsets(sA, sB)) return ;
+
+      /*
+       * Determine cost of merge
+       */
+      auto currentCost = subsetIDToCost[sA] + subsetIDToCost[sB];
+      auto sccsOfSubsets = partition.sccsOfSubsets(sA, sB);
+      auto mergeCost = this->latencyPerInvocation(sccdagAttrs, sccsOfSubsets);
+      auto loweredCost = currentCost - mergeCost;
+
+      /*
+       * Only merge if it doesn't yield an SCC costing more than half the total cost
+       * TODO(angelo): Determine fractional limit based on number of cores available
+       */
+      if (mergeCost > totalCost / 1 || partition.subsets.size() == 2) return ;
+
+      /*
+       * Only merge if it best lowers cost
+       */
+      if (loweredCost < maxLoweredCost) return ;
+
+      minSubsetAID = sA;
+      minSubsetBID = sB;
+      maxLoweredCost = loweredCost;
+      chosenMergeCost = mergeCost;
+    };
+
+    /*
      * Merge subsets.
      */
     while (!subIDToCheck.empty()) {
@@ -165,73 +200,40 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
       if (!partition.isValidSubset(subID)) continue ;
 
       /*
-       * Prioritize merge that best lowers overall cost without yielding a too costly partition
-       */
-      int minSubsetID = -1;
-      int32_t maxLoweredCost = 0;
-      int32_t chosenMergeCost = 0;
-      auto tryToMergeWith = [&](int s) -> void {
-        if (!partition.canMergeSubsets(subID, s)) return ;
-
-        /*
-         * Determine cost of merge
-         */
-        auto currentCost = subsetIDToCost[subID] + subsetIDToCost[s];
-        auto sccsOfSubsets = partition.sccsOfSubsets(subID, s);
-        auto mergeCost = this->latencyPerInvocation(sccdagAttrs, sccsOfSubsets);
-        auto loweredCost = currentCost - mergeCost;
-
-        /*
-         * Only merge if it doesn't yield an SCC costing more than half the total cost
-         * TODO(angelo): Determine fractional limit based on number of cores available
-         */
-        if (mergeCost > totalCost / 1 || partition.subsets.size() == 2) return ;
-
-        /*
-         * Only merge if it best lowers cost
-         */
-        if (loweredCost < maxLoweredCost) return ;
-
-        minSubsetID = s;
-        maxLoweredCost = loweredCost;
-        chosenMergeCost = mergeCost;
-      };
-
-      /*
        * Check merge criteria on dependents and depth-1 neighbors
        */
       auto dependentIDs = partition.getDependentIDs(subID);
       auto siblingIDs = partition.getSiblingIDs(subID);
-      for (auto s : dependentIDs) tryToMergeWith(s);
-      for (auto s : siblingIDs) tryToMergeWith(s);
+      for (auto s : dependentIDs) checkIfShouldMerge(subID, s);
+      for (auto s : siblingIDs) checkIfShouldMerge(subID, s);
 
       /*
-       * Merge partition if one is found; reiterate the merge check on it
+       * Add dependent SCCs as well.
        */
-      if (minSubsetID != -1) {
-        auto mergedSubID = partition.mergeSubsets(subID, minSubsetID);
-        subIDToCheck.push(mergedSubID);
-        alreadyChecked.insert(mergedSubID);
-
-        /*
-         * Readjust subset cost tracking
-         */
-        subsetIDToCost[mergedSubID] = chosenMergeCost;
-        totalCost -= maxLoweredCost;
-
-        /*
-         * Add dependent SCCs as well.
-         */
-        for (auto s : dependentIDs) {
-          if (alreadyChecked.find(s) == alreadyChecked.end()){
-            subIDToCheck.push(s);
-            alreadyChecked.insert(s);
-          }
+      for (auto s : dependentIDs) {
+        if (alreadyChecked.find(s) == alreadyChecked.end()){
+          subIDToCheck.push(s);
+          alreadyChecked.insert(s);
         }
-
-        modified = true;
       }
     }
+
+    /*
+     * Merge partition if one is found; reiterate the merge check on it
+     */
+    if (minSubsetAID != -1) {
+      auto mergedSubID = partition.mergeSubsets(minSubsetAID, minSubsetBID);
+      modified = true;
+      subIDToCheck.push(mergedSubID);
+      alreadyChecked.insert(mergedSubID);
+
+      /*
+       * Readjust subset cost tracking
+       */
+      subsetIDToCost[mergedSubID] = chosenMergeCost;
+      totalCost -= maxLoweredCost;
+    }
+
   } while (modified);
 
   return ;
