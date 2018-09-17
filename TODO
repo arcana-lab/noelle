@@ -1,6 +1,3 @@
-==== BUGS
-- Fix IndependentIterations6
-
 ==== SOFTWARE ENGINEERING
 - Add the option to decide the number of threads to target per loop
 
@@ -16,12 +13,8 @@
 ==== Parallelizer
 - Modify parallelizer to be able to parallelize multiple loops nested to each other at the same time
 
-- Implement the reduction as parallel SCC with reduction code
-
 
 ==== DOALL
-- Understand why ReductionIterations3 is not parallelized as DOALL
-
 - Promote chunk size to be an option (e.g., --doall-chunksize)
 
 
