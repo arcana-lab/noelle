@@ -389,13 +389,23 @@ void llvm::PDGAnalysis::collectMemorylessFunctions (Module &M) {
       for (auto &I : B) {
         if (isa<LoadInst>(I) || isa<StoreInst>(I) || isa<CallInst>(I)) {
           isMemoryless = false;
-          break;
         }
+
+        for (auto &op : I.operands()) {
+          if (isa<GlobalValue>(op.get())) {
+            isMemoryless = false;
+            break;
+          }
+        }
+        
+        if (!isMemoryless) break;
       }
 
       if (!isMemoryless) break;
     }
 
+    // TODO(angelo): Trigger a recheck of functions using this function
+    // in case they are then found to be memoryless
     if (isMemoryless) memorylessFunctionNames.insert(F.getName());
   }
 }
