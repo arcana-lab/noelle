@@ -1,27 +1,24 @@
-PARALLELIZATION=Parallelizer
-PARALLELIZATION_OPTIONS=-dswp-verbose=3 -dswp-force
-PDGPRINTER=PDGPrinter
 CC=clang++
-AA6=-cfl-anders-aa
-AA5=-scev-aa
-AA4=-tbaa
-AA3=-cfl-steens-aa
-AA2=-globals-aa
-AA1=-basicaa
-AA=$(AA1) $(AA2) $(AA3) $(AA4) $(AA5) $(AA6)
+AA_BASE=-basicaa
+AA_ADVANCED=$(AA_BASE) -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa
 ANALYSES=$(AA) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization -heuristics
-THREADER=$(PARALLELIZATION)_utils
 LIBS=-lm
-INCLUDES=-I../include/threadpool/include
-OPTIMIZED=parallelized
-TRANSFORMATIONS_BEFORE_PARALLELIZATION=-basicaa -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
-OPT_LEVEL=-O3
+
 RUNTIME_CFLAGS="-DDSWP_STATS"
 RUNTIME_CFLAGS=""
+PARALLELIZATION_OPTIONS=-dswp-verbose=3 -dswp-force
+OPT_LEVEL=-O3
 
-PRINTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/$(PDGPRINTER).so
+INCLUDES=-I../include/threadpool/include
+THREADER=Parallelizer_utils
+OPTIMIZED=parallelized
+
+TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
+PDGPASS=-load ~/CAT/lib/PDGAnalysis.so
+PRINTPASSES=$(PDGPASS) -load ~/CAT/lib/PDGPrinter.so
 PARALLELIZATION_TECHNIQUES= -load ~/CAT/lib/DSWP.so -load ~/CAT/lib/DOALL.so
-OPTPASSES=-load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/ParallelizationTechnique.so -load ~/CAT/lib/$(PARALLELIZATION).so 
+PRE_OPTPASSES=$(PDGPASS) -load ~/CAT/lib/DGSimplify.so
+OPTPASSES=$(PDGPASS) -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/ParallelizationTechnique.so -load ~/CAT/lib/Parallelizer.so 
 
 all: baseline $(OPTIMIZED)
 
@@ -35,7 +32,7 @@ $(OPTIMIZED): test_dswp.bc
 	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
 test_pdgdot.bc: test_seq.bc
-	opt $(PRINTPASSES) $(ANALYSES) -$(PDGPRINTER) $^ -o $@
+	opt $(PRINTPASSES) $(ANALYSES) -PDGPrinter $^ -o $@
 
 test_dswp.bc: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -parallelizer $(PARALLELIZATION_OPTIONS) $^ -o $@
@@ -54,13 +51,14 @@ test.bc: test.cpp
 
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
+	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $(PRE_OPTPASSES) -DGSimplify $@ -o $@
 	llvm-dis $@
 
 show_passes: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
+	opt $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
 
 show_time: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -$(PARALLELIZATION) $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
+	opt $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline $(OPTIMIZED)
