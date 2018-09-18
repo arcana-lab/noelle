@@ -90,14 +90,14 @@ namespace llvm {
       {
         auto func = funcToTraverse.front();
         funcToTraverse.pop();
-        if (funcSet.find(func) != funcSet.end()) return;
+        if (funcSet.find(func) != funcSet.end()) continue;
         funcSet.insert(func);
 
         auto funcCGNode = callGraph[func];
         for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end()))
         {
           auto F = callRecord.second->getFunction();
-          if (F->empty()) return;
+          if (F->empty()) continue;
           funcToTraverse.push(F);
         }
       }
