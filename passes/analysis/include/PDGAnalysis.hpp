@@ -21,31 +21,32 @@ namespace llvm {
 
       bool runOnModule (Module &M) override ;
 
+      PDG * getFunctionPDG (Function &F) ;
+
       PDG * getPDG () ;
 
     private:
       PDG *programDependenceGraph;
-      std::map<Function *, AAResults *> aaResults;
       std::set<std::string> memorylessFunctionNames;
 
       template <class InstI, class InstJ>
-      void addEdgeFromMemoryAlias(Function &, AAResults *, InstI *, InstJ *, bool storePair);
+      void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, InstI *, InstJ *, bool WAW);
 
-      void addEdgeFromFunctionModRef(Function &, AAResults *, StoreInst *, CallInst *);
-      void addEdgeFromFunctionModRef(Function &, AAResults *, LoadInst *, CallInst *);
-      void addEdgeFromFunctionModRef(Function &, AAResults *, CallInst *, CallInst *);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, StoreInst *, CallInst *);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, LoadInst *, CallInst *);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallInst *, CallInst *);
 
-      void iterateInstForStoreAliases(Function &, AAResults *, StoreInst *);
-      void iterateInstForLoadAliases(Function &, AAResults *, LoadInst *);
+      void iterateInstForStoreAliases(PDG *, Function &, AAResults &, StoreInst *);
+      void iterateInstForLoadAliases(PDG *, Function &, AAResults &, LoadInst *);
+      void iterateInstForModRef(PDG *, Function &, AAResults &, CallInst &);
 
-      void iterateInstForModRef(Function &, AAResults *, CallInst &);
+      void constructEdgesFromUseDefs (PDG *pdg);
+      void constructEdgesFromAliases (PDG *pdg, Module &M);
+      void constructEdgesFromControl (PDG *pdg, Module &M);
+      void constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA);
+      void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
 
-      void constructEdgesFromUseDefs (Module &M);
-
-      void constructEdgesFromAliases (Module &M);
-
-      void constructEdgesFromControl (Module &M);
-      void constructControlEdgesForFunction(Function &F, PostDominatorTree &postDomTree);
+      void removeEdgesNotUsedByParSchemes (PDG *pdg);
 
       void collectMemorylessFunctions (Module &M);
       bool edgeIsApparentIntraIterationDependency (DGEdge<Value> *edge);

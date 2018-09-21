@@ -37,21 +37,13 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 bool llvm::PDGAnalysis::runOnModule (Module &M){
   this->programDependenceGraph = new PDG();
 
-  this->programDependenceGraph->addNodes(M);
-  constructEdgesFromUseDefs(M);
-  constructEdgesFromAliases(M);
-  constructEdgesFromControl(M);
+  this->programDependenceGraph->populateNodesOf(M);
+  constructEdgesFromUseDefs(this->programDependenceGraph);
+  constructEdgesFromAliases(this->programDependenceGraph, M);
+  constructEdgesFromControl(this->programDependenceGraph, M);
 
   collectMemorylessFunctions(M);
-
-  std::set<DGEdge<Value> *> removeEdges;
-  for (auto edge : this->programDependenceGraph->getEdges()) {
-    if (edgeIsApparentIntraIterationDependency(edge)
-        || edgeIsOnKnownMemorylessFunction(edge)) {
-      removeEdges.insert(edge);
-    }
-  }
-  for (auto edge : removeEdges) this->programDependenceGraph->removeEdge(edge);
+  removeEdgesNotUsedByParSchemes(this->programDependenceGraph);
 
   return false;
 }
@@ -64,12 +56,25 @@ llvm::PDGAnalysis::~PDGAnalysis(){
   delete this->programDependenceGraph;
 }
 
+llvm::PDG * llvm::PDGAnalysis::getFunctionPDG (Function &F) {
+  auto pdg = new PDG();
+  pdg->populateNodesOf(F);
+
+  auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+  constructEdgesFromUseDefs(pdg);
+  constructEdgesFromAliasesForFunction(pdg, F, AA);
+  auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
+  constructEdgesFromControlForFunction(pdg, F, PDT);
+
+  return pdg;
+}
+
 llvm::PDG * llvm::PDGAnalysis::getPDG (){
   return this->programDependenceGraph;
 }
 
-void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
-  for (auto node : make_range(programDependenceGraph->begin_nodes(), programDependenceGraph->end_nodes())) {
+void llvm::PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
+  for (auto node : make_range(pdg->begin_nodes(), pdg->end_nodes())) {
     Value *pdgValue = node->getT();
     if (pdgValue->getNumUses() == 0)
       continue;
@@ -77,23 +82,18 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (Module &M){
     for (auto& U : pdgValue->uses()) {
       auto user = U.getUser();
 
-      bool makeEdge = false;
-      if (auto userInst = dyn_cast<Instruction>(user)) makeEdge = true;
-      else if (auto userArg = dyn_cast<Argument>(user)) makeEdge = true;
-      
-      if (!makeEdge) continue;      
-      auto *edge = programDependenceGraph->addEdge(pdgValue, user);
-      edge->setMemMustType(false, true, DG_DATA_RAW);
+      if (isa<Instruction>(user) || isa<Argument>(user)) {
+        auto edge = pdg->addEdge(pdgValue, user);
+        edge->setMemMustType(false, true, DG_DATA_RAW);
+      }
     }
   }
-
-  return ;
 }
 
 template <class InstI, class InstJ>
-void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, InstI *memI, InstJ *memJ, bool WAW){
+void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, InstI *memI, InstJ *memJ, bool WAW){
   bool makeEdge = false, must = false;
-  switch (aa->alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
+  switch (AA.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
       makeEdge = true;
@@ -106,15 +106,15 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (Function &F, AAResults *aa, Inst
   if (!makeEdge) return;
   
   DataDependencyType dataDepType = WAW ? DG_DATA_WAW : DG_DATA_RAW;
-  programDependenceGraph->addEdge((Value*)memI, (Value*)memJ)->setMemMustType(true, must, dataDepType);
+  pdg->addEdge((Value*)memI, (Value*)memJ)->setMemMustType(true, must, dataDepType);
 
   dataDepType = WAW ? DG_DATA_WAW : DG_DATA_WAR;
-  programDependenceGraph->addEdge((Value*)memJ, (Value*)memI)->setMemMustType(true, must, dataDepType);
+  pdg->addEdge((Value*)memJ, (Value*)memI)->setMemMustType(true, must, dataDepType);
 }
 
-void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, StoreInst *memI, CallInst *call){
+void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, StoreInst *memI, CallInst *call){
   bool makeRefEdge = false, makeModEdge = false;
-  switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
+  switch (AA.getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
       makeRefEdge = true;
       break;
@@ -128,19 +128,19 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, S
 
   if (makeRefEdge)
   {
-    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
-    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_WAR);
+    pdg->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
+    pdg->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_WAR);
   }
   if (makeModEdge)
   {
-    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
-    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_WAW);
+    pdg->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
+    pdg->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_WAW);
   }
 }
 
-void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, LoadInst *memI, CallInst *call){
+void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, LoadInst *memI, CallInst *call){
   bool makeModEdge = false;
-  switch (aa->getModRefInfo(call, MemoryLocation::get(memI))) {
+  switch (AA.getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
       break;
     case MRI_Mod:
@@ -151,14 +151,14 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, L
 
   if (makeModEdge)
   {
-    programDependenceGraph->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_RAW);
-    programDependenceGraph->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
+    pdg->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_RAW);
+    pdg->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
   }
 }
 
-void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, CallInst *otherCall, CallInst *call){
+void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *otherCall, CallInst *call){
   bool makeRefEdge = false, makeModEdge = false;
-  switch (aa->getModRefInfo(ImmutableCallSite(call), ImmutableCallSite(otherCall))) {
+  switch (AA.getModRefInfo(ImmutableCallSite(call), ImmutableCallSite(otherCall))) {
     case MRI_Ref:
       makeRefEdge = true;
       break;
@@ -172,70 +172,74 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (Function &F, AAResults *aa, C
 
   if (makeRefEdge)
   {
-    programDependenceGraph->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
-    programDependenceGraph->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
+    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+    pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
   }
   if (makeModEdge)
   {
-    programDependenceGraph->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
+    pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
   }
 }
 
-void llvm::PDGAnalysis::iterateInstForStoreAliases(Function &F, AAResults *aa, StoreInst *store) {
+void llvm::PDGAnalysis::iterateInstForStoreAliases (PDG *pdg, Function &F, AAResults &AA, StoreInst *store) {
   for (auto &B : F) {
     for (auto &I : B) {
       if (auto *otherStore = dyn_cast<StoreInst>(&I)) {
         if (store != otherStore)
-          addEdgeFromMemoryAlias<StoreInst, StoreInst>(F, aa, store, otherStore, true);
+          addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg, F, AA, store, otherStore, true);
       } else if (auto *load = dyn_cast<LoadInst>(&I)) {
-        addEdgeFromMemoryAlias<StoreInst, LoadInst>(F, aa, store, load, false);
+        addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg, F, AA, store, load, false);
       }
     }
   }
 }
 
-void llvm::PDGAnalysis::iterateInstForModRef(Function &F, AAResults *aa, CallInst &call) {
+void llvm::PDGAnalysis::iterateInstForModRef(PDG *pdg, Function &F, AAResults &AA, CallInst &call) {
   for (auto &B : F) {
     for (auto &I : B) {
       if (auto *load = dyn_cast<LoadInst>(&I)) {
-        addEdgeFromFunctionModRef(F, aa, load, &call);
+        addEdgeFromFunctionModRef(pdg, F, AA, load, &call);
       } else if (auto *store = dyn_cast<StoreInst>(&I)) {
-        addEdgeFromFunctionModRef(F, aa, store, &call);
+        addEdgeFromFunctionModRef(pdg, F, AA, store, &call);
       } else if (auto *otherCall = dyn_cast<CallInst>(&I)) {
-        addEdgeFromFunctionModRef(F, aa, otherCall, &call);
+        addEdgeFromFunctionModRef(pdg, F, AA, otherCall, &call);
       }
     }
   }
 }
 
-void llvm::PDGAnalysis::constructEdgesFromAliases (Module &M){
+void llvm::PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
   /*
    * Use alias analysis on stores, loads, and function calls to construct PDG edges
    */
   for (auto &F : M) {
     if (F.empty()) continue ;
-    auto aaResults = &(getAnalysis<AAResultsWrapperPass>(F).getAAResults());
-    for (auto &B : F) {
-      for (auto &I : B) {
-        if (auto* store = dyn_cast<StoreInst>(&I)) {
-          iterateInstForStoreAliases(F, aaResults, store);
-        } else if (auto *call = dyn_cast<CallInst>(&I)) {
-          iterateInstForModRef(F, aaResults, *call);
-        }
+    auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+    constructEdgesFromAliasesForFunction(pdg, F, AA);
+  }
+}
+
+void llvm::PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA){
+  for (auto &B : F) {
+    for (auto &I : B) {
+      if (auto* store = dyn_cast<StoreInst>(&I)) {
+        iterateInstForStoreAliases(pdg, F, AA, store);
+      } else if (auto *call = dyn_cast<CallInst>(&I)) {
+        iterateInstForModRef(pdg, F, AA, *call);
       }
     }
   }
 }
 
-void llvm::PDGAnalysis::constructEdgesFromControl (Module &M){
+void llvm::PDGAnalysis::constructEdgesFromControl (PDG *pdg, Module &M){
   for (auto &F : M) {
     if (F.empty()) continue ;
-    auto postDomTree = &getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
-    this->constructControlEdgesForFunction(F, *postDomTree);
+    auto &postDomTree = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
+    this->constructEdgesFromControlForFunction(pdg, F, postDomTree);
   }
 }
 
-void llvm::PDGAnalysis::constructControlEdgesForFunction (Function &F, PostDominatorTree &postDomTree) {
+void llvm::PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree) {
   for (auto &B : F)
   {
     SmallVector<BasicBlock *, 10> dominatedBBs;
@@ -253,12 +257,24 @@ void llvm::PDGAnalysis::constructControlEdgesForFunction (Function &F, PostDomin
         auto controlTerminator = predBB->getTerminator();
         for (auto &I : B)
         {
-          auto edge = this->programDependenceGraph->addEdge((Value*)controlTerminator, (Value*)&I);
+          auto edge = pdg->addEdge((Value*)controlTerminator, (Value*)&I);
           edge->setControl(true);
         }
       }
     }
   }
+}
+
+void llvm::PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {
+  std::set<DGEdge<Value> *> removeEdges;
+  for (auto edge : pdg->getEdges()) {
+    if (edgeIsApparentIntraIterationDependency(edge)
+        || edgeIsOnKnownMemorylessFunction(edge)) {
+      removeEdges.insert(edge);
+    }
+  }
+
+  for (auto edge : removeEdges) pdg->removeEdge(edge);
 }
 
 /*
@@ -296,7 +312,6 @@ bool llvm::PDGAnalysis::edgeIsApparentIntraIterationDependency (DGEdge<Value> *e
     if (instMayPrecede(outgoingT, incomingT)) return false;
 
     if (checkLoadStoreAliasOnSameGEP(gep)) {
-      // edge->print(errs() << "LOADSTORECHECKING:    Removing edge: ") << "\n";
       return true;
     }
   }
@@ -350,7 +365,6 @@ bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep) {
   auto notAllConstantIndices = false;
   for (auto &indexV : gep->indices()) {
     if (isa<ConstantInt>(indexV)) continue;
-    // indexV->print(errs() << "LOADSTORECHECKING:    Non constant index inst: "); errs() << "\n";
     notAllConstantIndices = true;
 
     auto scev = SE.getSCEV(indexV);
@@ -360,7 +374,6 @@ bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep) {
     // auto loop = LI.getLoopFor(cast<Instruction>(indexV)->getParent());
     // for (auto &op : loop->getHeader()->getTerminator()->operands()) {
     //   if (auto cmp = dyn_cast<ICmpInst>(op)) {
-    //     // cmp->print(errs() << "LOADSTORECHECKING:    Cmp inst: "); errs() << "\n";
     //     auto lhs = cmp->getOperand(0);
     //     auto rhs = cmp->getOperand(1);
     //     if (!isa<ConstantInt>(lhs) && !isa<ConstantInt>(rhs)) return false;
@@ -426,8 +439,8 @@ bool llvm::PDGAnalysis::edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge) {
     auto funcVal = call->getCalledValue();
     auto funcName = funcVal->getName();
     if (memorylessFunctionNames.find(funcName) != memorylessFunctionNames.end()) {
-      funcVal->print(errs() << "Func call: "); errs() << "\n";
-      errs() << "Func name: " << funcVal->getName();
+      // funcVal->print(errs() << "Func call: "); errs() << "\n";
+      // errs() << "Func name: " << funcVal->getName();
       return true;
     }
     return false;
