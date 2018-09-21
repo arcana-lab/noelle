@@ -24,6 +24,9 @@
 #include <set>
 #include <queue>
 
+#include <iostream>
+#include <fstream>
+
 using namespace llvm;
 
 namespace llvm {
@@ -46,11 +49,9 @@ namespace llvm {
        */
       std::set<Function *> funcToCheck;
       collectAllFunctionsInCallGraph(M, funcToCheck);
+      bool inlined = inlineCallsInFunctionsWithMassiveSCCs(funcToCheck);
 
-      auto *graph = getAnalysis<PDGAnalysis>().getPDG();
-      inlineCallsInFunctionsWithMassiveSCCs(graph, funcToCheck);
-
-      return false;
+      return inlined;
     }
 
     void getAnalysisUsage(AnalysisUsage &AU) const override {
@@ -86,23 +87,27 @@ namespace llvm {
       }
     }
 
-    void inlineCallsInFunctionsWithMassiveSCCs (PDG *pdg, std::set<Function *> &funcSet) {
-      while (!funcSet.empty()) {
-        std::set<Function *> funcSetToRecheck;
-        for (auto F : funcSet) {
-          errs() << "Encountered function: " << F->getName() << "\n";
+    bool inlineCallsInFunctionsWithMassiveSCCs (std::set<Function *> &funcSet) {
+      auto &PDGA = getAnalysis<PDGAnalysis>();
+      bool inlined = false;
+      for (auto F : funcSet) {
+        errs() << "Encountered function: " << F->getName() << "\n";
 
-          auto fdg = pdg->createFunctionSubgraph(*F);
-          bool inlinedCall = checkToInlineCallInFunction(fdg, *F);
-          delete fdg;
+        auto fdg = PDGA.getFunctionPDG(*F);
+        bool inlinedCall = checkToInlineCallInFunction(fdg, *F);
+        delete fdg;
 
-          if (inlinedCall) {
-            funcSetToRecheck.insert(F);
-          }
-        }
-        
-        funcSet = funcSetToRecheck;
+        inlined |= inlinedCall;
       }
+      
+      ofstream inlineInfo("dgsimplify_inlineinfo.txt");
+      inlineInfo << (inlined ? "1" : "0");
+      inlineInfo.close();
+
+      if (inlined) {
+        errs() << "Inlined\n";
+      }
+      return inlined;
     }
 
     /*
