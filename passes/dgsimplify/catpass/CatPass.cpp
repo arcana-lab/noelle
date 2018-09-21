@@ -5,8 +5,12 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/CallGraph.h"
+#include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
+#include "llvm/Analysis/PostDominators.h"
 
 #include "DGBase.hpp"
 #include "DGGraphTraits.hpp"
@@ -14,11 +18,8 @@
 #include "PDGAnalysis.hpp"
 #include "SCCDAG.hpp"
 
-#include "llvm/ADT/GraphTraits.h"
-#include "llvm/Analysis/DOTGraphTraitsPass.h"
-#include "llvm/Analysis/DomPrinter.h"
-#include "llvm/Support/GraphWriter.h"
-#include "llvm/Support/DOTGraphTraits.h"
+#include "LoopDependenceInfo.hpp"
+#include "SCCDAGAttrs.hpp"
 
 #include <set>
 #include <queue>
@@ -47,7 +48,6 @@ namespace llvm {
       collectAllFunctionsInCallGraph(M, funcToCheck);
 
       auto *graph = getAnalysis<PDGAnalysis>().getPDG();
-      
       inlineCallsInFunctionsWithMassiveSCCs(graph, funcToCheck);
 
       return false;
@@ -57,6 +57,8 @@ namespace llvm {
       AU.addRequired<LoopInfoWrapperPass>();
       AU.addRequired<CallGraphWrapperPass>();
       AU.addRequired<PDGAnalysis>();
+      AU.addRequired<PostDominatorTreeWrapperPass>();
+      AU.addRequired<ScalarEvolutionWrapperPass>();
       AU.setPreservesAll();
       return ;
     }
@@ -78,18 +80,106 @@ namespace llvm {
         for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end()))
         {
           auto F = callRecord.second->getFunction();
-          if (F->empty()) continue;
+          if (!F || F->empty()) continue;
           funcToTraverse.push(F);
         }
       }
     }
 
     void inlineCallsInFunctionsWithMassiveSCCs (PDG *pdg, std::set<Function *> &funcSet) {
-      errs() << "Collected the following functions:\n";
-      for (auto F : funcSet) {
-        errs() << "Encountered function: " << F->getName() << "\n";
+      while (!funcSet.empty()) {
+        std::set<Function *> funcSetToRecheck;
+        for (auto F : funcSet) {
+          errs() << "Encountered function: " << F->getName() << "\n";
+
+          auto fdg = pdg->createFunctionSubgraph(*F);
+          bool inlinedCall = checkToInlineCallInFunction(fdg, *F);
+          delete fdg;
+
+          if (inlinedCall) {
+            funcSetToRecheck.insert(F);
+          }
+        }
+        
+        funcSet = funcSetToRecheck;
       }
     }
+
+    /*
+     * GOAL: Go through loops in function
+     * If there is only one non-clonable/reducable SCC,
+     * try inlining the function call in that SCC with the
+     * most memory edges to other internal/external values
+     */
+    bool checkToInlineCallInFunction (PDG *fdg, Function &F) {
+      auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
+      auto& LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+      auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(F).getSE();
+      for (auto loop : LI.getLoopsInPreorder()) {
+        loop->print(errs() << "Loop:\n"); errs() << "\n";
+        auto LDI = new LoopDependenceInfo(&F, fdg, loop, LI, PDT);
+        auto &attrs = LDI->sccdagAttrs;
+        attrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
+
+        int64_t maxMemEdges = 0;
+        CallInst *inlineCall = nullptr;
+
+        std::set<SCC *> sccsToCheck;
+        for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
+          auto scc = sccNode->getT();
+
+          scc->printMinimal(errs() << "SCC:\n") << "\n";
+          if (attrs.executesCommutatively(scc)
+              || attrs.executesIndependently(scc)
+              || attrs.canBeCloned(scc)) {
+            continue;
+          }
+
+          sccsToCheck.insert(scc);
+        }
+
+        /*
+         * NOTE: if there are more than two non-trivial SCCs, then
+         * there is less incentive to continue trying to inline.
+         * Why 2? Because 2 is always a simple non-trivial number
+         * to start a heuristic at.
+         */
+        if (sccsToCheck.size() > 2) continue;
+
+        for (auto scc : sccsToCheck) {
+          for (auto valNode : scc->getNodes()) {
+            auto val = valNode->getT();
+            if (auto call = dyn_cast<CallInst>(val)) {
+              auto callF = call->getCalledFunction();
+              if (!callF || callF->empty()) continue;
+
+              auto memEdgeCount = 0;
+              for (auto edge : valNode->getAllConnectedEdges()) {
+                if (edge->isMemoryDependence()) memEdgeCount++;
+              }
+
+              if (memEdgeCount > maxMemEdges) {
+                maxMemEdges = memEdgeCount;
+                inlineCall = call;
+              }
+            }
+          }
+        }
+
+        delete LDI;
+
+        if (inlineCall) {
+          InlineFunctionInfo IFI;
+          inlineCall->print(errs() << "Inlining: "); errs() << "\n";
+          if (InlineFunction(inlineCall, IFI)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
   };
 }
 
