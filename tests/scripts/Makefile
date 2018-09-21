@@ -20,11 +20,14 @@ PARALLELIZATION_TECHNIQUES= -load ~/CAT/lib/DSWP.so -load ~/CAT/lib/DOALL.so
 PRE_OPTPASSES=$(PDGPASS) -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/DGSimplify.so
 OPTPASSES=$(PDGPASS) -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/ParallelizationTechnique.so -load ~/CAT/lib/Parallelizer.so 
 
-all: baseline $(OPTIMIZED)
+all: baseline testseq $(OPTIMIZED)
 
 baseline: baseline.bc
 	$(CC) $(OPT_LEVEL) $^ -o $@
 
+testseq: test_seq.bc
+	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
+	
 $(THREADER).bc: $(THREADER).cpp
 	$(CC) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
 

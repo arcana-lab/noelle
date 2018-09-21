@@ -91,7 +91,7 @@ namespace llvm {
       auto &PDGA = getAnalysis<PDGAnalysis>();
       bool inlined = false;
       for (auto F : funcSet) {
-        errs() << "Encountered function: " << F->getName() << "\n";
+        // errs() << "Encountered function: " << F->getName() << "\n";
 
         auto fdg = PDGA.getFunctionPDG(*F);
         bool inlinedCall = checkToInlineCallInFunction(fdg, *F);
@@ -104,9 +104,6 @@ namespace llvm {
       inlineInfo << (inlined ? "1" : "0");
       inlineInfo.close();
 
-      if (inlined) {
-        errs() << "Inlined\n";
-      }
       return inlined;
     }
 
@@ -121,7 +118,7 @@ namespace llvm {
       auto& LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
       auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(F).getSE();
       for (auto loop : LI.getLoopsInPreorder()) {
-        loop->print(errs() << "Loop:\n"); errs() << "\n";
+        // loop->print(errs() << "Loop:\n"); errs() << "\n";
         auto LDI = new LoopDependenceInfo(&F, fdg, loop, LI, PDT);
         auto &attrs = LDI->sccdagAttrs;
         attrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
@@ -133,7 +130,7 @@ namespace llvm {
         for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
           auto scc = sccNode->getT();
 
-          scc->printMinimal(errs() << "SCC:\n") << "\n";
+          // scc->printMinimal(errs() << "SCC:\n") << "\n";
           if (attrs.executesCommutatively(scc)
               || attrs.executesIndependently(scc)
               || attrs.canBeCloned(scc)) {
@@ -175,7 +172,7 @@ namespace llvm {
 
         if (inlineCall) {
           InlineFunctionInfo IFI;
-          inlineCall->print(errs() << "Inlining: "); errs() << "\n";
+          // inlineCall->print(errs() << "Inlining: "); errs() << "\n";
           if (InlineFunction(inlineCall, IFI)) {
             return true;
           }
