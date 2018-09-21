@@ -17,7 +17,7 @@ TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcom
 PDGPASS=-load ~/CAT/lib/PDGAnalysis.so
 PRINTPASSES=$(PDGPASS) -load ~/CAT/lib/PDGPrinter.so
 PARALLELIZATION_TECHNIQUES= -load ~/CAT/lib/DSWP.so -load ~/CAT/lib/DOALL.so
-PRE_OPTPASSES=$(PDGPASS) -load ~/CAT/lib/DGSimplify.so
+PRE_OPTPASSES=$(PDGPASS) -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/DGSimplify.so
 OPTPASSES=$(PDGPASS) -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/ParallelizationTechnique.so -load ~/CAT/lib/Parallelizer.so 
 
 all: baseline $(OPTIMIZED)
