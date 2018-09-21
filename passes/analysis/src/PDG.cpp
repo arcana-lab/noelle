@@ -21,37 +21,42 @@ llvm::PDG::~PDG() {
     if (node) delete node;
 }
 
-void llvm::PDG::addNodes (Module &M) {
+void llvm::PDG::populateNodesOf (Module &M) {
 
   /*
    * Create a node per instruction and function argument
    */
-  for (auto &F : M)
-  {
-    for (auto &arg : F.args()) addNode(cast<Value>(&arg), /*inclusion=*/ true);
-
-    for (auto &B : F)
-    {
-      for (auto &I : B)
-      {
-        addNode(cast<Value>(&I), /*inclusion=*/ true);
-      }
-    }
+  for (auto &F : M) {
+    addNodesOf(F);
   }
 
   /* 
    * Set the entry node: the first instruction of the function "main"
    */
   auto mainF = M.getFunction("main");
-  if (mainF == nullptr) {
-    errs() << "ERROR: Main function not found\n";
-    abort();
+  assert(mainF != nullptr);
+  setEntryPointAt(*mainF);
+}
+
+void llvm::PDG::populateNodesOf (Function &F) {
+  addNodesOf(F);
+  setEntryPointAt(F);
+}
+
+void llvm::PDG::addNodesOf (Function &F) {
+  for (auto &arg : F.args()) addNode(cast<Value>(&arg), /*inclusion=*/ true);
+
+  for (auto &B : F) {
+    for (auto &I : B) {
+      addNode(cast<Value>(&I), /*inclusion=*/ true);
+    }
   }
-  auto entryInstr = &*(mainF->begin()->begin());
+}
+
+void llvm::PDG::setEntryPointAt (Function &F) {
+  auto entryInstr = &*(F.begin()->begin());
   entryNode = internalNodeMap[entryInstr];
   assert(entryNode != nullptr);
-
-  return ;
 }
 
 llvm::DGEdge<Value> * llvm::PDG::addEdge (Value *from, Value *to) { 
@@ -65,21 +70,12 @@ PDG *llvm::PDG::createFunctionSubgraph(Function &F) {
   /*
    * Create a node per instruction and argument of the function
    */
-  for (auto &arg : F.args()) addNode(cast<Value>(&arg), /*inclusion=*/ true);
-
-  for (auto &B : F)
-  {
-    for (auto &I : B)
-    {
-      functionPDG->addNode(cast<Value>(&I), /*inclusion=*/ true);
-    }
-  }
+  functionPDG->addNodesOf(F);
 
   /* 
    * Set the entry node: the first instruction of function F
    */
-  functionPDG->entryNode = functionPDG->internalNodeMap[&*(F.begin()->begin())];
-  assert(functionPDG->entryNode != nullptr);
+  functionPDG->setEntryPointAt(F);
 
   /*
    * Recreate all edges connected to internal nodes of function
