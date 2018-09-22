@@ -224,8 +224,6 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
     if (minSubsetAID != -1) {
       auto mergedSubID = partition.mergeSubsets(minSubsetAID, minSubsetBID);
       modified = true;
-      subIDToCheck.push(mergedSubID);
-      alreadyChecked.insert(mergedSubID);
 
       /*
        * Readjust subset cost tracking

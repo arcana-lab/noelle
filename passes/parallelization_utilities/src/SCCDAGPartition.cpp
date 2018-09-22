@@ -133,24 +133,27 @@ int SCCDAGPartition::mergeSubsets (int subsetA, int subsetB) {
 }
 
 bool SCCDAGPartition::canMergeSubsets (int subAID, int subBID) {
-    std::set<SCC *> outgoingToB;
-    for (auto scc : subsetOfID(subBID)->SCCs) {
-        for (auto edge : sccDAG->fetchNode(scc)->getIncomingEdges()) {
-            outgoingToB.insert(edge->getOutgoingT());
-        }
-    }
+  return !hasAncestor(subAID, subBID) && !hasAncestor(subBID, subAID);
+}
 
-    /*
-     * Check that no cycle would form by merging the subsets
-     */
-    auto subsetA = subsetOfID(subAID);
-    for (auto scc : subsetA->SCCs) {
-        for (auto edge : sccDAG->fetchNode(scc)->getOutgoingEdges()) {
-            if (subsetA->SCCs.find(edge->getIncomingT()) != subsetA->SCCs.end()) continue;
-            if (outgoingToB.find(edge->getIncomingT()) != outgoingToB.end()) return false;
-        }
+bool SCCDAGPartition::hasAncestor (int subset, int ancSubset) {
+  std::set<int> subsetsSeen;
+  std::queue<int> subsetsToVisit;
+  subsetsToVisit.push(subset);
+  subsetsSeen.insert(subset);
+  while (!subsetsToVisit.empty()) {
+    auto sub = subsetsToVisit.front();
+    subsetsToVisit.pop();
+    auto ancestors = this->getAncestorIDs(sub);
+    for (auto ancSub : ancestors) {
+      if (ancSub == ancSubset) return true;
+      if (subsetsSeen.find(ancSub) == subsetsSeen.end()) {
+        subsetsToVisit.push(ancSub);
+        subsetsSeen.insert(ancSub);
+      }
     }
-    return true;
+  }
+  return false;
 }
 
 /*
@@ -238,42 +241,28 @@ int SCCDAGPartition::traverseAndCheckToMerge (std::vector<int> &path) {
   while (merged) {
     merged = false;
 
-    errs() << "While-ing this subset\n";
     auto subset = subsetOfID(subsetID);
-    errs() << "It has this many SCCs: " << subset->SCCs.size() << "\n";
-    for (auto scc : subset->SCCs) {
-      scc->printMinimal(errs() << "SCC under subset\n") << "\n";
-    }
-
     auto depSubIDs = this->getDependentIDs(subsetID);
     for (auto subID : depSubIDs) {
       if (!isValidSubset(subID)) continue ;
       auto subIter = std::find(path.begin(), path.end(), subID);
 
       /*
-      errs() << "For-ing this dep subset\n";
-      errs() << "It has this many SCCs: " << sub->SCCs.size() << "\n";
-      for (auto scc : sub->SCCs) {
-        scc->printMinimal(errs() << "SCC under subset\n") << "\n";
-      }
-      */
-
-      /*
        * If dependent doesn't form a cycle in our path, recursively try merging
        * Else, merge the whole cycle contained in our path and return
        */
       if (subIter == path.end()) {
-        errs() << "Going down further\n";
+        // errs() << "Going down further\n";
         std::vector<int> nextPath(path.begin(), path.end());
         nextPath.push_back(subID);
         auto mergedSubID = traverseAndCheckToMerge(nextPath);
-        errs() << "Went down and came back up\n";
+        // errs() << "Went down and came back up\n";
 
         /*
          * Current subset was merged away, so return the newly merged subset
          */
         if (nextPath.size() <= path.size()) {
-          errs() << "We disappeared\n";
+          // errs() << "We disappeared\n";
           path.erase(path.begin() + nextPath.size(), path.end());
           path[path.size() - 1] = mergedSubID;
           return mergedSubID;
@@ -283,12 +272,11 @@ int SCCDAGPartition::traverseAndCheckToMerge (std::vector<int> &path) {
          * Dependent was merged; restart scan through dependents
          */
         if (mergedSubID != -1) {
-          errs() << "We merged ?\n";
           merged = true;
           break;
         }
       } else {
-        errs() << "We merged\n";
+        // errs() << "We merged\n";
         auto newPathEndIter = subIter;
         int mergedSubID = *(subIter++);
         while (subIter != path.end()) {
@@ -298,7 +286,7 @@ int SCCDAGPartition::traverseAndCheckToMerge (std::vector<int> &path) {
         }
         path.erase(newPathEndIter, path.end());
         path.push_back(mergedSubID);
-        errs() << "Returning merged\n";
+        // errs() << "Returning merged\n";
         return mergedSubID;
       }
     }
@@ -392,22 +380,9 @@ std::set<int> SCCDAGPartition::getSiblingIDs (int subsetID) {
 }
 
 std::set<int> SCCDAGPartition::getSubsetIDsWithNoIncomingEdges () {
-  std::set<int> topLevelSubsetIDs;
-  auto topLevelNodes = sccDAG->getTopLevelNodes();
-  for (auto node : topLevelNodes) {
-    auto subsetID = this->subsetIDOfSCC(node->getT());
-    if (subsetID != -1) topLevelSubsetIDs.insert(subsetID);
-  }
-
-  /*
-   * Should the top level nodes be removable, grab their descendants which belong to subsets
-   */
-  if (topLevelSubsetIDs.size() == 0) {
-    topLevelSubsetIDs = this->getDependentIDs(topLevelNodes);
-  }
-
   std::set<int> rootSubsetIDs;
-  for (auto subsetID : topLevelSubsetIDs) {
+  for (auto &subset : subsets) {
+    auto subsetID = getSubsetID(subset);
     if (this->getAncestorIDs(subsetID).size() > 0) continue;
     rootSubsetIDs.insert(subsetID);
   }

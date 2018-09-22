@@ -37,6 +37,7 @@ class SCCDAGPartition {
     std::set<SCC *> sccsOfSubsets (int subsetA, int subsetB);
     int mergeSubsets (int subsetA, int subsetB);
     bool canMergeSubsets (int subsetA, int subsetB);
+    bool hasAncestor (int subsetA, int subsetB);
 
     void mergeSubsetsRequiringMemSync ();
     void mergeSubsetsFormingCycles ();
