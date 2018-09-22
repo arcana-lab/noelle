@@ -2,8 +2,9 @@
 
 using namespace llvm;
 
-void DSWP::createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
+void DSWP::createStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
   auto topLevelSubIDs = LDI->partition.getSubsetIDsWithNoIncomingEdges();
+  assert(topLevelSubIDs.size() > 0);
   std::set<int> subsFound(topLevelSubIDs.begin(), topLevelSubIDs.end());
   std::deque<int> subsToTraverse(topLevelSubIDs.begin(), topLevelSubIDs.end());
 

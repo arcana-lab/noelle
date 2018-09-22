@@ -93,7 +93,7 @@ namespace llvm {
        * Pipeline
        */
       void createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par);
-      void createStagesfromPartitionedSCCs (DSWPLoopDependenceInfo *LDI);
+      void createStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI);
       void createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par);
 
       /*

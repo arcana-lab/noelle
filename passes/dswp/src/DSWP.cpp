@@ -107,7 +107,7 @@ void DSWP::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelizat
 }
 
 void DSWP::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
-  createStagesfromPartitionedSCCs(LDI);
+  createStagesFromPartitionedSCCs(LDI);
   addRemovableSCCsToStages(LDI);
 
   collectPartitionedSCCQueueInfo(par, LDI);
