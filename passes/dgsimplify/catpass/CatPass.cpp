@@ -100,9 +100,11 @@ namespace llvm {
         inlined |= inlinedCall;
       }
       
-      ofstream inlineInfo("dgsimplify_inlineinfo.txt");
-      inlineInfo << (inlined ? "1" : "0");
-      inlineInfo.close();
+      if (inlined) {
+        ofstream inlineInfo("dgsimplify_continue.txt");
+        inlineInfo << "1";
+        inlineInfo.close();
+      }
 
       return inlined;
     }
@@ -172,7 +174,7 @@ namespace llvm {
 
         if (inlineCall) {
           InlineFunctionInfo IFI;
-          // inlineCall->print(errs() << "Inlining: "); errs() << "\n";
+          inlineCall->print(errs() << "DGSIMPLIFY:   Inlining: "); errs() << "\n";
           if (InlineFunction(inlineCall, IFI)) {
             return true;
           }

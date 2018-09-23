@@ -54,7 +54,7 @@ test.bc: test.cpp
 
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
-	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $(PRE_OPTPASSES) -DGSimplify $@ -o $@
+	@../scripts/iterate_dgsimplify.sh "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)" "$(PRE_OPTPASSES)" "$@"
 	llvm-dis $@
 
 show_passes: test_seq.bc
@@ -64,6 +64,6 @@ show_time: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline $(OPTIMIZED)
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED)
 
 .PHONY: show_passes show_time
