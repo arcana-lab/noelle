@@ -364,18 +364,20 @@ std::set<int> SCCDAGPartition::getRelatedIDs (std::set<DGNode<SCC> *> &sccNodes,
 }
 
 std::set<int> SCCDAGPartition::getSiblingIDs (int subsetID) {
-  auto sccNodes = this->getSCCNodes(subsetID);
-  std::set<int> subsetIDs = this->getAncestorIDs(sccNodes);
-  if (subsetIDs.find(subsetID) != subsetIDs.end()) subsetIDs.erase(subsetID);
-
+  std::set<int> ancIDs = this->getAncestorIDs(subsetID);
+  std::set<int> depIDs = this->getDependentIDs(subsetID);
   std::set<int> neighborIDs;
-  for (auto otherSubsetID : subsetIDs) {
-    auto otherSCCNodes = this->getSCCNodes(otherSubsetID);
-    auto otherSubIDs = this->getDependentIDs(otherSCCNodes);
-    if (otherSubIDs.find(otherSubsetID) != otherSubIDs.end()) otherSubIDs.erase(otherSubsetID);
-    if (otherSubIDs.find(subsetID) != otherSubIDs.end()) otherSubIDs.erase(subsetID);
-    neighborIDs.insert(otherSubIDs.begin(), otherSubIDs.end());
+
+  for (auto ancID : ancIDs) {
+    auto depSubIDs = this->getDependentIDs(ancID);
+    neighborIDs.insert(depSubIDs.begin(), depSubIDs.end());
   }
+  for (auto depID : depIDs) {
+    auto ancSubIDs = this->getAncestorIDs(depID);
+    neighborIDs.insert(ancSubIDs.begin(), ancSubIDs.end());
+  }
+
+  if (neighborIDs.find(subsetID) != neighborIDs.end()) neighborIDs.erase(subsetID);
   return neighborIDs;
 }
 
