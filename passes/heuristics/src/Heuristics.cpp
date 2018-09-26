@@ -128,12 +128,20 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
      * Estimate the current latency for traversing once the pipeline created by the current partition of the SCCDAG.
      */
     uint64_t totalCost = 0;
+    uint64_t totalInstCount = 0;
     std::unordered_map<int, uint64_t> subsetIDToCost;
+    std::unordered_map<int, uint64_t> subsetIDToInstCount;
     for (auto &subset : partition.subsets) {
       auto subsetID = partition.getSubsetID(subset);
-      auto cost = this->latencyPerInvocation(sccdagAttrs, subset->SCCs);
+
+      uint64_t instCount = 0;
+      for (auto scc : subset->SCCs) instCount += scc->numInternalNodes();
+      uint64_t cost = this->latencyPerInvocation(sccdagAttrs, subset->SCCs);
+
+      subsetIDToInstCount[subsetID] = instCount;
       subsetIDToCost[subsetID] = cost;
 
+      totalInstCount += instCount;
       totalCost += cost;
     }
 
@@ -153,18 +161,22 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
      */
     int minSubsetAID = -1;
     int minSubsetBID = -1;
-    int32_t maxLoweredCost = 0;
-    int32_t chosenMergeCost = 0;
+    uint64_t maxLoweredCost = 0;
+    uint64_t minInstCount = totalInstCount;
+    uint64_t chosenMergeCost = 0;
     auto checkIfShouldMerge = [&](int sA, int sB) -> void {
+      // errs() << "Checking to see if can merge " << sA << " with " << sB << "\n";
       if (!partition.canMergeSubsets(sA, sB)) return ;
+      // errs() << "Trying to merge " << sA << " with " << sB << "\n";
 
       /*
        * Determine cost of merge
        */
       auto currentCost = subsetIDToCost[sA] + subsetIDToCost[sB];
+      auto instCount = subsetIDToInstCount[sA] + subsetIDToInstCount[sB];
       auto sccsOfSubsets = partition.sccsOfSubsets(sA, sB);
-      auto mergeCost = this->latencyPerInvocation(sccdagAttrs, sccsOfSubsets);
-      auto loweredCost = currentCost - mergeCost;
+      uint64_t mergeCost = this->latencyPerInvocation(sccdagAttrs, sccsOfSubsets);
+      uint64_t loweredCost = currentCost - mergeCost;
 
       /*
        * Only merge if it doesn't yield an SCC costing more than half the total cost
@@ -175,11 +187,19 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
       /*
        * Only merge if it best lowers cost
        */
+      // errs() << "\twill lower merge by " << loweredCost << "\n";
       if (loweredCost < maxLoweredCost) return ;
 
+      /*
+       * Only merge if it is the smallest of equally cost effective merges
+       */
+      if (loweredCost == maxLoweredCost && minInstCount < instCount) return ;
+
+      // errs() << "\tis current best candidate for merge\n";
       minSubsetAID = sA;
       minSubsetBID = sB;
       maxLoweredCost = loweredCost;
+      minInstCount = instCount;
       chosenMergeCost = mergeCost;
     };
 
@@ -198,6 +218,8 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
        * Check if the current subset has been already tagged to be removed (i.e., merged).
        */
       if (!partition.isValidSubset(subID)) continue ;
+
+      // errs() << "Traversing " << subID << "\n";
 
       /*
        * Check merge criteria on dependents and depth-1 neighbors
@@ -222,13 +244,17 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
      * Merge partition if one is found; reiterate the merge check on it
      */
     if (minSubsetAID != -1) {
+      // errs() << "Merging " << minSubsetAID << " with " << minSubsetBID << "\n";
       auto mergedSubID = partition.mergeSubsets(minSubsetAID, minSubsetBID);
       modified = true;
+      subIDToCheck.push(mergedSubID);
+      alreadyChecked.insert(mergedSubID);
 
       /*
        * Readjust subset cost tracking
        */
       subsetIDToCost[mergedSubID] = chosenMergeCost;
+      subsetIDToInstCount[mergedSubID] = minInstCount;
       totalCost -= maxLoweredCost;
     }
 

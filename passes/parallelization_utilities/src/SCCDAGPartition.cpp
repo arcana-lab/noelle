@@ -51,7 +51,7 @@ raw_ostream &SCCDAGSubset::print (raw_ostream &stream, std::string prefixToUse) 
 
 raw_ostream &SCCDAGPartition::print (raw_ostream &stream, std::string prefixToUse) {
   for (auto &subset : this->subsets) {
-    subset->print(stream << prefixToUse << "Subset:\n", prefixToUse);
+    subset->print(stream << prefixToUse << "Subset " << getSubsetID(subset) << "\n", prefixToUse);
   }
   return stream;
 }
