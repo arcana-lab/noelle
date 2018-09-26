@@ -1,13 +1,26 @@
-This is the template to use for assignments of the Code Analysis and Transformation class at Northwestern
+Helpers: Parallelization, SCCDAGAttrs, SCCDAGPartition, Queue
+Data Structures: LoopDependenceInfo, LoopEnvironment, LoopInfoSummary
 
-To build: 
-  Compile and install your code by invoking ./run_me.sh
-  The script run_me.sh compiles and installs an LLVM-based compiler that includes your CAT in the directory ~/CAT
+Implementation
+  Parallelization
+    Provides utilities for acquiring loops to parallelize, populating
+    data structures used by parallelization techniques, and linking
+    parallelized versions of a loop to the original function
 
-To run:
-  1) Add your compiler cat-c in your PATH (i.e., export PATH=~/CAT/bin:$PATH)
+  SCCDAGAttrs
+    An ad-hoc collection of data structures and helpers that characterize
+    SCC by several criteria:
+      Whether the SCC is Independent, Reducable, or Sequential
+      Whether the SCC is clonable
+      Whether the SCC is composed solely of an IV (induction variable)
+        Whether that IV is "simple", a single PHI, accumulator, and branch
 
-  2) Invoke your compiler to compile a C program. For example
-    $ cat-c program_to_analyse.c -o mybinary
-    $ cat-c -O3 program_to_analyse.c -o mybinary
-    $ cat-c -O0 program_to_analyse.bc -o mybinary
+    NOTE: These analyses of SCC should be formalized and separated out
+
+  SCCDAGPartition
+    A set of helpers for describing subsets (sets of SCCs) of the loop's
+    SCCDAG. Helpers include:
+      Adding, removing, and merging subsets
+      Checking whether a merge is valid
+      Checking post-merge if no cycles exist
+      Removing cycles by means of further merging
