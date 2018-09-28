@@ -133,7 +133,11 @@ int SCCDAGPartition::mergeSubsets (int subsetA, int subsetB) {
 }
 
 bool SCCDAGPartition::canMergeSubsets (int subAID, int subBID) {
-  return !hasAncestor(subAID, subBID) && !hasAncestor(subBID, subAID);
+  // Only allow direct ancestors to merge
+  auto ancA = this->getAncestorIDs(subAID);
+  auto ancB = this->getAncestorIDs(subBID);
+  return (!hasAncestor(subAID, subBID) || (ancA.size() == 1 && ancA.find(subBID) != ancA.end()))
+    && (!hasAncestor(subBID, subAID) || (ancB.size() == 1 && ancB.find(subAID) != ancB.end()));
 }
 
 bool SCCDAGPartition::hasAncestor (int subset, int ancSubset) {
@@ -252,17 +256,14 @@ int SCCDAGPartition::traverseAndCheckToMerge (std::vector<int> &path) {
        * Else, merge the whole cycle contained in our path and return
        */
       if (subIter == path.end()) {
-        // errs() << "Going down further\n";
         std::vector<int> nextPath(path.begin(), path.end());
         nextPath.push_back(subID);
         auto mergedSubID = traverseAndCheckToMerge(nextPath);
-        // errs() << "Went down and came back up\n";
 
         /*
          * Current subset was merged away, so return the newly merged subset
          */
         if (nextPath.size() <= path.size()) {
-          // errs() << "We disappeared\n";
           path.erase(path.begin() + nextPath.size(), path.end());
           path[path.size() - 1] = mergedSubID;
           return mergedSubID;
@@ -276,7 +277,6 @@ int SCCDAGPartition::traverseAndCheckToMerge (std::vector<int> &path) {
           break;
         }
       } else {
-        // errs() << "We merged\n";
         auto newPathEndIter = subIter;
         int mergedSubID = *(subIter++);
         while (subIter != path.end()) {
@@ -286,7 +286,6 @@ int SCCDAGPartition::traverseAndCheckToMerge (std::vector<int> &path) {
         }
         path.erase(newPathEndIter, path.end());
         path.push_back(mergedSubID);
-        // errs() << "Returning merged\n";
         return mergedSubID;
       }
     }
