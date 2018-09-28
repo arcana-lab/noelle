@@ -343,14 +343,14 @@ std::set<int> SCCDAGPartition::getRelatedIDs (std::set<DGNode<SCC> *> &sccNodes,
   for (auto sccNode : sccNodes) {
     auto selfSubsetID = this->subsetIDOfSCC(sccNode->getT());
     std::queue<DGNode<SCC> *> sccToCheck;
-    sccToCheck.push(sccNode);
+    addKinFunc(sccToCheck, sccNode);
     while (!sccToCheck.empty()) {
       auto sccNode = sccToCheck.front();
       sccToCheck.pop();
 
       auto subsetID = this->subsetIDOfSCC(sccNode->getT());
-      if (subsetID != -1 && subsetID != selfSubsetID) {
-        if (relatedIDs.find(subsetID) == relatedIDs.end()) {
+      if (subsetID != -1) {
+        if (subsetID != selfSubsetID) {
           relatedIDs.insert(subsetID);
         }
         continue;
