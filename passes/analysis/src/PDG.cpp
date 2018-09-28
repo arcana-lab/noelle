@@ -14,7 +14,6 @@
 llvm::PDG::PDG() {}
 
 llvm::PDG::~PDG() {
-  //errs() << "Destroying PDG\n";
   for (auto *edge : allEdges)
     if (edge) delete edge;
   for (auto *node : allNodes)

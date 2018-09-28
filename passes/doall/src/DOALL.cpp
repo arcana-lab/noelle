@@ -37,7 +37,7 @@ bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, H
       && !sccInfo->isClonable
       && !LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
       isDOALL = false;
-      scc->print(errs() << "DOALL:   Non clonable, non commutative scc at top level of loop:\n") << "\n";
+      scc->printMinimal(errs() << "DOALL:   Non clonable, non commutative scc at top level of loop:\n", "DOALL:\t") << "\n";
     }
   }
   errs() << "DOALL:   Is it? " << isDOALL << "\n";

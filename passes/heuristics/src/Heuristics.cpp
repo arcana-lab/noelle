@@ -177,9 +177,9 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
     uint64_t minInstCount = totalInstCount;
     uint64_t chosenMergeCost = 0;
     auto checkIfShouldMerge = [&](int sA, int sB) -> void {
-      errs() << "Checking to see if can merge " << sA << " with " << sB << "\n";
+      // errs() << "Checking to see if can merge " << sA << " with " << sB << "\n";
       if (!partition.canMergeSubsets(sA, sB)) return ;
-      errs() << "Trying to merge " << sA << " with " << sB << "\n";
+      // errs() << "Trying to merge " << sA << " with " << sB << "\n";
 
       /*
        * Determine cost of merge

@@ -20,7 +20,7 @@ void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) {
   for (auto &stage : LDI->stages) {
     errs() << "DSWP:    Stage: " << stage->order << "\n";
     for (auto scc : stage->stageSCCs) {
-      scc->print(errs(), "DSWP:     ");
+      scc->print(errs(), "DSWP:     ", /*maxEdges=*/15);
       errs() << "DSWP:    \n" ;
     }
   }

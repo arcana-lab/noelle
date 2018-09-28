@@ -44,13 +44,20 @@ llvm::SCC::~SCC() {
   return ;
 }
 
-raw_ostream &llvm::SCC::print (raw_ostream &stream, std::string prefixToUse) {
+raw_ostream &llvm::SCC::print (raw_ostream &stream, std::string prefixToUse, int maxEdges) {
   stream << prefixToUse << "Internal nodes: " << internalNodeMap.size() << "\n";
   for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
   stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
   for (auto nodePair : externalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
   stream << prefixToUse << "Edges: " << allEdges.size() << "\n";
-  for (auto edge : allEdges) edge->print(stream, prefixToUse + "\t") << "\n";
+  int edgesPrinted = 0;
+  for (auto edge : allEdges) {
+    if (edgesPrinted++ >= maxEdges) {
+      stream << prefixToUse << "\t....\n";
+      break;
+    }
+    edge->print(stream, prefixToUse + "\t") << "\n";
+  }
   return stream;
 }
 

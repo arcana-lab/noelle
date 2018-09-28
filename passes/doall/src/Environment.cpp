@@ -56,7 +56,6 @@ void DOALL::storePostEnvironment (
     auto opIdentity = opToIdentity[firstAccumI->getOpcode()];
     Value *initVal = nullptr;
     Type *accumTy = producer->getType();
-    accumTy->print(errs() << "accum type: "); errs() << "\n";
     if (accumTy->isIntegerTy()) initVal = ConstantInt::get(accumTy, opIdentity);
     if (accumTy->isFloatTy()) initVal = ConstantFP::get(accumTy, (float)opIdentity);
     if (accumTy->isDoubleTy()) initVal = ConstantFP::get(accumTy, (double)opIdentity);
@@ -74,10 +73,6 @@ void DOALL::storePostEnvironment (
     IRBuilder<> chHeaderB(chunker->chHeader);
     chHeaderB.SetInsertPoint(&*chHeaderB.GetInsertBlock()->begin());
     auto accumOuterPHI = chHeaderB.CreatePHI(initVal->getType(), 2);
-
-    producer->print(errs() << "Producer: "); errs() << "\n";
-    accumOuterPHI->print(errs() << "Accum outer phi: "); errs() << "\n";
-    initVal->print(errs() << "Init val: "); errs() << "\n";
 
     accumOuterPHI->addIncoming(initVal, chunker->entryBlock);
     accumOuterPHI->addIncoming(prodClone, innerExitBB);
@@ -127,7 +122,6 @@ void DOALL::reducePostEnvironment (
       accumVal = accumVal 
         ? reduceBuilder.CreateBinOp(binOp, accumVal, reduceVal)
         : reduceVal;
-      accumVal->print(errs() << "Accum val after: "); errs() << "\n";
     }
 
     auto prodPHI = cast<PHINode>(producer);
@@ -157,20 +151,16 @@ Value *DOALL::createEnvArray (
 
   auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
   auto storeEnvAllocaInArray = [&](Value *arr, int envIndex, AllocaInst *alloca) -> void {
-    arr->print(errs() << "Index " << envIndex << ", Array: "); errs() << "\n";
-    alloca->print(errs() << "Alloca "); errs() << "\n";
     auto indValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
     auto envPtr = entryBuilder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ zeroV, indValue }));
     auto depCast = entryBuilder.CreateBitCast(envPtr, PointerType::getUnqual(alloca->getType()));
     auto store = entryBuilder.CreateStore(alloca, depCast);
-    store->print(errs() << "Store "); errs() << "\n\n";
   };
 
   /*
    * Create empty environment array for producers, exit block tracking
    */
   for (auto envIndex : LDI->environment->getPreEnvIndices()) {
-    LDI->environment->producerAt(envIndex)->print(errs() << "Producer "); errs() << "\n";
     Type *envType = LDI->environment->typeOfEnv(envIndex);
     auto varAlloca = entryBuilder.CreateAlloca(envType);
 
@@ -182,7 +172,6 @@ Value *DOALL::createEnvArray (
     parBuilder.CreateStore(LDI->environment->producerAt(envIndex), varAlloca);
   }
   for (auto envIndex : LDI->environment->getPostEnvIndices()) {
-    LDI->environment->producerAt(envIndex)->print(errs() << "Producer "); errs() << "\n";
     auto reduceArrType = ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES);
     auto reduceArrAlloca = entryBuilder.CreateAlloca(reduceArrType);
 

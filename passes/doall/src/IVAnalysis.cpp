@@ -32,11 +32,7 @@ void DOALL::reduceOriginIV (
     chunker->cloneIVInfo.start = startClone;
     chunker->cloneIVInfo.cmpIVTo = endClone;
   } else {
-    errs() << "STEP SIZE BACKWARDS:\n";
-    endClone->print(errs() << "End clone: "); errs() << "\n";
     chunker->cloneIVInfo.start = entryB.CreateAdd(endClone, oneV);
     chunker->cloneIVInfo.cmpIVTo = entryB.CreateAdd(startClone, oneV);
-    chunker->cloneIVInfo.start->print(errs() << "New start: "); errs() << "\n";
-    chunker->cloneIVInfo.cmpIVTo->print(errs() << "New end: "); errs() << "\n";
   }
 }

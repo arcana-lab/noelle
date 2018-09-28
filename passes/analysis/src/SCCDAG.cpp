@@ -56,8 +56,6 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg)
         }
 
         if (!uniqueSCC) continue;
-        // errs() << "This is another unique? SCC:\n";
-        // for (auto node : nodes) node->print(errs()) << "\n";
         auto scc = new SCC(nodes);
         sccDAG->addNode(scc, /*inclusion=*/ true);
       }

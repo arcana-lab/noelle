@@ -439,8 +439,6 @@ bool llvm::PDGAnalysis::edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge) {
     auto funcVal = call->getCalledValue();
     auto funcName = funcVal->getName();
     if (memorylessFunctionNames.find(funcName) != memorylessFunctionNames.end()) {
-      // funcVal->print(errs() << "Func call: "); errs() << "\n";
-      // errs() << "Func name: " << funcVal->getName();
       return true;
     }
     return false;

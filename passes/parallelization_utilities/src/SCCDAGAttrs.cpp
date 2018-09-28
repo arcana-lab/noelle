@@ -170,7 +170,6 @@ bool SCCDAGAttrs::checkSimpleIVEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LI
   auto loop = LIS.bbToLoop[ivInfo.br->getParent()];
   auto brLHSInLoop = loop->bbs.find(ivInfo.br->getSuccessor(0)) != loop->bbs.end();
   auto brRHSInLoop = loop->bbs.find(ivInfo.br->getSuccessor(1)) != loop->bbs.end();
-  errs() << "In LHS: " << brLHSInLoop << ", In RHS: " << brRHSInLoop << "\n";
   if (!(brLHSInLoop ^ brRHSInLoop)) return false;
 
   bool exitOnCmp = !brLHSInLoop;
@@ -183,12 +182,6 @@ bool SCCDAGAttrs::checkSimpleIVEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LI
     abort();
   };
 
-  errs() << "Is CMP IV on LHS: " << ivInfo.isCmpIVLHS << "\n";
-  errs() << "Signed predicate: " << ICmpInst::getPredicateName(signedPred) << "\n";
-  ivInfo.cmp->print(errs() << "Cmp: "); errs() << "\n";
-  ivInfo.br->print(errs() << "Br: "); errs() << "\n";
-  errs() << "Exit on cmp: " << exitOnCmp << "\n";
-  errs() << "step size: " << stepSize << "\n";
   if (!exitOnCmp) { 
     if (stepSize == 1) {
       switch (signedPred) {
@@ -319,7 +312,6 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
   /*
    * Requirement: SCC has no dependent SCCs
    */
-  // scc->printMinimal(errs() << "DOALL:   Checking commutative for scc:\n") << "\n";
   for (auto iNodePair : scc->externalNodePairs()) {
     if (iNodePair.second->numIncomingEdges() == 0) continue ;
     for (auto edge : iNodePair.second->getIncomingEdges()) {
@@ -362,7 +354,6 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
       return false;
     }
   }
-  // errs() << "Single chain formed by side effect free accumulators\n";
 
   /*
    * Requirement: instructions are all Add/Sub or all Mul
@@ -381,7 +372,6 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
     }
   }
 
-  // errs() << "DOALL:   IS reducable\n";
   return this->getSCCAttrs(scc)->isReducable = true;
 }
 

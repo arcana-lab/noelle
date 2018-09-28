@@ -7,23 +7,29 @@ void Parallelizer::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
   /*
    * Print the current SCCDAG.
    */
+  // NOTE(angelo): For the sake of brevity in logging, these have been removed
   if (this->verbose >= Verbosity::Maximal) {
-    errs() << "Parallelizer:  Before merging SCCs\n";
-    printSCCs(LDI->loopSCCDAG);
+    // errs() << "Parallelizer:  Before merging SCCs\n";
+    // printSCCs(LDI->loopSCCDAG);
   }
 
   /*
    * Merge SCCs.
    */
+  // NOTE(angelo): For the sake of brevity in logging, instead of logging
+  // the before and after, which can be VERY verbose, we should just log
+  // each change made by these merge helpers. This would still capture everything
+  // necessary for debugging purposes.
   mergeSingleSyntacticSugarInstrs(LDI);
   mergeBranchesWithoutOutgoingEdges(LDI);
 
   /*
    * Print the current SCCDAG.
    */
+  // NOTE(angelo): For the sake of brevity in logging, these have been removed
   if (this->verbose >= Verbosity::Maximal) {
-    errs() << "Parallelizer:  After merging SCCs\n";
-    printSCCs(LDI->loopSCCDAG);
+    // errs() << "Parallelizer:  After merging SCCs\n";
+    // printSCCs(LDI->loopSCCDAG);
   }
 
   return ;
