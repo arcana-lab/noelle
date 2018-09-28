@@ -20,7 +20,7 @@ namespace llvm {
        */
       uint64_t latencyPerInvocation (SCC *scc);
 
-      uint64_t latencyPerInvocation (SCCDAGAttrs &sccdagAttrs, std::set<SCC *> &sccs);
+      uint64_t latencyPerInvocation (SCCDAGAttrs &sccdagAttrs, std::set<std::set<SCC *> *> &subsets);
 
       uint64_t latencyPerInvocation (Instruction *inst);
 

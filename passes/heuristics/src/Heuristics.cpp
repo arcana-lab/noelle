@@ -12,29 +12,33 @@ uint64_t Heuristics::latencyPerInvocation (SCC *scc){
   return cost;
 }
 
-uint64_t Heuristics::latencyPerInvocation (SCCDAGAttrs &sccdagAttrs, std::set<SCC *> &sccs){
-  int cost = 0;
-  for (auto scc : sccs) {
-    auto &sccInfo = sccdagAttrs.getSCCAttrs(scc);
+uint64_t Heuristics::latencyPerInvocation (SCCDAGAttrs &sccdagAttrs, std::set<std::set<SCC *> *> &subsets){
+  uint64_t maxInternalCost = 0;
+  std::set<Value *> queueValues;
+  for (auto sccs : subsets) {
+    for (auto scc : *sccs) {
+      auto &sccInfo = sccdagAttrs.getSCCAttrs(scc);
 
-    /*
-     * Collect scc internal information 
-     */
-    cost += sccInfo->internalCost;
+      /*
+       * Collect scc internal information 
+       */
+      auto internalCost = sccInfo->internalCost;
+      if (internalCost > maxInternalCost) maxInternalCost = sccInfo->internalCost;
 
-    /*
-     * Collect scc external cost (through edges)
-     */
-    std::set<Value *> incomingEdges;
-    for (auto &sccEdgesPair : sccInfo->sccToEdgeInfo) {
-      if (sccs.find(sccEdgesPair.first) != sccs.end()) continue;
-      auto &edges = sccEdgesPair.second->edges;
-      incomingEdges.insert(edges.begin(), edges.end());
+      /*
+       * Collect scc external cost (through edges)
+       */
+      for (auto &sccEdgesPair : sccInfo->sccToEdgeInfo) {
+        if (sccs->find(sccEdgesPair.first) != sccs->end()) continue;
+        auto &edges = sccEdgesPair.second->edges;
+        queueValues.insert(edges.begin(), edges.end());
+      }
     }
+  }
 
-    for (auto edgeVal : incomingEdges) {
-      cost += this->queueLatency(edgeVal);
-    }
+  uint64_t cost = maxInternalCost;
+  for (auto queueVal : queueValues) {
+    cost += this->queueLatency(queueVal);
   }
   return cost;
 }
@@ -54,7 +58,14 @@ uint64_t Heuristics::latencyPerInvocation (Instruction *inst){
   /*
    * Estimate the latency of the instruction.
    */
-  auto latency = 1;
+  uint64_t latency;
+  if (isa<StoreInst>(inst) || isa<LoadInst>(inst)) {
+    latency = 10;
+  } else if (isa<TerminatorInst>(inst)) {
+    latency = 5;
+  } else {
+    latency = 1;
+  }
 
   /*
    * Handle call instructions.
@@ -98,7 +109,7 @@ uint64_t Heuristics::latencyPerInvocation (Instruction *inst){
       }
 
     } else {
-      calleeLatency = 10;
+      calleeLatency = 50;
     }
 
     /*
@@ -136,7 +147,8 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
 
       uint64_t instCount = 0;
       for (auto scc : subset->SCCs) instCount += scc->numInternalNodes();
-      uint64_t cost = this->latencyPerInvocation(sccdagAttrs, subset->SCCs);
+      std::set<std::set<SCC *> *> subsets = { &subset->SCCs };
+      uint64_t cost = this->latencyPerInvocation(sccdagAttrs, subsets);
 
       subsetIDToInstCount[subsetID] = instCount;
       subsetIDToCost[subsetID] = cost;
@@ -165,17 +177,20 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
     uint64_t minInstCount = totalInstCount;
     uint64_t chosenMergeCost = 0;
     auto checkIfShouldMerge = [&](int sA, int sB) -> void {
-      // errs() << "Checking to see if can merge " << sA << " with " << sB << "\n";
+      errs() << "Checking to see if can merge " << sA << " with " << sB << "\n";
       if (!partition.canMergeSubsets(sA, sB)) return ;
-      // errs() << "Trying to merge " << sA << " with " << sB << "\n";
+      errs() << "Trying to merge " << sA << " with " << sB << "\n";
 
       /*
        * Determine cost of merge
        */
       auto currentCost = subsetIDToCost[sA] + subsetIDToCost[sB];
       auto instCount = subsetIDToInstCount[sA] + subsetIDToInstCount[sB];
-      auto sccsOfSubsets = partition.sccsOfSubsets(sA, sB);
-      uint64_t mergeCost = this->latencyPerInvocation(sccdagAttrs, sccsOfSubsets);
+      std::set<std::set<SCC *> *> subsets = {
+        &(partition.subsetOfID(sA)->SCCs),
+        &(partition.subsetOfID(sB)->SCCs)
+      };
+      uint64_t mergeCost = this->latencyPerInvocation(sccdagAttrs, subsets);
       uint64_t loweredCost = currentCost - mergeCost;
 
       /*
@@ -187,7 +202,6 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
       /*
        * Only merge if it best lowers cost
        */
-      // errs() << "\twill lower merge by " << loweredCost << "\n";
       if (loweredCost < maxLoweredCost) return ;
 
       /*
@@ -195,7 +209,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
        */
       if (loweredCost == maxLoweredCost && minInstCount < instCount) return ;
 
-      // errs() << "\tis current best candidate for merge\n";
+      // errs() << "\twill lower merge by " << loweredCost << "\n";
       minSubsetAID = sA;
       minSubsetBID = sB;
       maxLoweredCost = loweredCost;
@@ -219,7 +233,7 @@ void Heuristics::adjustParallelizationPartitionForDSWP (SCCDAGPartition &partiti
        */
       if (!partition.isValidSubset(subID)) continue ;
 
-      // errs() << "Traversing " << subID << "\n";
+      // errs() << "\nTraversing " << subID << "\n";
 
       /*
        * Check merge criteria on dependents and depth-1 neighbors
