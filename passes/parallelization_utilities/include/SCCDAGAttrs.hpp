@@ -96,25 +96,28 @@ namespace llvm {
       std::set<SCC *> clonableSCCs;
 
       /*
-       * Methods
+       * Methods related to a single SCC.
        */
-      bool executesCommutatively (SCC *scc);
-      bool executesIndependently (SCC *scc);
+      //SIMONE: all questions should be marked "const"
+      bool executesCommutatively (SCC *scc); //SIMONE: it should be a question: canInvocationsExecuteCommutatively
+      bool executesIndependently (SCC *scc); //SIMONE: it should be a question: canInvocationsExecuteIndependently
       bool canBeCloned (SCC *scc);
       bool isInductionVariableSCC (SCC *scc);
-      std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
-
-      bool loopHasInductionVariable ();
       bool isSCCContainedInSubloop (LoopInfoSummary &LIS, SCC *scc) const ;
-      bool allPostLoopEnvValuesAreReducable (LoopEnvironment *env) const ;
-
       std::set<BasicBlock *> & getBasicBlocks (SCC *scc);
+      std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc); // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
 
+      /*
+       * Methods related to a set of SCCs.
+       */
       int getSCCSubsetCost (std::set<SCC *> &sccs);
 
-      // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
-      std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc);
-
+      /*
+       * Methods related to the whole loop.
+       */
+      std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
+      bool loopHasInductionVariable (); //SIMONE: it should be a question
+      bool allPostLoopEnvValuesAreReducable (LoopEnvironment *env) const ; //SIMONE: it should be a question
       void populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvolution &SE);
 
     private:
@@ -127,7 +130,6 @@ namespace llvm {
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);
       bool checkIfClonableByInductionVars (SCC *scc);
       bool checkIfClonableBySyntacticSugarInstrs (SCC *scc);
-
       std::unordered_map<SCC *, std::unique_ptr<SCCAttrs>> sccToInfo;
   };
 }
