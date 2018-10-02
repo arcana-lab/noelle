@@ -31,3 +31,13 @@
 
 - Create a new pass to map memory locations to variables as much as possible
   This removes the overly conservative memory loop-carried data dependences
+
+
+Task log - Angelo
+  - investigate failure to parallelize streamcluster doall loops / RedIters2
+  - investigate failure of load-store backedge removal heuristic
+  - do not inline calls to the function inlining within
+  - min-max partition heuristic
+  - extract environment construction from DSWP and DOALL
+  - clean up analysis classes (SCCDAGAttrs, SimpleIVInfo, ...)
+  - write performance tests (~40 secs baseline length, use time, awk, measure speedup: base/par)
