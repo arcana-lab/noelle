@@ -3,6 +3,8 @@
 
 - Reconsider all abstractions (e.g., do we need all LoopSummary, LoopInfoSummary, and LoopDependenceInfo? do we need SCCEdgeInfo?)
 
+- Create a "Dependence" abstraction, which is DG<Value>
+  - have methods like "getSource(), getDestination(), isMemoryBased()"
 
 ==== AUTOTUNER
 - Extend the autotuner to decide #threads per loop
