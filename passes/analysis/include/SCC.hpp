@@ -18,8 +18,6 @@ namespace llvm {
 
         SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
 
-        ~SCC() ;
-
         raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "", int maxEdges = 15) ;
         raw_ostream &printMinimal (raw_ostream &stream, std::string prefixToUse = "") ;
 
@@ -28,6 +26,8 @@ namespace llvm {
         SCCType getType (void) const;
 
         void setType (SCCType t);
+
+        ~SCC() ;
 
       private:
         SCCType sccType;

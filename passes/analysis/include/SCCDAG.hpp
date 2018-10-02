@@ -29,6 +29,8 @@ namespace llvm {
 
       SCCDAG() ;
 
+      //SIMONE: it would be fantastic to have a method like "getAllSCCsWithNoInternalIncomingEdges"
+
       void mergeSCCs(std::set<DGNode<SCC> *> &sccSet);
 
       std::set<DGNode<SCC> *> previousDepthNodes(DGNode<SCC> *node) const;
