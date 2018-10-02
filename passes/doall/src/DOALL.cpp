@@ -33,6 +33,8 @@ bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, H
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
     auto &sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    // SIMONE: I'm not sure the following condition is correct.
+    // For example, a loop with a commutative SCC cannot be parallelized by DOALL.
     if (scc->getType() != SCC::SCCType::COMMUTATIVE
       && !sccInfo->isClonable
       && !LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
