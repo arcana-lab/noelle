@@ -9,7 +9,7 @@ RUNTIME_CFLAGS=""
 PARALLELIZATION_OPTIONS=-dswp-verbose=3 -dswp-force
 OPT_LEVEL=-O3
 
-INCLUDES=-I../include/threadpool/include
+INCLUDES=-I../../include/threadpool/include
 THREADER=Parallelizer_utils
 OPTIMIZED=parallelized
 
@@ -54,7 +54,7 @@ test.bc: test.cpp
 
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
-	@../scripts/iterate_dgsimplify.sh "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)" "$(PRE_OPTPASSES)" "$@"
+	@../../scripts/iterate_dgsimplify.sh "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)" "$(PRE_OPTPASSES)" "$@"
 	llvm-dis $@
 
 show_passes: test_seq.bc

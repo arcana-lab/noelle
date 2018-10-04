@@ -6,14 +6,9 @@ function runningTests {
   local checked_tests=0 ;
   local passed_tests=0 ;
   local dirs_of_failed_tests="" ;
+  
   for i in `ls`; do
     if ! test -d $i ; then
-      continue ;
-    fi
-    if test $i == "scripts" ; then
-      continue ;
-    fi
-    if test $i == "include" ; then
       continue ;
     fi
     checked_tests=`echo "$checked_tests + 1" | bc` ;
@@ -55,8 +50,10 @@ function runningTests {
   echo "" ;
 }
 
+cd regression ;
 runningTests "Testing with \"-dswp-force -dswp-no-scc-merge\"" "-dswp-verbose=3 -dswp-force -dswp-no-scc-merge" ;
 runningTests "Testing with \"-dswp-force\"" "-dswp-verbose=3 -dswp-force" ;
 runningTests "Testing the default configuration" "-dswp-verbose=3" ;
+cd ../ ;
 
 exit 0;

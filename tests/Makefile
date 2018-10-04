@@ -1,5 +1,10 @@
-all: download
-	./scripts/test.sh
+all: regression performance
+
+regression: download
+	./scripts/test_regression.sh ;
+
+performance: download
+	./scripts/test_performance.sh ;
 
 download:
 	mkdir -p include ; cd include ; ../scripts/download.sh "/project/marc/repositories/threadpool" ;
