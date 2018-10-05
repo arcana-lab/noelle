@@ -36,9 +36,6 @@
 
 
 Task log - Angelo
-  - investigate failure to parallelize streamcluster doall loops / RedIters2
-  - investigate failure of load-store backedge removal heuristic
-  - do not inline calls to the function inlining within
   - min-max partition heuristic
   - extract environment construction from DSWP and DOALL
   - clean up analysis classes (SCCDAGAttrs, SimpleIVInfo, ...)
