@@ -21,3 +21,8 @@ function cleanTests {
 
 cleanTests regression
 cleanTests performance
+
+# Remove speedup info on performance tests
+cd performance ;
+rm -f *.txt ;
+cd ../ ;

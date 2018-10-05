@@ -11,7 +11,7 @@ function runningTests {
 
     # Go to the test directory
     cd $i ;
-    echo "   Testing `basename $i` " ;
+    echo -e " Testing `basename $i` " ;
 
     # Clean
     # echo "   Make clean " ;
@@ -23,8 +23,8 @@ function runningTests {
 
     # Capture output only
     # echo "   Small run " ;
-    ./baseline 10 &> output_baseline.txt
-    ./parallelized 10 &> output_parallelized.txt
+    ./baseline 10 &> output_baseline.txt ;
+    ./parallelized 10 &> output_parallelized.txt ;
 
     # Check the output to confirm correctness before measuring performance
     cmp output_baseline.txt output_parallelized.txt &> /dev/null ;
@@ -33,24 +33,31 @@ function runningTests {
       return 1 ;
     fi
 
-    # Capture times
-    # echo "   Running baseline " ;
-    { time ./baseline 1000 ; } &> time_baseline.txt
-    # echo "   Running performance " ;
-    { time ./parallelized 1000 ; } &> time_parallelized.txt
+    # Read input for arguments to performance runs
+    local ARGS=$(< perf_args.info) ;
 
-    local MATCHER="/real\t(.*)m(.*)s/"
-    local PRINTER="{ print a[1] * 60 + a[2] }"
-    local GAWK_CMD=" match(\$0, ${MATCHER}, a) ${PRINTER} "
+    # Capture times
+    echo -e "  Running baseline " ;
+    { time ./baseline $ARGS ; } &> time_baseline.txt ;
+    echo -e "  Running performance " ;
+    { time ./parallelized $ARGS ; } &> time_parallelized.txt ;
+
+    local MATCHER="/real\t(.*)m(.*)s/" ;
+    local PRINTER="{ print a[1] * 60 + a[2] }" ;
+    local GAWK_CMD=" match(\$0, ${MATCHER}, a) ${PRINTER} " ;
 
     local BASE=$(gawk "$GAWK_CMD" time_baseline.txt) ;
     local PAR=$(gawk "$GAWK_CMD" time_parallelized.txt) ;
 
-    echo -ne "$i\\t" >> $3
-    echo $(bc <<< " scale=3; $BASE / $PAR ") >> $3 ;
-
     cd ../ ;
+
+    echo -ne "$i\\t" >> $3 ;
+    local SPEEDUP=$(bc <<< " scale=3; $BASE / $PAR ") ;
+    echo -e "  Speedup: $SPEEDUP" ;
+    echo $SPEEDUP >> $3 ;
   done
+
+  echo "Done"
 }
 
 cd performance ;
