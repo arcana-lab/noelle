@@ -122,9 +122,6 @@ namespace llvm {
         auto &attrs = LDI->sccdagAttrs;
         attrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
 
-        int64_t maxMemEdges = 0;
-        CallInst *inlineCall = nullptr;
-
         std::set<SCC *> sccsToCheck;
         for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
           auto scc = sccNode->getT();
@@ -146,12 +143,21 @@ namespace llvm {
          */
         if (sccsToCheck.size() > 2) continue;
 
+        int64_t maxMemEdges = 0;
+        CallInst *inlineCall = nullptr;
+
         for (auto scc : sccsToCheck) {
           for (auto valNode : scc->getNodes()) {
             auto val = valNode->getT();
             if (auto call = dyn_cast<CallInst>(val)) {
               auto callF = call->getCalledFunction();
               if (!callF || callF->empty()) continue;
+              
+              /*
+               * NOTE(angelo): Do not consider inlining a recursive function call
+               */
+              errs() << "DGSimplify:   BINGO:   Call F == F: " << (callF == &F) << "\n";
+              if (callF == &F) continue;
 
               auto memEdgeCount = 0;
               for (auto edge : valNode->getAllConnectedEdges()) {
