@@ -1,1 +1,16 @@
+# dependencies
 threadpool
+
+# test output
+tests/regression/**/*.bc
+tests/performance/**/*.bc
+tests/regression/**/*.ll
+tests/performance/**/*.ll
+tests/regression/**/*.txt
+tests/performance/**/*.txt
+
+# linked files for testing
+tests/regression/**/Parallelizer_utils.cpp
+tests/performance/**/Parallelizer_utils.cpp
+tests/regression/**/Makefile
+tests/performance/**/Makefile
