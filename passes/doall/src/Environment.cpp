@@ -141,6 +141,7 @@ void DOALL::reducePostEnvironment (
   }
 }
 
+/*
 Value *DOALL::createEnvArray (
   LoopDependenceInfo *LDI,
   Parallelization &par,
@@ -157,18 +158,12 @@ Value *DOALL::createEnvArray (
     auto store = entryBuilder.CreateStore(alloca, depCast);
   };
 
-  /*
-   * Create empty environment array for producers, exit block tracking
-   */
   for (auto envIndex : LDI->environment->getPreEnvIndices()) {
     Type *envType = LDI->environment->typeOfEnv(envIndex);
     auto varAlloca = entryBuilder.CreateAlloca(envType);
 
     storeEnvAllocaInArray(LDI->envArray, envIndex, varAlloca);
 
-    /*
-     * Insert pre-loop producers into the environment array
-     */
     parBuilder.CreateStore(LDI->environment->producerAt(envIndex), varAlloca);
   }
   for (auto envIndex : LDI->environment->getPostEnvIndices()) {
@@ -187,4 +182,4 @@ Value *DOALL::createEnvArray (
   
   return cast<Value>(parBuilder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
 }
-
+*/

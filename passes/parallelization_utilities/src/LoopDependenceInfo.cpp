@@ -47,6 +47,7 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
 	l->getExitBlocks(loopExitBlocks);
 
   environment = new LoopEnvironment(this->loopDG, this->loopExitBlocks);
+  envBuilder = new EnvBuilder(this->environment);
 
   return ;
 };
@@ -60,6 +61,7 @@ llvm::LoopDependenceInfo::~LoopDependenceInfo() {
   delete loopInternalDG;
   delete loopSCCDAG;
   delete environment;
+  delete envBuilder;
 
   return ;
 }

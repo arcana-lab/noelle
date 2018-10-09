@@ -81,17 +81,19 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
-  // TODO Check all of these after refactoring
-  auto firstBB = &*LDI->function->begin();
-  IRBuilder<> entryBuilder(firstBB->getTerminator());
-  LDI->envArray = entryBuilder.CreateAlloca(LDI->envArrayType);
-
   auto &cxt = LDI->function->getContext();
   LDI->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
   LDI->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
   IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
 
-  auto envPtr = createEnvArray(LDI, par, chunker, entryBuilder, doallBuilder);
+  LDI->envBuilder->createEnvArray(doallBuilder);
+  const preEnvRange = LDI->environment->getPreEnvIndices();
+  const postEnvRange = LDI->environment->getPostEnvIndices();
+  std::set<int> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
+  std::set<int> reducableVars(postEnvRange.begin(), postEnvRange.end());
+  LDI->envBuilder->allocateEnvVariables(builder, nonReducableVars, reducableVars, NUM_CORES);
+  auto envPtr = LDI->envBuilder->getEnvArrayInt8Ptr();
+
   // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic
   auto numCores = ConstantInt::get(par.int64, NUM_CORES);
   auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);

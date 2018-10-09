@@ -125,29 +125,33 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
   auto M = LDI->function->getParent();
 
   /*
-   * Allocate the memory where pointers to variables will be stored.
-   * These variables are those involved in dependences from code outside the loop to inside it.
-   * Such variables are read by code inside the loop and updated just after the execution of the parallelized loop and before jumping to the code outside the loop.
-   */
-  auto firstBB = &*LDI->function->begin();
-  IRBuilder<> funcBuilder(firstBB->getTerminator());
-  LDI->envArray = funcBuilder.CreateAlloca(LDI->envArrayType);
-
-  /*
    * Create a basic block in the original function where the parallelized loop exists.
    * This basic block will include code needed to execute the parallelized loop.
    */
   LDI->entryPointOfParallelizedLoop = BasicBlock::Create(M->getContext(), "", LDI->function);
   LDI->exitPointOfParallelizedLoop = LDI->entryPointOfParallelizedLoop;
   IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
-  auto envPtr = createEnvArrayFromStages(LDI, funcBuilder, builder, par);
-  auto stagesPtr = createStagesArrayFromStages(LDI, funcBuilder, par);
+
+  /*
+   * Allocate the environment
+   */
+  LDI->envBuilder->createEnvArray(builder);
+  std::set<int> nonReducableVars;
+  std::set<int> reducableVars;
+  for (auto i = 0; i < LDI->environment->envSize(); ++i) nonReducableVars.insert(i);
+  LDI->envBuilder->allocateEnvVariables(builder, nonReducableVars, reducableVars, 0);
+  auto envPtr = LDI->envBuilder->getEnvArrayInt8Ptr();
+
+  /*
+   * Reference the stages in an array
+   */
+  auto stagesPtr = createStagesArrayFromStages(LDI, builder, par);
 
   /*
    * Allocate an array of integers.
    * Each integer represents the bitwidth of each queue that connects pipeline stages.
    */
-  auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, funcBuilder, par);
+  auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, builder, par);
 
   /*
    * Call the stage dispatcher with the environment, queues array, and stages array
@@ -166,4 +170,53 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
   storeOutgoingDependentsIntoExternalValues(LDI, builder, par);
 
   return ;
+}
+
+/*
+Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par) {
+
+  std::vector<Value*> envPtrs;
+  for (int i = 0; i < LDI->environment->envSize(); ++i) {
+    Type *envType = LDI->environment->typeOfEnv(i);
+    auto varAlloca = funcBuilder.CreateAlloca(envType);
+    envPtrs.push_back(varAlloca);
+    auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
+    auto envPtr = funcBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
+    auto depCast = funcBuilder.CreateBitCast(envPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
+    funcBuilder.CreateStore(varAlloca, depCast);
+  }
+
+  for (int envIndex : LDI->environment->getPreEnvIndices()) {
+    builder.CreateStore(LDI->environment->producerAt(envIndex), envPtrs[envIndex]);
+  }
+  
+  return cast<Value>(builder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
+}
+*/
+
+Value * DSWP::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
+  auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->stageArrayType));
+  auto stageCastType = PointerType::getUnqual(LDI->stages[0]->sccStage->getType());
+  for (int i = 0; i < LDI->stages.size(); ++i) {
+    auto &stage = LDI->stages[i];
+    auto stageIndex = cast<Value>(ConstantInt::get(par.int64, i));
+    auto stagePtr = funcBuilder.CreateInBoundsGEP(stagesAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, stageIndex }));
+    auto stageCast = funcBuilder.CreateBitCast(stagePtr, stageCastType);
+    funcBuilder.CreateStore(stage->sccStage, stageCast);
+  }
+
+  return cast<Value>(funcBuilder.CreateBitCast(stagesAlloca, PointerType::getUnqual(par.int8)));
+}
+
+Value * DSWP::createQueueSizesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
+  auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(par.int64, LDI->queues.size())));
+  for (int i = 0; i < LDI->queues.size(); ++i) {
+    auto &queue = LDI->queues[i];
+    auto queueIndex = cast<Value>(ConstantInt::get(par.int64, i));
+    auto queuePtr = funcBuilder.CreateInBoundsGEP(queuesAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, queueIndex }));
+    auto queueCast = funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(par.int64));
+    funcBuilder.CreateStore(ConstantInt::get(par.int64, queue->bitLength), queueCast);
+  }
+
+  return cast<Value>(funcBuilder.CreateBitCast(queuesAlloca, PointerType::getUnqual(par.int64)));
 }

@@ -7,6 +7,7 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Support/raw_ostream.h"
 #include "LoopEnvironment.hpp"
+#include "EnvBuilder.hpp"
 
 using namespace std;
 
@@ -52,8 +53,7 @@ namespace llvm {
     /*
      * Parallelized loop
      */
-    Value *envArray;
-    ArrayType *envArrayType;
+    EnvBuilder *envBuilder;
     BasicBlock *entryPointOfParallelizedLoop;
     BasicBlock *exitPointOfParallelizedLoop;
 
