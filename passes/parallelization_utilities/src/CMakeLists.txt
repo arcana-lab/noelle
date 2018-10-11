@@ -1,5 +1,6 @@
 # Sources
 set(Srcs 
+  EnvBuilder.cpp
   LoopEnvironment.cpp
   SCCDAGAttrs.cpp
   LoopDependenceInfo.cpp

@@ -87,11 +87,11 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
 
   LDI->envBuilder->createEnvArray(doallBuilder);
-  const preEnvRange = LDI->environment->getPreEnvIndices();
-  const postEnvRange = LDI->environment->getPostEnvIndices();
+  auto preEnvRange = LDI->environment->getPreEnvIndices();
+  auto postEnvRange = LDI->environment->getPostEnvIndices();
   std::set<int> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
   std::set<int> reducableVars(postEnvRange.begin(), postEnvRange.end());
-  LDI->envBuilder->allocateEnvVariables(builder, nonReducableVars, reducableVars, NUM_CORES);
+  LDI->envBuilder->allocateEnvVariables(doallBuilder, nonReducableVars, reducableVars, NUM_CORES);
   auto envPtr = LDI->envBuilder->getEnvArrayInt8Ptr();
 
   // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic

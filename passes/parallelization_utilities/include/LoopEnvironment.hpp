@@ -7,6 +7,8 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 
+#include "PDG.hpp"
+
 namespace llvm {
 
   class LoopEnvironment {

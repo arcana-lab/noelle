@@ -67,7 +67,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
     LDI->preHeader,
     LDI->entryPointOfParallelizedLoop,
     LDI->exitPointOfParallelizedLoop,
-    LDI->envArray,
+    LDI->envBuilder->getEnvArray(),
     exitIndex,
     LDI->loopExitBlocks
   );

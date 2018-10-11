@@ -5,23 +5,13 @@ void DOALL::reproducePreEnv (
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
-
+  auto envUser = LDI->envBuilder->getUser(0);
   IRBuilder<> entryB(chunker->entryBlock);
   for (auto envInd : LDI->environment->getPreEnvIndices()) {
+    envUser->createEnvPtr(entryB, envInd);
+    auto envLoad = entryB.CreateLoad(envUser->getEnvPtr(envInd));
     auto producer = LDI->environment->producerAt(envInd);
-    auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
-    auto envPtr = entryB.CreateInBoundsGEP(
-      LDI->envArray,
-      ArrayRef<Value*>({
-        cast<Value>(ConstantInt::get(par.int64, 0)),
-        envIndV
-      })
-    );
-    auto prodPtr = entryB.CreateBitCast(
-      entryB.CreateLoad(envPtr),
-      PointerType::getUnqual(producer->getType())
-    );
-    chunker->preEnvMap[producer] = cast<Value>(entryB.CreateLoad(prodPtr));
+    chunker->preEnvMap[producer] = cast<Value>(envLoad);
   }
 }
 
@@ -30,24 +20,14 @@ void DOALL::storePostEnvironment (
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
-
+  auto envUser = LDI->envBuilder->getUser(0);
   IRBuilder<> entryB(chunker->entryBlock->getTerminator());
-  auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
+    envUser->createReducableEnvPtr(entryB, envInd, NUM_CORES, chunker->coreArgVal);
+    auto envPtr = envUser->getEnvPtr(envInd);
+
     auto producer = LDI->environment->producerAt(envInd);
     assert(isa<PHINode>(producer));
-
-    auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
-    auto envPtr = entryB.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ zeroV, envIndV }));
-    auto reduceArr = entryB.CreateBitCast(
-      entryB.CreateLoad(envPtr),
-      PointerType::getUnqual(ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES))
-    );
-    auto reduceArrPtr = entryB.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ zeroV, chunker->coreArgVal }));
-    auto reducePtr = entryB.CreateBitCast(
-      entryB.CreateLoad(reduceArrPtr),
-      PointerType::getUnqual(producer->getType())
-    );
 
     // Ignore initial value of accumulation PHI, use binary op's identity value
     auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
@@ -60,13 +40,13 @@ void DOALL::storePostEnvironment (
     if (accumTy->isFloatTy()) initVal = ConstantFP::get(accumTy, (float)opIdentity);
     if (accumTy->isDoubleTy()) initVal = ConstantFP::get(accumTy, (double)opIdentity);
     assert(initVal != nullptr);
-    entryB.CreateStore(initVal, reducePtr);
+    entryB.CreateStore(initVal, envPtr);
 
     // Store final value of accumulation PHI
     auto prodClone = cast<PHINode>(chunker->innerValMap[(Instruction*)producer]);
     auto innerExitBB = chunker->innerBBMap[LDI->loopExitBlocks[0]];
     IRBuilder<> exitingBuilder(innerExitBB->getTerminator());
-    exitingBuilder.CreateStore(prodClone, reducePtr);
+    exitingBuilder.CreateStore(prodClone, envPtr);
 
     // Consolidate accumulator in outer loop
     auto initValPHIIndex = prodClone->getBasicBlockIndex(chunker->innerBBMap[LDI->preHeader]);
@@ -86,42 +66,21 @@ void DOALL::reducePostEnvironment (
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
-
   auto &cxt = LDI->function->getContext();
   IRBuilder<> reduceBuilder(LDI->exitPointOfParallelizedLoop);
 
-  auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
     auto producer = LDI->environment->producerAt(envInd);
-    auto envIndV = cast<Value>(ConstantInt::get(par.int64, envInd));
-    auto envPtr = reduceBuilder.CreateInBoundsGEP(
-      LDI->envArray,
-      ArrayRef<Value*>({ zeroV, envIndV })
-    );
-    auto ptrTy_int8 = PointerType::getUnqual(par.int8);
-    auto reduceArr = reduceBuilder.CreateBitCast(
-      reduceBuilder.CreateLoad(envPtr),
-      PointerType::getUnqual(ArrayType::get(ptrTy_int8, NUM_CORES))
-    );
-
     auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
     auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->PHIAccumulators.begin());
     auto binOpCode = firstAccumI->getOpcode();
     binOpCode = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
     auto binOp = (Instruction::BinaryOps)binOpCode;
 
-    Value *accumVal = nullptr;
-    for (auto i = 0; i < NUM_CORES; ++i) {
-      auto indVal = cast<Value>(ConstantInt::get(par.int64, i));
-      auto reduceArrPtr = reduceBuilder.CreateInBoundsGEP(reduceArr, ArrayRef<Value*>({ zeroV, indVal }));
-      auto reducePtr = reduceBuilder.CreateBitCast(
-        reduceBuilder.CreateLoad(reduceArrPtr),
-        PointerType::getUnqual(producer->getType())
-      );
-      auto reduceVal = reduceBuilder.CreateLoad(reducePtr);
-      accumVal = accumVal 
-        ? reduceBuilder.CreateBinOp(binOp, accumVal, reduceVal)
-        : reduceVal;
+    Value *accumVal = reduceBuilder.CreateLoad(LDI->envBuilder->getReducableEnvVar(envInd, 0));
+    for (auto i = 1; i < NUM_CORES; ++i) {
+      auto envVar = reduceBuilder.CreateLoad(LDI->envBuilder->getReducableEnvVar(envInd, i));
+      accumVal = reduceBuilder.CreateBinOp(binOp, accumVal, envVar);
     }
 
     auto prodPHI = cast<PHINode>(producer);
@@ -140,46 +99,3 @@ void DOALL::reducePostEnvironment (
     }
   }
 }
-
-/*
-Value *DOALL::createEnvArray (
-  LoopDependenceInfo *LDI,
-  Parallelization &par,
-  std::unique_ptr<ChunkerInfo> &chunker,
-  IRBuilder<> entryBuilder,
-  IRBuilder<> parBuilder
-) {
-
-  auto zeroV = cast<Value>(ConstantInt::get(par.int64, 0));
-  auto storeEnvAllocaInArray = [&](Value *arr, int envIndex, AllocaInst *alloca) -> void {
-    auto indValue = cast<Value>(ConstantInt::get(par.int64, envIndex));
-    auto envPtr = entryBuilder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ zeroV, indValue }));
-    auto depCast = entryBuilder.CreateBitCast(envPtr, PointerType::getUnqual(alloca->getType()));
-    auto store = entryBuilder.CreateStore(alloca, depCast);
-  };
-
-  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
-    Type *envType = LDI->environment->typeOfEnv(envIndex);
-    auto varAlloca = entryBuilder.CreateAlloca(envType);
-
-    storeEnvAllocaInArray(LDI->envArray, envIndex, varAlloca);
-
-    parBuilder.CreateStore(LDI->environment->producerAt(envIndex), varAlloca);
-  }
-  for (auto envIndex : LDI->environment->getPostEnvIndices()) {
-    auto reduceArrType = ArrayType::get(PointerType::getUnqual(par.int8), NUM_CORES);
-    auto reduceArrAlloca = entryBuilder.CreateAlloca(reduceArrType);
-
-    storeEnvAllocaInArray(LDI->envArray, envIndex, reduceArrAlloca);
-
-    Type *envType = LDI->environment->typeOfEnv(envIndex);
-    for (auto i = 0; i < NUM_CORES; ++i) {
-      auto varAlloca = entryBuilder.CreateAlloca(envType);
-
-      storeEnvAllocaInArray(reduceArrAlloca, i, varAlloca);
-    }
-  }
-  
-  return cast<Value>(parBuilder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
-}
-*/

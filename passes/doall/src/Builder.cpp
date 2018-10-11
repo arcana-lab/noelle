@@ -41,15 +41,13 @@ std::unique_ptr<ChunkerInfo> DOALL::createChunkingFuncAndArgs (
   /*
    * Create environment context within chunking function
    */
-  LDI->envArrayType = ArrayType::get(
-    ptrTy_int8,
-    LDI->environment->envSize()
-  );
+  LDI->envBuilder->createEnvUsers(1);
+  auto envUser = LDI->envBuilder->getUser(0);
   IRBuilder<> entryB(chunker->entryBlock);
-  LDI->envArray = entryB.CreateBitCast(
+  envUser->setEnvArray(entryB.CreateBitCast(
     chunker->envArgVal,
-    PointerType::getUnqual(LDI->envArrayType)
-  );
+    PointerType::getUnqual(LDI->envBuilder->getEnvArrayTy())
+  ));
 
   return chunker;
 }

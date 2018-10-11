@@ -140,6 +140,14 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
   std::set<int> reducableVars;
   for (auto i = 0; i < LDI->environment->envSize(); ++i) nonReducableVars.insert(i);
   LDI->envBuilder->allocateEnvVariables(builder, nonReducableVars, reducableVars, 0);
+
+  /*
+   * Insert pre-loop producers into the environment array
+   */
+  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
+    auto store = builder.CreateStore(LDI->environment->producerAt(envIndex), LDI->envBuilder->getEnvVar(envIndex));
+  }
+
   auto envPtr = LDI->envBuilder->getEnvArrayInt8Ptr();
 
   /*
@@ -171,28 +179,6 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
 
   return ;
 }
-
-/*
-Value * DSWP::createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par) {
-
-  std::vector<Value*> envPtrs;
-  for (int i = 0; i < LDI->environment->envSize(); ++i) {
-    Type *envType = LDI->environment->typeOfEnv(i);
-    auto varAlloca = funcBuilder.CreateAlloca(envType);
-    envPtrs.push_back(varAlloca);
-    auto envIndex = cast<Value>(ConstantInt::get(par.int64, i));
-    auto envPtr = funcBuilder.CreateInBoundsGEP(LDI->envArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, envIndex }));
-    auto depCast = funcBuilder.CreateBitCast(envPtr, PointerType::getUnqual(PointerType::getUnqual(envType)));
-    funcBuilder.CreateStore(varAlloca, depCast);
-  }
-
-  for (int envIndex : LDI->environment->getPreEnvIndices()) {
-    builder.CreateStore(LDI->environment->producerAt(envIndex), envPtrs[envIndex]);
-  }
-  
-  return cast<Value>(builder.CreateBitCast(LDI->envArray, PointerType::getUnqual(par.int8)));
-}
-*/
 
 Value * DSWP::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
   auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->stageArrayType));

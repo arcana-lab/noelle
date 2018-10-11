@@ -59,7 +59,6 @@ namespace llvm {
     BasicBlock *entryBlock, *abortBlock, *exitBlock;
     std::vector<BasicBlock *> loopExitBlocks;
     BasicBlock *prologueBlock, *epilogueBlock;
-    unordered_map<int, BasicBlock *> controlToSwitchBlock;
 
     /*
      * Maps original loop instructions to clones 
@@ -70,16 +69,6 @@ namespace llvm {
      * Map original to clone basic blocks for: scc execution, predecessors, and successors
      */
     unordered_map<BasicBlock*, BasicBlock*> sccBBCloneMap;
-
-    /*
-     * Maps from instructions within loop to environment indices
-     */
-    unordered_map<Instruction *, int> outgoingEnvs;
-
-    /*
-     * Stores incoming environment indices
-     */
-    set<int> incomingEnvs;
 
     /*
      * Maps from producer to the queues they push to
@@ -101,6 +90,5 @@ namespace llvm {
      */
     unordered_map<int, std::unique_ptr<QueueInstrs>> queueInstrMap;
     unordered_map<int, Instruction *> envLoadMap;
-    Value *envAlloca;
   };
 }

@@ -47,7 +47,7 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
 	l->getExitBlocks(loopExitBlocks);
 
   environment = new LoopEnvironment(this->loopDG, this->loopExitBlocks);
-  envBuilder = new EnvBuilder(this->environment);
+  envBuilder = new EnvBuilder(*this->environment, this->header->getContext());
 
   return ;
 };
