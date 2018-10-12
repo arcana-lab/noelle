@@ -7,6 +7,19 @@ long long int computeSum (long long int *a, long long int iters){
 
   for (auto i=0; i < iters; ++i){
     a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
+    a[i] += iters;
   }
 
   return s;

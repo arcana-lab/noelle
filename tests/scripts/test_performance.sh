@@ -62,8 +62,8 @@ function runningTests {
 
 cd performance ;
 runningTests "Measuring with \"-dswp-force -dswp-no-scc-merge\"" "-dswp-verbose=0 -dswp-force -dswp-no-scc-merge" "speedups-no-merge.txt" ;
-# runningTests "Measuring with \"-dswp-force\"" "-dswp-verbose=0 -dswp-force" "speedups-force.txt" ;
- #runningTests "Measuring the default configuration" "-dswp-verbose=0" "speedups.txt" ;
+runningTests "Measuring with \"-dswp-force\"" "-dswp-verbose=0 -dswp-force" "speedups-force.txt" ;
+runningTests "Measuring the default configuration" "-dswp-verbose=0" "speedups.txt" ;
 cd ../ ;
 
 exit 0;
