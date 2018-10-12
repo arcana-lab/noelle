@@ -94,6 +94,13 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   LDI->envBuilder->allocateEnvVariables(doallBuilder, nonReducableVars, reducableVars, NUM_CORES);
   auto envPtr = LDI->envBuilder->getEnvArrayInt8Ptr();
 
+  /*
+   * Insert pre-loop producers into the environment array
+   */
+  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
+    doallBuilder.CreateStore(LDI->environment->producerAt(envIndex), LDI->envBuilder->getEnvVar(envIndex));
+  }
+
   // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic
   auto numCores = ConstantInt::get(par.int64, NUM_CORES);
   auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
