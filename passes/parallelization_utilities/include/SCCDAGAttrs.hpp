@@ -26,10 +26,6 @@ namespace llvm {
     unsigned accumOpForType (unsigned op, Type *type);
   };
 
-  struct SCCEdgeInfo {
-    std::set<Value *> edges;
-  };
-
   /*
    * TODO(angelo): Fully understand SCEV to render this characterization
    * of an IV obsolete
@@ -56,12 +52,10 @@ namespace llvm {
        */
       SCC *scc;
       std::set<BasicBlock *> bbs;
-      int internalCost;
       bool isIndependent;
       bool isClonable;
       bool isReducable;
       bool isIVSCC;
-      std::unordered_map<SCC *, std::unique_ptr<SCCEdgeInfo>> sccToEdgeInfo;
 
       /*
        * TODO(angelo): allow multiple phis as long as they form a single cycle
@@ -76,7 +70,7 @@ namespace llvm {
        * Methods
        */
       SCCAttrs (SCC *s)
-        : scc{s}, internalCost{0}, isIndependent{0}, isClonable{0},
+        : scc{s}, isIndependent{0}, isClonable{0},
           isReducable{0}, isSimpleIV{0}, singlePHI{nullptr} {
         // Collect basic blocks contained within SCC
         for (auto nodePair : this->scc->internalNodePairs()) {

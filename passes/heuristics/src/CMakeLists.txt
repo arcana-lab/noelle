@@ -1,7 +1,11 @@
 # Sources
 set(Srcs 
-  HeuristicsPass.cpp
+  InvocationLatency.cpp
+  PartitionCostAnalysis.cpp
+  MinMaxSizePartitionAnalysis.cpp
+  SmallestSizePartitionAnalysis.cpp
   Heuristics.cpp
+  HeuristicsPass.cpp
 )
 
 # Compilation flags

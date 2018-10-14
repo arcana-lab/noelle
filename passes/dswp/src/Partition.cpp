@@ -57,7 +57,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
     /*
      * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
      */
-    h->adjustParallelizationPartitionForDSWP(LDI->partition, LDI->sccdagAttrs, /*idealThreads=*/ 2);
+    h->adjustParallelizationPartitionForDSWP(LDI->partition, /*idealThreads=*/ 2);
   }
 
   /*

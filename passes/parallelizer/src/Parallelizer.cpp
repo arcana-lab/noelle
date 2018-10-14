@@ -92,11 +92,6 @@ void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *
   LDI->sccdagAttrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
 
   /*
-   * Estimate the latency per invocation of the SCCs.
-   */
-  estimateCostAndExtentOfParallelismOfSCCs(LDI, h);
-
-  /*
    * Keep track of which nodes of the SCCDAG are single instructions.
    */
   collectParallelizableSingleInstrNodes(LDI);

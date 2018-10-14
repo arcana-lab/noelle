@@ -4,9 +4,12 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 
-#include "SCC.hpp"
 #include "SCCDAGPartition.hpp"
-#include "SCCDAGAttrs.hpp"
+
+#include "../src/InvocationLatency.hpp"
+#include "../src/PartitionCostAnalysis.hpp"
+#include "../src/SmallestSizePartitionAnalysis.hpp"
+#include "../src/MinMaxSizePartitionAnalysis.hpp"
 
 using namespace std;
 
@@ -18,19 +21,24 @@ namespace llvm {
       /*
        * Methods
        */
-      uint64_t latencyPerInvocation (SCC *scc);
+      void adjustParallelizationPartitionForDSWP (
+        SCCDAGPartition &partition,
+        uint64_t idealThreads
+      );
 
-      uint64_t latencyPerInvocation (SCCDAGAttrs &sccdagAttrs, std::set<std::set<SCC *> *> &subsets);
+     private:
 
-      uint64_t latencyPerInvocation (Instruction *inst);
+      void minMaxMergePartition (
+        SCCDAGPartition &partition,
+        uint64_t idealThreads
+      );
 
-      uint64_t queueLatency (Value *queueVal);
+      void smallestSizeMergePartition (
+        SCCDAGPartition &partition,
+        uint64_t idealThreads
+      );
 
-      void adjustParallelizationPartitionForDSWP (SCCDAGPartition &partition, SCCDAGAttrs &sccdagAttrs, uint64_t idealThreads);
-
-    private:
-      std::unordered_map<Function *, uint64_t> funcToCost;
-      std::unordered_map<Value *, uint64_t> queueValToCost;
+      InvocationLatency invocationLatency;
   };
 
 }

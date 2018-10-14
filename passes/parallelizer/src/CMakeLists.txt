@@ -1,6 +1,5 @@
 # Sources
 set(Srcs 
-  SCCAnalysis.cpp
   Pass.cpp
   Parallelizer.cpp
   Helper.cpp
