@@ -97,14 +97,21 @@ bool DOALL::apply (
   this->reduceOriginIV(LDI, par, chunker, SE);
   this->createOuterLoop(LDI, par, chunker);
   this->alterInnerLoopToIterateChunks(LDI, par, chunker);
+
+  /*
+   * Storing the final results to loop live-out variables.
+   */
   this->storePostEnvironment(LDI, par, chunker);
 
+  /*
+   * Add the final return to the DOALL function.
+   */
   IRBuilder<> exitB(chunker->exitBlock);
   exitB.CreateRetVoid();
 
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par, chunker);
 
-  chunker->f->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
+  //chunker->f->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
   // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
   // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
 
