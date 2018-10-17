@@ -70,11 +70,30 @@ bool DOALL::apply (
   ScalarEvolution &SE
 ) {
   errs() << "DOALL: Start the parallelization\n";
+
+  /*
+   * Create a new function, which we are going to call it the DOALL function, where we will store the parallelized loop.
+   */
   auto chunker = this->createChunkingFuncAndArgs(LDI, par);
 
+  /*
+   * Clone the sequential loop and store the clone to the DOALL function.
+   */
   this->reproduceOriginLoop(LDI, par, chunker);
+
+  /*
+   * Load all loop live-in values at the entry point of the DOALL function, before the parallelized loop starts.
+   */
   this->reproducePreEnv(LDI, par, chunker);
+
+  /*
+   * Fix the data flow within the parallelized loop.
+   *
+   * At this point, all operands of an instruction of the parallelize loop still point to the instructions within the sequential loop.
+   * We have to redirect these operands to point to the new operands that are generated within the parallelized loop.
+   */
   this->mapOriginLoopValueUses(LDI, par, chunker);
+
   this->reduceOriginIV(LDI, par, chunker, SE);
   this->createOuterLoop(LDI, par, chunker);
   this->alterInnerLoopToIterateChunks(LDI, par, chunker);
