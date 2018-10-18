@@ -13,21 +13,21 @@ ParallelizationTechnique::ParallelizationTechnique (Module &module, Verbosity v)
 
 ParallelizationTechnique::~ParallelizationTechnique () {}
 
-void ParallelizationTechnique::initEnvBuilder (LoopDependenceInfo *LDI) {
+void ParallelizationTechnique::initEnvBuilder (LoopDependenceInfoForParallelizer *LDI) {
   envBuilder = new EnvBuilder(*LDI->environment, module.getContext());
 }
 
-void ParallelizationTechnique::createEnvironment (LoopDependenceInfo *LDI) {
+void ParallelizationTechnique::createEnvironment (LoopDependenceInfoForParallelizer *LDI) {
 }
 
-void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LDI) {
+void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfoForParallelizer *LDI) {
   IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
   for (auto envIndex : LDI->environment->getPreEnvIndices()) {
     builder.CreateStore(LDI->environment->producerAt(envIndex), envBuilder->getEnvVar(envIndex));
   }
 }
 
-void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
+void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) {
   IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
   for (int envInd : LDI->environment->getPostEnvIndices()) {
     auto prod = LDI->environment->producerAt(envInd);

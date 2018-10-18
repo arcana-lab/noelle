@@ -1,7 +1,7 @@
 #include "DOALL.hpp"
 
 void DOALL::reproducePreEnv (
-  LoopDependenceInfo *LDI,
+  LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
@@ -16,7 +16,7 @@ void DOALL::reproducePreEnv (
 }
 
 void DOALL::storePostEnvironment (
-  LoopDependenceInfo *LDI,
+  LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {

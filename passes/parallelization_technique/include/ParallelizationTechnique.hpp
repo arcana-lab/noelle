@@ -5,7 +5,7 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
 #include "Parallelization.hpp"
-#include "LoopDependenceInfo.hpp"
+#include "LoopDependenceInfoForParallelizer.hpp"
 #include "Heuristics.hpp"
 
 namespace llvm {
@@ -21,12 +21,12 @@ namespace llvm {
       /*
        * Apply the parallelization technique to the loop LDI.
        */
-      virtual bool apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) = 0;
+      virtual bool apply (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) = 0;
 
       /*
        * Can the current parallelization technique be applied to parallelize loop LDI?
        */
-      virtual bool canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const = 0 ;
+      virtual bool canBeAppliedToLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const = 0 ;
 
       Value * getEnvArray () { return envBuilder->getEnvArray(); }
 
@@ -37,10 +37,10 @@ namespace llvm {
 
     protected:
 
-      void initEnvBuilder (LoopDependenceInfo *LDI);
-      virtual void createEnvironment (LoopDependenceInfo *LDI);
-      void populateLiveInEnvironment (LoopDependenceInfo *LDI);
-      virtual void propagateLiveOutEnvironment (LoopDependenceInfo *LDI);
+      void initEnvBuilder (LoopDependenceInfoForParallelizer *LDI);
+      virtual void createEnvironment (LoopDependenceInfoForParallelizer *LDI);
+      void populateLiveInEnvironment (LoopDependenceInfoForParallelizer *LDI);
+      virtual void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI);
 
       /*
        * Fields

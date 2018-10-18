@@ -49,8 +49,8 @@ namespace llvm {
        * Methods
        */
       DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Verbosity v);
-      bool apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
-      bool canBeAppliedToLoop (LoopDependenceInfo *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
+      bool apply (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
+      bool canBeAppliedToLoop (LoopDependenceInfoForParallelizer *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
 
     private:
 
@@ -63,8 +63,8 @@ namespace llvm {
       /*
        * Environment overrides
        */
-      void createEnvironment (LoopDependenceInfo *LDI);
-      void propagateLiveOutEnvironment (LoopDependenceInfo *LDI);
+      void createEnvironment (LoopDependenceInfoForParallelizer *LDI) override ;
+      void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) override ;
 
       /*
        * Methods

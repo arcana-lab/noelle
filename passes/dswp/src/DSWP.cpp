@@ -28,11 +28,11 @@ DSWP::DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Ve
   return ;
 }
       
-bool DSWP::canBeAppliedToLoop (LoopDependenceInfo *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
+bool DSWP::canBeAppliedToLoop (LoopDependenceInfoForParallelizer *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
   return true;
 }
 
-bool DSWP::apply (LoopDependenceInfo *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) {
+bool DSWP::apply (LoopDependenceInfoForParallelizer *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) {
   this->initEnvBuilder(baseLDI);
 
   /*
@@ -98,7 +98,7 @@ bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
   return LDI->partition.subsets.size() > 1;
 }
 
-void DSWP::createEnvironment (LoopDependenceInfo  *LDI) {
+void DSWP::createEnvironment (LoopDependenceInfoForParallelizer  *LDI) {
   ParallelizationTechnique::createEnvironment(LDI);
 
   IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
@@ -132,6 +132,6 @@ void DSWP::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelizatio
   configureDependencyStorage(LDI, par);
 }
 
-void DSWP::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
+void DSWP::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) {
   ParallelizationTechnique::propagateLiveOutEnvironment(LDI);
 }

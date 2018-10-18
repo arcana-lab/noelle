@@ -19,7 +19,7 @@
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
 
-#include "LoopDependenceInfo.hpp"
+#include "LoopDependenceInfoForParallelizer.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
@@ -48,8 +48,8 @@ namespace llvm {
        * Methods
        */
       DOALL (Module &module, Verbosity v);
-      bool apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
-      bool canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
+      bool apply (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
+      bool canBeAppliedToLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
 
     private:
 
@@ -61,23 +61,23 @@ namespace llvm {
       /*
        * Environment overrides
        */
-      void createEnvironment (LoopDependenceInfo *LDI) override ;
-      void propagateLiveOutEnvironment (LoopDependenceInfo *LDI) override ;
+      void createEnvironment (LoopDependenceInfoForParallelizer *LDI) override ;
+      void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) override ;
 
       /*
        * Methods
        */
-      std::unique_ptr<ChunkerInfo> createChunkingFuncAndArgs (LoopDependenceInfo *LDI, Parallelization &par);
-      void cloneSequentialLoop(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      void reproducePreEnv(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      void mapOriginLoopValueUses(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      void reduceOriginIV(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, ScalarEvolution &SE);
-      void createOuterLoop(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      void alterInnerLoopToIterateChunks(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      void storePostEnvironment(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      std::unique_ptr<ChunkerInfo> createChunkingFuncAndArgs (LoopDependenceInfoForParallelizer *LDI, Parallelization &par);
+      void cloneSequentialLoop(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void reproducePreEnv(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void mapOriginLoopValueUses(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void reduceOriginIV(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, ScalarEvolution &SE);
+      void createOuterLoop(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void alterInnerLoopToIterateChunks(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void storePostEnvironment(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
 
-      void addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      Value *createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
+      void addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      Value *createEnvArray (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
   };
 
 }

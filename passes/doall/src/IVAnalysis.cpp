@@ -2,7 +2,7 @@
 
 // TODO(angelo): Have LoopSummary scrape this info from IVs
 void DOALL::reduceOriginIV (
-  LoopDependenceInfo *LDI,
+  LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker,
   ScalarEvolution &SE

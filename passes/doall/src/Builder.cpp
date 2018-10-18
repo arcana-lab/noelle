@@ -1,7 +1,7 @@
 #include "DOALL.hpp"
 
 std::unique_ptr<ChunkerInfo> DOALL::createChunkingFuncAndArgs (
-  LoopDependenceInfo *LDI,
+  LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par
 ) {
 
@@ -53,7 +53,7 @@ std::unique_ptr<ChunkerInfo> DOALL::createChunkingFuncAndArgs (
 }
 
 void DOALL::cloneSequentialLoop (
-  LoopDependenceInfo *LDI,
+  LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
@@ -88,7 +88,7 @@ void DOALL::cloneSequentialLoop (
 }
 
 void DOALL::mapOriginLoopValueUses (
-  LoopDependenceInfo *LDI,
+  LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
@@ -151,7 +151,7 @@ void DOALL::mapOriginLoopValueUses (
 }
 
 void DOALL::createOuterLoop (
-  LoopDependenceInfo *LDI,
+  LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
@@ -191,7 +191,7 @@ void DOALL::createOuterLoop (
 }
 
 void DOALL::alterInnerLoopToIterateChunks (
-  LoopDependenceInfo *LDI,
+  LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {

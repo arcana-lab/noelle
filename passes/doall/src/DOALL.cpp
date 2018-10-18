@@ -13,7 +13,7 @@ DOALL::DOALL (Module &module, Verbosity v)
   return ;
 }
 
-bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
+bool DOALL::canBeAppliedToLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
   errs() << "DOALL: Checking if is a doall loop\n";
 
   /*
@@ -64,7 +64,7 @@ bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, H
 }
       
 bool DOALL::apply (
-  LoopDependenceInfo *LDI,
+  LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,
   Heuristics *h,
   ScalarEvolution &SE
@@ -121,7 +121,7 @@ bool DOALL::apply (
   return true;
 }
 
-void DOALL::createEnvironment (LoopDependenceInfo *LDI) {
+void DOALL::createEnvironment (LoopDependenceInfoForParallelizer *LDI) {
   ParallelizationTechnique::createEnvironment(LDI);
 
   IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
@@ -138,7 +138,7 @@ void DOALL::createEnvironment (LoopDependenceInfo *LDI) {
   envBuilder->allocateEnvVariables(builder, nonReducableVars, reducableVars, NUM_CORES);
 }
 
-void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
+void DOALL::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) {
   std::unordered_map<int, int> reducableBinaryOps;
   std::unordered_map<int, Value *> initialValues;
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
@@ -161,7 +161,7 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
 }
 
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
-  LoopDependenceInfo *LDI,
+  LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
