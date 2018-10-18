@@ -16,8 +16,8 @@ namespace llvm {
 
   class MinMaxSizePartitionAnalysis : public PartitionCostAnalysis {
    public:  
-    MinMaxSizePartitionAnalysis (InvocationLatency &IL, SCCDAGPartition &p)
-      : PartitionCostAnalysis{IL, p} {};
+    MinMaxSizePartitionAnalysis (InvocationLatency &IL, SCCDAGPartition &p, int cores)
+      : PartitionCostAnalysis{IL, p, cores} {};
 
     void checkIfShouldMerge (int sA, int sB);
   };

@@ -14,7 +14,7 @@ namespace llvm {
 
   class PartitionCostAnalysis {
    public:
-    PartitionCostAnalysis (InvocationLatency &IL, SCCDAGPartition &p);
+    PartitionCostAnalysis (InvocationLatency &IL, SCCDAGPartition &p, int numCores);
 
     void traverseAllPartitionSubsets ();
 
@@ -27,6 +27,7 @@ namespace llvm {
    protected:
     InvocationLatency &IL;
     SCCDAGPartition &partition;
+    int numCores;
 
     uint64_t totalCost;
     uint64_t totalInstCount;

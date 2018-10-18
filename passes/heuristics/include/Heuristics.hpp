@@ -17,6 +17,7 @@ namespace llvm {
 
   class Heuristics {
     public:
+      Heuristics (int numCores = 2);
 
       /*
        * Methods
@@ -39,6 +40,7 @@ namespace llvm {
       );
 
       InvocationLatency invocationLatency;
+      int numCores;
   };
 
 }

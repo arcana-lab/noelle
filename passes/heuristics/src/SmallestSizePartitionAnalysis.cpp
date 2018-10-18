@@ -20,11 +20,7 @@ void llvm::SmallestSizePartitionAnalysis::checkIfShouldMerge (int sA, int sB) {
   uint64_t merge = IL.latencyPerInvocation(subsets);
   uint64_t lowered = current - merge;
 
-  /*
-   * Only merge if it doesn't yield an SCC costing more than half the total cost
-   * TODO(angelo): Determine fractional limit based on number of cores available
-   */
-  if (merge > totalCost / 1 || partition.subsets.size() == 2) return ;
+  if (merge > totalCost / 1 || partition.subsets.size() == numCores) return ;
 
   /*
    * Only merge if it best lowers cost

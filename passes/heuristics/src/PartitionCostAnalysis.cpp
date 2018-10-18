@@ -2,8 +2,9 @@
 
 llvm::PartitionCostAnalysis::PartitionCostAnalysis (
   InvocationLatency &il,
-  SCCDAGPartition &p
-) : totalCost{0}, totalInstCount{0}, IL{il}, partition{p} {
+  SCCDAGPartition &p,
+  int cores
+) : totalCost{0}, totalInstCount{0}, IL{il}, partition{p}, numCores{cores} {
 
   /*
    * Estimate the current latency for executing the pipeline of the current SCCDAG partition once.
