@@ -61,8 +61,8 @@ namespace llvm {
       /*
        * Environment overrides
        */
-      void createEnvironment (LoopDependenceInfo *LDI);
-      void propagateLiveOutEnvironment (LoopDependenceInfo *LDI);
+      void createEnvironment (LoopDependenceInfo *LDI) override ;
+      void propagateLiveOutEnvironment (LoopDependenceInfo *LDI) override ;
 
       /*
        * Methods
