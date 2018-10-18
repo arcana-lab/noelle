@@ -1,13 +1,23 @@
 # dependencies
 threadpool
 
-# test output
+# test output steps
 tests/regression/**/*.bc
 tests/performance/**/*.bc
 tests/regression/**/*.ll
 tests/performance/**/*.ll
 tests/regression/**/*.txt
 tests/performance/**/*.txt
+tests/regression/**/*.dot
+tests/performance/**/*.dot
+
+# test output executables
+tests/regression/**/baseline
+tests/performance/**/baseline
+tests/regression/**/parallelized
+tests/performance/**/parallelized
+tests/regression/**/testseq
+tests/performance/**/testseq
 
 # linked files for testing
 tests/regression/**/Parallelizer_utils.cpp
