@@ -54,7 +54,6 @@ namespace llvm {
   class EnvBuilder {
    public:
     EnvBuilder (LoopEnvironment &LE, llvm::LLVMContext &CXT);
-    ~EnvBuilder ();
 
     /*
      * Create an environment array, insert into the IRBuilder
@@ -70,6 +69,13 @@ namespace llvm {
       int reducerCount
     );
 
+    void reduceLiveOutVariables (
+      IRBuilder<>,
+      std::unordered_map<int, int> &reducableBinaryOps,
+      std::unordered_map<int, Value *> &initialValues,
+      int reducerCount
+    );
+
     /*
      * As all users of the environment konw its structure,
      *  pass around the equivalent of a void pointer
@@ -80,9 +86,13 @@ namespace llvm {
 
     EnvUserBuilder *getUser (int user) { return envUsers[user]; }
 
-    AllocaInst *getEnvVar (int ind) { return envIndexToVar[ind]; }
-    AllocaInst *getReducableEnvVar (int ind, int reducerInd) {
+    Value *getEnvVar (int ind) { return envIndexToVar[ind]; }
+    Value *getReducableEnvVar (int ind, int reducerInd) {
       return envIndexToReducableVar[ind][reducerInd];
+    }
+
+    bool isReduced (int ind) {
+      return envIndexToReducableVar.find(ind) != envIndexToReducableVar.end();
     }
 
    private:
@@ -98,8 +108,8 @@ namespace llvm {
     /*
      * The allocations for variables in the environment
      */
-		std::unordered_map<int, AllocaInst *> envIndexToVar;
-		std::unordered_map<int, std::vector<AllocaInst *>> envIndexToReducableVar;
+		std::unordered_map<int, Value *> envIndexToVar;
+		std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
 
     /*
      * Information on a specific user (a function, stage, chunk, etc...)

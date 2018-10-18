@@ -81,10 +81,6 @@ EnvBuilder::EnvBuilder (LoopEnvironment &le, LLVMContext &CXT) : LE{le} {
   this->envArrayType = ArrayType::get(ptrTy_int8, this->LE.envSize());
 }
 
-EnvBuilder::~EnvBuilder () {
-  for (auto user : this->envUsers) delete user;
-}
-
 void EnvBuilder::createEnvArray (IRBuilder<> builder) {
   auto int8 = IntegerType::get(builder.getContext(), 8);
   auto ptrTy_int8 = PointerType::getUnqual(int8);
@@ -134,6 +130,9 @@ void EnvBuilder::allocateEnvVariables (
 
     storeEnvAllocaInArray(this->envArray, envIndex, reduceArrAlloca);
 
+    /*
+     * Create environment variable's array, one slot per user
+     */
     Type *envType = this->LE.typeOfEnv(envIndex);
     for (auto i = 0; i < reducerCount; ++i) {
       auto varAlloca = builder.CreateAlloca(envType);
@@ -141,5 +140,30 @@ void EnvBuilder::allocateEnvVariables (
 
       storeEnvAllocaInArray(reduceArrAlloca, i, varAlloca);
     }
+  }
+}
+
+void EnvBuilder::reduceLiveOutVariables (
+  IRBuilder<> builder,
+  std::unordered_map<int, int> &reducableBinaryOps,
+  std::unordered_map<int, Value *> &initialValues,
+  int reducerCount
+) {
+  for (auto envIndexInitValue : initialValues) {
+    auto envIndex = envIndexInitValue.first;
+    auto initialValue = envIndexInitValue.second;
+    auto binOp = (Instruction::BinaryOps)reducableBinaryOps[envIndex];
+
+    /*
+     * Reduce environment variable's array
+     */
+    Value *accumVal = builder.CreateLoad(this->getReducableEnvVar(envIndex, 0));
+    for (auto i = 1; i < reducerCount; ++i) {
+      auto envVar = builder.CreateLoad(this->getReducableEnvVar(envIndex, i));
+      accumVal = builder.CreateBinOp(binOp, accumVal, envVar);
+    }
+
+    accumVal = builder.CreateBinOp(binOp, accumVal, initialValue);
+    envIndexToVar[envIndex] = accumVal;
   }
 }

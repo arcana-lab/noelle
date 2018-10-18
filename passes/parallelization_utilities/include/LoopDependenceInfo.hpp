@@ -21,7 +21,6 @@ namespace llvm {
      * Context
      */
     Function *function;
-    LoopEnvironment *environment;
 
     /*
      * Loop entry and exit points.
@@ -35,6 +34,11 @@ namespace llvm {
      */
     std::vector<BasicBlock *> loopBBs;
     unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
+
+    /*
+     * Environment
+     */
+    LoopEnvironment *environment;
 
     /*
      * Dependences
@@ -53,7 +57,6 @@ namespace llvm {
     /*
      * Parallelized loop
      */
-    EnvBuilder *envBuilder;
     BasicBlock *entryPointOfParallelizedLoop;
     BasicBlock *exitPointOfParallelizedLoop;
 
