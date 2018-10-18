@@ -8,7 +8,7 @@ DOALL::DOALL (Module &module, Verbosity v)
   /*
    * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
    */
-  this->doallDispatcher = this->module.getFunction("doallDispatcher");
+  this->dispatcher = this->module.getFunction("doallDispatcher");
 
   return ;
 }
@@ -79,7 +79,7 @@ bool DOALL::apply (
   /*
    * Clone the sequential loop and store the clone to the DOALL function.
    */
-  this->reproduceOriginLoop(LDI, par, chunker);
+  this->cloneSequentialLoop(LDI, par, chunker);
 
   /*
    * Load all loop live-in values at the entry point of the DOALL function, before the parallelized loop starts.
@@ -148,7 +148,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   auto numCores = ConstantInt::get(par.int64, NUM_CORES);
   auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
 
-  doallBuilder.CreateCall(this->doallDispatcher, ArrayRef<Value *>({
+  doallBuilder.CreateCall(this->dispatcher, ArrayRef<Value *>({
     (Value *)chunker->f,
     envPtr,
     numCores,

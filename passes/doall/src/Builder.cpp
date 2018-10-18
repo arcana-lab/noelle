@@ -52,7 +52,7 @@ std::unique_ptr<ChunkerInfo> DOALL::createChunkingFuncAndArgs (
   return chunker;
 }
 
-void DOALL::reproduceOriginLoop (
+void DOALL::cloneSequentialLoop (
   LoopDependenceInfo *LDI,
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker

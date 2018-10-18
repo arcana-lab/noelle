@@ -56,13 +56,13 @@ namespace llvm {
       /*
        * Fields
        */
-      Function *doallDispatcher;
+      Function *dispatcher;
 
       /*
        * Methods
        */
       std::unique_ptr<ChunkerInfo> createChunkingFuncAndArgs (LoopDependenceInfo *LDI, Parallelization &par);
-      void reproduceOriginLoop(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void cloneSequentialLoop(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void reproducePreEnv(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void mapOriginLoopValueUses(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void reduceOriginIV(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, ScalarEvolution &SE);
