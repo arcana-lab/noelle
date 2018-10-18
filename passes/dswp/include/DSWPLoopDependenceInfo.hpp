@@ -5,7 +5,7 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "LoopDependenceInfo.hpp"
+#include "LoopDependenceInfoForParallelizer.hpp"
 #include "PipelineInfo.hpp"
 #include "SCCDAGPartition.hpp"
 
@@ -14,14 +14,8 @@ using namespace llvm;
 
 namespace llvm {
 
-  class DSWPLoopDependenceInfo : public LoopDependenceInfo {
+  class DSWPLoopDependenceInfo : public LoopDependenceInfoForParallelizer {
     public:
-
-      /*
-       * Stores characterizations of Loop SCCDAG
-       */
-      SCCDAGPartition partition;
-      std::set<SCC *> singleInstrNodes;
 
       /*
        * Stores new pipeline execution

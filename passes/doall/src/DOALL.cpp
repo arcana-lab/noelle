@@ -5,45 +5,62 @@ DOALL::DOALL (Module &module, Verbosity v)
   ParallelizationTechnique{module, v}
   {
 
-  this->doallDispatcher = this->module.getFunction("doallDispatcher");
+  /*
+   * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
+   */
+  this->dispatcher = this->module.getFunction("doallDispatcher");
 
   return ;
 }
 
 bool DOALL::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
+  errs() << "DOALL: Checking if is a doall loop\n";
 
-  errs() << "DOALL:   Checking if is a doall loop\n";
-
-  bool isDOALL = true;
-  if (LDI->loopExitBlocks.size() > 1) { 
-    isDOALL = false;
-    errs() << "DOALL:   More than 1 loop exit block\n";
+  /*
+   * The loop must have one single exit path.
+   */
+  if (LDI->numberOfExits() > 1) { 
+    errs() << "DOALL:   More than 1 loop exit blocks\n";
+    return false;
   }
 
+  /*
+   * The loop must have all live-out variables to be reducable.
+   */
   if (!LDI->sccdagAttrs.allPostLoopEnvValuesAreReducable(LDI->environment)) {
-    isDOALL = false;
     errs() << "DOALL:   Some post environment value is not reducable\n";
+    return false;
   }
 
+  /*
+   * The loop must have at least one induction variable.
+   * This is because the trip count must be controlled by an induction variable.
+   */
   if (!LDI->sccdagAttrs.loopHasInductionVariable()) {
-    isDOALL = false;
     errs() << "DOALL:   Loop does not have an IV\n";
+    return false;
   }
 
+  /*
+   * The compiler must be able to remove loop-carried data dependences of all SCCs with loop-carried data dependences.
+   */
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
     auto &sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
-    // SIMONE: I'm not sure the following condition is correct.
-    // For example, a loop with a commutative SCC cannot be parallelized by DOALL.
+    //TODO(SIMONE): I'm not sure the following condition is correct. For example, a loop with a commutative SCC cannot be parallelized by DOALL.
     if (scc->getType() != SCC::SCCType::COMMUTATIVE
       && !sccInfo->isClonable
       && !LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
-      isDOALL = false;
       scc->printMinimal(errs() << "DOALL:   Non clonable, non commutative scc at top level of loop:\n", "DOALL:\t") << "\n";
+      return false;
     }
   }
-  errs() << "DOALL:   Is it? " << isDOALL << "\n";
-  return isDOALL;
+
+  /*
+   * The loop is a DOALL one.
+   */
+  errs() << "DOALL:   The loop can be parallelized with DOALL\n" ;
+  return true;
 }
       
 bool DOALL::apply (
@@ -52,23 +69,49 @@ bool DOALL::apply (
   Heuristics *h,
   ScalarEvolution &SE
 ) {
-  errs() << "DOALL:   Start\n";
+  errs() << "DOALL: Start the parallelization\n";
+
+  /*
+   * Create a new function, which we are going to call it the DOALL function, where we will store the parallelized loop.
+   */
   auto chunker = this->createChunkingFuncAndArgs(LDI, par);
 
-  this->reproduceOriginLoop(LDI, par, chunker);
+  /*
+   * Clone the sequential loop and store the clone to the DOALL function.
+   */
+  this->cloneSequentialLoop(LDI, par, chunker);
+
+  /*
+   * Load all loop live-in values at the entry point of the DOALL function, before the parallelized loop starts.
+   */
   this->reproducePreEnv(LDI, par, chunker);
+
+  /*
+   * Fix the data flow within the parallelized loop.
+   *
+   * At this point, all operands of an instruction of the parallelize loop still point to the instructions within the sequential loop.
+   * We have to redirect these operands to point to the new operands that are generated within the parallelized loop.
+   */
   this->mapOriginLoopValueUses(LDI, par, chunker);
+
   this->reduceOriginIV(LDI, par, chunker, SE);
   this->createOuterLoop(LDI, par, chunker);
   this->alterInnerLoopToIterateChunks(LDI, par, chunker);
+
+  /*
+   * Storing the final results to loop live-out variables.
+   */
   this->storePostEnvironment(LDI, par, chunker);
 
+  /*
+   * Add the final return to the DOALL function.
+   */
   IRBuilder<> exitB(chunker->exitBlock);
   exitB.CreateRetVoid();
 
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par, chunker);
 
-  chunker->f->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
+  //chunker->f->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
   // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
   // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
 
@@ -105,7 +148,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   auto numCores = ConstantInt::get(par.int64, NUM_CORES);
   auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
 
-  doallBuilder.CreateCall(this->doallDispatcher, ArrayRef<Value *>({
+  doallBuilder.CreateCall(this->dispatcher, ArrayRef<Value *>({
     (Value *)chunker->f,
     envPtr,
     numCores,
@@ -114,4 +157,6 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   doallBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
 
   reducePostEnvironment(LDI, par, chunker);
+
+  return ;
 }

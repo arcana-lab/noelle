@@ -36,6 +36,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
      * Apply DOALL.
      */
     codeModified = doall.apply(LDI, par, h, SE);
+
   } else {
 
     /*

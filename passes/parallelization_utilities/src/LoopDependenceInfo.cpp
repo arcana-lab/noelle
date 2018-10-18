@@ -7,7 +7,7 @@
 using namespace std;
 using namespace llvm;
 
-llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt)
+LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt)
 		: function{f}, functionDG{fG} {
 
     /*
@@ -51,6 +51,16 @@ llvm::LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, Loop
 
   return ;
 };
+    
+uint32_t LoopDependenceInfo::numberOfExits (void) const{
+
+  /*
+   * Fetch the number of exit blocks.
+   */
+  auto exits = this->loopExitBlocks.size();
+
+  return exits;
+}
 
 void LoopDependenceInfo::createPDGs (void){
   return ;
