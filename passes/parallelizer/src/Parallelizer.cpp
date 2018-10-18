@@ -30,19 +30,21 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
    * Parallelize the loop.
    */
   auto codeModified = false;
+  Value *envArray;
   if (doall.canBeAppliedToLoop(LDI, par, h, SE)){
 
     /*
      * Apply DOALL.
      */
     codeModified = doall.apply(LDI, par, h, SE);
-
+    envArray = doall.getEnvArray();
   } else {
 
     /*
      * Apply DSWP.
      */
     codeModified = dswp.apply(LDI, par, h, SE);
+    envArray = dswp.getEnvArray();
   }
 
   /*
@@ -68,7 +70,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
     LDI->preHeader,
     LDI->entryPointOfParallelizedLoop,
     LDI->exitPointOfParallelizedLoop,
-    LDI->envBuilder->getEnvArray(),
+    envArray,
     exitIndex,
     LDI->loopExitBlocks
   );

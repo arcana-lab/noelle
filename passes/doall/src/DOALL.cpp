@@ -71,6 +71,8 @@ bool DOALL::apply (
 ) {
   errs() << "DOALL: Start the parallelization\n";
 
+  this->initEnvBuilder(LDI);
+
   /*
    * Create a new function, which we are going to call it the DOALL function, where we will store the parallelized loop.
    */
@@ -119,6 +121,45 @@ bool DOALL::apply (
   return true;
 }
 
+void DOALL::createEnvironment (LoopDependenceInfo *LDI) {
+  ParallelizationTechnique::createEnvironment(LDI);
+
+  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
+  envBuilder->createEnvArray(builder);
+
+  /*
+   * Allocate memory for all environment variables
+   */
+  auto preEnvRange = LDI->environment->getPreEnvIndices();
+  auto postEnvRange = LDI->environment->getPostEnvIndices();
+  std::set<int> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
+  std::set<int> reducableVars(postEnvRange.begin(), postEnvRange.end());
+
+  envBuilder->allocateEnvVariables(builder, nonReducableVars, reducableVars, NUM_CORES);
+}
+
+void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
+  std::unordered_map<int, int> reducableBinaryOps;
+  std::unordered_map<int, Value *> initialValues;
+  for (auto envInd : LDI->environment->getPostEnvIndices()) {
+    auto producer = LDI->environment->producerAt(envInd);
+    auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
+    auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->PHIAccumulators.begin());
+    auto binOpCode = firstAccumI->getOpcode();
+    reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
+
+    auto prodPHI = cast<PHINode>(producer);
+    auto initValPHIIndex = prodPHI->getBasicBlockIndex(LDI->preHeader);
+    initialValues[envInd] = prodPHI->getIncomingValue(initValPHIIndex);
+  }
+
+  IRBuilder<> *builder = new IRBuilder<>(LDI->entryPointOfParallelizedLoop);
+  envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues, NUM_CORES);
+  delete builder;
+
+  ParallelizationTechnique::propagateLiveOutEnvironment(LDI);
+}
+
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   LoopDependenceInfo *LDI,
   Parallelization &par,
@@ -127,36 +168,24 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   auto &cxt = LDI->function->getContext();
   LDI->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
   LDI->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
-  IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
 
-  LDI->envBuilder->createEnvArray(doallBuilder);
-  auto preEnvRange = LDI->environment->getPreEnvIndices();
-  auto postEnvRange = LDI->environment->getPostEnvIndices();
-  std::set<int> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
-  std::set<int> reducableVars(postEnvRange.begin(), postEnvRange.end());
-  LDI->envBuilder->allocateEnvVariables(doallBuilder, nonReducableVars, reducableVars, NUM_CORES);
-  auto envPtr = LDI->envBuilder->getEnvArrayInt8Ptr();
-
-  /*
-   * Insert pre-loop producers into the environment array
-   */
-  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
-    doallBuilder.CreateStore(LDI->environment->producerAt(envIndex), LDI->envBuilder->getEnvVar(envIndex));
-  }
+  this->createEnvironment(LDI);
+  this->populateLiveInEnvironment(LDI);
+  auto envPtr = envBuilder->getEnvArrayInt8Ptr();
 
   // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic
   auto numCores = ConstantInt::get(par.int64, NUM_CORES);
   auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
 
+  IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
   doallBuilder.CreateCall(this->dispatcher, ArrayRef<Value *>({
     (Value *)chunker->f,
     envPtr,
     numCores,
     chunkSize
   }));
+
+  this->propagateLiveOutEnvironment(LDI);
+
   doallBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
-
-  reducePostEnvironment(LDI, par, chunker);
-
-  return ;
 }

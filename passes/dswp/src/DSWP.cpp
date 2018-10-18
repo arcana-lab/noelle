@@ -33,6 +33,7 @@ bool DSWP::canBeAppliedToLoop (LoopDependenceInfo *baseLDI, Parallelization &par
 }
 
 bool DSWP::apply (LoopDependenceInfo *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) {
+  this->initEnvBuilder(baseLDI);
 
   /*
    * Fetch the LDI.
@@ -97,6 +98,18 @@ bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
   return LDI->partition.subsets.size() > 1;
 }
 
+void DSWP::createEnvironment (LoopDependenceInfo  *LDI) {
+  ParallelizationTechnique::createEnvironment(LDI);
+
+  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
+  envBuilder->createEnvArray(builder);
+  std::set<int> nonReducableVars;
+  std::set<int> reducableVars;
+  for (auto i = 0; i < LDI->environment->envSize(); ++i) nonReducableVars.insert(i);
+
+  envBuilder->allocateEnvVariables(builder, nonReducableVars, reducableVars, 0);
+}
+
 void DSWP::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
   LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
   LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
@@ -112,10 +125,13 @@ void DSWP::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelizatio
   collectControlQueueInfo(par, LDI);
   collectRemovableSCCQueueInfo(par, LDI);
 
-  LDI->envBuilder->createEnvUsers(LDI->stages.size());
+  envBuilder->createEnvUsers(LDI->stages.size());
   collectPreLoopEnvInfo(LDI);
   collectPostLoopEnvInfo(LDI);
 
   configureDependencyStorage(LDI, par);
 }
 
+void DSWP::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
+  ParallelizationTechnique::propagateLiveOutEnvironment(LDI);
+}

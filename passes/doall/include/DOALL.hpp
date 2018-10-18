@@ -59,6 +59,12 @@ namespace llvm {
       Function *dispatcher;
 
       /*
+       * Environment overrides
+       */
+      void createEnvironment (LoopDependenceInfo *LDI);
+      void propagateLiveOutEnvironment (LoopDependenceInfo *LDI);
+
+      /*
        * Methods
        */
       std::unique_ptr<ChunkerInfo> createChunkingFuncAndArgs (LoopDependenceInfo *LDI, Parallelization &par);
@@ -71,7 +77,6 @@ namespace llvm {
       void storePostEnvironment(LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
 
       void addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      void reducePostEnvironment (LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       Value *createEnvArray (LoopDependenceInfo *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
   };
 

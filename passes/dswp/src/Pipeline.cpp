@@ -130,36 +130,22 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
    */
   LDI->entryPointOfParallelizedLoop = BasicBlock::Create(M->getContext(), "", LDI->function);
   LDI->exitPointOfParallelizedLoop = LDI->entryPointOfParallelizedLoop;
-  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
 
-  /*
-   * Allocate the environment
-   */
-  LDI->envBuilder->createEnvArray(builder);
-  std::set<int> nonReducableVars;
-  std::set<int> reducableVars;
-  for (auto i = 0; i < LDI->environment->envSize(); ++i) nonReducableVars.insert(i);
-  LDI->envBuilder->allocateEnvVariables(builder, nonReducableVars, reducableVars, 0);
-
-  /*
-   * Insert pre-loop producers into the environment array
-   */
-  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
-    auto store = builder.CreateStore(LDI->environment->producerAt(envIndex), LDI->envBuilder->getEnvVar(envIndex));
-  }
-
-  auto envPtr = LDI->envBuilder->getEnvArrayInt8Ptr();
+  this->createEnvironment(LDI);
+  this->populateLiveInEnvironment(LDI);
+  auto envPtr = envBuilder->getEnvArrayInt8Ptr();
 
   /*
    * Reference the stages in an array
    */
-  auto stagesPtr = createStagesArrayFromStages(LDI, builder, par);
+  IRBuilder<> *builder = new IRBuilder<>(LDI->entryPointOfParallelizedLoop);
+  auto stagesPtr = createStagesArrayFromStages(LDI, *builder, par);
 
   /*
    * Allocate an array of integers.
    * Each integer represents the bitwidth of each queue that connects pipeline stages.
    */
-  auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, builder, par);
+  auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, *builder, par);
 
   /*
    * Call the stage dispatcher with the environment, queues array, and stages array
@@ -170,14 +156,10 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
   /*
    * Add the call to "stageDispatcher"
    */
-  builder.CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
+  builder->CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
+  delete builder;
 
-  /*
-   * Satisfy dependences from the code inside the loop to the code outside it.
-   */
-  storeOutgoingDependentsIntoExternalValues(LDI, builder, par);
-
-  return ;
+  this->propagateLiveOutEnvironment(LDI);
 }
 
 Value * DSWP::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {

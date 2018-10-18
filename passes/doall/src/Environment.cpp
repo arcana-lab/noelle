@@ -5,7 +5,7 @@ void DOALL::reproducePreEnv (
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
-  auto envUser = LDI->envBuilder->getUser(0);
+  auto envUser = envBuilder->getUser(0);
   IRBuilder<> entryB(chunker->entryBlock);
   for (auto envInd : LDI->environment->getPreEnvIndices()) {
     envUser->createEnvPtr(entryB, envInd);
@@ -20,7 +20,7 @@ void DOALL::storePostEnvironment (
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
-  auto envUser = LDI->envBuilder->getUser(0);
+  auto envUser = envBuilder->getUser(0);
   IRBuilder<> entryB(chunker->entryBlock->getTerminator());
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
     envUser->createReducableEnvPtr(entryB, envInd, NUM_CORES, chunker->coreArgVal);
@@ -58,44 +58,5 @@ void DOALL::storePostEnvironment (
     accumOuterPHI->addIncoming(prodClone, innerExitBB);
 
     prodClone->setIncomingValue(initValPHIIndex, accumOuterPHI);
-  }
-}
-
-void DOALL::reducePostEnvironment (
-  LoopDependenceInfo *LDI,
-  Parallelization &par,
-  std::unique_ptr<ChunkerInfo> &chunker
-) {
-  auto &cxt = LDI->function->getContext();
-  IRBuilder<> reduceBuilder(LDI->exitPointOfParallelizedLoop);
-
-  for (auto envInd : LDI->environment->getPostEnvIndices()) {
-    auto producer = LDI->environment->producerAt(envInd);
-    auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
-    auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->PHIAccumulators.begin());
-    auto binOpCode = firstAccumI->getOpcode();
-    binOpCode = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
-    auto binOp = (Instruction::BinaryOps)binOpCode;
-
-    Value *accumVal = reduceBuilder.CreateLoad(LDI->envBuilder->getReducableEnvVar(envInd, 0));
-    for (auto i = 1; i < NUM_CORES; ++i) {
-      auto envVar = reduceBuilder.CreateLoad(LDI->envBuilder->getReducableEnvVar(envInd, i));
-      accumVal = reduceBuilder.CreateBinOp(binOp, accumVal, envVar);
-    }
-
-    auto prodPHI = cast<PHINode>(producer);
-    auto initValPHIIndex = prodPHI->getBasicBlockIndex(LDI->preHeader);
-    auto initVal = prodPHI->getIncomingValue(initValPHIIndex);
-    accumVal = reduceBuilder.CreateBinOp(binOp, accumVal, initVal);
-
-    for (auto consumer : LDI->environment->consumersOf(producer)) {
-      if (auto depPHI = dyn_cast<PHINode>(consumer)) {
-        depPHI->addIncoming(accumVal, LDI->exitPointOfParallelizedLoop);
-        continue;
-      }
-      producer->print(errs() << "Producer of environment variable:\t"); errs() << "\n";
-      errs() << "Loop not in LCSSA!\n";
-      abort();
-    }
   }
 }

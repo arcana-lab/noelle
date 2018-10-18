@@ -61,6 +61,12 @@ namespace llvm {
       bool enableMergingSCC;
 
       /*
+       * Environment overrides
+       */
+      void createEnvironment (LoopDependenceInfo *LDI);
+      void propagateLiveOutEnvironment (LoopDependenceInfo *LDI);
+
+      /*
        * Methods
        */
       void clusterSubloops (DSWPLoopDependenceInfo *LDI);
@@ -87,7 +93,6 @@ namespace llvm {
       Value * createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par) ;
       Value * createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par);
       Value * createQueueSizesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par);
-      void storeOutgoingDependentsIntoExternalValues (DSWPLoopDependenceInfo *LDI, IRBuilder<> builder, Parallelization &par);
 
       /*
        * Pipeline
