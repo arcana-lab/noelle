@@ -51,7 +51,7 @@ namespace llvm {
       bool apply (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
       bool canBeAppliedToLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
 
-    private:
+    protected:
 
       /*
        * Fields

@@ -16,7 +16,7 @@ OPTIMIZED=parallelized
 TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
 PDGPASS=-load ~/CAT/lib/PDGAnalysis.so
 PRINTPASSES=$(PDGPASS) -load ~/CAT/lib/PDGPrinter.so
-PARALLELIZATION_TECHNIQUES= -load ~/CAT/lib/DSWP.so -load ~/CAT/lib/DOALL.so
+PARALLELIZATION_TECHNIQUES= -load ~/CAT/lib/DSWP.so -load ~/CAT/lib/DOALL.so -load ~/CAT/lib/HELIX.so
 PRE_OPTPASSES=$(PDGPASS) -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/DGSimplify.so
 OPTPASSES=$(PDGPASS) -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/ParallelizationTechnique.so -load ~/CAT/lib/Parallelizer.so 
 

@@ -1,19 +1,13 @@
 # Sources
 set(Srcs 
-  Pass.cpp
-  Parallelizer.cpp
-  Helper.cpp
-  LoopSelector.cpp
-  ParallelSCC.cpp
-  Partition.cpp
-  Printer.cpp
+  HELIX.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Parallelizer")
+set(PassName "HELIX")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -27,7 +21,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../analysis/include ../../threadpool/include ../../parallelization_utilities/include ../../heuristics/include ../../parallelization_technique/include ../../dswp/include ../../doall/include ../../helix/include ./)
+include_directories(${LLVM_INCLUDE_DIRS} ../../analysis/include ../../threadpool/include ../../parallelization_utilities/include ../../heuristics/include ../../parallelization_technique/include ../../doall/include ../include ./)
 
 # Declare the LLVM pass to compile
 add_llvm_loadable_module(${PassName} ${Srcs})

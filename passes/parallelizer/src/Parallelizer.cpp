@@ -2,7 +2,7 @@
 
 using namespace llvm;
   
-bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, Heuristics *h){
+bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, HELIX &helix, Heuristics *h){
 
   /*
    * Assertions.
@@ -38,6 +38,15 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
      */
     codeModified = doall.apply(LDI, par, h, SE);
     envArray = doall.getEnvArray();
+
+  } else if (helix.canBeAppliedToLoop(LDI, par, h, SE)) {
+
+    /*
+     * Apply HELIX
+     */
+    codeModified = helix.apply(LDI, par, h, SE);
+    envArray = helix.getEnvArray();
+
   } else {
 
     /*

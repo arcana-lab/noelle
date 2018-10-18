@@ -141,6 +141,11 @@ extern "C" {
     return ;
   }
 
+  void helixDispatcher (void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), void *env, int64_t numCores, int64_t chunkSize){
+    abort();
+    return ;
+  }
+
   void stageDispatcher (void *env, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
     #ifdef RUNTIME_PRINT
     std::cerr << "Starting dispatcher: num stages " << numberOfStages << ", num queues: " << numberOfQueues << std::endl;

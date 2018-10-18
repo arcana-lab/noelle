@@ -41,6 +41,7 @@ bool Parallelizer::runOnModule (Module &M) {
    */
   DSWP dswp{M, this->forceParallelization, !this->forceNoSCCPartition, this->verbose};
   DOALL doall{M, this->verbose};
+  HELIX helix{M, this->verbose};
 
   /*
    * Collect information about C++ code we link parallelized loops with.
@@ -72,7 +73,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Parallelize the current loop with Parallelizer.
      */
-    modified |= this->parallelizeLoop(loop, parallelizationFramework, dswp, doall, heuristics);
+    modified |= this->parallelizeLoop(loop, parallelizationFramework, dswp, doall, helix, heuristics);
 
     /*
      * Free the memory.

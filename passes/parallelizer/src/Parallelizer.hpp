@@ -28,6 +28,7 @@
 #include "HeuristicsPass.hpp"
 #include "DSWP.hpp"
 #include "DOALL.hpp"
+#include "HELIX.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -69,7 +70,7 @@ namespace llvm {
       /*
        * Methods
        */
-      bool parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, Heuristics *h) ;
+      bool parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, HELIX &helix, Heuristics *h) ;
       std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
       void mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
