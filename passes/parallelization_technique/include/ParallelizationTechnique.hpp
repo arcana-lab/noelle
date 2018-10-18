@@ -17,7 +17,6 @@ namespace llvm {
        * Constructor.
        */
       ParallelizationTechnique (Module &module, Verbosity v);
-      ~ParallelizationTechnique ();
 
       /*
        * Apply the parallelization technique to the loop LDI.
@@ -30,6 +29,11 @@ namespace llvm {
       virtual bool canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const = 0 ;
 
       Value * getEnvArray () { return envBuilder->getEnvArray(); }
+
+      /*
+       * Destructor.
+       */
+      ~ParallelizationTechnique ();
 
     protected:
 
