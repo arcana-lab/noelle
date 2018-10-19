@@ -71,6 +71,9 @@ bool DOALL::apply (
 ) {
   errs() << "DOALL: Start the parallelization\n";
 
+  /*
+   * Initialize the environment.
+   */
   this->initEnvBuilder(LDI);
 
   /*
@@ -97,7 +100,15 @@ bool DOALL::apply (
   this->mapOriginLoopValueUses(LDI, par, chunker);
 
   this->reduceOriginIV(LDI, par, chunker, SE);
+
+  /*
+   * Create the outermost loop that iterate over chunks.
+   */
   this->createOuterLoop(LDI, par, chunker);
+
+  /*
+   * Adjust the innermost loop, which iterates over elements within a single chunk.
+   */
   this->alterInnerLoopToIterateChunks(LDI, par, chunker);
 
   /*
