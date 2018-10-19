@@ -39,7 +39,6 @@ Task log - Angelo
   - min-max partition heuristic
   - extract environment construction from DSWP and DOALL
   - clean up analysis classes (SCCDAGAttrs, SimpleIVInfo, ...)
-  - write performance tests (~40 secs baseline length, use time, awk, measure speedup: base/par)
 
 In progress:
   Abstract env array:
