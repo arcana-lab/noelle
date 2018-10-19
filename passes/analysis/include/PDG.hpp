@@ -24,13 +24,20 @@ namespace llvm {
    */
   class PDG : public DG<Value> {
     public:
+
+      /*
+       * Constructor
+       */
       PDG() ;
-      ~PDG() ;
 
       /*
        * Add all instructions included in the module M as nodes to the PDG.
        */
       void populateNodesOf (Module &M);
+
+      /*
+       * Add all instructions included in the function F as nodes to the PDG.
+       */
       void populateNodesOf (Function &F);
 
       /*
@@ -41,14 +48,19 @@ namespace llvm {
       /*
        * Creating Program Dependence Subgraphs
        */
-      PDG *createFunctionSubgraph (Function &F);
-      PDG *createLoopsSubgraph (Loop *loop);
-      PDG *createSubgraphFromValues (std::vector<Value *> &valueList, bool linkToExternal);
+      PDG * createFunctionSubgraph (Function &F);
+      PDG * createLoopsSubgraph (Loop *loop);
+      PDG * createSubgraphFromValues (std::vector<Value *> &valueList, bool linkToExternal);
+
+      /*
+       * Destructor
+       */
+      ~PDG() ;
       
     private:
       void addNodesOf (Function &F);
       void setEntryPointAt (Function &F);
       void copyEdgesInto (PDG *newPDG, bool linkToExternal = true);
   };
-}
 
+}
