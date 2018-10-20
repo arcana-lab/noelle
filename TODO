@@ -17,6 +17,7 @@
 
 
 ==== DOALL
+- BUGFIX: Swap outer and inner loops (See Builder.cpp:78)
 - Promote chunk size to be an option (e.g., --doall-chunksize)
 
 

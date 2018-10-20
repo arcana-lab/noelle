@@ -74,6 +74,10 @@ void DOALL::cloneSequentialLoop (
   /*
    * Map inner loop preheader to outer loop header
    * TODO(SIMONE): explain why the mapping isn't from inner loop preheader to outer loop preheader
+   * TODO(ANGELO): fix the fact that this is incorrect. It highlights a bigger issue:
+   *   The inner and outer loops of our DOALL execution need to be flipped. The outer loop should be
+   *   the original loop, the inner loop should be constructed. This fixes the below incorrect mapping
+   *   so that it is between loop preheaders.
    */
   chunker->innerBBMap[LDI->preHeader] = chunker->chHeader;
 
