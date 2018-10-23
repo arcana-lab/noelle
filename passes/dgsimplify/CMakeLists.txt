@@ -14,6 +14,9 @@ add_definitions(
 -D__STDC_CONSTANT_MACROS
 )
 
+SET(CUSTOM_COMPILE_FLAGS "-fexceptions")
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${CUSTOM_COMPILE_FLAGS}" )
+SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${CUSTOM_COMPILE_FLAGS}" )
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 include_directories(${LLVM_INCLUDE_DIRS})
@@ -26,7 +29,7 @@ list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(AddLLVM)
 
 # Pass
-add_subdirectory(catpass)
+add_subdirectory(src)
 
 # Install
-install(PROGRAMS DESTINATION)
+install(PROGRAMS include/DGSimplify.hpp DESTINATION include)

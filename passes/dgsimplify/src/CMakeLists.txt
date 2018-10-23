@@ -1,13 +1,13 @@
 # Sources
-set(CATPassSrc 
-  CatPass.cpp
+set(PassSrc 
+  DGSimplify.cpp
 )
 
 # Compilation flags
-set_source_files_properties(${CATPassSrc} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
+set_source_files_properties(${PassSrc} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(CATPassName "DGSimplify")
+set(PassName "DGSimplify")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -21,8 +21,8 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../analysis/include ../../parallelization_utilities/include)
+include_directories(${LLVM_INCLUDE_DIRS} ../../analysis/include ../../parallelization_utilities/include ../include)
 
 
 # Declare the LLVM pass to compile
-add_llvm_loadable_module(${CATPassName} ${CATPassSrc})
+add_llvm_loadable_module(${PassName} ${PassSrc})
