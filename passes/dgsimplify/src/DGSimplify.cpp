@@ -29,6 +29,39 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
   bool inlined = inlineCallsInFunctionsWithMassiveSCCs(funcToCheck);
   return inlined;
   */
+  auto main = M.getFunction("main");
+  collectFnParents(main);
+
+  for (auto fns : parents) {
+    errs() << "Parent function: " << fns.first->getName() << "\n";
+    for (auto f : fns.second) {
+      errs() << "  Child: " << f->getName() << "\n";
+    }
+  }
+
+  collectInDepthOrderFns(main);
+
+  int count = 0;
+  for (auto fn : depthOrderedFns) {
+    ++count;
+    errs() << "Function: " << count << " " << fn->getName() << "\n";
+  }
+
+
+  /*
+  // NOTE(angelo): Order function calls by traversing depth ordered functions
+  int callInd = 0;
+  for (auto func : depthOrderedFns) {
+    collectPreOrderedLoopsFor(func);
+    for (auto &B : F) {
+      for (auto &I : B) {
+        if (auto call = dyn_cast<CallInst>(V)) {
+          preOrderedCalls[call] = callInd++;
+        }
+      }
+    }
+  }
+  */
 
   return false;
 }
@@ -158,9 +191,10 @@ bool llvm::DGSimplify::checkToInlineCallInFunction (PDG *fdg, Function &F) {
   return false;
 }
 
-void llvm::DGSimplify::collectInDepthOrderFnsCallsAndLoops (Function *main) {
+void llvm::DGSimplify::collectFnParents (Function *main) {
   auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
   std::queue<Function *> funcToTraverse;
+  std::set<Function *> reached;
 
   /*
    * NOTE(angelo): Traverse call graph, collecting function "parents":
@@ -168,8 +202,6 @@ void llvm::DGSimplify::collectInDepthOrderFnsCallsAndLoops (Function *main) {
    *  breadth-first traversal of the call graph
    */
   funcToTraverse.push(main);
-  std::set<Function *> reached;
-  std::unordered_map<Function *, std::set<Function *>> parents;
   reached.insert(main);
   while (!funcToTraverse.empty()) {
     auto func = funcToTraverse.front();
@@ -179,79 +211,79 @@ void llvm::DGSimplify::collectInDepthOrderFnsCallsAndLoops (Function *main) {
     for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
       auto F = callRecord.second->getFunction();
       if (!F || F->empty()) continue;
+      parents[F].insert(func);
       if (reached.find(F) != reached.end()) continue;
       reached.insert(F);
-      parents[F].insert(func);
       funcToTraverse.push(F);
     }
   }
-  reached.clear()
+}
 
-  /*
-   * NOTE(angelo): Determine the depth of functions in the call graph:
-   *  next-depth functions are those where every parent function
-   *  has already been assigned a previous depth
-   */
+/*
+ * NOTE(angelo): Determine the depth of functions in the call graph:
+ *  next-depth functions are those where every parent function
+ *  has already been assigned a previous depth
+ * Obviously, recursive loops by this definition have undefined depth.
+ *  For these groups, each with functions in a recursive chain,
+ *  the groups are ordered by their entry points' relative depths
+ *  and assigned depths after all other directed acyclic portions of
+ *  the call graph from their common ancestor is traversed.
+ */
+void llvm::DGSimplify::collectInDepthOrderFns (Function *main) {
+  auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
+  std::queue<Function *> funcToTraverse;
+  std::set<Function *> reached;
+  std::vector<Function *> *deferred = new std::vector<Function *>();
+
   funcToTraverse.push(main);
+  fnOrders[main] = 0;
   depthOrderedFns.push_back(main);
   reached.insert(main);
   while (!funcToTraverse.empty()) {
-    auto func = funcToTraverse.front();
-    funcToTraverse.pop();
+    while (!funcToTraverse.empty()) {
+      auto func = funcToTraverse.front();
+      funcToTraverse.pop();
+      errs() << "Traversing: " << func->getName() << "\n";
 
-    auto funcCGNode = callGraph[func];
-    for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
-      auto F = callRecord.second->getFunction();
-      if (!F || F->empty()) continue;
-      if (reached.find(F) != reached.end()) continue;
-      
-      bool allParentsOrdered = true;
-      for (auto parent : parents[F]) {
-        if (reached.find(parent) == reached.end()) {
-          allParentsOrdered = false;
-          break;
-        }
-      }
-      if (allParentsOrdered) {
-        depthOrderedFns.push_back(F);
-        funcToTraverse.push(F);
-        reached.insert(F);
-      }
-    }
-  }
-
-  // NOTE(angelo): Order function calls by traversing depth ordered functions
-  // TODO(angelo): From here
-  int callInd = 0;
-  while (!funcToTraverse.empty()) {
-    auto func = funcToTraverse.front();
-    funcToTraverse.pop();
-
-    /*
-     * NOTE(angelo): Existence of ordering for a function's loops is the
-     *  most performant check for whether it has been encountered already 
-     */
-    if (preOrderedLoops.find(func) != preOrderedLoops.end()) continue;
-    orderedFns.push_back(func);
-    collectPreOrderedLoopsFor(func);
-
-    auto funcCGNode = callGraph[func];
-    for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
-      if (!callRecord.first.pointsToAliveValue()) continue;
-      auto *V = &*callRecord.first;
-
-      /*
-       * NOTE(angelo): Current implementation only traverses CallInst invocations,
-       *  not InvokeInst invocations of functions
-       */
-      if (auto call = dyn_cast<CallInst>(V)) {
+      auto funcCGNode = callGraph[func];
+      for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
         auto F = callRecord.second->getFunction();
         if (!F || F->empty()) continue;
-        preOrderedCalls[call] = callInd++;
-        funcToTraverse.push(F);
+        if (reached.find(F) != reached.end()) continue;
+        
+        bool allParentsOrdered = true;
+        for (auto parent : parents[F]) {
+          if (reached.find(parent) == reached.end()) {
+            allParentsOrdered = false;
+            break;
+          }
+        }
+        if (allParentsOrdered) {
+          funcToTraverse.push(F);
+          fnOrders[F] = depthOrderedFns.size();
+          depthOrderedFns.push_back(F);
+          reached.insert(F);
+        } else {
+          deferred->push_back(F);
+        }
       }
     }
+
+    auto remaining = new std::vector<Function *>();
+    for (auto left : *deferred) {
+      if (fnOrders.find(left) == fnOrders.end()) {
+        remaining->push_back(left);
+        funcToTraverse.push(left);
+        fnOrders[left] = depthOrderedFns.size();
+        depthOrderedFns.push_back(left);
+        reached.insert(left);
+      }
+    }
+    delete deferred;
+    deferred = remaining;
   }
+
+  delete deferred;
 }
 
 void llvm::DGSimplify::collectPreOrderedLoopsFor (Function *F) {

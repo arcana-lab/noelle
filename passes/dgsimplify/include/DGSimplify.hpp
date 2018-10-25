@@ -34,7 +34,7 @@ namespace llvm {
     static char ID;
 
     DGSimplify()
-      : ModulePass{ID}, fnsAffected{}, orderedFns{},
+      : ModulePass{ID}, fnsAffected{}, depthOrderedFns{},
         preOrderedCalls{}, preOrderedLoops{} {}
 
     ~DGSimplify() ;
@@ -55,7 +55,8 @@ namespace llvm {
     /*
      * Function and loop order tracking
      */
-    void collectInDepthOrderFnsCallsAndLoops (Function *main);
+    void collectFnParents (Function *main) ;
+    void collectInDepthOrderFns (Function *main);
     void collectPreOrderedLoopsFor (Function *F) ;
 
     /*
@@ -74,7 +75,9 @@ namespace llvm {
     bool inlineFunctionCall (Function *F, CallInst *call) ;
 
     std::set<Function *> fnsAffected;
+    std::unordered_map<Function *, std::set<Function *>> parents;
     std::vector<Function *> depthOrderedFns;
+    std::unordered_map<Function *, int> fnOrders;
   };
 }
 
