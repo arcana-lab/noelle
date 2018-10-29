@@ -97,11 +97,18 @@ int neste (int iters) {
 int nestf (int iters) {
   if (iters == 0) return 0;
   int x = nestg(iters - 1);
+  for (int i = 0; i < iters; i++) {
+    x += i;
+  }
   return x;
 }
 
 int nestg (int iters) {
   if (iters == 0) return 0;
-  int x = nestc(iters - 1);
+  int x = 0;
+  for (int i = 0; i < 10; ++i) {
+    x += nestc(iters - 1);
+    x -= nestc(iters - 2);
+  }
   return x;
 }

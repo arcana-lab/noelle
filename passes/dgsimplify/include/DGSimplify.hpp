@@ -23,19 +23,21 @@
 #include <set>
 #include <queue>
 
+#include <stdio.h>
 #include <iostream>
 #include <fstream>
 
 using namespace llvm;
 
 namespace llvm {
+
   struct DGSimplify : public ModulePass {
   public:
     static char ID;
 
     DGSimplify()
-      : ModulePass{ID}, fnsAffected{}, depthOrderedFns{},
-        preOrderedCalls{}, preOrderedLoops{} {}
+      : ModulePass{ID}, fnsAffected{}, parentFns{}, childrenFns{},
+        loopsToCheck{}, depthOrderedFns{}, preOrderedLoops{} {}
 
     ~DGSimplify() ;
 
@@ -46,38 +48,57 @@ namespace llvm {
     void getAnalysisUsage(AnalysisUsage &AU) const override ;
 
   private:
-    void collectAllFunctionsInCallGraph (Module &M, std::set<Function *> &funcSet) ;
-
-    bool inlineCallsInFunctionsWithMassiveSCCs (std::set<Function *> &funcSet) ;
-
-    bool checkToInlineCallInFunction (PDG *fdg, Function &F) ;
 
     /*
-     * Function and loop order tracking
+     * Inlining procedure
      */
-    void collectFnParents (Function *main) ;
-    void collectInDepthOrderFns (Function *main);
-    void collectPreOrderedLoopsFor (Function *F) ;
-
-    /*
-     * NOTE(angelo): Naive assumption is that for function count n,
-     *  there are O(n) calls, and O(1) loops per function.
-     * To aim for O(1) lookup, ordered functions are mapped over,
-     *  with values (ordered indices) updated manually, whereas
-     *  loops are simply vectorized.
-     */
-    std::unordered_map<CallInst *, int> preOrderedCalls;
-    std::unordered_map<Function *, std::vector<Loop *> *> preOrderedLoops;
+    void getLoopsToInline (std::string filename) ;
+    bool registerRemainingLoops (std::string filename) ;
+    bool inlineCallsInMassiveSCCsOfLoops () ;
+    bool inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) ;
+    bool inlineFnsOfLoopsToCGRoot () ;
 
     /*
      * Inline tracking
      */
     bool inlineFunctionCall (Function *F, CallInst *call) ;
+    void adjustOrdersAfterInline (Function *F, CallInst *call) ;
+    Loop *getNextPreorderLoopAfter (Function *F, CallInst *call) ;
 
-    std::set<Function *> fnsAffected;
-    std::unordered_map<Function *, std::set<Function *>> parents;
+    /*
+     * Function and loop order tracking
+     */
+    void collectFnGraph (Function *main) ;
+    void collectInDepthOrderFns (Function *main);
+    void collectPreOrderedLoopsFor (Function *F) ;
+    void addFnPairInstance (Function *parentF, Function *childF, CallInst *call) ;
+    void removeFnPairInstance (Function *parentF, Function *childF, CallInst *call) ;
+
+    /*
+     * Debugging
+     */
+    void printFnCallGraph ();
+    void printFnOrder ();
+    void printFnLoopOrder (Function *F);
+
+    /*
+     * Determining and maintaining depth ordering of functions and their loops
+     */
+    std::unordered_map<Function *, std::set<Function *>> parentFns;
+    std::unordered_map<Function *, std::unordered_map<Function *, std::set<CallInst *>>> childrenFns;
     std::vector<Function *> depthOrderedFns;
     std::unordered_map<Function *, int> fnOrders;
+    std::unordered_map<Function *, std::unordered_map<Loop *, int> *> preOrderedLoops;
+
+    /*
+     * Tracking functions that had a CallInst of theirs inlined
+     */
+    std::set<Function *> fnsAffected;
+
+    /*
+     * Tracking the functions and loops to affect
+     */
+    std::unordered_map<Function *, std::set<Loop *>> loopsToCheck;
   };
 }
 

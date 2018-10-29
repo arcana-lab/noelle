@@ -21,19 +21,7 @@ std::vector<DSWPLoopDependenceInfo *> Parallelizer::getLoopsToParallelize (Modul
   /*
    * Consider all loops to parallelize.
    */
-  std::set<Function *> functionsSeen;
   for (auto loop : *allLoops){
-    auto function = loop->function;
-    if (functionsSeen.find(function) != functionsSeen.end()){
-
-      /*
-       * Free the memory.
-       */
-      // delete loop;
-      // continue ;
-    }
-    functionsSeen.insert(function);
-
     auto dswpLoop = (DSWPLoopDependenceInfo *)(loop);
     loopsToParallelize.push_back(dswpLoop);
   }
