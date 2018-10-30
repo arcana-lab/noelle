@@ -47,6 +47,7 @@ void DOALL::reduceOriginIV (
    */
   auto offsetV = ConstantInt::get(IVInfo.step->getType(), IVInfo.endOffset);
   IRBuilder<> entryB(chunker->entryBlock);
+  auto endClone = chunker->fetchClone(IVInfo.cmpIVTo);
   endClone = IVInfo.endOffset ? entryB.CreateAdd(endClone, offsetV) : endClone;
 
   /*
