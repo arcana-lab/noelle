@@ -11,6 +11,7 @@ namespace llvm {
     struct LoopSummary {
     	int id;
     	LoopSummary *parent;
+      std::set<LoopSummary *> children;
     	int depth;
       BasicBlock *header;
     	std::set<BasicBlock *> bbs;
@@ -59,6 +60,8 @@ namespace llvm {
   			}
 
   			/*
+         * TODO(angelo): Separate out populating parents and children
+         *  from this pseudo constructor, promote above to constructor
   			 * Associate loops with their parents
   			 */
   			for (auto subLoop : l->getSubLoops()) {

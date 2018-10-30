@@ -63,7 +63,7 @@ namespace llvm {
      */
     bool inlineFunctionCall (Function *F, CallInst *call) ;
     void adjustOrdersAfterInline (Function *F, CallInst *call) ;
-    Loop *getNextPreorderLoopAfter (Function *F, CallInst *call) ;
+    LoopSummary *getNextPreorderLoopAfter (Function *F, CallInst *call) ;
 
     /*
      * Function and loop order tracking
@@ -88,7 +88,7 @@ namespace llvm {
     std::unordered_map<Function *, std::unordered_map<Function *, std::set<CallInst *>>> childrenFns;
     std::vector<Function *> depthOrderedFns;
     std::unordered_map<Function *, int> fnOrders;
-    std::unordered_map<Function *, std::unordered_map<Loop *, int> *> preOrderedLoops;
+    std::unordered_map<Function *, std::vector<LoopSummary *> *> preOrderedLoops;
 
     /*
      * Tracking functions that had a CallInst of theirs inlined
@@ -98,7 +98,12 @@ namespace llvm {
     /*
      * Tracking the functions and loops to affect
      */
-    std::unordered_map<Function *, std::set<Loop *>> loopsToCheck;
+    std::unordered_map<Function *, std::set<LoopSummary *>> loopsToCheck;
+
+    /*
+     * Internal structures owned by the pass
+     */
+    std::set<LoopSummary *> loopSummaries;
   };
 }
 
