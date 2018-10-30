@@ -47,13 +47,22 @@ void llvm::PartitionCostAnalysis::traverseAllPartitionSubsets () {
      * Check if the current subset has been already tagged to be removed (i.e., merged).
      */
     if (!partition.isValidSubset(subID)) continue ;
-    // errs() << "\nTraversing " << subID << "\n";
+    errs() << "Traversing " << subID << "\n";
+    partition.subsetOfID(subID)->print(errs(), "H:   ");
 
     /*
      * Check merge criteria on dependents and depth-1 neighbors
      */
     auto dependentIDs = partition.getDependentIDs(subID);
     auto siblingIDs = partition.getSiblingIDs(subID);
+
+    errs() << "Dependents: ";
+    for (auto s : dependentIDs) errs() << s << " ";
+    errs() << "\n";
+    errs() << "Siblings: ";
+    for (auto s : siblingIDs) errs() << s << " ";
+    errs() << "\n";
+
     for (auto s : dependentIDs) checkIfShouldMerge(subID, s);
     for (auto s : siblingIDs) checkIfShouldMerge(subID, s);
 
@@ -71,7 +80,8 @@ void llvm::PartitionCostAnalysis::traverseAllPartitionSubsets () {
 
 void llvm::PartitionCostAnalysis::resetCandidateSubsetInfo () {
   minSubsetA = minSubsetB = -1;
-  loweredCost = mergedSubsetCost = 0;
+  loweredCost = 0;
+  mergedSubsetCost = totalCost;
   instCount = totalInstCount;
 }
 
@@ -92,4 +102,12 @@ bool llvm::PartitionCostAnalysis::mergeCandidateSubsets () {
     return true;
   }
   return false;
+}
+
+void llvm::PartitionCostAnalysis::printCandidate (raw_ostream &stream) {
+  std::string prefix = "Heuristic:   PCA: ";
+  stream << prefix << "Min subset IDs: " << minSubsetA << " " << minSubsetB << "\n";
+  stream << prefix << "Lowered cost: " << loweredCost
+    << " Merged subset cost: " << mergedSubsetCost
+    << " Instruction count: " << instCount << "\n";
 }

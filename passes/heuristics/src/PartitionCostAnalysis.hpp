@@ -24,6 +24,8 @@ namespace llvm {
 
     bool mergeCandidateSubsets ();
 
+    void printCandidate (raw_ostream &stream);
+
    protected:
     InvocationLatency &IL;
     SCCDAGPartition &partition;

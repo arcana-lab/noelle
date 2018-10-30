@@ -8,7 +8,8 @@ void Heuristics::adjustParallelizationPartitionForDSWP (
   SCCDAGPartition &partition,
   uint64_t idealThreads
 ) {
-  smallestSizeMergePartition(partition, idealThreads);
+  // smallestSizeMergePartition(partition, idealThreads);
+  minMaxMergePartition(partition, idealThreads);
 }
 
 void Heuristics::minMaxMergePartition (
@@ -23,6 +24,7 @@ void Heuristics::minMaxMergePartition (
     PCA.resetCandidateSubsetInfo();
     PCA.traverseAllPartitionSubsets();
 
+    PCA.printCandidate(errs());
     modified = PCA.mergeCandidateSubsets();
   } while (modified);
 }
