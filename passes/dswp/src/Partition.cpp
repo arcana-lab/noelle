@@ -84,7 +84,8 @@ void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
       auto bb = cast<Instruction>(iNodePair.first)->getParent();
       auto subL = li.bbToLoop[bb];
       auto subDepth = subL->depth;
-      if (loopDepth >= subDepth) continue;
+      if (subL == loop) continue;
+      assert(loopDepth < subDepth);
 
       while (subDepth - 1 > loopDepth) {
         subL = subL->parent;

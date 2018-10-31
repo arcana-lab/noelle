@@ -1,5 +1,7 @@
 #pragma once
 
+#include <math.h>
+
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instructions.h"
 #include "PDG.hpp"
@@ -27,6 +29,8 @@ namespace llvm {
         bitLength = DataLayout(p->getModule()).getTypeAllocSize(dependentType) * 8;
       } else {
         bitLength = dependentType->getPrimitiveSizeInBits();
+        // NOTE(angelo): Round up to the nearest power of 2
+        bitLength = pow(2, ceil(log2(bitLength)));
       }
     }
   };

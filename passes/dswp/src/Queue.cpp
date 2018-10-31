@@ -93,7 +93,7 @@ void DSWP::registerQueue (Parallelization &par, DSWPLoopDependenceInfo *LDI, Sta
   auto& queueTypes = par.queues.queueSizeToIndex ;
   bool byteSize = queueTypes.find(queueInfo->bitLength) != queueTypes.end();
   if (!byteSize) { 
-    errs() << "NOT BYTE SIZE (" << queueInfo->bitLength << "): "; producer->getType()->print(errs()); errs() <<  "\n";
+    errs() << "NOT SUPPORTED BYTE SIZE (" << queueInfo->bitLength << "): "; producer->getType()->print(errs()); errs() <<  "\n";
     producer->print(errs() << "Producer: "); errs() << "\n";
     abort();
   }
