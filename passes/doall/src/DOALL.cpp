@@ -152,6 +152,12 @@ void DOALL::createEnvironment (LoopDependenceInfoForParallelizer *LDI) {
 void DOALL::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) {
   std::unordered_map<int, int> reducableBinaryOps;
   std::unordered_map<int, Value *> initialValues;
+
+  /*
+   * Assertions.
+   */
+  assert(LDI != nullptr);
+
   for (auto envInd : LDI->environment->getPostEnvIndices()) {
     auto producer = LDI->environment->producerAt(envInd);
     auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
@@ -164,11 +170,17 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI)
     initialValues[envInd] = prodPHI->getIncomingValue(initValPHIIndex);
   }
 
-  IRBuilder<> *builder = new IRBuilder<>(LDI->entryPointOfParallelizedLoop);
-  envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues, NUM_CORES);
+  auto builder = new IRBuilder<>(LDI->entryPointOfParallelizedLoop);
+  this->envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues, NUM_CORES);
+
+  /*
+   * Free the memory.
+   */
   delete builder;
 
   ParallelizationTechnique::propagateLiveOutEnvironment(LDI);
+
+  return ;
 }
 
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
@@ -176,18 +188,32 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
+
+  /*
+   * Create the entry and exit points of the function that will include the parallelized loop.
+   */
   auto &cxt = LDI->function->getContext();
   LDI->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
   LDI->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
 
+  /*
+   * Create the environment.
+   */
   this->createEnvironment(LDI);
   this->populateLiveInEnvironment(LDI);
+
+  /*
+   * Fetch the pointer to the environment.
+   */
   auto envPtr = envBuilder->getEnvArrayInt8Ptr();
 
   // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic
   auto numCores = ConstantInt::get(par.int64, NUM_CORES);
   auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
 
+  /*
+   * Call the function that incudes the parallelized loop.
+   */
   IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
   doallBuilder.CreateCall(this->dispatcher, ArrayRef<Value *>({
     (Value *)chunker->f,
@@ -196,7 +222,15 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
     chunkSize
   }));
 
+  /*
+   * Propagate the last value of live-out variables to the code outside the parallelized loop.
+   */
   this->propagateLiveOutEnvironment(LDI);
 
+  /*
+   * Jump to the unique successor of the loop.
+   */
   doallBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
+
+  return ;
 }
