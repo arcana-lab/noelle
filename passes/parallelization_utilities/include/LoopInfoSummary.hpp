@@ -26,6 +26,11 @@ namespace llvm {
           if (l->isLoopLatch(bb)) latchBBs.insert(bb);
         }
     	}
+
+      void print (raw_ostream &stream) {
+        stream << "Loop summary: " << id << ", depth: " << depth << "\n";
+        header->begin()->print(stream); stream << "\n";
+      }
     };
 
 	struct LoopInfoSummary {
@@ -42,11 +47,11 @@ namespace llvm {
   		}
 
   		void populate(LoopInfo &li, Loop *l) {
-			std::unordered_map<Loop *, LoopSummary *> loopToSummary;
+        std::unordered_map<Loop *, LoopSummary *> loopToSummary;
 
-			/*
-			 * Summarize information about each loop
-			 */
+        /*
+         * Summarize information about each loop
+         */
   			loopToSummary[l] = this->createSummary(l);
   			loopToSummary[l]->parent = nullptr;
   			topLoop = loopToSummary[l];
@@ -71,5 +76,12 @@ namespace llvm {
   				lSum->parent = (inSummary ? loopToSummary[parLoop] : nullptr);
   			}
   		}
+
+      void print (raw_ostream &stream) {
+        stream << "Loop summaries:\n";
+        for (auto &loop : loops) {
+          loop->print(stream);
+        }
+      }
     };
 }

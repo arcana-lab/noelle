@@ -69,10 +69,11 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
     loopsToCheck.clear();
     std::string filename = "dgsimplify_loop_hoisting.txt";
     getLoopsToInline(filename);
-    bool inlined = inlineFnsOfLoopsToCGRoot();
+    // bool inlined = inlineFnsOfLoopsToCGRoot();
+    loopsToCheck.clear();
     bool remaining = registerRemainingLoops(filename);
     if (remaining) writeToContinueFile();
-    return inlined;
+    // return inlined;
   }
 
   return false;
@@ -277,9 +278,13 @@ bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
       fnsWillCheck.insert(parentF);
     }
     if (!inlinedFully) break;
-    loopsToCheck.erase(fnsToCheck[fnIndex]);
+    loopsToCheck.erase(childF);
+    fnsWillCheck.erase(childF);
     ++fnIndex;
   }
+
+  // TODO(angelo): Handle case where we list functions to check without loops
+  // TODO(angelo): Add fnsWillCheck to loopsToCheck, and remaining fnsToCheck
 }
 
 bool llvm::DGSimplify::inlineFunctionCall (Function *F, CallInst *call) {

@@ -38,14 +38,4 @@
 
 Task log - Angelo
   - min-max partition heuristic
-  - extract environment construction from DSWP and DOALL
   - clean up analysis classes (SCCDAGAttrs, SimpleIVInfo, ...)
-
-In progress:
-  Abstract env array:
-    In DSWP:
-      Pipeline.cpp:134
-    LDI->envArray OVERLOADED in DOALL implementation as looping function's environment AND each chunk's env
-      DOALL.cpp:87, Builder.cpp:49
-  Abstract load/store into environment creation (DSWP, DOALL)
-
