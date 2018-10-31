@@ -47,23 +47,33 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
   /*
    * Inline calls within large SCCs of targeted loops
    */
-  std::string filename = "scc_call_inlining";
-  getLoopsToInline(filename);
-  bool inlined = inlineCallsInMassiveSCCsOfLoops();
-  bool remaining = registerRemainingLoops(filename);
-  if (remaining) writeToContinueFile();
-  if (inlined) return true;
+  ifstream doCallInlineFile("dgsimplify_do_scc_call_inline.txt");
+  bool doInline = doCallInlineFile.good();
+  doCallInlineFile.close();
+  if (doInline) {
+    std::string filename = "dgsimplify_scc_call_inlining.txt";
+    getLoopsToInline(filename);
+    bool inlined = inlineCallsInMassiveSCCsOfLoops();
+    bool remaining = registerRemainingLoops(filename);
+    if (remaining) writeToContinueFile();
+    return inlined;
+  }
 
   /*
    * Inline functions containing targeted loops so the loop is in main
    */
-  loopsToCheck.clear();
-  filename = "loop_hoisting";
-  getLoopsToInline(filename);
-  inlined = inlineFnsOfLoopsToCGRoot();
-  remaining = registerRemainingLoops(filename);
-  if (remaining) writeToContinueFile();
-  if (inlined) return true;
+  ifstream doHoistFile("dgsimplify_do_hoist.txt");
+  bool doHoist = doHoistFile.good();
+  doHoistFile.close();
+  if (doHoist) {
+    loopsToCheck.clear();
+    std::string filename = "dgsimplify_loop_hoisting.txt";
+    getLoopsToInline(filename);
+    bool inlined = inlineFnsOfLoopsToCGRoot();
+    bool remaining = registerRemainingLoops(filename);
+    if (remaining) writeToContinueFile();
+    return inlined;
+  }
 
   return false;
 }
@@ -80,7 +90,7 @@ void llvm::DGSimplify::getAnalysisUsage(AnalysisUsage &AU) const {
 
 void llvm::DGSimplify::getLoopsToInline (std::string filename) {
   loopsToCheck.clear();
-  ifstream infile("dgsimplify_" + filename);
+  ifstream infile(filename);
   if (infile.good()) {
     std::string line;
     std::string delimiter = ",";
@@ -95,7 +105,7 @@ void llvm::DGSimplify::getLoopsToInline (std::string filename) {
       errs() << "DGSimplify:   Checking: FN index: "
         << fnInd << " " << F->getName()
         << ", LOOP: " << loopInd << "\n";
-      loops[loopInd]->header->print(errs() << "Header:\n"); errs();
+      // loops[loopInd]->header->print(errs() << "Header:\n"); errs() << "\n";
     }
     return;
   }
@@ -108,23 +118,23 @@ void llvm::DGSimplify::getLoopsToInline (std::string filename) {
       errs() << "DGSimplify:   Checking: FN index: "
         << fnOrders[F] << " " << F->getName()
         << ", LOOP: " << summary->id << "\n";
-      summary->header->print(errs() << "Header:\n"); errs();
+      // summary->header->print(errs() << "Header:\n"); errs() << "\n";
     }
   }
 }
 
 bool llvm::DGSimplify::registerRemainingLoops (std::string filename) {
-  std::string fullname = "dgsimplify_" + filename;
-  remove(fullname.c_str());
+  remove(filename.c_str());
   if (loopsToCheck.size() == 0) return false;
 
-  ofstream outfile(fullname);
+  ofstream outfile(filename);
   for (auto funcLoops : loopsToCheck) {
     auto F = funcLoops.first;
     int fnInd = fnOrders[F];
     for (auto summary : funcLoops.second) {
       int loopInd = summary->id;
-      errs() << "DGSimplify:   Remaining: FN index: " << fnInd
+      errs() << "DGSimplify:   Remaining: FN index: "
+        << fnInd << " " << F->getName()
         << ", LOOP index: " << loopInd << "\n";
       outfile << fnInd << "," << loopInd << "\n";
     }
@@ -276,8 +286,12 @@ bool llvm::DGSimplify::inlineFunctionCall (Function *F, CallInst *call) {
   // NOTE(angelo): Prevent inlining a call within a function already altered by inlining
   if (fnsAffected.find(F) != fnsAffected.end()) return false ;
 
+  // NOTE(angelo): Prevent inlining a call to the entry of a recursive chain of functions
+  Function *callF = call->getCalledFunction();
+  if (recursiveChainEntranceFns.find(callF) != recursiveChainEntranceFns.end()) return false ;
+
   InlineFunctionInfo IFI;
-  call->print(errs() << "DGSimplify:   Inlining: "); errs() << "\n";
+  call->print(errs() << "DGSimplify:   Inlining in: " << F->getName() << ", "); errs() << "\n";
   if (InlineFunction(call, IFI)) {
     fnsAffected.insert(F); 
     adjustOrdersAfterInline(F, call);
@@ -474,6 +488,7 @@ void llvm::DGSimplify::collectInDepthOrderFns (Function *main) {
     auto remaining = new std::vector<Function *>();
     for (auto left : *deferred) {
       if (fnOrders.find(left) == fnOrders.end()) {
+        recursiveChainEntranceFns.insert(left);
         remaining->push_back(left);
         funcToTraverse.push(left);
         fnOrders[left] = depthOrderedFns.size();
@@ -542,8 +557,7 @@ void llvm::DGSimplify::printFnCallGraph () {
 void llvm::DGSimplify::printFnOrder () {
   int count = 0;
   for (auto fn : depthOrderedFns) {
-    ++count;
-    errs() << "DGSimplify:   Function: " << count << " " << fn->getName() << "\n";
+    errs() << "DGSimplify:   Function: " << count++ << " " << fn->getName() << "\n";
   }
 }
 

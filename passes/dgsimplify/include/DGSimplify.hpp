@@ -87,6 +87,7 @@ namespace llvm {
     std::unordered_map<Function *, std::set<Function *>> parentFns;
     std::unordered_map<Function *, std::unordered_map<Function *, std::set<CallInst *>>> childrenFns;
     std::vector<Function *> depthOrderedFns;
+    std::set<Function *> recursiveChainEntranceFns;
     std::unordered_map<Function *, int> fnOrders;
     std::unordered_map<Function *, std::vector<LoopSummary *> *> preOrderedLoops;
 

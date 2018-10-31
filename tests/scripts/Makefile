@@ -54,7 +54,8 @@ test.bc: test.cpp
 
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
-	@../../scripts/iterate_dgsimplify.sh "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)" "$(PRE_OPTPASSES)" "$@"
+	@../../scripts/iterate_dgsimplify.sh "" "$(PRE_OPTPASSES)" "$@"
+	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
 	llvm-dis $@
 
 show_passes: test_seq.bc

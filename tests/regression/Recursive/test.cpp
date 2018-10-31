@@ -64,9 +64,12 @@ int main (int argc, char *argv[]){
  */
 int nesta (int iters) {
   if (iters == 0) return 0;
-  int x = nestb(iters - 1);
-  int y = nestc(iters - 1);
-  int z = nestb(iters - 1);
+  int x = 0, y = 0, z = 0;
+  for (int i = 0; i < 10; ++i) {
+    x += nestb(iters - 1);
+    y += nestc(iters - 1);
+    z += nestb(iters - 1);
+  }
   return x + y + z;
 }
 
