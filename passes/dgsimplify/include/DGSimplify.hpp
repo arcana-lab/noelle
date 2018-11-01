@@ -56,13 +56,17 @@ namespace llvm {
     bool registerRemainingLoops (std::string filename) ;
     bool inlineCallsInMassiveSCCsOfLoops () ;
     bool inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) ;
+
+    void getFunctionsToInline (std::string filename) ;
+    bool registerRemainingFunctions (std::string filename) ;
     bool inlineFnsOfLoopsToCGRoot () ;
 
     /*
      * Inline tracking
      */
-    bool inlineFunctionCall (Function *F, CallInst *call) ;
-    void adjustOrdersAfterInline (Function *F, CallInst *call) ;
+    bool canInlineWithoutRecursiveLoop (Function *parentF, Function *childF) ;
+    bool inlineFunctionCall (Function *F, Function *childF, CallInst *call) ;
+    void adjustOrdersAfterInline (Function *F, Function *childF, CallInst *call, LoopSummary *nextLoop) ;
     LoopSummary *getNextPreorderLoopAfter (Function *F, CallInst *call) ;
 
     /*
@@ -100,6 +104,7 @@ namespace llvm {
      * Tracking the functions and loops to affect
      */
     std::unordered_map<Function *, std::set<LoopSummary *>> loopsToCheck;
+    std::set<Function *> fnsToCheck;
 
     /*
      * Internal structures owned by the pass
