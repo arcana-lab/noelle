@@ -83,7 +83,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
   return ;
 }
 
-void ParallelizationTechnique::generateCodeToLoadAllLiveInVariables (
+void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
   LoopDependenceInfoForParallelizer *LDI, 
   BasicBlock *appendLoadsInThisBasicBlock,
   std::function<void (Value *originalProducer, Value *generatedLoad)> producerLoadMap

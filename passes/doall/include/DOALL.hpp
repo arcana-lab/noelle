@@ -68,7 +68,7 @@ namespace llvm {
        * Import methods of the base class that we overload.
        */
       using ParallelizationTechnique::cloneSequentialLoop ;
-      using ParallelizationTechnique::generateCodeToLoadAllLiveInVariables ;
+      using ParallelizationTechnique::generateCodeToLoadLiveInVariables ;
 
       /*
        * Methods
@@ -80,7 +80,12 @@ namespace llvm {
           std::unique_ptr<ChunkerInfo> &chunker
           );
 
-      void generateCodeToLoadAllLiveInVariables (
+      void generateCodeToLoadLiveInVariables (
+          LoopDependenceInfoForParallelizer *LDI, 
+          std::unique_ptr<ChunkerInfo> &chunker
+          );
+
+      void generateCodeToStoreLiveOutVariables (
           LoopDependenceInfoForParallelizer *LDI, 
           std::unique_ptr<ChunkerInfo> &chunker
           );
@@ -89,7 +94,6 @@ namespace llvm {
       void reduceOriginIV(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, ScalarEvolution &SE);
       void createOuterLoop(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void alterInnerLoopToIterateChunks(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      void storePostEnvironment(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
 
       void addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       Value *createEnvArray (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);

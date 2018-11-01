@@ -40,7 +40,7 @@ namespace llvm {
       void initEnvBuilder (LoopDependenceInfoForParallelizer *LDI);
       virtual void createEnvironment (LoopDependenceInfoForParallelizer *LDI);
 
-      virtual void generateCodeToLoadAllLiveInVariables (
+      virtual void generateCodeToLoadLiveInVariables (
           LoopDependenceInfoForParallelizer *LDI, 
           BasicBlock *appendLoadsInThisBasicBlock,
           std::function<void (Value *originalProducer, Value *generatedLoad)> producerLoadMap

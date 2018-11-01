@@ -1,6 +1,6 @@
 #include "DOALL.hpp"
 
-void DOALL::generateCodeToLoadAllLiveInVariables (
+void DOALL::generateCodeToLoadLiveInVariables (
   LoopDependenceInfoForParallelizer *LDI,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
@@ -15,12 +15,11 @@ void DOALL::generateCodeToLoadAllLiveInVariables (
   /*
    * Generate loads to load live-in variables.
    */
-  this->generateCodeToLoadAllLiveInVariables(LDI, chunker->entryBlock, mapFunction);
+  this->generateCodeToLoadLiveInVariables(LDI, chunker->entryBlock, mapFunction);
 }
 
-void DOALL::storePostEnvironment (
+void DOALL::generateCodeToStoreLiveOutVariables (
   LoopDependenceInfoForParallelizer *LDI,
-  Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
   auto envUser = envBuilder->getUser(0);
