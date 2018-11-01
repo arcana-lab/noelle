@@ -68,6 +68,7 @@ namespace llvm {
        * Import methods of the base class that we overload.
        */
       using ParallelizationTechnique::cloneSequentialLoop ;
+      using ParallelizationTechnique::generateCodeToLoadAllLiveInVariables ;
 
       /*
        * Methods
@@ -79,7 +80,11 @@ namespace llvm {
           std::unique_ptr<ChunkerInfo> &chunker
           );
 
-      void reproducePreEnv(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void generateCodeToLoadAllLiveInVariables (
+          LoopDependenceInfoForParallelizer *LDI, 
+          std::unique_ptr<ChunkerInfo> &chunker
+          );
+
       void mapOriginLoopValueUses(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void reduceOriginIV(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, ScalarEvolution &SE);
       void createOuterLoop(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);

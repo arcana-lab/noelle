@@ -1,18 +1,21 @@
 #include "DOALL.hpp"
 
-void DOALL::reproducePreEnv (
+void DOALL::generateCodeToLoadAllLiveInVariables (
   LoopDependenceInfoForParallelizer *LDI,
-  Parallelization &par,
   std::unique_ptr<ChunkerInfo> &chunker
 ) {
-  auto envUser = envBuilder->getUser(0);
-  IRBuilder<> entryB(chunker->entryBlock);
-  for (auto envInd : LDI->environment->getPreEnvIndices()) {
-    envUser->createEnvPtr(entryB, envInd);
-    auto envLoad = entryB.CreateLoad(envUser->getEnvPtr(envInd));
-    auto producer = LDI->environment->producerAt(envInd);
-    chunker->preEnvMap[producer] = cast<Value>(envLoad);
-  }
+
+  /*
+   * Define the function to use.
+   */
+  auto mapFunction = [&chunker](Value *originalProducer, Value *generatedLoad){
+    chunker->preEnvMap[originalProducer] = cast<Value>(generatedLoad);
+  };
+
+  /*
+   * Generate loads to load live-in variables.
+   */
+  this->generateCodeToLoadAllLiveInVariables(LDI, chunker->entryBlock, mapFunction);
 }
 
 void DOALL::storePostEnvironment (

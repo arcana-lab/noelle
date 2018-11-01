@@ -89,7 +89,7 @@ bool DOALL::apply (
   /*
    * Load all loop live-in values at the entry point of the DOALL function, before the parallelized loop starts.
    */
-  this->reproducePreEnv(LDI, par, chunker);
+  this->generateCodeToLoadAllLiveInVariables(LDI, chunker);
 
   /*
    * Fix the data flow within the parallelized loop.

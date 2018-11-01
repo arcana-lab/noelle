@@ -82,3 +82,28 @@ void ParallelizationTechnique::cloneSequentialLoop (
 
   return ;
 }
+
+void ParallelizationTechnique::generateCodeToLoadAllLiveInVariables (
+  LoopDependenceInfoForParallelizer *LDI, 
+  BasicBlock *appendLoadsInThisBasicBlock,
+  std::function<void (Value *originalProducer, Value *generatedLoad)> producerLoadMap
+  ){
+
+  /*
+   * Fetch the user.
+   */
+  auto envUser = this->envBuilder->getUser(0);
+
+  /*
+   * Generate loads to load live-in variables.
+   */
+  IRBuilder<> entryB(appendLoadsInThisBasicBlock);
+  for (auto envInd : LDI->environment->getPreEnvIndices()) {
+    envUser->createEnvPtr(entryB, envInd);
+    auto envLoad = entryB.CreateLoad(envUser->getEnvPtr(envInd));
+    auto producer = LDI->environment->producerAt(envInd);
+    producerLoadMap(producer, cast<Value>(envLoad));
+  }
+
+  return ;
+}
