@@ -325,6 +325,27 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   }
 
   /*
+   * NOTE(angelo): LCSSA constants need to be replicated for parallelized code path
+   */
+  for (auto bb : loopExitBlocks) {
+    for (auto &I : *bb) {
+      if (auto phi = dyn_cast<PHINode>(&I)) {
+        auto bbIndex = phi->getBasicBlockIndex(originalHeader);
+        if (bbIndex == -1) {
+          phi->print(errs() << "HOW "); errs() << "\n";
+          continue;
+        }
+        auto val = phi->getIncomingValue(bbIndex);
+        if (isa<Constant>(val)) {
+          phi->addIncoming(val, endOfParLoopInOriginalFunc);
+        }
+        continue;
+      }
+      break;
+    }
+  }
+
+  /*
    * Set/Reset global variable so only one invocation of the loop is run in parallel at a time.
    */
   if (startOfParLoopInOriginalFunc == endOfParLoopInOriginalFunc) {
