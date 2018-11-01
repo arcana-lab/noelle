@@ -97,7 +97,7 @@ bool DOALL::apply (
    * At this point, all operands of an instruction of the parallelize loop still point to the instructions within the sequential loop.
    * We have to redirect these operands to point to the new operands that are generated within the parallelized loop.
    */
-  this->mapOriginLoopValueUses(LDI, par, chunker);
+  this->adjustDataFlowToUseClonedInstructions(LDI, chunker);
 
   this->reduceOriginIV(LDI, par, chunker, SE);
 

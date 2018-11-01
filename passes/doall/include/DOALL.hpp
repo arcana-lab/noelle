@@ -69,6 +69,7 @@ namespace llvm {
        */
       using ParallelizationTechnique::cloneSequentialLoop ;
       using ParallelizationTechnique::generateCodeToLoadLiveInVariables ;
+      using ParallelizationTechnique::adjustDataFlowToUseClonedInstructions ;
 
       /*
        * Methods
@@ -90,7 +91,11 @@ namespace llvm {
           std::unique_ptr<ChunkerInfo> &chunker
           );
 
-      void mapOriginLoopValueUses(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+      void adjustDataFlowToUseClonedInstructions(
+          LoopDependenceInfoForParallelizer *LDI, 
+          std::unique_ptr<ChunkerInfo> &chunker
+          );
+
       void reduceOriginIV(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, ScalarEvolution &SE);
       void createOuterLoop(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void alterInnerLoopToIterateChunks(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);

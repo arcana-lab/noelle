@@ -41,10 +41,10 @@ namespace llvm {
       virtual void createEnvironment (LoopDependenceInfoForParallelizer *LDI);
 
       virtual void generateCodeToLoadLiveInVariables (
-          LoopDependenceInfoForParallelizer *LDI, 
-          BasicBlock *appendLoadsInThisBasicBlock,
-          std::function<void (Value *originalProducer, Value *generatedLoad)> producerLoadMap
-          );
+        LoopDependenceInfoForParallelizer *LDI, 
+        BasicBlock *appendLoadsInThisBasicBlock,
+        std::function<void (Value *originalProducer, Value *generatedLoad)> producerLoadMap
+        );
 
       void populateLiveInEnvironment (LoopDependenceInfoForParallelizer *LDI);
       virtual void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI);
@@ -53,11 +53,21 @@ namespace llvm {
        * Clone the whole sequential loop.
        */
       virtual void cloneSequentialLoop (
-          LoopDependenceInfoForParallelizer *LDI, 
-          std::function<BasicBlock * (void)> createNewBasicBlock,
-          std::function<void (BasicBlock *, BasicBlock *)> basicBlockMap,
-          std::function<void (Instruction *, Instruction *)> instructionMap
-          );
+        LoopDependenceInfoForParallelizer *LDI, 
+        std::function<BasicBlock * (void)> createNewBasicBlock,
+        std::function<void (BasicBlock *, BasicBlock *)> basicBlockMap,
+        std::function<void (Instruction *, Instruction *)> instructionMap
+        );
+
+      /*
+       * Adjust the data flow to use the cloned instructions.
+       */
+      virtual void adjustDataFlowToUseClonedInstructions (
+        LoopDependenceInfoForParallelizer *LDI,
+        unordered_map<Instruction *, Instruction *> fromOriginalToClonedInstruction,
+        unordered_map<BasicBlock *, BasicBlock *> fromOriginalToClonedBasicBlock,
+        unordered_map<Value *, Value *> fromOriginalToClonedLiveInVariable
+        );
 
       /*
        * Fields
