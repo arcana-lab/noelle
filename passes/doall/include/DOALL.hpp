@@ -76,11 +76,7 @@ namespace llvm {
 
       void cloneSequentialLoop (
           LoopDependenceInfoForParallelizer *LDI, 
-          Parallelization &par, 
-          std::unique_ptr<ChunkerInfo> &chunker, 
-          std::function<BasicBlock * (void)> createNewBasicBlock,
-          std::function<void (BasicBlock *, BasicBlock *)> basicBlockMap,
-          std::function<void (Instruction *, Instruction *)> instructionMap
+          std::unique_ptr<ChunkerInfo> &chunker
           );
 
       void reproducePreEnv(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);

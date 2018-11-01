@@ -84,17 +84,7 @@ bool DOALL::apply (
   /*
    * Clone the sequential loop and store the clone to the DOALL function.
    */
-  auto createNewBasicBlock = [&chunker] (void) -> BasicBlock * {
-    auto cloneBB = chunker->createChunkerBB();
-    return cloneBB;
-  };
-  auto basicBlockMapFunction = [&chunker](BasicBlock *originalBB, BasicBlock *cloneBB) {
-    chunker->innerBBMap[originalBB] = cloneBB;
-  };
-  auto instructionMapFunction = [&chunker](Instruction *originalInstruction, Instruction *cloneInstruction) {
-    chunker->innerValMap[originalInstruction] = cloneInstruction;
-  };
-  this->cloneSequentialLoop(LDI, par, chunker, createNewBasicBlock, basicBlockMapFunction, instructionMapFunction);
+  this->cloneSequentialLoop(LDI, chunker);
 
   /*
    * Load all loop live-in values at the entry point of the DOALL function, before the parallelized loop starts.

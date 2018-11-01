@@ -54,12 +54,22 @@ std::unique_ptr<ChunkerInfo> DOALL::createChunkingFuncAndArgs (
 
 void DOALL::cloneSequentialLoop (
   LoopDependenceInfoForParallelizer *LDI,
-  Parallelization &par,
-  std::unique_ptr<ChunkerInfo> &chunker,
-  std::function<BasicBlock * (void)> createNewBasicBlock,
-  std::function<void (BasicBlock *, BasicBlock *)> basicBlockMap,
-  std::function<void (Instruction *, Instruction *)> instructionMap
+  std::unique_ptr<ChunkerInfo> &chunker
   ){
+
+  /*
+   * Define the functions to use to clone the sequential loop.
+   */
+  auto createNewBasicBlock = [&chunker] (void) -> BasicBlock * {
+    auto cloneBB = chunker->createChunkerBB();
+    return cloneBB;
+  };
+  auto basicBlockMap = [&chunker](BasicBlock *originalBB, BasicBlock *cloneBB) {
+    chunker->innerBBMap[originalBB] = cloneBB;
+  };
+  auto instructionMap = [&chunker](Instruction *originalInstruction, Instruction *cloneInstruction) {
+    chunker->innerValMap[originalInstruction] = cloneInstruction;
+  };
 
   /*
    * Clone the whole sequential loop.
