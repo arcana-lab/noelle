@@ -18,6 +18,7 @@ function runSimplify {
   local FILE_NAME=$(expand_rel_path "$3") &> /dev/null ;
   local ITER=0 ;
 
+  rm -f dgsimplify_**
   touch "dgsimplify_do_scc_call_inline.txt"
   touch "dgsimplify_continue.txt"
   while test -e "dgsimplify_continue.txt" ; do
@@ -28,6 +29,7 @@ function runSimplify {
   done
 
   ITER=0
+  rm -f dgsimplify_**
   touch "dgsimplify_do_hoist.txt"
   touch "dgsimplify_continue.txt"
   while test -e "dgsimplify_continue.txt" ; do
@@ -36,9 +38,9 @@ function runSimplify {
     printf "Running DGSimplify to hoist loops to main, iteration: $ITER\n"
     opt $DEP_TRANS $DEP_PASS "-DGSimplify" $FILE_NAME "-o" $FILE_NAME
   done
+
+  rm -f dgsimplify_**
 }
 
-rm -f dgsimplify_**
 runSimplify "$1" "$2" "$3"
-rm -f dgsimplify_**
 exit 0

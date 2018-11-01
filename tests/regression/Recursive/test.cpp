@@ -99,9 +99,9 @@ int neste (int iters) {
 
 int nestf (int iters) {
   if (iters == 0) return 0;
-  int x = nestg(iters - 1);
+  int x = 0;
   for (int i = 0; i < iters; i++) {
-    x += i;
+    x += nestg(i);
   }
   return x;
 }
