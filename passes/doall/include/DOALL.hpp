@@ -68,7 +68,16 @@ namespace llvm {
        * Methods
        */
       std::unique_ptr<ChunkerInfo> createChunkingFuncAndArgs (LoopDependenceInfoForParallelizer *LDI, Parallelization &par);
-      void cloneSequentialLoop(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
+
+      void cloneSequentialLoop (
+          LoopDependenceInfoForParallelizer *LDI, 
+          Parallelization &par, 
+          std::unique_ptr<ChunkerInfo> &chunker, 
+          std::function<BasicBlock * (void)> createNewBasicBlock,
+          std::function<void (BasicBlock *, BasicBlock *)> basicBlockMap,
+          std::function<void (Instruction *, Instruction *)> instructionMap
+          );
+
       void reproducePreEnv(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void mapOriginLoopValueUses(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
       void reduceOriginIV(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, ScalarEvolution &SE);

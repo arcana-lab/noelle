@@ -55,19 +55,30 @@ std::unique_ptr<ChunkerInfo> DOALL::createChunkingFuncAndArgs (
 void DOALL::cloneSequentialLoop (
   LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,
-  std::unique_ptr<ChunkerInfo> &chunker
-) {
+  std::unique_ptr<ChunkerInfo> &chunker,
+  std::function<BasicBlock * (void)> createNewBasicBlock,
+  std::function<void (BasicBlock *, BasicBlock *)> basicBlockMap,
+  std::function<void (Instruction *, Instruction *)> instructionMap
+  ){
 
   /*
    * Create inner loop
    */
   for (auto originBB : LDI->liSummary.topLoop->bbs) {
-    auto cloneBB = chunker->createChunkerBB();
+
+    /*
+     * Create a new basic block for the function that will include the cloned loop.
+     */
+    auto cloneBB = createNewBasicBlock();
+    basicBlockMap(originBB, cloneBB);
+
+    /*
+     * Clone every instruction of the current basic block and add them to the cloned basic block just created.
+     */
     IRBuilder<> builder(cloneBB);
-    chunker->innerBBMap[originBB] = cloneBB;
     for (auto &I : *originBB) {
       auto cloneI = builder.Insert(I.clone());
-      chunker->innerValMap[&I] = cloneI;
+      instructionMap(&I, cloneI);
     }
   }
 
@@ -79,14 +90,14 @@ void DOALL::cloneSequentialLoop (
    *   the original loop, the inner loop should be constructed. This fixes the below incorrect mapping
    *   so that it is between loop preheaders.
    */
-  chunker->innerBBMap[LDI->preHeader] = chunker->chHeader;
+  basicBlockMap(LDI->preHeader, chunker->chHeader);
 
   /*
    * Map single exit block of inner loop to outer loop latch
    */
   auto singleExitBB = LDI->loopExitBlocks[0];
   assert(singleExitBB != nullptr);
-  chunker->innerBBMap[singleExitBB] = chunker->chLatch;
+  basicBlockMap(singleExitBB, chunker->chLatch);
 
   return ;
 }
