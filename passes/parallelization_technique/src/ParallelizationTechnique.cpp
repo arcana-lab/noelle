@@ -51,3 +51,34 @@ void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfoFo
     }
   }
 }
+
+void ParallelizationTechnique::cloneSequentialLoop (
+  LoopDependenceInfoForParallelizer *LDI, 
+  std::function<BasicBlock * (void)> createNewBasicBlock,
+  std::function<void (BasicBlock *, BasicBlock *)> basicBlockMap,
+  std::function<void (Instruction *, Instruction *)> instructionMap
+  ){
+
+  /*
+   * Create inner loop
+   */
+  for (auto originBB : LDI->liSummary.topLoop->bbs) {
+
+    /*
+     * Create a new basic block for the function that will include the cloned loop.
+     */
+    auto cloneBB = createNewBasicBlock();
+    basicBlockMap(originBB, cloneBB);
+
+    /*
+     * Clone every instruction of the current basic block and add them to the cloned basic block just created.
+     */
+    IRBuilder<> builder(cloneBB);
+    for (auto &I : *originBB) {
+      auto cloneI = builder.Insert(I.clone());
+      instructionMap(&I, cloneI);
+    }
+  }
+
+  return ;
+}

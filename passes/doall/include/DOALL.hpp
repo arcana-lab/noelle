@@ -65,6 +65,11 @@ namespace llvm {
       void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) override ;
 
       /*
+       * Import methods of the base class that we overload.
+       */
+      using ParallelizationTechnique::cloneSequentialLoop ;
+
+      /*
        * Methods
        */
       std::unique_ptr<ChunkerInfo> createChunkingFuncAndArgs (LoopDependenceInfoForParallelizer *LDI, Parallelization &par);

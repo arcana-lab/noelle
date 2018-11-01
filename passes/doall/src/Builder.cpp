@@ -62,25 +62,9 @@ void DOALL::cloneSequentialLoop (
   ){
 
   /*
-   * Create inner loop
+   * Clone the whole sequential loop.
    */
-  for (auto originBB : LDI->liSummary.topLoop->bbs) {
-
-    /*
-     * Create a new basic block for the function that will include the cloned loop.
-     */
-    auto cloneBB = createNewBasicBlock();
-    basicBlockMap(originBB, cloneBB);
-
-    /*
-     * Clone every instruction of the current basic block and add them to the cloned basic block just created.
-     */
-    IRBuilder<> builder(cloneBB);
-    for (auto &I : *originBB) {
-      auto cloneI = builder.Insert(I.clone());
-      instructionMap(&I, cloneI);
-    }
-  }
+  this->cloneSequentialLoop(LDI, createNewBasicBlock, basicBlockMap, instructionMap);
 
   /*
    * Map inner loop preheader to outer loop header

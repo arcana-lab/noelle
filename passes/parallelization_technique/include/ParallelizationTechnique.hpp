@@ -43,6 +43,16 @@ namespace llvm {
       virtual void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI);
 
       /*
+       * Clone the whole sequential loop.
+       */
+      virtual void cloneSequentialLoop (
+          LoopDependenceInfoForParallelizer *LDI, 
+          std::function<BasicBlock * (void)> createNewBasicBlock,
+          std::function<void (BasicBlock *, BasicBlock *)> basicBlockMap,
+          std::function<void (Instruction *, Instruction *)> instructionMap
+          );
+
+      /*
        * Fields
        */
       Module& module;
