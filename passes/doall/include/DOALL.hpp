@@ -74,7 +74,7 @@ namespace llvm {
       /*
        * Methods
        */
-      std::unique_ptr<ChunkerInfo> createChunkingFuncAndArgs (LoopDependenceInfoForParallelizer *LDI, Parallelization &par);
+      std::unique_ptr<ChunkerInfo> createFunctionThatWillIncludeTheParallelizedLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par);
 
       void cloneSequentialLoop (
           LoopDependenceInfoForParallelizer *LDI, 

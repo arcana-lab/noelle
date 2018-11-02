@@ -79,7 +79,7 @@ bool DOALL::apply (
   /*
    * Create a new function, which we are going to call it the DOALL function, where we will store the parallelized loop.
    */
-  auto chunker = this->createChunkingFuncAndArgs(LDI, par);
+  auto chunker = this->createFunctionThatWillIncludeTheParallelizedLoop(LDI, par);
 
   /*
    * Clone the sequential loop and store the clone to the DOALL function.

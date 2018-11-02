@@ -1,6 +1,6 @@
 #include "DOALL.hpp"
 
-std::unique_ptr<ChunkerInfo> DOALL::createChunkingFuncAndArgs (
+std::unique_ptr<ChunkerInfo> DOALL::createFunctionThatWillIncludeTheParallelizedLoop (
   LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par
 ) {
