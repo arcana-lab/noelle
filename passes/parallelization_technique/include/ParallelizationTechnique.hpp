@@ -7,6 +7,7 @@
 #include "Parallelization.hpp"
 #include "LoopDependenceInfoForParallelizer.hpp"
 #include "Heuristics.hpp"
+#include "TechniqueWorker.hpp"
 
 namespace llvm {
 
@@ -37,37 +38,46 @@ namespace llvm {
 
     protected:
 
+      /*
+       * Parallelized loop's environment
+       */
       void initEnvBuilder (LoopDependenceInfoForParallelizer *LDI);
       virtual void createEnvironment (LoopDependenceInfoForParallelizer *LDI);
-
-      virtual void generateCodeToLoadLiveInVariables (
-        LoopDependenceInfoForParallelizer *LDI, 
-        BasicBlock *appendLoadsInThisBasicBlock,
-        std::function<void (Value *originalProducer, Value *generatedLoad)> producerLoadMap
-        );
 
       void populateLiveInEnvironment (LoopDependenceInfoForParallelizer *LDI);
       virtual void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI);
 
       /*
-       * Clone the whole sequential loop.
+       * Worker helpers for manipulating loop body clones
        */
+      virtual void createWorkers (int numWorkers);
       virtual void cloneSequentialLoop (
-        LoopDependenceInfoForParallelizer *LDI, 
-        std::function<BasicBlock * (void)> createNewBasicBlock,
-        std::function<void (BasicBlock *, BasicBlock *)> basicBlockMap,
-        std::function<void (Instruction *, Instruction *)> instructionMap
-        );
+        LoopDependenceInfoForParallelizer *LDI,
+        int workerIndex
+      );
+      virtual void cloneSequentialLoopSubset (
+        LoopDependenceInfoForParallelizer *LDI,
+        int workerIndex,
+        std::set<SCC *> subset
+      );
 
       /*
-       * Adjust the data flow to use the cloned instructions.
+       * Worker helpers for environment usage
        */
-      virtual void adjustDataFlowToUseClonedInstructions (
+      virtual void generateCodeToLoadLiveInVariables (
+        LoopDependenceInfoForParallelizer *LDI, 
+        int workerIndex
+      );
+
+      virtual void generateCodeToStoreLiveOutVariables (
+        LoopDependenceInfoForParallelizer *LDI, 
+        int workerIndex
+      );
+
+      virtual void adjustDataFlowToUseClones (
         LoopDependenceInfoForParallelizer *LDI,
-        unordered_map<Instruction *, Instruction *> fromOriginalToClonedInstruction,
-        unordered_map<BasicBlock *, BasicBlock *> fromOriginalToClonedBasicBlock,
-        unordered_map<Value *, Value *> fromOriginalToClonedLiveInVariable
-        );
+        int workerIndex
+      );
 
       /*
        * Fields
@@ -75,6 +85,11 @@ namespace llvm {
       Module& module;
       Verbosity verbose;
       EnvBuilder *envBuilder;
+
+      /*
+       * Cloned loop representation for each user
+       */
+      std::vector<TechniqueWorker *> workers;
   };
 
 }

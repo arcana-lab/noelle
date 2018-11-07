@@ -81,10 +81,13 @@ void DSWP::loadAndStoreEnv (
   /*
    * Load (outside of loop -> SCC) dependencies
    */
+  auto &worker = this->workers[stageInfo->order];
   for (auto envIndex : envUser->getPreEnvIndices())
   {
     auto envLoad = entryBuilder.CreateLoad(envUser->getEnvPtr(envIndex));
     stageInfo->envLoadMap[envIndex] = cast<Instruction>(envLoad);
+    auto producer = LDI->environment->producerAt(envIndex)
+    worker->lineInClones[producer] = stageInfo->envLoadMap[envIndex];
   }
 
   /*

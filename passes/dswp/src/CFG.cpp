@@ -2,8 +2,37 @@
 
 using namespace llvm;
 
-void DSWP::remapControlFlow (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo)
-{
+void DSWP::collectTransitiveCondBrs (DSWPLoopDependenceInfo *LDI,
+  std::set<TerminatorInst *> &bottomLevelBrs,
+  std::set<TerminatorInst *> &descendantCondBrs
+) {
+  std::queue<DGNode<Value> *> queuedBrs;
+  std::set<TerminatorInst *> visitedBrs;
+  for (auto br : bottomLevelBrs) {
+    queuedBrs.push(LDI->loopInternalDG->fetchNode(cast<Value>(br)));
+    visitedBrs.insert(br);
+  }
+
+  while (!queuedBrs.empty()) {
+    auto brNode = queuedBrs.front();
+    auto term = cast<TerminatorInst>(brNode->getT());
+    queuedBrs.pop();
+    if (term->getNumSuccessors() > 1) {
+      descendantCondBrs.insert(term);
+    }
+
+    for (auto edge : brNode->getIncomingEdges()) {
+      if (auto termI = dyn_cast<TerminatorInst>(edge->getOutgoingT())) {
+        if (visitedBrs.find(termI) == visitedBrs.end()) {
+          queuedBrs.push(edge->getOutgoingNode());
+          visitedBrs.insert(termI);
+        }
+      }
+    }
+  }
+}
+
+void DSWP::remapControlFlow (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo) {
   auto &context = LDI->function->getContext();
   auto stageF = stageInfo->sccStage;
 
@@ -35,8 +64,7 @@ void DSWP::remapControlFlow (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageI
   }
 }
 
-void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI)
-{
+void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI) {
   std::set<BasicBlock *> iterEndBBs;
   iterEndBBs.insert(LDI->header);
   for (auto bb : LDI->loopExitBlocks) iterEndBBs.insert(bb);
@@ -139,55 +167,38 @@ void DSWP::createInstAndBBForSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<S
   auto &context = LDI->function->getParent()->getContext();
 
   /*
-   * Clone instructions within the stage's scc, and removable sccs
+   * Clone the portion of the loop within the stage's normal, and clonable, SCCs
+   * TODO(angelo): Rename removable to clonable. The name removable stemed from
+   * its irrelevance when partitioning stages as it gets duplicated
    */
-  std::set<BasicBlock *> allBBs;
-  auto cloneInstructionsOf = [&](SCC *scc) -> void {
-    for (auto nodePair : scc->internalNodePairs())
-    {
-      auto I = cast<Instruction>(nodePair.first);
-      stageInfo->iCloneMap[I] = I->clone();
-      allBBs.insert(I->getParent());
-    }
-  };
-
-  for (auto scc : stageInfo->stageSCCs) cloneInstructionsOf(scc);
-  for (auto scc : stageInfo->removableSCCs) cloneInstructionsOf(scc);
+  std::set<SCC *> subset;
+  for (auto scc : stageInfo->stageSCCs) subset.insert(scc);
+  for (auto scc : stageInfo->removableSCCs) subset.insert(scc);
+  this->cloneSequentialLoopSubset(LDI, stageInfo->order, subset);
 
   /*
-   * Clone loop basic blocks and terminators
+   * Determine the needed basic block terminators outside of the stage's SCCs
+   * to capture control flow through the loop body to either loop latch or loop
+   * exiting basic blocks
    */
+  auto worker = this->workers[stageInfo->order];
   for (auto B : LDI->loopBBs) {
-    stageInfo->sccBBCloneMap[B] = BasicBlock::Create(context, "", stageInfo->sccStage);
     auto terminator = cast<Instruction>(B->getTerminator());
-    if (stageInfo->iCloneMap.find(terminator) == stageInfo->iCloneMap.end()) {
+    if (worker->instructionClones.find(terminator) == worker->instructionClones.end()) {
       if (stageInfo->usedCondBrs.find(B->getTerminator()) != stageInfo->usedCondBrs.end())
       {
-        stageInfo->iCloneMap[terminator] = terminator->clone();
+        worker->instructionClones[terminator] = terminator->clone();
         continue;
       }
-      stageInfo->iCloneMap[terminator] = BranchInst::Create(LDI->loopBBtoPD[B]);
+      worker->instructionClones[terminator] = BranchInst::Create(LDI->loopBBtoPD[B]);
     }
-  }
-  for (int i = 0; i < LDI->loopExitBlocks.size(); ++i) {
-    stageInfo->sccBBCloneMap[LDI->loopExitBlocks[i]] = stageInfo->loopExitBlocks[i];
   }
 
   /*
-   * Attach SCC instructions to their basic blocks in correct relative order
+   * Map loop exit block clones
+   * TODO(angelo): Have ParallelizationTechnique expose an API to do this more generally
    */
-  int size = stageInfo->iCloneMap.size();
-  int instrInserted = 0;
-  for (auto B : LDI->loopBBs) {
-    IRBuilder<> builder(stageInfo->sccBBCloneMap[B]);
-    for (auto &I : *B)
-    {
-      if (stageInfo->iCloneMap.find(&I) == stageInfo->iCloneMap.end()) continue;
-      builder.Insert(stageInfo->iCloneMap[&I]);
-      instrInserted++;
-    }
+  for (int i = 0; i < LDI->loopExitBlocks.size(); ++i) {
+    worker->basicBlockClones[LDI->loopExitBlocks[i]] = stageInfo->loopExitBlocks[i];
   }
-  assert(instrInserted == size);
-
-  return ;
 }

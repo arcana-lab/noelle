@@ -54,6 +54,7 @@ namespace llvm {
   class EnvBuilder {
    public:
     EnvBuilder (LoopEnvironment &LE, llvm::LLVMContext &CXT);
+    ~EnvBuilder ();
 
     /*
      * Create an environment array, insert into the IRBuilder

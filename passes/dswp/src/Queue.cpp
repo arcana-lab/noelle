@@ -2,32 +2,37 @@
 
 using namespace llvm;
 
-void DSWP::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
-{
-  for (auto queueIndex : stageInfo->popValueQueues)
-  {
+void DSWP::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
+  auto worker = this->workers[stageInfo->order];
+  auto &bbClones = worker->basicBlockClones;
+  auto &iClones = worker->instructionClones;
+
+  for (auto queueIndex : stageInfo->popValueQueues) {
     auto &queueInfo = LDI->queues[queueIndex];
     auto queueInstrs = stageInfo->queueInstrMap[queueIndex].get();
     auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
 
     auto bb = queueInfo->producer->getParent();
-    assert(stageInfo->sccBBCloneMap.find(bb) != stageInfo->sccBBCloneMap.end());
+    assert(bbClones.find(bb) != bbClones.end());
 
-    IRBuilder<> builder(stageInfo->sccBBCloneMap[bb]);
+    IRBuilder<> builder(bbClones[bb]);
     queueInstrs->queueCall = builder.CreateCall(par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]], queueCallArgs);
     queueInstrs->load = builder.CreateLoad(queueInstrs->alloca);
+
+    /*
+     * Map from producer to queue load 
+     */
+    worker->instructionClones[queueInfo->producer] = queueInstrs->load;
 
     /*
      * Position queue call and load relatively identically to where the producer is in the basic block
      */
     bool pastProducer = false;
-    for (auto &I : *bb)
-    {
+    for (auto &I : *bb) {
       if (&I == queueInfo->producer) pastProducer = true;
       else if (auto phi = dyn_cast<PHINode>(&I)) continue;
-      else if (pastProducer && stageInfo->iCloneMap.find(&I) != stageInfo->iCloneMap.end())
-      {
-        auto iClone = stageInfo->iCloneMap[&I];
+      else if (pastProducer && iClones.find(&I) != iClones.end()) {
+        auto iClone = iClones[&I];
         cast<Instruction>(queueInstrs->queueCall)->moveBefore(iClone);
         cast<Instruction>(queueInstrs->load)->moveBefore(iClone);
         break;
@@ -36,27 +41,27 @@ void DSWP::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInf
   }
 }
 
-void DSWP::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par)
-{
-  for (auto queueIndex : stageInfo->pushValueQueues)
-  {
+void DSWP::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
+  auto worker = this->workers[stageInfo->order];
+  auto &iClones = worker->instructionClones;
+
+  for (auto queueIndex : stageInfo->pushValueQueues) {
     auto queueInstrs = stageInfo->queueInstrMap[queueIndex].get();
     auto queueInfo = LDI->queues[queueIndex].get();
     auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
     
-    auto pClone = stageInfo->iCloneMap[queueInfo->producer];
+    auto pClone = iClones[queueInfo->producer];
     auto pCloneBB = pClone->getParent();
     IRBuilder<> builder(pCloneBB);
     auto store = builder.CreateStore(pClone, queueInstrs->alloca);
-    queueInstrs->queueCall = builder.CreateCall(par.queues.queuePushes[par.queues.queueSizeToIndex[queueInfo->bitLength]], queueCallArgs);
+    auto queuePushFunction = par.queues.queuePushes[par.queues.queueSizeToIndex[queueInfo->bitLength]];
+    queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
 
     bool pastProducer = false;
-    for (auto &I : *pCloneBB)
-    {
+    for (auto &I : *pCloneBB) {
       if (&I == pClone) pastProducer = true;
       else if (auto phi = dyn_cast<PHINode>(&I)) continue;
-      else if (pastProducer)
-      {
+      else if (pastProducer) {
         store->moveBefore(&I);
         cast<Instruction>(queueInstrs->queueCall)->moveBefore(&I);
         break;
@@ -65,8 +70,7 @@ void DSWP::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageIn
   }
 }
 
-void DSWP::registerQueue (Parallelization &par, DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer)
-{
+void DSWP::registerQueue (Parallelization &par, DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer) {
   int queueIndex = LDI->queues.size();
   for (auto queueI : fromStage->producerToQueues[producer])
   {
@@ -99,8 +103,7 @@ void DSWP::registerQueue (Parallelization &par, DSWPLoopDependenceInfo *LDI, Sta
   }
 }
 
-void DSWP::collectControlQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI)
-{
+void DSWP::collectControlQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI) {
   auto findContaining = [&](Value *val) -> std::pair<StageInfo *, SCC *> {
     for (auto &stage : LDI->stages)
     {
@@ -151,13 +154,22 @@ void DSWP::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique
   auto loadQueuePtrFromIndex = [&](int queueIndex) -> void {
     auto queueInfo = LDI->queues[queueIndex].get();
     auto queueIndexValue = cast<Value>(ConstantInt::get(par.int64, queueIndex));
-    auto queuePtr = entryBuilder.CreateInBoundsGEP(queuesArray, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, queueIndexValue }));
-    auto queueCast = entryBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(par.queues.queueTypes[par.queues.queueSizeToIndex[queueInfo->bitLength]]));
+    auto queuePtr = entryBuilder.CreateInBoundsGEP(queuesArray, ArrayRef<Value*>({
+      LDI->zeroIndexForBaseArray,
+      queueIndexValue
+    }));
+    auto parQueueIndex = par.queues.queueSizeToIndex[queueInfo->bitLength];
+    auto queueType = par.queues.queueTypes[parQueueIndex];
+    auto queueElemType = par.queues.queueElementTypes[parQueueIndex];
+    auto queueCast = entryBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(queueType));
 
     auto queueInstrs = std::make_unique<QueueInstrs>();
     queueInstrs->queuePtr = entryBuilder.CreateLoad(queueCast);
     queueInstrs->alloca = entryBuilder.CreateAlloca(queueInfo->dependentType);
-    queueInstrs->allocaCast = entryBuilder.CreateBitCast(queueInstrs->alloca, PointerType::getUnqual(par.queues.queueElementTypes[par.queues.queueSizeToIndex[queueInfo->bitLength]]));
+    queueInstrs->allocaCast = entryBuilder.CreateBitCast(
+      queueInstrs->alloca,
+      PointerType::getUnqual(queueElemType)
+    );
     stageInfo->queueInstrMap[queueIndex] = std::move(queueInstrs);
   };
 

@@ -3,7 +3,6 @@ set(Srcs
   DSWPLoopDependenceInfo.cpp
   DSWP.cpp
   CFG.cpp
-  ControlDependence.cpp
   Environment.cpp
   Inliner.cpp
   Partition.cpp

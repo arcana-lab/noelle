@@ -3,15 +3,12 @@
 using namespace llvm;
 
 ParallelizationTechnique::ParallelizationTechnique (Module &module, Verbosity v)
-  :
-  module{module},
-  verbose{v}
-  {
+  : module{module}, verbose{v}, workers{} {}
 
-  return ;
+ParallelizationTechnique::~ParallelizationTechnique () {
+  delete envBuilder;
+  for (auto worker : workers) delete worker;
 }
-
-ParallelizationTechnique::~ParallelizationTechnique () {}
 
 void ParallelizationTechnique::initEnvBuilder (LoopDependenceInfoForParallelizer *LDI) {
   envBuilder = new EnvBuilder(*LDI->environment, module.getContext());
@@ -52,42 +49,88 @@ void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfoFo
   }
 }
 
+void ParallelizationTechnique::createWorkers (int numWorkers) {
+  for (auto i = 0; i < numWorkers; ++i) {
+    workers->push_back(new TechniqueWorker());
+  }
+}
+
 void ParallelizationTechnique::cloneSequentialLoop (
-  LoopDependenceInfoForParallelizer *LDI, 
-  std::function<BasicBlock * (void)> createNewBasicBlock,
-  std::function<void (BasicBlock *, BasicBlock *)> basicBlockMap,
-  std::function<void (Instruction *, Instruction *)> instructionMap
-  ){
+  LoopDependenceInfoForParallelizer *LDI,
+  int workerIndex
+){
+  auto &cxt = module->getContext();
+  auto worker = workers[workerIndex];
 
   /*
-   * Create inner loop
+   * Clone all basic blocks of the original loop
    */
   for (auto originBB : LDI->liSummary.topLoop->bbs) {
 
     /*
-     * Create a new basic block for the function that will include the cloned loop.
+     * Clone the basic block in the context of the original loop's function
      */
-    auto cloneBB = createNewBasicBlock();
-    basicBlockMap(originBB, cloneBB);
+    auto cloneBB = BasicBlock::Create(cxt, "", LDI->function);
+    worker->basicBlockClones[originBB] = cloneBB;
 
     /*
-     * Clone every instruction of the current basic block and add them to the cloned basic block just created.
+     * Clone every instruction in the basic block, adding them in order to the clone
      */
     IRBuilder<> builder(cloneBB);
     for (auto &I : *originBB) {
       auto cloneI = builder.Insert(I.clone());
-      instructionMap(&I, cloneI);
+      worker->instructionClones[&I] = cloneI;
+    }
+  }
+}
+
+void ParallelizationTechnique::cloneSequentialLoopSubset (
+  LoopDependenceInfoForParallelizer *LDI,
+  int workerIndex,
+  std::set<SCC *> subset
+){
+  auto &cxt = module->getContext();
+  auto worker = workers[workerIndex];
+
+  /*
+   * Clone all basic blocks, whether empty or not
+   */
+  for (auto bb : LDI->liSummary.topLoop->bbs) {
+    auto cloneBB = BasicBlock::Create(cxt, "", LDI->function);
+    worker->basicBlockClones[originBB] = cloneBB;
+  }
+
+  /*
+   * Clone a portion of the original loop (determined by a set of SCCs
+   * Determine the set of basic blocks these instructions belong to
+   */
+  std::set<BasicBlock *> bbSubset;
+  for (auto scc : subset) {
+    for (auto nodePair : scc->internalNodePairs())
+    {
+      auto I = cast<Instruction>(nodePair.first);
+      worker->instructionClones[I] = I->clone();
+      bbSubset.insert(I->getParent());
     }
   }
 
-  return ;
+  /*
+   * Add cloned instructions to their respective cloned basic blocks
+   */
+  for (auto bb : bbSubset) {
+    IRBuilder<> builder(worker->basicBlockClones[bb]);
+    for (auto &I : *bb) {
+      if (worker->instructionClones.find(&I) == worker->instructionClones.end()) continue;
+      builder.Insert(worker->instructionClones[&I]);
+    }
+  }
 }
 
 void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
   LoopDependenceInfoForParallelizer *LDI, 
   BasicBlock *appendLoadsInThisBasicBlock,
   std::function<void (Value *originalProducer, Value *generatedLoad)> producerLoadMap
-  ){
+){
 
   /*
    * Fetch the user.
@@ -108,69 +151,62 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
   return ;
 }
 
-void ParallelizationTechnique::adjustDataFlowToUseClonedInstructions (
+void ParallelizationTechnique::adjustDataFlowToUseClones (
   LoopDependenceInfoForParallelizer *LDI,
-  unordered_map<Instruction *, Instruction *> fromOriginalToClonedInstruction,
-  unordered_map<BasicBlock *, BasicBlock *> fromOriginalToClonedBasicBlock,
-  unordered_map<Value *, Value *> fromOriginalToClonedLiveInVariable
-  ){
+  int workerIndex
+){
+  auto &worker = workers[workerIndex];
+  auto &bbClones = worker->basicBlockClones;
+  auto &iClones = worker->instructionClones;
+  auto &liveIns = worker->liveInClones;
 
-  for (auto iPair : fromOriginalToClonedInstruction) {
-    auto cloneI = iPair.second;
+  for (auto pair : iClones) {
+    auto cloneI = pair.second;
+
+    /*
+     * Adjust basic block references of terminators and PHI nodes
+     */
     if (auto terminator = dyn_cast<TerminatorInst>(cloneI)) {
       for (int i = 0; i < terminator->getNumSuccessors(); ++i) {
         auto succBB = terminator->getSuccessor(i);
-        assert(fromOriginalToClonedBasicBlock.find(succBB) != fromOriginalToClonedBasicBlock.end());
-        terminator->setSuccessor(i, fromOriginalToClonedBasicBlock[succBB]);
+        assert(bbClones.find(succBB) != bbClones.end());
+        terminator->setSuccessor(i, bbClones[succBB]);
       }
     }
 
     if (auto phi = dyn_cast<PHINode>(cloneI)) {
       for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
-        auto cloneBB = fromOriginalToClonedBasicBlock[phi->getIncomingBlock(i)];
+        auto cloneBB = bbClones[phi->getIncomingBlock(i)];
         phi->setIncomingBlock(i, cloneBB);
       }
     }
 
-    // TODO(angelo): Add exhaustive search of types to parallelization
-    // utilities for use in DSWP and here in DOALL
+    /*
+     * Adjust values (other instructions and live-in values) used by clones
+     */
     for (auto &op : cloneI->operands()) {
-
-      /*
-       * Fetch the value used by the instruction.
-       */
       auto opV = op.get();
 
       /*
-       * Check if the value is a loop live-in one.
+       * If the value is a loop live-in one,
+       * set it to the value loaded outside the parallelized loop.
        */
-      if (fromOriginalToClonedLiveInVariable.find(opV) != fromOriginalToClonedLiveInVariable.end()) {
-
-        /*
-         * The value is a loop live-in one.
-         * Set it to the value loaded outside the parallelized loop.
-         */
-        op.set(fromOriginalToClonedLiveInVariable[opV]);
+      if (liveIns.find(opV) != liveIns.end()) {
+        op.set(liveIns[opV]);
         continue ;
       }
 
       /*
        * The value is not a loop live-in one.
        * 
-       * Check if the value is generated by another instruction inside the loop.
+       * If the value is generated by another instruction inside the loop,
+       * set it to the equivalent cloned instruction.
        */
       if (auto opI = dyn_cast<Instruction>(opV)) {
-        if (fromOriginalToClonedInstruction.find(opI) != fromOriginalToClonedInstruction.end()) {
-
-         /*
-          * The value is generated by another instruction inside the loop.
-          * Set it to be the value generated by the equivalent instruction included in the parallelized loop.
-          */
-          op.set(fromOriginalToClonedInstruction[opI]);
+        if (iClones.find(opI) != iClones.end()) {
+          op.set(iClones[opI]);
         }
       }
     }
   }
-
-  return ;
 }

@@ -2,7 +2,8 @@
 
 using namespace llvm ;
 
-EnvUserBuilder::EnvUserBuilder (LoopEnvironment &le) : LE{le} {} 
+EnvUserBuilder::EnvUserBuilder (LoopEnvironment &le)
+  : LE{le}, envIndexToPtr{}, preEnvIndices{}, postEnvIndices{} {} 
 
 void EnvUserBuilder::createEnvPtr (
   IRBuilder<> builder,
@@ -75,10 +76,15 @@ void EnvUserBuilder::createReducableEnvPtr (
   this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
 }
 
-EnvBuilder::EnvBuilder (LoopEnvironment &le, LLVMContext &CXT) : LE{le} {
+EnvBuilder::EnvBuilder (LoopEnvironment &le, LLVMContext &CXT)
+  : LE{le}, envIndexToVar{}, envIndexToReducableVar{}, envUsers{} {
   auto int8 = IntegerType::get(CXT, 8);
   auto ptrTy_int8 = PointerType::getUnqual(int8);
   this->envArrayType = ArrayType::get(ptrTy_int8, this->LE.envSize());
+}
+
+EnvBuilder::~EnvBuilder () {
+  for (auto user : envUsers) delete user;
 }
 
 void EnvBuilder::createEnvArray (IRBuilder<> builder) {

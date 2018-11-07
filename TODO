@@ -39,3 +39,46 @@
 Task log - Angelo
   - min-max partition heuristic
   - clean up analysis classes (SCCDAGAttrs, SimpleIVInfo, ...)
+  Write a test pass to scan AA of a simple global variable program
+  LiveIn APIs for loading all live in variables (HELIX, DOALL), and loading a subset (DSWP)
+  CloneLoop APIs for whole loop at once (DOALL), and sets and sets of BBs (DSWP)
+  Confirm data flow between clones is generalizable
+  PropagateLiveOuts -> GenerateCodeToLoadLiveOutVars
+  PopulateEnvironment -> GenerateCodeTOCreateEnvironment
+  live in, live out naming
+
+==== Worker construction
+
+DOALL structure:
+  Create entry, exit
+  Clone whole loop
+  Load env
+  Remap data/control flow
+  Introduce outer/inner loop chunk structure
+  Store env
+
+DSWP structure:
+  Create entry, exit
+  Clone subset of loop
+  Add queue push/pop
+  Add env load/store
+  Remap data/control flow
+  Inline queue calls
+
+Proposed structure:
+  Prepare
+    Helper that identifies mapping between entry and exit(s)
+    Helper that initializes an env user
+  Base clone
+    DOALL: Clone whole
+    DSWP: Determine subset to clone
+  Augment clone
+    DOALL: Introduce outer/inner loop
+    DSWP: Trim CFG, introduce queues
+  Handle environment
+    Load live ins, store live outs
+  Data flow
+    Reroute clones, environment, etc...
+  Optimize structure
+    DSWP: Inline queue calls
+

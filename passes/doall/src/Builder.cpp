@@ -58,23 +58,9 @@ void DOALL::cloneSequentialLoop (
   ){
 
   /*
-   * Define the functions to use to clone the sequential loop.
-   */
-  auto createNewBasicBlock = [&chunker] (void) -> BasicBlock * {
-    auto cloneBB = chunker->createChunkerBB();
-    return cloneBB;
-  };
-  auto basicBlockMap = [&chunker](BasicBlock *originalBB, BasicBlock *cloneBB) {
-    chunker->innerBBMap[originalBB] = cloneBB;
-  };
-  auto instructionMap = [&chunker](Instruction *originalInstruction, Instruction *cloneInstruction) {
-    chunker->innerValMap[originalInstruction] = cloneInstruction;
-  };
-
-  /*
    * Clone the whole sequential loop.
    */
-  this->cloneSequentialLoop(LDI, createNewBasicBlock, basicBlockMap, instructionMap);
+  this->cloneSequentialLoop(LDI);
 
   /*
    * Map inner loop preheader to outer loop header
@@ -84,23 +70,13 @@ void DOALL::cloneSequentialLoop (
    *   the original loop, the inner loop should be constructed. This fixes the below incorrect mapping
    *   so that it is between loop preheaders.
    */
-  basicBlockMap(LDI->preHeader, chunker->chHeader);
+  this->basicBlockClones[LDI->preHeader] = chunker->chHeader;
 
   /*
    * Map single exit block of inner loop to outer loop latch
+   * TODO(angelo): As in DSWP, generalize exit block cloning
    */
-  auto singleExitBB = LDI->loopExitBlocks[0];
-  assert(singleExitBB != nullptr);
-  basicBlockMap(singleExitBB, chunker->chLatch);
-
-  return ;
-}
-
-void DOALL::adjustDataFlowToUseClonedInstructions (
-  LoopDependenceInfoForParallelizer *LDI,
-  std::unique_ptr<ChunkerInfo> &chunker
-) {
-  this->adjustDataFlowToUseClonedInstructions(LDI, chunker->innerValMap, chunker->innerBBMap, chunker->preEnvMap);
+  this->basicBlockClones[LDI->loopExitBlocks[0]] = chunker->chLatch;
 }
 
 void DOALL::createOuterLoop (
