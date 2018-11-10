@@ -6,8 +6,8 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "LoopDependenceInfoForParallelizer.hpp"
-#include "PipelineInfo.hpp"
 #include "SCCDAGPartition.hpp"
+#include "TechniqueWorkerDSWP.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -20,8 +20,7 @@ namespace llvm {
       /*
        * Stores new pipeline execution
        */
-      unordered_map<SCC *, StageInfo *> sccToStage;
-      std::vector<std::unique_ptr<StageInfo>> stages;
+      unordered_map<SCC *, DSWPTechniqueWorker *> sccToStage;
       std::vector<std::unique_ptr<QueueInfo>> queues;
 
       /*

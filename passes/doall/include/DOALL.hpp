@@ -28,7 +28,7 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechnique.hpp"
 
-#include "ChunkerInfo.hpp"
+#include "TechniqueWorkerDOALL.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -48,60 +48,45 @@ namespace llvm {
        * Methods
        */
       DOALL (Module &module, Verbosity v);
-      bool apply (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
-      bool canBeAppliedToLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
+      bool apply (
+        LoopDependenceInfoForParallelizer *LDI,
+        Parallelization &par,
+        Heuristics *h,
+        ScalarEvolution &SE
+      ) override ;
+      bool canBeAppliedToLoop (
+        LoopDependenceInfoForParallelizer *LDI,
+        Parallelization &par,
+        Heuristics *h,
+        ScalarEvolution &SE
+      ) const override ;
 
     protected:
 
       /*
-       * Fields
-       */
-      Function *dispatcher;
-
-      /*
        * Environment overrides
        */
-      void createEnvironment (LoopDependenceInfoForParallelizer *LDI) override ;
-      void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) override ;
+      void propagateLiveOutEnvironment (
+        LoopDependenceInfoForParallelizer *LDI
+      ) override ;
 
       /*
-       * Import methods of the base class that we overload.
+       * DOALL specific generation
        */
-      using ParallelizationTechnique::cloneSequentialLoop ;
-      using ParallelizationTechnique::generateCodeToLoadLiveInVariables ;
-      using ParallelizationTechnique::adjustDataFlowToUseClonedInstructions ;
+      void simplifyOriginalLoopIV (
+        LoopDependenceInfoForParallelizer *LDI
+      );
+      void generateOuterLoopAndAdjustInnerLoop (
+        LoopDependenceInfoForParallelizer *LDI
+      );
+      void propagatePHINodesThroughOuterLoop (
+        LoopDependenceInfoForParallelizer *LDI
+      );
+      void addChunkFunctionExecutionAsideOriginalLoop (
+        LoopDependenceInfoForParallelizer *LDI,
+        Parallelization &par
+      );
 
-      /*
-       * Methods
-       */
-      std::unique_ptr<ChunkerInfo> createFunctionThatWillIncludeTheParallelizedLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par);
-
-      void cloneSequentialLoop (
-          LoopDependenceInfoForParallelizer *LDI, 
-          std::unique_ptr<ChunkerInfo> &chunker
-          );
-
-      void generateCodeToLoadLiveInVariables (
-          LoopDependenceInfoForParallelizer *LDI, 
-          std::unique_ptr<ChunkerInfo> &chunker
-          );
-
-      void generateCodeToStoreLiveOutVariables (
-          LoopDependenceInfoForParallelizer *LDI, 
-          std::unique_ptr<ChunkerInfo> &chunker
-          );
-
-      void adjustDataFlowToUseClonedInstructions(
-          LoopDependenceInfoForParallelizer *LDI, 
-          std::unique_ptr<ChunkerInfo> &chunker
-          );
-
-      void reduceOriginIV(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, ScalarEvolution &SE);
-      void createOuterLoop(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      void alterInnerLoopToIterateChunks(LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-
-      void addChunkFunctionExecutionAsideOriginalLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker);
-      Value *createEnvArray (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, std::unique_ptr<ChunkerInfo> &chunker, IRBuilder<> entryBuilder, IRBuilder<> parBuilder);
   };
 
 }

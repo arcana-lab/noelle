@@ -24,6 +24,7 @@ namespace llvm {
     bool isAddOp (unsigned op);
     bool isSubOp (unsigned op);
     unsigned accumOpForType (unsigned op, Type *type);
+    Value *generateIdentityFor (Instruction *accumulator);
   };
 
   /*

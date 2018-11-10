@@ -66,19 +66,59 @@ DSWP structure:
   Inline queue calls
 
 Proposed structure:
+  - Inlinined steps in DOALL/DSWP apply
+  - Shift from StageInfo/ChunkerInfo to TechniqueWorker
   Prepare
-    Helper that identifies mapping between entry and exit(s)
-    Helper that initializes an env user
+    Helper that identifies mapping between entry and exit(s) DONE
+    Helper that initializes an env user DONE
   Base clone
-    DOALL: Clone whole
-    DSWP: Determine subset to clone
+    DOALL: Clone whole DONE
+    DSWP: Determine subset to clone DONE
   Augment clone
-    DOALL: Introduce outer/inner loop
-    DSWP: Trim CFG, introduce queues
-  Handle environment
-    Load live ins, store live outs
+    DOALL: Introduce outer/inner loop NOT
+      - Look at Builder.cpp
+      - Handle new mapping on preheader and exit
+    DSWP: Trim CFG, introduce queues NOT
+  Handle environment (ALMOST DONE)
+    Load live ins, store live outs DOING
+      - Steps are in DOALL/DSWP Environment.cpp
   Data flow
-    Reroute clones, environment, etc...
+    Reroute clones, environment, etc... DOING
   Optimize structure
     DSWP: Inline queue calls
 
+DOALL: outer loop
+  Start value: IV start + core ind * chunk size
+  Step size: num cores * chunk size * [IV step (should always be 1?) ]
+  Cmp: cmpToExclusive (unsigned lt), brancing to exit if not true
+
+DOALL: inner loop
+  Start value: 0
+  Step size: accumulator step (should always be 1?)
+  Composite IV: outer + inner
+    Replace all uses
+  Cmp:
+    1) outer + inner < cmpToExclusive
+      Ensure sum instruction is before the cmp
+    2) inner < chunk size
+
+Outer loop contains original header PHIs
+Inner loop is generated, and either
+  1) ensures no other PHIs exist in the original header
+  2) generates adjusted PHIs in the inner loop
+    Is this necessary? Would these other PHIs break the condition for DOALL?
+    Conditions for DOALL:
+      one exit block
+      all live outs are reducable
+      the loop has an IV
+      all loop carried dependencies are:
+        commutative, contained in a subloop, or clonable
+        (reducable, self contained, side effect free)
+    So it is possible:
+      For some i_ = c, i++ / i--, if you have another IV such as
+      j_ = d, j+=s, then convert to j'', j'_ = 0, j'++/j'--, j'' = d + j'
+      and then set j'' = d + (j'_ - i_) + i
+
+Instructions don't seem to be cloned into the correct function...
+Referring to another BB (check all BB mappings are added before data flow mapping)
+Stored value type does not match pointer operand type (they seem the same)

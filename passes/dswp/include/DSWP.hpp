@@ -20,7 +20,6 @@
 #include "llvm/IR/IRBuilder.h"
 
 #include "DSWPLoopDependenceInfo.hpp"
-#include "PipelineInfo.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
@@ -28,6 +27,8 @@
 #include "Parallelization.hpp"
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechnique.hpp"
+
+#include "TechniqueWorkerDSWP.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -40,17 +41,21 @@ namespace llvm {
     public:
 
       /*
-       * Object fields
-       */
-      Function *stageDispatcher;
-      FunctionType *stageType;
-
-      /*
        * Methods
        */
       DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Verbosity v);
-      bool apply (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
-      bool canBeAppliedToLoop (LoopDependenceInfoForParallelizer *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
+      bool apply (
+        LoopDependenceInfoForParallelizer *LDI,
+        Parallelization &par,
+        Heuristics *h,
+        ScalarEvolution &SE
+      ) override ;
+      bool canBeAppliedToLoop (
+        LoopDependenceInfoForParallelizer *baseLDI,
+        Parallelization &par,
+        Heuristics *h,
+        ScalarEvolution &SE
+      ) const override ;
 
     private:
 
@@ -61,58 +66,74 @@ namespace llvm {
       bool enableMergingSCC;
 
       /*
-       * Environment overrides
-       */
-      void createEnvironment (LoopDependenceInfoForParallelizer *LDI) override ;
-      void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) override ;
-
-      /*
-       * Methods
-       */
-      void clusterSubloops (DSWPLoopDependenceInfo *LDI);
-      void partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h);
-      bool isWorthParallelizing (DSWPLoopDependenceInfo *LDI);
-      void addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI);
-      void registerQueue (Parallelization &par, DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer);
-      void collectPartitionedSCCQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI);
-      void collectTransitiveCondBrs (DSWPLoopDependenceInfo *LDI, std::set<TerminatorInst *> &bottomLevelBrs, std::set<TerminatorInst *> &descendantCondBrs);
-      void trimCFGOfStages (DSWPLoopDependenceInfo *LDI);
-      void collectControlQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI);
-      void collectRemovableSCCQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI);
-      void collectPreLoopEnvInfo (DSWPLoopDependenceInfo *LDI);
-      void collectPostLoopEnvInfo (DSWPLoopDependenceInfo *LDI);
-      void configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par);
-      void collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par);
-      void createInstAndBBForSCC (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo);
-      void loadAndStoreEnv (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par);
-      void loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) ;
-      void popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par);
-      void pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par);
-      void remapOperandsOfInstClones (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo);
-      void remapControlFlow (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo);
-      Value * createEnvArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, IRBuilder<> builder, Parallelization &par) ;
-      Value * createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par);
-      Value * createQueueSizesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par);
-
-      /*
        * Pipeline
        */
-      void createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par);
-      void createStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI);
+      void partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) const ;
+      void clusterSubloops (DSWPLoopDependenceInfo *LDI);
+      void generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI);
+      void addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI);
+      void generateLoopSubsetForStage (DSWPLoopDependenceInfo *LDI, int workerIndex);
+      void generateLoadsOfQueuePointers (
+        DSWPLoopDependenceInfo *LDI,
+        Parallelization &par,
+        int workerIndex
+      );
+      void popValueQueues (
+        DSWPLoopDependenceInfo *LDI,
+        Parallelization &par,
+        int workerIndex
+      );
+      void pushValueQueues (
+        DSWPLoopDependenceInfo *LDI,
+        Parallelization &par,
+        int workerIndex
+      );
       void createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par);
+      Value * createStagesArrayFromStages (
+        DSWPLoopDependenceInfo *LDI,
+        IRBuilder<> funcBuilder,
+        Parallelization &par
+      );
+      Value * createQueueSizesArrayFromStages (
+        DSWPLoopDependenceInfo *LDI,
+        IRBuilder<> funcBuilder,
+        Parallelization &par
+      );
 
       /*
        * Recursively inline queue push/pop functions in DSWP Utils and ThreadPool API
        */
-      void inlineQueueCalls (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo);
+      void inlineQueueCalls (DSWPLoopDependenceInfo *LDI, int workerIndex);
+
+      /*
+       * Information collection helpers
+       */
+      void collectDataQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par);
+      void collectControlQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par);
+      void registerQueue (
+        Parallelization &par,
+        DSWPLoopDependenceInfo *LDI,
+        DSWPTechniqueWorker *fromStage,
+        DSWPTechniqueWorker *toStage,
+        Instruction *producer,
+        Instruction *consumer
+      );
+      void trimCFGOfStages (DSWPLoopDependenceInfo *LDI);
+      void collectTransitiveCondBrs (
+        DSWPLoopDependenceInfo *LDI,
+        std::set<TerminatorInst *> &bottomLevelBrs,
+        std::set<TerminatorInst *> &descendantCondBrs
+      );
+      void collectLiveInEnvInfo (DSWPLoopDependenceInfo *LDI);
+      void collectLiveOutEnvInfo (DSWPLoopDependenceInfo *LDI);
 
       /*
        * Debug utilities
        */
-      void printStageSCCs (DSWPLoopDependenceInfo *LDI);
-      void printStageQueues (DSWPLoopDependenceInfo *LDI);
-      void printEnv (DSWPLoopDependenceInfo *LDI);
-      void printPartition (DSWPLoopDependenceInfo *LDI);
+      void printStageSCCs (DSWPLoopDependenceInfo *LDI) const ;
+      void printStageQueues (DSWPLoopDependenceInfo *LDI) const ;
+      void printEnv (DSWPLoopDependenceInfo *LDI) const ;
+      void printPartition (DSWPLoopDependenceInfo *LDI) const ;
   };
 
 }

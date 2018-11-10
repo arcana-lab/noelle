@@ -2,15 +2,14 @@
 
 using namespace llvm;
 
-void DSWP::createStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
+void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
   auto topLevelSubIDs = LDI->partition.getSubsetIDsWithNoIncomingEdges();
   assert(topLevelSubIDs.size() > 0);
   std::set<int> subsFound(topLevelSubIDs.begin(), topLevelSubIDs.end());
   std::deque<int> subsToTraverse(topLevelSubIDs.begin(), topLevelSubIDs.end());
 
-  int order = 0;
-  while (!subsToTraverse.empty())
-  {
+  std::vector<TechniqueWorker *> techniqueWorkers;
+  while (!subsToTraverse.empty()) {
     auto sub = subsToTraverse.front();
     subsToTraverse.pop_front();
 
@@ -18,103 +17,57 @@ void DSWP::createStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
      * Add all unvisited, next depth partitions to the traversal queue 
      */
     auto nextSubs = LDI->partition.nextLevelSubsetIDs(sub);
-    for (auto next : nextSubs)
-    {
+    for (auto next : nextSubs) {
       if (subsFound.find(next) != subsFound.end()) continue;
       subsFound.insert(next);
       subsToTraverse.push_back(next);
     }
 
-    LDI->stages.push_back(std::move(std::make_unique<StageInfo>(order++)));
-    auto stage = LDI->stages[order - 1].get();
+    /*
+     * Create worker (stage), populating its SCCs
+     */
+    auto worker = new DSWPTechniqueWorker();
+    techniqueWorkers.push_back(worker);
     for (auto scc : LDI->partition.subsetOfID(sub)->SCCs) {
-      stage->stageSCCs.insert(scc);
-      LDI->sccToStage[scc] = stage;
+      worker->stageSCCs.insert(scc);
+      LDI->sccToStage[scc] = worker;
     }
   }
+
+  this->generateWorkers(LDI, techniqueWorkers);
+  this->numWorkerInstances = techniqueWorkers.size();
+  assert(this->numWorkerInstances == LDI->partition.subsets.size());
 }
 
-void DSWP::createPipelineStageFromSCCDAGPartition (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
+void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
+  for (auto techniqueWorker : this->workers) {
+    auto worker = (DSWPTechniqueWorker *)techniqueWorker;
+    std::set<DGNode<SCC> *> visitedNodes;
+    std::queue<DGNode<SCC> *> dependentSCCNodes;
 
-  /*
-   * Create a function where we will store all the code that will be executed for the current pipeline stage.
-   */
-  auto M = LDI->function->getParent();
-  auto stageF = cast<Function>(M->getOrInsertFunction("", stageType));
-  auto &context = M->getContext();
-  stageInfo->sccStage = stageF;
+    for (auto scc : worker->stageSCCs) {
+      dependentSCCNodes.push(LDI->loopSCCDAG->fetchNode(scc));
+    }
 
-  /*
-   * Create the entry and exit basic blocks of the pipeline-stage function.
-   */
-  stageInfo->entryBlock = BasicBlock::Create(context, "", stageF);
-  stageInfo->exitBlock = BasicBlock::Create(context, "", stageF);
-  stageInfo->sccBBCloneMap[LDI->preHeader] = stageInfo->entryBlock;
+    while (!dependentSCCNodes.empty()) {
+      auto depSCCNode = dependentSCCNodes.front();
+      dependentSCCNodes.pop();
 
-  /*
-   * Create one basic block per loop exit.
-   * Also, add unconditional branches from each of these basic blocks to the unique exit block created before.
-   */
-  for (auto exitBB : LDI->loopExitBlocks) {
-    auto newExitBB = BasicBlock::Create(context, "", stageF);
-    stageInfo->loopExitBlocks.push_back(newExitBB);
-    IRBuilder<> builder(newExitBB);
-    builder.CreateBr(stageInfo->exitBlock);
+      /*
+       * Collect clonable SCCs with outgoing edges to SCCs in the worker
+       */
+      for (auto sccEdge : depSCCNode->getIncomingEdges()) {
+        auto fromSCCNode = sccEdge->getOutgoingNode();
+        auto fromSCC = fromSCCNode->getT();
+        if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
+        if (!LDI->sccdagAttrs.canBeCloned(fromSCC)) continue;
+
+        worker->removableSCCs.insert(fromSCC);
+        dependentSCCNodes.push(fromSCCNode);
+        visitedNodes.insert(fromSCCNode);
+      }
+    }
   }
-
-  /*
-   * Add the instructions of the current pipeline stage to the related function.
-   */
-  createInstAndBBForSCC(LDI, stageInfo);
-
-  /*
-   * Add code at the entry point of the related function to load pointers of all queues for the current pipeline stage.
-   */
-  loadAllQueuePointersInEntry(LDI, stageInfo, par);
-
-  /*
-   * Add code to push values between the current pipeline stage and the connected ones.
-   */
-  popValueQueues(LDI, stageInfo, par);
-  pushValueQueues(LDI, stageInfo, par);
-
-  /*
-   * Add the required loads and stores to satisfy dependences from the code outside the loop to the code inside it.
-   */
-  loadAndStoreEnv(LDI, stageInfo, par);
-
-  /*
-   * Link the cloned basic blocks by following the control flows of the original loop.
-   */
-  remapControlFlow(LDI, stageInfo);
-
-  /*
-   * Link the data flows through variables of the cloned instructions following the data flows of the original loop.
-   */
-  remapOperandsOfInstClones(LDI, stageInfo);
-
-  /*
-   * Add the unconditional branch from the entry basic block to the header of the loop.
-   */
-  IRBuilder<> entryBuilder(stageInfo->entryBlock);
-  entryBuilder.CreateBr(stageInfo->sccBBCloneMap[LDI->header]);
-
-  /*
-   * Add the return instruction at the end of the exit basic block.
-   */
-  IRBuilder<> exitBuilder(stageInfo->exitBlock);
-  exitBuilder.CreateRetVoid();
-
-  /*
-   * Inline recursively calls to queues.
-   */
-  inlineQueueCalls(LDI, stageInfo);
-
-  if (this->verbose >= Verbosity::Pipeline) {
-    stageInfo->sccStage->print(errs() << "Pipeline stage printout:\n"); errs() << "\n";
-  }
-
-  return ;
 }
 
 void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
@@ -131,7 +84,7 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
   LDI->entryPointOfParallelizedLoop = BasicBlock::Create(M->getContext(), "", LDI->function);
   LDI->exitPointOfParallelizedLoop = LDI->entryPointOfParallelizedLoop;
 
-  this->createEnvironment(LDI);
+  this->allocateEnvironmentArray(LDI);
   this->populateLiveInEnvironment(LDI);
   auto envPtr = envBuilder->getEnvArrayInt8Ptr();
 
@@ -151,37 +104,57 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
    * Call the stage dispatcher with the environment, queues array, and stages array
    */
   auto queuesCount = cast<Value>(ConstantInt::get(par.int64, LDI->queues.size()));
-  auto stagesCount = cast<Value>(ConstantInt::get(par.int64, LDI->stages.size()));
+  auto stagesCount = cast<Value>(ConstantInt::get(par.int64, this->numWorkerInstances));
 
   /*
-   * Add the call to "stageDispatcher"
+   * Add the call to the worker dispatcher: "stageDispatcher" (see DSWP constructor)
    */
-  builder->CreateCall(stageDispatcher, ArrayRef<Value*>({ envPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
+  builder->CreateCall(workerDispatcher, ArrayRef<Value*>({
+    envPtr,
+    queueSizesPtr,
+    stagesPtr,
+    stagesCount,
+    queuesCount
+  }));
   delete builder;
 
   this->propagateLiveOutEnvironment(LDI);
 }
 
-Value * DSWP::createStagesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
+Value * DSWP::createStagesArrayFromStages (
+  DSWPLoopDependenceInfo *LDI,
+  IRBuilder<> funcBuilder,
+  Parallelization &par
+) {
   auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->stageArrayType));
-  auto stageCastType = PointerType::getUnqual(LDI->stages[0]->sccStage->getType());
-  for (int i = 0; i < LDI->stages.size(); ++i) {
-    auto &stage = LDI->stages[i];
+  auto stageCastType = PointerType::getUnqual(this->workers[0]->F->getType());
+  for (int i = 0; i < this->numWorkerInstances; ++i) {
+    auto stage = this->workers[i];
     auto stageIndex = cast<Value>(ConstantInt::get(par.int64, i));
-    auto stagePtr = funcBuilder.CreateInBoundsGEP(stagesAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, stageIndex }));
+    auto stagePtr = funcBuilder.CreateInBoundsGEP(stagesAlloca, ArrayRef<Value*>({
+      LDI->zeroIndexForBaseArray,
+      stageIndex
+    }));
     auto stageCast = funcBuilder.CreateBitCast(stagePtr, stageCastType);
-    funcBuilder.CreateStore(stage->sccStage, stageCast);
+    funcBuilder.CreateStore(stage->F, stageCast);
   }
 
   return cast<Value>(funcBuilder.CreateBitCast(stagesAlloca, PointerType::getUnqual(par.int8)));
 }
 
-Value * DSWP::createQueueSizesArrayFromStages (DSWPLoopDependenceInfo *LDI, IRBuilder<> funcBuilder, Parallelization &par) {
+Value * DSWP::createQueueSizesArrayFromStages (
+  DSWPLoopDependenceInfo *LDI,
+  IRBuilder<> funcBuilder,
+  Parallelization &par
+) {
   auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(par.int64, LDI->queues.size())));
   for (int i = 0; i < LDI->queues.size(); ++i) {
     auto &queue = LDI->queues[i];
     auto queueIndex = cast<Value>(ConstantInt::get(par.int64, i));
-    auto queuePtr = funcBuilder.CreateInBoundsGEP(queuesAlloca, ArrayRef<Value*>({ LDI->zeroIndexForBaseArray, queueIndex }));
+    auto queuePtr = funcBuilder.CreateInBoundsGEP(queuesAlloca, ArrayRef<Value*>({
+      LDI->zeroIndexForBaseArray,
+      queueIndex
+    }));
     auto queueCast = funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(par.int64));
     funcBuilder.CreateStore(ConstantInt::get(par.int64, queue->bitLength), queueCast);
   }

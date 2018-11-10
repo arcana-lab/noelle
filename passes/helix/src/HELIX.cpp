@@ -8,7 +8,7 @@ HELIX::HELIX (Module &module, Verbosity v)
   /*
    * Fetch the dispatcher to use to jump to a parallelized HELIX loop.
    */
-  this->dispatcher = this->module.getFunction("helixDispatcher");
+  this->workerDispatcher = this->module.getFunction("helixDispatcher");
 
   return ;
 }
@@ -16,7 +16,7 @@ HELIX::HELIX (Module &module, Verbosity v)
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
   return false;
 }
-      
+
 bool HELIX::apply (
   LoopDependenceInfoForParallelizer *LDI,
   Parallelization &par,

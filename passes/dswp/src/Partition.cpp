@@ -2,7 +2,7 @@
 
 using namespace llvm;
 
-void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
+void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) const {
 
   /*
    * Initial the partition structure with the merged SCCDAG
@@ -102,32 +102,5 @@ void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
   if (loopSets.size() == 1) return;
   for (auto loopSetPair : loopSets) {
     LDI->partition.addSubset(loopSetPair.second);
-  }
-}
-
-void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
-  for (auto &stage : LDI->stages) {
-    std::set<DGNode<SCC> *> visitedNodes;
-    std::queue<DGNode<SCC> *> dependentSCCNodes;
-
-    for (auto scc : stage->stageSCCs) {
-      dependentSCCNodes.push(LDI->loopSCCDAG->fetchNode(scc));
-    }
-
-    while (!dependentSCCNodes.empty()) {
-      auto depSCCNode = dependentSCCNodes.front();
-      dependentSCCNodes.pop();
-
-      for (auto sccEdge : depSCCNode->getIncomingEdges()) {
-        auto fromSCCNode = sccEdge->getOutgoingNode();
-        auto fromSCC = fromSCCNode->getT();
-        if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
-        if (!LDI->sccdagAttrs.canBeCloned(fromSCC)) continue;
-
-        stage->removableSCCs.insert(fromSCC);
-        dependentSCCNodes.push(fromSCCNode);
-        visitedNodes.insert(fromSCCNode);
-      }
-    }
   }
 }

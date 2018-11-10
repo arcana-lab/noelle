@@ -3,7 +3,14 @@
 using namespace llvm ;
 
 EnvUserBuilder::EnvUserBuilder (LoopEnvironment &le)
-  : LE{le}, envIndexToPtr{}, preEnvIndices{}, postEnvIndices{} {} 
+  : LE{le}, envIndexToPtr{}, preEnvIndices{}, postEnvIndices{} {
+  envIndexToPtr.clear();
+  preEnvIndices.clear();
+  postEnvIndices.clear();
+}
+
+EnvUserBuilder::~EnvUserBuilder () {
+}
 
 void EnvUserBuilder::createEnvPtr (
   IRBuilder<> builder,
@@ -77,21 +84,19 @@ void EnvUserBuilder::createReducableEnvPtr (
 }
 
 EnvBuilder::EnvBuilder (LoopEnvironment &le, LLVMContext &CXT)
-  : LE{le}, envIndexToVar{}, envIndexToReducableVar{}, envUsers{} {
+  : LE{le}, envIndexToVar{}, envIndexToReducableVar{},
+    envUsers{}, numReducers{-1} {
   auto int8 = IntegerType::get(CXT, 8);
   auto ptrTy_int8 = PointerType::getUnqual(int8);
   this->envArrayType = ArrayType::get(ptrTy_int8, this->LE.envSize());
+  envIndexToVar.clear();
+  envIndexToReducableVar.clear();
+  envUsers.clear();
+  envArray = envArrayInt8Ptr = nullptr;
 }
 
 EnvBuilder::~EnvBuilder () {
   for (auto user : envUsers) delete user;
-}
-
-void EnvBuilder::createEnvArray (IRBuilder<> builder) {
-  auto int8 = IntegerType::get(builder.getContext(), 8);
-  auto ptrTy_int8 = PointerType::getUnqual(int8);
-  this->envArray = builder.CreateAlloca(this->envArrayType);
-  this->envArrayInt8Ptr = cast<Value>(builder.CreateBitCast(this->envArray, ptrTy_int8));
 }
 
 void EnvBuilder::createEnvUsers (int numUsers) {
@@ -100,14 +105,36 @@ void EnvBuilder::createEnvUsers (int numUsers) {
   }
 }
 
-void EnvBuilder::allocateEnvVariables (
-  IRBuilder<> builder,
+void EnvBuilder::createEnvVariables (
   std::set<int> &singleVarIndices,
   std::set<int> &reducableVarIndices,
   int reducerCount
 ) {
+  numReducers = reducerCount;
+  for (auto envIndex : singleVarIndices) {
+    envIndexToVar[envIndex] = nullptr;
+  }
+  for (auto envIndex : reducableVarIndices) {
+    envIndexToReducableVar[envIndex] = std::vector<Value *>();
+  }
+}
+
+void EnvBuilder::generateEnvArray (IRBuilder<> builder) {
+  auto int8 = IntegerType::get(builder.getContext(), 8);
+  auto ptrTy_int8 = PointerType::getUnqual(int8);
+  this->envArray = builder.CreateAlloca(this->envArrayType);
+  this->envArrayInt8Ptr = cast<Value>(builder.CreateBitCast(this->envArray, ptrTy_int8));
+}
+
+void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
   if (!this->envArray) {
-    errs() << "An environment array has not been created!\n";
+    errs() << "An environment array has not been generated!\n"
+      << "\tSee the EnvBuilder API call generateEnvArray\n";
+    abort();
+  }
+  if (envIndexToVar.size() + envIndexToReducableVar.size() != LE.envSize()) {
+    errs() << "Not all environment variables have been created!\n"
+      << "\tSee the EnvBuilder API call createEnvVariables\n";
     abort();
   }
 
@@ -122,7 +149,11 @@ void EnvBuilder::allocateEnvVariables (
     auto store = builder.CreateStore(alloca, depCast);
   };
 
-  for (auto envIndex : singleVarIndices) {
+  std::set<int> singleVars;
+  for (auto indexVarPair : envIndexToVar) {
+    singleVars.insert(indexVarPair.first);
+  }
+  for (auto envIndex : singleVars) {
     Type *envType = this->LE.typeOfEnv(envIndex);
     auto varAlloca = builder.CreateAlloca(envType);
     envIndexToVar[envIndex] = varAlloca;
@@ -130,8 +161,12 @@ void EnvBuilder::allocateEnvVariables (
     storeEnvAllocaInArray(this->envArray, envIndex, varAlloca);
   }
 
-  for (auto envIndex : reducableVarIndices) {
-    auto reduceArrType = ArrayType::get(ptrTy_int8, reducerCount);
+  std::set<int> reducableVars;
+  for (auto indexVarPair : envIndexToReducableVar) {
+    reducableVars.insert(indexVarPair.first);
+  }
+  for (auto envIndex : reducableVars) {
+    auto reduceArrType = ArrayType::get(ptrTy_int8, numReducers);
     auto reduceArrAlloca = builder.CreateAlloca(reduceArrType);
 
     storeEnvAllocaInArray(this->envArray, envIndex, reduceArrAlloca);
@@ -140,7 +175,7 @@ void EnvBuilder::allocateEnvVariables (
      * Create environment variable's array, one slot per user
      */
     Type *envType = this->LE.typeOfEnv(envIndex);
-    for (auto i = 0; i < reducerCount; ++i) {
+    for (auto i = 0; i < numReducers; ++i) {
       auto varAlloca = builder.CreateAlloca(envType);
       envIndexToReducableVar[envIndex].push_back(varAlloca);
 
@@ -152,8 +187,7 @@ void EnvBuilder::allocateEnvVariables (
 void EnvBuilder::reduceLiveOutVariables (
   IRBuilder<> builder,
   std::unordered_map<int, int> &reducableBinaryOps,
-  std::unordered_map<int, Value *> &initialValues,
-  int reducerCount
+  std::unordered_map<int, Value *> &initialValues
 ) {
   for (auto envIndexInitValue : initialValues) {
     auto envIndex = envIndexInitValue.first;
@@ -164,7 +198,7 @@ void EnvBuilder::reduceLiveOutVariables (
      * Reduce environment variable's array
      */
     Value *accumVal = builder.CreateLoad(this->getReducableEnvVar(envIndex, 0));
-    for (auto i = 1; i < reducerCount; ++i) {
+    for (auto i = 1; i < numReducers; ++i) {
       auto envVar = builder.CreateLoad(this->getReducableEnvVar(envIndex, i));
       accumVal = builder.CreateBinOp(binOp, accumVal, envVar);
     }
@@ -172,4 +206,33 @@ void EnvBuilder::reduceLiveOutVariables (
     accumVal = builder.CreateBinOp(binOp, accumVal, initialValue);
     envIndexToVar[envIndex] = accumVal;
   }
+}
+
+Value *EnvBuilder::getEnvArrayInt8Ptr () {
+  assert(envArrayInt8Ptr);
+  return envArrayInt8Ptr;
+}
+
+Value *EnvBuilder::getEnvArray () {
+  assert(envArray);
+  return envArray;
+}
+
+Value *EnvBuilder::getEnvVar (int ind) {
+  auto iter = envIndexToVar.find(ind);
+  assert(iter != envIndexToVar.end());
+  return (*iter).second;
+}
+
+Value *EnvBuilder::getReducableEnvVar (int ind, int reducerInd) {
+  auto iter = envIndexToReducableVar.find(ind);
+  assert(iter != envIndexToReducableVar.end());
+  return (*iter).second[reducerInd];
+}
+
+bool EnvBuilder::isReduced (int ind) {
+  auto isSingle = envIndexToVar.find(ind) != envIndexToVar.end();
+  auto isReduce = envIndexToReducableVar.find(ind) != envIndexToReducableVar.end();
+  assert(isSingle || isReduce);
+  return isReduce;
 }

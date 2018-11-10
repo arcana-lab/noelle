@@ -17,6 +17,7 @@ namespace llvm {
   class EnvUserBuilder {
    public:
     EnvUserBuilder (LoopEnvironment &le);
+    ~EnvUserBuilder ();
 
     void setEnvArray (Value *envArr) { this->envArray = envArr; }
     void createEnvPtr (IRBuilder<> b, int envIndex);
@@ -57,44 +58,45 @@ namespace llvm {
     ~EnvBuilder ();
 
     /*
-     * Create an environment array, insert into the IRBuilder
+     * Create environment users and designate variable types
      */
-    void createEnvArray (IRBuilder<> builder);
-
     void createEnvUsers (int numUsers);
-
-    void allocateEnvVariables (
-      IRBuilder<>,
+    void createEnvVariables (
       std::set<int> &singleVarIndices,
       std::set<int> &reducableVarIndices,
       int reducerCount
     );
 
+    /*
+     * Generate code to create environment array/variable allocations
+     */
+    void generateEnvArray (IRBuilder<> builder);
+    void generateEnvVariables (IRBuilder<>);
+
+    /*
+     * Reduce live out variables given binary operators to reduce
+     * with and initial values to start at
+     */
     void reduceLiveOutVariables (
       IRBuilder<>,
       std::unordered_map<int, int> &reducableBinaryOps,
-      std::unordered_map<int, Value *> &initialValues,
-      int reducerCount
+      std::unordered_map<int, Value *> &initialValues
     );
 
     /*
      * As all users of the environment konw its structure,
      *  pass around the equivalent of a void pointer
      */
-    Value *getEnvArrayInt8Ptr () { return envArrayInt8Ptr; }
-    Value *getEnvArray () { return envArray; }
+    Value *getEnvArrayInt8Ptr () ;
+    Value *getEnvArray () ;
     ArrayType *getEnvArrayTy () { return envArrayType; }
 
     EnvUserBuilder *getUser (int user) { return envUsers[user]; }
+    int getNumUsers () { return envUsers.size(); }
 
-    Value *getEnvVar (int ind) { return envIndexToVar[ind]; }
-    Value *getReducableEnvVar (int ind, int reducerInd) {
-      return envIndexToReducableVar[ind][reducerInd];
-    }
-
-    bool isReduced (int ind) {
-      return envIndexToReducableVar.find(ind) != envIndexToReducableVar.end();
-    }
+    Value *getEnvVar (int ind) ;
+    Value *getReducableEnvVar (int ind, int reducerInd) ;
+    bool isReduced (int ind) ;
 
    private:
     LoopEnvironment &LE;
@@ -107,10 +109,11 @@ namespace llvm {
     ArrayType *envArrayType;
 
     /*
-     * The allocations for variables in the environment
+     * The environment variable types and their allocations
      */
 		std::unordered_map<int, Value *> envIndexToVar;
 		std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
+    int numReducers;
 
     /*
      * Information on a specific user (a function, stage, chunk, etc...)

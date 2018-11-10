@@ -22,14 +22,26 @@ namespace llvm {
       /*
        * Apply the parallelization technique to the loop LDI.
        */
-      virtual bool apply (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) = 0;
+      virtual bool apply (
+        LoopDependenceInfoForParallelizer *LDI,
+        Parallelization &par,
+        Heuristics *h,
+        ScalarEvolution &SE
+      ) = 0;
 
       /*
        * Can the current parallelization technique be applied to parallelize loop LDI?
        */
-      virtual bool canBeAppliedToLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const = 0 ;
+      virtual bool canBeAppliedToLoop (
+        LoopDependenceInfoForParallelizer *LDI,
+        Parallelization &par,
+        Heuristics *h,
+        ScalarEvolution &SE
+      ) const = 0 ;
 
       Value * getEnvArray () { return envBuilder->getEnvArray(); }
+
+      virtual void reset () ;
 
       /*
        * Destructor.
@@ -39,18 +51,28 @@ namespace llvm {
     protected:
 
       /*
+       * Worker helpers for preparing loop code generation
+       */
+      virtual void generateWorkers (
+        LoopDependenceInfoForParallelizer *LDI, 
+        std::vector<TechniqueWorker *> workerStructs
+      );
+
+      /*
        * Parallelized loop's environment
        */
-      void initEnvBuilder (LoopDependenceInfoForParallelizer *LDI);
-      virtual void createEnvironment (LoopDependenceInfoForParallelizer *LDI);
-
+      void initializeEnvironmentBuilder (
+        LoopDependenceInfoForParallelizer *LDI,
+        std::set<int> simpleVars,
+        std::set<int> reducableVars
+      );
+      void allocateEnvironmentArray (LoopDependenceInfoForParallelizer *LDI);
       void populateLiveInEnvironment (LoopDependenceInfoForParallelizer *LDI);
       virtual void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI);
 
       /*
        * Worker helpers for manipulating loop body clones
        */
-      virtual void createWorkers (int numWorkers);
       virtual void cloneSequentialLoop (
         LoopDependenceInfoForParallelizer *LDI,
         int workerIndex
@@ -58,7 +80,7 @@ namespace llvm {
       virtual void cloneSequentialLoopSubset (
         LoopDependenceInfoForParallelizer *LDI,
         int workerIndex,
-        std::set<SCC *> subset
+        std::set<Instruction *> subset
       );
 
       /*
@@ -71,6 +93,11 @@ namespace llvm {
 
       virtual void generateCodeToStoreLiveOutVariables (
         LoopDependenceInfoForParallelizer *LDI, 
+        int workerIndex
+      );
+
+      virtual void generateCodeToStoreExitBlockIndex (
+        LoopDependenceInfoForParallelizer *LDI,
         int workerIndex
       );
 
@@ -87,9 +114,12 @@ namespace llvm {
       EnvBuilder *envBuilder;
 
       /*
-       * Cloned loop representation for each user
+       * Cloned loop representation for users
        */
+      Function *workerDispatcher;
+      FunctionType *workerType;
       std::vector<TechniqueWorker *> workers;
+      int numWorkerInstances;
   };
 
 }

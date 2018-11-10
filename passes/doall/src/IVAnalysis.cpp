@@ -1,29 +1,28 @@
 #include "DOALL.hpp"
 
 // TODO(angelo): Have LoopSummary scrape this info from IVs
-void DOALL::reduceOriginIV (
-  LoopDependenceInfoForParallelizer *LDI,
-  Parallelization &par,
-  std::unique_ptr<ChunkerInfo> &chunker,
-  ScalarEvolution &SE
+void DOALL::simplifyOriginalLoopIV (
+  LoopDependenceInfoForParallelizer *LDI
 ) {
+  auto worker = (DOALLTechniqueWorker *)workers[0];
 
   /*
-   * Fetch the information about the loop induction variable that controls the loop trip count.
+   * Fetch information about the loop induction variable controlling the loop trip count.
    */
   auto headerBr = LDI->header->getTerminator();
   auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
   auto &attrs = LDI->sccdagAttrs.getSCCAttrs(headerSCC);
   assert(attrs->isSimpleIV);
-  chunker->originIVAttrs = attrs.get();
+  worker->originalIVAttrs = attrs.get();
 
   /*
-   * Map from instructions of the original loop's IV to the respective cloned instructions.
+   * Identify clones of the PHI, Cmp, and Branch instructions that govern the loop IV.
    */
-  chunker->cloneIV = cast<PHINode>(chunker->fetchClone(attrs->singlePHI));
+  auto &iClones = worker->instructionClones;
+  worker->originalIVClone = cast<PHINode>(iClones[attrs->singlePHI]);
   auto IVInfo = attrs->simpleIVInfo;
-  chunker->cloneIVInfo.cmp = cast<CmpInst>(chunker->fetchClone(IVInfo.cmp));
-  chunker->cloneIVInfo.br = cast<BranchInst>(chunker->fetchClone(IVInfo.br));
+  worker->clonedIVInfo.cmp = cast<CmpInst>(iClones[IVInfo.cmp]);
+  worker->clonedIVInfo.br = cast<BranchInst>(iClones[IVInfo.br]);
 
   /*
    * ============================================================================
@@ -31,24 +30,34 @@ void DOALL::reduceOriginIV (
    * ============================================================================
    */
 
+  auto fetchClone = [&](Value *V) -> Value * {
+    if (isa<ConstantData>(V)) return V;
+    if (worker->liveInClones.find(V) != worker->liveInClones.end()) {
+      return worker->liveInClones[V];
+    }
+    assert(isa<Instruction>(V));
+    auto iCloneIter = iClones.find((Instruction *)V);
+    assert(iCloneIter != iClones.end());
+    return iCloneIter->second;
+  };
+
   /*
    * Fetch clone of initial Value of the original loop's IV PHINode: [start, ...)
    */
-  auto startClone = chunker->fetchClone(IVInfo.start);
+  auto startClone = fetchClone(IVInfo.start);
 
   /*
    * Fetch clone of Value used in CmpInst of the original loop's IV
    */
-  auto cmpToClone = chunker->fetchClone(IVInfo.cmpIVTo);
+  auto cmpToClone = fetchClone(IVInfo.cmpIVTo);
 
   /*
    * Fetch the offset from the compared to Value to the end value: [..., end)
    * cmpToValue + offset = end
    */
   auto offsetV = ConstantInt::get(IVInfo.step->getType(), IVInfo.endOffset);
-  IRBuilder<> entryB(chunker->entryBlock);
-  auto endClone = chunker->fetchClone(IVInfo.cmpIVTo);
-  endClone = IVInfo.endOffset ? entryB.CreateAdd(endClone, offsetV) : endClone;
+  IRBuilder<> entryBuilder(worker->entryBlock);
+  auto endClone = IVInfo.endOffset ? entryBuilder.CreateAdd(cmpToClone, offsetV) : cmpToClone;
 
   /*
    * Manipulate clone IV [start, end) values to guarantee the following: 
@@ -57,13 +66,13 @@ void DOALL::reduceOriginIV (
    * 3) The CmpInst checks that the end value is NOT reached. If it is, the loop body is NOT executed
    */
   auto oneV = ConstantInt::get(IVInfo.step->getType(), 1);
-  chunker->cloneIVInfo.step = oneV;
+  worker->clonedIVInfo.step = oneV;
   auto stepSize = IVInfo.step->getValue().getSExtValue();
   if (stepSize == 1) {
-    chunker->cloneIVInfo.start = startClone;
-    chunker->cloneIVInfo.cmpIVTo = endClone;
+    worker->clonedIVInfo.start = startClone;
+    worker->clonedIVInfo.cmpIVTo = endClone;
   } else {
-    chunker->cloneIVInfo.start = entryB.CreateAdd(endClone, oneV);
-    chunker->cloneIVInfo.cmpIVTo = entryB.CreateAdd(startClone, oneV);
+    worker->clonedIVInfo.start = entryBuilder.CreateAdd(endClone, oneV);
+    worker->clonedIVInfo.cmpIVTo = entryBuilder.CreateAdd(startClone, oneV);
   }
 }

@@ -12,71 +12,158 @@ DSWP::DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Ve
   /*
    * Fetch the function that dispatch the parallelized loop.
    */
-  this->stageDispatcher = module.getFunction("stageDispatcher");
+  this->workerDispatcher = module.getFunction("stageDispatcher");
 
   /*
    * Fetch the function that executes a stage.
    */
-  auto stageExecuter = module.getFunction("stageExecuter");
+  auto workerExecuter = module.getFunction("stageExecuter");
 
   /*
    * Define its signature.
    */
-  auto stageArgType = stageExecuter->arg_begin()->getType();
-  this->stageType = cast<FunctionType>(cast<PointerType>(stageArgType)->getElementType());
+  auto workerArgType = workerExecuter->arg_begin()->getType();
+  this->workerType = cast<FunctionType>(cast<PointerType>(workerArgType)->getElementType());
 
   return ;
 }
-      
-bool DSWP::canBeAppliedToLoop (LoopDependenceInfoForParallelizer *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
-  return true;
-}
 
-bool DSWP::apply (LoopDependenceInfoForParallelizer *baseLDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) {
-  this->initEnvBuilder(baseLDI);
-
-  /*
-   * Fetch the LDI.
-   */
+bool DSWP::canBeAppliedToLoop (
+  LoopDependenceInfoForParallelizer *baseLDI,
+  Parallelization &par,
+  Heuristics *h,
+  ScalarEvolution &SE
+) const {
   auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
-  if (LDI == nullptr){
-    return false;
-  }
 
   /*
    * Partition the SCCDAG.
    */
   partitionSCCDAG(LDI, h);
 
-  /*
-   * Check whether it is worth parallelizing the current loop.
-   */
-  if (!isWorthParallelizing(LDI)) {
-    if (this->verbose > Verbosity::Disabled) {
-      errs() << "DSWP:  Not enough TLP can be extracted\n";
-      errs() << "DSWP: Exit\n";
-    }
-    return false;
+  if (this->forceParallelization){
+    return true;
   }
 
   /*
-   * Collect require information to parallelize the current loop.
+   * Check whether it is worth parallelizing the current loop.
    */
-  collectStageAndQueueInfo(LDI, par);
+  bool canApply = LDI->partition.subsets.size() > 1;
+  if (!canApply && this->verbose > Verbosity::Disabled) {
+    errs() << "DSWP:  Not enough TLP can be extracted\n";
+    errs() << "DSWP: Exit\n";
+  }
+
+  return canApply;
+}
+
+bool DSWP::apply (
+  LoopDependenceInfoForParallelizer *baseLDI,
+  Parallelization &par,
+  Heuristics *h,
+  ScalarEvolution &SE
+) {
+  auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
+
+  /*
+   * Determine DSWP workers (stages)
+   */
+  generateStagesFromPartitionedSCCs(LDI);
+  addRemovableSCCsToStages(LDI);
+
+  /*
+   * Collect which queues need to exist between workers
+   *
+   * NOTE: The trimming of the call graph for all workers is an optimization
+   *  that lessens the number of control queues necessary. However,
+   *  the algorithm that pops queue values is naive, so the trimming
+   *  optimization requires non-control queue information to be collected
+   *  prior to its execution. Hence, its weird placement:
+   */
+  collectDataQueueInfo(LDI, par);
+  trimCFGOfStages(LDI);
+  collectControlQueueInfo(LDI, par);
+
+  /*
+   * Collect information on stages' environments
+   */
+  std::set<int> nonReducableVars;
+  std::set<int> reducableVars;
+  for (auto i = 0; i < LDI->environment->envSize(); ++i) nonReducableVars.insert(i);
+  initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
+  collectLiveInEnvInfo(LDI);
+  collectLiveOutEnvInfo(LDI);
+
   if (this->verbose >= Verbosity::Maximal) {
     printStageSCCs(LDI);
     printStageQueues(LDI);
     printEnv(LDI);
   }
 
-  /*
-   * Create the pipeline stages.
-   */
   if (this->verbose > Verbosity::Disabled) {
-    errs() << "DSWP:  Create " << LDI->stages.size() << " pipeline stages\n";
+    errs() << "DSWP:  Create " << this->workers.size() << " pipeline stages\n";
   }
-  for (auto &stage : LDI->stages) {
-    createPipelineStageFromSCCDAGPartition(LDI, stage, par);
+
+  /*
+   * Helper declarations
+   */
+  LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
+  LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
+  LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), this->workers.size());
+
+  /*
+   * Create the pipeline stages (technique workers)
+   */
+  for (auto i = 0; i < this->workers.size(); ++i) {
+    auto worker = (DSWPTechniqueWorker *)this->workers[i];
+
+    /*
+     * Add instructions of the current pipeline stage to the worker function
+     */
+    generateLoopSubsetForStage(LDI, i);
+
+    /*
+     * Load pointers of all queues for the current pipeline stage at the function's entry
+     * Push/pop queue values between the current pipeline stage and connected ones
+     */
+    generateLoadsOfQueuePointers(LDI, par, i);
+    popValueQueues(LDI, par, i);
+    pushValueQueues(LDI, par, i);
+
+    /*
+     * Load all loop live-in values at the entry point of the worker.
+     * Store final results to loop live-out variables.
+     */
+    generateCodeToLoadLiveInVariables(LDI, i);
+    generateCodeToStoreLiveOutVariables(LDI, i);
+
+    /*
+     * Fix the data flow within the parallelized loop by redirecting operands of
+     * cloned instructions to refer to the other cloned instructions. Currently,
+     * they still refer to the original loop's instructions.
+     */
+    adjustDataFlowToUseClones(LDI, i);
+
+    /*
+     * Add the unconditional branch from the entry basic block to the header of the loop.
+     */
+    IRBuilder<> entryBuilder(worker->entryBlock);
+    entryBuilder.CreateBr(worker->basicBlockClones[LDI->header]);
+
+    /*
+     * Add the return instruction at the end of the exit basic block.
+     */
+    IRBuilder<> exitBuilder(worker->exitBlock);
+    exitBuilder.CreateRetVoid();
+
+    /*
+     * Inline recursively calls to queues.
+     */
+    inlineQueueCalls(LDI, i);
+
+    if (this->verbose >= Verbosity::Pipeline) {
+      worker->F->print(errs() << "Pipeline stage printout:\n"); errs() << "\n";
+    }
   }
 
   /*
@@ -88,50 +175,4 @@ bool DSWP::apply (LoopDependenceInfoForParallelizer *baseLDI, Parallelization &p
   createPipelineFromStages(LDI, par);
 
   return true;
-}
-
-bool DSWP::isWorthParallelizing (DSWPLoopDependenceInfo *LDI) {
-  if (this->forceParallelization){
-    return true;
-  }
-
-  return LDI->partition.subsets.size() > 1;
-}
-
-void DSWP::createEnvironment (LoopDependenceInfoForParallelizer  *LDI) {
-  ParallelizationTechnique::createEnvironment(LDI);
-
-  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
-  envBuilder->createEnvArray(builder);
-  std::set<int> nonReducableVars;
-  std::set<int> reducableVars;
-  for (auto i = 0; i < LDI->environment->envSize(); ++i) nonReducableVars.insert(i);
-
-  envBuilder->allocateEnvVariables(builder, nonReducableVars, reducableVars, 0);
-}
-
-void DSWP::configureDependencyStorage (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
-  LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
-  LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
-  LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->stages.size());
-}
-
-void DSWP::collectStageAndQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
-  createStagesFromPartitionedSCCs(LDI);
-  addRemovableSCCsToStages(LDI);
-
-  collectPartitionedSCCQueueInfo(par, LDI);
-  trimCFGOfStages(LDI);
-  collectControlQueueInfo(par, LDI);
-  collectRemovableSCCQueueInfo(par, LDI);
-
-  envBuilder->createEnvUsers(LDI->stages.size());
-  collectPreLoopEnvInfo(LDI);
-  collectPostLoopEnvInfo(LDI);
-
-  configureDependencyStorage(LDI, par);
-}
-
-void DSWP::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) {
-  ParallelizationTechnique::propagateLiveOutEnvironment(LDI);
 }

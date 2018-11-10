@@ -8,12 +8,28 @@ DOALL::DOALL (Module &module, Verbosity v)
   /*
    * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
    */
-  this->dispatcher = this->module.getFunction("doallDispatcher");
+  this->workerDispatcher = this->module.getFunction("doallDispatcher");
+
+  auto &cxt = module.getContext();
+  auto int8 = IntegerType::get(cxt, 8);
+  auto int64 = IntegerType::get(cxt, 64);
+  auto funcArgTypes = ArrayRef<Type*>({
+    PointerType::getUnqual(int8),
+    int64,
+    int64,
+    int64
+  });
+  this->workerType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
 
   return ;
 }
 
-bool DOALL::canBeAppliedToLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
+bool DOALL::canBeAppliedToLoop (
+  LoopDependenceInfoForParallelizer *LDI,
+  Parallelization &par,
+  Heuristics *h,
+  ScalarEvolution &SE
+) const {
   errs() << "DOALL: Checking if is a doall loop\n";
 
   /*
@@ -72,71 +88,11 @@ bool DOALL::apply (
   errs() << "DOALL: Start the parallelization\n";
 
   /*
-   * Initialize the environment.
+   * Prepare DOALL worker (chunk executing function)
    */
-  this->initEnvBuilder(LDI);
-
-  /*
-   * Create a new function, which we are going to call it the DOALL function, where we will store the parallelized loop.
-   */
-  auto chunker = this->createFunctionThatWillIncludeTheParallelizedLoop(LDI, par);
-
-  /*
-   * Clone the sequential loop and store the clone to the DOALL function.
-   */
-  this->cloneSequentialLoop(LDI, chunker);
-
-  /*
-   * Load all loop live-in values at the entry point of the DOALL function, before the parallelized loop starts.
-   */
-  this->generateCodeToLoadLiveInVariables(LDI, chunker);
-
-  /*
-   * Fix the data flow within the parallelized loop.
-   *
-   * At this point, all operands of an instruction of the parallelize loop still point to the instructions within the sequential loop.
-   * We have to redirect these operands to point to the new operands that are generated within the parallelized loop.
-   */
-  this->adjustDataFlowToUseClonedInstructions(LDI, chunker);
-
-  this->reduceOriginIV(LDI, par, chunker, SE);
-
-  /*
-   * Create the outermost loop that iterate over chunks.
-   */
-  this->createOuterLoop(LDI, par, chunker);
-
-  /*
-   * Adjust the innermost loop, which iterates over elements within a single chunk.
-   */
-  this->alterInnerLoopToIterateChunks(LDI, par, chunker);
-
-  /*
-   * Storing the final results to loop live-out variables.
-   */
-  this->generateCodeToStoreLiveOutVariables(LDI, chunker);
-
-  /*
-   * Add the final return to the DOALL function.
-   */
-  IRBuilder<> exitB(chunker->exitBlock);
-  exitB.CreateRetVoid();
-
-  addChunkFunctionExecutionAsideOriginalLoop(LDI, par, chunker);
-
-  //chunker->f->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
-  // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
-  // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
-
-  errs() << "DOALL: Exit\n";
-  return true;
-}
-
-void DOALL::createEnvironment (LoopDependenceInfoForParallelizer *LDI) {
-  ParallelizationTechnique::createEnvironment(LDI);
-
-  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
-  envBuilder->createEnvArray(builder);
+  DOALLTechniqueWorker *chunkerWorker = new DOALLTechniqueWorker();
+  this->generateWorkers(LDI, { chunkerWorker });
+  this->numWorkerInstances = NUM_CORES;
 
   /*
    * Allocate memory for all environment variables
@@ -145,8 +101,65 @@ void DOALL::createEnvironment (LoopDependenceInfoForParallelizer *LDI) {
   auto postEnvRange = LDI->environment->getPostEnvIndices();
   std::set<int> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
   std::set<int> reducableVars(postEnvRange.begin(), postEnvRange.end());
+  initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
 
-  envBuilder->allocateEnvVariables(builder, nonReducableVars, reducableVars, NUM_CORES);
+  /*
+   * Clone loop into the single worker used by DOALL
+   */
+  this->cloneSequentialLoop(LDI, 0);
+
+  /*
+   * Load all loop live-in values at the entry point of the worker.
+   * Store final results to loop live-out variables.
+   */
+  auto envUser = this->envBuilder->getUser(0);
+  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
+    envUser->addPreEnvIndex(envIndex);
+  }
+  for (auto envIndex : LDI->environment->getPostEnvIndices()) {
+    envUser->addPostEnvIndex(envIndex);
+  }
+  this->generateCodeToLoadLiveInVariables(LDI, 0);
+  this->generateCodeToStoreLiveOutVariables(LDI, 0);
+
+  /*
+   * Simplify the original IV to iterate from smaller to larger bound by +1 increments
+   * Create the outermost loop that iterates over chunks
+   * Adjust the innermost loop to execute a single chunk
+   * TODO(angelo): Re-formulate these changes to work AFTER data flows are adjusted
+   */
+  this->simplifyOriginalLoopIV(LDI);
+  this->generateOuterLoopAndAdjustInnerLoop(LDI);
+
+  /*
+   * Fix the data flow within the parallelized loop by redirecting operands of
+   * cloned instructions to refer to the other cloned instructions. Currently,
+   * they still refer to the original loop's instructions.
+   */
+  this->adjustDataFlowToUseClones(LDI, 0);
+
+  /*
+   * Hoist PHINodes in the original loop: this propagates their value
+   *  through the outer loop latch/header back into the inner loop header
+   * This is done after data flow is adjusted to disambiguate adjustments
+   *  from original -> clone and adjustments to their execution flow
+   */
+  this->propagatePHINodesThroughOuterLoop(LDI);
+
+  /*
+   * Add the final return to the single worker's exit block.
+   */
+  IRBuilder<> exitB(workers[0]->exitBlock);
+  exitB.CreateRetVoid();
+
+  addChunkFunctionExecutionAsideOriginalLoop(LDI, par);
+
+  workers[0]->F->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
+  // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
+  // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
+
+  errs() << "DOALL: Exit\n";
+  return true;
 }
 
 void DOALL::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) {
@@ -171,7 +184,7 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI)
   }
 
   auto builder = new IRBuilder<>(LDI->entryPointOfParallelizedLoop);
-  this->envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues, NUM_CORES);
+  this->envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues);
 
   /*
    * Free the memory.
@@ -185,8 +198,7 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI)
 
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   LoopDependenceInfoForParallelizer *LDI,
-  Parallelization &par,
-  std::unique_ptr<ChunkerInfo> &chunker
+  Parallelization &par
 ) {
 
   /*
@@ -199,7 +211,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Create the environment.
    */
-  this->createEnvironment(LDI);
+  this->allocateEnvironmentArray(LDI);
   this->populateLiveInEnvironment(LDI);
 
   /*
@@ -215,8 +227,8 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    * Call the function that incudes the parallelized loop.
    */
   IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
-  doallBuilder.CreateCall(this->dispatcher, ArrayRef<Value *>({
-    (Value *)chunker->f,
+  doallBuilder.CreateCall(this->workerDispatcher, ArrayRef<Value *>({
+    (Value *)workers[0]->F,
     envPtr,
     numCores,
     chunkSize

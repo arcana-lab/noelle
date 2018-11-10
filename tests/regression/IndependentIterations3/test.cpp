@@ -3,17 +3,17 @@
 #include <math.h>
 
 long long int computeSum (long long int *a, long long int iters){
-  long long int s =0;
-  long long int s2 =0;
+  long long int s = 1;
+  long long int s2 = 0;
 
   for (auto i=0; i < iters; ++i){
     s += a[i];
 
-    s *= i;
+    s += i;
 
-    s *= a[i];
+    s += a[i];
 
-    s2 += s;
+    s2 *= s;
   }
 
   return s + s2;

@@ -2,9 +2,10 @@
 
 using namespace llvm;
 
-void DSWP::inlineQueueCalls (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo) {
+void DSWP::inlineQueueCalls (DSWPLoopDependenceInfo *LDI, int workerIndex) {
+  auto worker = (DSWPTechniqueWorker *)this->workers[workerIndex];
   std::queue<CallInst *> callsToInline;
-  for (auto &queueInstrPair : stageInfo->queueInstrMap) {
+  for (auto &queueInstrPair : worker->queueInstrMap) {
     auto &queueInstr = queueInstrPair.second;
     callsToInline.push(cast<CallInst>(queueInstr->queueCall));
   }
@@ -37,7 +38,7 @@ void DSWP::inlineQueueCalls (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageI
     /*
      * Collect next level of queue push/pop calls to inline
      */
-    for (auto &B : *stageInfo->sccStage) {
+    for (auto &B : *worker->F) {
       for (auto &I : B) {
         if (auto call = dyn_cast<CallInst>(&I)) {
           if (funcToInline.find(call->getCalledFunction()) != funcToInline.end()) {

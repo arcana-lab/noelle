@@ -42,6 +42,17 @@ unsigned AccumulatorOpInfo::accumOpForType (unsigned op, Type *type) {
   }
 }
 
+Value *AccumulatorOpInfo::generateIdentityFor (Instruction *accumulator) {
+  Value *initVal = nullptr;
+  auto opIdentity = this->opIdentities[accumulator->getOpcode()];
+  Type *accumTy = accumulator->getType();
+  if (accumTy->isIntegerTy()) initVal = ConstantInt::get(accumTy, opIdentity);
+  if (accumTy->isFloatTy()) initVal = ConstantFP::get(accumTy, (float)opIdentity);
+  if (accumTy->isDoubleTy()) initVal = ConstantFP::get(accumTy, (double)opIdentity);
+  assert(initVal != nullptr);
+  return initVal;
+}
+
 std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
   std::set<SCC *> sccs;
   for (auto &sccInfoPair : this->sccToInfo) {
@@ -295,10 +306,13 @@ void SCCDAGAttrs::collectSinglePHIAndAccumulators (SCC *scc) {
       auto binOp = I->getOpcode();
       if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
         accums.insert(I);
+        continue;
       }
-      continue;
     }
 
+    /*
+     * Fail to collect if an unexpected instruction is found
+     */
     return ;
   }
 
@@ -310,7 +324,7 @@ void SCCDAGAttrs::collectSinglePHIAndAccumulators (SCC *scc) {
 bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
 
   /*
-   * Requirement: SCC has no dependent SCCs
+   * Requirement: SCC has no data dependent SCCs
    */
   for (auto iNodePair : scc->externalNodePairs()) {
     if (iNodePair.second->numIncomingEdges() == 0) continue ;

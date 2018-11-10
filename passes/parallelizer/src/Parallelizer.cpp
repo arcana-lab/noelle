@@ -38,6 +38,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
      */
     codeModified = doall.apply(LDI, par, h, SE);
     envArray = doall.getEnvArray();
+    doall.reset();
 
   } else if (helix.canBeAppliedToLoop(LDI, par, h, SE)) {
 
@@ -46,14 +47,16 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
      */
     codeModified = helix.apply(LDI, par, h, SE);
     envArray = helix.getEnvArray();
+    helix.reset();
 
-  } else {
+  } else if (dswp.canBeAppliedToLoop(LDI, par, h, SE)) {
 
     /*
      * Apply DSWP.
      */
     codeModified = dswp.apply(LDI, par, h, SE);
     envArray = dswp.getEnvArray();
+    dswp.reset();
   }
 
   /*

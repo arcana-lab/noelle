@@ -2,7 +2,6 @@
 set(Srcs 
   DOALL.cpp
   Builder.cpp
-  Environment.cpp
   IVAnalysis.cpp
 )
 

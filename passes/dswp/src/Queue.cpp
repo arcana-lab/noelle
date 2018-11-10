@@ -2,113 +2,64 @@
 
 using namespace llvm;
 
-void DSWP::popValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
-  auto worker = this->workers[stageInfo->order];
-  auto &bbClones = worker->basicBlockClones;
-  auto &iClones = worker->instructionClones;
+void DSWP::registerQueue (
+  Parallelization &par,
+  DSWPLoopDependenceInfo *LDI,
+  DSWPTechniqueWorker *fromStage,
+  DSWPTechniqueWorker *toStage,
+  Instruction *producer,
+  Instruction *consumer
+) {
 
-  for (auto queueIndex : stageInfo->popValueQueues) {
-    auto &queueInfo = LDI->queues[queueIndex];
-    auto queueInstrs = stageInfo->queueInstrMap[queueIndex].get();
-    auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
-
-    auto bb = queueInfo->producer->getParent();
-    assert(bbClones.find(bb) != bbClones.end());
-
-    IRBuilder<> builder(bbClones[bb]);
-    queueInstrs->queueCall = builder.CreateCall(par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]], queueCallArgs);
-    queueInstrs->load = builder.CreateLoad(queueInstrs->alloca);
-
-    /*
-     * Map from producer to queue load 
-     */
-    worker->instructionClones[queueInfo->producer] = queueInstrs->load;
-
-    /*
-     * Position queue call and load relatively identically to where the producer is in the basic block
-     */
-    bool pastProducer = false;
-    for (auto &I : *bb) {
-      if (&I == queueInfo->producer) pastProducer = true;
-      else if (auto phi = dyn_cast<PHINode>(&I)) continue;
-      else if (pastProducer && iClones.find(&I) != iClones.end()) {
-        auto iClone = iClones[&I];
-        cast<Instruction>(queueInstrs->queueCall)->moveBefore(iClone);
-        cast<Instruction>(queueInstrs->load)->moveBefore(iClone);
-        break;
-      }
-    }
-  }
-}
-
-void DSWP::pushValueQueues (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
-  auto worker = this->workers[stageInfo->order];
-  auto &iClones = worker->instructionClones;
-
-  for (auto queueIndex : stageInfo->pushValueQueues) {
-    auto queueInstrs = stageInfo->queueInstrMap[queueIndex].get();
-    auto queueInfo = LDI->queues[queueIndex].get();
-    auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
-    
-    auto pClone = iClones[queueInfo->producer];
-    auto pCloneBB = pClone->getParent();
-    IRBuilder<> builder(pCloneBB);
-    auto store = builder.CreateStore(pClone, queueInstrs->alloca);
-    auto queuePushFunction = par.queues.queuePushes[par.queues.queueSizeToIndex[queueInfo->bitLength]];
-    queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
-
-    bool pastProducer = false;
-    for (auto &I : *pCloneBB) {
-      if (&I == pClone) pastProducer = true;
-      else if (auto phi = dyn_cast<PHINode>(&I)) continue;
-      else if (pastProducer) {
-        store->moveBefore(&I);
-        cast<Instruction>(queueInstrs->queueCall)->moveBefore(&I);
-        break;
-      }
-    }
-  }
-}
-
-void DSWP::registerQueue (Parallelization &par, DSWPLoopDependenceInfo *LDI, StageInfo *fromStage, StageInfo *toStage, Instruction *producer, Instruction *consumer) {
+  /*
+   * Find/create the push queue in the producer stage
+   */
   int queueIndex = LDI->queues.size();
-  for (auto queueI : fromStage->producerToQueues[producer])
-  {
+  QueueInfo *queueInfo = nullptr;
+  for (auto queueI : fromStage->producerToQueues[producer]) {
     if (LDI->queues[queueI]->toStage != toStage->order) continue;
     queueIndex = queueI;
+    queueInfo = LDI->queues[queueIndex].get();
     break;
   }
-
-  if (queueIndex == LDI->queues.size())
-  {
+  if (queueIndex == LDI->queues.size()) {
     LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType())));
     fromStage->producerToQueues[producer].insert(queueIndex);
+    queueInfo = LDI->queues[queueIndex].get();
+
+    /*
+     * Confirm a new queue is of a size handled by the parallelizer
+     */
+    auto& queueTypes = par.queues.queueSizeToIndex;
+    bool byteSize = queueTypes.find(queueInfo->bitLength) != queueTypes.end();
+    if (!byteSize) {
+      errs() << "NOT SUPPORTED BYTE SIZE (" << queueInfo->bitLength << "): "; producer->getType()->print(errs()); errs() <<  "\n";
+      producer->print(errs() << "Producer: "); errs() << "\n";
+      abort();
+    }
   }
 
+  /*
+   * Track queue indices in stages
+   */
   fromStage->pushValueQueues.insert(queueIndex);
   toStage->popValueQueues.insert(queueIndex);
   toStage->producedPopQueue[producer] = queueIndex;
 
-  auto queueInfo = LDI->queues[queueIndex].get();
+  /*
+   * Track the stages this queue communicates between
+   */
   queueInfo->consumers.insert(consumer);
   queueInfo->fromStage = fromStage->order;
   queueInfo->toStage = toStage->order;
-
-  auto& queueTypes = par.queues.queueSizeToIndex ;
-  bool byteSize = queueTypes.find(queueInfo->bitLength) != queueTypes.end();
-  if (!byteSize) { 
-    errs() << "NOT SUPPORTED BYTE SIZE (" << queueInfo->bitLength << "): "; producer->getType()->print(errs()); errs() <<  "\n";
-    producer->print(errs() << "Producer: "); errs() << "\n";
-    abort();
-  }
 }
 
-void DSWP::collectControlQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI) {
-  auto findContaining = [&](Value *val) -> std::pair<StageInfo *, SCC *> {
-    for (auto &stage : LDI->stages)
-    {
-      for (auto scc : stage->stageSCCs) if (scc->isInternal(val)) return std::make_pair(stage.get(), scc);
-      for (auto scc : stage->removableSCCs) if (scc->isInternal(val)) return std::make_pair(stage.get(), scc);
+void DSWP::collectControlQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+  auto findContaining = [&](Value *val) -> std::pair<DSWPTechniqueWorker *, SCC *> {
+    for (auto techniqueWorker : this->workers) {
+      auto worker = (DSWPTechniqueWorker *)techniqueWorker;
+      for (auto scc : worker->stageSCCs) if (scc->isInternal(val)) return std::make_pair(worker, scc);
+      for (auto scc : worker->removableSCCs) if (scc->isInternal(val)) return std::make_pair(worker, scc);
     }
     return std::make_pair(nullptr, nullptr);
   };
@@ -120,33 +71,67 @@ void DSWP::collectControlQueueInfo (Parallelization &par, DSWPLoopDependenceInfo
     auto brStageSCC = findContaining(cast<Value>(consumerI));
     assert(brStageSCC.first != nullptr);
 
-    for (auto edge : brStageSCC.second->fetchNode(cast<Value>(consumerI))->getIncomingEdges())
-    {
+    for (auto edge : brStageSCC.second->fetchNode(cast<Value>(consumerI))->getIncomingEdges()) {
       if (edge->isControlDependence()) continue;
       auto producer = cast<Instruction>(edge->getOutgoingT());
       auto prodStageSCC = findContaining(cast<Value>(producer));
-      StageInfo *prodStage = prodStageSCC.first;
+      DSWPTechniqueWorker *prodStage = prodStageSCC.first;
       SCC *prodSCC = prodStageSCC.second;
       assert(prodStage != nullptr);
 
-      for (auto &otherStage : LDI->stages)
-      {
+      for (auto techniqueWorker : this->workers) {
+        auto otherStage = (DSWPTechniqueWorker *)techniqueWorker;
+
         /*
          * Register a queue if the producer isn't in the stage and the consumer is used
          */
-        if (otherStage.get() == prodStage) continue;
+        if (otherStage == prodStage) continue;
         if (otherStage->removableSCCs.find(prodSCC) != otherStage->removableSCCs.end()) continue;
         if (otherStage->usedCondBrs.find(consumerTerm) == otherStage->usedCondBrs.end()) continue;
-        registerQueue(par, LDI, prodStage, otherStage.get(), producer, consumerI);
+        registerQueue(par, LDI, prodStage, otherStage, producer, consumerI);
       }
     }
   }
 }
 
-void DSWP::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique_ptr<StageInfo> &stageInfo, Parallelization &par) {
-  IRBuilder<> entryBuilder(stageInfo->entryBlock);
-  auto argIter = stageInfo->sccStage->arg_begin();
-  auto queuesArray = entryBuilder.CreateBitCast(&*(++argIter), PointerType::getUnqual(LDI->queueArrayType));
+void DSWP::collectDataQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+  for (auto techniqueWorker : this->workers) {
+    auto toStage = (DSWPTechniqueWorker *)techniqueWorker;
+    std::set<SCC *> allSCCs(toStage->removableSCCs.begin(), toStage->removableSCCs.end());
+    allSCCs.insert(toStage->stageSCCs.begin(), toStage->stageSCCs.end());
+    for (auto scc : allSCCs) {
+      for (auto sccEdge : LDI->loopSCCDAG->fetchNode(scc)->getIncomingEdges()) {
+        auto fromSCC = sccEdge->getOutgoingT();
+        if (LDI->sccdagAttrs.canBeCloned(fromSCC)) continue;
+        auto fromStage = LDI->sccToStage[fromSCC];
+        if (fromStage == toStage) continue;
+
+        /*
+         * Create value queues for each dependency of the form: producer -> consumers
+         */
+        for (auto instructionEdge : sccEdge->getSubEdges()) {
+          assert(!instructionEdge->isMemoryDependence());
+          if (instructionEdge->isControlDependence()) continue;
+          auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
+          auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
+          registerQueue(par, LDI, fromStage, toStage, producer, consumer);
+        }
+      }
+    }
+  }
+}
+
+void DSWP::generateLoadsOfQueuePointers (
+  DSWPLoopDependenceInfo *LDI,
+  Parallelization &par,
+  int workerIndex
+) {
+  auto worker = (DSWPTechniqueWorker *)this->workers[workerIndex];
+  IRBuilder<> entryBuilder(worker->entryBlock);
+  auto queuesArray = entryBuilder.CreateBitCast(
+    worker->queueArg,
+    PointerType::getUnqual(LDI->queueArrayType)
+  );
 
   /*
    * Load this stage's relevant queues
@@ -170,67 +155,80 @@ void DSWP::loadAllQueuePointersInEntry (DSWPLoopDependenceInfo *LDI, std::unique
       queueInstrs->alloca,
       PointerType::getUnqual(queueElemType)
     );
-    stageInfo->queueInstrMap[queueIndex] = std::move(queueInstrs);
+    worker->queueInstrMap[queueIndex] = std::move(queueInstrs);
   };
 
-  for (auto queueIndex : stageInfo->pushValueQueues) loadQueuePtrFromIndex(queueIndex);
-  for (auto queueIndex : stageInfo->popValueQueues) loadQueuePtrFromIndex(queueIndex);
+  for (auto queueIndex : worker->pushValueQueues) loadQueuePtrFromIndex(queueIndex);
+  for (auto queueIndex : worker->popValueQueues) loadQueuePtrFromIndex(queueIndex);
 }
 
-void DSWP::collectPartitionedSCCQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI)
-{
-  for (auto scc : LDI->loopSCCDAG->getNodes())
-  {
-    for (auto sccEdge : scc->getOutgoingEdges())
-    {
-      auto sccPair = sccEdge->getNodePair();
-      auto fromSCC = sccPair.first->getT();
-      auto toSCC = sccPair.second->getT();
-      if (LDI->sccdagAttrs.canBeCloned(fromSCC)) continue;
-      if (LDI->sccdagAttrs.canBeCloned(toSCC)) continue;
+void DSWP::popValueQueues (DSWPLoopDependenceInfo *LDI, Parallelization &par, int workerIndex) {
+  auto worker = (DSWPTechniqueWorker *)this->workers[workerIndex];
+  auto &bbClones = worker->basicBlockClones;
+  auto &iClones = worker->instructionClones;
 
-      auto fromStage = LDI->sccToStage[fromSCC];
-      auto toStage = LDI->sccToStage[toSCC];
-      if (fromStage == toStage) continue;
+  for (auto queueIndex : worker->popValueQueues) {
+    auto &queueInfo = LDI->queues[queueIndex];
+    auto queueInstrs = worker->queueInstrMap[queueIndex].get();
+    auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
 
-      /*
-       * Create value queues for each dependency of the form: producer -> consumers
-       */
-      for (auto instructionEdge : sccEdge->getSubEdges())
-      {
-        assert(!instructionEdge->isMemoryDependence());
-        if (instructionEdge->isControlDependence()) continue;
-        auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
-        auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
-        registerQueue(par, LDI, fromStage, toStage, producer, consumer);
+    auto bb = queueInfo->producer->getParent();
+    assert(bbClones.find(bb) != bbClones.end());
+
+    IRBuilder<> builder(bbClones[bb]);
+    auto queuePopFunction = par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]];
+    queueInstrs->queueCall = builder.CreateCall(queuePopFunction, queueCallArgs);
+    queueInstrs->load = builder.CreateLoad(queueInstrs->alloca);
+
+    /*
+     * Map from producer to queue load 
+     */
+    worker->instructionClones[queueInfo->producer] = (Instruction *)queueInstrs->load;
+
+    /*
+     * Position queue call and load relatively identically to where the producer is in the basic block
+     */
+    bool pastProducer = false;
+    bool moved = false;
+    for (auto &I : *bb) {
+      if (&I == queueInfo->producer) pastProducer = true;
+      else if (auto phi = dyn_cast<PHINode>(&I)) continue;
+      else if (pastProducer && iClones.find(&I) != iClones.end()) {
+        auto iClone = iClones[&I];
+        cast<Instruction>(queueInstrs->queueCall)->moveBefore(iClone);
+        cast<Instruction>(queueInstrs->load)->moveBefore(iClone);
+        moved = true;
+        break;
       }
     }
+    assert(moved);
   }
 }
 
-void DSWP::collectRemovableSCCQueueInfo (Parallelization &par, DSWPLoopDependenceInfo *LDI) {
-  for (auto &stage : LDI->stages)
-  {
-    auto toStage = stage.get();
-    for (auto removableSCC : stage->removableSCCs)
-    {
-      for (auto sccEdge : LDI->loopSCCDAG->fetchNode(removableSCC)->getIncomingEdges())
-      {
-        auto fromSCC = sccEdge->getOutgoingT();
-        if (LDI->sccdagAttrs.canBeCloned(fromSCC)) continue;
-        auto fromStage = LDI->sccToStage[fromSCC];
+void DSWP::pushValueQueues (DSWPLoopDependenceInfo *LDI, Parallelization &par, int workerIndex) {
+  auto worker = (DSWPTechniqueWorker *)this->workers[workerIndex];
+  auto &iClones = worker->instructionClones;
 
-        /*
-         * Create value queues for each dependency of the form: producer -> consumers
-         */
-        for (auto instructionEdge : sccEdge->getSubEdges())
-        {
-          assert(!instructionEdge->isMemoryDependence());
-          if (instructionEdge->isControlDependence()) continue;
-          auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
-          auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
-          registerQueue(par, LDI, fromStage, toStage, producer, consumer);
-        }
+  for (auto queueIndex : worker->pushValueQueues) {
+    auto queueInstrs = worker->queueInstrMap[queueIndex].get();
+    auto queueInfo = LDI->queues[queueIndex].get();
+    auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
+    
+    auto pClone = iClones[queueInfo->producer];
+    auto pCloneBB = pClone->getParent();
+    IRBuilder<> builder(pCloneBB);
+    auto store = builder.CreateStore(pClone, queueInstrs->alloca);
+    auto queuePushFunction = par.queues.queuePushes[par.queues.queueSizeToIndex[queueInfo->bitLength]];
+    queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
+
+    bool pastProducer = false;
+    for (auto &I : *pCloneBB) {
+      if (&I == pClone) pastProducer = true;
+      else if (auto phi = dyn_cast<PHINode>(&I)) continue;
+      else if (pastProducer) {
+        store->moveBefore(&I);
+        cast<Instruction>(queueInstrs->queueCall)->moveBefore(&I);
+        break;
       }
     }
   }

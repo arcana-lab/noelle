@@ -332,7 +332,6 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
       if (auto phi = dyn_cast<PHINode>(&I)) {
         auto bbIndex = phi->getBasicBlockIndex(originalHeader);
         if (bbIndex == -1) {
-          phi->print(errs() << "HOW "); errs() << "\n";
           continue;
         }
         auto val = phi->getIncomingValue(bbIndex);
