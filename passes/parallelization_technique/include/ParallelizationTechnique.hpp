@@ -96,7 +96,7 @@ namespace llvm {
         int workerIndex
       );
 
-      virtual void generateCodeToStoreExitBlockIndex (
+      void generateCodeToStoreExitBlockIndex (
         LoopDependenceInfoForParallelizer *LDI,
         int workerIndex
       );
