@@ -41,14 +41,17 @@ bool DSWP::canBeAppliedToLoop (
    */
   partitionSCCDAG(LDI, h);
 
-  if (this->forceParallelization){
+  bool canApply = LDI->partition.subsets.size() > 1;
+  if (this->forceParallelization) {
+    if (!canApply && this->verbose > Verbosity::Disabled) {
+      errs() << "DSWP:  Forced parallelization of a disadvantageous loop\n";
+    }
     return true;
   }
 
   /*
    * Check whether it is worth parallelizing the current loop.
    */
-  bool canApply = LDI->partition.subsets.size() > 1;
   if (!canApply && this->verbose > Verbosity::Disabled) {
     errs() << "DSWP:  Not enough TLP can be extracted\n";
     errs() << "DSWP: Exit\n";
