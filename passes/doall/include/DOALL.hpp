@@ -36,7 +36,7 @@
 #include <deque>
 
 // TODO(angelo): replace with values passed into this library
-#define NUM_CORES 4
+#define NUM_CORES 8
 #define CHUNK_SIZE 8
 
 namespace llvm {
