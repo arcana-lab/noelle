@@ -43,3 +43,12 @@ Task log - Angelo
   PropagateLiveOuts -> GenerateCodeToLoadLiveOutVars
   PopulateEnvironment -> GenerateCodeTOCreateEnvironment
   live in, live out naming
+
+
+==== Terms
+TechniqueWorker -> Task
+DOALLTechniqueWorker -> DOALLTask
+outerHeader -> outermostLoopHeader
+outerLatch -> outermostLoopLatch
+getPreEnvIndices -> getEnvironmentIndicesOfLiveInVariables
+getPostEnvIndices -> getEnvironmentIndicesOfLiveOutVariables
