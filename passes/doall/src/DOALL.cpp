@@ -25,7 +25,7 @@ DOALL::DOALL (Module &module, Verbosity v)
 }
 
 bool DOALL::canBeAppliedToLoop (
-  LoopDependenceInfoForParallelizer *LDI,
+  LoopDependenceInfo *LDI,
   Parallelization &par,
   Heuristics *h,
   ScalarEvolution &SE
@@ -43,7 +43,7 @@ bool DOALL::canBeAppliedToLoop (
   /*
    * The loop must have all live-out variables to be reducable.
    */
-  if (!LDI->sccdagAttrs.allPostLoopEnvValuesAreReducable(LDI->environment)) {
+  if (!LDI->sccdagAttrs.areAllLiveOutValuesReducable(LDI->environment)) {
     errs() << "DOALL:   Some post environment value is not reducable\n";
     return false;
   }
@@ -52,7 +52,7 @@ bool DOALL::canBeAppliedToLoop (
    * The loop must have at least one induction variable.
    * This is because the trip count must be controlled by an induction variable.
    */
-  if (!LDI->sccdagAttrs.loopHasInductionVariable()) {
+  if (!LDI->sccdagAttrs.doesLoopHaveIV()) {
     errs() << "DOALL:   Loop does not have an IV\n";
     return false;
   }
@@ -62,10 +62,9 @@ bool DOALL::canBeAppliedToLoop (
    */
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
-    auto &sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
     //TODO(SIMONE): I'm not sure the following condition is correct. For example, a loop with a commutative SCC cannot be parallelized by DOALL.
     if (scc->getType() != SCC::SCCType::COMMUTATIVE
-      && !sccInfo->isClonable
+      && !LDI->sccdagAttrs.canBeCloned(scc)
       && !LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
       scc->printMinimal(errs() << "DOALL:   Non clonable, non commutative scc at top level of loop:\n", "DOALL:\t") << "\n";
       return false;
@@ -80,7 +79,7 @@ bool DOALL::canBeAppliedToLoop (
 }
       
 bool DOALL::apply (
-  LoopDependenceInfoForParallelizer *LDI,
+  LoopDependenceInfo *LDI,
   Parallelization &par,
   Heuristics *h,
   ScalarEvolution &SE
@@ -162,7 +161,7 @@ bool DOALL::apply (
   return true;
 }
 
-void DOALL::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) {
+void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
   std::unordered_map<int, int> reducableBinaryOps;
   std::unordered_map<int, Value *> initialValues;
 
@@ -197,7 +196,7 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI)
 }
 
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
-  LoopDependenceInfoForParallelizer *LDI,
+  LoopDependenceInfo *LDI,
   Parallelization &par
 ) {
 

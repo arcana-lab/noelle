@@ -4,7 +4,6 @@ set(Srcs
   Parallelizer.cpp
   Helper.cpp
   LoopSelector.cpp
-  ParallelSCC.cpp
   Partition.cpp
   Printer.cpp
 )

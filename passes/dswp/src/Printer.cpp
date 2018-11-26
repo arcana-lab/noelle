@@ -7,10 +7,6 @@
 #include "SCCDAG.hpp"
 #include "DSWP.hpp"
 
-void llvm::DSWP::printPartition (DSWPLoopDependenceInfo *LDI) const {
-  LDI->partition.print(errs(), "DSWP:   ");
-}
-
 void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) const {
   if (this->verbose <= Verbosity::Minimal){
     return ;

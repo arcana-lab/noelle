@@ -20,7 +20,7 @@ void ParallelizationTechnique::reset () {
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder (
-  LoopDependenceInfoForParallelizer *LDI,
+  LoopDependenceInfo *LDI,
   std::set<int> simpleVars,
   std::set<int> reducableVars
 ) {
@@ -45,20 +45,20 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   }
 }
 
-void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfoForParallelizer *LDI) {
+void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI) {
   IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
   envBuilder->generateEnvArray(builder);
   envBuilder->generateEnvVariables(builder);
 }
 
-void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfoForParallelizer *LDI) {
+void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LDI) {
   IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
   for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
     builder.CreateStore(LDI->environment->producerAt(envIndex), envBuilder->getEnvVar(envIndex));
   }
 }
 
-void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) {
+void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
   IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
   for (int envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto prod = LDI->environment->producerAt(envInd);
@@ -84,7 +84,7 @@ void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfoFo
 }
 
 void ParallelizationTechnique::generateTasks (
-  LoopDependenceInfoForParallelizer *LDI,
+  LoopDependenceInfo *LDI,
   std::vector<TaskExecution *> taskStructs
 ) {
   numTaskInstances = taskStructs.size();
@@ -119,7 +119,7 @@ void ParallelizationTechnique::generateTasks (
 }
 
 void ParallelizationTechnique::cloneSequentialLoop (
-  LoopDependenceInfoForParallelizer *LDI,
+  LoopDependenceInfo *LDI,
   int taskIndex
 ){
   auto &cxt = module.getContext();
@@ -148,7 +148,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
 }
 
 void ParallelizationTechnique::cloneSequentialLoopSubset (
-  LoopDependenceInfoForParallelizer *LDI,
+  LoopDependenceInfo *LDI,
   int taskIndex,
   std::set<Instruction *> subset
 ){
@@ -181,7 +181,7 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
 }
 
 void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
-  LoopDependenceInfoForParallelizer *LDI, 
+  LoopDependenceInfo *LDI, 
   int taskIndex
 ){
   auto task = this->tasks[taskIndex];
@@ -205,7 +205,7 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
 }
 
 void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
-  LoopDependenceInfoForParallelizer *LDI, 
+  LoopDependenceInfo *LDI, 
   int taskIndex
 ){
   auto task = this->tasks[taskIndex];
@@ -255,7 +255,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
 }
 
 void ParallelizationTechnique::adjustDataFlowToUseClones (
-  LoopDependenceInfoForParallelizer *LDI,
+  LoopDependenceInfo *LDI,
   int taskIndex
 ){
   auto &task = tasks[taskIndex];
@@ -321,7 +321,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
 }
 
 void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
-  LoopDependenceInfoForParallelizer *LDI,
+  LoopDependenceInfo *LDI,
   int taskIndex
 ){
 

@@ -2,19 +2,13 @@
 
 using namespace llvm;
 
-void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) const {
+void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
 
   /*
    * Initial the partition structure with the merged SCCDAG
    */
-  LDI->partition.initialize(LDI->loopSCCDAG, &LDI->sccdagAttrs, &LDI->liSummary);
-
-  /*
-   * Check if we can cluster SCCs.
-   */
-  if (this->enableMergingSCC) {
-    // clusterSubloops(LDI);
-  }
+  assert(subsets == nullptr && "ERROR: Partition should not exist yet\n");
+  subsets = new std::set<std::set<SCC *> *>();
 
   /*
    * Assign SCCs that have no partition to their own partitions.
@@ -27,26 +21,23 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) const {
      */
     auto currentSCC = nodePair.first;
     if (LDI->sccdagAttrs.canBeCloned(currentSCC)) continue ;
-
-    /*
-     * Check if the current SCC has been already assigned to a partition; if not, assign it to a new partition.
-     */
-    if (LDI->partition.subsetIDOfSCC(currentSCC) == -1) {
-      LDI->partition.addSubset(nodePair.first);
-    }
+    auto singleSet = new std::set<SCC *>();
+    singleSet->insert(nodePair.first);
+    subsets->insert(singleSet);
   }
 
   /*
    * Ensure no memory edges go across subsets so no synchronization is necessary
    */
-  LDI->partition.mergeSubsetsRequiringMemSync();
+  partitioner = new SCCDAGPartition(LDI->loopSCCDAG, &LDI->sccdagAttrs, &LDI->liSummary, subsets);
+  while (partitioner->mergeAlongMemoryEdges());
 
   /*
    * Print the initial partitions.
    */
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  Before partitioning the SCCDAG\n";
-    printPartition(LDI);
+    partitioner->print(errs(), "DSWP:   ");
   }
 
   /*
@@ -57,7 +48,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) const {
     /*
      * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
      */
-    h->adjustParallelizationPartitionForDSWP(LDI->partition, /*idealThreads=*/ 2);
+    h->adjustParallelizationPartitionForDSWP(partitioner, LDI->sccdagAttrs, /*idealThreads=*/ 2);
   }
 
   /*
@@ -65,12 +56,13 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) const {
    */
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  After partitioning the SCCDAG\n";
-    printPartition(LDI);
+    partitioner->print(errs(), "DSWP:   ");
   }
 
   return ;
 }
 
+/*
 void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
   auto &li = LDI->liSummary;
   auto loop = li.bbToLoop[LDI->header];
@@ -96,11 +88,9 @@ void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
     }
   }
 
-  /*
-   * Basic Heuristic: partition entire sub loops only if there is more than one
-   */
   if (loopSets.size() == 1) return;
   for (auto loopSetPair : loopSets) {
-    LDI->partition.addSubset(loopSetPair.second);
+    partition.addSubset(loopSetPair.second);
   }
 }
+*/

@@ -19,7 +19,7 @@
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
 
-#include "LoopDependenceInfoForParallelizer.hpp"
+#include "LoopDependenceInfo.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
@@ -46,8 +46,8 @@ namespace llvm {
        * Methods
        */
       HELIX (Module &module, Verbosity v);
-      bool apply (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
-      bool canBeAppliedToLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
+      bool apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
+      bool canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
 
     protected:
 

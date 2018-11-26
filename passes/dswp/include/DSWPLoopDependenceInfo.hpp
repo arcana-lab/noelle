@@ -5,7 +5,7 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "LoopDependenceInfoForParallelizer.hpp"
+#include "LoopDependenceInfo.hpp"
 #include "SCCDAGPartition.hpp"
 #include "TaskExecutionDSWP.hpp"
 
@@ -14,7 +14,7 @@ using namespace llvm;
 
 namespace llvm {
 
-  class DSWPLoopDependenceInfo : public LoopDependenceInfoForParallelizer {
+  class DSWPLoopDependenceInfo : public LoopDependenceInfo {
     public:
 
       /*

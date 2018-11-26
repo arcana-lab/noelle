@@ -45,17 +45,22 @@ namespace llvm {
        */
       DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Verbosity v);
       bool apply (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         Parallelization &par,
         Heuristics *h,
         ScalarEvolution &SE
       ) override ;
       bool canBeAppliedToLoop (
-        LoopDependenceInfoForParallelizer *baseLDI,
+        LoopDependenceInfo *baseLDI,
         Parallelization &par,
         Heuristics *h,
         ScalarEvolution &SE
       ) const override ;
+      void initialize (
+        LoopDependenceInfo *baseLDI,
+        Heuristics *h
+      );
+      void reset () override ;
 
     private:
 
@@ -68,7 +73,7 @@ namespace llvm {
       /*
        * Pipeline
        */
-      void partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) const ;
+      void partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) ;
       void clusterSubloops (DSWPLoopDependenceInfo *LDI);
       void generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI);
       void addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI);
@@ -133,7 +138,12 @@ namespace llvm {
       void printStageSCCs (DSWPLoopDependenceInfo *LDI) const ;
       void printStageQueues (DSWPLoopDependenceInfo *LDI) const ;
       void printEnv (DSWPLoopDependenceInfo *LDI) const ;
-      void printPartition (DSWPLoopDependenceInfo *LDI) const ;
+
+      /*
+       * DSWP specific structures used to determine workers
+       */
+      SCCDAGPartition *partitioner;
+      std::set<std::set<SCC *> *> *subsets;
   };
 
 }

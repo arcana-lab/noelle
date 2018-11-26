@@ -13,12 +13,12 @@ HELIX::HELIX (Module &module, Verbosity v)
   return ;
 }
 
-bool HELIX::canBeAppliedToLoop (LoopDependenceInfoForParallelizer *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
+bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
   return false;
 }
 
 bool HELIX::apply (
-  LoopDependenceInfoForParallelizer *LDI,
+  LoopDependenceInfo *LDI,
   Parallelization &par,
   Heuristics *h,
   ScalarEvolution &SE

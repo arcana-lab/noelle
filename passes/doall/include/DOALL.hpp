@@ -19,7 +19,7 @@
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
 
-#include "LoopDependenceInfoForParallelizer.hpp"
+#include "LoopDependenceInfo.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
@@ -49,13 +49,13 @@ namespace llvm {
        */
       DOALL (Module &module, Verbosity v);
       bool apply (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         Parallelization &par,
         Heuristics *h,
         ScalarEvolution &SE
       ) override ;
       bool canBeAppliedToLoop (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         Parallelization &par,
         Heuristics *h,
         ScalarEvolution &SE
@@ -67,23 +67,23 @@ namespace llvm {
        * Environment overrides
        */
       void propagateLiveOutEnvironment (
-        LoopDependenceInfoForParallelizer *LDI
+        LoopDependenceInfo *LDI
       ) override ;
 
       /*
        * DOALL specific generation
        */
       void simplifyOriginalLoopIV (
-        LoopDependenceInfoForParallelizer *LDI
+        LoopDependenceInfo *LDI
       );
       void generateOuterLoopAndAdjustInnerLoop (
-        LoopDependenceInfoForParallelizer *LDI
+        LoopDependenceInfo *LDI
       );
       void propagatePHINodesThroughOuterLoop (
-        LoopDependenceInfoForParallelizer *LDI
+        LoopDependenceInfo *LDI
       );
       void addChunkFunctionExecutionAsideOriginalLoop (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         Parallelization &par
       );
 

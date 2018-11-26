@@ -1,7 +1,7 @@
 #include "DOALL.hpp"
 
 void DOALL::generateOuterLoopAndAdjustInnerLoop (
-  LoopDependenceInfoForParallelizer *LDI
+  LoopDependenceInfo *LDI
 ){
   auto task = (DOALLTaskExecution *)tasks[0];
 
@@ -168,7 +168,7 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
 }
 
 void DOALL::propagatePHINodesThroughOuterLoop (
-  LoopDependenceInfoForParallelizer *LDI
+  LoopDependenceInfo *LDI
 ) {
   auto task = (DOALLTaskExecution *)tasks[0];
 

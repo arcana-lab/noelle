@@ -2,7 +2,7 @@
 
 // TODO(angelo): Have LoopSummary scrape this info from IVs
 void DOALL::simplifyOriginalLoopIV (
-  LoopDependenceInfoForParallelizer *LDI
+  LoopDependenceInfo *LDI
 ) {
   auto task = (DOALLTaskExecution *)tasks[0];
 

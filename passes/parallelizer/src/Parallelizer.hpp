@@ -77,7 +77,6 @@ namespace llvm {
       void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI);
       void mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI);
       void collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h, ScalarEvolution &SE);
-      void collectParallelizableSingleInstrNodes (DSWPLoopDependenceInfo *LDI);
 
       /*
        * Debug utilities

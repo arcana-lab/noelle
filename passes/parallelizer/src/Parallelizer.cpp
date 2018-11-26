@@ -49,14 +49,17 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
     envArray = helix.getEnvArray();
     helix.reset();
 
-  } else if (dswp.canBeAppliedToLoop(LDI, par, h, SE)) {
+  } else {
+    dswp.initialize(LDI, h);
+    if (dswp.canBeAppliedToLoop(LDI, par, h, SE)) {
 
-    /*
-     * Apply DSWP.
-     */
-    codeModified = dswp.apply(LDI, par, h, SE);
-    envArray = dswp.getEnvArray();
-    dswp.reset();
+      /*
+       * Apply DSWP.
+       */
+      codeModified = dswp.apply(LDI, par, h, SE);
+      envArray = dswp.getEnvArray();
+      dswp.reset();
+    }
   }
 
   /*
@@ -105,9 +108,4 @@ void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *
    * Evaluate the SCCs (e.g., which ones are commutative) of the SCCDAG of the loop.
    */
   LDI->sccdagAttrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
-
-  /*
-   * Keep track of which nodes of the SCCDAG are single instructions.
-   */
-  collectParallelizableSingleInstrNodes(LDI);
 }

@@ -6,7 +6,8 @@ DSWP::DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Ve
   :
   ParallelizationTechnique{module, v},
   forceParallelization{forceParallelization},
-  enableMergingSCC{enableSCCMerging}
+  enableMergingSCC{enableSCCMerging},
+  partitioner{nullptr}, subsets{nullptr}
   {
 
   /*
@@ -28,20 +29,29 @@ DSWP::DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Ve
   return ;
 }
 
+void DSWP::reset () {
+  ParallelizationTechnique::reset();
+  if (subsets) {
+    delete partitioner;
+    delete subsets;
+    subsets = nullptr;
+  }
+}
+
+void DSWP::initialize (LoopDependenceInfo *baseLDI, Heuristics *h) {
+  auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
+  partitionSCCDAG(LDI, h);
+}
+
 bool DSWP::canBeAppliedToLoop (
-  LoopDependenceInfoForParallelizer *baseLDI,
+  LoopDependenceInfo *baseLDI,
   Parallelization &par,
   Heuristics *h,
   ScalarEvolution &SE
 ) const {
   auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
 
-  /*
-   * Partition the SCCDAG.
-   */
-  partitionSCCDAG(LDI, h);
-
-  bool canApply = LDI->partition.subsets.size() > 1;
+  bool canApply = subsets->size() > 1;
   if (this->forceParallelization) {
     if (!canApply && this->verbose > Verbosity::Disabled) {
       errs() << "DSWP:  Forced parallelization of a disadvantageous loop\n";
@@ -61,7 +71,7 @@ bool DSWP::canBeAppliedToLoop (
 }
 
 bool DSWP::apply (
-  LoopDependenceInfoForParallelizer *baseLDI,
+  LoopDependenceInfo *baseLDI,
   Parallelization &par,
   Heuristics *h,
   ScalarEvolution &SE

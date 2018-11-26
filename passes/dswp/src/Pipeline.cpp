@@ -3,32 +3,16 @@
 using namespace llvm;
 
 void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
-  auto topLevelSubIDs = LDI->partition.getSubsetIDsWithNoIncomingEdges();
-  assert(topLevelSubIDs.size() > 0);
-  std::set<int> subsFound(topLevelSubIDs.begin(), topLevelSubIDs.end());
-  std::deque<int> subsToTraverse(topLevelSubIDs.begin(), topLevelSubIDs.end());
-
   std::vector<TaskExecution *> techniqueTasks;
-  while (!subsToTraverse.empty()) {
-    auto sub = subsToTraverse.front();
-    subsToTraverse.pop_front();
-
-    /*
-     * Add all unvisited, next depth partitions to the traversal queue 
-     */
-    auto nextSubs = LDI->partition.nextLevelSubsetIDs(sub);
-    for (auto next : nextSubs) {
-      if (subsFound.find(next) != subsFound.end()) continue;
-      subsFound.insert(next);
-      subsToTraverse.push_back(next);
-    }
+  auto &depthOrdered = partitioner->getDepthOrderedSubsets();
+  for (auto subset : depthOrdered) {
 
     /*
      * Create task (stage), populating its SCCs
      */
     auto task = new DSWPTaskExecution();
     techniqueTasks.push_back(task);
-    for (auto scc : LDI->partition.subsetOfID(sub)->SCCs) {
+    for (auto scc : *subset) {
       task->stageSCCs.insert(scc);
       LDI->sccToStage[scc] = task;
     }
@@ -36,7 +20,8 @@ void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
 
   this->generateTasks(LDI, techniqueTasks);
   this->numTaskInstances = techniqueTasks.size();
-  assert(this->numTaskInstances == LDI->partition.subsets.size());
+  errs() << "Task instances: " << this->numTaskInstances << ", Subsets: " << subsets->size() << "\n";
+  assert(this->numTaskInstances == subsets->size());
 }
 
 void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {

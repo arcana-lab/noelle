@@ -5,7 +5,7 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
 #include "Parallelization.hpp"
-#include "LoopDependenceInfoForParallelizer.hpp"
+#include "LoopDependenceInfo.hpp"
 #include "Heuristics.hpp"
 #include "TaskExecution.hpp"
 
@@ -23,7 +23,7 @@ namespace llvm {
        * Apply the parallelization technique to the loop LDI.
        */
       virtual bool apply (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         Parallelization &par,
         Heuristics *h,
         ScalarEvolution &SE
@@ -33,7 +33,7 @@ namespace llvm {
        * Can the current parallelization technique be applied to parallelize loop LDI?
        */
       virtual bool canBeAppliedToLoop (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         Parallelization &par,
         Heuristics *h,
         ScalarEvolution &SE
@@ -54,7 +54,7 @@ namespace llvm {
        * Task helpers for preparing loop code generation
        */
       virtual void generateTasks (
-        LoopDependenceInfoForParallelizer *LDI, 
+        LoopDependenceInfo *LDI, 
         std::vector<TaskExecution *> taskStructs
       );
 
@@ -62,23 +62,23 @@ namespace llvm {
        * Parallelized loop's environment
        */
       void initializeEnvironmentBuilder (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         std::set<int> simpleVars,
         std::set<int> reducableVars
       );
-      void allocateEnvironmentArray (LoopDependenceInfoForParallelizer *LDI);
-      void populateLiveInEnvironment (LoopDependenceInfoForParallelizer *LDI);
-      virtual void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI);
+      void allocateEnvironmentArray (LoopDependenceInfo *LDI);
+      void populateLiveInEnvironment (LoopDependenceInfo *LDI);
+      virtual void propagateLiveOutEnvironment (LoopDependenceInfo *LDI);
 
       /*
        * Task helpers for manipulating loop body clones
        */
       virtual void cloneSequentialLoop (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         int taskIndex
       );
       virtual void cloneSequentialLoopSubset (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         int taskIndex,
         std::set<Instruction *> subset
       );
@@ -87,22 +87,22 @@ namespace llvm {
        * Task helpers for environment usage
        */
       virtual void generateCodeToLoadLiveInVariables (
-        LoopDependenceInfoForParallelizer *LDI, 
+        LoopDependenceInfo *LDI, 
         int taskIndex
       );
 
       virtual void generateCodeToStoreLiveOutVariables (
-        LoopDependenceInfoForParallelizer *LDI, 
+        LoopDependenceInfo *LDI, 
         int taskIndex
       );
 
       void generateCodeToStoreExitBlockIndex (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         int taskIndex
       );
 
       virtual void adjustDataFlowToUseClones (
-        LoopDependenceInfoForParallelizer *LDI,
+        LoopDependenceInfo *LDI,
         int taskIndex
       );
 

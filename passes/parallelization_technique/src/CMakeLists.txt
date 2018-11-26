@@ -1,7 +1,6 @@
 # Sources
 set(Srcs 
   ParallelizationTechnique.cpp
-  LoopDependenceInfoForParallelizer.cpp
 )
 
 # Compilation flags
