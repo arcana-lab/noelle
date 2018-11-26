@@ -20,7 +20,6 @@ void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
 
   this->generateTasks(LDI, techniqueTasks);
   this->numTaskInstances = techniqueTasks.size();
-  errs() << "Task instances: " << this->numTaskInstances << ", Subsets: " << subsets->size() << "\n";
   assert(this->numTaskInstances == subsets->size());
 }
 

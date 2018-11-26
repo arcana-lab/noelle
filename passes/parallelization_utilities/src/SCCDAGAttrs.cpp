@@ -96,7 +96,7 @@ bool SCCDAGAttrs::doesLoopHaveIV () const {
 }
 
 bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
-  for (auto envIndex : env->getPostEnvIndices()) {
+  for (auto envIndex : env->getEnvIndicesOfLiveOutVars()) {
     auto producer = env->producerAt(envIndex);
     auto scc = sccdag->sccOfValue(producer);
 

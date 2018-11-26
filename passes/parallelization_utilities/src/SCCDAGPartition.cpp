@@ -73,8 +73,8 @@ SCCset *SCCDAGPartition::mergePair (SCCset *subsetA, SCCset *subsetB, bool doReo
   subsets->insert(mergedSubset);
   for (auto scc : *mergedSubset) SCCToSet[scc] = mergedSubset;
 
-  printNodeInGraph(errs(), "DEBUG: ", subsetA);
-  printNodeInGraph(errs(), "DEBUG: ", subsetB);
+  // printNodeInGraph(errs(), "DEBUG: ", subsetA);
+  // printNodeInGraph(errs(), "DEBUG: ", subsetB);
 
   auto transferRelations = [&](SCCset *from, SCCset *to) -> void {
     for (auto parent : parentSubsets[from]) {
@@ -105,9 +105,9 @@ SCCset *SCCDAGPartition::mergePair (SCCset *subsetA, SCCset *subsetB, bool doReo
     childrenSubsets.erase(mergedSubset);
   }
 
-  printNodeInGraph(errs(), "DEBUG: ", mergedSubset);
+  // printNodeInGraph(errs(), "DEBUG: ", mergedSubset);
 
-  orderSubsets();
+  if (doReorder) orderSubsets();
   return mergedSubset;
 }
 
@@ -302,8 +302,15 @@ void SCCDAGPartition::orderSubsets () {
 
   depthOrderedSubsets.resize(subsets->size());
   assert(subsetDepths.size() == subsets->size());
+  std::vector<std::set<SCCset *>> depthBuckets(subsets->size());
   for (auto subsetDepth : subsetDepths) {
-    depthOrderedSubsets[subsetDepth.second] = subsetDepth.first;
+    depthBuckets[subsetDepth.second].insert(subsetDepth.first);
+  }
+  auto count = 0;
+  for (auto bucket : depthBuckets) {
+    for (auto subset : bucket) {
+      depthOrderedSubsets[count++] = subset;
+    }
   }
 }
 

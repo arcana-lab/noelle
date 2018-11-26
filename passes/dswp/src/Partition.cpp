@@ -22,7 +22,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
     auto currentSCC = nodePair.first;
     if (LDI->sccdagAttrs.canBeCloned(currentSCC)) continue ;
     auto singleSet = new std::set<SCC *>();
-    singleSet->insert(nodePair.first);
+    singleSet->insert(currentSCC);
     subsets->insert(singleSet);
   }
 
