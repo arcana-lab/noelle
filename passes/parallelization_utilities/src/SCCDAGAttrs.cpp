@@ -250,7 +250,7 @@ std::set<BasicBlock *> & SCCDAGAttrs::getBasicBlocks (SCC *scc){
 }
 
 bool SCCDAGAttrs::allPostLoopEnvValuesAreReducable (LoopEnvironment *env) const {
-  for (auto envIndex : env->getPostEnvIndices()) {
+  for (auto envIndex : env->getEnvIndicesOfLiveOutVars()) {
     auto producer = env->producerAt(envIndex);
     auto scc = sccdag->sccOfValue(producer);
 

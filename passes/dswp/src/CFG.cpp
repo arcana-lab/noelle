@@ -60,14 +60,14 @@ void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI) {
   /*
    * Collect conditional branches necessary to capture stage execution
    */
-  for (auto techniqueWorker : this->workers) {
-    auto worker = (DSWPTechniqueWorker *)techniqueWorker;
-    for (auto br : minNecessaryCondBrs) worker->usedCondBrs.insert(br);
+  for (auto techniqueTask : this->tasks) {
+    auto task = (DSWPTaskExecution *)techniqueTask;
+    for (auto br : minNecessaryCondBrs) task->usedCondBrs.insert(br);
 
     std::set<TerminatorInst *> stageBrs;
-    std::set<SCC *> workerSCCs(worker->stageSCCs.begin(), worker->stageSCCs.end());
-    workerSCCs.insert(worker->removableSCCs.begin(), worker->removableSCCs.end());
-    for (auto scc : workerSCCs) {
+    std::set<SCC *> taskSCCs(task->stageSCCs.begin(), task->stageSCCs.end());
+    taskSCCs.insert(task->removableSCCs.begin(), task->removableSCCs.end());
+    for (auto scc : taskSCCs) {
       for (auto nodePair : scc->internalNodePairs()) {
         stageBrs.insert(cast<Instruction>(nodePair.first)->getParent()->getTerminator());
       }
@@ -75,16 +75,16 @@ void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI) {
 
     // NOTE: This is because queue loads are done in the basic block of the producer,
     //  hence portions of the CFG where the producer would be contained must be preserved
-    for (auto queueIndex : worker->popValueQueues) {
+    for (auto queueIndex : task->popValueQueues) {
       stageBrs.insert(LDI->queues[queueIndex]->producer->getParent()->getTerminator());
     }
 
-    collectTransitiveCondBrs(LDI, stageBrs, worker->usedCondBrs);
+    collectTransitiveCondBrs(LDI, stageBrs, task->usedCondBrs);
   }
 }
 
-void DSWP::generateLoopSubsetForStage (DSWPLoopDependenceInfo *LDI, int workerIndex) {
-  auto worker = (DSWPTechniqueWorker *)this->workers[workerIndex];
+void DSWP::generateLoopSubsetForStage (DSWPLoopDependenceInfo *LDI, int taskIndex) {
+  auto task = (DSWPTaskExecution *)this->tasks[taskIndex];
 
   /*
    * Clone the portion of the loop within the stage's normal, and clonable, SCCs
@@ -92,31 +92,31 @@ void DSWP::generateLoopSubsetForStage (DSWPLoopDependenceInfo *LDI, int workerIn
    * its irrelevance when partitioning stages as it gets duplicated
    */
   std::set<Instruction *> subset;
-  for (auto scc : worker->removableSCCs) {
+  for (auto scc : task->removableSCCs) {
     for (auto nodePair : scc->internalNodePairs()) {
       subset.insert(cast<Instruction>(nodePair.first));
     }
   }
-  for (auto scc : worker->stageSCCs) {
+  for (auto scc : task->stageSCCs) {
     for (auto nodePair : scc->internalNodePairs()) {
       subset.insert(cast<Instruction>(nodePair.first));
     }
   }
-  this->cloneSequentialLoopSubset(LDI, worker->order, subset);
+  this->cloneSequentialLoopSubset(LDI, task->order, subset);
 
   /*
    * Determine the needed basic block terminators outside of the stage's SCCs
    * to capture control flow through the loop body to either loop latch or loop
    * exiting basic blocks
    */
-  auto &iClones = worker->instructionClones;
-  auto &bbClones = worker->basicBlockClones;
-  auto &cxt = worker->F->getContext();
+  auto &iClones = task->instructionClones;
+  auto &bbClones = task->basicBlockClones;
+  auto &cxt = task->F->getContext();
   for (auto B : LDI->loopBBs) {
     auto terminator = cast<Instruction>(B->getTerminator());
     if (iClones.find(terminator) == iClones.end()) {
       Instruction *termClone = nullptr;
-      if (worker->usedCondBrs.find(B->getTerminator()) != worker->usedCondBrs.end()) {
+      if (task->usedCondBrs.find(B->getTerminator()) != task->usedCondBrs.end()) {
         termClone = terminator->clone();
       } else {
         termClone = BranchInst::Create(LDI->loopBBtoPD[B]);
@@ -124,7 +124,7 @@ void DSWP::generateLoopSubsetForStage (DSWPLoopDependenceInfo *LDI, int workerIn
       iClones[terminator] = termClone;
 
       if (bbClones.find(B) == bbClones.end()) {
-        bbClones[B] = BasicBlock::Create(cxt, "", worker->F);
+        bbClones[B] = BasicBlock::Create(cxt, "", task->F);
       }
       IRBuilder<> builder(bbClones[B]);
       builder.Insert(termClone);
@@ -136,6 +136,6 @@ void DSWP::generateLoopSubsetForStage (DSWPLoopDependenceInfo *LDI, int workerIn
    * TODO(angelo): Have ParallelizationTechnique expose an API to do this more generally
    */
   for (int i = 0; i < LDI->loopExitBlocks.size(); ++i) {
-    worker->basicBlockClones[LDI->loopExitBlocks[i]] = worker->loopExitBlocks[i];
+    task->basicBlockClones[LDI->loopExitBlocks[i]] = task->loopExitBlocks[i];
   }
 }

@@ -28,7 +28,7 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechnique.hpp"
 
-#include "TechniqueWorkerDOALL.hpp"
+#include "TaskExecutionDOALL.hpp"
 
 #include <unordered_map>
 #include <set>

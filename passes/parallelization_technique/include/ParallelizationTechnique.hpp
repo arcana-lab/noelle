@@ -7,7 +7,7 @@
 #include "Parallelization.hpp"
 #include "LoopDependenceInfoForParallelizer.hpp"
 #include "Heuristics.hpp"
-#include "TechniqueWorker.hpp"
+#include "TaskExecution.hpp"
 
 namespace llvm {
 
@@ -51,11 +51,11 @@ namespace llvm {
     protected:
 
       /*
-       * Worker helpers for preparing loop code generation
+       * Task helpers for preparing loop code generation
        */
-      virtual void generateWorkers (
+      virtual void generateTasks (
         LoopDependenceInfoForParallelizer *LDI, 
-        std::vector<TechniqueWorker *> workerStructs
+        std::vector<TaskExecution *> taskStructs
       );
 
       /*
@@ -71,39 +71,39 @@ namespace llvm {
       virtual void propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI);
 
       /*
-       * Worker helpers for manipulating loop body clones
+       * Task helpers for manipulating loop body clones
        */
       virtual void cloneSequentialLoop (
         LoopDependenceInfoForParallelizer *LDI,
-        int workerIndex
+        int taskIndex
       );
       virtual void cloneSequentialLoopSubset (
         LoopDependenceInfoForParallelizer *LDI,
-        int workerIndex,
+        int taskIndex,
         std::set<Instruction *> subset
       );
 
       /*
-       * Worker helpers for environment usage
+       * Task helpers for environment usage
        */
       virtual void generateCodeToLoadLiveInVariables (
         LoopDependenceInfoForParallelizer *LDI, 
-        int workerIndex
+        int taskIndex
       );
 
       virtual void generateCodeToStoreLiveOutVariables (
         LoopDependenceInfoForParallelizer *LDI, 
-        int workerIndex
+        int taskIndex
       );
 
       void generateCodeToStoreExitBlockIndex (
         LoopDependenceInfoForParallelizer *LDI,
-        int workerIndex
+        int taskIndex
       );
 
       virtual void adjustDataFlowToUseClones (
         LoopDependenceInfoForParallelizer *LDI,
-        int workerIndex
+        int taskIndex
       );
 
       /*
@@ -116,10 +116,10 @@ namespace llvm {
       /*
        * Cloned loop representation for users
        */
-      Function *workerDispatcher;
-      FunctionType *workerType;
-      std::vector<TechniqueWorker *> workers;
-      int numWorkerInstances;
+      Function *taskDispatcher;
+      FunctionType *taskType;
+      std::vector<TaskExecution *> tasks;
+      int numTaskInstances;
   };
 
 }

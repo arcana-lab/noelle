@@ -4,7 +4,7 @@
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instructions.h"
-#include "TechniqueWorker.hpp"
+#include "TaskExecution.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
 
@@ -17,12 +17,12 @@ namespace llvm {
   struct QueueInfo;
   struct QueueInstrs;
 
-  struct DSWPTechniqueWorker : TechniqueWorker {
-    DSWPTechniqueWorker ()
+  struct DSWPTaskExecution : TaskExecution {
+    DSWPTaskExecution ()
       : stageSCCs{}, removableSCCs{}, usedCondBrs{} {}
 
     /*
-     * DSWP specific worker function arguments
+     * DSWP specific task function arguments
      */
     Value *queueArg;
 

@@ -7,7 +7,7 @@
 
 #include "LoopDependenceInfoForParallelizer.hpp"
 #include "SCCDAGPartition.hpp"
-#include "TechniqueWorkerDSWP.hpp"
+#include "TaskExecutionDSWP.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -20,7 +20,7 @@ namespace llvm {
       /*
        * Stores new pipeline execution
        */
-      unordered_map<SCC *, DSWPTechniqueWorker *> sccToStage;
+      unordered_map<SCC *, DSWPTaskExecution *> sccToStage;
       std::vector<std::unique_ptr<QueueInfo>> queues;
 
       /*

@@ -3,10 +3,10 @@
 using namespace llvm ;
 
 EnvUserBuilder::EnvUserBuilder (LoopEnvironment &le)
-  : LE{le}, envIndexToPtr{}, preEnvIndices{}, postEnvIndices{} {
+  : LE{le}, envIndexToPtr{}, liveInInds{}, liveOutInds{} {
   envIndexToPtr.clear();
-  preEnvIndices.clear();
-  postEnvIndices.clear();
+  liveInInds.clear();
+  liveOutInds.clear();
 }
 
 EnvUserBuilder::~EnvUserBuilder () {

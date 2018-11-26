@@ -45,14 +45,14 @@ Type * LoopEnvironment::typeOfEnv (int index) const {
   return exitBlockType;
 }
       
-void LoopEnvironment::addProducer (Value *producer, bool preLoop){
+void LoopEnvironment::addProducer (Value *producer, bool liveIn){
   auto envIndex = envProducers.size();
   envProducers.push_back(producer);
   producerIndexMap[producer] = envIndex;
-  if (preLoop) {
-    preLoopEnv.insert(envIndex);
+  if (liveIn) {
+    liveInInds.insert(envIndex);
   } else {
-    postLoopEnv.insert(envIndex);
+    liveOutInds.insert(envIndex);
   }
 
   return ;
@@ -62,8 +62,8 @@ bool LoopEnvironment::isProducer (Value *producer) const {
   return producerIndexMap.find(producer) != producerIndexMap.end();
 }
 
-bool LoopEnvironment::isPreLoopEnv (Value *val) {
-  return isProducer(val) && preLoopEnv.find(producerIndexMap[val]) != preLoopEnv.end();
+bool LoopEnvironment::isLiveIn (Value *val) {
+  return isProducer(val) && liveInInds.find(producerIndexMap[val]) != liveInInds.end();
 }
       
 void LoopEnvironment::addPreLoopProducer (Value *producer) { 

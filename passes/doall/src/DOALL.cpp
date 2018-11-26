@@ -8,7 +8,7 @@ DOALL::DOALL (Module &module, Verbosity v)
   /*
    * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
    */
-  this->workerDispatcher = this->module.getFunction("doallDispatcher");
+  this->taskDispatcher = this->module.getFunction("doallDispatcher");
 
   auto &cxt = module.getContext();
   auto int8 = IntegerType::get(cxt, 8);
@@ -19,7 +19,7 @@ DOALL::DOALL (Module &module, Verbosity v)
     int64,
     int64
   });
-  this->workerType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
+  this->taskType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
 
   return ;
 }
@@ -88,36 +88,36 @@ bool DOALL::apply (
   errs() << "DOALL: Start the parallelization\n";
 
   /*
-   * Prepare DOALL worker (chunk executing function)
+   * Prepare DOALL task (chunk executing function)
    */
-  DOALLTechniqueWorker *chunkerWorker = new DOALLTechniqueWorker();
-  this->generateWorkers(LDI, { chunkerWorker });
-  this->numWorkerInstances = NUM_CORES;
+  DOALLTaskExecution *chunkerTask = new DOALLTaskExecution();
+  this->generateTasks(LDI, { chunkerTask });
+  this->numTaskInstances = NUM_CORES;
 
   /*
    * Allocate memory for all environment variables
    */
-  auto preEnvRange = LDI->environment->getPreEnvIndices();
-  auto postEnvRange = LDI->environment->getPostEnvIndices();
+  auto preEnvRange = LDI->environment->getEnvIndicesOfLiveInVars();
+  auto postEnvRange = LDI->environment->getEnvIndicesOfLiveOutVars();
   std::set<int> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
   std::set<int> reducableVars(postEnvRange.begin(), postEnvRange.end());
   initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
 
   /*
-   * Clone loop into the single worker used by DOALL
+   * Clone loop into the single task used by DOALL
    */
   this->cloneSequentialLoop(LDI, 0);
 
   /*
-   * Load all loop live-in values at the entry point of the worker.
+   * Load all loop live-in values at the entry point of the task.
    * Store final results to loop live-out variables.
    */
   auto envUser = this->envBuilder->getUser(0);
-  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
-    envUser->addPreEnvIndex(envIndex);
+  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
+    envUser->addLiveInIndex(envIndex);
   }
-  for (auto envIndex : LDI->environment->getPostEnvIndices()) {
-    envUser->addPostEnvIndex(envIndex);
+  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+    envUser->addLiveOutIndex(envIndex);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
   this->generateCodeToStoreLiveOutVariables(LDI, 0);
@@ -147,14 +147,14 @@ bool DOALL::apply (
   this->propagatePHINodesThroughOuterLoop(LDI);
 
   /*
-   * Add the final return to the single worker's exit block.
+   * Add the final return to the single task's exit block.
    */
-  IRBuilder<> exitB(workers[0]->exitBlock);
+  IRBuilder<> exitB(tasks[0]->exitBlock);
   exitB.CreateRetVoid();
 
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par);
 
-  workers[0]->F->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
+  tasks[0]->F->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
   // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
   // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
 
@@ -171,7 +171,7 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI)
    */
   assert(LDI != nullptr);
 
-  for (auto envInd : LDI->environment->getPostEnvIndices()) {
+  for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto producer = LDI->environment->producerAt(envInd);
     auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
     auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->PHIAccumulators.begin());
@@ -227,8 +227,8 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    * Call the function that incudes the parallelized loop.
    */
   IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
-  doallBuilder.CreateCall(this->workerDispatcher, ArrayRef<Value *>({
-    (Value *)workers[0]->F,
+  doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
+    (Value *)tasks[0]->F,
     envPtr,
     numCores,
     chunkSize

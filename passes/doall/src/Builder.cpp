@@ -3,15 +3,15 @@
 void DOALL::generateOuterLoopAndAdjustInnerLoop (
   LoopDependenceInfoForParallelizer *LDI
 ){
-  auto worker = (DOALLTechniqueWorker *)workers[0];
+  auto task = (DOALLTaskExecution *)tasks[0];
 
   /*
    * Determine start value and step size for outer loop IV
    */
-  IRBuilder<> entryBuilder(worker->entryBlock);
-  auto startOfIV = worker->clonedIVInfo.start;
+  IRBuilder<> entryBuilder(task->entryBlock);
+  auto startOfIV = task->clonedIVInfo.start;
   auto nthCoreOffset = entryBuilder.CreateZExtOrTrunc(
-    entryBuilder.CreateMul(worker->coreArg, worker->chunkSizeArg),
+    entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg),
     startOfIV->getType()
   );
   auto outerIVStartVal = entryBuilder.CreateAdd(startOfIV, nthCoreOffset);
@@ -21,48 +21,48 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
    * the offset of chunk size * num cores is the entire step size
    */
   auto numCoresOffset = entryBuilder.CreateZExtOrTrunc(
-    entryBuilder.CreateMul(worker->numCoresArg, worker->chunkSizeArg),
+    entryBuilder.CreateMul(task->numCoresArg, task->chunkSizeArg),
     startOfIV->getType()
   );
 
   /*
    * Generate outer loop header, latch, PHI, and stepper
    */
-  auto &cxt = worker->F->getContext();
-  worker->outerHeader = BasicBlock::Create(cxt, "", worker->F);
-  worker->outerLatch = BasicBlock::Create(cxt, "", worker->F);
-  IRBuilder<> outerHBuilder(worker->outerHeader);
-  IRBuilder<> outerLBuilder(worker->outerLatch);
-  worker->outerIV = outerHBuilder.CreatePHI(startOfIV->getType(), /*numReservedValues=*/2);
-  auto outerIVStepper = outerLBuilder.CreateAdd(worker->outerIV, numCoresOffset);
-  outerLBuilder.CreateBr(worker->outerHeader);
+  auto &cxt = task->F->getContext();
+  task->outermostLoopHeader = BasicBlock::Create(cxt, "", task->F);
+  task->outermostLoopLatch = BasicBlock::Create(cxt, "", task->F);
+  IRBuilder<> outerHBuilder(task->outermostLoopHeader);
+  IRBuilder<> outerLBuilder(task->outermostLoopLatch);
+  task->outermostLoopIV = outerHBuilder.CreatePHI(startOfIV->getType(), /*numReservedValues=*/2);
+  auto outerIVStepper = outerLBuilder.CreateAdd(task->outermostLoopIV, numCoresOffset);
+  outerLBuilder.CreateBr(task->outermostLoopHeader);
 
   /*
    * Create outer loop IV lifecycle
    */
-  worker->outerIV->addIncoming(outerIVStartVal, worker->entryBlock);
-  worker->outerIV->addIncoming(outerIVStepper, worker->outerLatch);
+  task->outermostLoopIV->addIncoming(outerIVStartVal, task->entryBlock);
+  task->outermostLoopIV->addIncoming(outerIVStepper, task->outermostLoopLatch);
 
   /*
    * Upon simplifying the original loop IV, the cmp to value was set to
    * the exclusive upper bound, hence the unsigned less than comparison
    */
   auto outerIVCmp = outerHBuilder.CreateICmpULT(
-    worker->outerIV,
-    worker->clonedIVInfo.cmpIVTo
+    task->outermostLoopIV,
+    task->clonedIVInfo.cmpIVTo
   );
-  auto innerHeader = worker->basicBlockClones[LDI->header];
-  outerHBuilder.CreateCondBr(outerIVCmp, innerHeader, worker->loopExitBlocks[0]);
+  auto innerHeader = task->basicBlockClones[LDI->header];
+  outerHBuilder.CreateCondBr(outerIVCmp, innerHeader, task->loopExitBlocks[0]);
 
   /*
    * Reset inner loop start value to 0
    */
-  auto PHIType = worker->originalIVClone->getType();
+  auto PHIType = task->originalIVClone->getType();
   auto startValueIndex = -1;
-  bool entryIndexIs0 = worker->originalIVClone->getIncomingBlock(0) == LDI->preHeader;
-  bool entryIndexIs1 = worker->originalIVClone->getIncomingBlock(1) == LDI->preHeader;
+  bool entryIndexIs0 = task->originalIVClone->getIncomingBlock(0) == LDI->preHeader;
+  bool entryIndexIs1 = task->originalIVClone->getIncomingBlock(1) == LDI->preHeader;
   assert(entryIndexIs0 || entryIndexIs1);
-  worker->originalIVClone->setIncomingValue(
+  task->originalIVClone->setIncomingValue(
     entryIndexIs0 ? 0 : 1,
     ConstantInt::get(PHIType, 0)
   );
@@ -72,18 +72,18 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
    *  this should be done for all PHIs in the inner loop at the same time
    *  to avoid code duplication. See API propagatePHINodesThroughOuterLoop
    */
-  worker->originalIVClone->setIncomingBlock(
+  task->originalIVClone->setIncomingBlock(
     entryIndexIs0 ? 0 : 1,
-    worker->outerHeader
+    task->outermostLoopHeader
   );
 
   /*
    * Revise latch stepper instruction to increment
    */
-  auto &accumulators = worker->originalIVAttrs->PHIAccumulators;
+  auto &accumulators = task->originalIVAttrs->PHIAccumulators;
   assert(accumulators.size() == 1);
   auto originStepper = *(accumulators.begin());
-  auto innerStepper = worker->instructionClones[originStepper];
+  auto innerStepper = task->instructionClones[originStepper];
   bool stepIndexIs0 = isa<ConstantInt>(innerStepper->getOperand(0));
   bool stepIndexIs1 = isa<ConstantInt>(innerStepper->getOperand(1));
   assert(stepIndexIs0 || stepIndexIs1);
@@ -100,45 +100,45 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
   while (isa<PHINode>(&*(iIter++)));
   IRBuilder<> headerBuilder(&*(--iIter));
   auto sumIV = (Instruction *)headerBuilder.CreateAdd(
-    worker->originalIVClone,
-    worker->outerIV
+    task->originalIVClone,
+    task->outermostLoopIV
   );
 
   /*
    * Replace uses of the induction variable
    * (not including uses in the header or by the stepper instruction
    */
-  for (auto &use : worker->originalIVAttrs->singlePHI->uses()) {
+  for (auto &use : task->originalIVAttrs->singlePHI->uses()) {
     auto cloneUser = (Instruction *)use.getUser();
     cloneUser->print(errs() << "Potential user: "); errs() << "\n";
-    if (worker->instructionClones.find(cloneUser) == worker->instructionClones.end()) continue;
-    auto cloneI = worker->instructionClones[cloneUser];
+    if (task->instructionClones.find(cloneUser) == task->instructionClones.end()) continue;
+    auto cloneI = task->instructionClones[cloneUser];
     cloneI->print(errs() << " Is user: "); errs() << "\n";
     if (cloneI == innerStepper || cloneI->getParent() == innerHeader) continue;
     // NOTE: The replacement is from the ORIGINAL PHI IV to the sum, not the clone to the sum
     //  This horrendous incongruency is because this function acts before data flow is adjusted
     //  Once that is changed, this can be made symmetric
-    ((User *)cloneI)->replaceUsesOfWith(worker->originalIVAttrs->singlePHI, sumIV);
+    ((User *)cloneI)->replaceUsesOfWith(task->originalIVAttrs->singlePHI, sumIV);
   }
 
   /*
    * Replace inner loop condition with less than total loop size condition
    */
-  auto innerCmp = worker->clonedIVInfo.cmp;
+  auto innerCmp = task->clonedIVInfo.cmp;
   innerCmp->setPredicate(CmpInst::Predicate::ICMP_ULT);
   innerCmp->setOperand(0, sumIV);
-  innerCmp->setOperand(1, worker->clonedIVInfo.cmpIVTo);
+  innerCmp->setOperand(1, task->clonedIVInfo.cmpIVTo);
 
   /*
    * Add a condition to check that the IV is less than chunk size
    */
   auto castChunkSize = entryBuilder.CreateZExtOrTrunc(
-    worker->chunkSizeArg,
-    worker->originalIVClone->getType()
+    task->chunkSizeArg,
+    task->originalIVClone->getType()
   );
-  auto innerBr = worker->clonedIVInfo.br;
+  auto innerBr = task->clonedIVInfo.br;
   headerBuilder.SetInsertPoint(innerBr);
-  Value *chunkCmp = headerBuilder.CreateICmpULT(worker->originalIVClone, castChunkSize);
+  Value *chunkCmp = headerBuilder.CreateICmpULT(task->originalIVClone, castChunkSize);
 
   /*
    * Ensure both above conditions are met, that the inner loop IV is within bounds
@@ -158,36 +158,36 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
    * and to the outer loop latch if not
    */
   innerBr->setCondition(inBoundsIV);
-  innerBr->setSuccessor(0, worker->basicBlockClones[innerBodyBB]);
-  innerBr->setSuccessor(1, worker->outerLatch);
+  innerBr->setSuccessor(0, task->basicBlockClones[innerBodyBB]);
+  innerBr->setSuccessor(1, task->outermostLoopLatch);
 
   /*
    * Finally, define branch from entry to outer loop
    */
-  entryBuilder.CreateBr(worker->outerHeader);
+  entryBuilder.CreateBr(task->outermostLoopHeader);
 }
 
 void DOALL::propagatePHINodesThroughOuterLoop (
   LoopDependenceInfoForParallelizer *LDI
 ) {
-  auto worker = (DOALLTechniqueWorker *)workers[0];
+  auto task = (DOALLTaskExecution *)tasks[0];
 
   /*
    * Collect all PHIs (that aren't the IV)
    */
-  auto innerHeader = worker->basicBlockClones[LDI->header];
+  auto innerHeader = task->basicBlockClones[LDI->header];
   std::set<PHINode *> phis;
   for (auto &I : *innerHeader) {
     if (!isa<PHINode>(&I)) break ;
     // Ignore the inner loop IV
-    if (&I == worker->originalIVClone) continue ;
+    if (&I == task->originalIVClone) continue ;
     phis.insert((PHINode *)&I);
   }
 
   /*
    * Create equivalent outer loop PHIs for these inner loop PHIs
    */
-  IRBuilder<> outerBuilder(&*worker->outerHeader->begin());
+  IRBuilder<> outerBuilder(&*task->outermostLoopHeader->begin());
   for (auto phi : phis) {
     auto outerPHI = outerBuilder.CreatePHI(phi->getType(), /*numReservedValues=*/2);
 
@@ -195,8 +195,8 @@ void DOALL::propagatePHINodesThroughOuterLoop (
      * Adjust inner loop PHI to have the outer loop header as an incoming block
      *  instead of the entry block (as the pre header mapped to the entry block)
      */
-    auto innerEntryIndex = phi->getBasicBlockIndex(worker->entryBlock);
-    phi->setIncomingBlock(innerEntryIndex, worker->outerHeader);
+    auto innerEntryIndex = phi->getBasicBlockIndex(task->entryBlock);
+    phi->setIncomingBlock(innerEntryIndex, task->outermostLoopHeader);
 
     /*
      * If incoming is pre header, use initial value of inner PHI
@@ -204,8 +204,8 @@ void DOALL::propagatePHINodesThroughOuterLoop (
      * As for the inner loop PHI, replace initial value with outer header PHI
      */
     auto startVal = phi->getIncomingValue(innerEntryIndex);
-    outerPHI->addIncoming(startVal, worker->entryBlock);
-    outerPHI->addIncoming(phi, worker->outerLatch);
+    outerPHI->addIncoming(startVal, task->entryBlock);
+    outerPHI->addIncoming(phi, task->outermostLoopLatch);
     phi->setIncomingValue(innerEntryIndex, outerPHI);
   }
 }

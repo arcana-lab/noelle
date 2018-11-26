@@ -12,18 +12,18 @@ DSWP::DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Ve
   /*
    * Fetch the function that dispatch the parallelized loop.
    */
-  this->workerDispatcher = module.getFunction("stageDispatcher");
+  this->taskDispatcher = module.getFunction("stageDispatcher");
 
   /*
    * Fetch the function that executes a stage.
    */
-  auto workerExecuter = module.getFunction("stageExecuter");
+  auto taskExecuter = module.getFunction("stageExecuter");
 
   /*
    * Define its signature.
    */
-  auto workerArgType = workerExecuter->arg_begin()->getType();
-  this->workerType = cast<FunctionType>(cast<PointerType>(workerArgType)->getElementType());
+  auto taskArgType = taskExecuter->arg_begin()->getType();
+  this->taskType = cast<FunctionType>(cast<PointerType>(taskArgType)->getElementType());
 
   return ;
 }
@@ -69,15 +69,15 @@ bool DSWP::apply (
   auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
 
   /*
-   * Determine DSWP workers (stages)
+   * Determine DSWP tasks (stages)
    */
   generateStagesFromPartitionedSCCs(LDI);
   addRemovableSCCsToStages(LDI);
 
   /*
-   * Collect which queues need to exist between workers
+   * Collect which queues need to exist between tasks
    *
-   * NOTE: The trimming of the call graph for all workers is an optimization
+   * NOTE: The trimming of the call graph for all tasks is an optimization
    *  that lessens the number of control queues necessary. However,
    *  the algorithm that pops queue values is naive, so the trimming
    *  optimization requires non-control queue information to be collected
@@ -104,7 +104,7 @@ bool DSWP::apply (
   }
 
   if (this->verbose > Verbosity::Disabled) {
-    errs() << "DSWP:  Create " << this->workers.size() << " pipeline stages\n";
+    errs() << "DSWP:  Create " << this->tasks.size() << " pipeline stages\n";
   }
 
   /*
@@ -112,16 +112,16 @@ bool DSWP::apply (
    */
   LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
   LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
-  LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), this->workers.size());
+  LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), this->tasks.size());
 
   /*
-   * Create the pipeline stages (technique workers)
+   * Create the pipeline stages (technique tasks)
    */
-  for (auto i = 0; i < this->workers.size(); ++i) {
-    auto worker = (DSWPTechniqueWorker *)this->workers[i];
+  for (auto i = 0; i < this->tasks.size(); ++i) {
+    auto task = (DSWPTaskExecution *)this->tasks[i];
 
     /*
-     * Add instructions of the current pipeline stage to the worker function
+     * Add instructions of the current pipeline stage to the task function
      */
     generateLoopSubsetForStage(LDI, i);
 
@@ -134,7 +134,7 @@ bool DSWP::apply (
     pushValueQueues(LDI, par, i);
 
     /*
-     * Load all loop live-in values at the entry point of the worker.
+     * Load all loop live-in values at the entry point of the task.
      * Store final results to loop live-out variables.
      */
     generateCodeToLoadLiveInVariables(LDI, i);
@@ -150,13 +150,13 @@ bool DSWP::apply (
     /*
      * Add the unconditional branch from the entry basic block to the header of the loop.
      */
-    IRBuilder<> entryBuilder(worker->entryBlock);
-    entryBuilder.CreateBr(worker->basicBlockClones[LDI->header]);
+    IRBuilder<> entryBuilder(task->entryBlock);
+    entryBuilder.CreateBr(task->basicBlockClones[LDI->header]);
 
     /*
      * Add the return instruction at the end of the exit basic block.
      */
-    IRBuilder<> exitBuilder(worker->exitBlock);
+    IRBuilder<> exitBuilder(task->exitBlock);
     exitBuilder.CreateRetVoid();
 
     /*
@@ -165,7 +165,7 @@ bool DSWP::apply (
     inlineQueueCalls(LDI, i);
 
     if (this->verbose >= Verbosity::Pipeline) {
-      worker->F->print(errs() << "Pipeline stage printout:\n"); errs() << "\n";
+      task->F->print(errs() << "Pipeline stage printout:\n"); errs() << "\n";
     }
   }
 

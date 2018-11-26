@@ -4,7 +4,7 @@ using namespace std;
 
 namespace llvm {
 
-  struct TechniqueWorker {
+  struct TaskExecution {
     int order;
     Function *F;
     BasicBlock *entryBlock, *exitBlock;

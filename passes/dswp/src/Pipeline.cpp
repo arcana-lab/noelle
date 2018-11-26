@@ -8,7 +8,7 @@ void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
   std::set<int> subsFound(topLevelSubIDs.begin(), topLevelSubIDs.end());
   std::deque<int> subsToTraverse(topLevelSubIDs.begin(), topLevelSubIDs.end());
 
-  std::vector<TechniqueWorker *> techniqueWorkers;
+  std::vector<TaskExecution *> techniqueTasks;
   while (!subsToTraverse.empty()) {
     auto sub = subsToTraverse.front();
     subsToTraverse.pop_front();
@@ -24,28 +24,28 @@ void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
     }
 
     /*
-     * Create worker (stage), populating its SCCs
+     * Create task (stage), populating its SCCs
      */
-    auto worker = new DSWPTechniqueWorker();
-    techniqueWorkers.push_back(worker);
+    auto task = new DSWPTaskExecution();
+    techniqueTasks.push_back(task);
     for (auto scc : LDI->partition.subsetOfID(sub)->SCCs) {
-      worker->stageSCCs.insert(scc);
-      LDI->sccToStage[scc] = worker;
+      task->stageSCCs.insert(scc);
+      LDI->sccToStage[scc] = task;
     }
   }
 
-  this->generateWorkers(LDI, techniqueWorkers);
-  this->numWorkerInstances = techniqueWorkers.size();
-  assert(this->numWorkerInstances == LDI->partition.subsets.size());
+  this->generateTasks(LDI, techniqueTasks);
+  this->numTaskInstances = techniqueTasks.size();
+  assert(this->numTaskInstances == LDI->partition.subsets.size());
 }
 
 void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
-  for (auto techniqueWorker : this->workers) {
-    auto worker = (DSWPTechniqueWorker *)techniqueWorker;
+  for (auto techniqueTask : this->tasks) {
+    auto task = (DSWPTaskExecution *)techniqueTask;
     std::set<DGNode<SCC> *> visitedNodes;
     std::queue<DGNode<SCC> *> dependentSCCNodes;
 
-    for (auto scc : worker->stageSCCs) {
+    for (auto scc : task->stageSCCs) {
       dependentSCCNodes.push(LDI->loopSCCDAG->fetchNode(scc));
     }
 
@@ -54,7 +54,7 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
       dependentSCCNodes.pop();
 
       /*
-       * Collect clonable SCCs with outgoing edges to SCCs in the worker
+       * Collect clonable SCCs with outgoing edges to SCCs in the task
        */
       for (auto sccEdge : depSCCNode->getIncomingEdges()) {
         auto fromSCCNode = sccEdge->getOutgoingNode();
@@ -62,7 +62,7 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
         if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
         if (!LDI->sccdagAttrs.canBeCloned(fromSCC)) continue;
 
-        worker->removableSCCs.insert(fromSCC);
+        task->removableSCCs.insert(fromSCC);
         dependentSCCNodes.push(fromSCCNode);
         visitedNodes.insert(fromSCCNode);
       }
@@ -104,12 +104,12 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
    * Call the stage dispatcher with the environment, queues array, and stages array
    */
   auto queuesCount = cast<Value>(ConstantInt::get(par.int64, LDI->queues.size()));
-  auto stagesCount = cast<Value>(ConstantInt::get(par.int64, this->numWorkerInstances));
+  auto stagesCount = cast<Value>(ConstantInt::get(par.int64, this->numTaskInstances));
 
   /*
-   * Add the call to the worker dispatcher: "stageDispatcher" (see DSWP constructor)
+   * Add the call to the task dispatcher: "stageDispatcher" (see DSWP constructor)
    */
-  builder->CreateCall(workerDispatcher, ArrayRef<Value*>({
+  builder->CreateCall(taskDispatcher, ArrayRef<Value*>({
     envPtr,
     queueSizesPtr,
     stagesPtr,
@@ -127,9 +127,9 @@ Value * DSWP::createStagesArrayFromStages (
   Parallelization &par
 ) {
   auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->stageArrayType));
-  auto stageCastType = PointerType::getUnqual(this->workers[0]->F->getType());
-  for (int i = 0; i < this->numWorkerInstances; ++i) {
-    auto stage = this->workers[i];
+  auto stageCastType = PointerType::getUnqual(this->tasks[0]->F->getType());
+  for (int i = 0; i < this->numTaskInstances; ++i) {
+    auto stage = this->tasks[i];
     auto stageIndex = cast<Value>(ConstantInt::get(par.int64, i));
     auto stagePtr = funcBuilder.CreateInBoundsGEP(stagesAlloca, ArrayRef<Value*>({
       LDI->zeroIndexForBaseArray,

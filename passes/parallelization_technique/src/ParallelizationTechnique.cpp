@@ -3,16 +3,16 @@
 using namespace llvm;
 
 ParallelizationTechnique::ParallelizationTechnique (Module &module, Verbosity v)
-  : module{module}, verbose{v}, workers{}, envBuilder{0} {}
+  : module{module}, verbose{v}, tasks{}, envBuilder{0} {}
 
 ParallelizationTechnique::~ParallelizationTechnique () {
   reset();
 }
 
 void ParallelizationTechnique::reset () {
-  for (auto worker : workers) delete worker;
-  workers.clear();
-  numWorkerInstances = 0;
+  for (auto task : tasks) delete task;
+  tasks.clear();
+  numTaskInstances = 0;
   if (envBuilder) {
     delete envBuilder;
     envBuilder = nullptr;
@@ -24,22 +24,22 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   std::set<int> simpleVars,
   std::set<int> reducableVars
 ) {
-  if (workers.size() == 0) {
-    errs() << "ERROR: Parallelization technique workers haven't been created yet!\n"
+  if (tasks.size() == 0) {
+    errs() << "ERROR: Parallelization technique tasks haven't been created yet!\n"
       << "\tTheir environment builders can't be initialized until they are.\n";
     abort();
   }
 
   envBuilder = new EnvBuilder(*LDI->environment, module.getContext());
-  envBuilder->createEnvVariables(simpleVars, reducableVars, numWorkerInstances);
+  envBuilder->createEnvVariables(simpleVars, reducableVars, numTaskInstances);
 
-  envBuilder->createEnvUsers(workers.size());
-  for (auto i = 0; i < workers.size(); ++i) {
-    auto worker = workers[i];
+  envBuilder->createEnvUsers(tasks.size());
+  for (auto i = 0; i < tasks.size(); ++i) {
+    auto task = tasks[i];
     auto envUser = envBuilder->getUser(i);
-    IRBuilder<> entryBuilder(worker->entryBlock);
+    IRBuilder<> entryBuilder(task->entryBlock);
     envUser->setEnvArray(entryBuilder.CreateBitCast(
-      worker->envArg,
+      task->envArg,
       PointerType::getUnqual(envBuilder->getEnvArrayTy())
     ));
   }
@@ -53,14 +53,14 @@ void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfoForPa
 
 void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfoForParallelizer *LDI) {
   IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
-  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
+  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
     builder.CreateStore(LDI->environment->producerAt(envIndex), envBuilder->getEnvVar(envIndex));
   }
 }
 
 void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfoForParallelizer *LDI) {
   IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
-  for (int envInd : LDI->environment->getPostEnvIndices()) {
+  for (int envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto prod = LDI->environment->producerAt(envInd);
 
     /*
@@ -83,47 +83,47 @@ void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfoFo
   }
 }
 
-void ParallelizationTechnique::generateWorkers (
+void ParallelizationTechnique::generateTasks (
   LoopDependenceInfoForParallelizer *LDI,
-  std::vector<TechniqueWorker *> workerStructs
+  std::vector<TaskExecution *> taskStructs
 ) {
-  numWorkerInstances = workerStructs.size();
-  for (auto i = 0; i < numWorkerInstances; ++i) {
-    auto worker = workerStructs[i];
-    workers.push_back(worker);
+  numTaskInstances = taskStructs.size();
+  for (auto i = 0; i < numTaskInstances; ++i) {
+    auto task = taskStructs[i];
+    tasks.push_back(task);
 
     auto &cxt = module.getContext();
-    worker->order = i;
-    worker->F = cast<Function>(module.getOrInsertFunction("", workerType));
-    worker->extractFuncArgs();
-    worker->entryBlock = BasicBlock::Create(cxt, "", worker->F);
-    worker->exitBlock = BasicBlock::Create(cxt, "", worker->F);
+    task->order = i;
+    task->F = cast<Function>(module.getOrInsertFunction("", taskType));
+    task->extractFuncArgs();
+    task->entryBlock = BasicBlock::Create(cxt, "", task->F);
+    task->exitBlock = BasicBlock::Create(cxt, "", task->F);
 
     /*
      * Map original preheader to entry block
      */
-    worker->basicBlockClones[LDI->preHeader] = worker->entryBlock;
+    task->basicBlockClones[LDI->preHeader] = task->entryBlock;
 
     /*
      * Create one basic block per loop exit, mapping between originals and clones,
      * and branching from them to the function exit block
      */
     for (auto exitBB : LDI->loopExitBlocks) {
-      auto newExitBB = BasicBlock::Create(cxt, "", worker->F);
-      worker->basicBlockClones[exitBB] = newExitBB;
-      worker->loopExitBlocks.push_back(newExitBB);
+      auto newExitBB = BasicBlock::Create(cxt, "", task->F);
+      task->basicBlockClones[exitBB] = newExitBB;
+      task->loopExitBlocks.push_back(newExitBB);
       IRBuilder<> builder(newExitBB);
-      builder.CreateBr(worker->exitBlock);
+      builder.CreateBr(task->exitBlock);
     }
   }
 }
 
 void ParallelizationTechnique::cloneSequentialLoop (
   LoopDependenceInfoForParallelizer *LDI,
-  int workerIndex
+  int taskIndex
 ){
   auto &cxt = module.getContext();
-  auto worker = workers[workerIndex];
+  auto task = tasks[taskIndex];
 
   /*
    * Clone all basic blocks of the original loop
@@ -133,8 +133,8 @@ void ParallelizationTechnique::cloneSequentialLoop (
     /*
      * Clone the basic block in the context of the original loop's function
      */
-    auto cloneBB = BasicBlock::Create(cxt, "", worker->F);
-    worker->basicBlockClones[originBB] = cloneBB;
+    auto cloneBB = BasicBlock::Create(cxt, "", task->F);
+    task->basicBlockClones[originBB] = cloneBB;
 
     /*
      * Clone every instruction in the basic block, adding them in order to the clone
@@ -142,19 +142,19 @@ void ParallelizationTechnique::cloneSequentialLoop (
     IRBuilder<> builder(cloneBB);
     for (auto &I : *originBB) {
       auto cloneI = builder.Insert(I.clone());
-      worker->instructionClones[&I] = cloneI;
+      task->instructionClones[&I] = cloneI;
     }
   }
 }
 
 void ParallelizationTechnique::cloneSequentialLoopSubset (
   LoopDependenceInfoForParallelizer *LDI,
-  int workerIndex,
+  int taskIndex,
   std::set<Instruction *> subset
 ){
   auto &cxt = module.getContext();
-  auto worker = workers[workerIndex];
-  auto &iClones = worker->instructionClones;
+  auto task = tasks[taskIndex];
+  auto &iClones = task->instructionClones;
 
   /*
    * Clone a portion of the original loop (determined by a set of SCCs
@@ -170,24 +170,24 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
    * Add cloned instructions to their respective cloned basic blocks
    */
   for (auto bb : bbSubset) {
-    auto cloneBB = BasicBlock::Create(cxt, "", worker->F);
+    auto cloneBB = BasicBlock::Create(cxt, "", task->F);
     IRBuilder<> builder(cloneBB);
     for (auto &I : *bb) {
       if (iClones.find(&I) == iClones.end()) continue;
       builder.Insert(iClones[&I]);
     }
-    worker->basicBlockClones[bb] = cloneBB;
+    task->basicBlockClones[bb] = cloneBB;
   }
 }
 
 void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
   LoopDependenceInfoForParallelizer *LDI, 
-  int workerIndex
+  int taskIndex
 ){
-  auto worker = this->workers[workerIndex];
-  IRBuilder<> builder(worker->entryBlock);
-  auto envUser = this->envBuilder->getUser(workerIndex);
-  for (auto envIndex : envUser->getPreEnvIndices()) {
+  auto task = this->tasks[taskIndex];
+  IRBuilder<> builder(task->entryBlock);
+  auto envUser = this->envBuilder->getUser(taskIndex);
+  for (auto envIndex : envUser->getEnvIndicesOfLiveInVars()) {
 
     /*
      * Create GEP access of the environment variable at the given index
@@ -200,25 +200,25 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
      */
     auto envLoad = builder.CreateLoad(envUser->getEnvPtr(envIndex));
     auto producer = LDI->environment->producerAt(envIndex);
-    worker->liveInClones[producer] = cast<Instruction>(envLoad);
+    task->liveInClones[producer] = cast<Instruction>(envLoad);
   }
 }
 
 void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
   LoopDependenceInfoForParallelizer *LDI, 
-  int workerIndex
+  int taskIndex
 ){
-  auto worker = this->workers[workerIndex];
-  IRBuilder<> entryBuilder(worker->entryBlock);
-  auto envUser = this->envBuilder->getUser(workerIndex);
-  for (auto envIndex : envUser->getPostEnvIndices()) {
+  auto task = this->tasks[taskIndex];
+  IRBuilder<> entryBuilder(task->entryBlock);
+  auto envUser = this->envBuilder->getUser(taskIndex);
+  for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
 
     /*
      * Create GEP access of the single, or reducable, environment variable
      */
     bool isReduced = this->envBuilder->isReduced(envIndex);
     if (isReduced) {
-      envUser->createReducableEnvPtr(entryBuilder, envIndex, numWorkerInstances, worker->instanceIndexV);
+      envUser->createReducableEnvPtr(entryBuilder, envIndex, numTaskInstances, task->instanceIndexV);
     } else {
       envUser->createEnvPtr(entryBuilder, envIndex);
     }
@@ -245,23 +245,23 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     /*
      * Store the clone of the producer at the environment pointer
      */
-    auto prodClone = worker->instructionClones[producer];
-    auto prodCloneBB = worker->basicBlockClones[producer->getParent()];
+    auto prodClone = task->instructionClones[producer];
+    auto prodCloneBB = task->basicBlockClones[producer->getParent()];
     IRBuilder<> prodBuilder(prodCloneBB->getTerminator());
     prodBuilder.CreateStore(prodClone, envPtr);
   }
 
-  generateCodeToStoreExitBlockIndex(LDI, workerIndex);
+  generateCodeToStoreExitBlockIndex(LDI, taskIndex);
 }
 
 void ParallelizationTechnique::adjustDataFlowToUseClones (
   LoopDependenceInfoForParallelizer *LDI,
-  int workerIndex
+  int taskIndex
 ){
-  auto &worker = workers[workerIndex];
-  auto &bbClones = worker->basicBlockClones;
-  auto &iClones = worker->instructionClones;
-  auto &liveIns = worker->liveInClones;
+  auto &task = tasks[taskIndex];
+  auto &bbClones = task->basicBlockClones;
+  auto &iClones = task->instructionClones;
+  auto &liveIns = task->liveInClones;
 
   for (auto pair : iClones) {
     auto cloneI = pair.second;
@@ -272,7 +272,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     if (auto terminator = dyn_cast<TerminatorInst>(cloneI)) {
       for (int i = 0; i < terminator->getNumSuccessors(); ++i) {
         auto succBB = terminator->getSuccessor(i);
-        if (succBB->getParent() == worker->F) continue;
+        if (succBB->getParent() == task->F) continue;
         assert(bbClones.find(succBB) != bbClones.end());
         terminator->setSuccessor(i, bbClones[succBB]);
       }
@@ -281,7 +281,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     if (auto phi = dyn_cast<PHINode>(cloneI)) {
       for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
         auto incomingBB = phi->getIncomingBlock(i);
-        if (incomingBB->getParent() == worker->F) continue;
+        if (incomingBB->getParent() == task->F) continue;
         auto cloneBB = bbClones[incomingBB];
         phi->setIncomingBlock(i, cloneBB);
       }
@@ -310,7 +310,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
         if (iClones.find(opI) != iClones.end()) {
           op.set(iClones[opI]);
         } else {
-          if (opI->getFunction() != worker->F) {
+          if (opI->getFunction() != task->F) {
             cloneI->print(errs() << "ERROR:   Instruction has op from another function: "); errs() << "\n";
             opI->print(errs() << "ERROR:   Op: "); errs() << "\n";
           }
@@ -322,24 +322,24 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
 
 void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
   LoopDependenceInfoForParallelizer *LDI,
-  int workerIndex
+  int taskIndex
 ){
 
   /*
    * Confirm whether an exit block choice is represented in the environment
    */
-  auto worker = this->workers[workerIndex];
-  if (worker->loopExitBlocks.size() == 1) return ;
+  auto task = this->tasks[taskIndex];
+  if (task->loopExitBlocks.size() == 1) return ;
   auto exitBlockEnvIndex = LDI->environment->indexOfExitBlock();
   assert(exitBlockEnvIndex != -1);
 
-  auto envUser = this->envBuilder->getUser(workerIndex);
-  IRBuilder<> entryBuilder(worker->entryBlock);
+  auto envUser = this->envBuilder->getUser(taskIndex);
+  IRBuilder<> entryBuilder(task->entryBlock);
   envUser->createEnvPtr(entryBuilder, exitBlockEnvIndex);
 
   auto int32 = IntegerType::get(module.getContext(), 32);
-  for (int i = 0; i < worker->loopExitBlocks.size(); ++i) {
-    IRBuilder<> builder(&*worker->loopExitBlocks[i]->begin());
+  for (int i = 0; i < task->loopExitBlocks.size(); ++i) {
+    IRBuilder<> builder(&*task->loopExitBlocks[i]->begin());
     auto envPtr = envUser->getEnvPtr(exitBlockEnvIndex);
     builder.CreateStore(ConstantInt::get(int32, i), envPtr);
   }

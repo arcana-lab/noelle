@@ -4,7 +4,7 @@
 void DOALL::simplifyOriginalLoopIV (
   LoopDependenceInfoForParallelizer *LDI
 ) {
-  auto worker = (DOALLTechniqueWorker *)workers[0];
+  auto task = (DOALLTaskExecution *)tasks[0];
 
   /*
    * Fetch information about the loop induction variable controlling the loop trip count.
@@ -13,16 +13,16 @@ void DOALL::simplifyOriginalLoopIV (
   auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
   auto &attrs = LDI->sccdagAttrs.getSCCAttrs(headerSCC);
   assert(attrs->isSimpleIV);
-  worker->originalIVAttrs = attrs.get();
+  task->originalIVAttrs = attrs.get();
 
   /*
    * Identify clones of the PHI, Cmp, and Branch instructions that govern the loop IV.
    */
-  auto &iClones = worker->instructionClones;
-  worker->originalIVClone = cast<PHINode>(iClones[attrs->singlePHI]);
+  auto &iClones = task->instructionClones;
+  task->originalIVClone = cast<PHINode>(iClones[attrs->singlePHI]);
   auto IVInfo = attrs->simpleIVInfo;
-  worker->clonedIVInfo.cmp = cast<CmpInst>(iClones[IVInfo.cmp]);
-  worker->clonedIVInfo.br = cast<BranchInst>(iClones[IVInfo.br]);
+  task->clonedIVInfo.cmp = cast<CmpInst>(iClones[IVInfo.cmp]);
+  task->clonedIVInfo.br = cast<BranchInst>(iClones[IVInfo.br]);
 
   /*
    * ============================================================================
@@ -32,8 +32,8 @@ void DOALL::simplifyOriginalLoopIV (
 
   auto fetchClone = [&](Value *V) -> Value * {
     if (isa<ConstantData>(V)) return V;
-    if (worker->liveInClones.find(V) != worker->liveInClones.end()) {
-      return worker->liveInClones[V];
+    if (task->liveInClones.find(V) != task->liveInClones.end()) {
+      return task->liveInClones[V];
     }
     assert(isa<Instruction>(V));
     auto iCloneIter = iClones.find((Instruction *)V);
@@ -56,7 +56,7 @@ void DOALL::simplifyOriginalLoopIV (
    * cmpToValue + offset = end
    */
   auto offsetV = ConstantInt::get(IVInfo.step->getType(), IVInfo.endOffset);
-  IRBuilder<> entryBuilder(worker->entryBlock);
+  IRBuilder<> entryBuilder(task->entryBlock);
   auto endClone = IVInfo.endOffset ? entryBuilder.CreateAdd(cmpToClone, offsetV) : cmpToClone;
 
   /*
@@ -66,13 +66,13 @@ void DOALL::simplifyOriginalLoopIV (
    * 3) The CmpInst checks that the end value is NOT reached. If it is, the loop body is NOT executed
    */
   auto oneV = ConstantInt::get(IVInfo.step->getType(), 1);
-  worker->clonedIVInfo.step = oneV;
+  task->clonedIVInfo.step = oneV;
   auto stepSize = IVInfo.step->getValue().getSExtValue();
   if (stepSize == 1) {
-    worker->clonedIVInfo.start = startClone;
-    worker->clonedIVInfo.cmpIVTo = endClone;
+    task->clonedIVInfo.start = startClone;
+    task->clonedIVInfo.cmpIVTo = endClone;
   } else {
-    worker->clonedIVInfo.start = entryBuilder.CreateAdd(endClone, oneV);
-    worker->clonedIVInfo.cmpIVTo = entryBuilder.CreateAdd(startClone, oneV);
+    task->clonedIVInfo.start = entryBuilder.CreateAdd(endClone, oneV);
+    task->clonedIVInfo.cmpIVTo = entryBuilder.CreateAdd(startClone, oneV);
   }
 }

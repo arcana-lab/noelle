@@ -19,12 +19,12 @@ namespace llvm {
         return make_range(envProducers.begin(), envProducers.end());
       }
 
-      iterator_range<std::set<int>::iterator> getPreEnvIndices() { 
-        return make_range(preLoopEnv.begin(), preLoopEnv.end());
+      iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveInVars() { 
+        return make_range(liveInInds.begin(), liveInInds.end());
       }
 
-      iterator_range<std::set<int>::iterator> getPostEnvIndices() { 
-        return make_range(postLoopEnv.begin(), postLoopEnv.end());
+      iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveOutVars() { 
+        return make_range(liveOutInds.begin(), liveOutInds.end());
       }
 
       /*
@@ -36,7 +36,7 @@ namespace llvm {
 
       Type *typeOfEnv (int index) const ;
 
-      bool isPreLoopEnv (Value *val);
+      bool isLiveIn (Value *val);
 
       inline Value *producerAt (int ind) { return envProducers[ind]; }
 
@@ -54,13 +54,13 @@ namespace llvm {
     private:
       void addPreLoopProducer (Value *producer);
       void addPostLoopProducer (Value *producer);
-      void addProducer (Value *producer, bool preLoop);
+      void addProducer (Value *producer, bool liveIn);
 
       std::vector<Value *> envProducers;
       std::unordered_map<Value *, int> producerIndexMap;
 
-      std::set<int> preLoopEnv;
-      std::set<int> postLoopEnv;
+      std::set<int> liveInInds;
+      std::set<int> liveOutInds;
 
       std::unordered_map<Value *, std::set<Value *>> prodConsumers;
 

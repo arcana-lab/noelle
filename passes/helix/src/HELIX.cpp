@@ -8,7 +8,7 @@ HELIX::HELIX (Module &module, Verbosity v)
   /*
    * Fetch the dispatcher to use to jump to a parallelized HELIX loop.
    */
-  this->workerDispatcher = this->module.getFunction("helixDispatcher");
+  this->taskDispatcher = this->module.getFunction("helixDispatcher");
 
   return ;
 }

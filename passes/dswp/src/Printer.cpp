@@ -17,10 +17,10 @@ void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) const {
   }
 
   errs() << "DSWP:  Pipeline stages\n";
-  for (auto techniqueWorker : this->workers) {
-    auto worker = (DSWPTechniqueWorker *)techniqueWorker;
-    errs() << "DSWP:    Stage: " << worker->order << "\n";
-    for (auto scc : worker->stageSCCs) {
+  for (auto techniqueTask : this->tasks) {
+    auto task = (DSWPTaskExecution *)techniqueTask;
+    errs() << "DSWP:    Stage: " << task->order << "\n";
+    for (auto scc : task->stageSCCs) {
       scc->print(errs(), "DSWP:     ", /*maxEdges=*/15);
       errs() << "DSWP:    \n" ;
     }
@@ -42,18 +42,18 @@ void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI) const {
    * Print the IDs of the queues.
    */
   errs() << "DSWP:  Queues that connect the pipeline stages\n";
-  for (auto techniqueWorker : this->workers) {
-    auto worker = (DSWPTechniqueWorker *)techniqueWorker;
-    errs() << "DSWP:    Stage: " << worker->order << "\n";
+  for (auto techniqueTask : this->tasks) {
+    auto task = (DSWPTaskExecution *)techniqueTask;
+    errs() << "DSWP:    Stage: " << task->order << "\n";
 
     errs() << "DSWP:      Push value queues: ";
-    for (auto qInd : worker->pushValueQueues) {
+    for (auto qInd : task->pushValueQueues) {
       errs() << qInd << " ";
     }
     errs() << "\n" ;
 
     errs() << "DSWP:      Pop value queues: ";
-    for (auto qInd : worker->popValueQueues) {
+    for (auto qInd : task->popValueQueues) {
       errs() << qInd << " ";
     }
     errs() << "\n";
@@ -88,12 +88,12 @@ void llvm::DSWP::printEnv (DSWPLoopDependenceInfo *LDI) const {
    */
   errs() << "DSWP:  Environment\n";
   int count = 1;
-  for (auto envIndex : LDI->environment->getPreEnvIndices()) {
+  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
     LDI->environment->producerAt(envIndex)->print(errs()
       << "DSWP:    Pre loop env " << count++ << ", producer:\t");
     errs() << "\n";
   }
-  for (auto envIndex : LDI->environment->getPostEnvIndices()) {
+  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     LDI->environment->producerAt(envIndex)->print(errs()
       << "DSWP:    Post loop env " << count++ << ", producer:\t");
     errs() << "\n";

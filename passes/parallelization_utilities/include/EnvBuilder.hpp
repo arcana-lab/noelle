@@ -28,14 +28,14 @@ namespace llvm {
       Value *reducerIndV
     );
 
-    void addPreEnvIndex (int ind) { preEnvIndices.insert(ind); }
-    void addPostEnvIndex (int ind) { postEnvIndices.insert(ind); }
+    void addLiveInIndex (int ind) { liveInInds.insert(ind); }
+    void addLiveOutIndex (int ind) { liveOutInds.insert(ind); }
 
-    iterator_range<std::set<int>::iterator> getPreEnvIndices() { 
-      return make_range(preEnvIndices.begin(), preEnvIndices.end());
+    iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveInVars() { 
+      return make_range(liveInInds.begin(), liveInInds.end());
     }
-    iterator_range<std::set<int>::iterator> getPostEnvIndices() { 
-      return make_range(postEnvIndices.begin(), postEnvIndices.end());
+    iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveOutVars() { 
+      return make_range(liveOutInds.begin(), liveOutInds.end());
     }
 
     Instruction *getEnvPtr (int ind) { return envIndexToPtr[ind]; }
@@ -48,8 +48,8 @@ namespace llvm {
 		 * Maps from environment index to load/stores
 		 */
 		std::unordered_map<int, Instruction *> envIndexToPtr;
-    std::set<int> preEnvIndices;
-    std::set<int> postEnvIndices;
+    std::set<int> liveInInds;
+    std::set<int> liveOutInds;
   };
 
   class EnvBuilder {

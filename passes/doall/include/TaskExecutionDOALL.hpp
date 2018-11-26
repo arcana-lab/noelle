@@ -1,17 +1,17 @@
 #pragma once
 
-#include "TechniqueWorker.hpp"
+#include "TaskExecution.hpp"
 
 using namespace std;
 
 namespace llvm {
 
-  struct DOALLTechniqueWorker : TechniqueWorker {
+  struct DOALLTaskExecution : TaskExecution {
 
     /*
      * Inner loop header/latch
      */
-    BasicBlock *outerHeader, *outerLatch;
+    BasicBlock *outermostLoopHeader, *outermostLoopLatch;
 
     /*
      * Chunking function specific arguments
@@ -24,7 +24,7 @@ namespace llvm {
     SCCAttrs *originalIVAttrs;
     SimpleIVInfo clonedIVInfo;
     PHINode *originalIVClone;
-    PHINode *outerIV;
+    PHINode *outermostLoopIV;
 
     void extractFuncArgs () {
       auto argIter = this->F->arg_begin();

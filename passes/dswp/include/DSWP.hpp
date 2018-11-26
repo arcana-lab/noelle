@@ -28,7 +28,7 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechnique.hpp"
 
-#include "TechniqueWorkerDSWP.hpp"
+#include "TaskExecutionDSWP.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -72,21 +72,21 @@ namespace llvm {
       void clusterSubloops (DSWPLoopDependenceInfo *LDI);
       void generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI);
       void addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI);
-      void generateLoopSubsetForStage (DSWPLoopDependenceInfo *LDI, int workerIndex);
+      void generateLoopSubsetForStage (DSWPLoopDependenceInfo *LDI, int taskIndex);
       void generateLoadsOfQueuePointers (
         DSWPLoopDependenceInfo *LDI,
         Parallelization &par,
-        int workerIndex
+        int taskIndex
       );
       void popValueQueues (
         DSWPLoopDependenceInfo *LDI,
         Parallelization &par,
-        int workerIndex
+        int taskIndex
       );
       void pushValueQueues (
         DSWPLoopDependenceInfo *LDI,
         Parallelization &par,
-        int workerIndex
+        int taskIndex
       );
       void createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par);
       Value * createStagesArrayFromStages (
@@ -103,7 +103,7 @@ namespace llvm {
       /*
        * Recursively inline queue push/pop functions in DSWP Utils and ThreadPool API
        */
-      void inlineQueueCalls (DSWPLoopDependenceInfo *LDI, int workerIndex);
+      void inlineQueueCalls (DSWPLoopDependenceInfo *LDI, int taskIndex);
 
       /*
        * Information collection helpers
@@ -113,8 +113,8 @@ namespace llvm {
       void registerQueue (
         Parallelization &par,
         DSWPLoopDependenceInfo *LDI,
-        DSWPTechniqueWorker *fromStage,
-        DSWPTechniqueWorker *toStage,
+        DSWPTaskExecution *fromStage,
+        DSWPTaskExecution *toStage,
         Instruction *producer,
         Instruction *consumer
       );
