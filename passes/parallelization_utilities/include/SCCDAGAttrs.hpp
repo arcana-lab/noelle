@@ -87,35 +87,41 @@ namespace llvm {
        * Fields
        */
       SCCDAG *sccdag;
+      std::unordered_map<SCC *, std::unique_ptr<SCCAttrs>> sccToInfo;
       AccumulatorOpInfo accumOpInfo;
       std::set<SCC *> clonableSCCs;
+      std::unordered_map<SCC *, std::set<SCC *>> parentsViaClones;
+      std::unordered_map<SCC *, std::set<DGEdge<SCC> *>> edgesViaClones;
 
       /*
-       * Methods related to a single SCC.
+       * Methods on SCCDAG.
        */
-      //SIMONE: all questions should be marked "const"
-      bool executesCommutatively (SCC *scc); //SIMONE: it should be a question: canInvocationsExecuteCommutatively
-      bool executesIndependently (SCC *scc); //SIMONE: it should be a question: canInvocationsExecuteIndependently
-      bool canBeCloned (SCC *scc);
-      bool isInductionVariableSCC (SCC *scc);
+      void populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvolution &SE);
+      std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
+      bool doesLoopHaveIV () const ;
+      bool areAllLiveOutValuesReducable (LoopEnvironment *env) const ;
+
+      /*
+       * Methods on single SCC.
+       */
+      bool canExecuteCommutatively (SCC *scc) const ;
+      bool canExecuteIndependently (SCC *scc) const ;
+      bool canBeCloned (SCC *scc) const ;
+      bool isInductionVariableSCC (SCC *scc) const ;
       bool isSCCContainedInSubloop (LoopInfoSummary &LIS, SCC *scc) const ;
       std::set<BasicBlock *> & getBasicBlocks (SCC *scc);
-      std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc); // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
-
-      /*
-       * Methods related to a set of SCCs.
-       */
-      int getSCCSubsetCost (std::set<SCC *> &sccs);
-
-      /*
-       * Methods related to the whole loop.
-       */
-      std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
-      bool loopHasInductionVariable (); //SIMONE: it should be a question
-      bool allPostLoopEnvValuesAreReducable (LoopEnvironment *env) const ; //SIMONE: it should be a question
-      void populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvolution &SE);
+      // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
+      std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc); 
 
     private:
+      /*
+       * Helper methods on SCCDAG
+       */
+      void collectSCCGraphAssumingDistributedClones ();
+
+      /*
+       * Helper methods on single SCC
+       */
       void collectSinglePHIAndAccumulators (SCC *scc);
       bool checkIfCommutative (SCC *scc);
       bool checkIfIndependent (SCC *scc);
@@ -123,8 +129,8 @@ namespace llvm {
       bool checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS);
       bool checkSimpleIVEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LIS);
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);
-      bool checkIfClonableByInductionVars (SCC *scc);
-      bool checkIfClonableBySyntacticSugarInstrs (SCC *scc);
-      std::unordered_map<SCC *, std::unique_ptr<SCCAttrs>> sccToInfo;
+      bool isClonableByInductionVars (SCC *scc) const ;
+      bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;
+      bool isClonableByCmpBrInstrs (SCC *scc) const ;
   };
 }
