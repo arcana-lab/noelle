@@ -17,28 +17,33 @@ uint64_t InvocationLatency::latencyPerInvocation (SCC *scc){
   return cost;
 }
 
-uint64_t InvocationLatency::latencyPerInvocation (std::set<std::set<SCC *> *> &subsets){
+/*
+ * The execution time of all subsets is approx:
+ *  1) The maximum internal execution of any subset +
+ *  2) The time spent en/de-queueing for all subsets
+ */
+uint64_t InvocationLatency::latencyPerInvocation (
+  SCCDAGAttrs *attrs,
+  std::set<std::set<SCC *> *> &subsets
+) {
   uint64_t maxInternalCost = 0;
   std::set<Value *> queueValues;
+  std::set<SCC *> allSCCs;
   for (auto sccs : subsets) {
+    std::set<SCC *> subsetSCCs(sccs->begin(), sccs->end());
     for (auto scc : *sccs) {
-
-      /*
-       * Collect scc internal information 
-       */
-      auto internalCost = this->latencyPerInvocation(scc);
-      if (internalCost > maxInternalCost) maxInternalCost = internalCost;
-
-      /*
-       * Collect scc external cost (through edges)
-       */
-      if (sccToExternals.find(scc) == sccToExternals.end()) {
-        for (auto &valueNodePair : scc->externalNodePairs()) {
-          sccToExternals[scc].insert(valueNodePair.first);
-        }
-      }
-      queueValues.insert(sccToExternals[scc].begin(), sccToExternals[scc].end());
+      auto &parents = memoizeParents(attrs, scc);
+      subsetSCCs.insert(parents.begin(), parents.end());
     }
+    allSCCs.insert(subsetSCCs.begin(), subsetSCCs.end());
+
+    uint64_t internalCost = 0;
+    for (auto scc : subsetSCCs) {
+      auto &externals = memoizeExternals(attrs, scc);
+      queueValues.insert(externals.begin(), externals.end());
+      internalCost += this->latencyPerInvocation(scc);
+    }
+    if (internalCost > maxInternalCost) maxInternalCost = internalCost;
   }
 
   uint64_t cost = maxInternalCost;
@@ -129,4 +134,34 @@ uint64_t InvocationLatency::latencyPerInvocation (Instruction *inst){
 uint64_t InvocationLatency::queueLatency (Value *queueVal){
   // TODO(angelo): use primitive size of bits of type of value?
   return 100;
+}
+
+/*
+ * Retrieve or memoize all values the SCC is dependent on
+ * This does NOT include values within clonable parents as
+ *  they will be present during execution (because they are cloned)
+ */
+std::set<Value *> &InvocationLatency::memoizeExternals (SCCDAGAttrs *attrs, SCC *scc) {
+  auto externalsIter = incomingExternals.find(scc);
+  if (externalsIter != incomingExternals.end()) return externalsIter->second;
+  for (auto edge : attrs->edgesViaClones[scc]) {
+    auto parent = edge->getIncomingT();
+    if (attrs->canBeCloned(parent)) continue;
+    for (auto subEdge : edge->getSubEdges()) {
+      incomingExternals[scc].insert(subEdge->getIncomingT());
+    }
+  }
+  return incomingExternals[scc];
+}
+
+/*
+ * Retrieve or memoize all parents of this SCC that are clonable
+ */
+std::set<SCC *> &InvocationLatency::memoizeParents (SCCDAGAttrs *attrs, SCC *scc) {
+  auto parentsIter = clonableParents.find(scc);
+  if (parentsIter != clonableParents.end()) return parentsIter->second;
+  for (auto parent : attrs->parentsViaClones[scc]) {
+    if (attrs->canBeCloned(parent)) clonableParents[scc].insert(parent);
+  }
+  return clonableParents[scc];
 }

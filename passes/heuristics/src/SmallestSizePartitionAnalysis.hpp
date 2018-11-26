@@ -16,9 +16,9 @@ namespace llvm {
 
   class SmallestSizePartitionAnalysis : public PartitionCostAnalysis {
    public:
-    SmallestSizePartitionAnalysis (InvocationLatency &IL, SCCDAGPartition &p, int cores)
-      : PartitionCostAnalysis{IL, p, cores} {};
+    SmallestSizePartitionAnalysis (InvocationLatency &IL, SCCDAGPartition &p, SCCDAGAttrs &attrs, int cores)
+      : PartitionCostAnalysis{IL, p, attrs, cores} {};
 
-    void checkIfShouldMerge (int sA, int sB);
+    void checkIfShouldMerge (SCCset *sA, SCCset *sB);
   };
 }

@@ -3,9 +3,9 @@
 /*
  * Prioritize merge that best lowers overall cost without yielding a too costly partition
  */
-void llvm::SmallestSizePartitionAnalysis::checkIfShouldMerge (int sA, int sB) {
+void llvm::SmallestSizePartitionAnalysis::checkIfShouldMerge (SCCset *sA, SCCset *sB) {
   // errs() << "Checking to see if can merge " << sA << " with " << sB << "\n";
-  if (!partition.canMergeSubsets(sA, sB)) return ;
+  if (partition.mergeYieldsCycle(sA, sB)) return ;
   // errs() << "Trying to merge " << sA << " with " << sB << "\n";
 
   /*
@@ -13,14 +13,11 @@ void llvm::SmallestSizePartitionAnalysis::checkIfShouldMerge (int sA, int sB) {
    */
   auto current = subsetCost[sA] + subsetCost[sB];
   auto insts = subsetInstCount[sA] + subsetInstCount[sB];
-  std::set<std::set<SCC *> *> subsets = {
-    &(partition.subsetOfID(sA)->SCCs),
-    &(partition.subsetOfID(sB)->SCCs)
-  };
-  uint64_t merge = IL.latencyPerInvocation(subsets);
+  std::set<SCCset *> subsets = { sA, sB };
+  uint64_t merge = IL.latencyPerInvocation(&dagAttrs, subsets);
   uint64_t lowered = current - merge;
 
-  if (merge > totalCost / 1 || partition.subsets.size() == numCores) return ;
+  if (merge > totalCost / 1 || partition.getSubsets()->size() == numCores) return ;
 
   /*
    * Only merge if it best lowers cost

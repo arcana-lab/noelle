@@ -23,7 +23,8 @@ namespace llvm {
        * Methods
        */
       void adjustParallelizationPartitionForDSWP (
-        SCCDAGPartition &partition,
+        SCCDAGPartition *partition,
+        SCCDAGAttrs &attrs,
         uint64_t idealThreads
       );
 
@@ -31,11 +32,13 @@ namespace llvm {
 
       void minMaxMergePartition (
         SCCDAGPartition &partition,
+        SCCDAGAttrs &attrs,
         uint64_t idealThreads
       );
 
       void smallestSizeMergePartition (
         SCCDAGPartition &partition,
+        SCCDAGAttrs &attrs,
         uint64_t idealThreads
       );
 

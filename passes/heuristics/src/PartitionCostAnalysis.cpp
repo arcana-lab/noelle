@@ -1,24 +1,26 @@
 #include "PartitionCostAnalysis.hpp"
 
+const std::string llvm::PartitionCostAnalysis::prefix = "Heuristic:   PCA: ";
+
 llvm::PartitionCostAnalysis::PartitionCostAnalysis (
   InvocationLatency &il,
   SCCDAGPartition &p,
+  SCCDAGAttrs &attrs,
   int cores
-) : totalCost{0}, totalInstCount{0}, IL{il}, partition{p}, numCores{cores} {
+) : totalCost{0}, totalInstCount{0}, IL{il},
+    partition{p}, dagAttrs{attrs}, numCores{cores} {
 
   /*
    * Estimate the current latency for executing the pipeline of the current SCCDAG partition once.
    */
-  for (auto &subset : partition.subsets) {
-    auto subsetID = partition.getSubsetID(subset);
-
+  for (auto subset : *partition.getSubsets()) {
     uint64_t instCount = 0;
-    for (auto scc : subset->SCCs) instCount += scc->numInternalNodes();
-    std::set<std::set<SCC *> *> subsets = { &subset->SCCs };
-    uint64_t cost = IL.latencyPerInvocation(subsets);
+    for (auto scc : *subset) instCount += scc->numInternalNodes();
+    std::set<SCCset *> single = { subset };
+    uint64_t cost = IL.latencyPerInvocation(&dagAttrs, single);
 
-    subsetInstCount[subsetID] = instCount;
-    subsetCost[subsetID] = cost;
+    subsetCost[subset] = cost;
+    subsetInstCount[subset] = instCount;
 
     totalInstCount += instCount;
     totalCost += cost;
@@ -30,83 +32,62 @@ void llvm::PartitionCostAnalysis::traverseAllPartitionSubsets () {
   /*
    * Collect all subsets of the current SCCDAG partition.
    */
-  std::queue<int> subIDToCheck;
-  std::set<int> alreadyChecked;
-  auto topLevelSubIDs = partition.getSubsetIDsWithNoIncomingEdges();
-  for (auto subID : topLevelSubIDs) {
-    subIDToCheck.push(subID);
-    alreadyChecked.insert(subID);
+  std::queue<SCCset *> subToCheck;
+  std::set<SCCset *> alreadyChecked;
+  for (auto root : *partition.getRoots()) {
+    subToCheck.push(root);
+    alreadyChecked.insert(root);
   }
 
-  while (!subIDToCheck.empty()) {
-
-    auto subID = subIDToCheck.front();
-    subIDToCheck.pop();
-
-    /*
-     * Check if the current subset has been already tagged to be removed (i.e., merged).
-     */
-    if (!partition.isValidSubset(subID)) continue ;
-    errs() << "Traversing " << subID << "\n";
-    partition.subsetOfID(subID)->print(errs(), "H:   ");
+  while (!subToCheck.empty()) {
+    auto sub = subToCheck.front();
+    subToCheck.pop();
+    auto children = partition.getChildren(sub);
+    if (!children) continue;
 
     /*
-     * Check merge criteria on dependents and depth-1 neighbors
+     * Check merge criteria on children
+     * Traverse them in turn
      */
-    auto dependentIDs = partition.getDependentIDs(subID);
-    auto siblingIDs = partition.getSiblingIDs(subID);
-
-    errs() << "Dependents: ";
-    for (auto s : dependentIDs) errs() << s << " ";
-    errs() << "\n";
-    errs() << "Siblings: ";
-    for (auto s : siblingIDs) errs() << s << " ";
-    errs() << "\n";
-
-    for (auto s : dependentIDs) checkIfShouldMerge(subID, s);
-    for (auto s : siblingIDs) checkIfShouldMerge(subID, s);
-
-    /*
-     * Add dependent SCCs as well.
-     */
-    for (auto s : dependentIDs) {
-      if (alreadyChecked.find(s) == alreadyChecked.end()){
-        subIDToCheck.push(s);
-        alreadyChecked.insert(s);
+    for (auto child : *children) {
+      checkIfShouldMerge(sub, child);
+      if (alreadyChecked.find(child) == alreadyChecked.end()){
+        subToCheck.push(child);
+        alreadyChecked.insert(child);
       }
     }
   }
 }
 
 void llvm::PartitionCostAnalysis::resetCandidateSubsetInfo () {
-  minSubsetA = minSubsetB = -1;
+  minSubsetA = minSubsetB = nullptr;
   loweredCost = 0;
   mergedSubsetCost = totalCost;
   instCount = totalInstCount;
 }
 
 bool llvm::PartitionCostAnalysis::mergeCandidateSubsets () {
-  /*
-   * Merge partition if one is found; reiterate the merge check on it
-   */
-  if (minSubsetA != -1) {
-    // errs() << "Merging " << minSubsetAID << " with " << minSubsetBID << "\n";
-    auto mergedSub = partition.mergeSubsets(minSubsetA, minSubsetB);
+  if (!minSubsetA) return false;
 
-    /*
-     * Readjust subset cost tracking
-     */
-    subsetCost[mergedSub] = mergedSubsetCost;
-    subsetInstCount[mergedSub] = instCount;
-    totalCost -= loweredCost;
-    return true;
-  }
-  return false;
+  auto mergedSub = partition.mergePair(minSubsetA, minSubsetB);
+
+  /*
+   * Readjust subset cost tracking
+   */
+  subsetCost[mergedSub] = mergedSubsetCost;
+  subsetInstCount[mergedSub] = instCount;
+  totalCost -= loweredCost;
+  return true;
 }
 
 void llvm::PartitionCostAnalysis::printCandidate (raw_ostream &stream) {
-  std::string prefix = "Heuristic:   PCA: ";
-  stream << prefix << "Min subset IDs: " << minSubsetA << " " << minSubsetB << "\n";
+  if (!minSubsetA || !minSubsetB) {
+    stream << prefix << "No candidates\n";
+    return;
+  }
+  stream << prefix << "Min subsets:\n";
+  stream << prefix << partition.subsetStr(minSubsetA)
+    << " " << partition.subsetStr(minSubsetB) << "\n";
   stream << prefix << "Lowered cost: " << loweredCost
     << " Merged subset cost: " << mergedSubsetCost
     << " Instruction count: " << instCount << "\n";

@@ -1,24 +1,26 @@
 #include "MinMaxSizePartitionAnalysis.hpp"
 
-void llvm::MinMaxSizePartitionAnalysis::checkIfShouldMerge (int sA, int sB) {
-  errs() << "Checking to merge: " << sA << " " << sB << "\n";
-  if (!partition.canMergeSubsets(sA, sB)) return ;
-  errs() << "Is possible\n";
+void llvm::MinMaxSizePartitionAnalysis::checkIfShouldMerge (SCCset *sA, SCCset *sB) {
+  std::string subsetStrs = partition.subsetStr(sA) + " " + partition.subsetStr(sB);
+  errs() << prefix << "Checking: " << subsetStrs;
+  if (partition.mergeYieldsCycle(sA, sB)) {
+    errs() << "\n";
+    return;
+  }
+  errs() << " Is possible\n";
 
   auto current = subsetCost[sA] + subsetCost[sB];
   auto insts = subsetInstCount[sA] + subsetInstCount[sB];
-  std::set<std::set<SCC *> *> subsets = {
-    &(partition.subsetOfID(sA)->SCCs),
-    &(partition.subsetOfID(sB)->SCCs)
-  };
-  uint64_t merge = IL.latencyPerInvocation(subsets);
+  std::set<SCCset *> subsets = { sA, sB };
+  uint64_t merge = IL.latencyPerInvocation(&dagAttrs, subsets);
   uint64_t lowered = current - merge;
 
-  if (partition.subsets.size() == numCores) return ;
+  if (partition.getSubsets()->size() == numCores) return ;
 
-  errs() << "Current cost of both: " << current << "\n";
-  errs() << "Inst count of both versus current min: " << insts << " " << instCount << "\n";
-  errs() << "Merged together cost versus min: " << merge << " " << mergedSubsetCost << "\n";
+  // errs() << prefix << subsetStrs << "\n";
+  errs() << prefix << "Lowered cost: " << lowered
+    << " Merged cost: " << merge
+    << " Instr count: " << insts << "\n";
 
   /*
    * Only merge if it is the cheapest of the merges
