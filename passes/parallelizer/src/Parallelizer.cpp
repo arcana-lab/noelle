@@ -58,8 +58,8 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
        */
       codeModified = dswp.apply(LDI, par, h, SE);
       envArray = dswp.getEnvArray();
-      dswp.reset();
     }
+    dswp.reset();
   }
 
   /*
