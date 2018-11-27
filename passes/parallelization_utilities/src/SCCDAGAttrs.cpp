@@ -42,13 +42,12 @@ unsigned AccumulatorOpInfo::accumOpForType (unsigned op, Type *type) {
   }
 }
 
-Value *AccumulatorOpInfo::generateIdentityFor (Instruction *accumulator) {
+Value *AccumulatorOpInfo::generateIdentityFor (Instruction *accumulator, Type *castType) {
   Value *initVal = nullptr;
   auto opIdentity = this->opIdentities[accumulator->getOpcode()];
-  Type *accumTy = accumulator->getType();
-  if (accumTy->isIntegerTy()) initVal = ConstantInt::get(accumTy, opIdentity);
-  if (accumTy->isFloatTy()) initVal = ConstantFP::get(accumTy, (float)opIdentity);
-  if (accumTy->isDoubleTy()) initVal = ConstantFP::get(accumTy, (double)opIdentity);
+  if (castType->isIntegerTy()) initVal = ConstantInt::get(castType, opIdentity);
+  if (castType->isFloatTy()) initVal = ConstantFP::get(castType, (float)opIdentity);
+  if (castType->isDoubleTy()) initVal = ConstantFP::get(castType, (double)opIdentity);
   assert(initVal != nullptr);
   return initVal;
 }

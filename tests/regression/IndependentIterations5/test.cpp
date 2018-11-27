@@ -9,9 +9,10 @@ long long int computeSum (long long int *a, long long int iters, long long unsig
 
     double tmp = 43290.32435F;
     for (auto j=0; j < inner_iters; j++){
-      tmp = tmp / 2;
+      tmp = tmp - 2;
     }
 
+    s += tmp;
     a[i] += tmp;
   }
 

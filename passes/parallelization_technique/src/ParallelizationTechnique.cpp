@@ -238,7 +238,11 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
        */
       auto producerSCC = LDI->loopSCCDAG->sccOfValue(cast<PHINode>(producer));
       auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->PHIAccumulators.begin());
-      auto identityV = LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(firstAccumI);
+      auto envPtrType = envPtr->getType();
+      auto identityV = LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(
+        firstAccumI,
+        cast<PointerType>(envPtrType)->getElementType()
+      );
       entryBuilder.CreateStore(identityV, envPtr);
     }
 
