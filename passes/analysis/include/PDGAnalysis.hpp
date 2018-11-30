@@ -28,6 +28,7 @@ namespace llvm {
     private:
       PDG *programDependenceGraph;
       std::set<std::string> memorylessFunctionNames;
+      std::set<GlobalValue *> primitiveArrayGlobals;
 
       template <class InstI, class InstJ>
       void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, InstI *, InstJ *, bool WAW);
@@ -48,6 +49,7 @@ namespace llvm {
 
       void removeEdgesNotUsedByParSchemes (PDG *pdg);
 
+      void collectPrimitiveArrayGlobalValues (Module &M);
       void collectMemorylessFunctions (Module &M);
       bool edgeIsApparentIntraIterationDependency (DGEdge<Value> *edge);
       bool edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge);

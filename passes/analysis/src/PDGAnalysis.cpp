@@ -30,6 +30,7 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
+  AU.addRequired<CallGraphWrapperPass>();
   AU.setPreservesAll();
   return ;
 }
@@ -42,6 +43,7 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   constructEdgesFromAliases(this->programDependenceGraph, M);
   constructEdgesFromControl(this->programDependenceGraph, M);
 
+  collectPrimitiveArrayGlobalValues(M);
   collectMemorylessFunctions(M);
   removeEdgesNotUsedByParSchemes(this->programDependenceGraph);
 
@@ -391,6 +393,119 @@ bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep) {
   }
 
   return notAllConstantIndices;
+}
+
+void llvm::PDGAnalysis::collectPrimitiveArrayGlobalValues  (Module &M) {
+
+  /*
+   * Collect functions to examine globals' uses within
+   */
+  auto main = M.getFunction("main");
+  auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
+  std::queue<Function *> funcToTraverse;
+  std::set<Function *> reached;
+  funcToTraverse.push(main);
+  reached.insert(main);
+  while (!funcToTraverse.empty()) {
+    auto func = funcToTraverse.front();
+    funcToTraverse.pop();
+
+    auto funcCGNode = callGraph[func];
+    for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
+      auto F = callRecord.second->getFunction();
+      if (!F || F->empty()) continue;
+
+      if (reached.find(F) != reached.end()) continue;
+      reached.insert(F);
+      funcToTraverse.push(F);
+    }
+  }
+
+  std::function<bool(std::set<Instruction *>, Instruction *)> isUsedOnlyByNonAddrValues;
+  isUsedOnlyByNonAddrValues = [&isUsedOnlyByNonAddrValues](
+    std::set<Instruction *> checked,
+    Instruction *I
+  ) -> bool {
+    if (checked.find(I) != checked.end()) return true;
+    checked.insert(I);
+
+    for (auto user : I->users()) {
+      if (isa<TerminatorInst>(user)) continue;
+      if (auto store = dyn_cast<StoreInst>(user)) {
+        auto stored = store->getValueOperand();
+        if (isa<IntegerType>(stored->getType())) {
+          if (auto storedI = dyn_cast<Instruction>(stored)) {
+            if (isUsedOnlyByNonAddrValues(checked, storedI)) continue;
+          }
+          if (auto storedC = dyn_cast<ConstantData>(stored)) continue;
+        }
+        // stored->print(errs() << "PDGAnalysis: store not integer type or used by such: "); errs() << "\n";
+        // stored->getType()->print(errs() << "TYPE: "); errs() << "\n";
+      }
+      if (auto userI = dyn_cast<Instruction>(user)) {
+        if (isa<IntegerType>(userI->getType())) {
+          if (isUsedOnlyByNonAddrValues(checked, userI)) continue;
+        }
+        // userI->print(errs() << "PDGAnalysis: user not integer type or used by such: "); errs() << "\n";
+        // userI->getType()->print(errs() << "TYPE: "); errs() << "\n";
+      }
+      user->print(errs() << "PDGAnalysis: Inst user not understood: "); errs() << "\n";
+      return false;
+    }
+    return true;
+  };
+
+  std::set<std::string> allocators = { "malloc", "calloc" };
+  std::set<std::string> readOnlyFns = { "fprintf", "printf" };
+  for (auto &GV : M.globals()) {
+    bool isPrimitiveArray = true;
+    for (auto user : GV.users()) {
+      if (auto I = dyn_cast<Instruction>(user)) {
+        if (reached.find(I->getFunction()) == reached.end()) {
+          isPrimitiveArray = false;
+          break;
+        }
+
+        if (auto store = dyn_cast<StoreInst>(I)) {
+          // Confirm the store is of a malloc'd or calloc'd array, one that is
+          //  only stored into this value
+          if (auto storedCall = dyn_cast<CallInst>(store->getValueOperand())) {
+            auto callF = storedCall->getCalledFunction();
+            if (allocators.find(callF->getName()) != allocators.end()) {
+              if (storedCall->hasOneUse()) continue;
+            }
+          }
+          // store->print(errs() << "PDGAnalysis:  GV store: "); errs() << "\n";
+        }
+        if (auto load = dyn_cast<LoadInst>(I)) {
+          // Confirm all uses of the GV load are GEP that are used to store
+          //  non-addressed values only, or read only function calls
+          bool nonAddressedUsers = true;
+          for (auto loadUser : load->users()) {
+            if (auto GEPUser = dyn_cast<GetElementPtrInst>(loadUser)) {
+              if (isUsedOnlyByNonAddrValues({}, GEPUser)) continue;
+            }
+            if (auto callUser = dyn_cast<CallInst>(loadUser)) {
+              auto fnName = callUser->getCalledFunction()->getName();
+              if (readOnlyFns.find(fnName) != readOnlyFns.end()) continue;
+              // errs() << "Unnaccepted name: " << fnName << "\n";
+            }
+            // loadUser->print(errs() << "PDGAnalysis:  GV load user: "); errs() << "\n";
+            nonAddressedUsers = false;
+          }
+          if (nonAddressedUsers) continue;
+        }
+      }
+      // user->print(errs() << "PDGAnalysis:  GV user not understood: "); errs() << "\n";
+      isPrimitiveArray = false;
+      break;
+    }
+
+    if (isPrimitiveArray) {
+      primitiveArrayGlobals.insert(&GV);
+      GV.print(errs() << "UNDERSTOOD: "); errs() << "\n";
+    }
+  }
 }
 
 void llvm::PDGAnalysis::collectMemorylessFunctions (Module &M) {
