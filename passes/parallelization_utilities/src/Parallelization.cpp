@@ -162,6 +162,11 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      */
     int32_t currentValueRead;
     while (indexString >> currentValueRead){
+
+      /*
+       * Fetch the current parameter.
+       */
+      assert(currentValueRead == 0 || currentValueRead == 1);
       loopThreads.push_back(currentValueRead);
 
       /*
@@ -171,6 +176,26 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       if (  (peekChar == ' ')   ||
             (peekChar == '\n')  ){
         indexString.ignore();
+      }
+
+      /*
+       * Skip parameters we are not handling right now
+       */
+      for (auto skipNum = 0; skipNum < 8; skipNum++){
+
+        /*
+         * Skip the current parameter.
+         */
+        indexString.ignore();
+
+        /*
+         * Skip separators
+         */
+        auto peekChar = indexString.peek();
+        if (  (peekChar == ' ')   ||
+              (peekChar == '\n')  ){
+          indexString.ignore();
+        }
       }
     }
   }
