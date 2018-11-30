@@ -186,7 +186,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         /*
          * Skip the current parameter.
          */
-        indexString.ignore();
+        indexString >> currentValueRead;
 
         /*
          * Skip separators
