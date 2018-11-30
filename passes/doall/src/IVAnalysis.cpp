@@ -13,7 +13,7 @@ void DOALL::simplifyOriginalLoopIV (
   auto headerBr = LDI->header->getTerminator();
   auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
   auto &attrs = LDI->sccdagAttrs.getSCCAttrs(headerSCC);
-  assert(attrs->isSimpleIV);
+  assert(attrs->simpleIVInfo);
   task->originalIVAttrs = attrs.get();
 
   /*
@@ -21,7 +21,7 @@ void DOALL::simplifyOriginalLoopIV (
    */
   auto &iClones = task->instructionClones;
   task->originalIVClone = cast<PHINode>(iClones[attrs->singlePHI]);
-  auto IVInfo = attrs->simpleIVInfo;
+  auto &IVInfo = *attrs->simpleIVInfo;
   task->clonedIVInfo.cmp = cast<CmpInst>(iClones[IVInfo.cmp]);
   task->clonedIVInfo.br = cast<BranchInst>(iClones[IVInfo.br]);
 

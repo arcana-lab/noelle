@@ -59,24 +59,31 @@ namespace llvm {
       bool isIVSCC;
 
       /*
-       * TODO(angelo): allow multiple phis as long as they form a single cycle
+       * Fields used if the SCC is of a "simple" form,
+       * consisting of only PHIs, binary accumulators,
+       * control flow (compares / branches), and cast instructions
        */
-      PHINode * singlePHI;
-      std::set<Instruction *> PHIAccumulators;
-
-      bool isSimpleIV;
-      SimpleIVInfo simpleIVInfo;
+      std::set<PHINode *> PHINodes;
+      std::set<Instruction *> accumulators;
+      PHINode *singlePHI;
+      Instruction *singleAccumulator;
+      SimpleIVInfo *simpleIVInfo;
 
       /*
        * Methods
        */
       SCCAttrs (SCC *s)
         : scc{s}, isIndependent{0}, isClonable{0},
-          isReducable{0}, isSimpleIV{0}, singlePHI{nullptr} {
+          isReducable{0}, singlePHI{nullptr},
+          singleAccumulator{nullptr}, simpleIVInfo{nullptr},
+          PHINodes{}, accumulators{} {
         // Collect basic blocks contained within SCC
         for (auto nodePair : this->scc->internalNodePairs()) {
           this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
         }
+      }
+      ~SCCAttrs () {
+        if (simpleIVInfo) delete simpleIVInfo;
       }
   };
 
@@ -122,12 +129,12 @@ namespace llvm {
       /*
        * Helper methods on single SCC
        */
-      void collectSinglePHIAndAccumulators (SCC *scc);
+      void collectPHIsAndAccumulators (SCC *scc);
       bool checkIfCommutative (SCC *scc);
       bool checkIfIndependent (SCC *scc);
       bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE);
-      bool checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS);
-      bool checkSimpleIVEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LIS);
+      void checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS);
+      bool doesIVHaveSimpleEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LIS);
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);
       bool isClonableByInductionVars (SCC *scc) const ;
       bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;

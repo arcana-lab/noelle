@@ -63,6 +63,9 @@ bool DSWP::canBeAppliedToLoop (
    * Check whether it is worth parallelizing the current loop.
    */
   if (!canApply && this->verbose > Verbosity::Disabled) {
+    for (auto scc : **subsets->begin()) {
+      scc->print(errs()) << "\n";
+    }
     errs() << "DSWP:  Not enough TLP can be extracted\n";
     errs() << "DSWP: Exit\n";
   }

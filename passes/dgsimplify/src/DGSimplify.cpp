@@ -303,7 +303,7 @@ bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
   bool inlined = false;
   while (fnIndex < orderedFns.size()) {
     auto childF = orderedFns[fnIndex++];
-    // errs() << "Traversing through CG; at fn: " << fnOrders[childF] << "\n";
+    // errs() << "Traversing through CG; at fn: " << fnOrders[childF] << " " << childF->getName() << "\n";
     // NOTE(angelo): If we avoid this function until next pass, we do the same with its parents
     if (fnsToAvoid.find(childF) != fnsToAvoid.end()) {
       for (auto parentF : parentFns[childF]) fnsToAvoid.insert(parentF);
@@ -323,7 +323,7 @@ bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
       // NOTE(angelo): Do not inline recursive function calls
       if (parentF == childF) continue;
 
-      // NOTE(angelo): Do not inline from less deep to more deep (to avoid recursive chains)
+      // NOTE(angelo): Do not inline into a parent deeper than the child (to avoid recursive chains)
       if (fnOrders[parentF] > fnOrders[childF]) continue;
 
       // NOTE(angelo): Cache calls as inlining affects the call list in childrenFns
@@ -337,6 +337,7 @@ bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
       for (auto call : cachedCalls) {
         if (call->getCalledFunction() != childF) continue;
         bool inlinedCall = inlineFunctionCall(parentF, childF, call);
+        if (inlinedCall) errs() << "Inlined: " << childF->getName() << " into " << parentF->getName() << "\n";
         inlined |= inlinedCall;
         inlinedCalls &= inlinedCall;
         if (inlined) break;
