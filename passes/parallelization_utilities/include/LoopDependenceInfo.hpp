@@ -61,6 +61,12 @@ namespace llvm {
     BasicBlock *exitPointOfParallelizedLoop;
 
     /*
+     * Parallelization
+     */
+    uint32_t maximumNumberOfCoresForTheParallelization;
+    uint32_t DOALLChunkSize;
+
+    /*
      * Methods
      */
     LoopDependenceInfo (Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);

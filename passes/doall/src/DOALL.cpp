@@ -91,7 +91,7 @@ bool DOALL::apply (
    */
   DOALLTaskExecution *chunkerTask = new DOALLTaskExecution();
   this->generateTasks(LDI, { chunkerTask });
-  this->numTaskInstances = NUM_CORES;
+  this->numTaskInstances = LDI->maximumNumberOfCoresForTheParallelization;
 
   /*
    * Allocate memory for all environment variables
@@ -218,9 +218,15 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    */
   auto envPtr = envBuilder->getEnvArrayInt8Ptr();
 
-  // TODO(angelo): Outsource num cores / chunk size values to autotuner or heuristic
-  auto numCores = ConstantInt::get(par.int64, NUM_CORES);
-  auto chunkSize = ConstantInt::get(par.int64, CHUNK_SIZE);
+  /*
+   * Fetch the number of cores
+   */
+  auto numCores = ConstantInt::get(par.int64, LDI->maximumNumberOfCoresForTheParallelization);
+
+  /*
+   * Fetch the chunk size.
+   */
+  auto chunkSize = ConstantInt::get(par.int64, LDI->DOALLChunkSize);
 
   /*
    * Call the function that incudes the parallelized loop.

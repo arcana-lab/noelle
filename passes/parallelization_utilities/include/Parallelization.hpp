@@ -61,5 +61,8 @@ namespace llvm {
         Value *envIndexForExitVariable,
         SmallVector<BasicBlock *, 10> &loopExitBlocks
         );
+
+    private:
+      uint32_t fetchTheNextValue (std::stringstream &stream);
   };
 }

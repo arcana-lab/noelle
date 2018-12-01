@@ -136,7 +136,8 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   /*
    * Check if we should filter out loops.
    */
-  std::vector<int32_t> loopThreads{};
+  std::vector<uint32_t> loopThreads{};
+  std::vector<uint32_t> DOALLChunkSize{};
   auto indexFileName = getenv("INDEX_FILE");
   if (indexFileName){
 
@@ -160,42 +161,53 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Parse the file
      */
-    int32_t currentValueRead;
-    while (indexString >> currentValueRead){
+    while (indexString.eof()){
 
       /*
-       * Fetch the current parameter.
+       * Should the loop be parallelized?
        */
-      assert(currentValueRead == 0 || currentValueRead == 1);
-      loopThreads.push_back(currentValueRead);
+      auto shouldBeParallelized = this->fetchTheNextValue(indexString);
+      assert(shouldBeParallelized == 0 || shouldBeParallelized == 1);
 
       /*
-       * Skip separators
+       * Unroll factor
        */
-      auto peekChar = indexString.peek();
-      if (  (peekChar == ' ')   ||
-            (peekChar == '\n')  ){
-        indexString.ignore();
-      }
+      auto unrollFactor = this->fetchTheNextValue(indexString);
 
       /*
-       * Skip parameters we are not handling right now
+       * Peel factor
        */
-      for (auto skipNum = 0; skipNum < 8; skipNum++){
+      auto peelFactor = this->fetchTheNextValue(indexString);
 
-        /*
-         * Skip the current parameter.
-         */
-        indexString >> currentValueRead;
+      /*
+       * Technique to use
+       */
+      auto technique = this->fetchTheNextValue(indexString);
 
-        /*
-         * Skip separators
-         */
-        auto peekChar = indexString.peek();
-        if (  (peekChar == ' ')   ||
-              (peekChar == '\n')  ){
-          indexString.ignore();
-        }
+      /*
+       * Number of cores
+       */
+      auto cores = this->fetchTheNextValue(indexString);
+
+      /*
+       * DOALL: chunk factor
+       */
+      auto DOALLChunkFactor = this->fetchTheNextValue(indexString);
+
+      /*
+       * Skip
+       */
+      this->fetchTheNextValue(indexString);
+      this->fetchTheNextValue(indexString);
+      this->fetchTheNextValue(indexString);
+
+      /*
+       * If the loop needs to be parallelized, then we enable it.
+       */
+      if (  (shouldBeParallelized)    &&
+            (cores >= 2)              ){
+        loopThreads.push_back(cores);
+        DOALLChunkSize.push_back(DOALLChunkFactor);
       }
     }
   }
@@ -252,6 +264,12 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       }
 
       /*
+       * Set the loop constraints specified by INDEX_FILE.
+       */
+      ldi->maximumNumberOfCoresForTheParallelization = loopThreads[currentLoopIndex];
+      ldi->DOALLChunkSize = DOALLChunkSize[currentLoopIndex];
+
+      /*
        * We have to filter loops.
        *
        * Check if more than one thread is assigned to the current loop.
@@ -261,14 +279,22 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
         abort();
       }
-      auto numberOfThreadsForTheCurrentLoop = loopThreads[currentLoopIndex];
-      if (numberOfThreadsForTheCurrentLoop == 0){
+      if (ldi->maximumNumberOfCoresForTheParallelization <= 1){
 
         /*
          * Only one thread has been assigned to the current loop.
          * Hence, the current loop will not be parallelized.
          */
         currentLoopIndex++;
+
+        /*
+         * Free the memory.
+         */
+        delete ldi ;
+
+        /*
+         * Jump to the next loop.
+         */
         continue ;
       }
 
@@ -383,6 +409,35 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   endBuilder.CreateStore(const0, globalBool);
 
   return ;
+}
+
+uint32_t llvm::Parallelization::fetchTheNextValue (std::stringstream &stream){
+  uint32_t currentValueRead;
+
+  /*
+   * Skip separators
+   */
+  auto peekChar = stream.peek();
+  if (  (peekChar == ' ')   ||
+        (peekChar == '\n')  ){
+    stream.ignore();
+  }
+
+  /*
+   * Parse the value.
+   */
+  stream >> currentValueRead;
+
+  /*
+   * Skip separators
+   */
+  peekChar = stream.peek();
+  if (  (peekChar == ' ')   ||
+        (peekChar == '\n')  ){
+    stream.ignore();
+  }
+
+  return currentValueRead;
 }
 
 llvm::Parallelization::~Parallelization(){

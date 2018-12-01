@@ -8,43 +8,44 @@ using namespace std;
 using namespace llvm;
 
 LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt)
-		: function{f}, functionDG{fG} {
+		: function{f}, functionDG{fG}, DOALLChunkSize{2}, maximumNumberOfCoresForTheParallelization{2}
+  {
 
-    /*
-     * Create a LoopInfo summary
-     */
-    this->liSummary.populate(li, l);
+  /*
+   * Create a LoopInfo summary
+   */
+  this->liSummary.populate(li, l);
 
-    /*
-     * Set the headers.
-     */
-    this->header = l->getHeader();
-    this->preHeader = l->getLoopPreheader();
+  /*
+   * Set the headers.
+   */
+  this->header = l->getHeader();
+  this->preHeader = l->getLoopPreheader();
 
-    /*
-     * Set the loop body.
-     */
-    for (auto bb : l->blocks()){
-      this->loopBBs.push_back(&*bb);
-      loopBBtoPD[&*bb] = pdt.getNode(&*bb)->getIDom()->getBlock();
-    }
+  /*
+   * Set the loop body.
+   */
+  for (auto bb : l->blocks()){
+    this->loopBBs.push_back(&*bb);
+    loopBBtoPD[&*bb] = pdt.getNode(&*bb)->getIDom()->getBlock();
+  }
 
-    /*
-     * Set the loop dependence graph.
-     */
-	this->loopDG = functionDG->createLoopsSubgraph(l);
+  /*
+   * Set the loop dependence graph.
+   */
+  this->loopDG = functionDG->createLoopsSubgraph(l);
 
-	/*
-	 * Build a SCCDAG of loop-internal instructions
-	 */
-	std::vector<Value *> loopInternals;
-	for (auto internalNode : loopDG->internalNodePairs()) {
-		loopInternals.push_back(internalNode.first);
-	}
-	loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
-	loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
+  /*
+   * Build a SCCDAG of loop-internal instructions
+   */
+  std::vector<Value *> loopInternals;
+  for (auto internalNode : loopDG->internalNodePairs()) {
+      loopInternals.push_back(internalNode.first);
+  }
+  loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
+  loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
 
-	l->getExitBlocks(loopExitBlocks);
+  l->getExitBlocks(loopExitBlocks);
 
   environment = new LoopEnvironment(loopDG, loopExitBlocks);
 
