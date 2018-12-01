@@ -84,7 +84,13 @@ bool DOALL::apply (
   Heuristics *h,
   ScalarEvolution &SE
 ) {
+
+  /*
+   * Print the parallelization request.
+   */
   errs() << "DOALL: Start the parallelization\n";
+  errs() << "DOALL:   Threads to extract = " << LDI->maximumNumberOfCoresForTheParallelization << "\n";
+  errs() << "DOALL:   Chunk size = " << LDI->DOALLChunkSize << "\n";
 
   /*
    * Prepare DOALL task (chunk executing function)
