@@ -1,3 +1,4 @@
+#include <thread>
 #include "PDG.hpp"
 #include "SCCDAG.hpp"
 #include "llvm/Analysis/LoopInfo.h"
@@ -8,7 +9,7 @@ using namespace std;
 using namespace llvm;
 
 LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt)
-		: function{f}, functionDG{fG}, DOALLChunkSize{2}, maximumNumberOfCoresForTheParallelization{2}
+		: function{f}, functionDG{fG}, DOALLChunkSize{2}, maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency()}
   {
 
   /*
