@@ -16,10 +16,6 @@
 - Modify parallelizer to be able to parallelize multiple loops nested to each other at the same time
 
 
-==== DOALL
-- Promote chunk size to be an option (e.g., --doall-chunksize)
-
-
 ==== OTHER PARALLELIZATION SCHEMES
 - Implement PS-DSWP
 
