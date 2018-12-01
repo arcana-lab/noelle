@@ -17,7 +17,6 @@
 
 
 ==== DOALL
-- BUGFIX: Swap outer and inner loops (See Builder.cpp:78)
 - Promote chunk size to be an option (e.g., --doall-chunksize)
 
 
@@ -27,9 +26,11 @@
 - Implement HELIX
 
 
-==== OPTIMIZATIONS
-- Inline calls involved in an SCC and rerun the PDG analysis
+==== BENCHMARKS
+- Bring all PARSEC benchmarks
 
+
+==== OPTIMIZATIONS
 - Packing/unpacking pushes and pops
 
 - Create a new pass to map memory locations to variables as much as possible
@@ -37,8 +38,6 @@
 
 
 Task log - Angelo
-  - min-max partition heuristic
   - clean up analysis classes (SCCDAGAttrs, SimpleIVInfo, ...)
-  Write a test pass to scan AA of a simple global variable program
   PropagateLiveOuts -> GenerateCodeToLoadLiveOutVars
   PopulateEnvironment -> GenerateCodeTOCreateEnvironment
