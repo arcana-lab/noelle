@@ -1,6 +1,4 @@
 ==== SOFTWARE ENGINEERING
-- Add the option to decide the number of threads to target per loop
-
 - Reconsider all abstractions (e.g., do we need all LoopSummary, LoopInfoSummary, and LoopDependenceInfo? do we need SCCEdgeInfo?)
 
 - Create a "Dependence" abstraction, which is DG<Value>
