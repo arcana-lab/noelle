@@ -6,11 +6,6 @@
 - Create a "Dependence" abstraction, which is DG<Value>
   - have methods like "getSource(), getDestination(), isMemoryBased()"
 
-==== AUTOTUNER
-- Extend the autotuner to decide #threads per loop
-
-- Extend the autotuner to decide the parallelization-specific parameters (e.g., chunk size for DOALL, SCCDAG partitioning for DSWP)
-
 
 ==== Parallelizer
 - Modify parallelizer to be able to parallelize multiple loops nested to each other at the same time
