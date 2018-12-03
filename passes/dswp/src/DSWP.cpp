@@ -137,9 +137,12 @@ bool DSWP::apply (
 
     /*
      * Load pointers of all queues for the current pipeline stage at the function's entry
-     * Push/pop queue values between the current pipeline stage and connected ones
      */
     generateLoadsOfQueuePointers(LDI, par, i);
+
+    /*
+     * Add push/pop operations from queues between the current pipeline stage and the connected ones
+     */
     popValueQueues(LDI, par, i);
     pushValueQueues(LDI, par, i);
 
