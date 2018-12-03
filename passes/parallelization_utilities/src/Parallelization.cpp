@@ -161,7 +161,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Parse the file
      */
-    while (indexString.eof()){
+    while (indexString.peak() != EOF){
 
       /*
        * Should the loop be parallelized?
