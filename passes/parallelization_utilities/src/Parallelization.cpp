@@ -136,6 +136,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   /*
    * Check if we should filter out loops.
    */
+  auto filterLoops = false;
   std::vector<uint32_t> loopThreads{};
   std::vector<uint32_t> DOALLChunkSize{};
   auto indexFileName = getenv("INDEX_FILE");
@@ -162,6 +163,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      * Parse the file
      */
     while (indexString.peek() != EOF){
+      filterLoops = true;
 
       /*
        * Should the loop be parallelized?
@@ -208,10 +210,13 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
             (cores >= 2)              ){
         loopThreads.push_back(cores);
         DOALLChunkSize.push_back(DOALLChunkFactor);
+
+      } else{
+        loopThreads.push_back(1);
+        DOALLChunkSize.push_back(0);
       }
     }
   }
-  auto filterLoops = (loopThreads.size() > 0) ? true : false;
 
   /*
    * Append loops of each function.
