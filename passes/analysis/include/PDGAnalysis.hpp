@@ -28,6 +28,7 @@ namespace llvm {
     private:
       PDG *programDependenceGraph;
       std::set<std::string> memorylessFunctionNames;
+      std::set<Function *> CGUnderMain;
       std::set<GlobalValue *> primitiveArrayGlobals;
 
       template <class InstI, class InstJ>
@@ -47,13 +48,16 @@ namespace llvm {
       void constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA);
       void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
 
+      void collectCGUnderFunctionMain (Module &M);
       void removeEdgesNotUsedByParSchemes (PDG *pdg);
 
       void collectPrimitiveArrayGlobalValues (Module &M);
+      bool isOnlyUsedByNonAddrValues (std::set<Instruction *> checked, Instruction *I);
+
       void collectMemorylessFunctions (Module &M);
-      bool edgeIsApparentIntraIterationDependency (DGEdge<Value> *edge);
+      bool edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge);
       bool edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge);
-      bool checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep);
-      bool instMayPrecede (Value *from, Value *to);
+      bool areGEPIndicesConstantOrIV (GetElementPtrInst *gep);
+      bool canPrecedeInCurrentIteration (Instruction *from, Instruction *to);
   };
 }

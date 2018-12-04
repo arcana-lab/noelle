@@ -43,6 +43,7 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   constructEdgesFromAliases(this->programDependenceGraph, M);
   constructEdgesFromControl(this->programDependenceGraph, M);
 
+  collectCGUnderFunctionMain(M);
   collectPrimitiveArrayGlobalValues(M);
   collectMemorylessFunctions(M);
   removeEdgesNotUsedByParSchemes(this->programDependenceGraph);
@@ -267,139 +268,7 @@ void llvm::PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function
   }
 }
 
-void llvm::PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {
-  std::set<DGEdge<Value> *> removeEdges;
-  for (auto edge : pdg->getEdges()) {
-    if (edgeIsApparentIntraIterationDependency(edge)
-        || edgeIsOnKnownMemorylessFunction(edge)) {
-      removeEdges.insert(edge);
-    }
-  }
-
-  for (auto edge : removeEdges) pdg->removeEdge(edge);
-}
-
-/*
- * Remove dependencies between intra-iteration store and load pairs
- */
-bool llvm::PDGAnalysis::edgeIsApparentIntraIterationDependency (DGEdge<Value> *edge) {
-  if (!edge->isMemoryDependence() || edge->isWAWDependence()) return false;
-
-  auto outgoingT = edge->getOutgoingT();
-  auto incomingT = edge->getIncomingT();
-  if (isa<CallInst>(outgoingT) || isa<CallInst>(incomingT)) return false;
-
-  /*
-   * Assert: must be a WAR load-store OR a RAW store-load
-   */
-  LoadInst *load;
-  StoreInst *store;
-  if (edge->isWARDependence()) {
-    assert(isa<StoreInst>(incomingT) && isa<LoadInst>(outgoingT));
-    load = (LoadInst*)outgoingT;
-    store = (StoreInst*)incomingT;
-  } else {
-    assert(isa<LoadInst>(incomingT) && isa<StoreInst>(outgoingT));
-    store = (StoreInst*)outgoingT;
-    load = (LoadInst*)incomingT;
-  }
-
-  auto baseOp = load->getPointerOperand();
-  if (load->getPointerOperand() != store->getPointerOperand()) return false;
-  if (auto gep = dyn_cast<GetElementPtrInst>(baseOp)) {
-
-    /*
-     * Skip if the edge may be intra-iteration
-     */
-    if (instMayPrecede(outgoingT, incomingT)) return false;
-
-    if (checkLoadStoreAliasOnSameGEP(gep)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-bool llvm::PDGAnalysis::instMayPrecede (Value *from, Value *to) {
-  auto fromI = (Instruction*)from;
-  auto toI = (Instruction*)to;
-  auto& DT = getAnalysis<DominatorTreeWrapperPass>(*fromI->getFunction()).getDomTree();
-  BasicBlock *fromBB = fromI->getParent();
-
-  if (fromBB == toI->getParent()) {
-    for (auto &I : *fromBB) {
-      if (&I == fromI) return true;
-      if (&I == toI) return false;
-    }
-  }
-
-  std::queue<DGNode<Value> *> controlNodes;
-  std::set<DGNode<Value> *> visitedNodes;
-  auto startNode = this->programDependenceGraph->fetchNode(to);
-  controlNodes.push(startNode);
-  visitedNodes.insert(startNode);
-  while (!controlNodes.empty()) {
-    auto node = controlNodes.front();
-    controlNodes.pop();
-
-    BasicBlock *bb = ((Instruction*)node->getT())->getParent();
-    if (DT.dominates(fromBB, bb)) return true;
-    for (auto edge : node->getIncomingEdges()) {
-      if (!edge->isControlDependence()) continue;
-      auto incomingNode = edge->getOutgoingNode();
-      if (visitedNodes.find(incomingNode) != visitedNodes.end()) continue;
-      controlNodes.push(incomingNode);
-      visitedNodes.insert(incomingNode);
-    }
-  }
-  return false;
-}
-
-/*
- * Check that all non-constant indices of GEP are those of monotonic induction variables
- */
-bool llvm::PDGAnalysis::checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep) {
-  Function *gepFunc = gep->getFunction();
-  auto &LI = getAnalysis<LoopInfoWrapperPass>(*gepFunc).getLoopInfo();
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*gepFunc).getSE();
-
-  auto notAllConstantIndices = false;
-  for (auto &indexV : gep->indices()) {
-    if (isa<ConstantInt>(indexV)) continue;
-    notAllConstantIndices = true;
-
-    auto scev = SE.getSCEV(indexV);
-    if (scev->getSCEVType() != scAddRecExpr) return false;
-
-    // Assumption? : All polynomial add recursive expressions are induction variables
-    // auto loop = LI.getLoopFor(cast<Instruction>(indexV)->getParent());
-    // for (auto &op : loop->getHeader()->getTerminator()->operands()) {
-    //   if (auto cmp = dyn_cast<ICmpInst>(op)) {
-    //     auto lhs = cmp->getOperand(0);
-    //     auto rhs = cmp->getOperand(1);
-    //     if (!isa<ConstantInt>(lhs) && !isa<ConstantInt>(rhs)) return false;
-    //     auto lhsc = SE.getSCEV(lhs);
-    //     auto rhsc = SE.getSCEV(rhs);
-    //     
-    //     // auto pred = cmp->getPredicate();
-    //     // bool isKnown = SE.isKnownViaInduction(pred, lhs, rhs);
-    //     bool isKnown = lhsc->getSCEVType() == scAddRecExpr && rhsc->getSCEVType() == scConstant;
-    //     isKnown |= rhsc->getSCEVType() == scAddRecExpr && lhsc->getSCEVType() == scConstant;
-    //     if (!isKnown) return false;
-    //     break;
-    //   }
-    // }
-  }
-
-  return notAllConstantIndices;
-}
-
-void llvm::PDGAnalysis::collectPrimitiveArrayGlobalValues  (Module &M) {
-
-  /*
-   * Collect functions to examine globals' uses within
-   */
+void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {
   auto main = M.getFunction("main");
   auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
   std::queue<Function *> funcToTraverse;
@@ -421,49 +290,175 @@ void llvm::PDGAnalysis::collectPrimitiveArrayGlobalValues  (Module &M) {
     }
   }
 
-  std::function<bool(std::set<Instruction *>, Instruction *)> isUsedOnlyByNonAddrValues;
-  isUsedOnlyByNonAddrValues = [&isUsedOnlyByNonAddrValues](
-    std::set<Instruction *> checked,
-    Instruction *I
-  ) -> bool {
-    if (checked.find(I) != checked.end()) return true;
-    checked.insert(I);
+  CGUnderMain.clear();
+  CGUnderMain.insert(reached.begin(), reached.end());
+}
 
-    for (auto user : I->users()) {
-      if (isa<TerminatorInst>(user)) continue;
-      if (auto store = dyn_cast<StoreInst>(user)) {
-        auto stored = store->getValueOperand();
-        if (isa<IntegerType>(stored->getType())) {
-          if (auto storedI = dyn_cast<Instruction>(stored)) {
-            if (isUsedOnlyByNonAddrValues(checked, storedI)) continue;
-          }
-          if (auto storedC = dyn_cast<ConstantData>(stored)) continue;
-        }
-        // stored->print(errs() << "PDGAnalysis: store not integer type or used by such: "); errs() << "\n";
-        // stored->getType()->print(errs() << "TYPE: "); errs() << "\n";
-      }
-      if (auto userI = dyn_cast<Instruction>(user)) {
-        if (isa<IntegerType>(userI->getType())) {
-          if (isUsedOnlyByNonAddrValues(checked, userI)) continue;
-        }
-        // userI->print(errs() << "PDGAnalysis: user not integer type or used by such: "); errs() << "\n";
-        // userI->getType()->print(errs() << "TYPE: "); errs() << "\n";
-      }
-      user->print(errs() << "PDGAnalysis: Inst user not understood: "); errs() << "\n";
-      return false;
+void llvm::PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {
+  std::set<DGEdge<Value> *> removeEdges;
+  for (auto edge : pdg->getEdges()) {
+    auto source = edge->getOutgoingT();
+    if (!isa<Instruction>(source)) continue;
+    auto F = cast<Instruction>(source)->getFunction();
+    if (CGUnderMain.find(F) == CGUnderMain.end()) continue;
+    if (edgeIsNotLoopCarriedMemoryDependency(edge)
+        || edgeIsOnKnownMemorylessFunction(edge)) {
+      removeEdges.insert(edge);
     }
-    return true;
-  };
+  }
 
+  for (auto edge : removeEdges) pdg->removeEdge(edge);
+}
+
+// NOTE: Loads between random parts of separate GVs and both edges between GVs should be removed
+bool llvm::PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge) {
+  if (!edge->isMemoryDependence() || edge->isWAWDependence()) return false;
+
+  auto outgoingT = edge->getOutgoingT();
+  auto incomingT = edge->getIncomingT();
+  if (isa<CallInst>(outgoingT) || isa<CallInst>(incomingT)) return false;
+
+  /*
+   * Assert: must be a WAR load-store OR a RAW store-load
+   */
+  LoadInst *load;
+  StoreInst *store;
+  if (edge->isWARDependence()) {
+    assert(isa<StoreInst>(incomingT) && isa<LoadInst>(outgoingT));
+    load = (LoadInst*)outgoingT;
+    store = (StoreInst*)incomingT;
+  } else {
+    assert(isa<LoadInst>(incomingT) && isa<StoreInst>(outgoingT));
+    store = (StoreInst*)outgoingT;
+    load = (LoadInst*)incomingT;
+  }
+
+  if (!isa<GetElementPtrInst>(load->getPointerOperand())) return false;
+  if (!isa<GetElementPtrInst>(store->getPointerOperand())) return false;
+  auto loadGEP = cast<GetElementPtrInst>(load->getPointerOperand());
+  auto storeGEP = cast<GetElementPtrInst>(store->getPointerOperand());
+
+  outgoingT->print(errs() << "\nChecking load store pair:\n"); errs() << "\n";
+  incomingT->print(errs()); errs() << "\n";
+
+  /*
+   * Check if load/store IV-governed GEPs are on the same pointer
+   * or on primitive array global variables
+   */
+  if (!areGEPIndicesConstantOrIV(loadGEP)) return false;
+  if (loadGEP == storeGEP) {
+    // NOTE: until the GEP is guaranteed to be contiguous memory of
+    //  non pointer values, no guarantee about this dependency can be made
+    return false;
+  }
+
+  if (loadGEP != storeGEP) {
+    if (!areGEPIndicesConstantOrIV(storeGEP)) return false;
+
+    auto isArrayGVLoad = [&](Value *V) -> bool {
+      if (auto load = dyn_cast<LoadInst>(V)) {
+        if (auto GV = dyn_cast<GlobalValue>(load->getPointerOperand())) {
+          return primitiveArrayGlobals.find(GV) != primitiveArrayGlobals.end();
+        }
+      }
+      return false;
+    };
+
+    auto loadGV = loadGEP->getPointerOperand();
+    auto storeGV = storeGEP->getPointerOperand();
+    if (!isArrayGVLoad(loadGV) || !isArrayGVLoad(storeGV)) return false;
+
+    auto loadFromGV = ((LoadInst*)loadGV)->getPointerOperand();
+    auto storeToGV = ((StoreInst*)storeGV)->getPointerOperand();
+    if (loadFromGV == storeToGV) {
+      auto outgoingGEP = (Instruction*)(edge->isWARDependence() ? loadGEP : storeGEP);
+      auto incomingGEP = (Instruction*)(edge->isWARDependence() ? storeGEP : loadGEP);
+      if (canPrecedeInCurrentIteration(outgoingGEP, incomingGEP)) {
+        errs() << "Not removing possible intra-iteration dependence\n";
+        return false;
+      }
+    }
+
+    loadGV->print(errs() << "Possible GV primitive arrays: "); errs() << "\n";
+    storeGV->print(errs() << "Possible GV primitive arrays: "); errs() << "\n";
+  }
+
+  assert(!edge->isMustDependence()
+    && "LLVM AA states load store pair is a must dependence! Bad PDGAnalysis.");
+  errs() << "Load store pair memory dependence removed!\n";
+  return true;
+}
+
+bool llvm::PDGAnalysis::canPrecedeInCurrentIteration (Instruction *from, Instruction *to) {
+  auto &LI = getAnalysis<LoopInfoWrapperPass>(*from->getFunction()).getLoopInfo();
+  BasicBlock *fromBB = from->getParent();
+  BasicBlock *toBB = to->getParent();
+  auto loop = LI.getLoopFor(fromBB);
+  BasicBlock *headerBB = nullptr;
+  if (loop) headerBB = loop->getHeader();
+
+  if (fromBB == toBB) {
+    for (auto &I : *fromBB) {
+      if (&I == from) return true;
+      if (&I == to) return false;
+    }
+  }
+
+  std::queue<BasicBlock *> bbToTraverse;
+  std::set<BasicBlock *> bbReached;
+  auto traverseOn = [&](BasicBlock *bb) -> void {
+    bbToTraverse.push(bb); bbReached.insert(bb);
+  };
+  traverseOn(toBB);
+
+  while (!bbToTraverse.empty()) {
+    auto bb = bbToTraverse.front();
+    bbToTraverse.pop();
+    if (bb == fromBB) return true;
+    if (bb == headerBB) continue;
+
+    for (auto predBB : make_range(pred_begin(bb), pred_end(bb))) {
+      if (bbReached.find(predBB) == bbReached.end()) {
+        traverseOn(predBB);
+      }
+    }
+  }
+
+  return false;
+}
+
+/*
+ * Check that all non-constant indices of GEP are those of monotonic induction variables
+ */
+bool llvm::PDGAnalysis::areGEPIndicesConstantOrIV (GetElementPtrInst *gep) {
+  Function *gepFunc = gep->getFunction();
+  auto &LI = getAnalysis<LoopInfoWrapperPass>(*gepFunc).getLoopInfo();
+  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*gepFunc).getSE();
+
+  for (auto &indexV : gep->indices()) {
+    if (isa<ConstantInt>(indexV)) continue;
+
+    // Assumption? : All polynomial add recursive expressions are induction variables
+    auto scev = SE.getSCEV(indexV);
+    if (scev->getSCEVType() != scAddRecExpr) return false;
+  }
+
+  gep->print(errs() << "Checked indices of GEP: " << notAllConstantIndices << " "); errs() << "\n";
+  return true;
+}
+
+void llvm::PDGAnalysis::collectPrimitiveArrayGlobalValues (Module &M) {
   std::set<std::string> allocators = { "malloc", "calloc" };
   std::set<std::string> readOnlyFns = { "fprintf", "printf" };
   for (auto &GV : M.globals()) {
+    if (GV.hasExternalLinkage()) continue;
     bool isPrimitiveArray = true;
+    bool usedByMain = false;
+
     for (auto user : GV.users()) {
       if (auto I = dyn_cast<Instruction>(user)) {
-        if (reached.find(I->getFunction()) == reached.end()) {
-          isPrimitiveArray = false;
-          break;
+        if (CGUnderMain.find(I->getFunction()) != CGUnderMain.end()) {
+          usedByMain = true;
         }
 
         if (auto store = dyn_cast<StoreInst>(I)) {
@@ -483,29 +478,72 @@ void llvm::PDGAnalysis::collectPrimitiveArrayGlobalValues  (Module &M) {
           bool nonAddressedUsers = true;
           for (auto loadUser : load->users()) {
             if (auto GEPUser = dyn_cast<GetElementPtrInst>(loadUser)) {
-              if (isUsedOnlyByNonAddrValues({}, GEPUser)) continue;
+              if (isOnlyUsedByNonAddrValues({}, GEPUser)) continue;
             }
             if (auto callUser = dyn_cast<CallInst>(loadUser)) {
               auto fnName = callUser->getCalledFunction()->getName();
               if (readOnlyFns.find(fnName) != readOnlyFns.end()) continue;
-              // errs() << "Unnaccepted name: " << fnName << "\n";
+              // errs() << "PDGAnalysis:  Unnaccepted name: " << fnName << "\n";
             }
             // loadUser->print(errs() << "PDGAnalysis:  GV load user: "); errs() << "\n";
             nonAddressedUsers = false;
           }
           if (nonAddressedUsers) continue;
         }
+        // I->print(errs() << "PDGAnalysis:  GV unknown userI: "); errs() << "\n";
       }
-      // user->print(errs() << "PDGAnalysis:  GV user not understood: "); errs() << "\n";
+
+      if (auto oper = dyn_cast<Operator>(user)) {
+        if (isa<BitCastOperator>(user) || isa<ZExtOperator>(user)) continue;
+        if (isa<GEPOperator>(user) || isa<PtrToIntOperator>(user)
+            || isa<OverflowingBinaryOperator>(user) || isa<PossiblyExactOperator>(user)) {
+          isPrimitiveArray = false;
+        }
+        // user->print(errs() << "PDGAnalysis:  operator user not understood: "); errs() << "\n";
+      }
+
+      // user->print(errs() << "PDGAnalysis:  user not understood: "); errs() << "\n";
       isPrimitiveArray = false;
-      break;
     }
 
-    if (isPrimitiveArray) {
-      primitiveArrayGlobals.insert(&GV);
-      GV.print(errs() << "UNDERSTOOD: "); errs() << "\n";
+    if (!usedByMain) continue;
+    if (!isPrimitiveArray) {
+      GV.print(errs() << "GV not understood to be primitive integer array: "); errs() << "\n";
+      continue;
     }
+    GV.print(errs() << "GV understood to be primitive integer array: "); errs() << "\n";
+    primitiveArrayGlobals.insert(&GV);
   }
+}
+
+bool PDGAnalysis::isOnlyUsedByNonAddrValues (std::set<Instruction *> checked, Instruction *I) {
+  if (checked.find(I) != checked.end()) return true;
+  checked.insert(I);
+
+  for (auto user : I->users()) {
+    if (isa<TerminatorInst>(user)) continue;
+    if (auto store = dyn_cast<StoreInst>(user)) {
+      auto stored = store->getValueOperand();
+      if (isa<IntegerType>(stored->getType())) {
+        if (auto storedI = dyn_cast<Instruction>(stored)) {
+          if (isOnlyUsedByNonAddrValues(checked, storedI)) continue;
+        }
+        if (auto storedC = dyn_cast<ConstantData>(stored)) continue;
+      }
+      // stored->print(errs() << "PDGAnalysis: store not integer type or used by such: "); errs() << "\n";
+      // stored->getType()->print(errs() << "TYPE: "); errs() << "\n";
+    }
+    if (auto userI = dyn_cast<Instruction>(user)) {
+      if (isa<IntegerType>(userI->getType())) {
+        if (isOnlyUsedByNonAddrValues(checked, userI)) continue;
+      }
+      // userI->print(errs() << "PDGAnalysis: user not integer type or used by such: "); errs() << "\n";
+      // userI->getType()->print(errs() << "TYPE: "); errs() << "\n";
+    }
+    user->print(errs() << "PDGAnalysis: Inst user not understood: "); errs() << "\n";
+    return false;
+  }
+  return true;
 }
 
 void llvm::PDGAnalysis::collectMemorylessFunctions (Module &M) {
