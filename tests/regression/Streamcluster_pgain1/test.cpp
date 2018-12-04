@@ -13,8 +13,9 @@ int pgain1 (int iters){
   int count = 0;
   for (auto i=0; i < iters; ++i){
     if (is_valid[i]) {
-      values[i] = count++;
+      values[i] = 5;
     }
+    count += values[i];
   }
 
   return count;
@@ -42,9 +43,8 @@ int main (int argc, char *argv[]){
   */
 
   for (auto i=0; i < iterations; i++){
-    if (i % 5 < 2) {
-      is_valid[i] = 1;
-    }
+    is_valid[i] = i % 5 < 2;
+    values[i] = 1;
   }
 
   /*
