@@ -15,7 +15,7 @@ void llvm::MinMaxSizePartitionAnalysis::checkIfShouldMerge (SCCset *sA, SCCset *
   uint64_t merge = IL.latencyPerInvocation(&dagAttrs, subsets);
   uint64_t lowered = current - merge;
 
-  if (partition.getSubsets()->size() == numCores) return ;
+  if (partition.getSubsets()->size() <= numCores) return ;
 
   // errs() << prefix << subsetStrs << "\n";
   errs() << prefix << "Lowered cost: " << lowered

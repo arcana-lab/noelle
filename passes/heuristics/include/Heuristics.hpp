@@ -17,7 +17,6 @@ namespace llvm {
 
   class Heuristics {
     public:
-      Heuristics (int numCores = 2);
 
       /*
        * Methods
@@ -25,7 +24,7 @@ namespace llvm {
       void adjustParallelizationPartitionForDSWP (
         SCCDAGPartition *partition,
         SCCDAGAttrs &attrs,
-        uint64_t idealThreads
+        uint64_t numThreads
       );
 
      private:
@@ -33,17 +32,16 @@ namespace llvm {
       void minMaxMergePartition (
         SCCDAGPartition &partition,
         SCCDAGAttrs &attrs,
-        uint64_t idealThreads
+        uint64_t numThreads
       );
 
       void smallestSizeMergePartition (
         SCCDAGPartition &partition,
         SCCDAGAttrs &attrs,
-        uint64_t idealThreads
+        uint64_t numThreads
       );
 
       InvocationLatency invocationLatency;
-      int numCores;
   };
 
 }

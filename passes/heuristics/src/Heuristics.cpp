@@ -2,24 +2,22 @@
 
 using namespace llvm;
 
-Heuristics::Heuristics (int cores) : numCores{cores} {}
-
 void Heuristics::adjustParallelizationPartitionForDSWP (
   SCCDAGPartition *partition,
   SCCDAGAttrs &attrs,
-  uint64_t idealThreads
+  uint64_t numThreads
 ) {
   // smallestSizeMergePartition(*partition, attrs, idealThreads);
-  minMaxMergePartition(*partition, attrs, idealThreads);
+  minMaxMergePartition(*partition, attrs, numThreads);
 }
 
 void Heuristics::minMaxMergePartition (
   SCCDAGPartition &partition,
   SCCDAGAttrs &attrs,
-  uint64_t idealThreads
+  uint64_t numThreads
 ) {
   auto modified = false;
-  MinMaxSizePartitionAnalysis PCA(invocationLatency, partition, attrs, numCores);
+  MinMaxSizePartitionAnalysis PCA(invocationLatency, partition, attrs, numThreads);
   do {
     modified = false;
 
@@ -33,10 +31,10 @@ void Heuristics::minMaxMergePartition (
 void Heuristics::smallestSizeMergePartition (
   SCCDAGPartition &partition,
   SCCDAGAttrs &attrs,
-  uint64_t idealThreads
+  uint64_t numThreads
 ) {
   auto modified = false;
-  SmallestSizePartitionAnalysis PCA(invocationLatency, partition, attrs, numCores);
+  SmallestSizePartitionAnalysis PCA(invocationLatency, partition, attrs, numThreads);
   do {
     modified = false;
 
