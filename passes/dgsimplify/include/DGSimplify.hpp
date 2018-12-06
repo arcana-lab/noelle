@@ -74,7 +74,8 @@ namespace llvm {
      */
     void collectFnGraph (Function *main) ;
     void collectInDepthOrderFns (Function *main);
-    void collectPreOrderedLoopsFor (Function *F) ;
+    void createPreOrderedLoopSummariesFor (Function *F) ;
+    std::vector<Loop *> *collectPreOrderedLoopsFor (Function *F, LoopInfo &LI) ;
     void addFnPairInstance (Function *parentF, Function *childF, CallInst *call) ;
     void removeFnPairInstance (Function *parentF, Function *childF, CallInst *call) ;
 
@@ -84,6 +85,8 @@ namespace llvm {
     void printFnCallGraph ();
     void printFnOrder ();
     void printFnLoopOrder (Function *F);
+    void printLoopsToCheck ();
+    void printFnsToCheck ();
 
     /*
      * Determining and maintaining depth ordering of functions and their loops
