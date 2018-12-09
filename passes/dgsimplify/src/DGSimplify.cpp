@@ -29,6 +29,7 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
   auto main = M.getFunction("main");
   collectFnGraph(main);
   collectInDepthOrderFns(main);
+
   // OPTIMIZATION(angelo): Do this lazily, depending on what functions are considered in algorithms
   for (auto func : depthOrderedFns) {
     createPreOrderedLoopSummariesFor(func);
@@ -153,8 +154,10 @@ bool llvm::DGSimplify::registerRemainingLoops (std::string filename) {
   ofstream outfile(filename);
   for (auto funcLoops : loopsToCheck) {
     int fnInd = fnOrders[funcLoops.first];
+    auto &allLoops = *preOrderedLoops[funcLoops.first];
     for (auto summary : funcLoops.second) {
-      outfile << fnInd << "," << summary->id << "\n";
+      auto loopInd = std::find(allLoops.begin(), allLoops.end(), summary);
+      outfile << fnInd << "," << (loopInd - allLoops.begin()) << "\n";
     }
   }
   outfile.close();
@@ -184,10 +187,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops () {
   // NOTE(angelo): Order these functions to prevent duplicating loops yet to be checked
   std::vector<Function *> orderedFns;
   for (auto fnLoops : loopsToCheck) orderedFns.push_back(fnLoops.first);
-  std::sort(orderedFns.begin(), orderedFns.end(), [this](Function *a, Function *b) {
-    // NOTE(angelo): Sort functions deepest first
-    return fnOrders[a] > fnOrders[b];
-  });
+  sortInDepthOrderFns(orderedFns);
 
   std::set<Function *> fnsToAvoid;
   for (auto F : orderedFns) {
@@ -203,11 +203,13 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops () {
     auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*F).getSE();
     auto *fdg = PDGA.getFunctionPDG(*F);
     auto *loopsPreorder = collectPreOrderedLoopsFor(F, LI);
+    auto &allSummaries = *preOrderedLoops[F];
 
     bool inlined = false;
     std::set<LoopSummary *> removeSummaries;
     for (auto summary : loopsToCheck[F]) {
-      auto loop = (*loopsPreorder)[summary->id];
+      auto loopInd = std::find(allSummaries.begin(), allSummaries.end(), summary);
+      auto loop = (*loopsPreorder)[loopInd - allSummaries.begin()];
       auto LDI = new LoopDependenceInfo(F, fdg, loop, LI, PDT);
       auto &attrs = LDI->sccdagAttrs;
       attrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
@@ -293,10 +295,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo
 bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
   std::vector<Function *> orderedFns;
   for (auto fn : fnsToCheck) orderedFns.push_back(fn);
-  std::sort(orderedFns.begin(), orderedFns.end(), [this](Function *a, Function *b) {
-    // NOTE(angelo): Sort functions deepest first
-    return fnOrders[a] > fnOrders[b];
-  });
+  sortInDepthOrderFns(orderedFns);
 
   int fnIndex = 0;
   std::set<Function *> fnsWillCheck(orderedFns.begin(), orderedFns.end());
@@ -327,14 +326,15 @@ bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
       if (fnOrders[parentF] > fnOrders[childF]) continue;
 
       // NOTE(angelo): Cache calls as inlining affects the call list in childrenFns
-      std::set<CallInst *> calls;
-      for (auto call : childrenFns[parentF][childF]) calls.insert(call);
+      auto parentCalls = orderedCalls[parentF];
+      std::set<CallInst *> cachedCalls(parentCalls.begin(), parentCalls.end());
 
       // NOTE(angelo): Since only one inline per function is permitted, this loop
       //  either inlines no calls (should the parent already be affected) or inlines
       //  the first call, indicating whether there are more calls to inline
       bool inlinedCalls = true;
-      for (auto call : calls) {
+      for (auto call : cachedCalls) {
+        if (call->getCalledFunction() != childF) continue;
         bool inlinedCall = inlineFunctionCall(parentF, childF, call);
         inlined |= inlinedCall;
         inlinedCalls &= inlinedCall;
@@ -371,128 +371,47 @@ bool llvm::DGSimplify::inlineFunctionCall (Function *F, Function *childF, CallIn
   // NOTE(angelo): Prevent inlining a call within a function already altered by inlining
   if (fnsAffected.find(F) != fnsAffected.end()) return false ;
   if (!canInlineWithoutRecursiveLoop(F, childF)) return false ;
+
   call->print(errs() << "DGSimplify:   Inlining in: " << F->getName() << ", "); errs() << "\n";
-  LoopSummary *loopAfterCall = getNextPreorderLoopAfter(F, call);
+  int loopIndAfterCall = getNextPreorderLoopAfter(F, call);
+  auto &parentCalls = orderedCalls[F];
+  auto callInd = std::find(parentCalls.begin(), parentCalls.end(), call) - parentCalls.begin();
 
   InlineFunctionInfo IFI;
   if (InlineFunction(call, IFI)) {
     fnsAffected.insert(F); 
-    adjustOrdersAfterInline(F, childF, call, loopAfterCall);
+    adjustLoopOrdersAfterInline(F, childF, loopIndAfterCall);
+    adjustFnGraphAfterInline(F, childF, callInd);
     return true;
   }
   return false;
 }
 
-LoopSummary *llvm::DGSimplify::getNextPreorderLoopAfter (Function *F, CallInst *call) {
-  if (preOrderedLoops.find(F) == preOrderedLoops.end()) return nullptr;
+int llvm::DGSimplify::getNextPreorderLoopAfter (Function *F, CallInst *call) {
+  if (preOrderedLoops.find(F) == preOrderedLoops.end()) return -1;
 
   auto &summaries = *preOrderedLoops[F];
-  auto getSummaryIfHeader = [&](BasicBlock *BB) -> LoopSummary * {
-    for (auto summary : summaries) {
-      if (summary->header == BB) return summary;
+  auto getSummaryIfHeader = [&](BasicBlock *BB) -> int {
+    for (auto i = 0; i < summaries.size(); ++i) {
+      if (summaries[i]->header == BB) return i;
     }
-    return nullptr;
+    return -1;
   };
 
   // Check all basic blocks after that of the call instruction for the next loop header
   auto bbIter = call->getParent()->getIterator();
   while (++bbIter != F->end()) {
-    auto summary = getSummaryIfHeader(&*bbIter);
-    if (summary) return summary;
+    auto sInd = getSummaryIfHeader(&*bbIter);
+    if (sInd != -1) return sInd;
   }
-  return nullptr;
+  return -1;
 }
-
-/*
-  // NOTE(angelo): Mimic getLoopFor, getLoopDepth, and isLoopHeader of llvm LoopInfo API
-  auto getSummaryFor = [&](BasicBlock *BB) -> LoopSummary * {
-    LoopSummary *deepestSummary = nullptr;
-    for (auto summary : *summaries) {
-      if (summary->bbs.find(BB) == summary->bbs.end()) continue;
-      if (deepestSummary && summary->depth < deepestSummary->depth) continue;
-      deepestSummary = summary;
-    }
-    return deepestSummary;
-  };
-  auto getSummaryIfHeader = [&](BasicBlock *BB) -> LoopSummary * {
-    for (auto summary : *summaries) {
-      if (summary->header == BB) return summary;
-    }
-    return nullptr;
-  };
-
-  auto callBB = call->getParent();
-  auto callLoop = getSummaryFor(callBB);
-  auto callDepth = callLoop ? callLoop->depth : 0;
-  bool startSearch = false;
-  LoopSummary *prev = nullptr;
-  LoopSummary *next = nullptr;
-  // NOTE(angelo): Search in forward program order for next loop header
-
-  errs() << "Start traversal\n";
-
-  auto debugSumm = [&](LoopSummary *l) -> void {
-    l->header->begin()->print(errs() << "Header I of " << l->id << ": "); errs() << "\n";
-  };
-
-  auto& LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
-  auto loopsPreorder = LI.getLoopsInPreorder();
-  for (auto i = 0; i < loopsPreorder.size(); ++i){
-    loopsPreorder[i]->getHeader()->begin()->print(errs() << "Loop " << i << ": "); errs() << "\n";
-   }
-  for (auto summary : *summaries) debugSumm(summary);
-
-  for (auto &B : *F) {
-    if (!startSearch) {
-      auto l = getSummaryIfHeader(&B);
-      if (l) prev = l;
-      if (l) debugSumm(l);
-    }
-    if (callBB == &B) {
-      startSearch = true;
-      continue;
-    }
-    if (startSearch) {
-      auto l = getSummaryIfHeader(&B);
-      if (!l) continue;
-      if (l) debugSumm(l);
-
-      assert(l->depth <= callDepth + 1);
-      next = l;
-      break;
-    }
-  }
-
-  errs() << "Stop traversal\n";
-
-  bool nextIsStart = !prev && next->id == 0;
-  bool nextIsNone = !next && prev->id == summaries->size() - 1;
-  bool prevThenNext = prev && next && prev->id + 1 == next->id;
-  if (!nextIsStart && !nextIsNone && !prevThenNext) {
-    if (prev) errs() << "PREV: " << prev->id << "\n";
-    if (next) errs() << "NEXT: " << prev->id << "\n";
-    errs() << "HAVING TROUBLE FINDING THE NEXT PREORDER LOOP AFTER CALL:\n";
-    call->print(errs()); errs() << "\n";
-    errs() << "In function:\n";
-    F->print(errs()); errs() << "\n";
-  }
-  assert(nextIsStart || nextIsNone || prevThenNext);
-  return next;
-  */
 
 /*
  * Function and loop ordering
  */
 
-void llvm::DGSimplify::adjustOrdersAfterInline (Function *parentF, Function *childF, CallInst *call, LoopSummary *nextLoop) {
-  removeFnPairInstance(parentF, childF, call);
-  for (auto newChild : childrenFns[childF]) {
-    for (auto childCall : newChild.second) {
-      addFnPairInstance(parentF, newChild.first, childCall);
-    }
-  }
-  // printFnCallGraph();
-
+void llvm::DGSimplify::adjustLoopOrdersAfterInline (Function *parentF, Function *childF, int nextLoopInd) {
   bool parentHasLoops = preOrderedLoops.find(parentF) != preOrderedLoops.end();
   bool childHasLoops = preOrderedLoops.find(childF) != preOrderedLoops.end();
   if (!childHasLoops) return ;
@@ -505,9 +424,8 @@ void llvm::DGSimplify::adjustOrdersAfterInline (Function *parentF, Function *chi
    */
   auto &parentLoops = *preOrderedLoops[parentF];
   auto &childLoops = *preOrderedLoops[childF];
-  auto startInd = nextLoop ? nextLoop->id : parentLoops.size();
   auto childLoopCount = childLoops.size();
-  auto endInd = startInd + childLoopCount;
+  auto endInd = nextLoopInd + childLoopCount;
 
   // NOTE(angelo): Adjust parent loops after the call site
   parentLoops.resize(parentLoops.size() + childLoopCount);
@@ -516,12 +434,41 @@ void llvm::DGSimplify::adjustOrdersAfterInline (Function *parentF, Function *chi
   }
 
   // NOTE(angelo): Insert inlined loops from child function
-  for (auto childIndex = startInd; childIndex < endInd; ++childIndex) {
-    parentLoops[childIndex] = childLoops[childIndex - startInd];
+  for (auto childIndex = nextLoopInd; childIndex < endInd; ++childIndex) {
+    parentLoops[childIndex] = childLoops[childIndex - nextLoopInd];
+  }
+}
+
+void llvm::DGSimplify::adjustFnGraphAfterInline (Function *parentF, Function *childF, int callInd) {
+  auto &parentCalled = orderedCalled[parentF];
+  auto &childCalled = orderedCalled[childF];
+  parentCalled.erase(parentCalled.begin() + callInd);
+  if (childCalled.size() > 0) {
+    auto childCallCount = childCalled.size();
+    auto endInsertAt = callInd + childCallCount;
+
+    // Shift over calls after the inlined call to make room for called function's calls
+    parentCalled.resize(parentCalled.size() + childCallCount);
+    for (auto shiftIndex = parentCalled.size() - 1; shiftIndex >= endInsertAt; --shiftIndex) {
+      parentCalled[shiftIndex] = parentCalled[shiftIndex - childCallCount];
+    }
+
+    // Insert the called function's calls starting from the position of the inlined call
+    for (auto childIndex = callInd; childIndex < endInsertAt; ++childIndex) {
+      parentCalled[childIndex] = childCalled[childIndex - callInd];
+    }
   }
 
-  // DEBUG(angelo): loop order after inlining
-  // printFnLoopOrder(parentF);
+  // Readjust function graph of the function inlined within
+  std::set<Function *> reached;
+  childrenFns[parentF].clear();
+  parentFns[childF].erase(parentF);
+  for (auto F : parentCalled) {
+    if (reached.find(F) != reached.end()) continue;
+    reached.insert(F);
+    childrenFns[parentF].push_back(F);
+    parentFns[F].insert(parentF);
+  }
 }
 
 void llvm::DGSimplify::collectFnGraph (Function *main) {
@@ -537,20 +484,67 @@ void llvm::DGSimplify::collectFnGraph (Function *main) {
   funcToTraverse.push(main);
   reached.insert(main);
   while (!funcToTraverse.empty()) {
-    auto func = funcToTraverse.front();
+    auto parentF = funcToTraverse.front();
     funcToTraverse.pop();
 
-    auto funcCGNode = callGraph[func];
-    for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
-      auto weakVH = callRecord.first;
-      if (!weakVH.pointsToAliveValue() || !isa<CallInst>(*&weakVH)) continue;
-      auto F = callRecord.second->getFunction();
-      if (!F || F->empty()) continue;
+    collectFnCallsAndCalled(callGraph, parentF);
 
-      addFnPairInstance(func, F, (CallInst *)(&*weakVH));
-      if (reached.find(F) != reached.end()) continue;
-      reached.insert(F);
-      funcToTraverse.push(F);
+    // Collect functions' first invocations in program forward order
+    childrenFns[parentF].clear();
+    std::set<Function *> orderedFns;
+    for (auto childF : orderedCalled[parentF]) {
+      if (orderedFns.find(childF) != orderedFns.end()) continue;
+      orderedFns.insert(childF);
+      childrenFns[parentF].push_back(childF);
+      parentFns[childF].insert(parentF);
+    }
+
+    // Traverse the children not already enqueued to be traversed
+    for (auto childF : childrenFns[parentF]) {
+      if (reached.find(childF) != reached.end()) continue;
+      reached.insert(childF);
+      funcToTraverse.push(childF);
+    }
+  }
+}
+
+void llvm::DGSimplify::collectFnCallsAndCalled (CallGraph &CG, Function *parentF) {
+
+  // Collect call instructions to already linked functions
+  std::set<CallInst *> unorderedCalls;
+  auto funcCGNode = CG[parentF];
+  for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
+    auto weakVH = callRecord.first;
+    if (!weakVH.pointsToAliveValue() || !isa<CallInst>(&*weakVH)) continue;
+    auto call = (CallInst *)(&*weakVH);
+    auto F = call->getCalledFunction();
+    if (!F || F->empty()) continue;
+    unorderedCalls.insert(call);
+  }
+
+  // Sort call instructions in program forward order
+  std::unordered_map<BasicBlock *, std::set<CallInst *>> bbCalls;
+  for (auto call : unorderedCalls) {
+    bbCalls[call->getParent()].insert(call);
+  }
+
+  orderedCalls[parentF].clear();
+  orderedCalled[parentF].clear();
+  for (auto &B : *parentF) {
+    if (bbCalls.find(&B) == bbCalls.end()) continue;
+    if (bbCalls[&B].size() == 1) {
+      auto call = *(bbCalls[&B].begin());
+      orderedCalls[parentF].push_back(call);
+      orderedCalled[parentF].push_back(call->getCalledFunction());
+      continue;
+    }
+
+    for (auto &I : B) {
+      if (!isa<CallInst>(&I)) continue;
+      auto call = (CallInst*)(&I);
+      if (bbCalls[&B].find(call) == bbCalls[&B].end()) continue;
+      orderedCalls[parentF].push_back(call);
+      orderedCalled[parentF].push_back(call->getCalledFunction());
     }
   }
 }
@@ -585,8 +579,7 @@ void llvm::DGSimplify::collectInDepthOrderFns (Function *main) {
       auto func = funcToTraverse.front();
       funcToTraverse.pop();
 
-      for (auto fnCalls : childrenFns[func]) {
-        auto F = fnCalls.first;
+      for (auto F : childrenFns[func]) {
         if (reached.find(F) != reached.end()) continue;
         
         bool allParentsOrdered = true;
@@ -646,6 +639,7 @@ void llvm::DGSimplify::createPreOrderedLoopSummariesFor (Function *F) {
   std::unordered_map<Loop *, LoopSummary *> summaryMap;
   for (auto i = 0; i < loops->size(); ++i) {
     auto summary = new LoopSummary(i, (*loops)[i]);
+    loopSummaries.insert(summary);
     orderedLoops.push_back(summary);
     summaryMap[(*loops)[i]] = summary;
   }
@@ -673,19 +667,11 @@ std::vector<Loop *> *llvm::DGSimplify::collectPreOrderedLoopsFor (Function *F, L
   return loops;
 }
 
-void llvm::DGSimplify::addFnPairInstance (Function *parentF, Function *childF, CallInst *call) {
-  auto &children = childrenFns[parentF];
-  parentFns[childF].insert(parentF);
-  children[childF].insert(call);
-}
-
-void llvm::DGSimplify::removeFnPairInstance (Function *parentF, Function *childF, CallInst *call) {
-  auto &children = childrenFns[parentF];
-  children[childF].erase(call);
-  if (children[childF].size() == 0) {
-    parentFns[childF].erase(parentF);
-    children.erase(childF);
-  }
+void llvm::DGSimplify::sortInDepthOrderFns (std::vector<Function *> &inOrder) {
+  std::sort(inOrder.begin(), inOrder.end(), [this](Function *a, Function *b) {
+    // NOTE(angelo): Sort functions deepest first
+    return fnOrders[a] > fnOrders[b];
+  });
 }
 
 /*
@@ -709,9 +695,10 @@ void llvm::DGSimplify::printFnOrder () {
 }
 
 void llvm::DGSimplify::printFnLoopOrder (Function *F) {
+  auto count = 1;
   for (auto summary : *preOrderedLoops[F]) {
     auto headerBB = summary->header;
-    errs() << "DGSimplify:   Loop " << summary->id << ", depth: " << summary->depth << "\n";
+    errs() << "DGSimplify:   Loop " << count++ << ", depth: " << summary->depth << "\n";
     // headerBB->print(errs()); errs() << "\n";
   }
 }
@@ -727,7 +714,7 @@ void llvm::DGSimplify::printLoopsToCheck () {
     for (auto loop : fnLoops.second) {
       auto loopInd = std::find(allLoops.begin(), allLoops.end(), loop);
       assert(loopInd != allLoops.end() && "DEBUG: Loop not given an order!");
-      errs() << "DGSimplify:   \tChecking Loop: " << (*loopInd)->id << "\n";
+      errs() << "DGSimplify:   \tChecking Loop: " << (loopInd - allLoops.begin()) << "\n";
     }
   }
   errs() << "DGSimplify:   ---------------\n";
