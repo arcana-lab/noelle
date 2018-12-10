@@ -1,9 +1,3 @@
-#include "llvm/Pass.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/raw_ostream.h"
-
 #include "SCCDAG.hpp"
 #include "DSWP.hpp"
 

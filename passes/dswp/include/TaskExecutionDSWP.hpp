@@ -1,14 +1,9 @@
 #pragma once
 
-#include <math.h>
-
-#include "llvm/IR/DataLayout.h"
-#include "llvm/IR/Instructions.h"
+#include "SystemHeaders.hpp"
 #include "TaskExecution.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
-
-#include <unordered_map>
 
 using namespace std;
 
