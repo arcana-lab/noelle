@@ -33,21 +33,29 @@
 #include <queue>
 #include <deque>
 
-// TODO(simone): replace with values passed into this library
-#define NUM_CORES 4
-#define CHUNK_SIZE 8
-
 namespace llvm {
 
-  class HELIX : public DOALL {
+  class HELIX : public ParallelizationTechnique {
     public:
 
       /*
        * Methods
        */
       HELIX (Module &module, Verbosity v);
-      bool apply (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) override ;
-      bool canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const override ;
+
+      bool apply (
+        LoopDependenceInfo *LDI, 
+        Parallelization &par, 
+        Heuristics *h, 
+        ScalarEvolution &SE
+        ) override ;
+
+      bool canBeAppliedToLoop (
+        LoopDependenceInfo *LDI, 
+        Parallelization &par, 
+        Heuristics *h, 
+        ScalarEvolution &SE
+        ) const override ;
 
     protected:
 

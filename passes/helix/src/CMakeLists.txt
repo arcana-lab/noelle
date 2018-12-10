@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   HELIX.cpp
+  HELIXTask.cpp
 )
 
 # Compilation flags

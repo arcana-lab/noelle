@@ -1,8 +1,9 @@
 #include "HELIX.hpp"
+#include "HELIXTask.hpp"
 
 HELIX::HELIX (Module &module, Verbosity v)
   :
-  DOALL{module, v}
+  ParallelizationTechnique{module, v}
   {
 
   /*
@@ -23,5 +24,6 @@ bool HELIX::apply (
   Heuristics *h,
   ScalarEvolution &SE
 ) {
+
   return false;
 }
