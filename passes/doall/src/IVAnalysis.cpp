@@ -1,10 +1,11 @@
 #include "DOALL.hpp"
+#include "DOALLTask.hpp"
 
 // TODO(angelo): Have LoopSummary scrape this info from IVs
 void DOALL::simplifyOriginalLoopIV (
   LoopDependenceInfo *LDI
 ) {
-  auto task = (DOALLTaskExecution *)tasks[0];
+  auto task = (DOALLTask *)tasks[0];
 
   /*
    * Fetch information about the loop induction variable controlling the loop trip count.

@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   DOALL.cpp
+  DOALLTask.cpp
   Builder.cpp
   IVAnalysis.cpp
 )

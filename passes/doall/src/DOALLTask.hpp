@@ -1,12 +1,11 @@
 #pragma once
 
 #include "TaskExecution.hpp"
-
-using namespace std;
+#include "SCCDAGAttrs.hpp"
 
 namespace llvm {
 
-  struct DOALLTaskExecution : TaskExecution {
+  struct DOALLTask : TaskExecution {
 
     /*
      * Inner loop header/latch
@@ -26,13 +25,6 @@ namespace llvm {
     PHINode *originalIVClone;
     PHINode *outermostLoopIV;
 
-    void extractFuncArgs () override {
-      auto argIter = this->F->arg_begin();
-      this->envArg = (Value *) &*(argIter++);
-      this->coreArg = (Value *) &*(argIter++); 
-      this->numCoresArg = (Value *) &*(argIter++);
-      this->chunkSizeArg = (Value *) &*(argIter++);
-      this->instanceIndexV = coreArg;
-    }
+    void extractFuncArgs () override ;
   };
 }

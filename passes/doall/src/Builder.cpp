@@ -1,9 +1,10 @@
 #include "DOALL.hpp"
+#include "DOALLTask.hpp"
 
 void DOALL::generateOuterLoopAndAdjustInnerLoop (
   LoopDependenceInfo *LDI
 ){
-  auto task = (DOALLTaskExecution *)tasks[0];
+  auto task = (DOALLTask *)tasks[0];
 
   /*
    * Determine start value and step size for outer loop IV
@@ -170,7 +171,7 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
 void DOALL::propagatePHINodesThroughOuterLoop (
   LoopDependenceInfo *LDI
 ) {
-  auto task = (DOALLTaskExecution *)tasks[0];
+  auto task = (DOALLTask *)tasks[0];
 
   /*
    * Collect all PHIs (that aren't the IV)

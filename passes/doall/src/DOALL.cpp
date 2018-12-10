@@ -1,4 +1,5 @@
 #include "DOALL.hpp"
+#include "DOALLTask.hpp"
 
 DOALL::DOALL (Module &module, Verbosity v)
   :
@@ -95,7 +96,7 @@ bool DOALL::apply (
   /*
    * Generate empty tasks for DOALL execution.
    */
-  auto chunkerTask = new DOALLTaskExecution();
+  auto chunkerTask = new DOALLTask();
   this->generateEmptyTasks(LDI, { chunkerTask });
   this->numTaskInstances = LDI->maximumNumberOfCoresForTheParallelization;
 
