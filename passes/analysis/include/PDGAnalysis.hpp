@@ -55,7 +55,10 @@ namespace llvm {
       bool isOnlyUsedByNonAddrValues (std::set<Instruction *> checked, Instruction *I);
 
       void collectMemorylessFunctions (Module &M);
+      bool isBackedgeOfLoadStoreIntoSameOffsetOfArray (DGEdge<Value> *edge, LoadInst *load, StoreInst *store);
       bool edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge);
+      bool isMemoryAccessIntoDifferentGlobals (DGEdge<Value> *edge);
+      Value *getNonAliasingGV (Value *V);
       bool edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge);
       bool areGEPIndicesConstantOrIV (GetElementPtrInst *gep);
       bool canPrecedeInCurrentIteration (Instruction *from, Instruction *to);

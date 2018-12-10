@@ -312,7 +312,7 @@ void llvm::PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {
 
 // NOTE: Loads between random parts of separate GVs and both edges between GVs should be removed
 bool llvm::PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge) {
-  if (!edge->isMemoryDependence() || edge->isWAWDependence()) return false;
+  if (!edge->isMemoryDependence()) return false;
 
   auto outgoingT = edge->getOutgoingT();
   auto incomingT = edge->getIncomingT();
@@ -321,72 +321,106 @@ bool llvm::PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edg
   /*
    * Assert: must be a WAR load-store OR a RAW store-load
    */
-  LoadInst *load;
-  StoreInst *store;
+  LoadInst *load = nullptr;
+  StoreInst *store = nullptr;
   if (edge->isWARDependence()) {
     assert(isa<StoreInst>(incomingT) && isa<LoadInst>(outgoingT));
     load = (LoadInst*)outgoingT;
     store = (StoreInst*)incomingT;
-  } else {
+  } else if (edge->isRAWDependence()) {
     assert(isa<LoadInst>(incomingT) && isa<StoreInst>(outgoingT));
     store = (StoreInst*)outgoingT;
     load = (LoadInst*)incomingT;
   }
 
+  bool loopCarried = true;
+  if (loopCarried &&
+      isMemoryAccessIntoDifferentGlobals(edge)) {
+    loopCarried = false;
+  }
+  if (loopCarried &&
+      isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store)) {
+    loopCarried = false;
+  }
+
+  if (!loopCarried) {
+    assert(!edge->isMustDependence()
+      && "LLVM AA states load store pair is a must dependence! Bad PDGAnalysis.");
+    // errs() << "Load store pair memory dependence removed!\n";
+  }
+  return !loopCarried;
+}
+
+bool llvm::PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray (
+  DGEdge<Value> *edge,
+  LoadInst *load,
+  StoreInst *store
+) {
+  if (!load || !store) return false;
   if (!isa<GetElementPtrInst>(load->getPointerOperand())) return false;
   if (!isa<GetElementPtrInst>(store->getPointerOperand())) return false;
-  auto loadGEP = cast<GetElementPtrInst>(load->getPointerOperand());
-  auto storeGEP = cast<GetElementPtrInst>(store->getPointerOperand());
+  auto loadGEP = (GetElementPtrInst*)(load->getPointerOperand());
+  auto storeGEP = (GetElementPtrInst*)(store->getPointerOperand());
+  if (!areGEPIndicesConstantOrIV(loadGEP) ||
+      !areGEPIndicesConstantOrIV(storeGEP)) return false;
+  if (loadGEP != storeGEP) false;
 
-  outgoingT->print(errs() << "\nChecking load store pair:\n"); errs() << "\n";
-  incomingT->print(errs()); errs() << "\n";
+  // NOTE: until the GEP is guaranteed to be contiguous memory of
+  //  non pointer values, no guarantee about this dependency can be made
+  //  even if it is a load/store on the same IV-governed gep
+  //  *** with the exception of primitive global arrays for now ***
+  auto GV = getNonAliasingGV(loadGEP->getPointerOperand());
+  if (!GV) return false;
 
-  /*
-   * Check if load/store IV-governed GEPs are on the same pointer
-   * or on primitive array global variables
-   */
-  if (!areGEPIndicesConstantOrIV(loadGEP)) return false;
-  if (loadGEP == storeGEP) {
-    // NOTE: until the GEP is guaranteed to be contiguous memory of
-    //  non pointer values, no guarantee about this dependency can be made
+  auto outgoingI = (Instruction*)(edge->getOutgoingT());
+  auto incomingT = (Instruction*)(edge->getIncomingT());
+
+  if (canPrecedeInCurrentIteration(outgoingI, incomingT)) {
+    errs() << "Not removing possible intra-iteration dependence\n";
     return false;
   }
 
-  if (loadGEP != storeGEP) {
-    if (!areGEPIndicesConstantOrIV(storeGEP)) return false;
+  return true;
+}
 
-    auto isArrayGVLoad = [&](Value *V) -> bool {
-      if (auto load = dyn_cast<LoadInst>(V)) {
-        if (auto GV = dyn_cast<GlobalValue>(load->getPointerOperand())) {
-          return primitiveArrayGlobals.find(GV) != primitiveArrayGlobals.end();
-        }
-      }
-      return false;
-    };
+bool llvm::PDGAnalysis::isMemoryAccessIntoDifferentGlobals (DGEdge<Value> *edge) {
+  auto getGV = [&](Value *V) -> Value * {
+    if (auto load = dyn_cast<LoadInst>(V)) {
+      return getNonAliasingGV(load->getPointerOperand());
+    }
+    if (auto store = dyn_cast<StoreInst>(V)) {
+      return getNonAliasingGV(store->getPointerOperand());
+    }
+    return nullptr;
+  };
 
-    auto loadGV = loadGEP->getPointerOperand();
-    auto storeGV = storeGEP->getPointerOperand();
-    if (!isArrayGVLoad(loadGV) || !isArrayGVLoad(storeGV)) return false;
+  Value *GV1 = getGV(edge->getOutgoingT());
+  Value *GV2 = getGV(edge->getIncomingT());
+  if (!GV1 || !GV2) return false;
 
-    auto loadFromGV = ((LoadInst*)loadGV)->getPointerOperand();
-    auto storeToGV = ((StoreInst*)storeGV)->getPointerOperand();
-    if (loadFromGV == storeToGV) {
-      auto outgoingGEP = (Instruction*)(edge->isWARDependence() ? loadGEP : storeGEP);
-      auto incomingGEP = (Instruction*)(edge->isWARDependence() ? storeGEP : loadGEP);
-      if (canPrecedeInCurrentIteration(outgoingGEP, incomingGEP)) {
-        errs() << "Not removing possible intra-iteration dependence\n";
-        return false;
+  if (GV1 == GV2) return false;
+  return true;
+}
+
+Value *llvm::PDGAnalysis::getNonAliasingGV (Value *V) {
+  auto getGVIfNonAliasing = [&](Value *V) -> Value * {
+    if (auto GV = dyn_cast<GlobalValue>(V)) {
+      if (primitiveArrayGlobals.find(GV) != primitiveArrayGlobals.end()) {
+        return GV;
       }
     }
+    return nullptr;
+  };
 
-    loadGV->print(errs() << "Possible GV primitive arrays: "); errs() << "\n";
-    storeGV->print(errs() << "Possible GV primitive arrays: "); errs() << "\n";
+  if (auto gep = dyn_cast<GetElementPtrInst>(V)) {
+    if (auto load = dyn_cast<LoadInst>(gep->getPointerOperand())) {
+      return getGVIfNonAliasing(load->getPointerOperand());
+    }
+    if (auto store = dyn_cast<StoreInst>(gep->getPointerOperand())) {
+      return getGVIfNonAliasing(store->getPointerOperand());
+    }
   }
-
-  assert(!edge->isMustDependence()
-    && "LLVM AA states load store pair is a must dependence! Bad PDGAnalysis.");
-  errs() << "Load store pair memory dependence removed!\n";
-  return true;
+  return getGVIfNonAliasing(V);
 }
 
 bool llvm::PDGAnalysis::canPrecedeInCurrentIteration (Instruction *from, Instruction *to) {
@@ -442,8 +476,6 @@ bool llvm::PDGAnalysis::areGEPIndicesConstantOrIV (GetElementPtrInst *gep) {
     auto scev = SE.getSCEV(indexV);
     if (scev->getSCEVType() != scAddRecExpr) return false;
   }
-
-  gep->print(errs() << "Checked indices of GEP: " << notAllConstantIndices << " "); errs() << "\n";
   return true;
 }
 
