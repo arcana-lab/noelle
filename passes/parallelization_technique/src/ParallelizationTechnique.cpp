@@ -83,7 +83,7 @@ void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *
   }
 }
 
-void ParallelizationTechnique::generateTasks (
+void ParallelizationTechnique::generateEmptyTasks (
   LoopDependenceInfo *LDI,
   std::vector<TaskExecution *> taskStructs
 ) {

@@ -89,14 +89,14 @@ bool DOALL::apply (
    * Print the parallelization request.
    */
   errs() << "DOALL: Start the parallelization\n";
-  errs() << "DOALL:   Threads to extract = " << LDI->maximumNumberOfCoresForTheParallelization << "\n";
+  errs() << "DOALL:   Number of threads to extract = " << LDI->maximumNumberOfCoresForTheParallelization << "\n";
   errs() << "DOALL:   Chunk size = " << LDI->DOALLChunkSize << "\n";
 
   /*
-   * Prepare DOALL task (chunk executing function)
+   * Generate empty tasks for DOALL execution.
    */
-  DOALLTaskExecution *chunkerTask = new DOALLTaskExecution();
-  this->generateTasks(LDI, { chunkerTask });
+  auto chunkerTask = new DOALLTaskExecution();
+  this->generateEmptyTasks(LDI, { chunkerTask });
   this->numTaskInstances = LDI->maximumNumberOfCoresForTheParallelization;
 
   /*

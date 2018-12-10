@@ -44,18 +44,21 @@ namespace llvm {
        * Methods
        */
       DOALL (Module &module, Verbosity v);
+
       bool apply (
         LoopDependenceInfo *LDI,
         Parallelization &par,
         Heuristics *h,
         ScalarEvolution &SE
       ) override ;
+
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
         Parallelization &par,
         Heuristics *h,
         ScalarEvolution &SE
       ) const override ;
+
 
     protected:
 

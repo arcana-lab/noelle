@@ -51,15 +51,15 @@ namespace llvm {
     protected:
 
       /*
-       * Task helpers for preparing loop code generation
+       * Generate empty tasks.
        */
-      virtual void generateTasks (
+      virtual void generateEmptyTasks (
         LoopDependenceInfo *LDI, 
         std::vector<TaskExecution *> taskStructs
       );
 
       /*
-       * Parallelized loop's environment
+       * Loop's environment
        */
       void initializeEnvironmentBuilder (
         LoopDependenceInfo *LDI,
@@ -114,7 +114,7 @@ namespace llvm {
       EnvBuilder *envBuilder;
 
       /*
-       * Cloned loop representation for users
+       * Parallel task related information.
        */
       Function *taskDispatcher;
       FunctionType *taskType;

@@ -26,7 +26,7 @@ namespace llvm {
     PHINode *originalIVClone;
     PHINode *outermostLoopIV;
 
-    void extractFuncArgs () {
+    void extractFuncArgs () override {
       auto argIter = this->F->arg_begin();
       this->envArg = (Value *) &*(argIter++);
       this->coreArg = (Value *) &*(argIter++); 
