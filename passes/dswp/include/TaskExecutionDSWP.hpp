@@ -12,51 +12,53 @@ namespace llvm {
   struct QueueInfo;
   struct QueueInstrs;
 
-  struct DSWPTaskExecution : TaskExecution {
-    DSWPTaskExecution ()
-      : stageSCCs{}, removableSCCs{}, usedCondBrs{} {}
+  class DSWPTaskExecution : public Task {
+    public:
 
-    /*
-     * DSWP specific task function arguments
-     */
-    Value *queueArg;
+      DSWPTaskExecution ()
+        : stageSCCs{}, removableSCCs{}, usedCondBrs{} {}
 
-    /*
-     * Original loops' relevant structures
-     */
-    std::set<SCC *> stageSCCs;
-    std::set<SCC *> removableSCCs;
-    std::set<TerminatorInst *> usedCondBrs;
+      /*
+       * DSWP specific task function arguments
+       */
+      Value *queueArg;
 
-    /*
-     * Maps from producer to the queues they push to
-     */
-    unordered_map<Instruction *, std::set<int>> producerToQueues;
+      /*
+       * Original loops' relevant structures
+       */
+      std::set<SCC *> stageSCCs;
+      std::set<SCC *> removableSCCs;
+      std::set<TerminatorInst *> usedCondBrs;
 
-    /*
-     * Maps from other stage's producer to this stage's queues
-     */
-    unordered_map<Instruction *, int> producedPopQueue;
+      /*
+       * Maps from producer to the queues they push to
+       */
+      unordered_map<Instruction *, std::set<int>> producerToQueues;
 
-    /*
-     * Stores queue indices and pointers for the stage
-     */
-    std::set<int> pushValueQueues, popValueQueues;
+      /*
+       * Maps from other stage's producer to this stage's queues
+       */
+      unordered_map<Instruction *, int> producedPopQueue;
 
-    /*
-     * Stores information on queue/env usage within stage
-     */
-    unordered_map<int, std::unique_ptr<QueueInstrs>> queueInstrMap;
+      /*
+       * Stores queue indices and pointers for the stage
+       */
+      std::set<int> pushValueQueues, popValueQueues;
 
-    void extractFuncArgs () {
-      auto argIter = this->F->arg_begin();
-      this->envArg = (Value *) &*(argIter++);
-      this->queueArg = (Value *) &*(argIter++);
-      instanceIndexV = ConstantInt::get(
-        IntegerType::get(F->getContext(), 64),
-        order
-      );
-    }
+      /*
+       * Stores information on queue/env usage within stage
+       */
+      unordered_map<int, std::unique_ptr<QueueInstrs>> queueInstrMap;
+
+      void extractFuncArgs () {
+        auto argIter = this->F->arg_begin();
+        this->envArg = (Value *) &*(argIter++);
+        this->queueArg = (Value *) &*(argIter++);
+        instanceIndexV = ConstantInt::get(
+          IntegerType::get(F->getContext(), 64),
+          order
+        );
+      }
   };
 
   struct QueueInfo {

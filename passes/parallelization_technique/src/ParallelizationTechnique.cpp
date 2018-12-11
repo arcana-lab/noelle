@@ -85,7 +85,7 @@ void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *
 
 void ParallelizationTechnique::generateEmptyTasks (
   LoopDependenceInfo *LDI,
-  std::vector<TaskExecution *> taskStructs
+  std::vector<Task *> taskStructs
 ) {
   numTaskInstances = taskStructs.size();
   for (auto i = 0; i < numTaskInstances; ++i) {

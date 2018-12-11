@@ -55,7 +55,7 @@ namespace llvm {
        */
       virtual void generateEmptyTasks (
         LoopDependenceInfo *LDI, 
-        std::vector<TaskExecution *> taskStructs
+        std::vector<Task *> taskStructs
       );
 
       /*
@@ -118,7 +118,7 @@ namespace llvm {
        */
       Function *taskDispatcher;
       FunctionType *taskType;
-      std::vector<TaskExecution *> tasks;
+      std::vector<Task *> tasks;
       int numTaskInstances;
   };
 
