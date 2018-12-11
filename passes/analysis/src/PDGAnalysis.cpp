@@ -370,14 +370,10 @@ bool llvm::PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray (
   auto outgoingI = (Instruction*)(edge->getOutgoingT());
   auto incomingI = (Instruction*)(edge->getIncomingT());
   if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
-    errs() << "Not removing possible intra-iteration dependence\n";
-    outgoingI->print(errs() << "Outgoing: "); errs() << "\n";
-    incomingI->print(errs() << "Incoming: "); errs() << "\n";
+    // errs() << "Not removing possible intra-iteration dependence\n";
     return false;
   }
 
-  outgoingI->print(errs() << "Removing: Outgoing: "); errs() << "\n";
-  incomingI->print(errs() << "Incoming: "); errs() << "\n";
   return true;
 }
 
@@ -418,14 +414,10 @@ bool llvm::PDGAnalysis::isBackedgeIntoSameGlobal (
   auto outgoingI = (Instruction*)(edge->getOutgoingT());
   auto incomingI = (Instruction*)(edge->getIncomingT());
   if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
-    errs() << "Not removing possible intra-iteration dependence\n";
-    outgoingI->print(errs() << "Outgoing: "); errs() << "\n";
-    incomingI->print(errs() << "Incoming: "); errs() << "\n";
+    // errs() << "Not removing possible intra-iteration dependence\n";
     return false;
   }
 
-  outgoingI->print(errs() << "Removing: Outgoing: "); errs() << "\n";
-  incomingI->print(errs() << "Incoming: "); errs() << "\n";
   return true;
 }
 
@@ -621,10 +613,10 @@ void llvm::PDGAnalysis::collectPrimitiveArrayGlobalValues (Module &M) {
 
     if (!usedByMain) continue;
     if (!isPrimitiveArray) {
-      GV.print(errs() << "GV not understood to be primitive integer array: "); errs() << "\n";
+      // GV.print(errs() << "GV not understood to be primitive integer array: "); errs() << "\n";
       continue;
     }
-    GV.print(errs() << "GV understood to be primitive integer array: "); errs() << "\n";
+    // GV.print(errs() << "GV understood to be primitive integer array: "); errs() << "\n";
     primitiveArrayGlobals.insert(&GV);
   }
 }
@@ -653,7 +645,7 @@ bool PDGAnalysis::isOnlyUsedByNonAddrValues (std::set<Instruction *> checked, In
       // userI->print(errs() << "PDGAnalysis: user not integer type or used by such: "); errs() << "\n";
       // userI->getType()->print(errs() << "TYPE: "); errs() << "\n";
     }
-    user->print(errs() << "PDGAnalysis: Inst user not understood: "); errs() << "\n";
+    // user->print(errs() << "PDGAnalysis: Inst user not understood: "); errs() << "\n";
     return false;
   }
   return true;
