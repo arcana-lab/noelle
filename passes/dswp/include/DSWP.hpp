@@ -19,7 +19,14 @@ namespace llvm {
       /*
        * Methods
        */
-      DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Verbosity v);
+      DSWP (
+        Module &module,
+        bool forceParallelization,
+        bool enableSCCMerging,
+        Verbosity v,
+        int coresPerOverride
+      );
+
       bool apply (
         LoopDependenceInfo *LDI,
         Parallelization &par,
@@ -120,6 +127,8 @@ namespace llvm {
        */
       SCCDAGPartition *partitioner;
       std::set<std::set<SCC *> *> *subsets;
+
+      int coresPerLoopOverride;
   };
 
 }

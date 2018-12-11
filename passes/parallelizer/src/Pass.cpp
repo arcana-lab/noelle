@@ -7,7 +7,14 @@ using namespace llvm;
  */
 static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
-static cl::opt<int> Verbose("dswp-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: stage outline 3: maximal)"));
+static cl::opt<int> Verbose("dswp-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal)"));
+
+/*
+ * Command line overrides for some autotuned parameters
+ */
+static cl::opt<int> DOALLChunkSizeOverride("doall-chunk-size", cl::ZeroOrMore, cl::Hidden, cl::desc("DOALL chunk size"));
+static cl::opt<int> DOALLCoresPerOverride("doall-cores-per", cl::ZeroOrMore, cl::Hidden, cl::desc("DOALL number of cores"));
+static cl::opt<int> DSWPCoresPerOverride("dswp-cores-per", cl::ZeroOrMore, cl::Hidden, cl::desc("DSWP number of cores"));
 
 Parallelizer::Parallelizer()
   :
@@ -39,8 +46,19 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Allocate the parallelization techniques.
    */
-  DSWP dswp{M, this->forceParallelization, !this->forceNoSCCPartition, this->verbose};
-  DOALL doall{M, this->verbose};
+  DSWP dswp{
+    M,
+    this->forceParallelization,
+    !this->forceNoSCCPartition,
+    this->verbose,
+    DSWPCoresPerOverride.getValue(),
+  };
+  DOALL doall{
+    M,
+    this->verbose,
+    DOALLCoresPerOverride.getValue(),
+    DOALLChunkSizeOverride.getValue()
+  };
   HELIX helix{M, this->verbose};
 
   /*
@@ -60,7 +78,6 @@ bool Parallelizer::runOnModule (Module &M) {
   for (auto loop : loopsToParallelize){
     errs() << "Parallelizer:    Function \"" << loop->function->getName() << "\"\n";
     errs() << "Parallelizer:    Try to parallelize the loop \"" << *loop->header->getFirstNonPHI() << "\"\n";
-    errs() << "\n";
   }
 
   /*

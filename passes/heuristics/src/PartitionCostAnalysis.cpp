@@ -6,9 +6,10 @@ llvm::PartitionCostAnalysis::PartitionCostAnalysis (
   InvocationLatency &il,
   SCCDAGPartition &p,
   SCCDAGAttrs &attrs,
-  int cores
+  int cores,
+  Verbosity v
 ) : totalCost{0}, totalInstCount{0}, IL{il},
-    partition{p}, dagAttrs{attrs}, numCores{cores} {
+    partition{p}, dagAttrs{attrs}, numCores{cores}, verbose{verbose} {
 
   /*
    * Estimate the current latency for executing the pipeline of the current SCCDAG partition once.
@@ -81,6 +82,8 @@ bool llvm::PartitionCostAnalysis::mergeCandidateSubsets () {
 }
 
 void llvm::PartitionCostAnalysis::printCandidate (raw_ostream &stream) {
+  if (verbose == Verbosity::Disabled) return;
+
   if (!minSubsetA || !minSubsetB) {
     stream << prefix << "No candidates\n";
     return;

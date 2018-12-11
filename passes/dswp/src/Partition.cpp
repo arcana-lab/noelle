@@ -35,6 +35,9 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Print the initial partitions.
    */
+  if (this->verbose >= Verbosity::Minimal) {
+    errs() << "DSWP:  Initial number of partitions: " << subsets->size() << "\n";
+  }
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  Before partitioning the SCCDAG\n";
     partitioner->print(errs(), "DSWP:   ");
@@ -51,13 +54,17 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
     h->adjustParallelizationPartitionForDSWP(
       partitioner,
       LDI->sccdagAttrs,
-      /*numThreads=*/LDI->maximumNumberOfCoresForTheParallelization
+      /*numThreads=*/LDI->maximumNumberOfCoresForTheParallelization,
+      this->verbose
     );
   }
 
   /*
    * Print the partitioned SCCDAG.
    */
+  if (this->verbose >= Verbosity::Minimal) {
+    errs() << "DSWP:  Final number of partitions: " << subsets->size() << "\n";
+  }
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  After partitioning the SCCDAG\n";
     partitioner->print(errs(), "DSWP:   ");

@@ -1,9 +1,15 @@
 #include "DOALL.hpp"
 #include "DOALLTask.hpp"
 
-DOALL::DOALL (Module &module, Verbosity v)
-  :
-  ParallelizationTechnique{module, v}
+DOALL::DOALL (
+  Module &module,
+  Verbosity v,
+  int coresPer,
+  int chunkSize
+) :
+  ParallelizationTechnique{module, v},
+  coresPerLoopOverride{coresPer},
+  chunkSizeOverride{chunkSize}
   {
 
   /*
@@ -31,13 +37,17 @@ bool DOALL::canBeAppliedToLoop (
   Heuristics *h,
   ScalarEvolution &SE
 ) const {
-  errs() << "DOALL: Checking if is a doall loop\n";
+  if (this->verbose != Verbosity::Disabled) {
+    errs() << "DOALL: Checking if is a doall loop\n";
+  }
 
   /*
    * The loop must have one single exit path.
    */
   if (LDI->numberOfExits() > 1) { 
-    errs() << "DOALL:   More than 1 loop exit blocks\n";
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "DOALL:   More than 1 loop exit blocks\n";
+    }
     return false;
   }
 
@@ -45,7 +55,9 @@ bool DOALL::canBeAppliedToLoop (
    * The loop must have all live-out variables to be reducable.
    */
   if (!LDI->sccdagAttrs.areAllLiveOutValuesReducable(LDI->environment)) {
-    errs() << "DOALL:   Some post environment value is not reducable\n";
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "DOALL:   Some post environment value is not reducable\n";
+    }
     return false;
   }
 
@@ -54,7 +66,9 @@ bool DOALL::canBeAppliedToLoop (
    * This is because the trip count must be controlled by an induction variable.
    */
   if (!LDI->sccdagAttrs.doesLoopHaveIV()) {
-    errs() << "DOALL:   Loop does not have an IV\n";
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "DOALL:   Loop does not have an IV\n";
+    }
     return false;
   }
 
@@ -67,7 +81,12 @@ bool DOALL::canBeAppliedToLoop (
     if (scc->getType() != SCC::SCCType::COMMUTATIVE
       && !LDI->sccdagAttrs.canBeCloned(scc)
       && !LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
-      scc->printMinimal(errs() << "DOALL:   Non clonable, non commutative scc at top level of loop:\n", "DOALL:\t") << "\n";
+      if (this->verbose != Verbosity::Disabled) {
+        errs() << "DOALL:   Non clonable, non commutative scc at top level of loop:\n";
+        if (this->verbose >= Verbosity::Maximal) {
+          scc->printMinimal(errs(), "DOALL:\t") << "\n";
+        }
+      }
       return false;
     }
   }
@@ -75,7 +94,9 @@ bool DOALL::canBeAppliedToLoop (
   /*
    * The loop is a DOALL one.
    */
-  errs() << "DOALL:   The loop can be parallelized with DOALL\n" ;
+  if (this->verbose != Verbosity::Disabled) {
+    errs() << "DOALL:   The loop can be parallelized with DOALL\n" ;
+  }
   return true;
 }
       
@@ -85,13 +106,17 @@ bool DOALL::apply (
   Heuristics *h,
   ScalarEvolution &SE
 ) {
+  if (chunkSizeOverride > 0) LDI->DOALLChunkSize = chunkSizeOverride;
+  if (coresPerLoopOverride > 0) LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
 
   /*
    * Print the parallelization request.
    */
-  errs() << "DOALL: Start the parallelization\n";
-  errs() << "DOALL:   Number of threads to extract = " << LDI->maximumNumberOfCoresForTheParallelization << "\n";
-  errs() << "DOALL:   Chunk size = " << LDI->DOALLChunkSize << "\n";
+  if (this->verbose != Verbosity::Disabled) {
+    errs() << "DOALL: Start the parallelization\n";
+    errs() << "DOALL:   Number of threads to extract = " << LDI->maximumNumberOfCoresForTheParallelization << "\n";
+    errs() << "DOALL:   Chunk size = " << LDI->DOALLChunkSize << "\n";
+  }
 
   /*
    * Generate empty tasks for DOALL execution.
@@ -160,11 +185,11 @@ bool DOALL::apply (
 
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par);
 
-  tasks[0]->F->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
-  // LDI->entryPointOfParallelizedLoop->print(errs() << "Finalized doall BB\n"); errs() << "\n";
-  // LDI->function->print(errs() << "LDI function:\n"); errs() << "\n";
+  if (this->verbose >= Verbosity::Maximal) {
+    tasks[0]->F->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
+    errs() << "DOALL: Exit\n";
+  }
 
-  errs() << "DOALL: Exit\n";
   return true;
 }
 

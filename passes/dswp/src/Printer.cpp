@@ -2,7 +2,7 @@
 #include "DSWP.hpp"
 
 void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) const {
-  if (this->verbose <= Verbosity::Minimal){
+  if (this->verbose == Verbosity::Disabled) {
     return ;
   }
 
@@ -24,7 +24,7 @@ void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI) const {
   /*
    * Check if we should print.
    */
-  if (this->verbose <= Verbosity::Minimal){
+  if (this->verbose == Verbosity::Disabled) {
     return ;
   }
 
@@ -69,7 +69,7 @@ void llvm::DSWP::printEnv (DSWPLoopDependenceInfo *LDI) const {
   /*
    * Check if we should print.
    */
-  if (this->verbose <= Verbosity::Minimal){
+  if (this->verbose == Verbosity::Disabled){
     return ;
   }
 

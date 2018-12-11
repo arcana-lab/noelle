@@ -9,7 +9,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
    */
   assert(LDI != nullptr);
   assert(h != nullptr);
-  if (this->verbose > Verbosity::Disabled) {
+  if (this->verbose != Verbosity::Disabled) {
     errs() << "Parallelizer: Start\n";
     errs() << "Parallelizer:  Function \"" << LDI->function->getName() << "\"\n";
     errs() << "Parallelizer:  Try to parallelize the loop \"" << *LDI->header->getFirstNonPHI() << "\"\n";
@@ -76,7 +76,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
    *
    * Link the parallelized loop within the original function that includes the sequential loop.
    */
-  if (this->verbose > Verbosity::Disabled) {
+  if (this->verbose != Verbosity::Disabled) {
     errs() << "Parallelizer:  Link the parallelize loop\n";
   }
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
@@ -89,14 +89,14 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
     exitIndex,
     LDI->loopExitBlocks
   );
-  if (this->verbose >= Verbosity::Pipeline) {
+  if (this->verbose >= Verbosity::Maximal) {
     LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
   }
 
   /*
    * Return
    */
-  if (this->verbose > Verbosity::Disabled) {
+  if (this->verbose != Verbosity::Disabled) {
     errs() << "Parallelizer: Exit\n";
   }
   return true;

@@ -4,6 +4,7 @@
  * Options of the dependence graph simplifier pass.
  */
 static cl::opt<bool> ForceInlineToLoop("dgsimplify-inline-to-loop", cl::ZeroOrMore, cl::Hidden, cl::desc("Force inlining along the call graph from main to the loops being parallelized"));
+static cl::opt<int> Verbose("pass-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
 
 DGSimplify::~DGSimplify () {
   for (auto orderedLoops : preOrderedLoops) {
@@ -15,13 +16,15 @@ DGSimplify::~DGSimplify () {
 }
 
 bool llvm::DGSimplify::doInitialization (Module &M) {
-  errs() << "DGSimplify at \"doInitialization\"\n" ;
+  this->verbose = static_cast<Verbosity>(Verbose.getValue());
 
   return false;
 }
 
 bool llvm::DGSimplify::runOnModule (Module &M) {
-  errs() << "DGSimplify at \"runOnModule\"\n";
+  if (this->verbose != Verbosity::Disabled) {
+    errs() << "DGSimplify at \"runOnModule\"\n";
+  }
 
   /*
    * Collect function and loop ordering to track inlining progress
@@ -34,8 +37,15 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
   for (auto func : depthOrderedFns) {
     createPreOrderedLoopSummariesFor(func);
   }
-  // printFnCallGraph();
-  // printFnOrder();
+
+  auto printFnInfo = [&]() -> void {
+    if (this->verbose >= Verbosity::Maximal) {
+      errs() << "DGSimplify:   Function graph and order\n";
+      printFnCallGraph();
+      printFnOrder();
+    }
+  };
+  printFnInfo();
 
   auto writeToContinueFile = []() -> void {
     ofstream continuefile("dgsimplify_continue.txt");
@@ -52,15 +62,18 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
   if (doInline) {
     std::string filename = "dgsimplify_scc_call_inlining.txt";
     getLoopsToInline(filename);
+
     bool inlined = inlineCallsInMassiveSCCsOfLoops();
-    if (inlined) {
-      collectInDepthOrderFns(main);
-      // printFnCallGraph();
-      // printFnOrder();
-    }
+    if (inlined) collectInDepthOrderFns(main);
+
     bool remaining = registerRemainingLoops(filename);
     if (remaining) writeToContinueFile();
-    else errs() << "DGSimplify:   No remaining call inlining in SCCs\n";
+
+    printFnInfo();
+    if (!remaining && this->verbose != Verbosity::Disabled) {
+      errs() << "DGSimplify:   No remaining call inlining in SCCs\n";
+    }
+
     return inlined;
   }
 
@@ -73,15 +86,18 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
   if (doHoist) {
     std::string filename = "dgsimplify_loop_hoisting.txt";
     getFunctionsToInline(filename);
+
     bool inlined = inlineFnsOfLoopsToCGRoot();
-    if (inlined) {
-      collectInDepthOrderFns(main);
-      // printFnCallGraph();
-      // printFnOrder();
-    }
+    if (inlined) collectInDepthOrderFns(main);
+
     bool remaining = registerRemainingFunctions(filename);
     if (remaining) writeToContinueFile();
-    else errs() << "DGSimplify:   No remaining hoists\n";
+
+    printFnInfo();
+    if (!remaining && this->verbose != Verbosity::Disabled) {
+      errs() << "DGSimplify:   No remaining hoists\n";
+    }
+
     return inlined;
   }
 
@@ -191,7 +207,6 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops () {
 
   std::set<Function *> fnsToAvoid;
   for (auto F : orderedFns) {
-    // errs() << "Traversing looping functions; at fn: " << fnOrders[F] << "\n";
     // NOTE(angelo): If we avoid this function until next pass, we do the same with its parents
     if (fnsToAvoid.find(F) != fnsToAvoid.end()) {
       for (auto parentF : parentFns[F]) fnsToAvoid.insert(parentF);
@@ -303,7 +318,7 @@ bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
   bool inlined = false;
   while (fnIndex < orderedFns.size()) {
     auto childF = orderedFns[fnIndex++];
-    // errs() << "Traversing through CG; at fn: " << fnOrders[childF] << " " << childF->getName() << "\n";
+
     // NOTE(angelo): If we avoid this function until next pass, we do the same with its parents
     if (fnsToAvoid.find(childF) != fnsToAvoid.end()) {
       for (auto parentF : parentFns[childF]) fnsToAvoid.insert(parentF);
@@ -337,7 +352,11 @@ bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
       for (auto call : cachedCalls) {
         if (call->getCalledFunction() != childF) continue;
         bool inlinedCall = inlineFunctionCall(parentF, childF, call);
-        if (inlinedCall) errs() << "Inlined: " << childF->getName() << " into " << parentF->getName() << "\n";
+
+        if (inlinedCall && this->verbose != Verbosity::Disabled) {
+          errs() << "Inlined: " << childF->getName() << " into " << parentF->getName() << "\n";
+        }
+
         inlined |= inlinedCall;
         inlinedCalls &= inlinedCall;
         if (inlined) break;
@@ -375,7 +394,11 @@ bool llvm::DGSimplify::inlineFunctionCall (Function *F, Function *childF, CallIn
   if (fnsAffected.find(F) != fnsAffected.end()) return false ;
   if (!canInlineWithoutRecursiveLoop(F, childF)) return false ;
 
-  call->print(errs() << "DGSimplify:   Inlining in: " << F->getName() << ", "); errs() << "\n";
+  if (this->verbose != Verbosity::Disabled) {
+    call->print(errs() << "DGSimplify:   Inlining in: " << F->getName() << ", ");
+    errs() << "\n";
+  }
+
   int loopIndAfterCall = getNextPreorderLoopAfter(F, call);
   auto &parentCalls = orderedCalls[F];
   auto callInd = std::find(parentCalls.begin(), parentCalls.end(), call) - parentCalls.begin();
@@ -427,7 +450,6 @@ void llvm::DGSimplify::adjustLoopOrdersAfterInline (Function *parentF, Function 
    */
   auto &parentLoops = *preOrderedLoops[parentF];
   auto &childLoops = *preOrderedLoops[childF];
-  // for (auto loop : parentLoops) { errs() << "Initial loop: " << loop->id << "\n"; }
   auto childLoopCount = childLoops.size();
   auto endInd = nextLoopInd + childLoopCount;
 
@@ -441,14 +463,11 @@ void llvm::DGSimplify::adjustLoopOrdersAfterInline (Function *parentF, Function 
   for (auto childIndex = nextLoopInd; childIndex < endInd; ++childIndex) {
     parentLoops[childIndex] = childLoops[childIndex - nextLoopInd];
   }
-
-  // for (auto loop : parentLoops) { errs() << "Shifted loop: " << loop->id << "\n"; }
 }
 
 void llvm::DGSimplify::adjustFnGraphAfterInline (Function *parentF, Function *childF, int callInd) {
   auto &parentCalled = orderedCalled[parentF];
   auto &childCalled = orderedCalled[childF];
-  // for (auto called : parentCalled) { errs() << "Initial called: " << called->getName() << "\n"; }
 
   parentCalled.erase(parentCalled.begin() + callInd);
   if (childCalled.size() > 0) {
@@ -466,7 +485,6 @@ void llvm::DGSimplify::adjustFnGraphAfterInline (Function *parentF, Function *ch
       parentCalled[childIndex] = childCalled[childIndex - callInd];
     }
   }
-  // for (auto called : parentCalled) { errs() << "Shifted called: " << called->getName() << "\n"; }
 
   // Readjust function graph of the function inlined within
   std::set<Function *> reached;
@@ -688,6 +706,7 @@ void llvm::DGSimplify::sortInDepthOrderFns (std::vector<Function *> &inOrder) {
  */
 
 void llvm::DGSimplify::printFnCallGraph () {
+  if (this->verbose == Verbosity::Disabled) return;
   for (auto fns : parentFns) {
     errs() << "DGSimplify:   Child function: " << fns.first->getName() << "\n";
     for (auto f : fns.second) {
@@ -697,6 +716,7 @@ void llvm::DGSimplify::printFnCallGraph () {
 }
 
 void llvm::DGSimplify::printFnOrder () {
+  if (this->verbose == Verbosity::Disabled) return;
   int count = 0;
   for (auto fn : depthOrderedFns) {
     errs() << "DGSimplify:   Function: " << count++ << " " << fn->getName() << "\n";
@@ -704,6 +724,7 @@ void llvm::DGSimplify::printFnOrder () {
 }
 
 void llvm::DGSimplify::printFnLoopOrder (Function *F) {
+  if (this->verbose == Verbosity::Disabled) return;
   auto count = 1;
   for (auto summary : *preOrderedLoops[F]) {
     auto headerBB = summary->header;
@@ -713,6 +734,7 @@ void llvm::DGSimplify::printFnLoopOrder (Function *F) {
 }
 
 void llvm::DGSimplify::printLoopsToCheck () {
+  if (this->verbose == Verbosity::Disabled) return;
   errs() << "DGSimplify:   Loops in checklist ---------------\n";
   for (auto fnLoops : loopsToCheck) {
     auto F = fnLoops.first;
@@ -730,6 +752,7 @@ void llvm::DGSimplify::printLoopsToCheck () {
 }
 
 void llvm::DGSimplify::printFnsToCheck () {
+  if (this->verbose == Verbosity::Disabled) return;
   errs() << "DGSimplify:   Functions in checklist ---------------\n";
   for (auto F : fnsToCheck) {
     auto fnInd = fnOrders[F];

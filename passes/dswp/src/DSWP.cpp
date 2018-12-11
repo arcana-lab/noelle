@@ -2,12 +2,18 @@
 
 using namespace llvm;
 
-DSWP::DSWP (Module &module, bool forceParallelization, bool enableSCCMerging, Verbosity v)
-  :
+DSWP::DSWP (
+  Module &module,
+  bool forceParallelization,
+  bool enableSCCMerging,
+  Verbosity v,
+  int coresPerOverride
+) :
   ParallelizationTechnique{module, v},
   forceParallelization{forceParallelization},
   enableMergingSCC{enableSCCMerging},
-  partitioner{nullptr}, subsets{nullptr}
+  partitioner{nullptr}, subsets{nullptr},
+  coresPerLoopOverride{coresPerOverride}
   {
 
   /*
@@ -40,6 +46,7 @@ void DSWP::reset () {
 
 void DSWP::initialize (LoopDependenceInfo *baseLDI, Heuristics *h) {
   auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
+  if (coresPerLoopOverride > 0) LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
   partitionSCCDAG(LDI, h);
 }
 
@@ -53,7 +60,7 @@ bool DSWP::canBeAppliedToLoop (
 
   bool canApply = subsets->size() > 1;
   if (this->forceParallelization) {
-    if (!canApply && this->verbose > Verbosity::Disabled) {
+    if (!canApply && this->verbose != Verbosity::Disabled) {
       errs() << "DSWP:  Forced parallelization of a disadvantageous loop\n";
     }
     return true;
@@ -62,10 +69,7 @@ bool DSWP::canBeAppliedToLoop (
   /*
    * Check whether it is worth parallelizing the current loop.
    */
-  if (!canApply && this->verbose > Verbosity::Disabled) {
-    for (auto scc : **subsets->begin()) {
-      scc->print(errs()) << "\n";
-    }
+  if (!canApply && this->verbose != Verbosity::Disabled) {
     errs() << "DSWP:  Not enough TLP can be extracted\n";
     errs() << "DSWP: Exit\n";
   }
@@ -112,11 +116,12 @@ bool DSWP::apply (
 
   if (this->verbose >= Verbosity::Maximal) {
     printStageSCCs(LDI);
+  }
+  if (this->verbose >= Verbosity::Minimal) {
     printStageQueues(LDI);
     printEnv(LDI);
   }
-
-  if (this->verbose > Verbosity::Disabled) {
+  if (this->verbose != Verbosity::Disabled) {
     errs() << "DSWP:  Create " << this->tasks.size() << " pipeline stages\n";
   }
 
@@ -180,15 +185,15 @@ bool DSWP::apply (
      */
     inlineQueueCalls(LDI, i);
 
-    if (this->verbose >= Verbosity::Pipeline) {
-      task->F->print(errs() << "Pipeline stage printout:\n"); errs() << "\n";
+    if (this->verbose >= Verbosity::Maximal) {
+      task->F->print(errs() << "Pipeline stage " << i << ":\n"); errs() << "\n";
     }
   }
 
   /*
    * Create the whole pipeline by connecting the stages.
    */
-  if (this->verbose > Verbosity::Disabled) {
+  if (this->verbose != Verbosity::Disabled) {
     errs() << "DSWP:  Link pipeline stages\n";
   }
   createPipelineFromStages(LDI, par);

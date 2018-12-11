@@ -1,13 +1,16 @@
 #include "MinMaxSizePartitionAnalysis.hpp"
 
 void llvm::MinMaxSizePartitionAnalysis::checkIfShouldMerge (SCCset *sA, SCCset *sB) {
-  std::string subsetStrs = partition.subsetStr(sA) + " " + partition.subsetStr(sB);
-  errs() << prefix << "Checking: " << subsetStrs;
-  if (partition.mergeYieldsCycle(sA, sB)) {
-    errs() << "\n";
-    return;
+  bool yieldsCycle = partition.mergeYieldsCycle(sA, sB);
+
+  if (verbose >= Verbosity::Maximal) {
+    std::string subsetStrs = partition.subsetStr(sA) + " " + partition.subsetStr(sB);
+    errs() << prefix << "Checking: " << subsetStrs;
+    if (yieldsCycle) errs() << "\n";
+    errs() << " Is possible\n";
   }
-  errs() << " Is possible\n";
+
+  if (yieldsCycle) return ;
 
   auto current = subsetCost[sA] + subsetCost[sB];
   auto insts = subsetInstCount[sA] + subsetInstCount[sB];
@@ -17,10 +20,11 @@ void llvm::MinMaxSizePartitionAnalysis::checkIfShouldMerge (SCCset *sA, SCCset *
 
   if (partition.getSubsets()->size() <= numCores) return ;
 
-  // errs() << prefix << subsetStrs << "\n";
-  errs() << prefix << "Lowered cost: " << lowered
-    << " Merged cost: " << merge
-    << " Instr count: " << insts << "\n";
+  if (verbose >= Verbosity::Maximal) {
+    errs() << prefix << "Lowered cost: " << lowered
+      << " Merged cost: " << merge
+      << " Instr count: " << insts << "\n";
+  }
 
   /*
    * Only merge if it is the cheapest of the merges

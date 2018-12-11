@@ -42,43 +42,62 @@ void Parallelizer::mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI)
     auto scc = sccNode->getT();
 
     /*
-     * Determine if node is a single syntactic sugar instruction with only one dependent SCC
+     * Determine if node is a single syntactic sugar instruction that has either
+     * a single parent SCC or a single child SCC
      */
     if (scc->numInternalNodes() > 1) continue;
     auto I = scc->begin_internal_node_map()->first;
     if (!isa<PHINode>(I) && !isa<GetElementPtrInst>(I) && !isa<CastInst>(I)) continue;
-    if (sccNode->numOutgoingEdges() != 1) continue;
-    auto dependentNode = (*sccNode->begin_outgoing_edges())->getIncomingNode();
+
+    // TODO: Even if more than one edge exists, attempt next/previous depth SCCs.
+    DGNode<SCC> *adjacentNode = nullptr;
+    if (sccNode->numOutgoingEdges() == 1) {
+      adjacentNode = (*sccNode->begin_outgoing_edges())->getIncomingNode();
+    }
+    if (sccNode->numIncomingEdges() == 1) {
+      auto incomingOption = (*sccNode->begin_incoming_edges())->getOutgoingNode();
+      if (!adjacentNode) {
+        adjacentNode = incomingOption;
+      } else {
+
+        /*
+         * NOTE: generally, these are lcssa PHIs, or casts of previous PHIs/instructions
+         * If a GEP, it's load is in the child SCC, so leave it with the child
+         */
+        if (isa<PHINode>(I) || isa<CastInst>(I)) adjacentNode = incomingOption;
+      }
+    }
+    if (!adjacentNode) continue;
 
     /*
-     * Determine the merged state of the single instruction node and its dependent
+     * Determine the merged state of the single instruction node and its adjacent
      * Merge the current merged nodes holding both of the above
      */
     bool mergedSCCNode = mergedToGroup.find(sccNode) != mergedToGroup.end();
-    bool mergedDepNode = mergedToGroup.find(dependentNode) != mergedToGroup.end();
-    if (mergedSCCNode && mergedDepNode) {
+    bool mergedAdjNode = mergedToGroup.find(adjacentNode) != mergedToGroup.end();
+    if (mergedSCCNode && mergedAdjNode) {
 
       /*
-       * Combine the dependent node's merged group into that of the single instruction's merged group
+       * Combine the adjacent node's merged group into that of the single instruction's merged group
        */
-      auto depSet = mergedToGroup[dependentNode];
-      for (auto node : *depSet) {
+      auto adjSet = mergedToGroup[adjacentNode];
+      for (auto node : *adjSet) {
         mergedToGroup[sccNode]->insert(node);
         mergedToGroup[node] = mergedToGroup[sccNode];
       }
-      singles.erase(depSet);
-      delete depSet;
+      singles.erase(adjSet);
+      delete adjSet;
     } else if (mergedSCCNode) {
-      mergedToGroup[sccNode]->insert(dependentNode);
-      mergedToGroup[dependentNode] = mergedToGroup[sccNode];
-    } else if (mergedDepNode) {
-      mergedToGroup[dependentNode]->insert(sccNode);
-      mergedToGroup[sccNode] = mergedToGroup[dependentNode];
+      mergedToGroup[sccNode]->insert(adjacentNode);
+      mergedToGroup[adjacentNode] = mergedToGroup[sccNode];
+    } else if (mergedAdjNode) {
+      mergedToGroup[adjacentNode]->insert(sccNode);
+      mergedToGroup[sccNode] = mergedToGroup[adjacentNode];
     } else {
-      auto nodes = new std::set<DGNode<SCC> *>({ sccNode, dependentNode });
+      auto nodes = new std::set<DGNode<SCC> *>({ sccNode, adjacentNode });
       singles.insert(nodes);
       mergedToGroup[sccNode] = nodes;
-      mergedToGroup[dependentNode] = nodes;
+      mergedToGroup[adjacentNode] = nodes;
     }
   }
 

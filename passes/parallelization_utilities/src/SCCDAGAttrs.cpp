@@ -102,8 +102,8 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
     // TODO(angelo): Implement this if it is legal. Unsure at the moment
     // if (scc->getType() == SCC::SCCType::INDEPENDENT) continue ;
     if (scc->getType() == SCC::SCCType::COMMUTATIVE) continue ;
-    errs() << "SCC type is indep: " << (scc->getType() == SCC::SCCType::INDEPENDENT) << "\n";
-    scc->print(errs()) << "\n";
+    scc->print(errs() << "NON COMM SCC THAT CAUSES NONREDUCABLE LIVE OUT:\n") << "\n";
+
     return false;
   }
   return true;
@@ -223,7 +223,6 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
    *  and one constant or external value
    */
   auto &sccInfo = this->getSCCAttrs(scc);
-  if (!sccInfo->singlePHI) return false;
   if (sccInfo->accumulators.size() == 0) return false;
   auto phis = sccInfo->PHINodes;
   auto accums = sccInfo->accumulators;
@@ -233,16 +232,36 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
       return false;
     }
 
-    auto opL = accum->getOperand(0);
-    auto opR = accum->getOperand(1);
-    auto isExternalOrConstant = [&](Value *val) -> bool {
-      return isa<ConstantData>(val) || scc->isExternal(val);
+    auto isIndependentOfSCC = [&](Value *val) -> bool {
+      if (!scc->isInternal(val)) return false;
+      auto node = scc->fetchNode(val);
+      for (auto edge : node->getIncomingEdges()) {
+        if (scc->isInternal(edge->getOutgoingT())) return false;
+      }
+      return true;
+    };
+    auto isExternalIndependentOrConstant = [&](Value *val) -> bool {
+      if (isa<ConstantData>(val)) return true;
+      if (scc->isExternal(val)) return true;
+      return isIndependentOfSCC(val);
+    };
+    auto isInternalPHI = [&](Value *val) -> bool {
+      return isa<PHINode>(val) && phis.find(cast<PHINode>(val)) != phis.end()
+        && !isIndependentOfSCC(val);
+    };
+    auto isInternalAccum = [&](Value *val) -> bool {
+      return isa<Instruction>(val) && accums.find(cast<Instruction>(val)) != accums.end();
     };
     auto isInternalPHIOrAccum = [&](Value *val) -> bool {
-      return (isa<PHINode>(val) && phis.find(cast<PHINode>(val)) != phis.end()) ||
-        (isa<Instruction>(val) && accums.find(cast<Instruction>(val)) != accums.end());
+      if (auto cast = dyn_cast<CastInst>(val)) {
+        return isInternalPHI(cast->getOperand(0)) || isInternalAccum(cast->getOperand(0));
+      }
+      return isInternalPHI(val) || isInternalAccum(val);
     };
-    if (!(isExternalOrConstant(opL) ^ isExternalOrConstant(opR))) return false;
+
+    auto opL = accum->getOperand(0);
+    auto opR = accum->getOperand(1);
+    if (!(isExternalIndependentOrConstant(opL) ^ isExternalIndependentOrConstant(opR))) return false;
     if (!(isInternalPHIOrAccum(opL) ^ isInternalPHIOrAccum(opR))) return false;
   }
 

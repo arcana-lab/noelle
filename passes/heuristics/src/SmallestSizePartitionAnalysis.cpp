@@ -4,9 +4,7 @@
  * Prioritize merge that best lowers overall cost without yielding a too costly partition
  */
 void llvm::SmallestSizePartitionAnalysis::checkIfShouldMerge (SCCset *sA, SCCset *sB) {
-  // errs() << "Checking to see if can merge " << sA << " with " << sB << "\n";
   if (partition.mergeYieldsCycle(sA, sB)) return ;
-  // errs() << "Trying to merge " << sA << " with " << sB << "\n";
 
   /*
    * Determine cost of merge
@@ -29,7 +27,6 @@ void llvm::SmallestSizePartitionAnalysis::checkIfShouldMerge (SCCset *sA, SCCset
    */
   if (lowered == loweredCost && insts > instCount) return ;
 
-  // errs() << "\twill lower merge by " << loweredCost << "\n";
   minSubsetA = sA;
   minSubsetB = sB;
   loweredCost = lowered;

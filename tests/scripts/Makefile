@@ -6,7 +6,7 @@ LIBS=-lm
 
 RUNTIME_CFLAGS="-DDSWP_STATS"
 RUNTIME_CFLAGS=""
-PARALLELIZATION_OPTIONS=-dswp-verbose=3 -dswp-force
+PARALLELIZATION_OPTIONS=-dswp-verbose=1 -dswp-force -doall-chunk-size=32 -doall-cores-per=8 -dswp-cores-per=2
 OPT_LEVEL=-O3
 
 INCLUDES=-I../../include/threadpool/include
@@ -54,7 +54,7 @@ test.bc: test.cpp
 
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
-	@../../scripts/iterate_dgsimplify.sh "" "$(PRE_OPTPASSES)" "$@"
+	@../../scripts/iterate_dgsimplify.sh "-pass-verbose=1" "$(PRE_OPTPASSES)" "$@"
 	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
 	llvm-dis $@
 

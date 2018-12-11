@@ -111,10 +111,8 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
    */
   for (auto &use : task->originalIVAttrs->singlePHI->uses()) {
     auto cloneUser = (Instruction *)use.getUser();
-    cloneUser->print(errs() << "Potential user: "); errs() << "\n";
     if (task->instructionClones.find(cloneUser) == task->instructionClones.end()) continue;
     auto cloneI = task->instructionClones[cloneUser];
-    cloneI->print(errs() << " Is user: "); errs() << "\n";
     if (cloneI == innerStepper || cloneI->getParent() == innerHeader) continue;
     // NOTE: The replacement is from the ORIGINAL PHI IV to the sum, not the clone to the sum
     //  This horrendous incongruency is because this function acts before data flow is adjusted

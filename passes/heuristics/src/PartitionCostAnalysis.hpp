@@ -6,6 +6,7 @@
 
 #include "SCC.hpp"
 #include "SCCDAGPartition.hpp"
+#include "Parallelization.hpp"
 #include "InvocationLatency.hpp"
 
 using namespace std;
@@ -14,7 +15,13 @@ namespace llvm {
 
   class PartitionCostAnalysis {
    public:
-    PartitionCostAnalysis (InvocationLatency &IL, SCCDAGPartition &p, SCCDAGAttrs &, int numCores);
+    PartitionCostAnalysis (
+      InvocationLatency &IL,
+      SCCDAGPartition &p,
+      SCCDAGAttrs &,
+      int numCores,
+      Verbosity verbose
+    );
 
     void traverseAllPartitionSubsets ();
 
@@ -44,6 +51,8 @@ namespace llvm {
     uint64_t loweredCost;
     uint64_t instCount;
     uint64_t mergedSubsetCost;
+
+    Verbosity verbose;
   };
 
 }

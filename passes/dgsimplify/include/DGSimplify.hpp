@@ -19,6 +19,7 @@
 #include "SCCDAG.hpp"
 
 #include "LoopDependenceInfo.hpp"
+#include "Parallelization.hpp"
 
 #include <set>
 #include <queue>
@@ -118,6 +119,7 @@ namespace llvm {
      * Internal structures owned by the pass
      */
     std::set<LoopSummary *> loopSummaries;
+    Verbosity verbose;
   };
 }
 

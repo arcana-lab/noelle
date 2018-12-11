@@ -17,7 +17,7 @@ using namespace llvm;
 
 namespace llvm {
 
-  enum class Verbosity { Disabled, Minimal, Pipeline, Maximal };
+  enum class Verbosity { Disabled, Minimal, Maximal };
 
   struct Parallelization : public ModulePass {
     public:

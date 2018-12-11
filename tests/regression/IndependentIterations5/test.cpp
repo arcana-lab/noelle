@@ -13,7 +13,7 @@ long long int computeSum (long long int *a, long long int iters, long long unsig
     }
 
     s += tmp;
-    a[i] += tmp;
+    // a[i] += tmp;
   }
 
   return s;
