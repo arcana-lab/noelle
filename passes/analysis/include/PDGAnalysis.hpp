@@ -54,13 +54,28 @@ namespace llvm {
       void collectPrimitiveArrayGlobalValues (Module &M);
       bool isOnlyUsedByNonAddrValues (std::set<Instruction *> checked, Instruction *I);
 
-      void collectMemorylessFunctions (Module &M);
-      bool isBackedgeOfLoadStoreIntoSameOffsetOfArray (DGEdge<Value> *edge, LoadInst *load, StoreInst *store);
       bool edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge);
+      bool isBackedgeOfLoadStoreIntoSameOffsetOfArray (
+        DGEdge<Value> *edge,
+        LoadInst *load,
+        StoreInst *store
+      );
+      bool isBackedgeIntoSameGlobal (DGEdge<Value> *edge);
       bool isMemoryAccessIntoDifferentGlobals (DGEdge<Value> *edge);
-      Value *getNonAliasingGV (Value *V);
-      bool edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge);
-      bool areGEPIndicesConstantOrIV (GetElementPtrInst *gep);
+
+      Value *getNonAliasingGVFromDirectAccess (Value *V);
+      std::pair<Value *, GetElementPtrInst *> getNonAliasingGVFromGEPAccess (
+        Value *V,
+        bool IVGovernedGEP = false
+      );
+      Value *getGVIfNonAliasing (Value *V);
+      Value *getMemoryPointerOp (Value *V);
+
       bool canPrecedeInCurrentIteration (Instruction *from, Instruction *to);
+      bool areGEPIndicesConstantOrIV (GetElementPtrInst *gep);
+      bool areIdenticalGEPAccessesInSameLoop (GetElementPtrInst *gep1, GetElementPtrInst *gep2);
+
+      void collectMemorylessFunctions (Module &M);
+      bool edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge);
   };
 }

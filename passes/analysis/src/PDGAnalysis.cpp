@@ -334,12 +334,9 @@ bool llvm::PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edg
   }
 
   bool loopCarried = true;
-  if (loopCarried &&
-      isMemoryAccessIntoDifferentGlobals(edge)) {
-    loopCarried = false;
-  }
-  if (loopCarried &&
-      isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store)) {
+  if (isMemoryAccessIntoDifferentGlobals(edge) ||
+      isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store) ||
+      isBackedgeIntoSameGlobal(edge)) {
     loopCarried = false;
   }
 
@@ -356,6 +353,11 @@ bool llvm::PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray (
   LoadInst *load,
   StoreInst *store
 ) {
+  // NOTE: until the GEP is guaranteed to be contiguous memory of
+  //  non pointer values, no guarantee about this dependency can be made
+  //  even if it is a load/store on the same IV-governed gep
+  return false;
+
   if (!load || !store) return false;
   if (!isa<GetElementPtrInst>(load->getPointerOperand())) return false;
   if (!isa<GetElementPtrInst>(store->getPointerOperand())) return false;
@@ -363,64 +365,119 @@ bool llvm::PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray (
   auto storeGEP = (GetElementPtrInst*)(store->getPointerOperand());
   if (!areGEPIndicesConstantOrIV(loadGEP) ||
       !areGEPIndicesConstantOrIV(storeGEP)) return false;
-  if (loadGEP != storeGEP) false;
-
-  // NOTE: until the GEP is guaranteed to be contiguous memory of
-  //  non pointer values, no guarantee about this dependency can be made
-  //  even if it is a load/store on the same IV-governed gep
-  //  *** with the exception of primitive global arrays for now ***
-  auto GV = getNonAliasingGV(loadGEP->getPointerOperand());
-  if (!GV) return false;
+  if (!areIdenticalGEPAccessesInSameLoop(loadGEP, storeGEP)) false;
 
   auto outgoingI = (Instruction*)(edge->getOutgoingT());
-  auto incomingT = (Instruction*)(edge->getIncomingT());
-
-  if (canPrecedeInCurrentIteration(outgoingI, incomingT)) {
+  auto incomingI = (Instruction*)(edge->getIncomingT());
+  if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
     errs() << "Not removing possible intra-iteration dependence\n";
+    outgoingI->print(errs() << "Outgoing: "); errs() << "\n";
+    incomingI->print(errs() << "Incoming: "); errs() << "\n";
     return false;
   }
 
+  outgoingI->print(errs() << "Removing: Outgoing: "); errs() << "\n";
+  incomingI->print(errs() << "Incoming: "); errs() << "\n";
+  return true;
+}
+
+bool llvm::PDGAnalysis::isBackedgeIntoSameGlobal (
+  DGEdge<Value> *edge
+) {
+  auto getNonAliasingGVAccess = [&](Value *V) -> std::pair<Value *, GetElementPtrInst *> {
+    Value *GV = getNonAliasingGVFromDirectAccess(V);
+    if (GV) return make_pair(GV, nullptr);
+    return getNonAliasingGVFromGEPAccess(V, /*IVGovernedGEP*/true);
+  };
+
+  GetElementPtrInst *gep = nullptr;
+  auto pair1 = getNonAliasingGVAccess(edge->getOutgoingT());
+  auto pair2 = getNonAliasingGVAccess(edge->getIncomingT());
+
+  // Ensure the same global variable is used
+  auto GV1 = pair1.first;
+  auto GV2 = pair2.first;
+  if (!GV1 || !GV2) return false;
+  if (GV1 != GV2) return false;
+
+  // Ensure either of the following:
+  //  1) two accesses using the same IV governed GEP
+  //  2) a store into the GEP and a load of the entire GV
+  auto GEP1 = pair1.second;
+  auto GEP2 = pair2.second;
+  if (GEP1 && GEP2) {
+    if (!areIdenticalGEPAccessesInSameLoop(GEP1, GEP2)) return false;
+  } else if (GEP1) {
+    if (!isa<StoreInst>(edge->getOutgoingT()) ||
+        !isa<LoadInst>(edge->getIncomingT())) return false;
+  } else if (GEP2) {
+    if (!isa<LoadInst>(edge->getOutgoingT()) ||
+        !isa<StoreInst>(edge->getIncomingT())) return false;
+  } else return false;
+
+  auto outgoingI = (Instruction*)(edge->getOutgoingT());
+  auto incomingI = (Instruction*)(edge->getIncomingT());
+  if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
+    errs() << "Not removing possible intra-iteration dependence\n";
+    outgoingI->print(errs() << "Outgoing: "); errs() << "\n";
+    incomingI->print(errs() << "Incoming: "); errs() << "\n";
+    return false;
+  }
+
+  outgoingI->print(errs() << "Removing: Outgoing: "); errs() << "\n";
+  incomingI->print(errs() << "Incoming: "); errs() << "\n";
   return true;
 }
 
 bool llvm::PDGAnalysis::isMemoryAccessIntoDifferentGlobals (DGEdge<Value> *edge) {
-  auto getGV = [&](Value *V) -> Value * {
-    if (auto load = dyn_cast<LoadInst>(V)) {
-      return getNonAliasingGV(load->getPointerOperand());
-    }
-    if (auto store = dyn_cast<StoreInst>(V)) {
-      return getNonAliasingGV(store->getPointerOperand());
-    }
-    return nullptr;
+  auto getNonAliasingGVAccess = [&](Value *V) -> Value * {
+    Value *GV = getNonAliasingGVFromDirectAccess(V);
+    if (GV) return GV;
+    return getNonAliasingGVFromGEPAccess(V, /*IVGovernedGEP*/false).first;
   };
 
-  Value *GV1 = getGV(edge->getOutgoingT());
-  Value *GV2 = getGV(edge->getIncomingT());
+  Value *GV1 = getNonAliasingGVAccess(edge->getOutgoingT());
+  Value *GV2 = getNonAliasingGVAccess(edge->getIncomingT());
   if (!GV1 || !GV2) return false;
-
   if (GV1 == GV2) return false;
   return true;
 }
 
-Value *llvm::PDGAnalysis::getNonAliasingGV (Value *V) {
-  auto getGVIfNonAliasing = [&](Value *V) -> Value * {
-    if (auto GV = dyn_cast<GlobalValue>(V)) {
-      if (primitiveArrayGlobals.find(GV) != primitiveArrayGlobals.end()) {
-        return GV;
-      }
-    }
-    return nullptr;
-  };
+Value *llvm::PDGAnalysis::getNonAliasingGVFromDirectAccess (Value *V) {
+  auto memOp = getMemoryPointerOp(V);
+  return memOp ? getGVIfNonAliasing(memOp) : nullptr;
+}
 
-  if (auto gep = dyn_cast<GetElementPtrInst>(V)) {
-    if (auto load = dyn_cast<LoadInst>(gep->getPointerOperand())) {
-      return getGVIfNonAliasing(load->getPointerOperand());
-    }
-    if (auto store = dyn_cast<StoreInst>(gep->getPointerOperand())) {
-      return getGVIfNonAliasing(store->getPointerOperand());
+std::pair<Value *, GetElementPtrInst *>
+llvm::PDGAnalysis::getNonAliasingGVFromGEPAccess (Value *V, bool IVGovernedGEP) {
+  auto empty = std::make_pair(nullptr, nullptr);
+  auto memOp = getMemoryPointerOp(V);
+  if (!memOp) return empty;
+  if (auto gep = dyn_cast<GetElementPtrInst>(memOp)) {
+    if (IVGovernedGEP && !areGEPIndicesConstantOrIV(gep)) return empty;
+    auto memOp = getMemoryPointerOp(gep->getPointerOperand());
+    if (memOp) return std::make_pair(getGVIfNonAliasing(memOp), gep);
+  }
+  return empty;
+}
+
+Value *llvm::PDGAnalysis::getGVIfNonAliasing (Value *V) {
+  if (auto GV = dyn_cast<GlobalValue>(V)) {
+    if (primitiveArrayGlobals.find(GV) != primitiveArrayGlobals.end()) {
+      return GV;
     }
   }
-  return getGVIfNonAliasing(V);
+  return nullptr;
+}
+
+Value *llvm::PDGAnalysis::getMemoryPointerOp (Value *V) {
+  if (auto load = dyn_cast<LoadInst>(V)) {
+    return load->getPointerOperand();
+  }
+  if (auto store = dyn_cast<StoreInst>(V)) {
+    return store->getPointerOperand();
+  }
+  return nullptr;
 }
 
 bool llvm::PDGAnalysis::canPrecedeInCurrentIteration (Instruction *from, Instruction *to) {
@@ -476,6 +533,30 @@ bool llvm::PDGAnalysis::areGEPIndicesConstantOrIV (GetElementPtrInst *gep) {
     auto scev = SE.getSCEV(indexV);
     if (scev->getSCEVType() != scAddRecExpr) return false;
   }
+  return true;
+}
+
+bool PDGAnalysis::areIdenticalGEPAccessesInSameLoop (GetElementPtrInst *gep1, GetElementPtrInst *gep2) {
+  if (gep1 == gep2) return true;
+
+  if (gep1->getFunction() != gep2->getFunction()) return false;
+  auto &LI = getAnalysis<LoopInfoWrapperPass>(*gep1->getFunction()).getLoopInfo();
+  if (LI.getLoopFor(gep1->getParent()) != LI.getLoopFor(gep2->getParent())) return false;
+
+  Value *accessed = nullptr;
+  if (auto load = dyn_cast<LoadInst>(gep1->getPointerOperand())) {
+    accessed = load->getPointerOperand();
+  } else return false;
+  if (auto load = dyn_cast<LoadInst>(gep2->getPointerOperand())) {
+    if (accessed != load->getPointerOperand()) return false;
+  } else return false;
+
+  auto indexCount = 0;
+  for (auto &indexV1 : gep1->indices()) {
+    auto &indexV2 = *(gep2->idx_begin() + indexCount++);
+    if (indexV1 != indexV2) return false;
+  }
+
   return true;
 }
 
