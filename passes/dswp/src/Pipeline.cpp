@@ -3,7 +3,7 @@
 using namespace llvm;
 
 void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
-  std::vector<TaskExecution *> techniqueTasks;
+  std::vector<Task *> techniqueTasks;
   auto &depthOrdered = partitioner->getDepthOrderedSubsets();
   for (auto subset : depthOrdered) {
 
