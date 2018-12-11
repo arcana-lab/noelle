@@ -81,7 +81,7 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
   /*
    * Revise latch stepper instruction to increment
    */
-  auto &accumulators = task->originalIVAttrs->PHIAccumulators;
+  auto &accumulators = task->originalIVAttrs->accumulators;
   assert(accumulators.size() == 1);
   auto originStepper = *(accumulators.begin());
   auto innerStepper = task->instructionClones[originStepper];

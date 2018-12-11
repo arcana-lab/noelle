@@ -28,6 +28,8 @@ namespace llvm {
     private:
       PDG *programDependenceGraph;
       std::set<std::string> memorylessFunctionNames;
+      std::set<Function *> CGUnderMain;
+      std::set<GlobalValue *> primitiveArrayGlobals;
 
       template <class InstI, class InstJ>
       void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, InstI *, InstJ *, bool WAW);
@@ -46,12 +48,34 @@ namespace llvm {
       void constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA);
       void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
 
+      void collectCGUnderFunctionMain (Module &M);
       void removeEdgesNotUsedByParSchemes (PDG *pdg);
 
+      void collectPrimitiveArrayGlobalValues (Module &M);
+      bool isOnlyUsedByNonAddrValues (std::set<Instruction *> checked, Instruction *I);
+
+      bool edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge);
+      bool isBackedgeOfLoadStoreIntoSameOffsetOfArray (
+        DGEdge<Value> *edge,
+        LoadInst *load,
+        StoreInst *store
+      );
+      bool isBackedgeIntoSameGlobal (DGEdge<Value> *edge);
+      bool isMemoryAccessIntoDifferentGlobals (DGEdge<Value> *edge);
+
+      Value *getNonAliasingGVFromDirectAccess (Value *V);
+      std::pair<Value *, GetElementPtrInst *> getNonAliasingGVFromGEPAccess (
+        Value *V,
+        bool IVGovernedGEP = false
+      );
+      Value *getGVIfNonAliasing (Value *V);
+      Value *getMemoryPointerOp (Value *V);
+
+      bool canPrecedeInCurrentIteration (Instruction *from, Instruction *to);
+      bool areGEPIndicesConstantOrIV (GetElementPtrInst *gep);
+      bool areIdenticalGEPAccessesInSameLoop (GetElementPtrInst *gep1, GetElementPtrInst *gep2);
+
       void collectMemorylessFunctions (Module &M);
-      bool edgeIsApparentIntraIterationDependency (DGEdge<Value> *edge);
       bool edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge);
-      bool checkLoadStoreAliasOnSameGEP (GetElementPtrInst *gep);
-      bool instMayPrecede (Value *from, Value *to);
   };
 }

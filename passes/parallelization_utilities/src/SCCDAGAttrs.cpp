@@ -58,7 +58,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvol
     auto scc = node->getT();
     this->sccToInfo[scc] = std::move(std::make_unique<SCCAttrs>(scc));
 
-    this->collectSinglePHIAndAccumulators(scc);
+    this->collectPHIsAndAccumulators(scc);
     this->checkIfInductionVariableSCC(scc, SE);
     if (isInductionVariableSCC(scc)) this->checkIfSimpleIV(scc, LIS);
     this->checkIfClonable(scc, SE);
@@ -102,6 +102,8 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
     // TODO(angelo): Implement this if it is legal. Unsure at the moment
     // if (scc->getType() == SCC::SCCType::INDEPENDENT) continue ;
     if (scc->getType() == SCC::SCCType::COMMUTATIVE) continue ;
+    errs() << "SCC type is indep: " << (scc->getType() == SCC::SCCType::INDEPENDENT) << "\n";
+    scc->print(errs()) << "\n";
     return false;
   }
   return true;
@@ -168,23 +170,21 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
   }
 }
 
-void SCCDAGAttrs::collectSinglePHIAndAccumulators (SCC *scc) {
-  PHINode *singlePHI = nullptr;
-  std::set<Instruction *> accums;
+void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
+  auto &sccInfo = this->getSCCAttrs(scc);
   for (auto iNodePair : scc->internalNodePairs()) {
     auto V = iNodePair.first;
     if (isa<CmpInst>(V) || isa<TerminatorInst>(V)) continue ;
     if (isa<GetElementPtrInst>(V) || isa<CastInst>(V)) continue ;
 
     if (auto phi = dyn_cast<PHINode>(V)) {
-      if (singlePHI) return ;
-      singlePHI = phi;
+      sccInfo->PHINodes.insert(phi);
       continue;
     }
     if (auto I = dyn_cast<Instruction>(V)) {
       auto binOp = I->getOpcode();
       if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
-        accums.insert(I);
+        sccInfo->accumulators.insert(I);
         continue;
       }
     }
@@ -192,12 +192,17 @@ void SCCDAGAttrs::collectSinglePHIAndAccumulators (SCC *scc) {
     /*
      * Fail to collect if an unexpected instruction is found
      */
+    sccInfo->PHINodes.clear();
+    sccInfo->accumulators.clear();
     return ;
   }
 
-  auto &sccInfo = this->getSCCAttrs(scc);
-  sccInfo->singlePHI = singlePHI;
-  sccInfo->PHIAccumulators = std::set<Instruction *>(accums.begin(), accums.end());
+  if (sccInfo->PHINodes.size() == 1) {
+    sccInfo->singlePHI = *sccInfo->PHINodes.begin();
+  }
+  if (sccInfo->accumulators.size() == 1) {
+    sccInfo->singleAccumulator = *sccInfo->accumulators.begin();
+  }
 }
 
 bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
@@ -212,47 +217,43 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
     }
   }
 
+  /*
+   * Requirement: 1+ accumulators that are all side effect free
+   * Requirement: all accumulators act on one PHI/accumulator in the SCC
+   *  and one constant or external value
+   */
   auto &sccInfo = this->getSCCAttrs(scc);
   if (!sccInfo->singlePHI) return false;
-  if (sccInfo->PHIAccumulators.size() == 0) return false;
-  for (auto accum : sccInfo->PHIAccumulators) {
-
-    /*
-     * Requirement: instructions are side effect free
-     */
+  if (sccInfo->accumulators.size() == 0) return false;
+  auto phis = sccInfo->PHINodes;
+  auto accums = sccInfo->accumulators;
+  for (auto accum : accums) {
     unsigned opCode = accum->getOpcode();
     if (accumOpInfo.sideEffectFreeOps.find(opCode) == accumOpInfo.sideEffectFreeOps.end()) {
       return false;
     }
 
-    /*
-     * Requirement: commutative instruction has one internal use and is used once internally
-     */
-    auto internalUses = 0;
-    auto internalUsers = 0;
-    auto iNode = scc->fetchNode(accum);
-    for (auto edge : iNode->getIncomingEdges()) {
-      if (scc->isInternal(edge->getOutgoingT())) internalUses++;
-    }
-    for (auto edge : iNode->getOutgoingEdges()) {
-      if (scc->isInternal(edge->getIncomingT())) internalUsers++;
-    }
-
-    if (internalUses != 1 || internalUsers != 1) return false;
+    auto opL = accum->getOperand(0);
+    auto opR = accum->getOperand(1);
+    auto isExternalOrConstant = [&](Value *val) -> bool {
+      return isa<ConstantData>(val) || scc->isExternal(val);
+    };
+    auto isInternalPHIOrAccum = [&](Value *val) -> bool {
+      return (isa<PHINode>(val) && phis.find(cast<PHINode>(val)) != phis.end()) ||
+        (isa<Instruction>(val) && accums.find(cast<Instruction>(val)) != accums.end());
+    };
+    if (!(isExternalOrConstant(opL) ^ isExternalOrConstant(opR))) return false;
+    if (!(isInternalPHIOrAccum(opL) ^ isInternalPHIOrAccum(opR))) return false;
   }
 
   /*
    * Requirement: instructions are all Add/Sub or all Mul
+   * Requirement: second operand of subtraction must be external
    */
-  auto firstAccum = *sccInfo->PHIAccumulators.begin();
-  bool isFirstMul = accumOpInfo.isMulOp(firstAccum->getOpcode());
-  for (auto accum : sccInfo->PHIAccumulators) {
+  bool isFirstMul = accumOpInfo.isMulOp((*accums.begin())->getOpcode());
+  for (auto accum : accums) {
     bool isMul = accumOpInfo.isMulOp(accum->getOpcode());
     if (isMul ^ isFirstMul) return false;
-
-    /*
-     * Requirement: second operand of subtraction must be external
-     */
     if (accumOpInfo.isSubOp(accum->getOpcode())) {
       if (scc->isInternal(accum->getOperand(1))) return false;
     }
@@ -306,16 +307,15 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
   return this->getSCCAttrs(scc)->isIVSCC = isIvSCC;
 }
 
-bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
+void SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
 
   /*
    * IV is described by single PHI with a start and recurrence incoming value
    * The IV has one accumulator only
    */
   auto &sccInfo = this->getSCCAttrs(scc);
-  if (!sccInfo->singlePHI) return false;
-  if (sccInfo->singlePHI->getNumIncomingValues() != 2) return false;
-  if (sccInfo->PHIAccumulators.size() != 1) return false;
+  if (!sccInfo->singlePHI || !sccInfo->singleAccumulator) return;
+  if (sccInfo->singlePHI->getNumIncomingValues() != 2) return;
 
   /*
    * The IV has one condition/conditional branch only
@@ -324,17 +324,17 @@ bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
   for (auto iNodePair : scc->internalNodePairs()) {
     auto V = iNodePair.first;
     if (auto cmp = dyn_cast<CmpInst>(V)) {
-      if (IVInfo.cmp) return false;
+      if (IVInfo.cmp) return;
       IVInfo.cmp = cmp;
     } else if (auto br = dyn_cast<BranchInst>(V)) {
       if (br->isUnconditional()) continue;
-      if (IVInfo.br) return false;
+      if (IVInfo.br) return;
       IVInfo.br = br;
     }
   }
-  if (!IVInfo.cmp || !IVInfo.br) return false;
+  if (!IVInfo.cmp || !IVInfo.br) return;
 
-  Instruction *accum = *sccInfo->PHIAccumulators.begin();
+  auto accum = sccInfo->singleAccumulator;
   auto incomingStart = sccInfo->singlePHI->getIncomingValue(0);
   if (incomingStart == accum) incomingStart = sccInfo->singlePHI->getIncomingValue(1);
   IVInfo.start = incomingStart;
@@ -344,10 +344,10 @@ bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
    */
   auto stepValue = accum->getOperand(0);
   if (stepValue == sccInfo->singlePHI) stepValue = accum->getOperand(1);
-  if (!isa<ConstantInt>(stepValue)) return false;
+  if (!isa<ConstantInt>(stepValue)) return;
   IVInfo.step = (ConstantInt*)stepValue;
   auto stepSize = IVInfo.step->getValue();
-  if (stepSize != 1 && stepSize != -1) return false;
+  if (stepSize != 1 && stepSize != -1) return;
 
   auto cmpLHS = IVInfo.cmp->getOperand(0);
   unsigned cmpToInd = cmpLHS == sccInfo->singlePHI || cmpLHS == accum;
@@ -358,13 +358,12 @@ bool SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
   /*
    * The last value before the end value reached by the IV can be determined
    */
-  if (!checkSimpleIVEndVal(IVInfo, LIS)) return false;
+  if (!doesIVHaveSimpleEndVal(IVInfo, LIS)) return;
 
-  sccInfo->simpleIVInfo = IVInfo;
-  return sccInfo->isSimpleIV = true;
+  sccInfo->simpleIVInfo = new SimpleIVInfo(IVInfo);
 }
 
-bool SCCDAGAttrs::checkSimpleIVEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LIS) {
+bool SCCDAGAttrs::doesIVHaveSimpleEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LIS) {
 
   /*
    * Branch statement has two successors, one in the loop body, one outside the loop

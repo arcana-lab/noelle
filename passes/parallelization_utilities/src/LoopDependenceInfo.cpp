@@ -9,7 +9,7 @@ using namespace std;
 using namespace llvm;
 
 LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt)
-		: function{f}, functionDG{fG}, DOALLChunkSize{2}, maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency()}
+		: function{f}, functionDG{fG}, DOALLChunkSize{8}, maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency()}
   {
 
   /*

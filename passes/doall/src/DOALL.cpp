@@ -180,7 +180,7 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
   for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto producer = LDI->environment->producerAt(envInd);
     auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
-    auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->PHIAccumulators.begin());
+    auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->accumulators.begin());
     auto binOpCode = firstAccumI->getOpcode();
     reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
 

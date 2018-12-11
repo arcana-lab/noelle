@@ -66,17 +66,19 @@ namespace llvm {
      */
     bool canInlineWithoutRecursiveLoop (Function *parentF, Function *childF) ;
     bool inlineFunctionCall (Function *F, Function *childF, CallInst *call) ;
-    void adjustOrdersAfterInline (Function *F, Function *childF, CallInst *call, LoopSummary *nextLoop) ;
-    LoopSummary *getNextPreorderLoopAfter (Function *F, CallInst *call) ;
+    int getNextPreorderLoopAfter (Function *F, CallInst *call) ;
+    void adjustLoopOrdersAfterInline (Function *F, Function *childF, int nextLoop) ;
+    void adjustFnGraphAfterInline (Function *F, Function *childF, int callInd) ;
 
     /*
      * Function and loop order tracking
      */
     void collectFnGraph (Function *main) ;
+    void collectFnCallsAndCalled (CallGraph &CG, Function *parentF) ;
     void collectInDepthOrderFns (Function *main);
-    void collectPreOrderedLoopsFor (Function *F) ;
-    void addFnPairInstance (Function *parentF, Function *childF, CallInst *call) ;
-    void removeFnPairInstance (Function *parentF, Function *childF, CallInst *call) ;
+    void createPreOrderedLoopSummariesFor (Function *F) ;
+    std::vector<Loop *> *collectPreOrderedLoopsFor (Function *F, LoopInfo &LI) ;
+    void sortInDepthOrderFns (std::vector<Function *> &inOrder);
 
     /*
      * Debugging
@@ -84,12 +86,14 @@ namespace llvm {
     void printFnCallGraph ();
     void printFnOrder ();
     void printFnLoopOrder (Function *F);
+    void printLoopsToCheck ();
+    void printFnsToCheck ();
 
     /*
      * Determining and maintaining depth ordering of functions and their loops
      */
     std::unordered_map<Function *, std::set<Function *>> parentFns;
-    std::unordered_map<Function *, std::unordered_map<Function *, std::set<CallInst *>>> childrenFns;
+    std::unordered_map<Function *, std::vector<Function *>> childrenFns;
     std::vector<Function *> depthOrderedFns;
     std::set<Function *> recursiveChainEntranceFns;
     std::unordered_map<Function *, int> fnOrders;
@@ -97,8 +101,12 @@ namespace llvm {
 
     /*
      * Tracking functions that had a CallInst of theirs inlined
+     * Initially valid call graph information accurate on unaffected functions
+     * Updated called function order as inlines occur
      */
     std::set<Function *> fnsAffected;
+    std::unordered_map<Function *, std::vector<CallInst *>> orderedCalls;
+    std::unordered_map<Function *, std::vector<Function *>> orderedCalled;
 
     /*
      * Tracking the functions and loops to affect

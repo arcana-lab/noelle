@@ -13,8 +13,9 @@ int pgain1 (int iters){
   int count = 0;
   for (auto i=0; i < iters; ++i){
     if (is_valid[i]) {
-      values[i] = count++;
+      values[i] = 5;
     }
+    count += values[i];
   }
 
   return count;
@@ -35,13 +36,27 @@ int main (int argc, char *argv[]){
   is_valid = (bool *)calloc(iterations, sizeof(bool));
   values = (int *)malloc(iterations * sizeof(int));
 
+  /*
+  iterations = 3;
+  bool is_valid[3] = { false, false, false };
+  int values[3] = { 1, 2, 3 };
+  */
+
   for (auto i=0; i < iterations; i++){
-    if (i % 5 < 2) {
-      is_valid[i] = 1;
-    }
+    is_valid[i] = i % 5 < 2;
+    values[i] = 1;
   }
 
+  /*
+  int count = 4;
+  for (auto i=0; i < iterations; ++i){
+    if (is_valid[i]) {
+      values[i] = count;
+    }
+  }
+  */
   auto count = pgain1(iterations);
+
   printf("%d, %d\n", count, values[iterations/2]);
 
   return 0;
