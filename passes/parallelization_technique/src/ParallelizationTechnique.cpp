@@ -237,7 +237,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
        * Store the identity value of the operator
        */
       auto producerSCC = LDI->loopSCCDAG->sccOfValue(cast<PHINode>(producer));
-      auto firstAccumI = LDI->sccdagAttrs.getSCCAttrs(producerSCC)->singleAccumulator;
+      auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->accumulators.begin());
       auto envPtrType = envPtr->getType();
       auto identityV = LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(
         firstAccumI,
