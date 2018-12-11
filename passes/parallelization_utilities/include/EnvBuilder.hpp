@@ -47,7 +47,7 @@ namespace llvm {
 		/*
 		 * Maps from environment index to load/stores
 		 */
-		std::unordered_map<int, Instruction *> envIndexToPtr;
+    std::unordered_map<int, Instruction *> envIndexToPtr;
     std::set<int> liveInInds;
     std::set<int> liveOutInds;
   };
@@ -111,8 +111,8 @@ namespace llvm {
     /*
      * The environment variable types and their allocations
      */
-		std::unordered_map<int, Value *> envIndexToVar;
-		std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
+    std::unordered_map<int, Value *> envIndexToVar;
+    std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
     int numReducers;
 
     /*

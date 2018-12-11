@@ -52,6 +52,11 @@ namespace llvm {
 
       /*
        * Generate empty tasks.
+       *
+       * Each task will be composed by the following empty basic blocks:
+       * - an entry basic block, which is mapped to the pre-header of the loop LDI
+       * - an exit block, which is the only basic block that will exit the task
+       * - one basic block per loop exit, which will jump to the exit block
        */
       virtual void generateEmptyTasks (
         LoopDependenceInfo *LDI, 
@@ -63,11 +68,19 @@ namespace llvm {
        */
       void initializeEnvironmentBuilder (
         LoopDependenceInfo *LDI,
+        std::set<int> nonReducableVars
+      );
+
+      void initializeEnvironmentBuilder (
+        LoopDependenceInfo *LDI,
         std::set<int> simpleVars,
         std::set<int> reducableVars
       );
+
       void allocateEnvironmentArray (LoopDependenceInfo *LDI);
+
       void populateLiveInEnvironment (LoopDependenceInfo *LDI);
+
       virtual void propagateLiveOutEnvironment (LoopDependenceInfo *LDI);
 
       /*

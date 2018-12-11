@@ -43,6 +43,19 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
       PointerType::getUnqual(envBuilder->getEnvArrayTy())
     ));
   }
+
+  return ;
+}
+
+void ParallelizationTechnique::initializeEnvironmentBuilder (
+  LoopDependenceInfo *LDI,
+  std::set<int> nonReducableVars
+  ){
+  std::set<int> emptySet{};
+
+  this->initializeEnvironmentBuilder(LDI, nonReducableVars, emptySet);
+
+  return ;
 }
 
 void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI) {
