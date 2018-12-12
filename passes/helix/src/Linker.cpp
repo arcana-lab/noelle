@@ -1,6 +1,8 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
+using namespace llvm ;
+
 void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   LoopDependenceInfo *LDI,
   Parallelization &par,

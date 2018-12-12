@@ -3,6 +3,8 @@ set(Srcs
   HELIX.cpp
   HELIXTask.cpp
   Linker.cpp
+  SequentialSegments.cpp
+  SequentialSegment.cpp
 )
 
 # Compilation flags

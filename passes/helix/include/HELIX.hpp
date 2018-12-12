@@ -9,6 +9,7 @@
 #include "Parallelization.hpp"
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechnique.hpp"
+#include "SequentialSegment.hpp"
 
 namespace llvm {
 
@@ -41,6 +42,10 @@ namespace llvm {
         uint64_t numberOfSequentialSegments
       );
 
+      std::vector<SequentialSegment *> identifySequentialSegments (
+        LoopDependenceInfo *LDI
+      );
+    
     private:
 
   };

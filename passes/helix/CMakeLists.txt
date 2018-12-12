@@ -32,4 +32,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/HELIX.hpp DESTINATION include)
+install(PROGRAMS include/HELIX.hpp include/SequentialSegment.hpp DESTINATION include)

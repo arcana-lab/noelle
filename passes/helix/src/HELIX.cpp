@@ -59,6 +59,11 @@ bool HELIX::apply (
   }
 
   /*
+   * Identify sequential segments.
+   */
+  auto sequentialSegments = this->identifySequentialSegments(LDI);
+
+  /*
    * Generate empty tasks for the HELIX execution.
    */
   auto helixTask = new HELIXTask();
