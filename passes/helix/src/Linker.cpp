@@ -39,8 +39,8 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Call the function that incudes the parallelized loop.
    */
-  IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
-  doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
+  IRBuilder<> helixBuilder(LDI->entryPointOfParallelizedLoop);
+  helixBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
     (Value *)tasks[0]->F,
     envPtr,
     numCores,
@@ -55,7 +55,7 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Jump to the unique successor of the loop.
    */
-  doallBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
+  helixBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
 
   return ;
 }
