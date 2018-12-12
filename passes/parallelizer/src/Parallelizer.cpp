@@ -70,6 +70,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
   }
   assert(LDI->entryPointOfParallelizedLoop != nullptr);
   assert(LDI->exitPointOfParallelizedLoop != nullptr);
+  assert(envArray != nullptr);
 
   /*
    * The loop has been parallelized.
