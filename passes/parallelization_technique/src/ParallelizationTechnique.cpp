@@ -30,10 +30,10 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
     abort();
   }
 
-  envBuilder = new EnvBuilder(*LDI->environment, module.getContext());
-  envBuilder->createEnvVariables(simpleVars, reducableVars, numTaskInstances);
+  this->envBuilder = new EnvBuilder(*LDI->environment, module.getContext());
+  this->envBuilder->createEnvVariables(simpleVars, reducableVars, numTaskInstances);
 
-  envBuilder->createEnvUsers(tasks.size());
+  this->envBuilder->createEnvUsers(tasks.size());
   for (auto i = 0; i < tasks.size(); ++i) {
     auto task = tasks[i];
     auto envUser = envBuilder->getUser(i);

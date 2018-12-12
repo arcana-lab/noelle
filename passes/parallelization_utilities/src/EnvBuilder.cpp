@@ -127,14 +127,25 @@ void EnvBuilder::generateEnvArray (IRBuilder<> builder) {
 }
 
 void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
+
+  /*
+   * Check the environment array.
+   */
   if (!this->envArray) {
     errs() << "An environment array has not been generated!\n"
       << "\tSee the EnvBuilder API call generateEnvArray\n";
     abort();
   }
-  if (envIndexToVar.size() + envIndexToReducableVar.size() != LE.envSize()) {
-    errs() << "Not all environment variables have been created!\n"
-      << "\tSee the EnvBuilder API call createEnvVariables\n";
+
+  /*
+   * Check the variables created.
+   */
+  auto variablesCreated = envIndexToVar.size() + envIndexToReducableVar.size();
+  if (variablesCreated != this->LE.envSize()) {
+    errs() << "EnvBuilder: ERROR = Not all environment variables have been created.\n" ;
+    errs() << "\tEnvironment varibles = " << LE.envSize() << "\n";
+    errs() << "\tVariables created = " << variablesCreated << "\n";
+    errs() << "\tSee the EnvBuilder API call createEnvVariables\n";
     abort();
   }
 
