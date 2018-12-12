@@ -141,8 +141,23 @@ extern "C" {
     return ;
   }
 
-  void helixDispatcher (void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), void *env, int64_t numCores, int64_t chunkSize){
-    abort();
+  void helixDispatcher (void (*parallelizedLoop)(void *, int64_t, int64_t), void *env, int64_t numCores, int64_t numOfsequentialSegments){
+
+    /*
+     * Launch threads
+     */
+    std::vector<MARC::TaskFuture<void>> localFutures;
+    for (auto i = 0; i < numCores; ++i) {
+      localFutures.push_back(pool.submit(parallelizedLoop, env, i, numCores));
+    }
+
+    /*
+     * Wait for the threads to end
+     */
+    for (auto& future : localFutures){
+      future.get();
+    }
+
     return ;
   }
 

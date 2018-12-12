@@ -35,6 +35,11 @@ namespace llvm {
         ) const override ;
 
     protected:
+      void addChunkFunctionExecutionAsideOriginalLoop (
+        LoopDependenceInfo *LDI,
+        Parallelization &par,
+        uint64_t numberOfSequentialSegments
+      );
 
     private:
 

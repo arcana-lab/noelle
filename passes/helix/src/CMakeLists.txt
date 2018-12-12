@@ -2,6 +2,7 @@
 set(Srcs 
   HELIX.cpp
   HELIXTask.cpp
+  Linker.cpp
 )
 
 # Compilation flags
