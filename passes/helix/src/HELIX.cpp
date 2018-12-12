@@ -77,6 +77,7 @@ bool HELIX::apply (
    */
   std::set<int> allEnvironementVariables{liveInVars.begin(), liveInVars.end()};
   allEnvironementVariables.insert(liveOutVars.begin(), liveOutVars.end());
+  errs() << "AAA " << allEnvironementVariables.size() << " " << LDI->environment->envSize() << "\n";
 
   /*
    * Build the single environment that is shared between all instances of the HELIX task.

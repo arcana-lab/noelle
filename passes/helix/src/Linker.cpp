@@ -16,6 +16,7 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
 
   /*
    * Create the environment.
+   * This will append store instructions to LDI->entryPointOfParallelizedLoop to initialize the environment array.
    */
   this->allocateEnvironmentArray(LDI);
   this->populateLiveInEnvironment(LDI);
