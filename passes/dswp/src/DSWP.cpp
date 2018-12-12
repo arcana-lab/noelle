@@ -162,6 +162,11 @@ bool DSWP::apply (
     generateCodeToStoreLiveOutVariables(LDI, i);
 
     /*
+     * Generate a store to propagate the information about which exit block has been taken from the parallelized loop to the code outside it.
+     */
+    generateCodeToStoreExitBlockIndex(LDI, i);
+
+    /*
      * Fix the data flow within the parallelized loop by redirecting operands of
      * cloned instructions to refer to the other cloned instructions. Currently,
      * they still refer to the original loop's instructions.

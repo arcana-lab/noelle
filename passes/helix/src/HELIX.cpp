@@ -104,6 +104,11 @@ bool HELIX::apply (
   this->generateCodeToStoreLiveOutVariables(LDI, 0);
 
   /*
+   * Generate a store to propagate the information about which exit block has been taken from the parallelized loop to the code outside it.
+   */
+  this->generateCodeToStoreExitBlockIndex(LDI, 0);
+
+  /*
    * The operands of the cloned instructions still refer to the original ones.
    *
    * Fix the data flow within the parallelized loop by redirecting operands of cloned instructions to refer to the other cloned instructions. 

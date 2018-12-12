@@ -229,7 +229,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     /*
      * Create GEP access of the single, or reducable, environment variable
      */
-    bool isReduced = this->envBuilder->isReduced(envIndex);
+    auto isReduced = this->envBuilder->isReduced(envIndex);
     if (isReduced) {
       envUser->createReducableEnvPtr(entryBuilder, envIndex, numTaskInstances, task->instanceIndexV);
     } else {
@@ -268,7 +268,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     prodBuilder.CreateStore(prodClone, envPtr);
   }
 
-  generateCodeToStoreExitBlockIndex(LDI, taskIndex);
+  return ;
 }
 
 void ParallelizationTechnique::adjustDataFlowToUseClones (
@@ -343,21 +343,34 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
 ){
 
   /*
-   * Confirm whether an exit block choice is represented in the environment
+   * Check whether there are multiple exit blocks or not.
+   * If there are more exit blocks, then we need to specify which one has been taken.
    */
   auto task = this->tasks[taskIndex];
-  if (task->loopExitBlocks.size() == 1) return ;
+  if (task->loopExitBlocks.size() == 1) {
+    return ;
+  }
+
+  /*
+   * There are multiple exit blocks.
+   *
+   * Fetch the pointer of the location where the exit block ID taken will be stored.
+   */
   auto exitBlockEnvIndex = LDI->environment->indexOfExitBlock();
   assert(exitBlockEnvIndex != -1);
-
   auto envUser = this->envBuilder->getUser(taskIndex);
   IRBuilder<> entryBuilder(task->entryBlock);
   envUser->createEnvPtr(entryBuilder, exitBlockEnvIndex);
 
+  /*
+   * Add a store instruction to specify to the code outside the parallelized loop which exit block is taken.
+   */
   auto int32 = IntegerType::get(module.getContext(), 32);
   for (int i = 0; i < task->loopExitBlocks.size(); ++i) {
     IRBuilder<> builder(&*task->loopExitBlocks[i]->begin());
     auto envPtr = envUser->getEnvPtr(exitBlockEnvIndex);
     builder.CreateStore(ConstantInt::get(int32, i), envPtr);
   }
+
+  return ;
 }

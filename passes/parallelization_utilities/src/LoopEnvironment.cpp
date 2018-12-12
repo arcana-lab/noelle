@@ -96,4 +96,3 @@ int LoopEnvironment::indexOfProducer (Value *producer) {
 std::set<Value *> &LoopEnvironment::consumersOf (Value *prod) {
   return prodConsumers[prod];
 }
-
