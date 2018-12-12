@@ -3,7 +3,7 @@
 using namespace llvm;
 
 void DSWP::inlineQueueCalls (DSWPLoopDependenceInfo *LDI, int taskIndex) {
-  auto task = (DSWPTaskExecution *)this->tasks[taskIndex];
+  auto task = (DSWPTask *)this->tasks[taskIndex];
   std::queue<CallInst *> callsToInline;
   for (auto &queueInstrPair : task->queueInstrMap) {
     auto &queueInstr = queueInstrPair.second;

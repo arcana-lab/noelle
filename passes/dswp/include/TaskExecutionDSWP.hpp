@@ -12,10 +12,9 @@ namespace llvm {
   struct QueueInfo;
   struct QueueInstrs;
 
-  class DSWPTaskExecution : public Task {
+  class DSWPTask : public Task {
     public:
-
-      DSWPTaskExecution ()
+      DSWPTask ()
         : stageSCCs{}, removableSCCs{}, usedCondBrs{} {}
 
       /*

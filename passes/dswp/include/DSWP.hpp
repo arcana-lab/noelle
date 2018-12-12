@@ -101,8 +101,8 @@ namespace llvm {
       void registerQueue (
         Parallelization &par,
         DSWPLoopDependenceInfo *LDI,
-        DSWPTaskExecution *fromStage,
-        DSWPTaskExecution *toStage,
+        DSWPTask *fromStage,
+        DSWPTask *toStage,
         Instruction *producer,
         Instruction *consumer
       );

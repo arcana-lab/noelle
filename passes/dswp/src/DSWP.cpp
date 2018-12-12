@@ -46,7 +46,9 @@ void DSWP::reset () {
 
 void DSWP::initialize (LoopDependenceInfo *baseLDI, Heuristics *h) {
   auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
-  if (coresPerLoopOverride > 0) LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
+  if (coresPerLoopOverride > 0) {
+    LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
+  }
   partitionSCCDAG(LDI, h);
 }
 
@@ -56,9 +58,7 @@ bool DSWP::canBeAppliedToLoop (
   Heuristics *h,
   ScalarEvolution &SE
 ) const {
-  auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
-
-  bool canApply = subsets->size() > 1;
+  auto canApply = subsets->size() > 1;
   if (this->forceParallelization) {
     if (!canApply && this->verbose != Verbosity::Disabled) {
       errs() << "DSWP:  Forced parallelization of a disadvantageous loop\n";
@@ -136,7 +136,7 @@ bool DSWP::apply (
    * Create the pipeline stages (technique tasks)
    */
   for (auto i = 0; i < this->tasks.size(); ++i) {
-    auto task = (DSWPTaskExecution *)this->tasks[i];
+    auto task = (DSWPTask *)this->tasks[i];
 
     /*
      * Add instructions of the current pipeline stage to the task function

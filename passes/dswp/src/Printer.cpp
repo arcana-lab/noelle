@@ -8,7 +8,7 @@ void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) const {
 
   errs() << "DSWP:  Pipeline stages\n";
   for (auto techniqueTask : this->tasks) {
-    auto task = (DSWPTaskExecution *)techniqueTask;
+    auto task = (DSWPTask *)techniqueTask;
     errs() << "DSWP:    Stage: " << task->order << "\n";
     for (auto scc : task->stageSCCs) {
       scc->print(errs(), "DSWP:     ", /*maxEdges=*/15);
@@ -33,7 +33,7 @@ void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI) const {
    */
   errs() << "DSWP:  Queues that connect the pipeline stages\n";
   for (auto techniqueTask : this->tasks) {
-    auto task = (DSWPTaskExecution *)techniqueTask;
+    auto task = (DSWPTask *)techniqueTask;
     errs() << "DSWP:    Stage: " << task->order << "\n";
 
     errs() << "DSWP:      Push value queues: ";

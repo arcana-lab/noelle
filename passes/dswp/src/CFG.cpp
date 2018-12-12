@@ -61,7 +61,7 @@ void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI) {
    * Collect conditional branches necessary to capture stage execution
    */
   for (auto techniqueTask : this->tasks) {
-    auto task = (DSWPTaskExecution *)techniqueTask;
+    auto task = (DSWPTask *)techniqueTask;
     for (auto br : minNecessaryCondBrs) task->usedCondBrs.insert(br);
 
     std::set<TerminatorInst *> stageBrs;
@@ -84,7 +84,7 @@ void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI) {
 }
 
 void DSWP::generateLoopSubsetForStage (DSWPLoopDependenceInfo *LDI, int taskIndex) {
-  auto task = (DSWPTaskExecution *)this->tasks[taskIndex];
+  auto task = (DSWPTask *)this->tasks[taskIndex];
 
   /*
    * Clone the portion of the loop within the stage's normal, and clonable, SCCs

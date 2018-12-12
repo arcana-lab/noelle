@@ -4,6 +4,9 @@
 - Create a "Dependence" abstraction, which is DG<Value>
   - have methods like "getSource(), getDestination(), isMemoryBased()"
 
+==== Renaming
+generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
+
 
 ==== Parallelizer
 - Modify parallelizer to be able to parallelize multiple loops nested to each other at the same time

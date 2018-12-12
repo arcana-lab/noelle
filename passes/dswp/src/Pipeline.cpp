@@ -10,7 +10,7 @@ void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
     /*
      * Create task (stage), populating its SCCs
      */
-    auto task = new DSWPTaskExecution();
+    auto task = new DSWPTask();
     techniqueTasks.push_back(task);
     for (auto scc : *subset) {
       task->stageSCCs.insert(scc);
@@ -25,7 +25,7 @@ void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
 
 void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
   for (auto techniqueTask : this->tasks) {
-    auto task = (DSWPTaskExecution *)techniqueTask;
+    auto task = (DSWPTask *)techniqueTask;
     std::set<DGNode<SCC> *> visitedNodes;
     std::queue<DGNode<SCC> *> dependentSCCNodes;
 

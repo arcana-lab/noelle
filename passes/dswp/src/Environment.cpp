@@ -19,7 +19,7 @@ void DSWP::collectLiveInEnvInfo (DSWPLoopDependenceInfo *LDI) {
 
       if (!isSharedInst) {
         for (auto i = 0; i < this->tasks.size(); ++i) {
-          auto task = (DSWPTaskExecution *)this->tasks[i];
+          auto task = (DSWPTask *)this->tasks[i];
           bool isInternal = false;
           for (auto scc : task->stageSCCs) isInternal |= scc->isInternal(consumer);
           if (isInternal) envBuilder->getUser(i)->addLiveInIndex(envIndex);
@@ -43,7 +43,7 @@ void DSWP::collectLiveOutEnvInfo (DSWPLoopDependenceInfo *LDI) {
 
     if (!isSharedInst) {
       for (auto i = 0; i < this->tasks.size(); ++i) {
-        auto task = (DSWPTaskExecution *)this->tasks[i];
+        auto task = (DSWPTask *)this->tasks[i];
         bool isInternal = false;
         for (auto scc : task->stageSCCs) isInternal |= scc->isInternal(producer);
         if (isInternal) {
