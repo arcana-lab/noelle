@@ -77,7 +77,14 @@ bool HELIX::apply (
    */
   std::set<int> allEnvironementVariables{liveInVars.begin(), liveInVars.end()};
   allEnvironementVariables.insert(liveOutVars.begin(), liveOutVars.end());
-  errs() << "AAA " << allEnvironementVariables.size() << " " << LDI->environment->envSize() << "\n";
+
+  /*
+   * Add the memory location of the environment used to store the exit block taken to leave the parallelized loop.
+   * This location exists only if there is more than one loop exit.
+   */
+  if (LDI->numberOfExits() > 1){ 
+    allEnvironementVariables.insert(LDI->environment->indexOfExitBlock());
+  }
 
   /*
    * Build the single environment that is shared between all instances of the HELIX task.
