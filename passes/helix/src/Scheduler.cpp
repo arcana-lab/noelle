@@ -9,3 +9,11 @@ void HELIX::squeezeSequentialSegments (
 
   return ;
 }
+
+void HELIX::scheduleSequentialSegments (
+  LoopDependenceInfo *LDI,
+  std::vector<SequentialSegment *> *sss
+  ){
+
+  return ;
+}

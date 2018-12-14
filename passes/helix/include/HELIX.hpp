@@ -51,6 +51,11 @@ namespace llvm {
         std::vector<SequentialSegment *> *sss
       );
 
+      void scheduleSequentialSegments (
+        LoopDependenceInfo *LDI,
+        std::vector<SequentialSegment *> *sss
+      );
+
     private:
 
   };

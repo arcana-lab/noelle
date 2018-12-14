@@ -145,6 +145,11 @@ bool HELIX::apply (
   this->squeezeSequentialSegments(LDI, &sequentialSegments);
 
   /*
+   * Schedule the sequential segments to overlap parallel and sequential segments.
+   */
+  this->scheduleSequentialSegments(LDI, &sequentialSegments);
+
+  /*
    * Link the parallelize code to the original one.
    */
   this->addChunkFunctionExecutionAsideOriginalLoop(LDI, par, sequentialSegments.size());
