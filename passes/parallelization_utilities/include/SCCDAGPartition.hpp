@@ -15,13 +15,18 @@ class SCCDAGPartition {
       LoopInfoSummary *LIS,
       std::set<SCCset *> *sets
     );
+
     void resetPartition (std::set<SCCset *> *subsets);
 
     SCCset *mergePairAndCycles (SCCset *subsetA, SCCset *subsetB);
+
     SCCset *mergePair (SCCset *subsetA, SCCset *subsetB, bool doReorder = true);
 
     bool mergeYieldsCycle (SCCset *subsetA, SCCset *subsetB);
+
     bool mergeAlongMemoryEdges ();
+
+    uint64_t numberOfPartitions (void);
 
     std::set<SCCset *> *getSubsets() { return subsets; }
     std::set<SCCset *> *getRoots() { return &roots; }

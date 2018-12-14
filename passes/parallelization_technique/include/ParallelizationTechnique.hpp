@@ -8,6 +8,7 @@
 #include "LoopDependenceInfo.hpp"
 #include "Heuristics.hpp"
 #include "TaskExecution.hpp"
+#include "SCCDAGPartition.hpp"
 
 namespace llvm {
 
@@ -120,11 +121,19 @@ namespace llvm {
       );
 
       /*
+       * Partition SCCDAG.
+       */
+      void partitionSCCDAG (
+        LoopDependenceInfo *LDI
+      );
+
+      /*
        * Fields
        */
       Module& module;
       Verbosity verbose;
       EnvBuilder *envBuilder;
+      SCCDAGPartition *partition;
 
       /*
        * Parallel task related information.

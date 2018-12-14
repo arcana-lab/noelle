@@ -4,7 +4,7 @@ using namespace llvm;
 
 void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
   std::vector<Task *> techniqueTasks;
-  auto &depthOrdered = partitioner->getDepthOrderedSubsets();
+  auto &depthOrdered = this->partition->getDepthOrderedSubsets();
   for (auto subset : depthOrdered) {
 
     /*
@@ -20,7 +20,7 @@ void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
 
   this->generateEmptyTasks(LDI, techniqueTasks);
   this->numTaskInstances = techniqueTasks.size();
-  assert(this->numTaskInstances == subsets->size());
+  assert(this->numTaskInstances == this->partition->numberOfPartitions());
 }
 
 void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {

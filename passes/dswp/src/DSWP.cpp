@@ -12,7 +12,6 @@ DSWP::DSWP (
   ParallelizationTechnique{module, v},
   forceParallelization{forceParallelization},
   enableMergingSCC{enableSCCMerging},
-  partitioner{nullptr}, subsets{nullptr},
   coresPerLoopOverride{coresPerOverride}
   {
 
@@ -35,15 +34,6 @@ DSWP::DSWP (
   return ;
 }
 
-void DSWP::reset () {
-  ParallelizationTechnique::reset();
-  if (subsets) {
-    delete partitioner;
-    delete subsets;
-    subsets = nullptr;
-  }
-}
-
 void DSWP::initialize (LoopDependenceInfo *baseLDI, Heuristics *h) {
   auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
   if (coresPerLoopOverride > 0) {
@@ -58,7 +48,7 @@ bool DSWP::canBeAppliedToLoop (
   Heuristics *h,
   ScalarEvolution &SE
 ) const {
-  auto canApply = subsets->size() > 1;
+  auto canApply = this->partition->numberOfPartitions() > 1;
   if (this->forceParallelization) {
     if (!canApply && this->verbose != Verbosity::Disabled) {
       errs() << "DSWP:  Forced parallelization of a disadvantageous loop\n";

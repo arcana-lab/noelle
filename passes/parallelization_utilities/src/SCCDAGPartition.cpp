@@ -11,6 +11,10 @@ SCCDAGPartition::SCCDAGPartition (
   resetPartition(sets);
 }
 
+uint64_t SCCDAGPartition::numberOfPartitions (void){
+  return this->subsets->size();
+}
+
 void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
   subsets = sets;
   for (auto subset : *subsets) {

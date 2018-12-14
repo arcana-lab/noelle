@@ -43,7 +43,6 @@ namespace llvm {
         LoopDependenceInfo *baseLDI,
         Heuristics *h
       );
-      void reset () override ;
 
     private:
 
@@ -125,7 +124,6 @@ namespace llvm {
       /*
        * DSWP specific structures used to determine workers
        */
-      SCCDAGPartition *partitioner;
       std::set<std::set<SCC *> *> *subsets;
 
       int coresPerLoopOverride;

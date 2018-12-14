@@ -5,9 +5,9 @@ using namespace llvm;
 void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
 
   /*
-   * Initial the partition structure with the merged SCCDAG
+   * Prepare the initial partition.
    */
-  assert(subsets == nullptr && "ERROR: Partition should not exist yet\n");
+
   subsets = new std::set<std::set<SCC *> *>();
 
   /*
@@ -29,8 +29,8 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Ensure no memory edges go across subsets so no synchronization is necessary
    */
-  partitioner = new SCCDAGPartition(LDI->loopSCCDAG, &LDI->sccdagAttrs, &LDI->liSummary, subsets);
-  while (partitioner->mergeAlongMemoryEdges());
+  partition = new SCCDAGPartition(LDI->loopSCCDAG, &LDI->sccdagAttrs, &LDI->liSummary, subsets);
+  while (partition->mergeAlongMemoryEdges());
 
   /*
    * Print the initial partitions.
@@ -40,7 +40,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   }
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  Before partitioning the SCCDAG\n";
-    partitioner->print(errs(), "DSWP:   ");
+    partition->print(errs(), "DSWP:   ");
   }
 
   /*
@@ -52,7 +52,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
      * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
      */
     h->adjustParallelizationPartitionForDSWP(
-      partitioner,
+      partition,
       LDI->sccdagAttrs,
       /*numThreads=*/LDI->maximumNumberOfCoresForTheParallelization,
       this->verbose
@@ -63,11 +63,11 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
    * Print the partitioned SCCDAG.
    */
   if (this->verbose >= Verbosity::Minimal) {
-    errs() << "DSWP:  Final number of partitions: " << subsets->size() << "\n";
+    errs() << "DSWP:  Final number of partitions: " << this->partition->numberOfPartitions() << "\n";
   }
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  After partitioning the SCCDAG\n";
-    partitioner->print(errs(), "DSWP:   ");
+    partition->print(errs(), "DSWP:   ");
   }
 
   return ;
