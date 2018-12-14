@@ -45,7 +45,12 @@ namespace llvm {
       std::vector<SequentialSegment *> identifySequentialSegments (
         LoopDependenceInfo *LDI
       );
-    
+ 
+      void squeezeSequentialSegments (
+        LoopDependenceInfo *LDI,
+        std::vector<SequentialSegment *> *sss
+      );
+
     private:
 
   };

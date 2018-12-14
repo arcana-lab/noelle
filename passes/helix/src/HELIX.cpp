@@ -59,11 +59,6 @@ bool HELIX::apply (
   }
 
   /*
-   * Identify sequential segments.
-   */
-  auto sequentialSegments = this->identifySequentialSegments(LDI);
-
-  /*
    * Generate empty tasks for the HELIX execution.
    */
   auto helixTask = new HELIXTask();
@@ -140,9 +135,19 @@ bool HELIX::apply (
   exitB.CreateRetVoid();
 
   /*
+   * Identify the sequential segments.
+   */
+  auto sequentialSegments = this->identifySequentialSegments(LDI);
+
+  /*
+   * Schedule the code to minimize the instructions within each sequential segment.
+   */
+  this->squeezeSequentialSegments(LDI, &sequentialSegments);
+
+  /*
    * Link the parallelize code to the original one.
    */
-  this->addChunkFunctionExecutionAsideOriginalLoop(LDI, par, 0);
+  this->addChunkFunctionExecutionAsideOriginalLoop(LDI, par, sequentialSegments.size());
 
   /*
    * Print the HELIX task.
