@@ -8,12 +8,12 @@
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
 #include "HeuristicsPass.hpp"
-#include "ParallelizationTechnique.hpp"
+#include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "TaskExecutionDSWP.hpp"
 
 namespace llvm {
 
-  class DSWP : public ParallelizationTechnique {
+  class DSWP : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
     public:
 
       /*
@@ -120,11 +120,6 @@ namespace llvm {
       void printStageSCCs (DSWPLoopDependenceInfo *LDI) const ;
       void printStageQueues (DSWPLoopDependenceInfo *LDI) const ;
       void printEnv (DSWPLoopDependenceInfo *LDI) const ;
-
-      /*
-       * DSWP specific structures used to determine workers
-       */
-      std::set<std::set<SCC *> *> *subsets;
 
       int coresPerLoopOverride;
   };

@@ -3,7 +3,7 @@
 
 HELIX::HELIX (Module &module, Verbosity v)
   :
-  ParallelizationTechnique{module, v}
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v}
   {
 
   /*

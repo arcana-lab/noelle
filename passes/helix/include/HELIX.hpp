@@ -8,12 +8,12 @@
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
 #include "HeuristicsPass.hpp"
-#include "ParallelizationTechnique.hpp"
+#include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"
 
 namespace llvm {
 
-  class HELIX : public ParallelizationTechnique {
+  class HELIX : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
     public:
 
       /*

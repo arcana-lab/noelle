@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   ParallelizationTechnique.cpp
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.cpp
 )
 
 # Compilation flags

@@ -7,37 +7,11 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Prepare the initial partition.
    */
-
-  subsets = new std::set<std::set<SCC *> *>();
-
-  /*
-   * Assign SCCs that have no partition to their own partitions.
-   */
-  for (auto nodePair : LDI->loopSCCDAG->internalNodePairs()) {
-
-    /*
-     * Check if the current SCC can be removed (e.g., because it is due to induction variables).
-     * If it is, then this SCC has already been assigned to every dependent partition.
-     */
-    auto currentSCC = nodePair.first;
-    if (LDI->sccdagAttrs.canBeCloned(currentSCC)) continue ;
-    auto singleSet = new std::set<SCC *>();
-    singleSet->insert(currentSCC);
-    subsets->insert(singleSet);
-  }
-
-  /*
-   * Ensure no memory edges go across subsets so no synchronization is necessary
-   */
-  partition = new SCCDAGPartition(LDI->loopSCCDAG, &LDI->sccdagAttrs, &LDI->liSummary, subsets);
-  while (partition->mergeAlongMemoryEdges());
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSCCDAG(LDI);
 
   /*
    * Print the initial partitions.
    */
-  if (this->verbose >= Verbosity::Minimal) {
-    errs() << "DSWP:  Initial number of partitions: " << subsets->size() << "\n";
-  }
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  Before partitioning the SCCDAG\n";
     partition->print(errs(), "DSWP:   ");

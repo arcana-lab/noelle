@@ -9,7 +9,7 @@ DSWP::DSWP (
   Verbosity v,
   int coresPerOverride
 ) :
-  ParallelizationTechnique{module, v},
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v},
   forceParallelization{forceParallelization},
   enableMergingSCC{enableSCCMerging},
   coresPerLoopOverride{coresPerOverride}
