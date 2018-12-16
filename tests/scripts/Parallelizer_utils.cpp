@@ -21,6 +21,8 @@
 
 using namespace MARC;
 
+#define CACHE_LINE_SIZE 64
+
 #ifdef DSWP_STATS
 static int64_t numberOfPushes8 = 0;
 static int64_t numberOfPushes16 = 0;
@@ -144,6 +146,26 @@ extern "C" {
   void helixDispatcher (void (*parallelizedLoop)(void *, int64_t, int64_t), void *env, int64_t numCores, int64_t numOfsequentialSegments){
 
     /*
+     * Assumptions.
+     */
+    assert(parallelizedLoop != NULL);
+    assert(env != NULL);
+    assert(numCores > 1);
+    assert(numOfsequentialSegments > 0);
+
+    /*
+     * Allocate the sequential segment arrays.
+     * We need numCores - 1 arrays.
+     */
+    auto numOfSSArrays = numCores - 1;
+    void *ssArrays = NULL;
+    posix_memalign(&ssArrays, CACHE_LINE_SIZE, CACHE_LINE_SIZE * numOfsequentialSegments *  numOfSSArrays);
+    if (ssArrays == NULL){
+      fprintf(stderr, "HelixDispatcher: ERROR = not enough memory to allocate %d sequential segment arrays\n", numCores);
+      abort();
+    }
+
+    /*
      * Launch threads
      */
     std::vector<MARC::TaskFuture<void>> localFutures;
@@ -157,6 +179,11 @@ extern "C" {
     for (auto& future : localFutures){
       future.get();
     }
+
+    /*
+     * Free the memory.
+     */
+    free(ssArrays);
 
     return ;
   }
