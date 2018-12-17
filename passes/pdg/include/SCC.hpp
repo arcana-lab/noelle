@@ -10,52 +10,42 @@
  */
 #pragma once
 
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/Support/raw_ostream.h"
 
-#include "SCCDAGPartition.hpp"
-#include "Parallelization.hpp"
+#include "DGBase.hpp"
 
-#include "../src/InvocationLatency.hpp"
-#include "../src/PartitionCostAnalysis.hpp"
-#include "../src/SmallestSizePartitionAnalysis.hpp"
-#include "../src/MinMaxSizePartitionAnalysis.hpp"
-
-using namespace std;
+using namespace llvm;
 
 namespace llvm {
 
-  class Heuristics {
-    public:
+	/*
+	* Strongly Connected Component
+	*/
+	class SCC : public DG<Value> {
+      public:
+        enum SCCType {SEQUENTIAL, COMMUTATIVE, INDEPENDENT};
 
-      /*
-       * Methods
-       */
-      void adjustParallelizationPartitionForDSWP (
-        SCCDAGPartition *partition,
-        SCCDAGAttrs &attrs,
-        uint64_t numThreads,
-        Verbosity verbose
-      );
+        SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
 
-     private:
+        raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "", int maxEdges = 15) ;
+        raw_ostream &printMinimal (raw_ostream &stream, std::string prefixToUse = "") ;
 
-      void minMaxMergePartition (
-        SCCDAGPartition &partition,
-        SCCDAGAttrs &attrs,
-        uint64_t numThreads,
-        Verbosity verbose
-      );
+        bool hasCycle (bool ignoreControlDep = false) ;
 
-      void smallestSizeMergePartition (
-        SCCDAGPartition &partition,
-        SCCDAGAttrs &attrs,
-        uint64_t numThreads,
-        Verbosity verbose
-      );
+        SCCType getType (void) const;
 
-      InvocationLatency invocationLatency;
-  };
+        void setType (SCCType t);
 
+        ~SCC() ;
+
+      private:
+        SCCType sccType;
+	};
+
+	template<> class DGEdge<SCC> : public DGEdgeBase<SCC, Value> {
+	public:
+		DGEdge(DGNode<SCC> *src, DGNode<SCC> *dst) : DGEdgeBase<SCC, Value>(src, dst) {}
+		DGEdge(const DGEdge<SCC> &oldEdge) : DGEdgeBase<SCC, Value>(oldEdge) {}
+	};
 }

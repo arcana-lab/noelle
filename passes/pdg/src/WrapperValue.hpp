@@ -10,52 +10,27 @@
  */
 #pragma once
 
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 
-#include "SCCDAGPartition.hpp"
-#include "Parallelization.hpp"
-
-#include "../src/InvocationLatency.hpp"
-#include "../src/PartitionCostAnalysis.hpp"
-#include "../src/SmallestSizePartitionAnalysis.hpp"
-#include "../src/MinMaxSizePartitionAnalysis.hpp"
-
-using namespace std;
+using namespace llvm;
 
 namespace llvm {
+	class WrapperValue {
+	 public:
+	 	WrapperValue(Value *val) : value{val} {};
+	 	WrapperValue(Instruction *inst) : value{cast<Value>(inst)} {};
+	 	WrapperValue(Argument *arg) : value{cast<Value>(arg)} {};
 
-  class Heuristics {
-    public:
+	 	Value *getValue() { return value; }
+		raw_ostream & print(raw_ostream &stream);
+	 private:
+		Value *value;
+	};
 
-      /*
-       * Methods
-       */
-      void adjustParallelizationPartitionForDSWP (
-        SCCDAGPartition *partition,
-        SCCDAGAttrs &attrs,
-        uint64_t numThreads,
-        Verbosity verbose
-      );
-
-     private:
-
-      void minMaxMergePartition (
-        SCCDAGPartition &partition,
-        SCCDAGAttrs &attrs,
-        uint64_t numThreads,
-        Verbosity verbose
-      );
-
-      void smallestSizeMergePartition (
-        SCCDAGPartition &partition,
-        SCCDAGAttrs &attrs,
-        uint64_t numThreads,
-        Verbosity verbose
-      );
-
-      InvocationLatency invocationLatency;
-  };
-
+	raw_ostream & WrapperValue::print(raw_ostream &stream)
+	{
+		if (value == nullptr) return (stream << "NULL value in WrapperValue");
+		value->print(stream);
+		return stream;
+	}
 }
