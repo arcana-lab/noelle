@@ -14,7 +14,7 @@
  * Options of the dependence graph simplifier pass.
  */
 static cl::opt<bool> ForceInlineToLoop("dgsimplify-inline-to-loop", cl::ZeroOrMore, cl::Hidden, cl::desc("Force inlining along the call graph from main to the loops being parallelized"));
-static cl::opt<int> Verbose("pass-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
+static cl::opt<int> Verbose("inliner-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
 
 DGSimplify::~DGSimplify () {
   for (auto orderedLoops : preOrderedLoops) {

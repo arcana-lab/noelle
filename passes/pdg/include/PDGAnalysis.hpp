@@ -19,6 +19,8 @@
 using namespace llvm;
 
 namespace llvm {
+  enum class PDGVerbosity { Disabled, Minimal, Maximal };
+
   struct PDGAnalysis : public ModulePass {
     public:
       static char ID;
@@ -40,6 +42,7 @@ namespace llvm {
       std::set<std::string> memorylessFunctionNames;
       std::set<Function *> CGUnderMain;
       std::set<GlobalValue *> primitiveArrayGlobals;
+      PDGVerbosity verbose;
 
       template <class InstI, class InstJ>
       void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, InstI *, InstJ *, bool WAW);

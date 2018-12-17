@@ -5,6 +5,12 @@
 static bool * is_valid;
 static int * values;
 
+bool * external_global;
+static int * alias_global1;
+static int * alias_global2;
+
+static int * addressed_global;
+
 int pgain1 (int iters){
 
   /*
@@ -36,28 +42,29 @@ int main (int argc, char *argv[]){
   is_valid = (bool *)calloc(iterations, sizeof(bool));
   values = (int *)malloc(iterations * sizeof(int));
 
-  /*
-  iterations = 3;
-  bool is_valid[3] = { false, false, false };
-  int values[3] = { 1, 2, 3 };
-  */
-
   for (auto i=0; i < iterations; i++){
     is_valid[i] = i % 5 < 2;
     values[i] = 1;
   }
 
-  /*
-  int count = 4;
-  for (auto i=0; i < iterations; ++i){
-    if (is_valid[i]) {
-      values[i] = count;
-    }
-  }
-  */
   auto count = pgain1(iterations);
 
   printf("%d, %d\n", count, values[iterations/2]);
+
+  alias_global1 = (int *)calloc(iterations, sizeof(int));
+  alias_global2 = alias_global1;
+  for (auto i = 1; i < iterations; i++) {
+    alias_global1[i-1] = i;
+    if (i < 50) {
+      alias_global2[i] = alias_global1[i-1];
+    } else {
+      alias_global2[i] = 0;
+    }
+  }
+
+  addressed_global = (int *)malloc(iterations * sizeof(int));
+  *(addressed_global + 2) = 5;
+  printf("%d\n", addressed_global[2]);
 
   return 0;
 }

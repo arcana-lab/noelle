@@ -25,12 +25,15 @@
 
 #include "../include/PDGAnalysis.hpp"
 
+static cl::opt<int> Verbose("pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
+
 using namespace llvm;
 
 bool llvm::PDGAnalysis::doInitialization (Module &M){
   this->memorylessFunctionNames = {
     "sqrt"
   };
+  this->verbose = static_cast<PDGVerbosity>(Verbose.getValue());
   return false;
 }
 
@@ -353,7 +356,11 @@ bool llvm::PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edg
   if (!loopCarried) {
     assert(!edge->isMustDependence()
       && "LLVM AA states load store pair is a must dependence! Bad PDGAnalysis.");
-    // errs() << "Load store pair memory dependence removed!\n";
+    if (verbose >= PDGVerbosity::Maximal) {
+      errs() << "PDGAnalysis:  Memory dependence removed! From - to:\n";
+      outgoingT->print(errs() << "PDGAnalysis:  Outgoing: "); errs() << "\n";
+      incomingT->print(errs() << "PDGAnalysis:  Incoming: "); errs() << "\n";
+    }
   }
   return !loopCarried;
 }
@@ -380,7 +387,6 @@ bool llvm::PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray (
   auto outgoingI = (Instruction*)(edge->getOutgoingT());
   auto incomingI = (Instruction*)(edge->getIncomingT());
   if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
-    // errs() << "Not removing possible intra-iteration dependence\n";
     return false;
   }
 
@@ -424,7 +430,6 @@ bool llvm::PDGAnalysis::isBackedgeIntoSameGlobal (
   auto outgoingI = (Instruction*)(edge->getOutgoingT());
   auto incomingI = (Instruction*)(edge->getIncomingT());
   if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
-    // errs() << "Not removing possible intra-iteration dependence\n";
     return false;
   }
 
@@ -567,70 +572,85 @@ void llvm::PDGAnalysis::collectPrimitiveArrayGlobalValues (Module &M) {
   std::set<std::string> readOnlyFns = { "fprintf", "printf" };
   for (auto &GV : M.globals()) {
     if (GV.hasExternalLinkage()) continue;
-    bool isPrimitiveArray = true;
-    bool usedByMain = false;
+    if (GV.getNumUses() == 0) continue;
 
+    std::set<Instruction *> scopedUsers;
+    bool understoodUses = true;
+    bool relevantToMain = false;
     for (auto user : GV.users()) {
-      if (auto I = dyn_cast<Instruction>(user)) {
-        if (CGUnderMain.find(I->getFunction()) != CGUnderMain.end()) {
-          usedByMain = true;
-        }
-
-        if (auto store = dyn_cast<StoreInst>(I)) {
-          // Confirm the store is of a malloc'd or calloc'd array, one that is
-          //  only stored into this value
-          if (auto storedCall = dyn_cast<CallInst>(store->getValueOperand())) {
-            auto callF = storedCall->getCalledFunction();
-            if (allocators.find(callF->getName()) != allocators.end()) {
-              if (storedCall->hasOneUse()) continue;
-            }
+      Instruction *I = nullptr;
+      if (isa<Instruction>(user)) {
+        I = (Instruction *)user;
+      } else if (isa<BitCastOperator>(user) || isa<ZExtOperator>(user)) {
+        if (user->hasOneUse()) {
+          auto operUser = *user->user_begin();
+          if (isa<Instruction>(operUser)) {
+            I = (Instruction *)operUser;
           }
-          // store->print(errs() << "PDGAnalysis:  GV store: "); errs() << "\n";
         }
-        if (auto load = dyn_cast<LoadInst>(I)) {
-          // Confirm all uses of the GV load are GEP that are used to store
-          //  non-addressed values only, or read only function calls
-          bool nonAddressedUsers = true;
-          for (auto loadUser : load->users()) {
-            if (auto GEPUser = dyn_cast<GetElementPtrInst>(loadUser)) {
-              if (isOnlyUsedByNonAddrValues({}, GEPUser)) continue;
-            }
-            if (auto callUser = dyn_cast<CallInst>(loadUser)) {
-              auto fnName = callUser->getCalledFunction()->getName();
-              if (readOnlyFns.find(fnName) != readOnlyFns.end()) continue;
-              // errs() << "PDGAnalysis:  Unnaccepted name: " << fnName << "\n";
-            }
-            // loadUser->print(errs() << "PDGAnalysis:  GV load user: "); errs() << "\n";
-            nonAddressedUsers = false;
-          }
-          if (nonAddressedUsers) continue;
-        }
-        // I->print(errs() << "PDGAnalysis:  GV unknown userI: "); errs() << "\n";
       }
 
-      if (auto oper = dyn_cast<Operator>(user)) {
-        if (isa<BitCastOperator>(user) || isa<ZExtOperator>(user)) continue;
-        if (isa<GEPOperator>(user) || isa<PtrToIntOperator>(user)
-            || isa<OverflowingBinaryOperator>(user) || isa<PossiblyExactOperator>(user)) {
-          isPrimitiveArray = false;
+      understoodUses &= I != nullptr;
+      if (understoodUses) {
+        scopedUsers.insert(I);
+        relevantToMain |= CGUnderMain.find(I->getFunction()) != CGUnderMain.end();
+        continue;
+      }
+      break;
+    }
+    if (!understoodUses || !relevantToMain) continue;
+
+    bool isPrimitiveArray = true;
+    for (auto I : scopedUsers) {
+      if (auto store = dyn_cast<StoreInst>(I)) {
+        // Confirm the store is of a malloc'd or calloc'd array, one that is
+        //  only stored into this value
+        if (auto storedCall = dyn_cast<CallInst>(store->getValueOperand())) {
+          auto callF = storedCall->getCalledFunction();
+          if (allocators.find(callF->getName()) != allocators.end()) {
+            if (storedCall->hasOneUse()) continue;
+          }
         }
-        // user->print(errs() << "PDGAnalysis:  operator user not understood: "); errs() << "\n";
       }
 
-      // user->print(errs() << "PDGAnalysis:  user not understood: "); errs() << "\n";
+      if (auto load = dyn_cast<LoadInst>(I)) {
+        // Confirm all uses of the GV load are GEP that are used to store
+        //  non-addressed values only, or read only function calls
+        bool nonAddressedUsers = true;
+        for (auto loadUser : load->users()) {
+          if (auto GEPUser = dyn_cast<GetElementPtrInst>(loadUser)) {
+            if (isOnlyUsedByNonAddrValues({}, GEPUser)) continue;
+          }
+          if (auto callUser = dyn_cast<CallInst>(loadUser)) {
+            auto fnName = callUser->getCalledFunction()->getName();
+            if (readOnlyFns.find(fnName) != readOnlyFns.end()) continue;
+          }
+          nonAddressedUsers = false;
+        }
+        if (nonAddressedUsers) continue;
+      }
+
+      if (verbose >= PDGVerbosity::Maximal) {
+        I->print(errs() << "PDGAnalysis:  GV related I not understood: "); errs() << "\n";
+      }
       isPrimitiveArray = false;
+      break;
     }
 
-    if (!usedByMain) continue;
     if (!isPrimitiveArray) {
-      // GV.print(errs() << "GV not understood to be primitive integer array: "); errs() << "\n";
+      if (verbose >= PDGVerbosity::Minimal) {
+        GV.print(errs() << "PDGAnalysis:  GV not understood to be primitive integer array: "); errs() << "\n";
+      }
       continue;
     }
-    // GV.print(errs() << "GV understood to be primitive integer array: "); errs() << "\n";
+    if (verbose >= PDGVerbosity::Minimal) {
+      GV.print(errs() << "PDGAnalysis:  GV understood to be primitive integer array: "); errs() << "\n";
+    }
     primitiveArrayGlobals.insert(&GV);
   }
 }
 
+// TODO: rename to isValueNotEscaped
 bool PDGAnalysis::isOnlyUsedByNonAddrValues (std::set<Instruction *> checked, Instruction *I) {
   if (checked.find(I) != checked.end()) return true;
   checked.insert(I);
@@ -645,28 +665,27 @@ bool PDGAnalysis::isOnlyUsedByNonAddrValues (std::set<Instruction *> checked, In
         }
         if (auto storedC = dyn_cast<ConstantData>(stored)) continue;
       }
-      // stored->print(errs() << "PDGAnalysis: store not integer type or used by such: "); errs() << "\n";
-      // stored->getType()->print(errs() << "TYPE: "); errs() << "\n";
     }
     if (auto userI = dyn_cast<Instruction>(user)) {
       if (isa<IntegerType>(userI->getType())) {
         if (isOnlyUsedByNonAddrValues(checked, userI)) continue;
       }
-      // userI->print(errs() << "PDGAnalysis: user not integer type or used by such: "); errs() << "\n";
-      // userI->getType()->print(errs() << "TYPE: "); errs() << "\n";
     }
-    // user->print(errs() << "PDGAnalysis: Inst user not understood: "); errs() << "\n";
+
+    if (verbose >= PDGVerbosity::Maximal) {
+      user->print(errs() << "PDGAnalysis:  GV related user not understood: "); errs() << "\n";
+      user->getType()->print(errs() << "PDGAnalysis:  \tWith type"); errs() << "\n";
+    }
     return false;
   }
   return true;
 }
 
 void llvm::PDGAnalysis::collectMemorylessFunctions (Module &M) {
-  for (auto &F : M) {
-    if (F.empty()) continue;
+  for (auto F : CGUnderMain) {
 
     bool isMemoryless = true;
-    for (auto &B : F) {
+    for (auto &B : *F) {
       for (auto &I : B) {
         if (isa<LoadInst>(I) || isa<StoreInst>(I) || isa<CallInst>(I)) {
           isMemoryless = false;
@@ -687,7 +706,12 @@ void llvm::PDGAnalysis::collectMemorylessFunctions (Module &M) {
 
     // TODO(angelo): Trigger a recheck of functions using this function
     // in case they are then found to be memoryless
-    if (isMemoryless) memorylessFunctionNames.insert(F.getName());
+    if (isMemoryless) {
+      memorylessFunctionNames.insert(F->getName());
+      if (verbose >= PDGVerbosity::Minimal) {
+        errs() << "PDGAnalysis:  Memoryless function found: " << F->getName() << "\n";
+      }
+    }
   }
 }
 
