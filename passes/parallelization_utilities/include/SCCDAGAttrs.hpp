@@ -140,7 +140,7 @@ namespace llvm {
        * Helper methods on single SCC
        */
       void collectPHIsAndAccumulators (SCC *scc);
-      bool checkIfCommutative (SCC *scc);
+      bool checkIfCommutative (SCC *scc, LoopInfoSummary &LIS);
       bool checkIfIndependent (SCC *scc);
       bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE);
       void checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS);

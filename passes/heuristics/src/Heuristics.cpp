@@ -35,7 +35,7 @@ void Heuristics::minMaxMergePartition (
 
     PCA.resetCandidateSubsetInfo();
     PCA.traverseAllPartitionSubsets();
-    PCA.printCandidate(errs());
+    if (verbose >= Verbosity::Maximal) PCA.printCandidate(errs());
     modified = PCA.mergeCandidateSubsets();
   } while (modified);
 }
@@ -53,7 +53,7 @@ void Heuristics::smallestSizeMergePartition (
 
     PCA.resetCandidateSubsetInfo();
     PCA.traverseAllPartitionSubsets();
-    PCA.printCandidate(errs());
+    if (verbose >= Verbosity::Maximal) PCA.printCandidate(errs());
     modified = PCA.mergeCandidateSubsets();
   } while (modified);
 }

@@ -19,7 +19,7 @@ llvm::PartitionCostAnalysis::PartitionCostAnalysis (
   int cores,
   Verbosity v
 ) : totalCost{0}, totalInstCount{0}, IL{il},
-    partition{p}, dagAttrs{attrs}, numCores{cores}, verbose{verbose} {
+    partition{p}, dagAttrs{attrs}, numCores{cores}, verbose{v} {
 
   /*
    * Estimate the current latency for executing the pipeline of the current SCCDAG partition once.

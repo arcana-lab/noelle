@@ -33,7 +33,7 @@ void llvm::MinMaxSizePartitionAnalysis::checkIfShouldMerge (SCCset *sA, SCCset *
   if (verbose >= Verbosity::Maximal) {
     errs() << prefix << "Lowered cost: " << lowered
       << " Merged cost: " << merge
-      << " Instr count: " << insts << "\n";
+      << " Instruction count: " << insts << "\n";
   }
 
   /*

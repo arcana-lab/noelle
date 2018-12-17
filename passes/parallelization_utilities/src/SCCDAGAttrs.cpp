@@ -75,7 +75,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvol
 
     if (this->checkIfIndependent(scc)) {
       scc->setType(SCC::SCCType::INDEPENDENT);
-    } else if (this->checkIfCommutative(scc)) {
+    } else if (this->checkIfCommutative(scc, LIS)) {
       scc->setType(SCC::SCCType::COMMUTATIVE);
     } else {
       scc->setType(SCC::SCCType::SEQUENTIAL);
@@ -96,12 +96,36 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const
 
 /*
  * Assumption(angelo): An induction variable will be the root SCC of the loop
+ * TODO: Rename to isLoopGovernedByIV
  */
 bool SCCDAGAttrs::doesLoopHaveIV () const {
   auto topLevelNodes = sccdag->getTopLevelNodes();
-  if (topLevelNodes.size() != 1) return false;
-  auto scc = (*topLevelNodes.begin())->getT();
-  return isInductionVariableSCC(scc);
+
+  /*
+   * Step 1: Isolate top level SCCs (excluding independent instructions in SCCDAG)
+   */
+  std::queue<DGNode<SCC> *> toTraverse;
+  for (auto node : topLevelNodes) toTraverse.push(node);
+  std::set<SCC *> topLevelSCCs;
+  while (!toTraverse.empty()) {
+    auto node = toTraverse.front();
+    auto scc = node->getT();
+    toTraverse.pop();
+    if (canExecuteIndependently(scc)) {
+      auto nextDepth = sccdag->nextDepthNodes(node);
+      for (auto next : nextDepth) toTraverse.push(next);
+      continue;
+    }
+    topLevelSCCs.insert(scc);
+  }
+
+  /*
+   * Step 2: Ensure there is only 1, and that it is an induction variable
+   */
+  // errs() << "SCCDAG ATTRS: NUM TOP LEVEL SCCS: " << topLevelSCCs.size() << "\n";
+  if (topLevelSCCs.size() != 1) return false;
+  // (*topLevelSCCs.begin())->print(errs() << "That single SCC:\n") << "\n";
+  return isInductionVariableSCC(*topLevelSCCs.begin());
 }
 
 bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
@@ -215,7 +239,8 @@ void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
   }
 }
 
-bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
+bool SCCDAGAttrs::checkIfCommutative (SCC *scc, LoopInfoSummary &LIS) {
+  auto &sccInfo = this->getSCCAttrs(scc);
 
   /*
    * Requirement: SCC has no data dependent SCCs
@@ -228,11 +253,37 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc) {
   }
 
   /*
+   * Requirement: all PHI incoming values from within a loop iteration
+   * are from other internal PHIs (no PHI = constant, etc... business)
+   * so that accumulation is truly expressed solely by accumulators
+   */
+  for (auto phi : sccInfo->PHINodes) {
+    auto loopOfPHI = LIS.bbToLoop[phi->getParent()];
+    for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
+      auto incomingBB = phi->getIncomingBlock(i);
+      auto loopOfIncoming = LIS.bbToLoop[incomingBB];
+      if (loopOfIncoming != loopOfPHI) continue;
+      auto incomingV = phi->getIncomingValue(i);
+      if (auto incomingPHI = dyn_cast<PHINode>(incomingV)) {
+        if (sccInfo->PHINodes.find(incomingPHI) == sccInfo->PHINodes.end()) {
+          return false;
+        } else {
+          continue;
+        }
+      }
+      if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
+        if (sccInfo->accumulators.find(incomingI) == sccInfo->accumulators.end()) {
+          return false;
+        }
+      }
+    }
+  }
+
+  /*
    * Requirement: 1+ accumulators that are all side effect free
    * Requirement: all accumulators act on one PHI/accumulator in the SCC
    *  and one constant or external value
    */
-  auto &sccInfo = this->getSCCAttrs(scc);
   if (sccInfo->accumulators.size() == 0) return false;
   auto phis = sccInfo->PHINodes;
   auto accums = sccInfo->accumulators;
@@ -300,7 +351,7 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
 
 /*
  * TODO(angelo): More strictly verify that Cmp/Br instrs only use constants
- *  or PHINodes in the SCC
+ *  loop-externals, or PHINodes in the SCC
  */
 bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
   auto isIvSCC = true;
@@ -308,10 +359,13 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
   for (auto iNodePair : scc->internalNodePairs()) {
     auto V = iNodePair.first;
     auto canBePartOfSCC = isa<CmpInst>(V) || isa<TerminatorInst>(V);
+      // || isa<LoadInst>(V) || isa<GetElementPtrInst>(V);
     hasPHINode |= isa<PHINode>(V);
 
     auto scev = SE.getSCEV(V);
     switch (scev->getSCEVType()) {
+    case scAddRecExpr:
+      continue;
     case scConstant:
     case scTruncate:
     case scZeroExtend:
@@ -321,8 +375,6 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
     case scUDivExpr:
     case scAddExpr:
     case scMulExpr:
-    case scAddRecExpr:
-      continue;
     case scUnknown:
     case scCouldNotCompute:
       isIvSCC &= canBePartOfSCC;
