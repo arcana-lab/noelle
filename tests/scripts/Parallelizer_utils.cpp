@@ -143,7 +143,12 @@ extern "C" {
     return ;
   }
 
-  void helixDispatcher (void (*parallelizedLoop)(void *, int64_t, int64_t), void *env, int64_t numCores, int64_t numOfsequentialSegments){
+  void helixDispatcher (
+    void (*parallelizedLoop)(void *, void *, int64_t, int64_t), 
+    void *env,
+    int64_t numCores, 
+    int64_t numOfsequentialSegments
+    ){
 
     /*
      * Assumptions.
@@ -159,7 +164,8 @@ extern "C" {
      */
     auto numOfSSArrays = numCores - 1;
     void *ssArrays = NULL;
-    posix_memalign(&ssArrays, CACHE_LINE_SIZE, CACHE_LINE_SIZE * numOfsequentialSegments *  numOfSSArrays);
+    auto ssArraySize = CACHE_LINE_SIZE * numOfsequentialSegments;
+    posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize *  numOfSSArrays);
     if (ssArrays == NULL){
       fprintf(stderr, "HelixDispatcher: ERROR = not enough memory to allocate %d sequential segment arrays\n", numCores);
       abort();
@@ -170,7 +176,21 @@ extern "C" {
      */
     std::vector<MARC::TaskFuture<void>> localFutures;
     for (auto i = 0; i < numCores; ++i) {
-      localFutures.push_back(pool.submit(parallelizedLoop, env, i, numCores));
+
+      /*
+       * Fetch the sequential segment array for the current thread.
+       */
+      auto ssArray = (void *)(((uint64_t)ssArrays) + (i * ssArraySize));
+
+      /*
+       * Launch the thread.
+       */
+      localFutures.push_back(pool.submit(parallelizedLoop, env, ssArray, i, numCores));
+
+      /*
+       * Launch the helper thread.
+       */
+      //TODO
     }
 
     /*
