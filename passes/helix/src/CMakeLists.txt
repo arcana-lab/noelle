@@ -7,6 +7,7 @@ set(Srcs
   SequentialSegment.cpp
   Scheduler.cpp
   Synchronization.cpp
+  Inliner.cpp
 )
 
 # Compilation flags

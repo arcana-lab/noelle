@@ -71,6 +71,10 @@ namespace llvm {
         std::vector<SequentialSegment *> *sss
       );
 
+      void inlineCalls (
+        void
+      );
+
     private:
 
   };

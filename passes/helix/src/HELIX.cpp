@@ -171,6 +171,11 @@ bool HELIX::apply (
   this->addChunkFunctionExecutionAsideOriginalLoop(LDI, par, sequentialSegments.size());
 
   /*
+   * Inline calls to HELIX functions.
+   */
+  this->inlineCalls();
+
+  /*
    * Print the HELIX task.
    */
   if (this->verbose != Verbosity::Disabled) {
