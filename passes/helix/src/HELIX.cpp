@@ -161,6 +161,11 @@ bool HELIX::apply (
   this->scheduleSequentialSegments(LDI, &sequentialSegments);
 
   /*
+   * Add synchronization instructions.
+   */
+  this->addSynchronizations(LDI, &sequentialSegments);
+
+  /*
    * Link the parallelize code to the original one.
    */
   this->addChunkFunctionExecutionAsideOriginalLoop(LDI, par, sequentialSegments.size());

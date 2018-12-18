@@ -66,6 +66,11 @@ namespace llvm {
         std::vector<SequentialSegment *> *sss
       );
 
+      void addSynchronizations (
+        LoopDependenceInfo *LDI,
+        std::vector<SequentialSegment *> *sss
+      );
+
     private:
 
   };

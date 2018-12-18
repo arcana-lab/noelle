@@ -6,6 +6,7 @@ set(Srcs
   SequentialSegments.cpp
   SequentialSegment.cpp
   Scheduler.cpp
+  Synchronization.cpp
 )
 
 # Compilation flags
