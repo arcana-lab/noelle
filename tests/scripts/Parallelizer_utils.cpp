@@ -143,7 +143,7 @@ extern "C" {
     return ;
   }
 
-  void helixDispatcher (
+  void HELIX_dispatcher (
     void (*parallelizedLoop)(void *, void *, int64_t, int64_t), 
     void *env,
     int64_t numCores, 
@@ -204,6 +204,42 @@ extern "C" {
      * Free the memory.
      */
     free(ssArrays);
+
+    return ;
+  }
+
+  void HELIX_wait (
+    void *sequentialSegment
+    ){
+
+    /*
+     * Fetch the spinlock
+     */
+    auto ss = (pthread_spinlock_t *) sequentialSegment;
+    assert(ss != NULL);
+
+    /*
+     * Wait
+     */
+    pthread_spin_lock(ss);
+
+    return ;
+  }
+
+  void HELIX_signal (
+    void *sequentialSegment
+    ){
+
+    /*
+     * Fetch the spinlock
+     */
+    auto ss = (pthread_spinlock_t *) sequentialSegment;
+    assert(ss != NULL);
+
+    /*
+     * Wait
+     */
+    pthread_spin_unlock(ss);
 
     return ;
   }

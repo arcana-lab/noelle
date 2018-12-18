@@ -24,20 +24,20 @@ HELIX::HELIX (Module &module, Verbosity v)
   /*
    * Fetch the dispatcher to use to jump to a parallelized HELIX loop.
    */
-  this->taskDispatcher = this->module.getFunction("helixDispatcher");
+  this->taskDispatcher = this->module.getFunction("HELIX_dispatcher");
   if (this->taskDispatcher == nullptr){
-    errs()<< "HELIX: ERROR = the function helixDispatcher could not be found.\n" ;
+    errs()<< "HELIX: ERROR = the function HELIX_dispatcher could not be found.\n" ;
     abort();
   }
 
   /*
-   * Fetch the LLVM types of the helixDispatcher arguments.
+   * Fetch the LLVM types of the HELIX_dispatcher arguments.
    */
   auto int8 = IntegerType::get(cxt, 8);
   auto int64 = IntegerType::get(cxt, 64);
 
   /*
-   * Create the LLVM signature of helixDispatcher.
+   * Create the LLVM signature of HELIX_dispatcher.
    */
   auto funcArgTypes = ArrayRef<Type*>({
     PointerType::getUnqual(int8),
