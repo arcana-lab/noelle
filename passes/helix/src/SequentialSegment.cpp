@@ -13,6 +13,8 @@
 
 using namespace llvm ;
 
-SequentialSegment::SequentialSegment (LoopDependenceInfo *LDI, SCC *scc){
+SequentialSegment::SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs){
+  //TODO
+  
   return ;
 }

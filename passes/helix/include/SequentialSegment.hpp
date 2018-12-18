@@ -11,13 +11,13 @@
 #pragma once
 
 #include "HELIX.hpp"
-#include "SCC.hpp"
+#include "SCCDAGPartition.hpp"
 
 namespace llvm {
 
   class SequentialSegment {
     public:
-      SequentialSegment (LoopDependenceInfo *LDI, SCC *scc) ;
+      SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs) ;
 
   };
 

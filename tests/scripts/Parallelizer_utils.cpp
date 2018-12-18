@@ -167,7 +167,7 @@ extern "C" {
     auto ssArraySize = CACHE_LINE_SIZE * numOfsequentialSegments;
     posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize *  numOfSSArrays);
     if (ssArrays == NULL){
-      fprintf(stderr, "HelixDispatcher: ERROR = not enough memory to allocate %d sequential segment arrays\n", numCores);
+      fprintf(stderr, "HelixDispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n", numCores);
       abort();
     }
 

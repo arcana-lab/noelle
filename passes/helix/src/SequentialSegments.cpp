@@ -15,6 +15,31 @@ using namespace llvm ;
 std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependenceInfo *LDI){
   std::vector<SequentialSegment *> sss;
 
+  /*
+   * Prepare the initial partition.
+   */
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSCCDAG(LDI);
+
+  /*
+   * Fetch the partitions.
+   */
+  auto& partitions = this->partition->getDepthOrderedSubsets();
+
+  /*
+   * Allocate the sequential segments, one per partition.
+   */
+  for (auto partition : partitions){
+
+    /*
+     * Allocate a sequential segment.
+     */
+    auto ss = new SequentialSegment(LDI, partition);
+
+    /*
+     * Insert the new sequential segment to the list.
+     */
+    sss.push_back(ss);
+  }
 
   return sss;
 }

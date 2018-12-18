@@ -41,6 +41,7 @@ HELIX::HELIX (Module &module, Verbosity v)
    */
   auto funcArgTypes = ArrayRef<Type*>({
     PointerType::getUnqual(int8),
+    PointerType::getUnqual(int8),
     int64,
     int64
   });
