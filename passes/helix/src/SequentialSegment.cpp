@@ -14,7 +14,23 @@
 using namespace llvm ;
 
 SequentialSegment::SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs){
+
+  /*
+   * Identify all the dependent instructions
+   */
+  for (auto scc : *sccs){
+    assert(scc->hasCycle());
+  }
+
+  /*
+   * Identify the locations where wait instructions should be placed.
+   */
   //TODO
-  
+
+  /*
+   * Identify the locations where signal instructions should be placed.
+   */
+  //TODO
+
   return ;
 }

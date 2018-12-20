@@ -21,19 +21,35 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
   ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSCCDAG(LDI);
 
   /*
-   * Fetch the partitions.
+   * Fetch the subsets.
    */
-  auto& partitions = this->partition->getDepthOrderedSubsets();
+  auto& subsets = this->partition->getDepthOrderedSubsets();
 
   /*
    * Allocate the sequential segments, one per partition.
    */
-  for (auto partition : partitions){
+  for (auto subset : subsets){
+
+    /*
+     * Check if the current set of SCCs require a sequential segments.
+     */
+    auto requireSS = false;
+    for (auto scc : *subset){
+      auto sccType = scc->getType();
+      if (  (sccType == SCC::SEQUENTIAL)  ||
+            (sccType == SCC::COMMUTATIVE) ){
+        requireSS = true;
+        break ;
+      }
+    }
+    if (!requireSS){
+      continue ;
+    }
 
     /*
      * Allocate a sequential segment.
      */
-    auto ss = new SequentialSegment(LDI, partition);
+    auto ss = new SequentialSegment(LDI, subset);
 
     /*
      * Insert the new sequential segment to the list.
