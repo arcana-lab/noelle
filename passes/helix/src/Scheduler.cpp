@@ -16,6 +16,7 @@ void HELIX::squeezeSequentialSegments (
   LoopDependenceInfo *LDI,
   std::vector<SequentialSegment *> *sss
   ){
+  //TODO
 
   return ;
 }
@@ -24,6 +25,7 @@ void HELIX::scheduleSequentialSegments (
   LoopDependenceInfo *LDI,
   std::vector<SequentialSegment *> *sss
   ){
+  //TODO
 
   return ;
 }
