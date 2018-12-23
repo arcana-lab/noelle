@@ -47,12 +47,14 @@ namespace llvm {
     Value *start;
     ConstantInt *step;
     Value *cmpIVTo;
+    std::vector<Instruction *> cmpToValueDerivation;
     bool isCmpOnAccum;
     bool isCmpIVLHS;
     int endOffset;
 
     SimpleIVInfo () : cmp{nullptr}, br{nullptr}, start{nullptr},
-      step{nullptr}, cmpIVTo{nullptr}, endOffset{0} {};
+      step{nullptr}, cmpIVTo{nullptr}, endOffset{0},
+      cmpToValueDerivation{} {};
   };
 
   class SCCAttrs {

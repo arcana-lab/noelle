@@ -66,6 +66,20 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
   outerHBuilder.CreateCondBr(outerIVCmp, innerHeader, task->loopExitBlocks[0]);
 
   /*
+   * Hoist any values used to derive the compared to value up to the entry block
+   */
+  auto &valueChain = task->clonedIVInfo.cmpToValueDerivation;
+  if (valueChain.size() > 0) {
+    entryBuilder.SetInsertPoint((Instruction*)task->clonedIVInfo.cmpIVTo);
+    // The 0th value in the chain is the compare to value itself, which is already hoisted
+    for (auto i = valueChain.size() - 1; i >= 1; --i) {
+      valueChain[i]->removeFromParent();
+      entryBuilder.Insert(valueChain[i]);
+    }
+    entryBuilder.SetInsertPoint(task->entryBlock);
+  }
+
+  /*
    * Reset inner loop start value to 0
    */
   auto PHIType = task->originalIVClone->getType();

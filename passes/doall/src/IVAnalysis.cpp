@@ -59,15 +59,28 @@ void DOALL::simplifyOriginalLoopIV (
 
   /*
    * Fetch clone of Value used in CmpInst of the original loop's IV
+   * If an instruction, hoist to the entry block for further manipulation
    */
   auto cmpToClone = fetchClone(IVInfo.cmpIVTo);
+
+  IRBuilder<> entryBuilder(task->entryBlock);
+  if (isa<Instruction>(cmpToClone)) {
+    auto cmpI = (Instruction*)cmpToClone;
+    cmpI->removeFromParent();
+    entryBuilder.Insert(cmpI);
+
+    for (auto I : IVInfo.cmpToValueDerivation) {
+      Value *cloneI = fetchClone(I);
+      assert(isa<Instruction>(cloneI));
+      task->clonedIVInfo.cmpToValueDerivation.push_back((Instruction*)cloneI);
+    }
+  }
 
   /*
    * Fetch the offset from the compared to Value to the end value: [..., end)
    * cmpToValue + offset = end
    */
   auto offsetV = ConstantInt::get(IVInfo.step->getType(), IVInfo.endOffset);
-  IRBuilder<> entryBuilder(task->entryBlock);
   auto endClone = IVInfo.endOffset ? entryBuilder.CreateAdd(cmpToClone, offsetV) : cmpToClone;
 
   /*
