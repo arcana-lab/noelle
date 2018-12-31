@@ -20,7 +20,7 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
    * Determine start value and step size for outer loop IV
    */
   IRBuilder<> entryBuilder(task->entryBlock);
-  auto startOfIV = task->clonedIVInfo.start;
+  auto startOfIV = task->clonedIVBounds.start;
   auto nthCoreOffset = entryBuilder.CreateZExtOrTrunc(
     entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg),
     startOfIV->getType()
@@ -60,7 +60,7 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
    */
   auto outerIVCmp = outerHBuilder.CreateICmpULT(
     task->outermostLoopIV,
-    task->clonedIVInfo.cmpIVTo
+    task->clonedIVBounds.cmpIVTo
   );
   auto innerHeader = task->basicBlockClones[LDI->header];
   outerHBuilder.CreateCondBr(outerIVCmp, innerHeader, task->loopExitBlocks[0]);
@@ -68,9 +68,9 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
   /*
    * Hoist any values used to derive the compared to value up to the entry block
    */
-  auto &valueChain = task->clonedIVInfo.cmpToValueDerivation;
+  auto &valueChain = task->clonedIVBounds.cmpToDerivation;
   if (valueChain.size() > 0) {
-    entryBuilder.SetInsertPoint((Instruction*)task->clonedIVInfo.cmpIVTo);
+    entryBuilder.SetInsertPoint((Instruction*)task->clonedIVBounds.cmpIVTo);
     // The 0th value in the chain is the compare to value itself, which is already hoisted
     for (auto i = valueChain.size() - 1; i >= 1; --i) {
       valueChain[i]->removeFromParent();
@@ -82,12 +82,12 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
   /*
    * Reset inner loop start value to 0
    */
-  auto PHIType = task->originalIVClone->getType();
+  auto PHIType = task->cloneOfOriginalIV->getType();
   auto startValueIndex = -1;
-  bool entryIndexIs0 = task->originalIVClone->getIncomingBlock(0) == LDI->preHeader;
-  bool entryIndexIs1 = task->originalIVClone->getIncomingBlock(1) == LDI->preHeader;
+  bool entryIndexIs0 = task->cloneOfOriginalIV->getIncomingBlock(0) == LDI->preHeader;
+  bool entryIndexIs1 = task->cloneOfOriginalIV->getIncomingBlock(1) == LDI->preHeader;
   assert(entryIndexIs0 || entryIndexIs1);
-  task->originalIVClone->setIncomingValue(
+  task->cloneOfOriginalIV->setIncomingValue(
     entryIndexIs0 ? 0 : 1,
     ConstantInt::get(PHIType, 0)
   );
@@ -97,7 +97,7 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
    *  this should be done for all PHIs in the inner loop at the same time
    *  to avoid code duplication. See API propagatePHINodesThroughOuterLoop
    */
-  task->originalIVClone->setIncomingBlock(
+  task->cloneOfOriginalIV->setIncomingBlock(
     entryIndexIs0 ? 0 : 1,
     task->outermostLoopHeader
   );
@@ -125,7 +125,7 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
   while (isa<PHINode>(&*(iIter++)));
   IRBuilder<> headerBuilder(&*(--iIter));
   auto sumIV = (Instruction *)headerBuilder.CreateAdd(
-    task->originalIVClone,
+    task->cloneOfOriginalIV,
     task->outermostLoopIV
   );
 
@@ -147,42 +147,40 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
   /*
    * Replace inner loop condition with less than total loop size condition
    */
-  auto innerCmp = task->clonedIVInfo.cmp;
-  innerCmp->setPredicate(CmpInst::Predicate::ICMP_ULT);
-  innerCmp->setOperand(0, sumIV);
-  innerCmp->setOperand(1, task->clonedIVInfo.cmpIVTo);
+  task->cloneOfOriginalCmp->setPredicate(CmpInst::Predicate::ICMP_ULT);
+  task->cloneOfOriginalCmp->setOperand(0, sumIV);
+  task->cloneOfOriginalCmp->setOperand(1, task->clonedIVBounds.cmpIVTo);
 
   /*
    * Add a condition to check that the IV is less than chunk size
    */
   auto castChunkSize = entryBuilder.CreateZExtOrTrunc(
     task->chunkSizeArg,
-    task->originalIVClone->getType()
+    task->cloneOfOriginalIV->getType()
   );
-  auto innerBr = task->clonedIVInfo.br;
-  headerBuilder.SetInsertPoint(innerBr);
-  Value *chunkCmp = headerBuilder.CreateICmpULT(task->originalIVClone, castChunkSize);
+  headerBuilder.SetInsertPoint(task->cloneOfOriginalBr);
+  Value *chunkCmp = headerBuilder.CreateICmpULT(task->cloneOfOriginalIV, castChunkSize);
 
   /*
    * Ensure both above conditions are met, that the inner loop IV is within bounds
    */
-  Value *inBoundsIV = headerBuilder.CreateBinOp(Instruction::And, chunkCmp, innerCmp);
+  Value *inBoundsIV = headerBuilder.CreateBinOp(Instruction::And, chunkCmp, task->cloneOfOriginalCmp);
 
   /*
    * Get the entry block into the loop body
    */
-  auto loopBodyIndexIs0 = innerBr->getSuccessor(0) != LDI->loopExitBlocks[0];
-  auto loopBodyIndexIs1 = innerBr->getSuccessor(1) != LDI->loopExitBlocks[0];
+  auto loopBodyIndexIs0 = task->cloneOfOriginalBr->getSuccessor(0) != LDI->loopExitBlocks[0];
+  auto loopBodyIndexIs1 = task->cloneOfOriginalBr->getSuccessor(1) != LDI->loopExitBlocks[0];
   assert(loopBodyIndexIs0 || loopBodyIndexIs1);
-  auto innerBodyBB = innerBr->getSuccessor(loopBodyIndexIs0 ? 0 : 1);
+  auto innerBodyBB = task->cloneOfOriginalBr->getSuccessor(loopBodyIndexIs0 ? 0 : 1);
 
   /*
    * Revise branch to go to the loop body if the IV is in bounds,
    * and to the outer loop latch if not
    */
-  innerBr->setCondition(inBoundsIV);
-  innerBr->setSuccessor(0, task->basicBlockClones[innerBodyBB]);
-  innerBr->setSuccessor(1, task->outermostLoopLatch);
+  task->cloneOfOriginalBr->setCondition(inBoundsIV);
+  task->cloneOfOriginalBr->setSuccessor(0, task->basicBlockClones[innerBodyBB]);
+  task->cloneOfOriginalBr->setSuccessor(1, task->outermostLoopLatch);
 
   /*
    * Finally, define branch from entry to outer loop
@@ -203,7 +201,7 @@ void DOALL::propagatePHINodesThroughOuterLoop (
   for (auto &I : *innerHeader) {
     if (!isa<PHINode>(&I)) break ;
     // Ignore the inner loop IV
-    if (&I == task->originalIVClone) continue ;
+    if (&I == task->cloneOfOriginalIV) continue ;
     phis.insert((PHINode *)&I);
   }
 

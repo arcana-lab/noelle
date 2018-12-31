@@ -75,7 +75,7 @@ bool DOALL::canBeAppliedToLoop (
    * The loop must have at least one induction variable.
    * This is because the trip count must be controlled by an induction variable.
    */
-  if (!LDI->sccdagAttrs.doesLoopHaveIV()) {
+  if (!LDI->sccdagAttrs.isLoopGovernedByIV()) {
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   Loop does not have an IV\n";
     }
@@ -87,8 +87,7 @@ bool DOALL::canBeAppliedToLoop (
    */
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
-    //TODO(SIMONE): I'm not sure the following condition is correct. For example, a loop with a commutative SCC cannot be parallelized by DOALL.
-    if (scc->getType() != SCC::SCCType::COMMUTATIVE
+    if (scc->getType() != SCC::SCCType::REDUCIBLE
       && !LDI->sccdagAttrs.canBeCloned(scc)
       && !LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
       if (this->verbose != Verbosity::Disabled) {

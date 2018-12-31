@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+long long int *array;
+
 long long int computeSum (long long int *a, long long int iters, long long unsigned int inner_iters){
   long long int s =0;
 
@@ -31,11 +33,12 @@ int main (int argc, char *argv[]){
   auto iterations = atoll(argv[1]);
   auto inner_iterations = atoll(argv[2]);
 
-  long long int *array = (long long int *) malloc(sizeof(long long int) * iterations);
+  // long long int *array = (long long int *) malloc(sizeof(long long int) * iterations);
+  // array = (long long int *) malloc(sizeof(long long int) * iterations);
 
-  for (auto i=0; i < iterations; i++){
-    array[i] = i;
-  }
+  // for (auto i=0; i < iterations; i++){
+    // array[i] = i;
+  // }
 
   auto s = computeSum(array, iterations, inner_iterations);
   printf("%lld\n", s);

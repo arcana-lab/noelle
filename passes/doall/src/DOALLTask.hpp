@@ -32,8 +32,10 @@ namespace llvm {
        * Clone of original IV loop, new outer loop
        */
       SCCAttrs *originalIVAttrs;
-      SimpleIVInfo clonedIVInfo;
-      PHINode *originalIVClone;
+      FixedIVBounds clonedIVBounds;
+      PHINode *cloneOfOriginalIV;
+      CmpInst *cloneOfOriginalCmp;
+      BranchInst *cloneOfOriginalBr;
       PHINode *outermostLoopIV;
 
       void extractFuncArgs () override ;

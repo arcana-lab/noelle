@@ -37,26 +37,6 @@ namespace llvm {
     Value *generateIdentityFor (Instruction *accumulator, Type *castType);
   };
 
-  /*
-   * TODO(angelo): Fully understand SCEV to render this characterization
-   * of an IV obsolete
-   */
-  struct SimpleIVInfo {
-    CmpInst *cmp;
-    BranchInst *br;
-    Value *start;
-    ConstantInt *step;
-    Value *cmpIVTo;
-    std::vector<Instruction *> cmpToValueDerivation;
-    bool isCmpOnAccum;
-    bool isCmpIVLHS;
-    int endOffset;
-
-    SimpleIVInfo () : cmp{nullptr}, br{nullptr}, start{nullptr},
-      step{nullptr}, cmpIVTo{nullptr}, endOffset{0},
-      cmpToValueDerivation{} {};
-  };
-
   class SCCAttrs {
     public:
 
@@ -65,65 +45,79 @@ namespace llvm {
        */
       SCC *scc;
       std::set<BasicBlock *> bbs;
-      bool isIndependent;
+      std::set<Value *> sccValues;
       bool isClonable;
-      bool isReducable;
-      bool isIVSCC;
+      bool hasIV;
 
-      /*
-       * Fields used if the SCC is of a "simple" form,
-       * consisting of only PHIs, binary accumulators,
-       * control flow (compares / branches), and cast instructions
-       */
       std::set<PHINode *> PHINodes;
       std::set<Instruction *> accumulators;
       PHINode *singlePHI;
       Instruction *singleAccumulator;
-      SimpleIVInfo *simpleIVInfo;
+      std::set<TerminatorInst *> controlFlowInsts;
+      std::set<std::pair<Value *, TerminatorInst *>> controlPairs;
+      std::pair<Value *, TerminatorInst *> singleControlPair;
 
       /*
        * Methods
        */
-      SCCAttrs (SCC *s)
-        : scc{s}, isIndependent{0}, isClonable{0},
-          isReducable{0}, singlePHI{nullptr},
-          singleAccumulator{nullptr}, simpleIVInfo{nullptr},
-          PHINodes{}, accumulators{} {
-        // Collect basic blocks contained within SCC
-        for (auto nodePair : this->scc->internalNodePairs()) {
-          this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
-        }
-      }
-      ~SCCAttrs () {
-        if (simpleIVInfo) delete simpleIVInfo;
-      }
+      SCCAttrs (SCC *s);
+      void collectSCCValues ();
+  };
+
+  //TODO: Have calculated by DOALL pass, not by SCCAttrs
+  struct FixedIVBounds {
+    Value *start;
+    ConstantInt *step;
+    Value *cmpIVTo;
+    std::vector<Instruction *> cmpToDerivation;
+    bool isCmpOnAccum;
+    bool isCmpIVLHS;
+    int endOffset;
+
+    FixedIVBounds () : start{nullptr}, step{nullptr},
+      cmpIVTo{nullptr}, endOffset{0}, cmpToDerivation{} {};
   };
 
   class SCCDAGAttrs {
     public:
 
       /*
-       * Fields
+       * Graph wide structures
        */
       SCCDAG *sccdag;
-      std::unordered_map<SCC *, std::unique_ptr<SCCAttrs>> sccToInfo;
       AccumulatorOpInfo accumOpInfo;
+      std::unordered_map<SCC *, std::unique_ptr<SCCAttrs>> sccToInfo;
+
+      /*
+       * Dependencies in graph
+       */
+      std::unordered_map<Value *, std::set<SCC *>> intraIterDeps;
+      std::unordered_map<SCC *, std::set<DGEdge<Value> *>> interIterDeps;
+
+      /*
+       * Isolated clonable SCCs and resulting inherited parents
+       */
       std::set<SCC *> clonableSCCs;
       std::unordered_map<SCC *, std::set<SCC *>> parentsViaClones;
       std::unordered_map<SCC *, std::set<DGEdge<SCC> *>> edgesViaClones;
+
+      /*
+       * Optional supplementary structures for some SCC
+       */
+      std::unordered_map<SCC *, FixedIVBounds *> sccIVBounds;
 
       /*
        * Methods on SCCDAG.
        */
       void populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvolution &SE);
       std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
-      bool doesLoopHaveIV () const ;
+      bool isLoopGovernedByIV () const ;
       bool areAllLiveOutValuesReducable (LoopEnvironment *env) const ;
 
       /*
        * Methods on single SCC.
        */
-      bool canExecuteCommutatively (SCC *scc) const ;
+      bool canExecuteReducibly (SCC *scc) const ;
       bool canExecuteIndependently (SCC *scc) const ;
       bool canBeCloned (SCC *scc) const ;
       bool isInductionVariableSCC (SCC *scc) const ;
@@ -133,23 +127,33 @@ namespace llvm {
       std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc); 
 
     private:
+
       /*
        * Helper methods on SCCDAG
        */
       void collectSCCGraphAssumingDistributedClones ();
+      void collectDependencies (LoopInfoSummary &LIS);
 
       /*
        * Helper methods on single SCC
        */
       void collectPHIsAndAccumulators (SCC *scc);
-      bool checkIfCommutative (SCC *scc, LoopInfoSummary &LIS);
+      void collectControlFlowInstructions (SCC *scc);
+      bool checkIfReducible (SCC *scc, LoopInfoSummary &LIS);
       bool checkIfIndependent (SCC *scc);
       bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE);
-      void checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS);
-      bool doesIVHaveSimpleEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LIS);
+      void checkIfIVHasFixedBounds (SCC *scc, LoopInfoSummary &LIS);
+      bool isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopInfoSummary &LIS);
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);
       bool isClonableByInductionVars (SCC *scc) const ;
       bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;
       bool isClonableByCmpBrInstrs (SCC *scc) const ;
+
+      /*
+       * Helper methods on single values within SCCs
+       */
+      bool isDerivedWithinSCC (Value *V, SCC *scc) const ;
+      bool isDerivedPHIOrAccumulator (Value *V, SCC *scc) const ;
+      bool collectDerivationChain (std::vector<Instruction *> &chain, SCC *scc);
   };
 }

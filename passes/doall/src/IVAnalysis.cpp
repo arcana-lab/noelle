@@ -23,17 +23,18 @@ void DOALL::simplifyOriginalLoopIV (
   auto headerBr = LDI->header->getTerminator();
   auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
   auto &attrs = LDI->sccdagAttrs.getSCCAttrs(headerSCC);
-  assert(attrs->simpleIVInfo);
   task->originalIVAttrs = attrs.get();
+  assert(LDI->sccdagAttrs.sccIVBounds.find(headerSCC) != LDI->sccdagAttrs.sccIVBounds.end());
+  auto &IVBounds = *LDI->sccdagAttrs.sccIVBounds[headerSCC];
 
   /*
-   * Identify clones of the PHI, Cmp, and Branch instructions that govern the loop IV.
+   * Identify clone of the PHI, CmpInst, and BranchInst that govern the loop IV.
    */
   auto &iClones = task->instructionClones;
-  task->originalIVClone = cast<PHINode>(iClones[attrs->singlePHI]);
-  auto &IVInfo = *attrs->simpleIVInfo;
-  task->clonedIVInfo.cmp = cast<CmpInst>(iClones[IVInfo.cmp]);
-  task->clonedIVInfo.br = cast<BranchInst>(iClones[IVInfo.br]);
+  task->cloneOfOriginalIV = cast<PHINode>(iClones[attrs->singlePHI]);
+  auto controlPair = task->originalIVAttrs->singleControlPair;
+  task->cloneOfOriginalCmp = cast<CmpInst>(iClones[(Instruction*)controlPair.first]);
+  task->cloneOfOriginalBr = cast<BranchInst>(iClones[controlPair.second]);
 
   /*
    * ============================================================================
@@ -55,13 +56,13 @@ void DOALL::simplifyOriginalLoopIV (
   /*
    * Fetch clone of initial Value of the original loop's IV PHINode: [start, ...)
    */
-  auto startClone = fetchClone(IVInfo.start);
+  auto startClone = fetchClone(IVBounds.start);
 
   /*
    * Fetch clone of Value used in CmpInst of the original loop's IV
    * If an instruction, hoist to the entry block for further manipulation
    */
-  auto cmpToClone = fetchClone(IVInfo.cmpIVTo);
+  auto cmpToClone = fetchClone(IVBounds.cmpIVTo);
 
   IRBuilder<> entryBuilder(task->entryBlock);
   if (isa<Instruction>(cmpToClone)) {
@@ -69,10 +70,10 @@ void DOALL::simplifyOriginalLoopIV (
     cmpI->removeFromParent();
     entryBuilder.Insert(cmpI);
 
-    for (auto I : IVInfo.cmpToValueDerivation) {
+    for (auto I : IVBounds.cmpToDerivation) {
       Value *cloneI = fetchClone(I);
       assert(isa<Instruction>(cloneI));
-      task->clonedIVInfo.cmpToValueDerivation.push_back((Instruction*)cloneI);
+      task->clonedIVBounds.cmpToDerivation.push_back((Instruction*)cloneI);
     }
   }
 
@@ -80,8 +81,8 @@ void DOALL::simplifyOriginalLoopIV (
    * Fetch the offset from the compared to Value to the end value: [..., end)
    * cmpToValue + offset = end
    */
-  auto offsetV = ConstantInt::get(IVInfo.step->getType(), IVInfo.endOffset);
-  auto endClone = IVInfo.endOffset ? entryBuilder.CreateAdd(cmpToClone, offsetV) : cmpToClone;
+  auto offsetV = ConstantInt::get(IVBounds.step->getType(), IVBounds.endOffset);
+  auto endClone = IVBounds.endOffset ? entryBuilder.CreateAdd(cmpToClone, offsetV) : cmpToClone;
 
   /*
    * Manipulate clone IV [start, end) values to guarantee the following: 
@@ -89,14 +90,14 @@ void DOALL::simplifyOriginalLoopIV (
    * 2) The PHI is incremented/decremented at the loop latch, NOT before
    * 3) The CmpInst checks that the end value is NOT reached. If it is, the loop body is NOT executed
    */
-  auto oneV = ConstantInt::get(IVInfo.step->getType(), 1);
-  task->clonedIVInfo.step = oneV;
-  auto stepSize = IVInfo.step->getValue().getSExtValue();
+  auto oneV = ConstantInt::get(IVBounds.step->getType(), 1);
+  task->clonedIVBounds.step = oneV;
+  auto stepSize = IVBounds.step->getValue().getSExtValue();
   if (stepSize == 1) {
-    task->clonedIVInfo.start = startClone;
-    task->clonedIVInfo.cmpIVTo = endClone;
+    task->clonedIVBounds.start = startClone;
+    task->clonedIVBounds.cmpIVTo = endClone;
   } else {
-    task->clonedIVInfo.start = entryBuilder.CreateAdd(endClone, oneV);
-    task->clonedIVInfo.cmpIVTo = entryBuilder.CreateAdd(startClone, oneV);
+    task->clonedIVBounds.start = entryBuilder.CreateAdd(endClone, oneV);
+    task->clonedIVBounds.cmpIVTo = entryBuilder.CreateAdd(startClone, oneV);
   }
 }

@@ -62,21 +62,90 @@ Value *AccumulatorOpInfo::generateIdentityFor (Instruction *accumulator, Type *c
   return initVal;
 }
 
+void SCCAttrs::collectSCCValues () {
+  struct PathValue {
+    PathValue *prev;
+    Value *value;
+    PathValue (Value *V, PathValue *PV = nullptr) : value{V}, prev{PV} {};
+  };
+
+  std::set<PathValue *> pathValues;
+  std::queue<PathValue *> toTraverse;
+  std::set<DGNode<Value> *> topLevelNodes = scc->getTopLevelNodes();
+  for (auto node : topLevelNodes) {
+    auto pathV = new PathValue(node->getT());
+    pathValues.insert(pathV);
+    toTraverse.push(pathV);
+  }
+
+  while (!toTraverse.empty()) {
+    auto pathV = toTraverse.front();
+    toTraverse.pop();
+
+    bool isCycle = false;
+    auto prevV = pathV->prev;
+    while (prevV) {
+      if (pathV->value == prevV->value) {
+        isCycle = true;
+        break;
+      }
+      prevV = prevV->prev;
+    }
+
+    if (isCycle) {
+      auto cycleV = pathV;
+      while (cycleV != prevV) {
+        sccValues.insert(cycleV->value);
+        cycleV = cycleV->prev;
+      }
+      continue;
+    }
+
+    auto node = scc->fetchNode(pathV->value);
+    for (auto edge : node->getOutgoingEdges()) {
+      auto nextPathV = new PathValue(edge->getIncomingT(), pathV);
+      pathValues.insert(nextPathV);
+      toTraverse.push(nextPathV);
+    }
+  }
+
+  for (auto pathV : pathValues) delete pathV;
+}
+
+SCCAttrs::SCCAttrs (SCC *s)
+  : scc{s}, isClonable{0}, hasIV{0},
+    PHINodes{}, accumulators{}, controlFlowInsts{}, controlPairs{},
+    singlePHI{nullptr}, singleAccumulator{nullptr}, singleControlPair{nullptr,nullptr} {
+
+  // Collect basic blocks contained within SCC
+  for (auto nodePair : this->scc->internalNodePairs()) {
+    this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
+  }
+
+  // Collect values actually contained in the strongly connected components,
+  // ignoring ancillary values merged into the SCC object
+  collectSCCValues();
+}
+
 void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvolution &SE) {
   this->sccdag = loopSCCDAG;
+  collectDependencies(LIS);
+
   for (auto node : loopSCCDAG->getNodes()) {
     auto scc = node->getT();
     this->sccToInfo[scc] = std::move(std::make_unique<SCCAttrs>(scc));
 
     this->collectPHIsAndAccumulators(scc);
+    this->collectControlFlowInstructions(scc);
+
     this->checkIfInductionVariableSCC(scc, SE);
-    if (isInductionVariableSCC(scc)) this->checkIfSimpleIV(scc, LIS);
+    if (isInductionVariableSCC(scc)) this->checkIfIVHasFixedBounds(scc, LIS);
     this->checkIfClonable(scc, SE);
 
     if (this->checkIfIndependent(scc)) {
       scc->setType(SCC::SCCType::INDEPENDENT);
-    } else if (this->checkIfCommutative(scc, LIS)) {
-      scc->setType(SCC::SCCType::COMMUTATIVE);
+    } else if (this->checkIfReducible(scc, LIS)) {
+      scc->setType(SCC::SCCType::REDUCIBLE);
     } else {
       scc->setType(SCC::SCCType::SEQUENTIAL);
     }
@@ -87,18 +156,16 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvol
 
 std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
   std::set<SCC *> sccs;
-  for (auto &sccInfoPair : this->sccToInfo) {
-    if (sccInfoPair.second->isIndependent) continue ;
-    sccs.insert(sccInfoPair.first);
+  for (auto &sccDependencies : this->interIterDeps) {
+    sccs.insert(sccDependencies.first);
   }
   return sccs;
 }
 
 /*
  * Assumption(angelo): An induction variable will be the root SCC of the loop
- * TODO: Rename to isLoopGovernedByIV
  */
-bool SCCDAGAttrs::doesLoopHaveIV () const {
+bool SCCDAGAttrs::isLoopGovernedByIV () const {
   auto topLevelNodes = sccdag->getTopLevelNodes();
 
   /*
@@ -135,7 +202,7 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
 
     // TODO(angelo): Implement this if it is legal. Unsure at the moment
     // if (scc->getType() == SCC::SCCType::INDEPENDENT) continue ;
-    if (scc->getType() == SCC::SCCType::COMMUTATIVE) continue ;
+    if (scc->getType() == SCC::SCCType::REDUCIBLE) continue ;
     scc->print(errs() << "NON COMM SCC THAT CAUSES NONREDUCABLE LIVE OUT:\n") << "\n";
 
     return false;
@@ -143,12 +210,12 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
   return true;
 }
 
-bool SCCDAGAttrs::canExecuteCommutatively (SCC *scc) const {
-  return sccToInfo.find(scc)->second->isReducable;
+bool SCCDAGAttrs::canExecuteReducibly (SCC *scc) const {
+  return scc->getType() == SCC::SCCType::REDUCIBLE;
 }
 
 bool SCCDAGAttrs::canExecuteIndependently (SCC *scc) const {
-  return sccToInfo.find(scc)->second->isIndependent;
+  return scc->getType() == SCC::SCCType::INDEPENDENT;
 }
 
 bool SCCDAGAttrs::canBeCloned (SCC *scc) const {
@@ -156,7 +223,7 @@ bool SCCDAGAttrs::canBeCloned (SCC *scc) const {
 }
 
 bool SCCDAGAttrs::isInductionVariableSCC (SCC *scc) const {
-  return sccToInfo.find(scc)->second->isIVSCC;
+  return sccToInfo.find(scc)->second->hasIV;
 }
 
 bool SCCDAGAttrs::isSCCContainedInSubloop (LoopInfoSummary &LIS, SCC *scc) const {
@@ -204,6 +271,57 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
   }
 }
 
+void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
+
+  /*
+   * Collect values producing intra iteration data dependencies
+   */
+  for (auto edge : sccdag->getEdges()) {
+    auto sccTo = edge->getIncomingT();
+    for (auto subEdge : edge->getSubEdges()) {
+      intraIterDeps[subEdge->getOutgoingT()].insert(sccTo);
+    }
+  }
+
+  /*
+   * Collect back edges within each SCC
+   * Data dependency back edges are from non-control
+   * instructions to PHIs in loop headers
+   * Control dependency back edges are from conditional
+   * branches to instructions in loop headers
+   */
+  for (auto sccNode : sccdag->getNodes()) {
+    auto scc = sccNode->getT();
+    for (auto valuePair : scc->internalNodePairs()) {
+      if (auto phi = dyn_cast<PHINode>(valuePair.first)) {
+        auto loop = LIS.bbToLoop[phi->getParent()];
+        if (loop->header != phi->getParent()) continue;
+
+        for (auto edge : valuePair.second->getIncomingEdges()) {
+          if (edge->isControlDependence()) continue;
+          if (!scc->isInternal(edge->getOutgoingT())) continue;
+          interIterDeps[scc].insert(edge);
+        }
+      }
+
+      if (auto term = dyn_cast<TerminatorInst>(valuePair.first)) {
+        for (auto edge : valuePair.second->getOutgoingEdges()) {
+          auto outV = edge->getIncomingT();
+          assert(isa<Instruction>(outV));
+          auto outBB = ((Instruction*)outV)->getParent();
+          if (LIS.bbToLoop[outBB]->header != outBB) continue;
+          interIterDeps[scc].insert(edge);
+        }
+      }
+    }
+
+    bool noCycle = !scc->hasCycle(/*ignoreControlDep=*/false);
+    bool noInterIterDeps = interIterDeps.find(scc) == interIterDeps.end();
+    assert(noCycle == noInterIterDeps
+      && "Improper collection of inter iteration dependencies in SCC!");
+  }
+}
+
 void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
   auto &sccInfo = this->getSCCAttrs(scc);
   for (auto iNodePair : scc->internalNodePairs()) {
@@ -230,11 +348,39 @@ void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
   }
 }
 
-bool SCCDAGAttrs::checkIfCommutative (SCC *scc, LoopInfoSummary &LIS) {
+void SCCDAGAttrs::collectControlFlowInstructions (SCC *scc) {
+  auto &sccInfo = this->getSCCAttrs(scc);
+  for (auto iNodePair : scc->internalNodePairs()) {
+    if (iNodePair.second->numOutgoingEdges() == 0) continue;
+    if (auto term = dyn_cast<TerminatorInst>(iNodePair.first)) {
+      sccInfo->controlFlowInsts.insert(term);
+    }
+  }
+
+  for (auto term : sccInfo->controlFlowInsts) {
+    if (auto br = dyn_cast<BranchInst>(term)) {
+      assert(br->isConditional()
+        && "BranchInst with outgoing edges in an SCC must be conditional!");
+      sccInfo->controlPairs.insert(std::make_pair(br->getCondition(), br));
+    }
+    if (auto switchI = dyn_cast<SwitchInst>(term)) {
+      sccInfo->controlPairs.insert(std::make_pair(switchI->getCondition(), switchI));
+    }
+  }
+
+  if (sccInfo->controlPairs.size() == 1) {
+    sccInfo->singleControlPair = *sccInfo->controlPairs.begin();
+  }
+}
+
+bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
 
   /*
-   * Requirement: SCC has no data dependent SCCs and no memory dependencies
+   * Requirement: Data flow: no data dependent SCCs,
+   * no memory dependencies, single data backedge
+   * Requirement: Control flow is intra-iteration,
+   * flow (conditions) determined externally to the SCC
    */
   for (auto iNodePair : scc->externalNodePairs()) {
     if (iNodePair.second->numConnectedEdges() == 0) continue ;
@@ -248,6 +394,17 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc, LoopInfoSummary &LIS) {
     }
   }
 
+  auto dataBackEdges = 0;
+  for (auto edge : interIterDeps[scc]) {
+    if (edge->isControlDependence()) return false;
+    dataBackEdges++;
+  }
+  if (dataBackEdges != 1) return false;
+
+  for (auto pair : sccInfo->controlPairs) {
+    if (scc->isInternal(pair.first)) return false;
+  }
+
   /*
    * Requirement: all PHI incoming values from within a loop iteration
    * are from other internal PHIs (no PHI = constant, etc... business)
@@ -258,20 +415,9 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc, LoopInfoSummary &LIS) {
     for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
       auto incomingBB = phi->getIncomingBlock(i);
       auto loopOfIncoming = LIS.bbToLoop[incomingBB];
+      // FIXME: This check should actually be whether this BB is anywhere in the loop map
       if (loopOfIncoming != loopOfPHI) continue;
-      auto incomingV = phi->getIncomingValue(i);
-      if (auto incomingPHI = dyn_cast<PHINode>(incomingV)) {
-        if (sccInfo->PHINodes.find(incomingPHI) == sccInfo->PHINodes.end()) {
-          return false;
-        } else {
-          continue;
-        }
-      }
-      if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
-        if (sccInfo->accumulators.find(incomingI) == sccInfo->accumulators.end()) {
-          return false;
-        }
-      }
+      if (!isDerivedPHIOrAccumulator(phi->getIncomingValue(i), scc)) return false;
     }
   }
 
@@ -289,37 +435,10 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc, LoopInfoSummary &LIS) {
       return false;
     }
 
-    auto isIndependentOfSCC = [&](Value *val) -> bool {
-      if (!scc->isInternal(val)) return false;
-      auto node = scc->fetchNode(val);
-      for (auto edge : node->getIncomingEdges()) {
-        if (scc->isInternal(edge->getOutgoingT())) return false;
-      }
-      return true;
-    };
-    auto isExternalIndependentOrConstant = [&](Value *val) -> bool {
-      if (isa<ConstantData>(val)) return true;
-      if (scc->isExternal(val)) return true;
-      return isIndependentOfSCC(val);
-    };
-    auto isInternalPHI = [&](Value *val) -> bool {
-      return isa<PHINode>(val) && phis.find(cast<PHINode>(val)) != phis.end()
-        && !isIndependentOfSCC(val);
-    };
-    auto isInternalAccum = [&](Value *val) -> bool {
-      return isa<Instruction>(val) && accums.find(cast<Instruction>(val)) != accums.end();
-    };
-    auto isInternalPHIOrAccum = [&](Value *val) -> bool {
-      if (auto cast = dyn_cast<CastInst>(val)) {
-        return isInternalPHI(cast->getOperand(0)) || isInternalAccum(cast->getOperand(0));
-      }
-      return isInternalPHI(val) || isInternalAccum(val);
-    };
-
     auto opL = accum->getOperand(0);
     auto opR = accum->getOperand(1);
-    if (!(isExternalIndependentOrConstant(opL) ^ isExternalIndependentOrConstant(opR))) return false;
-    if (!(isInternalPHIOrAccum(opL) ^ isInternalPHIOrAccum(opR))) return false;
+    if (!(isDerivedWithinSCC(opL, scc) ^ isDerivedWithinSCC(opR, scc))) return false;
+    if (!(isDerivedPHIOrAccumulator(opL, scc) ^ isDerivedPHIOrAccumulator(opR, scc))) return false;
   }
 
   /*
@@ -335,77 +454,58 @@ bool SCCDAGAttrs::checkIfCommutative (SCC *scc, LoopInfoSummary &LIS) {
     }
   }
 
-  return this->getSCCAttrs(scc)->isReducable = true;
+  return true;
 }
 
 /*
  * The SCC is independent if it doesn't have loop carried data dependencies
  */
 bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
-  return this->getSCCAttrs(scc)->isIndependent = !scc->hasCycle(/*ignoreControlDep=*/false);
+  return interIterDeps.find(scc) == interIterDeps.end();
 }
 
 bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
-  auto setIsIV = [&](bool isIV) -> bool {
-    return this->getSCCAttrs(scc)->isIVSCC = isIV;
-  };
-  auto fetchSinglePHIUse = [&](Instruction *binI) -> PHINode * {
-    auto opL = binI->getOperand(0), opR = binI->getOperand(1);
-    auto phiL = isa<PHINode>(opL), phiR = isa<PHINode>(opR);
-    if (!(phiL ^ phiR)) return nullptr;
-    return phiL ? (PHINode*)opL : (PHINode*)opR;
+  auto &sccInfo = this->getSCCAttrs(scc);
+  auto setHasIV = [&](bool hasIV) -> bool {
+    return sccInfo->hasIV = hasIV;
   };
 
   /*
    * Identify single conditional branch that dictates control flow in the SCC
    */
-  BranchInst *condBr = nullptr;
-  for (auto iNodePair : scc->internalNodePairs()) {
-    if (auto term = dyn_cast<TerminatorInst>(iNodePair.first)) {
-      if (iNodePair.second->numOutgoingEdges() > 0) {
-        if (auto br = dyn_cast<BranchInst>(term)) {
-          if (!condBr && br->isConditional()) {
-            condBr = br;
-            continue;
-          }
-        }
-        return setIsIV(false);
-      }
-    }
-  }
+  TerminatorInst *term = sccInfo->singleControlPair.second;
+  if (!term || !isa<BranchInst>(term)) return setHasIV(false);
+  Value *condition = sccInfo->singleControlPair.first;
+  if (!condition || !isa<CmpInst>(condition)) return setHasIV(false);
+  CmpInst *cmp = (CmpInst*)condition;
 
   /*
-   * Identify, on the CmpInst, a PHINode, and some constant, external,
-   * or internal that is iteration independent
+   * Identify, on the CmpInst, a PHINode or accumulator, and some value not
+   * derived within the SCC
    */
-  PHINode *IV = nullptr;
-  if (!condBr) return setIsIV(false);
-  if (auto cmp = dyn_cast<CmpInst>(condBr->getCondition())) {
-    IV = fetchSinglePHIUse(cmp);
-    if (!IV) return setIsIV(false);
-  }
-  
-  /*
-   * Ensure the PHI is an induction variable
-   */
-  for (auto I : this->getSCCAttrs(scc)->accumulators) {
-    PHINode *usedPHI = fetchSinglePHIUse(I);
-    if (IV != usedPHI) continue;
+  auto opL = cmp->getOperand(0), opR = cmp->getOperand(1);
+  if (!(isDerivedWithinSCC(opL, scc) ^ isDerivedWithinSCC(opR, scc))) return false;
+  if (!(isDerivedPHIOrAccumulator(opL, scc) ^ isDerivedPHIOrAccumulator(opR, scc))) return false;
 
+  /*
+   * Ensure a single PHI with induction accumulation only
+   */
+  if (!sccInfo->singlePHI) return setHasIV(false);
+  for (auto I : sccInfo->accumulators) {
     auto scev = SE.getSCEV(I);
     if (scev->getSCEVType() != scAddRecExpr) {
-      return setIsIV(false);
+      return setHasIV(false);
     }
   }
 
-  return setIsIV(true);
+  return setHasIV(true);
 }
 
-void SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
-  SimpleIVInfo *simpleIVInfo = new SimpleIVInfo();
-  SimpleIVInfo &IVInfo = *simpleIVInfo;
+void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopInfoSummary &LIS) {
+  FixedIVBounds *fixedIVBounds = new FixedIVBounds();
+  FixedIVBounds &IVBounds = *fixedIVBounds;
   auto notSimple = [&]() -> void {
-    delete simpleIVInfo;
+    delete fixedIVBounds;
     return;
   };
 
@@ -416,27 +516,12 @@ void SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
   if (!sccInfo->singlePHI || !sccInfo->singleAccumulator) return notSimple();
   if (sccInfo->singlePHI->getNumIncomingValues() != 2) return notSimple();
-
-  /*
-   * The IV has one condition/conditional branch only
-   */
-  for (auto iNodePair : scc->internalNodePairs()) {
-    auto V = iNodePair.first;
-    if (auto cmp = dyn_cast<CmpInst>(V)) {
-      if (IVInfo.cmp) return notSimple();
-      IVInfo.cmp = cmp;
-    } else if (auto br = dyn_cast<BranchInst>(V)) {
-      if (br->isUnconditional()) continue;
-      if (IVInfo.br) return notSimple();
-      IVInfo.br = br;
-    }
-  }
-  if (!IVInfo.cmp || !IVInfo.br) return notSimple();
+  if (sccInfo->singleControlPair.first == nullptr) return notSimple();
 
   auto accum = sccInfo->singleAccumulator;
   auto incomingStart = sccInfo->singlePHI->getIncomingValue(0);
   if (incomingStart == accum) incomingStart = sccInfo->singlePHI->getIncomingValue(1);
-  IVInfo.start = incomingStart;
+  IVBounds.start = incomingStart;
 
   /*
    * The IV recurrence is integer, by +-1 
@@ -444,78 +529,55 @@ void SCCDAGAttrs::checkIfSimpleIV (SCC *scc, LoopInfoSummary &LIS) {
   auto stepValue = accum->getOperand(0);
   if (stepValue == sccInfo->singlePHI) stepValue = accum->getOperand(1);
   if (!isa<ConstantInt>(stepValue)) return notSimple();
-  IVInfo.step = (ConstantInt*)stepValue;
-  auto stepSize = IVInfo.step->getValue();
+  IVBounds.step = (ConstantInt*)stepValue;
+  auto stepSize = IVBounds.step->getValue();
   if (stepSize != 1 && stepSize != -1) return notSimple();
 
-  auto cmpLHS = IVInfo.cmp->getOperand(0);
+  auto cmp = (CmpInst*)sccInfo->singleControlPair.first;
+  auto cmpLHS = cmp->getOperand(0);
   unsigned cmpToInd = cmpLHS == sccInfo->singlePHI || cmpLHS == accum;
-  IVInfo.cmpIVTo = IVInfo.cmp->getOperand(cmpToInd);
-  IVInfo.isCmpOnAccum = IVInfo.cmp->getOperand((cmpToInd + 1) % 2) == accum;
-  IVInfo.isCmpIVLHS = cmpToInd;
+  IVBounds.cmpIVTo = cmp->getOperand(cmpToInd);
+  IVBounds.isCmpOnAccum = cmp->getOperand((cmpToInd + 1) % 2) == accum;
+  IVBounds.isCmpIVLHS = cmpToInd;
 
   /*
    * The CmpInst compare value is constant, or a chain (length 0 or more)
    * of independent nodes in the SCC that ends in a loop external value
    */
-  if (!isa<ConstantData>(IVInfo.cmpIVTo)) {
-    // TODO: Chain is not followed: Print internal-ness and incoming dependencies
-    // IVInfo.cmpIVTo->print(errs() << "BEGINNING OF CHAIN: "); errs() << "\n";
-    Value *derivingValue = IVInfo.cmpIVTo;
-    while (scc->isInternal(derivingValue)) {
-      // NOTE: This is only necessary because of limitations in implementation
-      //  Nothing theoretically prevents the compare to value from being an
-      //  operator on an instruction or loop external value.
-      if (!isa<Instruction>(derivingValue)) return notSimple();
-      IVInfo.cmpToValueDerivation.push_back((Instruction*)derivingValue);
+  if (!isa<ConstantData>(IVBounds.cmpIVTo)) {
+    if (!isa<Instruction>(IVBounds.cmpIVTo)) return notSimple();
+    IVBounds.cmpToDerivation.push_back((Instruction*)IVBounds.cmpIVTo);
+    if (!collectDerivationChain(IVBounds.cmpToDerivation, scc)) return notSimple();
 
-      auto node = scc->fetchNode(derivingValue);
-      std::set<Value *> incomingDataDeps;
-      for (auto edge : node->getIncomingEdges()) {
-        if (edge->isControlDependence()) continue;
-        incomingDataDeps.insert(edge->getOutgoingT());
-        // edge->getOutgoingT()->print(errs() << "CHAIN DEP: Incoming value: "); errs() << "\n";
-      }
-      incomingDataDeps.erase(derivingValue);
-
-      if (incomingDataDeps.size() == 0) {
-        derivingValue = nullptr;
-        break;
-      }
-      if (incomingDataDeps.size() != 1) return notSimple();
-      derivingValue = *incomingDataDeps.begin();
-    }
-
-    if (derivingValue) {
-      if (!isa<Instruction>(derivingValue)) return notSimple();
-      auto derivingBB = ((Instruction*)derivingValue)->getParent();
-      // derivingValue->print(errs() << "END OF CHAIN: "); errs() << "\n";
-      if (LIS.bbToLoop.find(derivingBB) != LIS.bbToLoop.end()) return notSimple();
-    }
+    auto chainEnd = IVBounds.cmpToDerivation.back();
+    if (LIS.bbToLoop.find(chainEnd->getParent()) != LIS.bbToLoop.end()) return notSimple();
   }
 
   /*
    * The last value before the end value reached by the IV can be determined
    */
-  if (!doesIVHaveSimpleEndVal(IVInfo, LIS)) return notSimple();
+  if (!isIVUpperBoundSimple(scc, IVBounds, LIS)) return notSimple();
 
-  sccInfo->simpleIVInfo = simpleIVInfo;
+  sccIVBounds[scc] = fixedIVBounds;
 }
 
-bool SCCDAGAttrs::doesIVHaveSimpleEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary &LIS) {
+bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopInfoSummary &LIS) {
+  auto &sccInfo = this->getSCCAttrs(scc);
+  auto cmp = cast<CmpInst>(sccInfo->singleControlPair.first);
+  auto br = cast<BranchInst>(sccInfo->singleControlPair.second);
 
   /*
    * Branch statement has two successors, one in the loop body, one outside the loop
    */
-  auto loop = LIS.bbToLoop[ivInfo.br->getParent()];
-  auto brLHSInLoop = loop->bbs.find(ivInfo.br->getSuccessor(0)) != loop->bbs.end();
-  auto brRHSInLoop = loop->bbs.find(ivInfo.br->getSuccessor(1)) != loop->bbs.end();
+  auto loop = LIS.bbToLoop[br->getParent()];
+  auto brLHSInLoop = loop->bbs.find(br->getSuccessor(0)) != loop->bbs.end();
+  auto brRHSInLoop = loop->bbs.find(br->getSuccessor(1)) != loop->bbs.end();
   if (!(brLHSInLoop ^ brRHSInLoop)) return false;
 
   bool exitOnCmp = !brLHSInLoop;
-  auto signedPred = ivInfo.cmp->isUnsigned() ? ivInfo.cmp->getSignedPredicate() : ivInfo.cmp->getPredicate();
-  signedPred = ivInfo.isCmpIVLHS ? signedPred : ICmpInst::getSwappedPredicate(signedPred);
-  int stepSize = ivInfo.step->getValue().getSExtValue();
+  auto signedPred = cmp->isUnsigned() ? cmp->getSignedPredicate() : cmp->getPredicate();
+  signedPred = IVBounds.isCmpIVLHS ? signedPred : ICmpInst::getSwappedPredicate(signedPred);
+  int stepSize = IVBounds.step->getValue().getSExtValue();
 
   auto cmpPredAbort = [&]() -> void {
     errs() << "SCCDAGAttrs:   Error: comparison and branch of top level IV misunderstood\n";
@@ -526,7 +588,7 @@ bool SCCDAGAttrs::doesIVHaveSimpleEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary 
     if (stepSize == 1) {
       switch (signedPred) {
         case CmpInst::Predicate::ICMP_SLE:
-          ivInfo.endOffset = 1;
+          IVBounds.endOffset = 1;
         case CmpInst::Predicate::ICMP_NE:
         case CmpInst::Predicate::ICMP_SLT:
           break;
@@ -536,7 +598,7 @@ bool SCCDAGAttrs::doesIVHaveSimpleEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary 
     } else {
       switch (signedPred) {
         case CmpInst::Predicate::ICMP_SGE:
-          ivInfo.endOffset = -1;
+          IVBounds.endOffset = -1;
         case CmpInst::Predicate::ICMP_NE:
         case CmpInst::Predicate::ICMP_SGT:
           break;
@@ -548,7 +610,7 @@ bool SCCDAGAttrs::doesIVHaveSimpleEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary 
     if (stepSize == 1) {
       switch (signedPred) {
         case CmpInst::Predicate::ICMP_SGT:
-          ivInfo.endOffset = 1;
+          IVBounds.endOffset = 1;
         case CmpInst::Predicate::ICMP_SGE:
         case CmpInst::Predicate::ICMP_EQ:
           break;
@@ -558,7 +620,7 @@ bool SCCDAGAttrs::doesIVHaveSimpleEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary 
     } else {
       switch (signedPred) {
         case CmpInst::Predicate::ICMP_SLT:
-          ivInfo.endOffset = -1;
+          IVBounds.endOffset = -1;
         case CmpInst::Predicate::ICMP_SLE:
         case CmpInst::Predicate::ICMP_EQ:
           break;
@@ -568,7 +630,7 @@ bool SCCDAGAttrs::doesIVHaveSimpleEndVal (SimpleIVInfo &ivInfo, LoopInfoSummary 
     }
   }
 
-  ivInfo.endOffset -= stepSize * ivInfo.isCmpOnAccum;
+  IVBounds.endOffset -= stepSize * IVBounds.isCmpOnAccum;
   return true;
 }
 
@@ -584,39 +646,26 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
 bool SCCDAGAttrs::isClonableByInductionVars (SCC *scc) const {
 
   /*
-   * Check if the current node of the SCCDAG is an SCC used by other nodes.
+   * FIXME: This check should not exist; instead, SCC where cloning
+   * is trivial should be separated out by the parallelization scheme
    */
-  if (scc->numInternalNodes() == 1 || sccdag->fetchNode(scc)->numOutgoingEdges() == 0) {
-    return false;
-  }
-
-  /*
-   * The current node of the SCCDAG is an SCC.
-   *
-   * Check if this SCC can be removed exploiting induction variables.
-   * In more detail, this SCC can be removed if the loop-carried data dependence, which has created this SCC in the PDG, is due to updates to induction variables.
-   */
-  if (this->isInductionVariableSCC(scc)) {
-    return true;
-  }
-
-  return false;
+  if (sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
+  return this->isInductionVariableSCC(scc);
 }
 
 bool SCCDAGAttrs::isClonableBySyntacticSugarInstrs (SCC *scc) const {
 
   /*
-   * Check if the current node of the SCCDAG is an SCC used by other nodes.
+   * FIXME: This check should not exist; instead, SCC where cloning
+   * is trivial should be separated out by the parallelization scheme
    */
-  if (scc->numInternalNodes() > 1 || sccdag->fetchNode(scc)->numOutgoingEdges() == 0) {
-    return false;
-  }
+  if (sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
 
+  if (scc->numInternalNodes() > 1) return false;
   auto I = scc->begin_internal_node_map()->first;
   if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
     return true;
   }
-
   return false;
 }
 
@@ -626,5 +675,55 @@ bool SCCDAGAttrs::isClonableByCmpBrInstrs (SCC *scc) const {
     if (isa<CmpInst>(V) || isa<TerminatorInst>(V)) continue;
     return false;
   }
+  return true;
+}
+
+/*
+ * NOTE: Derivation within an SCC requires inclusion in the SCC object
+ * and dependency to a value in the strongly connected component, in the cycle
+ */
+bool SCCDAGAttrs::isDerivedWithinSCC (Value *val, SCC *scc) const {
+  auto &sccInfo = sccToInfo.find(scc)->second;
+  return sccInfo->sccValues.find(val) != sccInfo->sccValues.end();
+}
+
+bool SCCDAGAttrs::isDerivedPHIOrAccumulator (Value *val, SCC *scc) const {
+  Value *derived = val;
+  if (auto cast = dyn_cast<CastInst>(val)) {
+    derived = cast->getOperand(0);
+  }
+
+  auto &sccInfo = sccToInfo.find(scc)->second;
+  bool isInternalPHI = isa<PHINode>(derived)
+    && sccInfo->PHINodes.find(cast<PHINode>(derived)) != sccInfo->PHINodes.end();
+  bool isInternalAccum = isa<Instruction>(derived)
+    && sccInfo->accumulators.find(cast<Instruction>(derived)) != sccInfo->accumulators.end();
+  return isDerivedWithinSCC(derived, scc) && (isInternalPHI || isInternalAccum);
+}
+
+bool SCCDAGAttrs::collectDerivationChain (std::vector<Instruction *> &chain, SCC *scc) {
+  Instruction *deriving = chain[0];
+  chain.pop_back();
+  while (scc->isInternal(deriving)) {
+    chain.push_back(deriving);
+
+    auto node = scc->fetchNode(deriving);
+    std::set<Value *> incomingDataDeps;
+    for (auto edge : node->getIncomingEdges()) {
+      if (edge->isControlDependence()) continue;
+      incomingDataDeps.insert(edge->getOutgoingT());
+    }
+    incomingDataDeps.erase(deriving);
+
+    /*
+     * Continue down the dependency graph only if it is a linear chain
+     */
+    if (incomingDataDeps.size() == 0) break;
+    if (incomingDataDeps.size() != 1) return false;
+    auto V = *incomingDataDeps.begin();
+    if (!isa<Instruction>(V)) return false;
+    deriving = (Instruction*)V;
+  }
+
   return true;
 }

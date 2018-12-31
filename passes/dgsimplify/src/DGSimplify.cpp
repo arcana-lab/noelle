@@ -272,7 +272,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo
   std::set<SCC *> sccsToCheck;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
-    if (!LDI->sccdagAttrs.canExecuteCommutatively(scc)
+    if (!LDI->sccdagAttrs.canExecuteReducibly(scc)
         && !LDI->sccdagAttrs.canExecuteIndependently(scc)
         && !LDI->sccdagAttrs.canBeCloned(scc)) {
       sccsToCheck.insert(scc);

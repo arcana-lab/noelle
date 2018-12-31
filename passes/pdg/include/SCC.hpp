@@ -24,7 +24,7 @@ namespace llvm {
 	*/
 	class SCC : public DG<Value> {
       public:
-        enum SCCType {SEQUENTIAL, COMMUTATIVE, INDEPENDENT};
+        enum SCCType {SEQUENTIAL, REDUCIBLE, INDEPENDENT};
 
         SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
 

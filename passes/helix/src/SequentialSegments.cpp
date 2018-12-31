@@ -37,7 +37,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
     for (auto scc : *subset){
       auto sccType = scc->getType();
       if (  (sccType == SCC::SEQUENTIAL)  ||
-            (sccType == SCC::COMMUTATIVE) ){
+            (sccType == SCC::REDUCIBLE) ){
         requireSS = true;
         break ;
       }
