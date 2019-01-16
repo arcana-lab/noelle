@@ -306,10 +306,20 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
 
       if (auto term = dyn_cast<TerminatorInst>(valuePair.first)) {
         for (auto edge : valuePair.second->getOutgoingEdges()) {
-          auto outV = edge->getIncomingT();
-          assert(isa<Instruction>(outV));
-          auto outBB = ((Instruction*)outV)->getParent();
-          if (LIS.bbToLoop[outBB]->header != outBB) continue;
+          auto depV = edge->getIncomingT();
+          assert(isa<Instruction>(depV));
+          auto depBB = ((Instruction*)depV)->getParent();
+          if (LIS.bbToLoop[depBB]->header != depBB) continue;
+          interIterDeps[scc].insert(edge);
+        }
+      }
+
+      if (isa<StoreInst>(valuePair.first) || isa<LoadInst>(valuePair.first)) {
+        auto memI = (Instruction *)valuePair.first;
+        for (auto edge : valuePair.second->getOutgoingEdges()) {
+          if (!edge->isMemoryDependence()) continue;
+          auto depI = (Instruction *)edge->getIncomingT();
+          if (canPrecedeInCurrentIteration(LIS, memI, depI)) continue;
           interIterDeps[scc].insert(edge);
         }
       }
@@ -317,9 +327,51 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
 
     bool noCycle = !scc->hasCycle(/*ignoreControlDep=*/false);
     bool noInterIterDeps = interIterDeps.find(scc) == interIterDeps.end();
-    assert(noCycle == noInterIterDeps
-      && "Improper collection of inter iteration dependencies in SCC!");
+    if (noCycle != noInterIterDeps) {
+      errs() << "ERROR: Improper collection of inter iteration dependencies in SCC! "
+        << (noCycle ? "cycle" : "no cycle") << " but "
+        << (noInterIterDeps ? "inter iter dependencies" : "no inter iter dependencies") << "\n";
+      assert(false && "SCCDAGAttrs::collectDependencies");
+    }
   }
+}
+
+// TODO: Consolidate this logic and its equivalent in PDGAnalysis
+bool SCCDAGAttrs::canPrecedeInCurrentIteration (LoopInfoSummary &LIS, Instruction *from, Instruction *to) const {
+  BasicBlock *fromBB = from->getParent();
+  BasicBlock *toBB = to->getParent();
+  auto loopIter = LIS.bbToLoop.find(fromBB);
+  BasicBlock *headerBB = nullptr;
+  if (loopIter != LIS.bbToLoop.end()) headerBB = loopIter->second->header;
+
+  if (fromBB == toBB) {
+    for (auto &I : *fromBB) {
+      if (&I == from) return true;
+      if (&I == to) return false;
+    }
+  }
+
+  std::queue<BasicBlock *> bbToTraverse;
+  std::set<BasicBlock *> bbReached;
+  auto traverseOn = [&](BasicBlock *bb) -> void {
+    bbToTraverse.push(bb); bbReached.insert(bb);
+  };
+  traverseOn(toBB);
+
+  while (!bbToTraverse.empty()) {
+    auto bb = bbToTraverse.front();
+    bbToTraverse.pop();
+    if (bb == fromBB) return true;
+    if (bb == headerBB) continue;
+
+    for (auto predBB : make_range(pred_begin(bb), pred_end(bb))) {
+      if (bbReached.find(predBB) == bbReached.end()) {
+        traverseOn(predBB);
+      }
+    }
+  }
+
+  return false;
 }
 
 void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
@@ -397,6 +449,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
   auto dataBackEdges = 0;
   for (auto edge : interIterDeps[scc]) {
     if (edge->isControlDependence()) return false;
+    if (edge->isMemoryDependence()) return false;
     dataBackEdges++;
   }
   if (dataBackEdges != 1) return false;
@@ -414,9 +467,8 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
     auto loopOfPHI = LIS.bbToLoop[phi->getParent()];
     for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
       auto incomingBB = phi->getIncomingBlock(i);
-      auto loopOfIncoming = LIS.bbToLoop[incomingBB];
-      // FIXME: This check should actually be whether this BB is anywhere in the loop map
-      if (loopOfIncoming != loopOfPHI) continue;
+      auto loopOfIncoming = LIS.bbToLoop.find(incomingBB);
+      if (loopOfIncoming == LIS.bbToLoop.end() || loopOfIncoming->second != loopOfPHI) continue;
       if (!isDerivedPHIOrAccumulator(phi->getIncomingValue(i), scc)) return false;
     }
   }
@@ -703,6 +755,8 @@ bool SCCDAGAttrs::isDerivedPHIOrAccumulator (Value *val, SCC *scc) const {
 
 bool SCCDAGAttrs::collectDerivationChain (std::vector<Instruction *> &chain, SCC *scc) {
   Instruction *deriving = chain[0];
+  if (!scc->isInternal(deriving)) return true;
+
   chain.pop_back();
   while (scc->isInternal(deriving)) {
     chain.push_back(deriving);

@@ -155,5 +155,6 @@ namespace llvm {
       bool isDerivedWithinSCC (Value *V, SCC *scc) const ;
       bool isDerivedPHIOrAccumulator (Value *V, SCC *scc) const ;
       bool collectDerivationChain (std::vector<Instruction *> &chain, SCC *scc);
+      bool canPrecedeInCurrentIteration (LoopInfoSummary &LIS, Instruction *from, Instruction *to) const ;
   };
 }
