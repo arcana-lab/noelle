@@ -69,11 +69,13 @@ void SCCAttrs::collectSCCValues () {
     PathValue (Value *V, PathValue *PV = nullptr) : value{V}, prev{PV} {};
   };
 
+  std::set<Value *> valuesSeen;
   std::set<PathValue *> pathValues;
   std::queue<PathValue *> toTraverse;
   std::set<DGNode<Value> *> topLevelNodes = scc->getTopLevelNodes();
   for (auto node : topLevelNodes) {
     auto pathV = new PathValue(node->getT());
+    valuesSeen.insert(node->getT());
     pathValues.insert(pathV);
     toTraverse.push(pathV);
   }
@@ -95,7 +97,7 @@ void SCCAttrs::collectSCCValues () {
     if (isCycle) {
       auto cycleV = pathV;
       while (cycleV != prevV) {
-        sccValues.insert(cycleV->value);
+        stronglyConnectedDataValues.insert(cycleV->value);
         cycleV = cycleV->prev;
       }
       continue;
@@ -103,9 +105,23 @@ void SCCAttrs::collectSCCValues () {
 
     auto node = scc->fetchNode(pathV->value);
     for (auto edge : node->getOutgoingEdges()) {
-      auto nextPathV = new PathValue(edge->getIncomingT(), pathV);
-      pathValues.insert(nextPathV);
-      toTraverse.push(nextPathV);
+      // Only trace paths across data dependencies, starting
+      //  anew on newly encountered data values across control dependencies
+      auto nextV = edge->getIncomingT();
+      PathValue *nextPathV = nullptr;
+      if (edge->isControlDependence()) {
+        if (valuesSeen.find(nextV) == valuesSeen.end()) {
+          nextPathV = new PathValue(nextV);
+        }
+      } else {
+        nextPathV = new PathValue(nextV, pathV);
+      }
+
+      if (nextPathV) {
+        valuesSeen.insert(nextV);
+        pathValues.insert(nextPathV);
+        toTraverse.push(nextPathV);
+      }
     }
   }
 
@@ -299,7 +315,9 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
 
         for (auto edge : valuePair.second->getIncomingEdges()) {
           if (edge->isControlDependence()) continue;
-          if (!scc->isInternal(edge->getOutgoingT())) continue;
+          auto depI = (Instruction*)edge->getOutgoingT();
+          if (!scc->isInternal(depI)) continue;
+          if (canPrecedeInCurrentIteration(LIS, depI, phi)) continue;
           interIterDeps[scc].insert(edge);
         }
       }
@@ -309,12 +327,14 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
           auto depV = edge->getIncomingT();
           assert(isa<Instruction>(depV));
           auto depBB = ((Instruction*)depV)->getParent();
-          if (LIS.bbToLoop[depBB]->header != depBB) continue;
+          if (term->getParent() != depBB) continue;
           interIterDeps[scc].insert(edge);
         }
       }
 
-      if (isa<StoreInst>(valuePair.first) || isa<LoadInst>(valuePair.first)) {
+      if (isa<StoreInst>(valuePair.first)
+          || isa<LoadInst>(valuePair.first)
+          || isa<CallInst>(valuePair.first)) {
         auto memI = (Instruction *)valuePair.first;
         for (auto edge : valuePair.second->getOutgoingEdges()) {
           if (!edge->isMemoryDependence()) continue;
@@ -325,14 +345,17 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
       }
     }
 
-    bool noCycle = !scc->hasCycle(/*ignoreControlDep=*/false);
+    // bool noCycle = !scc->hasCycle(/*ignoreControlDep=*/false);
+    /*
     bool noInterIterDeps = interIterDeps.find(scc) == interIterDeps.end();
     if (noCycle != noInterIterDeps) {
       errs() << "ERROR: Improper collection of inter iteration dependencies in SCC! "
-        << (noCycle ? "cycle" : "no cycle") << " but "
-        << (noInterIterDeps ? "inter iter dependencies" : "no inter iter dependencies") << "\n";
+        << (noCycle ? "no cycle" : "cycle") << " but "
+        << (noInterIterDeps ? "no inter iter dependencies" : "inter iter dependencies") << "\n";
+      scc->print(errs()) << "\n";
       assert(false && "SCCDAGAttrs::collectDependencies");
     }
+    */
   }
 }
 
@@ -519,6 +542,7 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
 bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
   auto &sccInfo = this->getSCCAttrs(scc);
   auto setHasIV = [&](bool hasIV) -> bool {
+    // scc->printMinimal(errs() << "Not IV:\n") << "\n";
     return sccInfo->hasIV = hasIV;
   };
 
@@ -536,8 +560,8 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
    * derived within the SCC
    */
   auto opL = cmp->getOperand(0), opR = cmp->getOperand(1);
-  if (!(isDerivedWithinSCC(opL, scc) ^ isDerivedWithinSCC(opR, scc))) return false;
-  if (!(isDerivedPHIOrAccumulator(opL, scc) ^ isDerivedPHIOrAccumulator(opR, scc))) return false;
+  if (!(isDerivedWithinSCC(opL, scc) ^ isDerivedWithinSCC(opR, scc))) return setHasIV(false);
+  if (!(isDerivedPHIOrAccumulator(opL, scc) ^ isDerivedPHIOrAccumulator(opR, scc))) return setHasIV(false);
 
   /*
    * Ensure a single PHI with induction accumulation only
@@ -550,6 +574,7 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
     }
   }
 
+  // scc->printMinimal(errs() << "IS an IV:\n") << "\n";
   return setHasIV(true);
 }
 
@@ -602,7 +627,7 @@ void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopInfoSummary &LIS) {
     if (!collectDerivationChain(IVBounds.cmpToDerivation, scc)) return notSimple();
 
     auto chainEnd = IVBounds.cmpToDerivation.back();
-    if (LIS.bbToLoop.find(chainEnd->getParent()) != LIS.bbToLoop.end()) return notSimple();
+    if (isDerivedWithinSCC(chainEnd, scc)) return notSimple();
   }
 
   /*
@@ -733,10 +758,12 @@ bool SCCDAGAttrs::isClonableByCmpBrInstrs (SCC *scc) const {
 /*
  * NOTE: Derivation within an SCC requires inclusion in the SCC object
  * and dependency to a value in the strongly connected component, in the cycle
+ * TODO: Derivation should only consider data dependency cycles, not control
  */
 bool SCCDAGAttrs::isDerivedWithinSCC (Value *val, SCC *scc) const {
   auto &sccInfo = sccToInfo.find(scc)->second;
-  return sccInfo->sccValues.find(val) != sccInfo->sccValues.end();
+  return sccInfo->stronglyConnectedDataValues.find(val)
+    != sccInfo->stronglyConnectedDataValues.end();
 }
 
 bool SCCDAGAttrs::isDerivedPHIOrAccumulator (Value *val, SCC *scc) const {
@@ -757,9 +784,12 @@ bool SCCDAGAttrs::collectDerivationChain (std::vector<Instruction *> &chain, SCC
   Instruction *deriving = chain[0];
   if (!scc->isInternal(deriving)) return true;
 
+  std::set<Instruction *> valuesSeen;
   chain.pop_back();
   while (scc->isInternal(deriving)) {
     chain.push_back(deriving);
+    if (valuesSeen.find(deriving) != valuesSeen.end()) return false;
+    valuesSeen.insert(deriving);
 
     auto node = scc->fetchNode(deriving);
     std::set<Value *> incomingDataDeps;
