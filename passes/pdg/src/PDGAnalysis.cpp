@@ -30,9 +30,9 @@ static cl::opt<int> Verbose("pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc(
 using namespace llvm;
 
 bool llvm::PDGAnalysis::doInitialization (Module &M){
-  this->memorylessFunctionNames = {
-    "sqrt"
-  };
+  this->readOnlyFunctionNames = { "fprintf", "printf" };
+  this->allocatorFunctionNames = { "malloc", "calloc" };
+  this->memorylessFunctionNames = { "sqrt" };
   this->verbose = static_cast<PDGVerbosity>(Verbose.getValue());
   return false;
 }
@@ -57,7 +57,7 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   constructEdgesFromControl(this->programDependenceGraph, M);
 
   collectCGUnderFunctionMain(M);
-  collectPrimitiveArrayGlobalValues(M);
+  collectPrimitiveArrayValues(M);
   collectMemorylessFunctions(M);
   removeEdgesNotUsedByParSchemes(this->programDependenceGraph);
 
@@ -307,6 +307,20 @@ void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {
   CGUnderMain.insert(reached.begin(), reached.end());
 }
 
+void PDGAnalysis::collectFunctionCallsTo (std::set<Function *> &called, std::set<CallInst *> &calls) {
+  auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
+  for (auto caller : CGUnderMain) {
+    auto funcCGNode = callGraph[caller];
+    for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
+      auto F = callRecord.second->getFunction();
+      if (called.find(F) == called.end()) continue;
+      if (auto call = dyn_cast<CallInst>(&*callRecord.first)) {
+        calls.insert(call);
+      }
+    }
+  }
+}
+
 void llvm::PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {
   std::set<DGEdge<Value> *> removeEdges;
   for (auto edge : pdg->getEdges()) {
@@ -347,15 +361,17 @@ bool llvm::PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edg
   }
 
   bool loopCarried = true;
-  if (isMemoryAccessIntoDifferentGlobals(edge) ||
-      isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store) ||
+  if (isMemoryAccessIntoDifferentArrays(edge) ||
+      (store && load && isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store)) ||
       isBackedgeIntoSameGlobal(edge)) {
     loopCarried = false;
   }
 
   if (!loopCarried) {
-    assert(!edge->isMustDependence()
-      && "LLVM AA states load store pair is a must dependence! Bad PDGAnalysis.");
+    // NOTE: We are actually removing must dependencies, but only those that are
+    // backedges where by the next iteration, the access is at a different memory location
+    // assert(!edge->isMustDependence()
+    //  && "LLVM AA states load store pair is a must dependence! Bad PDGAnalysis.");
     if (verbose >= PDGVerbosity::Maximal) {
       errs() << "PDGAnalysis:  Memory dependence removed! From - to:\n";
       outgoingT->print(errs() << "PDGAnalysis:  Outgoing: "); errs() << "\n";
@@ -370,19 +386,13 @@ bool llvm::PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray (
   LoadInst *load,
   StoreInst *store
 ) {
-  // NOTE: until the GEP is guaranteed to be contiguous memory of
-  //  non pointer values, no guarantee about this dependency can be made
-  //  even if it is a load/store on the same IV-governed gep
-  return false;
+  auto access1 = getPrimitiveArrayAccess(load, true);
+  auto access2 = getPrimitiveArrayAccess(store, true);
 
-  if (!load || !store) return false;
-  if (!isa<GetElementPtrInst>(load->getPointerOperand())) return false;
-  if (!isa<GetElementPtrInst>(store->getPointerOperand())) return false;
-  auto loadGEP = (GetElementPtrInst*)(load->getPointerOperand());
-  auto storeGEP = (GetElementPtrInst*)(store->getPointerOperand());
-  if (!areGEPIndicesConstantOrIV(loadGEP) ||
-      !areGEPIndicesConstantOrIV(storeGEP)) return false;
-  if (!areIdenticalGEPAccessesInSameLoop(loadGEP, storeGEP)) false;
+  auto gep1 = access1.second;
+  auto gep2 = access2.second;
+  if (!gep1 || !gep2) return false;
+  if (!areIdenticalGEPAccessesInSameLoop(gep1, gep2)) return false;
 
   auto outgoingI = (Instruction*)(edge->getOutgoingT());
   auto incomingI = (Instruction*)(edge->getIncomingT());
@@ -396,29 +406,28 @@ bool llvm::PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray (
 bool llvm::PDGAnalysis::isBackedgeIntoSameGlobal (
   DGEdge<Value> *edge
 ) {
-  auto getNonAliasingGVAccess = [&](Value *V) -> std::pair<Value *, GetElementPtrInst *> {
-    Value *GV = getNonAliasingGVFromDirectAccess(V);
-    if (GV) return make_pair(GV, nullptr);
-    return getNonAliasingGVFromGEPAccess(V, /*IVGovernedGEP*/true);
-  };
+  auto access1 = getPrimitiveArrayAccess(edge->getOutgoingT(), true);
+  auto access2 = getPrimitiveArrayAccess(edge->getIncomingT(), true);
 
-  GetElementPtrInst *gep = nullptr;
-  auto pair1 = getNonAliasingGVAccess(edge->getOutgoingT());
-  auto pair2 = getNonAliasingGVAccess(edge->getIncomingT());
+  /*
+   * Ensure the same global variable is accessed by the edge values
+   */
+  auto array1 = access1.first;
+  auto array2 = access2.first;
+  if (!array1 || !isa<GlobalValue>(array1)) return false;
+  if (array1 != array2) return false;
 
-  // Ensure the same global variable is used
-  auto GV1 = pair1.first;
-  auto GV2 = pair2.first;
-  if (!GV1 || !GV2) return false;
-  if (GV1 != GV2) return false;
-
-  // Ensure either of the following:
-  //  1) two accesses using the same IV governed GEP
-  //  2) a store into the GEP and a load of the entire GV
-  auto GEP1 = pair1.second;
-  auto GEP2 = pair2.second;
+  /*
+   * Ensure either of the following:
+   *  1) two load accesses using the same IV governed GEP
+   *  2) a store into the GEP and a load of the entire GV
+   */
+  auto GEP1 = access1.second;
+  auto GEP2 = access2.second;
   if (GEP1 && GEP2) {
     if (!areIdenticalGEPAccessesInSameLoop(GEP1, GEP2)) return false;
+    if (!isa<LoadInst>(edge->getOutgoingT()) ||
+        !isa<LoadInst>(edge->getIncomingT())) return false;
   } else if (GEP1) {
     if (!isa<StoreInst>(edge->getOutgoingT()) ||
         !isa<LoadInst>(edge->getIncomingT())) return false;
@@ -427,6 +436,9 @@ bool llvm::PDGAnalysis::isBackedgeIntoSameGlobal (
         !isa<StoreInst>(edge->getIncomingT())) return false;
   } else return false;
 
+  /*
+   * Ensure that the edge is a backedge
+   */
   auto outgoingI = (Instruction*)(edge->getOutgoingT());
   auto incomingI = (Instruction*)(edge->getIncomingT());
   if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
@@ -436,40 +448,77 @@ bool llvm::PDGAnalysis::isBackedgeIntoSameGlobal (
   return true;
 }
 
-bool llvm::PDGAnalysis::isMemoryAccessIntoDifferentGlobals (DGEdge<Value> *edge) {
-  auto getNonAliasingGVAccess = [&](Value *V) -> Value * {
-    Value *GV = getNonAliasingGVFromDirectAccess(V);
-    if (GV) return GV;
-    return getNonAliasingGVFromGEPAccess(V, /*IVGovernedGEP*/false).first;
-  };
-
-  Value *GV1 = getNonAliasingGVAccess(edge->getOutgoingT());
-  Value *GV2 = getNonAliasingGVAccess(edge->getIncomingT());
-  if (!GV1 || !GV2) return false;
-  if (GV1 == GV2) return false;
-  return true;
-}
-
-Value *llvm::PDGAnalysis::getNonAliasingGVFromDirectAccess (Value *V) {
-  auto memOp = getMemoryPointerOp(V);
-  return memOp ? getGVIfNonAliasing(memOp) : nullptr;
+bool llvm::PDGAnalysis::isMemoryAccessIntoDifferentArrays (DGEdge<Value> *edge) {
+  Value *array1 = getPrimitiveArrayAccess(edge->getOutgoingT()).first;
+  Value *array2 = getPrimitiveArrayAccess(edge->getIncomingT()).first;
+  return (array1 && array2 && array1 != array2);
 }
 
 std::pair<Value *, GetElementPtrInst *>
-llvm::PDGAnalysis::getNonAliasingGVFromGEPAccess (Value *V, bool IVGovernedGEP) {
+llvm::PDGAnalysis::getPrimitiveArrayAccess (Value *V, bool mustBeIVGovernedAccess) {
+  auto memOp = getMemoryPointerOperand(V);
+  if (!memOp) return std::make_pair(nullptr, nullptr);
+
+  /*
+   * The value V is a memory instruction directly on an array
+   */
+  auto directAccessArray = getPrimitiveArray(memOp);
+  if (directAccessArray) {
+    // directAccessArray->print(errs() << "Found direct access array: "); errs() << "\n";
+  }
+  if (directAccessArray) return std::make_pair(directAccessArray, nullptr);
+
   auto empty = std::make_pair(nullptr, nullptr);
-  auto memOp = getMemoryPointerOp(V);
-  if (!memOp) return empty;
   if (auto gep = dyn_cast<GetElementPtrInst>(memOp)) {
-    if (IVGovernedGEP && !areGEPIndicesConstantOrIV(gep)) return empty;
-    auto memOp = getMemoryPointerOp(gep->getPointerOperand());
-    if (memOp) return std::make_pair(getGVIfNonAliasing(memOp), gep);
+
+    /*
+     * Should this be requested, check that the GEP has offsets
+     * determined by induction variables
+     */
+    if (mustBeIVGovernedAccess && !areGEPIndicesConstantOrIV(gep)) return empty;
+
+    /*
+     * The value V is a memory instruction on a GEP of either a
+     * local array or a load of a global array
+     */
+    auto gepMemOp = gep->getPointerOperand();
+    auto localArray = getLocalPrimitiveArray(gepMemOp);
+    if (localArray) {
+      // localArray->print(errs() << "Found GEP access local array: "); errs() << "\n";
+    }
+    if (localArray) return std::make_pair(localArray, gep);
+
+    auto loadMemOp = getMemoryPointerOperand(gepMemOp);
+    auto globalArray = loadMemOp
+      ? getGlobalValuePrimitiveArray(loadMemOp) : nullptr;
+    if (globalArray) {
+      // globalArray->print(errs() << "Found GEP access global array: "); errs() << "\n";
+    }
+    if (globalArray) return std::make_pair(globalArray, gep);
   }
   return empty;
 }
 
-Value *llvm::PDGAnalysis::getGVIfNonAliasing (Value *V) {
-  if (auto GV = dyn_cast<GlobalValue>(V)) {
+Value *llvm::PDGAnalysis::getPrimitiveArray (Value *V) {
+  auto localArray = getLocalPrimitiveArray(V);
+  return localArray ? localArray : getGlobalValuePrimitiveArray(V);
+}
+
+Value *llvm::PDGAnalysis::getLocalPrimitiveArray (Value *V) {
+  auto targetV = V;
+  if (auto cast = dyn_cast<CastInst>(V)) targetV = cast->getOperand(0);
+  if (auto I = dyn_cast<Instruction>(targetV)) {
+    if (primitiveArrayLocals.find(I) != primitiveArrayLocals.end()) {
+      return I;
+    }
+  }
+  return nullptr;
+}
+
+Value *llvm::PDGAnalysis::getGlobalValuePrimitiveArray (Value *V) {
+  auto targetV = V;
+  if (auto cast = dyn_cast<CastInst>(V)) targetV = cast->getOperand(0);
+  if (auto GV = dyn_cast<GlobalValue>(targetV)) {
     if (primitiveArrayGlobals.find(GV) != primitiveArrayGlobals.end()) {
       return GV;
     }
@@ -477,7 +526,7 @@ Value *llvm::PDGAnalysis::getGVIfNonAliasing (Value *V) {
   return nullptr;
 }
 
-Value *llvm::PDGAnalysis::getMemoryPointerOp (Value *V) {
+Value *llvm::PDGAnalysis::getMemoryPointerOperand (Value *V) {
   if (auto load = dyn_cast<LoadInst>(V)) {
     return load->getPointerOperand();
   }
@@ -550,13 +599,17 @@ bool PDGAnalysis::areIdenticalGEPAccessesInSameLoop (GetElementPtrInst *gep1, Ge
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*gep1->getFunction()).getLoopInfo();
   if (LI.getLoopFor(gep1->getParent()) != LI.getLoopFor(gep2->getParent())) return false;
 
-  Value *accessed = nullptr;
-  if (auto load = dyn_cast<LoadInst>(gep1->getPointerOperand())) {
-    accessed = load->getPointerOperand();
-  } else return false;
-  if (auto load = dyn_cast<LoadInst>(gep2->getPointerOperand())) {
-    if (accessed != load->getPointerOperand()) return false;
-  } else return false;
+  auto gepOp1 = gep1->getPointerOperand();
+  auto gepOp2 = gep2->getPointerOperand();
+  if (gepOp1 != gepOp2) {
+    Value *accessed = nullptr;
+    if (auto load = dyn_cast<LoadInst>(gepOp1)) {
+      accessed = load->getPointerOperand();
+    } else return false;
+    if (auto load = dyn_cast<LoadInst>(gepOp2)) {
+      if (accessed != load->getPointerOperand()) return false;
+    } else return false;
+  }
 
   auto indexCount = 0;
   for (auto &indexV1 : gep1->indices()) {
@@ -567,114 +620,205 @@ bool PDGAnalysis::areIdenticalGEPAccessesInSameLoop (GetElementPtrInst *gep1, Ge
   return true;
 }
 
-void llvm::PDGAnalysis::collectPrimitiveArrayGlobalValues (Module &M) {
-  std::set<std::string> allocators = { "malloc", "calloc" };
-  std::set<std::string> readOnlyFns = { "fprintf", "printf" };
+bool llvm::PDGAnalysis::collectUserInstructions (Value *V, std::set<Instruction *> &userInstructions) {
+  for (auto user : V->users()) {
+    Instruction *I = nullptr;
+    if (isa<Instruction>(user)) {
+      I = (Instruction *)user;
+    } else if (isa<BitCastOperator>(user) || isa<ZExtOperator>(user)) {
+      if (user->hasOneUse()) {
+        auto operUser = *user->user_begin();
+        if (isa<Instruction>(operUser)) {
+          I = (Instruction *)operUser;
+        }
+      }
+    }
+
+    if (!I) return false;
+    userInstructions.insert(I);
+  }
+  return true;
+}
+
+void llvm::PDGAnalysis::collectPrimitiveArrayValues (Module &M) {
+
+  /*
+   * Check global values used under the CG of function "main"
+   */
   for (auto &GV : M.globals()) {
     if (GV.hasExternalLinkage()) continue;
     if (GV.getNumUses() == 0) continue;
 
     std::set<Instruction *> scopedUsers;
-    bool understoodUses = true;
+    if (!collectUserInstructions(&GV, scopedUsers)) continue;
+
     bool relevantToMain = false;
-    for (auto user : GV.users()) {
-      Instruction *I = nullptr;
-      if (isa<Instruction>(user)) {
-        I = (Instruction *)user;
-      } else if (isa<BitCastOperator>(user) || isa<ZExtOperator>(user)) {
-        if (user->hasOneUse()) {
-          auto operUser = *user->user_begin();
-          if (isa<Instruction>(operUser)) {
-            I = (Instruction *)operUser;
-          }
-        }
-      }
-
-      understoodUses &= I != nullptr;
-      if (understoodUses) {
-        scopedUsers.insert(I);
-        relevantToMain |= CGUnderMain.find(I->getFunction()) != CGUnderMain.end();
-        continue;
-      }
-      break;
-    }
-    if (!understoodUses || !relevantToMain) continue;
-
-    bool isPrimitiveArray = true;
     for (auto I : scopedUsers) {
-      if (auto store = dyn_cast<StoreInst>(I)) {
-        // Confirm the store is of a malloc'd or calloc'd array, one that is
-        //  only stored into this value
-        if (auto storedCall = dyn_cast<CallInst>(store->getValueOperand())) {
-          auto callF = storedCall->getCalledFunction();
-          if (allocators.find(callF->getName()) != allocators.end()) {
-            if (storedCall->hasOneUse()) continue;
-          }
-        }
-      }
-
-      if (auto load = dyn_cast<LoadInst>(I)) {
-        // Confirm all uses of the GV load are GEP that are used to store
-        //  non-addressed values only, or read only function calls
-        bool nonAddressedUsers = true;
-        for (auto loadUser : load->users()) {
-          if (auto GEPUser = dyn_cast<GetElementPtrInst>(loadUser)) {
-            if (isOnlyUsedByNonAddrValues({}, GEPUser)) continue;
-          }
-          if (auto callUser = dyn_cast<CallInst>(loadUser)) {
-            auto fnName = callUser->getCalledFunction()->getName();
-            if (readOnlyFns.find(fnName) != readOnlyFns.end()) continue;
-          }
-          nonAddressedUsers = false;
-        }
-        if (nonAddressedUsers) continue;
-      }
-
-      if (verbose >= PDGVerbosity::Maximal) {
-        I->print(errs() << "PDGAnalysis:  GV related I not understood: "); errs() << "\n";
-      }
-      isPrimitiveArray = false;
-      break;
+      relevantToMain |= CGUnderMain.find(I->getFunction()) != CGUnderMain.end();
+      if (relevantToMain) break;
     }
+    if (!relevantToMain) continue;
 
-    if (!isPrimitiveArray) {
-      if (verbose >= PDGVerbosity::Minimal) {
-        GV.print(errs() << "PDGAnalysis:  GV not understood to be primitive integer array: "); errs() << "\n";
-      }
-      continue;
-    }
-    if (verbose >= PDGVerbosity::Minimal) {
-      GV.print(errs() << "PDGAnalysis:  GV understood to be primitive integer array: "); errs() << "\n";
-    }
-    primitiveArrayGlobals.insert(&GV);
+    if (isPrimitiveArrayPointer(&GV, scopedUsers)) primitiveArrayGlobals.insert(&GV);
+  }
+
+  /*
+   * Check values where contiguous memory allocators are used
+   */
+  std::set<Function *> allocatorFns;
+  for (auto allocName : allocatorFunctionNames) {
+    auto F = M.getFunction(allocName);
+    if (!F) continue;
+    allocatorFns.insert(F);
+  }
+  std::set<CallInst *> allocatorCalls;
+  collectFunctionCallsTo(allocatorFns, allocatorCalls);
+
+  for (auto call : allocatorCalls) {
+    std::set<Instruction *> allUsers;
+    if (!collectUserInstructions(call, allUsers)) continue;
+    if (isPrimitiveArray(call, allUsers)) primitiveArrayLocals.insert(call);
   }
 }
 
-// TODO: rename to isValueNotEscaped
-bool PDGAnalysis::isOnlyUsedByNonAddrValues (std::set<Instruction *> checked, Instruction *I) {
-  if (checked.find(I) != checked.end()) return true;
-  checked.insert(I);
-
-  for (auto user : I->users()) {
-    if (isa<TerminatorInst>(user)) continue;
-    if (auto store = dyn_cast<StoreInst>(user)) {
-      auto stored = store->getValueOperand();
-      if (isa<IntegerType>(stored->getType())) {
-        if (auto storedI = dyn_cast<Instruction>(stored)) {
-          if (isOnlyUsedByNonAddrValues(checked, storedI)) continue;
+bool PDGAnalysis::isPrimitiveArrayPointer (Value *V, std::set<Instruction *> &userInstructions) {
+  bool isPrimitive = true;
+  for (auto I : userInstructions) {
+    if (auto store = dyn_cast<StoreInst>(I)) {
+      // Confirm the store is of a contiguously allocated array unique to this value
+      if (auto storedCall = dyn_cast<CallInst>(store->getValueOperand())) {
+        auto callF = storedCall->getCalledFunction();
+        if (allocatorFunctionNames.find(callF->getName()) != allocatorFunctionNames.end()) {
+          if (storedCall->hasOneUse()) continue;
         }
-        if (auto storedC = dyn_cast<ConstantData>(stored)) continue;
       }
     }
-    if (auto userI = dyn_cast<Instruction>(user)) {
-      if (isa<IntegerType>(userI->getType())) {
-        if (isOnlyUsedByNonAddrValues(checked, userI)) continue;
+
+    if (auto load = dyn_cast<LoadInst>(I)) {
+      // Confirm all uses of the GV load obey those of a primitive array
+      std::set<Instruction *> allUsers;
+      if (collectUserInstructions(load, allUsers)
+          && isPrimitiveArray(load, allUsers)) {
+        continue;
       }
     }
 
     if (verbose >= PDGVerbosity::Maximal) {
-      user->print(errs() << "PDGAnalysis:  GV related user not understood: "); errs() << "\n";
-      user->getType()->print(errs() << "PDGAnalysis:  \tWith type"); errs() << "\n";
+      I->print(errs() << "PDGAnalysis:  GV related instruction not understood: "); errs() << "\n";
+    }
+    isPrimitive = false;
+    break;
+  }
+
+  if (verbose >= PDGVerbosity::Minimal) {
+    errs() << "PDGAnalysis:  GV value is a primitive integer array: " << isPrimitive << ", ";
+    V->print(errs()); errs() << "\n";
+  }
+  return isPrimitive;
+}
+
+bool PDGAnalysis::isPrimitiveArray (Value *V, std::set<Instruction *> &userInstructions) {
+  bool isPrimitive = true;
+  for (auto I : userInstructions) {
+    if (auto cast = dyn_cast<CastInst>(I)) {
+      std::set<Instruction *> castUsers;
+      if (collectUserInstructions(cast, castUsers)
+          && isPrimitiveArray(cast, castUsers)) continue;
+    }
+    if (auto GEPUser = dyn_cast<GetElementPtrInst>(I)) {
+      if (doesValueNotEscape({ GEPUser }, GEPUser)) continue;
+    }
+    if (auto callUser = dyn_cast<CallInst>(I)) {
+      auto fnName = callUser->getCalledFunction()->getName();
+      if (readOnlyFunctionNames.find(fnName) != readOnlyFunctionNames.end()) continue;
+    }
+
+    if (verbose >= PDGVerbosity::Maximal) {
+      I->print(errs() << "PDGAnalysis:  related instruction not understood: "); errs() << "\n";
+    }
+    isPrimitive = false;
+    break;
+  }
+
+  if (verbose >= PDGVerbosity::Minimal) {
+    errs() << "PDGAnalysis:  value is a primitive integer array: " << isPrimitive << ", ";
+    V->print(errs()); errs() << "\n";
+  }
+  return isPrimitive;
+}
+
+bool PDGAnalysis::doesValueNotEscape (std::set<Instruction *> checked, Instruction *I) {
+  User *unkUser = nullptr;
+  for (auto user : I->users()) {
+    if (!isa<Instruction>(user)) {
+      unkUser = user;
+      break;
+    }
+    auto userI = cast<Instruction>(user);
+    if (checked.find(userI) != checked.end()) continue;
+    checked.insert(userI);
+
+    /*
+     * The termination is either local to the function, or the return value
+     * is not escaped (only an integer type is returned)
+     */
+    if (isa<TerminatorInst>(user)) {
+      if (isa<BranchInst>(user) || isa<SwitchInst>(user)) continue;
+      if (isa<ReturnInst>(user)) {
+
+        /*
+         * NOTE: Technically, a program could treat the returned integer as
+         * a pointer, but since at no point along the uses of the original
+         * value are pointer based instructions permitted, no intentional
+         * pointer value can be returned here
+         */
+        auto returnV = cast<ReturnInst>(user)->getReturnValue();
+        if (isa<IntegerType>(returnV->getType())) continue;
+      }
+      unkUser = user;
+      break;
+    }
+
+    /*
+     * The user stores a non-escaped value into the memory location
+     */
+    if (auto store = dyn_cast<StoreInst>(user)) {
+      auto stored = store->getValueOperand();
+      auto storedDoesNotEscape = false;
+      if (isa<IntegerType>(stored->getType())) {
+        if (auto storedI = dyn_cast<Instruction>(stored)) {
+          if (doesValueNotEscape(checked, storedI)) storedDoesNotEscape = true;
+        }
+        if (auto storedC = dyn_cast<ConstantData>(stored)) storedDoesNotEscape = true;
+      }
+
+      auto storage = store->getPointerOperand();
+      auto storageDoesNotEscape = storage == (Value *)I;
+      if (!storageDoesNotEscape) {
+        if (auto storageI = dyn_cast<Instruction>(storage)) {
+          if (doesValueNotEscape(checked, storageI)) storageDoesNotEscape = true;
+        }
+      }
+
+      if (storedDoesNotEscape && storageDoesNotEscape) continue;
+      unkUser = user;
+      break;
+    }
+
+    /*
+     * The user is a non-escaped integer expression
+     */
+    if (isa<IntegerType>(userI->getType())) {
+      if (doesValueNotEscape(checked, userI)) continue;
+    }
+    unkUser = user;
+    break;
+  }
+
+  if (unkUser) {
+    if (verbose >= PDGVerbosity::Maximal) {
+      unkUser->print(errs() << "PDGAnalysis:  GV related user not understood: "); errs() << "\n";
+      unkUser->getType()->print(errs() << "PDGAnalysis:  \tWith type"); errs() << "\n";
     }
     return false;
   }

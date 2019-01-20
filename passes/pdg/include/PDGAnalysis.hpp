@@ -39,9 +39,10 @@ namespace llvm {
 
     private:
       PDG *programDependenceGraph;
-      std::set<std::string> memorylessFunctionNames;
+      std::set<std::string> readOnlyFunctionNames, allocatorFunctionNames, memorylessFunctionNames;
       std::set<Function *> CGUnderMain;
       std::set<GlobalValue *> primitiveArrayGlobals;
+      std::set<Instruction *> primitiveArrayLocals;
       PDGVerbosity verbose;
 
       template <class InstI, class InstJ>
@@ -62,10 +63,14 @@ namespace llvm {
       void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
 
       void collectCGUnderFunctionMain (Module &M);
+      void collectFunctionCallsTo (std::set<Function *> &called, std::set<CallInst *> &calls);
       void removeEdgesNotUsedByParSchemes (PDG *pdg);
 
-      void collectPrimitiveArrayGlobalValues (Module &M);
-      bool isOnlyUsedByNonAddrValues (std::set<Instruction *> checked, Instruction *I);
+      void collectPrimitiveArrayValues (Module &M);
+      bool isPrimitiveArray (Value *V, std::set<Instruction *> &userInstructions);
+      bool isPrimitiveArrayPointer (Value *V, std::set<Instruction *> &userInstructions);
+      bool doesValueNotEscape (std::set<Instruction *> checked, Instruction *I);
+      bool collectUserInstructions (Value *V, std::set<Instruction *> &userInstructions);
 
       bool edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge);
       bool isBackedgeOfLoadStoreIntoSameOffsetOfArray (
@@ -74,15 +79,14 @@ namespace llvm {
         StoreInst *store
       );
       bool isBackedgeIntoSameGlobal (DGEdge<Value> *edge);
-      bool isMemoryAccessIntoDifferentGlobals (DGEdge<Value> *edge);
+      bool isMemoryAccessIntoDifferentArrays (DGEdge<Value> *edge);
 
-      Value *getNonAliasingGVFromDirectAccess (Value *V);
-      std::pair<Value *, GetElementPtrInst *> getNonAliasingGVFromGEPAccess (
-        Value *V,
-        bool IVGovernedGEP = false
-      );
-      Value *getGVIfNonAliasing (Value *V);
-      Value *getMemoryPointerOp (Value *V);
+      std::pair<Value *, GetElementPtrInst *>
+      getPrimitiveArrayAccess (Value *V, bool mustBeIVGovernedAccess = false);
+      Value *getPrimitiveArray (Value *V);
+      Value *getLocalPrimitiveArray (Value *V);
+      Value *getGlobalValuePrimitiveArray (Value *V);
+      Value *getMemoryPointerOperand (Value *V);
 
       bool canPrecedeInCurrentIteration (Instruction *from, Instruction *to);
       bool areGEPIndicesConstantOrIV (GetElementPtrInst *gep);

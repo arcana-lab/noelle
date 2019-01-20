@@ -92,7 +92,7 @@ bool DOALL::canBeAppliedToLoop (
       && !LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
       if (this->verbose != Verbosity::Disabled) {
         errs() << "DOALL:   Non clonable, non commutative scc at top level of loop:\n";
-        if (this->verbose >= Verbosity::Maximal) {
+        if (this->verbose >= Verbosity::Minimal) {
           scc->printMinimal(errs(), "DOALL:\t") << "\n";
         }
       }

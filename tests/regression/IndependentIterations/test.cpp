@@ -22,6 +22,8 @@ int main (int argc, char *argv[]){
     return -1;
   }
   auto iterations = atoll(argv[1]);
+  if (iterations == 0) return 0;
+
   long long int *array = (long long int *) malloc(sizeof(long long int) * iterations);
 
   for (auto i=0; i < iterations; i++){
@@ -29,7 +31,7 @@ int main (int argc, char *argv[]){
   }
 
   auto s = computeSum(array, iterations);
-  printf("%lld\n", s);
+  printf("%lld %lld\n", s, array[iterations/2]);
 
   return 0;
 }

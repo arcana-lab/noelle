@@ -27,6 +27,7 @@ uint64_t SCCDAGPartition::numberOfPartitions (void){
 
 void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
   subsets = sets;
+  SCCToSet.clear();
   for (auto subset : *subsets) {
     for (auto scc : *subset) {
       SCCToSet[scc] = subset;
@@ -56,7 +57,13 @@ void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
     }
     bb = bb->getNextNode();
   }
-  assert(SCCDebugIndex.size() == SCCToSet.size());
+
+  if (SCCDebugIndex.size() != SCCToSet.size()) {
+    errs() << "ERROR: Mismatch # of SCC encountered (in program forward order traversal): "
+      << SCCDebugIndex.size() << " versus total # of SCC in subsets: "
+      << SCCToSet.size() << "\n";
+    assert(false && "SCCDAGPartition::resetPartition");
+  }
 
   /*
    * Ensure the initial specified configuration has no cycles.
