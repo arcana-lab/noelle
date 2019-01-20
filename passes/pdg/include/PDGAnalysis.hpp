@@ -93,6 +93,6 @@ namespace llvm {
       bool areIdenticalGEPAccessesInSameLoop (GetElementPtrInst *gep1, GetElementPtrInst *gep2);
 
       void collectMemorylessFunctions (Module &M);
-      bool edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge);
+      bool edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge);
   };
 }

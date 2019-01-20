@@ -329,7 +329,7 @@ void llvm::PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {
     auto F = cast<Instruction>(source)->getFunction();
     if (CGUnderMain.find(F) == CGUnderMain.end()) continue;
     if (edgeIsNotLoopCarriedMemoryDependency(edge)
-        || edgeIsOnKnownMemorylessFunction(edge)) {
+        || edgeIsAlongNonMemoryWritingFunctions(edge)) {
       removeEdges.insert(edge);
     }
   }
@@ -859,30 +859,31 @@ void llvm::PDGAnalysis::collectMemorylessFunctions (Module &M) {
   }
 }
 
-bool llvm::PDGAnalysis::edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge) {
+bool llvm::PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
   if (!edge->isMemoryDependence()) return false;
 
   auto outgoingT = edge->getOutgoingT();
   auto incomingT = edge->getIncomingT();
 
-  auto isCallMemoryless = [&](CallInst *call) -> bool {
+  auto isFunctionMemoryless = [&](StringRef funcName) -> bool {
+    return memorylessFunctionNames.find(funcName) != memorylessFunctionNames.end();
+  };
+  auto isFunctionNonWriting = [&](StringRef funcName) -> bool {
+    return isFunctionMemoryless(funcName)
+      || readOnlyFunctionNames.find(funcName) != readOnlyFunctionNames.end();
+  };
+
+  auto getCallFnName = [&](CallInst *call) -> StringRef {
     auto func = call->getCalledFunction();
     if (func && !func->empty()) {
-      auto funcName = func->getName();
-      return memorylessFunctionNames.find(funcName) != memorylessFunctionNames.end();
+      return func->getName();
     }
-
-    auto funcVal = call->getCalledValue();
-    auto funcName = funcVal->getName();
-    if (memorylessFunctionNames.find(funcName) != memorylessFunctionNames.end()) {
-      return true;
-    }
-    return false;
+    return call->getCalledValue()->getName();
   };
 
   if (isa<CallInst>(outgoingT) && isa<CallInst>(incomingT)) {
-    if (!isCallMemoryless(cast<CallInst>(outgoingT))) return false;
-    if (!isCallMemoryless(cast<CallInst>(incomingT))) return false;
+    if (!isFunctionNonWriting(getCallFnName(cast<CallInst>(outgoingT)))) return false;
+    if (!isFunctionNonWriting(getCallFnName(cast<CallInst>(incomingT)))) return false;
     return true;
   }
 
@@ -898,9 +899,7 @@ bool llvm::PDGAnalysis::edgeIsOnKnownMemorylessFunction (DGEdge<Value> *edge) {
     return false;
   }
 
-  for (auto i = 0; i < call->getNumOperands(); ++i) {
-    if (mem == call->getOperand(i)) return false;
-  }
-  return isCallMemoryless(call);
+  auto callName = getCallFnName(call);
+  return isa<LoadInst>(mem) && isFunctionNonWriting(callName)
+    || isa<StoreInst>(mem) && isFunctionMemoryless(callName);
 }
-
