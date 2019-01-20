@@ -452,10 +452,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
 
   /*
-   * Requirement: Data flow: no data dependent SCCs,
-   * no memory dependencies, single data backedge
-   * Requirement: Control flow is intra-iteration,
-   * flow (conditions) determined externally to the SCC
+   * Requirement: There are no data/memory dependent SCCs of this SCC
    */
   for (auto iNodePair : scc->externalNodePairs()) {
     if (iNodePair.second->numConnectedEdges() == 0) continue ;
@@ -469,14 +466,35 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
     }
   }
 
-  auto dataBackEdges = 0;
+  /*
+   * Requirement: Data flow: a single data backedge per loop level
+   * contained in this SCC
+   */
+  std::set<LoopSummary *> backedgeLoops;
   for (auto edge : interIterDeps[scc]) {
     if (edge->isControlDependence()) return false;
     if (edge->isMemoryDependence()) return false;
-    dataBackEdges++;
-  }
-  if (dataBackEdges != 1) return false;
 
+    auto outI = isa<Instruction>(edge->getOutgoingT())
+      ? cast<Instruction>(edge->getOutgoingT()) : nullptr;
+    auto inI = isa<Instruction>(edge->getIncomingT())
+      ? cast<Instruction>(edge->getIncomingT()) : nullptr;
+    if (!outI || !inI) return false;
+
+    auto outgoingBBLoop = LIS.bbToLoop.find(outI->getParent());
+    auto incomingBBLoop = LIS.bbToLoop.find(inI->getParent());
+    if (outgoingBBLoop == LIS.bbToLoop.end() ||
+        outgoingBBLoop == incomingBBLoop) return false;
+
+    auto loop = outgoingBBLoop->second;
+    if (backedgeLoops.find(loop) != backedgeLoops.end()) return false;
+    backedgeLoops.insert(loop);
+  }
+
+  /*
+   * Requirement: Control flow is intra-iteration; conditions are
+   * determined externally to the SCC
+   */
   for (auto pair : sccInfo->controlPairs) {
     if (scc->isInternal(pair.first)) return false;
   }
