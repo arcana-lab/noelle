@@ -69,13 +69,12 @@ void SCCAttrs::collectSCCValues () {
     PathValue (Value *V, PathValue *PV = nullptr) : value{V}, prev{PV} {};
   };
 
-  std::set<Value *> valuesSeen;
+  std::set<DGEdge<Value> *> edgesSeen;
   std::set<PathValue *> pathValues;
   std::queue<PathValue *> toTraverse;
   std::set<DGNode<Value> *> topLevelNodes = scc->getTopLevelNodes();
   for (auto node : topLevelNodes) {
     auto pathV = new PathValue(node->getT());
-    valuesSeen.insert(node->getT());
     pathValues.insert(pathV);
     toTraverse.push(pathV);
   }
@@ -105,20 +104,20 @@ void SCCAttrs::collectSCCValues () {
 
     auto node = scc->fetchNode(pathV->value);
     for (auto edge : node->getOutgoingEdges()) {
+      if (edgesSeen.find(edge) != edgesSeen.end()) continue;
+      edgesSeen.insert(edge);
+
       // Only trace paths across data dependencies, starting
       //  anew on newly encountered data values across control dependencies
       auto nextV = edge->getIncomingT();
       PathValue *nextPathV = nullptr;
       if (edge->isControlDependence()) {
-        if (valuesSeen.find(nextV) == valuesSeen.end()) {
-          nextPathV = new PathValue(nextV);
-        }
+        nextPathV = new PathValue(nextV);
       } else {
         nextPathV = new PathValue(nextV, pathV);
       }
 
       if (nextPathV) {
-        valuesSeen.insert(nextV);
         pathValues.insert(nextPathV);
         toTraverse.push(nextPathV);
       }
