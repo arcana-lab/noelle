@@ -83,6 +83,18 @@ bool DOALL::canBeAppliedToLoop (
   }
 
   /*
+   * The loop's IV does not have bounds that have been successfuly analyzed
+   */
+  auto headerBr = LDI->header->getTerminator();
+  auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
+  if (LDI->sccdagAttrs.sccIVBounds.find(headerSCC) == LDI->sccdagAttrs.sccIVBounds.end()) {
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "DOALL:   Loop does not have understood bounds to its IV\n";
+    }
+    return false;
+  }
+
+  /*
    * The compiler must be able to remove loop-carried data dependences of all SCCs with loop-carried data dependences.
    */
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();

@@ -141,7 +141,7 @@ namespace llvm {
       void collectControlFlowInstructions (SCC *scc);
       bool checkIfReducible (SCC *scc, LoopInfoSummary &LIS);
       bool checkIfIndependent (SCC *scc);
-      bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE);
+      bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopInfoSummary &LIS);
       void checkIfIVHasFixedBounds (SCC *scc, LoopInfoSummary &LIS);
       bool isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopInfoSummary &LIS);
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);

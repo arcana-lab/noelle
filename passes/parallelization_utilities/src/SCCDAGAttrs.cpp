@@ -154,7 +154,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvol
     this->collectPHIsAndAccumulators(scc);
     this->collectControlFlowInstructions(scc);
 
-    this->checkIfInductionVariableSCC(scc, SE);
+    this->checkIfInductionVariableSCC(scc, SE, LIS);
     if (isInductionVariableSCC(scc)) this->checkIfIVHasFixedBounds(scc, LIS);
     this->checkIfClonable(scc, SE);
 
@@ -557,7 +557,7 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
   return interIterDeps.find(scc) == interIterDeps.end();
 }
 
-bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
+bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopInfoSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
   auto setHasIV = [&](bool hasIV) -> bool {
     // scc->printMinimal(errs() << "Not IV:\n") << "\n";
@@ -585,6 +585,14 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE) {
    * Ensure a single PHI with induction accumulation only
    */
   if (!sccInfo->singlePHI) return setHasIV(false);
+  auto loopOfPHI = LIS.bbToLoop[sccInfo->singlePHI->getParent()];
+  for (auto i = 0; i < sccInfo->singlePHI->getNumIncomingValues(); ++i) {
+    auto incomingBB = sccInfo->singlePHI->getIncomingBlock(i);
+    auto loopOfIncoming = LIS.bbToLoop.find(incomingBB);
+    if (loopOfIncoming == LIS.bbToLoop.end() || loopOfIncoming->second != loopOfPHI) continue;
+    if (!isDerivedPHIOrAccumulator(sccInfo->singlePHI->getIncomingValue(i), scc)) return setHasIV(false);
+  }
+
   for (auto I : sccInfo->accumulators) {
     auto scev = SE.getSCEV(I);
     if (scev->getSCEVType() != scAddRecExpr) {
