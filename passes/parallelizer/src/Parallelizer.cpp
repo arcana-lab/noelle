@@ -37,6 +37,26 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
   collectSCCDAGAttrs(LDI, h, SE);
 
   /*
+   * Gauge the limits of each parallelization scheme
+   */
+  auto numDSWPDependencies = 0, numHELIXDependencies = 0;
+  for (auto valueToSCCs : LDI->sccdagAttrs.intraIterDeps) {
+    numDSWPDependencies += valueToSCCs.second.size();
+  }
+  for (auto SCCToEdges : LDI->sccdagAttrs.interIterDeps) {
+    numHELIXDependencies += SCCToEdges.second.size();
+  }
+  if (this->verbose >= Verbosity::Minimal) {
+    if (numDSWPDependencies > numHELIXDependencies) { 
+      errs() << "Parallelizer:  In theory, HELIX would be more effective than DSWP\n";
+    } else if (numDSWPDependencies < numHELIXDependencies) { 
+      errs() << "Parallelizer:  In theory, DSWP would be more effective than HELIX\n";
+    } else {
+      errs() << "Parallelizer:  In theory, DSWP would be as effective as HELIX\n";
+    }
+  }
+
+  /*
    * Parallelize the loop.
    */
   auto codeModified = false;
