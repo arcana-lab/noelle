@@ -62,6 +62,7 @@ Value *AccumulatorOpInfo::generateIdentityFor (Instruction *accumulator, Type *c
   return initVal;
 }
 
+// FIXME: Do not use
 void SCCAttrs::collectSCCValues () {
   struct PathValue {
     PathValue *prev;
@@ -69,23 +70,31 @@ void SCCAttrs::collectSCCValues () {
     PathValue (Value *V, PathValue *PV = nullptr) : value{V}, prev{PV} {};
   };
 
-  std::set<DGEdge<Value> *> edgesSeen;
+  /*
+   * Bookkeeping for later deletion and to avoid duplicate work
+   */
   std::set<PathValue *> pathValues;
-  std::queue<PathValue *> toTraverse;
-  std::set<DGNode<Value> *> topLevelNodes = scc->getTopLevelNodes();
+  std::set<Value *> valuesSeen;
+
+  std::deque<PathValue *> toTraverse;
+  auto topLevelNodes = scc->getTopLevelNodes(true);
   for (auto node : topLevelNodes) {
+    node->getT()->print(errs() << "TOP LEVEL V: "); errs() << "\n";
     auto pathV = new PathValue(node->getT());
     pathValues.insert(pathV);
-    toTraverse.push(pathV);
+    toTraverse.push_front(pathV);
   }
 
+  scc->print(errs(), "COLLECT: ", 0) << "\n";
   while (!toTraverse.empty()) {
     auto pathV = toTraverse.front();
-    toTraverse.pop();
+    toTraverse.pop_front();
+    // pathV->value->print(errs() << "Traversing V: "); errs() << "\n";
 
     bool isCycle = false;
     auto prevV = pathV->prev;
     while (prevV) {
+      // prevV->value->print(errs() << "\t Prev V: "); errs() << "\n";
       if (pathV->value == prevV->value) {
         isCycle = true;
         break;
@@ -104,27 +113,31 @@ void SCCAttrs::collectSCCValues () {
 
     auto node = scc->fetchNode(pathV->value);
     for (auto edge : node->getOutgoingEdges()) {
-      if (edgesSeen.find(edge) != edgesSeen.end()) continue;
-      edgesSeen.insert(edge);
 
       // Only trace paths across data dependencies, starting
       //  anew on newly encountered data values across control dependencies
       auto nextV = edge->getIncomingT();
       PathValue *nextPathV = nullptr;
       if (edge->isControlDependence()) {
+        // nextV->print(errs() << "Control dependence traveling to: "); errs() << "\n";
         nextPathV = new PathValue(nextV);
       } else {
+        // nextV->print(errs() << "Data dependence traveling to: "); errs() << "\n";
         nextPathV = new PathValue(nextV, pathV);
       }
 
       if (nextPathV) {
         pathValues.insert(nextPathV);
-        toTraverse.push(nextPathV);
+        toTraverse.push_front(nextPathV);
       }
     }
   }
 
   for (auto pathV : pathValues) delete pathV;
+
+  for (auto dataV : stronglyConnectedDataValues) {
+    dataV->print(errs() << "COLLECT: V: "); errs() << "\n";
+  }
 }
 
 SCCAttrs::SCCAttrs (SCC *s)
@@ -139,7 +152,7 @@ SCCAttrs::SCCAttrs (SCC *s)
 
   // Collect values actually contained in the strongly connected components,
   // ignoring ancillary values merged into the SCC object
-  collectSCCValues();
+  // collectSCCValues();
 }
 
 void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopInfoSummary &LIS, ScalarEvolution &SE) {
@@ -194,7 +207,7 @@ bool SCCDAGAttrs::isLoopGovernedByIV () const {
     auto scc = node->getT();
     toTraverse.pop();
     if (canExecuteIndependently(scc)) {
-      auto nextDepth = sccdag->nextDepthNodes(node);
+      auto nextDepth = sccdag->getNextDepthNodes(node);
       for (auto next : nextDepth) toTraverse.push(next);
       continue;
     }
@@ -204,7 +217,7 @@ bool SCCDAGAttrs::isLoopGovernedByIV () const {
   /*
    * Step 2: Ensure there is only 1, and that it is an induction variable
    */
-  // errs() << "SCCDAG ATTRS: NUM TOP LEVEL SCCS: " << topLevelSCCs.size() << "\n";
+  // errs() << "SCCDAGAttrs: NUM TOP LEVEL SCCS: " << topLevelSCCs.size() << "\n";
   if (topLevelSCCs.size() != 1) return false;
   // (*topLevelSCCs.begin())->print(errs() << "That single SCC:\n") << "\n";
   return isInductionVariableSCC(*topLevelSCCs.begin());
@@ -786,9 +799,78 @@ bool SCCDAGAttrs::isClonableByCmpBrInstrs (SCC *scc) const {
  * TODO: Derivation should only consider data dependency cycles, not control
  */
 bool SCCDAGAttrs::isDerivedWithinSCC (Value *val, SCC *scc) const {
+  if (!scc->isInternal(val)) return false;
+
   auto &sccInfo = sccToInfo.find(scc)->second;
-  return sccInfo->stronglyConnectedDataValues.find(val)
+  auto isStrongly = sccInfo->stronglyConnectedDataValues.find(val)
     != sccInfo->stronglyConnectedDataValues.end();
+  auto isWeakly = sccInfo->weaklyConnectedDataValues.find(val)
+    != sccInfo->weaklyConnectedDataValues.end();
+  if (isStrongly) return true;
+  if (isWeakly) return false;
+
+  // Traversing both outgoing OR incoming edges leads back to the node
+  // if it is in the SCC; otherwise, it is just a merged in node
+  auto startNode = scc->fetchNode(val);
+  std::queue<DGNode<Value> *> toOutgoing;
+  std::set<DGNode<Value> *> seen;
+  toOutgoing.push(startNode);
+  bool inCycle = false;
+  while (!toOutgoing.empty()) {
+    auto node = toOutgoing.front();
+    toOutgoing.pop();
+
+    for (auto edge : node->getOutgoingEdges()) {
+      if (edge->isControlDependence()) continue;
+      auto inNode = edge->getIncomingNode();
+      if (scc->isExternal(inNode->getT())) continue;
+      if (inNode == startNode) inCycle = true;
+      if (seen.find(inNode) == seen.end()) {
+        // inNode->getT()->print(errs() << "GOING TO: "); errs() << "\n";
+        seen.insert(inNode);
+        toOutgoing.push(inNode);
+      }
+    }
+    if (inCycle) break;
+  }
+  // errs() << "IN CYCLE with outgoings: " << inCycle << "\n";
+
+  if (!inCycle) {
+    sccInfo->weaklyConnectedDataValues.insert(val);
+    // val->print(errs() << "WEAKLY CONNECTED: "); errs() << "\n";
+    return false;
+  }
+
+  inCycle = false;
+  seen.clear();
+  std::queue<DGNode<Value> *> toIncoming;
+  toIncoming.push(startNode);
+  while (!toIncoming.empty()) {
+    auto node = toIncoming.front();
+    toIncoming.pop();
+
+    for (auto edge : node->getIncomingEdges()) {
+      if (edge->isControlDependence()) continue;
+      auto outNode = edge->getOutgoingNode();
+      if (scc->isExternal(outNode->getT())) continue;
+      if (outNode == startNode) inCycle = true;
+      if (seen.find(outNode) == seen.end()) {
+        // outNode->getT()->print(errs() << "GOING TO: "); errs() << "\n";
+        seen.insert(outNode);
+        toIncoming.push(outNode);
+      }
+    }
+    if (inCycle) break;
+  }
+  // errs() << "IN CYCLE with incomings: " << inCycle << "\n";
+
+  if (!inCycle) {
+    sccInfo->weaklyConnectedDataValues.insert(val);
+    // val->print(errs() << "WEAKLY CONNECTED: "); errs() << "\n";
+    return false;
+  }
+  sccInfo->stronglyConnectedDataValues.insert(val);
+  return true;
 }
 
 bool SCCDAGAttrs::isDerivedPHIOrAccumulator (Value *val, SCC *scc) const {

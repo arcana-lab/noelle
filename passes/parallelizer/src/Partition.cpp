@@ -135,7 +135,7 @@ void Parallelizer::mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LD
    */
   for (auto tailSCC : tailCmpBrs) {
     std::set<DGNode<SCC> *> nodesToMerge = { tailSCC };
-    nodesToMerge.insert(*LDI->loopSCCDAG->previousDepthNodes(tailSCC).begin());
+    nodesToMerge.insert(*LDI->loopSCCDAG->getPreviousDepthNodes(tailSCC).begin());
     LDI->loopSCCDAG->mergeSCCs(nodesToMerge);
   }
 }

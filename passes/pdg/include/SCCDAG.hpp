@@ -43,10 +43,6 @@ namespace llvm {
 
       void mergeSCCs(std::set<DGNode<SCC> *> &sccSet);
 
-      std::set<DGNode<SCC> *> previousDepthNodes(DGNode<SCC> *node) const;
-
-      std::set<DGNode<SCC> *> nextDepthNodes(DGNode<SCC> *node) const;
-
       SCC *sccOfValue (Value *val) const;
       ~SCCDAG() ;
 

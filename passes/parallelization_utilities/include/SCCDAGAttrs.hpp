@@ -46,6 +46,7 @@ namespace llvm {
       SCC *scc;
       std::set<BasicBlock *> bbs;
       std::set<Value *> stronglyConnectedDataValues;
+      std::set<Value *> weaklyConnectedDataValues;
       bool isClonable;
       bool hasIV;
 

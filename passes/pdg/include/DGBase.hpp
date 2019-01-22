@@ -100,9 +100,11 @@ namespace llvm {
       /*
        * Merging/Extracting Graphs
        */
-      std::set<DGNode<T> *> getTopLevelNodes();
+      std::set<DGNode<T> *> getTopLevelNodes(bool onlyInternal = false);
       std::set<DGNode<T> *> getLeafNodes();
       std::vector<std::set<DGNode<T> *> *> getDisconnectedSubgraphs();
+      std::set<DGNode<T> *> getNextDepthNodes(DGNode<T> *node);
+      std::set<DGNode<T> *> getPreviousDepthNodes(DGNode<T> *node);
       void removeNode(DGNode<T> *node);
       void removeEdge(DGEdge<T> *edge);
       void addNodesIntoNewGraph(DG<T> &newGraph, std::set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode);
@@ -295,7 +297,7 @@ namespace llvm {
   }
 
   template <class T>
-  std::set<DGNode<T> *> DG<T>::getTopLevelNodes()
+  std::set<DGNode<T> *> DG<T>::getTopLevelNodes(bool onlyInternal)
   {
     std::set<DGNode<T> *> topLevelNodes;
 
@@ -304,10 +306,14 @@ namespace llvm {
      */
     for (auto node : allNodes)
     {
+      if (onlyInternal && isExternal(node->getT())) continue;
+
       bool noOtherIncoming = true;
       for (auto incomingE : node->getIncomingEdges())
       {
-        noOtherIncoming &= (incomingE->getOutgoingNode() == node);
+        bool edgeToSelf = (incomingE->getOutgoingNode() == node);
+        bool edgeToExternal = onlyInternal && isExternal(incomingE->getOutgoingT());
+        noOtherIncoming &= edgeToSelf || edgeToExternal;
       }
       if (noOtherIncoming) topLevelNodes.insert(node);
     }
@@ -315,10 +321,23 @@ namespace llvm {
 
     /*
      * Add a node in the top cycle of the graph
+     * 1) By the time every node is visited, the node that was capable
+     * of fulfilling this requirement must be in the top cycle
+     * 2) Should internal nodes only be requested, if there is an
+     * internal cycle, "visiting" all external nodes beforehand has
+     * no bearing on this method
      */
     std::set<DGNode<T> *> visitedNodes;
+    if (onlyInternal) {
+      for (auto nodePair : externalNodePairs()) {
+        visitedNodes.insert(nodePair.second);
+      }
+    }
+
     for (auto node : allNodes)
     {
+      if (onlyInternal && isExternal(node->getT())) continue;
+
       if (visitedNodes.find(node) != visitedNodes.end()) continue;
 
       std::queue<DGNode<T> *> nodeToTraverse;
@@ -393,6 +412,56 @@ namespace llvm {
     }
 
     return connectedComponents;
+  }
+
+  template <class T>
+  std::set<DGNode<T> *> DG<T>::getNextDepthNodes(DGNode<T> *node)
+  {
+    std::set<DGNode<T> *> incomingNodes;
+    for (auto edge : node->getOutgoingEdges()) incomingNodes.insert(edge->getIncomingNode());
+
+    std::set<DGNode<T> *> nextDepthNodes;
+    for (auto incoming : incomingNodes)
+    {
+      /*
+       * Check if edge exists from another next to this next node;
+       * If so, it isn't the next depth
+       */
+      bool isNextDepth = true;
+      for (auto incomingE : incoming->getIncomingEdges())
+      {
+        isNextDepth &= (incomingNodes.find(incomingE->getOutgoingNode()) == incomingNodes.end());
+      }
+
+      if (!isNextDepth) continue;
+      nextDepthNodes.insert(incoming);
+    }
+    return nextDepthNodes;
+  }
+
+  template <class T>
+  std::set<DGNode<T> *> DG<T>::getPreviousDepthNodes(DGNode<T> *node)
+  {
+    std::set<DGNode<T> *> outgoingNodes;
+    for (auto edge : node->getIncomingEdges()) outgoingNodes.insert(edge->getOutgoingNode());
+
+    std::set<DGNode<T> *> previousDepthNodes;
+    for (auto outgoing : outgoingNodes)
+    {
+      /*
+       * Check if edge exists from this previous to another previous node;
+       * If so, it isn't the previous depth
+       */
+      bool isPrevDepth = true;
+      for (auto outgoingE : outgoing->getOutgoingEdges())
+      {
+        isPrevDepth &= (outgoingNodes.find(outgoingE->getIncomingNode()) == outgoingNodes.end());
+      }
+
+      if (!isPrevDepth) continue;
+      previousDepthNodes.insert(outgoing);
+    }
+    return previousDepthNodes;
   }
 
   template <class T>

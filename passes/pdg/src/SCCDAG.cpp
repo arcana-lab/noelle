@@ -159,54 +159,6 @@ void llvm::SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
   this->markEdgesAndSubEdges();
 }
 
-std::set<DGNode<SCC> *> llvm::SCCDAG::previousDepthNodes(DGNode<SCC> *node) const
-{
-  std::set<DGNode<SCC> *> outgoingNodes;
-  for (auto edge : node->getIncomingEdges()) outgoingNodes.insert(edge->getOutgoingNode());
-
-  std::set<DGNode<SCC> *> previousDepthNodes;
-  for (auto outgoing : outgoingNodes)
-  {
-    /*
-     * Check if edge exists from this previous to another previous node;
-     * If so, it isn't the previous depth
-     */
-    bool isPrevDepth = true;
-    for (auto outgoingE : outgoing->getOutgoingEdges())
-    {
-      isPrevDepth &= (outgoingNodes.find(outgoingE->getIncomingNode()) == outgoingNodes.end());
-    }
-
-    if (!isPrevDepth) continue;
-    previousDepthNodes.insert(outgoing);
-  }
-  return previousDepthNodes;
-}
-
-std::set<DGNode<SCC> *> llvm::SCCDAG::nextDepthNodes(DGNode<SCC> *node) const
-{
-  std::set<DGNode<SCC> *> incomingNodes;
-  for (auto edge : node->getOutgoingEdges()) incomingNodes.insert(edge->getIncomingNode());
-
-  std::set<DGNode<SCC> *> nextDepthNodes;
-  for (auto incoming : incomingNodes)
-  {
-    /*
-     * Check if edge exists from another next to this next node;
-     * If so, it isn't the next depth
-     */
-    bool isNextDepth = true;
-    for (auto incomingE : incoming->getIncomingEdges())
-    {
-      isNextDepth &= (incomingNodes.find(incomingE->getOutgoingNode()) == incomingNodes.end());
-    }
-
-    if (!isNextDepth) continue;
-    nextDepthNodes.insert(incoming);
-  }
-  return nextDepthNodes;
-}
-
 SCC *llvm::SCCDAG::sccOfValue (Value *val) const {
   return valueToSCCNode.find(val)->second->getT();
 }
