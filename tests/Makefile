@@ -1,5 +1,5 @@
 RUNTIME_DIRNAME="threadpool"
-RUNTIME_GITREPO="/project/parallelizing_compiler/repositories"
+RUNTIME_GITREPO="https://github.com/scampanoni"
 
 all: regression performance
 
