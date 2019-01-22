@@ -1,3 +1,6 @@
+RUNTIME_DIRNAME="threadpool"
+RUNTIME_GITREPO="/project/parallelizing_compiler/repositories"
+
 all: regression performance
 
 regression: download
@@ -7,7 +10,7 @@ performance: download
 	./scripts/test_performance.sh ;
 
 download:
-	mkdir -p include ; cd include ; ../scripts/download.sh "/project/parallelizing_compiler/repositories/threadpool/" ;
+	mkdir -p include ; cd include ; ../scripts/download.sh "$(RUNTIME_GITREPO)/$(RUNTIME_DIRNAME)" "$(RUNTIME_DIRNAME)" ;
 	./scripts/add_symbolic_link.sh ;
 
 clean:
