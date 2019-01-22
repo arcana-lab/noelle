@@ -13,7 +13,7 @@ int main (int argc, char *argv[]){
     v1 = v1 - 3;
 
     // SCC 2
-    v2 = v2 * 3;
+    v2 = v2 * 3 + v1;
     v2 = v2 / 2;
   }
 
