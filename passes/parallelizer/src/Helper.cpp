@@ -19,10 +19,20 @@ bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallel
   std::string pushers[4] = { "queuePush8", "queuePush16", "queuePush32", "queuePush64" };
   std::string poppers[4] = { "queuePop8", "queuePop16", "queuePop32", "queuePop64" };
   for (auto pusher : pushers) {
-    par.queues.queuePushes.push_back(M.getFunction(pusher));
+    auto pushFunction = M.getFunction(pusher);
+    if (pushFunction == nullptr){
+      errs() << "Parallelizer: ERROR = function \"" << pusher << "\" could not be found\n";
+      abort();
+    }
+    par.queues.queuePushes.push_back(pushFunction);
   }
   for (auto popper : poppers) {
-    par.queues.queuePops.push_back(M.getFunction(popper));
+    auto popFunction = M.getFunction(popper);
+    if (popFunction == nullptr){
+      errs() << "Parallelizer: ERROR = function \"" << popper << "\" could not be found\n";
+      abort();
+    }
+    par.queues.queuePops.push_back(popFunction);
   }
   for (auto queueF : par.queues.queuePushes) {
     par.queues.queueTypes.push_back(queueF->arg_begin()->getType());
