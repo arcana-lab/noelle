@@ -23,7 +23,10 @@ namespace llvm {
       /*
        * Task arguments
        */
-      Value *coreArg, *numCoresArg, *ssArrayArg;
+      Value *coreArg;
+      Value *numCoresArg;
+      Value *ssPastArrayArg;
+      Value *ssFutureArrayArg;
 
       /*
        * Clone of original IV loop, new outer loop

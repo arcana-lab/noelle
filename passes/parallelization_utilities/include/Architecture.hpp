@@ -10,25 +10,4 @@
  */
 #pragma once
 
-#include "HELIX.hpp"
-#include "SCCDAGPartition.hpp"
-
-namespace llvm {
-
-  class SequentialSegment {
-    public:
-      SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs, int32_t ID) ;
-
-      void forEachEntry (std::function <void (Instruction *justAfterEntry)> whatToDo);
-
-      void forEachExit (std::function <void (Instruction *justBeforeExit)> whatToDo);
-
-      int32_t getID (void);
-
-    private:
-      std::set<Instruction *> entries;
-      std::set<Instruction *> exits;
-      int32_t ID;
-  };
-
-}
+#define CACHE_LINE_SIZE 64

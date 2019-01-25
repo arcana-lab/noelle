@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
+#include <pthread.h>
 #include <functional>
 #include <memory>
 #include <thread>
@@ -144,7 +145,7 @@ extern "C" {
   }
 
   void HELIX_dispatcher (
-    void (*parallelizedLoop)(void *, void *, int64_t, int64_t), 
+    void (*parallelizedLoop)(void *, void *, void *, int64_t, int64_t), 
     void *env,
     int64_t numCores, 
     int64_t numOfsequentialSegments
@@ -164,11 +165,46 @@ extern "C" {
      */
     auto numOfSSArrays = numCores - 1;
     void *ssArrays = NULL;
-    auto ssArraySize = CACHE_LINE_SIZE * numOfsequentialSegments;
+    auto ssSize = CACHE_LINE_SIZE;
+    auto ssArraySize = ssSize * numOfsequentialSegments;
     posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize *  numOfSSArrays);
     if (ssArrays == NULL){
-      fprintf(stderr, "HelixDispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n", numCores);
+      fprintf(stderr, "HelixDispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n", (long long)numCores);
       abort();
+    }
+
+    /*
+     * Initialize the sequential segment arrays.
+     */
+    for (auto i = 0; i < numOfSSArrays; i++){
+
+      /*
+       * Fetch the current sequential segment array.
+       */
+      auto ssArray = (void *)(((uint64_t)ssArrays) + (i * ssArraySize));
+
+      /*
+       * Initialize the locks.
+       */
+      for (auto lockID = 0; lockID < numOfsequentialSegments; lockID++){
+
+        /*
+         * Fetch the pointer to the current lock.
+         */
+        auto lock = (pthread_spinlock_t *)(((uint64_t)ssArray) + (lockID * ssSize));
+
+        /*
+         * Initialize the lock.
+         */
+        pthread_spin_init(lock, PTHREAD_PROCESS_PRIVATE);
+        
+        /*
+         * If the sequential segment is not for core 0, then we need to lock it.
+         */
+        if (i > 0){
+          pthread_spin_lock(lock);
+        }
+      }
     }
 
     /*
@@ -178,14 +214,22 @@ extern "C" {
     for (auto i = 0; i < numCores; ++i) {
 
       /*
+       * Identify the past and future sequential segment arrays.
+       */
+      auto pastID = i;
+      auto futureID = (i + 1) % numCores;
+
+      /*
        * Fetch the sequential segment array for the current thread.
        */
-      auto ssArray = (void *)(((uint64_t)ssArrays) + (i * ssArraySize));
+      auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
+      auto ssArrayFuture = (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
+      assert(ssArrayPast != ssArrayFuture);
 
       /*
        * Launch the thread.
        */
-      localFutures.push_back(pool.submit(parallelizedLoop, env, ssArray, i, numCores));
+      localFutures.push_back(pool.submit(parallelizedLoop, env, ssArrayPast, ssArrayFuture, i, numCores));
 
       /*
        * Launch the helper thread.
@@ -237,7 +281,7 @@ extern "C" {
     assert(ss != NULL);
 
     /*
-     * Wait
+     * Signal
      */
     pthread_spin_unlock(ss);
 

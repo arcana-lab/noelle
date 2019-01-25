@@ -26,16 +26,17 @@ namespace llvm {
       public:
         enum SCCType {SEQUENTIAL, REDUCIBLE, INDEPENDENT};
 
-        SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
-
-        raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "", int maxEdges = 15) ;
-        raw_ostream &printMinimal (raw_ostream &stream, std::string prefixToUse = "") ;
+        SCC (std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
 
         bool hasCycle (bool ignoreControlDep = false) ;
 
         SCCType getType (void) const;
 
         void setType (SCCType t);
+
+        raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "", int maxEdges = 15) ;
+
+        raw_ostream &printMinimal (raw_ostream &stream, std::string prefixToUse = "") ;
 
         ~SCC() ;
 
