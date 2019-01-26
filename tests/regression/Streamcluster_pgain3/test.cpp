@@ -3,12 +3,13 @@
 #include <math.h>
 
 typedef struct {
+  int randomVariableInTheWay;
   float *array;
 } Point;
 
 typedef struct {
-  int dim;
   int iters;
+  int dim;
   Point *p;
 } Points;
 
@@ -17,6 +18,10 @@ float readOnly (Point &p, Point &q, int dim) {
   for (auto i = 0; i < dim; i++)
     result += (p.array[i] - q.array[i])*(p.array[i] - q.array[i]);
   return result;
+}
+
+void doPrint (Points *p) {
+  printf("%d\n", p->dim);
 }
 
 int main (int argc, char *argv[]){
@@ -34,6 +39,10 @@ int main (int argc, char *argv[]){
   Points points;
   points.dim = 1000;
   points.iters = iterations;
+
+  Points *pointsTest = new Points();
+  pointsTest->dim = iterations;
+  doPrint(pointsTest);
 
   float* block = (float*)malloc(iterations*points.dim*sizeof(float));
   points.p = (Point *)malloc(iterations*sizeof(Point));
@@ -61,7 +70,7 @@ int main (int argc, char *argv[]){
     }
   }
 
-  printf("%.2f, %d\n", accumulation, values[iterations/2]);
+  printf("%.2f, %d\n", accumulation, is_valid[iterations/2], values[iterations/2]);
 
   return 0;
 }
