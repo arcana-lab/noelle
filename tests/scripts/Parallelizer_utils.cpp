@@ -197,7 +197,7 @@ extern "C" {
          * Initialize the lock.
          */
         pthread_spin_init(lock, PTHREAD_PROCESS_PRIVATE);
-        
+
         /*
          * If the sequential segment is not for core 0, then we need to lock it.
          */

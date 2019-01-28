@@ -76,6 +76,7 @@ namespace llvm {
       );
 
     private:
+      Function *waitSSCall, *signalSSCall;
 
   };
 

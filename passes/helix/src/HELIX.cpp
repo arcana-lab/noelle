@@ -25,8 +25,14 @@ HELIX::HELIX (Module &module, Verbosity v)
    * Fetch the dispatcher to use to jump to a parallelized HELIX loop.
    */
   this->taskDispatcher = this->module.getFunction("HELIX_dispatcher");
+  this->waitSSCall = this->module.getFunction("HELIX_wait");
+  this->signalSSCall =  this->module.getFunction("HELIX_signal");
   if (this->taskDispatcher == nullptr){
     errs()<< "HELIX: ERROR = the function HELIX_dispatcher could not be found.\n" ;
+    abort();
+  }
+  if (!this->waitSSCall  || !this->signalSSCall) {
+    errs() << "HELIX: ERROR = sync functions HELIX_wait, HELIX_signal were not both found.\n";
     abort();
   }
 

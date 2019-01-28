@@ -18,6 +18,9 @@ void HELIX::addSynchronizations (
   LoopDependenceInfo *LDI,
   std::vector<SequentialSegment *> *sss
   ){
+  assert(this->tasks.size() == 1);
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+  IRBuilder<> entryBuilder(helixTask->entryBlock);
 
   /*
    * Iterate over sequential segments.
@@ -31,25 +34,21 @@ void HELIX::addSynchronizations (
      * We call this new variable, ssState.
      * This new variable is reponsible to store the information about whether a wait instruction of the current sequential segment has already been executed in the current iteration for the current thread.
      */
-    //TODO
-    Value *ssState;
+    auto &cxt = LDI->function->getContext();
+    auto int64 = IntegerType::get(cxt, 32);
+    Value *ssState = entryBuilder.CreateAlloca(int64);
 
     /*
      * Reset the value of ssState at the beginning of the iteration (i.e., loop header)
      */
-    //TODO
+    auto headerClone = helixTask->basicBlockClones[LDI->header];
+    IRBuilder<> headerBuilder(headerClone->getTerminator()->getPrevNode());
+    headerBuilder.CreateStore(ConstantInt::get(int64, 0), ssState);
 
     /*
-     * Define the code that inject wait instructions.
+     * Define a helper to fetch the appropriate ss entry in synchronization arrays
      */
-    auto injectWait = [this, ss, ssState](Instruction *justAfterEntry) -> void {
-
-      /*
-       * Fetch the sequential segment array
-       */
-      assert(this->tasks.size() == 1);
-      auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
-      auto ssArray = helixTask->ssPastArrayArg;
+    auto fetchEntry = [ss, &entryBuilder, int64](Value *ssArray) -> Value * {
 
       /*
        * Compute the offset of the sequential segment entry.
@@ -60,25 +59,54 @@ void HELIX::addSynchronizations (
       /*
        * Fetch the pointer to the sequential segment entry.
        */
-      //TODO
+      auto ssArrayAsInt = entryBuilder.CreatePtrToInt(ssArray, int64);
+      auto ssEntryAsInt = entryBuilder.CreateAdd(ConstantInt::get(int64, ssOffset), ssArrayAsInt);
+      return entryBuilder.CreateIntToPtr(ssEntryAsInt, ssArray->getType());
+    };
+
+    /*
+     * Define the code that inject wait instructions.
+     */
+    auto injectWait = [&](Instruction *justAfterEntry) -> void {
 
       /*
-       * Check if the ssState has been set already.
-       * If it did, then it means that we have already executed wait for "ss" and, therefore, we must not invoke wait another time.
-       * If it didn't, then we need to invoke HELIX_wait.
+       * Fetch the sequential segment entry in the past array
        */
-      //TODO
+      auto ssArray = helixTask->ssPastArrayArg;
+      auto ssEntryPtr = fetchEntry(ssArray);
+
+      /*
+       * Separate out the basic block into 2 halves, the second starting with justAfterEntry
+       */
+      auto beforeEntryBB = justAfterEntry->getParent();
+      auto ssEntryBB = BasicBlock::Create(cxt, "", helixTask->F);
+      IRBuilder<> ssEntryBuilder(ssEntryBB);
+      auto afterEntry = justAfterEntry;
+      while (afterEntry) {
+        afterEntry->removeFromParent();
+        ssEntryBuilder.Insert(afterEntry);
+        afterEntry = afterEntry->getNextNode();
+      }
 
       /*
        * Inject a call to HELIX_wait just before "justAfterEntry"
-       */
-      //TODO
-
-      /*
        * Set the ssState just after the call to HELIX_wait.
        * This will keep track of the fact that we have executed wait for ss in the current iteration.
        */
-      //TODO
+      auto ssWaitBB = BasicBlock::Create(cxt, "", helixTask->F);
+      IRBuilder<> ssWaitBuilder(ssWaitBB);
+      ssWaitBuilder.CreateCall(this->waitSSCall, { ssEntryPtr });
+      ssWaitBuilder.CreateStore(ConstantInt::get(int64, 1), ssState);
+      ssWaitBuilder.CreateBr(ssEntryBB);
+
+      /*
+       * Check if the ssState has been set already.
+       * If it did, then we have already executed the wait to enter this ss and must not invoke it again.
+       * If it didn't, then we need to invoke HELIX_wait.
+       */
+      IRBuilder<> beforeEntryBuilder(beforeEntryBB);
+      auto needToWait = beforeEntryBuilder.CreateICmpEQ(ssState, ConstantInt::get(int64, 0));
+      beforeEntryBuilder.CreateCondBr(needToWait, ssWaitBB, ssEntryBB);
 
       return ;
     };
@@ -86,25 +114,19 @@ void HELIX::addSynchronizations (
     /*
      * Define the code that inject wait instructions.
      */
-    auto injectSignal = [this, ss](Instruction *justBeforeExit) -> void {
+    auto injectSignal = [&](Instruction *justBeforeExit) -> void {
 
       /*
-       * Fetch the sequential segment array
+       * Fetch the sequential segment entry in the past array
        */
-      assert(this->tasks.size() == 1);
-      auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
       auto ssArray = helixTask->ssFutureArrayArg;
-
-      /*
-       * Fetch the sequential segment entry.
-       */
-      auto ssID = ss->getID();
-      //TODO
+      auto ssEntryPtr = fetchEntry(ssArray);
 
       /*
        * Inject a call to HELIX_signal just after "justBeforeExit" 
        */
-      //TODO
+      IRBuilder<> beforeExitBuilder(justBeforeExit->getPrevNode());
+      beforeExitBuilder.CreateCall(this->signalSSCall, { ssEntryPtr });
 
       return ;
     };
