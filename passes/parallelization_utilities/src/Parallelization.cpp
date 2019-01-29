@@ -182,6 +182,8 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       auto shouldBeParallelized = this->fetchTheNextValue(indexString);
       assert(shouldBeParallelized == 0 || shouldBeParallelized == 1);
 
+      errs() << "SHOULD BE PARALLELIZED: " << shouldBeParallelized << "\n";
+
       /*
        * Unroll factor
        */
@@ -268,6 +270,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      * Append these loops.
      */
     for (auto loop : loops){
+      loop->print(errs() << "This is loop: " << currentLoopIndex << "\n");
       auto ldi = allocationFunction(function, funcPDG, loop, LI, PDT);
 
       /*
@@ -346,6 +349,19 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   Value *envIndexForExitVariable,
   SmallVector<BasicBlock *, 10> &loopExitBlocks
   ){
+
+  /*
+   * Hoist allocations in the parallelized loop basic block to the function's entry
+   */
+  std::set<Instruction *> allocas;
+  for (auto &I : *startOfParLoopInOriginalFunc) {
+    if (isa<AllocaInst>(I)) allocas.insert(&I);
+  }
+  Instruction *entryI = &*startOfParLoopInOriginalFunc->getParent()->begin()->begin();
+  for (auto I : allocas) {
+    I->removeFromParent();
+    I->insertBefore(entryI);
+  }
 
   /*
    * Create the global variable for the parallelized loop.

@@ -156,15 +156,8 @@ bool DSWP::apply (
 
     /*
      * Load all loop live-in values at the entry point of the task.
-     * Store final results to loop live-out variables.
      */
     generateCodeToLoadLiveInVariables(LDI, i);
-    generateCodeToStoreLiveOutVariables(LDI, i);
-
-    /*
-     * Generate a store to propagate the information about which exit block has been taken from the parallelized loop to the code outside it.
-     */
-    generateCodeToStoreExitBlockIndex(LDI, i);
 
     /*
      * Fix the data flow within the parallelized loop by redirecting operands of
@@ -184,6 +177,13 @@ bool DSWP::apply (
      */
     IRBuilder<> exitBuilder(task->exitBlock);
     exitBuilder.CreateRetVoid();
+
+    /*
+     * Store final results to loop live-out variables.
+     * Generate a store to propagate the information about which exit block has been taken from the parallelized loop to the code outside it.
+     */
+    generateCodeToStoreLiveOutVariables(LDI, i);
+    generateCodeToStoreExitBlockIndex(LDI, i);
 
     /*
      * Inline recursively calls to queues.

@@ -124,9 +124,26 @@ namespace llvm {
         int taskIndex
       );
 
+      std::set<BasicBlock *> determineLatestPointsToInsertLiveOutStore (
+        LoopDependenceInfo *LDI,
+        int taskIndex,
+        Instruction *liveOut
+      );
+
       virtual void adjustDataFlowToUseClones (
         LoopDependenceInfo *LDI,
         int taskIndex
+      );
+
+      void setReducableVariablesToBeginAtIdentityValue (
+        LoopDependenceInfo *LDI,
+        int taskIndex
+      );
+
+      Value *getIdentityValueForEnvironmentValue (
+        LoopDependenceInfo *LDI,
+        int taskIndex,
+        int environmentIndex
       );
 
       /*

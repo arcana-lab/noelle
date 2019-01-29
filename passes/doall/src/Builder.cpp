@@ -209,8 +209,10 @@ void DOALL::propagatePHINodesThroughOuterLoop (
    * Create equivalent outer loop PHIs for these inner loop PHIs
    */
   IRBuilder<> outerBuilder(&*task->outermostLoopHeader->begin());
+  std::unordered_map<PHINode *, PHINode *> innerToOuterPHI;
   for (auto phi : phis) {
     auto outerPHI = outerBuilder.CreatePHI(phi->getType(), /*numReservedValues=*/2);
+    innerToOuterPHI[phi] = outerPHI;
 
     /*
      * Adjust inner loop PHI to have the outer loop header as an incoming block
@@ -220,13 +222,38 @@ void DOALL::propagatePHINodesThroughOuterLoop (
     phi->setIncomingBlock(innerEntryIndex, task->outermostLoopHeader);
 
     /*
-     * If incoming is pre header, use initial value of inner PHI
-     * Otherwise, route from outer loop latch using current value of inner PHI
-     * As for the inner loop PHI, replace initial value with outer header PHI
+     * Route the inner PHI and outer PHI values
      */
     auto startVal = phi->getIncomingValue(innerEntryIndex);
     outerPHI->addIncoming(startVal, task->entryBlock);
     outerPHI->addIncoming(phi, task->outermostLoopLatch);
     phi->setIncomingValue(innerEntryIndex, outerPHI);
+  }
+
+  /*
+   * Associate live-out values with their new outer PHI counterpart instead of
+   * the inner PHI value so that when the the outer PHI is stored into the
+   * environment, as it is the most up-to-date value
+   */
+  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+    auto originalProducer = LDI->environment->producerAt(envIndex);
+    assert(isa<Instruction>(originalProducer));
+    auto originalProducerI = cast<Instruction>(originalProducer);
+    auto clonedProducer = task->instructionClones[originalProducerI];
+
+    /*
+     * NOTE: In the case of DOALL, all live out variables must be reducible
+     * All reducible variables are represented with PHIs in DOALL structured
+     * loops, so the PHI would have been mapped into the outer loop.
+     */
+    assert(isa<PHINode>(clonedProducer));
+    auto clonedPHI = cast<PHINode>(clonedProducer);
+    assert(innerToOuterPHI.find(clonedPHI) != innerToOuterPHI.end());
+
+    /*
+     * Remap clone of environment producer from the inner to the outer PHI
+     */
+    auto outerPHI = innerToOuterPHI[clonedPHI];
+    task->instructionClones[originalProducerI] = outerPHI;
   }
 }
