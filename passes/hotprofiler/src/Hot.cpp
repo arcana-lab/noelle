@@ -50,11 +50,22 @@ void Hot::computeProgramInvocations (void){
    * Compute the total number of instructions executed.
    */
   for (auto pairs : this->bbInvocations){
+
+    /*
+     * Fetch the current basic block
+     */
     auto bb = pairs.first;
     auto bbInv = pairs.second;
-    auto totalBBInsts = this->getBasicBlockInvocations(bb);
 
+    /*
+     * Fetch the number of invocations of the basic block and its length.
+     */
+    auto totalBBInsts = this->getBasicBlockInvocations(bb);
     auto bbLength = std::distance(bb->begin(), bb->end());
+
+    /*
+     * Update the module counter
+     */
     this->moduleNumberOfInstructionsExecuted += (totalBBInsts * bbLength);
   }
 
