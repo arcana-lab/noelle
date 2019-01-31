@@ -26,6 +26,8 @@ namespace llvm {
 
       uint64_t getBasicBlockInvocations (BasicBlock *bb) ;
 
+      uint64_t getBasicBlockDynamicInstructions (BasicBlock *bb) ;
+
       double getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) ;
       
 
@@ -37,6 +39,7 @@ namespace llvm {
       /*
        * Functions
        */
+      uint64_t getFunctionDynamicInstructions (Function *f);
 
 
       /*
