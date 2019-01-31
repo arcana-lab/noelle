@@ -13,19 +13,50 @@
 
 using namespace llvm ;
 
-SequentialSegment::SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs){
+SequentialSegment::SequentialSegment (
+  LoopDependenceInfo *LDI, 
+  SCCset *sccs,
+  int32_t ID
+  ){
+
+  /*
+   * Set the ID
+   */
+  this->ID = ID;
 
   /*
    * Identify all the dependent instructions
    */
+  std::set<Instruction *> allInstructionsInSS;
   for (auto scc : *sccs){
     assert(scc->hasCycle());
+
+    /*
+     * Add all instructions of the current SCC to the set.
+     */
+    for (auto node : scc->getNodes()){
+
+      /*
+       * Fetch the LLVM value associated to the node.
+       */
+      auto value = node->getT();
+
+      /*
+       * Cast the value to an instruction.
+       */
+      auto inst = cast<Instruction>(value);
+
+      /*
+       * Insert the instruction to the set.
+       */
+      allInstructionsInSS.insert(inst);
+    }
   }
 
   /*
    * Identify the locations where wait instructions should be placed.
    */
-  //TODO
+  this->entries = allInstructionsInSS;
 
   /*
    * Identify the locations where signal instructions should be placed.
@@ -33,4 +64,34 @@ SequentialSegment::SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs){
   //TODO
 
   return ;
+}
+
+void SequentialSegment::forEachEntry (
+  std::function <void (Instruction *justAfterEntry)> whatToDo){
+
+  /*
+   * Iterate over the entries.
+   */
+  for (auto entry : this->entries){
+    whatToDo(entry);
+  }
+
+  return ;
+}
+
+void SequentialSegment::forEachExit (
+  std::function <void (Instruction *justBeforeExit)> whatToDo){
+
+  /*
+   * Iterate over the exits.
+   */
+  for (auto exit : this->exits){
+    whatToDo(exit);
+  }
+
+  return ;
+}
+
+int32_t SequentialSegment::getID (void){
+  return this->ID;
 }

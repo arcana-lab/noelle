@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.4.3)
-project(Parallelization)
+project(CAT)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -15,7 +15,6 @@ add_definitions(
 )
 
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
-
 include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -29,4 +28,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/EnvBuilder.hpp include/LoopInfoSummary.hpp include/LoopEnvironment.hpp include/LoopDependenceInfo.hpp include/Parallelization.hpp include/SCCDAGAttrs.hpp include/SCCDAGPartition.hpp include/Queue.hpp include/SystemHeaders.hpp include/Architecture.hpp DESTINATION include)
+install(PROGRAMS DESTINATION)

@@ -10,25 +10,46 @@
  */
 #pragma once
 
-#include "HELIX.hpp"
-#include "SCCDAGPartition.hpp"
+#include "SystemHeaders.hpp"
 
 namespace llvm {
 
-  class SequentialSegment {
+  class Hot {
     public:
-      SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs, int32_t ID) ;
 
-      void forEachEntry (std::function <void (Instruction *justAfterEntry)> whatToDo);
+      Hot ();
 
-      void forEachExit (std::function <void (Instruction *justBeforeExit)> whatToDo);
+      /*
+       * Basic blocks.
+       */
+      void setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations);
 
-      int32_t getID (void);
+      uint64_t getBasicBlockInvocations (BasicBlock *bb) ;
+
+      double getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) ;
+      
+
+      /*
+       * Loops
+       */
+
+
+      /*
+       * Functions
+       */
+
+
+      /*
+       * Module
+       */
+      uint64_t getModuleInstructionExecuted (void) const ;
+
+      void computeProgramInvocations (void);
 
     private:
-      std::set<Instruction *> entries;
-      std::set<Instruction *> exits;
-      int32_t ID;
+      std::map<BasicBlock *, uint64_t> bbInvocations;
+      std::map<Function *, uint64_t> functionInstructions;
+      std::map<Function *, uint64_t> functionInvocations;
+      uint64_t moduleNumberOfInstructionsExecuted;
   };
-
 }

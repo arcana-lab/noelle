@@ -28,6 +28,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
   /*
    * Allocate the sequential segments, one per partition.
    */
+  int32_t ssID = 0;
   for (auto subset : subsets){
 
     /*
@@ -49,11 +50,12 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
     /*
      * Allocate a sequential segment.
      */
-    auto ss = new SequentialSegment(LDI, subset);
+    auto ss = new SequentialSegment(LDI, subset, ssID);
 
     /*
      * Insert the new sequential segment to the list.
      */
+    ssID++;
     sss.push_back(ss);
   }
 
