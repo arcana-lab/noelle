@@ -96,6 +96,10 @@ namespace {
       AU.setPreservesAll();
     }
 
+    Hot& getHot (void){
+      return this->hot;
+    }
+
     private:
       Hot hot;
   };
