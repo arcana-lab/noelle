@@ -22,6 +22,23 @@ Hot::Hot ()
 }
 
 void Hot::setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations){
+
+  /*
+   * Check if bb is the entry point of a function.
+   */
+  auto f = bb->getParent();
+  auto& entryBB = f->getEntryBlock();
+  if (&entryBB == bb){
+
+    /*
+     * Insert the number of invocations of a function.
+     */
+    this->functionInvocations[f] = invocations;
+  }
+
+  /*
+   * Insert the number of invocations of the basic block bb.
+   */
   this->bbInvocations[bb] = invocations;
 
   return ;
@@ -33,13 +50,27 @@ uint64_t Hot::getBasicBlockInvocations (BasicBlock *bb) {
   return inv;
 }
       
+uint64_t Hot::getBasicBlockDynamicInstructions (BasicBlock *bb) {
+  auto inv = this->getBasicBlockInvocations(bb);
+  
+  auto bbLength = std::distance(bb->begin(), bb->end());
+
+  return inv * bbLength;
+}
+
 double Hot::getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) {
   auto v1 = (double )this->bbInvocations[sourceBB];
   auto v2 = (double )this->bbInvocations[targetBB];
 
   return v2 / v1;
 }
-      
+ 
+uint64_t Hot::getFunctionDynamicInstructions (Function *f){
+  auto insts = this->functionInstructions[f];
+
+  return insts;
+}
+
 uint64_t Hot::getModuleInstructionExecuted (void) const {
   return this->moduleNumberOfInstructionsExecuted;
 }
@@ -68,6 +99,28 @@ void Hot::computeProgramInvocations (void){
      */
     this->moduleNumberOfInstructionsExecuted += (totalBBInsts * bbLength);
   }
+
+  /*
+   * Compute the total number of instructions executed by each function.
+   * Each call instructions is considered one; so callee instructions are not considered.
+   */
+  for (auto pairs : this->functionInvocations){
+
+    /*
+     * Fetch the function.
+     */
+    auto f = pairs.first;
+    
+    /*
+     * Consider all basic blocks.
+     */
+    uint64_t c = 0;
+    for (auto& bb : *f){
+      c += this->getBasicBlockDynamicInstructions(&bb);
+    }
+    this->functionInstructions[f] = c;
+  }
+  
 
   return ;
 }
