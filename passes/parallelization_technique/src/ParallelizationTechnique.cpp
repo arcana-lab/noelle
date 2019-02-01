@@ -76,7 +76,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
 }
 
 void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI) {
-  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
+  IRBuilder<> builder(&*LDI->function->begin()->begin());
   envBuilder->generateEnvArray(builder);
   envBuilder->generateEnvVariables(builder);
 }

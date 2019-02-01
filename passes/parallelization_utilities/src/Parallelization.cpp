@@ -352,7 +352,8 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
 
   /*
    * Hoist allocations in the parallelized loop basic block to the function's entry
-   */
+   * Possibly rendered obsolete by allocating the environment array at the function's entry
+
   std::set<Instruction *> allocas;
   for (auto &I : *startOfParLoopInOriginalFunc) {
     if (isa<AllocaInst>(I)) allocas.insert(&I);
@@ -362,6 +363,8 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
     I->removeFromParent();
     I->insertBefore(entryI);
   }
+
+   */
 
   /*
    * Create the global variable for the parallelized loop.
