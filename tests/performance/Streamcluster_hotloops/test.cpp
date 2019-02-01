@@ -22,14 +22,15 @@ int main (int argc, char *argv[]){
 
   for (auto i=0; i < iterations; i++){
     is_valid[i] = i % 5 < 2;
-    values[i] = i;
+    values[i] = iterations;
   }
 
   int total_value = 0;
   for (auto i=0; i < iterations; ++i) {
+    bool is_it = is_valid[i];
     for (auto j=0; j < values[i]; ++j) {
       total_value += (i + 3) * (j - 5);
-      if (is_valid[i]) {
+      if (is_it ^ (j < 10)) {
         total_value += i + j;
       }
     }
