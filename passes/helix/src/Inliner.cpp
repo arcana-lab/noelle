@@ -9,13 +9,14 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "HELIX.hpp"
+#include "HELIXTask.hpp"
 
 using namespace llvm ;
 
 void HELIX::inlineCalls (
   void
   ){
-  //TODO
-
-  return ;
+  auto task = (HELIXTask*)tasks[0];
+  doNestedInlineOfCalls(task->F, task->waits);
+  doNestedInlineOfCalls(task->F, task->signals);
 }

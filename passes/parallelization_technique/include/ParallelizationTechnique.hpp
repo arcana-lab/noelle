@@ -154,6 +154,11 @@ namespace llvm {
       );
 
       /*
+       * General purpose helpers (that should be moved to parallelization_utils)
+       */
+      void doNestedInlineOfCalls (Function *F, std::set<CallInst *> &calls);
+
+      /*
        * Fields
        */
       Module& module;
