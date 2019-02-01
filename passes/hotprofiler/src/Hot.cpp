@@ -50,7 +50,7 @@ uint64_t Hot::getBasicBlockInvocations (BasicBlock *bb) {
   return inv;
 }
       
-uint64_t Hot::getBasicBlockDynamicInstructions (BasicBlock *bb) {
+uint64_t Hot::getBasicBlockInstructions (BasicBlock *bb) {
   auto inv = this->getBasicBlockInvocations(bb);
   
   auto bbLength = std::distance(bb->begin(), bb->end());
@@ -65,7 +65,7 @@ double Hot::getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) {
   return v2 / v1;
 }
  
-uint64_t Hot::getFunctionDynamicInstructions (Function *f){
+uint64_t Hot::getFunctionInstructions (Function *f){
   auto insts = this->functionInstructions[f];
 
   return insts;
@@ -116,7 +116,7 @@ void Hot::computeProgramInvocations (void){
      */
     uint64_t c = 0;
     for (auto& bb : *f){
-      c += this->getBasicBlockDynamicInstructions(&bb);
+      c += this->getBasicBlockInstructions(&bb);
     }
     this->functionInstructions[f] = c;
   }
