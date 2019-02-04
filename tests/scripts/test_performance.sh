@@ -4,6 +4,9 @@ function runningTests {
   echo $1 ;
   > $3 ;
 
+  # Export autotuner specifications for parallelization
+  export INDEX_FILE="autotuner.info" ;
+
   for i in `ls`; do
     if ! test -d $i ; then
       continue ;

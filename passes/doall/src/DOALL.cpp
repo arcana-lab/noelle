@@ -162,7 +162,6 @@ bool DOALL::apply (
 
   /*
    * Load all loop live-in values at the entry point of the task.
-   * Store final results to loop live-out variables.
    */
   auto envUser = this->envBuilder->getUser(0);
   for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
@@ -172,7 +171,6 @@ bool DOALL::apply (
     envUser->addLiveOutIndex(envIndex);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
-  this->generateCodeToStoreLiveOutVariables(LDI, 0);
 
   /*
    * Simplify the original IV to iterate from smaller to larger bound by +1 increments
@@ -189,20 +187,28 @@ bool DOALL::apply (
    * they still refer to the original loop's instructions.
    */
   this->adjustDataFlowToUseClones(LDI, 0);
-
-  /*
-   * Hoist PHINodes in the original loop: this propagates their value
-   *  through the outer loop latch/header back into the inner loop header
-   * This is done after data flow is adjusted to disambiguate adjustments
-   *  from original -> clone and adjustments to their execution flow
-   */
-  this->propagatePHINodesThroughOuterLoop(LDI);
+  this->setReducableVariablesToBeginAtIdentityValue(LDI, 0);
 
   /*
    * Add the final return to the single task's exit block.
    */
   IRBuilder<> exitB(tasks[0]->exitBlock);
   exitB.CreateRetVoid();
+
+  /*
+   * Hoist PHINodes in the original loop: this propagates their value
+   *  through the outer loop latch/header back into the inner loop header
+   * This is done after data flow is adjusted to disambiguate mapping
+   *  from original -> clone instructions and adjusting flow of execution
+   */
+  this->propagatePHINodesThroughOuterLoop(LDI);
+
+  /*
+   * Store final results to loop live-out variables. Note this occurs after
+   * all other code is generated. Propagated PHIs through the generated
+   * outer loop might affect the values stored
+   */
+  this->generateCodeToStoreLiveOutVariables(LDI, 0);
 
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par);
 

@@ -6,7 +6,9 @@ LIBS=-lm
 
 RUNTIME_CFLAGS="-DDSWP_STATS"
 RUNTIME_CFLAGS=""
-PARALLELIZATION_OPTIONS=-pdg-verbose=1 -dswp-verbose=1 -dswp-force -doall-chunk-size=32 -doall-cores-per=8 -dswp-cores-per=2
+# Other parallelization options:
+# -doall-chunk-size=NUMBER, -doall-cores-per=NUMBER
+PARALLELIZATION_OPTIONS=-pdg-verbose=1 -dswp-verbose=1 -dswp-force -dswp-cores-per=2
 OPT_LEVEL=-O3
 
 INCLUDES=-I../../include/threadpool/include

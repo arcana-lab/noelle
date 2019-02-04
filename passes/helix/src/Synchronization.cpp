@@ -95,7 +95,7 @@ void HELIX::addSynchronizations (
        */
       auto ssWaitBB = BasicBlock::Create(cxt, "", helixTask->F);
       IRBuilder<> ssWaitBuilder(ssWaitBB);
-      ssWaitBuilder.CreateCall(this->waitSSCall, { ssEntryPtr });
+      auto wait = ssWaitBuilder.CreateCall(this->waitSSCall, { ssEntryPtr });
       ssWaitBuilder.CreateStore(ConstantInt::get(int64, 1), ssState);
       ssWaitBuilder.CreateBr(ssEntryBB);
 
@@ -108,7 +108,10 @@ void HELIX::addSynchronizations (
       auto needToWait = beforeEntryBuilder.CreateICmpEQ(ssState, ConstantInt::get(int64, 0));
       beforeEntryBuilder.CreateCondBr(needToWait, ssWaitBB, ssEntryBB);
 
-      return ;
+      /*
+       * Track the call to wait
+       */
+      helixTask->waits.insert(cast<CallInst>(wait));
     };
 
     /*
@@ -126,9 +129,12 @@ void HELIX::addSynchronizations (
        * Inject a call to HELIX_signal just after "justBeforeExit" 
        */
       IRBuilder<> beforeExitBuilder(justBeforeExit->getPrevNode());
-      beforeExitBuilder.CreateCall(this->signalSSCall, { ssEntryPtr });
+      auto signal = beforeExitBuilder.CreateCall(this->signalSSCall, { ssEntryPtr });
 
-      return ;
+      /*
+       * Track the call to signal
+       */
+      helixTask->signals.insert(cast<CallInst>(signal));
     };
 
     /*

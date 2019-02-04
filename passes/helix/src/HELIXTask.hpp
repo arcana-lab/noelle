@@ -36,6 +36,12 @@ namespace llvm {
       PHINode *originalIVClone;
       PHINode *outermostLoopIV;
 
+      /*
+       * Synchronization calls (waits, signals)
+       */
+      std::set<CallInst *> waits;
+      std::set<CallInst *> signals;
+
       void extractFuncArgs () override ;
   };
 }
