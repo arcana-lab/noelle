@@ -7,7 +7,10 @@ if test $# -lt 3 ; then
 fi
 srcBC="$1" ;
 profBC="$2" ;
-profExec="$3" ;
+profExec="" ;
+if test $# -ge 3 ; then
+  profExec="$3" ;
+fi
 
 # Clean
 rm -f $profBC $profExec *.profraw ;
@@ -16,4 +19,6 @@ rm -f $profBC $profExec *.profraw ;
 opt -pgo-instr-gen -instrprof $srcBC -o $profBC ;
 
 # Generate the binary
-clang $profBC -fprofile-instr-generate -o $profExec ;
+if test "$profExec" != "" ; then
+  clang $profBC -fprofile-instr-generate -o $profExec ;
+fi
