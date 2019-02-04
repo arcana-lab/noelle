@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 # Fetch the inputs
-if test $# -lt 3 ; then
+if test $# -lt 2 ; then
   echo "USAGE: `basename $0` SRC_BC DST_BC BINARY" ;
   exit 0;
 fi
