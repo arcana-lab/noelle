@@ -3,6 +3,7 @@ set(Srcs
   HELIX.cpp
   HELIXTask.cpp
   Linker.cpp
+  Spiller.cpp
   SequentialSegments.cpp
   SequentialSegment.cpp
   Scheduler.cpp

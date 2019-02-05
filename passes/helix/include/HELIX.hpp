@@ -52,6 +52,10 @@ namespace llvm {
         uint64_t numberOfSequentialSegments
       );
 
+      void spillLoopCarriedDataDependencies (
+        LoopDependenceInfo *LDI
+      );
+
       std::vector<SequentialSegment *> identifySequentialSegments (
         LoopDependenceInfo *LDI
       );
