@@ -30,6 +30,7 @@
 
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
+#include "HotProfiler.hpp"
 
 using namespace llvm;
 
@@ -51,6 +52,7 @@ void llvm::Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<PDGAnalysis>();
+  AU.addRequired<HotProfiler>();
 
   return ;
 }
@@ -132,6 +134,11 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
    * Fetch the PDG.
    */
   auto graph = getAnalysis<PDGAnalysis>().getPDG();
+
+  /*
+   * Fetch the profiles.
+   */
+  auto& profiles = getAnalysis<HotProfiler>().getHot();
 
   /*
    * Allocate the vector of loops.
