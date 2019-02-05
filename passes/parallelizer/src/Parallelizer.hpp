@@ -76,6 +76,7 @@ namespace llvm {
       bool forceParallelization;
       bool forceNoSCCPartition;
       Verbosity verbose;
+      double minHot;
 
       /*
        * Methods

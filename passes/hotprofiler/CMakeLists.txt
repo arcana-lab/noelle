@@ -28,4 +28,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/Hot.hpp DESTINATION include)
+install(PROGRAMS include/HotProfiler.hpp include/Hot.hpp DESTINATION include)

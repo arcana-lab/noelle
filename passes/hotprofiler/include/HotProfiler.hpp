@@ -9,50 +9,30 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-
 #include "SystemHeaders.hpp"
 
+#include "llvm/Analysis/BlockFrequencyInfo.h"
+#include "llvm/Analysis/BranchProbabilityInfo.h"
+#include "Hot.hpp"
+
+using namespace llvm;
+
 namespace llvm {
-
-  class Hot {
+  struct HotProfiler : public ModulePass {
     public:
+      static char ID; 
 
-      Hot ();
+      HotProfiler();
 
-      /*
-       * Basic blocks.
-       */
-      void setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations);
+      bool doInitialization (Module &M) override ;
 
-      uint64_t getBasicBlockInvocations (BasicBlock *bb) ;
-
-      uint64_t getBasicBlockInstructions (BasicBlock *bb) ;
-
-      double getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) ;
+      bool runOnModule (Module &M) override ;
       
+      void getAnalysisUsage(AnalysisUsage &AU) const override ;
 
-      /*
-       * Loops
-       */
-
-
-      /*
-       * Functions
-       */
-      uint64_t getFunctionInstructions (Function *f);
-
-
-      /*
-       * Module
-       */
-      uint64_t getModuleInstructions (void) const ;
-
-      void computeProgramInvocations (void);
+      Hot& getHot (void);
 
     private:
-      std::map<BasicBlock *, uint64_t> bbInvocations;
-      std::map<Function *, uint64_t> functionInstructions;
-      std::map<Function *, uint64_t> functionInvocations;
-      uint64_t moduleNumberOfInstructionsExecuted;
+      Hot hot;
   };
 }

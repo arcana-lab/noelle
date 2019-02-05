@@ -30,6 +30,7 @@
 
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
+#include "HotProfiler.hpp"
 
 using namespace llvm;
 
@@ -51,6 +52,7 @@ void llvm::Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<PDGAnalysis>();
+  AU.addRequired<HotProfiler>();
 
   return ;
 }
@@ -124,7 +126,8 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
 }
 
 std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
-  Module *module, 
+  Module *module,
+  double minimumHotness,
   std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &, PostDominatorTree &)> allocationFunction
   ){
 
@@ -132,6 +135,11 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
    * Fetch the PDG.
    */
   auto graph = getAnalysis<PDGAnalysis>().getPDG();
+
+  /*
+   * Fetch the profiles.
+   */
+  auto& profiles = getAnalysis<HotProfiler>().getHot();
 
   /*
    * Allocate the vector of loops.
@@ -247,6 +255,19 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      */
     if (std::distance(LI.begin(), LI.end()) == 0){
       continue ;
+    }
+
+    /*
+     * Check if the function is hot.
+     */
+    auto mInsts = profiles.getModuleInstructions();
+    if (mInsts > 0){
+      auto fInsts = profiles.getFunctionInstructions(function);
+      auto hotness = ((double)fInsts) / ((double)mInsts);
+      if (hotness <= minimumHotness){
+        errs() << "Parallelizer: disable \"" << function->getName() << "\" as cold function\n";
+        continue ;
+      }
     }
 
     /*

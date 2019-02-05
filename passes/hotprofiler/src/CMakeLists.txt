@@ -1,6 +1,6 @@
 # Sources
 set(Srcs
-  Pass.cpp
+  HotProfiler.cpp
   Hot.cpp
 )
 
@@ -8,7 +8,7 @@ set(Srcs
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "HOTProfiler")
+set(PassName "HotProfiler")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
