@@ -84,6 +84,11 @@ bool HELIX::apply (
   assert(helixTask == this->tasks[0]);
 
   /*
+   * Spill loop carried dependencies of the original loop
+   */
+  spillLoopCarriedDataDependencies(LDI);
+
+  /*
    * Fetch the indices of live-in and live-out variables of the loop being parallelized.
    */
   auto liveInVars = LDI->environment->getEnvIndicesOfLiveInVars();
