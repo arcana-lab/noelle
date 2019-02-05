@@ -18,6 +18,7 @@ using namespace llvm;
 static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
 static cl::opt<int> Verbose("dswp-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal)"));
+static cl::opt<int> MinimumHotness("noelle-min-hot", cl::ZeroOrMore, cl::Hidden, cl::desc("Minimum hotness of code to be parallelized"));
 
 /*
  * Command line overrides for some autotuned parameters
@@ -31,7 +32,8 @@ Parallelizer::Parallelizer()
   ModulePass{ID}, 
   forceParallelization{false},
   forceNoSCCPartition{false},
-  verbose{Verbosity::Disabled}
+  verbose{Verbosity::Disabled},
+  minHot{0}
   {
 
   return ;
@@ -39,6 +41,7 @@ Parallelizer::Parallelizer()
 
 bool Parallelizer::doInitialization (Module &M) {
   this->verbose = static_cast<Verbosity>(Verbose.getValue());
+  this->minHot = ((double)(MinimumHotness.getValue())) / 100;
   this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
   this->forceNoSCCPartition |= (ForceNoSCCPartition.getNumOccurrences() > 0);
 

@@ -71,7 +71,7 @@ uint64_t Hot::getFunctionInstructions (Function *f){
   return insts;
 }
 
-uint64_t Hot::getModuleInstructionExecuted (void) const {
+uint64_t Hot::getModuleInstructions (void) const {
   return this->moduleNumberOfInstructionsExecuted;
 }
       

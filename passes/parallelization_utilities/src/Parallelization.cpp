@@ -126,7 +126,8 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
 }
 
 std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
-  Module *module, 
+  Module *module,
+  double minimumHotness,
   std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &, PostDominatorTree &)> allocationFunction
   ){
 
@@ -254,6 +255,19 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      */
     if (std::distance(LI.begin(), LI.end()) == 0){
       continue ;
+    }
+
+    /*
+     * Check if the function is hot.
+     */
+    auto mInsts = profiles.getModuleInstructions();
+    if (mInsts > 0){
+      auto fInsts = profiles.getFunctionInstructions(function);
+      auto hotness = ((double)fInsts) / ((double)mInsts);
+      if (hotness <= minimumHotness){
+        errs() << "Parallelizer: disable \"" << function->getName() << "\" as cold function\n";
+        continue ;
+      }
     }
 
     /*

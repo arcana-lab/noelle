@@ -45,7 +45,7 @@ namespace llvm {
       /*
        * Module
        */
-      uint64_t getModuleInstructionExecuted (void) const ;
+      uint64_t getModuleInstructions (void) const ;
 
       void computeProgramInvocations (void);
 

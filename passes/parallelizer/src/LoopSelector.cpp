@@ -26,7 +26,7 @@ std::vector<DSWPLoopDependenceInfo *> Parallelizer::getLoopsToParallelize (Modul
   /*
    * Collect all loops included in the module.
    */
-  auto allLoops = par.getModuleLoops(&M, allocatorOfLoopStructures);
+  auto allLoops = par.getModuleLoops(&M, this->minHot, allocatorOfLoopStructures);
 
   /*
    * Consider all loops to parallelize.
