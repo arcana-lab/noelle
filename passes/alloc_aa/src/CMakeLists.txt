@@ -1,6 +1,7 @@
 # Sources
 set(PassSrc 
   AllocAA.cpp
+  MemorySite.cpp
 )
 
 # Compilation flags
