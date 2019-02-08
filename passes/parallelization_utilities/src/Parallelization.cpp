@@ -241,6 +241,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
    * Append loops of each function.
    */
   auto currentLoopIndex = 0;
+  errs() << "Parallelizer: Filter out cold code\n" ;
   for (auto function : *functions){
 
     /*
@@ -263,7 +264,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       auto fInsts = profiles.getFunctionInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
       if (hotness <= minimumHotness){
-        errs() << "Parallelizer: disable \"" << function->getName() << "\" as cold function\n";
+        errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
         continue ;
       }
     }
@@ -289,7 +290,6 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      * Consider these loops.
      */
     for (auto loop : loops){
-      loop->print(errs() << "This is loop: " << currentLoopIndex << "\n");
 
       /*
        * Check if the loop is hot enough.
@@ -299,7 +299,8 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         auto lInsts = profiles.getLoopInstructions(loop);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness <= minimumHotness){
-          errs() << "Parallelizer:  Disable \"" << currentLoopIndex << "\"\n";
+          errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
+          currentLoopIndex++;
           continue ;
         }
       }
