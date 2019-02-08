@@ -1,4 +1,7 @@
-all: hotprofiler printer pdg parallelization_utilities dgsimplify parallelizer heuristics parallelization_technique dswp doall helix
+all: hotprofiler printer pdg parallelization_utilities dataflow dgsimplify parallelizer heuristics parallelization_technique dswp doall helix
+
+dataflow:
+	cd $@ ; ../scripts/run_me.sh
 
 hotprofiler:
 	cd $@ ; ../scripts/run_me.sh
@@ -39,4 +42,4 @@ uninstall:
 clean:
 	rm -rf */build */*.json ; find ./ -name .ycm_extra_conf.py -delete
 
-.PHONY: clean pdg printer dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix hotprofiler
+.PHONY: clean pdg printer dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix hotprofiler dataflow

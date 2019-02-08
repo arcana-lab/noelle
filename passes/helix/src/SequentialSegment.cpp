@@ -10,6 +10,7 @@
  */
 #include "HELIX.hpp"
 #include "SequentialSegment.hpp"
+#include "DataFlow.hpp"
 
 using namespace llvm ;
 
@@ -61,7 +62,28 @@ SequentialSegment::SequentialSegment (
   /*
    * Identify the locations where signal instructions should be placed.
    */
-  //TODO
+  auto dfa = DataFlowAnalysis{};
+  auto computeGEN = [](Instruction *i, DataFlowResult *df) {
+    auto& gen = df->GEN(i);
+    gen.insert(i);
+    return ;
+  };
+  auto computeKILL = [](Instruction *, DataFlowResult *) {
+    return ;
+  };
+  auto computeOUT = [](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
+    auto& inS = df->IN(succ);
+    OUT.insert(inS.begin(), inS.end());
+    return ;
+  } ;
+  auto computeIN = [](std::set<Value *>& IN, Instruction *inst, DataFlowResult *df) {
+    auto& genI = df->GEN(inst);
+    auto& outI = df->OUT(inst);
+    IN.insert(outI.begin(), outI.end());
+    IN.insert(genI.begin(), genI.end());
+    return ;
+  };
+  dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
 
   return ;
 }
