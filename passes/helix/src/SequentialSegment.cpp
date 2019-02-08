@@ -60,7 +60,7 @@ SequentialSegment::SequentialSegment (
   this->entries = allInstructionsInSS;
 
   /*
-   * Identify the locations where signal instructions should be placed.
+   * Run the data flow analysis needed to identify the locations where signal instructions will be placed.
    */
   auto dfa = DataFlowAnalysis{};
   auto computeGEN = [](Instruction *i, DataFlowResult *df) {
@@ -84,6 +84,11 @@ SequentialSegment::SequentialSegment (
     return ;
   };
   dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
+
+  /*
+   * Identify the locations where signal instructions should be placed.
+   */
+  //TODO
 
   return ;
 }
