@@ -294,8 +294,19 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       /*
        * Check if the loop is hot enough.
        */
-      
+       if (profiles.isAvailable()){
+        auto mInsts = profiles.getModuleInstructions();
+        auto lInsts = profiles.getLoopInstructions(loop);
+        auto hotness = ((double)lInsts) / ((double)mInsts);
+        if (hotness <= minimumHotness){
+          errs() << "Parallelizer:  Disable \"" << currentLoopIndex << "\"\n";
+          continue ;
+        }
+      }
 
+      /*
+       * Allocate the loop wrapper.
+       */
       auto ldi = allocationFunction(function, funcPDG, loop, LI, PDT);
 
       /*

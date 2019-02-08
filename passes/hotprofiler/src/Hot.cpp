@@ -68,6 +68,17 @@ double Hot::getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) {
 
   return v2 / v1;
 }
+      
+uint64_t Hot::getLoopInstructions (Loop *loop){
+  uint64_t insts = 0;
+
+  for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
+    auto bb = *bbi;
+    insts += this->getBasicBlockInstructions(bb);
+  }
+
+  return insts;
+}
  
 uint64_t Hot::getFunctionInstructions (Function *f){
   auto insts = this->functionInstructions[f];

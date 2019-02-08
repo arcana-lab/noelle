@@ -36,6 +36,7 @@ namespace llvm {
       /*
        * Loops
        */
+      uint64_t getLoopInstructions (Loop *loop);
 
 
       /*
