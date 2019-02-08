@@ -76,7 +76,21 @@ SequentialSegment::SequentialSegment (
   auto computeKILL = [](Instruction *, DataFlowResult *) {
     return ;
   };
-  auto computeOUT = [](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
+  auto computeOUT = [LDI](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
+
+    /*
+     * Check if the successor is the header.
+     * In this case, we do not propagate the reachable instructions.
+     * We do this because we are interested in understanding the reachability of instructions within a single iteration.
+     */
+    auto succBB = succ->getParent();
+    if (succBB == LDI->header){
+      return ;
+    }
+
+    /*
+     * Propagate the data flow values.
+     */
     auto& inS = df->IN(succ);
     OUT.insert(inS.begin(), inS.end());
     return ;
