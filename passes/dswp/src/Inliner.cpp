@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void DSWP::inlineQueueCalls (DSWPLoopDependenceInfo *LDI, int taskIndex) {
+void DSWP::inlineQueueCalls (int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
   std::set<CallInst *> callsToInline;
   for (auto &queueInstrPair : task->queueInstrMap) {

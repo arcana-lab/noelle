@@ -87,6 +87,7 @@ bool HELIX::apply (
    * Spill loop carried dependencies of the original loop
    */
   spillLoopCarriedDataDependencies(LDI);
+  // FIXME: Spilling the old loop invalidates many data structures within LDI. Reconstruct LDI
 
   /*
    * Fetch the indices of live-in and live-out variables of the loop being parallelized.

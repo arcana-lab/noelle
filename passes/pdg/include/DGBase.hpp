@@ -101,7 +101,7 @@ namespace llvm {
        * Merging/Extracting Graphs
        */
       std::set<DGNode<T> *> getTopLevelNodes(bool onlyInternal = false);
-      std::set<DGNode<T> *> getLeafNodes();
+      std::set<DGNode<T> *> getLeafNodes(bool onlyInternal = false);
       std::vector<std::set<DGNode<T> *> *> getDisconnectedSubgraphs();
       std::set<DGNode<T> *> getNextDepthNodes(DGNode<T> *node);
       std::set<DGNode<T> *> getPreviousDepthNodes(DGNode<T> *node);
@@ -367,10 +367,19 @@ namespace llvm {
   }
 
   template <class T>
-  std::set<DGNode<T> *> DG<T>::getLeafNodes()
+  std::set<DGNode<T> *> DG<T>::getLeafNodes(bool onlyInternal)
   {
     std::set<DGNode<T> *> leafNodes;
-    for (auto node : allNodes) if (node->numOutgoingEdges() == 0) leafNodes.insert(node);
+    if (onlyInternal) {
+      for (auto node : allNodes)
+        if (node->numOutgoingEdges() == 0)
+          leafNodes.insert(node);
+    } else {
+      for (auto nodePair : internalNodePairs()) {
+        if (nodePair.second->numOutgoingEdges() == 0)
+          leafNodes.insert(nodePair.second);
+      }
+    }
     return leafNodes;
   }
 

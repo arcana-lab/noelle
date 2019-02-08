@@ -16,7 +16,47 @@ void HELIX::squeezeSequentialSegments (
   LoopDependenceInfo *LDI,
   std::vector<SequentialSegment *> *sss
   ){
-  //TODO
+
+  /*
+   * TODO: For each SCC of each SS:
+   * Ensure all externals are outside the sequential segment
+   * whether before (incoming) or after (outgoing)
+   * Why do that when you can just try to squeeze firsts and lasts
+   * as close to each other as possible given their dependencies!
+   */
+
+  for (auto ss : *sss) {
+    for (auto scc : ss->getSCCs()) {
+      // Determine first and last instructions
+      std::set<Value *> firsts, lasts;
+      auto &backEdges = LDI->sccdagAttrs.interIterDeps[scc];
+      for (auto edge : backEdges) {
+        lasts.insert(edge->getOutgoingT());
+        firsts.insert(edge->getIncomingT());
+      }
+
+      std::set<Value *> extractBefore, extractAfter;
+
+      for (auto externalPair : scc->externalNodePairs()) {
+        auto externalV = externalPair.first;
+        if (externalPair.second->numOutgoingEdges() > 0) {
+          // Confirm the external is before the first instructions in the SCC
+          auto executesBefore = false;
+          for (auto first : firsts) {
+            // TODO: Determine execution order between first and externalV
+          }
+          if (!executesBefore) extractBefore.insert(externalV);
+        } else {
+          // Confirm the external is after the last instructions in the SCC
+          auto executesAfter = false;
+          for (auto last : lasts) {
+            // TODO: Determine execution order between last and externalV
+          }
+          if (!executesAfter) extractAfter.insert(externalV);
+        }
+      }
+    }
+  }
 
   return ;
 }

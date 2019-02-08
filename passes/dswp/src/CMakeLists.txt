@@ -1,6 +1,5 @@
 # Sources
 set(Srcs 
-  DSWPLoopDependenceInfo.cpp
   DSWP.cpp
   CFG.cpp
   Environment.cpp

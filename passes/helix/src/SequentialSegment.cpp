@@ -26,6 +26,11 @@ SequentialSegment::SequentialSegment (
   this->ID = ID;
 
   /*
+   * Track the SCCset for later optimizations
+   */
+  this->sccs = sccs;
+
+  /*
    * Identify all the dependent instructions
    */
   std::set<Instruction *> allInstructionsInSS;

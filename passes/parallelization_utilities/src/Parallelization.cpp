@@ -127,8 +127,7 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
 
 std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   Module *module,
-  double minimumHotness,
-  std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &, PostDominatorTree &)> allocationFunction
+  double minimumHotness
   ){
 
   /* 
@@ -309,7 +308,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       /*
        * Allocate the loop wrapper.
        */
-      auto ldi = allocationFunction(function, funcPDG, loop, LI, PDT);
+      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, PDT);
 
       /*
        * Check if we have to filter loops.

@@ -12,7 +12,7 @@
 
 using namespace llvm;
   
-bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, HELIX &helix, Heuristics *h){
+bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, HELIX &helix, Heuristics *h){
 
   /*
    * Assertions.
@@ -34,7 +34,7 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
    * Collect information about the non-trivial SCCs
    */
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
-  collectSCCDAGAttrs(LDI, h, SE);
+  LDI->sccdagAttrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
 
   /*
    * Gauge the limits of each parallelization scheme
@@ -131,12 +131,4 @@ bool Parallelizer::parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization
     errs() << "Parallelizer: Exit\n";
   }
   return true;
-}
-
-void Parallelizer::collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h, ScalarEvolution &SE) {
-
-  /*
-   * Evaluate the SCCs (e.g., which ones are commutative) of the SCCDAG of the loop.
-   */
-  LDI->sccdagAttrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
 }
