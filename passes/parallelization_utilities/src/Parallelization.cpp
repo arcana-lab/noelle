@@ -303,6 +303,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
           currentLoopIndex++;
           continue ;
         }
+        errs() << "Parallelizer:  Loop hotness = " << hotness << "\n" ;
       }
 
       /*
