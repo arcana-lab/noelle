@@ -190,8 +190,6 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       auto shouldBeParallelized = this->fetchTheNextValue(indexString);
       assert(shouldBeParallelized == 0 || shouldBeParallelized == 1);
 
-      errs() << "SHOULD BE PARALLELIZED: " << shouldBeParallelized << "\n";
-
       /*
        * Unroll factor
        */
@@ -260,8 +258,8 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Check if the function is hot.
      */
-    auto mInsts = profiles.getModuleInstructions();
-    if (mInsts > 0){
+    if (profiles.isAvailable()){
+      auto mInsts = profiles.getModuleInstructions();
       auto fInsts = profiles.getFunctionInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
       if (hotness <= minimumHotness){
@@ -288,10 +286,16 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     auto loops = LI.getLoopsInPreorder();
 
     /*
-     * Append these loops.
+     * Consider these loops.
      */
     for (auto loop : loops){
       loop->print(errs() << "This is loop: " << currentLoopIndex << "\n");
+
+      /*
+       * Check if the loop is hot enough.
+       */
+      
+
       auto ldi = allocationFunction(function, funcPDG, loop, LI, PDT);
 
       /*

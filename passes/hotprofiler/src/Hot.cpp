@@ -20,6 +20,10 @@ Hot::Hot ()
   {
   return ;
 }
+      
+bool Hot::isAvailable (void) const {
+  return (this->getModuleInstructions() > 0);
+}
 
 void Hot::setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations){
 

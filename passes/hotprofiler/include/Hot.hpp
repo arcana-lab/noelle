@@ -19,6 +19,8 @@ namespace llvm {
 
       Hot ();
 
+      bool isAvailable (void) const ;
+
       /*
        * Basic blocks.
        */
