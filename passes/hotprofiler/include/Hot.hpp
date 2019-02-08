@@ -19,6 +19,8 @@ namespace llvm {
 
       Hot ();
 
+      bool isAvailable (void) const ;
+
       /*
        * Basic blocks.
        */
@@ -34,6 +36,7 @@ namespace llvm {
       /*
        * Loops
        */
+      uint64_t getLoopInstructions (Loop *loop);
 
 
       /*

@@ -20,6 +20,10 @@ Hot::Hot ()
   {
   return ;
 }
+      
+bool Hot::isAvailable (void) const {
+  return (this->getModuleInstructions() > 0);
+}
 
 void Hot::setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations){
 
@@ -63,6 +67,17 @@ double Hot::getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) {
   auto v2 = (double )this->bbInvocations[targetBB];
 
   return v2 / v1;
+}
+      
+uint64_t Hot::getLoopInstructions (Loop *loop){
+  uint64_t insts = 0;
+
+  for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
+    auto bb = *bbi;
+    insts += this->getBasicBlockInstructions(bb);
+  }
+
+  return insts;
 }
  
 uint64_t Hot::getFunctionInstructions (Function *f){
