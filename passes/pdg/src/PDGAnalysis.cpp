@@ -48,27 +48,16 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool llvm::PDGAnalysis::runOnModule (Module &M){
-  this->programDependenceGraph = new PDG();
-
-  this->programDependenceGraph->populateNodesOf(M);
-  constructEdgesFromUseDefs(this->programDependenceGraph);
-  constructEdgesFromAliases(this->programDependenceGraph, M);
-  constructEdgesFromControl(this->programDependenceGraph, M);
-
-  collectCGUnderFunctionMain(M);
-  auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
-  this->allocAA = &getAnalysis<AllocAA>();
-  removeEdgesNotUsedByParSchemes(this->programDependenceGraph);
-
+  this->M = &M;
   return false;
 }
 
-llvm::PDGAnalysis::PDGAnalysis() : ModulePass{ID} {
-  return ;
-}
+llvm::PDGAnalysis::PDGAnalysis()
+  : ModulePass{ID}, M{nullptr}, programDependenceGraph{nullptr}, CGUnderMain{} {}
 
 llvm::PDGAnalysis::~PDGAnalysis() {
-  delete this->programDependenceGraph;
+  if (this->programDependenceGraph)
+    delete this->programDependenceGraph;
 }
 
 llvm::PDG * llvm::PDGAnalysis::getFunctionPDG (Function &F) {
@@ -81,11 +70,30 @@ llvm::PDG * llvm::PDGAnalysis::getFunctionPDG (Function &F) {
   auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
   constructEdgesFromControlForFunction(pdg, F, PDT);
 
+  trimDGUsingCustomAliasAnalysis(pdg);
+
   return pdg;
 }
 
 llvm::PDG * llvm::PDGAnalysis::getPDG (){
+  if (this->programDependenceGraph)
+    delete this->programDependenceGraph;
+  this->programDependenceGraph = new PDG();
+  this->programDependenceGraph->populateNodesOf(*this->M);
+
+  constructEdgesFromUseDefs(this->programDependenceGraph);
+  constructEdgesFromAliases(this->programDependenceGraph, *this->M);
+  constructEdgesFromControl(this->programDependenceGraph, *this->M);
+
+  trimDGUsingCustomAliasAnalysis(this->programDependenceGraph);
+
   return this->programDependenceGraph;
+}
+
+void llvm::PDGAnalysis::trimDGUsingCustomAliasAnalysis (PDG *pdg) {
+  collectCGUnderFunctionMain(*this->M);
+  this->allocAA = &getAnalysis<AllocAA>();
+  removeEdgesNotUsedByParSchemes(pdg);
 }
 
 void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {

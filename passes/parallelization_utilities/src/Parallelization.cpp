@@ -130,11 +130,6 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   double minimumHotness
   ){
 
-  /* 
-   * Fetch the PDG.
-   */
-  auto graph = getAnalysis<PDGAnalysis>().getPDG();
-
   /*
    * Fetch the profiles.
    */
@@ -271,7 +266,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Fetch the function dependence graph.
      */
-    auto funcPDG = graph->createFunctionSubgraph(*function);
+    auto funcPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
 
     /*
      * Fetch the dominators.

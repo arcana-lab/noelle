@@ -39,10 +39,13 @@ namespace llvm {
       PDG * getPDG () ;
 
     private:
+      Module *M;
       PDG *programDependenceGraph;
       AllocAA *allocAA;
       std::set<Function *> CGUnderMain;
       PDGVerbosity verbose;
+
+      void trimDGUsingCustomAliasAnalysis (PDG *pdg);
 
       // TODO: Find a way to extract this into a helper module for all passes in the PDG project
       void collectCGUnderFunctionMain (Module &M);
