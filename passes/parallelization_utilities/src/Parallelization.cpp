@@ -127,14 +127,8 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
 
 std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   Module *module,
-  double minimumHotness,
-  std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &, PostDominatorTree &)> allocationFunction
+  double minimumHotness
   ){
-
-  /* 
-   * Fetch the PDG.
-   */
-  auto graph = getAnalysis<PDGAnalysis>().getPDG();
 
   /*
    * Fetch the profiles.
@@ -241,6 +235,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
    * Append loops of each function.
    */
   auto currentLoopIndex = 0;
+  errs() << "Parallelizer: Filter out cold code\n" ;
   for (auto function : *functions){
 
     /*
@@ -263,7 +258,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       auto fInsts = profiles.getFunctionInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
       if (hotness <= minimumHotness){
-        errs() << "Parallelizer: disable \"" << function->getName() << "\" as cold function\n";
+        errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
         continue ;
       }
     }
@@ -271,7 +266,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Fetch the function dependence graph.
      */
-    auto funcPDG = graph->createFunctionSubgraph(*function);
+    auto funcPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
 
     /*
      * Fetch the dominators.
@@ -289,7 +284,6 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      * Consider these loops.
      */
     for (auto loop : loops){
-      loop->print(errs() << "This is loop: " << currentLoopIndex << "\n");
 
       /*
        * Check if the loop is hot enough.
@@ -299,15 +293,17 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         auto lInsts = profiles.getLoopInstructions(loop);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness <= minimumHotness){
-          errs() << "Parallelizer:  Disable \"" << currentLoopIndex << "\"\n";
+          errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
+          currentLoopIndex++;
           continue ;
         }
+        errs() << "Parallelizer:  Loop hotness = " << hotness << "\n" ;
       }
 
       /*
        * Allocate the loop wrapper.
        */
-      auto ldi = allocationFunction(function, funcPDG, loop, LI, PDT);
+      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, PDT);
 
       /*
        * Check if we have to filter loops.

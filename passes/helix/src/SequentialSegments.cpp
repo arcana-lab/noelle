@@ -37,6 +37,10 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
     auto requireSS = false;
     for (auto scc : *subset){
       auto sccType = scc->getType();
+
+      /*
+       * FIXME(angelo): A reducible SCC should not be sequential in nature
+       */
       if (  (sccType == SCC::SEQUENTIAL)  ||
             (sccType == SCC::REDUCIBLE) ){
         requireSS = true;

@@ -32,4 +32,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/DSWP.hpp DESTINATION include)
+install(PROGRAMS include/AllocAA.hpp DESTINATION include)

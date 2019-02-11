@@ -3,7 +3,6 @@ set(Srcs
   Pass.cpp
   Parallelizer.cpp
   Helper.cpp
-  LoopSelector.cpp
   Partition.cpp
   Printer.cpp
 )
@@ -26,7 +25,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../pdg/include ../../threadpool/include ../../parallelization_utilities/include ../../heuristics/include ../../parallelization_technique/include ../../dswp/include ../../doall/include ../../helix/include ./)
+include_directories(${LLVM_INCLUDE_DIRS} ../../alloc_aa/include ../../pdg/include ../../threadpool/include ../../parallelization_utilities/include ../../heuristics/include ../../parallelization_technique/include ../../dswp/include ../../doall/include ../../helix/include ./)
 
 # Declare the LLVM pass to compile
 add_llvm_loadable_module(${PassName} ${Srcs})

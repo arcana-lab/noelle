@@ -10,6 +10,7 @@
  */
 #include "HELIX.hpp"
 #include "SequentialSegment.hpp"
+#include "DataFlow.hpp"
 
 using namespace llvm ;
 
@@ -23,6 +24,11 @@ SequentialSegment::SequentialSegment (
    * Set the ID
    */
   this->ID = ID;
+
+  /*
+   * Track the SCCset for later optimizations
+   */
+  this->sccs = sccs;
 
   /*
    * Identify all the dependent instructions
@@ -57,6 +63,46 @@ SequentialSegment::SequentialSegment (
    * Identify the locations where wait instructions should be placed.
    */
   this->entries = allInstructionsInSS;
+
+  /*
+   * Run the data flow analysis needed to identify the locations where signal instructions will be placed.
+   */
+  auto dfa = DataFlowAnalysis{};
+  auto computeGEN = [](Instruction *i, DataFlowResult *df) {
+    auto& gen = df->GEN(i);
+    gen.insert(i);
+    return ;
+  };
+  auto computeKILL = [](Instruction *, DataFlowResult *) {
+    return ;
+  };
+  auto computeOUT = [LDI](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
+
+    /*
+     * Check if the successor is the header.
+     * In this case, we do not propagate the reachable instructions.
+     * We do this because we are interested in understanding the reachability of instructions within a single iteration.
+     */
+    auto succBB = succ->getParent();
+    if (succBB == LDI->header){
+      return ;
+    }
+
+    /*
+     * Propagate the data flow values.
+     */
+    auto& inS = df->IN(succ);
+    OUT.insert(inS.begin(), inS.end());
+    return ;
+  } ;
+  auto computeIN = [](std::set<Value *>& IN, Instruction *inst, DataFlowResult *df) {
+    auto& genI = df->GEN(inst);
+    auto& outI = df->OUT(inst);
+    IN.insert(outI.begin(), outI.end());
+    IN.insert(genI.begin(), genI.end());
+    return ;
+  };
+  dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
 
   /*
    * Identify the locations where signal instructions should be placed.

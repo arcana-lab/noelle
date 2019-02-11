@@ -22,7 +22,10 @@ DSWP::DSWP (
   ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v},
   forceParallelization{forceParallelization},
   enableMergingSCC{enableSCCMerging},
-  coresPerLoopOverride{coresPerOverride}
+  coresPerLoopOverride{coresPerOverride},
+  queues{}, queueArrayType{nullptr},
+  sccToStage{}, stageArrayType{nullptr},
+  zeroIndexForBaseArray{nullptr}
   {
 
   /*
@@ -44,8 +47,7 @@ DSWP::DSWP (
   return ;
 }
 
-void DSWP::initialize (LoopDependenceInfo *baseLDI, Heuristics *h) {
-  auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
+void DSWP::initialize (LoopDependenceInfo *LDI, Heuristics *h) {
   if (coresPerLoopOverride > 0) {
     LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
   }
@@ -53,7 +55,7 @@ void DSWP::initialize (LoopDependenceInfo *baseLDI, Heuristics *h) {
 }
 
 bool DSWP::canBeAppliedToLoop (
-  LoopDependenceInfo *baseLDI,
+  LoopDependenceInfo *LDI,
   Parallelization &par,
   Heuristics *h,
   ScalarEvolution &SE
@@ -78,12 +80,11 @@ bool DSWP::canBeAppliedToLoop (
 }
 
 bool DSWP::apply (
-  LoopDependenceInfo *baseLDI,
+  LoopDependenceInfo *LDI,
   Parallelization &par,
   Heuristics *h,
   ScalarEvolution &SE
 ) {
-  auto LDI = static_cast<DSWPLoopDependenceInfo *>(baseLDI);
 
   /*
    * Determine DSWP tasks (stages)
@@ -128,9 +129,9 @@ bool DSWP::apply (
   /*
    * Helper declarations
    */
-  LDI->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
-  LDI->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), LDI->queues.size());
-  LDI->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), this->tasks.size());
+  this->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
+  this->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), this->queues.size());
+  this->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), this->tasks.size());
 
   /*
    * Create the pipeline stages (technique tasks)
@@ -146,13 +147,13 @@ bool DSWP::apply (
     /*
      * Load pointers of all queues for the current pipeline stage at the function's entry
      */
-    generateLoadsOfQueuePointers(LDI, par, i);
+    generateLoadsOfQueuePointers(par, i);
 
     /*
      * Add push/pop operations from queues between the current pipeline stage and the connected ones
      */
-    popValueQueues(LDI, par, i);
-    pushValueQueues(LDI, par, i);
+    popValueQueues(par, i);
+    pushValueQueues(par, i);
 
     /*
      * Load all loop live-in values at the entry point of the task.
@@ -188,7 +189,7 @@ bool DSWP::apply (
     /*
      * Inline recursively calls to queues.
      */
-    inlineQueueCalls(LDI, i);
+    inlineQueueCalls(i);
 
     if (this->verbose >= Verbosity::Maximal) {
       task->F->print(errs() << "Pipeline stage " << i << ":\n"); errs() << "\n";

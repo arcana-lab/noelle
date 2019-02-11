@@ -11,7 +11,7 @@
 #include "SCCDAG.hpp"
 #include "DSWP.hpp"
 
-void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) const {
+void llvm::DSWP::printStageSCCs (LoopDependenceInfo *LDI) const {
   if (this->verbose == Verbosity::Disabled) {
     return ;
   }
@@ -29,7 +29,7 @@ void llvm::DSWP::printStageSCCs (DSWPLoopDependenceInfo *LDI) const {
   return ;
 }
 
-void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI) const {
+void llvm::DSWP::printStageQueues (LoopDependenceInfo *LDI) const {
 
   /*
    * Check if we should print.
@@ -63,7 +63,7 @@ void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI) const {
    * Print the queues.
    */
   int count = 0;
-  for (auto &queue : LDI->queues) {
+  for (auto &queue : this->queues) {
     errs() << "DSWP:    Queue: " << count++ << "\n";
     queue->producer->print(errs() << "DSWP:     Producer:\t"); errs() << "\n";
     for (auto consumer : queue->consumers) {
@@ -74,7 +74,7 @@ void llvm::DSWP::printStageQueues (DSWPLoopDependenceInfo *LDI) const {
   return ;
 }
 
-void llvm::DSWP::printEnv (DSWPLoopDependenceInfo *LDI) const {
+void llvm::DSWP::printEnv (LoopDependenceInfo *LDI) const {
 
   /*
    * Check if we should print.

@@ -1,0 +1,55 @@
+---
+Angelo: Notes about the LLVM 5.0.0 AliasAnalysis implementation
+---
+
+These notes were produced as I studied LLVM's BasicAliasAnalysis.
+
+-- llvm/Analysis/AliasAnalysis.h
+
+Declares enumerations:
+  AliasResult, ModRefInfo
+    These are actually insanely clever; When AAResults aggregates
+    results, it bitwise ANDs them together. The most conservative
+    results are enumeration values consisting of all 1s bits, the
+    least conservative results consist of all 0s bits.
+
+  FunctionModRefLocation
+    a function's means of memory access?
+  FunctionModRefBehavior
+    (argument / inaccessible memory read/write)
+  
+  AAResults (not templated surprisingly) that contains
+    a friend, the templateable AAResultBase
+    an array of templated Concept
+
+  Concept is an interface to ensure the AA methods are implemented 
+
+  Model is templated with a AAResult type, it stores an instance
+  of the AAResult, exposes a setter, and overrides (implements)
+  the Concepts AA methods with the AAResult instance.
+
+  AAResultBase is a templated T class that implements a class AAResultProxy,
+  has a templated friend class AAResults::Model it templates with T, stores
+  a reference to the aggregated AAResults within it, all so that the one true
+  AAResults instance "mixin" its implementations of certain AA methods.
+
+    Mind you, AAResults iterates its Concepts (which are really Models),
+    so why any CRTP (curiously recursive template pattern) is used is beyond me
+
+-- llvm/Analysis/CaptureTracking.h
+  Insightful work list traversals of Use of Values to determine
+  whether a value is captured by a function (dereferenced/stored elsewhere)
+    PointerMayBeCaptured, PointerMayBeCapturedBefore (an instruction)
+
+-- llvm/Analysis/MemoryBuiltins.h
+  Boolean functions to check whether a Value is an allocation function,
+  malloc like, calloc like, a free call, etc...
+
+  getObjectSize API with options Exact, Min, Max, where the size is from the
+  start of that Ptr to the known end of the object pointed to
+    Implements a subclass of InstVisitor to traverse values intraprodecurally
+    and calculate the size and offset of a Value, from which the remainder
+    size is a simple calculation for getObjectSize to finish
+
+-- llvm/Analysis/ValueTracking.h
+  Misc helpers that understand Value's properties (numerical ones)

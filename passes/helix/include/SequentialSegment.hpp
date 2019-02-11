@@ -12,6 +12,7 @@
 
 #include "HELIX.hpp"
 #include "SCCDAGPartition.hpp"
+#include "llvm/ADT/iterator_range.h"
 
 namespace llvm {
 
@@ -25,9 +26,13 @@ namespace llvm {
 
       int32_t getID (void);
 
+      iterator_range<SCCset::iterator>
+      getSCCs() { return make_range(sccs->begin(), sccs->end()); }
+
     private:
       std::set<Instruction *> entries;
       std::set<Instruction *> exits;
+      SCCset *sccs;
       int32_t ID;
   };
 

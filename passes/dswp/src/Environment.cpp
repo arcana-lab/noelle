@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void DSWP::collectLiveInEnvInfo (DSWPLoopDependenceInfo *LDI) {
+void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
   for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
     auto producer = LDI->environment->producerAt(envIndex);
 
@@ -39,7 +39,7 @@ void DSWP::collectLiveInEnvInfo (DSWPLoopDependenceInfo *LDI) {
   }
 }
 
-void DSWP::collectLiveOutEnvInfo (DSWPLoopDependenceInfo *LDI) {
+void DSWP::collectLiveOutEnvInfo (LoopDependenceInfo *LDI) {
   for (auto envIndex : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto producer = LDI->environment->producerAt(envIndex);
 

@@ -8,7 +8,7 @@ RUNTIME_CFLAGS="-DDSWP_STATS"
 RUNTIME_CFLAGS=""
 # Other parallelization options:
 # -doall-chunk-size=NUMBER, -doall-cores-per=NUMBER
-PARALLELIZATION_OPTIONS=-pdg-verbose=1 -dswp-verbose=1 -dswp-force -dswp-cores-per=2
+PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -dswp-verbose=1 -dswp-force -dswp-cores-per=2
 OPT_LEVEL=-O3
 
 INCLUDES=-I../../include/threadpool/include
@@ -16,7 +16,7 @@ THREADER=Parallelizer_utils
 OPTIMIZED=parallelized
 
 TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
-PDGPASS=-load ~/CAT/lib/PDGAnalysis.so
+PDGPASS=-load ~/CAT/lib/AllocAA.so -load ~/CAT/lib/PDGAnalysis.so
 PRINTPASSES=$(PDGPASS) -load ~/CAT/lib/PDGPrinter.so
 PARALLELIZATION_TECHNIQUES= -load ~/CAT/lib/DSWP.so -load ~/CAT/lib/DOALL.so -load ~/CAT/lib/HELIX.so
 PRE_OPTPASSES=$(PDGPASS) -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/DGSimplify.so

@@ -14,7 +14,7 @@ using namespace llvm;
 
 void DSWP::registerQueue (
   Parallelization &par,
-  DSWPLoopDependenceInfo *LDI,
+  LoopDependenceInfo *LDI,
   DSWPTask *fromStage,
   DSWPTask *toStage,
   Instruction *producer,
@@ -24,18 +24,18 @@ void DSWP::registerQueue (
   /*
    * Find/create the push queue in the producer stage
    */
-  int queueIndex = LDI->queues.size();
+  int queueIndex = this->queues.size();
   QueueInfo *queueInfo = nullptr;
   for (auto queueI : fromStage->producerToQueues[producer]) {
-    if (LDI->queues[queueI]->toStage != toStage->order) continue;
+    if (this->queues[queueI]->toStage != toStage->order) continue;
     queueIndex = queueI;
-    queueInfo = LDI->queues[queueIndex].get();
+    queueInfo = this->queues[queueIndex].get();
     break;
   }
-  if (queueIndex == LDI->queues.size()) {
-    LDI->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType())));
+  if (queueIndex == this->queues.size()) {
+    this->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType())));
     fromStage->producerToQueues[producer].insert(queueIndex);
-    queueInfo = LDI->queues[queueIndex].get();
+    queueInfo = this->queues[queueIndex].get();
 
     /*
      * Confirm a new queue is of a size handled by the parallelizer
@@ -64,7 +64,7 @@ void DSWP::registerQueue (
   queueInfo->toStage = toStage->order;
 }
 
-void DSWP::collectControlQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {
   auto findContaining = [&](Value *val) -> std::pair<DSWPTask *, SCC *> {
     for (auto techniqueTask : this->tasks) {
       auto task = (DSWPTask *)techniqueTask;
@@ -104,7 +104,7 @@ void DSWP::collectControlQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization
   }
 }
 
-void DSWP::collectDataQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {
   for (auto techniqueTask : this->tasks) {
     auto toStage = (DSWPTask *)techniqueTask;
     std::set<SCC *> allSCCs(toStage->removableSCCs.begin(), toStage->removableSCCs.end());
@@ -113,7 +113,7 @@ void DSWP::collectDataQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &p
       for (auto sccEdge : LDI->loopSCCDAG->fetchNode(scc)->getIncomingEdges()) {
         auto fromSCC = sccEdge->getOutgoingT();
         if (LDI->sccdagAttrs.canBeCloned(fromSCC)) continue;
-        auto fromStage = LDI->sccToStage[fromSCC];
+        auto fromStage = this->sccToStage[fromSCC];
         if (fromStage == toStage) continue;
 
         /*
@@ -132,7 +132,6 @@ void DSWP::collectDataQueueInfo (DSWPLoopDependenceInfo *LDI, Parallelization &p
 }
 
 void DSWP::generateLoadsOfQueuePointers (
-  DSWPLoopDependenceInfo *LDI,
   Parallelization &par,
   int taskIndex
 ) {
@@ -140,17 +139,17 @@ void DSWP::generateLoadsOfQueuePointers (
   IRBuilder<> entryBuilder(task->entryBlock);
   auto queuesArray = entryBuilder.CreateBitCast(
     task->queueArg,
-    PointerType::getUnqual(LDI->queueArrayType)
+    PointerType::getUnqual(this->queueArrayType)
   );
 
   /*
    * Load this stage's relevant queues
    */
   auto loadQueuePtrFromIndex = [&](int queueIndex) -> void {
-    auto queueInfo = LDI->queues[queueIndex].get();
+    auto queueInfo = this->queues[queueIndex].get();
     auto queueIndexValue = cast<Value>(ConstantInt::get(par.int64, queueIndex));
     auto queuePtr = entryBuilder.CreateInBoundsGEP(queuesArray, ArrayRef<Value*>({
-      LDI->zeroIndexForBaseArray,
+      this->zeroIndexForBaseArray,
       queueIndexValue
     }));
     auto parQueueIndex = par.queues.queueSizeToIndex[queueInfo->bitLength];
@@ -172,13 +171,13 @@ void DSWP::generateLoadsOfQueuePointers (
   for (auto queueIndex : task->popValueQueues) loadQueuePtrFromIndex(queueIndex);
 }
 
-void DSWP::popValueQueues (DSWPLoopDependenceInfo *LDI, Parallelization &par, int taskIndex) {
+void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
   auto &bbClones = task->basicBlockClones;
   auto &iClones = task->instructionClones;
 
   for (auto queueIndex : task->popValueQueues) {
-    auto &queueInfo = LDI->queues[queueIndex];
+    auto &queueInfo = this->queues[queueIndex];
     auto queueInstrs = task->queueInstrMap[queueIndex].get();
     auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
 
@@ -215,13 +214,13 @@ void DSWP::popValueQueues (DSWPLoopDependenceInfo *LDI, Parallelization &par, in
   }
 }
 
-void DSWP::pushValueQueues (DSWPLoopDependenceInfo *LDI, Parallelization &par, int taskIndex) {
+void DSWP::pushValueQueues (Parallelization &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
   auto &iClones = task->instructionClones;
 
   for (auto queueIndex : task->pushValueQueues) {
     auto queueInstrs = task->queueInstrMap[queueIndex].get();
-    auto queueInfo = LDI->queues[queueIndex].get();
+    auto queueInfo = this->queues[queueIndex].get();
     auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
     
     auto pClone = iClones[queueInfo->producer];

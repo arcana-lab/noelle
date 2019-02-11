@@ -37,7 +37,6 @@ bool HotProfiler::runOnModule (Module &M) {
     if (F.empty()){
       continue ;
     }
-    errs() << "HotProfiler:   Function = " << F.getName() << "\n" ;
     auto& bfi = getAnalysis<BlockFrequencyInfoWrapperPass>(F).getBFI();
     auto& bpi = getAnalysis<BranchProbabilityInfoWrapperPass>(F).getBPI();
 

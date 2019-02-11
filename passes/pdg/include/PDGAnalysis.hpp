@@ -15,6 +15,7 @@
 #include "llvm/IR/Instructions.h"
 
 #include "PDG.hpp"
+#include "AllocAA.hpp"
 
 using namespace llvm;
 
@@ -38,12 +39,16 @@ namespace llvm {
       PDG * getPDG () ;
 
     private:
+      Module *M;
       PDG *programDependenceGraph;
-      std::set<std::string> readOnlyFunctionNames, allocatorFunctionNames, memorylessFunctionNames;
+      AllocAA *allocAA;
       std::set<Function *> CGUnderMain;
-      std::set<GlobalValue *> primitiveArrayGlobals;
-      std::set<Instruction *> primitiveArrayLocals;
       PDGVerbosity verbose;
+
+      void trimDGUsingCustomAliasAnalysis (PDG *pdg);
+
+      // TODO: Find a way to extract this into a helper module for all passes in the PDG project
+      void collectCGUnderFunctionMain (Module &M);
 
       template <class InstI, class InstJ>
       void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, InstI *, InstJ *, bool WAW);
@@ -62,15 +67,7 @@ namespace llvm {
       void constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA);
       void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
 
-      void collectCGUnderFunctionMain (Module &M);
-      void collectFunctionCallsTo (std::set<Function *> &called, std::set<CallInst *> &calls);
       void removeEdgesNotUsedByParSchemes (PDG *pdg);
-
-      void collectPrimitiveArrayValues (Module &M);
-      bool isPrimitiveArray (Value *V, std::set<Instruction *> &userInstructions);
-      bool isPrimitiveArrayPointer (Value *V, std::set<Instruction *> &userInstructions);
-      bool doesValueNotEscape (std::set<Instruction *> checked, Instruction *I);
-      bool collectUserInstructions (Value *V, std::set<Instruction *> &userInstructions);
 
       bool edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge);
       bool isBackedgeOfLoadStoreIntoSameOffsetOfArray (
@@ -81,18 +78,8 @@ namespace llvm {
       bool isBackedgeIntoSameGlobal (DGEdge<Value> *edge);
       bool isMemoryAccessIntoDifferentArrays (DGEdge<Value> *edge);
 
-      std::pair<Value *, GetElementPtrInst *>
-      getPrimitiveArrayAccess (Value *V, bool mustBeIVGovernedAccess = false);
-      Value *getPrimitiveArray (Value *V);
-      Value *getLocalPrimitiveArray (Value *V);
-      Value *getGlobalValuePrimitiveArray (Value *V);
-      Value *getMemoryPointerOperand (Value *V);
-
       bool canPrecedeInCurrentIteration (Instruction *from, Instruction *to);
-      bool areGEPIndicesConstantOrIV (GetElementPtrInst *gep);
-      bool areIdenticalGEPAccessesInSameLoop (GetElementPtrInst *gep1, GetElementPtrInst *gep2);
 
-      void collectMemorylessFunctions (Module &M);
       bool edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge);
   };
 }

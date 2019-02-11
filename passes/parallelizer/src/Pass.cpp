@@ -86,9 +86,9 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = this->getLoopsToParallelize(M, parallelizationFramework);
-  errs() << "Parallelizer:  There are " << loopsToParallelize.size() << " loops to parallelize\n";
-  for (auto loop : loopsToParallelize){
+  auto loopsToParallelize = parallelizationFramework.getModuleLoops(&M, this->minHot);
+  errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
+  for (auto loop : *loopsToParallelize){
     errs() << "Parallelizer:    Function \"" << loop->function->getName() << "\"\n";
     errs() << "Parallelizer:    Try to parallelize the loop \"" << *loop->header->getFirstNonPHI() << "\"\n";
   }
@@ -96,9 +96,9 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Parallelize the loops selected.
    */
-  errs() << "Parallelizer:  Parallelize all " << loopsToParallelize.size() << " loops, one at a time\n";
+  errs() << "Parallelizer:  Parallelize all " << loopsToParallelize->size() << " loops, one at a time\n";
   auto modified = false;
-  for (auto loop : loopsToParallelize){
+  for (auto loop : *loopsToParallelize){
 
     /*
      * Parallelize the current loop with Parallelizer.
@@ -110,6 +110,8 @@ bool Parallelizer::runOnModule (Module &M) {
      */
     delete loop;
   }
+
+  delete loopsToParallelize;
 
   return modified;
 }

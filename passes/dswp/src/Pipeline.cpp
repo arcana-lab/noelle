@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
+void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
   std::vector<Task *> techniqueTasks;
   auto &depthOrdered = this->partition->getDepthOrderedSubsets();
   for (auto subset : depthOrdered) {
@@ -24,7 +24,7 @@ void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
     techniqueTasks.push_back(task);
     for (auto scc : *subset) {
       task->stageSCCs.insert(scc);
-      LDI->sccToStage[scc] = task;
+      this->sccToStage[scc] = task;
     }
   }
 
@@ -33,7 +33,7 @@ void DSWP::generateStagesFromPartitionedSCCs (DSWPLoopDependenceInfo *LDI) {
   assert(this->numTaskInstances == this->partition->numberOfPartitions());
 }
 
-void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
+void DSWP::addRemovableSCCsToStages (LoopDependenceInfo *LDI) {
   for (auto techniqueTask : this->tasks) {
     auto task = (DSWPTask *)techniqueTask;
     std::set<DGNode<SCC> *> visitedNodes;
@@ -64,7 +64,7 @@ void DSWP::addRemovableSCCsToStages (DSWPLoopDependenceInfo *LDI) {
   }
 }
 
-void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelization &par) {
+void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &par) {
 
   /*
    * Fetch the module.
@@ -97,7 +97,7 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
   /*
    * Call the stage dispatcher with the environment, queues array, and stages array
    */
-  auto queuesCount = cast<Value>(ConstantInt::get(par.int64, LDI->queues.size()));
+  auto queuesCount = cast<Value>(ConstantInt::get(par.int64, this->queues.size()));
   auto stagesCount = cast<Value>(ConstantInt::get(par.int64, this->numTaskInstances));
 
   /*
@@ -116,17 +116,17 @@ void DSWP::createPipelineFromStages (DSWPLoopDependenceInfo *LDI, Parallelizatio
 }
 
 Value * DSWP::createStagesArrayFromStages (
-  DSWPLoopDependenceInfo *LDI,
+  LoopDependenceInfo *LDI,
   IRBuilder<> funcBuilder,
   Parallelization &par
 ) {
-  auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(LDI->stageArrayType));
+  auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(this->stageArrayType));
   auto stageCastType = PointerType::getUnqual(this->tasks[0]->F->getType());
   for (int i = 0; i < this->numTaskInstances; ++i) {
     auto stage = this->tasks[i];
     auto stageIndex = cast<Value>(ConstantInt::get(par.int64, i));
     auto stagePtr = funcBuilder.CreateInBoundsGEP(stagesAlloca, ArrayRef<Value*>({
-      LDI->zeroIndexForBaseArray,
+      this->zeroIndexForBaseArray,
       stageIndex
     }));
     auto stageCast = funcBuilder.CreateBitCast(stagePtr, stageCastType);
@@ -137,16 +137,16 @@ Value * DSWP::createStagesArrayFromStages (
 }
 
 Value * DSWP::createQueueSizesArrayFromStages (
-  DSWPLoopDependenceInfo *LDI,
+  LoopDependenceInfo *LDI,
   IRBuilder<> funcBuilder,
   Parallelization &par
 ) {
-  auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(par.int64, LDI->queues.size())));
-  for (int i = 0; i < LDI->queues.size(); ++i) {
-    auto &queue = LDI->queues[i];
+  auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(par.int64, this->queues.size())));
+  for (int i = 0; i < this->queues.size(); ++i) {
+    auto &queue = this->queues[i];
     auto queueIndex = cast<Value>(ConstantInt::get(par.int64, i));
     auto queuePtr = funcBuilder.CreateInBoundsGEP(queuesAlloca, ArrayRef<Value*>({
-      LDI->zeroIndexForBaseArray,
+      this->zeroIndexForBaseArray,
       queueIndex
     }));
     auto queueCast = funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(par.int64));

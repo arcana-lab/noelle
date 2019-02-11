@@ -1,18 +1,14 @@
 # Sources
 set(Srcs 
-  EnvBuilder.cpp
-  LoopEnvironment.cpp
-  SCCDAGAttrs.cpp
-  LoopDependenceInfo.cpp
-  SCCDAGPartition.cpp
-  Parallelization.cpp
+  DataFlowResult.cpp
+  DataFlowAnalysis.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Parallelization")
+set(PassName "DataFlow")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -26,7 +22,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../alloc_aa/include ../../pdg/include ../../hotprofiler/include ../include)
+include_directories(${LLVM_INCLUDE_DIRS} ../../parallelization_utilities/include ../include ./)
 
 # Declare the LLVM pass to compile
 add_llvm_loadable_module(${PassName} ${Srcs})
