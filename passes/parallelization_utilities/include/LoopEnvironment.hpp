@@ -52,19 +52,19 @@ namespace llvm {
 
       std::set<Value *> &consumersOf (Value *prod);
 
+      bool isProducer (Value *producer) const ;
+
+    private:
+      void addLiveInProducer (Value *producer);
+      void addLiveOutProducer (Value *producer);
+      void addProducer (Value *producer, bool liveIn);
+
       /*
        * DEPRECATED(angelo): use of this API suggests poor environment 
        * algorithm, as all producers should just be iterated over for
        * any arbitrary operation
        */
-      int indexOfProducer (Value *producer);
-
-      bool isProducer (Value *producer) const ;
-
-    private:
-      void addPreLoopProducer (Value *producer);
-      void addPostLoopProducer (Value *producer);
-      void addProducer (Value *producer, bool liveIn);
+      int indexOfProducer (Value *producer) { return producerIndexMap[producer]; }
 
       std::vector<Value *> envProducers;
       std::unordered_map<Value *, int> producerIndexMap;

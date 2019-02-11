@@ -81,6 +81,7 @@ namespace llvm {
 
     private:
       Function *waitSSCall, *signalSSCall;
+      EnvBuilder *loopCarriedEnvBuilder;
 
   };
 

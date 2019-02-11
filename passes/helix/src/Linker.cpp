@@ -55,6 +55,7 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   helixBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
     (Value *)tasks[0]->F,
     envPtr,
+    // TODO: insert loopCarriedArray here
     numCores,
     numOfSS
   }));

@@ -84,10 +84,9 @@ bool HELIX::apply (
   assert(helixTask == this->tasks[0]);
 
   /*
-   * Spill loop carried dependencies of the original loop
+   * Spill loop carried dependencies into a separate environment array
    */
   spillLoopCarriedDataDependencies(LDI);
-  // FIXME: Spilling the old loop invalidates many data structures within LDI. Reconstruct LDI
 
   /*
    * Fetch the indices of live-in and live-out variables of the loop being parallelized.
@@ -98,21 +97,22 @@ bool HELIX::apply (
   /*
    * Add all live-in and live-out variables as variables to be included in the environment.
    */
-  std::set<int> allEnvironementVariables{liveInVars.begin(), liveInVars.end()};
-  allEnvironementVariables.insert(liveOutVars.begin(), liveOutVars.end());
+  std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
+  nonReducableVars.insert(liveOutVars.begin(), liveOutVars.end());
+  std::set<int> reducableVars;
 
   /*
    * Add the memory location of the environment used to store the exit block taken to leave the parallelized loop.
    * This location exists only if there is more than one loop exit.
    */
   if (LDI->numberOfExits() > 1){ 
-    allEnvironementVariables.insert(LDI->environment->indexOfExitBlock());
+    nonReducableVars.insert(LDI->environment->indexOfExitBlock());
   }
 
   /*
    * Build the single environment that is shared between all instances of the HELIX task.
    */
-  this->initializeEnvironmentBuilder(LDI, allEnvironementVariables);
+  this->initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
 
   /*
    * Clone the sequential loop and store the cloned instructions/basic blocks within the single task of HELIX.

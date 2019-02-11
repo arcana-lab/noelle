@@ -108,9 +108,19 @@ bool DSWP::apply (
   /*
    * Collect information on stages' environments
    */
-  std::set<int> nonReducableVars;
+  auto liveInVars = LDI->environment->getEnvIndicesOfLiveInVars();
+  auto liveOutVars = LDI->environment->getEnvIndicesOfLiveOutVars();
+  std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
+  nonReducableVars.insert(liveOutVars.begin(), liveOutVars.end());
   std::set<int> reducableVars;
-  for (auto i = 0; i < LDI->environment->envSize(); ++i) nonReducableVars.insert(i);
+
+  /*
+   * Should an exit block environment variable be necessary, register one 
+   */
+  if (LDI->numberOfExits() > 1){ 
+    nonReducableVars.insert(LDI->environment->indexOfExitBlock());
+  }
+
   initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
   collectLiveInEnvInfo(LDI);
   collectLiveOutEnvInfo(LDI);

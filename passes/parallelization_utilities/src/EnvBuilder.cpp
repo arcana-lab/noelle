@@ -12,8 +12,8 @@
 
 using namespace llvm ;
 
-EnvUserBuilder::EnvUserBuilder (LoopEnvironment &le)
-  : LE{le}, envIndexToPtr{}, liveInInds{}, liveOutInds{} {
+EnvUserBuilder::EnvUserBuilder ()
+  : envIndexToPtr{}, liveInInds{}, liveOutInds{} {
   envIndexToPtr.clear();
   liveInInds.clear();
   liveOutInds.clear();
@@ -24,7 +24,8 @@ EnvUserBuilder::~EnvUserBuilder () {
 
 void EnvUserBuilder::createEnvPtr (
   IRBuilder<> builder,
-  int envIndex
+  int envIndex,
+  Type *type
 ) {
   if (!this->envArray) {
     errs() << "A reference to the environment array has not been set for this user!\n";
@@ -43,7 +44,7 @@ void EnvUserBuilder::createEnvPtr (
   );
   auto envPtr = builder.CreateBitCast(
     builder.CreateLoad(envGEP),
-    PointerType::getUnqual(this->LE.typeOfEnv(envIndex))
+    PointerType::getUnqual(type)
   );
 
   this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
@@ -52,6 +53,7 @@ void EnvUserBuilder::createEnvPtr (
 void EnvUserBuilder::createReducableEnvPtr (
   IRBuilder<> builder,
   int envIndex,
+  Type *type,
   int reducerCount,
   Value *reducerIndV
 ) {
@@ -87,21 +89,20 @@ void EnvUserBuilder::createReducableEnvPtr (
   );
   auto envPtr = builder.CreateBitCast(
     builder.CreateLoad(envGEP),
-    PointerType::getUnqual(this->LE.typeOfEnv(envIndex))
+    PointerType::getUnqual(type)
   );
 
   this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
 }
 
-EnvBuilder::EnvBuilder (LoopEnvironment &le, LLVMContext &CXT)
-  : LE{le}, envIndexToVar{}, envIndexToReducableVar{},
-    envUsers{}, numReducers{-1} {
-  auto int8 = IntegerType::get(CXT, 8);
-  auto ptrTy_int8 = PointerType::getUnqual(int8);
-  this->envArrayType = ArrayType::get(ptrTy_int8, this->LE.envSize());
+EnvBuilder::EnvBuilder (LLVMContext &cxt)
+  : CXT{cxt}, envTypes{}, envUsers{},
+    envIndexToVar{}, envIndexToReducableVar{},
+    numReducers{-1}, envSize{-1} {
   envIndexToVar.clear();
   envIndexToReducableVar.clear();
   envUsers.clear();
+  envArrayType = nullptr;
   envArray = envArrayInt8Ptr = nullptr;
 }
 
@@ -111,15 +112,28 @@ EnvBuilder::~EnvBuilder () {
 
 void EnvBuilder::createEnvUsers (int numUsers) {
   for (int i = 0; i < numUsers; ++i) {
-    this->envUsers.push_back(new EnvUserBuilder(this->LE));
+    this->envUsers.push_back(new EnvUserBuilder());
   }
 }
 
+// TODO: Adjust users of createEnvVariables to pass the Type map
 void EnvBuilder::createEnvVariables (
+  std::vector<Type *> &varTypes,
   std::set<int> &singleVarIndices,
   std::set<int> &reducableVarIndices,
   int reducerCount
 ) {
+  assert(envSize == -1 && "Environment variables must be fully determined at once\n");
+  this->envSize = singleVarIndices.size() + reducableVarIndices.size();
+
+  assert(this->envSize == varTypes.size()
+    && "Environment variables must either be singular or reducible\n");
+  this->envTypes = std::vector<Type *>(varTypes.begin(), varTypes.end());
+
+  auto int8 = IntegerType::get(this->CXT, 8);
+  auto ptrTy_int8 = PointerType::getUnqual(int8);
+  this->envArrayType = ArrayType::get(ptrTy_int8, this->envSize);
+
   numReducers = reducerCount;
   for (auto envIndex : singleVarIndices) {
     envIndexToVar[envIndex] = nullptr;
@@ -130,6 +144,12 @@ void EnvBuilder::createEnvVariables (
 }
 
 void EnvBuilder::generateEnvArray (IRBuilder<> builder) {
+  if(envSize == -1) {
+    errs() << "Environment array variables must be specified!\n"
+      << "\tSee the EnvBuilder API call createEnvVariables\n";
+    abort();
+  }
+
   auto int8 = IntegerType::get(builder.getContext(), 8);
   auto ptrTy_int8 = PointerType::getUnqual(int8);
   this->envArray = builder.CreateAlloca(this->envArrayType);
@@ -147,18 +167,6 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
     abort();
   }
 
-  /*
-   * Check the variables created.
-   */
-  auto variablesCreated = envIndexToVar.size() + envIndexToReducableVar.size();
-  if (variablesCreated != this->LE.envSize()) {
-    errs() << "EnvBuilder: ERROR = Not all environment variables have been created.\n" ;
-    errs() << "\tEnvironment varibles = " << LE.envSize() << "\n";
-    errs() << "\tVariables created = " << variablesCreated << "\n";
-    errs() << "\tSee the EnvBuilder API call createEnvVariables\n";
-    abort();
-  }
-
   auto int8 = IntegerType::get(builder.getContext(), 8);
   auto ptrTy_int8 = PointerType::getUnqual(int8);
   auto int64 = IntegerType::get(builder.getContext(), 64);
@@ -170,23 +178,28 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
     auto store = builder.CreateStore(alloca, depCast);
   };
 
-  std::set<int> singleVars;
-  for (auto indexVarPair : envIndexToVar) {
-    singleVars.insert(indexVarPair.first);
-  }
-  for (auto envIndex : singleVars) {
-    Type *envType = this->LE.typeOfEnv(envIndex);
+  /*
+   * NOTE: Manipulation of the map cannot be done while iterating it
+   */
+  std::set<int> singleIndices;
+  for (auto indexVarPair : envIndexToVar)
+    singleIndices.insert(indexVarPair.first);
+  for (auto envIndex : singleIndices) {
+    auto envType = envTypes[envIndex];
     auto varAlloca = builder.CreateAlloca(envType);
     envIndexToVar[envIndex] = varAlloca;
 
     storeEnvAllocaInArray(this->envArray, envIndex, varAlloca);
   }
 
-  std::set<int> reducableVars;
-  for (auto indexVarPair : envIndexToReducableVar) {
-    reducableVars.insert(indexVarPair.first);
-  }
-  for (auto envIndex : reducableVars) {
+  /*
+   * NOTE: No manipulation and iteration at the same time
+   */
+  std::set<int> reducableIndices;
+  for (auto indexVarPair : envIndexToReducableVar)
+    reducableIndices.insert(indexVarPair.first);
+  for (auto envIndex : reducableIndices) {
+    auto envType = envTypes[envIndex];
     auto reduceArrType = ArrayType::get(ptrTy_int8, numReducers);
     auto reduceArrAlloca = builder.CreateAlloca(reduceArrType);
 
@@ -195,7 +208,6 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
     /*
      * Create environment variable's array, one slot per user
      */
-    Type *envType = this->LE.typeOfEnv(envIndex);
     for (auto i = 0; i < numReducers; ++i) {
       auto varAlloca = builder.CreateAlloca(envType);
       envIndexToReducableVar[envIndex].push_back(varAlloca);
