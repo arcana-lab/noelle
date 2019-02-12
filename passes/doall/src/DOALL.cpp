@@ -241,7 +241,7 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
     initialValues[envInd] = prodPHI->getIncomingValue(initValPHIIndex);
   }
 
-  auto builder = new IRBuilder<>(LDI->entryPointOfParallelizedLoop);
+  auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
   this->envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues);
 
   /*
@@ -263,8 +263,8 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    * Create the entry and exit points of the function that will include the parallelized loop.
    */
   auto &cxt = LDI->function->getContext();
-  LDI->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
-  LDI->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+  this->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+  this->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
 
   /*
    * Create the environment.
@@ -290,7 +290,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Call the function that incudes the parallelized loop.
    */
-  IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
+  IRBuilder<> doallBuilder(this->entryPointOfParallelizedLoop);
   doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
     (Value *)tasks[0]->F,
     envPtr,
@@ -306,7 +306,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Jump to the unique successor of the loop.
    */
-  doallBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
+  doallBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
   return ;
 }

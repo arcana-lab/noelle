@@ -90,14 +90,14 @@ void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI
 }
 
 void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LDI) {
-  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
+  IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
     builder.CreateStore(LDI->environment->producerAt(envIndex), envBuilder->getEnvVar(envIndex));
   }
 }
 
 void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
-  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
+  IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (int envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto prod = LDI->environment->producerAt(envInd);
 
@@ -111,7 +111,7 @@ void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *
 
     for (auto consumer : LDI->environment->consumersOf(prod)) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
-        depPHI->addIncoming(envVar, LDI->exitPointOfParallelizedLoop);
+        depPHI->addIncoming(envVar, this->exitPointOfParallelizedLoop);
         continue;
       }
       prod->print(errs() << "Producer of environment variable:\t"); errs() << "\n";

@@ -65,12 +65,6 @@ namespace llvm {
     SCCDAGAttrs sccdagAttrs;
 
     /*
-     * Parallelized loop
-     */
-    BasicBlock *entryPointOfParallelizedLoop;
-    BasicBlock *exitPointOfParallelizedLoop;
-
-    /*
      * Parallelization
      */
     uint32_t maximumNumberOfCoresForTheParallelization;

@@ -50,6 +50,8 @@ namespace llvm {
       ) const = 0 ;
 
       Value * getEnvArray () { return envBuilder->getEnvArray(); }
+      BasicBlock *getParLoopEntryPoint () { return entryPointOfParallelizedLoop; }
+      BasicBlock *getParLoopExitPoint () { return exitPointOfParallelizedLoop; }
 
       virtual void reset () ;
 
@@ -170,6 +172,7 @@ namespace llvm {
        */
       Function *taskDispatcher;
       FunctionType *taskType;
+      BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
       std::vector<Task *> tasks;
       int numTaskInstances;
   };

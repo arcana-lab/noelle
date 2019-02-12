@@ -60,26 +60,25 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
    * Parallelize the loop.
    */
   auto codeModified = false;
-  Value *envArray;
+  ParallelizationTechnique *usedTechnique = nullptr;
   if (doall.canBeAppliedToLoop(LDI, par, h, SE)){
 
     /*
      * Apply DOALL.
      */
-    codeModified = doall.apply(LDI, par, h, SE);
-    envArray = doall.getEnvArray();
     doall.reset();
-
+    codeModified = doall.apply(LDI, par, h, SE);
+    usedTechnique = &doall;
   } else if (helix.canBeAppliedToLoop(LDI, par, h, SE)) {
 
     /*
      * Apply HELIX
      */
-    codeModified = helix.apply(LDI, par, h, SE);
-    envArray = helix.getEnvArray();
     helix.reset();
-
+    codeModified = helix.apply(LDI, par, h, SE);
+    usedTechnique = &helix;
   } else {
+    dswp.reset();
     dswp.initialize(LDI, h);
     if (dswp.canBeAppliedToLoop(LDI, par, h, SE)) {
 
@@ -87,9 +86,8 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
        * Apply DSWP.
        */
       codeModified = dswp.apply(LDI, par, h, SE);
-      envArray = dswp.getEnvArray();
+      usedTechnique = &dswp;
     }
-    dswp.reset();
   }
 
   /*
@@ -98,9 +96,11 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
   if (!codeModified){
     return false;
   }
-  assert(LDI->entryPointOfParallelizedLoop != nullptr);
-  assert(LDI->exitPointOfParallelizedLoop != nullptr);
+  Value *envArray = usedTechnique->getEnvArray();
   assert(envArray != nullptr);
+  BasicBlock *entryPoint = usedTechnique->getParLoopEntryPoint();
+  BasicBlock *exitPoint = usedTechnique->getParLoopExitPoint();
+  assert(entryPoint != nullptr && exitPoint != nullptr);
 
   /*
    * The loop has been parallelized.
@@ -114,8 +114,8 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
   par.linkParallelizedLoopToOriginalFunction(
     LDI->function->getParent(),
     LDI->preHeader,
-    LDI->entryPointOfParallelizedLoop,
-    LDI->exitPointOfParallelizedLoop,
+    entryPoint,
+    exitPoint, 
     envArray,
     exitIndex,
     LDI->loopExitBlocks

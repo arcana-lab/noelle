@@ -305,6 +305,14 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        */
       auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, PDT);
 
+      auto ldiDo = [&](Function *f, int loopIndex = 0) -> LoopDependenceInfo *{
+        auto fPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*f);
+        auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+        auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
+        auto l = LI.getLoopsInPreorder()[0];
+        return new LoopDependenceInfo(f, fPDG, l, LI, PDT);
+      };
+
       /*
        * Check if we have to filter loops.
        */

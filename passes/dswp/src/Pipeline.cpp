@@ -75,8 +75,8 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &p
    * Create a basic block in the original function where the parallelized loop exists.
    * This basic block will include code needed to execute the parallelized loop.
    */
-  LDI->entryPointOfParallelizedLoop = BasicBlock::Create(M->getContext(), "", LDI->function);
-  LDI->exitPointOfParallelizedLoop = LDI->entryPointOfParallelizedLoop;
+  this->entryPointOfParallelizedLoop = BasicBlock::Create(M->getContext(), "", LDI->function);
+  this->exitPointOfParallelizedLoop = this->entryPointOfParallelizedLoop;
 
   this->allocateEnvironmentArray(LDI);
   this->populateLiveInEnvironment(LDI);
@@ -85,7 +85,7 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &p
   /*
    * Reference the stages in an array
    */
-  IRBuilder<> *builder = new IRBuilder<>(LDI->entryPointOfParallelizedLoop);
+  IRBuilder<> *builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
   auto stagesPtr = createStagesArrayFromStages(LDI, *builder, par);
 
   /*
