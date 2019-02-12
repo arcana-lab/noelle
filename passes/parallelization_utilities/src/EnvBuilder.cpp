@@ -33,19 +33,14 @@ void EnvUserBuilder::createEnvPtr (
   }
 
   auto int64 = IntegerType::get(builder.getContext(), 64);
-  auto envIndV = cast<Value>(ConstantInt::get(int64, envIndex));
+  auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
+  auto envIndV = cast<Value>(ConstantInt::get(int64, envIndex * 8));
 
   auto envGEP = builder.CreateInBoundsGEP(
     this->envArray,
-    ArrayRef<Value*>({
-      cast<Value>(ConstantInt::get(int64, 0)),
-      envIndV
-    })
+    ArrayRef<Value*>({ zeroV, envIndV })
   );
-  auto envPtr = builder.CreateBitCast(
-    builder.CreateLoad(envGEP),
-    PointerType::getUnqual(type)
-  );
+  auto envPtr = builder.CreateBitCast(envGEP, PointerType::getUnqual(type));
 
   this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
 }
@@ -66,31 +61,21 @@ void EnvUserBuilder::createReducableEnvPtr (
   auto ptrTy_int8 = PointerType::getUnqual(int8);
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
-  auto envIndV = cast<Value>(ConstantInt::get(int64, envIndex));
+  auto envIndV = cast<Value>(ConstantInt::get(int64, envIndex * 8));
 
   auto envReduceGEP = builder.CreateInBoundsGEP(
     this->envArray,
-    ArrayRef<Value*>({
-      zeroV,
-      envIndV
-    })
+    ArrayRef<Value*>({ zeroV, envIndV })
   );
-  auto envReducePtr = builder.CreateBitCast(
-    builder.CreateLoad(envReduceGEP),
-    PointerType::getUnqual(ArrayType::get(ptrTy_int8, reducerCount))
-  );
+  auto arrPtr = PointerType::getUnqual(ArrayType::get(int64, reducerCount * 8));
+  auto envReducePtr = builder.CreateBitCast(envReduceGEP, PointerType::getUnqual(arrPtr));
 
+  auto reduceIndAlignedV = builder.CreateMul(reducerIndV, ConstantInt::get(int64, 8));
   auto envGEP = builder.CreateInBoundsGEP(
-    envReducePtr,
-    ArrayRef<Value*>({
-      zeroV,
-      reducerIndV,
-    })
+    builder.CreateLoad(envReducePtr),
+    ArrayRef<Value*>({ zeroV, reduceIndAlignedV })
   );
-  auto envPtr = builder.CreateBitCast(
-    builder.CreateLoad(envGEP),
-    PointerType::getUnqual(type)
-  );
+  auto envPtr = builder.CreateBitCast(envGEP, PointerType::getUnqual(type));
 
   this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
 }
@@ -130,9 +115,9 @@ void EnvBuilder::createEnvVariables (
     && "Environment variables must either be singular or reducible\n");
   this->envTypes = std::vector<Type *>(varTypes.begin(), varTypes.end());
 
-  auto int8 = IntegerType::get(this->CXT, 8);
-  auto ptrTy_int8 = PointerType::getUnqual(int8);
-  this->envArrayType = ArrayType::get(ptrTy_int8, this->envSize);
+  auto int64 = IntegerType::get(this->CXT, 64);
+  // auto ptrTy_int8 = PointerType::getUnqual(int8);
+  this->envArrayType = ArrayType::get(int64, this->envSize * 8);
 
   numReducers = reducerCount;
   for (auto envIndex : singleVarIndices) {
@@ -171,11 +156,12 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
   auto ptrTy_int8 = PointerType::getUnqual(int8);
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
-  auto storeEnvAllocaInArray = [&](Value *arr, int envIndex, AllocaInst *alloca) -> void {
-    auto indValue = cast<Value>(ConstantInt::get(int64, envIndex));
+  auto fetchCastedEnvPtr = [&](Value *arr, int envIndex, Type *ptrType) -> Value * {
+    // NOTE: Environment values are 64 byte aligned
+    auto indValue = cast<Value>(ConstantInt::get(int64, envIndex * 8));
     auto envPtr = builder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ zeroV, indValue }));
-    auto depCast = builder.CreateBitCast(envPtr, PointerType::getUnqual(alloca->getType()));
-    auto store = builder.CreateStore(alloca, depCast);
+    auto cast = builder.CreateBitCast(envPtr, ptrType);
+    return cast;
   };
 
   /*
@@ -185,11 +171,8 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
   for (auto indexVarPair : envIndexToVar)
     singleIndices.insert(indexVarPair.first);
   for (auto envIndex : singleIndices) {
-    auto envType = envTypes[envIndex];
-    auto varAlloca = builder.CreateAlloca(envType);
-    envIndexToVar[envIndex] = varAlloca;
-
-    storeEnvAllocaInArray(this->envArray, envIndex, varAlloca);
+    auto ptrType = PointerType::getUnqual(envTypes[envIndex]);
+    envIndexToVar[envIndex] = fetchCastedEnvPtr(this->envArray, envIndex, ptrType);
   }
 
   /*
@@ -199,20 +182,20 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
   for (auto indexVarPair : envIndexToReducableVar)
     reducableIndices.insert(indexVarPair.first);
   for (auto envIndex : reducableIndices) {
-    auto envType = envTypes[envIndex];
-    auto reduceArrType = ArrayType::get(ptrTy_int8, numReducers);
+    auto ptrType = PointerType::getUnqual(envTypes[envIndex]);
+    auto reduceArrType = ArrayType::get(int64, numReducers * 8);
     auto reduceArrAlloca = builder.CreateAlloca(reduceArrType);
 
-    storeEnvAllocaInArray(this->envArray, envIndex, reduceArrAlloca);
+    auto reduceArrPtrType = PointerType::getUnqual(reduceArrAlloca->getType());
+    auto envPtr = fetchCastedEnvPtr(this->envArray, envIndex, reduceArrPtrType);
+    builder.CreateStore(reduceArrAlloca, envPtr);
 
     /*
      * Create environment variable's array, one slot per user
      */
     for (auto i = 0; i < numReducers; ++i) {
-      auto varAlloca = builder.CreateAlloca(envType);
-      envIndexToReducableVar[envIndex].push_back(varAlloca);
-
-      storeEnvAllocaInArray(reduceArrAlloca, i, varAlloca);
+      auto reducePtr = fetchCastedEnvPtr(reduceArrAlloca, i, ptrType);
+      envIndexToReducableVar[envIndex].push_back(reducePtr);
     }
   }
 }

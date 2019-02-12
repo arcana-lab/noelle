@@ -440,15 +440,11 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
       envArray,
       ArrayRef<Value*>({
         cast<Value>(ConstantInt::get(int64, 0)),
-        envIndexForExitVariable
+        endBuilder.CreateMul(envIndexForExitVariable, ConstantInt::get(int64, 8))
       })
     );
-    auto exitEnvCast = endBuilder.CreateBitCast(
-      endBuilder.CreateLoad(exitEnvPtr),
-      PointerType::getUnqual(int32)
-    );
-    auto envVar = endBuilder.CreateLoad(exitEnvCast);
-    auto exitSwitch = endBuilder.CreateSwitch(envVar, loopExitBlocks[0]);
+    auto exitEnvCast = endBuilder.CreateIntCast(endBuilder.CreateLoad(exitEnvPtr), int32, /*isSigned=*/false);
+    auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
     for (int i = 1; i < loopExitBlocks.size(); ++i) {
       exitSwitch->addCase(ConstantInt::get(int32, i), loopExitBlocks[i]);
     }
