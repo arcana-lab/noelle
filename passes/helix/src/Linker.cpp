@@ -23,8 +23,6 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
    * Create the entry and exit points of the function that will include the parallelized loop.
    */
   auto &cxt = LDI->function->getContext();
-  this->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
-  this->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
 
   /*
    * Create the environment.

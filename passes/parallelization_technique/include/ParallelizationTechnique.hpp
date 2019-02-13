@@ -35,8 +35,7 @@ namespace llvm {
       virtual bool apply (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        Heuristics *h,
-        ScalarEvolution &SE
+        Heuristics *h
       ) = 0;
 
       /*
@@ -45,8 +44,7 @@ namespace llvm {
       virtual bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        Heuristics *h,
-        ScalarEvolution &SE
+        Heuristics *h
       ) const = 0 ;
 
       Value * getEnvArray () { return envBuilder->getEnvArray(); }

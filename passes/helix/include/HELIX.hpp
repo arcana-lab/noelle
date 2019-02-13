@@ -35,15 +35,13 @@ namespace llvm {
       bool apply (
         LoopDependenceInfo *LDI, 
         Parallelization &par, 
-        Heuristics *h, 
-        ScalarEvolution &SE
+        Heuristics *h
         ) override ;
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI, 
         Parallelization &par, 
-        Heuristics *h, 
-        ScalarEvolution &SE
+        Heuristics *h
         ) const override ;
 
       Function *getTaskFunction () { return tasks[0]->F; }
@@ -52,15 +50,13 @@ namespace llvm {
       void createParallelizableTask (
         LoopDependenceInfo *LDI,
         Parallelization &par, 
-        Heuristics *h, 
-        ScalarEvolution &SE
+        Heuristics *h
       );
 
       void synchronizeTask (
         LoopDependenceInfo *LDI,
         Parallelization &par, 
-        Heuristics *h, 
-        ScalarEvolution &SE
+        Heuristics *h
       );
 
       void addChunkFunctionExecutionAsideOriginalLoop (

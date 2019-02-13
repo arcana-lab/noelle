@@ -56,15 +56,14 @@ HELIX::HELIX (Module &module, Verbosity v)
   return ;
 }
 
-bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
-  return true;
+bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) const {
+  return false;
 }
 
 bool HELIX::apply (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  Heuristics *h,
-  ScalarEvolution &SE
+  Heuristics *h
 ) {
 
   /*
@@ -74,9 +73,9 @@ bool HELIX::apply (
    * using the loop dependence info for that task
    */
   if (this->tasks.size() == 0) {
-    this->createParallelizableTask(LDI, par, h, SE);
+    this->createParallelizableTask(LDI, par, h);
   } else {
-    this->synchronizeTask(LDI, par, h, SE);
+    this->synchronizeTask(LDI, par, h);
   }
 
   return true;
@@ -85,8 +84,7 @@ bool HELIX::apply (
 void HELIX::createParallelizableTask (
   LoopDependenceInfo *LDI,
   Parallelization &par, 
-  Heuristics *h, 
-  ScalarEvolution &SE
+  Heuristics *h
 ){
 
   /*
@@ -184,8 +182,7 @@ void HELIX::createParallelizableTask (
 void HELIX::synchronizeTask (
   LoopDependenceInfo *LDI,
   Parallelization &par, 
-  Heuristics *h, 
-  ScalarEvolution &SE
+  Heuristics *h
 ){
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
