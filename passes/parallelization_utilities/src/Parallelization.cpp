@@ -466,7 +466,6 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   endBuilder.SetInsertPoint(endOfParLoopInOriginalFunc->getTerminator());
   endBuilder.CreateStore(const0, globalBool);
 
-  startOfParLoopInOriginalFunc->getParent()->print(errs() << "THE FUNCTION\n");
   return ;
 }
 
