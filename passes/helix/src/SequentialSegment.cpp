@@ -95,7 +95,6 @@ SequentialSegment::SequentialSegment (
    * Identify the locations where signal and wait instructions should be placed.
    */
   for (auto I : ssInstructions) {
-    I->print(errs() << "I in SS: "); errs() << "\n";
     auto &beforeEntries = dfr->OUT(I);
 
     bool noSSEntries = true;
@@ -106,7 +105,6 @@ SequentialSegment::SequentialSegment (
 
       if (ssInstructions.find(beforeI) != ssInstructions.end()) {
         inSS.insert(beforeI);
-        beforeI->print(errs() << "    Value in before set: "); errs() << "\n";
         noSSEntries = false;
       }
     }

@@ -41,8 +41,7 @@ void HELIX::addSynchronizations (
     /*
      * Reset the value of ssState at the beginning of the iteration (i.e., loop header)
      */
-    auto headerClone = helixTask->basicBlockClones[LDI->header];
-    IRBuilder<> headerBuilder(headerClone->getTerminator());
+    IRBuilder<> headerBuilder(LDI->header->getTerminator());
     headerBuilder.CreateStore(ConstantInt::get(int64, 0), ssState);
 
     /*
@@ -105,7 +104,8 @@ void HELIX::addSynchronizations (
        * If it didn't, then we need to invoke HELIX_wait.
        */
       IRBuilder<> beforeEntryBuilder(beforeEntryBB);
-      auto needToWait = beforeEntryBuilder.CreateICmpEQ(ssState, ConstantInt::get(int64, 0));
+      auto ssStateLoad = beforeEntryBuilder.CreateLoad(ssState);
+      auto needToWait = beforeEntryBuilder.CreateICmpEQ(ssStateLoad, ConstantInt::get(int64, 0));
       beforeEntryBuilder.CreateCondBr(needToWait, ssWaitBB, ssEntryBB);
 
       /*
@@ -128,7 +128,7 @@ void HELIX::addSynchronizations (
       /*
        * Inject a call to HELIX_signal just after "justBeforeExit" 
        */
-      IRBuilder<> beforeExitBuilder(justBeforeExit->getPrevNode());
+      IRBuilder<> beforeExitBuilder(justBeforeExit);
       auto signal = beforeExitBuilder.CreateCall(this->signalSSCall, { ssEntryPtr });
 
       /*
