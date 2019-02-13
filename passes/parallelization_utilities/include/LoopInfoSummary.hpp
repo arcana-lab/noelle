@@ -24,6 +24,7 @@ namespace llvm {
     std::set<LoopSummary *> children;
     int depth;
     BasicBlock *header;
+    std::vector<BasicBlock *> orderedBBs;
     std::set<BasicBlock *> bbs;
     std::set<BasicBlock *> latchBBs;
 
@@ -32,6 +33,8 @@ namespace llvm {
       this->depth = l->getLoopDepth();
       this->header = l->getHeader();
       for (auto bb : l->blocks()) {
+        // NOTE: Unsure if this is program forward order
+        orderedBBs.push_back(bb);
         this->bbs.insert(bb);
         if (l->isLoopLatch(bb)) latchBBs.insert(bb);
       }

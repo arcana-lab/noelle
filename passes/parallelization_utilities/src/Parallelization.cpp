@@ -269,11 +269,9 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     auto funcPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
 
     /*
-     * Fetch the dominators.
+     * Fetch the post dominators.
      */
-    //auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
-    //auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
     /*
      * Fetch all loops of the current function.
@@ -304,14 +302,6 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        * Allocate the loop wrapper.
        */
       auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, PDT);
-
-      auto ldiDo = [&](Function *f, int loopIndex = 0) -> LoopDependenceInfo *{
-        auto fPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*f);
-        auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
-        auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
-        auto l = LI.getLoopsInPreorder()[0];
-        return new LoopDependenceInfo(f, fPDG, l, LI, PDT);
-      };
 
       /*
        * Check if we have to filter loops.
@@ -389,22 +379,6 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   Value *envIndexForExitVariable,
   SmallVector<BasicBlock *, 10> &loopExitBlocks
   ){
-
-  /*
-   * Hoist allocations in the parallelized loop basic block to the function's entry
-   * Possibly rendered obsolete by allocating the environment array at the function's entry
-
-  std::set<Instruction *> allocas;
-  for (auto &I : *startOfParLoopInOriginalFunc) {
-    if (isa<AllocaInst>(I)) allocas.insert(&I);
-  }
-  Instruction *entryI = &*startOfParLoopInOriginalFunc->getParent()->begin()->begin();
-  for (auto I : allocas) {
-    I->removeFromParent();
-    I->insertBefore(entryI);
-  }
-
-   */
 
   /*
    * Create the global variable for the parallelized loop.

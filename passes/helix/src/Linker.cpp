@@ -23,20 +23,21 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
    * Create the entry and exit points of the function that will include the parallelized loop.
    */
   auto &cxt = LDI->function->getContext();
-  LDI->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
-  LDI->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+  this->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+  this->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
 
   /*
    * Create the environment.
-   * This will append store instructions to LDI->entryPointOfParallelizedLoop to initialize the environment array.
+   * This will append store instructions to entryPointOfParallelizedLoop to initialize the environment array.
    */
   this->allocateEnvironmentArray(LDI);
   this->populateLiveInEnvironment(LDI);
 
   /*
-   * Fetch the pointer to the environment.
+   * Fetch the pointer to the environments
    */
   auto envPtr = envBuilder->getEnvArrayInt8Ptr();
+  auto loopCarriedEnvPtr = loopCarriedEnvBuilder->getEnvArrayInt8Ptr();
 
   /*
    * Fetch the number of cores

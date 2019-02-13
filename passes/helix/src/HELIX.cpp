@@ -12,8 +12,8 @@
 #include "HELIXTask.hpp"
 
 HELIX::HELIX (Module &module, Verbosity v)
-  :
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v}
+  : loopCarriedEnvBuilder{nullptr}, loopCarriedPHIs{},
+    ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v}
   {
 
   /*
@@ -57,7 +57,7 @@ HELIX::HELIX (Module &module, Verbosity v)
 }
 
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
-  return false;
+  return true;
 }
 
 bool HELIX::apply (
@@ -66,6 +66,28 @@ bool HELIX::apply (
   Heuristics *h,
   ScalarEvolution &SE
 ) {
+
+  /*
+   * If a task has not been defined, create such a task from the
+   * loop dependence info of the original function's loop
+   * Otherwise, add synchronization to the already defined task
+   * using the loop dependence info for that task
+   */
+  if (this->tasks.size() == 0) {
+    this->createParallelizableTask(LDI, par, h, SE);
+  } else {
+    this->synchronizeTask(LDI, par, h, SE);
+  }
+
+  return true;
+}
+
+void HELIX::createParallelizableTask (
+  LoopDependenceInfo *LDI,
+  Parallelization &par, 
+  Heuristics *h, 
+  ScalarEvolution &SE
+){
 
   /*
    * Print the parallelization request.
@@ -82,11 +104,6 @@ bool HELIX::apply (
   this->generateEmptyTasks(LDI, { helixTask });
   this->numTaskInstances = LDI->maximumNumberOfCoresForTheParallelization;
   assert(helixTask == this->tasks[0]);
-
-  /*
-   * Spill loop carried dependencies into a separate environment array
-   */
-  spillLoopCarriedDataDependencies(LDI);
 
   /*
    * Fetch the indices of live-in and live-out variables of the loop being parallelized.
@@ -131,12 +148,6 @@ bool HELIX::apply (
     envUser->addLiveOutIndex(envIndex);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
-  this->generateCodeToStoreLiveOutVariables(LDI, 0);
-
-  /*
-   * Generate a store to propagate the information about which exit block has been taken from the parallelized loop to the code outside it.
-   */
-  this->generateCodeToStoreExitBlockIndex(LDI, 0);
 
   /*
    * The operands of the cloned instructions still refer to the original ones.
@@ -145,9 +156,9 @@ bool HELIX::apply (
    */
   this->adjustDataFlowToUseClones(LDI, 0);
 
-   /*
-    * Add the unconditional branch from the entry basic block to the header of the loop.
-    */
+  /*
+   * Add the unconditional branch from the entry basic block to the header of the loop.
+   */
   IRBuilder<> entryBuilder(helixTask->entryBlock);
   entryBuilder.CreateBr(helixTask->basicBlockClones[LDI->header]);
 
@@ -156,6 +167,27 @@ bool HELIX::apply (
    */
   IRBuilder<> exitB(helixTask->exitBlock);
   exitB.CreateRetVoid();
+
+  /*
+   * Store final results of loop live-out variables. Note this occurs after data flow is adjusted.
+   * Generate a store to propagate information about which exit block the parallelized loop took.
+   */
+  this->generateCodeToStoreLiveOutVariables(LDI, 0);
+  this->generateCodeToStoreExitBlockIndex(LDI, 0);
+
+  /*
+   * Spill loop carried dependencies into a separate environment array
+   */
+  this->spillLoopCarriedDataDependencies(LDI);
+}
+
+void HELIX::synchronizeTask (
+  LoopDependenceInfo *LDI,
+  Parallelization &par, 
+  Heuristics *h, 
+  ScalarEvolution &SE
+){
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
   /*
    * Identify the sequential segments.
@@ -194,6 +226,4 @@ bool HELIX::apply (
     helixTask->F->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
     errs() << "HELIX: Exit\n";
   }
-
-  return true;
 }

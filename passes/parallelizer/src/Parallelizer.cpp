@@ -76,6 +76,15 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
      */
     helix.reset();
     codeModified = helix.apply(LDI, par, h, SE);
+
+    Function *function = helix.getTaskFunction();
+    auto fPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+    auto l = LI.getLoopsInPreorder()[0];
+    auto newLDI = new LoopDependenceInfo(function, fPDG, l, LI);
+    newLDI->copyParallelizationOptionsFrom(LDI);
+
+    codeModified = helix.apply(newLDI, par, h, SE);
     usedTechnique = &helix;
   } else {
     dswp.reset();

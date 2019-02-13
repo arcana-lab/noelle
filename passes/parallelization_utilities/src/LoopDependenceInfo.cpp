@@ -18,9 +18,45 @@
 using namespace std;
 using namespace llvm;
 
-LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt)
-		: function{f}, functionDG{fG}, DOALLChunkSize{8}, maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency()}
+LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li)
+		: function{f}, functionDG{fG}, DOALLChunkSize{8},
+      maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency()}
   {
+  this->fetchLoopAndBBInfo(li, l);
+  this->createDGsForLoop(l);
+  this->environment = new LoopEnvironment(this->loopDG, this->loopExitBlocks);
+};
+
+LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt)
+		: LoopDependenceInfo{f, fG, l, li}
+  {
+  for (auto bb : l->blocks()) {
+    loopBBtoPD[&*bb] = pdt.getNode(&*bb)->getIDom()->getBlock();
+  }
+};
+
+LoopDependenceInfo::~LoopDependenceInfo() {
+  delete this->loopDG;
+  delete this->loopInternalDG;
+  delete this->loopSCCDAG;
+  delete this->environment;
+
+  return ;
+}
+
+void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) {
+  this->DOALLChunkSize = otherLDI->DOALLChunkSize;
+  this->maximumNumberOfCoresForTheParallelization = otherLDI->maximumNumberOfCoresForTheParallelization;
+}
+
+/*
+ * Fetch the number of exit blocks.
+ */
+uint32_t LoopDependenceInfo::numberOfExits (void) const{
+  return this->loopExitBlocks.size();
+}
+
+void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l) {
 
   /*
    * Create a LoopInfo summary
@@ -38,8 +74,12 @@ LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &
    */
   for (auto bb : l->blocks()){
     this->loopBBs.push_back(&*bb);
-    loopBBtoPD[&*bb] = pdt.getNode(&*bb)->getIDom()->getBlock();
   }
+
+  l->getExitBlocks(loopExitBlocks);
+}
+
+void LoopDependenceInfo::createDGsForLoop (Loop *l){
 
   /*
    * Set the loop dependence graph.
@@ -55,33 +95,4 @@ LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &
   }
   loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
   loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
-
-  l->getExitBlocks(loopExitBlocks);
-
-  environment = new LoopEnvironment(loopDG, loopExitBlocks);
-
-  return ;
-};
-    
-uint32_t LoopDependenceInfo::numberOfExits (void) const{
-
-  /*
-   * Fetch the number of exit blocks.
-   */
-  auto exits = this->loopExitBlocks.size();
-
-  return exits;
-}
-
-void LoopDependenceInfo::createPDGs (void){
-  return ;
-}
-
-llvm::LoopDependenceInfo::~LoopDependenceInfo() {
-  delete loopDG;
-  delete loopInternalDG;
-  delete loopSCCDAG;
-  delete environment;
-
-  return ;
 }

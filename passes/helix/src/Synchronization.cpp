@@ -42,7 +42,7 @@ void HELIX::addSynchronizations (
      * Reset the value of ssState at the beginning of the iteration (i.e., loop header)
      */
     auto headerClone = helixTask->basicBlockClones[LDI->header];
-    IRBuilder<> headerBuilder(headerClone->getTerminator()->getPrevNode());
+    IRBuilder<> headerBuilder(headerClone->getTerminator());
     headerBuilder.CreateStore(ConstantInt::get(int64, 0), ssState);
 
     /*

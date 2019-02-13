@@ -20,6 +20,7 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"
+#include <vector>
 
 namespace llvm {
 
@@ -45,7 +46,23 @@ namespace llvm {
         ScalarEvolution &SE
         ) const override ;
 
+      Function *getTaskFunction () { return tasks[0]->F; }
+
     protected:
+      void createParallelizableTask (
+        LoopDependenceInfo *LDI,
+        Parallelization &par, 
+        Heuristics *h, 
+        ScalarEvolution &SE
+      );
+
+      void synchronizeTask (
+        LoopDependenceInfo *LDI,
+        Parallelization &par, 
+        Heuristics *h, 
+        ScalarEvolution &SE
+      );
+
       void addChunkFunctionExecutionAsideOriginalLoop (
         LoopDependenceInfo *LDI,
         Parallelization &par,
@@ -81,7 +98,9 @@ namespace llvm {
 
     private:
       Function *waitSSCall, *signalSSCall;
+
       EnvBuilder *loopCarriedEnvBuilder;
+      std::vector<PHINode *> loopCarriedPHIs;
 
   };
 

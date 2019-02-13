@@ -125,6 +125,19 @@ void ParallelizationTechnique::generateEmptyTasks (
   LoopDependenceInfo *LDI,
   std::vector<Task *> taskStructs
 ) {
+  if (this->tasks.size() > 0) {
+    errs() << "The technique has been re-initialized without resetting!"
+       << " There are leftover tasks.\n";
+    abort();
+  }
+
+  /*
+   * Setup original loop and task with functions and basic blocks for wiring
+   */
+  auto &cxt = LDI->function->getContext();
+  this->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+  this->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+
   numTaskInstances = taskStructs.size();
   for (auto i = 0; i < numTaskInstances; ++i) {
     auto task = taskStructs[i];
@@ -166,7 +179,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
   /*
    * Clone all basic blocks of the original loop
    */
-  for (auto originBB : LDI->liSummary.topLoop->bbs) {
+  for (auto originBB : LDI->liSummary.topLoop->orderedBBs) {
 
     /*
      * Clone the basic block in the context of the original loop's function

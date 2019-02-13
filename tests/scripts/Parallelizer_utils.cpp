@@ -145,8 +145,9 @@ extern "C" {
   }
 
   void HELIX_dispatcher (
-    void (*parallelizedLoop)(void *, void *, void *, int64_t, int64_t), 
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t), 
     void *env,
+    void *loopCarriedArray,
     int64_t numCores, 
     int64_t numOfsequentialSegments
     ){
@@ -229,7 +230,12 @@ extern "C" {
       /*
        * Launch the thread.
        */
-      localFutures.push_back(pool.submit(parallelizedLoop, env, ssArrayPast, ssArrayFuture, i, numCores));
+      localFutures.push_back(pool.submit(
+        parallelizedLoop,
+        env, loopCarriedArray,
+        ssArrayPast, ssArrayFuture,
+        i, numCores
+      ));
 
       /*
        * Launch the helper thread.
