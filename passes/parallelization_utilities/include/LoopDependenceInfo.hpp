@@ -73,8 +73,21 @@ namespace llvm {
     /*
      * Methods
      */
-    LoopDependenceInfo (Function *f, PDG *fG, Loop *l, LoopInfo &li);
-    LoopDependenceInfo (Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
+    LoopDependenceInfo (
+      Function *f,
+      PDG *fG,
+      Loop *l,
+      LoopInfo &li,
+      ScalarEvolution &SE
+    );
+    LoopDependenceInfo (
+      Function *f,
+      PDG *fG,
+      Loop *l,
+      LoopInfo &li,
+      ScalarEvolution &SE,
+      PostDominatorTree &pdt
+    );
     ~LoopDependenceInfo();
 
     void copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) ;
@@ -85,6 +98,10 @@ namespace llvm {
    private:
     void fetchLoopAndBBInfo (LoopInfo &li, Loop *l) ;
     void createDGsForLoop (Loop *l) ;
+
+    void mergeSingleSyntacticSugarInstrs ();
+    void mergeBranchesWithoutOutgoingEdges ();
+    void mergeTrivialNodesInSCCDAG ();
   };
 
 }

@@ -38,15 +38,13 @@ namespace llvm {
       bool apply (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        Heuristics *h,
-        ScalarEvolution &SE
+        Heuristics *h
       ) override ;
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        Heuristics *h,
-        ScalarEvolution &SE
+        Heuristics *h
       ) const override ;
 
 

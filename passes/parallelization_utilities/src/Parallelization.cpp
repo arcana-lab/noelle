@@ -269,9 +269,10 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     auto funcPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
 
     /*
-     * Fetch the post dominators.
+     * Fetch the post dominators and scalar evolutions
      */
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
+    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
     /*
      * Fetch all loops of the current function.
@@ -301,7 +302,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       /*
        * Allocate the loop wrapper.
        */
-      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, PDT);
+      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, PDT);
 
       /*
        * Check if we have to filter loops.
@@ -465,6 +466,7 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   endBuilder.SetInsertPoint(endOfParLoopInOriginalFunc->getTerminator());
   endBuilder.CreateStore(const0, globalBool);
 
+  startOfParLoopInOriginalFunc->getParent()->print(errs() << "THE FUNCTION\n");
   return ;
 }
 

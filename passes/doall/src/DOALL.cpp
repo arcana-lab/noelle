@@ -44,8 +44,7 @@ DOALL::DOALL (
 bool DOALL::canBeAppliedToLoop (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  Heuristics *h,
-  ScalarEvolution &SE
+  Heuristics *h
 ) const {
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Checking if is a doall loop\n";
@@ -124,8 +123,7 @@ bool DOALL::canBeAppliedToLoop (
 bool DOALL::apply (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  Heuristics *h,
-  ScalarEvolution &SE
+  Heuristics *h
 ) {
   if (chunkSizeOverride > 0) LDI->DOALLChunkSize = chunkSizeOverride;
   if (coresPerLoopOverride > 0) LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;

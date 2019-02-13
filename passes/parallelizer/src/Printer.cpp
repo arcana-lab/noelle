@@ -17,31 +17,6 @@
 #include "SCCDAG.hpp"
 #include "Parallelizer.hpp"
 
-void llvm::Parallelizer::printSCCs (SCCDAG *sccSubgraph){
-
-  /*
-   * Check if we should print.
-   */
-  if (this->verbose <= Verbosity::Minimal){
-    return ;
-  }
-
-  /*
-   * Print the SCCs.
-   */
-  for (auto sccI = sccSubgraph->begin_internal_node_map(); sccI != sccSubgraph->end_internal_node_map(); ++sccI) {
-
-    /*
-     * Fetch and print the current SCC.
-     */
-    errs() << "Parallelizer:   SCC\n" ;
-    auto scc = sccI->first;
-    scc->print(errs(), "Parallelizer:     ");
-  }
-
-  return ;
-}
-
 void llvm::Parallelizer::printLoop (Loop *loop)
 {
   errs() << "Parallelizing the following loop\n" ;

@@ -78,14 +78,14 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &p
   /*
    * Reference the stages in an array
    */
-  IRBuilder<> *builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
-  auto stagesPtr = createStagesArrayFromStages(LDI, *builder, par);
+  IRBuilder<> builder(this->entryPointOfParallelizedLoop);
+  auto stagesPtr = createStagesArrayFromStages(LDI, builder, par);
 
   /*
    * Allocate an array of integers.
    * Each integer represents the bitwidth of each queue that connects pipeline stages.
    */
-  auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, *builder, par);
+  auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, builder, par);
 
   /*
    * Call the stage dispatcher with the environment, queues array, and stages array
@@ -96,16 +96,16 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &p
   /*
    * Add the call to the task dispatcher: "stageDispatcher" (see DSWP constructor)
    */
-  builder->CreateCall(taskDispatcher, ArrayRef<Value*>({
+  builder.CreateCall(taskDispatcher, ArrayRef<Value*>({
     envPtr,
     queueSizesPtr,
     stagesPtr,
     stagesCount,
     queuesCount
   }));
-  delete builder;
 
   this->propagateLiveOutEnvironment(LDI);
+  builder.CreateBr(this->exitPointOfParallelizedLoop);
 }
 
 Value * DSWP::createStagesArrayFromStages (

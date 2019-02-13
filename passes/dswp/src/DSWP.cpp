@@ -57,8 +57,7 @@ void DSWP::initialize (LoopDependenceInfo *LDI, Heuristics *h) {
 bool DSWP::canBeAppliedToLoop (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  Heuristics *h,
-  ScalarEvolution &SE
+  Heuristics *h
 ) const {
   auto canApply = this->partition->numberOfPartitions() > 1;
   if (this->forceParallelization) {
@@ -82,8 +81,7 @@ bool DSWP::canBeAppliedToLoop (
 bool DSWP::apply (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  Heuristics *h,
-  ScalarEvolution &SE
+  Heuristics *h
 ) {
 
   /*

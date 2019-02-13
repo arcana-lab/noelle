@@ -26,17 +26,6 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
   }
 
   /*
-   * Merge SCCs where separation is unnecessary.
-   */
-  mergeTrivialNodesInSCCDAG(LDI);
-
-  /*
-   * Collect information about the non-trivial SCCs
-   */
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
-  LDI->sccdagAttrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
-
-  /*
    * Gauge the limits of each parallelization scheme
    */
   auto numDSWPDependencies = 0, numHELIXDependencies = 0;
@@ -61,40 +50,41 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
    */
   auto codeModified = false;
   ParallelizationTechnique *usedTechnique = nullptr;
-  if (doall.canBeAppliedToLoop(LDI, par, h, SE)){
+  if (doall.canBeAppliedToLoop(LDI, par, h)){
 
     /*
      * Apply DOALL.
      */
     doall.reset();
-    codeModified = doall.apply(LDI, par, h, SE);
+    codeModified = doall.apply(LDI, par, h);
     usedTechnique = &doall;
-  } else if (helix.canBeAppliedToLoop(LDI, par, h, SE)) {
+  } else if (helix.canBeAppliedToLoop(LDI, par, h)) {
 
     /*
      * Apply HELIX
      */
     helix.reset();
-    codeModified = helix.apply(LDI, par, h, SE);
+    codeModified = helix.apply(LDI, par, h);
 
     Function *function = helix.getTaskFunction();
     auto fPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
-    auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+    auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+    auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
     auto l = LI.getLoopsInPreorder()[0];
-    auto newLDI = new LoopDependenceInfo(function, fPDG, l, LI);
+    auto newLDI = new LoopDependenceInfo(function, fPDG, l, LI, SE);
     newLDI->copyParallelizationOptionsFrom(LDI);
 
-    codeModified = helix.apply(newLDI, par, h, SE);
+    codeModified = helix.apply(newLDI, par, h);
     usedTechnique = &helix;
   } else {
     dswp.reset();
     dswp.initialize(LDI, h);
-    if (dswp.canBeAppliedToLoop(LDI, par, h, SE)) {
+    if (dswp.canBeAppliedToLoop(LDI, par, h)) {
 
       /*
        * Apply DSWP.
        */
-      codeModified = dswp.apply(LDI, par, h, SE);
+      codeModified = dswp.apply(LDI, par, h);
       usedTechnique = &dswp;
     }
   }
