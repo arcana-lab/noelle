@@ -70,7 +70,8 @@ SequentialSegment::SequentialSegment (
      * We do this because we are interested in understanding the reachability of instructions within a single iteration.
      */
     auto succBB = succ->getParent();
-    if (succBB == LDI->header){
+    // if (succBB == LDI->header){
+    if (succ == &*LDI->header->begin()) {
       return ;
     }
 
@@ -90,23 +91,30 @@ SequentialSegment::SequentialSegment (
   };
   DataFlowResult *dfr = dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
 
-  auto hasNoSCCEntries = [&ssInstructions](std::set<Value *> &values) -> bool {
-    for (auto V : values) {
-      assert(isa<Instruction>(V) && "Data flow analysis on loop internals is only valid on instructions");
-      if (ssInstructions.find(cast<Instruction>(V)) != ssInstructions.end()) {
-        return false;
-      }
-    }
-    return true;
-  };
-
   /*
    * Identify the locations where signal and wait instructions should be placed.
    */
   for (auto I : ssInstructions) {
-    if (hasNoSCCEntries(dfr->IN(I))) {
+    I->print(errs() << "I in SS: "); errs() << "\n";
+    auto &beforeEntries = dfr->OUT(I);
+
+    bool noSSEntries = true;
+    std::set<Instruction *> inSS;
+    for (auto beforeV : beforeEntries) {
+      auto beforeI = cast<Instruction>(beforeV);
+      if (I == beforeI) continue;
+
+      if (ssInstructions.find(beforeI) != ssInstructions.end()) {
+        inSS.insert(beforeI);
+        beforeI->print(errs() << "    Value in before set: "); errs() << "\n";
+        noSSEntries = false;
+      }
+    }
+    bool allSSEntries = (inSS.size() + 1) == ssInstructions.size();
+
+    if (noSSEntries) {
       this->entries.insert(I);
-    } else if (hasNoSCCEntries(dfr->OUT(I))) {
+    } else if (allSSEntries) {
       this->exits.insert(I);
     }
   }
