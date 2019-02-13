@@ -51,14 +51,14 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   /*
    * Register a new environment builder and the single HELIX task
    */
-  this->envBuilder = new EnvBuilder(module.getContext());
-  this->envBuilder->createEnvVariables(phiTypes, nonReducablePHIs, cannotReduceLoopCarriedPHIs, 1);
-  this->envBuilder->createEnvUsers(1);
-  auto envUser = envBuilder->getUser(0);
+  this->loopCarriedEnvBuilder = new EnvBuilder(module.getContext());
+  this->loopCarriedEnvBuilder->createEnvVariables(phiTypes, nonReducablePHIs, cannotReduceLoopCarriedPHIs, 1);
+  this->loopCarriedEnvBuilder->createEnvUsers(1);
+  auto envUser = loopCarriedEnvBuilder->getUser(0);
 
   envUser->setEnvArray(entryBuilder.CreateBitCast(
     helixTask->loopCarriedArrayArg,
-    PointerType::getUnqual(envBuilder->getEnvArrayTy())
+    PointerType::getUnqual(loopCarriedEnvBuilder->getEnvArrayTy())
   ));
 
   /*
@@ -66,15 +66,15 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * Load incoming values from the preheader
    */
   IRBuilder<> loopFunctionBuilder(&*LDI->function->begin()->begin());
-  envBuilder->generateEnvArray(loopFunctionBuilder);
-  envBuilder->generateEnvVariables(loopFunctionBuilder);
+  loopCarriedEnvBuilder->generateEnvArray(loopFunctionBuilder);
+  loopCarriedEnvBuilder->generateEnvVariables(loopFunctionBuilder);
 
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (auto envIndex = 0; envIndex < originalLoopPHIs.size(); ++envIndex) {
     auto phi = originalLoopPHIs[envIndex];
     auto preHeaderIndex = phi->getBasicBlockIndex(LDI->preHeader);
     auto preHeaderV = phi->getIncomingValue(preHeaderIndex);
-    builder.CreateStore(preHeaderV, envBuilder->getEnvVar(envIndex));
+    builder.CreateStore(preHeaderV, loopCarriedEnvBuilder->getEnvVar(envIndex));
   }
 
   /*

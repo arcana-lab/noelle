@@ -20,7 +20,7 @@ void HELIX::addSynchronizations (
   ){
   assert(this->tasks.size() == 1);
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
-  IRBuilder<> entryBuilder(helixTask->entryBlock);
+  IRBuilder<> entryBuilder(helixTask->entryBlock->getTerminator());
 
   /*
    * Iterate over sequential segments.

@@ -94,6 +94,7 @@ namespace llvm {
 
     private:
       Function *waitSSCall, *signalSSCall;
+      LoopDependenceInfo *originalLDI;
 
       EnvBuilder *loopCarriedEnvBuilder;
       std::vector<PHINode *> loopCarriedPHIs;

@@ -48,6 +48,8 @@ HELIX::HELIX (Module &module, Verbosity v)
   auto funcArgTypes = ArrayRef<Type*>({
     PointerType::getUnqual(int8),
     PointerType::getUnqual(int8),
+    PointerType::getUnqual(int8),
+    PointerType::getUnqual(int8),
     int64,
     int64
   });
@@ -86,6 +88,11 @@ void HELIX::createParallelizableTask (
   Parallelization &par, 
   Heuristics *h
 ){
+
+  /*
+   * NOTE: Keep around the original loops' LoopDependenceInfo for later phases
+   */
+  this->originalLDI = LDI;
 
   /*
    * Print the parallelization request.
@@ -209,7 +216,7 @@ void HELIX::synchronizeTask (
   /*
    * Link the parallelize code to the original one.
    */
-  this->addChunkFunctionExecutionAsideOriginalLoop(LDI, par, sequentialSegments.size());
+  this->addChunkFunctionExecutionAsideOriginalLoop(this->originalLDI, par, sequentialSegments.size());
 
   /*
    * Inline calls to HELIX functions.
