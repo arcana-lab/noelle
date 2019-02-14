@@ -8,7 +8,7 @@ RUNTIME_CFLAGS="-DDSWP_STATS"
 RUNTIME_CFLAGS="-DRUNTIME_PRINT"
 # Other parallelization options:
 # -doall-chunk-size=NUMBER, -doall-cores-per=NUMBER
-PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -dswp-verbose=1 -dswp-force -dswp-cores-per=2
+PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -dswp-verbose=1 -dswp-force -dswp-cores-per=2 -helix-cores-per=2
 OPT_LEVEL=-O3
 
 INCLUDES=-I../../include/threadpool/include

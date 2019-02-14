@@ -144,6 +144,10 @@ extern "C" {
     return ;
   }
 
+  #ifdef RUNTIME_PRINT
+  void *mySSGlobal = nullptr;
+  #endif
+
   void HELIX_dispatcher (
     void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t), 
     void *env,
@@ -172,6 +176,11 @@ extern "C" {
     auto ssSize = CACHE_LINE_SIZE;
     auto ssArraySize = ssSize * numOfsequentialSegments;
     posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize *  numOfSSArrays);
+
+    #ifdef RUNTIME_PRINT
+    mySSGlobal = ssArrays;
+    #endif
+
     if (ssArrays == NULL){
       fprintf(stderr, "HelixDispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n", (long long)numCores);
       abort();
@@ -219,7 +228,7 @@ extern "C" {
     std::vector<MARC::TaskFuture<void>> localFutures;
     for (auto i = 0; i < numCores; ++i) {
       #ifdef RUNTIME_PRINT
-      std::cerr << "Creating future for core: " << i << "\n";
+      fprintf(stderr, "HelixDispatcher: Creating future for core %d\n", i);
       #endif
 
       /*
@@ -236,7 +245,7 @@ extern "C" {
       assert(ssArrayPast != ssArrayFuture);
 
       #ifdef RUNTIME_PRINT
-      std::cerr << "Defined ss past and future arrays: " << ssArrayPast << " " << ssArrayFuture << "\n";
+      fprintf(stderr, "HelixDispatcher: defined ss past and future arrays: %ld %ld\n", (int *)ssArrayPast - (int *)mySSGlobal, (int *)ssArrayFuture - (int *)mySSGlobal);
       #endif
 
       /*
@@ -255,12 +264,25 @@ extern "C" {
       //TODO
     }
 
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Submitted pool\n";
+    int futureGotten = 0;
+    #endif
+
     /*
      * Wait for the threads to end
      */
     for (auto& future : localFutures){
       future.get();
+
+      #ifdef RUNTIME_PRINT
+      fprintf(stderr, "Got future: %d\n", futureGotten++);
+      #endif
     }
+
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Got all futures\n";
+    #endif
 
     /*
      * Free the memory.
@@ -281,7 +303,7 @@ extern "C" {
     assert(ss != NULL);
 
     #ifdef RUNTIME_PRINT
-    std::cerr << "Waiting on sequential segment: " << sequentialSegment << "\n";
+    fprintf(stderr, "HelixDispatcher: Waiting on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
     #endif
 
     /*
@@ -303,7 +325,7 @@ extern "C" {
     assert(ss != NULL);
 
     #ifdef RUNTIME_PRINT
-    std::cerr << "Signaling on sequential segment: " << sequentialSegment << "\n";
+    fprintf(stderr, "HelixDispatcher: Signaling on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
     #endif
 
     /*
