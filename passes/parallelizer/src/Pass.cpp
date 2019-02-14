@@ -26,6 +26,7 @@ static cl::opt<int> MinimumHotness("noelle-min-hot", cl::ZeroOrMore, cl::Hidden,
 static cl::opt<int> DOALLChunkSizeOverride("doall-chunk-size", cl::ZeroOrMore, cl::Hidden, cl::desc("DOALL chunk size"));
 static cl::opt<int> DOALLCoresPerOverride("doall-cores-per", cl::ZeroOrMore, cl::Hidden, cl::desc("DOALL number of cores"));
 static cl::opt<int> DSWPCoresPerOverride("dswp-cores-per", cl::ZeroOrMore, cl::Hidden, cl::desc("DSWP number of cores"));
+static cl::opt<int> HELIXCoresPerOverride("helix-cores-per", cl::ZeroOrMore, cl::Hidden, cl::desc("HELIX number of cores"));
 
 Parallelizer::Parallelizer()
   :
@@ -72,7 +73,11 @@ bool Parallelizer::runOnModule (Module &M) {
     DOALLCoresPerOverride.getValue(),
     DOALLChunkSizeOverride.getValue()
   };
-  HELIX helix{M, this->verbose};
+  HELIX helix{
+    M,
+    this->verbose,
+    HELIXCoresPerOverride.getValue()
+  };
 
   /*
    * Collect information about C++ code we link parallelized loops with.

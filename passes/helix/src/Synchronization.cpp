@@ -35,7 +35,7 @@ void HELIX::addSynchronizations (
      * This new variable is reponsible to store the information about whether a wait instruction of the current sequential segment has already been executed in the current iteration for the current thread.
      */
     auto &cxt = LDI->function->getContext();
-    auto int64 = IntegerType::get(cxt, 32);
+    auto int64 = IntegerType::get(cxt, 64);
     Value *ssState = entryBuilder.CreateAlloca(int64);
 
     /*
@@ -150,9 +150,13 @@ void HELIX::addSynchronizations (
     ss->forEachEntry(injectWait);
 
     /*
-     * Inject signals.
+     * Inject signals at sequential segment exits
+     * Inject signals at loop exits
      */
     ss->forEachExit(injectSignal);
+    for (auto exitBB : LDI->loopExitBlocks) {
+      injectSignal(exitBB->getTerminator());
+    }
   }
 
   return ;

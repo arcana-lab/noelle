@@ -74,7 +74,6 @@ namespace llvm {
         Parallelization &par
       );
 
-      int coresPerLoopOverride;
       int chunkSizeOverride;
   };
 

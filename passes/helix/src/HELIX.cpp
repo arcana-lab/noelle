@@ -11,9 +11,9 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-HELIX::HELIX (Module &module, Verbosity v)
-  : loopCarriedEnvBuilder{nullptr}, loopCarriedPHIs{},
-    ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v}
+HELIX::HELIX (Module &module, Verbosity v, int coresPer)
+  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v, coresPer},
+    loopCarriedEnvBuilder{nullptr}, loopCarriedPHIs{}
   {
 
   /*
@@ -67,6 +67,13 @@ bool HELIX::apply (
   Parallelization &par,
   Heuristics *h
 ) {
+
+  /*
+   * Propagate any override parameters through the dependence info
+   */
+  if (coresPerLoopOverride > 0) {
+    LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
+  }
 
   /*
    * If a task has not been defined, create such a task from the

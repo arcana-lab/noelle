@@ -17,12 +17,11 @@ DSWP::DSWP (
   bool forceParallelization,
   bool enableSCCMerging,
   Verbosity v,
-  int coresPerOverride
+  int coresPer
 ) :
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v},
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v, coresPer},
   forceParallelization{forceParallelization},
   enableMergingSCC{enableSCCMerging},
-  coresPerLoopOverride{coresPerOverride},
   queues{}, queueArrayType{nullptr},
   sccToStage{}, stageArrayType{nullptr},
   zeroIndexForBaseArray{nullptr}

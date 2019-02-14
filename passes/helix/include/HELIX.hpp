@@ -30,7 +30,11 @@ namespace llvm {
       /*
        * Methods
        */
-      HELIX (Module &module, Verbosity v);
+      HELIX (
+        Module &module,
+        Verbosity v,
+        int coresPerOverride
+      );
 
       bool apply (
         LoopDependenceInfo *LDI, 
@@ -98,7 +102,6 @@ namespace llvm {
 
       EnvBuilder *loopCarriedEnvBuilder;
       std::vector<PHINode *> loopCarriedPHIs;
-
   };
 
 }

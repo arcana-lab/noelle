@@ -17,8 +17,7 @@ DOALL::DOALL (
   int coresPer,
   int chunkSize
 ) :
-  ParallelizationTechnique{module, v},
-  coresPerLoopOverride{coresPer},
+  ParallelizationTechnique{module, v, coresPer},
   chunkSizeOverride{chunkSize}
   {
 
