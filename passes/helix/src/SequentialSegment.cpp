@@ -95,25 +95,24 @@ SequentialSegment::SequentialSegment (
    * Identify the locations where signal and wait instructions should be placed.
    */
   for (auto I : ssInstructions) {
-    auto &beforeEntries = dfr->OUT(I);
+    auto &afterInstructions = dfr->OUT(I);
 
-    bool noSSEntries = true;
     std::set<Instruction *> inSS;
-    for (auto beforeV : beforeEntries) {
-      auto beforeI = cast<Instruction>(beforeV);
-      if (I == beforeI) continue;
+    for (auto afterV : afterInstructions) {
+      auto afterI = cast<Instruction>(afterV);
+      if (I == afterI) continue;
 
-      if (ssInstructions.find(beforeI) != ssInstructions.end()) {
-        inSS.insert(beforeI);
-        noSSEntries = false;
+      if (ssInstructions.find(afterI) != ssInstructions.end()) {
+        inSS.insert(afterI);
       }
     }
-    bool allSSEntries = (inSS.size() + 1) == ssInstructions.size();
 
-    if (noSSEntries) {
-      this->entries.insert(I);
-    } else if (allSSEntries) {
+    bool noneInSS = inSS.size() == 0;
+    bool allInSS = (inSS.size() + 1) == ssInstructions.size();
+    if (noneInSS) {
       this->exits.insert(I);
+    } else if (allInSS) {
+      this->entries.insert(I);
     }
   }
   assert(this->entries.size() > 0

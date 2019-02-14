@@ -41,7 +41,7 @@ void HELIX::addSynchronizations (
     /*
      * Reset the value of ssState at the beginning of the iteration (i.e., loop header)
      */
-    IRBuilder<> headerBuilder(LDI->header->getTerminator());
+    IRBuilder<> headerBuilder(LDI->header->getFirstNonPHI());
     headerBuilder.CreateStore(ConstantInt::get(int64, 0), ssState);
 
     /*
@@ -64,15 +64,15 @@ void HELIX::addSynchronizations (
     };
 
     /*
+     * Fetch the sequential segment entry in the past and future array
+     */
+    auto ssPastPtr = fetchEntry(helixTask->ssPastArrayArg);
+    auto ssFuturePtr = fetchEntry(helixTask->ssFutureArrayArg);
+
+    /*
      * Define the code that inject wait instructions.
      */
     auto injectWait = [&](Instruction *justAfterEntry) -> void {
-
-      /*
-       * Fetch the sequential segment entry in the past array
-       */
-      auto ssArray = helixTask->ssPastArrayArg;
-      auto ssEntryPtr = fetchEntry(ssArray);
 
       /*
        * Separate out the basic block into 2 halves, the second starting with justAfterEntry
@@ -82,9 +82,20 @@ void HELIX::addSynchronizations (
       IRBuilder<> ssEntryBuilder(ssEntryBB);
       auto afterEntry = justAfterEntry;
       while (afterEntry) {
-        afterEntry->removeFromParent();
-        ssEntryBuilder.Insert(afterEntry);
+        auto currentEntry = afterEntry;
         afterEntry = afterEntry->getNextNode();
+        currentEntry->removeFromParent();
+        ssEntryBuilder.Insert(currentEntry);
+      }
+
+      /*
+       * Redirect PHI node incoming blocks from beforeEntryBB to ssEntryBB
+       */
+      for (auto succToEntry : successors(ssEntryBB)) {
+        for (auto &phi : succToEntry->phis()) {
+          auto incomingIndex = phi.getBasicBlockIndex(beforeEntryBB);
+          phi.setIncomingBlock(incomingIndex, ssEntryBB);
+        }
       }
 
       /*
@@ -94,7 +105,7 @@ void HELIX::addSynchronizations (
        */
       auto ssWaitBB = BasicBlock::Create(cxt, "", helixTask->F);
       IRBuilder<> ssWaitBuilder(ssWaitBB);
-      auto wait = ssWaitBuilder.CreateCall(this->waitSSCall, { ssEntryPtr });
+      auto wait = ssWaitBuilder.CreateCall(this->waitSSCall, { ssPastPtr });
       ssWaitBuilder.CreateStore(ConstantInt::get(int64, 1), ssState);
       ssWaitBuilder.CreateBr(ssEntryBB);
 
@@ -120,16 +131,12 @@ void HELIX::addSynchronizations (
     auto injectSignal = [&](Instruction *justBeforeExit) -> void {
 
       /*
-       * Fetch the sequential segment entry in the past array
-       */
-      auto ssArray = helixTask->ssFutureArrayArg;
-      auto ssEntryPtr = fetchEntry(ssArray);
-
-      /*
        * Inject a call to HELIX_signal just after "justBeforeExit" 
        */
-      IRBuilder<> beforeExitBuilder(justBeforeExit);
-      auto signal = beforeExitBuilder.CreateCall(this->signalSSCall, { ssEntryPtr });
+      auto terminator = justBeforeExit->getParent()->getTerminator();
+      Instruction *insertPoint = terminator == justBeforeExit ? terminator : justBeforeExit->getNextNode();
+      IRBuilder<> beforeExitBuilder(insertPoint);
+      auto signal = beforeExitBuilder.CreateCall(this->signalSSCall, { ssFuturePtr });
 
       /*
        * Track the call to signal

@@ -226,7 +226,7 @@ void HELIX::synchronizeTask (
   /*
    * Print the HELIX task.
    */
-  if (this->verbose != Verbosity::Disabled) {
+  if (this->verbose >= Verbosity::Maximal) {
     helixTask->F->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
     errs() << "HELIX: Exit\n";
   }
