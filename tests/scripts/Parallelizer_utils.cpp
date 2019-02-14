@@ -151,6 +151,9 @@ extern "C" {
     int64_t numCores, 
     int64_t numOfsequentialSegments
     ){
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Starting dispatcher: num sequential segments " << numOfsequentialSegments << ", num cores: " << numCores << "\n";
+    #endif
 
     /*
      * Assumptions.
@@ -204,6 +207,8 @@ extern "C" {
          */
         if (i > 0){
           pthread_spin_lock(lock);
+        } else {
+          pthread_spin_unlock(lock);
         }
       }
     }
@@ -213,6 +218,9 @@ extern "C" {
      */
     std::vector<MARC::TaskFuture<void>> localFutures;
     for (auto i = 0; i < numCores; ++i) {
+      #ifdef RUNTIME_PRINT
+      std::cerr << "Creating future for core: " << i << "\n";
+      #endif
 
       /*
        * Identify the past and future sequential segment arrays.
@@ -226,6 +234,10 @@ extern "C" {
       auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
       auto ssArrayFuture = (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
       assert(ssArrayPast != ssArrayFuture);
+
+      #ifdef RUNTIME_PRINT
+      std::cerr << "Defined ss past and future arrays: " << ssArrayPast << " " << ssArrayFuture << "\n";
+      #endif
 
       /*
        * Launch the thread.
@@ -268,6 +280,10 @@ extern "C" {
     auto ss = (pthread_spinlock_t *) sequentialSegment;
     assert(ss != NULL);
 
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Waiting on sequential segment: " << sequentialSegment << "\n";
+    #endif
+
     /*
      * Wait
      */
@@ -285,6 +301,10 @@ extern "C" {
      */
     auto ss = (pthread_spinlock_t *) sequentialSegment;
     assert(ss != NULL);
+
+    #ifdef RUNTIME_PRINT
+    std::cerr << "Signaling on sequential segment: " << sequentialSegment << "\n";
+    #endif
 
     /*
      * Signal
