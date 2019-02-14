@@ -311,6 +311,10 @@ extern "C" {
      */
     pthread_spin_lock(ss);
 
+    #ifdef RUNTIME_PRINT
+    fprintf(stderr, "HelixDispatcher: Waited on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
+    #endif
+
     return ;
   }
 
@@ -332,6 +336,10 @@ extern "C" {
      * Signal
      */
     pthread_spin_unlock(ss);
+
+    #ifdef RUNTIME_PRINT
+    fprintf(stderr, "HelixDispatcher: Signaled on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
+    #endif
 
     return ;
   }
