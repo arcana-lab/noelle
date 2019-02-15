@@ -33,6 +33,30 @@ static int64_t numberOfPushes64 = 0;
 
 static ThreadPool pool{true, std::thread::hardware_concurrency()};
 
+void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
+
+  while ((*theLoopIsOver) == 0){
+
+    /*
+     * Prefetch all sequential segment cache lines of the current loop iteration.
+     */
+    for (auto i = 0 ; ((*theLoopIsOver) == 0) && (i < numOfsequentialSegments); i++){
+
+      /*
+       * Fetch the pointer.
+       */
+      auto ptr = (uint64_t *)(((uint64_t)ssArray) + (i * CACHE_LINE_SIZE));
+
+      /*
+       * Prefetch the cache line for the current sequential segment.
+       */
+      while (((*theLoopIsOver) == 0) && ((*ptr) == 0)) ;
+    }
+  }
+
+  return ;
+}
+    
 extern "C" {
 
   typedef void (*stageFunctionPtr_t)(void *, void*);
@@ -271,7 +295,16 @@ extern "C" {
       /*
        * Launch the helper thread.
        */
-      //TODO
+      continue ;
+      uint64_t loopIsOverFlagOffset = 1 * CACHE_LINE_SIZE;
+      uint64_t *pointerToTheLoopIsOverFlag = (uint64_t *)(((uint64_t)env) + (loopIsOverFlagOffset)); //FIXME this is incorrect
+      localFutures.push_back(pool.submitToCores(
+        cores,
+        HELIX_helperThread, 
+        ssArrayPast,
+        numOfsequentialSegments,
+        pointerToTheLoopIsOverFlag
+      ));
     }
 
     #ifdef RUNTIME_PRINT
