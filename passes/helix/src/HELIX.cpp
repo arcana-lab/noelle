@@ -98,6 +98,7 @@ void HELIX::createParallelizableTask (
 
   /*
    * NOTE: Keep around the original loops' LoopDependenceInfo for later phases
+   * //TODO: we need to specify why this is necessary
    */
   this->originalLDI = LDI;
 
@@ -128,7 +129,7 @@ void HELIX::createParallelizableTask (
    */
   std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
   nonReducableVars.insert(liveOutVars.begin(), liveOutVars.end());
-  std::set<int> reducableVars;
+  std::set<int> reducableVars{}; //TODO: SIMONE: why we don't have reducable vars? is this because ScalarEvolutionWrapperPass cannot be used because it needs to be recomputed?
 
   /*
    * Add the memory location of the environment used to store the exit block taken to leave the parallelized loop.
@@ -181,16 +182,22 @@ void HELIX::createParallelizableTask (
   exitB.CreateRetVoid();
 
   /*
-   * Store final results of loop live-out variables. Note this occurs after data flow is adjusted.
-   * Generate a store to propagate information about which exit block the parallelized loop took.
+   * Store final results of loop live-out variables. 
+   * Note this occurs after data flow is adjusted.  TODO: is this a must? if so, let's say it explicitely
    */
   this->generateCodeToStoreLiveOutVariables(LDI, 0);
+
+  /*
+   * Generate a store to propagate information about which exit block the parallelized loop took.
+   */
   this->generateCodeToStoreExitBlockIndex(LDI, 0);
 
   /*
    * Spill loop carried dependencies into a separate environment array
    */
   this->spillLoopCarriedDataDependencies(LDI);
+
+  return ;
 }
 
 void HELIX::synchronizeTask (
@@ -237,4 +244,6 @@ void HELIX::synchronizeTask (
     helixTask->F->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
     errs() << "HELIX: Exit\n";
   }
+
+  return ;
 }

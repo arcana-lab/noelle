@@ -58,6 +58,7 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
     doall.reset();
     codeModified = doall.apply(LDI, par, h);
     usedTechnique = &doall;
+
   } else if (helix.canBeAppliedToLoop(LDI, par, h)) {
 
     /*
@@ -70,12 +71,13 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
     auto fPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
     auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
     auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
-    auto l = LI.getLoopsInPreorder()[0];
+    auto l = LI.getLoopsInPreorder()[0]; //TODO: SIMONE: how do we know that the loop we want to parallelize is [0] ?
     auto newLDI = new LoopDependenceInfo(function, fPDG, l, LI, SE);
     newLDI->copyParallelizationOptionsFrom(LDI);
 
     codeModified = helix.apply(newLDI, par, h);
     usedTechnique = &helix;
+
   } else {
     dswp.reset();
     dswp.initialize(LDI, h);
@@ -95,10 +97,18 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
   if (!codeModified){
     return false;
   }
-  Value *envArray = usedTechnique->getEnvArray();
+
+  /*
+   * Fetch the environment array where the exit block ID has been stored.
+   */
+  auto envArray = usedTechnique->getEnvArray();
   assert(envArray != nullptr);
-  BasicBlock *entryPoint = usedTechnique->getParLoopEntryPoint();
-  BasicBlock *exitPoint = usedTechnique->getParLoopExitPoint();
+
+  /*
+   * Fetch entry and exit point executed by the parallelized loop.
+   */
+  auto entryPoint = usedTechnique->getParLoopEntryPoint();
+  auto exitPoint = usedTechnique->getParLoopExitPoint();
   assert(entryPoint != nullptr && exitPoint != nullptr);
 
   /*
