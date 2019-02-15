@@ -58,6 +58,14 @@ HELIX::HELIX (Module &module, Verbosity v, int coresPer)
   return ;
 }
 
+void HELIX::reset () {
+  ParallelizationTechnique::reset();
+  loopCarriedPHIs.clear();
+  if (loopCarriedEnvBuilder) {
+    delete loopCarriedEnvBuilder;
+  }
+}
+
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) const {
   return false;
 }

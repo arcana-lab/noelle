@@ -50,6 +50,8 @@ namespace llvm {
 
       Function *getTaskFunction () { return tasks[0]->F; }
 
+      void reset () override ;
+
     protected:
       void createParallelizableTask (
         LoopDependenceInfo *LDI,
