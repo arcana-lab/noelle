@@ -225,6 +225,7 @@ extern "C" {
     /*
      * Launch threads
      */
+    cpu_set_t cores;
     std::vector<MARC::TaskFuture<void>> localFutures;
     for (auto i = 0; i < numCores; ++i) {
       #ifdef RUNTIME_PRINT
@@ -249,9 +250,18 @@ extern "C" {
       #endif
 
       /*
+       * Set the affinity for both the thread and its helper.
+       */
+      CPU_ZERO(&cores);
+      auto physicalCore = i * 2;
+      CPU_SET(physicalCore, &cores);
+      CPU_SET(physicalCore + 1, &cores);
+
+      /*
        * Launch the thread.
        */
-      localFutures.push_back(pool.submit(
+      localFutures.push_back(pool.submitToCores(
+        cores,
         parallelizedLoop,
         env, loopCarriedArray,
         ssArrayPast, ssArrayFuture,
