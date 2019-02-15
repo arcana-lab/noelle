@@ -25,7 +25,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   LoopInfo &li,
   ScalarEvolution &SE
 ) : function{f}, functionDG{fG}, DOALLChunkSize{8},
-    maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency()}
+    maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency() / 2}
   {
   this->fetchLoopAndBBInfo(li, l);
   this->createDGsForLoop(l);

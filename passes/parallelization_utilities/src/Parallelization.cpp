@@ -356,18 +356,6 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     }
   }
 
-  /*
-   * If no loops were filtered, no loop constraints were placed yet
-   * We naively divide the maximum number of cores across the loops
-   */
-  if (!filterLoops && allLoops->size() > 0){
-    auto coreCount = std::thread::hardware_concurrency();
-    auto coresPer = coreCount / allLoops->size();
-    for (auto ldi : *allLoops) {
-      ldi->maximumNumberOfCoresForTheParallelization = coresPer;
-    }
-  }
-
   return allLoops;
 }
 

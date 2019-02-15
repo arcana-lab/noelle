@@ -59,7 +59,7 @@ HELIX::HELIX (Module &module, Verbosity v, int coresPer)
 }
 
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) const {
-  return false;
+  return true ;
 }
 
 bool HELIX::apply (
@@ -67,13 +67,6 @@ bool HELIX::apply (
   Parallelization &par,
   Heuristics *h
 ) {
-
-  /*
-   * Propagate any override parameters through the dependence info
-   */
-  if (coresPerLoopOverride > 0) {
-    LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
-  }
 
   /*
    * If a task has not been defined, create such a task from the
