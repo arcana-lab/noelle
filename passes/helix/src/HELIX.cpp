@@ -59,7 +59,7 @@ HELIX::HELIX (Module &module, Verbosity v, int coresPer)
 }
 
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) const {
-  return true ;
+  return false;
 }
 
 bool HELIX::apply (
