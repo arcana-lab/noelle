@@ -156,7 +156,9 @@ extern "C" {
     int64_t numOfsequentialSegments
     ){
     #ifdef RUNTIME_PRINT
-    std::cerr << "Starting dispatcher: num sequential segments " << numOfsequentialSegments << ", num cores: " << numCores << "\n";
+    std::cerr << "HELIX: dispatcher: Start" << std::endl;
+    std::cerr << "HELIX: dispatcher:  Number of sequential segments = " << numOfsequentialSegments << std::endl;
+    std::cerr << "HELIX: dispatcher:  Number of cores = " << numCores << std::endl;
     #endif
 
     /*
@@ -171,7 +173,7 @@ extern "C" {
      * Allocate the sequential segment arrays.
      * We need numCores - 1 arrays.
      */
-    auto numOfSSArrays = numCores - 1;
+    auto numOfSSArrays = numCores;
     void *ssArrays = NULL;
     auto ssSize = CACHE_LINE_SIZE;
     auto ssArraySize = ssSize * numOfsequentialSegments;
@@ -182,7 +184,7 @@ extern "C" {
     #endif
 
     if (ssArrays == NULL){
-      fprintf(stderr, "HelixDispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n", (long long)numCores);
+      fprintf(stderr, "HELIX: dispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n", (long long)numCores);
       abort();
     }
 
@@ -216,8 +218,6 @@ extern "C" {
          */
         if (i > 0){
           pthread_spin_lock(lock);
-        } else {
-          pthread_spin_unlock(lock);
         }
       }
     }
