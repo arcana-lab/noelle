@@ -173,9 +173,10 @@ extern "C" {
   #endif
 
   void HELIX_dispatcher (
-    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t), 
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t/*, uint64_t **/), 
     void *env,
     void *loopCarriedArray,
+    //uint64_t *loopIsOverFlag,
     int64_t numCores, 
     int64_t numOfsequentialSegments
     ){
@@ -289,21 +290,21 @@ extern "C" {
         parallelizedLoop,
         env, loopCarriedArray,
         ssArrayPast, ssArrayFuture,
-        i, numCores
+        i, numCores/*,
+        loopIsOverFlag*/
       ));
 
       /*
        * Launch the helper thread.
        */
       continue ;
-      uint64_t loopIsOverFlagOffset = 1 * CACHE_LINE_SIZE;
-      uint64_t *pointerToTheLoopIsOverFlag = (uint64_t *)(((uint64_t)env) + (loopIsOverFlagOffset)); //FIXME this is incorrect
+      uint64_t *loopIsOverFlag;
       localFutures.push_back(pool.submitToCores(
         cores,
         HELIX_helperThread, 
         ssArrayPast,
         numOfsequentialSegments,
-        pointerToTheLoopIsOverFlag
+        loopIsOverFlag
       ));
     }
 

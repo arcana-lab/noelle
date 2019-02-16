@@ -4,9 +4,11 @@ AA_ADVANCED=$(AA_BASE) -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa
 ANALYSES=$(AA) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization -heuristics
 LIBS=-lm
 
-RUNTIME_CFLAGS="-DDSWP_STATS"
-RUNTIME_CFLAGS="-DRUNTIME_PRINT"
-RUNTIME_CFLAGS=""
+# Set the runtime flags
+RUNTIME_CFLAGS="-DDEBUG"
+#RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DDSWP_STATS"
+#RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DRUNTIME_PRINT"
+
 # Other parallelization options:
 # -doall-chunk-size=NUMBER, -doall-cores-per=NUMBER
 PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -dswp-verbose=2 -dswp-force 
@@ -40,9 +42,12 @@ $(OPTIMIZED): test_dswp.bc
 test_pdgdot.bc: test_seq.bc
 	opt $(PRINTPASSES) $(ANALYSES) -PDGPrinter $^ -o $@
 
-test_dswp.bc: test_seq.bc
+test_dswp_unoptimized.bc: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -parallelizer $(PARALLELIZATION_OPTIONS) $^ -o $@
-	$(CC) $(OPT_LEVEL) -c -emit-llvm $@ -o $@
+	llvm-dis $@
+
+test_dswp.bc: test_dswp_unoptimized.bc
+	$(CC) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
 	llvm-dis $@
 
 baseline.bc: test.bc
