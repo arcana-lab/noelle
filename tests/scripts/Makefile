@@ -75,6 +75,12 @@ show_time: test_seq.bc
 print_transformations_before_parallelization:
 	../../scripts/print.sh "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)"
 
+print_alias_analyses:
+	../../scripts/print.sh "$(AA_ADVANCED)"
+
+print_analyses:
+	../../scripts/print.sh "$(ANALYSES)"
+
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw
 
