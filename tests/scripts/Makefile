@@ -1,7 +1,7 @@
 CC=clang++
 AA_BASE=-basicaa
 AA_ADVANCED=$(AA_BASE) -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa
-ANALYSES=$(AA) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization -heuristics
+ANALYSES=$(AA_ADVANCED) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization -heuristics
 LIBS=-lm
 
 # Set the runtime flags
@@ -71,6 +71,9 @@ show_passes: test_seq.bc
 
 show_time: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
+
+print_transformations_before_parallelization:
+	../../scripts/print.sh "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)"
 
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw
