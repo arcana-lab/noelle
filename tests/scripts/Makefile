@@ -1,7 +1,7 @@
 CC=clang++
 AA_BASE=-basicaa
 AA_ADVANCED=$(AA_BASE) -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa
-ANALYSES=$(AA_ADVANCED) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization -heuristics
+ANALYSES=$(AA_ADVANCED) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization 
 LIBS=-lm
 
 # Set the runtime flags
@@ -40,10 +40,10 @@ $(OPTIMIZED): test_dswp.bc
 	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
 test_pdgdot.bc: test_seq.bc
-	opt $(PRINTPASSES) $(ANALYSES) -PDGPrinter $^ -o $@
+	opt $(PRINTPASSES) $(ANALYSES) -heuristics -PDGPrinter $^ -o $@
 
 test_dswp_unoptimized.bc: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -parallelizer $(PARALLELIZATION_OPTIONS) $^ -o $@
+	opt $(OPTPASSES) $(ANALYSES) -heuristics -parallelizer $(PARALLELIZATION_OPTIONS) $^ -o $@
 	llvm-dis $@
 
 test_dswp.bc: test_dswp_unoptimized.bc
@@ -67,10 +67,10 @@ test_seq.bc: test.bc $(THREADER).bc
 	llvm-dis $@
 
 show_passes: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
+	opt $(OPTPASSES) $(ANALYSES) -heuristics -Parallelizer $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
 
 show_time: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
+	opt $(OPTPASSES) $(ANALYSES) -heuristics -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 print_transformations_before_parallelization:
 	../../scripts/print.sh "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)"
