@@ -300,36 +300,28 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       }
 
       /*
-       * Allocate the loop wrapper.
-       */
-      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, PDT);
-
-      /*
        * Check if we have to filter loops.
        */
       if (!filterLoops){
+
+        /*
+         * Allocate the loop wrapper.
+         */
+        auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, PDT);
+
         allLoops->push_back(ldi);
         currentLoopIndex++;
         continue ;
       }
 
       /*
-       * Set the loop constraints specified by INDEX_FILE.
-       */
-      ldi->maximumNumberOfCoresForTheParallelization = loopThreads[currentLoopIndex];
-      ldi->DOALLChunkSize = DOALLChunkSize[currentLoopIndex];
-
-      /*
-       * We have to filter loops.
+       * We need to filter loops.
        *
        * Check if more than one thread is assigned to the current loop.
        * If that's the case, then we have to enable that loop.
        */
-      if (currentLoopIndex >= loopThreads.size()){
-        errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
-        abort();
-      }
-      if (ldi->maximumNumberOfCoresForTheParallelization <= 1){
+      auto maximumNumberOfCoresForTheParallelization = loopThreads[currentLoopIndex];
+      if (maximumNumberOfCoresForTheParallelization <= 1){
 
         /*
          * Only one thread has been assigned to the current loop.
@@ -338,14 +330,27 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         currentLoopIndex++;
 
         /*
-         * Free the memory.
-         */
-        delete ldi ;
-
-        /*
          * Jump to the next loop.
          */
         continue ;
+      }
+
+      /*
+       * The current loop has more than one core assigned to it.
+       * Therefore, we need to parallelize this loop.
+       *
+       * Allocate the loop wrapper.
+       */
+      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, PDT);
+
+      /*
+       * Set the loop constraints specified by INDEX_FILE.
+       */
+      ldi->maximumNumberOfCoresForTheParallelization = maximumNumberOfCoresForTheParallelization;
+      ldi->DOALLChunkSize = DOALLChunkSize[currentLoopIndex];
+      if (currentLoopIndex >= loopThreads.size()){
+        errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
+        abort();
       }
 
       /*
