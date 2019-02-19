@@ -24,7 +24,7 @@ PRINTPASSES=$(PDGPASS) -load ~/CAT/lib/PDGPrinter.so
 PARALLELIZATION_TECHNIQUES= -load ~/CAT/lib/DSWP.so -load ~/CAT/lib/DOALL.so -load ~/CAT/lib/HELIX.so
 PRE_OPTPASSES=$(PDGPASS) -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/DGSimplify.so
 OPTPASSES=$(PDGPASS) -load ~/CAT/lib/DataFlow.so -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so -load ~/CAT/lib/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/Parallelizer.so 
-PRINT_OUTPUT_FILE=
+PRINT_OUTPUT_FILE=test.txt
 
 all: baseline testseq $(OPTIMIZED)
 
@@ -74,13 +74,13 @@ show_time: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -heuristics -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 print_transformations_before_parallelization:
-	../../scripts/print.sh "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)" "$(PRINT_OUTPUT_FILE)"
+	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)" 
 
 print_alias_analyses:
-	../../scripts/print.sh "$(AA_ADVANCED)" "$(PRINT_OUTPUT_FILE)"
+	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(AA_ADVANCED)" 
 
 print_analyses:
-	../../scripts/print.sh "$(ANALYSES)" "$(PRINT_OUTPUT_FILE)"
+	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(ANALYSES)" 
 
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw

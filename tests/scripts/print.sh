@@ -1,3 +1,4 @@
 #!/bin/bash
 
-echo $@
+outputFile="$1" ;
+echo "${@:2}" > $outputFile ;
