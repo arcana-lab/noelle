@@ -11,8 +11,8 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-HELIX::HELIX (Module &module, Verbosity v, int coresPer)
-  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v, coresPer},
+HELIX::HELIX (Module &module, Verbosity v)
+  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v},
     loopCarriedEnvBuilder{nullptr}, loopCarriedPHIs{}
   {
 

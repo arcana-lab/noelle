@@ -13,12 +13,9 @@
 
 DOALL::DOALL (
   Module &module,
-  Verbosity v,
-  int coresPer,
-  int chunkSize
+  Verbosity v
 ) :
-  ParallelizationTechnique{module, v, coresPer},
-  chunkSizeOverride{chunkSize}
+  ParallelizationTechnique{module, v}
   {
 
   /*
@@ -124,8 +121,6 @@ bool DOALL::apply (
   Parallelization &par,
   Heuristics *h
 ) {
-  if (chunkSizeOverride > 0) LDI->DOALLChunkSize = chunkSizeOverride;
-  if (coresPerLoopOverride > 0) LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
 
   /*
    * Print the parallelization request.

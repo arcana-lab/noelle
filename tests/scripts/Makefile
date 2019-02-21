@@ -10,7 +10,6 @@ RUNTIME_CFLAGS="-DDEBUG"
 #RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DRUNTIME_PRINT"
 
 # Other parallelization options:
-# -doall-chunk-size=NUMBER, -doall-cores-per=NUMBER
 PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -dswp-verbose=2 -dswp-force 
 OPT_LEVEL=-O3
 

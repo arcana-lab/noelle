@@ -16,10 +16,9 @@ DSWP::DSWP (
   Module &module,
   bool forceParallelization,
   bool enableSCCMerging,
-  Verbosity v,
-  int coresPer
+  Verbosity v
 ) :
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v, coresPer},
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v},
   forceParallelization{forceParallelization},
   enableMergingSCC{enableSCCMerging},
   queues{}, queueArrayType{nullptr},
@@ -47,9 +46,6 @@ DSWP::DSWP (
 }
 
 void DSWP::initialize (LoopDependenceInfo *LDI, Heuristics *h) {
-  if (coresPerLoopOverride > 0) {
-    LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
-  }
   partitionSCCDAG(LDI, h);
 }
 

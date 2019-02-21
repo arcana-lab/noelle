@@ -20,14 +20,6 @@ static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl
 static cl::opt<int> Verbose("dswp-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal)"));
 static cl::opt<int> MinimumHotness("noelle-min-hot", cl::ZeroOrMore, cl::Hidden, cl::desc("Minimum hotness of code to be parallelized"));
 
-/*
- * Command line overrides for some autotuned parameters
- */
-static cl::opt<int> DOALLChunkSizeOverride("doall-chunk-size", cl::ZeroOrMore, cl::Hidden, cl::desc("DOALL chunk size"));
-static cl::opt<int> DOALLCoresPerOverride("doall-cores-per", cl::ZeroOrMore, cl::Hidden, cl::desc("DOALL number of cores"));
-static cl::opt<int> DSWPCoresPerOverride("dswp-cores-per", cl::ZeroOrMore, cl::Hidden, cl::desc("DSWP number of cores"));
-static cl::opt<int> HELIXCoresPerOverride("helix-cores-per", cl::ZeroOrMore, cl::Hidden, cl::desc("HELIX number of cores"));
-
 Parallelizer::Parallelizer()
   :
   ModulePass{ID}, 
@@ -64,19 +56,15 @@ bool Parallelizer::runOnModule (Module &M) {
     M,
     this->forceParallelization,
     !this->forceNoSCCPartition,
-    this->verbose,
-    DSWPCoresPerOverride.getValue(),
+    this->verbose
   };
   DOALL doall{
     M,
-    this->verbose,
-    DOALLCoresPerOverride.getValue(),
-    DOALLChunkSizeOverride.getValue()
+    this->verbose
   };
   HELIX helix{
     M,
-    this->verbose,
-    HELIXCoresPerOverride.getValue()
+    this->verbose
   };
 
   /*

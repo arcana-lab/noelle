@@ -30,9 +30,7 @@ namespace llvm {
        */
       DOALL (
         Module &module,
-        Verbosity v,
-        int coresPerOverride,
-        int chunkSizeOverride
+        Verbosity v
       );
 
       bool apply (
@@ -73,8 +71,6 @@ namespace llvm {
         LoopDependenceInfo *LDI,
         Parallelization &par
       );
-
-      int chunkSizeOverride;
   };
 
 }

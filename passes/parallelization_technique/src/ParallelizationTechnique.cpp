@@ -12,8 +12,8 @@
 
 using namespace llvm;
 
-ParallelizationTechnique::ParallelizationTechnique (Module &module, Verbosity v, int coresPer)
-  : module{module}, verbose{v}, tasks{}, envBuilder{0}, coresPerLoopOverride{coresPer}
+ParallelizationTechnique::ParallelizationTechnique (Module &module, Verbosity v)
+  : module{module}, verbose{v}, tasks{}, envBuilder{0}
   {
 
   return ;

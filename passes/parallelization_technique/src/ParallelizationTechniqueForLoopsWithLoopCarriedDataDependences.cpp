@@ -14,10 +14,9 @@ using namespace llvm;
 
 ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences (
   Module &module, 
-  Verbosity v,
-  int coresPer
+  Verbosity v
   )
-  : ParallelizationTechnique{module, v, coresPer}, partition{nullptr}
+  : ParallelizationTechnique{module, v}, partition{nullptr}
   {
 
   return ;

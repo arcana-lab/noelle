@@ -590,6 +590,9 @@ bool Parallelization::filterOutLoops (
 
     /*
      * Technique to use
+     * 0: DOALL
+     * 1: DSWP
+     * 2: HELIX
      */
     auto technique = this->fetchTheNextValue(indexString);
 

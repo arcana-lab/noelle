@@ -33,8 +33,7 @@ namespace llvm {
         Module &module,
         bool forceParallelization,
         bool enableSCCMerging,
-        Verbosity v,
-        int coresPerOverride
+        Verbosity v
       );
 
       bool apply (
@@ -42,11 +41,13 @@ namespace llvm {
         Parallelization &par,
         Heuristics *h
       ) override ;
+
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
         Parallelization &par,
         Heuristics *h
       ) const override ;
+
       void initialize (
         LoopDependenceInfo *LDI,
         Heuristics *h

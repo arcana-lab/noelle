@@ -27,7 +27,7 @@ namespace llvm {
       /*
        * Constructor.
        */
-      ParallelizationTechnique (Module &module, Verbosity v, int coresPer);
+      ParallelizationTechnique (Module &module, Verbosity v);
 
       /*
        * Apply the parallelization technique to the loop LDI.
@@ -173,11 +173,6 @@ namespace llvm {
       BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
       std::vector<Task *> tasks;
       int numTaskInstances;
-
-      /*
-       * Configurable overrides
-       */
-      int coresPerLoopOverride;
   };
 
 }

@@ -32,8 +32,7 @@ namespace llvm {
        */
       HELIX (
         Module &module,
-        Verbosity v,
-        int coresPerOverride
+        Verbosity v
       );
 
       bool apply (
