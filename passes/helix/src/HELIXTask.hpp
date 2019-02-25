@@ -28,6 +28,7 @@ namespace llvm {
       Value *ssPastArrayArg;
       Value *ssFutureArrayArg;
       Value *loopCarriedArrayArg;
+      Value *loopIsOverFlagArg;
 
       /*
        * Clone of original IV loop, new outer loop

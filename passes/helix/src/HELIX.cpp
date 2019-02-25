@@ -51,7 +51,8 @@ HELIX::HELIX (Module &module, Verbosity v)
     PointerType::getUnqual(int8),
     PointerType::getUnqual(int8),
     int64,
-    int64
+    int64,
+    PointerType::getUnqual(int64)
   });
   this->taskType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
 

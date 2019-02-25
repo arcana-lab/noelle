@@ -23,6 +23,34 @@ void HELIX::addSynchronizations (
   IRBuilder<> entryBuilder(helixTask->entryBlock->getTerminator());
 
   /*
+   * Identify the preamble SCC
+   */
+  auto preambleSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
+  assert(preambleSCCNodes.size() == 1);
+  auto preambleSCC = (*preambleSCCNodes.begin())->getT();
+
+  /*
+   * Assert that the preamble dictates control flow of loop iterations
+   */
+  std::set<TerminatorInst *> exitingTerms;
+  for (auto exitBB : LDI->loopExitBlocks) {
+    for (auto predBB : predecessors(exitBB)) {
+      exitingTerms.insert(predBB->getTerminator());
+    }
+  }
+
+  for (auto term : exitingTerms) {
+    auto scc = LDI->loopSCCDAG->sccOfValue(term);
+    auto termNode = scc->fetchNode(term);
+    for (auto edge : termNode->getIncomingEdges()) {
+      if (edge->isControlDependence()) {
+        assert(preambleSCC->isInternal(edge->getIncomingT())
+          && "Preamble SCC must hold control flow determining loop iteration execution!");
+      }
+    }
+  }
+
+  /*
    * Iterate over sequential segments.
    */
   for (auto ss : *sss){
@@ -154,8 +182,68 @@ void HELIX::addSynchronizations (
      * Inject signals at loop exits
      */
     ss->forEachExit(injectSignal);
-    for (auto exitBB : LDI->loopExitBlocks) {
-      injectSignal(exitBB->getTerminator());
+
+    /*
+     * Inject a check for whether the loop-is-over flag is true
+     * Exit the loop if so, signaling preamble SS synchronization to avoid deadlock
+     */
+    auto injectExitFlagCheck = [&](Instruction *justAfterEntry) -> void {
+      
+      /*
+       * Assuming the instruction is now the first of its basic block due to synchronization
+       */
+      assert(justAfterEntry->getPrevNode() == nullptr
+        && "Failed assumption: the ss begins at the start of a basic block");
+
+      auto entryBB = justAfterEntry->getParent();
+      auto checkFlagBB = BasicBlock::Create(cxt, "", LDI->function);
+      std::vector<BasicBlock *> predBBs(pred_begin(entryBB), pred_end(entryBB));
+      for (auto predBB : predBBs) {
+        auto term = predBB->getTerminator();
+        assert(isa<BranchInst>(term));
+
+        for (int i = 0; i < term->getNumSuccessors(); ++i) {
+          if (term->getSuccessor(i) == entryBB) {
+            term->setSuccessor(i, checkFlagBB);
+          }
+        }
+      }
+
+      IRBuilder<> checkFlagBuilder(checkFlagBB);
+      auto flagValue = checkFlagBuilder.CreateLoad(helixTask->loopIsOverFlagArg);
+      auto isFlagSet = checkFlagBuilder.CreateICmpEQ(ConstantInt::get(int64, 1), flagValue);
+      checkFlagBuilder.CreateCondBr(isFlagSet, helixTask->exitBlock, entryBB);
+    };
+
+    /*
+     * On finishing the task, set the loop-is-over flag to true.
+     */
+    auto injectExitFlagSet = [&](Instruction *exitInstruction) -> void {
+      IRBuilder<> setFlagBuilder(exitInstruction);
+      setFlagBuilder.CreateStore(
+        ConstantInt::get(int64, 1),
+        helixTask->loopIsOverFlagArg
+      );
+    };
+
+    /*
+     * Determine if this SS contains the preamble
+     */
+    bool containsPreamble = false;
+    for (auto scc : ss->getSCCs()) {
+      containsPreamble |= scc == preambleSCC;
+      if (containsPreamble) break;
+    }
+
+    /*
+     * Handle loop exit flag within the SS containing the preamble
+     */
+    if (containsPreamble) {
+      ss->forEachEntry(injectExitFlagCheck);
+
+      auto retI = helixTask->exitBlock->getTerminator();
+      injectExitFlagSet(retI);
+      injectSignal(retI);
     }
   }
 

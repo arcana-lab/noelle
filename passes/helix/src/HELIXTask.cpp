@@ -22,6 +22,7 @@ void llvm::HELIXTask::extractFuncArgs (void) {
   this->ssFutureArrayArg = (Value *) &*(argIter++);
   this->coreArg = (Value *) &*(argIter++); 
   this->numCoresArg = (Value *) &*(argIter++);
+  this->loopIsOverFlagArg = (Value *) &*(argIter++);
 
   /*
    * Set the task index.

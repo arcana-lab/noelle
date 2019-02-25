@@ -173,10 +173,9 @@ extern "C" {
   #endif
 
   void HELIX_dispatcher (
-    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t/*, uint64_t **/), 
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
     void *env,
     void *loopCarriedArray,
-    //uint64_t *loopIsOverFlag,
     int64_t numCores, 
     int64_t numOfsequentialSegments
     ){
@@ -250,6 +249,7 @@ extern "C" {
     /*
      * Launch threads
      */
+    uint64_t loopIsOverFlag = 0;
     cpu_set_t cores;
     std::vector<MARC::TaskFuture<void>> localFutures;
     for (auto i = 0; i < numCores; ++i) {
@@ -290,21 +290,20 @@ extern "C" {
         parallelizedLoop,
         env, loopCarriedArray,
         ssArrayPast, ssArrayFuture,
-        i, numCores/*,
-        loopIsOverFlag*/
+        i, numCores,
+        &loopIsOverFlag
       ));
 
       /*
        * Launch the helper thread.
        */
       continue ;
-      uint64_t *loopIsOverFlag;
       localFutures.push_back(pool.submitToCores(
         cores,
         HELIX_helperThread, 
         ssArrayPast,
         numOfsequentialSegments,
-        loopIsOverFlag
+        &loopIsOverFlag
       ));
     }
 
