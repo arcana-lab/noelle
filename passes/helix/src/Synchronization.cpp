@@ -238,13 +238,20 @@ void HELIX::addSynchronizations (
     /*
      * Handle loop exit flag within the SS containing the preamble
      */
+    auto retI = helixTask->exitBlock->getTerminator();
     if (containsPreamble) {
       ss->forEachEntry(injectExitFlagCheck);
 
-      auto retI = helixTask->exitBlock->getTerminator();
       injectExitFlagSet(retI);
-      injectSignal(retI);
     }
+
+    /*
+     * HACK: Until the preamble is ensured to be the first to synchronize 
+     * signaling all sequential segments upon exit is needed to avoid deadlock.
+     * Inefficiently ordered loads of variables causes this. Proper reordering
+     * or squeezing of sequential segments can ensure this is fixed.
+     */
+    injectSignal(retI);
   }
 
   return ;
