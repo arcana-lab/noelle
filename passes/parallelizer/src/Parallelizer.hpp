@@ -39,6 +39,7 @@
 #include "DSWP.hpp"
 #include "DOALL.hpp"
 #include "HELIX.hpp"
+#include "Techniques.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -77,6 +78,7 @@ namespace llvm {
       bool forceNoSCCPartition;
       Verbosity verbose;
       double minHot;
+      Techniques techniques;
 
       /*
        * Methods

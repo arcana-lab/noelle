@@ -68,7 +68,7 @@ void HELIX::reset () {
 }
 
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) const {
-  return false;
+  return true ;
 }
 
 bool HELIX::apply (

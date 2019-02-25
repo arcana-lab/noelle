@@ -50,7 +50,10 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
    */
   auto codeModified = false;
   ParallelizationTechnique *usedTechnique = nullptr;
-  if (doall.canBeAppliedToLoop(LDI, par, h)){
+  if (  true
+        && this->techniques.doall
+        && doall.canBeAppliedToLoop(LDI, par, h)
+    ){
 
     /*
      * Apply DOALL.
@@ -59,7 +62,10 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
     codeModified = doall.apply(LDI, par, h);
     usedTechnique = &doall;
 
-  } else if (helix.canBeAppliedToLoop(LDI, par, h)) {
+  } else if ( true
+              && this->techniques.helix
+              && helix.canBeAppliedToLoop(LDI, par, h)   
+    ){
 
     /*
      * Apply HELIX
@@ -78,7 +84,9 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
     codeModified = helix.apply(newLDI, par, h);
     usedTechnique = &helix;
 
-  } else {
+  } else if ( true
+              && this->techniques.dswp
+    ) {
     dswp.reset();
     dswp.initialize(LDI, h);
     if (dswp.canBeAppliedToLoop(LDI, par, h)) {
