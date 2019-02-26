@@ -1,0 +1,21 @@
+This requires VIA (https://bitbucket.org/DennisZh/via/branch/metadata_id)
+which should be build and installed in <VIA_INSTALL_DIR>
+
+Then the following excerpt can be used to execute
+
+```
+export via_install_dir=<VIA_INSTALL_DIR>
+export LD_LIBRARY_PATH="${via_install_dir}/lib:${LD_LIBRARY_PATH}"
+export PATH="${via_install_dir}/lib:${PATH}"
+
+export oracle_opt_cmd=<LLVM_OPT_DIR>
+export oracle_clang_cmd=<CLANG_DIR>
+
+
+${oracle_opt_cmd} -load <unique_marker_lib>
+                  -load <oracle_aa_lib> -exe-script=<NOELLE_INSTALL>/bin/run_via.sh -input-args <BC_FILE_INPUT>
+                  ...
+                     <BC_FILE>
+```
+
+

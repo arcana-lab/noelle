@@ -1,4 +1,10 @@
-all: printer pdg parallelization_utilities dgsimplify parallelizer heuristics parallelization_technique dswp doall helix
+all: printer pdg parallelization_utilities dgsimplify parallelizer heuristics parallelization_technique dswp doall helix oracle_aa unique_ir_marker
+
+oracle_aa:
+	cd $@ ; ../scripts/run_me.sh
+
+unique_ir_marker:
+	cd $@ ; ../scripts/run_me.sh
 
 printer:
 	cd $@ ; ../scripts/run_me.sh
@@ -36,4 +42,4 @@ uninstall:
 clean:
 	rm -rf */build */*.json ; find ./ -name .ycm_extra_conf.py -delete
 
-.PHONY: clean pdg printer dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix
+.PHONY: clean pdg printer dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix oracle_aa unique_ir_marker

@@ -94,5 +94,7 @@ namespace llvm {
 
       void collectMemorylessFunctions (Module &M);
       bool edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge);
+
+      AAResults &getAAResults(Function &F);
   };
 }

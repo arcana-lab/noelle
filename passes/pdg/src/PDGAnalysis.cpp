@@ -23,6 +23,8 @@
 
 #include "llvm/ADT/iterator_range.h"
 
+#include "OracleAA.hpp"
+
 #include "../include/PDGAnalysis.hpp"
 
 static cl::opt<int> Verbose("pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
@@ -40,6 +42,7 @@ bool llvm::PDGAnalysis::doInitialization (Module &M){
 void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<AAResultsWrapperPass>();
+  AU.addRequired<OracleAAWrapperPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
@@ -76,7 +79,7 @@ llvm::PDG * llvm::PDGAnalysis::getFunctionPDG (Function &F) {
   auto pdg = new PDG();
   pdg->populateNodesOf(F);
 
-  auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+  auto &AA = getAAResults(F);
   constructEdgesFromUseDefs(pdg);
   constructEdgesFromAliasesForFunction(pdg, F, AA);
   auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
@@ -230,7 +233,7 @@ void llvm::PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
    */
   for (auto &F : M) {
     if (F.empty()) continue ;
-    auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+    auto &AA = getAAResults(F);
     constructEdgesFromAliasesForFunction(pdg, F, AA);
   }
 }
@@ -902,4 +905,12 @@ bool llvm::PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edg
   auto callName = getCallFnName(call);
   return isa<LoadInst>(mem) && isFunctionNonWriting(callName)
     || isa<StoreInst>(mem) && isFunctionMemoryless(callName);
+}
+
+AAResults &PDGAnalysis::getAAResults(Function &F) {
+  // FIXME: This can be replaced with createExternalAAWrapperPass in the OracleAAWrapperPass
+  auto &OracleAA = getAnalysis<OracleAAWrapperPass>().getResult();
+  auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+  AA.addAAResult(OracleAA);
+  return AA;
 }

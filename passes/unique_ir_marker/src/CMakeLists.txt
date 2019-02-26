@@ -1,17 +1,15 @@
 # Sources
 set(Srcs 
-  PDGAnalysis.cpp
-  AnalysisPass.cpp
-  PDG.cpp
-  SCCDAG.cpp
-  SCC.cpp
+  UniqueIRMarker.cpp
+  UniqueIRMarkerReader.cpp
+  IDToValueMapper.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "PDGAnalysis")
+set(PassName "UniqueIRMarker")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -25,8 +23,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../oracle_aa/include ../../unique_ir_marker/include)
-
+include_directories(${LLVM_INCLUDE_DIRS} ../include/ ./)
 
 # Declare the LLVM pass to compile
 add_llvm_loadable_module(${PassName} ${Srcs})
