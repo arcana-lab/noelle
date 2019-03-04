@@ -8,14 +8,20 @@ export via_install_dir=<VIA_INSTALL_DIR>
 export LD_LIBRARY_PATH="${via_install_dir}/lib:${LD_LIBRARY_PATH}"
 export PATH="${via_install_dir}/lib:${PATH}"
 
-export oracle_opt_cmd=<LLVM_OPT_DIR>
-export oracle_clang_cmd=<CLANG_DIR>
+export oracle_opt_cmd=<LLVM OPT DIR>
+export oracle_clang_cmd=<CLANG DIR>
+export oracle_clang_opts=<ARGS TO BUILD EXE>
+export oracle_input_args=<ARGS TO RUN EXE>
+
 
 
 ${oracle_opt_cmd} -load <unique_marker_lib>
                   -load <oracle_aa_lib> -exe-script=<NOELLE_INSTALL>/bin/run_via.sh -input-args <BC_FILE_INPUT>
+	          ( -load <pdg_analysis.lib> -use-oracle-aa )
                   ...
                      <BC_FILE>
 ```
+
+
 
 
