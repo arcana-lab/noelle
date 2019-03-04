@@ -29,7 +29,7 @@
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
 
-#include "DSWPLoopDependenceInfo.hpp"
+#include "LoopDependenceInfo.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
@@ -76,17 +76,24 @@ namespace llvm {
       bool forceParallelization;
       bool forceNoSCCPartition;
       Verbosity verbose;
+      double minHot;
 
       /*
        * Methods
        */
-      bool parallelizeLoop (DSWPLoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, HELIX &helix, Heuristics *h) ;
-      std::vector<DSWPLoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
+      bool parallelizeLoop (
+        LoopDependenceInfo *LDI,
+        Parallelization &par,
+        DSWP &dswp,
+        DOALL &doall,
+        HELIX &helix,
+        Heuristics *h
+      );
+      std::vector<LoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
-      void mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI);
-      void mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI);
-      void mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI);
-      void collectSCCDAGAttrs (DSWPLoopDependenceInfo *LDI, Heuristics *h, ScalarEvolution &SE);
+      void mergeSingleSyntacticSugarInstrs (LoopDependenceInfo *LDI);
+      void mergeBranchesWithoutOutgoingEdges (LoopDependenceInfo *LDI);
+      void mergeTrivialNodesInSCCDAG (LoopDependenceInfo *LDI);
 
       /*
        * Debug utilities

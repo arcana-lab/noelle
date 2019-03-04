@@ -25,8 +25,14 @@ HELIX::HELIX (Module &module, Verbosity v)
    * Fetch the dispatcher to use to jump to a parallelized HELIX loop.
    */
   this->taskDispatcher = this->module.getFunction("HELIX_dispatcher");
+  this->waitSSCall = this->module.getFunction("HELIX_wait");
+  this->signalSSCall =  this->module.getFunction("HELIX_signal");
   if (this->taskDispatcher == nullptr){
     errs()<< "HELIX: ERROR = the function HELIX_dispatcher could not be found.\n" ;
+    abort();
+  }
+  if (!this->waitSSCall  || !this->signalSSCall) {
+    errs() << "HELIX: ERROR = sync functions HELIX_wait, HELIX_signal were not both found.\n";
     abort();
   }
 
@@ -76,6 +82,12 @@ bool HELIX::apply (
   this->generateEmptyTasks(LDI, { helixTask });
   this->numTaskInstances = LDI->maximumNumberOfCoresForTheParallelization;
   assert(helixTask == this->tasks[0]);
+
+  /*
+   * Spill loop carried dependencies of the original loop
+   */
+  spillLoopCarriedDataDependencies(LDI);
+  // FIXME: Spilling the old loop invalidates many data structures within LDI. Reconstruct LDI
 
   /*
    * Fetch the indices of live-in and live-out variables of the loop being parallelized.

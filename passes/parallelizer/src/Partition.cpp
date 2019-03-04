@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void Parallelizer::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::mergeTrivialNodesInSCCDAG (LoopDependenceInfo *LDI) {
 
   /*
    * Print the current SCCDAG.
@@ -45,7 +45,7 @@ void Parallelizer::mergeTrivialNodesInSCCDAG (DSWPLoopDependenceInfo *LDI) {
   return ;
 }
 
-void Parallelizer::mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::mergeSingleSyntacticSugarInstrs (LoopDependenceInfo *LDI) {
   std::unordered_map<DGNode<SCC> *, std::set<DGNode<SCC> *> *> mergedToGroup;
   std::set<std::set<DGNode<SCC> *> *> singles;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
@@ -117,7 +117,7 @@ void Parallelizer::mergeSingleSyntacticSugarInstrs (DSWPLoopDependenceInfo *LDI)
   }
 }
 
-void Parallelizer::mergeBranchesWithoutOutgoingEdges (DSWPLoopDependenceInfo *LDI) {
+void Parallelizer::mergeBranchesWithoutOutgoingEdges (LoopDependenceInfo *LDI) {
   std::vector<DGNode<SCC> *> tailCmpBrs;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();

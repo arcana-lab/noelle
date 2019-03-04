@@ -134,23 +134,35 @@ void llvm::DGSimplify::getLoopsToInline (std::string filename) {
   if (infile.good()) {
     std::string line;
     std::string delimiter = ",";
+    std::unordered_map<int, std::vector<int>> allInds;
     while(getline(infile, line)) {
       size_t i = line.find(delimiter);
       int fnInd = std::stoi(line.substr(0, i));
       int loopInd = std::stoi(line.substr(i + delimiter.length()));
-      auto F = depthOrderedFns[fnInd];
-      auto &loops = *preOrderedLoops[F];
-      assert(loopInd < loops.size());
-      loopsToCheck[F].insert(loops[loopInd]);
+      allInds[fnInd].push_back(loopInd);
     }
-    return;
-  }
 
-  // NOTE(angelo): Default to selecting all loops in the program
-  for (auto funcLoops : preOrderedLoops) {
-    auto F = funcLoops.first;
-    for (auto summary : *funcLoops.second) {
-      loopsToCheck[F].insert(summary);
+    for (auto fnLoopInds : allInds) {
+      auto fnInd = fnLoopInds.first;
+      auto loopInds = fnLoopInds.second;
+      assert(fnInd >= 0 && fnInd < depthOrderedFns.size());
+      auto F = depthOrderedFns[fnInd];
+
+      auto &loops = *preOrderedLoops[F];
+      std::sort(loopInds.begin(), loopInds.end());
+      assert(loopInds[0] >= 0 && loopInds[loopInds.size() - 1] < loops.size());
+      for (auto loopInd : loopInds) {
+        loopsToCheck[F].push_back(loops[loopInd]);
+      }
+    }
+
+  } else {
+    // NOTE(angelo): Default to selecting all loops in the program
+    for (auto funcLoops : preOrderedLoops) {
+      auto F = funcLoops.first;
+      for (auto summary : *funcLoops.second) {
+        loopsToCheck[F].push_back(summary);
+      }
     }
   }
 }
@@ -162,14 +174,14 @@ void llvm::DGSimplify::getFunctionsToInline (std::string filename) {
     std::string line;
     while(getline(infile, line)) {
       int fnInd = std::stoi(line);
+      assert(fnInd > 0 && fnInd < depthOrderedFns.size());
       fnsToCheck.insert(depthOrderedFns[fnInd]);
     }
-    return;
-  }
-
-  // NOTE(angelo): Default to select all functions with loops in them
-  for (auto funcLoops : preOrderedLoops) {
-    fnsToCheck.insert(funcLoops.first);
+  } else {
+    // NOTE(angelo): Default to select all functions with loops in them
+    for (auto funcLoops : preOrderedLoops) {
+      fnsToCheck.insert(funcLoops.first);
+    }
   }
 }
 
@@ -195,8 +207,11 @@ bool llvm::DGSimplify::registerRemainingFunctions (std::string filename) {
   if (fnsToCheck.size() == 0) return false;
 
   ofstream outfile(filename);
-  for (auto F : fnsToCheck) {
-    outfile << fnOrders[F] << "\n";
+  std::vector<int> fnInds;
+  for (auto F : fnsToCheck) fnInds.push_back(fnOrders[F]);
+  std::sort(fnInds.begin(), fnInds.end());
+  for (auto ind : fnInds) {
+    outfile << ind << "\n";
   }
   outfile.close();
   return true;
@@ -232,9 +247,11 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops () {
 
     bool inlined = false;
     std::set<LoopSummary *> removeSummaries;
-    for (auto summary : loopsToCheck[F]) {
-      auto loopInd = std::find(allSummaries.begin(), allSummaries.end(), summary);
-      auto loop = (*loopsPreorder)[loopInd - allSummaries.begin()];
+    auto &toCheck = loopsToCheck[F];
+    for (auto summary : toCheck) {
+      auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
+      auto loopInd = loopIter - allSummaries.begin();
+      auto loop = (*loopsPreorder)[loopInd];
       auto LDI = new LoopDependenceInfo(F, fdg, loop, LI, PDT);
       auto &attrs = LDI->sccdagAttrs;
       attrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
@@ -254,9 +271,20 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops () {
     if (inlined) {
       for (auto parentF : parentFns[F]) fnsToAvoid.insert(parentF);
     }
-    for (auto summary : removeSummaries) loopsToCheck[F].erase(summary);
+
+    // NOTE(angelo): Do not re-check loops that weren't inlined within after a check 
+    std::vector<int> removeInds;
+    for (auto i = 0; i < toCheck.size(); ++i) {
+      if (removeSummaries.find(toCheck[i]) != removeSummaries.end())
+        removeInds.push_back(i);
+    }
+    std::sort(removeInds.begin(), removeInds.end());
+    for (auto i = 0; i < removeInds.size(); ++i) {
+      toCheck.erase(toCheck.begin() + removeInds[removeInds.size() - i - 1]);
+    }
+
     // NOTE(angelo): Clear function entries without any more loops to check
-    if (loopsToCheck[F].size() == 0) loopsToCheck.erase(F);
+    if (toCheck.size() == 0) loopsToCheck.erase(F);
   }
 
   return anyInlined;
@@ -319,7 +347,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo
 
 bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
   std::vector<Function *> orderedFns;
-  for (auto fn : fnsToCheck) orderedFns.push_back(fn);
+  for (auto F : fnsToCheck) orderedFns.push_back(F);
   sortInDepthOrderFns(orderedFns);
 
   int fnIndex = 0;
@@ -764,10 +792,12 @@ void llvm::DGSimplify::printLoopsToCheck () {
 void llvm::DGSimplify::printFnsToCheck () {
   if (this->verbose == Verbosity::Disabled) return;
   errs() << "DGSimplify:   Functions in checklist ---------------\n";
-  for (auto F : fnsToCheck) {
-    auto fnInd = fnOrders[F];
+  std::vector<int> fnInds;
+  for (auto F : fnsToCheck) fnInds.push_back(fnOrders[F]);
+  std::sort(fnInds.begin(), fnInds.end());
+  for (auto ind : fnInds) {
     errs() << "DGSimplify:   Fn: "
-      << fnInd << " " << F->getName() << "\n";
+      << ind << " " << depthOrderedFns[ind]->getName() << "\n";
   }
   errs() << "DGSimplify:   ---------------\n";
 }

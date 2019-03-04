@@ -10,7 +10,9 @@ LIBS=-lm
 
 RUNTIME_CFLAGS="-DDSWP_STATS"
 RUNTIME_CFLAGS=""
-PARALLELIZATION_OPTIONS=-pdg-verbose=1 -dswp-verbose=1 -dswp-force -doall-chunk-size=32 -doall-cores-per=8 -dswp-cores-per=2
+# Other parallelization options:
+# -doall-chunk-size=NUMBER, -doall-cores-per=NUMBER
+PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -dswp-verbose=1 -dswp-force -dswp-cores-per=2
 OPT_LEVEL=-O3
 
 INCLUDES=-I../../include/threadpool/include
@@ -20,12 +22,13 @@ OPTIMIZED=parallelized
 
 
 TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
+<<<<<<< HEAD
 ORACLEAA_PASS=-load $(INSTALL_LIB)/UniqueIRMarker.so -load $(INSTALL_LIB)/OracleAA.so  -input-args "${oracle_input_args}" -exe-script=$(INSTALL_DIR)/bin/run_via.sh -loops
-PDGPASS=$(ORACLEAA_PASS) -load $(INSTALL_LIB)/PDGAnalysis.so
+PDGPASS=$(ORACLEAA_PASS) -load $(INSTALL_LIB)/AllocAA.so $(INSTALL_LIB)/PDGAnalysis.so
 PRINTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/PDGPrinter.so
-PARALLELIZATION_TECHNIQUES= -load $(INSTALL_LIB)//DSWP.so -load $(INSTALL_LIB)/DOALL.so -load $(INSTALL_LIB)/HELIX.so
+PARALLELIZATION_TECHNIQUES= -load $(INSTALL_LIB)/DSWP.so -load $(INSTALL_LIB)/DOALL.so -load $(INSTALL_LIB)/HELIX.so
 PRE_OPTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/DGSimplify.so
-OPTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/Heuristics.so -load $(INSTALL_LIB)/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load $(INSTALL_LIB)/Parallelizer.so 
+OPTPASSES=$(PDGPASS) $(INSTALL_LIB)/HotProfiler.so -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/Heuristics.so -load $(INSTALL_LIB)/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load $(INSTALL_LIB)/Parallelizer.so 
 
 all: baseline baseline_pdgdot.bc testseq $(OPTIMIZED)
 
@@ -59,7 +62,7 @@ baseline.bc: test.bc
 
 test.bc: test.cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
-#	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
 	opt -dot-cfg -disable-output $@
 	llvm-dis $@
 
@@ -76,6 +79,6 @@ show_time: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED)
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw
 
 .PHONY: show_passes show_time

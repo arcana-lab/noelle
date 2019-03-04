@@ -8,39 +8,30 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "Parallelizer.hpp"
+#pragma once
 
-using namespace llvm;
+#include "SystemHeaders.hpp"
 
-std::vector<DSWPLoopDependenceInfo *> Parallelizer::getLoopsToParallelize (Module &M, Parallelization &par){
-  std::vector<DSWPLoopDependenceInfo *> loopsToParallelize;
+namespace llvm {
 
-  /*
-   * Define the allocator of loop structures.
-   */
-  auto allocatorOfLoopStructures = [] (Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt) -> LoopDependenceInfo * {
-    auto ldi = new DSWPLoopDependenceInfo(f, fG, l, li, pdt);
-    return ldi;
+  class DataFlowResult {
+    public:
+
+      /*
+       * Methods
+       */
+      DataFlowResult ();
+
+      std::set<Value *>& GEN (Instruction *inst);
+      std::set<Value *>& KILL (Instruction *inst);
+      std::set<Value *>& IN (Instruction *inst);
+      std::set<Value *>& OUT (Instruction *inst);
+
+    private:
+      std::map<Instruction *, std::set<Value *>> gens;
+      std::map<Instruction *, std::set<Value *>> kills;
+      std::map<Instruction *, std::set<Value *>> ins;
+      std::map<Instruction *, std::set<Value *>> outs;
   };
 
-  /*
-   * Collect all loops included in the module.
-   */
-  auto allLoops = par.getModuleLoops(&M, allocatorOfLoopStructures);
-
-  /*
-   * Consider all loops to parallelize.
-   */
-  for (auto loop : *allLoops){
-    auto dswpLoop = (DSWPLoopDependenceInfo *)(loop);
-    loopsToParallelize.push_back(dswpLoop);
-  }
-
-  /*
-   * Free the memory.
-   */
-  delete allLoops;
-
-  return loopsToParallelize;
 }
-

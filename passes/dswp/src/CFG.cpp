@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void DSWP::collectTransitiveCondBrs (DSWPLoopDependenceInfo *LDI,
+void DSWP::collectTransitiveCondBrs (LoopDependenceInfo *LDI,
   std::set<TerminatorInst *> &bottomLevelBrs,
   std::set<TerminatorInst *> &descendantCondBrs
 ) {
@@ -42,7 +42,7 @@ void DSWP::collectTransitiveCondBrs (DSWPLoopDependenceInfo *LDI,
   }
 }
 
-void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI) {
+void DSWP::trimCFGOfStages (LoopDependenceInfo *LDI) {
   std::set<BasicBlock *> iterEndBBs;
   iterEndBBs.insert(LDI->header);
   for (auto bb : LDI->loopExitBlocks) iterEndBBs.insert(bb);
@@ -86,14 +86,14 @@ void DSWP::trimCFGOfStages (DSWPLoopDependenceInfo *LDI) {
     // NOTE: This is because queue loads are done in the basic block of the producer,
     //  hence portions of the CFG where the producer would be contained must be preserved
     for (auto queueIndex : task->popValueQueues) {
-      stageBrs.insert(LDI->queues[queueIndex]->producer->getParent()->getTerminator());
+      stageBrs.insert(this->queues[queueIndex]->producer->getParent()->getTerminator());
     }
 
     collectTransitiveCondBrs(LDI, stageBrs, task->usedCondBrs);
   }
 }
 
-void DSWP::generateLoopSubsetForStage (DSWPLoopDependenceInfo *LDI, int taskIndex) {
+void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
 
   /*

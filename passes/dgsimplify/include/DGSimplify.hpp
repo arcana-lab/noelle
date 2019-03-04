@@ -122,7 +122,7 @@ namespace llvm {
     /*
      * Tracking the functions and loops to affect
      */
-    std::unordered_map<Function *, std::set<LoopSummary *>> loopsToCheck;
+    std::unordered_map<Function *, std::vector<LoopSummary *>> loopsToCheck;
     std::set<Function *> fnsToCheck;
 
     /*

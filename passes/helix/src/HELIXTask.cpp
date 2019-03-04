@@ -17,7 +17,8 @@ void llvm::HELIXTask::extractFuncArgs (void) {
    */
   auto argIter = this->F->arg_begin();
   this->envArg = (Value *) &*(argIter++);
-  this->ssArrayArg = (Value *) &*(argIter++);
+  this->ssPastArrayArg = (Value *) &*(argIter++);
+  this->ssFutureArrayArg = (Value *) &*(argIter++);
   this->coreArg = (Value *) &*(argIter++); 
   this->numCoresArg = (Value *) &*(argIter++);
 

@@ -30,6 +30,7 @@
 
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
+#include "HotProfiler.hpp"
 
 using namespace llvm;
 
@@ -51,6 +52,7 @@ void llvm::Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<PDGAnalysis>();
+  AU.addRequired<HotProfiler>();
 
   return ;
 }
@@ -124,14 +126,14 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
 }
 
 std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
-  Module *module, 
-  std::function<LoopDependenceInfo * (Function *, PDG *, Loop *, LoopInfo &, PostDominatorTree &)> allocationFunction
+  Module *module,
+  double minimumHotness
   ){
 
-  /* 
-   * Fetch the PDG.
+  /*
+   * Fetch the profiles.
    */
-  auto graph = getAnalysis<PDGAnalysis>().getPDG();
+  auto& profiles = getAnalysis<HotProfiler>().getHot();
 
   /*
    * Allocate the vector of loops.
@@ -233,6 +235,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
    * Append loops of each function.
    */
   auto currentLoopIndex = 0;
+  errs() << "Parallelizer: Filter out cold code\n" ;
   for (auto function : *functions){
 
     /*
@@ -248,9 +251,22 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     }
 
     /*
+     * Check if the function is hot.
+     */
+    if (profiles.isAvailable()){
+      auto mInsts = profiles.getModuleInstructions();
+      auto fInsts = profiles.getFunctionInstructions(function);
+      auto hotness = ((double)fInsts) / ((double)mInsts);
+      if (hotness <= minimumHotness){
+        errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
+        continue ;
+      }
+    }
+
+    /*
      * Fetch the function dependence graph.
      */
-    auto funcPDG = graph->createFunctionSubgraph(*function);
+    auto funcPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
 
     /*
      * Fetch the dominators.
@@ -265,10 +281,29 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     auto loops = LI.getLoopsInPreorder();
 
     /*
-     * Append these loops.
+     * Consider these loops.
      */
     for (auto loop : loops){
-      auto ldi = allocationFunction(function, funcPDG, loop, LI, PDT);
+
+      /*
+       * Check if the loop is hot enough.
+       */
+       if (profiles.isAvailable()){
+        auto mInsts = profiles.getModuleInstructions();
+        auto lInsts = profiles.getLoopInstructions(loop);
+        auto hotness = ((double)lInsts) / ((double)mInsts);
+        if (hotness <= minimumHotness){
+          errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
+          currentLoopIndex++;
+          continue ;
+        }
+        errs() << "Parallelizer:  Loop hotness = " << hotness << "\n" ;
+      }
+
+      /*
+       * Allocate the loop wrapper.
+       */
+      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, PDT);
 
       /*
        * Check if we have to filter loops.
@@ -346,6 +381,22 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   Value *envIndexForExitVariable,
   SmallVector<BasicBlock *, 10> &loopExitBlocks
   ){
+
+  /*
+   * Hoist allocations in the parallelized loop basic block to the function's entry
+   * Possibly rendered obsolete by allocating the environment array at the function's entry
+
+  std::set<Instruction *> allocas;
+  for (auto &I : *startOfParLoopInOriginalFunc) {
+    if (isa<AllocaInst>(I)) allocas.insert(&I);
+  }
+  Instruction *entryI = &*startOfParLoopInOriginalFunc->getParent()->begin()->begin();
+  for (auto I : allocas) {
+    I->removeFromParent();
+    I->insertBefore(entryI);
+  }
+
+   */
 
   /*
    * Create the global variable for the parallelized loop.

@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
+void DSWP::partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) {
 
   /*
    * Prepare the initial partition.
@@ -58,7 +58,7 @@ void DSWP::partitionSCCDAG (DSWPLoopDependenceInfo *LDI, Heuristics *h) {
 }
 
 /*
-void DSWP::clusterSubloops (DSWPLoopDependenceInfo *LDI) {
+void DSWP::clusterSubloops (LoopDependenceInfo *LDI) {
   auto &li = LDI->liSummary;
   auto loop = li.bbToLoop[LDI->header];
   auto loopDepth = loop->depth;

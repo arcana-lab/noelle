@@ -1,9 +1,12 @@
-all: printer pdg parallelization_utilities dgsimplify parallelizer heuristics parallelization_technique dswp doall helix oracle_aa unique_ir_marker
+all: hotprofiler printer pdg parallelization_utilities alloc_aa dataflow dgsimplify parallelizer heuristics parallelization_technique dswp doall helix oracle_aa unique_ir_marker
 
 oracle_aa:
 	cd $@ ; ../scripts/run_me.sh
 
-unique_ir_marker:
+dataflow:
+	cd $@ ; ../scripts/run_me.sh
+
+hotprofiler:
 	cd $@ ; ../scripts/run_me.sh
 
 printer:
@@ -13,6 +16,9 @@ parallelization_utilities:
 	cd $@ ; ../scripts/run_me.sh
 
 pdg:
+	cd $@ ; ../scripts/run_me.sh
+
+alloc_aa:
 	cd $@ ; ../scripts/run_me.sh
 
 dgsimplify:
@@ -42,4 +48,4 @@ uninstall:
 clean:
 	rm -rf */build */*.json ; find ./ -name .ycm_extra_conf.py -delete
 
-.PHONY: clean pdg printer dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix oracle_aa unique_ir_marker
+.PHONY: clean pdg printer alloc_aa dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix hotprofiler dataflow oracle_aa unique_ir_marker

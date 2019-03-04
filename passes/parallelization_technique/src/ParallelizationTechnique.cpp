@@ -76,7 +76,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
 }
 
 void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI) {
-  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
+  IRBuilder<> builder(&*LDI->function->begin()->begin());
   envBuilder->generateEnvArray(builder);
   envBuilder->generateEnvVariables(builder);
 }
@@ -240,6 +240,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
 ){
   auto task = this->tasks[taskIndex];
   IRBuilder<> entryBuilder(task->entryBlock);
+  auto entryTerminator = task->entryBlock->getTerminator();
   auto envUser = this->envBuilder->getUser(taskIndex);
   for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
 
@@ -266,13 +267,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
        * Fetch the operator of the accumulator instruction for this reducable PHI node
        * Store the identity value of the operator
        */
-      auto producerSCC = LDI->loopSCCDAG->sccOfValue(cast<PHINode>(producer));
-      auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->accumulators.begin());
-      auto envPtrType = envPtr->getType();
-      auto identityV = LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(
-        firstAccumI,
-        cast<PointerType>(envPtrType)->getElementType()
-      );
+      auto identityV = getIdentityValueForEnvironmentValue(LDI, taskIndex, envIndex);
       entryBuilder.CreateStore(identityV, envPtr);
     }
 
@@ -280,12 +275,41 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      * Store the clone of the producer at the environment pointer
      */
     auto prodClone = task->instructionClones[producer];
-    auto prodCloneBB = task->basicBlockClones[producer->getParent()];
-    IRBuilder<> prodBuilder(prodCloneBB->getTerminator());
-    prodBuilder.CreateStore(prodClone, envPtr);
+    auto insertBBs = determineLatestPointsToInsertLiveOutStore(LDI, taskIndex, producer);
+    for (auto BB : insertBBs) {
+      IRBuilder<> liveOutBuilder(BB);
+      auto store = (StoreInst*)liveOutBuilder.CreateStore(prodClone, envPtr);
+      store->removeFromParent();
+      store->insertBefore(BB->getTerminator());
+    }
   }
 
-  return ;
+  if (entryTerminator->getNextNode()) {
+    entryTerminator->removeFromParent();
+    entryBuilder.Insert(entryTerminator);
+  }
+}
+
+std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLiveOutStore (
+  LoopDependenceInfo *LDI,
+  int taskIndex,
+  Instruction *liveOut
+){
+  auto task = this->tasks[taskIndex];
+
+  /*
+   * Determine whether the producer is in the loop header. If so, return all
+   * the loop's exit blocks, as the live out value must be valid at all exit points
+   */
+  auto liveOutClone = task->instructionClones[liveOut];
+  auto isInHeader = LDI->header == liveOut->getParent();
+  if (!isInHeader) return { liveOutClone->getParent() };
+
+  std::set<BasicBlock *> insertPoints;
+  for (auto BB : LDI->loopExitBlocks) {
+    insertPoints.insert(task->basicBlockClones[BB]);
+  }
+  return insertPoints;
 }
 
 void ParallelizationTechnique::adjustDataFlowToUseClones (
@@ -354,6 +378,60 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
   }
 }
 
+void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
+  LoopDependenceInfo *LDI,
+  int taskIndex
+){
+  auto task = this->tasks[taskIndex];
+  for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+    if (!envBuilder->isReduced(envInd)) continue;
+
+    auto producer = LDI->environment->producerAt(envInd);
+    assert(isa<PHINode>(producer) && "Reducable producers are assumed to be PHIs");
+    auto producerPHI = cast<PHINode>(producer);
+    assert(LDI->header == producerPHI->getParent()
+      && "Reducable producers are assumed to be live throughout the loop");
+
+    auto producerClone = cast<PHINode>(task->instructionClones[producerPHI]);
+    auto preheaderClone = task->basicBlockClones[LDI->preHeader];
+    auto incomingIndex = producerClone->getBasicBlockIndex(preheaderClone);
+    assert(incomingIndex != -1 && "Loop entry present on producer PHI node");
+
+    auto identityV = getIdentityValueForEnvironmentValue(LDI, taskIndex, envInd);
+    producerClone->setIncomingValue(incomingIndex, identityV);
+  }
+}
+
+Value *ParallelizationTechnique::getIdentityValueForEnvironmentValue (
+  LoopDependenceInfo *LDI,
+  int taskIndex,
+  int environmentIndex
+){
+
+/*
+      auto producerSCC = LDI->loopSCCDAG->sccOfValue(cast<PHINode>(producer));
+      auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->accumulators.begin());
+      auto envPtrType = envPtr->getType();
+      auto identityV = LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(
+        firstAccumI,
+        cast<PointerType>(envPtrType)->getElementType()
+      );
+*/
+
+  auto producer = LDI->environment->producerAt(environmentIndex);
+  auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
+  assert(producerSCC != nullptr && "The environment value doesn't belong to a loop SCC");
+
+  auto &sccAttrs = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+  assert(sccAttrs->accumulators.size() > 0 && "The environment value isn't accumulated!");
+
+  auto firstAccumI = *(sccAttrs->accumulators.begin());
+  return LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(
+    firstAccumI,
+    producer->getType()
+  );
+}
+
 void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
   LoopDependenceInfo *LDI,
   int taskIndex
@@ -377,17 +455,72 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
   assert(exitBlockEnvIndex != -1);
   auto envUser = this->envBuilder->getUser(taskIndex);
   IRBuilder<> entryBuilder(task->entryBlock);
+  auto entryTerminator = task->entryBlock->getTerminator();
+
   envUser->createEnvPtr(entryBuilder, exitBlockEnvIndex);
+  entryTerminator->removeFromParent();
+  entryBuilder.Insert(entryTerminator);
 
   /*
    * Add a store instruction to specify to the code outside the parallelized loop which exit block is taken.
    */
   auto int32 = IntegerType::get(module.getContext(), 32);
   for (int i = 0; i < task->loopExitBlocks.size(); ++i) {
-    IRBuilder<> builder(&*task->loopExitBlocks[i]->begin());
+    auto bb = &*task->loopExitBlocks[i];
+    auto term = bb->getTerminator();
+    IRBuilder<> builder(bb);
     auto envPtr = envUser->getEnvPtr(exitBlockEnvIndex);
     builder.CreateStore(ConstantInt::get(int32, i), envPtr);
+    term->removeFromParent();
+    builder.Insert(term);
   }
 
   return ;
+}
+
+void ParallelizationTechnique::doNestedInlineOfCalls (
+  Function *function,
+  std::set<CallInst *> &calls
+){
+  std::queue<CallInst *> callsToInline;
+  for (auto call : calls) callsToInline.push(call);
+
+  while (!callsToInline.empty()) {
+
+    /*
+     * Empty the queue, inlining each site
+     */
+    std::set<Function *> funcToInline;
+    while (!callsToInline.empty()) {
+      auto callToInline = callsToInline.front();
+      callsToInline.pop();
+
+      auto F = callToInline->getCalledFunction();
+      for (auto &B : *F) {
+        for (auto &I : B) {
+          if (auto call = dyn_cast<CallInst>(&I)) {
+            auto func = call->getCalledFunction();
+            if (func == nullptr || func->empty()) continue;
+            funcToInline.insert(func);
+          }
+        }
+      }
+
+      InlineFunctionInfo IFI;
+      InlineFunction(callToInline, IFI);
+    }
+
+    /*
+     * Collect next level of queue push/pop calls to inline
+     */
+    for (auto &B : *function) {
+      for (auto &I : B) {
+        if (auto call = dyn_cast<CallInst>(&I)) {
+          if (funcToInline.find(call->getCalledFunction()) != funcToInline.end()) {
+            callsToInline.push(call);
+          }
+        }
+      }
+    }
+  }
 }

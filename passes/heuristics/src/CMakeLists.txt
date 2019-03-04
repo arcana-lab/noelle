@@ -26,7 +26,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../pdg/include ../../threadpool/include ../../parallelization_utilities/include)
+include_directories(${LLVM_INCLUDE_DIRS} ../../alloc_aa/include ../../pdg/include ../../threadpool/include ../../parallelization_utilities/include)
 
 # Declare the LLVM pass to compile
 add_llvm_loadable_module(${PassName} ${Srcs})
