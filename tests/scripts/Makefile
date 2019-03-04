@@ -3,6 +3,7 @@ INSTALL_DIR=/local/scratch/josi2/noelle/install
 INSTALL_LIB=$(INSTALL_DIR)/lib
 
 CC=${LLVM_BIN}/clang++
+OPT=${LLVM_BIN}/opt
 AA_BASE=-basicaa
 AA_ADVANCED=$(AA_BASE) -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa
 ANALYSES=$(AA) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization -heuristics
@@ -22,13 +23,12 @@ OPTIMIZED=parallelized
 
 
 TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
-<<<<<<< HEAD
 ORACLEAA_PASS=-load $(INSTALL_LIB)/UniqueIRMarker.so -load $(INSTALL_LIB)/OracleAA.so  -input-args "${oracle_input_args}" -exe-script=$(INSTALL_DIR)/bin/run_via.sh -loops
-PDGPASS=$(ORACLEAA_PASS) -load $(INSTALL_LIB)/AllocAA.so $(INSTALL_LIB)/PDGAnalysis.so
+PDGPASS=$(ORACLEAA_PASS) -load $(INSTALL_LIB)/AllocAA.so -load $(INSTALL_LIB)/PDGAnalysis.so
 PRINTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/PDGPrinter.so
 PARALLELIZATION_TECHNIQUES= -load $(INSTALL_LIB)/DSWP.so -load $(INSTALL_LIB)/DOALL.so -load $(INSTALL_LIB)/HELIX.so
 PRE_OPTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/DGSimplify.so
-OPTPASSES=$(PDGPASS) $(INSTALL_LIB)/HotProfiler.so -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/Heuristics.so -load $(INSTALL_LIB)/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load $(INSTALL_LIB)/Parallelizer.so 
+OPTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/HotProfiler.so -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/Heuristics.so -load $(INSTALL_LIB)/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load $(INSTALL_LIB)/Parallelizer.so 
 
 all: baseline baseline_pdgdot.bc testseq $(OPTIMIZED)
 
@@ -37,7 +37,7 @@ baseline: baseline.bc
 	$(CC) $(OPT_LEVEL) $^ -o $@
 
 baseline_pdgdot.bc: test.bc
-	opt $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -PDGPrinter $^  -o $@
+	$(OPT) $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -PDGPrinter $^  -o $@
 
 testseq: test_seq.bc
 	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
@@ -49,10 +49,10 @@ $(OPTIMIZED): test_dswp.bc
 	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
 test_pdgdot.bc: test_seq.bc
-	opt $(PRINTPASSES) $(ANALYSES) -PDGPrinter $^ -o $@
+	$(OPT) $(PRINTPASSES) $(ANALYSES) -PDGPrinter $^ -o $@
 
 test_dswp.bc: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -parallelizer $(PARALLELIZATION_OPTIONS) $^ -o $@
+	$(OPT) $(OPTPASSES) $(ANALYSES) -parallelizer $(PARALLELIZATION_OPTIONS) $^ -o $@
 	$(CC) $(OPT_LEVEL) -c -emit-llvm $@ -o $@
 	llvm-dis $@
 
@@ -62,21 +62,21 @@ baseline.bc: test.bc
 
 test.bc: test.cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
-	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
-	opt -dot-cfg -disable-output $@
+	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
 	@../../scripts/iterate_dgsimplify.sh "-inliner-verbose=1" "$(PRE_OPTPASSES)" "$@"
-	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
 	llvm-dis $@
 
 show_passes: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
+	$(OPT) $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
 
 show_time: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
+	$(OPT) $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw

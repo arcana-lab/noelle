@@ -85,7 +85,13 @@ void oracle_aa::VIAInvoker::dumpModule() {
 // execute the executable
 void oracle_aa::VIAInvoker::executeVIAInference(StringRef inputArgs) {
 
-  auto ScriptWithArgs = OracleExecutionScriptPath.getValue() + " " + std::to_string(moduleID) + " " + inputArgs.str();
+  auto modIDStr = std::to_string(moduleID);
+  auto ScriptWithArgs = OracleExecutionScriptPath.getValue() + " " + modIDStr + " " + inputArgs.str();
+
+  std::string s = modIDStr + "-oracle-dgg.viaconf";
+
+  // Tell VIA where the viaconf setting is.
+  setenv("VIACONF_SETTING", s.c_str(), 1);
 
   errs() << ScriptWithArgs << '\n';
 
