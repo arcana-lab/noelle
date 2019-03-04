@@ -9,6 +9,10 @@ function cleanTests {
     fi
 
     cd $i ;
+    if [ -f artifacts ] ; then
+      cat artifacts | xargs rm 
+      rm artifacts
+    fi 
     make clean ;
     rm -f *_utils.cpp Makefile ;
     cd ../ ;

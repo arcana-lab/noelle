@@ -79,6 +79,6 @@ show_time: test_seq.bc
 	$(OPT) $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *.dep *.viaconf
 
 .PHONY: show_passes show_time
