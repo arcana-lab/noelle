@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
+set -e
 
 name="$1"
-execution_args="$2"
+shift
+execution_args="$@"
 
 ir_in="${name}.bc"
 instrumented_ir="${name}.via.bc"
@@ -16,7 +18,9 @@ ${oracle_opt_cmd} -load LLVMVIAInstrument.so -via -S ${ir_in} -o ${instrumented_
 
 export VIACONF_SETTING="${name}-oracle-ddg.viaconf"
 
-${oracle_clang_cmd} ${instrumented_ir} -o ${bin_name} -L"${via_install_dir}/lib" -lvia
+echo running "${oracle_clang_cmd} ${oracle_clang_opts} ${instrumented_ir} -o ${bin_name} -L"${via_install_dir}/lib" -lvia"
+
+${oracle_clang_cmd} ${oracle_clang_opts} ${instrumented_ir} -o ${bin_name} -L"${via_install_dir}/lib" -lvia
 
 
 # Execute Instrumented binary

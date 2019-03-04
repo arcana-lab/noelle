@@ -42,7 +42,9 @@ AliasResult OracleDDGAAResult::alias(const MemoryLocation &LocA, const MemoryLoc
   auto InsB = dyn_cast<Instruction>(LocB.Ptr);
   if (!InsA || !InsB) {
     errs() << "Cannot handle "; LocA.Ptr->print(errs()); errs() << " "; LocB.Ptr->print(errs()); errs() << '\n';
-    assert( 0 && "Cannot continue" );
+    // TODO: Handle this
+    return MayAlias;
+//    assert( 0 && "Cannot continue" );
   }
 
   auto Fa = UniqueIRMarkerReader::getFunctionID(InsA->getFunction());
@@ -75,8 +77,8 @@ AliasResult OracleDDGAAResult::alias(const MemoryLocation &LocA, const MemoryLoc
 }
 
 void OracleAAWrapperPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<UniqueIRMarkerPass>(); // Must mark up the IR
   AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<UniqueIRMarkerPass>(); // Must mark up the IR
   AU.setPreservesAll();
 }
 
@@ -89,7 +91,7 @@ bool llvm::OracleAAWrapperPass::doInitialization(llvm::Module &M) {
 bool OracleAAWrapperPass::runOnModule(Module &M) {
   oracle_aa::VIAInvoker viaInvoker(M, *this);
   assert(!Inputs.empty() && "Need at least one input argument");
-  viaInvoker.runInference(Inputs.front());
+  viaInvoker.runInference( Inputs.front() );
   auto res = viaInvoker.getResults();
   Result->getAliasResults()->unionFunctionAlias( *res );
   return true;
@@ -102,7 +104,7 @@ ModulePass* llvm::createOracleDDGAAWrapperPass() {
 
 char OracleAAWrapperPass::ID = 0;
 static RegisterPass<OracleAAWrapperPass> X("OracleAA", "Instruments and executes the current IR to find memory "
-                                                          "dependencies at runtime for a given input", true, true);
+                                                          "dependencies at runtime for a given input");
 
 
 //static llvm::legacy::RegisterStandardPasses

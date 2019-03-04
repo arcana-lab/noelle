@@ -48,23 +48,6 @@ void oracle_aa::VIAInvoker::runInference(StringRef inputArgs) {
 
 // build a viaconf file for each loop in the program and write it to viaConfigFilename
 void oracle_aa::VIAInvoker::buildOracleDDGConfig(llvm::SmallVector<llvm::Loop *, 8> lp) {
-
-//  std::vector<uint64_t> loopIDs{};
-
-//  for ( auto &F: M ) {
-//    auto &LI = MP.getAnalysis<llvm::LoopInfoWrapperPass>(F).getLoopInfo();
-//    for ( auto &L : LI ) {
-//      auto *metaNode = L->getLoopID();
-//      assert(metaNode && "No metadata");
-//      assert(metaNode->getNumOperands() == 2 && "Loop ID must have two operands (itself and the ID");
-//      auto *constant = dyn_cast<ConstantAsMetadata>(metaNode->getOperand(1))->getValue();
-//      auto v = dyn_cast<ConstantInt>(constant)->getZExtValue();
-//      loopIDs.push_back(v);
-//      errs() << "loop id: " << v << '\n';
-//    }
-//  }
-
-
   rapidjson::StringBuffer buffer;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> prettyBuffer(buffer);
 
@@ -86,8 +69,6 @@ void oracle_aa::VIAInvoker::buildOracleDDGConfig(llvm::SmallVector<llvm::Loop *,
 void oracle_aa::VIAInvoker::dumpModule() {
 
   std::error_code EC;
-
-  errs() << moduleBitcodeFilename << '\n';
 
   llvm::raw_fd_ostream OS(moduleBitcodeFilename, EC, sys::fs::OpenFlags::F_None);
   WriteBitcodeToFile(&M, OS);
@@ -146,9 +127,9 @@ void oracle_aa::VIAInvoker::parseResponse() {
   IDToValueMapper idToValueMapper(M);
   auto mapping = idToValueMapper.idToValueMap(ids);
 
-  auto module = doc["Module"].GetUint64();
+  auto module = doc["ModuleID"].GetUint64();
   for ( auto &iter : resultList.GetArray() ) {
-    auto function = iter["Function"].GetUint64();
+    auto function = iter["FunctionID"].GetUint64();
     for ( auto &dep : iter[DependenciesKey].GetArray() ) {
       auto depType = StringRef(dep[0].GetString());
       auto first = dep[1].GetUint64();
@@ -170,7 +151,7 @@ void oracle_aa::VIAInvoker::parseResponse() {
         errs() << "depType not known: " << depType << '\n';
         assert(0 && "found an unknown dependency type");
       }
-      errs() << "parsing response: ";
+      errs() << "parsing response bhal: ";
       getPtrValue(firstValue)->print(errs());
       errs() << " ";
       getPtrValue(secondValue)->print(errs());
@@ -185,6 +166,9 @@ Value *VIAInvoker::getPtrValue(Instruction *I) {
     return Load->getPointerOperand();
   } else if (auto *Store = dyn_cast<StoreInst>(I)) {
     return Store->getPointerOperand();
+    // FIXME: handle calls correctly.
+  } else if ( auto *Call = dyn_cast<CallInst>(I) ) {
+    return I;
   } else {
     errs() << "Got an Instruction with opname: " <<  I->getOpcodeName() << '\n';
     assert ( 0 && "Instruction must be a load or a store" );

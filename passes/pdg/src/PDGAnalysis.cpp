@@ -29,6 +29,8 @@
 
 static cl::opt<int> Verbose("pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
 
+static cl::opt<bool> UseOracleAA("use-oracle-aa", cl::ValueOptional, cl::desc("Should use OracleAA"));
+
 using namespace llvm;
 
 bool llvm::PDGAnalysis::doInitialization (Module &M){
@@ -42,7 +44,9 @@ bool llvm::PDGAnalysis::doInitialization (Module &M){
 void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<AAResultsWrapperPass>();
-  AU.addRequired<OracleAAWrapperPass>();
+  if (UseOracleAA) {
+    AU.addRequired<OracleAAWrapperPass>();
+  }
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
@@ -909,8 +913,10 @@ bool llvm::PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edg
 
 AAResults &PDGAnalysis::getAAResults(Function &F) {
   // FIXME: This can be replaced with createExternalAAWrapperPass in the OracleAAWrapperPass
-  auto &OracleAA = getAnalysis<OracleAAWrapperPass>().getResult();
   auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
-  AA.addAAResult(OracleAA);
+  if (UseOracleAA) {
+    auto &OracleAA = getAnalysis<OracleAAWrapperPass>().getResult();
+    AA.addAAResult(OracleAA);
+  }
   return AA;
 }

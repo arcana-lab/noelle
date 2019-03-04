@@ -40,6 +40,10 @@ class OracleDDGAAResult : public AAResultBase<OracleDDGAAResult> {
   AliasResult  query(const MemoryLocation &, const MemoryLocation &);
 
   AliasResult  alias(const MemoryLocation &, const MemoryLocation &);
+
+//  ModRefInfo  getModRefInfo(const CallInst *C, const MemoryLocation &Loc);
+//
+//  ModRefInfo  getModRefInfo(ImmutableCallSite CS1, ImmutableCallSite CS2);
 };
 
 

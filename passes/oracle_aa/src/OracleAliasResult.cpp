@@ -36,17 +36,17 @@ void OracleAliasResults::unionFunctionAlias(OracleAliasResults &res) {
 
       {
         auto &FsRaR = Fs.second.ReadAfterRead;
-        this->res[Ms.first][Fs.first].ReadAfterWrite.insert(FsRaR.begin(), FsRaR.end());
+        this->res[Ms.first][Fs.first].ReadAfterRead.insert(FsRaR.begin(), FsRaR.end());
       }
 
       {
         auto &FsWaR = Fs.second.WriteAfterRead;
-        this->res[Ms.first][Fs.first].ReadAfterWrite.insert(FsWaR.begin(), FsWaR.end());
+        this->res[Ms.first][Fs.first].WriteAfterRead.insert(FsWaR.begin(), FsWaR.end());
       }
 
       {
         auto &FsWaW = Fs.second.WriteAfterWrite;
-        this->res[Ms.first][Fs.first].ReadAfterWrite.insert(FsWaW.begin(), FsWaW.end());
+        this->res[Ms.first][Fs.first].WriteAfterWrite.insert(FsWaW.begin(), FsWaW.end());
       }
     }
   }
