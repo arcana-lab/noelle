@@ -1,4 +1,5 @@
-CC=clang++
+CC=clang
+CPP=clang++
 AA_BASE=-basicaa
 AA_ADVANCED=$(AA_BASE) -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa
 ANALYSES=$(AA_ADVANCED) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization 
@@ -25,19 +26,36 @@ PRE_OPTPASSES=$(PDGPASS) -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallel
 OPTPASSES=$(PDGPASS) -load ~/CAT/lib/DataFlow.so -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so -load ~/CAT/lib/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/Parallelizer.so 
 PRINT_OUTPUT_FILE=test.txt
 
+# Fetch the list of files to compile
+CPP_FILES := $(wildcard *.cpp)
+BC_FILES := $(notdir $(CPP_FILES:.cpp=.bc))
+
+
 all: baseline testseq $(OPTIMIZED)
 
+%.bc: %.c
+	$(CC) $(INCLUDES) -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
+	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	opt -dot-cfg -disable-output $@
+	llvm-dis $@
+
+%.bc: %.cpp
+	$(CPP) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
+	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	opt -dot-cfg -disable-output $@
+	llvm-dis $@
+
 baseline: baseline.bc
-	$(CC) $(OPT_LEVEL) $^ -o $@
+	$(CPP) $(OPT_LEVEL) $^ -o $@
 
 testseq: test_seq.bc
-	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
+	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 	
 $(THREADER).bc: $(THREADER).cpp
-	$(CC) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
+	$(CPP) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
 
 $(OPTIMIZED): test_dswp.bc
-	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
+	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
 test_pdgdot.bc: test_seq.bc
 	opt $(PRINTPASSES) $(ANALYSES) -heuristics -PDGPrinter $^ -o $@
@@ -47,17 +65,11 @@ test_dswp_unoptimized.bc: test_seq.bc
 	llvm-dis $@
 
 test_dswp.bc: test_dswp_unoptimized.bc
-	$(CC) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
+	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
 	llvm-dis $@
 
 baseline.bc: test.bc
-	$(CC) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
-	llvm-dis $@
-
-test.bc: test.cpp
-	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
-	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
-	opt -dot-cfg -disable-output $@
+	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
 	llvm-dis $@
 
 test_seq.bc: test.bc $(THREADER).bc
