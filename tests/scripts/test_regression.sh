@@ -51,13 +51,13 @@ function runningTests {
 }
 
 cd regression ;
-runningTests "Testing the default configuration" "-dswp-verbose=3" ;
+runningTests "Testing the default configuration" "-noelle-verbose=3" ;
 
-runningTests "Testing with \"-dswp-force -noelle-disable-helix\"" "-dswp-verbose=3 -dswp-force -noelle-disable-helix" ;
-runningTests "Testing with \"-dswp-force -dswp-no-scc-merge -noelle-disable-helix\"" "-dswp-verbose=3 -dswp-force -dswp-no-scc-merge -noelle-disable-helix" ;
+runningTests "Testing with \"-dswp-force -noelle-disable-helix\"" "-noelle-verbose=3 -dswp-force -noelle-disable-helix" ;
+runningTests "Testing with \"-dswp-force -dswp-no-scc-merge -noelle-disable-helix\"" "-noelle-verbose=3 -dswp-force -dswp-no-scc-merge -noelle-disable-helix" ;
 
-runningTests "Testing with \"-dswp-force -noelle-disable-dswp\"" "-dswp-verbose=3 -dswp-force -noelle-disable-dswp" ;
-runningTests "Testing with \"-dswp-force -dswp-no-scc-merge -noelle-disable-dswp\"" "-dswp-verbose=3 -dswp-force -dswp-no-scc-merge -noelle-disable-dswp" ;
+runningTests "Testing with \"-dswp-force -noelle-disable-dswp\"" "-noelle-verbose=3 -dswp-force -noelle-disable-dswp" ;
+runningTests "Testing with \"-dswp-force -dswp-no-scc-merge -noelle-disable-dswp\"" "-noelle-verbose=3 -dswp-force -dswp-no-scc-merge -noelle-disable-dswp" ;
 cd ../ ;
 
 exit 0;

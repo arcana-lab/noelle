@@ -11,7 +11,7 @@ RUNTIME_CFLAGS="-DDEBUG"
 #RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DRUNTIME_PRINT"
 
 # Other parallelization options:
-PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -dswp-verbose=2 -dswp-force 
+PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -noelle-verbose=2 -dswp-force 
 OPT_LEVEL=-O3
 
 INCLUDES=-I../../include/threadpool/include
