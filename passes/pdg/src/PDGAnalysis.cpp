@@ -24,7 +24,9 @@
 
 #include "llvm/ADT/iterator_range.h"
 
-#include "../include/PDGAnalysis.hpp"
+#include "TalkDown.hpp"
+
+#include "PDGAnalysis.hpp"
 
 static cl::opt<int> Verbose("pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
 
@@ -43,6 +45,7 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<AllocAA>();
+  AU.addRequired<TalkDown>();
   AU.setPreservesAll();
   return ;
 }
@@ -91,9 +94,21 @@ llvm::PDG * llvm::PDGAnalysis::getPDG (){
 }
 
 void llvm::PDGAnalysis::trimDGUsingCustomAliasAnalysis (PDG *pdg) {
+
+  /*
+   * Invoke AllocAA
+   */
   collectCGUnderFunctionMain(*this->M);
   this->allocAA = &getAnalysis<AllocAA>();
   removeEdgesNotUsedByParSchemes(pdg);
+
+  /*
+   * Invoke the TalkDown
+   */
+  auto& talkDown = getAnalysis<TalkDown>();
+  //TODO
+
+  return ;
 }
 
 void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {

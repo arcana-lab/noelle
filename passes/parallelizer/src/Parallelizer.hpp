@@ -39,6 +39,7 @@
 #include "DSWP.hpp"
 #include "DOALL.hpp"
 #include "HELIX.hpp"
+#include "Techniques.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -77,6 +78,7 @@ namespace llvm {
       bool forceNoSCCPartition;
       Verbosity verbose;
       double minHot;
+      Techniques techniques;
 
       /*
        * Methods
@@ -91,14 +93,10 @@ namespace llvm {
       );
       std::vector<LoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
-      void mergeSingleSyntacticSugarInstrs (LoopDependenceInfo *LDI);
-      void mergeBranchesWithoutOutgoingEdges (LoopDependenceInfo *LDI);
-      void mergeTrivialNodesInSCCDAG (LoopDependenceInfo *LDI);
 
       /*
        * Debug utilities
        */
-      void printSCCs (SCCDAG *sccSubgraph);
       void printLoop (Loop *loop);
   };
 

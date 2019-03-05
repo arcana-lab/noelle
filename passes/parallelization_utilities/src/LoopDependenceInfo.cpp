@@ -18,9 +18,63 @@
 using namespace std;
 using namespace llvm;
 
-LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt)
-		: function{f}, functionDG{fG}, DOALLChunkSize{8}, maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency()}
+LoopDependenceInfo::LoopDependenceInfo(
+  Function *f,
+  PDG *fG,
+  Loop *l,
+  LoopInfo &li,
+  ScalarEvolution &SE
+) : function{f}, functionDG{fG}, DOALLChunkSize{8},
+    maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency() / 2}
   {
+  this->fetchLoopAndBBInfo(li, l);
+  this->createDGsForLoop(l);
+  this->environment = new LoopEnvironment(this->loopDG, this->loopExitBlocks);
+
+  /*
+   * Merge SCCs where separation is unnecessary
+   * Calculate various attributes on remaining SCCs
+   */
+  mergeTrivialNodesInSCCDAG();
+  this->sccdagAttrs.populate(this->loopSCCDAG, this->liSummary, SE);
+};
+
+LoopDependenceInfo::LoopDependenceInfo(
+  Function *f,
+  PDG *fG,
+  Loop *l,
+  LoopInfo &li,
+  ScalarEvolution &SE,
+  PostDominatorTree &pdt
+) : LoopDependenceInfo{f, fG, l, li, SE}
+  {
+  for (auto bb : l->blocks()) {
+    loopBBtoPD[&*bb] = pdt.getNode(&*bb)->getIDom()->getBlock();
+  }
+};
+
+LoopDependenceInfo::~LoopDependenceInfo() {
+  delete this->loopDG;
+  delete this->loopInternalDG;
+  delete this->loopSCCDAG;
+  delete this->environment;
+
+  return ;
+}
+
+void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) {
+  this->DOALLChunkSize = otherLDI->DOALLChunkSize;
+  this->maximumNumberOfCoresForTheParallelization = otherLDI->maximumNumberOfCoresForTheParallelization;
+}
+
+/*
+ * Fetch the number of exit blocks.
+ */
+uint32_t LoopDependenceInfo::numberOfExits (void) const{
+  return this->loopExitBlocks.size();
+}
+
+void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l) {
 
   /*
    * Create a LoopInfo summary
@@ -38,8 +92,12 @@ LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &
    */
   for (auto bb : l->blocks()){
     this->loopBBs.push_back(&*bb);
-    loopBBtoPD[&*bb] = pdt.getNode(&*bb)->getIDom()->getBlock();
   }
+
+  l->getExitBlocks(loopExitBlocks);
+}
+
+void LoopDependenceInfo::createDGsForLoop (Loop *l){
 
   /*
    * Set the loop dependence graph.
@@ -55,33 +113,112 @@ LoopDependenceInfo::LoopDependenceInfo(Function *f, PDG *fG, Loop *l, LoopInfo &
   }
   loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
   loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
+}
 
-  l->getExitBlocks(loopExitBlocks);
-
-  environment = new LoopEnvironment(loopDG, loopExitBlocks);
-
-  return ;
-};
-    
-uint32_t LoopDependenceInfo::numberOfExits (void) const{
+void LoopDependenceInfo::mergeTrivialNodesInSCCDAG () {
 
   /*
-   * Fetch the number of exit blocks.
+   * Merge SCCs.
    */
-  auto exits = this->loopExitBlocks.size();
-
-  return exits;
+  // NOTE(angelo): For the sake of brevity in logging, instead of logging
+  // the before and after, which can be VERY verbose, we should just log
+  // each change made by these merge helpers. This would still capture everything
+  // necessary for debugging purposes.
+  mergeSingleSyntacticSugarInstrs();
+  mergeBranchesWithoutOutgoingEdges();
 }
 
-void LoopDependenceInfo::createPDGs (void){
-  return ;
+void LoopDependenceInfo::mergeSingleSyntacticSugarInstrs () {
+  std::unordered_map<DGNode<SCC> *, std::set<DGNode<SCC> *> *> mergedToGroup;
+  std::set<std::set<DGNode<SCC> *> *> singles;
+  for (auto sccNode : this->loopSCCDAG->getNodes()) {
+    auto scc = sccNode->getT();
+
+    /*
+     * Determine if node is a single syntactic sugar instruction that has either
+     * a single parent SCC or a single child SCC
+     */
+    if (scc->numInternalNodes() > 1) continue;
+    auto I = scc->begin_internal_node_map()->first;
+    if (!isa<PHINode>(I) && !isa<GetElementPtrInst>(I) && !isa<CastInst>(I)) continue;
+
+    // TODO: Even if more than one edge exists, attempt next/previous depth SCCs.
+    DGNode<SCC> *adjacentNode = nullptr;
+    if (sccNode->numOutgoingEdges() == 1) {
+      adjacentNode = (*sccNode->begin_outgoing_edges())->getIncomingNode();
+    }
+    if (sccNode->numIncomingEdges() == 1) {
+      auto incomingOption = (*sccNode->begin_incoming_edges())->getOutgoingNode();
+      if (!adjacentNode) {
+        adjacentNode = incomingOption;
+      } else {
+
+        /*
+         * NOTE: generally, these are lcssa PHIs, or casts of previous PHIs/instructions
+         * If a GEP, it's load is in the child SCC, so leave it with the child
+         */
+        if (isa<PHINode>(I) || isa<CastInst>(I)) adjacentNode = incomingOption;
+      }
+    }
+    if (!adjacentNode) continue;
+
+    /*
+     * Determine the merged state of the single instruction node and its adjacent
+     * Merge the current merged nodes holding both of the above
+     */
+    bool mergedSCCNode = mergedToGroup.find(sccNode) != mergedToGroup.end();
+    bool mergedAdjNode = mergedToGroup.find(adjacentNode) != mergedToGroup.end();
+    if (mergedSCCNode && mergedAdjNode) {
+
+      /*
+       * Combine the adjacent node's merged group into that of the single instruction's merged group
+       */
+      auto adjSet = mergedToGroup[adjacentNode];
+      for (auto node : *adjSet) {
+        mergedToGroup[sccNode]->insert(node);
+        mergedToGroup[node] = mergedToGroup[sccNode];
+      }
+      singles.erase(adjSet);
+      delete adjSet;
+    } else if (mergedSCCNode) {
+      mergedToGroup[sccNode]->insert(adjacentNode);
+      mergedToGroup[adjacentNode] = mergedToGroup[sccNode];
+    } else if (mergedAdjNode) {
+      mergedToGroup[adjacentNode]->insert(sccNode);
+      mergedToGroup[sccNode] = mergedToGroup[adjacentNode];
+    } else {
+      auto nodes = new std::set<DGNode<SCC> *>({ sccNode, adjacentNode });
+      singles.insert(nodes);
+      mergedToGroup[sccNode] = nodes;
+      mergedToGroup[adjacentNode] = nodes;
+    }
+  }
+
+  for (auto sccNodes : singles) { 
+    this->loopSCCDAG->mergeSCCs(*sccNodes);
+    delete sccNodes;
+  }
 }
 
-llvm::LoopDependenceInfo::~LoopDependenceInfo() {
-  delete loopDG;
-  delete loopInternalDG;
-  delete loopSCCDAG;
-  delete environment;
+void LoopDependenceInfo::mergeBranchesWithoutOutgoingEdges () {
+  std::vector<DGNode<SCC> *> tailCmpBrs;
+  for (auto sccNode : this->loopSCCDAG->getNodes()) {
+    auto scc = sccNode->getT();
+    if (sccNode->numIncomingEdges() == 0 || sccNode->numOutgoingEdges() > 0) continue ;
 
-  return ;
+    bool allCmpOrBr = true;
+    for (auto node : scc->getNodes()) {
+      allCmpOrBr &= (isa<TerminatorInst>(node->getT()) || isa<CmpInst>(node->getT()));
+    }
+    if (allCmpOrBr) tailCmpBrs.push_back(sccNode);
+  }
+
+  /*
+   * Merge trailing compare/branch scc into previous depth scc
+   */
+  for (auto tailSCC : tailCmpBrs) {
+    std::set<DGNode<SCC> *> nodesToMerge = { tailSCC };
+    nodesToMerge.insert(*this->loopSCCDAG->getPreviousDepthNodes(tailSCC).begin());
+    this->loopSCCDAG->mergeSCCs(nodesToMerge);
+  }
 }

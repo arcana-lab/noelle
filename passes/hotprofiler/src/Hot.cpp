@@ -63,10 +63,34 @@ uint64_t Hot::getBasicBlockInstructions (BasicBlock *bb) {
 }
 
 double Hot::getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) {
-  auto v1 = (double )this->bbInvocations[sourceBB];
-  auto v2 = (double )this->bbInvocations[targetBB];
+  auto &branchSuccessors = this->branchProbability[sourceBB];
+  
+  /*
+   * Check if we have information about the branch.
+   */
+  if (branchSuccessors.find(targetBB) == branchSuccessors.end()){
 
-  return v2 / v1;
+    /* 
+     * We do not have information about the branch.
+     */
+    return 0;
+  }
+
+  /*
+   * We have information about the branch.
+   *
+   * Fetch the frequency.
+   */
+  auto f = branchSuccessors[targetBB];
+
+  return f;
+}
+      
+void Hot::setBranchFrequency (BasicBlock *src, BasicBlock *dst, double branchFrequency){
+  auto &branchSuccessors = this->branchProbability[src];
+  branchSuccessors[dst] = branchFrequency;
+
+  return ;
 }
       
 uint64_t Hot::getLoopInstructions (Loop *loop){

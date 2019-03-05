@@ -9,50 +9,124 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "HELIX.hpp"
+#include "HELIXTask.hpp"
+#include <set>
 
 using namespace llvm ;
 
 void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
-  std::set<PHINode *> loopCarriedPHIs;
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
   /*
    * Collect all PHIs in the loop header; they are local variables
    * with loop carried data dependencies and need to be spilled
    */
-  Instruction *headerPHI = &*LDI->header->begin();
-  while (isa<PHINode>(headerPHI)) {
-    loopCarriedPHIs.insert((PHINode *)headerPHI);
-    headerPHI = headerPHI->getNextNode();
+  std::vector<PHINode *> originalLoopPHIs;
+  for (auto &phi : LDI->header->phis()) {
+    originalLoopPHIs.push_back(&phi);
+    auto clonePHI = (PHINode *)(helixTask->instructionClones[&phi]);
+    this->loopCarriedPHIs.push_back(clonePHI);
   }
-  assert(loopCarriedPHIs.size() > 0
+  assert(this->loopCarriedPHIs.size() > 0
     && "There should be loop carried data dependencies for a HELIX loop");
 
   /*
-   * Spill each loop carried PHI
+   * Register each PHI as part of the loop carried environment
    */
-  IRBuilder<> entryBuilder(&*LDI->function->begin()->begin());
-  IRBuilder<> headerBuilder(headerPHI->getPrevNode());
-  for (auto phi : loopCarriedPHIs) {
-    auto alloca = entryBuilder.CreateAlloca(phi->getType());
-
-    /*
-     * Store loop carried and initial values onto the stack
-     */
-    for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
-      auto terminator = phi->getIncomingBlock(i)->getTerminator();
-      IRBuilder<> builder(terminator);
-      builder.CreateStore(phi->getIncomingValue(i), alloca);
-      terminator->removeFromParent();
-      builder.Insert(terminator);
-    }
-
-    /*
-     * Load from the stack; replace uses of the PHI with the load
-     */
-    auto load = headerBuilder.CreateLoad(alloca);
-    for (auto user : phi->users()) {
-      user->replaceUsesOfWith(phi, load);
-    }
-    phi->removeFromParent();
+  std::vector<Type *> phiTypes;
+  std::set<int> nonReducablePHIs;
+  std::set<int> cannotReduceLoopCarriedPHIs;
+  for (auto i = 0; i < this->loopCarriedPHIs.size(); ++i) {
+    phiTypes.push_back(this->loopCarriedPHIs[i]->getType());
+    nonReducablePHIs.insert(i);
   }
+
+  /*
+   * Instantiate a builder to the task's entry, track the terminator,
+   * and later hoist the terminator back to the end of the entry block.
+   */
+  auto entryBlockTerminator = helixTask->entryBlock->getTerminator();
+  IRBuilder<> entryBuilder(helixTask->entryBlock);
+
+  /*
+   * Register a new environment builder and the single HELIX task
+   */
+  this->loopCarriedEnvBuilder = new EnvBuilder(module.getContext());
+  this->loopCarriedEnvBuilder->createEnvVariables(phiTypes, nonReducablePHIs, cannotReduceLoopCarriedPHIs, 1);
+  this->loopCarriedEnvBuilder->createEnvUsers(1);
+  auto envUser = loopCarriedEnvBuilder->getUser(0);
+
+  envUser->setEnvArray(entryBuilder.CreateBitCast(
+    helixTask->loopCarriedArrayArg,
+    PointerType::getUnqual(loopCarriedEnvBuilder->getEnvArrayTy())
+  ));
+
+  /*
+   * Allocate the environment array (64 byte aligned)
+   * Load incoming values from the preheader
+   */
+  IRBuilder<> loopFunctionBuilder(&*LDI->function->begin()->begin());
+  loopCarriedEnvBuilder->generateEnvArray(loopFunctionBuilder);
+  loopCarriedEnvBuilder->generateEnvVariables(loopFunctionBuilder);
+
+  IRBuilder<> builder(this->entryPointOfParallelizedLoop);
+  for (auto envIndex = 0; envIndex < originalLoopPHIs.size(); ++envIndex) {
+    auto phi = originalLoopPHIs[envIndex];
+    auto preHeaderIndex = phi->getBasicBlockIndex(LDI->preHeader);
+    auto preHeaderV = phi->getIncomingValue(preHeaderIndex);
+    builder.CreateStore(preHeaderV, loopCarriedEnvBuilder->getEnvVar(envIndex));
+  }
+
+  /*
+   * Generate code to store each incoming loop carried PHI value,
+   * load the incoming value, and replace PHI uses with load uses
+   * For the pre header edge case, store this initial value at time of
+   * allocation of the environment
+   */
+  auto preHeaderClone = helixTask->basicBlockClones[LDI->preHeader];
+  auto firstNonPHI = helixTask->instructionClones[LDI->header->getFirstNonPHI()];
+  IRBuilder<> headerBuilder(firstNonPHI);
+  for (auto phiI = 0; phiI < loopCarriedPHIs.size(); phiI++) {
+    auto phi = loopCarriedPHIs[phiI];
+
+    /*
+     * Create GEP access of the environment variable at index i
+     */
+    envUser->createEnvPtr(entryBuilder, phiI, phiTypes[phiI]);
+    auto envPtr = envUser->getEnvPtr(phiI);
+
+    /*
+     * Store loop carried values of the PHI into the environment
+     */
+    for (auto inInd = 0; inInd < phi->getNumIncomingValues(); ++inInd) {
+      auto incomingBB = phi->getIncomingBlock(inInd);
+      if (incomingBB == preHeaderClone) continue;
+
+      /*
+       * Determine the position of the incoming value's producer
+       * If it isn't an instruction, insert at the incoming block's entry
+       */
+      auto incomingV = phi->getIncomingValue(inInd);
+      Instruction *insertPoint = &*incomingBB->begin();
+      if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
+        insertPoint = incomingI->getNextNode();
+      }
+
+      IRBuilder<> builder(insertPoint);
+      builder.CreateStore(incomingV, envPtr);
+    }
+
+    /*
+     * Replace uses of PHI with environment load
+     */
+    auto envLoad = headerBuilder.CreateLoad(envPtr);
+    std::set<User *> phiUsers(phi->user_begin(), phi->user_end());
+    for (auto user : phiUsers) {
+      user->replaceUsesOfWith(phi, envLoad);
+    }
+    phi->eraseFromParent();
+  }
+
+  entryBlockTerminator->removeFromParent();
+  entryBuilder.Insert(entryBlockTerminator);
 }

@@ -66,6 +66,24 @@ bool HotProfiler::runOnModule (Module &M) {
        * Set the invocations.
        */
       this->hot.setBasicBlockInvocations(&bb, v);
+
+      /*
+       * Compute the frequency of jumping to the successors of bb.
+       */
+      for (auto succBB : successors(&bb)){
+        auto prob = bpi.getEdgeProbability(&bb, succBB);
+        if (prob.isUnknown()){
+          continue ;
+        }
+        auto probNum = double(prob.getNumerator());
+        auto probDen = double(prob.getDenominator());
+        auto probValue = probNum / probDen;
+
+        /*
+         * Set the frequency.
+         */
+        this->hot.setBranchFrequency(&bb, succBB, probValue);
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.4.3)
-project(Parallelization)
+project(CAT)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -14,6 +14,9 @@ add_definitions(
 -D__STDC_CONSTANT_MACROS
 )
 
+SET(CUSTOM_COMPILE_FLAGS "-fexceptions")
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${CUSTOM_COMPILE_FLAGS}" )
+SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${CUSTOM_COMPILE_FLAGS}" )
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 include_directories(${LLVM_INCLUDE_DIRS})
@@ -29,4 +32,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/Techniques.hpp include/EnvBuilder.hpp include/LoopInfoSummary.hpp include/LoopEnvironment.hpp include/LoopDependenceInfo.hpp include/Parallelization.hpp include/SCCDAGAttrs.hpp include/SCCDAGPartition.hpp include/Queue.hpp include/SystemHeaders.hpp include/Architecture.hpp DESTINATION include)
+install(PROGRAMS include/TalkDown.hpp DESTINATION include)

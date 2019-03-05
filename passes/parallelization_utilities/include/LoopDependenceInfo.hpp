@@ -65,13 +65,7 @@ namespace llvm {
     SCCDAGAttrs sccdagAttrs;
 
     /*
-     * Parallelized loop
-     */
-    BasicBlock *entryPointOfParallelizedLoop;
-    BasicBlock *exitPointOfParallelizedLoop;
-
-    /*
-     * Parallelization
+     * Parallelization options
      */
     uint32_t maximumNumberOfCoresForTheParallelization;
     uint32_t DOALLChunkSize;
@@ -79,12 +73,35 @@ namespace llvm {
     /*
      * Methods
      */
-    LoopDependenceInfo (Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
-
-    virtual uint32_t numberOfExits (void) const;
-
-    virtual void createPDGs (void) ;
+    LoopDependenceInfo (
+      Function *f,
+      PDG *fG,
+      Loop *l,
+      LoopInfo &li,
+      ScalarEvolution &SE
+    );
+    LoopDependenceInfo (
+      Function *f,
+      PDG *fG,
+      Loop *l,
+      LoopInfo &li,
+      ScalarEvolution &SE,
+      PostDominatorTree &pdt
+    );
     ~LoopDependenceInfo();
+
+    void copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) ;
+    uint32_t numberOfExits (void) const;
+
+    std::function<LoopDependenceInfo *(Function *F, int loopIndex)> *reevaluator;
+
+   private:
+    void fetchLoopAndBBInfo (LoopInfo &li, Loop *l) ;
+    void createDGsForLoop (Loop *l) ;
+
+    void mergeSingleSyntacticSugarInstrs ();
+    void mergeBranchesWithoutOutgoingEdges ();
+    void mergeTrivialNodesInSCCDAG ();
   };
 
 }

@@ -26,17 +26,6 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
   }
 
   /*
-   * Merge SCCs where separation is unnecessary.
-   */
-  mergeTrivialNodesInSCCDAG(LDI);
-
-  /*
-   * Collect information about the non-trivial SCCs
-   */
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*LDI->function).getSE();
-  LDI->sccdagAttrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
-
-  /*
    * Gauge the limits of each parallelization scheme
    */
   auto numDSWPDependencies = 0, numHELIXDependencies = 0;
@@ -60,36 +49,54 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
    * Parallelize the loop.
    */
   auto codeModified = false;
-  Value *envArray;
-  if (doall.canBeAppliedToLoop(LDI, par, h, SE)){
+  ParallelizationTechnique *usedTechnique = nullptr;
+  if (  true
+        && this->techniques.doall
+        && doall.canBeAppliedToLoop(LDI, par, h)
+    ){
 
     /*
      * Apply DOALL.
      */
-    codeModified = doall.apply(LDI, par, h, SE);
-    envArray = doall.getEnvArray();
     doall.reset();
+    codeModified = doall.apply(LDI, par, h);
+    usedTechnique = &doall;
 
-  } else if (helix.canBeAppliedToLoop(LDI, par, h, SE)) {
+  } else if ( true
+              && this->techniques.helix
+              && helix.canBeAppliedToLoop(LDI, par, h)   
+    ){
 
     /*
      * Apply HELIX
      */
-    codeModified = helix.apply(LDI, par, h, SE);
-    envArray = helix.getEnvArray();
     helix.reset();
+    codeModified = helix.apply(LDI, par, h);
 
-  } else {
+    Function *function = helix.getTaskFunction();
+    auto fPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
+    auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+    auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+    auto l = LI.getLoopsInPreorder()[0]; //TODO: SIMONE: how do we know that the loop we want to parallelize is [0] ?
+    auto newLDI = new LoopDependenceInfo(function, fPDG, l, LI, SE);
+    newLDI->copyParallelizationOptionsFrom(LDI);
+
+    codeModified = helix.apply(newLDI, par, h);
+    usedTechnique = &helix;
+
+  } else if ( true
+              && this->techniques.dswp
+    ) {
+    dswp.reset();
     dswp.initialize(LDI, h);
-    if (dswp.canBeAppliedToLoop(LDI, par, h, SE)) {
+    if (dswp.canBeAppliedToLoop(LDI, par, h)) {
 
       /*
        * Apply DSWP.
        */
-      codeModified = dswp.apply(LDI, par, h, SE);
-      envArray = dswp.getEnvArray();
+      codeModified = dswp.apply(LDI, par, h);
+      usedTechnique = &dswp;
     }
-    dswp.reset();
   }
 
   /*
@@ -98,9 +105,19 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
   if (!codeModified){
     return false;
   }
-  assert(LDI->entryPointOfParallelizedLoop != nullptr);
-  assert(LDI->exitPointOfParallelizedLoop != nullptr);
+
+  /*
+   * Fetch the environment array where the exit block ID has been stored.
+   */
+  auto envArray = usedTechnique->getEnvArray();
   assert(envArray != nullptr);
+
+  /*
+   * Fetch entry and exit point executed by the parallelized loop.
+   */
+  auto entryPoint = usedTechnique->getParLoopEntryPoint();
+  auto exitPoint = usedTechnique->getParLoopExitPoint();
+  assert(entryPoint != nullptr && exitPoint != nullptr);
 
   /*
    * The loop has been parallelized.
@@ -114,8 +131,8 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
   par.linkParallelizedLoopToOriginalFunction(
     LDI->function->getParent(),
     LDI->preHeader,
-    LDI->entryPointOfParallelizedLoop,
-    LDI->exitPointOfParallelizedLoop,
+    entryPoint,
+    exitPoint, 
     envArray,
     exitIndex,
     LDI->loopExitBlocks

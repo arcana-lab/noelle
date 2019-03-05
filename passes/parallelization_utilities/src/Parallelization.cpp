@@ -149,87 +149,10 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   /*
    * Check if we should filter out loops.
    */
-  auto filterLoops = false;
   std::vector<uint32_t> loopThreads{};
   std::vector<uint32_t> DOALLChunkSize{};
   auto indexFileName = getenv("INDEX_FILE");
-  if (indexFileName){
-
-    /*
-     * We need to filter out loops.
-     *
-     * Open the file that specifies which loops to keep.
-     */
-    auto indexBuf = MemoryBuffer::getFileAsStream(indexFileName);
-    if (auto ec = indexBuf.getError()){
-      errs() << "Failed to read INDEX_FILE = \"" << indexFileName << "\":" << ec.message() << "\n";
-      abort();
-    }
-
-    /*
-     * Read the file.
-     */
-    auto fileAsString = indexBuf.get()->getBuffer().str();
-    std::stringstream indexString{fileAsString};
-
-    /*
-     * Parse the file
-     */
-    while (indexString.peek() != EOF){
-      filterLoops = true;
-
-      /*
-       * Should the loop be parallelized?
-       */
-      auto shouldBeParallelized = this->fetchTheNextValue(indexString);
-      assert(shouldBeParallelized == 0 || shouldBeParallelized == 1);
-
-      /*
-       * Unroll factor
-       */
-      auto unrollFactor = this->fetchTheNextValue(indexString);
-
-      /*
-       * Peel factor
-       */
-      auto peelFactor = this->fetchTheNextValue(indexString);
-
-      /*
-       * Technique to use
-       */
-      auto technique = this->fetchTheNextValue(indexString);
-
-      /*
-       * Number of cores
-       */
-      auto cores = this->fetchTheNextValue(indexString);
-
-      /*
-       * DOALL: chunk factor
-       */
-      auto DOALLChunkFactor = this->fetchTheNextValue(indexString);
-
-      /*
-       * Skip
-       */
-      this->fetchTheNextValue(indexString);
-      this->fetchTheNextValue(indexString);
-      this->fetchTheNextValue(indexString);
-
-      /*
-       * If the loop needs to be parallelized, then we enable it.
-       */
-      if (  (shouldBeParallelized)    &&
-            (cores >= 2)              ){
-        loopThreads.push_back(cores);
-        DOALLChunkSize.push_back(DOALLChunkFactor);
-
-      } else{
-        loopThreads.push_back(1);
-        DOALLChunkSize.push_back(0);
-      }
-    }
-  }
+  auto filterLoops = this->filterOutLoops(indexFileName, loopThreads, DOALLChunkSize);
 
   /*
    * Append loops of each function.
@@ -269,11 +192,10 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     auto funcPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
 
     /*
-     * Fetch the dominators.
+     * Fetch the post dominators and scalar evolutions
      */
-    //auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
-    //auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
     /*
      * Fetch all loops of the current function.
@@ -301,36 +223,28 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       }
 
       /*
-       * Allocate the loop wrapper.
-       */
-      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, PDT);
-
-      /*
        * Check if we have to filter loops.
        */
       if (!filterLoops){
+
+        /*
+         * Allocate the loop wrapper.
+         */
+        auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, PDT);
+
         allLoops->push_back(ldi);
         currentLoopIndex++;
         continue ;
       }
 
       /*
-       * Set the loop constraints specified by INDEX_FILE.
-       */
-      ldi->maximumNumberOfCoresForTheParallelization = loopThreads[currentLoopIndex];
-      ldi->DOALLChunkSize = DOALLChunkSize[currentLoopIndex];
-
-      /*
-       * We have to filter loops.
+       * We need to filter loops.
        *
        * Check if more than one thread is assigned to the current loop.
        * If that's the case, then we have to enable that loop.
        */
-      if (currentLoopIndex >= loopThreads.size()){
-        errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
-        abort();
-      }
-      if (ldi->maximumNumberOfCoresForTheParallelization <= 1){
+      auto maximumNumberOfCoresForTheParallelization = loopThreads[currentLoopIndex];
+      if (maximumNumberOfCoresForTheParallelization <= 1){
 
         /*
          * Only one thread has been assigned to the current loop.
@@ -339,14 +253,29 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         currentLoopIndex++;
 
         /*
-         * Free the memory.
-         */
-        delete ldi ;
-
-        /*
          * Jump to the next loop.
          */
         continue ;
+      }
+
+      /*
+       * The current loop has more than one core assigned to it.
+       * Therefore, we need to parallelize this loop.
+       *
+       * Allocate the loop wrapper.
+       */
+      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, PDT);
+
+      /*
+       * Set the loop constraints specified by INDEX_FILE.
+       *
+       * DOALL chunk size is the one defined by INDEX_FILE + 1. This is because chunk size must start from 1.
+       */
+      ldi->maximumNumberOfCoresForTheParallelization = maximumNumberOfCoresForTheParallelization;
+      ldi->DOALLChunkSize = DOALLChunkSize[currentLoopIndex] + 1;
+      if (currentLoopIndex >= loopThreads.size()){
+        errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
+        abort();
       }
 
       /*
@@ -357,19 +286,128 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     }
   }
 
+  return allLoops;
+}
+
+uint32_t Parallelization::getNumberOfModuleLoops (
+  Module *module,
+  double minimumHotness
+  ){
+  uint32_t counter = 0;
+
   /*
-   * If no loops were filtered, no loop constraints were placed yet
-   * We naively divide the maximum number of cores across the loops
+   * Fetch the profiles.
    */
-  if (!filterLoops && allLoops->size() > 0){
-    auto coreCount = std::thread::hardware_concurrency();
-    auto coresPer = coreCount / allLoops->size();
-    for (auto ldi : *allLoops) {
-      ldi->maximumNumberOfCoresForTheParallelization = coresPer;
+  auto& profiles = getAnalysis<HotProfiler>().getHot();
+
+  /*
+   * Fetch the list of functions of the module.
+   */
+  auto mainFunction = module->getFunction("main");
+  auto functions = this->getModuleFunctionsReachableFrom(module, mainFunction);
+
+  /*
+   * Check if we should filter out loops.
+   */
+  std::vector<uint32_t> loopThreads{};
+  std::vector<uint32_t> DOALLChunkSize{};
+  auto indexFileName = getenv("INDEX_FILE");
+  auto filterLoops = this->filterOutLoops(indexFileName, loopThreads, DOALLChunkSize);
+
+  /*
+   * Append loops of each function.
+   */
+  auto currentLoopIndex = 0;
+  for (auto function : *functions){
+
+    /*
+     * Fetch the loop analysis.
+     */
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+
+    /*
+     * Check if the function has loops.
+     */
+    if (std::distance(LI.begin(), LI.end()) == 0){
+      continue ;
+    }
+
+    /*
+     * Check if the function is hot.
+     */
+    if (profiles.isAvailable()){
+      auto mInsts = profiles.getModuleInstructions();
+      auto fInsts = profiles.getFunctionInstructions(function);
+      auto hotness = ((double)fInsts) / ((double)mInsts);
+      if (hotness <= minimumHotness){
+        continue ;
+      }
+    }
+
+    /*
+     * Fetch all loops of the current function.
+     */
+    auto loops = LI.getLoopsInPreorder();
+
+    /*
+     * Consider these loops.
+     */
+    for (auto loop : loops){
+
+      /*
+       * Check if the loop is hot enough.
+       */
+       if (profiles.isAvailable()){
+        auto mInsts = profiles.getModuleInstructions();
+        auto lInsts = profiles.getLoopInstructions(loop);
+        auto hotness = ((double)lInsts) / ((double)mInsts);
+        if (hotness <= minimumHotness){
+          currentLoopIndex++;
+          continue ;
+        }
+      }
+
+      /*
+       * Check if we have to filter loops.
+       */
+      if (!filterLoops){
+        counter++;
+        currentLoopIndex++;
+        continue ;
+      }
+
+      /*
+       * We need to filter loops.
+       *
+       * Check if more than one thread is assigned to the current loop.
+       * If that's the case, then we have to enable that loop.
+       */
+      auto maximumNumberOfCoresForTheParallelization = loopThreads[currentLoopIndex];
+      if (maximumNumberOfCoresForTheParallelization <= 1){
+
+        /*
+         * Only one thread has been assigned to the current loop.
+         * Hence, the current loop will not be parallelized.
+         */
+        currentLoopIndex++;
+
+        /*
+         * Jump to the next loop.
+         */
+        continue ;
+      }
+
+      /*
+       * The current loop has more than one core assigned to it.
+       * Therefore, we need to parallelize this loop.
+       * In other words, the current loop needs to be considered as specified by the user.
+       */
+      counter++;
+      currentLoopIndex++;
     }
   }
 
-  return allLoops;
+  return counter;
 }
 
 void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
@@ -381,22 +419,6 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   Value *envIndexForExitVariable,
   SmallVector<BasicBlock *, 10> &loopExitBlocks
   ){
-
-  /*
-   * Hoist allocations in the parallelized loop basic block to the function's entry
-   * Possibly rendered obsolete by allocating the environment array at the function's entry
-
-  std::set<Instruction *> allocas;
-  for (auto &I : *startOfParLoopInOriginalFunc) {
-    if (isa<AllocaInst>(I)) allocas.insert(&I);
-  }
-  Instruction *entryI = &*startOfParLoopInOriginalFunc->getParent()->begin()->begin();
-  for (auto I : allocas) {
-    I->removeFromParent();
-    I->insertBefore(entryI);
-  }
-
-   */
 
   /*
    * Create the global variable for the parallelized loop.
@@ -440,15 +462,11 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
       envArray,
       ArrayRef<Value*>({
         cast<Value>(ConstantInt::get(int64, 0)),
-        envIndexForExitVariable
+        endBuilder.CreateMul(envIndexForExitVariable, ConstantInt::get(int64, 8))
       })
     );
-    auto exitEnvCast = endBuilder.CreateBitCast(
-      endBuilder.CreateLoad(exitEnvPtr),
-      PointerType::getUnqual(int32)
-    );
-    auto envVar = endBuilder.CreateLoad(exitEnvCast);
-    auto exitSwitch = endBuilder.CreateSwitch(envVar, loopExitBlocks[0]);
+    auto exitEnvCast = endBuilder.CreateIntCast(endBuilder.CreateLoad(exitEnvPtr), int32, /*isSigned=*/false);
+    auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
     for (int i = 1; i < loopExitBlocks.size(); ++i) {
       exitSwitch->addCase(ConstantInt::get(int32, i), loopExitBlocks[i]);
     }
@@ -517,6 +535,101 @@ uint32_t llvm::Parallelization::fetchTheNextValue (std::stringstream &stream){
   }
 
   return currentValueRead;
+}
+      
+bool Parallelization::filterOutLoops (
+  char *fileName,
+  std::vector<uint32_t>& loopThreads,
+  std::vector<uint32_t>& DOALLChunkSize
+  ){
+
+  /*
+   * Check the name of the file that lists the loops to consider.
+   */
+  if (!fileName){
+    return false;
+  }
+
+  /*
+   * We need to filter out loops.
+   *
+   * Open the file that specifies which loops to keep.
+   */
+  auto indexBuf = MemoryBuffer::getFileAsStream(fileName);
+  if (auto ec = indexBuf.getError()){
+    errs() << "Failed to read INDEX_FILE = \"" << fileName << "\":" << ec.message() << "\n";
+    abort();
+  }
+
+  /*
+   * Read the file.
+   */
+  auto fileAsString = indexBuf.get()->getBuffer().str();
+  std::stringstream indexString{fileAsString};
+
+  /*
+   * Parse the file
+   */
+  auto filterLoops = false;
+  while (indexString.peek() != EOF){
+    filterLoops = true;
+
+    /*
+     * Should the loop be parallelized?
+     */
+    auto shouldBeParallelized = this->fetchTheNextValue(indexString);
+    assert(shouldBeParallelized == 0 || shouldBeParallelized == 1);
+
+    /*
+     * Unroll factor
+     */
+    auto unrollFactor = this->fetchTheNextValue(indexString);
+
+    /*
+     * Peel factor
+     */
+    auto peelFactor = this->fetchTheNextValue(indexString);
+
+    /*
+     * Technique to use
+     * 0: DOALL
+     * 1: DSWP
+     * 2: HELIX
+     */
+    auto technique = this->fetchTheNextValue(indexString);
+
+    /*
+     * Number of cores
+     */
+    auto cores = this->fetchTheNextValue(indexString);
+
+    /*
+     * DOALL: chunk factor
+     */
+    auto DOALLChunkFactor = this->fetchTheNextValue(indexString);
+
+    /*
+     * Skip
+     */
+    this->fetchTheNextValue(indexString);
+    this->fetchTheNextValue(indexString);
+    this->fetchTheNextValue(indexString);
+
+    /*
+     * If the loop needs to be parallelized, then we enable it.
+     */
+    if (  (shouldBeParallelized)    &&
+          (cores >= 2)              ){
+      loopThreads.push_back(cores);
+      DOALLChunkSize.push_back(DOALLChunkFactor);
+
+    } else{
+      loopThreads.push_back(1);
+      DOALLChunkSize.push_back(0);
+    }
+  }
+  
+  return filterLoops;
 }
 
 llvm::Parallelization::~Parallelization(){

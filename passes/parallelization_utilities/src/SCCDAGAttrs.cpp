@@ -231,7 +231,6 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
     // TODO(angelo): Implement this if it is legal. Unsure at the moment
     // if (scc->getType() == SCC::SCCType::INDEPENDENT) continue ;
     if (scc->getType() == SCC::SCCType::REDUCIBLE) continue ;
-    scc->print(errs() << "NON COMM SCC THAT CAUSES NONREDUCABLE LIVE OUT:\n") << "\n";
 
     return false;
   }

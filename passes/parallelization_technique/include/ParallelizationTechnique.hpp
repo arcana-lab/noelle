@@ -35,8 +35,7 @@ namespace llvm {
       virtual bool apply (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        Heuristics *h,
-        ScalarEvolution &SE
+        Heuristics *h
       ) = 0;
 
       /*
@@ -45,11 +44,12 @@ namespace llvm {
       virtual bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        Heuristics *h,
-        ScalarEvolution &SE
+        Heuristics *h
       ) const = 0 ;
 
       Value * getEnvArray () { return envBuilder->getEnvArray(); }
+      BasicBlock *getParLoopEntryPoint () { return entryPointOfParallelizedLoop; }
+      BasicBlock *getParLoopExitPoint () { return exitPointOfParallelizedLoop; }
 
       virtual void reset () ;
 
@@ -170,6 +170,7 @@ namespace llvm {
        */
       Function *taskDispatcher;
       FunctionType *taskType;
+      BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
       std::vector<Task *> tasks;
       int numTaskInstances;
   };

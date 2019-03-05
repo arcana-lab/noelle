@@ -13,13 +13,9 @@
 
 DOALL::DOALL (
   Module &module,
-  Verbosity v,
-  int coresPer,
-  int chunkSize
+  Verbosity v
 ) :
-  ParallelizationTechnique{module, v},
-  coresPerLoopOverride{coresPer},
-  chunkSizeOverride{chunkSize}
+  ParallelizationTechnique{module, v}
   {
 
   /*
@@ -44,8 +40,7 @@ DOALL::DOALL (
 bool DOALL::canBeAppliedToLoop (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  Heuristics *h,
-  ScalarEvolution &SE
+  Heuristics *h
 ) const {
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Checking if is a doall loop\n";
@@ -104,7 +99,7 @@ bool DOALL::canBeAppliedToLoop (
       && !LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
       if (this->verbose != Verbosity::Disabled) {
         errs() << "DOALL:   Non clonable, non commutative scc at top level of loop:\n";
-        if (this->verbose >= Verbosity::Minimal) {
+        if (this->verbose >= Verbosity::Maximal) {
           scc->printMinimal(errs(), "DOALL:\t") << "\n";
         }
       }
@@ -124,11 +119,8 @@ bool DOALL::canBeAppliedToLoop (
 bool DOALL::apply (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  Heuristics *h,
-  ScalarEvolution &SE
+  Heuristics *h
 ) {
-  if (chunkSizeOverride > 0) LDI->DOALLChunkSize = chunkSizeOverride;
-  if (coresPerLoopOverride > 0) LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
 
   /*
    * Print the parallelization request.
@@ -241,7 +233,7 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
     initialValues[envInd] = prodPHI->getIncomingValue(initValPHIIndex);
   }
 
-  auto builder = new IRBuilder<>(LDI->entryPointOfParallelizedLoop);
+  auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
   this->envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues);
 
   /*
@@ -263,8 +255,6 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    * Create the entry and exit points of the function that will include the parallelized loop.
    */
   auto &cxt = LDI->function->getContext();
-  LDI->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
-  LDI->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
 
   /*
    * Create the environment.
@@ -290,7 +280,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Call the function that incudes the parallelized loop.
    */
-  IRBuilder<> doallBuilder(LDI->entryPointOfParallelizedLoop);
+  IRBuilder<> doallBuilder(this->entryPointOfParallelizedLoop);
   doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
     (Value *)tasks[0]->F,
     envPtr,
@@ -306,7 +296,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Jump to the unique successor of the loop.
    */
-  doallBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
+  doallBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
   return ;
 }

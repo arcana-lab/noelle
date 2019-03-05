@@ -16,13 +16,11 @@ DSWP::DSWP (
   Module &module,
   bool forceParallelization,
   bool enableSCCMerging,
-  Verbosity v,
-  int coresPerOverride
+  Verbosity v
 ) :
   ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v},
   forceParallelization{forceParallelization},
   enableMergingSCC{enableSCCMerging},
-  coresPerLoopOverride{coresPerOverride},
   queues{}, queueArrayType{nullptr},
   sccToStage{}, stageArrayType{nullptr},
   zeroIndexForBaseArray{nullptr}
@@ -48,17 +46,13 @@ DSWP::DSWP (
 }
 
 void DSWP::initialize (LoopDependenceInfo *LDI, Heuristics *h) {
-  if (coresPerLoopOverride > 0) {
-    LDI->maximumNumberOfCoresForTheParallelization = coresPerLoopOverride;
-  }
   partitionSCCDAG(LDI, h);
 }
 
 bool DSWP::canBeAppliedToLoop (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  Heuristics *h,
-  ScalarEvolution &SE
+  Heuristics *h
 ) const {
   auto canApply = this->partition->numberOfPartitions() > 1;
   if (this->forceParallelization) {
@@ -82,8 +76,7 @@ bool DSWP::canBeAppliedToLoop (
 bool DSWP::apply (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  Heuristics *h,
-  ScalarEvolution &SE
+  Heuristics *h
 ) {
 
   /*
@@ -108,9 +101,19 @@ bool DSWP::apply (
   /*
    * Collect information on stages' environments
    */
-  std::set<int> nonReducableVars;
+  auto liveInVars = LDI->environment->getEnvIndicesOfLiveInVars();
+  auto liveOutVars = LDI->environment->getEnvIndicesOfLiveOutVars();
+  std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
+  nonReducableVars.insert(liveOutVars.begin(), liveOutVars.end());
   std::set<int> reducableVars;
-  for (auto i = 0; i < LDI->environment->envSize(); ++i) nonReducableVars.insert(i);
+
+  /*
+   * Should an exit block environment variable be necessary, register one 
+   */
+  if (LDI->numberOfExits() > 1){ 
+    nonReducableVars.insert(LDI->environment->indexOfExitBlock());
+  }
+
   initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
   collectLiveInEnvInfo(LDI);
   collectLiveOutEnvInfo(LDI);

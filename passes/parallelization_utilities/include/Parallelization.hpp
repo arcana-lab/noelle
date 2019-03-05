@@ -62,6 +62,11 @@ namespace llvm {
         double minimumHotness
         );
 
+      uint32_t getNumberOfModuleLoops (
+        Module *module,
+        double minimumHotness
+        );
+
       void linkParallelizedLoopToOriginalFunction (
         Module *module, 
         BasicBlock *originalPreHeader, 
@@ -73,6 +78,14 @@ namespace llvm {
         );
 
     private:
-      uint32_t fetchTheNextValue (std::stringstream &stream);
+      uint32_t fetchTheNextValue (
+        std::stringstream &stream
+        );
+
+      bool filterOutLoops (
+        char *fileName,
+        std::vector<uint32_t>& loopThreads,
+        std::vector<uint32_t>& DOALLChunkSize
+        );
   };
 }

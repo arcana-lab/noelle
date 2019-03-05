@@ -33,22 +33,21 @@ namespace llvm {
         Module &module,
         bool forceParallelization,
         bool enableSCCMerging,
-        Verbosity v,
-        int coresPerOverride
+        Verbosity v
       );
 
       bool apply (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        Heuristics *h,
-        ScalarEvolution &SE
+        Heuristics *h
       ) override ;
+
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        Heuristics *h,
-        ScalarEvolution &SE
+        Heuristics *h
       ) const override ;
+
       void initialize (
         LoopDependenceInfo *LDI,
         Heuristics *h
@@ -131,8 +130,6 @@ namespace llvm {
       void printStageSCCs (LoopDependenceInfo *LDI) const ;
       void printStageQueues (LoopDependenceInfo *LDI) const ;
       void printEnv (LoopDependenceInfo *LDI) const ;
-
-      int coresPerLoopOverride;
   };
 
 }
