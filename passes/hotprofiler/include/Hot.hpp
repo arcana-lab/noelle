@@ -30,8 +30,6 @@ namespace llvm {
 
       uint64_t getBasicBlockInstructions (BasicBlock *bb) ;
 
-      double getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) ;
-      
 
       /*
        * Loops
@@ -50,12 +48,22 @@ namespace llvm {
        */
       uint64_t getModuleInstructions (void) const ;
 
+ 
+      /*
+       * Branches
+       */
+      double getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) ;
+
+      void setBranchFrequency (BasicBlock *src, BasicBlock *dst, double branchFrequency);
+
+
       void computeProgramInvocations (void);
 
     private:
       std::map<BasicBlock *, uint64_t> bbInvocations;
       std::map<Function *, uint64_t> functionInstructions;
       std::map<Function *, uint64_t> functionInvocations;
+      std::map<BasicBlock *, std::map<BasicBlock *, double>> branchProbability;
       uint64_t moduleNumberOfInstructionsExecuted;
   };
 }
