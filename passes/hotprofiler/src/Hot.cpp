@@ -64,6 +64,23 @@ uint64_t Hot::getBasicBlockInstructions (BasicBlock *bb) {
 
 double Hot::getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) {
   auto &branchSuccessors = this->branchProbability[sourceBB];
+  
+  /*
+   * Check if we have information about the branch.
+   */
+  if (branchSuccessors.find(targetBB) == branchSuccessors.end()){
+
+    /* 
+     * We do not have information about the branch.
+     */
+    return 0;
+  }
+
+  /*
+   * We have information about the branch.
+   *
+   * Fetch the frequency.
+   */
   auto f = branchSuccessors[targetBB];
 
   return f;

@@ -268,9 +268,11 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
 
       /*
        * Set the loop constraints specified by INDEX_FILE.
+       *
+       * DOALL chunk size is the one defined by INDEX_FILE + 1. This is because chunk size must start from 1.
        */
       ldi->maximumNumberOfCoresForTheParallelization = maximumNumberOfCoresForTheParallelization;
-      ldi->DOALLChunkSize = DOALLChunkSize[currentLoopIndex];
+      ldi->DOALLChunkSize = DOALLChunkSize[currentLoopIndex] + 1;
       if (currentLoopIndex >= loopThreads.size()){
         errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
         abort();
