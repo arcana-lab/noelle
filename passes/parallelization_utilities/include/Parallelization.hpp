@@ -85,6 +85,7 @@ namespace llvm {
       bool filterOutLoops (
         char *fileName,
         std::vector<uint32_t>& loopThreads,
+        std::vector<uint32_t>& techniquesToDisable,
         std::vector<uint32_t>& DOALLChunkSize
         );
   };

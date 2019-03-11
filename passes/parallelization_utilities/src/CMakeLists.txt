@@ -6,7 +6,6 @@ set(Srcs
   LoopDependenceInfo.cpp
   SCCDAGPartition.cpp
   Parallelization.cpp
-  Techniques.cpp
 )
 
 # Compilation flags

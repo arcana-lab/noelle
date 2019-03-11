@@ -40,9 +40,19 @@ bool Parallelizer::doInitialization (Module &M) {
   this->minHot = ((double)(MinimumHotness.getValue())) / 100;
   this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
   this->forceNoSCCPartition |= (ForceNoSCCPartition.getNumOccurrences() > 0);
-  this->techniques.doall = (DisableDOALL.getNumOccurrences() == 0);
-  this->techniques.dswp = (DisableDSWP.getNumOccurrences() == 0);
-  this->techniques.helix = (DisableHELIX.getNumOccurrences() == 0);
+
+  /*
+   * Enable parallelization techniques.
+   */
+  if (DisableDOALL.getNumOccurrences() == 0){
+    this->enabledTechniques.insert(DOALL_ID);
+  }
+  if (DisableDSWP.getNumOccurrences() == 0){
+    this->enabledTechniques.insert(DSWP_ID);
+  }
+  if (DisableHELIX.getNumOccurrences() == 0){
+    this->enabledTechniques.insert(HELIX_ID);
+  }
 
   return false; 
 }
