@@ -5,22 +5,28 @@
 
 #include <llvm/IR/Constants.h>
 
+#include <optional>
+
 #include "UniqueIRMarker.hpp"
+
+using std::optional;
+using std::nullopt;
+using std::reference_wrapper;
 
 class UniqueIRMarkerReader : public InstVisitor<UniqueIRMarker>  {
 
  public:
-  static Constant* getInstructionConstID(const llvm::Instruction *);
-  static Constant* getFunctionConstID(const llvm::Function *);
-  static Constant* getBasicBlockConstID(const llvm::BasicBlock *);
-  static Constant* getLoopConstID(const llvm::Loop *);
-  static Constant* getModuleConstID(const llvm::Module *);
+  static optional<Constant *> getInstructionConstID(const llvm::Instruction *);
+  static optional<Constant *> getFunctionConstID(const llvm::Function *);
+  static optional<Constant *> getBasicBlockConstID(const llvm::BasicBlock *);
+  static optional<Constant *> getLoopConstID(const llvm::Loop *);
+  static optional<Constant *> getModuleConstID(const llvm::Module *);
 
-  static IDType getModuleID(const llvm::Module*);
-  static IDType getFunctionID(const llvm::Function*);
-  static IDType getBasicBlockID(const llvm::BasicBlock*);
-  static IDType getInstructionID(const llvm::Instruction*);
-  static IDType getLoopID(const llvm::Loop*);
+  static optional<IDType> getModuleID(const llvm::Module*);
+  static optional<IDType> getFunctionID(const llvm::Function*);
+  static optional<IDType> getBasicBlockID(const llvm::BasicBlock*);
+  static optional<IDType> getInstructionID(const llvm::Instruction*);
+  static optional<IDType> getLoopID(const llvm::Loop*);
 
   void visitInstruction(Instruction &I);
 
@@ -32,9 +38,14 @@ class UniqueIRMarkerReader : public InstVisitor<UniqueIRMarker>  {
   static const StringRef VIAFunction;
   static const StringRef VIAModule;
 
-  static IDType getID(const Constant*);
-  static Constant* getConst(const llvm::MDOperand&);
-  static const MDOperand& getIthOperand(const MDNode*, uint operand);
+  static optional<IDType> getID(const Constant*);
+  static optional<Constant *> getConst(const llvm::MDOperand&);
+  static optional<reference_wrapper<const MDOperand>> getIthOperand(const MDNode*, uint operand);
+
+  template <typename T>
+  static optional<IDType> getIDConst(const T *, std::function<optional<Constant *>(const T *)>);
+
+  static optional<Constant *> getConstFromMeta(llvm::MDNode *, uint operand);
 };
 
 #endif //CAT_UNIQUEIRMARKERREADER_HPP

@@ -12,9 +12,9 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/istreamwrapper.h>
-#include <VIAInvoker.hpp>
 
 #include "VIAInvoker.hpp"
+#include "UniqueIRMarkerReader.hpp"
 
 cl::opt<std::string> OracleExecutionScriptPath("exe-script",
     cl::desc("Path to the script used to instrument and execute the current IR"),
@@ -28,7 +28,9 @@ const StringRef VIAInvoker::WAR = "WAR";
 const StringRef VIAInvoker::WAW = "WAW";
 
 oracle_aa::VIAInvoker::VIAInvoker(Module &M, ModulePass& MP) : M(M), MP(MP) {
-  moduleID = UniqueIRMarkerReader::getModuleID(&M);
+  auto m = UniqueIRMarkerReader::getModuleID(&M);
+  assert(m && "Must have a module ID, maybe Unique IR Marker has not been run?");
+  moduleID = m.value();
   auto modIDStr = std::to_string(moduleID);
 
   results = std::make_shared<OracleAliasResults>();
@@ -48,6 +50,22 @@ void oracle_aa::VIAInvoker::runInference(StringRef inputArgs) {
 
 // build a viaconf file for each loop in the program and write it to viaConfigFilename
 void oracle_aa::VIAInvoker::buildOracleDDGConfig(llvm::SmallVector<llvm::Loop *, 8> lp) {
+
+  std::vector<uint64_t> loopIDs{};
+    for ( auto &F: M ) {
+      if (F.empty()) continue;
+      auto &LI = MP.getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+      for ( auto &L : LI ) {
+        // skip inner loops
+        if ( L->getLoopDepth() > 1 ) continue;
+        auto LID = UniqueIRMarkerReader::getLoopID(L);
+        if (LID) {
+          loopIDs.push_back(LID.value());
+          errs() << "loop id: " << LID.value() << '\n';
+        }
+      }
+  }
+
   rapidjson::StringBuffer buffer;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> prettyBuffer(buffer);
 
@@ -55,7 +73,15 @@ void oracle_aa::VIAInvoker::buildOracleDDGConfig(llvm::SmallVector<llvm::Loop *,
   prettyBuffer.StartObject();
     prettyBuffer.Key("Monitor"); prettyBuffer.String("Basic");
     prettyBuffer.Key("Model"); prettyBuffer.String("OracleDDG");
-    prettyBuffer.Key("Loop"); prettyBuffer.String("all");
+    prettyBuffer.Key("Loop");
+      prettyBuffer.StartArray();
+      for ( auto &LID : loopIDs) {
+        prettyBuffer.StartObject();
+        prettyBuffer.Key("ModuleID"); prettyBuffer.Uint64(moduleID);
+        prettyBuffer.Key("LoopID");   prettyBuffer.Uint64(LID);
+        prettyBuffer.EndObject();
+      }
+      prettyBuffer.EndArray();
   prettyBuffer.EndObject();
 
   std::ofstream ofs(viaConfigFilename);
@@ -133,9 +159,10 @@ void oracle_aa::VIAInvoker::parseResponse() {
   IDToValueMapper idToValueMapper(M);
   auto mapping = idToValueMapper.idToValueMap(ids);
 
-  auto module = doc["ModuleID"].GetUint64();
   for ( auto &iter : resultList.GetArray() ) {
-    auto function = iter["FunctionID"].GetUint64();
+    auto ModuleID = iter["ModuleID"].GetUint64();
+    auto FunctionID = iter["FunctionID"].GetUint64();
+    auto LoopID = iter["LoopID"].GetUint64();
     for ( auto &dep : iter[DependenciesKey].GetArray() ) {
       auto depType = StringRef(dep[0].GetString());
       auto first = dep[1].GetUint64();
@@ -146,18 +173,18 @@ void oracle_aa::VIAInvoker::parseResponse() {
       assert(secondValue);
       auto dependency = std::pair<const Value *, const Value *>(getPtrValue(firstValue), getPtrValue(secondValue));
       if (depType == RAR) {
-        results->addFunctionRaR(module, function, dependency);
+        results->addFunctionRaR(ModuleID, FunctionID, LoopID, dependency);
       } else if (depType == RAW) {
-        results->addFunctionRaW(module, function, dependency);
+        results->addFunctionRaW(ModuleID, FunctionID, LoopID, dependency);
       } else if (depType == WAR) {
-        results->addFunctionWaR(module, function, dependency);
+        results->addFunctionWaR(ModuleID, FunctionID, LoopID, dependency);
       } else if (depType == WAW) {
-        results->addFunctionWaW(module, function, dependency);
+        results->addFunctionWaW(ModuleID, FunctionID, LoopID, dependency);
       } else {
         errs() << "depType not known: " << depType << '\n';
         assert(0 && "found an unknown dependency type");
       }
-      errs() << "parsing response bhal: ";
+      errs() << "parsing response " << depType << ":";
       getPtrValue(firstValue)->print(errs());
       errs() << " ";
       getPtrValue(secondValue)->print(errs());

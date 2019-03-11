@@ -17,23 +17,20 @@
 
 namespace llvm {
 
-void initializeOracleDDGAAWrapperPassPass(llvm::PassRegistry &Registry);
-void initializeExternalOracleDDGAAWrapperPassPass(llvm::PassRegistry &Registry);
-
-
 class OracleDDGAAResult : public AAResultBase<OracleDDGAAResult> {
   friend AAResultBase<OracleDDGAAResult>;
 
   std::unique_ptr<OracleAliasResults> Res;
 
+  ModulePass &MP;
+
  public:
   static char ID;
-  OracleDDGAAResult();
+  OracleDDGAAResult(ModulePass &AA);
 
   OracleAliasResults *getAliasResults() { Res.get(); }
 
   bool invalidate(Function &, const PreservedAnalyses &, FunctionAnalysisManager::Invalidator &) {
-    errs() << "invalidated.\n";
     return false;
   }
 
@@ -41,9 +38,10 @@ class OracleDDGAAResult : public AAResultBase<OracleDDGAAResult> {
 
   AliasResult  alias(const MemoryLocation &, const MemoryLocation &);
 
-//  ModRefInfo  getModRefInfo(const CallInst *C, const MemoryLocation &Loc);
-//
-//  ModRefInfo  getModRefInfo(ImmutableCallSite CS1, ImmutableCallSite CS2);
+  ModRefInfo  getModRefInfo(const ImmutableCallSite CS, const MemoryLocation &Loc);
+
+  ModRefInfo  getModRefInfo(ImmutableCallSite CS1, ImmutableCallSite CS2);
+  Loop *getTopMostLoop(Loop *La) const;
 };
 
 
@@ -60,7 +58,6 @@ class OracleDDGAAResult : public AAResultBase<OracleDDGAAResult> {
     bool doInitialization(Module&) override;
 
     void *getAdjustedAnalysisPointer(AnalysisID ID) override {
-      errs() << "called adj point ana with id:" << ID << '\n';
       if (ID == &OracleAAWrapperPass::ID) {
         return this;
       }
@@ -69,37 +66,29 @@ class OracleDDGAAResult : public AAResultBase<OracleDDGAAResult> {
 
     bool runOnModule(Module &) override;
 
-    OracleDDGAAResult &getResult() {
-      errs()<< "got results\n";
-      return *Result;
-    };
+    OracleDDGAAResult &getResult();
 
-    const OracleDDGAAResult &getResult() const {
-      errs() << "got results\n";
-      return *Result;
-    }
+    const OracleDDGAAResult &getResult() const;
 
     void getAnalysisUsage( AnalysisUsage& ) const override;
-
-  private:
   };
 
 ModulePass* createOracleDDGAAWrapperPass();
 
-void registerOracleAAPasses(llvm::legacy::PassManagerBase &PM) {
-  errs() << "called register external oracle aa pass\n";
-  auto pass = llvm::createExternalAAWrapperPass([](Pass &P, Function &F, AAResults &AAR) {
-    errs() << "called external oracle aa pass\n";
-    auto &wrapper = P.getAnalysis<OracleAAWrapperPass>(F);
-    AAR.addAAResult(wrapper.getResult());
-  });
-  PM.add(pass);
-}
+//void registerOracleAAPasses(llvm::legacy::PassManagerBase &PM) {
+//  errs() << "called register external oracle aa pass\n";
+//  auto pass = llvm::createExternalAAWrapperPass([](Pass &P, Function &F, AAResults &AAR) {
+//    errs() << "called external oracle aa pass\n";
+//    auto &wrapper = P.getAnalysis<OracleAAWrapperPass>(F);
+//    AAR.addAAResult(wrapper.getResult());
+//  });
+//  PM.add(pass);
+//}
 
 
-class OracleAAMix : AnalysisInfoMixin<OracleAAMix> {
-  friend AnalysisInfoMixin<OracleAAMix>;
-};
+//class OracleAAMix : AnalysisInfoMixin<OracleAAMix> {
+//  friend AnalysisInfoMixin<OracleAAMix>;
+//};
 
 };
 

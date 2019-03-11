@@ -15,7 +15,8 @@ std::unique_ptr<std::map<IDType, Value *>> IDToValueMapper::idToValueMap(std::se
 }
 
 void IDToValueMapper::visitInstruction(Instruction &I) {
-  auto ID = UniqueIRMarkerReader::getInstructionID(&I);
+  // FIXME: handle not ID.
+  auto ID = UniqueIRMarkerReader::getInstructionID(&I).value();
   if ( relevantIDs->find(ID) != relevantIDs->end() ) {
     mapping->insert( std::pair<IDType, Value *>(ID, &I) );
   }

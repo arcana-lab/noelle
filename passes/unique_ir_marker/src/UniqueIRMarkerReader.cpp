@@ -1,4 +1,5 @@
 
+
 #include <UniqueIRMarkerReader.hpp>
 
 #include "UniqueIRMarkerReader.hpp"
@@ -11,13 +12,12 @@ const StringRef UniqueIRMarkerReader::VIABasicBlock = "VIA.BB.ID";
 const StringRef UniqueIRMarkerReader::VIAFunction = "VIA.Fn.ID";
 const StringRef UniqueIRMarkerReader::VIAModule = "VIA.M.ID";
 
-llvm::Constant *UniqueIRMarkerReader::getInstructionConstID(const llvm::Instruction *I) {
-  assert(I && "Not a valid Instruction");
-  auto* metaNode = I->getMetadata(VIAInstruction);
-  return getConst(getIthOperand(metaNode, 0));
+optional<Constant *> UniqueIRMarkerReader::getInstructionConstID(const llvm::Instruction *I) {
+  if (!I) return nullopt;
+  return getConstFromMeta(I->getMetadata(VIAInstruction), 0);
 }
 
-llvm::Constant *UniqueIRMarkerReader::getModuleConstID(const llvm::Module *M) {
+optional<Constant *> UniqueIRMarkerReader::getModuleConstID(const llvm::Module *M) {
   assert(M && "Not a valid Module");
   auto* metaNode = M->getNamedMetadata(Twine(VIAModule));
   assert(metaNode && "No ID for module it is likely that the unique IR identifier pass (adding metadata with IDs) has "
@@ -27,58 +27,72 @@ llvm::Constant *UniqueIRMarkerReader::getModuleConstID(const llvm::Module *M) {
   return getConst(metaNode->getOperand(0)->getOperand(0));
 }
 
-Constant *UniqueIRMarkerReader::getLoopConstID(const llvm::Loop *L) {
+optional<Constant *> UniqueIRMarkerReader::getLoopConstID(const llvm::Loop *L) {
   assert(L && "Not a valid Loop");
   auto* metaNode = L->getLoopID();
-  return getConst(getIthOperand(metaNode, 1));
+  return getConstFromMeta(metaNode, 1);
 }
 
-Constant *UniqueIRMarkerReader::getBasicBlockConstID(const llvm::BasicBlock *BB) {
+optional<Constant *> UniqueIRMarkerReader::getBasicBlockConstID(const llvm::BasicBlock *BB) {
   assert(!BB->empty() && "Empty Basic Blocks have no ID");
   auto* metaNode = BB->front().getMetadata(VIABasicBlock);
-  return getConst(getIthOperand(metaNode, 0));
+  return getConstFromMeta(metaNode, 0);
 }
 
-Constant *UniqueIRMarkerReader::getFunctionConstID(const llvm::Function *F) {
+optional<Constant *> UniqueIRMarkerReader::getFunctionConstID(const llvm::Function *F) {
   assert(F && "Not a valid function");
   auto* metaNode = F->getMetadata(VIAFunction);
-  if (!metaNode) return nullptr;
-  return getConst(getIthOperand(metaNode, 0));
+  return getConstFromMeta(metaNode, 0);
 }
 
-IDType UniqueIRMarkerReader::getModuleID(const Module *M) {
-  return getID(getModuleConstID(M));
+optional<IDType> UniqueIRMarkerReader::getModuleID(const Module *M) {
+  errs() << "here\n";
+  return getIDConst<Module>(M, getModuleConstID);
 }
 
-IDType UniqueIRMarkerReader::getFunctionID(const llvm::Function* F) {
-  return getID(getFunctionConstID(const_cast<Function *>(F)));
+optional<IDType> UniqueIRMarkerReader::getFunctionID(const llvm::Function* F) {
+  return getIDConst<Function>(F, getFunctionConstID);
 }
 
-IDType UniqueIRMarkerReader::getBasicBlockID(const llvm::BasicBlock* BB) {
-  return getID(getBasicBlockConstID(BB));
+optional<IDType> UniqueIRMarkerReader::getBasicBlockID(const llvm::BasicBlock* BB) {
+  return getIDConst<BasicBlock>(BB, getBasicBlockConstID);
 }
 
-IDType UniqueIRMarkerReader::getInstructionID(const llvm::Instruction* I) {
-  return getID(getInstructionConstID(I));
+optional<IDType> UniqueIRMarkerReader::getInstructionID(const llvm::Instruction* I) {
+  return getIDConst<Instruction>(I, getInstructionConstID);
 }
 
-IDType UniqueIRMarkerReader::getLoopID(const llvm::Loop* L) {
-  return getID(getLoopConstID(L));
+optional<IDType> UniqueIRMarkerReader::getLoopID(const llvm::Loop* L) {
+  return getIDConst<Loop>(L, getLoopConstID);
 }
 
-IDType UniqueIRMarkerReader::getID(const Constant *C) {
-  return dyn_cast<ConstantInt>(C)->getZExtValue();
+optional<IDType> UniqueIRMarkerReader::getID(const Constant *C) {
+  auto ConstInt = dyn_cast<ConstantInt>(C);
+  return  ConstInt ? optional<IDType>(ConstInt->getZExtValue()) : nullopt;
 }
 
-Constant *UniqueIRMarkerReader::getConst(const llvm::MDOperand& node) {
-  return dyn_cast<ConstantAsMetadata>(node)->getValue();
+optional<Constant *> UniqueIRMarkerReader::getConst(const llvm::MDOperand& node) {
+  auto *ConstMeta = dyn_cast<ConstantAsMetadata>(node);
+  return ConstMeta ? optional<Constant *>(ConstMeta->getValue()) : nullopt;
 }
 
-const MDOperand& UniqueIRMarkerReader::getIthOperand(const MDNode* node, uint operand) {
-  assert(node && "Metadata not found");
-  assert(node->getNumOperands() == (operand+1) && "Meta node doesn't have the correct number of operands");
-
-  return node->getOperand(operand);
-
+optional<reference_wrapper<const MDOperand>> UniqueIRMarkerReader::getIthOperand(const MDNode* node, uint operand) {
+  if (node && node->getNumOperands() == (operand + 1)) {
+    return optional<reference_wrapper<const MDOperand>>{ node->getOperand(operand) };
+  }
+  return std::nullopt;
 }
+
+template< typename T>
+optional<IDType> UniqueIRMarkerReader::getIDConst(const T *t, std::function<optional<Constant *>(const T *)> f) {
+  auto *x = f(t).value_or(nullptr);
+  return x ? getID(x) : nullopt;
+}
+
+optional<Constant *> UniqueIRMarkerReader::getConstFromMeta(llvm::MDNode *node, uint operand) {
+  if (!node) return nullopt;
+  auto np = getIthOperand(node, operand);
+  return np ? getConst(np.value()) : nullopt;
+}
+
 
