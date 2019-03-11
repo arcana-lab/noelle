@@ -37,7 +37,7 @@ function runningTests {
 
     # Go to the test directory
     cd $i ;
-    echo -n -e "\r   Testing $currentTest / $numOfTests : `basename $i`                                                 " ;
+    echo -n -e "\r   Successes $passed_tests : Testing $currentTest / $numOfTests : `basename $i`                                                 " ;
 
     # Clean
     make clean > /dev/null ; 
