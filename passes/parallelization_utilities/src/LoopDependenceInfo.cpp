@@ -27,6 +27,12 @@ LoopDependenceInfo::LoopDependenceInfo(
 ) : function{f}, functionDG{fG}, DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency() / 2}
   {
+
+  /*
+   * Enable all techniques.
+   */
+  this->enableAllTechniques();
+
   this->fetchLoopAndBBInfo(li, l);
   this->createDGsForLoop(l);
   this->environment = new LoopEnvironment(this->loopDG, this->loopExitBlocks);
@@ -198,6 +204,26 @@ void LoopDependenceInfo::mergeSingleSyntacticSugarInstrs () {
     this->loopSCCDAG->mergeSCCs(*sccNodes);
     delete sccNodes;
   }
+}
+  
+bool LoopDependenceInfo::isTechniqueEnabled (Technique technique){
+  auto exist = this->enabledTechniques.find(technique) != this->enabledTechniques.end();
+
+  return exist;
+}
+
+void LoopDependenceInfo::enableAllTechniques (void){
+  this->enabledTechniques.insert(DOALL_ID);
+  this->enabledTechniques.insert(DSWP_ID);
+  this->enabledTechniques.insert(HELIX_ID);
+
+  return ;
+}
+
+void LoopDependenceInfo::disableTechnique (Technique techniqueToDisable){
+  this->enabledTechniques.erase(techniqueToDisable);
+
+  return ;
 }
 
 void LoopDependenceInfo::mergeBranchesWithoutOutgoingEdges () {

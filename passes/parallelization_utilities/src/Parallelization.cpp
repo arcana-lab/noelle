@@ -151,8 +151,9 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
    */
   std::vector<uint32_t> loopThreads{};
   std::vector<uint32_t> DOALLChunkSize{};
+  std::vector<uint32_t> techniquesToDisable{};
   auto indexFileName = getenv("INDEX_FILE");
-  auto filterLoops = this->filterOutLoops(indexFileName, loopThreads, DOALLChunkSize);
+  auto filterLoops = this->filterOutLoops(indexFileName, loopThreads, techniquesToDisable, DOALLChunkSize);
 
   /*
    * Append loops of each function.
@@ -259,6 +260,14 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       }
 
       /*
+       * Safety code.
+       */
+      if (currentLoopIndex >= loopThreads.size()){
+        errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
+        abort();
+      }
+
+      /*
        * The current loop has more than one core assigned to it.
        * Therefore, we need to parallelize this loop.
        *
@@ -271,11 +280,52 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        *
        * DOALL chunk size is the one defined by INDEX_FILE + 1. This is because chunk size must start from 1.
        */
-      ldi->maximumNumberOfCoresForTheParallelization = maximumNumberOfCoresForTheParallelization;
       ldi->DOALLChunkSize = DOALLChunkSize[currentLoopIndex] + 1;
-      if (currentLoopIndex >= loopThreads.size()){
-        errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
-        abort();
+
+      /*
+       * Set the maximum number of threads that we can extract from the current loop.
+       */
+      ldi->maximumNumberOfCoresForTheParallelization = maximumNumberOfCoresForTheParallelization;
+
+      /*
+       * Set the techniques that are enabled.
+       */
+      auto disableTechniques = techniquesToDisable[currentLoopIndex];
+      switch (disableTechniques){
+
+        case 0:
+          ldi->enableAllTechniques();
+          break ;
+
+        case 1:
+          ldi->disableTechnique(DSWP_ID);
+          break ;
+
+        case 2:
+          ldi->disableTechnique(HELIX_ID);
+          break ;
+
+        case 3:
+          ldi->disableTechnique(DOALL_ID);
+          break ;
+
+        case 4:
+          ldi->disableTechnique(DSWP_ID);
+          ldi->disableTechnique(HELIX_ID);
+          break ;
+
+        case 5:
+          ldi->disableTechnique(DSWP_ID);
+          ldi->disableTechnique(DOALL_ID);
+          break ;
+
+        case 6:
+          ldi->disableTechnique(HELIX_ID);
+          ldi->disableTechnique(DOALL_ID);
+          break ;
+
+        default:
+          abort();
       }
 
       /*
@@ -310,9 +360,10 @@ uint32_t Parallelization::getNumberOfModuleLoops (
    * Check if we should filter out loops.
    */
   std::vector<uint32_t> loopThreads{};
+  std::vector<uint32_t> techniquesToDisable{};
   std::vector<uint32_t> DOALLChunkSize{};
   auto indexFileName = getenv("INDEX_FILE");
-  auto filterLoops = this->filterOutLoops(indexFileName, loopThreads, DOALLChunkSize);
+  auto filterLoops = this->filterOutLoops(indexFileName, loopThreads, techniquesToDisable, DOALLChunkSize);
 
   /*
    * Append loops of each function.
@@ -540,6 +591,7 @@ uint32_t llvm::Parallelization::fetchTheNextValue (std::stringstream &stream){
 bool Parallelization::filterOutLoops (
   char *fileName,
   std::vector<uint32_t>& loopThreads,
+  std::vector<uint32_t>& techniquesToDisable,
   std::vector<uint32_t>& DOALLChunkSize
   ){
 
@@ -591,10 +643,14 @@ bool Parallelization::filterOutLoops (
     auto peelFactor = this->fetchTheNextValue(indexString);
 
     /*
-     * Technique to use
-     * 0: DOALL
+     * Techniques to disable
+     * 0: None
      * 1: DSWP
      * 2: HELIX
+     * 3: DOALL
+     * 4: DSWP, HELIX
+     * 5: DSWP, DOALL
+     * 6: HELIX, DOALL
      */
     auto technique = this->fetchTheNextValue(indexString);
 
@@ -621,10 +677,12 @@ bool Parallelization::filterOutLoops (
     if (  (shouldBeParallelized)    &&
           (cores >= 2)              ){
       loopThreads.push_back(cores);
+      techniquesToDisable.push_back(technique);
       DOALLChunkSize.push_back(DOALLChunkFactor);
 
     } else{
       loopThreads.push_back(1);
+      techniquesToDisable.push_back(0);
       DOALLChunkSize.push_back(0);
     }
   }

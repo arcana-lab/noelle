@@ -78,7 +78,7 @@ namespace llvm {
       bool forceNoSCCPartition;
       Verbosity verbose;
       double minHot;
-      Techniques techniques;
+      std::set<Technique> enabledTechniques;
 
       /*
        * Methods
