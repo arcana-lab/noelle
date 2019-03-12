@@ -46,7 +46,6 @@ optional<Constant *> UniqueIRMarkerReader::getFunctionConstID(const llvm::Functi
 }
 
 optional<IDType> UniqueIRMarkerReader::getModuleID(const Module *M) {
-  errs() << "here\n";
   return getIDConst<Module>(M, getModuleConstID);
 }
 
