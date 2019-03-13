@@ -3,6 +3,9 @@ RUNTIME_GITREPO="https://github.com/scampanoni"
 
 all: regression performance
 
+oracle_aa: download
+	./scripts/test_oracle_aa.sh ;
+
 regression: download
 	./scripts/test_regression.sh ;
 

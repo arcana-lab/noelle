@@ -20,8 +20,9 @@ function linkParUtils {
 
   cd ../ ;
 }
-
 echo "Adding symbolic links for regression tests" ;
 linkParUtils regression
+echo "Adding symbolic links for oracle_aa tests"  ;
+linkParUtils oracle_aa
 echo "Adding symbolic links for performance tests" ;
 linkParUtils performance

@@ -1,0 +1,21 @@
+{
+    "Result": [
+        {
+            "ModuleID": 0,
+            "FunctionID": 0,
+            "LoopID": 1,
+            "FunctionName": "main",
+            "Dependencies": [
+                ["RAW", 16, 22],
+                ["WAR", 22, 20]
+            ]
+        },
+        {
+            "ModuleID": 0,
+            "FunctionID": 0,
+            "LoopID": 0,
+            "FunctionName": "main",
+            "Dependencies": []
+        }
+    ]
+}

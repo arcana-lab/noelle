@@ -26,6 +26,8 @@ function cleanTests {
 cleanTests regression
 cleanTests performance
 
+cleanTests oracle_aa
+
 # Remove speedup info on performance tests
 cd performance ;
 rm -f *.txt ;

@@ -36,8 +36,8 @@ baseline: baseline.bc
 	@echo $(PATH)
 	$(CC) $(OPT_LEVEL) $^ -o $@
 
-baseline_pdgdot.bc: test.bc
-	$(OPT) $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -PDGPrinter $^  -o $@
+baseline_pdgdot.bc: 
+	$(OPT) $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -PDGPrinter test.in -o $@
 
 testseq: test_seq.bc
 	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
