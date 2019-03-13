@@ -3,6 +3,9 @@ all: hotprofiler printer pdg parallelization_utilities alloc_aa dataflow dgsimpl
 oracle_aa:
 	cd $@ ; ../scripts/run_me.sh
 
+unique_ir_marker:
+	cd $@ ; ../scripts/run_me.sh
+
 dataflow:
 	cd $@ ; ../scripts/run_me.sh
 
