@@ -52,19 +52,20 @@ void oracle_aa::VIAInvoker::runInference(StringRef inputArgs) {
 void oracle_aa::VIAInvoker::buildOracleDDGConfig(llvm::SmallVector<llvm::Loop *, 8> lp) {
 
   std::vector<uint64_t> loopIDs{};
-    for ( auto &F: M ) {
-      if (F.empty()) continue;
-      auto &LI = MP.getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
-      for ( auto &L : LI ) {
-        // skip inner loops
-        if ( L->getLoopDepth() > 1 ) continue;
-        auto LID = UniqueIRMarkerReader::getLoopID(L);
-        if (LID) {
-          loopIDs.push_back(LID.value());
-          errs() << "loop id: " << LID.value() << '\n';
-        }
+  for ( auto &F: M ) {
+    if (F.empty()) continue;
+    auto &LI = MP.getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+    for ( auto &L : LI ) {
+      // skip inner loops
+      if ( L->getLoopDepth() > 1 ) continue;
+      auto LID = UniqueIRMarkerReader::getLoopID(L);
+      if (LID) {
+        loopIDs.push_back(LID.value());
       }
+    }
   }
+
+  NumOfLoops = loopIDs.size();
 
   rapidjson::StringBuffer buffer;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> prettyBuffer(buffer);
@@ -131,6 +132,8 @@ void oracle_aa::VIAInvoker::executeVIAInference(StringRef inputArgs) {
 // read the result from the executable which is of the form <moduleID>-oracle-ddg.dep
 // create a OracleAliasResult (a quad of all types of memory dependencies).
 void oracle_aa::VIAInvoker::parseResponse() {
+  // No Loops to consider.
+  if (NumOfLoops <= 0) return;
 
   errs() << viaResultFilename << '\n';
   std::ifstream ifs(viaResultFilename);
@@ -145,50 +148,52 @@ void oracle_aa::VIAInvoker::parseResponse() {
 
   // Find all Dependency IDs
   std::set<IDType> ids;
-  auto &resultList = doc["Result"];
-  for ( auto &iter : resultList.GetArray() ) {
-    for ( auto &dep : iter[DependenciesKey].GetArray()) {
-      auto first = dep[1].GetUint64();
-      auto second = dep[2].GetUint64();
-      ids.insert(first);
-      ids.insert(second);
-    }
-  }
-
-  // Create an ID to Dependency Mapping.
-  IDToValueMapper idToValueMapper(M);
-  auto mapping = idToValueMapper.idToValueMap(ids);
-
-  for ( auto &iter : resultList.GetArray() ) {
-    auto ModuleID = iter["ModuleID"].GetUint64();
-    auto FunctionID = iter["FunctionID"].GetUint64();
-    auto LoopID = iter["LoopID"].GetUint64();
-    for ( auto &dep : iter[DependenciesKey].GetArray() ) {
-      auto depType = StringRef(dep[0].GetString());
-      auto first = dep[1].GetUint64();
-      auto firstValue = dyn_cast<Instruction>((*mapping)[first]);
-      assert(firstValue);
-      auto second = dep[2].GetUint64();
-      auto secondValue = dyn_cast<Instruction>((*mapping)[second]);
-      assert(secondValue);
-      auto dependency = std::pair<const Value *, const Value *>(getPtrValue(firstValue), getPtrValue(secondValue));
-      if (depType == RAR) {
-        results->addFunctionRaR(ModuleID, FunctionID, LoopID, dependency);
-      } else if (depType == RAW) {
-        results->addFunctionRaW(ModuleID, FunctionID, LoopID, dependency);
-      } else if (depType == WAR) {
-        results->addFunctionWaR(ModuleID, FunctionID, LoopID, dependency);
-      } else if (depType == WAW) {
-        results->addFunctionWaW(ModuleID, FunctionID, LoopID, dependency);
-      } else {
-        errs() << "depType not known: " << depType << '\n';
-        assert(0 && "found an unknown dependency type");
+  if (doc.IsObject()) {
+    auto &resultList = doc["Result"];
+    for (auto &iter : resultList.GetArray()) {
+      for (auto &dep : iter[DependenciesKey].GetArray()) {
+        auto first = dep[1].GetUint64();
+        auto second = dep[2].GetUint64();
+        ids.insert(first);
+        ids.insert(second);
       }
-      errs() << "parsing response " << depType << ":";
-      getPtrValue(firstValue)->print(errs());
-      errs() << " ";
-      getPtrValue(secondValue)->print(errs());
-      errs() << '\n';
+    }
+
+    // Create an ID to Dependency Mapping.
+    IDToValueMapper idToValueMapper(M);
+    auto mapping = idToValueMapper.idToValueMap(ids);
+
+    for (auto &iter : resultList.GetArray()) {
+      auto ModuleID = iter["ModuleID"].GetUint64();
+      auto FunctionID = iter["FunctionID"].GetUint64();
+      auto LoopID = iter["LoopID"].GetUint64();
+      for (auto &dep : iter[DependenciesKey].GetArray()) {
+        auto depType = StringRef(dep[0].GetString());
+        auto first = dep[1].GetUint64();
+        auto firstValue = dyn_cast<Instruction>((*mapping)[first]);
+        assert(firstValue);
+        auto second = dep[2].GetUint64();
+        auto secondValue = dyn_cast<Instruction>((*mapping)[second]);
+        assert(secondValue);
+        auto dependency = std::pair<const Value *, const Value *>(getPtrValue(firstValue), getPtrValue(secondValue));
+        if (depType == RAR) {
+          results->addFunctionRaR(ModuleID, FunctionID, LoopID, dependency);
+        } else if (depType == RAW) {
+          results->addFunctionRaW(ModuleID, FunctionID, LoopID, dependency);
+        } else if (depType == WAR) {
+          results->addFunctionWaR(ModuleID, FunctionID, LoopID, dependency);
+        } else if (depType == WAW) {
+          results->addFunctionWaW(ModuleID, FunctionID, LoopID, dependency);
+        } else {
+          errs() << "depType not known: " << depType << '\n';
+          assert(0 && "found an unknown dependency type");
+        }
+        errs() << "parsing response " << depType << ":";
+        getPtrValue(firstValue)->print(errs());
+        errs() << " ";
+        getPtrValue(secondValue)->print(errs());
+        errs() << '\n';
+      }
     }
   }
 

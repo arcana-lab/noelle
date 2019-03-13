@@ -45,6 +45,8 @@ class VIAInvoker {
 
   std::shared_ptr<OracleAliasResults> results;
 
+  unsigned int NumOfLoops = 0;
+
   const static StringRef RAR;
   const static StringRef RAW;
   const static StringRef WAR;
