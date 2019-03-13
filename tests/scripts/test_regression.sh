@@ -32,11 +32,11 @@ function runningTests {
     # Check the output ;
     cmp output_baseline.txt output_parallelized.txt &> /dev/null ;
     if test $? -ne 0 ; then
-      echo "Failed" ;
+      echo -e "\e[31mFailed\e[0m" ;
       dirs_of_failed_tests="${i} ${dirs_of_failed_tests}" ;
     else
       passed_tests=`echo "$passed_tests + 1" | bc` ;
-      echo "Passed" ;
+      echo -e "\e[32mPassed\e[0m" ;
     fi
 
     cd ../ ;
