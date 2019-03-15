@@ -21,7 +21,7 @@ function runningTests {
     make clean > /dev/null ; 
 
     # Compile
-    make baseline_pdgdot.bc >> compiler_output.txt 2>&1 ;
+    make run_oracle_aa >> compiler_output.txt 2>&1 ;
 
     # Clean .dot files 
     rm *.dot 2> /dev/null

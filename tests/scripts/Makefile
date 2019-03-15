@@ -23,7 +23,8 @@ OPTIMIZED=parallelized
 
 
 TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
-ORACLEAA_PASS=-load $(INSTALL_LIB)/UniqueIRMarker.so -load $(INSTALL_LIB)/OracleAA.so  -input-args "${oracle_input_args}" -exe-script=$(INSTALL_DIR)/bin/run_via.sh -loops
+UNIQUE_IR_MARKER_PASS=-load $(INSTALL_LIB)/UniqueIRMarker.so 
+ORACLEAA_PASS=$(UNIQUE_IR_MARKER_PASS) -load $(INSTALL_LIB)/OracleAA.so  -input-args "${oracle_input_args}" -exe-script=$(INSTALL_DIR)/bin/run_via.sh -loops
 PDGPASS=$(ORACLEAA_PASS) -load $(INSTALL_LIB)/AllocAA.so -load $(INSTALL_LIB)/PDGAnalysis.so
 PRINTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/PDGPrinter.so
 PARALLELIZATION_TECHNIQUES= -load $(INSTALL_LIB)/DSWP.so -load $(INSTALL_LIB)/DOALL.so -load $(INSTALL_LIB)/HELIX.so
@@ -36,8 +37,8 @@ baseline: baseline.bc
 	@echo $(PATH)
 	$(CC) $(OPT_LEVEL) $^ -o $@
 
-baseline_pdgdot.bc: 
-	$(OPT) $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -PDGPrinter test.in -o $@
+baseline_pdgdot.bc: test.bc
+	$(OPT) $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -PDGPrinter $^ -o $@
 
 testseq: test_seq.bc
 	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
@@ -60,6 +61,15 @@ baseline.bc: test.bc
 	$(CC) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
 	llvm-dis $@
 
+ir_mark.bc: test.cpp
+	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
+	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $(UNIQUE_IR_MARKER_PASS) -UniqueIRID $@ -o $@
+	$(OPT) -dot-cfg -disable-output $@
+	llvm-dis $@
+
+run_oracle_aa:
+	$(OPT) $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -PDGPrinter test.in -o $@
+
 test.bc: test.cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
 	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
@@ -79,6 +89,6 @@ show_time: test_seq.bc
 	$(OPT) $(OPTPASSES) $(ANALYSES) -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *.dep *.viaconf
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *.dep *.viaconf run_oracle_aa
 
 .PHONY: show_passes show_time
