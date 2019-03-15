@@ -62,10 +62,10 @@ function runningTests {
     currentTest=`echo "$currentTest + 1" | bc` ;
     cd ../ ;
   done
-  echo "" ;
 
   # Print the results
-  echo "    Tests passed: ${passed_tests} / ${checked_tests}" ;
+  echo -n -e "\r   Tests passed: ${passed_tests} / ${checked_tests}                                                                   " ;
+  echo "" ;
   if test "${dirs_of_failed_tests}" != "" ; then
     echo "    Tests failed: ${dirs_of_failed_tests}" ;
   fi
