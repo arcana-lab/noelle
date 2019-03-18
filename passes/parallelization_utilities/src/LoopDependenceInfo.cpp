@@ -71,6 +71,9 @@ LoopDependenceInfo::~LoopDependenceInfo() {
 void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) {
   this->DOALLChunkSize = otherLDI->DOALLChunkSize;
   this->maximumNumberOfCoresForTheParallelization = otherLDI->maximumNumberOfCoresForTheParallelization;
+  this->enabledTechniques = otherLDI->enabledTechniques;
+
+  return ;
 }
 
 /*

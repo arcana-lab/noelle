@@ -91,6 +91,7 @@ namespace llvm {
       );
 
       void copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) ;
+
       uint32_t numberOfExits (void) const;
 
       std::function<LoopDependenceInfo *(Function *F, int loopIndex)> *reevaluator;
@@ -105,6 +106,7 @@ namespace llvm {
 
     private:
       std::set<Technique> enabledTechniques;
+
       void fetchLoopAndBBInfo (LoopInfo &li, Loop *l) ;
       void createDGsForLoop (Loop *l) ;
 
