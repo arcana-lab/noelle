@@ -30,13 +30,7 @@ class UniqueIRMarkerReader : public InstVisitor<UniqueIRMarker>  {
 
   void visitInstruction(Instruction &I);
 
-
-
  private:
-  static const StringRef VIAInstruction;
-  static const StringRef VIABasicBlock;
-  static const StringRef VIAFunction;
-  static const StringRef VIAModule;
 
   static optional<IDType> getID(const Constant*);
   static optional<Constant *> getConst(const llvm::MDOperand&);

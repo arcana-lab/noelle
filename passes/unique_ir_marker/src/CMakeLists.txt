@@ -2,6 +2,7 @@
 set(Srcs 
   UniqueIRMarker.cpp
   UniqueIRMarkerReader.cpp
+  UniqueIRConstants.cpp
   IDToValueMapper.cpp
 )
 

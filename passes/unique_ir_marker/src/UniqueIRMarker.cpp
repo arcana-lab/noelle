@@ -1,9 +1,10 @@
 
 #include "UniqueIRMarker.hpp"
+#include "UniqueIRConstants.hpp"
 
 
 void UniqueIRMarker::visitModule(Module &M) {
-  auto metaNode = M.getOrInsertNamedMetadata(VIAModule);
+  auto metaNode = M.getOrInsertNamedMetadata(UniqueIRConstants::VIAModule);
 
   auto *meta = buildNode(M.getContext(), ModuleCounter++);
   if (metaNode->getNumOperands() == 0) {
@@ -20,7 +21,7 @@ void UniqueIRMarker::visitModule(Module &M) {
 void UniqueIRMarker::visitFunction(Function &F) {
   LLVMContext& Context = F.getContext();
   auto *countMeta = buildNode(Context, FunctionCounter++);
-  F.setMetadata(VIAFunction, countMeta);
+  F.setMetadata(UniqueIRConstants::VIAFunction, countMeta);
 
   if ( F.empty() ) return;
 
@@ -39,12 +40,12 @@ void UniqueIRMarker::visitFunction(Function &F) {
 void UniqueIRMarker::visitBasicBlock(BasicBlock &BB) {
   if( BB.empty() ) return;
   auto *countMeta = buildNode(BB.getContext(), BasicBlockCounter++);
-  BB.front().setMetadata(VIABasicBlock, countMeta);
+  BB.front().setMetadata(UniqueIRConstants::VIABasicBlock, countMeta);
 }
 
 void UniqueIRMarker::visitInstruction(Instruction &I) {
   auto *countMeta = buildNode(I.getContext(), uniqueInstructionCounter());
-  I.setMetadata(VIAInstruction, countMeta);
+  I.setMetadata(UniqueIRConstants::VIAInstruction, countMeta);
 }
 
 MDNode *UniqueIRMarker::buildNode(LLVMContext& C, IDType value) {

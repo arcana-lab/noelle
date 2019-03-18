@@ -31,10 +31,6 @@ class UniqueIRMarker : public InstVisitor<UniqueIRMarker> {
   ModulePass& MP;
 
 
-  const StringRef VIAInstruction = "VIA.Ins.ID";
-  const StringRef VIABasicBlock = "VIA.BB.ID";
-  const StringRef VIAFunction = "VIA.Fn.ID";
-  const StringRef VIAModule = "VIA.M.ID";
 
 };
 
