@@ -1,0 +1,12 @@
+{
+    "Functions": [
+        {
+            "ModuleID": 0,
+            "FunctionID": 0,
+            "FunctionName": "main",
+            "Dependencies": [
+                [24, 7]
+            ]
+        }
+    ]
+}

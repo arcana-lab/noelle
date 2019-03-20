@@ -21,10 +21,7 @@ function runningTests {
     make clean > /dev/null ; 
 
     # Compile
-    make run_oracle_aa >> compiler_output.txt 2>&1 ;
-
-    # Clean .dot files 
-#    rm *.dot 2> /dev/null
+    make baseline_comm >> compiler_output.txt 2>&1 ;
 
     # Check the output ;
     output=0-oracle-ddg.dep
@@ -52,7 +49,7 @@ function runningTests {
   echo "" ;
 }
 
-cd oracle_aa ;
+cd commutativity ;
 runningTests 
 cd ../ ;
 

@@ -27,6 +27,7 @@ cleanTests regression
 cleanTests performance
 
 cleanTests oracle_aa
+cleanTests commutativity
 
 # Remove speedup info on performance tests
 cd performance ;

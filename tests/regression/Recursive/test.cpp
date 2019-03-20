@@ -116,7 +116,9 @@ int nestg (int iters) {
   int x = 0;
   for (int i = 0; i < 10; ++i) {
     x += nestc(iters - 1);
-    x -= nestc(iters - 2);
+    if (iters > 1) {
+      x -= nestc(iters - 2);
+    }
   }
   return x;
 }

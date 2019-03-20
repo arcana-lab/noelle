@@ -6,6 +6,9 @@ all: regression performance
 oracle_aa: download
 	./scripts/test_oracle_aa.sh ;
 
+commutativity: download
+	./scripts/test_commutativity.sh ;
+
 regression: download
 	./scripts/test_regression.sh ;
 

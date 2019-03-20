@@ -1,0 +1,11 @@
+{
+    "Functions": [
+        {
+            "ModuleID": 0,
+            "FunctionID": 0,
+            "FunctionName": "main",
+            "Dependencies": [
+            ]
+        }
+    ]
+}

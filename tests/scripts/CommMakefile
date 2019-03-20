@@ -24,12 +24,23 @@ OPTIMIZED=parallelized
 
 TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
 UNIQUE_IR_MARKER_PASS=-load $(INSTALL_LIB)/UniqueIRMarker.so 
-ORACLEAA_PASS=$(UNIQUE_IR_MARKER_PASS) -load $(INSTALL_LIB)/OracleAA.so  -input-args "${oracle_input_args}" -exe-script=$(INSTALL_DIR)/bin/run_via.sh -loops
+ORACLEAA_PASS= $(UNIQUE_IR_MARKER_PASS) -load $(INSTALL_LIB)/OracleAA.so  
+ORACLEAA_ARGS= -input-args "${oracle_input_args}" -exe-script=$(INSTALL_DIR)/bin/run_via.sh 
 PDGPASS=$(ORACLEAA_PASS) -load $(INSTALL_LIB)/AllocAA.so -load $(INSTALL_LIB)/PDGAnalysis.so
 PRINTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/PDGPrinter.so
 PARALLELIZATION_TECHNIQUES= -load $(INSTALL_LIB)/DSWP.so -load $(INSTALL_LIB)/DOALL.so -load $(INSTALL_LIB)/HELIX.so
 PRE_OPTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/DGSimplify.so
 OPTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/HotProfiler.so -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/Heuristics.so -load $(INSTALL_LIB)/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load $(INSTALL_LIB)/Parallelizer.so 
+
+COMMPASSES=-load $(INSTALL_LIB)/CommutativeDependenceAnalysis.so 
+
+COMM_REM_DEP=-CommutativeDependenceAnalysis
+COMM_SYNC_OPT=-CommSync
+
+COMM=$(OPTPASSES) $(PARALLELIZATION_TECHNIQUES) $(COMMPASSES) $(COMM_REM_DEP) $(ORACLEAA_ARGS) -comm-dep=test.commd -parallelizer $(PARALLELIZATION_OPTIONS) 
+      
+
+
 
 all: baseline baseline_pdgdot.bc testseq $(OPTIMIZED)
 
@@ -37,8 +48,8 @@ baseline: baseline.bc
 	@echo $(PATH)
 	$(CC) $(OPT_LEVEL) $^ -o $@
 
-baseline_pdgdot.bc: test.bc
-	$(OPT) $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -PDGPrinter $^ -o $@
+baseline_comm: ir_mark.bc
+	$(OPT) $(COMM) $^ -o $@
 
 testseq: test_seq.bc
 	$(CC) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
@@ -65,7 +76,6 @@ ir_mark.bc: test.cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
 	@../../scripts/iterate_dgsimplify.sh "-inliner-verbose=1" "$(PRE_OPTPASSES)" "$@"
 	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $(UNIQUE_IR_MARKER_PASS) -UniqueIRID $@ -o $@
-	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
 run_oracle_aa:
