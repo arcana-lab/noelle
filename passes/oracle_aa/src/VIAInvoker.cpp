@@ -160,7 +160,7 @@ void oracle_aa::VIAInvoker::parseResponse() {
     }
 
     // Create an ID to Dependency Mapping.
-    IDToValueMapper idToValueMapper(M);
+    IDToInstructionMapper idToValueMapper(M);
     auto mapping = idToValueMapper.idToValueMap(ids);
 
     for (auto &iter : resultList.GetArray()) {

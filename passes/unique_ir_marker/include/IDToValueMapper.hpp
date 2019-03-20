@@ -6,19 +6,32 @@
 #include <set>
 #include "UniqueIRMarker.hpp"
 
-class IDToValueMapper  : public InstVisitor<IDToValueMapper> {
+class IDToInstructionMapper  : public InstVisitor<IDToInstructionMapper> {
  public:
-  IDToValueMapper(Module &);
+  explicit IDToInstructionMapper(Module &);
 
-  std::unique_ptr<std::map<IDType, Value*>> idToValueMap(std::set<IDType> &);
+  std::unique_ptr<std::map<IDType, Instruction *>> idToValueMap(std::set<IDType> &);
 
   void visitInstruction(Instruction &I);
 
  private:
   std::set<IDType> *relevantIDs;
-  std::map<IDType, Value *> *mapping;
-  Module &M;
+  std::map<IDType, Instruction *> *mapping;
+  Module &Mod;
+};
 
+class IDToFunctionMapper : public InstVisitor<IDToFunctionMapper> {
+ public:
+  explicit IDToFunctionMapper(Module &);
+
+  std::unique_ptr<std::map<IDType, Function *>> idToValueMap(std::set<IDType> &);
+
+  void visitFunction(Function &I);
+
+ private:
+  std::set<IDType> *relevantIDs;
+  std::map<IDType, Function *> *mapping;
+  Module &Mod;
 };
 
 #endif //CAT_IDTOVALUEMAPPER_HPP
