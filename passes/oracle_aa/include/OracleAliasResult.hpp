@@ -12,16 +12,27 @@ class OracleAliasFunctionResults {
  public:
   OracleAliasFunctionResults() : ReadAfterRead(), ReadAfterWrite(),
                                  WriteAfterWrite(), WriteAfterRead(),
-                                 dependencies{ ReadAfterWrite, WriteAfterRead, WriteAfterWrite }{}
+                                 dependencies{ make_pair(ReadAfterWrite, DependencyType::RaW),
+                                               make_pair(WriteAfterRead, DependencyType ::WaR),
+                                               make_pair(WriteAfterWrite, DependencyType::WaW) }
+  { }
 
   using Dependency = std::pair<const Value *, const Value *>;
   using Dependencies = std::set<Dependency>;
+
+  enum class DependencyType {
+    RaR,
+    RaW,
+    WaR,
+    WaW
+  };
+
   Dependencies ReadAfterWrite;
   Dependencies ReadAfterRead;
   Dependencies WriteAfterRead;
   Dependencies WriteAfterWrite;
 
-  std::array<Dependencies, 4> dependencies;
+  std::array<std::pair<Dependencies, DependencyType>, 3> dependencies;
 };
 
 class OracleAliasResults {

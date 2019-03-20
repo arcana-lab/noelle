@@ -5,7 +5,7 @@ project(CAT)
 # Programming languages to use
 enable_language(C CXX)
 
-find_package(RapidJSON)
+find_package(RapidJSON REQUIRED)
 
 # Find and link with LLVM
 find_package(LLVM REQUIRED CONFIG)

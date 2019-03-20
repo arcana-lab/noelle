@@ -12,6 +12,8 @@
 #include <llvm/IR/LegacyPassManager.h>
 
 #include <memory>
+#include <functional>
+#include <optional>
 
 #include "OracleAliasResult.hpp"
 
@@ -42,6 +44,10 @@ class OracleDDGAAResult : public AAResultBase<OracleDDGAAResult> {
 
   ModRefInfo  getModRefInfo(ImmutableCallSite CS1, ImmutableCallSite CS2);
   Loop *getTopMostLoop(Loop *La) const;
+ private:
+  template <typename V>
+  V SearchResult(const Instruction *, const Instruction *,
+                 std::function<std::optional<V>(OracleAliasFunctionResults::Dependencies, OracleAliasFunctionResults::DependencyType)> f, V none, std::function<V(void)> NoMatch);
 };
 
 

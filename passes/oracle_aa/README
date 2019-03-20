@@ -1,6 +1,8 @@
 This requires VIA (https://bitbucket.org/DennisZh/via/branch/metadata_id)
 which should be build and installed in <VIA_INSTALL_DIR>
 
+This pass also depends on RapidJSON > 1.1.0
+
 Then the following excerpt can be used to execute
 
 ```

@@ -33,7 +33,7 @@ echo "executing ${bin_name} with args '${execution_args}'"
 ./${bin_name} ${execution_args}
 
 [ -e $artifacts ] && rm $artifacts
-touch artifacts
+
 echo "$bin_name" >> $artifacts
 
 echo "done"
