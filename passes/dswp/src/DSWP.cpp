@@ -45,32 +45,35 @@ DSWP::DSWP (
   return ;
 }
 
-void DSWP::initialize (LoopDependenceInfo *LDI, Heuristics *h) {
-  partitionSCCDAG(LDI, h);
-}
-
 bool DSWP::canBeAppliedToLoop (
   LoopDependenceInfo *LDI,
   Parallelization &par,
   Heuristics *h
 ) const {
-  auto canApply = this->partition->numberOfPartitions() > 1;
-  if (this->forceParallelization) {
-    if (!canApply && this->verbose != Verbosity::Disabled) {
-      errs() << "DSWP:  Forced parallelization of a disadvantageous loop\n";
-    }
-    return true;
+
+  /*
+   * Check if there is at least one sequential stage.
+   * If there isn't, then this loop is a DOALL. Hence, DSWP is not applicable.
+   */
+  for (auto nodePair : LDI->loopSCCDAG->internalNodePairs()) {
+
+    /*
+     * Check if the current SCC can be removed (e.g., because it is due to induction variables).
+     * If it is, then this SCC has already been assigned to every dependent partition.
+     */
+    auto currentSCC = nodePair.first;
+    if (LDI->sccdagAttrs.canBeCloned(currentSCC)) continue ;
+
+    /*
+     * We found a sequential stage.
+     */
+    return true ;
   }
 
   /*
-   * Check whether it is worth parallelizing the current loop.
+   * No sequential stage has been found.
    */
-  if (!canApply && this->verbose != Verbosity::Disabled) {
-    errs() << "DSWP:  Not enough TLP can be extracted\n";
-    errs() << "DSWP: Exit\n";
-  }
-
-  return canApply;
+  return false;
 }
 
 bool DSWP::apply (
@@ -78,6 +81,21 @@ bool DSWP::apply (
   Parallelization &par,
   Heuristics *h
 ) {
+
+  /*
+   * Start.
+   */
+  if (this->verbose != Verbosity::Disabled) {
+    errs() << "DSWP: Start\n";
+  }
+
+  /*
+   * Partition the SCCDAG.
+   */
+  partitionSCCDAG(LDI, h);
+  if (this->verbose != Verbosity::Disabled) {
+    errs() << "DSWP:  There are " << this->partition->numberOfPartitions() << " partitions in the SCCDAG\n";
+  }
 
   /*
    * Determine DSWP tasks (stages)
@@ -207,5 +225,11 @@ bool DSWP::apply (
   }
   createPipelineFromStages(LDI, par);
 
+  /*
+   * Exit
+   */
+  if (this->verbose != Verbosity::Disabled) {
+    errs() << "DSWP: Exit\n";
+  }
   return true;
 }

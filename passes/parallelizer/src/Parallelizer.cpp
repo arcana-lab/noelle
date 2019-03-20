@@ -91,16 +91,13 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
               && LDI->isTechniqueEnabled(DSWP_ID)
               && dswp.canBeAppliedToLoop(LDI, par, h)
     ) {
-    dswp.reset();
-    dswp.initialize(LDI, h);
-    if (dswp.canBeAppliedToLoop(LDI, par, h)) {
 
-      /*
-       * Apply DSWP.
-       */
-      codeModified = dswp.apply(LDI, par, h);
-      usedTechnique = &dswp;
-    }
+    /*
+     * Apply DSWP.
+     */
+    dswp.reset();
+    codeModified = dswp.apply(LDI, par, h);
+    usedTechnique = &dswp;
   }
 
   /*
