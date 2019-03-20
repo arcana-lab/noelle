@@ -252,9 +252,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops () {
       auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
       auto loopInd = loopIter - allSummaries.begin();
       auto loop = (*loopsPreorder)[loopInd];
-      auto LDI = new LoopDependenceInfo(F, fdg, loop, LI, PDT);
-      auto &attrs = LDI->sccdagAttrs;
-      attrs.populate(LDI->loopSCCDAG, LDI->liSummary, SE);
+      auto LDI = new LoopDependenceInfo(F, fdg, loop, LI, SE, PDT);
       bool inlinedCall = inlineCallsInMassiveSCCs(F, LDI);
       if (!inlinedCall) removeSummaries.insert(summary);
 

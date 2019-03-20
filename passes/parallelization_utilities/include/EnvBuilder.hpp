@@ -26,14 +26,15 @@ namespace llvm {
 
   class EnvUserBuilder {
    public:
-    EnvUserBuilder (LoopEnvironment &le);
+    EnvUserBuilder ();
     ~EnvUserBuilder ();
 
     void setEnvArray (Value *envArr) { this->envArray = envArr; }
-    void createEnvPtr (IRBuilder<> b, int envIndex);
+    void createEnvPtr (IRBuilder<> b, int envIndex, Type *type);
     void createReducableEnvPtr (
       IRBuilder<> b,
       int envIndex,
+      Type *type,
       int reducerCount,
       Value *reducerIndV
     );
@@ -51,7 +52,6 @@ namespace llvm {
     Instruction *getEnvPtr (int ind) { return envIndexToPtr[ind]; }
 
    private:
-    LoopEnvironment &LE;
     Value *envArray;
 
 		/*
@@ -64,7 +64,7 @@ namespace llvm {
 
   class EnvBuilder {
    public:
-    EnvBuilder (LoopEnvironment &LE, llvm::LLVMContext &CXT);
+    EnvBuilder (llvm::LLVMContext &CXT);
     ~EnvBuilder ();
 
     /*
@@ -72,6 +72,7 @@ namespace llvm {
      */
     void createEnvUsers (int numUsers);
     void createEnvVariables (
+      std::vector<Type *> &varTypes,
       std::set<int> &singleVarIndices,
       std::set<int> &reducableVarIndices,
       int reducerCount
@@ -109,18 +110,20 @@ namespace llvm {
     bool isReduced (int ind) ;
 
    private:
-    LoopEnvironment &LE;
 
     /*
      * The environment array, owned by this builder
      */
+    LLVMContext &CXT;
     Value *envArray;
     Value *envArrayInt8Ptr;
-    ArrayType *envArrayType;
 
     /*
      * The environment variable types and their allocations
      */
+    int envSize;
+    ArrayType *envArrayType;
+    std::vector<Type *> envTypes;
     std::unordered_map<int, Value *> envIndexToVar;
     std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
     int numReducers;

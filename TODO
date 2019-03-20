@@ -17,9 +17,6 @@
 ==== Renaming
 generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
 
-==== Parallelizer
-- Modify parallelizer to be able to parallelize multiple loops nested to each other at the same time
-
 
 ==== OTHER PARALLELIZATION SCHEMES
 - Implement PS-DSWP

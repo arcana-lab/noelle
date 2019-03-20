@@ -27,7 +27,7 @@ LoopEnvironment::LoopEnvironment(PDG *loopDG, SmallVector<BasicBlock *, 10> &exi
       isProducer = true;
       this->prodConsumers[externalValue].insert(edge->getIncomingT());
     }
-    if (isProducer) this->addPreLoopProducer(externalValue);
+    if (isProducer) this->addLiveInProducer(externalValue);
 
     /*
      * Determine whether the external value is a consumer
@@ -36,7 +36,7 @@ LoopEnvironment::LoopEnvironment(PDG *loopDG, SmallVector<BasicBlock *, 10> &exi
     {
       if (edge->isMemoryDependence() || edge->isControlDependence()) continue;
       auto internalValue = edge->getOutgoingT();
-      if (!this->isProducer(internalValue)) this->addPostLoopProducer(internalValue);
+      if (!this->isProducer(internalValue)) this->addLiveOutProducer(internalValue);
       this->prodConsumers[internalValue].insert(externalValue);
     }
   }
@@ -54,7 +54,7 @@ Type * LoopEnvironment::typeOfEnv (int index) const {
 
   return exitBlockType;
 }
-      
+
 void LoopEnvironment::addProducer (Value *producer, bool liveIn){
   auto envIndex = envProducers.size();
   envProducers.push_back(producer);
@@ -64,8 +64,6 @@ void LoopEnvironment::addProducer (Value *producer, bool liveIn){
   } else {
     liveOutInds.insert(envIndex);
   }
-
-  return ;
 }
 
 bool LoopEnvironment::isProducer (Value *producer) const {
@@ -75,32 +73,21 @@ bool LoopEnvironment::isProducer (Value *producer) const {
 bool LoopEnvironment::isLiveIn (Value *val) {
   return isProducer(val) && liveInInds.find(producerIndexMap[val]) != liveInInds.end();
 }
-      
-void LoopEnvironment::addPreLoopProducer (Value *producer) { 
+
+void LoopEnvironment::addLiveInProducer (Value *producer) { 
   addProducer(producer, true); 
-
-  return ;
 }
-      
-void LoopEnvironment::addPostLoopProducer (Value *producer) { 
+
+void LoopEnvironment::addLiveOutProducer (Value *producer) { 
   addProducer(producer, false); 
-
-  return ;
 }
-      
+
 int LoopEnvironment::indexOfExitBlock (void) const {
   return hasExitBlockEnv ? envProducers.size() : -1; 
 }
-      
+
 int LoopEnvironment::envSize (void) const {
   return envProducers.size() + (hasExitBlockEnv ? 1 : 0);
-}
-
-/*
- * DEPRECATED(angelo): See LoopEnvironment.hpp for reason
- */
-int LoopEnvironment::indexOfProducer (Value *producer) {
-  return producerIndexMap[producer];
 }
 
 std::set<Value *> &LoopEnvironment::consumersOf (Value *prod) {

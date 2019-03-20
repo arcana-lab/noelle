@@ -12,8 +12,8 @@
 #include "HELIXTask.hpp"
 
 HELIX::HELIX (Module &module, Verbosity v)
-  :
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v}
+  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v},
+    loopCarriedEnvBuilder{nullptr}, loopCarriedPHIs{}
   {
 
   /*
@@ -48,24 +48,61 @@ HELIX::HELIX (Module &module, Verbosity v)
   auto funcArgTypes = ArrayRef<Type*>({
     PointerType::getUnqual(int8),
     PointerType::getUnqual(int8),
+    PointerType::getUnqual(int8),
+    PointerType::getUnqual(int8),
     int64,
-    int64
+    int64,
+    PointerType::getUnqual(int64)
   });
   this->taskType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
 
   return ;
 }
 
-bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h, ScalarEvolution &SE) const {
-  return false;
+void HELIX::reset () {
+  ParallelizationTechnique::reset();
+  loopCarriedPHIs.clear();
+  if (loopCarriedEnvBuilder) {
+    delete loopCarriedEnvBuilder;
+  }
+}
+
+bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) const {
+  return true ;
 }
 
 bool HELIX::apply (
   LoopDependenceInfo *LDI,
   Parallelization &par,
-  Heuristics *h,
-  ScalarEvolution &SE
+  Heuristics *h
 ) {
+
+  /*
+   * If a task has not been defined, create such a task from the
+   * loop dependence info of the original function's loop
+   * Otherwise, add synchronization to the already defined task
+   * using the loop dependence info for that task
+   */
+  if (this->tasks.size() == 0) {
+    this->createParallelizableTask(LDI, par, h);
+  } else {
+    this->synchronizeTask(LDI, par, h);
+  }
+
+  return true;
+}
+
+void HELIX::createParallelizableTask (
+  LoopDependenceInfo *LDI,
+  Parallelization &par, 
+  Heuristics *h
+){
+
+  /*
+   * NOTE: Keep around the original loops' LoopDependenceInfo for later phases
+   * //TODO: we need to specify why this is necessary
+   */
+  this->originalLDI = LDI;
 
   /*
    * Print the parallelization request.
@@ -84,12 +121,6 @@ bool HELIX::apply (
   assert(helixTask == this->tasks[0]);
 
   /*
-   * Spill loop carried dependencies of the original loop
-   */
-  spillLoopCarriedDataDependencies(LDI);
-  // FIXME: Spilling the old loop invalidates many data structures within LDI. Reconstruct LDI
-
-  /*
    * Fetch the indices of live-in and live-out variables of the loop being parallelized.
    */
   auto liveInVars = LDI->environment->getEnvIndicesOfLiveInVars();
@@ -98,21 +129,22 @@ bool HELIX::apply (
   /*
    * Add all live-in and live-out variables as variables to be included in the environment.
    */
-  std::set<int> allEnvironementVariables{liveInVars.begin(), liveInVars.end()};
-  allEnvironementVariables.insert(liveOutVars.begin(), liveOutVars.end());
+  std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
+  nonReducableVars.insert(liveOutVars.begin(), liveOutVars.end());
+  std::set<int> reducableVars{}; //TODO: SIMONE: why we don't have reducable vars? is this because ScalarEvolutionWrapperPass cannot be used because it needs to be recomputed?
 
   /*
    * Add the memory location of the environment used to store the exit block taken to leave the parallelized loop.
    * This location exists only if there is more than one loop exit.
    */
   if (LDI->numberOfExits() > 1){ 
-    allEnvironementVariables.insert(LDI->environment->indexOfExitBlock());
+    nonReducableVars.insert(LDI->environment->indexOfExitBlock());
   }
 
   /*
    * Build the single environment that is shared between all instances of the HELIX task.
    */
-  this->initializeEnvironmentBuilder(LDI, allEnvironementVariables);
+  this->initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
 
   /*
    * Clone the sequential loop and store the cloned instructions/basic blocks within the single task of HELIX.
@@ -131,12 +163,6 @@ bool HELIX::apply (
     envUser->addLiveOutIndex(envIndex);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
-  this->generateCodeToStoreLiveOutVariables(LDI, 0);
-
-  /*
-   * Generate a store to propagate the information about which exit block has been taken from the parallelized loop to the code outside it.
-   */
-  this->generateCodeToStoreExitBlockIndex(LDI, 0);
 
   /*
    * The operands of the cloned instructions still refer to the original ones.
@@ -145,9 +171,9 @@ bool HELIX::apply (
    */
   this->adjustDataFlowToUseClones(LDI, 0);
 
-   /*
-    * Add the unconditional branch from the entry basic block to the header of the loop.
-    */
+  /*
+   * Add the unconditional branch from the entry basic block to the header of the loop.
+   */
   IRBuilder<> entryBuilder(helixTask->entryBlock);
   entryBuilder.CreateBr(helixTask->basicBlockClones[LDI->header]);
 
@@ -156,6 +182,32 @@ bool HELIX::apply (
    */
   IRBuilder<> exitB(helixTask->exitBlock);
   exitB.CreateRetVoid();
+
+  /*
+   * Store final results of loop live-out variables. 
+   * Note this occurs after data flow is adjusted.  TODO: is this a must? if so, let's say it explicitely
+   */
+  this->generateCodeToStoreLiveOutVariables(LDI, 0);
+
+  /*
+   * Generate a store to propagate information about which exit block the parallelized loop took.
+   */
+  this->generateCodeToStoreExitBlockIndex(LDI, 0);
+
+  /*
+   * Spill loop carried dependencies into a separate environment array
+   */
+  this->spillLoopCarriedDataDependencies(LDI);
+
+  return ;
+}
+
+void HELIX::synchronizeTask (
+  LoopDependenceInfo *LDI,
+  Parallelization &par, 
+  Heuristics *h
+){
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
   /*
    * Identify the sequential segments.
@@ -180,7 +232,7 @@ bool HELIX::apply (
   /*
    * Link the parallelize code to the original one.
    */
-  this->addChunkFunctionExecutionAsideOriginalLoop(LDI, par, sequentialSegments.size());
+  this->addChunkFunctionExecutionAsideOriginalLoop(this->originalLDI, par, sequentialSegments.size());
 
   /*
    * Inline calls to HELIX functions.
@@ -190,10 +242,10 @@ bool HELIX::apply (
   /*
    * Print the HELIX task.
    */
-  if (this->verbose != Verbosity::Disabled) {
+  if (this->verbose >= Verbosity::Maximal) {
     helixTask->F->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
     errs() << "HELIX: Exit\n";
   }
 
-  return true;
+  return ;
 }

@@ -31,38 +31,24 @@ SequentialSegment::SequentialSegment (
   this->sccs = sccs;
 
   /*
-   * Identify all the dependent instructions
+   * Identify all dependent instructions that require synchronization
    */
-  std::set<Instruction *> allInstructionsInSS;
+  std::set<Instruction *> ssInstructions;
   for (auto scc : *sccs){
     assert(scc->hasCycle());
 
     /*
      * Add all instructions of the current SCC to the set.
      */
-    for (auto node : scc->getNodes()){
+    for (auto nodePair : scc->internalNodePairs()){
 
       /*
-       * Fetch the LLVM value associated to the node.
+       * Fetch the LLVM value associated to the node
+       * NOTE: Values internal to an SCC are instructions
        */
-      auto value = node->getT();
-
-      /*
-       * Cast the value to an instruction.
-       */
-      auto inst = cast<Instruction>(value);
-
-      /*
-       * Insert the instruction to the set.
-       */
-      allInstructionsInSS.insert(inst);
+      ssInstructions.insert(cast<Instruction>(nodePair.first));
     }
   }
-
-  /*
-   * Identify the locations where wait instructions should be placed.
-   */
-  this->entries = allInstructionsInSS;
 
   /*
    * Run the data flow analysis needed to identify the locations where signal instructions will be placed.
@@ -84,7 +70,8 @@ SequentialSegment::SequentialSegment (
      * We do this because we are interested in understanding the reachability of instructions within a single iteration.
      */
     auto succBB = succ->getParent();
-    if (succBB == LDI->header){
+    // if (succBB == LDI->header){
+    if (succ == &*LDI->header->begin()) {
       return ;
     }
 
@@ -102,12 +89,36 @@ SequentialSegment::SequentialSegment (
     IN.insert(genI.begin(), genI.end());
     return ;
   };
-  dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
+  DataFlowResult *dfr = dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
 
   /*
-   * Identify the locations where signal instructions should be placed.
+   * Identify the locations where signal and wait instructions should be placed.
    */
-  //TODO
+  for (auto I : ssInstructions) {
+    auto &afterInstructions = dfr->OUT(I);
+
+    std::set<Instruction *> inSS;
+    for (auto afterV : afterInstructions) {
+      auto afterI = cast<Instruction>(afterV);
+      if (I == afterI) continue;
+
+      if (ssInstructions.find(afterI) != ssInstructions.end()) {
+        inSS.insert(afterI);
+      }
+    }
+
+    bool noneInSS = inSS.size() == 0;
+    bool allInSS = (inSS.size() + 1) == ssInstructions.size();
+    if (noneInSS) {
+      this->exits.insert(I);
+    } else if (allInSS) {
+      this->entries.insert(I);
+    }
+  }
+  assert(this->entries.size() > 0
+    && "The data flow analysis did not identify any per-iteration entry to the sequential segment!\n");
+  assert(this->exits.size() > 0
+    && "The data flow analysis did not identify any per-iteration exit to the sequential segment!\n");
 
   return ;
 }

@@ -20,6 +20,7 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"
+#include <vector>
 
 namespace llvm {
 
@@ -29,23 +30,40 @@ namespace llvm {
       /*
        * Methods
        */
-      HELIX (Module &module, Verbosity v);
+      HELIX (
+        Module &module,
+        Verbosity v
+      );
 
       bool apply (
         LoopDependenceInfo *LDI, 
         Parallelization &par, 
-        Heuristics *h, 
-        ScalarEvolution &SE
+        Heuristics *h
         ) override ;
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI, 
         Parallelization &par, 
-        Heuristics *h, 
-        ScalarEvolution &SE
+        Heuristics *h
         ) const override ;
 
+      Function *getTaskFunction () { return tasks[0]->F; }
+
+      void reset () override ;
+
     protected:
+      void createParallelizableTask (
+        LoopDependenceInfo *LDI,
+        Parallelization &par, 
+        Heuristics *h
+      );
+
+      void synchronizeTask (
+        LoopDependenceInfo *LDI,
+        Parallelization &par, 
+        Heuristics *h
+      );
+
       void addChunkFunctionExecutionAsideOriginalLoop (
         LoopDependenceInfo *LDI,
         Parallelization &par,
@@ -81,7 +99,10 @@ namespace llvm {
 
     private:
       Function *waitSSCall, *signalSSCall;
+      LoopDependenceInfo *originalLDI;
 
+      EnvBuilder *loopCarriedEnvBuilder;
+      std::vector<PHINode *> loopCarriedPHIs;
   };
 
 }

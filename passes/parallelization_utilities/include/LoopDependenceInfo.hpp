@@ -18,73 +18,99 @@
 #include "llvm/Support/raw_ostream.h"
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
+#include "Techniques.hpp"
 
 using namespace std;
 
 namespace llvm {
 
   class LoopDependenceInfo {
-   public:
-    LoopInfoSummary liSummary;
+    public:
+      LoopInfoSummary liSummary;
 
-    /*
-     * Context
-     */
-    Function *function;
+      /*
+       * Context
+       */
+      Function *function;
 
-    /*
-     * Loop entry and exit points.
-     */
-    BasicBlock *header;
-    BasicBlock *preHeader;
-    SmallVector<BasicBlock *, 10> loopExitBlocks;
+      /*
+       * Loop entry and exit points.
+       */
+      BasicBlock *header;
+      BasicBlock *preHeader;
+      SmallVector<BasicBlock *, 10> loopExitBlocks;
 
-    /*
-     * Loop
-     */
-    std::vector<BasicBlock *> loopBBs;
-    unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
+      /*
+       * Loop
+       */
+      std::vector<BasicBlock *> loopBBs;
+      unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
 
-    /*
-     * Environment
-     */
-    LoopEnvironment *environment;
+      /*
+       * Environment
+       */
+      LoopEnvironment *environment;
 
-    /*
-     * Dependences
-     */
-    PDG *functionDG;
-    PDG *loopDG;
-    PDG *loopInternalDG;
+      /*
+       * Dependences
+       */
+      PDG *functionDG;
+      PDG *loopDG;
+      PDG *loopInternalDG;
 
-    /*
-     * SCCDAG.
-     */
-    // REFACTOR(angelo): rename loopSCCDAG to loopInternalSCCDAG
-    SCCDAG *loopSCCDAG;
-    SCCDAGAttrs sccdagAttrs;
+      /*
+       * SCCDAG.
+       */
+      // REFACTOR(angelo): rename loopSCCDAG to loopInternalSCCDAG
+      SCCDAG *loopSCCDAG;
+      SCCDAGAttrs sccdagAttrs;
 
-    /*
-     * Parallelized loop
-     */
-    BasicBlock *entryPointOfParallelizedLoop;
-    BasicBlock *exitPointOfParallelizedLoop;
+      /*
+       * Parallelization options
+       */
+      uint32_t maximumNumberOfCoresForTheParallelization;
+      uint32_t DOALLChunkSize;
 
-    /*
-     * Parallelization
-     */
-    uint32_t maximumNumberOfCoresForTheParallelization;
-    uint32_t DOALLChunkSize;
+      /*
+       * Methods
+       */
+      LoopDependenceInfo (
+        Function *f,
+        PDG *fG,
+        Loop *l,
+        LoopInfo &li,
+        ScalarEvolution &SE
+      );
+      LoopDependenceInfo (
+        Function *f,
+        PDG *fG,
+        Loop *l,
+        LoopInfo &li,
+        ScalarEvolution &SE,
+        PostDominatorTree &pdt
+      );
 
-    /*
-     * Methods
-     */
-    LoopDependenceInfo (Function *f, PDG *fG, Loop *l, LoopInfo &li, PostDominatorTree &pdt);
+      void copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) ;
+      uint32_t numberOfExits (void) const;
 
-    virtual uint32_t numberOfExits (void) const;
+      std::function<LoopDependenceInfo *(Function *F, int loopIndex)> *reevaluator;
+      
+      bool isTechniqueEnabled (Technique technique);
 
-    virtual void createPDGs (void) ;
-    ~LoopDependenceInfo();
+      void enableAllTechniques (void);
+
+      void disableTechnique (Technique techniqueToDisable);
+
+      ~LoopDependenceInfo();
+
+    private:
+      std::set<Technique> enabledTechniques;
+      void fetchLoopAndBBInfo (LoopInfo &li, Loop *l) ;
+      void createDGsForLoop (Loop *l) ;
+
+      void mergeSingleSyntacticSugarInstrs ();
+      void mergeBranchesWithoutOutgoingEdges ();
+      void mergeTrivialNodesInSCCDAG ();
   };
 
 }

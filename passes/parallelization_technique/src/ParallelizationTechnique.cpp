@@ -47,8 +47,16 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
     abort();
   }
 
-  this->envBuilder = new EnvBuilder(*LDI->environment, module.getContext());
-  this->envBuilder->createEnvVariables(simpleVars, reducableVars, numTaskInstances);
+  /*
+   * Collect the Type of each environment variable
+   */
+  std::vector<Type *> varTypes;
+  for (auto i = 0; i < LDI->environment->envSize(); ++i) {
+    varTypes.push_back(LDI->environment->typeOfEnv(i));
+  }
+
+  this->envBuilder = new EnvBuilder(module.getContext());
+  this->envBuilder->createEnvVariables(varTypes, simpleVars, reducableVars, numTaskInstances);
 
   this->envBuilder->createEnvUsers(tasks.size());
   for (auto i = 0; i < tasks.size(); ++i) {
@@ -82,14 +90,14 @@ void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI
 }
 
 void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LDI) {
-  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
+  IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
     builder.CreateStore(LDI->environment->producerAt(envIndex), envBuilder->getEnvVar(envIndex));
   }
 }
 
 void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
-  IRBuilder<> builder(LDI->entryPointOfParallelizedLoop);
+  IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (int envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto prod = LDI->environment->producerAt(envInd);
 
@@ -103,7 +111,7 @@ void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *
 
     for (auto consumer : LDI->environment->consumersOf(prod)) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
-        depPHI->addIncoming(envVar, LDI->exitPointOfParallelizedLoop);
+        depPHI->addIncoming(envVar, this->exitPointOfParallelizedLoop);
         continue;
       }
       prod->print(errs() << "Producer of environment variable:\t"); errs() << "\n";
@@ -117,6 +125,19 @@ void ParallelizationTechnique::generateEmptyTasks (
   LoopDependenceInfo *LDI,
   std::vector<Task *> taskStructs
 ) {
+  if (this->tasks.size() > 0) {
+    errs() << "The technique has been re-initialized without resetting!"
+       << " There are leftover tasks.\n";
+    abort();
+  }
+
+  /*
+   * Setup original loop and task with functions and basic blocks for wiring
+   */
+  auto &cxt = LDI->function->getContext();
+  this->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+  this->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+
   numTaskInstances = taskStructs.size();
   for (auto i = 0; i < numTaskInstances; ++i) {
     auto task = taskStructs[i];
@@ -158,7 +179,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
   /*
    * Clone all basic blocks of the original loop
    */
-  for (auto originBB : LDI->liSummary.topLoop->bbs) {
+  for (auto originBB : LDI->liSummary.topLoop->orderedBBs) {
 
     /*
      * Clone the basic block in the context of the original loop's function
@@ -218,18 +239,18 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
   IRBuilder<> builder(task->entryBlock);
   auto envUser = this->envBuilder->getUser(taskIndex);
   for (auto envIndex : envUser->getEnvIndicesOfLiveInVars()) {
+    auto producer = LDI->environment->producerAt(envIndex);
 
     /*
      * Create GEP access of the environment variable at the given index
      */
-    envUser->createEnvPtr(builder, envIndex);
+    envUser->createEnvPtr(builder, envIndex, producer->getType());
 
     /*
      * Load the environment pointer
      * Register the load as a "clone" of the original producer
      */
     auto envLoad = builder.CreateLoad(envUser->getEnvPtr(envIndex));
-    auto producer = LDI->environment->producerAt(envIndex);
     task->liveInClones[producer] = cast<Instruction>(envLoad);
   }
 }
@@ -243,18 +264,19 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
   auto entryTerminator = task->entryBlock->getTerminator();
   auto envUser = this->envBuilder->getUser(taskIndex);
   for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
+    auto producer = (Instruction*)LDI->environment->producerAt(envIndex);
+    auto envType = producer->getType();
 
     /*
      * Create GEP access of the single, or reducable, environment variable
      */
     auto isReduced = this->envBuilder->isReduced(envIndex);
     if (isReduced) {
-      envUser->createReducableEnvPtr(entryBuilder, envIndex, numTaskInstances, task->instanceIndexV);
+      envUser->createReducableEnvPtr(entryBuilder, envIndex, envType, numTaskInstances, task->instanceIndexV);
     } else {
-      envUser->createEnvPtr(entryBuilder, envIndex);
+      envUser->createEnvPtr(entryBuilder, envIndex, envType);
     }
     auto envPtr = envUser->getEnvPtr(envIndex);
-    auto producer = (Instruction*)LDI->environment->producerAt(envIndex);
 
     /*
      * If the variable is reducable, store the identity as the initial value
@@ -457,7 +479,8 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
   IRBuilder<> entryBuilder(task->entryBlock);
   auto entryTerminator = task->entryBlock->getTerminator();
 
-  envUser->createEnvPtr(entryBuilder, exitBlockEnvIndex);
+  auto envType = LDI->environment->typeOfEnv(exitBlockEnvIndex);
+  envUser->createEnvPtr(entryBuilder, exitBlockEnvIndex, envType);
   entryTerminator->removeFromParent();
   entryBuilder.Insert(entryTerminator);
 

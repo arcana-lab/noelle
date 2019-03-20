@@ -20,7 +20,35 @@ void HELIX::addSynchronizations (
   ){
   assert(this->tasks.size() == 1);
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
-  IRBuilder<> entryBuilder(helixTask->entryBlock);
+  IRBuilder<> entryBuilder(helixTask->entryBlock->getTerminator());
+
+  /*
+   * Identify the preamble SCC
+   */
+  auto preambleSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
+  assert(preambleSCCNodes.size() == 1);
+  auto preambleSCC = (*preambleSCCNodes.begin())->getT();
+
+  /*
+   * Assert that the preamble dictates control flow of loop iterations
+   */
+  std::set<TerminatorInst *> exitingTerms;
+  for (auto exitBB : LDI->loopExitBlocks) {
+    for (auto predBB : predecessors(exitBB)) {
+      exitingTerms.insert(predBB->getTerminator());
+    }
+  }
+
+  for (auto term : exitingTerms) {
+    auto scc = LDI->loopSCCDAG->sccOfValue(term);
+    auto termNode = scc->fetchNode(term);
+    for (auto edge : termNode->getIncomingEdges()) {
+      if (edge->isControlDependence()) {
+        assert(preambleSCC->isInternal(edge->getIncomingT())
+          && "Preamble SCC must hold control flow determining loop iteration execution!");
+      }
+    }
+  }
 
   /*
    * Iterate over sequential segments.
@@ -35,14 +63,13 @@ void HELIX::addSynchronizations (
      * This new variable is reponsible to store the information about whether a wait instruction of the current sequential segment has already been executed in the current iteration for the current thread.
      */
     auto &cxt = LDI->function->getContext();
-    auto int64 = IntegerType::get(cxt, 32);
+    auto int64 = IntegerType::get(cxt, 64);
     Value *ssState = entryBuilder.CreateAlloca(int64);
 
     /*
      * Reset the value of ssState at the beginning of the iteration (i.e., loop header)
      */
-    auto headerClone = helixTask->basicBlockClones[LDI->header];
-    IRBuilder<> headerBuilder(headerClone->getTerminator()->getPrevNode());
+    IRBuilder<> headerBuilder(LDI->header->getFirstNonPHI());
     headerBuilder.CreateStore(ConstantInt::get(int64, 0), ssState);
 
     /*
@@ -65,15 +92,15 @@ void HELIX::addSynchronizations (
     };
 
     /*
+     * Fetch the sequential segment entry in the past and future array
+     */
+    auto ssPastPtr = fetchEntry(helixTask->ssPastArrayArg);
+    auto ssFuturePtr = fetchEntry(helixTask->ssFutureArrayArg);
+
+    /*
      * Define the code that inject wait instructions.
      */
     auto injectWait = [&](Instruction *justAfterEntry) -> void {
-
-      /*
-       * Fetch the sequential segment entry in the past array
-       */
-      auto ssArray = helixTask->ssPastArrayArg;
-      auto ssEntryPtr = fetchEntry(ssArray);
 
       /*
        * Separate out the basic block into 2 halves, the second starting with justAfterEntry
@@ -83,9 +110,20 @@ void HELIX::addSynchronizations (
       IRBuilder<> ssEntryBuilder(ssEntryBB);
       auto afterEntry = justAfterEntry;
       while (afterEntry) {
-        afterEntry->removeFromParent();
-        ssEntryBuilder.Insert(afterEntry);
+        auto currentEntry = afterEntry;
         afterEntry = afterEntry->getNextNode();
+        currentEntry->removeFromParent();
+        ssEntryBuilder.Insert(currentEntry);
+      }
+
+      /*
+       * Redirect PHI node incoming blocks from beforeEntryBB to ssEntryBB
+       */
+      for (auto succToEntry : successors(ssEntryBB)) {
+        for (auto &phi : succToEntry->phis()) {
+          auto incomingIndex = phi.getBasicBlockIndex(beforeEntryBB);
+          phi.setIncomingBlock(incomingIndex, ssEntryBB);
+        }
       }
 
       /*
@@ -95,7 +133,7 @@ void HELIX::addSynchronizations (
        */
       auto ssWaitBB = BasicBlock::Create(cxt, "", helixTask->F);
       IRBuilder<> ssWaitBuilder(ssWaitBB);
-      auto wait = ssWaitBuilder.CreateCall(this->waitSSCall, { ssEntryPtr });
+      auto wait = ssWaitBuilder.CreateCall(this->waitSSCall, { ssPastPtr });
       ssWaitBuilder.CreateStore(ConstantInt::get(int64, 1), ssState);
       ssWaitBuilder.CreateBr(ssEntryBB);
 
@@ -105,7 +143,8 @@ void HELIX::addSynchronizations (
        * If it didn't, then we need to invoke HELIX_wait.
        */
       IRBuilder<> beforeEntryBuilder(beforeEntryBB);
-      auto needToWait = beforeEntryBuilder.CreateICmpEQ(ssState, ConstantInt::get(int64, 0));
+      auto ssStateLoad = beforeEntryBuilder.CreateLoad(ssState);
+      auto needToWait = beforeEntryBuilder.CreateICmpEQ(ssStateLoad, ConstantInt::get(int64, 0));
       beforeEntryBuilder.CreateCondBr(needToWait, ssWaitBB, ssEntryBB);
 
       /*
@@ -120,16 +159,12 @@ void HELIX::addSynchronizations (
     auto injectSignal = [&](Instruction *justBeforeExit) -> void {
 
       /*
-       * Fetch the sequential segment entry in the past array
-       */
-      auto ssArray = helixTask->ssFutureArrayArg;
-      auto ssEntryPtr = fetchEntry(ssArray);
-
-      /*
        * Inject a call to HELIX_signal just after "justBeforeExit" 
        */
-      IRBuilder<> beforeExitBuilder(justBeforeExit->getPrevNode());
-      auto signal = beforeExitBuilder.CreateCall(this->signalSSCall, { ssEntryPtr });
+      auto terminator = justBeforeExit->getParent()->getTerminator();
+      Instruction *insertPoint = terminator == justBeforeExit ? terminator : justBeforeExit->getNextNode();
+      IRBuilder<> beforeExitBuilder(insertPoint);
+      auto signal = beforeExitBuilder.CreateCall(this->signalSSCall, { ssFuturePtr });
 
       /*
        * Track the call to signal
@@ -143,9 +178,80 @@ void HELIX::addSynchronizations (
     ss->forEachEntry(injectWait);
 
     /*
-     * Inject signals.
+     * Inject signals at sequential segment exits
+     * Inject signals at loop exits
      */
     ss->forEachExit(injectSignal);
+
+    /*
+     * Inject a check for whether the loop-is-over flag is true
+     * Exit the loop if so, signaling preamble SS synchronization to avoid deadlock
+     */
+    auto injectExitFlagCheck = [&](Instruction *justAfterEntry) -> void {
+      
+      /*
+       * Assuming the instruction is now the first of its basic block due to synchronization
+       */
+      assert(justAfterEntry->getPrevNode() == nullptr
+        && "Failed assumption: the ss begins at the start of a basic block");
+
+      auto entryBB = justAfterEntry->getParent();
+      auto checkFlagBB = BasicBlock::Create(cxt, "", LDI->function);
+      std::vector<BasicBlock *> predBBs(pred_begin(entryBB), pred_end(entryBB));
+      for (auto predBB : predBBs) {
+        auto term = predBB->getTerminator();
+        assert(isa<BranchInst>(term));
+
+        for (int i = 0; i < term->getNumSuccessors(); ++i) {
+          if (term->getSuccessor(i) == entryBB) {
+            term->setSuccessor(i, checkFlagBB);
+          }
+        }
+      }
+
+      IRBuilder<> checkFlagBuilder(checkFlagBB);
+      auto flagValue = checkFlagBuilder.CreateLoad(helixTask->loopIsOverFlagArg);
+      auto isFlagSet = checkFlagBuilder.CreateICmpEQ(ConstantInt::get(int64, 1), flagValue);
+      checkFlagBuilder.CreateCondBr(isFlagSet, helixTask->exitBlock, entryBB);
+    };
+
+    /*
+     * On finishing the task, set the loop-is-over flag to true.
+     */
+    auto injectExitFlagSet = [&](Instruction *exitInstruction) -> void {
+      IRBuilder<> setFlagBuilder(exitInstruction);
+      setFlagBuilder.CreateStore(
+        ConstantInt::get(int64, 1),
+        helixTask->loopIsOverFlagArg
+      );
+    };
+
+    /*
+     * Determine if this SS contains the preamble
+     */
+    bool containsPreamble = false;
+    for (auto scc : ss->getSCCs()) {
+      containsPreamble |= scc == preambleSCC;
+      if (containsPreamble) break;
+    }
+
+    /*
+     * Handle loop exit flag within the SS containing the preamble
+     */
+    auto retI = helixTask->exitBlock->getTerminator();
+    if (containsPreamble) {
+      ss->forEachEntry(injectExitFlagCheck);
+
+      injectExitFlagSet(retI);
+    }
+
+    /*
+     * HACK: Until the preamble is ensured to be the first to synchronize 
+     * signaling all sequential segments upon exit is needed to avoid deadlock.
+     * Inefficiently ordered loads of variables causes this. Proper reordering
+     * or squeezing of sequential segments can ensure this is fixed.
+     */
+    injectSignal(retI);
   }
 
   return ;

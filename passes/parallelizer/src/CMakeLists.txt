@@ -3,7 +3,6 @@ set(Srcs
   Pass.cpp
   Parallelizer.cpp
   Helper.cpp
-  Partition.cpp
   Printer.cpp
 )
 

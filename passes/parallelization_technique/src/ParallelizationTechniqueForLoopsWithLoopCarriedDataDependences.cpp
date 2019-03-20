@@ -16,7 +16,7 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::ParallelizationT
   Module &module, 
   Verbosity v
   )
-  : ParallelizationTechnique{module, v}, partition{nullptr} 
+  : ParallelizationTechnique{module, v}, partition{nullptr}
   {
 
   return ;

@@ -23,20 +23,19 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
    * Create the entry and exit points of the function that will include the parallelized loop.
    */
   auto &cxt = LDI->function->getContext();
-  LDI->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
-  LDI->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
 
   /*
    * Create the environment.
-   * This will append store instructions to LDI->entryPointOfParallelizedLoop to initialize the environment array.
+   * This will append store instructions to entryPointOfParallelizedLoop to initialize the environment array.
    */
   this->allocateEnvironmentArray(LDI);
   this->populateLiveInEnvironment(LDI);
 
   /*
-   * Fetch the pointer to the environment.
+   * Fetch the pointer to the environments
    */
   auto envPtr = envBuilder->getEnvArrayInt8Ptr();
+  auto loopCarriedEnvPtr = loopCarriedEnvBuilder->getEnvArrayInt8Ptr();
 
   /*
    * Fetch the number of cores
@@ -51,10 +50,11 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Call the function that incudes the parallelized loop.
    */
-  IRBuilder<> helixBuilder(LDI->entryPointOfParallelizedLoop);
+  IRBuilder<> helixBuilder(this->entryPointOfParallelizedLoop);
   helixBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
     (Value *)tasks[0]->F,
     envPtr,
+    loopCarriedEnvPtr,
     numCores,
     numOfSS
   }));
@@ -67,7 +67,7 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Jump to the unique successor of the loop.
    */
-  helixBuilder.CreateBr(LDI->exitPointOfParallelizedLoop);
+  helixBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
   return ;
 }

@@ -12,58 +12,22 @@
 
 #include "SystemHeaders.hpp"
 
+using namespace llvm;
+
 namespace llvm {
 
-  class Hot {
+  struct TalkDown : public ModulePass {
     public:
+      static char ID;
 
-      Hot ();
+      TalkDown () : ModulePass{ID} {}
 
-      bool isAvailable (void) const ;
+      bool doInitialization (Module &M) override ;
 
-      /*
-       * Basic blocks.
-       */
-      void setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations);
+      bool runOnModule (Module &M) override ;
 
-      uint64_t getBasicBlockInvocations (BasicBlock *bb) ;
-
-      uint64_t getBasicBlockInstructions (BasicBlock *bb) ;
-
-
-      /*
-       * Loops
-       */
-      uint64_t getLoopInstructions (Loop *loop);
-
-
-      /*
-       * Functions
-       */
-      uint64_t getFunctionInstructions (Function *f);
-
-
-      /*
-       * Module
-       */
-      uint64_t getModuleInstructions (void) const ;
-
- 
-      /*
-       * Branches
-       */
-      double getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) ;
-
-      void setBranchFrequency (BasicBlock *src, BasicBlock *dst, double branchFrequency);
-
-
-      void computeProgramInvocations (void);
+      void getAnalysisUsage(AnalysisUsage &AU) const override ;
 
     private:
-      std::map<BasicBlock *, uint64_t> bbInvocations;
-      std::map<Function *, uint64_t> functionInstructions;
-      std::map<Function *, uint64_t> functionInvocations;
-      std::map<BasicBlock *, std::map<BasicBlock *, double>> branchProbability;
-      uint64_t moduleNumberOfInstructionsExecuted;
   };
 }

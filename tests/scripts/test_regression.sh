@@ -1,5 +1,17 @@
 #!/bin/bash
 
+function runningTestsWrapper {
+  local optionsToUse="$@" ;
+
+  if test "${optionsToUse}" == "" ; then
+    runningTests "Testing the default configuration" "-noelle-verbose=3" ;
+  else
+    runningTests "Testing with \"${optionsToUse}\"" "-noelle-verbose=3 ${optionsToUse}" ;
+  fi
+
+  return ;
+}
+
 function runningTests {
   echo $1 ;
 
@@ -51,9 +63,24 @@ function runningTests {
 }
 
 cd regression ;
-runningTests "Testing with \"-dswp-force\"" "-dswp-verbose=3 -dswp-force" ;
-runningTests "Testing with \"-dswp-force -dswp-no-scc-merge\"" "-dswp-verbose=3 -dswp-force -dswp-no-scc-merge" ;
-runningTests "Testing the default configuration" "-dswp-verbose=3" ;
+
+runningTestsWrapper 
+
+runningTestsWrapper -dswp-force -noelle-disable-helix ;
+runningTestsWrapper -dswp-force -noelle-disable-helix -dswp-no-scc-merge ;
+
+runningTestsWrapper -dswp-force -noelle-disable-dswp ;
+runningTestsWrapper -dswp-force -noelle-disable-dswp -dswp-no-scc-merge ;
+
+runningTestsWrapper -dswp-force -noelle-disable-doall ;
+runningTestsWrapper -dswp-force -noelle-disable-doall -dswp-no-scc-merge ;
+
+runningTestsWrapper -dswp-force -noelle-disable-doall -noelle-disable-helix ;
+runningTestsWrapper -dswp-force -noelle-disable-doall -noelle-disable-helix -dswp-no-scc-merge ;
+
+runningTestsWrapper -dswp-force -noelle-disable-doall -noelle-disable-dswp ;
+runningTestsWrapper -dswp-force -noelle-disable-doall -noelle-disable-dswp -dswp-no-scc-merge ;
+
 cd ../ ;
 
 exit 0;

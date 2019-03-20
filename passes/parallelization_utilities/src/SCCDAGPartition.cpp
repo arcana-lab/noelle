@@ -42,6 +42,11 @@ void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
   auto count = 0;
   auto &bbs = LIS->topLoop->bbs;
   auto bb = LIS->topLoop->header;
+
+  /*
+   * FIXME: No guarantee that there won't be gaps of basic blocks not
+   * for the loop in question as we scan in program forward order
+   */
   while (bb && bbs.find(bb) != bbs.end()) {
     for (auto &I : *bb) {
       auto scc = sccdag->sccOfValue(&I);

@@ -30,23 +30,19 @@ namespace llvm {
        */
       DOALL (
         Module &module,
-        Verbosity v,
-        int coresPerOverride,
-        int chunkSizeOverride
+        Verbosity v
       );
 
       bool apply (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        Heuristics *h,
-        ScalarEvolution &SE
+        Heuristics *h
       ) override ;
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        Heuristics *h,
-        ScalarEvolution &SE
+        Heuristics *h
       ) const override ;
 
 
@@ -75,9 +71,6 @@ namespace llvm {
         LoopDependenceInfo *LDI,
         Parallelization &par
       );
-
-      int coresPerLoopOverride;
-      int chunkSizeOverride;
   };
 
 }
