@@ -18,7 +18,7 @@ namespace llvm {
 
   class SequentialSegment {
     public:
-      SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs, int32_t ID) ;
+      SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs, int32_t ID, Verbosity verbosity) ;
 
       void forEachEntry (std::function <void (Instruction *justAfterEntry)> whatToDo);
 
@@ -34,6 +34,7 @@ namespace llvm {
       std::set<Instruction *> exits;
       SCCset *sccs;
       int32_t ID;
+      Verbosity verbosity;
   };
 
 }

@@ -127,6 +127,11 @@ namespace llvm {
       // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
       std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc); 
 
+      /*
+       * Methods about single dependence.
+       */
+      bool isALoopCarriedDependence (SCC *scc, DGEdge<Value> *dependence) ;
+
     private:
 
       /*

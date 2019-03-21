@@ -326,9 +326,36 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
 
         for (auto edge : valuePair.second->getIncomingEdges()) {
           if (edge->isControlDependence()) continue;
+
+          /*
+           * Check if the dependence is between instructions within the loop.
+           */
           auto depI = (Instruction*)edge->getOutgoingT();
           if (!scc->isInternal(depI)) continue;
+
+          /*
+           * Check if the dependence crosses the iteration boundary.
+           */
           if (canPrecedeInCurrentIteration(LIS, depI, phi)) continue;
+
+          /*
+           * The dependence From->To crosses the iteration boundary.
+           * However, To is a PHI node. Hence, there is this potential case where it doesn't lead to a cross-iteration dependence.
+           *
+           * Ly:
+           *
+           * To:  = PHI (<%v, Lx>; <%w, Ly>)
+           *
+           * Lx
+           * From: = %v
+           *
+           * Check for this special case.
+           */
+          if (canPrecedeInCurrentIteration(LIS, phi, depI)) continue;
+
+          /*
+           * The dependence is loop-carried.
+           */
           interIterDeps[scc].insert(edge);
         }
       }
@@ -916,4 +943,20 @@ bool SCCDAGAttrs::collectDerivationChain (std::vector<Instruction *> &chain, SCC
   }
 
   return true;
+}
+
+bool SCCDAGAttrs::isALoopCarriedDependence (SCC *scc, DGEdge<Value> *dependence) {
+
+  /*
+   * Fetch the set of loop-carried data dependences of a SCC.
+   */
+  if (this->interIterDeps.find(scc) == this->interIterDeps.end()){
+    return false;
+  }
+  auto lcDeps = this->interIterDeps[scc];
+
+  /*
+   * Check whether the dependence is inside lcDeps.
+   */
+  return lcDeps.find(dependence) != lcDeps.end();
 }

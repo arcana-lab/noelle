@@ -59,11 +59,21 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   for (auto nodePair : LDI->loopSCCDAG->internalNodePairs()) {
 
     /*
+     * Fetch the current node in the SCCDAG.
+     */
+    auto currentSCC = nodePair.first;
+
+    /*
      * Check if the current SCC can be removed (e.g., because it is due to induction variables).
      * If it is, then this SCC has already been assigned to every dependent partition.
      */
-    auto currentSCC = nodePair.first;
-    if (LDI->sccdagAttrs.canBeCloned(currentSCC)) continue ;
+    if (LDI->sccdagAttrs.canBeCloned(currentSCC)) {
+      continue ;
+    }
+
+    /*
+     * The current SCC cannot be removed.
+     */
     auto singleSet = new std::set<SCC *>();
     singleSet->insert(currentSCC);
     subsets->insert(singleSet);

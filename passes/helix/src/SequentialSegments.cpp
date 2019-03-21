@@ -54,7 +54,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
     /*
      * Allocate a sequential segment.
      */
-    auto ss = new SequentialSegment(LDI, subset, ssID);
+    auto ss = new SequentialSegment(LDI, subset, ssID, this->verbose);
 
     /*
      * Insert the new sequential segment to the list.

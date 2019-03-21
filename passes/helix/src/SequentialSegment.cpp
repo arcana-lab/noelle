@@ -17,8 +17,11 @@ using namespace llvm ;
 SequentialSegment::SequentialSegment (
   LoopDependenceInfo *LDI, 
   SCCset *sccs,
-  int32_t ID
-  ){
+  int32_t ID,
+  Verbosity verbosity
+  ) :
+  verbosity{verbosity}
+  {
 
   /*
    * Set the ID
@@ -33,9 +36,27 @@ SequentialSegment::SequentialSegment (
   /*
    * Identify all dependent instructions that require synchronization
    */
+  if (this->verbosity >= Verbosity::Maximal) {
+    errs() << "HELIX:   Sequential segment " << ID << "\n" ;
+    errs() << "HELIX:     SCCs included in the current sequential segment\n";
+  }
   std::set<Instruction *> ssInstructions;
   for (auto scc : *sccs){
     assert(scc->hasCycle());
+    if (this->verbosity >= Verbosity::Maximal) {
+      errs() << "HELIX:       Type = " << scc->getType() << "\n";
+      errs() << "HELIX:       Loop-carried data dependences\n";
+      for (auto valuePair : scc->internalNodePairs()) {
+        for (auto edge : valuePair.second->getIncomingEdges()) {
+          if (!LDI->sccdagAttrs.isALoopCarriedDependence(scc, edge)){
+            continue ;
+          }
+          auto fromInst = edge->getOutgoingT();
+          auto toInst = edge->getIncomingT();
+          errs() << "HELIX:        \"" << *fromInst << "\" -> \"" << *toInst  << "\"\n";
+        }
+      }
+    }
 
     /*
      * Add all instructions of the current SCC to the set.
@@ -47,6 +68,12 @@ SequentialSegment::SequentialSegment (
        * NOTE: Values internal to an SCC are instructions
        */
       ssInstructions.insert(cast<Instruction>(nodePair.first));
+    }
+  }
+  if (this->verbosity >= Verbosity::Maximal) {
+    errs() << "HELIX:     Instructions that belong to the SS\n";
+    for (auto ssInst : ssInstructions){
+      errs() << "HELIX:       " << *ssInst << "\n";
     }
   }
 
