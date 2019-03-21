@@ -70,7 +70,6 @@ SequentialSegment::SequentialSegment (
      * We do this because we are interested in understanding the reachability of instructions within a single iteration.
      */
     auto succBB = succ->getParent();
-    // if (succBB == LDI->header){
     if (succ == &*LDI->header->begin()) {
       return ;
     }
@@ -89,7 +88,7 @@ SequentialSegment::SequentialSegment (
     IN.insert(genI.begin(), genI.end());
     return ;
   };
-  DataFlowResult *dfr = dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
+  auto dfr = dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
 
   /*
    * Identify the locations where signal and wait instructions should be placed.
