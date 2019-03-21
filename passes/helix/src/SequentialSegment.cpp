@@ -93,9 +93,25 @@ SequentialSegment::SequentialSegment (
   /*
    * Identify the locations where signal and wait instructions should be placed.
    */
+  std::list<Instruction *> workingList;
+  std::unordered_map<Instruction *, bool> visited;
   for (auto I : ssInstructions) {
-    auto &afterInstructions = dfr->OUT(I);
+    visited[I] = true;
+    workingList.push_back(I);
+  }
+  while (!workingList.empty()){
 
+    /*
+     * Fetch the current instruction to consider.
+     */
+    auto I = workingList.front();
+    workingList.pop_front();
+    assert(visited[I] == true);
+
+    /*
+     * Check OUT[I]
+     */
+    auto &afterInstructions = dfr->OUT(I);
     std::set<Instruction *> inSS;
     for (auto afterV : afterInstructions) {
       auto afterI = cast<Instruction>(afterV);
@@ -106,13 +122,79 @@ SequentialSegment::SequentialSegment (
       }
     }
 
+    /*
+     * Check if I is an exit of the current sequential segment.
+     */
     bool noneInSS = inSS.size() == 0;
-    bool allInSS = (inSS.size() + 1) == ssInstructions.size();
     if (noneInSS) {
       this->exits.insert(I);
-    } else if (allInSS) {
+      continue ;
+    }
+
+    /*
+     *
+     * Add the successors of I to the working list.
+     */
+    auto bb = I->getParent();
+    if (bb->getTerminator() != I){
+
+      /*
+       * I is inside a basic block.
+       *
+       * Fetch the next instruction within the same basic block.
+       */
+      BasicBlock::iterator iter(I);
+      iter++;
+      auto succI = &*iter;
+      if (visited.find(succI) == visited.end()){
+        workingList.push_back(succI);
+        visited[succI] = true;
+      }
+
+    } else {
+
+      /*
+       * I is the terminator of a basic block.
+       * We need to add the first instructions of the basic block successors if they belong to the loop.
+       */
+      for (auto succBB : successors(bb)){
+
+        /*
+         * Check if succBB belongs to the loop being parallelized.
+         */
+        if (std::find(LDI->loopBBs.begin(), LDI->loopBBs.end(), succBB) == LDI->loopBBs.end()){
+
+          /*
+           * succBB doesn't belong to the loop being parallelized.
+           */
+          continue ;
+        }
+
+        /*
+         * succBB belongs to the loop being parallelized.
+         */
+        auto succI = succBB->getFirstNonPHIOrDbgOrLifetime();
+        if (visited.find(succI) == visited.end()){
+          workingList.push_back(succI);
+          visited[succI] = true;
+        }
+      }
+    }
+
+    /*
+     * Check if I is an entry of the current sequential segment.
+     */
+    bool allInSS = (inSS.size() + 1) == ssInstructions.size();
+    if (  true
+          && allInSS
+          && (ssInstructions.find(I) != ssInstructions.end())
+          ) {
       this->entries.insert(I);
     }
+
+    /*
+     * I is not an entry and it is not an exit.
+     */
   }
   assert(this->entries.size() > 0
     && "The data flow analysis did not identify any per-iteration entry to the sequential segment!\n");
