@@ -16,6 +16,7 @@
 #include "CommutativeDependenceSource.hpp"
 
 using namespace llvm;
+using std::make_pair;
 
 cl::opt<std::string> CommutativeDependencyFilename("comm-dep", cl::desc("A list of all  the commutative"
                                                                       " dependencies in the current compilation "

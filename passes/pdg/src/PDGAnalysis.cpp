@@ -25,7 +25,7 @@
 #include "llvm/ADT/iterator_range.h"
 
 #include "OracleAA.hpp"
-
+#include "CommutativeDependenceAnalysis.hpp"
 #include "TalkDown.hpp"
 
 #include "PDGAnalysis.hpp"
@@ -53,6 +53,8 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<AllocAA>();
   AU.addRequired<TalkDown>();
+  AU.addRequired<CommutativeDependenceAnalysisPass>();
+
   AU.setPreservesAll();
   return ;
 }
@@ -82,6 +84,9 @@ llvm::PDG * llvm::PDGAnalysis::getFunctionPDG (Function &F) {
 
   trimDGUsingCustomAliasAnalysis(pdg);
 
+  auto source = getAnalysis<CommutativeDependenceAnalysisPass>().getCommutativeDependenceSource();
+  markCommutativeEdgesOfFunction(*pdg, F, source);
+
   return pdg;
 }
 
@@ -96,6 +101,9 @@ llvm::PDG * llvm::PDGAnalysis::getPDG (){
   constructEdgesFromControl(this->programDependenceGraph, *this->M);
 
   trimDGUsingCustomAliasAnalysis(this->programDependenceGraph);
+
+  auto source = getAnalysis<CommutativeDependenceAnalysisPass>().getCommutativeDependenceSource();
+  markCommutativeEdges(*this->programDependenceGraph, *M, source);
 
   return this->programDependenceGraph;
 }
@@ -116,6 +124,25 @@ void llvm::PDGAnalysis::trimDGUsingCustomAliasAnalysis (PDG *pdg) {
   //TODO
 
   return ;
+}
+
+void llvm::PDGAnalysis::markCommutativeEdges(PDG &PDG, Module &M,
+                                             CommutativeDependenceSource *DependencySource) {
+  for (auto &F : M) {
+    markCommutativeEdgesOfFunction(PDG, F, DependencySource);
+  }
+}
+
+void llvm::PDGAnalysis::markCommutativeEdgesOfFunction(PDG &PDG, Function &F,
+                                                       CommutativeDependenceSource *DependencySource) {
+  for (auto &[Src, Dst] : DependencySource->getCommutativeEdges(addressof(F))) {
+    auto SrcNode = PDG.fetchNode(Src);
+    auto DstNode = PDG.fetchNode(Dst);
+    auto *Edge = PDG.fetchEdge(SrcNode, DstNode);
+    auto *BackEdge = PDG.fetchEdge(DstNode, SrcNode);
+    Edge->setCommutative(true);
+    BackEdge->setCommutative(true);
+  }
 }
 
 void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {

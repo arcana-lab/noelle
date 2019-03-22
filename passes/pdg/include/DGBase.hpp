@@ -95,6 +95,7 @@ namespace llvm {
       DGNode<T> *fetchNode(T *theT);
 
       DGEdge<T> *addEdge(T *from, T *to);
+      DGEdge<T> *fetchEdge(DGNode<T> *in, DGNode<T> *out);
       DGEdge<T> *copyAddEdge(DGEdge<T> &edgeToCopy);
 
       /*
@@ -194,7 +195,8 @@ namespace llvm {
   {
    public:
     DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
-      : from(src), to(dst), memory(false), must(false), dataDepType(DG_DATA_NONE), isControl(false) {}
+      : from(src), to(dst), memory(false), must(false), dataDepType(DG_DATA_NONE),
+        isControl(false), isCommutative(false) {}
     DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
     typedef typename std::set<DGEdge<SubT> *>::iterator edges_iterator;
@@ -218,9 +220,11 @@ namespace llvm {
     bool isWARDependence() const { return dataDepType == DG_DATA_WAR; }
     bool isWAWDependence() const { return dataDepType == DG_DATA_WAW; }
     bool isControlDependence() const { return isControl; }
+    bool isCommutativeDependence() const { return isCommutative; }
     DataDependencyType dataDependenceType() const { return dataDepType; }
 
     void setControl(bool ctrl) { isControl = ctrl; }
+    void setCommutative(bool comm) { errs() << "setCommutative: " << comm << '\n'; isCommutative = comm; }
     void setMemMustType(bool mem, bool must, DataDependencyType dataDepType);
 
     void addSubEdge(DGEdge<SubT> *edge) { subEdges.insert(edge); }
@@ -234,7 +238,7 @@ namespace llvm {
    protected:
     DGNode<T> *from, *to;
     std::set<DGEdge<SubT> *> subEdges;
-    bool memory, must, isControl;
+    bool memory, must, isControl, isCommutative;
     DataDependencyType dataDepType;
   };
 
@@ -275,6 +279,13 @@ namespace llvm {
     fromNode->addOutgoingEdge(edge);
     toNode->addIncomingEdge(edge);
     return edge;
+  }
+
+  template <class T>
+  DGEdge<T> *DG<T>::fetchEdge(DGNode<T> *From, DGNode<T> *To) {
+    return *std::find_if(From->begin_outgoing_edges(), From->end_outgoing_edges(),
+        [To](auto edge)
+        { return edge->getIncomingNode() == To; });
   }
 
   template <class T>
@@ -538,7 +549,7 @@ namespace llvm {
     stream << "External nodes: " << externalNodeMap.size() << "\n";
     for (auto pair : externalNodePairs()) pair.second->print(stream) << "\n";
     stream << "Edges: " << allEdges.size() << "\n";
-    for (auto edge : allEdges) edge->print(stream) << "\n";
+    for (auto edge : allEdges) edge->print(errs()) << "\n";
   }
 
   /*
@@ -655,6 +666,7 @@ namespace llvm {
     to = nodePair.second;
     setMemMustType(oldEdge.isMemoryDependence(), oldEdge.isMustDependence(), oldEdge.dataDependenceType());
     setControl(oldEdge.isControlDependence());
+    setCommutative(oldEdge.isCommutativeDependence());
     for (auto subEdge : oldEdge.subEdges) addSubEdge(subEdge);
   }
 
@@ -684,6 +696,7 @@ namespace llvm {
     ros << this->dataDepToString();
     ros << (must ? " (must)" : " (may)");
     ros << (memory ? " from memory " : "");
+    ros << (isCommutativeDependence() ? " commutative |><| " : "");
     ros.flush();
     return edgeStr;
   }

@@ -19,7 +19,7 @@ add_definitions(
 )
 
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
-include_directories(${LLVM_INCLUDE_DIRS} ../unique_ir_marker/include ../alloc_aa/include ../pdg/include)
+include_directories(${LLVM_INCLUDE_DIRS} ../unique_ir_marker/include)
 link_directories(${LLVM_LIBRARY_DIRS})
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")

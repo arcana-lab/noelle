@@ -1,16 +1,17 @@
 
 #include "UniqueIRMarker.hpp"
-#include "PDGAnalysis.hpp"
-#include "SCCDAG.hpp"
+
+#include <type_traits>
+
 
 #include "CommutativeDependenceAnalysis.hpp"
 
+using std::addressof;
 
 CommutativeDependenceAnalysisPass::CommutativeDependenceAnalysisPass() : ModulePass(ID) {}
 
 void CommutativeDependenceAnalysisPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<UniqueIRMarkerPass>();
-  AU.addRequired<PDGAnalysis>();
   AU.setPreservesAll();
 }
 
@@ -20,14 +21,17 @@ bool CommutativeDependenceAnalysisPass::doInitialization(Module &M) {
 
 bool CommutativeDependenceAnalysisPass::runOnModule(Module &M) {
   CommDepSource->loadCommutativeDependencies();
-  auto *PDG = getAnalysis<PDGAnalysis>().getPDG();
 
   return false;
 }
 
 iterator_range<CommutativeDependenceSource::comm_dep_iterator>
-CommutativeDependenceAnalysisPass::getRemovedDependencies(Function *F) {
+CommutativeDependenceAnalysisPass::getCommutativeDependencies(Function *F) {
   return CommDepSource->getCommutativeEdges(F);
+}
+
+CommutativeDependenceSource *CommutativeDependenceAnalysisPass::getCommutativeDependenceSource() {
+  return CommDepSource.get();
 }
 
 char CommutativeDependenceAnalysisPass::ID = 0;

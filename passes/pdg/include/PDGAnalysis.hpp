@@ -19,6 +19,8 @@
 
 using namespace llvm;
 
+class CommutativeDependenceSource;
+
 namespace llvm {
   enum class PDGVerbosity { Disabled, Minimal, Maximal };
 
@@ -56,6 +58,9 @@ namespace llvm {
       void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, StoreInst *, CallInst *);
       void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, LoadInst *, CallInst *);
       void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallInst *, CallInst *);
+
+      void markCommutativeEdges(PDG &PDG, Module &M, CommutativeDependenceSource *dep) ;
+      void markCommutativeEdgesOfFunction(PDG &PDG, Function &F, CommutativeDependenceSource *dep);
 
       void iterateInstForStoreAliases(PDG *, Function &, AAResults &, StoreInst *);
       void iterateInstForLoadAliases(PDG *, Function &, AAResults &, LoadInst *);

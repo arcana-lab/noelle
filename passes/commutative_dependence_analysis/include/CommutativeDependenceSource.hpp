@@ -1,8 +1,17 @@
 #ifndef CAT_COMMUTATIVEDEPENDENCYSOURCE_HPP
 #define CAT_COMMUTATIVEDEPENDENCYSOURCE_HPP
 
-#include "PDG.hpp"
+#include <llvm/ADT/StringRef.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Value.h>
 
+#include <map>
+#include <set>
+
+using llvm::Function;
+using llvm::Value;
+using llvm::Module;
+using llvm::StringRef;
 
 class CommutativeDependenceSource {
  public:
@@ -20,7 +29,8 @@ class CommutativeDependenceSource {
   commutativeEdges_end(Function *F) { CommutativeDependencies[F].end(); }
 
   iterator_range<comm_dep_iterator>
-  getCommutativeEdges(Function *F) { return make_range(CommutativeDependencies[F].begin(), CommutativeDependencies[F].end()); }
+  getCommutativeEdges(Function *F) { return make_range(CommutativeDependencies[F].begin(),
+                                                       CommutativeDependencies[F].end()); }
 
 
  private:

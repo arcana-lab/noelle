@@ -30,3 +30,7 @@ Implementation
     NOTE: PDGAnalysis has minor built-in heuristics to trim overly-conservative
     edges from the dependence graph. These heuristics will soon be moved to a
     separate pass altogether to allow for toggling their use
+
+
+Depends on these passes:
+  unique_ir_marker, oracle_aa, commutative_dependence_analysis, parallelization_utilities, alloc_aa, talkdown

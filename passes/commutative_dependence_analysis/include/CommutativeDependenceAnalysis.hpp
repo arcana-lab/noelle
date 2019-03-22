@@ -42,11 +42,13 @@ class CommutativeDependenceAnalysisPass : public ModulePass {
   bool runOnModule(Module& ) override;
 
   iterator_range<CommutativeDependenceSource::comm_dep_iterator>
-  getRemovedDependencies(Function *);
+  getCommutativeDependencies(Function *F);
+
+  CommutativeDependenceSource *getCommutativeDependenceSource();
 
  private:
 
-  unique_ptr<CommutativeDependenceSource> CommDepSource;
+  std::unique_ptr<CommutativeDependenceSource> CommDepSource;
 };
 
 #endif
