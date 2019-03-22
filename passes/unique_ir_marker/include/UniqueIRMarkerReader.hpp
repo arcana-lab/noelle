@@ -1,19 +1,22 @@
+#pragma once
 
 
-#ifndef CAT_UNIQUEIRMARKERREADER_HPP
-#define CAT_UNIQUEIRMARKERREADER_HPP
-
+#include <llvm/Analysis/LoopInfo.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/InstVisitor.h>
 
 #include <optional>
 
-#include "UniqueIRMarker.hpp"
+#include "UniqueIRConstants.hpp"
+
 
 using std::optional;
 using std::nullopt;
 using std::reference_wrapper;
 
-class UniqueIRMarkerReader : public InstVisitor<UniqueIRMarker>  {
+using namespace llvm;
+
+class UniqueIRMarkerReader {
 
  public:
   static optional<Constant *> getInstructionConstID(const llvm::Instruction *);
@@ -28,8 +31,6 @@ class UniqueIRMarkerReader : public InstVisitor<UniqueIRMarker>  {
   static optional<IDType> getInstructionID(const llvm::Instruction*);
   static optional<IDType> getLoopID(const llvm::Loop*);
 
-  void visitInstruction(Instruction &I);
-
  private:
 
   static optional<IDType> getID(const Constant*);
@@ -41,5 +42,3 @@ class UniqueIRMarkerReader : public InstVisitor<UniqueIRMarker>  {
 
   static optional<Constant *> getConstFromMeta(llvm::MDNode *, uint operand);
 };
-
-#endif //CAT_UNIQUEIRMARKERREADER_HPP

@@ -1,24 +1,32 @@
 
-#include "UniqueIRMarker.hpp"
-#include "UniqueIRConstants.hpp"
+#include <UniqueIRMarker.hpp>
 
+#include "UniqueIRMarker.hpp"
+
+using std::addressof;
 
 void UniqueIRMarker::visitModule(Module &M) {
+  M.print(errs(), nullptr);
   auto metaNode = M.getOrInsertNamedMetadata(UniqueIRConstants::VIAModule);
 
-  auto *meta = buildNode(M.getContext(), ModuleCounter++);
+  auto moduleUID = uniqueModuleCounter();
+  auto *meta = buildNode(M.getContext(), moduleUID);
   if (metaNode->getNumOperands() == 0) {
     metaNode->addOperand(meta);
   } else if (metaNode->getNumOperands() == 1) {
-    metaNode->setOperand(0, meta);
+    AlreadyMarked = true;
+    auto setModuleID = UniqueIRMarkerReader::getModuleID(addressof(M));
+    assert(setModuleID && setModuleID.value() >= 0);
   } else {
     assert (0 && "Must either have not operands or 1");
   }
+
 
 }
 
 
 void UniqueIRMarker::visitFunction(Function &F) {
+  if (AlreadyMarked) return;
   LLVMContext& Context = F.getContext();
   auto *countMeta = buildNode(Context, FunctionCounter++);
   F.setMetadata(UniqueIRConstants::VIAFunction, countMeta);
@@ -38,12 +46,14 @@ void UniqueIRMarker::visitFunction(Function &F) {
 }
 
 void UniqueIRMarker::visitBasicBlock(BasicBlock &BB) {
+  if (AlreadyMarked) return;
   if( BB.empty() ) return;
   auto *countMeta = buildNode(BB.getContext(), BasicBlockCounter++);
   BB.front().setMetadata(UniqueIRConstants::VIABasicBlock, countMeta);
 }
 
 void UniqueIRMarker::visitInstruction(Instruction &I) {
+  if (AlreadyMarked) return;
   auto *countMeta = buildNode(I.getContext(), uniqueInstructionCounter());
   I.setMetadata(UniqueIRConstants::VIAInstruction, countMeta);
 }
@@ -61,6 +71,10 @@ uint64_t UniqueIRMarker::uniqueInstructionCounter() {
   return InstructionCounter++;
 }
 
+IDType UniqueIRMarker::uniqueModuleCounter() {
+  assert(ModuleCounter <= (std::numeric_limits<uint64_t>::max() - 1) && "ModuleCounter has overrun" );
+  return ModuleCounter++;
+}
 
 UniqueIRMarkerPass::UniqueIRMarkerPass() : ModulePass(ID) {}
 

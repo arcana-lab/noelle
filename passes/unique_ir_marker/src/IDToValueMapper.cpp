@@ -4,6 +4,8 @@
 #include "UniqueIRMarkerReader.hpp"
 #include "IDToValueMapper.hpp"
 
+using std::addressof;
+
 IDToInstructionMapper::IDToInstructionMapper(Module &M) : InstVisitor<IDToInstructionMapper>(), Mod(M), relevantIDs(nullptr) {}
 
 
@@ -17,10 +19,11 @@ std::unique_ptr<std::map<IDType, Instruction *>> IDToInstructionMapper::idToValu
 }
 
 void IDToInstructionMapper::visitInstruction(Instruction &I) {
-  // FIXME: handle not ID.
-  auto ID = UniqueIRMarkerReader::getInstructionID(&I).value();
-  if ( relevantIDs->find(ID) != relevantIDs->end() ) {
-    mapping->insert( std::pair<IDType, Instruction *>(ID, &I) );
+  auto InstructionIDOpt = UniqueIRMarkerReader::getInstructionID(addressof(I));
+  if (!InstructionIDOpt) return;
+  auto IID = InstructionIDOpt.value();
+  if ( relevantIDs->find(IID) != relevantIDs->end() ) {
+    mapping->insert( std::pair<IDType, Instruction *>(IID, addressof(I)) );
   }
 }
 
@@ -38,10 +41,11 @@ std::unique_ptr<std::map<IDType, Function *>> IDToFunctionMapper::idToValueMap(s
 }
 
 void IDToFunctionMapper::visitFunction(Function &F) {
-  // FIXME: handle not ID.
-  auto ID = UniqueIRMarkerReader::getFunctionID(&F).value();
-  if ( relevantIDs->find(ID) != relevantIDs->end() ) {
-    mapping->insert( std::pair<IDType, Function *>(ID, &F) );
+  auto FunctionIDOpt = UniqueIRMarkerReader::getFunctionID(addressof(F));
+  if (!FunctionIDOpt) return;
+  auto FID = FunctionIDOpt.value();
+  if ( relevantIDs->find(FID) != relevantIDs->end() ) {
+    mapping->insert( std::pair<IDType, Function *>(FID, &F) );
   }
 }
 

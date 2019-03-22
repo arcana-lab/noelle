@@ -224,7 +224,7 @@ namespace llvm {
     DataDependencyType dataDependenceType() const { return dataDepType; }
 
     void setControl(bool ctrl) { isControl = ctrl; }
-    void setCommutative(bool comm) { errs() << "setCommutative: " << comm << '\n'; isCommutative = comm; }
+    void setCommutative(bool comm) { isCommutative = comm; }
     void setMemMustType(bool mem, bool must, DataDependencyType dataDepType);
 
     void addSubEdge(DGEdge<SubT> *edge) { subEdges.insert(edge); }

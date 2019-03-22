@@ -1,9 +1,10 @@
-#ifndef CAT_UNIQUEIRCONSTANTS_HPP
-#define CAT_UNIQUEIRCONSTANTS_HPP
+#pragma once
 
 #include <llvm/ADT/StringRef.h>
 
 using llvm::StringRef;
+
+using IDType = uint64_t;
 
 class UniqueIRConstants {
  public:
@@ -12,5 +13,3 @@ class UniqueIRConstants {
   static const StringRef VIAFunction;
   static const StringRef VIAModule;
 };
-
-#endif //CAT_UNIQUEIRCONSTANTS_HPP

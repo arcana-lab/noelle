@@ -1,7 +1,4 @@
-
-
-#ifndef CAT_IDTOVALUEMAPPER_HPP
-#define CAT_IDTOVALUEMAPPER_HPP
+#pragma once
 
 #include <set>
 #include "UniqueIRMarker.hpp"
@@ -33,5 +30,3 @@ class IDToFunctionMapper : public InstVisitor<IDToFunctionMapper> {
   std::map<IDType, Function *> *mapping;
   Module &Mod;
 };
-
-#endif //CAT_IDTOVALUEMAPPER_HPP

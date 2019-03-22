@@ -1,13 +1,14 @@
-#ifndef ORACLEDDGAA_UNIQUEIRMARKER_H
-#define ORACLEDDGAA_UNIQUEIRMARKER_H
+#pragma once
 
 #include <llvm/Analysis/LoopInfo.h>
 #include <llvm/Pass.h>
 #include <llvm/IR/InstVisitor.h>
 
+#include "UniqueIRConstants.hpp"
+#include "UniqueIRMarkerReader.hpp"
+
 using namespace llvm;
 
-using IDType = uint64_t;
 
 class UniqueIRMarker : public InstVisitor<UniqueIRMarker> {
 
@@ -25,11 +26,15 @@ class UniqueIRMarker : public InstVisitor<UniqueIRMarker> {
 
 
   IDType uniqueInstructionCounter();
+  IDType uniqueModuleCounter();
 
   IDType BasicBlockCounter, InstructionCounter, FunctionCounter, LoopCounter, ModuleCounter;
   MDNode* buildNode(LLVMContext&, IDType);
   ModulePass& MP;
 
+  // if the bitcode file already has a module 'VIA.M.ID' definition then this walker will instead verify that
+  // the metadata is correctly inserted.
+  bool AlreadyMarked = false;
 
 
 };
@@ -43,5 +48,3 @@ class UniqueIRMarkerPass : public ModulePass {
   void getAnalysisUsage(AnalysisUsage& ) const override;
   bool runOnModule(Module& ) override;
 };
-
-#endif //ORACLEDDGAA_UNIQUEIRMARKER_H
