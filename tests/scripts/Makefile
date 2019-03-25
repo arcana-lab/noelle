@@ -26,8 +26,10 @@ OPTIMIZED=parallelized
 
 TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
 UNIQUE_IR_MARKER_PASS=-load $(INSTALL_LIB)/UniqueIRMarker.so 
-ORACLEAA_PASS=$(UNIQUE_IR_MARKER_PASS) -load $(INSTALL_LIB)/OracleAA.so  -input-args "${oracle_input_args}" -exe-script=$(INSTALL_DIR)/bin/run_via.sh -loops
-PDGPASS=$(ORACLEAA_PASS) -load $(INSTALL_LIB)/AllocAA.so -load $(INSTALL_LIB)/TalkDown.so -load $(INSTALL_LIB)/PDGAnalysis.so
+ORACLEAA_ARGS=-input-args "${oracle_input_args}" -exe-script=$(INSTALL_DIR)/bin/run_via.sh
+ORACLEAA_PASSES=$(UNIQUE_IR_MARKER_PASS) -load $(INSTALL_LIB)/OracleAA.so 
+ORACLEAA=$(ORACLEAA_PASSES) $(ORACLEAA_ARGS)
+PDGPASS=$(ORACLEAA) $(COMMPASSES) -load $(INSTALL_LIB)/AllocAA.so -load $(INSTALL_LIB)/TalkDown.so -load $(INSTALL_LIB)/PDGAnalysis.so 
 PRINTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/PDGPrinter.so
 PARALLELIZATION_TECHNIQUES= -load $(INSTALL_LIB)/DSWP.so -load $(INSTALL_LIB)/DOALL.so -load $(INSTALL_LIB)/HELIX.so
 PRE_OPTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/HotProfiler.so -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/DGSimplify.so
@@ -37,6 +39,12 @@ PRINT_OUTPUT_FILE=test.txt
 # Fetch the list of files to compile
 CPP_FILES := $(wildcard *.cpp)
 BC_FILES := $(notdir $(CPP_FILES:.cpp=.bc))
+
+COMMPASSES=-load $(INSTALL_LIB)/CommutativeDependenceAnalysis.so
+COMM_DEP_ANA=-CommutativeDependenceAnalysis
+
+COMM_USE=$(COMM_DEP_ANA) -comm-dep=test.commd 
+COMM=$(COMMPASSES) $(COMM_DEP_ANA) -comm-dep=test.commd 
 
 all: baseline baseline_pdgdot.bc testseq $(OPTIMIZED)
 
@@ -55,8 +63,15 @@ all: baseline baseline_pdgdot.bc testseq $(OPTIMIZED)
 baseline: baseline.bc
 	$(CPP) $(OPT_LEVEL) $^ -o $@
 
+
+test_seq_comm.bc: test_seq.bc
+	$(OPT) $(OPTPASSES) $(COMM_USE) -heuristics -parallelizer $(PARALLELIZATION_OPTIONS) --debug-pass=Structure -pdg-verbose=2 -noelle-verbose=2 $^ -o $@
+
+test_seq_comm: test_seq_comm.bc
+	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
+
 baseline_pdgdot.bc: test.bc
-	$(OPT) $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -PDGPrinter $^ -o $@
+	$(OPT) $(PRINTPASSES) $(ANALYSIS) -PDGPrinter $^ -o $@
 
 testseq: test_seq.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
@@ -85,12 +100,14 @@ ir_mark.bc: test.cpp
 	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
-run_oracle_aa:
-	$(OPT) $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -PDGPrinter test.in -o $@
+run_oracle_aa: $(THREADER).bc
+	llvm-link test.in $^ -o test-in.bc
+	$(OPT) $(PRINTPASSES) $(ANALYSIS) -use-oracle-aa -OracleAA test-in.bc -o $@
 
 test.bc: test.cpp
 	$(CC) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
 	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	$(OPT) $(UNIQUE_IR_MARKER_PASS) -UniqueIRID  $@ -o $@
 	$(OPT) -dot-cfg -disable-output $@
 
 baseline.bc: test.bc
@@ -119,6 +136,6 @@ print_analyses:
 	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(ANALYSES)" 
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *.dep *.viaconf run_oracle_aa
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq testseq_comm $(OPTIMIZED) *.prof *.profraw *.dep *.viaconf run_oracle_aa
 
 .PHONY: show_passes show_time

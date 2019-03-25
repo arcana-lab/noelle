@@ -21,22 +21,24 @@ function runningTests {
     make clean > /dev/null ; 
 
     # Compile
-    make baseline_comm >> compiler_output.txt 2>&1 ;
+    make test_seq_comm >> compiler_output.txt 2>&1 ;
 
-    # Check the output ;
-    output=0-oracle-ddg.dep
-    answer=test.aa
-    cmp $output $answer &>> test_output.txt 2>&1  ;
-    if test $? -ne 0 ; then
-      echo -e "\e[31mFailed\e[0m" ;
-      echo "-- Printing result on .dep and correct answer --"
-      diff -y $output $answer
-      echo "--------"
-      dirs_of_failed_tests="${i} ${dirs_of_failed_tests}" ;
-    else
-      passed_tests=`echo "$passed_tests + 1" | bc` ;
-      echo -e "\e[32mPassed\e[0m" ;
-    fi
+    echo "No Test"
+
+#    # Check the output ;
+#    output=0-oracle-ddg.dep
+#    answer=test.aa
+#    cmp $output $answer &>> test_output.txt 2>&1  ;
+#    if test $? -ne 0 ; then
+#      echo -e "\e[31mFailed\e[0m" ;
+#      echo "-- Printing result on .dep and correct answer --"
+#      diff -y $output $answer
+#      echo "--------"
+#      dirs_of_failed_tests="${i} ${dirs_of_failed_tests}" ;
+#    else
+#      passed_tests=`echo "$passed_tests + 1" | bc` ;
+#      echo -e "\e[32mPassed\e[0m" ;
+#    fi
 
     cd ../ ;
   done
