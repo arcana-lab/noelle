@@ -1,4 +1,6 @@
 
+#include <UniqueIRMarkerReader.hpp>
+
 #include "UniqueIRConstants.hpp"
 #include "UniqueIRMarkerReader.hpp"
 
@@ -87,6 +89,14 @@ optional<Constant *> UniqueIRMarkerReader::getConstFromMeta(llvm::MDNode *node, 
   if (!node) return nullopt;
   auto np = getIthOperand(node, operand);
   return np ? getConst(np.value()) : nullopt;
+}
+
+optional<IDType> UniqueIRMarkerReader::getIDFromLoopMeta(MDNode *Node) {
+  auto Const = getConstFromMeta(Node, 0);
+  if (Const) {
+    return getID(Const.value());
+  }
+  return nullopt;
 }
 
 

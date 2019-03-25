@@ -4,6 +4,8 @@
 #include <llvm/Pass.h>
 #include <llvm/IR/InstVisitor.h>
 
+#include <set>
+
 #include "UniqueIRConstants.hpp"
 #include "UniqueIRMarkerReader.hpp"
 
@@ -22,6 +24,8 @@ class UniqueIRMarker : public InstVisitor<UniqueIRMarker> {
 
   constexpr static unsigned int IDSize = sizeof(IDType) * 8; // IDs are in bits
 
+  bool verifyLoops();
+
  private:
 
 
@@ -35,6 +39,13 @@ class UniqueIRMarker : public InstVisitor<UniqueIRMarker> {
   // if the bitcode file already has a module 'VIA.M.ID' definition then this walker will instead verify that
   // the metadata is correctly inserted.
   bool AlreadyMarked = false;
+
+  std::set<IDType> LoopIDsFromLoopInfo;
+  std::set<IDType> LoopIDsFromPreviousMarkerPass;
+
+  void checkFunction(Function &);
+  void checkInstruction(Instruction &);
+
 
 
 };

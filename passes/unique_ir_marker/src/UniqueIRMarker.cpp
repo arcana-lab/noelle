@@ -1,4 +1,5 @@
 
+#include <set>
 #include <UniqueIRMarker.hpp>
 
 #include "UniqueIRMarker.hpp"
@@ -26,22 +27,25 @@ void UniqueIRMarker::visitModule(Module &M) {
 
 
 void UniqueIRMarker::visitFunction(Function &F) {
-  if (AlreadyMarked) return;
-  LLVMContext& Context = F.getContext();
-  auto *countMeta = buildNode(Context, FunctionCounter++);
-  F.setMetadata(UniqueIRConstants::VIAFunction, countMeta);
+  if (!AlreadyMarked) {
+    LLVMContext &Context = F.getContext();
+    auto *countMeta = buildNode(Context, FunctionCounter++);
+    F.setMetadata(UniqueIRConstants::VIAFunction, countMeta);
 
-  if ( F.empty() ) return;
+    if (F.empty()) return;
 
-  auto &LoopInfo  = MP.getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+    auto &LoopInfo = MP.getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
 
-  for ( auto &Loop : LoopInfo.getLoopsInPreorder() ) {
-    SmallVector<Metadata *, 2> MDs;
-    MDs.push_back(ConstantAsMetadata::get(ConstantInt::get(Context, llvm::APInt(IDSize, 0, false))));
-    MDs.push_back(ConstantAsMetadata::get(ConstantInt::get(Context, llvm::APInt(IDSize, LoopCounter++, false))));
-    auto *node = MDNode::get(Context, MDs);
-    node->replaceOperandWith(0,node);
-    Loop->setLoopID(node);
+    for (auto &Loop : LoopInfo.getLoopsInPreorder()) {
+      SmallVector<Metadata *, 2> MDs;
+      MDs.push_back(ConstantAsMetadata::get(ConstantInt::get(Context, llvm::APInt(IDSize, 0, false))));
+      MDs.push_back(ConstantAsMetadata::get(ConstantInt::get(Context, llvm::APInt(IDSize, LoopCounter++, false))));
+      auto *node = MDNode::get(Context, MDs);
+      node->replaceOperandWith(0, node);
+      Loop->setLoopID(node);
+    }
+  } else {
+    checkFunction(F);
   }
 }
 
@@ -53,9 +57,12 @@ void UniqueIRMarker::visitBasicBlock(BasicBlock &BB) {
 }
 
 void UniqueIRMarker::visitInstruction(Instruction &I) {
-  if (AlreadyMarked) return;
-  auto *countMeta = buildNode(I.getContext(), uniqueInstructionCounter());
-  I.setMetadata(UniqueIRConstants::VIAInstruction, countMeta);
+  if (!AlreadyMarked) {
+    auto *countMeta = buildNode(I.getContext(), uniqueInstructionCounter());
+    I.setMetadata(UniqueIRConstants::VIAInstruction, countMeta);
+  } else {
+    checkInstruction(I);
+  }
 }
 
 MDNode *UniqueIRMarker::buildNode(LLVMContext& C, IDType value) {
@@ -74,6 +81,43 @@ uint64_t UniqueIRMarker::uniqueInstructionCounter() {
 IDType UniqueIRMarker::uniqueModuleCounter() {
   assert(ModuleCounter <= (std::numeric_limits<uint64_t>::max() - 1) && "ModuleCounter has overrun" );
   return ModuleCounter++;
+}
+
+void UniqueIRMarker::checkFunction(Function &F) {
+  if (F.empty()) return;
+  if(UniqueIRMarkerReader::getFunctionID(addressof(F))) {
+    // Check that llvm.loop metadata is still correct.
+    auto &LoopInfo = MP.getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+    auto LoopIDs = std::set<IDType>();
+
+    for (auto &Loop : LoopInfo.getLoopsInPreorder()) {
+      auto LoopIDOpt = UniqueIRMarkerReader::getLoopID(Loop);
+      assert (LoopIDOpt);
+      LoopIDs.insert(UniqueIRMarkerReader::getLoopID(Loop).value());
+    }
+  }
+}
+void UniqueIRMarker::checkInstruction(Instruction &I) {
+  auto *LoopMeta = I.getMetadata("llvm.loop");
+  auto InstructionLoopIDOpt = UniqueIRMarkerReader::getIDFromLoopMeta(LoopMeta);
+  if (LoopMeta && InstructionLoopIDOpt) {
+    // Make sure that the loop id is the last instruction in the BB.
+    assert (addressof(I.getParent()->back()) == addressof(I));
+    auto &LoopInfo = MP.getAnalysis<LoopInfoWrapperPass>(*I.getFunction()).getLoopInfo();
+    auto L = LoopInfo.getLoopFor(I.getParent());
+    auto LILoopIDOpt = UniqueIRMarkerReader::getLoopID(L);
+    assert(LILoopIDOpt == InstructionLoopIDOpt && "Loop ID from LoopInfo must match Loop ID from the IR");
+
+    LoopIDsFromPreviousMarkerPass.insert(InstructionLoopIDOpt.value());
+  }
+
+}
+bool UniqueIRMarker::verifyLoops() {
+  // check that the sets are equal
+  return LoopIDsFromPreviousMarkerPass.size() == LoopIDsFromLoopInfo.size()
+        && std::equal(LoopIDsFromPreviousMarkerPass.begin(), LoopIDsFromPreviousMarkerPass.end(),
+                      LoopIDsFromLoopInfo.begin());
+
 }
 
 UniqueIRMarkerPass::UniqueIRMarkerPass() : ModulePass(ID) {}
@@ -96,6 +140,10 @@ bool UniqueIRMarkerPass::runOnModule(Module &M) {
   UniqueIRMarker walker{*this};
 
   walker.visit(M);
+
+  assert(walker.verifyLoops() && "UniqueIRMarker -- Error: "
+                                 "The verify failed for UniqueIRMarker which means that the IR loops have changed "
+                                 "the metadata reflecting this change.");
 
   // Since metadata will always be changed...
   return false;
