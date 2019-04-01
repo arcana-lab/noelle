@@ -46,16 +46,14 @@ SequentialSegment::SequentialSegment (
     if (this->verbosity >= Verbosity::Maximal) {
       errs() << "HELIX:       Type = " << scc->getType() << "\n";
       errs() << "HELIX:       Loop-carried data dependences\n";
-      for (auto valuePair : scc->internalNodePairs()) {
-        for (auto edge : valuePair.second->getIncomingEdges()) {
-          if (!LDI->sccdagAttrs.isALoopCarriedDependence(scc, edge)){
-            continue ;
-          }
-          auto fromInst = edge->getOutgoingT();
-          auto toInst = edge->getIncomingT();
-          errs() << "HELIX:        \"" << *fromInst << "\" -> \"" << *toInst  << "\"\n";
-        }
-      }
+      auto lcIterFunc = [scc](DGEdge<Value> *dep) -> bool {
+        auto fromInst = dep->getOutgoingT();
+        auto toInst = dep->getIncomingT();
+        assert(scc->isInternal(fromInst) || scc->isInternal(toInst));
+        errs() << "HELIX:        \"" << *fromInst << "\" -> \"" << *toInst  << "\"\n";
+        return false;
+      };
+      LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, lcIterFunc);
     }
 
     /*

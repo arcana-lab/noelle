@@ -132,6 +132,14 @@ namespace llvm {
        */
       bool isALoopCarriedDependence (SCC *scc, DGEdge<Value> *dependence) ;
 
+      /*
+       * Methods about multiple dependences.
+       */
+      void iterateOverLoopCarriedDataDependences (
+        SCC *scc, 
+        std::function<bool (DGEdge<Value> *dependence)> func)
+        ;
+
     private:
 
       /*

@@ -776,12 +776,21 @@ bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopI
 }
 
 void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
-  if (isClonableByInductionVars(scc) ||
-      isClonableBySyntacticSugarInstrs(scc) ||
-      isClonableByCmpBrInstrs(scc)) {
+
+  /*
+   * Check the simple cases.
+   */
+  if ( false
+       || isClonableByInductionVars(scc)
+       || isClonableBySyntacticSugarInstrs(scc)
+       || isClonableByCmpBrInstrs(scc)
+      ) {
     this->getSCCAttrs(scc)->isClonable = true;
     clonableSCCs.insert(scc);
+    return ;
   }
+
+  return ;
 }
 
 bool SCCDAGAttrs::isClonableByInductionVars (SCC *scc) const {
@@ -959,4 +968,39 @@ bool SCCDAGAttrs::isALoopCarriedDependence (SCC *scc, DGEdge<Value> *dependence)
    * Check whether the dependence is inside lcDeps.
    */
   return lcDeps.find(dependence) != lcDeps.end();
+}
+      
+void SCCDAGAttrs::iterateOverLoopCarriedDataDependences (
+  SCC *scc, 
+  std::function<bool (DGEdge<Value> *dependence)> func
+  ){
+
+  /*
+   * Iterate over internal edges of the SCC.
+   */
+  for (auto valuePair : scc->internalNodePairs()) {
+    for (auto edge : valuePair.second->getIncomingEdges()) {
+
+      /*
+       * Check if the current edge is a loop-carried data dependence.
+       */
+      if (!this->isALoopCarriedDependence(scc, edge)){
+        continue ;
+      }
+
+      /*
+       * The current edge is a loop-carried data dependence.
+       */
+      auto result = func(edge);
+
+      /*
+       * Check if the caller wants us to stop iterating.
+       */
+      if (result){
+        return ;
+      }
+    }
+  }
+
+  return ;
 }
