@@ -43,7 +43,7 @@ bool DOALL::canBeAppliedToLoop (
   Heuristics *h
 ) const {
   if (this->verbose != Verbosity::Disabled) {
-    errs() << "DOALL: Checking if is a doall loop\n";
+    errs() << "DOALL: Checking if the loop is DOALL\n";
   }
 
   /*
@@ -84,7 +84,7 @@ bool DOALL::canBeAppliedToLoop (
   auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
   if (LDI->sccdagAttrs.sccIVBounds.find(headerSCC) == LDI->sccdagAttrs.sccIVBounds.end()) {
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   Loop does not have understood bounds to its IV\n";
+      errs() << "DOALL:   It wasn't possible to determine how to compute the loop trip count just before executing the loop\n" ;
     }
     return false;
   }
@@ -94,17 +94,35 @@ bool DOALL::canBeAppliedToLoop (
    */
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
-    if (scc->getType() != SCC::SCCType::REDUCIBLE
-      && !LDI->sccdagAttrs.canBeCloned(scc)
-      && !LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
-      if (this->verbose != Verbosity::Disabled) {
-        errs() << "DOALL:   Non clonable, non commutative scc at top level of loop:\n";
-        if (this->verbose >= Verbosity::Maximal) {
-          scc->printMinimal(errs(), "DOALL:\t") << "\n";
-        }
-      }
-      return false;
+
+    /*
+     * If the SCC is reducable, then it does not block the loop to be a DOALL.
+     */
+    if (scc->getType() == SCC::SCCType::REDUCIBLE){
+      continue ;
     }
+
+    /*
+     * If the SCC can be cloned, then it does not block the loop to be a DOALL.
+     */
+    if (LDI->sccdagAttrs.canBeCloned(scc)){
+      continue ;
+    }
+    
+    /*
+     * If the SCC is of the sub-loop, then it does not block the loop to be a DOALL.
+     */
+    if (LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
+      continue ;
+    }
+
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "DOALL:   We found an SCC of type " << scc->getType() << " of the loop that is non clonable and non commutative\n" ;
+      if (this->verbose >= Verbosity::Maximal) {
+        scc->printMinimal(errs(), "DOALL:\t") << "\n";
+      }
+    }
+    return false;
   }
 
   /*
