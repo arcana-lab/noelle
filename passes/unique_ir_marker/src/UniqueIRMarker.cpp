@@ -7,7 +7,6 @@
 using std::addressof;
 
 void UniqueIRMarker::visitModule(Module &M) {
-  M.print(errs(), nullptr);
   auto metaNode = M.getOrInsertNamedMetadata(UniqueIRConstants::VIAModule);
 
   auto moduleUID = uniqueModuleCounter();
