@@ -20,6 +20,7 @@ typedef struct OptionData_ {
 } OptionData;
 
 OptionData *data;
+fptype *prices;
 int numOptions;
 
 int    * otype;
@@ -30,7 +31,7 @@ fptype * volatility;
 fptype * otime;
 int numError = 0;
 
-int bs_thread (fptype *prices) {
+int bs_thread(void) {
     int i, j;
     fptype price;
     fptype priceDelta;
@@ -53,11 +54,11 @@ int main (int argc, char **argv) {
     int rv;
 
     //Read input data
-    numOptions = atoll(argv[1]) + 2;
+    numOptions = atoll(argv[1]);
 
     // alloc spaces for the option data
     data = (OptionData*)malloc(numOptions*sizeof(OptionData));
-    fptype *prices = (fptype*)malloc(numOptions*sizeof(fptype));
+    prices = (fptype*)malloc(numOptions*sizeof(fptype));
     printf("Num of Options: %d\n", numOptions);
 
 #define PAD 256
@@ -82,8 +83,7 @@ int main (int argc, char **argv) {
         otime[i]      = data[i].t;
     }
 
-    bs_thread(prices);
-    printf("Wow: %f\n", prices[0] + prices[1]);
+    bs_thread();
 
     return 0;
 }
