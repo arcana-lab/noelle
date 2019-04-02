@@ -36,14 +36,28 @@ namespace llvm {
         // NOTE: Unsure if this is program forward order
         orderedBBs.push_back(bb);
         this->bbs.insert(bb);
-        if (l->isLoopLatch(bb)) latchBBs.insert(bb);
+        if (l->isLoopLatch(bb)) {
+          latchBBs.insert(bb);
+        }
       }
+
+      for (auto bb : this->bbs){
+        for (auto& inst : *bb){
+          if (l->isLoopInvariant(&inst)){
+            this->invariants.insert(&inst);
+          }
+        }
+      }
+      return ;
     }
 
     void print (raw_ostream &stream) {
       stream << "Loop summary: " << id << ", depth: " << depth << "\n";
       header->begin()->print(stream); stream << "\n";
     }
+      
+    private:
+      std::set<Value *> invariants;
   };
 
   struct LoopInfoSummary {

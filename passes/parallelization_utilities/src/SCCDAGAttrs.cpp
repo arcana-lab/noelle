@@ -320,11 +320,21 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
     for (auto valuePair : scc->internalNodePairs()) {
-      if (auto phi = dyn_cast<PHINode>(valuePair.first)) {
+
+      /*
+       * Fetch the instruction and the related node in the PDG.
+       */
+      auto inst = valuePair.first;
+      auto depNode = valuePair.second;
+
+      /*
+       * Handle PHI instructions.
+       */
+      if (auto phi = dyn_cast<PHINode>(inst)) {
         auto loop = LIS.bbToLoop[phi->getParent()];
         if (loop->header != phi->getParent()) continue;
 
-        for (auto edge : valuePair.second->getIncomingEdges()) {
+        for (auto edge : depNode->getIncomingEdges()) {
           if (edge->isControlDependence()) continue;
 
           /*
@@ -358,23 +368,30 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
            */
           interIterDeps[scc].insert(edge);
         }
+
+        continue ;
       }
 
-      if (auto term = dyn_cast<TerminatorInst>(valuePair.first)) {
-        for (auto edge : valuePair.second->getOutgoingEdges()) {
+      /*
+       * Handle Terminator instructions.
+       */
+      if (auto term = dyn_cast<TerminatorInst>(inst)) {
+        for (auto edge : depNode->getOutgoingEdges()) {
           auto depV = edge->getIncomingT();
           assert(isa<Instruction>(depV));
           auto depBB = ((Instruction*)depV)->getParent();
           if (term->getParent() != depBB) continue;
           interIterDeps[scc].insert(edge);
         }
+        continue ;
       }
 
-      if (isa<StoreInst>(valuePair.first)
-          || isa<LoadInst>(valuePair.first)
-          || isa<CallInst>(valuePair.first)) {
-        auto memI = (Instruction *)valuePair.first;
-        for (auto edge : valuePair.second->getOutgoingEdges()) {
+      if (isa<StoreInst>(inst)
+          || isa<LoadInst>(inst)
+          || isa<CallInst>(inst)
+        ) {
+        auto memI = cast<Instruction>(inst);
+        for (auto edge : depNode->getOutgoingEdges()) {
           if (!edge->isMemoryDependence()) continue;
           auto depI = (Instruction *)edge->getIncomingT();
           if (canPrecedeInCurrentIteration(LIS, memI, depI)) continue;

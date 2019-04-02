@@ -248,10 +248,19 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
 void llvm::PDGAnalysis::iterateInstForStoreAliases (PDG *pdg, Function &F, AAResults &AA, StoreInst *store) {
   for (auto &B : F) {
     for (auto &I : B) {
-      if (auto *otherStore = dyn_cast<StoreInst>(&I)) {
-        if (store != otherStore)
+
+      /*
+       * Check stores.
+       */
+      if (auto otherStore = dyn_cast<StoreInst>(&I)) {
+        if (store != otherStore){
           addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg, F, AA, store, otherStore, true);
-      } else if (auto *load = dyn_cast<LoadInst>(&I)) {
+        }
+
+      /* 
+       * Check loads.
+       */
+      } else if (auto load = dyn_cast<LoadInst>(&I)) {
         addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg, F, AA, store, load, false);
       }
     }
@@ -286,9 +295,9 @@ void llvm::PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
 void llvm::PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA){
   for (auto &B : F) {
     for (auto &I : B) {
-      if (auto* store = dyn_cast<StoreInst>(&I)) {
+      if (auto store = dyn_cast<StoreInst>(&I)) {
         iterateInstForStoreAliases(pdg, F, AA, store);
-      } else if (auto *call = dyn_cast<CallInst>(&I)) {
+      } else if (auto call = dyn_cast<CallInst>(&I)) {
         iterateInstForModRef(pdg, F, AA, *call);
       }
     }
