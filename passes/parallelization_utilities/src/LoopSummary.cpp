@@ -8,33 +8,45 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
-#include "SystemHeaders.hpp"
+#include "LoopSummary.hpp"
 
 using namespace llvm;
 
-namespace llvm {
+LoopSummary::LoopSummary (int id, Loop *l){
+  this->id = id;
+  this->depth = l->getLoopDepth();
+  this->header = l->getHeader();
+  for (auto bb : l->blocks()) {
+    // NOTE: Unsure if this is program forward order
+    orderedBBs.push_back(bb);
+    this->bbs.insert(bb);
+    if (l->isLoopLatch(bb)) {
+      latchBBs.insert(bb);
+    }
+  }
 
-  class LoopSummary {
-    public:
-      int id;
-      LoopSummary *parent;
-      std::set<LoopSummary *> children;
-      int depth;
-      BasicBlock *header;
-      std::vector<BasicBlock *> orderedBBs;
-      std::set<BasicBlock *> bbs;
-      std::set<BasicBlock *> latchBBs;
+  for (auto bb : this->bbs){
+    for (auto& inst : *bb){
+      if (l->isLoopInvariant(&inst)){
+        this->invariants.insert(&inst);
+      }
+    }
+  }
 
-      LoopSummary(int id, Loop *l);
-
-      bool isLoopInvariant (Value *v);
-
-      void print (raw_ostream &stream);
+  return ;
+}
       
-    private:
-      std::set<Value *> invariants;
-  };
+bool LoopSummary::isLoopInvariant (Value *v){
+  if (this->invariants.find(v) == this->invariants.end()){
+    return false;
+  }
 
+  return true;
+}
+      
+void LoopSummary::print (raw_ostream &stream) {
+  stream << "Loop summary: " << id << ", depth: " << depth << "\n";
+  header->begin()->print(stream); stream << "\n";
+
+  return ;
 }
