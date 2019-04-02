@@ -29,4 +29,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/Techniques.hpp include/EnvBuilder.hpp include/LoopInfoSummary.hpp include/LoopEnvironment.hpp include/LoopDependenceInfo.hpp include/Parallelization.hpp include/SCCDAGAttrs.hpp include/SCCDAGPartition.hpp include/Queue.hpp include/SystemHeaders.hpp include/Architecture.hpp DESTINATION include)
+install(PROGRAMS include/Techniques.hpp include/EnvBuilder.hpp include/LoopSummary.hpp include/LoopInfoSummary.hpp include/LoopEnvironment.hpp include/LoopDependenceInfo.hpp include/Parallelization.hpp include/SCCDAGAttrs.hpp include/SCCDAGPartition.hpp include/Queue.hpp include/SystemHeaders.hpp include/Architecture.hpp DESTINATION include)
