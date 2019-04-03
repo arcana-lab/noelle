@@ -119,7 +119,7 @@ bool DOALL::canBeAppliedToLoop (
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   We found an SCC of type " << scc->getType() << " of the loop that is non clonable and non commutative\n" ;
       if (this->verbose >= Verbosity::Maximal) {
-        scc->printMinimal(errs(), "DOALL:     ") << "\n";
+        scc->printMinimal(errs(), "DOALL:     ") ;
         errs() << "DOALL:     Loop-carried data dependences\n";
         LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
