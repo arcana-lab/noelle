@@ -228,12 +228,16 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
     auto producer = env->producerAt(envIndex);
     auto scc = sccdag->sccOfValue(producer);
 
-    // TODO(angelo): Implement this if it is legal. Unsure at the moment
-    // if (scc->getType() == SCC::SCCType::INDEPENDENT) continue ;
-    if (scc->getType() == SCC::SCCType::REDUCIBLE) continue ;
+    if (scc->getType() == SCC::SCCType::INDEPENDENT) {
+      continue ;
+    }
+    if (scc->getType() == SCC::SCCType::REDUCIBLE) {
+      continue ;
+    }
 
     return false;
   }
+
   return true;
 }
 
@@ -361,7 +365,7 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
            *
            * Check for this special case.
            */
-          if (canPrecedeInCurrentIteration(LIS, phi, depI)) continue;
+          //if (canPrecedeInCurrentIteration(LIS, phi, depI)) continue;
 
           /*
            * The dependence is loop-carried.

@@ -12,8 +12,16 @@
 
 using namespace llvm ;
 
-LoopEnvironment::LoopEnvironment(PDG *loopDG, SmallVector<BasicBlock *, 10> &exitBlocks) {
+LoopEnvironment::LoopEnvironment (
+  PDG *loopDG, 
+  SmallVector<BasicBlock *, 10> &exitBlocks
+  ) {
+
   for (auto nodeI : loopDG->externalNodePairs()) {
+
+    /*
+     * Fetch the live out variable.
+     */
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
 
@@ -21,22 +29,24 @@ LoopEnvironment::LoopEnvironment(PDG *loopDG, SmallVector<BasicBlock *, 10> &exi
      * Determine whether the external value is a producer
      */
     bool isProducer = false;
-    for (auto edge : externalNode->getOutgoingEdges())
-    {
+    for (auto edge : externalNode->getOutgoingEdges()) {
       if (edge->isMemoryDependence() || edge->isControlDependence()) continue;
       isProducer = true;
       this->prodConsumers[externalValue].insert(edge->getIncomingT());
     }
-    if (isProducer) this->addLiveInProducer(externalValue);
+    if (isProducer) {
+      this->addLiveInProducer(externalValue);
+    }
 
     /*
      * Determine whether the external value is a consumer
      */
-    for (auto edge : externalNode->getIncomingEdges())
-    {
+    for (auto edge : externalNode->getIncomingEdges()) {
       if (edge->isMemoryDependence() || edge->isControlDependence()) continue;
       auto internalValue = edge->getOutgoingT();
-      if (!this->isProducer(internalValue)) this->addLiveOutProducer(internalValue);
+      if (!this->isProducer(internalValue)) {
+        this->addLiveOutProducer(internalValue);
+      }
       this->prodConsumers[internalValue].insert(externalValue);
     }
   }
