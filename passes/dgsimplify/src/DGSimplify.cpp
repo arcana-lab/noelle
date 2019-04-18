@@ -145,7 +145,8 @@ void llvm::DGSimplify::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.setPreservesAll();
+  // FIXME: (joe) set preserve is not correct
+//  AU.setPreservesAll();
   return ;
 }
 
@@ -178,8 +179,6 @@ void llvm::DGSimplify::getLoopsToInline (std::string filename) {
       auto &loops = *preOrderedLoops[F];
       std::sort(loopInds.begin(), loopInds.end());
       assert(loopInds[0] >= 0);
-      for (auto lI : loopInds) {
-      }
       assert(loopInds[loopInds.size() - 1] < loops.size());
       for (auto loopInd : loopInds) {
         loopsToCheck[F].push_back(loops[loopInd]);
@@ -221,14 +220,31 @@ bool llvm::DGSimplify::registerRemainingLoops (std::string filename) {
 
   ofstream outfile(filename);
   for (const auto &funcLoops : loopsToCheck) {
-    auto iter = std::find_if(fnOrders.begin(), fnOrders.end(),
-        [funcLoops](auto fnO) {return fnO.first->getName() == funcLoops.first->getName();});
-    assert (iter != fnOrders.end());
-    auto fnInd = (*iter).second;
+    int fnInd = fnOrders[funcLoops.first];
     auto &allLoops = *preOrderedLoops[funcLoops.first];
-    for (auto summary : funcLoops.second) {
+
+    auto &F = *funcLoops.first;
+    auto &DomTree = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
+    auto LI = LoopInfo();
+    LI.analyze(DomTree);
+
+    // NOTE(joe): loop indices can be out of range since the Inline Function call can remove loops.
+    // if there are loops(P) and loops(C) then loops(P') <= loops(P) and loops(C). Where P is the parent function,
+    // C the child function, P' the parent function with C inlined and loops(F) is a returns the number of loops.
+    for (auto summaryIter = funcLoops.second.rbegin(); summaryIter != funcLoops.second.rend(); summaryIter++) {
+      auto summary = *summaryIter;
       auto loopInd = std::find(allLoops.begin(), allLoops.end(), summary);
-      outfile << fnInd << "," << std::distance(allLoops.begin(), loopInd) << '\n';
+      auto dist = std::distance(allLoops.begin(), loopInd);
+      auto loopPre = LI.getLoopsInPreorder().size();
+      // Loop index out-of-bounds, so report that all loops should be inlined.
+      if ( dist >= loopPre ) {
+        for (int i = 0; i < loopPre; i++) {
+          outfile << fnInd << "," << i << '\n';
+        }
+        break;
+      } else {
+        outfile << fnInd << "," << dist << '\n';
+      }
     }
   }
   outfile.close();
@@ -691,7 +707,6 @@ void llvm::DGSimplify::collectInDepthOrderFns (Function *main) {
         }
         if (allParentsOrdered) {
           funcToTraverse.push(F);
-          assert(depthOrderedFns.size() > 0);
           fnOrders[F] = depthOrderedFns.size();
           depthOrderedFns.push_back(F);
           reached.insert(F);
@@ -712,7 +727,6 @@ void llvm::DGSimplify::collectInDepthOrderFns (Function *main) {
         recursiveChainEntranceFns.insert(left);
         remaining->push_back(left);
         funcToTraverse.push(left);
-        assert(depthOrderedFns.size() > 0);
         fnOrders[left] = depthOrderedFns.size();
         depthOrderedFns.push_back(left);
         reached.insert(left);
