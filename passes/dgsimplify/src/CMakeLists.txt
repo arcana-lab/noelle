@@ -4,7 +4,7 @@ set(PassSrc
 )
 
 # Compilation flags
-set_source_files_properties(${PassSrc} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
+set_source_files_properties(${PassSrc} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
 set(PassName "DGSimplify")
