@@ -124,7 +124,12 @@ bool DOALL::canBeAppliedToLoop (
         LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
-          errs() << "DOALL:       " << *fromInst << " ---> " << *toInst << "\n";
+          errs() << "DOALL:       " << *fromInst << " ---> " << *toInst ;
+          if (dep->isMemoryDependence()){
+            errs() << " via memory\n";
+          } else {
+            errs() << " via variable\n";
+          }
           return false;
             });
       }

@@ -119,7 +119,11 @@ bool Parallelizer::runOnModule (Module &M) {
      */
     delete loop;
   }
+  errs() << "Parallelizer:  Parallelization complete\n";
 
+  /*
+   * Free the memory.
+   */
   delete loopsToParallelize;
 
   return modified;
