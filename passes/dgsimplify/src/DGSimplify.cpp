@@ -74,7 +74,20 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
     getLoopsToInline(filename);
 
     bool inlined = inlineCallsInMassiveSCCsOfLoops();
-    if (inlined) collectInDepthOrderFns(main);
+    if (inlined) {
+      // NOTE(joe) temporary fix which makes sure that before writing fnOrders to a file
+      // that the order match the order read in by the next pass. See adjustFnOrder.
+      getAnalysis<CallGraphWrapperPass>().runOnModule(M);
+      getAnalysis<PDGAnalysis>().runOnModule(M);
+      parentFns.clear();
+      childrenFns.clear();
+      orderedCalled.clear();
+      orderedCalls.clear();
+      auto m = M.getFunction("main");
+      collectFnGraph(m);
+      collectInDepthOrderFns(m);
+      printFnOrder();
+    }
 
     bool remaining = registerRemainingLoops(filename);
     if (remaining) writeToContinueFile();
@@ -98,7 +111,19 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
     getFunctionsToInline(filename);
 
     bool inlined = inlineFnsOfLoopsToCGRoot();
-    if (inlined) collectInDepthOrderFns(main);
+    if (inlined) {
+      // NOTE(joe) see above.
+      getAnalysis<CallGraphWrapperPass>().runOnModule(M);
+      getAnalysis<PDGAnalysis>().runOnModule(M);
+      parentFns.clear();
+      childrenFns.clear();
+      orderedCalled.clear();
+      orderedCalls.clear();
+      auto m = M.getFunction("main");
+      collectFnGraph(m);
+      collectInDepthOrderFns(m);
+      printFnOrder();
+    }
 
     bool remaining = registerRemainingFunctions(filename);
     if (remaining) writeToContinueFile();
@@ -120,7 +145,6 @@ void llvm::DGSimplify::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.setPreservesAll();
   return ;
 }
 
@@ -142,15 +166,18 @@ void llvm::DGSimplify::getLoopsToInline (std::string filename) {
       allInds[fnInd].push_back(loopInd);
     }
 
-    for (auto fnLoopInds : allInds) {
+    for (const auto &fnLoopInds : allInds) {
       auto fnInd = fnLoopInds.first;
       auto loopInds = fnLoopInds.second;
       assert(fnInd >= 0 && fnInd < depthOrderedFns.size());
       auto F = depthOrderedFns[fnInd];
-
+      if (auto iter = preOrderedLoops.find(F); iter == preOrderedLoops.end() || (*iter).second == nullptr) {
+        continue;
+      }
       auto &loops = *preOrderedLoops[F];
       std::sort(loopInds.begin(), loopInds.end());
-      assert(loopInds[0] >= 0 && loopInds[loopInds.size() - 1] < loops.size());
+      assert(loopInds[0] >= 0);
+      assert(loopInds[loopInds.size() - 1] < loops.size());
       for (auto loopInd : loopInds) {
         loopsToCheck[F].push_back(loops[loopInd]);
       }
@@ -187,15 +214,35 @@ void llvm::DGSimplify::getFunctionsToInline (std::string filename) {
 
 bool llvm::DGSimplify::registerRemainingLoops (std::string filename) {
   remove(filename.c_str());
-  if (loopsToCheck.size() == 0) return false;
+  if (loopsToCheck.empty()) return false;
 
   ofstream outfile(filename);
-  for (auto funcLoops : loopsToCheck) {
+  for (const auto &funcLoops : loopsToCheck) {
     int fnInd = fnOrders[funcLoops.first];
     auto &allLoops = *preOrderedLoops[funcLoops.first];
-    for (auto summary : funcLoops.second) {
+
+    auto &F = *funcLoops.first;
+    auto &DomTree = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
+    auto LI = LoopInfo();
+    LI.analyze(DomTree);
+
+    // NOTE(joe): loop indices can be out of range since the Inline Function call can remove loops.
+    // if there are loops(P) and loops(C) then loops(P') <= loops(P) and loops(C). Where P is the parent function,
+    // C the child function, P' the parent function with C inlined and loops(F) is a returns the number of loops.
+    for (auto summaryIter = funcLoops.second.rbegin(); summaryIter != funcLoops.second.rend(); summaryIter++) {
+      auto summary = *summaryIter;
       auto loopInd = std::find(allLoops.begin(), allLoops.end(), summary);
-      outfile << fnInd << "," << (loopInd - allLoops.begin()) << "\n";
+      auto dist = std::distance(allLoops.begin(), loopInd);
+      auto loopPre = LI.getLoopsInPreorder().size();
+      // Loop index out-of-bounds, so report that all loops should be inlined.
+      if ( dist >= loopPre ) {
+        for (int i = 0; i < loopPre; i++) {
+          outfile << fnInd << "," << i << '\n';
+        }
+        break;
+      } else {
+        outfile << fnInd << "," << dist << '\n';
+      }
     }
   }
   outfile.close();
@@ -204,7 +251,7 @@ bool llvm::DGSimplify::registerRemainingLoops (std::string filename) {
 
 bool llvm::DGSimplify::registerRemainingFunctions (std::string filename) {
   remove(filename.c_str());
-  if (fnsToCheck.size() == 0) return false;
+  if (fnsToCheck.empty()) return false;
 
   ofstream outfile(filename);
   std::vector<int> fnInds;
@@ -441,7 +488,7 @@ bool llvm::DGSimplify::inlineFunctionCall (Function *F, Function *childF, CallIn
 
   InlineFunctionInfo IFI;
   if (InlineFunction(call, IFI)) {
-    fnsAffected.insert(F); 
+    fnsAffected.insert(F);
     adjustLoopOrdersAfterInline(F, childF, loopIndAfterCall);
     adjustFnGraphAfterInline(F, childF, callInd);
     return true;
@@ -501,12 +548,16 @@ void llvm::DGSimplify::adjustLoopOrdersAfterInline (Function *parentF, Function 
   }
 }
 
+// NOTE(joe) This function doesn't correctly adjust Function Graph, since the function used to compute
+// childrenFns and parentFns [collectFnGraph] and therefore depthOrdered and fnOrder [in collectInDepthOrderFns] doesn't
+// take into account the defferent function that never got an order. This causes the number to be out between successive
+// iterations of this inliner.
 void llvm::DGSimplify::adjustFnGraphAfterInline (Function *parentF, Function *childF, int callInd) {
   auto &parentCalled = orderedCalled[parentF];
   auto &childCalled = orderedCalled[childF];
 
   parentCalled.erase(parentCalled.begin() + callInd);
-  if (childCalled.size() > 0) {
+  if (!childCalled.empty()) {
     auto childCallCount = childCalled.size();
     auto endInsertAt = callInd + childCallCount;
 
@@ -644,7 +695,7 @@ void llvm::DGSimplify::collectInDepthOrderFns (Function *main) {
 
       for (auto F : childrenFns[func]) {
         if (reached.find(F) != reached.end()) continue;
-        
+
         bool allParentsOrdered = true;
         for (auto parent : parentFns[F]) {
           if (reached.find(parent) == reached.end()) {
