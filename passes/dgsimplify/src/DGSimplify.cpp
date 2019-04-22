@@ -171,7 +171,8 @@ void llvm::DGSimplify::getLoopsToInline (std::string filename) {
       auto loopInds = fnLoopInds.second;
       assert(fnInd >= 0 && fnInd < depthOrderedFns.size());
       auto F = depthOrderedFns[fnInd];
-      if (auto iter = preOrderedLoops.find(F); iter == preOrderedLoops.end() || (*iter).second == nullptr) {
+      auto iter = preOrderedLoops.find(F);
+      if (iter == preOrderedLoops.end() || (*iter).second == nullptr) {
         continue;
       }
       auto &loops = *preOrderedLoops[F];
