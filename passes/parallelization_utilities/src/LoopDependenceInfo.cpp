@@ -120,8 +120,37 @@ void LoopDependenceInfo::createDGsForLoop (Loop *l){
   for (auto internalNode : loopDG->internalNodePairs()) {
       loopInternals.push_back(internalNode.first);
   }
-  loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
-  loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
+  this->loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
+  this->loopSCCDAG = SCCDAG::createSCCDAGFrom(loopInternalDG);
+
+  /*
+   * Safety check: check that the SCCDAG includes all instructions of the loop given as input.
+   */
+  #ifdef DEBUG
+
+  /*
+   * Check that all loop instructions belong to LDI-specific containers.
+   */
+  {
+  int64_t numberOfInstructionsInLoop = 0;
+  for (auto bbIter : l->blocks()){
+    for (auto &I : *bbIter){
+      assert(std::find(loopInternals.begin(), loopInternals.end(), &I) != loopInternals.end());
+      assert(this->loopInternalDG->isInternal(&I));
+      assert(this->loopSCCDAG->doesItContain(&I));
+      numberOfInstructionsInLoop++;
+    }
+  }
+
+  /*
+   * Check that all LDI-specific containers include only loop instructions.
+   */
+  assert(loopInternals.size() == numberOfInstructionsInLoop);
+  assert(loopInternalDG->numNodes() == loopInternals.size());
+  }
+  #endif
+
+  return ;
 }
 
 void LoopDependenceInfo::mergeTrivialNodesInSCCDAG () {

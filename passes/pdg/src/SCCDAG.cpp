@@ -21,18 +21,17 @@
 #include "../include/DGGraphTraits.hpp"
 #include "../include/SCCDAG.hpp"
 
-llvm::SCCDAG::SCCDAG() {}
+using namespace llvm ;
 
-llvm::SCCDAG::~SCCDAG() {
-  for (auto *edge : allEdges)
-    if (edge) delete edge;
-  for (auto *node : allNodes)
-    if (node) delete node;
+SCCDAG::SCCDAG() {
+  return ;
 }
 
+SCCDAG * SCCDAG::createSCCDAGFrom (PDG *pdg) {
 
-SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg)
-{
+  /*
+   * Create an empty SCCDAG.
+   */
   auto sccDAG = new SCCDAG();
 
   /*
@@ -82,9 +81,19 @@ SCCDAG *llvm::SCCDAG::createSCCDAGFrom(PDG *pdg)
   sccDAG->markEdgesAndSubEdges();
   return sccDAG;
 }
+      
+bool SCCDAG::doesItContain (Instruction *inst) const {
 
-void llvm::SCCDAG::markValuesInSCC()
-{
+  /*
+   * Fetch the SCC that contains the instruction given as input.
+   */
+  auto SCC = this->sccOfValue(inst);
+
+  return SCC != nullptr;
+}
+
+void SCCDAG::markValuesInSCC() {
+
   /*
    * Maintain association of each internal node to its SCC
    */
@@ -98,7 +107,7 @@ void llvm::SCCDAG::markValuesInSCC()
   }
 }
 
-void llvm::SCCDAG::markEdgesAndSubEdges()
+void SCCDAG::markEdgesAndSubEdges()
 {
   /*
    * Add edges between SCCs by looking at each SCC's outgoing edges
@@ -134,7 +143,7 @@ void llvm::SCCDAG::markEdgesAndSubEdges()
   }
 }
 
-void llvm::SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
+void SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
 {
   if (sccSet.size() < 2) return;
   
@@ -159,6 +168,55 @@ void llvm::SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
   this->markEdgesAndSubEdges();
 }
 
-SCC *llvm::SCCDAG::sccOfValue (Value *val) const {
+SCC * SCCDAG::sccOfValue (Value *val) const {
   return valueToSCCNode.find(val)->second->getT();
+}
+
+int64_t SCCDAG::numberOfInstructions (void) {
+
+  /*
+   * Iterate over SCCs.
+   */
+  int64_t n = 0;
+  for (auto sccNode : this->getNodes()){
+    auto SCC = sccNode->getT();
+    n += SCC->numberOfInstructions();
+  }
+
+  return n;
+}
+
+bool SCCDAG::iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke){
+
+  /*
+   * Iterate over SCC.
+   */
+  for (auto sccNode : this->getNodes()){
+
+    /*
+     * Iterate over instructions contained in the SCC.
+     */
+    auto SCC = sccNode->getT();
+    if (SCC->iterateOverInstructions(funcToInvoke)){
+      return true;
+    }
+  }
+
+  return false ;
+}
+
+SCCDAG::~SCCDAG() {
+  for (auto *edge : allEdges){
+    if (edge) {
+      delete edge;
+    }
+  }
+
+  for (auto *node : allNodes){
+    if (node) {
+      delete node;
+    }
+  }
+
+  return ;
 }

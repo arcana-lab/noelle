@@ -125,7 +125,9 @@ PDG *llvm::PDG::createSubgraphFromValues(std::vector<Value *> &valueList, bool l
   if (valueList.empty()) return nullptr;
   auto newPDG = new PDG();
 
-  for (auto &V : valueList) newPDG->addNode(V, /*inclusion=*/ true);
+  for (auto &V : valueList) {
+    newPDG->addNode(V, /*inclusion=*/ true);
+  }
 
   newPDG->entryNode = newPDG->internalNodeMap[*(valueList.begin())];
   assert(newPDG->entryNode != nullptr);

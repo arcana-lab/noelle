@@ -23,7 +23,9 @@ llvm::SCC::SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues) {
 	/*
 	 * Arbitrarily choose entry node from all nodes
 	 */
-	for (auto node : nodes) addNode(node->getT(), /*internal=*/ true);
+	for (auto node : nodes) {
+    addNode(node->getT(), /*internal=*/ true);
+  }
 	entryNode = (*allNodes.begin());
 
 	/*
@@ -48,6 +50,10 @@ llvm::SCC::SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues) {
 			copyAddEdge(*edge);
 		}
 	}
+}
+        
+int64_t SCC::numberOfInstructions (void) const {
+  return this->allNodes.size();
 }
 
 llvm::SCC::~SCC() {
@@ -118,4 +124,20 @@ void llvm::SCC::setType (llvm::SCC::SCCType t) {
   this->sccType = t;
 
   return ;
+}
+
+bool SCC::iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke){
+
+  /*
+   * Iterate over the nodes of the SCC.
+   */
+  for (auto node : this->getNodes()){
+    auto v = node->getT();
+    auto i = cast<Instruction>(v);
+    if (funcToInvoke(i)){
+      return true;
+    }
+  }
+
+  return false;
 }
