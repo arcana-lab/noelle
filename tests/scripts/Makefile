@@ -11,7 +11,7 @@ RUNTIME_CFLAGS="-DDEBUG"
 #RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DRUNTIME_PRINT"
 
 # Other parallelization options:
-PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -noelle-verbose=2 -dswp-force 
+PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -noelle-verbose=2 -dswp-force -noelle-min-hot=0
 OPT_LEVEL=-O3
 
 INCLUDES=-I../../include/threadpool/include
@@ -60,8 +60,8 @@ $(OPTIMIZED): test_dswp.bc
 test_pdgdot.bc: test_seq.bc
 	opt $(PRINTPASSES) $(ANALYSES) -heuristics -PDGPrinter $^ -o $@
 
-test_dswp_unoptimized.bc: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -heuristics -parallelizer $(PARALLELIZATION_OPTIONS) $^ -o $@
+test_dswp_unoptimized.bc: test_seq.bc output.prof
+	opt $(OPTPASSES) $(ANALYSES) -pgo-test-profile-file=output.prof -block-freq -pgo-instr-use -HotProfiler -heuristics -parallelizer $(PARALLELIZATION_OPTIONS) $< -o $@
 	llvm-dis $@
 
 test_dswp.bc: test_dswp_unoptimized.bc
@@ -77,6 +77,21 @@ test_seq.bc: test.bc $(THREADER).bc
 	@../../scripts/iterate_dgsimplify.sh "-inliner-verbose=1" "$(PRE_OPTPASSES)" "$@"
 	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
 	llvm-dis $@
+
+output.prof: default.profraw
+	llvm-profdata merge $^ -output=$@
+
+default.profraw: test_seq_prof input.txt
+	./$< `cat input.txt` 
+
+test_seq_prof: test_seq_prof.bc
+	$(CPP) -pthreads -fprofile-instr-generate -lstdc++ $^ $(LIBS) -o $@
+
+test_seq_prof.bc: test_seq.bc
+	@../../scripts/inject_hotprofiler.sh $^ $@
+
+input.txt:
+	echo "20 20" > $@
 
 show_passes: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -heuristics -Parallelizer $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
@@ -94,6 +109,6 @@ print_analyses:
 	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(ANALYSES)" 
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *prof
 
 .PHONY: show_passes show_time
