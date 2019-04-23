@@ -234,8 +234,13 @@ bool DOALL::apply (
 
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par);
 
+  /*
+   * Final printing.
+   */
   if (this->verbose >= Verbosity::Maximal) {
     tasks[0]->F->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
+  }
+  if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Exit\n";
   }
 
