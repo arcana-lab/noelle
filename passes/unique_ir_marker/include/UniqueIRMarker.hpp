@@ -12,10 +12,16 @@
 using namespace llvm;
 
 
+enum class MarkerMode {
+  Instrument,
+  Reinstrument,
+  Renumber
+};
+
 class UniqueIRMarker : public InstVisitor<UniqueIRMarker> {
 
  public:
-  explicit UniqueIRMarker(ModulePass& MP);
+  UniqueIRMarker(ModulePass& MP, MarkerMode mode);
 
   void visitModule    (Module &M);
   void visitFunction  (Function &F);
@@ -23,8 +29,6 @@ class UniqueIRMarker : public InstVisitor<UniqueIRMarker> {
   void visitInstruction(Instruction &I);
 
   constexpr static unsigned int IDSize = sizeof(IDType) * 8; // IDs are in bits
-
-  bool verifyLoops();
 
  private:
 
@@ -36,26 +40,8 @@ class UniqueIRMarker : public InstVisitor<UniqueIRMarker> {
   MDNode* buildNode(LLVMContext&, IDType);
   ModulePass& MP;
 
-  // if the bitcode file already has a module 'VIA.M.ID' definition then this walker will instead verify that
-  // the metadata is correctly inserted.
-  bool AlreadyMarked = false;
-
-  std::set<IDType> LoopIDsFromLoopInfo;
-  std::set<IDType> LoopIDsFromPreviousMarkerPass;
-
-  void checkFunction(Function &);
-  void checkInstruction(Instruction &);
-
-
+  MarkerMode Mode;
 
 };
 
-class UniqueIRMarkerPass : public ModulePass {
- public:
-  static char ID;
 
-  UniqueIRMarkerPass();
-  bool doInitialization (Module &M) override ;
-  void getAnalysisUsage(AnalysisUsage& ) const override;
-  bool runOnModule(Module& ) override;
-};

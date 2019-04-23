@@ -19,6 +19,7 @@ using namespace llvm;
 class UniqueIRMarkerReader {
 
   friend class UniqueIRMarker;
+  friend class UniqueIRVerifier;
 
  public:
   static optional<Constant *> getInstructionConstID(const llvm::Instruction *);

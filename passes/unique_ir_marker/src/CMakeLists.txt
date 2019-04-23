@@ -1,6 +1,8 @@
 # Sources
 set(Srcs 
   UniqueIRMarker.cpp
+  UniqueIRMarkerPass.cpp
+  UniqueIRVerifier.cpp
   UniqueIRMarkerReader.cpp
   UniqueIRConstants.cpp
   IDToValueMapper.cpp
