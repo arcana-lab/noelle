@@ -99,17 +99,23 @@ ModRefInfo OracleDDGAAResult::getModRefInfo(const ImmutableCallSite CS, const Me
     auto NoMatch = [&CS, &Loc, this]() -> ModRefInfo { AAResultBase::getModRefInfo(CS, Loc); };
 
     auto OracleModRefInfo = SearchResult<ModRefInfo>(CS.getInstruction(), I, Match, MRI_NoModRef, NoMatch);
-    errs() << "CS: "; CS->print(errs()); errs() << '\n';
-    errs() << "Loc: "; Loc.Ptr->print(errs()); errs() << '\n';
-    errs() << "OracleModRefInfo: " << OracleModRefInfo << " BaseModRefInfo: " << ModRefInfoBase << '\n';
     if (OracleModRefInfo == MRI_NoModRef) {
-      assert ((ModRefInfoBase == MRI_NoModRef)
-                  && "If Oracle find MRI_NoModRef then AAResultBase must find NoModRef");
+      if (ModRefInfoBase != MRI_NoModRef) {
+        errs() << "CS: "; CS->print(errs()); errs() << '\n';
+        errs() << "Loc: "; Loc.Ptr->print(errs()); errs() << '\n';
+        errs() << "OracleModRefInfo: " << OracleModRefInfo << " BaseModRefInfo: " << ModRefInfoBase << '\n';
+        assert ((ModRefInfoBase == MRI_NoModRef)
+                    && "If Oracle find MRI_NoModRef then AAResultBase must find NoModRef");
+      }
     }
     if (OracleModRefInfo == MRI_ModRef) {
-      assert ((ModRefInfoBase == MRI_ModRef || ModRefInfoBase == MRI_Mod || ModRefInfoBase == MRI_Ref)
-                  && "If Oracle finds MustAlias then AAResultBase must find ModRef, Mod or Ref");
-
+      if (!(ModRefInfoBase == MRI_ModRef || ModRefInfoBase == MRI_Mod || ModRefInfoBase == MRI_Ref)) {
+        errs() << "CS: "; CS->print(errs()); errs() << '\n';
+        errs() << "Loc: "; Loc.Ptr->print(errs()); errs() << '\n';
+        errs() << "OracleModRefInfo: " << OracleModRefInfo << " BaseModRefInfo: " << ModRefInfoBase << '\n';
+        assert ((ModRefInfoBase == MRI_ModRef || ModRefInfoBase == MRI_Mod || ModRefInfoBase == MRI_Ref)
+                    && "If Oracle finds MustAlias then AAResultBase must find ModRef, Mod or Ref");
+      }
     }
     return OracleModRefInfo;
   }
@@ -139,16 +145,15 @@ V OracleDDGAAResult::SearchResult(const Instruction *InsA, const Instruction *In
       IALoop = getTopMostLoop(IALoop);
       IBLoop = getTopMostLoop(IBLoop);
       if (auto IALoopID = UniqueIRMarkerReader::getLoopID(IALoop); IALoop == IBLoop && IALoopID) {
-
-        for (auto &[res, type] : Res->getFunctionResults(IAMID.value(),
-                                                         IAFID.value(),
-                                                         IALoopID.value()).dependencies) {
-          auto result = Match(res, type);
-          if (result) {
-            return result.value();
+        if (auto FuncResOpt = Res->getFunctionResults(IAMID.value(), IAFID.value(), IALoopID.value()); FuncResOpt) {
+          for (auto &[res, type] : FuncResOpt.value().get().dependencies) {
+            auto result = Match(res, type);
+            if (result) {
+              return result.value();
+            }
           }
+          return None;
         }
-        return None;
       }
     }
   }
@@ -172,7 +177,6 @@ bool OracleAAWrapperPass::runOnModule(Module &M) {
   viaInvoker.runInference( Inputs.front() );
   auto res = viaInvoker.getResults();
   Result->getAliasResults()->unionFunctionAlias( *res );
-  M.print(errs(), nullptr);
   return true;
 }
 

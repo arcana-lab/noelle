@@ -7,26 +7,39 @@
 
 
 
-OracleAliasFunctionResults &OracleAliasResults::getFunctionResults(IDType moduleID, IDType functionID, IDType loopID) {
-  return res[moduleID][functionID][loopID];
+optional<reference_wrapper<OracleAliasFunctionResults>> OracleAliasResults::getFunctionResults(IDType moduleID, IDType functionID, IDType loopID) {
+  auto modIter = res.find(moduleID);
+  if (modIter != res.end()) {
+    auto &funRes = modIter->second;
+    auto funIter = funRes.find(functionID);
+    if (funIter != funRes.end()) {
+      auto loopRes = funIter->second;
+      auto loopIter = loopRes.find(loopID);
+      if (loopIter != loopRes.end()) {
+        return loopIter->second;
+      }
+    }
+  }
+  return nullopt;
 }
+
 void OracleAliasResults::addFunctionRaW(IDType moduleID, IDType functionID, IDType loopID, OracleAliasFunctionResults::Dependency dep) {
-  res[moduleID][functionID][loopID].ReadAfterWrite.insert(dep);
+  res.at(moduleID).at(functionID).at(loopID).ReadAfterWrite.insert(dep);
 }
 
 void OracleAliasResults::addFunctionRaR(IDType moduleID, IDType functionID, IDType loopID, OracleAliasFunctionResults::Dependency dep) {
-  res[moduleID][functionID][loopID].ReadAfterRead.insert(dep);
+  res.at(moduleID).at(functionID).at(loopID).ReadAfterRead.insert(dep);
 }
 
 void OracleAliasResults::addFunctionWaR(IDType moduleID, IDType functionID, IDType loopID, OracleAliasFunctionResults::Dependency dep) {
-  res[moduleID][functionID][loopID].WriteAfterRead.insert(dep);
+  res.at(moduleID).at(functionID).at(loopID).WriteAfterRead.insert(dep);
 }
 
 void OracleAliasResults::addFunctionWaW(IDType moduleID, IDType functionID, IDType loopID, OracleAliasFunctionResults::Dependency dep) {
-  res[moduleID][functionID][loopID].WriteAfterWrite.insert(dep);
+  res.at(moduleID).at(functionID).at(loopID).WriteAfterWrite.insert(dep);
 }
-void OracleAliasResults::unionFunctionAlias(OracleAliasResults &res) {
-  for ( auto &Ms : res.res ) {
+void OracleAliasResults::unionFunctionAlias(OracleAliasResults &other) {
+  for ( auto &Ms : other.res ) {
     for (auto &Fs : Ms.second) {
       for (auto &Ls : Fs.second ) {
         {
@@ -51,4 +64,7 @@ void OracleAliasResults::unionFunctionAlias(OracleAliasResults &res) {
       }
     }
   }
+}
+void OracleAliasResults::didRecordFunctionDependencies(IDType moduleID, IDType functionID, IDType loopID) {
+  res[moduleID][functionID][loopID];
 }

@@ -43,7 +43,9 @@ class OracleAliasResults {
        std::map<IDType /* LoopID */,
            OracleAliasFunctionResults>>>;
 
-  OracleAliasFunctionResults& getFunctionResults(IDType moduleID, IDType functionID, IDType loopID);
+  optional<reference_wrapper<OracleAliasFunctionResults>> getFunctionResults(IDType moduleID, IDType functionID, IDType loopID);
+
+  void didRecordFunctionDependencies(IDType moduleID, IDType functionID, IDType loopID);
 
   void unionFunctionAlias( OracleAliasResults &res );
 

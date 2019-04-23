@@ -47,10 +47,27 @@ class VIAInvoker {
 
   unsigned int NumOfLoops = 0;
 
+  // RAR
   const static StringRef RAR;
+  bool isRaR(StringRef);
+
+  //RAW
   const static StringRef RAW;
+  const static StringRef RAA;
+  bool isRaW(StringRef);
+
+  // WAR
   const static StringRef WAR;
+  const static StringRef FAR;
+  bool isWaR(StringRef);
+
+  // WAW
+
   const static StringRef WAW;
+  const static StringRef WAA;
+  const static StringRef FAA;
+  const static StringRef FAW;
+  bool isWaW(StringRef);
 
   Value *getPtrValue(Instruction *I);
 

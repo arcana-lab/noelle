@@ -19,9 +19,9 @@ ${oracle_opt_cmd} -load LLVMVIAInstrument.so -via -S ${ir_in} -o ${instrumented_
 
 # Compile Instrumented file
 
-export VIACONF_SETTING="${name}-oracle-ddg.viaconf"
 
 echo running "${oracle_clang_cmd} ${oracle_clang_opts} ${instrumented_ir} -o ${bin_name} -L"${via_install_dir}/lib" -lvia"
+echo "VIACONF_SETTING=${VIACONF_SETTING}"
 
 ${oracle_clang_cmd} ${oracle_clang_opts} ${instrumented_ir} -o ${bin_name} -L"${via_install_dir}/lib" -lvia
 

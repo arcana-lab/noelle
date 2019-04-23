@@ -20,12 +20,48 @@ cl::opt<std::string> OracleExecutionScriptPath("exe-script",
     cl::desc("Path to the script used to instrument and execute the current IR"),
     cl::value_desc("filename"), cl::ValueRequired);
 
+cl::opt<std::string> OracleConfigFilepath("config-path",
+                                               cl::desc("Path to the oracle config used to specify which loops to "
+                                                        "instrument"),
+                                               cl::value_desc("filename"), cl::ValueOptional);
+
 using namespace oracle_aa;
 
+// RAR
 const StringRef VIAInvoker::RAR = "RAR";
+
+// RAW
 const StringRef VIAInvoker::RAW = "RAW";
+const StringRef VIAInvoker::RAA = "RAA";
+
+// WAR
+
 const StringRef VIAInvoker::WAR = "WAR";
+const StringRef VIAInvoker::FAR = "FAR";
+
+// WAW
 const StringRef VIAInvoker::WAW = "WAW";
+const StringRef VIAInvoker::WAA = "WAA";
+const StringRef VIAInvoker::FAA = "FAA";
+const StringRef VIAInvoker::FAW = "FAW";
+
+
+bool VIAInvoker::isRaR(StringRef R) {
+  return R == RAR;
+}
+
+bool VIAInvoker::isRaW(StringRef R) {
+  return R == RAW || R == RAA;
+}
+
+bool VIAInvoker::isWaR(StringRef R) {
+  return  R == WAR || R == FAR;
+}
+
+bool VIAInvoker::isWaW(StringRef R) {
+  return R == WAW || R == WAA || R == FAA || R == FAW;
+}
+
 
 oracle_aa::VIAInvoker::VIAInvoker(Module &M, ModulePass& MP) : M(M), MP(MP) {
   auto m = UniqueIRMarkerReader::getModuleID(&M);
@@ -35,21 +71,38 @@ oracle_aa::VIAInvoker::VIAInvoker(Module &M, ModulePass& MP) : M(M), MP(MP) {
 
   results = std::make_shared<OracleAliasResults>();
 
-  viaConfigFilename = modIDStr + "-oracle-ddg.viaconf";
+  if(OracleConfigFilepath.getNumOccurrences() > 0) {
+     viaConfigFilename = OracleConfigFilepath.getValue();
+  } else {
+     viaConfigFilename = modIDStr + "-oracle-ddg.viaconf";
+  }
   moduleBitcodeFilename = modIDStr + ".bc";
   viaResultFilename = modIDStr + "-oracle-ddg.dep";
 }
 
 void oracle_aa::VIAInvoker::runInference(StringRef inputArgs) {
-  SmallVector<Loop *, 8> sm{};
-  buildOracleDDGConfig(sm);
-  dumpModule();
-  executeVIAInference(inputArgs);
+  std::ifstream depFile(viaResultFilename);
+  if(!depFile.good()) {
+    SmallVector<Loop *, 8> sm{};
+    buildOracleDDGConfig(sm);
+    dumpModule();
+    executeVIAInference(inputArgs);
+  }
+  depFile.close();
   parseResponse();
 }
 
 // build a viaconf file for each loop in the program and write it to viaConfigFilename
 void oracle_aa::VIAInvoker::buildOracleDDGConfig(llvm::SmallVector<llvm::Loop *, 8> lp) {
+  if (OracleConfigFilepath.getNumOccurrences() > 0) {
+    std::ifstream depFile(viaConfigFilename);
+    if (!depFile.good()) {
+      errs() << OracleConfigFilepath << '\n';
+      assert( 0 && "Filename passes via -config-path must exist");
+    }
+    depFile.close();
+    return;
+  }
 
   std::vector<uint64_t> loopIDs{};
   for ( auto &F: M ) {
@@ -115,10 +168,8 @@ void oracle_aa::VIAInvoker::executeVIAInference(StringRef inputArgs) {
   auto modIDStr = std::to_string(moduleID);
   auto ScriptWithArgs = OracleExecutionScriptPath.getValue() + " " + modIDStr + " " + inputArgs.str();
 
-  std::string s = modIDStr + "-oracle-dgg.viaconf";
-
   // Tell VIA where the viaconf setting is.
-  setenv("VIACONF_SETTING", s.c_str(), 1);
+  setenv("VIACONF_SETTING", viaConfigFilename.c_str(), 1);
 
   errs() << ScriptWithArgs << '\n';
 
@@ -167,7 +218,12 @@ void oracle_aa::VIAInvoker::parseResponse() {
       auto ModuleID = iter["ModuleID"].GetUint64();
       auto FunctionID = iter["FunctionID"].GetUint64();
       auto LoopID = iter["LoopID"].GetUint64();
+      auto didRec = iter["InstrumentedLoop"].GetBool();
+      if (didRec) {
+        results->didRecordFunctionDependencies(ModuleID, FunctionID, LoopID);
+      }
       for (auto &dep : iter[DependenciesKey].GetArray()) {
+        assert(didRec && "how did we get here??");
         auto depType = StringRef(dep[0].GetString());
         auto first = dep[1].GetUint64();
         auto firstValue = dyn_cast<Instruction>((*mapping)[first]);
@@ -176,13 +232,13 @@ void oracle_aa::VIAInvoker::parseResponse() {
         auto secondValue = dyn_cast<Instruction>((*mapping)[second]);
         assert(secondValue);
         auto dependency = std::pair<const Value *, const Value *>(getPtrValue(firstValue), getPtrValue(secondValue));
-        if (depType == RAR) {
+        if (isRaR(depType)) {
           results->addFunctionRaR(ModuleID, FunctionID, LoopID, dependency);
-        } else if (depType == RAW) {
+        } else if (isRaW(depType)) {
           results->addFunctionRaW(ModuleID, FunctionID, LoopID, dependency);
-        } else if (depType == WAR) {
+        } else if (isWaR(depType)) {
           results->addFunctionWaR(ModuleID, FunctionID, LoopID, dependency);
-        } else if (depType == WAW) {
+        } else if (isWaW(depType)) {
           results->addFunctionWaW(ModuleID, FunctionID, LoopID, dependency);
         } else {
           errs() << "depType not known: " << depType << '\n';
@@ -207,9 +263,11 @@ Value *VIAInvoker::getPtrValue(Instruction *I) {
     // FIXME: handle calls correctly.
   } else if ( auto *Call = dyn_cast<CallInst>(I) ) {
     return I;
+  } else if ( auto AllocA = dyn_cast<AllocaInst>(I) ) {
+    return I;
   } else {
-    errs() << "Got an Instruction with opname: " <<  I->getOpcodeName() << '\n';
-    assert ( 0 && "Instruction must be a load or a store" );
+      errs() << "Got an Instruction with opname: " <<  I->getOpcodeName() << '\n';
+      assert ( 0 && "Instruction must be a load, store, alloca or a call" );
   }
 }
 
