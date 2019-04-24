@@ -13,9 +13,10 @@
 
 DOALL::DOALL (
   Module &module,
+  Hot &p,
   Verbosity v
 ) :
-  ParallelizationTechnique{module, v}
+  ParallelizationTechnique{module, p, v}
   {
 
   /*

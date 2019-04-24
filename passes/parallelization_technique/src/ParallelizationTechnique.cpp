@@ -12,8 +12,12 @@
 
 using namespace llvm;
 
-ParallelizationTechnique::ParallelizationTechnique (Module &module, Verbosity v)
-  : module{module}, verbose{v}, tasks{}, envBuilder{0}
+ParallelizationTechnique::ParallelizationTechnique (
+  Module &module, 
+  Hot &p,
+  Verbosity v
+  )
+  : module{module}, verbose{v}, tasks{}, envBuilder{0}, profile{p}
   {
 
   return ;
@@ -21,6 +25,8 @@ ParallelizationTechnique::ParallelizationTechnique (Module &module, Verbosity v)
 
 ParallelizationTechnique::~ParallelizationTechnique () {
   reset();
+
+  return ;
 }
 
 void ParallelizationTechnique::reset () {

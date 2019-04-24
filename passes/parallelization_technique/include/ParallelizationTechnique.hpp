@@ -18,6 +18,7 @@
 #include "LoopDependenceInfo.hpp"
 #include "Heuristics.hpp"
 #include "TaskExecution.hpp"
+#include "Hot.hpp"
 
 namespace llvm {
 
@@ -27,7 +28,11 @@ namespace llvm {
       /*
        * Constructor.
        */
-      ParallelizationTechnique (Module &module, Verbosity v);
+      ParallelizationTechnique (
+        Module &module, 
+        Hot &p,
+        Verbosity v
+      );
 
       /*
        * Apply the parallelization technique to the loop LDI.
@@ -173,6 +178,11 @@ namespace llvm {
       BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
       std::vector<Task *> tasks;
       int numTaskInstances;
+
+      /*
+       * Profiles.
+       */
+      Hot &profile;
   };
 
 }

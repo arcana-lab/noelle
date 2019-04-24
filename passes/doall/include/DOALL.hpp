@@ -30,6 +30,7 @@ namespace llvm {
        */
       DOALL (
         Module &module,
+        Hot &p,
         Verbosity v
       );
 

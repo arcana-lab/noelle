@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Parallelizer.hpp"
+#include "HotProfiler.hpp"
 
 using namespace llvm;
 
@@ -64,22 +65,26 @@ bool Parallelizer::runOnModule (Module &M) {
    */
   auto& parallelizationFramework = getAnalysis<Parallelization>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
+  auto& profiles = getAnalysis<HotProfiler>().getHot();
 
   /*
    * Allocate the parallelization techniques.
    */
   DSWP dswp{
     M,
+    profiles,
     this->forceParallelization,
     !this->forceNoSCCPartition,
     this->verbose
   };
   DOALL doall{
     M,
+    profiles,
     this->verbose
   };
   HELIX helix{
     M,
+    profiles,
     this->verbose
   };
 
@@ -135,6 +140,7 @@ void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<HeuristicsPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<HotProfiler>();
 
   return ;
 }

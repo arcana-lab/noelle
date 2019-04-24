@@ -31,6 +31,7 @@ namespace llvm {
        */
       DSWP (
         Module &module,
+        Hot &p,
         bool forceParallelization,
         bool enableSCCMerging,
         Verbosity v

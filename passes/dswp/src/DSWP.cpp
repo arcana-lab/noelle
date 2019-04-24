@@ -14,11 +14,12 @@ using namespace llvm;
 
 DSWP::DSWP (
   Module &module,
+  Hot &p,
   bool forceParallelization,
   bool enableSCCMerging,
   Verbosity v
 ) :
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, v},
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, v},
   forceParallelization{forceParallelization},
   enableMergingSCC{enableSCCMerging},
   queues{}, queueArrayType{nullptr},
