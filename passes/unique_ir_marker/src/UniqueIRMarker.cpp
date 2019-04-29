@@ -25,7 +25,8 @@ void UniqueIRMarker::visitModule(Module &M) {
 
   auto moduleUID = uniqueModuleCounter();
   auto *meta = buildNode(M.getContext(), moduleUID);
-  metaNode->setOperand(0, meta);
+  metaNode->clearOperands();
+  metaNode->addOperand(meta);
 }
 
 
