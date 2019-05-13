@@ -316,6 +316,8 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     entryTerminator->removeFromParent();
     entryBuilder.Insert(entryTerminator);
   }
+
+  return ;
 }
 
 std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLiveOutStore (
@@ -410,27 +412,62 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
   LoopDependenceInfo *LDI,
   int taskIndex
 ){
-  auto task = this->tasks[taskIndex];
-  for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
-    if (!envBuilder->isReduced(envInd)) continue;
 
+  /*
+   * Fetch the task.
+   */
+  auto task = this->tasks[taskIndex];
+
+  /*
+   * Iterate over live-out variables.
+   */
+  for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+
+    /*
+     * Check if the current live-out variable can be reduced.
+     */
+    auto isThisLiveOutVarReducable = this->envBuilder->isReduced(envInd);
+    if (!isThisLiveOutVarReducable) {
+      continue;
+    }
+
+    /*
+     * Fetch the instruction that produces the live-out variable.
+     * This instruction must be a PHI node.
+     */
     auto producer = LDI->environment->producerAt(envInd);
     assert(isa<PHINode>(producer) && "Reducable producers are assumed to be PHIs");
     auto producerPHI = cast<PHINode>(producer);
-    assert(LDI->header == producerPHI->getParent()
-      && "Reducable producers are assumed to be live throughout the loop");
+    assert(LDI->header == producerPHI->getParent() && "Reducable producers are assumed to be live throughout the loop");
 
+    /*
+     * Fetch the related instruction of the producer that has been created (cloned) and stored in the parallelized version of the loop.
+     */
     auto producerClone = cast<PHINode>(task->instructionClones[producerPHI]);
+
+    /*
+     * Fetch the cloned pre-header.
+     */
     auto preheaderClone = task->basicBlockClones[LDI->preHeader];
     auto incomingIndex = producerClone->getBasicBlockIndex(preheaderClone);
     assert(incomingIndex != -1 && "Loop entry present on producer PHI node");
 
+    /*
+     * Fetch the identity constant for the operation reduced.
+     * For example, if the variable reduced is an accumulator where "+" is used to accumulate values, then "0" is the identity.
+     */
     auto identityV = getIdentityValueForEnvironmentValue(LDI, taskIndex, envInd);
+
+    /*
+     * Set the initial value for the private variable.
+     */
     producerClone->setIncomingValue(incomingIndex, identityV);
   }
+
+  return ;
 }
 
-Value *ParallelizationTechnique::getIdentityValueForEnvironmentValue (
+Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
   LoopDependenceInfo *LDI,
   int taskIndex,
   int environmentIndex
