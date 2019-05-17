@@ -157,47 +157,86 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
   auto fetchCastedEnvPtr = [&](Value *arr, int envIndex, Type *ptrType) -> Value * {
-    // NOTE: Environment values are 64 byte aligned
+
+    /*
+     * Compute the offset of the variable with index "envIndex" that is stored inside the environment.
+     *
+     * NOTE: environment values are 64 byte aligned.
+     */
     auto indValue = cast<Value>(ConstantInt::get(int64, envIndex * 8));
+
+    /*
+     * Compute the address of the variable with index "envIndex".
+     */
     auto envPtr = builder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ zeroV, indValue }));
+
+    /*
+     * Cast the pointer to the proper data type.
+     */
     auto cast = builder.CreateBitCast(envPtr, ptrType);
+
     return cast;
   };
 
   /*
+   * Compute and cache the pointer of each variable that cannot be reduced and that are stored inside the environment.
+   *
    * NOTE: Manipulation of the map cannot be done while iterating it
    */
   std::set<int> singleIndices;
-  for (auto indexVarPair : envIndexToVar)
+  for (auto indexVarPair : envIndexToVar){
     singleIndices.insert(indexVarPair.first);
+  }
   for (auto envIndex : singleIndices) {
     auto ptrType = PointerType::getUnqual(envTypes[envIndex]);
     envIndexToVar[envIndex] = fetchCastedEnvPtr(this->envArray, envIndex, ptrType);
   }
 
   /*
+   * Vectorize reducable variables.
+   * Moreover, compute and cache the pointer of each reducable variable that are stored inside the environment.
+   *
    * NOTE: No manipulation and iteration at the same time
    */
   std::set<int> reducableIndices;
-  for (auto indexVarPair : envIndexToReducableVar)
+  for (auto indexVarPair : envIndexToReducableVar){
     reducableIndices.insert(indexVarPair.first);
+  }
   for (auto envIndex : reducableIndices) {
-    auto ptrType = PointerType::getUnqual(envTypes[envIndex]);
+
+    /*
+     * Fetch the type of the current reducable variable.
+     */
+    auto varType = envTypes[envIndex];
+    auto ptrType = PointerType::getUnqual(varType);
+
+    /*
+     * Define the type of the vectorized form of the reducable variable.
+     */
     auto reduceArrType = ArrayType::get(int64, numReducers * 8);
+
+    /*
+     * Allocate the vectorized form of the reducable variable on the stack.
+     */
     auto reduceArrAlloca = builder.CreateAlloca(reduceArrType);
 
+    /*
+     * Store the pointer of the vector of the reducable variable inside the environment.
+     */
     auto reduceArrPtrType = PointerType::getUnqual(reduceArrAlloca->getType());
     auto envPtr = fetchCastedEnvPtr(this->envArray, envIndex, reduceArrPtrType);
     builder.CreateStore(reduceArrAlloca, envPtr);
 
     /*
-     * Create environment variable's array, one slot per user
+     * Compute and cache the pointer of each element of the vectorized variable.
      */
     for (auto i = 0; i < numReducers; ++i) {
       auto reducePtr = fetchCastedEnvPtr(reduceArrAlloca, i, ptrType);
       envIndexToReducableVar[envIndex].push_back(reducePtr);
     }
   }
+
+  return ;
 }
 
 void EnvBuilder::reduceLiveOutVariables (
