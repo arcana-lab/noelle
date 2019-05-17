@@ -114,7 +114,7 @@ void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LD
   }
 }
 
-void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
+void ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (int envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto prod = LDI->environment->producerAt(envInd);

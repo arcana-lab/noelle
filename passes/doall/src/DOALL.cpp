@@ -22,8 +22,15 @@ DOALL::DOALL (
   /*
    * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
    */
-  this->taskDispatcher = this->module.getFunction("doallDispatcher");
+  this->taskDispatcher = this->module.getFunction("NOELLE_DOALLDispatcher");
+  if (this->taskDispatcher == nullptr){
+    errs() << "NOELLE: ERROR = function NOELLE_DOALLDispatcher couldn't be found\n";
+    abort();
+  }
 
+  /*
+   * Define the signature of the task, which will be invoked by the DOALL dispatcher.
+   */
   auto &cxt = module.getContext();
   auto int8 = IntegerType::get(cxt, 8);
   auto int64 = IntegerType::get(cxt, 64);
@@ -248,7 +255,7 @@ bool DOALL::apply (
   return true;
 }
 
-void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
+void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
   std::unordered_map<int, int> reducableBinaryOps;
   std::unordered_map<int, Value *> initialValues;
 
@@ -270,14 +277,14 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
   }
 
   auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
-  this->envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues);
+  this->envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues, numberOfThreadsExecuted);
 
   /*
    * Free the memory.
    */
   delete builder;
 
-  ParallelizationTechnique::propagateLiveOutEnvironment(LDI);
+  ParallelizationTechnique::propagateLiveOutEnvironment(LDI, numberOfThreadsExecuted);
 
   return ;
 }
@@ -317,7 +324,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    * Call the function that incudes the parallelized loop.
    */
   IRBuilder<> doallBuilder(this->entryPointOfParallelizedLoop);
-  doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
+  auto doallCallInst = doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
     (Value *)tasks[0]->F,
     envPtr,
     numCores,
@@ -327,7 +334,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
    */
-  this->propagateLiveOutEnvironment(LDI);
+  this->propagateLiveOutEnvironment(LDI, doallCallInst);
 
   /*
    * Jump to the unique successor of the loop.

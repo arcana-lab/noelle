@@ -33,32 +33,58 @@ static int64_t numberOfPushes64 = 0;
 
 static ThreadPool pool{true, std::thread::hardware_concurrency()};
 
-void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
-
-  while ((*theLoopIsOver) == 0){
-
-    /*
-     * Prefetch all sequential segment cache lines of the current loop iteration.
-     */
-    for (auto i = 0 ; ((*theLoopIsOver) == 0) && (i < numOfsequentialSegments); i++){
-
-      /*
-       * Fetch the pointer.
-       */
-      auto ptr = (uint64_t *)(((uint64_t)ssArray) + (i * CACHE_LINE_SIZE));
-
-      /*
-       * Prefetch the cache line for the current sequential segment.
-       */
-      while (((*theLoopIsOver) == 0) && ((*ptr) == 0)) ;
-    }
-  }
-
-  return ;
-}
-    
 extern "C" {
 
+  /******************************************** NOELLE APIs ***********************************************/
+
+  /*
+   * Return the number of cores to use for the parallelization.
+   */
+  int32_t NOELLE_getNumberOfCores (void);
+
+  /*
+   * Dispatch threads to run a DOALL loop.
+   */
+  int32_t NOELLE_DOALLDispatcher (
+    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), 
+    void *env, 
+    int64_t maxNumberOfCores, 
+    int64_t chunkSize
+    );
+
+
+
+
+
+  /******************************************** NOELLE API implementations ***********************************************/
+
+  /*
+   * HELIX helper thread.
+   */
+  void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
+
+    while ((*theLoopIsOver) == 0){
+
+      /*
+       * Prefetch all sequential segment cache lines of the current loop iteration.
+       */
+      for (auto i = 0 ; ((*theLoopIsOver) == 0) && (i < numOfsequentialSegments); i++){
+
+        /*
+         * Fetch the pointer.
+         */
+        auto ptr = (uint64_t *)(((uint64_t)ssArray) + (i * CACHE_LINE_SIZE));
+
+        /*
+         * Prefetch the cache line for the current sequential segment.
+         */
+        while (((*theLoopIsOver) == 0) && ((*ptr) == 0)) ;
+      }
+    }
+
+    return ;
+  }
+    
   typedef void (*stageFunctionPtr_t)(void *, void*);
 
   void printReachedS(std::string s)
@@ -142,22 +168,39 @@ extern "C" {
     return stage(env, queues);
   }
 
-  void doallDispatcher (void (*chunker)(void *, int64_t, int64_t, int64_t), void *env, int64_t numCores, int64_t chunkSize){
+  int32_t NOELLE_DOALLDispatcher (
+    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), 
+    void *env, 
+    int64_t maxNumberOfCores, 
+    int64_t chunkSize
+    ){
+
+    /*
+     * Set the number of cores to use.
+     */
+    auto runtimeNumberOfCores = NOELLE_getNumberOfCores();
+    auto numCores = runtimeNumberOfCores > maxNumberOfCores ? maxNumberOfCores : runtimeNumberOfCores;
     #ifdef RUNTIME_PRINT
     std::cerr << "Starting dispatcher: num cores " << numCores << ", chunk size: " << chunkSize << std::endl;
     #endif
 
+    /*
+     * Submit DOALL tasks.
+     */
     std::vector<MARC::TaskFuture<void>> localFutures;
     for (auto i = 0; i < numCores; ++i) {
-      localFutures.push_back(pool.submit(chunker, env, i, numCores, chunkSize));
+      localFutures.push_back(pool.submit(parallelizedLoop, env, i, numCores, chunkSize));
       #ifdef RUNTIME_PRINT
-      std::cerr << "Submitted chunker on core " << i << std::endl;
+      std::cerr << "Submitted DOALL task on core " << i << std::endl;
       #endif
     }
     #ifdef RUNTIME_PRINT
     std::cerr << "Submitted pool" << std::endl;
     #endif
 
+    /*
+     * Wait for DOALL tasks.
+     */
     for (auto& future : localFutures){
       future.get();
     }
@@ -165,7 +208,7 @@ extern "C" {
     std::cerr << "Got all futures" << std::endl;
     #endif
 
-    return ;
+    return runtimeNumberOfCores;
   }
 
   #ifdef RUNTIME_PRINT
@@ -468,5 +511,9 @@ extern "C" {
     #endif
 
     return ;
+  }
+
+  int32_t NOELLE_getNumberOfCores (void){
+    return std::thread::hardware_concurrency();
   }
 }

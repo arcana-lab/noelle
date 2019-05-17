@@ -21,8 +21,9 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
    */
   IRBuilder<> entryBuilder(task->entryBlock);
   auto startOfIV = task->clonedIVBounds.start;
+  auto coreIDTimesChunkSize = entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg);
   auto nthCoreOffset = entryBuilder.CreateZExtOrTrunc(
-    entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg),
+    coreIDTimesChunkSize,
     startOfIV->getType()
   );
   auto outerIVStartVal = entryBuilder.CreateAdd(startOfIV, nthCoreOffset);

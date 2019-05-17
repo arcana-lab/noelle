@@ -91,7 +91,8 @@ namespace llvm {
     void reduceLiveOutVariables (
       IRBuilder<>,
       std::unordered_map<int, int> &reducableBinaryOps,
-      std::unordered_map<int, Value *> &initialValues
+      std::unordered_map<int, Value *> &initialValues,
+      Value *numberOfThreadsExecuted
     );
 
     /*

@@ -89,6 +89,8 @@ EnvBuilder::EnvBuilder (LLVMContext &cxt)
   envUsers.clear();
   envArrayType = nullptr;
   envArray = envArrayInt8Ptr = nullptr;
+
+  return ;
 }
 
 EnvBuilder::~EnvBuilder () {
@@ -116,7 +118,6 @@ void EnvBuilder::createEnvVariables (
   this->envTypes = std::vector<Type *>(varTypes.begin(), varTypes.end());
 
   auto int64 = IntegerType::get(this->CXT, 64);
-  // auto ptrTy_int8 = PointerType::getUnqual(int8);
   this->envArrayType = ArrayType::get(int64, this->envSize * 8);
 
   numReducers = reducerCount;
@@ -242,7 +243,8 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
 void EnvBuilder::reduceLiveOutVariables (
   IRBuilder<> builder,
   std::unordered_map<int, int> &reducableBinaryOps,
-  std::unordered_map<int, Value *> &initialValues
+  std::unordered_map<int, Value *> &initialValues,
+  Value *numberOfThreadsExecuted
 ) {
   for (auto envIndexInitValue : initialValues) {
     auto envIndex = envIndexInitValue.first;
@@ -250,17 +252,31 @@ void EnvBuilder::reduceLiveOutVariables (
     auto binOp = (Instruction::BinaryOps)reducableBinaryOps[envIndex];
 
     /*
-     * Reduce environment variable's array
+     * Load the accumulator of the current reduced variable.
      */
     Value *accumVal = builder.CreateLoad(this->getReducableEnvVar(envIndex, 0));
+
+    /*
+     * Accumulate values to the accumulator of the current reduced variable.
+     */
     for (auto i = 1; i < numReducers; ++i) {
+
+      /*
+       * Load the next value that needs to be accumulated.
+       */
       auto envVar = builder.CreateLoad(this->getReducableEnvVar(envIndex, i));
+
+      /*
+       * Reduce environment variable's array
+       */
       accumVal = builder.CreateBinOp(binOp, accumVal, envVar);
     }
 
     accumVal = builder.CreateBinOp(binOp, accumVal, initialValue);
     envIndexToVar[envIndex] = accumVal;
   }
+
+  return ;
 }
 
 Value *EnvBuilder::getEnvArrayInt8Ptr () {
