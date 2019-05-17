@@ -90,9 +90,21 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
 }
 
 void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI) {
-  IRBuilder<> builder(&*LDI->function->begin()->begin());
+
+  /*
+   * Fetch the first instruction of the first basic block of the function that includes the loop we want to parallelized.
+   */
+  auto firstBB = LDI->function->begin();
+  auto firstI = firstBB->begin();
+
+  /*
+   * Generate the environment.
+   */
+  IRBuilder<> builder(&*firstI);
   envBuilder->generateEnvArray(builder);
   envBuilder->generateEnvVariables(builder);
+
+  return ;
 }
 
 void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LDI) {
