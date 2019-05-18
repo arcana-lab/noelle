@@ -52,7 +52,7 @@ namespace llvm {
       /*
        * Environment overrides
        */
-      void propagateLiveOutEnvironment (
+      BasicBlock * propagateLiveOutEnvironment (
         LoopDependenceInfo *LDI,
         Value *numberOfThreadsExecuted
       ) override ;

@@ -96,7 +96,7 @@ namespace llvm {
 
       void populateLiveInEnvironment (LoopDependenceInfo *LDI);
 
-      virtual void propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted);
+      virtual BasicBlock * propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted);
 
       /*
        * Task helpers for manipulating loop body clones

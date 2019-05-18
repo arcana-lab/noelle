@@ -240,21 +240,79 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
   return ;
 }
 
-void EnvBuilder::reduceLiveOutVariables (
+BasicBlock * EnvBuilder::reduceLiveOutVariables (
+  BasicBlock *bb,
   IRBuilder<> builder,
   std::unordered_map<int, int> &reducableBinaryOps,
   std::unordered_map<int, Value *> &initialValues,
   Value *numberOfThreadsExecuted
 ) {
+
+  /*
+   * Check if there are any live-out variable that needs to be reduced.
+   */
+  if (initialValues.size() == 0){
+    return bb;
+  }
+
+  /*
+   * Fetch the function that "bb" belongs to.
+   */
+  auto f = bb->getParent();
+
+  /*
+   * Generate load instructions to load the accumulators of the reduced variable.
+   */
+  std::vector<Value *> accumulators;
+  Instruction *lastInstAdded;
   for (auto envIndexInitValue : initialValues) {
     auto envIndex = envIndexInitValue.first;
-    auto initialValue = envIndexInitValue.second;
-    auto binOp = (Instruction::BinaryOps)reducableBinaryOps[envIndex];
+
+    /*
+     * Fetch the pointer of the accumulator of the reduced variable.
+     */
+    auto accumPtr = this->getReducableEnvVar(envIndex, 0);
 
     /*
      * Load the accumulator of the current reduced variable.
      */
-    Value *accumVal = builder.CreateLoad(this->getReducableEnvVar(envIndex, 0));
+    Value *accumVal = builder.CreateLoad(accumPtr);
+    accumulators.push_back(accumVal);
+    lastInstAdded = cast<Instruction>(accumVal);
+  }
+
+  /*
+   * Split the basic block into the old ones with all the loads just added and the rest.
+   */
+//  errs() << "AAAA0 " << *f ;
+//  auto afterReductionBB = bb->splitBasicBlock(lastInstAdded->getIterator()++, "AfterReduction");
+//  errs() << "AAAA1 " << *f ;
+
+  /*
+   * Create a new basic block that will include the loop body.
+   */
+//  auto loopBodyBB = BasicBlock::Create(this->CXT, "ReductionLoopBody", f);
+
+  /*
+   * Change the successor of "bb" to be "loopBodyBB".
+   */
+//  bb->getTerminator()->eraseFromParent();
+//  errs() << "AAAA2 " << *f ;
+//  IRBuilder<> bbBuilder{bb};
+//  bbBuilder.CreateBr(loopBodyBB);
+//  errs() << "AAAA3 " << *f ;
+
+  /*
+   * Accumulate values to the appropriate accumulators.
+   */
+  auto loopBodyBB = bb;
+  IRBuilder<> loopBodyBuilder{loopBodyBB};
+  auto count = 0;
+  for (auto envIndexInitValue : initialValues) {
+    auto envIndex = envIndexInitValue.first;
+    auto initialValue = envIndexInitValue.second;
+    auto binOp = (Instruction::BinaryOps)reducableBinaryOps[envIndex];
+    auto accumVal = accumulators[count];
 
     /*
      * Accumulate values to the accumulator of the current reduced variable.
@@ -264,19 +322,27 @@ void EnvBuilder::reduceLiveOutVariables (
       /*
        * Load the next value that needs to be accumulated.
        */
-      auto envVar = builder.CreateLoad(this->getReducableEnvVar(envIndex, i));
+      auto envVar = loopBodyBuilder.CreateLoad(this->getReducableEnvVar(envIndex, i));
 
       /*
        * Reduce environment variable's array
        */
-      accumVal = builder.CreateBinOp(binOp, accumVal, envVar);
+      accumVal = loopBodyBuilder.CreateBinOp(binOp, accumVal, envVar);
     }
 
-    accumVal = builder.CreateBinOp(binOp, accumVal, initialValue);
+    accumVal = loopBodyBuilder.CreateBinOp(binOp, accumVal, initialValue);
     envIndexToVar[envIndex] = accumVal;
+
+    count++;
   }
 
-  return ;
+  /*
+   * Add the successors of "loopBodyBB" to be either back to "loopBodyBB" or "afterReductionBB".
+   */
+  //loopBodyBuilder.CreateBr(afterReductionBB);
+  //errs() << "AAAA5 " << *f ;
+
+  return bb;
 }
 
 Value *EnvBuilder::getEnvArrayInt8Ptr () {

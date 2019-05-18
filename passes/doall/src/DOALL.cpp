@@ -246,7 +246,10 @@ bool DOALL::apply (
    * Final printing.
    */
   if (this->verbose >= Verbosity::Maximal) {
-    tasks[0]->F->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
+    LDI->function->print(errs() << "DOALL:  Final outside-loop code:\n" );
+    errs() << "\n";
+    tasks[0]->F->print(errs() << "DOALL:  Final parallelized loop:\n"); 
+    errs() << "\n";
   }
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Exit\n";
@@ -255,7 +258,7 @@ bool DOALL::apply (
   return true;
 }
 
-void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
+BasicBlock * DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
   std::unordered_map<int, int> reducableBinaryOps;
   std::unordered_map<int, Value *> initialValues;
 
@@ -277,7 +280,7 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberO
   }
 
   auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
-  this->envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues, numberOfThreadsExecuted);
+  auto latestBB = this->envBuilder->reduceLiveOutVariables(this->entryPointOfParallelizedLoop, *builder, reducableBinaryOps, initialValues, numberOfThreadsExecuted);
 
   /*
    * Free the memory.
@@ -286,7 +289,7 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberO
 
   ParallelizationTechnique::propagateLiveOutEnvironment(LDI, numberOfThreadsExecuted);
 
-  return ;
+  return latestBB;
 }
 
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
@@ -334,12 +337,13 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
    */
-  this->propagateLiveOutEnvironment(LDI, doallCallInst);
+  auto latestBBAfterDOALLCall = this->propagateLiveOutEnvironment(LDI, doallCallInst);
 
   /*
    * Jump to the unique successor of the loop.
    */
-  doallBuilder.CreateBr(this->exitPointOfParallelizedLoop);
+  IRBuilder<> afterDOALLBuilder{latestBBAfterDOALLCall};
+  afterDOALLBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
   return ;
 }
