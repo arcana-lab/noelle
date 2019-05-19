@@ -263,63 +263,14 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   auto f = bb->getParent();
 
   /*
-   * Generate load instructions to load the accumulators of the reduced variable.
-   */
-  std::vector<Value *> accumulators;
-  Instruction *lastInstAdded;
-  for (auto envIndexInitValue : initialValues) {
-    auto envIndex = envIndexInitValue.first;
-    auto initialValue = envIndexInitValue.second;
-
-    /*
-     * Fetch the pointer of the accumulator of the reduced variable.
-     */
-    auto accumPtr = this->getReducableEnvVar(envIndex, 0);
-
-    /*
-     * Load the accumulator of the current reduced variable.
-     */
-    Value *accumVal = builder.CreateLoad(accumPtr);
-
-    /*
-     * Accumulate the initial value.
-     */
-    auto binOp = (Instruction::BinaryOps)reducableBinaryOps[envIndex];
-    auto newAccumulatorValue = builder.CreateBinOp(binOp, accumVal, initialValue);
-    accumulators.push_back(newAccumulatorValue);
-
-    /*
-     * Keep track of the last instruction added.
-     */
-    lastInstAdded = cast<Instruction>(newAccumulatorValue);
-  }
-
-  /*
-   * Check if the last instruction added is the last one in the basic block.
-   */
-  BasicBlock *afterReductionBB = nullptr;
-  if (&(bb->back()) == lastInstAdded){
-
-    /*
-     * Create a new basic block that will include the code after the reduction loop.
-     */
-    afterReductionBB = BasicBlock::Create(this->CXT, "ReductionLoopBody", f);
-
-  } else {
-
-    /*
-     * The last instruction added isn't the last instruction of the basic block "bb".
-     * So we need to split "bb".
-     * Split the basic block into the old ones with all the loads just added and the rest.
-     */
-    auto splitPoint = ++(lastInstAdded->getIterator());
-    afterReductionBB = bb->splitBasicBlock(splitPoint, "AfterReduction");
-  }
-
-  /*
    * Create a new basic block that will include the loop body.
    */
-  auto loopBodyBB = BasicBlock::Create(this->CXT, "ReductionLoopBody", f, afterReductionBB);
+  auto loopBodyBB = BasicBlock::Create(this->CXT, "ReductionLoopBody", f);
+
+  /*
+   * Create a new basic block that will include the code after the reduction loop.
+   */
+  auto afterReductionBB = BasicBlock::Create(this->CXT, "AfterReduction", f, loopBodyBB);
 
   /*
    * Change the successor of "bb" to be "loopBodyBB".
@@ -337,8 +288,8 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   IRBuilder<> loopBodyBuilder{loopBodyBB};
   auto int32Type = IntegerType::get(builder.getContext(), 32);
   auto IVReductionLoop = loopBodyBuilder.CreatePHI(int32Type, 2);
-  auto constantOne = ConstantInt::get(int32Type, 1);
-  IVReductionLoop->addIncoming(constantOne, bb);
+  auto constantZero = ConstantInt::get(int32Type, 0);
+  IVReductionLoop->addIncoming(constantZero, bb);
 
   /*
    * Add the PHI nodes about the current accumulated value
@@ -346,23 +297,18 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   std::vector<PHINode *> phiNodes;
   auto count = 0;
   for (auto envIndexInitValue : initialValues) {
-
-    /*
-     * Fetch the accumulator set outside the reduction loop.
-     * This accumulator already includes the initial value of the reduced variable as well as the value computed by thread 0.
-     */
-    auto accumulatorValue = accumulators[count];
+    auto initialValue = envIndexInitValue.second;
 
     /*
      * Create a PHI node for the current reduced variable.
      */
-    auto variableType = accumulatorValue->getType();
+    auto variableType = initialValue->getType();
     auto phiNode = loopBodyBuilder.CreatePHI(variableType, 2);
 
     /*
      * Add the value in case we just started accumulating.
      */
-    phiNode->addIncoming(accumulatorValue, bb);
+    phiNode->addIncoming(initialValue, bb);
 
     /*
      * Keep track of the PHI node just created.
@@ -466,6 +412,7 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   /*
    * Update the induction variable for the reduction loop.
    */
+  auto constantOne = ConstantInt::get(int32Type, 1);
   auto updatedIVReductionLoop = loopBodyBuilder.CreateAdd(IVReductionLoop, constantOne);
   IVReductionLoop->addIncoming(updatedIVReductionLoop, loopBodyBB);
 
