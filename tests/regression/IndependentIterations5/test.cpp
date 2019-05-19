@@ -15,7 +15,6 @@ long long int computeSum (long long int *a, long long int iters, long long unsig
     }
 
     s += tmp;
-    // a[i] += tmp;
   }
 
   return s;
@@ -32,13 +31,6 @@ int main (int argc, char *argv[]){
   }
   auto iterations = atoll(argv[1]);
   auto inner_iterations = atoll(argv[2]);
-
-  // long long int *array = (long long int *) malloc(sizeof(long long int) * iterations);
-  // array = (long long int *) malloc(sizeof(long long int) * iterations);
-
-  // for (auto i=0; i < iterations; i++){
-    // array[i] = i;
-  // }
 
   auto s = computeSum(array, iterations, inner_iterations);
   printf("%lld\n", s);
