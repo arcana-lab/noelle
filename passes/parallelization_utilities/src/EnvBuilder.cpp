@@ -282,30 +282,45 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   }
 
   /*
-   * Split the basic block into the old ones with all the loads just added and the rest.
+   * Check if the last instruction added is the last one in the basic block.
    */
-//  errs() << "AAAA0 " << *f ;
-//  auto afterReductionBB = bb->splitBasicBlock(lastInstAdded->getIterator()++, "AfterReduction");
-//  errs() << "AAAA1 " << *f ;
+  BasicBlock *afterReductionBB = nullptr;
+  if (&(bb->back()) == lastInstAdded){
+
+    /*
+     * Create a new basic block that will include the code after the reduction loop.
+     */
+    afterReductionBB = BasicBlock::Create(this->CXT, "ReductionLoopBody", f);
+
+  } else {
+
+    /*
+     * The last instruction added isn't the last instruction of the basic block "bb".
+     * So we need to split "bb".
+     * Split the basic block into the old ones with all the loads just added and the rest.
+     */
+    auto splitPoint = ++(lastInstAdded->getIterator());
+    afterReductionBB = bb->splitBasicBlock(splitPoint, "AfterReduction");
+  }
 
   /*
    * Create a new basic block that will include the loop body.
    */
-//  auto loopBodyBB = BasicBlock::Create(this->CXT, "ReductionLoopBody", f);
+  auto loopBodyBB = BasicBlock::Create(this->CXT, "ReductionLoopBody", f, afterReductionBB);
 
   /*
    * Change the successor of "bb" to be "loopBodyBB".
    */
-//  bb->getTerminator()->eraseFromParent();
-//  errs() << "AAAA2 " << *f ;
-//  IRBuilder<> bbBuilder{bb};
-//  bbBuilder.CreateBr(loopBodyBB);
-//  errs() << "AAAA3 " << *f ;
+  auto bbTerminator = bb->getTerminator();
+  if (bbTerminator != nullptr){
+    bbTerminator->eraseFromParent();
+  }
+  IRBuilder<> bbBuilder{bb};
+  bbBuilder.CreateBr(loopBodyBB);
 
   /*
    * Accumulate values to the appropriate accumulators.
    */
-  auto loopBodyBB = bb;
   IRBuilder<> loopBodyBuilder{loopBodyBB};
   auto count = 0;
   for (auto envIndexInitValue : initialValues) {
@@ -339,10 +354,9 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   /*
    * Add the successors of "loopBodyBB" to be either back to "loopBodyBB" or "afterReductionBB".
    */
-  //loopBodyBuilder.CreateBr(afterReductionBB);
-  //errs() << "AAAA5 " << *f ;
+  loopBodyBuilder.CreateBr(afterReductionBB);
 
-  return bb;
+  return afterReductionBB;
 }
 
 Value *EnvBuilder::getEnvArrayInt8Ptr () {
