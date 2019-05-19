@@ -128,6 +128,7 @@ namespace llvm {
     std::vector<Type *> envTypes;
     std::unordered_map<int, Value *> envIndexToVar;
     std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
+    std::unordered_map<int, AllocaInst *> envIndexToVectorOfReducableVar;
     int numReducers;
 
     /*

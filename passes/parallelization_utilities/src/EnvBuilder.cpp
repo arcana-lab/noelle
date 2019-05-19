@@ -82,10 +82,11 @@ void EnvUserBuilder::createReducableEnvPtr (
 
 EnvBuilder::EnvBuilder (LLVMContext &cxt)
   : CXT{cxt}, envTypes{}, envUsers{},
-    envIndexToVar{}, envIndexToReducableVar{},
+    envIndexToVar{}, envIndexToReducableVar{}, envIndexToVectorOfReducableVar{},
     numReducers{-1}, envSize{-1} {
   envIndexToVar.clear();
   envIndexToReducableVar.clear();
+  envIndexToVectorOfReducableVar.clear();
   envUsers.clear();
   envArrayType = nullptr;
   envArray = envArrayInt8Ptr = nullptr;
@@ -220,6 +221,7 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
      * Allocate the vectorized form of the reducable variable on the stack.
      */
     auto reduceArrAlloca = builder.CreateAlloca(reduceArrType);
+    envIndexToVectorOfReducableVar[envIndex] = reduceArrAlloca;
 
     /*
      * Store the pointer of the vector of the reducable variable inside the environment.
@@ -267,6 +269,7 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   Instruction *lastInstAdded;
   for (auto envIndexInitValue : initialValues) {
     auto envIndex = envIndexInitValue.first;
+    auto initialValue = envIndexInitValue.second;
 
     /*
      * Fetch the pointer of the accumulator of the reduced variable.
@@ -277,8 +280,18 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
      * Load the accumulator of the current reduced variable.
      */
     Value *accumVal = builder.CreateLoad(accumPtr);
-    accumulators.push_back(accumVal);
-    lastInstAdded = cast<Instruction>(accumVal);
+
+    /*
+     * Accumulate the initial value.
+     */
+    auto binOp = (Instruction::BinaryOps)reducableBinaryOps[envIndex];
+    auto newAccumulatorValue = builder.CreateBinOp(binOp, accumVal, initialValue);
+    accumulators.push_back(newAccumulatorValue);
+
+    /*
+     * Keep track of the last instruction added.
+     */
+    lastInstAdded = cast<Instruction>(newAccumulatorValue);
   }
 
   /*
@@ -319,42 +332,152 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   bbBuilder.CreateBr(loopBodyBB);
 
   /*
-   * Accumulate values to the appropriate accumulators.
+   * Add the PHI node about the induction variable of the reduction loop.
    */
   IRBuilder<> loopBodyBuilder{loopBodyBB};
+  auto int32Type = IntegerType::get(builder.getContext(), 32);
+  auto IVReductionLoop = loopBodyBuilder.CreatePHI(int32Type, 2);
+  auto constantOne = ConstantInt::get(int32Type, 1);
+  IVReductionLoop->addIncoming(constantOne, bb);
+
+  /*
+   * Add the PHI nodes about the current accumulated value
+   */
+  std::vector<PHINode *> phiNodes;
   auto count = 0;
   for (auto envIndexInitValue : initialValues) {
+
+    /*
+     * Fetch the accumulator set outside the reduction loop.
+     * This accumulator already includes the initial value of the reduced variable as well as the value computed by thread 0.
+     */
+    auto accumulatorValue = accumulators[count];
+
+    /*
+     * Create a PHI node for the current reduced variable.
+     */
+    auto variableType = accumulatorValue->getType();
+    auto phiNode = loopBodyBuilder.CreatePHI(variableType, 2);
+
+    /*
+     * Add the value in case we just started accumulating.
+     */
+    phiNode->addIncoming(accumulatorValue, bb);
+
+    /*
+     * Keep track of the PHI node just created.
+     */
+    phiNodes.push_back(phiNode);
+  }
+
+  /*
+   * Load the values stored in the private copies of the threads.
+   */
+  count = 0;
+  std::vector<Value *> loadedValues;
+  for (auto envIndexInitValue : initialValues) {
     auto envIndex = envIndexInitValue.first;
-    auto initialValue = envIndexInitValue.second;
+
+    /*
+     * Compute the pointer of the private copy of the current thread.
+     *
+     * First, we compute the offset, which is "index" times 8 because environment values are 64 byte aligned.
+     */
+    auto eightValue = ConstantInt::get(int32Type, 8);
+    auto offsetValue = loopBodyBuilder.CreateMul(IVReductionLoop, eightValue);
+
+    /*
+     * Now, we compute the effective address.
+     */
+    auto baseAddressOfReducedVar = envIndexToVectorOfReducableVar[envIndex];
+    auto zeroV = cast<Value>(ConstantInt::get(int32Type, 0));
+    auto effectiveAddressOfReducedVar = loopBodyBuilder.CreateInBoundsGEP(baseAddressOfReducedVar, ArrayRef<Value*>({ zeroV, offsetValue}));
+
+    /*
+     * Finally, cast the effective address to the correct LLVM type.
+     */
+    auto varType = envTypes[envIndex];
+    auto ptrType = PointerType::getUnqual(varType);
+    auto effectiveAddressOfReducedVarProperlyCasted = loopBodyBuilder.CreateBitCast(effectiveAddressOfReducedVar, ptrType);
+
+    /*
+     * Load the next value that needs to be accumulated.
+     */
+    auto envVar = loopBodyBuilder.CreateLoad(effectiveAddressOfReducedVarProperlyCasted);
+    loadedValues.push_back(envVar);
+  }
+
+  /*
+   * Accumulate values to the appropriate accumulators.
+   */
+  count = 0;
+  for (auto envIndexInitValue : initialValues) {
+    auto envIndex = envIndexInitValue.first;
+
+    /*
+     * Fetch the information about the operation to perform to accumulate values.
+     */
     auto binOp = (Instruction::BinaryOps)reducableBinaryOps[envIndex];
-    auto accumVal = accumulators[count];
+
+    /*
+     * Fetch the accumulator, which is the PHI node related to the current reduced variable.
+     */
+    auto accumVal = phiNodes[count];
 
     /*
      * Accumulate values to the accumulator of the current reduced variable.
      */
-    for (auto i = 1; i < numReducers; ++i) {
+    auto privateCurrentCopy = loadedValues[count];
+    auto newAccumulatorValue = loopBodyBuilder.CreateBinOp(binOp, accumVal, privateCurrentCopy);
 
-      /*
-       * Load the next value that needs to be accumulated.
-       */
-      auto envVar = loopBodyBuilder.CreateLoad(this->getReducableEnvVar(envIndex, i));
-
-      /*
-       * Reduce environment variable's array
-       */
-      accumVal = loopBodyBuilder.CreateBinOp(binOp, accumVal, envVar);
-    }
-
-    accumVal = loopBodyBuilder.CreateBinOp(binOp, accumVal, initialValue);
-    envIndexToVar[envIndex] = accumVal;
+    /*
+     * Keep track of the new accumulator value.
+     */
+    envIndexToVar[envIndex] = newAccumulatorValue;
 
     count++;
   }
 
   /*
+   * Fix the PHI nodes of the accumulators.
+   */
+  count = 0;
+  for (auto envIndexInitValue : initialValues) {
+    auto envIndex = envIndexInitValue.first;
+
+    /*
+     * Fetch the PHI node of the accumulator of the current reduced variable.
+     */
+    auto phiNode = phiNodes[count];
+
+    /*
+     * Fetch the value computed by the previous iteration.
+     */
+    auto previousIterationAccumulatorValue = envIndexToVar[envIndex];
+
+    /*
+     * Add the value related to the previous iteration of the reduction loop.
+     */
+    phiNode->addIncoming(previousIterationAccumulatorValue, loopBodyBB);
+
+    count++;
+  }
+
+  /*
+   * Update the induction variable for the reduction loop.
+   */
+  auto updatedIVReductionLoop = loopBodyBuilder.CreateAdd(IVReductionLoop, constantOne);
+  IVReductionLoop->addIncoming(updatedIVReductionLoop, loopBodyBB);
+
+  /*
+   * Compute the condition to jump back to the reduction loop body.
+   */
+  auto continueToReduceVariables = loopBodyBuilder.CreateICmpSLT(updatedIVReductionLoop, numberOfThreadsExecuted);
+
+  /*
    * Add the successors of "loopBodyBB" to be either back to "loopBodyBB" or "afterReductionBB".
    */
-  loopBodyBuilder.CreateBr(afterReductionBB);
+  loopBodyBuilder.CreateCondBr(continueToReduceVariables, loopBodyBB, afterReductionBB);
 
   return afterReductionBB;
 }
