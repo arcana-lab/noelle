@@ -514,6 +514,10 @@ extern "C" {
   }
 
   int32_t NOELLE_getNumberOfCores (void){
-    return std::thread::hardware_concurrency();
+    auto envVar = getenv("NOELLE_CORES");
+    if (envVar == nullptr){
+      return std::thread::hardware_concurrency();
+    }
+    return atoi(envVar);
   }
 }
