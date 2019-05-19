@@ -208,7 +208,7 @@ extern "C" {
     std::cerr << "Got all futures" << std::endl;
     #endif
 
-    return runtimeNumberOfCores;
+    return numCores;
   }
 
   #ifdef RUNTIME_PRINT
