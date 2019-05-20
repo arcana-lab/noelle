@@ -22,8 +22,8 @@ TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcom
 PDGPASS=-load ~/CAT/lib/AllocAA.so -load ~/CAT/lib/TalkDown.so -load ~/CAT/lib/PDGAnalysis.so
 PRINTPASSES=$(PDGPASS) -load ~/CAT/lib/PDGPrinter.so
 PARALLELIZATION_TECHNIQUES= -load ~/CAT/lib/DSWP.so -load ~/CAT/lib/DOALL.so -load ~/CAT/lib/HELIX.so
-PRE_OPTPASSES=$(PDGPASS) -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/DGSimplify.so
-OPTPASSES=$(PDGPASS) -load ~/CAT/lib/DataFlow.so -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so -load ~/CAT/lib/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/Parallelizer.so 
+PRE_OPTPASSES=-load ~/CAT/lib/Architecture.so $(PDGPASS) -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/DGSimplify.so
+OPTPASSES=$(PDGPASS) -load ~/CAT/lib/Architecture.so -load ~/CAT/lib/DataFlow.so -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/Heuristics.so -load ~/CAT/lib/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load ~/CAT/lib/Parallelizer.so 
 PRINT_OUTPUT_FILE=test.txt
 
 # Fetch the list of files to compile

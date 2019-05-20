@@ -13,6 +13,7 @@
 #include "SCCDAG.hpp"
 #include "llvm/Analysis/LoopInfo.h"
 
+#include "Architecture.hpp"
 #include "LoopDependenceInfo.hpp"
 
 using namespace std;
@@ -25,7 +26,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   LoopInfo &li,
   ScalarEvolution &SE
 ) : function{f}, functionDG{fG}, DOALLChunkSize{8},
-    maximumNumberOfCoresForTheParallelization{std::thread::hardware_concurrency() / 2}
+    maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfLogicalCores() / 2}
   {
 
   /*
