@@ -26,7 +26,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   LoopInfo &li,
   ScalarEvolution &SE
 ) : function{f}, functionDG{fG}, DOALLChunkSize{8},
-    maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfLogicalCores() / 2}
+    maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()}
   {
 
   /*

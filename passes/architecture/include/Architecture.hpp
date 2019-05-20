@@ -20,6 +20,8 @@ namespace llvm {
 
         static int32_t getNumberOfLogicalCores (void);
 
+        static int32_t getNumberOfPhysicalCores (void);
+
         static int32_t getCacheLineBytes (void);
 
       private:

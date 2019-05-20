@@ -20,6 +20,10 @@ int32_t Architecture::getNumberOfLogicalCores (void){
   return std::thread::hardware_concurrency();
 }
 
+int32_t Architecture::getNumberOfPhysicalCores (void){
+  return getNumberOfLogicalCores() / 2;
+}
+
 int32_t Architecture::getCacheLineBytes (void){
   return 64;
 }
