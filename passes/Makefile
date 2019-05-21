@@ -1,4 +1,4 @@
-all: parallelization_utilities architecture hotprofiler printer pdg talkdown alloc_aa dataflow dgsimplify parallelizer heuristics parallelization_technique dswp doall helix
+all: basic_utilities parallelization_utilities architecture hotprofiler printer pdg talkdown alloc_aa dataflow dgsimplify parallelizer heuristics parallelization_technique dswp doall helix
 
 dataflow:
 	cd $@ ; ../scripts/run_me.sh
@@ -7,6 +7,9 @@ hotprofiler:
 	cd $@ ; ../scripts/run_me.sh
 
 printer:
+	cd $@ ; ../scripts/run_me.sh
+
+basic_utilities:
 	cd $@ ; ../scripts/run_me.sh
 
 parallelization_utilities:
