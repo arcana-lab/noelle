@@ -91,7 +91,7 @@ test_seq_prof.bc: test_seq.bc
 	@../../scripts/inject_hotprofiler.sh $^ $@
 
 input.txt:
-	echo "20 20 20" > $@
+	@../../scripts/create_input.sh $@
 
 show_passes: test_seq.bc
 	opt $(OPTPASSES) $(ANALYSES) -heuristics -Parallelizer $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output

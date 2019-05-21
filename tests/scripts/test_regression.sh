@@ -44,12 +44,15 @@ function runningTests {
 
     # Compile
     make PARALLELIZATION_OPTIONS="$2" >> compiler_output.txt 2>&1 ;
+    
+    # Generate the input
+    make input.txt &> /dev/null ;
 
     # Baseline
-    ./baseline 2 2 2 &> output_baseline.txt ;
+    ./baseline `cat input.txt` &> output_baseline.txt ;
 
     # Transformation
-    ./parallelized 2 2 2 &> output_parallelized.txt ;
+    ./parallelized `cat input.txt` &> output_parallelized.txt ;
 
     # Check the output ;
     cmp output_baseline.txt output_parallelized.txt &> /dev/null ;
