@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "EnvBuilder.hpp"
+#include "Architecture.hpp"
 
 using namespace llvm ;
 
@@ -34,7 +35,13 @@ void EnvUserBuilder::createEnvPtr (
 
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
-  auto envIndV = cast<Value>(ConstantInt::get(int64, envIndex * 8));
+
+  /*
+   * Compute how many values can fit in a cache line.
+   */
+  auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
+
+  auto envIndV = cast<Value>(ConstantInt::get(int64, envIndex * valuesInCacheLine));
 
   auto envGEP = builder.CreateInBoundsGEP(
     this->envArray,
@@ -57,20 +64,25 @@ void EnvUserBuilder::createReducableEnvPtr (
     abort();
   }
 
+  /*
+   * Compute how many values can fit in a cache line.
+   */
+  auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
+
   auto int8 = IntegerType::get(builder.getContext(), 8);
   auto ptrTy_int8 = PointerType::getUnqual(int8);
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
-  auto envIndV = cast<Value>(ConstantInt::get(int64, envIndex * 8));
+  auto envIndV = cast<Value>(ConstantInt::get(int64, envIndex * valuesInCacheLine));
 
   auto envReduceGEP = builder.CreateInBoundsGEP(
     this->envArray,
     ArrayRef<Value*>({ zeroV, envIndV })
   );
-  auto arrPtr = PointerType::getUnqual(ArrayType::get(int64, reducerCount * 8));
+  auto arrPtr = PointerType::getUnqual(ArrayType::get(int64, reducerCount * valuesInCacheLine));
   auto envReducePtr = builder.CreateBitCast(envReduceGEP, PointerType::getUnqual(arrPtr));
 
-  auto reduceIndAlignedV = builder.CreateMul(reducerIndV, ConstantInt::get(int64, 8));
+  auto reduceIndAlignedV = builder.CreateMul(reducerIndV, ConstantInt::get(int64, valuesInCacheLine));
   auto envGEP = builder.CreateInBoundsGEP(
     builder.CreateLoad(envReducePtr),
     ArrayRef<Value*>({ zeroV, reduceIndAlignedV })
@@ -118,8 +130,13 @@ void EnvBuilder::createEnvVariables (
     && "Environment variables must either be singular or reducible\n");
   this->envTypes = std::vector<Type *>(varTypes.begin(), varTypes.end());
 
+  /*
+   * Compute how many values can fit in a cache line.
+   */
+  auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
+
   auto int64 = IntegerType::get(this->CXT, 64);
-  this->envArrayType = ArrayType::get(int64, this->envSize * 8);
+  this->envArrayType = ArrayType::get(int64, this->envSize * valuesInCacheLine);
 
   numReducers = reducerCount;
   for (auto envIndex : singleVarIndices) {
@@ -163,9 +180,10 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
     /*
      * Compute the offset of the variable with index "envIndex" that is stored inside the environment.
      *
-     * NOTE: environment values are 64 byte aligned.
+     * Compute how many values can fit in a cache line.
      */
-    auto indValue = cast<Value>(ConstantInt::get(int64, envIndex * 8));
+    auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
+    auto indValue = cast<Value>(ConstantInt::get(int64, envIndex * valuesInCacheLine));
 
     /*
      * Compute the address of the variable with index "envIndex".
@@ -215,7 +233,8 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
     /*
      * Define the type of the vectorized form of the reducable variable.
      */
-    auto reduceArrType = ArrayType::get(int64, numReducers * 8);
+    auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
+    auto reduceArrType = ArrayType::get(int64, numReducers * valuesInCacheLine);
 
     /*
      * Allocate the vectorized form of the reducable variable on the stack.
@@ -317,6 +336,11 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   }
 
   /*
+   * Compute how many values can fit in a cache line.
+   */
+  auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
+
+  /*
    * Load the values stored in the private copies of the threads.
    */
   count = 0;
@@ -329,7 +353,7 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
      *
      * First, we compute the offset, which is "index" times 8 because environment values are 64 byte aligned.
      */
-    auto eightValue = ConstantInt::get(int32Type, 8);
+    auto eightValue = ConstantInt::get(int32Type, valuesInCacheLine);
     auto offsetValue = loopBodyBuilder.CreateMul(IVReductionLoop, eightValue);
 
     /*
