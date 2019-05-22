@@ -103,8 +103,8 @@ bool Parallelizer::runOnModule (Module &M) {
   auto loopsToParallelize = parallelizationFramework.getModuleLoops(&M, this->minHot);
   errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
   for (auto loop : *loopsToParallelize){
-    errs() << "Parallelizer:    Function \"" << loop->function->getName() << "\"\n";
-    errs() << "Parallelizer:    Try to parallelize the loop \"" << *loop->header->getFirstNonPHI() << "\"\n";
+    errs() << "Parallelizer:    Function: \"" << loop->function->getName() << "\"\n";
+    errs() << "Parallelizer:    Loop: \"" << *loop->header->getFirstNonPHI() << "\"\n";
   }
 
   /*
