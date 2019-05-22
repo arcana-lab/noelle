@@ -72,15 +72,33 @@ namespace llvm {
       int64_t getNumberOfDependencesBetweenInstructions (void) const ;
 
       /*
-       * Iterators.
+       * Iterator: iterate over the instructions that depend on @param fromValue .
+       *
+       * This means there is an edge from @param fromValue to @param toValue of the type specified by the other parameters.
+       * For each of this edge, the function @param functionToInvokePerDependence is invoked.
        */
       void iterateOverDependencesFrom (
-        Value *from, 
+        Value *fromValue, 
         bool includeControlDependences,
         bool includeMemoryDataDependences,
         bool includeRegisterDataDependences,
-        std::function<bool (Value *to, DataDependenceType ddType)> functionToInvokePerDependence
+        std::function<bool (Value *toValue, DataDependenceType ddType)> functionToInvokePerDependence
         );
+
+      /*
+       * Iterator: iterate over the instructions that @param toValue depends from.
+       *
+       * This means there is an edge from @param fromValue to @param toValue of the type specified by the other parameters.
+       * For each of this edge, the function @param functionToInvokePerDependence is invoked.
+       */
+      void iterateOverDependencesTo (
+        Value *toValue, 
+        bool includeControlDependences,
+        bool includeMemoryDataDependences,
+        bool includeRegisterDataDependences,
+        std::function<bool (Value *fromValue, DataDependenceType ddType)> functionToInvokePerDependence
+        );
+
 
       /*
        * Add the edge from "from" to "to" to the PDG.

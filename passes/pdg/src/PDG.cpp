@@ -250,6 +250,70 @@ void PDG::iterateOverDependencesFrom (
   return ;
 }
 
+void PDG::iterateOverDependencesTo (
+  Value *toValue, 
+  bool includeControlDependences,
+  bool includeMemoryDataDependences,
+  bool includeRegisterDataDependences,
+  std::function<bool (Value *fromValue, DataDependenceType ddType)> functionToInvokePerDependence
+  ){
+
+  /*
+   * Fetch the node in the PDG.
+   */
+  auto pdgNode = this->fetchNode(toValue);
+  if (pdgNode == nullptr){
+    return ;
+  }
+
+  /*
+   * Iterate over the edges of the node.
+   */
+  for (auto edgeIt = pdgNode->begin_incoming_edges(); edgeIt != pdgNode->end_incoming_edges(); ++edgeIt){
+
+    /*
+     * Fetch the destination value.
+     */
+    auto edge = *edgeIt;
+    auto srcValue = edge->getOutgoingT();
+
+    /*
+     * Check if this is a control dependence.
+     */
+    if (  true
+        && includeControlDependences
+        && edge->isControlDependence()
+      ){
+      functionToInvokePerDependence(srcValue, edge->dataDependenceType());
+      continue ;
+    }
+        
+    /*
+     * Check if this is a memory dependence.
+     */
+    if (  true
+        && includeMemoryDataDependences
+        && edge->isMemoryDependence()
+      ){
+      functionToInvokePerDependence(srcValue, edge->dataDependenceType());
+      continue ;
+    }
+
+    /*
+     * Check if this is a register dependence.
+     */
+    if (  true
+        && includeRegisterDataDependences
+        && (!edge->isMemoryDependence())
+      ){
+      functionToInvokePerDependence(srcValue, edge->dataDependenceType());
+      continue ;
+    }
+  }
+
+  return ;
+}
+
 PDG::~PDG() {
   for (auto *edge : allEdges)
     if (edge) delete edge;
