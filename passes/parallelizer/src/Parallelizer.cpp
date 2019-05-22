@@ -75,7 +75,7 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
     helix.reset();
     codeModified = helix.apply(LDI, par, h);
 
-    Function *function = helix.getTaskFunction();
+    auto function = helix.getTaskFunction();
     auto fPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
     auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
     auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
