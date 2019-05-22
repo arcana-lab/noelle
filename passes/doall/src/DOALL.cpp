@@ -86,7 +86,7 @@ bool DOALL::canBeAppliedToLoop (
   }
 
   /*
-   * The loop's IV does not have bounds that have been successfuly analyzed
+   * The loop's IV does not have bounds that have been successfully analyzed
    */
   auto headerBr = LDI->header->getTerminator();
   auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
