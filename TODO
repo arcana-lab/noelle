@@ -1,7 +1,4 @@
 ==== SOFTWARE ENGINEERING
-- Create a "Dependence" abstraction, which is DG<Value>
-  - have methods like "getSource(), getDestination(), isMemoryBased()"
-
 - Extract function order in call graph that is memoized in DGSimplify for use
   elsewhere (in Parallelization currently)
   - The data structures in question: 
@@ -21,7 +18,7 @@ generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
 ==== OTHER PARALLELIZATION SCHEMES
 - Implement PS-DSWP
 
-- Implement HELIX
+- Complete HELIX
 
 
 ==== BENCHMARKS
@@ -33,6 +30,11 @@ generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
 
 - Create a new pass to map memory locations to variables as much as possible
   This removes the overly conservative memory loop-carried data dependences
+
+
+==== ANALYSIS
+- Add SVF alias analysis
+
 
 ==== PDG ALIAS ANALYSIS LIMITATIONS
 - Non-pointer struct values alias with primitive arrays
