@@ -64,8 +64,7 @@ llvm::PDGAnalysis::~PDGAnalysis() {
 }
 
 llvm::PDG * llvm::PDGAnalysis::getFunctionPDG (Function &F) {
-  auto pdg = new PDG();
-  pdg->populateNodesOf(F);
+  auto pdg = new PDG(F);
 
   auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
   constructEdgesFromUseDefs(pdg);
@@ -81,8 +80,7 @@ llvm::PDG * llvm::PDGAnalysis::getFunctionPDG (Function &F) {
 llvm::PDG * llvm::PDGAnalysis::getPDG (){
   if (this->programDependenceGraph)
     delete this->programDependenceGraph;
-  this->programDependenceGraph = new PDG();
-  this->programDependenceGraph->populateNodesOf(*this->M);
+  this->programDependenceGraph = new PDG(*this->M);
 
   constructEdgesFromUseDefs(this->programDependenceGraph);
   constructEdgesFromAliases(this->programDependenceGraph, *this->M);
