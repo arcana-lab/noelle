@@ -28,7 +28,7 @@ namespace llvm {
   template <class T, class SubT> class DGEdgeBase;
   template <class T> class DGEdge;
 
-  enum DataDependencyType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
+  enum DataDependenceType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
 
   template <class T>
   class DG {
@@ -218,10 +218,10 @@ namespace llvm {
     bool isWARDependence() const { return dataDepType == DG_DATA_WAR; }
     bool isWAWDependence() const { return dataDepType == DG_DATA_WAW; }
     bool isControlDependence() const { return isControl; }
-    DataDependencyType dataDependenceType() const { return dataDepType; }
+    DataDependenceType dataDependenceType() const { return dataDepType; }
 
     void setControl(bool ctrl) { isControl = ctrl; }
-    void setMemMustType(bool mem, bool must, DataDependencyType dataDepType);
+    void setMemMustType(bool mem, bool must, DataDependenceType dataDepType);
 
     void addSubEdge(DGEdge<SubT> *edge) { subEdges.insert(edge); }
     void removeSubEdge(DGEdge<SubT> *edge) { subEdges.erase(edge); }
@@ -235,7 +235,7 @@ namespace llvm {
     DGNode<T> *from, *to;
     std::set<DGEdge<SubT> *> subEdges;
     bool memory, must, isControl;
-    DataDependencyType dataDepType;
+    DataDependenceType dataDepType;
   };
 
   /*
@@ -659,7 +659,7 @@ namespace llvm {
   }
 
   template <class T, class SubT>
-  void DGEdgeBase<T, SubT>::setMemMustType(bool mem, bool must, DataDependencyType dataDepType)
+  void DGEdgeBase<T, SubT>::setMemMustType(bool mem, bool must, DataDependenceType dataDepType)
   {
     this->memory = mem;
     this->must = must;

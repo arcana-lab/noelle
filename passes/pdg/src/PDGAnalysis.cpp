@@ -167,7 +167,7 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
 
   if (!makeEdge) return;
   
-  DataDependencyType dataDepType = WAW ? DG_DATA_WAW : DG_DATA_RAW;
+  DataDependenceType dataDepType = WAW ? DG_DATA_WAW : DG_DATA_RAW;
   pdg->addEdge((Value*)memI, (Value*)memJ)->setMemMustType(true, must, dataDepType);
 
   dataDepType = WAW ? DG_DATA_WAW : DG_DATA_WAR;

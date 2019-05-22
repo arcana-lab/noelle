@@ -66,9 +66,29 @@ namespace llvm {
       PDG ();
 
       /*
+       * Queries
+       */
+      int64_t getNumberOfInstructionsIncluded (void) const ;
+      int64_t getNumberOfDependencesBetweenInstructions (void) const ;
+
+      /*
+       * Iterators.
+       */
+      void iterateOverDependencesFrom (
+        Value *from, 
+        bool includeControlDependences,
+        bool includeMemoryDataDependences,
+        bool includeRegisterDataDependences,
+        std::function<bool (Value *to, DataDependenceType ddType)> functionToInvokePerDependence
+        );
+
+      /*
        * Add the edge from "from" to "to" to the PDG.
        */
-      DGEdge<Value> * addEdge (Value *from, Value *to);
+      DGEdge<Value> * addEdge (
+        Value *from, 
+        Value *to
+        );
 
       /*
        * Creating Program Dependence Subgraphs
@@ -76,12 +96,6 @@ namespace llvm {
       PDG * createFunctionSubgraph (Function &F);
       PDG * createLoopsSubgraph (Loop *loop);
       PDG * createSubgraphFromValues (std::vector<Value *> &valueList, bool linkToExternal);
-
-      /*
-       * Queries
-       */
-      int64_t getNumberOfInstructionsIncluded (void) const ;
-      int64_t getNumberOfDependencesBetweenInstructions (void) const ;
 
       /*
        * Destructor
