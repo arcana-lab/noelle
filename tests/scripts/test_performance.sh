@@ -53,7 +53,6 @@ function runningTests {
 
 cd performance ;
 runningTests "Measuring the default configuration" "-noelle-verbose=0" "speedups.txt" ;
-runningTests "No-HELIX configuration" "-noelle-verbose=0 -noelle-disable-helix" "speedups.txt" ;
 cd ../ ;
 
 exit 0;
