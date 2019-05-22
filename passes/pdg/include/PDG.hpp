@@ -66,9 +66,13 @@ namespace llvm {
       PDG ();
 
       /*
-       * Queries
+       * Return the number of instructions included in the PDG.
        */
       int64_t getNumberOfInstructionsIncluded (void) const ;
+
+      /*
+       * Return the number of dependences of the PDG including dependences that connect instructions outside the PDG.
+       */
       int64_t getNumberOfDependencesBetweenInstructions (void) const ;
 
       /*
@@ -98,7 +102,6 @@ namespace llvm {
         bool includeRegisterDataDependences,
         std::function<bool (Value *fromValue, DataDependenceType ddType)> functionToInvokePerDependence
         );
-
 
       /*
        * Add the edge from "from" to "to" to the PDG.
