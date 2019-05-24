@@ -52,6 +52,8 @@ uninstall:
 	rm -rf ~/CAT ;
 
 clean:
-	rm -rf */build */*.json ; find ./ -name .ycm_extra_conf.py -delete
+	rm -rf */build */*.json ; 
+	find ./ -name .ycm_extra_conf.py -delete ;
+	find ./ -name compile_commands.json -delete ;
 
 .PHONY: clean pdg printer talkdown alloc_aa dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix hotprofiler dataflow architecture
