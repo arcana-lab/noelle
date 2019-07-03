@@ -3,6 +3,9 @@ RUNTIME_GITREPO="/project/parallelizing_compiler/repositories"
 
 all: regression performance
 
+condor: download
+	cd condor ; make ; make submit ;
+	 
 regression: download
 	./scripts/test_regression.sh ;
 
@@ -14,4 +17,5 @@ download:
 	./scripts/add_symbolic_link.sh ;
 
 clean:
-	./scripts/clean.sh ; rm -rf include/
+	./scripts/clean.sh ; rm -rf include/ ; rm -f regression/*.txt ;
+	cd condor ; make clean ; 
