@@ -36,9 +36,10 @@ priority = 0
 # Set the directories for the execution
 InitialDir = $(RepoPath)
 Executable = $(RepoPath)/condor/bin/run.sh
+TestsPath  = 
 
 # Arguments of run.sh
-ParallelizationOptions = '-noelle-verbose=3'
-Arguments = $(InitialDir) $(InitialDir)/regression/$(Test) $(ParallelizationOptions) $(InitialDir)/regression/errors.txt
+ParallelizationOptions = 
+Arguments = $(InitialDir) $(InitialDir)/$(TestsPath)/$(Test) $(ParallelizationOptions) $(InitialDir)/regression/errors.txt
 
 # List the tests

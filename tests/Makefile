@@ -18,4 +18,5 @@ download:
 
 clean:
 	./scripts/clean.sh ; rm -rf include/ ; rm -f regression/*.txt ;
+	rm -rf regression_* ;
 	cd condor ; make clean ; 
