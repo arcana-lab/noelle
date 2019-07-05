@@ -36,7 +36,7 @@ def getNewFile(args):
       elif (line.startswith('TestsPath')):
         newFileAsStr += 'TestsPath = ' + args['testsPath'] + '\n'
       elif (line.startswith('ParallelizationOptions')):
-        newFileAsStr += 'ParallelizationOptions = \'' + args['parOptions'] + '\'\n'
+        newFileAsStr += 'ParallelizationOptions = ' + args['parOptions'] + '\n'
       else:
         newFileAsStr += str(line)
 
