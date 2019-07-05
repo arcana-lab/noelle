@@ -40,6 +40,6 @@ TestsPath  =
 
 # Arguments of run.sh
 ParallelizationOptions = 
-Arguments = "$(InitialDir) $(InitialDir)/$(TestsPath)/$(Test) '$(ParallelizationOptions)' $(InitialDir)/regression/errors.txt"
+Arguments = "$(InitialDir) $(InitialDir)/$(TestsPath)/$(Test) '$(ParallelizationOptions)' $(InitialDir)/$(TestsPath)/errors.txt"
 
 # List the tests
