@@ -60,11 +60,21 @@ void UniqueIRMarker::visitFunction(Function &F) {
         break;
     }
     SmallVector<Metadata *, 2> MDs;
+
     MDs.push_back(ConstantAsMetadata::get(ConstantInt::get(Context, llvm::APInt(IDSize, 0, false))));
-    MDs.push_back(ConstantAsMetadata::get(ConstantInt::get(Context, llvm::APInt(IDSize, LoopCounter++, false))));
+
+    SmallVector<Metadata *, 1> ID;
+    {
+      auto LoopVIAName = MDString::get(Context, UniqueIRConstants::VIALoop);
+      ID.push_back(LoopVIAName);
+      auto LoopIDMeta = ConstantAsMetadata::get(ConstantInt::get(Context, llvm::APInt(IDSize, LoopCounter++, false)));
+      ID.push_back(LoopIDMeta);
+    }
+    MDs.push_back(MDNode::get(Context, ID));
     auto *node = MDNode::get(Context, MDs);
     node->replaceOperandWith(0, node);
     Loop->setLoopID(node);
+    node->print(errs());
   }
 }
 

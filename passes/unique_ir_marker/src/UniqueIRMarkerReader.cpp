@@ -27,7 +27,25 @@ optional<Constant *> UniqueIRMarkerReader::getModuleConstID(const llvm::Module *
 optional<Constant *> UniqueIRMarkerReader::getLoopConstID(const llvm::Loop *L) {
   assert(L && "Not a valid Loop");
   auto* metaNode = L->getLoopID();
-  return getConstFromMeta(metaNode, 1);
+  if (!metaNode || metaNode->getNumOperands() < 2) {
+    return nullopt;
+  }
+
+  auto *possibleVIAIDPair = dyn_cast<MDTuple>(metaNode->getOperand(1));
+  if(!possibleVIAIDPair || possibleVIAIDPair->getNumOperands() < 2) {
+    return nullopt;
+  }
+
+  auto possibleVIAStrID = dyn_cast<MDString>(possibleVIAIDPair->getOperand(0));
+  if (!possibleVIAStrID || !possibleVIAStrID->getString().equals(UniqueIRConstants::VIALoop)) {
+    return nullopt;
+  }
+
+  auto possibleVIAID = dyn_cast<ConstantAsMetadata>(possibleVIAIDPair->getOperand(1));
+  if (!possibleVIAID) {
+    return nullopt;
+  }
+  return optional<Constant *>(possibleVIAID->getValue());
 }
 
 optional<Constant *> UniqueIRMarkerReader::getBasicBlockConstID(const llvm::BasicBlock *BB) {
@@ -92,6 +110,7 @@ optional<Constant *> UniqueIRMarkerReader::getConstFromMeta(llvm::MDNode *node, 
 }
 
 optional<IDType> UniqueIRMarkerReader::getIDFromLoopMeta(MDNode *Node) {
+  assert(0 && "fix this");
   auto Const = getConstFromMeta(Node, 0);
   if (Const) {
     return getID(Const.value());
