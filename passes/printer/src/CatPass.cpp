@@ -107,8 +107,8 @@ namespace llvm {
         for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end()))
         {
           auto F = callRecord.second->getFunction();
-          if (F && !F->empty())
-            funcToTraverse.push(F);
+          if (F->empty()) continue;
+          funcToTraverse.push(F);
         }
       }
     }
