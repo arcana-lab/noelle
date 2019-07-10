@@ -21,7 +21,11 @@ namespace llvm {
       /*
        * Constructor.
        */
-      ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences (Module &module, Verbosity v);
+      ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences (
+        Module &module, 
+        Hot &p,
+        Verbosity v
+      );
 
       void reset () override ;
 

@@ -9,6 +9,9 @@ oracle_aa: download
 commutativity: download
 	./scripts/test_commutativity.sh ;
 
+condor: download
+	cd condor ; make ; make submit ;
+	 
 regression: download
 	./scripts/test_regression.sh ;
 
@@ -20,4 +23,6 @@ download:
 	./scripts/add_symbolic_link.sh ;
 
 clean:
-	./scripts/clean.sh ; rm -rf include/
+	./scripts/clean.sh ; rm -rf include/ ; rm -f regression/*.txt ;
+	rm -rf regression_* ;
+	cd condor ; make clean ; 

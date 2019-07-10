@@ -81,7 +81,7 @@ void HELIX::addSynchronizations (
        * Compute the offset of the sequential segment entry.
        */
       auto ssID = ss->getID();
-      auto ssOffset = ssID * CACHE_LINE_SIZE;
+      auto ssOffset = ssID * Architecture::getCacheLineBytes();
 
       /*
        * Fetch the pointer to the sequential segment entry.

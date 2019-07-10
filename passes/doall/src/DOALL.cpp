@@ -13,16 +13,24 @@
 
 DOALL::DOALL (
   Module &module,
+  Hot &p,
   Verbosity v
 ) :
-  ParallelizationTechnique{module, v}
+  ParallelizationTechnique{module, p, v}
   {
 
   /*
    * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
    */
-  this->taskDispatcher = this->module.getFunction("doallDispatcher");
+  this->taskDispatcher = this->module.getFunction("NOELLE_DOALLDispatcher");
+  if (this->taskDispatcher == nullptr){
+    errs() << "NOELLE: ERROR = function NOELLE_DOALLDispatcher couldn't be found\n";
+    abort();
+  }
 
+  /*
+   * Define the signature of the task, which will be invoked by the DOALL dispatcher.
+   */
   auto &cxt = module.getContext();
   auto int8 = IntegerType::get(cxt, 8);
   auto int64 = IntegerType::get(cxt, 64);
@@ -78,7 +86,7 @@ bool DOALL::canBeAppliedToLoop (
   }
 
   /*
-   * The loop's IV does not have bounds that have been successfuly analyzed
+   * The loop's IV does not have bounds that have been successfully analyzed
    */
   auto headerBr = LDI->header->getTerminator();
   auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
@@ -234,15 +242,23 @@ bool DOALL::apply (
 
   addChunkFunctionExecutionAsideOriginalLoop(LDI, par);
 
+  /*
+   * Final printing.
+   */
   if (this->verbose >= Verbosity::Maximal) {
-    tasks[0]->F->print(errs() << "DOALL:  Finalized chunker:\n"); errs() << "\n";
+    LDI->function->print(errs() << "DOALL:  Final outside-loop code:\n" );
+    errs() << "\n";
+    tasks[0]->F->print(errs() << "DOALL:  Final parallelized loop:\n"); 
+    errs() << "\n";
+  }
+  if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Exit\n";
   }
 
   return true;
 }
 
-void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
+BasicBlock * DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
   std::unordered_map<int, int> reducableBinaryOps;
   std::unordered_map<int, Value *> initialValues;
 
@@ -264,16 +280,16 @@ void DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI) {
   }
 
   auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
-  this->envBuilder->reduceLiveOutVariables(*builder, reducableBinaryOps, initialValues);
+  auto latestBB = this->envBuilder->reduceLiveOutVariables(this->entryPointOfParallelizedLoop, *builder, reducableBinaryOps, initialValues, numberOfThreadsExecuted);
 
   /*
    * Free the memory.
    */
   delete builder;
 
-  ParallelizationTechnique::propagateLiveOutEnvironment(LDI);
+  ParallelizationTechnique::propagateLiveOutEnvironment(LDI, numberOfThreadsExecuted);
 
-  return ;
+  return latestBB;
 }
 
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
@@ -311,7 +327,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    * Call the function that incudes the parallelized loop.
    */
   IRBuilder<> doallBuilder(this->entryPointOfParallelizedLoop);
-  doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
+  auto doallCallInst = doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
     (Value *)tasks[0]->F,
     envPtr,
     numCores,
@@ -321,12 +337,13 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
    */
-  this->propagateLiveOutEnvironment(LDI);
+  auto latestBBAfterDOALLCall = this->propagateLiveOutEnvironment(LDI, doallCallInst);
 
   /*
    * Jump to the unique successor of the loop.
    */
-  doallBuilder.CreateBr(this->exitPointOfParallelizedLoop);
+  IRBuilder<> afterDOALLBuilder{latestBBAfterDOALLCall};
+  afterDOALLBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
   return ;
 }

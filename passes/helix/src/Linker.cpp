@@ -51,7 +51,7 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
    * Call the function that incudes the parallelized loop.
    */
   IRBuilder<> helixBuilder(this->entryPointOfParallelizedLoop);
-  helixBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
+  auto runtimeCall = helixBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
     (Value *)tasks[0]->F,
     envPtr,
     loopCarriedEnvPtr,
@@ -62,7 +62,7 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
    */
-  this->propagateLiveOutEnvironment(LDI);
+  this->propagateLiveOutEnvironment(LDI, runtimeCall);
 
   /*
    * Jump to the unique successor of the loop.

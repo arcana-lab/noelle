@@ -1,9 +1,10 @@
-INSTALL_DIR=/local/scratch/josi2/noelle/install
+CC=clang
+CPP=clang++
+OPT=opt
+
+INSTALL_DIR=~/CAT
 INSTALL_LIB=$(INSTALL_DIR)/lib
 
-CC=${LLVM_BIN}/clang
-CPP=${LLVM_BIN}/clang++
-OPT=${LLVM_BIN}/opt
 AA_BASE=-basicaa
 AA_ADVANCED=$(AA_BASE) -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa
 ANALYSES=$(AA_ADVANCED) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization 
@@ -15,25 +16,25 @@ RUNTIME_CFLAGS="-DDEBUG"
 #RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DRUNTIME_PRINT"
 
 # Other parallelization options:
-PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -noelle-verbose=2 -dswp-force 
+PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -pdg-verbose=1 -noelle-verbose=2 -dswp-force -noelle-min-hot=0
 OPT_LEVEL=-O3
 
 INCLUDES=-I../../include/threadpool/include
 THREADER=Parallelizer_utils
 OPTIMIZED=parallelized
 
-
-
-TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
+# Loader/dumper of PDGs
 UNIQUE_IR_MARKER_PASS=-load $(INSTALL_LIB)/UniqueIRMarker.so 
 ORACLEAA_ARGS=-input-args "${oracle_input_args}" -exe-script=$(INSTALL_DIR)/bin/run_via.sh
 ORACLEAA_PASSES=$(UNIQUE_IR_MARKER_PASS) -load $(INSTALL_LIB)/OracleAA.so 
 ORACLEAA=$(ORACLEAA_PASSES) $(ORACLEAA_ARGS)
+
+TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
 PDGPASS=$(ORACLEAA) $(COMMPASSES) -load $(INSTALL_LIB)/AllocAA.so -load $(INSTALL_LIB)/TalkDown.so -load $(INSTALL_LIB)/PDGAnalysis.so 
 PRINTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/PDGPrinter.so
 PARALLELIZATION_TECHNIQUES= -load $(INSTALL_LIB)/DSWP.so -load $(INSTALL_LIB)/DOALL.so -load $(INSTALL_LIB)/HELIX.so
-PRE_OPTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/HotProfiler.so -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/DGSimplify.so
-OPTPASSES=$(PDGPASS) -load $(INSTALL_LIB)/DataFlow.so -load $(INSTALL_LIB)/HotProfiler.so -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/Heuristics.so -load $(INSTALL_LIB)/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load $(INSTALL_LIB)/Parallelizer.so 
+PRE_OPTPASSES=-load $(INSTALL_LIB)/Architecture.so $(PDGPASS) -load $(INSTALL_LIB)/HotProfiler.so -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/DGSimplify.so
+OPTPASSES=$(PDGPASS) -load $(INSTALL_LIB)Architecture.so -load $(INSTALL_LIB)/DataFlow.so -load $(INSTALL_LIB)/HotProfiler.so -load $(INSTALL_LIB)/Parallelization.so -load $(INSTALL_LIB)/Heuristics.so -load $(INSTALL_LIB)/ParallelizationTechnique.so $(PARALLELIZATION_TECHNIQUES) -load $(INSTALL_LIB)/Parallelizer.so 
 PRINT_OUTPUT_FILE=test.txt
 
 # Fetch the list of files to compile
@@ -85,8 +86,8 @@ $(OPTIMIZED): test_dswp.bc
 test_pdgdot.bc: test_seq.bc
 	$(OPT) $(PRINTPASSES) $(ANALYSES) -heuristics -PDGPrinter $^ -o $@
 
-test_dswp_unoptimized.bc: test_seq.bc
-	$(OPT) $(OPTPASSES) $(ANALYSES) -heuristics -parallelizer $(PARALLELIZATION_OPTIONS) $^ -o $@
+test_dswp_unoptimized.bc: test_seq.bc output.prof
+	$(OPT) $(OPTPASSES) $(ANALYSES) -pgo-test-profile-file=output.prof -block-freq -pgo-instr-use -HotProfiler -heuristics -parallelizer $(PARALLELIZATION_OPTIONS) $< -o $@
 	llvm-dis $@
 
 test_dswp.bc: test_dswp_unoptimized.bc
@@ -120,6 +121,21 @@ test_seq.bc: test.bc $(THREADER).bc
 	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
 	llvm-dis $@
 
+output.prof: default.profraw
+	llvm-profdata merge $^ -output=$@
+
+default.profraw: test_seq_prof input.txt
+	./$< `cat input.txt` 
+
+test_seq_prof: test_seq_prof.bc
+	$(CPP) -pthreads -fprofile-instr-generate -lstdc++ $^ $(LIBS) -o $@
+
+test_seq_prof.bc: test_seq.bc
+	@../../scripts/inject_hotprofiler.sh $^ $@
+
+input.txt:
+	@../../scripts/create_input.sh $@
+
 show_passes: test_seq.bc
 	$(OPT) $(OPTPASSES) $(ANALYSES) -heuristics -Parallelizer $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
 
@@ -136,6 +152,7 @@ print_analyses:
 	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(ANALYSES)" 
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq testseq_comm $(OPTIMIZED) *.prof *.profraw *.dep *.viaconf run_oracle_aa
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *prof
+    rm -f *.dep *.viaconf run_oracle_aa testseq_comm 
 
 .PHONY: show_passes show_time

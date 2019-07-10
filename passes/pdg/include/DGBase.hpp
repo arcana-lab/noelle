@@ -28,7 +28,7 @@ namespace llvm {
   template <class T, class SubT> class DGEdgeBase;
   template <class T> class DGEdge;
 
-  enum DataDependencyType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
+  enum DataDependenceType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
 
   template <class T>
   class DG {
@@ -671,7 +671,7 @@ namespace llvm {
   }
 
   template <class T, class SubT>
-  void DGEdgeBase<T, SubT>::setMemMustType(bool mem, bool must, DataDependencyType dataDepType)
+  void DGEdgeBase<T, SubT>::setMemMustType(bool mem, bool must, DataDependenceType dataDepType)
   {
     this->memory = mem;
     this->must = must;

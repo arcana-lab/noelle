@@ -26,7 +26,7 @@ list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(AddLLVM)
 
 # Pass
-add_subdirectory(catpass)
+add_subdirectory(src)
 
 # Install
 install(PROGRAMS DESTINATION)

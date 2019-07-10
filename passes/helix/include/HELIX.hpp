@@ -32,6 +32,7 @@ namespace llvm {
        */
       HELIX (
         Module &module,
+        Hot &p,
         Verbosity v
       );
 

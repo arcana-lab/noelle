@@ -30,6 +30,7 @@ namespace llvm {
        */
       DOALL (
         Module &module,
+        Hot &p,
         Verbosity v
       );
 
@@ -51,8 +52,9 @@ namespace llvm {
       /*
        * Environment overrides
        */
-      void propagateLiveOutEnvironment (
-        LoopDependenceInfo *LDI
+      BasicBlock * propagateLiveOutEnvironment (
+        LoopDependenceInfo *LDI,
+        Value *numberOfThreadsExecuted
       ) override ;
 
       /*

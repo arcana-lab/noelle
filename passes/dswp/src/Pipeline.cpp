@@ -96,7 +96,7 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &p
   /*
    * Add the call to the task dispatcher: "stageDispatcher" (see DSWP constructor)
    */
-  builder.CreateCall(taskDispatcher, ArrayRef<Value*>({
+  auto runtimeCall = builder.CreateCall(taskDispatcher, ArrayRef<Value*>({
     envPtr,
     queueSizesPtr,
     stagesPtr,
@@ -104,8 +104,14 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &p
     queuesCount
   }));
 
-  this->propagateLiveOutEnvironment(LDI);
+  /*
+   * Propagate live-out values to the caller of the loop.
+   */
+  this->propagateLiveOutEnvironment(LDI, runtimeCall);
+
   builder.CreateBr(this->exitPointOfParallelizedLoop);
+
+  return ;
 }
 
 Value * DSWP::createStagesArrayFromStages (

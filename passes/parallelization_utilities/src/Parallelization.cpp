@@ -31,6 +31,7 @@
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
 #include "HotProfiler.hpp"
+#include "Architecture.hpp"
 
 using namespace llvm;
 
@@ -511,11 +512,17 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   if (loopExitBlocks.size() == 1) {
     endBuilder.CreateBr(loopExitBlocks[0]);
   } else {
+
+    /*
+     * Compute how many values can fit in a cache line.
+     */
+    auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
+
     auto exitEnvPtr = endBuilder.CreateInBoundsGEP(
       envArray,
       ArrayRef<Value*>({
         cast<Value>(ConstantInt::get(int64, 0)),
-        endBuilder.CreateMul(envIndexForExitVariable, ConstantInt::get(int64, 8))
+        endBuilder.CreateMul(envIndexForExitVariable, ConstantInt::get(int64, valuesInCacheLine))
       })
     );
     auto exitEnvCast = endBuilder.CreateIntCast(endBuilder.CreateLoad(exitEnvPtr), int32, /*isSigned=*/false);

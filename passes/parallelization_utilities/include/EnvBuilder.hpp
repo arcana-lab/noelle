@@ -88,10 +88,12 @@ namespace llvm {
      * Reduce live out variables given binary operators to reduce
      * with and initial values to start at
      */
-    void reduceLiveOutVariables (
+    BasicBlock * reduceLiveOutVariables (
+      BasicBlock *bb,
       IRBuilder<>,
       std::unordered_map<int, int> &reducableBinaryOps,
-      std::unordered_map<int, Value *> &initialValues
+      std::unordered_map<int, Value *> &initialValues,
+      Value *numberOfThreadsExecuted
     );
 
     /*
@@ -126,6 +128,7 @@ namespace llvm {
     std::vector<Type *> envTypes;
     std::unordered_map<int, Value *> envIndexToVar;
     std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
+    std::unordered_map<int, AllocaInst *> envIndexToVectorOfReducableVar;
     int numReducers;
 
     /*

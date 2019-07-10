@@ -36,24 +36,80 @@ namespace llvm {
     public:
 
       /*
-       * Constructor
-       */
-      PDG() ;
-
-      /*
+       * Constructor: 
        * Add all instructions included in the module M as nodes to the PDG.
        */
-      void populateNodesOf (Module &M);
+      PDG (Module &M) ;
 
       /*
+       * Constructor: 
        * Add all instructions included in the function F as nodes to the PDG.
        */
-      void populateNodesOf (Function &F);
+      PDG (Function &F) ;
+
+      /*
+       * Constructor: 
+       * Add all instructions included in the loop only.
+       */
+      PDG (Loop *loop) ;
+
+      /*
+       * Constructor: 
+       * Add only the instructions given as parameter.
+       */
+      PDG (std::vector<Value *> &values) ;
+
+      /*
+       * Constructor: 
+       * Empty graph.
+       */
+      PDG ();
+
+      /*
+       * Return the number of instructions included in the PDG.
+       */
+      int64_t getNumberOfInstructionsIncluded (void) const ;
+
+      /*
+       * Return the number of dependences of the PDG including dependences that connect instructions outside the PDG.
+       */
+      int64_t getNumberOfDependencesBetweenInstructions (void) const ;
+
+      /*
+       * Iterator: iterate over the instructions that depend on @param fromValue .
+       *
+       * This means there is an edge from @param fromValue to @param toValue of the type specified by the other parameters.
+       * For each of this edge, the function @param functionToInvokePerDependence is invoked.
+       */
+      void iterateOverDependencesFrom (
+        Value *fromValue, 
+        bool includeControlDependences,
+        bool includeMemoryDataDependences,
+        bool includeRegisterDataDependences,
+        std::function<bool (Value *toValue, DataDependenceType ddType)> functionToInvokePerDependence
+        );
+
+      /*
+       * Iterator: iterate over the instructions that @param toValue depends from.
+       *
+       * This means there is an edge from @param fromValue to @param toValue of the type specified by the other parameters.
+       * For each of this edge, the function @param functionToInvokePerDependence is invoked.
+       */
+      void iterateOverDependencesTo (
+        Value *toValue, 
+        bool includeControlDependences,
+        bool includeMemoryDataDependences,
+        bool includeRegisterDataDependences,
+        std::function<bool (Value *fromValue, DataDependenceType ddType)> functionToInvokePerDependence
+        );
 
       /*
        * Add the edge from "from" to "to" to the PDG.
        */
-      DGEdge<Value> * addEdge (Value *from, Value *to);
+      DGEdge<Value> * addEdge (
+        Value *from, 
+        Value *to
+        );
 
       /*
        * Creating Program Dependence Subgraphs
@@ -67,7 +123,7 @@ namespace llvm {
        */
       ~PDG() ;
       
-    private:
+    protected:
       void addNodesOf (Function &F);
       void setEntryPointAt (Function &F);
       void copyEdgesInto (PDG *newPDG, bool linkToExternal = true);
