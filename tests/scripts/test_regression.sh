@@ -18,7 +18,17 @@ function runningTests {
   local checked_tests=0 ;
   local passed_tests=0 ;
   local dirs_of_failed_tests="" ;
-  
+ 
+  # Compute the number of tests
+  numOfTests="0" ;
+  for i in `ls`; do
+    if ! test -d $i ; then
+      continue ;
+    fi
+    numOfTests=`echo "$numOfTests + 1" | bc` ;
+  done
+
+  currentTest="0" ; 
   for i in `ls`; do
     if ! test -d $i ; then
       continue ;
@@ -27,35 +37,38 @@ function runningTests {
 
     # Go to the test directory
     cd $i ;
-    echo -n "   Testing `basename $i` " ;
+    echo -n -e "\r   Successes $passed_tests : Testing $currentTest / $numOfTests : `basename $i`                                                 " ;
 
     # Clean
     make clean > /dev/null ; 
 
     # Compile
     make PARALLELIZATION_OPTIONS="$2" >> compiler_output.txt 2>&1 ;
+    
+    # Generate the input
+    make input.txt &> /dev/null ;
 
     # Baseline
-    ./baseline 2 2 2 &> output_baseline.txt ;
+    ./baseline `cat input.txt` &> output_baseline.txt ;
 
     # Transformation
-    ./parallelized 2 2 2 &> output_parallelized.txt ;
+    ./parallelized `cat input.txt` &> output_parallelized.txt ;
 
     # Check the output ;
     cmp output_baseline.txt output_parallelized.txt &> /dev/null ;
     if test $? -ne 0 ; then
-      echo -e "\e[31mFailed\e[0m" ;
       dirs_of_failed_tests="${i} ${dirs_of_failed_tests}" ;
     else
       passed_tests=`echo "$passed_tests + 1" | bc` ;
-      echo -e "\e[32mPassed\e[0m" ;
     fi
 
+    currentTest=`echo "$currentTest + 1" | bc` ;
     cd ../ ;
   done
 
   # Print the results
-  echo "    Tests passed: ${passed_tests} / ${checked_tests}" ;
+  echo -n -e "\r   Tests passed: ${passed_tests} / ${checked_tests}                                                                   " ;
+  echo "" ;
   if test "${dirs_of_failed_tests}" != "" ; then
     echo "    Tests failed: ${dirs_of_failed_tests}" ;
   fi

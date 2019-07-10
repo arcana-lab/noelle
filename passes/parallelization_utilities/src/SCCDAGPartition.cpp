@@ -22,15 +22,17 @@ SCCDAGPartition::SCCDAGPartition (
 }
 
 uint64_t SCCDAGPartition::numberOfPartitions (void){
+  assert(this->subsets != nullptr);
+
   return this->subsets->size();
 }
 
 void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
   subsets = sets;
-  SCCToSet.clear();
+  this->SCCToSet.clear();
   for (auto subset : *subsets) {
     for (auto scc : *subset) {
-      SCCToSet[scc] = subset;
+      this->SCCToSet[scc] = subset;
     }
   }
 

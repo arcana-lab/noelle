@@ -10,31 +10,31 @@
  */
 #pragma once
 
-#include "HELIX.hpp"
-#include "SCCDAGPartition.hpp"
-#include "llvm/ADT/iterator_range.h"
+#include "SystemHeaders.hpp"
+
+using namespace llvm;
 
 namespace llvm {
 
-  class SequentialSegment {
+  class LoopSummary {
     public:
-      SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs, int32_t ID, Verbosity verbosity) ;
+      int id;
+      LoopSummary *parent;
+      std::set<LoopSummary *> children;
+      int depth;
+      BasicBlock *header;
+      std::vector<BasicBlock *> orderedBBs;
+      std::set<BasicBlock *> bbs;
+      std::set<BasicBlock *> latchBBs;
 
-      void forEachEntry (std::function <void (Instruction *justAfterEntry)> whatToDo);
+      LoopSummary(int id, Loop *l);
 
-      void forEachExit (std::function <void (Instruction *justBeforeExit)> whatToDo);
+      bool isLoopInvariant (Value *v);
 
-      int32_t getID (void);
-
-      iterator_range<SCCset::iterator>
-      getSCCs() { return make_range(sccs->begin(), sccs->end()); }
-
+      void print (raw_ostream &stream);
+      
     private:
-      std::set<Instruction *> entries;
-      std::set<Instruction *> exits;
-      SCCset *sccs;
-      int32_t ID;
-      Verbosity verbosity;
+      std::set<Value *> invariants;
   };
 
 }

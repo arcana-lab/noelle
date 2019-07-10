@@ -228,12 +228,16 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
     auto producer = env->producerAt(envIndex);
     auto scc = sccdag->sccOfValue(producer);
 
-    // TODO(angelo): Implement this if it is legal. Unsure at the moment
-    // if (scc->getType() == SCC::SCCType::INDEPENDENT) continue ;
-    if (scc->getType() == SCC::SCCType::REDUCIBLE) continue ;
+    if (scc->getType() == SCC::SCCType::INDEPENDENT) {
+      continue ;
+    }
+    if (scc->getType() == SCC::SCCType::REDUCIBLE) {
+      continue ;
+    }
 
     return false;
   }
+
   return true;
 }
 
@@ -320,34 +324,78 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
     for (auto valuePair : scc->internalNodePairs()) {
-      if (auto phi = dyn_cast<PHINode>(valuePair.first)) {
+
+      /*
+       * Fetch the instruction and the related node in the PDG.
+       */
+      auto inst = valuePair.first;
+      auto depNode = valuePair.second;
+
+      /*
+       * Handle PHI instructions.
+       */
+      if (auto phi = dyn_cast<PHINode>(inst)) {
         auto loop = LIS.bbToLoop[phi->getParent()];
         if (loop->header != phi->getParent()) continue;
 
-        for (auto edge : valuePair.second->getIncomingEdges()) {
+        for (auto edge : depNode->getIncomingEdges()) {
           if (edge->isControlDependence()) continue;
+
+          /*
+           * Check if the dependence is between instructions within the loop.
+           */
           auto depI = (Instruction*)edge->getOutgoingT();
           if (!scc->isInternal(depI)) continue;
+
+          /*
+           * Check if the dependence crosses the iteration boundary.
+           */
           if (canPrecedeInCurrentIteration(LIS, depI, phi)) continue;
+
+          /*
+           * The dependence From->To crosses the iteration boundary.
+           * However, To is a PHI node. Hence, there is this potential case where it doesn't lead to a cross-iteration dependence.
+           *
+           * Ly:
+           *
+           * To:  = PHI (<%v, Lx>; <%w, Ly>)
+           *
+           * Lx
+           * From: = %v
+           *
+           * Check for this special case.
+           */
+          //if (canPrecedeInCurrentIteration(LIS, phi, depI)) continue;
+
+          /*
+           * The dependence is loop-carried.
+           */
           interIterDeps[scc].insert(edge);
         }
+
+        continue ;
       }
 
-      if (auto term = dyn_cast<TerminatorInst>(valuePair.first)) {
-        for (auto edge : valuePair.second->getOutgoingEdges()) {
+      /*
+       * Handle Terminator instructions.
+       */
+      if (auto term = dyn_cast<TerminatorInst>(inst)) {
+        for (auto edge : depNode->getOutgoingEdges()) {
           auto depV = edge->getIncomingT();
           assert(isa<Instruction>(depV));
           auto depBB = ((Instruction*)depV)->getParent();
           if (term->getParent() != depBB) continue;
           interIterDeps[scc].insert(edge);
         }
+        continue ;
       }
 
-      if (isa<StoreInst>(valuePair.first)
-          || isa<LoadInst>(valuePair.first)
-          || isa<CallInst>(valuePair.first)) {
-        auto memI = (Instruction *)valuePair.first;
-        for (auto edge : valuePair.second->getOutgoingEdges()) {
+      if (isa<StoreInst>(inst)
+          || isa<LoadInst>(inst)
+          || isa<CallInst>(inst)
+        ) {
+        auto memI = cast<Instruction>(inst);
+        for (auto edge : depNode->getOutgoingEdges()) {
           if (!edge->isMemoryDependence()) continue;
           auto depI = (Instruction *)edge->getIncomingT();
           if (canPrecedeInCurrentIteration(LIS, memI, depI)) continue;
@@ -749,12 +797,21 @@ bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopI
 }
 
 void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
-  if (isClonableByInductionVars(scc) ||
-      isClonableBySyntacticSugarInstrs(scc) ||
-      isClonableByCmpBrInstrs(scc)) {
+
+  /*
+   * Check the simple cases.
+   */
+  if ( false
+       || isClonableByInductionVars(scc)
+       || isClonableBySyntacticSugarInstrs(scc)
+       || isClonableByCmpBrInstrs(scc)
+      ) {
     this->getSCCAttrs(scc)->isClonable = true;
     clonableSCCs.insert(scc);
+    return ;
   }
+
+  return ;
 }
 
 bool SCCDAGAttrs::isClonableByInductionVars (SCC *scc) const {
@@ -916,4 +973,55 @@ bool SCCDAGAttrs::collectDerivationChain (std::vector<Instruction *> &chain, SCC
   }
 
   return true;
+}
+
+bool SCCDAGAttrs::isALoopCarriedDependence (SCC *scc, DGEdge<Value> *dependence) {
+
+  /*
+   * Fetch the set of loop-carried data dependences of a SCC.
+   */
+  if (this->interIterDeps.find(scc) == this->interIterDeps.end()){
+    return false;
+  }
+  auto lcDeps = this->interIterDeps[scc];
+
+  /*
+   * Check whether the dependence is inside lcDeps.
+   */
+  return lcDeps.find(dependence) != lcDeps.end();
+}
+      
+void SCCDAGAttrs::iterateOverLoopCarriedDataDependences (
+  SCC *scc, 
+  std::function<bool (DGEdge<Value> *dependence)> func
+  ){
+
+  /*
+   * Iterate over internal edges of the SCC.
+   */
+  for (auto valuePair : scc->internalNodePairs()) {
+    for (auto edge : valuePair.second->getIncomingEdges()) {
+
+      /*
+       * Check if the current edge is a loop-carried data dependence.
+       */
+      if (!this->isALoopCarriedDependence(scc, edge)){
+        continue ;
+      }
+
+      /*
+       * The current edge is a loop-carried data dependence.
+       */
+      auto result = func(edge);
+
+      /*
+       * Check if the caller wants us to stop iterating.
+       */
+      if (result){
+        return ;
+      }
+    }
+  }
+
+  return ;
 }

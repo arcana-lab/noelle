@@ -17,8 +17,11 @@ using namespace llvm ;
 SequentialSegment::SequentialSegment (
   LoopDependenceInfo *LDI, 
   SCCset *sccs,
-  int32_t ID
-  ){
+  int32_t ID,
+  Verbosity verbosity
+  ) :
+  verbosity{verbosity}
+  {
 
   /*
    * Set the ID
@@ -33,9 +36,25 @@ SequentialSegment::SequentialSegment (
   /*
    * Identify all dependent instructions that require synchronization
    */
+  if (this->verbosity >= Verbosity::Maximal) {
+    errs() << "HELIX:   Sequential segment " << ID << "\n" ;
+    errs() << "HELIX:     SCCs included in the current sequential segment\n";
+  }
   std::set<Instruction *> ssInstructions;
   for (auto scc : *sccs){
     assert(scc->hasCycle());
+    if (this->verbosity >= Verbosity::Maximal) {
+      errs() << "HELIX:       Type = " << scc->getType() << "\n";
+      errs() << "HELIX:       Loop-carried data dependences\n";
+      auto lcIterFunc = [scc](DGEdge<Value> *dep) -> bool {
+        auto fromInst = dep->getOutgoingT();
+        auto toInst = dep->getIncomingT();
+        assert(scc->isInternal(fromInst) || scc->isInternal(toInst));
+        errs() << "HELIX:        \"" << *fromInst << "\" -> \"" << *toInst  << "\"\n";
+        return false;
+      };
+      LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, lcIterFunc);
+    }
 
     /*
      * Add all instructions of the current SCC to the set.
@@ -47,6 +66,12 @@ SequentialSegment::SequentialSegment (
        * NOTE: Values internal to an SCC are instructions
        */
       ssInstructions.insert(cast<Instruction>(nodePair.first));
+    }
+  }
+  if (this->verbosity >= Verbosity::Maximal) {
+    errs() << "HELIX:     Instructions that belong to the SS\n";
+    for (auto ssInst : ssInstructions){
+      errs() << "HELIX:       " << *ssInst << "\n";
     }
   }
 
@@ -70,7 +95,6 @@ SequentialSegment::SequentialSegment (
      * We do this because we are interested in understanding the reachability of instructions within a single iteration.
      */
     auto succBB = succ->getParent();
-    // if (succBB == LDI->header){
     if (succ == &*LDI->header->begin()) {
       return ;
     }
@@ -89,14 +113,30 @@ SequentialSegment::SequentialSegment (
     IN.insert(genI.begin(), genI.end());
     return ;
   };
-  DataFlowResult *dfr = dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
+  auto dfr = dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
 
   /*
    * Identify the locations where signal and wait instructions should be placed.
    */
+  std::list<Instruction *> workingList;
+  std::unordered_map<Instruction *, bool> visited;
   for (auto I : ssInstructions) {
-    auto &afterInstructions = dfr->OUT(I);
+    visited[I] = true;
+    workingList.push_back(I);
+  }
+  while (!workingList.empty()){
 
+    /*
+     * Fetch the current instruction to consider.
+     */
+    auto I = workingList.front();
+    workingList.pop_front();
+    assert(visited[I] == true);
+
+    /*
+     * Check OUT[I]
+     */
+    auto &afterInstructions = dfr->OUT(I);
     std::set<Instruction *> inSS;
     for (auto afterV : afterInstructions) {
       auto afterI = cast<Instruction>(afterV);
@@ -107,13 +147,79 @@ SequentialSegment::SequentialSegment (
       }
     }
 
+    /*
+     * Check if I is an exit of the current sequential segment.
+     */
     bool noneInSS = inSS.size() == 0;
-    bool allInSS = (inSS.size() + 1) == ssInstructions.size();
     if (noneInSS) {
       this->exits.insert(I);
-    } else if (allInSS) {
+      continue ;
+    }
+
+    /*
+     *
+     * Add the successors of I to the working list.
+     */
+    auto bb = I->getParent();
+    if (bb->getTerminator() != I){
+
+      /*
+       * I is inside a basic block.
+       *
+       * Fetch the next instruction within the same basic block.
+       */
+      BasicBlock::iterator iter(I);
+      iter++;
+      auto succI = &*iter;
+      if (visited.find(succI) == visited.end()){
+        workingList.push_back(succI);
+        visited[succI] = true;
+      }
+
+    } else {
+
+      /*
+       * I is the terminator of a basic block.
+       * We need to add the first instructions of the basic block successors if they belong to the loop.
+       */
+      for (auto succBB : successors(bb)){
+
+        /*
+         * Check if succBB belongs to the loop being parallelized.
+         */
+        if (std::find(LDI->loopBBs.begin(), LDI->loopBBs.end(), succBB) == LDI->loopBBs.end()){
+
+          /*
+           * succBB doesn't belong to the loop being parallelized.
+           */
+          continue ;
+        }
+
+        /*
+         * succBB belongs to the loop being parallelized.
+         */
+        auto succI = succBB->getFirstNonPHIOrDbgOrLifetime();
+        if (visited.find(succI) == visited.end()){
+          workingList.push_back(succI);
+          visited[succI] = true;
+        }
+      }
+    }
+
+    /*
+     * Check if I is an entry of the current sequential segment.
+     */
+    bool allInSS = (inSS.size() + 1) == ssInstructions.size();
+    if (  true
+          && allInSS
+          && (ssInstructions.find(I) != ssInstructions.end())
+          ) {
       this->entries.insert(I);
     }
+
+    /*
+     * I is not an entry and it is not an exit.
+     */
   }
   assert(this->entries.size() > 0
     && "The data flow analysis did not identify any per-iteration entry to the sequential segment!\n");

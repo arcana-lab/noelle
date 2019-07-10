@@ -39,11 +39,18 @@ namespace llvm {
 
       SCCDAG() ;
 
+      bool doesItContain (Instruction *inst) const ;
+
+      int64_t numberOfInstructions (void) ;
+
+      bool iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke);
+
       //SIMONE: it would be fantastic to have a method like "getAllSCCsWithNoInternalIncomingEdges"
 
       void mergeSCCs(std::set<DGNode<SCC> *> &sccSet);
 
       SCC *sccOfValue (Value *val) const;
+
       ~SCCDAG() ;
 
 

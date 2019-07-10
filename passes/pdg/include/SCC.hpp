@@ -20,19 +20,23 @@ using namespace llvm;
 namespace llvm {
 
 	/*
-	* Strongly Connected Component
-	*/
+	 * Strongly Connected Component
+	 */
 	class SCC : public DG<Value> {
       public:
         enum SCCType {SEQUENTIAL, REDUCIBLE, INDEPENDENT};
 
         SCC (std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
 
+        bool iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke);
+
         bool hasCycle (bool ignoreControlDep = false) ;
 
         SCCType getType (void) const;
 
         void setType (SCCType t);
+
+        int64_t numberOfInstructions (void) const ;
 
         raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "", int maxEdges = 15) ;
 

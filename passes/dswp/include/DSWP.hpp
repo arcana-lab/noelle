@@ -48,11 +48,6 @@ namespace llvm {
         Heuristics *h
       ) const override ;
 
-      void initialize (
-        LoopDependenceInfo *LDI,
-        Heuristics *h
-      );
-
     private:
 
       /*

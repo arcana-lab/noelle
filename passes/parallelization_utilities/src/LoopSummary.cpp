@@ -8,33 +8,45 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#include "LoopSummary.hpp"
 
-#include "HELIX.hpp"
-#include "SCCDAGPartition.hpp"
-#include "llvm/ADT/iterator_range.h"
+using namespace llvm;
 
-namespace llvm {
+LoopSummary::LoopSummary (int id, Loop *l){
+  this->id = id;
+  this->depth = l->getLoopDepth();
+  this->header = l->getHeader();
+  for (auto bb : l->blocks()) {
+    // NOTE: Unsure if this is program forward order
+    orderedBBs.push_back(bb);
+    this->bbs.insert(bb);
+    if (l->isLoopLatch(bb)) {
+      latchBBs.insert(bb);
+    }
+  }
 
-  class SequentialSegment {
-    public:
-      SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs, int32_t ID, Verbosity verbosity) ;
+  for (auto bb : this->bbs){
+    for (auto& inst : *bb){
+      if (l->isLoopInvariant(&inst)){
+        this->invariants.insert(&inst);
+      }
+    }
+  }
 
-      void forEachEntry (std::function <void (Instruction *justAfterEntry)> whatToDo);
+  return ;
+}
+      
+bool LoopSummary::isLoopInvariant (Value *v){
+  if (this->invariants.find(v) == this->invariants.end()){
+    return false;
+  }
 
-      void forEachExit (std::function <void (Instruction *justBeforeExit)> whatToDo);
+  return true;
+}
+      
+void LoopSummary::print (raw_ostream &stream) {
+  stream << "Loop summary: " << id << ", depth: " << depth << "\n";
+  header->begin()->print(stream); stream << "\n";
 
-      int32_t getID (void);
-
-      iterator_range<SCCset::iterator>
-      getSCCs() { return make_range(sccs->begin(), sccs->end()); }
-
-    private:
-      std::set<Instruction *> entries;
-      std::set<Instruction *> exits;
-      SCCset *sccs;
-      int32_t ID;
-      Verbosity verbosity;
-  };
-
+  return ;
 }
