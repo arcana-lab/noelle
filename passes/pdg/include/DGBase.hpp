@@ -195,7 +195,8 @@ namespace llvm {
   {
    public:
     DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
-      : from(src), to(dst), memory(false), must(false), dataDepType(DG_DATA_NONE), isControl(false) {}
+      : from(src), to(dst), memory(false), must(false), dataDepType(DG_DATA_NONE), isControl(false)
+      {}
     DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
     typedef typename std::set<DGEdge<SubT> *>::iterator edges_iterator;
