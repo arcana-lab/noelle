@@ -195,8 +195,9 @@ namespace llvm {
   {
    public:
     DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
-      : from(src), to(dst), memory(false), must(false), dataDepType(DG_DATA_NONE),
-        isControl(false), isCommutative(false) {}
+      : from(src), to(dst), memory(false), must(false), dataDepType(DG_DATA_NONE), isControl(false)
+      , isCommutative(false) 
+      {}
     DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
     typedef typename std::set<DGEdge<SubT> *>::iterator edges_iterator;
@@ -221,11 +222,11 @@ namespace llvm {
     bool isWAWDependence() const { return dataDepType == DG_DATA_WAW; }
     bool isControlDependence() const { return isControl; }
     bool isCommutativeDependence() const { return isCommutative; }
-    DataDependencyType dataDependenceType() const { return dataDepType; }
+    DataDependenceType dataDependenceType() const { return dataDepType; }
 
     void setControl(bool ctrl) { isControl = ctrl; }
+    void setMemMustType(bool mem, bool must, DataDependenceType dataDepType);
     void setCommutative(bool comm) { isCommutative = comm; }
-    void setMemMustType(bool mem, bool must, DataDependencyType dataDepType);
 
     void addSubEdge(DGEdge<SubT> *edge) { subEdges.insert(edge); }
     void removeSubEdge(DGEdge<SubT> *edge) { subEdges.erase(edge); }
@@ -239,7 +240,7 @@ namespace llvm {
     DGNode<T> *from, *to;
     std::set<DGEdge<SubT> *> subEdges;
     bool memory, must, isControl, isCommutative;
-    DataDependencyType dataDepType;
+    DataDependenceType dataDepType;
   };
 
   /*
@@ -549,7 +550,7 @@ namespace llvm {
     stream << "External nodes: " << externalNodeMap.size() << "\n";
     for (auto pair : externalNodePairs()) pair.second->print(stream) << "\n";
     stream << "Edges: " << allEdges.size() << "\n";
-    for (auto edge : allEdges) edge->print(errs()) << "\n";
+    for (auto edge : allEdges) edge->print(stream) << "\n";
   }
 
   /*
