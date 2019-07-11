@@ -6,12 +6,20 @@ if test "$installDir" == "" ; then
   installDir="~/CAT"
 fi
 
+# Check the cmake binary
+command -v cmake3
+if test $? -eq 1 ; then
+  CMAKE="cmake" ;
+else
+  CMAKE="cmake3" ;
+fi
+
 # Install
 pushd ./ ;
 rm -rf build/ ; 
 mkdir build ; 
 cd build ; 
-cmake -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_BUILD_TYPE=Debug ../ ; 
+${CMAKE} -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_BUILD_TYPE=Debug ../ ; 
 make ;
 make install ;
 popd ;
