@@ -1,4 +1,7 @@
-all: basic_utilities parallelization_utilities architecture hotprofiler printer pdg talkdown alloc_aa dataflow dgsimplify parallelizer heuristics parallelization_technique dswp doall helix
+all: basic_utilities parallelization_utilities architecture hotprofiler printer pdg talkdown alloc_aa dataflow dgsimplify parallelizer heuristics parallelization_technique dswp doall helix unique_ir_marker
+
+unique_ir_marker:
+	cd $@ ; ../scripts/run_me.sh
 
 dataflow:
 	cd $@ ; ../scripts/run_me.sh
@@ -56,4 +59,4 @@ clean:
 	find ./ -name .ycm_extra_conf.py -delete ;
 	find ./ -name compile_commands.json -delete ;
 
-.PHONY: clean pdg printer talkdown alloc_aa dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix hotprofiler dataflow architecture
+.PHONY: clean pdg printer talkdown alloc_aa dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix hotprofiler dataflow architecture unique_ir_marker
