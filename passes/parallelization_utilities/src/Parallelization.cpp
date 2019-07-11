@@ -191,6 +191,8 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Fetch the function dependence graph.
      */
+    // FIXME: Possible memory leak, this is the only pointer t funcPDG (so owner)
+    // FIXME: LDI doesn't clean up funcPDG
     auto funcPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
 
     /*
