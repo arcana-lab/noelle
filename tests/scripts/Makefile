@@ -1,5 +1,7 @@
 CC=clang
 CPP=clang++
+OPT=opt
+
 AA_BASE=-basicaa
 AA_ADVANCED=$(AA_BASE) -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa
 ANALYSES=$(AA_ADVANCED) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization 
@@ -35,14 +37,14 @@ all: baseline testseq $(OPTIMIZED)
 
 %.bc: %.c
 	$(CC) $(INCLUDES) -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
-	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
-	opt -dot-cfg -disable-output $@
+	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
 %.bc: %.cpp
 	$(CPP) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
-	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
-	opt -dot-cfg -disable-output $@
+	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
 baseline: baseline.bc
@@ -58,10 +60,10 @@ $(OPTIMIZED): test_dswp.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
 test_pdgdot.bc: test_seq.bc
-	opt $(PRINTPASSES) $(ANALYSES) -heuristics -PDGPrinter $^ -o $@
+	$(OPT) $(PRINTPASSES) $(ANALYSES) -heuristics -PDGPrinter $^ -o $@
 
 test_dswp_unoptimized.bc: test_seq.bc output.prof
-	opt $(OPTPASSES) $(ANALYSES) -pgo-test-profile-file=output.prof -block-freq -pgo-instr-use -HotProfiler -heuristics -parallelizer $(PARALLELIZATION_OPTIONS) $< -o $@
+	$(OPT) $(OPTPASSES) $(ANALYSES) -pgo-test-profile-file=output.prof -block-freq -pgo-instr-use -HotProfiler -heuristics -parallelizer $(PARALLELIZATION_OPTIONS) $< -o $@
 	llvm-dis $@
 
 test_dswp.bc: test_dswp_unoptimized.bc
@@ -75,7 +77,7 @@ baseline.bc: test.bc
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
 	@../../scripts/iterate_dgsimplify.sh "-inliner-verbose=1" "$(PRE_OPTPASSES)" "$@"
-	opt $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
 	llvm-dis $@
 
 output.prof: default.profraw
@@ -94,10 +96,10 @@ input.txt:
 	@../../scripts/create_input.sh $@
 
 show_passes: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -heuristics -Parallelizer $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
+	$(OPT) $(OPTPASSES) $(ANALYSES) -heuristics -Parallelizer $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
 
 show_time: test_seq.bc
-	opt $(OPTPASSES) $(ANALYSES) -heuristics -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
+	$(OPT) $(OPTPASSES) $(ANALYSES) -heuristics -Parallelizer $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 print_transformations_before_parallelization:
 	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)" 
