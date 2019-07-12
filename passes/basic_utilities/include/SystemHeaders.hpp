@@ -18,6 +18,7 @@
 
 #include <math.h>
 
+#include <llvm/ADT/StringRef.h>
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"
@@ -26,6 +27,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/DataLayout.h"
+#include <llvm/IR/InstVisitor.h>
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Utils/Cloning.h"

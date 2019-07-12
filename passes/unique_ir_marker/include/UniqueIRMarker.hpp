@@ -1,10 +1,6 @@
 #pragma once
 
-#include <llvm/Analysis/LoopInfo.h>
-#include <llvm/Pass.h>
-#include <llvm/IR/InstVisitor.h>
-
-#include <set>
+#include "SystemHeaders.hpp"
 
 #include "UniqueIRConstants.hpp"
 #include "UniqueIRMarkerReader.hpp"

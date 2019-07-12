@@ -1,9 +1,6 @@
 #pragma once
 
-#include <llvm/Analysis/LoopInfo.h>
-#include <llvm/IR/InstVisitor.h>
-
-#include <set>
+#include "SystemHeaders.hpp"
 
 #include "UniqueIRConstants.hpp"
 #include "UniqueIRMarkerReader.hpp"
@@ -22,8 +19,6 @@ class UniqueIRVerifier : public InstVisitor<UniqueIRVerifier> {
   bool verifyLoops();
 
  private:
-
-
   ModulePass& MP;
 
   // if the bitcode file already has a module 'VIA.M.ID' definition then this walker will instead verify that
@@ -35,7 +30,4 @@ class UniqueIRVerifier : public InstVisitor<UniqueIRVerifier> {
 
   void checkFunction(Function &);
   void checkInstruction(Instruction &);
-
-
-
 };

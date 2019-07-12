@@ -1,6 +1,6 @@
 #pragma once
 
-#include <llvm/ADT/StringRef.h>
+#include "SystemHeaders.hpp"
 
 using llvm::StringRef;
 

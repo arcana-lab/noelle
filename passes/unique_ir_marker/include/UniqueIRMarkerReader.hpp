@@ -1,14 +1,9 @@
 #pragma once
 
-
-#include <llvm/Analysis/LoopInfo.h>
-#include <llvm/IR/Constants.h>
-#include <llvm/IR/InstVisitor.h>
-
+#include "SystemHeaders.hpp"
 #include <optional>
 
 #include "UniqueIRConstants.hpp"
-
 
 using std::optional;
 using std::nullopt;
@@ -35,8 +30,6 @@ class UniqueIRMarkerReader {
   static optional<IDType> getLoopID(const llvm::Loop *);
 
  private:
-
-
   static optional<IDType> getID(const Constant *);
   static optional<Constant *> getConst(const llvm::MDOperand &);
   static optional<reference_wrapper<const MDOperand>> getIthOperand(const MDNode *, uint operand);

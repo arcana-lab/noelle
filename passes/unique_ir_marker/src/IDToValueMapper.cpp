@@ -1,4 +1,3 @@
-
 #include <IDToValueMapper.hpp>
 
 #include "UniqueIRMarkerReader.hpp"

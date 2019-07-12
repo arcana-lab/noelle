@@ -1,6 +1,7 @@
 #pragma once
 
-#include <set>
+#include "SystemHeaders.hpp"
+
 #include "UniqueIRMarker.hpp"
 
 class IDToInstructionMapper  : public InstVisitor<IDToInstructionMapper> {

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <llvm/Analysis/LoopInfo.h>
-#include <llvm/Pass.h>
+#include "SystemHeaders.hpp"
 
 using namespace llvm;
 
