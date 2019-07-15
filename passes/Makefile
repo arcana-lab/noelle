@@ -1,4 +1,4 @@
-all: basic_utilities parallelization_utilities architecture hotprofiler printer pdg talkdown alloc_aa dataflow dgsimplify parallelizer heuristics parallelization_technique dswp doall helix oracle_aa unique_ir_marker commutative_dependence_analysis 
+all: basic_utilities parallelization_utilities architecture hotprofiler printer pdg talkdown alloc_aa dataflow dgsimplify parallelizer heuristics parallelization_technique dswp doall helix unique_ir_marker oracle_aa commutative_dependence_analysis 
 
 oracle_aa:
 	cd $@ ; ../scripts/run_me.sh
@@ -65,4 +65,4 @@ clean:
 	find ./ -name .ycm_extra_conf.py -delete ;
 	find ./ -name compile_commands.json -delete ;
 
-.PHONY: clean pdg printer talkdown alloc_aa dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix hotprofiler dataflow architecture oracle_aa unique_ir_marker commutative_dependence_analysis
+.PHONY: clean pdg printer talkdown alloc_aa dgsimplify parallelizer download parallelization_utilities heuristics parallelization_technique dswp doall helix hotprofiler dataflow architecture unique_ir_marker oracle_aa commutative_dependence_analysis
