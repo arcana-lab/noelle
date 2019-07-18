@@ -20,8 +20,8 @@ DataFlowResult * DataFlowAnalysis::applyForward (
   Function *f,
   std::function<void (Instruction *, DataFlowResult *)> computeGEN,
   std::function<void (Instruction *, DataFlowResult *)> computeKILL,
-  std::function<void (std::set<Value *>& IN)> initializeIN,
-  std::function<void (std::set<Value *>& OUT)> initializeOUT,
+  std::function<void (Instruction *inst, std::set<Value *>& IN)> initializeIN,
+  std::function<void (Instruction *inst, std::set<Value *>& OUT)> initializeOUT,
   std::function<void (std::set<Value *>& IN, Instruction *predecessor, DataFlowResult *df)> computeIN,
   std::function<void (std::set<Value *>& OUT, Instruction *inst, DataFlowResult *df)> computeOUT
   ){
@@ -34,8 +34,8 @@ DataFlowResult * DataFlowAnalysis::applyForward (
     for (auto& i : bb){
       auto& INSet = df->IN(&i);
       auto& OUTSet = df->OUT(&i);
-      initializeIN(INSet);
-      initializeOUT(OUTSet);
+      initializeIN(&i, INSet);
+      initializeOUT(&i, OUTSet);
     }
   }
 
