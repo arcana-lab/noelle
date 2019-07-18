@@ -20,14 +20,28 @@ DataFlowResult * DataFlowAnalysis::applyForward (
   Function *f,
   std::function<void (Instruction *, DataFlowResult *)> computeGEN,
   std::function<void (Instruction *, DataFlowResult *)> computeKILL,
+  std::function<void (std::set<Value *>& IN)> initializeIN,
+  std::function<void (std::set<Value *>& OUT)> initializeOUT,
   std::function<void (std::set<Value *>& IN, Instruction *predecessor, DataFlowResult *df)> computeIN,
   std::function<void (std::set<Value *>& OUT, Instruction *inst, DataFlowResult *df)> computeOUT
   ){
 
   /*
-   * Compute the GENs and KILLs
+   * Initialize IN and OUT sets.
    */
   auto df = new DataFlowResult{};
+  for (auto& bb : *f){
+    for (auto& i : bb){
+      auto INSet = df->IN(&i);
+      auto OUTSet = df->OUT(&i);
+      initializeIN(INSet);
+      initializeOUT(OUTSet);
+    }
+  }
+
+  /*
+   * Compute the GENs and KILLs
+   */
   computeGENAndKILL(f, computeGEN, computeKILL, df);
 
   /*
