@@ -32,8 +32,8 @@ DataFlowResult * DataFlowAnalysis::applyForward (
   auto df = new DataFlowResult{};
   for (auto& bb : *f){
     for (auto& i : bb){
-      auto INSet = df->IN(&i);
-      auto OUTSet = df->OUT(&i);
+      auto& INSet = df->IN(&i);
+      auto& OUTSet = df->OUT(&i);
       initializeIN(INSet);
       initializeOUT(OUTSet);
     }
