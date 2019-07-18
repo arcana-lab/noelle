@@ -22,8 +22,8 @@ DataFlowResult * DataFlowAnalysis::applyForward (
   std::function<void (Instruction *, DataFlowResult *)> computeKILL,
   std::function<void (Instruction *inst, std::set<Value *>& IN)> initializeIN,
   std::function<void (Instruction *inst, std::set<Value *>& OUT)> initializeOUT,
-  std::function<void (std::set<Value *>& IN, Instruction *predecessor, DataFlowResult *df)> computeIN,
-  std::function<void (std::set<Value *>& OUT, Instruction *inst, DataFlowResult *df)> computeOUT
+  std::function<void (Instruction *inst, std::set<Value *>& IN, Instruction *predecessor, DataFlowResult *df)> computeIN,
+  std::function<void (Instruction *inst, std::set<Value *>& OUT, DataFlowResult *df)> computeOUT
   ){
 
   /*
@@ -91,18 +91,18 @@ DataFlowResult * DataFlowAnalysis::applyForward (
       /* 
        * Compute IN[inst]
        */
-      computeIN(inSetOfInst, predecessorInst, df);
+      computeIN(inst, inSetOfInst, predecessorInst, df);
     }
 
     /* 
      * Compute OUT[inst]
      */
     auto oldSize = outSetOfInst.size();
-    computeOUT(outSetOfInst, inst, df);
+    computeOUT(inst, outSetOfInst, df);
 
     /* Check if the OUT of the first instruction of the current basic block changed.
      */
-    if (outSetOfInst.size() > oldSize){
+    if (outSetOfInst.size() != oldSize){
 
       /* 
        * Propagate the new OUT[inst] to the rest of the instructions of the current basic block.
@@ -125,13 +125,13 @@ DataFlowResult * DataFlowAnalysis::applyForward (
          * Compute IN[i]
          */
         auto& inSetOfI = df->IN(i);
-        computeIN(inSetOfI, predI, df);
+        computeIN(i, inSetOfI, predI, df);
 
         /* 
          * Compute OUT[i] 
          */
         auto& outSetOfI = df->OUT(i);
-        computeOUT(outSetOfI, i, df);
+        computeOUT(i, outSetOfI, df);
 
         /*
          * Update the predecessor.
