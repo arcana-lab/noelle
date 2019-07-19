@@ -50,20 +50,29 @@ DataFlowResult * DataFlowAnalysis::applyForward (
    * Create the working list by adding all basic blocks to it.
    */
   std::list<BasicBlock *> workingList;
+  std::unordered_map<BasicBlock *, bool> worklingListContent;
   for (auto& bb : *f){
     workingList.push_back(&bb);
+    worklingListContent[&bb] = true;
   }
 
   /* 
    * Compute the INs and OUTs iteratively until the working list is empty.
    */
+  std::unordered_map<Instruction *, bool> alreadyVisited;
   while (!workingList.empty()){
 
     /* 
      * Fetch a basic block that needs to be processed.
      */
     auto bb = workingList.front();
+    assert(worklingListContent[bb] == true);
+
+    /*
+     * Remove the basic block from the workingList.
+     */
     workingList.pop_front();
+    worklingListContent[bb] = false;
 
     /* 
      * Fetch the first instruction of the basic block.
@@ -102,19 +111,19 @@ DataFlowResult * DataFlowAnalysis::applyForward (
 
     /* Check if the OUT of the first instruction of the current basic block changed.
      */
-    if (outSetOfInst.size() != oldSize){
+    if (  false
+          || (!alreadyVisited[inst])
+          || (outSetOfInst.size() != oldSize)
+      ){
+      alreadyVisited[inst] = true;
 
       /* 
        * Propagate the new OUT[inst] to the rest of the instructions of the current basic block.
        */
       BasicBlock::iterator iter(inst);
       auto predI = inst;
+      iter++;
       while (iter != bb->end()){
-
-        /*
-         * Move the iterator.
-         */
-        iter++;
 
         /*
          * Fetch the current instruction.
@@ -137,12 +146,20 @@ DataFlowResult * DataFlowAnalysis::applyForward (
          * Update the predecessor.
          */
         predI = i;
+
+        /*
+         * Move the iterator.
+         */
+        iter++;
       } 
 
       /* 
        * Add successors of the current basic block to the working list.
        */
       for (auto succBB : successors(bb)){
+        if (worklingListContent[succBB] == true){
+          continue ;
+        }
         workingList.push_back(succBB);
       }
     }
