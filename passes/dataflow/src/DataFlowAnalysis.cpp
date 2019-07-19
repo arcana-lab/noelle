@@ -161,6 +161,7 @@ DataFlowResult * DataFlowAnalysis::applyForward (
           continue ;
         }
         workingList.push_back(succBB);
+        worklingListContent[succBB] = true;
       }
     }
   }
