@@ -24,12 +24,14 @@ make ;
 make install ;
 popd ;
 
-pushd ./ ;
-cd src ;
-if ! test -f compile_commands.json ; then
-  ln -s ../build/compile_commands.json
+if test -d src ; then
+  pushd ./ ;
+  cd src ;
+  if ! test -f compile_commands.json ; then
+    ln -s ../build/compile_commands.json
+  fi
+  popd ;
 fi
-popd ;
 
 if test -d include ; then
   pushd ./ ;
