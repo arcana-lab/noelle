@@ -64,6 +64,8 @@ clean:
 
 .PHONY: noelle
 
-.PHONY: pdg printer talkdown alloc_aa dgsimplify parallelizer parallelization_utilities heuristics parallelization_technique dswp doall helix hotprofiler dataflow architecture unique_ir_marker
+.PHONY: basic_utilities parallelization_utilities 
+
+.PHONY: pdg printer talkdown alloc_aa dgsimplify parallelizer heuristics parallelization_technique dswp doall helix hotprofiler dataflow architecture unique_ir_marker
 
 .PHONY: clean download
