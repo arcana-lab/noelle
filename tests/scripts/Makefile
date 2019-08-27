@@ -60,7 +60,7 @@ test_pdgdot.bc: test_seq.bc
 	$(OPT) $(PRINTPASSES) $(ANALYSES) -heuristics -PDGPrinter $^ -o $@
 
 test_dswp_unoptimized.bc: test_seq.bc output.prof
-	noelle-pgo $(PARALLELIZATION_OPTIONS) $< -o $@
+	noelle-pgo output.prof $(PARALLELIZATION_OPTIONS) $< -o $@
 	llvm-dis $@
 
 test_dswp.bc: test_dswp_unoptimized.bc
@@ -92,11 +92,11 @@ test_seq_prof.bc: test_seq.bc
 input.txt:
 	@../../scripts/create_input.sh $@
 
-show_passes: test_seq.bc
-	noelle-pgo $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
+show_passes: test_seq.bc output.prof
+	noelle-pgo output.prof $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
 
-show_time: test_seq.bc
-	noelle-pgo $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
+show_time: test_seq.bc output.prof
+	noelle-pgo output.prof $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 print_analyses:
 	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(ANALYSES)" 
