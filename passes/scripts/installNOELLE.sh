@@ -38,7 +38,7 @@ awk -v installDirectory="${installDir}" '{
     } else {
       print ;
     }
-  }' scripts/noelle-pgo > ${installDir}/bin/noelle-seq ;
+  }' scripts/noelle-seq > ${installDir}/bin/noelle-seq ;
 
 
 chmod 744 ${installDir}/bin/noelle ;
