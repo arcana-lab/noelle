@@ -44,3 +44,4 @@ awk -v installDirectory="${installDir}" '{
 chmod 744 ${installDir}/bin/noelle ;
 chmod 744 ${installDir}/bin/noelle-pre ;
 chmod 744 ${installDir}/bin/noelle-pgo ;
+chmod 744 ${installDir}/bin/noelle-seq ;
