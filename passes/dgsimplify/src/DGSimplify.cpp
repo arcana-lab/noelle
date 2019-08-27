@@ -73,7 +73,7 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
     std::string filename = "dgsimplify_scc_call_inlining.txt";
     getLoopsToInline(filename);
 
-    bool inlined = inlineCallsInMassiveSCCsOfLoops();
+    auto inlined = inlineCallsInMassiveSCCsOfLoops();
     if (inlined) {
       // NOTE(joe) temporary fix which makes sure that before writing fnOrders to a file
       // that the order match the order read in by the next pass. See adjustFnOrder.
@@ -89,11 +89,16 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
       printFnOrder();
     }
 
-    bool remaining = registerRemainingLoops(filename);
-    if (remaining) writeToContinueFile();
+    auto remaining = registerRemainingLoops(filename);
+    if (remaining) {
+      writeToContinueFile();
+    }
 
     printFnInfo();
-    if (!remaining && this->verbose != Verbosity::Disabled) {
+    if (  true
+          && (!remaining)  
+          && (this->verbose != Verbosity::Disabled)
+      ){
       errs() << "DGSimplify:   No remaining call inlining in SCCs\n";
     }
 
@@ -269,20 +274,24 @@ bool llvm::DGSimplify::registerRemainingFunctions (std::string filename) {
  * Inlining
  */
 
-bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops () {
+bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
   auto &PDGA = getAnalysis<PDGAnalysis>();
   bool anyInlined = false;
 
   // NOTE(angelo): Order these functions to prevent duplicating loops yet to be checked
   std::vector<Function *> orderedFns;
-  for (auto fnLoops : loopsToCheck) orderedFns.push_back(fnLoops.first);
+  for (auto fnLoops : loopsToCheck) {
+    orderedFns.push_back(fnLoops.first);
+  }
   sortInDepthOrderFns(orderedFns);
 
   std::set<Function *> fnsToAvoid;
   for (auto F : orderedFns) {
     // NOTE(angelo): If we avoid this function until next pass, we do the same with its parents
     if (fnsToAvoid.find(F) != fnsToAvoid.end()) {
-      for (auto parentF : parentFns[F]) fnsToAvoid.insert(parentF);
+      for (auto parentF : parentFns[F]) {
+        fnsToAvoid.insert(parentF);
+      }
       continue;
     }
 
@@ -302,7 +311,9 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops () {
       auto loop = (*loopsPreorder)[loopInd];
       auto LDI = new LoopDependenceInfo(F, fdg, loop, LI, SE, PDT);
       bool inlinedCall = inlineCallsInMassiveSCCs(F, LDI);
-      if (!inlinedCall) removeSummaries.insert(summary);
+      if (!inlinedCall) {
+        removeSummaries.insert(summary);
+      }
 
       inlined |= inlinedCall;
       delete LDI;
@@ -313,12 +324,19 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops () {
     delete loopsPreorder;
     anyInlined |= inlined;
 
-    // NOTE(angelo): Avoid parents of affected fns; we are not finished with the affected fns
+    /*
+     * Avoid parents of affected functions.
+     * This is because we are not finished with the affected functions.
+     */
     if (inlined) {
-      for (auto parentF : parentFns[F]) fnsToAvoid.insert(parentF);
+      for (auto parentF : parentFns[F]) {
+        fnsToAvoid.insert(parentF);
+      }
     }
 
-    // NOTE(angelo): Do not re-check loops that weren't inlined within after a check 
+    /*
+     * Do not re-check loops that weren't inlined within after a check 
+     */
     std::vector<int> removeInds;
     for (auto i = 0; i < toCheck.size(); ++i) {
       if (removeSummaries.find(toCheck[i]) != removeSummaries.end())
@@ -329,8 +347,12 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops () {
       toCheck.erase(toCheck.begin() + removeInds[removeInds.size() - i - 1]);
     }
 
-    // NOTE(angelo): Clear function entries without any more loops to check
-    if (toCheck.size() == 0) loopsToCheck.erase(F);
+    /*
+     * Clear function entries without any more loops to check
+     */
+    if (toCheck.size() == 0) {
+      loopsToCheck.erase(F);
+    }
   }
 
   return anyInlined;
