@@ -147,6 +147,7 @@ namespace llvm {
        */
       void collectSCCGraphAssumingDistributedClones ();
       void collectDependencies (LoopInfoSummary &LIS);
+      void identifyInterIterationDependences (LoopInfoSummary &LIS);
 
       /*
        * Helper methods on single SCC
