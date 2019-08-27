@@ -18,7 +18,7 @@ PARALLELIZATION_TECHNIQUES="-load ${installDir}/lib/DSWP.so -load ${installDir}/
 OPTPASSES="${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/Parallelization.so -load ${installDir}/lib/Heuristics.so -load ${installDir}/lib/ParallelizationTechnique.so ${PARALLELIZATION_TECHNIQUES} -load ${installDir}/lib/Parallelizer.so"
 
 
-cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} -heuristics -parallelizer $@"
+cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} -pgo-test-profile-file=$1 -block-freq -pgo-instr-use -HotProfiler -heuristics -parallelizer ${@:2}"
 echo $cmdToExecute ;
 
 eval $cmdToExecute 
