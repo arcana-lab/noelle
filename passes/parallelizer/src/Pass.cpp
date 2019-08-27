@@ -105,6 +105,16 @@ bool Parallelizer::runOnModule (Module &M) {
   for (auto loop : *loopsToParallelize){
     errs() << "Parallelizer:    Function: \"" << loop->function->getName() << "\"\n";
     errs() << "Parallelizer:    Loop: \"" << *loop->header->getFirstNonPHI() << "\"\n";
+    if (profiles.isAvailable()){
+      auto& profiles = getAnalysis<HotProfiler>().getHot();
+      auto mInsts = profiles.getModuleInstructions();
+
+      auto& LI = getAnalysis<LoopInfoWrapperPass>(*loop->function).getLoopInfo();
+      auto loopInsts = profiles.getLoopInstructions(LI.getLoopFor(loop->header));
+      auto hotness = ((double)loopInsts) / ((double)mInsts);
+      hotness *= 100;
+      errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
+    }
   }
 
   /*
