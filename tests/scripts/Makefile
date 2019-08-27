@@ -98,9 +98,6 @@ show_passes: test_seq.bc
 show_time: test_seq.bc
 	noelle $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
-print_alias_analyses:
-	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(AA_ADVANCED)" 
-
 print_analyses:
 	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(ANALYSES)" 
 
