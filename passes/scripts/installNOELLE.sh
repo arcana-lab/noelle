@@ -10,7 +10,7 @@ mkdir -p ${installDir}/bin ;
 
 awk -v installDirectory="${installDir}" '{
     if ($1 == "installDir"){
-      printf("%s=%s\n", $1, installDirectory);
+      printf("%s=\"%s\"\n", $1, installDirectory);
     } else {
       print ;
     }
@@ -18,7 +18,7 @@ awk -v installDirectory="${installDir}" '{
 
 awk -v installDirectory="${installDir}" '{
     if ($1 == "installDir"){
-      printf("%s=%s\n", $1, installDirectory);
+      printf("%s=\"%s\"\n", $1, installDirectory);
     } else {
       print ;
     }
