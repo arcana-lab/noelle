@@ -20,7 +20,6 @@ INCLUDES=-I../../include/threadpool/include
 THREADER=Parallelizer_utils
 OPTIMIZED=parallelized
 
-TRANSFORMATIONS_BEFORE_PARALLELIZATION=$(AA_BASE) -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars
 PDGPASS=-load ~/CAT/lib/AllocAA.so -load ~/CAT/lib/TalkDown.so -load ~/CAT/lib/PDGAnalysis.so
 PRINTPASSES=$(PDGPASS) -load ~/CAT/lib/PDGPrinter.so
 PRE_OPTPASSES=-load ~/CAT/lib/Architecture.so $(PDGPASS) -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/DGSimplify.so
@@ -35,13 +34,13 @@ all: baseline testseq $(OPTIMIZED)
 
 %.bc: %.c
 	$(CC) $(INCLUDES) -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
-	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	noelle-pre $@ -o $@
 	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
 %.bc: %.cpp
 	$(CPP) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
-	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	noelle-pre $@ -o $@
 	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
@@ -75,7 +74,7 @@ baseline.bc: test.bc
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
 	@../../scripts/iterate_dgsimplify.sh "-inliner-verbose=1" "$(PRE_OPTPASSES)" "$@"
-	$(OPT) $(TRANSFORMATIONS_BEFORE_PARALLELIZATION) $@ -o $@
+	noelle-pre $@ -o $@
 	llvm-dis $@
 
 output.prof: default.profraw
@@ -98,9 +97,6 @@ show_passes: test_seq.bc
 
 show_time: test_seq.bc
 	noelle $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
-
-print_transformations_before_parallelization:
-	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(TRANSFORMATIONS_BEFORE_PARALLELIZATION)" 
 
 print_alias_analyses:
 	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(AA_ADVANCED)" 
