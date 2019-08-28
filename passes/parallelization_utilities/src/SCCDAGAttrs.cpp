@@ -741,8 +741,8 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, Lo
 }
 
 void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopInfoSummary &LIS) {
-  FixedIVBounds *fixedIVBounds = new FixedIVBounds();
-  FixedIVBounds &IVBounds = *fixedIVBounds;
+  auto fixedIVBounds = new FixedIVBounds();
+  auto &IVBounds = *fixedIVBounds;
   auto notSimple = [&]() -> void {
     delete fixedIVBounds;
     return;
@@ -798,6 +798,8 @@ void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopInfoSummary &LIS) {
   if (!isIVUpperBoundSimple(scc, IVBounds, LIS)) return notSimple();
 
   sccIVBounds[scc] = fixedIVBounds;
+
+  return ;
 }
 
 bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopInfoSummary &LIS) {
@@ -932,7 +934,9 @@ bool SCCDAGAttrs::isClonableByCmpBrInstrs (SCC *scc) const {
  * TODO: Derivation should only consider data dependency cycles, not control
  */
 bool SCCDAGAttrs::isDerivedWithinSCC (Value *val, SCC *scc) const {
-  if (!scc->isInternal(val)) return false;
+  if (!scc->isInternal(val)) {
+    return false;
+  }
 
   auto &sccInfo = sccToInfo.find(scc)->second;
   auto isStrongly = sccInfo->stronglyConnectedDataValues.find(val)
@@ -940,7 +944,9 @@ bool SCCDAGAttrs::isDerivedWithinSCC (Value *val, SCC *scc) const {
   auto isWeakly = sccInfo->weaklyConnectedDataValues.find(val)
     != sccInfo->weaklyConnectedDataValues.end();
   if (isStrongly) return true;
-  if (isWeakly) return false;
+  if (isWeakly) {
+    return false;
+  }
 
   // Traversing both outgoing OR incoming edges leads back to the node
   // if it is in the SCC; otherwise, it is just a merged in node
@@ -1002,6 +1008,7 @@ bool SCCDAGAttrs::isDerivedWithinSCC (Value *val, SCC *scc) const {
     // val->print(errs() << "WEAKLY CONNECTED: "); errs() << "\n";
     return false;
   }
+
   sccInfo->stronglyConnectedDataValues.insert(val);
   return true;
 }
@@ -1028,14 +1035,19 @@ bool SCCDAGAttrs::collectDerivationChain (std::vector<Instruction *> &chain, SCC
   chain.pop_back();
   while (scc->isInternal(deriving)) {
     chain.push_back(deriving);
-    if (valuesSeen.find(deriving) != valuesSeen.end()) return false;
+    if (valuesSeen.find(deriving) != valuesSeen.end()) {
+      return false;
+    }
     valuesSeen.insert(deriving);
 
     auto node = scc->fetchNode(deriving);
     std::set<Value *> incomingDataDeps;
     for (auto edge : node->getIncomingEdges()) {
-      if (edge->isControlDependence()) continue;
-      incomingDataDeps.insert(edge->getOutgoingT());
+      if (edge->isControlDependence()) {
+        continue;
+      }
+      auto instructionSrc = edge->getOutgoingT();
+      incomingDataDeps.insert(instructionSrc);
     }
     incomingDataDeps.erase(deriving);
 
@@ -1043,9 +1055,13 @@ bool SCCDAGAttrs::collectDerivationChain (std::vector<Instruction *> &chain, SCC
      * Continue down the dependency graph only if it is a linear chain
      */
     if (incomingDataDeps.size() == 0) break;
-    if (incomingDataDeps.size() != 1) return false;
+    if (incomingDataDeps.size() != 1) {
+      return false;
+    }
     auto V = *incomingDataDeps.begin();
-    if (!isa<Instruction>(V)) return false;
+    if (!isa<Instruction>(V)) {
+      return false;
+    }
     deriving = (Instruction*)V;
   }
 
