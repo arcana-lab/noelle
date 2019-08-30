@@ -24,12 +24,13 @@ generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
 ==== BENCHMARKS
 - Bring all PARSEC benchmarks
 
+- Bring all MiBench benchmarks
+
+- Bring all SPEC cpu2000, cpu2006, and cpu2017 benchmarks
+
 
 ==== OPTIMIZATIONS
 - Packing/unpacking pushes and pops
-
-- Create a new pass to map memory locations to variables as much as possible
-  This removes the overly conservative memory loop-carried data dependences
 
 
 ==== ANALYSIS
