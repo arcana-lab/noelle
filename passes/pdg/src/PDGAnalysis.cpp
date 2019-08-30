@@ -154,7 +154,11 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
 
 template <class InstI, class InstJ>
 void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, InstI *memI, InstJ *memJ, bool WAW){
-  bool makeEdge = false, must = false;
+  auto makeEdge = false, must = false;
+
+  /*
+   * Query the LLVM alias analyses.
+   */
   switch (AA.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
@@ -164,18 +168,33 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
       makeEdge = must = true;
       break;
   }
-
-  if (!makeEdge) return;
+  if (!makeEdge) {
+    return;
+  }
   
+  /*
+   * Check other alias analyses
+   */
+  //TODO
+
+  /*
+   * There is a dependence.
+   */
   DataDependenceType dataDepType = WAW ? DG_DATA_WAW : DG_DATA_RAW;
   pdg->addEdge((Value*)memI, (Value*)memJ)->setMemMustType(true, must, dataDepType);
 
   dataDepType = WAW ? DG_DATA_WAW : DG_DATA_WAR;
   pdg->addEdge((Value*)memJ, (Value*)memI)->setMemMustType(true, must, dataDepType);
+
+  return ;
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, StoreInst *memI, CallInst *call){
-  bool makeRefEdge = false, makeModEdge = false;
+  auto makeRefEdge = false, makeModEdge = false;
+
+  /*
+   * Query the LLVM alias analyses.
+   */
   switch (AA.getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
       makeRefEdge = true;
@@ -187,21 +206,39 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
       makeRefEdge = makeModEdge = true;
       break;
   }
+  if (  true
+        && (!makeRefEdge)
+        && (!makeModEdge)
+    ){
+    return ;
+  }
 
-  if (makeRefEdge)
-  {
+  /*
+   * Check other alias analyses
+   */
+  //TODO
+
+  /*
+   * There is a dependence.
+   */
+  if (makeRefEdge) {
     pdg->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
     pdg->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_WAR);
   }
-  if (makeModEdge)
-  {
+  if (makeModEdge) {
     pdg->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
     pdg->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_WAW);
   }
+
+  return ;
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, LoadInst *memI, CallInst *call){
-  bool makeModEdge = false;
+  auto makeModEdge = false;
+
+  /*
+   * Query the LLVM alias analyses.
+   */
   switch (AA.getModRefInfo(call, MemoryLocation::get(memI))) {
     case MRI_Ref:
       break;
@@ -210,16 +247,30 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
       makeModEdge = true;
       break;
   }
-
-  if (makeModEdge)
-  {
-    pdg->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_RAW);
-    pdg->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
+  if (!makeModEdge){
+    return ;
   }
+
+  /*
+   * Check other alias analyses
+   */
+  //TODO
+
+  /*
+   * There is a dependence.
+   */
+  pdg->addEdge((Value*)call, (Value*)memI)->setMemMustType(true, false, DG_DATA_RAW);
+  pdg->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
+
+  return ;
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *otherCall, CallInst *call){
-  bool makeRefEdge = false, makeModEdge = false;
+  auto makeRefEdge = false, makeModEdge = false;
+
+  /*
+   * Query the LLVM alias analyses.
+   */
   switch (AA.getModRefInfo(ImmutableCallSite(call), ImmutableCallSite(otherCall))) {
     case MRI_Ref:
       makeRefEdge = true;
@@ -231,16 +282,30 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
       makeRefEdge = makeModEdge = true;
       break;
   }
+  if (  true
+        && (!makeRefEdge)
+        && (!makeModEdge)
+    ){
+    return ;
+  }
 
-  if (makeRefEdge)
-  {
+  /*
+   * Check other alias analyses
+   */
+  //TODO
+
+  /*
+   * There is a dependence.
+   */
+  if (makeRefEdge) {
     pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
     pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
   }
-  if (makeModEdge)
-  {
+  if (makeModEdge) {
     pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
   }
+
+  return ;
 }
 
 void llvm::PDGAnalysis::iterateInstForStoreAliases (PDG *pdg, Function &F, AAResults &AA, StoreInst *store) {
