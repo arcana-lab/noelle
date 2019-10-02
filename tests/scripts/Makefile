@@ -92,6 +92,12 @@ test_seq_prof.bc: test_seq.bc
 input.txt:
 	@../../scripts/create_input.sh $@
 
+test_correctness: input.txt baseline $(OPTIMIZED)
+	./baseline `cat input.txt` &> output_baseline.txt ;
+	./parallelized `cat input.txt` &> output_parallelized.txt ;
+	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
+	echo "Success"
+
 show_passes: test_seq.bc output.prof
 	noelle-pgo output.prof $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
 
