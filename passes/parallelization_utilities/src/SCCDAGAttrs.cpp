@@ -614,46 +614,11 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
   /*
    * Requirement: There are no memory dependences that connect an instruction of the SCC with another one outside that SCC.
    * TODO: improvement: we can also accept if a memory dependence exists from an instruction of the SCC with another one outside the loop the SCC is contained in (and any sub-loop of it).
-   *
-   * Requirement: There are no loop-carried data dependences that connect an instruction of the SCC with another instruction of the loop that contains this SCC, which is outside that SCC.
    */
   for (auto iNodePair : scc->externalNodePairs()) {
     auto dependenceDst = iNodePair.second;
-    if (dependenceDst->numConnectedEdges() == 0) {
-      continue ;
-    }
     for (auto edge : dependenceDst->getAllConnectedEdges()) {
       if (edge->isMemoryDependence()) {
-        return false;
-      }
-    }
-
-    /*
-     * Requirement: There are no loop-carried data dependences that connect an instruction of the SCC with another instruction of the loop that contains this SCC, which is outside that SCC.
-     */
-    if (dependenceDst->numIncomingEdges() == 0) {
-      continue ;
-    }
-    for (auto edge : dependenceDst->getIncomingEdges()) {
-      assert(edge->getIncomingNode() == dependenceDst);
-
-      /*
-       * Fetch the source of the dependence.
-       */
-      auto dependenceSrc = edge->getOutgoingNode();
-
-      /*
-       * Check the dependence.
-       */
-      if (!edge->isControlDependence()) {
-
-        /*
-         * There is a data dependence between the current SCC instruction and another one outside this SCC, which belongs to the loop.
-         * We need to check if this data dependence is loop-carried.
-         */
-        if (!this->isALoopCarriedDependence(scc, edge)){
-          continue ;
-        }
         return false;
       }
     }
