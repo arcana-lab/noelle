@@ -588,7 +588,33 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
 
   /*
-   * Requirement: There are no memory dependences that connect an instruction of the SCC with another instruction of the loop that contains this SCC.
+   * Requirement: all instructions of the SCC belong to the same loop.
+   */
+  LoopSummary *loopOfSCC = nullptr;
+  for (auto instNodePair : scc->internalNodePairs()){
+    if (auto inst = dyn_cast<Instruction>(instNodePair.first)){
+      auto instBB = inst->getParent();
+      auto currentLoop = LIS.bbToLoop[instBB];
+      if (loopOfSCC == nullptr){
+        loopOfSCC = currentLoop ;
+        continue ;
+      }
+      if (loopOfSCC != currentLoop){
+        return false;
+      }
+    }
+    
+  }
+
+  /* TODO to remove
+   * errs() << "XAN: SCC = " ;
+  scc->print(errs());
+  errs() << "\n";*/
+
+  /*
+   * Requirement: There are no memory dependences that connect an instruction of the SCC with another one outside that SCC.
+   * TODO: improvement: we can also accept if a memory dependence exists from an instruction of the SCC with another one outside the loop the SCC is contained in (and any sub-loop of it).
+   *
    * Requirement: There are no loop-carried data dependences that connect an instruction of the SCC with another instruction of the loop that contains this SCC, which is outside that SCC.
    */
   for (auto iNodePair : scc->externalNodePairs()) {
@@ -602,10 +628,23 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
       }
     }
 
+    /*
+     * Requirement: There are no loop-carried data dependences that connect an instruction of the SCC with another instruction of the loop that contains this SCC, which is outside that SCC.
+     */
     if (dependenceDst->numIncomingEdges() == 0) {
       continue ;
     }
     for (auto edge : dependenceDst->getIncomingEdges()) {
+      assert(edge->getIncomingNode() == dependenceDst);
+
+      /*
+       * Fetch the source of the dependence.
+       */
+      auto dependenceSrc = edge->getOutgoingNode();
+
+      /*
+       * Check the dependence.
+       */
       if (!edge->isControlDependence()) {
 
         /*
