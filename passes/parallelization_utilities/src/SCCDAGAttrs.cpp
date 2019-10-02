@@ -588,17 +588,35 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
 
   /*
-   * Requirement: There are no data/memory dependent SCCs of this SCC
+   * Requirement: There are no memory dependences that connect an instruction of the SCC with another instruction of the loop that contains this SCC.
+   * Requirement: There are no loop-carried data dependences that connect an instruction of the SCC with another instruction of the loop that contains this SCC, which is outside that SCC.
    */
   for (auto iNodePair : scc->externalNodePairs()) {
-    if (iNodePair.second->numConnectedEdges() == 0) continue ;
-    for (auto edge : iNodePair.second->getAllConnectedEdges()) {
-      if (edge->isMemoryDependence()) return false;
+    auto dependenceDst = iNodePair.second;
+    if (dependenceDst->numConnectedEdges() == 0) {
+      continue ;
+    }
+    for (auto edge : dependenceDst->getAllConnectedEdges()) {
+      if (edge->isMemoryDependence()) {
+        return false;
+      }
     }
 
-    if (iNodePair.second->numIncomingEdges() == 0) continue ;
-    for (auto edge : iNodePair.second->getIncomingEdges()) {
-      if (!edge->isControlDependence()) return false;
+    if (dependenceDst->numIncomingEdges() == 0) {
+      continue ;
+    }
+    for (auto edge : dependenceDst->getIncomingEdges()) {
+      if (!edge->isControlDependence()) {
+
+        /*
+         * There is a data dependence between the current SCC instruction and another one outside this SCC, which belongs to the loop.
+         * We need to check if this data dependence is loop-carried.
+         */
+        if (!this->isALoopCarriedDependence(scc, edge)){
+          continue ;
+        }
+        return false;
+      }
     }
   }
 
@@ -608,22 +626,32 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
    */
   std::set<LoopSummary *> backedgeLoops;
   for (auto edge : interIterDeps[scc]) {
-    if (edge->isControlDependence()) return false;
-    if (edge->isMemoryDependence()) return false;
+    if (edge->isControlDependence()) {
+      return false;
+    }
+    if (edge->isMemoryDependence()) {
+      return false;
+    }
 
     auto outI = isa<Instruction>(edge->getOutgoingT())
       ? cast<Instruction>(edge->getOutgoingT()) : nullptr;
     auto inI = isa<Instruction>(edge->getIncomingT())
       ? cast<Instruction>(edge->getIncomingT()) : nullptr;
-    if (!outI || !inI) return false;
+    if (!outI || !inI) {
+      return false;
+    }
 
     auto outgoingBBLoop = LIS.bbToLoop.find(outI->getParent());
     auto incomingBBLoop = LIS.bbToLoop.find(inI->getParent());
     if (outgoingBBLoop == LIS.bbToLoop.end() ||
-        outgoingBBLoop == incomingBBLoop) return false;
+        outgoingBBLoop == incomingBBLoop) {
+      return false;
+    }
 
     auto loop = outgoingBBLoop->second;
-    if (backedgeLoops.find(loop) != backedgeLoops.end()) return false;
+    if (backedgeLoops.find(loop) != backedgeLoops.end()) {
+      return false;
+    }
     backedgeLoops.insert(loop);
   }
 
@@ -632,7 +660,9 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
    * determined externally to the SCC
    */
   for (auto pair : sccInfo->controlPairs) {
-    if (scc->isInternal(pair.first)) return false;
+    if (scc->isInternal(pair.first)) {
+      return false;
+    }
   }
 
   /*
@@ -641,12 +671,54 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
    * so that accumulation is truly expressed solely by accumulators
    */
   for (auto phi : sccInfo->PHINodes) {
-    auto loopOfPHI = LIS.bbToLoop[phi->getParent()];
+
+    /*
+     * Fetch the basic block of the PHI instruction.
+     */
+    auto phiBB = phi->getParent();
+
+    /*
+     * Fetch the loop that contains the current PHI.
+     */
+    auto loopOfPHI = LIS.bbToLoop[phiBB];
+
+    /*
+     * Check all incoming values of the current PHI.
+     */
     for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
+
+      /*
+       * Fetch the current incoming value.
+       */
+      auto incomingValue = phi->getIncomingValue(i);
       auto incomingBB = phi->getIncomingBlock(i);
       auto loopOfIncoming = LIS.bbToLoop.find(incomingBB);
-      if (loopOfIncoming == LIS.bbToLoop.end() || loopOfIncoming->second != loopOfPHI) continue;
-      if (!isDerivedPHIOrAccumulator(phi->getIncomingValue(i), scc)) return false;
+
+      /*
+       * Check whether the incoming value is from any loop.
+       */
+      if (loopOfIncoming == LIS.bbToLoop.end()){
+
+        /*
+         * It is from outside any loop, so it is not a problem as being loop invariant.
+         */
+        continue ;
+      }
+
+      /*
+       * Check if the incoming value is from a different loop of the one that contains the PHI.
+       */
+      if (loopOfIncoming->second != loopOfPHI) {
+        continue;
+      }
+
+      /*
+       * The incoming value is from the same loop of the PHI.
+       * Check if it comes from a different PHI or a unique accumulator of the current SCC.
+       */
+      if (!this->isDerivedPHIOrAccumulator(incomingValue, scc)) {
+        return false;
+      }
     }
   }
 
@@ -655,7 +727,9 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
    * Requirement: all accumulators act on one PHI/accumulator in the SCC
    *  and one constant or external value
    */
-  if (sccInfo->accumulators.size() == 0) return false;
+  if (sccInfo->accumulators.size() == 0) {
+    return false;
+  }
   auto phis = sccInfo->PHINodes;
   auto accums = sccInfo->accumulators;
   for (auto accum : accums) {
@@ -666,8 +740,12 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
 
     auto opL = accum->getOperand(0);
     auto opR = accum->getOperand(1);
-    if (!(isDerivedWithinSCC(opL, scc) ^ isDerivedWithinSCC(opR, scc))) return false;
-    if (!(isDerivedPHIOrAccumulator(opL, scc) ^ isDerivedPHIOrAccumulator(opR, scc))) return false;
+    if (!(isDerivedWithinSCC(opL, scc) ^ isDerivedWithinSCC(opR, scc))) {
+      return false;
+    }
+    if (!(isDerivedPHIOrAccumulator(opL, scc) ^ isDerivedPHIOrAccumulator(opR, scc))) {
+      return false;
+    }
   }
 
   /*
@@ -677,9 +755,13 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
   bool isFirstMul = accumOpInfo.isMulOp((*accums.begin())->getOpcode());
   for (auto accum : accums) {
     bool isMul = accumOpInfo.isMulOp(accum->getOpcode());
-    if (isMul ^ isFirstMul) return false;
+    if (isMul ^ isFirstMul) {
+      return false;
+    }
     if (accumOpInfo.isSubOp(accum->getOpcode())) {
-      if (scc->isInternal(accum->getOperand(1))) return false;
+      if (scc->isInternal(accum->getOperand(1))) {
+        return false;
+      }
     }
   }
 
@@ -1014,16 +1096,17 @@ bool SCCDAGAttrs::isDerivedWithinSCC (Value *val, SCC *scc) const {
 }
 
 bool SCCDAGAttrs::isDerivedPHIOrAccumulator (Value *val, SCC *scc) const {
-  Value *derived = val;
+  auto derived = val;
   if (auto cast = dyn_cast<CastInst>(val)) {
     derived = cast->getOperand(0);
   }
 
-  auto &sccInfo = sccToInfo.find(scc)->second;
+  auto &sccInfo = this->sccToInfo.find(scc)->second;
   bool isInternalPHI = isa<PHINode>(derived)
     && sccInfo->PHINodes.find(cast<PHINode>(derived)) != sccInfo->PHINodes.end();
   bool isInternalAccum = isa<Instruction>(derived)
     && sccInfo->accumulators.find(cast<Instruction>(derived)) != sccInfo->accumulators.end();
+
   return isDerivedWithinSCC(derived, scc) && (isInternalPHI || isInternalAccum);
 }
 
