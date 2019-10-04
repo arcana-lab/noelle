@@ -1,4 +1,9 @@
-all: basic_utilities parallelization_utilities architecture hotprofiler printer pdg talkdown alloc_aa dataflow dgsimplify parallelizer heuristics parallelization_technique dswp doall helix unique_ir_marker noelle
+UTILS=basic_utilities parallelization_utilities architecture
+ANALYSIS=pdg talkdown alloc_aa dataflow
+PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
+ALL=$(UTILS) $(ANALYSIS) $(PARALLELIZATION) hotprofiler dgsimplify unique_ir_marker noelle
+
+all: $(ALL)
 
 noelle:
 	./scripts/installNOELLE.sh
@@ -10,9 +15,6 @@ dataflow:
 	cd $@ ; ../scripts/run_me.sh
 
 hotprofiler:
-	cd $@ ; ../scripts/run_me.sh
-
-printer:
 	cd $@ ; ../scripts/run_me.sh
 
 basic_utilities:
@@ -62,10 +64,6 @@ clean:
 	find ./ -name .ycm_extra_conf.py -delete ;
 	find ./ -name compile_commands.json -delete ;
 
-.PHONY: noelle
+.PHONY: $(ALL)
 
-.PHONY: basic_utilities parallelization_utilities 
-
-.PHONY: pdg printer talkdown alloc_aa dgsimplify parallelizer heuristics parallelization_technique dswp doall helix hotprofiler dataflow architecture unique_ir_marker
-
-.PHONY: clean download
+.PHONY: clean download uninstall

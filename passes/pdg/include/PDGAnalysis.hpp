@@ -16,6 +16,7 @@
 
 #include "PDG.hpp"
 #include "AllocAA.hpp"
+#include "PDGPrinter.hpp"
 
 using namespace llvm;
 
@@ -44,6 +45,7 @@ namespace llvm {
       AllocAA *allocAA;
       std::set<Function *> CGUnderMain;
       PDGVerbosity verbose;
+      PDGPrinter printer;
 
       void trimDGUsingCustomAliasAnalysis (PDG *pdg);
 

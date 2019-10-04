@@ -21,14 +21,12 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/PostDominators.h"
-
 #include "llvm/ADT/iterator_range.h"
 
 #include "TalkDown.hpp"
-
 #include "PDGAnalysis.hpp"
 
-static cl::opt<int> Verbose("pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
+static cl::opt<int> Verbose("noelle-pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
 
 using namespace llvm;
 
@@ -56,23 +54,55 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
 }
 
 llvm::PDGAnalysis::PDGAnalysis()
-  : ModulePass{ID}, M{nullptr}, programDependenceGraph{nullptr}, CGUnderMain{} {}
+  : ModulePass{ID}, M{nullptr}, programDependenceGraph{nullptr}, CGUnderMain{}, printer{} {
+  return ;
+}
 
 llvm::PDGAnalysis::~PDGAnalysis() {
   if (this->programDependenceGraph)
     delete this->programDependenceGraph;
 }
 
-llvm::PDG * llvm::PDGAnalysis::getFunctionPDG (Function &F) {
+llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
+
+  /*
+   * Allocate the PDG structure.
+   */
   auto pdg = new PDG(F);
 
-  auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+  /*
+   * Add dependences between variables
+   */
   constructEdgesFromUseDefs(pdg);
+
+  /*
+   * Add dependences between memory accesses
+   */
+  auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
   constructEdgesFromAliasesForFunction(pdg, F, AA);
+
+  /*
+   * Add control dependences
+   */
   auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
   constructEdgesFromControlForFunction(pdg, F, PDT);
 
+  /*
+   * Try to remove dependences
+   */
   trimDGUsingCustomAliasAnalysis(pdg);
+
+  /*
+   * Print the PDG
+   */
+  if (this->verbose >= PDGVerbosity::Maximal){
+    auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
+    auto getLoopInfo = [this](Function *f) -> LoopInfo& {
+      auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
+      return LI;
+    };
+    this->printer.printPDG(*F.getParent(), callGraph, pdg, getLoopInfo);
+  }
 
   return pdg;
 }

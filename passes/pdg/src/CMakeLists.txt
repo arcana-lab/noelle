@@ -5,6 +5,7 @@ set(Srcs
   PDG.cpp
   SCCDAG.cpp
   SCC.cpp
+  PDGPrinter.cpp
 )
 
 # Compilation flags
@@ -26,7 +27,7 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS}
-                     ../../basic_utilities/include
+           ../../basic_utilities/include
 					 ../../parallelization_utilities/include
 					 ../../alloc_aa/include 
 					 ../../talkdown/include 
