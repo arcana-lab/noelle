@@ -28,6 +28,10 @@ SCCDAG::SCCDAG() {
 }
 
 SCCDAG * SCCDAG::createSCCDAGFrom (PDG *pdg) {
+  /*
+  errs() << "XAN: PDG -> SCCDAG\n";
+  pdg->print(errs());
+  */
 
   /*
    * Create an empty SCCDAG.

@@ -163,6 +163,8 @@ void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {
 
   CGUnderMain.clear();
   CGUnderMain.insert(reached.begin(), reached.end());
+
+  return ;
 }
 
 void llvm::PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
@@ -375,6 +377,7 @@ void llvm::PDGAnalysis::iterateInstForModRef(PDG *pdg, Function &F, AAResults &A
 }
 
 void llvm::PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
+
   /*
    * Use alias analysis on stores, loads, and function calls to construct PDG edges
    */
@@ -433,27 +436,64 @@ void llvm::PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function
 
 void llvm::PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {
   std::set<DGEdge<Value> *> removeEdges;
+
+  /*
+   * Collect the edges in the PDG that can be safely removed.
+   */
   for (auto edge : pdg->getEdges()) {
+
+    /*
+     * Fetch the source of the dependence.
+     */
     auto source = edge->getOutgoingT();
     if (!isa<Instruction>(source)) continue;
+
+    /*
+     * Check if the function of the dependence destiation cannot be reached from main.
+     */
     auto F = cast<Instruction>(source)->getFunction();
     if (CGUnderMain.find(F) == CGUnderMain.end()) continue;
-    if (edgeIsNotLoopCarriedMemoryDependency(edge)
-        || edgeIsAlongNonMemoryWritingFunctions(edge)) {
+
+    if (  false
+        || edgeIsNotLoopCarriedMemoryDependency(edge)
+        || edgeIsAlongNonMemoryWritingFunctions(edge)
+      ) {
       removeEdges.insert(edge);
     }
   }
 
-  for (auto edge : removeEdges) pdg->removeEdge(edge);
+  /*
+   * Remove the tagged edges.
+   */
+  for (auto edge : removeEdges) {
+    pdg->removeEdge(edge);
+  }
+
+  return ;
 }
 
 // NOTE: Loads between random parts of separate GVs and both edges between GVs should be removed
-bool llvm::PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge) {
-  if (!edge->isMemoryDependence()) return false;
+bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge) {
 
+  /*
+   * Check if this is a memory dependence.
+   */
+  if (!edge->isMemoryDependence()) {
+    return false;
+  }
+
+  /*
+   * Fetch the source and destination of the dependence.
+   */
   auto outgoingT = edge->getOutgoingT();
   auto incomingT = edge->getIncomingT();
-  if (isa<CallInst>(outgoingT) || isa<CallInst>(incomingT)) return false;
+
+  /*
+   * Handle only memory instructions.
+   */
+  if (isa<CallInst>(outgoingT) || isa<CallInst>(incomingT)) {
+    return false;
+  }
 
   /*
    * Assert: must be a WAR load-store OR a RAW store-load
@@ -605,19 +645,37 @@ bool llvm::PDGAnalysis::canPrecedeInCurrentIteration (Instruction *from, Instruc
   return false;
 }
 
-bool llvm::PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
-  if (!edge->isMemoryDependence()) return false;
+bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
 
+  /*
+   * Check if this is a memory dependence.
+   */
+  if (!edge->isMemoryDependence()) {
+    return false;
+  }
+
+  /*
+   * Fetch the source and destination of the dependence.
+   */
   auto outgoingT = edge->getOutgoingT();
   auto incomingT = edge->getIncomingT();
 
+  /*
+   * Auxiliary code.
+   */
   auto isFunctionMemoryless = [&](StringRef funcName) -> bool {
-    return allocAA->isMemoryless(funcName);
+    auto isMemoryless = allocAA->isMemoryless(funcName);
+    return isMemoryless;
   };
   auto isFunctionNonWriting = [&](StringRef funcName) -> bool {
-    return isFunctionMemoryless(funcName) || allocAA->isReadOnly(funcName);
+    if (isFunctionMemoryless(funcName)){
+      return true;
+    }
+    if (allocAA->isReadOnly(funcName)){
+      return true;
+    }
+    return false;
   };
-
   auto getCallFnName = [&](CallInst *call) -> StringRef {
     auto func = call->getCalledFunction();
     if (func && !func->empty()) {
@@ -626,24 +684,45 @@ bool llvm::PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edg
     return call->getCalledValue()->getName();
   };
 
-  if (isa<CallInst>(outgoingT) && isa<CallInst>(incomingT)) {
+  /*
+   * Handle the case both instructions are calls.
+   */
+  if (  true
+        && isa<CallInst>(outgoingT) 
+        && isa<CallInst>(incomingT)
+    ) {
+
+    /*
+     * If both callees do not write memory, then there is no memory dependence.
+     */
     if (!isFunctionNonWriting(getCallFnName(cast<CallInst>(outgoingT)))) return false;
     if (!isFunctionNonWriting(getCallFnName(cast<CallInst>(incomingT)))) return false;
     return true;
   }
 
+  /*
+   * Handle the case where both instructions are not call.
+   */
+  if (  true
+        && (!isa<CallInst>(outgoingT))
+        && (!isa<CallInst>(incomingT))
+    ) {
+    return false;
+  }
+
+  /*
+   * Handle the case where just one of the instruction is a call.
+   */
   CallInst *call;
   Value *mem;
   if (isa<CallInst>(outgoingT)) {
     call = cast<CallInst>(outgoingT);
     mem = incomingT;
-  } else if (isa<CallInst>(incomingT)) {
+  } else {
+    assert(isa<CallInst>(incomingT));
     call = cast<CallInst>(incomingT);
     mem = outgoingT; 
-  } else {
-    return false;
   }
-
   auto callName = getCallFnName(call);
   return isa<LoadInst>(mem) && isFunctionNonWriting(callName)
     || isa<StoreInst>(mem) && isFunctionMemoryless(callName);

@@ -87,7 +87,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
   std::string filename;
   raw_string_ostream ros(filename);
   ros << "pdg-" << F.getName() << ".dot";
-  auto *subgraph = graph->createFunctionSubgraph(F);
+  auto subgraph = graph->createFunctionSubgraph(F);
   writeGraph<PDG>(ros.str(), subgraph);
 
   /*

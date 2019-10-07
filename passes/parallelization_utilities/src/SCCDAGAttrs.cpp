@@ -333,7 +333,8 @@ void SCCDAGAttrs::collectDependencies (LoopInfoSummary &LIS) {
   for (auto edge : sccdag->getEdges()) {
     auto sccTo = edge->getIncomingT();
     for (auto subEdge : edge->getSubEdges()) {
-      intraIterDeps[subEdge->getOutgoingT()].insert(sccTo);
+      auto sccFrom = subEdge->getOutgoingT();
+      intraIterDeps[sccFrom].insert(sccTo);
     }
   }
 
@@ -391,13 +392,13 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopInfoSummary &LIS){
           /*
            * Check if the dependence is between instructions within the loop.
            */
-          auto depI = (Instruction*)edge->getOutgoingT();
-          if (!scc->isInternal(depI)) continue;
+          auto depDst = cast<Instruction>(edge->getOutgoingT());
+          if (!scc->isInternal(depDst)) continue;
 
           /*
            * Check if the dependence crosses the iteration boundary.
            */
-          if (canPrecedeInCurrentIteration(LIS, depI, phi)) continue;
+          if (canPrecedeInCurrentIteration(LIS, depDst, phi)) continue;
 
           /*
            * The dependence From->To crosses the iteration boundary.
@@ -462,12 +463,12 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopInfoSummary &LIS){
           /*
            * Fetch the other instruction attached to the current memory dependence.
            */
-          auto depI = (Instruction *)edge->getIncomingT();
+          auto depDst = (Instruction *)edge->getIncomingT();
 
           /*
            * Check if there is a path that connects these two instructions and that path goes across loop iterations.
            */
-          if (canPrecedeInCurrentIteration(LIS, memI, depI)) {
+          if (!canPrecedeInCurrentIteration(LIS, depDst, memI)) {
             continue;
           }
 
@@ -603,7 +604,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
         return false;
       }
     }
-    
+
   }
 
   /* TODO to remove
