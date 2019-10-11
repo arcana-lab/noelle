@@ -1,5 +1,5 @@
 RUNTIME_DIRNAME="threadpool"
-RUNTIME_GITREPO="/project/parallelizing_compiler/repositories"
+RUNTIME_GITREPO="git@github.com:scampanoni/virgil.git"
 
 all: regression performance
 
@@ -13,7 +13,7 @@ performance: download
 	./scripts/test_performance.sh ;
 
 download:
-	mkdir -p include ; cd include ; ../scripts/download.sh "$(RUNTIME_GITREPO)/$(RUNTIME_DIRNAME)" "$(RUNTIME_DIRNAME)" ;
+	mkdir -p include ; cd include ; ../scripts/download.sh "$(RUNTIME_GITREPO)" "$(RUNTIME_DIRNAME)" ;
 	./scripts/add_symbolic_link.sh ;
 
 clean:
