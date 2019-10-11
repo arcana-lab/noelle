@@ -20,9 +20,9 @@ INCLUDES=-I../../include/threadpool/include
 THREADER=Parallelizer_utils
 OPTIMIZED=parallelized
 
-PDGPASS=-load ~/CAT/lib/AllocAA.so -load ~/CAT/lib/TalkDown.so -load ~/CAT/lib/PDGAnalysis.so
-PRINTPASSES=$(PDGPASS) -load ~/CAT/lib/PDGPrinter.so
-PRE_OPTPASSES=-load ~/CAT/lib/Architecture.so $(PDGPASS) -load ~/CAT/lib/HotProfiler.so -load ~/CAT/lib/Parallelization.so -load ~/CAT/lib/DGSimplify.so
+PDGPASS=-load ../../../install/lib/AllocAA.so -load ../../../install/lib/TalkDown.so -load ../../../install/lib/PDGAnalysis.so
+PRINTPASSES=$(PDGPASS) -load ../../../install/lib/PDGPrinter.so
+PRE_OPTPASSES=-load ../../../install/lib/Architecture.so $(PDGPASS) -load ../../../install/lib/HotProfiler.so -load ../../../install/lib/Parallelization.so -load ../../../install/lib/DGSimplify.so
 PRINT_OUTPUT_FILE=test.txt
 
 # Fetch the list of files to compile
