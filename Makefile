@@ -1,12 +1,12 @@
-all: passes tests
+all: src tests
 
-passes:
-	cd passes ; make ; 
+src:
+	cd src ; make ; 
 	
-tests: passes
+tests: src
 	cd tests ; make ;
 
 clean:
-	cd passes ; make clean ; cd ../tests ; make clean; 
+	cd src ; make clean ; cd ../tests ; make clean; 
 
-.PHONY: passes tests
+.PHONY: src tests clean
