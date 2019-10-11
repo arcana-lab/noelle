@@ -3,7 +3,7 @@
 # Set the installation directory
 installDir=$PDG_INSTALL_DIR ;
 if test "$installDir" == "" ; then
-  eval installDir="~/CAT"
+  eval installDir="`realpath ../install`"  ;
 fi
 
 mkdir -p ${installDir}/bin ;

@@ -3,8 +3,9 @@
 # Set the installation directory
 installDir=$PDG_INSTALL_DIR ;
 if test "$installDir" == "" ; then
-  installDir="~/CAT"
+  installDir="`realpath ../../install`"  ;
 fi
+mkdir -p $installDir ;
 
 # Check the cmake binary
 command -v cmake3

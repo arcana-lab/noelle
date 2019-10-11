@@ -57,7 +57,7 @@ helix:
 	cd $@ ; ../scripts/run_me.sh
 
 uninstall:
-	rm -rf ~/CAT ;
+	rm -rf ../install ;
 
 clean:
 	rm -rf */build */*.json ; 

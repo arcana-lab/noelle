@@ -51,6 +51,8 @@ function runningTests {
   echo "Done"
 }
 
+export PATH=`pwd`/../install/bin:$PATH ;
+
 cd performance ;
 runningTests "Measuring the default configuration" "-noelle-verbose=0" "speedups.txt" ;
 cd ../ ;

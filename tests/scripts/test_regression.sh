@@ -75,6 +75,8 @@ function runningTests {
   echo "" ;
 }
 
+export PATH=`pwd`/../install/bin:$PATH
+
 cd regression ;
 
 runningTestsWrapper 
