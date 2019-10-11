@@ -10,7 +10,7 @@ function linkParUtils {
     cd $i ;
     echo "  $i" ;
     if ! test -f Parallelizer_utils.cpp ; then
-      ln -s ../../scripts/Parallelizer_utils.cpp ;
+      ln -s ../../../src/runtime/Parallelizer_utils.cpp ;
     fi
     if ! test -f Makefile ; then
       ln -s ../../scripts/Makefile ;
