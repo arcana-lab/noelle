@@ -78,7 +78,7 @@ namespace llvm {
        * Iterator ranges
        */
       iterator_range<nodes_iterator>
-      getNodes() { return make_range(allNodes.begin(), allNodes.end()); }
+      getNodes() { errs() << "Getting nodes\n"; return make_range(allNodes.begin(), allNodes.end()); }
       iterator_range<edges_iterator>
       getEdges() { return make_range(allEdges.begin(), allEdges.end()); }
 
@@ -633,6 +633,8 @@ namespace llvm {
     std::string nodeStr;
     raw_string_ostream ros(nodeStr);
     theT->print(ros);
+		ros.flush();
+		errs() << "Well hello there\n";
     return nodeStr;
   }
 
@@ -649,7 +651,9 @@ namespace llvm {
   template <class T>
   raw_ostream & DGNode<T>::print(raw_ostream &stream)
   { 
-    theT->print(stream);
+		errs() << "THIS IS A FRESH LINE IN DGNODE PRINT\n";
+	  stream << "POINTER: " << theT << "\n";
+    // theT->print(stream);
     return stream;
   }
 
