@@ -114,6 +114,37 @@ void HELIX::createParallelizableTask (
   if (this->verbose != Verbosity::Disabled) {
     errs() << "HELIX: Start the parallelization\n";
     errs() << "HELIX:   Number of threads to extract = " << LDI->maximumNumberOfCoresForTheParallelization << "\n";
+    if (this->verbose != Verbosity::Disabled) {
+      auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
+      for (auto scc : nonDOALLSCCs) {
+        if (scc->getType() == SCC::SCCType::REDUCIBLE){
+          continue ;
+        }
+        if (LDI->sccdagAttrs.canBeCloned(scc)){
+          continue ;
+        }
+        if (LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
+          continue ;
+        }
+        errs() << "HELIX:   We found an SCC of type " << scc->getType() << " of the loop that is non clonable and non commutative\n" ;
+        if (this->verbose >= Verbosity::Maximal) {
+          errs() << "HELIX:     SCC:\n";
+          scc->printMinimal(errs(), "HELIX:       ") ;
+          errs() << "HELIX:       Loop-carried data dependences\n";
+          LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+            auto fromInst = dep->getOutgoingT();
+            auto toInst = dep->getIncomingT();
+            errs() << "HELIX:       " << *fromInst << " ---> " << *toInst ;
+            if (dep->isMemoryDependence()){
+              errs() << " via memory\n";
+            } else {
+              errs() << " via variable\n";
+            }
+            return false;
+              });
+        }
+      }
+    }
   }
 
   /*
@@ -211,6 +242,10 @@ void HELIX::synchronizeTask (
   Parallelization &par, 
   Heuristics *h
 ){
+
+  /*
+   * Fetch the HELIX task.
+   */
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
   /*

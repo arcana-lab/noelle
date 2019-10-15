@@ -37,7 +37,8 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   std::set<int> nonReducablePHIs;
   std::set<int> cannotReduceLoopCarriedPHIs;
   for (auto i = 0; i < this->loopCarriedPHIs.size(); ++i) {
-    phiTypes.push_back(this->loopCarriedPHIs[i]->getType());
+    auto phiType = this->loopCarriedPHIs[i]->getType();
+    phiTypes.push_back(phiType);
     nonReducablePHIs.insert(i);
   }
 
@@ -54,7 +55,11 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   this->loopCarriedEnvBuilder = new EnvBuilder(module.getContext());
   this->loopCarriedEnvBuilder->createEnvVariables(phiTypes, nonReducablePHIs, cannotReduceLoopCarriedPHIs, 1);
   this->loopCarriedEnvBuilder->createEnvUsers(1);
-  auto envUser = loopCarriedEnvBuilder->getUser(0);
+
+  /*
+   * Fetch the unique user of the environment builder dedicated to spilled variables.
+   */
+  auto envUser = this->loopCarriedEnvBuilder->getUser(0);
 
   envUser->setEnvArray(entryBuilder.CreateBitCast(
     helixTask->loopCarriedArrayArg,
@@ -129,4 +134,6 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
 
   entryBlockTerminator->removeFromParent();
   entryBuilder.Insert(entryBlockTerminator);
+
+  return ;
 }
