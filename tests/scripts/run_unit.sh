@@ -2,13 +2,6 @@
 
 CC="clang++"
 TRANSFORMATIONS_BEFORE_PARALLELIZATION="-basicaa -mem2reg"
-UNIT_TESTED_PASSES=" \
-  -load $HOME/CAT/lib/TalkDown.so \
-  -load $HOME/CAT/lib/HotProfiler.so \
-  -load $HOME/CAT/lib/AllocAA.so \
-  -load $HOME/CAT/lib/PDGAnalysis.so \
-  -load $HOME/CAT/lib/Parallelization.so \
-"
 
 UNIT_TEST_PASS=" \
   -load ../../../helpers/build/UnitTestHelpers.so \
@@ -32,7 +25,7 @@ function runTest {
   ${CC} -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c test.cpp -o test_pre.bc
   opt ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} test_pre.bc -o test.bc
   llvm-dis test.bc -o test.ll
-  opt ${UNIT_TESTED_PASSES} ${UNIT_TEST_PASS} test.bc -o tested.bc
+  noelle-load ${UNIT_TEST_PASS} test.bc -o tested.bc
 
   cd ../ ;
 }

@@ -2,23 +2,9 @@
 
 installDir
 
-OPT="opt" ;
-
-########### Analyses
-AA_BASE="-basicaa"
-AA_ADVANCED="${AA_BASE} -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa"
-ANALYSES="${AA_ADVANCED} -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization"
-
-PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/PDGAnalysis.so"
-
-
-########### Transformations
-PARALLELIZATION_TECHNIQUES="-load ${installDir}/lib/DSWP.so -load ${installDir}/lib/DOALL.so -load ${installDir}/lib/HELIX.so"
-
-OPTPASSES="${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/Parallelization.so -load ${installDir}/lib/Heuristics.so -load ${installDir}/lib/ParallelizationTechnique.so ${PARALLELIZATION_TECHNIQUES} -load ${installDir}/lib/Parallelizer.so"
-
-
-cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} $@"
+# Set the command to execute
+cmdToExecute="noelle-load -parallelization $@"
 echo $cmdToExecute ;
 
+# Execute the command
 eval $cmdToExecute 
