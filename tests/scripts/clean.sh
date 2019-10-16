@@ -26,3 +26,10 @@ cleanTests performance
 cd performance ;
 rm -f *.txt ;
 cd ../ ;
+
+# Clean unit tests
+cd unit 
+find ./ -iname *.bc -delete ;
+find ./ -iname *.ll -delete ;
+rm -rf */build ;
+cd ../ ;
