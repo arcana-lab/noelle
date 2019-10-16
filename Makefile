@@ -9,6 +9,8 @@ tests: src
 clean:
 	cd src ; make clean ; 
 	cd tests ; make clean; 
+
+uninstall:
 	rm -rf install ;
 
-.PHONY: src tests clean
+.PHONY: src tests clean uninstall
