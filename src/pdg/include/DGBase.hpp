@@ -78,7 +78,7 @@ namespace llvm {
        * Iterator ranges
        */
       iterator_range<nodes_iterator>
-      getNodes() { errs() << "Getting nodes\n"; return make_range(allNodes.begin(), allNodes.end()); }
+      getNodes() { return make_range(allNodes.begin(), allNodes.end()); }
       iterator_range<edges_iterator>
       getEdges() { return make_range(allEdges.begin(), allEdges.end()); }
 

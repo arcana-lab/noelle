@@ -72,13 +72,6 @@ Values DGTestSuite::pdgHasAllValuesInProgram (ModulePass &pass) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto node : dgPass.fdg->getNodes()) {
-		errs() << " TEST NODE:\n";
-		node->print(errs());
-		errs() << "\n TEST POINTER:\n";
-		errs() << node->getT();
-		errs() << "\n";
-		node->getT()->print(errs() << " TEST VALUE: ");
-		errs() << "\n";
     valueNames.insert(dgPass.suite->printToString(node->getT()));
   }
   return valueNames;

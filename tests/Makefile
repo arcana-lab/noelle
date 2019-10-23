@@ -1,5 +1,5 @@
 RUNTIME_DIRNAME="threadpool"
-RUNTIME_GITREPO="git@github.com:scampanoni/virgil.git"
+RUNTIME_GITREPO="https://github.com/scampanoni/virgil.git"
 
 all: regression performance buildunit rununit
 
