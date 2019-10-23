@@ -634,7 +634,6 @@ namespace llvm {
     raw_string_ostream ros(nodeStr);
     theT->print(ros);
 		ros.flush();
-		errs() << "Well hello there\n";
     return nodeStr;
   }
 
@@ -651,9 +650,7 @@ namespace llvm {
   template <class T>
   raw_ostream & DGNode<T>::print(raw_ostream &stream)
   { 
-		errs() << "THIS IS A FRESH LINE IN DGNODE PRINT\n";
-	  stream << "POINTER: " << theT << "\n";
-    // theT->print(stream);
+    theT->print(stream);
     return stream;
   }
 
