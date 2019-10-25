@@ -80,11 +80,15 @@ namespace llvm {
     }
 
     static std::string getEdgeAttributes(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter, DG *dg) {
-      auto edge = node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes());
       const std::string cntColor = "color=blue";
       const std::string memColor = "color=red";
       const std::string varColor = "color=black";
-      return edge->isControlDependence() ? cntColor : (edge->isMemoryDependence() ? memColor : varColor);
+      std::string attrsStr;
+      raw_string_ostream ros(attrsStr);
+      auto edge = node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes());
+      ros << (edge->isControlDependence() ? cntColor : (edge->isMemoryDependence() ? memColor : varColor));
+      if (dg->isExternal(edge->getOutgoingT()) || dg->isExternal(edge->getIncomingT())) ros << ",style=dotted";
+      return ros.str();
     }
   };
   
