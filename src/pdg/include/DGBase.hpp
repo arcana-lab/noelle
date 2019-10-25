@@ -688,6 +688,12 @@ namespace llvm {
   template <class T, class SubT>
   std::string DGEdgeBase<T, SubT>::toString()
   {
+    if (this->subEdges.size() > 0) {
+      std::string edgesStr;
+      raw_string_ostream ros(edgesStr);
+      for (auto edge : this->subEdges) ros << edge->toString();
+      return ros.str();
+    }
     if (this->isControlDependence()) return "CTRL";
     std::string edgeStr;
     raw_string_ostream ros(edgeStr);

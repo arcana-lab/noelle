@@ -19,14 +19,48 @@ using namespace llvm;
 
 namespace llvm {
   /*
-   * DGDOTNodeTraits<NodeType>: Dependence Graph's node level base traits
+   * ElementTraits<NodeType>: Dependence Graph's node/edge level base traits
    */
   template <class T>
-  struct DGDOTNodeTraits : public DefaultDOTGraphTraits {
-    explicit DGDOTNodeTraits(bool isSimple=false) : DefaultDOTGraphTraits(isSimple) {}
+  struct ElementTraits : public DefaultDOTGraphTraits {
+    explicit ElementTraits(bool isSimple=false) : DefaultDOTGraphTraits(isSimple) {}
     
     std::string getNodeLabel(DGNode<T> *node, DGNode<T> *entry) {
       return node->toString();
+    }
+
+    std::string getEdgeSourceLabel(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter) {
+      return node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes())->toString();
+    }
+  };
+
+  /*
+   * Strongly Connected Components ElementTraits specialization
+   */
+  template <>
+  struct ElementTraits<SCC> : public DefaultDOTGraphTraits {
+    explicit ElementTraits(bool isSimple=false) : DefaultDOTGraphTraits(isSimple) {}
+
+    std::string getNodeLabel(DGNode<SCC> *node, DGNode<SCC> *entry) {
+      std::string nodeStr;
+      raw_string_ostream ros(nodeStr);
+      for (auto nodePair : node->getT()->internalNodePairs()) {
+        nodePair.first->print(ros);
+        ros << "\n";
+      }
+      return ros.str();
+    }
+
+    std::string getEdgeSourceLabel(DGNode<SCC> *node, typename std::vector<DGNode<SCC> *>::iterator nodeIter) {
+      std::string edgeStr;
+      raw_string_ostream ros(edgeStr);
+      DGEdge<SCC> *edgesBetweenSCC = node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes());
+      for (DGEdge<Value> *edge : edgesBetweenSCC->getSubEdges()) {
+        edge->getOutgoingT()->printAsOperand(ros);
+        edge->getIncomingT()->printAsOperand(ros << " -> ");
+        ros << "  ";
+      }
+      return ros.str();
     }
   };
 
@@ -34,19 +68,15 @@ namespace llvm {
    * DGDOTGraphTraits<GraphType, NodeType>: Dependence Graph's base traits
    */
   template <class DG, class T>
-  struct DGDOTGraphTraits : public DGDOTNodeTraits<T> {
-    DGDOTGraphTraits (bool isSimple=false) : DGDOTNodeTraits<T>(isSimple) {}
+  struct DGDOTGraphTraits : public ElementTraits<T> {
+    DGDOTGraphTraits (bool isSimple=false) : ElementTraits<T>(isSimple) {}
 
     std::string getNodeLabel(DGNode<T> *node, DG *dg) {
-      return DGDOTNodeTraits<T>::getNodeLabel(node, dg->getEntryNode());
+      return ElementTraits<T>::getNodeLabel(node, dg->getEntryNode());
     }
 
     static std::string getNodeAttributes(DGNode<T> *node, DG *dg) {
       return dg->isExternal(node->getT()) ? "color=gray" : "color=black";
-    }
-
-    std::string getEdgeSourceLabel(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter) {
-      return node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes())->toString();
     }
 
     static std::string getEdgeAttributes(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter, DG *dg) {

@@ -101,13 +101,13 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
   /*
    * Name and graph each SCC within the function's SCCDAG
    */
-  int count = 0;
-  for (auto sccI = sccSubgraph->begin_nodes(); sccI != sccSubgraph->end_nodes(); ++sccI) {
-    auto scc = (*sccI)->getT();
-    filename.clear();
-    ros << "scc-" << F.getName() << "-" << (count++) << ".dot";
-    writeGraph<SCC>(ros.str(), scc);
-  }
+  // int count = 0;
+  // for (auto sccI = sccSubgraph->begin_nodes(); sccI != sccSubgraph->end_nodes(); ++sccI) {
+  //   auto scc = (*sccI)->getT();
+  //   filename.clear();
+  //   ros << "scc-" << F.getName() << "-" << (count++) << ".dot";
+  //   writeGraph<SCC>(ros.str(), scc);
+  // }
 
   delete sccSubgraph;
   delete subgraph;
