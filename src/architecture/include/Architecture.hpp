@@ -18,9 +18,9 @@ namespace llvm {
       public:
         Architecture ();
 
-        static int32_t getNumberOfLogicalCores (void);
+        static uint32_t getNumberOfLogicalCores (void);
 
-        static int32_t getNumberOfPhysicalCores (void);
+        static uint32_t getNumberOfPhysicalCores (void);
 
         static int32_t getCacheLineBytes (void);
 

@@ -16,11 +16,11 @@ Architecture::Architecture (){
   return ;
 }
     
-int32_t Architecture::getNumberOfLogicalCores (void){
+uint32_t Architecture::getNumberOfLogicalCores (void){
   return std::thread::hardware_concurrency();
 }
 
-int32_t Architecture::getNumberOfPhysicalCores (void){
+uint32_t Architecture::getNumberOfPhysicalCores (void){
   return getNumberOfLogicalCores() / 2;
 }
 
