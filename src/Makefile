@@ -63,6 +63,7 @@ clean:
 	rm -rf */build */*.json ; 
 	find ./ -name .ycm_extra_conf.py -delete ;
 	find ./ -name compile_commands.json -delete ;
+	rm -rf */*/.clangd ;
 
 .PHONY: $(ALL)
 
