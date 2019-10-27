@@ -1,10 +1,9 @@
+# Commands
 CC=clang
 CPP=clang++
 OPT=opt
 
-AA_BASE=-basicaa
-AA_ADVANCED=$(AA_BASE) -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa
-ANALYSES=$(AA_ADVANCED) -scalar-evolution -loops -loop-simplify -lcssa -domtree -parallelization 
+# Libraries
 LIBS=-lm
 
 # Set the runtime flags
@@ -19,16 +18,11 @@ OPT_LEVEL=-O3
 INCLUDES=-I../../include/threadpool/include
 THREADER=Parallelizer_utils
 OPTIMIZED=parallelized
-
-PDGPASS=-load ../../../install/lib/AllocAA.so -load ../../../install/lib/TalkDown.so -load ../../../install/lib/PDGAnalysis.so
-PRINTPASSES=$(PDGPASS) -load ../../../install/lib/PDGPrinter.so
-PRE_OPTPASSES=-load ../../../install/lib/Architecture.so $(PDGPASS) -load ../../../install/lib/HotProfiler.so -load ../../../install/lib/Parallelization.so -load ../../../install/lib/DGSimplify.so
 PRINT_OUTPUT_FILE=test.txt
 
 # Fetch the list of files to compile
 CPP_FILES := $(wildcard *.cpp)
 BC_FILES := $(notdir $(CPP_FILES:.cpp=.bc))
-
 
 all: baseline testseq $(OPTIMIZED)
 
@@ -73,7 +67,7 @@ baseline.bc: test.bc
 
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
-	@../../scripts/iterate_dgsimplify.sh "-inliner-verbose=1" "$(PRE_OPTPASSES)" "$@"
+	@../../scripts/iterate_dgsimplify.sh "-inliner-verbose=1" "$@"
 	noelle-pre $@ -o $@
 	llvm-dis $@
 
@@ -103,9 +97,6 @@ show_passes: test_seq.bc output.prof
 
 show_time: test_seq.bc output.prof
 	noelle-pgo output.prof $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
-
-print_analyses:
-	../../scripts/print.sh "$(PRINT_OUTPUT_FILE)" "$(ANALYSES)" 
 
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *prof

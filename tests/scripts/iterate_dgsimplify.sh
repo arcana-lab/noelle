@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/bash -e
 : '
 Goal: 
 run the following as long as it outputs a file indicating to continue
@@ -15,8 +15,7 @@ function expand_rel_path {
 
 function runSimplify {
   local OPTIONS=$1 ;
-  local DEP_PASS=$(expand_rel_path "$2") &> /dev/null ;
-  local FILE_NAME=$(expand_rel_path "$3") &> /dev/null ;
+  local FILE_NAME=$(expand_rel_path "$2") &> /dev/null ;
   local ITER=0 ;
 
   rm -f dgsimplify_**
@@ -24,9 +23,9 @@ function runSimplify {
   touch "dgsimplify_continue.txt"
   while test -e "dgsimplify_continue.txt" ; do
     rm "dgsimplify_continue.txt"
-    ((ITER++))
+    let ITER=ITER+1 
     printf "Running DGSimplify to inline calls within SCCs, iteration: $ITER\n"
-    opt $DEP_PASS "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
+    noelle-load -load ../../../install/lib/DGSimplify.so "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
   done
 
   ITER=0
@@ -35,13 +34,12 @@ function runSimplify {
   touch "dgsimplify_continue.txt"
   while test -e "dgsimplify_continue.txt" ; do
     rm "dgsimplify_continue.txt"
-    ((ITER++))
+    let ITER=ITER+1 
     printf "Running DGSimplify to hoist loops to main, iteration: $ITER\n"
-    opt $DEP_PASS "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
+    noelle-load -load ../../../install/lib/DGSimplify.so "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
   done
 
   rm -f dgsimplify_**
 }
 
-runSimplify "$1" "$2" "$3"
-exit 0
+runSimplify "$1" "$2"
