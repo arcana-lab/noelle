@@ -114,8 +114,8 @@ namespace llvm {
       void trimCFGOfStages (LoopDependenceInfo *LDI);
       void collectTransitiveCondBrs (
         LoopDependenceInfo *LDI,
-        std::set<TerminatorInst *> &bottomLevelBrs,
-        std::set<TerminatorInst *> &descendantCondBrs
+        std::set<Instruction *> &bottomLevelBrs,
+        std::set<Instruction *> &descendantCondBrs
       );
       void collectLiveInEnvInfo (LoopDependenceInfo *LDI);
       void collectLiveOutEnvInfo (LoopDependenceInfo *LDI);

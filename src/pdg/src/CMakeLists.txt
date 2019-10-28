@@ -35,4 +35,4 @@ include_directories(${LLVM_INCLUDE_DIRS}
                      )
 
 # Declare the LLVM pass to compile
-add_llvm_loadable_module(${PassName} ${Srcs})
+add_llvm_library(${PassName} MODULE ${Srcs})

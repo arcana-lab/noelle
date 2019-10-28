@@ -37,7 +37,7 @@ namespace llvm {
        */
       std::set<SCC *> stageSCCs;
       std::set<SCC *> removableSCCs;
-      std::set<TerminatorInst *> usedCondBrs;
+      std::set<Instruction *> usedCondBrs;
 
       /*
        * Maps from producer to the queues they push to

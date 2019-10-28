@@ -327,7 +327,11 @@ bool AllocAA::doesValueNotEscape (std::set<Instruction *> checked, Instruction *
      * The termination is either local to the function, or the return value
      * is not escaped (only an integer type is returned)
      */
-    if (isa<TerminatorInst>(user)) {
+    Instruction *userInst;
+    if (  true
+          && ((userInst = dyn_cast<Instruction>(user)) != nullptr)
+          && userInst->isTerminator()
+        ) {
       if (isa<BranchInst>(user) || isa<SwitchInst>(user)) continue;
       if (isa<ReturnInst>(user)) {
 

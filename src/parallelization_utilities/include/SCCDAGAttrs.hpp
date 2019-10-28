@@ -10,13 +10,11 @@
  */
 #pragma once
 
+#include "SystemHeaders.hpp"
 #include "SCCDAG.hpp"
 #include "SCC.hpp"
 #include "LoopInfoSummary.hpp"
 #include "LoopEnvironment.hpp"
-#include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpressions.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace std;
 using namespace llvm;
@@ -54,15 +52,15 @@ namespace llvm {
       std::set<Instruction *> accumulators;
       PHINode *singlePHI;
       Instruction *singleAccumulator;
-      std::set<TerminatorInst *> controlFlowInsts;
-      std::set<std::pair<Value *, TerminatorInst *>> controlPairs;
-      std::pair<Value *, TerminatorInst *> singleControlPair;
+      std::set<Instruction *> controlFlowInsts;
+      std::set<std::pair<Value *, Instruction *>> controlPairs;
 
       /*
        * Methods
        */
       SCCAttrs (SCC *s);
       void collectSCCValues ();
+      const std::pair<Value *, Instruction *> * getSingleInstructionThatControlLoopExit (void);
   };
 
   //TODO: Have calculated by DOALL pass, not by SCCAttrs

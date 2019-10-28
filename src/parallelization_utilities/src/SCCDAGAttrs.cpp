@@ -143,7 +143,8 @@ void SCCAttrs::collectSCCValues () {
 SCCAttrs::SCCAttrs (SCC *s)
   : scc{s}, isClonable{0}, hasIV{0},
     PHINodes{}, accumulators{}, controlFlowInsts{}, controlPairs{},
-    singlePHI{nullptr}, singleAccumulator{nullptr}, singleControlPair{nullptr,nullptr} {
+    singlePHI{nullptr}, singleAccumulator{nullptr}
+  {
 
   // Collect basic blocks contained within SCC
   for (auto nodePair : this->scc->internalNodePairs()) {
@@ -369,13 +370,14 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopInfoSummary &LIS){
       /*
        * Fetch the instruction and the related node in the PDG.
        */
-      auto inst = valuePair.first;
+      auto instValue = valuePair.first;
+      auto inst = dyn_cast<Instruction>(instValue);
       auto depNode = valuePair.second;
 
       /*
        * Handle PHI instructions.
        */
-      if (auto phi = dyn_cast<PHINode>(inst)) {
+      if (auto phi = dyn_cast<PHINode>(instValue)) {
 
         /*
          * Check if the current PHI node is within the header of the loop we care.
@@ -427,12 +429,15 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopInfoSummary &LIS){
       /*
        * Handle Terminator instructions.
        */
-      if (auto term = dyn_cast<TerminatorInst>(inst)) {
+      if (  true
+            && (inst != nullptr)
+            && inst->isTerminator()
+        ){
         for (auto edge : depNode->getOutgoingEdges()) {
           auto depV = edge->getIncomingT();
           assert(isa<Instruction>(depV));
           auto depBB = ((Instruction*)depV)->getParent();
-          if (term->getParent() != depBB) continue;
+          if (inst->getParent() != depBB) continue;
           interIterDeps[scc].insert(edge);
         }
         continue ;
@@ -563,13 +568,19 @@ void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
 void SCCDAGAttrs::collectControlFlowInstructions (SCC *scc) {
   auto &sccInfo = this->getSCCAttrs(scc);
   for (auto iNodePair : scc->internalNodePairs()) {
-    if (iNodePair.second->numOutgoingEdges() == 0) continue;
-    if (auto term = dyn_cast<TerminatorInst>(iNodePair.first)) {
-      sccInfo->controlFlowInsts.insert(term);
+    if (iNodePair.second->numOutgoingEdges() == 0) {
+      continue;
+    }
+    auto currentValue = iNodePair.first;
+    if (auto currentInst = dyn_cast<Instruction>(currentValue)){
+      if (currentInst->isTerminator()){
+        sccInfo->controlFlowInsts.insert(currentInst);
+      }
     }
   }
 
   for (auto term : sccInfo->controlFlowInsts) {
+    assert(term->isTerminator());
     if (auto br = dyn_cast<BranchInst>(term)) {
       assert(br->isConditional()
         && "BranchInst with outgoing edges in an SCC must be conditional!");
@@ -580,9 +591,7 @@ void SCCDAGAttrs::collectControlFlowInstructions (SCC *scc) {
     }
   }
 
-  if (sccInfo->controlPairs.size() == 1) {
-    sccInfo->singleControlPair = *sccInfo->controlPairs.begin();
-  }
+  return ;
 }
 
 bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopInfoSummary &LIS) {
@@ -788,11 +797,21 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, Lo
   };
 
   /*
+   * Check whether there is a single conditional branch that dictates control flow in the SCC
+   */
+  auto termPtr = sccInfo->getSingleInstructionThatControlLoopExit();
+  if (termPtr == nullptr) {
+    return setHasIV(false);
+  }
+
+  /*
    * Identify single conditional branch that dictates control flow in the SCC
    */
-  TerminatorInst *term = sccInfo->singleControlPair.second;
+  auto& termPair = *termPtr;
+  auto term = termPair.second;
+  assert(term->isTerminator());
   if (!term || !isa<BranchInst>(term)) return setHasIV(false);
-  Value *condition = sccInfo->singleControlPair.first;
+  auto condition = termPair.first;
   if (!condition || !isa<CmpInst>(condition)) return setHasIV(false);
   CmpInst *cmp = (CmpInst*)condition;
 
@@ -842,7 +861,8 @@ void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopInfoSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
   if (!sccInfo->singlePHI || !sccInfo->singleAccumulator) return notSimple();
   if (sccInfo->singlePHI->getNumIncomingValues() != 2) return notSimple();
-  if (sccInfo->singleControlPair.first == nullptr) return notSimple();
+  auto singleControlPair = sccInfo->getSingleInstructionThatControlLoopExit();
+  if (singleControlPair == nullptr) return notSimple();
 
   auto accum = sccInfo->singleAccumulator;
   auto incomingStart = sccInfo->singlePHI->getIncomingValue(0);
@@ -859,7 +879,7 @@ void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopInfoSummary &LIS) {
   auto stepSize = IVBounds.step->getValue();
   if (stepSize != 1 && stepSize != -1) return notSimple();
 
-  auto cmp = (CmpInst*)sccInfo->singleControlPair.first;
+  auto cmp = cast<CmpInst>(singleControlPair->first);
   auto cmpLHS = cmp->getOperand(0);
   unsigned cmpToInd = cmpLHS == sccInfo->singlePHI || cmpLHS == accum;
   IVBounds.cmpIVTo = cmp->getOperand(cmpToInd);
@@ -891,8 +911,10 @@ void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopInfoSummary &LIS) {
 
 bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopInfoSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
-  auto cmp = cast<CmpInst>(sccInfo->singleControlPair.first);
-  auto br = cast<BranchInst>(sccInfo->singleControlPair.second);
+  auto singleControlPair = sccInfo->getSingleInstructionThatControlLoopExit();
+  assert(singleControlPair != nullptr);
+  auto cmp = cast<CmpInst>(singleControlPair->first);
+  auto br = cast<BranchInst>(singleControlPair->second);
 
   /*
    * Branch statement has two successors, one in the loop body, one outside the loop
@@ -1009,7 +1031,11 @@ bool SCCDAGAttrs::isClonableBySyntacticSugarInstrs (SCC *scc) const {
 bool SCCDAGAttrs::isClonableByCmpBrInstrs (SCC *scc) const {
   for (auto iNodePair : scc->internalNodePairs()) {
     auto V = iNodePair.first;
-    if (isa<CmpInst>(V) || isa<TerminatorInst>(V)) continue;
+    if (auto inst = dyn_cast<Instruction>(V)){
+      if (isa<CmpInst>(inst) || inst->isTerminator()) {
+        continue;
+      }
+    }
     return false;
   }
   return true;
@@ -1205,4 +1231,14 @@ void SCCDAGAttrs::iterateOverLoopCarriedDataDependences (
   }
 
   return ;
+}
+
+const std::pair<Value *, Instruction *> * SCCAttrs::getSingleInstructionThatControlLoopExit (void){
+  if (this->controlPairs.size() != 1){
+    return nullptr;
+  }
+
+  auto controlPair = &*this->controlPairs.begin();
+
+  return controlPair;
 }

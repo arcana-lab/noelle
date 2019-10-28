@@ -44,15 +44,34 @@ namespace llvm {
       /*
        * Node and Edge Iterators
        */
-      nodes_iterator begin_nodes() { allNodes.begin(); }
-      nodes_iterator end_nodes() { allNodes.end(); }
+      nodes_iterator begin_nodes() { 
+        auto n = allNodes.begin(); 
+        return n;
+      }
+
+      nodes_iterator end_nodes() { 
+        auto n = allNodes.end(); 
+        return n;
+      }
       nodes_const_iterator begin_nodes() const { allNodes.begin(); }
       nodes_const_iterator end_nodes() const { allNodes.end(); }
 
-      node_map_iterator begin_internal_node_map() { internalNodeMap.begin(); }
-      node_map_iterator end_internal_node_map() { internalNodeMap.end(); }
-      node_map_iterator begin_external_node_map() { externalNodeMap.begin(); }
-      node_map_iterator end_external_node_map() { externalNodeMap.end(); }
+      node_map_iterator begin_internal_node_map() { 
+        auto n = internalNodeMap.begin(); 
+        return n;
+      }
+      node_map_iterator end_internal_node_map() { 
+        auto n = internalNodeMap.end(); 
+        return n;
+      }
+      node_map_iterator begin_external_node_map() { 
+        auto n = externalNodeMap.begin(); 
+        return n;
+      }
+      node_map_iterator end_external_node_map() { 
+        auto n = externalNodeMap.end(); 
+        return n;
+      }
 
       edges_iterator begin_edges() { allEdges.begin(); }
       edges_iterator end_edges() { allEdges.end(); }

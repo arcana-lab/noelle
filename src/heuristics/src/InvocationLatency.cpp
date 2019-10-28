@@ -81,7 +81,7 @@ uint64_t InvocationLatency::latencyPerInvocation (Instruction *inst){
   uint64_t latency;
   if (isa<StoreInst>(inst) || isa<LoadInst>(inst)) {
     latency = 10;
-  } else if (isa<TerminatorInst>(inst)) {
+  } else if (inst->isTerminator()) {
     latency = 5;
   } else {
     latency = 1;

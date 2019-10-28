@@ -165,7 +165,8 @@ void ParallelizationTechnique::generateEmptyTasks (
 
     auto &cxt = module.getContext();
     task->order = i;
-    task->F = cast<Function>(module.getOrInsertFunction("", taskType));
+    auto functionCallee = module.getOrInsertFunction("", taskType);
+    task->F = cast<Function>(functionCallee.getCallee());
     task->extractFuncArgs();
     task->entryBlock = BasicBlock::Create(cxt, "", task->F);
     task->exitBlock = BasicBlock::Create(cxt, "", task->F);
@@ -397,12 +398,12 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     /*
      * Adjust basic block references of terminators and PHI nodes
      */
-    if (auto terminator = dyn_cast<TerminatorInst>(cloneI)) {
-      for (int i = 0; i < terminator->getNumSuccessors(); ++i) {
-        auto succBB = terminator->getSuccessor(i);
+    if (cloneI->isTerminator()) {
+      for (int i = 0; i < cloneI->getNumSuccessors(); ++i) {
+        auto succBB = cloneI->getSuccessor(i);
         if (succBB->getParent() == task->F) continue;
         assert(bbClones.find(succBB) != bbClones.end());
-        terminator->setSuccessor(i, bbClones[succBB]);
+        cloneI->setSuccessor(i, bbClones[succBB]);
       }
     }
 

@@ -15,6 +15,10 @@ else
   CMAKE="cmake3" ;
 fi
 
+# Set the compiler
+export CC=clang
+export CXX=clang++
+
 # Install
 pushd ./ ;
 rm -rf build/ ; 

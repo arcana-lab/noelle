@@ -267,7 +267,25 @@ void LoopDependenceInfo::mergeBranchesWithoutOutgoingEdges () {
 
     bool allCmpOrBr = true;
     for (auto node : scc->getNodes()) {
-      allCmpOrBr &= (isa<TerminatorInst>(node->getT()) || isa<CmpInst>(node->getT()));
+      auto nodeValue = node->getT();
+
+      /*
+       * Handle the cmp instruction.
+       */
+      if (isa<CmpInst>(nodeValue)){
+        allCmpOrBr &= true;
+        continue ;
+      }
+
+      /*
+       * Handle the branch instruction.
+       */
+      auto nodeInst = dyn_cast<Instruction>(nodeValue);
+      if (nodeInst == nullptr){
+        allCmpOrBr &= false;
+        continue ;
+      }
+      allCmpOrBr &= nodeInst->isTerminator();
     }
     if (allCmpOrBr) tailCmpBrs.push_back(sccNode);
   }

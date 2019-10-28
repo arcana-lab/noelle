@@ -169,7 +169,8 @@ void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {
 
 void llvm::PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
   for (auto node : make_range(pdg->begin_nodes(), pdg->end_nodes())) {
-    Value *pdgValue = node->getT();
+    errs() << "CUCU " << node << "\n";
+    auto pdgValue = node->getT();
     if (pdgValue->getNumUses() == 0)
       continue;
 
@@ -228,13 +229,13 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(memI))) {
-    case MRI_Ref:
+    case ModRefInfo::Ref:
       makeRefEdge = true;
       break;
-    case MRI_Mod:
+    case ModRefInfo::Mod:
       makeModEdge = true;
       break;
-    case MRI_ModRef:
+    case ModRefInfo::ModRef:
       makeRefEdge = makeModEdge = true;
       break;
   }
@@ -272,10 +273,10 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(memI))) {
-    case MRI_Ref:
+    case ModRefInfo::Ref:
       break;
-    case MRI_Mod:
-    case MRI_ModRef:
+    case ModRefInfo::Mod:
+    case ModRefInfo::ModRef:
       makeModEdge = true;
       break;
   }
@@ -303,14 +304,14 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
   /*
    * Query the LLVM alias analyses.
    */
-  switch (AA.getModRefInfo(ImmutableCallSite(call), ImmutableCallSite(otherCall))) {
-    case MRI_Ref:
+  switch (AA.getModRefInfo(call, otherCall)) {
+    case ModRefInfo::Ref:
       makeRefEdge = true;
       break;
-    case MRI_Mod:
+    case ModRefInfo::Mod:
       makeModEdge = true;
       break;
-    case MRI_ModRef:
+    case ModRefInfo::ModRef:
       makeRefEdge = makeModEdge = true;
       break;
   }

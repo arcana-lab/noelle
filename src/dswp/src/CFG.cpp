@@ -13,11 +13,11 @@
 using namespace llvm;
 
 void DSWP::collectTransitiveCondBrs (LoopDependenceInfo *LDI,
-  std::set<TerminatorInst *> &bottomLevelBrs,
-  std::set<TerminatorInst *> &descendantCondBrs
+  std::set<Instruction *> &bottomLevelBrs,
+  std::set<Instruction *> &descendantCondBrs
 ) {
   std::queue<DGNode<Value> *> queuedBrs;
-  std::set<TerminatorInst *> visitedBrs;
+  std::set<Instruction *> visitedBrs;
   for (auto br : bottomLevelBrs) {
     queuedBrs.push(LDI->loopInternalDG->fetchNode(cast<Value>(br)));
     visitedBrs.insert(br);
@@ -25,15 +25,18 @@ void DSWP::collectTransitiveCondBrs (LoopDependenceInfo *LDI,
 
   while (!queuedBrs.empty()) {
     auto brNode = queuedBrs.front();
-    auto term = cast<TerminatorInst>(brNode->getT());
+    auto term = cast<Instruction>(brNode->getT());
     queuedBrs.pop();
     if (term->getNumSuccessors() > 1) {
       descendantCondBrs.insert(term);
     }
 
     for (auto edge : brNode->getIncomingEdges()) {
-      if (auto termI = dyn_cast<TerminatorInst>(edge->getOutgoingT())) {
-        if (visitedBrs.find(termI) == visitedBrs.end()) {
+      if (auto termI = dyn_cast<Instruction>(edge->getOutgoingT())) {
+        if (  true
+              && termI->isTerminator()
+              && (visitedBrs.find(termI) == visitedBrs.end()) 
+            ){
           queuedBrs.push(edge->getOutgoingNode());
           visitedBrs.insert(termI);
         }
@@ -50,10 +53,10 @@ void DSWP::trimCFGOfStages (LoopDependenceInfo *LDI) {
   /*
    * Collect branches at end of loop iteration
    */
-  std::set<TerminatorInst *> iterEndBrs;
+  std::set<Instruction *> iterEndBrs;
   for (auto bb : LDI->loopBBs) {
     auto term = bb->getTerminator();
-    for (auto termBB : term->successors()) {
+    for (auto termBB : successors(bb)){
       if (iterEndBBs.find(termBB) != iterEndBBs.end()) {
         iterEndBrs.insert(term);
         break;
@@ -64,7 +67,7 @@ void DSWP::trimCFGOfStages (LoopDependenceInfo *LDI) {
   /*
    * Collect conditional branches necessary to capture loop iteration tail branches
    */
-  std::set<TerminatorInst *> minNecessaryCondBrs;
+  std::set<Instruction *> minNecessaryCondBrs;
   collectTransitiveCondBrs(LDI, iterEndBrs, minNecessaryCondBrs);
 
   /*
@@ -74,7 +77,7 @@ void DSWP::trimCFGOfStages (LoopDependenceInfo *LDI) {
     auto task = (DSWPTask *)techniqueTask;
     for (auto br : minNecessaryCondBrs) task->usedCondBrs.insert(br);
 
-    std::set<TerminatorInst *> stageBrs;
+    std::set<Instruction *> stageBrs;
     std::set<SCC *> taskSCCs(task->stageSCCs.begin(), task->stageSCCs.end());
     taskSCCs.insert(task->removableSCCs.begin(), task->removableSCCs.end());
     for (auto scc : taskSCCs) {

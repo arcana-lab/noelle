@@ -226,6 +226,7 @@ raw_ostream &SCCDAGPartition::printNodeInGraph (raw_ostream &stream, std::string
     for (auto parent : parentSubsets[subset]) stream << subsetStr(parent) << "; ";
   }
   stream << "\n";
+  return stream;
 }
 
 raw_ostream &SCCDAGPartition::printGraph (raw_ostream &stream, std::string prefix) {

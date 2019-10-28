@@ -1,10 +1,10 @@
 # Sources
-set(PassSrc 
+set(Srcs 
   DGSimplify.cpp
 )
 
 # Compilation flags
-set_source_files_properties(${PassSrc} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
+set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
 set(PassName "DGSimplify")
@@ -25,4 +25,4 @@ include_directories(${LLVM_INCLUDE_DIRS} ../../basic_utilities/include ../../all
 
 
 # Declare the LLVM pass to compile
-add_llvm_loadable_module(${PassName} ${PassSrc})
+add_llvm_library(${PassName} MODULE ${Srcs})
