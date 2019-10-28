@@ -2,12 +2,10 @@
 
 
 ## Prerequisites
-LLVM 5.0.0
-GCC that supports C++ 14
+LLVM 9.0.0
 
-To enable them on the Zythos cluster: 
-  - source /project/llvm/5.0.0/enable
-  - source /opt/rh/devtoolset-8/enable
+To enable it on the Zythos cluster: 
+  - source /project/llvm/9.0.0/enable
 
 
 ## Build
