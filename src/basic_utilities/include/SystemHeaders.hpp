@@ -17,7 +17,7 @@
 #include <thread>
 
 #include <math.h>
-
+#include "llvm/IR/InstrTypes.h"
 #include <llvm/ADT/StringRef.h>
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
