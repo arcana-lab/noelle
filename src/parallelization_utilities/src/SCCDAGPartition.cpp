@@ -19,6 +19,8 @@ SCCDAGPartition::SCCDAGPartition (
   std::set<SCCset *> *sets
 ) : LIS{lis}, sccdag{dag}, dagAttrs{attrs} {
   resetPartition(sets);
+
+  return ;
 }
 
 uint64_t SCCDAGPartition::numberOfPartitions (void){
@@ -28,8 +30,16 @@ uint64_t SCCDAGPartition::numberOfPartitions (void){
 }
 
 void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
+
+  /*
+   * Reset the fields.
+   */
   subsets = sets;
   this->SCCToSet.clear();
+
+  /*
+   * Create the mapping from SCC to its set.
+   */
   for (auto subset : *subsets) {
     for (auto scc : *subset) {
       this->SCCToSet[scc] = subset;
@@ -37,34 +47,100 @@ void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
   }
 
   /*
-   * Create a program forward ordering of SCCs for debug purposes
+   * Create a program forward ordering of SCCs for debug purposes.
+   * This SCC order will be stored in SCCDebugOrder.
+   *
+   *  - Reset SCCDebugOrder.
    */
-  std::set<SCC *> sccEncountered;
   SCCDebugOrder.resize(SCCToSet.size());
   auto count = 0;
-  auto &bbs = LIS->topLoop->bbs;
+
+  /*
+   *  - Fetch the header basic block of the outermost loop. This will be the beginning of the traversal.
+   */
   auto bb = LIS->topLoop->header;
 
   /*
-   * FIXME: No guarantee that there won't be gaps of basic blocks not
-   * for the loop in question as we scan in program forward order
+   * - Fetch the set of basic blocks that compose the outermost loop. This will be used to avoid iterating over basic blocks outside the outermost loop.
    */
-  while (bb && bbs.find(bb) != bbs.end()) {
+  auto &bbs = LIS->topLoop->bbs;
+
+  /*
+   *  - Compute SCCDebugOrder.
+   */
+  std::set<SCC *> sccEncountered;
+  std::unordered_map<BasicBlock *, bool> bbsEncountered;
+  std::stack<BasicBlock *> todos;
+  todos.push(bb);
+  while (todos.size() > 0){
+
+    /*
+     * Fetch the current basic block.
+     */
+    auto bb = todos.top();
+    todos.pop();
+
+    /*
+     * Check if the basic block belongs to the outermost loop.
+     */
+    if (bbs.find(bb) == bbs.end()){
+
+      /*
+       * The basic block does not belong to the outermost loop, so we can skip it.
+       */
+      continue ;
+    }
+
+    /*
+     * Check if we have already checked the current basic block.
+     */
+    if (bbsEncountered.find(bb) != bbsEncountered.end()){
+
+      /*
+       * We have already evaluated the current basic block.
+       * There is no need to re-evaluate it.
+       */
+      continue ;
+    }
+    bbsEncountered[bb] = true;
+
+    /*
+     * Consider all instructions of the current basic block.
+     */
     for (auto &I : *bb) {
+
+      /*
+       * Fetch the SCC that includes the current instruction of the current basic block.
+       */
       auto scc = sccdag->sccOfValue(&I);
 
       /*
-       * Process SCC not encountered that are present in a subset
+       * Check whether the current SCC has been processed already.
        */
       if (SCCToSet.find(scc) == SCCToSet.end()) continue;
       if (sccEncountered.find(scc) != sccEncountered.end()) continue;
       sccEncountered.insert(scc);
+
+      /*
+       * Process the new SCC.
+       */
       SCCDebugOrder[count] = scc;
       SCCDebugIndex[scc] = count++;
     }
-    bb = bb->getNextNode();
+
+    /*
+     * Push on top of the stack all successors of the current basic block.
+     */
+    for (auto succBB : successors(bb)){
+      if (bbsEncountered.find(succBB) == bbsEncountered.end()){
+        todos.push(succBB);
+      }
+    }
   }
 
+  /*
+   *  - Check everything is correct.
+   */
   if (SCCDebugIndex.size() != SCCToSet.size()) {
     errs() << "ERROR: Mismatch # of SCC encountered (in program forward order traversal): "
       << SCCDebugIndex.size() << " versus total # of SCC in subsets: "
@@ -74,12 +150,18 @@ void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
 
   /*
    * Ensure the initial specified configuration has no cycles.
-   * Then determine a depth ordering of subsets based on their
-   * parent-children graph
    */
-  if (hasCycle()) mergeCycles();
+  if (hasCycle()) {
+    mergeCycles();
+  }
+
+  /*
+   * Determine a depth ordering of subsets based on their parent-children graph.
+   */
   resetSubsetGraph();
   orderSubsets();
+
+  return ;
 }
 
 SCCset *SCCDAGPartition::mergePairAndCycles (SCCset *subsetA, SCCset *subsetB) {
