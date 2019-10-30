@@ -2,6 +2,7 @@ all: compile
 
 compile: svf patch.tar
 	cd svf ; tar xf ../patch.tar ;
+	cd svf ; ./build.sh ;
 
 svf:
 	git clone https://github.com/SVF-tools/SVF.git svf
