@@ -23,6 +23,8 @@
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/ADT/iterator_range.h"
 
+#include "WPA/WPAPass.h"
+
 #include "TalkDown.hpp"
 #include "PDGAnalysis.hpp"
 
@@ -44,12 +46,14 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<AllocAA>();
   AU.addRequired<TalkDown>();
+  AU.addRequired<WPAPass>();
   AU.setPreservesAll();
   return ;
 }
 
 bool llvm::PDGAnalysis::runOnModule (Module &M){
   this->M = &M;
+  this->wpa = &getAnalysis<WPAPass>();
   return false;
 }
 
@@ -192,7 +196,23 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
   /*
    * Query the LLVM alias analyses.
    */
-  switch (AA.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
+  // switch (AA.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
+  //   case PartialAlias:
+  //   case MayAlias:
+  //     makeEdge = true;
+  //     break;
+  //   case MustAlias:
+  //     makeEdge = must = true;
+  //     break;
+  // }
+  // if (!makeEdge) {
+  //   return;
+  // }
+  
+  /*
+   * Check other alias analyses
+   */
+  switch (this->wpa->alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
       makeEdge = true;
@@ -204,11 +224,6 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
   if (!makeEdge) {
     return;
   }
-  
-  /*
-   * Check other alias analyses
-   */
-  //TODO
 
   /*
    * There is a dependence.

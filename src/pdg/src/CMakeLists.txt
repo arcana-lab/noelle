@@ -31,7 +31,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
 					 ../../parallelization_utilities/include
 					 ../../alloc_aa/include 
 					 ../../talkdown/include 
-					 ../include 
+					 ../include
+           ../../../external/svf/include
                      )
 
 # Declare the LLVM pass to compile

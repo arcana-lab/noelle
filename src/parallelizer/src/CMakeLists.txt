@@ -24,7 +24,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../basic_utilities/include ../../alloc_aa/include ../../pdg/include ../../threadpool/include ../../parallelization_utilities/include ../../heuristics/include ../../parallelization_technique/include ../../dswp/include ../../doall/include ../../helix/include ../../hotprofiler/include ./)
+include_directories(${LLVM_INCLUDE_DIRS} ../../basic_utilities/include ../../alloc_aa/include ../../pdg/include ../../threadpool/include ../../parallelization_utilities/include ../../heuristics/include ../../parallelization_technique/include ../../dswp/include ../../doall/include ../../helix/include ../../hotprofiler/include ./ ../../../external/svf/include)
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})

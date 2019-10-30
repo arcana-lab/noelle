@@ -8,13 +8,14 @@ OPT="opt" ;
 AA="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa"
 ANALYSES="${AA} -scalar-evolution -loops -loop-simplify -lcssa -domtree"
 
+WPAPASS="-load ${installDir}/../external/svf/Release-build/lib/libSvf.so -veto -ander"
 PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/PDGAnalysis.so"
 
 
 ########### Transformations
 PARALLELIZATION_TECHNIQUES="-load ${installDir}/lib/DSWP.so -load ${installDir}/lib/DOALL.so -load ${installDir}/lib/HELIX.so"
 
-OPTPASSES="${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/Parallelization.so -load ${installDir}/lib/Heuristics.so -load ${installDir}/lib/ParallelizationTechnique.so ${PARALLELIZATION_TECHNIQUES} -load ${installDir}/lib/Parallelizer.so"
+OPTPASSES="${WPAPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/Parallelization.so -load ${installDir}/lib/Heuristics.so -load ${installDir}/lib/ParallelizationTechnique.so ${PARALLELIZATION_TECHNIQUES} -load ${installDir}/lib/Parallelizer.so"
 
 # Set the command to execute
 cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} ${@}"
