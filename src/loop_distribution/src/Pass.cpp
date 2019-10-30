@@ -10,6 +10,7 @@
  */
 #include "LoopDistribution.hpp"
 #include "PDGAnalysis.hpp"
+#include "HotProfiler.hpp"
 
 using namespace llvm;
 
@@ -33,6 +34,7 @@ bool LoopDistribution::runOnModule (Module &M) {
 void LoopDistribution::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<HotProfiler>();
 
   return ;
 }
