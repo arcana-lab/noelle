@@ -196,19 +196,19 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
   /*
    * Query the LLVM alias analyses.
    */
-  // switch (AA.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
-  //   case PartialAlias:
-  //   case MayAlias:
-  //     makeEdge = true;
-  //     break;
-  //   case MustAlias:
-  //     makeEdge = must = true;
-  //     break;
-  // }
-  // if (!makeEdge) {
-  //   return;
-  // }
-  
+  switch (AA.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
+    case PartialAlias:
+    case MayAlias:
+      makeEdge = true;
+      break;
+    case MustAlias:
+      makeEdge = must = true;
+    break;
+  }
+  if (!makeEdge) {
+    return;
+  }
+
   /*
    * Check other alias analyses
    */
