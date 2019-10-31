@@ -33,10 +33,6 @@ generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
 - Packing/unpacking pushes and pops
 
 
-==== ANALYSIS
-- Add SVF alias analysis
-
-
 ==== PDG ALIAS ANALYSIS LIMITATIONS
 - Non-pointer struct values alias with primitive arrays
 - Primitive arrays stored and used in a struct
