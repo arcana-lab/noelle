@@ -16,5 +16,6 @@ clean:
 
 uninstall:
 	rm -rf install ;
+	cd external ; make $@
 
 .PHONY: src tests clean uninstall external
