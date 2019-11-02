@@ -73,10 +73,22 @@ namespace llvm {
         return n;
       }
 
-      edges_iterator begin_edges() { allEdges.begin(); }
-      edges_iterator end_edges() { allEdges.end(); }
-      edges_const_iterator begin_edges() const { allEdges.begin(); }
-      edges_const_iterator end_edges() const { allEdges.end(); }
+      edges_iterator begin_edges() { 
+        auto e = allEdges.begin(); 
+        return e;
+      }
+      edges_iterator end_edges() { 
+        auto e = allEdges.end(); 
+        return e;
+      }
+      edges_const_iterator begin_edges() const { 
+        auto e = allEdges.begin(); 
+        return e;
+      }
+      edges_const_iterator end_edges() const { 
+        auto e = allEdges.end(); 
+        return e;
+      }
 
       /*
        * Node and Edge Properties
