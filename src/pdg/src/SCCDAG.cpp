@@ -209,6 +209,21 @@ bool SCCDAG::iterateOverInstructions (std::function<bool (Instruction *)> funcTo
   return false ;
 }
 
+bool SCCDAG::iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke){
+
+  /*
+   * Iterate over SCC.
+   */
+  for (auto sccNode : this->getNodes()){
+    auto SCC = sccNode->getT();
+    if (funcToInvoke(SCC)){
+      return true;
+    }
+  }
+
+  return false ;
+}
+
 SCCDAG::~SCCDAG() {
   for (auto *edge : allEdges){
     if (edge) {

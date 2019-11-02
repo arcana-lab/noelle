@@ -76,7 +76,7 @@ namespace llvm {
       int64_t getNumberOfDependencesBetweenInstructions (void) const ;
 
       /*
-       * Iterator: iterate over the instructions that depend on @param fromValue .
+       * Iterator: iterate over the instructions that depend on @param fromValue until @functionToInvokePerDependence returns true or there is no other dependence to iterate.
        *
        * This means there is an edge from @param fromValue to @param toValue of the type specified by the other parameters.
        * For each of this edge, the function @param functionToInvokePerDependence is invoked.
@@ -90,7 +90,7 @@ namespace llvm {
         );
 
       /*
-       * Iterator: iterate over the instructions that @param toValue depends from.
+       * Iterator: iterate over the instructions that @param toValue depends from until @functionToInvokePerDependence returns true or there is no other dependence to iterate.
        *
        * This means there is an edge from @param fromValue to @param toValue of the type specified by the other parameters.
        * For each of this edge, the function @param functionToInvokePerDependence is invoked.

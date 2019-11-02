@@ -220,7 +220,9 @@ void PDG::iterateOverDependencesFrom (
         && includeControlDependences
         && edge->isControlDependence()
       ){
-      functionToInvokePerDependence(destValue, edge->dataDependenceType());
+      if (functionToInvokePerDependence(destValue, edge->dataDependenceType())){
+        return ;
+      }
       continue ;
     }
         
@@ -231,7 +233,9 @@ void PDG::iterateOverDependencesFrom (
         && includeMemoryDataDependences
         && edge->isMemoryDependence()
       ){
-      functionToInvokePerDependence(destValue, edge->dataDependenceType());
+      if (functionToInvokePerDependence(destValue, edge->dataDependenceType())){
+        return ;
+      }
       continue ;
     }
 
@@ -242,7 +246,9 @@ void PDG::iterateOverDependencesFrom (
         && includeRegisterDataDependences
         && (!edge->isMemoryDependence())
       ){
-      functionToInvokePerDependence(destValue, edge->dataDependenceType());
+      if (functionToInvokePerDependence(destValue, edge->dataDependenceType())){
+        return ;
+      }
       continue ;
     }
   }
@@ -284,7 +290,9 @@ void PDG::iterateOverDependencesTo (
         && includeControlDependences
         && edge->isControlDependence()
       ){
-      functionToInvokePerDependence(srcValue, edge->dataDependenceType());
+      if (functionToInvokePerDependence(srcValue, edge->dataDependenceType())){
+        return ;
+      }
       continue ;
     }
         
@@ -295,7 +303,9 @@ void PDG::iterateOverDependencesTo (
         && includeMemoryDataDependences
         && edge->isMemoryDependence()
       ){
-      functionToInvokePerDependence(srcValue, edge->dataDependenceType());
+      if (functionToInvokePerDependence(srcValue, edge->dataDependenceType())){
+        return ;
+      }
       continue ;
     }
 
@@ -306,7 +316,9 @@ void PDG::iterateOverDependencesTo (
         && includeRegisterDataDependences
         && (!edge->isMemoryDependence())
       ){
-      functionToInvokePerDependence(srcValue, edge->dataDependenceType());
+      if (functionToInvokePerDependence(srcValue, edge->dataDependenceType())){
+        return ;
+      }
       continue ;
     }
   }

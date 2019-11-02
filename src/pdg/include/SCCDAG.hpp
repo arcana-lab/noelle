@@ -31,26 +31,50 @@ using namespace llvm;
 namespace llvm {
 
   /*
-   * Program Dependence Graph.
+   * SCCDAG of a loop.
    */
   class SCCDAG : public DG<SCC> {
     public:
       static SCCDAG * createSCCDAGFrom (PDG *);
 
+      /*
+       * Constructor.
+       */
       SCCDAG() ;
 
+      /*
+       * Check if @inst is included in the SCCDAG.
+       */
       bool doesItContain (Instruction *inst) const ;
 
+      /*
+       * Return the number of instructions that compose the SCCDAG.
+       */
       int64_t numberOfInstructions (void) ;
 
+      /*
+       * Iterate over SCCs until @funcToInvoke returns true or no other SCC exists.
+       */
+      bool iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke);
+
+      /*
+       * Iterate over instructions until @funcToInvoke returns true or no other instruction exists.
+       */
       bool iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke);
 
-      //SIMONE: it would be fantastic to have a method like "getAllSCCsWithNoInternalIncomingEdges"
+      /*
+       * Merge SCCs of @sccSet to become a single node of the SCCDAG.
+       */
+      void mergeSCCs (std::set<DGNode<SCC> *> &sccSet);
 
-      void mergeSCCs(std::set<DGNode<SCC> *> &sccSet);
+      /*
+       * Return the SCC that contains @val
+       */
+      SCC * sccOfValue (Value *val) const;
 
-      SCC *sccOfValue (Value *val) const;
-
+      /*
+       * Deconstructor.
+       */
       ~SCCDAG() ;
 
 
