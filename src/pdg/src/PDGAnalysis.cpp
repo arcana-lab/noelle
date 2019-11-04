@@ -173,7 +173,6 @@ void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {
 
 void llvm::PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
   for (auto node : make_range(pdg->begin_nodes(), pdg->end_nodes())) {
-    errs() << "CUCU " << node << "\n";
     auto pdgValue = node->getT();
     if (pdgValue->getNumUses() == 0)
       continue;
