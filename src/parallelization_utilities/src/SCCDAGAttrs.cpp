@@ -19,7 +19,9 @@ AccumulatorOpInfo::AccumulatorOpInfo () {
     Instruction::Mul,
     Instruction::FMul,
     Instruction::Sub,
-    Instruction::FSub
+    Instruction::FSub,
+    Instruction::Or,
+    Instruction::And
   };
   this->accumOps = std::set<unsigned>(sideEffectFreeOps.begin(), sideEffectFreeOps.end());
   this->opIdentities = {
@@ -28,7 +30,9 @@ AccumulatorOpInfo::AccumulatorOpInfo () {
     { Instruction::Mul, 1 },
     { Instruction::FMul, 1 },
     { Instruction::Sub, 0 },
-    { Instruction::FSub, 0 }
+    { Instruction::FSub, 0 },
+    { Instruction::Or, 0 },
+    { Instruction::And, 1 }
   };
 }
 
@@ -544,16 +548,43 @@ bool SCCDAGAttrs::canPrecedeInCurrentIteration (LoopInfoSummary &LIS, Instructio
 }
 
 void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
+
+  /*
+   * Fetch the attributes of the SCC.
+   */
   auto &sccInfo = this->getSCCAttrs(scc);
+
+  /*
+   * Iterate over elements of the SCC to collect PHIs and accumulators.
+   */
   for (auto iNodePair : scc->internalNodePairs()) {
+
+    /*
+     * Fetch the current element of the SCC.
+     */
     auto V = iNodePair.first;
 
+    /*
+     * Check if it is a PHI.
+     */
     if (auto phi = dyn_cast<PHINode>(V)) {
       sccInfo->PHINodes.insert(phi);
       continue;
     }
+
+    /*
+     * Check if it is an accumulator.
+     */
     if (auto I = dyn_cast<Instruction>(V)) {
+
+      /*
+       * Fetch the opcode.
+       */
       auto binOp = I->getOpcode();
+
+      /*
+       * Check if this is an opcode we handle.
+       */
       if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
         sccInfo->accumulators.insert(I);
         continue;
@@ -567,6 +598,8 @@ void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
   if (sccInfo->accumulators.size() == 1) {
     sccInfo->singleAccumulator = *sccInfo->accumulators.begin();
   }
+
+  return ;
 }
 
 void SCCDAGAttrs::collectControlFlowInstructions (SCC *scc) {

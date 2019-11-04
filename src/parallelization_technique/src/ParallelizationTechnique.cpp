@@ -497,7 +497,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
      * Fetch the identity constant for the operation reduced.
      * For example, if the variable reduced is an accumulator where "+" is used to accumulate values, then "0" is the identity.
      */
-    auto identityV = getIdentityValueForEnvironmentValue(LDI, taskIndex, envInd);
+    auto identityV = this->getIdentityValueForEnvironmentValue(LDI, taskIndex, envInd);
 
     /*
      * Set the initial value for the private variable.
@@ -514,28 +514,37 @@ Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
   int environmentIndex
 ){
 
-/*
-      auto producerSCC = LDI->loopSCCDAG->sccOfValue(cast<PHINode>(producer));
-      auto firstAccumI = *(LDI->sccdagAttrs.getSCCAttrs(producerSCC)->accumulators.begin());
-      auto envPtrType = envPtr->getType();
-      auto identityV = LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(
-        firstAccumI,
-        cast<PointerType>(envPtrType)->getElementType()
-      );
-*/
-
+  /*
+   * Fetch the producer of new values of the current environment variable.
+   */
   auto producer = LDI->environment->producerAt(environmentIndex);
+
+  /*
+   * Fetch the SCC that this producer belongs to.
+   */
   auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
   assert(producerSCC != nullptr && "The environment value doesn't belong to a loop SCC");
 
+  /*
+   * Fetch the attributes about the producer SCC.
+   */
   auto &sccAttrs = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
   assert(sccAttrs->accumulators.size() > 0 && "The environment value isn't accumulated!");
 
+  /*
+   * Fetch the accumulator.
+   */
   auto firstAccumI = *(sccAttrs->accumulators.begin());
-  return LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(
+
+  /*
+   * Fetch the identity.
+   */
+  auto identityValue = LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(
     firstAccumI,
     producer->getType()
   );
+
+  return identityValue;
 }
 
 void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
