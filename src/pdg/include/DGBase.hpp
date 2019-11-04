@@ -53,21 +53,32 @@ namespace llvm {
         auto n = allNodes.end(); 
         return n;
       }
-      nodes_const_iterator begin_nodes() const { allNodes.begin(); }
-      nodes_const_iterator end_nodes() const { allNodes.end(); }
+
+      nodes_const_iterator begin_nodes() const { 
+        auto n = allNodes.begin(); 
+        return n;
+      }
+
+      nodes_const_iterator end_nodes() const { 
+        auto n = allNodes.end(); 
+        return n;
+      }
 
       node_map_iterator begin_internal_node_map() { 
         auto n = internalNodeMap.begin(); 
         return n;
       }
+
       node_map_iterator end_internal_node_map() { 
         auto n = internalNodeMap.end(); 
         return n;
       }
+
       node_map_iterator begin_external_node_map() { 
         auto n = externalNodeMap.begin(); 
         return n;
       }
+
       node_map_iterator end_external_node_map() { 
         auto n = externalNodeMap.end(); 
         return n;
@@ -77,14 +88,17 @@ namespace llvm {
         auto e = allEdges.begin(); 
         return e;
       }
+
       edges_iterator end_edges() { 
         auto e = allEdges.end(); 
         return e;
       }
+
       edges_const_iterator begin_edges() const { 
         auto e = allEdges.begin(); 
         return e;
       }
+
       edges_const_iterator end_edges() const { 
         auto e = allEdges.end(); 
         return e;
