@@ -263,6 +263,10 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
   return true;
 }
 
+bool SCCDAGAttrs::mustExecuteSequentially (SCC *scc) const {
+  return scc->getType() == SCC::SCCType::SEQUENTIAL;
+}
+
 bool SCCDAGAttrs::canExecuteReducibly (SCC *scc) const {
   return scc->getType() == SCC::SCCType::REDUCIBLE;
 }

@@ -116,6 +116,7 @@ namespace llvm {
       /*
        * Methods on single SCC.
        */
+      bool mustExecuteSequentially (SCC *scc) const ;
       bool canExecuteReducibly (SCC *scc) const ;
       bool canExecuteIndependently (SCC *scc) const ;
       bool canBeCloned (SCC *scc) const ;
@@ -170,4 +171,5 @@ namespace llvm {
       bool collectDerivationChain (std::vector<Instruction *> &chain, SCC *scc);
       bool canPrecedeInCurrentIteration (LoopInfoSummary &LIS, Instruction *from, Instruction *to) const ;
   };
+
 }

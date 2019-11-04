@@ -74,6 +74,10 @@ namespace llvm {
       /*
        * Methods
        */
+
+      /*
+       * Constructors.
+       */
       LoopDependenceInfo (
         Function *f,
         PDG *fG,
@@ -90,18 +94,36 @@ namespace llvm {
         PostDominatorTree &pdt
       );
 
+      /*
+       * Copy all options from otherLDI to "this".
+       */
       void copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) ;
 
+      /*
+       * Return the number of exits of the loop.
+       */
       uint32_t numberOfExits (void) const;
 
       std::function<LoopDependenceInfo *(Function *F, int loopIndex)> *reevaluator;
       
+      /*
+       * Check whether a transformation is enabled.
+       */
       bool isTechniqueEnabled (Technique technique);
 
+      /*
+       * Enable all transformations.
+       */
       void enableAllTechniques (void);
 
+      /*
+       * Disable all transformations.
+       */
       void disableTechnique (Technique techniqueToDisable);
 
+      /*
+       * Deconstructor.
+       */
       ~LoopDependenceInfo();
 
     private:
