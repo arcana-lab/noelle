@@ -51,7 +51,7 @@ int main (int argc, char *argv[]){
   /*
    * Example of more nested recursion
    */
-  printf("%d\n", nesta(5));
+  printf("%d\n", nesta(iterations / 10));
 
   return 0;
 }
