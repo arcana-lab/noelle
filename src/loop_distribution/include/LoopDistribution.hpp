@@ -2,8 +2,10 @@
 
 #include "SystemHeaders.hpp"
 #include "LoopDependenceInfo.hpp"
+#include "SCC.hpp"
 
 namespace llvm {
+
   struct LoopDistribution : public ModulePass {
     public:
 
@@ -20,7 +22,15 @@ namespace llvm {
       bool runOnModule (Module &M) override ;
       void getAnalysisUsage (AnalysisUsage &AU) const override ;
 
-      bool splitLoop (LoopDependenceInfo &LDI, std::set<Instruction *> instructionsToPullOut);
+      bool splitLoop (
+        LoopDependenceInfo const &LDI, 
+        SCC *SCCToPullOut
+        );
+
+      bool splitLoop (
+        LoopDependenceInfo const &LDI, 
+        std::set<SCC *> const &SCCsToPullOut
+        );
 
     private:
 

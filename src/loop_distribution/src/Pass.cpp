@@ -18,13 +18,11 @@ LoopDistribution::LoopDistribution()
   :
   ModulePass{ID}
   {
-
   return ;
 }
 
 bool LoopDistribution::doInitialization (Module &M) {
-
-  return false; 
+  return true;
 }
 
 bool LoopDistribution::runOnModule (Module &M) {
@@ -32,20 +30,17 @@ bool LoopDistribution::runOnModule (Module &M) {
 }
 
 void LoopDistribution::getAnalysisUsage (AnalysisUsage &AU) const {
-  AU.addRequired<PDGAnalysis>();
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<HotProfiler>();
-
+  AU.setPreservesAll();
   return ;
 }
 
 // Next there is code to register your pass to "opt"
 char llvm::LoopDistribution::ID = 0;
-static RegisterPass<LoopDistribution> X("loopdist", "Loop distribution");
+static RegisterPass<LoopDistribution> X("LoopDistribution", "Loop distribution");
 
 // Next there is code to register your pass to "clang"
 static LoopDistribution * _PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
+static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_ModuleOptimizerEarly,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
         if(!_PassMaker){ PM.add(_PassMaker = new LoopDistribution());}}); // ** for -Ox
 static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,

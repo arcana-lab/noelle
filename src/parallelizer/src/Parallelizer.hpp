@@ -40,6 +40,7 @@
 #include "DOALL.hpp"
 #include "HELIX.hpp"
 #include "Techniques.hpp"
+#include "LoopDistribution.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -89,10 +90,19 @@ namespace llvm {
         DSWP &dswp,
         DOALL &doall,
         HELIX &helix,
-        Heuristics *h
+        Heuristics *h,
+        LoopDistribution &loopDist
       );
-      std::vector<LoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par);
+
+      std::vector<LoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par) ;
+
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
+
+      void applyEnablers (
+        LoopDependenceInfo *LDI,
+        Parallelization &par,
+        LoopDistribution &loopDist
+      );
 
       /*
        * Debug utilities

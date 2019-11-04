@@ -12,7 +12,15 @@
 
 using namespace llvm;
   
-bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &par, DSWP &dswp, DOALL &doall, HELIX &helix, Heuristics *h){
+bool Parallelizer::parallelizeLoop (
+  LoopDependenceInfo *LDI, 
+  Parallelization &par, 
+  DSWP &dswp, 
+  DOALL &doall, 
+  HELIX &helix, 
+  Heuristics *h,
+  LoopDistribution &loopDist
+  ){
 
   /*
    * Assertions.
@@ -24,6 +32,11 @@ bool Parallelizer::parallelizeLoop (LoopDependenceInfo *LDI, Parallelization &pa
     errs() << "Parallelizer:  Function \"" << LDI->function->getName() << "\"\n";
     errs() << "Parallelizer:  Try to parallelize the loop \"" << *LDI->header->getFirstNonPHI() << "\"\n";
   }
+
+  /*
+   * Apply parallelization enablers.
+   */
+  this->applyEnablers(LDI, par, loopDist);
 
   /*
    * Gauge the limits of each parallelization scheme

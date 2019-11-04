@@ -10,6 +10,7 @@
  */
 #include "Parallelizer.hpp"
 #include "HotProfiler.hpp"
+#include "LoopDistribution.hpp"
 
 using namespace llvm;
 
@@ -66,6 +67,7 @@ bool Parallelizer::runOnModule (Module &M) {
   auto& parallelizationFramework = getAnalysis<Parallelization>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
   auto& profiles = getAnalysis<HotProfiler>().getHot();
+  auto& loopDist = getAnalysis<LoopDistribution>();
 
   /*
    * Allocate the parallelization techniques.
@@ -127,7 +129,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Parallelize the current loop with Parallelizer.
      */
-    modified |= this->parallelizeLoop(loop, parallelizationFramework, dswp, doall, helix, heuristics);
+    modified |= this->parallelizeLoop(loop, parallelizationFramework, dswp, doall, helix, heuristics, loopDist);
 
     /*
      * Free the memory.
@@ -145,11 +147,28 @@ bool Parallelizer::runOnModule (Module &M) {
 }
 
 void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
+
+  /*
+   * Analyses.
+   */
   AU.addRequired<PDGAnalysis>();
+  AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<ScalarEvolutionWrapperPass>();
+
+  /*
+   * Parallelizations.
+   */
   AU.addRequired<Parallelization>();
   AU.addRequired<HeuristicsPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<LoopInfoWrapperPass>();
+
+  /*
+   * Parallelization enablers.
+   */
+  AU.addRequired<LoopDistribution>();
+
+  /*
+   * Profilers.
+   */
   AU.addRequired<HotProfiler>();
 
   return ;
