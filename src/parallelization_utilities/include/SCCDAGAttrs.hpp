@@ -13,7 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "SCCDAG.hpp"
 #include "SCC.hpp"
-#include "LoopsInfoSummary.hpp"
+#include "LoopsSummary.hpp"
 #include "LoopEnvironment.hpp"
 
 using namespace std;
@@ -108,7 +108,7 @@ namespace llvm {
       /*
        * Methods on SCCDAG.
        */
-      void populate (SCCDAG *loopSCCDAG, LoopsInfoSummary &LIS, ScalarEvolution &SE);
+      void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE);
       std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
       bool isLoopGovernedByIV () const ;
       bool areAllLiveOutValuesReducable (LoopEnvironment *env) const ;
@@ -121,7 +121,7 @@ namespace llvm {
       bool canExecuteIndependently (SCC *scc) const ;
       bool canBeCloned (SCC *scc) const ;
       bool isInductionVariableSCC (SCC *scc) const ;
-      bool isSCCContainedInSubloop (LoopsInfoSummary &LIS, SCC *scc) const ;
+      bool isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const ;
       std::set<BasicBlock *> & getBasicBlocks (SCC *scc);
       // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
       std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc); 
@@ -145,19 +145,19 @@ namespace llvm {
        * Helper methods on SCCDAG
        */
       void collectSCCGraphAssumingDistributedClones ();
-      void collectDependencies (LoopsInfoSummary &LIS);
-      void identifyInterIterationDependences (LoopsInfoSummary &LIS);
+      void collectDependencies (LoopsSummary &LIS);
+      void identifyInterIterationDependences (LoopsSummary &LIS);
 
       /*
        * Helper methods on single SCC
        */
       void collectPHIsAndAccumulators (SCC *scc);
       void collectControlFlowInstructions (SCC *scc);
-      bool checkIfReducible (SCC *scc, LoopsInfoSummary &LIS);
+      bool checkIfReducible (SCC *scc, LoopsSummary &LIS);
       bool checkIfIndependent (SCC *scc);
-      bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsInfoSummary &LIS);
-      void checkIfIVHasFixedBounds (SCC *scc, LoopsInfoSummary &LIS);
-      bool isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopsInfoSummary &LIS);
+      bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);
+      void checkIfIVHasFixedBounds (SCC *scc, LoopsSummary &LIS);
+      bool isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopsSummary &LIS);
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);
       bool isClonableByInductionVars (SCC *scc) const ;
       bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;
@@ -169,7 +169,7 @@ namespace llvm {
       bool isDerivedWithinSCC (Value *V, SCC *scc) const ;
       bool isDerivedPHIOrAccumulator (Value *V, SCC *scc) const ;
       bool collectDerivationChain (std::vector<Instruction *> &chain, SCC *scc);
-      bool canPrecedeInCurrentIteration (LoopsInfoSummary &LIS, Instruction *from, Instruction *to) const ;
+      bool canPrecedeInCurrentIteration (LoopsSummary &LIS, Instruction *from, Instruction *to) const ;
   };
 
 }

@@ -160,7 +160,7 @@ SCCAttrs::SCCAttrs (SCC *s)
   // collectSCCValues();
 }
 
-void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsInfoSummary &LIS, ScalarEvolution &SE) {
+void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE) {
   this->sccdag = loopSCCDAG;
 
   /*
@@ -287,7 +287,7 @@ bool SCCDAGAttrs::isInductionVariableSCC (SCC *scc) const {
   return sccToInfo.find(scc)->second->hasIV;
 }
 
-bool SCCDAGAttrs::isSCCContainedInSubloop (LoopsInfoSummary &LIS, SCC *scc) const {
+bool SCCDAGAttrs::isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const {
   bool instInSubloops = true;
   for (auto iNodePair : scc->internalNodePairs()) {
     auto bb = cast<Instruction>(iNodePair.first)->getParent();
@@ -334,7 +334,7 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
   return ;
 }
 
-void SCCDAGAttrs::collectDependencies (LoopsInfoSummary &LIS) {
+void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS) {
 
   /*
    * Collect values producing intra iteration data dependencies
@@ -355,7 +355,7 @@ void SCCDAGAttrs::collectDependencies (LoopsInfoSummary &LIS) {
   return ;
 }
 
-void SCCDAGAttrs::identifyInterIterationDependences (LoopsInfoSummary &LIS){
+void SCCDAGAttrs::identifyInterIterationDependences (LoopsSummary &LIS){
 
   /*
    * Collect back edges within each SCC Data dependency. 
@@ -510,7 +510,7 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopsInfoSummary &LIS){
 }
 
 // TODO: Consolidate this logic and its equivalent in PDGAnalysis
-bool SCCDAGAttrs::canPrecedeInCurrentIteration (LoopsInfoSummary &LIS, Instruction *from, Instruction *to) const {
+bool SCCDAGAttrs::canPrecedeInCurrentIteration (LoopsSummary &LIS, Instruction *from, Instruction *to) const {
   BasicBlock *fromBB = from->getParent();
   BasicBlock *toBB = to->getParent();
 
@@ -637,7 +637,7 @@ void SCCDAGAttrs::collectControlFlowInstructions (SCC *scc) {
   return ;
 }
 
-bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsInfoSummary &LIS) {
+bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
 
   /*
@@ -827,7 +827,7 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
   return interIterDeps.find(scc) == interIterDeps.end();
 }
 
-bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsInfoSummary &LIS) {
+bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
   auto setHasIV = [&](bool hasIV) -> bool {
     // scc->printMinimal(errs() << "Not IV:\n") << "\n";
@@ -884,7 +884,7 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, Lo
   return setHasIV(true);
 }
 
-void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopsInfoSummary &LIS) {
+void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopsSummary &LIS) {
   auto fixedIVBounds = new FixedIVBounds();
   auto &IVBounds = *fixedIVBounds;
   auto notSimple = [&]() -> void {
@@ -947,7 +947,7 @@ void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopsInfoSummary &LIS) {
   return ;
 }
 
-bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopsInfoSummary &LIS) {
+bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopsSummary &LIS) {
   auto &sccInfo = this->getSCCAttrs(scc);
   auto singleControlPair = sccInfo->getSingleInstructionThatControlLoopExit();
   assert(singleControlPair != nullptr);

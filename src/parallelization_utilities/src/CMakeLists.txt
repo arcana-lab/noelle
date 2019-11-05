@@ -1,7 +1,7 @@
 # Sources
 set(Srcs 
   LoopSummary.cpp
-  LoopsInfoSummary.cpp
+  LoopsSummary.cpp
   EnvBuilder.cpp
   LoopEnvironment.cpp
   SCCDAGAttrs.cpp

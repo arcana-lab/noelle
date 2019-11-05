@@ -1,5 +1,5 @@
 Helpers: Parallelization, SCCDAGAttrs, SCCDAGPartition, Queue
-Data Structures: LoopDependenceInfo, LoopEnvironment, LoopsInfoSummary
+Data Structures: LoopDependenceInfo, LoopEnvironment, LoopsSummary
 
 Implementation
   Parallelization
