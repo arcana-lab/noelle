@@ -693,17 +693,29 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
       return false;
     }
 
-    auto outgoingBBLoop = LIS.bbToLoop.find(outI->getParent());
-    auto incomingBBLoop = LIS.bbToLoop.find(inI->getParent());
+    auto outIBB = outI->getParent();
+    auto inIBB = inI->getParent();
+    /*auto outgoingBBLoop = LIS.getLoop(outIBB);
+    auto incomingBBLoop = LIS.getLoop(inIBB);
+    if (  false
+          || (outgoingBBLoop == nullptr)
+          || (outgoingBBLoop == incomingBBLoop)
+      ) {
+      return false;
+    }*/
+    auto outgoingBBLoop = LIS.bbToLoop.find(outIBB);
+    auto incomingBBLoop = LIS.bbToLoop.find(inIBB);
     if (outgoingBBLoop == LIS.bbToLoop.end() ||
         outgoingBBLoop == incomingBBLoop) {
       return false;
     }
 
     auto loop = outgoingBBLoop->second;
+    //if (backedgeLoops.find(outgoingBBLoop) != backedgeLoops.end()) {
     if (backedgeLoops.find(loop) != backedgeLoops.end()) {
       return false;
     }
+    //backedgeLoops.insert(outgoingBBLoop);
     backedgeLoops.insert(loop);
   }
 
