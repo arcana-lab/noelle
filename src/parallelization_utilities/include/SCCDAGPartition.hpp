@@ -13,7 +13,7 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "SCCDAGAttrs.hpp"
-#include "LoopInfoSummary.hpp"
+#include "LoopsInfoSummary.hpp"
 
 typedef typename std::set<SCC *> SCCset;
 
@@ -22,7 +22,7 @@ class SCCDAGPartition {
     SCCDAGPartition (
       SCCDAG *dag,
       SCCDAGAttrs *attrs,
-      LoopInfoSummary *LIS,
+      LoopsInfoSummary *LIS,
       std::set<SCCset *> *sets
     );
 
@@ -85,5 +85,5 @@ class SCCDAGPartition {
      */
     SCCDAG *sccdag;
     SCCDAGAttrs *dagAttrs;
-    LoopInfoSummary *LIS;
+    LoopsInfoSummary *LIS;
 };
