@@ -732,7 +732,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
     /*
      * Fetch the loop that contains the current PHI.
      */
-    auto loopOfPHI = LIS.bbToLoop[phiBB];
+    auto loopOfPHI = LIS.getLoop(phiBB);
 
     /*
      * Check all incoming values of the current PHI.
@@ -865,7 +865,8 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, Lo
    * Ensure a single PHI with induction accumulation only
    */
   if (!sccInfo->singlePHI) return setHasIV(false);
-  auto loopOfPHI = LIS.bbToLoop[sccInfo->singlePHI->getParent()];
+  auto singlePHIBB = sccInfo->singlePHI->getParent();
+  auto loopOfPHI = LIS.getLoop(singlePHIBB);
   for (auto i = 0; i < sccInfo->singlePHI->getNumIncomingValues(); ++i) {
     auto incomingBB = sccInfo->singlePHI->getIncomingBlock(i);
     auto loopOfIncoming = LIS.bbToLoop.find(incomingBB);
@@ -957,7 +958,8 @@ bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, Loops
   /*
    * Branch statement has two successors, one in the loop body, one outside the loop
    */
-  auto loop = LIS.bbToLoop[br->getParent()];
+  auto brBB = br->getParent();
+  auto loop = LIS.getLoop(brBB);
   auto brLHSInLoop = loop->bbs.find(br->getSuccessor(0)) != loop->bbs.end();
   auto brRHSInLoop = loop->bbs.find(br->getSuccessor(1)) != loop->bbs.end();
   if (!(brLHSInLoop ^ brRHSInLoop)) return false;
