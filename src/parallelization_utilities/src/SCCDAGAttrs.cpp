@@ -695,28 +695,25 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
 
     auto outIBB = outI->getParent();
     auto inIBB = inI->getParent();
-    /*auto outgoingBBLoop = LIS.getLoop(outIBB);
+    auto outgoingBBLoop = LIS.getLoop(outIBB);
     auto incomingBBLoop = LIS.getLoop(inIBB);
-    if (  false
+    /*if (  false
           || (outgoingBBLoop == nullptr)
           || (outgoingBBLoop == incomingBBLoop)
       ) {
       return false;
     }*/
-    auto outgoingBBLoop = LIS.bbToLoop.find(outIBB);
-    auto incomingBBLoop = LIS.bbToLoop.find(inIBB);
-    if (outgoingBBLoop == LIS.bbToLoop.end() ||
-        outgoingBBLoop == incomingBBLoop) {
+    auto outgoingBBLoopI = LIS.bbToLoop.find(outIBB);
+    auto incomingBBLoopI = LIS.bbToLoop.find(inIBB);
+    if (outgoingBBLoopI == LIS.bbToLoop.end() ||
+        outgoingBBLoopI == incomingBBLoopI) {
       return false;
     }
 
-    auto loop = outgoingBBLoop->second;
-    //if (backedgeLoops.find(outgoingBBLoop) != backedgeLoops.end()) {
-    if (backedgeLoops.find(loop) != backedgeLoops.end()) {
+    if (backedgeLoops.find(outgoingBBLoop) != backedgeLoops.end()) {
       return false;
     }
-    //backedgeLoops.insert(outgoingBBLoop);
-    backedgeLoops.insert(loop);
+    backedgeLoops.insert(outgoingBBLoop);
   }
 
   /*
