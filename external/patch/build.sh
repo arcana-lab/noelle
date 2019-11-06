@@ -37,8 +37,8 @@ if [[ $1 == 'debug' ]]
 then
 cmake -D CMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_INSTALL_PREFIX="${installDir}" ../
 else
-cmake ../
+cmake -DCMAKE_INSTALL_PREFIX="${installDir}" ../
 fi
-cmake ../
+cmake -DCMAKE_INSTALL_PREFIX="${installDir}" ../
 make -j4
 
