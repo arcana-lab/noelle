@@ -638,6 +638,10 @@ void SCCDAGAttrs::collectControlFlowInstructions (SCC *scc) {
 }
 
 bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
+
+  /*
+   * Fetch the attributes of the current SCC.
+   */
   auto &sccInfo = this->getSCCAttrs(scc);
 
   /*
@@ -656,7 +660,6 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
         return false;
       }
     }
-
   }
 
   /*
@@ -673,18 +676,28 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
   }
 
   /*
-   * Requirement: Data flow: a single data backedge per loop level
-   * contained in this SCC
+   * Requirement: There is a single loop-carried data dependence between instructions of the SCC via variables.
    */
-  std::set<LoopSummary *> backedgeLoops;
+  uint32_t loopCarriedDataDeps = 0;
   for (auto edge : interIterDeps[scc]) {
+
+    /*
+     * Check that the loop-carried dependence is a data dependence one.
+     */
     if (edge->isControlDependence()) {
       return false;
     }
+
+    /*
+     * Check that the loop-carried data dependence is through variables.
+     */
     if (edge->isMemoryDependence()) {
       return false;
     }
 
+    /*
+     * Check that the source and destination of the dependence are instructions.
+     */
     auto outI = isa<Instruction>(edge->getOutgoingT())
       ? cast<Instruction>(edge->getOutgoingT()) : nullptr;
     auto inI = isa<Instruction>(edge->getIncomingT())
@@ -693,29 +706,13 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
       return false;
     }
 
-    auto outIBB = outI->getParent();
-    auto inIBB = inI->getParent();
-    auto outgoingBBLoop = LIS.getLoop(outIBB);
-    auto incomingBBLoop = LIS.getLoop(inIBB);
-    /*if (  false
-          || (outgoingBBLoop == nullptr)
-          || (outgoingBBLoop == incomingBBLoop)
-      ) {
-      return false;
-    }*/
-    auto outgoingBBLoopI = LIS.bbToLoop.find(outIBB);
-    auto incomingBBLoopI = LIS.bbToLoop.find(inIBB);
-    if (  false
-          || (outgoingBBLoop == nullptr)
-          || (outgoingBBLoopI == incomingBBLoopI)
-      ) {
-      return false;
-    }
-
-    if (backedgeLoops.find(outgoingBBLoop) != backedgeLoops.end()) {
-      return false;
-    }
-    backedgeLoops.insert(outgoingBBLoop);
+    /*
+     * Increase the counter.
+     */
+    loopCarriedDataDeps++;
+  }
+  if (loopCarriedDataDeps > 1) {
+    return false;
   }
 
   /*
