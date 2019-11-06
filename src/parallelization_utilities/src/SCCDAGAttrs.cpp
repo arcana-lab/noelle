@@ -288,10 +288,10 @@ bool SCCDAGAttrs::isInductionVariableSCC (SCC *scc) const {
 }
 
 bool SCCDAGAttrs::isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const {
-  bool instInSubloops = true;
+  auto instInSubloops = true;
   for (auto iNodePair : scc->internalNodePairs()) {
-    auto bb = cast<Instruction>(iNodePair.first)->getParent();
-    instInSubloops &= LIS.getLoop(bb) != LIS.topLoop;
+    auto inst = cast<Instruction>(iNodePair.first);
+    instInSubloops &= LIS.getLoop(inst) != LIS.topLoop;
   }
   return instInSubloops;
 }
@@ -390,8 +390,7 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopsSummary &LIS){
         /*
          * Check if the current PHI node is within the header of the loop we care.
          */
-        auto bbOfPhi = phi->getParent();
-        auto loop = LIS.getLoop(bbOfPhi);
+        auto loop = LIS.getLoop(phi);
         if (loop->header != phi->getParent()) {
           continue;
         }
@@ -517,7 +516,7 @@ bool SCCDAGAttrs::canPrecedeInCurrentIteration (LoopsSummary &LIS, Instruction *
   /*
    * Fetch the header.
    */
-  auto loopOfBB = LIS.getLoop(fromBB);
+  auto loopOfBB = LIS.getLoop(from);
   BasicBlock *headerBB = nullptr;
   if (loopOfBB != nullptr) {
     headerBB = loopOfBB->header;
@@ -650,8 +649,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
   LoopSummary *loopOfSCC = nullptr;
   for (auto instNodePair : scc->internalNodePairs()){
     if (auto inst = dyn_cast<Instruction>(instNodePair.first)){
-      auto instBB = inst->getParent();
-      auto currentLoop = LIS.getLoop(instBB);
+      auto currentLoop = LIS.getLoop(inst);
       if (loopOfSCC == nullptr){
         loopOfSCC = currentLoop ;
         continue ;
@@ -733,14 +731,9 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
   for (auto phi : sccInfo->PHINodes) {
 
     /*
-     * Fetch the basic block of the PHI instruction.
-     */
-    auto phiBB = phi->getParent();
-
-    /*
      * Fetch the loop that contains the current PHI.
      */
-    auto loopOfPHI = LIS.getLoop(phiBB);
+    auto loopOfPHI = LIS.getLoop(phi);
 
     /*
      * Check all incoming values of the current PHI.
@@ -873,8 +866,7 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, Lo
    * Ensure a single PHI with induction accumulation only
    */
   if (!sccInfo->singlePHI) return setHasIV(false);
-  auto singlePHIBB = sccInfo->singlePHI->getParent();
-  auto loopOfPHI = LIS.getLoop(singlePHIBB);
+  auto loopOfPHI = LIS.getLoop(sccInfo->singlePHI);
   for (auto i = 0; i < sccInfo->singlePHI->getNumIncomingValues(); ++i) {
     auto incomingBB = sccInfo->singlePHI->getIncomingBlock(i);
     auto loopOfIncoming = LIS.getLoop(incomingBB);
@@ -971,8 +963,7 @@ bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, Loops
   /*
    * Branch statement has two successors, one in the loop body, one outside the loop
    */
-  auto brBB = br->getParent();
-  auto loop = LIS.getLoop(brBB);
+  auto loop = LIS.getLoop(br);
   auto brLHSInLoop = loop->bbs.find(br->getSuccessor(0)) != loop->bbs.end();
   auto brRHSInLoop = loop->bbs.find(br->getSuccessor(1)) != loop->bbs.end();
   if (!(brLHSInLoop ^ brRHSInLoop)) return false;
