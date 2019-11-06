@@ -40,5 +40,6 @@ else
 cmake -DCMAKE_INSTALL_PREFIX="${installDir}" ../
 fi
 cmake -DCMAKE_INSTALL_PREFIX="${installDir}" ../
-make -j4
+make -j8
 
+make install 
