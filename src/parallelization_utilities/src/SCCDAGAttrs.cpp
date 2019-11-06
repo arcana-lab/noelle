@@ -752,12 +752,12 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
        */
       auto incomingValue = phi->getIncomingValue(i);
       auto incomingBB = phi->getIncomingBlock(i);
-      auto loopOfIncoming = LIS.bbToLoop.find(incomingBB);
+      auto loopOfIncoming = LIS.getLoop(incomingBB);
 
       /*
        * Check whether the incoming value is from any loop.
        */
-      if (loopOfIncoming == LIS.bbToLoop.end()){
+      if (loopOfIncoming == nullptr){
 
         /*
          * It is from outside any loop, so it is not a problem as being loop invariant.
@@ -768,7 +768,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
       /*
        * Check if the incoming value is from a different loop of the one that contains the PHI.
        */
-      if (loopOfIncoming->second != loopOfPHI) {
+      if (loopOfIncoming != loopOfPHI) {
         continue;
       }
 
@@ -877,8 +877,13 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, Lo
   auto loopOfPHI = LIS.getLoop(singlePHIBB);
   for (auto i = 0; i < sccInfo->singlePHI->getNumIncomingValues(); ++i) {
     auto incomingBB = sccInfo->singlePHI->getIncomingBlock(i);
-    auto loopOfIncoming = LIS.bbToLoop.find(incomingBB);
-    if (loopOfIncoming == LIS.bbToLoop.end() || loopOfIncoming->second != loopOfPHI) continue;
+    auto loopOfIncoming = LIS.getLoop(incomingBB);
+    if (  false
+          || (loopOfIncoming == nullptr) 
+          || (loopOfIncoming != loopOfPHI)
+      ){
+      continue;
+    }
     if (!isDerivedPHIOrAccumulator(sccInfo->singlePHI->getIncomingValue(i), scc)) return setHasIV(false);
   }
 
