@@ -706,7 +706,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
     auto outgoingBBLoopI = LIS.bbToLoop.find(outIBB);
     auto incomingBBLoopI = LIS.bbToLoop.find(inIBB);
     if (  false
-          || (outgoingBBLoopI == LIS.bbToLoop.end())
+          || (outgoingBBLoop == nullptr)
           || (outgoingBBLoopI == incomingBBLoopI)
       ) {
       return false;
