@@ -6,10 +6,10 @@ compile: svf patch.tar
 
 svf:
 	git clone https://github.com/SVF-tools/SVF.git svf
-	./scripts/patch.sh
 
 patch.tar: patch svf
 	cd $< ; tar cf $@ * ; mv $@ ../ ;
+	./scripts/patch.sh
 
 clean:
 	./scripts/clean.sh

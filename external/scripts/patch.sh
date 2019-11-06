@@ -14,7 +14,7 @@ mv setup.sh svf/ ;
 
 awk -v llvmDir=${llvmDir} '
   {
-    if ($1 == "LLVMRELEASE=/home/ysui/llvm-9.0.0/llvm-9.0.0.obj"){
+    if ($1 == "LLVMRELEASE"){
       printf("LLVMRELEASE=%s\n", llvmDir);
     } else {
       print ;
