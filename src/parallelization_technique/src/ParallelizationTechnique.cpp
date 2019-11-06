@@ -528,7 +528,7 @@ Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
   /*
    * Fetch the attributes about the producer SCC.
    */
-  auto &sccAttrs = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+  auto sccAttrs = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
   assert(sccAttrs->accumulators.size() > 0 && "The environment value isn't accumulated!");
 
   /*

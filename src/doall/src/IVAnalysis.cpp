@@ -22,8 +22,8 @@ void DOALL::simplifyOriginalLoopIV (
    */
   auto headerBr = LDI->header->getTerminator();
   auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
-  auto &attrs = LDI->sccdagAttrs.getSCCAttrs(headerSCC);
-  task->originalIVAttrs = attrs.get();
+  auto attrs = LDI->sccdagAttrs.getSCCAttrs(headerSCC);
+  task->originalIVAttrs = attrs;
   auto &IVBounds = *LDI->sccdagAttrs.sccIVBounds[headerSCC];
 
   /*

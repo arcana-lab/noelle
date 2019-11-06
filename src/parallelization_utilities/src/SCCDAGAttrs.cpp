@@ -177,7 +177,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
      * Fetch the current SCC.
      */
     auto scc = node->getT();
-    this->sccToInfo[scc] = std::move(std::make_unique<SCCAttrs>(scc));
+    this->sccToInfo[scc] = new SCCAttrs(scc);
 
     /*
      * Collect information about the current SCC.
@@ -302,7 +302,7 @@ std::set<BasicBlock *> & SCCDAGAttrs::getBasicBlocks (SCC *scc) {
 }
 
 // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
-std::unique_ptr<SCCAttrs> & SCCDAGAttrs::getSCCAttrs (SCC *scc) {
+SCCAttrs * SCCDAGAttrs::getSCCAttrs (SCC *scc) {
   return this->sccToInfo[scc];
 }
 
@@ -557,7 +557,7 @@ void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
   /*
    * Fetch the attributes of the SCC.
    */
-  auto &sccInfo = this->getSCCAttrs(scc);
+  auto sccInfo = this->getSCCAttrs(scc);
 
   /*
    * Iterate over elements of the SCC to collect PHIs and accumulators.
@@ -608,7 +608,7 @@ void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
 }
 
 void SCCDAGAttrs::collectControlFlowInstructions (SCC *scc) {
-  auto &sccInfo = this->getSCCAttrs(scc);
+  auto sccInfo = this->getSCCAttrs(scc);
   for (auto iNodePair : scc->internalNodePairs()) {
     if (iNodePair.second->numOutgoingEdges() == 0) {
       continue;
@@ -641,7 +641,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
   /*
    * Fetch the attributes of the current SCC.
    */
-  auto &sccInfo = this->getSCCAttrs(scc);
+  auto sccInfo = this->getSCCAttrs(scc);
 
   /*
    * Requirement: all instructions of the SCC belong to the same loop.
@@ -829,7 +829,7 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
 }
 
 bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS) {
-  auto &sccInfo = this->getSCCAttrs(scc);
+  auto sccInfo = this->getSCCAttrs(scc);
   auto setHasIV = [&](bool hasIV) -> bool {
     // scc->printMinimal(errs() << "Not IV:\n") << "\n";
     return sccInfo->hasIV = hasIV;
@@ -902,7 +902,7 @@ void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopsSummary &LIS) {
    * IV is described by single PHI with a start and recurrence incoming value
    * The IV has one accumulator only
    */
-  auto &sccInfo = this->getSCCAttrs(scc);
+  auto sccInfo = this->getSCCAttrs(scc);
   if (!sccInfo->singlePHI || !sccInfo->singleAccumulator) return notSimple();
   if (sccInfo->singlePHI->getNumIncomingValues() != 2) return notSimple();
   auto singleControlPair = sccInfo->getSingleInstructionThatControlLoopExit();
@@ -954,7 +954,7 @@ void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopsSummary &LIS) {
 }
 
 bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopsSummary &LIS) {
-  auto &sccInfo = this->getSCCAttrs(scc);
+  auto sccInfo = this->getSCCAttrs(scc);
   auto singleControlPair = sccInfo->getSingleInstructionThatControlLoopExit();
   assert(singleControlPair != nullptr);
   auto cmp = cast<CmpInst>(singleControlPair->first);

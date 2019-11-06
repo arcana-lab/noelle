@@ -85,7 +85,6 @@ namespace llvm {
        */
       SCCDAG *sccdag;
       AccumulatorOpInfo accumOpInfo;
-      std::unordered_map<SCC *, std::unique_ptr<SCCAttrs>> sccToInfo;
 
       /*
        * Dependencies in graph
@@ -123,8 +122,7 @@ namespace llvm {
       bool isInductionVariableSCC (SCC *scc) const ;
       bool isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const ;
       std::set<BasicBlock *> & getBasicBlocks (SCC *scc);
-      // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
-      std::unique_ptr<SCCAttrs> &getSCCAttrs (SCC *scc); 
+      SCCAttrs * getSCCAttrs (SCC *scc); 
 
       /*
        * Methods about single dependence.
@@ -140,6 +138,7 @@ namespace llvm {
         ;
 
     private:
+      std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
 
       /*
        * Helper methods on SCCDAG
