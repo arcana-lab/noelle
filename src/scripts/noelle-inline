@@ -5,6 +5,8 @@ run the following as long as it outputs a file indicating to continue
 opt $(PRE_OPTPASSES) -DGSimplify $(OPTIONS) $@ -o $@
 '
 
+installDir
+
 function expand_rel_path {
   local VAL=$1 ;
   # Was stripping quotes, no longer passes quotes
@@ -25,7 +27,7 @@ function runSimplify {
     rm "dgsimplify_continue.txt"
     let ITER=ITER+1 
     printf "Running DGSimplify to inline calls within SCCs, iteration: $ITER\n"
-    noelle-load -load ../../../install/lib/DGSimplify.so "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
+    noelle-load -load ${installDir}/lib/DGSimplify.so "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
   done
 
   ITER=0
@@ -36,7 +38,7 @@ function runSimplify {
     rm "dgsimplify_continue.txt"
     let ITER=ITER+1 
     printf "Running DGSimplify to hoist loops to main, iteration: $ITER\n"
-    noelle-load -load ../../../install/lib/DGSimplify.so "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
+    noelle-load -load ${installDir}/lib/DGSimplify.so "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
   done
 
   rm -f dgsimplify_**

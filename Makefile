@@ -4,7 +4,7 @@ external:
 	cd external ; make ;
 
 src: external
-	cd src ; make ; 
+	cd src ; make -j ; 
 	
 tests: src
 	cd tests ; make ;

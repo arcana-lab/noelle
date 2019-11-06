@@ -27,9 +27,11 @@ patchInstallDir "noelle" ;
 patchInstallDir "noelle-pre" ;
 patchInstallDir "noelle-pgo" ;
 patchInstallDir "noelle-seq" ;
+patchInstallDir "noelle-inline" ;
 
 chmod 744 ${installDir}/bin/noelle-load ;
 chmod 744 ${installDir}/bin/noelle ;
 chmod 744 ${installDir}/bin/noelle-pre ;
 chmod 744 ${installDir}/bin/noelle-pgo ;
 chmod 744 ${installDir}/bin/noelle-seq ;
+chmod 744 ${installDir}/bin/noelle-inline ;

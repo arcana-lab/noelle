@@ -67,7 +67,7 @@ baseline.bc: test.bc
 
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
-	@../../scripts/iterate_dgsimplify.sh "-inliner-verbose=1" "$@"
+	noelle-inline "-inliner-verbose=1" "$@"
 	noelle-pre $@ -o $@
 	llvm-dis $@
 
