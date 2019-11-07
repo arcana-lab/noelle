@@ -5,6 +5,7 @@ set(Srcs
   EnvBuilder.cpp
   LoopEnvironment.cpp
   SCCDAGAttrs.cpp
+  SCCAttrs.cpp
   LoopDependenceInfo.cpp
   SCCDAGPartition.cpp
   Parallelization.cpp

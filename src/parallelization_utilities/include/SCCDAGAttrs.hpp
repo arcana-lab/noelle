@@ -13,6 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "SCCDAG.hpp"
 #include "SCC.hpp"
+#include "SCCAttrs.hpp"
 #include "LoopsSummary.hpp"
 #include "LoopEnvironment.hpp"
 
@@ -33,34 +34,6 @@ namespace llvm {
     bool isSubOp (unsigned op);
     unsigned accumOpForType (unsigned op, Type *type);
     Value *generateIdentityFor (Instruction *accumulator, Type *castType);
-  };
-
-  class SCCAttrs {
-    public:
-
-      /*
-       * Fields
-       */
-      SCC *scc;
-      std::set<BasicBlock *> bbs;
-      std::set<Value *> stronglyConnectedDataValues;
-      std::set<Value *> weaklyConnectedDataValues;
-      bool isClonable;
-      bool hasIV;
-
-      std::set<PHINode *> PHINodes;
-      std::set<Instruction *> accumulators;
-      PHINode *singlePHI;
-      Instruction *singleAccumulator;
-      std::set<Instruction *> controlFlowInsts;
-      std::set<std::pair<Value *, Instruction *>> controlPairs;
-
-      /*
-       * Methods
-       */
-      SCCAttrs (SCC *s);
-      void collectSCCValues ();
-      const std::pair<Value *, Instruction *> * getSingleInstructionThatControlLoopExit (void);
   };
 
   //TODO: Have calculated by DOALL pass, not by SCCAttrs
@@ -134,8 +107,7 @@ namespace llvm {
        */
       void iterateOverLoopCarriedDataDependences (
         SCC *scc, 
-        std::function<bool (DGEdge<Value> *dependence)> func)
-        ;
+        std::function<bool (DGEdge<Value> *dependence)> func) ;
 
     private:
       std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
