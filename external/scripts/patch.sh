@@ -21,8 +21,6 @@ awk -v llvmDir=${llvmDir} '
     }
   }' svf/build.sh > build.sh ;
 
-sed -i '2ialias cmake="cmake3"' build.sh
-
 mv build.sh svf/build.sh ;
 
 chmod 744 svf/*.sh ;
