@@ -25,7 +25,7 @@ rm -rf build/ ;
 mkdir build ; 
 cd build ; 
 ${CMAKE} -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_BUILD_TYPE=Debug ../ ; 
-make ;
+make -j;
 make install ;
 popd ;
 

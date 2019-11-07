@@ -11,6 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
+#include "AccumulatorOpInfo.hpp"
 #include "SCCDAG.hpp"
 #include "SCC.hpp"
 #include "SCCAttrs.hpp"
@@ -21,20 +22,6 @@ using namespace std;
 using namespace llvm;
 
 namespace llvm {
-
-  struct AccumulatorOpInfo {
-    AccumulatorOpInfo ();
-
-    std::set<unsigned> sideEffectFreeOps;
-    std::set<unsigned> accumOps;
-    std::unordered_map<unsigned, unsigned> opIdentities;
-
-    bool isMulOp (unsigned op);
-    bool isAddOp (unsigned op);
-    bool isSubOp (unsigned op);
-    unsigned accumOpForType (unsigned op, Type *type);
-    Value *generateIdentityFor (Instruction *accumulator, Type *castType);
-  };
 
   //TODO: Have calculated by DOALL pass, not by SCCAttrs
   struct FixedIVBounds {
@@ -81,7 +68,9 @@ namespace llvm {
        * Methods on SCCDAG.
        */
       void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE);
+      std::set<SCC *> getSCCsWithLoopCarriedDependencies (void) const ;
       std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
+      std::set<SCC *> getSCCsWithLoopCarriedControlDependencies (void) const ;
       bool isLoopGovernedByIV () const ;
       bool areAllLiveOutValuesReducable (LoopEnvironment *env) const ;
 
@@ -122,8 +111,6 @@ namespace llvm {
       /*
        * Helper methods on single SCC
        */
-      void collectPHIsAndAccumulators (SCC *scc);
-      void collectControlFlowInstructions (SCC *scc);
       bool checkIfReducible (SCC *scc, LoopsSummary &LIS);
       bool checkIfIndependent (SCC *scc);
       bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);

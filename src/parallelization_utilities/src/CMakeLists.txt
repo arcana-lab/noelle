@@ -4,8 +4,9 @@ set(Srcs
   LoopsSummary.cpp
   EnvBuilder.cpp
   LoopEnvironment.cpp
-  SCCDAGAttrs.cpp
+  AccumulatorOpInfo.cpp
   SCCAttrs.cpp
+  SCCDAGAttrs.cpp
   LoopDependenceInfo.cpp
   SCCDAGPartition.cpp
   Parallelization.cpp

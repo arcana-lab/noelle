@@ -12,20 +12,168 @@
 
 using namespace llvm;
 
-SCCAttrs::SCCAttrs (SCC *s)
-  : scc{s}, isClonable{0}, hasIV{0},
-    PHINodes{}, accumulators{}, controlFlowInsts{}, controlPairs{},
-    singlePHI{nullptr}, singleAccumulator{nullptr}
+SCCAttrs::SCCAttrs (
+    SCC *s, 
+    AccumulatorOpInfo &opInfo
+  ) : 
+    scc{s}
+    , accumOpInfo{opInfo}
+    , isClonable{0}
+    , hasIV{0}
+    , PHINodes{}
+    , accumulators{}
+    , controlFlowInsts{}
+    , controlPairs{}
   {
 
-  // Collect basic blocks contained within SCC
+  /*
+   * Collect the basic blocks of the instructions contained within SCC.
+   */
   for (auto nodePair : this->scc->internalNodePairs()) {
-    this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
+    auto valueIncludedInSCC = nodePair.first;
+    auto instIncludedInSCC = cast<Instruction>(valueIncludedInSCC);
+    this->bbs.insert(instIncludedInSCC->getParent());
   }
 
   // Collect values actually contained in the strongly connected components,
   // ignoring ancillary values merged into the SCC object
   // collectSCCValues();
+
+  /*
+   * Collect the control flows of the SCC.
+   */
+  this->collectControlFlowInstructions();
+
+  /*
+   * Collect PHIs and accumulators included in the SCC.
+   */
+  this->collectPHIsAndAccumulators();
+
+  return;
+}
+      
+iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs (void){
+  return make_range(this->PHINodes.begin(), this->PHINodes.end()); 
+}
+
+iterator_range<SCCAttrs::instruction_iterator> SCCAttrs::getAccumulators (void){
+  return make_range(this->accumulators.begin(), this->accumulators.end()); 
+}
+      
+bool SCCAttrs::doesItContainThisPHI (PHINode *phi){
+  return this->PHINodes.find(phi) != this->PHINodes.end();
+}
+
+bool SCCAttrs::doesItContainThisInstructionAsAccumulator (Instruction *inst){
+  return this->accumulators.find(inst) != this->accumulators.end();
+}
+
+uint32_t SCCAttrs::numberOfPHIs (void){
+  return this->PHINodes.size();
+}
+
+uint32_t SCCAttrs::numberOfAccumulators (void){
+  return this->accumulators.size();
+}
+      
+PHINode * SCCAttrs::getSinglePHI (void){
+  if (this->PHINodes.size() != 1) {
+    return nullptr;
+  }
+
+  auto singlePHI = *this->PHINodes.begin();
+  return singlePHI;
+}
+      
+Instruction * SCCAttrs::getSingleAccumulator (void){
+  if (this->accumulators.size() != 1) {
+    return nullptr;
+  }
+  
+  auto singleAccumulator = *this->accumulators.begin();
+  return singleAccumulator;
+}
+
+void SCCAttrs::collectPHIsAndAccumulators (void) {
+
+  /*
+   * Iterate over elements of the SCC to collect PHIs and accumulators.
+   */
+  for (auto iNodePair : this->scc->internalNodePairs()) {
+
+    /*
+     * Fetch the current element of the SCC.
+     */
+    auto V = iNodePair.first;
+
+    /*
+     * Check if it is a PHI.
+     */
+    if (auto phi = dyn_cast<PHINode>(V)) {
+      this->PHINodes.insert(phi);
+      continue;
+    }
+
+    /*
+     * Check if it is an accumulator.
+     */
+    if (auto I = dyn_cast<Instruction>(V)) {
+
+      /*
+       * Fetch the opcode.
+       */
+      auto binOp = I->getOpcode();
+
+      /*
+       * Check if this is an opcode we handle.
+       */
+      if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
+        this->accumulators.insert(I);
+        continue;
+      }
+    }
+  }
+
+  return ;
+}
+
+void SCCAttrs::collectControlFlowInstructions (void){
+
+  /*
+   * Collect the terminators of the SCC that are involved in dependences.
+   */
+  for (auto iNodePair : this->scc->internalNodePairs()) {
+    if (iNodePair.second->numOutgoingEdges() == 0) {
+      continue;
+    }
+    auto currentValue = iNodePair.first;
+    if (auto currentInst = dyn_cast<Instruction>(currentValue)){
+      if (currentInst->isTerminator()){
+        this->controlFlowInsts.insert(currentInst);
+      }
+    }
+  }
+
+  /*
+   * Collect the (condition, jump) pairs.
+   */
+  for (auto term : this->controlFlowInsts) {
+    assert(term->isTerminator());
+    if (auto br = dyn_cast<BranchInst>(term)) {
+      assert(br->isConditional()
+        && "BranchInst with outgoing edges in an SCC must be conditional!");
+      this->controlPairs.insert(std::make_pair(br->getCondition(), br));
+    }
+    if (auto switchI = dyn_cast<SwitchInst>(term)) {
+      this->controlPairs.insert(std::make_pair(switchI->getCondition(), switchI));
+    }
+  }
+
+  return ;
+}
+
+SCC * SCCAttrs::getSCC (void){
+  return this->scc;
 }
 
 const std::pair<Value *, Instruction *> * SCCAttrs::getSingleInstructionThatControlLoopExit (void){

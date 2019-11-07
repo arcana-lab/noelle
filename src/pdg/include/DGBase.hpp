@@ -265,6 +265,7 @@ namespace llvm {
     bool isWARDependence() const { return dataDepType == DG_DATA_WAR; }
     bool isWAWDependence() const { return dataDepType == DG_DATA_WAW; }
     bool isControlDependence() const { return isControl; }
+    bool isDataDependence() const { return !isControl; }
     DataDependenceType dataDependenceType() const { return dataDepType; }
 
     void setControl(bool ctrl) { isControl = ctrl; }

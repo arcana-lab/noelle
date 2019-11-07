@@ -106,9 +106,8 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
   /*
    * Revise latch stepper instruction to increment
    */
-  auto &accumulators = task->originalIVAttrs->accumulators;
-  assert(accumulators.size() == 1);
-  auto originStepper = *(accumulators.begin());
+  assert(task->originalIVAttrs->numberOfAccumulators() == 1);
+  auto originStepper = *(task->originalIVAttrs->getAccumulators().begin());
   auto innerStepper = task->instructionClones[originStepper];
   bool stepIndexIs0 = isa<ConstantInt>(innerStepper->getOperand(0));
   bool stepIndexIs1 = isa<ConstantInt>(innerStepper->getOperand(1));
@@ -131,10 +130,16 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
   );
 
   /*
+   * Fetch the single PHI of the induction variable.
+   */
+  auto singlePHI = task->originalIVAttrs->getSinglePHI();
+  assert(singlePHI != nullptr);
+
+  /*
    * Replace uses of the induction variable
    * (not including uses in the header or by the stepper instruction
    */
-  for (auto &use : task->originalIVAttrs->singlePHI->uses()) {
+  for (auto &use : singlePHI->uses()) {
     auto cloneUser = (Instruction *)use.getUser();
     if (task->instructionClones.find(cloneUser) == task->instructionClones.end()) continue;
     auto cloneI = task->instructionClones[cloneUser];
@@ -142,7 +147,7 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
     // NOTE: The replacement is from the ORIGINAL PHI IV to the sum, not the clone to the sum
     //  This horrendous incongruency is because this function acts before data flow is adjusted
     //  Once that is changed, this can be made symmetric
-    ((User *)cloneI)->replaceUsesOfWith(task->originalIVAttrs->singlePHI, sumIV);
+    ((User *)cloneI)->replaceUsesOfWith(singlePHI, sumIV);
   }
 
   /*

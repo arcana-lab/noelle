@@ -12,60 +12,6 @@
 
 using namespace llvm;
 
-AccumulatorOpInfo::AccumulatorOpInfo () {
-  this->sideEffectFreeOps = {
-    Instruction::Add,
-    Instruction::FAdd,
-    Instruction::Mul,
-    Instruction::FMul,
-    Instruction::Sub,
-    Instruction::FSub,
-    Instruction::Or,
-    Instruction::And
-  };
-  this->accumOps = std::set<unsigned>(sideEffectFreeOps.begin(), sideEffectFreeOps.end());
-  this->opIdentities = {
-    { Instruction::Add, 0 },
-    { Instruction::FAdd, 0 },
-    { Instruction::Mul, 1 },
-    { Instruction::FMul, 1 },
-    { Instruction::Sub, 0 },
-    { Instruction::FSub, 0 },
-    { Instruction::Or, 0 },
-    { Instruction::And, 1 }
-  };
-}
-
-bool AccumulatorOpInfo::isSubOp (unsigned op) {
-  return Instruction::Sub == op || Instruction::FSub == op;
-}
-
-bool AccumulatorOpInfo::isMulOp (unsigned op) {
-  return Instruction::Mul == op || Instruction::FMul == op;
-}
-
-bool AccumulatorOpInfo::isAddOp (unsigned op) {
-  return Instruction::Add == op || Instruction::FAdd == op;
-}
-
-unsigned AccumulatorOpInfo::accumOpForType (unsigned op, Type *type) {
-  if (type->isIntegerTy()) {
-    return isMulOp(op) ? Instruction::Mul : Instruction::Add;
-  } else {
-    return isMulOp(op) ? Instruction::FMul : Instruction::FAdd;
-  }
-}
-
-Value *AccumulatorOpInfo::generateIdentityFor (Instruction *accumulator, Type *castType) {
-  Value *initVal = nullptr;
-  auto opIdentity = this->opIdentities[accumulator->getOpcode()];
-  if (castType->isIntegerTy()) initVal = ConstantInt::get(castType, opIdentity);
-  if (castType->isFloatTy()) initVal = ConstantFP::get(castType, (float)opIdentity);
-  if (castType->isDoubleTy()) initVal = ConstantFP::get(castType, (double)opIdentity);
-  assert(initVal != nullptr);
-  return initVal;
-}
-
 void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE) {
   this->sccdag = loopSCCDAG;
 
@@ -83,14 +29,11 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
      * Fetch the current SCC.
      */
     auto scc = node->getT();
-    this->sccToInfo[scc] = new SCCAttrs(scc);
+    this->sccToInfo[scc] = new SCCAttrs(scc, this->accumOpInfo);
 
     /*
      * Collect information about the current SCC.
      */
-    this->collectPHIsAndAccumulators(scc);
-    this->collectControlFlowInstructions(scc);
-
     this->checkIfInductionVariableSCC(scc, SE, LIS);
     if (isInductionVariableSCC(scc)) {
       this->checkIfIVHasFixedBounds(scc, LIS);
@@ -114,10 +57,46 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
   return ;
 }
 
-std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
+std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDependencies (void) const {
   std::set<SCC *> sccs;
   for (auto &sccDependencies : this->interIterDeps) {
     sccs.insert(sccDependencies.first);
+  }
+  return sccs;
+}
+      
+std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies (void) const {
+  std::set<SCC *> sccs;
+  for (auto &sccDependencies : this->interIterDeps) {
+    auto &deps = sccDependencies.second;
+    auto isControl = false;
+    for (auto dep : deps){
+      if (dep->isControlDependence()){
+        isControl = true;
+        break ;
+      }
+    }
+    if (isControl){
+      sccs.insert(sccDependencies.first);
+    }
+  }
+  return sccs;
+}
+
+std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
+  std::set<SCC *> sccs;
+  for (auto &sccDependencies : this->interIterDeps) {
+    auto &deps = sccDependencies.second;
+    auto isData = false;
+    for (auto dep : deps){
+      if (dep->isDataDependence()){
+        isData = true;
+        break ;
+      }
+    }
+    if (isData){
+      sccs.insert(sccDependencies.first);
+    }
   }
   return sccs;
 }
@@ -458,90 +437,6 @@ bool SCCDAGAttrs::canPrecedeInCurrentIteration (LoopsSummary &LIS, Instruction *
   return false;
 }
 
-void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
-
-  /*
-   * Fetch the attributes of the SCC.
-   */
-  auto sccInfo = this->getSCCAttrs(scc);
-
-  /*
-   * Iterate over elements of the SCC to collect PHIs and accumulators.
-   */
-  for (auto iNodePair : scc->internalNodePairs()) {
-
-    /*
-     * Fetch the current element of the SCC.
-     */
-    auto V = iNodePair.first;
-
-    /*
-     * Check if it is a PHI.
-     */
-    if (auto phi = dyn_cast<PHINode>(V)) {
-      sccInfo->PHINodes.insert(phi);
-      continue;
-    }
-
-    /*
-     * Check if it is an accumulator.
-     */
-    if (auto I = dyn_cast<Instruction>(V)) {
-
-      /*
-       * Fetch the opcode.
-       */
-      auto binOp = I->getOpcode();
-
-      /*
-       * Check if this is an opcode we handle.
-       */
-      if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
-        sccInfo->accumulators.insert(I);
-        continue;
-      }
-    }
-  }
-
-  if (sccInfo->PHINodes.size() == 1) {
-    sccInfo->singlePHI = *sccInfo->PHINodes.begin();
-  }
-  if (sccInfo->accumulators.size() == 1) {
-    sccInfo->singleAccumulator = *sccInfo->accumulators.begin();
-  }
-
-  return ;
-}
-
-void SCCDAGAttrs::collectControlFlowInstructions (SCC *scc) {
-  auto sccInfo = this->getSCCAttrs(scc);
-  for (auto iNodePair : scc->internalNodePairs()) {
-    if (iNodePair.second->numOutgoingEdges() == 0) {
-      continue;
-    }
-    auto currentValue = iNodePair.first;
-    if (auto currentInst = dyn_cast<Instruction>(currentValue)){
-      if (currentInst->isTerminator()){
-        sccInfo->controlFlowInsts.insert(currentInst);
-      }
-    }
-  }
-
-  for (auto term : sccInfo->controlFlowInsts) {
-    assert(term->isTerminator());
-    if (auto br = dyn_cast<BranchInst>(term)) {
-      assert(br->isConditional()
-        && "BranchInst with outgoing edges in an SCC must be conditional!");
-      sccInfo->controlPairs.insert(std::make_pair(br->getCondition(), br));
-    }
-    if (auto switchI = dyn_cast<SwitchInst>(term)) {
-      sccInfo->controlPairs.insert(std::make_pair(switchI->getCondition(), switchI));
-    }
-  }
-
-  return ;
-}
-
 bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
 
   /*
@@ -634,7 +529,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
    * are from other internal PHIs (no PHI = constant, etc... business)
    * so that accumulation is truly expressed solely by accumulators
    */
-  for (auto phi : sccInfo->PHINodes) {
+  for (auto phi : sccInfo->getPHIs()) {
 
     /*
      * Fetch the loop that contains the current PHI.
@@ -686,11 +581,10 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
    * Requirement: all accumulators act on one PHI/accumulator in the SCC
    *  and one constant or external value
    */
-  if (sccInfo->accumulators.size() == 0) {
+  if (sccInfo->numberOfAccumulators() == 0) {
     return false;
   }
-  auto phis = sccInfo->PHINodes;
-  auto accums = sccInfo->accumulators;
+  auto accums = sccInfo->getAccumulators();
   for (auto accum : accums) {
     unsigned opCode = accum->getOpcode();
     if (accumOpInfo.sideEffectFreeOps.find(opCode) == accumOpInfo.sideEffectFreeOps.end()) {
@@ -771,10 +665,11 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, Lo
   /*
    * Ensure a single PHI with induction accumulation only
    */
-  if (!sccInfo->singlePHI) return setHasIV(false);
-  auto loopOfPHI = LIS.getLoop(sccInfo->singlePHI);
-  for (auto i = 0; i < sccInfo->singlePHI->getNumIncomingValues(); ++i) {
-    auto incomingBB = sccInfo->singlePHI->getIncomingBlock(i);
+  auto singlePHI = sccInfo->getSinglePHI();
+  if (!singlePHI) return setHasIV(false);
+  auto loopOfPHI = LIS.getLoop(sccInfo->getSinglePHI());
+  for (auto i = 0; i < singlePHI->getNumIncomingValues(); ++i) {
+    auto incomingBB = singlePHI->getIncomingBlock(i);
     auto loopOfIncoming = LIS.getLoop(incomingBB);
     if (  false
           || (loopOfIncoming == nullptr) 
@@ -782,10 +677,10 @@ bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, Lo
       ){
       continue;
     }
-    if (!isDerivedPHIOrAccumulator(sccInfo->singlePHI->getIncomingValue(i), scc)) return setHasIV(false);
+    if (!isDerivedPHIOrAccumulator(singlePHI->getIncomingValue(i), scc)) return setHasIV(false);
   }
 
-  for (auto I : sccInfo->accumulators) {
+  for (auto I : sccInfo->getAccumulators()) {
     auto scev = SE.getSCEV(I);
     if (scev->getSCEVType() != scAddRecExpr) {
       return setHasIV(false);
@@ -805,25 +700,31 @@ void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopsSummary &LIS) {
   };
 
   /*
+   * Fetch the single PHI and single accumulator.
+   */
+  auto sccInfo = this->getSCCAttrs(scc);
+  auto singlePHI = sccInfo->getSinglePHI();
+  auto singleAccumulator = sccInfo->getSingleAccumulator();
+
+  /*
    * IV is described by single PHI with a start and recurrence incoming value
    * The IV has one accumulator only
    */
-  auto sccInfo = this->getSCCAttrs(scc);
-  if (!sccInfo->singlePHI || !sccInfo->singleAccumulator) return notSimple();
-  if (sccInfo->singlePHI->getNumIncomingValues() != 2) return notSimple();
+  if (!singlePHI || !singleAccumulator) return notSimple();
+  if (singlePHI->getNumIncomingValues() != 2) return notSimple();
   auto singleControlPair = sccInfo->getSingleInstructionThatControlLoopExit();
   if (singleControlPair == nullptr) return notSimple();
 
-  auto accum = sccInfo->singleAccumulator;
-  auto incomingStart = sccInfo->singlePHI->getIncomingValue(0);
-  if (incomingStart == accum) incomingStart = sccInfo->singlePHI->getIncomingValue(1);
+  auto accum = singleAccumulator;
+  auto incomingStart = singlePHI->getIncomingValue(0);
+  if (incomingStart == accum) incomingStart = singlePHI->getIncomingValue(1);
   IVBounds.start = incomingStart;
 
   /*
    * The IV recurrence is integer, by +-1 
    */
   auto stepValue = accum->getOperand(0);
-  if (stepValue == sccInfo->singlePHI) stepValue = accum->getOperand(1);
+  if (stepValue == singlePHI) stepValue = accum->getOperand(1);
   if (!isa<ConstantInt>(stepValue)) return notSimple();
   IVBounds.step = (ConstantInt*)stepValue;
   auto stepSize = IVBounds.step->getValue();
@@ -831,7 +732,7 @@ void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopsSummary &LIS) {
 
   auto cmp = cast<CmpInst>(singleControlPair->first);
   auto cmpLHS = cmp->getOperand(0);
-  unsigned cmpToInd = cmpLHS == sccInfo->singlePHI || cmpLHS == accum;
+  unsigned cmpToInd = cmpLHS == singlePHI || cmpLHS == accum;
   IVBounds.cmpIVTo = cmp->getOperand(cmpToInd);
   IVBounds.isCmpOnAccum = cmp->getOperand((cmpToInd + 1) % 2) == accum;
   IVBounds.isCmpIVLHS = cmpToInd;
@@ -1083,10 +984,8 @@ bool SCCDAGAttrs::isDerivedPHIOrAccumulator (Value *val, SCC *scc) const {
   }
 
   auto &sccInfo = this->sccToInfo.find(scc)->second;
-  bool isInternalPHI = isa<PHINode>(derived)
-    && sccInfo->PHINodes.find(cast<PHINode>(derived)) != sccInfo->PHINodes.end();
-  bool isInternalAccum = isa<Instruction>(derived)
-    && sccInfo->accumulators.find(cast<Instruction>(derived)) != sccInfo->accumulators.end();
+  bool isInternalPHI = isa<PHINode>(derived) && sccInfo->doesItContainThisPHI(cast<PHINode>(derived));
+  bool isInternalAccum = isa<Instruction>(derived) && sccInfo->doesItContainThisInstructionAsAccumulator(cast<Instruction>(derived));
 
   return isDerivedWithinSCC(derived, scc) && (isInternalPHI || isInternalAccum);
 }
