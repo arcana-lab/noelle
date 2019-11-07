@@ -274,7 +274,7 @@ BasicBlock * DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value 
     auto producer = LDI->environment->producerAt(envInd);
     auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
     auto producerSCCAttributes = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
-    auto firstAccumI = *(producerSCCAttributes->accumulators.begin());
+    auto firstAccumI = *(producerSCCAttributes->getAccumulators().begin());
     auto binOpCode = firstAccumI->getOpcode();
     reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
 

@@ -20,6 +20,12 @@ namespace llvm {
     public:
 
       /*
+       * Iterators.
+       */
+      typedef typename set<PHINode *>::iterator phi_iterator;
+      typedef typename set<Instruction *>::iterator instruction_iterator;
+
+      /*
        * Fields
        */
       std::set<BasicBlock *> bbs;
@@ -28,10 +34,6 @@ namespace llvm {
       bool isClonable;
       bool hasIV;
 
-      std::set<PHINode *> PHINodes;
-      std::set<Instruction *> accumulators;
-      PHINode *singlePHI;
-      Instruction *singleAccumulator;
       std::set<std::pair<Value *, Instruction *>> controlPairs;
 
       /*
@@ -47,6 +49,41 @@ namespace llvm {
        */
       SCC * getSCC (void);
 
+      /*
+       * Get the PHIs.
+       */
+      iterator_range<phi_iterator> getPHIs (void);
+
+      /*
+       * Check if the SCC contains a PHI instruction.
+       */
+      bool doesItContainThisPHI (PHINode *phi);
+
+      /*
+       * Return the single PHI if it exists. nullptr otherwise.
+       */
+      PHINode * getSinglePHI (void);
+
+      /*
+       * Return the single accumulator if it exists. nullptr otherwise.
+       */
+      Instruction *getSingleAccumulator (void);
+
+      /*
+       * Check if the SCC contains an accumulator.
+       */
+      bool doesItContainThisInstructionAsAccumulator (Instruction *inst);
+
+      /*
+       * Get the accumulators.
+       */
+      iterator_range<instruction_iterator> getAccumulators (void);
+
+      /*
+       * Return the number of accumulators included in the SCC.
+       */
+      uint32_t numberOfAccumulators (void);
+
       void collectSCCValues ();
 
       const std::pair<Value *, Instruction *> * getSingleInstructionThatControlLoopExit (void);
@@ -55,6 +92,8 @@ namespace llvm {
       SCC *scc;
       AccumulatorOpInfo accumOpInfo;
       std::set<Instruction *> controlFlowInsts;
+      std::set<PHINode *> PHINodes;
+      std::set<Instruction *> accumulators;
   
       void collectPHIsAndAccumulators (void);
       void collectControlFlowInstructions (void);

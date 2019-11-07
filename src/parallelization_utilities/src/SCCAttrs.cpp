@@ -24,8 +24,6 @@ SCCAttrs::SCCAttrs (
     , accumulators{}
     , controlFlowInsts{}
     , controlPairs{}
-    , singlePHI{nullptr}
-    , singleAccumulator{nullptr}
   {
 
   /*
@@ -52,6 +50,44 @@ SCCAttrs::SCCAttrs (
   this->collectPHIsAndAccumulators();
 
   return;
+}
+      
+iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs (void){
+  return make_range(this->PHINodes.begin(), this->PHINodes.end()); 
+}
+
+iterator_range<SCCAttrs::instruction_iterator> SCCAttrs::getAccumulators (void){
+  return make_range(this->accumulators.begin(), this->accumulators.end()); 
+}
+      
+bool SCCAttrs::doesItContainThisPHI (PHINode *phi){
+  return this->PHINodes.find(phi) != this->PHINodes.end();
+}
+
+bool SCCAttrs::doesItContainThisInstructionAsAccumulator (Instruction *inst){
+  return this->accumulators.find(inst) != this->accumulators.end();
+}
+
+uint32_t SCCAttrs::numberOfAccumulators (void){
+  return this->accumulators.size();
+}
+      
+PHINode * SCCAttrs::getSinglePHI (void){
+  if (this->PHINodes.size() != 1) {
+    return nullptr;
+  }
+
+  auto singlePHI = *this->PHINodes.begin();
+  return singlePHI;
+}
+      
+Instruction * SCCAttrs::getSingleAccumulator (void){
+  if (this->accumulators.size() != 1) {
+    return nullptr;
+  }
+  
+  auto singleAccumulator = *this->accumulators.begin();
+  return singleAccumulator;
 }
 
 void SCCAttrs::collectPHIsAndAccumulators (void) {
@@ -93,13 +129,6 @@ void SCCAttrs::collectPHIsAndAccumulators (void) {
       }
     }
   }
-
-  /*if (sccInfo->PHINodes.size() == 1) {
-    sccInfo->singlePHI = *sccInfo->PHINodes.begin();
-  }
-  if (sccInfo->accumulators.size() == 1) {
-    sccInfo->singleAccumulator = *sccInfo->accumulators.begin();
-  }*/
 
   return ;
 }

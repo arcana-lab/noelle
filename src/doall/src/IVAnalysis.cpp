@@ -30,7 +30,7 @@ void DOALL::simplifyOriginalLoopIV (
    * Identify clone of the PHI, CmpInst, and BranchInst that govern the loop IV.
    */
   auto &iClones = task->instructionClones;
-  task->cloneOfOriginalIV = cast<PHINode>(iClones[attrs->singlePHI]);
+  task->cloneOfOriginalIV = cast<PHINode>(iClones[attrs->getSinglePHI()]);
   assert(task->originalIVAttrs->controlPairs.size() == 1);
   auto controlPair = *task->originalIVAttrs->controlPairs.begin();
   task->cloneOfOriginalCmp = cast<CmpInst>(iClones[(Instruction*)controlPair.first]);
