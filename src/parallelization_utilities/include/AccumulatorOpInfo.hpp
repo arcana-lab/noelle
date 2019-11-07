@@ -11,53 +11,22 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "AccumulatorOpInfo.hpp"
-#include "SCC.hpp"
 
 namespace llvm {
 
-  class SCCAttrs {
+  class AccumulatorOpInfo {
     public:
+      AccumulatorOpInfo ();
 
-      /*
-       * Fields
-       */
-      std::set<BasicBlock *> bbs;
-      std::set<Value *> stronglyConnectedDataValues;
-      std::set<Value *> weaklyConnectedDataValues;
-      bool isClonable;
-      bool hasIV;
+      std::set<unsigned> sideEffectFreeOps;
+      std::set<unsigned> accumOps;
+      std::unordered_map<unsigned, unsigned> opIdentities;
 
-      std::set<PHINode *> PHINodes;
-      std::set<Instruction *> accumulators;
-      PHINode *singlePHI;
-      Instruction *singleAccumulator;
-      std::set<std::pair<Value *, Instruction *>> controlPairs;
-
-      /*
-       * Constructor
-       */
-      SCCAttrs (
-        SCC *s, 
-        AccumulatorOpInfo &opInfo
-        );
-
-      /*
-       * Get the SCC.
-       */
-      SCC * getSCC (void);
-
-      void collectSCCValues ();
-
-      const std::pair<Value *, Instruction *> * getSingleInstructionThatControlLoopExit (void);
-
-    private:
-      SCC *scc;
-      AccumulatorOpInfo accumOpInfo;
-      std::set<Instruction *> controlFlowInsts;
-  
-      void collectPHIsAndAccumulators (void);
-      void collectControlFlowInstructions (void);
+      bool isMulOp (unsigned op);
+      bool isAddOp (unsigned op);
+      bool isSubOp (unsigned op);
+      unsigned accumOpForType (unsigned op, Type *type);
+      Value *generateIdentityFor (Instruction *accumulator, Type *castType);
   };
 
 }

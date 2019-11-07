@@ -12,10 +12,20 @@
 
 using namespace llvm;
 
-SCCAttrs::SCCAttrs (SCC *s)
-  : scc{s}, isClonable{0}, hasIV{0},
-    PHINodes{}, accumulators{}, controlFlowInsts{}, controlPairs{},
-    singlePHI{nullptr}, singleAccumulator{nullptr}
+SCCAttrs::SCCAttrs (
+    SCC *s, 
+    AccumulatorOpInfo &opInfo
+  ) : 
+    scc{s}
+    , accumOpInfo{opInfo}
+    , isClonable{0}
+    , hasIV{0}
+    , PHINodes{}
+    , accumulators{}
+    , controlFlowInsts{}
+    , controlPairs{}
+    , singlePHI{nullptr}
+    , singleAccumulator{nullptr}
   {
 
   /*
@@ -36,7 +46,62 @@ SCCAttrs::SCCAttrs (SCC *s)
    */
   this->collectControlFlowInstructions();
 
+  /*
+   * Collect PHIs and accumulators included in the SCC.
+   */
+  this->collectPHIsAndAccumulators();
+
   return;
+}
+
+void SCCAttrs::collectPHIsAndAccumulators (void) {
+
+  /*
+   * Iterate over elements of the SCC to collect PHIs and accumulators.
+   */
+  for (auto iNodePair : this->scc->internalNodePairs()) {
+
+    /*
+     * Fetch the current element of the SCC.
+     */
+    auto V = iNodePair.first;
+
+    /*
+     * Check if it is a PHI.
+     */
+    if (auto phi = dyn_cast<PHINode>(V)) {
+      this->PHINodes.insert(phi);
+      continue;
+    }
+
+    /*
+     * Check if it is an accumulator.
+     */
+    if (auto I = dyn_cast<Instruction>(V)) {
+
+      /*
+       * Fetch the opcode.
+       */
+      auto binOp = I->getOpcode();
+
+      /*
+       * Check if this is an opcode we handle.
+       */
+      if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
+        this->accumulators.insert(I);
+        continue;
+      }
+    }
+  }
+
+  /*if (sccInfo->PHINodes.size() == 1) {
+    sccInfo->singlePHI = *sccInfo->PHINodes.begin();
+  }
+  if (sccInfo->accumulators.size() == 1) {
+    sccInfo->singleAccumulator = *sccInfo->accumulators.begin();
+  }*/
+
+  return ;
 }
 
 void SCCAttrs::collectControlFlowInstructions (void){
