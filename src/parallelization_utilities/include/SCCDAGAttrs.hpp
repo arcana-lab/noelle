@@ -123,7 +123,6 @@ namespace llvm {
        * Helper methods on single SCC
        */
       void collectPHIsAndAccumulators (SCC *scc);
-      void collectControlFlowInstructions (SCC *scc);
       bool checkIfReducible (SCC *scc, LoopsSummary &LIS);
       bool checkIfIndependent (SCC *scc);
       bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);

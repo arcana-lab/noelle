@@ -89,7 +89,6 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
      * Collect information about the current SCC.
      */
     this->collectPHIsAndAccumulators(scc);
-    this->collectControlFlowInstructions(scc);
 
     this->checkIfInductionVariableSCC(scc, SE, LIS);
     if (isInductionVariableSCC(scc)) {
@@ -508,35 +507,6 @@ void SCCDAGAttrs::collectPHIsAndAccumulators (SCC *scc) {
   }
   if (sccInfo->accumulators.size() == 1) {
     sccInfo->singleAccumulator = *sccInfo->accumulators.begin();
-  }
-
-  return ;
-}
-
-void SCCDAGAttrs::collectControlFlowInstructions (SCC *scc) {
-  auto sccInfo = this->getSCCAttrs(scc);
-  for (auto iNodePair : scc->internalNodePairs()) {
-    if (iNodePair.second->numOutgoingEdges() == 0) {
-      continue;
-    }
-    auto currentValue = iNodePair.first;
-    if (auto currentInst = dyn_cast<Instruction>(currentValue)){
-      if (currentInst->isTerminator()){
-        sccInfo->controlFlowInsts.insert(currentInst);
-      }
-    }
-  }
-
-  for (auto term : sccInfo->controlFlowInsts) {
-    assert(term->isTerminator());
-    if (auto br = dyn_cast<BranchInst>(term)) {
-      assert(br->isConditional()
-        && "BranchInst with outgoing edges in an SCC must be conditional!");
-      sccInfo->controlPairs.insert(std::make_pair(br->getCondition(), br));
-    }
-    if (auto switchI = dyn_cast<SwitchInst>(term)) {
-      sccInfo->controlPairs.insert(std::make_pair(switchI->getCondition(), switchI));
-    }
   }
 
   return ;

@@ -18,14 +18,64 @@ SCCAttrs::SCCAttrs (SCC *s)
     singlePHI{nullptr}, singleAccumulator{nullptr}
   {
 
-  // Collect basic blocks contained within SCC
+  /*
+   * Collect the basic blocks of the instructions contained within SCC.
+   */
   for (auto nodePair : this->scc->internalNodePairs()) {
-    this->bbs.insert(cast<Instruction>(nodePair.first)->getParent());
+    auto valueIncludedInSCC = nodePair.first;
+    auto instIncludedInSCC = cast<Instruction>(valueIncludedInSCC);
+    this->bbs.insert(instIncludedInSCC->getParent());
   }
 
   // Collect values actually contained in the strongly connected components,
   // ignoring ancillary values merged into the SCC object
   // collectSCCValues();
+
+  /*
+   * Collect the control flows of the SCC.
+   */
+  this->collectControlFlowInstructions();
+
+  return;
+}
+
+void SCCAttrs::collectControlFlowInstructions (void){
+
+  /*
+   * Collect the terminators of the SCC that are involved in dependences.
+   */
+  for (auto iNodePair : this->scc->internalNodePairs()) {
+    if (iNodePair.second->numOutgoingEdges() == 0) {
+      continue;
+    }
+    auto currentValue = iNodePair.first;
+    if (auto currentInst = dyn_cast<Instruction>(currentValue)){
+      if (currentInst->isTerminator()){
+        this->controlFlowInsts.insert(currentInst);
+      }
+    }
+  }
+
+  /*
+   * Collect the (condition, jump) pairs.
+   */
+  for (auto term : this->controlFlowInsts) {
+    assert(term->isTerminator());
+    if (auto br = dyn_cast<BranchInst>(term)) {
+      assert(br->isConditional()
+        && "BranchInst with outgoing edges in an SCC must be conditional!");
+      this->controlPairs.insert(std::make_pair(br->getCondition(), br));
+    }
+    if (auto switchI = dyn_cast<SwitchInst>(term)) {
+      this->controlPairs.insert(std::make_pair(switchI->getCondition(), switchI));
+    }
+  }
+
+  return ;
+}
+
+SCC * SCCAttrs::getSCC (void){
+  return this->scc;
 }
 
 const std::pair<Value *, Instruction *> * SCCAttrs::getSingleInstructionThatControlLoopExit (void){

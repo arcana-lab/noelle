@@ -21,7 +21,6 @@ namespace llvm {
       /*
        * Fields
        */
-      SCC *scc;
       std::set<BasicBlock *> bbs;
       std::set<Value *> stronglyConnectedDataValues;
       std::set<Value *> weaklyConnectedDataValues;
@@ -32,15 +31,27 @@ namespace llvm {
       std::set<Instruction *> accumulators;
       PHINode *singlePHI;
       Instruction *singleAccumulator;
-      std::set<Instruction *> controlFlowInsts;
       std::set<std::pair<Value *, Instruction *>> controlPairs;
 
       /*
-       * Methods
+       * Constructor
        */
       SCCAttrs (SCC *s);
+
+      /*
+       * Get the SCC.
+       */
+      SCC * getSCC (void);
+
       void collectSCCValues ();
+
       const std::pair<Value *, Instruction *> * getSingleInstructionThatControlLoopExit (void);
+
+    private:
+      SCC *scc;
+      std::set<Instruction *> controlFlowInsts;
+  
+      void collectControlFlowInstructions (void);
   };
 
 }
