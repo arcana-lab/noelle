@@ -27,6 +27,7 @@
 #include <queue>
 
 #include "PDGPrinter.hpp"
+#include "PDGAnalysis.hpp"
 
 using namespace llvm;
 
@@ -124,4 +125,111 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
   delete subgraph;
 
   return ;
+}
+
+void PDGPrinter::addClusteringToDotFile (std::string inputFileName, std::string outputFileName) {
+  ifstream ifile(inputFileName);
+  unordered_map<std::string, std::set<std::string>> clusterNodes;
+
+  if (!ifile.is_open()) {
+    errs() << "ERROR: Couldn't open dot file: " << inputFileName << "\n";
+    return;
+  }
+
+  int numLines = 0;
+  groupNodesByCluster(clusterNodes, numLines, ifile);
+
+  if (clusterNodes.size() == 0) {
+    errs() << "ERROR: No clusters found\n";
+    return;
+  }
+
+  ifile.clear();
+  ifile.seekg(0, ios::beg);
+
+  ofstream cfile;
+  cfile.open(outputFileName);
+  if (!cfile.is_open()) {
+    errs() << "ERROR: Couldn't open dot files: " << inputFileName << "," << outputFileName << "\n";
+    return;
+  }
+
+  string line;
+  for (int i = 0; i < numLines - 1; ++i) {
+    getline(ifile, line);
+    cfile << line << "\n";
+  }
+
+  writeClusterToFile(clusterNodes, cfile);
+
+  getline(ifile, line);
+  cfile << line;
+  cfile.close();
+}
+
+void PDGPrinter::writeClusterToFile (const unordered_map<std::string, std::set<std::string>> &clusterNodes, ofstream &cfile) {
+  for (auto clusterNodesPair : clusterNodes) {
+    std::string indent = "    ";
+    cfile << "\n";
+    cfile << indent << "subgraph cluster_" << clusterNodesPair.first << " {\n";
+    cfile << indent << indent << "label=\"" << clusterNodesPair.first << "\";\n";
+    for (auto node : clusterNodesPair.second) {
+      cfile << indent << indent << node << ";\n";
+    }
+    cfile << indent << "}\n";
+  }
+}
+
+void PDGPrinter::groupNodesByCluster (unordered_map<std::string, std::set<std::string>> &clusterNodes, int &numLines, ifstream &ifile) {
+  std::string CLUSTER_KEY = "cluster=";
+  std::string NODE_NAME = "Node";
+  std::string line;
+  while (getline(ifile, line) && (++numLines)) {
+    int nodeIndex = line.find(NODE_NAME);
+    if (nodeIndex == std::string::npos)
+        continue;
+
+    if (line.find(NODE_NAME, nodeIndex + NODE_NAME.length) != std::string::npos) continue;
+
+    std::size_t nodeEndIndex = line.find("[", nodeIndex);
+    if (nodeEndIndex == std::string::npos) continue;
+    std::string nodeName = line.substr(nodeIndex, nodeEndIndex - nodeIndex);
+
+    std::size_t clusterIndex = line.find(CLUSTER_KEY);
+    std::size_t clusterEndIndex = line.find(",", clusterIndex);
+    if (clusterIndex == std::string::npos || clusterEndIndex == std::string::npos) continue;
+
+    auto clusterNameSize = clusterEndIndex - clusterIndex - CLUSTER_KEY.size();
+    std::string clusterName = line.substr(clusterIndex + CLUSTER_KEY.size(), clusterNameSize);
+    clusterNodes[clusterName].insert(nodeName);
+  }
+}
+
+PDGPrinterWrapperPass::PDGPrinterWrapperPass () : ModulePass{ID} {
+  return ;
+}
+
+llvm::PDGPrinterWrapperPass::~PDGPrinterWrapperPass() {
+}
+
+void llvm::PDGPrinterWrapperPass::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<PDGAnalysis>();
+  AU.addRequired<CallGraphWrapperPass>();
+  AU.setPreservesAll();
+  return ;
+}
+
+bool PDGPrinterWrapperPass::doInitialization (Module &M) {
+  return false;
+}
+
+bool llvm::PDGPrinterWrapperPass::runOnModule (Module &M) {
+  auto &pdgAnalysis = getAnalysis<PDGAnalysis>();
+  auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
+  auto getLoopInfo = [this](Function *f) -> LoopInfo& {
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
+    return LI;
+  };
+  (new PDGPrinter())->printPDG(M, callGraph, pdgAnalysis.getPDG(), getLoopInfo);
+  return false;
 }

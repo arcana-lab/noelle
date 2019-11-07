@@ -26,6 +26,7 @@
 #include "WPA/WPAPass.h"
 
 #include "TalkDown.hpp"
+#include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
 
 static cl::opt<int> Verbose("noelle-pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
@@ -100,12 +101,7 @@ llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
    * Print the PDG
    */
   if (this->verbose >= PDGVerbosity::Maximal){
-    auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
-    auto getLoopInfo = [this](Function *f) -> LoopInfo& {
-      auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-      return LI;
-    };
-    this->printer.printPDG(*F.getParent(), callGraph, pdg, getLoopInfo);
+    this->printer.printGraphsForFunction(F, pdg, getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo());
   }
 
   return pdg;

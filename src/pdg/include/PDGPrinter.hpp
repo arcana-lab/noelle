@@ -33,6 +33,9 @@
 
 #include <set>
 #include <queue>
+#include <unordered_map>
+#include <iostream>
+#include <fstream>
 
 using namespace llvm;
 
@@ -49,19 +52,24 @@ namespace llvm {
         std::function<LoopInfo& (Function *f)> getLoopInfo
         );
 
+      void printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI);
+
     private:
 
       template <class GT>
       void writeGraph(const std::string& filename, GT *graph) {
+        const std::string unclusteredFilename = "_unclustered_" + filename;
         errs() << "Writing '" << filename << "'...\n";
 
         std::error_code EC;
-        raw_fd_ostream File(filename, EC, sys::fs::F_Text);
+        raw_fd_ostream File(unclusteredFilename, EC, sys::fs::F_Text);
         std::string Title = DOTGraphTraits<GT *>::getGraphName(graph);
 
         if (!EC) {
           WriteGraph(File, graph, false, Title);
+          addClusteringToDotFile(unclusteredFilename, filename)
           errs() << "\n";
+
         } else {
           errs() << "  error opening file for writing!\n";
           abort();
@@ -74,7 +82,21 @@ namespace llvm {
         std::set<Function *> &funcSet
         );
 
-      void printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI);
+      void addClusteringToDotFile(std::string inputFileName, std::string outputFileName);
+      void groupNodesByCluster(unordered_map<std::string, std::set<std::string>> &clusterNodes, int &numLines, ifstream &ifile);
+      void writeClusterToFile(const unordered_map<std::string, std::set<std::string>> &clusterNodes, ofstream &cfile);
   };
 
+  class PDGPrinterWrapperPass : public ModulePass {
+    public:
+      static char ID;
+      PDGPrinterWrapperPass();
+      virtual ~PDGPrinterWrapperPass();
+
+      bool doInitialization (Module &M) override ;
+
+      void getAnalysisUsage(AnalysisUsage &AU) const override ;
+
+      bool runOnModule (Module &M) override ;
+  };
 }

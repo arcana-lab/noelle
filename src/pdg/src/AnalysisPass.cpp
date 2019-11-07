@@ -37,3 +37,14 @@ static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
 static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
         if(!_PassMaker){ PM.add(_PassMaker = new PDGAnalysis());}});// ** for -O0
+
+char llvm::PDGPrinterWrapperPass::ID = 0;
+static RegisterPass<PDGPrinterWrapperPass> XX("PDGPrinterWrapperPass", "Printing the Program Dependence Graph");
+
+static PDGPrinterWrapperPass * _PrinterPassMaker = NULL;
+static RegisterStandardPasses _PrinterRegPass1(PassManagerBuilder::EP_OptimizerLast,
+    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
+        if(!_PrinterPassMaker){ PM.add(_PrinterPassMaker = new PDGPrinterWrapperPass());}}); // ** for -Ox
+static RegisterStandardPasses _PrinterRegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
+    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
+        if(!_PrinterPassMaker){ PM.add(_PrinterPassMaker = new PDGPrinterWrapperPass());}});// ** for -O0

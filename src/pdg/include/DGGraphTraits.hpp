@@ -76,7 +76,17 @@ namespace llvm {
     }
 
     static std::string getNodeAttributes(DGNode<T> *node, DG *dg) {
-      return dg->isExternal(node->getT()) ? "color=gray" : "color=black";
+      std::string color = dg->isExternal(node->getT()) ? "color=gray" : "color=black";
+
+      std::string subgraph = "printercluster=";
+      if (dg->isExternal(node->getT())) {
+        bool isIncoming = node->numOutgoingEdges() > 0;
+        subgraph += isIncoming ? "incomingExternal" : "outgoingExternal";
+      } else {
+        subgraph += "internal";
+      }
+
+      return color + "," + subgraph;
     }
 
     static std::string getEdgeAttributes(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter, DG *dg) {
