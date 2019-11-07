@@ -57,10 +57,46 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
   return ;
 }
 
-std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
+std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDependencies (void) const {
   std::set<SCC *> sccs;
   for (auto &sccDependencies : this->interIterDeps) {
     sccs.insert(sccDependencies.first);
+  }
+  return sccs;
+}
+      
+std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies (void) const {
+  std::set<SCC *> sccs;
+  for (auto &sccDependencies : this->interIterDeps) {
+    auto &deps = sccDependencies.second;
+    auto isControl = false;
+    for (auto dep : deps){
+      if (dep->isControlDependence()){
+        isControl = true;
+        break ;
+      }
+    }
+    if (isControl){
+      sccs.insert(sccDependencies.first);
+    }
+  }
+  return sccs;
+}
+
+std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
+  std::set<SCC *> sccs;
+  for (auto &sccDependencies : this->interIterDeps) {
+    auto &deps = sccDependencies.second;
+    auto isData = false;
+    for (auto dep : deps){
+      if (dep->isDataDependence()){
+        isData = true;
+        break ;
+      }
+    }
+    if (isData){
+      sccs.insert(sccDependencies.first);
+    }
   }
   return sccs;
 }

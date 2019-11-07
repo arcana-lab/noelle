@@ -68,7 +68,9 @@ namespace llvm {
        * Methods on SCCDAG.
        */
       void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE);
+      std::set<SCC *> getSCCsWithLoopCarriedDependencies (void) const ;
       std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
+      std::set<SCC *> getSCCsWithLoopCarriedControlDependencies (void) const ;
       bool isLoopGovernedByIV () const ;
       bool areAllLiveOutValuesReducable (LoopEnvironment *env) const ;
 

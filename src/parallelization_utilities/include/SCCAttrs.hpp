@@ -65,6 +65,16 @@ namespace llvm {
       PHINode * getSinglePHI (void);
 
       /*
+       * Return the number of PHIs included in the SCC.
+       */
+      uint32_t numberOfPHIs (void);
+
+     /*
+       * Get the accumulators.
+       */
+      iterator_range<instruction_iterator> getAccumulators (void);
+
+      /*
        * Return the single accumulator if it exists. nullptr otherwise.
        */
       Instruction *getSingleAccumulator (void);
@@ -73,11 +83,6 @@ namespace llvm {
        * Check if the SCC contains an accumulator.
        */
       bool doesItContainThisInstructionAsAccumulator (Instruction *inst);
-
-      /*
-       * Get the accumulators.
-       */
-      iterator_range<instruction_iterator> getAccumulators (void);
 
       /*
        * Return the number of accumulators included in the SCC.

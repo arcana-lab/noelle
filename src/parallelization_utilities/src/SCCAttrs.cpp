@@ -68,6 +68,10 @@ bool SCCAttrs::doesItContainThisInstructionAsAccumulator (Instruction *inst){
   return this->accumulators.find(inst) != this->accumulators.end();
 }
 
+uint32_t SCCAttrs::numberOfPHIs (void){
+  return this->PHINodes.size();
+}
+
 uint32_t SCCAttrs::numberOfAccumulators (void){
   return this->accumulators.size();
 }

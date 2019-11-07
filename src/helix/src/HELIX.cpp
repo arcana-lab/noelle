@@ -115,7 +115,7 @@ void HELIX::createParallelizableTask (
     errs() << "HELIX: Start the parallelization\n";
     errs() << "HELIX:   Number of threads to extract = " << LDI->maximumNumberOfCoresForTheParallelization << "\n";
     if (this->verbose != Verbosity::Disabled) {
-      auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
+      auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDependencies();
       for (auto scc : nonDOALLSCCs) {
         if (scc->getType() == SCC::SCCType::REDUCIBLE){
           continue ;
