@@ -6,6 +6,8 @@ if test "$installDir" == "" ; then
   installDir="`realpath ../../install`"  ;
 fi
 mkdir -p $installDir ;
+export CC=clang
+export CPP=clang++
 
 alias cmake="cmake3"
 # type './build.sh'  for release build
