@@ -5,7 +5,7 @@ run the following as long as it outputs a file indicating to continue
 opt $(PRE_OPTPASSES) -DGSimplify $(OPTIONS) $@ -o $@
 '
 
-installDir
+# installDir
 
 function expand_rel_path {
   local VAL=$1 ;

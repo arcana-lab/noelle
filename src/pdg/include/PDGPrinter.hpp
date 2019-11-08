@@ -67,7 +67,8 @@ namespace llvm {
 
         if (!EC) {
           WriteGraph(File, graph, false, Title);
-          addClusteringToDotFile(unclusteredFilename, filename)
+					File.close();
+          addClusteringToDotFile(unclusteredFilename, filename);
           errs() << "\n";
 
         } else {

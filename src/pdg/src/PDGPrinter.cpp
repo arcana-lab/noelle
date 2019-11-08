@@ -141,6 +141,7 @@ void PDGPrinter::addClusteringToDotFile (std::string inputFileName, std::string 
 
   if (clusterNodes.size() == 0) {
     errs() << "ERROR: No clusters found\n";
+		ifile.close();
     return;
   }
 
@@ -151,6 +152,7 @@ void PDGPrinter::addClusteringToDotFile (std::string inputFileName, std::string 
   cfile.open(outputFileName);
   if (!cfile.is_open()) {
     errs() << "ERROR: Couldn't open dot files: " << inputFileName << "," << outputFileName << "\n";
+		ifile.close();
     return;
   }
 
@@ -165,6 +167,7 @@ void PDGPrinter::addClusteringToDotFile (std::string inputFileName, std::string 
   getline(ifile, line);
   cfile << line;
   cfile.close();
+	ifile.close();
 }
 
 void PDGPrinter::writeClusterToFile (const unordered_map<std::string, std::set<std::string>> &clusterNodes, ofstream &cfile) {
@@ -184,12 +187,14 @@ void PDGPrinter::groupNodesByCluster (unordered_map<std::string, std::set<std::s
   std::string CLUSTER_KEY = "cluster=";
   std::string NODE_NAME = "Node";
   std::string line;
-  while (getline(ifile, line) && (++numLines)) {
+  while (getline(ifile, line)) {
+		++numLines;
+		// errs() << "Found line: " << line << "\n";
     int nodeIndex = line.find(NODE_NAME);
-    if (nodeIndex == std::string::npos)
-        continue;
+    if (nodeIndex == std::string::npos) continue;
 
-    if (line.find(NODE_NAME, nodeIndex + NODE_NAME.length) != std::string::npos) continue;
+    if (line.find(NODE_NAME, nodeIndex + NODE_NAME.length()) != std::string::npos) continue;
+		// errs() << "Is node line\n";
 
     std::size_t nodeEndIndex = line.find("[", nodeIndex);
     if (nodeEndIndex == std::string::npos) continue;
@@ -201,6 +206,7 @@ void PDGPrinter::groupNodesByCluster (unordered_map<std::string, std::set<std::s
 
     auto clusterNameSize = clusterEndIndex - clusterIndex - CLUSTER_KEY.size();
     std::string clusterName = line.substr(clusterIndex + CLUSTER_KEY.size(), clusterNameSize);
+		// errs() << "Has cluster name: " << clusterName << "\n";
     clusterNodes[clusterName].insert(nodeName);
   }
 }
