@@ -83,7 +83,6 @@ namespace llvm {
       bool canBeCloned (SCC *scc) const ;
       bool isInductionVariableSCC (SCC *scc) const ;
       bool isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const ;
-      std::set<BasicBlock *> & getBasicBlocks (SCC *scc);
       SCCAttrs * getSCCAttrs (SCC *scc); 
 
       /*

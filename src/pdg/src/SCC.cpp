@@ -13,7 +13,7 @@
 
 using namespace llvm;
 
-llvm::SCC::SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues) {
+SCC::SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues) {
 
   /*
    * Set scc type (conservatively)
@@ -56,11 +56,7 @@ int64_t SCC::numberOfInstructions (void) const {
   return this->allNodes.size();
 }
 
-llvm::SCC::~SCC() {
-  return ;
-}
-
-raw_ostream &llvm::SCC::print (raw_ostream &stream, std::string prefixToUse, int maxEdges) {
+raw_ostream &SCC::print (raw_ostream &stream, std::string prefixToUse, int maxEdges) {
   stream << prefixToUse << "Internal nodes: " << internalNodeMap.size() << "\n";
   for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
   stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
@@ -77,7 +73,7 @@ raw_ostream &llvm::SCC::print (raw_ostream &stream, std::string prefixToUse, int
   return stream;
 }
 
-raw_ostream &llvm::SCC::printMinimal (raw_ostream &stream, std::string prefixToUse) {
+raw_ostream &SCC::printMinimal (raw_ostream &stream, std::string prefixToUse) {
   stream << prefixToUse << "Internal nodes: " << internalNodeMap.size() << "\n";
   for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
   stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
@@ -86,7 +82,7 @@ raw_ostream &llvm::SCC::printMinimal (raw_ostream &stream, std::string prefixToU
   return stream;
 }
 
-bool llvm::SCC::hasCycle (bool ignoreControlDep) {
+bool SCC::hasCycle (bool ignoreControlDep) {
 	std::set<DGNode<Value> *> nodesChecked;
 	for (auto node : this->getNodes()) {
 		if (nodesChecked.find(node) != nodesChecked.end()) continue;
@@ -113,14 +109,15 @@ bool llvm::SCC::hasCycle (bool ignoreControlDep) {
 			}
 		}
 	}
+
 	return false;
 }
 
-llvm::SCC::SCCType llvm::SCC::getType (void) const {
+SCC::SCCType SCC::getType (void) const {
   return this->sccType;
 }
 
-void llvm::SCC::setType (llvm::SCC::SCCType t) {
+void SCC::setType (SCC::SCCType t) {
   this->sccType = t;
 
   return ;
@@ -140,4 +137,8 @@ bool SCC::iterateOverInstructions (std::function<bool (Instruction *)> funcToInv
   }
 
   return false;
+}
+
+SCC::~SCC() {
+  return ;
 }

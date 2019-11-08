@@ -48,9 +48,11 @@ namespace llvm {
         SCCType sccType;
 	};
 
-	template<> class DGEdge<SCC> : public DGEdgeBase<SCC, Value> {
-	public:
-		DGEdge(DGNode<SCC> *src, DGNode<SCC> *dst) : DGEdgeBase<SCC, Value>(src, dst) {}
-		DGEdge(const DGEdge<SCC> &oldEdge) : DGEdgeBase<SCC, Value>(oldEdge) {}
+	template<> 
+  class DGEdge<SCC> : public DGEdgeBase<SCC, Value> {
+	  public:
+		  DGEdge(DGNode<SCC> *src, DGNode<SCC> *dst) : DGEdgeBase<SCC, Value>(src, dst) {}
+		  DGEdge(const DGEdge<SCC> &oldEdge) : DGEdgeBase<SCC, Value>(oldEdge) {}
 	};
+
 }

@@ -13,6 +13,10 @@
 using namespace llvm;
 
 void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE) {
+
+  /*
+   * Set the SCCDAG.
+   */
   this->sccdag = loopSCCDAG;
 
   /*
@@ -29,6 +33,10 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
      * Fetch the current SCC.
      */
     auto scc = node->getT();
+
+    /*
+     * Allocate the metadata about this SCC.
+     */
     this->sccToInfo[scc] = new SCCAttrs(scc, this->accumOpInfo);
 
     /*
@@ -179,11 +187,6 @@ bool SCCDAGAttrs::isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const {
     instInSubloops &= LIS.getLoop(inst) != LIS.topLoop;
   }
   return instInSubloops;
-}
-
-std::set<BasicBlock *> & SCCDAGAttrs::getBasicBlocks (SCC *scc) {
-  auto &sccInfo = this->sccToInfo[scc];
-  return sccInfo->bbs;
 }
 
 // REFACTOR(angelo): find better workaround than just a getter for SCCAttrs

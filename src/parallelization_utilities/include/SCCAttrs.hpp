@@ -28,7 +28,6 @@ namespace llvm {
       /*
        * Fields
        */
-      std::set<BasicBlock *> bbs;
       std::set<Value *> stronglyConnectedDataValues;
       std::set<Value *> weaklyConnectedDataValues;
       bool isClonable;
@@ -95,6 +94,7 @@ namespace llvm {
 
     private:
       SCC *scc;
+      std::set<BasicBlock *> bbs;
       AccumulatorOpInfo accumOpInfo;
       std::set<Instruction *> controlFlowInsts;
       std::set<PHINode *> PHINodes;
