@@ -641,8 +641,8 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
 bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS) {
   auto sccInfo = this->getSCCAttrs(scc);
   auto setHasIV = [&](bool hasIV) -> bool {
-    // scc->printMinimal(errs() << "Not IV:\n") << "\n";
-    return sccInfo->hasIV = hasIV;
+    sccInfo->setSCCToBeInductionVariable(hasIV);
+    return sccInfo->isInductionVariableSCC();
   };
 
   /*
@@ -855,7 +855,7 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
        || isClonableBySyntacticSugarInstrs(scc)
        || isClonableByCmpBrInstrs(scc)
       ) {
-    this->getSCCAttrs(scc)->isClonable = true;
+    this->getSCCAttrs(scc)->setSCCToBeClonable();
     clonableSCCs.insert(scc);
     return ;
   }

@@ -19,12 +19,12 @@ SCCAttrs::SCCAttrs (
     scc{s}
     , sccType{SCCType::SEQUENTIAL}
     , accumOpInfo{opInfo}
-    , isClonable{0}
-    , hasIV{0}
     , PHINodes{}
     , accumulators{}
     , controlFlowInsts{}
     , controlPairs{}
+    , isClonable{0}
+    , hasIV{0}
   {
 
   /*
@@ -273,4 +273,14 @@ void SCCAttrs::collectSCCValues () {
   for (auto dataV : stronglyConnectedDataValues) {
     dataV->print(errs() << "COLLECT: V: "); errs() << "\n";
   }
+}
+
+void SCCAttrs::setSCCToBeInductionVariable (bool hasIV){
+  this->hasIV = hasIV;
+  return;
+}
+
+void SCCAttrs::setSCCToBeClonable (bool isClonable){
+  this->isClonable = isClonable;
+  return;
 }

@@ -35,8 +35,6 @@ namespace llvm {
        */
       std::set<Value *> stronglyConnectedDataValues;
       std::set<Value *> weaklyConnectedDataValues;
-      bool isClonable;
-      bool hasIV;
 
       std::set<std::pair<Value *, Instruction *>> controlPairs;
 
@@ -57,11 +55,6 @@ namespace llvm {
        * Return the type of SCC.
        */
       SCCType getType (void) const;
-
-      /*
-       * Set the type of SCC.
-       */
-      void setType (SCCType t);
 
       /*
        * Return true if the iterations of the SCC must execute sequentially.
@@ -133,6 +126,21 @@ namespace llvm {
        */
       uint32_t numberOfAccumulators (void);
 
+      /*
+       * Set the type of SCC.
+       */
+      void setType (SCCType t);
+
+      /*
+       * Set the SCC as created by updated of an induction variable.
+       */
+      void setSCCToBeInductionVariable (bool hasIV = true);
+
+      /*
+       * Set the SCC to be clonable.
+       */
+      void setSCCToBeClonable (bool isClonable = true);
+
       void collectSCCValues ();
 
       const std::pair<Value *, Instruction *> * getSingleInstructionThatControlLoopExit (void);
@@ -145,6 +153,8 @@ namespace llvm {
       std::set<Instruction *> controlFlowInsts;
       std::set<PHINode *> PHINodes;
       std::set<Instruction *> accumulators;
+      bool isClonable;
+      bool hasIV;
   
       void collectPHIsAndAccumulators (void);
       void collectControlFlowInstructions (void);
