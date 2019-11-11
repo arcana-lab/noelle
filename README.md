@@ -9,7 +9,7 @@ To enable it on the Zythos cluster:
 
 
 ## Build
-To build, go to "src" and run "make -j".
+To build, run from the repository root directory: "make src" 
 
 
 ## Test
