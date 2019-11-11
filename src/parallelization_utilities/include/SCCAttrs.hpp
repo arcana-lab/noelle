@@ -20,6 +20,11 @@ namespace llvm {
     public:
 
       /*
+       * Types.
+       */
+      enum SCCType {SEQUENTIAL, REDUCIBLE, INDEPENDENT};
+
+      /*
        * Iterators.
        */
       typedef typename set<PHINode *>::iterator phi_iterator;
@@ -47,6 +52,46 @@ namespace llvm {
        * Get the SCC.
        */
       SCC * getSCC (void);
+
+      /*
+       * Return the type of SCC.
+       */
+      SCCType getType (void) const;
+
+      /*
+       * Set the type of SCC.
+       */
+      void setType (SCCType t);
+
+      /*
+       * Return true if the iterations of the SCC must execute sequentially.
+       * Return false otherwise.
+       */
+      bool mustExecuteSequentially (void) const ;
+
+      /*
+       * Return true if a reduction transformation can be applied to the SCC. 
+       * Return false otherwise.
+       */
+      bool canExecuteReducibly (void) const ;
+
+      /*
+       * Return true if the iterations of the SCC are independent between each other.
+       * Return false otherwise.
+       */
+      bool canExecuteIndependently (void) const ;
+
+      /*
+       * Return true if it is safe to clone the SCC.
+       * Return false otherwise.
+       */
+      bool canBeCloned (void) const ;
+
+      /*
+       * Return true if the SCC exists because of updates of an induction variable.
+       * Return false otherwise.
+       */
+      bool isInductionVariableSCC (void) const ;
 
       /*
        * Get the PHIs.
@@ -94,6 +139,7 @@ namespace llvm {
 
     private:
       SCC *scc;
+      SCCType sccType;
       std::set<BasicBlock *> bbs;
       AccumulatorOpInfo accumOpInfo;
       std::set<Instruction *> controlFlowInsts;

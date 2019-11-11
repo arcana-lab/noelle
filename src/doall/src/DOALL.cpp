@@ -104,16 +104,21 @@ bool DOALL::canBeAppliedToLoop (
   for (auto scc : nonDOALLSCCs) {
 
     /*
+     * Fetch the SCC metadata.
+     */
+    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+
+    /*
      * If the SCC is reducable, then it does not block the loop to be a DOALL.
      */
-    if (scc->getType() == SCC::SCCType::REDUCIBLE){
+    if (sccInfo->canExecuteReducibly()){
       continue ;
     }
 
     /*
      * If the SCC can be cloned, then it does not block the loop to be a DOALL.
      */
-    if (LDI->sccdagAttrs.canBeCloned(scc)){
+    if (sccInfo->canBeCloned()){
       continue ;
     }
     
@@ -125,7 +130,7 @@ bool DOALL::canBeAppliedToLoop (
     }
 
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   We found an SCC of type " << scc->getType() << " of the loop that is non clonable and non commutative\n" ;
+      errs() << "DOALL:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
       if (this->verbose >= Verbosity::Maximal) {
         scc->printMinimal(errs(), "DOALL:     ") ;
         errs() << "DOALL:     Loop-carried data dependences\n";

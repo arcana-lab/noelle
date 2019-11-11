@@ -63,12 +63,13 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
      * Fetch the current node in the SCCDAG.
      */
     auto currentSCC = nodePair.first;
+    auto currentSCCInfo = LDI->sccdagAttrs.getSCCAttrs(currentSCC);
 
     /*
      * Check if the current SCC can be removed (e.g., because it is due to induction variables).
      * If it is, then this SCC has already been assigned to every dependent partition.
      */
-    if (LDI->sccdagAttrs.canBeCloned(currentSCC)) {
+    if (currentSCCInfo->canBeCloned()) {
       continue ;
     }
 

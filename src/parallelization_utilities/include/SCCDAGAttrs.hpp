@@ -65,9 +65,13 @@ namespace llvm {
       std::unordered_map<SCC *, FixedIVBounds *> sccIVBounds;
 
       /*
-       * Methods on SCCDAG.
+       * Constructors.
        */
       void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE);
+
+      /*
+       * Methods on SCCDAG.
+       */
       std::set<SCC *> getSCCsWithLoopCarriedDependencies (void) const ;
       std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
       std::set<SCC *> getSCCsWithLoopCarriedControlDependencies (void) const ;
@@ -77,13 +81,8 @@ namespace llvm {
       /*
        * Methods on single SCC.
        */
-      bool mustExecuteSequentially (SCC *scc) const ;
-      bool canExecuteReducibly (SCC *scc) const ;
-      bool canExecuteIndependently (SCC *scc) const ;
-      bool canBeCloned (SCC *scc) const ;
-      bool isInductionVariableSCC (SCC *scc) const ;
       bool isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const ;
-      SCCAttrs * getSCCAttrs (SCC *scc); 
+      SCCAttrs * getSCCAttrs (SCC *scc) const; 
 
       /*
        * Methods about single dependence.

@@ -24,17 +24,11 @@ namespace llvm {
 	 */
 	class SCC : public DG<Value> {
       public:
-        enum SCCType {SEQUENTIAL, REDUCIBLE, INDEPENDENT};
-
         SCC (std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
 
         bool iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke);
 
         bool hasCycle (bool ignoreControlDep = false) ;
-
-        SCCType getType (void) const;
-
-        void setType (SCCType t);
 
         int64_t numberOfInstructions (void) const ;
 
@@ -43,9 +37,6 @@ namespace llvm {
         raw_ostream &printMinimal (raw_ostream &stream, std::string prefixToUse = "") ;
 
         ~SCC() ;
-
-      private:
-        SCCType sccType;
 	};
 
 	template<> 

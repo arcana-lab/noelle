@@ -59,11 +59,18 @@ bool DSWP::canBeAppliedToLoop (
   for (auto nodePair : LDI->loopSCCDAG->internalNodePairs()) {
 
     /*
+     * Fetch the current SCC.
+     */
+    auto currentSCC = nodePair.first;
+    auto currentSCCInfo = LDI->sccdagAttrs.getSCCAttrs(currentSCC);
+
+    /*
      * Check if the current SCC can be removed (e.g., because it is due to induction variables).
      * If it is, then this SCC has already been assigned to every dependent partition.
      */
-    auto currentSCC = nodePair.first;
-    if (LDI->sccdagAttrs.canBeCloned(currentSCC)) continue ;
+    if (currentSCCInfo->canBeCloned()) {
+      continue ;
+    }
 
     /*
      * We found a sequential stage.

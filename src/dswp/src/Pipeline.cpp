@@ -54,7 +54,8 @@ void DSWP::addRemovableSCCsToStages (LoopDependenceInfo *LDI) {
         auto fromSCCNode = sccEdge->getOutgoingNode();
         auto fromSCC = fromSCCNode->getT();
         if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
-        if (!LDI->sccdagAttrs.canBeCloned(fromSCC)) continue;
+        auto fromSCCInfo = LDI->sccdagAttrs.getSCCAttrs(fromSCC);
+        if (!fromSCCInfo->canBeCloned()) continue;
 
         task->removableSCCs.insert(fromSCC);
         dependentSCCNodes.push(fromSCCNode);

@@ -35,10 +35,15 @@ void Parallelizer::applyEnablers (
   auto collectSequentialSCCsFunction = [LDI,&sequentialSCCs](SCC *currentSCC) -> bool {
 
     /*
+     * Fetch the SCC metadata.
+     */
+    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(currentSCC);
+
+    /*
      * Check if the current SCC can be removed (e.g., because it is due to induction variables).
      * If it is, then we do not need to remove it from the loop to be parallelized.
      */
-    if (!LDI->sccdagAttrs.mustExecuteSequentially(currentSCC)) {
+    if (!sccInfo->mustExecuteSequentially()) {
       return false;
     }
 

@@ -17,6 +17,7 @@ SCCAttrs::SCCAttrs (
     AccumulatorOpInfo &opInfo
   ) : 
     scc{s}
+    , sccType{SCCType::SEQUENTIAL}
     , accumOpInfo{opInfo}
     , isClonable{0}
     , hasIV{0}
@@ -51,7 +52,17 @@ SCCAttrs::SCCAttrs (
 
   return;
 }
-      
+ 
+SCCAttrs::SCCType SCCAttrs::getType (void) const {
+  return this->sccType;
+}
+
+void SCCAttrs::setType (SCCAttrs::SCCType t) {
+  this->sccType = t;
+
+  return ;
+}
+
 iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs (void){
   return make_range(this->PHINodes.begin(), this->PHINodes.end()); 
 }

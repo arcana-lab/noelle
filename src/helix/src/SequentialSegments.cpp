@@ -36,14 +36,23 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
      */
     auto requireSS = false;
     for (auto scc : *subset){
-      auto sccType = scc->getType();
+
+      /*
+       * Fetch the SCC metadata.
+       */
+      auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+
+      /*
+       * Fetch the type of the SCC.
+       */
+      auto sccType = sccInfo->getType();
 
       /*
        * Only sequential SCC can generate a sequential segment.
        * FIXME: A reducible SCC should not be sequential in nature
        */
-      if (  (sccType == SCC::SEQUENTIAL)  ||
-            (sccType == SCC::REDUCIBLE) ){
+      if (  (sccType == SCCAttrs::SEQUENTIAL)  ||
+            (sccType == SCCAttrs::REDUCIBLE) ){
         requireSS = true;
         break ;
       }

@@ -147,16 +147,22 @@ uint64_t InvocationLatency::queueLatency (Value *queueVal){
 }
 
 /*
- * Retrieve or memoize all values the SCC is dependent on
- * This does NOT include values within clonable parents as
- *  they will be present during execution (because they are cloned)
+ * Retrieve or memoize all values the SCC is dependent on.
+ * This does NOT include values within clonable parents as they will be present during execution (because they are cloned).
  */
 std::set<Value *> &InvocationLatency::memoizeExternals (SCCDAGAttrs *attrs, SCC *scc) {
   auto externalsIter = incomingExternals.find(scc);
-  if (externalsIter != incomingExternals.end()) return externalsIter->second;
+  if (externalsIter != incomingExternals.end()) {
+    return externalsIter->second;
+  }
+
   for (auto edge : attrs->edgesViaClones[scc]) {
     auto parent = edge->getIncomingT();
-    if (attrs->canBeCloned(parent)) continue;
+    auto parentInfo = attrs->getSCCAttrs(parent);
+    if (parentInfo->canBeCloned()) {
+      continue;
+    }
+
     for (auto subEdge : edge->getSubEdges()) {
       incomingExternals[scc].insert(subEdge->getIncomingT());
     }
@@ -171,7 +177,10 @@ std::set<SCC *> &InvocationLatency::memoizeParents (SCCDAGAttrs *attrs, SCC *scc
   auto parentsIter = clonableParents.find(scc);
   if (parentsIter != clonableParents.end()) return parentsIter->second;
   for (auto parent : attrs->parentsViaClones[scc]) {
-    if (attrs->canBeCloned(parent)) clonableParents[scc].insert(parent);
+    auto parentInfo = attrs->getSCCAttrs(parent);
+    if (parentInfo->canBeCloned()) {
+      clonableParents[scc].insert(parent);
+    }
   }
   return clonableParents[scc];
 }

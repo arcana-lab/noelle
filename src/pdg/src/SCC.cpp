@@ -15,11 +15,6 @@ using namespace llvm;
 
 SCC::SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues) {
 
-  /*
-   * Set scc type (conservatively)
-   */
-  this->sccType = SCCType::SEQUENTIAL;
-
 	/*
 	 * Arbitrarily choose entry node from all nodes
 	 */
@@ -111,16 +106,6 @@ bool SCC::hasCycle (bool ignoreControlDep) {
 	}
 
 	return false;
-}
-
-SCC::SCCType SCC::getType (void) const {
-  return this->sccType;
-}
-
-void SCC::setType (SCC::SCCType t) {
-  this->sccType = t;
-
-  return ;
 }
 
 bool SCC::iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke){

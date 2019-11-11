@@ -37,13 +37,14 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
     /*
      * Allocate the metadata about this SCC.
      */
-    this->sccToInfo[scc] = new SCCAttrs(scc, this->accumOpInfo);
+    auto sccInfo = new SCCAttrs(scc, this->accumOpInfo);
+    this->sccToInfo[scc] = sccInfo;
 
     /*
      * Collect information about the current SCC.
      */
     this->checkIfInductionVariableSCC(scc, SE, LIS);
-    if (isInductionVariableSCC(scc)) {
+    if (sccInfo->isInductionVariableSCC()) {
       this->checkIfIVHasFixedBounds(scc, LIS);
     }
     this->checkIfClonable(scc, SE);
@@ -52,11 +53,11 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
      * Tag the current SCC.
      */
     if (this->checkIfIndependent(scc)) {
-      scc->setType(SCC::SCCType::INDEPENDENT);
+      sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
     } else if (this->checkIfReducible(scc, LIS)) {
-      scc->setType(SCC::SCCType::REDUCIBLE);
+      sccInfo->setType(SCCAttrs::SCCType::REDUCIBLE);
     } else {
-      scc->setType(SCC::SCCType::SEQUENTIAL);
+      sccInfo->setType(SCCAttrs::SCCType::SEQUENTIAL);
     }
   }
 
@@ -119,13 +120,21 @@ bool SCCDAGAttrs::isLoopGovernedByIV () const {
    * Step 1: Isolate top level SCCs (excluding independent instructions in SCCDAG)
    */
   std::queue<DGNode<SCC> *> toTraverse;
-  for (auto node : topLevelNodes) toTraverse.push(node);
+  for (auto node : topLevelNodes) {
+    toTraverse.push(node);
+  }
   std::set<SCC *> topLevelSCCs;
   while (!toTraverse.empty()) {
+
+    /*
+     * Fetch the current SCC and its metadata.
+     */
     auto node = toTraverse.front();
     auto scc = node->getT();
     toTraverse.pop();
-    if (canExecuteIndependently(scc)) {
+    auto sccInfo = this->getSCCAttrs(scc);
+
+    if (sccInfo->canExecuteIndependently()) {
       auto nextDepth = sccdag->getNextDepthNodes(node);
       for (auto next : nextDepth) toTraverse.push(next);
       continue;
@@ -136,21 +145,33 @@ bool SCCDAGAttrs::isLoopGovernedByIV () const {
   /*
    * Step 2: Ensure there is only 1, and that it is an induction variable
    */
-  // errs() << "SCCDAGAttrs: NUM TOP LEVEL SCCS: " << topLevelSCCs.size() << "\n";
   if (topLevelSCCs.size() != 1) return false;
-  // (*topLevelSCCs.begin())->print(errs() << "That single SCC:\n") << "\n";
-  return isInductionVariableSCC(*topLevelSCCs.begin());
+  auto topLevelSCC = *topLevelSCCs.begin();
+  auto topLevelSCCInfo = this->getSCCAttrs(topLevelSCC);
+  return topLevelSCCInfo->isInductionVariableSCC();
 }
 
 bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
+
+  /*
+   * Iterate over live-out variables.
+   */
   for (auto envIndex : env->getEnvIndicesOfLiveOutVars()) {
+
+    /*
+     * Fetch the SCC that contains the producer of the environment variable.
+     */
     auto producer = env->producerAt(envIndex);
     auto scc = sccdag->sccOfValue(producer);
 
-    if (scc->getType() == SCC::SCCType::INDEPENDENT) {
+    /*
+     * Check the SCC type.
+     */
+    auto sccInfo = this->getSCCAttrs(scc);
+    if (sccInfo->getType() == SCCAttrs::SCCType::INDEPENDENT) {
       continue ;
     }
-    if (scc->getType() == SCC::SCCType::REDUCIBLE) {
+    if (sccInfo->getType() == SCCAttrs::SCCType::REDUCIBLE) {
       continue ;
     }
 
@@ -158,26 +179,6 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
   }
 
   return true;
-}
-
-bool SCCDAGAttrs::mustExecuteSequentially (SCC *scc) const {
-  return scc->getType() == SCC::SCCType::SEQUENTIAL;
-}
-
-bool SCCDAGAttrs::canExecuteReducibly (SCC *scc) const {
-  return scc->getType() == SCC::SCCType::REDUCIBLE;
-}
-
-bool SCCDAGAttrs::canExecuteIndependently (SCC *scc) const {
-  return scc->getType() == SCC::SCCType::INDEPENDENT;
-}
-
-bool SCCDAGAttrs::canBeCloned (SCC *scc) const {
-  return sccToInfo.find(scc)->second->isClonable;
-}
-
-bool SCCDAGAttrs::isInductionVariableSCC (SCC *scc) const {
-  return sccToInfo.find(scc)->second->hasIV;
 }
 
 bool SCCDAGAttrs::isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const {
@@ -189,9 +190,12 @@ bool SCCDAGAttrs::isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const {
   return instInSubloops;
 }
 
-// REFACTOR(angelo): find better workaround than just a getter for SCCAttrs
-SCCAttrs * SCCDAGAttrs::getSCCAttrs (SCC *scc) {
-  return this->sccToInfo[scc];
+SCCAttrs * SCCDAGAttrs::getSCCAttrs (SCC *scc) const {
+  auto sccInfo = this->sccToInfo.find(scc);
+  if (sccInfo == this->sccToInfo.end()){
+    return nullptr;
+  }
+  return sccInfo->second;
 }
 
 void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
@@ -214,8 +218,11 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
       auto node = nodesToCheck.front();
       nodesToCheck.pop();
       auto scc = node->getT();
+      auto sccInfo = this->getSCCAttrs(scc);
       this->parentsViaClones[childSCC].insert(scc);
-      if (this->canBeCloned(scc)) addIncomingNodes(nodesToCheck, node);
+      if (sccInfo->canBeCloned()) {
+        addIncomingNodes(nodesToCheck, node);
+      }
     }
   }
 
@@ -863,7 +870,13 @@ bool SCCDAGAttrs::isClonableByInductionVars (SCC *scc) const {
    * is trivial should be separated out by the parallelization scheme
    */
   if (sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
-  return this->isInductionVariableSCC(scc);
+
+  /*
+   * Fetch the SCC metadata.
+   */
+  auto sccInfo = this->getSCCAttrs(scc);
+
+  return sccInfo->isInductionVariableSCC();
 }
 
 bool SCCDAGAttrs::isClonableBySyntacticSugarInstrs (SCC *scc) const {
@@ -1083,4 +1096,24 @@ void SCCDAGAttrs::iterateOverLoopCarriedDataDependences (
   }
 
   return ;
+}
+
+bool SCCAttrs::mustExecuteSequentially (void) const {
+  return this->getType() == SCCAttrs::SCCType::SEQUENTIAL;
+}
+
+bool SCCAttrs::canExecuteReducibly (void) const {
+  return this->getType() == SCCAttrs::SCCType::REDUCIBLE;
+}
+
+bool SCCAttrs::canExecuteIndependently (void) const {
+  return this->getType() == SCCAttrs::SCCType::INDEPENDENT;
+}
+
+bool SCCAttrs::canBeCloned (void) const {
+  return this->isClonable;
+}
+
+bool SCCAttrs::isInductionVariableSCC (void) const {
+  return this->hasIV;
 }

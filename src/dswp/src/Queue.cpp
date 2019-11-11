@@ -112,7 +112,10 @@ void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) 
     for (auto scc : allSCCs) {
       for (auto sccEdge : LDI->loopSCCDAG->fetchNode(scc)->getIncomingEdges()) {
         auto fromSCC = sccEdge->getOutgoingT();
-        if (LDI->sccdagAttrs.canBeCloned(fromSCC)) continue;
+        auto fromSCCInfo = LDI->sccdagAttrs.getSCCAttrs(fromSCC);
+        if (fromSCCInfo->canBeCloned()) {
+          continue;
+        }
         auto fromStage = this->sccToStage[fromSCC];
         if (fromStage == toStage) continue;
 

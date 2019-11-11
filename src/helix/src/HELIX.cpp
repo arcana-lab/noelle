@@ -117,16 +117,29 @@ void HELIX::createParallelizableTask (
     if (this->verbose != Verbosity::Disabled) {
       auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDependencies();
       for (auto scc : nonDOALLSCCs) {
-        if (scc->getType() == SCC::SCCType::REDUCIBLE){
+
+        /*
+         * Fetch the SCC metadata.
+         */
+        auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+
+        /*
+         * Check the SCC.
+         */
+        if (sccInfo->canExecuteReducibly()){
           continue ;
         }
-        if (LDI->sccdagAttrs.canBeCloned(scc)){
+        if (sccInfo->canBeCloned()){
           continue ;
         }
         if (LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
           continue ;
         }
-        errs() << "HELIX:   We found an SCC of type " << scc->getType() << " of the loop that is non clonable and non commutative\n" ;
+
+        /*
+         * The current SCC needs to create a sequential segment.
+         */
+        errs() << "HELIX:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
         if (this->verbose >= Verbosity::Maximal) {
           errs() << "HELIX:     SCC:\n";
           scc->printMinimal(errs(), "HELIX:       ") ;

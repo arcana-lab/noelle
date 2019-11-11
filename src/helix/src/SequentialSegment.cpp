@@ -44,7 +44,16 @@ SequentialSegment::SequentialSegment (
   for (auto scc : *sccs){
     assert(scc->hasCycle());
     if (this->verbosity >= Verbosity::Maximal) {
-      errs() << "HELIX:       Type = " << scc->getType() << "\n";
+
+      /*
+       * Fetch the SCC metadata.
+       */
+      auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+
+      /*
+       * Print
+       */
+      errs() << "HELIX:       Type = " << sccInfo->getType() << "\n";
       errs() << "HELIX:       Loop-carried data dependences\n";
       auto lcIterFunc = [scc](DGEdge<Value> *dep) -> bool {
         auto fromInst = dep->getOutgoingT();
