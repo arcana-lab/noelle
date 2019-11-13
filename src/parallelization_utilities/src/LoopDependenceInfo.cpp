@@ -299,3 +299,13 @@ void LoopDependenceInfo::mergeBranchesWithoutOutgoingEdges () {
     this->loopSCCDAG->mergeSCCs(nodesToMerge);
   }
 }
+      
+void LoopDependenceInfo::addInstruction (Instruction *inst){
+  errs() << "ERROR: LoopDependenceInfo::addInstruction is not implemented yet \n";
+  return ;
+}
+
+void LoopDependenceInfo::removeInstruction (Instruction *inst){
+  errs() << "ERROR: LoopDependenceInfo::removeInstruction is not implemented yet \n";
+  return ;
+}

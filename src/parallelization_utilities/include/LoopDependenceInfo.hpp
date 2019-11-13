@@ -71,6 +71,8 @@ namespace llvm {
       uint32_t maximumNumberOfCoresForTheParallelization;
       uint32_t DOALLChunkSize;
 
+      std::function<LoopDependenceInfo *(Function *F, int loopIndex)> *reevaluator;
+
       /*
        * Methods
        */
@@ -95,6 +97,16 @@ namespace llvm {
       );
 
       /*
+       * Update the fields to consider @inst as part of the loop.
+       */
+      void addInstruction (Instruction *inst);
+
+      /*
+       * Update the fields to consider @inst as not part of the loop anymore.
+       */
+      void removeInstruction (Instruction *inst);
+
+      /*
        * Copy all options from otherLDI to "this".
        */
       void copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) ;
@@ -104,8 +116,6 @@ namespace llvm {
        */
       uint32_t numberOfExits (void) const;
 
-      std::function<LoopDependenceInfo *(Function *F, int loopIndex)> *reevaluator;
-      
       /*
        * Check whether a transformation is enabled.
        */

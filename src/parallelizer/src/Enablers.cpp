@@ -74,8 +74,12 @@ void Parallelizer::applyEnablers (
      * The SCC has been pulled out the loop.
      * Update the data structures.
      */
-    //TODO
-    errs() << "ERROR = the data structures are not updated after having splitted the loop\n";
+    for (auto instRemoved : instsRemoved){
+      LDI->removeInstruction(instRemoved);
+    }
+    for (auto instAdded : instsAdded){
+      LDI->addInstruction(instAdded);
+    }
   }
   
   return ;
