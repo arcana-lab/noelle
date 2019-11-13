@@ -63,7 +63,9 @@ void Parallelizer::applyEnablers (
     /*
      * Try to bring the sequential SCC outside the loop.
      */
-    auto splitted = loopDist.splitLoop(*LDI, SCC);
+    std::set<Instruction *> instsRemoved;
+    std::set<Instruction *> instsAdded;
+    auto splitted = loopDist.splitLoop(*LDI, SCC, instsRemoved, instsAdded);
     if (!splitted){
       continue ;
     }
