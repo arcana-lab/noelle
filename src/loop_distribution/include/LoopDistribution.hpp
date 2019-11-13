@@ -24,12 +24,16 @@ namespace llvm {
 
       bool splitLoop (
         LoopDependenceInfo const &LDI, 
-        SCC *SCCToPullOut
+        SCC *SCCToPullOut,
+        std::set<Instruction *> &instructionsRemoved,
+        std::set<Instruction *> &instructionsAdded
         );
 
       bool splitLoop (
         LoopDependenceInfo const &LDI, 
-        std::set<SCC *> const &SCCsToPullOut
+        std::set<SCC *> const &SCCsToPullOut,
+        std::set<Instruction *> &instructionsRemoved,
+        std::set<Instruction *> &instructionsAdded
         );
 
     private:
