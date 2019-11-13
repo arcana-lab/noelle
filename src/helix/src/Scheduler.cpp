@@ -143,12 +143,12 @@ void propagateTransitiveDomination (
 
 */
 
-void HELIX::squeezeSequentialSegments (
+void HELIX::squeezeSequentialSegment (
   LoopDependenceInfo *LDI,
-  std::vector<SequentialSegment *> *sss
+  SequentialSegment *ss
   ){
 
-  // TODO: Finish
+  //TODO
   return ;
 
   /*
@@ -190,7 +190,6 @@ void HELIX::squeezeSequentialSegments (
    * Why do that when you can just try to squeeze firsts and lasts
    * as close to each other as possible given their dependencies!
    */
-  for (auto ss : *sss) {
     for (auto scc : ss->getSCCs()) {
       // Determine first and last instructions
       std::set<Value *> firsts, lasts;
@@ -221,7 +220,21 @@ void HELIX::squeezeSequentialSegments (
         }
       }
     }
+}
+
+void HELIX::squeezeSequentialSegments (
+  LoopDependenceInfo *LDI,
+  std::vector<SequentialSegment *> *sss
+  ){
+
+  /*
+   * Squeeze all sequential segments.
+   */
+  for (auto ss : *sss){
+    this->squeezeSequentialSegment(LDI, ss);
   }
+
+  return ;
 }
 
 void HELIX::scheduleSequentialSegments (

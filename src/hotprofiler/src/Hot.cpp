@@ -109,6 +109,12 @@ uint64_t Hot::getFunctionInstructions (Function *f){
 
   return insts;
 }
+      
+uint64_t Hot::getFunctionInvocations (Function *f){
+  auto invs = this->functionInvocations[f];
+
+  return invs;
+}
 
 uint64_t Hot::getModuleInstructions (void) const {
   return this->moduleNumberOfInstructionsExecuted;

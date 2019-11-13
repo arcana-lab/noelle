@@ -104,6 +104,11 @@ namespace llvm {
 
       EnvBuilder *loopCarriedEnvBuilder;
       std::vector<PHINode *> loopCarriedPHIs;
+
+      void squeezeSequentialSegment (
+        LoopDependenceInfo *LDI,
+        SequentialSegment *ss
+      );
   };
 
 }

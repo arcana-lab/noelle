@@ -41,6 +41,7 @@ namespace llvm {
        * Functions
        */
       uint64_t getFunctionInstructions (Function *f);
+      uint64_t getFunctionInvocations (Function *f);
 
 
       /*
