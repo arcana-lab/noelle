@@ -186,7 +186,7 @@ int64_t PDG::getNumberOfDependencesBetweenInstructions (void) const {
   return this->numEdges();
 }
 
-void PDG::iterateOverDependencesFrom (
+bool PDG::iterateOverDependencesFrom (
   Value *from, 
   bool includeControlDependences,
   bool includeMemoryDataDependences,
@@ -199,7 +199,7 @@ void PDG::iterateOverDependencesFrom (
    */
   auto pdgNode = this->fetchNode(from);
   if (pdgNode == nullptr){
-    return ;
+    return false;
   }
 
   /*
@@ -221,7 +221,7 @@ void PDG::iterateOverDependencesFrom (
         && edge->isControlDependence()
       ){
       if (functionToInvokePerDependence(destValue, edge->dataDependenceType())){
-        return ;
+        return true;
       }
       continue ;
     }
@@ -234,7 +234,7 @@ void PDG::iterateOverDependencesFrom (
         && edge->isMemoryDependence()
       ){
       if (functionToInvokePerDependence(destValue, edge->dataDependenceType())){
-        return ;
+        return true;
       }
       continue ;
     }
@@ -247,16 +247,16 @@ void PDG::iterateOverDependencesFrom (
         && (!edge->isMemoryDependence())
       ){
       if (functionToInvokePerDependence(destValue, edge->dataDependenceType())){
-        return ;
+        return true;
       }
       continue ;
     }
   }
 
-  return ;
+  return false;
 }
 
-void PDG::iterateOverDependencesTo (
+bool PDG::iterateOverDependencesTo (
   Value *toValue, 
   bool includeControlDependences,
   bool includeMemoryDataDependences,
@@ -269,7 +269,7 @@ void PDG::iterateOverDependencesTo (
    */
   auto pdgNode = this->fetchNode(toValue);
   if (pdgNode == nullptr){
-    return ;
+    return false;
   }
 
   /*
@@ -291,7 +291,7 @@ void PDG::iterateOverDependencesTo (
         && edge->isControlDependence()
       ){
       if (functionToInvokePerDependence(srcValue, edge->dataDependenceType())){
-        return ;
+        return true;
       }
       continue ;
     }
@@ -304,7 +304,7 @@ void PDG::iterateOverDependencesTo (
         && edge->isMemoryDependence()
       ){
       if (functionToInvokePerDependence(srcValue, edge->dataDependenceType())){
-        return ;
+        return true;
       }
       continue ;
     }
@@ -317,13 +317,13 @@ void PDG::iterateOverDependencesTo (
         && (!edge->isMemoryDependence())
       ){
       if (functionToInvokePerDependence(srcValue, edge->dataDependenceType())){
-        return ;
+        return true;
       }
       continue ;
     }
   }
 
-  return ;
+  return false;
 }
 
 PDG::~PDG() {

@@ -80,8 +80,11 @@ namespace llvm {
        *
        * This means there is an edge from @param fromValue to @param toValue of the type specified by the other parameters.
        * For each of this edge, the function @param functionToInvokePerDependence is invoked.
+       *
+       * This function returns true if the iteration ends earlier. 
+       * It returns false otherwise.
        */
-      void iterateOverDependencesFrom (
+      bool iterateOverDependencesFrom (
         Value *fromValue, 
         bool includeControlDependences,
         bool includeMemoryDataDependences,
@@ -94,8 +97,11 @@ namespace llvm {
        *
        * This means there is an edge from @param fromValue to @param toValue of the type specified by the other parameters.
        * For each of this edge, the function @param functionToInvokePerDependence is invoked.
+       *
+       * This function returns true if the iteration ends earlier. 
+       * It returns false otherwise.
        */
-      void iterateOverDependencesTo (
+      bool iterateOverDependencesTo (
         Value *toValue, 
         bool includeControlDependences,
         bool includeMemoryDataDependences,
