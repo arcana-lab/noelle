@@ -1,20 +1,14 @@
 # Sources
 set(Srcs 
-  DSWP.cpp
-  CFG.cpp
-  Environment.cpp
-  Inliner.cpp
-  Partition.cpp
-  Pipeline.cpp
-  Printer.cpp
-  Queue.cpp
+  LoopSummary.cpp
+  LoopsSummary.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "DSWP")
+set(PassName "Loops")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -28,20 +22,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} 
-  ../../../external/svf/include
-  ../../basic_utilities/include 
-  ../../alloc_aa/include 
-  ../../pdg/include 
-  ../../threadpool/include 
-  ../../loops/include
-  ../../parallelization_utilities/include 
-  ../../heuristics/include 
-  ../../parallelization_technique/include 
-  ../../hotprofiler/include 
-  ../include 
-  ./ 
-  )
+include_directories(${LLVM_INCLUDE_DIRS} ../../basic_utilities/include ../../architecture/include ../../alloc_aa/include ../../pdg/include ../../hotprofiler/include ../include ../../../external/svf/include)
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})

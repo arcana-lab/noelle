@@ -16,7 +16,7 @@ PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so 
 ENABLERS="-load ${installDir}/lib/LoopDistribution.so"
 PARALLELIZATION_TECHNIQUES="-load ${installDir}/lib/DSWP.so -load ${installDir}/lib/DOALL.so -load ${installDir}/lib/HELIX.so"
 
-OPTPASSES="${WPAPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/Parallelization.so -load ${installDir}/lib/Heuristics.so -load ${installDir}/lib/ParallelizationTechnique.so ${ENABLERS} ${PARALLELIZATION_TECHNIQUES} -load ${installDir}/lib/Parallelizer.so"
+OPTPASSES="${WPAPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/Loops.so -load ${installDir}/lib/Parallelization.so -load ${installDir}/lib/Heuristics.so -load ${installDir}/lib/ParallelizationTechnique.so ${ENABLERS} ${PARALLELIZATION_TECHNIQUES} -load ${installDir}/lib/Parallelizer.so"
 
 # Set the command to execute
 cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} ${@}"

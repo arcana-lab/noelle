@@ -25,9 +25,21 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../basic_utilities/include ../../alloc_aa/include ../../pdg/include ../../threadpool/include ../../parallelization_utilities/include ../../heuristics/include ../../parallelization_technique/include ../../dswp/include ../../doall/include ../../helix/include ../../hotprofiler/include
-  ../../loop_distribution/include
+include_directories(${LLVM_INCLUDE_DIRS} 
   ../../../external/svf/include
+  ../../basic_utilities/include 
+  ../../alloc_aa/include 
+  ../../pdg/include 
+  ../../threadpool/include 
+  ../../loops/include
+  ../../parallelization_utilities/include 
+  ../../heuristics/include 
+  ../../parallelization_technique/include 
+  ../../dswp/include 
+  ../../doall/include 
+  ../../helix/include 
+  ../../hotprofiler/include
+  ../../loop_distribution/include
   ./
   )
 
