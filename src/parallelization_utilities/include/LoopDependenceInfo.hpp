@@ -54,14 +54,11 @@ namespace llvm {
       /*
        * Dependences
        */
-      PDG *functionDG;
-      PDG *loopDG;
       PDG *loopInternalDG;
 
       /*
        * SCCDAG.
        */
-      // REFACTOR(angelo): rename loopSCCDAG to loopInternalSCCDAG
       SCCDAG *loopSCCDAG;
       SCCDAGAttrs sccdagAttrs;
 
@@ -139,8 +136,12 @@ namespace llvm {
     private:
       std::set<Technique> enabledTechniques;
 
+      /*
+       * Dependences
+       */
+
       void fetchLoopAndBBInfo (LoopInfo &li, Loop *l) ;
-      void createDGsForLoop (Loop *l) ;
+      PDG * createDGsForLoop (Loop *l, PDG *functionDG) ;
 
       void mergeSingleSyntacticSugarInstrs ();
       void mergeBranchesWithoutOutgoingEdges ();

@@ -16,7 +16,6 @@
 #include "Architecture.hpp"
 #include "LoopDependenceInfo.hpp"
 
-using namespace std;
 using namespace llvm;
 
 LoopDependenceInfo::LoopDependenceInfo(
@@ -25,7 +24,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   Loop *l,
   LoopInfo &li,
   ScalarEvolution &SE
-) : function{f}, functionDG{fG}, DOALLChunkSize{8},
+) : function{f}, DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()}
   {
 
@@ -35,8 +34,8 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->enableAllTechniques();
 
   this->fetchLoopAndBBInfo(li, l);
-  this->createDGsForLoop(l);
-  this->environment = new LoopEnvironment(this->loopDG, this->loopExitBlocks);
+  auto loopDG = this->createDGsForLoop(l, fG);
+  this->environment = new LoopEnvironment(loopDG, this->loopExitBlocks);
 
   /*
    * Merge SCCs where separation is unnecessary
@@ -44,7 +43,14 @@ LoopDependenceInfo::LoopDependenceInfo(
    */
   mergeTrivialNodesInSCCDAG();
   this->sccdagAttrs.populate(this->loopSCCDAG, this->liSummary, SE);
-};
+
+  /*
+   * Free the memory.
+   */
+  delete loopDG;
+
+  return ;
+}
 
 LoopDependenceInfo::LoopDependenceInfo(
   Function *f,
@@ -58,10 +64,11 @@ LoopDependenceInfo::LoopDependenceInfo(
   for (auto bb : l->blocks()) {
     loopBBtoPD[&*bb] = pdt.getNode(&*bb)->getIDom()->getBlock();
   }
-};
+
+  return ;
+}
 
 LoopDependenceInfo::~LoopDependenceInfo() {
-  delete this->loopDG;
   delete this->loopInternalDG;
   delete this->loopSCCDAG;
   delete this->environment;
@@ -107,12 +114,12 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l) {
   l->getExitBlocks(loopExitBlocks);
 }
 
-void LoopDependenceInfo::createDGsForLoop (Loop *l){
+PDG * LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG){
 
   /*
    * Set the loop dependence graph.
    */
-  this->loopDG = functionDG->createLoopsSubgraph(l);
+  auto loopDG = functionDG->createLoopsSubgraph(l);
 
   /*
    * Build a SCCDAG of loop-internal instructions
@@ -151,7 +158,7 @@ void LoopDependenceInfo::createDGsForLoop (Loop *l){
   }
   #endif
 
-  return ;
+  return loopDG;
 }
 
 void LoopDependenceInfo::mergeTrivialNodesInSCCDAG () {
