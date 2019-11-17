@@ -20,7 +20,7 @@ void DSWP::collectTransitiveCondBrs (LoopDependenceInfo *LDI,
   /*
    * Fetch the loop dependence graph
    */
-  //auto loopDG = LDI->getLoopDG();
+  auto loopDG = LDI->getLoopDG();
 
   /*
    * Collect the branches
@@ -28,7 +28,7 @@ void DSWP::collectTransitiveCondBrs (LoopDependenceInfo *LDI,
   std::queue<DGNode<Value> *> queuedBrs;
   std::set<Instruction *> visitedBrs;
   for (auto br : bottomLevelBrs) {
-    queuedBrs.push(LDI->getLoopDG()->fetchNode(cast<Value>(br)));
+    queuedBrs.push(loopDG->fetchNode(cast<Value>(br)));
     visitedBrs.insert(br);
   }
 
