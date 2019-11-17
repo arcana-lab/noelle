@@ -133,13 +133,13 @@ namespace llvm {
        */
       ~LoopDependenceInfo();
 
-      PDG *loopDG;                            /* Dependence graph of the loop. This graph does not include instructions outside the loop (i.e., no external dependences are included).  */
     private:
 
       /*
        * Fields
        */
       std::set<Technique> enabledTechniques;  /* Techniques enabled. */
+      PDG *loopDG;                            /* Dependence graph of the loop. This graph does not include instructions outside the loop (i.e., no external dependences are included).  */
 
       /*
        * Methods

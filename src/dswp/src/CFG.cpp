@@ -28,7 +28,7 @@ void DSWP::collectTransitiveCondBrs (LoopDependenceInfo *LDI,
   std::queue<DGNode<Value> *> queuedBrs;
   std::set<Instruction *> visitedBrs;
   for (auto br : bottomLevelBrs) {
-    queuedBrs.push(LDI->loopDG->fetchNode(cast<Value>(br)));
+    queuedBrs.push(LDI->getLoopDG()->fetchNode(cast<Value>(br)));
     visitedBrs.insert(br);
   }
 
