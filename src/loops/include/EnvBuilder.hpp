@@ -10,17 +10,8 @@
  */
 #pragma once;
 
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/IRBuilder.h"
-
+#include "SystemHeaders.hpp"
 #include "LoopEnvironment.hpp"
-
-#include <unordered_map>
-#include <vector>
-#include <set>
 
 namespace llvm {
 

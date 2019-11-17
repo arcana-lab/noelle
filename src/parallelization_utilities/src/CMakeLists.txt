@@ -1,6 +1,5 @@
 # Sources
 set(Srcs 
-  EnvBuilder.cpp
   AccumulatorOpInfo.cpp
   SCCAttrs.cpp
   SCCDAGAttrs.cpp

@@ -3,6 +3,7 @@ set(Srcs
   LoopSummary.cpp
   LoopsSummary.cpp
   LoopEnvironment.cpp
+  EnvBuilder.cpp
 )
 
 # Compilation flags

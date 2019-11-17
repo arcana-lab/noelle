@@ -55,6 +55,8 @@ LoopEnvironment::LoopEnvironment (
   if (this->hasExitBlockEnv) {
     this->exitBlockType = IntegerType::get(exitBlocks[0]->getContext(), 32);
   }
+
+  return ;
 }
 
 Type * LoopEnvironment::typeOfEnv (int index) const {
@@ -74,6 +76,8 @@ void LoopEnvironment::addProducer (Value *producer, bool liveIn){
   } else {
     liveOutInds.insert(envIndex);
   }
+
+  return ;
 }
 
 bool LoopEnvironment::isProducer (Value *producer) const {
@@ -86,10 +90,12 @@ bool LoopEnvironment::isLiveIn (Value *val) {
 
 void LoopEnvironment::addLiveInProducer (Value *producer) { 
   addProducer(producer, true); 
+  return ;
 }
 
 void LoopEnvironment::addLiveOutProducer (Value *producer) { 
   addProducer(producer, false); 
+  return ;
 }
 
 int LoopEnvironment::indexOfExitBlock (void) const {
@@ -100,6 +106,6 @@ int LoopEnvironment::envSize (void) const {
   return envProducers.size() + (hasExitBlockEnv ? 1 : 0);
 }
 
-std::set<Value *> &LoopEnvironment::consumersOf (Value *prod) {
+std::set<Value *> & LoopEnvironment::consumersOf (Value *prod) {
   return prodConsumers[prod];
 }
