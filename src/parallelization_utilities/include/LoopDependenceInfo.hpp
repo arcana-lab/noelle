@@ -10,17 +10,15 @@
  */
 #pragma once
 
+#include "SystemHeaders.hpp"
+
 #include "PDG.hpp"
 #include "SCCDAG.hpp"
 #include "LoopsSummary.hpp"
 #include "SCCDAGAttrs.hpp"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Support/raw_ostream.h"
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
 #include "Techniques.hpp"
-
-using namespace std;
 
 namespace llvm {
 

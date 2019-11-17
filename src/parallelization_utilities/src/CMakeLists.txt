@@ -1,7 +1,6 @@
 # Sources
 set(Srcs 
   EnvBuilder.cpp
-  LoopEnvironment.cpp
   AccumulatorOpInfo.cpp
   SCCAttrs.cpp
   SCCDAGAttrs.cpp

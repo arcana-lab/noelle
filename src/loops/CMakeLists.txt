@@ -29,4 +29,8 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/LoopSummary.hpp include/LoopsSummary.hpp DESTINATION include)
+install(PROGRAMS 
+  include/LoopSummary.hpp 
+  include/LoopsSummary.hpp 
+  include/LoopEnvironment.hpp
+  DESTINATION include)
