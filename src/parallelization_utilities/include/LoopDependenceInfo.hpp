@@ -52,11 +52,6 @@ namespace llvm {
       LoopEnvironment *environment;
 
       /*
-       * Dependences
-       */
-      PDG *loopInternalDG;
-
-      /*
        * SCCDAG.
        */
       SCCDAG *loopSCCDAG;
@@ -92,6 +87,11 @@ namespace llvm {
         ScalarEvolution &SE,
         PostDominatorTree &pdt
       );
+
+      /*
+       * Get the dependence graph of the loop.
+       */
+      PDG * getLoopDG (void);
 
       /*
        * Update the fields to consider @inst as part of the loop.
@@ -133,13 +133,17 @@ namespace llvm {
        */
       ~LoopDependenceInfo();
 
+      PDG *loopDG;                            /* Dependence graph of the loop. This graph does not include instructions outside the loop (i.e., no external dependences are included).  */
     private:
-      std::set<Technique> enabledTechniques;
 
       /*
-       * Dependences
+       * Fields
        */
+      std::set<Technique> enabledTechniques;  /* Techniques enabled. */
 
+      /*
+       * Methods
+       */
       void fetchLoopAndBBInfo (LoopInfo &li, Loop *l) ;
       PDG * createDGsForLoop (Loop *l, PDG *functionDG) ;
 
