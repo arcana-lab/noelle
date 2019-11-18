@@ -43,7 +43,6 @@ namespace llvm {
       /*
        * Graph wide structures
        */
-      SCCDAG *sccdag;
       AccumulatorOpInfo accumOpInfo;
 
       /*
@@ -98,6 +97,7 @@ namespace llvm {
 
     private:
       std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
+      SCCDAG *sccdag;     /* SCCDAG of the related loop.  */
 
       /*
        * Helper methods on SCCDAG
