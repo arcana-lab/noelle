@@ -110,7 +110,7 @@ void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) 
     std::set<SCC *> allSCCs(toStage->removableSCCs.begin(), toStage->removableSCCs.end());
     allSCCs.insert(toStage->stageSCCs.begin(), toStage->stageSCCs.end());
     for (auto scc : allSCCs) {
-      for (auto sccEdge : LDI->loopSCCDAG->fetchNode(scc)->getIncomingEdges()) {
+      for (auto sccEdge : LDI->sccdagAttrs.getSCCDAG()->fetchNode(scc)->getIncomingEdges()) {
         auto fromSCC = sccEdge->getOutgoingT();
         auto fromSCCInfo = LDI->sccdagAttrs.getSCCAttrs(fromSCC);
         if (fromSCCInfo->canBeCloned()) {

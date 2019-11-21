@@ -21,7 +21,7 @@ void Parallelizer::applyEnablers (
   /*
    * Fetch the SCCDAG of the loop.
    */
-  auto SCCDAG = LDI->loopSCCDAG;
+  auto SCCDAG = LDI->sccdagAttrs.getSCCDAG();
 
   /*
    * Define the set of SCCs to bring outside the loop.

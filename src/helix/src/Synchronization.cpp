@@ -25,7 +25,7 @@ void HELIX::addSynchronizations (
   /*
    * Identify the preamble SCC
    */
-  auto preambleSCCNodes = LDI->loopSCCDAG->getTopLevelNodes();
+  auto preambleSCCNodes = LDI->sccdagAttrs.getSCCDAG()->getTopLevelNodes();
   assert(preambleSCCNodes.size() == 1);
   auto preambleSCC = (*preambleSCCNodes.begin())->getT();
 
@@ -40,7 +40,7 @@ void HELIX::addSynchronizations (
   }
 
   for (auto term : exitingTerms) {
-    auto scc = LDI->loopSCCDAG->sccOfValue(term);
+    auto scc = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(term);
     auto termNode = scc->fetchNode(term);
     for (auto edge : termNode->getIncomingEdges()) {
       if (edge->isControlDependence()) {

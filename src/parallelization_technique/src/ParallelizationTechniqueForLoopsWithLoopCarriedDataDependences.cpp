@@ -57,7 +57,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   /*
    * Assign SCCs that have no partition to their own partitions.
    */
-  for (auto nodePair : LDI->loopSCCDAG->internalNodePairs()) {
+  for (auto nodePair : LDI->sccdagAttrs.getSCCDAG()->internalNodePairs()) {
 
     /*
      * Fetch the current node in the SCCDAG.
@@ -84,7 +84,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   /*
    * Ensure no memory edges go across subsets so no synchronization is necessary
    */
-  this->partition = new SCCDAGPartition(LDI->loopSCCDAG, &LDI->sccdagAttrs, &LDI->liSummary, subsets);
+  this->partition = new SCCDAGPartition(LDI->sccdagAttrs.getSCCDAG(), &LDI->sccdagAttrs, &LDI->liSummary, subsets);
   while (partition->mergeAlongMemoryEdges());
 
   /*

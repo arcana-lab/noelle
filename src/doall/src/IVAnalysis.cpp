@@ -21,7 +21,7 @@ void DOALL::simplifyOriginalLoopIV (
    * Fetch information about the loop induction variable controlling the loop trip count.
    */
   auto headerBr = LDI->header->getTerminator();
-  auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
+  auto headerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(headerBr);
   auto attrs = LDI->sccdagAttrs.getSCCAttrs(headerSCC);
   task->originalIVAttrs = attrs;
   auto &IVBounds = *LDI->sccdagAttrs.sccIVBounds[headerSCC];

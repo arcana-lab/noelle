@@ -522,7 +522,7 @@ Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
   /*
    * Fetch the SCC that this producer belongs to.
    */
-  auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
+  auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
   assert(producerSCC != nullptr && "The environment value doesn't belong to a loop SCC");
 
   /*

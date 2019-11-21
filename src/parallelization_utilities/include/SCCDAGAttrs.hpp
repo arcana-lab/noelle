@@ -95,6 +95,11 @@ namespace llvm {
         SCC *scc, 
         std::function<bool (DGEdge<Value> *dependence)> func) ;
 
+      /*
+       * Return the SCCDAG of the loop.
+       */
+      SCCDAG * getSCCDAG (void);
+
     private:
       std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
       SCCDAG *sccdag;     /* SCCDAG of the related loop.  */

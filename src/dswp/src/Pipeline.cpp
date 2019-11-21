@@ -40,7 +40,7 @@ void DSWP::addRemovableSCCsToStages (LoopDependenceInfo *LDI) {
     std::queue<DGNode<SCC> *> dependentSCCNodes;
 
     for (auto scc : task->stageSCCs) {
-      dependentSCCNodes.push(LDI->loopSCCDAG->fetchNode(scc));
+      dependentSCCNodes.push(LDI->sccdagAttrs.getSCCDAG()->fetchNode(scc));
     }
 
     while (!dependentSCCNodes.empty()) {

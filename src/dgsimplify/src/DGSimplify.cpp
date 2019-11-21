@@ -366,7 +366,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
  */
 bool llvm::DGSimplify::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
   std::set<SCC *> sccsToCheck;
-  for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
+  for (auto sccNode : LDI->sccdagAttrs.getSCCDAG()->getNodes()) {
     auto scc = sccNode->getT();
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
     if (  true

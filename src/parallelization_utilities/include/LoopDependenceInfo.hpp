@@ -52,7 +52,6 @@ namespace llvm {
       /*
        * SCCDAG.
        */
-      SCCDAG *loopSCCDAG;
       SCCDAGAttrs sccdagAttrs;
 
       /*
@@ -143,11 +142,11 @@ namespace llvm {
        * Methods
        */
       void fetchLoopAndBBInfo (LoopInfo &li, Loop *l) ;
-      PDG * createDGsForLoop (Loop *l, PDG *functionDG) ;
+      std::pair<PDG *, SCCDAG *> createDGsForLoop (Loop *l, PDG *functionDG) ;
 
-      void mergeSingleSyntacticSugarInstrs ();
-      void mergeBranchesWithoutOutgoingEdges ();
-      void mergeTrivialNodesInSCCDAG ();
+      void mergeSingleSyntacticSugarInstrs (SCCDAG *loopSCCDAG);
+      void mergeBranchesWithoutOutgoingEdges (SCCDAG *loopSCCDAG);
+      void mergeTrivialNodesInSCCDAG (SCCDAG *loopSCCDAG);
   };
 
 }

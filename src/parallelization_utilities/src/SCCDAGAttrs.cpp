@@ -114,7 +114,7 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const
  * Assumption(angelo): An induction variable will be the root SCC of the loop
  */
 bool SCCDAGAttrs::isLoopGovernedByIV () const {
-  auto topLevelNodes = sccdag->getTopLevelNodes();
+  auto topLevelNodes = this->sccdag->getTopLevelNodes();
 
   /*
    * Step 1: Isolate top level SCCs (excluding independent instructions in SCCDAG)
@@ -135,7 +135,7 @@ bool SCCDAGAttrs::isLoopGovernedByIV () const {
     auto sccInfo = this->getSCCAttrs(scc);
 
     if (sccInfo->canExecuteIndependently()) {
-      auto nextDepth = sccdag->getNextDepthNodes(node);
+      auto nextDepth = this->sccdag->getNextDepthNodes(node);
       for (auto next : nextDepth) toTraverse.push(next);
       continue;
     }
@@ -162,7 +162,7 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
      * Fetch the SCC that contains the producer of the environment variable.
      */
     auto producer = env->producerAt(envIndex);
-    auto scc = sccdag->sccOfValue(producer);
+    auto scc = this->sccdag->sccOfValue(producer);
 
     /*
      * Check the SCC type.
@@ -209,7 +209,7 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
     for (auto node : nodes) queue.push(node);
   };
 
-  for (auto sccPair : sccdag->internalNodePairs()) {
+  for (auto sccPair : this->sccdag->internalNodePairs()) {
     auto childSCC = sccPair.first;
     std::queue<DGNode<SCC> *> nodesToCheck;
     addIncomingNodes(nodesToCheck, sccPair.second);
@@ -234,7 +234,7 @@ void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS) {
   /*
    * Collect values producing intra iteration data dependencies
    */
-  for (auto edge : sccdag->getEdges()) {
+  for (auto edge : this->sccdag->getEdges()) {
     auto sccTo = edge->getIncomingT();
     for (auto subEdge : edge->getSubEdges()) {
       auto sccFrom = subEdge->getOutgoingT();
@@ -258,7 +258,7 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopsSummary &LIS){
    *
    * Control dependency back edges are from conditional branches to instructions in loop headers.
    */
-  for (auto sccNode : sccdag->getNodes()) {
+  for (auto sccNode : this->sccdag->getNodes()) {
 
     /*
      * Fetch an SCC of the current loop.
@@ -869,7 +869,7 @@ bool SCCDAGAttrs::isClonableByInductionVars (SCC *scc) const {
    * FIXME: This check should not exist; instead, SCC where cloning
    * is trivial should be separated out by the parallelization scheme
    */
-  if (sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
+  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
 
   /*
    * Fetch the SCC metadata.
@@ -885,7 +885,7 @@ bool SCCDAGAttrs::isClonableBySyntacticSugarInstrs (SCC *scc) const {
    * FIXME: This check should not exist; instead, SCC where cloning
    * is trivial should be separated out by the parallelization scheme
    */
-  if (sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
+  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
 
   if (scc->numInternalNodes() > 1) return false;
   auto I = scc->begin_internal_node_map()->first;
@@ -1096,6 +1096,10 @@ void SCCDAGAttrs::iterateOverLoopCarriedDataDependences (
   }
 
   return ;
+}
+
+SCCDAG * SCCDAGAttrs::getSCCDAG (void){
+  return this->sccdag;
 }
 
 bool SCCAttrs::mustExecuteSequentially (void) const {

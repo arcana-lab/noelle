@@ -56,7 +56,7 @@ bool DSWP::canBeAppliedToLoop (
    * Check if there is at least one sequential stage.
    * If there isn't, then this loop is a DOALL. Hence, DSWP is not applicable.
    */
-  for (auto nodePair : LDI->loopSCCDAG->internalNodePairs()) {
+  for (auto nodePair : LDI->sccdagAttrs.getSCCDAG()->internalNodePairs()) {
 
     /*
      * Fetch the current SCC.

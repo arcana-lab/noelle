@@ -30,16 +30,25 @@ LoopDependenceInfo::LoopDependenceInfo(
    */
   this->enableAllTechniques();
 
+  /*
+   * Fetch the PDG of the loop and its SCCDAG.
+   */
   this->fetchLoopAndBBInfo(li, l);
-  auto loopDG = this->createDGsForLoop(l, fG);
+  auto DGs = this->createDGsForLoop(l, fG);
+  auto loopDG = DGs.first;
+  auto loopSCCDAG = DGs.second;
+
+  /*
+   * Create the environment for the loop.
+   */
   this->environment = new LoopEnvironment(loopDG, this->loopExitBlocks);
 
   /*
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
-  mergeTrivialNodesInSCCDAG();
-  this->sccdagAttrs.populate(this->loopSCCDAG, this->liSummary, SE);
+  mergeTrivialNodesInSCCDAG(loopSCCDAG);
+  this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE);
 
   /*
    * Free the memory.
@@ -67,7 +76,6 @@ LoopDependenceInfo::LoopDependenceInfo(
 
 LoopDependenceInfo::~LoopDependenceInfo() {
   delete this->loopDG;
-  delete this->loopSCCDAG;
   delete this->environment;
 
   return ;
@@ -109,9 +117,11 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l) {
   }
 
   l->getExitBlocks(loopExitBlocks);
+
+  return ;
 }
 
-PDG * LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG){
+std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG){
 
   /*
    * Set the loop dependence graph.
@@ -126,7 +136,7 @@ PDG * LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG){
       loopInternals.push_back(internalNode.first);
   }
   this->loopDG = loopDG->createSubgraphFromValues(loopInternals, false);
-  this->loopSCCDAG = SCCDAG::createSCCDAGFrom(this->loopDG);
+  auto loopSCCDAG = SCCDAG::createSCCDAGFrom(this->loopDG);
 
   /*
    * Safety check: check that the SCCDAG includes all instructions of the loop given as input.
@@ -142,7 +152,7 @@ PDG * LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG){
     for (auto &I : *bbIter){
       assert(std::find(loopInternals.begin(), loopInternals.end(), &I) != loopInternals.end());
       assert(this->loopDG->isInternal(&I));
-      assert(this->loopSCCDAG->doesItContain(&I));
+      assert(loopSCCDAG->doesItContain(&I));
       numberOfInstructionsInLoop++;
     }
   }
@@ -155,10 +165,10 @@ PDG * LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG){
   }
   #endif
 
-  return loopDG;
+  return make_pair(loopDG, loopSCCDAG);
 }
 
-void LoopDependenceInfo::mergeTrivialNodesInSCCDAG () {
+void LoopDependenceInfo::mergeTrivialNodesInSCCDAG (SCCDAG *loopSCCDAG) {
 
   /*
    * Merge SCCs.
@@ -167,14 +177,16 @@ void LoopDependenceInfo::mergeTrivialNodesInSCCDAG () {
   // the before and after, which can be VERY verbose, we should just log
   // each change made by these merge helpers. This would still capture everything
   // necessary for debugging purposes.
-  mergeSingleSyntacticSugarInstrs();
-  mergeBranchesWithoutOutgoingEdges();
+  mergeSingleSyntacticSugarInstrs(loopSCCDAG);
+  mergeBranchesWithoutOutgoingEdges(loopSCCDAG);
+
+  return ;
 }
 
-void LoopDependenceInfo::mergeSingleSyntacticSugarInstrs () {
+void LoopDependenceInfo::mergeSingleSyntacticSugarInstrs (SCCDAG *loopSCCDAG) {
   std::unordered_map<DGNode<SCC> *, std::set<DGNode<SCC> *> *> mergedToGroup;
   std::set<std::set<DGNode<SCC> *> *> singles;
-  for (auto sccNode : this->loopSCCDAG->getNodes()) {
+  for (auto sccNode : loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
 
     /*
@@ -238,7 +250,7 @@ void LoopDependenceInfo::mergeSingleSyntacticSugarInstrs () {
   }
 
   for (auto sccNodes : singles) { 
-    this->loopSCCDAG->mergeSCCs(*sccNodes);
+    loopSCCDAG->mergeSCCs(*sccNodes);
     delete sccNodes;
   }
 }
@@ -263,9 +275,9 @@ void LoopDependenceInfo::disableTechnique (Technique techniqueToDisable){
   return ;
 }
 
-void LoopDependenceInfo::mergeBranchesWithoutOutgoingEdges () {
+void LoopDependenceInfo::mergeBranchesWithoutOutgoingEdges (SCCDAG *loopSCCDAG) {
   std::vector<DGNode<SCC> *> tailCmpBrs;
-  for (auto sccNode : this->loopSCCDAG->getNodes()) {
+  for (auto sccNode : loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
     if (sccNode->numIncomingEdges() == 0 || sccNode->numOutgoingEdges() > 0) continue ;
 
@@ -299,8 +311,8 @@ void LoopDependenceInfo::mergeBranchesWithoutOutgoingEdges () {
    */
   for (auto tailSCC : tailCmpBrs) {
     std::set<DGNode<SCC> *> nodesToMerge = { tailSCC };
-    nodesToMerge.insert(*this->loopSCCDAG->getPreviousDepthNodes(tailSCC).begin());
-    this->loopSCCDAG->mergeSCCs(nodesToMerge);
+    nodesToMerge.insert(*loopSCCDAG->getPreviousDepthNodes(tailSCC).begin());
+    loopSCCDAG->mergeSCCs(nodesToMerge);
   }
 }
       

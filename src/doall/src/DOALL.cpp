@@ -89,7 +89,7 @@ bool DOALL::canBeAppliedToLoop (
    * The loop's IV does not have bounds that have been successfully analyzed
    */
   auto headerBr = LDI->header->getTerminator();
-  auto headerSCC = LDI->loopSCCDAG->sccOfValue(headerBr);
+  auto headerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(headerBr);
   if (LDI->sccdagAttrs.sccIVBounds.find(headerSCC) == LDI->sccdagAttrs.sccIVBounds.end()) {
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   It wasn't possible to determine how to compute the loop trip count just before executing the loop\n" ;
@@ -277,7 +277,7 @@ BasicBlock * DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value 
    */
   for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto producer = LDI->environment->producerAt(envInd);
-    auto producerSCC = LDI->loopSCCDAG->sccOfValue(producer);
+    auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
     auto producerSCCAttributes = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
     auto firstAccumI = *(producerSCCAttributes->getAccumulators().begin());
     auto binOpCode = firstAccumI->getOpcode();
