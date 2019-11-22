@@ -17,16 +17,14 @@ alias cmake="cmake3"
 # Please change the following home directories of your LLVM builds
 ########
 LLVMRELEASE
-LLVMDEBUG=/home/ysui/llvm-9.0.0/llvm-9.0.0.dbg
 
 if [[ $1 == 'debug' ]]
 then
 BuildTY='Debug'
-export LLVM_DIR=$LLVMDEBUG
 else
 BuildTY='Release'
-export LLVM_DIR=$LLVMRELEASE
 fi
+export LLVM_DIR=$LLVMRELEASE
 
 export PATH=$LLVM_DIR/bin:$PATH
 Build=$BuildTY'-build'
