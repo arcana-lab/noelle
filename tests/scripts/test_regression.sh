@@ -79,6 +79,10 @@ export PATH=`pwd`/../install/bin:$PATH
 
 cd regression ;
 
+# Test enablers
+runningTestsWrapper -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall ;
+
+# Test parallelization techniques
 runningTestsWrapper 
 
 runningTestsWrapper -dswp-force -noelle-disable-helix ;
