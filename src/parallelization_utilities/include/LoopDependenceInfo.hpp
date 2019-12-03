@@ -42,7 +42,7 @@ namespace llvm {
        * Loop
        */
       std::vector<BasicBlock *> loopBBs;
-      unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
+      std::unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
 
       /*
        * Environment
@@ -59,8 +59,6 @@ namespace llvm {
        */
       uint32_t maximumNumberOfCoresForTheParallelization;
       uint32_t DOALLChunkSize;
-
-      std::function<LoopDependenceInfo *(Function *F, int loopIndex)> *reevaluator;
 
       /*
        * Methods
