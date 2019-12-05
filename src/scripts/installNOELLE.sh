@@ -24,14 +24,14 @@ mkdir -p ${installDir}/bin ;
 
 patchInstallDir "noelle-load" ;
 patchInstallDir "noelle" ;
-patchInstallDir "noelle-pre" ;
+patchInstallDir "noelle-norm" ;
 patchInstallDir "noelle-pgo" ;
 patchInstallDir "noelle-seq" ;
 patchInstallDir "noelle-inline" ;
 
 chmod 744 ${installDir}/bin/noelle-load ;
 chmod 744 ${installDir}/bin/noelle ;
-chmod 744 ${installDir}/bin/noelle-pre ;
+chmod 744 ${installDir}/bin/noelle-norm ;
 chmod 744 ${installDir}/bin/noelle-pgo ;
 chmod 744 ${installDir}/bin/noelle-seq ;
 chmod 744 ${installDir}/bin/noelle-inline ;

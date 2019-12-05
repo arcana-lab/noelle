@@ -28,13 +28,13 @@ all: baseline testseq $(OPTIMIZED)
 
 %.bc: %.c
 	$(CC) $(INCLUDES) -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
-	noelle-pre $@ -o $@
+	noelle-norm $@ -o $@
 	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
 %.bc: %.cpp
 	$(CPP) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
-	noelle-pre $@ -o $@
+	noelle-norm $@ -o $@
 	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
@@ -68,7 +68,7 @@ baseline.bc: test.bc
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
 	noelle-inline "-inliner-verbose=1" "$@"
-	noelle-pre $@ -o $@
+	noelle-norm $@ -o $@
 	llvm-dis $@
 
 output.prof: default.profraw
