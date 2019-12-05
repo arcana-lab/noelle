@@ -17,18 +17,20 @@ namespace llvm {
 
   class LoopsSummary {
     public:
-      LoopSummary *topLoop;
-      std::set<std::unique_ptr<LoopSummary>> loops;
+      std::set<std::shared_ptr<LoopSummary>> loops;
 
       LoopSummary * getLoop (Instruction *instIncludedInLoop);
 
       LoopSummary * getLoop (BasicBlock *bbIncludedInLoop);
+
+      LoopSummary * getLoopNestingTreeRoot (void) const ;
 
       void populate (LoopInfo &li, Loop *loop);
 
       void print (raw_ostream &stream);
 
     private:
+      LoopSummary *topLoop;
 
       /*
        * Fields.

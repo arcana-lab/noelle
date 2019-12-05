@@ -3,7 +3,12 @@ CONDOR_FILE=regression.con
 
 all: regression
 
-regression: regression_default regression_1 regression_2 regression_3 regression_4
+regression: regression_enablers regression_default regression_1 regression_2 regression_3 regression_4
+
+regression_enablers:
+	cd ../ ; cp -r regression $@ ;
+	python scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall" ${EMAIL};
+	./scripts/appendTests.sh $@.con ;
 
 regression_default:
 	cd ../ ; cp -r regression $@ ;

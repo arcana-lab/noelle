@@ -98,7 +98,7 @@ namespace llvm {
 
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
 
-      void applyEnablers (
+      bool applyEnablers (
         LoopDependenceInfo *LDI,
         Parallelization &par,
         LoopDistribution &loopDist

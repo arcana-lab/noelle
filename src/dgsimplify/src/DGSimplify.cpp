@@ -778,7 +778,7 @@ void llvm::DGSimplify::createPreOrderedLoopSummariesFor (Function *F) {
   auto &orderedLoops = *preOrderedLoops[F];
   std::unordered_map<Loop *, LoopSummary *> summaryMap;
   for (auto i = 0; i < loops->size(); ++i) {
-    auto summary = new LoopSummary(i, (*loops)[i]);
+    auto summary = new LoopSummary((*loops)[i]);
     loopSummaries.insert(summary);
     orderedLoops.push_back(summary);
     summaryMap[(*loops)[i]] = summary;

@@ -27,19 +27,18 @@ LoopSummary * LoopsSummary::getLoop (BasicBlock *bbIncludedInLoop){
   return l;
 }
 
-LoopSummary *LoopsSummary::createSummary (Loop *l) {
-  auto id = loops.size();
-  auto lSummary = std::make_unique<LoopSummary>(id, l);
+LoopSummary * LoopsSummary::createSummary (Loop *l) {
+  auto lSummary = std::make_shared<LoopSummary>(l);
   auto lPtr = lSummary.get();
   for (auto bb : l->blocks()) {
     bbToLoop[bb] = lPtr;
   }
-  auto ls = loops.insert(std::move(lSummary)).first->get();
+  auto ls = this->loops.insert(std::move(lSummary)).first->get();
 
   return ls;
 }
       
-void LoopsSummary::populate(LoopInfo &li, Loop *loop) {
+void LoopsSummary::populate (LoopInfo &li, Loop *loop) {
   std::unordered_map<Loop *, LoopSummary *> loopToSummary;
   loopToSummary[loop->getParentLoop()] = nullptr;
 
@@ -51,21 +50,38 @@ void LoopsSummary::populate(LoopInfo &li, Loop *loop) {
   toSummarize.push(loop);
 
   while (!toSummarize.empty()) {
+
+    /*
+     * Fetch the current loop.
+     */
     auto l = toSummarize.front();
     toSummarize.pop();
 
+    /*
+     * Create the summary of the current loop.
+     */
     auto summary = this->createSummary(l);
     loopToSummary[l] = summary;
+
+    /*
+     * Set the parent loop.
+     */
     auto parent = l->getParentLoop();
     assert(loopToSummary.find(parent) != loopToSummary.end());
     summary->parent = loopToSummary[parent];
 
+    /*
+     * Iterate over the subloops of the current loop.
+     */
     for (auto subLoop : l->getSubLoops()) {
       toSummarize.push(subLoop);
     }
   }
 
-  topLoop = loopToSummary[loop];
+  /*
+   * Set the root of the tree
+   */
+  this->topLoop = loopToSummary[loop];
 
   return ;
 }
@@ -77,4 +93,8 @@ void LoopsSummary::print (raw_ostream &stream) {
   }
 
   return ;
+}
+      
+LoopSummary * LoopsSummary::getLoopNestingTreeRoot (void) const {
+  return this->topLoop;
 }

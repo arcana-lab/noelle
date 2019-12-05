@@ -183,9 +183,10 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
 
 bool SCCDAGAttrs::isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const {
   auto instInSubloops = true;
+  auto topLoop = LIS.getLoopNestingTreeRoot();
   for (auto iNodePair : scc->internalNodePairs()) {
     auto inst = cast<Instruction>(iNodePair.first);
-    instInSubloops &= LIS.getLoop(inst) != LIS.topLoop;
+    instInSubloops &= LIS.getLoop(inst) != topLoop;
   }
   return instInSubloops;
 }

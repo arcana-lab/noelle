@@ -84,19 +84,14 @@ namespace llvm {
       );
 
       /*
+       * Return the ID of the loop.
+       */
+      uint64_t getID (void) const ;
+
+      /*
        * Get the dependence graph of the loop.
        */
       PDG * getLoopDG (void);
-
-      /*
-       * Update the fields to consider @inst as part of the loop.
-       */
-      void addInstruction (Instruction *inst);
-
-      /*
-       * Update the fields to consider @inst as not part of the loop anymore.
-       */
-      void removeInstruction (Instruction *inst);
 
       /*
        * Copy all options from otherLDI to "this".
@@ -122,6 +117,14 @@ namespace llvm {
        * Disable all transformations.
        */
       void disableTechnique (Technique techniqueToDisable);
+
+      /*
+       * Iterate over children of "this" recursively following the loop nesting tree rooted by "this".
+       * This will go through children of children etc...
+       */
+      bool iterateOverSubLoopsRecursively (
+        std::function<bool (const LoopSummary &child)> funcToInvoke
+        );
 
       /*
        * Deconstructor.

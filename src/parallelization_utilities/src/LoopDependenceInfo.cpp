@@ -320,12 +320,23 @@ PDG * LoopDependenceInfo::getLoopDG (void){
   return this->loopDG;
 }
 
-void LoopDependenceInfo::addInstruction (Instruction *inst){
-  errs() << "ERROR: LoopDependenceInfo::addInstruction is not implemented yet \n";
-  return ;
-}
+bool LoopDependenceInfo::iterateOverSubLoopsRecursively (
+  std::function<bool (const LoopSummary &child)> funcToInvoke
+  ){
 
-void LoopDependenceInfo::removeInstruction (Instruction *inst){
-  errs() << "ERROR: LoopDependenceInfo::removeInstruction is not implemented yet \n";
-  return ;
+  /*
+   * Iterate over the children.
+   */
+  for (auto subloop : this->liSummary.loops){
+    if (funcToInvoke(*subloop)){
+      return true ;
+    }
+  }
+
+  return false;
+}
+      
+uint64_t LoopDependenceInfo::getID (void) const {
+  auto root = this->liSummary.getLoopNestingTreeRoot();
+  return root->getID();
 }

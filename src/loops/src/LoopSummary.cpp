@@ -12,8 +12,15 @@
 
 using namespace llvm;
 
-LoopSummary::LoopSummary (int id, Loop *l){
-  this->id = id;
+uint64_t LoopSummary::globalID = 0;
+
+LoopSummary::LoopSummary (Loop *l) {
+
+  /*
+   * Set the ID
+   */
+  this->ID = LoopSummary::globalID++;
+
   this->depth = l->getLoopDepth();
   this->header = l->getHeader();
   for (auto bb : l->blocks()) {
@@ -45,8 +52,12 @@ bool LoopSummary::isLoopInvariant (Value *v){
 }
       
 void LoopSummary::print (raw_ostream &stream) {
-  stream << "Loop summary: " << id << ", depth: " << depth << "\n";
+  stream << "Loop summary: " << this->ID << ", depth: " << depth << "\n";
   header->begin()->print(stream); stream << "\n";
 
   return ;
+}
+
+uint64_t LoopSummary::getID (void) const {
+  return this->ID;
 }

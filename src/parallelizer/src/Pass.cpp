@@ -11,6 +11,7 @@
 #include "Parallelizer.hpp"
 #include "HotProfiler.hpp"
 #include "LoopDistribution.hpp"
+#include <unordered_map>
 
 using namespace llvm;
 
@@ -124,17 +125,51 @@ bool Parallelizer::runOnModule (Module &M) {
    */
   errs() << "Parallelizer:  Parallelize all " << loopsToParallelize->size() << " loops, one at a time\n";
   auto modified = false;
+  std::unordered_map<uint64_t, bool> modifiedLoops;
   for (auto loop : *loopsToParallelize){
+
+    /*
+     * Check if the loop can be parallelized.
+     * This depends on whether the metadata (e.g., LoopDependenceInfo) are correct, which depends on whether its inner loops have been modified or not.
+     */
+    auto checkFunc = [&modifiedLoops](const LoopSummary &child) -> bool {
+
+      /*
+       * Fetch the ID of the subloop.
+       */
+      auto childID = child.getID();
+
+      /*
+       * Check if the sub-loop has been modified
+       */
+      if (modifiedLoops[childID]){
+
+        /*
+         * The subloop has been modified
+         */
+        return true;
+      }
+
+      /*
+       * The subloop has not been modified
+       */
+      return false;
+    };
+    if (loop->iterateOverSubLoopsRecursively(checkFunc)){
+
+      /*
+       * A subloop has been modified.
+       * Hence, we cannot trust the metadata of "loop".
+       */
+      continue ;
+    }
 
     /*
      * Parallelize the current loop with Parallelizer.
      */
-    modified |= this->parallelizeLoop(loop, parallelizationFramework, dswp, doall, helix, heuristics, loopDist);
-
-    /*
-     * Free the memory.
-     */
-    delete loop;
+    auto loopID = loop->getID();
+    modifiedLoops[loopID] |= this->parallelizeLoop(loop, parallelizationFramework, dswp, doall, helix, heuristics, loopDist);
+    modified |= modifiedLoops[loopID];
   }
   errs() << "Parallelizer:  Parallelization complete\n";
 

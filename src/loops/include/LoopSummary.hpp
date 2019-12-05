@@ -18,7 +18,6 @@ namespace llvm {
 
   class LoopSummary {
     public:
-      int id;
       LoopSummary *parent;
       std::set<LoopSummary *> children;
       int depth;
@@ -27,14 +26,18 @@ namespace llvm {
       std::set<BasicBlock *> bbs;
       std::set<BasicBlock *> latchBBs;
 
-      LoopSummary(int id, Loop *l);
+      LoopSummary (Loop *l);
 
       bool isLoopInvariant (Value *v);
 
       void print (raw_ostream &stream);
       
+      uint64_t getID (void) const ;
+
     private:
+      uint64_t ID;
       std::set<Value *> invariants;
+      static uint64_t globalID;
   };
 
 }

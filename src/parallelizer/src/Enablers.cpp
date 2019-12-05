@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void Parallelizer::applyEnablers (
+bool Parallelizer::applyEnablers (
     LoopDependenceInfo *LDI,
     Parallelization &par,
     LoopDistribution &loopDist
@@ -72,15 +72,11 @@ void Parallelizer::applyEnablers (
 
     /*
      * The SCC has been pulled out the loop.
-     * Update the data structures.
+     * We need to update all metadata about loops.
+     * To do so, we currently quit and rerun NOELLE.
      */
-    for (auto instRemoved : instsRemoved){
-      LDI->removeInstruction(instRemoved);
-    }
-    for (auto instAdded : instsAdded){
-      LDI->addInstruction(instAdded);
-    }
+    return true;
   }
   
-  return ;
+  return false;
 }

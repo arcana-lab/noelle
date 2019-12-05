@@ -29,14 +29,24 @@ bool Parallelizer::parallelizeLoop (
   assert(h != nullptr);
   if (this->verbose != Verbosity::Disabled) {
     errs() << "Parallelizer: Start\n";
-    errs() << "Parallelizer:  Function \"" << LDI->function->getName() << "\"\n";
-    errs() << "Parallelizer:  Try to parallelize the loop \"" << *LDI->header->getFirstNonPHI() << "\"\n";
+    errs() << "Parallelizer:  Function = \"" << LDI->function->getName() << "\"\n";
+    errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *LDI->header->getFirstNonPHI() << "\"\n";
   }
 
   /*
    * Apply parallelization enablers.
    */
-  this->applyEnablers(LDI, par, loopDist);
+  if (this->verbose != Verbosity::Disabled) {
+    errs() << "Parallelizer:  Run enablers\n";
+  }
+  auto enablersModifiedCode = this->applyEnablers(LDI, par, loopDist);
+  if (enablersModifiedCode){
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "Parallelizer:    Enablers have modified the code\n";
+      errs() << "Parallelizer: Exit\n";
+    }
+    return true;
+  }
 
   /*
    * Gauge the limits of each parallelization scheme
