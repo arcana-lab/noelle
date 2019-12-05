@@ -67,8 +67,7 @@ baseline.bc: test.bc
 
 test_seq.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
-	noelle-inline "-inliner-verbose=1" "$@"
-	noelle-norm $@ -o $@
+	noelle-pre "$@"
 	llvm-dis $@
 
 output.prof: default.profraw
