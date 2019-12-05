@@ -7,6 +7,11 @@ cmdToExecute="noelle-norm $@ -o $@"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
+# Add metadata to all loops of the program
+cmdToExecute="noelle-loopmeta $@ -o $@"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Inline functions
 cmdToExecute="noelle-inline -inliner-verbose=1 $@"
 echo $cmdToExecute ;
