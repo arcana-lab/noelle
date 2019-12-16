@@ -96,7 +96,8 @@ raw_ostream &SCC::printMinimal (raw_ostream &stream, std::string prefixToUse) {
 
 bool SCC::hasCycle (bool ignoreControlDep) {
 	std::set<DGNode<Value> *> nodesChecked;
-	for (auto node : this->getNodes()) {
+	for (auto nodePair : this->internalNodePairs()) {
+    auto node = nodePair.second;
 		if (nodesChecked.find(node) != nodesChecked.end()) continue;
 
 		std::set<DGNode<Value> *> nodesSeen;
