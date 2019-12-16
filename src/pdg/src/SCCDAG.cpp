@@ -86,6 +86,7 @@ SCCDAG::SCCDAG(PDG *pdg) {
      */
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
+    errs() << "CUCU " << *externalValue << "\n";
 
     /*
      * Create an SCC for it.

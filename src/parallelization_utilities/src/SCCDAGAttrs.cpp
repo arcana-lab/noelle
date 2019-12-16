@@ -27,12 +27,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
   /*
    * Tag SCCs depending on their characteristics.
    */
-  for (auto node : loopSCCDAG->getNodes()) {
-
-    /*
-     * Fetch the current SCC.
-     */
-    auto scc = node->getT();
+  loopSCCDAG->iterateOverSCCs([this, &SE, &LIS](SCC *scc) -> bool {
 
     /*
      * Allocate the metadata about this SCC.
@@ -59,7 +54,9 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
     } else {
       sccInfo->setType(SCCAttrs::SCCType::SEQUENTIAL);
     }
-  }
+
+    return false;
+  });
 
   collectSCCGraphAssumingDistributedClones();
 
@@ -294,12 +291,7 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopsSummary &LIS){
    *
    * Control dependency back edges are from conditional branches to instructions in loop headers.
    */
-  for (auto sccNode : this->sccdag->getNodes()) {
-
-    /*
-     * Fetch an SCC of the current loop.
-     */
-    auto scc = sccNode->getT();
+  this->sccdag->iterateOverSCCs([this, &LIS](SCC *scc) -> bool {
 
     /*
      * Iterate over each instruction within the current SCC.
@@ -434,7 +426,9 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopsSummary &LIS){
       assert(false && "SCCDAGAttrs::collectDependencies");
     }
     */
+    return false;
   }
+  );
 
   return ;
 }

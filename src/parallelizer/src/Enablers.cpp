@@ -23,7 +23,7 @@ bool Parallelizer::applyEnablers (
    */
   auto SCCDAG = LDI->sccdagAttrs.getSCCDAG();
   errs() << "XAN: INOUT: Start\n";
-  SCCDAG->iterateOverLiveInAndLiveOut([](Instruction *v) -> bool{
+  SCCDAG->iterateOverLiveInAndLiveOut([](Value *v) -> bool{
       errs() << "XAN: INTOUT:   " << *v << "\n";
       return false;
       });
