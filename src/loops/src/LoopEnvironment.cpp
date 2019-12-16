@@ -20,17 +20,19 @@ LoopEnvironment::LoopEnvironment (
   for (auto nodeI : loopDG->externalNodePairs()) {
 
     /*
-     * Fetch the live out variable.
+     * Fetch the live in/out variable.
      */
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
 
     /*
-     * Determine whether the external value is a producer
+     * Determine whether the external value is a producer (i.e., live-in).
      */
-    bool isProducer = false;
+    auto isProducer = false;
     for (auto edge : externalNode->getOutgoingEdges()) {
-      if (edge->isMemoryDependence() || edge->isControlDependence()) continue;
+      if (edge->isMemoryDependence() || edge->isControlDependence()) {
+        continue;
+      }
       isProducer = true;
       this->prodConsumers[externalValue].insert(edge->getIncomingT());
     }
@@ -39,10 +41,12 @@ LoopEnvironment::LoopEnvironment (
     }
 
     /*
-     * Determine whether the external value is a consumer
+     * Determine whether the external value is a consumer (i.e., live-out).
      */
     for (auto edge : externalNode->getIncomingEdges()) {
-      if (edge->isMemoryDependence() || edge->isControlDependence()) continue;
+      if (edge->isMemoryDependence() || edge->isControlDependence()) {
+        continue;
+      }
       auto internalValue = edge->getOutgoingT();
       if (!this->isProducer(internalValue)) {
         this->addLiveOutProducer(internalValue);

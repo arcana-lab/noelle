@@ -58,9 +58,20 @@ namespace llvm {
       bool iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke);
 
       /*
-       * Iterate over instructions until @funcToInvoke returns true or no other instruction exists.
+       * Iterate over instructions inside the SCCDAG until @funcToInvoke returns true or no other instruction exists.
        */
       bool iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke);
+
+      /*
+       * Iterate over live-ins and live-outs of the loop represented by the SCCDAG until @funcToInvoke returns true or no other live-in and live-out exist.
+       */
+      bool iterateOverLiveInAndLiveOut (std::function<bool (Instruction *)> funcToInvoke);
+
+      /*
+       * Iterate over all instructions (internal and external) until @funcToInvoke returns true or no other instruction exists.
+       * External nodes represent live-ins and live-outs of the loop represented by the SCCDAG.
+       */
+      bool iterateOverAllInstructions (std::function<bool (Instruction *)> funcToInvoke);
 
       /*
        * Merge SCCs of @sccSet to become a single node of the SCCDAG.

@@ -280,9 +280,12 @@ namespace llvm {
     std::string dataDepToString();
 
    protected:
-    DGNode<T> *from, *to;
+    DGNode<T> *from;
+    DGNode<T> *to;
     std::set<DGEdge<SubT> *> subEdges;
-    bool memory, must, isControl;
+    bool memory;
+    bool must;
+    bool isControl;
     DataDependenceType dataDepType;
   };
 

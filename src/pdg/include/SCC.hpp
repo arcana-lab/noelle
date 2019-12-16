@@ -23,20 +23,48 @@ namespace llvm {
 	 * Strongly Connected Component
 	 */
 	class SCC : public DG<Value> {
-      public:
-        SCC (std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
+    public:
 
-        bool iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke);
+      /*
+       * Constructor.
+       */
+      SCC (std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
 
-        bool hasCycle (bool ignoreControlDep = false) ;
+      /*
+       * Iterate over instructions inside the SCC until @funcToInvoke returns true or no other instruction exists.
+       */
+      bool iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke);
 
-        int64_t numberOfInstructions (void) const ;
+      /*
+       * Iterate over all instructions (internal and external) until @funcToInvoke returns true or no other instruction exists.
+       * External nodes represent live-ins and live-outs of the SCC.
+       */
+      bool iterateOverAllInstructions (std::function<bool (Instruction *)> funcToInvoke);
 
-        raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "", int maxEdges = 15) ;
+      /*
+       * Check if the SCC has cycles in it.
+       */
+      bool hasCycle (bool ignoreControlDep = false) ;
 
-        raw_ostream &printMinimal (raw_ostream &stream, std::string prefixToUse = "") ;
+      /*
+       * Return the number of instructions that compose the SCC.
+       */
+      int64_t numberOfInstructions (void) const ;
 
-        ~SCC() ;
+      /*
+       * Print
+       */
+      raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "", int maxEdges = 15) ;
+
+      /*
+       * Print
+       */
+      raw_ostream &printMinimal (raw_ostream &stream, std::string prefixToUse = "") ;
+
+      /*
+       * Deconstructor.
+       */
+      ~SCC() ;
 	};
 
 	template<> 

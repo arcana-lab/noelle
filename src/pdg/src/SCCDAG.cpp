@@ -28,10 +28,6 @@ SCCDAG::SCCDAG() {
 }
 
 SCCDAG * SCCDAG::createSCCDAGFrom (PDG *pdg) {
-  /*
-  errs() << "XAN: PDG -> SCCDAG\n";
-  pdg->print(errs());
-  */
 
   /*
    * Create an empty SCCDAG.
@@ -42,15 +38,13 @@ SCCDAG * SCCDAG::createSCCDAGFrom (PDG *pdg) {
    * Iterate over all disconnected subgraphs of the PDG and calculate their strongly connected components
    */
   auto subgraphs = pdg->getDisconnectedSubgraphs();
-  for (auto subgraphNodeset : subgraphs)
-  {
+  for (auto subgraphNodeset : subgraphs) {
     auto subgraphPDG = new PDG();
     pdg->addNodesIntoNewGraph(*cast<DG<Value>>(subgraphPDG), *subgraphNodeset, *subgraphNodeset->begin());
     delete subgraphNodeset;
 
     std::set<Value *> valuesInSCCs;
-    for (auto topLevelNode : subgraphPDG->getTopLevelNodes())
-    {
+    for (auto topLevelNode : subgraphPDG->getTopLevelNodes()) {
       subgraphPDG->setEntryNode(topLevelNode);
       std::set<DGNode<Value> *> nodes;
       for (auto pdgI = scc_begin(subgraphPDG); pdgI != scc_end(subgraphPDG); ++pdgI)
@@ -195,13 +189,53 @@ bool SCCDAG::iterateOverInstructions (std::function<bool (Instruction *)> funcTo
   /*
    * Iterate over SCC.
    */
+  for (auto sccNodePair : this->internalNodePairs()){
+
+    /*
+     * Iterate over instructions contained in the SCC.
+     */
+    auto SCC = sccNodePair.first;
+    if (SCC->iterateOverInstructions(funcToInvoke)){
+      return true;
+    }
+  }
+
+  return false ;
+}
+
+bool SCCDAG::iterateOverLiveInAndLiveOut (std::function<bool (Instruction *)> funcToInvoke){
+
+  /*
+   * Iterate over live-ins and live-outs of SCCs.
+   *
+   * A live-in/live-out is an SCC, which in the simplest case, it is a Value
+   */
+  for (auto sccNodePair : this->externalNodePairs()){
+
+    /*
+     * Iterate over internal nodes of the current SCC.
+     */
+    auto SCC = sccNodePair.first;
+    if (SCC->iterateOverInstructions(funcToInvoke)){
+      return true;
+    }
+  }
+
+  return false ;
+}
+
+bool SCCDAG::iterateOverAllInstructions (std::function<bool (Instruction *)> funcToInvoke){
+
+  /*
+   * Iterate over SCC.
+   */
   for (auto sccNode : this->getNodes()){
 
     /*
      * Iterate over instructions contained in the SCC.
      */
     auto SCC = sccNode->getT();
-    if (SCC->iterateOverInstructions(funcToInvoke)){
+    if (SCC->iterateOverAllInstructions(funcToInvoke)){
       return true;
     }
   }

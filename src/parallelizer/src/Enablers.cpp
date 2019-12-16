@@ -22,6 +22,12 @@ bool Parallelizer::applyEnablers (
    * Fetch the SCCDAG of the loop.
    */
   auto SCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  errs() << "XAN: INOUT: Start\n";
+  SCCDAG->iterateOverLiveInAndLiveOut([](Instruction *v) -> bool{
+      errs() << "XAN: INTOUT:   " << *v << "\n";
+      return false;
+      });
+  errs() << "XAN: INOUT: Exit\n";
 
   /*
    * Define the set of SCCs to bring outside the loop.
@@ -38,6 +44,14 @@ bool Parallelizer::applyEnablers (
      * Fetch the SCC metadata.
      */
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(currentSCC);
+    errs() << "XAN: Start\n";
+    errs() << "XAN:   Number of instructions = " << currentSCC->numberOfInstructions() << "\n";
+    currentSCC->iterateOverInstructions([](Instruction *i) -> bool {
+        errs() << "XAN:   " << *i << "\n";
+        return false;
+        });
+    errs() << "XAN: Exit\n";
+    currentSCC->print(errs());
 
     /*
      * Check if the current SCC can be removed (e.g., because it is due to induction variables).

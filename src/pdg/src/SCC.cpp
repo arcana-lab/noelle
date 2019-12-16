@@ -48,14 +48,30 @@ SCC::SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues) {
 }
         
 int64_t SCC::numberOfInstructions (void) const {
-  return this->allNodes.size();
+  return this->numInternalNodes();
 }
 
 raw_ostream &SCC::print (raw_ostream &stream, std::string prefixToUse, int maxEdges) {
+
+  /*
+   * Print instructions that compose the SCC.
+   */
   stream << prefixToUse << "Internal nodes: " << internalNodeMap.size() << "\n";
-  for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+  for (auto nodePair : internalNodePairs()) {
+    nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+  }
+
+  /*
+   * Print live-in and live-out values.
+   */
   stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
-  for (auto nodePair : externalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+  for (auto nodePair : externalNodePairs()) {
+    nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+  }
+
+  /*
+   * Print the dependences that cross the SCC.
+   */
   stream << prefixToUse << "Edges: " << allEdges.size() << "\n";
   int edgesPrinted = 0;
   for (auto edge : allEdges) {
@@ -65,6 +81,7 @@ raw_ostream &SCC::print (raw_ostream &stream, std::string prefixToUse, int maxEd
     }
     edge->print(stream, prefixToUse + "\t") << "\n";
   }
+
   return stream;
 }
 
@@ -109,6 +126,22 @@ bool SCC::hasCycle (bool ignoreControlDep) {
 }
 
 bool SCC::iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke){
+
+  /*
+   * Iterate over the internal instructions of the SCC.
+   */
+  for (auto nodePair : this->internalNodePairs()){
+    auto v = nodePair.first;
+    auto i = cast<Instruction>(v);
+    if (funcToInvoke(i)){
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool SCC::iterateOverAllInstructions (std::function<bool (Instruction *)> funcToInvoke){
 
   /*
    * Iterate over the nodes of the SCC.
