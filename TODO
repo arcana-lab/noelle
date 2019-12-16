@@ -10,6 +10,7 @@
   - Instead of just program correctness, tests can ensure certain loops are
     parallelized using a specific parallelization scheme
 
+- Include in SCCDAG live-in and live-out values
 
 ==== Renaming
 generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
