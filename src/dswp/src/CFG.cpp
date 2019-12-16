@@ -23,6 +23,11 @@ void DSWP::collectTransitiveCondBrs (LoopDependenceInfo *LDI,
   auto loopDG = LDI->getLoopDG();
 
   /*
+   * Fetch the SCCDAG.
+   */
+  auto SCCDAG = LDI->sccdagAttrs.getSCCDAG();
+
+  /*
    * Collect the branches
    */
   std::queue<DGNode<Value> *> queuedBrs;
@@ -43,6 +48,7 @@ void DSWP::collectTransitiveCondBrs (LoopDependenceInfo *LDI,
     for (auto edge : brNode->getIncomingEdges()) {
       if (auto termI = dyn_cast<Instruction>(edge->getOutgoingT())) {
         if (  true
+              && SCCDAG->doesItContain(termI)
               && termI->isTerminator()
               && (visitedBrs.find(termI) == visitedBrs.end()) 
             ){
