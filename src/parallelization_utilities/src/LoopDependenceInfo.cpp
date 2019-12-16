@@ -186,8 +186,13 @@ void LoopDependenceInfo::mergeTrivialNodesInSCCDAG (SCCDAG *loopSCCDAG) {
 void LoopDependenceInfo::mergeSingleSyntacticSugarInstrs (SCCDAG *loopSCCDAG) {
   std::unordered_map<DGNode<SCC> *, std::set<DGNode<SCC> *> *> mergedToGroup;
   std::set<std::set<DGNode<SCC> *> *> singles;
-  for (auto sccNode : loopSCCDAG->getNodes()) {
-    auto scc = sccNode->getT();
+
+  /*
+   * Iterate over SCCs.
+   */
+  for (auto sccPair : loopSCCDAG->internalNodePairs()){
+    auto scc = sccPair.first;
+    auto sccNode = sccPair.second;
 
     /*
      * Determine if node is a single syntactic sugar instruction that has either
@@ -277,13 +282,16 @@ void LoopDependenceInfo::disableTechnique (Technique techniqueToDisable){
 
 void LoopDependenceInfo::mergeBranchesWithoutOutgoingEdges (SCCDAG *loopSCCDAG) {
   std::vector<DGNode<SCC> *> tailCmpBrs;
-  for (auto sccNode : loopSCCDAG->getNodes()) {
-    auto scc = sccNode->getT();
+  for (auto sccPair : loopSCCDAG->internalNodePairs()){
+    auto scc = sccPair.first;
+    auto sccNode = sccPair.second;
+
     if (sccNode->numIncomingEdges() == 0 || sccNode->numOutgoingEdges() > 0) continue ;
 
     bool allCmpOrBr = true;
-    for (auto node : scc->getNodes()) {
-      auto nodeValue = node->getT();
+    for (auto nodePair : scc->internalNodePairs()){
+      auto nodeValue = nodePair.first;
+      auto node = nodePair.second;
 
       /*
        * Handle the cmp instruction.
