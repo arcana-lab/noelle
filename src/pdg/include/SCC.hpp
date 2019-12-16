@@ -31,6 +31,17 @@ namespace llvm {
       SCC (std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
 
       /*
+       * Iterate over values inside the SCC until @funcToInvoke returns true or no other one exists.
+       */
+      bool iterateOverValues (std::function<bool (Value *)> funcToInvoke);
+
+      /*
+       * Iterate over all values (internal and external) until @funcToInvoke returns true or no other value exists.
+       * External nodes represent live-ins and live-outs of the SCC.
+       */
+      bool iterateOverAllValues (std::function<bool (Value *)> funcToInvoke);
+
+      /*
        * Iterate over instructions inside the SCC until @funcToInvoke returns true or no other instruction exists.
        */
       bool iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke);

@@ -132,9 +132,10 @@ bool SCC::iterateOverInstructions (std::function<bool (Instruction *)> funcToInv
    */
   for (auto nodePair : this->internalNodePairs()){
     auto v = nodePair.first;
-    auto i = cast<Instruction>(v);
-    if (funcToInvoke(i)){
-      return true;
+    if (auto i = dyn_cast<Instruction>(v)){
+      if (funcToInvoke(i)){
+        return true;
+      }
     }
   }
 
@@ -148,8 +149,39 @@ bool SCC::iterateOverAllInstructions (std::function<bool (Instruction *)> funcTo
    */
   for (auto node : this->getNodes()){
     auto v = node->getT();
-    auto i = cast<Instruction>(v);
-    if (funcToInvoke(i)){
+    if (auto i = dyn_cast<Instruction>(v)){
+      if (funcToInvoke(i)){
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+bool SCC::iterateOverValues (std::function<bool (Value *)> funcToInvoke){
+
+  /*
+   * Iterate over the internal instructions of the SCC.
+   */
+  for (auto nodePair : this->internalNodePairs()){
+    auto v = nodePair.first;
+    if (funcToInvoke(v)){
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool SCC::iterateOverAllValues (std::function<bool (Value *)> funcToInvoke){
+
+  /*
+   * Iterate over the nodes of the SCC.
+   */
+  for (auto node : this->getNodes()){
+    auto v = node->getT();
+    if (funcToInvoke(v)){
       return true;
     }
   }

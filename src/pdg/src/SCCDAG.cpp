@@ -79,7 +79,27 @@ SCCDAG::SCCDAG(PDG *pdg) {
   /*
    * Add live-ins and live-outs.
    */
-  //TODO
+  for (auto nodeI : pdg->externalNodePairs()) {
+
+    /*
+     * Fetch the live in/out variable.
+     */
+    auto externalNode = nodeI.second;
+    auto externalValue = externalNode->getT();
+
+    /*
+     * Create an SCC for it.
+     * This is because the template class DG is not general enough to handle different types between internal and external nodes.
+     */
+    std::set<DGNode<Value> *> nodes;
+    nodes.insert(externalNode);
+    auto newSCC = new SCC(nodes, false);
+
+    /*
+     * Add the live-in/out SCC to the SCCDAG as external node.
+     */
+    this->addNode(newSCC, /*inclusion=*/ false);
+  }
 
   return ;
 }
@@ -216,7 +236,7 @@ bool SCCDAG::iterateOverInstructions (std::function<bool (Instruction *)> funcTo
   return false ;
 }
 
-bool SCCDAG::iterateOverLiveInAndLiveOut (std::function<bool (Instruction *)> funcToInvoke){
+bool SCCDAG::iterateOverLiveInAndLiveOut (std::function<bool (Value *)> funcToInvoke){
 
   /*
    * Iterate over live-ins and live-outs of SCCs.
@@ -229,7 +249,7 @@ bool SCCDAG::iterateOverLiveInAndLiveOut (std::function<bool (Instruction *)> fu
      * Iterate over internal nodes of the current SCC.
      */
     auto SCC = sccNodePair.first;
-    if (SCC->iterateOverInstructions(funcToInvoke)){
+    if (SCC->iterateOverValues(funcToInvoke)){
       return true;
     }
   }
@@ -249,6 +269,25 @@ bool SCCDAG::iterateOverAllInstructions (std::function<bool (Instruction *)> fun
      */
     auto SCC = sccNode->getT();
     if (SCC->iterateOverAllInstructions(funcToInvoke)){
+      return true;
+    }
+  }
+
+  return false ;
+}
+
+bool SCCDAG::iterateOverAllValues (std::function<bool (Value *)> funcToInvoke){
+
+  /*
+   * Iterate over SCC.
+   */
+  for (auto sccNode : this->getNodes()){
+
+    /*
+     * Iterate over instructions contained in the SCC.
+     */
+    auto SCC = sccNode->getT();
+    if (SCC->iterateOverAllValues(funcToInvoke)){
       return true;
     }
   }
