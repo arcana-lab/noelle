@@ -35,12 +35,11 @@ namespace llvm {
    */
   class SCCDAG : public DG<SCC> {
     public:
-      static SCCDAG * createSCCDAGFrom (PDG *);
 
       /*
        * Constructor.
        */
-      SCCDAG() ;
+      SCCDAG (PDG *loopDependenceGraph) ;
 
       /*
        * Check if @inst is included in the SCCDAG.

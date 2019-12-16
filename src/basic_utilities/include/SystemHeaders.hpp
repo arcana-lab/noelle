@@ -26,6 +26,7 @@
 #include "llvm/IR/InstrTypes.h"
 #include <llvm/ADT/StringRef.h>
 #include "llvm/ADT/iterator_range.h"
+#include "llvm/ADT/SCCIterator.h"
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"

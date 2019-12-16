@@ -96,7 +96,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
    */
   filename.clear();
   ros << "sccdg-" << F.getName() << ".dot";
-  SCCDAG *sccSubgraph = SCCDAG::createSCCDAGFrom(subgraph);
+  auto sccSubgraph = new SCCDAG(subgraph);
   writeGraph<SCCDAG>(ros.str(), sccSubgraph);
 
   /*

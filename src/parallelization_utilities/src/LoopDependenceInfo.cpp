@@ -136,7 +136,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
       loopInternals.push_back(internalNode.first);
   }
   this->loopDG = loopDG->createSubgraphFromValues(loopInternals, false);
-  auto loopSCCDAG = SCCDAG::createSCCDAGFrom(this->loopDG);
+  auto loopSCCDAG = new SCCDAG(this->loopDG);
 
   /*
    * Safety check: check that the SCCDAG includes all instructions of the loop given as input.

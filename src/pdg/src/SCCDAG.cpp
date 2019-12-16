@@ -8,31 +8,13 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "llvm/Pass.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Analysis/AliasAnalysis.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/ADT/SCCIterator.h"
-#include <set>
-#include <unordered_map>
-
-#include "../include/DGGraphTraits.hpp"
-#include "../include/SCCDAG.hpp"
+#include <SystemHeaders.hpp>
+#include "DGGraphTraits.hpp"
+#include "SCCDAG.hpp"
 
 using namespace llvm ;
 
-SCCDAG::SCCDAG() {
-  return ;
-}
-
-SCCDAG * SCCDAG::createSCCDAGFrom (PDG *pdg) {
-
-  /*
-   * Create an empty SCCDAG.
-   */
-  auto sccDAG = new SCCDAG();
+SCCDAG::SCCDAG(PDG *pdg) {
 
   /*
    * Iterate over all disconnected subgraphs of the PDG and calculate their strongly connected components
@@ -64,7 +46,7 @@ SCCDAG * SCCDAG::createSCCDAGFrom (PDG *pdg) {
 
         if (!uniqueSCC) continue;
         auto scc = new SCC(nodes);
-        sccDAG->addNode(scc, /*inclusion=*/ true);
+        this->addNode(scc, /*inclusion=*/ true);
       }
     }
 
@@ -75,9 +57,10 @@ SCCDAG * SCCDAG::createSCCDAGFrom (PDG *pdg) {
     delete subgraphPDG;
   }
 
-  sccDAG->markValuesInSCC();
-  sccDAG->markEdgesAndSubEdges();
-  return sccDAG;
+  this->markValuesInSCC();
+  this->markEdgesAndSubEdges();
+
+  return ;
 }
       
 bool SCCDAG::doesItContain (Instruction *inst) const {
