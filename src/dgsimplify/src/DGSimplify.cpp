@@ -365,9 +365,14 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
  * most memory edges to other internal/external values
  */
 bool llvm::DGSimplify::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
+
+  /*
+   * Fetch the SCCDAG
+   */
+  auto SCCDAG = LDI->sccdagAttrs.getSCCDAG();
+
   std::set<SCC *> sccsToCheck;
-  for (auto sccNode : LDI->sccdagAttrs.getSCCDAG()->getNodes()) {
-    auto scc = sccNode->getT();
+  SCCDAG->iterateOverSCCs([LDI, &sccsToCheck](SCC *scc) -> bool{
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
     if (  true
           && (!sccInfo->canExecuteReducibly())
@@ -376,7 +381,9 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo
       ){
       sccsToCheck.insert(scc);
     }
-  }
+
+    return false;
+  });
 
   /*
    * NOTE: if there are more than two non-trivial SCCs, then
