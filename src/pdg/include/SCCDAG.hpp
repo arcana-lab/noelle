@@ -89,8 +89,8 @@ namespace llvm {
 
 
     protected:
-      void markValuesInSCC();
-      void markEdgesAndSubEdges();
+      void markValuesInSCC (void);
+      void markEdgesAndSubEdges (void);
 
       unordered_map<Value *, DGNode<SCC> *> valueToSCCNode;
   };
