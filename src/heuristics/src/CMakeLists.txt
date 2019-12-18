@@ -34,6 +34,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../threadpool/include 
   ../../loops/include
   ../../parallelization_utilities/include 
+  ../../talkdown/include
   )
 
 # Declare the LLVM pass to compile

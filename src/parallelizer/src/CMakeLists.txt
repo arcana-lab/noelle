@@ -40,6 +40,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../helix/include 
   ../../hotprofiler/include
   ../../loop_distribution/include
+  ../../talkdown/include
   ./
   )
 

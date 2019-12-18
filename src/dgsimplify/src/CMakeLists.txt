@@ -28,6 +28,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../pdg/include 
   ../../loops/include
   ../../parallelization_utilities/include 
+  ../../talkdown/include
   ../include 
   )
 

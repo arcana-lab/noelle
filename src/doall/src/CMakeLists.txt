@@ -35,6 +35,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../heuristics/include 
   ../../parallelization_technique/include 
   ../../hotprofiler/include 
+  ../../talkdown/include
   ../include 
   ./ 
   )
