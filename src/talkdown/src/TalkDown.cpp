@@ -8,15 +8,26 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 #include "TalkDown.hpp"
 
+/*
+ * Options for talkdown
+ */
+static cl::opt<bool> TalkDownDisable("noelle-talkdown-disable", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable Talkdown"));
+      
 bool llvm::TalkDown::doInitialization (Module &M) { 
+  this->enabled = (TalkDownDisable.getNumOccurrences() == 0);
 
   return false;
 }
 
 bool llvm::TalkDown::runOnModule (Module &M) {
+  errs() << "AA\n";
+  if (!this->enabled){
+    return false;
+  }
+  errs() << "AA2\n";
+
 
   return false;
 }

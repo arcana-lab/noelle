@@ -29,5 +29,6 @@ namespace llvm {
       void getAnalysisUsage(AnalysisUsage &AU) const override ;
 
     private:
+      bool enabled;
   };
 }
