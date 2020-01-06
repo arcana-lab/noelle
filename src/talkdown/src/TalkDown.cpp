@@ -22,12 +22,9 @@ bool llvm::TalkDown::doInitialization (Module &M) {
 }
 
 bool llvm::TalkDown::runOnModule (Module &M) {
-  errs() << "AA\n";
   if (!this->enabled){
     return false;
   }
-  errs() << "AA2\n";
-
 
   return false;
 }
