@@ -283,7 +283,7 @@ bool AllocAA::isPrimitiveArrayPointer (Value *V, std::set<Instruction *> &userIn
 }
 
 bool AllocAA::isPrimitiveArray (Value *V, std::set<Instruction *> &userInstructions) {
-  bool isPrimitive = true;
+  auto isPrimitive = true;
   for (auto I : userInstructions) {
     if (auto cast = dyn_cast<CastInst>(I)) {
       std::set<Instruction *> castUsers;
@@ -294,8 +294,11 @@ bool AllocAA::isPrimitiveArray (Value *V, std::set<Instruction *> &userInstructi
       if (doesValueNotEscape({ GEPUser }, GEPUser)) continue;
     }
     if (auto callUser = dyn_cast<CallInst>(I)) {
-      auto fnName = callUser->getCalledFunction()->getName();
-      if (readOnlyFunctionNames.find(fnName) != readOnlyFunctionNames.end()) continue;
+      auto calleeFn = callUser->getCalledFunction();
+      if (calleeFn != nullptr){
+        auto fnName = calleeFn->getName();
+        if (readOnlyFunctionNames.find(fnName) != readOnlyFunctionNames.end()) continue;
+      }
     }
 
     if (verbose >= AllocAAVerbosity::Maximal) {
