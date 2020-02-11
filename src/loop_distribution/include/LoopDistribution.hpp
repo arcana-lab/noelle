@@ -47,6 +47,32 @@ namespace llvm {
       /*
        * Methods
        */
+      bool splitLoop (
+        LoopDependenceInfo const &LDI,
+        std::set<Instruction *> &instsToPullOut
+      );
+
+      bool splitWouldRequireForwardingDataDependencies (
+        LoopDependenceInfo const &LDI,
+        std::set<Instruction *> const &instsToPullOut,
+        std::set<Instruction *> const &controlInsts
+      );
+
+      bool allInstsToPullOutControlDependOnLoopExitingBlock (
+        LoopDependenceInfo const &LDI,
+        std::set<Instruction *> const &instsToPullOut
+      );
+
+      std::set<Instruction *> getInstructionsThatControlTheLoop (
+        LoopDependenceInfo const &LDI,
+        std::set<SCC *> const &controlSCCs
+      );
+
+      void doSplit (
+        LoopDependenceInfo const &LDI,
+        std::set<Instruction *> const &instsToPullOut,
+        std::set<Instruction *> const &controlInstructions
+      );
 
   };
 
