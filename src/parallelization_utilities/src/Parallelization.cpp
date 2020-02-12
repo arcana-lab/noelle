@@ -182,7 +182,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       auto mInsts = profiles.getModuleInstructions();
       auto fInsts = profiles.getFunctionInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
-      if (hotness <= minimumHotness){
+      if (hotness < minimumHotness){
         errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
         continue ;
       }
@@ -218,7 +218,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         auto mInsts = profiles.getModuleInstructions();
         auto lInsts = profiles.getLoopInstructions(loop);
         auto hotness = ((double)lInsts) / ((double)mInsts);
-        if (hotness <= minimumHotness){
+        if (hotness < minimumHotness){
           errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
           currentLoopIndex++;
           continue ;

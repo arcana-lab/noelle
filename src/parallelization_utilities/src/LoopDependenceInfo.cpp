@@ -51,6 +51,11 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE);
 
   /*
+   * Set the nesting level.
+   */
+  this->nestingLevel = l->getLoopDepth();
+
+  /*
    * Free the memory.
    */
   delete loopDG;
@@ -72,6 +77,10 @@ LoopDependenceInfo::LoopDependenceInfo(
   }
 
   return ;
+}
+      
+uint32_t LoopDependenceInfo::getNestingLevel (void) const {
+  return this->nestingLevel;
 }
 
 LoopDependenceInfo::~LoopDependenceInfo() {

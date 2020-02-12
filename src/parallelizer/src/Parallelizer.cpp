@@ -31,6 +31,7 @@ bool Parallelizer::parallelizeLoop (
     errs() << "Parallelizer: Start\n";
     errs() << "Parallelizer:  Function = \"" << LDI->function->getName() << "\"\n";
     errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *LDI->header->getFirstNonPHI() << "\"\n";
+    errs() << "Parallelizer:  Nesting level = " << LDI->getNestingLevel() << "\n";
   }
 
   /*
