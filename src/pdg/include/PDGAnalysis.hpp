@@ -23,7 +23,7 @@
 using namespace llvm;
 
 namespace llvm {
-  enum class PDGVerbosity { Disabled, Minimal, Maximal };
+  enum class PDGVerbosity { Disabled, Minimal, Maximal, MaximalAndPDG };
 
   struct PDGAnalysis : public ModulePass {
     public:

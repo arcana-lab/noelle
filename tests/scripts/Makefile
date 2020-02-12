@@ -50,9 +50,6 @@ $(THREADER).bc: $(THREADER).cpp
 $(OPTIMIZED): test_dswp.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
-test_pdgdot.bc: test_seq.bc
-	$(OPT) $(PRINTPASSES) $(ANALYSES) -heuristics -PDGPrinter $^ -o $@
-
 test_dswp_unoptimized.bc: test_seq.bc output.prof
 	noelle-pgo output.prof $(PARALLELIZATION_OPTIONS) $< -o $@
 	llvm-dis $@
@@ -97,7 +94,10 @@ show_passes: test_seq.bc output.prof
 show_time: test_seq.bc output.prof
 	noelle-pgo output.prof $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
+pdg: test_seq.bc
+	noelle-pdg $^
+
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
 
-.PHONY: show_passes show_time
+.PHONY: test_correctness show_passes show_time pdg clean

@@ -15,7 +15,7 @@
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
 
-static cl::opt<int> Verbose("noelle-pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
+static cl::opt<int> Verbose("noelle-pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal, 3:maximal plus dumping PDG"));
 
 using namespace llvm;
 
@@ -39,8 +39,31 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool llvm::PDGAnalysis::runOnModule (Module &M){
+
+  /*
+   * Store global information.
+   */
   this->M = &M;
   this->wpa = &getAnalysis<WPAPass>();
+
+  /*
+   * Check if we should print the PDG
+   */
+  if (this->verbose >= PDGVerbosity::MaximalAndPDG){
+
+    /*
+     * Print the PDG
+     */
+    auto currentPDG = this->getPDG();
+    auto localPDGPrinter = new PDGPrinter();
+    auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
+    auto getLoopInfo = [this](Function *f) -> LoopInfo& {
+      auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
+      return LI;
+    };
+    localPDGPrinter->printPDG(M, callGraph, currentPDG, getLoopInfo);
+  }
+
   return false;
 }
 

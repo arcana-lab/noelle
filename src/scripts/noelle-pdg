@@ -1,0 +1,10 @@
+#!/bin/bash
+
+installDir
+
+# Set the command to execute
+cmdToExecute="noelle-load -PDGAnalysis -noelle-pdg-verbose=3 -disable-output $@" 
+echo $cmdToExecute ;
+
+# Execute the command
+eval $cmdToExecute 

@@ -210,32 +210,3 @@ void PDGPrinter::groupNodesByCluster (unordered_map<std::string, std::set<std::s
     clusterNodes[clusterName].insert(nodeName);
   }
 }
-
-PDGPrinterWrapperPass::PDGPrinterWrapperPass () : ModulePass{ID} {
-  return ;
-}
-
-llvm::PDGPrinterWrapperPass::~PDGPrinterWrapperPass() {
-}
-
-void llvm::PDGPrinterWrapperPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<PDGAnalysis>();
-  AU.addRequired<CallGraphWrapperPass>();
-  AU.setPreservesAll();
-  return ;
-}
-
-bool PDGPrinterWrapperPass::doInitialization (Module &M) {
-  return false;
-}
-
-bool llvm::PDGPrinterWrapperPass::runOnModule (Module &M) {
-  auto &pdgAnalysis = getAnalysis<PDGAnalysis>();
-  auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
-  auto getLoopInfo = [this](Function *f) -> LoopInfo& {
-    auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-    return LI;
-  };
-  (new PDGPrinter())->printPDG(M, callGraph, pdgAnalysis.getPDG(), getLoopInfo);
-  return false;
-}

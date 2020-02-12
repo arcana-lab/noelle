@@ -17,6 +17,7 @@ bool Parallelizer::applyEnablers (
     Parallelization &par,
     LoopDistribution &loopDist
   ){
+  return false;
 
   /*
    * Fetch the SCCDAG of the loop.

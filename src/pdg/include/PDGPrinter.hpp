@@ -88,16 +88,4 @@ namespace llvm {
       void writeClusterToFile(const unordered_map<std::string, std::set<std::string>> &clusterNodes, ofstream &cfile);
   };
 
-  class PDGPrinterWrapperPass : public ModulePass {
-    public:
-      static char ID;
-      PDGPrinterWrapperPass();
-      virtual ~PDGPrinterWrapperPass();
-
-      bool doInitialization (Module &M) override ;
-
-      void getAnalysisUsage(AnalysisUsage &AU) const override ;
-
-      bool runOnModule (Module &M) override ;
-  };
 }
