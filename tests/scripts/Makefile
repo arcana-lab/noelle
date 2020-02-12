@@ -77,7 +77,7 @@ default.profraw: test_seq_prof input.txt
 	./$< `cat input.txt` 
 
 test_seq_prof: test_seq_prof.bc
-	$(CPP) -pthreads -fprofile-instr-generate -lstdc++ $^ $(LIBS) -o $@
+	$(CPP) -O0 -pthreads -fprofile-instr-generate -lstdc++ $^ $(LIBS) -o $@
 
 test_seq_prof.bc: test_seq.bc
 	@../../scripts/inject_hotprofiler.sh $^ $@
