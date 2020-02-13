@@ -123,8 +123,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
      * Print each SCC within the loop SCCDAG.
      */
     auto sccCount = 0;
-    for (auto sccI = sccSubgraph->begin_nodes(); sccI != sccSubgraph->end_nodes(); ++sccI) {
-      auto scc = (*sccI)->getT();
+    for (auto scc : sccSubgraph->getSCCs()){
       filename.clear();
       ros << "pdg-function-" << F.getName() << "-loop" << loopCount << "-SCCDAG-SCC" << sccCount << ".dot";
       writeGraph<SCC>(ros.str(), scc);

@@ -310,6 +310,16 @@ bool SCCDAG::iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke){
 
   return false ;
 }
+      
+std::unordered_set<SCC *> SCCDAG::getSCCs (void) {
+  std::unordered_set<SCC *> s;
+  for (auto sccIPair : this->internalNodePairs()){
+    auto scc = sccIPair.first;
+    s.insert(scc);
+  }
+
+  return s;
+}
 
 SCCDAG::~SCCDAG() {
   for (auto *edge : allEdges){

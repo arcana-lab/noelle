@@ -20,6 +20,7 @@
 #include "llvm/ADT/iterator_range.h"
 #include <set>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "DGBase.hpp"
 #include "SCC.hpp"
@@ -55,6 +56,11 @@ namespace llvm {
        * Iterate over SCCs until @funcToInvoke returns true or no other SCC exists.
        */
       bool iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke);
+
+      /*
+       * Return the range that includes all SCCs.
+       */
+      std::unordered_set<SCC *> getSCCs (void) ;
 
       /*
        * Iterate over instructions inside the SCCDAG until @funcToInvoke returns true or no other instruction exists.
