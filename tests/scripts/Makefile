@@ -29,13 +29,11 @@ all: baseline testseq $(OPTIMIZED)
 %.bc: %.c
 	$(CC) $(INCLUDES) -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
 	noelle-norm $@ -o $@
-	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
 %.bc: %.cpp
 	$(CPP) $(INCLUDES) -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c $< -o $@
 	noelle-norm $@ -o $@
-	$(OPT) -dot-cfg -disable-output $@
 	llvm-dis $@
 
 baseline: baseline.bc

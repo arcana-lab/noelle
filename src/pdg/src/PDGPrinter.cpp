@@ -83,46 +83,65 @@ void PDGPrinter::collectAllFunctionsInCallGraph (Module &M, CallGraph &callGraph
 void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
 
   /*
-   * Name and graph the function's DG
+   * Print the DG of the function.
    */
   std::string filename;
   raw_string_ostream ros(filename);
-  ros << "pdg-" << F.getName() << ".dot";
+  ros << "pdg-function-" << F.getName() << ".dot";
   auto subgraph = graph->createFunctionSubgraph(F);
   writeGraph<PDG>(ros.str(), subgraph);
-
-  /*
-   * Name and graph the function's SCCDAG
-   */
-  filename.clear();
-  ros << "sccdg-" << F.getName() << ".dot";
-  auto sccSubgraph = new SCCDAG(subgraph);
-  writeGraph<SCCDAG>(ros.str(), sccSubgraph);
-
-  /*
-   * Name and graph each SCC within the function's SCCDAG
-   */
-  // int count = 0;
-  // for (auto sccI = sccSubgraph->begin_nodes(); sccI != sccSubgraph->end_nodes(); ++sccI) {
-  //   auto scc = (*sccI)->getT();
-  //   filename.clear();
-  //   ros << "scc-" << F.getName() << "-" << (count++) << ".dot";
-  //   writeGraph<SCC>(ros.str(), scc);
-  // }
-
-  delete sccSubgraph;
   delete subgraph;
 
   /*
-   * Name and graph the loop DG of the function
+   * Check if the function has loops.
    */
   if (LI.empty()) return ;
-  filename.clear();
-  ros << "pdg-" << F.getName() << "-loop1.dot";
 
-  subgraph = graph->createLoopsSubgraph(*(LI.getLoopsInPreorder().begin()));
-  writeGraph<PDG>(ros.str(), subgraph);
-  delete subgraph;
+  /*
+   * Print the DG of each loop.
+   */
+  auto loopCount = 0;
+  for (auto currentLoop : LI.getLoopsInPreorder()){
+
+    /*
+     * Print the loop DG.
+     */
+    filename.clear();
+    ros << "pdg-function-" << F.getName() << "-loop" << loopCount << ".dot";
+    subgraph = graph->createLoopsSubgraph(currentLoop);
+    writeGraph<PDG>(ros.str(), subgraph);
+
+    /*
+     * Print the SCCDAG of the loop.
+     */
+    filename.clear();
+    ros << "pdg-function-" << F.getName() << "-loop" << loopCount << "-SCCDAG.dot";
+    auto sccSubgraph = new SCCDAG(subgraph);
+    writeGraph<SCCDAG>(ros.str(), sccSubgraph);
+
+    /*
+     * Print each SCC within the loop SCCDAG.
+     */
+    auto sccCount = 0;
+    for (auto sccI = sccSubgraph->begin_nodes(); sccI != sccSubgraph->end_nodes(); ++sccI) {
+      auto scc = (*sccI)->getT();
+      filename.clear();
+      ros << "pdg-function-" << F.getName() << "-loop" << loopCount << "-SCCDAG-SCC" << sccCount << ".dot";
+      writeGraph<SCC>(ros.str(), scc);
+      sccCount++;
+    }
+    
+    /*
+     * Free the memory
+     */
+    delete sccSubgraph;
+    delete subgraph;
+
+    /*
+     * Increase the loop count ID
+     */
+    loopCount++;
+  }
 
   return ;
 }
