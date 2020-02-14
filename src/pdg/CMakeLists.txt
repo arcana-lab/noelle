@@ -28,4 +28,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/DGBase.hpp include/DGGraphTraits.hpp include/PDG.hpp include/PDGAnalysis.hpp include/SCC.hpp include/SCCDAG.hpp include/PDGPrinter.hpp DESTINATION include)
+install(PROGRAMS include/Assumptions.h include/DGBase.hpp include/DGGraphTraits.hpp include/PDG.hpp include/PDGAnalysis.hpp include/SCC.hpp include/SCCDAG.hpp include/PDGPrinter.hpp DESTINATION include)
