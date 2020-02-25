@@ -25,7 +25,7 @@ SCCDAG::SCCDAG(PDG *pdg) {
   auto subgraphs = pdg->getDisconnectedSubgraphs();
   for (auto subgraphNodeset : subgraphs) {
     PDG subgraphPDG{};
-    pdg->addNodesIntoNewGraph(*cast<DG<Value>>(&subgraphPDG), *subgraphNodeset, *subgraphNodeset->begin());
+    pdg->copyNodesIntoNewGraph(*cast<DG<Value>>(&subgraphPDG), *subgraphNodeset, *subgraphNodeset->begin());
     delete subgraphNodeset;
 
     std::set<Value *> valuesInSCCs;
@@ -42,7 +42,6 @@ SCCDAG::SCCDAG(PDG *pdg) {
         for (auto node : *pdgI) {
           if (valuesInSCCs.find(node->getT()) != valuesInSCCs.end()) {
             uniqueSCC = false;
-            break;
           }
           nodes.insert(node);
           valuesInSCCs.insert(node->getT());
