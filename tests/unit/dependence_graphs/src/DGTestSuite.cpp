@@ -54,6 +54,7 @@ bool DGTestSuite::doInitialization (Module &M) {
 void DGTestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<CallGraphWrapperPass>();
 }
 
 bool DGTestSuite::runOnModule (Module &M) {
@@ -62,6 +63,7 @@ bool DGTestSuite::runOnModule (Module &M) {
   this->mainF = M.getFunction("main");
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainF);
 
+  errs() << "DGTestSuite: Running tests\n";
   suite->runTests((ModulePass &)*this);
 
   return false;
