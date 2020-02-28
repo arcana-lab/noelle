@@ -607,9 +607,28 @@ namespace llvm {
     map.erase(theT);
     allNodes.erase(node);
 
-    for (auto edge : node->getIncomingEdges()) edge->getOutgoingNode()->removeConnectedNode(node);
-    for (auto edge : node->getOutgoingEdges()) edge->getIncomingNode()->removeConnectedNode(node);
-    for (auto edge : node->getAllConnectedEdges()) allEdges.erase(edge);
+    /*
+     * Collect edges to operate on before doing deletes
+     */
+    std::set<DGEdge<T> *> incomingToNode;
+    std::set<DGEdge<T> *> outgoingFromNode;
+    std::set<DGEdge<T> *> allToAndFromNode;
+    for (auto edge : node->getIncomingEdges()) incomingToNode.insert(edge);
+    for (auto edge : node->getOutgoingEdges()) outgoingFromNode.insert(edge);
+    for (auto edge : node->getAllConnectedEdges()) allToAndFromNode.insert(edge);
+
+    /*
+     * Delete relations to edges and edges themselves
+     */
+    for (auto edge : incomingToNode) edge->getOutgoingNode()->removeConnectedNode(node);
+    for (auto edge : outgoingFromNode) edge->getIncomingNode()->removeConnectedNode(node);
+    for (auto edge : allToAndFromNode)
+    {
+      allEdges.erase(edge);
+      delete edge;
+    }
+
+    delete node;
   }
 
   template <class T>
@@ -618,6 +637,7 @@ namespace llvm {
     edge->getOutgoingNode()->removeConnectedEdge(edge);
     edge->getIncomingNode()->removeConnectedEdge(edge);
     allEdges.erase(edge);
+    delete edge;
   }
 
   template <class T>
@@ -657,13 +677,14 @@ namespace llvm {
   template <class T>
   raw_ostream & DG<T>::print(raw_ostream &stream)
   {
-    stream << "Total nodes: " << allNodes.size() << "\n";
-    stream << "Internal nodes: " << internalNodeMap.size() << "\n";
+    stream << "Total node count: " << allNodes.size() << "\n";
+    stream << "Internal node count: " << internalNodeMap.size() << "\n";
     for (auto pair : internalNodePairs()) pair.second->print(stream) << "\n";
-    stream << "External nodes: " << externalNodeMap.size() << "\n";
+    stream << "External node count: " << externalNodeMap.size() << "\n";
     for (auto pair : externalNodePairs()) pair.second->print(stream) << "\n";
-    stream << "Edges: " << allEdges.size() << "\n";
+    stream << "Edge count: " << allEdges.size() << "\n";
     for (auto edge : allEdges) edge->print(stream) << "\n";
+    return stream;
   }
 
   /*
