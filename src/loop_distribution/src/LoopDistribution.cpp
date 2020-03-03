@@ -80,16 +80,23 @@ bool LoopDistribution::splitLoop (
    */
   std::set<Instruction *> controlInstructions{};
   for (auto controlSCC : controlSCCs) {
+    errs() << "LoopDistribution: New Control SCC\n";
+    for (auto pair : controlSCC->internalNodePairs()) {
+      if (auto controlInst = dyn_cast<Instruction>(pair.second->getT())) {
+        if (controlInst->mayHaveSideEffects()){
+          errs() << "LoopDistribution: Abort: " << *controlInst << " is not clonable\n";
+          return false;
+        }
+        errs () << "LoopDistribution: Control SCC: " <<  *controlInst << "\n";
+        controlInstructions.insert(controlInst);
+      }
+    }
+    /*
     if (LDI.sccdagAttrs.clonableSCCs.find(controlSCC) == LDI.sccdagAttrs.clonableSCCs.end()) {
       errs() << "LoopDistribution: Abort: Not all SCCs that control the loop are cloneable\n";
       return false;
     }
-    for (auto pair : controlSCC->internalNodePairs()) {
-      if (auto controlInst = dyn_cast<Instruction>(pair.second->getT())) {
-        errs () << "Control SCC: " <<  *controlInst << "\n";
-        controlInstructions.insert(controlInst);
-      }
-    }
+    */
   }
 
   /*
@@ -110,11 +117,11 @@ bool LoopDistribution::splitLoop (
   }
 
   /*
-   * Require that all instructions in instsToPullOut control-depend on the loop exiting block
+   * Require that all instructions in instsToPullOut control-depend on a loop exiting block
    *   TODO(lukas): Ask if we are better off just checking if each instruction is in a loop BB
    */
   if (!this->allInstsToPullOutControlDependOnLoopExitingBlock(LDI, instsToPullOut)) {
-    errs() << "LoopDistribution: Abort: Not all instructions control-depend on the loop exiting block\n";
+    errs() << "LoopDistribution: Abort: Not all instructions control-depend on a loop exiting block\n";
     return false;
   }
 
@@ -155,7 +162,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
     auto i = cast<Instruction>(toOrFrom);
 
     /*
-     * Ignore dependencies between instructions in we are pulling out or were already cloned
+     * Ignore dependencies between instructions we are pulling out or were already cloned
      */
     if (true
         && instsToPullOut.find(i) == instsToPullOut.end()
@@ -205,7 +212,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
 
 /*
  * Checks that all instructions in instsToPullOut control-depend on the loop exiting block
- *   TODO(Lukas): Requires that there only be one exit block
+ *   TODO(Lukas): Too conservative, change to assert
  */
 bool LoopDistribution::allInstsToPullOutControlDependOnLoopExitingBlock (
   LoopDependenceInfo const &LDI,
@@ -213,31 +220,30 @@ bool LoopDistribution::allInstsToPullOutControlDependOnLoopExitingBlock (
   ){
 
   /*
-   * An exit block should have a single predecessor
-   */
-  auto loopExitingBlock = LDI.loopExitBlocks[0]->getSinglePredecessor();
-  if (!loopExitingBlock) {
-    errs() << "LoopDistribution: Exit block has more than one predecessor\n";
-    return false;
-  }
-
-  /*
    * Get a set of the instructions that control-depend on the loop exit
    */
   std::set<Instruction *> controlDependsOnExit{};
-  LDI.getLoopDG()->iterateOverDependencesFrom(
-    loopExitingBlock->getTerminator(),
-    true,  // Control
-    false, // Memory
-    false, // Register
-    [&controlDependsOnExit](Value *toValue,
-                            DataDependenceType ddType) -> bool {
-      if (auto i = dyn_cast<Instruction>(toValue)) {
-        controlDependsOnExit.insert(i);
+  for (auto loopExitBlock : LDI.loopExitBlocks) {
+
+    /*
+     * An exit block should have a single predecessor
+     */
+    auto loopExitingBlock = LDI.loopExitBlocks[0]->getSinglePredecessor();
+    assert(loopExitingBlock);
+    LDI.getLoopDG()->iterateOverDependencesFrom(
+      loopExitingBlock->getTerminator(),
+      true,  // Control
+      false, // Memory
+      false, // Register
+      [&controlDependsOnExit](Value *toValue,
+                              DataDependenceType ddType) -> bool {
+        if (auto i = dyn_cast<Instruction>(toValue)) {
+          controlDependsOnExit.insert(i);
+        }
+        return false;
       }
-      return false;
-    }
-  );
+    );
+  }
 
   /*
    * Check if controlDependsOnExit is a superset of instsToPullOut
@@ -413,26 +419,6 @@ void LoopDistribution::doSplit (
     }
   }
   errs() << "LoopDistribution: Finished removing instructions from the original loop\n";
-
-  /*
-   * Remove instructions that are useless (we didn't need to clone them)
-   */
-  std::vector<Instruction *> uselessInstructions{};
-  for (auto &BB : LDI.loopBBs) {
-    auto cloneBB = bbMap.at(BB);
-    for (auto &cloneI : *cloneBB) {
-      if (cloneI.use_empty() && cloneI.isSafeToRemove()) {
-        uselessInstructions.push_back(&cloneI);
-        errs() << "LoopDistribution: Didn't need to clone " << cloneI << "\n";
-        break;
-      }
-    }
-  }
-  /*
-  for (auto uselessI : uselessInstructions) {
-    uselessI->eraseFromParent();
-  }
-  */
 
   errs() << "LoopDistribution: Success: Finished split of " << *LDI.function << "\n";
   return ;
