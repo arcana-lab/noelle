@@ -318,7 +318,8 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *otherCall, CallInst *call){
-  auto makeRefEdge = false, makeModEdge = false;
+  auto makeRefEdge = false, makeModEdge = false, makeModRefEdge = false;
+  auto reverseRefEdge = false, reverseModEdge = false, reverseModRefEdge = false;
 
   /*
    * Query the LLVM alias analyses.
@@ -329,14 +330,28 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
       break;
     case ModRefInfo::Mod:
       makeModEdge = true;
+      switch (AA.getModRefInfo(otherCall, call)) {
+        case ModRefInfo::Ref:
+          reverseRefEdge = true;
+          break;
+        case ModRefInfo::Mod:
+          reverseModEdge = true;
+          break;
+        case ModRefInfo::ModRef:
+          reverseModRefEdge = true;
+          break;
+        default:
+          abort();
+      }
       break;
     case ModRefInfo::ModRef:
-      makeRefEdge = makeModEdge = true;
+      makeModRefEdge = true;
       break;
   }
   if (  true
         && (!makeRefEdge)
         && (!makeModEdge)
+        && (!makeModRefEdge)
     ){
     return ;
   }
@@ -354,7 +369,29 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
     pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
   }
   if (makeModEdge) {
-    pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
+    /*
+     * Dependency of Mod result between call and otherCall is depend on the reverse getModRefInfo result
+     */
+    if (reverseRefEdge) {
+      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
+    }
+    if (reverseModEdge) {
+      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
+    }
+    if (reverseModRefEdge) {
+      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
+      pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
+    }
+  }
+  if (makeModRefEdge) {
+    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+    pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
+    pdg->addEdge((Value*)otherCall, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);    
   }
 
   return ;
