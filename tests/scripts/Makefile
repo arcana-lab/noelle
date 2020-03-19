@@ -4,7 +4,7 @@ CPP=clang++
 OPT=opt
 
 # Libraries
-LIBS=-lm
+LIBS=-lm -lstdc++ -lpthread
 
 # Set the runtime flags
 RUNTIME_CFLAGS="-DDEBUG"
@@ -65,6 +65,9 @@ test_seq.bc: test.bc $(THREADER).bc
 	noelle-pre "$@"
 	llvm-dis $@
 
+test_seq_enable.bc: test_seq.bc output.prof
+	noelle-enable output.prof $(PARALLELIZATION_OPTIONS) $< -o $@
+
 output.prof: default.profraw
 	llvm-profdata merge $^ -output=$@
 
@@ -72,7 +75,7 @@ default.profraw: test_seq_prof input.txt
 	./$< `cat input.txt` 
 
 test_seq_prof: test_seq_prof.bc
-	$(CPP) -O0 -pthreads -fprofile-instr-generate -lstdc++ $^ $(LIBS) -o $@
+	$(CPP) -fprofile-instr-generate $^ $(LIBS) -o $@
 
 test_seq_prof.bc: test_seq.bc
 	@../../scripts/inject_hotprofiler.sh $^ $@
