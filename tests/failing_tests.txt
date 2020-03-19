@@ -5,6 +5,7 @@ regression_1/ReductionIterationsAnd -noelle-verbose=3 -dswp-force -noelle-disabl
 regression_1/Simple -noelle-verbose=3 -dswp-force -noelle-disable-helix
 regression_2/3mm_polybench -noelle-verbose=3 -dswp-force -noelle-disable-helix -dswp-no-scc-merge
 regression_2/Correlation_polybench -noelle-verbose=3 -dswp-force -noelle-disable-helix -dswp-no-scc-merge
+regression_2/DependentIterations -noelle-verbose=3 -dswp-force -noelle-disable-helix -dswp-no-scc-merge
 regression_2/ReductionIterationsAnd -noelle-verbose=3 -dswp-force -noelle-disable-helix -dswp-no-scc-merge
 regression_2/Simple -noelle-verbose=3 -dswp-force -noelle-disable-helix -dswp-no-scc-merge
 regression_3/3mm_polybench -noelle-verbose=3 -dswp-force -noelle-disable-dswp
