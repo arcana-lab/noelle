@@ -8,11 +8,11 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "Parallelizer.hpp"
+#include "EnablersManager.hpp"
 
 using namespace llvm;
 
-bool Parallelizer::applyEnablers (
+bool EnablersManager::applyEnablers (
     LoopDependenceInfo *LDI,
     Parallelization &par,
     LoopDistribution &loopDist
@@ -22,12 +22,6 @@ bool Parallelizer::applyEnablers (
    * Fetch the SCCDAG of the loop.
    */
   auto SCCDAG = LDI->sccdagAttrs.getSCCDAG();
-  errs() << "XAN: INOUT: Start\n";
-  SCCDAG->iterateOverLiveInAndLiveOut([](Value *v) -> bool{
-      errs() << "XAN: INTOUT:   " << *v << "\n";
-      return false;
-      });
-  errs() << "XAN: INOUT: Exit\n";
 
   /*
    * Define the set of SCCs to bring outside the loop.
@@ -44,14 +38,6 @@ bool Parallelizer::applyEnablers (
      * Fetch the SCC metadata.
      */
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(currentSCC);
-    errs() << "XAN: Start\n";
-    errs() << "XAN:   Number of instructions = " << currentSCC->numberOfInstructions() << "\n";
-    currentSCC->iterateOverInstructions([](Instruction *i) -> bool {
-        errs() << "XAN:   " << *i << "\n";
-        return false;
-        });
-    errs() << "XAN: Exit\n";
-    currentSCC->print(errs());
 
     /*
      * Check if the current SCC can be removed (e.g., because it is due to induction variables).
@@ -87,7 +73,7 @@ bool Parallelizer::applyEnablers (
     /*
      * The SCC has been pulled out the loop.
      * We need to update all metadata about loops.
-     * To do so, we currently quit and rerun NOELLE.
+     * To do so, we currently quit and rerun noelle-enable
      */
     return true;
   }

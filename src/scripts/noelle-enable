@@ -1,0 +1,10 @@
+#!/bin/bash
+
+installDir
+
+# Set the command to execute
+cmdToExecute="noelle-load -load ${installDir}/lib/Enablers.so -parallelization -pgo-test-profile-file=$1 -block-freq -pgo-instr-use -HotProfiler -enablers ${@:2}"
+echo $cmdToExecute ;
+
+# Execute the command
+eval $cmdToExecute 
