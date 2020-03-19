@@ -6,6 +6,9 @@ all: regression performance buildunit rununit
 condor: download
 	cd condor ; make ; make submit ;
 
+condor_check: 
+	./scripts/condor_check.sh ;
+
 regression: download
 	./scripts/test_regression.sh ;
 
@@ -27,4 +30,4 @@ clean:
 	rm -rf regression_* ;
 	cd condor ; make clean ; 
 
-.PHONY: condor regression performance buildunit rununit download clean 
+.PHONY: condor condor_check regression performance buildunit rununit download clean 
