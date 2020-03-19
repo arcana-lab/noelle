@@ -35,21 +35,6 @@ bool Parallelizer::parallelizeLoop (
   }
 
   /*
-   * Apply parallelization enablers.
-   */
-  if (this->verbose != Verbosity::Disabled) {
-    errs() << "Parallelizer:  Run enablers\n";
-  }
-  auto enablersModifiedCode = this->applyEnablers(LDI, par, loopDist);
-  if (enablersModifiedCode){
-    if (this->verbose != Verbosity::Disabled) {
-      errs() << "Parallelizer:    Enablers have modified the code\n";
-      errs() << "Parallelizer: Exit\n";
-    }
-    return true;
-  }
-
-  /*
    * Parallelize the loop.
    */
   auto codeModified = false;

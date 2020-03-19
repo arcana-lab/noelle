@@ -10,24 +10,7 @@
  */
 #pragma once
 
-#include "llvm/Pass.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/DerivedUser.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include "llvm/Transforms/Utils/Cloning.h"
-#include "llvm/Transforms/Utils/LoopUtils.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpressions.h"
-#include "llvm/IR/Dominators.h"
-#include "llvm/Analysis/AssumptionCache.h"
-#include "llvm/IR/Mangler.h"
-#include "llvm/IR/IRBuilder.h"
+#include "SystemHeaders.hpp"
 
 #include "LoopDependenceInfo.hpp"
 #include "PDG.hpp"
@@ -35,21 +18,11 @@
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
-#include "HeuristicsPass.hpp"
-#include "DSWP.hpp"
-#include "DOALL.hpp"
-#include "HELIX.hpp"
-#include "Techniques.hpp"
 #include "LoopDistribution.hpp"
-
-#include <unordered_map>
-#include <set>
-#include <queue>
-#include <deque>
 
 namespace llvm {
 
-  struct Parallelizer : public ModulePass {
+  struct EnablersManager : public ModulePass {
     public:
 
       /*
@@ -58,14 +31,9 @@ namespace llvm {
       static char ID;
 
       /*
-       * Object fields
-       */
-      Function *printReachedI, *printPushedP, *printPulledP;
-
-      /*
        * Methods
        */
-      Parallelizer();
+      EnablersManager();
       bool doInitialization (Module &M) override ;
       bool runOnModule (Module &M) override ;
       void getAnalysisUsage (AnalysisUsage &AU) const override ;
@@ -75,33 +43,22 @@ namespace llvm {
       /*
        * Fields
        */
-      bool forceParallelization;
-      bool forceNoSCCPartition;
-      Verbosity verbose;
       double minHot;
-      std::set<Technique> enabledTechniques;
+      Verbosity verbose;
 
       /*
        * Methods
        */
-      bool parallelizeLoop (
+      std::vector<LoopDependenceInfo *> getLoopsToParallelize (
+          Module &M, 
+          Parallelization &par
+        );
+
+      bool applyEnablers (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        DSWP &dswp,
-        DOALL &doall,
-        HELIX &helix,
-        Heuristics *h,
         LoopDistribution &loopDist
-      );
-
-      std::vector<LoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par) ;
-
-      bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
-
-      /*
-       * Debug utilities
-       */
-      void printLoop (Loop *loop);
+        );
   };
 
 }
