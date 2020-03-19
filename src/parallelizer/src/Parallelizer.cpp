@@ -93,6 +93,7 @@ bool Parallelizer::parallelizeLoop (
    * Check if the loop has been parallelized.
    */
   if (!codeModified){
+    errs() << "Parallelizer: Exit (no code modified)\n";
     return false;
   }
 
