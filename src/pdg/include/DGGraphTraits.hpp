@@ -56,11 +56,24 @@ namespace llvm {
       raw_string_ostream ros(edgeStr);
       DGEdge<SCC> *edgesBetweenSCC = node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes());
       for (DGEdge<Value> *edge : edgesBetweenSCC->getSubEdges()) {
-        edge->getOutgoingT()->printAsOperand(ros);
-        edge->getIncomingT()->printAsOperand(ros << " -> ");
-        ros << "  ";
+        printValueStr(edge->getOutgoingT(), ros);
+        printValueStr(edge->getIncomingT(), ros << " -> ");
+        ros << " ; ";
       }
       return ros.str();
+    }
+
+    void printValueStr(Value *value, raw_ostream &ros) {
+      if (auto brI = dyn_cast<BranchInst>(value)) {
+        if (brI->isUnconditional()) {
+          value->print(ros);
+        } else {
+          ros << "br ";
+          printValueStr(brI->getCondition(), ros);
+        }
+      } else {
+        value->printAsOperand(ros);
+      }
     }
   };
 
