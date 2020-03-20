@@ -15,6 +15,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 
+#include "PDGPrinter.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
@@ -52,10 +53,15 @@ namespace llvm {
       static Values pdgIdentifiesRootValues (ModulePass &pass) ;
       static Values pdgIdentifiesLeafValues (ModulePass &pass) ;
       static Values pdgIdentifiesDisconnectedValueSets (ModulePass &pass) ;
+      static Values sccdagInternalNodesOfOutermostLoop (ModulePass &pass) ;
+      static Values sccdagExternalNodesOfOutermostLoop (ModulePass &pass) ;
+
+      Values getSCCValues(std::set<SCC *> sccs) ;
 
       TestSuite *suite;
       Module *M;
       Function *mainF;
       PDG *fdg;
+      SCCDAG *sccdagOutermostLoop;
   };
 }
