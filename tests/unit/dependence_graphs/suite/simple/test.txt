@@ -105,3 +105,16 @@ br label %6
   %3 = mul nsw i32 %0, 5 | %4 = sdiv i32 %3, 2 | %5 = add nsw i32 %4, 1 | %7 = icmp ult i32 %.0, 100 | %9 = add nsw i32 %.02, 1 |
   br i1 %7, label %8, label %16, !prof !30 | br label %14 | br label %6 | i32 %0
 ret i32 0
+
+sccdag internal nodes (of outermost loop)
+%15 = add i32 %.0, 1 | %7 = icmp ult i32 %.0, 100 | br i1 %7, label %8, label %16, !prof !30 | %.0 = phi i32 [ 0, %2 ], [ %15, %14 ]
+br label %6
+br label %14
+%.02 = phi i32 [ %0, %2 ], [ %10, %14 ] | %9 = add nsw i32 %.02, 1 | %10 = sub nsw i32 %9, 3
+%.01 = phi i32 [ %5, %2 ], [ %13, %14 ] | %11 = mul nsw i32 %.01, 3 | %12 = add nsw i32 %11, %10 | %13 = sdiv i32 %12, 2
+
+sccdag external nodes (of outermost loop)
+%5 = add nsw i32 %4, 1
+i32 %0
+%.02.lcssa = phi i32 [ %.02, %6 ]
+%.01.lcssa = phi i32 [ %.01, %6 ]

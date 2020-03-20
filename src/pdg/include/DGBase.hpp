@@ -222,8 +222,8 @@ namespace llvm {
       raw_ostream &print(raw_ostream &stream);
 
     protected:
-      DGNode(int32_t id) : theT(nullptr) {}
-      DGNode(int32_t id, T *node) : theT(node) {}
+      DGNode(int32_t id) : ID{id}, theT(nullptr) {}
+      DGNode(int32_t id, T *node) : ID{id}, theT(node) {}
 
       void removeInstance(DGEdge<T> *edge);
       void removeInstances(DGNode<T> *node);
@@ -497,13 +497,22 @@ namespace llvm {
   {
     std::set<DGNode<T> *> leafNodes;
     if (onlyInternal) {
-      for (auto node : allNodes)
-        if (node->numOutgoingEdges() == 0)
-          leafNodes.insert(node);
+      for (auto selfNode : allNodes) {
+        bool noChildNode = true;
+        for (auto edge : selfNode->getOutgoingEdges()) {
+          noChildNode &= (edge->getIncomingNode() == selfNode);
+        }
+        if (noChildNode)
+          leafNodes.insert(selfNode);
+      }
     } else {
-      for (auto nodePair : internalNodePairs()) {
-        if (nodePair.second->numOutgoingEdges() == 0)
-          leafNodes.insert(nodePair.second);
+      for (auto selfNodePair : internalNodePairs()) {
+        bool noChildNode = true;
+        for (auto edge : selfNodePair.second->getOutgoingEdges()) {
+          noChildNode &= (edge->getIncomingNode() == selfNodePair.second);
+        }
+        if (noChildNode)
+          leafNodes.insert(selfNodePair.second);
       }
     }
     return leafNodes;

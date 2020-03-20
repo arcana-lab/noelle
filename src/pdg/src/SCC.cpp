@@ -13,40 +13,90 @@
 
 using namespace llvm;
 
-SCC::SCC(std::set<DGNode<Value> *> nodes, bool connectToExternalValues) {
+SCC::SCC(std::set<DGNode<Value> *> internalNodes) {
+
+  /*
+   * Collect all internal values
+   */
+  std::set<Value *> internalValues;
+  for (auto node : internalNodes) {
+    internalValues.insert(node->getT());
+  }
+
+  /*
+   * Determine nodes that are not internal
+   * Compare by value and NOT node to avoid duplicate classification
+   *  if the set of nodes come from 2+ graph contexts
+   */
+  std::set<DGNode<Value> *> externalNodes;
+  for (auto node : internalNodes) {
+    for (auto edge : node->getOutgoingEdges()) {
+      if (internalValues.find(edge->getIncomingT()) == internalValues.end()) {
+        externalNodes.insert(edge->getIncomingNode());
+      }
+    }
+    for (auto edge : node->getIncomingEdges()) {
+      if (internalValues.find(edge->getOutgoingT()) == internalValues.end()) {
+        externalNodes.insert(edge->getOutgoingNode());
+      }
+    }
+  }
+
+  copyNodesAndEdges(internalNodes, externalNodes);
+}
+
+SCC::SCC(std::set<DGNode<Value> *> internalNodes, std::set<DGNode<Value> *> externalNodes) {
+  copyNodesAndEdges(internalNodes, externalNodes);
+}
+
+void SCC::copyNodesAndEdges(std::set<DGNode<Value> *> internalNodes, std::set<DGNode<Value> *> externalNodes) {
 
 	/*
-	 * Arbitrarily choose entry node from all nodes
+	 * Add all nodes by classification. Arbitrarily choose entry node from all nodes
 	 */
-	for (auto node : nodes) {
+	for (auto node : internalNodes) {
     addNode(node->getT(), /*internal=*/ true);
+  }
+  for (auto node : externalNodes) {
+    addNode(node->getT(), /*internal=*/ false);
   }
 	entryNode = (*allNodes.begin());
 
 	/*
-	 * Add internal/external edges on this SCC's instructions 
+	 * Add internal edges on this SCC's instructions 
 	 * Note: to avoid edge duplication, ignore incoming edges from internal nodes (they were considered in outgoing edges)
 	 */
-	for (auto node : nodes)
+  for (auto node : internalNodes) {
+		auto theT = node->getT();
+		for (auto edge : node->getOutgoingEdges())
+		{
+			auto incomingT = edge->getIncomingT();
+      if (isExternal(incomingT)) continue ;
+			copyAddEdge(*edge);
+		}
+  }
+
+	/*
+	 * Add external edges on this SCC's instructions 
+   */
+	for (auto node : internalNodes)
 	{
 		auto theT = node->getT();
 		for (auto edge : node->getOutgoingEdges())
 		{
 			auto incomingT = edge->getIncomingNode()->getT();
-      if (!connectToExternalValues && !isInternal(incomingT)) continue ;
-			fetchOrAddNode(incomingT, /*internal=*/ false);
+      if (isInternal(incomingT)) continue ;
 			copyAddEdge(*edge);
 		}
 		for (auto edge : node->getIncomingEdges())
 		{
 			auto outgoingT = edge->getOutgoingNode()->getT();
-			if (isInGraph(outgoingT)) continue;
-			fetchOrAddNode(outgoingT, /*internal=*/ false);
+			if (isInternal(outgoingT)) continue;
 			copyAddEdge(*edge);
 		}
 	}
 }
-        
+
 int64_t SCC::numberOfInstructions (void) const {
   return this->numInternalNodes();
 }
