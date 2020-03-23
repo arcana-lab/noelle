@@ -54,8 +54,6 @@ namespace llvm {
 
       void printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI);
 
-    private:
-
       template <class GT>
       void writeGraph(const std::string& filename, GT *graph) {
         const std::string unclusteredFilename = "_unclustered_" + filename;
@@ -76,6 +74,8 @@ namespace llvm {
           abort();
         }
       }
+
+    private:
 
       void collectAllFunctionsInCallGraph (
         Module &M, 

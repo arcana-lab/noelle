@@ -10,6 +10,8 @@ tests/regression/**/*.txt
 tests/performance/**/*.txt
 tests/regression/**/*.dot
 tests/performance/**/*.dot
+tests/unit/**/*.dot
+tests/**/*_prof
 
 # test output executables
 tests/regression/**/baseline
