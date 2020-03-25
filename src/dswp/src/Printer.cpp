@@ -102,7 +102,7 @@ void llvm::DSWP::printEnv (LoopDependenceInfo *LDI) const {
   return ;
 }
 
-void llvm::DSWP::writeStageGraphsAsDot (LoopDependenceInfo *LDI) const {
+void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
 
   PDGPrinter pdgPrinter;
   DG<DGString> stageGraph;
@@ -132,11 +132,11 @@ void llvm::DSWP::writeStageGraphsAsDot (LoopDependenceInfo *LDI) const {
     }
   }
 
-  pdgPrinter.writeGraph<DG<DGString>>("dswpStagesForLoop_" + std::to_string(LDI->getID()) + ".dot", &stageGraph);
+  pdgPrinter.writeGraph<DG<DGString>>("dswpStagesForLoop_" + std::to_string(LDI.getID()) + ".dot", &stageGraph);
   for (auto elem : elements) delete elem;
 }
 
-void llvm::DSWP::writeStageQueuesAsDot (LoopDependenceInfo *LDI) const {
+void llvm::DSWP::writeStageQueuesAsDot (const LoopDependenceInfo &LDI) const {
 
   PDGPrinter pdgPrinter;
   DG<DGString> queueGraph;
@@ -156,13 +156,13 @@ void llvm::DSWP::writeStageQueuesAsDot (LoopDependenceInfo *LDI) const {
   };
 
   for (auto &queue : this->queues) {
-    auto producerNode = addNode(queue.get()->fromStage, queue.get()->producer);
-    for (auto consumerI : queue.get()->consumers) {
-      auto consumerNode = addNode(queue.get()->toStage, consumerI);
+    auto producerNode = addNode(queue->fromStage, queue->producer);
+    for (auto consumerI : queue->consumers) {
+      auto consumerNode = addNode(queue->toStage, consumerI);
       queueGraph.addEdge(producerNode->getT(), consumerNode->getT());
     }
   }
 
-  pdgPrinter.writeGraph<DG<DGString>>("dswpQueuesForLoop_" + std::to_string(LDI->getID()) + ".dot", &queueGraph);
+  pdgPrinter.writeGraph<DG<DGString>>("dswpQueuesForLoop_" + std::to_string(LDI.getID()) + ".dot", &queueGraph);
   for (auto elem : elements) delete elem;
 }
