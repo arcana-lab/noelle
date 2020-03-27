@@ -15,7 +15,7 @@ newTestsFailed="" ;
 while IFS= read -r line; do
   grep -Fxq "$line" failing_tests.txt ;
   if test $? -ne 0 ; then
-    newTestsFailed="${newTestsFailed} $line" ;
+    newTestsFailed="${newTestsFailed}\n\t$line" ;
   fi
 done < "$currentResults"
 
@@ -33,4 +33,4 @@ if test "$newTestsFailed" == "" ; then
   exit 0;
 fi
 
-echo "  New tests failed: $newTestsFailed" ;
+echo -e "  New tests failed: $newTestsFailed" ;
