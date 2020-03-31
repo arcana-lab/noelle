@@ -65,6 +65,27 @@ void DSWP::addRemovableSCCsToStages (LoopDependenceInfo *LDI) {
   }
 }
 
+void DSWP::assertCompleteAndValidStagesStructure(LoopDependenceInfo *LDI) {
+  std::set<SCC *> allSCCs;
+  for (auto techniqueTask : this->tasks) {
+    auto task = (DSWPTask *)techniqueTask;
+    for (auto scc : task->stageSCCs) {
+      assert(allSCCs.find(scc) == allSCCs.end()
+        && "A non-clonable SCC is present in more than one DSWP stage");
+      allSCCs.insert(scc);
+    }
+
+    for (auto scc : task->removableSCCs) {
+      allSCCs.insert(scc);
+    }
+  }
+
+  for (auto node : LDI->sccdagAttrs.getSCCDAG()->getNodes()) {
+    assert(allSCCs.find(node->getT()) != allSCCs.end()
+      && "A loop's SCC is not present in any DSWP stage");
+  }
+}
+
 void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &par) {
 
   /*

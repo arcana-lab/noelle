@@ -77,6 +77,7 @@ namespace llvm {
       void clusterSubloops (LoopDependenceInfo *LDI);
       void generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI);
       void addRemovableSCCsToStages (LoopDependenceInfo *LDI);
+      void assertCompleteAndValidStagesStructure(LoopDependenceInfo *LDI);
       void generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex);
       void generateLoadsOfQueuePointers (Parallelization &par, int taskIndex);
       void popValueQueues (Parallelization &par, int taskIndex);

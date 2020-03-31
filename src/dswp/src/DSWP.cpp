@@ -111,6 +111,7 @@ bool DSWP::apply (
   generateStagesFromPartitionedSCCs(LDI);
   addRemovableSCCsToStages(LDI);
   writeStageGraphsAsDot(*LDI);
+  assertCompleteAndValidStagesStructure(LDI);
 
   /*
    * Collect which queues need to exist between tasks
