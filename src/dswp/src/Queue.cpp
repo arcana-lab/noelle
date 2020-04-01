@@ -123,7 +123,8 @@ void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) 
          * Create value queues for each dependency of the form: producer -> consumers
          */
         for (auto instructionEdge : sccEdge->getSubEdges()) {
-          assert(!instructionEdge->isMemoryDependence());
+          assert(!instructionEdge->isMemoryDependence()
+            && "DSWP requires that no memory dependencies exist across tasks!");
           if (instructionEdge->isControlDependence()) continue;
           auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
           auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
