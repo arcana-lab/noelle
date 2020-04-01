@@ -35,7 +35,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    */
   this->fetchLoopAndBBInfo(li, l);
   auto DGs = this->createDGsForLoop(l, fG);
-  auto loopDG = DGs.first;
+  this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
 
   /*
@@ -54,11 +54,6 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Set the nesting level.
    */
   this->nestingLevel = l->getLoopDepth();
-
-  /*
-   * Free the memory.
-   */
-  delete loopDG;
 
   return ;
 }
@@ -144,8 +139,8 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
   for (auto internalNode : loopDG->internalNodePairs()) {
       loopInternals.push_back(internalNode.first);
   }
-  this->loopDG = loopDG->createSubgraphFromValues(loopInternals, false);
-  auto loopSCCDAG = new SCCDAG(this->loopDG);
+  auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
+  auto loopSCCDAG = new SCCDAG(loopInternalDG);
 
   /*
    * Safety check: check that the SCCDAG includes all instructions of the loop given as input.
@@ -160,7 +155,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
   for (auto bbIter : l->blocks()){
     for (auto &I : *bbIter){
       assert(std::find(loopInternals.begin(), loopInternals.end(), &I) != loopInternals.end());
-      assert(this->loopDG->isInternal(&I));
+      assert(loopInternalDG->isInternal(&I));
       assert(loopSCCDAG->doesItContain(&I));
       numberOfInstructionsInLoop++;
     }
@@ -170,7 +165,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
    * Check that all LDI-specific containers include only loop instructions.
    */
   assert(loopInternals.size() == numberOfInstructionsInLoop);
-  assert(loopDG->numNodes() == loopInternals.size());
+  assert(loopInternalDG->numNodes() == loopInternals.size());
   }
   #endif
 
