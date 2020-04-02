@@ -10,6 +10,7 @@
  */
 #include "SystemHeaders.hpp"
 
+#include "SVF-FE/LLVMUtil.h"
 #include "WPA/WPAPass.h"
 #include "TalkDown.hpp"
 #include "PDGPrinter.hpp"
@@ -33,7 +34,6 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<AllocAA>();
   AU.addRequired<TalkDown>();
-  AU.addRequired<WPAPass>();
   AU.setPreservesAll();
   return ;
 }
@@ -44,7 +44,13 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
    * Store global information.
    */
   this->M = &M;
-  this->wpa = &getAnalysis<WPAPass>();
+
+  /*
+   * Construct WPAPass
+   */
+  this->wpa = new WPAPass();
+  SVFModule *svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(M);
+  wpa->runOnModule(svfModule); 
 
   /*
    * Check if we should print the PDG
