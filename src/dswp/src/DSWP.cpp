@@ -123,8 +123,10 @@ bool DSWP::apply (
    *  prior to its execution. Hence, its weird placement:
    */
   collectDataQueueInfo(LDI, par);
+  assertQueuesAreAcyclical();
   trimCFGOfStages(LDI);
   collectControlQueueInfo(LDI, par);
+  assertQueuesAreAcyclical();
   writeStageQueuesAsDot(*LDI);
 
   /*

@@ -71,7 +71,9 @@ void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &pa
       for (auto scc : task->stageSCCs) if (scc->isInternal(val)) return std::make_pair(task, scc);
       for (auto scc : task->removableSCCs) if (scc->isInternal(val)) return std::make_pair(task, scc);
     }
-    return std::make_pair(nullptr, nullptr);
+    val->print(errs() << "DSWP:  ERROR! Value not present in any task! ");
+    errs() << "\n";
+    abort();
   };
 
   for (auto bb : LDI->loopBBs){
@@ -79,7 +81,6 @@ void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &pa
     if (consumerTerm->getNumSuccessors() == 1) continue;
     auto consumerI = cast<Instruction>(bb->getTerminator());
     auto brStageSCC = findContaining(cast<Value>(consumerI));
-    assert(brStageSCC.first != nullptr);
 
     for (auto edge : brStageSCC.second->fetchNode(cast<Value>(consumerI))->getIncomingEdges()) {
       if (edge->isControlDependence()) continue;
@@ -87,7 +88,6 @@ void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &pa
       auto prodStageSCC = findContaining(cast<Value>(producer));
       DSWPTask *prodStage = prodStageSCC.first;
       SCC *prodSCC = prodStageSCC.second;
-      assert(prodStage != nullptr);
 
       for (auto techniqueTask : this->tasks) {
         auto otherStage = (DSWPTask *)techniqueTask;
@@ -130,6 +130,36 @@ void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) 
           auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
           registerQueue(par, LDI, fromStage, toStage, producer, consumer);
         }
+      }
+    }
+  }
+}
+
+void DSWP::assertQueuesAreAcyclical () {
+
+  /*
+   * For each of the ordered vector of tasks:
+   * 1) ensure that push queues do not loop back to a previous task
+   * 2) ensure that pop queues do not loop forward to a following task
+   */
+  for (int i = 0; i < this->tasks.size(); ++i) {
+    DSWPTask *task = (DSWPTask *)this->tasks[i];
+
+    for (auto queueIdx : task->pushValueQueues) {
+      int toTaskIdx = this->queues[queueIdx]->toStage;
+      if (toTaskIdx <= i) {
+        errs() << "DSWP:  ERROR! Push queue " << queueIdx << " loops back from stage "
+          << i << " to stage " << toTaskIdx;
+        abort();
+      }
+    }
+
+    for (auto queueIdx : task->popValueQueues) {
+      int fromTaskIdx = this->queues[queueIdx]->fromStage;
+      if (fromTaskIdx >= i) {
+        errs() << "DSWP:  ERROR! Pop queue " << queueIdx << " goes from stage "
+          << fromTaskIdx << " to stage " << i;
+        abort();
       }
     }
   }

@@ -120,6 +120,7 @@ namespace llvm {
       );
       void collectLiveInEnvInfo (LoopDependenceInfo *LDI);
       void collectLiveOutEnvInfo (LoopDependenceInfo *LDI);
+      void assertQueuesAreAcyclical ();
 
       /*
        * Debug utilities
