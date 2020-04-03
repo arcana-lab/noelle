@@ -1,0 +1,34 @@
+# Sources
+set(Srcs 
+  DSTestSuite.cpp
+)
+
+# Compilation flags
+set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
+
+# Name of the LLVM pass
+set(PassName "dominator_summary")
+
+# configure LLVM 
+find_package(LLVM REQUIRED CONFIG)
+
+set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
+set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
+
+list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+include(HandleLLVMOptions)
+include(AddLLVM)
+
+message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
+
+set(RootPath ../../../..)
+set(PassesPath ${RootPath}/src)
+set(UtilDep ${PassesPath}/basic_utilities/include)
+set(DGDep ${PassesPath}/alloc_aa/include ${PassesPath}/pdg/include ${PassesPath}/talkdown/include)
+set(SVFDep ${RootPath}/external/svf/include)
+set(ParDep ${PassesPath}/parallelization_utilities/include)
+include_directories(${LLVM_INCLUDE_DIRS} ${UtilDep} ${DGDep} ${SVFDep} ${ParDep} ../../helpers/include ../include ./)
+
+# Declare the LLVM pass to compile
+add_llvm_library(${PassName} MODULE ${Srcs})
+
