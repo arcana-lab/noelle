@@ -126,6 +126,8 @@ namespace llvm {
       void printStageSCCs (LoopDependenceInfo *LDI) const ;
       void printStageQueues (LoopDependenceInfo *LDI) const ;
       void printEnv (LoopDependenceInfo *LDI) const ;
+      void writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const ;
+      void writeStageQueuesAsDot (const LoopDependenceInfo &LDI) const ;
   };
 
 }

@@ -110,6 +110,7 @@ bool DSWP::apply (
    */
   generateStagesFromPartitionedSCCs(LDI);
   addRemovableSCCsToStages(LDI);
+  writeStageGraphsAsDot(*LDI);
 
   /*
    * Collect which queues need to exist between tasks
@@ -123,6 +124,7 @@ bool DSWP::apply (
   collectDataQueueInfo(LDI, par);
   trimCFGOfStages(LDI);
   collectControlQueueInfo(LDI, par);
+  writeStageQueuesAsDot(*LDI);
 
   /*
    * Collect information on stages' environments

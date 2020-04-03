@@ -56,11 +56,24 @@ namespace llvm {
       raw_string_ostream ros(edgeStr);
       DGEdge<SCC> *edgesBetweenSCC = node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes());
       for (DGEdge<Value> *edge : edgesBetweenSCC->getSubEdges()) {
-        edge->getOutgoingT()->printAsOperand(ros);
-        edge->getIncomingT()->printAsOperand(ros << " -> ");
-        ros << "  ";
+        printValueStr(edge->getOutgoingT(), ros);
+        printValueStr(edge->getIncomingT(), ros << " -> ");
+        ros << " ; ";
       }
       return ros.str();
+    }
+
+    void printValueStr(Value *value, raw_ostream &ros) {
+      if (auto brI = dyn_cast<BranchInst>(value)) {
+        if (brI->isUnconditional()) {
+          value->print(ros);
+        } else {
+          ros << "br ";
+          printValueStr(brI->getCondition(), ros);
+        }
+      } else {
+        value->printAsOperand(ros);
+      }
     }
   };
 
@@ -172,4 +185,32 @@ namespace llvm {
   template<> struct GraphTraits<PDG *> : DGGraphTraits<PDG, Value> {};
   template<> struct GraphTraits<SCC *> : DGGraphTraits<SCC, Value> {};
   template<> struct GraphTraits<SCCDAG *> : DGGraphTraits<SCCDAG, SCC> {};
+
+  /*
+   * GraphTraits specialization for generic element
+   */
+  template <class T>
+  class DGElementWrapper {
+    public:
+      DGElementWrapper(T elem) : element{elem} {};
+
+      void print(llvm::raw_ostream &ros) {
+        ros << element;
+      }
+
+    private:
+      T element;
+  };
+
+  using DGString = DGElementWrapper<std::string>;
+  template<> struct GraphTraits<DG<DGString> *> : DGGraphTraits<DG<DGString>, DGString> {};
+
+  template<>
+  struct DOTGraphTraits<DG<DGString> *> : DGDOTGraphTraits<DG<DGString>, DGString> {
+    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<DG<DGString>, DGString>(isSimple) {}
+
+    static std::string getGraphName(DG<DGString> *dg) {
+      return "Raw String Graph";
+    }
+  };
 }
