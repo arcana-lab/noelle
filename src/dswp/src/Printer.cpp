@@ -101,3 +101,68 @@ void llvm::DSWP::printEnv (LoopDependenceInfo *LDI) const {
 
   return ;
 }
+
+void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
+
+  PDGPrinter pdgPrinter;
+  DG<DGString> stageGraph;
+  std::set<DGString *> elements;
+
+  auto addNode = [&](std::string val) -> DGNode<DGString> * {
+    auto element = new DGString(val);
+    elements.insert(element);
+    return stageGraph.addNode(element, true);
+  };
+
+  for (auto techniqueTask : this->tasks) {
+
+    /*
+     * Produce node indicating the task index that owns the following SCCs
+     */
+    auto task = (DSWPTask *)techniqueTask;
+    auto headerNode = addNode("Stage: " + std::to_string(task->order));
+
+    for (auto scc : task->stageSCCs) {
+      std::string sccDescription;
+      raw_string_ostream ros(sccDescription);
+      scc->printMinimal(ros, "");
+      ros.flush();
+      auto sccNode = addNode(sccDescription);
+      stageGraph.addEdge(headerNode->getT(), sccNode->getT());
+    }
+  }
+
+  pdgPrinter.writeGraph<DG<DGString>>("dswpStagesForLoop_" + std::to_string(LDI.getID()) + ".dot", &stageGraph);
+  for (auto elem : elements) delete elem;
+}
+
+void llvm::DSWP::writeStageQueuesAsDot (const LoopDependenceInfo &LDI) const {
+
+  PDGPrinter pdgPrinter;
+  DG<DGString> queueGraph;
+  std::set<DGString *> elements;
+
+  /*
+   * Add a stage's queue producer or consumer as a node to the graph
+   */
+  auto addNode = [&](int stageIndex, Instruction *I) -> DGNode<DGString> * {
+    std::string queueDesc;
+    raw_string_ostream ros(queueDesc);
+    I->print(ros << "Stage: " + std::to_string(stageIndex) << "\n");
+    ros.flush();
+    auto element = new DGString(queueDesc);
+    elements.insert(element);
+    return queueGraph.addNode(element, true);
+  };
+
+  for (auto &queue : this->queues) {
+    auto producerNode = addNode(queue->fromStage, queue->producer);
+    for (auto consumerI : queue->consumers) {
+      auto consumerNode = addNode(queue->toStage, consumerI);
+      queueGraph.addEdge(producerNode->getT(), consumerNode->getT());
+    }
+  }
+
+  pdgPrinter.writeGraph<DG<DGString>>("dswpQueuesForLoop_" + std::to_string(LDI.getID()) + ".dot", &queueGraph);
+  for (auto elem : elements) delete elem;
+}
