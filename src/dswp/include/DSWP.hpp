@@ -77,7 +77,7 @@ namespace llvm {
       void clusterSubloops (LoopDependenceInfo *LDI);
       void generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI);
       void addRemovableSCCsToStages (LoopDependenceInfo *LDI);
-      void assertCompleteAndValidStagesStructure(LoopDependenceInfo *LDI);
+      bool isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const ;
       void generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex);
       void generateLoadsOfQueuePointers (Parallelization &par, int taskIndex);
       void popValueQueues (Parallelization &par, int taskIndex);
@@ -120,7 +120,7 @@ namespace llvm {
       );
       void collectLiveInEnvInfo (LoopDependenceInfo *LDI);
       void collectLiveOutEnvInfo (LoopDependenceInfo *LDI);
-      void assertQueuesAreAcyclical ();
+      bool areQueuesAcyclical () const ;
 
       /*
        * Debug utilities

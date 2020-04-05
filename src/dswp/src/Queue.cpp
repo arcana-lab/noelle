@@ -135,7 +135,7 @@ void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) 
   }
 }
 
-void DSWP::assertQueuesAreAcyclical () {
+bool DSWP::areQueuesAcyclical () const {
 
   /*
    * For each of the ordered vector of tasks:
@@ -150,7 +150,7 @@ void DSWP::assertQueuesAreAcyclical () {
       if (toTaskIdx <= i) {
         errs() << "DSWP:  ERROR! Push queue " << queueIdx << " loops back from stage "
           << i << " to stage " << toTaskIdx;
-        abort();
+        return false;
       }
     }
 
@@ -159,10 +159,12 @@ void DSWP::assertQueuesAreAcyclical () {
       if (fromTaskIdx >= i) {
         errs() << "DSWP:  ERROR! Pop queue " << queueIdx << " goes from stage "
           << fromTaskIdx << " to stage " << i;
-        abort();
+        return false;
       }
     }
   }
+
+  return true;
 }
 
 void DSWP::generateLoadsOfQueuePointers (
