@@ -1,0 +1,10 @@
+#!/bin/bash
+
+installDir
+
+# Set the command to execute
+cmdToExecute="noelle-load -load ${installDir}/lib/CleanMetadata.so -CleanMetadata -clean-pdg-metadata=true $@" 
+echo $cmdToExecute ;
+
+# Execute the command
+eval $cmdToExecute 

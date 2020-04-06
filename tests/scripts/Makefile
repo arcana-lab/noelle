@@ -99,6 +99,10 @@ pdg: test_seq.bc
 	noelle-pdg $^ -o $^
 	llvm-dis $^
 
+meta_clean: test_seq.bc
+	noelle-meta-clean $^ -o $^
+	llvm-dis $^
+
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
 
