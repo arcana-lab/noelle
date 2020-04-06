@@ -111,6 +111,10 @@ bool DSWP::apply (
   generateStagesFromPartitionedSCCs(LDI);
   addRemovableSCCsToStages(LDI);
   writeStageGraphsAsDot(*LDI);
+<<<<<<< HEAD
+=======
+  assert(isCompleteAndValidStageStructure(LDI));
+>>>>>>> dgfixes
 
   /*
    * Collect which queues need to exist between tasks
@@ -122,8 +126,13 @@ bool DSWP::apply (
    *  prior to its execution. Hence, its weird placement:
    */
   collectDataQueueInfo(LDI, par);
+  // assert(areQueuesAcyclical());
   trimCFGOfStages(LDI);
   collectControlQueueInfo(LDI, par);
+<<<<<<< HEAD
+=======
+  // assert(areQueuesAcyclical());
+>>>>>>> dgfixes
   writeStageQueuesAsDot(*LDI);
 
   /*

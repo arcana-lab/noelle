@@ -27,4 +27,4 @@ add_library(${LibraryName} SHARED ${Srcs})
 set_target_properties(${LibraryName} PROPERTIES PREFIX "")
 
 # Install
-install(TARGETS ${LibraryName} DESTINATION include)
+install(TARGETS ${LibraryName} DESTINATION lib)

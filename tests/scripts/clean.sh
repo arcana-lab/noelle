@@ -31,5 +31,6 @@ cd ../ ;
 cd unit 
 find ./ -iname *.bc -delete ;
 find ./ -iname *.ll -delete ;
+find ./ -iname *prof* -delete ;
 rm -rf */build ;
 cd ../ ;
