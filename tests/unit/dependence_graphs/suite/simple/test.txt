@@ -9,7 +9,7 @@ br label %6
 %.01 = phi i32 [ %5, %2 ], [ %13, %14 ]
 %.0 = phi i32 [ 0, %2 ], [ %15, %14 ]
 %7 = icmp ult i32 %.0, 100
-br i1 %7, label %8, label %16
+br i1 %7, label %8, label %16, !prof !30
 %9 = add nsw i32 %.02, 1
 %10 = sub nsw i32 %9, 3
 %11 = mul nsw i32 %.01, 3
@@ -18,7 +18,10 @@ br i1 %7, label %8, label %16
 br label %14
 %15 = add i32 %.0, 1
 br label %6
-%17 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str, i32 0, i32 0), i32 %.02, i32 %.01)
+%.02.lcssa = phi i32 [ %.02, %6 ]
+%.01.lcssa = phi i32 [ %.01, %6 ]
+%17 = getelementptr [8 x i8], [8 x i8]* @.str, i64 0, i64 0
+%18 = call i32 (i8*, ...) @printf(i8* %17, i32 %.02.lcssa, i32 %.01.lcssa)
 ret i32 0
 
 pdg edges
@@ -27,10 +30,14 @@ i32 %0 ; %3 = mul nsw i32 %0, 5 ; data
 %.0 = phi i32 [ 0, %2 ], [ %15, %14 ] ; %15 = add i32 %.0, 1 ; data
 %.0 = phi i32 [ 0, %2 ], [ %15, %14 ] ; %7 = icmp ult i32 %.0, 100 ; data
 %.01 = phi i32 [ %5, %2 ], [ %13, %14 ] ; %11 = mul nsw i32 %.01, 3 ; data
-%.01 = phi i32 [ %5, %2 ], [ %13, %14 ] ;
-  %17 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str, i32 0, i32 0), i32 %.02, i32 %.01) ; data
-%.02 = phi i32 [ %0, %2 ], [ %10, %14 ] ;
-  %17 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str, i32 0, i32 0), i32 %.02, i32 %.01) ; data
+%.01 = phi i32 [ %5, %2 ], [ %13, %14 ] ; %.01.lcssa = phi i32 [ %.01, %6 ] ; data
+%.02 = phi i32 [ %0, %2 ], [ %10, %14 ] ; %.02.lcssa = phi i32 [ %.02, %6 ] ; data
+%.01.lcssa = phi i32 [ %.01, %6 ] ; %18 = call i32 (i8*, ...) @printf(i8* %17, i32 %.02.lcssa, i32 %.01.lcssa) ; data
+%.02.lcssa = phi i32 [ %.02, %6 ] ; %18 = call i32 (i8*, ...) @printf(i8* %17, i32 %.02.lcssa, i32 %.01.lcssa) ; data
+%17 = getelementptr [8 x i8], [8 x i8]* @.str, i64 0, i64 0 ;
+  %18 = call i32 (i8*, ...) @printf(i8* %17, i32 %.02.lcssa, i32 %.01.lcssa) ; data
+%18 = call i32 (i8*, ...) @printf(i8* %17, i32 %.02.lcssa, i32 %.01.lcssa) ;
+  %18 = call i32 (i8*, ...) @printf(i8* %17, i32 %.02.lcssa, i32 %.01.lcssa) ; memory
 %.02 = phi i32 [ %0, %2 ], [ %10, %14 ] ; %9 = add nsw i32 %.02, 1 ; data
 %10 = sub nsw i32 %9, 3 ; %.02 = phi i32 [ %0, %2 ], [ %10, %14 ] ; data
 %10 = sub nsw i32 %9, 3 ; %12 = add nsw i32 %11, %10 ; data
@@ -41,28 +48,28 @@ i32 %0 ; %3 = mul nsw i32 %0, 5 ; data
 %3 = mul nsw i32 %0, 5 ; %4 = sdiv i32 %3, 2 ; data
 %4 = sdiv i32 %3, 2 ; %5 = add nsw i32 %4, 1 ; data
 %5 = add nsw i32 %4, 1 ; %.01 = phi i32 [ %5, %2 ], [ %13, %14 ] ; data
-%7 = icmp ult i32 %.0, 100 ; br i1 %7, label %8, label %16 ; data
+%7 = icmp ult i32 %.0, 100 ; br i1 %7, label %8, label %16, !prof !30 ; data
 %9 = add nsw i32 %.02, 1 ; %10 = sub nsw i32 %9, 3 ; data
-br i1 %7, label %8, label %16 ; %.0 = phi i32 [ 0, %2 ], [ %15, %14 ] ; control
-br i1 %7, label %8, label %16 ; %.01 = phi i32 [ %5, %2 ], [ %13, %14 ] ; control
-br i1 %7, label %8, label %16 ; %.02 = phi i32 [ %0, %2 ], [ %10, %14 ] ; control
-br i1 %7, label %8, label %16 ; %10 = sub nsw i32 %9, 3 ; control
-br i1 %7, label %8, label %16 ; %11 = mul nsw i32 %.01, 3 ; control
-br i1 %7, label %8, label %16 ; %12 = add nsw i32 %11, %10 ; control
-br i1 %7, label %8, label %16 ; %13 = sdiv i32 %12, 2 ; control
-br i1 %7, label %8, label %16 ; %15 = add i32 %.0, 1 ; control
-br i1 %7, label %8, label %16 ; %7 = icmp ult i32 %.0, 100 ; control
-br i1 %7, label %8, label %16 ; %9 = add nsw i32 %.02, 1 ; control
-br i1 %7, label %8, label %16 ; br i1 %7, label %8, label %16 ; control
-br i1 %7, label %8, label %16 ; br label %14 ; control
-br i1 %7, label %8, label %16 ; br label %6 ; control
+br i1 %7, label %8, label %16, !prof !30 ; %.0 = phi i32 [ 0, %2 ], [ %15, %14 ] ; control
+br i1 %7, label %8, label %16, !prof !30 ; %.01 = phi i32 [ %5, %2 ], [ %13, %14 ] ; control
+br i1 %7, label %8, label %16, !prof !30 ; %.02 = phi i32 [ %0, %2 ], [ %10, %14 ] ; control
+br i1 %7, label %8, label %16, !prof !30 ; %10 = sub nsw i32 %9, 3 ; control
+br i1 %7, label %8, label %16, !prof !30 ; %11 = mul nsw i32 %.01, 3 ; control
+br i1 %7, label %8, label %16, !prof !30 ; %12 = add nsw i32 %11, %10 ; control
+br i1 %7, label %8, label %16, !prof !30 ; %13 = sdiv i32 %12, 2 ; control
+br i1 %7, label %8, label %16, !prof !30 ; %15 = add i32 %.0, 1 ; control
+br i1 %7, label %8, label %16, !prof !30 ; %7 = icmp ult i32 %.0, 100 ; control
+br i1 %7, label %8, label %16, !prof !30 ; %9 = add nsw i32 %.02, 1 ; control
+br i1 %7, label %8, label %16, !prof !30 ; br i1 %7, label %8, label %16, !prof !30 ; control
+br i1 %7, label %8, label %16, !prof !30 ; br label %14 ; control
+br i1 %7, label %8, label %16, !prof !30 ; br label %6 ; control
 
 ldg nodes
 %.02 = phi i32 [ %0, %2 ], [ %10, %14 ]
 %.01 = phi i32 [ %5, %2 ], [ %13, %14 ]
 %.0 = phi i32 [ 0, %2 ], [ %15, %14 ]
 %7 = icmp ult i32 %.0, 100
-br i1 %7, label %8, label %16
+br i1 %7, label %8, label %16, !prof !30
 %9 = add nsw i32 %.02, 1
 %10 = sub nsw i32 %9, 3
 %11 = mul nsw i32 %.01, 3
@@ -77,21 +84,37 @@ i32 %0
 i8** %1
 br label %6
 %.0 = phi i32 [ 0, %2 ], [ %15, %14 ]
+%17 = getelementptr [8 x i8], [8 x i8]* @.str, i64 0, i64 0
 ret i32 0
 
 pdg leaf values
 i8** %1
 br label %6
 br label %14
-%17 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str, i32 0, i32 0), i32 %.02, i32 %.01)
+%18 = call i32 (i8*, ...) @printf(i8* %17, i32 %.02.lcssa, i32 %.01.lcssa)
 ret i32 0
 
 pdg disjoint values
 i8** %1
 br label %6
 %.0 = phi i32 [ 0, %2 ], [ %15, %14 ] | %.01 = phi i32 [ %5, %2 ], [ %13, %14 ] | %.02 = phi i32 [ %0, %2 ], [ %10, %14 ] |
+  %.01.lcssa = phi i32 [ %.01, %6 ] | %.02.lcssa = phi i32 [ %.02, %6 ] |
   %10 = sub nsw i32 %9, 3 | %11 = mul nsw i32 %.01, 3 | %12 = add nsw i32 %11, %10 | %13 = sdiv i32 %12, 2 | %15 = add i32 %.0, 1 |
-  %17 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str, i32 0, i32 0), i32 %.02, i32 %.01) |
+  %17 = getelementptr [8 x i8], [8 x i8]* @.str, i64 0, i64 0 |
+  %18 = call i32 (i8*, ...) @printf(i8* %17, i32 %.02.lcssa, i32 %.01.lcssa) |
   %3 = mul nsw i32 %0, 5 | %4 = sdiv i32 %3, 2 | %5 = add nsw i32 %4, 1 | %7 = icmp ult i32 %.0, 100 | %9 = add nsw i32 %.02, 1 |
-  br i1 %7, label %8, label %16 | br label %14 | br label %6 | i32 %0
+  br i1 %7, label %8, label %16, !prof !30 | br label %14 | br label %6 | i32 %0
 ret i32 0
+
+sccdag internal nodes (of outermost loop)
+%15 = add i32 %.0, 1 | %7 = icmp ult i32 %.0, 100 | br i1 %7, label %8, label %16, !prof !30 | %.0 = phi i32 [ 0, %2 ], [ %15, %14 ]
+br label %6
+br label %14
+%.02 = phi i32 [ %0, %2 ], [ %10, %14 ] | %9 = add nsw i32 %.02, 1 | %10 = sub nsw i32 %9, 3
+%.01 = phi i32 [ %5, %2 ], [ %13, %14 ] | %11 = mul nsw i32 %.01, 3 | %12 = add nsw i32 %11, %10 | %13 = sdiv i32 %12, 2
+
+sccdag external nodes (of outermost loop)
+%5 = add nsw i32 %4, 1
+i32 %0
+%.02.lcssa = phi i32 [ %.02, %6 ]
+%.01.lcssa = phi i32 [ %.01, %6 ]
