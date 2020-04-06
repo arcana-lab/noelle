@@ -111,10 +111,7 @@ bool DSWP::apply (
   generateStagesFromPartitionedSCCs(LDI);
   addRemovableSCCsToStages(LDI);
   writeStageGraphsAsDot(*LDI);
-<<<<<<< HEAD
-=======
   assert(isCompleteAndValidStageStructure(LDI));
->>>>>>> dgfixes
 
   /*
    * Collect which queues need to exist between tasks
@@ -129,10 +126,7 @@ bool DSWP::apply (
   // assert(areQueuesAcyclical());
   trimCFGOfStages(LDI);
   collectControlQueueInfo(LDI, par);
-<<<<<<< HEAD
-=======
   // assert(areQueuesAcyclical());
->>>>>>> dgfixes
   writeStageQueuesAsDot(*LDI);
 
   /*
