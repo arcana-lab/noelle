@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE) {
+void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, DominatorSummary &DS) {
 
   /*
    * Set the SCCDAG.
@@ -22,7 +22,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
   /*
    * Partition dependences between intra-iteration and iter-iteration ones.
    */
-  collectDependencies(LIS);
+  collectDependencies(LIS, DS);
 
   /*
    * Tag SCCs depending on their characteristics.
@@ -262,23 +262,27 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
   return ;
 }
 
-void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS) {
+void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS, DominatorSummary &DS) {
 
-  /*
-   * Collect values producing intra iteration data dependencies
-   */
-  for (auto edge : this->sccdag->getEdges()) {
-    auto sccTo = edge->getIncomingT();
-    for (auto subEdge : edge->getSubEdges()) {
-      auto sccFrom = subEdge->getOutgoingT();
-      intraIterDeps[sccFrom].insert(sccTo);
+  for (auto sccNode : this->sccdag->getNodes()) {
+    auto scc = sccNode->getT();
+    for (auto edge : scc->getEdges()) {
+      if (!isa<Instruction>(edge->getOutgoingT())) continue ;
+      if (!isa<Instruction>(edge->getIncomingT())) continue ;
+
+      auto instFrom = dyn_cast<Instruction>(edge->getOutgoingT());
+      auto instTo = dyn_cast<Instruction>(edge->getIncomingT());
+      if (LIS.getLoop(instFrom) == nullptr || LIS.getLoop(instTo) == nullptr) {
+        continue;
+      }
+
+      if (instFrom == instTo || !DS.DT.dominates(instFrom, instTo)) {
+        interIterDeps[scc].insert(edge);
+      } else {
+        intraIterDeps[scc].insert(edge);
+      }
     }
   }
-
-  /*
-   * Identify inter-iteration data dependences.
-   */
-  this->identifyInterIterationDependences(LIS);
 
   return ;
 }
