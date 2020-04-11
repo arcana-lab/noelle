@@ -20,7 +20,8 @@ LoopDependenceInfo::LoopDependenceInfo(
   PDG *fG,
   Loop *l,
   LoopInfo &li,
-  ScalarEvolution &SE
+  ScalarEvolution &SE,
+  DominatorSummary &DS
 ) : function{f}, DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()}
   {
@@ -48,32 +49,20 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Calculate various attributes on remaining SCCs
    */
   mergeTrivialNodesInSCCDAG(loopSCCDAG);
-  this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE);
+  this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, DS);
 
   /*
    * Set the nesting level.
    */
   this->nestingLevel = l->getLoopDepth();
 
-  return ;
-}
-
-LoopDependenceInfo::LoopDependenceInfo(
-  Function *f,
-  PDG *fG,
-  Loop *l,
-  LoopInfo &li,
-  ScalarEvolution &SE,
-  PostDominatorTree &pdt
-) : LoopDependenceInfo{f, fG, l, li, SE}
-  {
   for (auto bb : l->blocks()) {
-    loopBBtoPD[&*bb] = pdt.getNode(&*bb)->getIDom()->getBlock();
+    loopBBtoPD[&*bb] = DS.PDT.getNode(&*bb)->getIDom()->getBlock();
   }
 
   return ;
 }
-      
+
 uint32_t LoopDependenceInfo::getNestingLevel (void) const {
   return this->nestingLevel;
 }

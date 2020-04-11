@@ -198,7 +198,9 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Fetch the post dominators and scalar evolutions
      */
+    auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
+    DominatorSummary DS(DT, PDT);
     auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
     /*
@@ -234,7 +236,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, PDT);
+        auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, DS);
 
         allLoops->push_back(ldi);
         currentLoopIndex++;
@@ -276,7 +278,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        *
        * Allocate the loop wrapper.
        */
-      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, PDT);
+      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, DS);
 
       /*
        * Set the loop constraints specified by INDEX_FILE.

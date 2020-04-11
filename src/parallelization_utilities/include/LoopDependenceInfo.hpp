@@ -72,15 +72,8 @@ namespace llvm {
         PDG *fG,
         Loop *l,
         LoopInfo &li,
-        ScalarEvolution &SE
-      );
-      LoopDependenceInfo (
-        Function *f,
-        PDG *fG,
-        Loop *l,
-        LoopInfo &li,
         ScalarEvolution &SE,
-        PostDominatorTree &pdt
+        DominatorSummary &DS
       );
 
       /*
