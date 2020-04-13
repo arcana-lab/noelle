@@ -45,6 +45,7 @@ namespace llvm {
       Module *M;
       PDG *programDependenceGraph;
       WPAPass *wpa;
+      bool wpaInitialized;
       AllocAA *allocAA;
       std::set<Function *> CGUnderMain;
       TalkDown *talkdown;
