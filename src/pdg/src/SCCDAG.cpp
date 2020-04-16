@@ -25,7 +25,7 @@ SCCDAG::SCCDAG(PDG *pdg) {
   auto subgraphs = pdg->getDisconnectedSubgraphs();
   for (auto subgraphNodeset : subgraphs) {
     PDG subgraphPDG{};
-    pdg->addNodesIntoNewGraph(*cast<DG<Value>>(&subgraphPDG), *subgraphNodeset, *subgraphNodeset->begin());
+    pdg->copyNodesIntoNewGraph(*cast<DG<Value>>(&subgraphPDG), *subgraphNodeset, *subgraphNodeset->begin());
     delete subgraphNodeset;
 
     std::set<Value *> valuesInSCCs;
@@ -42,7 +42,6 @@ SCCDAG::SCCDAG(PDG *pdg) {
         for (auto node : *pdgI) {
           if (valuesInSCCs.find(node->getT()) != valuesInSCCs.end()) {
             uniqueSCC = false;
-            break;
           }
           nodes.insert(node);
           valuesInSCCs.insert(node->getT());
@@ -56,7 +55,12 @@ SCCDAG::SCCDAG(PDG *pdg) {
          * Add a new SCC to the SCCDAG.
          */
         auto scc = new SCC(nodes);
-        this->addNode(scc, /*inclusion=*/ true);
+        auto isInternal = false;
+        for (auto node : nodes) {
+          isInternal |= pdg->isInternal(node->getT());
+        }
+
+        this->addNode(scc, /*inclusion=*/ isInternal);
       }
     }
 
@@ -76,32 +80,6 @@ SCCDAG::SCCDAG(PDG *pdg) {
    */
   this->markEdgesAndSubEdges();
 
-  /*
-   * Add live-ins and live-outs.
-   */
-  for (auto nodeI : pdg->externalNodePairs()) {
-
-    /*
-     * Fetch the live in/out variable.
-     */
-    auto externalNode = nodeI.second;
-    auto externalValue = externalNode->getT();
-    errs() << "CUCU " << *externalValue << "\n";
-
-    /*
-     * Create an SCC for it.
-     * This is because the template class DG is not general enough to handle different types between internal and external nodes.
-     */
-    std::set<DGNode<Value> *> nodes;
-    nodes.insert(externalNode);
-    auto newSCC = new SCC(nodes, false);
-
-    /*
-     * Add the live-in/out SCC to the SCCDAG as external node.
-     */
-    this->addNode(newSCC, /*inclusion=*/ false);
-  }
-
   return ;
 }
       
@@ -118,12 +96,11 @@ bool SCCDAG::doesItContain (Instruction *inst) const {
 void SCCDAG::markValuesInSCC (void) {
 
   /*
-   * Maintain association of each internal node to its SCC
+   * Maintain association of each SCC's node value to its SCC
    */
   this->valueToSCCNode.clear();
-  for (auto SCCPair : this->internalNodePairs()) {
-    auto scc = SCCPair.first;
-    auto sccNode = SCCPair.second;
+  for (auto sccNode : this->getNodes()) {
+    auto scc = sccNode->getT();
     for (auto instPair : scc->internalNodePairs()) {
       this->valueToSCCNode[instPair.first] = sccNode;
     }
@@ -138,13 +115,12 @@ void SCCDAG::markEdgesAndSubEdges (void) {
    * Iterate across SCCs.
    */
   std::set<DGEdge<SCC> *> clearedEdges;
-  for (auto outgoingSCCPair : this->internalNodePairs()){
+  for (auto outgoingSCCNode : this->getNodes()){
 
     /*
      * Fetch the current SCC.
      */
-    auto outgoingSCC = outgoingSCCPair.first;
-    auto outgoingSCCNode = outgoingSCCPair.second;
+    auto outgoingSCC = outgoingSCCNode->getT();
 
     /*
      * Check dependences that go outside the current SCC.
@@ -187,6 +163,13 @@ void SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
       mergeNodes.insert(internalNodePair.second);
     }
   }
+
+  /*
+   * Note: nodes are from 2 contexts; internal nodes will point to external nodes,
+   *  some of whose values are in nodes in this list, and some of whose values are NOT in nodes in this list.
+   *  However, SCC's constructor accounts for that context mismatch and properly copies edges WITHOUT
+   *  duplicating any nodes or edges.
+   */
   auto mergeSCC = new SCC(mergeNodes);
 
   /*
@@ -201,7 +184,8 @@ void SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
 }
 
 SCC * SCCDAG::sccOfValue (Value *val) const {
-  return valueToSCCNode.find(val)->second->getT();
+  auto sccIter = valueToSCCNode.find(val);
+  return sccIter == valueToSCCNode.end() ? nullptr : sccIter->second->getT();
 }
 
 int64_t SCCDAG::numberOfInstructions (void) {

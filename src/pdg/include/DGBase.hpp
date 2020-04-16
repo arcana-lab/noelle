@@ -36,6 +36,8 @@ namespace llvm {
   template <class T>
   class DG {
     public:
+      DG () : nodeIdCounter{0} {}
+
       typedef typename set<DGNode<T> *>::iterator nodes_iterator;
       typedef typename set<DGNode<T> *>::const_iterator nodes_const_iterator;
 
@@ -157,12 +159,13 @@ namespace llvm {
       std::set<DGNode<T> *> getPreviousDepthNodes(DGNode<T> *node);
       void removeNode(DGNode<T> *node);
       void removeEdge(DGEdge<T> *edge);
-      void addNodesIntoNewGraph(DG<T> &newGraph, std::set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode);
+      void copyNodesIntoNewGraph(DG<T> &newGraph, std::set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode);
       void clear();
 
       raw_ostream & print(raw_ostream &stream);
 
     protected:
+      int32_t nodeIdCounter;
       std::set<DGNode<T> *> allNodes;
       std::set<DGEdge<T> *> allEdges;
       DGNode<T> *entryNode;
@@ -174,9 +177,6 @@ namespace llvm {
   class DGNode
   {
     public:
-      DGNode() : theT(nullptr) {}
-      DGNode(T *node) : theT(node) {}
-
       typedef typename std::vector<DGNode<T> *>::iterator nodes_iterator;
       typedef typename std::set<DGEdge<T> *>::iterator edges_iterator;
       typedef typename std::set<DGEdge<T> *>::const_iterator edges_const_iterator;
@@ -222,9 +222,13 @@ namespace llvm {
       raw_ostream &print(raw_ostream &stream);
 
     protected:
+      DGNode(int32_t id) : ID{id}, theT(nullptr) {}
+      DGNode(int32_t id, T *node) : ID{id}, theT(node) {}
+
       void removeInstance(DGEdge<T> *edge);
       void removeInstances(DGNode<T> *node);
 
+      int32_t ID;
       T *theT;
       std::set<DGEdge<T> *> allConnectedEdges;
       std::set<DGEdge<T> *> outgoingEdges;
@@ -235,6 +239,8 @@ namespace llvm {
       std::vector<DGEdge<T> *> outgoingEdgeInstances;
 
       unordered_map<DGNode<T> *, std::set<DGEdge<T> *>> nodeToEdgesMap;
+
+    friend class DG<T>;
   };
 
   template <class T>
@@ -349,7 +355,7 @@ namespace llvm {
   template <class T>
   DGNode<T> *DG<T>::addNode(T *theT, bool inclusion)
   {
-    auto *node = new DGNode<T>(theT);
+    auto *node = new DGNode<T>(nodeIdCounter++, theT);
     allNodes.insert(node);
     auto &map = inclusion ? internalNodeMap : externalNodeMap;
     map[theT] = node;
@@ -427,7 +433,8 @@ namespace llvm {
     std::set<DGNode<T> *> topLevelNodes;
 
     /*
-     * Add all nodes that have no incoming nodes (other than self)
+     * Add all nodes that have no incoming nodes
+     * Exclude self, and external nodes if onlyInternal = true
      */
     for (auto node : allNodes)
     {
@@ -442,36 +449,53 @@ namespace llvm {
       }
       if (noOtherIncoming) topLevelNodes.insert(node);
     }
-    if (topLevelNodes.size() > 0) return topLevelNodes;
 
     /*
-     * Add a node in the top cycle of the graph
-     * 1) By the time every node is visited, the node that was capable
-     * of fulfilling this requirement must be in the top cycle
-     * 2) Should internal nodes only be requested, if there is an
-     * internal cycle, "visiting" all external nodes beforehand has
-     * no bearing on this method
+     * Register all nodes that are reachable from the above nodes^M
+     * Nodes not reachable are in cycles, to be dealt with shortly^M
+     * External nodes are marked visited if onlyInternal = true^M
      */
     std::set<DGNode<T> *> visitedNodes;
-    if (onlyInternal) {
-      for (auto nodePair : externalNodePairs()) {
+    std::queue<DGNode<T> *> traverseQueue;
+    for (auto root : topLevelNodes) traverseQueue.push(root);
+    while (!traverseQueue.empty())
+    {
+      auto node = traverseQueue.front();
+      traverseQueue.pop();
+      visitedNodes.insert(node);
+      for (auto edge : node->getOutgoingEdges())
+      {
+        auto incomingNode = edge->getIncomingNode();
+        if (visitedNodes.find(incomingNode) != visitedNodes.end()) continue;
+        traverseQueue.push(incomingNode);
+      }
+    }
+
+    if (onlyInternal)
+    {
+      for (auto nodePair : externalNodePairs())
+      {
         visitedNodes.insert(nodePair.second);
       }
     }
 
+    /*
+     * Traverse each unvisited node, collect nodes part of its cycle,
+     * and choose the 'first' node from each cycle (based on its id)
+     */
     for (auto node : allNodes)
     {
-      if (onlyInternal && isExternal(node->getT())) continue;
-
       if (visitedNodes.find(node) != visitedNodes.end()) continue;
 
       std::queue<DGNode<T> *> nodeToTraverse;
       nodeToTraverse.push(node);
+      DGNode<T> *rootInCycle = node;
       while (!nodeToTraverse.empty())
       {
         auto traverseN = nodeToTraverse.front();
         visitedNodes.insert(traverseN);
         nodeToTraverse.pop();
+        if (traverseN->ID < rootInCycle->ID) rootInCycle = traverseN;
 
         for (auto outgoingE : traverseN->getOutgoingEdges())
         {
@@ -481,11 +505,7 @@ namespace llvm {
         }
       }
 
-      if (visitedNodes.size() == allNodes.size())
-      {
-        topLevelNodes.insert(node);
-        break;
-      }
+      topLevelNodes.insert(rootInCycle);
     }
 
     return topLevelNodes;
@@ -496,13 +516,22 @@ namespace llvm {
   {
     std::set<DGNode<T> *> leafNodes;
     if (onlyInternal) {
-      for (auto node : allNodes)
-        if (node->numOutgoingEdges() == 0)
-          leafNodes.insert(node);
+      for (auto selfNode : allNodes) {
+        bool noChildNode = true;
+        for (auto edge : selfNode->getOutgoingEdges()) {
+          noChildNode &= (edge->getIncomingNode() == selfNode);
+        }
+        if (noChildNode)
+          leafNodes.insert(selfNode);
+      }
     } else {
-      for (auto nodePair : internalNodePairs()) {
-        if (nodePair.second->numOutgoingEdges() == 0)
-          leafNodes.insert(nodePair.second);
+      for (auto selfNodePair : internalNodePairs()) {
+        bool noChildNode = true;
+        for (auto edge : selfNodePair.second->getOutgoingEdges()) {
+          noChildNode &= (edge->getIncomingNode() == selfNodePair.second);
+        }
+        if (noChildNode)
+          leafNodes.insert(selfNodePair.second);
       }
     }
     return leafNodes;
@@ -606,9 +635,28 @@ namespace llvm {
     map.erase(theT);
     allNodes.erase(node);
 
-    for (auto edge : node->getIncomingEdges()) edge->getOutgoingNode()->removeConnectedNode(node);
-    for (auto edge : node->getOutgoingEdges()) edge->getIncomingNode()->removeConnectedNode(node);
-    for (auto edge : node->getAllConnectedEdges()) allEdges.erase(edge);
+    /*
+     * Collect edges to operate on before doing deletes
+     */
+    std::set<DGEdge<T> *> incomingToNode;
+    std::set<DGEdge<T> *> outgoingFromNode;
+    std::set<DGEdge<T> *> allToAndFromNode;
+    for (auto edge : node->getIncomingEdges()) incomingToNode.insert(edge);
+    for (auto edge : node->getOutgoingEdges()) outgoingFromNode.insert(edge);
+    for (auto edge : node->getAllConnectedEdges()) allToAndFromNode.insert(edge);
+
+    /*
+     * Delete relations to edges and edges themselves
+     */
+    for (auto edge : incomingToNode) edge->getOutgoingNode()->removeConnectedNode(node);
+    for (auto edge : outgoingFromNode) edge->getIncomingNode()->removeConnectedNode(node);
+    for (auto edge : allToAndFromNode)
+    {
+      allEdges.erase(edge);
+      delete edge;
+    }
+
+    delete node;
   }
 
   template <class T>
@@ -617,17 +665,17 @@ namespace llvm {
     edge->getOutgoingNode()->removeConnectedEdge(edge);
     edge->getIncomingNode()->removeConnectedEdge(edge);
     allEdges.erase(edge);
+    delete edge;
   }
 
   template <class T>
-  void DG<T>::addNodesIntoNewGraph(DG<T> &newGraph, std::set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode)
+  void DG<T>::copyNodesIntoNewGraph(DG<T> &newGraph, std::set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode)
   {
-    newGraph.entryNode = entryNode;
-
     for (auto node : nodesToPartition)
     {
       auto theT = node->getT();
-      newGraph.addNode(theT, isInternal(theT));
+      auto clonedNode = newGraph.addNode(theT, isInternal(theT));
+      if (theT == entryNode->getT()) newGraph.setEntryNode(clonedNode);
     }
 
     /*
@@ -657,13 +705,14 @@ namespace llvm {
   template <class T>
   raw_ostream & DG<T>::print(raw_ostream &stream)
   {
-    stream << "Total nodes: " << allNodes.size() << "\n";
-    stream << "Internal nodes: " << internalNodeMap.size() << "\n";
+    stream << "Total node count: " << allNodes.size() << "\n";
+    stream << "Internal node count: " << internalNodeMap.size() << "\n";
     for (auto pair : internalNodePairs()) pair.second->print(stream) << "\n";
-    stream << "External nodes: " << externalNodeMap.size() << "\n";
+    stream << "External node count: " << externalNodeMap.size() << "\n";
     for (auto pair : externalNodePairs()) pair.second->print(stream) << "\n";
-    stream << "Edges: " << allEdges.size() << "\n";
+    stream << "Edge count: " << allEdges.size() << "\n";
     for (auto edge : allEdges) edge->print(stream) << "\n";
+    return stream;
   }
 
   /*

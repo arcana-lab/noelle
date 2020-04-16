@@ -26,9 +26,10 @@ namespace llvm {
     public:
 
       /*
-       * Constructor.
+       * Constructors.
        */
-      SCC (std::set<DGNode<Value> *> nodes, bool connectToExternalValues = true) ;
+      SCC (std::set<DGNode<Value> *> internalNodes) ;
+      SCC (std::set<DGNode<Value> *> internalNodes, std::set<DGNode<Value> *> externalNodes) ;
 
       /*
        * Iterate over values inside the SCC until @funcToInvoke returns true or no other one exists.
@@ -76,6 +77,9 @@ namespace llvm {
        * Deconstructor.
        */
       ~SCC() ;
+
+    private:
+      void copyNodesAndEdges (std::set<DGNode<Value> *> internalNodes, std::set<DGNode<Value> *> externalNodes) ;
 	};
 
 	template<> 

@@ -29,4 +29,13 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/Techniques.hpp include/LoopDependenceInfo.hpp include/Parallelization.hpp include/SCCDAGAttrs.hpp include/SCCDAGPartition.hpp include/Queue.hpp include/SCCAttrs.hpp include/AccumulatorOpInfo.hpp DESTINATION include)
+install(PROGRAMS include/Techniques.hpp
+    include/DominatorSummary.hpp
+    include/LoopDependenceInfo.hpp
+    include/Parallelization.hpp
+    include/SCCDAGAttrs.hpp
+    include/SCCDAGPartition.hpp
+    include/Queue.hpp
+    include/SCCAttrs.hpp
+    include/AccumulatorOpInfo.hpp
+    DESTINATION include)

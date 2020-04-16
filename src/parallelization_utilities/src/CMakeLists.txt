@@ -3,6 +3,7 @@ set(Srcs
   AccumulatorOpInfo.cpp
   SCCAttrs.cpp
   SCCDAGAttrs.cpp
+  DominatorSummary.cpp
   LoopDependenceInfo.cpp
   SCCDAGPartition.cpp
   Parallelization.cpp
