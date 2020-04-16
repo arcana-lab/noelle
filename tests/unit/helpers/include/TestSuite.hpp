@@ -47,9 +47,12 @@ namespace parallelizertests {
 
     void runTests (ModulePass &pass) ;
 
-    void checkTest (int testId, Values &expectedValues) ;
+    bool checkTest (int testId, Values &expectedValues) ;
     template <typename T> std::string printToString (T *printable) ;
     template <typename T> std::string printAsOperandToString (T *printable) ;
+
+    std::string valueToString (Value *value) ;
+    std::string trimProfilerBitcodeInfo (std::string bitcodeValue) ;
 
     const std::string orderedValueDelimiter = ";";
     const std::string unorderedValueDelimiter = "|";
