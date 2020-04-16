@@ -86,7 +86,7 @@ Values DGTestSuite::pdgHasAllValuesInProgram (ModulePass &pass) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto node : dgPass.fdg->getNodes()) {
-    valueNames.insert(dgPass.suite->printToString(node->getT()));
+    valueNames.insert(dgPass.suite->valueToString(node->getT()));
   }
   return valueNames;
 }
@@ -95,8 +95,8 @@ Values DGTestSuite::pdgHasAllDGEdgesInProgram (ModulePass &pass) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto edge : dgPass.fdg->getEdges()) {
-    std::string outName = dgPass.suite->printToString(edge->getOutgoingT());
-    std::string inName = dgPass.suite->printToString(edge->getIncomingT());
+    std::string outName = dgPass.suite->valueToString(edge->getOutgoingT());
+    std::string inName = dgPass.suite->valueToString(edge->getIncomingT());
     std::string type = edge->isControlDependence() ? "control" : (
       edge->isMemoryDependence() ? "memory" : "data"
     );
@@ -113,7 +113,7 @@ Values DGTestSuite::ldgHasOnlyValuesOfLoop (ModulePass &pass) {
   auto ldi = dgPass.fdg->createLoopsSubgraph(l);
   Values valueNames;
   for (auto nodePair : ldi->internalNodePairs()) {
-    valueNames.insert(dgPass.suite->printToString(nodePair.first));
+    valueNames.insert(dgPass.suite->valueToString(nodePair.first));
   }
   delete ldi;
   return valueNames;
@@ -123,7 +123,7 @@ Values DGTestSuite::pdgIdentifiesRootValues (ModulePass &pass) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto node : dgPass.fdg->getTopLevelNodes()) {
-    valueNames.insert(dgPass.suite->printToString(node->getT()));
+    valueNames.insert(dgPass.suite->valueToString(node->getT()));
   }
   return valueNames;
 }
@@ -132,7 +132,7 @@ Values DGTestSuite::pdgIdentifiesLeafValues (ModulePass &pass) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto node : dgPass.fdg->getLeafNodes()) {
-    valueNames.insert(dgPass.suite->printToString(node->getT()));
+    valueNames.insert(dgPass.suite->valueToString(node->getT()));
   }
   return valueNames;
 }
@@ -144,7 +144,7 @@ Values DGTestSuite::pdgIdentifiesDisconnectedValueSets (ModulePass &pass) {
   for (auto disjointSet : disjointSets) {
     std::vector<std::string> valueNames;
     for (auto node : *disjointSet) {
-      valueNames.push_back(dgPass.suite->printToString(node->getT()));
+      valueNames.push_back(dgPass.suite->valueToString(node->getT()));
     }
     std::string setName = valueNames[0];
     for (int i = 1; i < valueNames.size(); ++i) {
@@ -181,9 +181,9 @@ Values DGTestSuite::getSCCValues(std::set<SCC *> sccs) {
     int i = 0;
     for (auto nodePair : scc->internalNodePairs()) values[i++] = nodePair.first;
 
-    std::string valuesDelimited = suite->printToString(values[0]);
+    std::string valuesDelimited = suite->valueToString(values[0]);
     for (i = 1; i < values.size(); ++i) {
-      valuesDelimited += suite->unorderedValueDelimiter + suite->printToString(values[i]);
+      valuesDelimited += suite->unorderedValueDelimiter + suite->valueToString(values[i]);
     }
     sccStrings.insert(valuesDelimited);
   }
