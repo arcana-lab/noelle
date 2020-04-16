@@ -144,8 +144,7 @@ namespace llvm {
       const DGNode<T> *fetchConstNode(T *theT) const;
 
       DGEdge<T> *addEdge(T *from, T *to);
-      DGEdge<T> *fetchEdge(DGNode<T> *in, DGNode<T> *out);
-      std::set<DGEdge<T> *> fetchEdgeSet(DGNode<T> *From, DGNode<T> *To);
+      std::set<DGEdge<T> *> fetchEdges(DGNode<T> *From, DGNode<T> *To);
       DGEdge<T> *copyAddEdge(DGEdge<T> &edgeToCopy);
 
       /*
@@ -391,14 +390,7 @@ namespace llvm {
   }
 
   template <class T>
-  DGEdge<T> *DG<T>::fetchEdge(DGNode<T> *From, DGNode<T> *To) {
-    return *std::find_if(From->begin_outgoing_edges(), From->end_outgoing_edges(),
-        [To](auto edge)
-        { return edge->getIncomingNode() == To; });
-  }
-
-  template <class T>
-  std::set<DGEdge<T> *> DG<T>::fetchEdgeSet(DGNode<T> *From, DGNode<T> *To) {
+  std::set<DGEdge<T> *> DG<T>::fetchEdges(DGNode<T> *From, DGNode<T> *To) {
     std::set<DGEdge<T> *> edgeSet;
 
     for (auto &edge : From->getOutgoingEdges()) {
