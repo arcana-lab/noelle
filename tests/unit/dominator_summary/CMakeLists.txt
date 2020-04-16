@@ -33,4 +33,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/DGTestSuite.hpp DESTINATION include)
+install(PROGRAMS include/DSTestSuite.hpp DESTINATION include)

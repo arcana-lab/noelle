@@ -14,13 +14,12 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/Dominators.h"
+#include "llvm/Analysis/PostDominators.h"
+#include "llvm/Support/GenericDomTree.h"
 
-#include "PDGPrinter.hpp"
-#include "PDG.hpp"
-#include "SCC.hpp"
-#include "SCCDAG.hpp"
-#include "PDGAnalysis.hpp"
 #include "TestSuite.hpp"
+#include "DominatorSummary.hpp"
 
 #include <sstream>
 #include <vector>
@@ -30,10 +29,10 @@ using namespace parallelizertests;
 
 namespace llvm {
 
-  class DGTestSuite : public ModulePass {
+  class DSTestSuite : public ModulePass {
     public:
 
-      DGTestSuite() : ModulePass{ID} {}
+      DSTestSuite() : ModulePass{ID} {}
 
       /*
        * Class fields
@@ -47,21 +46,19 @@ namespace llvm {
       void getAnalysisUsage (AnalysisUsage &AU) const override ;
 
     private:
-      static Values pdgHasAllValuesInProgram (ModulePass &pass) ;
-      static Values pdgHasAllDGEdgesInProgram (ModulePass &pass) ;
-      static Values ldgHasOnlyValuesOfLoop (ModulePass &pass) ;
-      static Values pdgIdentifiesRootValues (ModulePass &pass) ;
-      static Values pdgIdentifiesLeafValues (ModulePass &pass) ;
-      static Values pdgIdentifiesDisconnectedValueSets (ModulePass &pass) ;
-      static Values sccdagInternalNodesOfOutermostLoop (ModulePass &pass) ;
-      static Values sccdagExternalNodesOfOutermostLoop (ModulePass &pass) ;
 
-      Values getSCCValues(std::set<SCC *> sccs) ;
+      static Values domTreesAreIdentical (ModulePass &pass);
+
+      static Values domNodeIsIdentical (DSTestSuite &pass, DomTreeNodeBase<BasicBlock> &node, DomNodeSummary &nodeS);
+
+      template <class DTBase>
+      static Values domTreeIsIdentical (DSTestSuite &pass, DTBase &DT, DomTreeSummary &DTS);
 
       TestSuite *suite;
       Module *M;
-      Function *mainF;
-      PDG *fdg;
-      SCCDAG *sccdagOutermostLoop;
+      DominatorSummary *ds;
+      DominatorTree *dt;
+      PostDominatorTree *pdt;
   };
 }
+
