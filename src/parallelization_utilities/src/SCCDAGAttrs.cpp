@@ -217,9 +217,13 @@ bool SCCDAGAttrs::isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const {
   auto instInSubloops = true;
   auto topLoop = LIS.getLoopNestingTreeRoot();
   for (auto iNodePair : scc->internalNodePairs()) {
-    auto inst = cast<Instruction>(iNodePair.first);
-    instInSubloops &= LIS.getLoop(inst) != topLoop;
+    if (auto inst = dyn_cast<Instruction>(iNodePair.first)) {
+      instInSubloops &= LIS.getLoop(inst) != topLoop;
+    } else {
+      instInSubloops = false;
+    }
   }
+
   return instInSubloops;
 }
 
@@ -328,13 +332,14 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopsSummary &LIS){
           /*
            * Check if the dependence is between instructions within the loop.
            */
-          auto depDst = cast<Instruction>(edge->getOutgoingT());
-          if (!scc->isInternal(depDst)) continue;
+          auto depValue = edge->getOutgoingT();
+          if (!isa<Instruction>(depValue) || !scc->isInternal(depValue)) continue;
+          auto depInst = cast<Instruction>(depValue);
 
           /*
            * Check if the dependence crosses the iteration boundary.
            */
-          if (canPrecedeInCurrentIteration(LIS, depDst, phi)) continue;
+          if (canPrecedeInCurrentIteration(LIS, depInst, phi)) continue;
 
           /*
            * The dependence From->To crosses the iteration boundary.
@@ -349,7 +354,7 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopsSummary &LIS){
            *
            * Check for this special case.
            */
-          //if (canPrecedeInCurrentIteration(LIS, phi, depI)) continue;
+          //if (canPrecedeInCurrentIteration(LIS, phi, depInst)) continue;
 
           /*
            * The dependence is loop-carried.
