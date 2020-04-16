@@ -23,7 +23,6 @@ using namespace llvm;
 bool llvm::PDGAnalysis::doInitialization (Module &M){
   this->verbose = static_cast<PDGVerbosity>(Verbose.getValue());
   this->wpa = new WPAPass();
-  this->wpaInitialized = false;
   return false;
 }
 
@@ -50,11 +49,8 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   /*
    * Construct WPAPass
    */
-  if (!wpaInitialized) {
-    SVFModule *svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(M);
-    wpa->runOnModule(svfModule);
-    wpaInitialized = true;
-  }
+  SVFModule *svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(M);
+  wpa->runOnModule(svfModule);
 
   /*
    * Check if we should print the PDG
