@@ -6,7 +6,7 @@ OPT="opt" ;
 
 ########### Analyses
 AA="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa"
-ANALYSES="${AA} -scalar-evolution -loops -loop-simplify -lcssa -domtree"
+ANALYSES="${AA} -scalar-evolution -loops -loop-simplify -lcssa -domtree -postdomtree"
 
 WPAPASS="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so -veto -nander -hander -sander -sfrander -wander -ander -lander -hlander -stat=false"
 PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/PDGAnalysis.so"
