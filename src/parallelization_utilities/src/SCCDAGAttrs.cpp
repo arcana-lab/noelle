@@ -246,10 +246,10 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
     for (auto node : nodes) queue.push(node);
   };
 
-  for (auto sccPair : this->sccdag->internalNodePairs()) {
-    auto childSCC = sccPair.first;
+  for (auto childSCCNode : this->sccdag->getNodes()) {
+    auto childSCC = childSCCNode->getT();
     std::queue<DGNode<SCC> *> nodesToCheck;
-    addIncomingNodes(nodesToCheck, sccPair.second);
+    addIncomingNodes(nodesToCheck, childSCCNode);
 
     while (!nodesToCheck.empty()) {
       auto node = nodesToCheck.front();

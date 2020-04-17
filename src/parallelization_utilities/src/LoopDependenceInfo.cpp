@@ -48,7 +48,8 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
-  mergeTrivialNodesInSCCDAG(loopSCCDAG);
+  SCCDAGNormalizer normalizer(*loopSCCDAG, this->liSummary, SE, DS);
+  normalizer.normalizeInPlace();
   this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, DS);
 
   /*
@@ -161,97 +162,6 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
   return make_pair(loopDG, loopSCCDAG);
 }
 
-void LoopDependenceInfo::mergeTrivialNodesInSCCDAG (SCCDAG *loopSCCDAG) {
-
-  /*
-   * Merge SCCs.
-   */
-  // NOTE(angelo): For the sake of brevity in logging, instead of logging
-  // the before and after, which can be VERY verbose, we should just log
-  // each change made by these merge helpers. This would still capture everything
-  // necessary for debugging purposes.
-  mergeSingleSyntacticSugarInstrs(loopSCCDAG);
-  mergeBranchesWithoutOutgoingEdges(loopSCCDAG);
-
-  return ;
-}
-
-void LoopDependenceInfo::mergeSingleSyntacticSugarInstrs (SCCDAG *loopSCCDAG) {
-  std::unordered_map<DGNode<SCC> *, std::set<DGNode<SCC> *> *> mergedToGroup;
-  std::set<std::set<DGNode<SCC> *> *> singles;
-
-  /*
-   * Iterate over SCCs.
-   */
-  for (auto sccPair : loopSCCDAG->internalNodePairs()){
-    auto scc = sccPair.first;
-    auto sccNode = sccPair.second;
-
-    /*
-     * Determine if node is a single syntactic sugar instruction that has either
-     * a single parent SCC or a single child SCC
-     */
-    if (scc->numInternalNodes() > 1) continue;
-    auto I = scc->begin_internal_node_map()->first;
-    if (!isa<PHINode>(I) && !isa<GetElementPtrInst>(I) && !isa<CastInst>(I)) continue;
-
-    // TODO: Even if more than one edge exists, attempt next/previous depth SCCs.
-    DGNode<SCC> *adjacentNode = nullptr;
-    if (sccNode->numOutgoingEdges() == 1) {
-      adjacentNode = (*sccNode->begin_outgoing_edges())->getIncomingNode();
-    }
-    if (sccNode->numIncomingEdges() == 1) {
-      auto incomingOption = (*sccNode->begin_incoming_edges())->getOutgoingNode();
-      if (!adjacentNode) {
-        adjacentNode = incomingOption;
-      } else {
-
-        /*
-         * NOTE: generally, these are lcssa PHIs, or casts of previous PHIs/instructions
-         * If a GEP, it's load is in the child SCC, so leave it with the child
-         */
-        if (isa<PHINode>(I) || isa<CastInst>(I)) adjacentNode = incomingOption;
-      }
-    }
-    if (!adjacentNode) continue;
-
-    /*
-     * Determine the merged state of the single instruction node and its adjacent
-     * Merge the current merged nodes holding both of the above
-     */
-    bool mergedSCCNode = mergedToGroup.find(sccNode) != mergedToGroup.end();
-    bool mergedAdjNode = mergedToGroup.find(adjacentNode) != mergedToGroup.end();
-    if (mergedSCCNode && mergedAdjNode) {
-
-      /*
-       * Combine the adjacent node's merged group into that of the single instruction's merged group
-       */
-      auto adjSet = mergedToGroup[adjacentNode];
-      for (auto node : *adjSet) {
-        mergedToGroup[sccNode]->insert(node);
-        mergedToGroup[node] = mergedToGroup[sccNode];
-      }
-      singles.erase(adjSet);
-      delete adjSet;
-    } else if (mergedSCCNode) {
-      mergedToGroup[sccNode]->insert(adjacentNode);
-      mergedToGroup[adjacentNode] = mergedToGroup[sccNode];
-    } else if (mergedAdjNode) {
-      mergedToGroup[adjacentNode]->insert(sccNode);
-      mergedToGroup[sccNode] = mergedToGroup[adjacentNode];
-    } else {
-      auto nodes = new std::set<DGNode<SCC> *>({ sccNode, adjacentNode });
-      singles.insert(nodes);
-      mergedToGroup[sccNode] = nodes;
-      mergedToGroup[adjacentNode] = nodes;
-    }
-  }
-
-  for (auto sccNodes : singles) { 
-    loopSCCDAG->mergeSCCs(*sccNodes);
-    delete sccNodes;
-  }
-}
   
 bool LoopDependenceInfo::isTechniqueEnabled (Technique technique){
   auto exist = this->enabledTechniques.find(technique) != this->enabledTechniques.end();
@@ -273,50 +183,6 @@ void LoopDependenceInfo::disableTechnique (Technique techniqueToDisable){
   return ;
 }
 
-void LoopDependenceInfo::mergeBranchesWithoutOutgoingEdges (SCCDAG *loopSCCDAG) {
-  std::vector<DGNode<SCC> *> tailCmpBrs;
-  for (auto sccPair : loopSCCDAG->internalNodePairs()){
-    auto scc = sccPair.first;
-    auto sccNode = sccPair.second;
-
-    if (sccNode->numIncomingEdges() == 0 || sccNode->numOutgoingEdges() > 0) continue ;
-
-    bool allCmpOrBr = true;
-    for (auto nodePair : scc->internalNodePairs()){
-      auto nodeValue = nodePair.first;
-      auto node = nodePair.second;
-
-      /*
-       * Handle the cmp instruction.
-       */
-      if (isa<CmpInst>(nodeValue)){
-        allCmpOrBr &= true;
-        continue ;
-      }
-
-      /*
-       * Handle the branch instruction.
-       */
-      auto nodeInst = dyn_cast<Instruction>(nodeValue);
-      if (nodeInst == nullptr){
-        allCmpOrBr &= false;
-        continue ;
-      }
-      allCmpOrBr &= nodeInst->isTerminator();
-    }
-    if (allCmpOrBr) tailCmpBrs.push_back(sccNode);
-  }
-
-  /*
-   * Merge trailing compare/branch scc into previous depth scc
-   */
-  for (auto tailSCC : tailCmpBrs) {
-    std::set<DGNode<SCC> *> nodesToMerge = { tailSCC };
-    nodesToMerge.insert(*loopSCCDAG->getPreviousDepthNodes(tailSCC).begin());
-    loopSCCDAG->mergeSCCs(nodesToMerge);
-  }
-}
-      
 PDG * LoopDependenceInfo::getLoopDG (void){
   return this->loopDG;
 }

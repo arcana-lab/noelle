@@ -272,9 +272,8 @@ bool SCCDAG::iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke){
   /*
    * Iterate over SCC.
    */
-  for (auto SCCPair : this->internalNodePairs()){
-    auto SCC = SCCPair.first;
-    if (funcToInvoke(SCC)){
+  for (auto sccNode : this->getNodes()){
+    if (funcToInvoke(sccNode->getT())){
       return true;
     }
   }
@@ -284,9 +283,8 @@ bool SCCDAG::iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke){
       
 std::unordered_set<SCC *> SCCDAG::getSCCs (void) {
   std::unordered_set<SCC *> s;
-  for (auto sccIPair : this->internalNodePairs()){
-    auto scc = sccIPair.first;
-    s.insert(scc);
+  for (auto sccNode : this->getNodes()){
+    s.insert(sccNode->getT());
   }
 
   return s;
