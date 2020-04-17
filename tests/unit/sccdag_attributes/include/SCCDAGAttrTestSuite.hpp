@@ -22,7 +22,9 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
+#include "PDGPrinter.hpp"
 #include "SCCDAGAttrs.hpp"
+#include "SCCDAGNormalizer.hpp"
 
 #include "TestSuite.hpp"
 
@@ -53,6 +55,9 @@ namespace llvm {
     private:
 
       static Values sccdagHasCorrectSCCs (ModulePass &pass) ;
+      static Values normalizedTopLoopSCCDAG (ModulePass &pass) ;
+      Values getValuesOfSCCDAG (SCCDAG &sccdag) ;
+
       static Values sccsWithIVAreFound (ModulePass &pass) ;
       static Values attrsIdentifiesTripCountIVBounds (ModulePass &pass) ;
 
@@ -62,6 +67,7 @@ namespace llvm {
       static Values interIterationDependencies (ModulePass &pass) ;
       static Values intraIterationDependencies (ModulePass &pass) ;
 
+
       static Values printSCCs (ModulePass &pass, std::set<SCC *> sccs) ;
 
       TestSuite *suite;
@@ -70,6 +76,7 @@ namespace llvm {
       LoopInfo *LI;
       PDG *fdg;
       SCCDAG *sccdag;
+      SCCDAG *sccdagTopLoopNorm;
       SCCDAGAttrs *attrs;
   };
 }

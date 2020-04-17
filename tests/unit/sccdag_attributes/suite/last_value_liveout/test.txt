@@ -1,3 +1,11 @@
+normalized top loop sccdag
+i32 %0
+%.02 = phi i32 [ 0, %2 ], [ %6, %8 ] | %6 = add nsw i32 %.02, %0
+%.01 = phi i32 [ 0, %2 ], [ %7, %8 ] | %7 = add nsw i32 %6, 5 | %.01.lcssa = phi i32 [ %.01, %3 ]
+%.0 = phi i32 [ 0, %2 ], [ %9, %8 ] | %9 = add nsw i32 %.0, 1 | %4 = icmp slt i32 %.0, 100 |
+  br i1 %4, label %5, label %10 | br label %3 | br label %8
+%.02.lcssa = phi i32 [ %.02, %3 ]
+
 inter iteration top loop dependencies
 br i1 %4, label %5, label %10 ; %.02 = phi i32 [ 0, %2 ], [ %6, %8 ]
 br i1 %4, label %5, label %10 ; %.01 = phi i32 [ 0, %2 ], [ %7, %8 ]

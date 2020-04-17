@@ -31,7 +31,8 @@ const char *SCCDAGAttrTestSuite::tests[] = {
   "reducible SCC",
   "clonable SCC",
   "inter iteration top loop dependencies",
-  "intra iteration top loop dependencies"
+  "intra iteration top loop dependencies",
+  "normalized top loop sccdag"
 };
 TestFunction SCCDAGAttrTestSuite::testFns[] = {
   SCCDAGAttrTestSuite::sccdagHasCorrectSCCs,
@@ -39,7 +40,8 @@ TestFunction SCCDAGAttrTestSuite::testFns[] = {
   SCCDAGAttrTestSuite::reducibleSCCsAreFound,
   SCCDAGAttrTestSuite::clonableSCCsAreFound,
   SCCDAGAttrTestSuite::interIterationDependencies,
-  SCCDAGAttrTestSuite::intraIterationDependencies
+  SCCDAGAttrTestSuite::intraIterationDependencies,
+  SCCDAGAttrTestSuite::normalizedTopLoopSCCDAG
 };
 
 bool SCCDAGAttrTestSuite::doInitialization (Module &M) {
@@ -66,7 +68,8 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   this->LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   // TODO: Grab first loop and produce attributes on it
   LoopsSummary LIS;
-  LIS.populate(*LI, LI->getLoopsInPreorder()[0]);
+  Loop *topLoop = LI->getLoopsInPreorder()[0];
+  LIS.populate(*LI, topLoop);
 
   auto *DT = &getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
   auto *PDT = &getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
@@ -80,10 +83,18 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   this->attrs = new SCCDAGAttrs();
   this->attrs->populate(sccdag, LIS, *SE, DS);
 
+  auto loopDG = fdg->createLoopsSubgraph(topLoop);
+  this->sccdagTopLoopNorm = new SCCDAG(loopDG);
+  // PDGPrinter printer;
+  // printer.writeGraph<SCCDAG>("graph-top-loop.dot", sccdagTopLoopNorm);
+  SCCDAGNormalizer normalizer(*sccdagTopLoopNorm, LIS, *SE, DS);
+  normalizer.normalizeInPlace();
+
   suite->runTests((ModulePass &)*this);
 
   delete this->attrs;
   delete this->sccdag;
+  delete this->sccdagTopLoopNorm;
   delete fdg;
 
   return false;
@@ -100,15 +111,23 @@ std::string combineValues (std::vector<std::string> values, std::string delimite
 
 Values SCCDAGAttrTestSuite::sccdagHasCorrectSCCs (ModulePass &pass) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
+  return attrPass.getValuesOfSCCDAG(*attrPass.sccdag);
+}
+
+Values SCCDAGAttrTestSuite::normalizedTopLoopSCCDAG (ModulePass &pass) {
+  SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
+  return attrPass.getValuesOfSCCDAG(*attrPass.sccdagTopLoopNorm);
+}
+
+Values SCCDAGAttrTestSuite::getValuesOfSCCDAG (SCCDAG &dag) {
   Values valueNames;
-  for (auto node : attrPass.sccdag->getNodes()) {
+  for (auto node : dag.getNodes()) {
     std::vector<std::string> sccValues;
     for (auto nodePair : node->getT()->internalNodePairs()) {
-      sccValues.push_back(attrPass.suite->valueToString(nodePair.first));
+      sccValues.push_back(suite->valueToString(nodePair.first));
     }
-    valueNames.insert(combineValues(sccValues, attrPass.suite->unorderedValueDelimiter));
+    valueNames.insert(combineValues(sccValues, suite->unorderedValueDelimiter));
   }
-
   return valueNames;
 }
 
