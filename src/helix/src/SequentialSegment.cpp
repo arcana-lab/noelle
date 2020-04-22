@@ -223,7 +223,8 @@ SequentialSegment::SequentialSegment (
           && allInSS
           && (ssInstructions.find(I) != ssInstructions.end())
           ) {
-      this->entries.insert(I);
+      auto firstI = I->getParent()->getFirstNonPHIOrDbgOrLifetime();
+      this->entries.insert(firstI);
     }
 
     /*
