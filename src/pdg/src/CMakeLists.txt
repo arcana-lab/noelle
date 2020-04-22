@@ -2,6 +2,7 @@
 set(Srcs 
   PDGAnalysis.cpp
   AnalysisPass.cpp
+  ExecutionGraph.cpp
   PDG.cpp
   SCCDAG.cpp
   SCC.cpp
