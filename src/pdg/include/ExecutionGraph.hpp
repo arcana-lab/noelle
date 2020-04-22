@@ -48,6 +48,11 @@ namespace llvm {
        */
       ExecutionGraph (Loop *loop) ;
 
+      /*
+       * Add all basic blocks given
+       */
+      ExecutionGraph (std::set<BasicBlock *> &bbs) ;
+
     private:
       void connectBasicBlockNodes() ;
   };
