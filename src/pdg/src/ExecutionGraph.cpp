@@ -38,8 +38,17 @@ ExecutionGraph::ExecutionGraph(Loop *loop) {
   connectBasicBlockNodes();
 }
 
+ExecutionGraph::ExecutionGraph (std::set<BasicBlock *> &bbs) {
+  for (auto B : bbs) {
+    addNode(B, true);
+  }
+
+  connectBasicBlockNodes();
+}
+
 void ExecutionGraph::connectBasicBlockNodes() {
-  for (auto node : getNodes()) {
+  std::set<DGNode<BasicBlock> *> nodes(begin_nodes(), end_nodes());
+  for (auto node : nodes) {
     auto bb = node->getT();
     for (auto succBB : successors(bb)) {
       fetchOrAddNode(succBB, false);
