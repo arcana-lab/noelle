@@ -106,7 +106,8 @@ void HELIX::addSynchronizations (
        * Separate out the basic block into 2 halves, the second starting with justAfterEntry
        */
       auto beforeEntryBB = justAfterEntry->getParent();
-      auto ssEntryBB = BasicBlock::Create(cxt, "", helixTask->F);
+      auto ssEntryBBName = "SS" + std::to_string(ss->getID()) + "-entry";
+      auto ssEntryBB = BasicBlock::Create(cxt, ssEntryBBName, helixTask->F);
       IRBuilder<> ssEntryBuilder(ssEntryBB);
       auto afterEntry = justAfterEntry;
       while (afterEntry) {
@@ -117,7 +118,7 @@ void HELIX::addSynchronizations (
       }
 
       /*
-       * Redirect PHI node incoming blocks from beforeEntryBB to ssEntryBB
+       * Redirect PHI node incoming blocks in successors to beforeEntryBB so they are successors of ssEntryBB
        */
       for (auto succToEntry : successors(ssEntryBB)) {
         for (auto &phi : succToEntry->phis()) {
@@ -131,7 +132,8 @@ void HELIX::addSynchronizations (
        * Set the ssState just after the call to HELIX_wait.
        * This will keep track of the fact that we have executed wait for ss in the current iteration.
        */
-      auto ssWaitBB = BasicBlock::Create(cxt, "", helixTask->F);
+      auto ssWaitBBName = "SS" + std::to_string(ss->getID()) + "-wait";
+      auto ssWaitBB = BasicBlock::Create(cxt, ssWaitBBName, helixTask->F);
       IRBuilder<> ssWaitBuilder(ssWaitBB);
       auto wait = ssWaitBuilder.CreateCall(this->waitSSCall, { ssPastPtr });
       ssWaitBuilder.CreateStore(ConstantInt::get(int64, 1), ssState);
@@ -196,7 +198,8 @@ void HELIX::addSynchronizations (
         && "Failed assumption: the ss begins at the start of a basic block");
 
       auto entryBB = justAfterEntry->getParent();
-      auto checkFlagBB = BasicBlock::Create(cxt, "", LDI->function);
+      auto ssCheckBBName = "SS" + std::to_string(ss->getID()) + "-checkexit";
+      auto checkFlagBB = BasicBlock::Create(cxt, ssCheckBBName, LDI->function);
       std::vector<BasicBlock *> predBBs(pred_begin(entryBB), pred_end(entryBB));
       for (auto predBB : predBBs) {
         auto term = predBB->getTerminator();
