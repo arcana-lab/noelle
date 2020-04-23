@@ -223,6 +223,12 @@ SequentialSegment::SequentialSegment (
           && allInSS
           && (ssInstructions.find(I) != ssInstructions.end())
           ) {
+
+      /*
+       * NOTE: Do not include PHIs in a sequential segment. Let the PHI redirect data properly before
+       * entry into the sequential segment. This knowledge would be lost after the entry because
+       * of the insertion of control flow checking whether to wait before entering the segment
+       */
       auto firstI = I->getParent()->getFirstNonPHIOrDbgOrLifetime();
       this->entries.insert(firstI);
     }
