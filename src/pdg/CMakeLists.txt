@@ -32,7 +32,7 @@ install(PROGRAMS
   include/Assumptions.h
   include/DGBase.hpp
   include/DGGraphTraits.hpp
-  include/ExecutionGraph.hpp
+  include/SubCFGs.hpp
   include/PDG.hpp
   include/PDGAnalysis.hpp
   include/SCC.hpp
