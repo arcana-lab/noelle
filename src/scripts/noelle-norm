@@ -10,7 +10,7 @@ AA_BASE="-basicaa"
 
 
 ########### Transformations
-TRANSFORMATIONS_BEFORE_PARALLELIZATION="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so ${AA_BASE} -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -mergereturn"
+TRANSFORMATIONS_BEFORE_PARALLELIZATION="${AA_BASE} -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -mergereturn"
 
 
 cmdToExecute="${OPT} ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} $@"
