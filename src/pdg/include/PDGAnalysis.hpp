@@ -13,7 +13,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
-#include "WPA/WPAPass.h"
 
 #include "PDG.hpp"
 #include "AllocAA.hpp"
@@ -44,7 +43,6 @@ namespace llvm {
     private:
       Module *M;
       PDG *programDependenceGraph;
-      WPAPass *wpa;
       AllocAA *allocAA;
       std::set<Function *> CGUnderMain;
       TalkDown *talkdown;

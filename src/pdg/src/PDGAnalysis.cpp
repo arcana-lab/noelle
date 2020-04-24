@@ -10,7 +10,6 @@
  */
 #include "SystemHeaders.hpp"
 
-#include "SVF-FE/LLVMUtil.h"
 #include "WPA/WPAPass.h"
 #include "TalkDown.hpp"
 #include "PDGPrinter.hpp"
@@ -22,7 +21,6 @@ using namespace llvm;
 
 bool llvm::PDGAnalysis::doInitialization (Module &M){
   this->verbose = static_cast<PDGVerbosity>(Verbose.getValue());
-  this->wpa = new WPAPass();
   return false;
 }
 
@@ -35,6 +33,7 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<AllocAA>();
   AU.addRequired<TalkDown>();
+  AU.addRequired<WPAPass>();
   AU.setPreservesAll();
   return ;
 }
@@ -45,12 +44,6 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
    * Store global information.
    */
   this->M = &M;
-
-  /*
-   * Construct WPAPass
-   */
-  SVFModule *svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(M);
-  wpa->runOnModule(svfModule);
 
   /*
    * Check if we should print the PDG
@@ -520,7 +513,8 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
   /*
    * Check other alias analyses
    */
-  switch (this->wpa->alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
+  WPAPass &wpa = getAnalysis<WPAPass>();
+  switch (wpa.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
       makeEdge = true;
