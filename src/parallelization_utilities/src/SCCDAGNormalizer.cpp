@@ -13,9 +13,44 @@
 using namespace llvm;
 
 void SCCDAGNormalizer::normalizeInPlace() {
+
+  /*
+   * Note: the grouping of LCSSA instructions with the loop header PHI they
+   * close is necessary for parallelization techniques and must be prioritized
+   * above any other normalizations that merge PHI instruction SCCs
+   */
+  mergeLCSSAPhis();
+
   mergeSingleSyntacticSugarInstrs();
   mergeBranchesWithoutOutgoingEdges();
   mergeSCCsWithExternalInterIterationDependencies();
+}
+
+void SCCDAGNormalizer::mergeLCSSAPhis () {
+  MergeGroups mergeGroups;
+  for (auto sccNode : sccdag.getNodes()) {
+    auto scc = sccNode->getT();
+    if (scc->numInternalNodes() != 1) continue;
+
+    auto I = scc->begin_internal_node_map()->first;
+    if (!isa<PHINode>(I)) continue;
+
+    auto phi = cast<PHINode>(I);
+    if (phi->getNumIncomingValues() != 1) continue;
+
+    auto incomingI = phi->getIncomingValue(0);
+    if (!isa<PHINode>(incomingI)) continue;
+
+    auto incomingPHI = cast<PHINode>(incomingI);
+    auto incomingLoop = LIS.getLoop(incomingPHI->getParent());
+    if (!incomingLoop || incomingLoop->header != incomingPHI->getParent()) continue;
+
+    mergeGroups.merge(sccdag.fetchNode(sccdag.sccOfValue(incomingI)), sccNode);
+  }
+
+  for (auto sccNodes : mergeGroups.groups) { 
+    sccdag.mergeSCCs(*sccNodes);
+  }
 }
 
 void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies () {

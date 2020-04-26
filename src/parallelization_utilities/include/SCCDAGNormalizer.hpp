@@ -34,6 +34,7 @@ namespace llvm {
       DominatorSummary &DS;
       SCCDAG &sccdag;
 
+      void mergeLCSSAPhis () ;
       void mergeSCCsWithExternalInterIterationDependencies () ;
       void mergeSingleSyntacticSugarInstrs () ;
       void mergeBranchesWithoutOutgoingEdges () ;
