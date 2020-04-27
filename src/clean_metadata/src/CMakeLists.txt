@@ -1,21 +1,15 @@
 # Sources
-set(Srcs 
-  PDGAnalysis.cpp
-  AnalysisPass.cpp
-  SubCFGs.cpp
-  PDG.cpp
-  SCCDAG.cpp
-  SCC.cpp
-  PDGPrinter.cpp
+set(Srcs
+  CleanMetadata.cpp 
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "PDGAnalysis")
+set(PassName "CleanMetadata")
 
-# configure LLVM 
+# configure LLVM
 find_package(LLVM REQUIRED CONFIG)
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
@@ -29,11 +23,7 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS}
            ../../basic_utilities/include
-					 ../../parallelization_utilities/include
-					 ../../alloc_aa/include 
-					 ../../talkdown/include 
 					 ../include
-           ../../../external/svf/include
                      )
 
 # Declare the LLVM pass to compile

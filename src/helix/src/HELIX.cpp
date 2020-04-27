@@ -247,6 +247,11 @@ void HELIX::createParallelizableTask (
    */
   this->spillLoopCarriedDataDependencies(LDI);
 
+  if (this->verbose >= Verbosity::Maximal) {
+    SubCFGs execGraph(*helixTask->F);
+    DGPrinter::writeGraph<SubCFGs>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+  }
+
   return ;
 }
 
@@ -297,6 +302,8 @@ void HELIX::synchronizeTask (
   if (this->verbose >= Verbosity::Maximal) {
     helixTask->F->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
     errs() << "HELIX: Exit\n";
+    SubCFGs execGraph(*helixTask->F);
+    DGPrinter::writeGraph<SubCFGs>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;

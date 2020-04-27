@@ -41,6 +41,45 @@ using namespace llvm;
 
 namespace llvm {
 
+  class DGPrinter {
+    public:
+
+      template <class GT>
+      static bool writeGraph(const std::string& filename, GT *graph) {
+        errs() << "Writing '" << filename << "'...\n";
+
+        std::error_code EC;
+        raw_fd_ostream File(filename, EC, sys::fs::F_Text);
+        std::string Title = DOTGraphTraits<GT *>::getGraphName(graph);
+
+        if (!EC) {
+          WriteGraph(File, graph, false, Title);
+					File.close();
+          return true;
+        }
+
+        errs() << "  error opening file for writing!\n";
+        return false;
+      }
+
+      template <class GT>
+      static bool writeClusteredGraph(const std::string& filename, GT *graph) {
+        const std::string unclusteredFilename = "_unclustered_" + filename;
+        if (writeGraph<GT>(unclusteredFilename, graph)) {
+          addClusteringToDotFile(unclusteredFilename, filename);
+          return true;
+        }
+
+        return false;
+      }
+
+    private:
+
+      static void addClusteringToDotFile(std::string inputFileName, std::string outputFileName);
+      static void groupNodesByCluster(unordered_map<std::string, std::set<std::string>> &clusterNodes, int &numLines, ifstream &ifile);
+      static void writeClusterToFile(const unordered_map<std::string, std::set<std::string>> &clusterNodes, ofstream &cfile);
+  };
+
   class PDGPrinter {
     public:
       PDGPrinter();
@@ -54,27 +93,6 @@ namespace llvm {
 
       void printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI);
 
-      template <class GT>
-      void writeGraph(const std::string& filename, GT *graph) {
-        const std::string unclusteredFilename = "_unclustered_" + filename;
-        errs() << "Writing '" << filename << "'...\n";
-
-        std::error_code EC;
-        raw_fd_ostream File(unclusteredFilename, EC, sys::fs::F_Text);
-        std::string Title = DOTGraphTraits<GT *>::getGraphName(graph);
-
-        if (!EC) {
-          WriteGraph(File, graph, false, Title);
-					File.close();
-          addClusteringToDotFile(unclusteredFilename, filename);
-          errs() << "\n";
-
-        } else {
-          errs() << "  error opening file for writing!\n";
-          abort();
-        }
-      }
-
     private:
 
       void collectAllFunctionsInCallGraph (
@@ -82,10 +100,6 @@ namespace llvm {
         CallGraph &callGraph,
         std::set<Function *> &funcSet
         );
-
-      void addClusteringToDotFile(std::string inputFileName, std::string outputFileName);
-      void groupNodesByCluster(unordered_map<std::string, std::set<std::string>> &clusterNodes, int &numLines, ifstream &ifile);
-      void writeClusterToFile(const unordered_map<std::string, std::set<std::string>> &clusterNodes, ofstream &cfile);
   };
 
 }

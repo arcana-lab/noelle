@@ -13,7 +13,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
-#include "WPA/WPAPass.h"
 
 #include "PDG.hpp"
 #include "AllocAA.hpp"
@@ -44,12 +43,28 @@ namespace llvm {
     private:
       Module *M;
       PDG *programDependenceGraph;
-      WPAPass *wpa;
       AllocAA *allocAA;
       std::set<Function *> CGUnderMain;
       TalkDown *talkdown;
       PDGVerbosity verbose;
       PDGPrinter printer;
+
+      bool comparePDGs(PDG *, PDG *);
+      bool compareNodes(PDG *, PDG *);
+      bool compareEdges(PDG *, PDG *);
+
+      bool hasPDGAsMetadata(Module &);
+
+      PDG * constructPDGFromMetadata(Module &);
+      void constructNodesFromMetadata(PDG *, Function &, unordered_map<MDNode *, Value *> &);
+      void constructEdgesFromMetadata(PDG *, Function &, unordered_map<MDNode *, Value *> &);
+      DGEdge<Value> * constructEdgeFromMetadata(PDG *, MDNode *, unordered_map<MDNode *, Value *> &);
+
+      void embedPDGAsMetadata(PDG *);
+      void embedNodesAsMetadata(PDG *, LLVMContext &, unordered_map<Value *, MDNode *> &);
+      void embedEdgesAsMetadata(PDG *, LLVMContext &, unordered_map<Value *, MDNode *> &);
+      MDNode * getEdgeMetadata(DGEdge<Value> *, LLVMContext &, unordered_map<Value *, MDNode *> &);
+      MDNode * getSubEdgesMetadata(DGEdge<Value> *, LLVMContext &, unordered_map<Value *, MDNode *> &);
 
       void trimDGUsingCustomAliasAnalysis (PDG *pdg);
 
@@ -67,6 +82,7 @@ namespace llvm {
       void iterateInstForLoadAliases(PDG *, Function &, AAResults &, LoadInst *);
       void iterateInstForModRef(PDG *, Function &, AAResults &, CallInst &);
 
+      PDG * constructPDGFromAnalysis(Module &M);
       void constructEdgesFromUseDefs (PDG *pdg);
       void constructEdgesFromAliases (PDG *pdg, Module &M);
       void constructEdgesFromControl (PDG *pdg, Module &M);
