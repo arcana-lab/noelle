@@ -3,7 +3,7 @@
 installDir
 
 # Set the command to execute
-cmdToExecute="noelle-load -PDGAnalysis -noelle-pdg-verbose=3 $@" 
+cmdToExecute="noelle-load -load ${installDir}/lib/CleanMetadata.so -CleanMetadata -clean-pdg-metadata=true $@" 
 echo $cmdToExecute ;
 
 # Execute the command

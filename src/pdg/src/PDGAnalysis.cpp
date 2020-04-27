@@ -10,7 +10,6 @@
  */
 #include "SystemHeaders.hpp"
 
-#include "SVF-FE/LLVMUtil.h"
 #include "WPA/WPAPass.h"
 #include "TalkDown.hpp"
 #include "PDGPrinter.hpp"
@@ -34,6 +33,7 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<AllocAA>();
   AU.addRequired<TalkDown>();
+  AU.addRequired<WPAPass>();
   AU.setPreservesAll();
   return ;
 }
@@ -44,13 +44,6 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
    * Store global information.
    */
   this->M = &M;
-
-  /*
-   * Construct WPAPass
-   */
-  this->wpa = new WPAPass();
-  SVFModule *svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(M);
-  wpa->runOnModule(svfModule); 
 
   /*
    * Check if we should print the PDG
@@ -125,15 +118,313 @@ llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
 llvm::PDG * llvm::PDGAnalysis::getPDG (){
   if (this->programDependenceGraph)
     delete this->programDependenceGraph;
-  this->programDependenceGraph = new PDG(*this->M);
 
-  constructEdgesFromUseDefs(this->programDependenceGraph);
-  constructEdgesFromAliases(this->programDependenceGraph, *this->M);
-  constructEdgesFromControl(this->programDependenceGraph, *this->M);
-
-  trimDGUsingCustomAliasAnalysis(this->programDependenceGraph);
+  if (hasPDGAsMetadata(*this->M)) {
+    this->programDependenceGraph = constructPDGFromMetadata(*this->M);
+    assert(comparePDGs(constructPDGFromAnalysis(*this->M), this->programDependenceGraph) && "PDGs constructed are not the same");
+  }
+  else {
+    this->programDependenceGraph = constructPDGFromAnalysis(*this->M);
+    embedPDGAsMetadata(this->programDependenceGraph);
+  }
 
   return this->programDependenceGraph;
+}
+
+bool llvm::PDGAnalysis::comparePDGs(PDG *pdg1, PDG *pdg2) {
+  return compareNodes(pdg1, pdg2) && compareEdges(pdg1, pdg2);
+}
+
+bool llvm::PDGAnalysis::compareNodes(PDG *pdg1, PDG *pdg2) {
+  errs() << "Compare PDG Nodes\n";
+
+  if (pdg1->numNodes() != pdg2->numNodes()) {
+    return false;
+  }
+
+  for (auto &node : pdg1->getNodes()) {
+    if (pdg2->fetchNode(node->getT()) == nullptr) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool llvm::PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
+  errs() << "Compare PDG Edges\n";
+
+  if (pdg1->numEdges() != pdg2->numEdges()) {
+    return false;
+  }
+
+  for (auto &edge1 : pdg1->getEdges()) {
+    DGNode<Value> *outgoingNode = pdg2->fetchNode(edge1->getOutgoingT());
+    DGNode<Value> *incomingNode = pdg2->fetchNode(edge1->getIncomingT());
+    if (!outgoingNode || !incomingNode) {
+      return false;
+    }
+    set<DGEdge<Value> *> edgeSet = pdg2->fetchEdges(outgoingNode, incomingNode);
+    if (edgeSet.empty()) {
+      return false;
+    }
+
+    bool match = false;
+    for (auto &edge2 : edgeSet) {
+      if (edge1->isMemoryDependence() == edge2->isMemoryDependence() &&
+          edge1->isMustDependence() == edge2->isMustDependence() &&
+          edge1->isControlDependence() == edge2->isControlDependence() &&
+          edge1->isLoopCarriedDependence() == edge2->isLoopCarriedDependence() &&
+          edge1->isRemovableDependence() == edge2->isRemovableDependence() &&
+          edge1->dataDependenceType() == edge2->dataDependenceType()) {
+        match = true;
+        break;
+      }
+    }
+    if (!match) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool llvm::PDGAnalysis::hasPDGAsMetadata(Module &M) {
+  errs() << "Check if PDG has been embeded as metadata\n";
+  
+  if (NamedMDNode *n = M.getNamedMetadata("module.pdg")) {
+    if (MDNode *m = dyn_cast<MDNode>(n->getOperand(0))) {
+      if (cast<MDString>(m->getOperand(0))->getString() == "true") {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+PDG * llvm::PDGAnalysis::constructPDGFromAnalysis(Module &M) {
+  errs() << "Construct PDG from Analysis\n";
+
+  PDG *pdg = new PDG(M);
+
+  constructEdgesFromUseDefs(pdg);
+  constructEdgesFromAliases(pdg, M);
+  constructEdgesFromControl(pdg, M);
+
+  trimDGUsingCustomAliasAnalysis(pdg);
+
+  return pdg; 
+}
+
+PDG * llvm::PDGAnalysis::constructPDGFromMetadata(Module &M) {
+  errs() << "Construct PDG from Metadata\n";
+
+  PDG *pdg = new PDG();
+  unordered_map<MDNode *, Value *> IDNodeMap;
+
+  for (auto &F : M) {
+    constructNodesFromMetadata(pdg, F, IDNodeMap);
+    constructEdgesFromMetadata(pdg, F, IDNodeMap);
+  }
+
+  return pdg;
+}
+
+void llvm::PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unordered_map<MDNode *, Value *> &IDNodeMap) {
+  /*
+   * Construct id to node map and add nodes of arguments to pdg
+   */
+  if (MDNode *argsM = F.getMetadata("pdg.args.id")) {
+    for (auto &arg : F.args()) {
+      if (MDNode *m = dyn_cast<MDNode>(argsM->getOperand(arg.getArgNo()))) {
+        IDNodeMap[m] = &arg;
+        pdg->addNode(cast<Value>(&arg), true);
+      }
+    }
+  }
+
+  /*
+   * Construct id to node map and add nodes of instructions to pdg
+   */
+  for (auto &B : F) {
+    for (auto &I : B) {
+      if (MDNode *m = I.getMetadata("pdg.inst.id")) {
+        IDNodeMap[m] = &I;
+        pdg->addNode(cast<Value>(&I), true);
+      }
+    }
+  }
+
+  return;
+}
+
+void llvm::PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unordered_map<MDNode *, Value *> &IDNodeMap) {
+  /*
+   * Construct edges and set attributes
+   */
+  if (MDNode *edgesM = F.getMetadata("pdg.edges")) {
+    for (auto &operand : edgesM->operands()) {
+      if (MDNode *edgeM = dyn_cast<MDNode>(operand)) {
+        DGEdge<Value> *edge = constructEdgeFromMetadata(pdg, edgeM, IDNodeMap);
+  
+        /*
+         * Construct subEdges and set attributes
+         */        
+        if (MDNode *subEdgesM = dyn_cast<MDNode>(edgeM->getOperand(8))) {
+          for (auto &subOperand : subEdgesM->operands()) {
+            if (MDNode *subEdgeM = dyn_cast<MDNode>(subOperand)) {
+              DGEdge<Value> *subEdge = constructEdgeFromMetadata(pdg, subEdgeM, IDNodeMap);
+              edge->addSubEdge(subEdge);
+            }
+          }
+        }
+        
+        /*
+         * Add edge to pdg
+         */ 
+        pdg->copyAddEdge(*edge);
+      }
+    }
+  }
+
+  return;
+}
+
+DGEdge<Value> * llvm::PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *edgeM, unordered_map<MDNode *, Value *> &IDNodeMap) {
+  DGEdge<Value> *edge;  
+
+  if (MDNode *fromM = dyn_cast<MDNode>(edgeM->getOperand(0))) {
+    if (MDNode *toM = dyn_cast<MDNode>(edgeM->getOperand(1))) {
+      Value *from = IDNodeMap[fromM];
+      Value *to = IDNodeMap[toM];
+      edge = new DGEdge<Value>(pdg->fetchNode(from), pdg->fetchNode(to));
+      edge->setEdgeAttributes(
+        cast<MDString>(cast<MDNode>(edgeM->getOperand(2))->getOperand(0))->getString() == "true",
+        cast<MDString>(cast<MDNode>(edgeM->getOperand(3))->getOperand(0))->getString() == "true",
+        cast<MDString>(cast<MDNode>(edgeM->getOperand(4))->getOperand(0))->getString().str(),
+        cast<MDString>(cast<MDNode>(edgeM->getOperand(5))->getOperand(0))->getString() == "true",
+        cast<MDString>(cast<MDNode>(edgeM->getOperand(6))->getOperand(0))->getString() == "true",
+        cast<MDString>(cast<MDNode>(edgeM->getOperand(7))->getOperand(0))->getString() == "true"
+      );
+    }
+  }
+
+  return edge;
+}
+
+void llvm::PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
+  errs() << "Embed PDG as Metadata\n";
+
+  LLVMContext &C = this->M->getContext();
+  unordered_map<Value *, MDNode *> nodeIDMap;
+
+  embedNodesAsMetadata(pdg, C, nodeIDMap);
+  embedEdgesAsMetadata(pdg, C, nodeIDMap);
+
+  NamedMDNode *n = this->M->getOrInsertNamedMetadata("module.pdg");
+  n->addOperand(MDNode::get(C, MDString::get(C, "true")));
+
+  return;
+}
+
+void llvm::PDGAnalysis::embedNodesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
+  uint64_t i = 0;
+  unordered_map<Function *, unordered_map<uint64_t, Metadata *>> functionArgsIDMap;
+
+  /*
+   * Construct node to id map and embed metadata of instruction nodes to instruction
+   */
+  for (auto &node : pdg->getNodes()) {
+    Value *v = node->getT();
+    Constant *id = ConstantInt::get(Type::getInt64Ty(C), i++);
+    MDNode *m = MDNode::get(C, ConstantAsMetadata::get(id));
+    if (Argument *arg = dyn_cast<Argument>(v)) {
+      functionArgsIDMap[arg->getParent()][arg->getArgNo()] = m;
+    }
+    else if (Instruction *inst = dyn_cast<Instruction>(v)) {
+      inst->setMetadata("pdg.inst.id", m);
+    }
+    nodeIDMap[v] = m;
+  }
+
+  /*
+   * Embed metadta of argument nodes to function
+   */
+  for (auto &funArgs : functionArgsIDMap) {
+    vector<Metadata *> argsVec;
+    for (uint64_t i = 0; i < funArgs.second.size(); i++) {
+      argsVec.push_back(funArgs.second[i]);
+    }
+
+    MDNode *m = MDTuple::get(C, argsVec);
+    funArgs.first->setMetadata("pdg.args.id", m);
+  }
+
+  return;
+}
+
+void llvm::PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
+  unordered_map<Function *, vector<Metadata *>> functionEdgesMap;
+
+  /*
+   * Construct edge metadata
+   */
+  for (auto &edge : pdg->getEdges()) {
+    MDNode *edgeM = getEdgeMetadata(edge, C, nodeIDMap);
+    if (Argument *arg = dyn_cast<Argument>(edge->getOutgoingT())) {
+      functionEdgesMap[arg->getParent()].push_back(edgeM);
+    }
+    else if (Instruction *inst = dyn_cast<Instruction>(edge->getOutgoingT())) {
+      functionEdgesMap[inst->getFunction()].push_back(edgeM);
+    }
+  }
+
+  /*
+   * Embed metadata of edges to function
+   */
+  for (auto &funEdge : functionEdgesMap) {
+    MDNode *m = MDTuple::get(C, funEdge.second);
+    funEdge.first->setMetadata("pdg.edges", m);
+  }
+
+  return;
+}
+
+MDNode * llvm::PDGAnalysis::getEdgeMetadata(DGEdge<Value> *edge, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
+  Metadata *edgeM[] = {
+    nodeIDMap[edge->getOutgoingT()],
+    nodeIDMap[edge->getIncomingT()],
+    MDNode::get(C, MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
+    MDNode::get(C, MDString::get(C, edge->isMustDependence() ? "true" : "false")),
+    MDNode::get(C, MDString::get(C, edge->dataDepToString())),
+    MDNode::get(C, MDString::get(C, edge->isControlDependence() ? "true" : "false")),
+    MDNode::get(C, MDString::get(C, edge->isLoopCarriedDependence() ? "true" : "false")),
+    MDNode::get(C, MDString::get(C, edge->isRemovableDependence() ? "true" : "false")),
+    getSubEdgesMetadata(edge, C, nodeIDMap)
+  };
+
+  return MDNode::get(C, edgeM);
+}
+
+MDNode * llvm::PDGAnalysis::getSubEdgesMetadata(DGEdge<Value> *edge, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
+  vector<Metadata *> subEdgesVec;
+
+  for (auto &subEdge : edge->getSubEdges()) {
+    Metadata *subEdgeM[] = {
+      nodeIDMap[subEdge->getOutgoingT()],
+      nodeIDMap[subEdge->getIncomingT()],
+      MDNode::get(C, MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
+      MDNode::get(C, MDString::get(C, edge->isMustDependence() ? "true" : "false")),
+      MDNode::get(C, MDString::get(C, edge->dataDepToString())),
+      MDNode::get(C, MDString::get(C, edge->isControlDependence() ? "true" : "false")),
+      MDNode::get(C, MDString::get(C, edge->isLoopCarriedDependence() ? "true" : "false")),
+      MDNode::get(C, MDString::get(C, edge->isRemovableDependence() ? "true" : "false")),
+    };
+    subEdgesVec.push_back(MDNode::get(C, subEdgeM));
+  }
+
+  return MDTuple::get(C, subEdgesVec);
 }
 
 void llvm::PDGAnalysis::trimDGUsingCustomAliasAnalysis (PDG *pdg) {
@@ -222,7 +513,8 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
   /*
    * Check other alias analyses
    */
-  switch (this->wpa->alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
+  WPAPass &wpa = getAnalysis<WPAPass>();
+  switch (wpa.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
       makeEdge = true;

@@ -60,7 +60,6 @@ function runTest {
   ./test_prof "$PROGRAM_INPUT_FOR_PROFILE"
   llvm-profdata merge default.profraw -output=$TEST_PROFILE
   opt ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} test_pre.bc -o test.bc
-  llvm-dis test.bc -o test.ll
 
   local UNIT_TEST_PASS="-load $TEST_LIB_DIR/UnitTestHelpers.so -load $TEST_LIB_DIR/$TEST_SO -UnitTester"
   loadAndRunNoellePasses "$UNIT_TEST_PASS" test.bc tested.bc
