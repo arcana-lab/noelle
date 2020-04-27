@@ -4,7 +4,7 @@ br label %4
 ret i32 0
 
 sccdag internal nodes (of outermost loop)
-  %.01 = phi %struct._N* [ %2, %0 ], [ %16, %13 ] | %5 = icmp ne %struct._N* %.01, null | br i1 %5, label %6, label %17, !prof !32 |
+  %.01 = phi %struct._N* [ %2, %0 ], [ %16, %13 ] | %5 = icmp ne %struct._N* %.01, null | br i1 %5, label %6, label %17 |
     %15 = getelementptr inbounds %struct._N, %struct._N* %.01, i32 0, i32 1 | %16 = load %struct._N*, %struct._N** %15, align 8 |
     %7 = getelementptr inbounds %struct._N, %struct._N* %.01, i32 0, i32 0 | %8 = load i32, i32* %7, align 8 |
     %19 = call i32 (i8*, ...) @printf(i8* %18, i32 %.02.lcssa) |
@@ -12,7 +12,7 @@ sccdag internal nodes (of outermost loop)
     %1 = call noalias i8* @malloc(i64 16) #4 |
     store i32 41, i32* %3, align 8
   %9 = icmp slt i32 %8, 40
-  br i1 %9, label %10, label %13, !prof !33
+  br i1 %9, label %10, label %13
   %11 = mul nsw i32 2, %8
   %12 = add nsw i32 %11, 3
   %.02 = phi i32 [ 0, %0 ], [ %14, %13 ] | %14 = add nsw i32 %.02, %.0

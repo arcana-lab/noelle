@@ -104,7 +104,6 @@ void llvm::DSWP::printEnv (LoopDependenceInfo *LDI) const {
 
 void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
 
-  PDGPrinter pdgPrinter;
   DG<DGString> stageGraph;
   std::set<DGString *> elements;
 
@@ -132,13 +131,12 @@ void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
     }
   }
 
-  pdgPrinter.writeGraph<DG<DGString>>("dswpStagesForLoop_" + std::to_string(LDI.getID()) + ".dot", &stageGraph);
+  DGPrinter::writeGraph<DG<DGString>>("dswpStagesForLoop_" + std::to_string(LDI.getID()) + ".dot", &stageGraph);
   for (auto elem : elements) delete elem;
 }
 
 void llvm::DSWP::writeStageQueuesAsDot (const LoopDependenceInfo &LDI) const {
 
-  PDGPrinter pdgPrinter;
   DG<DGString> queueGraph;
   std::set<DGString *> elements;
 
@@ -163,6 +161,6 @@ void llvm::DSWP::writeStageQueuesAsDot (const LoopDependenceInfo &LDI) const {
     }
   }
 
-  pdgPrinter.writeGraph<DG<DGString>>("dswpQueuesForLoop_" + std::to_string(LDI.getID()) + ".dot", &queueGraph);
+  DGPrinter::writeGraph<DG<DGString>>("dswpQueuesForLoop_" + std::to_string(LDI.getID()) + ".dot", &queueGraph);
   for (auto elem : elements) delete elem;
 }
