@@ -51,15 +51,25 @@ void TestSuite::runTests (ModulePass &pass) {
     errs() << suiteName << ": Not Testing: " << group << "\n";
   }
 
+  int numSuccess = 0;
+  int numSkips = 0;
   for (auto testId = 0; testId < tests.size(); ++testId) {
     std::string testName(testNames[testId]);
-    if (mismatchGroups.first.find(testName) != mismatchGroups.first.end()) continue;
+    if (mismatchGroups.first.find(testName) != mismatchGroups.first.end()) {
+      numSkips++;
+      continue;
+    }
+
     Values actual = tests[testId](pass);
-    checkTest(testId, actual);
+    numSuccess += checkTest(testId, actual) ? 1 : 0;
   }
+
+  errs() << suiteName << " Successes: " << numSuccess
+    << " Skips: " << numSkips
+    << " Failures: " << (tests.size() - numSuccess - numSkips) << "\n";
 }
 
-void TestSuite::checkTest (int testId, Values &actualValues) {
+bool TestSuite::checkTest (int testId, Values &actualValues) {
   std::pair<Values, Values>
   mismatchValues = comparator->nonIntersectingOfGroup(testNames[testId], actualValues);
 
@@ -76,4 +86,18 @@ void TestSuite::checkTest (int testId, Values &actualValues) {
 
   if (testPassed) errs() << suiteName << ": Passed: " << testNames[testId] << "\n";
   else errs() << suiteName << ": Failed: " << testNames[testId] << "\n";
+
+  return testPassed;
+}
+
+std::string TestSuite::valueToString (Value *value) {
+  return trimProfilerBitcodeInfo(printToString(value));
+}
+
+std::string TestSuite::trimProfilerBitcodeInfo (std::string bitcodeValue) {
+  auto it = bitcodeValue.find(", !prof");
+  if (it != std::string::npos) {
+    bitcodeValue.erase(bitcodeValue.begin() + it, bitcodeValue.end());
+  }
+  return bitcodeValue;
 }

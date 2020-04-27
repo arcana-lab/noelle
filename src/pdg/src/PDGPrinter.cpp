@@ -51,7 +51,7 @@ void PDGPrinter::printPDG (
   /*
    * Print the PDG
    */
-  writeGraph<PDG>("pdg-full.dot", graph);
+  DGPrinter::writeClusteredGraph<PDG>("pdg-full.dot", graph);
   for (auto F : funcToGraph) {
     auto& LI = getLoopInfo(F);
     printGraphsForFunction(*F, graph, LI);
@@ -89,7 +89,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
   raw_string_ostream ros(filename);
   ros << "pdg-function-" << F.getName() << ".dot";
   auto subgraph = graph->createFunctionSubgraph(F);
-  writeGraph<PDG>(ros.str(), subgraph);
+  DGPrinter::writeClusteredGraph<PDG>(ros.str(), subgraph);
   delete subgraph;
 
   /*
@@ -109,7 +109,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
     filename.clear();
     ros << "pdg-function-" << F.getName() << "-loop" << loopCount << ".dot";
     subgraph = graph->createLoopsSubgraph(currentLoop);
-    writeGraph<PDG>(ros.str(), subgraph);
+    DGPrinter::writeClusteredGraph<PDG>(ros.str(), subgraph);
 
     /*
      * Print the SCCDAG of the loop.
@@ -117,7 +117,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
     filename.clear();
     ros << "pdg-function-" << F.getName() << "-loop" << loopCount << "-SCCDAG.dot";
     auto sccSubgraph = new SCCDAG(subgraph);
-    writeGraph<SCCDAG>(ros.str(), sccSubgraph);
+    DGPrinter::writeClusteredGraph<SCCDAG>(ros.str(), sccSubgraph);
 
     /*
      * Print each SCC within the loop SCCDAG.
@@ -126,7 +126,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
     for (auto scc : sccSubgraph->getSCCs()){
       filename.clear();
       ros << "pdg-function-" << F.getName() << "-loop" << loopCount << "-SCCDAG-SCC" << sccCount << ".dot";
-      writeGraph<SCC>(ros.str(), scc);
+      DGPrinter::writeClusteredGraph<SCC>(ros.str(), scc);
       sccCount++;
     }
     
@@ -145,7 +145,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
   return ;
 }
 
-void PDGPrinter::addClusteringToDotFile (std::string inputFileName, std::string outputFileName) {
+void DGPrinter::addClusteringToDotFile (std::string inputFileName, std::string outputFileName) {
   ifstream ifile(inputFileName);
   unordered_map<std::string, std::set<std::string>> clusterNodes;
 
@@ -188,7 +188,7 @@ void PDGPrinter::addClusteringToDotFile (std::string inputFileName, std::string 
 	ifile.close();
 }
 
-void PDGPrinter::writeClusterToFile (const unordered_map<std::string, std::set<std::string>> &clusterNodes, ofstream &cfile) {
+void DGPrinter::writeClusterToFile (const unordered_map<std::string, std::set<std::string>> &clusterNodes, ofstream &cfile) {
   for (auto clusterNodesPair : clusterNodes) {
     std::string indent = "    ";
     cfile << "\n";
@@ -201,7 +201,7 @@ void PDGPrinter::writeClusterToFile (const unordered_map<std::string, std::set<s
   }
 }
 
-void PDGPrinter::groupNodesByCluster (unordered_map<std::string, std::set<std::string>> &clusterNodes, int &numLines, ifstream &ifile) {
+void DGPrinter::groupNodesByCluster (unordered_map<std::string, std::set<std::string>> &clusterNodes, int &numLines, ifstream &ifile) {
   std::string CLUSTER_KEY = "cluster=";
   std::string NODE_NAME = "Node";
   std::string line;

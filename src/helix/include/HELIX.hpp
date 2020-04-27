@@ -12,6 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "LoopDependenceInfo.hpp"
+#include "SubCFGs.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
