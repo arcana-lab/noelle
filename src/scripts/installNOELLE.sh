@@ -11,6 +11,8 @@ function patchInstallDir {
     }
   }' scripts/$fileToPatch > ${installDir}/bin/$fileToPatch ;
 
+  chmod 744 ${installDir}/bin/$fileToPatch ;
+
   return 
 }
 
@@ -32,16 +34,5 @@ patchInstallDir "noelle-inline" ;
 patchInstallDir "noelle-loopmeta" ;
 patchInstallDir "noelle-pdg" ;
 patchInstallDir "noelle-meta-clean" ;
+patchInstallDir "noelle-meta-pdg-embed" ;
 patchInstallDir "noelle-enable" ;
-
-chmod 744 ${installDir}/bin/noelle-load ;
-chmod 744 ${installDir}/bin/noelle ;
-chmod 744 ${installDir}/bin/noelle-norm ;
-chmod 744 ${installDir}/bin/noelle-pre ;
-chmod 744 ${installDir}/bin/noelle-pgo ;
-chmod 744 ${installDir}/bin/noelle-seq ;
-chmod 744 ${installDir}/bin/noelle-inline ;
-chmod 744 ${installDir}/bin/noelle-loopmeta ;
-chmod 744 ${installDir}/bin/noelle-pdg ;
-chmod 744 ${installDir}/bin/noelle-meta-clean ;
-chmod 744 ${installDir}/bin/noelle-enable ;
