@@ -83,6 +83,10 @@ bool DSWP::isCompleteAndValidStageStructure (LoopDependenceInfo *LDI) const {
   }
 
   for (auto node : LDI->sccdagAttrs.getSCCDAG()->getNodes()) {
+    if (LDI->sccdagAttrs.getSCCAttrs(node->getT())->canBeCloned()) {
+      continue ;
+    }
+
     if (allSCCs.find(node->getT()) == allSCCs.end()) {
       errs() << "DSWP:  ERROR! A loop's SCC is not present in any DSWP stage";
       return false;
