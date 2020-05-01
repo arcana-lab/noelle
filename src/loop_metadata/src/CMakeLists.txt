@@ -1,6 +1,7 @@
 # Sources
 set(Srcs
   LoopMetadataPass.cpp
+  LoopMetadata.cpp
 )
 
 # Compilation flags
@@ -21,7 +22,12 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../include ../../basic_utilities/include ../../parallelization_utilities/include)
+include_directories(
+  ${LLVM_INCLUDE_DIRS} 
+  ../include 
+  ../../basic_utilities/include 
+  ../../parallelization_utilities/include
+  )
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})

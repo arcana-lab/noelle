@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "SystemHeaders.hpp"
+#include "llvm/Analysis/LoopInfo.h"
 
 #include "LoopMetadataPass.hpp"
 
@@ -21,16 +22,47 @@ LoopMetadataPass::LoopMetadataPass()
 
   return ;
 }
-
+      
 bool LoopMetadataPass::doInitialization (Module &M) {
   return false;
 }
 
 bool LoopMetadataPass::runOnModule (Module &M) {
-  return false;
+
+  /*
+   * Fetch the context
+   */
+  auto& context = M.getContext();
+
+  /*
+   * Tag all loops of all functions.
+   */
+  auto modified = false;
+  for (auto &F : M){
+
+    /*
+     * Fetch the result of loop identification analysis for the current function
+     */
+    auto& LIA = getAnalysis<LoopInfoWrapperPass>(F);
+    continue ;
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+    continue ;
+
+    /*
+     * Tag the loops of the current function.
+     */
+    modified |= this->tagLoops(context, F, LI);
+  }
+
+  return modified;
 }
 
 void LoopMetadataPass::getAnalysisUsage (AnalysisUsage &AU) const {
+
+  /*
+   * Analyses.
+   */
+  AU.addRequired<LoopInfoWrapperPass>();
 
   return ;
 }
