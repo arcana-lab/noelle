@@ -24,6 +24,7 @@ fi
 
 mkdir -p ${installDir}/bin ;
 
+patchInstallDir "noelle-basic" ;
 patchInstallDir "noelle-load" ;
 patchInstallDir "noelle" ;
 patchInstallDir "noelle-norm" ;
@@ -31,8 +32,8 @@ patchInstallDir "noelle-pre" ;
 patchInstallDir "noelle-pgo" ;
 patchInstallDir "noelle-seq" ;
 patchInstallDir "noelle-inline" ;
-patchInstallDir "noelle-loopmeta" ;
 patchInstallDir "noelle-pdg" ;
 patchInstallDir "noelle-meta-clean" ;
+patchInstallDir "noelle-meta-loop-embed" ;
 patchInstallDir "noelle-meta-pdg-embed" ;
 patchInstallDir "noelle-enable" ;
