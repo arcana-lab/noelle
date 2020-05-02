@@ -3,7 +3,7 @@
 installDir
 
 # Set the command to execute
-cmdToExecute="noelle-load -PDGAnalysis -noelle-pdg-verbose=0 $@" 
+cmdToExecute="noelle-load -PDGAnalysis -noelle-pdg-verbose=3 $@" 
 echo $cmdToExecute ;
 
 # Execute the command
