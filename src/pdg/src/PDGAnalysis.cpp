@@ -79,10 +79,28 @@ llvm::PDGAnalysis::~PDGAnalysis() {
 llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
 
   /*
+   * Make sure the module PDG has been constructed.
+   */
+  if (!this->programDependenceGraph){
+    this->getPDG();
+  }
+
+  /*
+   * The module PDG has been built.
+   *
+   * Take the subset related to the function given as input.
+   *
    * Allocate the PDG structure.
+   * This constructore only adds the nodes to the PDG created.
    */
   auto pdg = new PDG(F);
 
+  /*
+   * Add the edges between the nodes of the new PDG.
+   */
+  //TODO
+
+//########################## to delete ### START
   /*
    * Add dependences between variables
    */
@@ -104,6 +122,8 @@ llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
    * Try to remove dependences
    */
   trimDGUsingCustomAliasAnalysis(pdg);
+//########################## to delete ### END
+
 
   /*
    * Print the PDG
