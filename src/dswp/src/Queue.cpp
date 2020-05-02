@@ -114,11 +114,7 @@ void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &pa
     if (isControllingLoopExit) {
       tasksControlledByCondition = std::set<Task *>(this->tasks.begin(), this->tasks.end());
     } else {
-      for (auto conditionalBranchDependency : conditionalBranchNode->getOutgoingEdges()) {
-        auto dependentInstruction = conditionalBranchDependency->getIncomingT();
-        auto taskContainingDependentInstruction = this->sccToStage.at(sccdag->sccOfValue(dependentInstruction));
-        tasksControlledByCondition.insert(taskContainingDependentInstruction);
-      }
+      tasksControlledByCondition = collectTransitivelyControlledTasks(LDI, conditionalBranchNode);
     }
 
     /*
@@ -134,6 +130,48 @@ void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &pa
       }
     }
   }
+}
+
+std::set<Task *> DSWP::collectTransitivelyControlledTasks (
+  LoopDependenceInfo *LDI,
+  DGNode<Value> *conditionalBranchNode
+) {
+  std::set<Task *> tasksControlledByCondition;
+  SCCDAG *sccdag = LDI->sccdagAttrs.getSCCDAG();
+  auto getTaskOfNode = [this, sccdag](DGNode<Value> *node) {
+    return this->sccToStage.at(sccdag->sccOfValue(node->getT()));
+  };
+
+  /*
+   * To prevent cyclical traversal within a single SCC, include self as controlled
+   * The task of the conditional branch is removed after all transitively controlled tasks are added
+   */
+  Task *selfTask = getTaskOfNode(conditionalBranchNode);
+  tasksControlledByCondition.insert(selfTask);
+
+  std::queue<DGNode<Value> *> queuedNodes;
+  queuedNodes.push(conditionalBranchNode);
+
+  while (!queuedNodes.empty()) {
+    auto node = queuedNodes.front();
+    queuedNodes.pop();
+
+    /*
+     * Iterate the next set of dependent instructions and collect their tasks
+     * Enqueue dependent instructions in tasks not already visited
+     */
+    for (auto dependencyEdge : node->getOutgoingEdges()) {
+      auto dependentNode = dependencyEdge->getIncomingNode();
+      Task *dependentTask = getTaskOfNode(dependentNode);
+      if (tasksControlledByCondition.find(dependentTask) != tasksControlledByCondition.end()) continue;
+
+      tasksControlledByCondition.insert(dependentTask);
+      queuedNodes.push(dependentNode);
+    }
+  }
+
+  tasksControlledByCondition.erase(selfTask);
+  return tasksControlledByCondition;
 }
 
 void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {

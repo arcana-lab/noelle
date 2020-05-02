@@ -104,6 +104,10 @@ namespace llvm {
        */
       void collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par);
       void collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &par);
+      std::set<Task *> collectTransitivelyControlledTasks (
+        LoopDependenceInfo *LDI,
+        DGNode<Value> *conditionalBranchNodei
+      );
       void registerQueue (
         Parallelization &par,
         LoopDependenceInfo *LDI,
