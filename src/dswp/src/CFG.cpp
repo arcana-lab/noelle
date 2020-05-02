@@ -147,6 +147,19 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
       subset.insert(cast<Instruction>(nodePair.first));
     }
   }
+
+  /*
+   * Include control queue consumers (conditional branches) explicitly.
+   * They would be left out IF they don't belong to this task, rather some parent task
+   */
+  for (auto queueIndex : task->popValueQueues) {
+    for (auto conditionalBranch : this->queues.at(queueIndex)->consumers) {
+      if (conditionalBranch->isTerminator()) {
+        subset.insert(conditionalBranch);
+      }
+    }
+  }
+
   this->cloneSequentialLoopSubset(LDI, task->order, subset);
 
   /*
