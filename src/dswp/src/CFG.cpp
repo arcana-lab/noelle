@@ -101,10 +101,27 @@ void DSWP::trimCFGOfStages (LoopDependenceInfo *LDI) {
       }
     }
 
-    // NOTE: This is because queue loads are done in the basic block of the producer,
-    //  hence portions of the CFG where the producer would be contained must be preserved
     for (auto queueIndex : task->popValueQueues) {
-      stageBrs.insert(this->queues[queueIndex]->producer->getParent()->getTerminator());
+      auto &queueInfo = this->queues.at(queueIndex);
+
+      /*
+      * Include terminators of the basic blocks containinng producers of queues for this task
+      *   The load instructions for a queue are inserted in the producer's basic block
+      */
+      stageBrs.insert(queueInfo->producer->getParent()->getTerminator());
+
+      for (auto consumer : queueInfo->consumers) {
+        if (!consumer->isTerminator()) continue;
+
+        /*
+         * Include terminator consumers that aren't part of SCCs contained in the task
+         * as they still need to be cloned to communicate the control dependency to this task
+         */
+        auto consumerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(consumer);
+        if (taskSCCs.find(consumerSCC) == taskSCCs.end()) {
+          stageBrs.insert(consumer);
+        }
+      }
     }
 
     collectTransitiveCondBrs(LDI, stageBrs, task->usedCondBrs);
