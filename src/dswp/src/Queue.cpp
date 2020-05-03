@@ -79,6 +79,17 @@ void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &pa
       auto controlSCC = sccdag->sccOfValue(controlNode->getT());
       if (LDI->sccdagAttrs.getSCCAttrs(controlSCC)->canBeCloned()) continue;
 
+      /*
+       * Check if the controlling instruction has a data dependence requiring a queue
+       */
+      bool hasDataDependency = false;
+      for (auto conditionOrReturnValueDependency : controlNode->getIncomingEdges()) {
+        if (conditionOrReturnValueDependency->isControlDependence()) continue;
+        hasDataDependency = true;
+        break;
+      }
+      if (!hasDataDependency) continue;
+
       conditionalBranchNodes.insert(controlNode);
     }
   }
@@ -103,9 +114,11 @@ void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &pa
     assert(conditionsOfConditionalBranch.size() == 1);
 
     auto conditionalBranch = cast<Instruction>(conditionalBranchNode->getT());
-    assert(LDI->loopBBtoPD.find(conditionalBranch->getParent()) != LDI->loopBBtoPD.end());
-    // !LDI->liSummary.getLoop(LDI->loopBBtoPD[conditionalBranch->getParent()]);
-    bool isControllingLoopExit = loopExits.find(conditionalBranch->getParent()) != loopExits.end();
+    auto branchBB = conditionalBranch->getParent();
+    bool isControllingLoopExit = false;
+    for (auto succBB = succ_begin(branchBB); succBB != succ_end(branchBB); ++succBB) {
+      isControllingLoopExit |= loopExits.find(*succBB) != loopExits.end();
+    }
 
     /*
      * Determine which tasks are control dependent on the conditional branch

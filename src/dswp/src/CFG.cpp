@@ -162,30 +162,40 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
 
   this->cloneSequentialLoopSubset(LDI, task->order, subset);
 
-  /*
-   * Determine the needed basic block terminators outside of the stage's SCCs
-   * to capture control flow through the loop body to either loop latch or loop
-   * exiting basic blocks
-   */
-  auto &iClones = task->instructionClones;
-  auto &bbClones = task->basicBlockClones;
   auto &cxt = task->F->getContext();
   for (auto B : LDI->loopBBs) {
-    auto terminator = cast<Instruction>(B->getTerminator());
-    if (iClones.find(terminator) == iClones.end()) {
-      Instruction *termClone = nullptr;
-      if (task->usedCondBrs.find(B->getTerminator()) != task->usedCondBrs.end()) {
-        termClone = terminator->clone();
-      } else {
-        termClone = BranchInst::Create(LDI->loopBBtoPD[B]);
-      }
-      iClones[terminator] = termClone;
+    if (task->basicBlockClones.find(B) == task->basicBlockClones.end()) {
+      task->basicBlockClones[B] = BasicBlock::Create(cxt, "", task->F);
+    }
+  }
 
-      if (bbClones.find(B) == bbClones.end()) {
-        bbClones[B] = BasicBlock::Create(cxt, "", task->F);
+  std::set<BasicBlock *> loopExits(LDI->loopExitBlocks.begin(), LDI->loopExitBlocks.end());
+  std::queue<BasicBlock *> queueToFindMissingBBs;
+  std::set<BasicBlock *> visitedBBs(loopExits.begin(), loopExits.end());
+  queueToFindMissingBBs.push(LDI->header);
+
+  while (!queueToFindMissingBBs.empty()) {
+    auto originalB = queueToFindMissingBBs.front();
+    queueToFindMissingBBs.pop();
+    if (visitedBBs.find(originalB) != visitedBBs.end()) continue;
+    visitedBBs.insert(originalB);
+
+    assert(task->basicBlockClones.find(originalB) != task->basicBlockClones.end() && "Basic block not cloned!");
+    auto clonedB = task->basicBlockClones.at(originalB);
+
+    if (!clonedB->getTerminator() || !clonedB->getTerminator()->isTerminator()) {
+      auto postDominatingBB = LDI->loopBBtoPD.at(originalB);
+      assert(loopExits.find(postDominatingBB) == loopExits.end()
+        && "Loop exiting terminator not cloned by task!");
+
+      IRBuilder<> builder(clonedB);
+      builder.Insert(BranchInst::Create(task->basicBlockClones.at(postDominatingBB)));
+      queueToFindMissingBBs.push(postDominatingBB);
+
+    } else {
+      for (auto successorBB = succ_begin(originalB); successorBB != succ_end(originalB); ++successorBB) {
+        queueToFindMissingBBs.push(*successorBB);
       }
-      IRBuilder<> builder(bbClones[B]);
-      builder.Insert(termClone);
     }
   }
 
