@@ -151,23 +151,21 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks (
 ) {
   std::set<Task *> tasksControlledByCondition;
   SCCDAG *sccdag = LDI->sccdagAttrs.getSCCDAG();
-  auto getTaskOfNode = [this, sccdag](DGNode<Value> *node) {
-    return this->sccToStage.at(sccdag->sccOfValue(node->getT()));
+  auto getTaskOfNode = [this, LDI, sccdag](DGNode<Value> *node) -> Task * {
+    auto scc = sccdag->sccOfValue(node->getT());
+    if (LDI->sccdagAttrs.getSCCAttrs(scc)->canBeCloned()) return nullptr;
+    return this->sccToStage.at(scc);
   };
 
-  /*
-   * To prevent cyclical traversal within a single SCC, include self as controlled
-   * The task of the conditional branch is removed after all transitively controlled tasks are added
-   */
-  Task *selfTask = getTaskOfNode(conditionalBranchNode);
-  tasksControlledByCondition.insert(selfTask);
-
   std::queue<DGNode<Value> *> queuedNodes;
+  std::set<DGNode<Value> *> visitedNodes;
   queuedNodes.push(conditionalBranchNode);
 
   while (!queuedNodes.empty()) {
     auto node = queuedNodes.front();
     queuedNodes.pop();
+    if (visitedNodes.find(node) != visitedNodes.end()) continue;
+    visitedNodes.insert(node);
 
     /*
      * Iterate the next set of dependent instructions and collect their tasks
@@ -175,15 +173,19 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks (
      */
     for (auto dependencyEdge : node->getOutgoingEdges()) {
       auto dependentNode = dependencyEdge->getIncomingNode();
-      Task *dependentTask = getTaskOfNode(dependentNode);
-      if (tasksControlledByCondition.find(dependentTask) != tasksControlledByCondition.end()) continue;
-
-      tasksControlledByCondition.insert(dependentTask);
       queuedNodes.push(dependentNode);
+
+      Task *dependentTask = getTaskOfNode(dependentNode);
+      if (dependentTask) tasksControlledByCondition.insert(dependentTask);
     }
   }
 
+  /*
+   * A task containing the conditional branch does not need a control queue
+   */ 
+  Task *selfTask = getTaskOfNode(conditionalBranchNode);
   tasksControlledByCondition.erase(selfTask);
+
   return tasksControlledByCondition;
 }
 
