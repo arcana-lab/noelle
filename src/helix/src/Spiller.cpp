@@ -112,9 +112,11 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
        * If it isn't an instruction, insert at the incoming block's entry
        */
       auto incomingV = phi->getIncomingValue(inInd);
-      Instruction *insertPoint = &*incomingBB->begin();
+      Instruction *insertPoint = incomingBB->getFirstNonPHIOrDbgOrLifetime();
       if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
-        insertPoint = incomingI->getNextNode();
+        if (!isa<PHINode>(incomingI) && !isa<DbgInfoIntrinsic>(incomingI) && !incomingI->isLifetimeStartOrEnd()) {
+          insertPoint = incomingI->getNextNode();
+        }
       }
 
       IRBuilder<> builder(insertPoint);
