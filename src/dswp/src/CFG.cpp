@@ -199,6 +199,12 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
     }
   }
 
+  for (auto B : LDI->loopBBs) {
+    auto clonedB = task->basicBlockClones.at(B);
+    if (clonedB->getTerminator()) continue;
+    clonedB->eraseFromParent();
+  }
+
   /*
    * Map loop exit block clones
    * TODO(angelo): Have ParallelizationTechnique expose an API to do this more generally
