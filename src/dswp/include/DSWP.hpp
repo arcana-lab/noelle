@@ -76,7 +76,7 @@ namespace llvm {
       void partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) ;
       void clusterSubloops (LoopDependenceInfo *LDI);
       void generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI);
-      void addRemovableSCCsToStages (LoopDependenceInfo *LDI);
+      void addClonableSCCsToStages (LoopDependenceInfo *LDI);
       bool isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const ;
       void generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex);
       void generateLoadsOfQueuePointers (Parallelization &par, int taskIndex);

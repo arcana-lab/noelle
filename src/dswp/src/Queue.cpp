@@ -192,7 +192,7 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks (
 void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {
   for (auto techniqueTask : this->tasks) {
     auto toStage = (DSWPTask *)techniqueTask;
-    std::set<SCC *> allSCCs(toStage->removableSCCs.begin(), toStage->removableSCCs.end());
+    std::set<SCC *> allSCCs(toStage->clonableSCCs.begin(), toStage->clonableSCCs.end());
     allSCCs.insert(toStage->stageSCCs.begin(), toStage->stageSCCs.end());
     for (auto scc : allSCCs) {
       for (auto sccEdge : LDI->sccdagAttrs.getSCCDAG()->fetchNode(scc)->getIncomingEdges()) {
