@@ -125,7 +125,6 @@ bool DSWP::apply (
   collectDataQueueInfo(LDI, par);
   collectControlQueueInfo(LDI, par);
   // assert(areQueuesAcyclical());
-  trimCFGOfStages(LDI);
   writeStageQueuesAsDot(*LDI);
 
   /*

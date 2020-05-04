@@ -25,7 +25,7 @@ namespace llvm {
   class DSWPTask : public Task {
     public:
       DSWPTask ()
-        : stageSCCs{}, removableSCCs{}, usedCondBrs{} {}
+        : stageSCCs{}, removableSCCs{} {}
 
       /*
        * DSWP specific task function arguments
@@ -37,7 +37,6 @@ namespace llvm {
        */
       std::set<SCC *> stageSCCs;
       std::set<SCC *> removableSCCs;
-      std::set<Instruction *> usedCondBrs;
 
       /*
        * Maps from producer to the queues they push to
