@@ -116,12 +116,6 @@ namespace llvm {
         Instruction *producer,
         Instruction *consumer
       );
-      void trimCFGOfStages (LoopDependenceInfo *LDI);
-      void collectTransitiveCondBrs (
-        LoopDependenceInfo *LDI,
-        std::set<Instruction *> &bottomLevelBrs,
-        std::set<Instruction *> &descendantCondBrs
-      );
       void collectLiveInEnvInfo (LoopDependenceInfo *LDI);
       void collectLiveOutEnvInfo (LoopDependenceInfo *LDI);
       bool areQueuesAcyclical () const ;
