@@ -109,7 +109,7 @@ bool DSWP::apply (
    * Determine DSWP tasks (stages)
    */
   generateStagesFromPartitionedSCCs(LDI);
-  addRemovableSCCsToStages(LDI);
+  addClonableSCCsToStages(LDI);
   writeStageGraphsAsDot(*LDI);
   assert(isCompleteAndValidStageStructure(LDI));
 

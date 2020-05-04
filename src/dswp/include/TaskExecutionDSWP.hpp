@@ -25,7 +25,7 @@ namespace llvm {
   class DSWPTask : public Task {
     public:
       DSWPTask ()
-        : stageSCCs{}, removableSCCs{} {}
+        : stageSCCs{}, clonableSCCs{} {}
 
       /*
        * DSWP specific task function arguments
@@ -36,7 +36,7 @@ namespace llvm {
        * Original loops' relevant structures
        */
       std::set<SCC *> stageSCCs;
-      std::set<SCC *> removableSCCs;
+      std::set<SCC *> clonableSCCs;
 
       /*
        * Maps from producer to the queues they push to

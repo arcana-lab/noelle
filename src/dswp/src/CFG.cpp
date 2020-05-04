@@ -17,11 +17,9 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
 
   /*
    * Clone the portion of the loop within the stage's normal, and clonable, SCCs
-   * TODO(angelo): Rename removable to clonable. The name removable stemed from
-   * its irrelevance when partitioning stages as it gets duplicated
    */
   std::set<Instruction *> subset;
-  for (auto scc : task->removableSCCs) {
+  for (auto scc : task->clonableSCCs) {
     for (auto nodePair : scc->internalNodePairs()) {
       subset.insert(cast<Instruction>(nodePair.first));
     }
@@ -46,6 +44,9 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
 
   this->cloneSequentialLoopSubset(LDI, task->order, subset);
 
+  /*
+   * Create an empty basic block for all basic blocks in the loop to be potentially used in the task
+   */
   auto &cxt = task->F->getContext();
   for (auto B : LDI->loopBBs) {
     if (task->basicBlockClones.find(B) == task->basicBlockClones.end()) {
@@ -58,6 +59,14 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
   std::set<BasicBlock *> visitedBBs(loopExits.begin(), loopExits.end());
   queueToFindMissingBBs.push(LDI->header);
 
+  /*
+   * Traverse basic blocks from the header to all loop exits.
+   * Determine if the basic block has a terminator instruction created for this task
+   * If it does not, add a branch instruction to the basic block's post dominating basic block
+   * 
+   * This is to avoid handling loops or other complex control structures uniquely which
+   * do not concern this task. Trimming of the resulting control flow graph can be done later
+   */
   while (!queueToFindMissingBBs.empty()) {
     auto originalB = queueToFindMissingBBs.front();
     queueToFindMissingBBs.pop();
@@ -83,6 +92,10 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
     }
   }
 
+  /*
+   * Remove remaining basic blocks created that have no terminator
+   * TODO: This should not be necessary. Investigate the contents of loopBBs to determine the issue
+   */
   for (auto B : LDI->loopBBs) {
     auto clonedB = task->basicBlockClones.at(B);
     if (clonedB->getTerminator()) continue;
