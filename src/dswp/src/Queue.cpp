@@ -65,49 +65,134 @@ void DSWP::registerQueue (
 }
 
 void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {
-  auto findContaining = [&](Value *val) -> std::pair<DSWPTask *, SCC *> {
-    for (auto techniqueTask : this->tasks) {
-      auto task = (DSWPTask *)techniqueTask;
-      for (auto scc : task->stageSCCs) if (scc->isInternal(val)) return std::make_pair(task, scc);
-      for (auto scc : task->removableSCCs) if (scc->isInternal(val)) return std::make_pair(task, scc);
+  SCCDAG *sccdag = LDI->sccdagAttrs.getSCCDAG();
+  std::set<DGNode<Value> *> conditionalBranchNodes;
+  std::set<BasicBlock *> loopExits(LDI->loopExitBlocks.begin(), LDI->loopExitBlocks.end());
+
+  for (auto sccNode : sccdag->getNodes()) {
+    auto scc = sccNode->getT();
+
+    for (auto controlEdge : scc->getEdges()) {
+      if (!controlEdge->isControlDependence()) continue;
+
+      auto controlNode = controlEdge->getOutgoingNode();
+      auto controlSCC = sccdag->sccOfValue(controlNode->getT());
+      if (LDI->sccdagAttrs.getSCCAttrs(controlSCC)->canBeCloned()) continue;
+
+      /*
+       * Check if the controlling instruction has a data dependence requiring a queue
+       */
+      bool hasDataDependency = false;
+      for (auto conditionOrReturnValueDependency : controlNode->getIncomingEdges()) {
+        if (conditionOrReturnValueDependency->isControlDependence()) continue;
+        hasDataDependency = true;
+        break;
+      }
+      if (!hasDataDependency) continue;
+
+      conditionalBranchNodes.insert(controlNode);
     }
-    val->print(errs() << "DSWP:  ERROR! Value not present in any task! ");
-    errs() << "\n";
-    abort();
-  };
+  }
 
-  for (auto bb : LDI->loopBBs){
-    auto consumerTerm = bb->getTerminator();
-    if (consumerTerm->getNumSuccessors() == 1) continue;
-    auto consumerI = cast<Instruction>(bb->getTerminator());
-    auto brStageSCC = findContaining(cast<Value>(consumerI));
+  for (auto conditionalBranchNode : conditionalBranchNodes) {
 
-    for (auto edge : brStageSCC.second->fetchNode(cast<Value>(consumerI))->getIncomingEdges()) {
-      if (edge->isControlDependence()) continue;
-      auto producer = cast<Instruction>(edge->getOutgoingT());
-      auto prodStageSCC = findContaining(cast<Value>(producer));
-      DSWPTask *prodStage = prodStageSCC.first;
-      SCC *prodSCC = prodStageSCC.second;
+    /*
+     * Identify the single condition for this conditional branch
+     */
+    std::set<Instruction *> conditionsOfConditionalBranch;
+    for (auto conditionToBranchDependency : conditionalBranchNode->getIncomingEdges()) {
+      assert(!conditionToBranchDependency->isMemoryDependence()
+        && "DSWP requires that no memory dependencies exist across tasks!");
+      if (conditionToBranchDependency->isControlDependence()) continue;
 
-      for (auto techniqueTask : this->tasks) {
-        auto otherStage = (DSWPTask *)techniqueTask;
+      auto condition = conditionToBranchDependency->getOutgoingT();
+      auto conditionSCC = sccdag->sccOfValue(condition);
+      if (LDI->sccdagAttrs.getSCCAttrs(conditionSCC)->canBeCloned()) continue;
 
-        /*
-         * Register a queue if the producer isn't in the stage and the consumer is used
-         */
-        if (otherStage == prodStage) continue;
-        if (otherStage->removableSCCs.find(prodSCC) != otherStage->removableSCCs.end()) continue;
-        if (otherStage->usedCondBrs.find(consumerTerm) == otherStage->usedCondBrs.end()) continue;
-        registerQueue(par, LDI, prodStage, otherStage, producer, consumerI);
+      conditionsOfConditionalBranch.insert(cast<Instruction>(condition));
+    }
+    assert(conditionsOfConditionalBranch.size() == 1);
+
+    auto conditionalBranch = cast<Instruction>(conditionalBranchNode->getT());
+    auto branchBB = conditionalBranch->getParent();
+    bool isControllingLoopExit = false;
+    for (auto succBB = succ_begin(branchBB); succBB != succ_end(branchBB); ++succBB) {
+      isControllingLoopExit |= loopExits.find(*succBB) != loopExits.end();
+    }
+
+    /*
+     * Determine which tasks are control dependent on the conditional branch
+     */
+    std::set<Task *> tasksControlledByCondition;
+    if (isControllingLoopExit) {
+      tasksControlledByCondition = std::set<Task *>(this->tasks.begin(), this->tasks.end());
+    } else {
+      tasksControlledByCondition = collectTransitivelyControlledTasks(LDI, conditionalBranchNode);
+    }
+
+    /*
+     * For each task, add a queue from the condition to the branch
+     */
+    auto taskOfCondition = this->sccToStage.at(sccdag->sccOfValue(conditionalBranch));
+    for (auto techniqueTask : tasksControlledByCondition) {
+      auto taskControlledByCondition = (DSWPTask *)techniqueTask;
+      if (taskOfCondition == taskControlledByCondition) continue;
+
+      for (auto condition : conditionsOfConditionalBranch) {
+        registerQueue(par, LDI, taskOfCondition, taskControlledByCondition, condition, conditionalBranch);
       }
     }
   }
 }
 
+std::set<Task *> DSWP::collectTransitivelyControlledTasks (
+  LoopDependenceInfo *LDI,
+  DGNode<Value> *conditionalBranchNode
+) {
+  std::set<Task *> tasksControlledByCondition;
+  SCCDAG *sccdag = LDI->sccdagAttrs.getSCCDAG();
+  auto getTaskOfNode = [this, LDI, sccdag](DGNode<Value> *node) -> Task * {
+    auto scc = sccdag->sccOfValue(node->getT());
+    if (LDI->sccdagAttrs.getSCCAttrs(scc)->canBeCloned()) return nullptr;
+    return this->sccToStage.at(scc);
+  };
+
+  std::queue<DGNode<Value> *> queuedNodes;
+  std::set<DGNode<Value> *> visitedNodes;
+  queuedNodes.push(conditionalBranchNode);
+
+  while (!queuedNodes.empty()) {
+    auto node = queuedNodes.front();
+    queuedNodes.pop();
+    if (visitedNodes.find(node) != visitedNodes.end()) continue;
+    visitedNodes.insert(node);
+
+    /*
+     * Iterate the next set of dependent instructions and collect their tasks
+     * Enqueue dependent instructions in tasks not already visited
+     */
+    for (auto dependencyEdge : node->getOutgoingEdges()) {
+      auto dependentNode = dependencyEdge->getIncomingNode();
+      queuedNodes.push(dependentNode);
+
+      Task *dependentTask = getTaskOfNode(dependentNode);
+      if (dependentTask) tasksControlledByCondition.insert(dependentTask);
+    }
+  }
+
+  /*
+   * A task containing the conditional branch does not need a control queue
+   */ 
+  Task *selfTask = getTaskOfNode(conditionalBranchNode);
+  tasksControlledByCondition.erase(selfTask);
+
+  return tasksControlledByCondition;
+}
+
 void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {
   for (auto techniqueTask : this->tasks) {
     auto toStage = (DSWPTask *)techniqueTask;
-    std::set<SCC *> allSCCs(toStage->removableSCCs.begin(), toStage->removableSCCs.end());
+    std::set<SCC *> allSCCs(toStage->clonableSCCs.begin(), toStage->clonableSCCs.end());
     allSCCs.insert(toStage->stageSCCs.begin(), toStage->stageSCCs.end());
     for (auto scc : allSCCs) {
       for (auto sccEdge : LDI->sccdagAttrs.getSCCDAG()->fetchNode(scc)->getIncomingEdges()) {

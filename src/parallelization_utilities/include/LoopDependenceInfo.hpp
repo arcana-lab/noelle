@@ -16,6 +16,7 @@
 #include "SCCDAG.hpp"
 #include "LoopsSummary.hpp"
 #include "SCCDAGAttrs.hpp"
+#include "SCCDAGNormalizer.hpp"
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
 #include "Techniques.hpp"
@@ -72,15 +73,8 @@ namespace llvm {
         PDG *fG,
         Loop *l,
         LoopInfo &li,
-        ScalarEvolution &SE
-      );
-      LoopDependenceInfo (
-        Function *f,
-        PDG *fG,
-        Loop *l,
-        LoopInfo &li,
         ScalarEvolution &SE,
-        PostDominatorTree &pdt
+        DominatorSummary &DS
       );
 
       /*
@@ -154,9 +148,6 @@ namespace llvm {
       void fetchLoopAndBBInfo (LoopInfo &li, Loop *l) ;
       std::pair<PDG *, SCCDAG *> createDGsForLoop (Loop *l, PDG *functionDG) ;
 
-      void mergeSingleSyntacticSugarInstrs (SCCDAG *loopSCCDAG);
-      void mergeBranchesWithoutOutgoingEdges (SCCDAG *loopSCCDAG);
-      void mergeTrivialNodesInSCCDAG (SCCDAG *loopSCCDAG);
   };
 
 }
