@@ -22,7 +22,7 @@ LoopMetadataPass::LoopMetadataPass()
 
   return ;
 }
-      
+
 bool LoopMetadataPass::doInitialization (Module &M) {
   return false;
 }
