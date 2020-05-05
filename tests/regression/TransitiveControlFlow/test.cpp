@@ -37,4 +37,6 @@ int main (int argc, char *argv[]) {
   }
 
   printf("SCC1 value = %d, SCC2 value = %d, SCC3 value = %d\n", x, y, z);
+
+  return 0;
 }
