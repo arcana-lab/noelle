@@ -3,7 +3,7 @@
 CC="clang++"
 LIB_DIR=$PDG_INSTALL_DIR/lib
 TEST_LIB_DIR=$PDG_INSTALL_DIR/test/lib
-TRANSFORMATIONS_BEFORE_PARALLELIZATION="-basicaa -mem2reg -scalar-evolution -loops -loop-simplify -lcssa -domtree"
+TRANSFORMATIONS_BEFORE_PARALLELIZATION="-basicaa -mem2reg -scalar-evolution -loops -loop-simplify -lcssa -domtree -postdomtree"
 
 # TODO: Uniquely name unit test runners so they can all live in the installation directory
 #UNIT_TEST_PASS=" \

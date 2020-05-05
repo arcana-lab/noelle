@@ -189,6 +189,8 @@ void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
+  AU.addRequired<DominatorTreeWrapperPass>();
+  AU.addRequired<PostDominatorTreeWrapperPass>();
 
   /*
    * Parallelizations.

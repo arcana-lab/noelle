@@ -161,7 +161,16 @@ SequentialSegment::SequentialSegment (
      */
     bool noneInSS = inSS.size() == 0;
     if (noneInSS) {
-      this->exits.insert(I);
+
+      /*
+       * NOTE: Include all PHIs of a basic block before the exit of a sequential segment.
+       * No instruction, such as the 'signal' call instruction at the end of a sequential segment,
+       * can be placed before all PHIs of a basic block
+       */
+      auto lastI = (!isa<PHINode>(I) && !isa<DbgInfoIntrinsic>(I) && !I->isLifetimeStartOrEnd())
+        ? I : I->getParent()->getFirstNonPHIOrDbgOrLifetime();
+
+      this->exits.insert(lastI);
       continue ;
     }
 

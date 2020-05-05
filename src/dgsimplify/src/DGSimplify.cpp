@@ -148,6 +148,7 @@ void llvm::DGSimplify::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<PDGAnalysis>();
+  AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   return ;
@@ -295,7 +296,9 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
       continue;
     }
 
+    auto& DT = getAnalysis<DominatorTreeWrapperPass>(*F).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*F).getPostDomTree();
+    DominatorSummary DS(DT, PDT);
     auto& LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
     auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*F).getSE();
     auto *fdg = PDGA.getFunctionPDG(*F);
@@ -309,7 +312,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
       auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
       auto loopInd = loopIter - allSummaries.begin();
       auto loop = (*loopsPreorder)[loopInd];
-      auto LDI = new LoopDependenceInfo(F, fdg, loop, LI, SE, PDT);
+      auto LDI = new LoopDependenceInfo(F, fdg, loop, LI, SE, DS);
       bool inlinedCall = inlineCallsInMassiveSCCs(F, LDI);
       if (!inlinedCall) {
         removeSummaries.insert(summary);
