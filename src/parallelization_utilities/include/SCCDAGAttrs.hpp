@@ -17,6 +17,7 @@
 #include "SCCAttrs.hpp"
 #include "LoopsSummary.hpp"
 #include "LoopEnvironment.hpp"
+#include "DominatorSummary.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -48,7 +49,7 @@ namespace llvm {
       /*
        * Dependencies in graph
        */
-      std::unordered_map<Value *, std::set<SCC *>> intraIterDeps;
+      std::unordered_map<SCC *, std::set<DGEdge<Value> *>> intraIterDeps;
       std::unordered_map<SCC *, std::set<DGEdge<Value> *>> interIterDeps;
 
       /*
@@ -66,7 +67,7 @@ namespace llvm {
       /*
        * Constructors.
        */
-      void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE);
+      void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, DominatorSummary &DS);
 
       /*
        * Methods on SCCDAG.
@@ -108,7 +109,7 @@ namespace llvm {
        * Helper methods on SCCDAG
        */
       void collectSCCGraphAssumingDistributedClones ();
-      void collectDependencies (LoopsSummary &LIS);
+      void collectDependencies (LoopsSummary &LIS, DominatorSummary &DS);
       void identifyInterIterationDependences (LoopsSummary &LIS);
 
       /*

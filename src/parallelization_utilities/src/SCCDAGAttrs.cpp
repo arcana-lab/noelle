@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE) {
+void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, DominatorSummary &DS) {
 
   /*
    * Set the SCCDAG.
@@ -22,7 +22,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
   /*
    * Partition dependences between intra-iteration and iter-iteration ones.
    */
-  collectDependencies(LIS);
+  collectDependencies(LIS, DS);
 
   /*
    * Tag SCCs depending on their characteristics.
@@ -217,9 +217,13 @@ bool SCCDAGAttrs::isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const {
   auto instInSubloops = true;
   auto topLoop = LIS.getLoopNestingTreeRoot();
   for (auto iNodePair : scc->internalNodePairs()) {
-    auto inst = cast<Instruction>(iNodePair.first);
-    instInSubloops &= LIS.getLoop(inst) != topLoop;
+    if (auto inst = dyn_cast<Instruction>(iNodePair.first)) {
+      instInSubloops &= LIS.getLoop(inst) != topLoop;
+    } else {
+      instInSubloops = false;
+    }
   }
+
   return instInSubloops;
 }
 
@@ -242,10 +246,10 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
     for (auto node : nodes) queue.push(node);
   };
 
-  for (auto sccPair : this->sccdag->internalNodePairs()) {
-    auto childSCC = sccPair.first;
+  for (auto childSCCNode : this->sccdag->getNodes()) {
+    auto childSCC = childSCCNode->getT();
     std::queue<DGNode<SCC> *> nodesToCheck;
-    addIncomingNodes(nodesToCheck, sccPair.second);
+    addIncomingNodes(nodesToCheck, childSCCNode);
 
     while (!nodesToCheck.empty()) {
       auto node = nodesToCheck.front();
@@ -262,23 +266,27 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
   return ;
 }
 
-void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS) {
+void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS, DominatorSummary &DS) {
 
-  /*
-   * Collect values producing intra iteration data dependencies
-   */
-  for (auto edge : this->sccdag->getEdges()) {
-    auto sccTo = edge->getIncomingT();
-    for (auto subEdge : edge->getSubEdges()) {
-      auto sccFrom = subEdge->getOutgoingT();
-      intraIterDeps[sccFrom].insert(sccTo);
+  for (auto sccNode : this->sccdag->getNodes()) {
+    auto scc = sccNode->getT();
+    for (auto edge : scc->getEdges()) {
+      if (!isa<Instruction>(edge->getOutgoingT())) continue ;
+      if (!isa<Instruction>(edge->getIncomingT())) continue ;
+
+      auto instFrom = dyn_cast<Instruction>(edge->getOutgoingT());
+      auto instTo = dyn_cast<Instruction>(edge->getIncomingT());
+      if (LIS.getLoop(instFrom) == nullptr || LIS.getLoop(instTo) == nullptr) {
+        continue;
+      }
+
+      if (instFrom == instTo || !DS.DT.dominates(instFrom, instTo)) {
+        interIterDeps[scc].insert(edge);
+      } else {
+        intraIterDeps[scc].insert(edge);
+      }
     }
   }
-
-  /*
-   * Identify inter-iteration data dependences.
-   */
-  this->identifyInterIterationDependences(LIS);
 
   return ;
 }
@@ -324,13 +332,14 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopsSummary &LIS){
           /*
            * Check if the dependence is between instructions within the loop.
            */
-          auto depDst = cast<Instruction>(edge->getOutgoingT());
-          if (!scc->isInternal(depDst)) continue;
+          auto depValue = edge->getOutgoingT();
+          if (!isa<Instruction>(depValue) || !scc->isInternal(depValue)) continue;
+          auto depInst = cast<Instruction>(depValue);
 
           /*
            * Check if the dependence crosses the iteration boundary.
            */
-          if (canPrecedeInCurrentIteration(LIS, depDst, phi)) continue;
+          if (canPrecedeInCurrentIteration(LIS, depInst, phi)) continue;
 
           /*
            * The dependence From->To crosses the iteration boundary.
@@ -345,7 +354,7 @@ void SCCDAGAttrs::identifyInterIterationDependences (LoopsSummary &LIS){
            *
            * Check for this special case.
            */
-          //if (canPrecedeInCurrentIteration(LIS, phi, depI)) continue;
+          //if (canPrecedeInCurrentIteration(LIS, phi, depInst)) continue;
 
           /*
            * The dependence is loop-carried.

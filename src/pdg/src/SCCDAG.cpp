@@ -20,55 +20,42 @@ SCCDAG::SCCDAG(PDG *pdg) {
   /*
    * Create nodes of the SCCDAG.
    *
-   * Iterate over all disconnected subgraphs of the PDG and calculate their strongly connected components.
+   * Iterate over all nodes in the PDG to calculate strongly connected components (see Tarjan's DFS algo).
    */
-  auto subgraphs = pdg->getDisconnectedSubgraphs();
-  for (auto subgraphNodeset : subgraphs) {
-    PDG subgraphPDG{};
-    pdg->copyNodesIntoNewGraph(*cast<DG<Value>>(&subgraphPDG), *subgraphNodeset, *subgraphNodeset->begin());
-    delete subgraphNodeset;
+  std::set<DGNode<Value> *> visited;
+  std::set<std::set<DGNode<Value> *>> sccs;
+  DGNode<Value> *originalEntryNode = pdg->getEntryNode();
 
-    std::set<Value *> valuesInSCCs;
-    for (auto topLevelNode : subgraphPDG.getTopLevelNodes()) {
-      subgraphPDG.setEntryNode(topLevelNode);
-      std::set<DGNode<Value> *> nodes;
-      for (auto pdgI = scc_begin(&subgraphPDG); pdgI != scc_end(&subgraphPDG); ++pdgI) {
+  for (auto nodeToVisit : pdg->getNodes()) {
+    if (visited.find(nodeToVisit) != visited.end()) continue;
 
-        /*
-         * Identify a new SCC.
-         */
-        nodes.clear();
-        auto uniqueSCC = true;
-        for (auto node : *pdgI) {
-          if (valuesInSCCs.find(node->getT()) != valuesInSCCs.end()) {
-            uniqueSCC = false;
-          }
-          nodes.insert(node);
-          valuesInSCCs.insert(node->getT());
-        }
+    pdg->setEntryNode(nodeToVisit);
+    for (auto pdgI = scc_begin(pdg); pdgI != scc_end(pdg); ++pdgI) {
 
-        if (!uniqueSCC) {
-          continue;
-        }
-
-        /*
-         * Add a new SCC to the SCCDAG.
-         */
-        auto scc = new SCC(nodes);
-        auto isInternal = false;
-        for (auto node : nodes) {
-          isInternal |= pdg->isInternal(node->getT());
-        }
-
-        this->addNode(scc, /*inclusion=*/ isInternal);
+      /*
+       * Identify a new SCC.
+       */
+      const std::vector<DGNode<Value> *> &sccNodes = *pdgI;
+      if (visited.find(*sccNodes.begin()) != visited.end()) {
+        continue;
       }
-    }
 
-    /*
-     * Delete just the subgraph holder, not the nodes/edges which belong to the pdg input
-     */
-    subgraphPDG.clear();
+      /*
+       * Add a new SCC to the SCCDAG.
+       */
+      std::set<DGNode<Value> *> nodes(sccNodes.begin(), sccNodes.end());
+      visited.insert(nodes.begin(), nodes.end());
+      auto scc = new SCC(nodes);
+      auto isInternal = false;
+      for (auto node : nodes) {
+        isInternal |= pdg->isInternal(node->getT());
+      }
+
+      this->addNode(scc, /*inclusion=*/ isInternal);
+    }
   }
+
+  pdg->setEntryNode(originalEntryNode);
 
   /*
    * Create the map from a Value to an SCC included in the SCCDAG.
@@ -285,9 +272,8 @@ bool SCCDAG::iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke){
   /*
    * Iterate over SCC.
    */
-  for (auto SCCPair : this->internalNodePairs()){
-    auto SCC = SCCPair.first;
-    if (funcToInvoke(SCC)){
+  for (auto sccNode : this->getNodes()){
+    if (funcToInvoke(sccNode->getT())){
       return true;
     }
   }
@@ -297,9 +283,8 @@ bool SCCDAG::iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke){
       
 std::unordered_set<SCC *> SCCDAG::getSCCs (void) {
   std::unordered_set<SCC *> s;
-  for (auto sccIPair : this->internalNodePairs()){
-    auto scc = sccIPair.first;
-    s.insert(scc);
+  for (auto sccNode : this->getNodes()){
+    s.insert(sccNode->getT());
   }
 
   return s;

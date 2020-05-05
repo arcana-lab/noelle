@@ -76,7 +76,7 @@ namespace llvm {
       void partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) ;
       void clusterSubloops (LoopDependenceInfo *LDI);
       void generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI);
-      void addRemovableSCCsToStages (LoopDependenceInfo *LDI);
+      void addClonableSCCsToStages (LoopDependenceInfo *LDI);
       bool isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const ;
       void generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex);
       void generateLoadsOfQueuePointers (Parallelization &par, int taskIndex);
@@ -104,6 +104,10 @@ namespace llvm {
        */
       void collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par);
       void collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &par);
+      std::set<Task *> collectTransitivelyControlledTasks (
+        LoopDependenceInfo *LDI,
+        DGNode<Value> *conditionalBranchNodei
+      );
       void registerQueue (
         Parallelization &par,
         LoopDependenceInfo *LDI,
@@ -111,12 +115,6 @@ namespace llvm {
         DSWPTask *toStage,
         Instruction *producer,
         Instruction *consumer
-      );
-      void trimCFGOfStages (LoopDependenceInfo *LDI);
-      void collectTransitiveCondBrs (
-        LoopDependenceInfo *LDI,
-        std::set<Instruction *> &bottomLevelBrs,
-        std::set<Instruction *> &descendantCondBrs
       );
       void collectLiveInEnvInfo (LoopDependenceInfo *LDI);
       void collectLiveOutEnvInfo (LoopDependenceInfo *LDI);
