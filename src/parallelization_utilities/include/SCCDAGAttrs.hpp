@@ -51,6 +51,7 @@ namespace llvm {
        */
       std::unordered_map<SCC *, std::set<DGEdge<Value> *>> intraIterDeps;
       std::unordered_map<SCC *, std::set<DGEdge<Value> *>> interIterDeps;
+      std::unordered_map<SCC *, std::set<DGEdge<Value> *>> interIterDepsInternalToSCC;
 
       /*
        * Isolated clonable SCCs and resulting inherited parents
@@ -110,7 +111,6 @@ namespace llvm {
        */
       void collectSCCGraphAssumingDistributedClones ();
       void collectDependencies (LoopsSummary &LIS, DominatorSummary &DS);
-      void identifyInterIterationDependences (LoopsSummary &LIS);
 
       /*
        * Helper methods on single SCC
@@ -131,7 +131,6 @@ namespace llvm {
       bool isDerivedWithinSCC (Value *V, SCC *scc) const ;
       bool isDerivedPHIOrAccumulator (Value *V, SCC *scc) const ;
       bool collectDerivationChain (std::vector<Instruction *> &chain, SCC *scc);
-      bool canPrecedeInCurrentIteration (LoopsSummary &LIS, Instruction *from, Instruction *to) const ;
   };
 
 }
