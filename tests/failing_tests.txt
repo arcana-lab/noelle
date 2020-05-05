@@ -11,3 +11,4 @@ regression_4/Correlation_polybench -noelle-verbose=3 -dswp-force -noelle-disable
 regression_4/DependentIterations -noelle-verbose=3 -dswp-force -noelle-disable-dswp -dswp-no-scc-merge
 regression_default/3mm_polybench -noelle-verbose=3
 regression_default/Correlation_polybench -noelle-verbose=3
+regression_default/DependentIterations -noelle-verbose=3
