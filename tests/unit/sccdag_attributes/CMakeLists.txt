@@ -14,6 +14,10 @@ add_definitions(
 -D__STDC_CONSTANT_MACROS
 )
 
+SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+SET(CUSTOM_COMPILE_FLAGS "-fexceptions")
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${CUSTOM_COMPILE_FLAGS}" )
+SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${CUSTOM_COMPILE_FLAGS}" )
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 include_directories(${LLVM_INCLUDE_DIRS})
@@ -29,14 +33,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/Techniques.hpp
-    include/DominatorSummary.hpp
-    include/LoopDependenceInfo.hpp
-    include/Parallelization.hpp
-    include/SCCDAGAttrs.hpp
-    include/SCCDAGNormalizer.hpp
-    include/SCCDAGPartition.hpp
-    include/Queue.hpp
-    include/SCCAttrs.hpp
-    include/AccumulatorOpInfo.hpp
-    DESTINATION include)
+install(PROGRAMS include/SCCDAGAttrTestSuite.hpp DESTINATION include)

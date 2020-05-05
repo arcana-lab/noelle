@@ -69,7 +69,7 @@ void HELIX::addSynchronizations (
     /*
      * Reset the value of ssState at the beginning of the iteration (i.e., loop header)
      */
-    IRBuilder<> headerBuilder(LDI->header->getFirstNonPHI());
+    IRBuilder<> headerBuilder(LDI->header->getFirstNonPHIOrDbgOrLifetime());
     headerBuilder.CreateStore(ConstantInt::get(int64, 0), ssState);
 
     /*

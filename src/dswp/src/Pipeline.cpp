@@ -33,7 +33,7 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
   assert(this->numTaskInstances == this->partition->numberOfPartitions());
 }
 
-void DSWP::addRemovableSCCsToStages (LoopDependenceInfo *LDI) {
+void DSWP::addClonableSCCsToStages (LoopDependenceInfo *LDI) {
   for (auto techniqueTask : this->tasks) {
     auto task = (DSWPTask *)techniqueTask;
     std::set<DGNode<SCC> *> visitedNodes;
@@ -57,7 +57,7 @@ void DSWP::addRemovableSCCsToStages (LoopDependenceInfo *LDI) {
         auto fromSCCInfo = LDI->sccdagAttrs.getSCCAttrs(fromSCC);
         if (!fromSCCInfo->canBeCloned()) continue;
 
-        task->removableSCCs.insert(fromSCC);
+        task->clonableSCCs.insert(fromSCC);
         dependentSCCNodes.push(fromSCCNode);
         visitedNodes.insert(fromSCCNode);
       }
@@ -77,12 +77,16 @@ bool DSWP::isCompleteAndValidStageStructure (LoopDependenceInfo *LDI) const {
       allSCCs.insert(scc);
     }
 
-    for (auto scc : task->removableSCCs) {
+    for (auto scc : task->clonableSCCs) {
       allSCCs.insert(scc);
     }
   }
 
   for (auto node : LDI->sccdagAttrs.getSCCDAG()->getNodes()) {
+    if (LDI->sccdagAttrs.getSCCAttrs(node->getT())->canBeCloned()) {
+      continue ;
+    }
+
     if (allSCCs.find(node->getT()) == allSCCs.end()) {
       errs() << "DSWP:  ERROR! A loop's SCC is not present in any DSWP stage";
       return false;

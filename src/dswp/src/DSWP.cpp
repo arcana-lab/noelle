@@ -109,7 +109,7 @@ bool DSWP::apply (
    * Determine DSWP tasks (stages)
    */
   generateStagesFromPartitionedSCCs(LDI);
-  addRemovableSCCsToStages(LDI);
+  addClonableSCCsToStages(LDI);
   writeStageGraphsAsDot(*LDI);
   assert(isCompleteAndValidStageStructure(LDI));
 
@@ -123,8 +123,6 @@ bool DSWP::apply (
    *  prior to its execution. Hence, its weird placement:
    */
   collectDataQueueInfo(LDI, par);
-  // assert(areQueuesAcyclical());
-  trimCFGOfStages(LDI);
   collectControlQueueInfo(LDI, par);
   // assert(areQueuesAcyclical());
   writeStageQueuesAsDot(*LDI);

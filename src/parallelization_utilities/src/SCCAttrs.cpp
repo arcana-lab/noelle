@@ -32,8 +32,9 @@ SCCAttrs::SCCAttrs (
    */
   for (auto nodePair : this->scc->internalNodePairs()) {
     auto valueIncludedInSCC = nodePair.first;
-    auto instIncludedInSCC = cast<Instruction>(valueIncludedInSCC);
-    this->bbs.insert(instIncludedInSCC->getParent());
+    if (auto instIncludedInSCC = dyn_cast<Instruction>(valueIncludedInSCC)) {
+      this->bbs.insert(instIncludedInSCC->getParent());
+    }
   }
 
   // Collect values actually contained in the strongly connected components,
