@@ -23,7 +23,9 @@ AccumulatorOpInfo::AccumulatorOpInfo () {
     Instruction::Or,
     Instruction::And
   };
+
   this->accumOps = std::set<unsigned>(sideEffectFreeOps.begin(), sideEffectFreeOps.end());
+
   this->opIdentities = {
     { Instruction::Add, 0 },
     { Instruction::FAdd, 0 },
@@ -34,6 +36,18 @@ AccumulatorOpInfo::AccumulatorOpInfo () {
     { Instruction::Or, 0 },
     { Instruction::And, 1 }
   };
+
+  this->opReducingOperator = {
+    { Instruction::Add, Instruction::Add },
+    { Instruction::FAdd, Instruction::FAdd },
+    { Instruction::Mul, Instruction::Mul },
+    { Instruction::FMul, Instruction::FMul },
+    { Instruction::Sub, Instruction::Add },
+    { Instruction::FSub, Instruction::FAdd },
+    { Instruction::Or, Instruction::Or },
+    { Instruction::And, Instruction::And }
+  };
+
 }
 
 bool AccumulatorOpInfo::isSubOp (unsigned op) {
@@ -49,11 +63,14 @@ bool AccumulatorOpInfo::isAddOp (unsigned op) {
 }
 
 unsigned AccumulatorOpInfo::accumOpForType (unsigned op, Type *type) {
-  if (type->isIntegerTy()) {
-    return isMulOp(op) ? Instruction::Mul : Instruction::Add;
-  } else {
-    return isMulOp(op) ? Instruction::FMul : Instruction::FAdd;
-  }
+  assert(opReducingOperator.find(op) != opReducingOperator.end()
+    && "Attempting to reduce unknown operator!");
+  return opReducingOperator.at(op);
+  // if (type->isIntegerTy()) {
+  //   return isMulOp(op) ? Instruction::Mul : Instruction::Add;
+  // } else {
+  //   return isMulOp(op) ? Instruction::FMul : Instruction::FAdd;
+  // }
 }
 
 Value *AccumulatorOpInfo::generateIdentityFor (Instruction *accumulator, Type *castType) {
