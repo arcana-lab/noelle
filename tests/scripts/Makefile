@@ -52,7 +52,7 @@ $(OPTIMIZED): test_parallelized.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
 test_parallelized_unoptimized.bc: baseline_with_metadata.bc output.prof
-	noelle-pgo output.prof $(PARALLELIZATION_OPTIONS) $< -o $@
+	noelle-pgo output.prof $< -o $@ $(PARALLELIZATION_OPTIONS)
 	llvm-dis $@
 
 test_parallelized.bc: test_parallelized_unoptimized.bc
