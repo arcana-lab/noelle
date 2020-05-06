@@ -77,6 +77,7 @@ llvm::PDGAnalysis::~PDGAnalysis() {
 }
 
 llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
+  errs() << "get PDG through getFunctionPDG(): " << F.getName() << "\n";
 
   /*
    * Make sure the module PDG has been constructed.
@@ -89,41 +90,8 @@ llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
    * The module PDG has been built.
    *
    * Take the subset related to the function given as input.
-   *
-   * Allocate the PDG structure.
-   * This constructore only adds the nodes to the PDG created.
    */
-  auto pdg = new PDG(F);
-
-  /*
-   * Add the edges between the nodes of the new PDG.
-   */
-  //TODO
-
-//########################## to delete ### START
-  /*
-   * Add dependences between variables
-   */
-  constructEdgesFromUseDefs(pdg);
-
-  /*
-   * Add dependences between memory accesses
-   */
-  auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
-  constructEdgesFromAliasesForFunction(pdg, F, AA);
-
-  /*
-   * Add control dependences
-   */
-  auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
-  constructEdgesFromControlForFunction(pdg, F, PDT);
-
-  /*
-   * Try to remove dependences
-   */
-  trimDGUsingCustomAliasAnalysis(pdg);
-//########################## to delete ### END
-
+  auto pdg = this->programDependenceGraph->createFunctionSubgraph(F);
 
   /*
    * Print the PDG
@@ -136,6 +104,8 @@ llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
 }
 
 llvm::PDG * llvm::PDGAnalysis::getPDG (){
+  errs() << "get PDG through getPDG()\n";
+
   if (this->programDependenceGraph)
     delete this->programDependenceGraph;
 
@@ -146,6 +116,7 @@ llvm::PDG * llvm::PDGAnalysis::getPDG (){
   else {
     this->programDependenceGraph = constructPDGFromAnalysis(*this->M);
     embedPDGAsMetadata(this->programDependenceGraph);
+    assert(comparePDGs(this->programDependenceGraph, constructPDGFromMetadata(*this->M)) && "PDGs constructed are not the same");
   }
 
   return this->programDependenceGraph;
@@ -159,6 +130,7 @@ bool llvm::PDGAnalysis::compareNodes(PDG *pdg1, PDG *pdg2) {
   errs() << "Compare PDG Nodes\n";
 
   if (pdg1->numNodes() != pdg2->numNodes()) {
+    errs() << "number of pdg nodes are not the same\n";
     return false;
   }
 
@@ -175,6 +147,7 @@ bool llvm::PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
   errs() << "Compare PDG Edges\n";
 
   if (pdg1->numEdges() != pdg2->numEdges()) {
+    errs() << "number of pdg edges are not the same\n";
     return false;
   }
 
@@ -240,7 +213,7 @@ PDG * llvm::PDGAnalysis::constructPDGFromAnalysis(Module &M) {
 PDG * llvm::PDGAnalysis::constructPDGFromMetadata(Module &M) {
   errs() << "Construct PDG from Metadata\n";
 
-  PDG *pdg = new PDG();
+  PDG *pdg = new PDG(M);
   unordered_map<MDNode *, Value *> IDNodeMap;
 
   for (auto &F : M) {
@@ -259,7 +232,6 @@ void llvm::PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unorde
     for (auto &arg : F.args()) {
       if (MDNode *m = dyn_cast<MDNode>(argsM->getOperand(arg.getArgNo()))) {
         IDNodeMap[m] = &arg;
-        pdg->addNode(cast<Value>(&arg), true);
       }
     }
   }
@@ -271,7 +243,6 @@ void llvm::PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unorde
     for (auto &I : B) {
       if (MDNode *m = I.getMetadata("pdg.inst.id")) {
         IDNodeMap[m] = &I;
-        pdg->addNode(cast<Value>(&I), true);
       }
     }
   }
