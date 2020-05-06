@@ -4,12 +4,14 @@
 
 long long int computation (long long int *a, long long int iters){
   long long int s =0;
+  long long int t = 1;
 
   for (auto i=0; i < iters; ++i){
-    s &=  a[i];
+    s &= a[i];
+    t &= !a[i];
   }
 
-  return s;
+  return s + t;
 }
 
 int main (int argc, char *argv[]){
