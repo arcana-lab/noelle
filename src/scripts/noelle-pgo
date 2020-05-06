@@ -2,9 +2,17 @@
 
 installDir
 
-# Set the command to execute
-cmdToExecute="noelle-load -parallelization -pgo-test-profile-file=$1 -block-freq -pgo-instr-use -HotProfiler -heuristics -parallelizer ${@:2}"
+# Run HotProfiler
+cmdToExecute="noelle-load -pgo-test-profile-file=$1 -block-freq -pgo-instr-use -HotProfiler $2 -o $2"
 echo $cmdToExecute ;
+eval $cmdToExecute ;
 
-# Execute the command
-eval $cmdToExecute 
+# Embed PDG Metadata
+cmdToExecute="noelle-meta-pdg-embed $2 -o $2"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
+# Set the command to execute
+cmdToExecute="noelle-load -parallelization -heuristics -parallelizer ${@:2}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;

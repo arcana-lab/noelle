@@ -2,9 +2,12 @@
 
 installDir
 
-# Set the command to execute
-cmdToExecute="noelle-load -PDGAnalysis -noelle-pdg-verbose=3 $@" 
+# Clean PDG Metadata
+cmdToExecute="noelle-meta-clean $1 -o $1"
 echo $cmdToExecute ;
+eval $cmdToExecute ;
 
-# Execute the command
-eval $cmdToExecute 
+# Embed PDG Metadata
+cmdToExecute="noelle-load -PDGAnalysis -noelle-pdg-verbose=3 $@"
+echo $cmdToExecute ;
+eval $cmdToExecute ;

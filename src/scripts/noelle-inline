@@ -25,6 +25,7 @@ function runSimplify {
   touch "dgsimplify_continue.txt"
   while test -e "dgsimplify_continue.txt" ; do
     rm "dgsimplify_continue.txt"
+    noelle-meta-clean $FILE_NAME "-o" $FILE_NAME
     let ITER=ITER+1 
     printf "Running DGSimplify to inline calls within SCCs, iteration: $ITER\n"
     noelle-load -load ${installDir}/lib/DGSimplify.so "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
@@ -36,6 +37,7 @@ function runSimplify {
   touch "dgsimplify_continue.txt"
   while test -e "dgsimplify_continue.txt" ; do
     rm "dgsimplify_continue.txt"
+    noelle-meta-clean $FILE_NAME "-o" $FILE_NAME
     let ITER=ITER+1 
     printf "Running DGSimplify to hoist loops to main, iteration: $ITER\n"
     noelle-load -load ${installDir}/lib/DGSimplify.so "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
