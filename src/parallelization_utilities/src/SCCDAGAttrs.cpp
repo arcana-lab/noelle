@@ -326,14 +326,29 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
 
   /*
    * Requirement: There are no memory dependences that connect an instruction of the SCC with another one outside that SCC.
+   * Requirement: There are no outgoing control or data dependencies to any non-trivial SCC
    * TODO: improvement: we can also accept if a memory dependence exists from an instruction of the SCC with another one outside the loop the SCC is contained in (and any sub-loop of it).
    */
-  for (auto iNodePair : scc->externalNodePairs()) {
-    auto dependenceDst = iNodePair.second;
-    for (auto edge : dependenceDst->getAllConnectedEdges()) {
-      if (edge->isMemoryDependence()) {
+  auto sccNode = sccdag->fetchNode(scc);
+  for (auto edge : sccNode->getAllConnectedEdges()) {
+    for (auto subEdge : edge->getSubEdges()) {
+      if (subEdge->isMemoryDependence()) {
         return false;
       }
+    }
+  }
+
+  for (auto edge : sccNode->getOutgoingEdges()) {
+    auto dependentSCC = edge->getIncomingT();
+    if (dependentSCC == scc) continue;
+
+    /*
+    * TODO: This is a bit conservative. Ideally, we would check that all transitively dependent SCCs
+    * are trivial, which still allows this SCC to be reduced.
+    */
+    auto dependentSCCNode = edge->getIncomingNode();
+    if (dependentSCC->numInternalNodes() > 1 || dependentSCCNode->numOutgoingEdges() > 0) {
+      return false;
     }
   }
 
