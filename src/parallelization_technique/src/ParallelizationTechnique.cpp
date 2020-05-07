@@ -115,7 +115,36 @@ void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LD
 }
 
 BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
-  IRBuilder<> builder(this->entryPointOfParallelizedLoop);
+  auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
+
+  /*
+   * Collect reduction operation information needed to accumulate reducable variables after parallelization execution
+   */
+  std::unordered_map<int, int> reducableBinaryOps;
+  std::unordered_map<int, Value *> initialValues;
+  for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+    auto isReduced = envBuilder->isReduced(envInd);
+    if (!isReduced) continue;
+
+    auto producer = LDI->environment->producerAt(envInd);
+    auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
+    auto producerSCCAttributes = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+    auto firstAccumI = *(producerSCCAttributes->getAccumulators().begin());
+    auto binOpCode = firstAccumI->getOpcode();
+    reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
+
+    auto prodPHI = cast<PHINode>(producer);
+    auto initValPHIIndex = prodPHI->getBasicBlockIndex(LDI->preHeader);
+    initialValues[envInd] = prodPHI->getIncomingValue(initValPHIIndex);
+  }
+
+  auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
+    this->entryPointOfParallelizedLoop,
+    *builder,
+    reducableBinaryOps,
+    initialValues,
+    numberOfThreadsExecuted);
+
   for (int envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto prod = LDI->environment->producerAt(envInd);
 
@@ -125,7 +154,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
      */
     auto isReduced = envBuilder->isReduced(envInd);
     auto envVar = envBuilder->getEnvVar(envInd);
-    if (!isReduced) envVar = builder.CreateLoad(envBuilder->getEnvVar(envInd));
+    if (!isReduced) envVar = builder->CreateLoad(envBuilder->getEnvVar(envInd));
 
     for (auto consumer : LDI->environment->consumersOf(prod)) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
@@ -138,7 +167,12 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     }
   }
 
-  return this->entryPointOfParallelizedLoop;
+  /*
+   * Free the memory.
+   */
+  delete builder;
+
+  return afterReductionB;
 }
 
 void ParallelizationTechnique::generateEmptyTasks (

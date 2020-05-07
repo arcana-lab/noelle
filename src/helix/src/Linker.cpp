@@ -58,16 +58,15 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
     numCores,
     numOfSS
   }));
+  auto numThreadsUsed = helixBuilder.CreateExtractValue(runtimeCall, (uint64_t)0);
 
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
    */
-  this->propagateLiveOutEnvironment(LDI, runtimeCall);
+  auto latestBBAfterCall =  this->propagateLiveOutEnvironment(LDI, numThreadsUsed);
 
-  /*
-   * Jump to the unique successor of the loop.
-   */
-  helixBuilder.CreateBr(this->exitPointOfParallelizedLoop);
+  IRBuilder<> afterCallBuilder{latestBBAfterCall};
+  afterCallBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
   return ;
 }
