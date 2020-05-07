@@ -641,3 +641,48 @@ void ParallelizationTechnique::doNestedInlineOfCalls (
     }
   }
 }
+
+void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
+  std::error_code EC;
+  raw_fd_ostream File("technique-dump-loop-" + std::to_string(LDI.getID()) + ".txt", EC, sys::fs::F_Text);
+
+  if (EC) {
+    errs() << "ERROR: Could not dump debug logs to file!";
+    return ;
+  }
+
+  std::set<BasicBlock *> bbs(LDI.loopBBs.begin(), LDI.loopBBs.end());
+  DGPrinter::writeGraph<SubCFGs>("technique-original-loop-" + std::to_string(LDI.getID()) + ".dot", new SubCFGs(bbs));
+  DGPrinter::writeGraph<SCCDAG>("technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot", LDI.sccdagAttrs.getSCCDAG());
+
+  for (int i = 0; i < tasks.size(); ++i) {
+    auto task = tasks[i];
+    File << "===========\n";
+    std::string taskName = "Task " + std::to_string(i) + ": ";
+    task->F->print(File << taskName << "function" << "\n");
+    File << "\n";
+
+    File << taskName << "instruction clones" << "\n";
+    for (auto clonePair : task->instructionClones) {
+      clonePair.first->print(File << "Original: "); File << "\n\t";
+      clonePair.second->print(File << "Cloned: "); File << "\n";
+    }
+    File << "\n";
+
+    File << taskName << "basic block clones" << "\n";
+    for (auto clonePair : task->basicBlockClones) {
+      clonePair.first->printAsOperand(File << "Original: "); File << "\n\t";
+      clonePair.second->printAsOperand(File << "Cloned: "); File << "\n";
+    }
+    File << "\n";
+
+    File << taskName << "live in clones" << "\n";
+    for (auto clonePair : task->liveInClones) {
+      clonePair.first->print(File << "Original: "); File << "\n\t";
+      clonePair.second->print(File << "Cloned: "); File << "\n";
+    }
+    File << "\n";
+  }
+
+  File.close();
+}
