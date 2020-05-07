@@ -135,13 +135,15 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &p
     stagesCount,
     queuesCount
   }));
+  auto numThreadsUsed = builder.CreateExtractValue(runtimeCall, (uint64_t)0);
 
   /*
    * Propagate live-out values to the caller of the loop.
    */
-  this->propagateLiveOutEnvironment(LDI, runtimeCall);
+  auto latestBBAfterCall =  this->propagateLiveOutEnvironment(LDI, numThreadsUsed);
 
-  builder.CreateBr(this->exitPointOfParallelizedLoop);
+  IRBuilder<> afterCallBuilder{latestBBAfterCall};
+  afterCallBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
   return ;
 }
