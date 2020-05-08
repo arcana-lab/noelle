@@ -178,8 +178,17 @@ void HELIX::createParallelizableTask (
    * Add all live-in and live-out variables as variables to be included in the environment.
    */
   std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
-  nonReducableVars.insert(liveOutVars.begin(), liveOutVars.end());
-  std::set<int> reducableVars{}; //TODO: SIMONE: why we don't have reducable vars? is this because ScalarEvolutionWrapperPass cannot be used because it needs to be recomputed?
+  std::set<int> reducableVars{};
+  for (auto liveOutIndex : liveOutVars) {
+    auto producer = LDI->environment->producerAt(liveOutIndex);
+    auto scc = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
+    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    if (sccInfo->getType() == SCCAttrs::SCCType::REDUCIBLE) {
+      reducableVars.insert(liveOutIndex);
+    } else {
+      nonReducableVars.insert(liveOutIndex);
+    }
+  }
 
   /*
    * Add the memory location of the environment used to store the exit block taken to leave the parallelized loop.
