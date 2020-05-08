@@ -23,6 +23,8 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    */
   std::vector<PHINode *> originalLoopPHIs;
   for (auto &phi : LDI->header->phis()) {
+    auto phiSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(cast<Value>(&phi));
+    if (LDI->sccdagAttrs.getSCCAttrs(phiSCC)->canExecuteReducibly()) continue;
     originalLoopPHIs.push_back(&phi);
     auto clonePHI = (PHINode *)(helixTask->instructionClones[&phi]);
     this->loopCarriedPHIs.push_back(clonePHI);
