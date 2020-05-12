@@ -36,7 +36,7 @@ regression_4:
 	./scripts/appendTests.sh $@.con ;
 
 submit:
-	export PATH=`realpath ../../install/bin`:${PATH} ; scripts/submit.sh 
+	scripts/submit.sh 
 
 clean:
 	rm -rf log/*.out log/*.err log/*.log *~ ./*.con
