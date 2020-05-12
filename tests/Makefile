@@ -6,6 +6,9 @@ all: regression performance buildunit rununit
 condor: download
 	cd condor ; make ; make submit ;
 
+condor_watch:
+	watch condor_q `whoami` ;
+
 condor_check: 
 	./scripts/condor_check.sh ;
 
