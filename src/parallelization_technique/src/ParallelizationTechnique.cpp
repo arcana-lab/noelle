@@ -145,6 +145,22 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     initialValues,
     numberOfThreadsExecuted);
 
+  /*
+   * Free the memory.
+   */
+  delete builder;
+
+  /*
+   * If reduction occurred, then all environment loads to propagate live outs need to be
+   * inserted after the reduction loop
+   */
+  IRBuilder<> *afterReductionBuilder;
+  if (afterReductionB->getTerminator()) {
+    afterReductionBuilder->SetInsertPoint(afterReductionB->getTerminator());
+  } else {
+    afterReductionBuilder = new IRBuilder<>(afterReductionB);
+  }
+
   for (int envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto prod = LDI->environment->producerAt(envInd);
 
@@ -154,7 +170,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
      */
     auto isReduced = envBuilder->isReduced(envInd);
     auto envVar = envBuilder->getEnvVar(envInd);
-    if (!isReduced) envVar = builder->CreateLoad(envBuilder->getEnvVar(envInd));
+    if (!isReduced) envVar = afterReductionBuilder->CreateLoad(envBuilder->getEnvVar(envInd));
 
     for (auto consumer : LDI->environment->consumersOf(prod)) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
@@ -167,11 +183,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     }
   }
 
-  /*
-   * Free the memory.
-   */
-  delete builder;
-
+  delete afterReductionBuilder;
   return afterReductionB;
 }
 
