@@ -129,6 +129,10 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     auto producer = LDI->environment->producerAt(envInd);
     auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
     auto producerSCCAttributes = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+
+    /*
+     * HACK: Need to get accumulator that feeds directly into producer PHI, not any intermediate one
+     */
     auto firstAccumI = *(producerSCCAttributes->getAccumulators().begin());
     auto binOpCode = firstAccumI->getOpcode();
     reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
