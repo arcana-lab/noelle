@@ -77,7 +77,6 @@ llvm::PDGAnalysis::~PDGAnalysis() {
 }
 
 llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
-  errs() << "get PDG through getFunctionPDG(): " << F.getName() << "\n";
 
   /*
    * Make sure the module PDG has been constructed.
@@ -104,8 +103,6 @@ llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
 }
 
 llvm::PDG * llvm::PDGAnalysis::getPDG (){
-  errs() << "get PDG through getPDG()\n";
-
   if (this->programDependenceGraph)
     delete this->programDependenceGraph;
 

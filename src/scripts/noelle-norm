@@ -6,11 +6,11 @@ OPT="opt" ;
 
 ########### Analyses
 AA_BASE="-basicaa"
-
+EXTRA_LIBS="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so"
 
 
 ########### Transformations
-TRANSFORMATIONS_BEFORE_PARALLELIZATION="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so ${AA_BASE} -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -mergereturn"
+TRANSFORMATIONS_BEFORE_PARALLELIZATION="${EXTRA_LIBS} ${AA_BASE} -mem2reg -simplifycfg -instcombine -tailcallelim -loop-simplify -lcssa -loop-unswitch -instcombine -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -mergereturn"
 
 
 cmdToExecute="${OPT} ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} $@"
