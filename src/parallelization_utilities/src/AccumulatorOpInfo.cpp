@@ -37,17 +37,25 @@ AccumulatorOpInfo::AccumulatorOpInfo () {
     { Instruction::And, 1 }
   };
 
-  this->opReducingOperator = {
+  this->integerReducingOperators = {
     { Instruction::Add, Instruction::Add },
-    { Instruction::FAdd, Instruction::FAdd },
+    { Instruction::FAdd, Instruction::Add },
     { Instruction::Mul, Instruction::Mul },
-    { Instruction::FMul, Instruction::FMul },
+    { Instruction::FMul, Instruction::Mul },
     { Instruction::Sub, Instruction::Add },
-    { Instruction::FSub, Instruction::FAdd },
+    { Instruction::FSub, Instruction::Add },
     { Instruction::Or, Instruction::Or },
     { Instruction::And, Instruction::And }
   };
 
+  this->floatingReducingOperators = {
+    { Instruction::Add, Instruction::FAdd },
+    { Instruction::FAdd, Instruction::FAdd },
+    { Instruction::Mul, Instruction::FMul },
+    { Instruction::FMul, Instruction::FMul },
+    { Instruction::Sub, Instruction::FAdd },
+    { Instruction::FSub, Instruction::FAdd },
+  };
 }
 
 bool AccumulatorOpInfo::isSubOp (unsigned op) {
@@ -63,14 +71,21 @@ bool AccumulatorOpInfo::isAddOp (unsigned op) {
 }
 
 unsigned AccumulatorOpInfo::accumOpForType (unsigned op, Type *type) {
-  assert(opReducingOperator.find(op) != opReducingOperator.end()
-    && "Attempting to reduce unknown operator!");
-  return opReducingOperator.at(op);
-  // if (type->isIntegerTy()) {
-  //   return isMulOp(op) ? Instruction::Mul : Instruction::Add;
-  // } else {
-  //   return isMulOp(op) ? Instruction::FMul : Instruction::FAdd;
-  // }
+  switch (type->getTypeID()) {
+    case Type::IntegerTyID:
+      assert(integerReducingOperators.find(op) != integerReducingOperators.end()
+        && "Attempting to reduce unknown integer operator!");
+      return integerReducingOperators.at(op);
+    case Type::HalfTyID:
+    case Type::FloatTyID:
+    case Type::DoubleTyID:
+      assert(floatingReducingOperators.find(op) != floatingReducingOperators.end()
+        && "Attempting to reduce unknown floating operator!");
+      return floatingReducingOperators.at(op);
+    default:
+      assert(false
+        && "Attempting to reduce unknown type!");
+  }
 }
 
 Value *AccumulatorOpInfo::generateIdentityFor (Instruction *accumulator, Type *castType) {
