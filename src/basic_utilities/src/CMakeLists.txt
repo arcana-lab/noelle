@@ -1,19 +1,13 @@
 # Sources
 set(Srcs 
-  AccumulatorOpInfo.cpp
-  SCCAttrs.cpp
-  SCCDAGAttrs.cpp
-  SCCDAGNormalizer.cpp
-  LoopDependenceInfo.cpp
-  SCCDAGPartition.cpp
-  Parallelization.cpp
+  DominatorSummary.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Parallelization")
+set(PassName "BasicUtilities")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -28,14 +22,6 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
-  ../../../external/svf/include
-  ../../basic_utilities/include 
-  ../../architecture/include 
-  ../../alloc_aa/include 
-  ../../pdg/include 
-  ../../hotprofiler/include 
-  ../../loops/include 
-  ../../talkdown/include
   ../include 
   )
 
