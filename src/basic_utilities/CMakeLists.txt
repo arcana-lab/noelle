@@ -32,6 +32,7 @@ add_subdirectory(src)
 install(  PROGRAMS 
           include/SystemHeaders.hpp 
           include/DominatorSummary.hpp
+          include/Queue.hpp
           DESTINATION 
           include
         )
