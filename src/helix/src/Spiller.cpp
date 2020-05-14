@@ -136,6 +136,13 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
     phi->eraseFromParent();
   }
 
+  /*
+   * Erase record of spilled PHIs
+   */
+  for (auto phi : originalLoopPHIs) {
+    helixTask->instructionClones.erase(phi);
+  }
+
   entryBlockTerminator->removeFromParent();
   entryBuilder.Insert(entryBlockTerminator);
 
