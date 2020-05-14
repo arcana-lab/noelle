@@ -35,7 +35,6 @@ install(PROGRAMS include/Techniques.hpp
     include/SCCDAGAttrs.hpp
     include/SCCDAGNormalizer.hpp
     include/SCCDAGPartition.hpp
-    include/Queue.hpp
     include/SCCAttrs.hpp
     include/AccumulatorOpInfo.hpp
     DESTINATION include)
