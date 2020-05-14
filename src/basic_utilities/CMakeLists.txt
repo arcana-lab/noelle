@@ -25,5 +25,13 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(AddLLVM)
 
+# Pass
+add_subdirectory(src)
+
 # Install
-install(PROGRAMS include/SystemHeaders.hpp DESTINATION include)
+install(  PROGRAMS 
+          include/SystemHeaders.hpp 
+          include/DominatorSummary.hpp
+          DESTINATION 
+          include
+        )

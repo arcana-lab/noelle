@@ -30,7 +30,6 @@ add_subdirectory(src)
 
 # Install
 install(PROGRAMS include/Techniques.hpp
-    include/DominatorSummary.hpp
     include/LoopDependenceInfo.hpp
     include/Parallelization.hpp
     include/SCCDAGAttrs.hpp
