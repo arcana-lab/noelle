@@ -21,15 +21,16 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * Collect all PHIs in the loop header; they are local variables
    * with loop carried data dependencies and need to be spilled
    */
-  std::vector<PHINode *> originalLoopPHIs;
+  std::vector<PHINode *> originalLoopCarriedPHIs;
+  std::vector<PHINode *> clonedLoopCarriedPHIs;
   for (auto &phi : LDI->header->phis()) {
     auto phiSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(cast<Value>(&phi));
     if (LDI->sccdagAttrs.getSCCAttrs(phiSCC)->canExecuteReducibly()) continue;
-    originalLoopPHIs.push_back(&phi);
+    originalLoopCarriedPHIs.push_back(&phi);
     auto clonePHI = (PHINode *)(helixTask->instructionClones[&phi]);
-    this->loopCarriedPHIs.push_back(clonePHI);
+    clonedLoopCarriedPHIs.push_back(clonePHI);
   }
-  assert(this->loopCarriedPHIs.size() > 0
+  assert(clonedLoopCarriedPHIs.size() > 0
     && "There should be loop carried data dependencies for a HELIX loop");
 
   /*
@@ -38,8 +39,8 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   std::vector<Type *> phiTypes;
   std::set<int> nonReducablePHIs;
   std::set<int> cannotReduceLoopCarriedPHIs;
-  for (auto i = 0; i < this->loopCarriedPHIs.size(); ++i) {
-    auto phiType = this->loopCarriedPHIs[i]->getType();
+  for (auto i = 0; i < clonedLoopCarriedPHIs.size(); ++i) {
+    auto phiType = clonedLoopCarriedPHIs[i]->getType();
     phiTypes.push_back(phiType);
     nonReducablePHIs.insert(i);
   }
@@ -77,8 +78,8 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   loopCarriedEnvBuilder->generateEnvVariables(loopFunctionBuilder);
 
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
-  for (auto envIndex = 0; envIndex < originalLoopPHIs.size(); ++envIndex) {
-    auto phi = originalLoopPHIs[envIndex];
+  for (auto envIndex = 0; envIndex < originalLoopCarriedPHIs.size(); ++envIndex) {
+    auto phi = originalLoopCarriedPHIs[envIndex];
     auto preHeaderIndex = phi->getBasicBlockIndex(LDI->preHeader);
     auto preHeaderV = phi->getIncomingValue(preHeaderIndex);
     builder.CreateStore(preHeaderV, loopCarriedEnvBuilder->getEnvVar(envIndex));
@@ -93,8 +94,11 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   auto preHeaderClone = helixTask->basicBlockClones[LDI->preHeader];
   auto firstNonPHI = helixTask->instructionClones[LDI->header->getFirstNonPHI()];
   IRBuilder<> headerBuilder(firstNonPHI);
-  for (auto phiI = 0; phiI < loopCarriedPHIs.size(); phiI++) {
-    auto phi = loopCarriedPHIs[phiI];
+  for (auto phiI = 0; phiI < clonedLoopCarriedPHIs.size(); phiI++) {
+    auto phi = clonedLoopCarriedPHIs[phiI];
+    auto spilled = new SpilledLoopCarriedDependency();
+    this->spills.insert(spilled);
+    spilled->loopCarriedPHI = phi;
 
     /*
      * Create GEP access of the environment variable at index i
@@ -122,16 +126,16 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
       }
 
       IRBuilder<> builder(insertPoint);
-      builder.CreateStore(incomingV, envPtr);
+      spilled->environmentStores.insert(builder.CreateStore(incomingV, envPtr));
     }
 
     /*
      * Replace uses of PHI with environment load
      */
-    auto envLoad = headerBuilder.CreateLoad(envPtr);
+    spilled->environmentLoad = headerBuilder.CreateLoad(envPtr);
     std::set<User *> phiUsers(phi->user_begin(), phi->user_end());
     for (auto user : phiUsers) {
-      user->replaceUsesOfWith(phi, envLoad);
+      user->replaceUsesOfWith(phi, spilled->environmentLoad);
     }
     phi->eraseFromParent();
   }
@@ -139,7 +143,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   /*
    * Erase record of spilled PHIs
    */
-  for (auto phi : originalLoopPHIs) {
+  for (auto phi : originalLoopCarriedPHIs) {
     helixTask->instructionClones.erase(phi);
   }
 

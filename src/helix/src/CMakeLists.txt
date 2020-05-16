@@ -4,6 +4,7 @@ set(Srcs
   HELIXTask.cpp
   Linker.cpp
   Spiller.cpp
+  TaskFunctionDGDeriver.cpp
   SequentialSegments.cpp
   SequentialSegment.cpp
   Scheduler.cpp

@@ -17,7 +17,7 @@ HELIX::HELIX (
   Verbosity v
   )
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, v},
-    loopCarriedEnvBuilder{nullptr}, loopCarriedPHIs{}
+    loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr}
   {
 
   /*
@@ -65,10 +65,18 @@ HELIX::HELIX (
 
 void HELIX::reset () {
   ParallelizationTechnique::reset();
-  loopCarriedPHIs.clear();
   if (loopCarriedEnvBuilder) {
     delete loopCarriedEnvBuilder;
   }
+
+  if (taskFunctionDG) {
+    delete taskFunctionDG;
+  }
+
+  for (auto spill : spills) {
+    delete spill;
+  }
+  spills.clear();
 }
 
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) const {

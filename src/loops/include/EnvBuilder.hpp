@@ -99,6 +99,7 @@ namespace llvm {
     int getNumUsers () { return envUsers.size(); }
 
     Value *getEnvVar (int ind) ;
+    Value *getAccumulatedReducableEnvVar (int ind) ;
     Value *getReducableEnvVar (int ind, int reducerInd) ;
     bool isReduced (int ind) ;
 
@@ -118,6 +119,7 @@ namespace llvm {
     ArrayType *envArrayType;
     std::vector<Type *> envTypes;
     std::unordered_map<int, Value *> envIndexToVar;
+    std::unordered_map<int, Value *> envIndexToAccumulatedReducableVar;
     std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
     std::unordered_map<int, AllocaInst *> envIndexToVectorOfReducableVar;
     int numReducers;

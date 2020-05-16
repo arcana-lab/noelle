@@ -173,8 +173,12 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
      * memory that needs to be loaded from in order to retrieve the value
      */
     auto isReduced = envBuilder->isReduced(envInd);
-    auto envVar = envBuilder->getEnvVar(envInd);
-    if (!isReduced) envVar = afterReductionBuilder->CreateLoad(envBuilder->getEnvVar(envInd));
+    Value *envVar;
+    if (isReduced) {
+      envVar = envBuilder->getAccumulatedReducableEnvVar(envInd);
+    } else {
+      envVar = afterReductionBuilder->CreateLoad(envBuilder->getEnvVar(envInd));
+    }
 
     for (auto consumer : LDI->environment->consumersOf(prod)) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
