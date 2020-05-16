@@ -21,19 +21,10 @@ generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
 
 - Complete HELIX
 
+==== PDG
+- Finish the embedding of the PDG
 
-==== BENCHMARKS
-- Bring all PARSEC benchmarks
-
-- Bring all MiBench benchmarks
-
-- Bring all SPEC cpu2000, cpu2006, and cpu2017 benchmarks
-
+- Implement the detection of loop-carried data dependences in PDGAnalysis
 
 ==== OPTIMIZATIONS
 - Packing/unpacking pushes and pops
-
-
-==== PDG ALIAS ANALYSIS LIMITATIONS
-- Non-pointer struct values alias with primitive arrays
-- Primitive arrays stored and used in a struct
