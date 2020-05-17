@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 installDir
 
@@ -8,7 +8,7 @@ echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Add metadata to all loops of the program
-cmdToExecute="noelle-loopmeta $@ -o $@"
+cmdToExecute="noelle-meta-loop-embed $@ -o $@"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 

@@ -27,6 +27,8 @@ include_directories(
   ../include 
   ../../basic_utilities/include 
   ../../parallelization_utilities/include
+  ../../pdg/include
+  ../../loops/include
   )
 
 # Declare the LLVM pass to compile

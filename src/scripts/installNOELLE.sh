@@ -24,7 +24,6 @@ fi
 
 mkdir -p ${installDir}/bin ;
 
-patchInstallDir "noelle-basic" ;
 patchInstallDir "noelle-load" ;
 patchInstallDir "noelle" ;
 patchInstallDir "noelle-norm" ;
