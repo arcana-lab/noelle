@@ -2,6 +2,7 @@
 set(Srcs 
   Variable.cpp
   AccumulatorOpInfo.cpp
+  ControlFlowEquivalence.cpp
   InvariantManager.cpp
   InductionVariables.cpp
   InductionVariable.cpp
