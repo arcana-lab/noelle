@@ -17,15 +17,21 @@ using namespace llvm;
 
 bool LoopMetadataPass::tagLoops (
   LLVMContext &context,
-  Function &F,
-  LoopInfo &LI
+  Module &M,
+  Parallelization &par
   ){
 
   /*
-   * Tag all loops included in the function given as input.
+   * Fetch all the loops of the program.
+   */
+  auto loopsToParallelize = par.getModuleLoops(&M, 0);
+
+  /*
+   * Tag all loops.
    */
   auto modified = false;
-  for (auto loopInfo : LI.getLoopsInPreorder()){
+  auto loopID = 0;
+  for (auto loopInfo : *loopsToParallelize){
 
     /*
      * We cannot attach metadata to loops in the current LLVM infrastructure.
@@ -34,7 +40,7 @@ bool LoopMetadataPass::tagLoops (
      *
      * Fetch the header.
      */
-    auto header = loopInfo->getHeader();
+    auto header = loopInfo->header;
 
     /*
      * Fetch the terminator.
@@ -49,9 +55,18 @@ bool LoopMetadataPass::tagLoops (
     headerTerminator->setMetadata("loop_optimize", trueMetadata);
 
     /*
+     * Tag the header terminator to make explicit the ID of the loop.
+     */
+    auto loopIDString = std::to_string(loopID);
+    auto loopIDMetadataAsString = MDString::get(context, loopIDString);
+    auto loopIDMetadata = MDNode::get(context, loopIDMetadataAsString);
+    headerTerminator->setMetadata("loop_ID", loopIDMetadata);
+
+    /*
      * Remember that we have modified the code.
      */
     modified = true ;
+    loopID++;
   }
 
   return modified;

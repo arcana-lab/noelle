@@ -9,8 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "SystemHeaders.hpp"
-#include "llvm/Analysis/LoopInfo.h"
-
 #include "LoopMetadataPass.hpp"
 
 using namespace llvm;
@@ -30,29 +28,26 @@ bool LoopMetadataPass::doInitialization (Module &M) {
 bool LoopMetadataPass::runOnModule (Module &M) {
 
   /*
+   * Fetch the outputs of the passes we rely on.
+   */
+  auto& parallelizationFramework = getAnalysis<Parallelization>();
+
+  /*
    * Fetch the context
    */
   auto& context = M.getContext();
 
   /*
-   * Tag all loops of all functions.
+   * Tag all loops of the function given as input.
+   *
+   * Fetch the result of loop identification analysis.
    */
   auto modified = false;
-  for (auto &F : M){
 
-    /*
-     * Fetch the result of loop identification analysis for the current function
-     */
-    auto& LIA = getAnalysis<LoopInfoWrapperPass>(F);
-    continue ;
-    auto& LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
-    continue ;
-
-    /*
-     * Tag the loops of the current function.
-     */
-    modified |= this->tagLoops(context, F, LI);
-  }
+  /*
+   * Tag the loops of the current function.
+   */
+  modified |= this->tagLoops(context, M, parallelizationFramework);
 
   return modified;
 }
@@ -62,7 +57,7 @@ void LoopMetadataPass::getAnalysisUsage (AnalysisUsage &AU) const {
   /*
    * Analyses.
    */
-  AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<Parallelization>();
 
   return ;
 }

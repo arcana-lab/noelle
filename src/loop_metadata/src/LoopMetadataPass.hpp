@@ -10,6 +10,7 @@
  */
 #pragma once
 #include "SystemHeaders.hpp"
+#include "Parallelization.hpp"
 
 using namespace llvm;
 
@@ -28,7 +29,7 @@ namespace llvm {
       void getAnalysisUsage(AnalysisUsage &AU) const override ;
 
     private:
-      bool tagLoops (LLVMContext &context, Function &F, LoopInfo &LI);
+      bool tagLoops (LLVMContext &context, Module &M, Parallelization &par);
   };
 
 }
