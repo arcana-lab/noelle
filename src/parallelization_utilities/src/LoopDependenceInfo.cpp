@@ -57,9 +57,42 @@ LoopDependenceInfo::LoopDependenceInfo(
    */
   this->nestingLevel = l->getLoopDepth();
 
+  /*
+   * Cache the post-dominator tree.
+   */
   for (auto bb : l->blocks()) {
     loopBBtoPD[&*bb] = DS.PDT.getNode(&*bb)->getIDom()->getBlock();
   }
+
+  /*
+   * Fetch the metadata.
+   */
+  this->addMetadata("noelle.loop_ID");
+  this->addMetadata("noelle.loop_optimize");
+  
+  return ;
+}
+
+void LoopDependenceInfo::addMetadata (const std::string &metadataName){
+  auto headerTerm = this->header->getTerminator();
+
+  /*
+   * Fetch the metadata node.
+   */
+  auto metaNode = headerTerm->getMetadata(metadataName);
+  if (!metaNode){
+    return ;
+  }
+
+  /*
+   * Fetch the string.
+   */
+  auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
+
+  /*
+   * Add the metadata.
+   */
+  this->metadata[metadataName] = metaString;
 
   return ;
 }
@@ -204,6 +237,40 @@ bool LoopDependenceInfo::iterateOverSubLoopsRecursively (
 }
       
 uint64_t LoopDependenceInfo::getID (void) const {
-  auto root = this->liSummary.getLoopNestingTreeRoot();
-  return root->getID();
+  
+  /*
+   * Check if there is metadata.
+   */
+  uint64_t ID;
+  if (!this->doesHaveMetadata("noelle.loop_ID")){
+    abort();
+  }
+
+  /*
+   * Fetch the ID from the metadata.
+   */
+  auto IDString = this->getMetadata("noelle.loop_ID");
+  ID = std::stoul(IDString);
+
+  return ID;
+}
+
+std::string LoopDependenceInfo::getMetadata (const std::string &metadataName) const {
+
+  /*
+   * Check if the metadata exists.
+   */
+  if (!this->doesHaveMetadata(metadataName)){
+    return "";
+  }
+
+  return this->metadata.at(metadataName);
+}
+      
+bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) const {
+  if (this->metadata.find(metadataName) == this->metadata.end()){
+    return false;
+  }
+
+  return true;
 }

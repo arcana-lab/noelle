@@ -9,7 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "SystemHeaders.hpp"
-
 #include "LoopMetadataPass.hpp"
 
 using namespace llvm;
@@ -27,10 +26,38 @@ bool LoopMetadataPass::doInitialization (Module &M) {
 }
 
 bool LoopMetadataPass::runOnModule (Module &M) {
-  return false;
+
+  /*
+   * Fetch the outputs of the passes we rely on.
+   */
+  auto& parallelizationFramework = getAnalysis<Parallelization>();
+
+  /*
+   * Fetch the context
+   */
+  auto& context = M.getContext();
+
+  /*
+   * Tag all loops of the function given as input.
+   *
+   * Fetch the result of loop identification analysis.
+   */
+  auto modified = false;
+
+  /*
+   * Tag the loops of the current function.
+   */
+  modified |= this->tagLoops(context, M, parallelizationFramework);
+
+  return modified;
 }
 
 void LoopMetadataPass::getAnalysisUsage (AnalysisUsage &AU) const {
+
+  /*
+   * Analyses.
+   */
+  AU.addRequired<Parallelization>();
 
   return ;
 }

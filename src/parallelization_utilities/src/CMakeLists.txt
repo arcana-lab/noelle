@@ -4,7 +4,6 @@ set(Srcs
   SCCAttrs.cpp
   SCCDAGAttrs.cpp
   SCCDAGNormalizer.cpp
-  DominatorSummary.cpp
   LoopDependenceInfo.cpp
   SCCDAGPartition.cpp
   Parallelization.cpp
