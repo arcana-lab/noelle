@@ -13,8 +13,11 @@
 /*
  * C and C++ headers.
  */
+#include <map>
 #include <unordered_map>
 #include <set>
+#include <unordered_set>
+#include <vector>
 #include <queue>
 #include <deque>
 #include <thread>

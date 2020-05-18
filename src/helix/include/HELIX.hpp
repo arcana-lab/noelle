@@ -21,11 +21,10 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"
-#include <vector>
 
 namespace llvm {
 
-  struct SpilledLoopCarriedDependency;
+  class SpilledLoopCarriedDependency;
 
   class HELIX : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
     public:
@@ -116,7 +115,7 @@ namespace llvm {
       PDG *taskFunctionDG;
 
       EnvBuilder *loopCarriedEnvBuilder;
-      std::set<SpilledLoopCarriedDependency *> spills;
+      std::unordered_set<SpilledLoopCarriedDependency *> spills;
 
       void squeezeSequentialSegment (
         LoopDependenceInfo *LDI,
@@ -124,10 +123,11 @@ namespace llvm {
       );
   };
 
-  struct SpilledLoopCarriedDependency {
-    PHINode *loopCarriedPHI;
-    LoadInst *environmentLoad;
-    std::set<StoreInst *> environmentStores;
+  class SpilledLoopCarriedDependency {
+    public:
+      PHINode *loopCarriedPHI;
+      LoadInst *environmentLoad;
+      std::set<StoreInst *> environmentStores;
   };
 
 }
