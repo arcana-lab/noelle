@@ -107,10 +107,10 @@ void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
   DG<DGString> stageGraph;
   std::set<DGString *> elements;
 
-  auto addNode = [&](std::string val) -> DGNode<DGString> * {
+  auto addNode = [&](std::string val, bool isInternal) -> DGNode<DGString> * {
     auto element = new DGString(val);
     elements.insert(element);
-    return stageGraph.addNode(element, true);
+    return stageGraph.addNode(element, isInternal);
   };
 
   for (auto techniqueTask : this->tasks) {
@@ -119,14 +119,16 @@ void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
      * Produce node indicating the task index that owns the following SCCs
      */
     auto task = (DSWPTask *)techniqueTask;
-    auto headerNode = addNode("Stage: " + std::to_string(task->order));
+    auto headerNode = addNode("Stage: " + std::to_string(task->order), true);
 
-    for (auto scc : task->stageSCCs) {
+    std::set<SCC *> sccsForTask{task->stageSCCs.begin(), task->stageSCCs.end()};
+    sccsForTask.insert(task->clonableSCCs.begin(), task->clonableSCCs.end());
+    for (auto scc : sccsForTask) {
       std::string sccDescription;
       raw_string_ostream ros(sccDescription);
       scc->printMinimal(ros, "");
       ros.flush();
-      auto sccNode = addNode(sccDescription);
+      auto sccNode = addNode(sccDescription, task->stageSCCs.find(scc) != task->stageSCCs.end());
       stageGraph.addEdge(headerNode->getT(), sccNode->getT());
     }
   }

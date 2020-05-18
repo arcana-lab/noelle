@@ -21,6 +21,8 @@ namespace llvm {
       std::set<unsigned> sideEffectFreeOps;
       std::set<unsigned> accumOps;
       std::unordered_map<unsigned, unsigned> opIdentities;
+      std::unordered_map<unsigned, unsigned> integerReducingOperators;
+      std::unordered_map<unsigned, unsigned> floatingReducingOperators;
 
       bool isMulOp (unsigned op);
       bool isAddOp (unsigned op);

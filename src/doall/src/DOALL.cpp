@@ -263,44 +263,6 @@ bool DOALL::apply (
   return true;
 }
 
-BasicBlock * DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
-  std::unordered_map<int, int> reducableBinaryOps;
-  std::unordered_map<int, Value *> initialValues;
-
-  /*
-   * Assertions.
-   */
-  assert(LDI != nullptr);
-
-  /*
-   * Iterate over live-out variables.
-   */
-  for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
-    auto producer = LDI->environment->producerAt(envInd);
-    auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
-    auto producerSCCAttributes = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
-    auto firstAccumI = *(producerSCCAttributes->getAccumulators().begin());
-    auto binOpCode = firstAccumI->getOpcode();
-    reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
-
-    auto prodPHI = cast<PHINode>(producer);
-    auto initValPHIIndex = prodPHI->getBasicBlockIndex(LDI->preHeader);
-    initialValues[envInd] = prodPHI->getIncomingValue(initValPHIIndex);
-  }
-
-  auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
-  auto latestBB = this->envBuilder->reduceLiveOutVariables(this->entryPointOfParallelizedLoop, *builder, reducableBinaryOps, initialValues, numberOfThreadsExecuted);
-
-  /*
-   * Free the memory.
-   */
-  delete builder;
-
-  ParallelizationTechnique::propagateLiveOutEnvironment(LDI, numberOfThreadsExecuted);
-
-  return latestBB;
-}
-
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   LoopDependenceInfo *LDI,
   Parallelization &par
@@ -342,11 +304,12 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
     numCores,
     chunkSize
   }));
+  auto numThreadsUsed = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
 
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
    */
-  auto latestBBAfterDOALLCall = this->propagateLiveOutEnvironment(LDI, doallCallInst);
+  auto latestBBAfterDOALLCall = this->propagateLiveOutEnvironment(LDI, numThreadsUsed);
 
   /*
    * Jump to the unique successor of the loop.
