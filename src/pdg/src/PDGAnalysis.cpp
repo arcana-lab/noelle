@@ -127,7 +127,7 @@ bool llvm::PDGAnalysis::compareNodes(PDG *pdg1, PDG *pdg2) {
   errs() << "Compare PDG Nodes\n";
 
   if (pdg1->numNodes() != pdg2->numNodes()) {
-    errs() << "number of pdg nodes are not the same\n";
+    errs() << " number of pdg nodes are not the same\n";
     return false;
   }
 
@@ -144,7 +144,7 @@ bool llvm::PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
   errs() << "Compare PDG Edges\n";
 
   if (pdg1->numEdges() != pdg2->numEdges()) {
-    errs() << "number of pdg edges are not the same\n";
+    errs() << " number of pdg edges are not the same\n";
     return false;
   }
 
