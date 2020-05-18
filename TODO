@@ -22,8 +22,6 @@ generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
 - Complete HELIX
 
 ==== PDG
-- Finish the embedding of the PDG
-
 - Implement the detection of loop-carried data dependences in PDGAnalysis
 
 ==== OPTIMIZATIONS
