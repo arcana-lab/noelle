@@ -52,7 +52,7 @@ bool LoopMetadataPass::tagLoops (
      */
     auto trueMetadataString = MDString::get(context, "true");
     auto trueMetadata = MDNode::get(context, trueMetadataString);
-    headerTerminator->setMetadata("loop_optimize", trueMetadata);
+    headerTerminator->setMetadata("noelle.loop_optimize", trueMetadata);
 
     /*
      * Tag the header terminator to make explicit the ID of the loop.
@@ -60,7 +60,7 @@ bool LoopMetadataPass::tagLoops (
     auto loopIDString = std::to_string(loopID);
     auto loopIDMetadataAsString = MDString::get(context, loopIDString);
     auto loopIDMetadata = MDNode::get(context, loopIDMetadataAsString);
-    headerTerminator->setMetadata("loop_ID", loopIDMetadata);
+    headerTerminator->setMetadata("noelle.loop_ID", loopIDMetadata);
 
     /*
      * Remember that we have modified the code.
