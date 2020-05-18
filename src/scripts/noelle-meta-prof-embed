@@ -1,0 +1,8 @@
+#!/bin/bash
+
+installDir
+
+# Run HotProfiler
+cmdToExecute="noelle-load -pgo-test-profile-file=$1 -block-freq -pgo-instr-use -HotProfiler ${@:2}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;

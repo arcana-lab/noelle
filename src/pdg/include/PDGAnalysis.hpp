@@ -47,6 +47,7 @@ namespace llvm {
       std::set<Function *> CGUnderMain;
       TalkDown *talkdown;
       PDGVerbosity verbose;
+      bool embedPDG;
       PDGPrinter printer;
 
       bool comparePDGs(PDG *, PDG *);
