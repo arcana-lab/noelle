@@ -74,7 +74,12 @@ void PDGPrinter::collectAllFunctionsInCallGraph (Module &M, CallGraph &callGraph
     for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end()))
     {
       auto F = callRecord.second->getFunction();
-      if (F->empty()) continue;
+      if (!F) {
+        continue ;
+      }
+      if (F->empty()) {
+        continue;
+      }
       funcToTraverse.push(F);
     }
   }
