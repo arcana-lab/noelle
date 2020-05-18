@@ -50,7 +50,7 @@ namespace llvm {
         Heuristics *h
         ) const override ;
 
-      PDG *constructTaskFunctionDGFromOriginalLoopDG (
+      PDG * constructTaskInternalDependenceGraphFromOriginalLoopDG (
         LoopDependenceInfo *LDI,
         PostDominatorTree &postDomTreeOfTaskFunction
       );

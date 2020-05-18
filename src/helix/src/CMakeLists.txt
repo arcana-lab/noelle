@@ -2,9 +2,9 @@
 set(Srcs 
   HELIX.cpp
   HELIXTask.cpp
+  HELIXTaskInternalDependenceGraph.cpp
   Linker.cpp
   Spiller.cpp
-  TaskFunctionDGDeriver.cpp
   SequentialSegments.cpp
   SequentialSegment.cpp
   Scheduler.cpp
