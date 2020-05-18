@@ -57,53 +57,29 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Parallelize the loops selected.
    */
-  errs() << "EnablersManager:  Modify all " << loopsToParallelize->size() << " loops, one at a time\n";
+  errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
   auto modified = false;
-  std::unordered_map<uint64_t, bool> modifiedLoops;
+  std::unordered_map<Function *, bool> modifiedFunctions;
   for (auto loop : *loopsToParallelize){
 
     /*
-     * Check if the loop can be parallelized.
-     * This depends on whether the metadata (e.g., LoopDependenceInfo) are correct, which depends on whether its inner loops have been modified or not.
+     * Fetch the function that contains the current loop.
      */
-    auto checkFunc = [&modifiedLoops](const LoopSummary &child) -> bool {
+    auto f = loop->function;
 
-      /*
-       * Fetch the ID of the subloop.
-       */
-      auto childID = child.getID();
-
-      /*
-       * Check if the sub-loop has been modified
-       */
-      if (modifiedLoops[childID]){
-
-        /*
-         * The subloop has been modified
-         */
-        return true;
-      }
-
-      /*
-       * The subloop has not been modified
-       */
-      return false;
-    };
-    if (loop->iterateOverSubLoopsRecursively(checkFunc)){
-
-      /*
-       * A subloop has been modified.
-       * Hence, we cannot trust the metadata of "loop".
-       */
+    /*
+     * Check if we have already modified the function.
+     */
+    if (modifiedFunctions[f]){
+      errs() << "EnablersManager:   The current loop belongs to the function " << f->getName() << " , which has already been modified.\n" ;
       continue ;
     }
 
     /*
-     * Parallelize the current loop with EnablersManager.
+     * Improve the current loop.
      */
-    auto loopID = loop->getID();
-    modifiedLoops[loopID] |= this->applyEnablers(loop, parallelizationFramework, loopDist);
-    modified |= modifiedLoops[loopID];
+    modifiedFunctions[f] |= this->applyEnablers(loop, parallelizationFramework, loopDist);
+    modified |= modifiedFunctions[f];
   }
 
   /*

@@ -31,6 +31,7 @@ download:
 clean:
 	./scripts/clean.sh ; rm -rf include/ ; rm -f regression/*.txt ;
 	rm -rf regression_* ;
+	rm -rf tmp.* ;
 	cd condor ; make clean ; 
 
 .PHONY: condor condor_check regression performance buildunit rununit download clean 

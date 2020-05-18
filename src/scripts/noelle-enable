@@ -2,9 +2,55 @@
 
 installDir
 
-# Set the command to execute
-cmdToExecute="noelle-load -load ${installDir}/lib/Enablers.so -parallelization -pgo-test-profile-file=$1 -block-freq -pgo-instr-use -HotProfiler -enablers ${@:2}"
-echo $cmdToExecute ;
+# Set the file names
+IRFileInput="`mktemp`" ;
+IRFileInputLL="`mktemp`" ;
+IRFileOutput="`mktemp`" ;
+IRFileOutputLL="`mktemp`" ;
 
-# Execute the command
-eval $cmdToExecute 
+# Print
+echo "NOELLE: Enablers: Start" ;
+echo "NOELLE: Enablers:   Input: $1" ;
+echo "NOELLE: Enablers:   Output: $2" ;
+
+# Copy the initial input file
+cp $1 $IRFileInput ;
+
+# Invoke the enablers
+echo "NOELLE: Enablers:   Temporary input: $IRFileInput (.ll version is $IRFileInputLL)" ;
+echo "NOELLE: Enablers:   Temporary output: $IRFileOutput (.ll version is $IRFileOutputLL)" ;
+echo "NOELLE: Enablers:   Start invoking enablers" ;
+let c=0; 
+while true ; do
+  echo "NOELLE: Enablers:     Invocation $c" ;
+
+  # Set the command to execute and execute it
+  cmdToExecute="noelle-load -load ${installDir}/lib/Enablers.so -load ${installDir}/lib/LoopDistribution.so -enablers $IRFileInput -o $IRFileOutput"
+  echo $cmdToExecute ;
+  eval $cmdToExecute ;
+
+  # Check if we got an error
+  if test $? -ne 0 ; then
+    echo "ERROR" ;
+    exit 1;
+  fi
+
+  # Check if the bitcode has been modified
+  llvm-dis $IRFileInput -o $IRFileInputLL ;
+  llvm-dis $IRFileOutput -o $IRFileOutputLL ;
+  linesDifferent=`diff ${IRFileInputLL} ${IRFileOutputLL} | wc -l | awk '{print $1}'` ;
+  if test "$linesDifferent" == "4" ; then
+
+    # Copy the final output
+    cp $IRFileOutput $2 ;
+    break ;
+  fi
+
+  # Copy the output to the input
+  cp $IRFileOutput $IRFileInput ;
+
+  let c=$c+1; 
+done
+
+# Exit
+echo "NOELLE: Enablers: Exit" ;

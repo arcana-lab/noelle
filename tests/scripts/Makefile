@@ -71,9 +71,6 @@ baseline_pre.bc: test.bc $(THREADER).bc
 	noelle-pre "$@"
 	llvm-dis $@
 
-baseline_pre_enable.bc: baseline_pre.bc output.prof
-	noelle-enable output.prof $(PARALLELIZATION_OPTIONS) $< -o $@
-
 output.prof: default.profraw
 	llvm-profdata merge $^ -output=$@
 
