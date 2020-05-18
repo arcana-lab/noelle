@@ -42,7 +42,10 @@ SequentialSegment::SequentialSegment (
   }
   std::set<Instruction *> ssInstructions;
   for (auto scc : *sccs){
-    assert(scc->hasCycle());
+
+    // NOTE: SCC sandwiched between two with cycles may be single instruction nodes without sycles.
+    // assert(scc->hasCycle());
+
     if (this->verbosity >= Verbosity::Maximal) {
 
       /*

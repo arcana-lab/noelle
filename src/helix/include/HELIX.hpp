@@ -21,9 +21,10 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"
-#include <vector>
 
 namespace llvm {
+
+  class SpilledLoopCarriedDependency;
 
   class HELIX : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
     public:
@@ -48,6 +49,11 @@ namespace llvm {
         Parallelization &par, 
         Heuristics *h
         ) const override ;
+
+      PDG * constructTaskInternalDependenceGraphFromOriginalLoopDG (
+        LoopDependenceInfo *LDI,
+        PostDominatorTree &postDomTreeOfTaskFunction
+      );
 
       Function *getTaskFunction () { return tasks[0]->F; }
 
@@ -99,17 +105,29 @@ namespace llvm {
         void
       );
 
+      void hoistReducibleLiveOutStoresToTaskExit (
+        LoopDependenceInfo *LDI
+      );
+
     private:
       Function *waitSSCall, *signalSSCall;
       LoopDependenceInfo *originalLDI;
+      PDG *taskFunctionDG;
 
       EnvBuilder *loopCarriedEnvBuilder;
-      std::vector<PHINode *> loopCarriedPHIs;
+      std::unordered_set<SpilledLoopCarriedDependency *> spills;
 
       void squeezeSequentialSegment (
         LoopDependenceInfo *LDI,
         SequentialSegment *ss
       );
+  };
+
+  class SpilledLoopCarriedDependency {
+    public:
+      PHINode *loopCarriedPHI;
+      LoadInst *environmentLoad;
+      std::set<StoreInst *> environmentStores;
   };
 
 }

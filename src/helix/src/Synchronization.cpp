@@ -259,3 +259,42 @@ void HELIX::addSynchronizations (
 
   return ;
 }
+
+void HELIX::hoistReducibleLiveOutStoresToTaskExit(LoopDependenceInfo *LDI) {
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+  auto envUser = this->envBuilder->getUser(0);
+
+  for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
+    if (!this->envBuilder->isReduced(envIndex)) continue;
+
+    auto producer = (Instruction*)LDI->environment->producerAt(envIndex);
+    auto producerClone = helixTask->instructionClones[producer];
+
+    /*
+     * Locate all stores for this live out.
+     */
+    auto envPtr = envUser->getEnvPtr(envIndex);
+    std::set<StoreInst *> stores;
+    for (auto user : envPtr->users()) {
+      if (auto store = dyn_cast<StoreInst>(user)) {
+        if (store->getPointerOperand() == envPtr && store->getValueOperand() == producerClone) {
+          stores.insert(store);
+        }
+      }
+    }
+
+    /*
+     * Move one to the task's exit. Remove the rest.
+     */
+    assert(stores.size() >= 1);
+    auto storeIter = stores.begin();
+    auto firstStore = *storeIter++;
+    firstStore->removeFromParent();
+    IRBuilder<> exitBuilder(helixTask->exitBlock);
+    exitBuilder.Insert(firstStore);
+
+    for (; storeIter != stores.end(); ++storeIter) {
+      (*storeIter)->eraseFromParent();
+    }
+  }
+}

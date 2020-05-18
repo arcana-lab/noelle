@@ -19,6 +19,8 @@
 #include "Heuristics.hpp"
 #include "TaskExecution.hpp"
 #include "Hot.hpp"
+#include "PDGPrinter.hpp"
+#include "SubCFGs.hpp"
 
 namespace llvm {
 
@@ -162,6 +164,11 @@ namespace llvm {
        * General purpose helpers (that should be moved to parallelization_utils)
        */
       void doNestedInlineOfCalls (Function *F, std::set<CallInst *> &calls);
+
+      /*
+       * Debug
+       */
+      void dumpToFile (LoopDependenceInfo &LDI);
 
       /*
        * Fields

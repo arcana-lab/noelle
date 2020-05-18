@@ -50,14 +50,6 @@ namespace llvm {
     protected:
 
       /*
-       * Environment overrides
-       */
-      BasicBlock * propagateLiveOutEnvironment (
-        LoopDependenceInfo *LDI,
-        Value *numberOfThreadsExecuted
-      ) override ;
-
-      /*
        * DOALL specific generation
        */
       void simplifyOriginalLoopIV (

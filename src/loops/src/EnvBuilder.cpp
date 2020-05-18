@@ -316,12 +316,13 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   std::vector<PHINode *> phiNodes;
   auto count = 0;
   for (auto envIndexInitValue : initialValues) {
+    auto envIndex = envIndexInitValue.first;
     auto initialValue = envIndexInitValue.second;
 
     /*
      * Create a PHI node for the current reduced variable.
      */
-    auto variableType = initialValue->getType();
+    auto variableType = envTypes[envIndex];
     auto phiNode = loopBodyBuilder.CreatePHI(variableType, 2);
 
     /*
@@ -403,7 +404,7 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
     /*
      * Keep track of the new accumulator value.
      */
-    envIndexToVar[envIndex] = newAccumulatorValue;
+    envIndexToAccumulatedReducableVar[envIndex] = newAccumulatorValue;
 
     count++;
   }
@@ -423,7 +424,7 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
     /*
      * Fetch the value computed by the previous iteration.
      */
-    auto previousIterationAccumulatorValue = envIndexToVar[envIndex];
+    auto previousIterationAccumulatorValue = envIndexToAccumulatedReducableVar[envIndex];
 
     /*
      * Add the value related to the previous iteration of the reduction loop.
@@ -466,6 +467,12 @@ Value *EnvBuilder::getEnvArray () {
 Value *EnvBuilder::getEnvVar (int ind) {
   auto iter = envIndexToVar.find(ind);
   assert(iter != envIndexToVar.end());
+  return (*iter).second;
+}
+
+Value *EnvBuilder::getAccumulatedReducableEnvVar (int ind) {
+  auto iter = envIndexToAccumulatedReducableVar.find(ind);
+  assert(iter != envIndexToAccumulatedReducableVar.end());
   return (*iter).second;
 }
 
