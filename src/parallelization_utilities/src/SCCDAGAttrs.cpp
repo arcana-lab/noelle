@@ -65,7 +65,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
 
 std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDependencies (void) const {
   std::set<SCC *> sccs;
-  for (auto &sccDependencies : this->interIterDeps) {
+  for (auto &sccDependencies : this->interIterDepsInternalToSCC) {
     sccs.insert(sccDependencies.first);
   }
   return sccs;
@@ -77,7 +77,7 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies (void) co
   /*
    * Iterate over SCCs with loop-carried data dependences.
    */
-  for (auto &sccDependencies : this->interIterDeps) {
+  for (auto &sccDependencies : this->interIterDepsInternalToSCC) {
 
     /*
      * Fetch the SCC.
@@ -286,206 +286,20 @@ void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS, DominatorSummary &DS) 
         intraIterDeps[scc].insert(edge);
       }
     }
-  }
 
-  return ;
-}
-
-void SCCDAGAttrs::identifyInterIterationDependences (LoopsSummary &LIS){
-
-  /*
-   * Collect back edges within each SCC Data dependency. 
-   * Back edges are from non-control instructions to PHIs in loop headers.
-   *
-   * Control dependency back edges are from conditional branches to instructions in loop headers.
-   */
-  this->sccdag->iterateOverSCCs([this, &LIS](SCC *scc) -> bool {
-
-    /*
-     * Iterate over each instruction within the current SCC.
-     */
-    for (auto valuePair : scc->internalNodePairs()) {
-
-      /*
-       * Fetch the instruction and the related node in the PDG.
-       */
-      auto instValue = valuePair.first;
-      auto inst = dyn_cast<Instruction>(instValue);
-      auto depNode = valuePair.second;
-
-      /*
-       * Handle PHI instructions.
-       */
-      if (auto phi = dyn_cast<PHINode>(instValue)) {
-
-        /*
-         * Check if the current PHI node is within the header of the loop we care.
-         */
-        auto loop = LIS.getLoop(phi);
-        if (loop->header != phi->getParent()) {
-          continue;
-        }
-
-        for (auto edge : depNode->getIncomingEdges()) {
-          if (edge->isControlDependence()) continue;
-
-          /*
-           * Check if the dependence is between instructions within the loop.
-           */
-          auto depValue = edge->getOutgoingT();
-          if (!isa<Instruction>(depValue) || !scc->isInternal(depValue)) continue;
-          auto depInst = cast<Instruction>(depValue);
-
-          /*
-           * Check if the dependence crosses the iteration boundary.
-           */
-          if (canPrecedeInCurrentIteration(LIS, depInst, phi)) continue;
-
-          /*
-           * The dependence From->To crosses the iteration boundary.
-           * However, To is a PHI node. Hence, there is this potential case where it doesn't lead to a cross-iteration dependence.
-           *
-           * Ly:
-           *
-           * To:  = PHI (<%v, Lx>; <%w, Ly>)
-           *
-           * Lx
-           * From: = %v
-           *
-           * Check for this special case.
-           */
-          //if (canPrecedeInCurrentIteration(LIS, phi, depInst)) continue;
-
-          /*
-           * The dependence is loop-carried.
-           */
-          interIterDeps[scc].insert(edge);
-        }
-
-        continue ;
-      }
-
-      /*
-       * Handle Terminator instructions.
-       */
-      if (  true
-            && (inst != nullptr)
-            && inst->isTerminator()
-        ){
-        for (auto edge : depNode->getOutgoingEdges()) {
-          auto depV = edge->getIncomingT();
-          assert(isa<Instruction>(depV));
-          auto depBB = ((Instruction*)depV)->getParent();
-          if (inst->getParent() != depBB) continue;
-          interIterDeps[scc].insert(edge);
-        }
-        continue ;
-      }
-
-      /*
-       * Handle instructions that can access the memory.
-       */
-      if (  false
-          || isa<StoreInst>(inst)
-          || isa<LoadInst>(inst)
-          || isa<CallInst>(inst)
-        ) {
-        auto memI = cast<Instruction>(inst);
-
-        /*
-         * Check the dependences attached to the current instruction.
-         */
-        for (auto edge : depNode->getOutgoingEdges()) {
-
-          /*
-           * We only care about memory dependences.
-           */
-          if (!edge->isMemoryDependence()) {
-            continue;
-          }
-
-          /*
-           * Fetch the other instruction attached to the current memory dependence.
-           */
-          auto depDst = (Instruction *)edge->getIncomingT();
-
-          /*
-           * Check if there is a path that connects these two instructions and that path goes across loop iterations.
-           */
-          if (!canPrecedeInCurrentIteration(LIS, depDst, memI)) {
-            continue;
-          }
-
-          /*
-           * Tag the current dependence as inter-iteration.
-           */
-          interIterDeps[scc].insert(edge);
+    if (interIterDeps.find(scc) != interIterDeps.end()) {
+      for (auto dependency : interIterDeps[scc]) {
+        if (scc->isInternal(dependency->getOutgoingT()) && scc->isInternal(dependency->getIncomingT())) {
+          interIterDepsInternalToSCC[scc].insert(dependency);
         }
       }
     }
-
-    // bool noCycle = !scc->hasCycle(/*ignoreControlDep=*/false);
-    /*
-    bool noInterIterDeps = interIterDeps.find(scc) == interIterDeps.end();
-    if (noCycle != noInterIterDeps) {
-      errs() << "ERROR: Improper collection of inter iteration dependencies in SCC! "
-        << (noCycle ? "no cycle" : "cycle") << " but "
-        << (noInterIterDeps ? "no inter iter dependencies" : "inter iter dependencies") << "\n";
-      scc->print(errs()) << "\n";
-      assert(false && "SCCDAGAttrs::collectDependencies");
-    }
-    */
-    return false;
   }
-  );
 
   return ;
 }
 
 // TODO: Consolidate this logic and its equivalent in PDGAnalysis
-bool SCCDAGAttrs::canPrecedeInCurrentIteration (LoopsSummary &LIS, Instruction *from, Instruction *to) const {
-  BasicBlock *fromBB = from->getParent();
-  BasicBlock *toBB = to->getParent();
-
-  /*
-   * Fetch the header.
-   */
-  auto loopOfBB = LIS.getLoop(from);
-  BasicBlock *headerBB = nullptr;
-  if (loopOfBB != nullptr) {
-    headerBB = loopOfBB->header;
-  }
-
-  if (fromBB == toBB) {
-    for (auto &I : *fromBB) {
-      if (&I == from) return true;
-      if (&I == to) return false;
-    }
-  }
-
-  std::queue<BasicBlock *> bbToTraverse;
-  std::set<BasicBlock *> bbReached;
-  auto traverseOn = [&](BasicBlock *bb) -> void {
-    bbToTraverse.push(bb); bbReached.insert(bb);
-  };
-  traverseOn(toBB);
-
-  while (!bbToTraverse.empty()) {
-    auto bb = bbToTraverse.front();
-    bbToTraverse.pop();
-    if (bb == fromBB) return true;
-    if (bb == headerBB) continue;
-
-    for (auto predBB : make_range(pred_begin(bb), pred_end(bb))) {
-      if (bbReached.find(predBB) == bbReached.end()) {
-        traverseOn(predBB);
-      }
-    }
-  }
-
-  return false;
-}
-
 bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
 
   /*
@@ -512,14 +326,29 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
 
   /*
    * Requirement: There are no memory dependences that connect an instruction of the SCC with another one outside that SCC.
+   * Requirement: There are no outgoing control or data dependencies to any non-trivial SCC
    * TODO: improvement: we can also accept if a memory dependence exists from an instruction of the SCC with another one outside the loop the SCC is contained in (and any sub-loop of it).
    */
-  for (auto iNodePair : scc->externalNodePairs()) {
-    auto dependenceDst = iNodePair.second;
-    for (auto edge : dependenceDst->getAllConnectedEdges()) {
-      if (edge->isMemoryDependence()) {
+  auto sccNode = sccdag->fetchNode(scc);
+  for (auto edge : sccNode->getAllConnectedEdges()) {
+    for (auto subEdge : edge->getSubEdges()) {
+      if (subEdge->isMemoryDependence()) {
         return false;
       }
+    }
+  }
+
+  for (auto edge : sccNode->getOutgoingEdges()) {
+    auto dependentSCC = edge->getIncomingT();
+    if (dependentSCC == scc) continue;
+
+    /*
+    * TODO: This is a bit conservative. Ideally, we would check that all transitively dependent SCCs
+    * are trivial, which still allows this SCC to be reduced.
+    */
+    auto dependentSCCNode = edge->getIncomingNode();
+    if (dependentSCC->numInternalNodes() > 1 || dependentSCCNode->numOutgoingEdges() > 0) {
+      return false;
     }
   }
 
@@ -527,7 +356,10 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
    * Requirement: There is a single loop-carried data dependence between instructions of the SCC via variables.
    */
   uint32_t loopCarriedDataDeps = 0;
-  for (auto edge : interIterDeps[scc]) {
+  if (interIterDepsInternalToSCC.find(scc) == interIterDepsInternalToSCC.end()) {
+    return false;
+  }
+  for (auto edge : interIterDepsInternalToSCC[scc]) {
 
     /*
      * Check that the loop-carried dependence is a data dependence one.
@@ -674,7 +506,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
  * The SCC is independent if it doesn't have loop carried data dependencies
  */
 bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
-  return interIterDeps.find(scc) == interIterDeps.end();
+  return interIterDepsInternalToSCC.find(scc) == interIterDepsInternalToSCC.end();
 }
 
 bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS) {

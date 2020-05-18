@@ -127,6 +127,16 @@ namespace llvm {
         );
 
       /*
+       * Return true if the loop has the metadata requested.
+       */
+      bool doesHaveMetadata (const std::string &metadataName) const ;
+
+      /*
+       * Fetch the metadata attached to the loop.
+       */
+      std::string getMetadata (const std::string &metadataName) const ;
+
+      /*
        * Deconstructor.
        */
       ~LoopDependenceInfo();
@@ -139,14 +149,16 @@ namespace llvm {
       std::set<Technique> enabledTechniques;  /* Techniques enabled. */
       PDG *loopDG;                            /* Dependence graph of the loop. 
                                                * This graph does not include instructions outside the loop (i.e., no external dependences are included).  
-                                               * */
+                                               */
       uint32_t nestingLevel;
+      std::unordered_map<std::string, std::string> metadata;
 
       /*
        * Methods
        */
       void fetchLoopAndBBInfo (LoopInfo &li, Loop *l) ;
       std::pair<PDG *, SCCDAG *> createDGsForLoop (Loop *l, PDG *functionDG) ;
+      void addMetadata (const std::string &metadataName);
 
   };
 

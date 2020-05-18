@@ -2,6 +2,7 @@
 set(Srcs 
   HELIX.cpp
   HELIXTask.cpp
+  HELIXTaskInternalDependenceGraph.cpp
   Linker.cpp
   Spiller.cpp
   SequentialSegments.cpp

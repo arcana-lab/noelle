@@ -37,6 +37,12 @@ extern "C" {
 
   /******************************************** NOELLE APIs ***********************************************/
 
+  struct DispatcherInfo {
+    public:
+      int32_t numberOfThreadsUsed;
+      int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
+  };
+
   /*
    * Return the number of cores to use for the parallelization.
    */
@@ -45,16 +51,12 @@ extern "C" {
   /*
    * Dispatch threads to run a DOALL loop.
    */
-  int32_t NOELLE_DOALLDispatcher (
+  DispatcherInfo NOELLE_DOALLDispatcher (
     void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), 
     void *env, 
     int64_t maxNumberOfCores, 
     int64_t chunkSize
     );
-
-
-
-
 
   /******************************************** NOELLE API implementations ***********************************************/
 
@@ -168,7 +170,7 @@ extern "C" {
     return stage(env, queues);
   }
 
-  int32_t NOELLE_DOALLDispatcher (
+  DispatcherInfo NOELLE_DOALLDispatcher (
     void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), 
     void *env, 
     int64_t maxNumberOfCores, 
@@ -208,14 +210,16 @@ extern "C" {
     std::cerr << "Got all futures" << std::endl;
     #endif
 
-    return numCores;
+    DispatcherInfo dispatcherInfo;
+    dispatcherInfo.numberOfThreadsUsed = numCores;
+    return dispatcherInfo;
   }
 
   #ifdef RUNTIME_PRINT
   void *mySSGlobal = nullptr;
   #endif
 
-  void HELIX_dispatcher (
+  DispatcherInfo HELIX_dispatcher (
     void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
     void *env,
     void *loopCarriedArray,
@@ -375,7 +379,9 @@ extern "C" {
      */
     free(ssArrays);
 
-    return ;
+    DispatcherInfo dispatcherInfo;
+    dispatcherInfo.numberOfThreadsUsed = numCores;
+    return dispatcherInfo;
   }
 
   void HELIX_wait (
@@ -430,7 +436,7 @@ extern "C" {
     return ;
   }
 
-  void stageDispatcher (void *env, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
+  DispatcherInfo stageDispatcher (void *env, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
     #ifdef RUNTIME_PRINT
     std::cerr << "Starting dispatcher: num stages " << numberOfStages << ", num queues: " << numberOfQueues << std::endl;
     #endif
@@ -510,7 +516,9 @@ extern "C" {
     std::cout << "DSWP: 8 Bytes pushes = " << numberOfPushes64 << std::endl;
     #endif
 
-    return ;
+    DispatcherInfo dispatcherInfo;
+    dispatcherInfo.numberOfThreadsUsed = numberOfStages;
+    return dispatcherInfo;
   }
 
   int32_t NOELLE_getNumberOfCores (void){
@@ -520,4 +528,5 @@ extern "C" {
     }
     return atoi(envVar);
   }
+
 }

@@ -10,7 +10,7 @@ function cleanTests {
 
     cd $i ;
     make clean ;
-    rm -f *_utils.cpp Makefile ;
+    rm -f *_utils.cpp Makefile *.log *.dot ;
     cd ../ ;
   done
 

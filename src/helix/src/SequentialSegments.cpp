@@ -51,8 +51,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
        * Only sequential SCC can generate a sequential segment.
        * FIXME: A reducible SCC should not be sequential in nature
        */
-      if (  (sccType == SCCAttrs::SEQUENTIAL)  ||
-            (sccType == SCCAttrs::REDUCIBLE) ){
+      if (sccType == SCCAttrs::SEQUENTIAL) {
         requireSS = true;
         break ;
       }
