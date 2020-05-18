@@ -31,12 +31,10 @@ all: baseline testseq $(OPTIMIZED)
 
 %.bc: %.c
 	$(CC) $(INCLUDES) $(FRONTEND_FLAGS) -c $< -o $@
-	noelle-norm $@ -o $@
 	llvm-dis $@
 
 %.bc: %.cpp
 	$(CPP) $(INCLUDES) $(FRONTEND_FLAGS) -std=c++14 -c $< -o $@
-	noelle-norm $@ -o $@
 	llvm-dis $@
 
 baseline: baseline.bc
@@ -98,10 +96,10 @@ test_correctness: input.txt baseline $(OPTIMIZED)
 	echo "Success"
 
 show_passes: test_baseline.bc output.prof
-	noelle-pgo output.prof $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
+	noelle-parallelizer output.prof $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
 
 show_time: test_baseline.bc output.prof
-	noelle-pgo output.prof $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
+	noelle-parallelizer output.prof $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
 pdg: test_baseline.bc
 	noelle-pdg $^
