@@ -241,12 +241,21 @@ uint64_t LoopDependenceInfo::getID (void) const {
   /*
    * Check if there is metadata.
    */
-  
-  auto root = this->liSummary.getLoopNestingTreeRoot();
-  return root->getID();
+  uint64_t ID;
+  if (!this->doesHaveMetadata("noelle.loop_ID")){
+    abort();
+  }
+
+  /*
+   * Fetch the ID from the metadata.
+   */
+  auto IDString = this->getMetadata("noelle.loop_ID");
+  ID = std::stoul(IDString);
+
+  return ID;
 }
 
-std::string LoopDependenceInfo::getMetadata (const std::string &metadataName){
+std::string LoopDependenceInfo::getMetadata (const std::string &metadataName) const {
 
   /*
    * Check if the metadata exists.
@@ -255,10 +264,10 @@ std::string LoopDependenceInfo::getMetadata (const std::string &metadataName){
     return "";
   }
 
-  return this->metadata[metadataName];
+  return this->metadata.at(metadataName);
 }
       
-bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName){
+bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) const {
   if (this->metadata.find(metadataName) == this->metadata.end()){
     return false;
   }

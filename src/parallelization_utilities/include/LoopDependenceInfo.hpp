@@ -129,12 +129,12 @@ namespace llvm {
       /*
        * Return true if the loop has the metadata requested.
        */
-      bool doesHaveMetadata (const std::string &metadataName);
+      bool doesHaveMetadata (const std::string &metadataName) const ;
 
       /*
        * Fetch the metadata attached to the loop.
        */
-      std::string getMetadata (const std::string &metadataName);
+      std::string getMetadata (const std::string &metadataName) const ;
 
       /*
        * Deconstructor.
