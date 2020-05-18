@@ -1,15 +1,14 @@
 # Sources
 set(Srcs 
+  LoopUnroll.cpp
   Pass.cpp
-  Enablers.cpp
-  EnablersManager.cpp
 )
 
 # Compilation flags
-set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
+set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Enablers")
+set(PassName "LoopUnroll")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -28,19 +27,12 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../basic_utilities/include 
   ../../alloc_aa/include 
   ../../pdg/include 
-  ../../threadpool/include 
   ../../loops/include
   ../../parallelization_utilities/include 
-  ../../heuristics/include 
-  ../../parallelization_technique/include 
-  ../../dswp/include 
-  ../../doall/include 
-  ../../helix/include 
-  ../../hotprofiler/include
-  ../../loop_distribution/include
-  ../../loop_unroll/include
+  ../../hotprofiler/include 
   ../../talkdown/include
-  ./
+  ../include/ 
+  ./ 
   )
 
 # Declare the LLVM pass to compile

@@ -19,6 +19,7 @@
 #include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
 #include "LoopDistribution.hpp"
+#include "LoopUnroll.hpp"
 
 namespace llvm {
 
@@ -45,6 +46,7 @@ namespace llvm {
        */
       double minHot;
       Verbosity verbose;
+      bool enableEnablers;
 
       /*
        * Methods
@@ -57,7 +59,20 @@ namespace llvm {
       bool applyEnablers (
         LoopDependenceInfo *LDI,
         Parallelization &par,
-        LoopDistribution &loopDist
+        LoopDistribution &loopDist,
+        LoopUnroll &loopUnroll
+        );
+
+      bool applyLoopDistribution (
+          LoopDependenceInfo *LDI,
+          Parallelization &par,
+          LoopDistribution &loopDist
+        );
+
+      bool applyLoopUnroll (
+        LoopDependenceInfo *LDI,
+        Parallelization &par,
+        LoopUnroll &loopUnroll
         );
   };
 

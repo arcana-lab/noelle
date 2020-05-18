@@ -11,18 +11,21 @@
 #include "EnablersManager.hpp"
 #include "HotProfiler.hpp"
 #include "LoopDistribution.hpp"
+#include "LoopUnroll.hpp"
 #include <unordered_map>
 
 using namespace llvm;
 
 //extern cl::opt<int> Verbose("noelle-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal)"));
 //extern cl::opt<int> MinimumHotness("noelle-min-hot", cl::ZeroOrMore, cl::Hidden, cl::desc("Minimum hotness of code to be parallelized"));
+static cl::opt<bool> DisableEnablers("noelle-disable-enablers", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable all enablers"));
 
 bool EnablersManager::doInitialization (Module &M) {
   //this->minHot = ((double)(MinimumHotness.getValue())) / 100;
   //this->verbose = static_cast<Verbosity>(Verbose.getValue());
   this->minHot = 0;
   this->verbose = static_cast<Verbosity>(3);
+  this->enableEnablers = (DisableEnablers.getNumOccurrences() == 0) ? true : false;
 
   return false; 
 }
@@ -38,6 +41,7 @@ void EnablersManager::getAnalysisUsage (AnalysisUsage &AU) const {
    * Parallelization enablers.
    */
   AU.addRequired<LoopDistribution>();
+  AU.addRequired<LoopUnroll>();
 
   /*
    * Profilers.
