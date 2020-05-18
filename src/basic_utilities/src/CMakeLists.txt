@@ -1,14 +1,13 @@
 # Sources
-set(Srcs
-  LoopMetadataPass.cpp
-  LoopMetadata.cpp
+set(Srcs 
+  DominatorSummary.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopMetadata")
+set(PassName "BasicUtilities")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -22,13 +21,8 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(
-  ${LLVM_INCLUDE_DIRS} 
+include_directories(${LLVM_INCLUDE_DIRS} 
   ../include 
-  ../../basic_utilities/include 
-  ../../parallelization_utilities/include
-  ../../pdg/include
-  ../../loops/include
   )
 
 # Declare the LLVM pass to compile
