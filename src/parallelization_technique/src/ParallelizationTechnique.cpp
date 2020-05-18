@@ -115,7 +115,56 @@ void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LD
 }
 
 BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
-  IRBuilder<> builder(this->entryPointOfParallelizedLoop);
+  auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
+
+  /*
+   * Collect reduction operation information needed to accumulate reducable variables after parallelization execution
+   */
+  std::unordered_map<int, int> reducableBinaryOps;
+  std::unordered_map<int, Value *> initialValues;
+  for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+    auto isReduced = envBuilder->isReduced(envInd);
+    if (!isReduced) continue;
+
+    auto producer = LDI->environment->producerAt(envInd);
+    auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
+    auto producerSCCAttributes = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+
+    /*
+     * HACK: Need to get accumulator that feeds directly into producer PHI, not any intermediate one
+     */
+    auto firstAccumI = *(producerSCCAttributes->getAccumulators().begin());
+    auto binOpCode = firstAccumI->getOpcode();
+    reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
+
+    auto prodPHI = cast<PHINode>(producer);
+    auto initValPHIIndex = prodPHI->getBasicBlockIndex(LDI->preHeader);
+    initialValues[envInd] = prodPHI->getIncomingValue(initValPHIIndex);
+  }
+
+  auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
+    this->entryPointOfParallelizedLoop,
+    *builder,
+    reducableBinaryOps,
+    initialValues,
+    numberOfThreadsExecuted);
+
+  /*
+   * Free the memory.
+   */
+  delete builder;
+
+  /*
+   * If reduction occurred, then all environment loads to propagate live outs need to be
+   * inserted after the reduction loop
+   */
+  IRBuilder<> *afterReductionBuilder;
+  if (afterReductionB->getTerminator()) {
+    afterReductionBuilder->SetInsertPoint(afterReductionB->getTerminator());
+  } else {
+    afterReductionBuilder = new IRBuilder<>(afterReductionB);
+  }
+
   for (int envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto prod = LDI->environment->producerAt(envInd);
 
@@ -125,7 +174,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
      */
     auto isReduced = envBuilder->isReduced(envInd);
     auto envVar = envBuilder->getEnvVar(envInd);
-    if (!isReduced) envVar = builder.CreateLoad(envBuilder->getEnvVar(envInd));
+    if (!isReduced) envVar = afterReductionBuilder->CreateLoad(envBuilder->getEnvVar(envInd));
 
     for (auto consumer : LDI->environment->consumersOf(prod)) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
@@ -138,7 +187,8 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     }
   }
 
-  return this->entryPointOfParallelizedLoop;
+  delete afterReductionBuilder;
+  return afterReductionB;
 }
 
 void ParallelizationTechnique::generateEmptyTasks (
@@ -640,4 +690,49 @@ void ParallelizationTechnique::doNestedInlineOfCalls (
       }
     }
   }
+}
+
+void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
+  std::error_code EC;
+  raw_fd_ostream File("technique-dump-loop-" + std::to_string(LDI.getID()) + ".txt", EC, sys::fs::F_Text);
+
+  if (EC) {
+    errs() << "ERROR: Could not dump debug logs to file!";
+    return ;
+  }
+
+  std::set<BasicBlock *> bbs(LDI.loopBBs.begin(), LDI.loopBBs.end());
+  DGPrinter::writeGraph<SubCFGs>("technique-original-loop-" + std::to_string(LDI.getID()) + ".dot", new SubCFGs(bbs));
+  DGPrinter::writeGraph<SCCDAG>("technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot", LDI.sccdagAttrs.getSCCDAG());
+
+  for (int i = 0; i < tasks.size(); ++i) {
+    auto task = tasks[i];
+    File << "===========\n";
+    std::string taskName = "Task " + std::to_string(i) + ": ";
+    task->F->print(File << taskName << "function" << "\n");
+    File << "\n";
+
+    File << taskName << "instruction clones" << "\n";
+    for (auto clonePair : task->instructionClones) {
+      clonePair.first->print(File << "Original: "); File << "\n\t";
+      clonePair.second->print(File << "Cloned: "); File << "\n";
+    }
+    File << "\n";
+
+    File << taskName << "basic block clones" << "\n";
+    for (auto clonePair : task->basicBlockClones) {
+      clonePair.first->printAsOperand(File << "Original: "); File << "\n\t";
+      clonePair.second->printAsOperand(File << "Cloned: "); File << "\n";
+    }
+    File << "\n";
+
+    File << taskName << "live in clones" << "\n";
+    for (auto clonePair : task->liveInClones) {
+      clonePair.first->print(File << "Original: "); File << "\n\t";
+      clonePair.second->print(File << "Cloned: "); File << "\n";
+    }
+    File << "\n";
+  }
+
+  File.close();
 }

@@ -316,12 +316,13 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   std::vector<PHINode *> phiNodes;
   auto count = 0;
   for (auto envIndexInitValue : initialValues) {
+    auto envIndex = envIndexInitValue.first;
     auto initialValue = envIndexInitValue.second;
 
     /*
      * Create a PHI node for the current reduced variable.
      */
-    auto variableType = initialValue->getType();
+    auto variableType = envTypes[envIndex];
     auto phiNode = loopBodyBuilder.CreatePHI(variableType, 2);
 
     /*
