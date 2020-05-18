@@ -30,13 +30,6 @@ bool EnablersManager::doInitialization (Module &M) {
 void EnablersManager::getAnalysisUsage (AnalysisUsage &AU) const {
 
   /*
-   * Analyses.
-   */
-  AU.addRequired<PDGAnalysis>();
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-
-  /*
    * Parallelizations.
    */
   AU.addRequired<Parallelization>();
