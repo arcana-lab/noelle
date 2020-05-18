@@ -40,7 +40,7 @@ all: baseline testseq $(OPTIMIZED)
 baseline: baseline.bc
 	$(CPP) $(OPT_LEVEL) $^ -o $@
 
-testseq: test_baseline.bc
+testseq: baseline_pre.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 	
 $(THREADER).bc: $(THREADER).cpp
@@ -61,29 +61,29 @@ baseline.bc: test.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
 	llvm-dis $@
 
-baseline_with_metadata.bc: output.prof test_baseline.bc
+baseline_with_metadata.bc: output.prof baseline_pre.bc
 	noelle-meta-prof-embed $^ -o $@
 	noelle-meta-pdg-embed $@ -o $@
 	llvm-dis $@
 
-test_baseline.bc: test.bc $(THREADER).bc
+baseline_pre.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
 	noelle-pre "$@"
 	llvm-dis $@
 
-test_baseline_enable.bc: test_baseline.bc output.prof
+baseline_pre_enable.bc: baseline_pre.bc output.prof
 	noelle-enable output.prof $(PARALLELIZATION_OPTIONS) $< -o $@
 
 output.prof: default.profraw
 	llvm-profdata merge $^ -output=$@
 
-default.profraw: test_baseline_prof input.txt
+default.profraw: baseline_pre_prof input.txt
 	./$< `cat input.txt` 
 
-test_baseline_prof: test_baseline_prof.bc
+baseline_pre_prof: baseline_pre_prof.bc
 	$(CPP) -fprofile-instr-generate $^ $(LIBS) -o $@
 
-test_baseline_prof.bc: test_baseline.bc
+baseline_pre_prof.bc: baseline_pre.bc
 	@../../scripts/inject_hotprofiler.sh $^ $@
 
 input.txt:
@@ -95,19 +95,19 @@ test_correctness: input.txt baseline $(OPTIMIZED)
 	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
 	echo "Success"
 
-show_passes: test_baseline.bc output.prof
+show_passes: baseline_pre.bc output.prof
 	noelle-parallelizer output.prof $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
 
-show_time: test_baseline.bc output.prof
+show_time: baseline_pre.bc output.prof
 	noelle-parallelizer output.prof $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
 
-pdg: test_baseline.bc
+pdg: baseline_pre.bc
 	noelle-pdg $^
 
-meta: test_baseline.bc
+meta: baseline_pre.bc
 	noelle-meta-embed $^ -o $^
 
-meta_clean: test_baseline.bc
+meta_clean: baseline_pre.bc
 	noelle-meta-clean $^ -o $^
 	llvm-dis $^
 
