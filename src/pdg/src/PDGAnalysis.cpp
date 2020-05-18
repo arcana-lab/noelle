@@ -16,11 +16,14 @@
 #include "PDGAnalysis.hpp"
 
 static cl::opt<int> Verbose("noelle-pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal, 3:maximal plus dumping PDG"));
+static cl::opt<bool> EmbedPDG("noelle-pdg-embed", cl::ZeroOrMore, cl::Hidden, cl::desc("Embed the PDG"));
 
 using namespace llvm;
 
 bool llvm::PDGAnalysis::doInitialization (Module &M){
   this->verbose = static_cast<PDGVerbosity>(Verbose.getValue());
+  this->embedPDG = (EmbedPDG.getNumOccurrences() > 0) ? true : false;
+
   return false;
 }
 
@@ -103,17 +106,45 @@ llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
 }
 
 llvm::PDG * llvm::PDGAnalysis::getPDG (){
-  if (this->programDependenceGraph)
-    delete this->programDependenceGraph;
 
-  if (hasPDGAsMetadata(*this->M)) {
-    this->programDependenceGraph = constructPDGFromMetadata(*this->M);
-    assert(comparePDGs(constructPDGFromAnalysis(*this->M), this->programDependenceGraph) && "PDGs constructed are not the same");
+  /*
+   * Delete cached memory.
+   */
+  if (this->programDependenceGraph){
+    delete this->programDependenceGraph;
   }
-  else {
+
+  /*
+   * Construct the PDG
+   *
+   * Check if we have already done it and the PDG has been embedded in the IR.
+   */
+  if (this->hasPDGAsMetadata(*this->M)) {
+
+    /*
+     * The PDG has been embedded in the IR.
+     *
+     * Load the embedded PDG.
+     */
+    this->programDependenceGraph = constructPDGFromMetadata(*this->M);
+    assert(this->comparePDGs(constructPDGFromAnalysis(*this->M), this->programDependenceGraph) && "PDGs constructed are not the same");
+
+  } else {
+
+    /*
+     * There is no PDG in the IR.
+     * 
+     * Compute the PDG using the dependence analyses.
+     */
     this->programDependenceGraph = constructPDGFromAnalysis(*this->M);
-    embedPDGAsMetadata(this->programDependenceGraph);
-    assert(comparePDGs(this->programDependenceGraph, constructPDGFromMetadata(*this->M)) && "PDGs constructed are not the same");
+
+    /*
+     * Check if we should embed the PDG.
+     */
+    if (this->embedPDG){
+      embedPDGAsMetadata(this->programDependenceGraph);
+      assert(this->comparePDGs(this->programDependenceGraph, constructPDGFromMetadata(*this->M)) && "PDGs constructed are not the same");
+    }
   }
 
   return this->programDependenceGraph;

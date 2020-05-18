@@ -51,8 +51,8 @@ $(THREADER).bc: $(THREADER).cpp
 $(OPTIMIZED): test_parallelized.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
-test_parallelized_unoptimized.bc: baseline_with_metadata.bc output.prof
-	noelle-pgo output.prof $< -o $@ $(PARALLELIZATION_OPTIONS)
+test_parallelized_unoptimized.bc: baseline_with_metadata.bc
+	noelle-parallelizer $^ -o $@ $(PARALLELIZATION_OPTIONS)
 	llvm-dis $@
 
 test_parallelized.bc: test_parallelized_unoptimized.bc
@@ -63,8 +63,9 @@ baseline.bc: test.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
 	llvm-dis $@
 
-baseline_with_metadata.bc: test_baseline.bc
-	noelle-meta-pdg-embed $^ -o $@
+baseline_with_metadata.bc: output.prof test_baseline.bc
+	noelle-meta-prof-embed $^ -o $@
+	noelle-meta-pdg-embed $@ -o $@
 	llvm-dis $@
 
 test_baseline.bc: test.bc $(THREADER).bc

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+installDir
+
+# Set the command to execute
+cmdToExecute="noelle-load -parallelization -heuristics -parallelizer ${@}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
