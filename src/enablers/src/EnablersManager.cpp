@@ -11,6 +11,7 @@
 #include "EnablersManager.hpp"
 #include "HotProfiler.hpp"
 #include "LoopDistribution.hpp"
+#include "LoopUnroll.hpp"
 #include <unordered_map>
 
 using namespace llvm;
@@ -25,6 +26,13 @@ EnablersManager::EnablersManager()
 }
 
 bool EnablersManager::runOnModule (Module &M) {
+
+  /*
+   * Check if enablers have been enabled.
+   */
+  if (!this->enableEnablers){
+    return false;
+  }
   errs() << "EnablersManager: Start\n";
 
   /*
@@ -33,6 +41,7 @@ bool EnablersManager::runOnModule (Module &M) {
   auto& parallelizationFramework = getAnalysis<Parallelization>();
   auto& profiles = getAnalysis<HotProfiler>().getHot();
   auto& loopDist = getAnalysis<LoopDistribution>();
+  auto& loopUnroll = getAnalysis<LoopUnroll>();
 
   /*
    * Fetch all the loops we want to parallelize.
@@ -78,7 +87,7 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Improve the current loop.
      */
-    modifiedFunctions[f] |= this->applyEnablers(loop, parallelizationFramework, loopDist);
+    modifiedFunctions[f] |= this->applyEnablers(loop, parallelizationFramework, loopDist, loopUnroll);
     modified |= modifiedFunctions[f];
   }
 

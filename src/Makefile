@@ -1,7 +1,7 @@
 UTILS=basic_utilities parallelization_utilities architecture loop_metadata clean_metadata
 ANALYSIS=pdg talkdown alloc_aa dataflow loops
 PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
-ENABLERS=enablers loop_distribution
+ENABLERS=enablers loop_distribution loop_unroll
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) $(PARALLELIZATION) hotprofiler dgsimplify unique_ir_marker noelle
 
 all: $(ALL)
@@ -64,6 +64,9 @@ helix:
 	cd $@ ; ../scripts/run_me.sh
 
 loop_distribution:
+	cd $@ ; ../scripts/run_me.sh
+
+loop_unroll:
 	cd $@ ; ../scripts/run_me.sh
 
 loop_metadata:

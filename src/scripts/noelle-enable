@@ -25,7 +25,7 @@ while true ; do
   echo "NOELLE: Enablers:     Invocation $c" ;
 
   # Set the command to execute and execute it
-  cmdToExecute="noelle-load -load ${installDir}/lib/Enablers.so -load ${installDir}/lib/LoopDistribution.so -enablers $IRFileInput -o $IRFileOutput"
+  cmdToExecute="noelle-load -load ${installDir}/lib/Enablers.so -enablers $IRFileInput -o $IRFileOutput ${@:3}"
   echo $cmdToExecute ;
   eval $cmdToExecute ;
 
@@ -51,6 +51,9 @@ while true ; do
 
   let c=$c+1; 
 done
+
+# Clean
+rm $IRFileInput $IRFileInputLL $IRFileOutput $IRFileOutputLL ;
 
 # Exit
 echo "NOELLE: Enablers: Exit" ;
