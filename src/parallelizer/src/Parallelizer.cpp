@@ -69,7 +69,6 @@ bool Parallelizer::parallelizeLoop (
     auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
     auto taskFunctionDG = helix.constructTaskFunctionDGFromOriginalLoopDG(LDI, PDT);
-    // auto fPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
     DominatorSummary DS(DT, PDT);
     auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
     auto l = LI.getLoopsInPreorder()[0]; //TODO: SIMONE: how do we know that the loop we want to parallelize is [0] ?

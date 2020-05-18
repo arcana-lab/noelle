@@ -14,10 +14,10 @@
 
 using namespace llvm ;
 
-void constructEdgesFromUseDefs (PDG *pdg);
-void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
+static void constructEdgesFromUseDefs (PDG *pdg);
+static void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
 
-PDG *HELIX::constructTaskFunctionDGFromOriginalLoopDG (LoopDependenceInfo *LDI, PostDominatorTree &postDomTreeOfTaskFunction) {
+PDG * HELIX::constructTaskFunctionDGFromOriginalLoopDG (LoopDependenceInfo *LDI, PostDominatorTree &postDomTreeOfTaskFunction) {
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
   this->taskFunctionDG = new PDG(*helixTask->F);
@@ -84,7 +84,7 @@ PDG *HELIX::constructTaskFunctionDGFromOriginalLoopDG (LoopDependenceInfo *LDI, 
 /*
  * HACK: Copied straight from PDGAnalysis. Refactor and provide from pdg WITHOUT requiring alias analysis dependencies
  */
-void constructEdgesFromUseDefs (PDG *pdg){
+static void constructEdgesFromUseDefs (PDG *pdg){
   for (auto node : make_range(pdg->begin_nodes(), pdg->end_nodes())) {
     auto pdgValue = node->getT();
     if (pdgValue->getNumUses() == 0)
@@ -104,7 +104,7 @@ void constructEdgesFromUseDefs (PDG *pdg){
 /*
  * HACK: Copied straight from PDGAnalysis. Refactor and provide from pdg WITHOUT requiring alias analysis dependencies
  */
-void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree) {
+static void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree) {
   for (auto &B : F)
   {
     SmallVector<BasicBlock *, 10> dominatedBBs;
