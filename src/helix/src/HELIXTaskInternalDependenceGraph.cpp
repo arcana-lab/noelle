@@ -17,7 +17,7 @@ using namespace llvm ;
 static void constructEdgesFromUseDefs (PDG *pdg);
 static void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
 
-PDG * HELIX::constructTaskFunctionDGFromOriginalLoopDG (LoopDependenceInfo *LDI, PostDominatorTree &postDomTreeOfTaskFunction) {
+PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDependenceInfo *LDI, PostDominatorTree &postDomTreeOfTaskFunction) {
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
   this->taskFunctionDG = new PDG(*helixTask->F);
