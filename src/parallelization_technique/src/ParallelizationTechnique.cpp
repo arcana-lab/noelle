@@ -144,7 +144,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
 
     auto prodPHI = cast<PHINode>(producer);
-    auto initValPHIIndex = prodPHI->getBasicBlockIndex(loopPreHeader);
+    auto initValPHIIndex = prodPHI->getBasicBlockIndex(LDI->preHeader);
     initialValues[envInd] = prodPHI->getIncomingValue(initValPHIIndex);
   }
 
@@ -240,7 +240,7 @@ void ParallelizationTechnique::generateEmptyTasks (
     /*
      * Map original preheader to entry block
      */
-    task->basicBlockClones[loopPreHeader] = task->entryBlock;
+    task->basicBlockClones[LDI->preHeader] = task->entryBlock;
 
     /*
      * Create one basic block per loop exit, mapping between originals and clones,
@@ -569,7 +569,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
     /*
      * Fetch the cloned pre-header.
      */
-    auto preheaderClone = task->basicBlockClones[loopPreHeader];
+    auto preheaderClone = task->basicBlockClones[LDI->preHeader];
     auto incomingIndex = producerClone->getBasicBlockIndex(preheaderClone);
     assert(incomingIndex != -1 && "Loop entry present on producer PHI node");
 
