@@ -28,6 +28,8 @@ namespace llvm {
 
       BasicBlock * getHeader (void) const ;
 
+      BasicBlock * getPreHeader (void) const ;
+
       uint32_t getNestingLevel (void) const ;
 
       bool doesHaveCompileTimeKnownTripCount (void) const ;
@@ -57,6 +59,7 @@ namespace llvm {
     private:
       uint64_t ID;
       BasicBlock *header;
+      BasicBlock *preHeader;
       uint32_t depth;
       std::set<Value *> invariants;
       LoopSummary *parent;

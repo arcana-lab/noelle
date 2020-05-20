@@ -40,7 +40,6 @@ namespace llvm {
       /*
        * Loop entry and exit points.
        */
-      BasicBlock *preHeader;
       SmallVector<BasicBlock *, 10> loopExitBlocks;
 
       /*

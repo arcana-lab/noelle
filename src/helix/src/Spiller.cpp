@@ -26,6 +26,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    */
   auto loopSummary = LDI->getLoopSummary();
   auto loopHeader = loopSummary->getHeader();
+  auto loopPreHeader = loopSummary->getPreHeader();
 
   /*
    * Collect all PHIs in the loop header; they are local variables
@@ -90,7 +91,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (auto envIndex = 0; envIndex < originalLoopCarriedPHIs.size(); ++envIndex) {
     auto phi = originalLoopCarriedPHIs[envIndex];
-    auto preHeaderIndex = phi->getBasicBlockIndex(LDI->preHeader);
+    auto preHeaderIndex = phi->getBasicBlockIndex(loopPreHeader);
     auto preHeaderV = phi->getIncomingValue(preHeaderIndex);
     builder.CreateStore(preHeaderV, loopCarriedEnvBuilder->getEnvVar(envIndex));
   }
@@ -101,7 +102,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * For the pre header edge case, store this initial value at time of
    * allocation of the environment
    */
-  auto preHeaderClone = helixTask->basicBlockClones[LDI->preHeader];
+  auto preHeaderClone = helixTask->basicBlockClones[loopPreHeader];
   auto firstNonPHI = helixTask->instructionClones[loopHeader->getFirstNonPHI()];
   IRBuilder<> headerBuilder(firstNonPHI);
   for (auto phiI = 0; phiI < clonedLoopCarriedPHIs.size(); phiI++) {
