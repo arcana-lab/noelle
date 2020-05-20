@@ -58,13 +58,8 @@ void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
   /*
    *  - Fetch the header basic block of the outermost loop. This will be the beginning of the traversal.
    */
-  auto topLoop = LIS->getLoopNestingTreeRoot();
-  auto bb = topLoop->header;
-
-  /*
-   * - Fetch the set of basic blocks that compose the outermost loop. This will be used to avoid iterating over basic blocks outside the outermost loop.
-   */
-  auto &bbs = topLoop->bbs;
+  auto const topLoop = LIS->getLoopNestingTreeRoot();
+  auto bb = topLoop->getHeader();
 
   /*
    *  - Compute SCCDebugOrder.
@@ -84,7 +79,7 @@ void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
     /*
      * Check if the basic block belongs to the outermost loop.
      */
-    if (bbs.find(bb) == bbs.end()){
+    if (!topLoop->isBasicBlockWithin(bb)){
 
       /*
        * The basic block does not belong to the outermost loop, so we can skip it.

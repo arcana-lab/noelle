@@ -14,15 +14,39 @@ using namespace llvm;
 
 uint64_t LoopSummary::globalID = 0;
 
-LoopSummary::LoopSummary (Loop *l) {
+LoopSummary::LoopSummary (
+  Loop *l
+  ) 
+  : LoopSummary(l, nullptr)
+  {
+
+  return ;
+}
+
+LoopSummary::LoopSummary (
+  Loop *l,
+  LoopSummary *parentLoop
+  ) {
 
   /*
    * Set the ID
    */
   this->ID = LoopSummary::globalID++;
 
+  /*
+   * Set the nesting level
+   */
   this->depth = l->getLoopDepth();
+  this->parent = parentLoop;
+
+  /*
+   * Set the header
+   */
   this->header = l->getHeader();
+
+  /*
+   * Set the basic blocks and latches of the loop.
+   */
   for (auto bb : l->blocks()) {
     // NOTE: Unsure if this is program forward order
     orderedBBs.push_back(bb);
@@ -32,6 +56,9 @@ LoopSummary::LoopSummary (Loop *l) {
     }
   }
 
+  /*
+   * Set the loop invariant.
+   */
   for (auto bb : this->bbs){
     for (auto& inst : *bb){
       if (l->isLoopInvariant(&inst)){
@@ -42,6 +69,42 @@ LoopSummary::LoopSummary (Loop *l) {
 
   return ;
 }
+
+BasicBlock * LoopSummary::getHeader (void) const {
+  return this->header;
+}
+      
+uint32_t LoopSummary::getNestingLevel (void) const {
+  return this->depth;
+}
+      
+LoopSummary * LoopSummary::getParentLoop (void) const {
+  return this->parent;
+}
+      
+void LoopSummary::setParentLoop (LoopSummary *parentLoop) {
+  this->parent = parentLoop;
+
+  return ;
+}
+      
+std::unordered_set<LoopSummary *> LoopSummary::getChildren (void) const {
+  return this->children;
+}
+      
+void LoopSummary::addChild (LoopSummary *child) {
+  this->children.insert(child);
+
+  return ;
+}
+      
+std::unordered_set<BasicBlock *> LoopSummary::getLatches (void) const {
+  return this->getLatches();
+}
+      
+std::unordered_set<BasicBlock *> LoopSummary::getBasicBlocks (void) const {
+  return this->bbs;
+}
       
 bool LoopSummary::isLoopInvariant (Value *v){
   if (this->invariants.find(v) == this->invariants.end()){
@@ -49,6 +112,12 @@ bool LoopSummary::isLoopInvariant (Value *v){
   }
 
   return true;
+}
+      
+bool LoopSummary::isBasicBlockWithin (BasicBlock *bb) const {
+  auto found = this->bbs.find(bb) != this->bbs.end();
+
+  return found;
 }
       
 void LoopSummary::print (raw_ostream &stream) {

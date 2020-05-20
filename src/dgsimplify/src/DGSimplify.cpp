@@ -538,7 +538,7 @@ int llvm::DGSimplify::getNextPreorderLoopAfter (Function *F, CallInst *call) {
   auto &summaries = *preOrderedLoops[F];
   auto getSummaryIfHeader = [&](BasicBlock *BB) -> int {
     for (auto i = 0; i < summaries.size(); ++i) {
-      if (summaries[i]->header == BB) return i;
+      if (summaries[i]->getHeader() == BB) return i;
     }
     return 0;
   };
@@ -788,18 +788,28 @@ void llvm::DGSimplify::createPreOrderedLoopSummariesFor (Function *F) {
   auto &orderedLoops = *preOrderedLoops[F];
   std::unordered_map<Loop *, LoopSummary *> summaryMap;
   for (auto i = 0; i < loops->size(); ++i) {
-    auto summary = new LoopSummary((*loops)[i]);
+
+    /*
+     * Create the summary loop
+     */
+    auto loop = (*loops)[i];
+    auto summary = new LoopSummary(loop);
+
+    /*
+     * Keep track of the summary loop.
+     */
     loopSummaries.insert(summary);
     orderedLoops.push_back(summary);
-    summaryMap[(*loops)[i]] = summary;
+    summaryMap[loop] = summary;
   }
 
   // Associate loop summaries with parent and children loop summaries
   for (auto pair : summaryMap) {
     auto parentLoop = pair.first->getParentLoop();
-    pair.second->parent = parentLoop ? summaryMap[parentLoop] : nullptr;
+    auto parentLoopSummary = parentLoop ? summaryMap[parentLoop] : nullptr;
+    pair.second->setParentLoop(parentLoopSummary);
     for (auto childLoop : pair.first->getSubLoops()) {
-      pair.second->children.insert(summaryMap[childLoop]);
+      pair.second->addChild(summaryMap[childLoop]);
     }
   }
 
@@ -850,8 +860,8 @@ void llvm::DGSimplify::printFnLoopOrder (Function *F) {
   if (this->verbose == Verbosity::Disabled) return;
   auto count = 1;
   for (auto summary : *preOrderedLoops[F]) {
-    auto headerBB = summary->header;
-    errs() << "DGSimplify:   Loop " << count++ << ", depth: " << summary->depth << "\n";
+    auto headerBB = summary->getHeader();
+    errs() << "DGSimplify:   Loop " << count++ << ", depth: " << summary->getNestingLevel() << "\n";
     // headerBB->print(errs()); errs() << "\n";
   }
 }

@@ -652,8 +652,8 @@ bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, Loops
    * Branch statement has two successors, one in the loop body, one outside the loop
    */
   auto loop = LIS.getLoop(br);
-  auto brLHSInLoop = loop->bbs.find(br->getSuccessor(0)) != loop->bbs.end();
-  auto brRHSInLoop = loop->bbs.find(br->getSuccessor(1)) != loop->bbs.end();
+  auto brLHSInLoop = loop->isBasicBlockWithin(br->getSuccessor(0));
+  auto brRHSInLoop = loop->isBasicBlockWithin(br->getSuccessor(1));
   if (!(brLHSInLoop ^ brRHSInLoop)) return false;
 
   bool exitOnCmp = !brLHSInLoop;

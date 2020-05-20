@@ -27,8 +27,8 @@ LoopSummary * LoopsSummary::getLoop (BasicBlock *bbIncludedInLoop){
   return l;
 }
 
-LoopSummary * LoopsSummary::createSummary (Loop *l) {
-  auto lSummary = std::make_shared<LoopSummary>(l);
+LoopSummary * LoopsSummary::createSummary (Loop *l, LoopSummary *parentLoop) {
+  auto lSummary = std::make_shared<LoopSummary>(l, parentLoop);
   auto lPtr = lSummary.get();
   for (auto bb : l->blocks()) {
     bbToLoop[bb] = lPtr;
@@ -58,17 +58,16 @@ void LoopsSummary::populate (LoopInfo &li, Loop *loop) {
     toSummarize.pop();
 
     /*
-     * Create the summary of the current loop.
-     */
-    auto summary = this->createSummary(l);
-    loopToSummary[l] = summary;
-
-    /*
-     * Set the parent loop.
+     * Fetch the parent loop.
      */
     auto parent = l->getParentLoop();
     assert(loopToSummary.find(parent) != loopToSummary.end());
-    summary->parent = loopToSummary[parent];
+
+    /*
+     * Create the summary of the current loop.
+     */
+    auto summary = this->createSummary(l, loopToSummary[parent]);
+    loopToSummary[l] = summary;
 
     /*
      * Iterate over the subloops of the current loop.
