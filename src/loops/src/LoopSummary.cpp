@@ -26,7 +26,12 @@ LoopSummary::LoopSummary (
 LoopSummary::LoopSummary (
   Loop *l,
   LoopSummary *parentLoop
-  ) {
+  ) 
+  : 
+    parent{parentLoop}
+    , compileTimeKnownTripCount{false}
+    , tripCount{0}
+  {
 
   /*
    * Set the ID
@@ -37,7 +42,58 @@ LoopSummary::LoopSummary (
    * Set the nesting level
    */
   this->depth = l->getLoopDepth();
-  this->parent = parentLoop;
+
+  /*
+   * Set the header
+   */
+  this->header = l->getHeader();
+
+  /*
+   * Set the basic blocks and latches of the loop.
+   */
+  for (auto bb : l->blocks()) {
+    // NOTE: Unsure if this is program forward order
+    orderedBBs.push_back(bb);
+    this->bbs.insert(bb);
+    if (l->isLoopLatch(bb)) {
+      latchBBs.insert(bb);
+    }
+  }
+
+  /*
+   * Set the loop invariant.
+   */
+  for (auto bb : this->bbs){
+    for (auto& inst : *bb){
+      if (l->isLoopInvariant(&inst)){
+        this->invariants.insert(&inst);
+      }
+    }
+  }
+
+  return ;
+}
+
+LoopSummary::LoopSummary (
+  Loop *l,
+  LoopSummary *parentLoop,
+  uint64_t loopTripCount
+  ) 
+  : 
+    parent{parentLoop}
+    , compileTimeKnownTripCount{true}
+    , tripCount{loopTripCount}
+  {
+
+  /*
+   * Set the ID
+   */
+  this->ID = LoopSummary::globalID++;
+
+  /*
+   * Set the nesting level
+   */
+  this->depth = l->getLoopDepth();
 
   /*
    * Set the header
@@ -129,4 +185,12 @@ void LoopSummary::print (raw_ostream &stream) {
 
 uint64_t LoopSummary::getID (void) const {
   return this->ID;
+}
+
+bool LoopSummary::doesHaveCompileTimeKnownTripCount (void) const {
+  return this->compileTimeKnownTripCount;
+}
+
+uint64_t LoopSummary::getCompileTimeTripCount (void) const {
+  return this->tripCount;
 }

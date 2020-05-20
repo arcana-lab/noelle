@@ -156,7 +156,7 @@ namespace llvm {
       /*
        * Methods
        */
-      void fetchLoopAndBBInfo (LoopInfo &li, Loop *l) ;
+      void fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolution &SE);
       std::pair<PDG *, SCCDAG *> createDGsForLoop (Loop *l, PDG *functionDG) ;
       void addMetadata (const std::string &metadataName);
 

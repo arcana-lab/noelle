@@ -27,8 +27,18 @@ LoopSummary * LoopsSummary::getLoop (BasicBlock *bbIncludedInLoop){
   return l;
 }
 
-LoopSummary * LoopsSummary::createSummary (Loop *l, LoopSummary *parentLoop) {
-  auto lSummary = std::make_shared<LoopSummary>(l, parentLoop);
+LoopSummary * LoopsSummary::createSummary (Loop *l, LoopSummary *parentLoop, std::function<bool (Loop *l, uint64_t &tripCount)> setTripCountFunction) {
+
+  /*
+   * Find the trip count.
+   */
+  std::shared_ptr<LoopSummary> lSummary;
+  uint64_t tripCount;
+  if (setTripCountFunction(l, tripCount)){
+    lSummary = std::make_shared<LoopSummary>(l, parentLoop, tripCount);
+  } else {
+    lSummary = std::make_shared<LoopSummary>(l, parentLoop);
+  }
   auto lPtr = lSummary.get();
   for (auto bb : l->blocks()) {
     bbToLoop[bb] = lPtr;
@@ -38,7 +48,7 @@ LoopSummary * LoopsSummary::createSummary (Loop *l, LoopSummary *parentLoop) {
   return ls;
 }
       
-void LoopsSummary::populate (LoopInfo &li, Loop *loop) {
+void LoopsSummary::populate (LoopInfo &li, Loop *loop, std::function<bool (Loop *l, uint64_t &tripCount)> setTripCountFunction) {
   std::unordered_map<Loop *, LoopSummary *> loopToSummary;
   loopToSummary[loop->getParentLoop()] = nullptr;
 
@@ -66,7 +76,7 @@ void LoopsSummary::populate (LoopInfo &li, Loop *loop) {
     /*
      * Create the summary of the current loop.
      */
-    auto summary = this->createSummary(l, loopToSummary[parent]);
+    auto summary = this->createSummary(l, loopToSummary[parent], setTripCountFunction);
     loopToSummary[l] = summary;
 
     /*

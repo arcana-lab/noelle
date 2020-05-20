@@ -22,11 +22,17 @@ namespace llvm {
 
       LoopSummary (Loop *l, LoopSummary *parentLoop);
 
+      LoopSummary (Loop *l, LoopSummary *parentLoop, uint64_t loopTripCount);
+
       uint64_t getID (void) const ;
 
       BasicBlock * getHeader (void) const ;
 
       uint32_t getNestingLevel (void) const ;
+
+      bool doesHaveCompileTimeKnownTripCount (void) const ;
+      
+      uint64_t getCompileTimeTripCount (void) const ;
 
       LoopSummary * getParentLoop (void) const ;
       
@@ -54,6 +60,8 @@ namespace llvm {
       uint32_t depth;
       std::set<Value *> invariants;
       LoopSummary *parent;
+      bool compileTimeKnownTripCount;
+      uint64_t tripCount;
       std::unordered_set<LoopSummary *> children;
       std::unordered_set<BasicBlock *> latchBBs;
       std::unordered_set<BasicBlock *> bbs;
