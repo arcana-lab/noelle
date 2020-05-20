@@ -34,7 +34,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Fetch the PDG of the loop and its SCCDAG.
    */
-  this->fetchLoopAndBBInfo(li, l);
+  this->fetchLoopAndBBInfo(li, l, SE);
   auto DGs = this->createDGsForLoop(l, fG);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
@@ -123,12 +123,20 @@ uint32_t LoopDependenceInfo::numberOfExits (void) const{
   return this->loopExitBlocks.size();
 }
 
-void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l) {
+void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolution &SE) {
 
   /*
    * Create a LoopInfo summary
    */
-  this->liSummary.populate(li, l);
+  auto findTripCount = [&SE](Loop *loopToAnalyze, uint64_t &foundTripCount) -> bool {
+    auto tripCount = SE.getSmallConstantTripCount(loopToAnalyze);
+    if (tripCount == 0){
+      return false;
+    }
+    foundTripCount = tripCount;
+    return true;
+  };
+  this->liSummary.populate(li, l, findTripCount);
 
   /*
    * Set the headers.
