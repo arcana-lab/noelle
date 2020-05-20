@@ -29,10 +29,11 @@ bool Parallelizer::parallelizeLoop (
   assert(h != nullptr);
 
   /*
-   * Fetch the header.
+   * Fetch the loop headers.
    */
   auto loopSummary = LDI->getLoopSummary();
   auto loopHeader = loopSummary->getHeader();
+  auto loopPreHeader = loopSummary->getPreHeader();
 
   if (this->verbose != Verbosity::Disabled) {
     errs() << "Parallelizer: Start\n";
@@ -131,7 +132,7 @@ bool Parallelizer::parallelizeLoop (
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
   par.linkParallelizedLoopToOriginalFunction(
     LDI->function->getParent(),
-    LDI->preHeader,
+    loopPreHeader,
     entryPoint,
     exitPoint, 
     envArray,

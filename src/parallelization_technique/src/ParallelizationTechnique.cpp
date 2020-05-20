@@ -118,6 +118,12 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
   auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
 
   /*
+   * Fetch the loop headers.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopPreHeader = loopSummary->getPreHeader();
+
+  /*
    * Collect reduction operation information needed to accumulate reducable variables after parallelization execution
    */
   std::unordered_map<int, int> reducableBinaryOps;
@@ -138,7 +144,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
 
     auto prodPHI = cast<PHINode>(producer);
-    auto initValPHIIndex = prodPHI->getBasicBlockIndex(LDI->preHeader);
+    auto initValPHIIndex = prodPHI->getBasicBlockIndex(loopPreHeader);
     initialValues[envInd] = prodPHI->getIncomingValue(initValPHIIndex);
   }
 
@@ -206,6 +212,12 @@ void ParallelizationTechnique::generateEmptyTasks (
   }
 
   /*
+   * Fetch the loop headers.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopPreHeader = loopSummary->getPreHeader();
+
+  /*
    * Setup original loop and task with functions and basic blocks for wiring
    */
   auto &cxt = LDI->function->getContext();
@@ -228,7 +240,7 @@ void ParallelizationTechnique::generateEmptyTasks (
     /*
      * Map original preheader to entry block
      */
-    task->basicBlockClones[LDI->preHeader] = task->entryBlock;
+    task->basicBlockClones[loopPreHeader] = task->entryBlock;
 
     /*
      * Create one basic block per loop exit, mapping between originals and clones,
@@ -520,6 +532,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
    */
   auto loopSummary = LDI->getLoopSummary();
   auto loopHeader = loopSummary->getHeader();
+  auto loopPreHeader = loopSummary->getPreHeader();
 
   /*
    * Fetch the task.
@@ -556,7 +569,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
     /*
      * Fetch the cloned pre-header.
      */
-    auto preheaderClone = task->basicBlockClones[LDI->preHeader];
+    auto preheaderClone = task->basicBlockClones[loopPreHeader];
     auto incomingIndex = producerClone->getBasicBlockIndex(preheaderClone);
     assert(incomingIndex != -1 && "Loop entry present on producer PHI node");
 

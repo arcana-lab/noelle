@@ -44,9 +44,10 @@ LoopSummary::LoopSummary (
   this->depth = l->getLoopDepth();
 
   /*
-   * Set the header
+   * Set the headers
    */
   this->header = l->getHeader();
+  this->preHeader = l->getLoopPreheader();
 
   /*
    * Set the basic blocks and latches of the loop.
@@ -129,7 +130,11 @@ LoopSummary::LoopSummary (
 BasicBlock * LoopSummary::getHeader (void) const {
   return this->header;
 }
-      
+ 
+BasicBlock * LoopSummary::getPreHeader (void) const {
+  return this->preHeader;
+}
+
 uint32_t LoopSummary::getNestingLevel (void) const {
   return this->depth;
 }
