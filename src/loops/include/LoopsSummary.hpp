@@ -40,7 +40,7 @@ namespace llvm {
       /*
        * Methods.
        */
-      LoopSummary *createSummary (Loop *l);
+      LoopSummary *createSummary (Loop *l, LoopSummary *parentLoop);
   };
 
 }

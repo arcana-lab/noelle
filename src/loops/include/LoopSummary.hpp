@@ -18,25 +18,45 @@ namespace llvm {
 
   class LoopSummary {
     public:
-      LoopSummary *parent;
-      std::set<LoopSummary *> children;
-      int depth;
-      BasicBlock *header;
-      std::vector<BasicBlock *> orderedBBs;
-      std::set<BasicBlock *> bbs;
-      std::set<BasicBlock *> latchBBs;
-
       LoopSummary (Loop *l);
+
+      LoopSummary (Loop *l, LoopSummary *parentLoop);
+
+      uint64_t getID (void) const ;
+
+      BasicBlock * getHeader (void) const ;
+
+      uint32_t getNestingLevel (void) const ;
+
+      LoopSummary * getParentLoop (void) const ;
+      
+      void setParentLoop (LoopSummary *parentLoop) ;
+
+      std::unordered_set<LoopSummary *> getChildren (void) const ;
+
+      void addChild (LoopSummary *child) ;
+
+      std::unordered_set<BasicBlock *> getLatches (void) const ;
+
+      std::unordered_set<BasicBlock *> getBasicBlocks (void) const ;
+
+      bool isBasicBlockWithin (BasicBlock *bb) const ;
 
       bool isLoopInvariant (Value *v);
 
       void print (raw_ostream &stream);
       
-      uint64_t getID (void) const ;
+      std::vector<BasicBlock *> orderedBBs;
 
     private:
       uint64_t ID;
+      BasicBlock *header;
+      uint32_t depth;
       std::set<Value *> invariants;
+      LoopSummary *parent;
+      std::unordered_set<LoopSummary *> children;
+      std::unordered_set<BasicBlock *> latchBBs;
+      std::unordered_set<BasicBlock *> bbs;
       static uint64_t globalID;
   };
 

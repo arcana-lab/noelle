@@ -43,7 +43,7 @@ void SCCDAGNormalizer::mergeLCSSAPhis () {
 
     auto incomingPHI = cast<PHINode>(incomingI);
     auto incomingLoop = LIS.getLoop(incomingPHI->getParent());
-    if (!incomingLoop || incomingLoop->header != incomingPHI->getParent()) continue;
+    if (!incomingLoop || incomingLoop->getHeader() != incomingPHI->getParent()) continue;
 
     mergeGroups.merge(sccdag.fetchNode(sccdag.sccOfValue(incomingI)), sccNode);
   }
