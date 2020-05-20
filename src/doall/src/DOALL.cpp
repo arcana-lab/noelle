@@ -88,7 +88,9 @@ bool DOALL::canBeAppliedToLoop (
   /*
    * The loop's IV does not have bounds that have been successfully analyzed
    */
-  auto headerBr = LDI->header->getTerminator();
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+  auto headerBr = loopHeader->getTerminator();
   auto headerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(headerBr);
   if (LDI->sccdagAttrs.sccIVBounds.find(headerSCC) == LDI->sccdagAttrs.sccIVBounds.end()) {
     if (this->verbose != Verbosity::Disabled) {

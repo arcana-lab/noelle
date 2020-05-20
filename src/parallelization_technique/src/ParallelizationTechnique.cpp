@@ -424,11 +424,17 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
   auto task = this->tasks[taskIndex];
 
   /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+
+  /*
    * Determine whether the producer is in the loop header. If so, return all
    * the loop's exit blocks, as the live out value must be valid at all exit points
    */
   auto liveOutClone = task->instructionClones[liveOut];
-  auto isInHeader = LDI->header == liveOut->getParent();
+  auto isInHeader = loopHeader == liveOut->getParent();
   if (!isInHeader) return { liveOutClone->getParent() };
 
   std::set<BasicBlock *> insertPoints;
@@ -510,6 +516,12 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
 ){
 
   /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+
+  /*
    * Fetch the task.
    */
   auto task = this->tasks[taskIndex];
@@ -534,7 +546,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
     auto producer = LDI->environment->producerAt(envInd);
     assert(isa<PHINode>(producer) && "Reducable producers are assumed to be PHIs");
     auto producerPHI = cast<PHINode>(producer);
-    assert(LDI->header == producerPHI->getParent() && "Reducable producers are assumed to be live throughout the loop");
+    assert(loopHeader == producerPHI->getParent() && "Reducable producers are assumed to be live throughout the loop");
 
     /*
      * Fetch the related instruction of the producer that has been created (cloned) and stored in the parallelized version of the loop.

@@ -49,14 +49,21 @@ bool EnablersManager::runOnModule (Module &M) {
   auto loopsToParallelize = parallelizationFramework.getModuleLoops(&M, this->minHot);
   errs() << "EnablersManager:  There are " << loopsToParallelize->size() << " loops to consider\n";
   for (auto loop : *loopsToParallelize){
+
+    /*
+     * Fetch the header.
+     */
+    auto loopSummary = loop->getLoopSummary();
+    auto loopHeader = loopSummary->getHeader();
+
     errs() << "EnablersManager:    Function: \"" << loop->function->getName() << "\"\n";
-    errs() << "EnablersManager:    Loop: \"" << *loop->header->getFirstNonPHI() << "\"\n";
+    errs() << "EnablersManager:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
     if (profiles.isAvailable()){
       auto& profiles = getAnalysis<HotProfiler>().getHot();
       auto mInsts = profiles.getModuleInstructions();
 
       auto& LI = getAnalysis<LoopInfoWrapperPass>(*loop->function).getLoopInfo();
-      auto loopInsts = profiles.getLoopInstructions(LI.getLoopFor(loop->header));
+      auto loopInsts = profiles.getLoopInstructions(LI.getLoopFor(loopHeader));
       auto hotness = ((double)loopInsts) / ((double)mInsts);
       hotness *= 100;
       errs() << "EnablersManager:      Hotness = " << hotness << " %\n"; 

@@ -23,6 +23,12 @@ void HELIX::addSynchronizations (
   IRBuilder<> entryBuilder(helixTask->entryBlock->getTerminator());
 
   /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+
+  /*
    * Identify the preamble SCC
    */
   auto preambleSCCNodes = LDI->sccdagAttrs.getSCCDAG()->getTopLevelNodes();
@@ -69,7 +75,7 @@ void HELIX::addSynchronizations (
     /*
      * Reset the value of ssState at the beginning of the iteration (i.e., loop header)
      */
-    IRBuilder<> headerBuilder(LDI->header->getFirstNonPHIOrDbgOrLifetime());
+    IRBuilder<> headerBuilder(loopHeader->getFirstNonPHIOrDbgOrLifetime());
     headerBuilder.CreateStore(ConstantInt::get(int64, 0), ssState);
 
     /*

@@ -9,6 +9,11 @@ bool LoopUnroll::fullyUnrollLoop (
   ){
   auto modified = false;
 
+  /*
+   * Fetch the loop summary
+   */
+  auto ls = LDI.getLoopSummary();
+
 
   return modified;
 }
