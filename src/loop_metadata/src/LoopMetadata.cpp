@@ -38,9 +38,14 @@ bool LoopMetadataPass::tagLoops (
      * We cannot attach metadata to basic blocks in the current LLVM infrastructure.
      * Hence, we attach metadata to the terminator of the header of the loop to represent the metadata of the loop.
      *
+     * Fetch the loop summary.
+     */
+    auto loopSummary = loopInfo->getLoopSummary();
+
+    /*
      * Fetch the header.
      */
-    auto header = loopInfo->header;
+    auto header = loopSummary->getHeader();
 
     /*
      * Fetch the terminator.

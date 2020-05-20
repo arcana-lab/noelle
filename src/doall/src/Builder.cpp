@@ -14,7 +14,17 @@
 void DOALL::generateOuterLoopAndAdjustInnerLoop (
   LoopDependenceInfo *LDI
 ){
+
+  /*
+   * Fetch the task.
+   */
   auto task = (DOALLTask *)tasks[0];
+
+  /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
 
   /*
    * Determine start value and step size for outer loop IV
@@ -63,7 +73,7 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
     task->outermostLoopIV,
     task->clonedIVBounds.cmpIVTo
   );
-  auto innerHeader = task->basicBlockClones[LDI->header];
+  auto innerHeader = task->basicBlockClones[loopHeader];
   outerHBuilder.CreateCondBr(outerIVCmp, innerHeader, task->loopExitBlocks[0]);
 
   /*
@@ -197,12 +207,22 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
 void DOALL::propagatePHINodesThroughOuterLoop (
   LoopDependenceInfo *LDI
 ) {
+
+  /*
+   * Fetch the task
+   */
   auto task = (DOALLTask *)tasks[0];
+
+  /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
 
   /*
    * Collect all PHIs (that aren't the IV)
    */
-  auto innerHeader = task->basicBlockClones[LDI->header];
+  auto innerHeader = task->basicBlockClones[loopHeader];
   std::set<PHINode *> phis;
   for (auto &I : *innerHeader) {
     if (!isa<PHINode>(&I)) break ;

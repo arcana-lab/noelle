@@ -111,6 +111,12 @@ void HELIX::createParallelizableTask (
 ){
 
   /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+
+  /*
    * NOTE: Keep around the original loops' LoopDependenceInfo for later phases
    * //TODO: we need to specify why this is necessary
    */
@@ -241,7 +247,7 @@ void HELIX::createParallelizableTask (
    * Add the unconditional branch from the entry basic block to the header of the loop.
    */
   IRBuilder<> entryBuilder(helixTask->entryBlock);
-  entryBuilder.CreateBr(helixTask->basicBlockClones[LDI->header]);
+  entryBuilder.CreateBr(helixTask->basicBlockClones[loopHeader]);
 
   /*
    * Store final results of loop live-out variables. 

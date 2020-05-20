@@ -98,6 +98,12 @@ bool DSWP::apply (
   }
 
   /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+
+  /*
    * Partition the SCCDAG.
    */
   partitionSCCDAG(LDI, h);
@@ -203,7 +209,7 @@ bool DSWP::apply (
      * Add the unconditional branch from the entry basic block to the header of the loop.
      */
     IRBuilder<> entryBuilder(task->entryBlock);
-    entryBuilder.CreateBr(task->basicBlockClones[LDI->header]);
+    entryBuilder.CreateBr(task->basicBlockClones[loopHeader]);
 
     /*
      * Add the return instruction at the end of the exit basic block.

@@ -24,6 +24,12 @@ SequentialSegment::SequentialSegment (
   {
 
   /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+
+  /*
    * Set the ID
    */
   this->ID = ID;
@@ -99,7 +105,7 @@ SequentialSegment::SequentialSegment (
   auto computeKILL = [](Instruction *, DataFlowResult *) {
     return ;
   };
-  auto computeOUT = [LDI](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
+  auto computeOUT = [LDI, loopHeader](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
 
     /*
      * Check if the successor is the header.
@@ -107,7 +113,7 @@ SequentialSegment::SequentialSegment (
      * We do this because we are interested in understanding the reachability of instructions within a single iteration.
      */
     auto succBB = succ->getParent();
-    if (succ == &*LDI->header->begin()) {
+    if (succ == &*loopHeader->begin()) {
       return ;
     }
 

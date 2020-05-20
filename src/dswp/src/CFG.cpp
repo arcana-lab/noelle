@@ -16,6 +16,12 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
 
   /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+
+  /*
    * Clone the portion of the loop within the stage's normal, and clonable, SCCs
    */
   std::set<Instruction *> subset;
@@ -57,7 +63,7 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
   std::set<BasicBlock *> loopExits(LDI->loopExitBlocks.begin(), LDI->loopExitBlocks.end());
   std::queue<BasicBlock *> queueToFindMissingBBs;
   std::set<BasicBlock *> visitedBBs(loopExits.begin(), loopExits.end());
-  queueToFindMissingBBs.push(LDI->header);
+  queueToFindMissingBBs.push(loopHeader);
 
   /*
    * Traverse basic blocks from the header to all loop exits.

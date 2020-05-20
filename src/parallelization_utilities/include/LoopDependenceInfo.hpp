@@ -25,6 +25,11 @@ namespace llvm {
 
   class LoopDependenceInfo {
     public:
+
+      /*
+       * This field describes the loops with the current one as outermost.
+       * Each loop is described in terms of induction variables, trip count, and control structure (e.g., latches, header).
+       */
       LoopsSummary liSummary;
 
       /*
@@ -35,7 +40,6 @@ namespace llvm {
       /*
        * Loop entry and exit points.
        */
-      BasicBlock *header;
       BasicBlock *preHeader;
       SmallVector<BasicBlock *, 10> loopExitBlocks;
 
@@ -81,6 +85,11 @@ namespace llvm {
        * Return the ID of the loop.
        */
       uint64_t getID (void) const ;
+
+      /*
+       * Return the object that describes the loop in terms of induction variables, trip count, and control structure (e.g., latches, header)
+       */
+      LoopSummary * getLoopSummary (void) const ;
 
       /*
        * Get the dependence graph of the loop.

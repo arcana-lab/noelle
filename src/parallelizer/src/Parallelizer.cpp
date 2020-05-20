@@ -27,10 +27,17 @@ bool Parallelizer::parallelizeLoop (
    */
   assert(LDI != nullptr);
   assert(h != nullptr);
+
+  /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+
   if (this->verbose != Verbosity::Disabled) {
     errs() << "Parallelizer: Start\n";
     errs() << "Parallelizer:  Function = \"" << LDI->function->getName() << "\"\n";
-    errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *LDI->header->getFirstNonPHI() << "\"\n";
+    errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *loopHeader->getFirstNonPHI() << "\"\n";
     errs() << "Parallelizer:  Nesting level = " << LDI->getNestingLevel() << "\n";
   }
 

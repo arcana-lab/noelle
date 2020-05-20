@@ -74,7 +74,16 @@ LoopDependenceInfo::LoopDependenceInfo(
 }
 
 void LoopDependenceInfo::addMetadata (const std::string &metadataName){
-  auto headerTerm = this->header->getTerminator();
+
+  /*
+   * Fetch the loop summary.
+   */
+  auto ls = this->getLoopSummary();
+
+  /*
+   * Fetch the header terminator.
+   */
+  auto headerTerm = ls->getHeader()->getTerminator();
 
   /*
    * Fetch the metadata node.
@@ -141,7 +150,6 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolut
   /*
    * Set the headers.
    */
-  this->header = l->getHeader();
   this->preHeader = l->getLoopPreheader();
 
   /*
@@ -281,4 +289,8 @@ bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) cons
   }
 
   return true;
+}
+      
+LoopSummary * LoopDependenceInfo::getLoopSummary (void) const {
+  return this->liSummary.getLoopNestingTreeRoot();
 }

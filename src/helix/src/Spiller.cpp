@@ -15,7 +15,17 @@
 using namespace llvm ;
 
 void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
+
+  /*
+   * Fetch the task
+   */
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+
+  /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
 
   /*
    * Collect all PHIs in the loop header; they are local variables
@@ -23,7 +33,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    */
   std::vector<PHINode *> originalLoopCarriedPHIs;
   std::vector<PHINode *> clonedLoopCarriedPHIs;
-  for (auto &phi : LDI->header->phis()) {
+  for (auto &phi : loopHeader->phis()) {
     auto phiSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(cast<Value>(&phi));
     if (LDI->sccdagAttrs.getSCCAttrs(phiSCC)->canExecuteReducibly()) continue;
     originalLoopCarriedPHIs.push_back(&phi);
@@ -92,7 +102,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * allocation of the environment
    */
   auto preHeaderClone = helixTask->basicBlockClones[LDI->preHeader];
-  auto firstNonPHI = helixTask->instructionClones[LDI->header->getFirstNonPHI()];
+  auto firstNonPHI = helixTask->instructionClones[loopHeader->getFirstNonPHI()];
   IRBuilder<> headerBuilder(firstNonPHI);
   for (auto phiI = 0; phiI < clonedLoopCarriedPHIs.size(); phiI++) {
     auto phi = clonedLoopCarriedPHIs[phiI];

@@ -15,12 +15,22 @@
 void DOALL::simplifyOriginalLoopIV (
   LoopDependenceInfo *LDI
 ) {
+
+  /*
+   * Fetch the task
+   */
   auto task = (DOALLTask *)tasks[0];
+
+  /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
 
   /*
    * Fetch information about the loop induction variable controlling the loop trip count.
    */
-  auto headerBr = LDI->header->getTerminator();
+  auto headerBr = loopHeader->getTerminator();
   auto headerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(headerBr);
   auto attrs = LDI->sccdagAttrs.getSCCAttrs(headerSCC);
   task->originalIVAttrs = attrs;

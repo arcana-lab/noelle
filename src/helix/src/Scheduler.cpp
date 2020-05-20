@@ -83,6 +83,7 @@ void traverseDomination (
 
 void collectIDomsAndIPostDoms (
   LoopDependenceInfo *LDI,
+  BasicBlock *loopHeader,
   std::unordered_map<BasicBlock *, BasicBlock *> &iDoms,
   std::unordered_map<BasicBlock *, BasicBlock *> &iPostDoms
 ){
@@ -93,7 +94,7 @@ void collectIDomsAndIPostDoms (
   for (auto exitBB : LDI->loopExitBlocks) exitBBs.insert(exitBB);
   traverseDomination(preds, succs, iPostDoms, exitBBs, &*LDI->function->begin());
 
-  std::set<BasicBlock *> startBBs = { LDI->header };
+  std::set<BasicBlock *> startBBs = { loopHeader };
   traverseDomination(succs, preds, iDoms, startBBs, &*LDI->function->end());
 
   for (auto B : LDI->loopBBs) {
@@ -152,12 +153,18 @@ void HELIX::squeezeSequentialSegment (
   return ;
 
   /*
+   * Fetch the header.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+
+  /*
    * HACK: The LLVM post dominator pass cannot be run on newly created bitcode, so we
    * will re-create a map of immediate post dominators for the basic blocks in question
    */
   // LDI->function->print(errs() << "Function up until now: \n");
   std::unordered_map<BasicBlock *, BasicBlock *> iDoms, iPostDoms;
-  collectIDomsAndIPostDoms(LDI, iDoms, iPostDoms);
+  collectIDomsAndIPostDoms(LDI, loopHeader, iDoms, iPostDoms);
 
   /*
    * TODO: Propagate domination information through loop basic blocks
