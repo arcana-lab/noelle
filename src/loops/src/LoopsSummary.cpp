@@ -12,18 +12,18 @@
 
 using namespace llvm;
       
-LoopSummary * LoopsSummary::getLoop (Instruction *instIncludedInLoop){
-  auto instBB = instIncludedInLoop->getParent();
-  auto l = this->getLoop(instBB);
+LoopSummary * LoopsSummary::getLoop (Instruction &instIncludedInLoop) const {
+  auto instBB = instIncludedInLoop.getParent();
+  auto l = this->getLoop(*instBB);
   return l;
 }
 
-LoopSummary * LoopsSummary::getLoop (BasicBlock *bbIncludedInLoop){
-  auto lIter = this->bbToLoop.find(bbIncludedInLoop);
+LoopSummary * LoopsSummary::getLoop (BasicBlock &bbIncludedInLoop) const {
+  auto lIter = this->bbToLoop.find(&bbIncludedInLoop);
   if (lIter == this->bbToLoop.end()){
     return nullptr;
   }
-  auto l = this->bbToLoop[bbIncludedInLoop];
+  auto l = this->bbToLoop.at(&bbIncludedInLoop);
   return l;
 }
 
@@ -108,7 +108,7 @@ void LoopsSummary::populate (
   return ;
 }
 
-void LoopsSummary::print (raw_ostream &stream) {
+void LoopsSummary::print (raw_ostream &stream) const {
   stream << "Loop summaries:\n";
   for (auto &loop : loops) {
     loop->print(stream);

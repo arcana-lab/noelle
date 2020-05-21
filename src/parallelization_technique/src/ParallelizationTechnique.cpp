@@ -277,7 +277,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
   /*
    * Clone all basic blocks of the original loop
    */
-  auto topLoop = LDI->liSummary.getLoopNestingTreeRoot();
+  auto topLoop = LDI->getLoopSummary();
   for (auto originBB : topLoop->orderedBBs) {
 
     /*

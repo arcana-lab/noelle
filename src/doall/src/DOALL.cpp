@@ -127,7 +127,7 @@ bool DOALL::canBeAppliedToLoop (
     /*
      * If the SCC is of the sub-loop, then it does not block the loop to be a DOALL.
      */
-    if (LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
+    if (LDI->isSCCContainedInSubloop(scc)) {
       continue ;
     }
 
