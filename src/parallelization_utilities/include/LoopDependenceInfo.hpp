@@ -15,6 +15,7 @@
 #include "PDG.hpp"
 #include "SCCDAG.hpp"
 #include "LoopsSummary.hpp"
+#include "InductionVariables.hpp"
 #include "SCCDAGAttrs.hpp"
 #include "SCCDAGNormalizer.hpp"
 #include "LoopEnvironment.hpp"
@@ -122,6 +123,10 @@ namespace llvm {
        */
       bool isSCCContainedInSubloop (SCC *scc) const ;
 
+      LoopGoverningIVAttribution *getLoopGoverningIVAttribution () const {
+        return loopGoverningIVAttribution;
+      }
+
       /*
        * Return true if the loop has the metadata requested.
        */
@@ -153,6 +158,9 @@ namespace llvm {
                                                */
 
       std::unordered_map<std::string, std::string> metadata;
+
+      InductionVariables *inductionVariables;
+      LoopGoverningIVAttribution *loopGoverningIVAttribution;
 
       /*
        * Methods

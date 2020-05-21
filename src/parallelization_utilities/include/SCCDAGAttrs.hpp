@@ -16,6 +16,7 @@
 #include "SCC.hpp"
 #include "SCCAttrs.hpp"
 #include "LoopsSummary.hpp"
+#include "InductionVariables.hpp"
 #include "LoopEnvironment.hpp"
 #include "DominatorSummary.hpp"
 
@@ -23,20 +24,6 @@ using namespace std;
 using namespace llvm;
 
 namespace llvm {
-
-  //TODO: Have calculated by DOALL pass, not by SCCAttrs
-  struct FixedIVBounds {
-    Value *start;
-    ConstantInt *step;
-    Value *cmpIVTo;
-    std::vector<Instruction *> cmpToDerivation;
-    bool isCmpOnAccum;
-    bool isCmpIVLHS;
-    int endOffset;
-
-    FixedIVBounds () : start{nullptr}, step{nullptr},
-      cmpIVTo{nullptr}, endOffset{0}, cmpToDerivation{} {};
-  };
 
   class SCCDAGAttrs {
     public:
@@ -61,14 +48,9 @@ namespace llvm {
       std::unordered_map<SCC *, std::set<DGEdge<SCC> *>> edgesViaClones;
 
       /*
-       * Optional supplementary structures for some SCC
-       */
-      std::unordered_map<SCC *, FixedIVBounds *> sccIVBounds;
-
-      /*
        * Constructors.
        */
-      void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, DominatorSummary &DS);
+      void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, DominatorSummary &DS, InductionVariables &IV);
 
       /*
        * Methods on SCCDAG.
@@ -76,7 +58,7 @@ namespace llvm {
       std::set<SCC *> getSCCsWithLoopCarriedDependencies (void) const ;
       std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
       std::set<SCC *> getSCCsWithLoopCarriedControlDependencies (void) const ;
-      bool isLoopGovernedByIV () const ;
+      bool isLoopGovernedBySCC (SCC *scc) const ;
       bool areAllLiveOutValuesReducable (LoopEnvironment *env) const ;
 
       /*
@@ -117,9 +99,7 @@ namespace llvm {
        */
       bool checkIfReducible (SCC *scc, LoopsSummary &LIS);
       bool checkIfIndependent (SCC *scc);
-      bool checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);
-      void checkIfIVHasFixedBounds (SCC *scc, LoopsSummary &LIS);
-      bool isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopsSummary &LIS);
+      bool checkIfSCCOnlyContainsInductionVariable (SCC *scc, LoopsSummary &LIS, InductionVariables &IV);
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);
       bool isClonableByInductionVars (SCC *scc) const ;
       bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;

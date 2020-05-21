@@ -32,6 +32,7 @@ add_subdirectory(src)
 install(PROGRAMS include/Techniques.hpp
     include/LoopDependenceInfo.hpp
     include/Parallelization.hpp
+    include/InductionVariables.hpp
     include/SCCDAGAttrs.hpp
     include/SCCDAGNormalizer.hpp
     include/SCCDAGPartition.hpp

@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, DominatorSummary &DS) {
+void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, DominatorSummary &DS, InductionVariables &IV) {
 
   /*
    * Set the SCCDAG.
@@ -27,7 +27,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
   /*
    * Tag SCCs depending on their characteristics.
    */
-  loopSCCDAG->iterateOverSCCs([this, &SE, &LIS](SCC *scc) -> bool {
+  loopSCCDAG->iterateOverSCCs([this, &SE, &LIS, &IV](SCC *scc) -> bool {
 
     /*
      * Allocate the metadata about this SCC.
@@ -38,10 +38,8 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
     /*
      * Collect information about the current SCC.
      */
-    this->checkIfInductionVariableSCC(scc, SE, LIS);
-    if (sccInfo->isInductionVariableSCC()) {
-      this->checkIfIVHasFixedBounds(scc, LIS);
-    }
+    bool doesSCCOnlyContainIV = this->checkIfSCCOnlyContainsInductionVariable(scc, LIS, IV);
+    sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
     this->checkIfClonable(scc, SE);
 
     /*
@@ -142,10 +140,7 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const
   return sccs;
 }
 
-/*
- * Assumption(angelo): An induction variable will be the root SCC of the loop
- */
-bool SCCDAGAttrs::isLoopGovernedByIV () const {
+bool SCCDAGAttrs::isLoopGovernedBySCC (SCC *governingSCC) const {
   auto topLevelNodes = this->sccdag->getTopLevelNodes();
 
   /*
@@ -175,12 +170,11 @@ bool SCCDAGAttrs::isLoopGovernedByIV () const {
   }
 
   /*
-   * Step 2: Ensure there is only 1, and that it is an induction variable
+   * Step 2: Ensure there is only 1, and that it is the target SCC
    */
   if (topLevelSCCs.size() != 1) return false;
   auto topLevelSCC = *topLevelSCCs.begin();
-  auto topLevelSCCInfo = this->getSCCAttrs(topLevelSCC);
-  return topLevelSCCInfo->isInductionVariableSCC();
+  return topLevelSCC == governingSCC;
 }
 
 bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
@@ -300,6 +294,39 @@ void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS, DominatorSummary &DS) 
   }
 
   return ;
+}
+
+bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariable (SCC *scc, LoopsSummary &LIS, InductionVariables &IV) {
+
+  auto firstInternalValue = (*scc->begin_internal_node_map()).first;
+  if (!isa<Instruction>(firstInternalValue)) return false;
+  auto inst = cast<Instruction>(firstInternalValue);
+
+  auto loop = LIS.getLoop(*inst);
+  if (!loop) return false;
+
+  InductionVariable *containedIV = nullptr;
+  for (auto iv : IV.getInductionVariables(*loop)) {
+    if (scc->isInternal(iv->getHeaderPHI())) {
+      containedIV = iv;
+      break;
+    }
+  }
+  if (!containedIV) return false;
+
+  LoopGoverningIVAttribution attribution(*containedIV, *scc);
+  if (!attribution.isSCCContainingIVWellFormed()) {
+    auto &ivInstructions = containedIV->getAllInstructions();
+    if (scc->numInternalNodes() != ivInstructions.size()) return false;
+
+    for (auto I : ivInstructions) {
+      if (!scc->isInternal(I)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 // TODO: Consolidate this logic and its equivalent in PDGAnalysis
@@ -510,213 +537,6 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
  */
 bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
   return interIterDepsInternalToSCC.find(scc) == interIterDepsInternalToSCC.end();
-}
-
-bool SCCDAGAttrs::checkIfInductionVariableSCC (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS) {
-  auto sccInfo = this->getSCCAttrs(scc);
-  auto setHasIV = [&](bool hasIV) -> bool {
-    sccInfo->setSCCToBeInductionVariable(hasIV);
-    return sccInfo->isInductionVariableSCC();
-  };
-
-  /*
-   * Check whether there is a single conditional branch that dictates control flow in the SCC
-   */
-  auto termPtr = sccInfo->getSingleInstructionThatControlLoopExit();
-  if (termPtr == nullptr) {
-    return setHasIV(false);
-  }
-
-  /*
-   * Identify single conditional branch that dictates control flow in the SCC
-   */
-  auto& termPair = *termPtr;
-  auto term = termPair.second;
-  assert(term->isTerminator());
-  if (!term || !isa<BranchInst>(term)) return setHasIV(false);
-  auto condition = termPair.first;
-  if (!condition || !isa<CmpInst>(condition)) return setHasIV(false);
-  CmpInst *cmp = (CmpInst*)condition;
-
-  /*
-   * Identify, on the CmpInst, a PHINode or accumulator, and some value not
-   * derived within the SCC
-   */
-  auto opL = cmp->getOperand(0), opR = cmp->getOperand(1);
-  if (!(isDerivedWithinSCC(opL, scc) ^ isDerivedWithinSCC(opR, scc))) return setHasIV(false);
-  if (!(isDerivedPHIOrAccumulator(opL, scc) ^ isDerivedPHIOrAccumulator(opR, scc))) return setHasIV(false);
-
-  /*
-   * Ensure a single PHI with induction accumulation only
-   */
-  auto singlePHI = sccInfo->getSinglePHI();
-  if (!singlePHI) return setHasIV(false);
-  auto loopOfPHI = LIS.getLoop(*sccInfo->getSinglePHI());
-  for (auto i = 0; i < singlePHI->getNumIncomingValues(); ++i) {
-    auto incomingBB = singlePHI->getIncomingBlock(i);
-    auto loopOfIncoming = LIS.getLoop(*incomingBB);
-    if (  false
-          || (loopOfIncoming == nullptr) 
-          || (loopOfIncoming != loopOfPHI)
-      ){
-      continue;
-    }
-    if (!isDerivedPHIOrAccumulator(singlePHI->getIncomingValue(i), scc)) return setHasIV(false);
-  }
-
-  for (auto I : sccInfo->getAccumulators()) {
-    auto scev = SE.getSCEV(I);
-    if (scev->getSCEVType() != scAddRecExpr) {
-      return setHasIV(false);
-    }
-  }
-
-  // scc->printMinimal(errs() << "IS an IV:\n") << "\n";
-  return setHasIV(true);
-}
-
-void SCCDAGAttrs::checkIfIVHasFixedBounds (SCC *scc, LoopsSummary &LIS) {
-  auto fixedIVBounds = new FixedIVBounds();
-  auto &IVBounds = *fixedIVBounds;
-  auto notSimple = [&]() -> void {
-    delete fixedIVBounds;
-    return;
-  };
-
-  /*
-   * Fetch the single PHI and single accumulator.
-   */
-  auto sccInfo = this->getSCCAttrs(scc);
-  auto singlePHI = sccInfo->getSinglePHI();
-  auto singleAccumulator = sccInfo->getSingleAccumulator();
-
-  /*
-   * IV is described by single PHI with a start and recurrence incoming value
-   * The IV has one accumulator only
-   */
-  if (!singlePHI || !singleAccumulator) return notSimple();
-  if (singlePHI->getNumIncomingValues() != 2) return notSimple();
-  auto singleControlPair = sccInfo->getSingleInstructionThatControlLoopExit();
-  if (singleControlPair == nullptr) return notSimple();
-
-  auto accum = singleAccumulator;
-  auto incomingStart = singlePHI->getIncomingValue(0);
-  if (incomingStart == accum) incomingStart = singlePHI->getIncomingValue(1);
-  IVBounds.start = incomingStart;
-
-  /*
-   * The IV recurrence is integer, by +-1 
-   */
-  auto stepValue = accum->getOperand(0);
-  if (stepValue == singlePHI) stepValue = accum->getOperand(1);
-  if (!isa<ConstantInt>(stepValue)) return notSimple();
-  IVBounds.step = (ConstantInt*)stepValue;
-  auto stepSize = IVBounds.step->getValue();
-  if (stepSize != 1 && stepSize != -1) return notSimple();
-
-  auto cmp = cast<CmpInst>(singleControlPair->first);
-  auto cmpLHS = cmp->getOperand(0);
-  unsigned cmpToInd = cmpLHS == singlePHI || cmpLHS == accum;
-  IVBounds.cmpIVTo = cmp->getOperand(cmpToInd);
-  IVBounds.isCmpOnAccum = cmp->getOperand((cmpToInd + 1) % 2) == accum;
-  IVBounds.isCmpIVLHS = cmpToInd;
-
-  /*
-   * The CmpInst compare value is constant, or a chain (length 0 or more)
-   * of independent nodes in the SCC that ends in a loop external value
-   */
-  if (!isa<ConstantData>(IVBounds.cmpIVTo)) {
-    if (!isa<Instruction>(IVBounds.cmpIVTo)) return notSimple();
-    IVBounds.cmpToDerivation.push_back((Instruction*)IVBounds.cmpIVTo);
-    if (!collectDerivationChain(IVBounds.cmpToDerivation, scc)) return notSimple();
-
-    auto chainEnd = IVBounds.cmpToDerivation.back();
-    if (isDerivedWithinSCC(chainEnd, scc)) return notSimple();
-  }
-
-  /*
-   * The last value before the end value reached by the IV can be determined
-   */
-  if (!isIVUpperBoundSimple(scc, IVBounds, LIS)) return notSimple();
-
-  sccIVBounds[scc] = fixedIVBounds;
-
-  return ;
-}
-
-bool SCCDAGAttrs::isIVUpperBoundSimple (SCC *scc, FixedIVBounds &IVBounds, LoopsSummary &LIS) {
-  auto sccInfo = this->getSCCAttrs(scc);
-  auto singleControlPair = sccInfo->getSingleInstructionThatControlLoopExit();
-  assert(singleControlPair != nullptr);
-  auto cmp = cast<CmpInst>(singleControlPair->first);
-  auto br = cast<BranchInst>(singleControlPair->second);
-
-  /*
-   * Branch statement has two successors, one in the loop body, one outside the loop
-   */
-  auto loop = LIS.getLoop(*br);
-  auto brLHSInLoop = loop->isBasicBlockWithin(br->getSuccessor(0));
-  auto brRHSInLoop = loop->isBasicBlockWithin(br->getSuccessor(1));
-  if (!(brLHSInLoop ^ brRHSInLoop)) return false;
-
-  bool exitOnCmp = !brLHSInLoop;
-  auto signedPred = cmp->isUnsigned() ? cmp->getSignedPredicate() : cmp->getPredicate();
-  signedPred = IVBounds.isCmpIVLHS ? signedPred : ICmpInst::getSwappedPredicate(signedPred);
-  int stepSize = IVBounds.step->getValue().getSExtValue();
-
-  auto cmpPredAbort = [&]() -> void {
-    errs() << "SCCDAGAttrs:   Error: comparison and branch of top level IV misunderstood\n";
-    abort();
-  };
-
-  if (!exitOnCmp) { 
-    if (stepSize == 1) {
-      switch (signedPred) {
-        case CmpInst::Predicate::ICMP_SLE:
-          IVBounds.endOffset = 1;
-        case CmpInst::Predicate::ICMP_NE:
-        case CmpInst::Predicate::ICMP_SLT:
-          break;
-        default:
-          cmpPredAbort();
-      }
-    } else {
-      switch (signedPred) {
-        case CmpInst::Predicate::ICMP_SGE:
-          IVBounds.endOffset = -1;
-        case CmpInst::Predicate::ICMP_NE:
-        case CmpInst::Predicate::ICMP_SGT:
-          break;
-        default:
-          cmpPredAbort();
-      }
-    }
-  } else {
-    if (stepSize == 1) {
-      switch (signedPred) {
-        case CmpInst::Predicate::ICMP_SGT:
-          IVBounds.endOffset = 1;
-        case CmpInst::Predicate::ICMP_SGE:
-        case CmpInst::Predicate::ICMP_EQ:
-          break;
-        default:
-          cmpPredAbort();
-      }
-    } else {
-      switch (signedPred) {
-        case CmpInst::Predicate::ICMP_SLT:
-          IVBounds.endOffset = -1;
-        case CmpInst::Predicate::ICMP_SLE:
-        case CmpInst::Predicate::ICMP_EQ:
-          break;
-        default:
-          cmpPredAbort();
-      }
-    }
-  }
-
-  IVBounds.endOffset -= stepSize * IVBounds.isCmpOnAccum;
-  return true;
 }
 
 void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
