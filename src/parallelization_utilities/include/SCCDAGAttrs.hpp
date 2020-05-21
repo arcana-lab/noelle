@@ -82,7 +82,7 @@ namespace llvm {
       /*
        * Methods on single SCC.
        */
-      bool isSCCContainedInSubloop (LoopsSummary &LIS, SCC *scc) const ;
+      bool isSCCContainedInSubloop (const LoopsSummary &LIS, SCC *scc) const ;
       SCCAttrs * getSCCAttrs (SCC *scc) const; 
 
       /*

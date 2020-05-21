@@ -123,6 +123,12 @@ namespace llvm {
         );
 
       /*
+       * Return true if @param scc is fully contained in a subloop.
+       * Return false otherwise.
+       */
+      bool isSCCContainedInSubloop (SCC *scc) const ;
+
+      /*
        * Return true if the loop has the metadata requested.
        */
       bool doesHaveMetadata (const std::string &metadataName) const ;

@@ -146,7 +146,7 @@ void HELIX::createParallelizableTask (
         if (sccInfo->canBeCloned()){
           continue ;
         }
-        if (LDI->sccdagAttrs.isSCCContainedInSubloop(LDI->liSummary, scc)) {
+        if (LDI->isSCCContainedInSubloop(scc)) {
           continue ;
         }
 

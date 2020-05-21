@@ -273,3 +273,7 @@ bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) cons
 LoopSummary * LoopDependenceInfo::getLoopSummary (void) const {
   return this->liSummary.getLoopNestingTreeRoot();
 }
+      
+bool LoopDependenceInfo::isSCCContainedInSubloop (SCC *scc) const {
+  return this->sccdagAttrs.isSCCContainedInSubloop(this->liSummary, scc);
+}

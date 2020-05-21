@@ -19,15 +19,15 @@ namespace llvm {
     public:
       std::set<std::shared_ptr<LoopSummary>> loops;
 
-      LoopSummary * getLoop (Instruction *instIncludedInLoop);
+      LoopSummary * getLoop (Instruction &instIncludedInLoop) const ;
 
-      LoopSummary * getLoop (BasicBlock *bbIncludedInLoop);
+      LoopSummary * getLoop (BasicBlock &bbIncludedInLoop) const ;
 
       LoopSummary * getLoopNestingTreeRoot (void) const ;
 
       void populate (LoopInfo &li, Loop *loop, std::function<bool (Loop *l, uint64_t &tripCount)> setTripCountFunction);
 
-      void print (raw_ostream &stream);
+      void print (raw_ostream &stream) const ;
 
     private:
       LoopSummary *topLoop;
