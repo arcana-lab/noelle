@@ -32,6 +32,10 @@ namespace llvm {
 
       BasicBlock * getPreHeader (void) const ;
 
+      /*
+       * Return the nesting level of the loop.
+       * 1 means outermost loop.
+       */
       uint32_t getNestingLevel (void) const ;
 
       bool doesHaveCompileTimeKnownTripCount (void) const ;

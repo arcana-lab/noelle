@@ -100,12 +100,6 @@ namespace llvm {
       uint32_t numberOfExits (void) const;
 
       /*
-       * Return the nesting level of the loop.
-       * 1 means outermost loop.
-       */
-      uint32_t getNestingLevel (void) const ;
-
-      /*
        * Check whether a transformation is enabled.
        */
       bool isTechniqueEnabled (Technique technique);
@@ -152,7 +146,6 @@ namespace llvm {
       PDG *loopDG;                            /* Dependence graph of the loop. 
                                                * This graph does not include instructions outside the loop (i.e., no external dependences are included).  
                                                */
-      uint32_t nestingLevel;
       std::unordered_map<std::string, std::string> metadata;
 
       /*
