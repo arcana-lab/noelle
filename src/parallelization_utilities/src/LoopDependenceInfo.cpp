@@ -148,11 +148,6 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolut
   this->liSummary.populate(li, l, findTripCount);
 
   /*
-   * Set the headers.
-   */
-  this->preHeader = l->getLoopPreheader();
-
-  /*
    * Set the loop body.
    */
   for (auto bb : l->blocks()){

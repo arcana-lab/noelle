@@ -96,8 +96,8 @@ void DOALL::generateOuterLoopAndAdjustInnerLoop (
    */
   auto PHIType = task->cloneOfOriginalIV->getType();
   auto startValueIndex = -1;
-  bool entryIndexIs0 = task->cloneOfOriginalIV->getIncomingBlock(0) == LDI->preHeader;
-  bool entryIndexIs1 = task->cloneOfOriginalIV->getIncomingBlock(1) == LDI->preHeader;
+  bool entryIndexIs0 = task->cloneOfOriginalIV->getIncomingBlock(0) == loopPreHeader;
+  bool entryIndexIs1 = task->cloneOfOriginalIV->getIncomingBlock(1) == loopPreHeader;
   assert(entryIndexIs0 || entryIndexIs1);
   task->cloneOfOriginalIV->setIncomingValue(
     entryIndexIs0 ? 0 : 1,
