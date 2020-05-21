@@ -27,12 +27,6 @@ namespace llvm {
     public:
 
       /*
-       * This field describes the loops with the current one as outermost.
-       * Each loop is described in terms of induction variables, trip count, and control structure (e.g., latches, header).
-       */
-      LoopsSummary liSummary;
-
-      /*
        * Loop entry and exit points.
        */
       SmallVector<BasicBlock *, 10> loopExitBlocks;
@@ -149,9 +143,15 @@ namespace llvm {
        * Fields
        */
       std::set<Technique> enabledTechniques;  /* Techniques enabled. */
+
       PDG *loopDG;                            /* Dependence graph of the loop. 
                                                * This graph does not include instructions outside the loop (i.e., no external dependences are included).  
                                                */
+
+      LoopsSummary liSummary;                 /* This field describes the loops with the current one as outermost.
+                                               * Each loop is described in terms of induction variables, trip count, and control structure (e.g., latches, header).
+                                               */
+
       std::unordered_map<std::string, std::string> metadata;
 
       /*
