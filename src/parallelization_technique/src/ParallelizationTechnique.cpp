@@ -741,7 +741,12 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
     return ;
   }
 
-  std::set<BasicBlock *> bbs(LDI.loopBBs.begin(), LDI.loopBBs.end());
+  /*
+   * Fetch the loop summary.
+   */
+  auto loopSummary = LDI.getLoopSummary();
+
+  std::set<BasicBlock *> bbs(loopSummary->orderedBBs.begin(), loopSummary->orderedBBs.end());
   DGPrinter::writeGraph<SubCFGs>("technique-original-loop-" + std::to_string(LDI.getID()) + ".dot", new SubCFGs(bbs));
   DGPrinter::writeGraph<SCCDAG>("technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot", LDI.sccdagAttrs.getSCCDAG());
 

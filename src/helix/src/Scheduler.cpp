@@ -103,7 +103,7 @@ void collectIDomsAndIPostDoms (
   std::set<BasicBlock *> startBBs = { loopHeader };
   traverseDomination(succs, preds, iDoms, startBBs, &*loopFunction->end());
 
-  for (auto B : LDI->loopBBs) {
+  for (auto B : loopSummary->orderedBBs){
     // B->printAsOperand(errs() << "Basic block in loop: ", false); errs() << "\n";
     assert(iPostDoms.find(B) != iPostDoms.end()
       && "ERROR: Ad-hoc PDT analysis came up short on helix task's loop basic blocks");
