@@ -100,6 +100,7 @@ LoopSummary::LoopSummary (
    * Set the header
    */
   this->header = l->getHeader();
+  this->preHeader = l->getLoopPreheader();
 
   /*
    * Set the basic blocks and latches of the loop.

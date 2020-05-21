@@ -166,6 +166,9 @@ bool DOALL::apply (
   Parallelization &par,
   Heuristics *h
 ) {
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopHeader = loopSummary->getHeader();
+  auto loopPreHeader = loopSummary->getPreHeader();
 
   /*
    * Print the parallelization request.
