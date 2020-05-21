@@ -55,7 +55,7 @@ namespace llvm {
       void simplifyOriginalLoopIV (
         LoopDependenceInfo *LDI
       );
-      void generateOuterLoopAndAdjustInnerLoop (
+      void rewireLoopToIterateChunks (
         LoopDependenceInfo *LDI
       );
       void propagatePHINodesThroughOuterLoop (
@@ -66,6 +66,11 @@ namespace llvm {
         Function *loopFunction,
         Parallelization &par
       );
+
+      /*
+       * Helpers
+       */
+      Value *fetchClone(Value *original) const ;
   };
 
 }

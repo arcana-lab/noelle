@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   AccumulatorOpInfo.cpp
+  InductionVariables.cpp
   SCCAttrs.cpp
   SCCDAGAttrs.cpp
   SCCDAGNormalizer.cpp

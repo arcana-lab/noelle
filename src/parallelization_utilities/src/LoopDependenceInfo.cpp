@@ -48,9 +48,18 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
-  SCCDAGNormalizer normalizer(*loopSCCDAG, this->liSummary, SE, DS);
+  inductionVariables = new InductionVariables(liSummary, li, SE, *loopSCCDAG);
+  SCCDAGNormalizer normalizer(*loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
   normalizer.normalizeInPlace();
-  this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, DS);
+  inductionVariables = new InductionVariables(liSummary, li, SE, *loopSCCDAG);
+  this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
+
+  /*
+   * Collect induction variable information
+   */
+  auto iv = inductionVariables->getLoopGoverningInductionVariable(*liSummary.getLoop(*l->getHeader()));
+  loopGoverningIVAttribution = iv == nullptr ? nullptr
+    : new LoopGoverningIVAttribution(*iv, *loopSCCDAG->sccOfValue(iv->getHeaderPHI()));
 
   /*
    * Cache the post-dominator tree.
@@ -230,9 +239,9 @@ bool LoopDependenceInfo::iterateOverSubLoopsRecursively (
 
   return false;
 }
-      
+
 uint64_t LoopDependenceInfo::getID (void) const {
-  
+
   /*
    * Check if there is metadata.
    */
@@ -261,7 +270,7 @@ std::string LoopDependenceInfo::getMetadata (const std::string &metadataName) co
 
   return this->metadata.at(metadataName);
 }
-      
+
 bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) const {
   if (this->metadata.find(metadataName) == this->metadata.end()){
     return false;
@@ -269,11 +278,11 @@ bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) cons
 
   return true;
 }
-      
+
 LoopSummary * LoopDependenceInfo::getLoopSummary (void) const {
   return this->liSummary.getLoopNestingTreeRoot();
 }
-      
+
 bool LoopDependenceInfo::isSCCContainedInSubloop (SCC *scc) const {
   return this->sccdagAttrs.isSCCContainedInSubloop(this->liSummary, scc);
 }

@@ -23,8 +23,8 @@ namespace llvm {
   class SCCDAGNormalizer {
     public:
 
-      SCCDAGNormalizer(SCCDAG &dag, LoopsSummary &lis, ScalarEvolution &se, DominatorSummary &ds)
-        : LIS{lis}, SE{se}, DS{ds}, sccdag{dag} {}
+      SCCDAGNormalizer(SCCDAG &dag, LoopsSummary &lis, ScalarEvolution &se, DominatorSummary &ds, InductionVariables &iv)
+        : LIS{lis}, SE{se}, DS{ds}, IV{iv}, sccdag{dag} {}
 
       void normalizeInPlace() ;
 
@@ -32,6 +32,7 @@ namespace llvm {
       LoopsSummary &LIS;
       ScalarEvolution &SE;
       DominatorSummary &DS;
+      InductionVariables &IV;
       SCCDAG &sccdag;
 
       void mergeLCSSAPhis () ;
