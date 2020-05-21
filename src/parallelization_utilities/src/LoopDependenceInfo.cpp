@@ -147,13 +147,6 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolut
   };
   this->liSummary.populate(li, l, findTripCount);
 
-  /*
-   * Set the loop body.
-   */
-  for (auto bb : l->blocks()){
-    this->loopBBs.push_back(&*bb);
-  }
-
   l->getExitBlocks(loopExitBlocks);
 
   return ;

@@ -219,7 +219,7 @@ SequentialSegment::SequentialSegment (
         /*
          * Check if succBB belongs to the loop being parallelized.
          */
-        if (std::find(LDI->loopBBs.begin(), LDI->loopBBs.end(), succBB) == LDI->loopBBs.end()){
+        if (!loopSummary->isBasicBlockWithin(succBB)){
 
           /*
            * succBB doesn't belong to the loop being parallelized.
