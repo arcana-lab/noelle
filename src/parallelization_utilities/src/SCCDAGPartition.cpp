@@ -15,9 +15,9 @@ using namespace llvm;
 SCCDAGPartition::SCCDAGPartition (
   SCCDAG *dag,
   SCCDAGAttrs *attrs,
-  LoopsSummary *lis,
+  LoopSummary *loopSummary,
   std::set<SCCset *> *sets
-) : LIS{lis}, sccdag{dag}, dagAttrs{attrs} {
+) : loop{loopSummary}, sccdag{dag}, dagAttrs{attrs} {
   resetPartition(sets);
 
   return ;
@@ -58,7 +58,7 @@ void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
   /*
    *  - Fetch the header basic block of the outermost loop. This will be the beginning of the traversal.
    */
-  auto const topLoop = LIS->getLoopNestingTreeRoot();
+  auto const topLoop = this->loop;
   auto bb = topLoop->getHeader();
 
   /*
