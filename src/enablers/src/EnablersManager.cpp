@@ -56,13 +56,18 @@ bool EnablersManager::runOnModule (Module &M) {
     auto loopSummary = loop->getLoopSummary();
     auto loopHeader = loopSummary->getHeader();
 
-    errs() << "EnablersManager:    Function: \"" << loop->function->getName() << "\"\n";
+    /*
+     * Fetch the function
+     */
+    auto loopFunction = loopSummary->getFunction();
+
+    errs() << "EnablersManager:    Function: \"" << loopFunction->getName() << "\"\n";
     errs() << "EnablersManager:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
     if (profiles.isAvailable()){
       auto& profiles = getAnalysis<HotProfiler>().getHot();
       auto mInsts = profiles.getModuleInstructions();
 
-      auto& LI = getAnalysis<LoopInfoWrapperPass>(*loop->function).getLoopInfo();
+      auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
       auto loopInsts = profiles.getLoopInstructions(LI.getLoopFor(loopHeader));
       auto hotness = ((double)loopInsts) / ((double)mInsts);
       hotness *= 100;
@@ -81,7 +86,8 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Fetch the function that contains the current loop.
      */
-    auto f = loop->function;
+    auto loopSummary = loop->getLoopSummary();
+    auto f = loopSummary->getFunction();
 
     /*
      * Check if we have already modified the function.

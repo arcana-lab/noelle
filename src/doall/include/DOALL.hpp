@@ -63,6 +63,7 @@ namespace llvm {
       );
       void addChunkFunctionExecutionAsideOriginalLoop (
         LoopDependenceInfo *LDI,
+        Function *loopFunction,
         Parallelization &par
       );
   };

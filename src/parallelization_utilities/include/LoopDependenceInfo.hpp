@@ -33,11 +33,6 @@ namespace llvm {
       LoopsSummary liSummary;
 
       /*
-       * Context
-       */
-      Function *function;
-
-      /*
        * Loop entry and exit points.
        */
       SmallVector<BasicBlock *, 10> loopExitBlocks;

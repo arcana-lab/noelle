@@ -200,3 +200,8 @@ bool LoopSummary::doesHaveCompileTimeKnownTripCount (void) const {
 uint64_t LoopSummary::getCompileTimeTripCount (void) const {
   return this->tripCount;
 }
+      
+Function * LoopSummary::getFunction (void) const {
+  auto f = this->header->getParent();
+  return f;
+}

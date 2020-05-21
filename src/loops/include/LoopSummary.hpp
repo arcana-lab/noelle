@@ -26,6 +26,8 @@ namespace llvm {
 
       uint64_t getID (void) const ;
 
+      Function * getFunction (void) const ;
+
       BasicBlock * getHeader (void) const ;
 
       BasicBlock * getPreHeader (void) const ;

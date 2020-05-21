@@ -30,6 +30,11 @@ SequentialSegment::SequentialSegment (
   auto loopHeader = loopSummary->getHeader();
 
   /*
+   * Fetch the loop function.
+   */
+  auto loopFunction = loopSummary->getFunction();
+
+  /*
    * Set the ID
    */
   this->ID = ID;
@@ -131,7 +136,7 @@ SequentialSegment::SequentialSegment (
     IN.insert(genI.begin(), genI.end());
     return ;
   };
-  auto dfr = dfa.applyBackward(LDI->function, computeGEN, computeKILL, computeIN, computeOUT);
+  auto dfr = dfa.applyBackward(loopFunction, computeGEN, computeKILL, computeIN, computeOUT);
 
   /*
    * Identify the locations where signal and wait instructions should be placed.

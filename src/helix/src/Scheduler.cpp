@@ -90,12 +90,18 @@ void collectIDomsAndIPostDoms (
   pred_range (*preds)(BasicBlock *) = predecessors;
   succ_range (*succs)(BasicBlock *) = successors;
 
+  /*
+   * Fetch the loop function.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopFunction = loopSummary->getFunction();
+
   std::set<BasicBlock *> exitBBs;
   for (auto exitBB : LDI->loopExitBlocks) exitBBs.insert(exitBB);
-  traverseDomination(preds, succs, iPostDoms, exitBBs, &*LDI->function->begin());
+  traverseDomination(preds, succs, iPostDoms, exitBBs, &*loopFunction->begin());
 
   std::set<BasicBlock *> startBBs = { loopHeader };
-  traverseDomination(succs, preds, iDoms, startBBs, &*LDI->function->end());
+  traverseDomination(succs, preds, iDoms, startBBs, &*loopFunction->end());
 
   for (auto B : LDI->loopBBs) {
     // B->printAsOperand(errs() << "Basic block in loop: ", false); errs() << "\n";

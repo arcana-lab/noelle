@@ -92,9 +92,15 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
 void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI) {
 
   /*
+   * Fetch the loop function.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopFunction = loopSummary->getFunction();
+
+  /*
    * Fetch the first instruction of the first basic block of the function that includes the loop we want to parallelized.
    */
-  auto firstBB = LDI->function->begin();
+  auto firstBB = loopFunction->begin();
   auto firstI = firstBB->begin();
 
   /*
@@ -218,11 +224,16 @@ void ParallelizationTechnique::generateEmptyTasks (
   auto loopPreHeader = loopSummary->getPreHeader();
 
   /*
+   * Fetch the loop function.
+   */
+  auto loopFunction = loopSummary->getFunction();
+
+  /*
    * Setup original loop and task with functions and basic blocks for wiring
    */
-  auto &cxt = LDI->function->getContext();
-  this->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
-  this->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", LDI->function);
+  auto &cxt = loopFunction->getContext();
+  this->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", loopFunction);
+  this->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", loopFunction);
 
   this->numTaskInstances = taskStructs.size();
   for (auto i = 0; i < numTaskInstances; ++i) {

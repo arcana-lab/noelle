@@ -113,13 +113,18 @@ bool Parallelizer::runOnModule (Module &M) {
     auto loopSummary = loop->getLoopSummary();
     auto loopHeader = loopSummary->getHeader();
 
-    errs() << "Parallelizer:    Function: \"" << loop->function->getName() << "\"\n";
+    /*
+     * Fetch the function.
+     */
+    auto loopFunction = loopSummary->getFunction();
+
+    errs() << "Parallelizer:    Function: \"" << loopFunction->getName() << "\"\n";
     errs() << "Parallelizer:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
     if (profiles.isAvailable()){
       auto& profiles = getAnalysis<HotProfiler>().getHot();
       auto mInsts = profiles.getModuleInstructions();
 
-      auto& LI = getAnalysis<LoopInfoWrapperPass>(*loop->function).getLoopInfo();
+      auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
       auto loopInsts = profiles.getLoopInstructions(LI.getLoopFor(loopHeader));
       auto hotness = ((double)loopInsts) / ((double)mInsts);
       hotness *= 100;
