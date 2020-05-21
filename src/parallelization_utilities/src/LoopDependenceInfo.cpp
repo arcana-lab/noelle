@@ -53,11 +53,6 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, DS);
 
   /*
-   * Set the nesting level.
-   */
-  this->nestingLevel = l->getLoopDepth();
-
-  /*
    * Cache the post-dominator tree.
    */
   for (auto bb : l->blocks()) {
@@ -104,10 +99,6 @@ void LoopDependenceInfo::addMetadata (const std::string &metadataName){
   this->metadata[metadataName] = metaString;
 
   return ;
-}
-
-uint32_t LoopDependenceInfo::getNestingLevel (void) const {
-  return this->nestingLevel;
 }
 
 LoopDependenceInfo::~LoopDependenceInfo() {
