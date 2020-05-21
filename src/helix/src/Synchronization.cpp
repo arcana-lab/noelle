@@ -29,6 +29,11 @@ void HELIX::addSynchronizations (
   auto loopHeader = loopSummary->getHeader();
 
   /*
+   * Fetch the loop function.
+   */
+  auto loopFunction = loopSummary->getFunction();
+
+  /*
    * Identify the preamble SCC
    */
   auto preambleSCCNodes = LDI->sccdagAttrs.getSCCDAG()->getTopLevelNodes();
@@ -68,7 +73,7 @@ void HELIX::addSynchronizations (
      * We call this new variable, ssState.
      * This new variable is reponsible to store the information about whether a wait instruction of the current sequential segment has already been executed in the current iteration for the current thread.
      */
-    auto &cxt = LDI->function->getContext();
+    auto &cxt = loopFunction->getContext();
     auto int64 = IntegerType::get(cxt, 64);
     Value *ssState = entryBuilder.CreateAlloca(int64);
 
@@ -205,7 +210,7 @@ void HELIX::addSynchronizations (
 
       auto entryBB = justAfterEntry->getParent();
       auto ssCheckBBName = "SS" + std::to_string(ss->getID()) + "-checkexit";
-      auto checkFlagBB = BasicBlock::Create(cxt, ssCheckBBName, LDI->function);
+      auto checkFlagBB = BasicBlock::Create(cxt, ssCheckBBName, loopFunction);
       std::vector<BasicBlock *> predBBs(pred_begin(entryBB), pred_end(entryBB));
       for (auto predBB : predBBs) {
         auto term = predBB->getTerminator();

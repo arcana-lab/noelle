@@ -35,9 +35,17 @@ bool Parallelizer::parallelizeLoop (
   auto loopHeader = loopSummary->getHeader();
   auto loopPreHeader = loopSummary->getPreHeader();
 
+  /*
+   * Fetch the loop function.
+   */
+  auto loopFunction = loopSummary->getFunction();
+
+  /*
+   * Print
+   */
   if (this->verbose != Verbosity::Disabled) {
     errs() << "Parallelizer: Start\n";
-    errs() << "Parallelizer:  Function = \"" << LDI->function->getName() << "\"\n";
+    errs() << "Parallelizer:  Function = \"" << loopFunction->getName() << "\"\n";
     errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *loopHeader->getFirstNonPHI() << "\"\n";
     errs() << "Parallelizer:  Nesting level = " << LDI->getNestingLevel() << "\n";
   }
@@ -131,7 +139,7 @@ bool Parallelizer::parallelizeLoop (
   }
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
   par.linkParallelizedLoopToOriginalFunction(
-    LDI->function->getParent(),
+    loopFunction->getParent(),
     loopPreHeader,
     entryPoint,
     exitPoint, 
@@ -140,7 +148,7 @@ bool Parallelizer::parallelizeLoop (
     LDI->loopExitBlocks
   );
   if (this->verbose >= Verbosity::Maximal) {
-    LDI->function->print(errs() << "Final printout:\n"); errs() << "\n";
+    loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
   }
 
   /*

@@ -20,9 +20,15 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
 ) {
 
   /*
+   * Fetch the loop function.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopFunction = loopSummary->getFunction();
+
+  /*
    * Create the entry and exit points of the function that will include the parallelized loop.
    */
-  auto &cxt = LDI->function->getContext();
+  auto &cxt = loopFunction->getContext();
 
   /*
    * Create the environment.

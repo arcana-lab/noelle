@@ -29,6 +29,11 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   auto loopPreHeader = loopSummary->getPreHeader();
 
   /*
+   * Fetch the loop function.
+   */
+  auto loopFunction = loopSummary->getFunction();
+
+  /*
    * Collect all PHIs in the loop header; they are local variables
    * with loop carried data dependencies and need to be spilled
    */
@@ -84,7 +89,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * Allocate the environment array (64 byte aligned)
    * Load incoming values from the preheader
    */
-  IRBuilder<> loopFunctionBuilder(&*LDI->function->begin()->begin());
+  IRBuilder<> loopFunctionBuilder(&*loopFunction->begin()->begin());
   loopCarriedEnvBuilder->generateEnvArray(loopFunctionBuilder);
   loopCarriedEnvBuilder->generateEnvVariables(loopFunctionBuilder);
 

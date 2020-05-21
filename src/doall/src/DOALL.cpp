@@ -166,9 +166,18 @@ bool DOALL::apply (
   Parallelization &par,
   Heuristics *h
 ) {
+
+  /*
+   * Fetch the headers.
+   */
   auto loopSummary = LDI->getLoopSummary();
   auto loopHeader = loopSummary->getHeader();
   auto loopPreHeader = loopSummary->getPreHeader();
+
+  /*
+   * Fetch the loop function.
+   */
+  auto loopFunction = loopSummary->getFunction();
 
   /*
    * Print the parallelization request.
@@ -250,13 +259,13 @@ bool DOALL::apply (
    */
   this->generateCodeToStoreLiveOutVariables(LDI, 0);
 
-  addChunkFunctionExecutionAsideOriginalLoop(LDI, par);
+  addChunkFunctionExecutionAsideOriginalLoop(LDI, loopFunction, par);
 
   /*
    * Final printing.
    */
   if (this->verbose >= Verbosity::Maximal) {
-    LDI->function->print(errs() << "DOALL:  Final outside-loop code:\n" );
+    loopFunction->print(errs() << "DOALL:  Final outside-loop code:\n" );
     errs() << "\n";
     tasks[0]->F->print(errs() << "DOALL:  Final parallelized loop:\n"); 
     errs() << "\n";
@@ -270,13 +279,14 @@ bool DOALL::apply (
 
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   LoopDependenceInfo *LDI,
+  Function *loopFunction,
   Parallelization &par
 ) {
 
   /*
    * Create the entry and exit points of the function that will include the parallelized loop.
    */
-  auto &cxt = LDI->function->getContext();
+  auto &cxt = loopFunction->getContext();
 
   /*
    * Create the environment.

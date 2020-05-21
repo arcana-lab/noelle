@@ -99,9 +99,15 @@ bool DSWP::isCompleteAndValidStageStructure (LoopDependenceInfo *LDI) const {
 void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &par) {
 
   /*
+   * Fetch the loop function.
+   */
+  auto loopSummary = LDI->getLoopSummary();
+  auto loopFunction = loopSummary->getFunction();
+
+  /*
    * Fetch the module.
    */
-  auto M = LDI->function->getParent();
+  auto M = loopFunction->getParent();
 
   this->allocateEnvironmentArray(LDI);
   this->populateLiveInEnvironment(LDI);

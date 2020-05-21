@@ -22,7 +22,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   LoopInfo &li,
   ScalarEvolution &SE,
   DominatorSummary &DS
-) : function{f}, DOALLChunkSize{8},
+) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()}
   {
 
