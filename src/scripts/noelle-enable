@@ -2,6 +2,9 @@
 
 installDir
 
+# Code transformations
+ENABLERS="-load ${installDir}/lib/LoopDistribution.so -load ${installDir}/lib/LoopUnroll.so"
+
 # Set the file names
 IRFileInput="`mktemp`" ;
 IRFileInputLL="`mktemp`" ;
@@ -25,7 +28,7 @@ while true ; do
   echo "NOELLE: Enablers:     Invocation $c" ;
 
   # Set the command to execute and execute it
-  cmdToExecute="noelle-load -load ${installDir}/lib/Enablers.so -enablers $IRFileInput -o $IRFileOutput ${@:3}"
+  cmdToExecute="noelle-load ${ENABLERS} -load ${installDir}/lib/Enablers.so -enablers $IRFileInput -o $IRFileOutput ${@:3}"
   echo $cmdToExecute ;
   eval $cmdToExecute ;
 
