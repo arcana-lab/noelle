@@ -42,6 +42,8 @@ namespace llvm {
       
       uint64_t getCompileTimeTripCount (void) const ;
 
+      Loop * getLLVMLoop (void) const ;
+
       LoopSummary * getParentLoop (void) const ;
       
       void setParentLoop (LoopSummary *parentLoop) ;
@@ -64,6 +66,7 @@ namespace llvm {
 
     private:
       uint64_t ID;
+      Loop *llvmLoop;
       BasicBlock *header;
       BasicBlock *preHeader;
       uint32_t depth;

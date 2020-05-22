@@ -27,8 +27,8 @@ LoopSummary::LoopSummary (
   Loop *l,
   LoopSummary *parentLoop
   ) 
-  : 
-    parent{parentLoop}
+  : llvmLoop{l}
+    , parent{parentLoop}
     , compileTimeKnownTripCount{false}
     , tripCount{0}
   {
@@ -80,8 +80,8 @@ LoopSummary::LoopSummary (
   LoopSummary *parentLoop,
   uint64_t loopTripCount
   ) 
-  : 
-    parent{parentLoop}
+  : llvmLoop{l}
+    , parent{parentLoop}
     , compileTimeKnownTripCount{true}
     , tripCount{loopTripCount}
   {
@@ -204,4 +204,8 @@ uint64_t LoopSummary::getCompileTimeTripCount (void) const {
 Function * LoopSummary::getFunction (void) const {
   auto f = this->header->getParent();
   return f;
+}
+
+Loop * LoopSummary::getLLVMLoop (void) const {
+  return this->llvmLoop;
 }
