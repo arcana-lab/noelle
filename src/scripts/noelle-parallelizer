@@ -2,7 +2,11 @@
 
 installDir
 
+# Code transformations
+PARALLELIZATION_TECHNIQUES="-load ${installDir}/lib/DSWP.so -load ${installDir}/lib/DOALL.so -load ${installDir}/lib/HELIX.so"
+ENABLERS="-load ${installDir}/lib/LoopDistribution.so -load ${installDir}/lib/LoopUnroll.so"
+
 # Set the command to execute
-cmdToExecute="noelle-load -parallelization -heuristics -parallelizer ${@}"
+cmdToExecute="noelle-load ${ENABLERS} -load ${installDir}/lib/Heuristics.so -load ${installDir}/lib/ParallelizationTechnique.so  ${PARALLELIZATION_TECHNIQUES} -load ${installDir}/lib/Parallelizer.so -parallelization -heuristics -parallelizer ${@}"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
