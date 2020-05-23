@@ -147,8 +147,7 @@ void DOALL::rewireLoopToIterateChunks (
    */
   auto headerBr = cast<BranchInst>(task->instructionClones.at(ivAttribution->getHeaderBrInst()));
   ivUtility.updateConditionToCatchIteratingPastExitValue(
-    cast<CmpInst>(task->instructionClones.at(ivAttribution->getHeaderCmpInst())),
-    headerBr
+    cast<CmpInst>(task->instructionClones.at(ivAttribution->getHeaderCmpInst()))
   );
 
   if (headerBr->getSuccessor(0) != task->loopExitBlocks[0]) {

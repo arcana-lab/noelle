@@ -40,6 +40,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
      */
     bool doesSCCOnlyContainIV = this->checkIfSCCOnlyContainsInductionVariable(scc, LIS, IV);
     sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
+
     this->checkIfClonable(scc, SE);
 
     /*

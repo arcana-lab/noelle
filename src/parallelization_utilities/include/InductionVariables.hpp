@@ -53,8 +53,8 @@ namespace llvm {
 
     private:
       SCC &scc;
-      BasicBlock *exitBlock;
-      PHINode *headerPHI;
+      BasicBlock *exitBlock; // Move to Attribution class
+      PHINode *headerPHI; // outermostPHI
       std::set<PHINode *> PHIs;
       std::set<Instruction *> accumulators;
       std::set<Instruction *> allInstructions;

@@ -208,14 +208,6 @@ bool DOALL::apply (
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 
   /*
-   * Simplify the original IV to iterate from smaller to larger bound by +1 increments
-   * Create the outermost loop that iterates over chunks
-   * Adjust the innermost loop to execute a single chunk
-   * TODO(angelo): Re-formulate these changes to work AFTER data flows are adjusted
-   */
-  // this->simplifyOriginalLoopIV(LDI);
-
-  /*
    * Fix the data flow within the parallelized loop by redirecting operands of
    * cloned instructions to refer to the other cloned instructions. Currently,
    * they still refer to the original loop's instructions.
@@ -229,14 +221,6 @@ bool DOALL::apply (
    */
   IRBuilder<> exitB(tasks[0]->exitBlock);
   exitB.CreateRetVoid();
-
-  /*
-   * Hoist PHINodes in the original loop: this propagates their value
-   *  through the outer loop latch/header back into the inner loop header
-   * This is done after data flow is adjusted to disambiguate mapping
-   *  from original -> clone instructions and adjusting flow of execution
-   */
-  // this->propagatePHINodesThroughOuterLoop(LDI);
 
   /*
    * Store final results to loop live-out variables. Note this occurs after
