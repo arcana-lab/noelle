@@ -32,10 +32,6 @@ bool EnablersManager::doInitialization (Module &M) {
 
 void EnablersManager::getAnalysisUsage (AnalysisUsage &AU) const {
 
-  /*
-   * Parallelizations.
-   */
-  AU.addRequired<Parallelization>();
 
   /*
    * Parallelization enablers.
