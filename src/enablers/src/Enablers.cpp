@@ -112,6 +112,35 @@ bool EnablersManager::applyLoopUnroll (
   ){
 
   /*
+   * We want to fully unroll a loop if this can help the parallelization of an outer loop that includes it.
+   *
+   * One condition that allow this improvement is when the inner loop iterates over function pointers.
+   * For example:
+   * while (...){
+   *    for (auto i=0; i < 10; i++){
+   *      auto functionPtr = array[i];
+   *      (*functionPtr)(...)
+   *    }
+   * }
+   */
+
+  /*
+   * Fetch the loop.
+   */
+  auto ls = LDI->getLoopSummary();
+
+  /*
+   * Check if the loop belongs within another loop.
+   */
+  if (ls->getNestingLevel() == 1){
+
+    /*
+     * This is an outermost loop in a function.
+     */
+    return false;
+  }
+
+  /*
    * Fully unroll the loop.
    */
   auto modified = loopUnroll.fullyUnrollLoop(*LDI);
