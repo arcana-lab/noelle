@@ -35,12 +35,11 @@ void DOALL::rewireLoopToIterateChunks (
   auto ivAttribution = LDI->getLoopGoverningIVAttribution();
   auto &iv = ivAttribution->getInductionVariable();
   auto ivType = iv.getHeaderPHI()->getType();
+  auto chunkCounterType = task->chunkSizeArg->getType();
   auto startOfIV = fetchClone(iv.getStartAtHeader());
   auto stepOfIV = fetchClone(iv.getStepSize());
   auto exitConditionValue = fetchClone(ivAttribution->getHeaderCmpInstConditionValue());
   LoopGoverningIVUtility ivUtility(iv, *ivAttribution);
-  auto zeroValue = ConstantInt::get(ivType, 0);
-  auto oneValue = ConstantInt::get(ivType, 1);
 
   /*
    * Determine start value for outer loop IV
@@ -49,14 +48,13 @@ void DOALL::rewireLoopToIterateChunks (
   IRBuilder<> entryBuilder(task->entryBlock);
   auto temporaryBrToLoop = entryBuilder.CreateBr(headerClone);
   entryBuilder.SetInsertPoint(temporaryBrToLoop);
-  auto nthCoreOffset = entryBuilder.CreateZExtOrTrunc(
-    entryBuilder.CreateMul(
-      stepOfIV,
+  auto nthCoreOffset = entryBuilder.CreateMul(
+    stepOfIV,
+    entryBuilder.CreateZExtOrTrunc(
       entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg, "coreIdx_X_chunkSize"),
-      "stepSize_X_coreIdx_X_chunkSize"
+      ivType
     ),
-    ivType,
-    "nthCoreOffset"
+    "stepSize_X_coreIdx_X_chunkSize"
   );
   auto offsetStartValue = entryBuilder.CreateAdd(startOfIV, nthCoreOffset, "startPlusOffset");
 
@@ -65,17 +63,18 @@ void DOALL::rewireLoopToIterateChunks (
    * to the start of this core's next chunk
    * chunk_step_size: original_step_size * (num_cores - 1) * chunk_size
    */
-  auto chunkStepSize = entryBuilder.CreateZExtOrTrunc(
-    entryBuilder.CreateMul(
-      stepOfIV,
+  auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
+  auto chunkStepSize = entryBuilder.CreateMul(
+    stepOfIV,
+    entryBuilder.CreateZExtOrTrunc(
       entryBuilder.CreateMul(
-        entryBuilder.CreateSub(task->numCoresArg, oneValue, "numCoresMinus1"),
+        entryBuilder.CreateSub(task->numCoresArg, onesValueForChunking, "numCoresMinus1"),
         task->chunkSizeArg,
         "numCoresMinus1_X_chunkSize"
       ),
-      "stepSizeToNextChunk"
+      ivType
     ),
-    ivType
+    "stepSizeToNextChunk"
   );
   auto oppositeStepOfIV = entryBuilder.CreateMul(stepOfIV, ConstantInt::get(ivType, -1), "negatedStepSize");
 
@@ -86,19 +85,20 @@ void DOALL::rewireLoopToIterateChunks (
    */
   IRBuilder<> headerBuilder(headerClone->getFirstNonPHIOrDbgOrLifetime());
   auto loopGoverningIVPHI = cast<PHINode>(fetchClone(iv.getHeaderPHI()));
-  auto chunkPHI = headerBuilder.CreatePHI(ivType, iv.getHeaderPHI()->getNumIncomingValues());
+  auto chunkPHI = headerBuilder.CreatePHI(chunkCounterType, iv.getHeaderPHI()->getNumIncomingValues());
+  auto zeroValueForChunking = ConstantInt::get(chunkCounterType, 0);
 
   for (auto i = 0; i < loopGoverningIVPHI->getNumIncomingValues(); ++i) {
     auto B = loopGoverningIVPHI->getIncomingBlock(i);
     IRBuilder<> latchBuilder(B->getTerminator());
 
     if (preheaderClone == B) {
-      chunkPHI->addIncoming(zeroValue, B);
+      chunkPHI->addIncoming(zeroValueForChunking, B);
       loopGoverningIVPHI->setIncomingValue(i, offsetStartValue);
     } else {
-      auto chunkIncrement = latchBuilder.CreateAdd(chunkPHI, oneValue);
+      auto chunkIncrement = latchBuilder.CreateAdd(chunkPHI, onesValueForChunking);
       auto isChunkCompleted = latchBuilder.CreateICmp(CmpInst::Predicate::ICMP_EQ, chunkIncrement, task->chunkSizeArg);
-      auto chunkWrap = latchBuilder.CreateSelect(isChunkCompleted, zeroValue, chunkIncrement, "chunkWrap");
+      auto chunkWrap = latchBuilder.CreateSelect(isChunkCompleted, zeroValueForChunking, chunkIncrement, "chunkWrap");
       chunkPHI->addIncoming(chunkWrap, B);
 
       /*
