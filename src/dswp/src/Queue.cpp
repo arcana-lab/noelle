@@ -67,7 +67,8 @@ void DSWP::registerQueue (
 void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {
   SCCDAG *sccdag = LDI->sccdagAttrs.getSCCDAG();
   std::set<DGNode<Value> *> conditionalBranchNodes;
-  std::set<BasicBlock *> loopExits(LDI->loopExitBlocks.begin(), LDI->loopExitBlocks.end());
+  auto loopExitBlocks = LDI->getLoopSummary()->getLoopExitBasicBlocks();
+  std::set<BasicBlock *> loopExitBlockSet(loopExitBlocks.begin(), loopExitBlocks.end());
 
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
@@ -117,7 +118,7 @@ void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &pa
     auto branchBB = conditionalBranch->getParent();
     bool isControllingLoopExit = false;
     for (auto succBB = succ_begin(branchBB); succBB != succ_end(branchBB); ++succBB) {
-      isControllingLoopExit |= loopExits.find(*succBB) != loopExits.end();
+      isControllingLoopExit |= loopExitBlockSet.find(*succBB) != loopExitBlockSet.end();
     }
 
     /*

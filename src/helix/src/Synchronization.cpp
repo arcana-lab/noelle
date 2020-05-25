@@ -44,7 +44,7 @@ void HELIX::addSynchronizations (
    * Assert that the preamble dictates control flow of loop iterations
    */
   std::set<Instruction *> exitingTerms;
-  for (auto exitBB : LDI->loopExitBlocks) {
+  for (auto exitBB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
     for (auto predBB : predecessors(exitBB)) {
       exitingTerms.insert(predBB->getTerminator());
     }

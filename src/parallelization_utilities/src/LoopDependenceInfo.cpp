@@ -35,6 +35,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Fetch the PDG of the loop and its SCCDAG.
    */
   this->fetchLoopAndBBInfo(li, l, SE);
+  auto loopExitBlocks = getLoopSummary()->getLoopExitBasicBlocks();
   auto DGs = this->createDGsForLoop(l, fG);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
@@ -42,7 +43,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Create the environment for the loop.
    */
-  this->environment = new LoopEnvironment(loopDG, this->loopExitBlocks);
+  this->environment = new LoopEnvironment(loopDG, loopExitBlocks);
 
   /*
    * Merge SCCs where separation is unnecessary
@@ -59,7 +60,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    */
   auto iv = inductionVariables->getLoopGoverningInductionVariable(*liSummary.getLoop(*l->getHeader()));
   loopGoverningIVAttribution = iv == nullptr ? nullptr
-    : new LoopGoverningIVAttribution(*iv, *loopSCCDAG->sccOfValue(iv->getHeaderPHI()));
+    : new LoopGoverningIVAttribution(*iv, *loopSCCDAG->sccOfValue(iv->getHeaderPHI()), loopExitBlocks);
 
   /*
    * Cache the post-dominator tree.
@@ -129,7 +130,7 @@ void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *oth
  * Fetch the number of exit blocks.
  */
 uint32_t LoopDependenceInfo::numberOfExits (void) const{
-  return this->loopExitBlocks.size();
+  return this->getLoopSummary()->getLoopExitBasicBlocks().size();
 }
 
 void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolution &SE) {
@@ -146,8 +147,6 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolut
     return true;
   };
   this->liSummary.populate(li, l, findTripCount);
-
-  l->getExitBlocks(loopExitBlocks);
 
   return ;
 }

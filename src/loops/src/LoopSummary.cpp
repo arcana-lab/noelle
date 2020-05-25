@@ -27,52 +27,13 @@ LoopSummary::LoopSummary (
   Loop *l,
   LoopSummary *parentLoop
   ) 
-  : llvmLoop{l}
-    , parent{parentLoop}
+  : parent{parentLoop}
     , compileTimeKnownTripCount{false}
     , tripCount{0}
   {
 
-  /*
-   * Set the ID
-   */
-  this->ID = LoopSummary::globalID++;
+  instantiateIDsAndBasicBlocks(l);
 
-  /*
-   * Set the nesting level
-   */
-  this->depth = l->getLoopDepth();
-
-  /*
-   * Set the headers
-   */
-  this->header = l->getHeader();
-  this->preHeader = l->getLoopPreheader();
-
-  /*
-   * Set the basic blocks and latches of the loop.
-   */
-  for (auto bb : l->blocks()) {
-    // NOTE: Unsure if this is program forward order
-    orderedBBs.push_back(bb);
-    this->bbs.insert(bb);
-    if (l->isLoopLatch(bb)) {
-      latchBBs.insert(bb);
-    }
-  }
-
-  /*
-   * Set the loop invariant.
-   */
-  for (auto bb : this->bbs){
-    for (auto& inst : *bb){
-      if (l->isLoopInvariant(&inst)){
-        this->invariants.insert(&inst);
-      }
-    }
-  }
-
-  return ;
 }
 
 LoopSummary::LoopSummary (
@@ -80,11 +41,16 @@ LoopSummary::LoopSummary (
   LoopSummary *parentLoop,
   uint64_t loopTripCount
   ) 
-  : llvmLoop{l}
-    , parent{parentLoop}
+  : parent{parentLoop}
     , compileTimeKnownTripCount{true}
     , tripCount{loopTripCount}
   {
+
+  instantiateIDsAndBasicBlocks(l);
+
+}
+
+void LoopSummary::instantiateIDsAndBasicBlocks(Loop *llvmLoop) {
 
   /*
    * Set the ID
@@ -94,22 +60,22 @@ LoopSummary::LoopSummary (
   /*
    * Set the nesting level
    */
-  this->depth = l->getLoopDepth();
+  this->depth = llvmLoop->getLoopDepth();
 
   /*
    * Set the header
    */
-  this->header = l->getHeader();
-  this->preHeader = l->getLoopPreheader();
+  this->header = llvmLoop->getHeader();
+  this->preHeader = llvmLoop->getLoopPreheader();
 
   /*
    * Set the basic blocks and latches of the loop.
    */
-  for (auto bb : l->blocks()) {
+  for (auto bb : llvmLoop->blocks()) {
     // NOTE: Unsure if this is program forward order
     orderedBBs.push_back(bb);
     this->bbs.insert(bb);
-    if (l->isLoopLatch(bb)) {
+    if (llvmLoop->isLoopLatch(bb)) {
       latchBBs.insert(bb);
     }
   }
@@ -119,13 +85,16 @@ LoopSummary::LoopSummary (
    */
   for (auto bb : this->bbs){
     for (auto& inst : *bb){
-      if (l->isLoopInvariant(&inst)){
+      if (llvmLoop->isLoopInvariant(&inst)){
         this->invariants.insert(&inst);
       }
     }
   }
 
-  return ;
+  SmallVector<BasicBlock *, 10> exits;
+  llvmLoop->getExitBlocks(exits);
+  this->exitBlocks = std::vector<BasicBlock *>(exits.begin(), exits.end());
+
 }
 
 BasicBlock * LoopSummary::getHeader (void) const {
@@ -167,7 +136,11 @@ std::unordered_set<BasicBlock *> LoopSummary::getLatches (void) const {
 std::unordered_set<BasicBlock *> LoopSummary::getBasicBlocks (void) const {
   return this->bbs;
 }
-      
+
+std::vector<BasicBlock *> LoopSummary::getLoopExitBasicBlocks (void) const {
+  return this->exitBlocks;
+}
+
 bool LoopSummary::isLoopInvariant (Value *v){
   if (this->invariants.find(v) == this->invariants.end()){
     return false;
@@ -204,8 +177,4 @@ uint64_t LoopSummary::getCompileTimeTripCount (void) const {
 Function * LoopSummary::getFunction (void) const {
   auto f = this->header->getParent();
   return f;
-}
-
-Loop * LoopSummary::getLLVMLoop (void) const {
-  return this->llvmLoop;
 }

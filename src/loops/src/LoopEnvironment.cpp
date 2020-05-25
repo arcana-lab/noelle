@@ -14,8 +14,11 @@ using namespace llvm ;
 
 LoopEnvironment::LoopEnvironment (
   PDG *loopDG, 
-  SmallVector<BasicBlock *, 10> &exitBlocks
+  std::vector<BasicBlock *> &exitBlocks
   ) {
+
+  assert(exitBlocks.size() > 0);
+  auto &cxt = exitBlocks[0]->getContext();
 
   for (auto nodeI : loopDG->externalNodePairs()) {
 
@@ -57,7 +60,7 @@ LoopEnvironment::LoopEnvironment (
 
   this->hasExitBlockEnv = exitBlocks.size() > 1;
   if (this->hasExitBlockEnv) {
-    this->exitBlockType = IntegerType::get(exitBlocks[0]->getContext(), 32);
+    this->exitBlockType = IntegerType::get(cxt, 32);
   }
 
   return ;

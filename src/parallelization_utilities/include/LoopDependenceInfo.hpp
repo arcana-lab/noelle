@@ -28,11 +28,6 @@ namespace llvm {
     public:
 
       /*
-       * Loop entry and exit points.
-       */
-      SmallVector<BasicBlock *, 10> loopExitBlocks;
-
-      /*
        * Loop
        */
       std::unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;

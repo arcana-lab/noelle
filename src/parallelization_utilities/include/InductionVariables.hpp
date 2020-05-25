@@ -43,7 +43,6 @@ namespace llvm {
     public:
       InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHINode *headerPHI, SCC &scc) ;
 
-      BasicBlock *getExitBlock () { return exitBlock; }
       PHINode *getHeaderPHI () { return headerPHI; }
       std::set<PHINode *> &getPHIs() { return PHIs; }
       std::set<Instruction *> &getAccumulators() { return accumulators; }
@@ -53,7 +52,6 @@ namespace llvm {
 
     private:
       SCC &scc;
-      BasicBlock *exitBlock; // Move to Attribution class
       PHINode *headerPHI; // outermostPHI
       std::set<PHINode *> PHIs;
       std::set<Instruction *> accumulators;
@@ -65,12 +63,13 @@ namespace llvm {
 
   class LoopGoverningIVAttribution {
     public:
-      LoopGoverningIVAttribution (InductionVariable &IV, SCC &scc) ;
+      LoopGoverningIVAttribution (InductionVariable &IV, SCC &scc, std::vector<BasicBlock *> &exitBlocks) ;
 
       InductionVariable &getInductionVariable() { return IV; }
       CmpInst *getHeaderCmpInst() { return headerCmp; }
       Value *getHeaderCmpInstConditionValue() { return conditionValue; }
       BranchInst *getHeaderBrInst() { return headerBr; }
+      BasicBlock *getExitBlockFromHeader() { return exitBlock; }
       bool isSCCContainingIVWellFormed() { return isWellFormed; }
       std::set<Instruction *> &getConditionValueDerivation() { 
         return conditionValueDerivation;
@@ -83,6 +82,7 @@ namespace llvm {
       Value *conditionValue;
       CmpInst *headerCmp;
       BranchInst *headerBr;
+      BasicBlock *exitBlock;
       bool isWellFormed;
   };
 

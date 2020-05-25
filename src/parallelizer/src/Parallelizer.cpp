@@ -137,6 +137,7 @@ bool Parallelizer::parallelizeLoop (
     errs() << "Parallelizer:  Link the parallelize loop\n";
   }
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
+  auto loopExitBlocks = LDI->getLoopSummary()->getLoopExitBasicBlocks();
   par.linkParallelizedLoopToOriginalFunction(
     loopFunction->getParent(),
     loopPreHeader,
@@ -144,7 +145,7 @@ bool Parallelizer::parallelizeLoop (
     exitPoint, 
     envArray,
     exitIndex,
-    LDI->loopExitBlocks
+    loopExitBlocks
   );
   if (this->verbose >= Verbosity::Maximal) {
     loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";

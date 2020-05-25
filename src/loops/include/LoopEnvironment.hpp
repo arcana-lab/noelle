@@ -23,7 +23,7 @@ namespace llvm {
 
   class LoopEnvironment {
     public:
-      LoopEnvironment (PDG *loopDG, SmallVector<BasicBlock *, 10> &exitBlocks);
+      LoopEnvironment (PDG *loopDG, std::vector<BasicBlock *> &exitBlocks);
 
       iterator_range<std::vector<Value *>::iterator> getProducers() { 
         return make_range(envProducers.begin(), envProducers.end());

@@ -473,7 +473,7 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   BasicBlock *endOfParLoopInOriginalFunc,
   Value *envArray,
   Value *envIndexForExitVariable,
-  SmallVector<BasicBlock *, 10> &loopExitBlocks
+  std::vector<BasicBlock *> &loopExitBlocks
   ){
 
   /*
