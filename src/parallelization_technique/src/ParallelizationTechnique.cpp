@@ -257,7 +257,7 @@ void ParallelizationTechnique::generateEmptyTasks (
      * Create one basic block per loop exit, mapping between originals and clones,
      * and branching from them to the function exit block
      */
-    for (auto exitBB : LDI->loopExitBlocks) {
+    for (auto exitBB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
       auto newExitBB = BasicBlock::Create(cxt, "", task->F);
       task->basicBlockClones[exitBB] = newExitBB;
       task->loopExitBlocks.push_back(newExitBB);
@@ -461,7 +461,7 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
   if (!isInHeader) return { liveOutClone->getParent() };
 
   std::set<BasicBlock *> insertPoints;
-  for (auto BB : LDI->loopExitBlocks) {
+  for (auto BB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
     insertPoints.insert(task->basicBlockClones[BB]);
   }
   return insertPoints;

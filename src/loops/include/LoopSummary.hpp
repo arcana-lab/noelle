@@ -42,8 +42,6 @@ namespace llvm {
       
       uint64_t getCompileTimeTripCount (void) const ;
 
-      Loop * getLLVMLoop (void) const ;
-
       LoopSummary * getParentLoop (void) const ;
       
       void setParentLoop (LoopSummary *parentLoop) ;
@@ -56,6 +54,8 @@ namespace llvm {
 
       std::unordered_set<BasicBlock *> getBasicBlocks (void) const ;
 
+      std::vector<BasicBlock *> getLoopExitBasicBlocks (void) const ;
+
       bool isBasicBlockWithin (BasicBlock *bb) const ;
 
       bool isLoopInvariant (Value *v);
@@ -66,7 +66,6 @@ namespace llvm {
 
     private:
       uint64_t ID;
-      Loop *llvmLoop;
       BasicBlock *header;
       BasicBlock *preHeader;
       uint32_t depth;
@@ -77,7 +76,17 @@ namespace llvm {
       std::unordered_set<LoopSummary *> children;
       std::unordered_set<BasicBlock *> latchBBs;
       std::unordered_set<BasicBlock *> bbs;
+
+      /*
+       * Certain parallelization schemes rely on indexing exit blocks, so some arbitrary order needs to be established
+       * The reason that ordering isn't dictated later is to maintain reproducibility; LLVM returns a vector to begin
+       * with, so losing that ordering and re-establishing it from an unordered data structure is fraught.
+       */
+      std::vector<BasicBlock *> exitBlocks;
+
       static uint64_t globalID;
+
+      void instantiateIDsAndBasicBlocks(Loop *llvmLoop) ;
   };
 
 }

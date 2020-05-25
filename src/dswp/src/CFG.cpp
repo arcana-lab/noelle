@@ -60,7 +60,8 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
     }
   }
 
-  std::set<BasicBlock *> loopExits(LDI->loopExitBlocks.begin(), LDI->loopExitBlocks.end());
+  auto loopExitsVector = LDI->getLoopSummary()->getLoopExitBasicBlocks();
+  std::set<BasicBlock *> loopExits(loopExitsVector.begin(), loopExitsVector.end());
   std::queue<BasicBlock *> queueToFindMissingBBs;
   std::set<BasicBlock *> visitedBBs(loopExits.begin(), loopExits.end());
   queueToFindMissingBBs.push(loopHeader);
@@ -106,13 +107,5 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
     auto clonedB = task->basicBlockClones.at(B);
     if (clonedB->getTerminator()) continue;
     clonedB->eraseFromParent();
-  }
-
-  /*
-   * Map loop exit block clones
-   * TODO(angelo): Have ParallelizationTechnique expose an API to do this more generally
-   */
-  for (int i = 0; i < LDI->loopExitBlocks.size(); ++i) {
-    task->basicBlockClones[LDI->loopExitBlocks[i]] = task->loopExitBlocks[i];
   }
 }

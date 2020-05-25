@@ -40,7 +40,8 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, LoopInfo &LI, ScalarE
 
       loopToIVsMap[loop.get()].insert(IV);
 
-      LoopGoverningIVAttribution attribution(*IV, *sccContainingIV);
+      auto exitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+      LoopGoverningIVAttribution attribution(*IV, *sccContainingIV, exitBlocks);
       if (attribution.isSCCContainingIVWellFormed()) {
         loopToGoverningIVMap[loop.get()] = IV;
       }
@@ -68,17 +69,7 @@ InductionVariable *InductionVariables::getLoopGoverningInductionVariable (LoopSu
 }
 
 InductionVariable::InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHINode *headerPHI, SCC &scc)
-  : scc{scc}, headerPHI{headerPHI}, exitBlock{nullptr} {
-
-  // HACK: Find a cleaner way to ascertain the exit block
-  auto bbs = LS->getBasicBlocks();
-  for (auto succI = succ_begin(headerPHI->getParent()); succI != succ_end(headerPHI->getParent()); ++succI) {
-    if (bbs.find(*succI) == bbs.end()) {
-      this->exitBlock = *succI;
-      break;
-    }
-  }
-  assert(this->exitBlock != nullptr);
+  : scc{scc}, headerPHI{headerPHI} {
 
   /*
    * Collect intermediate values of the IV within the loop (by traversing its strongly connected component)
@@ -112,6 +103,7 @@ InductionVariable::InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHI
   /*
    * Fetch initial value of induction variable
    */
+  auto bbs = LS->getBasicBlocks();
   for (auto i = 0; i < headerPHI->getNumIncomingValues(); ++i) {
     auto incomingBB = headerPHI->getIncomingBlock(i);
     if (bbs.find(incomingBB) == bbs.end()) {
@@ -141,7 +133,7 @@ InductionVariable::InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHI
   }
 }
 
-LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, SCC &scc)
+LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, SCC &scc, std::vector<BasicBlock *> &exitBlocks)
   : IV{iv}, scc{scc}, headerCmp{nullptr}, conditionValueDerivation{}, isWellFormed{false} {
 
   auto headerPHI = iv.getHeaderPHI();
@@ -158,6 +150,13 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto opL = headerCmp->getOperand(0), opR = headerCmp->getOperand(1);
   if (!(opL == headerPHI ^ opR == headerPHI)) return;
   this->conditionValue = opL == headerPHI ? opR : opL;
+
+  std::set<BasicBlock *> exitBlockSet(exitBlocks.begin(), exitBlocks.end());
+  if (exitBlockSet.find(headerBr->getSuccessor(0)) != exitBlockSet.end()) {
+    this->exitBlock = headerBr->getSuccessor(0);
+  } else if (exitBlockSet.find(headerBr->getSuccessor(1)) != exitBlockSet.end()) {
+    this->exitBlock = headerBr->getSuccessor(1);
+  } else return ;
 
   if (scc.isInternal(conditionValue)) {
     std::queue<Instruction *> conditionDerivation;
@@ -222,7 +221,7 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
 
   assert(isa<ConstantInt>(IV.getStepSize()));
   bool isStepValuePositive = cast<ConstantInt>(IV.getStepSize())->getValue().isStrictlyPositive();
-  bool conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == IV.getExitBlock();
+  bool conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == attribution.getExitBlockFromHeader();
   auto exitPredicate = conditionExitsOnTrue ? condition->getPredicate() : condition->getInversePredicate();
   // errs() << "Exit predicate before operand check: " << exitPredicate << "\n";
   exitPredicate = doesOriginalCmpInstHaveIVAsLeftOperand ? exitPredicate : CmpInst::getSwappedPredicate(exitPredicate);
