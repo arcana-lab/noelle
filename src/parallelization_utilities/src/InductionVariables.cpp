@@ -202,8 +202,6 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
       }
     }
 
-    // value->print(errs() << "Problem value: "); errs() << "\n";
-    // scc.printMinimal(errs() << "SCC:\n");
     return;
   }
 

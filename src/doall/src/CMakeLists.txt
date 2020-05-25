@@ -3,7 +3,6 @@ set(Srcs
   DOALL.cpp
   DOALLTask.cpp
   Builder.cpp
-  IVAnalysis.cpp
 )
 
 # Compilation flags
