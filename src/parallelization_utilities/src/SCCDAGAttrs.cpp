@@ -327,6 +327,18 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariable (SCC *scc, LoopsSummar
     }
   }
 
+  /*
+   * NOTE: We are only concerned with IVs that have no memory dependencies
+   * in their SCC. Consider moving this responsibility to the clonable
+   * attribution and requiring parallelization schemes to check that too
+   */
+  for (auto iNodePair : scc->internalNodePairs()) {
+    for (auto edge : iNodePair.second->getIncomingEdges()) {
+      if (!scc->isInternal(edge->getOutgoingT())) continue;
+      if (edge->isMemoryDependence()) return false;
+    }
+  }
+
   return true;
 }
 

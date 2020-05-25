@@ -100,15 +100,11 @@ InductionVariable::InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHI
     } else if (auto I = dyn_cast<Instruction>(value)) {
       this->accumulators.insert(I);
       this->allInstructions.insert(I);
-    } else {
-      assert(false && "An induction variable instruction within its SCC has unknown type");
     }
 
     for (auto edge : node->getIncomingEdges()) {
-      assert(!edge->isMemoryDependence() && "An induction variable should not have memory dependencies");
       if (!edge->isDataDependence()) continue;
       if (!scc.isInternal(edge->getOutgoingT())) continue;
-
       ivIntermediateValues.push(edge->getOutgoingNode());
     }
   }
