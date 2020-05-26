@@ -133,6 +133,10 @@ InductionVariable::InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHI
   }
 }
 
+/*
+ * LoopGoverningIVUtility implementation
+ */
+
 LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, SCC &scc, std::vector<BasicBlock *> &exitBlocks)
   : IV{iv}, scc{scc}, headerCmp{nullptr}, conditionValueDerivation{}, isWellFormed{false} {
 
@@ -207,6 +211,63 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   isWellFormed = true;
 }
 
+/*
+ * LoopGoverningIVUtility implementation
+ */
+
+PHINode *LoopGoverningIVUtility::createChunkPHI (BasicBlock *preheaderB, BasicBlock *headerB, Type *chunkPHIType, Value *chunkSize) {
+
+  // TODO: Add asserts to ensure the basic blocks/terminators are well formed
+
+  std::vector<BasicBlock *> headerPreds(pred_begin(headerB), pred_end(headerB));
+  IRBuilder<> headerBuilder(headerB->getFirstNonPHIOrDbgOrLifetime());
+  auto chunkPHI = headerBuilder.CreatePHI(chunkPHIType, headerPreds.size());
+  auto zeroValueForChunking = ConstantInt::get(chunkPHIType, 0);
+  auto onesValueForChunking = ConstantInt::get(chunkPHIType, 1);
+
+  for (auto B : headerPreds) {
+    IRBuilder<> latchBuilder(B->getTerminator());
+
+    if (preheaderB == B) {
+      chunkPHI->addIncoming(zeroValueForChunking, B);
+    } else {
+      auto chunkIncrement = latchBuilder.CreateAdd(chunkPHI, onesValueForChunking);
+      auto isChunkCompleted = latchBuilder.CreateICmp(CmpInst::Predicate::ICMP_EQ, chunkIncrement, chunkSize);
+      auto chunkWrap = latchBuilder.CreateSelect(isChunkCompleted, zeroValueForChunking, chunkIncrement, "chunkWrap");
+      chunkPHI->addIncoming(chunkWrap, B);
+    }
+  }
+
+  return chunkPHI;
+}
+
+void LoopGoverningIVUtility::chunkLoopGoverningPHI(
+  BasicBlock *preheaderBlock,
+  PHINode *loopGoverningPHI,
+  PHINode *chunkPHI,
+  Value *chunkStepSize) {
+
+  for (auto i = 0; i < loopGoverningPHI->getNumIncomingValues(); ++i) {
+    auto B = loopGoverningPHI->getIncomingBlock(i);
+    IRBuilder<> latchBuilder(B->getTerminator());
+    if (preheaderBlock == B) continue;
+
+    auto chunkIncomingIdx = chunkPHI->getBasicBlockIndex(B);
+    Value *isChunkCompleted = cast<SelectInst>(chunkPHI->getIncomingValue(chunkIncomingIdx))->getCondition();
+
+    /*
+      * Iterate to next chunk if necessary
+      */
+    loopGoverningPHI->setIncomingValue(i, latchBuilder.CreateSelect(
+      isChunkCompleted,
+      latchBuilder.CreateAdd(loopGoverningPHI->getIncomingValue(i), chunkStepSize),
+      loopGoverningPHI->getIncomingValue(i),
+      "nextStepOrNextChunk"
+    ));
+
+  }
+}
+
 LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGoverningIVAttribution &attribution)
   : attribution{attribution}, conditionValueOrderedDerivation{}, flipOperandsToUseNonStrictPredicate{false} {
 
@@ -268,7 +329,11 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
 
 }
 
-void LoopGoverningIVUtility::updateConditionToCatchIteratingPastExitValue(CmpInst *cmpToUpdate) {
+void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitValue(
+  CmpInst *cmpToUpdate,
+  BranchInst *branchInst,
+  BasicBlock *exitBlock) {
+
   if (flipOperandsToUseNonStrictPredicate) {
     auto opL = cmpToUpdate->getOperand(0);
     auto opR = cmpToUpdate->getOperand(1);
@@ -276,6 +341,11 @@ void LoopGoverningIVUtility::updateConditionToCatchIteratingPastExitValue(CmpIns
     cmpToUpdate->setOperand(1, opL);
   }
   cmpToUpdate->setPredicate(nonStrictPredicate);
+
+  if (branchInst->getSuccessor(0) != exitBlock) {
+    branchInst->setSuccessor(1, branchInst->getSuccessor(0));
+    branchInst->setSuccessor(0, exitBlock);
+  }
 }
 
 void LoopGoverningIVUtility::cloneConditionalCheckFor(

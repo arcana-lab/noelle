@@ -94,7 +94,22 @@ namespace llvm {
         return conditionValueOrderedDerivation;
       }
 
-      void updateConditionToCatchIteratingPastExitValue (CmpInst *cmpToUpdate) ;
+      PHINode *createChunkPHI (
+        BasicBlock *preheaderBlock,
+        BasicBlock *headerBlock,
+        Type *chunkPHIType,
+        Value *chunkSize) ;
+
+      void chunkLoopGoverningPHI (
+        BasicBlock *preheaderBlock,
+        PHINode *loopGoverningPHI,
+        PHINode *chunkPHI,
+        Value *chunkStepSize) ;
+
+      void updateConditionAndBranchToCatchIteratingPastExitValue (
+        CmpInst *cmpToUpdate,
+        BranchInst *branchInst,
+        BasicBlock *exitBlock) ;
 
       void cloneConditionalCheckFor (
         Value *recurrenceOfIV,
