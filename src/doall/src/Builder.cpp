@@ -83,35 +83,19 @@ void DOALL::rewireLoopToIterateChunks (
    * Update IV PHI latch value to increment to the next chunk if the current chunk is finished
    * If incrementing to next chunk, check if previous iteration IV value passes header condition
    */
-  IRBuilder<> headerBuilder(headerClone->getFirstNonPHIOrDbgOrLifetime());
+  auto chunkPHI = ivUtility.createChunkPHI(preheaderClone, headerClone, chunkCounterType, task->chunkSizeArg);
   auto loopGoverningIVPHI = cast<PHINode>(fetchClone(iv.getHeaderPHI()));
-  auto chunkPHI = headerBuilder.CreatePHI(chunkCounterType, iv.getHeaderPHI()->getNumIncomingValues());
-  auto zeroValueForChunking = ConstantInt::get(chunkCounterType, 0);
+  loopGoverningIVPHI->setIncomingValueForBlock(preheaderClone, offsetStartValue);
+  ivUtility.chunkLoopGoverningPHI(preheaderClone, loopGoverningIVPHI, chunkPHI, chunkStepSize);
 
-  for (auto i = 0; i < loopGoverningIVPHI->getNumIncomingValues(); ++i) {
-    auto B = loopGoverningIVPHI->getIncomingBlock(i);
-    IRBuilder<> latchBuilder(B->getTerminator());
-
-    if (preheaderClone == B) {
-      chunkPHI->addIncoming(zeroValueForChunking, B);
-      loopGoverningIVPHI->setIncomingValue(i, offsetStartValue);
-    } else {
-      auto chunkIncrement = latchBuilder.CreateAdd(chunkPHI, onesValueForChunking);
-      auto isChunkCompleted = latchBuilder.CreateICmp(CmpInst::Predicate::ICMP_EQ, chunkIncrement, task->chunkSizeArg);
-      auto chunkWrap = latchBuilder.CreateSelect(isChunkCompleted, zeroValueForChunking, chunkIncrement, "chunkWrap");
-      chunkPHI->addIncoming(chunkWrap, B);
-
-      /*
-       * Iterate to next chunk if necessary
-       */
-      loopGoverningIVPHI->setIncomingValue(i, latchBuilder.CreateSelect(
-        isChunkCompleted,
-        latchBuilder.CreateAdd(loopGoverningIVPHI->getIncomingValue(i), chunkStepSize),
-        loopGoverningIVPHI->getIncomingValue(i),
-        "checkToJumpToNextChunk"
-      ));
-    }
-  }
+  /*
+   * The exit condition needs to be made non-strict to catch iterating past it
+   */
+  ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(
+    cast<CmpInst>(task->instructionClones.at(ivAttribution->getHeaderCmpInst())),
+    cast<BranchInst>(task->instructionClones.at(ivAttribution->getHeaderBrInst())),
+    task->loopExitBlocks[0]
+  );
 
   /*
    * The exit condition value does not need to be computed each iteration
@@ -129,21 +113,9 @@ void DOALL::rewireLoopToIterateChunks (
   }
 
   /*
-   * The exit condition needs to be made non-strict to catch iterating past it
-   */
-  auto headerBr = cast<BranchInst>(task->instructionClones.at(ivAttribution->getHeaderBrInst()));
-  ivUtility.updateConditionToCatchIteratingPastExitValue(
-    cast<CmpInst>(task->instructionClones.at(ivAttribution->getHeaderCmpInst()))
-  );
-
-  if (headerBr->getSuccessor(0) != task->loopExitBlocks[0]) {
-    headerBr->setSuccessor(1, headerBr->getSuccessor(0));
-    headerBr->setSuccessor(0, task->loopExitBlocks[0]);
-  }
-
-  /*
-   * TODO: Any other instructions in the header other than the IV comparison need
-   * to be copied into the body and the exit block
+   * NOTE: When loop governing IV attribution allows for any bther instructions in the header
+   * other than those of the IV and its comparison, those unrelated instructions need to be
+   * copied into the body and the exit block (to preserve the number of times they execute)
    * 
    * The logic in the exit block must be guarded so only the "last" iteration executes it,
    * not any cores that pass the last iteration 
