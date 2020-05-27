@@ -48,13 +48,15 @@ int main(int argc, char *argv[]) {
     exit(-1);
 	}
   iterations=atoi(argv[1]);
-  
-  for (i = 0; i < FUNCS; i++) {
-    j = n = 0;
-    seed = 42;
-	  n += pBitCntFunc[i](seed);
+ 
+  for (j=0; j < iterations; j++){
+    for (i = 0; i < FUNCS; i++) {
+      n = 0;
+      seed = 42;
+      n += pBitCntFunc[i](seed);
+    }
+    printf("Bits: %ld\n", n);
   }
-  printf("Bits: %ld\n", n);
 
   return 0;
 }
