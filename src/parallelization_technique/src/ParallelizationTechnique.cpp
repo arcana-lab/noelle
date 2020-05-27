@@ -462,7 +462,7 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
 
   std::set<BasicBlock *> insertPoints;
   for (auto BB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
-    insertPoints.insert(task->basicBlockClones[BB]);
+    insertPoints.insert(task->basicBlockClones.at(BB));
   }
   return insertPoints;
 }
@@ -580,7 +580,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
     /*
      * Fetch the cloned pre-header.
      */
-    auto preheaderClone = task->basicBlockClones[loopPreHeader];
+    auto preheaderClone = task->basicBlockClones.at(loopPreHeader);
     auto incomingIndex = producerClone->getBasicBlockIndex(preheaderClone);
     assert(incomingIndex != -1 && "Loop entry present on producer PHI node");
 

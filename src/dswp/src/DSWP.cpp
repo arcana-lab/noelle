@@ -181,22 +181,34 @@ bool DSWP::apply (
      * Add instructions of the current pipeline stage to the task function
      */
     generateLoopSubsetForStage(LDI, i);
+    if (this->verbose >= Verbosity::Maximal) {
+      printStageClonedValues(*LDI, i);
+    }
 
     /*
      * Load pointers of all queues for the current pipeline stage at the function's entry
      */
     generateLoadsOfQueuePointers(par, i);
+    if (this->verbose >= Verbosity::Maximal) {
+      errs() << "DSWP:  Loaded queue pointers\n";
+    }
 
     /*
      * Add push/pop operations from queues between the current pipeline stage and the connected ones
      */
     popValueQueues(par, i);
     pushValueQueues(par, i);
+    if (this->verbose >= Verbosity::Maximal) {
+      errs() << "DSWP:  Added queue pop and push instructions\n";
+    }
 
     /*
      * Load all loop live-in values at the entry point of the task.
      */
     generateCodeToLoadLiveInVariables(LDI, i);
+    if (this->verbose >= Verbosity::Maximal) {
+      errs() << "DSWP:  Loaded live-in variables\n";
+    }
 
     /*
      * Fix the data flow within the parallelized loop by redirecting operands of
@@ -204,12 +216,15 @@ bool DSWP::apply (
      * they still refer to the original loop's instructions.
      */
     adjustDataFlowToUseClones(LDI, i);
+    if (this->verbose >= Verbosity::Maximal) {
+      errs() << "DSWP:  Adjusted data flow between cloned instructions\n";
+    }
 
     /*
      * Add the unconditional branch from the entry basic block to the header of the loop.
      */
     IRBuilder<> entryBuilder(task->entryBlock);
-    entryBuilder.CreateBr(task->basicBlockClones[loopHeader]);
+    entryBuilder.CreateBr(task->basicBlockClones.at(loopHeader));
 
     /*
      * Add the return instruction at the end of the exit basic block.
@@ -223,6 +238,9 @@ bool DSWP::apply (
      */
     generateCodeToStoreLiveOutVariables(LDI, i);
     generateCodeToStoreExitBlockIndex(LDI, i);
+    if (this->verbose >= Verbosity::Maximal) {
+      errs() << "DSWP:  Stored live out instructions\n";
+    }
 
     /*
      * Inline recursively calls to queues.
