@@ -18,8 +18,7 @@ bool Parallelizer::parallelizeLoop (
   DSWP &dswp, 
   DOALL &doall, 
   HELIX &helix, 
-  Heuristics *h,
-  LoopDistribution &loopDist
+  Heuristics *h
   ){
 
   /*

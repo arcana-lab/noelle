@@ -10,8 +10,6 @@
  */
 #include "Parallelizer.hpp"
 #include "HotProfiler.hpp"
-#include "LoopDistribution.hpp"
-#include <unordered_map>
 
 using namespace llvm;
 
@@ -68,7 +66,6 @@ bool Parallelizer::runOnModule (Module &M) {
   auto& parallelizationFramework = getAnalysis<Parallelization>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
   auto& profiles = getAnalysis<HotProfiler>().getHot();
-  auto& loopDist = getAnalysis<LoopDistribution>();
 
   /*
    * Allocate the parallelization techniques.
@@ -180,7 +177,7 @@ bool Parallelizer::runOnModule (Module &M) {
      * Parallelize the current loop with Parallelizer.
      */
     auto loopID = loop->getID();
-    modifiedLoops[loopID] |= this->parallelizeLoop(loop, parallelizationFramework, dswp, doall, helix, heuristics, loopDist);
+    modifiedLoops[loopID] |= this->parallelizeLoop(loop, parallelizationFramework, dswp, doall, helix, heuristics);
     modified |= modifiedLoops[loopID];
   }
   errs() << "Parallelizer:  Parallelization complete\n";
@@ -209,11 +206,6 @@ void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
    */
   AU.addRequired<Parallelization>();
   AU.addRequired<HeuristicsPass>();
-
-  /*
-   * Parallelization enablers.
-   */
-  AU.addRequired<LoopDistribution>();
 
   /*
    * Profilers.

@@ -29,6 +29,7 @@
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
 
+#include "SystemHeaders.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
@@ -40,12 +41,6 @@
 #include "DOALL.hpp"
 #include "HELIX.hpp"
 #include "Techniques.hpp"
-#include "LoopDistribution.hpp"
-
-#include <unordered_map>
-#include <set>
-#include <queue>
-#include <deque>
 
 namespace llvm {
 
@@ -90,8 +85,7 @@ namespace llvm {
         DSWP &dswp,
         DOALL &doall,
         HELIX &helix,
-        Heuristics *h,
-        LoopDistribution &loopDist
+        Heuristics *h
       );
 
       std::vector<LoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par) ;
