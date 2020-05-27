@@ -152,15 +152,16 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks (
 ) {
   std::set<Task *> tasksControlledByCondition;
   SCCDAG *sccdag = LDI->sccdagAttrs.getSCCDAG();
-  auto getTaskOfNode = [this, LDI, sccdag](DGNode<Value> *node) -> Task * {
-    auto scc = sccdag->sccOfValue(node->getT());
-    if (LDI->sccdagAttrs.getSCCAttrs(scc)->canBeCloned()) return nullptr;
-    return this->sccToStage.at(scc);
+  auto getTaskOfNode = [this, LDI, sccdag](DGNode<SCC> *node) -> Task * {
+    if (LDI->sccdagAttrs.getSCCAttrs(node->getT())->canBeCloned()) return nullptr;
+    return this->sccToStage.at(node->getT());
   };
 
-  std::queue<DGNode<Value> *> queuedNodes;
-  std::set<DGNode<Value> *> visitedNodes;
-  queuedNodes.push(conditionalBranchNode);
+  std::queue<DGNode<SCC> *> queuedNodes;
+  std::set<DGNode<SCC> *> visitedNodes;
+  DGNode<SCC> *controllingNode = sccdag->fetchNode(sccdag->sccOfValue(conditionalBranchNode->getT()));
+  Task *controllingTask = getTaskOfNode(controllingNode);
+  queuedNodes.push(controllingNode);
 
   while (!queuedNodes.empty()) {
     auto node = queuedNodes.front();
@@ -177,15 +178,16 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks (
       queuedNodes.push(dependentNode);
 
       Task *dependentTask = getTaskOfNode(dependentNode);
-      if (dependentTask) tasksControlledByCondition.insert(dependentTask);
+      if (dependentTask) {
+        tasksControlledByCondition.insert(dependentTask);
+      }
     }
   }
 
   /*
    * A task containing the conditional branch does not need a control queue
    */ 
-  Task *selfTask = getTaskOfNode(conditionalBranchNode);
-  tasksControlledByCondition.erase(selfTask);
+  tasksControlledByCondition.erase(controllingTask);
 
   return tasksControlledByCondition;
 }

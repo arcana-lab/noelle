@@ -806,7 +806,7 @@ void SCCDAGAttrs::iterateOverLoopCarriedDataDependences (
   return ;
 }
 
-SCCDAG * SCCDAGAttrs::getSCCDAG (void){
+SCCDAG * SCCDAGAttrs::getSCCDAG (void) const {
   return this->sccdag;
 }
 

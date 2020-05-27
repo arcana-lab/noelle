@@ -107,5 +107,6 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
     auto clonedB = task->basicBlockClones.at(B);
     if (clonedB->getTerminator()) continue;
     clonedB->eraseFromParent();
+    task->basicBlockClones.erase(B);
   }
 }

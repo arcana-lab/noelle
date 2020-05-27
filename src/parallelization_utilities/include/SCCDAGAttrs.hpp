@@ -82,7 +82,8 @@ namespace llvm {
       /*
        * Return the SCCDAG of the loop.
        */
-      SCCDAG * getSCCDAG (void);
+      // TODO: Return const reference to SCCDAG, not a raw pointer
+      SCCDAG * getSCCDAG (void) const ;
 
     private:
       std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
