@@ -1,5 +1,5 @@
 /*
- * Copyright 2019  Simone Campanoni
+ * Copyright 2019 - 2020 Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -22,14 +22,18 @@ bool EnablersManager::applyEnablers (
   /*
    * Apply loop distribution.
    */
+  errs() << "EnablersManager:   Try to apply loop distribution\n";
   if (this->applyLoopDistribution(LDI, par, loopDist)){
+    errs() << "EnablersManager:     Distributed loop\n";
     return true;
   }
 
   /*
    * Apply loop unrolling.
    */
+  errs() << "EnablersManager:   Try to apply loop unrolling\n";
   if (this->applyLoopUnroll(LDI, par, loopUnroll)){
+    errs() << "EnablersManager:     Unrolled loop\n";
     return true;
   }
 
@@ -143,7 +147,12 @@ bool EnablersManager::applyLoopUnroll (
   /*
    * Fully unroll the loop.
    */
-  auto modified = loopUnroll.fullyUnrollLoop(*LDI);
+  auto &loopFunction = *ls->getFunction();
+  auto& LS = getAnalysis<LoopInfoWrapperPass>(loopFunction).getLoopInfo();
+  auto& DT = getAnalysis<DominatorTreeWrapperPass>(loopFunction).getDomTree();
+  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(loopFunction).getSE();
+  auto& AC = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(loopFunction);
+  auto modified = loopUnroll.fullyUnrollLoop(*LDI, LS, DT, SE, AC);
    
   return modified;
 }

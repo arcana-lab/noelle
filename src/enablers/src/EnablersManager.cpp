@@ -1,5 +1,5 @@
 /*
- * Copyright 2020  Simone Campanoni
+ * Copyright 2019 - 2020 Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -39,46 +39,22 @@ bool EnablersManager::runOnModule (Module &M) {
    * Fetch the outputs of the passes we rely on.
    */
   auto& parallelizationFramework = getAnalysis<Parallelization>();
-  auto& profiles = getAnalysis<HotProfiler>().getHot();
-  auto& loopDist = getAnalysis<LoopDistribution>();
-  auto& loopUnroll = getAnalysis<LoopUnroll>();
+
+  /*
+   * Create the enablers.
+   */
+  auto loopDist = LoopDistribution();
+  auto loopUnroll = LoopUnroll();
 
   /*
    * Fetch all the loops we want to parallelize.
    */
   auto loopsToParallelize = parallelizationFramework.getModuleLoops(&M, this->minHot);
-  errs() << "EnablersManager:  There are " << loopsToParallelize->size() << " loops to consider\n";
-  for (auto loop : *loopsToParallelize){
-
-    /*
-     * Fetch the header.
-     */
-    auto loopSummary = loop->getLoopSummary();
-    auto loopHeader = loopSummary->getHeader();
-
-    /*
-     * Fetch the function
-     */
-    auto loopFunction = loopSummary->getFunction();
-
-    errs() << "EnablersManager:    Function: \"" << loopFunction->getName() << "\"\n";
-    errs() << "EnablersManager:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
-    if (profiles.isAvailable()){
-      auto& profiles = getAnalysis<HotProfiler>().getHot();
-      auto mInsts = profiles.getModuleInstructions();
-
-      auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
-      auto loopInsts = profiles.getLoopInstructions(LI.getLoopFor(loopHeader));
-      auto hotness = ((double)loopInsts) / ((double)mInsts);
-      hotness *= 100;
-      errs() << "EnablersManager:      Hotness = " << hotness << " %\n"; 
-    }
-  }
+  errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
 
   /*
    * Parallelize the loops selected.
    */
-  errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
   auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
   for (auto loop : *loopsToParallelize){
