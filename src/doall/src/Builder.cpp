@@ -21,79 +21,84 @@ void DOALL::rewireLoopToIterateChunks (
   auto task = (DOALLTask *)tasks[0];
 
   /*
-   * Fetch the header.
+   * Fetch loop and IV information.
    */
   auto loopSummary = LDI->getLoopSummary();
   auto loopHeader = loopSummary->getHeader();
   auto loopPreHeader = loopSummary->getPreHeader();
   auto preheaderClone = task->basicBlockClones.at(loopPreHeader);
   auto headerClone = task->basicBlockClones.at(loopHeader);
+  auto allIVInfo = LDI->getInductionVariables();
 
   /*
-   * Fetch IV information
-   */
-  auto ivAttribution = LDI->getLoopGoverningIVAttribution();
-  auto &iv = ivAttribution->getInductionVariable();
-  auto ivType = iv.getHeaderPHI()->getType();
-  auto chunkCounterType = task->chunkSizeArg->getType();
-  auto startOfIV = fetchClone(iv.getStartAtHeader());
-  auto stepOfIV = fetchClone(iv.getStepSize());
-  auto exitConditionValue = fetchClone(ivAttribution->getHeaderCmpInstConditionValue());
-  LoopGoverningIVUtility ivUtility(iv, *ivAttribution);
-
-  /*
-   * Determine start value for outer loop IV
-   * core_start: original_start + original_step_size * core_id * chunk_size
+   * Hook up preheader to header to enable induction variable manipulation
    */
   IRBuilder<> entryBuilder(task->entryBlock);
   auto temporaryBrToLoop = entryBuilder.CreateBr(headerClone);
   entryBuilder.SetInsertPoint(temporaryBrToLoop);
-  auto nthCoreOffset = entryBuilder.CreateMul(
-    stepOfIV,
-    entryBuilder.CreateZExtOrTrunc(
-      entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg, "coreIdx_X_chunkSize"),
-      ivType
-    ),
-    "stepSize_X_coreIdx_X_chunkSize"
-  );
-  auto offsetStartValue = entryBuilder.CreateAdd(startOfIV, nthCoreOffset, "startPlusOffset");
+
+  /*
+   * Generate PHI to track progress on the current chunk
+   */
+  auto chunkCounterType = task->chunkSizeArg->getType();
+  auto chunkPHI = IVUtility::createChunkPHI(preheaderClone, headerClone, chunkCounterType, task->chunkSizeArg);
+
+  /*
+   * Determine start value of the IV for the task
+   * core_start: original_start + original_step_size * core_id * chunk_size
+   */
+  for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
+    auto startOfIV = fetchClone(ivInfo->getStartAtHeader());
+    auto stepOfIV = fetchClone(ivInfo->getStepSize());
+    auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getHeaderPHI()));
+
+    auto nthCoreOffset = entryBuilder.CreateMul(
+      stepOfIV,
+      entryBuilder.CreateZExtOrTrunc(
+        entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg, "coreIdx_X_chunkSize"),
+        ivPHI->getType()
+      ),
+      "stepSize_X_coreIdx_X_chunkSize"
+    );
+    auto offsetStartValue = entryBuilder.CreateAdd(startOfIV, nthCoreOffset, "startPlusOffset");
+
+    ivPHI->setIncomingValueForBlock(preheaderClone, offsetStartValue);
+  }
 
   /*
    * Determine additional step size from the beginning of the next core's chunk
    * to the start of this core's next chunk
    * chunk_step_size: original_step_size * (num_cores - 1) * chunk_size
    */
-  auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
-  auto chunkStepSize = entryBuilder.CreateMul(
-    stepOfIV,
-    entryBuilder.CreateZExtOrTrunc(
-      entryBuilder.CreateMul(
-        entryBuilder.CreateSub(task->numCoresArg, onesValueForChunking, "numCoresMinus1"),
-        task->chunkSizeArg,
-        "numCoresMinus1_X_chunkSize"
-      ),
-      ivType
-    ),
-    "stepSizeToNextChunk"
-  );
-  auto oppositeStepOfIV = entryBuilder.CreateMul(stepOfIV, ConstantInt::get(ivType, -1), "negatedStepSize");
+  for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
+    auto stepOfIV = fetchClone(ivInfo->getStepSize());
+    auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getHeaderPHI()));
 
-  /*
-   * Generate PHI to track progress on the current chunk
-   * Update IV PHI latch value to increment to the next chunk if the current chunk is finished
-   * If incrementing to next chunk, check if previous iteration IV value passes header condition
-   */
-  auto chunkPHI = ivUtility.createChunkPHI(preheaderClone, headerClone, chunkCounterType, task->chunkSizeArg);
-  auto loopGoverningIVPHI = cast<PHINode>(fetchClone(iv.getHeaderPHI()));
-  loopGoverningIVPHI->setIncomingValueForBlock(preheaderClone, offsetStartValue);
-  ivUtility.chunkLoopGoverningPHI(preheaderClone, loopGoverningIVPHI, chunkPHI, chunkStepSize);
+    auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
+    auto chunkStepSize = entryBuilder.CreateMul(
+      stepOfIV,
+      entryBuilder.CreateZExtOrTrunc(
+        entryBuilder.CreateMul(
+          entryBuilder.CreateSub(task->numCoresArg, onesValueForChunking, "numCoresMinus1"),
+          task->chunkSizeArg,
+          "numCoresMinus1_X_chunkSize"
+        ),
+        ivPHI->getType()
+      ),
+      "stepSizeToNextChunk"
+    );
+
+    IVUtility::chunkInductionVariablePHI(preheaderClone, ivPHI, chunkPHI, chunkStepSize);
+  }
 
   /*
    * The exit condition needs to be made non-strict to catch iterating past it
    */
+  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  LoopGoverningIVUtility ivUtility(loopGoverningIVAttr->getInductionVariable(), *loopGoverningIVAttr);
   ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(
-    cast<CmpInst>(task->instructionClones.at(ivAttribution->getHeaderCmpInst())),
-    cast<BranchInst>(task->instructionClones.at(ivAttribution->getHeaderBrInst())),
+    cast<CmpInst>(task->instructionClones.at(loopGoverningIVAttr->getHeaderCmpInst())),
+    cast<BranchInst>(task->instructionClones.at(loopGoverningIVAttr->getHeaderBrInst())),
     task->loopExitBlocks[0]
   );
 
@@ -101,6 +106,7 @@ void DOALL::rewireLoopToIterateChunks (
    * The exit condition value does not need to be computed each iteration
    * and so the value's derivation can be hoisted into the preheader
    */
+  auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
     auto &derivation = ivUtility.getConditionValueDerivation();
     for (auto I : derivation) {

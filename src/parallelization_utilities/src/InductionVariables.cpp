@@ -118,6 +118,7 @@ InductionVariable::InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHI
   auto headerSCEV = SE.getSCEV(headerPHI);
   assert(headerSCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
   auto stepSCEV = cast<SCEVAddRecExpr>(headerSCEV)->getStepRecurrence(SE);
+  Value *stepValue = nullptr;
   switch (stepSCEV->getSCEVType()) {
     case SCEVTypes::scConstant:
       this->stepSize = cast<SCEVConstant>(stepSCEV)->getValue();
@@ -125,7 +126,28 @@ InductionVariable::InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHI
     case SCEVTypes::scAddExpr:
     case SCEVTypes::scMulExpr:
     case SCEVTypes::scAddRecExpr:
+      // TODO: Trace expressions to determine if constituents are all loop invariant
+      this->stepSize = nullptr;
+      break;
     case SCEVTypes::scUnknown:
+
+      /*
+       * Ensure the value is loop invariant
+       */
+      stepValue = cast<SCEVUnknown>(stepSCEV)->getValue();
+      if (auto stepArgument = dyn_cast<Argument>(stepValue)) {
+        this->stepSize = stepValue;
+        break;
+      }
+      if (auto stepInst = dyn_cast<Instruction>(stepValue)) {
+        if (bbs.find(stepInst->getParent()) == bbs.end()) {
+          this->stepSize = stepValue;
+          break;
+        }
+      }
+
+      this->stepSize = nullptr;
+      break;
     default:
       // NOTE: We do not handle non-constant step size induction variables yet
       this->stepSize = nullptr;
@@ -215,7 +237,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
  * LoopGoverningIVUtility implementation
  */
 
-PHINode *LoopGoverningIVUtility::createChunkPHI (BasicBlock *preheaderB, BasicBlock *headerB, Type *chunkPHIType, Value *chunkSize) {
+PHINode *IVUtility::createChunkPHI (BasicBlock *preheaderB, BasicBlock *headerB, Type *chunkPHIType, Value *chunkSize) {
 
   // TODO: Add asserts to ensure the basic blocks/terminators are well formed
 
@@ -241,14 +263,14 @@ PHINode *LoopGoverningIVUtility::createChunkPHI (BasicBlock *preheaderB, BasicBl
   return chunkPHI;
 }
 
-void LoopGoverningIVUtility::chunkLoopGoverningPHI(
+void IVUtility::chunkInductionVariablePHI(
   BasicBlock *preheaderBlock,
-  PHINode *loopGoverningPHI,
+  PHINode *ivPHI,
   PHINode *chunkPHI,
   Value *chunkStepSize) {
 
-  for (auto i = 0; i < loopGoverningPHI->getNumIncomingValues(); ++i) {
-    auto B = loopGoverningPHI->getIncomingBlock(i);
+  for (auto i = 0; i < ivPHI->getNumIncomingValues(); ++i) {
+    auto B = ivPHI->getIncomingBlock(i);
     IRBuilder<> latchBuilder(B->getTerminator());
     if (preheaderBlock == B) continue;
 
@@ -258,10 +280,10 @@ void LoopGoverningIVUtility::chunkLoopGoverningPHI(
     /*
       * Iterate to next chunk if necessary
       */
-    loopGoverningPHI->setIncomingValue(i, latchBuilder.CreateSelect(
+    ivPHI->setIncomingValue(i, latchBuilder.CreateSelect(
       isChunkCompleted,
-      latchBuilder.CreateAdd(loopGoverningPHI->getIncomingValue(i), chunkStepSize),
-      loopGoverningPHI->getIncomingValue(i),
+      latchBuilder.CreateAdd(ivPHI->getIncomingValue(i), chunkStepSize),
+      ivPHI->getIncomingValue(i),
       "nextStepOrNextChunk"
     ));
 
