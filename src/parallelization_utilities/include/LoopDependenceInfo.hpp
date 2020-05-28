@@ -122,6 +122,10 @@ namespace llvm {
         return loopGoverningIVAttribution;
       }
 
+      InductionVariables *getInductionVariables () const {
+        return inductionVariables;
+      }
+
       /*
        * Return true if the loop has the metadata requested.
        */

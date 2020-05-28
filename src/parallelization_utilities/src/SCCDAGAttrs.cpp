@@ -315,9 +315,16 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariable (SCC *scc, LoopsSummar
   }
   if (!containedIV) return false;
 
-  auto exitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
-  LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
-  if (!attribution.isSCCContainingIVWellFormed()) {
+  /*
+   * If the IV is loop governing, ensure loop governance is well formed
+   * Else, simply enforce the SCC only contains IV intermediate instructions
+   */
+  auto loopGoverningIV = IV.getLoopGoverningInductionVariable(*loop);
+  if (loopGoverningIV == containedIV) {
+    auto exitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+    LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
+    if (!attribution.isSCCContainingIVWellFormed()) return false;
+  } else {
     auto &ivInstructions = containedIV->getAllInstructions();
     if (scc->numInternalNodes() != ivInstructions.size()) return false;
 

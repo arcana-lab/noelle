@@ -86,6 +86,21 @@ namespace llvm {
       bool isWellFormed;
   };
 
+  class IVUtility {
+    public:
+      static PHINode *createChunkPHI (
+        BasicBlock *preheaderBlock,
+        BasicBlock *headerBlock,
+        Type *chunkPHIType,
+        Value *chunkSize) ;
+
+      static void chunkInductionVariablePHI (
+        BasicBlock *preheaderBlock,
+        PHINode *ivPHI,
+        PHINode *chunkPHI,
+        Value *chunkStepSize) ;
+  };
+
   class LoopGoverningIVUtility {
     public:
       LoopGoverningIVUtility (InductionVariable &IV, LoopGoverningIVAttribution &attribution) ;
@@ -93,18 +108,6 @@ namespace llvm {
       std::vector<Instruction *> &getConditionValueDerivation () {
         return conditionValueOrderedDerivation;
       }
-
-      PHINode *createChunkPHI (
-        BasicBlock *preheaderBlock,
-        BasicBlock *headerBlock,
-        Type *chunkPHIType,
-        Value *chunkSize) ;
-
-      void chunkLoopGoverningPHI (
-        BasicBlock *preheaderBlock,
-        PHINode *loopGoverningPHI,
-        PHINode *chunkPHI,
-        Value *chunkStepSize) ;
 
       void updateConditionAndBranchToCatchIteratingPastExitValue (
         CmpInst *cmpToUpdate,
