@@ -28,6 +28,7 @@ LoopSummary::LoopSummary (
   LoopSummary *parentLoop
   ) 
   : parent{parentLoop}
+    , llvmLoop{l}
     , compileTimeKnownTripCount{false}
     , tripCount{0}
   {
@@ -42,6 +43,7 @@ LoopSummary::LoopSummary (
   uint64_t loopTripCount
   ) 
   : parent{parentLoop}
+    , llvmLoop{l}
     , compileTimeKnownTripCount{true}
     , tripCount{loopTripCount}
   {
