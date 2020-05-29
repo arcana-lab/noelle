@@ -19,6 +19,10 @@ namespace llvm {
     public:
       std::set<std::shared_ptr<LoopSummary>> loops;
 
+      LoopsSummary (
+        std::function<Loop * (BasicBlock *header)> getLLVMLoop
+        );
+
       LoopSummary * getLoop (Instruction &instIncludedInLoop) const ;
 
       LoopSummary * getLoop (BasicBlock &bbIncludedInLoop) const ;
@@ -36,11 +40,16 @@ namespace llvm {
        * Fields.
        */
       std::unordered_map<BasicBlock *, LoopSummary *> bbToLoop;
+      std::function<Loop * (BasicBlock *)> getLLVMLoopExternalFunction;
 
       /*
        * Methods.
        */
-      LoopSummary *createSummary (Loop *l, LoopSummary *parentLoop, std::function<bool (Loop *l, uint64_t &tripCount)> setTripCountFunction);
+      LoopSummary *createSummary (
+        Loop *l, 
+        LoopSummary *parentLoop, 
+        std::function<bool (Loop *l, uint64_t &tripCount)> setTripCountFunction
+        );
   };
 
 }

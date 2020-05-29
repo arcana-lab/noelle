@@ -18,11 +18,23 @@ namespace llvm {
 
   class LoopSummary {
     public:
-      LoopSummary (Loop *l);
+      LoopSummary (
+        BasicBlock *header,
+        std::function<Loop * (BasicBlock *header)> getLLVMLoop
+        );
 
-      LoopSummary (Loop *l, LoopSummary *parentLoop);
+      LoopSummary (
+        BasicBlock *header,
+        std::function<Loop * (BasicBlock *header)> getLLVMLoop,
+        LoopSummary *parentLoop
+        );
 
-      LoopSummary (Loop *l, LoopSummary *parentLoop, uint64_t loopTripCount);
+      LoopSummary (
+        BasicBlock *header,
+        std::function<Loop * (BasicBlock *header)> getLLVMLoop,
+        LoopSummary *parentLoop, 
+        uint64_t loopTripCount
+        );
 
       uint64_t getID (void) const ;
 
@@ -66,7 +78,6 @@ namespace llvm {
 
     private:
       uint64_t ID;
-      Loop *llvmLoop;
       BasicBlock *header;
       BasicBlock *preHeader;
       uint32_t depth;
@@ -77,6 +88,7 @@ namespace llvm {
       std::unordered_set<LoopSummary *> children;
       std::unordered_set<BasicBlock *> latchBBs;
       std::unordered_set<BasicBlock *> bbs;
+      std::function<Loop * (BasicBlock *)> getLLVMLoopExternalFunction;
       static uint64_t globalID;
   };
 

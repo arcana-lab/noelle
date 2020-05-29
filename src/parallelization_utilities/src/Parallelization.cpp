@@ -229,6 +229,16 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       }
 
       /*
+       * Define the function to get the LLVM loop.
+       */
+      auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
+        auto f = h->getParent();
+        auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
+        auto loop = LI.getLoopFor(h);
+        return loop;
+      };
+
+      /*
        * Check if we have to filter loops.
        */
       if (!filterLoops){
@@ -236,7 +246,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, DS);
+        auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, DS, getLLVMLoopFunction);
 
         allLoops->push_back(ldi);
         currentLoopIndex++;
@@ -278,7 +288,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        *
        * Allocate the loop wrapper.
        */
-      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, DS);
+      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, DS, getLLVMLoopFunction);
 
       /*
        * Set the loop constraints specified by INDEX_FILE.

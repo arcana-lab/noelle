@@ -15,72 +15,38 @@ using namespace llvm;
 uint64_t LoopSummary::globalID = 0;
 
 LoopSummary::LoopSummary (
-  Loop *l
+  BasicBlock *header,
+  std::function<Loop * (BasicBlock *header)> getLLVMLoop
   ) 
-  : LoopSummary(l, nullptr)
+  : LoopSummary(header, getLLVMLoop, nullptr)
   {
 
   return ;
 }
 
 LoopSummary::LoopSummary (
-  Loop *l,
+  BasicBlock *header,
+  std::function<Loop * (BasicBlock *header)> getLLVMLoop,
   LoopSummary *parentLoop
   ) 
-  : llvmLoop{l}
-    , parent{parentLoop}
-    , compileTimeKnownTripCount{false}
-    , tripCount{0}
+  : LoopSummary(header, getLLVMLoop, parentLoop, 0)
   {
 
   /*
-   * Set the ID
+   * Set the trip count is unknown.
    */
-  this->ID = LoopSummary::globalID++;
-
-  /*
-   * Set the nesting level
-   */
-  this->depth = l->getLoopDepth();
-
-  /*
-   * Set the headers
-   */
-  this->header = l->getHeader();
-  this->preHeader = l->getLoopPreheader();
-
-  /*
-   * Set the basic blocks and latches of the loop.
-   */
-  for (auto bb : l->blocks()) {
-    // NOTE: Unsure if this is program forward order
-    orderedBBs.push_back(bb);
-    this->bbs.insert(bb);
-    if (l->isLoopLatch(bb)) {
-      latchBBs.insert(bb);
-    }
-  }
-
-  /*
-   * Set the loop invariant.
-   */
-  for (auto bb : this->bbs){
-    for (auto& inst : *bb){
-      if (l->isLoopInvariant(&inst)){
-        this->invariants.insert(&inst);
-      }
-    }
-  }
+  this->compileTimeKnownTripCount = false;
 
   return ;
 }
 
 LoopSummary::LoopSummary (
-  Loop *l,
+  BasicBlock *header,
+  std::function<Loop * (BasicBlock *header)> getLLVMLoop,
   LoopSummary *parentLoop,
   uint64_t loopTripCount
   ) 
-  : llvmLoop{l}
+  : header{header}
     , parent{parentLoop}
     , compileTimeKnownTripCount{true}
     , tripCount{loopTripCount}
@@ -92,14 +58,23 @@ LoopSummary::LoopSummary (
   this->ID = LoopSummary::globalID++;
 
   /*
+   * Set the function to retrieve the LLVM loop.
+   */
+  this->getLLVMLoopExternalFunction = getLLVMLoop;
+
+  /*
+   * Fetch the LLVM loop.
+   */
+  auto l = getLLVMLoop(header);
+
+  /*
    * Set the nesting level
    */
   this->depth = l->getLoopDepth();
 
   /*
-   * Set the header
+   * Set the pre-header.
    */
-  this->header = l->getHeader();
   this->preHeader = l->getLoopPreheader();
 
   /*
@@ -207,5 +182,5 @@ Function * LoopSummary::getFunction (void) const {
 }
 
 Loop * LoopSummary::getLLVMLoop (void) const {
-  return this->llvmLoop;
+  return this->getLLVMLoopExternalFunction(this->header);
 }

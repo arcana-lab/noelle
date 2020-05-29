@@ -65,7 +65,8 @@ namespace llvm {
         Loop *l,
         LoopInfo &li,
         ScalarEvolution &SE,
-        DominatorSummary &DS
+        DominatorSummary &DS,
+        std::function<Loop * (BasicBlock *header)> getLLVMLoop
       );
 
       /*
