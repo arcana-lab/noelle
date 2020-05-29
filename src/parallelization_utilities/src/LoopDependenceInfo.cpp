@@ -21,9 +21,11 @@ LoopDependenceInfo::LoopDependenceInfo(
   Loop *l,
   LoopInfo &li,
   ScalarEvolution &SE,
-  DominatorSummary &DS
+  DominatorSummary &DS,
+  std::function<Loop * (BasicBlock *header)> getLLVMLoop
 ) : DOALLChunkSize{8},
-    maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()}
+    maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()},
+    liSummary{getLLVMLoop}
   {
 
   /*

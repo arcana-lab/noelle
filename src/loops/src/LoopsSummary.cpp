@@ -12,6 +12,15 @@
 
 using namespace llvm;
       
+LoopsSummary::LoopsSummary (
+  std::function<Loop * (BasicBlock *header)> getLLVMLoop
+  )
+  : getLLVMLoopExternalFunction{getLLVMLoop}
+  {
+
+  return ;
+}
+
 LoopSummary * LoopsSummary::getLoop (Instruction &instIncludedInLoop) const {
   auto instBB = instIncludedInLoop.getParent();
   auto l = this->getLoop(*instBB);
@@ -27,7 +36,11 @@ LoopSummary * LoopsSummary::getLoop (BasicBlock &bbIncludedInLoop) const {
   return l;
 }
 
-LoopSummary * LoopsSummary::createSummary (Loop *l, LoopSummary *parentLoop, std::function<bool (Loop *l, uint64_t &tripCount)> setTripCountFunction) {
+LoopSummary * LoopsSummary::createSummary (
+  Loop *l, 
+  LoopSummary *parentLoop, 
+  std::function<bool (Loop *l, uint64_t &tripCount)> setTripCountFunction
+  ) {
 
   /*
    * Find the trip count.
@@ -36,13 +49,18 @@ LoopSummary * LoopsSummary::createSummary (Loop *l, LoopSummary *parentLoop, std
   auto tripCountKnownAtCompileTime = setTripCountFunction(l, tripCount);
 
   /*
+   * Fetch the loop header.
+   */
+  auto header = l->getHeader();
+
+  /*
    * Allocate the LoopSummary
    */
   std::shared_ptr<LoopSummary> lSummary;
   if (tripCountKnownAtCompileTime){
-    lSummary = std::make_shared<LoopSummary>(l, parentLoop, tripCount);
+    lSummary = std::make_shared<LoopSummary>(header, this->getLLVMLoopExternalFunction, parentLoop, tripCount);
   } else {
-    lSummary = std::make_shared<LoopSummary>(l, parentLoop);
+    lSummary = std::make_shared<LoopSummary>(header, this->getLLVMLoopExternalFunction, parentLoop);
   }
 
   /*

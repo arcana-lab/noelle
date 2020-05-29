@@ -87,7 +87,13 @@ bool Parallelizer::parallelizeLoop (
     DominatorSummary DS(DT, PDT);
     auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
     auto l = LI.getLoopsInPreorder()[0]; //TODO: SIMONE: how do we know that the loop we want to parallelize is [0] ?
-    auto newLDI = new LoopDependenceInfo(function, taskFunctionDG, l, LI, SE, DS);
+    auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
+      auto f = h->getParent();
+      auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
+      auto loop = LI.getLoopFor(h);
+      return loop;
+    };
+    auto newLDI = new LoopDependenceInfo(function, taskFunctionDG, l, LI, SE, DS, getLLVMLoopFunction);
     newLDI->copyParallelizationOptionsFrom(LDI);
 
     codeModified = helix.apply(newLDI, par, h);
