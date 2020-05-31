@@ -119,13 +119,9 @@ namespace llvm {
        */
       bool isSCCContainedInSubloop (SCC *scc) const ;
 
-      LoopGoverningIVAttribution *getLoopGoverningIVAttribution () const {
-        return loopGoverningIVAttribution;
-      }
+      LoopGoverningIVAttribution * getLoopGoverningIVAttribution (void) const ;
 
-      InductionVariables *getInductionVariables () const {
-        return inductionVariables;
-      }
+      InductionVariables * getInductionVariables (void) const ;
 
       /*
        * Return true if the loop has the metadata requested.

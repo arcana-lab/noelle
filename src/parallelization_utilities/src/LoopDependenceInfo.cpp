@@ -287,3 +287,11 @@ LoopSummary * LoopDependenceInfo::getLoopSummary (void) const {
 bool LoopDependenceInfo::isSCCContainedInSubloop (SCC *scc) const {
   return this->sccdagAttrs.isSCCContainedInSubloop(this->liSummary, scc);
 }
+
+InductionVariables * LoopDependenceInfo::getInductionVariables (void) const {
+  return inductionVariables;
+}
+
+LoopGoverningIVAttribution * LoopDependenceInfo::getLoopGoverningIVAttribution (void) const {
+  return loopGoverningIVAttribution;
+}
