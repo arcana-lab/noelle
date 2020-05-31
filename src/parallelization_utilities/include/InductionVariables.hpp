@@ -29,10 +29,12 @@ namespace llvm {
     public:
       // HACK: Once caching Loop.getInductionVariable in LoopSummary, use LoopsSummary only, not LoopInfo as well
       InductionVariables (LoopsSummary &LIS, LoopInfo &LI, ScalarEvolution &SE, SCCDAG &sccdag);
+
       ~InductionVariables ();
 
-      std::set<InductionVariable *> &getInductionVariables (LoopSummary &LS) ;
-      InductionVariable *getLoopGoverningInductionVariable (LoopSummary &LS) ;
+      std::set<InductionVariable *> & getInductionVariables (LoopSummary &LS) ;
+
+      InductionVariable * getLoopGoverningInductionVariable (LoopSummary &LS) ;
 
     private:
       std::unordered_map<LoopSummary *, std::set<InductionVariable *>> loopToIVsMap;
