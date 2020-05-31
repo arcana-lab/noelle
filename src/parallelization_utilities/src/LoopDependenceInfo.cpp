@@ -37,6 +37,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Fetch the PDG of the loop and its SCCDAG.
    */
   this->fetchLoopAndBBInfo(li, l, SE);
+  auto loopExitBlocks = getLoopSummary()->getLoopExitBasicBlocks();
   auto DGs = this->createDGsForLoop(l, fG);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
@@ -44,15 +45,24 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Create the environment for the loop.
    */
-  this->environment = new LoopEnvironment(loopDG, this->loopExitBlocks);
+  this->environment = new LoopEnvironment(loopDG, loopExitBlocks);
 
   /*
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
-  SCCDAGNormalizer normalizer(*loopSCCDAG, this->liSummary, SE, DS);
+  inductionVariables = new InductionVariables(liSummary, li, SE, *loopSCCDAG);
+  SCCDAGNormalizer normalizer(*loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
   normalizer.normalizeInPlace();
-  this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, DS);
+  inductionVariables = new InductionVariables(liSummary, li, SE, *loopSCCDAG);
+  this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
+
+  /*
+   * Collect induction variable information
+   */
+  auto iv = inductionVariables->getLoopGoverningInductionVariable(*liSummary.getLoop(*l->getHeader()));
+  loopGoverningIVAttribution = iv == nullptr ? nullptr
+    : new LoopGoverningIVAttribution(*iv, *loopSCCDAG->sccOfValue(iv->getHeaderPHI()), loopExitBlocks);
 
   /*
    * Cache the post-dominator tree.
@@ -122,7 +132,7 @@ void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *oth
  * Fetch the number of exit blocks.
  */
 uint32_t LoopDependenceInfo::numberOfExits (void) const{
-  return this->loopExitBlocks.size();
+  return this->getLoopSummary()->getLoopExitBasicBlocks().size();
 }
 
 void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolution &SE) {
@@ -139,8 +149,6 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolut
     return true;
   };
   this->liSummary.populate(li, l, findTripCount);
-
-  l->getExitBlocks(loopExitBlocks);
 
   return ;
 }
@@ -232,9 +240,9 @@ bool LoopDependenceInfo::iterateOverSubLoopsRecursively (
 
   return false;
 }
-      
+
 uint64_t LoopDependenceInfo::getID (void) const {
-  
+
   /*
    * Check if there is metadata.
    */
@@ -263,7 +271,7 @@ std::string LoopDependenceInfo::getMetadata (const std::string &metadataName) co
 
   return this->metadata.at(metadataName);
 }
-      
+
 bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) const {
   if (this->metadata.find(metadataName) == this->metadata.end()){
     return false;
@@ -271,11 +279,11 @@ bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) cons
 
   return true;
 }
-      
+
 LoopSummary * LoopDependenceInfo::getLoopSummary (void) const {
   return this->liSummary.getLoopNestingTreeRoot();
 }
-      
+
 bool LoopDependenceInfo::isSCCContainedInSubloop (SCC *scc) const {
   return this->sccdagAttrs.isSCCContainedInSubloop(this->liSummary, scc);
 }

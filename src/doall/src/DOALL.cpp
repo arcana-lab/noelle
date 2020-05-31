@@ -78,23 +78,9 @@ bool DOALL::canBeAppliedToLoop (
    * The loop must have at least one induction variable.
    * This is because the trip count must be controlled by an induction variable.
    */
-  if (!LDI->sccdagAttrs.isLoopGovernedByIV()) {
+  if (!LDI->getLoopGoverningIVAttribution()) {
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   Loop does not have an IV\n";
-    }
-    return false;
-  }
-
-  /*
-   * The loop's IV does not have bounds that have been successfully analyzed
-   */
-  auto loopSummary = LDI->getLoopSummary();
-  auto loopHeader = loopSummary->getHeader();
-  auto headerBr = loopHeader->getTerminator();
-  auto headerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(headerBr);
-  if (LDI->sccdagAttrs.sccIVBounds.find(headerSCC) == LDI->sccdagAttrs.sccIVBounds.end()) {
-    if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   It wasn't possible to determine how to compute the loop trip count just before executing the loop\n" ;
     }
     return false;
   }
@@ -222,20 +208,12 @@ bool DOALL::apply (
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 
   /*
-   * Simplify the original IV to iterate from smaller to larger bound by +1 increments
-   * Create the outermost loop that iterates over chunks
-   * Adjust the innermost loop to execute a single chunk
-   * TODO(angelo): Re-formulate these changes to work AFTER data flows are adjusted
-   */
-  this->simplifyOriginalLoopIV(LDI);
-  this->generateOuterLoopAndAdjustInnerLoop(LDI);
-
-  /*
    * Fix the data flow within the parallelized loop by redirecting operands of
    * cloned instructions to refer to the other cloned instructions. Currently,
    * they still refer to the original loop's instructions.
    */
   this->adjustDataFlowToUseClones(LDI, 0);
+  this->rewireLoopToIterateChunks(LDI);
   this->setReducableVariablesToBeginAtIdentityValue(LDI, 0);
 
   /*
@@ -243,14 +221,6 @@ bool DOALL::apply (
    */
   IRBuilder<> exitB(tasks[0]->exitBlock);
   exitB.CreateRetVoid();
-
-  /*
-   * Hoist PHINodes in the original loop: this propagates their value
-   *  through the outer loop latch/header back into the inner loop header
-   * This is done after data flow is adjusted to disambiguate mapping
-   *  from original -> clone instructions and adjusting flow of execution
-   */
-  this->propagatePHINodesThroughOuterLoop(LDI);
 
   /*
    * Store final results to loop live-out variables. Note this occurs after
@@ -333,4 +303,18 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   afterDOALLBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
   return ;
+}
+
+Value *DOALL::fetchClone(Value *original) const {
+  auto task = (DOALLTask *)tasks[0];
+  if (isa<ConstantData>(original)) return original;
+
+  if (task->liveInClones.find(original) != task->liveInClones.end()) {
+    return task->liveInClones[original];
+  }
+
+  assert(isa<Instruction>(original));
+  auto iCloneIter = task->instructionClones.find(cast<Instruction>(original));
+  assert(iCloneIter != task->instructionClones.end());
+  return iCloneIter->second;
 }

@@ -55,9 +55,10 @@ void DSWP::addClonableSCCsToStages (LoopDependenceInfo *LDI) {
         auto fromSCC = fromSCCNode->getT();
         if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
         auto fromSCCInfo = LDI->sccdagAttrs.getSCCAttrs(fromSCC);
-        if (!fromSCCInfo->canBeCloned()) continue;
+        if (fromSCCInfo->canBeCloned()) {
+          task->clonableSCCs.insert(fromSCC);
+        }
 
-        task->clonableSCCs.insert(fromSCC);
         dependentSCCNodes.push(fromSCCNode);
         visitedNodes.insert(fromSCCNode);
       }

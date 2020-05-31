@@ -106,6 +106,7 @@ void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
 
   DG<DGString> stageGraph;
   std::set<DGString *> elements;
+  std::unordered_map<DGNode<SCC> *, DGNode<DGString> *> sccToDescriptionMap;
 
   auto addNode = [&](std::string val, bool isInternal) -> DGNode<DGString> * {
     auto element = new DGString(val);
@@ -113,24 +114,52 @@ void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
     return stageGraph.addNode(element, isInternal);
   };
 
-  for (auto techniqueTask : this->tasks) {
-
-    /*
-     * Produce node indicating the task index that owns the following SCCs
-     */
-    auto task = (DSWPTask *)techniqueTask;
-    auto headerNode = addNode("Stage: " + std::to_string(task->order), true);
-
-    std::set<SCC *> sccsForTask{task->stageSCCs.begin(), task->stageSCCs.end()};
-    sccsForTask.insert(task->clonableSCCs.begin(), task->clonableSCCs.end());
-    for (auto scc : sccsForTask) {
-      std::string sccDescription;
-      raw_string_ostream ros(sccDescription);
-      scc->printMinimal(ros, "");
-      ros.flush();
-      auto sccNode = addNode(sccDescription, task->stageSCCs.find(scc) != task->stageSCCs.end());
-      stageGraph.addEdge(headerNode->getT(), sccNode->getT());
+  auto findTasks = [&](SCC *scc) -> std::pair<std::set<DSWPTask *>, std::set<DSWPTask *>> {
+    std::set<DSWPTask *> tasksOwningSCC;
+    std::set<DSWPTask *> tasksWithClonableSCC;
+    for (auto techniqueTask : this->tasks) {
+      auto task = (DSWPTask *)techniqueTask;
+      if (task->stageSCCs.find(scc) != task->stageSCCs.end()) {
+        tasksOwningSCC.insert(task);
+      }
+      if (task->clonableSCCs.find(scc) != task->clonableSCCs.end()) {
+        tasksWithClonableSCC.insert(task);
+      }
     }
+    return std::make_pair(tasksOwningSCC, tasksWithClonableSCC);
+  };
+
+  auto sccdag = LDI.sccdagAttrs.getSCCDAG();
+  for (auto sccNode : sccdag->getNodes()) {
+    std::string sccDescription;
+    raw_string_ostream ros(sccDescription);
+    auto taskAssignments = findTasks(sccNode->getT());
+
+    ros << "Task ids owning scc: ";
+    for (auto owningTask : taskAssignments.first) {
+      ros << owningTask->order << " ";
+    }
+    ros << "\n";
+
+    ros << "Task ids using clonable scc: ";
+    for (auto owningTask : taskAssignments.second) {
+      ros << owningTask->order << " ";
+    }
+    ros << "\n";
+
+    for (auto iNodePair : sccNode->getT()->internalNodePairs()) {
+      iNodePair.first->print(ros);
+      ros << "\n";
+    }
+
+    ros.flush();
+    sccToDescriptionMap.insert(std::make_pair(sccNode, addNode(sccDescription, true)));
+  }
+
+  for (auto sccEdge : sccdag->getEdges()) {
+    auto outgoingDesc = sccToDescriptionMap.at(sccEdge->getOutgoingNode())->getT();
+    auto incomingDesc = sccToDescriptionMap.at(sccEdge->getIncomingNode())->getT();
+    stageGraph.addEdge(outgoingDesc, incomingDesc);
   }
 
   DGPrinter::writeGraph<DG<DGString>>("dswpStagesForLoop_" + std::to_string(LDI.getID()) + ".dot", &stageGraph);
@@ -165,4 +194,24 @@ void llvm::DSWP::writeStageQueuesAsDot (const LoopDependenceInfo &LDI) const {
 
   DGPrinter::writeGraph<DG<DGString>>("dswpQueuesForLoop_" + std::to_string(LDI.getID()) + ".dot", &queueGraph);
   for (auto elem : elements) delete elem;
+}
+
+void llvm::DSWP::printStageClonedValues (const LoopDependenceInfo &LDI, int taskIndex) const {
+  raw_ostream &stream = errs();
+  auto task = (DSWPTask *)this->tasks[taskIndex];
+
+  stream << "Basic Block mapping\n";
+  for (auto clonePair : task->basicBlockClones) {
+    clonePair.first->printAsOperand(stream << "Original: "); stream << "\n";
+    clonePair.second->printAsOperand(stream << "\tCloned: "); stream << "\n";
+  }
+  stream << "\n";
+
+  stream << "Instruction mapping\n";
+  for (auto clonePair : task->instructionClones) {
+    clonePair.first->print(stream << "Original: "); stream << "\n";
+    clonePair.second->print(stream << "\tCloned: "); stream << "\n";
+  }
+  stream << "\n";
+
 }

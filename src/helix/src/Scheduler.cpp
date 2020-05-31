@@ -97,7 +97,7 @@ void collectIDomsAndIPostDoms (
   auto loopFunction = loopSummary->getFunction();
 
   std::set<BasicBlock *> exitBBs;
-  for (auto exitBB : LDI->loopExitBlocks) exitBBs.insert(exitBB);
+  for (auto exitBB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) exitBBs.insert(exitBB);
   traverseDomination(preds, succs, iPostDoms, exitBBs, &*loopFunction->begin());
 
   std::set<BasicBlock *> startBBs = { loopHeader };

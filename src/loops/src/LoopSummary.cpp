@@ -70,7 +70,7 @@ LoopSummary::LoopSummary (
   /*
    * Set the nesting level
    */
-  this->depth = l->getLoopDepth();
+  this->depth = llvmLoop->getLoopDepth();
 
   /*
    * Set the pre-header.
@@ -80,11 +80,11 @@ LoopSummary::LoopSummary (
   /*
    * Set the basic blocks and latches of the loop.
    */
-  for (auto bb : l->blocks()) {
+  for (auto bb : llvmLoop->blocks()) {
     // NOTE: Unsure if this is program forward order
     orderedBBs.push_back(bb);
     this->bbs.insert(bb);
-    if (l->isLoopLatch(bb)) {
+    if (llvmLoop->isLoopLatch(bb)) {
       latchBBs.insert(bb);
     }
   }
@@ -94,11 +94,18 @@ LoopSummary::LoopSummary (
    */
   for (auto bb : this->bbs){
     for (auto& inst : *bb){
-      if (l->isLoopInvariant(&inst)){
+      if (llvmLoop->isLoopInvariant(&inst)){
         this->invariants.insert(&inst);
       }
     }
   }
+
+  /*
+   * Set the loop exits.
+   */
+  SmallVector<BasicBlock *, 10> exits;
+  llvmLoop->getExitBlocks(exits);
+  this->exitBlocks = std::vector<BasicBlock *>(exits.begin(), exits.end());
 
   return ;
 }
@@ -142,7 +149,11 @@ std::unordered_set<BasicBlock *> LoopSummary::getLatches (void) const {
 std::unordered_set<BasicBlock *> LoopSummary::getBasicBlocks (void) const {
   return this->bbs;
 }
-      
+
+std::vector<BasicBlock *> LoopSummary::getLoopExitBasicBlocks (void) const {
+  return this->exitBlocks;
+}
+
 bool LoopSummary::isLoopInvariant (Value *v){
   if (this->invariants.find(v) == this->invariants.end()){
     return false;

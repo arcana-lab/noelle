@@ -15,6 +15,7 @@
 #include "PDG.hpp"
 #include "SCCDAG.hpp"
 #include "LoopsSummary.hpp"
+#include "InductionVariables.hpp"
 #include "SCCDAGAttrs.hpp"
 #include "SCCDAGNormalizer.hpp"
 #include "LoopEnvironment.hpp"
@@ -25,11 +26,6 @@ namespace llvm {
 
   class LoopDependenceInfo {
     public:
-
-      /*
-       * Loop entry and exit points.
-       */
-      SmallVector<BasicBlock *, 10> loopExitBlocks;
 
       /*
        * Loop
@@ -123,6 +119,14 @@ namespace llvm {
        */
       bool isSCCContainedInSubloop (SCC *scc) const ;
 
+      LoopGoverningIVAttribution *getLoopGoverningIVAttribution () const {
+        return loopGoverningIVAttribution;
+      }
+
+      InductionVariables *getInductionVariables () const {
+        return inductionVariables;
+      }
+
       /*
        * Return true if the loop has the metadata requested.
        */
@@ -154,6 +158,9 @@ namespace llvm {
                                                */
 
       std::unordered_map<std::string, std::string> metadata;
+
+      InductionVariables *inductionVariables;
+      LoopGoverningIVAttribution *loopGoverningIVAttribution;
 
       /*
        * Methods
