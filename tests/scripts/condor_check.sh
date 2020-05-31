@@ -18,6 +18,20 @@ function identifyElementsOutsideSet {
 
 echo "Checking the regression test results" ;
 
+# Check the tests that are still running
+stillRunning="`mktemp`" ;
+condor_q `whoami` -l | grep ^Arguments > $stillRunning ;
+if test -s $stillRunning ; then
+  echo "  The following tests are still running" ;
+  while IFS= read -r line; do
+    testRunning=`echo $line | awk '{print $4}'` ;
+    echo "    $testRunning" ;
+  done < "$stillRunning"
+
+else
+  echo "  All tests finished" ;
+fi
+
 # Local variables
 origDir="`pwd`" ;
 origDirLength=`echo "${#origDir} + 2" | bc` ;
@@ -46,12 +60,12 @@ oldTestsNumber=`wc -l failing_tests.txt | awk '{print $1}'` ;
 newTestsNumber=`wc -l $currentResults | awk '{print $1}'` ;
 if test ${newTestsNumber} == ${oldTestsNumber} ; then
   echo "  All tests that failed before still fail" ;
-else
-  lessTests=`echo "${oldTestsNumber} - ${newTestsNumber}" | bc` ;
-  echo "  There are $lessTests less tests that fail now!" ;
-
-  # Print the tests that now pass
-  echo "  These tests are the following ones:" ;
-  identifyElementsOutsideSet $currentResults failing_tests.txt ;
-  echo -e "$outsideElements" ;
+  exit 0;
 fi
+lessTests=`echo "${oldTestsNumber} - ${newTestsNumber}" | bc` ;
+echo "  There are $lessTests less tests that fail now!" ;
+
+# Print the tests that now pass
+echo "  These tests are the following ones:" ;
+identifyElementsOutsideSet $currentResults failing_tests.txt ;
+echo -e "$outsideElements" ;
