@@ -52,13 +52,7 @@ namespace llvm {
       /*
        * DOALL specific generation
        */
-      void simplifyOriginalLoopIV (
-        LoopDependenceInfo *LDI
-      );
-      void generateOuterLoopAndAdjustInnerLoop (
-        LoopDependenceInfo *LDI
-      );
-      void propagatePHINodesThroughOuterLoop (
+      void rewireLoopToIterateChunks (
         LoopDependenceInfo *LDI
       );
       void addChunkFunctionExecutionAsideOriginalLoop (
@@ -66,6 +60,11 @@ namespace llvm {
         Function *loopFunction,
         Parallelization &par
       );
+
+      /*
+       * Helpers
+       */
+      Value *fetchClone(Value *original) const ;
   };
 
 }

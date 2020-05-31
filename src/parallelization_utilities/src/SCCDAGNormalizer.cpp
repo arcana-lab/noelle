@@ -55,7 +55,7 @@ void SCCDAGNormalizer::mergeLCSSAPhis () {
 
 void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies () {
   SCCDAGAttrs sccdagAttrs;
-  sccdagAttrs.populate(&sccdag, LIS, SE, DS);
+  sccdagAttrs.populate(&sccdag, LIS, SE, DS, IV);
 
   auto isLastValuePHI = [](SCC *scc) -> bool {
     if (scc->numInternalNodes() == 1) {

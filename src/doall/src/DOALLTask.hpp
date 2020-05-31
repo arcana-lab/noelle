@@ -32,7 +32,6 @@ namespace llvm {
        * Clone of original IV loop, new outer loop
        */
       SCCAttrs *originalIVAttrs;
-      FixedIVBounds clonedIVBounds;
       PHINode *cloneOfOriginalIV;
       CmpInst *cloneOfOriginalCmp;
       BranchInst *cloneOfOriginalBr;
