@@ -54,7 +54,7 @@ namespace llvm {
       
       uint64_t getCompileTimeTripCount (void) const ;
 
-      Loop * getLLVMLoop (void) const { return llvmLoop; }
+      Loop * getLLVMLoop (void) const ;
 
       LoopSummary * getParentLoop (void) const ;
       

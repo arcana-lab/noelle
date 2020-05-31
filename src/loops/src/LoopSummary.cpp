@@ -70,7 +70,7 @@ LoopSummary::LoopSummary (
   /*
    * Set the nesting level
    */
-  this->depth = llvmLoop->getLoopDepth();
+  this->depth = l->getLoopDepth();
 
   /*
    * Set the pre-header.
@@ -80,11 +80,11 @@ LoopSummary::LoopSummary (
   /*
    * Set the basic blocks and latches of the loop.
    */
-  for (auto bb : llvmLoop->blocks()) {
+  for (auto bb : l->blocks()) {
     // NOTE: Unsure if this is program forward order
     orderedBBs.push_back(bb);
     this->bbs.insert(bb);
-    if (llvmLoop->isLoopLatch(bb)) {
+    if (l->isLoopLatch(bb)) {
       latchBBs.insert(bb);
     }
   }
@@ -94,7 +94,7 @@ LoopSummary::LoopSummary (
    */
   for (auto bb : this->bbs){
     for (auto& inst : *bb){
-      if (llvmLoop->isLoopInvariant(&inst)){
+      if (l->isLoopInvariant(&inst)){
         this->invariants.insert(&inst);
       }
     }
@@ -104,7 +104,7 @@ LoopSummary::LoopSummary (
    * Set the loop exits.
    */
   SmallVector<BasicBlock *, 10> exits;
-  llvmLoop->getExitBlocks(exits);
+  l->getExitBlocks(exits);
   this->exitBlocks = std::vector<BasicBlock *>(exits.begin(), exits.end());
 
   return ;
