@@ -34,7 +34,6 @@ bool LoopUnroll::fullyUnrollLoop (
   if (!ls->doesHaveCompileTimeKnownTripCount()){
     return false;
   }
-    return false;
 
   /*
    * Fetch the function that includes the loop.
@@ -44,7 +43,8 @@ bool LoopUnroll::fullyUnrollLoop (
   /*
    * Fetch the LLVM loop.
    */
-  auto llvmLoop = ls->getLLVMLoop();
+  auto h = ls->getHeader();
+  auto llvmLoop = LI.getLoopFor(h);
 
   /*
    * Fetch the trip count.

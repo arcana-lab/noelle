@@ -145,6 +145,56 @@ bool EnablersManager::applyLoopUnroll (
   }
 
   /*
+   * Check if the loop includes at least one call to unknown callee.
+   */
+  auto fullyUnroll = false;
+  for (auto bb : ls->getBasicBlocks()){
+    for (auto& inst : *bb){
+
+      /*
+       * Check if the instruction is a call one.
+       */
+      if (!isa<CallInst>(&inst)){
+        continue ;
+      }
+      auto callInst = cast<CallInst>(&inst);
+
+      /*
+       * Check if the callee is known.
+       */
+      auto callee = callInst->getCalledFunction();
+      if (callee != nullptr){
+        continue ;
+      }
+
+      /*
+       * The callee is unknown.
+       *
+       * Check if the callee is determined by the result of a load instruction.
+       */
+      auto calleePtr = callInst->getCalledOperand();
+      if (!isa<LoadInst>(calleePtr)){
+        continue ;
+      }
+      auto loadInst = cast<LoadInst>(calleePtr);
+
+      /*
+       * Check if the address of the load instruction is the result of a GEP.
+       */
+      auto addr = loadInst->getPointerOperand();
+      if (!isa<GetElementPtrInst>(addr)){
+        continue ;
+      }
+      auto addrComputation = cast<GetElementPtrInst>(addr);
+
+      fullyUnroll = true;
+    }
+  }
+  if (!fullyUnroll){
+    return false;
+  }
+
+  /*
    * Fully unroll the loop.
    */
   auto &loopFunction = *ls->getFunction();
