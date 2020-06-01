@@ -114,6 +114,9 @@ LoopDependenceInfo::~LoopDependenceInfo() {
   delete this->loopDG;
   delete this->environment;
 
+  if (this->inductionVariables) delete this->inductionVariables;
+  if (this->loopGoverningIVAttribution) delete this->loopGoverningIVAttribution;
+
   return ;
 }
 

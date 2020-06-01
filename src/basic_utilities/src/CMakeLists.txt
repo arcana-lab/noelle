@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   DominatorSummary.cpp
+  ScalarEvolutionExpander.cpp
 )
 
 # Compilation flags

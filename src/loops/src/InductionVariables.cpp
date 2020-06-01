@@ -26,19 +26,15 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
      * Iterate over all phis within the loop header.
      */
     for (auto &phi : header->phis()) {
+      phi.print(errs() << "Checking PHI: "); errs() << "\n";
       auto scev = SE.getSCEV(&phi);
       if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) continue;
+      errs() << "IS IV\n";
 
       auto sccContainingIV = sccdag.sccOfValue(&phi);
-      auto IV = new InductionVariable(loop.get(), SE, &phi, *sccContainingIV); 
-      
-      // NOTE: We do not handle non-constant step size induction variables yet
-      if (!IV->getStepSize()) {
-        delete IV;
-        continue;
-      }
-
+      auto IV = new InductionVariable(loop.get(), l, SE, &phi, *sccContainingIV); 
       loopToIVsMap[loop.get()].insert(IV);
+      errs() << "BUILT IV\n";
 
       auto exitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
       LoopGoverningIVAttribution attribution(*IV, *sccContainingIV, exitBlocks);
@@ -68,8 +64,9 @@ InductionVariable *InductionVariables::getLoopGoverningInductionVariable (LoopSu
   return loopToGoverningIVMap.at(&LS);
 }
 
-InductionVariable::InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHINode *headerPHI, SCC &scc)
-  : scc{scc}, headerPHI{headerPHI} {
+InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEvolution &SE, PHINode *headerPHI, SCC &scc)
+  : scc{scc}, headerPHI{headerPHI}, startValue{nullptr},
+    stepSize{nullptr}, compositeStepSize{nullptr}, expansionOfCompositeStepSize{} {
 
   /*
    * Collect intermediate values of the IV within the loop (by traversing its strongly connected component)
@@ -112,47 +109,141 @@ InductionVariable::InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHI
     }
   }
 
-  /*
-   * Fetch step value of induction variable
-   */
   auto headerSCEV = SE.getSCEV(headerPHI);
   assert(headerSCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
   auto stepSCEV = cast<SCEVAddRecExpr>(headerSCEV)->getStepRecurrence(SE);
-  Value *stepValue = nullptr;
+
+  auto M = headerPHI->getFunction()->getParent();
+  DataLayout DL(M);
+  const char name = 'a';
+  auto expander = new SCEVExpander(SE, DL, &name);
   switch (stepSCEV->getSCEVType()) {
     case SCEVTypes::scConstant:
       this->stepSize = cast<SCEVConstant>(stepSCEV)->getValue();
+      stepSize->print(errs() << "Constant step: "); errs() << "\n";
       break;
-    case SCEVTypes::scAddExpr:
-    case SCEVTypes::scMulExpr:
-    case SCEVTypes::scAddRecExpr:
-      // TODO: Trace expressions to determine if constituents are all loop invariant
-      this->stepSize = nullptr;
+    case SCEVTypes::scUnknown:
+      this->stepSize = cast<SCEVUnknown>(stepSCEV)->getValue();
+      stepSize->print(errs() << "Arbitrary value step: "); errs() << "\n";
+      break;
+    default:
+      errs() << "Custom\n";
+      this->stepSize = expander->getExactExistingExpansion(stepSCEV, headerPHI, llvmLoop);
+      if (!this->stepSize) {
+        auto &entryBlock = headerPHI->getParent()->getParent()->getEntryBlock();
+        expander->setInsertPoint(entryBlock.getTerminator());
+        auto endCompositeValue = expander->expandCodeFor(stepSCEV);
+        expander->clearInsertPoint();
+        assert(isa<Instruction>(endCompositeValue));
+        auto currValue = entryBlock.getTerminator();
+        auto endValue = cast<Instruction>(endCompositeValue)->getNextNode();
+        while (currValue != endValue) {
+          expansionOfCompositeStepSize.push_back(currValue);
+          auto prevValue = currValue;
+          currValue = currValue->getNextNode();
+          prevValue->removeFromParent();
+        }
+      }
+      break;
+  }
+
+  delete expander;
+}
+
+InductionVariable::~InductionVariable () {
+  for (auto expandedInst : expansionOfCompositeStepSize) {
+    expandedInst->deleteValue();
+  }
+}
+
+void InductionVariable::determineStepSize(ScalarEvolution &SE, LoopSummary &LS) {
+
+  /*
+   * Fetch step value of induction variable
+   */
+  auto bbs = LS.getBasicBlocks();
+  auto headerSCEV = SE.getSCEV(headerPHI);
+  assert(headerSCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
+  auto stepSCEV = cast<SCEVAddRecExpr>(headerSCEV)->getStepRecurrence(SE);
+
+  auto isLoopInvariant = [&bbs](Value *stepValue) -> bool {
+    if (isa<ConstantInt>(stepValue)) return true;
+    if (auto stepArgument = dyn_cast<Argument>(stepValue)) return true;
+    if (auto stepInst = dyn_cast<Instruction>(stepValue)) {
+      if (bbs.find(stepInst->getParent()) == bbs.end()) return true;
+    }
+    return false;
+  };
+  auto areLoopInvariant = [&bbs, &isLoopInvariant](std::set<Value *> &stepValues) -> bool {
+    for (auto stepValue : stepValues) if (!isLoopInvariant(stepValue)) return false;
+    return true;
+  };
+
+  switch (stepSCEV->getSCEVType()) {
+    case SCEVTypes::scConstant:
+      this->stepSize = cast<SCEVConstant>(stepSCEV)->getValue();
       break;
     case SCEVTypes::scUnknown:
 
       /*
        * Ensure the value is loop invariant
        */
-      stepValue = cast<SCEVUnknown>(stepSCEV)->getValue();
-      if (auto stepArgument = dyn_cast<Argument>(stepValue)) {
-        this->stepSize = stepValue;
-        break;
-      }
-      if (auto stepInst = dyn_cast<Instruction>(stepValue)) {
-        if (bbs.find(stepInst->getParent()) == bbs.end()) {
-          this->stepSize = stepValue;
-          break;
-        }
-      }
-
-      this->stepSize = nullptr;
+      this->stepSize = cast<SCEVUnknown>(stepSCEV)->getValue();
+      break;
+    case SCEVTypes::scAddExpr:
+    case SCEVTypes::scMulExpr:
+    case SCEVTypes::scSMaxExpr:
+    case SCEVTypes::scSMinExpr:
+    case SCEVTypes::scUMaxExpr:
+    case SCEVTypes::scUMinExpr:
       break;
     default:
-      // NOTE: We do not handle non-constant step size induction variables yet
-      this->stepSize = nullptr;
       break;
   }
+
+  if (this->stepSize != nullptr && !isLoopInvariant(this->stepSize)) {
+    this->stepSize = nullptr;
+  }
+}
+
+std::set<Value *> InductionVariable::deriveComposableStepValuesFromSCEV(const SCEV *startSCEV) {
+  std::set<Value *> scevValues;
+  std::queue<const SCEV *> scevs;
+  scevs.push(startSCEV);
+
+  while (!scevs.empty()) {
+    auto scev = scevs.front();
+    scevs.pop();
+
+    const SCEVCommutativeExpr *commSCEV;
+    switch (scev->getSCEVType()) {
+      case SCEVTypes::scConstant:
+        scevValues.insert(cast<SCEVConstant>(scev)->getValue());
+        break;
+      case SCEVTypes::scAddExpr:
+      case SCEVTypes::scMulExpr:
+        commSCEV = cast<SCEVCommutativeExpr>(scev);
+        for (auto opI = 0; opI < commSCEV->getNumOperands(); ++opI) {
+          scevs.push(commSCEV->getOperand(opI));
+        }
+        break;;
+      case SCEVTypes::scUnknown:
+
+        /*
+        * Ensure the value is loop invariant
+        */
+        scevValues.insert(cast<SCEVUnknown>(scev)->getValue());
+        break;
+      default:
+
+        /*
+         * Some component of the SCEV isn't understand, so do not claim it can be derived
+         */
+        return std::set<Value *>();
+    }
+  }
+
+  return scevValues;
 }
 
 /*
@@ -161,6 +252,13 @@ InductionVariable::InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHI
 
 LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, SCC &scc, std::vector<BasicBlock *> &exitBlocks)
   : IV{iv}, scc{scc}, headerCmp{nullptr}, conditionValueDerivation{}, isWellFormed{false} {
+
+  /*
+   * To understand how to transform the loop governing condition, it is far simpler to
+   * know the sign of the step size at compile time. Extra overhead is necessary if this
+   * is only known at runtime, and that enhancement has yet to be made
+   */
+  if (iv.getSimpleValueOfStepSize() && !isa<ConstantInt>(iv.getSimpleValueOfStepSize())) return;
 
   auto headerPHI = iv.getHeaderPHI();
   auto &ivInstructions = iv.getAllInstructions();
@@ -248,7 +346,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
 }
 
 /*
- * LoopGoverningIVUtility implementation
+ * IVUtility implementation
  */
 
 PHINode *IVUtility::createChunkPHI (BasicBlock *preheaderB, BasicBlock *headerB, Type *chunkPHIType, Value *chunkSize) {
@@ -304,6 +402,55 @@ void IVUtility::chunkInductionVariablePHI(
   }
 }
 
+Value *IVUtility::composeStepSizeValue (
+  InductionVariable &IV,
+  IRBuilder<> builder
+) {
+  assert(IV.getSimpleValueOfStepSize() == nullptr &&
+    "The induction variable step size is simple and does not need to be re-composed");
+
+
+  auto isSimpleValue = [&](const SCEV *scev) -> bool {
+    switch (scev->getSCEVType()) {
+      case SCEVTypes::scConstant:
+      case SCEVTypes::scUnknown:
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  std::vector<const SCEVCommutativeExpr *> chainOfCompositions;
+  std::queue<const SCEVCommutativeExpr *> scevs;
+  // scevs.push(cast<SCEVCommutativeExpr>(compositeSCEV));
+  while (!scevs.empty()) {
+    auto scev = scevs.front();
+    scevs.pop();
+
+    chainOfCompositions.push_back(scev);
+    switch (scev->getSCEVType()) {
+      case SCEVTypes::scAddExpr:
+      case SCEVTypes::scMulExpr:
+        for (auto opI = 0; opI < scev->getNumOperands(); ++opI) {
+          if (auto commSCEV = dyn_cast<SCEVCommutativeExpr>(scev->getOperand(opI))) {
+            scevs.push(commSCEV);
+          } else assert(isSimpleValue(scev->getOperand(opI)));
+        }
+        break;
+      default:
+        assert(false && "The induction variable step size isn't understood");
+        return nullptr;
+    }
+  }
+
+  // TODO: Compute chain
+  return nullptr;
+}
+
+/*
+ * LoopGoverningIVUtility implementation
+ */
+
 LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGoverningIVAttribution &attribution)
   : attribution{attribution}, conditionValueOrderedDerivation{}, flipOperandsToUseNonStrictPredicate{false} {
 
@@ -316,8 +463,8 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
     conditionValueOrderedDerivation.push_back(&I);
   }
 
-  assert(isa<ConstantInt>(IV.getStepSize()));
-  bool isStepValuePositive = cast<ConstantInt>(IV.getStepSize())->getValue().isStrictlyPositive();
+  assert(IV.getSimpleValueOfStepSize() && isa<ConstantInt>(IV.getSimpleValueOfStepSize()));
+  bool isStepValuePositive = cast<ConstantInt>(IV.getSimpleValueOfStepSize())->getValue().isStrictlyPositive();
   bool conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == attribution.getExitBlockFromHeader();
   auto exitPredicate = conditionExitsOnTrue ? condition->getPredicate() : condition->getInversePredicate();
   // errs() << "Exit predicate before operand check: " << exitPredicate << "\n";

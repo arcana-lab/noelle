@@ -33,6 +33,7 @@ install(  PROGRAMS
           include/SystemHeaders.hpp 
           include/DominatorSummary.hpp
           include/Queue.hpp
+          include/ScalarEvolutionExpander.h
           DESTINATION 
           include
         )

@@ -44,12 +44,34 @@ void DOALL::rewireLoopToIterateChunks (
   auto chunkPHI = IVUtility::createChunkPHI(preheaderClone, headerClone, chunkCounterType, task->chunkSizeArg);
 
   /*
+   * Collect clones of step size deriving values
+   */
+  std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
+  for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
+    Value *clonedStepValue = nullptr;
+    if (ivInfo->getSimpleValueOfStepSize()) {
+      clonedStepValue = fetchClone(ivInfo->getSimpleValueOfStepSize());
+    } else {
+      auto expandedInsts = ivInfo->getExpansionOfCompositeStepSize();
+      assert(expandedInsts.size() > 0);
+      for (auto expandedInst : expandedInsts) {
+        auto clonedInst = expandedInst->clone();
+        clonedStepValue = clonedInst;
+        entryBuilder.Insert(clonedInst);
+        adjustDataFlowToUseClones(clonedInst, 0);
+      }
+    }
+
+    clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
+  }
+
+  /*
    * Determine start value of the IV for the task
    * core_start: original_start + original_step_size * core_id * chunk_size
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     auto startOfIV = fetchClone(ivInfo->getStartAtHeader());
-    auto stepOfIV = fetchClone(ivInfo->getStepSize());
+    auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getHeaderPHI()));
 
     auto nthCoreOffset = entryBuilder.CreateMul(
@@ -71,7 +93,7 @@ void DOALL::rewireLoopToIterateChunks (
    * chunk_step_size: original_step_size * (num_cores - 1) * chunk_size
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
-    auto stepOfIV = fetchClone(ivInfo->getStepSize());
+    auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getHeaderPHI()));
 
     auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);

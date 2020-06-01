@@ -10,6 +10,8 @@
  */
 #pragma once
 
+// #include "llvm/Transforms/Utils/ScalarEvolutionExpander.h"
+#include "ScalarEvolutionExpander.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "SystemHeaders.hpp"
 #include "SCCDAG.hpp"
@@ -42,14 +44,18 @@ namespace llvm {
 
   class InductionVariable {
     public:
-      InductionVariable  (LoopSummary *LS, ScalarEvolution &SE, PHINode *headerPHI, SCC &scc) ;
+      InductionVariable  (LoopSummary *LS, Loop *l, ScalarEvolution &SE, PHINode *headerPHI, SCC &scc) ;
+
+      ~InductionVariable () ;
 
       PHINode *getHeaderPHI () { return headerPHI; }
       std::set<PHINode *> &getPHIs() { return PHIs; }
       std::set<Instruction *> &getAccumulators() { return accumulators; }
       std::set<Instruction *> &getAllInstructions() { return allInstructions; }
       Value *getStartAtHeader () { return startValue; }
-      Value *getStepSize () { return stepSize; }
+      Value *getSimpleValueOfStepSize () { return stepSize; }
+      const SCEV *getComposableStepSize () { return compositeStepSize; }
+      std::vector<Instruction *> getExpansionOfCompositeStepSize() { return expansionOfCompositeStepSize; }
 
     private:
       SCC &scc;
@@ -60,6 +66,11 @@ namespace llvm {
 
       Value *startValue;
       Value *stepSize;
+      const SCEV *compositeStepSize;
+      std::vector<Instruction *> expansionOfCompositeStepSize;
+
+      void determineStepSize(ScalarEvolution &SE, LoopSummary &LS) ;
+      std::set<Value *> deriveComposableStepValuesFromSCEV(const SCEV *scev) ;
   };
 
   class LoopGoverningIVAttribution {
@@ -100,6 +111,11 @@ namespace llvm {
         PHINode *ivPHI,
         PHINode *chunkPHI,
         Value *chunkStepSize) ;
+
+      static Value *composeStepSizeValue (
+        InductionVariable &IV,
+        IRBuilder<> builder) ;
+
   };
 
   class LoopGoverningIVUtility {
