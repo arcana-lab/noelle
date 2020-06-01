@@ -29,12 +29,10 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
       phi.print(errs() << "Checking PHI: "); errs() << "\n";
       auto scev = SE.getSCEV(&phi);
       if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) continue;
-      errs() << "IS IV\n";
 
       auto sccContainingIV = sccdag.sccOfValue(&phi);
       auto IV = new InductionVariable(loop.get(), l, SE, &phi, *sccContainingIV); 
       loopToIVsMap[loop.get()].insert(IV);
-      errs() << "BUILT IV\n";
 
       auto exitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
       LoopGoverningIVAttribution attribution(*IV, *sccContainingIV, exitBlocks);
@@ -120,14 +118,11 @@ InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEv
   switch (stepSCEV->getSCEVType()) {
     case SCEVTypes::scConstant:
       this->stepSize = cast<SCEVConstant>(stepSCEV)->getValue();
-      stepSize->print(errs() << "Constant step: "); errs() << "\n";
       break;
     case SCEVTypes::scUnknown:
       this->stepSize = cast<SCEVUnknown>(stepSCEV)->getValue();
-      stepSize->print(errs() << "Arbitrary value step: "); errs() << "\n";
       break;
     default:
-      errs() << "Custom\n";
       this->stepSize = expander->getExactExistingExpansion(stepSCEV, headerPHI, llvmLoop);
       if (!this->stepSize) {
         auto &entryBlock = headerPHI->getParent()->getParent()->getEntryBlock();
@@ -154,96 +149,6 @@ InductionVariable::~InductionVariable () {
   for (auto expandedInst : expansionOfCompositeStepSize) {
     expandedInst->deleteValue();
   }
-}
-
-void InductionVariable::determineStepSize(ScalarEvolution &SE, LoopSummary &LS) {
-
-  /*
-   * Fetch step value of induction variable
-   */
-  auto bbs = LS.getBasicBlocks();
-  auto headerSCEV = SE.getSCEV(headerPHI);
-  assert(headerSCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
-  auto stepSCEV = cast<SCEVAddRecExpr>(headerSCEV)->getStepRecurrence(SE);
-
-  auto isLoopInvariant = [&bbs](Value *stepValue) -> bool {
-    if (isa<ConstantInt>(stepValue)) return true;
-    if (auto stepArgument = dyn_cast<Argument>(stepValue)) return true;
-    if (auto stepInst = dyn_cast<Instruction>(stepValue)) {
-      if (bbs.find(stepInst->getParent()) == bbs.end()) return true;
-    }
-    return false;
-  };
-  auto areLoopInvariant = [&bbs, &isLoopInvariant](std::set<Value *> &stepValues) -> bool {
-    for (auto stepValue : stepValues) if (!isLoopInvariant(stepValue)) return false;
-    return true;
-  };
-
-  switch (stepSCEV->getSCEVType()) {
-    case SCEVTypes::scConstant:
-      this->stepSize = cast<SCEVConstant>(stepSCEV)->getValue();
-      break;
-    case SCEVTypes::scUnknown:
-
-      /*
-       * Ensure the value is loop invariant
-       */
-      this->stepSize = cast<SCEVUnknown>(stepSCEV)->getValue();
-      break;
-    case SCEVTypes::scAddExpr:
-    case SCEVTypes::scMulExpr:
-    case SCEVTypes::scSMaxExpr:
-    case SCEVTypes::scSMinExpr:
-    case SCEVTypes::scUMaxExpr:
-    case SCEVTypes::scUMinExpr:
-      break;
-    default:
-      break;
-  }
-
-  if (this->stepSize != nullptr && !isLoopInvariant(this->stepSize)) {
-    this->stepSize = nullptr;
-  }
-}
-
-std::set<Value *> InductionVariable::deriveComposableStepValuesFromSCEV(const SCEV *startSCEV) {
-  std::set<Value *> scevValues;
-  std::queue<const SCEV *> scevs;
-  scevs.push(startSCEV);
-
-  while (!scevs.empty()) {
-    auto scev = scevs.front();
-    scevs.pop();
-
-    const SCEVCommutativeExpr *commSCEV;
-    switch (scev->getSCEVType()) {
-      case SCEVTypes::scConstant:
-        scevValues.insert(cast<SCEVConstant>(scev)->getValue());
-        break;
-      case SCEVTypes::scAddExpr:
-      case SCEVTypes::scMulExpr:
-        commSCEV = cast<SCEVCommutativeExpr>(scev);
-        for (auto opI = 0; opI < commSCEV->getNumOperands(); ++opI) {
-          scevs.push(commSCEV->getOperand(opI));
-        }
-        break;;
-      case SCEVTypes::scUnknown:
-
-        /*
-        * Ensure the value is loop invariant
-        */
-        scevValues.insert(cast<SCEVUnknown>(scev)->getValue());
-        break;
-      default:
-
-        /*
-         * Some component of the SCEV isn't understand, so do not claim it can be derived
-         */
-        return std::set<Value *>();
-    }
-  }
-
-  return scevValues;
 }
 
 /*
@@ -400,51 +305,6 @@ void IVUtility::chunkInductionVariablePHI(
     ));
 
   }
-}
-
-Value *IVUtility::composeStepSizeValue (
-  InductionVariable &IV,
-  IRBuilder<> builder
-) {
-  assert(IV.getSimpleValueOfStepSize() == nullptr &&
-    "The induction variable step size is simple and does not need to be re-composed");
-
-
-  auto isSimpleValue = [&](const SCEV *scev) -> bool {
-    switch (scev->getSCEVType()) {
-      case SCEVTypes::scConstant:
-      case SCEVTypes::scUnknown:
-        return true;
-      default:
-        return false;
-    }
-  };
-
-  std::vector<const SCEVCommutativeExpr *> chainOfCompositions;
-  std::queue<const SCEVCommutativeExpr *> scevs;
-  // scevs.push(cast<SCEVCommutativeExpr>(compositeSCEV));
-  while (!scevs.empty()) {
-    auto scev = scevs.front();
-    scevs.pop();
-
-    chainOfCompositions.push_back(scev);
-    switch (scev->getSCEVType()) {
-      case SCEVTypes::scAddExpr:
-      case SCEVTypes::scMulExpr:
-        for (auto opI = 0; opI < scev->getNumOperands(); ++opI) {
-          if (auto commSCEV = dyn_cast<SCEVCommutativeExpr>(scev->getOperand(opI))) {
-            scevs.push(commSCEV);
-          } else assert(isSimpleValue(scev->getOperand(opI)));
-        }
-        break;
-      default:
-        assert(false && "The induction variable step size isn't understood");
-        return nullptr;
-    }
-  }
-
-  // TODO: Compute chain
-  return nullptr;
 }
 
 /*
