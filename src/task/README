@@ -1,0 +1,39 @@
+Creating a Parallelization Technique
+==========================
+
+Constructing a new parallelization technique using this
+abstract class is made straightforward by the fairly
+linear nature in which parallelized execution is generated.
+
+Below are the steps all techniques share in common, and
+the process by which APIs in ParallelizationTechnique
+are used to satisfy those steps
+
+Technique Construction Steps
+--------------------------
+1) Initialization of users, or workers as the API calls them
+  that perform parallelized execution
+2) Initialization of the environment those workers interact with
+3) Cloning loop portions inside the worker's execution (its function)
+4) Linking the environment into each worker's cloned execution
+5) Adjusting data flow between cloned instructions to reference
+  other cloned instructions and/or environment loaded variables
+
+Workers
+--------------------------
+Think of these as thread executions. They are spawned by a
+dispatcher that passes them an environment to execute within,
+to load and store loop live values they interact with, for the
+purpose of divvy-ing up work needed to mimic the original loop.
+
+Environment
+--------------------------
+The environment is an allocated array in the function holding the
+original loop. This array stores loop live-in values and presents
+space for workers to store loop live-out values that can be used
+instead of the original loop's live-out variables.
+
+Loop Cloning/Data Flow
+--------------------------
+Either the whole loop, or a portion (some subset of the instructions)
+can be cloned into each worker.

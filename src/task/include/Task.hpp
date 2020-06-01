@@ -18,6 +18,8 @@ namespace llvm {
 
   class Task {
     public:
+      Task ();
+
       int order;
       Function *F;
       BasicBlock *entryBlock, *exitBlock;
@@ -32,4 +34,5 @@ namespace llvm {
 
       virtual void extractFuncArgs () = 0;
   };
+
 }

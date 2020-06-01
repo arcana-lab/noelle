@@ -17,7 +17,7 @@
 #include "Parallelization.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "Heuristics.hpp"
-#include "TaskExecution.hpp"
+#include "Task.hpp"
 #include "Hot.hpp"
 #include "PDGPrinter.hpp"
 #include "SubCFGs.hpp"
