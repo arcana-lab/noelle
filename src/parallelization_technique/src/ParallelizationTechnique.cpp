@@ -395,7 +395,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      */
     auto isReduced = this->envBuilder->isReduced(envIndex);
     if (isReduced) {
-      envUser->createReducableEnvPtr(entryBuilder, envIndex, envType, numTaskInstances, task->instanceIndexV);
+      envUser->createReducableEnvPtr(entryBuilder, envIndex, envType, numTaskInstances, task->getTaskInstanceID());
     } else {
       envUser->createEnvPtr(entryBuilder, envIndex, envType);
     }

@@ -83,3 +83,13 @@ std::unordered_set<BasicBlock *> Task::getOriginalBasicBlocks (void) const {
 
   return s;
 }
+
+void Task::addBasicBlock (BasicBlock *original, BasicBlock *internal) {
+  this->basicBlockClones[original] = internal;
+
+  return ;
+}
+
+Value * Task::getTaskInstanceID (void) const {
+  return this->instanceIndexV;
+}
