@@ -68,9 +68,6 @@ namespace llvm {
       Value *stepSize;
       const SCEV *compositeStepSize;
       std::vector<Instruction *> expansionOfCompositeStepSize;
-
-      void determineStepSize(ScalarEvolution &SE, LoopSummary &LS) ;
-      std::set<Value *> deriveComposableStepValuesFromSCEV(const SCEV *scev) ;
   };
 
   class LoopGoverningIVAttribution {
@@ -111,10 +108,6 @@ namespace llvm {
         PHINode *ivPHI,
         PHINode *chunkPHI,
         Value *chunkStepSize) ;
-
-      static Value *composeStepSizeValue (
-        InductionVariable &IV,
-        IRBuilder<> builder) ;
 
   };
 
