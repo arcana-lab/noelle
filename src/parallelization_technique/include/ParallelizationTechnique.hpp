@@ -137,8 +137,13 @@ namespace llvm {
         Instruction *liveOut
       );
 
-      virtual void adjustDataFlowToUseClones (
+      void adjustDataFlowToUseClones (
         LoopDependenceInfo *LDI,
+        int taskIndex
+      );
+
+      void adjustDataFlowToUseClones (
+        Instruction *cloneI,
         int taskIndex
       );
 
