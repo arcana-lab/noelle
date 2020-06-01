@@ -18,7 +18,7 @@
 #include "Parallelization.hpp"
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
-#include "TaskExecutionDSWP.hpp"
+#include "DSWPTask.hpp"
 #include "LoopDependenceInfo.hpp"
 
 namespace llvm {
