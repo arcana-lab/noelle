@@ -93,3 +93,7 @@ void Task::addBasicBlock (BasicBlock *original, BasicBlock *internal) {
 Value * Task::getTaskInstanceID (void) const {
   return this->instanceIndexV;
 }
+
+Value * Task::getEnvironment (void) const {
+  return this->envArg;
+}
