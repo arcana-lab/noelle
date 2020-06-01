@@ -18,6 +18,8 @@ namespace llvm {
   class DOALLTask : public Task {
     public:
 
+      DOALLTask ();
+
       /*
        * Inner loop header/latch
        */

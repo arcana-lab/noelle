@@ -241,7 +241,6 @@ void ParallelizationTechnique::generateEmptyTasks (
     tasks.push_back(task);
 
     auto &cxt = module.getContext();
-    task->order = i;
     auto functionCallee = module.getOrInsertFunction("", taskType);
     task->F = cast<Function>(functionCallee.getCallee());
     task->extractFuncArgs();

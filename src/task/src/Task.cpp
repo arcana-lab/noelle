@@ -12,8 +12,14 @@
 
 using namespace llvm;
 
-Task::Task(){
+Task::Task (uint32_t ID)
+  : ID{ID}
+  {
   return ;
+}
+
+uint32_t Task::getID (void) const {
+  return this->ID;
 }
       
 bool Task::isAnOriginalLiveIn (Value *v) const {
