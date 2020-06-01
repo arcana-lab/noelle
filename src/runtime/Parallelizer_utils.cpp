@@ -37,7 +37,7 @@ extern "C" {
 
   /******************************************** NOELLE APIs ***********************************************/
 
-  struct DispatcherInfo {
+  class DispatcherInfo {
     public:
       int32_t numberOfThreadsUsed;
       int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
@@ -57,6 +57,7 @@ extern "C" {
     int64_t maxNumberOfCores, 
     int64_t chunkSize
     );
+
 
   /******************************************** NOELLE API implementations ***********************************************/
 
@@ -522,11 +523,25 @@ extern "C" {
   }
 
   int32_t NOELLE_getNumberOfCores (void){
-    auto envVar = getenv("NOELLE_CORES");
-    if (envVar == nullptr){
-      return std::thread::hardware_concurrency();
+    static int32_t cores = 0;
+
+    /*
+     * Check if we have already computed the number of cores.
+     */
+    if (cores == 0){
+
+      /*
+       * Compute the number of cores.
+       */
+      auto envVar = getenv("NOELLE_CORES");
+      if (envVar == nullptr){
+        cores = std::thread::hardware_concurrency();
+      } else {
+        cores = atoi(envVar);
+      }
     }
-    return atoi(envVar);
+
+    return cores;
   }
 
 }

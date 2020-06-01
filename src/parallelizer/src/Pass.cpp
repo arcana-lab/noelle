@@ -132,7 +132,7 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Parallelize the loops selected.
    */
-  errs() << "Parallelizer:  Parallelize all " << loopsToParallelize->size() << " loops, one at a time\n";
+  errs() << "Parallelizer:  Parallelize " << loopsToParallelize->size() << " loops, one at a time\n";
   auto modified = false;
   std::unordered_map<uint64_t, bool> modifiedLoops;
   for (auto loop : *loopsToParallelize){
