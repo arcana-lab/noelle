@@ -43,13 +43,13 @@ namespace llvm {
 
       Value * getTaskInstanceID (void) const ;
 
+      Value * getEnvironment (void) const ;
+
       virtual void extractFuncArgs () = 0;
 
       Function *F;
       BasicBlock *entryBlock, *exitBlock;
       std::vector<BasicBlock *> loopExitBlocks;
-
-      Value *envArg;
       std::unordered_map<Instruction *, Instruction *> instructionClones;
 
     protected:
@@ -57,6 +57,7 @@ namespace llvm {
       std::unordered_map<Value *, Value *> liveInClones;
       std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
       Value *instanceIndexV;
+      Value *envArg;
   };
 
 }
