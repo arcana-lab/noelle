@@ -52,3 +52,34 @@ std::unordered_set<Value *> Task::getOriginalLiveIns (void) const {
 
   return s;
 }
+
+bool Task::isAnOriginalBasicBlock (BasicBlock *o) const {
+  if (this->basicBlockClones.find(o) == this->basicBlockClones.end()){
+    return false;
+  }
+
+  return true;
+}
+
+BasicBlock * Task::getCloneOfOriginalBasicBlock (BasicBlock *o) const {
+  if (!this->isAnOriginalBasicBlock(o)){
+    return nullptr;
+  }
+
+  return this->basicBlockClones.at(o);
+}
+
+void Task::removeOriginalBasicBlock (BasicBlock *b){
+  this->basicBlockClones.erase(b);
+
+  return ;
+}
+
+std::unordered_set<BasicBlock *> Task::getOriginalBasicBlocks (void) const {
+  std::unordered_set<BasicBlock *> s;
+  for (auto p : this->basicBlockClones){
+    s.insert(p.first);
+  }
+
+  return s;
+}

@@ -31,6 +31,16 @@ namespace llvm {
 
       void addLiveIn (Value *original, Value *internal) ;
 
+      bool isAnOriginalBasicBlock (BasicBlock *o) const ;
+
+      BasicBlock * getCloneOfOriginalBasicBlock (BasicBlock *o) const ;
+
+      std::unordered_set<BasicBlock *> getOriginalBasicBlocks (void) const ;
+
+      void addBasicBlock (BasicBlock *original, BasicBlock *internal) ;
+
+      void removeOriginalBasicBlock (BasicBlock *b);
+
       virtual void extractFuncArgs () = 0;
 
       Function *F;
@@ -40,11 +50,11 @@ namespace llvm {
       Value *envArg;
       Value *instanceIndexV;
 
-      std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
       std::unordered_map<Instruction *, Instruction *> instructionClones;
 
     private:
       std::unordered_map<Value *, Value *> liveInClones;
+      std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
       uint32_t ID;
   };
 

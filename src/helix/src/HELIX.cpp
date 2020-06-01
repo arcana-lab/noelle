@@ -247,7 +247,7 @@ void HELIX::createParallelizableTask (
    * Add the unconditional branch from the entry basic block to the header of the loop.
    */
   IRBuilder<> entryBuilder(helixTask->entryBlock);
-  entryBuilder.CreateBr(helixTask->basicBlockClones[loopHeader]);
+  entryBuilder.CreateBr(helixTask->getCloneOfOriginalBasicBlock(loopHeader));
 
   /*
    * Store final results of loop live-out variables. 

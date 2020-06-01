@@ -201,9 +201,10 @@ void llvm::DSWP::printStageClonedValues (const LoopDependenceInfo &LDI, int task
   auto task = (DSWPTask *)this->tasks[taskIndex];
 
   stream << "Basic Block mapping\n";
-  for (auto clonePair : task->basicBlockClones) {
-    clonePair.first->printAsOperand(stream << "Original: "); stream << "\n";
-    clonePair.second->printAsOperand(stream << "\tCloned: "); stream << "\n";
+  for (auto origBB : task->getOriginalBasicBlocks()){
+    origBB->printAsOperand(stream << "Original: "); stream << "\n";
+    auto cloneBB = task->getCloneOfOriginalBasicBlock(origBB);
+    cloneBB->printAsOperand(stream << "\tCloned: "); stream << "\n";
   }
   stream << "\n";
 
