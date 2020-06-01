@@ -250,7 +250,7 @@ void ParallelizationTechnique::generateEmptyTasks (
     /*
      * Map original preheader to entry block
      */
-    task->basicBlockClones[loopPreHeader] = task->entryBlock;
+    task->addBasicBlock(loopPreHeader, task->entryBlock);
 
     /*
      * Create one basic block per loop exit, mapping between originals and clones,
@@ -258,7 +258,7 @@ void ParallelizationTechnique::generateEmptyTasks (
      */
     for (auto exitBB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
       auto newExitBB = BasicBlock::Create(cxt, "", task->F);
-      task->basicBlockClones[exitBB] = newExitBB;
+      task->addBasicBlock(exitBB, newExitBB);
       task->loopExitBlocks.push_back(newExitBB);
       IRBuilder<> builder(newExitBB);
       builder.CreateBr(task->exitBlock);
@@ -283,7 +283,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
      * Clone the basic block in the context of the original loop's function
      */
     auto cloneBB = BasicBlock::Create(cxt, "", task->F);
-    task->basicBlockClones[originBB] = cloneBB;
+    task->addBasicBlock(originBB, cloneBB);
 
     /*
      * Clone every instruction in the basic block, adding them in order to the clone
@@ -325,7 +325,7 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
       if (iClones.find(&I) == iClones.end()) continue;
       builder.Insert(iClones[&I]);
     }
-    task->basicBlockClones[bb] = cloneBB;
+    task->addBasicBlock(bb, cloneBB);
   }
 }
 
@@ -461,7 +461,7 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
 
   std::set<BasicBlock *> insertPoints;
   for (auto BB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
-    insertPoints.insert(task->basicBlockClones.at(BB));
+    insertPoints.insert(task->getCloneOfOriginalBasicBlock(BB));
   }
   return insertPoints;
 }
@@ -471,7 +471,6 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
   int taskIndex
 ){
   auto &task = tasks[taskIndex];
-  auto &bbClones = task->basicBlockClones;
   auto &iClones = task->instructionClones;
 
   for (auto pair : iClones) {
@@ -484,8 +483,8 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
       for (int i = 0; i < cloneI->getNumSuccessors(); ++i) {
         auto succBB = cloneI->getSuccessor(i);
         if (succBB->getParent() == task->F) continue;
-        assert(bbClones.find(succBB) != bbClones.end());
-        cloneI->setSuccessor(i, bbClones[succBB]);
+        assert(task->isAnOriginalBasicBlock(succBB));
+        cloneI->setSuccessor(i, task->getCloneOfOriginalBasicBlock(succBB));
       }
     }
 
@@ -493,7 +492,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
       for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
         auto incomingBB = phi->getIncomingBlock(i);
         if (incomingBB->getParent() == task->F) continue;
-        auto cloneBB = bbClones[incomingBB];
+        auto cloneBB = task->getCloneOfOriginalBasicBlock(incomingBB);
         phi->setIncomingBlock(i, cloneBB);
       }
     }
@@ -579,7 +578,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
     /*
      * Fetch the cloned pre-header.
      */
-    auto preheaderClone = task->basicBlockClones.at(loopPreHeader);
+    auto preheaderClone = task->getCloneOfOriginalBasicBlock(loopPreHeader);
     auto incomingIndex = producerClone->getBasicBlockIndex(preheaderClone);
     assert(incomingIndex != -1 && "Loop entry present on producer PHI node");
 
@@ -764,9 +763,10 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
     File << "\n";
 
     File << taskName << "basic block clones" << "\n";
-    for (auto clonePair : task->basicBlockClones) {
-      clonePair.first->printAsOperand(File << "Original: "); File << "\n\t";
-      clonePair.second->printAsOperand(File << "Cloned: "); File << "\n";
+    for (auto origBB : task->getOriginalBasicBlocks()){
+      origBB->printAsOperand(File << "Original: "); File << "\n\t";
+      auto cloneBB = task->getCloneOfOriginalBasicBlock(origBB);
+      cloneBB->printAsOperand(File << "Cloned: "); File << "\n";
     }
     File << "\n";
 

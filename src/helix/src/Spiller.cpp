@@ -107,7 +107,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * For the pre header edge case, store this initial value at time of
    * allocation of the environment
    */
-  auto preHeaderClone = helixTask->basicBlockClones[loopPreHeader];
+  auto preHeaderClone = helixTask->getCloneOfOriginalBasicBlock(loopPreHeader);
   auto firstNonPHI = helixTask->instructionClones[loopHeader->getFirstNonPHI()];
   IRBuilder<> headerBuilder(firstNonPHI);
   for (auto phiI = 0; phiI < clonedLoopCarriedPHIs.size(); phiI++) {

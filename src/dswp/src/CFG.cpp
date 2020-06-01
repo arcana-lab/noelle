@@ -55,8 +55,8 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
    */
   auto &cxt = task->F->getContext();
   for (auto B : loopSummary->orderedBBs) {
-    if (task->basicBlockClones.find(B) == task->basicBlockClones.end()) {
-      task->basicBlockClones[B] = BasicBlock::Create(cxt, "", task->F);
+    if (!task->isAnOriginalBasicBlock(B)){
+      task->addBasicBlock(B, BasicBlock::Create(cxt, "", task->F));
     }
   }
 
@@ -80,8 +80,8 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
     if (visitedBBs.find(originalB) != visitedBBs.end()) continue;
     visitedBBs.insert(originalB);
 
-    assert(task->basicBlockClones.find(originalB) != task->basicBlockClones.end() && "Basic block not cloned!");
-    auto clonedB = task->basicBlockClones.at(originalB);
+    assert(task->isAnOriginalBasicBlock(originalB) && "Basic block not cloned!");
+    auto clonedB = task->getCloneOfOriginalBasicBlock(originalB);
 
     if (!clonedB->getTerminator() || !clonedB->getTerminator()->isTerminator()) {
       auto postDominatingBB = LDI->loopBBtoPD.at(originalB);
@@ -89,7 +89,7 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
         && "Loop exiting terminator not cloned by task!");
 
       IRBuilder<> builder(clonedB);
-      builder.Insert(BranchInst::Create(task->basicBlockClones.at(postDominatingBB)));
+      builder.Insert(BranchInst::Create(task->getCloneOfOriginalBasicBlock(postDominatingBB)));
       queueToFindMissingBBs.push(postDominatingBB);
 
     } else {
@@ -104,9 +104,9 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
    * TODO: This should not be necessary. Investigate the contents of loopBBs to determine the issue
    */
   for (auto B : loopSummary->orderedBBs) {
-    auto clonedB = task->basicBlockClones.at(B);
+    auto clonedB = task->getCloneOfOriginalBasicBlock(B);
     if (clonedB->getTerminator()) continue;
     clonedB->eraseFromParent();
-    task->basicBlockClones.erase(B);
+    task->removeOriginalBasicBlock(B);
   }
 }

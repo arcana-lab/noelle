@@ -299,7 +299,6 @@ void DSWP::generateLoadsOfQueuePointers (
 
 void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
-  auto &bbClones = task->basicBlockClones;
   auto &iClones = task->instructionClones;
 
   for (auto queueIndex : task->popValueQueues) {
@@ -308,9 +307,9 @@ void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
     auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
 
     auto bb = queueInfo->producer->getParent();
-    assert(bbClones.find(bb) != bbClones.end());
+    assert(task->isAnOriginalBasicBlock(bb));
 
-    IRBuilder<> builder(bbClones[bb]);
+    IRBuilder<> builder(task->getCloneOfOriginalBasicBlock(bb));
     auto queuePopFunction = par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]];
     queueInstrs->queueCall = builder.CreateCall(queuePopFunction, queueCallArgs);
     queueInstrs->load = builder.CreateLoad(queueInstrs->alloca);
