@@ -1,22 +1,13 @@
 # Sources
 set(Srcs 
-  HELIX.cpp
-  HELIXTask.cpp
-  HELIXTaskInternalDependenceGraph.cpp
-  Linker.cpp
-  Spiller.cpp
-  SequentialSegments.cpp
-  SequentialSegment.cpp
-  Scheduler.cpp
-  Synchronization.cpp
-  Inliner.cpp
+  Task.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "HELIX")
+set(PassName "Task")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -31,23 +22,9 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
-  ../../../external/svf/include
   ../../basic_utilities/include 
-  ../../task/include 
-  ../../dataflow/include 
-  ../../alloc_aa/include 
-  ../../pdg/include 
-  ../../threadpool/include 
-  ../../loops/include
-  ../../parallelization_utilities/include 
-  ../../architecture/include  
-  ../../heuristics/include 
-  ../../parallelization_technique/include 
-  ../../doall/include 
-  ../../hotprofiler/include 
-  ../../talkdown/include
   ../include 
-  ./ 
+  ./
   )
 
 # Declare the LLVM pass to compile

@@ -27,6 +27,7 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../../../external/svf/include
   ../../basic_utilities/include 
+  ../../task/include 
   ../../alloc_aa/include 
   ../../pdg/include 
   ../../threadpool/include 

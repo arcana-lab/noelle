@@ -8,41 +8,10 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
 #include "Task.hpp"
-#include "SCCDAGAttrs.hpp"
 
-using namespace std;
+using namespace llvm;
 
-namespace llvm {
-
-  class HELIXTask : public Task {
-    public:
-
-      /*
-       * Task arguments
-       */
-      Value *coreArg;
-      Value *numCoresArg;
-      Value *ssPastArrayArg;
-      Value *ssFutureArrayArg;
-      Value *loopCarriedArrayArg;
-      Value *loopIsOverFlagArg;
-
-      /*
-       * Clone of original IV loop, new outer loop
-       */
-      SCCAttrs *originalIVAttrs;
-      PHINode *originalIVClone;
-      PHINode *outermostLoopIV;
-
-      /*
-       * Synchronization calls (waits, signals)
-       */
-      std::set<CallInst *> waits;
-      std::set<CallInst *> signals;
-
-      void extractFuncArgs () override ;
-  };
+Task::Task(){
+  return ;
 }

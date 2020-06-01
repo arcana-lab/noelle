@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "TaskExecution.hpp"
+#include "Task.hpp"
 #include "SCCDAGAttrs.hpp"
 
 namespace llvm {
