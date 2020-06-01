@@ -24,8 +24,11 @@ namespace llvm {
 
   class DSWPTask : public Task {
     public:
-      DSWPTask ()
-        : stageSCCs{}, clonableSCCs{} {}
+
+      /*
+       * Constructor
+       */
+      DSWPTask (uint32_t ID);
 
       /*
        * DSWP specific task function arguments
@@ -58,15 +61,7 @@ namespace llvm {
        */
       unordered_map<int, std::unique_ptr<QueueInstrs>> queueInstrMap;
 
-      void extractFuncArgs () {
-        auto argIter = this->F->arg_begin();
-        this->envArg = (Value *) &*(argIter++);
-        this->queueArg = (Value *) &*(argIter++);
-        instanceIndexV = ConstantInt::get(
-          IntegerType::get(F->getContext(), 64),
-          order
-        );
-      }
+      void extractFuncArgs (void) override ;
   };
 
   struct QueueInfo {

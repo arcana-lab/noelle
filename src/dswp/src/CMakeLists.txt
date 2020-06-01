@@ -8,6 +8,7 @@ set(Srcs
   Pipeline.cpp
   Printer.cpp
   Queue.cpp
+  DSWPTask.cpp
 )
 
 # Compilation flags

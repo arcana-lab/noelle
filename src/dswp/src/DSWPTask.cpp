@@ -8,32 +8,27 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "HELIXTask.hpp"
+#include "TaskExecutionDSWP.hpp"
 
-HELIXTask::HELIXTask()
-  :Task{0}
+using namespace llvm;
+
+DSWPTask::DSWPTask (uint32_t ID)
+  : Task{ID},
+    stageSCCs{},
+    clonableSCCs{}
   {
+
   return ;
 }
-
-void llvm::HELIXTask::extractFuncArgs (void) {
-
-  /*
-   * Fetch the arguments of the function that implements the task.
-   */
+      
+void DSWPTask::extractFuncArgs (void) {
   auto argIter = this->F->arg_begin();
   this->envArg = (Value *) &*(argIter++);
-  this->loopCarriedArrayArg = (Value *) &*(argIter++);
-  this->ssPastArrayArg = (Value *) &*(argIter++);
-  this->ssFutureArrayArg = (Value *) &*(argIter++);
-  this->coreArg = (Value *) &*(argIter++); 
-  this->numCoresArg = (Value *) &*(argIter++);
-  this->loopIsOverFlagArg = (Value *) &*(argIter++);
-
-  /*
-   * Set the task index.
-   */
-  this->instanceIndexV = coreArg;
+  this->queueArg = (Value *) &*(argIter++);
+  instanceIndexV = ConstantInt::get(
+    IntegerType::get(F->getContext(), 64),
+    this->getID()
+  );
 
   return ;
 }

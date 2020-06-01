@@ -27,7 +27,7 @@ void DSWP::registerQueue (
   int queueIndex = this->queues.size();
   QueueInfo *queueInfo = nullptr;
   for (auto queueI : fromStage->producerToQueues[producer]) {
-    if (this->queues[queueI]->toStage != toStage->order) continue;
+    if (this->queues[queueI]->toStage != toStage->getID()) continue;
     queueIndex = queueI;
     queueInfo = this->queues[queueIndex].get();
     break;
@@ -60,8 +60,10 @@ void DSWP::registerQueue (
    * Track the stages this queue communicates between
    */
   queueInfo->consumers.insert(consumer);
-  queueInfo->fromStage = fromStage->order;
-  queueInfo->toStage = toStage->order;
+  queueInfo->fromStage = fromStage->getID();
+  queueInfo->toStage = toStage->getID();
+
+  return ;
 }
 
 void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {

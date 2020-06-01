@@ -19,7 +19,9 @@ namespace llvm {
   class Task {
     public:
 
-      Task ();
+      Task (uint32_t ID);
+
+      uint32_t getID (void) const ;
 
       bool isAnOriginalLiveIn (Value *v) const ;
 
@@ -31,7 +33,6 @@ namespace llvm {
 
       virtual void extractFuncArgs () = 0;
 
-      int order;
       Function *F;
       BasicBlock *entryBlock, *exitBlock;
       std::vector<BasicBlock *> loopExitBlocks;
@@ -44,6 +45,7 @@ namespace llvm {
 
     private:
       std::unordered_map<Value *, Value *> liveInClones;
+      uint32_t ID;
   };
 
 }

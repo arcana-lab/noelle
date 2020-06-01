@@ -15,12 +15,14 @@ using namespace llvm;
 void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
   std::vector<Task *> techniqueTasks;
   auto &depthOrdered = this->partition->getDepthOrderedSubsets();
+  auto taskID = 0;
   for (auto subset : depthOrdered) {
 
     /*
      * Create task (stage), populating its SCCs
      */
-    auto task = new DSWPTask();
+    auto task = new DSWPTask(taskID);
+    taskID++;
     techniqueTasks.push_back(task);
     for (auto scc : *subset) {
       task->stageSCCs.insert(scc);

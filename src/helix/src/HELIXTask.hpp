@@ -20,6 +20,8 @@ namespace llvm {
   class HELIXTask : public Task {
     public:
 
+      HELIXTask();
+
       /*
        * Task arguments
        */

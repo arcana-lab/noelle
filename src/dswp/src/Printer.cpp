@@ -19,7 +19,7 @@ void llvm::DSWP::printStageSCCs (LoopDependenceInfo *LDI) const {
   errs() << "DSWP:  Pipeline stages\n";
   for (auto techniqueTask : this->tasks) {
     auto task = (DSWPTask *)techniqueTask;
-    errs() << "DSWP:    Stage: " << task->order << "\n";
+    errs() << "DSWP:    Stage: " << task->getID() << "\n";
     for (auto scc : task->stageSCCs) {
       scc->print(errs(), "DSWP:     ", /*maxEdges=*/15);
       errs() << "DSWP:    \n" ;
@@ -44,7 +44,7 @@ void llvm::DSWP::printStageQueues (LoopDependenceInfo *LDI) const {
   errs() << "DSWP:  Queues that connect the pipeline stages\n";
   for (auto techniqueTask : this->tasks) {
     auto task = (DSWPTask *)techniqueTask;
-    errs() << "DSWP:    Stage: " << task->order << "\n";
+    errs() << "DSWP:    Stage: " << task->getID() << "\n";
 
     errs() << "DSWP:      Push value queues: ";
     for (auto qInd : task->pushValueQueues) {
@@ -137,13 +137,13 @@ void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
 
     ros << "Task ids owning scc: ";
     for (auto owningTask : taskAssignments.first) {
-      ros << owningTask->order << " ";
+      ros << owningTask->getID() << " ";
     }
     ros << "\n";
 
     ros << "Task ids using clonable scc: ";
     for (auto owningTask : taskAssignments.second) {
-      ros << owningTask->order << " ";
+      ros << owningTask->getID() << " ";
     }
     ros << "\n";
 

@@ -10,6 +10,13 @@
  */
 #include "DOALLTask.hpp"
 
+DOALLTask::DOALLTask ()
+  :Task{0}
+  {
+
+  return ;
+}
+
 void llvm::DOALLTask::extractFuncArgs (void) {
   auto argIter = this->F->arg_begin();
   this->envArg = (Value *) &*(argIter++);
