@@ -41,6 +41,8 @@ namespace llvm {
 
       void removeOriginalBasicBlock (BasicBlock *b);
 
+      Value * getTaskInstanceID (void) const ;
+
       virtual void extractFuncArgs () = 0;
 
       Function *F;
@@ -48,14 +50,13 @@ namespace llvm {
       std::vector<BasicBlock *> loopExitBlocks;
 
       Value *envArg;
-      Value *instanceIndexV;
-
       std::unordered_map<Instruction *, Instruction *> instructionClones;
 
-    private:
+    protected:
+      uint32_t ID;
       std::unordered_map<Value *, Value *> liveInClones;
       std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
-      uint32_t ID;
+      Value *instanceIndexV;
   };
 
 }
