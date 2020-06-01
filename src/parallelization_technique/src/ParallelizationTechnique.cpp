@@ -350,7 +350,7 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
      * Register the load as a "clone" of the original producer
      */
     auto envLoad = builder.CreateLoad(envUser->getEnvPtr(envIndex));
-    task->liveInClones[producer] = cast<Instruction>(envLoad);
+    task->addLiveIn(producer, envLoad);
   }
 }
 
@@ -474,7 +474,6 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
   auto &task = tasks[taskIndex];
   auto &bbClones = task->basicBlockClones;
   auto &iClones = task->instructionClones;
-  auto &liveIns = task->liveInClones;
 
   for (auto pair : iClones) {
     auto cloneI = pair.second;
@@ -510,8 +509,9 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
        * If the value is a loop live-in one,
        * set it to the value loaded outside the parallelized loop.
        */
-      if (liveIns.find(opV) != liveIns.end()) {
-        op.set(liveIns[opV]);
+      if (task->isAnOriginalLiveIn(opV)){
+        auto internalValue = task->getCloneOfOriginalLiveIn(opV);
+        op.set(internalValue);
         continue ;
       }
 
@@ -772,9 +772,10 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
     File << "\n";
 
     File << taskName << "live in clones" << "\n";
-    for (auto clonePair : task->liveInClones) {
-      clonePair.first->print(File << "Original: "); File << "\n\t";
-      clonePair.second->print(File << "Cloned: "); File << "\n";
+    for (auto origLiveIn : task->getOriginalLiveIns()) {
+      origLiveIn->print(File << "Original: "); File << "\n\t";
+      auto cloneLiveIn = task->getCloneOfOriginalLiveIn(origLiveIn);
+      cloneLiveIn->print(File << "Cloned: "); File << "\n";
     }
     File << "\n";
   }

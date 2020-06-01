@@ -309,8 +309,8 @@ Value *DOALL::fetchClone(Value *original) const {
   auto task = (DOALLTask *)tasks[0];
   if (isa<ConstantData>(original)) return original;
 
-  if (task->liveInClones.find(original) != task->liveInClones.end()) {
-    return task->liveInClones[original];
+  if (task->isAnOriginalLiveIn(original)){
+    return task->getCloneOfOriginalLiveIn(original);
   }
 
   assert(isa<Instruction>(original));

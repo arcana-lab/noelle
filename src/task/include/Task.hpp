@@ -18,7 +18,18 @@ namespace llvm {
 
   class Task {
     public:
+
       Task ();
+
+      bool isAnOriginalLiveIn (Value *v) const ;
+
+      Value * getCloneOfOriginalLiveIn (Value *o) const ;
+
+      std::unordered_set<Value *> getOriginalLiveIns (void) const ;
+
+      void addLiveIn (Value *original, Value *internal) ;
+
+      virtual void extractFuncArgs () = 0;
 
       int order;
       Function *F;
@@ -30,9 +41,9 @@ namespace llvm {
 
       std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
       std::unordered_map<Instruction *, Instruction *> instructionClones;
-      std::unordered_map<Value *, Value *> liveInClones;
 
-      virtual void extractFuncArgs () = 0;
+    private:
+      std::unordered_map<Value *, Value *> liveInClones;
   };
 
 }
