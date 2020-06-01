@@ -92,23 +92,7 @@ test_correctness: input.txt baseline $(OPTIMIZED)
 	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
 	echo "Success"
 
-show_passes: baseline_pre.bc output.prof
-	noelle-parallelizer output.prof $(PARALLELIZATION_OPTIONS) $^ --debug-pass=Structure -disable-output
-
-show_time: baseline_pre.bc output.prof
-	noelle-parallelizer output.prof $(PARALLELIZATION_OPTIONS) $^ -time-passes -disable-output
-
-pdg: baseline_pre.bc
-	noelle-pdg $^
-
-meta: baseline_pre.bc
-	noelle-meta-embed $^ -o $^
-
-meta_clean: baseline_pre.bc
-	noelle-meta-clean $^ -o $^
-	llvm-dis $^
-
 clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
 
-.PHONY: test_correctness show_passes show_time pdg meta_clean meta clean
+.PHONY: test_correctness clean
