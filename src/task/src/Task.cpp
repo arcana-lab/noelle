@@ -15,3 +15,34 @@ using namespace llvm;
 Task::Task(){
   return ;
 }
+      
+bool Task::isAnOriginalLiveIn (Value *v) const {
+  if (this->liveInClones.find(v) == this->liveInClones.end()){
+    return false;
+  }
+
+  return true;
+}
+
+Value * Task::getCloneOfOriginalLiveIn (Value *o) const {
+  if (!this->isAnOriginalLiveIn(o)){
+    return nullptr;
+  }
+
+  return this->liveInClones.at(o);
+}
+
+void Task::addLiveIn (Value *original, Value *internal) {
+  this->liveInClones[original] = internal;
+
+  return ;
+}
+
+std::unordered_set<Value *> Task::getOriginalLiveIns (void) const {
+  std::unordered_set<Value *> s;
+  for (auto p : this->liveInClones){
+    s.insert(p.first);
+  }
+
+  return s;
+}
