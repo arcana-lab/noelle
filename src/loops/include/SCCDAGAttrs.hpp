@@ -85,6 +85,11 @@ namespace llvm {
       // TODO: Return const reference to SCCDAG, not a raw pointer
       SCCDAG * getSCCDAG (void) const ;
 
+      /*
+       * Debug methods
+       */
+      void dumpToFile (int id) ;
+
     private:
       std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
       SCCDAG *sccdag;     /* SCCDAG of the related loop.  */
@@ -106,10 +111,11 @@ namespace llvm {
         std::set<InductionVariable *> &loopGoverningIVs,
         std::set<InductionVariable *> &IVs
       );
-      void checkIfClonable (SCC *scc, ScalarEvolution &SE);
+      void checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);
       bool isClonableByInductionVars (SCC *scc) const ;
       bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;
       bool isClonableByCmpBrInstrs (SCC *scc) const ;
+      bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(SCC *scc, LoopsSummary &LIS) const ;
 
       /*
        * Helper methods on single values within SCCs

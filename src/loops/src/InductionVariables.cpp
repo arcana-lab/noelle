@@ -34,7 +34,7 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
       auto IV = new InductionVariable(loop.get(), l, SE, &phi, *sccContainingIV); 
       loopToIVsMap[loop.get()].insert(IV);
 
-      auto exitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+      auto exitBlocks = LIS.getLoop(phi)->getLoopExitBasicBlocks();
       LoopGoverningIVAttribution attribution(*IV, *sccContainingIV, exitBlocks);
       if (attribution.isSCCContainingIVWellFormed()) {
         loopToGoverningIVMap[loop.get()] = IV;
@@ -161,7 +161,8 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
    * know the sign of the step size at compile time. Extra overhead is necessary if this
    * is only known at runtime, and that enhancement has yet to be made
    */
-  if (iv.getSimpleValueOfStepSize() && !isa<ConstantInt>(iv.getSimpleValueOfStepSize())) return;
+  if (!iv.getSimpleValueOfStepSize() || !isa<ConstantInt>(iv.getSimpleValueOfStepSize())) return;
+  // iv.getHeaderPHI()->print(errs() << "Has step size: "); errs() << "\n";
 
   auto headerPHI = iv.getHeaderPHI();
   auto &ivInstructions = iv.getAllInstructions();
@@ -172,6 +173,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto headerTerminator = headerPHI->getParent()->getTerminator();
   if (!isa<BranchInst>(headerTerminator)) return;
   this->headerBr = cast<BranchInst>(headerTerminator);
+  // iv.getHeaderPHI()->print(errs() << "Has branch: "); errs() << "\n";
 
   /*
    * Check this is a conditional branch.
@@ -191,6 +193,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto opL = headerCmp->getOperand(0), opR = headerCmp->getOperand(1);
   if (!(opL == headerPHI ^ opR == headerPHI)) return;
   this->conditionValue = opL == headerPHI ? opR : opL;
+  // iv.getHeaderPHI()->print(errs() << "Has condition: "); errs() << "\n";
 
   std::set<BasicBlock *> exitBlockSet(exitBlocks.begin(), exitBlocks.end());
   if (exitBlockSet.find(headerBr->getSuccessor(0)) != exitBlockSet.end()) {
@@ -198,6 +201,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   } else if (exitBlockSet.find(headerBr->getSuccessor(1)) != exitBlockSet.end()) {
     this->exitBlock = headerBr->getSuccessor(1);
   } else return ;
+  // iv.getHeaderPHI()->print(errs() << "Has one exit: "); errs() << "\n";
 
   if (scc.isInternal(conditionValue)) {
     std::queue<Instruction *> conditionDerivation;
@@ -210,6 +214,8 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
       conditionDerivation.pop();
 
       for (auto edge : scc.fetchNode(value)->getIncomingEdges()) {
+        if (!edge->isDataDependence()) continue;
+
         auto outgoingValue = edge->getOutgoingT();
         if (scc.isInternal(outgoingValue)) {
           assert(isa<Instruction>(outgoingValue)
@@ -219,8 +225,13 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
           /*
            * The exit condition value cannot be itself derived from the induction variable 
            */
-          if (ivInstructions.find(outgoingInst) != ivInstructions.end()) return;
+          if (ivInstructions.find(outgoingInst) != ivInstructions.end()) {
+            // outgoingInst->print(errs() << "Exit condition depends on IV: "); errs() << "\n";
+            return;
+          }
+
           conditionValueDerivation.insert(outgoingInst);
+          conditionDerivation.push(outgoingInst);
         }
       }
     }

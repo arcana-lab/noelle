@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "SCCDAGAttrs.hpp"
+#include "PDGPrinter.hpp"
 
 using namespace llvm;
 
@@ -37,6 +38,17 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
     if (loopGoverningIV) loopGoverningIVs.insert(loopGoverningIV);
   }
 
+  // errs() << "IVs: " << ivs.size() << "\n";
+  // for (auto iv : ivs) {
+  //   iv->getHeaderPHI()->print(errs() << "IV: "); errs() << "\n";
+  // }
+  // errs() << "-------------\n";
+  // errs() << "Loop governing IVs: " << loopGoverningIVs.size() << "\n";
+  // for (auto iv : loopGoverningIVs) {
+  //   iv->getHeaderPHI()->print(errs() << "IV: "); errs() << "\n";
+  // }
+  // errs() << "-------------\n";
+
   /*
    * Tag SCCs depending on their characteristics.
    */
@@ -54,7 +66,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
     bool doesSCCOnlyContainIV = this->checkIfSCCOnlyContainsInductionVariables(scc, LIS, ivs, loopGoverningIVs);
     sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
 
-    this->checkIfClonable(scc, SE);
+    this->checkIfClonable(scc, SE, LIS);
 
     /*
      * Tag the current SCC.
@@ -284,12 +296,6 @@ void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS, DominatorSummary &DS) 
 
       auto instFrom = dyn_cast<Instruction>(edge->getOutgoingT());
       auto instTo = dyn_cast<Instruction>(edge->getIncomingT());
-      if (  false
-            || (LIS.getLoop(*instFrom) == nullptr)
-            || (LIS.getLoop(*instTo) == nullptr)
-        ) {
-        continue;
-      }
 
       if (instFrom == instTo || !DS.DT.dominates(instFrom, instTo)) {
         interIterDeps[scc].insert(edge);
@@ -313,8 +319,8 @@ void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS, DominatorSummary &DS) 
 bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
   SCC *scc,
   LoopsSummary &LIS,
-  std::set<InductionVariable *> &loopGoverningIVs,
-  std::set<InductionVariable *> &IVs) {
+  std::set<InductionVariable *> &IVs,
+  std::set<InductionVariable *> &loopGoverningIVs) {
 
   /*
    * Identify contained induction variables
@@ -335,11 +341,16 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
    */
   for (auto containedIV : containedIVs) {
     if (loopGoverningIVs.find(containedIV) == loopGoverningIVs.end()) continue;
-    auto exitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+    auto exitBlocks = LIS.getLoop(*containedIV->getHeaderPHI()->getParent())->getLoopExitBasicBlocks();
     LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
-    if (!attribution.isSCCContainingIVWellFormed()) return false;
+    if (!attribution.isSCCContainingIVWellFormed()) {
+      // errs() << "Not well formed SCC for loop governing IV!\n";
+      return false;
+    }
     containedInsts.insert(attribution.getHeaderCmpInst());
     containedInsts.insert(attribution.getHeaderBrInst());
+    auto conditionValue = attribution.getHeaderCmpInstConditionValue();
+    if (isa<Instruction>(conditionValue)) containedInsts.insert(cast<Instruction>(conditionValue));
     auto conditionDerivation = attribution.getConditionValueDerivation();
     containedInsts.insert(conditionDerivation.begin(), conditionDerivation.end());
   }
@@ -359,6 +370,10 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
       }
     }
 
+    // value->print(errs() << "Suspect value: "); errs() << "\n";
+    // for (auto containedI : containedInsts) {
+    //   containedI->print(errs() << "Contained: "); errs() << "\n";
+    // }
     return false;
   }
 
@@ -575,7 +590,7 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
   return interIterDepsInternalToSCC.find(scc) == interIterDepsInternalToSCC.end();
 }
 
-void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
+void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS) {
 
   /*
    * Check the simple cases.
@@ -584,6 +599,7 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
        || isClonableByInductionVars(scc)
        || isClonableBySyntacticSugarInstrs(scc)
        || isClonableByCmpBrInstrs(scc)
+       || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc, LIS)
       ) {
     this->getSCCAttrs(scc)->setSCCToBeClonable();
     clonableSCCs.insert(scc);
@@ -591,6 +607,34 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE) {
   }
 
   return ;
+}
+
+bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies (SCC *scc, LoopsSummary &LIS) const {
+
+  /*
+   * FIXME: This check should not exist; instead, SCC where cloning
+   * is trivial should be separated out by the parallelization scheme
+   */
+  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
+
+  for (auto edge : scc->getEdges()) {
+    if (edge->isMemoryDependence()) return false;
+  }
+
+  if (interIterDepsInternalToSCC.find(scc) == interIterDepsInternalToSCC.end()) return true;
+
+  auto topLoop = LIS.getLoopNestingTreeRoot();
+  for (auto loopCarriedDependency : interIterDepsInternalToSCC.at(scc)) {
+    auto valueFrom = loopCarriedDependency->getOutgoingT();
+    auto valueTo = loopCarriedDependency->getIncomingT();
+    assert(isa<Instruction>(valueFrom) && isa<Instruction>(valueTo));
+    if (LIS.getLoop(*cast<Instruction>(valueFrom)) == topLoop ||
+      LIS.getLoop(*cast<Instruction>(valueTo)) == topLoop) {
+        return false;
+    }
+  }
+
+  return true;
 }
 
 bool SCCDAGAttrs::isClonableByInductionVars (SCC *scc) const {
@@ -830,6 +874,56 @@ void SCCDAGAttrs::iterateOverLoopCarriedDataDependences (
 
 SCCDAG * SCCDAGAttrs::getSCCDAG (void) const {
   return this->sccdag;
+}
+
+void SCCDAGAttrs::dumpToFile (int id) {
+  std::error_code EC;
+  std::string filename = "sccdag-attrs-loop-" + std::to_string(id) + ".dot";
+
+  if (EC) {
+    errs() << "ERROR: Could not dump debug logs to file!";
+    return ;
+  }
+
+  DG<DGString> stageGraph;
+  std::set<DGString *> elements;
+  std::unordered_map<DGNode<SCC> *, DGNode<DGString> *> sccToDescriptionMap;
+
+  auto addNode = [&](std::string val, bool isInternal) -> DGNode<DGString> * {
+    auto element = new DGString(val);
+    elements.insert(element);
+    return stageGraph.addNode(element, isInternal);
+  };
+
+  for (auto sccNode : sccdag->getNodes()) {
+    std::string sccDescription;
+    raw_string_ostream ros(sccDescription);
+
+    auto sccInfo = getSCCAttrs(sccNode->getT());
+    ros << "Type: ";
+    if (sccInfo->canExecuteIndependently()) ros << "Independent ";
+    if (sccInfo->canBeCloned()) ros << "Clonable ";
+    if (sccInfo->canExecuteReducibly()) ros << "Reducible ";
+    if (sccInfo->isInductionVariableSCC()) ros << "IV ";
+    ros << "\n";
+
+    for (auto iNodePair : sccNode->getT()->internalNodePairs()) {
+      iNodePair.first->print(ros);
+      ros << "\n";
+    }
+
+    ros.flush();
+    sccToDescriptionMap.insert(std::make_pair(sccNode, addNode(sccDescription, true)));
+  }
+
+  for (auto sccEdge : sccdag->getEdges()) {
+    auto outgoingDesc = sccToDescriptionMap.at(sccEdge->getOutgoingNode())->getT();
+    auto incomingDesc = sccToDescriptionMap.at(sccEdge->getIncomingNode())->getT();
+    stageGraph.addEdge(outgoingDesc, incomingDesc);
+  }
+
+  DGPrinter::writeGraph<DG<DGString>>(filename, &stageGraph);
+  for (auto elem : elements) delete elem;
 }
 
 bool SCCAttrs::mustExecuteSequentially (void) const {
