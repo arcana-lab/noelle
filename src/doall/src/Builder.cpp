@@ -56,10 +56,14 @@ void DOALL::rewireLoopToIterateChunks (
       assert(expandedInsts.size() > 0);
       for (auto expandedInst : expandedInsts) {
         auto clonedInst = expandedInst->clone();
-        clonedStepValue = clonedInst;
+        task->instructionClones.insert(std::make_pair(expandedInst, clonedInst));
         entryBuilder.Insert(clonedInst);
-        adjustDataFlowToUseClones(clonedInst, 0);
       }
+
+      for (auto expandedInst : expandedInsts) {
+        adjustDataFlowToUseClones(task->instructionClones.at(expandedInst), 0);
+      }
+      clonedStepValue = task->instructionClones.at(expandedInsts.back());
     }
 
     clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));

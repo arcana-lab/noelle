@@ -25,9 +25,22 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
   collectDependencies(LIS, DS);
 
   /*
+   * Collect flattened list of all IVs at all loop levels
+   */
+  std::set<InductionVariable *> ivs;
+  std::set<InductionVariable *> loopGoverningIVs;
+  for (auto &LS : LIS.loops) {
+    auto loop = LS.get();
+    auto loopIVs = IV.getInductionVariables(*loop);
+    ivs.insert(loopIVs.begin(), loopIVs.end());
+    auto loopGoverningIV = IV.getLoopGoverningInductionVariable(*loop);
+    if (loopGoverningIV) loopGoverningIVs.insert(loopGoverningIV);
+  }
+
+  /*
    * Tag SCCs depending on their characteristics.
    */
-  loopSCCDAG->iterateOverSCCs([this, &SE, &LIS, &IV](SCC *scc) -> bool {
+  loopSCCDAG->iterateOverSCCs([this, &SE, &LIS, &ivs, &loopGoverningIVs](SCC *scc) -> bool {
 
     /*
      * Allocate the metadata about this SCC.
@@ -38,7 +51,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
     /*
      * Collect information about the current SCC.
      */
-    bool doesSCCOnlyContainIV = this->checkIfSCCOnlyContainsInductionVariable(scc, LIS, IV);
+    bool doesSCCOnlyContainIV = this->checkIfSCCOnlyContainsInductionVariables(scc, LIS, ivs, loopGoverningIVs);
     sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
 
     this->checkIfClonable(scc, SE);
@@ -297,54 +310,56 @@ void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS, DominatorSummary &DS) 
   return ;
 }
 
-bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariable (SCC *scc, LoopsSummary &LIS, InductionVariables &IV) {
-
-  auto firstInternalValue = (*scc->begin_internal_node_map()).first;
-  if (!isa<Instruction>(firstInternalValue)) return false;
-  auto inst = cast<Instruction>(firstInternalValue);
-
-  auto loop = LIS.getLoop(*inst);
-  if (!loop) return false;
-
-  InductionVariable *containedIV = nullptr;
-  for (auto iv : IV.getInductionVariables(*loop)) {
-    if (scc->isInternal(iv->getHeaderPHI())) {
-      containedIV = iv;
-      break;
-    }
-  }
-  if (!containedIV) return false;
+bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
+  SCC *scc,
+  LoopsSummary &LIS,
+  std::set<InductionVariable *> &loopGoverningIVs,
+  std::set<InductionVariable *> &IVs) {
 
   /*
-   * If the IV is loop governing, ensure loop governance is well formed
-   * Else, simply enforce the SCC only contains IV intermediate instructions
+   * Identify contained induction variables
    */
-  auto loopGoverningIV = IV.getLoopGoverningInductionVariable(*loop);
-  if (loopGoverningIV == containedIV) {
+  std::set<InductionVariable *> containedIVs;
+  std::set<Instruction *> containedInsts;
+  for (auto iv : IVs) {
+    if (scc->isInternal(iv->getHeaderPHI())) {
+      containedIVs.insert(iv);
+      auto allInsts = iv->getAllInstructions();
+      containedInsts.insert(allInsts.begin(), allInsts.end());
+    }
+  }
+  if (containedIVs.size() == 0) return false;
+
+  /*
+   * If a contained IV is loop governing, ensure loop governance is well formed
+   */
+  for (auto containedIV : containedIVs) {
+    if (loopGoverningIVs.find(containedIV) == loopGoverningIVs.end()) continue;
     auto exitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
     LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
     if (!attribution.isSCCContainingIVWellFormed()) return false;
-  } else {
-    auto &ivInstructions = containedIV->getAllInstructions();
-    if (scc->numInternalNodes() != ivInstructions.size()) return false;
-
-    for (auto I : ivInstructions) {
-      if (!scc->isInternal(I)) {
-        return false;
-      }
-    }
+    containedInsts.insert(attribution.getHeaderCmpInst());
+    containedInsts.insert(attribution.getHeaderBrInst());
+    auto conditionDerivation = attribution.getConditionValueDerivation();
+    containedInsts.insert(conditionDerivation.begin(), conditionDerivation.end());
   }
 
   /*
-   * NOTE: We are only concerned with IVs that have no memory dependencies
-   * in their SCC. Consider moving this responsibility to the clonable
-   * attribution and requiring parallelization schemes to check that too
+   * NOTE: No side effects can be contained in the SCC; only instructions of the IVs
    */
-  for (auto iNodePair : scc->internalNodePairs()) {
-    for (auto edge : iNodePair.second->getIncomingEdges()) {
-      if (!scc->isInternal(edge->getOutgoingT())) continue;
-      if (edge->isMemoryDependence()) return false;
+  for (auto nodePair : scc->internalNodePairs()) {
+    auto value = nodePair.first;
+    if (auto inst = dyn_cast<Instruction>(value)) {
+      if (containedInsts.find(inst) != containedInsts.end()) continue;
+
+      if (auto br = dyn_cast<BranchInst>(value)) {
+        if (br->isUnconditional()) continue;
+      } else if (isa<GetElementPtrInst>(inst) || isa<PHINode>(inst) || isa<CastInst>(inst)) {
+        continue;
+      }
     }
+
+    return false;
   }
 
   return true;
