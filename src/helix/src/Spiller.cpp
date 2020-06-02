@@ -65,8 +65,8 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * Instantiate a builder to the task's entry, track the terminator,
    * and later hoist the terminator back to the end of the entry block.
    */
-  auto entryBlockTerminator = helixTask->entryBlock->getTerminator();
-  IRBuilder<> entryBuilder(helixTask->entryBlock);
+  auto entryBlockTerminator = helixTask->getEntry()->getTerminator();
+  IRBuilder<> entryBuilder(helixTask->getEntry());
 
   /*
    * Register a new environment builder and the single HELIX task

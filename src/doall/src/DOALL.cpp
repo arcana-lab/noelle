@@ -219,7 +219,7 @@ bool DOALL::apply (
   /*
    * Add the final return to the single task's exit block.
    */
-  IRBuilder<> exitB(tasks[0]->exitBlock);
+  IRBuilder<> exitB(tasks[0]->getExit());
   exitB.CreateRetVoid();
 
   /*

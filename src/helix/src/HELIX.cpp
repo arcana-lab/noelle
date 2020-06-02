@@ -246,7 +246,7 @@ void HELIX::createParallelizableTask (
   /*
    * Add the unconditional branch from the entry basic block to the header of the loop.
    */
-  IRBuilder<> entryBuilder(helixTask->entryBlock);
+  IRBuilder<> entryBuilder(helixTask->getEntry());
   entryBuilder.CreateBr(helixTask->getCloneOfOriginalBasicBlock(loopHeader));
 
   /*
@@ -278,7 +278,7 @@ void HELIX::createParallelizableTask (
   /*
    * Add the final return instruction to the single task's exit block.
    */
-  IRBuilder<> exitB(helixTask->exitBlock);
+  IRBuilder<> exitB(helixTask->getExit());
   exitB.CreateRetVoid();
 
   if (this->verbose >= Verbosity::Maximal) {

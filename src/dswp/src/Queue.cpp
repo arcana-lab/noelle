@@ -262,7 +262,7 @@ void DSWP::generateLoadsOfQueuePointers (
   int taskIndex
 ) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
-  IRBuilder<> entryBuilder(task->entryBlock);
+  IRBuilder<> entryBuilder(task->getEntry());
   auto queuesArray = entryBuilder.CreateBitCast(
     task->queueArg,
     PointerType::getUnqual(this->queueArrayType)
