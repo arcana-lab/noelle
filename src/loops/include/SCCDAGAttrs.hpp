@@ -100,7 +100,12 @@ namespace llvm {
        */
       bool checkIfReducible (SCC *scc, LoopsSummary &LIS);
       bool checkIfIndependent (SCC *scc);
-      bool checkIfSCCOnlyContainsInductionVariable (SCC *scc, LoopsSummary &LIS, InductionVariables &IV);
+      bool checkIfSCCOnlyContainsInductionVariables (
+        SCC *scc,
+        LoopsSummary &LIS,
+        std::set<InductionVariable *> &loopGoverningIVs,
+        std::set<InductionVariable *> &IVs
+      );
       void checkIfClonable (SCC *scc, ScalarEvolution &SE);
       bool isClonableByInductionVars (SCC *scc) const ;
       bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;

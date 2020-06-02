@@ -114,7 +114,7 @@ InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEv
   auto M = headerPHI->getFunction()->getParent();
   DataLayout DL(M);
   const char name = 'a';
-  auto expander = new SCEVExpander(SE, DL, &name);
+  SCEVExpander expander(SE, DL, &name);
   switch (stepSCEV->getSCEVType()) {
     case SCEVTypes::scConstant:
       this->stepSize = cast<SCEVConstant>(stepSCEV)->getValue();
@@ -123,12 +123,12 @@ InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEv
       this->stepSize = cast<SCEVUnknown>(stepSCEV)->getValue();
       break;
     default:
-      this->stepSize = expander->getExactExistingExpansion(stepSCEV, headerPHI, llvmLoop);
+      this->stepSize = expander.getExactExistingExpansion(stepSCEV, headerPHI, llvmLoop);
       if (!this->stepSize) {
         auto &entryBlock = headerPHI->getParent()->getParent()->getEntryBlock();
-        expander->setInsertPoint(entryBlock.getTerminator());
-        auto endCompositeValue = expander->expandCodeFor(stepSCEV);
-        expander->clearInsertPoint();
+        expander.setInsertPoint(entryBlock.getTerminator());
+        auto endCompositeValue = expander.expandCodeFor(stepSCEV);
+        expander.clearInsertPoint();
         assert(isa<Instruction>(endCompositeValue));
         auto currValue = entryBlock.getTerminator();
         auto endValue = cast<Instruction>(endCompositeValue)->getNextNode();
@@ -141,8 +141,6 @@ InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEv
       }
       break;
   }
-
-  delete expander;
 }
 
 InductionVariable::~InductionVariable () {
@@ -226,25 +224,6 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
         }
       }
     }
-  }
-
-  for (auto nodePair : this->scc.internalNodePairs()) {
-    auto value = nodePair.first;
-    if (auto inst = dyn_cast<Instruction>(value)) {
-      if (ivInstructions.find(inst) != ivInstructions.end()) continue;
-      if (conditionValueDerivation.find(inst) != conditionValueDerivation.end()) continue;
-
-      if (auto cmp = dyn_cast<CmpInst>(value)) {
-        if (cmp == headerCmp) continue;
-      } else if (auto br = dyn_cast<BranchInst>(value)) {
-        if (br == headerBr) continue;
-        if (br->isUnconditional()) continue;
-      } else if (isa<GetElementPtrInst>(inst) || isa<PHINode>(inst)) {
-        continue;
-      }
-    }
-
-    return;
   }
 
   isWellFormed = true;
