@@ -55,7 +55,7 @@ namespace llvm {
         PostDominatorTree &postDomTreeOfTaskFunction
       );
 
-      Function *getTaskFunction () { return tasks[0]->F; }
+      Function * getTaskFunction (void) const ;
 
       void reset () override ;
 

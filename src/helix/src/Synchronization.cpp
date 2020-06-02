@@ -118,7 +118,7 @@ void HELIX::addSynchronizations (
        */
       auto beforeEntryBB = justAfterEntry->getParent();
       auto ssEntryBBName = "SS" + std::to_string(ss->getID()) + "-entry";
-      auto ssEntryBB = BasicBlock::Create(cxt, ssEntryBBName, helixTask->F);
+      auto ssEntryBB = BasicBlock::Create(cxt, ssEntryBBName, helixTask->getTaskBody());
       IRBuilder<> ssEntryBuilder(ssEntryBB);
       auto afterEntry = justAfterEntry;
       while (afterEntry) {
@@ -144,7 +144,7 @@ void HELIX::addSynchronizations (
        * This will keep track of the fact that we have executed wait for ss in the current iteration.
        */
       auto ssWaitBBName = "SS" + std::to_string(ss->getID()) + "-wait";
-      auto ssWaitBB = BasicBlock::Create(cxt, ssWaitBBName, helixTask->F);
+      auto ssWaitBB = BasicBlock::Create(cxt, ssWaitBBName, helixTask->getTaskBody());
       IRBuilder<> ssWaitBuilder(ssWaitBB);
       auto wait = ssWaitBuilder.CreateCall(this->waitSSCall, { ssPastPtr });
       ssWaitBuilder.CreateStore(ConstantInt::get(int64, 1), ssState);

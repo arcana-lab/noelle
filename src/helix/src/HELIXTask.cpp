@@ -10,9 +10,13 @@
  */
 #include "HELIXTask.hpp"
 
-HELIXTask::HELIXTask()
-  :Task{0}
+HELIXTask::HELIXTask(
+  FunctionType *taskSignature,
+  Module &M
+  )
+  :Task{0, taskSignature, M}
   {
+
   return ;
 }
 

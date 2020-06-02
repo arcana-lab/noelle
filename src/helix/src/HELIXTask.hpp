@@ -20,7 +20,10 @@ namespace llvm {
   class HELIXTask : public Task {
     public:
 
-      HELIXTask();
+      HELIXTask(
+        FunctionType *taskSignature,
+        Module &M
+        );
 
       /*
        * Task arguments

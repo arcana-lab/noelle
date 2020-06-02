@@ -10,8 +10,11 @@
  */
 #include "DOALLTask.hpp"
 
-DOALLTask::DOALLTask ()
-  :Task{0}
+DOALLTask::DOALLTask (
+  FunctionType *taskSignature,
+  Module &M
+  )
+  :Task{0, taskSignature, M}
   {
 
   return ;

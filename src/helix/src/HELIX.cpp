@@ -177,7 +177,7 @@ void HELIX::createParallelizableTask (
   /*
    * Generate empty tasks for the HELIX execution.
    */
-  auto helixTask = new HELIXTask();
+  auto helixTask = new HELIXTask(this->taskType, this->module);
   this->generateEmptyTasks(LDI, { helixTask });
   this->numTaskInstances = LDI->maximumNumberOfCoresForTheParallelization;
   assert(helixTask == this->tasks[0]);
@@ -282,7 +282,7 @@ void HELIX::createParallelizableTask (
   exitB.CreateRetVoid();
 
   if (this->verbose >= Verbosity::Maximal) {
-    SubCFGs execGraph(*helixTask->F);
+    SubCFGs execGraph(*helixTask->getTaskBody());
     DGPrinter::writeGraph<SubCFGs>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
@@ -334,11 +334,15 @@ void HELIX::synchronizeTask (
    * Print the HELIX task.
    */
   if (this->verbose >= Verbosity::Maximal) {
-    helixTask->F->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
+    helixTask->getTaskBody()->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
     errs() << "HELIX: Exit\n";
-    SubCFGs execGraph(*helixTask->F);
+    SubCFGs execGraph(*helixTask->getTaskBody());
     DGPrinter::writeGraph<SubCFGs>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;
+}
+
+Function * HELIX::getTaskFunction (void) const {
+  return tasks[0]->getTaskBody();
 }

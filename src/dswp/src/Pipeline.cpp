@@ -21,7 +21,7 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
     /*
      * Create task (stage), populating its SCCs
      */
-    auto task = new DSWPTask(taskID);
+    auto task = new DSWPTask(taskID, this->taskType, this->module);
     taskID++;
     techniqueTasks.push_back(task);
     for (auto scc : *subset) {
@@ -163,7 +163,7 @@ Value * DSWP::createStagesArrayFromStages (
   Parallelization &par
 ) {
   auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(this->stageArrayType));
-  auto stageCastType = PointerType::getUnqual(this->tasks[0]->F->getType());
+  auto stageCastType = PointerType::getUnqual(this->tasks[0]->getTaskBody()->getType());
   for (int i = 0; i < this->numTaskInstances; ++i) {
     auto stage = this->tasks[i];
     auto stageIndex = cast<Value>(ConstantInt::get(par.int64, i));
@@ -172,7 +172,7 @@ Value * DSWP::createStagesArrayFromStages (
       stageIndex
     }));
     auto stageCast = funcBuilder.CreateBitCast(stagePtr, stageCastType);
-    funcBuilder.CreateStore(stage->F, stageCast);
+    funcBuilder.CreateStore(stage->getTaskBody(), stageCast);
   }
 
   return cast<Value>(funcBuilder.CreateBitCast(stagesAlloca, PointerType::getUnqual(par.int8)));

@@ -17,6 +17,8 @@ void HELIX::inlineCalls (
   void
   ){
   auto task = (HELIXTask*)tasks[0];
-  doNestedInlineOfCalls(task->F, task->waits);
-  doNestedInlineOfCalls(task->F, task->signals);
+  doNestedInlineOfCalls(task->getTaskBody(), task->waits);
+  doNestedInlineOfCalls(task->getTaskBody(), task->signals);
+
+  return ;
 }
