@@ -186,3 +186,19 @@ LLVMContext & Task::getLLVMContext (void) const {
 
   return c;
 }
+
+Instruction * Task::getCloneOfOriginalInstruction (Instruction *o) const {
+  if (!this->isAnOriginalInstruction(o)){
+    return nullptr;
+  }
+
+  return this->instructionClones.at(o);
+}
+
+bool Task::isAnOriginalInstruction (Instruction *i) const {
+  if (this->instructionClones.find(i) == this->instructionClones.end()){
+    return false;
+  }
+
+  return true;
+}

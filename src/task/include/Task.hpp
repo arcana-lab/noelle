@@ -25,7 +25,18 @@ namespace llvm {
         Module &M
         );
 
+      /*
+       * IDs
+       */
+
       uint32_t getID (void) const ;
+
+      Value * getTaskInstanceID (void) const ;
+
+
+      /*
+       * Live-in values.
+       */
 
       bool isAnOriginalLiveIn (Value *v) const ;
 
@@ -36,6 +47,20 @@ namespace llvm {
       void addLiveIn (Value *original, Value *internal) ;
 
       bool isAnOriginalBasicBlock (BasicBlock *o) const ;
+
+
+      /*
+       * Instructions
+       */
+
+      bool isAnOriginalInstruction (Instruction *i) const ;
+
+      Instruction * getCloneOfOriginalInstruction (Instruction *o) const ;
+
+
+      /*
+       * Basic blocks
+       */
 
       BasicBlock * getCloneOfOriginalBasicBlock (BasicBlock *o) const ;
 
@@ -49,12 +74,6 @@ namespace llvm {
 
       void removeOriginalBasicBlock (BasicBlock *b);
 
-      Value * getTaskInstanceID (void) const ;
-
-      Value * getEnvironment (void) const ;
-
-      Function * getTaskBody (void) const ;
-
       BasicBlock * getEntry (void) const ;
 
       BasicBlock * getExit (void) const ;
@@ -65,7 +84,21 @@ namespace llvm {
 
       void tagBasicBlockAsLastBlock (BasicBlock *b) ;
 
+
+      /*
+       * Body
+       */
+
+      Function * getTaskBody (void) const ;
+
+
+      /*
+       * Dependences with the outside code
+       */
+      Value * getEnvironment (void) const ;
+
       virtual void extractFuncArgs () = 0;
+
 
       std::unordered_map<Instruction *, Instruction *> instructionClones;
 
