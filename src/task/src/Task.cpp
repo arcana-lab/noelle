@@ -128,6 +128,25 @@ BasicBlock * Task::addBasicBlockStub (BasicBlock *original){
   return newBB;
 }
 
+BasicBlock * Task::cloneAndAddBasicBlock (BasicBlock *original){
+
+  /*
+   * Create a stub.
+   */
+  auto cloneBB = this->addBasicBlockStub(original);
+
+  /*
+   * Copy the original instructions into the cloned basic block.
+   */
+  IRBuilder<> builder(cloneBB);
+  for (auto &I : *original) {
+    auto cloneI = builder.Insert(I.clone());
+    this->instructionClones[&I] = cloneI;
+  }
+
+  return cloneBB;
+}
+
 Value * Task::getTaskInstanceID (void) const {
   return this->instanceIndexV;
 }

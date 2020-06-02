@@ -278,18 +278,9 @@ void ParallelizationTechnique::cloneSequentialLoop (
   for (auto originBB : topLoop->orderedBBs) {
 
     /*
-     * Clone the basic block in the context of the original loop's function
+     * Clone the basic block.
      */
-    auto cloneBB = task->addBasicBlockStub(originBB);
-
-    /*
-     * Clone every instruction in the basic block, adding them in order to the clone
-     */
-    IRBuilder<> builder(cloneBB);
-    for (auto &I : *originBB) {
-      auto cloneI = builder.Insert(I.clone());
-      task->instructionClones[&I] = cloneI;
-    }
+    task->cloneAndAddBasicBlock(originBB);
   }
 }
 

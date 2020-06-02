@@ -45,6 +45,8 @@ namespace llvm {
 
       BasicBlock * addBasicBlockStub (BasicBlock *original);
 
+      BasicBlock * cloneAndAddBasicBlock (BasicBlock *original);
+
       void removeOriginalBasicBlock (BasicBlock *b);
 
       Value * getTaskInstanceID (void) const ;
