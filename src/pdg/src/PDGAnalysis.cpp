@@ -213,7 +213,7 @@ bool llvm::PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
 bool llvm::PDGAnalysis::hasPDGAsMetadata(Module &M) {
   errs() << "Check if PDG has been embeded as metadata\n";
   
-  if (NamedMDNode *n = M.getNamedMetadata("module.pdg")) {
+  if (NamedMDNode *n = M.getNamedMetadata("noelle.module.pdg")) {
     if (MDNode *m = dyn_cast<MDNode>(n->getOperand(0))) {
       if (cast<MDString>(m->getOperand(0))->getString() == "true") {
         return true;
@@ -256,7 +256,7 @@ void llvm::PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unorde
   /*
    * Construct id to node map and add nodes of arguments to pdg
    */
-  if (MDNode *argsM = F.getMetadata("pdg.args.id")) {
+  if (MDNode *argsM = F.getMetadata("noelle.pdg.args.id")) {
     for (auto &arg : F.args()) {
       if (MDNode *m = dyn_cast<MDNode>(argsM->getOperand(arg.getArgNo()))) {
         IDNodeMap[m] = &arg;
@@ -269,7 +269,7 @@ void llvm::PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unorde
    */
   for (auto &B : F) {
     for (auto &I : B) {
-      if (MDNode *m = I.getMetadata("pdg.inst.id")) {
+      if (MDNode *m = I.getMetadata("noelle.pdg.inst.id")) {
         IDNodeMap[m] = &I;
       }
     }
@@ -282,7 +282,7 @@ void llvm::PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unorde
   /*
    * Construct edges and set attributes
    */
-  if (MDNode *edgesM = F.getMetadata("pdg.edges")) {
+  if (MDNode *edgesM = F.getMetadata("noelle.pdg.edges")) {
     for (auto &operand : edgesM->operands()) {
       if (MDNode *edgeM = dyn_cast<MDNode>(operand)) {
         DGEdge<Value> *edge = constructEdgeFromMetadata(pdg, edgeM, IDNodeMap);
@@ -341,7 +341,7 @@ void llvm::PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
   embedNodesAsMetadata(pdg, C, nodeIDMap);
   embedEdgesAsMetadata(pdg, C, nodeIDMap);
 
-  NamedMDNode *n = this->M->getOrInsertNamedMetadata("module.pdg");
+  NamedMDNode *n = this->M->getOrInsertNamedMetadata("noelle.module.pdg");
   n->addOperand(MDNode::get(C, MDString::get(C, "true")));
 
   return;
@@ -362,7 +362,7 @@ void llvm::PDGAnalysis::embedNodesAsMetadata(PDG *pdg, LLVMContext &C, unordered
       functionArgsIDMap[arg->getParent()][arg->getArgNo()] = m;
     }
     else if (Instruction *inst = dyn_cast<Instruction>(v)) {
-      inst->setMetadata("pdg.inst.id", m);
+      inst->setMetadata("noelle.pdg.inst.id", m);
     }
     nodeIDMap[v] = m;
   }
@@ -377,7 +377,7 @@ void llvm::PDGAnalysis::embedNodesAsMetadata(PDG *pdg, LLVMContext &C, unordered
     }
 
     MDNode *m = MDTuple::get(C, argsVec);
-    funArgs.first->setMetadata("pdg.args.id", m);
+    funArgs.first->setMetadata("noelle.pdg.args.id", m);
   }
 
   return;
@@ -404,7 +404,7 @@ void llvm::PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered
    */
   for (auto &funEdge : functionEdgesMap) {
     MDNode *m = MDTuple::get(C, funEdge.second);
-    funEdge.first->setMetadata("pdg.edges", m);
+    funEdge.first->setMetadata("noelle.pdg.edges", m);
   }
 
   return;
