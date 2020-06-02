@@ -55,9 +55,14 @@ namespace llvm {
 
       BasicBlock * getExit (void) const ;
 
+      uint32_t getNumberOfLastBlocks (void) const ;
+
+      BasicBlock * getLastBlock (uint32_t blockID) const ;
+
+      void tagBasicBlockAsLastBlock (BasicBlock *b) ;
+
       virtual void extractFuncArgs () = 0;
 
-      std::vector<BasicBlock *> loopExitBlocks;
       std::unordered_map<Instruction *, Instruction *> instructionClones;
 
     protected:
@@ -69,6 +74,7 @@ namespace llvm {
       Value *envArg;
       BasicBlock *entryBlock;
       BasicBlock *exitBlock;
+      std::vector<BasicBlock *> lastBlocks;
   };
 
 }

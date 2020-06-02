@@ -127,3 +127,17 @@ BasicBlock * Task::getEntry (void) const {
 BasicBlock * Task::getExit (void) const {
   return this->exitBlock;
 }
+      
+void Task::tagBasicBlockAsLastBlock (BasicBlock *b) {
+  this->lastBlocks.push_back(b);
+
+  return ;
+}
+
+uint32_t Task::getNumberOfLastBlocks (void) const {
+  return this->lastBlocks.size();
+}
+      
+BasicBlock * Task::getLastBlock (uint32_t blockID) const {
+  return this->lastBlocks[blockID];
+}

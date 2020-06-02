@@ -258,7 +258,7 @@ void ParallelizationTechnique::generateEmptyTasks (
     for (auto exitBB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
       auto newExitBB = BasicBlock::Create(cxt, "", task->getTaskBody());
       task->addBasicBlock(exitBB, newExitBB);
-      task->loopExitBlocks.push_back(newExitBB);
+      task->tagBasicBlockAsLastBlock(newExitBB);
       IRBuilder<> builder(newExitBB);
       builder.CreateBr(task->getExit());
     }
@@ -645,7 +645,7 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
    * If there are more exit blocks, then we need to specify which one has been taken.
    */
   auto task = this->tasks[taskIndex];
-  if (task->loopExitBlocks.size() == 1) {
+  if (task->getNumberOfLastBlocks() == 1) {
     return ;
   }
 
@@ -669,8 +669,8 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
    * Add a store instruction to specify to the code outside the parallelized loop which exit block is taken.
    */
   auto int32 = IntegerType::get(module.getContext(), 32);
-  for (int i = 0; i < task->loopExitBlocks.size(); ++i) {
-    auto bb = &*task->loopExitBlocks[i];
+  for (int i = 0; i < task->getNumberOfLastBlocks(); ++i) {
+    auto bb = task->getLastBlock(i);
     auto term = bb->getTerminator();
     IRBuilder<> builder(bb);
     auto envPtr = envUser->getEnvPtr(exitBlockEnvIndex);
