@@ -256,8 +256,7 @@ void ParallelizationTechnique::generateEmptyTasks (
      * and branching from them to the function exit block
      */
     for (auto exitBB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
-      auto newExitBB = BasicBlock::Create(cxt, "", task->getTaskBody());
-      task->addBasicBlock(exitBB, newExitBB);
+      auto newExitBB = task->addBasicBlockStub(exitBB);
       task->tagBasicBlockAsLastBlock(newExitBB);
       IRBuilder<> builder(newExitBB);
       builder.CreateBr(task->getExit());
@@ -281,8 +280,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
     /*
      * Clone the basic block in the context of the original loop's function
      */
-    auto cloneBB = BasicBlock::Create(cxt, "", task->getTaskBody());
-    task->addBasicBlock(originBB, cloneBB);
+    auto cloneBB = task->addBasicBlockStub(originBB);
 
     /*
      * Clone every instruction in the basic block, adding them in order to the clone
@@ -318,13 +316,12 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
    * Add cloned instructions to their respective cloned basic blocks
    */
   for (auto bb : bbSubset) {
-    auto cloneBB = BasicBlock::Create(cxt, "", task->getTaskBody());
+    auto cloneBB = task->addBasicBlockStub(bb);
     IRBuilder<> builder(cloneBB);
     for (auto &I : *bb) {
       if (iClones.find(&I) == iClones.end()) continue;
       builder.Insert(iClones[&I]);
     }
-    task->addBasicBlock(bb, cloneBB);
   }
 }
 

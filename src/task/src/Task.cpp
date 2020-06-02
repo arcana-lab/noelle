@@ -108,6 +108,26 @@ void Task::addBasicBlock (BasicBlock *original, BasicBlock *internal) {
   return ;
 }
 
+BasicBlock * Task::addBasicBlockStub (BasicBlock *original){
+
+  /*
+   * Fetch the context.
+   */
+  auto &c = this->getLLVMContext();
+
+  /*
+   * Allocate a new basic block.
+   */
+  auto newBB = BasicBlock::Create(c, "", this->F);
+
+  /*
+   * Keep track of the mapping.
+   */
+  this->addBasicBlock(original, newBB);
+
+  return newBB;
+}
+
 Value * Task::getTaskInstanceID (void) const {
   return this->instanceIndexV;
 }
@@ -140,4 +160,10 @@ uint32_t Task::getNumberOfLastBlocks (void) const {
       
 BasicBlock * Task::getLastBlock (uint32_t blockID) const {
   return this->lastBlocks[blockID];
+}
+
+LLVMContext & Task::getLLVMContext (void) const {
+  auto& c = this->F->getContext();
+
+  return c;
 }

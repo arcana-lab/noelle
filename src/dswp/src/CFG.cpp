@@ -56,7 +56,7 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
   auto &cxt = task->getTaskBody()->getContext();
   for (auto B : loopSummary->orderedBBs) {
     if (!task->isAnOriginalBasicBlock(B)){
-      task->addBasicBlock(B, BasicBlock::Create(cxt, "", task->getTaskBody()));
+      task->addBasicBlockStub(B);
     }
   }
 

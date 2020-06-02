@@ -43,6 +43,8 @@ namespace llvm {
 
       void addBasicBlock (BasicBlock *original, BasicBlock *internal) ;
 
+      BasicBlock * addBasicBlockStub (BasicBlock *original);
+
       void removeOriginalBasicBlock (BasicBlock *b);
 
       Value * getTaskInstanceID (void) const ;
@@ -75,6 +77,8 @@ namespace llvm {
       BasicBlock *entryBlock;
       BasicBlock *exitBlock;
       std::vector<BasicBlock *> lastBlocks;
+
+      LLVMContext & getLLVMContext (void) const ;
   };
 
 }
