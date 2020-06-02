@@ -314,7 +314,7 @@ Value * DOALL::fetchClone (Value *original) const {
   }
 
   assert(isa<Instruction>(original));
-  auto iCloneIter = task->instructionClones.find(cast<Instruction>(original));
-  assert(iCloneIter != task->instructionClones.end());
-  return iCloneIter->second;
+  auto iClone = task->getCloneOfOriginalInstruction(cast<Instruction>(original));
+  assert(iClone != nullptr);
+  return iClone;
 }
