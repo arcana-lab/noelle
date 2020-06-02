@@ -48,13 +48,13 @@ void Hot::setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations){
   return ;
 }
 
-uint64_t Hot::getBasicBlockInvocations (BasicBlock *bb) {
-  auto inv = this->bbInvocations[bb];
+uint64_t Hot::getBasicBlockInvocations (BasicBlock *bb) const {
+  auto inv = this->bbInvocations.at(bb);
 
   return inv;
 }
       
-uint64_t Hot::getBasicBlockInstructions (BasicBlock *bb) {
+uint64_t Hot::getBasicBlockInstructions (BasicBlock *bb) const {
   auto inv = this->getBasicBlockInvocations(bb);
   
   auto bbLength = std::distance(bb->begin(), bb->end());
@@ -62,8 +62,8 @@ uint64_t Hot::getBasicBlockInstructions (BasicBlock *bb) {
   return inv * bbLength;
 }
 
-double Hot::getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) {
-  auto &branchSuccessors = this->branchProbability[sourceBB];
+double Hot::getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) const {
+  auto &branchSuccessors = this->branchProbability.at(sourceBB);
   
   /*
    * Check if we have information about the branch.
@@ -81,7 +81,7 @@ double Hot::getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) {
    *
    * Fetch the frequency.
    */
-  auto f = branchSuccessors[targetBB];
+  auto f = branchSuccessors.at(targetBB);
 
   return f;
 }
@@ -93,7 +93,7 @@ void Hot::setBranchFrequency (BasicBlock *src, BasicBlock *dst, double branchFre
   return ;
 }
       
-uint64_t Hot::getLoopInstructions (Loop *loop){
+uint64_t Hot::getLoopInstructions (Loop *loop) const {
   uint64_t insts = 0;
 
   for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
@@ -104,14 +104,14 @@ uint64_t Hot::getLoopInstructions (Loop *loop){
   return insts;
 }
  
-uint64_t Hot::getFunctionInstructions (Function *f){
-  auto insts = this->functionInstructions[f];
+uint64_t Hot::getFunctionInstructions (Function *f) const {
+  auto insts = this->functionInstructions.at(f);
 
   return insts;
 }
       
-uint64_t Hot::getFunctionInvocations (Function *f){
-  auto invs = this->functionInvocations[f];
+uint64_t Hot::getFunctionInvocations (Function *f) const {
+  auto invs = this->functionInvocations.at(f);
 
   return invs;
 }
