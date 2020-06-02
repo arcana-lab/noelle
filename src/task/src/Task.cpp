@@ -119,3 +119,11 @@ Value * Task::getEnvironment (void) const {
 Function * Task::getTaskBody (void) const {
   return this->F;
 }
+
+BasicBlock * Task::getEntry (void) const {
+  return this->entryBlock;
+}
+
+BasicBlock * Task::getExit (void) const {
+  return this->exitBlock;
+}

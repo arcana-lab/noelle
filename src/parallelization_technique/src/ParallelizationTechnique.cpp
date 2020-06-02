@@ -68,7 +68,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   for (auto i = 0; i < tasks.size(); ++i) {
     auto task = tasks[i];
     auto envUser = envBuilder->getUser(i);
-    IRBuilder<> entryBuilder(task->entryBlock);
+    IRBuilder<> entryBuilder(task->getEntry());
     envUser->setEnvArray(entryBuilder.CreateBitCast(
       task->getEnvironment(),
       PointerType::getUnqual(envBuilder->getEnvArrayTy())
@@ -249,7 +249,7 @@ void ParallelizationTechnique::generateEmptyTasks (
     /*
      * Map original preheader to entry block
      */
-    task->addBasicBlock(loopPreHeader, task->entryBlock);
+    task->addBasicBlock(loopPreHeader, task->getEntry());
 
     /*
      * Create one basic block per loop exit, mapping between originals and clones,
@@ -260,7 +260,7 @@ void ParallelizationTechnique::generateEmptyTasks (
       task->addBasicBlock(exitBB, newExitBB);
       task->loopExitBlocks.push_back(newExitBB);
       IRBuilder<> builder(newExitBB);
-      builder.CreateBr(task->exitBlock);
+      builder.CreateBr(task->getExit());
     }
   }
 }
@@ -333,7 +333,7 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
   int taskIndex
 ){
   auto task = this->tasks[taskIndex];
-  IRBuilder<> builder(task->entryBlock);
+  IRBuilder<> builder(task->getEntry());
   auto envUser = this->envBuilder->getUser(taskIndex);
   for (auto envIndex : envUser->getEnvIndicesOfLiveInVars()) {
     auto producer = LDI->environment->producerAt(envIndex);
@@ -365,12 +365,12 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
   /*
    * Create a builder that points to the entry point of the function executed by the task.
    */
-  IRBuilder<> entryBuilder(task->entryBlock);
+  IRBuilder<> entryBuilder(task->getEntry());
 
   /*
    * Fetch the terminator of the entry basic block of the task.
    */
-  auto entryTerminator = task->entryBlock->getTerminator();
+  auto entryTerminator = task->getEntry()->getTerminator();
 
   /*
    * Iterate over live-out variables and inject stores at the end of the execution of the function of the task to propagate the new live-out values back to the caller of the parallelized loop.
@@ -657,8 +657,8 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
   auto exitBlockEnvIndex = LDI->environment->indexOfExitBlock();
   assert(exitBlockEnvIndex != -1);
   auto envUser = this->envBuilder->getUser(taskIndex);
-  IRBuilder<> entryBuilder(task->entryBlock);
-  auto entryTerminator = task->entryBlock->getTerminator();
+  IRBuilder<> entryBuilder(task->getEntry());
+  auto entryTerminator = task->getEntry()->getTerminator();
 
   auto envType = LDI->environment->typeOfEnv(exitBlockEnvIndex);
   envUser->createEnvPtr(entryBuilder, exitBlockEnvIndex, envType);

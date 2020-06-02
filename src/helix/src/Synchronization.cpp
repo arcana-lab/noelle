@@ -20,7 +20,7 @@ void HELIX::addSynchronizations (
   ){
   assert(this->tasks.size() == 1);
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
-  IRBuilder<> entryBuilder(helixTask->entryBlock->getTerminator());
+  IRBuilder<> entryBuilder(helixTask->getEntry()->getTerminator());
 
   /*
    * Fetch the header.
@@ -226,7 +226,7 @@ void HELIX::addSynchronizations (
       IRBuilder<> checkFlagBuilder(checkFlagBB);
       auto flagValue = checkFlagBuilder.CreateLoad(helixTask->loopIsOverFlagArg);
       auto isFlagSet = checkFlagBuilder.CreateICmpEQ(ConstantInt::get(int64, 1), flagValue);
-      checkFlagBuilder.CreateCondBr(isFlagSet, helixTask->exitBlock, entryBB);
+      checkFlagBuilder.CreateCondBr(isFlagSet, helixTask->getExit(), entryBB);
     };
 
     /*
@@ -252,7 +252,7 @@ void HELIX::addSynchronizations (
     /*
      * Handle loop exit flag within the SS containing the preamble
      */
-    auto retI = helixTask->exitBlock->getTerminator();
+    auto retI = helixTask->getExit()->getTerminator();
     if (containsPreamble) {
       ss->forEachEntry(injectExitFlagCheck);
 
@@ -301,7 +301,7 @@ void HELIX::hoistReducibleLiveOutStoresToTaskExit(LoopDependenceInfo *LDI) {
     auto storeIter = stores.begin();
     auto firstStore = *storeIter++;
     firstStore->removeFromParent();
-    IRBuilder<> exitBuilder(helixTask->exitBlock);
+    IRBuilder<> exitBuilder(helixTask->getExit());
     exitBuilder.Insert(firstStore);
 
     for (; storeIter != stores.end(); ++storeIter) {

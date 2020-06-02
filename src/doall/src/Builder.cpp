@@ -33,7 +33,7 @@ void DOALL::rewireLoopToIterateChunks (
   /*
    * Hook up preheader to header to enable induction variable manipulation
    */
-  IRBuilder<> entryBuilder(task->entryBlock);
+  IRBuilder<> entryBuilder(task->getEntry());
   auto temporaryBrToLoop = entryBuilder.CreateBr(headerClone);
   entryBuilder.SetInsertPoint(temporaryBrToLoop);
 

@@ -51,9 +51,12 @@ namespace llvm {
 
       Function * getTaskBody (void) const ;
 
+      BasicBlock * getEntry (void) const ;
+
+      BasicBlock * getExit (void) const ;
+
       virtual void extractFuncArgs () = 0;
 
-      BasicBlock *entryBlock, *exitBlock;
       std::vector<BasicBlock *> loopExitBlocks;
       std::unordered_map<Instruction *, Instruction *> instructionClones;
 
@@ -64,6 +67,8 @@ namespace llvm {
       std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
       Value *instanceIndexV;
       Value *envArg;
+      BasicBlock *entryBlock;
+      BasicBlock *exitBlock;
   };
 
 }

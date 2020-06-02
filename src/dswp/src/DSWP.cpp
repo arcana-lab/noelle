@@ -223,13 +223,13 @@ bool DSWP::apply (
     /*
      * Add the unconditional branch from the entry basic block to the header of the loop.
      */
-    IRBuilder<> entryBuilder(task->entryBlock);
+    IRBuilder<> entryBuilder(task->getEntry());
     entryBuilder.CreateBr(task->getCloneOfOriginalBasicBlock(loopHeader));
 
     /*
      * Add the return instruction at the end of the exit basic block.
      */
-    IRBuilder<> exitBuilder(task->exitBlock);
+    IRBuilder<> exitBuilder(task->getExit());
     exitBuilder.CreateRetVoid();
 
     /*
