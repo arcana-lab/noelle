@@ -248,7 +248,7 @@ bool DSWP::apply (
     inlineQueueCalls(i);
 
     if (this->verbose >= Verbosity::Maximal) {
-      task->F->print(errs() << "Pipeline stage " << i << ":\n"); errs() << "\n";
+      task->getTaskBody()->print(errs() << "Pipeline stage " << i << ":\n"); errs() << "\n";
     }
   }
 

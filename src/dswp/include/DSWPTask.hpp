@@ -28,7 +28,11 @@ namespace llvm {
       /*
        * Constructor
        */
-      DSWPTask (uint32_t ID);
+      DSWPTask (
+        uint32_t ID,
+        FunctionType *taskSignature,
+        Module &M
+        );
 
       /*
        * DSWP specific task function arguments

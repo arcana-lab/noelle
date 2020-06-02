@@ -240,12 +240,11 @@ void ParallelizationTechnique::generateEmptyTasks (
     auto task = taskStructs[i];
     tasks.push_back(task);
 
+    /*
+     * Set the formal arguments of the task.
+     */
     auto &cxt = module.getContext();
-    auto functionCallee = module.getOrInsertFunction("", taskType);
-    task->F = cast<Function>(functionCallee.getCallee());
     task->extractFuncArgs();
-    task->entryBlock = BasicBlock::Create(cxt, "", task->F);
-    task->exitBlock = BasicBlock::Create(cxt, "", task->F);
 
     /*
      * Map original preheader to entry block
@@ -257,7 +256,7 @@ void ParallelizationTechnique::generateEmptyTasks (
      * and branching from them to the function exit block
      */
     for (auto exitBB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
-      auto newExitBB = BasicBlock::Create(cxt, "", task->F);
+      auto newExitBB = BasicBlock::Create(cxt, "", task->getTaskBody());
       task->addBasicBlock(exitBB, newExitBB);
       task->loopExitBlocks.push_back(newExitBB);
       IRBuilder<> builder(newExitBB);
@@ -282,7 +281,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
     /*
      * Clone the basic block in the context of the original loop's function
      */
-    auto cloneBB = BasicBlock::Create(cxt, "", task->F);
+    auto cloneBB = BasicBlock::Create(cxt, "", task->getTaskBody());
     task->addBasicBlock(originBB, cloneBB);
 
     /*
@@ -319,7 +318,7 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
    * Add cloned instructions to their respective cloned basic blocks
    */
   for (auto bb : bbSubset) {
-    auto cloneBB = BasicBlock::Create(cxt, "", task->F);
+    auto cloneBB = BasicBlock::Create(cxt, "", task->getTaskBody());
     IRBuilder<> builder(cloneBB);
     for (auto &I : *bb) {
       if (iClones.find(&I) == iClones.end()) continue;
@@ -482,7 +481,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     if (cloneI->isTerminator()) {
       for (int i = 0; i < cloneI->getNumSuccessors(); ++i) {
         auto succBB = cloneI->getSuccessor(i);
-        if (succBB->getParent() == task->F) continue;
+        if (succBB->getParent() == task->getTaskBody()) continue;
         assert(task->isAnOriginalBasicBlock(succBB));
         cloneI->setSuccessor(i, task->getCloneOfOriginalBasicBlock(succBB));
       }
@@ -491,7 +490,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     if (auto phi = dyn_cast<PHINode>(cloneI)) {
       for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
         auto incomingBB = phi->getIncomingBlock(i);
-        if (incomingBB->getParent() == task->F) continue;
+        if (incomingBB->getParent() == task->getTaskBody()) continue;
         auto cloneBB = task->getCloneOfOriginalBasicBlock(incomingBB);
         phi->setIncomingBlock(i, cloneBB);
       }
@@ -521,7 +520,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
         if (iClones.find(opI) != iClones.end()) {
           op.set(iClones[opI]);
         } else {
-          if (opI->getFunction() != task->F) {
+          if (opI->getFunction() != task->getTaskBody()) {
             cloneI->print(errs() << "ERROR:   Instruction has op from another function: "); errs() << "\n";
             opI->print(errs() << "ERROR:   Op: "); errs() << "\n";
           }
@@ -752,7 +751,7 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
     auto task = tasks[i];
     File << "===========\n";
     std::string taskName = "Task " + std::to_string(i) + ": ";
-    task->F->print(File << taskName << "function" << "\n");
+    task->getTaskBody()->print(File << taskName << "function" << "\n");
     File << "\n";
 
     File << taskName << "instruction clones" << "\n";

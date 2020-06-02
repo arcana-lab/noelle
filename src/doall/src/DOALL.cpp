@@ -177,7 +177,7 @@ bool DOALL::apply (
   /*
    * Generate empty tasks for DOALL execution.
    */
-  auto chunkerTask = new DOALLTask();
+  auto chunkerTask = new DOALLTask(this->taskType, this->module);
   this->generateEmptyTasks(LDI, { chunkerTask });
   this->numTaskInstances = LDI->maximumNumberOfCoresForTheParallelization;
 
@@ -237,7 +237,7 @@ bool DOALL::apply (
   if (this->verbose >= Verbosity::Maximal) {
     loopFunction->print(errs() << "DOALL:  Final outside-loop code:\n" );
     errs() << "\n";
-    tasks[0]->F->print(errs() << "DOALL:  Final parallelized loop:\n"); 
+    tasks[0]->getTaskBody()->print(errs() << "DOALL:  Final parallelized loop:\n"); 
     errs() << "\n";
   }
   if (this->verbose != Verbosity::Disabled) {
@@ -284,7 +284,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    */
   IRBuilder<> doallBuilder(this->entryPointOfParallelizedLoop);
   auto doallCallInst = doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
-    (Value *)tasks[0]->F,
+    (Value *)tasks[0]->getTaskBody(),
     envPtr,
     numCores,
     chunkSize

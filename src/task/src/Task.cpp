@@ -12,9 +12,27 @@
 
 using namespace llvm;
 
-Task::Task (uint32_t ID)
+Task::Task (
+  uint32_t ID,
+  FunctionType *taskSignature,
+  Module &M
+  )
   : ID{ID}
   {
+
+  /*
+   * Create the empty body of the task.
+   */
+  auto functionCallee = M.getOrInsertFunction("", taskSignature);
+  this->F = cast<Function>(functionCallee.getCallee());
+
+  /*
+   * Add the entry and exit basic blocks.
+   */
+  auto &cxt = M.getContext();
+  this->entryBlock = BasicBlock::Create(cxt, "", this->F);
+  this->exitBlock = BasicBlock::Create(cxt, "", this->F);
+
   return ;
 }
 
@@ -96,4 +114,8 @@ Value * Task::getTaskInstanceID (void) const {
 
 Value * Task::getEnvironment (void) const {
   return this->envArg;
+}
+
+Function * Task::getTaskBody (void) const {
+  return this->F;
 }

@@ -12,8 +12,12 @@
 
 using namespace llvm;
 
-DSWPTask::DSWPTask (uint32_t ID)
-  : Task{ID},
+DSWPTask::DSWPTask (
+  uint32_t ID,
+  FunctionType *taskSignature,
+  Module &M
+  )
+  : Task{ID, taskSignature, M},
     stageSCCs{},
     clonableSCCs{}
   {

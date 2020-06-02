@@ -19,6 +19,6 @@ void DSWP::inlineQueueCalls (int taskIndex) {
     auto &queueInstr = queueInstrPair.second;
     callsToInline.insert(cast<CallInst>(queueInstr->queueCall));
   }
-  doNestedInlineOfCalls(task->F, callsToInline);
+  doNestedInlineOfCalls(task->getTaskBody(), callsToInline);
 }
 

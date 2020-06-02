@@ -18,7 +18,10 @@ namespace llvm {
   class DOALLTask : public Task {
     public:
 
-      DOALLTask ();
+      DOALLTask (
+        FunctionType *taskSignature,
+        Module &M
+        );
 
       /*
        * Inner loop header/latch

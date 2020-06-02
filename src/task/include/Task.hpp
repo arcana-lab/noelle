@@ -19,7 +19,11 @@ namespace llvm {
   class Task {
     public:
 
-      Task (uint32_t ID);
+      Task (
+        uint32_t ID,
+        FunctionType *taskSignature,
+        Module &M
+        );
 
       uint32_t getID (void) const ;
 
@@ -45,15 +49,17 @@ namespace llvm {
 
       Value * getEnvironment (void) const ;
 
+      Function * getTaskBody (void) const ;
+
       virtual void extractFuncArgs () = 0;
 
-      Function *F;
       BasicBlock *entryBlock, *exitBlock;
       std::vector<BasicBlock *> loopExitBlocks;
       std::unordered_map<Instruction *, Instruction *> instructionClones;
 
     protected:
       uint32_t ID;
+      Function *F;
       std::unordered_map<Value *, Value *> liveInClones;
       std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
       Value *instanceIndexV;

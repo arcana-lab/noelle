@@ -20,11 +20,11 @@ static void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDom
 PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDependenceInfo *LDI, PostDominatorTree &postDomTreeOfTaskFunction) {
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
-  this->taskFunctionDG = new PDG(*helixTask->F);
+  this->taskFunctionDG = new PDG(*helixTask->getTaskBody());
   constructEdgesFromUseDefs(this->taskFunctionDG);
 
   dumpToFile(*LDI);
-  constructEdgesFromControlForFunction(this->taskFunctionDG, *helixTask->F, postDomTreeOfTaskFunction);
+  constructEdgesFromControlForFunction(this->taskFunctionDG, *helixTask->getTaskBody(), postDomTreeOfTaskFunction);
 
   auto copyEdgeUsingTaskClonedValues = [&](DGEdge<Value> *originalEdge) -> void {
       DGEdge<Value> edgeToPointToClones(*originalEdge);
