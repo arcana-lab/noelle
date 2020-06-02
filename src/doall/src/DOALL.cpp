@@ -175,7 +175,7 @@ bool DOALL::apply (
   }
 
   /*
-   * Generate empty tasks for DOALL execution.
+   * Generate an empty task for the parallel DOALL execution.
    */
   auto chunkerTask = new DOALLTask(this->taskType, this->module);
   this->generateEmptyTasks(LDI, { chunkerTask });
@@ -284,7 +284,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    */
   IRBuilder<> doallBuilder(this->entryPointOfParallelizedLoop);
   auto doallCallInst = doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
-    (Value *)tasks[0]->getTaskBody(),
+    tasks[0]->getTaskBody(),
     envPtr,
     numCores,
     chunkSize
@@ -305,8 +305,8 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   return ;
 }
 
-Value *DOALL::fetchClone(Value *original) const {
-  auto task = (DOALLTask *)tasks[0];
+Value * DOALL::fetchClone (Value *original) const {
+  auto task = (DOALLTask *)this->tasks[0];
   if (isa<ConstantData>(original)) return original;
 
   if (task->isAnOriginalLiveIn(original)){
