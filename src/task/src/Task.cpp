@@ -217,3 +217,11 @@ std::unordered_set<Instruction *> Task::getOriginalInstructions (void) const {
 
   return s;
 }
+
+Instruction * Task::cloneAndAddInstruction (Instruction *original){
+  auto cloneI = original->clone();
+
+  this->addInstruction(original, cloneI);
+
+  return cloneI;
+}
