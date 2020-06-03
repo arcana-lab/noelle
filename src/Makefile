@@ -1,4 +1,4 @@
-UTILS=basic_utilities task parallelization_utilities architecture loop_metadata clean_metadata
+UTILS=basic_utilities task parallelization_utilities architecture loop_metadata clean_metadata pdg_stats
 ANALYSIS=pdg talkdown alloc_aa dataflow loops
 PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
 ENABLERS=enablers loop_distribution loop_unroll
@@ -76,6 +76,9 @@ loop_metadata:
 	cd $@ ; ../scripts/run_me.sh
 
 clean_metadata:
+	cd $@ ; ../scripts/run_me.sh
+
+pdg_stats:
 	cd $@ ; ../scripts/run_me.sh
 
 uninstall:
