@@ -472,7 +472,6 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
   int taskIndex
 ){
   auto &task = tasks[taskIndex];
-  auto &iClones = task->instructionClones;
 
   /*
    * Adjust basic block references of terminators and PHI nodes
