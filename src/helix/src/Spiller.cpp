@@ -43,7 +43,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
     auto phiSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(cast<Value>(&phi));
     if (LDI->sccdagAttrs.getSCCAttrs(phiSCC)->canExecuteReducibly()) continue;
     originalLoopCarriedPHIs.push_back(&phi);
-    auto clonePHI = (PHINode *)(helixTask->instructionClones[&phi]);
+    auto clonePHI = (PHINode *)(helixTask->getCloneOfOriginalInstruction(&phi));
     clonedLoopCarriedPHIs.push_back(clonePHI);
   }
   assert(clonedLoopCarriedPHIs.size() > 0
@@ -108,7 +108,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * allocation of the environment
    */
   auto preHeaderClone = helixTask->getCloneOfOriginalBasicBlock(loopPreHeader);
-  auto firstNonPHI = helixTask->instructionClones[loopHeader->getFirstNonPHI()];
+  auto firstNonPHI = helixTask->getCloneOfOriginalInstruction(loopHeader->getFirstNonPHI());
   IRBuilder<> headerBuilder(firstNonPHI);
   for (auto phiI = 0; phiI < clonedLoopCarriedPHIs.size(); phiI++) {
     auto phi = clonedLoopCarriedPHIs[phiI];
@@ -160,7 +160,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * Erase record of spilled PHIs
    */
   for (auto phi : originalLoopCarriedPHIs) {
-    helixTask->instructionClones.erase(phi);
+    helixTask->removeOriginalInstruction(phi);
   }
 
   entryBlockTerminator->removeFromParent();
