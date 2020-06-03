@@ -299,7 +299,6 @@ void DSWP::generateLoadsOfQueuePointers (
 
 void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
-  auto &iClones = task->instructionClones;
 
   for (auto queueIndex : task->popValueQueues) {
     auto &queueInfo = this->queues[queueIndex];
@@ -317,7 +316,7 @@ void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
     /*
      * Map from producer to queue load 
      */
-    task->instructionClones[queueInfo->producer] = (Instruction *)queueInstrs->load;
+    task->addInstruction(queueInfo->producer, cast<Instruction>(queueInstrs->load));
 
     /*
      * Position queue call and load relatively identically to where the producer is in the basic block
@@ -327,8 +326,8 @@ void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
     for (auto &I : *bb) {
       if (&I == queueInfo->producer) pastProducer = true;
       else if (auto phi = dyn_cast<PHINode>(&I)) continue;
-      else if (pastProducer && iClones.find(&I) != iClones.end()) {
-        auto iClone = iClones[&I];
+      else if (pastProducer && task->isAnOriginalInstruction(&I)) {
+        auto iClone = task->getCloneOfOriginalInstruction(&I);
         cast<Instruction>(queueInstrs->queueCall)->moveBefore(iClone);
         cast<Instruction>(queueInstrs->load)->moveBefore(iClone);
         moved = true;
@@ -341,14 +340,13 @@ void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
 
 void DSWP::pushValueQueues (Parallelization &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
-  auto &iClones = task->instructionClones;
 
   for (auto queueIndex : task->pushValueQueues) {
     auto queueInstrs = task->queueInstrMap[queueIndex].get();
     auto queueInfo = this->queues[queueIndex].get();
     auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
     
-    auto pClone = iClones[queueInfo->producer];
+    auto pClone = task->getCloneOfOriginalInstruction(queueInfo->producer);
     auto pCloneBB = pClone->getParent();
     IRBuilder<> builder(pCloneBB);
     auto store = builder.CreateStore(pClone, queueInstrs->alloca);
