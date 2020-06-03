@@ -209,9 +209,10 @@ void llvm::DSWP::printStageClonedValues (const LoopDependenceInfo &LDI, int task
   stream << "\n";
 
   stream << "Instruction mapping\n";
-  for (auto clonePair : task->instructionClones) {
-    clonePair.first->print(stream << "Original: "); stream << "\n";
-    clonePair.second->print(stream << "\tCloned: "); stream << "\n";
+  for (auto origI : task->getOriginalInstructions()){
+    origI->print(stream << "Original: "); stream << "\n";
+    auto cloneI = task->getCloneOfOriginalInstruction(origI);
+    cloneI->print(stream << "\tCloned: "); stream << "\n";
   }
   stream << "\n";
 

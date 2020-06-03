@@ -46,8 +46,6 @@ namespace llvm {
 
       void addLiveIn (Value *original, Value *internal) ;
 
-      bool isAnOriginalBasicBlock (BasicBlock *o) const ;
-
 
       /*
        * Instructions
@@ -57,10 +55,16 @@ namespace llvm {
 
       Instruction * getCloneOfOriginalInstruction (Instruction *o) const ;
 
+      void addInstruction (Instruction *original, Instruction *internal) ;
+
+      std::unordered_set<Instruction *> getOriginalInstructions (void) const ;
+
 
       /*
        * Basic blocks
        */
+
+      bool isAnOriginalBasicBlock (BasicBlock *o) const ;
 
       BasicBlock * getCloneOfOriginalBasicBlock (BasicBlock *o) const ;
 

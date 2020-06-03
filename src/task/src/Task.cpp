@@ -202,3 +202,18 @@ bool Task::isAnOriginalInstruction (Instruction *i) const {
 
   return true;
 }
+
+void Task::addInstruction (Instruction *original, Instruction *internal) {
+  this->instructionClones[original] = internal;
+
+  return ;
+}
+
+std::unordered_set<Instruction *> Task::getOriginalInstructions (void) const {
+  std::unordered_set<Instruction *> s;
+  for (auto p : this->instructionClones){
+    s.insert(p.first);
+  }
+
+  return s;
+}
