@@ -31,8 +31,8 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
       // originalEdge->getOutgoingT()->print(errs() << "Fetching clone of: "); errs() << "\n";
       // originalEdge->getIncomingT()->print(errs() << "Fetching clone of: "); errs() << "\n";
       edgeToPointToClones.setNodePair(
-        this->taskFunctionDG->fetchNode(helixTask->instructionClones.at(cast<Instruction>(originalEdge->getOutgoingT()))),
-        this->taskFunctionDG->fetchNode(helixTask->instructionClones.at(cast<Instruction>(originalEdge->getIncomingT())))
+        this->taskFunctionDG->fetchNode(helixTask->getCloneOfOriginalInstruction(cast<Instruction>(originalEdge->getOutgoingT()))),
+        this->taskFunctionDG->fetchNode(helixTask->getCloneOfOriginalInstruction(cast<Instruction>(originalEdge->getIncomingT())))
       );
       this->taskFunctionDG->copyAddEdge(edgeToPointToClones);
   };

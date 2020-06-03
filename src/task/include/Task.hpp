@@ -61,6 +61,8 @@ namespace llvm {
 
       Instruction * cloneAndAddInstruction (Instruction *original);
 
+      void removeOriginalInstruction (Instruction *o);
+
 
       /*
        * Basic blocks
@@ -106,8 +108,6 @@ namespace llvm {
       virtual void extractFuncArgs () = 0;
 
 
-      std::unordered_map<Instruction *, Instruction *> instructionClones;
-
     protected:
       uint32_t ID;
       Function *F;
@@ -118,6 +118,7 @@ namespace llvm {
       BasicBlock *entryBlock;
       BasicBlock *exitBlock;
       std::vector<BasicBlock *> lastBlocks;
+      std::unordered_map<Instruction *, Instruction *> instructionClones;
 
       LLVMContext & getLLVMContext (void) const ;
   };

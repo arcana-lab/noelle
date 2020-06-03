@@ -279,7 +279,7 @@ void HELIX::hoistReducibleLiveOutStoresToTaskExit(LoopDependenceInfo *LDI) {
     if (!this->envBuilder->isReduced(envIndex)) continue;
 
     auto producer = (Instruction*)LDI->environment->producerAt(envIndex);
-    auto producerClone = helixTask->instructionClones[producer];
+    auto producerClone = helixTask->getCloneOfOriginalInstruction(producer);
 
     /*
      * Locate all stores for this live out.

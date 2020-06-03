@@ -225,3 +225,9 @@ Instruction * Task::cloneAndAddInstruction (Instruction *original){
 
   return cloneI;
 }
+
+void Task::removeOriginalInstruction (Instruction *o) {
+  this->instructionClones.erase(o);
+
+  return ;
+}
