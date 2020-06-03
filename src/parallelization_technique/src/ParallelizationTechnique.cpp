@@ -291,7 +291,6 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
 ){
   auto &cxt = module.getContext();
   auto task = tasks[taskIndex];
-  auto &iClones = task->instructionClones;
 
   /*
    * Clone a portion of the original loop (determined by a set of SCCs
@@ -299,7 +298,7 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
    */
   std::set<BasicBlock *> bbSubset;
   for (auto I : subset) {
-    iClones[I] = I->clone();
+    task->cloneAndAddInstruction(I);
     bbSubset.insert(I->getParent());
   }
 
@@ -310,8 +309,11 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
     auto cloneBB = task->addBasicBlockStub(bb);
     IRBuilder<> builder(cloneBB);
     for (auto &I : *bb) {
-      if (iClones.find(&I) == iClones.end()) continue;
-      builder.Insert(iClones[&I]);
+      if (!task->isAnOriginalInstruction(&I)) {
+        continue;
+      }
+      auto cloneI = task->getCloneOfOriginalInstruction(&I);
+      builder.Insert(cloneI);
     }
   }
 }
@@ -375,7 +377,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     /*
      * Fetch the clone of the producer that belongs to the function of the task.
      */
-    auto prodClone = task->instructionClones[producer];
+    auto prodClone = task->getCloneOfOriginalInstruction(producer);
 
     /*
      * Create GEP access of the single, or reducable, environment variable
@@ -442,7 +444,7 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
    * Determine whether the producer is in the loop header. If so, return all
    * the loop's exit blocks, as the live out value must be valid at all exit points
    */
-  auto liveOutClone = task->instructionClones[liveOut];
+  auto liveOutClone = task->getCloneOfOriginalInstruction(liveOut);
   auto isInHeader = loopHeader == liveOut->getParent();
   if (!isInHeader) return { liveOutClone->getParent() };
 
@@ -458,10 +460,9 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
   int taskIndex
 ){
   auto &task = tasks[taskIndex];
-  auto &iClones = task->instructionClones;
 
-  for (auto pair : iClones) {
-    auto cloneI = pair.second;
+  for (auto origI : task->getOriginalInstructions()) {
+    auto cloneI = task->getCloneOfOriginalInstruction(origI);
 
     /*
      * Adjust basic block references of terminators and PHI nodes
@@ -505,8 +506,9 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
        * set it to the equivalent cloned instruction.
        */
       if (auto opI = dyn_cast<Instruction>(opV)) {
-        if (iClones.find(opI) != iClones.end()) {
-          op.set(iClones[opI]);
+        if (task->isAnOriginalInstruction(opI)){
+          auto cloneOpI = task->getCloneOfOriginalInstruction(opI);
+          op.set(cloneOpI);
         } else {
           if (opI->getFunction() != task->getTaskBody()) {
             cloneI->print(errs() << "ERROR:   Instruction has op from another function: "); errs() << "\n";
@@ -560,7 +562,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
     /*
      * Fetch the related instruction of the producer that has been created (cloned) and stored in the parallelized version of the loop.
      */
-    auto producerClone = cast<PHINode>(task->instructionClones[producerPHI]);
+    auto producerClone = cast<PHINode>(task->getCloneOfOriginalInstruction(producerPHI));
 
     /*
      * Fetch the cloned pre-header.
@@ -743,9 +745,10 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
     File << "\n";
 
     File << taskName << "instruction clones" << "\n";
-    for (auto clonePair : task->instructionClones) {
-      clonePair.first->print(File << "Original: "); File << "\n\t";
-      clonePair.second->print(File << "Cloned: "); File << "\n";
+    for (auto origI : task->getOriginalInstructions()){
+      origI->print(File << "Original: "); File << "\n\t";
+      auto cloneI = task->getCloneOfOriginalInstruction(origI);
+      cloneI->print(File << "Cloned: "); File << "\n";
     }
     File << "\n";
 

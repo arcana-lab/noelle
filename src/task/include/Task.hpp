@@ -59,6 +59,8 @@ namespace llvm {
 
       std::unordered_set<Instruction *> getOriginalInstructions (void) const ;
 
+      Instruction * cloneAndAddInstruction (Instruction *original);
+
 
       /*
        * Basic blocks
