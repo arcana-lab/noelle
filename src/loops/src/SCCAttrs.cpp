@@ -14,12 +14,14 @@ using namespace llvm;
 
 SCCAttrs::SCCAttrs (
     SCC *s, 
-    AccumulatorOpInfo &opInfo
+    AccumulatorOpInfo &opInfo,
+    LoopsSummary &LIS
   ) : 
     scc{s}
     , sccType{SCCType::SEQUENTIAL}
     , accumOpInfo{opInfo}
     , PHINodes{}
+    , headerPHINodes{}
     , accumulators{}
     , controlFlowInsts{}
     , controlPairs{}
@@ -49,7 +51,7 @@ SCCAttrs::SCCAttrs (
   /*
    * Collect PHIs and accumulators included in the SCC.
    */
-  this->collectPHIsAndAccumulators();
+  this->collectPHIsAndAccumulators(*LIS.getLoopNestingTreeRoot());
 
   return;
 }
@@ -97,6 +99,11 @@ PHINode * SCCAttrs::getSinglePHI (void){
   return singlePHI;
 }
       
+PHINode * SCCAttrs::getSingleHeaderPHI (void){
+  return this->headerPHINodes.size() != 1
+    ? nullptr : *this->headerPHINodes.begin();
+}
+
 Instruction * SCCAttrs::getSingleAccumulator (void){
   if (this->accumulators.size() != 1) {
     return nullptr;
@@ -106,7 +113,7 @@ Instruction * SCCAttrs::getSingleAccumulator (void){
   return singleAccumulator;
 }
 
-void SCCAttrs::collectPHIsAndAccumulators (void) {
+void SCCAttrs::collectPHIsAndAccumulators (LoopSummary &LS) {
 
   /*
    * Iterate over elements of the SCC to collect PHIs and accumulators.
@@ -123,6 +130,9 @@ void SCCAttrs::collectPHIsAndAccumulators (void) {
      */
     if (auto phi = dyn_cast<PHINode>(V)) {
       this->PHINodes.insert(phi);
+      if (LS.getHeader() == phi->getParent()) {
+        this->headerPHINodes.insert(phi);
+      }
       continue;
     }
 
