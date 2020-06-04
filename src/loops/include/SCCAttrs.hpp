@@ -11,6 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
+#include "LoopsSummary.hpp"
 #include "AccumulatorOpInfo.hpp"
 #include "SCC.hpp"
 
@@ -43,7 +44,8 @@ namespace llvm {
        */
       SCCAttrs (
         SCC *s, 
-        AccumulatorOpInfo &opInfo
+        AccumulatorOpInfo &opInfo,
+        LoopsSummary &LIS
         );
 
       /*
@@ -102,6 +104,11 @@ namespace llvm {
       PHINode * getSinglePHI (void);
 
       /*
+       * Return the single header PHI if it exists. nullptr otherwise.
+       */
+      PHINode * getSingleHeaderPHI (void);
+
+      /*
        * Return the number of PHIs included in the SCC.
        */
       uint32_t numberOfPHIs (void);
@@ -153,10 +160,11 @@ namespace llvm {
       std::set<Instruction *> controlFlowInsts;
       std::set<PHINode *> PHINodes;
       std::set<Instruction *> accumulators;
+      std::set<PHINode *> headerPHINodes;
       bool isClonable;
       bool hasIV;
   
-      void collectPHIsAndAccumulators (void);
+      void collectPHIsAndAccumulators (LoopSummary &LS);
       void collectControlFlowInstructions (void);
   };
 

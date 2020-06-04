@@ -57,7 +57,7 @@ void SCCDAGAttrs::populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvoluti
     /*
      * Allocate the metadata about this SCC.
      */
-    auto sccInfo = new SCCAttrs(scc, this->accumOpInfo);
+    auto sccInfo = new SCCAttrs(scc, this->accumOpInfo, LIS);
     this->sccToInfo[scc] = sccInfo;
 
     /*

@@ -149,9 +149,11 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     auto binOpCode = firstAccumI->getOpcode();
     reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
 
-    auto prodPHI = cast<PHINode>(producer);
-    auto initValPHIIndex = prodPHI->getBasicBlockIndex(loopPreHeader);
-    initialValues[envInd] = prodPHI->getIncomingValue(initValPHIIndex);
+    PHINode *headerProducerPHI = LDI->sccdagAttrs.getSCCAttrs(producerSCC)->getSingleHeaderPHI();
+    assert(headerProducerPHI != nullptr &&
+      "The reducible variable should be described by a single PHI in the header");
+    auto initValPHIIndex = headerProducerPHI->getBasicBlockIndex(loopPreHeader);
+    initialValues[envInd] = headerProducerPHI->getIncomingValue(initValPHIIndex);
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
@@ -392,13 +394,11 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
 
     /*
      * If the variable is reducable, store the identity as the initial value
-     * NOTE(angelo): A limitation of our reducability analysis requires PHINode producers
      */
     if (isReduced) {
-      assert(isa<PHINode>(producer));
 
       /*
-       * Fetch the operator of the accumulator instruction for this reducable PHI node
+       * Fetch the operator of the accumulator instruction for this reducable variable
        * Store the identity value of the operator
        */
       auto identityV = getIdentityValueForEnvironmentValue(LDI, taskIndex, envIndex);
@@ -560,17 +560,20 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
 
     /*
      * Fetch the instruction that produces the live-out variable.
-     * This instruction must be a PHI node.
+     * The reducible live out must be contained within an SCC that has a
+     * PHI node in the header. The incoming value from the preheader is the
+     * location of the initial value that needs to be changed
      */
     auto producer = LDI->environment->producerAt(envInd);
-    assert(isa<PHINode>(producer) && "Reducable producers are assumed to be PHIs");
-    auto producerPHI = cast<PHINode>(producer);
-    assert(loopHeader == producerPHI->getParent() && "Reducable producers are assumed to be live throughout the loop");
+    auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
+    PHINode *headerProducerPHI = LDI->sccdagAttrs.getSCCAttrs(producerSCC)->getSingleHeaderPHI();
+    assert(headerProducerPHI != nullptr &&
+      "The reducible variable should be described by a single PHI in the header");
 
     /*
      * Fetch the related instruction of the producer that has been created (cloned) and stored in the parallelized version of the loop.
      */
-    auto producerClone = cast<PHINode>(task->getCloneOfOriginalInstruction(producerPHI));
+    auto producerClone = cast<PHINode>(task->getCloneOfOriginalInstruction(headerProducerPHI));
 
     /*
      * Fetch the cloned pre-header.

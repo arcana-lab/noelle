@@ -122,11 +122,10 @@ void DOALL::rewireLoopToIterateChunks (
    */
   auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
   LoopGoverningIVUtility ivUtility(loopGoverningIVAttr->getInductionVariable(), *loopGoverningIVAttr);
-  ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(
-    cast<CmpInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderCmpInst())),
-    cast<BranchInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderBrInst())),
-    task->getLastBlock(0)
-  );
+  auto cmpInst = cast<CmpInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderCmpInst()));
+  auto brInst = cast<BranchInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderBrInst()));
+  ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(cmpInst, brInst, task->getLastBlock(0));
+  auto updatedCmpInst = cmpInst;
 
   /*
    * The exit condition value does not need to be computed each iteration
@@ -150,7 +149,85 @@ void DOALL::rewireLoopToIterateChunks (
    * copied into the body and the exit block (to preserve the number of times they execute)
    * 
    * The logic in the exit block must be guarded so only the "last" iteration executes it,
-   * not any cores that pass the last iteration 
+   * not any cores that pass the last iteration. This is further complicated because the mapping
+   * of live-out environment producing instructions might need to be updated with the peeled
+   * instructions in the exit block
+   * 
+   * A temporary mitigation is to transform loop latches with conditional branches that
+   * verify if the next iteration would ever occur
    */
 
+  /*
+   * Move any non-IV instructions in the header to the loop body and the header exit block
+   */
+  std::set<Instruction *> ivInstructions;
+  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
+  for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
+    ivInfo->getHeaderPHI()->print(errs() << "Accumulating IV: "); errs() << "\n";
+    for (auto nodePair : sccdag->sccOfValue(ivInfo->getHeaderPHI())->internalNodePairs()) {
+      auto value = nodePair.first;
+      if (auto inst = dyn_cast<Instruction>(value)) {
+        if (inst->getParent() == loopSummary->getHeader()) {
+          ivInstructions.insert(task->getCloneOfOriginalInstruction(inst));
+        }
+      }
+    }
+  }
+  ivInstructions.insert(chunkPHI);
+
+  bool requiresConditionBeforeEnteringHeader = false;
+  for (auto &I : *headerClone) {
+    if (ivInstructions.find(&I) == ivInstructions.end()) {
+      I.print(errs() << "CULPRIT: "); errs() << "\n";
+      requiresConditionBeforeEnteringHeader = true;
+      break;
+    }
+  }
+
+  if (requiresConditionBeforeEnteringHeader) {
+    auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
+    auto loopGoverningPHI = task->getCloneOfOriginalInstruction(loopGoverningIV.getHeaderPHI());
+    auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
+
+    /*
+     * In each latch, assert that the previous iteration would have executed
+     */
+    for (auto latch : loopSummary->getLatches()) {
+      BasicBlock *cloneLatch = task->getCloneOfOriginalBasicBlock(latch);
+      cloneLatch->print(errs() << "Addressing latch:\n");
+      auto latchTerminator = cloneLatch->getTerminator();
+      latchTerminator->eraseFromParent();
+      IRBuilder<> latchBuilder(cloneLatch);
+
+      auto currentIVValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(cloneLatch);
+      auto prevIterationValue = latchBuilder.CreateSub(currentIVValue, stepSize);
+      auto clonedCmpInst = updatedCmpInst->clone();
+      clonedCmpInst->replaceUsesOfWith(loopGoverningPHI, prevIterationValue);
+      latchBuilder.Insert(clonedCmpInst);
+      latchBuilder.CreateCondBr(clonedCmpInst, task->getLastBlock(0), headerClone);
+    }
+
+    /*
+     * In the preheader, assert that either the first iteration is being executed OR
+     * that the previous iteration would have executed. The reason we must also check
+     * if this is the first iteration is if the IV condition is such that <= 1
+     * iteration would ever occur
+     */
+    auto preheaderTerminator = preheaderClone->getTerminator();
+    preheaderTerminator->eraseFromParent();
+    IRBuilder<> preheaderBuilder(preheaderClone);
+    auto offsetStartValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(preheaderClone);
+    auto prevIterationValue = preheaderBuilder.CreateSub(offsetStartValue, stepSize);
+
+    auto clonedExitCmpInst = updatedCmpInst->clone();
+    clonedExitCmpInst->replaceUsesOfWith(loopGoverningPHI, prevIterationValue);
+    preheaderBuilder.Insert(clonedExitCmpInst);
+    auto startValue = fetchClone(loopGoverningIV.getStartAtHeader());
+    auto isNotFirstIteration = preheaderBuilder.CreateICmpNE(offsetStartValue, startValue);
+    preheaderBuilder.CreateCondBr(
+      preheaderBuilder.CreateAnd(isNotFirstIteration, clonedExitCmpInst),
+      task->getExit(),
+      headerClone
+    );
+  }
 }

@@ -130,7 +130,7 @@ void LoopSummary::addChild (LoopSummary *child) {
 }
       
 std::unordered_set<BasicBlock *> LoopSummary::getLatches (void) const {
-  return this->getLatches();
+  return this->latchBBs;
 }
       
 std::unordered_set<BasicBlock *> LoopSummary::getBasicBlocks (void) const {
