@@ -3,7 +3,7 @@
 installDir
 
 # Set the command to execute
-cmdToExecute="noelle-load -load ${installDir}/lib/PDGStats.so -PDGStats $@" 
+cmdToExecute="noelle-load -load ${installDir}/lib/PDGStats.so -PDGStats $@ -disable-output" 
 echo $cmdToExecute ;
 
 # Execute the command
