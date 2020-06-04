@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Yian Su
+ * Copyright 2016 - 2020  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -13,16 +13,16 @@
 
 using namespace llvm;
 
-bool llvm::PDGStats::doInitialization(Module &M) {
+bool PDGStats::doInitialization(Module &M) {
   return false;
 }
 
-void llvm::PDGStats::getAnalysisUsage(AnalysisUsage &AU) const {
+void PDGStats::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
   return;
 }
 
-bool llvm::PDGStats::runOnModule(Module &M) {
+bool PDGStats::runOnModule(Module &M) {
   for (auto &F : M) {
     collectStatsForNodes(F);
     collectStatsForEdges(F);
@@ -32,7 +32,7 @@ bool llvm::PDGStats::runOnModule(Module &M) {
   return false;
 }
 
-void llvm::PDGStats::collectStatsForNodes(Function &F) {
+void PDGStats::collectStatsForNodes(Function &F) {
   if (MDNode *argsM = F.getMetadata("noelle.pdg.args.id")) {
     this->numberOfNodes += argsM->getNumOperands();
   }
@@ -48,7 +48,7 @@ void llvm::PDGStats::collectStatsForNodes(Function &F) {
   return;
 }
 
-void llvm::PDGStats::collectStatsForEdges(Function &F) {
+void PDGStats::collectStatsForEdges(Function &F) {
   if (MDNode *edgesM = F.getMetadata("noelle.pdg.edges")) {
     this->numberOfEdges += edgesM->getNumOperands();
 
@@ -79,7 +79,7 @@ void llvm::PDGStats::collectStatsForEdges(Function &F) {
   return;
 }
 
-bool llvm::PDGStats::edgeIsDependenceOf(MDNode *edgeM, const EDGE_ATTRIBUTE edgeAttribute) {
+bool PDGStats::edgeIsDependenceOf(MDNode *edgeM, const EDGE_ATTRIBUTE edgeAttribute) {
   if (MDNode *m = dyn_cast<MDNode>(edgeM->getOperand(edgeAttribute))) {
     if (MDString *s = dyn_cast<MDString>(m->getOperand(0))) {
       return s->getString() == "true" ? true : false;
@@ -89,23 +89,25 @@ bool llvm::PDGStats::edgeIsDependenceOf(MDNode *edgeM, const EDGE_ATTRIBUTE edge
   assert(false && "Error fetching edge attribute from Metadata");
 }
 
-void llvm::PDGStats::printStats() {
+void PDGStats::printStats() {
   errs() << "Number of Nodes: " << this->numberOfNodes << "\n";
-  errs() << "Number of Edges: " << this->numberOfEdges << "\n";
-  errs() << "Number of Variable Dependence: " << this->numberOfVariableDependence << "\n";
-  errs() << "Number of Memory Dependence: " << this->numberOfMemoryDependence << "\n";
-  errs() << "Number of Memory Must Dependence: " << this->numberOfMemoryMustDependence << "\n";
-  errs() << "Number of Control Dependence: " << this->numberOfControlDependence << "\n";
+  errs() << "Number of Edges (a.k.a. dependences): " << this->numberOfEdges << "\n";
+  errs() << " Number of control dependences: " << this->numberOfControlDependence << "\n";
+  errs() << " Number of data dependences: " << this->numberOfEdges - this->numberOfControlDependence << "\n";
+  errs() << "   Number of variable dependences: " << this->numberOfVariableDependence << "\n";
+  errs() << "   Number of memory dependences: " << this->numberOfMemoryDependence << "\n";
+  errs() << "     Number of memory must dependences: " << this->numberOfMemoryMustDependence << "\n";
+  errs() << "     Number of memory may dependences: " << this->numberOfMemoryDependence - this->numberOfMemoryMustDependence << "\n";
 
   return;
 }
 
-llvm::PDGStats::PDGStats()
+PDGStats::PDGStats()
   : ModulePass{ID} {
   return;
 }
 
-llvm::PDGStats::~PDGStats() {
+PDGStats::~PDGStats() {
   return;
 }
 
