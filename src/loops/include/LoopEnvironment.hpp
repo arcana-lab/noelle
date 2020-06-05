@@ -25,17 +25,11 @@ namespace llvm {
     public:
       LoopEnvironment (PDG *loopDG, std::vector<BasicBlock *> &exitBlocks);
 
-      iterator_range<std::vector<Value *>::iterator> getProducers() { 
-        return make_range(envProducers.begin(), envProducers.end());
-      }
+      iterator_range<std::vector<Value *>::iterator> getProducers (void) ;
 
-      iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveInVars() { 
-        return make_range(liveInInds.begin(), liveInInds.end());
-      }
+      iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveInVars (void) ;
 
-      iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveOutVars() { 
-        return make_range(liveOutInds.begin(), liveOutInds.end());
-      }
+      iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveOutVars (void) ;
 
       /*
        * One per external dependent + one to track exit block

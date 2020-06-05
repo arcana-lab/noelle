@@ -116,3 +116,15 @@ int LoopEnvironment::envSize (void) const {
 std::set<Value *> & LoopEnvironment::consumersOf (Value *prod) {
   return prodConsumers[prod];
 }
+
+iterator_range<std::vector<Value *>::iterator> LoopEnvironment::getProducers (void) { 
+  return make_range(envProducers.begin(), envProducers.end());
+}
+      
+iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIndicesOfLiveInVars (void) { 
+  return make_range(liveInInds.begin(), liveInInds.end());
+}
+      
+iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIndicesOfLiveOutVars (void) { 
+  return make_range(liveOutInds.begin(), liveOutInds.end());
+}
