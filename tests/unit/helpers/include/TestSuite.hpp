@@ -15,6 +15,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/FileSystem.h"
 
 #include "Comparators.hpp"
 
@@ -45,14 +46,18 @@ namespace parallelizertests {
       std::string actualValuesFileName
     );
 
+    ~TestSuite() ;
+
     void runTests (ModulePass &pass) ;
 
-    bool checkTest (int testId, Values &expectedValues) ;
+    bool checkTest (int testId, Values &expectedValues, raw_fd_ostream &File) ;
     template <typename T> std::string printToString (T *printable) ;
     template <typename T> std::string printAsOperandToString (T *printable) ;
 
     std::string valueToString (Value *value) ;
     std::string trimProfilerBitcodeInfo (std::string bitcodeValue) ;
+
+    static std::string combineValues (std::vector<std::string> values, std::string delimiter) ;
 
     const std::string orderedValueDelimiter = ";";
     const std::string unorderedValueDelimiter = "|";
@@ -100,4 +105,5 @@ namespace parallelizertests {
     Parser::trim(str);
     return str;
   }
+
 }

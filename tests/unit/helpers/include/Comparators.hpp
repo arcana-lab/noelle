@@ -23,6 +23,7 @@ using namespace llvm;
 using namespace std;
 
 namespace parallelizertests {
+
   using Values = std::set<std::string>;
 
   class Comparator {
@@ -39,7 +40,15 @@ namespace parallelizertests {
 
     const std::unordered_map<std::string, std::set<std::string>> &getGroupValues ();
 
+    std::vector<std::string> split (std::string value) ;
+
    private:
+
+    void trySplitOrderedAndUnordered (
+      std::string value,
+      std::vector<std::string> &ordered,
+      std::vector<std::string> &unordered
+    ) ;
 
     std::string processDelimitedRow (std::string value);
 
@@ -55,4 +64,5 @@ namespace parallelizertests {
     static void trim (std::string &s);
     static std::vector<std::string> split (std::string s, std::string delimiter);
   };
+
 }

@@ -66,10 +66,22 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   auto mainFunction = M.getFunction("main");
 
   this->LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
+  this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
+
+  auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
+    return getAnalysis<LoopInfoWrapperPass>(*h->getParent()).getLoopInfo().getLoopFor(h);
+  };
+  auto findTripCount = [this](Loop *loopToAnalyze, uint64_t &foundTripCount) -> bool {
+    auto tripCount = SE->getSmallConstantTripCount(loopToAnalyze);
+    bool hasTripCount = tripCount != 0;
+    foundTripCount = hasTripCount ? tripCount : foundTripCount;
+    return hasTripCount;
+  };
+
   // TODO: Grab first loop and produce attributes on it
-  LoopsSummary LIS;
+  LoopsSummary LIS{getLLVMLoopFunction};
   Loop *topLoop = LI->getLoopsInPreorder()[0];
-  LIS.populate(*LI, topLoop);
+  LIS.populate(*LI, topLoop, findTripCount);
 
   auto *DT = &getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
   auto *PDT = &getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
@@ -78,16 +90,15 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
   this->sccdag = new SCCDAG(fdg);
 
-  this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
-
   this->attrs = new SCCDAGAttrs();
-  this->attrs->populate(sccdag, LIS, *SE, DS);
+  InductionVariables IV{LIS, *LI, *SE, *sccdag};
+  this->attrs->populate(sccdag, LIS, *SE, DS, IV);
 
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   this->sccdagTopLoopNorm = new SCCDAG(loopDG);
   // PDGPrinter printer;
   // printer.writeGraph<SCCDAG>("graph-top-loop.dot", sccdagTopLoopNorm);
-  SCCDAGNormalizer normalizer(*sccdagTopLoopNorm, LIS, *SE, DS);
+  SCCDAGNormalizer normalizer(*sccdagTopLoopNorm, LIS, *SE, DS, IV);
   normalizer.normalizeInPlace();
 
   suite->runTests((ModulePass &)*this);
@@ -98,15 +109,6 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   delete fdg;
 
   return false;
-}
-
-std::string combineValues (std::vector<std::string> values, std::string delimiter) {
-  std::string allValues = values[0];
-  for (int i = 1; i < values.size(); ++i) {
-    allValues += delimiter + values[i];
-  }
-
-  return allValues;
 }
 
 Values SCCDAGAttrTestSuite::sccdagHasCorrectSCCs (ModulePass &pass) {
@@ -126,7 +128,7 @@ Values SCCDAGAttrTestSuite::getValuesOfSCCDAG (SCCDAG &dag) {
     for (auto nodePair : node->getT()->internalNodePairs()) {
       sccValues.push_back(suite->valueToString(nodePair.first));
     }
-    valueNames.insert(combineValues(sccValues, suite->unorderedValueDelimiter));
+    valueNames.insert(TestSuite::combineValues(sccValues, suite->unorderedValueDelimiter));
   }
   return valueNames;
 }
@@ -172,7 +174,7 @@ Values SCCDAGAttrTestSuite::printSCCs (ModulePass &pass, std::set<SCC *> sccs) {
     for (auto nodePair : scc->internalNodePairs()) {
       sccValues.push_back(attrPass.suite->valueToString(nodePair.first));
     }
-    valueNames.insert(combineValues(sccValues, attrPass.suite->unorderedValueDelimiter));
+    valueNames.insert(TestSuite::combineValues(sccValues, attrPass.suite->unorderedValueDelimiter));
   }
 
   return valueNames;

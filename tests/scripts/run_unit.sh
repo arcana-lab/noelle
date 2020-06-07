@@ -5,12 +5,6 @@ LIB_DIR=$PDG_INSTALL_DIR/lib
 TEST_LIB_DIR=$PDG_INSTALL_DIR/test/lib
 TRANSFORMATIONS_BEFORE_PARALLELIZATION="-basicaa -mem2reg -scalar-evolution -loops -loop-simplify -lcssa -domtree -postdomtree"
 
-# TODO: Uniquely name unit test runners so they can all live in the installation directory
-#UNIT_TEST_PASS=" \
-  #-load ../../../helpers/build/UnitTestHelpers.so \
-  #-load ../../build/UnitTester.so -UnitTester \
-#"
-
 HOTPROFILER_SCRIPT="../../../../scripts/inject_hotprofiler.sh"
 PROGRAM_INPUT_FOR_PROFILE="20 20 20"
 TEST_PROFILE=output.prof
@@ -21,6 +15,8 @@ function loadAndRunNoellePasses {
   local INPUT=$2
   local OUTPUT=$3
 
+  local BASICS="-load $LIB_DIR/Architecture.so -load $LIB_DIR/BasicUtilities.so -load $LIB_DIR/DataFlow.so \
+    -load $LIB_DIR/Loops.so"
   local ANALYSES="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa"
   local WPAPASS="-load $LIB_DIR/libSvf.so -load $LIB_DIR/libCudd.so \
     -veto -nander -hander -sander -sfrander -wander -ander -fspta -lander -hlander -stat=false"
@@ -28,9 +24,9 @@ function loadAndRunNoellePasses {
   local ENABLERS="-load $LIB_DIR/LoopDistribution.so"
   local PARALLELIZATION_TECHNIQUES="-load $LIB_DIR/DSWP.so -load $LIB_DIR/DOALL.so -load $LIB_DIR/HELIX.so"
 
-  local OPTPASSES="$WPAPASS $PDGPASS -load $LIB_DIR/Architecture.so \
-    -load $LIB_DIR/DataFlow.so -load $LIB_DIR/HotProfiler.so \
-    -load $LIB_DIR/Loops.so -load $LIB_DIR/Parallelization.so \
+  local OPTPASSES="$WPAPASS $PDGPASS $BASICS \
+    -load $LIB_DIR/HotProfiler.so \
+    -load $LIB_DIR/Parallelization.so \
     -load $LIB_DIR/Heuristics.so -load $LIB_DIR/ParallelizationTechnique.so \
     $ENABLERS $PARALLELIZATION_TECHNIQUES -load $LIB_DIR/Parallelizer.so"
 
@@ -57,36 +53,48 @@ function runTest {
   ${CC} -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c test.cpp -o test_pre.bc
   $HOTPROFILER_SCRIPT test_pre.bc test_prof.bc
   ${CC} -O0 -fprofile-instr-generate test_prof.bc -o test_prof
-  ./test_prof "$PROGRAM_INPUT_FOR_PROFILE"
+  ./test_prof "$PROGRAM_INPUT_FOR_PROFILE" &> /dev/null
   llvm-profdata merge default.profraw -output=$TEST_PROFILE
-  opt ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} test_pre.bc -o test.bc
+  opt ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} test_pre.bc -o test.bc &> /dev/null
 
   local UNIT_TEST_PASS="-load $TEST_LIB_DIR/UnitTestHelpers.so -load $TEST_LIB_DIR/$TEST_SO -UnitTester"
-  loadAndRunNoellePasses "$UNIT_TEST_PASS" test.bc tested.bc
+  loadAndRunNoellePasses "$UNIT_TEST_PASS" test.bc tested.bc &> compiler_output.txt
   llvm-dis tested.bc -o tested.ll
+
+  if test -f "test_output.txt" ; then
+    # cat test_output.txt
+    :
+  else
+    echo "Test suite did not output results to test_output.txt"
+  fi
 
   cd ../ ;
 }
 
 function checkRunSuite {
-  if ! test -d $1 ; then
+  local TestSuiteName=$1
+  local UnitTestName=$2
+
+  if ! test -d $TestSuiteName ; then
     return ;
   fi
-  if ! test -d $1/suite ; then
+  if ! test -d $TestSuiteName/suite ; then
     return ;
   fi
 
-  cd $1/suite/ ;
+  cd $TestSuiteName/suite/ ;
 
-  if ! test -z "$2" ; then
-    runTest $1 $2
+  if ! test -z "$UnitTestName" ; then
+    runTest $TestSuiteName $UnitTestName
+    grep "Summary" $UnitTestName/test_output.txt
   else
     for i in `ls`; do
-      runTest $1 $i ;
+      runTest $TestSuiteName $i ;
+      grep "Summary" $i/test_output.txt
     done
   fi
 
-  echo -e "Finished running suite: $1" ;
+  echo -e "Finished running suite: $TestSuiteName" ;
 
   cd ../../ ;
 }
@@ -96,4 +104,6 @@ function trimTrailingSlash {
 }
 
 SUITE=$(trimTrailingSlash $1)
-checkRunSuite $SUITE $2 ;
+UNIT=$2
+
+checkRunSuite $SUITE $UNIT ;
