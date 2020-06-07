@@ -67,7 +67,6 @@ namespace llvm {
       static Values interIterationDependencies (ModulePass &pass) ;
       static Values intraIterationDependencies (ModulePass &pass) ;
 
-
       static Values printSCCs (ModulePass &pass, std::set<SCC *> sccs) ;
 
       TestSuite *suite;

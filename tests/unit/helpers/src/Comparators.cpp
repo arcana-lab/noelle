@@ -11,7 +11,7 @@
 
 #include "Comparators.hpp"
 
-using namespace parallelizertests;
+namespace parallelizertests {
 
 std::pair<Values, Values> Comparator::nonIntersecting (Values &v, Values &w) {
   Values notV, notW;
@@ -73,12 +73,10 @@ std::string FileComparator::processDelimitedRow (std::string value) {
   /*
    * Determine if the whole value represents an ordered/unordered set of tokens
    */
-  std::vector<std::string> unorderedTokens = Parser::split(value, unorderedDelimiter);
-  std::vector<std::string> orderedTokens = Parser::split(value, orderedDelimiter);
+  std::vector<std::string> unorderedTokens{}, orderedTokens{};
+  trySplitOrderedAndUnordered(value, orderedTokens, unorderedTokens);
   bool isUnordered = unorderedTokens.size() > 1;
   bool isOrdered = orderedTokens.size() > 1;
-  assert(!(isUnordered && isOrdered)
-    && "Error: tests cannot mix unordered and ordered expected values");
 
   /*
    * Trim each token, and if unordered, sort lexicographically
@@ -112,6 +110,31 @@ const std::unordered_map<std::string, std::set<std::string>> &FileComparator::ge
   return this->groupValues;
 }
 
+std::vector<std::string> FileComparator::split (std::string value) {
+  std::vector<std::string> unorderedTokens;
+  std::vector<std::string> orderedTokens;
+  trySplitOrderedAndUnordered(value, orderedTokens, unorderedTokens);
+  return orderedTokens.size() > 1 ? orderedTokens : unorderedTokens;
+}
+
+void FileComparator::trySplitOrderedAndUnordered (
+  std::string value,
+  std::vector<std::string> &ordered,
+  std::vector<std::string> &unordered
+) {
+  std::vector<std::string> unorderedTokens = Parser::split(value, unorderedDelimiter);
+  std::vector<std::string> orderedTokens = Parser::split(value, orderedDelimiter);
+  bool isUnordered = unorderedTokens.size() > 1;
+  bool isOrdered = orderedTokens.size() > 1;
+  assert(!(isUnordered && isOrdered)
+    && "Error: tests cannot mix unordered and ordered expected values");
+
+  ordered.clear();
+  ordered.insert(ordered.begin(), orderedTokens.begin(), orderedTokens.end());
+  unordered.clear();
+  unordered.insert(unordered.begin(), unorderedTokens.begin(), unorderedTokens.end());
+}
+
 void Parser::ltrim (std::string &s) {
   s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
       return !std::isspace(ch);
@@ -138,4 +161,6 @@ std::vector<std::string> Parser::split (std::string s, std::string delimiter) {
   }
   if (prev_pos != s.length()) tokens.push_back(s.substr(prev_pos, s.length() - prev_pos));
   return tokens;
+}
+
 }

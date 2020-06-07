@@ -1,6 +1,10 @@
 # dependencies
 threadpool
 
+# build artifacts
+src/**/build
+tests/unit/**/build
+
 # test output steps
 tests/regression/**/*.bc
 tests/performance/**/*.bc
@@ -10,6 +14,7 @@ tests/regression/**/*.txt
 tests/performance/**/*.txt
 tests/regression/**/*.dot
 tests/performance/**/*.dot
+tests/unit/**/suite/**/*.txt
 tests/unit/**/*.dot
 tests/**/*_prof
 

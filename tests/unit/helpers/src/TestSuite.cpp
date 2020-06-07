@@ -11,7 +11,7 @@
 
 #include "TestSuite.hpp"
 
-using namespace parallelizertests;
+namespace parallelizertests {
 
 TestSuite::TestSuite (
   std::string suite,
@@ -25,6 +25,7 @@ TestSuite::TestSuite (
     this->tests.push_back(fns[i]);
   }
   this->comparator = new FileComparator(expectedValuesFileName, unorderedValueDelimiter, orderedValueDelimiter);
+
 }
 
 TestSuite::TestSuite (
@@ -34,21 +35,31 @@ TestSuite::TestSuite (
   std::string expectedValuesFileName
 ) : suiteName{suite}, testNames{names}, tests{testFns} {
   this->comparator = new FileComparator(expectedValuesFileName);
+
 }
 
+TestSuite::~TestSuite() {}
+
 void TestSuite::runTests (ModulePass &pass) {
+  std::error_code EC;
+  raw_fd_ostream File("test_output.txt", EC);
+  if (EC) {
+    errs() << "Could not open output file!\n";
+    return ;
+  }
+
   Values groups(testNames.begin(), testNames.end());
   std::pair<Values, Values>
   mismatchGroups = comparator->nonIntersectingGroups(groups);
   if (mismatchGroups.second.size() != 0) {
     for (auto group : mismatchGroups.second) {
-      errs() << suiteName << ": Test not found: " << group << "\n";
+      File << suiteName << ": Test not found: " << group << "\n";
     }
     return;
   }
 
   for (auto group : mismatchGroups.first) {
-    errs() << suiteName << ": Not Testing: " << group << "\n";
+    File << suiteName << ": Not Testing: " << group << "\n";
   }
 
   int numSuccess = 0;
@@ -61,31 +72,32 @@ void TestSuite::runTests (ModulePass &pass) {
     }
 
     Values actual = tests[testId](pass);
-    numSuccess += checkTest(testId, actual) ? 1 : 0;
+    numSuccess += checkTest(testId, actual, File) ? 1 : 0;
   }
 
-  errs() << suiteName << " Successes: " << numSuccess
+  File << suiteName << " Summary: Successes: " << numSuccess
     << " Skips: " << numSkips
     << " Failures: " << (tests.size() - numSuccess - numSkips) << "\n";
+
+  File.close();
 }
 
-bool TestSuite::checkTest (int testId, Values &actualValues) {
+bool TestSuite::checkTest (int testId, Values &actualValues, raw_fd_ostream &File) {
   std::pair<Values, Values>
   mismatchValues = comparator->nonIntersectingOfGroup(testNames[testId], actualValues);
 
-  errs() << "\n";
   bool testPassed = true;
   for (auto v : mismatchValues.second) {
     testPassed = false;
-    errs() << suiteName << ": Expected    : " << v << " not found.\n";
+    File << suiteName << ": Expected    : " << v << " not found.\n";
   }
   for (auto v : mismatchValues.first) {
     testPassed = false;
-    errs() << suiteName << ": Not expected: " << v << " yet found\n";
+    File << suiteName << ": Not expected: " << v << " yet found\n";
   }
 
-  if (testPassed) errs() << suiteName << ": Passed: " << testNames[testId] << "\n";
-  else errs() << suiteName << ": Failed: " << testNames[testId] << "\n";
+  if (testPassed) File << suiteName << ": Passed: " << testNames[testId] << "\n";
+  else File << suiteName << ": Failed: " << testNames[testId] << "\n";
 
   return testPassed;
 }
@@ -100,4 +112,15 @@ std::string TestSuite::trimProfilerBitcodeInfo (std::string bitcodeValue) {
     bitcodeValue.erase(bitcodeValue.begin() + it, bitcodeValue.end());
   }
   return bitcodeValue;
+}
+
+std::string TestSuite::combineValues (std::vector<std::string> values, std::string delimiter) {
+  std::string allValues = values[0];
+  for (int i = 1; i < values.size(); ++i) {
+    allValues += delimiter + values[i];
+  }
+
+  return allValues;
+}
+
 }
