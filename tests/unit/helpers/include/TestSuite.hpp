@@ -57,6 +57,9 @@ namespace parallelizertests {
     std::string valueToString (Value *value) ;
     std::string trimProfilerBitcodeInfo (std::string bitcodeValue) ;
 
+    std::string combineOrderedValues (std::vector<std::string> values) ;
+    std::string combineUnorderedValues (std::vector<std::string> values) ;
+
     static std::string combineValues (std::vector<std::string> values, std::string delimiter) ;
 
     const std::string orderedValueDelimiter = ";";

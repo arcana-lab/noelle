@@ -114,6 +114,14 @@ std::string TestSuite::trimProfilerBitcodeInfo (std::string bitcodeValue) {
   return bitcodeValue;
 }
 
+std::string TestSuite::combineOrderedValues (std::vector<std::string> values) {
+  return TestSuite::combineValues(values, orderedValueDelimiter);
+}
+
+std::string TestSuite::combineUnorderedValues (std::vector<std::string> values) {
+  return TestSuite::combineValues(values, unorderedValueDelimiter);
+}
+
 std::string TestSuite::combineValues (std::vector<std::string> values, std::string delimiter) {
   std::string allValues = values[0];
   for (int i = 1; i < values.size(); ++i) {
