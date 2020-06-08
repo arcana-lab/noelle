@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -14,21 +14,7 @@
 
 using namespace llvm;
 
-HotProfiler::HotProfiler()
-  :
-  ModulePass(ID),
-  hot{}
-  {
-
-  return ;
-}
-
-bool HotProfiler::doInitialization (Module &M) {
-  return false;
-}
-
-bool HotProfiler::runOnModule (Module &M) {
-  errs() << "HotProfiler: Start\n" ;
+void HotProfiler::analyzeProfiles (Module &M){
 
   /*
    * Fetch the invocations of each basic block of each function.
@@ -92,17 +78,15 @@ bool HotProfiler::runOnModule (Module &M) {
    */
   this->hot.computeProgramInvocations();
 
-  auto totalInsts = this->hot.getModuleInstructions();
-  errs() << "HotProfiler:   Total instructions = " << totalInsts << "\n" ;
+  /*
+   * Compute the total instructions.
+   */
+  this->computeTotalInstructions();
 
-  errs() << "HotProfiler: Exit\n" ;
-  return false;
+  return ;
 }
 
-void HotProfiler::getAnalysisUsage (AnalysisUsage &AU) const {
-  AU.addRequired<BlockFrequencyInfoWrapperPass> ();
-  AU.addRequired<BranchProbabilityInfoWrapperPass> ();
-  AU.setPreservesAll();
+void HotProfiler::computeTotalInstructions (void){
 
   return ;
 }
@@ -110,16 +94,3 @@ void HotProfiler::getAnalysisUsage (AnalysisUsage &AU) const {
 Hot& HotProfiler::getHot (void){
   return this->hot;
 }
-
-// Next there is code to register your pass to "opt"
-char HotProfiler::ID = 0;
-static RegisterPass<HotProfiler> X("HotProfiler", "Profiler to identify hot code");
-
-// Next there is code to register your pass to "clang"
-static HotProfiler * _PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new HotProfiler());}}); // ** for -Ox
-static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new HotProfiler()); }}); // ** for -O0
