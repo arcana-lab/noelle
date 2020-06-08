@@ -93,7 +93,7 @@ void Hot::setBranchFrequency (BasicBlock *src, BasicBlock *dst, double branchFre
   return ;
 }
       
-uint64_t Hot::getLoopInstructions (Loop *loop) const {
+uint64_t Hot::getLoopSelfInstructions (Loop *loop) const {
   uint64_t insts = 0;
 
   for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
@@ -102,6 +102,16 @@ uint64_t Hot::getLoopInstructions (Loop *loop) const {
   }
 
   return insts;
+}
+
+uint64_t Hot::getLoopTotalInstructions (Loop *loop) const {
+  return this->totalLoopInstructions.at(loop);
+}
+
+void Hot::setLoopTotalInstructions (Loop *loop, uint64_t insts){
+  this->totalLoopInstructions[loop] = insts;
+
+  return ;
 }
  
 uint64_t Hot::getFunctionInstructions (Function *f) const {

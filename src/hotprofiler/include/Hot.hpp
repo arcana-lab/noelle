@@ -34,13 +34,28 @@ namespace llvm {
       /*
        * Loops
        */
-      uint64_t getLoopInstructions (Loop *loop) const ;
+
+      /*
+       * Return the total number of instructions executed excluding the instructions executed by the callees.
+       */
+      uint64_t getLoopSelfInstructions (Loop *loop) const ;
+
+      /*
+       * Return the total number of instructions executed including the instructions executed by the callees.
+       */
+      uint64_t getLoopTotalInstructions (Loop *loop) const ;
+
+      /*
+       * Set the total number of instructions executed by the loop.
+       */
+      void setLoopTotalInstructions (Loop *loop, uint64_t insts);
 
 
       /*
        * Functions
        */
       uint64_t getFunctionInstructions (Function *f) const ;
+
       uint64_t getFunctionInvocations (Function *f) const ;
 
 
@@ -65,6 +80,7 @@ namespace llvm {
       std::map<Function *, uint64_t> functionInstructions;
       std::map<Function *, uint64_t> functionInvocations;
       std::map<BasicBlock *, std::map<BasicBlock *, double>> branchProbability;
+      std::unordered_map<Loop *, uint64_t> totalLoopInstructions;
       uint64_t moduleNumberOfInstructionsExecuted;
   };
 
