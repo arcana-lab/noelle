@@ -61,7 +61,9 @@ namespace llvm {
       Module *M;
       ScalarEvolution *SE;
       LoopInfo *LI;
+      LoopsSummary *LIS;
       PDG *fdg;
+      SCCDAG *sccdag;
       InductionVariables *IVs;
   };
 }

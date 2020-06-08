@@ -114,7 +114,7 @@ InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEv
   auto M = headerPHI->getFunction()->getParent();
   DataLayout DL(M);
   const char name = 'a';
-  SCEVExpander expander(SE, DL, &name);
+  SCEVExpander *expander = new SCEVExpander(SE, DL, &name);
   switch (stepSCEV->getSCEVType()) {
     case SCEVTypes::scConstant:
       this->stepSize = cast<SCEVConstant>(stepSCEV)->getValue();
@@ -123,29 +123,41 @@ InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEv
       this->stepSize = cast<SCEVUnknown>(stepSCEV)->getValue();
       break;
     default:
-      this->stepSize = expander.getExactExistingExpansion(stepSCEV, headerPHI, llvmLoop);
+      this->stepSize = expander->getExactExistingExpansion(stepSCEV, headerPHI, llvmLoop);
       if (!this->stepSize) {
-        auto &entryBlock = headerPHI->getParent()->getParent()->getEntryBlock();
-        expander.setInsertPoint(entryBlock.getTerminator());
-        auto endCompositeValue = expander.expandCodeFor(stepSCEV);
-        expander.clearInsertPoint();
+
+        // TODO: Do not tamper with the current function, instead creating this termporary block in a temporary function
+        auto tempBlock = BasicBlock::Create(headerPHI->getContext(), "temp", headerPHI->getParent()->getParent());
+        IRBuilder<> tempBuilder(tempBlock);
+        auto tempInst = cast<Instruction>(tempBuilder.CreateBr(tempBlock));
+
+        expander->setInsertPoint(tempInst);
+        auto endCompositeValue = expander->expandCodeFor(stepSCEV);
+        expander->clearInsertPoint();
         assert(isa<Instruction>(endCompositeValue));
-        auto currValue = entryBlock.getTerminator();
+
+        auto currValue = &*tempBlock->begin();
         auto endValue = cast<Instruction>(endCompositeValue)->getNextNode();
         while (currValue != endValue) {
           expansionOfCompositeStepSize.push_back(currValue);
-          auto prevValue = currValue;
           currValue = currValue->getNextNode();
-          prevValue->removeFromParent();
         }
       }
       break;
   }
+
+  // TODO: Determine why this seg faults on the destructor of a ValueHandleBase
+  // delete expander;
 }
 
 InductionVariable::~InductionVariable () {
+  BasicBlock *tempBlock = nullptr;
   for (auto expandedInst : expansionOfCompositeStepSize) {
-    expandedInst->deleteValue();
+    tempBlock = expandedInst->getParent();
+    expandedInst->eraseFromParent();
+  }
+  if (tempBlock) {
+    tempBlock->eraseFromParent();
   }
 }
 

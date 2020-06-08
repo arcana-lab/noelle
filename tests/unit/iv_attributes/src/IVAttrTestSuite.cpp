@@ -57,37 +57,126 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   errs() << "IVAttrTestSuite: Start\n";
   auto mainFunction = M.getFunction("main");
 
-  // this->LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
-  // // TODO: Grab first loop and produce attributes on it
-  // LoopsSummary LIS;
-  // Loop *topLoop = LI->getLoopsInPreorder()[0];
-  // LIS.populate(*LI, topLoop);
+  this->LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
+  this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
 
-  // auto *DT = &getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
-  // auto *PDT = &getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
-  // DominatorSummary DS(*DT, *PDT);
+  this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
+  this->sccdag = new SCCDAG(fdg);
 
-  // this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
-  // this->sccdag = new SCCDAG(fdg);
+  auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
+    return getAnalysis<LoopInfoWrapperPass>(*h->getParent()).getLoopInfo().getLoopFor(h);
+  };
+  auto findTripCount = [this](Loop *loopToAnalyze, uint64_t &foundTripCount) -> bool {
+    auto tripCount = SE->getSmallConstantTripCount(loopToAnalyze);
+    bool hasTripCount = tripCount != 0;
+    foundTripCount = hasTripCount ? tripCount : foundTripCount;
+    return hasTripCount;
+  };
 
-  // this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
+  this->LIS = new LoopsSummary(getLLVMLoopFunction);
+  Loop *topLoop = LI->getLoopsInPreorder()[0];
+  LIS->populate(*LI, topLoop, findTripCount);
 
-  // this->attrs = new IVAttrs();
-  // this->attrs->populate(sccdag, LIS, *SE, DS);
+  errs() << "IVAttrTestSuite: Running IV analysis\n";
+  this->IVs = new InductionVariables(*LIS, *LI, *SE, *sccdag);
+  errs() << "IVAttrTestSuite: Finished IV analysis\n";
 
-  // auto loopDG = fdg->createLoopsSubgraph(topLoop);
-  // this->sccdagTopLoopNorm = new SCCDAG(loopDG);
-  // // PDGPrinter printer;
-  // // printer.writeGraph<SCCDAG>("graph-top-loop.dot", sccdagTopLoopNorm);
-  // SCCDAGNormalizer normalizer(*sccdagTopLoopNorm, LIS, *SE, DS);
-  // normalizer.normalizeInPlace();
+  suite->runTests((ModulePass &)*this);
 
-  // suite->runTests((ModulePass &)*this);
-
-  // delete this->attrs;
-  // delete this->sccdag;
-  // delete this->sccdagTopLoopNorm;
-  // delete fdg;
+  delete this->IVs;
+  delete this->LIS;
+  delete sccdag;
+  delete fdg;
 
   return false;
+}
+
+Values IVAttrTestSuite::verifyStartAndStepByLoop (ModulePass &pass) {
+  IVAttrTestSuite &attrPass = static_cast<IVAttrTestSuite &>(pass);
+  TestSuite *suite = attrPass.suite;
+
+  Values loopIVs;
+  for (auto &loop : attrPass.LIS->loops) {
+    for (auto IV : attrPass.IVs->getInductionVariables(*loop.get())) {
+      std::vector<std::string> loopIVStartStep;
+      loopIVStartStep.push_back(suite->printAsOperandToString(loop->getHeader()));
+      loopIVStartStep.push_back(suite->valueToString(IV->getStartAtHeader()));
+
+      if (IV->getSimpleValueOfStepSize()) {
+        loopIVStartStep.push_back(suite->valueToString(IV->getSimpleValueOfStepSize()));
+      } else {
+        for (auto I : IV->getExpansionOfCompositeStepSize()) {
+          loopIVStartStep.push_back(suite->valueToString(I));
+        }
+      }
+
+      loopIVs.insert(suite->combineOrderedValues(loopIVStartStep));
+    }
+  }
+
+  return loopIVs;
+}
+
+Values IVAttrTestSuite::verifyIntermediateValues (ModulePass &pass) {
+  IVAttrTestSuite &attrPass = static_cast<IVAttrTestSuite &>(pass);
+  TestSuite *suite = attrPass.suite;
+
+  Values loopIVIntermediates;
+  for (auto &loop : attrPass.LIS->loops) {
+    loopIVIntermediates.insert(suite->printAsOperandToString(loop->getHeader()));
+
+    for (auto IV : attrPass.IVs->getInductionVariables(*loop.get())) {
+      std::vector<std::string> intermediates;
+      for (auto inst : IV->getAllInstructions()) {
+        intermediates.push_back(suite->valueToString(inst));
+      }
+
+      loopIVIntermediates.insert(suite->combineUnorderedValues(intermediates));
+    }
+
+  }
+
+  return loopIVIntermediates;
+}
+
+Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass) {
+  IVAttrTestSuite &attrPass = static_cast<IVAttrTestSuite &>(pass);
+  TestSuite *suite = attrPass.suite;
+
+  Values loopGoverningInfos;
+  for (auto &loop : attrPass.LIS->loops) {
+    loopGoverningInfos.insert(suite->printAsOperandToString(loop->getHeader()));
+
+    auto IV = attrPass.IVs->getLoopGoverningInductionVariable(*loop.get());
+    if (!IV) continue;
+
+    auto exitBlocks = loop->getLoopExitBasicBlocks();
+    auto scc = attrPass.sccdag->sccOfValue(IV->getHeaderPHI());
+    auto attr = new LoopGoverningIVAttribution(*IV, *scc, exitBlocks);
+    if (!attr->isSCCContainingIVWellFormed()) continue;
+
+    std::vector<std::string> startAndStep;
+    startAndStep.push_back(suite->valueToString(IV->getStartAtHeader()));
+    if (IV->getSimpleValueOfStepSize()) {
+      startAndStep.push_back(suite->valueToString(IV->getSimpleValueOfStepSize()));
+    } else {
+      for (auto I : IV->getExpansionOfCompositeStepSize()) {
+        startAndStep.push_back(suite->valueToString(I));
+      }
+    }
+    loopGoverningInfos.insert(suite->combineOrderedValues(startAndStep));
+
+    loopGoverningInfos.insert(suite->valueToString(attr->getHeaderCmpInst()));
+    loopGoverningInfos.insert(suite->valueToString(attr->getHeaderBrInst()));
+    loopGoverningInfos.insert(suite->valueToString(attr->getHeaderCmpInstConditionValue()));
+
+    std::vector<std::string> derivation;
+    for (auto value : attr->getConditionValueDerivation()) {
+      derivation.push_back(suite->valueToString(value));
+    }
+    if (derivation.size() > 0) loopGoverningInfos.insert(suite->combineOrderedValues(derivation));
+
+  }
+
+  return loopGoverningInfos;
 }
