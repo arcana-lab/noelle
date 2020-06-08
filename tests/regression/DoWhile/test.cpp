@@ -5,10 +5,18 @@
 long long int computeSum (long long int *a, long long int iters){
   long long int s =0;
 
+  int j = 0;
   long long int i=0;
   do {
-    a[i] += iters;
-    ++i;
+
+    while (j < 10){
+      j += rand();
+    }
+
+    a[i] += j;
+
+    i++;
+
   } while (i < iters);
 
   return s;
@@ -26,9 +34,9 @@ int main (int argc, char *argv[]){
   auto iterations = atoll(argv[1]);
   if (iterations == 0) return 0;
 
-  long long int *array = (long long int *) calloc(0, sizeof(long long int) * iterations);
+  long long int *array = (long long int *) calloc(iterations, sizeof(long long int));
 
-  auto s = computeSum(array, iterations);
+  auto s = computeSum(array, iterations / 2);
   printf("%lld %lld\n", s, array[iterations/2]);
 
   return 0;
