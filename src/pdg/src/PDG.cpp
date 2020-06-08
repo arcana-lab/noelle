@@ -29,6 +29,7 @@ PDG::PDG (Module &M) {
    * Create a node per instruction and function argument
    */
   for (auto &F : M) {
+    if (F.isDeclaration()) continue;
     addNodesOf(F);
   }
 

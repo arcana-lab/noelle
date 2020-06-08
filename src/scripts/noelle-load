@@ -8,7 +8,7 @@ OPT="opt" ;
 AA="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa"
 ANALYSES="${AA} -scalar-evolution -loops -domtree -postdomtree"
 
-WPAPASS="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so -veto -nander -hander -sander -sfrander -wander -ander -lander -hlander -stat=false"
+WPAPASS="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so -stat=false"
 PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/PDGAnalysis.so"
 
 
