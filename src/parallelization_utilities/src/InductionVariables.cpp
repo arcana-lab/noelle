@@ -165,10 +165,24 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto headerPHI = iv.getHeaderPHI();
   auto &ivInstructions = iv.getAllInstructions();
 
+  /*
+   * Fetch the header terminator.
+   */
   auto headerTerminator = headerPHI->getParent()->getTerminator();
   if (!isa<BranchInst>(headerTerminator)) return;
   this->headerBr = cast<BranchInst>(headerTerminator);
 
+  /*
+   * Check this is a conditional branch.
+   * If it isn't, then we don't handle this type of loops (e.g., do-while).
+   */
+  if (!headerBr->isConditional()){
+    return ;
+  }
+
+  /*
+   * Fetch the condition of the conditional branch
+   */
   auto headerCondition = headerBr->getCondition();
   if (!isa<CmpInst>(headerCondition)) return;
 
