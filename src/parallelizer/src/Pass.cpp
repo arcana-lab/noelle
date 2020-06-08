@@ -122,7 +122,7 @@ bool Parallelizer::runOnModule (Module &M) {
       auto mInsts = profiles.getModuleInstructions();
 
       auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
-      auto loopInsts = profiles.getLoopInstructions(LI.getLoopFor(loopHeader));
+      auto loopInsts = profiles.getLoopSelfInstructions(LI.getLoopFor(loopHeader));
       auto hotness = ((double)loopInsts) / ((double)mInsts);
       hotness *= 100;
       errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 

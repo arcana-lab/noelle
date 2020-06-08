@@ -2,6 +2,7 @@
 set(Srcs
   HotProfiler.cpp
   Hot.cpp
+  Pass.cpp
 )
 
 # Compilation flags
