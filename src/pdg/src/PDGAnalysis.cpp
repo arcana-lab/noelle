@@ -10,7 +10,8 @@
  */
 #include "SystemHeaders.hpp"
 
-#include "WPA/WPAPass.h"
+#include "Util/SVFModule.h"
+#include "WPA/Andersen.h"
 #include "TalkDown.hpp"
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
@@ -36,7 +37,6 @@ void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<AllocAA>();
   AU.addRequired<TalkDown>();
-  AU.addRequired<WPAPass>();
   AU.setPreservesAll();
   return ;
 }
@@ -47,6 +47,20 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
    * Store global information.
    */
   this->M = &M;
+
+  /*
+   * Initialize SVF.
+   */
+  SVFModule svfModule(M);
+  this->pta = new AndersenWaveDiff();
+  this->pta->analyze(svfModule);
+  this->callGraph = pta->getPTACallGraph();
+  this->mssa = new MemSSA((BVDataPTAImpl*)this->pta, false);
+
+  /*
+   * Function analysis.
+   */
+  functionAnalysis(M);
 
   /*
    * Check if we should print the PDG
@@ -67,6 +81,72 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   }
 
   return false;
+}
+
+void llvm::PDGAnalysis::functionAnalysis(Module &M) {
+  /*
+   * Determine internal and external functions.
+   */
+  for (auto &F : M) {
+    if (F.isDeclaration()) {
+      this->functionIsExternal[F.getName()] = true;
+    }
+    else {
+      this->functionIsExternal[F.getName()] = false;
+    }
+  }
+
+  /*
+   * Collect internal and external functions.
+   */
+  for (auto &F : M) {
+    if (F.isDeclaration() && this->functionIsExternal[F.getName()]) {
+      this->externalFunctions.insert(&F);
+    }
+    else {
+      assert(!this->functionIsExternal[F.getName()] && "An internal function is determined as external?");
+      this->internalFunctions.insert(&F);
+    }
+  }
+
+  // /*
+  //  * Print internal and external functions.
+  //  */
+  // if (this->verbose >= PDGVerbosity::MaximalAndPDG) {
+  //   errs() << "Internal Functions:\n";
+  //   for (auto &internalFunction : this->internalFunctions) {
+  //     errs() << "\t" << internalFunction->getName() << "\n";
+  //   }
+  //   errs() << "External Functions:\n";
+  //   for (auto &externalFunction : this->externalFunctions) {
+  //     errs() << "\t" << externalFunction->getName() << "\n";
+  //   }
+  // }
+
+  /*
+   * Collect reachability results.
+   */
+  for (auto &internalFunction : this->internalFunctions) {
+    for (auto &externalFunction : this->externalFunctions) {
+      if (this->callGraph->isReachableBetweenFunctions(internalFunction, externalFunction)) {
+        this->reachableExternalFunctions[internalFunction].insert(externalFunction);
+      }
+    }
+  }
+
+  // /*
+  //  * Print reachability results.
+  //  */
+  // if (this->verbose >= PDGVerbosity::MaximalAndPDG) {
+  //   for (auto &pair : this->reachableExternalFunctions) {
+  //     errs() << "Reachable external functions of " << pair.first->getName() << "\n";
+  //     for (auto &externalFunction : pair.second) {
+  //       errs() << "\t" << externalFunction->getName() << "\n";
+  //     }
+  //   }
+  // }
+
+  return;
 }
 
 llvm::PDGAnalysis::PDGAnalysis()
@@ -532,8 +612,7 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
   /*
    * Check other alias analyses
    */
-  WPAPass &wpa = getAnalysis<WPAPass>();
-  switch (wpa.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
+  switch (this->pta->alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
     case PartialAlias:
     case MayAlias:
       makeEdge = true;
@@ -558,34 +637,83 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
   return ;
 }
 
+bool llvm::PDGAnalysis::querySVF(CallInst *call, BitVector &bv) {
+  if (this->callGraph->hasIndCSCallees(call)) {
+    const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
+    for (auto &callee : callees) {
+      if (this->functionIsExternal[callee->getName()] || !this->reachableExternalFunctions[callee].empty()) {
+        return false;
+      }
+    }
+  }
+  else {
+    Function *callee = call->getCalledFunction();
+    if (!callee) {
+      // ModRef bit is set
+      bv[2] = true;
+      return false;
+    }
+    else if (this->functionIsExternal[callee->getName()] || !this->reachableExternalFunctions[callee].empty()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, StoreInst *memI, CallInst *call){
+  BitVector bv(3, false);
   auto makeRefEdge = false, makeModEdge = false;
 
   /*
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(memI))) {
+    case ModRefInfo::NoModRef:
+      return;
     case ModRefInfo::Ref:
-      makeRefEdge = true;
+      bv[0] = true;
       break;
     case ModRefInfo::Mod:
-      makeModEdge = true;
+      bv[1] = true;
       break;
     case ModRefInfo::ModRef:
-      makeRefEdge = makeModEdge = true;
+      bv[2] = true;
       break;
-  }
-  if (  true
-        && (!makeRefEdge)
-        && (!makeModEdge)
-    ){
-    return ;
   }
 
   /*
    * Check other alias analyses
    */
-  //TODO
+  if (querySVF(call, bv)) {
+    switch (this->mssa->getMRGenerator()->getModRefInfo(call, MemoryLocation::get(memI))) {
+      case ModRefInfo::NoModRef:
+        return;
+      case ModRefInfo::Ref:
+        bv[0] = true;
+        break;
+      case ModRefInfo::Mod:
+        bv[1] = true;
+        break;
+      case ModRefInfo::ModRef:
+        bv[2] = true;
+        break;
+    }
+  }
+
+  // NoModRef when one says Mod and another says Ref
+  if (bv[0] && bv[1]) {
+    return; 
+  }
+  else if (bv[0]) {
+    makeRefEdge = true;
+  }
+  else if (bv[1]) {
+    makeModEdge = true;
+  }
+  else {
+    makeRefEdge = makeModEdge = true;
+  }
 
   /*
    * There is a dependence.
@@ -603,27 +731,34 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, LoadInst *memI, CallInst *call){
-  auto makeModEdge = false;
+  BitVector bv(3, false);
 
   /*
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(memI))) {
+    case ModRefInfo::NoModRef:
     case ModRefInfo::Ref:
-      break;
+      return;
     case ModRefInfo::Mod:
     case ModRefInfo::ModRef:
-      makeModEdge = true;
+      bv[1] = bv[2] = true;
       break;
-  }
-  if (!makeModEdge){
-    return ;
   }
 
   /*
    * Check other alias analyses
    */
-  //TODO
+  if (querySVF(call, bv)) {
+    switch (this->mssa->getMRGenerator()->getModRefInfo(call, MemoryLocation::get(memI))) {
+      case ModRefInfo::NoModRef:
+      case ModRefInfo::Ref:
+        return;
+      case ModRefInfo::Mod:
+      case ModRefInfo::ModRef:
+        bv[1] = bv[2] = true;
+    }
+  }
 
   /*
    * There is a dependence.
@@ -635,6 +770,8 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *otherCall, CallInst *call){
+  BitVector bv(3, false);
+  BitVector rbv(3, false);
   auto makeRefEdge = false, makeModEdge = false, makeModRefEdge = false;
   auto reverseRefEdge = false, reverseModEdge = false, reverseModRefEdge = false;
 
@@ -642,41 +779,88 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(call, otherCall)) {
+    case ModRefInfo::NoModRef:
+      return;
     case ModRefInfo::Ref:
-      makeRefEdge = true;
+      bv[0] = true;
       break;
     case ModRefInfo::Mod:
-      makeModEdge = true;
+      bv[1] = true;
       switch (AA.getModRefInfo(otherCall, call)) {
+        case ModRefInfo::NoModRef:
+          return;
         case ModRefInfo::Ref:
-          reverseRefEdge = true;
+          rbv[0] = true;
           break;
         case ModRefInfo::Mod:
-          reverseModEdge = true;
+          rbv[1] = true;
           break;
         case ModRefInfo::ModRef:
-          reverseModRefEdge = true;
+          rbv[2] = true;
           break;
-        default:
-          abort();
       }
       break;
     case ModRefInfo::ModRef:
-      makeModRefEdge = true;
+      bv[2] = true;
       break;
-  }
-  if (  true
-        && (!makeRefEdge)
-        && (!makeModEdge)
-        && (!makeModRefEdge)
-    ){
-    return ;
   }
 
   /*
    * Check other alias analyses
    */
-  //TODO
+  if (querySVF(call, bv) && querySVF(otherCall, bv)) {
+    switch (this->mssa->getMRGenerator()->getModRefInfo(call, otherCall)) {
+      case ModRefInfo::NoModRef:
+        return;
+      case ModRefInfo::Ref:
+        bv[0] = true;
+        break;
+      case ModRefInfo::Mod:
+        bv[1] = true;
+        switch (this->mssa->getMRGenerator()->getModRefInfo(otherCall, call)) {
+          case ModRefInfo::NoModRef:
+            return;
+          case ModRefInfo::Ref:
+            rbv[0] = true;
+            break;
+          case ModRefInfo::Mod:
+            rbv[1] = true;
+            break;
+          case ModRefInfo::ModRef:
+            rbv[2] = true;
+            break;
+        }
+        break;
+      case ModRefInfo::ModRef:
+        bv[2] = true;
+        break;
+    }
+  }
+
+  if (bv[0] && bv[1]) {
+    return;
+  }
+  else if (bv[0]) {
+    makeRefEdge = true;
+  }
+  else if (bv[1]) {
+    makeModEdge = true ;
+    if (rbv[0] && rbv[1]) {
+      return ;
+    }
+    else if (rbv[0]) {
+      reverseRefEdge = true;
+    }
+    else if (rbv[1]) {
+      reverseModEdge = true;
+    }
+    else {
+      reverseModRefEdge = true;
+    }
+  }
+  else {
+    makeModRefEdge = true;
+  }
 
   /*
    * There is a dependence.

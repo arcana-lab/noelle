@@ -19,6 +19,10 @@
 #include "PDGPrinter.hpp"
 #include "TalkDown.hpp"
 
+#include "MemoryModel/PointerAnalysis.h"
+#include "Util/PTACallGraph.h"
+#include "MSSA/MemSSA.h"
+
 using namespace llvm;
 
 namespace llvm {
@@ -49,6 +53,16 @@ namespace llvm {
       PDGVerbosity verbose;
       bool embedPDG;
       PDGPrinter printer;
+      PointerAnalysis *pta;
+      PTACallGraph *callGraph;
+      MemSSA *mssa;
+
+      unordered_map<std::string, bool> functionIsExternal;
+      set<const Function *> internalFunctions;
+      set<const Function *> externalFunctions;
+      unordered_map<const Function *, set<const Function *>> reachableExternalFunctions;
+      void functionAnalysis(Module &M);
+      bool querySVF(CallInst *call, BitVector &bv);
 
       bool comparePDGs(PDG *, PDG *);
       bool compareNodes(PDG *, PDG *);
