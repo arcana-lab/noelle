@@ -180,7 +180,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      */
     if (profiles.isAvailable()){
       auto mInsts = profiles.getModuleInstructions();
-      auto fInsts = profiles.getFunctionInstructions(function);
+      auto fInsts = profiles.getFunctionSelfInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
       if (hotness < minimumHotness){
         errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
@@ -403,7 +403,7 @@ uint32_t Parallelization::getNumberOfModuleLoops (
      */
     if (profiles.isAvailable()){
       auto mInsts = profiles.getModuleInstructions();
-      auto fInsts = profiles.getFunctionInstructions(function);
+      auto fInsts = profiles.getFunctionSelfInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
       if (hotness <= minimumHotness){
         continue ;

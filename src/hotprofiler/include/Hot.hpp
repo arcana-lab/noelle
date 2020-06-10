@@ -22,7 +22,13 @@ namespace llvm {
       bool isAvailable (void) const ;
 
       /*
-       * Basic blocks.
+       * =========================== Instructions ================================
+       */
+      uint64_t getInstructionInvocations (Instruction *i) const ;
+
+
+      /*
+       * =========================== Basic blocks ================================
        */
       void setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations);
 
@@ -32,7 +38,7 @@ namespace llvm {
 
 
       /*
-       * Loops
+       * =========================== Loops =======================================
        */
 
       /*
@@ -45,43 +51,48 @@ namespace llvm {
        */
       uint64_t getLoopTotalInstructions (Loop *loop) const ;
 
-      /*
-       * Set the total number of instructions executed by the loop.
-       */
-      void setLoopTotalInstructions (Loop *loop, uint64_t insts);
-
 
       /*
-       * Functions
+       * =========================== Functions ==================================
        */
-      uint64_t getFunctionInstructions (Function *f) const ;
 
       uint64_t getFunctionInvocations (Function *f) const ;
 
+      uint64_t getFunctionSelfInstructions (Function *f) const ;
+
+      uint64_t getFunctionTotalInstructions (Function *f) const ;
+
 
       /*
-       * Module
+       * =========================== Module ======================================
        */
       uint64_t getModuleInstructions (void) const ;
 
  
       /*
-       * Branches
+       * =========================== Branches ====================================
        */
       double getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) const ;
 
       void setBranchFrequency (BasicBlock *src, BasicBlock *dst, double branchFrequency);
 
 
-      void computeProgramInvocations (void);
+      void computeProgramInvocations (Module &M);
 
     private:
-      std::map<BasicBlock *, uint64_t> bbInvocations;
-      std::map<Function *, uint64_t> functionInstructions;
-      std::map<Function *, uint64_t> functionInvocations;
-      std::map<BasicBlock *, std::map<BasicBlock *, double>> branchProbability;
-      std::unordered_map<Loop *, uint64_t> totalLoopInstructions;
+      std::unordered_map<BasicBlock *, std::unordered_map<BasicBlock *, double>> branchProbability;
+      std::unordered_map<BasicBlock *, uint64_t> bbInvocations;
+      std::unordered_map<Function *, uint64_t> functionInvocations;
+      std::unordered_map<Function *, uint64_t> functionSelfInstructions;
+      std::unordered_map<Function *, uint64_t> functionTotalInstructions;
+      std::unordered_map<Instruction *, uint64_t> instructionTotalInstructions;
       uint64_t moduleNumberOfInstructionsExecuted;
+
+      void computeTotalInstructions (Module &M); 
+
+      void computeTotalInstructions (Function &F);
+
+      void setFunctionTotalInstructions (Function *f, uint64_t totalInstructions) ;
   };
 
 }
