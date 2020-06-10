@@ -47,6 +47,14 @@ void Hot::setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations){
 
   return ;
 }
+      
+uint64_t Hot::getInstructionInvocations (Instruction *i) const {
+  auto bb = i->getParent();
+
+  auto inv = this->getBasicBlockInvocations(bb);
+
+  return inv;
+}
 
 uint64_t Hot::getBasicBlockInvocations (BasicBlock *bb) const {
   auto inv = this->bbInvocations.at(bb);
@@ -105,17 +113,11 @@ uint64_t Hot::getLoopSelfInstructions (Loop *loop) const {
 }
 
 uint64_t Hot::getLoopTotalInstructions (Loop *loop) const {
-  return this->totalLoopInstructions.at(loop);
+  return 0;//TODO
 }
 
-void Hot::setLoopTotalInstructions (Loop *loop, uint64_t insts){
-  this->totalLoopInstructions[loop] = insts;
-
-  return ;
-}
- 
-uint64_t Hot::getFunctionInstructions (Function *f) const {
-  auto insts = this->functionInstructions.at(f);
+uint64_t Hot::getFunctionSelfInstructions (Function *f) const {
+  auto insts = this->functionSelfInstructions.at(f);
 
   return insts;
 }
@@ -130,7 +132,7 @@ uint64_t Hot::getModuleInstructions (void) const {
   return this->moduleNumberOfInstructionsExecuted;
 }
       
-void Hot::computeProgramInvocations (void){
+void Hot::computeProgramInvocations (Module &M){
 
   /*
    * Compute the total number of instructions executed.
@@ -173,9 +175,125 @@ void Hot::computeProgramInvocations (void){
     for (auto& bb : *f){
       c += this->getBasicBlockInstructions(&bb);
     }
-    this->functionInstructions[f] = c;
+    this->functionSelfInstructions[f] = c;
   }
-  
+
+  /*
+   * Compute the total instructions.
+   */
+  this->computeTotalInstructions(M);
+
+  return ;
+}
+
+void Hot::setFunctionTotalInstructions (Function *f, uint64_t totalInstructions) {
+  this->functionTotalInstructions[f] = totalInstructions;
+    
+  return ;
+}
+
+void Hot::computeTotalInstructions (Module &moduleToAnalyze){
+
+  /*
+   * Analyze every function included in M and compute their total instructions executed.
+   *
+   * To do so, we iterate over all functions of M.
+   */
+  for (auto &F : moduleToAnalyze){
+
+    /*
+     * Fetch the next function defined within the module.
+     */
+    if (F.empty()){
+      continue ;
+    }
+
+    /*
+     * Compute the total instructions of F.
+     */
+    this->computeTotalInstructions(F);
+  }
+   
+  /*
+   * Analyze every call instruction.
+   *
+   * To do so, we iterate over all functions and check all of their callers.
+   */
+  for (auto &F : moduleToAnalyze){
+
+    /*
+     * Fetch all callers of the function.
+     */
+    for (auto &useOfF : F.uses()){
+
+      /*
+       * Fetch the next call instruction to F.
+       */
+      auto userOfF = useOfF.getUser();
+      if (!isa<Instruction>(userOfF)){
+        continue ;
+      }
+      auto callerOfF = cast<Instruction>(userOfF);
+
+      /*
+       * The instruction "userOfF" invokes F.
+       */
+      //this->calleeTotalInstructions[callerOfF] = 
+    }
+  }
+
+  return ;
+}
+
+void Hot::computeTotalInstructions (Function &F){
+
+  /*
+   * Iterate over all instructions.
+   */
+  uint64_t t = 0;
+  for (auto& inst : instructions(&F)){
+
+    /*
+     * Count the instruction.
+     *
+     * Notice that this needs to be done even for call instructions.
+     */
+    t++;
+
+    /*
+     * Check if the instruction can invoke another function.
+     */
+    if (!isa<CallBase>(&inst)){
+      continue ;
+    }
+    auto callInst = dyn_cast<CallBase>(&inst);
+
+    /*
+     * Fetch the callee
+     */
+    auto callee = callInst->getCalledFunction();
+
+    /*
+     * Check if the callee is known and we can inspect its body.
+     */
+    if (  false
+          || (callee == nullptr)
+          || (callee->empty())
+       ){
+      continue ;
+    }
+
+
+    /*
+     * The callee is known and we can inspect its body.
+     */
+    //TODO
+  }
+
+  /*
+   * Set the total counter.
+   */
+  this->setFunctionTotalInstructions(&F, t);
 
   return ;
 }

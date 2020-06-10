@@ -36,7 +36,5 @@ namespace llvm {
       Hot hot;
 
       void analyzeProfiles (Module &M);
-
-      void computeTotalInstructions (void); 
   };
 }
