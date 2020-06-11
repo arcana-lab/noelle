@@ -115,18 +115,26 @@ bool Parallelizer::runOnModule (Module &M) {
      */
     auto loopFunction = loopSummary->getFunction();
 
+    /*
+     * Print information about this loop.
+     */
     errs() << "Parallelizer:    Function: \"" << loopFunction->getName() << "\"\n";
     errs() << "Parallelizer:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
-    if (profiles.isAvailable()){
-      auto& profiles = getAnalysis<HotProfiler>().getHot();
-      auto mInsts = profiles.getTotalInstructions();
-
-      auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
-      auto loopInsts = profiles.getTotalInstructions(LI.getLoopFor(loopHeader));
-      auto hotness = ((double)loopInsts) / ((double)mInsts);
-      hotness *= 100;
-      errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
+    if (!profiles.isAvailable()){
+      continue ;
     }
+
+    /*
+     * Print the coverage of this loop.
+     */
+    auto& profiles = getAnalysis<HotProfiler>().getHot();
+    auto mInsts = profiles.getTotalInstructions();
+
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
+    auto loopInsts = profiles.getTotalInstructions(LI.getLoopFor(loopHeader));
+    auto hotness = ((double)loopInsts) / ((double)mInsts);
+    hotness *= 100;
+    errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
   }
 
   /*
