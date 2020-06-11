@@ -15,7 +15,7 @@
 
 using namespace llvm ;
 
-uint64_t Hot::getFunctionSelfInstructions (Function *f) const {
+uint64_t Hot::getSelfInstructions (Function *f) const {
   auto insts = this->functionSelfInstructions.at(f);
 
   return insts;
