@@ -58,7 +58,7 @@ namespace llvm {
       /*
        * Return the total number of instructions executed excluding the instructions executed by the callees.
        */
-      uint64_t getLoopSelfInstructions (Loop *loop) const ;
+      uint64_t getSelfInstructions (Loop *loop) const ;
 
       /*
        * Return the total number of instructions executed including the instructions executed by the callees.
@@ -74,7 +74,7 @@ namespace llvm {
 
       uint64_t getInvocations (Function *f) const ;
 
-      uint64_t getFunctionSelfInstructions (Function *f) const ;
+      uint64_t getSelfInstructions (Function *f) const ;
 
       uint64_t getTotalInstructions (Function *f) const ;
 

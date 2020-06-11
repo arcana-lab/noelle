@@ -180,7 +180,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      */
     if (profiles.isAvailable()){
       auto mInsts = profiles.getTotalInstructions();
-      auto fInsts = profiles.getFunctionSelfInstructions(function);
+      auto fInsts = profiles.getTotalInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
       if (hotness < minimumHotness){
         errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
@@ -218,7 +218,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        */
        if (profiles.isAvailable()){
         auto mInsts = profiles.getTotalInstructions();
-        auto lInsts = profiles.getLoopSelfInstructions(loop);
+        auto lInsts = profiles.getTotalInstructions(loop);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness < minimumHotness){
           errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
@@ -403,7 +403,7 @@ uint32_t Parallelization::getNumberOfModuleLoops (
      */
     if (profiles.isAvailable()){
       auto mInsts = profiles.getTotalInstructions();
-      auto fInsts = profiles.getFunctionSelfInstructions(function);
+      auto fInsts = profiles.getTotalInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
       if (hotness <= minimumHotness){
         continue ;
@@ -425,7 +425,7 @@ uint32_t Parallelization::getNumberOfModuleLoops (
        */
        if (profiles.isAvailable()){
         auto mInsts = profiles.getTotalInstructions();
-        auto lInsts = profiles.getLoopSelfInstructions(loop);
+        auto lInsts = profiles.getTotalInstructions(loop);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness <= minimumHotness){
           currentLoopIndex++;
