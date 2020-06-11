@@ -179,7 +179,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      * Check if the function is hot.
      */
     if (profiles.isAvailable()){
-      auto mInsts = profiles.getModuleInstructions();
+      auto mInsts = profiles.getTotalInstructions();
       auto fInsts = profiles.getFunctionSelfInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
       if (hotness < minimumHotness){
@@ -217,7 +217,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        * Check if the loop is hot enough.
        */
        if (profiles.isAvailable()){
-        auto mInsts = profiles.getModuleInstructions();
+        auto mInsts = profiles.getTotalInstructions();
         auto lInsts = profiles.getLoopSelfInstructions(loop);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness < minimumHotness){
@@ -402,7 +402,7 @@ uint32_t Parallelization::getNumberOfModuleLoops (
      * Check if the function is hot.
      */
     if (profiles.isAvailable()){
-      auto mInsts = profiles.getModuleInstructions();
+      auto mInsts = profiles.getTotalInstructions();
       auto fInsts = profiles.getFunctionSelfInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
       if (hotness <= minimumHotness){
@@ -424,7 +424,7 @@ uint32_t Parallelization::getNumberOfModuleLoops (
        * Check if the loop is hot enough.
        */
        if (profiles.isAvailable()){
-        auto mInsts = profiles.getModuleInstructions();
+        auto mInsts = profiles.getTotalInstructions();
         auto lInsts = profiles.getLoopSelfInstructions(loop);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness <= minimumHotness){

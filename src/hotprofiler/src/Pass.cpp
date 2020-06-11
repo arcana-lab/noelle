@@ -38,7 +38,7 @@ bool HotProfiler::runOnModule (Module &M) {
   /*
    * Print the total number of instructions executed.
    */
-  auto totalInsts = this->hot.getModuleInstructions();
+  auto totalInsts = this->hot.getSelfInstructions();
   errs() << "HotProfiler:   Total instructions = " << totalInsts << "\n" ;
 
   errs() << "HotProfiler: Exit\n" ;

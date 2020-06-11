@@ -18,6 +18,7 @@
 #include <set>
 #include <unordered_set>
 #include <vector>
+#include <stack>
 #include <queue>
 #include <deque>
 #include <thread>
