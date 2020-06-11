@@ -119,7 +119,7 @@ bool Parallelizer::runOnModule (Module &M) {
     errs() << "Parallelizer:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
     if (profiles.isAvailable()){
       auto& profiles = getAnalysis<HotProfiler>().getHot();
-      auto mInsts = profiles.getModuleInstructions();
+      auto mInsts = profiles.getTotalInstructions();
 
       auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
       auto loopInsts = profiles.getLoopSelfInstructions(LI.getLoopFor(loopHeader));

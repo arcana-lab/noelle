@@ -24,17 +24,31 @@ namespace llvm {
       /*
        * =========================== Instructions ================================
        */
-      uint64_t getInstructionInvocations (Instruction *i) const ;
+      uint64_t getStaticInstructions (Instruction *i) const ;
+      
+      bool hasBeenExecuted (Instruction *i) const ;
+
+      uint64_t getInvocations (Instruction *i) const ;
+
+      uint64_t getSelfInstructions (Instruction *i) const ;
+
+      uint64_t getTotalInstructions (Instruction *i) const ;
 
 
       /*
        * =========================== Basic blocks ================================
        */
+      uint64_t getStaticInstructions (BasicBlock *bb) const ;
+
+      bool hasBeenExecuted (BasicBlock *bb) const ;
+
+      uint64_t getInvocations (BasicBlock *bb) const ;
+
+      uint64_t getSelfInstructions (BasicBlock *bb) const ;
+
+      uint64_t getTotalInstructions (BasicBlock *bb) const ;
+
       void setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations);
-
-      uint64_t getBasicBlockInvocations (BasicBlock *bb) const ;
-
-      uint64_t getBasicBlockInstructions (BasicBlock *bb) const ;
 
 
       /*
@@ -49,24 +63,33 @@ namespace llvm {
       /*
        * Return the total number of instructions executed including the instructions executed by the callees.
        */
-      uint64_t getLoopTotalInstructions (Loop *loop) const ;
+      uint64_t getTotalInstructions (Loop *loop) const ;
 
 
       /*
        * =========================== Functions ==================================
        */
 
-      uint64_t getFunctionInvocations (Function *f) const ;
+      bool hasBeenExecuted (Function *f) const ;
+
+      uint64_t getInvocations (Function *f) const ;
 
       uint64_t getFunctionSelfInstructions (Function *f) const ;
 
-      uint64_t getFunctionTotalInstructions (Function *f) const ;
+      uint64_t getTotalInstructions (Function *f) const ;
 
 
       /*
        * =========================== Module ======================================
        */
-      uint64_t getModuleInstructions (void) const ;
+
+      bool hasBeenExecuted (void) const ;
+
+      bool getInvocations (void) const ;
+
+      uint64_t getSelfInstructions (void) const ;
+
+      uint64_t getTotalInstructions (void) const ;
 
  
       /*
@@ -90,9 +113,11 @@ namespace llvm {
 
       void computeTotalInstructions (Module &M); 
 
-      void computeTotalInstructions (Function &F);
+      void computeTotalInstructions (Function &F, std::unordered_map<Function *, bool> &evaluationStack);
 
       void setFunctionTotalInstructions (Function *f, uint64_t totalInstructions) ;
+
+      bool isFunctionTotalInstructionsAvailable (Function &F) const ;
   };
 
 }
