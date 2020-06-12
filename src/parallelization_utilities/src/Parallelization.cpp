@@ -229,6 +229,14 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       }
 
       /*
+       * Define the function to get the ScalarEvolution object.
+       */
+      auto getLLVMSEFunction = [this](Function *f) -> ScalarEvolution & {
+        auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*f).getSE();
+        return SE;
+      };
+
+      /*
        * Define the function to get the LLVM loop.
        */
       auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
@@ -246,7 +254,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, DS, getLLVMLoopFunction);
+        auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, DS, getLLVMSEFunction, getLLVMLoopFunction);
 
         allLoops->push_back(ldi);
         currentLoopIndex++;
@@ -288,7 +296,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        *
        * Allocate the loop wrapper.
        */
-      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, DS, getLLVMLoopFunction);
+      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, DS, getLLVMSEFunction, getLLVMLoopFunction);
 
       /*
        * Set the loop constraints specified by INDEX_FILE.
