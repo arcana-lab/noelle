@@ -38,3 +38,4 @@ patchInstallDir "noelle-meta-pdg-embed" ;
 patchInstallDir "noelle-meta-prof-embed" ;
 patchInstallDir "noelle-pdg-stats" ;
 patchInstallDir "noelle-enable" ;
+patchInstallDir "noelle-prof-coverage" ;
