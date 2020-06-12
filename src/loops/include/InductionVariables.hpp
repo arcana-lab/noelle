@@ -19,6 +19,7 @@
 #include "LoopsSummary.hpp"
 #include "LoopEnvironment.hpp"
 #include "DominatorSummary.hpp"
+#include "ScalarEvolutionReferencer.hpp"
 
 using namespace std;
 using namespace llvm;
