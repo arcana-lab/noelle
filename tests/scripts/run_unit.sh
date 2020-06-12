@@ -5,7 +5,6 @@ LIB_DIR=$PDG_INSTALL_DIR/lib
 TEST_LIB_DIR=$PDG_INSTALL_DIR/test/lib
 TRANSFORMATIONS_BEFORE_PARALLELIZATION="-basicaa -mem2reg -scalar-evolution -loops -loop-simplify -lcssa -domtree -postdomtree"
 
-HOTPROFILER_SCRIPT="../../../../scripts/inject_hotprofiler.sh"
 PROGRAM_INPUT_FOR_PROFILE="20 20 20"
 TEST_PROFILE=output.prof
 
@@ -30,7 +29,8 @@ function loadAndRunNoellePasses {
     -load $LIB_DIR/Heuristics.so -load $LIB_DIR/ParallelizationTechnique.so \
     $ENABLERS $PARALLELIZATION_TECHNIQUES -load $LIB_DIR/Parallelizer.so"
 
-  local RUNNERS="-parallelization -block-freq -pgo-test-profile-file=$TEST_PROFILE -pgo-instr-use -HotProfiler -heuristics $PASSES"
+  #local RUNNERS="-parallelization -block-freq -pgo-test-profile-file=$TEST_PROFILE -pgo-instr-use -HotProfiler -heuristics $PASSES"
+  local RUNNERS="-parallelization -block-freq -heuristics $PASSES"
   local CMD_TO_EXECUTE="opt $OPTPASSES $ANALYSES $RUNNERS $INPUT -o $OUTPUT"
   eval $CMD_TO_EXECUTE
 }
@@ -51,10 +51,14 @@ function runTest {
   rm -f *.bc *.ll *.s *.o ;
 
   ${CC} -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c test.cpp -o test_pre.bc
-  $HOTPROFILER_SCRIPT test_pre.bc test_prof.bc
-  ${CC} -O0 -fprofile-instr-generate test_prof.bc -o test_prof
-  ./test_prof "$PROGRAM_INPUT_FOR_PROFILE" &> /dev/null
-  llvm-profdata merge default.profraw -output=$TEST_PROFILE
+
+  # noelle-prof-coverage test_pre.bc test_pre_prof
+  # ./test_pre_prof "$PROGRAM_INPUT_FOR_PROFILE"
+  # llvm-profdata merge default.profraw -output=$TEST_PROFILE
+
+  # noelle-meta-prof-embed test_pre.bc -o test_prof.bc
+  # ${CC} -O0 -fprofile-instr-generate test_prof.bc -o test_prof
+
   opt ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} test_pre.bc -o test.bc &> /dev/null
   llvm-dis test.bc -o test.ll
 
