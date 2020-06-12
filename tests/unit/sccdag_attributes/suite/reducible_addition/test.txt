@@ -35,6 +35,12 @@ br label %5
 %.0.lcssa = phi i32 [ %.0, %5 ]
 %19 = getelementptr [12 x i8], [12 x i8]* @.str, i64 0, i64 0
 ret i32 0
+%.01 = phi i32 [ 0, %2 ], [ %17, %16 ] ; %17 = add nsw i32 %.01, 1 ;
+  %6 = mul nsw i32 %0, 10000 ; %7 = icmp slt i32 %.01, %6 ; br i1 %7, label %8, label %18
+%10 = srem i32 %.01, 5
+%14 = sub nsw i32 %9, %13
+%3 = alloca [5 x i32], align 16
+i32 %0
 
 inter iteration top loop dependencies
 br i1 %7, label %8, label %18 ; %.02 = phi i32 [ 7, %2 ], [ %15, %16 ]

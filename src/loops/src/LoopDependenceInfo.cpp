@@ -48,10 +48,10 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
-  inductionVariables = new InductionVariables(liSummary, SE, *loopSCCDAG);
+  inductionVariables = new InductionVariables(liSummary, SE, *loopSCCDAG, *environment);
   SCCDAGNormalizer normalizer(*loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
   normalizer.normalizeInPlace();
-  inductionVariables = new InductionVariables(liSummary, SE, *loopSCCDAG);
+  inductionVariables = new InductionVariables(liSummary, SE, *loopSCCDAG, *environment);
   this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
 
   /*

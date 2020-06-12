@@ -78,7 +78,10 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   LIS->populate(*LI, topLoop, findTripCount);
 
   errs() << "IVAttrTestSuite: Running IV analysis\n";
-  this->IVs = new InductionVariables(*LIS, *LI, *SE, *sccdag);
+  auto loopDG = fdg->createLoopsSubgraph(topLoop);
+  auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+  auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
+  this->IVs = new InductionVariables(*LIS, *LI, *SE, *sccdag, *environment);
   errs() << "IVAttrTestSuite: Finished IV analysis\n";
 
   suite->runTests((ModulePass &)*this);
@@ -86,6 +89,7 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   delete this->IVs;
   delete this->LIS;
   delete sccdag;
+  delete loopDG;
   delete fdg;
 
   return false;
@@ -105,9 +109,13 @@ Values IVAttrTestSuite::verifyStartAndStepByLoop (ModulePass &pass) {
       if (IV->getSimpleValueOfStepSize()) {
         loopIVStartStep.push_back(suite->valueToString(IV->getSimpleValueOfStepSize()));
       } else {
-        for (auto I : IV->getExpansionOfCompositeStepSize()) {
-          loopIVStartStep.push_back(suite->valueToString(I));
+        auto B = (*IV->getExpansionOfCompositeStepSize().begin())->getParent();
+        auto F = IV->getHeaderPHI()->getFunction();
+        B->insertInto(F);
+        for (auto emplacedI : IV->getExpansionOfCompositeStepSize()) {
+          loopIVStartStep.push_back(suite->valueToString(emplacedI));
         }
+        B->removeFromParent();
       }
 
       loopIVs.insert(suite->combineOrderedValues(loopIVStartStep));
@@ -160,9 +168,13 @@ Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass) {
     if (IV->getSimpleValueOfStepSize()) {
       startAndStep.push_back(suite->valueToString(IV->getSimpleValueOfStepSize()));
     } else {
-      for (auto I : IV->getExpansionOfCompositeStepSize()) {
-        startAndStep.push_back(suite->valueToString(I));
+      auto B = (*IV->getExpansionOfCompositeStepSize().begin())->getParent();
+      auto F = IV->getHeaderPHI()->getFunction();
+      B->insertInto(F);
+      for (auto emplacedI : IV->getExpansionOfCompositeStepSize()) {
+        startAndStep.push_back(suite->valueToString(emplacedI));
       }
+      B->removeFromParent();
     }
     loopGoverningInfos.insert(suite->combineOrderedValues(startAndStep));
 

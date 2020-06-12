@@ -12,8 +12,12 @@
 
 using namespace llvm;
 
-InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, SCCDAG &sccdag)
+InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, SCCDAG &sccdag, LoopEnvironment &loopEnv)
   : loopToIVsMap{}, loopToGoverningIVMap{} {
+
+  Function &F = *LIS.getLoopNestingTreeRoot()->getHeader()->getParent();
+  ScalarEvolutionReferentialExpander referentialExpander(SE, F);
+
   for (auto &loop : LIS.loops) {
     loopToIVsMap[loop.get()] = std::set<InductionVariable *>();
 
@@ -31,7 +35,7 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
       if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) continue;
 
       auto sccContainingIV = sccdag.sccOfValue(&phi);
-      auto IV = new InductionVariable(loop.get(), l, SE, &phi, *sccContainingIV); 
+      auto IV = new InductionVariable(loop.get(), SE, &phi, *sccContainingIV, loopEnv, referentialExpander); 
       if (!IV->getSimpleValueOfStepSize() && !IV->getComposableStepSize()) {
         delete IV;
         continue;
@@ -45,6 +49,8 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
       }
     }
   }
+
+  errs() << "Done\n";
 }
 
 InductionVariables::~InductionVariables () {
@@ -66,8 +72,14 @@ InductionVariable *InductionVariables::getLoopGoverningInductionVariable (LoopSu
   return loopToGoverningIVMap.at(&LS);
 }
 
-InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEvolution &SE, PHINode *headerPHI, SCC &scc)
-  : scc{scc}, headerPHI{headerPHI}, startValue{nullptr},
+InductionVariable::InductionVariable  (
+  LoopSummary *LS,
+  ScalarEvolution &SE,
+  PHINode *headerPHI,
+  SCC &scc,
+  LoopEnvironment &loopEnv,
+  ScalarEvolutionReferentialExpander &referentialExpander
+) : scc{scc}, headerPHI{headerPHI}, startValue{nullptr},
     stepSize{nullptr}, compositeStepSize{nullptr}, expansionOfCompositeStepSize{} {
 
   /*
@@ -120,13 +132,19 @@ InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEv
   // const char name = 'a';
   // SCEVExpander *expander = new SCEVExpander(SE, DL, &name);
 
-  // TODO: Hoist this up to InductionVariables
-  ScalarEvolutionReferentialExpander referentialExpander(SE, *headerPHI->getFunction());
-
   std::set<Value *> valuesInScope{}; 
   std::set<Value *> valuesToReferenceAndNotExpand{};
-  for (auto node : scc.getNodes()) valuesInScope.insert(node->getT());
-  for (auto externalPair : scc.externalNodePairs()) valuesToReferenceAndNotExpand.insert(externalPair.first);
+  for (auto internalNodePair : scc.internalNodePairs()) valuesInScope.insert(internalNodePair.first);
+  for (auto externalPair : scc.externalNodePairs()) {
+    auto value = externalPair.first;
+    if (isa<Instruction>(value) && bbs.find(cast<Instruction>(value)->getParent()) != bbs.end()) continue;
+    valuesInScope.insert(externalPair.first);
+    valuesToReferenceAndNotExpand.insert(externalPair.first);
+  }
+  for (auto liveIn : loopEnv.getProducers()) {
+    valuesInScope.insert(liveIn);
+    valuesToReferenceAndNotExpand.insert(liveIn);
+  }
 
   switch (stepSCEV->getSCEVType()) {
     case SCEVTypes::scConstant:
@@ -140,18 +158,23 @@ InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEv
       break;
     default:
 
-      this->compositeStepSize = stepSCEV;
+      stepSCEV->print(errs() << "Referencing: "); errs() << "\n";
       auto stepSizeReferenceTree = referentialExpander.createReferenceTree(stepSCEV, valuesInScope);
       if (stepSizeReferenceTree) {
+        stepSizeReferenceTree->getSCEV()->print(errs() << "Expanding: "); errs() << "\n";
         auto tempBlock = BasicBlock::Create(headerPHI->getContext());
         IRBuilder<> tempBuilder(tempBlock);
-        referentialExpander.expandUsingReferenceValues(
+        auto finalValue = referentialExpander.expandUsingReferenceValues(
           stepSizeReferenceTree,
           valuesToReferenceAndNotExpand,
           tempBuilder
         );
-        for (auto &I : *tempBlock) {
-          expansionOfCompositeStepSize.push_back(&I);
+        if (finalValue) {
+          this->compositeStepSize = stepSCEV;
+          finalValue->print(errs() << "Expanded final value: "); errs() << "\n";
+          for (auto &I : *tempBlock) {
+            expansionOfCompositeStepSize.push_back(&I);
+          }
         }
       }
 
@@ -190,12 +213,12 @@ InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEv
 
 InductionVariable::~InductionVariable () {
   BasicBlock *tempBlock = nullptr;
-  for (auto expandedInst : expansionOfCompositeStepSize) {
-    tempBlock = expandedInst->getParent();
-    expandedInst->eraseFromParent();
-  }
+  // for (auto expandedInst : expansionOfCompositeStepSize) {
+  //   tempBlock = expandedInst->getParent();
+  //   expandedInst->eraseFromParent();
+  // }
   if (tempBlock) {
-    tempBlock->eraseFromParent();
+    tempBlock->deleteValue();
   }
 }
 
@@ -212,7 +235,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
    * is only known at runtime, and that enhancement has yet to be made
    */
   if (!iv.getSimpleValueOfStepSize() || !isa<ConstantInt>(iv.getSimpleValueOfStepSize())) return;
-  // iv.getHeaderPHI()->print(errs() << "Has step size: "); errs() << "\n";
+  iv.getHeaderPHI()->print(errs() << "Has step size: "); errs() << "\n";
 
   auto headerPHI = iv.getHeaderPHI();
   auto &ivInstructions = iv.getAllInstructions();
@@ -223,7 +246,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto headerTerminator = headerPHI->getParent()->getTerminator();
   if (!isa<BranchInst>(headerTerminator)) return;
   this->headerBr = cast<BranchInst>(headerTerminator);
-  // iv.getHeaderPHI()->print(errs() << "Has branch: "); errs() << "\n";
+  iv.getHeaderPHI()->print(errs() << "Has branch: "); errs() << "\n";
 
   /*
    * Check this is a conditional branch.
@@ -243,7 +266,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto opL = headerCmp->getOperand(0), opR = headerCmp->getOperand(1);
   if (!(opL == headerPHI ^ opR == headerPHI)) return;
   this->conditionValue = opL == headerPHI ? opR : opL;
-  // iv.getHeaderPHI()->print(errs() << "Has condition: "); errs() << "\n";
+  iv.getHeaderPHI()->print(errs() << "Has condition: "); errs() << "\n";
 
   std::set<BasicBlock *> exitBlockSet(exitBlocks.begin(), exitBlocks.end());
   if (exitBlockSet.find(headerBr->getSuccessor(0)) != exitBlockSet.end()) {
@@ -251,7 +274,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   } else if (exitBlockSet.find(headerBr->getSuccessor(1)) != exitBlockSet.end()) {
     this->exitBlock = headerBr->getSuccessor(1);
   } else return ;
-  // iv.getHeaderPHI()->print(errs() << "Has one exit: "); errs() << "\n";
+  iv.getHeaderPHI()->print(errs() << "Has one exit: "); errs() << "\n";
 
   if (scc.isInternal(conditionValue)) {
     std::queue<Instruction *> conditionDerivation;
@@ -276,7 +299,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
            * The exit condition value cannot be itself derived from the induction variable 
            */
           if (ivInstructions.find(outgoingInst) != ivInstructions.end()) {
-            // outgoingInst->print(errs() << "Exit condition depends on IV: "); errs() << "\n";
+            outgoingInst->print(errs() << "Exit condition depends on IV: "); errs() << "\n";
             return;
           }
 
@@ -287,6 +310,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
     }
   }
 
+  iv.getHeaderPHI()->print(errs() << "Is well formed: "); errs() << "\n";
   isWellFormed = true;
 }
 

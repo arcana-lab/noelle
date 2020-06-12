@@ -89,15 +89,17 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
 
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
   this->sccdag = new SCCDAG(fdg);
+  auto loopDG = fdg->createLoopsSubgraph(topLoop);
+  this->sccdagTopLoopNorm = new SCCDAG(loopDG);
 
   this->attrs = new SCCDAGAttrs();
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
-  InductionVariables IV{LIS, *LI, *SE, *sccdag};
+  auto loopExitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+  auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
+  InductionVariables IV{LIS, *LI, *SE, *sccdag, *environment};
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
   this->attrs->populate(sccdag, LIS, *SE, DS, IV);
 
-  auto loopDG = fdg->createLoopsSubgraph(topLoop);
-  this->sccdagTopLoopNorm = new SCCDAG(loopDG);
   // PDGPrinter printer;
   // printer.writeGraph<SCCDAG>("graph-top-loop.dot", sccdagTopLoopNorm);
   errs() << "SCCDAGAttrTestSuite: Normalizing sccdag\n";

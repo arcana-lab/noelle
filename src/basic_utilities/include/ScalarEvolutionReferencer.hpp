@@ -58,6 +58,8 @@ namespace llvm {
       Value *visitUnknown (const SCEVUnknown *S) ;
       Value *visitCouldNotCompute (const SCEVCouldNotCompute* S) ;
 
+      std::pair<Value *, Value *> visitTwoOperands (const SCEVNAryExpr *S) ;
+
       Value *rootValue;
       SCEVReference *currentNode;
       std::set<Value *> &valuesToReferenceAndNotExpand;
@@ -118,6 +120,8 @@ namespace llvm {
       Value *getValue() const ;
       const SCEV *getSCEV() const ;
       iterator_range<std::vector<SCEVReference *>::iterator> getChildReferences() ;
+      SCEVReference *getChildReference (int32_t idx) ;
+      int32_t getNumChildReferences() ;
 
       void addChildReference(SCEVReference *scevReference) ;
 
@@ -125,5 +129,8 @@ namespace llvm {
       Value *value;
       const SCEV *scev;
       std::vector<SCEVReference *> childReferences;
+
+      // TODO: Implement
+      bool containsAddRecExpr;
   };
 }
