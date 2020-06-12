@@ -49,6 +49,7 @@ ReferenceTreeBuilder::ReferenceTreeBuilder(const SCEV *scev, SCEVValueMapper &sc
   : valuesInScope{valuesInScope}, scevValueMapper{scevValueMapper} {
 
   tree = visit(scev);
+
 }
 
 SCEVReference *ReferenceTreeBuilder::getTree(){
@@ -89,7 +90,7 @@ SCEVReference *ReferenceTreeBuilder::createReferenceOfNArySCEV (const SCEVNAryEx
    * If references of composed SCEVs could not be found, only return this reference
    * if its value is within scope
    */
-  if (compositeReference->getChildReferences().size() != S->getNumOperands()) {
+  if (compositeReference->getNumChildReferences() != S->getNumOperands()) {
     if (!compositeReference->getValue()) {
       delete compositeReference;
       return nullptr;
@@ -238,6 +239,14 @@ const SCEV *SCEVReference::getSCEV() const {
 
 iterator_range<std::vector<SCEVReference *>::iterator> SCEVReference::getChildReferences() {
   return make_range(childReferences.begin(), childReferences.end());
+}
+
+SCEVReference *SCEVReference::getChildReference (int32_t idx) {
+  return childReferences.at(idx);
+}
+
+int32_t SCEVReference::getNumChildReferences() {
+  return childReferences.size();
 }
 
 void SCEVReference::addChildReference(SCEVReference *scevReference) {
