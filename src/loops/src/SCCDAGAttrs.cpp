@@ -296,6 +296,7 @@ void SCCDAGAttrs::collectDependencies (LoopsSummary &LIS, DominatorSummary &DS) 
 
       auto instFrom = dyn_cast<Instruction>(edge->getOutgoingT());
       auto instTo = dyn_cast<Instruction>(edge->getIncomingT());
+      if (!LIS.getLoop(*instFrom) || !LIS.getLoop(*instTo)) continue;
 
       if (instFrom == instTo || !DS.DT.dominates(instFrom, instTo)) {
         interIterDeps[scc].insert(edge);
