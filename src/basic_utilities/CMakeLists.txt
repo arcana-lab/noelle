@@ -34,6 +34,7 @@ install(  PROGRAMS
           include/DominatorSummary.hpp
           include/Queue.hpp
           include/ScalarEvolutionExpander.h
+          include/ScalarEvolutionReferencer.hpp
           DESTINATION 
           include
         )

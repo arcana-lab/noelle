@@ -32,8 +32,12 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
 
       auto sccContainingIV = sccdag.sccOfValue(&phi);
       auto IV = new InductionVariable(loop.get(), l, SE, &phi, *sccContainingIV); 
-      loopToIVsMap[loop.get()].insert(IV);
+      if (!IV->getSimpleValueOfStepSize() && !IV->getComposableStepSize()) {
+        delete IV;
+        continue;
+      }
 
+      loopToIVsMap[loop.get()].insert(IV);
       auto exitBlocks = LIS.getLoop(phi)->getLoopExitBasicBlocks();
       LoopGoverningIVAttribution attribution(*IV, *sccContainingIV, exitBlocks);
       if (attribution.isSCCContainingIVWellFormed()) {
@@ -111,38 +115,72 @@ InductionVariable::InductionVariable  (LoopSummary *LS, Loop *llvmLoop, ScalarEv
   assert(headerSCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
   auto stepSCEV = cast<SCEVAddRecExpr>(headerSCEV)->getStepRecurrence(SE);
 
-  auto M = headerPHI->getFunction()->getParent();
-  DataLayout DL(M);
-  const char name = 'a';
-  SCEVExpander *expander = new SCEVExpander(SE, DL, &name);
+  // auto M = headerPHI->getFunction()->getParent();
+  // DataLayout DL(M);
+  // const char name = 'a';
+  // SCEVExpander *expander = new SCEVExpander(SE, DL, &name);
+
+  // TODO: Hoist this up to InductionVariables
+  ScalarEvolutionReferentialExpander referentialExpander(SE, *headerPHI->getFunction());
+
+  std::set<Value *> valuesInScope{}; 
+  std::set<Value *> valuesToReferenceAndNotExpand{};
+  for (auto node : scc.getNodes()) valuesInScope.insert(node->getT());
+  for (auto externalPair : scc.externalNodePairs()) valuesToReferenceAndNotExpand.insert(externalPair.first);
+
   switch (stepSCEV->getSCEVType()) {
     case SCEVTypes::scConstant:
       this->stepSize = cast<SCEVConstant>(stepSCEV)->getValue();
       break;
     case SCEVTypes::scUnknown:
       this->stepSize = cast<SCEVUnknown>(stepSCEV)->getValue();
+      if (valuesToReferenceAndNotExpand.find(this->stepSize) == valuesToReferenceAndNotExpand.end()) {
+        this->stepSize = nullptr;
+      }
       break;
     default:
-      this->stepSize = expander->getExactExistingExpansion(stepSCEV, headerPHI, llvmLoop);
-      if (!this->stepSize) {
 
-        // TODO: Do not tamper with the current function, instead creating this termporary block in a temporary function
-        auto tempBlock = BasicBlock::Create(headerPHI->getContext(), "temp", headerPHI->getParent()->getParent());
+      this->compositeStepSize = stepSCEV;
+      auto stepSizeReferenceTree = referentialExpander.createReferenceTree(stepSCEV, valuesInScope);
+      if (stepSizeReferenceTree) {
+        auto tempBlock = BasicBlock::Create(headerPHI->getContext());
         IRBuilder<> tempBuilder(tempBlock);
-        auto tempInst = cast<Instruction>(tempBuilder.CreateBr(tempBlock));
-
-        expander->setInsertPoint(tempInst);
-        auto endCompositeValue = expander->expandCodeFor(stepSCEV);
-        expander->clearInsertPoint();
-        assert(isa<Instruction>(endCompositeValue));
-
-        auto currValue = &*tempBlock->begin();
-        auto endValue = cast<Instruction>(endCompositeValue)->getNextNode();
-        while (currValue != endValue) {
-          expansionOfCompositeStepSize.push_back(currValue);
-          currValue = currValue->getNextNode();
+        referentialExpander.expandUsingReferenceValues(
+          stepSizeReferenceTree,
+          valuesToReferenceAndNotExpand,
+          tempBuilder
+        );
+        for (auto &I : *tempBlock) {
+          expansionOfCompositeStepSize.push_back(&I);
         }
       }
+
+      // this->stepSize = expander->getExactExistingExpansion(stepSCEV, headerPHI, llvmLoop);
+      // if (!this->stepSize) {
+
+      //   auto tempBlock = BasicBlock::Create(headerPHI->getContext());
+      //   IRBuilder<> tempBuilder(tempBlock);
+      //   auto tempInst = cast<Instruction>(tempBuilder.CreateBr(tempBlock));
+      //   tempBlock->print(errs() << "Temp:\n");
+
+      //   expander->setInsertPoint(tempInst);
+      //   auto endCompositeValue = expander->expandCodeFor(stepSCEV);
+      //   endCompositeValue->print(errs() << "Expanded\t"); errs() << "\n";
+      //   expander->clearInsertPoint();
+
+      //   assert(isa<Instruction>(endCompositeValue));
+      //   auto endCompositeInst = cast<Instruction>(endCompositeValue);
+      //   if (endCompositeInst->getParent() != tempBlock) {
+      //     expansionOfCompositeStepSize.push_back(endCompositeInst);
+      //   } else {
+      //     auto currValue = &*tempBlock->begin();
+      //     auto endValue = endCompositeInst->getNextNode();
+      //     while (currValue != endValue) {
+      //       expansionOfCompositeStepSize.push_back(currValue);
+      //       currValue = currValue->getNextNode();
+      //     }
+      //   }
+      // }
       break;
   }
 
