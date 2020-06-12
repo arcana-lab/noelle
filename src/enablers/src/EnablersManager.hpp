@@ -69,7 +69,7 @@ namespace llvm {
           LoopDistribution &loopDist
         );
 
-      bool applyLoopUnroll (
+      bool applyDevirtualizer (
         LoopDependenceInfo *LDI,
         Parallelization &par,
         LoopUnroll &loopUnroll
