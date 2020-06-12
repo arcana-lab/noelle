@@ -1,6 +1,7 @@
 regression_1/3mm_polybench -noelle-verbose=3 -dswp-force -noelle-disable-helix
 regression_1/Correlation_polybench -noelle-verbose=3 -dswp-force -noelle-disable-helix
 regression_1/DependentIterations -noelle-verbose=3 -dswp-force -noelle-disable-helix
+regression_1/NestedLoops -noelle-verbose=3 -dswp-force -noelle-disable-helix
 regression_2/3mm_polybench -noelle-verbose=3 -dswp-force -noelle-disable-helix -dswp-no-scc-merge
 regression_2/Correlation_polybench -noelle-verbose=3 -dswp-force -noelle-disable-helix -dswp-no-scc-merge
 regression_2/DependentIterations -noelle-verbose=3 -dswp-force -noelle-disable-helix -dswp-no-scc-merge
