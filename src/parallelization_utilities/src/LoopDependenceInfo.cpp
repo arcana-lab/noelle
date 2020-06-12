@@ -20,8 +20,8 @@ LoopDependenceInfo::LoopDependenceInfo(
   PDG *fG,
   Loop *l,
   LoopInfo &li,
-  ScalarEvolution &SE,
   DominatorSummary &DS,
+  std::function<ScalarEvolution& (Function *f)> getScalarEvolution,
   std::function<Loop * (BasicBlock *header)> getLLVMLoop
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()},
@@ -36,7 +36,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Fetch the PDG of the loop and its SCCDAG.
    */
-  this->fetchLoopAndBBInfo(li, l, SE);
+  this->fetchLoopAndBBInfo(li, l, getScalarEvolution);
   auto loopExitBlocks = getLoopSummary()->getLoopExitBasicBlocks();
   auto DGs = this->createDGsForLoop(l, fG);
   this->loopDG = DGs.first;
@@ -51,6 +51,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
+  auto &SE = getScalarEvolution(f);
   inductionVariables = new InductionVariables(liSummary, li, SE, *loopSCCDAG);
   SCCDAGNormalizer normalizer(*loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
   normalizer.normalizeInPlace();
@@ -135,12 +136,17 @@ uint32_t LoopDependenceInfo::numberOfExits (void) const{
   return this->getLoopSummary()->getLoopExitBasicBlocks().size();
 }
 
-void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolution &SE) {
+void LoopDependenceInfo::fetchLoopAndBBInfo (
+  LoopInfo &li, 
+  Loop *l, 
+  std::function<ScalarEvolution& (Function *f)> getScalarEvolution
+  ){
 
   /*
    * Create a LoopInfo summary
    */
-  auto findTripCount = [&SE](Loop *loopToAnalyze, uint64_t &foundTripCount) -> bool {
+  auto findTripCount = [getScalarEvolution](Loop *loopToAnalyze, uint64_t &foundTripCount) -> bool {
+    auto& SE = getScalarEvolution(loopToAnalyze->getHeader()->getParent());
     auto tripCount = SE.getSmallConstantTripCount(loopToAnalyze);
     if (tripCount == 0){
       return false;

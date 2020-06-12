@@ -85,15 +85,18 @@ bool Parallelizer::parallelizeLoop (
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
     auto taskFunctionDG = helix.constructTaskInternalDependenceGraphFromOriginalLoopDG(LDI, PDT);
     DominatorSummary DS(DT, PDT);
-    auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
-    auto l = LI.getLoopsInPreorder()[0]; //TODO: SIMONE: how do we know that the loop we want to parallelize is [0] ?
+    auto l = LI.getLoopsInPreorder()[0];
     auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
       auto f = h->getParent();
       auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
       auto loop = LI.getLoopFor(h);
       return loop;
     };
-    auto newLDI = new LoopDependenceInfo(function, taskFunctionDG, l, LI, SE, DS, getLLVMLoopFunction);
+    auto getLLVMSEFunction = [this](Function *f) -> ScalarEvolution & {
+      auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*f).getSE();
+      return SE;
+    };
+    auto newLDI = new LoopDependenceInfo(function, taskFunctionDG, l, LI, DS, getLLVMSEFunction, getLLVMLoopFunction);
     newLDI->copyParallelizationOptionsFrom(LDI);
 
     codeModified = helix.apply(newLDI, par, h);
