@@ -91,16 +91,20 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   this->sccdag = new SCCDAG(fdg);
 
   this->attrs = new SCCDAGAttrs();
+  errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
   InductionVariables IV{LIS, *LI, *SE, *sccdag};
+  errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
   this->attrs->populate(sccdag, LIS, *SE, DS, IV);
 
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   this->sccdagTopLoopNorm = new SCCDAG(loopDG);
   // PDGPrinter printer;
   // printer.writeGraph<SCCDAG>("graph-top-loop.dot", sccdagTopLoopNorm);
+  errs() << "SCCDAGAttrTestSuite: Normalizing sccdag\n";
   SCCDAGNormalizer normalizer(*sccdagTopLoopNorm, LIS, *SE, DS, IV);
   normalizer.normalizeInPlace();
 
+  errs() << "SCCDAGAttrTestSuite: Running suite\n";
   suite->runTests((ModulePass &)*this);
 
   delete this->attrs;

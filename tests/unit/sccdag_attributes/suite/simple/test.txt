@@ -17,12 +17,18 @@ ret i32 0
 
 scc with IV
 br i1 %7, label %8, label %16 | %15 = add i32 %.0, 1 | %.0 = phi i32 [ 0, %2 ], [ %15, %14 ] | %7 = icmp ult i32 %.0, 100
+%.02 = phi i32 [ %0, %2 ], [ %10, %14 ] | %10 = sub nsw i32 %9, 3 | %9 = add nsw i32 %.02, 1
 
 reducible SCC
 
 clonable SCC
+i32 %0
 br label %6
+%.02 = phi i32 [ %0, %2 ], [ %10, %14 ] | %10 = sub nsw i32 %9, 3 | %9 = add nsw i32 %.02, 1
 br i1 %7, label %8, label %16 | %15 = add i32 %.0, 1 | %.0 = phi i32 [ 0, %2 ], [ %15, %14 ] | %7 = icmp ult i32 %.0, 100
+%3 = mul nsw i32 %0, 5
+%4 = sdiv i32 %3, 2
+%5 = add nsw i32 %4, 1
 br label %14
 %.02.lcssa = phi i32 [ %.02, %6 ]
 %.01.lcssa = phi i32 [ %.01, %6 ]
