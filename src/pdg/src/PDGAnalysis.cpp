@@ -511,22 +511,20 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
 
 template <class InstI, class InstJ>
 void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, InstI *memI, InstJ *memJ, bool WAW){
-  auto makeEdge = false, must = false;
+  auto must = false;
 
   /*
    * Query the LLVM alias analyses.
    */
   switch (AA.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
+    case NoAlias:
+      return ;
     case PartialAlias:
     case MayAlias:
-      makeEdge = true;
       break;
     case MustAlias:
-      makeEdge = must = true;
-    break;
-  }
-  if (!makeEdge) {
-    return;
+      must = true;
+      break;
   }
 
   /*
@@ -534,16 +532,14 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
    */
   WPAPass &wpa = getAnalysis<WPAPass>();
   switch (wpa.alias(MemoryLocation::get(memI), MemoryLocation::get(memJ))) {
+    case NoAlias:
+      return ;
     case PartialAlias:
     case MayAlias:
-      makeEdge = true;
       break;
     case MustAlias:
-      makeEdge = must = true;
+      must = true;
       break;
-  }
-  if (!makeEdge) {
-    return;
   }
 
   /*
