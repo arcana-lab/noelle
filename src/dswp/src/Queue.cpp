@@ -305,10 +305,35 @@ void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
     auto queueInstrs = task->queueInstrMap[queueIndex].get();
     auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
 
-    auto bb = queueInfo->producer->getParent();
-    assert(task->isAnOriginalBasicBlock(bb));
+    /*
+     * Determine the clone of the basic block of the original producer
+     */
+    auto originalB = queueInfo->producer->getParent();
+    assert(task->isAnOriginalBasicBlock(originalB));
+    auto clonedB = task->getCloneOfOriginalBasicBlock(originalB);
 
-    IRBuilder<> builder(task->getCloneOfOriginalBasicBlock(bb));
+    /*
+     * Determine the insertion point of the queue pop. We either:
+     * 1) Insert right before the first consumer in the producer's basic block
+     * 2) Insert at the end of the basic block if no such consumer is found
+     * 
+     * NOTE: Such a consumer CANNOT be a PHI. If it were, the producer would not
+     * be a PHI, and therefore would be in a previous basic block
+     */
+    std::set<Instruction *> consumers{};
+    Instruction *earliestConsumer = nullptr;
+    for (auto consumer : queueInfo->consumers) {
+      if (consumer->getParent() != originalB) continue;
+      consumers.insert(consumer);
+    }
+    for (auto &I : *originalB) {
+      if (consumers.find(&I) == consumers.end()) continue;
+      earliestConsumer = &I;
+      break;
+    }
+
+    auto insertionPoint = earliestConsumer ? earliestConsumer : clonedB->getTerminator();
+    IRBuilder<> builder(insertionPoint);
     auto queuePopFunction = par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]];
     queueInstrs->queueCall = builder.CreateCall(queuePopFunction, queueCallArgs);
     queueInstrs->load = builder.CreateLoad(queueInstrs->alloca);
@@ -317,24 +342,6 @@ void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
      * Map from producer to queue load 
      */
     task->addInstruction(queueInfo->producer, cast<Instruction>(queueInstrs->load));
-
-    /*
-     * Position queue call and load relatively identically to where the producer is in the basic block
-     */
-    bool pastProducer = false;
-    bool moved = false;
-    for (auto &I : *bb) {
-      if (&I == queueInfo->producer) pastProducer = true;
-      else if (auto phi = dyn_cast<PHINode>(&I)) continue;
-      else if (pastProducer && task->isAnOriginalInstruction(&I)) {
-        auto iClone = task->getCloneOfOriginalInstruction(&I);
-        cast<Instruction>(queueInstrs->queueCall)->moveBefore(iClone);
-        cast<Instruction>(queueInstrs->load)->moveBefore(iClone);
-        moved = true;
-        break;
-      }
-    }
-    assert(moved);
   }
 }
 
