@@ -68,7 +68,7 @@ LoopSummary * LoopsSummary::createSummary (
    */
   auto lPtr = lSummary.get();
   for (auto bb : l->blocks()) {
-    bbToLoop[bb] = lPtr;
+    this->bbToLoop[bb] = lPtr;
   }
   auto ls = this->loops.insert(std::move(lSummary)).first->get();
 
