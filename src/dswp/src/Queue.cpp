@@ -332,7 +332,8 @@ void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
       break;
     }
 
-    auto insertionPoint = earliestConsumer ? earliestConsumer : clonedB->getTerminator();
+    auto insertionPoint = earliestConsumer
+      ? task->getCloneOfOriginalInstruction(earliestConsumer) : clonedB->getTerminator();
     IRBuilder<> builder(insertionPoint);
     auto queuePopFunction = par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]];
     queueInstrs->queueCall = builder.CreateCall(queuePopFunction, queueCallArgs);
