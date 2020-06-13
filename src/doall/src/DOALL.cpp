@@ -213,8 +213,18 @@ bool DOALL::apply (
    * they still refer to the original loop's instructions.
    */
   this->adjustDataFlowToUseClones(LDI, 0);
-  this->rewireLoopToIterateChunks(LDI);
+
+  /*
+   * HACK: Setting reducible variables' preheader incoming value MUST occur
+   * before chunking the loop.
+   * 
+   * This is because loop chunking overrides the instruction clone map, mapping the
+   * original live out value to a PHI node in the loop exit block. The proper
+   * fix is to produce this PHI node in the loop exit block NOT while chunking
+   * but AFTER, as it only needs to occur if the latches became conditional
+   */
   this->setReducableVariablesToBeginAtIdentityValue(LDI, 0);
+  this->rewireLoopToIterateChunks(LDI);
 
   /*
    * Add the final return to the single task's exit block.
