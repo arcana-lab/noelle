@@ -10,12 +10,6 @@
  */
 #include "DGSimplify.hpp"
 
-/*
- * Options of the dependence graph simplifier pass.
- */
-static cl::opt<bool> ForceInlineToLoop("dgsimplify-inline-to-loop", cl::ZeroOrMore, cl::Hidden, cl::desc("Force inlining along the call graph from main to the loops being parallelized"));
-static cl::opt<int> Verbose("inliner-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
-
 DGSimplify::~DGSimplify () {
   for (auto orderedLoops : preOrderedLoops) {
     delete orderedLoops.second;
@@ -23,12 +17,6 @@ DGSimplify::~DGSimplify () {
   for (auto l : loopSummaries) {
     delete l;
   }
-}
-
-bool llvm::DGSimplify::doInitialization (Module &M) {
-  this->verbose = static_cast<Verbosity>(Verbose.getValue());
-
-  return false;
 }
 
 bool llvm::DGSimplify::runOnModule (Module &M) {
@@ -117,7 +105,6 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
 
     bool inlined = inlineFnsOfLoopsToCGRoot();
     if (inlined) {
-      // NOTE(joe) see above.
       getAnalysis<CallGraphWrapperPass>().runOnModule(M);
       getAnalysis<PDGAnalysis>().runOnModule(M);
       parentFns.clear();
@@ -144,20 +131,9 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
   return false;
 }
 
-void llvm::DGSimplify::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<PDGAnalysis>();
-  AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<PostDominatorTreeWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-  return ;
-}
-
 /*
  * Progress Tracking using file system
  */
-
 void llvm::DGSimplify::getLoopsToInline (std::string filename) {
   loopsToCheck.clear();
   ifstream infile(filename);
@@ -274,7 +250,6 @@ bool llvm::DGSimplify::registerRemainingFunctions (std::string filename) {
 /*
  * Inlining
  */
-
 bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
   auto &PDGA = getAnalysis<PDGAnalysis>();
   bool anyInlined = false;
@@ -573,7 +548,6 @@ int llvm::DGSimplify::getNextPreorderLoopAfter (Function *F, CallInst *call) {
 /*
  * Function and loop ordering
  */
-
 void llvm::DGSimplify::adjustLoopOrdersAfterInline (Function *parentF, Function *childF, int nextLoopInd) {
   bool parentHasLoops = preOrderedLoops.find(parentF) != preOrderedLoops.end();
   bool childHasLoops = preOrderedLoops.find(childF) != preOrderedLoops.end();
@@ -860,67 +834,4 @@ void llvm::DGSimplify::sortInDepthOrderFns (std::vector<Function *> &inOrder) {
     // NOTE(angelo): Sort functions deepest first
     return fnOrders[a] > fnOrders[b];
   });
-}
-
-/*
- * Debugging
- */
-
-void llvm::DGSimplify::printFnCallGraph () {
-  if (this->verbose == Verbosity::Disabled) return;
-  for (auto fns : parentFns) {
-    errs() << "DGSimplify:   Child function: " << fns.first->getName() << "\n";
-    for (auto f : fns.second) {
-      errs() << "DGSimplify:   \tParent: " << f->getName() << "\n";
-    }
-  }
-}
-
-void llvm::DGSimplify::printFnOrder () {
-  if (this->verbose == Verbosity::Disabled) return;
-  int count = 0;
-  for (auto fn : depthOrderedFns) {
-    errs() << "DGSimplify:   Function: " << count++ << " " << fn->getName() << "\n";
-  }
-}
-
-void llvm::DGSimplify::printFnLoopOrder (Function *F) {
-  if (this->verbose == Verbosity::Disabled) return;
-  auto count = 1;
-  for (auto summary : *preOrderedLoops[F]) {
-    auto headerBB = summary->getHeader();
-    errs() << "DGSimplify:   Loop " << count++ << ", depth: " << summary->getNestingLevel() << "\n";
-    // headerBB->print(errs()); errs() << "\n";
-  }
-}
-
-void llvm::DGSimplify::printLoopsToCheck () {
-  if (this->verbose == Verbosity::Disabled) return;
-  errs() << "DGSimplify:   Loops in checklist ---------------\n";
-  for (auto fnLoops : loopsToCheck) {
-    auto F = fnLoops.first;
-    auto fnInd = fnOrders[F];
-    errs() << "DGSimplify:   Fn: "
-      << fnInd << " " << F->getName() << "\n";
-    auto &allLoops = *preOrderedLoops[F];
-    for (auto loop : fnLoops.second) {
-      auto loopInd = std::find(allLoops.begin(), allLoops.end(), loop);
-      assert(loopInd != allLoops.end() && "DEBUG: Loop not given an order!");
-      errs() << "DGSimplify:   \tChecking Loop: " << (loopInd - allLoops.begin()) << "\n";
-    }
-  }
-  errs() << "DGSimplify:   ---------------\n";
-}
-
-void llvm::DGSimplify::printFnsToCheck () {
-  if (this->verbose == Verbosity::Disabled) return;
-  errs() << "DGSimplify:   Functions in checklist ---------------\n";
-  std::vector<int> fnInds;
-  for (auto F : fnsToCheck) fnInds.push_back(fnOrders[F]);
-  std::sort(fnInds.begin(), fnInds.end());
-  for (auto ind : fnInds) {
-    errs() << "DGSimplify:   Fn: "
-      << ind << " " << depthOrderedFns[ind]->getName() << "\n";
-  }
-  errs() << "DGSimplify:   ---------------\n";
 }

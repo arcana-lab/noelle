@@ -1,6 +1,8 @@
 # Sources
 set(Srcs 
+  Pass.cpp
   DGSimplify.cpp
+  Printer.cpp
 )
 
 # Compilation flags

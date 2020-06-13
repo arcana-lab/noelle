@@ -227,7 +227,7 @@ bool llvm::PDGAnalysis::hasPDGAsMetadata(Module &M) {
 PDG * llvm::PDGAnalysis::constructPDGFromAnalysis(Module &M) {
   errs() << "Construct PDG from Analysis\n";
 
-  PDG *pdg = new PDG(M);
+  auto pdg = new PDG(M);
 
   constructEdgesFromUseDefs(pdg);
   constructEdgesFromAliases(pdg, M);
