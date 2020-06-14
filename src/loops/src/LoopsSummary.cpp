@@ -13,10 +13,7 @@
 using namespace llvm;
       
 LoopsSummary::LoopsSummary (
-  std::unordered_map<BasicBlock *, Loop *> headerLoopPairs
-  )
-  : headerLoops{headerLoopPairs}
-  {
+  ) {
 
   return ;
 }

@@ -19,9 +19,7 @@ namespace llvm {
     public:
       std::set<std::shared_ptr<LoopSummary>> loops;
 
-      LoopsSummary (
-        std::unordered_map<BasicBlock *, Loop *> headerLoops
-        );
+      LoopsSummary ();
 
       LoopSummary * getLoop (Instruction &instIncludedInLoop) const ;
 

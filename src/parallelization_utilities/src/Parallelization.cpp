@@ -182,13 +182,11 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Consider these loops.
      */
-    errs() << "PAR: START\n";
     for (auto loop : loops){
 
       /*
        * Check if the loop is hot enough.
        */
-      errs() << "PAR:   Loop : " << *loop->getHeader() << "\n";
       if (profiles.isAvailable()){
         auto mInsts = profiles.getTotalInstructions();
         auto lInsts = profiles.getTotalInstructions(loop);
@@ -209,7 +207,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = this->newLoopDependenceInformation(funcPDG, loop, LI, SE, DS);
+        auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE);
 
         allLoops->push_back(ldi);
         currentLoopIndex++;
@@ -251,7 +249,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        *
        * Allocate the loop wrapper.
        */
-      auto ldi = this->newLoopDependenceInformation(funcPDG, loop, LI, SE, DS);
+      auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE);
 
       /*
        * Set the loop constraints specified by INDEX_FILE.
@@ -676,56 +674,4 @@ bool Parallelization::filterOutLoops (
 
 llvm::Parallelization::~Parallelization(){
   return ;
-}
-
-LoopDependenceInfo * Parallelization::newLoopDependenceInformation (
-  PDG *fG,
-  Loop *l,
-  LoopInfo &li,
-  ScalarEvolution &SE,
-  DominatorSummary &DS
-  ){
-
-  /*
-   * Fetch the function that includes the loop.
-   */
-  auto f = l->getHeader()->getParent();
-
-  /*
-   * Fetch the header-loop pairs.
-   */
-  auto headerLoopPairs = this->getHeaderLoopMap(li);
-
-  /*
-   * Allocate the loop wrapper.
-   */
-  auto ldi = new LoopDependenceInfo(f, fG, l, DS, SE, headerLoopPairs);
-
-  return ldi;
-}
-
-std::unordered_map<BasicBlock *, Loop *> Parallelization::getHeaderLoopMap (LoopInfo &LI){
-  std::unordered_map<BasicBlock *, Loop *> m{};
-
-  /*
-   * Define the recursive function to add header-loop pairs starting from a loop.
-   */
-  std::function<void (Loop *)> addLoops;
-  addLoops = [&addLoops, &m](Loop *l) {
-    auto h = l->getHeader();
-    m[h] = l;
-    for (auto subLoop : l->getSubLoops()){
-      addLoops(subLoop);
-    }
-    return ;
-  };
-
-  /*
-   * Iterate over outermost loops and add all header-loop pairs.
-   */
-  for (auto l : LI){
-    addLoops(l);
-  }
-
-  return m;
 }

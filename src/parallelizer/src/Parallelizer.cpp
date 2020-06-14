@@ -87,7 +87,7 @@ bool Parallelizer::parallelizeLoop (
     auto taskFunctionDG = helix.constructTaskInternalDependenceGraphFromOriginalLoopDG(LDI, PDT);
     DominatorSummary DS{DT, PDT};
     auto l = LI.getLoopsInPreorder()[0];
-    auto newLDI = par.newLoopDependenceInformation(taskFunctionDG, l, LI, SE, DS);
+    auto newLDI = new LoopDependenceInfo(taskFunctionDG, l, DS, SE);
     newLDI->copyParallelizationOptionsFrom(LDI);
 
     codeModified = helix.apply(newLDI, par, h);
