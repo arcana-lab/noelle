@@ -14,7 +14,7 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
-#include "Parallelization.hpp"
+#include "Noelle.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "Heuristics.hpp"
 #include "Task.hpp"
@@ -41,7 +41,7 @@ namespace llvm {
        */
       virtual bool apply (
         LoopDependenceInfo *LDI,
-        Parallelization &par,
+        Noelle &par,
         Heuristics *h
       ) = 0;
 
@@ -50,7 +50,7 @@ namespace llvm {
        */
       virtual bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
-        Parallelization &par,
+        Noelle &par,
         Heuristics *h
       ) const = 0 ;
 

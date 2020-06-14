@@ -30,7 +30,7 @@ bool LoopMetadataPass::runOnModule (Module &M) {
   /*
    * Fetch the outputs of the passes we rely on.
    */
-  auto& parallelizationFramework = getAnalysis<Parallelization>();
+  auto& parallelizationFramework = getAnalysis<Noelle>();
 
   /*
    * Fetch the context
@@ -57,7 +57,7 @@ void LoopMetadataPass::getAnalysisUsage (AnalysisUsage &AU) const {
   /*
    * Analyses.
    */
-  AU.addRequired<Parallelization>();
+  AU.addRequired<Noelle>();
 
   return ;
 }

@@ -15,7 +15,7 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
-#include "Parallelization.hpp"
+#include "Noelle.hpp"
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "DSWPTask.hpp"
@@ -39,13 +39,13 @@ namespace llvm {
 
       bool apply (
         LoopDependenceInfo *LDI,
-        Parallelization &par,
+        Noelle &par,
         Heuristics *h
       ) override ;
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
-        Parallelization &par,
+        Noelle &par,
         Heuristics *h
       ) const override ;
 
@@ -79,19 +79,19 @@ namespace llvm {
       void addClonableSCCsToStages (LoopDependenceInfo *LDI);
       bool isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const ;
       void generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex);
-      void generateLoadsOfQueuePointers (Parallelization &par, int taskIndex);
-      void popValueQueues (Parallelization &par, int taskIndex);
-      void pushValueQueues (Parallelization &par, int taskIndex);
-      void createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &par);
+      void generateLoadsOfQueuePointers (Noelle &par, int taskIndex);
+      void popValueQueues (Noelle &par, int taskIndex);
+      void pushValueQueues (Noelle &par, int taskIndex);
+      void createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par);
       Value * createStagesArrayFromStages (
         LoopDependenceInfo *LDI,
         IRBuilder<> funcBuilder,
-        Parallelization &par
+        Noelle &par
       );
       Value * createQueueSizesArrayFromStages (
         LoopDependenceInfo *LDI,
         IRBuilder<> funcBuilder,
-        Parallelization &par
+        Noelle &par
       );
 
       /*
@@ -102,14 +102,14 @@ namespace llvm {
       /*
        * Information collection helpers
        */
-      void collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par);
-      void collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &par);
+      void collectDataQueueInfo (LoopDependenceInfo *LDI, Noelle &par);
+      void collectControlQueueInfo (LoopDependenceInfo *LDI, Noelle &par);
       std::set<Task *> collectTransitivelyControlledTasks (
         LoopDependenceInfo *LDI,
         DGNode<Value> *conditionalBranchNodei
       );
       void registerQueue (
-        Parallelization &par,
+        Noelle &par,
         LoopDependenceInfo *LDI,
         DSWPTask *fromStage,
         DSWPTask *toStage,

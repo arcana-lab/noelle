@@ -28,18 +28,18 @@
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Support/MemoryBuffer.h"
 
-#include "Parallelization.hpp"
+#include "Noelle.hpp"
 #include "PDGAnalysis.hpp"
 #include "HotProfiler.hpp"
 #include "Architecture.hpp"
 
 using namespace llvm;
 
-llvm::Parallelization::Parallelization() : ModulePass{ID}{
+Noelle::Noelle() : ModulePass{ID}{
   return ;
 }
 
-std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom (Module *module, Function *startingPoint){
+std::vector<Function *> * Noelle::getModuleFunctionsReachableFrom (Module *module, Function *startingPoint){
   auto functions = new std::vector<Function *>();
 
   /*
@@ -97,7 +97,7 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
   return functions;
 }
 
-std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
+std::vector<LoopDependenceInfo *> * Noelle::getModuleLoops (
   Module *module,
   double minimumHotness
   ){
@@ -315,7 +315,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   return allLoops;
 }
 
-uint32_t Parallelization::getNumberOfModuleLoops (
+uint32_t Noelle::getNumberOfModuleLoops (
   Module *module,
   double minimumHotness
   ){
@@ -437,7 +437,7 @@ uint32_t Parallelization::getNumberOfModuleLoops (
   return counter;
 }
 
-void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
+void Noelle::linkParallelizedLoopToOriginalFunction (
   Module *module,
   BasicBlock *originalPreHeader,
   BasicBlock *startOfParLoopInOriginalFunc,
@@ -541,7 +541,7 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   return ;
 }
 
-uint32_t llvm::Parallelization::fetchTheNextValue (std::stringstream &stream){
+uint32_t Noelle::fetchTheNextValue (std::stringstream &stream){
   uint32_t currentValueRead;
 
   /*
@@ -570,7 +570,7 @@ uint32_t llvm::Parallelization::fetchTheNextValue (std::stringstream &stream){
   return currentValueRead;
 }
       
-bool Parallelization::filterOutLoops (
+bool Noelle::filterOutLoops (
   char *fileName,
   std::vector<uint32_t>& loopThreads,
   std::vector<uint32_t>& techniquesToDisable,
@@ -672,6 +672,6 @@ bool Parallelization::filterOutLoops (
   return filterLoops;
 }
 
-llvm::Parallelization::~Parallelization(){
+Noelle::~Noelle(){
   return ;
 }

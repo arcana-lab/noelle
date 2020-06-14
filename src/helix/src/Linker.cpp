@@ -15,7 +15,7 @@ using namespace llvm ;
 
 void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   LoopDependenceInfo *LDI,
-  Parallelization &par,
+  Noelle &par,
   uint64_t numberOfSequentialSegments
 ) {
 

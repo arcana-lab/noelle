@@ -99,7 +99,7 @@ bool DSWP::isCompleteAndValidStageStructure (LoopDependenceInfo *LDI) const {
   return true;
 }
 
-void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &par) {
+void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par) {
 
   /*
    * Fetch the loop function.
@@ -160,7 +160,7 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Parallelization &p
 Value * DSWP::createStagesArrayFromStages (
   LoopDependenceInfo *LDI,
   IRBuilder<> funcBuilder,
-  Parallelization &par
+  Noelle &par
 ) {
   auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(this->stageArrayType));
   auto stageCastType = PointerType::getUnqual(this->tasks[0]->getTaskBody()->getType());
@@ -181,7 +181,7 @@ Value * DSWP::createStagesArrayFromStages (
 Value * DSWP::createQueueSizesArrayFromStages (
   LoopDependenceInfo *LDI,
   IRBuilder<> funcBuilder,
-  Parallelization &par
+  Noelle &par
 ) {
   auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(par.int64, this->queues.size())));
   for (int i = 0; i < this->queues.size(); ++i) {

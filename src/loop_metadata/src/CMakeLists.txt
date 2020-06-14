@@ -27,6 +27,7 @@ include_directories(
   ../include 
   ../../basic_utilities/include 
   ../../parallelization_utilities/include
+  ../../noelle/include
   ../../pdg/include
   ../../loops/include
   )
