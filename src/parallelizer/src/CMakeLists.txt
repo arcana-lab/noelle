@@ -32,7 +32,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../pdg/include 
   ../../threadpool/include 
   ../../loop_structure/include
-  ../../parallelization_utilities/include 
+  ../../loops/include 
   ../../heuristics/include 
   ../../parallelization_technique/include 
   ../../dswp/include 

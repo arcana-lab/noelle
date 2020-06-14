@@ -33,7 +33,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../pdg/include 
   ../../threadpool/include 
   ../../loop_structure/include
-  ../../parallelization_utilities/include 
+  ../../loops/include 
   ../../talkdown/include
   ../../noelle/include
   )
