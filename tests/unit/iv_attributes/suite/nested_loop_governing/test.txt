@@ -1,0 +1,9 @@
+verifyStartAndStepByLoop
+label %23 ; i32 -2 ; i32 1
+label %28 ; i32 0 ; i32 1
+label %32 ; i32 0 ; i32 1
+
+verifyLoopGoverning
+label %23
+label %28
+label %32
