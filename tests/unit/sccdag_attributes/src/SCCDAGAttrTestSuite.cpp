@@ -61,6 +61,39 @@ void SCCDAGAttrTestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
 }
 
+void computeTripCounts (
+  Loop *l,
+  ScalarEvolution &SE,
+  std::unordered_map<Loop *, uint64_t> & loopTripCounts
+  ){
+
+  /*
+   * Fetch the trip count of the loop given as input.
+   */
+  auto tripCount = SE.getSmallConstantTripCount(l);
+
+  /*
+   * Check if the trip count is known at compile time.
+   */
+  if (tripCount > 0){
+
+    /*
+     * The trip count is known at compile time.
+     * Store it.
+     */
+    loopTripCounts[l] = tripCount;
+  }
+
+  /*
+   * Compute the trip counts of all sub-loops.
+   */
+  for (auto subLoop : l->getSubLoops()) {
+    computeTripCounts(subLoop, SE, loopTripCounts);
+  }
+
+  return ;
+}
+
 bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   errs() << "SCCDAGAttrTestSuite: Start\n";
   auto mainFunction = M.getFunction("main");
@@ -68,21 +101,13 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   this->LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
 
-  auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
-    return getAnalysis<LoopInfoWrapperPass>(*h->getParent()).getLoopInfo().getLoopFor(h);
-  };
-  auto findTripCount = [this](Loop *loopToAnalyze, uint64_t &foundTripCount) -> bool {
-    auto tripCount = SE->getSmallConstantTripCount(loopToAnalyze);
-    bool hasTripCount = tripCount != 0;
-    foundTripCount = hasTripCount ? tripCount : foundTripCount;
-    return hasTripCount;
-  };
-
   // TODO: Grab first loop and produce attributes on it
-  LoopsSummary LIS{getLLVMLoopFunction};
+  LoopsSummary LIS{};
   Loop *topLoop = LI->getLoopsInPreorder()[0];
-  LIS.populate(*LI, topLoop, findTripCount);
 
+  std::unordered_map<Loop *, uint64_t> tripCounts{};
+  computeTripCounts(topLoop, *SE, tripCounts);
+  LIS.populate(topLoop, tripCounts);
   auto *DT = &getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
   auto *PDT = &getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
   DominatorSummary DS(*DT, *PDT);
@@ -96,7 +121,7 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
   auto loopExitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
   auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
-  InductionVariables IV{LIS, *LI, *SE, *sccdag, *environment};
+  InductionVariables IV{LIS, *SE, *sccdag, *environment};
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
   this->attrs->populate(sccdag, LIS, *SE, DS, IV);
 
