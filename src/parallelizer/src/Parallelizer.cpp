@@ -83,10 +83,11 @@ bool Parallelizer::parallelizeLoop (
     auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
     auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
+    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
     auto taskFunctionDG = helix.constructTaskInternalDependenceGraphFromOriginalLoopDG(LDI, PDT);
     DominatorSummary DS{DT, PDT};
     auto l = LI.getLoopsInPreorder()[0];
-    auto newLDI = par.newLoopDependenceInformation(taskFunctionDG, l, LI, DS);
+    auto newLDI = par.newLoopDependenceInformation(taskFunctionDG, l, LI, SE, DS);
     newLDI->copyParallelizationOptionsFrom(LDI);
 
     codeModified = helix.apply(newLDI, par, h);

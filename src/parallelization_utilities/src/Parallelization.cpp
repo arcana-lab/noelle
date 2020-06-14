@@ -28,41 +28,12 @@
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Support/MemoryBuffer.h"
 
-#include "PDGAnalysis.hpp"
 #include "Parallelization.hpp"
+#include "PDGAnalysis.hpp"
 #include "HotProfiler.hpp"
 #include "Architecture.hpp"
 
 using namespace llvm;
-
-bool llvm::Parallelization::doInitialization (Module &M) {
-  int1 = IntegerType::get(M.getContext(), 1);
-  int8 = IntegerType::get(M.getContext(), 8);
-  int16 = IntegerType::get(M.getContext(), 16);
-  int32 = IntegerType::get(M.getContext(), 32);
-  int64 = IntegerType::get(M.getContext(), 64);
-
-  return false;
-}
-
-void llvm::Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<AssumptionCacheTracker>();
-  AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<PostDominatorTreeWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<PDGAnalysis>();
-  AU.addRequired<HotProfiler>();
-
-  return ;
-}
-
-bool llvm::Parallelization::runOnModule (Module &M){
-  errs() << "Parallelization at \"runOnModule\"\n" ;
-
-  return false;
-}
 
 llvm::Parallelization::Parallelization() : ModulePass{ID}{
   return ;
@@ -211,12 +182,14 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
     /*
      * Consider these loops.
      */
+    errs() << "PAR: START\n";
     for (auto loop : loops){
 
       /*
        * Check if the loop is hot enough.
        */
-       if (profiles.isAvailable()){
+      errs() << "PAR:   Loop : " << *loop->getHeader() << "\n";
+      if (profiles.isAvailable()){
         auto mInsts = profiles.getTotalInstructions();
         auto lInsts = profiles.getTotalInstructions(loop);
         auto hotness = ((double)lInsts) / ((double)mInsts);
@@ -236,7 +209,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = this->newLoopDependenceInformation(funcPDG, loop, LI, DS);
+        auto ldi = this->newLoopDependenceInformation(funcPDG, loop, LI, SE, DS);
 
         allLoops->push_back(ldi);
         currentLoopIndex++;
@@ -278,7 +251,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        *
        * Allocate the loop wrapper.
        */
-      auto ldi = this->newLoopDependenceInformation(funcPDG, loop, LI, DS);
+      auto ldi = this->newLoopDependenceInformation(funcPDG, loop, LI, SE, DS);
 
       /*
        * Set the loop constraints specified by INDEX_FILE.
@@ -709,6 +682,7 @@ LoopDependenceInfo * Parallelization::newLoopDependenceInformation (
   PDG *fG,
   Loop *l,
   LoopInfo &li,
+  ScalarEvolution &SE,
   DominatorSummary &DS
   ){
 
@@ -718,37 +692,40 @@ LoopDependenceInfo * Parallelization::newLoopDependenceInformation (
   auto f = l->getHeader()->getParent();
 
   /*
-   * Find the output of the LLVM analyses we need.
+   * Fetch the header-loop pairs.
    */
-  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*f).getSE();
-
-  /*
-   * Define the function to get the LLVM loop.
-   */
-  auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
-    auto f = h->getParent();
-    auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-    auto loop = LI.getLoopFor(h);
-    return loop;
-  };
+  auto headerLoopPairs = this->getHeaderLoopMap(li);
 
   /*
    * Allocate the loop wrapper.
    */
-  auto ldi = new LoopDependenceInfo(f, fG, l, li, DS, SE, getLLVMLoopFunction);
+  auto ldi = new LoopDependenceInfo(f, fG, l, DS, SE, headerLoopPairs);
 
   return ldi;
 }
 
-// Next there is code to register your pass to "opt"
-char llvm::Parallelization::ID = 0;
-static RegisterPass<Parallelization> X("parallelization", "Computing the Program Dependence Graph");
+std::unordered_map<BasicBlock *, Loop *> Parallelization::getHeaderLoopMap (LoopInfo &LI){
+  std::unordered_map<BasicBlock *, Loop *> m{};
 
-// Next there is code to register your pass to "clang"
-static Parallelization * _PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new Parallelization());}}); // ** for -Ox
-static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new Parallelization());}});// ** for -O0
+  /*
+   * Define the recursive function to add header-loop pairs starting from a loop.
+   */
+  std::function<void (Loop *)> addLoops;
+  addLoops = [&addLoops, &m](Loop *l) {
+    auto h = l->getHeader();
+    m[h] = l;
+    for (auto subLoop : l->getSubLoops()){
+      addLoops(subLoop);
+    }
+    return ;
+  };
+
+  /*
+   * Iterate over outermost loops and add all header-loop pairs.
+   */
+  for (auto l : LI){
+    addLoops(l);
+  }
+
+  return m;
+}

@@ -19,19 +19,16 @@ namespace llvm {
   class LoopSummary {
     public:
       LoopSummary (
-        BasicBlock *header,
-        std::function<Loop * (BasicBlock *header)> getLLVMLoop
+        Loop *l
         );
 
       LoopSummary (
-        BasicBlock *header,
-        std::function<Loop * (BasicBlock *header)> getLLVMLoop,
+        Loop *l,
         LoopSummary *parentLoop
         );
 
       LoopSummary (
-        BasicBlock *header,
-        std::function<Loop * (BasicBlock *header)> getLLVMLoop,
+        Loop *l,
         LoopSummary *parentLoop, 
         uint64_t loopTripCount
         );
@@ -53,8 +50,6 @@ namespace llvm {
       bool doesHaveCompileTimeKnownTripCount (void) const ;
       
       uint64_t getCompileTimeTripCount (void) const ;
-
-      Loop * getLLVMLoop (void) const ;
 
       LoopSummary * getParentLoop (void) const ;
       
@@ -90,7 +85,6 @@ namespace llvm {
       std::unordered_set<LoopSummary *> children;
       std::unordered_set<BasicBlock *> latchBBs;
       std::unordered_set<BasicBlock *> bbs;
-      std::function<Loop * (BasicBlock *)> getLLVMLoopExternalFunction;
 
       /*
        * Certain parallelization schemes rely on indexing exit blocks, so some arbitrary order needs to be established

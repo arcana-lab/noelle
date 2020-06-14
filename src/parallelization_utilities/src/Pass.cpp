@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -8,42 +8,50 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DGSimplify.hpp"
+#include "Parallelization.hpp"
+#include "PDGAnalysis.hpp"
+#include "HotProfiler.hpp"
 
 using namespace llvm;
 
-/*
- * Options of the dependence graph simplifier pass.
- */
-static cl::opt<int> Verbose("inliner-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
-
-bool DGSimplify::doInitialization (Module &M) {
-  this->verbose = static_cast<Verbosity>(Verbose.getValue());
+bool Parallelization::doInitialization (Module &M) {
+  int1 = IntegerType::get(M.getContext(), 1);
+  int8 = IntegerType::get(M.getContext(), 8);
+  int16 = IntegerType::get(M.getContext(), 16);
+  int32 = IntegerType::get(M.getContext(), 32);
+  int64 = IntegerType::get(M.getContext(), 64);
 
   return false;
 }
 
-void DGSimplify::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Parallelization>();
-  AU.addRequired<LoopInfoWrapperPass>();
+void Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<PDGAnalysis>();
+  AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<AssumptionCacheTracker>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
+  AU.addRequired<PDGAnalysis>();
+  AU.addRequired<HotProfiler>();
 
   return ;
 }
 
+bool Parallelization::runOnModule (Module &M){
+  errs() << "Parallelization at \"runOnModule\"\n" ;
+
+  return false;
+}
+
 // Next there is code to register your pass to "opt"
-char llvm::DGSimplify::ID = 0;
-static RegisterPass<DGSimplify> X("DGSimplify", "Dependence Graph modifier");
+char Parallelization::ID = 0;
+static RegisterPass<Parallelization> X("parallelization", "Computing the Program Dependence Graph");
 
 // Next there is code to register your pass to "clang"
-static DGSimplify * _PassMaker = NULL;
+static Parallelization * _PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new DGSimplify());}}); // ** for -Ox
+        if(!_PassMaker){ PM.add(_PassMaker = new Parallelization());}}); // ** for -Ox
 static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new DGSimplify());}});// ** for -O0
+        if(!_PassMaker){ PM.add(_PassMaker = new Parallelization());}});// ** for -O0

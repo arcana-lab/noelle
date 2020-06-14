@@ -13,9 +13,9 @@
 using namespace llvm;
       
 LoopsSummary::LoopsSummary (
-  std::function<Loop * (BasicBlock *header)> getLLVMLoop
+  std::unordered_map<BasicBlock *, Loop *> headerLoopPairs
   )
-  : getLLVMLoopExternalFunction{getLLVMLoop}
+  : headerLoops{headerLoopPairs}
   {
 
   return ;
@@ -58,9 +58,9 @@ LoopSummary * LoopsSummary::createSummary (
   std::shared_ptr<LoopSummary> lSummary;
   if (tripCountKnownAtCompileTime){
     auto tripCount = loopTripCounts.at(l);
-    lSummary = std::make_shared<LoopSummary>(header, this->getLLVMLoopExternalFunction, parentLoop, tripCount);
+    lSummary = std::make_shared<LoopSummary>(l, parentLoop, tripCount);
   } else {
-    lSummary = std::make_shared<LoopSummary>(header, this->getLLVMLoopExternalFunction, parentLoop);
+    lSummary = std::make_shared<LoopSummary>(l, parentLoop);
   }
 
   /*
@@ -76,7 +76,6 @@ LoopSummary * LoopsSummary::createSummary (
 }
       
 void LoopsSummary::populate (
-  LoopInfo &li, 
   Loop *loop, 
   const std::unordered_map<Loop *, uint64_t> & loopTripCounts
   ) {

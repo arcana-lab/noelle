@@ -19,13 +19,12 @@ LoopDependenceInfo::LoopDependenceInfo(
   Function *f,
   PDG *fG,
   Loop *l,
-  LoopInfo &li,
   DominatorSummary &DS,
   ScalarEvolution &SE,
-  std::function<Loop * (BasicBlock *header)> getLLVMLoop
+  std::unordered_map<BasicBlock *, Loop *> headerLoops
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()},
-    liSummary{getLLVMLoop}
+    liSummary{headerLoops}
   {
 
   /*
@@ -36,7 +35,8 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Fetch the PDG of the loop and its SCCDAG.
    */
-  this->fetchLoopAndBBInfo(li, l, SE);
+  errs() << "LDI: " << *l->getHeader() << "\n";
+  this->fetchLoopAndBBInfo(l, SE);
   auto loopExitBlocks = getLoopSummary()->getLoopExitBasicBlocks();
   auto DGs = this->createDGsForLoop(l, fG);
   this->loopDG = DGs.first;
@@ -51,10 +51,10 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
-  inductionVariables = new InductionVariables(liSummary, li, SE, *loopSCCDAG);
+  inductionVariables = new InductionVariables(liSummary, SE, *loopSCCDAG);
   SCCDAGNormalizer normalizer(*loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
   normalizer.normalizeInPlace();
-  inductionVariables = new InductionVariables(liSummary, li, SE, *loopSCCDAG);
+  inductionVariables = new InductionVariables(liSummary, SE, *loopSCCDAG);
   this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
 
   /*
@@ -136,7 +136,6 @@ uint32_t LoopDependenceInfo::numberOfExits (void) const{
 }
 
 void LoopDependenceInfo::fetchLoopAndBBInfo (
-  LoopInfo &li, 
   Loop *l,
   ScalarEvolution &SE
   ){
@@ -150,7 +149,7 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (
   /*
    * Create a LoopInfo summary
    */
-  this->liSummary.populate(li, l, loopTripCounts);
+  this->liSummary.populate(l, loopTripCounts);
 
   return ;
 }

@@ -271,6 +271,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
       continue;
     }
 
+    auto& noelle = getAnalysis<Parallelization>();
     auto& DT = getAnalysis<DominatorTreeWrapperPass>(*F).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*F).getPostDomTree();
     DominatorSummary DS(DT, PDT);
@@ -280,16 +281,6 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
     auto *loopsPreorder = collectPreOrderedLoopsFor(F, LI);
     auto &allSummaries = *preOrderedLoops[F];
 
-    /*
-     * Define the function to get the LLVM loop.
-     */
-    auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
-      auto f = h->getParent();
-      auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-      auto loop = LI.getLoopFor(h);
-      return loop;
-    };
-
     bool inlined = false;
     std::set<LoopSummary *> removeSummaries;
     auto &toCheck = loopsToCheck[F];
@@ -297,8 +288,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
       auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
       auto loopInd = loopIter - allSummaries.begin();
       auto loop = (*loopsPreorder)[loopInd];
-      auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*F).getSE();
-      auto LDI = new LoopDependenceInfo(F, fdg, loop, LI, DS, SE, getLLVMLoopFunction);
+      auto LDI = noelle.newLoopDependenceInformation(fdg, loop, LI, SE, DS);
       bool inlinedCall = inlineCallsInMassiveSCCs(F, LDI);
       if (!inlinedCall) {
         removeSummaries.insert(summary);
@@ -788,7 +778,7 @@ void llvm::DGSimplify::createPreOrderedLoopSummariesFor (Function *F) {
      * Create the summary loop
      */
     auto loop = (*loops)[i];
-    auto summary = new LoopSummary(loop->getHeader(), getLLVMLoopFunction);
+    auto summary = new LoopSummary(loop);
 
     /*
      * Keep track of the summary loop.
