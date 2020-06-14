@@ -89,17 +89,29 @@ bool TestSuite::checkTest (int testId, Values &actualValues, raw_fd_ostream &Fil
   bool testPassed = true;
   for (auto v : mismatchValues.second) {
     testPassed = false;
-    File << suiteName << ": Expected    : " << v << " not found.\n";
+    File << suiteName << ": Expected    : " << addSpacesBetweenDelimiters(v) << " not found.\n";
   }
   for (auto v : mismatchValues.first) {
     testPassed = false;
-    File << suiteName << ": Not expected: " << v << " yet found\n";
+    File << suiteName << ": Not expected: " << addSpacesBetweenDelimiters(v) << " yet found\n";
   }
 
   if (testPassed) File << suiteName << ": Passed: " << testNames[testId] << "\n";
   else File << suiteName << ": Failed: " << testNames[testId] << "\n";
 
   return testPassed;
+}
+
+std::string TestSuite::addSpacesBetweenDelimiters (std::string delimitedValues) {
+  std::regex delimiterRegex("\\" + orderedValueDelimiter + "|" + "\\" + unorderedValueDelimiter);
+  std::string captured = "$&";
+  std::string spacedDelimiterRegex(" $& ");
+
+  std::string spacedOutput;
+  raw_string_ostream valueStream(spacedOutput);
+  valueStream << std::regex_replace(delimitedValues, delimiterRegex, spacedDelimiterRegex);
+  valueStream.flush();
+  return spacedOutput;
 }
 
 std::string TestSuite::valueToString (Value *value) {

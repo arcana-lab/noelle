@@ -20,6 +20,8 @@
 #include "Comparators.hpp"
 
 #include <vector>
+#include <regex>
+#include <string>
 
 using namespace llvm;
 using namespace std;
@@ -51,6 +53,7 @@ namespace parallelizertests {
     void runTests (ModulePass &pass) ;
 
     bool checkTest (int testId, Values &expectedValues, raw_fd_ostream &File) ;
+    std::string addSpacesBetweenDelimiters (std::string delimitedValues) ;
     template <typename T> std::string printToString (T *printable) ;
     template <typename T> std::string printAsOperandToString (T *printable) ;
 
