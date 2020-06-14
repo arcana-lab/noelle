@@ -14,7 +14,7 @@ tests/regression/**/*.txt
 tests/performance/**/*.txt
 tests/regression/**/*.dot
 tests/performance/**/*.dot
-tests/unit/**/suite/**/*.txt
+tests/unit/**/suite/**/*_output.txt
 tests/unit/**/*.dot
 tests/**/*_prof
 
