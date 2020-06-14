@@ -38,8 +38,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../pdg/include 
   ../../threadpool/include 
-  ../../loops/include
-  ../../parallelization_utilities/include 
+  ../../loop_structure/include
+  ../../loops/include 
   ../../architecture/include  
   ../../heuristics/include 
   ../../parallelization_technique/include 

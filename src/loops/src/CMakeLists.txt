@@ -1,9 +1,12 @@
 # Sources
 set(Srcs 
-  LoopSummary.cpp
-  LoopsSummary.cpp
-  LoopEnvironment.cpp
-  EnvBuilder.cpp
+  AccumulatorOpInfo.cpp
+  InductionVariables.cpp
+  SCCAttrs.cpp
+  SCCDAGAttrs.cpp
+  SCCDAGNormalizer.cpp
+  LoopDependenceInfo.cpp
+  SCCDAGPartition.cpp
 )
 
 # Compilation flags
@@ -24,7 +27,17 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../basic_utilities/include ../../architecture/include ../../alloc_aa/include ../../pdg/include ../../hotprofiler/include ../include ../../../external/svf/include)
+include_directories(${LLVM_INCLUDE_DIRS} 
+  ../../../external/svf/include
+  ../../basic_utilities/include 
+  ../../architecture/include 
+  ../../alloc_aa/include 
+  ../../pdg/include 
+  ../../hotprofiler/include 
+  ../../loop_structure/include 
+  ../../talkdown/include
+  ../include 
+  )
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})

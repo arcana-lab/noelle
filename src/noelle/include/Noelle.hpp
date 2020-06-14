@@ -36,8 +36,6 @@ namespace llvm {
        */
       Noelle();
 
-      virtual ~Noelle();
-
       bool doInitialization (Module &M) override ;
 
       void getAnalysisUsage(AnalysisUsage &AU) const override ;
@@ -68,6 +66,8 @@ namespace llvm {
         Value *envIndexForExitVariable,
         std::vector<BasicBlock *> &loopExitBlocks
         );
+
+      ~Noelle();
 
     private:
 
