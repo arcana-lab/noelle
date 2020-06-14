@@ -13,7 +13,7 @@ PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so 
 
 
 ########### Transformations
-OPTPASSES="${WPAPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/BasicUtilities.so -load ${installDir}/lib/Task.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/Loops.so -load ${installDir}/lib/Parallelization.so -load ${installDir}/lib/Noelle.so"
+OPTPASSES="${WPAPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/BasicUtilities.so -load ${installDir}/lib/Task.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/LoopStructure.so -load ${installDir}/lib/Loops.so -load ${installDir}/lib/Noelle.so"
 
 # Set the command to execute
 cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} ${@}"

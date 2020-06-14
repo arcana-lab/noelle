@@ -1,19 +1,16 @@
 # Sources
 set(Srcs 
-  AccumulatorOpInfo.cpp
-  InductionVariables.cpp
-  SCCAttrs.cpp
-  SCCDAGAttrs.cpp
-  SCCDAGNormalizer.cpp
-  LoopDependenceInfo.cpp
-  SCCDAGPartition.cpp
+  LoopSummary.cpp
+  LoopsSummary.cpp
+  LoopEnvironment.cpp
+  EnvBuilder.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Parallelization")
+set(PassName "LoopStructure")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -27,17 +24,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} 
-  ../../../external/svf/include
-  ../../basic_utilities/include 
-  ../../architecture/include 
-  ../../alloc_aa/include 
-  ../../pdg/include 
-  ../../hotprofiler/include 
-  ../../loops/include 
-  ../../talkdown/include
-  ../include 
-  )
+include_directories(${LLVM_INCLUDE_DIRS} ../../basic_utilities/include ../../architecture/include ../../alloc_aa/include ../../pdg/include ../../hotprofiler/include ../include ../../../external/svf/include)
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})
