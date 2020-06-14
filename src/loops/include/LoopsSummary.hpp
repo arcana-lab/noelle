@@ -20,7 +20,7 @@ namespace llvm {
       std::set<std::shared_ptr<LoopSummary>> loops;
 
       LoopsSummary (
-        std::function<Loop * (BasicBlock *header)> getLLVMLoop
+        std::unordered_map<BasicBlock *, Loop *> headerLoops
         );
 
       LoopSummary * getLoop (Instruction &instIncludedInLoop) const ;
@@ -30,7 +30,6 @@ namespace llvm {
       LoopSummary * getLoopNestingTreeRoot (void) const ;
 
       void populate (
-        LoopInfo &li, 
         Loop *loop, 
         const std::unordered_map<Loop *, uint64_t> & loopTripCounts
         );
@@ -44,7 +43,7 @@ namespace llvm {
        * Fields.
        */
       std::unordered_map<BasicBlock *, LoopSummary *> bbToLoop;
-      std::function<Loop * (BasicBlock *)> getLLVMLoopExternalFunction;
+      std::unordered_map<BasicBlock *, Loop *> headerLoops;
 
       /*
        * Methods.
