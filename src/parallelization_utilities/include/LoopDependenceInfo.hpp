@@ -61,7 +61,7 @@ namespace llvm {
         Loop *l,
         LoopInfo &li,
         DominatorSummary &DS,
-        std::function<ScalarEvolution& (Function *f)> getScalarEvolution,
+        ScalarEvolution &SE,
         std::function<Loop * (BasicBlock *header)> getLLVMLoop
       );
 
@@ -161,7 +161,7 @@ namespace llvm {
       /*
        * Methods
        */
-      void fetchLoopAndBBInfo (LoopInfo &li, Loop *l, std::function<ScalarEvolution& (Function *f)> getScalarEvolution);
+      void fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolution &SE);
       std::pair<PDG *, SCCDAG *> createDGsForLoop (Loop *l, PDG *functionDG) ;
       void addMetadata (const std::string &metadataName);
 

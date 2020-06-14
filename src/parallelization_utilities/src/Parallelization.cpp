@@ -164,18 +164,6 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   for (auto function : *functions){
 
     /*
-     * Fetch the loop analysis.
-     */
-    auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
-
-    /*
-     * Check if the function has loops.
-     */
-    if (std::distance(LI.begin(), LI.end()) == 0){
-      continue ;
-    }
-
-    /*
      * Check if the function is hot.
      */
     if (profiles.isAvailable()){
@@ -186,6 +174,18 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
         continue ;
       }
+    }
+
+    /*
+     * Fetch the loop analysis.
+     */
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+
+    /*
+     * Check if the function has loops.
+     */
+    if (std::distance(LI.begin(), LI.end()) == 0){
+      continue ;
     }
 
     /*
@@ -200,7 +200,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      */
     auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
-    DominatorSummary DS(DT, PDT);
+    DominatorSummary DS{DT, PDT};
     auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
     /*
@@ -229,24 +229,6 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       }
 
       /*
-       * Define the function to get the ScalarEvolution object.
-       */
-      auto getLLVMSEFunction = [this](Function *f) -> ScalarEvolution & {
-        auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*f).getSE();
-        return SE;
-      };
-
-      /*
-       * Define the function to get the LLVM loop.
-       */
-      auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
-        auto f = h->getParent();
-        auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-        auto loop = LI.getLoopFor(h);
-        return loop;
-      };
-
-      /*
        * Check if we have to filter loops.
        */
       if (!filterLoops){
@@ -254,7 +236,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, DS, getLLVMSEFunction, getLLVMLoopFunction);
+        auto ldi = this->newLoopDependenceInformation(funcPDG, loop, LI, DS);
 
         allLoops->push_back(ldi);
         currentLoopIndex++;
@@ -296,7 +278,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        *
        * Allocate the loop wrapper.
        */
-      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, DS, getLLVMSEFunction, getLLVMLoopFunction);
+      auto ldi = this->newLoopDependenceInformation(funcPDG, loop, LI, DS);
 
       /*
        * Set the loop constraints specified by INDEX_FILE.
@@ -721,6 +703,41 @@ bool Parallelization::filterOutLoops (
 
 llvm::Parallelization::~Parallelization(){
   return ;
+}
+
+LoopDependenceInfo * Parallelization::newLoopDependenceInformation (
+  PDG *fG,
+  Loop *l,
+  LoopInfo &li,
+  DominatorSummary &DS
+  ){
+
+  /*
+   * Fetch the function that includes the loop.
+   */
+  auto f = l->getHeader()->getParent();
+
+  /*
+   * Find the output of the LLVM analyses we need.
+   */
+  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*f).getSE();
+
+  /*
+   * Define the function to get the LLVM loop.
+   */
+  auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
+    auto f = h->getParent();
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
+    auto loop = LI.getLoopFor(h);
+    return loop;
+  };
+
+  /*
+   * Allocate the loop wrapper.
+   */
+  auto ldi = new LoopDependenceInfo(f, fG, l, li, DS, SE, getLLVMLoopFunction);
+
+  return ldi;
 }
 
 // Next there is code to register your pass to "opt"
