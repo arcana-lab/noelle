@@ -1,5 +1,5 @@
 UTILS=basic_utilities task parallelization_utilities architecture loop_metadata clean_metadata pdg_stats
-ANALYSIS=pdg talkdown alloc_aa dataflow loops
+ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure
 PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
 ENABLERS=enablers loop_distribution loop_unroll
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) $(PARALLELIZATION) hotprofiler dgsimplify unique_ir_marker noelle scripts
@@ -24,7 +24,7 @@ hotprofiler:
 basic_utilities:
 	cd $@ ; ../scripts/run_me.sh
 
-loops:
+loop_structure:
 	cd $@ ; ../scripts/run_me.sh
 
 task:

@@ -31,7 +31,7 @@ bool EnablersManager::applyEnablers (
   /*
    * Try to devirtualize functions.
    */
-  errs() << "EnablersManager:   Try to apply loop unrolling\n";
+  errs() << "EnablersManager:   Try to devirtualize indirect calls\n";
   if (this->applyDevirtualizer(LDI, par, loopUnroll)){
     errs() << "EnablersManager:     Unrolled loop\n";
     return true;
