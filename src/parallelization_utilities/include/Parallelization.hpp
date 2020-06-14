@@ -29,7 +29,7 @@ namespace llvm {
 
   enum class Verbosity { Disabled, Minimal, Maximal };
 
-  struct Parallelization : public ModulePass {
+  class Parallelization : public ModulePass {
     public:
 
       /*
@@ -75,6 +75,13 @@ namespace llvm {
         Value *envArray,
         Value *envIndexForExitVariable,
         std::vector<BasicBlock *> &loopExitBlocks
+        );
+
+      LoopDependenceInfo * newLoopDependenceInformation (
+        PDG *fG,
+        Loop *l,
+        LoopInfo &li,
+        DominatorSummary &DS
         );
 
     private:

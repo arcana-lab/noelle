@@ -281,14 +281,6 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
     auto &allSummaries = *preOrderedLoops[F];
 
     /*
-     * Define the function to get the ScalarEvolution object.
-     */
-    auto getLLVMSEFunction = [this](Function *f) -> ScalarEvolution & {
-      auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*f).getSE();
-      return SE;
-    };
-
-    /*
      * Define the function to get the LLVM loop.
      */
     auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
@@ -305,7 +297,8 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
       auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
       auto loopInd = loopIter - allSummaries.begin();
       auto loop = (*loopsPreorder)[loopInd];
-      auto LDI = new LoopDependenceInfo(F, fdg, loop, LI, DS, getLLVMSEFunction, getLLVMLoopFunction);
+      auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*F).getSE();
+      auto LDI = new LoopDependenceInfo(F, fdg, loop, LI, DS, SE, getLLVMLoopFunction);
       bool inlinedCall = inlineCallsInMassiveSCCs(F, LDI);
       if (!inlinedCall) {
         removeSummaries.insert(summary);
