@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.4.3)
-project(Parallelization)
+project(Loops)
 
 # Programming languages to use
 enable_language(C CXX)
