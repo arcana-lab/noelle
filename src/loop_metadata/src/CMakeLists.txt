@@ -29,7 +29,7 @@ include_directories(
   ../../parallelization_utilities/include
   ../../noelle/include
   ../../pdg/include
-  ../../loops/include
+  ../../loop_structure/include
   )
 
 # Declare the LLVM pass to compile

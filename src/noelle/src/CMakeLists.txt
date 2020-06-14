@@ -29,7 +29,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../pdg/include 
   ../../hotprofiler/include 
-  ../../loops/include 
+  ../../loop_structure/include 
   ../../talkdown/include
   ../../parallelization_utilities/include
   ../include 
