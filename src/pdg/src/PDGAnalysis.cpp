@@ -51,16 +51,15 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   /*
    * Initialize SVF.
    */
-  SVFModule svfModule(M);
-  this->pta = new AndersenWaveDiff();
-  this->pta->analyze(svfModule);
-  this->callGraph = pta->getPTACallGraph();
-  this->mssa = new MemSSA((BVDataPTAImpl*)this->pta, false);
+  initializeSVF(M);
 
   /*
-   * Function analysis.
+   * Function reachability analysis.
    */
-  functionAnalysis(M);
+  identifyFunctionsThatInvokeLibrary(M);
+  if (this->verbose >= PDGVerbosity::MaximalAndPDG) {
+    printFunctionReachabilityResult();
+  }
 
   /*
    * Check if we should print the PDG
@@ -83,48 +82,41 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   return false;
 }
 
-void llvm::PDGAnalysis::functionAnalysis(Module &M) {
-  /*
-   * Determine internal and external functions.
-   */
-  for (auto &F : M) {
-    if (F.isDeclaration()) {
-      this->functionIsExternal[F.getName()] = true;
-    }
-    else {
-      this->functionIsExternal[F.getName()] = false;
-    }
-  }
+llvm::PDGAnalysis::PDGAnalysis()
+  : ModulePass{ID}, M{nullptr}, programDependenceGraph{nullptr}, CGUnderMain{}, printer{} {
+  return ;
+}
 
+llvm::PDGAnalysis::~PDGAnalysis() {
+  if (this->programDependenceGraph)
+    delete this->programDependenceGraph;
+}
+
+void llvm::PDGAnalysis::initializeSVF(Module &M) {
+  SVFModule svfModule(M);
+  this->pta = new AndersenWaveDiff();
+  this->pta->analyze(svfModule);
+  this->callGraph = this->pta->getPTACallGraph();
+  this->mssa = new MemSSA((BVDataPTAImpl *)this->pta, false);
+
+  return;
+}
+
+void llvm::PDGAnalysis::identifyFunctionsThatInvokeLibrary(Module &M) {
   /*
    * Collect internal and external functions.
    */
   for (auto &F : M) {
-    if (F.isDeclaration() && this->functionIsExternal[F.getName()]) {
+    if (F.empty()) {
       this->externalFunctions.insert(&F);
     }
     else {
-      assert(!this->functionIsExternal[F.getName()] && "An internal function is determined as external?");
       this->internalFunctions.insert(&F);
     }
   }
 
-  // /*
-  //  * Print internal and external functions.
-  //  */
-  // if (this->verbose >= PDGVerbosity::MaximalAndPDG) {
-  //   errs() << "Internal Functions:\n";
-  //   for (auto &internalFunction : this->internalFunctions) {
-  //     errs() << "\t" << internalFunction->getName() << "\n";
-  //   }
-  //   errs() << "External Functions:\n";
-  //   for (auto &externalFunction : this->externalFunctions) {
-  //     errs() << "\t" << externalFunction->getName() << "\n";
-  //   }
-  // }
-
   /*
-   * Collect reachability results.
+   * Identify function reachability.
    */
   for (auto &internalFunction : this->internalFunctions) {
     for (auto &externalFunction : this->externalFunctions) {
@@ -134,29 +126,33 @@ void llvm::PDGAnalysis::functionAnalysis(Module &M) {
     }
   }
 
-  // /*
-  //  * Print reachability results.
-  //  */
-  // if (this->verbose >= PDGVerbosity::MaximalAndPDG) {
-  //   for (auto &pair : this->reachableExternalFunctions) {
-  //     errs() << "Reachable external functions of " << pair.first->getName() << "\n";
-  //     for (auto &externalFunction : pair.second) {
-  //       errs() << "\t" << externalFunction->getName() << "\n";
-  //     }
-  //   }
-  // }
-
   return;
 }
 
-llvm::PDGAnalysis::PDGAnalysis()
-  : ModulePass{ID}, M{nullptr}, programDependenceGraph{nullptr}, CGUnderMain{}, printer{} {
-  return ;
-}
+void llvm::PDGAnalysis::printFunctionReachabilityResult() {
+  /*
+   * Print internal and external functions.
+   */
+  errs() << "Internal Functions:\n";
+  for (auto &internalFunction : this->internalFunctions) {
+    errs() << "\t" << internalFunction->getName() << "\n";
+  }
+  errs() << "External Functions:\n";
+  for (auto &externalFunction : this->externalFunctions) {
+    errs() << "\t" << externalFunction->getName() << "\n";
+  }
 
-llvm::PDGAnalysis::~PDGAnalysis() {
-  if (this->programDependenceGraph)
-    delete this->programDependenceGraph;
+  /*
+   * Print reachability results.
+   */
+  for (auto &pair : this->reachableExternalFunctions) {
+    errs() << "Reachable external functions of " << pair.first->getName() << "\n";
+    for (auto &externalFunction : pair.second) {
+      errs() << "\t" << externalFunction->getName() << "\n";
+    }
+  }
+
+  return;
 }
 
 llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
@@ -637,11 +633,11 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
   return ;
 }
 
-bool llvm::PDGAnalysis::querySVF(CallInst *call, BitVector &bv) {
+bool llvm::PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) {
   if (this->callGraph->hasIndCSCallees(call)) {
     const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
     for (auto &callee : callees) {
-      if (this->functionIsExternal[callee->getName()] || !this->reachableExternalFunctions[callee].empty()) {
+      if (callee->empty() || !this->reachableExternalFunctions[callee].empty()) {
         return false;
       }
     }
@@ -649,11 +645,10 @@ bool llvm::PDGAnalysis::querySVF(CallInst *call, BitVector &bv) {
   else {
     Function *callee = call->getCalledFunction();
     if (!callee) {
-      // ModRef bit is set
-      bv[2] = true;
+      bv[2] = true; // ModRef bit is set
       return false;
     }
-    else if (this->functionIsExternal[callee->getName()] || !this->reachableExternalFunctions[callee].empty()) {
+    else if (callee->empty() || !this->reachableExternalFunctions[callee].empty()) {
       return false;
     }
   }
@@ -685,7 +680,7 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
   /*
    * Check other alias analyses
    */
-  if (querySVF(call, bv)) {
+  if (isSafeToQueryModRefOfSVF(call, bv)) {
     switch (this->mssa->getMRGenerator()->getModRefInfo(call, MemoryLocation::get(memI))) {
       case ModRefInfo::NoModRef:
         return;
@@ -749,7 +744,7 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
   /*
    * Check other alias analyses
    */
-  if (querySVF(call, bv)) {
+  if (isSafeToQueryModRefOfSVF(call, bv)) {
     switch (this->mssa->getMRGenerator()->getModRefInfo(call, MemoryLocation::get(memI))) {
       case ModRefInfo::NoModRef:
       case ModRefInfo::Ref:
@@ -767,6 +762,26 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
   pdg->addEdge((Value*)memI, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
 
   return ;
+}
+
+bool llvm::PDGAnalysis::cannotReachExternal(CallInst *call) {
+  if (this->callGraph->hasIndCSCallees(call)) {
+    const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
+    for (auto &callee : callees) {
+      if (callee->empty() || !this->reachableExternalFunctions[callee].empty()) return false;
+    }
+  }
+  else {
+    Function *callee = call->getCalledFunction();
+    if (!callee || callee->empty() || !this->reachableExternalFunctions[callee].empty()) return false;
+  }
+
+  return true;
+}
+
+bool llvm::PDGAnalysis::hasNoMemoryOperations(CallInst *call) {
+  if (this->mssa->getMRGenerator()->getModRefInfo(call) == ModRefInfo::NoModRef) return true;
+  return false;
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *otherCall, CallInst *call){
@@ -808,7 +823,11 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
   /*
    * Check other alias analyses
    */
-  if (querySVF(call, bv) && querySVF(otherCall, bv)) {
+  if ((cannotReachExternal(call) && hasNoMemoryOperations(call)) || (cannotReachExternal(otherCall) && hasNoMemoryOperations(otherCall))) {
+    return;
+  }
+
+  if (isSafeToQueryModRefOfSVF(call, bv) && isSafeToQueryModRefOfSVF(otherCall, bv)) {
     switch (this->mssa->getMRGenerator()->getModRefInfo(call, otherCall)) {
       case ModRefInfo::NoModRef:
         return;
