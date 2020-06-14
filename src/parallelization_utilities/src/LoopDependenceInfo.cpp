@@ -16,15 +16,13 @@
 using namespace llvm;
 
 LoopDependenceInfo::LoopDependenceInfo(
-  Function *f,
   PDG *fG,
   Loop *l,
   DominatorSummary &DS,
-  ScalarEvolution &SE,
-  std::unordered_map<BasicBlock *, Loop *> headerLoops
+  ScalarEvolution &SE
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()},
-    liSummary{headerLoops}
+    liSummary{}
   {
 
   /*
@@ -35,7 +33,6 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Fetch the PDG of the loop and its SCCDAG.
    */
-  errs() << "LDI: " << *l->getHeader() << "\n";
   this->fetchLoopAndBBInfo(l, SE);
   auto loopExitBlocks = getLoopSummary()->getLoopExitBasicBlocks();
   auto DGs = this->createDGsForLoop(l, fG);

@@ -14,7 +14,6 @@ using namespace llvm;
 
 InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, SCCDAG &sccdag)
   : loopToIVsMap{}, loopToGoverningIVMap{} {
-  errs() << "AAA\n";
   for (auto &loop : LIS.loops) {
     loopToIVsMap[loop.get()] = std::set<InductionVariable *>();
 
@@ -22,8 +21,6 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
      * Fetch the loop header.
      */
     auto header = loop->getHeader();
-    errs() << " Loop : " << *header << "\n";
-    continue ;
 
     /*
      * Iterate over all phis within the loop header.

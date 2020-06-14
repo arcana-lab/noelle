@@ -77,14 +77,6 @@ namespace llvm {
         std::vector<BasicBlock *> &loopExitBlocks
         );
 
-      LoopDependenceInfo * newLoopDependenceInformation (
-        PDG *fG,
-        Loop *l,
-        LoopInfo &li,
-        ScalarEvolution &SE,
-        DominatorSummary &DS
-        );
-
     private:
       uint32_t fetchTheNextValue (
         std::stringstream &stream
@@ -95,10 +87,6 @@ namespace llvm {
         std::vector<uint32_t>& loopThreads,
         std::vector<uint32_t>& techniquesToDisable,
         std::vector<uint32_t>& DOALLChunkSize
-        );
-
-      std::unordered_map<BasicBlock *, Loop *> getHeaderLoopMap (
-        LoopInfo &LI
         );
   };
 }

@@ -24,7 +24,6 @@ bool DGSimplify::doInitialization (Module &M) {
 }
 
 void DGSimplify::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Parallelization>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<PDGAnalysis>();

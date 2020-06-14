@@ -271,7 +271,6 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
       continue;
     }
 
-    auto& noelle = getAnalysis<Parallelization>();
     auto& DT = getAnalysis<DominatorTreeWrapperPass>(*F).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*F).getPostDomTree();
     DominatorSummary DS(DT, PDT);
@@ -288,7 +287,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
       auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
       auto loopInd = loopIter - allSummaries.begin();
       auto loop = (*loopsPreorder)[loopInd];
-      auto LDI = noelle.newLoopDependenceInformation(fdg, loop, LI, SE, DS);
+      auto LDI = new LoopDependenceInfo(fdg, loop, DS, SE);
       bool inlinedCall = inlineCallsInMassiveSCCs(F, LDI);
       if (!inlinedCall) {
         removeSummaries.insert(summary);

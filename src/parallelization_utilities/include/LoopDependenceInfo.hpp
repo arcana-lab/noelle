@@ -52,12 +52,10 @@ namespace llvm {
        * Constructors.
        */
       LoopDependenceInfo (
-        Function *f,
         PDG *fG,
         Loop *l,
         DominatorSummary &DS,
-        ScalarEvolution &SE,
-        std::unordered_map<BasicBlock *, Loop *> headerLoops
+        ScalarEvolution &SE
       );
 
       /*
