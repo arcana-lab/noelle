@@ -18,6 +18,7 @@
 #include <set>
 #include <unordered_set>
 #include <vector>
+#include <stack>
 #include <queue>
 #include <deque>
 #include <thread>
@@ -41,6 +42,7 @@
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Dominators.h"
 #include <llvm/IR/InstVisitor.h>
+#include "llvm/IR/InstIterator.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Utils/Cloning.h"

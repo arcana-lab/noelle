@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.4.3)
-project(Parallelization)
+project(Noelle)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -29,12 +29,6 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/Techniques.hpp
-    include/LoopDependenceInfo.hpp
-    include/InductionVariables.hpp
-    include/SCCDAGAttrs.hpp
-    include/SCCDAGNormalizer.hpp
-    include/SCCDAGPartition.hpp
-    include/SCCAttrs.hpp
-    include/AccumulatorOpInfo.hpp
+install(PROGRAMS
+    include/Noelle.hpp
     DESTINATION include)

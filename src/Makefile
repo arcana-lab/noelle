@@ -2,12 +2,15 @@ UTILS=basic_utilities task parallelization_utilities architecture loop_metadata 
 ANALYSIS=pdg talkdown alloc_aa dataflow loops
 PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
 ENABLERS=enablers loop_distribution loop_unroll
-ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) $(PARALLELIZATION) hotprofiler dgsimplify unique_ir_marker noelle
+ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) $(PARALLELIZATION) hotprofiler dgsimplify unique_ir_marker noelle scripts
 
 all: $(ALL)
 
-noelle:
+scripts:
 	./scripts/installNOELLE.sh
+
+noelle:
+	cd $@ ; ../scripts/run_me.sh
 
 unique_ir_marker:
 	cd $@ ; ../scripts/run_me.sh

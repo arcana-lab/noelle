@@ -49,20 +49,13 @@ namespace llvm {
       uint32_t DOALLChunkSize;
 
       /*
-       * Methods
-       */
-
-      /*
        * Constructors.
        */
       LoopDependenceInfo (
-        Function *f,
         PDG *fG,
         Loop *l,
-        LoopInfo &li,
-        ScalarEvolution &SE,
         DominatorSummary &DS,
-        std::function<Loop * (BasicBlock *header)> getLLVMLoop
+        ScalarEvolution &SE
       );
 
       /*
@@ -161,9 +154,14 @@ namespace llvm {
       /*
        * Methods
        */
-      void fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolution &SE);
+      void fetchLoopAndBBInfo (Loop *l, ScalarEvolution &SE);
       std::pair<PDG *, SCCDAG *> createDGsForLoop (Loop *l, PDG *functionDG) ;
       void addMetadata (const std::string &metadataName);
+
+      void computeTripCounts (
+        Loop *l,
+        ScalarEvolution &SE,
+        std::unordered_map<Loop *, uint64_t> & loopTripCounts);
 
   };
 

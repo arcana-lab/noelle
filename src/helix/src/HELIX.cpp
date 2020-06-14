@@ -79,13 +79,13 @@ void HELIX::reset () {
   spills.clear();
 }
 
-bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Parallelization &par, Heuristics *h) const {
+bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Noelle &par, Heuristics *h) const {
   return true ;
 }
 
 bool HELIX::apply (
   LoopDependenceInfo *LDI,
-  Parallelization &par,
+  Noelle &par,
   Heuristics *h
 ) {
 
@@ -106,7 +106,7 @@ bool HELIX::apply (
 
 void HELIX::createParallelizableTask (
   LoopDependenceInfo *LDI,
-  Parallelization &par, 
+  Noelle &par, 
   Heuristics *h
 ){
 
@@ -291,7 +291,7 @@ void HELIX::createParallelizableTask (
 
 void HELIX::synchronizeTask (
   LoopDependenceInfo *LDI,
-  Parallelization &par, 
+  Noelle &par, 
   Heuristics *h
 ){
 

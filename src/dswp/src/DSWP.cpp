@@ -48,7 +48,7 @@ DSWP::DSWP (
 
 bool DSWP::canBeAppliedToLoop (
   LoopDependenceInfo *LDI,
-  Parallelization &par,
+  Noelle &par,
   Heuristics *h
 ) const {
 
@@ -86,7 +86,7 @@ bool DSWP::canBeAppliedToLoop (
 
 bool DSWP::apply (
   LoopDependenceInfo *LDI,
-  Parallelization &par,
+  Noelle &par,
   Heuristics *h
 ) {
 

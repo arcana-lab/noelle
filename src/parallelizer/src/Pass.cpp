@@ -63,7 +63,7 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Fetch the outputs of the passes we rely on.
    */
-  auto& parallelizationFramework = getAnalysis<Parallelization>();
+  auto& parallelizationFramework = getAnalysis<Noelle>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
   auto& profiles = getAnalysis<HotProfiler>().getHot();
 
@@ -115,18 +115,26 @@ bool Parallelizer::runOnModule (Module &M) {
      */
     auto loopFunction = loopSummary->getFunction();
 
+    /*
+     * Print information about this loop.
+     */
     errs() << "Parallelizer:    Function: \"" << loopFunction->getName() << "\"\n";
     errs() << "Parallelizer:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
-    if (profiles.isAvailable()){
-      auto& profiles = getAnalysis<HotProfiler>().getHot();
-      auto mInsts = profiles.getModuleInstructions();
-
-      auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
-      auto loopInsts = profiles.getLoopSelfInstructions(LI.getLoopFor(loopHeader));
-      auto hotness = ((double)loopInsts) / ((double)mInsts);
-      hotness *= 100;
-      errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
+    if (!profiles.isAvailable()){
+      continue ;
     }
+
+    /*
+     * Print the coverage of this loop.
+     */
+    auto& profiles = getAnalysis<HotProfiler>().getHot();
+    auto mInsts = profiles.getTotalInstructions();
+
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
+    auto loopInsts = profiles.getTotalInstructions(LI.getLoopFor(loopHeader));
+    auto hotness = ((double)loopInsts) / ((double)mInsts);
+    hotness *= 100;
+    errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
   }
 
   /*
@@ -202,9 +210,9 @@ void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<PostDominatorTreeWrapperPass>();
 
   /*
-   * Parallelizations.
+   * Noelle.
    */
-  AU.addRequired<Parallelization>();
+  AU.addRequired<Noelle>();
   AU.addRequired<HeuristicsPass>();
 
   /*

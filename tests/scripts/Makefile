@@ -77,11 +77,8 @@ output.prof: default.profraw
 default.profraw: baseline_pre_prof input.txt
 	./$< `cat input.txt` 
 
-baseline_pre_prof: baseline_pre_prof.bc
-	$(CPP) -fprofile-instr-generate $^ $(LIBS) -o $@
-
-baseline_pre_prof.bc: baseline_pre.bc
-	@../../scripts/inject_hotprofiler.sh $^ $@
+baseline_pre_prof: baseline_pre.bc
+	noelle-prof-coverage $^ $@ $(LIBS)
 
 input.txt:
 	@../../scripts/create_input.sh $@

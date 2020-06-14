@@ -35,7 +35,7 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
-#include "Parallelization.hpp"
+#include "Noelle.hpp"
 #include "HeuristicsPass.hpp"
 #include "DSWP.hpp"
 #include "DOALL.hpp"
@@ -81,16 +81,16 @@ namespace llvm {
        */
       bool parallelizeLoop (
         LoopDependenceInfo *LDI,
-        Parallelization &par,
+        Noelle &par,
         DSWP &dswp,
         DOALL &doall,
         HELIX &helix,
         Heuristics *h
       );
 
-      std::vector<LoopDependenceInfo *> getLoopsToParallelize (Module &M, Parallelization &par) ;
+      std::vector<LoopDependenceInfo *> getLoopsToParallelize (Module &M, Noelle &par) ;
 
-      bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) ;
+      bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Noelle &par) ;
 
       /*
        * Debug utilities

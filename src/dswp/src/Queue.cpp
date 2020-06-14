@@ -13,7 +13,7 @@
 using namespace llvm;
 
 void DSWP::registerQueue (
-  Parallelization &par,
+  Noelle &par,
   LoopDependenceInfo *LDI,
   DSWPTask *fromStage,
   DSWPTask *toStage,
@@ -66,7 +66,7 @@ void DSWP::registerQueue (
   return ;
 }
 
-void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {
+void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
   SCCDAG *sccdag = LDI->sccdagAttrs.getSCCDAG();
   std::set<DGNode<Value> *> conditionalBranchNodes;
   auto loopExitBlocks = LDI->getLoopSummary()->getLoopExitBasicBlocks();
@@ -194,7 +194,7 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks (
   return tasksControlledByCondition;
 }
 
-void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {
+void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
   for (auto techniqueTask : this->tasks) {
     auto toStage = (DSWPTask *)techniqueTask;
     std::set<SCC *> allSCCs(toStage->clonableSCCs.begin(), toStage->clonableSCCs.end());
@@ -258,7 +258,7 @@ bool DSWP::areQueuesAcyclical () const {
 }
 
 void DSWP::generateLoadsOfQueuePointers (
-  Parallelization &par,
+  Noelle &par,
   int taskIndex
 ) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
@@ -297,7 +297,7 @@ void DSWP::generateLoadsOfQueuePointers (
   for (auto queueIndex : task->popValueQueues) loadQueuePtrFromIndex(queueIndex);
 }
 
-void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
+void DSWP::popValueQueues (Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
 
   for (auto queueIndex : task->popValueQueues) {
@@ -305,10 +305,36 @@ void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
     auto queueInstrs = task->queueInstrMap[queueIndex].get();
     auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
 
-    auto bb = queueInfo->producer->getParent();
-    assert(task->isAnOriginalBasicBlock(bb));
+    /*
+     * Determine the clone of the basic block of the original producer
+     */
+    auto originalB = queueInfo->producer->getParent();
+    assert(task->isAnOriginalBasicBlock(originalB));
+    auto clonedB = task->getCloneOfOriginalBasicBlock(originalB);
 
-    IRBuilder<> builder(task->getCloneOfOriginalBasicBlock(bb));
+    /*
+     * Determine the insertion point of the queue pop. We either:
+     * 1) Insert right before the first consumer in the producer's basic block
+     * 2) Insert at the end of the basic block if no such consumer is found
+     * 
+     * NOTE: Such a consumer CANNOT be a PHI. If it were, the producer would not
+     * be a PHI, and therefore would be in a previous basic block
+     */
+    std::set<Instruction *> consumers{};
+    Instruction *earliestConsumer = nullptr;
+    for (auto consumer : queueInfo->consumers) {
+      if (consumer->getParent() != originalB) continue;
+      consumers.insert(consumer);
+    }
+    for (auto &I : *originalB) {
+      if (consumers.find(&I) == consumers.end()) continue;
+      earliestConsumer = &I;
+      break;
+    }
+
+    auto insertionPoint = earliestConsumer
+      ? task->getCloneOfOriginalInstruction(earliestConsumer) : clonedB->getTerminator();
+    IRBuilder<> builder(insertionPoint);
     auto queuePopFunction = par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]];
     queueInstrs->queueCall = builder.CreateCall(queuePopFunction, queueCallArgs);
     queueInstrs->load = builder.CreateLoad(queueInstrs->alloca);
@@ -317,28 +343,10 @@ void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
      * Map from producer to queue load 
      */
     task->addInstruction(queueInfo->producer, cast<Instruction>(queueInstrs->load));
-
-    /*
-     * Position queue call and load relatively identically to where the producer is in the basic block
-     */
-    bool pastProducer = false;
-    bool moved = false;
-    for (auto &I : *bb) {
-      if (&I == queueInfo->producer) pastProducer = true;
-      else if (auto phi = dyn_cast<PHINode>(&I)) continue;
-      else if (pastProducer && task->isAnOriginalInstruction(&I)) {
-        auto iClone = task->getCloneOfOriginalInstruction(&I);
-        cast<Instruction>(queueInstrs->queueCall)->moveBefore(iClone);
-        cast<Instruction>(queueInstrs->load)->moveBefore(iClone);
-        moved = true;
-        break;
-      }
-    }
-    assert(moved);
   }
 }
 
-void DSWP::pushValueQueues (Parallelization &par, int taskIndex) {
+void DSWP::pushValueQueues (Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
 
   for (auto queueIndex : task->pushValueQueues) {

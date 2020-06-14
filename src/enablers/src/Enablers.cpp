@@ -14,7 +14,7 @@ using namespace llvm;
 
 bool EnablersManager::applyEnablers (
     LoopDependenceInfo *LDI,
-    Parallelization &par,
+    Noelle &par,
     LoopDistribution &loopDist,
     LoopUnroll &loopUnroll
   ){
@@ -29,10 +29,10 @@ bool EnablersManager::applyEnablers (
   }
 
   /*
-   * Apply loop unrolling.
+   * Try to devirtualize functions.
    */
   errs() << "EnablersManager:   Try to apply loop unrolling\n";
-  if (this->applyLoopUnroll(LDI, par, loopUnroll)){
+  if (this->applyDevirtualizer(LDI, par, loopUnroll)){
     errs() << "EnablersManager:     Unrolled loop\n";
     return true;
   }
@@ -42,7 +42,7 @@ bool EnablersManager::applyEnablers (
 
 bool EnablersManager::applyLoopDistribution (
     LoopDependenceInfo *LDI,
-    Parallelization &par,
+    Noelle &par,
     LoopDistribution &loopDist
   ){
 
@@ -109,9 +109,9 @@ bool EnablersManager::applyLoopDistribution (
   return false;
 }
 
-bool EnablersManager::applyLoopUnroll (
+bool EnablersManager::applyDevirtualizer (
     LoopDependenceInfo *LDI,
-    Parallelization &par,
+    Noelle &par,
     LoopUnroll &loopUnroll
   ){
 

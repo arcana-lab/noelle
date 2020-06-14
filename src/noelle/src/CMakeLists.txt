@@ -1,14 +1,14 @@
 # Sources
 set(Srcs 
-  ParallelizationTechnique.cpp
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.cpp
+  Pass.cpp
+  Noelle.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "ParallelizationTechnique")
+set(PassName "Noelle")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -23,18 +23,16 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
+  ../../../external/svf/include
   ../../basic_utilities/include 
-  ../../task/include 
+  ../../architecture/include 
   ../../alloc_aa/include 
   ../../pdg/include 
-  ../../threadpool/include 
-  ../../loops/include
-  ../../parallelization_utilities/include 
-  ../../heuristics/include 
   ../../hotprofiler/include 
-  ../../noelle/include
+  ../../loops/include 
+  ../../talkdown/include
+  ../../parallelization_utilities/include
   ../include 
-  ./
   )
 
 # Declare the LLVM pass to compile

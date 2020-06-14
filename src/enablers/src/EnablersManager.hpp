@@ -17,7 +17,7 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
-#include "Parallelization.hpp"
+#include "Noelle.hpp"
 #include "LoopDistribution.hpp"
 #include "LoopUnroll.hpp"
 
@@ -53,25 +53,25 @@ namespace llvm {
        */
       std::vector<LoopDependenceInfo *> getLoopsToParallelize (
           Module &M, 
-          Parallelization &par
+          Noelle &par
         );
 
       bool applyEnablers (
         LoopDependenceInfo *LDI,
-        Parallelization &par,
+        Noelle &par,
         LoopDistribution &loopDist,
         LoopUnroll &loopUnroll
         );
 
       bool applyLoopDistribution (
           LoopDependenceInfo *LDI,
-          Parallelization &par,
+          Noelle &par,
           LoopDistribution &loopDist
         );
 
-      bool applyLoopUnroll (
+      bool applyDevirtualizer (
         LoopDependenceInfo *LDI,
-        Parallelization &par,
+        Noelle &par,
         LoopUnroll &loopUnroll
         );
   };

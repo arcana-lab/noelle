@@ -38,7 +38,7 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Fetch the outputs of the passes we rely on.
    */
-  auto& parallelizationFramework = getAnalysis<Parallelization>();
+  auto& parallelizationFramework = getAnalysis<Noelle>();
 
   /*
    * Create the enablers.

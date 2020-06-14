@@ -16,7 +16,7 @@
 
 #include "SCC.hpp"
 #include "SCCDAGPartition.hpp"
-#include "Parallelization.hpp"
+#include "Noelle.hpp"
 #include "InvocationLatency.hpp"
 
 using namespace std;
