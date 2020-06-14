@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes (Module &M, Parallelization &par) {
+bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes (Module &M, Noelle &par) {
   printReachedI = M.getFunction("printReachedI");
   printPushedP = M.getFunction("printPushedP");
   printPulledP = M.getFunction("printPulledP");

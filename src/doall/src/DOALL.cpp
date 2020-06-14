@@ -47,7 +47,7 @@ DOALL::DOALL (
 
 bool DOALL::canBeAppliedToLoop (
   LoopDependenceInfo *LDI,
-  Parallelization &par,
+  Noelle &par,
   Heuristics *h
 ) const {
   if (this->verbose != Verbosity::Disabled) {
@@ -149,7 +149,7 @@ bool DOALL::canBeAppliedToLoop (
       
 bool DOALL::apply (
   LoopDependenceInfo *LDI,
-  Parallelization &par,
+  Noelle &par,
   Heuristics *h
 ) {
 
@@ -250,7 +250,7 @@ bool DOALL::apply (
 void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   LoopDependenceInfo *LDI,
   Function *loopFunction,
-  Parallelization &par
+  Noelle &par
 ) {
 
   /*

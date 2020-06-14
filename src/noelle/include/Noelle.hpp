@@ -10,15 +10,7 @@
  */
 #pragma once
 
-#include "llvm/IR/Module.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Transforms/Utils/LoopUtils.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpressions.h"
-#include "llvm/IR/Dominators.h"
-#include "llvm/Analysis/AssumptionCache.h"
+#include "SystemHeaders.hpp"
 
 #include "LoopDependenceInfo.hpp"
 #include "Queue.hpp"
@@ -29,7 +21,7 @@ namespace llvm {
 
   enum class Verbosity { Disabled, Minimal, Maximal };
 
-  struct Parallelization : public ModulePass {
+  class Noelle : public ModulePass {
     public:
 
       /*
@@ -42,9 +34,9 @@ namespace llvm {
       /*
        * Methods.
        */
-      Parallelization();
+      Noelle();
 
-      virtual ~Parallelization();
+      virtual ~Noelle();
 
       bool doInitialization (Module &M) override ;
 
@@ -78,6 +70,7 @@ namespace llvm {
         );
 
     private:
+
       uint32_t fetchTheNextValue (
         std::stringstream &stream
         );

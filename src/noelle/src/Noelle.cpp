@@ -28,47 +28,18 @@
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Support/MemoryBuffer.h"
 
+#include "Noelle.hpp"
 #include "PDGAnalysis.hpp"
-#include "Parallelization.hpp"
 #include "HotProfiler.hpp"
 #include "Architecture.hpp"
 
 using namespace llvm;
 
-bool llvm::Parallelization::doInitialization (Module &M) {
-  int1 = IntegerType::get(M.getContext(), 1);
-  int8 = IntegerType::get(M.getContext(), 8);
-  int16 = IntegerType::get(M.getContext(), 16);
-  int32 = IntegerType::get(M.getContext(), 32);
-  int64 = IntegerType::get(M.getContext(), 64);
-
-  return false;
-}
-
-void llvm::Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<AssumptionCacheTracker>();
-  AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<PostDominatorTreeWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<PDGAnalysis>();
-  AU.addRequired<HotProfiler>();
-
+Noelle::Noelle() : ModulePass{ID}{
   return ;
 }
 
-bool llvm::Parallelization::runOnModule (Module &M){
-  errs() << "Parallelization at \"runOnModule\"\n" ;
-
-  return false;
-}
-
-llvm::Parallelization::Parallelization() : ModulePass{ID}{
-  return ;
-}
-
-std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom (Module *module, Function *startingPoint){
+std::vector<Function *> * Noelle::getModuleFunctionsReachableFrom (Module *module, Function *startingPoint){
   auto functions = new std::vector<Function *>();
 
   /*
@@ -126,7 +97,7 @@ std::vector<Function *> * llvm::Parallelization::getModuleFunctionsReachableFrom
   return functions;
 }
 
-std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
+std::vector<LoopDependenceInfo *> * Noelle::getModuleLoops (
   Module *module,
   double minimumHotness
   ){
@@ -164,6 +135,19 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   for (auto function : *functions){
 
     /*
+     * Check if the function is hot.
+     */
+    if (profiles.isAvailable()){
+      auto mInsts = profiles.getTotalInstructions();
+      auto fInsts = profiles.getTotalInstructions(function);
+      auto hotness = ((double)fInsts) / ((double)mInsts);
+      if (hotness < minimumHotness){
+        errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
+        continue ;
+      }
+    }
+
+    /*
      * Fetch the loop analysis.
      */
     auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
@@ -173,19 +157,6 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      */
     if (std::distance(LI.begin(), LI.end()) == 0){
       continue ;
-    }
-
-    /*
-     * Check if the function is hot.
-     */
-    if (profiles.isAvailable()){
-      auto mInsts = profiles.getModuleInstructions();
-      auto fInsts = profiles.getFunctionInstructions(function);
-      auto hotness = ((double)fInsts) / ((double)mInsts);
-      if (hotness < minimumHotness){
-        errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
-        continue ;
-      }
     }
 
     /*
@@ -200,7 +171,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
      */
     auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
-    DominatorSummary DS(DT, PDT);
+    DominatorSummary DS{DT, PDT};
     auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
     /*
@@ -216,9 +187,9 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       /*
        * Check if the loop is hot enough.
        */
-       if (profiles.isAvailable()){
-        auto mInsts = profiles.getModuleInstructions();
-        auto lInsts = profiles.getLoopSelfInstructions(loop);
+      if (profiles.isAvailable()){
+        auto mInsts = profiles.getTotalInstructions();
+        auto lInsts = profiles.getTotalInstructions(loop);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness < minimumHotness){
           errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
@@ -229,16 +200,6 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
       }
 
       /*
-       * Define the function to get the LLVM loop.
-       */
-      auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
-        auto f = h->getParent();
-        auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-        auto loop = LI.getLoopFor(h);
-        return loop;
-      };
-
-      /*
        * Check if we have to filter loops.
        */
       if (!filterLoops){
@@ -246,7 +207,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, DS, getLLVMLoopFunction);
+        auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE);
 
         allLoops->push_back(ldi);
         currentLoopIndex++;
@@ -288,7 +249,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
        *
        * Allocate the loop wrapper.
        */
-      auto ldi = new LoopDependenceInfo(function, funcPDG, loop, LI, SE, DS, getLLVMLoopFunction);
+      auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE);
 
       /*
        * Set the loop constraints specified by INDEX_FILE.
@@ -354,7 +315,7 @@ std::vector<LoopDependenceInfo *> * llvm::Parallelization::getModuleLoops (
   return allLoops;
 }
 
-uint32_t Parallelization::getNumberOfModuleLoops (
+uint32_t Noelle::getNumberOfModuleLoops (
   Module *module,
   double minimumHotness
   ){
@@ -402,8 +363,8 @@ uint32_t Parallelization::getNumberOfModuleLoops (
      * Check if the function is hot.
      */
     if (profiles.isAvailable()){
-      auto mInsts = profiles.getModuleInstructions();
-      auto fInsts = profiles.getFunctionInstructions(function);
+      auto mInsts = profiles.getTotalInstructions();
+      auto fInsts = profiles.getTotalInstructions(function);
       auto hotness = ((double)fInsts) / ((double)mInsts);
       if (hotness <= minimumHotness){
         continue ;
@@ -424,8 +385,8 @@ uint32_t Parallelization::getNumberOfModuleLoops (
        * Check if the loop is hot enough.
        */
        if (profiles.isAvailable()){
-        auto mInsts = profiles.getModuleInstructions();
-        auto lInsts = profiles.getLoopSelfInstructions(loop);
+        auto mInsts = profiles.getTotalInstructions();
+        auto lInsts = profiles.getTotalInstructions(loop);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness <= minimumHotness){
           currentLoopIndex++;
@@ -476,7 +437,7 @@ uint32_t Parallelization::getNumberOfModuleLoops (
   return counter;
 }
 
-void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
+void Noelle::linkParallelizedLoopToOriginalFunction (
   Module *module,
   BasicBlock *originalPreHeader,
   BasicBlock *startOfParLoopInOriginalFunc,
@@ -580,7 +541,7 @@ void llvm::Parallelization::linkParallelizedLoopToOriginalFunction (
   return ;
 }
 
-uint32_t llvm::Parallelization::fetchTheNextValue (std::stringstream &stream){
+uint32_t Noelle::fetchTheNextValue (std::stringstream &stream){
   uint32_t currentValueRead;
 
   /*
@@ -609,7 +570,7 @@ uint32_t llvm::Parallelization::fetchTheNextValue (std::stringstream &stream){
   return currentValueRead;
 }
       
-bool Parallelization::filterOutLoops (
+bool Noelle::filterOutLoops (
   char *fileName,
   std::vector<uint32_t>& loopThreads,
   std::vector<uint32_t>& techniquesToDisable,
@@ -711,19 +672,6 @@ bool Parallelization::filterOutLoops (
   return filterLoops;
 }
 
-llvm::Parallelization::~Parallelization(){
+Noelle::~Noelle(){
   return ;
 }
-
-// Next there is code to register your pass to "opt"
-char llvm::Parallelization::ID = 0;
-static RegisterPass<Parallelization> X("parallelization", "Computing the Program Dependence Graph");
-
-// Next there is code to register your pass to "clang"
-static Parallelization * _PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new Parallelization());}}); // ** for -Ox
-static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new Parallelization());}});// ** for -O0

@@ -27,8 +27,7 @@ namespace llvm {
 
   class InductionVariables {
     public:
-      // HACK: Once caching Loop.getInductionVariable in LoopSummary, use LoopsSummary only, not LoopInfo as well
-      InductionVariables (LoopsSummary &LIS, LoopInfo &LI, ScalarEvolution &SE, SCCDAG &sccdag);
+      InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, SCCDAG &sccdag);
 
       ~InductionVariables ();
 

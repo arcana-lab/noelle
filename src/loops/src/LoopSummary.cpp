@@ -15,21 +15,19 @@ using namespace llvm;
 uint64_t LoopSummary::globalID = 0;
 
 LoopSummary::LoopSummary (
-  BasicBlock *header,
-  std::function<Loop * (BasicBlock *header)> getLLVMLoop
+  Loop *l
   ) 
-  : LoopSummary(header, getLLVMLoop, nullptr)
+  : LoopSummary(l, nullptr)
   {
 
   return ;
 }
 
 LoopSummary::LoopSummary (
-  BasicBlock *header,
-  std::function<Loop * (BasicBlock *header)> getLLVMLoop,
+  Loop *l,
   LoopSummary *parentLoop
   ) 
-  : LoopSummary(header, getLLVMLoop, parentLoop, 0)
+  : LoopSummary(l, parentLoop, 0)
   {
 
   /*
@@ -41,13 +39,11 @@ LoopSummary::LoopSummary (
 }
 
 LoopSummary::LoopSummary (
-  BasicBlock *header,
-  std::function<Loop * (BasicBlock *header)> getLLVMLoop,
+  Loop *l,
   LoopSummary *parentLoop,
   uint64_t loopTripCount
   ) 
-  : header{header}
-    , parent{parentLoop}
+  : parent{parentLoop}
     , compileTimeKnownTripCount{true}
     , tripCount{loopTripCount}
   {
@@ -58,23 +54,14 @@ LoopSummary::LoopSummary (
   this->ID = LoopSummary::globalID++;
 
   /*
-   * Set the function to retrieve the LLVM loop.
-   */
-  this->getLLVMLoopExternalFunction = getLLVMLoop;
-
-  /*
-   * Fetch the LLVM loop.
-   */
-  auto l = getLLVMLoop(header);
-
-  /*
    * Set the nesting level
    */
   this->depth = l->getLoopDepth();
 
   /*
-   * Set the pre-header.
+   * Set the headers.
    */
+  this->header = l->getHeader();
   this->preHeader = l->getLoopPreheader();
 
   /*
@@ -190,8 +177,4 @@ uint64_t LoopSummary::getCompileTimeTripCount (void) const {
 Function * LoopSummary::getFunction (void) const {
   auto f = this->header->getParent();
   return f;
-}
-
-Loop * LoopSummary::getLLVMLoop (void) const {
-  return this->getLLVMLoopExternalFunction(this->header);
 }

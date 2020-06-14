@@ -14,7 +14,7 @@ using namespace llvm;
   
 bool Parallelizer::parallelizeLoop (
   LoopDependenceInfo *LDI, 
-  Parallelization &par, 
+  Noelle &par, 
   DSWP &dswp, 
   DOALL &doall, 
   HELIX &helix, 
@@ -83,17 +83,11 @@ bool Parallelizer::parallelizeLoop (
     auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
     auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
+    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
     auto taskFunctionDG = helix.constructTaskInternalDependenceGraphFromOriginalLoopDG(LDI, PDT);
-    DominatorSummary DS(DT, PDT);
-    auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
-    auto l = LI.getLoopsInPreorder()[0]; //TODO: SIMONE: how do we know that the loop we want to parallelize is [0] ?
-    auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
-      auto f = h->getParent();
-      auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-      auto loop = LI.getLoopFor(h);
-      return loop;
-    };
-    auto newLDI = new LoopDependenceInfo(function, taskFunctionDG, l, LI, SE, DS, getLLVMLoopFunction);
+    DominatorSummary DS{DT, PDT};
+    auto l = LI.getLoopsInPreorder()[0];
+    auto newLDI = new LoopDependenceInfo(taskFunctionDG, l, DS, SE);
     newLDI->copyParallelizationOptionsFrom(LDI);
 
     codeModified = helix.apply(newLDI, par, h);

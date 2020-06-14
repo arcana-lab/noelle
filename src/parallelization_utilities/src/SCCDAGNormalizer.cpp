@@ -68,22 +68,38 @@ void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies () {
     return false;
   };
 
-  MergeGroups mergeGroups;
+  MergeGroups mergeGroups{};
   for (auto sccAndLoopCarriedEdges : sccdagAttrs.interIterDeps) {
-    auto outgoingSCC = sccAndLoopCarriedEdges.first;
-    for (auto edge : sccAndLoopCarriedEdges.second) {
+    auto producerSCC = sccAndLoopCarriedEdges.first;
+    auto loopCarriedDeps = sccAndLoopCarriedEdges.second;
+    for (auto edge : loopCarriedDeps) {
       if (!edge->isDataDependence()) continue;
 
-      if (outgoingSCC->isExternal(edge->getIncomingT())) {
-        auto incomingSCC = sccdag.sccOfValue(edge->getIncomingT());
-
-        if (!isLastValuePHI(incomingSCC)) {
-          errs() << "SCCDAGNormalizer:  Unknown SCC with external loop carried dependence edge!\n";
-          edge->print(errs()) << "\n";
-        }
-
-        mergeGroups.merge(sccdag.fetchNode(outgoingSCC), sccdag.fetchNode(incomingSCC));
+      auto consumer = edge->getIncomingT();
+      if (!producerSCC->isExternal(consumer)) {
+        continue ;
       }
+
+      /*
+       * Fetch the SCC that is the destination of the current loop-carried data dependence of @producerSCC.
+       *
+       * Notice that @producerSCC cannot be @consumerSCC as the latter has one node that is not included in the former.
+       */
+      auto consumerSCC = sccdag.sccOfValue(consumer);
+      assert(producerSCC != consumerSCC);
+
+      /*
+       * Check the consumer SCC.
+       */
+      if (!isLastValuePHI(consumerSCC)) {
+        errs() << "SCCDAGNormalizer:  Unknown SCC with external loop carried dependence edge!\n";
+        edge->print(errs()) << "\n";
+      }
+
+      /*
+       * Merge @produerSCC with @consumerSCC
+       */
+      mergeGroups.merge(sccdag.fetchNode(producerSCC), sccdag.fetchNode(consumerSCC));
     }
   }
 
@@ -198,14 +214,34 @@ void SCCDAGNormalizer::MergeGroups::merge(DGNode<SCC> *sccNode1, DGNode<SCC> *sc
   bool isGrouped1 = sccToGroupMap.find(sccNode1) != sccToGroupMap.end();
   bool isGrouped2 = sccToGroupMap.find(sccNode2) != sccToGroupMap.end();
   if (isGrouped1 && isGrouped2) {
+
+    /*
+     * Fetch the groups.
+     */
+    auto group1 = sccToGroupMap[sccNode1];
     auto group2 = sccToGroupMap[sccNode2];
-    for (auto node : *group2) {
-      sccToGroupMap[sccNode1]->insert(node);
-      sccToGroupMap[node] = sccToGroupMap[sccNode1];
+
+    /*
+     * If the two SCCs already belong to the same group, then there is nothing to do.
+     */
+    if (group1 == group2) {
+      return ;
     }
 
+    /*
+     * Add the second group to the first one.
+     */
+    for (auto node : *group2) {
+      group1->insert(node);
+      sccToGroupMap[node] = group1;
+    }
+
+    /*
+     * Delete the second group.
+     */
     groups.erase(group2);
     delete group2;
+
   } else if (isGrouped1) {
     sccToGroupMap[sccNode1]->insert(sccNode2);
     sccToGroupMap[sccNode2] = sccToGroupMap[sccNode1];

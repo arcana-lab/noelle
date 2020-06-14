@@ -2,6 +2,11 @@
 set(Srcs
   HotProfiler.cpp
   Hot.cpp
+  Hot_Instruction.cpp
+  Hot_BasicBlock.cpp
+  Hot_Loop.cpp
+  Hot_Function.cpp
+  Hot_Module.cpp
   Pass.cpp
 )
 

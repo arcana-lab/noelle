@@ -76,17 +76,7 @@ void HotProfiler::analyzeProfiles (Module &M){
   /*
    * Compute the global counters.
    */
-  this->hot.computeProgramInvocations();
-
-  /*
-   * Compute the total instructions.
-   */
-  this->computeTotalInstructions();
-
-  return ;
-}
-
-void HotProfiler::computeTotalInstructions (void){
+  this->hot.computeProgramInvocations(M);
 
   return ;
 }

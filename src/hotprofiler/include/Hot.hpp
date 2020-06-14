@@ -22,66 +22,102 @@ namespace llvm {
       bool isAvailable (void) const ;
 
       /*
-       * Basic blocks.
+       * =========================== Instructions ================================
        */
-      void setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations);
+      uint64_t getStaticInstructions (Instruction *i) const ;
+      
+      bool hasBeenExecuted (Instruction *i) const ;
 
-      uint64_t getBasicBlockInvocations (BasicBlock *bb) const ;
+      uint64_t getInvocations (Instruction *i) const ;
 
-      uint64_t getBasicBlockInstructions (BasicBlock *bb) const ;
+      uint64_t getSelfInstructions (Instruction *i) const ;
+
+      uint64_t getTotalInstructions (Instruction *i) const ;
 
 
       /*
-       * Loops
+       * =========================== Basic blocks ================================
+       */
+      uint64_t getStaticInstructions (BasicBlock *bb) const ;
+
+      bool hasBeenExecuted (BasicBlock *bb) const ;
+
+      uint64_t getInvocations (BasicBlock *bb) const ;
+
+      uint64_t getSelfInstructions (BasicBlock *bb) const ;
+
+      uint64_t getTotalInstructions (BasicBlock *bb) const ;
+
+      void setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations);
+
+
+      /*
+       * =========================== Loops =======================================
        */
 
       /*
        * Return the total number of instructions executed excluding the instructions executed by the callees.
        */
-      uint64_t getLoopSelfInstructions (Loop *loop) const ;
+      uint64_t getSelfInstructions (Loop *loop) const ;
 
       /*
        * Return the total number of instructions executed including the instructions executed by the callees.
        */
-      uint64_t getLoopTotalInstructions (Loop *loop) const ;
-
-      /*
-       * Set the total number of instructions executed by the loop.
-       */
-      void setLoopTotalInstructions (Loop *loop, uint64_t insts);
+      uint64_t getTotalInstructions (Loop *loop) const ;
 
 
       /*
-       * Functions
+       * =========================== Functions ==================================
        */
-      uint64_t getFunctionInstructions (Function *f) const ;
 
-      uint64_t getFunctionInvocations (Function *f) const ;
+      bool hasBeenExecuted (Function *f) const ;
+
+      uint64_t getInvocations (Function *f) const ;
+
+      uint64_t getSelfInstructions (Function *f) const ;
+
+      uint64_t getTotalInstructions (Function *f) const ;
 
 
       /*
-       * Module
+       * =========================== Module ======================================
        */
-      uint64_t getModuleInstructions (void) const ;
+
+      bool hasBeenExecuted (void) const ;
+
+      bool getInvocations (void) const ;
+
+      uint64_t getSelfInstructions (void) const ;
+
+      uint64_t getTotalInstructions (void) const ;
 
  
       /*
-       * Branches
+       * =========================== Branches ====================================
        */
       double getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) const ;
 
       void setBranchFrequency (BasicBlock *src, BasicBlock *dst, double branchFrequency);
 
 
-      void computeProgramInvocations (void);
+      void computeProgramInvocations (Module &M);
 
     private:
-      std::map<BasicBlock *, uint64_t> bbInvocations;
-      std::map<Function *, uint64_t> functionInstructions;
-      std::map<Function *, uint64_t> functionInvocations;
-      std::map<BasicBlock *, std::map<BasicBlock *, double>> branchProbability;
-      std::unordered_map<Loop *, uint64_t> totalLoopInstructions;
+      std::unordered_map<BasicBlock *, std::unordered_map<BasicBlock *, double>> branchProbability;
+      std::unordered_map<BasicBlock *, uint64_t> bbInvocations;
+      std::unordered_map<Function *, uint64_t> functionInvocations;
+      std::unordered_map<Function *, uint64_t> functionSelfInstructions;
+      std::unordered_map<Function *, uint64_t> functionTotalInstructions;
+      std::unordered_map<Instruction *, uint64_t> instructionTotalInstructions;
       uint64_t moduleNumberOfInstructionsExecuted;
+
+      void computeTotalInstructions (Module &M); 
+
+      void computeTotalInstructions (Function &F, std::unordered_map<Function *, bool> &evaluationStack);
+
+      void setFunctionTotalInstructions (Function *f, uint64_t totalInstructions) ;
+
+      bool isFunctionTotalInstructionsAvailable (Function &F) const ;
   };
 
 }

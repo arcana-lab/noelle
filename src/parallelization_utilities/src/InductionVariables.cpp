@@ -12,20 +12,20 @@
 
 using namespace llvm;
 
-InductionVariables::InductionVariables (LoopsSummary &LIS, LoopInfo &LI, ScalarEvolution &SE, SCCDAG &sccdag)
+InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, SCCDAG &sccdag)
   : loopToIVsMap{}, loopToGoverningIVMap{} {
   for (auto &loop : LIS.loops) {
-    auto l = LI.getLoopFor(loop->getHeader());
     loopToIVsMap[loop.get()] = std::set<InductionVariable *>();
 
-    // TODO: Determine why LLVM's API always returns nullptr 
-    // auto loopGoverningPHI = l->getInductionVariable(SE);
-    // if (!loopGoverningPHI) {
-    //   errs() << "Has no loop governing PHI?\n";
-    //   l->getHeader()->print(errs());
-    // }
+    /*
+     * Fetch the loop header.
+     */
+    auto header = loop->getHeader();
 
-    for (auto &phi : loop->getHeader()->phis()) {
+    /*
+     * Iterate over all phis within the loop header.
+     */
+    for (auto &phi : header->phis()) {
       auto scev = SE.getSCEV(&phi);
       if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) continue;
 

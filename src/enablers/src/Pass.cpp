@@ -41,9 +41,9 @@ void EnablersManager::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<AssumptionCacheTracker>();
 
   /*
-   * Parallelization framework.
+   * Noelle framework.
    */
-  AU.addRequired<Parallelization>();
+  AU.addRequired<Noelle>();
 
   return ;
 }

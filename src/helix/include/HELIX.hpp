@@ -17,7 +17,7 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
-#include "Parallelization.hpp"
+#include "Noelle.hpp"
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"
@@ -40,13 +40,13 @@ namespace llvm {
 
       bool apply (
         LoopDependenceInfo *LDI, 
-        Parallelization &par, 
+        Noelle &par, 
         Heuristics *h
         ) override ;
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI, 
-        Parallelization &par, 
+        Noelle &par, 
         Heuristics *h
         ) const override ;
 
@@ -62,19 +62,19 @@ namespace llvm {
     protected:
       void createParallelizableTask (
         LoopDependenceInfo *LDI,
-        Parallelization &par, 
+        Noelle &par, 
         Heuristics *h
       );
 
       void synchronizeTask (
         LoopDependenceInfo *LDI,
-        Parallelization &par, 
+        Noelle &par, 
         Heuristics *h
       );
 
       void addChunkFunctionExecutionAsideOriginalLoop (
         LoopDependenceInfo *LDI,
-        Parallelization &par,
+        Noelle &par,
         uint64_t numberOfSequentialSegments
       );
 

@@ -16,16 +16,13 @@
 using namespace llvm;
 
 LoopDependenceInfo::LoopDependenceInfo(
-  Function *f,
   PDG *fG,
   Loop *l,
-  LoopInfo &li,
-  ScalarEvolution &SE,
   DominatorSummary &DS,
-  std::function<Loop * (BasicBlock *header)> getLLVMLoop
+  ScalarEvolution &SE
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()},
-    liSummary{getLLVMLoop}
+    liSummary{}
   {
 
   /*
@@ -36,7 +33,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Fetch the PDG of the loop and its SCCDAG.
    */
-  this->fetchLoopAndBBInfo(li, l, SE);
+  this->fetchLoopAndBBInfo(l, SE);
   auto loopExitBlocks = getLoopSummary()->getLoopExitBasicBlocks();
   auto DGs = this->createDGsForLoop(l, fG);
   this->loopDG = DGs.first;
@@ -51,10 +48,10 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
-  inductionVariables = new InductionVariables(liSummary, li, SE, *loopSCCDAG);
+  inductionVariables = new InductionVariables(liSummary, SE, *loopSCCDAG);
   SCCDAGNormalizer normalizer(*loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
   normalizer.normalizeInPlace();
-  inductionVariables = new InductionVariables(liSummary, li, SE, *loopSCCDAG);
+  inductionVariables = new InductionVariables(liSummary, SE, *loopSCCDAG);
   this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, DS, *inductionVariables);
 
   /*
@@ -135,20 +132,54 @@ uint32_t LoopDependenceInfo::numberOfExits (void) const{
   return this->getLoopSummary()->getLoopExitBasicBlocks().size();
 }
 
-void LoopDependenceInfo::fetchLoopAndBBInfo (LoopInfo &li, Loop *l, ScalarEvolution &SE) {
+void LoopDependenceInfo::fetchLoopAndBBInfo (
+  Loop *l,
+  ScalarEvolution &SE
+  ){
+
+  /*
+   * Compute the trip counts of all loops in the loop tree that starts with @l.
+   */
+  std::unordered_map<Loop *, uint64_t> loopTripCounts;
+  this->computeTripCounts(l, SE, loopTripCounts);
 
   /*
    * Create a LoopInfo summary
    */
-  auto findTripCount = [&SE](Loop *loopToAnalyze, uint64_t &foundTripCount) -> bool {
-    auto tripCount = SE.getSmallConstantTripCount(loopToAnalyze);
-    if (tripCount == 0){
-      return false;
-    }
-    foundTripCount = tripCount;
-    return true;
-  };
-  this->liSummary.populate(li, l, findTripCount);
+  this->liSummary.populate(l, loopTripCounts);
+
+  return ;
+}
+
+void LoopDependenceInfo::computeTripCounts (
+  Loop *l,
+  ScalarEvolution &SE,
+  std::unordered_map<Loop *, uint64_t> & loopTripCounts
+  ){
+
+  /*
+   * Fetch the trip count of the loop given as input.
+   */
+  auto tripCount = SE.getSmallConstantTripCount(l);
+
+  /*
+   * Check if the trip count is known at compile time.
+   */
+  if (tripCount > 0){
+
+    /*
+     * The trip count is known at compile time.
+     * Store it.
+     */
+    loopTripCounts[l] = tripCount;
+  }
+
+  /*
+   * Compute the trip counts of all sub-loops.
+   */
+  for (auto subLoop : l->getSubLoops()) {
+    this->computeTripCounts(subLoop, SE, loopTripCounts);
+  }
 
   return ;
 }

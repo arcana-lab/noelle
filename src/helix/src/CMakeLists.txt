@@ -46,6 +46,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../doall/include 
   ../../hotprofiler/include 
   ../../talkdown/include
+  ../../noelle/include
   ../include 
   ./ 
   )

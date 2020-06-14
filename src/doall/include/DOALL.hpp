@@ -16,7 +16,7 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
-#include "Parallelization.hpp"
+#include "Noelle.hpp"
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechnique.hpp"
 
@@ -36,13 +36,13 @@ namespace llvm {
 
       bool apply (
         LoopDependenceInfo *LDI,
-        Parallelization &par,
+        Noelle &par,
         Heuristics *h
       ) override ;
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
-        Parallelization &par,
+        Noelle &par,
         Heuristics *h
       ) const override ;
 
@@ -58,7 +58,7 @@ namespace llvm {
       void addChunkFunctionExecutionAsideOriginalLoop (
         LoopDependenceInfo *LDI,
         Function *loopFunction,
-        Parallelization &par
+        Noelle &par
       );
 
       /*
