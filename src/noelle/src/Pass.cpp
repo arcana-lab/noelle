@@ -8,13 +8,13 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "Parallelization.hpp"
+#include "Noelle.hpp"
 #include "PDGAnalysis.hpp"
 #include "HotProfiler.hpp"
 
 using namespace llvm;
 
-bool Parallelization::doInitialization (Module &M) {
+bool Noelle::doInitialization (Module &M) {
   int1 = IntegerType::get(M.getContext(), 1);
   int8 = IntegerType::get(M.getContext(), 8);
   int16 = IntegerType::get(M.getContext(), 16);
@@ -24,7 +24,7 @@ bool Parallelization::doInitialization (Module &M) {
   return false;
 }
 
-void Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
+void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<AssumptionCacheTracker>();
@@ -37,21 +37,21 @@ void Parallelization::getAnalysisUsage(AnalysisUsage &AU) const {
   return ;
 }
 
-bool Parallelization::runOnModule (Module &M){
-  errs() << "Parallelization at \"runOnModule\"\n" ;
+bool Noelle::runOnModule (Module &M){
+  errs() << "Noelle at \"runOnModule\"\n" ;
 
   return false;
 }
 
 // Next there is code to register your pass to "opt"
-char Parallelization::ID = 0;
-static RegisterPass<Parallelization> X("parallelization", "Computing the Program Dependence Graph");
+char Noelle::ID = 0;
+static RegisterPass<Noelle> X("parallelization", "Computing the Program Dependence Graph");
 
 // Next there is code to register your pass to "clang"
-static Parallelization * _PassMaker = NULL;
+static Noelle * _PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new Parallelization());}}); // ** for -Ox
+        if(!_PassMaker){ PM.add(_PassMaker = new Noelle());}}); // ** for -Ox
 static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new Parallelization());}});// ** for -O0
+        if(!_PassMaker){ PM.add(_PassMaker = new Noelle());}});// ** for -O0

@@ -18,7 +18,7 @@ using namespace llvm;
 bool LoopMetadataPass::tagLoops (
   LLVMContext &context,
   Module &M,
-  Parallelization &par
+  Noelle &par
   ){
 
   /*

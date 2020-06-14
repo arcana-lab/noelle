@@ -14,7 +14,7 @@ using namespace llvm;
 
 bool EnablersManager::applyEnablers (
     LoopDependenceInfo *LDI,
-    Parallelization &par,
+    Noelle &par,
     LoopDistribution &loopDist,
     LoopUnroll &loopUnroll
   ){
@@ -42,7 +42,7 @@ bool EnablersManager::applyEnablers (
 
 bool EnablersManager::applyLoopDistribution (
     LoopDependenceInfo *LDI,
-    Parallelization &par,
+    Noelle &par,
     LoopDistribution &loopDist
   ){
 
@@ -111,7 +111,7 @@ bool EnablersManager::applyLoopDistribution (
 
 bool EnablersManager::applyDevirtualizer (
     LoopDependenceInfo *LDI,
-    Parallelization &par,
+    Noelle &par,
     LoopUnroll &loopUnroll
   ){
 

@@ -14,7 +14,7 @@ using namespace llvm;
   
 bool Parallelizer::parallelizeLoop (
   LoopDependenceInfo *LDI, 
-  Parallelization &par, 
+  Noelle &par, 
   DSWP &dswp, 
   DOALL &doall, 
   HELIX &helix, 

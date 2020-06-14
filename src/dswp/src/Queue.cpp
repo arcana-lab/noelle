@@ -13,7 +13,7 @@
 using namespace llvm;
 
 void DSWP::registerQueue (
-  Parallelization &par,
+  Noelle &par,
   LoopDependenceInfo *LDI,
   DSWPTask *fromStage,
   DSWPTask *toStage,
@@ -66,7 +66,7 @@ void DSWP::registerQueue (
   return ;
 }
 
-void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {
+void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
   SCCDAG *sccdag = LDI->sccdagAttrs.getSCCDAG();
   std::set<DGNode<Value> *> conditionalBranchNodes;
   auto loopExitBlocks = LDI->getLoopSummary()->getLoopExitBasicBlocks();
@@ -194,7 +194,7 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks (
   return tasksControlledByCondition;
 }
 
-void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Parallelization &par) {
+void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
   for (auto techniqueTask : this->tasks) {
     auto toStage = (DSWPTask *)techniqueTask;
     std::set<SCC *> allSCCs(toStage->clonableSCCs.begin(), toStage->clonableSCCs.end());
@@ -258,7 +258,7 @@ bool DSWP::areQueuesAcyclical () const {
 }
 
 void DSWP::generateLoadsOfQueuePointers (
-  Parallelization &par,
+  Noelle &par,
   int taskIndex
 ) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
@@ -297,7 +297,7 @@ void DSWP::generateLoadsOfQueuePointers (
   for (auto queueIndex : task->popValueQueues) loadQueuePtrFromIndex(queueIndex);
 }
 
-void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
+void DSWP::popValueQueues (Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
 
   for (auto queueIndex : task->popValueQueues) {
@@ -346,7 +346,7 @@ void DSWP::popValueQueues (Parallelization &par, int taskIndex) {
   }
 }
 
-void DSWP::pushValueQueues (Parallelization &par, int taskIndex) {
+void DSWP::pushValueQueues (Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
 
   for (auto queueIndex : task->pushValueQueues) {

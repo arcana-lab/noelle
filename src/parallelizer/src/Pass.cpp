@@ -63,7 +63,7 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Fetch the outputs of the passes we rely on.
    */
-  auto& parallelizationFramework = getAnalysis<Parallelization>();
+  auto& parallelizationFramework = getAnalysis<Noelle>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
   auto& profiles = getAnalysis<HotProfiler>().getHot();
 
@@ -210,9 +210,9 @@ void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<PostDominatorTreeWrapperPass>();
 
   /*
-   * Parallelizations.
+   * Noelle.
    */
-  AU.addRequired<Parallelization>();
+  AU.addRequired<Noelle>();
   AU.addRequired<HeuristicsPass>();
 
   /*

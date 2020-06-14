@@ -1,6 +1,5 @@
 # Sources
 set(Srcs 
-  Pass.cpp
   AccumulatorOpInfo.cpp
   InductionVariables.cpp
   SCCAttrs.cpp
@@ -8,7 +7,6 @@ set(Srcs
   SCCDAGNormalizer.cpp
   LoopDependenceInfo.cpp
   SCCDAGPartition.cpp
-  Parallelization.cpp
 )
 
 # Compilation flags

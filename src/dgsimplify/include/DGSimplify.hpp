@@ -31,7 +31,7 @@
 #include "SCCDAG.hpp"
 
 #include "LoopDependenceInfo.hpp"
-#include "Parallelization.hpp"
+#include "Noelle.hpp"
 
 #include <set>
 #include <queue>

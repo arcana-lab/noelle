@@ -31,6 +31,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loops/include
   ../../parallelization_utilities/include 
   ../../talkdown/include
+  ../../noelle/include
   ../include 
   )
 
