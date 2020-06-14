@@ -16,13 +16,14 @@ function loadAndRunNoellePasses {
   local OUTPUT=$3
 
   local BASICS="-load $LIB_DIR/Architecture.so -load $LIB_DIR/BasicUtilities.so -load $LIB_DIR/DataFlow.so \
-    -load $LIB_DIR/Loops.so"
+    -load $LIB_DIR/Loops.so -load $LIB_DIR/HotProfiler.so"
   local ANALYSES="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa"
   local WPAPASS="-load $LIB_DIR/libSvf.so -load $LIB_DIR/libCudd.so \
     -veto -nander -hander -sander -sfrander -wander -ander -fspta -lander -hlander -stat=false"
   local PDGPASS="-load $LIB_DIR/AllocAA.so -load $LIB_DIR/TalkDown.so -load $LIB_DIR/PDGAnalysis.so"
   local ENABLERS="-load $LIB_DIR/LoopDistribution.so"
-  local PARALLELIZATION_TECHNIQUES="-load $LIB_DIR/DSWP.so -load $LIB_DIR/DOALL.so -load $LIB_DIR/HELIX.so"
+  local PARALLELIZATION_TECHNIQUES="-load $LIB_DIR/Noelle.so -load $LIB_DIR/Task.so \
+    -load $LIB_DIR/DSWP.so -load $LIB_DIR/DOALL.so -load $LIB_DIR/HELIX.so"
 
   local OPTPASSES="$WPAPASS $PDGPASS $BASICS \
     -load $LIB_DIR/HotProfiler.so \
@@ -31,7 +32,6 @@ function loadAndRunNoellePasses {
     $ENABLERS $PARALLELIZATION_TECHNIQUES -load $LIB_DIR/Parallelizer.so"
 
   local RUNNERS="-parallelization -block-freq -pgo-test-profile-file=$TEST_PROFILE -pgo-instr-use -HotProfiler -heuristics $PASSES"
-  #local RUNNERS="-parallelization -block-freq -heuristics $PASSES"
   local CMD_TO_EXECUTE="opt $OPTPASSES $ANALYSES $RUNNERS $INPUT -o $OUTPUT"
   eval $CMD_TO_EXECUTE
 }
@@ -54,10 +54,10 @@ function runTest {
   ${CC} -std=c++14 -emit-llvm -O0 -Xclang -disable-O0-optnone -c test.cpp -o test_pre.bc
 
   noelle-prof-coverage test_pre.bc test_pre_prof $PROFILER_LIBS
-  ./test_pre_prof "$PROGRAM_INPUT_FOR_PROFILE"
+  ./test_pre_prof "$PROGRAM_INPUT_FOR_PROFILE" &> /dev/null
   llvm-profdata merge default.profraw -output=$TEST_PROFILE
 
-  noelle-meta-prof-embed $TEST_PROFILE test_pre.bc -o test_prof.bc
+  noelle-meta-prof-embed $TEST_PROFILE test_pre.bc -o test_prof.bc &> /dev/null
   ${CC} -O0 -fprofile-instr-generate test_prof.bc -o test_prof
 
   opt ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} test_pre.bc -o test.bc &> /dev/null

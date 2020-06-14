@@ -53,6 +53,39 @@ void IVAttrTestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
 }
 
+void computeTripCounts (
+  Loop *l,
+  ScalarEvolution &SE,
+  std::unordered_map<Loop *, uint64_t> & loopTripCounts
+  ){
+
+  /*
+   * Fetch the trip count of the loop given as input.
+   */
+  auto tripCount = SE.getSmallConstantTripCount(l);
+
+  /*
+   * Check if the trip count is known at compile time.
+   */
+  if (tripCount > 0){
+
+    /*
+     * The trip count is known at compile time.
+     * Store it.
+     */
+    loopTripCounts[l] = tripCount;
+  }
+
+  /*
+   * Compute the trip counts of all sub-loops.
+   */
+  for (auto subLoop : l->getSubLoops()) {
+    computeTripCounts(subLoop, SE, loopTripCounts);
+  }
+
+  return ;
+}
+
 bool IVAttrTestSuite::runOnModule (Module &M) {
   errs() << "IVAttrTestSuite: Start\n";
   auto mainFunction = M.getFunction("main");
@@ -63,25 +96,17 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
   this->sccdag = new SCCDAG(fdg);
 
-  auto getLLVMLoopFunction = [this](BasicBlock *h) -> Loop *{
-    return getAnalysis<LoopInfoWrapperPass>(*h->getParent()).getLoopInfo().getLoopFor(h);
-  };
-  auto findTripCount = [this](Loop *loopToAnalyze, uint64_t &foundTripCount) -> bool {
-    auto tripCount = SE->getSmallConstantTripCount(loopToAnalyze);
-    bool hasTripCount = tripCount != 0;
-    foundTripCount = hasTripCount ? tripCount : foundTripCount;
-    return hasTripCount;
-  };
-
-  this->LIS = new LoopsSummary(getLLVMLoopFunction);
+  this->LIS = new LoopsSummary();
   Loop *topLoop = LI->getLoopsInPreorder()[0];
-  LIS->populate(*LI, topLoop, findTripCount);
+  std::unordered_map<Loop *, uint64_t> tripCounts{};
+  computeTripCounts(topLoop, *SE, tripCounts);
+  LIS->populate(topLoop, tripCounts);
 
   errs() << "IVAttrTestSuite: Running IV analysis\n";
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
   auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
-  this->IVs = new InductionVariables(*LIS, *LI, *SE, *sccdag, *environment);
+  this->IVs = new InductionVariables(*LIS, *SE, *sccdag, *environment);
   errs() << "IVAttrTestSuite: Finished IV analysis\n";
 
   suite->runTests((ModulePass &)*this);
