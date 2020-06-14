@@ -68,7 +68,7 @@ void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies () {
     return false;
   };
 
-  MergeGroups mergeGroups;
+  MergeGroups mergeGroups{};
   for (auto sccAndLoopCarriedEdges : sccdagAttrs.interIterDeps) {
     auto producerSCC = sccAndLoopCarriedEdges.first;
     auto loopCarriedDeps = sccAndLoopCarriedEdges.second;
@@ -214,16 +214,31 @@ void SCCDAGNormalizer::MergeGroups::merge(DGNode<SCC> *sccNode1, DGNode<SCC> *sc
   bool isGrouped1 = sccToGroupMap.find(sccNode1) != sccToGroupMap.end();
   bool isGrouped2 = sccToGroupMap.find(sccNode2) != sccToGroupMap.end();
   if (isGrouped1 && isGrouped2) {
-    if (sccToGroupMap.find(sccNode1) == sccToGroupMap.find(sccNode2)){
+
+    /*
+     * Fetch the groups.
+     */
+    auto group1 = sccToGroupMap[sccNode1];
+    auto group2 = sccToGroupMap[sccNode2];
+
+    /*
+     * If the two SCCs already belong to the same group, then there is nothing to do.
+     */
+    if (group1 == group2) {
       return ;
     }
 
-    auto group2 = sccToGroupMap[sccNode2];
+    /*
+     * Add the second group to the first one.
+     */
     for (auto node : *group2) {
-      sccToGroupMap[sccNode1]->insert(node);
-      sccToGroupMap[node] = sccToGroupMap[sccNode1];
+      group1->insert(node);
+      sccToGroupMap[node] = group1;
     }
 
+    /*
+     * Delete the second group.
+     */
     groups.erase(group2);
     delete group2;
 

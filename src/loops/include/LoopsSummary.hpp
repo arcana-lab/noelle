@@ -29,7 +29,11 @@ namespace llvm {
 
       LoopSummary * getLoopNestingTreeRoot (void) const ;
 
-      void populate (LoopInfo &li, Loop *loop, std::function<bool (Loop *l, uint64_t &tripCount)> setTripCountFunction);
+      void populate (
+        LoopInfo &li, 
+        Loop *loop, 
+        const std::unordered_map<Loop *, uint64_t> & loopTripCounts
+        );
 
       void print (raw_ostream &stream) const ;
 
@@ -48,7 +52,7 @@ namespace llvm {
       LoopSummary *createSummary (
         Loop *l, 
         LoopSummary *parentLoop, 
-        std::function<bool (Loop *l, uint64_t &tripCount)> setTripCountFunction
+        const std::unordered_map<Loop *, uint64_t> & loopTripCounts
         );
   };
 

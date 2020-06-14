@@ -143,18 +143,49 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (
   ){
 
   /*
+   * Compute the trip counts of all loops in the loop tree that starts with @l.
+   */
+  auto& SE = getScalarEvolution(l->getHeader()->getParent());
+  std::unordered_map<Loop *, uint64_t> loopTripCounts;
+  this->computeTripCounts(l, SE, loopTripCounts);
+
+  /*
    * Create a LoopInfo summary
    */
-  auto findTripCount = [getScalarEvolution](Loop *loopToAnalyze, uint64_t &foundTripCount) -> bool {
-    auto& SE = getScalarEvolution(loopToAnalyze->getHeader()->getParent());
-    auto tripCount = SE.getSmallConstantTripCount(loopToAnalyze);
-    if (tripCount == 0){
-      return false;
-    }
-    foundTripCount = tripCount;
-    return true;
-  };
-  this->liSummary.populate(li, l, findTripCount);
+  this->liSummary.populate(li, l, loopTripCounts);
+
+  return ;
+}
+
+void LoopDependenceInfo::computeTripCounts (
+  Loop *l,
+  ScalarEvolution &SE,
+  std::unordered_map<Loop *, uint64_t> & loopTripCounts
+  ){
+
+  /*
+   * Fetch the trip count of the loop given as input.
+   */
+  auto tripCount = SE.getSmallConstantTripCount(l);
+
+  /*
+   * Check if the trip count is known at compile time.
+   */
+  if (tripCount > 0){
+
+    /*
+     * The trip count is known at compile time.
+     * Store it.
+     */
+    loopTripCounts[l] = tripCount;
+  }
+
+  /*
+   * Compute the trip counts of all sub-loops.
+   */
+  for (auto subLoop : l->getSubLoops()) {
+    this->computeTripCounts(subLoop, SE, loopTripCounts);
+  }
 
   return ;
 }
