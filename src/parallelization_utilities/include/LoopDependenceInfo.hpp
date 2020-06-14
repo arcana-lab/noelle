@@ -165,6 +165,11 @@ namespace llvm {
       std::pair<PDG *, SCCDAG *> createDGsForLoop (Loop *l, PDG *functionDG) ;
       void addMetadata (const std::string &metadataName);
 
+      void computeTripCounts (
+        Loop *l,
+        ScalarEvolution &SE,
+        std::unordered_map<Loop *, uint64_t> & loopTripCounts);
+
   };
 
 }
