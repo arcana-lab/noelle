@@ -439,6 +439,9 @@ public:
     
     /// getModRefInfo APIs
     //@{
+    inline ModRefInfo getModRefInfo(const CallInst *call) {
+        return getModRefInfo(SVFUtil::getLLVMCallSite(call));
+    }
     ModRefInfo getModRefInfo(CallSite cs);
     inline ModRefInfo getModRefInfo(const CallInst *call, const MemoryLocation &Loc) {
         return getModRefInfo(SVFUtil::getLLVMCallSite(call), Loc.Ptr);
