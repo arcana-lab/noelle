@@ -70,6 +70,7 @@ namespace llvm {
       Value *getSimpleValueOfStepSize () { return stepSize; }
       const SCEV *getComposableStepSize () { return compositeStepSize; }
       std::vector<Instruction *> getExpansionOfCompositeStepSize() { return expansionOfCompositeStepSize; }
+      bool isStepSizeLoopInvariant() ;
 
     private:
       SCC &scc;
@@ -82,6 +83,7 @@ namespace llvm {
       Value *stepSize;
       const SCEV *compositeStepSize;
       std::vector<Instruction *> expansionOfCompositeStepSize;
+      bool isStepLoopInvariant;
   };
 
   class LoopGoverningIVAttribution {

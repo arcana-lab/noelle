@@ -30,7 +30,7 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
      * Iterate over all phis within the loop header.
      */
     for (auto &phi : header->phis()) {
-      phi.print(errs() << "Checking PHI: "); errs() << "\n";
+      // phi.print(errs() << "Checking PHI: "); errs() << "\n";
       auto scev = SE.getSCEV(&phi);
       if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) continue;
 
@@ -49,8 +49,6 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
       }
     }
   }
-
-  errs() << "Done\n";
 }
 
 InductionVariables::~InductionVariables () {
@@ -80,7 +78,8 @@ InductionVariable::InductionVariable  (
   LoopEnvironment &loopEnv,
   ScalarEvolutionReferentialExpander &referentialExpander
 ) : scc{scc}, headerPHI{headerPHI}, startValue{nullptr},
-    stepSize{nullptr}, compositeStepSize{nullptr}, expansionOfCompositeStepSize{} {
+    stepSize{nullptr}, compositeStepSize{nullptr}, expansionOfCompositeStepSize{},
+    isStepLoopInvariant{false} {
 
   /*
    * Collect intermediate values of the IV within the loop (by traversing its strongly connected component)
@@ -134,12 +133,18 @@ InductionVariable::InductionVariable  (
 
   std::set<Value *> valuesInScope{}; 
   std::set<Value *> valuesToReferenceAndNotExpand{};
-  for (auto internalNodePair : scc.internalNodePairs()) valuesInScope.insert(internalNodePair.first);
+  std::set<Value *> valuesInternalToLoop{};
+  for (auto internalNodePair : scc.internalNodePairs()) {
+    auto value = internalNodePair.first;
+    valuesInScope.insert(value);
+    valuesInternalToLoop.insert(value);
+  }
   for (auto externalPair : scc.externalNodePairs()) {
     auto value = externalPair.first;
-    if (isa<Instruction>(value) && bbs.find(cast<Instruction>(value)->getParent()) != bbs.end()) continue;
-    valuesInScope.insert(externalPair.first);
-    valuesToReferenceAndNotExpand.insert(externalPair.first);
+    valuesInScope.insert(value);
+    valuesToReferenceAndNotExpand.insert(value);
+    if (!isa<Instruction>(value) || bbs.find(cast<Instruction>(value)->getParent()) == bbs.end()) continue;
+    valuesInternalToLoop.insert(value);
   }
   for (auto liveIn : loopEnv.getProducers()) {
     valuesInScope.insert(liveIn);
@@ -149,19 +154,22 @@ InductionVariable::InductionVariable  (
   switch (stepSCEV->getSCEVType()) {
     case SCEVTypes::scConstant:
       this->stepSize = cast<SCEVConstant>(stepSCEV)->getValue();
+      this->isStepLoopInvariant = true;
       break;
     case SCEVTypes::scUnknown:
       this->stepSize = cast<SCEVUnknown>(stepSCEV)->getValue();
+      this->isStepLoopInvariant = true;
       if (valuesToReferenceAndNotExpand.find(this->stepSize) == valuesToReferenceAndNotExpand.end()) {
         this->stepSize = nullptr;
+        this->isStepLoopInvariant = false;
       }
       break;
     default:
 
-      stepSCEV->print(errs() << "Referencing: "); errs() << "\n";
+      // stepSCEV->print(errs() << "Referencing: "); errs() << "\n";
       auto stepSizeReferenceTree = referentialExpander.createReferenceTree(stepSCEV, valuesInScope);
       if (stepSizeReferenceTree) {
-        stepSizeReferenceTree->getSCEV()->print(errs() << "Expanding: "); errs() << "\n";
+        // stepSizeReferenceTree->getSCEV()->print(errs() << "Expanding: "); errs() << "\n";
         auto tempBlock = BasicBlock::Create(headerPHI->getContext());
         IRBuilder<> tempBuilder(tempBlock);
         auto finalValue = referentialExpander.expandUsingReferenceValues(
@@ -170,45 +178,33 @@ InductionVariable::InductionVariable  (
           tempBuilder
         );
         if (finalValue) {
+          this->isStepLoopInvariant = true;
+          auto references = stepSizeReferenceTree->collectAllReferences();
+          for (auto reference : references) {
+            if (isa<SCEVAddRecExpr>(reference->getSCEV())) {
+              if (!reference->getValue() || valuesInternalToLoop.find(reference->getValue()) != valuesInternalToLoop.end()) {
+                this->isStepLoopInvariant = false;
+                break;
+              }
+            }
+          }
+
           this->compositeStepSize = stepSCEV;
-          finalValue->print(errs() << "Expanded final value: "); errs() << "\n";
+          // finalValue->print(errs() << "Expanded final value: "); errs() << "\n";
           for (auto &I : *tempBlock) {
             expansionOfCompositeStepSize.push_back(&I);
           }
         }
       }
-
-      // this->stepSize = expander->getExactExistingExpansion(stepSCEV, headerPHI, llvmLoop);
-      // if (!this->stepSize) {
-
-      //   auto tempBlock = BasicBlock::Create(headerPHI->getContext());
-      //   IRBuilder<> tempBuilder(tempBlock);
-      //   auto tempInst = cast<Instruction>(tempBuilder.CreateBr(tempBlock));
-      //   tempBlock->print(errs() << "Temp:\n");
-
-      //   expander->setInsertPoint(tempInst);
-      //   auto endCompositeValue = expander->expandCodeFor(stepSCEV);
-      //   endCompositeValue->print(errs() << "Expanded\t"); errs() << "\n";
-      //   expander->clearInsertPoint();
-
-      //   assert(isa<Instruction>(endCompositeValue));
-      //   auto endCompositeInst = cast<Instruction>(endCompositeValue);
-      //   if (endCompositeInst->getParent() != tempBlock) {
-      //     expansionOfCompositeStepSize.push_back(endCompositeInst);
-      //   } else {
-      //     auto currValue = &*tempBlock->begin();
-      //     auto endValue = endCompositeInst->getNextNode();
-      //     while (currValue != endValue) {
-      //       expansionOfCompositeStepSize.push_back(currValue);
-      //       currValue = currValue->getNextNode();
-      //     }
-      //   }
-      // }
       break;
   }
 
   // TODO: Determine why this seg faults on the destructor of a ValueHandleBase
   // delete expander;
+}
+
+bool InductionVariable::isStepSizeLoopInvariant () {
+  return isStepLoopInvariant;
 }
 
 InductionVariable::~InductionVariable () {
@@ -235,7 +231,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
    * is only known at runtime, and that enhancement has yet to be made
    */
   if (!iv.getSimpleValueOfStepSize() || !isa<ConstantInt>(iv.getSimpleValueOfStepSize())) return;
-  iv.getHeaderPHI()->print(errs() << "Has step size: "); errs() << "\n";
+  // iv.getHeaderPHI()->print(errs() << "Has step size: "); errs() << "\n";
 
   auto headerPHI = iv.getHeaderPHI();
   auto &ivInstructions = iv.getAllInstructions();
@@ -246,7 +242,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto headerTerminator = headerPHI->getParent()->getTerminator();
   if (!isa<BranchInst>(headerTerminator)) return;
   this->headerBr = cast<BranchInst>(headerTerminator);
-  iv.getHeaderPHI()->print(errs() << "Has branch: "); errs() << "\n";
+  // iv.getHeaderPHI()->print(errs() << "Has branch: "); errs() << "\n";
 
   /*
    * Check this is a conditional branch.
@@ -266,7 +262,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto opL = headerCmp->getOperand(0), opR = headerCmp->getOperand(1);
   if (!(opL == headerPHI ^ opR == headerPHI)) return;
   this->conditionValue = opL == headerPHI ? opR : opL;
-  iv.getHeaderPHI()->print(errs() << "Has condition: "); errs() << "\n";
+  // iv.getHeaderPHI()->print(errs() << "Has condition: "); errs() << "\n";
 
   std::set<BasicBlock *> exitBlockSet(exitBlocks.begin(), exitBlocks.end());
   if (exitBlockSet.find(headerBr->getSuccessor(0)) != exitBlockSet.end()) {
@@ -274,7 +270,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   } else if (exitBlockSet.find(headerBr->getSuccessor(1)) != exitBlockSet.end()) {
     this->exitBlock = headerBr->getSuccessor(1);
   } else return ;
-  iv.getHeaderPHI()->print(errs() << "Has one exit: "); errs() << "\n";
+  // iv.getHeaderPHI()->print(errs() << "Has one exit: "); errs() << "\n";
 
   if (scc.isInternal(conditionValue)) {
     std::queue<Instruction *> conditionDerivation;
@@ -299,7 +295,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
            * The exit condition value cannot be itself derived from the induction variable 
            */
           if (ivInstructions.find(outgoingInst) != ivInstructions.end()) {
-            outgoingInst->print(errs() << "Exit condition depends on IV: "); errs() << "\n";
+            // outgoingInst->print(errs() << "Exit condition depends on IV: "); errs() << "\n";
             return;
           }
 
@@ -310,7 +306,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
     }
   }
 
-  iv.getHeaderPHI()->print(errs() << "Is well formed: "); errs() << "\n";
+  // iv.getHeaderPHI()->print(errs() << "Is well formed: "); errs() << "\n";
   isWellFormed = true;
 }
 

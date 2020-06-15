@@ -252,3 +252,14 @@ int32_t SCEVReference::getNumChildReferences() {
 void SCEVReference::addChildReference(SCEVReference *scevReference) {
   childReferences.push_back(scevReference);
 }
+
+std::set<SCEVReference *> SCEVReference::collectAllReferences () {
+  std::set<SCEVReference *> references;
+  references.insert(this);
+  for (auto child : childReferences) {
+    auto childReferences = child->collectAllReferences();
+    references.insert(childReferences.begin(), childReferences.end());
+  }
+
+  return references;
+}

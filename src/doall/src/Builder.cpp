@@ -176,22 +176,26 @@ void DOALL::rewireLoopToIterateChunks (
   std::set<Instruction *> ivInstructions;
   auto sccdag = LDI->sccdagAttrs.getSCCDAG();
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
-    ivInfo->getHeaderPHI()->print(errs() << "Accumulating IV: "); errs() << "\n";
-    for (auto nodePair : sccdag->sccOfValue(ivInfo->getHeaderPHI())->internalNodePairs()) {
-      auto value = nodePair.first;
-      if (auto inst = dyn_cast<Instruction>(value)) {
-        if (inst->getParent() == loopSummary->getHeader()) {
-          ivInstructions.insert(task->getCloneOfOriginalInstruction(inst));
-        }
-      }
+    for (auto I : ivInfo->getAllInstructions()) {
+      ivInstructions.insert(task->getCloneOfOriginalInstruction(I));
     }
   }
+  auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
+  for (auto scc : nonDOALLSCCs) {
+    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    if (!sccInfo->canExecuteReducibly()) continue;
+    assert(sccInfo->getSingleHeaderPHI());
+    ivInstructions.insert(task->getCloneOfOriginalInstruction(sccInfo->getSingleHeaderPHI()));
+  }
   ivInstructions.insert(chunkPHI);
+  ivInstructions.insert(cmpInst);
+  ivInstructions.insert(brInst);
 
   bool requiresConditionBeforeEnteringHeader = false;
   for (auto &I : *headerClone) {
     if (ivInstructions.find(&I) == ivInstructions.end()) {
-      I.print(errs() << "CULPRIT: "); errs() << "\n";
+      assert(!isa<PHINode>(I)
+        && "All PHIs (which have loop carried dependencies) must be chunked or reducible");
       requiresConditionBeforeEnteringHeader = true;
       break;
     }
@@ -207,7 +211,7 @@ void DOALL::rewireLoopToIterateChunks (
      */
     for (auto latch : loopSummary->getLatches()) {
       BasicBlock *cloneLatch = task->getCloneOfOriginalBasicBlock(latch);
-      cloneLatch->print(errs() << "Addressing latch:\n");
+      // cloneLatch->print(errs() << "Addressing latch:\n");
       auto latchTerminator = cloneLatch->getTerminator();
       latchTerminator->eraseFromParent();
       IRBuilder<> latchBuilder(cloneLatch);
@@ -268,12 +272,12 @@ void DOALL::rewireLoopToIterateChunks (
       assert(producerI->getType() == headerProducerPHI->getType()
         && "Casting latch values for live out propagation not implemented");
       auto liveOutPHI = loopExitBuilder.CreatePHI(producerI->getType(), headerProducerPHI->getNumIncomingValues());
-      producerI->print(errs() << "Adding incoming from header: "); errs() << "\n";
+      // producerI->print(errs() << "Adding incoming from header: "); errs() << "\n";
       liveOutPHI->addIncoming(task->getCloneOfOriginalInstruction(producerI), headerClone);
       for (auto latch : loopSummary->getLatches()) {
         auto latchValue = headerProducerPHI->getIncomingValueForBlock(latch);
         assert(isa<Instruction>(latchValue));
-        latchValue->print(errs() << "Adding incoming from latch: "); errs() << "\n";
+        // latchValue->print(errs() << "Adding incoming from latch: "); errs() << "\n";
         liveOutPHI->addIncoming(
           task->getCloneOfOriginalInstruction(cast<Instruction>(latchValue)),
           task->getCloneOfOriginalBasicBlock(latch)
