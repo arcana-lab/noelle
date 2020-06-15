@@ -39,7 +39,7 @@ void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
    */
   for (auto &F : M) {
     if (F.empty()) {
-      if (this->externalFuncsHandledBySVF.count(F.getName())) continue;
+      if (this->externalFuncsHaveNoSideEffectOrHandledBySVF.count(F.getName())) continue;
       this->unhandledExternalFuncs.insert(&F);
     }
     else {
@@ -591,7 +591,7 @@ bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) {
 }
 
 bool PDGAnalysis::isUnhandledExternalFunction(const Function *F) {
-  return F->empty() && !this->externalFuncsHandledBySVF.count(F->getName());
+  return F->empty() && !this->externalFuncsHaveNoSideEffectOrHandledBySVF.count(F->getName());
 }
 
 bool PDGAnalysis::isInternalFunctionThatReachUnhandledExternalFunction(const Function *F) {

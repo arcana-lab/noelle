@@ -61,9 +61,6 @@ namespace llvm {
       std::unordered_set<const Function *> internalFuncs;
       std::unordered_set<const Function *> unhandledExternalFuncs;
       std::unordered_map<const Function *, std::unordered_set<const Function *>> reachableUnhandledExternalFuncs;
-      const StringSet<> externalFuncsHandledBySVF {
-        "sqrt"
-      };
       
       void initializeSVF(Module &M);
       void identifyFunctionsThatInvokeUnhandledLibrary(Module &M);
@@ -130,5 +127,115 @@ namespace llvm {
       bool edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge);
 
       bool isInIndependentRegion(Instruction *, Instruction *);
+
+      // http://www.cplusplus.com/reference/clibrary/ and https://github.com/SVF-tools/SVF/blob/master/lib/Util/ExtAPI.cpp
+      const StringSet<> externalFuncsHaveNoSideEffectOrHandledBySVF {
+        // ctype.h
+        "isalnum",
+        "isalpha",
+        "isblank",
+        "iscntrl",
+        "isdigit",
+        "isgraph",
+        "islower",
+        "isprint",
+        "ispunct",
+        "isspace",
+        "isupper",
+        "isxdigit",
+        "tolower",
+        "toupper",
+
+        // math.h
+        "cos",
+        "sin",
+        "tan",
+        "acos",
+        "asin",
+        "atan",
+        "atan2",
+        "cosh",
+        "sinh",
+        "tanh",
+        "acosh",
+        "asinh",
+        "atanh",
+        "exp",
+        "ldexp",
+        "log",
+        "log10",
+        "exp2",
+        "expm1",
+        "ilogb",
+        "log1p",
+        "log2",
+        "logb",
+        "scalbn",
+        "scalbln",
+        "pow",
+        "sqrt",
+        "cbrt",
+        "hypot",
+        "erf",
+        "erfc",
+        "tgamma",
+        "lgamma",
+        "ceil",
+        "floor",
+        "fmod",
+        "trunc",
+        "round",
+        "lround",
+        "llround",
+        "nearbyint",
+        "remainder",
+        "copysign",
+        "nextafter",
+        "nexttoward",
+        "fdim",
+        "fmax",
+        "fmin",
+        "fabs",
+        "abs",
+        "fma",
+        "fpclassify",
+        "isfinite",
+        "isinf",
+        "isnan",
+        "isnormal",
+        "signbit",
+        "isgreater",
+        "isgreaterequal",
+        "isless",
+        "islessequal",
+        "islessgreater",
+        "isunordered",
+
+        // stdlib.h
+        "rand",
+        "srand",
+        
+        // time.h
+        "clock",
+        "difftime",
+
+        // wctype.h
+        "iswalnum",
+        "iswalpha",
+        "iswblank",
+        "iswcntrl",
+        "iswdigit",
+        "iswgraph",
+        "iswlower",
+        "iswprint",
+        "iswpunct",
+        "iswspace",
+        "iswupper",
+        "iswxdigit",
+        "towlower",
+        "towupper",
+        "iswctype",
+        "towctrans"
+      };
   };
 }
