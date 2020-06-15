@@ -71,7 +71,7 @@ void TestSuite::runTests (ModulePass &pass) {
       continue;
     }
 
-    Values actual = tests[testId](pass);
+    Values actual = tests[testId](pass, *this);
     numSuccess += checkTest(testId, actual, File) ? 1 : 0;
   }
 

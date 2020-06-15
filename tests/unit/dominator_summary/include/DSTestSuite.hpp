@@ -47,7 +47,7 @@ namespace llvm {
 
     private:
 
-      static Values domTreesAreIdentical (ModulePass &pass);
+      static Values domTreesAreIdentical (ModulePass &pass, TestSuite &suite);
 
       static Values domNodeIsIdentical (DSTestSuite &pass, DomTreeNodeBase<BasicBlock> &node, DomNodeSummary &nodeS);
 

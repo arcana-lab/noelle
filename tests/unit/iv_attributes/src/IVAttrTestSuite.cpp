@@ -120,51 +120,49 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   return false;
 }
 
-Values IVAttrTestSuite::verifyStartAndStepByLoop (ModulePass &pass) {
+Values IVAttrTestSuite::verifyStartAndStepByLoop (ModulePass &pass, TestSuite &suite) {
   IVAttrTestSuite &attrPass = static_cast<IVAttrTestSuite &>(pass);
-  TestSuite *suite = attrPass.suite;
 
   Values loopIVs;
   for (auto &loop : attrPass.LIS->loops) {
     for (auto IV : attrPass.IVs->getInductionVariables(*loop.get())) {
       std::vector<std::string> loopIVStartStep;
-      loopIVStartStep.push_back(suite->printAsOperandToString(loop->getHeader()));
-      loopIVStartStep.push_back(suite->valueToString(IV->getStartAtHeader()));
+      loopIVStartStep.push_back(suite.printAsOperandToString(loop->getHeader()));
+      loopIVStartStep.push_back(suite.valueToString(IV->getStartAtHeader()));
 
       if (IV->getSimpleValueOfStepSize()) {
-        loopIVStartStep.push_back(suite->valueToString(IV->getSimpleValueOfStepSize()));
+        loopIVStartStep.push_back(suite.valueToString(IV->getSimpleValueOfStepSize()));
       } else {
         auto B = (*IV->getExpansionOfCompositeStepSize().begin())->getParent();
         auto F = IV->getHeaderPHI()->getFunction();
         B->insertInto(F);
         for (auto emplacedI : IV->getExpansionOfCompositeStepSize()) {
-          loopIVStartStep.push_back(suite->valueToString(emplacedI));
+          loopIVStartStep.push_back(suite.valueToString(emplacedI));
         }
         B->removeFromParent();
       }
 
-      loopIVs.insert(suite->combineOrderedValues(loopIVStartStep));
+      loopIVs.insert(suite.combineOrderedValues(loopIVStartStep));
     }
   }
 
   return loopIVs;
 }
 
-Values IVAttrTestSuite::verifyIntermediateValues (ModulePass &pass) {
+Values IVAttrTestSuite::verifyIntermediateValues (ModulePass &pass, TestSuite &suite) {
   IVAttrTestSuite &attrPass = static_cast<IVAttrTestSuite &>(pass);
-  TestSuite *suite = attrPass.suite;
 
   Values loopIVIntermediates;
   for (auto &loop : attrPass.LIS->loops) {
-    loopIVIntermediates.insert(suite->printAsOperandToString(loop->getHeader()));
+    loopIVIntermediates.insert(suite.printAsOperandToString(loop->getHeader()));
 
     for (auto IV : attrPass.IVs->getInductionVariables(*loop.get())) {
       std::vector<std::string> intermediates;
       for (auto inst : IV->getAllInstructions()) {
-        intermediates.push_back(suite->valueToString(inst));
+        intermediates.push_back(suite.valueToString(inst));
       }
 
-      loopIVIntermediates.insert(suite->combineUnorderedValues(intermediates));
+      loopIVIntermediates.insert(suite.combineUnorderedValues(intermediates));
     }
 
   }
@@ -172,13 +170,12 @@ Values IVAttrTestSuite::verifyIntermediateValues (ModulePass &pass) {
   return loopIVIntermediates;
 }
 
-Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass) {
+Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass, TestSuite &suite) {
   IVAttrTestSuite &attrPass = static_cast<IVAttrTestSuite &>(pass);
-  TestSuite *suite = attrPass.suite;
 
   Values loopGoverningInfos;
   for (auto &loop : attrPass.LIS->loops) {
-    loopGoverningInfos.insert(suite->printAsOperandToString(loop->getHeader()));
+    loopGoverningInfos.insert(suite.printAsOperandToString(loop->getHeader()));
 
     auto IV = attrPass.IVs->getLoopGoverningInductionVariable(*loop.get());
     if (!IV) continue;
@@ -189,29 +186,29 @@ Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass) {
     if (!attr->isSCCContainingIVWellFormed()) continue;
 
     std::vector<std::string> startAndStep;
-    startAndStep.push_back(suite->valueToString(IV->getStartAtHeader()));
+    startAndStep.push_back(suite.valueToString(IV->getStartAtHeader()));
     if (IV->getSimpleValueOfStepSize()) {
-      startAndStep.push_back(suite->valueToString(IV->getSimpleValueOfStepSize()));
+      startAndStep.push_back(suite.valueToString(IV->getSimpleValueOfStepSize()));
     } else {
       auto B = (*IV->getExpansionOfCompositeStepSize().begin())->getParent();
       auto F = IV->getHeaderPHI()->getFunction();
       B->insertInto(F);
       for (auto emplacedI : IV->getExpansionOfCompositeStepSize()) {
-        startAndStep.push_back(suite->valueToString(emplacedI));
+        startAndStep.push_back(suite.valueToString(emplacedI));
       }
       B->removeFromParent();
     }
-    loopGoverningInfos.insert(suite->combineOrderedValues(startAndStep));
+    loopGoverningInfos.insert(suite.combineOrderedValues(startAndStep));
 
-    loopGoverningInfos.insert(suite->valueToString(attr->getHeaderCmpInst()));
-    loopGoverningInfos.insert(suite->valueToString(attr->getHeaderBrInst()));
-    loopGoverningInfos.insert(suite->valueToString(attr->getHeaderCmpInstConditionValue()));
+    loopGoverningInfos.insert(suite.valueToString(attr->getHeaderCmpInst()));
+    loopGoverningInfos.insert(suite.valueToString(attr->getHeaderBrInst()));
+    loopGoverningInfos.insert(suite.valueToString(attr->getHeaderCmpInstConditionValue()));
 
     std::vector<std::string> derivation;
     for (auto value : attr->getConditionValueDerivation()) {
-      derivation.push_back(suite->valueToString(value));
+      derivation.push_back(suite.valueToString(value));
     }
-    if (derivation.size() > 0) loopGoverningInfos.insert(suite->combineOrderedValues(derivation));
+    if (derivation.size() > 0) loopGoverningInfos.insert(suite.combineOrderedValues(derivation));
 
   }
 

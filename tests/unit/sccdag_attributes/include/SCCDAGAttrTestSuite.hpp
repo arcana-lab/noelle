@@ -54,20 +54,20 @@ namespace llvm {
 
     private:
 
-      static Values sccdagHasCorrectSCCs (ModulePass &pass) ;
-      static Values normalizedTopLoopSCCDAG (ModulePass &pass) ;
+      static Values sccdagHasCorrectSCCs (ModulePass &pass, TestSuite &suite) ;
+      static Values normalizedTopLoopSCCDAG (ModulePass &pass, TestSuite &suite) ;
       Values getValuesOfSCCDAG (SCCDAG &sccdag) ;
 
-      static Values sccsWithIVAreFound (ModulePass &pass) ;
-      static Values attrsIdentifiesTripCountIVBounds (ModulePass &pass) ;
+      static Values sccsWithIVAreFound (ModulePass &pass, TestSuite &suite) ;
+      static Values attrsIdentifiesTripCountIVBounds (ModulePass &pass, TestSuite &suite) ;
 
-      static Values reducibleSCCsAreFound (ModulePass &pass) ;
-      static Values clonableSCCsAreFound (ModulePass &pass) ;
+      static Values reducibleSCCsAreFound (ModulePass &pass, TestSuite &suite) ;
+      static Values clonableSCCsAreFound (ModulePass &pass, TestSuite &suite) ;
 
-      static Values interIterationDependencies (ModulePass &pass) ;
-      static Values intraIterationDependencies (ModulePass &pass) ;
+      static Values interIterationDependencies (ModulePass &pass, TestSuite &suite) ;
+      static Values intraIterationDependencies (ModulePass &pass, TestSuite &suite) ;
 
-      static Values printSCCs (ModulePass &pass, std::set<SCC *> sccs) ;
+      static Values printSCCs (ModulePass &pass, TestSuite &suite, std::set<SCC *> sccs) ;
 
       TestSuite *suite;
       Module *M;
