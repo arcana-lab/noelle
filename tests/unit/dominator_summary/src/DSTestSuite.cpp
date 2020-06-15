@@ -106,7 +106,7 @@ Values DSTestSuite::domTreeIsIdentical (DSTestSuite &pass, DTBase &DT, DomTreeSu
   return {};
 }
 
-Values DSTestSuite::domTreesAreIdentical (ModulePass &pass) {
+Values DSTestSuite::domTreesAreIdentical (ModulePass &pass, TestSuite &suite) {
   auto &dsPass = static_cast<DSTestSuite &>(pass);
   Values errors = DSTestSuite::domTreeIsIdentical(dsPass, *dsPass.dt, dsPass.ds->DT);
   if (errors.size() > 0) return errors;

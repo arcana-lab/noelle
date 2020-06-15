@@ -28,7 +28,9 @@ using namespace std;
 
 namespace parallelizertests {
 
-  typedef Values (*TestFunction)(ModulePass &);
+  class TestSuite;
+
+  typedef Values (*TestFunction)(ModulePass &, TestSuite &);
 
   class TestSuite {
    public:

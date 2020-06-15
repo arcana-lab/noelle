@@ -142,12 +142,12 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   return false;
 }
 
-Values SCCDAGAttrTestSuite::sccdagHasCorrectSCCs (ModulePass &pass) {
+Values SCCDAGAttrTestSuite::sccdagHasCorrectSCCs (ModulePass &pass, TestSuite &suite) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   return attrPass.getValuesOfSCCDAG(*attrPass.sccdag);
 }
 
-Values SCCDAGAttrTestSuite::normalizedTopLoopSCCDAG (ModulePass &pass) {
+Values SCCDAGAttrTestSuite::normalizedTopLoopSCCDAG (ModulePass &pass, TestSuite &suite) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   return attrPass.getValuesOfSCCDAG(*attrPass.sccdagTopLoopNorm);
 }
@@ -164,7 +164,7 @@ Values SCCDAGAttrTestSuite::getValuesOfSCCDAG (SCCDAG &dag) {
   return valueNames;
 }
 
-Values SCCDAGAttrTestSuite::sccsWithIVAreFound (ModulePass &pass) {
+Values SCCDAGAttrTestSuite::sccsWithIVAreFound (ModulePass &pass, TestSuite &suite) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
@@ -172,10 +172,10 @@ Values SCCDAGAttrTestSuite::sccsWithIVAreFound (ModulePass &pass) {
     if (sccAttrs->isInductionVariableSCC()) sccs.insert(node->getT());
   }
 
-  return SCCDAGAttrTestSuite::printSCCs(pass, sccs);
+  return SCCDAGAttrTestSuite::printSCCs(pass, suite, sccs);
 }
 
-Values SCCDAGAttrTestSuite::reducibleSCCsAreFound (ModulePass &pass) {
+Values SCCDAGAttrTestSuite::reducibleSCCsAreFound (ModulePass &pass, TestSuite &suite) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
@@ -183,10 +183,10 @@ Values SCCDAGAttrTestSuite::reducibleSCCsAreFound (ModulePass &pass) {
     if (sccAttrs->canExecuteReducibly()) sccs.insert(node->getT());
   }
 
-  return SCCDAGAttrTestSuite::printSCCs(pass, sccs);
+  return SCCDAGAttrTestSuite::printSCCs(pass, suite, sccs);
 }
 
-Values SCCDAGAttrTestSuite::clonableSCCsAreFound (ModulePass &pass) {
+Values SCCDAGAttrTestSuite::clonableSCCsAreFound (ModulePass &pass, TestSuite &suite) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
@@ -194,45 +194,45 @@ Values SCCDAGAttrTestSuite::clonableSCCsAreFound (ModulePass &pass) {
     if (sccAttrs->canBeCloned()) sccs.insert(node->getT());
   }
 
-  return SCCDAGAttrTestSuite::printSCCs(pass, sccs);
+  return SCCDAGAttrTestSuite::printSCCs(pass, suite, sccs);
 }
 
-Values SCCDAGAttrTestSuite::printSCCs (ModulePass &pass, std::set<SCC *> sccs) {
+Values SCCDAGAttrTestSuite::printSCCs (ModulePass &pass, TestSuite &suite, std::set<SCC *> sccs) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   Values valueNames{};
   for (auto scc : sccs) {
     std::vector<std::string> sccValues;
     for (auto nodePair : scc->internalNodePairs()) {
-      sccValues.push_back(attrPass.suite->valueToString(nodePair.first));
+      sccValues.push_back(suite.valueToString(nodePair.first));
     }
-    valueNames.insert(TestSuite::combineValues(sccValues, attrPass.suite->unorderedValueDelimiter));
+    valueNames.insert(TestSuite::combineValues(sccValues, suite.unorderedValueDelimiter));
   }
 
   return valueNames;
 }
 
-Values SCCDAGAttrTestSuite::interIterationDependencies (ModulePass &pass) {
+Values SCCDAGAttrTestSuite::interIterationDependencies (ModulePass &pass, TestSuite &suite) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   Values valueNames{};
   for (auto sccAndDeps : attrPass.attrs->interIterDeps) {
     for (auto dep : sccAndDeps.second) {
-      std::string outValue = attrPass.suite->valueToString(dep->getOutgoingT());
-      std::string inValue = attrPass.suite->valueToString(dep->getIncomingT());
-      valueNames.insert(outValue + attrPass.suite->orderedValueDelimiter + inValue);
+      std::string outValue = suite.valueToString(dep->getOutgoingT());
+      std::string inValue = suite.valueToString(dep->getIncomingT());
+      valueNames.insert(outValue + suite.orderedValueDelimiter + inValue);
     }
   }
 
   return valueNames;
 }
 
-Values SCCDAGAttrTestSuite::intraIterationDependencies (ModulePass &pass) {
+Values SCCDAGAttrTestSuite::intraIterationDependencies (ModulePass &pass, TestSuite &suite) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   Values valueNames{};
   for (auto sccAndDeps : attrPass.attrs->intraIterDeps) {
     for (auto dep : sccAndDeps.second) {
-      std::string outValue = attrPass.suite->valueToString(dep->getOutgoingT());
-      std::string inValue = attrPass.suite->valueToString(dep->getIncomingT());
-      valueNames.insert(outValue + attrPass.suite->orderedValueDelimiter + inValue);
+      std::string outValue = suite.valueToString(dep->getOutgoingT());
+      std::string inValue = suite.valueToString(dep->getIncomingT());
+      valueNames.insert(outValue + suite.orderedValueDelimiter + inValue);
     }
   }
 

@@ -53,9 +53,9 @@ namespace llvm {
 
     private:
 
-      static Values verifyStartAndStepByLoop (ModulePass &pass) ;
-      static Values verifyIntermediateValues (ModulePass &pass) ;
-      static Values verifyLoopGoverning (ModulePass &pass) ;
+      static Values verifyStartAndStepByLoop (ModulePass &pass, TestSuite &suite) ;
+      static Values verifyIntermediateValues (ModulePass &pass, TestSuite &suite) ;
+      static Values verifyLoopGoverning (ModulePass &pass, TestSuite &suite) ;
 
       TestSuite *suite;
       Module *M;
