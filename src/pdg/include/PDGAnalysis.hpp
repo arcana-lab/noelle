@@ -38,7 +38,7 @@ namespace llvm {
 
       PDG * getFunctionPDG (Function &F) ;
 
-      PDG * getPDG () ;
+      PDG * getPDG (void) ;
 
     private:
       Module *M;

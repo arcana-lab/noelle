@@ -22,11 +22,6 @@ PDGAnalysis::PDGAnalysis()
   return ;
 }
 
-PDGAnalysis::~PDGAnalysis() {
-  if (this->programDependenceGraph)
-    delete this->programDependenceGraph;
-}
-
 PDG * PDGAnalysis::getFunctionPDG (Function &F) {
 
   /*
@@ -53,13 +48,13 @@ PDG * PDGAnalysis::getFunctionPDG (Function &F) {
   return pdg;
 }
 
-PDG * PDGAnalysis::getPDG (){
+PDG * PDGAnalysis::getPDG (void){
 
   /*
-   * Delete cached memory.
+   * Check if we have already built the PDG.
    */
   if (this->programDependenceGraph){
-    delete this->programDependenceGraph;
+    return this->programDependenceGraph;
   }
 
   /*
@@ -189,9 +184,15 @@ PDG * PDGAnalysis::constructPDGFromAnalysis(Module &M) {
 PDG * PDGAnalysis::constructPDGFromMetadata(Module &M) {
   errs() << "Construct PDG from Metadata\n";
 
-  PDG *pdg = new PDG(M);
-  unordered_map<MDNode *, Value *> IDNodeMap;
+  /*
+   * Create the PDG.
+   */
+  auto pdg = new PDG(M);
 
+  /*
+   * Fill up the PDG.
+   */
+  std::unordered_map<MDNode *, Value *> IDNodeMap;
   for (auto &F : M) {
     constructNodesFromMetadata(pdg, F, IDNodeMap);
     constructEdgesFromMetadata(pdg, F, IDNodeMap);
@@ -1044,4 +1045,9 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
   auto callName = getCallFnName(call);
   return isa<LoadInst>(mem) && isFunctionNonWriting(callName)
     || isa<StoreInst>(mem) && isFunctionMemoryless(callName);
+}
+
+PDGAnalysis::~PDGAnalysis() {
+  if (this->programDependenceGraph)
+    delete this->programDependenceGraph;
 }
