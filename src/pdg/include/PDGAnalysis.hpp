@@ -48,6 +48,7 @@ namespace llvm {
       TalkDown *talkdown;
       PDGVerbosity verbose;
       bool embedPDG;
+      bool dumpPDG;
       PDGPrinter printer;
 
       bool comparePDGs(PDG *, PDG *);
