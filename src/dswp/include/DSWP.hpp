@@ -49,6 +49,8 @@ namespace llvm {
         Heuristics *h
       ) const override ;
 
+      void reset () override ;
+
     private:
 
       /*
