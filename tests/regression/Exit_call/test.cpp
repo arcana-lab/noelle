@@ -2,16 +2,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include <functional>
 
-std::function<void (int)> fetchF (void){
-  auto myF = [](int n){
-    if (n >= 1){
-      exit(0);
-    }
-  };
+void myF (int n){
+  if (n >= 1){
+    exit(0);
+  }
+}
 
-  return myF;
+void myG (int n){
 }
 
 int main (int argc, char *argv[]){
@@ -19,20 +17,16 @@ int main (int argc, char *argv[]){
   v1 = argc;
   v2 = ((argc * 5) / 2) + 1;
 
-  auto g = fetchF();
+  // SCC 1
+  v1 = v1 + 1;
+  v1 = v1 - 3;
 
-  for (uint32_t i = 0; i < 100; ++i) {
+  myF(argc);
+  myG(argc);
 
-    // SCC 1
-    v1 = v1 + 1;
-    v1 = v1 - 3;
-
-    g(argc);
-
-    // SCC 2
-    v2 = v2 * 3 + v1;
-    v2 = v2 / 2;
-  }
+  // SCC 2
+  v2 = v2 * 3 + v1;
+  v2 = v2 / 2;
 
   printf("%d, %d\n", v1, v2);
   return 0;
