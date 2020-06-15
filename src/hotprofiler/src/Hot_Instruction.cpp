@@ -24,6 +24,43 @@ uint64_t Hot::getInvocations (Instruction *i) const {
 
   auto inv = this->getInvocations(bb);
 
+  /*
+   * If the instruction is not a call or invoke instruction, then the basic block invocation is the instruction invocation.
+   */
+  if (  (!isa<CallInst>(i)) && (!isa<InvokeInst>(i))  ){
+    return inv;
+  }
+
+  /*
+   * The instruction can invoke another function, which might terminate the program execution.
+   * This would lead to a mismatch between the basic block invocations and the instruction one.
+   *
+   * To deal with this mismatch, we check the invocations of the callee: the callee invocations must be grather or equal the instruction invocations.
+   */
+  Function *callee = nullptr;
+  if (auto callInst = dyn_cast<CallInst>(i)){
+    callee = callInst->getCalledFunction();
+  } else {
+    auto callInst2 = cast<InvokeInst>(i);
+    callee = callInst2->getCalledFunction();
+  }
+  if (  (callee == nullptr) || (callee->empty()) ){
+
+    /*
+     * If the callee is unknown or it isn't part of the program, then we cannot make any adjustment.
+     */
+    return inv;
+  }
+
+  /*
+   * Adjust the invocation number.
+   */
+  auto calleeInv = this->getInvocations(callee);
+  if (calleeInv < inv){
+    inv = calleeInv;
+  }
+  assert(inv <= calleeInv);
+
   return inv;
 }
 
