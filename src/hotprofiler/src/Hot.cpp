@@ -262,6 +262,7 @@ void Hot::computeTotalInstructions (
       continue ;
     }
     assert(this->hasBeenExecuted(callee));
+    assert(this->getInvocations(callee) >= this->getInvocations(callInst));
 
     /*
      * The callee is known and we can inspect its body.

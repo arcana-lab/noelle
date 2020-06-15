@@ -16,80 +16,14 @@
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
 
-static cl::opt<int> Verbose("noelle-pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal, 3:maximal plus dumping PDG"));
-static cl::opt<bool> EmbedPDG("noelle-pdg-embed", cl::ZeroOrMore, cl::Hidden, cl::desc("Embed the PDG"));
-
 using namespace llvm;
 
-bool llvm::PDGAnalysis::doInitialization (Module &M){
-  this->verbose = static_cast<PDGVerbosity>(Verbose.getValue());
-  this->embedPDG = (EmbedPDG.getNumOccurrences() > 0) ? true : false;
-
-  return false;
-}
-
-void llvm::PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<AAResultsWrapperPass>();
-  AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<PostDominatorTreeWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<AllocAA>();
-  AU.addRequired<TalkDown>();
-  AU.setPreservesAll();
-  return ;
-}
-
-bool llvm::PDGAnalysis::runOnModule (Module &M){
-
-  /*
-   * Store global information.
-   */
-  this->M = &M;
-
-  /*
-   * Initialize SVF.
-   */
-  initializeSVF(M);
-
-  /*
-   * Function reachability analysis.
-   */
-  identifyFunctionsThatInvokeUnhandledLibrary(M);
-
-  /*
-   * Check if we should print the PDG
-   */
-  if (this->verbose >= PDGVerbosity::MaximalAndPDG){
-
-    /*
-     * Print the PDG
-     */
-    auto currentPDG = this->getPDG();
-    auto localPDGPrinter = new PDGPrinter();
-    auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
-    auto getLoopInfo = [this](Function *f) -> LoopInfo& {
-      auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-      return LI;
-    };
-    localPDGPrinter->printPDG(M, callGraph, currentPDG, getLoopInfo);
-  }
-
-  return false;
-}
-
-llvm::PDGAnalysis::PDGAnalysis()
+PDGAnalysis::PDGAnalysis()
   : ModulePass{ID}, M{nullptr}, programDependenceGraph{nullptr}, CGUnderMain{}, printer{} {
   return ;
 }
 
-llvm::PDGAnalysis::~PDGAnalysis() {
-  if (this->programDependenceGraph)
-    delete this->programDependenceGraph;
-}
-
-void llvm::PDGAnalysis::initializeSVF(Module &M) {
+void PDGAnalysis::initializeSVF(Module &M) {
   SVFModule svfModule(M);
   this->pta = new AndersenWaveDiff();
   this->pta->analyze(svfModule);
@@ -99,7 +33,7 @@ void llvm::PDGAnalysis::initializeSVF(Module &M) {
   return;
 }
 
-void llvm::PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
+void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
   /*
    * Collect internal and unhandled external functions.
    */
@@ -127,7 +61,7 @@ void llvm::PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
   return;
 }
 
-void llvm::PDGAnalysis::printFunctionReachabilityResult() {
+void PDGAnalysis::printFunctionReachabilityResult() {
   /*
    * Print internal and unhandled external functions.
    */
@@ -153,7 +87,7 @@ void llvm::PDGAnalysis::printFunctionReachabilityResult() {
   return;
 }
 
-llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
+PDG * PDGAnalysis::getFunctionPDG (Function &F) {
 
   /*
    * Make sure the module PDG has been constructed.
@@ -179,13 +113,13 @@ llvm::PDG * PDGAnalysis::getFunctionPDG (Function &F) {
   return pdg;
 }
 
-llvm::PDG * llvm::PDGAnalysis::getPDG (){
+PDG * PDGAnalysis::getPDG (void){
 
   /*
-   * Delete cached memory.
+   * Check if we have already built the PDG.
    */
   if (this->programDependenceGraph){
-    delete this->programDependenceGraph;
+    return this->programDependenceGraph;
   }
 
   /*
@@ -224,11 +158,11 @@ llvm::PDG * llvm::PDGAnalysis::getPDG (){
   return this->programDependenceGraph;
 }
 
-bool llvm::PDGAnalysis::comparePDGs(PDG *pdg1, PDG *pdg2) {
+bool PDGAnalysis::comparePDGs(PDG *pdg1, PDG *pdg2) {
   return compareNodes(pdg1, pdg2) && compareEdges(pdg1, pdg2);
 }
 
-bool llvm::PDGAnalysis::compareNodes(PDG *pdg1, PDG *pdg2) {
+bool PDGAnalysis::compareNodes(PDG *pdg1, PDG *pdg2) {
   errs() << "Compare PDG Nodes\n";
 
   if (pdg1->numNodes() != pdg2->numNodes()) {
@@ -245,7 +179,7 @@ bool llvm::PDGAnalysis::compareNodes(PDG *pdg1, PDG *pdg2) {
   return true;
 }
 
-bool llvm::PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
+bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
   errs() << "Compare PDG Edges\n";
 
   if (pdg1->numEdges() != pdg2->numEdges()) {
@@ -284,7 +218,7 @@ bool llvm::PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
   return true;
 }
 
-bool llvm::PDGAnalysis::hasPDGAsMetadata(Module &M) {
+bool PDGAnalysis::hasPDGAsMetadata(Module &M) {
   errs() << "Check if PDG has been embeded as metadata\n";
   
   if (NamedMDNode *n = M.getNamedMetadata("noelle.module.pdg")) {
@@ -298,7 +232,7 @@ bool llvm::PDGAnalysis::hasPDGAsMetadata(Module &M) {
   return false;
 }
 
-PDG * llvm::PDGAnalysis::constructPDGFromAnalysis(Module &M) {
+PDG * PDGAnalysis::constructPDGFromAnalysis(Module &M) {
   errs() << "Construct PDG from Analysis\n";
 
   auto pdg = new PDG(M);
@@ -312,12 +246,18 @@ PDG * llvm::PDGAnalysis::constructPDGFromAnalysis(Module &M) {
   return pdg; 
 }
 
-PDG * llvm::PDGAnalysis::constructPDGFromMetadata(Module &M) {
+PDG * PDGAnalysis::constructPDGFromMetadata(Module &M) {
   errs() << "Construct PDG from Metadata\n";
 
-  PDG *pdg = new PDG(M);
-  unordered_map<MDNode *, Value *> IDNodeMap;
+  /*
+   * Create the PDG.
+   */
+  auto pdg = new PDG(M);
 
+  /*
+   * Fill up the PDG.
+   */
+  std::unordered_map<MDNode *, Value *> IDNodeMap;
   for (auto &F : M) {
     constructNodesFromMetadata(pdg, F, IDNodeMap);
     constructEdgesFromMetadata(pdg, F, IDNodeMap);
@@ -326,7 +266,7 @@ PDG * llvm::PDGAnalysis::constructPDGFromMetadata(Module &M) {
   return pdg;
 }
 
-void llvm::PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unordered_map<MDNode *, Value *> &IDNodeMap) {
+void PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unordered_map<MDNode *, Value *> &IDNodeMap) {
   /*
    * Construct id to node map and add nodes of arguments to pdg
    */
@@ -352,7 +292,7 @@ void llvm::PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unorde
   return;
 }
 
-void llvm::PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unordered_map<MDNode *, Value *> &IDNodeMap) {
+void PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unordered_map<MDNode *, Value *> &IDNodeMap) {
   /*
    * Construct edges and set attributes
    */
@@ -384,7 +324,7 @@ void llvm::PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unorde
   return;
 }
 
-DGEdge<Value> * llvm::PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *edgeM, unordered_map<MDNode *, Value *> &IDNodeMap) {
+DGEdge<Value> * PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *edgeM, unordered_map<MDNode *, Value *> &IDNodeMap) {
   DGEdge<Value> *edge;  
 
   if (MDNode *fromM = dyn_cast<MDNode>(edgeM->getOperand(0))) {
@@ -406,7 +346,7 @@ DGEdge<Value> * llvm::PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *e
   return edge;
 }
 
-void llvm::PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
+void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
   errs() << "Embed PDG as Metadata\n";
 
   LLVMContext &C = this->M->getContext();
@@ -421,7 +361,7 @@ void llvm::PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
   return;
 }
 
-void llvm::PDGAnalysis::embedNodesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
+void PDGAnalysis::embedNodesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
   uint64_t i = 0;
   unordered_map<Function *, unordered_map<uint64_t, Metadata *>> functionArgsIDMap;
 
@@ -457,7 +397,7 @@ void llvm::PDGAnalysis::embedNodesAsMetadata(PDG *pdg, LLVMContext &C, unordered
   return;
 }
 
-void llvm::PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
+void PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
   unordered_map<Function *, vector<Metadata *>> functionEdgesMap;
 
   /*
@@ -484,7 +424,7 @@ void llvm::PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered
   return;
 }
 
-MDNode * llvm::PDGAnalysis::getEdgeMetadata(DGEdge<Value> *edge, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
+MDNode * PDGAnalysis::getEdgeMetadata(DGEdge<Value> *edge, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
   Metadata *edgeM[] = {
     nodeIDMap[edge->getOutgoingT()],
     nodeIDMap[edge->getIncomingT()],
@@ -500,7 +440,7 @@ MDNode * llvm::PDGAnalysis::getEdgeMetadata(DGEdge<Value> *edge, LLVMContext &C,
   return MDNode::get(C, edgeM);
 }
 
-MDNode * llvm::PDGAnalysis::getSubEdgesMetadata(DGEdge<Value> *edge, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
+MDNode * PDGAnalysis::getSubEdgesMetadata(DGEdge<Value> *edge, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
   vector<Metadata *> subEdgesVec;
 
   for (auto &subEdge : edge->getSubEdges()) {
@@ -520,7 +460,7 @@ MDNode * llvm::PDGAnalysis::getSubEdgesMetadata(DGEdge<Value> *edge, LLVMContext
   return MDTuple::get(C, subEdgesVec);
 }
 
-void llvm::PDGAnalysis::trimDGUsingCustomAliasAnalysis (PDG *pdg) {
+void PDGAnalysis::trimDGUsingCustomAliasAnalysis (PDG *pdg) {
 
   /*
    * Invoke AllocAA
@@ -566,7 +506,7 @@ void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {
   return ;
 }
 
-void llvm::PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
+void PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
   for (auto node : make_range(pdg->begin_nodes(), pdg->end_nodes())) {
     auto pdgValue = node->getT();
     if (pdgValue->getNumUses() == 0)
@@ -584,7 +524,7 @@ void llvm::PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
 }
 
 template <class InstI, class InstJ>
-void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, InstI *memI, InstJ *memJ, bool WAW){
+void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, InstI *memI, InstJ *memJ, bool WAW){
   auto must = false;
 
   /*
@@ -627,7 +567,7 @@ void llvm::PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults
   return ;
 }
 
-bool llvm::PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) {
+bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) {
   if (this->callGraph->hasIndCSCallees(call)) {
     const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
     for (auto &callee : callees) {
@@ -650,15 +590,15 @@ bool llvm::PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) 
   return true;
 }
 
-bool llvm::PDGAnalysis::isUnhandledExternalFunction(const Function *F) {
+bool PDGAnalysis::isUnhandledExternalFunction(const Function *F) {
   return F->empty() && !this->externalFuncsHandledBySVF.count(F->getName());
 }
 
-bool llvm::PDGAnalysis::isInternalFunctionThatReachUnhandledExternalFunction(const Function *F) {
+bool PDGAnalysis::isInternalFunctionThatReachUnhandledExternalFunction(const Function *F) {
   return !F->empty() && !this->reachableUnhandledExternalFuncs[F].empty();
 }
 
-bool llvm::PDGAnalysis::cannotReachUnhandledExternalFunction(CallInst *call) {
+bool PDGAnalysis::cannotReachUnhandledExternalFunction(CallInst *call) {
   if (this->callGraph->hasIndCSCallees(call)) {
     const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
     for (auto &callee : callees) {
@@ -673,12 +613,12 @@ bool llvm::PDGAnalysis::cannotReachUnhandledExternalFunction(CallInst *call) {
   return true;
 }
 
-bool llvm::PDGAnalysis::hasNoMemoryOperations(CallInst *call) {
+bool PDGAnalysis::hasNoMemoryOperations(CallInst *call) {
   if (this->mssa->getMRGenerator()->getModRefInfo(call) == ModRefInfo::NoModRef) return true;
   return false;
 }
 
-void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, StoreInst *memI, CallInst *call){
+void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, StoreInst *memI, CallInst *call){
   BitVector bv(3, false);
   auto makeRefEdge = false, makeModEdge = false;
 
@@ -747,7 +687,7 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
   return ;
 }
 
-void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, LoadInst *memI, CallInst *call){
+void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, LoadInst *memI, CallInst *call){
   BitVector bv(3, false);
 
   /*
@@ -786,7 +726,7 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
   return ;
 }
 
-void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *otherCall, CallInst *call){
+void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *otherCall, CallInst *call){
   BitVector bv(3, false);
   BitVector rbv(3, false);
   auto makeRefEdge = false, makeModEdge = false, makeModRefEdge = false;
@@ -920,7 +860,7 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
   return ;
 }
 
-void llvm::PDGAnalysis::iterateInstForStoreAliases (PDG *pdg, Function &F, AAResults &AA, StoreInst *store) {
+void PDGAnalysis::iterateInstForStoreAliases (PDG *pdg, Function &F, AAResults &AA, StoreInst *store) {
   for (auto &B : F) {
     for (auto &I : B) {
 
@@ -942,7 +882,7 @@ void llvm::PDGAnalysis::iterateInstForStoreAliases (PDG *pdg, Function &F, AARes
   }
 }
 
-void llvm::PDGAnalysis::iterateInstForModRef(PDG *pdg, Function &F, AAResults &AA, CallInst &call) {
+void PDGAnalysis::iterateInstForModRef(PDG *pdg, Function &F, AAResults &AA, CallInst &call) {
   for (auto &B : F) {
     for (auto &I : B) {
       if (auto *load = dyn_cast<LoadInst>(&I)) {
@@ -956,7 +896,7 @@ void llvm::PDGAnalysis::iterateInstForModRef(PDG *pdg, Function &F, AAResults &A
   }
 }
 
-void llvm::PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
+void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
 
   /*
    * Use alias analysis on stores, loads, and function calls to construct PDG edges
@@ -968,7 +908,7 @@ void llvm::PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
   }
 }
 
-void llvm::PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA){
+void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA){
   for (auto &B : F) {
     for (auto &I : B) {
       if (auto store = dyn_cast<StoreInst>(&I)) {
@@ -980,7 +920,7 @@ void llvm::PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function
   }
 }
 
-void llvm::PDGAnalysis::constructEdgesFromControl (PDG *pdg, Module &M){
+void PDGAnalysis::constructEdgesFromControl (PDG *pdg, Module &M){
   for (auto &F : M) {
     if (F.empty()) continue ;
     auto &postDomTree = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
@@ -988,7 +928,7 @@ void llvm::PDGAnalysis::constructEdgesFromControl (PDG *pdg, Module &M){
   }
 }
 
-void llvm::PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree) {
+void PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree) {
   for (auto &B : F)
   {
     SmallVector<BasicBlock *, 10> dominatedBBs;
@@ -1014,7 +954,7 @@ void llvm::PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function
   }
 }
 
-void llvm::PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {
+void PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {
   std::set<DGEdge<Value> *> removeEdges;
 
   /*
@@ -1111,7 +1051,7 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge) {
   return !loopCarried;
 }
 
-bool llvm::PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray (
+bool PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray (
   DGEdge<Value> *edge,
   LoadInst *load,
   StoreInst *store
@@ -1134,7 +1074,7 @@ bool llvm::PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray (
   return true;
 }
 
-bool llvm::PDGAnalysis::isBackedgeIntoSameGlobal (
+bool PDGAnalysis::isBackedgeIntoSameGlobal (
   DGEdge<Value> *edge
 ) {
   auto access1 = allocAA->getPrimitiveArrayAccess(edge->getOutgoingT());
@@ -1181,13 +1121,13 @@ bool llvm::PDGAnalysis::isBackedgeIntoSameGlobal (
   return true;
 }
 
-bool llvm::PDGAnalysis::isMemoryAccessIntoDifferentArrays (DGEdge<Value> *edge) {
+bool PDGAnalysis::isMemoryAccessIntoDifferentArrays (DGEdge<Value> *edge) {
   Value *array1 = allocAA->getPrimitiveArrayAccess(edge->getOutgoingT()).first;
   Value *array2 = allocAA->getPrimitiveArrayAccess(edge->getIncomingT()).first;
   return (array1 && array2 && array1 != array2);
 }
 
-bool llvm::PDGAnalysis::canPrecedeInCurrentIteration (Instruction *from, Instruction *to) {
+bool PDGAnalysis::canPrecedeInCurrentIteration (Instruction *from, Instruction *to) {
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*from->getFunction()).getLoopInfo();
   BasicBlock *fromBB = from->getParent();
   BasicBlock *toBB = to->getParent();
@@ -1306,4 +1246,9 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
   auto callName = getCallFnName(call);
   return isa<LoadInst>(mem) && isFunctionNonWriting(callName)
     || isa<StoreInst>(mem) && isFunctionMemoryless(callName);
+}
+
+PDGAnalysis::~PDGAnalysis() {
+  if (this->programDependenceGraph)
+    delete this->programDependenceGraph;
 }

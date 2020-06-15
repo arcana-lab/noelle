@@ -10,16 +10,14 @@
  */
 #include "DGSimplify.hpp"
 
-DGSimplify::~DGSimplify () {
-  for (auto orderedLoops : preOrderedLoops) {
-    delete orderedLoops.second;
-  }
-  for (auto l : loopSummaries) {
-    delete l;
-  }
-}
-
 bool llvm::DGSimplify::runOnModule (Module &M) {
+
+  /*
+   * Check if the inliner has been enabled.
+   */
+  if (!this->enable){
+    return false;
+  }
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DGSimplify at \"runOnModule\"\n";
   }
@@ -816,4 +814,13 @@ void llvm::DGSimplify::sortInDepthOrderFns (std::vector<Function *> &inOrder) {
     // NOTE(angelo): Sort functions deepest first
     return fnOrders[a] > fnOrders[b];
   });
+}
+
+DGSimplify::~DGSimplify () {
+  for (auto orderedLoops : preOrderedLoops) {
+    delete orderedLoops.second;
+  }
+  for (auto l : loopSummaries) {
+    delete l;
+  }
 }

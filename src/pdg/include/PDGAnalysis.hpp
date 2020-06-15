@@ -42,7 +42,7 @@ namespace llvm {
 
       PDG * getFunctionPDG (Function &F) ;
 
-      PDG * getPDG () ;
+      PDG * getPDG (void) ;
 
     private:
       Module *M;
@@ -52,6 +52,7 @@ namespace llvm {
       TalkDown *talkdown;
       PDGVerbosity verbose;
       bool embedPDG;
+      bool dumpPDG;
       PDGPrinter printer;
       PointerAnalysis *pta;
       PTACallGraph *callGraph;
