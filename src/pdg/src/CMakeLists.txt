@@ -1,5 +1,6 @@
 # Sources
 set(Srcs 
+  Pass.cpp
   PDGAnalysis.cpp
   AnalysisPass.cpp
   SubCFGs.cpp
