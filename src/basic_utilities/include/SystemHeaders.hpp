@@ -32,6 +32,7 @@
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/ADT/SCCIterator.h"
 #include "llvm/ADT/BitVector.h"
+#include "llvm/ADT/StringSet.h"
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"

@@ -57,16 +57,20 @@ namespace llvm {
       PTACallGraph *callGraph;
       MemSSA *mssa;
 
-      std::unordered_set<const Function *> internalFunctions;
-      std::unordered_set<const Function *> externalFunctions;
-      std::unordered_map<const Function *, std::unordered_set<const Function *>> reachableExternalFunctions;
+      std::unordered_set<const Function *> internalFuncs;
+      std::unordered_set<const Function *> unhandledExternalFuncs;
+      std::unordered_map<const Function *, std::unordered_set<const Function *>> reachableUnhandledExternalFuncs;
+      const StringSet<> externalFuncsHandledBySVF {
+        "sqrt"
+      };
       
       void initializeSVF(Module &M);
-      void identifyFunctionsThatInvokeLibrary(Module &M);
+      void identifyFunctionsThatInvokeUnhandledLibrary(Module &M);
       void printFunctionReachabilityResult();
       bool isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv);
-      bool calleeIsExternal(CallInst *call);
-      bool cannotReachExternal(CallInst *call);
+      bool isUnhandledExternalFunction(const Function *F);
+      bool isInternalFunctionThatReachUnhandledExternalFunction(const Function *F);
+      bool cannotReachUnhandledExternalFunction(CallInst *call);
       bool hasNoMemoryOperations(CallInst *call);
 
       bool comparePDGs(PDG *, PDG *);

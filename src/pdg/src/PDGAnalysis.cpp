@@ -56,10 +56,7 @@ bool llvm::PDGAnalysis::runOnModule (Module &M){
   /*
    * Function reachability analysis.
    */
-  identifyFunctionsThatInvokeLibrary(M);
-  if (this->verbose >= PDGVerbosity::MaximalAndPDG) {
-    printFunctionReachabilityResult();
-  }
+  identifyFunctionsThatInvokeUnhandledLibrary(M);
 
   /*
    * Check if we should print the PDG
@@ -102,26 +99,27 @@ void llvm::PDGAnalysis::initializeSVF(Module &M) {
   return;
 }
 
-void llvm::PDGAnalysis::identifyFunctionsThatInvokeLibrary(Module &M) {
+void llvm::PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
   /*
-   * Collect internal and external functions.
+   * Collect internal and unhandled external functions.
    */
   for (auto &F : M) {
     if (F.empty()) {
-      this->externalFunctions.insert(&F);
+      if (this->externalFuncsHandledBySVF.count(F.getName())) continue;
+      this->unhandledExternalFuncs.insert(&F);
     }
     else {
-      this->internalFunctions.insert(&F);
+      this->internalFuncs.insert(&F);
     }
   }
 
   /*
    * Identify function reachability.
    */
-  for (auto &internalFunction : this->internalFunctions) {
-    for (auto &externalFunction : this->externalFunctions) {
-      if (this->callGraph->isReachableBetweenFunctions(internalFunction, externalFunction)) {
-        this->reachableExternalFunctions[internalFunction].insert(externalFunction);
+  for (auto &internal : this->internalFuncs) {
+    for (auto &external : this->unhandledExternalFuncs) {
+      if (this->callGraph->isReachableBetweenFunctions(internal, external)) {
+        this->reachableUnhandledExternalFuncs[internal].insert(external);
       }
     }
   }
@@ -131,24 +129,24 @@ void llvm::PDGAnalysis::identifyFunctionsThatInvokeLibrary(Module &M) {
 
 void llvm::PDGAnalysis::printFunctionReachabilityResult() {
   /*
-   * Print internal and external functions.
+   * Print internal and unhandled external functions.
    */
   errs() << "Internal Functions:\n";
-  for (auto &internalFunction : this->internalFunctions) {
-    errs() << "\t" << internalFunction->getName() << "\n";
+  for (auto &internal : this->internalFuncs) {
+    errs() << "\t" << internal->getName() << "\n";
   }
-  errs() << "External Functions:\n";
-  for (auto &externalFunction : this->externalFunctions) {
-    errs() << "\t" << externalFunction->getName() << "\n";
+  errs() << "Unhandled External Functions:\n";
+  for (auto &external : this->unhandledExternalFuncs) {
+    errs() << "\t" << external->getName() << "\n";
   }
 
   /*
    * Print reachability results.
    */
-  for (auto &pair : this->reachableExternalFunctions) {
+  for (auto &pair : this->reachableUnhandledExternalFuncs) {
     errs() << "Reachable external functions of " << pair.first->getName() << "\n";
-    for (auto &externalFunction : pair.second) {
-      errs() << "\t" << externalFunction->getName() << "\n";
+    for (auto &external : pair.second) {
+      errs() << "\t" << external->getName() << "\n";
     }
   }
 
@@ -633,7 +631,7 @@ bool llvm::PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) 
   if (this->callGraph->hasIndCSCallees(call)) {
     const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
     for (auto &callee : callees) {
-      if (callee->empty() || !this->reachableExternalFunctions[callee].empty()) {
+      if (isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
         return false;
       }
     }
@@ -644,12 +642,40 @@ bool llvm::PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) 
       bv[2] = true; // ModRef bit is set
       return false;
     }
-    else if (callee->empty() || !this->reachableExternalFunctions[callee].empty()) {
+    else if (isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
       return false;
     }
   }
 
   return true;
+}
+
+bool llvm::PDGAnalysis::isUnhandledExternalFunction(const Function *F) {
+  return F->empty() && !this->externalFuncsHandledBySVF.count(F->getName());
+}
+
+bool llvm::PDGAnalysis::isInternalFunctionThatReachUnhandledExternalFunction(const Function *F) {
+  return !F->empty() && !this->reachableUnhandledExternalFuncs[F].empty();
+}
+
+bool llvm::PDGAnalysis::cannotReachUnhandledExternalFunction(CallInst *call) {
+  if (this->callGraph->hasIndCSCallees(call)) {
+    const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
+    for (auto &callee : callees) {
+      if (isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) return false;
+    }
+  }
+  else {
+    Function *callee = call->getCalledFunction();
+    if (!callee || isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) return false;
+  }
+
+  return true;
+}
+
+bool llvm::PDGAnalysis::hasNoMemoryOperations(CallInst *call) {
+  if (this->mssa->getMRGenerator()->getModRefInfo(call) == ModRefInfo::NoModRef) return true;
+  return false;
 }
 
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, StoreInst *memI, CallInst *call){
@@ -760,26 +786,6 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
   return ;
 }
 
-bool llvm::PDGAnalysis::cannotReachExternal(CallInst *call) {
-  if (this->callGraph->hasIndCSCallees(call)) {
-    const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
-    for (auto &callee : callees) {
-      if (callee->empty() || !this->reachableExternalFunctions[callee].empty()) return false;
-    }
-  }
-  else {
-    Function *callee = call->getCalledFunction();
-    if (!callee || callee->empty() || !this->reachableExternalFunctions[callee].empty()) return false;
-  }
-
-  return true;
-}
-
-bool llvm::PDGAnalysis::hasNoMemoryOperations(CallInst *call) {
-  if (this->mssa->getMRGenerator()->getModRefInfo(call) == ModRefInfo::NoModRef) return true;
-  return false;
-}
-
 void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *otherCall, CallInst *call){
   BitVector bv(3, false);
   BitVector rbv(3, false);
@@ -819,7 +825,8 @@ void llvm::PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResu
   /*
    * Check other alias analyses
    */
-  if ((cannotReachExternal(call) && hasNoMemoryOperations(call)) || (cannotReachExternal(otherCall) && hasNoMemoryOperations(otherCall))) {
+  if ((cannotReachUnhandledExternalFunction(call) && hasNoMemoryOperations(call)) ||
+      (cannotReachUnhandledExternalFunction(otherCall) && hasNoMemoryOperations(otherCall))) {
     return;
   }
 
