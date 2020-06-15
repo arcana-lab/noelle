@@ -86,6 +86,21 @@ bool DOALL::canBeAppliedToLoop (
   }
 
   /*
+   * NOTE: Due to a limitation in our ability to chunk induction variables,
+   * all induction variables must have step sizes that are loop invariant
+   */
+  for (auto IV : LDI->getInductionVariables()->getInductionVariables(*LDI->getLoopSummary())) {
+    if (IV->isStepSizeLoopInvariant()) {
+      IV->getHeaderPHI()->print(errs() << "DOALL:  Loop IV with loop invariant step size: "); errs() << "\n";
+      continue;
+    }
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "DOALL:  Loop has IV with loop variant step size\n";
+    }
+    return false;
+  }
+
+  /*
    * The compiler must be able to remove loop-carried data dependences of all SCCs with loop-carried data dependences.
    */
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();

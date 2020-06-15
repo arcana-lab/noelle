@@ -125,12 +125,11 @@ namespace llvm {
 
       void addChildReference(SCEVReference *scevReference) ;
 
+      std::set<SCEVReference *> collectAllReferences () ;
+
     private:
       Value *value;
       const SCEV *scev;
       std::vector<SCEVReference *> childReferences;
-
-      // TODO: Implement
-      bool containsAddRecExpr;
   };
 }
