@@ -44,7 +44,8 @@ void DOALL::rewireLoopToIterateChunks (
   auto chunkPHI = IVUtility::createChunkPHI(preheaderClone, headerClone, chunkCounterType, task->chunkSizeArg);
 
   /*
-   * Collect clones of step size deriving values
+   * Collect clones of step size deriving values for all induction variables
+   * of the top level loop
    */
   std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
@@ -52,6 +53,13 @@ void DOALL::rewireLoopToIterateChunks (
     if (ivInfo->getSimpleValueOfStepSize()) {
       clonedStepValue = fetchClone(ivInfo->getSimpleValueOfStepSize());
     } else {
+
+      /*
+       * The step size is a composite SCEV. Fetch its instruction expansion,
+       * cloning into the entry block of the function
+       * 
+       * NOTE: The step size is expected to be loop invariant
+       */
       auto expandedInsts = ivInfo->getExpansionOfCompositeStepSize();
       assert(expandedInsts.size() > 0);
       for (auto expandedInst : expandedInsts) {
@@ -60,6 +68,9 @@ void DOALL::rewireLoopToIterateChunks (
         entryBuilder.Insert(clonedInst);
       }
 
+      /*
+       * Wire the instructions in the expansion to use the cloned values
+       */
       for (auto expandedInst : expandedInsts) {
         adjustDataFlowToUseClones(task->getCloneOfOriginalInstruction(expandedInst), 0);
       }
@@ -135,8 +146,9 @@ void DOALL::rewireLoopToIterateChunks (
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
     auto &derivation = ivUtility.getConditionValueDerivation();
     for (auto I : derivation) {
-      I->removeFromParent();
-      entryBuilder.Insert(I);
+      auto cloneI = task->getCloneOfOriginalInstruction(I);
+      cloneI->removeFromParent();
+      entryBuilder.Insert(cloneI);
     }
 
     exitConditionInst->removeFromParent();
