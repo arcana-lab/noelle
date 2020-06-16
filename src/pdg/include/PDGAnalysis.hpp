@@ -31,7 +31,9 @@ namespace llvm {
   struct PDGAnalysis : public ModulePass {
     public:
       static char ID;
+
       PDGAnalysis();
+
       virtual ~PDGAnalysis();
 
       bool doInitialization (Module &M) override ;
