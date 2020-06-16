@@ -218,6 +218,38 @@ InductionVariable::~InductionVariable () {
   }
 }
 
+PHINode *InductionVariable::getHeaderPHI () {
+  return headerPHI;
+}
+
+std::set<PHINode *> &InductionVariable::getPHIs() {
+  return PHIs;
+}
+
+std::set<Instruction *> &InductionVariable::getAccumulators() {
+  return accumulators;
+}
+
+std::set<Instruction *> &InductionVariable::getAllInstructions() {
+  return allInstructions;
+}
+
+Value *InductionVariable::getStartAtHeader () {
+  return startValue;
+}
+
+Value *InductionVariable::getSimpleValueOfStepSize () {
+  return stepSize;
+}
+
+const SCEV *InductionVariable::getComposableStepSize () {
+  return compositeStepSize;
+}
+
+std::vector<Instruction *> InductionVariable::getExpansionOfCompositeStepSize() {
+  return expansionOfCompositeStepSize;
+}
+
 /*
  * LoopGoverningIVUtility implementation
  */
@@ -308,6 +340,34 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
 
   // iv.getHeaderPHI()->print(errs() << "Is well formed: "); errs() << "\n";
   isWellFormed = true;
+}
+
+InductionVariable &LoopGoverningIVAttribution::getInductionVariable() {
+  return IV;
+}
+
+CmpInst *LoopGoverningIVAttribution::getHeaderCmpInst() {
+  return headerCmp;
+}
+
+Value *LoopGoverningIVAttribution::getHeaderCmpInstConditionValue() {
+  return conditionValue;
+}
+
+BranchInst *LoopGoverningIVAttribution::getHeaderBrInst() {
+  return headerBr;
+}
+
+BasicBlock *LoopGoverningIVAttribution::getExitBlockFromHeader() {
+  return exitBlock;
+}
+
+bool LoopGoverningIVAttribution::isSCCContainingIVWellFormed() {
+  return isWellFormed;
+}
+
+std::set<Instruction *> &LoopGoverningIVAttribution::getConditionValueDerivation() { 
+  return conditionValueDerivation;
 }
 
 /*
@@ -461,4 +521,8 @@ void LoopGoverningIVUtility::cloneConditionalCheckFor(
   Value *cmpInst;
   cmpInst = cloneBuilder.CreateICmp(nonStrictPredicate, recurrenceOfIV, clonedCompareValue);
   cloneBuilder.CreateCondBr(cmpInst, exitBlock, continueBlock);
+}
+
+std::vector<Instruction *> &LoopGoverningIVUtility::getConditionValueDerivation () {
+  return conditionValueOrderedDerivation;
 }

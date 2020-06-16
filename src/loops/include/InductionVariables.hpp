@@ -62,14 +62,14 @@ namespace llvm {
 
       ~InductionVariable () ;
 
-      PHINode *getHeaderPHI () { return headerPHI; }
-      std::set<PHINode *> &getPHIs() { return PHIs; }
-      std::set<Instruction *> &getAccumulators() { return accumulators; }
-      std::set<Instruction *> &getAllInstructions() { return allInstructions; }
-      Value *getStartAtHeader () { return startValue; }
-      Value *getSimpleValueOfStepSize () { return stepSize; }
-      const SCEV *getComposableStepSize () { return compositeStepSize; }
-      std::vector<Instruction *> getExpansionOfCompositeStepSize() { return expansionOfCompositeStepSize; }
+      PHINode *getHeaderPHI () ;
+      std::set<PHINode *> &getPHIs() ;
+      std::set<Instruction *> &getAccumulators() ;
+      std::set<Instruction *> &getAllInstructions() ;
+      Value *getStartAtHeader () ;
+      Value *getSimpleValueOfStepSize () ;
+      const SCEV *getComposableStepSize () ;
+      std::vector<Instruction *> getExpansionOfCompositeStepSize() ;
       bool isStepSizeLoopInvariant() ;
 
     private:
@@ -90,15 +90,13 @@ namespace llvm {
     public:
       LoopGoverningIVAttribution (InductionVariable &IV, SCC &scc, std::vector<BasicBlock *> &exitBlocks) ;
 
-      InductionVariable &getInductionVariable() { return IV; }
-      CmpInst *getHeaderCmpInst() { return headerCmp; }
-      Value *getHeaderCmpInstConditionValue() { return conditionValue; }
-      BranchInst *getHeaderBrInst() { return headerBr; }
-      BasicBlock *getExitBlockFromHeader() { return exitBlock; }
-      bool isSCCContainingIVWellFormed() { return isWellFormed; }
-      std::set<Instruction *> &getConditionValueDerivation() { 
-        return conditionValueDerivation;
-      }
+      InductionVariable &getInductionVariable() ;
+      CmpInst *getHeaderCmpInst() ;
+      Value *getHeaderCmpInstConditionValue() ;
+      BranchInst *getHeaderBrInst() ;
+      BasicBlock *getExitBlockFromHeader() ;
+      bool isSCCContainingIVWellFormed() ;
+      std::set<Instruction *> &getConditionValueDerivation() ;
 
     private:
       InductionVariable &IV;
@@ -131,9 +129,7 @@ namespace llvm {
     public:
       LoopGoverningIVUtility (InductionVariable &IV, LoopGoverningIVAttribution &attribution) ;
 
-      std::vector<Instruction *> &getConditionValueDerivation () {
-        return conditionValueOrderedDerivation;
-      }
+      std::vector<Instruction *> &getConditionValueDerivation () ;
 
       void updateConditionAndBranchToCatchIteratingPastExitValue (
         CmpInst *cmpToUpdate,
