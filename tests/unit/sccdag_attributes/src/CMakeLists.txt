@@ -26,8 +26,8 @@ set(PassesPath ${RootPath}/src)
 set(UtilDep ${PassesPath}/basic_utilities/include)
 set(DGDep ${PassesPath}/alloc_aa/include ${PassesPath}/pdg/include ${PassesPath}/talkdown/include)
 set(SVFDep ${RootPath}/external/svf/include)
-set(ParDep ${PassesPath}/loops/include ${PassesPath}/parallelization_utilities/include)
-include_directories(${LLVM_INCLUDE_DIRS} ${UtilDep} ${DGDep} ${SVFDep} ${ParDep} ../../helpers/include ../include ./)
+set(LoopDep ${PassesPath}/loops/include ${PassesPath}/loop_structure/include ${PassesPath}/loop_metadata/include)
+include_directories(${LLVM_INCLUDE_DIRS} ${UtilDep} ${DGDep} ${SVFDep} ${LoopDep} ../../helpers/include ../include ./)
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})
