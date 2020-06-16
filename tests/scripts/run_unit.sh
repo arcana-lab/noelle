@@ -16,18 +16,17 @@ function loadAndRunNoellePasses {
   local OUTPUT=$3
 
   local BASICS="-load $LIB_DIR/Architecture.so -load $LIB_DIR/BasicUtilities.so -load $LIB_DIR/DataFlow.so \
-    -load $LIB_DIR/Loops.so -load $LIB_DIR/HotProfiler.so"
+    -load $LIB_DIR/Loops.so -load $LIB_DIR/HotProfiler.so \
+    -load $LIB_DIR/LoopMetadata.so -load $LIB_DIR/LoopStructure.so"
   local ANALYSES="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa"
   local WPAPASS="-load $LIB_DIR/libSvf.so -load $LIB_DIR/libCudd.so \
     -veto -nander -hander -sander -sfrander -wander -ander -fspta -lander -hlander -stat=false"
   local PDGPASS="-load $LIB_DIR/AllocAA.so -load $LIB_DIR/TalkDown.so -load $LIB_DIR/PDGAnalysis.so"
-  local ENABLERS="-load $LIB_DIR/LoopDistribution.so"
+  local ENABLERS="-load $LIB_DIR/LoopDistribution.so -load $LIB_DIR/LoopUnroll.so"
   local PARALLELIZATION_TECHNIQUES="-load $LIB_DIR/Noelle.so -load $LIB_DIR/Task.so \
     -load $LIB_DIR/DSWP.so -load $LIB_DIR/DOALL.so -load $LIB_DIR/HELIX.so"
 
   local OPTPASSES="$WPAPASS $PDGPASS $BASICS \
-    -load $LIB_DIR/HotProfiler.so \
-    -load $LIB_DIR/Parallelization.so \
     -load $LIB_DIR/Heuristics.so -load $LIB_DIR/ParallelizationTechnique.so \
     $ENABLERS $PARALLELIZATION_TECHNIQUES -load $LIB_DIR/Parallelizer.so"
 
