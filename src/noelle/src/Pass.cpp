@@ -14,7 +14,17 @@
 
 using namespace llvm;
 
+static cl::opt<int> Verbose("noelle-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal)"));
+static cl::opt<int> MinimumHotness("noelle-min-hot", cl::ZeroOrMore, cl::Hidden, cl::desc("Minimum hotness of code to be parallelized"));
+
 bool Noelle::doInitialization (Module &M) {
+
+  /*
+   * Fetch the command line options.
+   */
+  this->verbose = static_cast<Verbosity>(Verbose.getValue());
+  this->minHot = ((double)(MinimumHotness.getValue())) / 100;
+
   int1 = IntegerType::get(M.getContext(), 1);
   int8 = IntegerType::get(M.getContext(), 8);
   int16 = IntegerType::get(M.getContext(), 16);

@@ -44,8 +44,6 @@ namespace llvm {
       /*
        * Fields
        */
-      double minHot;
-      Verbosity verbose;
       bool enableEnablers;
 
       /*

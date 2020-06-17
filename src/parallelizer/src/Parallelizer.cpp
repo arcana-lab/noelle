@@ -28,6 +28,11 @@ bool Parallelizer::parallelizeLoop (
   assert(h != nullptr);
 
   /*
+   * Fetch the verbosity level.
+   */
+  auto verbose = par.getVerbosity();
+
+  /*
    * Fetch the loop headers.
    */
   auto loopSummary = LDI->getLoopSummary();
@@ -42,7 +47,7 @@ bool Parallelizer::parallelizeLoop (
   /*
    * Print
    */
-  if (this->verbose != Verbosity::Disabled) {
+  if (verbose != Verbosity::Disabled) {
     errs() << "Parallelizer: Start\n";
     errs() << "Parallelizer:  Function = \"" << loopFunction->getName() << "\"\n";
     errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *loopHeader->getFirstNonPHI() << "\"\n";
@@ -133,7 +138,7 @@ bool Parallelizer::parallelizeLoop (
    *
    * Link the parallelized loop within the original function that includes the sequential loop.
    */
-  if (this->verbose != Verbosity::Disabled) {
+  if (verbose != Verbosity::Disabled) {
     errs() << "Parallelizer:  Link the parallelize loop\n";
   }
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
@@ -147,14 +152,14 @@ bool Parallelizer::parallelizeLoop (
     exitIndex,
     loopExitBlocks
   );
-  if (this->verbose >= Verbosity::Maximal) {
+  if (verbose >= Verbosity::Maximal) {
     loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
   }
 
   /*
    * Return
    */
-  if (this->verbose != Verbosity::Disabled) {
+  if (verbose != Verbosity::Disabled) {
     errs() << "Parallelizer: Exit\n";
   }
   return true;

@@ -67,9 +67,15 @@ namespace llvm {
         std::vector<BasicBlock *> &loopExitBlocks
         );
 
+      Verbosity getVerbosity (void) const ;
+
+      double getMinimumHotness (void) const ;
+
       ~Noelle();
 
     private:
+      Verbosity verbose;
+      double minHot;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream

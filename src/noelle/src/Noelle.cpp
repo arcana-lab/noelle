@@ -35,7 +35,12 @@
 
 using namespace llvm;
 
-Noelle::Noelle() : ModulePass{ID}{
+Noelle::Noelle() 
+  : ModulePass{ID}
+    , verbose{Verbosity::Disabled}
+    , minHot{0.0}
+  {
+
   return ;
 }
 
@@ -670,6 +675,14 @@ bool Noelle::filterOutLoops (
   }
   
   return filterLoops;
+}
+
+Verbosity Noelle::getVerbosity (void) const {
+  return this->verbose;
+}
+
+double Noelle::getMinimumHotness (void) const {
+  return this->minHot;
 }
 
 Noelle::~Noelle(){
