@@ -2,7 +2,7 @@
 : '
 Goal: 
 run the following as long as it outputs a file indicating to continue
-opt $(PRE_OPTPASSES) -DGSimplify $(OPTIONS) $@ -o $@
+opt $(PRE_OPTPASSES) -Inliner $(OPTIONS) $@ -o $@
 '
 
 installDir
@@ -26,8 +26,8 @@ function runSimplify {
   while test -e "dgsimplify_continue.txt" ; do
     rm "dgsimplify_continue.txt"
     let ITER=ITER+1 
-    printf "Running DGSimplify to inline calls within SCCs, iteration: $ITER\n"
-    noelle-load -load ${installDir}/lib/DGSimplify.so "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
+    printf "Running Inliner to inline calls within SCCs, iteration: $ITER\n"
+    noelle-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $FILE_NAME "-o" $FILE_NAME
   done
 
   ITER=0
@@ -37,8 +37,8 @@ function runSimplify {
   while test -e "dgsimplify_continue.txt" ; do
     rm "dgsimplify_continue.txt"
     let ITER=ITER+1 
-    printf "Running DGSimplify to hoist loops to main, iteration: $ITER\n"
-    noelle-load -load ${installDir}/lib/DGSimplify.so "-DGSimplify" $OPTIONS $FILE_NAME "-o" $FILE_NAME
+    printf "Running Inliner to hoist loops to main, iteration: $ITER\n"
+    noelle-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $FILE_NAME "-o" $FILE_NAME
   done
 
   rm -f dgsimplify_**

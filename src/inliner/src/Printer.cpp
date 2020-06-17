@@ -8,65 +8,65 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DGSimplify.hpp"
+#include "Inliner.hpp"
 
 using namespace llvm;
 
-void DGSimplify::printFnCallGraph () {
+void Inliner::printFnCallGraph () {
   if (this->verbose == Verbosity::Disabled) return;
   for (auto fns : parentFns) {
-    errs() << "DGSimplify:   Child function: " << fns.first->getName() << "\n";
+    errs() << "Inliner:   Child function: " << fns.first->getName() << "\n";
     for (auto f : fns.second) {
-      errs() << "DGSimplify:   \tParent: " << f->getName() << "\n";
+      errs() << "Inliner:   \tParent: " << f->getName() << "\n";
     }
   }
 }
 
-void DGSimplify::printFnOrder () {
+void Inliner::printFnOrder () {
   if (this->verbose == Verbosity::Disabled) return;
   int count = 0;
   for (auto fn : depthOrderedFns) {
-    errs() << "DGSimplify:   Function: " << count++ << " " << fn->getName() << "\n";
+    errs() << "Inliner:   Function: " << count++ << " " << fn->getName() << "\n";
   }
 }
 
-void DGSimplify::printFnLoopOrder (Function *F) {
+void Inliner::printFnLoopOrder (Function *F) {
   if (this->verbose == Verbosity::Disabled) return;
   auto count = 1;
   for (auto summary : *preOrderedLoops[F]) {
     auto headerBB = summary->getHeader();
-    errs() << "DGSimplify:   Loop " << count++ << ", depth: " << summary->getNestingLevel() << "\n";
+    errs() << "Inliner:   Loop " << count++ << ", depth: " << summary->getNestingLevel() << "\n";
     // headerBB->print(errs()); errs() << "\n";
   }
 }
 
-void DGSimplify::printLoopsToCheck () {
+void Inliner::printLoopsToCheck () {
   if (this->verbose == Verbosity::Disabled) return;
-  errs() << "DGSimplify:   Loops in checklist ---------------\n";
+  errs() << "Inliner:   Loops in checklist ---------------\n";
   for (auto fnLoops : loopsToCheck) {
     auto F = fnLoops.first;
     auto fnInd = fnOrders[F];
-    errs() << "DGSimplify:   Fn: "
+    errs() << "Inliner:   Fn: "
       << fnInd << " " << F->getName() << "\n";
     auto &allLoops = *preOrderedLoops[F];
     for (auto loop : fnLoops.second) {
       auto loopInd = std::find(allLoops.begin(), allLoops.end(), loop);
       assert(loopInd != allLoops.end() && "DEBUG: Loop not given an order!");
-      errs() << "DGSimplify:   \tChecking Loop: " << (loopInd - allLoops.begin()) << "\n";
+      errs() << "Inliner:   \tChecking Loop: " << (loopInd - allLoops.begin()) << "\n";
     }
   }
-  errs() << "DGSimplify:   ---------------\n";
+  errs() << "Inliner:   ---------------\n";
 }
 
-void DGSimplify::printFnsToCheck () {
+void Inliner::printFnsToCheck () {
   if (this->verbose == Verbosity::Disabled) return;
-  errs() << "DGSimplify:   Functions in checklist ---------------\n";
+  errs() << "Inliner:   Functions in checklist ---------------\n";
   std::vector<int> fnInds;
   for (auto F : fnsToCheck) fnInds.push_back(fnOrders[F]);
   std::sort(fnInds.begin(), fnInds.end());
   for (auto ind : fnInds) {
-    errs() << "DGSimplify:   Fn: "
+    errs() << "Inliner:   Fn: "
       << ind << " " << depthOrderedFns[ind]->getName() << "\n";
   }
-  errs() << "DGSimplify:   ---------------\n";
+  errs() << "Inliner:   ---------------\n";
 }

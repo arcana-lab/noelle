@@ -10,49 +10,30 @@
  */
 #pragma once
 
-#include "llvm/Pass.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include "llvm/Transforms/Utils/Cloning.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/CallGraph.h"
-#include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpressions.h"
-#include "llvm/Analysis/PostDominators.h"
+#include "SystemHeaders.hpp"
 
 #include "DGBase.hpp"
 #include "DGGraphTraits.hpp"
 #include "PDG.hpp"
 #include "PDGAnalysis.hpp"
 #include "SCCDAG.hpp"
-
 #include "LoopDependenceInfo.hpp"
 #include "Noelle.hpp"
-
-#include <set>
-#include <queue>
-
-#include <stdio.h>
-#include <iostream>
 #include <fstream>
 
 using namespace llvm;
 
 namespace llvm {
 
-  struct DGSimplify : public ModulePass {
+  struct Inliner : public ModulePass {
   public:
     static char ID;
 
-    DGSimplify()
+    Inliner()
       : ModulePass{ID}, fnsAffected{}, parentFns{}, childrenFns{},
         loopsToCheck{}, depthOrderedFns{}, preOrderedLoops{} {}
 
-    ~DGSimplify() ;
+    ~Inliner() ;
 
     bool doInitialization (Module &M) override ;
 

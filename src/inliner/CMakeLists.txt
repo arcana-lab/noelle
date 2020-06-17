@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.4.3)
-project(CAT)
+project(Inliner)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -32,4 +32,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/DGSimplify.hpp DESTINATION include)
+install(PROGRAMS include/Inliner.hpp DESTINATION include)

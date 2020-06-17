@@ -8,9 +8,9 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DGSimplify.hpp"
+#include "Inliner.hpp"
 
-bool llvm::DGSimplify::runOnModule (Module &M) {
+bool llvm::Inliner::runOnModule (Module &M) {
 
   /*
    * Check if the inliner has been enabled.
@@ -19,7 +19,7 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
     return false;
   }
   if (this->verbose != Verbosity::Disabled) {
-    errs() << "DGSimplify at \"runOnModule\"\n";
+    errs() << "Inliner at \"runOnModule\"\n";
   }
 
   /*
@@ -36,7 +36,7 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
 
   auto printFnInfo = [&]() -> void {
     if (this->verbose >= Verbosity::Maximal) {
-      errs() << "DGSimplify:   Function graph and order\n";
+      errs() << "Inliner:   Function graph and order\n";
       printFnCallGraph();
       printFnOrder();
     }
@@ -85,7 +85,7 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
           && (!remaining)  
           && (this->verbose != Verbosity::Disabled)
       ){
-      errs() << "DGSimplify:   No remaining call inlining in SCCs\n";
+      errs() << "Inliner:   No remaining call inlining in SCCs\n";
     }
 
     return inlined;
@@ -120,7 +120,7 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
 
     printFnInfo();
     if (!remaining && this->verbose != Verbosity::Disabled) {
-      errs() << "DGSimplify:   No remaining hoists\n";
+      errs() << "Inliner:   No remaining hoists\n";
     }
 
     return inlined;
@@ -132,7 +132,7 @@ bool llvm::DGSimplify::runOnModule (Module &M) {
 /*
  * Progress Tracking using file system
  */
-void llvm::DGSimplify::getLoopsToInline (std::string filename) {
+void llvm::Inliner::getLoopsToInline (std::string filename) {
   loopsToCheck.clear();
   ifstream infile(filename);
   if (infile.good()) {
@@ -175,7 +175,7 @@ void llvm::DGSimplify::getLoopsToInline (std::string filename) {
   }
 }
 
-void llvm::DGSimplify::getFunctionsToInline (std::string filename) {
+void llvm::Inliner::getFunctionsToInline (std::string filename) {
   fnsToCheck.clear();
   ifstream infile(filename);
   if (infile.good()) {
@@ -193,7 +193,7 @@ void llvm::DGSimplify::getFunctionsToInline (std::string filename) {
   }
 }
 
-bool llvm::DGSimplify::registerRemainingLoops (std::string filename) {
+bool llvm::Inliner::registerRemainingLoops (std::string filename) {
   remove(filename.c_str());
   if (loopsToCheck.empty()) return false;
 
@@ -230,7 +230,7 @@ bool llvm::DGSimplify::registerRemainingLoops (std::string filename) {
   return true;
 }
 
-bool llvm::DGSimplify::registerRemainingFunctions (std::string filename) {
+bool llvm::Inliner::registerRemainingFunctions (std::string filename) {
   remove(filename.c_str());
   if (fnsToCheck.empty()) return false;
 
@@ -248,7 +248,7 @@ bool llvm::DGSimplify::registerRemainingFunctions (std::string filename) {
 /*
  * Inlining
  */
-bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
+bool llvm::Inliner::inlineCallsInMassiveSCCsOfLoops (void) {
   auto &PDGA = getAnalysis<PDGAnalysis>();
   bool anyInlined = false;
 
@@ -340,7 +340,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCsOfLoops (void) {
  * try inlining the function call in that SCC with the
  * most memory edges to other internal/external values
  */
-bool llvm::DGSimplify::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
+bool llvm::Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
 
   /*
    * Fetch the SCCDAG
@@ -399,7 +399,7 @@ bool llvm::DGSimplify::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo
   return inlineCall && inlineFunctionCall(F, inlineCall->getCalledFunction(), inlineCall);
 }
 
-bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
+bool llvm::Inliner::inlineFnsOfLoopsToCGRoot () {
   std::vector<Function *> orderedFns;
   for (auto F : fnsToCheck) orderedFns.push_back(F);
   sortInDepthOrderFns(orderedFns);
@@ -475,19 +475,19 @@ bool llvm::DGSimplify::inlineFnsOfLoopsToCGRoot () {
   return inlined;
 }
 
-bool llvm::DGSimplify::canInlineWithoutRecursiveLoop (Function *parentF, Function *childF) {
+bool llvm::Inliner::canInlineWithoutRecursiveLoop (Function *parentF, Function *childF) {
   // NOTE(angelo): Prevent inlining a call to the entry of a recursive chain of functions
   if (recursiveChainEntranceFns.find(childF) != recursiveChainEntranceFns.end()) return false ;
   return true;
 }
 
-bool llvm::DGSimplify::inlineFunctionCall (Function *F, Function *childF, CallInst *call) {
+bool llvm::Inliner::inlineFunctionCall (Function *F, Function *childF, CallInst *call) {
   // NOTE(angelo): Prevent inlining a call within a function already altered by inlining
   if (fnsAffected.find(F) != fnsAffected.end()) return false ;
   if (!canInlineWithoutRecursiveLoop(F, childF)) return false ;
 
   if (this->verbose != Verbosity::Disabled) {
-    call->print(errs() << "DGSimplify:   Inlining in: " << F->getName() << ", ");
+    call->print(errs() << "Inliner:   Inlining in: " << F->getName() << ", ");
     errs() << "\n";
   }
 
@@ -505,7 +505,7 @@ bool llvm::DGSimplify::inlineFunctionCall (Function *F, Function *childF, CallIn
   return false;
 }
 
-int llvm::DGSimplify::getNextPreorderLoopAfter (Function *F, CallInst *call) {
+int llvm::Inliner::getNextPreorderLoopAfter (Function *F, CallInst *call) {
   if (preOrderedLoops.find(F) == preOrderedLoops.end()) return 0;
 
   auto &summaries = *preOrderedLoops[F];
@@ -528,7 +528,7 @@ int llvm::DGSimplify::getNextPreorderLoopAfter (Function *F, CallInst *call) {
 /*
  * Function and loop ordering
  */
-void llvm::DGSimplify::adjustLoopOrdersAfterInline (Function *parentF, Function *childF, int nextLoopInd) {
+void llvm::Inliner::adjustLoopOrdersAfterInline (Function *parentF, Function *childF, int nextLoopInd) {
   bool parentHasLoops = preOrderedLoops.find(parentF) != preOrderedLoops.end();
   bool childHasLoops = preOrderedLoops.find(childF) != preOrderedLoops.end();
   if (!childHasLoops || preOrderedLoops[childF]->size() == 0) return ;
@@ -560,7 +560,7 @@ void llvm::DGSimplify::adjustLoopOrdersAfterInline (Function *parentF, Function 
 // childrenFns and parentFns [collectFnGraph] and therefore depthOrdered and fnOrder [in collectInDepthOrderFns] doesn't
 // take into account the defferent function that never got an order. This causes the number to be out between successive
 // iterations of this inliner.
-void llvm::DGSimplify::adjustFnGraphAfterInline (Function *parentF, Function *childF, int callInd) {
+void llvm::Inliner::adjustFnGraphAfterInline (Function *parentF, Function *childF, int callInd) {
   auto &parentCalled = orderedCalled[parentF];
   auto &childCalled = orderedCalled[childF];
 
@@ -593,7 +593,7 @@ void llvm::DGSimplify::adjustFnGraphAfterInline (Function *parentF, Function *ch
   }
 }
 
-void llvm::DGSimplify::collectFnGraph (Function *main) {
+void llvm::Inliner::collectFnGraph (Function *main) {
   auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
   std::queue<Function *> funcToTraverse;
   std::set<Function *> reached;
@@ -630,7 +630,7 @@ void llvm::DGSimplify::collectFnGraph (Function *main) {
   }
 }
 
-void llvm::DGSimplify::collectFnCallsAndCalled (CallGraph &CG, Function *parentF) {
+void llvm::Inliner::collectFnCallsAndCalled (CallGraph &CG, Function *parentF) {
 
   // Collect call instructions to already linked functions
   std::set<CallInst *> unorderedCalls;
@@ -681,7 +681,7 @@ void llvm::DGSimplify::collectFnCallsAndCalled (CallGraph &CG, Function *parentF
  *  after all other directed acyclic portions of the call graph (starting
  *  from their common ancestor) is traversed.
  */
-void llvm::DGSimplify::collectInDepthOrderFns (Function *main) {
+void llvm::Inliner::collectInDepthOrderFns (Function *main) {
   depthOrderedFns.clear();
   recursiveChainEntranceFns.clear();
   fnOrders.clear();
@@ -745,10 +745,10 @@ void llvm::DGSimplify::collectInDepthOrderFns (Function *main) {
   delete deferred;
 }
 
-void llvm::DGSimplify::createPreOrderedLoopSummariesFor (Function *F) {
+void llvm::Inliner::createPreOrderedLoopSummariesFor (Function *F) {
   // NOTE(angelo): Enforce managing order instead of recalculating it entirely
   if (preOrderedLoops.find(F) != preOrderedLoops.end()) {
-    errs() << "DGSimplify:   Misuse! Do not collect ordered loops more than once. Manage current ordering.\n";
+    errs() << "Inliner:   Misuse! Do not collect ordered loops more than once. Manage current ordering.\n";
   }
 
   auto& LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
@@ -799,7 +799,7 @@ void llvm::DGSimplify::createPreOrderedLoopSummariesFor (Function *F) {
   preOrderedLoops[F] = &orderedLoops;
 }
 
-std::vector<Loop *> *llvm::DGSimplify::collectPreOrderedLoopsFor (Function *F, LoopInfo &LI) {
+std::vector<Loop *> *llvm::Inliner::collectPreOrderedLoopsFor (Function *F, LoopInfo &LI) {
   // Collect loops in program forward order
   auto loops = new std::vector<Loop *>();
   for (auto &B : *F) {
@@ -809,14 +809,14 @@ std::vector<Loop *> *llvm::DGSimplify::collectPreOrderedLoopsFor (Function *F, L
   return loops;
 }
 
-void llvm::DGSimplify::sortInDepthOrderFns (std::vector<Function *> &inOrder) {
+void llvm::Inliner::sortInDepthOrderFns (std::vector<Function *> &inOrder) {
   std::sort(inOrder.begin(), inOrder.end(), [this](Function *a, Function *b) {
     // NOTE(angelo): Sort functions deepest first
     return fnOrders[a] > fnOrders[b];
   });
 }
 
-DGSimplify::~DGSimplify () {
+Inliner::~Inliner () {
   for (auto orderedLoops : preOrderedLoops) {
     delete orderedLoops.second;
   }
