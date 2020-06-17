@@ -153,21 +153,25 @@ bool LoopDistribution::splitLoop (
 bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
   LoopDependenceInfo const &LDI,
   std::set<Instruction *> const &instsToPullOut,
-  std::set<Instruction *> const &clonedInsts
+  std::set<Instruction *> const &controlInstructions
   ){
   auto BBs = LDI.getLoopSummary()->getBasicBlocks();
-  auto fn = [&BBs, &instsToPullOut, &clonedInsts](Value *toOrFrom, DataDependenceType ddType) -> bool {
+  auto fn = [&BBs, &instsToPullOut, &controlInstructions](Value *toOrFrom, DataDependenceType ddType) -> bool {
     if (!isa<Instruction>(toOrFrom)) {
       return false;
     }
     auto i = cast<Instruction>(toOrFrom);
 
     /*
-     * Ignore dependencies between instructions we are pulling out or were already cloned
+     * Ignore dependencies between instructions we are pulling out and control instructions.
+     *   It is okay for an instruction to depend on a control instruction, because control
+     *   instructions will be cloned. It is impossible for a control instruction to depend on
+     *   a non-control instruction (by definition).
+     *   TODO(lukas): Confirm the above
      */
     if (true
         && instsToPullOut.find(i) == instsToPullOut.end()
-        && clonedInsts.find(i) == clonedInsts.end()
+        && controlInstructions.find(i) == controlInstructions.end()
        ) {
       auto bb = i->getParent();
 
@@ -276,7 +280,7 @@ void LoopDistribution::doSplit (
     bbMap[BB] = cloneBB;
     IRBuilder<> builder(cloneBB);
     for (auto &I : *BB) {
-      if (isa<BranchInst>(I)) {
+      if (isa<BranchInst>(I)) { // TODO(lukas): Should this be all terminators?
         continue;
       }
       if (false
@@ -290,17 +294,14 @@ void LoopDistribution::doSplit (
   errs() << "LoopDistribution: Finished cloning non-branch instructions\n";
 
   /*
-   * Collect the branch instructions that can lead to exiting the loop. This needs to happen
+   * Collect the exiting basic blocks of the original loop. This needs to happen
    *   before we add branches to the new loop or getSinglePredecessor won't work
    */
-  std::unordered_map<BasicBlock *, BranchInst *> oldExitBlockToBranch{};
-  std::vector<BasicBlock *> oldExitingBlocks{};
-  for (auto loopExitBlock : loopSummary->getLoopExitBasicBlocks()) {
-    auto oldExitingBlock = loopExitBlock->getSinglePredecessor();
-    oldExitingBlocks.push_back(oldExitingBlock);
-    assert(oldExitingBlock && isa<BranchInst>(oldExitingBlock->getTerminator()));
-    auto oldLoopExit = cast<BranchInst>(oldExitingBlock->getTerminator());
-    oldExitBlockToBranch[loopExitBlock] = oldLoopExit;
+  std::unordered_map<BasicBlock *, BasicBlock *> exitBlockToExitingBlock{};
+  for (auto exitBlock : loopSummary->getLoopExitBasicBlocks()) {
+    auto exitingBlock = exitBlock->getSinglePredecessor();
+    assert(exitingBlock);
+    exitBlockToExitingBlock[exitBlock] = exitingBlock;
   }
   errs() << "LoopDistribution: Finished collecting exit branches\n";
 
@@ -334,15 +335,24 @@ void LoopDistribution::doSplit (
   /*
    * Connect the original loop to the new loop using the branches we found earlier. This needs
    *   to happen after we add branches to the new loop or the branches we are about to add
-   *   will mess up the process of stitching things together by pointing to blocks not in the map
-   *   TODO(Lukas): This requires the one exit block assumption
+   *   will mess up the process of stitching things together by pointing to blocks not in the map.
+   *   New exit blocks are added so that we maintain the single predecessor invarient. These new
+   *   exit blocks branch to a preheader which then branches to the new loop's header.
    */
+  auto newPreHeader = BasicBlock::Create(cxt, "", loopSummary->getFunction());
   auto newLoopHeader = bbMap.at(loopSummary->getHeader());
-  for (auto loopExitBlock : loopSummary->getLoopExitBasicBlocks()) {
-    auto oldLoopExit = oldExitBlockToBranch[loopExitBlock];
-    for (unsigned idx = 0; idx < oldLoopExit->getNumSuccessors(); idx++) {
-      if (oldLoopExit->getSuccessor(idx) == loopExitBlock) {
-        oldLoopExit->setSuccessor(idx, newLoopHeader);
+  BranchInst::Create(newLoopHeader, newPreHeader);
+  bbMap[loopSummary->getPreHeader()] = newPreHeader;
+  for (auto pair : exitBlockToExitingBlock) {
+    auto oldExitBlock = pair.first;
+    auto exitingBlock = pair.second;
+    assert(isa<BranchInst>(exitingBlock->getTerminator()));
+    auto exitBranch = cast<BranchInst>(exitingBlock->getTerminator());
+    auto newExitBlock = BasicBlock::Create(cxt, "", loopSummary->getFunction());
+    BranchInst::Create(newPreHeader, newExitBlock);
+    for (unsigned idx = 0; idx < exitBranch->getNumSuccessors(); idx++) {
+      if (exitBranch->getSuccessor(idx) == oldExitBlock) {
+        exitBranch->setSuccessor(idx, newExitBlock);
         break;
       }
     }
@@ -370,16 +380,12 @@ void LoopDistribution::doSplit (
       }
 
       /*
-       * Fix data flows that are incoming basic blocks in phi nodes. If the incoming block is
-       *   the preheader of the original loop, replace it with the exiting block
-       *   TODO(Lukas): This assumes only a single loop exit
+       * Fix data flows that are incoming basic blocks in phi nodes.
        */
       if (auto clonePHI = dyn_cast<PHINode>(&cloneI)) {
         for (unsigned idx = 0; idx < clonePHI->getNumIncomingValues(); idx++) {
           auto oldBB = clonePHI->getIncomingBlock(idx);
-          auto newBB = oldBB == loopSummary->getPreHeader()
-            ? oldExitingBlocks[0]
-            : bbMap.at(oldBB);
+          auto newBB = bbMap.at(oldBB);
           clonePHI->setIncomingBlock(idx, newBB);
         }
       }
@@ -414,10 +420,18 @@ void LoopDistribution::doSplit (
   errs() << "LoopDistribution: Finished fixing instruction dependencies in exit blocks\n";
 
   /*
-   * Remove instructions from the original loop (if they are not control instructions)
+   * Remove instructions from the original loop if they are not control instructions.
+   *   Also replace all uses of an instruction with its corresponding clone. This is necessary in
+   *   the case that an instruction outside of this loop needs to consume the produced value.
+   *   It is always correct to do this because we have already confirmed that there are no uses of
+   *   this instruction within the original loop, so any other remaning references are about to 
+   *   become null.
+   *   TODO(lukas): Confirm this
    */
   for (auto inst : instsToPullOut) {
     if (controlInstructions.find(inst) == controlInstructions.end()) {
+      auto cloneInst = instMap.at(inst);
+      inst->replaceAllUsesWith(cloneInst);
       inst->eraseFromParent();
     }
   }
