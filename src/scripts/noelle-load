@@ -19,4 +19,5 @@ OPTPASSES="${WPAPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load $
 cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} ${@}"
 
 # Execute the command
+echo $cmdToExecute
 eval $cmdToExecute 
