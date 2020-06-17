@@ -106,7 +106,7 @@ PDG * PDGAnalysis::getFunctionPDG (Function &F) {
   /*
    * Print the PDG
    */
-  if (this->verbose >= PDGVerbosity::Maximal){
+  if (this->dumpPDG){
     this->printer.printGraphsForFunction(F, pdg, getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo());
   }
 
