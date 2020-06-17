@@ -18,8 +18,7 @@ using namespace llvm;
 
 EnablersManager::EnablersManager()
   :
-  ModulePass{ID}, 
-  minHot{0}
+  ModulePass{ID}
   {
 
   return ;
@@ -38,7 +37,7 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Fetch the outputs of the passes we rely on.
    */
-  auto& parallelizationFramework = getAnalysis<Noelle>();
+  auto& noelle = getAnalysis<Noelle>();
 
   /*
    * Create the enablers.
@@ -49,7 +48,7 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = parallelizationFramework.getModuleLoops(&M, this->minHot);
+  auto loopsToParallelize = noelle.getModuleLoops(&M, noelle.getMinimumHotness());
   errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
 
   /*
@@ -76,7 +75,7 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Improve the current loop.
      */
-    modifiedFunctions[f] |= this->applyEnablers(loop, parallelizationFramework, loopDist, loopUnroll);
+    modifiedFunctions[f] |= this->applyEnablers(loop, noelle, loopDist, loopUnroll);
     modified |= modifiedFunctions[f];
   }
 

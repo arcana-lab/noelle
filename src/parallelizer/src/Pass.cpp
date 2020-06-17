@@ -18,8 +18,6 @@ using namespace llvm;
  */
 static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
-static cl::opt<int> Verbose("noelle-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal)"));
-static cl::opt<int> MinimumHotness("noelle-min-hot", cl::ZeroOrMore, cl::Hidden, cl::desc("Minimum hotness of code to be parallelized"));
 static cl::opt<bool> DisableDSWP("noelle-disable-dswp", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DSWP"));
 static cl::opt<bool> DisableHELIX("noelle-disable-helix", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable HELIX"));
 static cl::opt<bool> DisableDOALL("noelle-disable-doall", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DOALL"));
@@ -28,17 +26,13 @@ Parallelizer::Parallelizer()
   :
   ModulePass{ID}, 
   forceParallelization{false},
-  forceNoSCCPartition{false},
-  verbose{Verbosity::Disabled},
-  minHot{0}
+  forceNoSCCPartition{false}
   {
 
   return ;
 }
 
 bool Parallelizer::doInitialization (Module &M) {
-  this->verbose = static_cast<Verbosity>(Verbose.getValue());
-  this->minHot = ((double)(MinimumHotness.getValue())) / 100;
   this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
   this->forceNoSCCPartition |= (ForceNoSCCPartition.getNumOccurrences() > 0);
 
@@ -63,9 +57,14 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Fetch the outputs of the passes we rely on.
    */
-  auto& parallelizationFramework = getAnalysis<Noelle>();
+  auto& noelle = getAnalysis<Noelle>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
   auto& profiles = getAnalysis<HotProfiler>().getHot();
+
+  /*
+   * Fetch the verbosity level.
+   */
+  auto verbosity = noelle.getVerbosity();
 
   /*
    * Allocate the parallelization techniques.
@@ -75,24 +74,24 @@ bool Parallelizer::runOnModule (Module &M) {
     profiles,
     this->forceParallelization,
     !this->forceNoSCCPartition,
-    this->verbose
+    verbosity
   };
   DOALL doall{
     M,
     profiles,
-    this->verbose
+    verbosity
   };
   HELIX helix{
     M,
     profiles,
-    this->verbose
+    verbosity
   };
 
   /*
    * Collect information about C++ code we link parallelized loops with.
    */
   errs() << "Parallelizer: Analyzing the module " << M.getName() << "\n";
-  if (!collectThreadPoolHelperFunctionsAndTypes(M, parallelizationFramework)) {
+  if (!collectThreadPoolHelperFunctionsAndTypes(M, noelle)) {
     errs() << "Parallelizer utils not included!\n";
     return false;
   }
@@ -100,7 +99,7 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = parallelizationFramework.getModuleLoops(&M, this->minHot);
+  auto loopsToParallelize = noelle.getModuleLoops(&M, noelle.getMinimumHotness());
   errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
   for (auto loop : *loopsToParallelize){
 
@@ -185,7 +184,7 @@ bool Parallelizer::runOnModule (Module &M) {
      * Parallelize the current loop with Parallelizer.
      */
     auto loopID = loop->getID();
-    modifiedLoops[loopID] |= this->parallelizeLoop(loop, parallelizationFramework, dswp, doall, helix, heuristics);
+    modifiedLoops[loopID] |= this->parallelizeLoop(loop, noelle, dswp, doall, helix, heuristics);
     modified |= modifiedLoops[loopID];
   }
   errs() << "Parallelizer:  Parallelization complete\n";
