@@ -27,7 +27,7 @@ let c=0;
 while true ; do
   echo "NOELLE: Enablers:     Invocation $c" ;
 
-  # Set the command to execute and execute it
+  # Set the command to execute the enablers
   cmdToExecute="noelle-load ${ENABLERS} -load ${installDir}/lib/Enablers.so -enablers $IRFileInput -o $IRFileOutput ${@:3}"
   echo $cmdToExecute ;
   eval $cmdToExecute ;
@@ -48,6 +48,12 @@ while true ; do
     cp $IRFileOutput $2 ;
     break ;
   fi
+
+  # Normalize the code
+  echo "NOELLE: Enablers:       Normalize the code" ;
+  cmdToExecute="noelle-norm $IRFileOutput -o $IRFileOutput"
+  echo $cmdToExecute ;
+  eval $cmdToExecute ;
 
   # Copy the output to the input
   cp $IRFileOutput $IRFileInput ;
