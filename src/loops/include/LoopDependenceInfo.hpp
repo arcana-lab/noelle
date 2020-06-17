@@ -158,7 +158,7 @@ namespace llvm {
 
       LoopGoverningIVAttribution *loopGoverningIVAttribution;
 
-      std::set<Value *> invariants;
+      std::unordered_set<Value *> invariants;
 
       bool compileTimeKnownTripCount;
 
