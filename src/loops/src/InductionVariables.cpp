@@ -203,7 +203,7 @@ InductionVariable::InductionVariable  (
   // delete expander;
 }
 
-bool InductionVariable::isStepSizeLoopInvariant () {
+bool InductionVariable::isStepSizeLoopInvariant (void) const {
   return isStepLoopInvariant;
 }
 
@@ -218,35 +218,35 @@ InductionVariable::~InductionVariable () {
   }
 }
 
-PHINode *InductionVariable::getHeaderPHI () {
+PHINode * InductionVariable::getHeaderPHI (void) const {
   return headerPHI;
 }
 
-std::set<PHINode *> &InductionVariable::getPHIs() {
+std::set<PHINode *> & InductionVariable::getPHIs (void) {
   return PHIs;
 }
 
-std::set<Instruction *> &InductionVariable::getAccumulators() {
+std::set<Instruction *> &InductionVariable::getAccumulators (void) {
   return accumulators;
 }
 
-std::set<Instruction *> &InductionVariable::getAllInstructions() {
+std::set<Instruction *> &InductionVariable::getAllInstructions(void) {
   return allInstructions;
 }
 
-Value *InductionVariable::getStartAtHeader () {
+Value *InductionVariable::getStartAtHeader (void) const {
   return startValue;
 }
 
-Value *InductionVariable::getSimpleValueOfStepSize () {
+Value *InductionVariable::getSimpleValueOfStepSize (void) const {
   return stepSize;
 }
 
-const SCEV *InductionVariable::getComposableStepSize () {
+const SCEV *InductionVariable::getComposableStepSize (void) const {
   return compositeStepSize;
 }
 
-std::vector<Instruction *> InductionVariable::getExpansionOfCompositeStepSize() {
+std::vector<Instruction *> InductionVariable::getExpansionOfCompositeStepSize(void) const {
   return expansionOfCompositeStepSize;
 }
 
@@ -355,31 +355,31 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   isWellFormed = true;
 }
 
-InductionVariable &LoopGoverningIVAttribution::getInductionVariable() {
+InductionVariable &LoopGoverningIVAttribution::getInductionVariable(void) const {
   return IV;
 }
 
-CmpInst *LoopGoverningIVAttribution::getHeaderCmpInst() {
+CmpInst *LoopGoverningIVAttribution::getHeaderCmpInst(void) const {
   return headerCmp;
 }
 
-Value *LoopGoverningIVAttribution::getHeaderCmpInstConditionValue() {
+Value *LoopGoverningIVAttribution::getHeaderCmpInstConditionValue(void) const {
   return conditionValue;
 }
 
-BranchInst *LoopGoverningIVAttribution::getHeaderBrInst() {
+BranchInst *LoopGoverningIVAttribution::getHeaderBrInst(void) const {
   return headerBr;
 }
 
-BasicBlock *LoopGoverningIVAttribution::getExitBlockFromHeader() {
+BasicBlock *LoopGoverningIVAttribution::getExitBlockFromHeader(void) const {
   return exitBlock;
 }
 
-bool LoopGoverningIVAttribution::isSCCContainingIVWellFormed() {
+bool LoopGoverningIVAttribution::isSCCContainingIVWellFormed(void) const {
   return isWellFormed;
 }
 
-std::set<Instruction *> &LoopGoverningIVAttribution::getConditionValueDerivation() { 
+std::set<Instruction *> &LoopGoverningIVAttribution::getConditionValueDerivation(void) { 
   return conditionValueDerivation;
 }
 
@@ -536,6 +536,6 @@ void LoopGoverningIVUtility::cloneConditionalCheckFor(
   cloneBuilder.CreateCondBr(cmpInst, exitBlock, continueBlock);
 }
 
-std::vector<Instruction *> &LoopGoverningIVUtility::getConditionValueDerivation () {
+std::vector<Instruction *> &LoopGoverningIVUtility::getConditionValueDerivation (void) {
   return conditionValueOrderedDerivation;
 }
