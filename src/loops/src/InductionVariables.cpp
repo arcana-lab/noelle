@@ -314,26 +314,39 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
       auto value = conditionDerivation.front();
       conditionDerivation.pop();
 
-      for (auto edge : scc.fetchNode(value)->getIncomingEdges()) {
+      auto valueNodeInSCC = scc.fetchNode(value);
+      for (auto edge : valueNodeInSCC->getIncomingEdges()) {
         if (!edge->isDataDependence()) continue;
 
         auto outgoingValue = edge->getOutgoingT();
-        if (scc.isInternal(outgoingValue)) {
-          assert(isa<Instruction>(outgoingValue)
-            && "An internal value to an IV's SCC must be an instruction!");
-          auto outgoingInst = cast<Instruction>(outgoingValue);
-
-          /*
-           * The exit condition value cannot be itself derived from the induction variable 
-           */
-          if (ivInstructions.find(outgoingInst) != ivInstructions.end()) {
-            // outgoingInst->print(errs() << "Exit condition depends on IV: "); errs() << "\n";
-            return;
-          }
-
-          conditionValueDerivation.insert(outgoingInst);
-          conditionDerivation.push(outgoingInst);
+        if (!scc.isInternal(outgoingValue)) {
+          continue ;
         }
+        assert(isa<Instruction>(outgoingValue)
+          && "An internal value to an IV's SCC must be an instruction!");
+        auto outgoingInst = cast<Instruction>(outgoingValue);
+
+        /*
+         * The exit condition value cannot be itself derived from the induction variable 
+         */
+        if (ivInstructions.find(outgoingInst) != ivInstructions.end()) {
+          // outgoingInst->print(errs() << "Exit condition depends on IV: "); errs() << "\n";
+          return;
+        }
+
+        /*
+         * Check if we have already considered outgoingInst.
+         */
+        if (this->conditionValueDerivation.find(outgoingInst) != this->conditionValueDerivation.end()){
+          continue ;
+        }
+
+        /*
+         * @outgoingInst hasn't been considered yet.
+         * It's time to consider it.
+         */
+        conditionValueDerivation.insert(outgoingInst);
+        conditionDerivation.push(outgoingInst);
       }
     }
   }
