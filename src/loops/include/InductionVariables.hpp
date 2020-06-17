@@ -30,7 +30,6 @@ namespace llvm {
 
   class InductionVariables {
     public:
-      // HACK: Once caching Loop.getInductionVariable in LoopSummary, use LoopsSummary only, not LoopInfo as well
       InductionVariables (
         LoopsSummary &LIS,
         ScalarEvolution &SE,
@@ -51,6 +50,7 @@ namespace llvm {
 
   class InductionVariable {
     public:
+
       InductionVariable  (
         LoopSummary *LS,
         ScalarEvolution &SE,
@@ -60,17 +60,25 @@ namespace llvm {
         ScalarEvolutionReferentialExpander &referentialExpander
       ) ;
 
-      ~InductionVariable () ;
+      PHINode * getHeaderPHI (void) const ;
 
-      PHINode *getHeaderPHI () ;
-      std::set<PHINode *> &getPHIs() ;
-      std::set<Instruction *> &getAccumulators() ;
-      std::set<Instruction *> &getAllInstructions() ;
-      Value *getStartAtHeader () ;
-      Value *getSimpleValueOfStepSize () ;
-      const SCEV *getComposableStepSize () ;
-      std::vector<Instruction *> getExpansionOfCompositeStepSize() ;
-      bool isStepSizeLoopInvariant() ;
+      std::set<PHINode *> & getPHIs (void) ;
+
+      std::set<Instruction *> & getAccumulators (void) ;
+
+      std::set<Instruction *> & getAllInstructions(void) ;
+
+      Value * getStartAtHeader (void) const;
+
+      Value * getSimpleValueOfStepSize (void) const;
+
+      const SCEV *getComposableStepSize (void) const;
+
+      std::vector<Instruction *> getExpansionOfCompositeStepSize(void) const;
+
+      bool isStepSizeLoopInvariant(void) const;
+
+      ~InductionVariable ();
 
     private:
       SCC &scc;
@@ -90,13 +98,19 @@ namespace llvm {
     public:
       LoopGoverningIVAttribution (InductionVariable &IV, SCC &scc, std::vector<BasicBlock *> &exitBlocks) ;
 
-      InductionVariable &getInductionVariable() ;
-      CmpInst *getHeaderCmpInst() ;
-      Value *getHeaderCmpInstConditionValue() ;
-      BranchInst *getHeaderBrInst() ;
-      BasicBlock *getExitBlockFromHeader() ;
-      bool isSCCContainingIVWellFormed() ;
-      std::set<Instruction *> &getConditionValueDerivation() ;
+      InductionVariable &getInductionVariable(void) const;
+
+      CmpInst *getHeaderCmpInst(void) const;
+
+      Value *getHeaderCmpInstConditionValue(void) const;
+
+      BranchInst *getHeaderBrInst(void) const;
+
+      BasicBlock *getExitBlockFromHeader(void) const;
+
+      bool isSCCContainingIVWellFormed(void) const;
+
+      std::set<Instruction *> & getConditionValueDerivation(void) ;
 
     private:
       InductionVariable &IV;
@@ -129,7 +143,7 @@ namespace llvm {
     public:
       LoopGoverningIVUtility (InductionVariable &IV, LoopGoverningIVAttribution &attribution) ;
 
-      std::vector<Instruction *> &getConditionValueDerivation () ;
+      std::vector<Instruction *> &getConditionValueDerivation (void) ;
 
       void updateConditionAndBranchToCatchIteratingPastExitValue (
         CmpInst *cmpToUpdate,
