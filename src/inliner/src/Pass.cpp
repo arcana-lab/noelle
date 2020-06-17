@@ -8,7 +8,7 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DGSimplify.hpp"
+#include "Inliner.hpp"
 
 using namespace llvm;
 
@@ -18,14 +18,14 @@ using namespace llvm;
 static cl::opt<int> Verbose("noelle-inliner-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
 static cl::opt<bool> InlinerDisable("noelle-disable-inliner", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 
-bool DGSimplify::doInitialization (Module &M) {
+bool Inliner::doInitialization (Module &M) {
   this->verbose = static_cast<Verbosity>(Verbose.getValue());
   this->enable = (InlinerDisable.getNumOccurrences() == 0) ? true : false;
 
   return false;
 }
 
-void DGSimplify::getAnalysisUsage(AnalysisUsage &AU) const {
+void Inliner::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<PDGAnalysis>();
@@ -37,14 +37,14 @@ void DGSimplify::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 // Next there is code to register your pass to "opt"
-char llvm::DGSimplify::ID = 0;
-static RegisterPass<DGSimplify> X("DGSimplify", "Dependence Graph modifier");
+char llvm::Inliner::ID = 0;
+static RegisterPass<Inliner> X("inliner", "Dependence Graph modifier");
 
 // Next there is code to register your pass to "clang"
-static DGSimplify * _PassMaker = NULL;
+static Inliner * _PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new DGSimplify());}}); // ** for -Ox
+        if(!_PassMaker){ PM.add(_PassMaker = new Inliner());}}); // ** for -Ox
 static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new DGSimplify());}});// ** for -O0
+        if(!_PassMaker){ PM.add(_PassMaker = new Inliner());}});// ** for -O0

@@ -1,7 +1,7 @@
 # Sources
 set(Srcs 
   Pass.cpp
-  DGSimplify.cpp
+  Inliner.cpp
   Printer.cpp
 )
 
@@ -9,7 +9,7 @@ set(Srcs
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "DGSimplify")
+set(PassName "Inliner")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
