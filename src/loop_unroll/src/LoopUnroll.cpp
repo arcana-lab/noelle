@@ -31,7 +31,7 @@ bool LoopUnroll::fullyUnrollLoop (
   /*
    * Check if the loop has compile time known trip count.
    */
-  if (!ls->doesHaveCompileTimeKnownTripCount()){
+  if (!LDI.doesHaveCompileTimeKnownTripCount()){
     return false;
   }
 
@@ -49,7 +49,7 @@ bool LoopUnroll::fullyUnrollLoop (
   /*
    * Fetch the trip count.
    */
-  auto tripCount = ls->getCompileTimeTripCount();
+  auto tripCount = LDI.getCompileTimeTripCount();
 
   /*
    * Try to unroll the loop

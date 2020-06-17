@@ -27,25 +27,7 @@ LoopSummary::LoopSummary (
   Loop *l,
   LoopSummary *parentLoop
   ) 
-  : LoopSummary(l, parentLoop, 0)
-  {
-
-  /*
-   * Set the trip count is unknown.
-   */
-  this->compileTimeKnownTripCount = false;
-
-  return ;
-}
-
-LoopSummary::LoopSummary (
-  Loop *l,
-  LoopSummary *parentLoop,
-  uint64_t loopTripCount
-  ) 
   : parent{parentLoop}
-    , compileTimeKnownTripCount{true}
-    , tripCount{loopTripCount}
   {
 
   /*
@@ -73,17 +55,6 @@ LoopSummary::LoopSummary (
     this->bbs.insert(bb);
     if (l->isLoopLatch(bb)) {
       latchBBs.insert(bb);
-    }
-  }
-
-  /*
-   * Set the loop invariant.
-   */
-  for (auto bb : this->bbs){
-    for (auto& inst : *bb){
-      if (l->isLoopInvariant(&inst)){
-        this->invariants.insert(&inst);
-      }
     }
   }
 
@@ -140,15 +111,7 @@ std::unordered_set<BasicBlock *> LoopSummary::getBasicBlocks (void) const {
 std::vector<BasicBlock *> LoopSummary::getLoopExitBasicBlocks (void) const {
   return this->exitBlocks;
 }
-
-bool LoopSummary::isLoopInvariant (Value *v){
-  if (this->invariants.find(v) == this->invariants.end()){
-    return false;
-  }
-
-  return true;
-}
-      
+    
 bool LoopSummary::isBasicBlockWithin (BasicBlock *bb) const {
   auto found = this->bbs.find(bb) != this->bbs.end();
 
@@ -165,15 +128,7 @@ void LoopSummary::print (raw_ostream &stream) {
 uint64_t LoopSummary::getID (void) const {
   return this->ID;
 }
-
-bool LoopSummary::doesHaveCompileTimeKnownTripCount (void) const {
-  return this->compileTimeKnownTripCount;
-}
-
-uint64_t LoopSummary::getCompileTimeTripCount (void) const {
-  return this->tripCount;
-}
-      
+   
 Function * LoopSummary::getFunction (void) const {
   auto f = this->header->getParent();
   return f;

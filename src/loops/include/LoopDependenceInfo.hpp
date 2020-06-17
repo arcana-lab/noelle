@@ -116,6 +116,10 @@ namespace llvm {
 
       InductionVariables * getInductionVariables (void) const ;
 
+      bool doesHaveCompileTimeKnownTripCount (void) const ;
+      
+      uint64_t getCompileTimeTripCount (void) const ;
+
       /*
        * Return true if the loop has the metadata requested.
        */
@@ -125,6 +129,8 @@ namespace llvm {
        * Fetch the metadata attached to the loop.
        */
       std::string getMetadata (const std::string &metadataName) const ;
+
+      bool isLoopInvariant (Value *v) const ;
 
       /*
        * Deconstructor.
@@ -149,19 +155,36 @@ namespace llvm {
       std::unordered_map<std::string, std::string> metadata;
 
       InductionVariables *inductionVariables;
+
       LoopGoverningIVAttribution *loopGoverningIVAttribution;
+
+      std::set<Value *> invariants;
+
+      bool compileTimeKnownTripCount;
+
+      uint64_t tripCount;
 
       /*
        * Methods
        */
-      void fetchLoopAndBBInfo (Loop *l, ScalarEvolution &SE);
-      std::pair<PDG *, SCCDAG *> createDGsForLoop (Loop *l, PDG *functionDG) ;
-      void addMetadata (const std::string &metadataName);
+      void fetchLoopAndBBInfo (
+        Loop *l, 
+        ScalarEvolution &SE
+        );
 
-      void computeTripCounts (
+      std::pair<PDG *, SCCDAG *> createDGsForLoop (
+        Loop *l, 
+        PDG *functionDG
+        ) ;
+
+      void addMetadata (
+        const std::string &metadataName
+        );
+
+      uint64_t computeTripCounts (
         Loop *l,
-        ScalarEvolution &SE,
-        std::unordered_map<Loop *, uint64_t> & loopTripCounts);
+        ScalarEvolution &SE
+        );
 
   };
 
