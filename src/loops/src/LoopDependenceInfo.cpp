@@ -143,21 +143,38 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (
   /*
    * Compute the trip counts of all loops in the loop tree that starts with @l.
    */
-  std::unordered_map<Loop *, uint64_t> loopTripCounts;
-  this->computeTripCounts(l, SE, loopTripCounts);
+  auto loopTripCount = this->computeTripCounts(l, SE);
+  if (loopTripCount > 0){
+    this->compileTimeKnownTripCount = true;
+    this->tripCount = loopTripCount;
+
+  } else {
+    this->compileTimeKnownTripCount = false;
+  }
 
   /*
    * Create a LoopInfo summary
    */
-  this->liSummary.populate(l, loopTripCounts);
+  this->liSummary.populate(l);
+
+  /*
+   * Set the loop invariant.
+   */
+  auto loopStructure = this->getLoopSummary();
+  for (auto bb : loopStructure->getBasicBlocks()){
+    for (auto& inst : *bb){
+      if (l->isLoopInvariant(&inst)){
+        this->invariants.insert(&inst);
+      }
+    }
+  }
 
   return ;
 }
 
-void LoopDependenceInfo::computeTripCounts (
+uint64_t LoopDependenceInfo::computeTripCounts (
   Loop *l,
-  ScalarEvolution &SE,
-  std::unordered_map<Loop *, uint64_t> & loopTripCounts
+  ScalarEvolution &SE
   ){
 
   /*
@@ -165,26 +182,7 @@ void LoopDependenceInfo::computeTripCounts (
    */
   auto tripCount = SE.getSmallConstantTripCount(l);
 
-  /*
-   * Check if the trip count is known at compile time.
-   */
-  if (tripCount > 0){
-
-    /*
-     * The trip count is known at compile time.
-     * Store it.
-     */
-    loopTripCounts[l] = tripCount;
-  }
-
-  /*
-   * Compute the trip counts of all sub-loops.
-   */
-  for (auto subLoop : l->getSubLoops()) {
-    this->computeTripCounts(subLoop, SE, loopTripCounts);
-  }
-
-  return ;
+  return tripCount;
 }
 
 std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG){
@@ -328,4 +326,24 @@ InductionVariables * LoopDependenceInfo::getInductionVariables (void) const {
 
 LoopGoverningIVAttribution * LoopDependenceInfo::getLoopGoverningIVAttribution (void) const {
   return loopGoverningIVAttribution;
+}
+
+bool LoopDependenceInfo::doesHaveCompileTimeKnownTripCount (void) const {
+  return this->compileTimeKnownTripCount;
+}
+
+uint64_t LoopDependenceInfo::getCompileTimeTripCount (void) const {
+  return this->tripCount;
+}
+
+bool LoopDependenceInfo::isLoopInvariant (Value *v) const {
+  if (v == nullptr){
+    return false;
+  }
+
+  if (this->invariants.find(v) == this->invariants.end()){
+    return false;
+  }
+
+  return true;
 }
