@@ -25,7 +25,7 @@ echo "  Checking the regression test results" ;
 # Check the tests that are still running
 regressionFinished="0" ;
 stillRunning="`mktemp`" ;
-condor_q `whoami` -l | grep ^Arguments > $stillRunning ;
+condor_q `whoami` -l | grep ^Arguments | grep "`pwd`" > $stillRunning ;
 if test -s $stillRunning ; then
   echo "    The following tests are still running" ;
   while IFS= read -r line; do
