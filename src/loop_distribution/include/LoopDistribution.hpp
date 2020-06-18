@@ -12,6 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "LoopDependenceInfo.hpp"
+#include "LoopSummary.hpp"
 #include "SCC.hpp"
 
 namespace llvm {
@@ -52,6 +53,12 @@ namespace llvm {
         std::set<Instruction *> &instsToPullOut,
         std::set<Instruction *> &instructionsRemoved,
         std::set<Instruction *> &instructionsAdded
+      );
+
+      bool splitWouldBeTrivial (
+        LoopSummary * const loopSummary,
+        std::set<Instruction *> const &instsToPullOut,
+        std::set<Instruction *> const &controlInsts
       );
 
       bool splitWouldRequireForwardingDataDependencies (
