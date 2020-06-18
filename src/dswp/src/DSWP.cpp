@@ -69,9 +69,19 @@ bool DSWP::canBeAppliedToLoop (
 ) const {
 
   /*
+   * Fetch the profiles
+   */
+  auto profiles = par.getProfiles();
+
+  /*
    * Check if there is at least one sequential stage.
    * If there isn't, then this loop is a DOALL. Hence, DSWP is not applicable.
+   *
+   * Also, compute the coverage of the biggest stage.
+   * If the coverage is too high, then the parallelization isn't worth it.
    */
+  auto doesSequentialSCCExist = false;
+  uint64_t biggestSCC = 0;
   for (auto nodePair : LDI->sccdagAttrs.getSCCDAG()->internalNodePairs()) {
 
     /*
@@ -79,6 +89,15 @@ bool DSWP::canBeAppliedToLoop (
      */
     auto currentSCC = nodePair.first;
     auto currentSCCInfo = LDI->sccdagAttrs.getSCCAttrs(currentSCC);
+
+    /*
+     * Check the coverage of the SCC.
+     */
+    auto currentSCCTotalInsts = profiles->getTotalInstructions(currentSCC);
+    if (currentSCCTotalInsts > biggestSCC){
+      biggestSCC = currentSCCTotalInsts;
+    }
+    assert(biggestSCC >= currentSCCTotalInsts);
 
     /*
      * Check if the current SCC can be removed (e.g., because it is due to induction variables).
@@ -91,13 +110,46 @@ bool DSWP::canBeAppliedToLoop (
     /*
      * We found a sequential stage.
      */
-    return true ;
+    doesSequentialSCCExist = true;
   }
 
   /*
-   * No sequential stage has been found.
+   * If there isn't a sequential SCC, then this loop is a DOALL. Hence, DSWP is not applicable.
    */
-  return false;
+  if (!doesSequentialSCCExist){
+    errs() << "DSWP: It is not applicable because the loop doesn't have a sequential SCC\n";
+    return false;
+  }
+
+  /*
+   * Check if we are forced to parallelize
+   */
+  if (this->forceParallelization){
+
+    /*
+     * DSWP is applicable.
+     */
+    return true;
+  }
+
+  /*
+   * Check if the parallelization is worth it.
+   */
+  auto loopTotalInsts = profiles->getTotalInstructions(LDI->getLoopSummary());
+  auto biggestSCCCoverage = ((double)biggestSCC) / ((double)loopTotalInsts);
+  if (biggestSCCCoverage >= 0.8){
+
+    /*
+     * The pipeline would be too imbalance.
+     */
+    errs() << "DSWP: It is not applicable because the coverage of the biggest SCC is " << biggestSCCCoverage << "\n";
+    return false;
+  }
+
+  /*
+   * DSWP is applicable.
+   */
+  return true ;
 }
 
 bool DSWP::apply (
