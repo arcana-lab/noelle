@@ -4,6 +4,12 @@ label %28 ; i32 0 ; i32 1
 label %32 ; i32 0 ; i32 1
 
 verifyLoopGoverning
-label %23
-label %28
-label %32
+label %23 ; i32 -2 ; i32 1 ;
+    %26 = icmp slt i64 %24, %25 ; br i1 %26, label %27, label %93 ;
+    %25 = add nsw i64 %19, 2
+label %28 ; i32 0 ; i32 1 ;
+    %30 = icmp slt i64 %29, %16 ; br i1 %30, label %31, label %90 ;
+    %16 = call i64 @atoll(i8* %15) #4
+label %32 ; i32 0 ; i32 1 ;
+    %34 = icmp slt i64 %33, %13 ; br i1 %34, label %35, label %87 ;
+    %13 = call i64 @atoll(i8* %12) #4
