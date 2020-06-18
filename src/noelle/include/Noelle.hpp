@@ -14,6 +14,7 @@
 
 #include "LoopDependenceInfo.hpp"
 #include "Queue.hpp"
+#include "HotProfiler.hpp"
 
 using namespace llvm;
 
@@ -71,6 +72,8 @@ namespace llvm {
 
       Function * getEntryFunction (void) const ;
 
+      Hot * getProfiles (void) ;
+
       Verbosity getVerbosity (void) const ;
 
       double getMinimumHotness (void) const ;
@@ -81,6 +84,7 @@ namespace llvm {
       Verbosity verbose;
       double minHot;
       Module *program;
+      Hot *profiles;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream

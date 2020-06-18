@@ -9,7 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Parallelizer.hpp"
-#include "HotProfiler.hpp"
 
 using namespace llvm;
 
@@ -59,7 +58,11 @@ bool Parallelizer::runOnModule (Module &M) {
    */
   auto& noelle = getAnalysis<Noelle>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
-  auto& profiles = getAnalysis<HotProfiler>().getHot();
+
+  /*
+   * Fetch the profiles.
+   */
+  auto profiles = noelle.getProfiles();
 
   /*
    * Fetch the verbosity level.
@@ -71,19 +74,19 @@ bool Parallelizer::runOnModule (Module &M) {
    */
   DSWP dswp{
     M,
-    profiles,
+    *profiles,
     this->forceParallelization,
     !this->forceNoSCCPartition,
     verbosity
   };
   DOALL doall{
     M,
-    profiles,
+    *profiles,
     verbosity
   };
   HELIX helix{
     M,
-    profiles,
+    *profiles,
     verbosity
   };
 
@@ -119,18 +122,17 @@ bool Parallelizer::runOnModule (Module &M) {
      */
     errs() << "Parallelizer:    Function: \"" << loopFunction->getName() << "\"\n";
     errs() << "Parallelizer:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
-    if (!profiles.isAvailable()){
+    if (!profiles->isAvailable()){
       continue ;
     }
 
     /*
      * Print the coverage of this loop.
      */
-    auto& profiles = getAnalysis<HotProfiler>().getHot();
-    auto mInsts = profiles.getTotalInstructions();
+    auto mInsts = profiles->getTotalInstructions();
 
     auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
-    auto loopInsts = profiles.getTotalInstructions(LI.getLoopFor(loopHeader));
+    auto loopInsts = profiles->getTotalInstructions(LI.getLoopFor(loopHeader));
     auto hotness = ((double)loopInsts) / ((double)mInsts);
     hotness *= 100;
     errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
@@ -202,7 +204,6 @@ void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
   /*
    * Analyses.
    */
-  AU.addRequired<PDGAnalysis>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
@@ -213,11 +214,6 @@ void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
    */
   AU.addRequired<Noelle>();
   AU.addRequired<HeuristicsPass>();
-
-  /*
-   * Profilers.
-   */
-  AU.addRequired<HotProfiler>();
 
   return ;
 }

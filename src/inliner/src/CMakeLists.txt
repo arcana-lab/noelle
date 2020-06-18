@@ -31,6 +31,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_structure/include
   ../../loops/include 
   ../../talkdown/include
+  ../../hotprofiler/include
   ../../noelle/include
   ../include 
   )

@@ -27,9 +27,10 @@ include_directories(
   ../include 
   ../../basic_utilities/include 
   ../../loops/include
-  ../../noelle/include
   ../../pdg/include
   ../../loop_structure/include
+  ../../hotprofiler/include
+  ../../noelle/include
   )
 
 # Declare the LLVM pass to compile
