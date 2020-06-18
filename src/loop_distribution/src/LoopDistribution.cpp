@@ -54,17 +54,15 @@ bool LoopDistribution::splitLoop (
   std::set<Instruction *> &instructionsAdded
   ){
   errs() << "LoopDistribution: Attempting Loop Distribution\n";
-  for (auto inst : instsToPullOut) {
-    errs() << "LoopDistribution: Asked to pull out " << *inst << "\n";
-  }
 
   /*
-   * Require that there is only one exit block. This simplifies how we deal with PHI nodes
-   *   TODO(lukas): This should be safe to remove now
+   * Assert that all instructions in instsToPullOut are actually within the loop
    */
-  if (LDI.numberOfExits() != 1) {
-    errs() << "LoopDistribution: Abort: Number of exits is " << LDI.numberOfExits() << ", not 1\n";
-    return false;
+  auto loopBBs = LDI.getLoopSummary()->getBasicBlocks();
+  for (auto inst : instsToPullOut) {
+    auto parent = inst->getParent();
+    errs() << "LoopDistribution: Asked to pull out " << *inst << "\n";
+    assert(std::find(loopBBs.begin(), loopBBs.end(), parent) != loopBBs.end());
   }
 
   /*
@@ -119,15 +117,6 @@ bool LoopDistribution::splitLoop (
    */
   if (this->splitWouldRequireForwardingDataDependencies(LDI, instsToPullOut, controlInstructions)) {
     errs() << "LoopDistribution: Abort: Splitting the loop would require forwarding data dependencies\n";
-    return false;
-  }
-
-  /*
-   * Require that all instructions in instsToPullOut control-depend on a loop exiting block
-   *   TODO(lukas): Change to checking if each instruction is in a loop BB and make this an assert
-   */
-  if (!this->allInstsToPullOutControlDependOnLoopExitingBlock(LDI, instsToPullOut)) {
-    errs() << "LoopDistribution: Abort: Not all instructions control-depend on a loop exiting block\n";
     return false;
   }
 
@@ -225,52 +214,6 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
     }
   }
   return false;
-}
-
-
-/*
- * Checks that all instructions in instsToPullOut control-depend on the loop exiting block
- *   TODO(Lukas): Too conservative, change to assert
- */
-bool LoopDistribution::allInstsToPullOutControlDependOnLoopExitingBlock (
-  LoopDependenceInfo const &LDI,
-  std::set<Instruction *> const &instsToPullOut
-  ){
-
-  /*
-   * Get a set of the instructions that control-depend on the loop exit
-   */
-  std::set<Instruction *> controlDependsOnExit{};
-  auto loopExitBlocks = LDI.getLoopSummary()->getLoopExitBasicBlocks();
-  for (auto loopExitBlock : loopExitBlocks) {
-
-    /*
-     * An exit block should have a single predecessor
-     */
-    auto loopExitingBlock = loopExitBlocks[0]->getSinglePredecessor();
-    assert(loopExitingBlock);
-    LDI.getLoopDG()->iterateOverDependencesFrom(
-      loopExitingBlock->getTerminator(),
-      true,  // Control
-      false, // Memory
-      false, // Register
-      [&controlDependsOnExit](Value *toValue,
-                              DataDependenceType ddType) -> bool {
-        if (auto i = dyn_cast<Instruction>(toValue)) {
-          controlDependsOnExit.insert(i);
-        }
-        return false;
-      }
-    );
-  }
-
-  /*
-   * Check if controlDependsOnExit is a superset of instsToPullOut
-   */
-  auto allControlDependOnExit =
-    std::includes(controlDependsOnExit.begin(), controlDependsOnExit.end(),
-                  instsToPullOut.begin(), instsToPullOut.end());
-  return allControlDependOnExit;
 }
 
 void LoopDistribution::doSplit (
