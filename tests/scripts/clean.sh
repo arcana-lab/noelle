@@ -3,6 +3,8 @@
 function cleanTests {
   cd $1 ;
 
+  rm -f *.txt ;
+
   for i in `ls`; do
     if ! test -d $i ; then
       continue ;
@@ -21,6 +23,7 @@ function cleanTests {
 
 cleanTests regression
 cleanTests performance
+cleanTests unit
 
 # Remove speedup info on performance tests
 cd performance ;

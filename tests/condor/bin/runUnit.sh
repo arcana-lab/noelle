@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 # Fetch the inputs
-if test $# -lt 4 ; then
+if test $# -lt 1 ; then
   echo "USAGE: `basename $0` UNITTEST_DIR" ;
   exit 1;
 fi
