@@ -16,5 +16,8 @@ cd $testDir ;
 # Clean
 make clean ;
 
+# Compile ;
+make build ;
+
 # Run
-make >> compiler_output.txt 2>&1 ;
+make run >> compiler_output.txt 2>&1 ;

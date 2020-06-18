@@ -1,7 +1,7 @@
 RUNTIME_DIRNAME="threadpool"
 RUNTIME_GITREPO="https://github.com/scampanoni/virgil.git"
 
-all: regression performance buildunit rununit
+all: regression performance unit
 
 condor: download
 	cd condor ; make ; make submit ;
@@ -18,11 +18,8 @@ regression: download
 performance: download
 	./scripts/test_performance.sh ;
 
-buildunit:
-	cd unit ; for i in `ls`; do ../scripts/build_unit.sh $$i ; done ; cd ../ ;
-
-rununit:
-	cd unit ; for i in `ls`; do ../scripts/run_unit.sh $$i ; done ; cd ../ ;
+unit:
+	cd unit ; make ;
 
 download:
 	mkdir -p include ; cd include ; ../scripts/download.sh "$(RUNTIME_GITREPO)" "$(RUNTIME_DIRNAME)" ;
@@ -33,5 +30,6 @@ clean:
 	rm -rf regression_* ;
 	rm -rf tmp.* ;
 	cd condor ; make clean ; 
+	cd unit ; make clean ;
 
-.PHONY: condor condor_check regression performance buildunit rununit download clean 
+.PHONY: condor condor_check regression performance unit download clean 
