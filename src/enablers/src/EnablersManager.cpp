@@ -48,7 +48,7 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = noelle.getModuleLoops(&M, noelle.getMinimumHotness());
+  auto loopsToParallelize = noelle.getProgramLoops();
   errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
 
   /*
