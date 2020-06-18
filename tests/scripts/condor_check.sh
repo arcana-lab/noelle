@@ -118,12 +118,20 @@ if test $? -eq 0 ; then
   echo -e "  At least one performance test ${RED}failed${NC} to compile" ;
   
 else 
-  echo "  All performance tests compiled correctly" ;
-  grep -i "Performance degradation" compiler_output_performance.txt &> /dev/null ;
-  if test $? -eq 0 ; then
-    echo "  Next are the performance tests that run slower:" ;
-    grep -i "Performance degradation" compiler_output_performance.txt ;
-  else 
-    echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
+
+  # Check if they are still running
+  linesRunning=`wc -l performance/speedups.txt | awk '{print $1}'` ;
+  linesOracle=`wc -l performance/oracle_speedups | awk '{print $1}'` ;
+  if test "$linesOracle" != "$linesRunning" ; then
+    echo "  They are still running" ;
+  else
+    echo "  All performance tests compiled correctly" ;
+    grep -i "Performance degradation" compiler_output_performance.txt &> /dev/null ;
+    if test $? -eq 0 ; then
+      echo "  Next are the performance tests that run slower:" ;
+      grep -i "Performance degradation" compiler_output_performance.txt ;
+    else 
+      echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
+    fi
   fi
 fi
