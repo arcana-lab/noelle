@@ -143,7 +143,7 @@ bool Parallelizer::parallelizeLoop (
   }
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
   auto loopExitBlocks = LDI->getLoopSummary()->getLoopExitBasicBlocks();
-  par.linkParallelizedLoopToOriginalFunction(
+  par.linkTransformedLoopToOriginalFunction(
     loopFunction->getParent(),
     loopPreHeader,
     entryPoint,

@@ -41,6 +41,7 @@ Noelle::Noelle()
     , minHot{0.0}
     , program{nullptr}
     , profiles{nullptr}
+    , programDependenceGraph{nullptr}
   {
 
   return ;
@@ -454,7 +455,7 @@ uint32_t Noelle::getNumberOfProgramLoops (
   return counter;
 }
 
-void Noelle::linkParallelizedLoopToOriginalFunction (
+void Noelle::linkTransformedLoopToOriginalFunction (
   Module *module,
   BasicBlock *originalPreHeader,
   BasicBlock *startOfParLoopInOriginalFunc,
@@ -708,6 +709,20 @@ Hot * Noelle::getProfiles (void) {
   }
 
   return this->profiles;
+}
+      
+PDG * Noelle::getProgramDependenceGraph (void) {
+  if (this->programDependenceGraph == nullptr){
+    this->programDependenceGraph = getAnalysis<PDGAnalysis>().getPDG();
+  }
+  
+  return this->programDependenceGraph;
+}
+      
+PDG * Noelle::getFunctionDependenceGraph (Function *f) {
+  auto FDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*f);
+
+  return FDG;
 }
 
 Noelle::~Noelle(){
