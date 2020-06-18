@@ -1,0 +1,45 @@
+# Set the universe
+Universe = vanilla
+
+# Describe the target machine
+Requirements = (Machine == "allagash.cs.northwestern.edu")
+
+Rank = TARGET.Mips
+Copy_To_Spool = False
+
+# Notification
+Notification = error
+
+# Notification email
+Notify_User = 
+
+# Set the environment
+Getenv = True
+#Environment = VAR="value";VAR2="value2"
+
+# Set the repository
+RepoPath = 
+
+# Define the output directories
+LogDir = $(RepoPath)/condor/log
+Output = $(LogDir)/condor.out
+Error = $(LogDir)/condor.err
+Log = $(LogDir)/condor.log
+
+# Each job requires access to the whole machine
++IsWholeMachineJob      = true
++IsSuspensionJob        = false
+
+# Set the priority
+priority = 0
+
+# Set the directories for the execution
+InitialDir = $(RepoPath)
+Executable = $(RepoPath)/condor/bin/runPerformance.sh
+TestsPath  = 
+
+# Arguments of the executable
+Arguments = "$(InitialDir)"
+
+# List the tests
+Queue

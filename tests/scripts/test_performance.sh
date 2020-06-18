@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 function runningTests {
   echo $1 ;
@@ -53,9 +53,18 @@ function runningTests {
 
 export PATH=`pwd`/../install/bin:$PATH ;
 
+# Run
 cd performance ;
 runningTests "Measuring the default configuration" "-noelle-verbose=0" "speedups.txt" ;
+
+# Check the speedups
+paste speedups.txt oracle_speedups > speedups_compare.txt ;
+awk '{
+      if ($2 < ($4 * 0.9)){
+      printf("  Performance degradation for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
+    }
+  }' speedups_compare.txt ;
+
 cd ../ ;
 
 exit 0;
-

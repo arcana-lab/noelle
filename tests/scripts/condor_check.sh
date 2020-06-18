@@ -15,7 +15,7 @@ function identifyElementsOutsideSet {
   return 0;
 }
 
-echo "REGRESSION TESTS:" ;
+echo "################################### REGRESSION TESTS:" ;
 echo "  Checking the regression test results" ;
 
 # Check the tests that are still running
@@ -72,21 +72,33 @@ echo -e "$outsideElements" ;
 echo "" ;
 
 # Check the unit tests
-echo "UNIT TESTS:";
+echo "################################### UNIT TESTS:" ;
 if ! test -f unit/compiler_output.txt ;then
   echo "  They are still running" ;
-  exit 0;
+
+else
+  fails=`grep Failures unit/compiler_output.txt | awk '
+    BEGIN {
+      f = 0;
+    } {
+      f += $8 ;
+    } END {
+      printf("%d\n", f);
+    }' `;
+  if ! test $fails == "0" ; then
+    echo "  $fails tests failed" ;
+  else
+    echo "  All unit tests succeded" ;
+  fi
 fi
-fails=`grep Failures unit/compiler_output.txt | awk '
-  BEGIN {
-    f = 0;
-  } {
-    f += $8 ;
-  } END {
-    printf("%d\n", f);
-  }' `;
-if ! test $fails == "0" ; then
-  echo "  $fails tests failed" ;
-  exit 0;
+echo "" ;
+
+# Check the performance tests
+echo "################################### PERFORMANCE TESTS:" ;
+grep -i error compiler_output_performance.txt &> /dev/null ;
+if test $? -eq 0 ; then
+  echo "  At least one performance test failed to compile" ;
+  
+else 
+  echo "  All performance tests compiled correctly" ;
 fi
-echo "  All unit tests succeded" ;
