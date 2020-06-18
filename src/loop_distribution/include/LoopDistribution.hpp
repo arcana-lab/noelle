@@ -49,7 +49,9 @@ namespace llvm {
        */
       bool splitLoop (
         LoopDependenceInfo const &LDI,
-        std::set<Instruction *> &instsToPullOut
+        std::set<Instruction *> &instsToPullOut,
+        std::set<Instruction *> &instructionsRemoved,
+        std::set<Instruction *> &instructionsAdded
       );
 
       bool splitWouldRequireForwardingDataDependencies (
@@ -71,7 +73,9 @@ namespace llvm {
       void doSplit (
         LoopDependenceInfo const &LDI,
         std::set<Instruction *> const &instsToPullOut,
-        std::set<Instruction *> const &controlInstructions
+        std::set<Instruction *> const &controlInstructions,
+        std::set<Instruction *> &instructionsRemoved,
+        std::set<Instruction *> &instructionsAdded
       );
 
   };

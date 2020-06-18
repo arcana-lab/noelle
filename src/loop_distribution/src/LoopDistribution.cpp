@@ -42,14 +42,16 @@ bool LoopDistribution::splitLoop (
       Insts.insert(i);
     }
   }
-  bool modified = this->splitLoop(LDI, Insts);
+  bool modified = this->splitLoop(LDI, Insts, instructionsRemoved, instructionsAdded);
   return modified;
 }
 
 
 bool LoopDistribution::splitLoop (
   LoopDependenceInfo const &LDI,
-  std::set<Instruction *> &instsToPullOut
+  std::set<Instruction *> &instsToPullOut,
+  std::set<Instruction *> &instructionsRemoved,
+  std::set<Instruction *> &instructionsAdded
   ){
   errs() << "LoopDistribution: Attempting Loop Distribution\n";
   for (auto inst : instsToPullOut) {
@@ -133,7 +135,7 @@ bool LoopDistribution::splitLoop (
   /*
    * Splitting the loop is now safe
    */
-  this->doSplit(LDI, instsToPullOut, controlInstructions);
+  this->doSplit(LDI, instsToPullOut, controlInstructions, instructionsRemoved, instructionsAdded);
   return true;
 }
 
@@ -255,7 +257,9 @@ bool LoopDistribution::allInstsToPullOutControlDependOnLoopExitingBlock (
 void LoopDistribution::doSplit (
   LoopDependenceInfo const &LDI,
   std::set<Instruction *> const &instsToPullOut,
-  std::set<Instruction *> const &controlInstructions
+  std::set<Instruction *> const &controlInstructions,
+  std::set<Instruction *> &instructionsRemoved,
+  std::set<Instruction *> &instructionsAdded
   ){
   auto loopSummary = LDI.getLoopSummary();
   auto &cxt = loopSummary->getFunction()->getContext();
@@ -279,6 +283,7 @@ void LoopDistribution::doSplit (
           || instsToPullOut.find(&I) != instsToPullOut.end()
           || controlInstructions.find(&I) != controlInstructions.end()) {
         auto cloneInst = builder.Insert(I.clone());
+        instructionsAdded.insert(cloneInst);
         instMap[&I] = cloneInst;
       }
     }
@@ -313,6 +318,7 @@ void LoopDistribution::doSplit (
     IRBuilder<> builder(bbMap.at(BB));
     auto terminator = BB->getTerminator();
     auto cloneTerminator = builder.Insert(terminator->clone());
+    instructionsAdded.insert(cloneTerminator);
     assert(isa<BranchInst>(terminator) && isa<BranchInst>(cloneTerminator));
     auto branch = cast<BranchInst>(terminator);
     auto cloneBranch = cast<BranchInst>(cloneTerminator);
@@ -333,7 +339,8 @@ void LoopDistribution::doSplit (
    */
   auto newPreHeader = BasicBlock::Create(cxt, "", loopSummary->getFunction());
   auto newLoopHeader = bbMap.at(loopSummary->getHeader());
-  BranchInst::Create(newLoopHeader, newPreHeader);
+  auto newPreHeaderBranch = BranchInst::Create(newLoopHeader, newPreHeader);
+  instructionsAdded.insert(newPreHeaderBranch);
   bbMap[loopSummary->getPreHeader()] = newPreHeader;
   for (auto pair : exitBlockToExitingBlock) {
     auto oldExitBlock = pair.first;
@@ -341,7 +348,8 @@ void LoopDistribution::doSplit (
     assert(isa<BranchInst>(exitingBlock->getTerminator()));
     auto exitBranch = cast<BranchInst>(exitingBlock->getTerminator());
     auto newExitBlock = BasicBlock::Create(cxt, "", loopSummary->getFunction());
-    BranchInst::Create(newPreHeader, newExitBlock);
+    auto newExitBlockBranch = BranchInst::Create(newPreHeader, newExitBlock);
+    instructionsAdded.insert(newExitBlockBranch);
     for (unsigned idx = 0; idx < exitBranch->getNumSuccessors(); idx++) {
       if (exitBranch->getSuccessor(idx) == oldExitBlock) {
         exitBranch->setSuccessor(idx, newExitBlock);
@@ -424,6 +432,7 @@ void LoopDistribution::doSplit (
     if (controlInstructions.find(inst) == controlInstructions.end()) {
       auto cloneInst = instMap.at(inst);
       inst->replaceAllUsesWith(cloneInst);
+      instructionsRemoved.insert(inst);
       inst->eraseFromParent();
     }
   }
@@ -431,4 +440,4 @@ void LoopDistribution::doSplit (
 
   errs() << "LoopDistribution: Success: Finished split of " << *loopSummary->getFunction() << "\n";
   return ;
-  }
+}
