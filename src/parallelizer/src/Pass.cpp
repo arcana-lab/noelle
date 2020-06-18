@@ -130,9 +130,7 @@ bool Parallelizer::runOnModule (Module &M) {
      * Print the coverage of this loop.
      */
     auto mInsts = profiles->getTotalInstructions();
-
-    auto& LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
-    auto loopInsts = profiles->getTotalInstructions(LI.getLoopFor(loopHeader));
+    auto loopInsts = profiles->getTotalInstructions(loopSummary);
     auto hotness = ((double)loopInsts) / ((double)mInsts);
     hotness *= 100;
     errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 

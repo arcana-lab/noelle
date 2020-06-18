@@ -4,6 +4,7 @@ set(Srcs
   Hot.cpp
   Hot_Instruction.cpp
   Hot_BasicBlock.cpp
+  Hot_SCC.cpp
   Hot_Loop.cpp
   Hot_Function.cpp
   Hot_Module.cpp
@@ -28,7 +29,13 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../include ../../basic_utilities/include ../../loops/include)
+include_directories(${LLVM_INCLUDE_DIRS} 
+  ../include 
+  ../../basic_utilities/include 
+  ../../loops/include
+  ../../pdg/include
+  ../../loop_structure/include
+  )
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})

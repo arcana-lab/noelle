@@ -11,6 +11,8 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
+#include "SCC.hpp"
+#include "LoopSummary.hpp"
 
 namespace llvm {
 
@@ -52,18 +54,27 @@ namespace llvm {
 
 
       /*
+       * =========================== SCC  ========================================
+       */
+
+      uint64_t getSelfInstructions (SCC *scc) const ;
+
+      uint64_t getTotalInstructions (SCC *scc) const ;
+
+
+      /*
        * =========================== Loops =======================================
        */
 
       /*
        * Return the total number of instructions executed excluding the instructions executed by the callees.
        */
-      uint64_t getSelfInstructions (Loop *loop) const ;
+      uint64_t getSelfInstructions (LoopSummary *loop) const ;
 
       /*
        * Return the total number of instructions executed including the instructions executed by the callees.
        */
-      uint64_t getTotalInstructions (Loop *loop) const ;
+      uint64_t getTotalInstructions (LoopSummary *loop) const ;
 
 
       /*

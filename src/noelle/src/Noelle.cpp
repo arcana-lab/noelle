@@ -203,7 +203,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
        */
       if (profiles.isAvailable()){
         auto mInsts = profiles.getTotalInstructions();
-        auto lInsts = profiles.getTotalInstructions(loop);
+        LoopSummary loopS{loop};
+        auto lInsts = profiles.getTotalInstructions(&loopS);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness < minimumHotness){
           errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
@@ -404,7 +405,8 @@ uint32_t Noelle::getNumberOfProgramLoops (
        */
        if (profiles.isAvailable()){
         auto mInsts = profiles.getTotalInstructions();
-        auto lInsts = profiles.getTotalInstructions(loop);
+        LoopSummary loopS{loop};
+        auto lInsts = profiles.getTotalInstructions(&loopS);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness <= minimumHotness){
           currentLoopIndex++;
