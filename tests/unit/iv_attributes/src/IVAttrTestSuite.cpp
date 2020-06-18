@@ -100,7 +100,7 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   Loop *topLoop = LI->getLoopsInPreorder()[0];
   std::unordered_map<Loop *, uint64_t> tripCounts{};
   computeTripCounts(topLoop, *SE, tripCounts);
-  LIS->populate(topLoop, tripCounts);
+  LIS->populate(topLoop);
 
   errs() << "IVAttrTestSuite: Running IV analysis\n";
   auto loopDG = fdg->createLoopsSubgraph(topLoop);

@@ -107,7 +107,7 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
 
   std::unordered_map<Loop *, uint64_t> tripCounts{};
   computeTripCounts(topLoop, *SE, tripCounts);
-  LIS.populate(topLoop, tripCounts);
+  LIS.populate(topLoop);
   auto *DT = &getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
   auto *PDT = &getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
   DominatorSummary DS(*DT, *PDT);
