@@ -15,22 +15,26 @@
 
 using namespace llvm ;
 
-uint64_t Hot::getSelfInstructions (LoopSummary *loop) const {
-  uint64_t insts = 0;
+uint64_t Hot::getSelfInstructions (SCC *scc) const {
+  uint64_t t=0;
 
-  for (auto bb : loop->getBasicBlocks()){
-    insts += this->getStaticInstructions(bb);
-  }
+  auto accumulateF = [this, &t] (Instruction *i) -> bool {
+    t += this->getSelfInstructions(i);
+    return false;
+  };
+  scc->iterateOverInstructions(accumulateF);
 
-  return insts;
+  return t;
 }
 
-uint64_t Hot::getTotalInstructions (LoopSummary *loop) const {
-  uint64_t insts = 0;
+uint64_t Hot::getTotalInstructions (SCC *scc) const {
+  uint64_t t=0;
 
-  for (auto bb : loop->getBasicBlocks()){
-    insts += this->getTotalInstructions(bb);
-  }
+  auto accumulateF = [this, &t] (Instruction *i) -> bool {
+    t += this->getTotalInstructions(i);
+    return false;
+  };
+  scc->iterateOverInstructions(accumulateF);
 
-  return insts;
+  return t;
 }
