@@ -15,21 +15,21 @@ function identifyElementsOutsideSet {
   return 0;
 }
 
-
-echo "Checking the regression test results" ;
+echo "REGRESSION TESTS:" ;
+echo "  Checking the regression test results" ;
 
 # Check the tests that are still running
 stillRunning="`mktemp`" ;
 condor_q `whoami` -l | grep ^Arguments > $stillRunning ;
 if test -s $stillRunning ; then
-  echo "  The following tests are still running" ;
+  echo "    The following tests are still running" ;
   while IFS= read -r line; do
     testRunning=`echo $line | awk '{print $4}'` ;
-    echo "    $testRunning" ;
+    echo "      $testRunning" ;
   done < "$stillRunning"
 
 else
-  echo "  All tests finished" ;
+  echo "    All tests finished" ;
 fi
 
 # Local variables
@@ -51,21 +51,42 @@ done < "$currentResults"
 
 # Check the results
 if test "$newTestsFailed" != "" ; then
-  echo -e "  New tests failed: $newTestsFailed" ;
+  echo -e "   New tests failed: $newTestsFailed" ;
 fi
 
 # The regression passed
-echo "The regression tests passed" ;
+echo "  The regression tests passed" ;
 oldTestsNumber=`wc -l failing_tests.txt | awk '{print $1}'` ;
 newTestsNumber=`wc -l $currentResults | awk '{print $1}'` ;
 if test ${newTestsNumber} == ${oldTestsNumber} ; then
-  echo "  All tests that failed before still fail" ;
+  echo "    All tests that failed before still fail" ;
   exit 0;
 fi
 lessTests=`echo "${oldTestsNumber} - ${newTestsNumber}" | bc` ;
-echo "  There are $lessTests less tests that fail now!" ;
+echo "    There are $lessTests less tests that fail now!" ;
 
 # Print the tests that now pass
-echo "  These tests are the following ones:" ;
+echo "    These tests are the following ones:" ;
 identifyElementsOutsideSet $currentResults failing_tests.txt ;
 echo -e "$outsideElements" ;
+echo "" ;
+
+# Check the unit tests
+echo "UNIT TESTS:";
+if ! test -f unit/compiler_output.txt ;then
+  echo "  They are still running" ;
+  exit 0;
+fi
+fails=`grep Failures unit/compiler_output.txt | awk '
+  BEGIN {
+    f = 0;
+  } {
+    f += $8 ;
+  } END {
+    printf("%d\n", f);
+  }' `;
+if ! test $fails == "0" ; then
+  echo "  $fails tests failed" ;
+  exit 0;
+fi
+echo "  All unit tests succeded" ;
