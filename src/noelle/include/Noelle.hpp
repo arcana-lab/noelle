@@ -60,7 +60,7 @@ namespace llvm {
         double minimumHotness
         );
 
-      void linkParallelizedLoopToOriginalFunction (
+      void linkTransformedLoopToOriginalFunction (
         Module *module, 
         BasicBlock *originalPreHeader, 
         BasicBlock *startOfParLoopInOriginalFunc,
@@ -74,6 +74,10 @@ namespace llvm {
 
       Hot * getProfiles (void) ;
 
+      PDG * getProgramDependenceGraph (void) ;
+
+      PDG * getFunctionDependenceGraph (Function *f) ;
+
       Verbosity getVerbosity (void) const ;
 
       double getMinimumHotness (void) const ;
@@ -85,6 +89,7 @@ namespace llvm {
       double minHot;
       Module *program;
       Hot *profiles;
+      PDG *programDependenceGraph;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream
@@ -97,4 +102,5 @@ namespace llvm {
         std::vector<uint32_t>& DOALLChunkSize
         );
   };
+
 }
