@@ -32,6 +32,8 @@ add_subdirectory(src)
 install(PROGRAMS include/Techniques.hpp
     include/LoopDependenceInfo.hpp
     include/InductionVariables.hpp
+    include/LoopGoverningIVAttribution.hpp
+    include/IVStepperUtility.hpp
     include/SCCDAGAttrs.hpp
     include/SCCDAGNormalizer.hpp
     include/SCCDAGPartition.hpp

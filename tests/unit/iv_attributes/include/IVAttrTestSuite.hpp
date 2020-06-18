@@ -24,6 +24,7 @@
 #include "PDGAnalysis.hpp"
 #include "PDGPrinter.hpp"
 #include "InductionVariables.hpp"
+#include "LoopGoverningIVAttribution.hpp"
 
 #include "TestSuite.hpp"
 

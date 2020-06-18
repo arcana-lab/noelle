@@ -11,61 +11,41 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "LoopDependenceInfo.hpp"
-#include "PDG.hpp"
+#include "InductionVariables.hpp"
 #include "SCC.hpp"
-#include "SCCDAG.hpp"
-#include "PDGAnalysis.hpp"
-#include "Noelle.hpp"
-#include "HeuristicsPass.hpp"
-#include "ParallelizationTechnique.hpp"
-#include "IVStepperUtility.hpp"
 
 namespace llvm {
 
-  class DOALL : public ParallelizationTechnique {
+  class LoopGoverningIVAttribution {
     public:
+      LoopGoverningIVAttribution (InductionVariable &IV, SCC &scc, std::vector<BasicBlock *> &exitBlocks) ;
 
-      /*
-       * Methods
-       */
-      DOALL (
-        Module &module,
-        Hot &p,
-        Verbosity v
-      );
+      InductionVariable &getInductionVariable(void) const;
 
-      bool apply (
-        LoopDependenceInfo *LDI,
-        Noelle &par,
-        Heuristics *h
-      ) override ;
+      CmpInst *getHeaderCmpInst(void) const;
 
-      bool canBeAppliedToLoop (
-        LoopDependenceInfo *LDI,
-        Noelle &par,
-        Heuristics *h
-      ) const override ;
+      Value *getHeaderCmpInstConditionValue(void) const;
 
+      BranchInst *getHeaderBrInst(void) const;
 
-    protected:
+      BasicBlock *getExitBlockFromHeader(void) const;
 
-      /*
-       * DOALL specific generation
-       */
-      void rewireLoopToIterateChunks (
-        LoopDependenceInfo *LDI
-      );
-      void addChunkFunctionExecutionAsideOriginalLoop (
-        LoopDependenceInfo *LDI,
-        Function *loopFunction,
-        Noelle &par
-      );
+      bool isSCCContainingIVWellFormed(void) const;
 
-      /*
-       * Helpers
-       */
-      Value *fetchClone(Value *original) const ;
+      std::set<Instruction *> & getConditionValueDerivation(void) ;
+
+      Instruction *getIntermediateValueUsedInCompare () ;
+
+    private:
+      InductionVariable &IV;
+      SCC &scc;
+      std::set<Instruction *> conditionValueDerivation;
+      Value *conditionValue;
+      Instruction *intermediateValueUsedInCompare;
+      CmpInst *headerCmp;
+      BranchInst *headerBr;
+      BasicBlock *exitBlock;
+      bool isWellFormed;
   };
 
 }
