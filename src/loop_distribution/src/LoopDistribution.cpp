@@ -100,9 +100,8 @@ bool LoopDistribution::splitLoop (
    * Require that not every control instruction is included in the instructions to pull out. This
    *   guarantees that we reach a fixed point
    */
-  if (std::includes(instsToPullOut.begin(), instsToPullOut.end(),
-                    controlInstructions.begin(), controlInstructions.end())) {
-    errs() << "LoopDistribution: Abort: Request is unnecessary and could lead to an infinite loop\n";
+  if (this->splitWouldBeTrivial(LDI.getLoopSummary(), instsToPullOut, controlInstructions)) {
+    errs() << "LoopDistribution: Abort: Request is trivial and could lead to an infinite loop\n";
     return false;
   }
 
@@ -136,6 +135,26 @@ bool LoopDistribution::splitLoop (
    * Splitting the loop is now safe
    */
   this->doSplit(LDI, instsToPullOut, controlInstructions, instructionsRemoved, instructionsAdded);
+  return true;
+}
+
+/*
+ * Checks if the union of instsToPullOut and controlInsts covers every instruction in the loop
+ */
+bool LoopDistribution::splitWouldBeTrivial (
+  LoopSummary * const loopSummary,
+  std::set<Instruction *> const &instsToPullOut,
+  std::set<Instruction *> const &controlInsts
+  ){
+  for (auto &BB : loopSummary->getBasicBlocks()) {
+    for (auto &I : *BB) {
+      if (true
+          && instsToPullOut.find(&I) == instsToPullOut.end()
+          && controlInsts.find(&I) == controlInsts.end()) {
+            return false;
+      }
+    }
+  }
   return true;
 }
 
