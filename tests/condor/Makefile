@@ -3,7 +3,7 @@ CONDOR_FILE=regression.con
 
 all: regression
 
-regression: regression_enablers regression_default regression_1 regression_2 regression_3 regression_4
+regression: regression_enablers regression_default regression_1 regression_2 regression_3 regression_4 unit.con
 
 regression_enablers:
 	cd ../ ; cp -r regression $@ ;
