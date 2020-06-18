@@ -58,6 +58,7 @@ bool LoopDistribution::splitLoop (
 
   /*
    * Require that there is only one exit block. This simplifies how we deal with PHI nodes
+   *   TODO(lukas): This should be safe to remove now
    */
   if (LDI.numberOfExits() != 1) {
     errs() << "LoopDistribution: Abort: Number of exits is " << LDI.numberOfExits() << ", not 1\n";
@@ -66,7 +67,7 @@ bool LoopDistribution::splitLoop (
 
   /*
    * Require that there is only one SCC with loop-carried control dependencies
-   *   TODO(Lukas): Are we sure that multiple SCCs are bad?
+   *   TODO(Lukas): This should (?) be safe to remove
    */
   auto controlSCCs = LDI.sccdagAttrs.getSCCsWithLoopCarriedControlDependencies();
   if (controlSCCs.size() != 1) {
@@ -91,12 +92,16 @@ bool LoopDistribution::splitLoop (
         controlInstructions.insert(controlInst);
       }
     }
-    /*
-    if (LDI.sccdagAttrs.clonableSCCs.find(controlSCC) == LDI.sccdagAttrs.clonableSCCs.end()) {
-      errs() << "LoopDistribution: Abort: Not all SCCs that control the loop are cloneable\n";
-      return false;
-    }
-    */
+  }
+
+  /*
+   * Require that not every control instruction is included in the instructions to pull out. This
+   *   guarantees that we reach a fixed point
+   */
+  if (std::includes(instsToPullOut.begin(), instsToPullOut.end(),
+                    controlInstructions.begin(), controlInstructions.end())) {
+    errs() << "LoopDistribution: Abort: Request is unnecessary and could lead to an infinite loop\n";
+    return false;
   }
 
   /*
@@ -118,23 +123,10 @@ bool LoopDistribution::splitLoop (
 
   /*
    * Require that all instructions in instsToPullOut control-depend on a loop exiting block
-   *   TODO(lukas): Ask if we are better off just checking if each instruction is in a loop BB
+   *   TODO(lukas): Change to checking if each instruction is in a loop BB and make this an assert
    */
   if (!this->allInstsToPullOutControlDependOnLoopExitingBlock(LDI, instsToPullOut)) {
     errs() << "LoopDistribution: Abort: Not all instructions control-depend on a loop exiting block\n";
-    return false;
-  }
-
-  /*
-   * Require that instsToPullOut and controlInstructions have no common instructions
-   *   TODO(lukas): Decide if the API should be "ignore control instructions" or "reject them"
-   */
-  std::set<Instruction *> commonInstructions{};
-  std::set_intersection(instsToPullOut.begin(), instsToPullOut.end(),
-                        controlInstructions.begin(), controlInstructions.end(),
-                        std::inserter(commonInstructions, commonInstructions.begin()));
-  if (!commonInstructions.empty()) {
-    errs() << "LoopDistribution: Abort: Asked to pull a control instruction out of the loop\n";
     return false;
   }
 
