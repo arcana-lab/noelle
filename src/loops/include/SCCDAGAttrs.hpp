@@ -17,6 +17,7 @@
 #include "SCCAttrs.hpp"
 #include "LoopsSummary.hpp"
 #include "InductionVariables.hpp"
+#include "LoopGoverningIVAttribution.hpp"
 #include "LoopEnvironment.hpp"
 #include "DominatorSummary.hpp"
 

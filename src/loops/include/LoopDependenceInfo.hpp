@@ -16,6 +16,7 @@
 #include "SCCDAG.hpp"
 #include "LoopsSummary.hpp"
 #include "InductionVariables.hpp"
+#include "LoopGoverningIVAttribution.hpp"
 #include "SCCDAGAttrs.hpp"
 #include "SCCDAGNormalizer.hpp"
 #include "LoopEnvironment.hpp"

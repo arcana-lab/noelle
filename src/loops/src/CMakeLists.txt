@@ -2,6 +2,8 @@
 set(Srcs 
   AccumulatorOpInfo.cpp
   InductionVariables.cpp
+  LoopGoverningIVAttribution.cpp
+  IVStepperUtility.cpp
   SCCAttrs.cpp
   SCCDAGAttrs.cpp
   SCCDAGNormalizer.cpp
