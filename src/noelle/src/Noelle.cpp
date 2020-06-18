@@ -103,8 +103,13 @@ std::vector<Function *> * Noelle::getModuleFunctionsReachableFrom (Module *modul
   return functions;
 }
 
-std::vector<LoopDependenceInfo *> * Noelle::getModuleLoops (
-  Module *module,
+std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (void){
+  auto v = this->getProgramLoops(this->minHot);
+
+  return v;
+}
+
+std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
   double minimumHotness
   ){
 
@@ -121,8 +126,9 @@ std::vector<LoopDependenceInfo *> * Noelle::getModuleLoops (
   /*
    * Fetch the list of functions of the module.
    */
-  auto mainFunction = module->getFunction("main");
-  auto functions = this->getModuleFunctionsReachableFrom(module, mainFunction);
+  auto mainFunction = this->getEntryFunction();
+  assert(mainFunction != nullptr);
+  auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
 
   /*
    * Check if we should filter out loops.
@@ -321,8 +327,11 @@ std::vector<LoopDependenceInfo *> * Noelle::getModuleLoops (
   return allLoops;
 }
 
-uint32_t Noelle::getNumberOfModuleLoops (
-  Module *module,
+uint32_t Noelle::getNumberOfProgramLoops (void) {
+  return this->getNumberOfProgramLoops(this->minHot);
+}
+
+uint32_t Noelle::getNumberOfProgramLoops (
   double minimumHotness
   ){
   uint32_t counter = 0;
@@ -335,8 +344,9 @@ uint32_t Noelle::getNumberOfModuleLoops (
   /*
    * Fetch the list of functions of the module.
    */
-  auto mainFunction = module->getFunction("main");
-  auto functions = this->getModuleFunctionsReachableFrom(module, mainFunction);
+  auto mainFunction = this->getEntryFunction();
+  assert(mainFunction != nullptr);
+  auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
 
   /*
    * Check if we should filter out loops.

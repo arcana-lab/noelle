@@ -24,7 +24,7 @@ bool LoopMetadataPass::tagLoops (
   /*
    * Fetch all the loops of the program.
    */
-  auto loopsToParallelize = par.getModuleLoops(&M, 0);
+  auto loopsToParallelize = par.getProgramLoops(0);
 
   /*
    * Tag all loops.
