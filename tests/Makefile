@@ -31,5 +31,6 @@ clean:
 	rm -rf tmp.* ;
 	cd condor ; make clean ; 
 	cd unit ; make clean ;
+	rm -f compiler_output* ;
 
 .PHONY: condor condor_check regression performance unit download clean 

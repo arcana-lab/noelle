@@ -3,7 +3,7 @@ CONDOR_FILE=regression.con
 
 all: regression
 
-regression: regression_enablers regression_default regression_1 regression_2 regression_3 regression_4 unit.con
+regression: regression_enablers regression_default regression_1 regression_2 regression_3 regression_4 unit.con performance.con
 
 regression_enablers:
 	cd ../ ; cp -r regression $@ ;
@@ -36,6 +36,9 @@ regression_4:
 	./scripts/appendTests.sh $@.con ;
 
 unit.con:
+	python2 scripts/generateCondorScript.py scripts/$@ ./$@ "$@" " " ${EMAIL};
+
+performance.con:
 	python2 scripts/generateCondorScript.py scripts/$@ ./$@ "$@" " " ${EMAIL};
 
 submit:
