@@ -81,6 +81,7 @@ else
 
   # Check if there are still running tests
   if test $regressionFinished == "1" ; then
+    echo "" ;
     echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
   fi
 fi
