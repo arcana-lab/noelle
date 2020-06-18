@@ -55,24 +55,30 @@ done < "$currentResults"
 
 # Check the results
 if test "$newTestsFailed" != "" ; then
-  echo -e "   New tests failed: $newTestsFailed" ;
-fi
+  echo -e "    New tests ${RED}failed${NC}: $newTestsFailed" ;
+  echo -e "    The regression tests ${RED}failed${NC}" ;
 
-# The regression passed
-echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
-oldTestsNumber=`wc -l failing_tests.txt | awk '{print $1}'` ;
-newTestsNumber=`wc -l $currentResults | awk '{print $1}'` ;
-if test ${newTestsNumber} == ${oldTestsNumber} ; then
-  echo "    All tests that failed before still fail" ;
-  exit 0;
-fi
-lessTests=`echo "${oldTestsNumber} - ${newTestsNumber}" | bc` ;
-echo "    There are $lessTests less tests that fail now!" ;
+else
 
-# Print the tests that now pass
-echo "    These tests are the following ones:" ;
-identifyElementsOutsideSet $currentResults failing_tests.txt ;
-echo -e "$outsideElements" ;
+  # The regression passed
+  echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
+
+  # Check if there are tests that use to fail that now pass
+  oldTestsNumber=`wc -l failing_tests.txt | awk '{print $1}'` ;
+  newTestsNumber=`wc -l $currentResults | awk '{print $1}'` ;
+  if test ${newTestsNumber} == ${oldTestsNumber} ; then
+    echo "    All tests that failed before still fail" ;
+    exit 0;
+  fi
+  lessTests=`echo "${oldTestsNumber} - ${newTestsNumber}" | bc` ;
+  echo "    There are $lessTests less tests that fail now!" ;
+
+  # Print the tests that now pass
+  echo "    These tests are the following ones:" ;
+  identifyElementsOutsideSet $currentResults failing_tests.txt ;
+  echo -e "$outsideElements" ;
+
+fi
 echo "" ;
 
 # Check the unit tests
@@ -90,7 +96,7 @@ else
       printf("%d\n", f);
     }' `;
   if ! test $fails == "0" ; then
-    echo "  $fails tests failed" ;
+    echo -e "  $fails tests ${RED}failed${NC}" ;
   else
     echo -e "  All unit tests ${GREEN}succeded${NC}" ;
   fi
@@ -101,7 +107,7 @@ echo "" ;
 echo "################################### PERFORMANCE TESTS:" ;
 grep -i error compiler_output_performance.txt &> /dev/null ;
 if test $? -eq 0 ; then
-  echo "  At least one performance test failed to compile" ;
+  echo -e "  At least one performance test ${RED}failed${NC} to compile" ;
   
 else 
   echo "  All performance tests compiled correctly" ;
