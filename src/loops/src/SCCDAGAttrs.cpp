@@ -263,23 +263,33 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
       nodes.insert(edge->getOutgoingNode());
       this->edgesViaClones[scc].insert(edge);
     }
-    for (auto node : nodes) queue.push(node);
+    for (auto node : nodes) {
+      queue.push(node);
+    }
   };
 
   for (auto childSCCNode : this->sccdag->getNodes()) {
     auto childSCC = childSCCNode->getT();
     std::queue<DGNode<SCC> *> nodesToCheck;
-    addIncomingNodes(nodesToCheck, childSCCNode);
+    std::unordered_map<DGNode<SCC> *, bool> analyzed;
 
+    analyzed[childSCCNode] = true;
+    addIncomingNodes(nodesToCheck, childSCCNode);
+    
     while (!nodesToCheck.empty()) {
       auto node = nodesToCheck.front();
       nodesToCheck.pop();
       auto scc = node->getT();
       auto sccInfo = this->getSCCAttrs(scc);
       this->parentsViaClones[childSCC].insert(scc);
-      if (sccInfo->canBeCloned()) {
-        addIncomingNodes(nodesToCheck, node);
+      if (!sccInfo->canBeCloned()) {
+        continue ;
       }
+      if (analyzed[node]){
+        continue ;
+      }
+      addIncomingNodes(nodesToCheck, node);
+      analyzed[node] = true;
     }
   }
 
