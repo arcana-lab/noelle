@@ -1,12 +1,13 @@
-all: install
-	../scripts/build_unit.sh 
+all: run
 
-install:
-	mkdir $@ 
+run:
+	for i in `ls`; do ../scripts/run_unit.sh $$i ; done
+
+build:
+	../scripts/build_unit.sh 
 
 clean:
 	rm -f *.txt ;
-	rm -rf install ;
 	rm -rf */build ;
 	find ./ -name compile_commands.json -delete
 	find ./ -name *.bc -delete
@@ -14,4 +15,4 @@ clean:
 	find ./ -name output.prof -delete
 	find ./ -name default.profraw -delete
 
-.PHONY: clean
+.PHONY: clean build run

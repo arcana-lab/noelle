@@ -1,5 +1,10 @@
 #!/bin/bash -e
 
+# Set the installation directory
+installDir="`realpath ../../install`/test"  ;
+mkdir -p $installDir ;
+export PDG_INSTALL_DIR="$installDir" ;
+
 for i in `ls` ; do
 
   # Check if this is a directory

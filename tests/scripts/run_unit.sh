@@ -1,5 +1,10 @@
 #!/bin/bash -e
 
+# Set the installation directory
+installDir="`realpath ../../install`"  ;
+mkdir -p $installDir ;
+export PDG_INSTALL_DIR="$installDir" ;
+
 CC="clang++"
 LIB_DIR=$PDG_INSTALL_DIR/lib
 TEST_LIB_DIR=$PDG_INSTALL_DIR/test/lib
