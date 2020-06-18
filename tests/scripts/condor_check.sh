@@ -1,5 +1,9 @@
 #!/bin/bash
 
+RED='\033[1;31m' ;
+GREEN='\033[0;32m' ;
+NC='\033[0m' ;
+
 function identifyElementsOutsideSet {
   local setFile="$1" ;
   local elementsToCheckFile="$2" ;
@@ -55,7 +59,7 @@ if test "$newTestsFailed" != "" ; then
 fi
 
 # The regression passed
-echo "  The regression tests passed" ;
+echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
 oldTestsNumber=`wc -l failing_tests.txt | awk '{print $1}'` ;
 newTestsNumber=`wc -l $currentResults | awk '{print $1}'` ;
 if test ${newTestsNumber} == ${oldTestsNumber} ; then
@@ -88,7 +92,7 @@ else
   if ! test $fails == "0" ; then
     echo "  $fails tests failed" ;
   else
-    echo "  All unit tests succeded" ;
+    echo -e "  All unit tests ${GREEN}succeded${NC}" ;
   fi
 fi
 echo "" ;
@@ -101,4 +105,11 @@ if test $? -eq 0 ; then
   
 else 
   echo "  All performance tests compiled correctly" ;
+  grep -i "Performance degradation" compiler_output_performance.txt &> /dev/null ;
+  if test $? -eq 0 ; then
+    echo "  Next are the performance tests that run slower:" ;
+    grep -i "Performance degradation" compiler_output_performance.txt ;
+  else 
+    echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
+  fi
 fi
