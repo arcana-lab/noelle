@@ -25,6 +25,11 @@ bool Noelle::doInitialization (Module &M) {
   this->verbose = static_cast<Verbosity>(Verbose.getValue());
   this->minHot = ((double)(MinimumHotness.getValue())) / 100;
 
+  /*
+   * Store the module.
+   */
+  this->program = &M;
+
   int1 = IntegerType::get(M.getContext(), 1);
   int8 = IntegerType::get(M.getContext(), 8);
   int16 = IntegerType::get(M.getContext(), 16);

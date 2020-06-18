@@ -39,6 +39,7 @@ Noelle::Noelle()
   : ModulePass{ID}
     , verbose{Verbosity::Disabled}
     , minHot{0.0}
+    , program{nullptr}
   {
 
   return ;
@@ -683,6 +684,11 @@ Verbosity Noelle::getVerbosity (void) const {
 
 double Noelle::getMinimumHotness (void) const {
   return this->minHot;
+}
+
+Function * Noelle::getEntryFunction (void) const {
+  auto f = this->program->getFunction("main");
+  return f;
 }
 
 Noelle::~Noelle(){
