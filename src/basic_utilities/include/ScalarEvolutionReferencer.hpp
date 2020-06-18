@@ -104,8 +104,8 @@ namespace llvm {
       SCEVValueMapper (ScalarEvolution &SE, Function &F) ;
 
       Value *getSingleValueOf(const SCEV *scev) const ;
-      const std::set<Value *> &getValuesOf(const SCEV *scev) const ;
-      const SCEV *getValuesOf(Value *value) const ;
+      const std::set<Value *> getValuesOf(const SCEV *scev) const ;
+      const SCEV *getSCEVOf(Value *value) const ;
 
     private:
       std::unordered_map<const SCEV *, std::set<Value *>> scevToValues;

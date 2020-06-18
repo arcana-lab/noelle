@@ -202,19 +202,18 @@ SCEVValueMapper::SCEVValueMapper (ScalarEvolution &SE, Function &F) {
 }
 
 Value *SCEVValueMapper::getSingleValueOf(const SCEV *scev) const {
-  assert(scevToValues.find(scev) != scevToValues.end());
-  auto &values = scevToValues.at(scev);
-  return (values.size() > 1) ? nullptr : *values.begin();
+  auto values = getValuesOf(scev);
+  return (values.size() != 1) ? nullptr : *values.begin();
 }
 
-const std::set<Value *> &SCEVValueMapper::getValuesOf(const SCEV *scev) const {
-  assert(scevToValues.find(scev) != scevToValues.end());
-  return scevToValues.at(scev);
+const std::set<Value *> SCEVValueMapper::getValuesOf(const SCEV *scev) const {
+  return scevToValues.find(scev) != scevToValues.end()
+    ? scevToValues.at(scev) : std::set<Value *>{};
 }
 
-const SCEV *SCEVValueMapper::getValuesOf(Value *value) const {
-  assert(valueToSCEV.find(value) != valueToSCEV.end());
-  return valueToSCEV.at(value);
+const SCEV *SCEVValueMapper::getSCEVOf(Value *value) const {
+  return valueToSCEV.find(value) != valueToSCEV.end()
+    ? valueToSCEV.at(value) : nullptr;
 }
 
 /*******************************
