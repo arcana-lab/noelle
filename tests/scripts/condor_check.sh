@@ -63,26 +63,26 @@ if test "$newTestsFailed" != "" ; then
 else
 
   # The regression passed
-  # Check if there are still running tests
-  if test $regressionFinished == "1" ; then
-    echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
-  fi
-
+  # 
   # Check if there are tests that use to fail that now pass
   oldTestsNumber=`wc -l failing_tests.txt | awk '{print $1}'` ;
   newTestsNumber=`wc -l $currentResults | awk '{print $1}'` ;
   if test ${newTestsNumber} == ${oldTestsNumber} ; then
     echo "    All tests that failed before still fail" ;
-    exit 0;
+  else
+    lessTests=`echo "${oldTestsNumber} - ${newTestsNumber}" | bc` ;
+    echo "    There are $lessTests less tests that fail now!" ;
+
+    # Print the tests that now pass
+    echo "    These tests are the following ones:" ;
+    identifyElementsOutsideSet $currentResults failing_tests.txt ;
+    echo -e "$outsideElements" ;
   fi
-  lessTests=`echo "${oldTestsNumber} - ${newTestsNumber}" | bc` ;
-  echo "    There are $lessTests less tests that fail now!" ;
 
-  # Print the tests that now pass
-  echo "    These tests are the following ones:" ;
-  identifyElementsOutsideSet $currentResults failing_tests.txt ;
-  echo -e "$outsideElements" ;
-
+  # Check if there are still running tests
+  if test $regressionFinished == "1" ; then
+    echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
+  fi
 fi
 echo "" ;
 
