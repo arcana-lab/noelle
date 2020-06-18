@@ -23,6 +23,7 @@ echo "################################### REGRESSION TESTS:" ;
 echo "  Checking the regression test results" ;
 
 # Check the tests that are still running
+regressionFinished="0" ;
 stillRunning="`mktemp`" ;
 condor_q `whoami` -l | grep ^Arguments > $stillRunning ;
 if test -s $stillRunning ; then
@@ -34,6 +35,7 @@ if test -s $stillRunning ; then
 
 else
   echo "    All tests finished" ;
+  regressionFinished="1" ;
 fi
 
 # Local variables
@@ -61,7 +63,10 @@ if test "$newTestsFailed" != "" ; then
 else
 
   # The regression passed
-  echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
+  # Check if there are still running tests
+  if test $regressionFinished == "1" ; then
+    echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
+  fi
 
   # Check if there are tests that use to fail that now pass
   oldTestsNumber=`wc -l failing_tests.txt | awk '{print $1}'` ;
