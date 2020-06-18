@@ -35,6 +35,9 @@ regression_4:
 	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -dswp-force -noelle-disable-dswp -dswp-no-scc-merge " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
+unit.con:
+	python2 scripts/generateCondorScript.py scripts/$@ ./$@ "$@" " " ${EMAIL};
+
 submit:
 	scripts/submit.sh 
 

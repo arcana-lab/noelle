@@ -35,11 +35,11 @@ priority = 0
 
 # Set the directories for the execution
 InitialDir = $(RepoPath)
-Executable = $(RepoPath)/condor/bin/runRegression.sh
+Executable = $(RepoPath)/condor/bin/runUnit.sh
 TestsPath  = 
 
-# Arguments of run.sh
-ParallelizationOptions = 
-Arguments = "$(InitialDir) $(InitialDir)/$(TestsPath)/$(Test) '$(ParallelizationOptions)' $(InitialDir)/$(TestsPath)/errors.txt"
+# Arguments of the executable
+Arguments = "$(InitialDir)/tests/unit" 
 
 # List the tests
+Queue
