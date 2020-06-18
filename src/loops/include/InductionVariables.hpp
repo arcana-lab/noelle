@@ -60,6 +60,8 @@ namespace llvm {
         ScalarEvolutionReferentialExpander &referentialExpander
       ) ;
 
+      SCC *getSCC (void) const ;
+
       PHINode * getHeaderPHI (void) const ;
 
       std::set<PHINode *> & getPHIs (void) ;
@@ -112,11 +114,14 @@ namespace llvm {
 
       std::set<Instruction *> & getConditionValueDerivation(void) ;
 
+      Instruction *getIntermediateValueUsedInCompare () ;
+
     private:
       InductionVariable &IV;
       SCC &scc;
       std::set<Instruction *> conditionValueDerivation;
       Value *conditionValue;
+      Instruction *intermediateValueUsedInCompare;
       CmpInst *headerCmp;
       BranchInst *headerBr;
       BasicBlock *exitBlock;

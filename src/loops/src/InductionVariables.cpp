@@ -83,6 +83,7 @@ InductionVariable::InductionVariable  (
 
   /*
    * Collect intermediate values of the IV within the loop (by traversing its strongly connected component)
+   * Traverse data dependencies the header PHI has.
    */
   std::queue<DGNode<Value> *> ivIntermediateValues;
   std::set<Value *> valuesVisited;
@@ -105,10 +106,25 @@ InductionVariable::InductionVariable  (
 
     for (auto edge : node->getIncomingEdges()) {
       if (!edge->isDataDependence()) continue;
-      if (!scc.isInternal(edge->getOutgoingT())) continue;
-      ivIntermediateValues.push(edge->getOutgoingNode());
+      auto otherNode = edge->getOutgoingNode();
+      if (!scc.isInternal(otherNode->getT())) continue;
+      ivIntermediateValues.push(otherNode);
     }
   }
+
+  /*
+   * Include any casts on intermediate values
+   * TODO: Determine what other instructions could still represent the induction variable
+   * but not necessarily appear in the SCC for that induction variable
+   */
+  std::set<CastInst *> castsToAdd{};
+  for (auto intermediateValue : this->allInstructions) {
+    for (auto user : intermediateValue->users()) {
+      if (!isa<CastInst>(user)) continue;
+      castsToAdd.insert(cast<CastInst>(user));
+    }
+  }
+  this->allInstructions.insert(castsToAdd.begin(), castsToAdd.end());
 
   /*
    * Fetch initial value of induction variable
@@ -142,9 +158,11 @@ InductionVariable::InductionVariable  (
   for (auto externalPair : scc.externalNodePairs()) {
     auto value = externalPair.first;
     valuesInScope.insert(value);
-    valuesToReferenceAndNotExpand.insert(value);
-    if (!isa<Instruction>(value) || bbs.find(cast<Instruction>(value)->getParent()) == bbs.end()) continue;
-    valuesInternalToLoop.insert(value);
+    if (!isa<Instruction>(value) || bbs.find(cast<Instruction>(value)->getParent()) == bbs.end()) {
+      valuesToReferenceAndNotExpand.insert(value);
+    } else {
+      valuesInternalToLoop.insert(value);
+    }
   }
   for (auto liveIn : loopEnv.getProducers()) {
     valuesInScope.insert(liveIn);
@@ -190,7 +208,8 @@ InductionVariable::InductionVariable  (
           }
 
           this->compositeStepSize = stepSCEV;
-          // finalValue->print(errs() << "Expanded final value: "); errs() << "\n";
+          finalValue->print(errs() << "Expanded final value: "); errs() << "\n";
+          // TODO: Handle case where no expansion is necessary, say if the finalValue is an SCEV already external to the loop
           for (auto &I : *tempBlock) {
             expansionOfCompositeStepSize.push_back(&I);
           }
@@ -216,6 +235,10 @@ InductionVariable::~InductionVariable () {
   if (tempBlock) {
     tempBlock->deleteValue();
   }
+}
+
+SCC *InductionVariable::getSCC (void) const {
+  return &scc;
 }
 
 PHINode * InductionVariable::getHeaderPHI (void) const {
@@ -255,7 +278,10 @@ std::vector<Instruction *> InductionVariable::getExpansionOfCompositeStepSize(vo
  */
 
 LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, SCC &scc, std::vector<BasicBlock *> &exitBlocks)
-  : IV{iv}, scc{scc}, headerCmp{nullptr}, conditionValueDerivation{}, isWellFormed{false} {
+  : IV{iv}, scc{scc}, headerCmp{nullptr}, conditionValueDerivation{},
+    intermediateValueUsedInCompare{nullptr}, isWellFormed{false} {
+
+  iv.getHeaderPHI()->print(errs() << "Checking for loop governance: "); errs() << "\n";
 
   /*
    * To understand how to transform the loop governing condition, it is far simpler to
@@ -263,26 +289,28 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
    * is only known at runtime, and that enhancement has yet to be made
    */
   if (!iv.getSimpleValueOfStepSize() || !isa<ConstantInt>(iv.getSimpleValueOfStepSize())) return;
-  // iv.getHeaderPHI()->print(errs() << "Has step size: "); errs() << "\n";
+  iv.getHeaderPHI()->print(errs() << "Has step size: "); errs() << "\n";
 
   auto headerPHI = iv.getHeaderPHI();
   auto &ivInstructions = iv.getAllInstructions();
 
   /*
-   * Fetch the header terminator.
+   * Fetch the loop governing terminator.
+   * NOTE: It should be the only conditional branch in the IV's SCC
    */
-  auto headerTerminator = headerPHI->getParent()->getTerminator();
-  if (!isa<BranchInst>(headerTerminator)) return;
-  this->headerBr = cast<BranchInst>(headerTerminator);
-  // iv.getHeaderPHI()->print(errs() << "Has branch: "); errs() << "\n";
-
-  /*
-   * Check this is a conditional branch.
-   * If it isn't, then we don't handle this type of loops (e.g., do-while).
-   */
-  if (!headerBr->isConditional()){
-    return ;
+  BranchInst *loopGoverningTerminator = nullptr;
+  for (auto node : iv.getSCC()->getNodes()) {
+    auto value = node->getT();
+    if (!isa<BranchInst>(value)) continue;
+    auto br = cast<BranchInst>(value);
+    if (!br->isConditional()) continue;
+    if (loopGoverningTerminator) return;
+    loopGoverningTerminator = br;
   }
+  if (!loopGoverningTerminator) return;
+  this->headerBr = loopGoverningTerminator;
+
+  this->headerBr->print(errs() << "Has branch: "); errs() << "\n";
 
   /*
    * Fetch the condition of the conditional branch
@@ -292,9 +320,17 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
 
   this->headerCmp = cast<CmpInst>(headerCondition);
   auto opL = headerCmp->getOperand(0), opR = headerCmp->getOperand(1);
-  if (!(opL == headerPHI ^ opR == headerPHI)) return;
-  this->conditionValue = opL == headerPHI ? opR : opL;
-  // iv.getHeaderPHI()->print(errs() << "Has condition: "); errs() << "\n";
+  auto isOpLHSAnIntermediate = isa<Instruction>(opL)
+    && ivInstructions.find(cast<Instruction>(opL)) != ivInstructions.end();
+  auto isOpRHSAnIntermediate = isa<Instruction>(opR)
+    && ivInstructions.find(cast<Instruction>(opR)) != ivInstructions.end();
+  for (auto I : ivInstructions) { I->print(errs() << "IV INST: "); errs() << "\n"; }
+  if (!(isOpLHSAnIntermediate ^ isOpRHSAnIntermediate)) return;
+  this->conditionValue = isOpLHSAnIntermediate ? opR : opL;
+  this->intermediateValueUsedInCompare = cast<Instruction>(isOpLHSAnIntermediate ? opL : opR);
+
+  this->headerCmp->print(errs() << "Has comparison: "); errs() << "\n";
+  this->conditionValue->print(errs() << "Has condition: "); errs() << "\n";
 
   std::set<BasicBlock *> exitBlockSet(exitBlocks.begin(), exitBlocks.end());
   if (exitBlockSet.find(headerBr->getSuccessor(0)) != exitBlockSet.end()) {
@@ -302,7 +338,8 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   } else if (exitBlockSet.find(headerBr->getSuccessor(1)) != exitBlockSet.end()) {
     this->exitBlock = headerBr->getSuccessor(1);
   } else return ;
-  // iv.getHeaderPHI()->print(errs() << "Has one exit: "); errs() << "\n";
+
+  iv.getHeaderPHI()->print(errs() << "Has one exit: "); errs() << "\n";
 
   if (scc.isInternal(conditionValue)) {
     std::queue<Instruction *> conditionDerivation;
@@ -326,11 +363,12 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
           && "An internal value to an IV's SCC must be an instruction!");
         auto outgoingInst = cast<Instruction>(outgoingValue);
 
+        outgoingInst->print(errs() << "Exit condition depends on: "); errs() << "\n";
+
         /*
          * The exit condition value cannot be itself derived from the induction variable 
          */
         if (ivInstructions.find(outgoingInst) != ivInstructions.end()) {
-          // outgoingInst->print(errs() << "Exit condition depends on IV: "); errs() << "\n";
           return;
         }
 
@@ -351,7 +389,8 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
     }
   }
 
-  // iv.getHeaderPHI()->print(errs() << "Is well formed: "); errs() << "\n";
+  iv.getHeaderPHI()->print(errs() << "Is well formed: "); errs() << "\n";
+
   isWellFormed = true;
 }
 
@@ -381,6 +420,10 @@ bool LoopGoverningIVAttribution::isSCCContainingIVWellFormed(void) const {
 
 std::set<Instruction *> &LoopGoverningIVAttribution::getConditionValueDerivation(void) { 
   return conditionValueDerivation;
+}
+
+Instruction *LoopGoverningIVAttribution::getIntermediateValueUsedInCompare () {
+  return intermediateValueUsedInCompare;
 }
 
 /*
@@ -448,7 +491,8 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
   : attribution{attribution}, conditionValueOrderedDerivation{}, flipOperandsToUseNonStrictPredicate{false} {
 
   condition = attribution.getHeaderCmpInst();
-  this->doesOriginalCmpInstHaveIVAsLeftOperand = condition->getOperand(0) == IV.getHeaderPHI();
+  // TODO: Refer to whichever intermediate value is used in the comparison (known on attribution)
+  this->doesOriginalCmpInstHaveIVAsLeftOperand = condition->getOperand(0) == attribution.getIntermediateValueUsedInCompare();
 
   auto &conditionValueDerivationSet = attribution.getConditionValueDerivation();
   for (auto &I : *condition->getParent()) {
