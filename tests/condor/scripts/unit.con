@@ -39,7 +39,7 @@ Executable = $(RepoPath)/condor/bin/runUnit.sh
 TestsPath  = 
 
 # Arguments of the executable
-Arguments = "$(InitialDir)/tests/unit" 
+Arguments = "$(InitialDir)/unit" 
 
 # List the tests
 Queue
