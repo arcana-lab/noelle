@@ -40,6 +40,7 @@ Noelle::Noelle()
     , verbose{Verbosity::Disabled}
     , minHot{0.0}
     , program{nullptr}
+    , profiles{nullptr}
   {
 
   return ;
@@ -699,6 +700,14 @@ double Noelle::getMinimumHotness (void) const {
 Function * Noelle::getEntryFunction (void) const {
   auto f = this->program->getFunction("main");
   return f;
+}
+      
+Hot * Noelle::getProfiles (void) {
+  if (this->profiles == nullptr){
+    this->profiles = &getAnalysis<HotProfiler>().getHot();
+  }
+
+  return this->profiles;
 }
 
 Noelle::~Noelle(){

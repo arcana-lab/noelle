@@ -34,7 +34,6 @@
 #include "PDG.hpp"
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
-#include "PDGAnalysis.hpp"
 #include "Noelle.hpp"
 #include "HeuristicsPass.hpp"
 #include "DSWP.hpp"
