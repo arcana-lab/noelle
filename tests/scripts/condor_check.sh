@@ -86,6 +86,7 @@ else
   fi
 fi
 echo "" ;
+echo "" ;
 
 # Check the unit tests
 echo "################################### UNIT TESTS:" ;
@@ -107,6 +108,7 @@ else
     echo -e "  All unit tests ${GREEN}succeded${NC}" ;
   fi
 fi
+echo "" ;
 echo "" ;
 
 # Check the performance tests
