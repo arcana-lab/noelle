@@ -54,46 +54,121 @@ namespace llvm {
       InductionVariable  (
         LoopSummary *LS,
         ScalarEvolution &SE,
-        PHINode *headerPHI,
+        PHINode *loopEntryPHI,
         SCC &scc,
-        LoopEnvironment &loopEnv,
+        LoopEnvironment &loopEnvironment,
         ScalarEvolutionReferentialExpander &referentialExpander
       ) ;
 
       SCC *getSCC (void) const ;
 
-      PHINode * getHeaderPHI (void) const ;
+      PHINode * getLoopEntryPHI (void) const ;
 
       std::set<PHINode *> & getPHIs (void) ;
 
-      std::set<Instruction *> & getAccumulators (void) ;
+      std::set<Instruction *> & getNonPHIIntermediateValues (void) ;
 
       std::set<Instruction *> & getAllInstructions(void) ;
 
-      Value * getStartAtHeader (void) const;
+      Value * getStartValue (void) const;
 
-      Value * getSimpleValueOfStepSize (void) const;
+      Value * getSingleComputedStepValue (void) const;
 
-      const SCEV *getComposableStepSize (void) const;
+      std::vector<Instruction *> getComputationOfStepValue (void) const;
 
-      std::vector<Instruction *> getExpansionOfCompositeStepSize(void) const;
+      bool isStepValueLoopInvariant (void) const;
 
-      bool isStepSizeLoopInvariant(void) const;
+      const SCEV *getStepSCEV (void) const;
 
       ~InductionVariable ();
 
     private:
+
+      /*
+       * The SCC that contains the induction variable
+       */
       SCC &scc;
-      PHINode *headerPHI; // outermostPHI
+
+      /*
+       * The loop entry PHI node. For normalized loops with a single header,
+       * this PHI is the destination of all loop carried dependencies for the IV
+       */
+      PHINode *loopEntryPHI;
+
+      /*
+       * All PHIs, whether intermediate or the loop entry PHI
+       */
       std::set<PHINode *> PHIs;
-      std::set<Instruction *> accumulators;
+
+      /*
+       * All non-PHI intermediate values of the IV
+       */
+      std::set<Instruction *> nonPHIIntermediateValues;
+
+      /*
+       * All PHI/non-PHI intermediate values AND all casts of the IV
+       */
       std::set<Instruction *> allInstructions;
 
+      /*
+       * Start value (the incoming value to the loop entry PHI from the preheader)
+       */
       Value *startValue;
-      Value *stepSize;
-      const SCEV *compositeStepSize;
-      std::vector<Instruction *> expansionOfCompositeStepSize;
-      bool isStepLoopInvariant;
+
+      /*
+       * The SCEV representing the step recurrence
+       */
+      const SCEV *stepSCEV;
+
+      /*
+       * A single constant or loop external value representing the step recurrence
+       */
+      Value *singleStepValue;
+
+      /*
+       * The values, in order of execution, used to compute the step recurrence
+       * The last value is the step value between iterations
+       * NOTE: these values expand the step SCEV so that all uses in the values are
+       * 1) loop invariant and loop external
+       * OR
+       * 2) derived from another induction variable in the loop
+       * 
+       * TODO: Imply in name that this computation is a list of instructions, and
+       * that if the value need not be computed and can instead be referenced, this
+       * list will be empty
+       */
+      std::vector<Instruction *> computationOfStepValue;
+
+      /*
+       * Whether the computed step value's uses are all loop invariant/external
+       */
+      bool isComputedStepValueLoopInvariant;
+
+      /*
+       * Helper functions and structures
+       */ 
+      std::set<Value *> valuesToReferenceInComputingStepValue;
+      std::set<Value *> valuesInScopeOfInductionVariable;
+      void collectValuesInternalAndExternalToLoopAndSCC (
+        LoopSummary *LS,
+        LoopEnvironment &loopEnvironment
+      ) ;
+
+      void deriveStepValue (
+        LoopSummary *LS,
+        ScalarEvolution &SE,
+        ScalarEvolutionReferentialExpander &referentialExpander,
+        LoopEnvironment &loopEnv
+      ) ;
+
+      void deriveStepValueFromSCEVConstant (const SCEVConstant *scev) ;
+      void deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev, LoopSummary *LS) ;
+      bool deriveStepValueFromCompositeSCEV (
+        const SCEV *scev,
+        ScalarEvolutionReferentialExpander &referentialExpander,
+        LoopSummary *LS
+      ) ;
+
   };
 
 }

@@ -339,7 +339,7 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
   std::set<InductionVariable *> containedIVs;
   std::set<Instruction *> containedInsts;
   for (auto iv : IVs) {
-    if (scc->isInternal(iv->getHeaderPHI())) {
+    if (scc->isInternal(iv->getLoopEntryPHI())) {
       containedIVs.insert(iv);
       auto allInsts = iv->getAllInstructions();
       containedInsts.insert(allInsts.begin(), allInsts.end());
@@ -352,7 +352,7 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
    */
   for (auto containedIV : containedIVs) {
     if (loopGoverningIVs.find(containedIV) == loopGoverningIVs.end()) continue;
-    auto exitBlocks = LIS.getLoop(*containedIV->getHeaderPHI()->getParent())->getLoopExitBasicBlocks();
+    auto exitBlocks = LIS.getLoop(*containedIV->getLoopEntryPHI()->getParent())->getLoopExitBasicBlocks();
     LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
     if (!attribution.isSCCContainingIVWellFormed()) {
       // errs() << "Not well formed SCC for loop governing IV!\n";

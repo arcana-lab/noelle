@@ -50,8 +50,8 @@ void DOALL::rewireLoopToIterateChunks (
   std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     Value *clonedStepValue = nullptr;
-    if (ivInfo->getSimpleValueOfStepSize()) {
-      clonedStepValue = fetchClone(ivInfo->getSimpleValueOfStepSize());
+    if (ivInfo->getSingleComputedStepValue()) {
+      clonedStepValue = fetchClone(ivInfo->getSingleComputedStepValue());
     } else {
 
       /*
@@ -60,7 +60,7 @@ void DOALL::rewireLoopToIterateChunks (
        * 
        * NOTE: The step size is expected to be loop invariant
        */
-      auto expandedInsts = ivInfo->getExpansionOfCompositeStepSize();
+      auto expandedInsts = ivInfo->getComputationOfStepValue();
       assert(expandedInsts.size() > 0);
       for (auto expandedInst : expandedInsts) {
         auto clonedInst = expandedInst->clone();
@@ -85,9 +85,9 @@ void DOALL::rewireLoopToIterateChunks (
    * core_start: original_start + original_step_size * core_id * chunk_size
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
-    auto startOfIV = fetchClone(ivInfo->getStartAtHeader());
+    auto startOfIV = fetchClone(ivInfo->getStartValue());
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
-    auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getHeaderPHI()));
+    auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getLoopEntryPHI()));
 
     auto nthCoreOffset = entryBuilder.CreateMul(
       stepOfIV,
@@ -109,7 +109,7 @@ void DOALL::rewireLoopToIterateChunks (
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
-    auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getHeaderPHI()));
+    auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getLoopEntryPHI()));
 
     auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
     auto chunkStepSize = entryBuilder.CreateMul(
@@ -203,7 +203,7 @@ void DOALL::rewireLoopToIterateChunks (
 
   if (requiresConditionBeforeEnteringHeader) {
     auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
-    auto loopGoverningPHI = task->getCloneOfOriginalInstruction(loopGoverningIV.getHeaderPHI());
+    auto loopGoverningPHI = task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI());
     auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
 
     /*
@@ -239,7 +239,7 @@ void DOALL::rewireLoopToIterateChunks (
     auto clonedExitCmpInst = updatedCmpInst->clone();
     clonedExitCmpInst->replaceUsesOfWith(loopGoverningPHI, prevIterationValue);
     preheaderBuilder.Insert(clonedExitCmpInst);
-    auto startValue = fetchClone(loopGoverningIV.getStartAtHeader());
+    auto startValue = fetchClone(loopGoverningIV.getStartValue());
     auto isNotFirstIteration = preheaderBuilder.CreateICmpNE(offsetStartValue, startValue);
     preheaderBuilder.CreateCondBr(
       preheaderBuilder.CreateAnd(isNotFirstIteration, clonedExitCmpInst),

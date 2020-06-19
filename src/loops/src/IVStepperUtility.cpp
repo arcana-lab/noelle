@@ -82,8 +82,8 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
     conditionValueOrderedDerivation.push_back(&I);
   }
 
-  assert(IV.getSimpleValueOfStepSize() && isa<ConstantInt>(IV.getSimpleValueOfStepSize()));
-  bool isStepValuePositive = cast<ConstantInt>(IV.getSimpleValueOfStepSize())->getValue().isStrictlyPositive();
+  assert(IV.getSingleComputedStepValue() && isa<ConstantInt>(IV.getSingleComputedStepValue()));
+  bool isStepValuePositive = cast<ConstantInt>(IV.getSingleComputedStepValue())->getValue().isStrictlyPositive();
   bool conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == attribution.getExitBlockFromHeader();
   auto exitPredicate = conditionExitsOnTrue ? condition->getPredicate() : condition->getInversePredicate();
   // errs() << "Exit predicate before operand check: " << exitPredicate << "\n";
