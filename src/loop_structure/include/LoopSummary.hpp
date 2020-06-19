@@ -55,6 +55,10 @@ namespace llvm {
 
       std::vector<BasicBlock *> getLoopExitBasicBlocks (void) const ;
 
+      bool isLoopInvariant (Value *value) const ;
+
+      bool isContainedInstructionLoopInvariant (Instruction *inst) const ;
+
       bool isBasicBlockWithin (BasicBlock *bb) const ;
 
       void print (raw_ostream &stream);
@@ -67,6 +71,7 @@ namespace llvm {
       BasicBlock *preHeader;
       uint32_t depth;
       LoopSummary *parent;
+      std::unordered_set<Instruction *> invariants;
       std::unordered_set<LoopSummary *> children;
       std::unordered_set<BasicBlock *> latchBBs;
       std::unordered_set<BasicBlock *> bbs;

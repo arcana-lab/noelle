@@ -131,8 +131,6 @@ namespace llvm {
        */
       std::string getMetadata (const std::string &metadataName) const ;
 
-      bool isLoopInvariant (Value *v) const ;
-
       /*
        * Deconstructor.
        */
