@@ -18,6 +18,7 @@ namespace llvm {
 
   class LoopSummary {
     public:
+
       LoopSummary (
         Loop *l
         );

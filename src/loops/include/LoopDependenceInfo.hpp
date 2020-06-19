@@ -28,10 +28,7 @@ namespace llvm {
   class LoopDependenceInfo {
     public:
 
-      /*
-       * Loop
-       */
-      std::unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;
+      std::unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;  /*< From Basic block to its immediate post-dominatr.  */
 
       /*
        * Environment
