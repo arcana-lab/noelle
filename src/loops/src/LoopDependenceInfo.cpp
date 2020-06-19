@@ -59,7 +59,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    */
   auto iv = inductionVariables->getLoopGoverningInductionVariable(*liSummary.getLoop(*l->getHeader()));
   loopGoverningIVAttribution = iv == nullptr ? nullptr
-    : new LoopGoverningIVAttribution(*iv, *loopSCCDAG->sccOfValue(iv->getHeaderPHI()), loopExitBlocks);
+    : new LoopGoverningIVAttribution(*iv, *loopSCCDAG->sccOfValue(iv->getLoopEntryPHI()), loopExitBlocks);
 
   /*
    * Cache the post-dominator tree.

@@ -16,17 +16,17 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   : IV{iv}, scc{scc}, headerCmp{nullptr}, conditionValueDerivation{},
     intermediateValueUsedInCompare{nullptr}, isWellFormed{false} {
 
-  iv.getHeaderPHI()->print(errs() << "Checking for loop governance: "); errs() << "\n";
+  iv.getLoopEntryPHI()->print(errs() << "Checking for loop governance: "); errs() << "\n";
 
   /*
    * To understand how to transform the loop governing condition, it is far simpler to
    * know the sign of the step size at compile time. Extra overhead is necessary if this
    * is only known at runtime, and that enhancement has yet to be made
    */
-  if (!iv.getSimpleValueOfStepSize() || !isa<ConstantInt>(iv.getSimpleValueOfStepSize())) return;
-  iv.getHeaderPHI()->print(errs() << "Has step size: "); errs() << "\n";
+  if (!iv.getSingleComputedStepValue() || !isa<ConstantInt>(iv.getSingleComputedStepValue())) return;
+  iv.getLoopEntryPHI()->print(errs() << "Has step size: "); errs() << "\n";
 
-  auto headerPHI = iv.getHeaderPHI();
+  auto headerPHI = iv.getLoopEntryPHI();
   auto &ivInstructions = iv.getAllInstructions();
 
   /*
@@ -34,8 +34,9 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
    * NOTE: It should be the only conditional branch in the IV's SCC
    */
   BranchInst *loopGoverningTerminator = nullptr;
-  for (auto node : iv.getSCC()->getNodes()) {
-    auto value = node->getT();
+  // iv.getSCC()->printMinimal(errs() << "Containing SCC:\n");
+  for (auto internalNodePair : iv.getSCC()->internalNodePairs()) {
+    auto value = internalNodePair.first;
     if (!isa<BranchInst>(value)) continue;
     auto br = cast<BranchInst>(value);
     if (!br->isConditional()) continue;
@@ -74,7 +75,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
     this->exitBlock = headerBr->getSuccessor(1);
   } else return ;
 
-  iv.getHeaderPHI()->print(errs() << "Has one exit: "); errs() << "\n";
+  iv.getLoopEntryPHI()->print(errs() << "Has one exit: "); errs() << "\n";
 
   if (scc.isInternal(conditionValue)) {
     std::queue<Instruction *> conditionDerivation;
@@ -124,7 +125,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
     }
   }
 
-  iv.getHeaderPHI()->print(errs() << "Is well formed: "); errs() << "\n";
+  iv.getLoopEntryPHI()->print(errs() << "Is well formed: "); errs() << "\n";
 
   isWellFormed = true;
 }

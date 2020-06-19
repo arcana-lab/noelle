@@ -128,16 +128,16 @@ Values IVAttrTestSuite::verifyStartAndStepByLoop (ModulePass &pass, TestSuite &s
     for (auto IV : attrPass.IVs->getInductionVariables(*loop.get())) {
       std::vector<std::string> loopIVStartStep;
       loopIVStartStep.push_back(suite.printAsOperandToString(loop->getHeader()));
-      loopIVStartStep.push_back(suite.valueToString(IV->getStartAtHeader()));
+      loopIVStartStep.push_back(suite.valueToString(IV->getStartValue()));
 
-      if (IV->getSimpleValueOfStepSize()) {
-        loopIVStartStep.push_back(suite.valueToString(IV->getSimpleValueOfStepSize()));
+      if (IV->getSingleComputedStepValue()) {
+        loopIVStartStep.push_back(suite.valueToString(IV->getSingleComputedStepValue()));
       } else {
-        IV->getHeaderPHI()->print(errs() << "Header of composite: "); errs() << "\n";
-        auto B = (*IV->getExpansionOfCompositeStepSize().begin())->getParent();
-        auto F = IV->getHeaderPHI()->getFunction();
+        IV->getLoopEntryPHI()->print(errs() << "Header of composite: "); errs() << "\n";
+        auto B = (*IV->getComputationOfStepValue().begin())->getParent();
+        auto F = IV->getLoopEntryPHI()->getFunction();
         B->insertInto(F);
-        for (auto emplacedI : IV->getExpansionOfCompositeStepSize()) {
+        for (auto emplacedI : IV->getComputationOfStepValue()) {
           loopIVStartStep.push_back(suite.valueToString(emplacedI));
         }
         B->removeFromParent();
@@ -180,7 +180,7 @@ Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass, TestSuite &suite)
     if (!IV) continue;
 
     auto exitBlocks = loop->getLoopExitBasicBlocks();
-    auto scc = attrPass.sccdag->sccOfValue(IV->getHeaderPHI());
+    auto scc = attrPass.sccdag->sccOfValue(IV->getLoopEntryPHI());
     auto attr = new LoopGoverningIVAttribution(*IV, *scc, exitBlocks);
     if (!attr->isSCCContainingIVWellFormed()) continue;
 
@@ -188,14 +188,14 @@ Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass, TestSuite &suite)
     info.push_back(suite.printAsOperandToString(loop->getHeader()));
 
     std::vector<std::string> startAndStep;
-    startAndStep.push_back(suite.valueToString(IV->getStartAtHeader()));
-    if (IV->getSimpleValueOfStepSize()) {
-      startAndStep.push_back(suite.valueToString(IV->getSimpleValueOfStepSize()));
+    startAndStep.push_back(suite.valueToString(IV->getStartValue()));
+    if (IV->getSingleComputedStepValue()) {
+      startAndStep.push_back(suite.valueToString(IV->getSingleComputedStepValue()));
     } else {
-      auto B = (*IV->getExpansionOfCompositeStepSize().begin())->getParent();
-      auto F = IV->getHeaderPHI()->getFunction();
+      auto B = (*IV->getComputationOfStepValue().begin())->getParent();
+      auto F = IV->getLoopEntryPHI()->getFunction();
       B->insertInto(F);
-      for (auto emplacedI : IV->getExpansionOfCompositeStepSize()) {
+      for (auto emplacedI : IV->getComputationOfStepValue()) {
         startAndStep.push_back(suite.valueToString(emplacedI));
       }
       B->removeFromParent();

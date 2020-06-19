@@ -37,7 +37,11 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
 
       auto sccContainingIV = sccdag.sccOfValue(&phi);
       auto IV = new InductionVariable(loop.get(), SE, &phi, *sccContainingIV, loopEnv, referentialExpander); 
-      if (!IV->getSimpleValueOfStepSize() && !IV->getComposableStepSize()) {
+
+      /*
+       * Only save IVs for which the step size is understood
+       */
+      if (!IV->getStepSCEV()) {
         delete IV;
         continue;
       }
@@ -74,13 +78,12 @@ InductionVariable *InductionVariables::getLoopGoverningInductionVariable (LoopSu
 InductionVariable::InductionVariable  (
   LoopSummary *LS,
   ScalarEvolution &SE,
-  PHINode *headerPHI,
+  PHINode *loopEntryPHI,
   SCC &scc,
   LoopEnvironment &loopEnv,
   ScalarEvolutionReferentialExpander &referentialExpander
-) : scc{scc}, headerPHI{headerPHI}, startValue{nullptr},
-    stepSize{nullptr}, compositeStepSize{nullptr}, expansionOfCompositeStepSize{},
-    isStepLoopInvariant{false} {
+) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{nullptr},
+    stepSCEV{nullptr}, computationOfStepValue{}, isComputedStepValueLoopInvariant{false} {
 
   /*
    * Collect intermediate values of the IV within the loop (by traversing its strongly connected component)
@@ -88,7 +91,8 @@ InductionVariable::InductionVariable  (
    */
   std::queue<DGNode<Value> *> ivIntermediateValues;
   std::set<Value *> valuesVisited;
-  ivIntermediateValues.push(scc.fetchNode(headerPHI));
+  ivIntermediateValues.push(scc.fetchNode(loopEntryPHI));
+
   while (!ivIntermediateValues.empty()) {
     auto node = ivIntermediateValues.front();
     auto value = node->getT();
@@ -97,18 +101,29 @@ InductionVariable::InductionVariable  (
     if (valuesVisited.find(value) != valuesVisited.end()) continue;
     valuesVisited.insert(value);
 
-    if (auto phi = dyn_cast<PHINode>(value)) {
+    /*
+     * Classify the encountered value as either a PHI or a non-PHI intermediate instruction
+     * If it is not an instruction, skip
+     */
+    if (!isa<Instruction>(value)) continue;
+    auto instruction = cast<Instruction>(value);
+    this->allInstructions.insert(instruction);
+    if (auto phi = dyn_cast<PHINode>(instruction)) {
       this->PHIs.insert(phi);
-      this->allInstructions.insert(cast<Instruction>(phi));
-    } else if (auto I = dyn_cast<Instruction>(value)) {
-      this->accumulators.insert(I);
-      this->allInstructions.insert(I);
+    } else {
+      this->nonPHIIntermediateValues.insert(instruction);
     }
 
+    /*
+     * Traverse all dependencies this instruction has that are internal
+     * to the SCC; they are transitive dependencies of the loop entry PHI
+     * and thus must be intermediate values
+     */
     for (auto edge : node->getIncomingEdges()) {
       if (!edge->isDataDependence()) continue;
       auto otherNode = edge->getOutgoingNode();
-      if (!scc.isInternal(otherNode->getT())) continue;
+      auto otherValue = otherNode->getT();
+      if (!scc.isInternal(otherValue)) continue;
       ivIntermediateValues.push(otherNode);
     }
   }
@@ -131,108 +146,175 @@ InductionVariable::InductionVariable  (
    * Fetch initial value of induction variable
    */
   auto bbs = LS->getBasicBlocks();
-  for (auto i = 0; i < headerPHI->getNumIncomingValues(); ++i) {
-    auto incomingBB = headerPHI->getIncomingBlock(i);
+  for (auto i = 0; i < loopEntryPHI->getNumIncomingValues(); ++i) {
+    auto incomingBB = loopEntryPHI->getIncomingBlock(i);
     if (bbs.find(incomingBB) == bbs.end()) {
-      this->startValue = headerPHI->getIncomingValue(i);
+      this->startValue = loopEntryPHI->getIncomingValue(i);
       break;
     }
   }
 
-  auto headerSCEV = SE.getSCEV(headerPHI);
-  assert(headerSCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
-  auto stepSCEV = cast<SCEVAddRecExpr>(headerSCEV)->getStepRecurrence(SE);
+  collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
+  deriveStepValue(LS, SE, referentialExpander, loopEnv);
+}
+
+void InductionVariable::collectValuesInternalAndExternalToLoopAndSCC (
+  LoopSummary *LS,
+  LoopEnvironment &loopEnvironment
+) {
+
+  auto bbs = LS->getBasicBlocks();
+
+  /*
+   * Values internal to the IV's SCC are in scope but should
+   * NOT be referenced when computing the IV's step value
+   */
+  for (auto internalNodePair : scc.internalNodePairs()) {
+    auto value = internalNodePair.first;
+    valuesInScopeOfInductionVariable.insert(value);
+  }
+
+  /*
+   * Values external to the IV's SCC are in scope
+   * 
+   * HACK: they should be referenced when computing the IV's step value
+   * even if they aren't loop external, but that would require a more
+   * powerful way to distinguish instructions in the loop that are
+   * still loop invariant, which isn't possible at this time. Therefore,
+   * we force the expansion of all but live in values. In turn, the expander
+   * will return that it could not expand SCEVAddRecExpr, exiting gracefully.
+   */
+  for (auto externalPair : scc.externalNodePairs()) {
+    auto value = externalPair.first;
+    valuesInScopeOfInductionVariable.insert(value);
+  }
+
+  /*
+   * All live ins are in scope and should be referenced
+   */
+  for (auto liveIn : loopEnvironment.getProducers()) {
+    valuesInScopeOfInductionVariable.insert(liveIn);
+    valuesToReferenceInComputingStepValue.insert(liveIn);
+  }
+}
+
+/*
+ * Examine the step recurrence SCEV and either retrieve the single value
+ * representing the SCEV or expand values to represent it
+ */
+void InductionVariable::deriveStepValue (
+  LoopSummary *LS,
+  ScalarEvolution &SE,
+  ScalarEvolutionReferentialExpander &referentialExpander,
+  LoopEnvironment &loopEnv
+) {
+
+  auto loopEntrySCEV = SE.getSCEV(loopEntryPHI);
+  assert(loopEntrySCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
+  this->stepSCEV = cast<SCEVAddRecExpr>(loopEntrySCEV)->getStepRecurrence(SE);
+
+  switch (stepSCEV->getSCEVType()) {
+    case SCEVTypes::scConstant:
+      deriveStepValueFromSCEVConstant(cast<SCEVConstant>(stepSCEV));
+      break;
+    case SCEVTypes::scUnknown:
+      deriveStepValueFromSCEVUnknown(cast<SCEVUnknown>(stepSCEV), LS);
+      break;
+    case SCEVTypes::scAddExpr:
+    case SCEVTypes::scAddRecExpr:
+    case SCEVTypes::scMulExpr:
+    case SCEVTypes::scSignExtend:
+    case SCEVTypes::scSMaxExpr:
+    case SCEVTypes::scSMinExpr:
+    case SCEVTypes::scTruncate:
+    case SCEVTypes::scUDivExpr:
+    case SCEVTypes::scUMaxExpr:
+    case SCEVTypes::scUMinExpr:
+    case SCEVTypes::scZeroExtend:
+
+      /*
+       * Not all composite SCEVs are handled, so if the derivation fails,
+       * do not claim understanding of the step recurrence
+       */
+      if (!deriveStepValueFromCompositeSCEV(stepSCEV, referentialExpander, LS)) {
+        this->stepSCEV = nullptr;
+      }
+      break;
+    case SCEVTypes::scCouldNotCompute:
+      break;
+  }
+
+}
+
+void InductionVariable::deriveStepValueFromSCEVConstant (const SCEVConstant *scev) {
+  this->singleStepValue = scev->getValue();
+  this->isComputedStepValueLoopInvariant = true;
+}
+
+void InductionVariable::deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev, LoopSummary *LS) {
+  this->singleStepValue = scev->getValue();
+  this->isComputedStepValueLoopInvariant = LS->isLoopInvariant(this->singleStepValue);
+}
+
+bool InductionVariable::deriveStepValueFromCompositeSCEV (
+  const SCEV *scev,
+  ScalarEvolutionReferentialExpander &referentialExpander,
+  LoopSummary *LS
+) {
 
   // auto M = headerPHI->getFunction()->getParent();
   // DataLayout DL(M);
   // const char name = 'a';
   // SCEVExpander *expander = new SCEVExpander(SE, DL, &name);
 
-  std::set<Value *> valuesInScope{}; 
-  std::set<Value *> valuesToReferenceAndNotExpand{};
-  std::set<Value *> valuesInternalToLoop{};
-  for (auto internalNodePair : scc.internalNodePairs()) {
-    auto value = internalNodePair.first;
-    valuesInScope.insert(value);
-    valuesInternalToLoop.insert(value);
-  }
-  for (auto externalPair : scc.externalNodePairs()) {
-    auto value = externalPair.first;
-    valuesInScope.insert(value);
-    if (!isa<Instruction>(value) || bbs.find(cast<Instruction>(value)->getParent()) == bbs.end()) {
-      valuesToReferenceAndNotExpand.insert(value);
-    } else {
-      valuesInternalToLoop.insert(value);
+  // stepSCEV->print(errs() << "Referencing: "); errs() << "\n";
+  auto stepSizeReferenceTree = referentialExpander.createReferenceTree(scev, valuesInScopeOfInductionVariable);
+  if (!stepSizeReferenceTree) return false;
+
+  // stepSizeReferenceTree->getSCEV()->print(errs() << "Expanding: "); errs() << "\n";
+  auto tempBlock = BasicBlock::Create(loopEntryPHI->getContext());
+  IRBuilder<> tempBuilder(tempBlock);
+  auto finalValue = referentialExpander.expandUsingReferenceValues(
+    stepSizeReferenceTree,
+    valuesToReferenceInComputingStepValue,
+    tempBuilder
+  );
+  if (!finalValue) return false;
+
+  this->isComputedStepValueLoopInvariant = true;
+  auto references = stepSizeReferenceTree->collectAllReferences();
+  // TODO: Only check leaf reference values
+  for (auto reference : references) {
+    if (reference->getValue() && LS->isLoopInvariant(reference->getValue())) {
+      this->isComputedStepValueLoopInvariant = false;
+      break;
     }
   }
-  for (auto liveIn : loopEnv.getProducers()) {
-    valuesInScope.insert(liveIn);
-    valuesToReferenceAndNotExpand.insert(liveIn);
+
+  finalValue->print(errs() << "Expanded final value: "); errs() << "\n";
+
+  /*
+   * If no instruction was expanded (where a value is referenced instead)
+   * OR
+   * if only one instruction was expanded to represent the step recurrence
+   * then save that single value
+   */
+  if (tempBlock->size() < 2) {
+    singleStepValue = finalValue;
   }
 
-  switch (stepSCEV->getSCEVType()) {
-    case SCEVTypes::scConstant:
-      this->stepSize = cast<SCEVConstant>(stepSCEV)->getValue();
-      this->isStepLoopInvariant = true;
-      break;
-    case SCEVTypes::scUnknown:
-      this->stepSize = cast<SCEVUnknown>(stepSCEV)->getValue();
-      this->isStepLoopInvariant = true;
-      if (valuesToReferenceAndNotExpand.find(this->stepSize) == valuesToReferenceAndNotExpand.end()) {
-        this->stepSize = nullptr;
-        this->isStepLoopInvariant = false;
-      }
-      break;
-    default:
-
-      // stepSCEV->print(errs() << "Referencing: "); errs() << "\n";
-      auto stepSizeReferenceTree = referentialExpander.createReferenceTree(stepSCEV, valuesInScope);
-      if (stepSizeReferenceTree) {
-        // stepSizeReferenceTree->getSCEV()->print(errs() << "Expanding: "); errs() << "\n";
-        auto tempBlock = BasicBlock::Create(headerPHI->getContext());
-        IRBuilder<> tempBuilder(tempBlock);
-        auto finalValue = referentialExpander.expandUsingReferenceValues(
-          stepSizeReferenceTree,
-          valuesToReferenceAndNotExpand,
-          tempBuilder
-        );
-        if (finalValue) {
-          this->isStepLoopInvariant = true;
-          auto references = stepSizeReferenceTree->collectAllReferences();
-          for (auto reference : references) {
-            if (isa<SCEVAddRecExpr>(reference->getSCEV())) {
-              if (!reference->getValue() || valuesInternalToLoop.find(reference->getValue()) != valuesInternalToLoop.end()) {
-                this->isStepLoopInvariant = false;
-                break;
-              }
-            }
-          }
-
-          this->compositeStepSize = stepSCEV;
-          finalValue->print(errs() << "Expanded final value: "); errs() << "\n";
-          // TODO: Handle case where no expansion is necessary, say if the finalValue is an SCEV already external to the loop
-          for (auto &I : *tempBlock) {
-            expansionOfCompositeStepSize.push_back(&I);
-          }
-        }
-      }
-      break;
+  /*
+    * Save expanded values that compute the step recurrence
+    */
+  for (auto &I : *tempBlock) {
+    computationOfStepValue.push_back(&I);
   }
 
-  // TODO: Determine why this seg faults on the destructor of a ValueHandleBase
-  // delete expander;
-}
-
-bool InductionVariable::isStepSizeLoopInvariant (void) const {
-  return isStepLoopInvariant;
+  return true;
 }
 
 InductionVariable::~InductionVariable () {
   BasicBlock *tempBlock = nullptr;
-  // for (auto expandedInst : expansionOfCompositeStepSize) {
-  //   tempBlock = expandedInst->getParent();
-  //   expandedInst->eraseFromParent();
-  // }
   if (tempBlock) {
     tempBlock->deleteValue();
   }
@@ -242,34 +324,38 @@ SCC *InductionVariable::getSCC (void) const {
   return &scc;
 }
 
-PHINode * InductionVariable::getHeaderPHI (void) const {
-  return headerPHI;
+PHINode * InductionVariable::getLoopEntryPHI (void) const {
+  return loopEntryPHI;
 }
 
 std::set<PHINode *> & InductionVariable::getPHIs (void) {
   return PHIs;
 }
 
-std::set<Instruction *> &InductionVariable::getAccumulators (void) {
-  return accumulators;
+std::set<Instruction *> &InductionVariable::getNonPHIIntermediateValues (void) {
+  return nonPHIIntermediateValues;
 }
 
 std::set<Instruction *> &InductionVariable::getAllInstructions(void) {
   return allInstructions;
 }
 
-Value *InductionVariable::getStartAtHeader (void) const {
+Value *InductionVariable::getStartValue (void) const {
   return startValue;
 }
 
-Value *InductionVariable::getSimpleValueOfStepSize (void) const {
-  return stepSize;
+Value *InductionVariable::getSingleComputedStepValue (void) const {
+  return singleStepValue;
 }
 
-const SCEV *InductionVariable::getComposableStepSize (void) const {
-  return compositeStepSize;
+const SCEV *InductionVariable::getStepSCEV (void) const {
+  return stepSCEV;
 }
 
-std::vector<Instruction *> InductionVariable::getExpansionOfCompositeStepSize(void) const {
-  return expansionOfCompositeStepSize;
+std::vector<Instruction *> InductionVariable::getComputationOfStepValue(void) const {
+  return computationOfStepValue;
+}
+
+bool InductionVariable::isStepValueLoopInvariant (void) const {
+  return isComputedStepValueLoopInvariant;
 }
