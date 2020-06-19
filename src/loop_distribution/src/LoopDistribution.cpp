@@ -66,41 +66,44 @@ bool LoopDistribution::splitLoop (
   }
 
   /*
-   * Require that there is only one SCC with loop-carried control dependencies
-   *   TODO(Lukas): This should (?) be safe to remove
+   * Collect control instructions from the SCCs with loop-carried control dependencies
    */
   auto controlSCCs = LDI.sccdagAttrs.getSCCsWithLoopCarriedControlDependencies();
-  if (controlSCCs.size() != 1) {
-    errs() << "LoopDistribution: Abort: Number of SCCs with loop-carried control dependencies is "
-           << controlSCCs.size() << ", not 1\n";
-    return false;
-  }
-
-  /*
-   * Require that all SCCs that control the loop are cloneable and collect control instructions
-   */
   std::set<Instruction *> controlInstructions{};
   for (auto controlSCC : controlSCCs) {
     errs() << "LoopDistribution: New Control SCC\n";
     for (auto pair : controlSCC->internalNodePairs()) {
       if (auto controlInst = dyn_cast<Instruction>(pair.second->getT())) {
-        if (controlInst->mayHaveSideEffects()){
-          errs() << "LoopDistribution: Abort: " << *controlInst << " is not clonable\n";
-          return false;
-        }
-        errs () << "LoopDistribution: Control SCC: " <<  *controlInst << "\n";
+        errs () << "LoopDistribution: Control instruction from SCC: " <<  *controlInst << "\n";
         controlInstructions.insert(controlInst);
       }
     }
   }
 
   /*
-   * Require that not every control instruction is included in the instructions to pull out. This
-   *   guarantees that we reach a fixed point
+   * Collect control instructions that are dependencies of conditional branches
    */
-  if (this->splitWouldBeTrivial(LDI.getLoopSummary(), instsToPullOut, controlInstructions)) {
-    errs() << "LoopDistribution: Abort: Request is trivial and could lead to an infinite loop\n";
-    return false;
+  for (auto BB : LDI.getLoopSummary()->getBasicBlocks()) {
+    if (auto branch = dyn_cast<BranchInst>(BB->getTerminator())) {
+      if (branch->isConditional()) {
+        if (auto condition = dyn_cast<Instruction>(branch->getCondition())) {
+          errs () << "LoopDistribution: Colecting dependencies of  " <<  *condition << "\n";
+          controlInstructions.insert(condition);
+          this->recursivelyCollectDependencies(condition, controlInstructions);
+        }      
+      }
+    }
+  }
+
+  /*
+   * Require that all control instuctions are clonable
+   */
+  for (auto controlInst : controlInstructions) {
+    if (controlInst->mayHaveSideEffects()){
+      errs() << "LoopDistribution: Abort: Unclonable instruction " << *controlInst << "\n";
+      return false;
+    }
+    errs () << "LoopDistribution: Control instruction: " <<  *controlInst << "\n";
   }
 
   /*
@@ -113,68 +116,159 @@ bool LoopDistribution::splitLoop (
   }
 
   /*
+   * Require that all instructions in sub loops are clonable, and collect them
+   */
+  std::set<Instruction *> subLoopInstructions{};
+  for (auto childLoopSummary : LDI.getLoopSummary()->getChildren()) {
+    errs() << "LoopDistribution: New sub loop\n";
+    for (auto &childBB : childLoopSummary->getBasicBlocks()) {
+      for (auto &childI : *childBB) {
+        if (childI.mayHaveSideEffects()){
+          errs() << "LoopDistribution: Abort: Unclonable sub loop instruction " << childI << "\n";
+          return false;
+        }
+        errs() << "LoopDistribution: Sub loop instruction: " << childI << "\n";
+        subLoopInstructions.insert(&childI);
+      }
+    }
+  }
+  errs() << "LoopDistribution: Found " << subLoopInstructions.size() << " sub loop instructions\n";
+
+  /*
+   * Require that no instruction to pull out is in a sub loop. We can relax this requirement
+   *   later, but right now we are faithfully reproducing every sub loop in the new loop
+   */
+  for (auto inst : instsToPullOut) {
+    if (subLoopInstructions.find(inst) != subLoopInstructions.end()) {
+      errs() << "LoopDistribution: Abort: Tried to remove sub loop instruction " << *inst << "\n";
+      return false;
+    }
+  }
+
+  /*
+   * Require that there are instructions in the loop besides control instructions and
+   *   the instructions we are pulling out. This avoids an infinite loop of splits
+   */
+  if (this->splitWouldBeTrivial(
+      LDI.getLoopSummary(),
+      instsToPullOut,
+      controlInstructions,
+      subLoopInstructions
+      )
+    ) {
+    errs() << "LoopDistribution: Abort: Request is trivial and could lead to an infinite loop\n";
+    return false;
+  }
+
+  /*
    * Require that there are no data dependencies between instsToPullOut and the rest of the loop
    */
-  if (this->splitWouldRequireForwardingDataDependencies(LDI, instsToPullOut, controlInstructions)) {
-    errs() << "LoopDistribution: Abort: Splitting the loop would require forwarding data dependencies\n";
+  if (this->splitWouldRequireForwardingDataDependencies(
+        LDI,
+        instsToPullOut,
+        controlInstructions,
+        subLoopInstructions
+      )
+    ) {
+    errs() << "LoopDistribution: Abort: Distribution would require forwarding data dependencies\n";
     return false;
   }
 
   /*
    * Splitting the loop is now safe
    */
-  this->doSplit(LDI, instsToPullOut, controlInstructions, instructionsRemoved, instructionsAdded);
+  this->doSplit(
+    LDI,
+    instsToPullOut,
+    controlInstructions,
+    subLoopInstructions,
+    instructionsRemoved,
+    instructionsAdded
+  );
   return true;
+}
+
+
+/*
+ * Add every instruction that is a dependency of inst to the set toPopulate
+ */
+void LoopDistribution::recursivelyCollectDependencies (
+  Instruction * inst,
+  std::set<Instruction *> &toPopulate
+  ){
+    std::vector<Instruction *> queue = {inst};
+    while (queue.size() != 0) {
+      auto i = queue.back();
+      queue.pop_back();
+      for (unsigned idx = 0; idx < i->getNumOperands(); idx++) {
+        if (auto dependency = dyn_cast<Instruction>(i->getOperand(idx))) {
+          if (toPopulate.find(dependency) == toPopulate.end()) {
+            errs () << "LoopDistribution: Found dependency: " << *dependency << "\n";
+            toPopulate.insert(dependency);
+            queue.push_back(dependency);
+          }
+        }
+      }
+    }
+  return ;
 }
 
 /*
  * Checks if the union of instsToPullOut and controlInsts covers every instruction in the loop
+ *   that is not a branch or part of a sub loop (since we will replicate those anyway)
  */
 bool LoopDistribution::splitWouldBeTrivial (
   LoopSummary * const loopSummary,
   std::set<Instruction *> const &instsToPullOut,
-  std::set<Instruction *> const &controlInsts
+  std::set<Instruction *> const &controlInstructions,
+  std::set<Instruction *> const &subLoopInstructions
   ){
+  bool result = true;
   for (auto &BB : loopSummary->getBasicBlocks()) {
     for (auto &I : *BB) {
       if (true
           && instsToPullOut.find(&I) == instsToPullOut.end()
-          && controlInsts.find(&I) == controlInsts.end()) {
-            return false;
+          && controlInstructions.find(&I) == controlInstructions.end()
+          && subLoopInstructions.find(&I) == subLoopInstructions.end()
+          && (!isa<BranchInst>(&I))
+        ) {
+        errs() << "LoopDistribution: Not trivial because of " << I << "\n";
+        result =  false;
       }
     }
   }
-  return true;
+  return result;
 }
-
 
 /*
  * Checks if any instructions in instsToPullOut are the source or destination of a data dependency
- *   to another instruction in the loop (external to instsToPullOut)
+ *   to another instruction in the loop that would break if we split the loop
  */
 bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
   LoopDependenceInfo const &LDI,
   std::set<Instruction *> const &instsToPullOut,
-  std::set<Instruction *> const &controlInstructions
+  std::set<Instruction *> const &controlInstructions,
+  std::set<Instruction *> const &subLoopInstructions
   ){
   auto BBs = LDI.getLoopSummary()->getBasicBlocks();
-  auto fn = [&BBs, &instsToPullOut, &controlInstructions](Value *toOrFrom, DataDependenceType ddType) -> bool {
-    if (!isa<Instruction>(toOrFrom)) {
+  auto fromFn = [&BBs, &instsToPullOut, &controlInstructions, &subLoopInstructions]
+    (Value *from, DataDependenceType ddType) -> bool {
+    if (!isa<Instruction>(from)) {
       return false;
     }
-    auto i = cast<Instruction>(toOrFrom);
+    auto i = cast<Instruction>(from);
 
     /*
-     * Ignore dependencies between instructions we are pulling out and control instructions.
-     *   It is okay for an instruction to depend on a control instruction, because control
-     *   instructions will be cloned. It is impossible for a control instruction to depend on
-     *   a non-control instruction (by definition).
+     * Ignore dependencies between instructions we are pulling out. It is okay to have a 
+     *   to have a from-dependence with a control instruction or a sub loop instruction
+     *   because those instructions will still be present in the new loop.
      *   TODO(lukas): Confirm the above
      */
     if (true
         && instsToPullOut.find(i) == instsToPullOut.end()
         && controlInstructions.find(i) == controlInstructions.end()
-       ) {
+        && subLoopInstructions.find(i) == subLoopInstructions.end()
+    ) {
       auto bb = i->getParent();
 
       /*
@@ -182,7 +276,31 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
        */
       if (std::find(BBs.begin(), BBs.end(), bb) != BBs.end()) {
         errs() << "LoopDistribution: Instruction "
-               << *i << " is involved in a data dependency that would need to be forwarded\n";
+               << *i << " is the source of a data dependency that would need to be forwarded\n";
+        return true;
+      }
+    }
+    return false;
+  };
+  auto toFn = [&BBs, &instsToPullOut](Value *to, DataDependenceType ddType) -> bool {
+    if (!isa<Instruction>(to)) {
+      return false;
+    }
+    auto i = cast<Instruction>(to);
+
+    /*
+     * Ignore dependencies between instructions we are pulling out. We can't have dependencies to
+     *   cloned instructions because we would break them when we pull out the instruction
+     */
+    if (instsToPullOut.find(i) == instsToPullOut.end()) {
+      auto bb = i->getParent();
+
+      /*
+       * Only dependencies inside the loop should cause us to abort
+       */
+      if (std::find(BBs.begin(), BBs.end(), bb) != BBs.end()) {
+        errs() << "LoopDistribution: Instruction "
+               << *i << " consumes a data dependency that would need to be forwarded\n";
         return true;
       }
     }
@@ -195,7 +313,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
       false, // Control
       true,  // Memory
       true,  // Register
-      fn
+      toFn
     );
     if (isSourceOfExternalDataDependency) {
       errs() << "LoopDistribution: Problem was dependency from " << *inst << "\n";
@@ -206,7 +324,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
       false, // Control
       true,  // Memory
       true,  // Register
-      fn
+      fromFn
     );
     if (isDestinationOfExternalDataDependency) {
       errs() << "LoopDistribution: Problem was dependency to " << *inst << "\n";
@@ -220,6 +338,7 @@ void LoopDistribution::doSplit (
   LoopDependenceInfo const &LDI,
   std::set<Instruction *> const &instsToPullOut,
   std::set<Instruction *> const &controlInstructions,
+  std::set<Instruction *> const &subLoopInstructions,
   std::set<Instruction *> &instructionsRemoved,
   std::set<Instruction *> &instructionsAdded
   ){
@@ -229,7 +348,7 @@ void LoopDistribution::doSplit (
 
   /*
    * Duplicate the basic blocks of the loop and insert clones of all necessary
-   *   non-branch instructions in order (instsToPullOut and controlInstructions)
+   *   non-branch instructions in order
    */
   std::unordered_map<Instruction *, Instruction *> instMap{};
   std::unordered_map<BasicBlock *, BasicBlock *> bbMap{};
@@ -243,7 +362,9 @@ void LoopDistribution::doSplit (
       }
       if (false
           || instsToPullOut.find(&I) != instsToPullOut.end()
-          || controlInstructions.find(&I) != controlInstructions.end()) {
+          || controlInstructions.find(&I) != controlInstructions.end()
+          || subLoopInstructions.find(&I) != subLoopInstructions.end()
+      ) {
         auto cloneInst = builder.Insert(I.clone());
         instructionsAdded.insert(cloneInst);
         instMap[&I] = cloneInst;
@@ -382,7 +503,7 @@ void LoopDistribution::doSplit (
   errs() << "LoopDistribution: Finished fixing instruction dependencies in exit blocks\n";
 
   /*
-   * Remove instructions from the original loop if they are not control instructions.
+   * Remove instructions from the original loop if they were not cloned and are not branches.
    *   Also replace all uses of an instruction with its corresponding clone. This is necessary in
    *   the case that an instruction outside of this loop needs to consume the produced value.
    *   It is always correct to do this because we have already confirmed that there are no uses of
@@ -391,7 +512,11 @@ void LoopDistribution::doSplit (
    *   TODO(lukas): Confirm this
    */
   for (auto inst : instsToPullOut) {
-    if (controlInstructions.find(inst) == controlInstructions.end()) {
+    if (true
+       && controlInstructions.find(inst) == controlInstructions.end()
+       && subLoopInstructions.find(inst) == subLoopInstructions.end()
+       && (!isa<BranchInst>(inst))
+    ) {
       auto cloneInst = instMap.at(inst);
       inst->replaceAllUsesWith(cloneInst);
       instructionsRemoved.insert(inst);

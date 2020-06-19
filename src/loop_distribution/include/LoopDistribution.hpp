@@ -55,27 +55,30 @@ namespace llvm {
         std::set<Instruction *> &instructionsAdded
       );
 
+      void recursivelyCollectDependencies (
+        Instruction * inst,
+        std::set<Instruction *> &toPopulate
+      );
+
       bool splitWouldBeTrivial (
         LoopSummary * const loopSummary,
         std::set<Instruction *> const &instsToPullOut,
-        std::set<Instruction *> const &controlInsts
+        std::set<Instruction *> const &controlInstructions,
+        std::set<Instruction *> const &subLoopInstructions
       );
 
       bool splitWouldRequireForwardingDataDependencies (
         LoopDependenceInfo const &LDI,
         std::set<Instruction *> const &instsToPullOut,
-        std::set<Instruction *> const &controlInsts
-      );
-
-      std::set<Instruction *> getInstructionsThatControlTheLoop (
-        LoopDependenceInfo const &LDI,
-        std::set<SCC *> const &controlSCCs
+        std::set<Instruction *> const &controlInstructions,
+        std::set<Instruction *> const &subLoopInstructions
       );
 
       void doSplit (
         LoopDependenceInfo const &LDI,
         std::set<Instruction *> const &instsToPullOut,
         std::set<Instruction *> const &controlInstructions,
+        std::set<Instruction *> const &subLoopInstructions,
         std::set<Instruction *> &instructionsRemoved,
         std::set<Instruction *> &instructionsAdded
       );
