@@ -56,6 +56,17 @@ LoopSummary::LoopSummary (
     if (l->isLoopLatch(bb)) {
       latchBBs.insert(bb);
     }
+
+    for (auto& inst : *bb){
+
+      /*
+       * NOTE: Loop implementation of isLoopInvariant simply checks if the value
+       * is in the loop, not if it changes between iterations.
+       */
+      if (l->isLoopInvariant(&inst)){
+        this->invariants.insert(&inst);
+      }
+    }
   }
 
   /*
@@ -111,7 +122,31 @@ std::unordered_set<BasicBlock *> LoopSummary::getBasicBlocks (void) const {
 std::vector<BasicBlock *> LoopSummary::getLoopExitBasicBlocks (void) const {
   return this->exitBlocks;
 }
-    
+
+bool LoopSummary::isLoopInvariant (Value *value) const {
+  if (auto inst = dyn_cast<Instruction>(value)) {
+    if (!isBasicBlockWithin(inst->getParent())) return true;
+    return isContainedInstructionLoopInvariant(inst);
+  } else if (auto arg = dyn_cast<Argument>(value)) {
+    return true;
+  }
+
+  /*
+   * We cannot determine whether the value is loop invariant without further analysis
+   */
+  return false;
+}
+
+bool LoopSummary::isContainedInstructionLoopInvariant (Instruction *inst) const {
+
+  /*
+   * Currently, we are as naive as LLVM, not including loop internal instructions
+   * which derive from loop invariants as being loop invariant. We simply cache
+   * loop instructions which LLVM's isLoopInvariant returns true for
+   */
+  return this->invariants.find(inst) != this->invariants.end();
+}
+
 bool LoopSummary::isBasicBlockWithin (BasicBlock *bb) const {
   auto found = this->bbs.find(bb) != this->bbs.end();
 

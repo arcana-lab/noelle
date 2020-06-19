@@ -157,18 +157,6 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (
    */
   this->liSummary.populate(l);
 
-  /*
-   * Set the loop invariant.
-   */
-  auto loopStructure = this->getLoopSummary();
-  for (auto bb : loopStructure->getBasicBlocks()){
-    for (auto& inst : *bb){
-      if (l->isLoopInvariant(&inst)){
-        this->invariants.insert(&inst);
-      }
-    }
-  }
-
   return ;
 }
 
@@ -334,16 +322,4 @@ bool LoopDependenceInfo::doesHaveCompileTimeKnownTripCount (void) const {
 
 uint64_t LoopDependenceInfo::getCompileTimeTripCount (void) const {
   return this->tripCount;
-}
-
-bool LoopDependenceInfo::isLoopInvariant (Value *v) const {
-  if (v == nullptr){
-    return false;
-  }
-
-  if (this->invariants.find(v) == this->invariants.end()){
-    return false;
-  }
-
-  return true;
 }
