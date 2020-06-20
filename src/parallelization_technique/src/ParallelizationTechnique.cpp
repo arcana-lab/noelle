@@ -410,12 +410,16 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      * that have reducible live outs, and this flexibility is ONLY permitted for reducible live outs
      * as non-reducible live outs can never store intermediate values of the producer.
      */
+    auto &taskFunction = *task->getTaskBody();
+    DominatorTree taskDT(taskFunction);
+    PostDominatorTree taskPDT(taskFunction);
+    DominatorSummary taskDS(taskDT, taskPDT);
     auto prodClone = task->getCloneOfOriginalInstruction(producer);
-    auto insertBBs = this->determineLatestPointsToInsertLiveOutStore(LDI, taskIndex, producer);
+    auto insertBBs = this->determineLatestPointsToInsertLiveOutStore(LDI, taskIndex, prodClone, isReduced, taskDS);
     for (auto BB : insertBBs) {
 
       auto producerValueToStore = isReduced
-        ? generatePHIOfIntermediateProducerValuesForReducibleLiveOutVariable(LDI, taskIndex, envIndex, BB)
+        ? generatePHIOfIntermediateProducerValuesForReducibleLiveOutVariable(LDI, taskIndex, envIndex, BB, taskDS)
         : prodClone;
 
       IRBuilder<> liveOutBuilder(BB);
@@ -431,7 +435,9 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
 std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLiveOutStore (
   LoopDependenceInfo *LDI,
   int taskIndex,
-  Instruction *liveOut
+  Instruction *liveOut,
+  bool isReduced,
+  DominatorSummary &taskDS
 ){
   auto task = this->tasks[taskIndex];
 
@@ -439,16 +445,23 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
    * Fetch the header.
    */
   auto loopSummary = LDI->getLoopSummary();
-  auto loopHeader = loopSummary->getHeader();
+  auto liveOutBlock = liveOut->getParent();
 
   /*
-   * TODO: Determine the exit block for which the live out is defined
+   * If the live out is reduced, then insert the store right before the task completes
+   * Otherwise, only insert stores in loop exit blocks the live out dominates
    */
   std::set<BasicBlock *> insertPoints;
-  // for (auto BB : loopSummary->getLoopExitBasicBlocks()) {
-  //   insertPoints.insert(task->getCloneOfOriginalBasicBlock(BB));
-  // }
-  insertPoints.insert(task->getExit());
+  if (isReduced) {
+    insertPoints.insert(task->getExit());
+  } else {
+    for (auto BB : loopSummary->getLoopExitBasicBlocks()) {
+      auto cloneBB = task->getCloneOfOriginalBasicBlock(BB);
+      if (!taskDS.DT.dominates(liveOutBlock, cloneBB)) continue;
+      insertPoints.insert(cloneBB);
+    }
+  }
+
   return insertPoints;
 }
 
@@ -459,16 +472,11 @@ PHINode * ParallelizationTechnique::generatePHIOfIntermediateProducerValuesForRe
   LoopDependenceInfo *LDI, 
   int taskIndex,
   int envIndex,
-  BasicBlock *insertBasicBlock
+  BasicBlock *insertBasicBlock,
+  DominatorSummary &taskDS
 ) {
 
-  /*
-   * HACK: Compute task dominator summary
-   */
   auto task = this->tasks[taskIndex];
-  DominatorTree taskDT(*task->getTaskBody());
-  PostDominatorTree taskPDT(*task->getTaskBody());
-  DominatorSummary taskDS(taskDT, taskPDT);
   auto &DT = taskDS.DT;
   auto &PDT = taskDS.PDT;
 
@@ -515,7 +523,8 @@ PHINode * ParallelizationTechnique::generatePHIOfIntermediateProducerValuesForRe
 
     std::set<Instruction *> dominatingValues{};
     for (auto intermediateValue : intermediateValues) {
-      if (DT.dominates(intermediateValue->getParent(), predecessor)) {
+      auto intermediateBlock = intermediateValue->getParent();
+      if (DT.dominates(intermediateBlock, predecessor)) {
         dominatingValues.insert(intermediateValue);
         intermediateValue->print(errs() << "Dominating value: "); errs() << "\n";
       }

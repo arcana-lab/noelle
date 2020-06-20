@@ -125,6 +125,7 @@ namespace llvm {
 
   class SpilledLoopCarriedDependency {
     public:
+      PHINode *originalLoopCarriedPHI;
       PHINode *loopCarriedPHI;
       LoadInst *environmentLoad;
       std::set<StoreInst *> environmentStores;

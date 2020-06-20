@@ -65,8 +65,9 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * Instantiate a builder to the task's entry, track the terminator,
    * and later hoist the terminator back to the end of the entry block.
    */
-  auto entryBlockTerminator = helixTask->getEntry()->getTerminator();
-  IRBuilder<> entryBuilder(helixTask->getEntry());
+  auto entryBlock = helixTask->getEntry();
+  auto entryBlockTerminator = entryBlock->getTerminator();
+  IRBuilder<> entryBuilder(entryBlockTerminator);
 
   /*
    * Register a new environment builder and the single HELIX task
@@ -111,9 +112,11 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   auto firstNonPHI = helixTask->getCloneOfOriginalInstruction(loopHeader->getFirstNonPHI());
   IRBuilder<> headerBuilder(firstNonPHI);
   for (auto phiI = 0; phiI < clonedLoopCarriedPHIs.size(); phiI++) {
+    auto originalPHI = originalLoopCarriedPHIs[phiI];
     auto phi = clonedLoopCarriedPHIs[phiI];
     auto spilled = new SpilledLoopCarriedDependency();
     this->spills.insert(spilled);
+    spilled->originalLoopCarriedPHI = originalPHI;
     spilled->loopCarriedPHI = phi;
 
     /*
@@ -163,8 +166,12 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
     helixTask->removeOriginalInstruction(phi);
   }
 
-  entryBlockTerminator->removeFromParent();
-  entryBuilder.Insert(entryBlockTerminator);
+  /*
+   * Translate instruction clone from cloned PHI to spilled load of that now removed cloned PHI
+   */
+  for (auto spill : this->spills) {
+    helixTask->addInstruction(spill->originalLoopCarriedPHI, spill->environmentLoad);
+  }
 
   return ;
 }

@@ -130,7 +130,8 @@ namespace llvm {
         LoopDependenceInfo *LDI, 
         int taskIndex,
         int envIndex,
-        BasicBlock *insertBasicBlock
+        BasicBlock *insertBasicBlock,
+        DominatorSummary &taskDS
       );
 
       void generateCodeToStoreExitBlockIndex (
@@ -141,7 +142,9 @@ namespace llvm {
       std::set<BasicBlock *> determineLatestPointsToInsertLiveOutStore (
         LoopDependenceInfo *LDI,
         int taskIndex,
-        Instruction *liveOut
+        Instruction *liveOut,
+        bool isReduced,
+        DominatorSummary &taskDS
       );
 
       void adjustDataFlowToUseClones (
