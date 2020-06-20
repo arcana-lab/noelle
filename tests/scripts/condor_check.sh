@@ -25,7 +25,7 @@ echo "  Checking the regression test results" ;
 # Check the tests that are still running
 regressionFinished="0" ;
 stillRunning="`mktemp`" ;
-condor_q `whoami` -l | grep ^Arguments | grep "`pwd` | grep regression" > $stillRunning ;
+condor_q `whoami` -l | grep ^Arguments | grep "`pwd`" | grep regression > $stillRunning ;
 if test -s $stillRunning ; then
   echo "    The following tests are still running" ;
   while IFS= read -r line; do
@@ -120,18 +120,24 @@ if test $? -eq 0 ; then
 else 
 
   # Check if they are still running
-  linesRunning=`wc -l performance/speedups.txt | awk '{print $1}'` ;
-  linesOracle=`wc -l performance/oracle_speedups | awk '{print $1}'` ;
-  if test "$linesOracle" != "$linesRunning" ; then
-    echo "  They are still running" ;
-  else
-    echo "  All performance tests compiled correctly" ;
-    grep -i "Performance degradation" compiler_output_performance.txt &> /dev/null ;
-    if test $? -eq 0 ; then
-      echo "  Next are the performance tests that run slower:" ;
-      grep -i "Performance degradation" compiler_output_performance.txt ;
-    else 
-      echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
+  if test -f performance/speedups.txt ; then
+    linesRunning=`wc -l performance/speedups.txt | awk '{print $1}'` ;
+    linesOracle=`wc -l performance/oracle_speedups | awk '{print $1}'` ;
+    if test "$linesOracle" != "$linesRunning" ; then
+      echo "  They are still running" ;
+
+    else
+      echo "  All performance tests compiled correctly" ;
+      grep -i "Performance degradation" compiler_output_performance.txt &> /dev/null ;
+      if test $? -eq 0 ; then
+        echo "  Next are the performance tests that run slower:" ;
+        grep -i "Performance degradation" compiler_output_performance.txt ;
+      else 
+        echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
+      fi
     fi
+
+  else 
+    echo "  They are still running" ;
   fi
 fi
