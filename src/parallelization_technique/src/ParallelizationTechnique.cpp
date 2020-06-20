@@ -465,9 +465,6 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
   return insertPoints;
 }
 
-/*
- * PROBLEM: We don't have domination summary of cloned task
- */
 PHINode * ParallelizationTechnique::generatePHIOfIntermediateProducerValuesForReducibleLiveOutVariable (
   LoopDependenceInfo *LDI, 
   int taskIndex,
@@ -508,25 +505,14 @@ PHINode * ParallelizationTechnique::generatePHIOfIntermediateProducerValuesForRe
    * NOTE: If this is a well-formed insert point for the live out, exactly one such intermediate value must exist
    */
   std::set<BasicBlock *> preds{pred_begin(insertBasicBlock), pred_end(insertBasicBlock)};
-  for (auto pred : preds) {
-    for (auto pred2 : preds) {
-      if (DT.dominates(pred, pred2)) {
-        pred->print(errs() << "This dominates:\n");
-        pred2->print(errs() << "This is dominated\n");
-      }
-    }
-  }
-
   for (auto predIter = pred_begin(insertBasicBlock); predIter != pred_end(insertBasicBlock); ++predIter) {
     auto predecessor = *predIter;
-    predecessor->print(errs() << "Wiring from\n");
 
     std::set<Instruction *> dominatingValues{};
     for (auto intermediateValue : intermediateValues) {
       auto intermediateBlock = intermediateValue->getParent();
       if (DT.dominates(intermediateBlock, predecessor)) {
         dominatingValues.insert(intermediateValue);
-        intermediateValue->print(errs() << "Dominating value: "); errs() << "\n";
       }
     }
 
@@ -536,18 +522,12 @@ PHINode * ParallelizationTechnique::generatePHIOfIntermediateProducerValuesForRe
     Instruction *lastDominatingIntermediateValue = *dominatingValues.begin();
     for (auto value : dominatingValues) {
       if (!DT.dominates(lastDominatingIntermediateValue, value)) {
-        if (!DT.dominates(value, lastDominatingIntermediateValue)) {
-          lastDominatingIntermediateValue->print(errs() << "V1: "); errs() << "\n";
-          value->print(errs() << "V1: "); errs() << "\n";
-        }
         assert(DT.dominates(value, lastDominatingIntermediateValue)
           && "Cannot store reducible live out where no producer value post-dominates the others");
         continue;
       }
       lastDominatingIntermediateValue = value;
     }
-
-    lastDominatingIntermediateValue->print(errs() << "Last intermediate: "); errs() << "\n";
 
     auto predecessorTerminator = predecessor->getTerminator();
     IRBuilder<> builderAtValue(predecessorTerminator);

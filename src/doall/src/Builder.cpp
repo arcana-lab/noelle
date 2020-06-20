@@ -246,50 +246,5 @@ void DOALL::rewireLoopToIterateChunks (
       task->getExit(),
       headerClone
     );
-
-    /*
-     * For every live out value, produce a PHI node to capture the value through the latch exit
-     * Each live out value must be reducible for DOALL, and a reducible variable must have a header PHI
-     * node as part of its representation
-     */
-    // IRBuilder<> loopExitBuilder(task->getLastBlock(0)->getFirstNonPHIOrDbgOrLifetime());
-    // for (auto producerIdx : LDI->environment->getEnvIndicesOfLiveOutVars()) {
-    //   auto producer = LDI->environment->producerAt(producerIdx);
-    //   assert(isa<Instruction>(producer));
-    //   auto producerI = cast<Instruction>(producer);
-
-    //   /*
-    //    * Fetch the PHI node in the header for this live out value.
-    //    * NOTE: The live out value doesn't need to be the header PHI; it can be an intermediate value
-    //    */
-    //   auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producerI);
-    //   PHINode *headerProducerPHI = LDI->sccdagAttrs.getSCCAttrs(producerSCC)->getSingleHeaderPHI();
-
-    //   /*
-    //    * Produce a live out PHI in the exit block
-    //    * Add all latch values that now can become the live out value
-    //    */
-    //   assert(producerI->getType() == headerProducerPHI->getType()
-    //     && "Casting latch values for live out propagation not implemented");
-    //   auto liveOutPHI = loopExitBuilder.CreatePHI(producerI->getType(), headerProducerPHI->getNumIncomingValues());
-    //   // producerI->print(errs() << "Adding incoming from header: "); errs() << "\n";
-    //   liveOutPHI->addIncoming(task->getCloneOfOriginalInstruction(producerI), headerClone);
-    //   for (auto latch : loopSummary->getLatches()) {
-    //     auto latchValue = headerProducerPHI->getIncomingValueForBlock(latch);
-    //     assert(isa<Instruction>(latchValue));
-    //     // latchValue->print(errs() << "Adding incoming from latch: "); errs() << "\n";
-    //     liveOutPHI->addIncoming(
-    //       task->getCloneOfOriginalInstruction(cast<Instruction>(latchValue)),
-    //       task->getCloneOfOriginalBasicBlock(latch)
-    //     );
-    //   }
-
-    //   /*
-    //    * HACK: Ensure that the new live out PHI represents the producer in the parallelization technique
-    //    * This is necessary for storing live outs done by ParallelizationTechnique.cpp
-    //    */
-    //   task->addInstruction(producerI, liveOutPHI);
-    // }
-
   }
 }

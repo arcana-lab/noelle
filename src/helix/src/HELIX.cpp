@@ -250,27 +250,6 @@ void HELIX::createParallelizableTask (
   entryBuilder.CreateBr(helixTask->getCloneOfOriginalBasicBlock(loopHeader));
 
   /*
-   * Store final results of loop live-out variables. 
-   * Note this occurs after data flow is adjusted.  TODO: is this a must? if so, let's say it explicitely
-   */
-  // this->generateCodeToStoreLiveOutVariables(LDI, 0);
-
-  /*
-   * HACK: Hoist reducible live out StoreInst right before the task's return statement
-   * since short circuiting synchronization logic skips loop exit blocks. The fix is to either
-   * 1) store all live outs (cloned, reducible, or from spilled environment) right before the task's return
-   *  This would require re-loading of spilled environment and cause redundant stores to spilled environment
-   * 2) initially store reducible live outs right before the task's return
-   *  This is slightly messier code-wise (deviating from ParallelizationTechnique's implementation)
-   */
-  // this->hoistReducibleLiveOutStoresToTaskExit(LDI);
-
-  /*
-   * Generate a store to propagate information about which exit block the parallelized loop took.
-   */
-  // this->generateCodeToStoreExitBlockIndex(LDI, 0);
-
-  /*
    * Spill loop carried dependencies into a separate environment array
    */
   this->spillLoopCarriedDataDependencies(LDI);
@@ -320,7 +299,15 @@ void HELIX::synchronizeTask (
    */
   this->addSynchronizations(LDI, &sequentialSegments);
 
+  /*
+   * Store final results of loop live-out variables. 
+   * Note this occurs after data flow is adjusted.  TODO: is this a must? if so, let's say it explicitely
+   */
   this->generateCodeToStoreLiveOutVariables(this->originalLDI, 0);
+
+  /*
+   * Generate a store to propagate information about which exit block the parallelized loop took.
+   */
   this->generateCodeToStoreExitBlockIndex(this->originalLDI, 0);
 
   /*
