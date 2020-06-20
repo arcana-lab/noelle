@@ -105,10 +105,6 @@ namespace llvm {
         void
       );
 
-      void hoistReducibleLiveOutStoresToTaskExit (
-        LoopDependenceInfo *LDI
-      );
-
     private:
       Function *waitSSCall, *signalSSCall;
       LoopDependenceInfo *originalLDI;
