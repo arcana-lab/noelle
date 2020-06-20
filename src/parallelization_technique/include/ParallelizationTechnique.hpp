@@ -126,6 +126,13 @@ namespace llvm {
         int taskIndex
       );
 
+      PHINode * generatePHIOfIntermediateProducerValuesForReducibleLiveOutVariable (
+        LoopDependenceInfo *LDI, 
+        int taskIndex,
+        int envIndex,
+        BasicBlock *insertBasicBlock
+      );
+
       void generateCodeToStoreExitBlockIndex (
         LoopDependenceInfo *LDI,
         int taskIndex

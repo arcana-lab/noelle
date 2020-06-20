@@ -253,7 +253,7 @@ void HELIX::createParallelizableTask (
    * Store final results of loop live-out variables. 
    * Note this occurs after data flow is adjusted.  TODO: is this a must? if so, let's say it explicitely
    */
-  this->generateCodeToStoreLiveOutVariables(LDI, 0);
+  // this->generateCodeToStoreLiveOutVariables(LDI, 0);
 
   /*
    * HACK: Hoist reducible live out StoreInst right before the task's return statement
@@ -263,12 +263,12 @@ void HELIX::createParallelizableTask (
    * 2) initially store reducible live outs right before the task's return
    *  This is slightly messier code-wise (deviating from ParallelizationTechnique's implementation)
    */
-  this->hoistReducibleLiveOutStoresToTaskExit(LDI);
+  // this->hoistReducibleLiveOutStoresToTaskExit(LDI);
 
   /*
    * Generate a store to propagate information about which exit block the parallelized loop took.
    */
-  this->generateCodeToStoreExitBlockIndex(LDI, 0);
+  // this->generateCodeToStoreExitBlockIndex(LDI, 0);
 
   /*
    * Spill loop carried dependencies into a separate environment array
@@ -319,6 +319,9 @@ void HELIX::synchronizeTask (
    * Add synchronization instructions.
    */
   this->addSynchronizations(LDI, &sequentialSegments);
+
+  this->generateCodeToStoreLiveOutVariables(this->originalLDI, 0);
+  this->generateCodeToStoreExitBlockIndex(this->originalLDI, 0);
 
   /*
    * Link the parallelize code to the original one.
