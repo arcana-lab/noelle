@@ -171,6 +171,24 @@ SequentialSegment::SequentialSegment (
     }
 
     /*
+     * Check if I is an entry of the current sequential segment.
+     */
+    bool allInSS = (inSS.size() + 1) == ssInstructions.size();
+    if (  true
+          && allInSS
+          && (ssInstructions.find(I) != ssInstructions.end())
+          ) {
+
+      /*
+       * NOTE: Do not include PHIs in a sequential segment. Let the PHI redirect data properly before
+       * entry into the sequential segment. This knowledge would be lost after the entry because
+       * of the insertion of control flow checking whether to wait before entering the segment
+       */
+      auto firstI = I->getParent()->getFirstNonPHIOrDbgOrLifetime();
+      this->entries.insert(firstI);
+    }
+
+    /*
      * Check if I is an exit of the current sequential segment.
      */
     bool noneInSS = inSS.size() == 0;
@@ -185,11 +203,14 @@ SequentialSegment::SequentialSegment (
         ? I : I->getParent()->getFirstNonPHIOrDbgOrLifetime();
 
       this->exits.insert(lastI);
+
+      /*
+       * If I is an exit, there is no need to continue along successors
+       */
       continue ;
     }
 
     /*
-     *
      * Add the successors of I to the working list.
      */
     auto bb = I->getParent();
@@ -237,29 +258,8 @@ SequentialSegment::SequentialSegment (
         }
       }
     }
-
-    /*
-     * Check if I is an entry of the current sequential segment.
-     */
-    bool allInSS = (inSS.size() + 1) == ssInstructions.size();
-    if (  true
-          && allInSS
-          && (ssInstructions.find(I) != ssInstructions.end())
-          ) {
-
-      /*
-       * NOTE: Do not include PHIs in a sequential segment. Let the PHI redirect data properly before
-       * entry into the sequential segment. This knowledge would be lost after the entry because
-       * of the insertion of control flow checking whether to wait before entering the segment
-       */
-      auto firstI = I->getParent()->getFirstNonPHIOrDbgOrLifetime();
-      this->entries.insert(firstI);
-    }
-
-    /*
-     * I is not an entry and it is not an exit.
-     */
   }
+
   assert(this->entries.size() > 0
     && "The data flow analysis did not identify any per-iteration entry to the sequential segment!\n");
   assert(this->exits.size() > 0
