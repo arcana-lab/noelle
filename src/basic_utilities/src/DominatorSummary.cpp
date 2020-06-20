@@ -170,7 +170,11 @@ bool DomTreeSummary::dominates (Instruction *I, Instruction *J) {
 }
 
 bool DomTreeSummary::dominates (BasicBlock *B1, BasicBlock *B2) {
-  return this->dominates(this->getNode(B1), this->getNode(B2));
+  auto nodeB1 = this->getNode(B1);
+  auto nodeB2 = this->getNode(B2);
+  assert(nodeB1 && nodeB2
+    && "The basic blocks provided to DomTreeSummary are not present in the tree");
+  return this->dominates(nodeB1, nodeB2);
 }
 
 bool DomTreeSummary::dominates (DomNodeSummary *node1, DomNodeSummary *node2) {
