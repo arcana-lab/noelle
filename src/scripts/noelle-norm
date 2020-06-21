@@ -11,7 +11,6 @@ EXTRA_LIBS="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so
 
 ########### Transformations
 TRANSFORMATIONS_BEFORE_PARALLELIZATION="${EXTRA_LIBS} ${AA_BASE} -mem2reg -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -mergereturn --break-crit-edges -loop-simplify -lcssa"
-#TRANSFORMATIONS_BEFORE_PARALLELIZATION="${EXTRA_LIBS} ${AA_BASE} -mem2reg -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa       -loop-unswitch -globalopt -instcombine -ipsccp      -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -mergereturn --break-crit-edges -loop-simplify -lcssa"
 
 cmdToExecute="${OPT} ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} $@"
 echo $cmdToExecute ;
