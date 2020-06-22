@@ -113,6 +113,6 @@ namespace llvm {
      */
     std::set<LoopSummary *> loopSummaries;
     Verbosity verbose;
-    bool enable;
   };
+
 }

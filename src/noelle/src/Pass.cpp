@@ -19,6 +19,7 @@ static cl::opt<int> MinimumHotness("noelle-min-hot", cl::ZeroOrMore, cl::Hidden,
 static cl::opt<bool> DisableDSWP("noelle-disable-dswp", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DSWP"));
 static cl::opt<bool> DisableHELIX("noelle-disable-helix", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable HELIX"));
 static cl::opt<bool> DisableDOALL("noelle-disable-doall", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DOALL"));
+static cl::opt<bool> DisableInliner("noelle-disable-inliner", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 
 bool Noelle::doInitialization (Module &M) {
 
@@ -35,6 +36,9 @@ bool Noelle::doInitialization (Module &M) {
   }
   if (DisableHELIX.getNumOccurrences() == 0){
     this->enabledTransformations.insert(HELIX_ID);
+  }
+  if (DisableInliner.getNumOccurrences() == 0){
+    this->enabledTransformations.insert(INLINER_ID);
   }
 
   /*
