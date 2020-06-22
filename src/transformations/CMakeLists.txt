@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.4.3)
-project(Loops)
+project(Transformations)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -25,18 +25,9 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(AddLLVM)
 
-# Pass
-add_subdirectory(src)
-
 # Install
-install(PROGRAMS 
-    include/LoopDependenceInfo.hpp
-    include/InductionVariables.hpp
-    include/LoopGoverningIVAttribution.hpp
-    include/IVStepperUtility.hpp
-    include/SCCDAGAttrs.hpp
-    include/SCCDAGNormalizer.hpp
-    include/SCCDAGPartition.hpp
-    include/SCCAttrs.hpp
-    include/AccumulatorOpInfo.hpp
-    DESTINATION include)
+install(  PROGRAMS 
+          include/Transformations.hpp
+          DESTINATION 
+          include
+        )

@@ -281,38 +281,38 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
       /*
        * Set the techniques that are enabled.
        */
-      auto disableTechniques = techniquesToDisable[currentLoopIndex];
-      switch (disableTechniques){
+      auto disableTransformations = techniquesToDisable[currentLoopIndex];
+      switch (disableTransformations){
 
         case 0:
-          ldi->enableAllTechniques();
+          ldi->enableAllTransformations();
           break ;
 
         case 1:
-          ldi->disableTechnique(DSWP_ID);
+          ldi->disableTransformation(DSWP_ID);
           break ;
 
         case 2:
-          ldi->disableTechnique(HELIX_ID);
+          ldi->disableTransformation(HELIX_ID);
           break ;
 
         case 3:
-          ldi->disableTechnique(DOALL_ID);
+          ldi->disableTransformation(DOALL_ID);
           break ;
 
         case 4:
-          ldi->disableTechnique(DSWP_ID);
-          ldi->disableTechnique(HELIX_ID);
+          ldi->disableTransformation(DSWP_ID);
+          ldi->disableTransformation(HELIX_ID);
           break ;
 
         case 5:
-          ldi->disableTechnique(DSWP_ID);
-          ldi->disableTechnique(DOALL_ID);
+          ldi->disableTransformation(DSWP_ID);
+          ldi->disableTransformation(DOALL_ID);
           break ;
 
         case 6:
-          ldi->disableTechnique(HELIX_ID);
-          ldi->disableTechnique(DOALL_ID);
+          ldi->disableTransformation(HELIX_ID);
+          ldi->disableTransformation(DOALL_ID);
           break ;
 
         default:

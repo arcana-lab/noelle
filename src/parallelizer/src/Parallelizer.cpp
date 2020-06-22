@@ -60,8 +60,8 @@ bool Parallelizer::parallelizeLoop (
   auto codeModified = false;
   ParallelizationTechnique *usedTechnique = nullptr;
   if (  true
-        && (this->enabledTechniques.find(DOALL_ID) != this->enabledTechniques.end())
-        && LDI->isTechniqueEnabled(DOALL_ID)
+        && (this->enabledTransformations.find(DOALL_ID) != this->enabledTransformations.end())
+        && LDI->isTransformationEnabled(DOALL_ID)
         && doall.canBeAppliedToLoop(LDI, par, h)
     ){
 
@@ -73,8 +73,8 @@ bool Parallelizer::parallelizeLoop (
     usedTechnique = &doall;
 
   } else if ( true
-              && (this->enabledTechniques.find(HELIX_ID) != this->enabledTechniques.end())
-              && LDI->isTechniqueEnabled(HELIX_ID)
+              && (this->enabledTransformations.find(HELIX_ID) != this->enabledTransformations.end())
+              && LDI->isTransformationEnabled(HELIX_ID)
               && helix.canBeAppliedToLoop(LDI, par, h)   
     ){
 
@@ -99,8 +99,8 @@ bool Parallelizer::parallelizeLoop (
     usedTechnique = &helix;
 
   } else if ( true
-              && (this->enabledTechniques.find(DSWP_ID) != this->enabledTechniques.end())
-              && LDI->isTechniqueEnabled(DSWP_ID)
+              && (this->enabledTransformations.find(DSWP_ID) != this->enabledTransformations.end())
+              && LDI->isTransformationEnabled(DSWP_ID)
               && dswp.canBeAppliedToLoop(LDI, par, h)
     ) {
 

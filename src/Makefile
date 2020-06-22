@@ -1,4 +1,4 @@
-UTILS=basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats
+UTILS=transformations basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats
 ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure
 PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
 ENABLERS=enablers loop_distribution loop_unroll inliner
@@ -22,6 +22,9 @@ hotprofiler:
 	cd $@ ; ../scripts/run_me.sh
 
 basic_utilities:
+	cd $@ ; ../scripts/run_me.sh
+
+transformations:
 	cd $@ ; ../scripts/run_me.sh
 
 loop_structure:
