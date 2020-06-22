@@ -59,9 +59,13 @@ namespace llvm {
        * Methods
        */
       Parallelizer();
+
       bool doInitialization (Module &M) override ;
+
       bool runOnModule (Module &M) override ;
+
       void getAnalysisUsage (AnalysisUsage &AU) const override ;
+
 
     private:
 
@@ -70,7 +74,6 @@ namespace llvm {
        */
       bool forceParallelization;
       bool forceNoSCCPartition;
-      std::set<Transformation> enabledTransformations;
 
       /*
        * Methods

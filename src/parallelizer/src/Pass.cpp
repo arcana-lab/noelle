@@ -17,9 +17,6 @@ using namespace llvm;
  */
 static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
-static cl::opt<bool> DisableDSWP("noelle-disable-dswp", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DSWP"));
-static cl::opt<bool> DisableHELIX("noelle-disable-helix", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable HELIX"));
-static cl::opt<bool> DisableDOALL("noelle-disable-doall", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DOALL"));
 
 Parallelizer::Parallelizer()
   :
@@ -34,19 +31,6 @@ Parallelizer::Parallelizer()
 bool Parallelizer::doInitialization (Module &M) {
   this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
   this->forceNoSCCPartition |= (ForceNoSCCPartition.getNumOccurrences() > 0);
-
-  /*
-   * Enable parallelization techniques.
-   */
-  if (DisableDOALL.getNumOccurrences() == 0){
-    this->enabledTransformations.insert(DOALL_ID);
-  }
-  if (DisableDSWP.getNumOccurrences() == 0){
-    this->enabledTransformations.insert(DSWP_ID);
-  }
-  if (DisableHELIX.getNumOccurrences() == 0){
-    this->enabledTransformations.insert(HELIX_ID);
-  }
 
   return false; 
 }
