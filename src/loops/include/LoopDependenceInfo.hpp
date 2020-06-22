@@ -21,7 +21,7 @@
 #include "SCCDAGNormalizer.hpp"
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
-#include "Techniques.hpp"
+#include "Transformations.hpp"
 
 namespace llvm {
 
@@ -84,17 +84,17 @@ namespace llvm {
       /*
        * Check whether a transformation is enabled.
        */
-      bool isTechniqueEnabled (Technique technique);
+      bool isTransformationEnabled (Transformation transformation);
 
       /*
        * Enable all transformations.
        */
-      void enableAllTechniques (void);
+      void enableAllTransformations (void);
 
       /*
        * Disable all transformations.
        */
-      void disableTechnique (Technique techniqueToDisable);
+      void disableTransformation (Transformation transformationToDisable);
 
       /*
        * Iterate over children of "this" recursively following the loop nesting tree rooted by "this".
@@ -138,7 +138,7 @@ namespace llvm {
       /*
        * Fields
        */
-      std::set<Technique> enabledTechniques;  /* Techniques enabled. */
+      std::set<Transformation> enabledTransformations;  /* Transformations enabled. */
 
       PDG *loopDG;                            /* Dependence graph of the loop. 
                                                * This graph does not include instructions outside the loop (i.e., no external dependences are included).  

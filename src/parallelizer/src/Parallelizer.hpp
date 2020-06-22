@@ -39,7 +39,6 @@
 #include "DSWP.hpp"
 #include "DOALL.hpp"
 #include "HELIX.hpp"
-#include "Techniques.hpp"
 
 namespace llvm {
 
@@ -71,7 +70,7 @@ namespace llvm {
        */
       bool forceParallelization;
       bool forceNoSCCPartition;
-      std::set<Technique> enabledTechniques;
+      std::set<Transformation> enabledTransformations;
 
       /*
        * Methods

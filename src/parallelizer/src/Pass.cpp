@@ -39,13 +39,13 @@ bool Parallelizer::doInitialization (Module &M) {
    * Enable parallelization techniques.
    */
   if (DisableDOALL.getNumOccurrences() == 0){
-    this->enabledTechniques.insert(DOALL_ID);
+    this->enabledTransformations.insert(DOALL_ID);
   }
   if (DisableDSWP.getNumOccurrences() == 0){
-    this->enabledTechniques.insert(DSWP_ID);
+    this->enabledTransformations.insert(DSWP_ID);
   }
   if (DisableHELIX.getNumOccurrences() == 0){
-    this->enabledTechniques.insert(HELIX_ID);
+    this->enabledTransformations.insert(HELIX_ID);
   }
 
   return false; 

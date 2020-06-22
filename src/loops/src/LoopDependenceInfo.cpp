@@ -26,9 +26,9 @@ LoopDependenceInfo::LoopDependenceInfo(
   {
 
   /*
-   * Enable all techniques.
+   * Enable all transformations.
    */
-  this->enableAllTechniques();
+  this->enableAllTransformations();
 
   /*
    * Fetch the PDG of the loop and its SCCDAG.
@@ -123,7 +123,7 @@ LoopDependenceInfo::~LoopDependenceInfo() {
 void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) {
   this->DOALLChunkSize = otherLDI->DOALLChunkSize;
   this->maximumNumberOfCoresForTheParallelization = otherLDI->maximumNumberOfCoresForTheParallelization;
-  this->enabledTechniques = otherLDI->enabledTechniques;
+  this->enabledTransformations = otherLDI->enabledTransformations;
 
   return ;
 }
@@ -221,22 +221,23 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
 }
 
   
-bool LoopDependenceInfo::isTechniqueEnabled (Technique technique){
-  auto exist = this->enabledTechniques.find(technique) != this->enabledTechniques.end();
+bool LoopDependenceInfo::isTransformationEnabled (Transformation transformation){
+  auto exist = this->enabledTransformations.find(transformation) != this->enabledTransformations.end();
 
   return exist;
 }
 
-void LoopDependenceInfo::enableAllTechniques (void){
-  this->enabledTechniques.insert(DOALL_ID);
-  this->enabledTechniques.insert(DSWP_ID);
-  this->enabledTechniques.insert(HELIX_ID);
+void LoopDependenceInfo::enableAllTransformations (void){
+  for (int32_t i = Transformation::First; i <= Transformation::Last; i++){
+    auto t = static_cast<Transformation>(i);
+    this->enabledTransformations.insert(t);
+  }
 
   return ;
 }
 
-void LoopDependenceInfo::disableTechnique (Technique techniqueToDisable){
-  this->enabledTechniques.erase(techniqueToDisable);
+void LoopDependenceInfo::disableTransformation (Transformation transformationToDisable){
+  this->enabledTransformations.erase(transformationToDisable);
 
   return ;
 }
