@@ -39,8 +39,9 @@ LoopCarriedDependencies::LoopCarriedDependencies (
       if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
         auto producerLevel = producerLoop->getNestingLevel();
         auto consumerLevel = consumerLoop->getNestingLevel();
-        assert(producerLevel >= consumerLevel
-          && "Producer of loop carried dependency is NOT in the same loop or in an inner-more loop than the consumer");
+        auto isMemoryDependenceThusCanCrossLoops = edge->isMemoryDependence();
+        assert((isMemoryDependenceThusCanCrossLoops || (producerLevel <= consumerLevel))
+          && "Producer of loop carried data dependency is NOT in the same loop or an inner-more loop than the consumer");
         loopCarriedDependenciesMap[consumerLoop].insert(edge);
       }
     }
