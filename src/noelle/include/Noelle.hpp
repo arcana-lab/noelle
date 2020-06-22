@@ -82,6 +82,11 @@ namespace llvm {
 
       double getMinimumHotness (void) const ;
 
+      /*
+       * Check whether a transformation is enabled.
+       */
+      bool isTransformationEnabled (Transformation transformation);
+
       ~Noelle();
 
     private:
@@ -90,6 +95,7 @@ namespace llvm {
       Module *program;
       Hot *profiles;
       PDG *programDependenceGraph;
+      std::set<Transformation> enabledTransformations;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream
