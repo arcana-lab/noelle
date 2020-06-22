@@ -10,7 +10,6 @@
   - Instead of just program correctness, tests can ensure certain loops are
     parallelized using a specific parallelization scheme
 
-- Include in SCCDAG live-in and live-out values
 
 ==== Renaming
 generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
@@ -21,8 +20,10 @@ generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
 
 - Complete HELIX
 
+
 ==== PDG
 - Implement the detection of loop-carried data dependences in PDGAnalysis
+
 
 ==== OPTIMIZATIONS
 - Packing/unpacking pushes and pops
