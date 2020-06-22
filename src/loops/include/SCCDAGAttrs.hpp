@@ -19,7 +19,7 @@
 #include "InductionVariables.hpp"
 #include "LoopGoverningIVAttribution.hpp"
 #include "LoopEnvironment.hpp"
-#include "DominatorSummary.hpp"
+#include "LoopCarriedDependencies.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -37,9 +37,8 @@ namespace llvm {
       /*
        * Dependencies in graph
        */
-      std::unordered_map<SCC *, std::set<DGEdge<Value> *>> intraIterDeps;
-      std::unordered_map<SCC *, std::set<DGEdge<Value> *>> interIterDeps;
-      std::unordered_map<SCC *, std::set<DGEdge<Value> *>> interIterDepsInternalToSCC;
+      std::unordered_map<SCC *, Criticisms> sccToLoopCarriedDependencies;
+      std::unordered_map<SCC *, std::set<DGEdge<Value> *>> sccToInternalLoopCarriedDependencies;
 
       /*
        * Isolated clonable SCCs and resulting inherited parents
@@ -51,7 +50,7 @@ namespace llvm {
       /*
        * Constructors.
        */
-      void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, DominatorSummary &DS, InductionVariables &IV);
+      void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, LoopCarriedDependencies &LCD, InductionVariables &IV);
 
       /*
        * Methods on SCCDAG.
@@ -99,7 +98,7 @@ namespace llvm {
        * Helper methods on SCCDAG
        */
       void collectSCCGraphAssumingDistributedClones ();
-      void collectDependencies (LoopsSummary &LIS, DominatorSummary &DS);
+      void collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarriedDependencies &LCD);
 
       /*
        * Helper methods on single SCC

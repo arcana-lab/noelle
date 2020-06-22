@@ -33,5 +33,6 @@ install(PROGRAMS
   include/LoopSummary.hpp 
   include/LoopsSummary.hpp 
   include/LoopEnvironment.hpp
+  include/LoopCarriedDependencies.hpp
   include/EnvBuilder.hpp
   DESTINATION include)

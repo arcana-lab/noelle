@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -11,41 +11,23 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-
-#include "PDG.hpp"
+#include "Assumptions.h"
 #include "LoopsSummary.hpp"
-#include "LoopCarriedDependencies.hpp"
+#include "DominatorSummary.hpp"
+#include "DGBase.hpp"
 #include "SCCDAG.hpp"
-#include "SCCDAGAttrs.hpp"
+#include "SCC.hpp"
 
 namespace llvm {
 
-  class SCCDAGNormalizer {
+  class LoopCarriedDependencies {
     public:
+      LoopCarriedDependencies (const LoopsSummary &LIS, const DominatorSummary &DS, SCCDAG &sccdagForLoops) ;
 
-      SCCDAGNormalizer(SCCDAG &dag, LoopsSummary &lis, LoopCarriedDependencies &lcd) ;
-
-      void normalizeInPlace (void) ;
+      Criticisms getLoopCarriedDependenciesForLoop (LoopSummary &LS) ;
 
     private:
-      LoopsSummary &LIS;
-      LoopCarriedDependencies &loopCarriedDependencies;
-      SCCDAG &sccdag;
-
-      void mergeLCSSAPhis (void) ;
-      void mergeSCCsWithExternalInterIterationDependencies (void) ;
-      void mergeSingleSyntacticSugarInstrs (void) ;
-      void mergeBranchesWithoutOutgoingEdges (void) ;
-    
-      class MergeGroups {
-        public:
-          std::unordered_map<DGNode<SCC> *, std::set<DGNode<SCC> *> *> sccToGroupMap;
-          std::set<std::set<DGNode<SCC> *> *> groups;
-
-          MergeGroups() : sccToGroupMap{} {}
-          ~MergeGroups() ;
-
-          void merge(DGNode<SCC> *sccNode1, DGNode<SCC> *sccNode2) ;
-      };
+      std::unordered_map<LoopSummary *, Criticisms> loopCarriedDependenciesMap;
   };
+
 }

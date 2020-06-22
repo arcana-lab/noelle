@@ -23,7 +23,6 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
   this->taskFunctionDG = new PDG(*helixTask->getTaskBody());
   constructEdgesFromUseDefs(this->taskFunctionDG);
 
-  dumpToFile(*LDI);
   constructEdgesFromControlForFunction(this->taskFunctionDG, *helixTask->getTaskBody(), postDomTreeOfTaskFunction);
 
   auto copyEdgeUsingTaskClonedValues = [&](DGEdge<Value> *originalEdge) -> void {

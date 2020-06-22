@@ -64,8 +64,7 @@ namespace llvm {
       static Values reducibleSCCsAreFound (ModulePass &pass, TestSuite &suite) ;
       static Values clonableSCCsAreFound (ModulePass &pass, TestSuite &suite) ;
 
-      static Values interIterationDependencies (ModulePass &pass, TestSuite &suite) ;
-      static Values intraIterationDependencies (ModulePass &pass, TestSuite &suite) ;
+      static Values loopCarriedDependencies (ModulePass &pass, TestSuite &suite) ;
 
       static Values printSCCs (ModulePass &pass, TestSuite &suite, std::set<SCC *> sccs) ;
 

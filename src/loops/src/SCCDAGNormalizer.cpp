@@ -12,7 +12,11 @@
 
 using namespace llvm;
 
-void SCCDAGNormalizer::normalizeInPlace() {
+SCCDAGNormalizer::SCCDAGNormalizer (SCCDAG &dag, LoopsSummary &lis, LoopCarriedDependencies &lcd)
+  : LIS{lis}, loopCarriedDependencies{lcd}, sccdag{dag} {
+}
+
+void SCCDAGNormalizer::normalizeInPlace (void) {
 
   /*
    * Note: the grouping of LCSSA instructions with the loop header PHI they
@@ -53,10 +57,7 @@ void SCCDAGNormalizer::mergeLCSSAPhis () {
   }
 }
 
-void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies () {
-  SCCDAGAttrs sccdagAttrs;
-  sccdagAttrs.populate(&sccdag, LIS, SE, DS, IV);
-
+void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies (void) {
   auto isLastValuePHI = [](SCC *scc) -> bool {
     if (scc->numInternalNodes() == 1) {
       auto I = scc->begin_internal_node_map()->first;
@@ -69,36 +70,38 @@ void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies () {
   };
 
   MergeGroups mergeGroups{};
-  for (auto sccAndLoopCarriedEdges : sccdagAttrs.interIterDeps) {
-    auto producerSCC = sccAndLoopCarriedEdges.first;
-    auto loopCarriedDeps = sccAndLoopCarriedEdges.second;
-    for (auto edge : loopCarriedDeps) {
+  for (auto &loop : LIS.loops) {
+    auto &loopRef = *loop.get();
+    auto loopCarriedEdges = loopCarriedDependencies.getLoopCarriedDependenciesForLoop(*loop.get());
+    for (auto edge : loopCarriedEdges) {
       if (!edge->isDataDependence()) continue;
 
+      auto producer = edge->getOutgoingT();
       auto consumer = edge->getIncomingT();
+      auto producerSCC = sccdag.sccOfValue(producer);
       if (!producerSCC->isExternal(consumer)) {
         continue ;
       }
 
       /*
-       * Fetch the SCC that is the destination of the current loop-carried data dependence of @producerSCC.
-       *
-       * Notice that @producerSCC cannot be @consumerSCC as the latter has one node that is not included in the former.
-       */
+      * Fetch the SCC that is the destination of the current loop-carried data dependence of @producerSCC.
+      *
+      * Notice that @producerSCC cannot be @consumerSCC as the latter has one node that is not included in the former.
+      */
       auto consumerSCC = sccdag.sccOfValue(consumer);
       assert(producerSCC != consumerSCC);
 
       /*
-       * Check the consumer SCC.
-       */
+      * Check the consumer SCC.
+      */
       if (!isLastValuePHI(consumerSCC)) {
         errs() << "SCCDAGNormalizer:  Unknown SCC with external loop carried dependence edge!\n";
         edge->print(errs()) << "\n";
       }
 
       /*
-       * Merge @produerSCC with @consumerSCC
-       */
+      * Merge @produerSCC with @consumerSCC
+      */
       mergeGroups.merge(sccdag.fetchNode(producerSCC), sccdag.fetchNode(consumerSCC));
     }
   }
@@ -108,7 +111,7 @@ void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies () {
   }
 }
 
-void SCCDAGNormalizer::mergeSingleSyntacticSugarInstrs () {
+void SCCDAGNormalizer::mergeSingleSyntacticSugarInstrs (void) {
   MergeGroups mergeGroups;
 
   /*
@@ -156,7 +159,7 @@ void SCCDAGNormalizer::mergeSingleSyntacticSugarInstrs () {
   }
 }
 
-void SCCDAGNormalizer::mergeBranchesWithoutOutgoingEdges () {
+void SCCDAGNormalizer::mergeBranchesWithoutOutgoingEdges (void) {
   std::vector<DGNode<SCC> *> tailCmpBrs;
   for (auto sccPair : sccdag.internalNodePairs()){
     auto scc = sccPair.first;

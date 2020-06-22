@@ -30,8 +30,7 @@ const char *SCCDAGAttrTestSuite::tests[] = {
   "scc with IV",
   "reducible SCC",
   "clonable SCC",
-  "inter iteration top loop dependencies",
-  "intra iteration top loop dependencies",
+  "loop carried dependencies (top loop)",
   "normalized top loop sccdag"
 };
 TestFunction SCCDAGAttrTestSuite::testFns[] = {
@@ -39,8 +38,7 @@ TestFunction SCCDAGAttrTestSuite::testFns[] = {
   SCCDAGAttrTestSuite::sccsWithIVAreFound,
   SCCDAGAttrTestSuite::reducibleSCCsAreFound,
   SCCDAGAttrTestSuite::clonableSCCsAreFound,
-  SCCDAGAttrTestSuite::interIterationDependencies,
-  SCCDAGAttrTestSuite::intraIterationDependencies,
+  SCCDAGAttrTestSuite::loopCarriedDependencies,
   SCCDAGAttrTestSuite::normalizedTopLoopSCCDAG
 };
 
@@ -117,19 +115,23 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   this->sccdagTopLoopNorm = new SCCDAG(loopDG);
 
+  LoopCarriedDependencies lcd(LIS, DS, *sccdag);
+  errs() << "SCCDAGAttrTestSuite: Normalizing sccdag\n";
+  SCCDAGNormalizer normalizer(*sccdagTopLoopNorm, LIS, lcd);
+  normalizer.normalizeInPlace();
+
   this->attrs = new SCCDAGAttrs();
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
   auto loopExitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
   auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
   InductionVariables IV{LIS, *SE, *sccdag, *environment};
+
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
-  this->attrs->populate(sccdag, LIS, *SE, DS, IV);
+  // TODO: Test attribution on normalized SCCDAG as well
+  this->attrs->populate(sccdag, LIS, *SE, lcd, IV);
 
   // PDGPrinter printer;
   // printer.writeGraph<SCCDAG>("graph-top-loop.dot", sccdagTopLoopNorm);
-  errs() << "SCCDAGAttrTestSuite: Normalizing sccdag\n";
-  SCCDAGNormalizer normalizer(*sccdagTopLoopNorm, LIS, *SE, DS, IV);
-  normalizer.normalizeInPlace();
 
   errs() << "SCCDAGAttrTestSuite: Running suite\n";
   suite->runTests((ModulePass &)*this);
@@ -211,24 +213,10 @@ Values SCCDAGAttrTestSuite::printSCCs (ModulePass &pass, TestSuite &suite, std::
   return valueNames;
 }
 
-Values SCCDAGAttrTestSuite::interIterationDependencies (ModulePass &pass, TestSuite &suite) {
+Values SCCDAGAttrTestSuite::loopCarriedDependencies (ModulePass &pass, TestSuite &suite) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   Values valueNames{};
-  for (auto sccAndDeps : attrPass.attrs->interIterDeps) {
-    for (auto dep : sccAndDeps.second) {
-      std::string outValue = suite.valueToString(dep->getOutgoingT());
-      std::string inValue = suite.valueToString(dep->getIncomingT());
-      valueNames.insert(outValue + suite.orderedValueDelimiter + inValue);
-    }
-  }
-
-  return valueNames;
-}
-
-Values SCCDAGAttrTestSuite::intraIterationDependencies (ModulePass &pass, TestSuite &suite) {
-  SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
-  Values valueNames{};
-  for (auto sccAndDeps : attrPass.attrs->intraIterDeps) {
+  for (auto sccAndDeps : attrPass.attrs->sccToLoopCarriedDependencies) {
     for (auto dep : sccAndDeps.second) {
       std::string outValue = suite.valueToString(dep->getOutgoingT());
       std::string inValue = suite.valueToString(dep->getIncomingT());

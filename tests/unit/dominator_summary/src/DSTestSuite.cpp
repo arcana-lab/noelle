@@ -84,8 +84,8 @@ Values DSTestSuite::domNodeIsIdentical (DSTestSuite &pass, DomTreeNodeBase<Basic
     return { "Immediate dominator summary is not correct for: " + pass.suite->printToString(bbS) };
   }
 
-  auto &children = node.getChildren();
-  auto &childrenS = nodeS.getChildren();
+  auto children = node.getChildren();
+  auto childrenS = nodeS.getChildren();
   for (auto i = 0; i < node.getNumChildren(); ++i) {
     Values errors = DSTestSuite::domNodeIsIdentical(pass, *children[i], *childrenS[i]);
     if (errors.size() > 0) return errors;

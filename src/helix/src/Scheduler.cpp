@@ -206,7 +206,7 @@ void HELIX::squeezeSequentialSegment (
     for (auto scc : ss->getSCCs()) {
       // Determine first and last instructions
       std::set<Value *> firsts, lasts;
-      auto &backEdges = LDI->sccdagAttrs.interIterDeps[scc];
+      auto &backEdges = LDI->sccdagAttrs.sccToLoopCarriedDependencies[scc];
       for (auto edge : backEdges) {
         lasts.insert(edge->getOutgoingT());
         firsts.insert(edge->getIncomingT());
