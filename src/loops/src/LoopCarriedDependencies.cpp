@@ -37,9 +37,11 @@ LoopCarriedDependencies::LoopCarriedDependencies (
       if (!producerLoop || !consumerLoop) continue;
 
       if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
-        assert(producerLoop == consumerLoop
-          && "Loops are not in LCSSA form, so loop carried dependencies span between loops");
-        loopCarriedDependenciesMap[producerLoop].insert(edge);
+        auto producerLevel = producerLoop->getNestingLevel();
+        auto consumerLevel = consumerLoop->getNestingLevel();
+        assert(producerLevel >= consumerLevel
+          && "Producer of loop carried dependency is NOT in the same loop or in an inner-more loop than the consumer");
+        loopCarriedDependenciesMap[consumerLoop].insert(edge);
       }
     }
   }
