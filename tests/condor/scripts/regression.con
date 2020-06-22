@@ -40,6 +40,7 @@ TestsPath  =
 
 # Arguments of run.sh
 ParallelizationOptions = 
-Arguments = "$(InitialDir) $(InitialDir)/$(TestsPath)/$(Test) '$(ParallelizationOptions)' $(InitialDir)/$(TestsPath)/errors.txt"
+NoelleOptions = 
+Arguments = "$(InitialDir) $(InitialDir)/$(TestsPath)/$(Test) '$(NoelleOptions)' '$(ParallelizationOptions)' $(InitialDir)/$(TestsPath)/errors.txt"
 
 # List the tests
