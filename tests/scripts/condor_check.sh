@@ -57,7 +57,7 @@ cat regression*/*.txt  | sort | cut -c ${origDirLength}- > $currentResults ;
 newTestsFailed="" ;
 while IFS= read -r line; do
   line=$(trim "$line") ;
-  grep -Fxq "$line" failing_tests.txt ;
+  grep -Fxq "$line" regression/failing_tests ;
   if test $? -ne 0 ; then
     newTestsFailed="${newTestsFailed}\n\t$line" ;
   fi
@@ -73,7 +73,7 @@ else
   # The regression passed
   # 
   # Check if there are tests that use to fail that now pass
-  oldTestsNumber=`wc -l failing_tests.txt | awk '{print $1}'` ;
+  oldTestsNumber=`wc -l regression/failing_tests | awk '{print $1}'` ;
   newTestsNumber=`wc -l $currentResults | awk '{print $1}'` ;
   if test ${newTestsNumber} == ${oldTestsNumber} ; then
     echo "    All tests that failed before still fail" ;
@@ -83,7 +83,7 @@ else
 
     # Print the tests that now pass
     echo "    These tests are the following ones:" ;
-    identifyElementsOutsideSet $currentResults failing_tests.txt ;
+    identifyElementsOutsideSet $currentResults regression/failing_tests ;
     echo -e "$outsideElements" ;
   fi
 
