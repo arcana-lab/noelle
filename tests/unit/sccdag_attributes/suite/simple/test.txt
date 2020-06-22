@@ -9,8 +9,8 @@ br i1 %7, label %8, label %16 | %15 = add i32 %.0, 1 | %.0 = phi i32 [ 0, %2 ], 
 %.02 = phi i32 [ %0, %2 ], [ %10, %14 ] | %10 = sub nsw i32 %9, 3 | %9 = add nsw i32 %.02, 1
 %.01 = phi i32 [ %5, %2 ], [ %13, %14 ] | %11 = mul nsw i32 %.01, 3 | %12 = add nsw i32 %11, %10 | %13 = sdiv i32 %12, 2
 br label %14
-%.02.lcssa = phi i32 [ %.02, %6 ]
 %.01.lcssa = phi i32 [ %.01, %6 ]
+%.02.lcssa = phi i32 [ %.02, %6 ]
 %17 = getelementptr [8 x i8], [8 x i8]* @.str, i64 0, i64 0
 %18 = call i32 (i8*, ...) @printf(i8* %17, i32 %.02.lcssa, i32 %.01.lcssa)
 ret i32 0
@@ -35,7 +35,7 @@ br label %14
 %17 = getelementptr [8 x i8], [8 x i8]* @.str, i64 0, i64 0
 ret i32 0
 
-inter iteration top loop dependencies
+loop carried dependencies (top loop)
 br i1 %7, label %8, label %16 ; %.02 = phi i32 [ %0, %2 ], [ %10, %14 ]
 br i1 %7, label %8, label %16 ; %.01 = phi i32 [ %5, %2 ], [ %13, %14 ]
 br i1 %7, label %8, label %16 ; %.0 = phi i32 [ 0, %2 ], [ %15, %14 ]
@@ -44,22 +44,3 @@ br i1 %7, label %8, label %16 ; br i1 %7, label %8, label %16
 %15 = add i32 %.0, 1 ; %.0 = phi i32 [ 0, %2 ], [ %15, %14 ]
 %10 = sub nsw i32 %9, 3 ; %.02 = phi i32 [ %0, %2 ], [ %10, %14 ]
 %13 = sdiv i32 %12, 2 ; %.01 = phi i32 [ %5, %2 ], [ %13, %14 ]
-
-intra iteration top loop dependencies
-br i1 %7, label %8, label %16 ; br label %6
-br i1 %7, label %8, label %16 ; br label %14
-br i1 %7, label %8, label %16 ; %9 = add nsw i32 %.02, 1
-br i1 %7, label %8, label %16 ; %10 = sub nsw i32 %9, 3
-br i1 %7, label %8, label %16 ; %11 = mul nsw i32 %.01, 3
-br i1 %7, label %8, label %16 ; %12 = add nsw i32 %11, %10
-br i1 %7, label %8, label %16 ; %13 = sdiv i32 %12, 2
-br i1 %7, label %8, label %16 ; %15 = add i32 %.0, 1
-%7 = icmp ult i32 %.0, 100 ; br i1 %7, label %8, label %16
-%9 = add nsw i32 %.02, 1 ; %10 = sub nsw i32 %9, 3
-%10 = sub nsw i32 %9, 3 ; %12 = add nsw i32 %11, %10
-%11 = mul nsw i32 %.01, 3 ; %12 = add nsw i32 %11, %10
-%12 = add nsw i32 %11, %10 ; %13 = sdiv i32 %12, 2
-%.0 = phi i32 [ 0, %2 ], [ %15, %14 ] ; %15 = add i32 %.0, 1
-%.0 = phi i32 [ 0, %2 ], [ %15, %14 ] ; %7 = icmp ult i32 %.0, 100
-%.01 = phi i32 [ %5, %2 ], [ %13, %14 ] ; %11 = mul nsw i32 %.01, 3
-%.02 = phi i32 [ %0, %2 ], [ %10, %14 ] ; %9 = add nsw i32 %.02, 1

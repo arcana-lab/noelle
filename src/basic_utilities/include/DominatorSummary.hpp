@@ -23,11 +23,11 @@ namespace llvm {
     DomNodeSummary (const DTAliases::Node &node);
     DomNodeSummary (const DomNodeSummary &node);
 
-    BasicBlock *getBlock () const { return B; }
-    DomNodeSummary *getParent () { return parent; }
-    std::vector<DomNodeSummary *> &getChildren () { return children; }
-    unsigned getLevel () const { return level; }
-    DomNodeSummary *getIDom () { return iDom; }
+    BasicBlock *getBlock (void) const ;
+    DomNodeSummary *getParent (void) ;
+    std::vector<DomNodeSummary *> getChildren (void) ;
+    unsigned getLevel (void) const ;
+    DomNodeSummary *getIDom (void) ;
 
     raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "") ;
 
@@ -50,7 +50,7 @@ namespace llvm {
     ~DomTreeSummary ();
 
     void transferToClones (std::unordered_map<BasicBlock *, BasicBlock *> &bbCloneMap);
-    raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "") ;
+    raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "") const ;
 
    private:
     DomTreeSummary (std::set<DTAliases::Node *> nodes);
@@ -66,13 +66,13 @@ namespace llvm {
     void cloneNodes (std::set<NodeType *> &nodes);
 
    public:
-    DomNodeSummary *getNode (BasicBlock *B);
-    bool dominates (Instruction *I, Instruction *J);
-    bool dominates (BasicBlock *B1, BasicBlock *B2);
-    bool dominates (DomNodeSummary *node1, DomNodeSummary *node2);
-    std::set<DomNodeSummary *> dominates (DomNodeSummary *node);
-    BasicBlock *findNearestCommonDominator (BasicBlock *B1, BasicBlock *B2);
-    DomNodeSummary *findNearestCommonDominator (DomNodeSummary *node1, DomNodeSummary *node2);
+    DomNodeSummary *getNode (BasicBlock *B) const ;
+    bool dominates (Instruction *I, Instruction *J) const ;
+    bool dominates (BasicBlock *B1, BasicBlock *B2) const ;
+    bool dominates (DomNodeSummary *node1, DomNodeSummary *node2) const ;
+    std::set<DomNodeSummary *> dominates (DomNodeSummary *node) const ;
+    BasicBlock *findNearestCommonDominator (BasicBlock *B1, BasicBlock *B2) const ;
+    DomNodeSummary *findNearestCommonDominator (DomNodeSummary *node1, DomNodeSummary *node2) const ;
 
    private:
     std::set<DomNodeSummary *> nodes;
