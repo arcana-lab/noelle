@@ -12,21 +12,29 @@
 #include "Noelle.hpp"
 
 bool llvm::Inliner::runOnModule (Module &M) {
-
-  /*
-   * Check if the inliner has been enabled.
-   */
-  if (!this->enable){
-    return false;
-  }
   if (this->verbose != Verbosity::Disabled) {
-    errs() << "Inliner at \"runOnModule\"\n";
+    errs() << "Inliner: Start\n";
   }
 
   /*
    * Fetch NOELLE.
    */
   auto& noelle = getAnalysis<Noelle>();
+
+  /*
+   * Check if the inliner has been enabled.
+   */
+  if (!noelle.isTransformationEnabled(INLINER_ID)){
+
+    /*
+     * The function inliner has been disabled.
+     */
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "Inliner: Exit\n";
+    }
+
+    return false;
+  }
 
   /*
    * Fetch the entry point of the program.

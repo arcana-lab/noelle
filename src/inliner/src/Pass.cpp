@@ -17,11 +17,9 @@ using namespace llvm;
  * Options of the dependence graph simplifier pass.
  */
 static cl::opt<int> Verbose("noelle-inliner-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
-static cl::opt<bool> InlinerDisable("noelle-disable-inliner", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 
 bool Inliner::doInitialization (Module &M) {
   this->verbose = static_cast<Verbosity>(Verbose.getValue());
-  this->enable = (InlinerDisable.getNumOccurrences() == 0) ? true : false;
 
   return false;
 }
