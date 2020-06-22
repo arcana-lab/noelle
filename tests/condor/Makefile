@@ -3,7 +3,7 @@ CONDOR_FILE=regression.con
 
 all: regression
 
-regression: regression_enablers regression_default regression_1 regression_2 regression_3 regression_4 unit.con performance.con
+regression: regression_enablers regression_default regression_1 regression_2 regression_3 regression_4 regression_5 regression_6 unit.con performance.con
 
 regression_enablers:
 	cd ../ ; cp -r regression $@ ;
@@ -33,6 +33,16 @@ regression_3:
 regression_4:
 	cd ../ ; cp -r regression $@ ;
 	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-dswp" "-dswp-force -dswp-no-scc-merge " ${EMAIL};
+	./scripts/appendTests.sh $@.con ;
+
+regression_5:
+	cd ../ ; cp -r regression $@ ;
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner" " " ${EMAIL};
+	./scripts/appendTests.sh $@.con ;
+
+regression_6:
+	cd ../ ; cp -r regression $@ ;
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner" " " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 unit.con:
