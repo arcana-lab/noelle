@@ -32,6 +32,7 @@ add_subdirectory(src)
 install(PROGRAMS 
     include/LoopDependenceInfo.hpp
     include/InductionVariables.hpp
+    include/LoopCarriedDependencies.hpp
     include/LoopGoverningIVAttribution.hpp
     include/IVStepperUtility.hpp
     include/SCCDAGAttrs.hpp

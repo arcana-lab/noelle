@@ -3,7 +3,6 @@ set(Srcs
   LoopSummary.cpp
   LoopsSummary.cpp
   LoopEnvironment.cpp
-  LoopCarriedDependencies.cpp
   EnvBuilder.cpp
 )
 
