@@ -1,14 +1,15 @@
 #!/bin/bash
 
 # Fetch the inputs
-if test $# -lt 4 ; then
-  echo "USAGE: `basename $0` REPO_DIR TEST_DIR PARALLELIZATION_OPTIONS ERROR_FILE" ;
+if test $# -lt 5 ; then
+  echo "USAGE: `basename $0` REPO_DIR TEST_DIR NOELLE_OPTIONS PARALLELIZATION_OPTIONS ERROR_FILE" ;
   exit 1;
 fi
 repoDir="$1" ;
 testDir="$2" ;
-parallelizationOptions="$3" ;
-errorFile="$4" ;
+noelleOptions="$3" ;
+parallelizationOptions="$4" ;
+errorFile="$5" ;
 
 # Setup the environment
 source ~/.bash_profile ;
@@ -21,7 +22,7 @@ cd $testDir ;
 make clean ;
 
 # Compile
-make PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
+make NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
 
 # Generate the input
 make input.txt 
@@ -36,5 +37,5 @@ make input.txt
 cmp output_baseline.txt output_parallelized.txt ;
 if test $? -ne 0 ; then
   echo "ERROR: the test didn't pass" ;
-  echo "$testDir $parallelizationOptions" >> $errorFile ;
+  echo "$testDir $noelleOptions $parallelizationOptions" >> $errorFile ;
 fi

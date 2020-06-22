@@ -13,7 +13,8 @@ RUNTIME_CFLAGS="-DDEBUG"
 
 # Parallelization options
 # 	- To dump the PDG: -noelle-pdg-dump
-PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -dswp-force -noelle-min-hot=0
+PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -dswp-force 
+NOELLE_OPTIONS=-noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
 OPT_LEVEL=-O3
 
 # Front-end flags
@@ -51,7 +52,7 @@ $(OPTIMIZED): test_parallelized.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
 test_parallelized_unoptimized.bc: baseline_with_metadata.bc
-	noelle-parallelizer $^ -o $@ $(PARALLELIZATION_OPTIONS)
+	noelle-parallelizer $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
 	llvm-dis $@
 
 test_parallelized.bc: test_parallelized_unoptimized.bc
@@ -69,7 +70,7 @@ baseline_with_metadata.bc: output.prof baseline_pre.bc
 
 baseline_pre.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
-	noelle-pre "$@"
+	noelle-pre $@ $(NOELLE_OPTIONS)
 	llvm-dis $@
 
 output.prof: default.profraw

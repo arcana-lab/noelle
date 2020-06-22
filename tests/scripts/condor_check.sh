@@ -4,6 +4,13 @@ RED='\033[1;31m' ;
 GREEN='\033[0;32m' ;
 NC='\033[0m' ;
 
+trim() {
+  local s2 s="$*"
+  until s2="${s#[[:space:]]}"; [ "$s2" = "$s" ]; do s="$s2"; done
+  until s2="${s%[[:space:]]}"; [ "$s2" = "$s" ]; do s="$s2"; done
+  echo "$s"
+}
+
 function identifyElementsOutsideSet {
   local setFile="$1" ;
   local elementsToCheckFile="$2" ;
@@ -49,6 +56,7 @@ cat regression*/*.txt  | sort | cut -c ${origDirLength}- > $currentResults ;
 # Compare with the known one
 newTestsFailed="" ;
 while IFS= read -r line; do
+  line=$(trim "$line") ;
   grep -Fxq "$line" failing_tests.txt ;
   if test $? -ne 0 ; then
     newTestsFailed="${newTestsFailed}\n\t$line" ;
