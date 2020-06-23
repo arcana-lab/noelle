@@ -27,7 +27,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   iv.getLoopEntryPHI()->print(errs() << "Has step size: "); errs() << "\n";
 
   auto headerPHI = iv.getLoopEntryPHI();
-  auto &ivInstructions = iv.getAllInstructions();
+  auto ivInstructions = iv.getAllInstructions();
 
   /*
    * Fetch the loop governing terminator.
