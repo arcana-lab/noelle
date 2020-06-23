@@ -101,7 +101,7 @@ SequentialSegment::SequentialSegment (
   /*
    * Run the data flow analysis needed to identify the locations where signal instructions will be placed.
    */
-  auto dfa = DataFlowAnalysis{};
+  auto dfa = DataFlowEngine{};
   auto computeGEN = [](Instruction *i, DataFlowResult *df) {
     auto& gen = df->GEN(i);
     gen.insert(i);
