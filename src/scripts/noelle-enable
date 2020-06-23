@@ -3,7 +3,7 @@
 installDir
 
 # Code transformations
-ENABLERS="-load ${installDir}/lib/LoopDistribution.so -load ${installDir}/lib/LoopUnroll.so"
+ENABLERS="-load ${installDir}/lib/LoopDistribution.so -load ${installDir}/lib/LoopUnroll.so -load ${installDir}/lib/LoopWhilify.so"
 
 # Set the file names
 IRFileInput="`mktemp`" ;
