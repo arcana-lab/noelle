@@ -92,11 +92,10 @@ bool DOALL::canBeAppliedToLoop (
   auto IVManager = LDI->getInductionVariableManager();
   for (auto IV : IVManager->getInductionVariables(*LDI->getLoopSummary())) {
     if (IV->isStepValueLoopInvariant()) {
-      IV->getLoopEntryPHI()->print(errs() << "DOALL:  Loop IV with loop invariant step size: "); errs() << "\n";
       continue;
     }
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:  Loop has IV with loop variant step size\n";
+      errs() << "DOALL:  Loop has an induction variable with step size that is not loop invariant\n";
     }
     return false;
   }
