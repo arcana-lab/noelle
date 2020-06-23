@@ -51,7 +51,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   LoopCarriedDependencies lcd(this->liSummary, DS, *loopSCCDAG);
   SCCDAGNormalizer normalizer(*loopSCCDAG, this->liSummary, lcd);
   normalizer.normalizeInPlace();
-  inductionVariables = new InductionVariables(liSummary, SE, *loopSCCDAG, *environment);
+  inductionVariables = new InductionVariableManager(liSummary, SE, *loopSCCDAG, *environment);
   this->sccdagAttrs.populate(loopSCCDAG, this->liSummary, SE, lcd, *inductionVariables);
 
   /*
@@ -309,7 +309,7 @@ bool LoopDependenceInfo::isSCCContainedInSubloop (SCC *scc) const {
   return this->sccdagAttrs.isSCCContainedInSubloop(this->liSummary, scc);
 }
 
-InductionVariables * LoopDependenceInfo::getInductionVariables (void) const {
+InductionVariableManager * LoopDependenceInfo::getInductionVariableManager (void) const {
   return inductionVariables;
 }
 

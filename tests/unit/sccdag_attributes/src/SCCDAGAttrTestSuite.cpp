@@ -124,7 +124,7 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
   auto loopExitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
   auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
-  InductionVariables IV{LIS, *SE, *sccdag, *environment};
+  InductionVariableManager IV{LIS, *SE, *sccdag, *environment};
 
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
   // TODO: Test attribution on normalized SCCDAG as well
