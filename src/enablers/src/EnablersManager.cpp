@@ -43,6 +43,7 @@ bool EnablersManager::runOnModule (Module &M) {
    */
   auto loopDist = LoopDistribution();
   auto loopUnroll = LoopUnroll();
+  auto loopWhilify = LoopWhilifier(noelle);
 
   /*
    * Fetch all the loops we want to parallelize.
@@ -74,7 +75,7 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Improve the current loop.
      */
-    modifiedFunctions[f] |= this->applyEnablers(loop, noelle, loopDist, loopUnroll);
+    modifiedFunctions[f] |= this->applyEnablers(loop, noelle, loopDist, loopUnroll, loopWhilify);
     modified |= modifiedFunctions[f];
   }
 

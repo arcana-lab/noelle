@@ -16,7 +16,8 @@ bool EnablersManager::applyEnablers (
     LoopDependenceInfo *LDI,
     Noelle &par,
     LoopDistribution &loopDist,
-    LoopUnroll &loopUnroll
+    LoopUnroll &loopUnroll,
+    LoopWhilifier &loopWhilifier
   ){
 
   /*
@@ -33,11 +34,31 @@ bool EnablersManager::applyEnablers (
    */
   errs() << "EnablersManager:   Try to devirtualize indirect calls\n";
   if (this->applyDevirtualizer(LDI, par, loopUnroll)){
-    errs() << "EnablersManager:     Unrolled loop\n";
+    errs() << "EnablersManager:     Some calls have been devirtualized\n";
+    return true;
+  }
+
+  /*
+   * Run the whilifier.
+   */
+  errs() << "EnablersManager:   Try to whilify loops\n";
+  if (this->applyLoopWhilifier(LDI, par, loopWhilifier)){
+    errs() << "EnablersManager:     The loop has been whilified\n";
     return true;
   }
 
   return false;
+}
+
+bool EnablersManager::applyLoopWhilifier (
+    LoopDependenceInfo *LDI,
+    Noelle &par,
+    LoopWhilifier &loopWhilifier
+  ){
+
+  auto modified = loopWhilifier.whilifyLoop(*LDI);
+
+  return modified;
 }
 
 bool EnablersManager::applyLoopDistribution (
