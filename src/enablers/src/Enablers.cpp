@@ -129,9 +129,10 @@ bool EnablersManager::applyDevirtualizer (
    */
 
   /*
-   * Fetch the loop.
+   * Fetch the loop information.
    */
   auto ls = LDI->getLoopSummary();
+  auto IVM = LDI->getInductionVariableManager();
 
   /*
    * Check if the loop belongs within another loop.
@@ -187,7 +188,22 @@ bool EnablersManager::applyDevirtualizer (
       }
       auto addrComputation = cast<GetElementPtrInst>(addr);
 
-      fullyUnroll = true;
+      /*
+       * Check if the GEP relies on an induction variable.
+       */
+      for (auto& idx : addrComputation->indices()){
+        if (!isa<Instruction>(idx)){
+          continue ;
+        }
+        auto instIdx = cast<Instruction>(idx);
+        if (IVM->doesContributeToComputeAnInductionVaraible(instIdx)){
+          fullyUnroll = true;
+          break ;
+        }
+      }
+      if (fullyUnroll){
+        break ;
+      }
     }
   }
   if (!fullyUnroll){
