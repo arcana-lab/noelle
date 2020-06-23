@@ -50,7 +50,7 @@ namespace llvm {
       /*
        * Constructors.
        */
-      void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, LoopCarriedDependencies &LCD, InductionVariables &IV);
+      void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, LoopCarriedDependencies &LCD, InductionVariableManager &IV);
 
       /*
        * Methods on SCCDAG.

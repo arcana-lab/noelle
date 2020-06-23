@@ -28,10 +28,10 @@ namespace llvm {
 
   class InductionVariable;
 
-  class InductionVariables {
+  class InductionVariableManager {
     public:
 
-      InductionVariables (
+      InductionVariableManager (
         LoopsSummary &LIS,
         ScalarEvolution &SE,
         SCCDAG &sccdag,
@@ -45,7 +45,7 @@ namespace llvm {
 
       InductionVariable * getLoopGoverningInductionVariable (LoopSummary &LS) ;
 
-      ~InductionVariables ();
+      ~InductionVariableManager ();
 
     private:
       std::unordered_map<LoopSummary *, std::set<InductionVariable *>> loopToIVsMap;

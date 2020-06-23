@@ -112,7 +112,7 @@ namespace llvm {
 
       LoopGoverningIVAttribution * getLoopGoverningIVAttribution (void) const ;
 
-      InductionVariables * getInductionVariables (void) const ;
+      InductionVariableManager * getInductionVariableManager (void) const ;
 
       bool doesHaveCompileTimeKnownTripCount (void) const ;
       
@@ -150,7 +150,7 @@ namespace llvm {
 
       std::unordered_map<std::string, std::string> metadata;
 
-      InductionVariables *inductionVariables;
+      InductionVariableManager *inductionVariables;
 
       LoopGoverningIVAttribution *loopGoverningIVAttribution;
 

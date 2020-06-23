@@ -89,7 +89,8 @@ bool DOALL::canBeAppliedToLoop (
    * NOTE: Due to a limitation in our ability to chunk induction variables,
    * all induction variables must have step sizes that are loop invariant
    */
-  for (auto IV : LDI->getInductionVariables()->getInductionVariables(*LDI->getLoopSummary())) {
+  auto IVManager = LDI->getInductionVariableManager();
+  for (auto IV : IVManager->getInductionVariables(*LDI->getLoopSummary())) {
     if (IV->isStepValueLoopInvariant()) {
       IV->getLoopEntryPHI()->print(errs() << "DOALL:  Loop IV with loop invariant step size: "); errs() << "\n";
       continue;

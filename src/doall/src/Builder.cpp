@@ -28,7 +28,7 @@ void DOALL::rewireLoopToIterateChunks (
   auto loopPreHeader = loopSummary->getPreHeader();
   auto preheaderClone = task->getCloneOfOriginalBasicBlock(loopPreHeader);
   auto headerClone = task->getCloneOfOriginalBasicBlock(loopHeader);
-  auto allIVInfo = LDI->getInductionVariables();
+  auto allIVInfo = LDI->getInductionVariableManager();
 
   /*
    * Hook up preheader to header to enable induction variable manipulation

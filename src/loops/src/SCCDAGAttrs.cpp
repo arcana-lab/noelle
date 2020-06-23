@@ -18,7 +18,7 @@ void SCCDAGAttrs::populate (
   LoopsSummary &LIS,
   ScalarEvolution &SE,
   LoopCarriedDependencies &LCD,
-  InductionVariables &IV
+  InductionVariableManager &IV
 ) {
 
   /*

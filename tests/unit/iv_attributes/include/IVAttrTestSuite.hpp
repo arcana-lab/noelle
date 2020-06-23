@@ -65,6 +65,6 @@ namespace llvm {
       LoopsSummary *LIS;
       PDG *fdg;
       SCCDAG *sccdag;
-      InductionVariables *IVs;
+      InductionVariableManager *IVs;
   };
 }

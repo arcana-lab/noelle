@@ -13,7 +13,7 @@
 
 using namespace llvm;
 
-InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, SCCDAG &sccdag, LoopEnvironment &loopEnv)
+InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvolution &SE, SCCDAG &sccdag, LoopEnvironment &loopEnv)
   : loopToIVsMap{}, loopToGoverningIVMap{} {
 
   Function &F = *LIS.getLoopNestingTreeRoot()->getHeader()->getParent();
@@ -56,7 +56,7 @@ InductionVariables::InductionVariables (LoopsSummary &LIS, ScalarEvolution &SE, 
   }
 }
 
-InductionVariables::~InductionVariables () {
+InductionVariableManager::~InductionVariableManager () {
   for (auto loopIVs : loopToIVsMap) {
     for (auto IV : loopIVs.second) {
       delete IV;
@@ -66,11 +66,11 @@ InductionVariables::~InductionVariables () {
   loopToGoverningIVMap.clear();
 }
 
-std::set<InductionVariable *> InductionVariables::getInductionVariables(LoopSummary &LS) {
+std::set<InductionVariable *> InductionVariableManager::getInductionVariables (LoopSummary &LS) {
   return loopToIVsMap.at(&LS);
 }
 
-InductionVariable *InductionVariables::getLoopGoverningInductionVariable (LoopSummary &LS) {
+InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable (LoopSummary &LS) {
   if (loopToGoverningIVMap.find(&LS) == loopToGoverningIVMap.end()) return nullptr;
   return loopToGoverningIVMap.at(&LS);
 }
