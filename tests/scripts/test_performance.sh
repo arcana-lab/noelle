@@ -55,7 +55,7 @@ export PATH=`pwd`/../install/bin:$PATH ;
 
 # Run
 cd performance ;
-runningTests "Measuring the default configuration" "-noelle-verbose=0" "speedups.txt" ;
+runningTests "Measuring the default configuration" "-noelle-verbose=3" "speedups.txt" ;
 
 # Check the speedups
 paste speedups.txt oracle_speedups > speedups_compare.txt ;
