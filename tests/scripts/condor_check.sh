@@ -138,7 +138,7 @@ else
       echo "  All performance tests compiled correctly" ;
       grep -i "Performance degradation" compiler_output_performance.txt &> /dev/null ;
       if test $? -eq 0 ; then
-        echo "  Next are the performance tests that run slower:" ;
+        echo -e "  Next are the performance tests that run ${RED}slower${NC}:" ;
         grep -i "Performance degradation" compiler_output_performance.txt ;
       else 
         echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
