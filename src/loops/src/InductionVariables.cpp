@@ -66,7 +66,7 @@ InductionVariables::~InductionVariables () {
   loopToGoverningIVMap.clear();
 }
 
-std::set<InductionVariable *> &InductionVariables::getInductionVariables(LoopSummary &LS) {
+std::set<InductionVariable *> InductionVariables::getInductionVariables(LoopSummary &LS) {
   return loopToIVsMap.at(&LS);
 }
 
@@ -328,15 +328,15 @@ PHINode * InductionVariable::getLoopEntryPHI (void) const {
   return loopEntryPHI;
 }
 
-std::set<PHINode *> & InductionVariable::getPHIs (void) {
+std::set<PHINode *> InductionVariable::getPHIs (void) const {
   return PHIs;
 }
 
-std::set<Instruction *> &InductionVariable::getNonPHIIntermediateValues (void) {
+std::set<Instruction *> InductionVariable::getNonPHIIntermediateValues (void) const {
   return nonPHIIntermediateValues;
 }
 
-std::set<Instruction *> &InductionVariable::getAllInstructions(void) {
+std::set<Instruction *> InductionVariable::getAllInstructions(void) const {
   return allInstructions;
 }
 

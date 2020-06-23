@@ -30,6 +30,7 @@ namespace llvm {
 
   class InductionVariables {
     public:
+
       InductionVariables (
         LoopsSummary &LIS,
         ScalarEvolution &SE,
@@ -37,11 +38,14 @@ namespace llvm {
         LoopEnvironment &loopEnv
       );
 
-      ~InductionVariables ();
-
-      std::set<InductionVariable *> & getInductionVariables (LoopSummary &LS) ;
+      /*
+       * Return all induction variables including the loop-governing one.
+       */
+      std::set<InductionVariable *> getInductionVariables (LoopSummary &LS) ;
 
       InductionVariable * getLoopGoverningInductionVariable (LoopSummary &LS) ;
+
+      ~InductionVariables ();
 
     private:
       std::unordered_map<LoopSummary *, std::set<InductionVariable *>> loopToIVsMap;
@@ -60,15 +64,15 @@ namespace llvm {
         ScalarEvolutionReferentialExpander &referentialExpander
       ) ;
 
-      SCC *getSCC (void) const ;
+      SCC * getSCC (void) const ;
 
       PHINode * getLoopEntryPHI (void) const ;
 
-      std::set<PHINode *> & getPHIs (void) ;
+      std::set<PHINode *> getPHIs (void) const ;
 
-      std::set<Instruction *> & getNonPHIIntermediateValues (void) ;
+      std::set<Instruction *> getNonPHIIntermediateValues (void) const ;
 
-      std::set<Instruction *> & getAllInstructions(void) ;
+      std::set<Instruction *> getAllInstructions(void) const ;
 
       Value * getStartValue (void) const;
 
