@@ -56,6 +56,32 @@ InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvo
   }
 }
 
+bool InductionVariableManager::doesContributeToComputeAnInductionVaraible (Instruction *i) {
+
+  /*
+   * Iterate over every loop and their induction variables.
+   */
+  for (auto loopIVPair : this->loopToIVsMap){
+
+    /*
+     * Fetch the set of induction variables of the current loop.
+     */
+    auto IVs = loopIVPair.second;
+
+    /*
+     * Check each induction variable.
+     */
+    for (auto IV : IVs){
+      auto insts = IV->getAllInstructions();
+      if (insts.find(i) != insts.end()){
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 InductionVariableManager::~InductionVariableManager () {
   for (auto loopIVs : loopToIVsMap) {
     for (auto IV : loopIVs.second) {
