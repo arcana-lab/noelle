@@ -82,6 +82,10 @@ namespace llvm {
 
       double getMinimumHotness (void) const ;
 
+      Type * getIntegerType (uint32_t bitwidth) const ;
+
+      Type * getVoidType (void) const ;
+
       /*
        * Check whether a transformation is enabled.
        */
