@@ -20,6 +20,7 @@
 #include "Noelle.hpp"
 #include "LoopDistribution.hpp"
 #include "LoopUnroll.hpp"
+#include "LoopWhilify.hpp"
 
 namespace llvm {
 
@@ -58,7 +59,14 @@ namespace llvm {
         LoopDependenceInfo *LDI,
         Noelle &par,
         LoopDistribution &loopDist,
-        LoopUnroll &loopUnroll
+        LoopUnroll &loopUnroll,
+        LoopWhilifier &LoopWhilifier
+        );
+
+      bool applyLoopWhilifier (
+          LoopDependenceInfo *LDI,
+          Noelle &par,
+          LoopWhilifier &loopWhilifier
         );
 
       bool applyLoopDistribution (
