@@ -113,7 +113,7 @@ Instruction * SCCAttrs::getSingleAccumulator (void){
   return singleAccumulator;
 }
 
-void SCCAttrs::collectPHIsAndAccumulators (LoopSummary &LS) {
+void SCCAttrs::collectPHIsAndAccumulators (LoopStructure &LS) {
 
   /*
    * Iterate over elements of the SCC to collect PHIs and accumulators.

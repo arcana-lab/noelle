@@ -49,7 +49,7 @@ LoopCarriedDependencies::LoopCarriedDependencies (
 
 }
 
-Criticisms LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (LoopSummary &LS) {
+Criticisms LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (LoopStructure &LS) {
   assert(loopCarriedDependenciesMap.find(&LS) != loopCarriedDependenciesMap.end());
   return loopCarriedDependenciesMap.at(&LS);
 }

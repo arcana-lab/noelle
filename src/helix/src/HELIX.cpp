@@ -113,7 +113,7 @@ void HELIX::createParallelizableTask (
   /*
    * Fetch the header.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
 
   /*

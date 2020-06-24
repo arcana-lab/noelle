@@ -95,7 +95,7 @@ void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI
   /*
    * Fetch the loop function.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopFunction = loopSummary->getFunction();
 
   /*
@@ -127,7 +127,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
   /*
    * Fetch the loop headers.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopPreHeader = loopSummary->getPreHeader();
 
   /*
@@ -223,7 +223,7 @@ void ParallelizationTechnique::generateEmptyTasks (
   /*
    * Fetch the loop headers.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopPreHeader = loopSummary->getPreHeader();
 
   /*
@@ -258,7 +258,7 @@ void ParallelizationTechnique::generateEmptyTasks (
      * Create one basic block per loop exit, mapping between originals and clones,
      * and branching from them to the function exit block
      */
-    for (auto exitBB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
+    for (auto exitBB : LDI->getLoopStructure()->getLoopExitBasicBlocks()) {
       auto newExitBB = task->addBasicBlockStub(exitBB);
       task->tagBasicBlockAsLastBlock(newExitBB);
       IRBuilder<> builder(newExitBB);
@@ -277,7 +277,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
   /*
    * Clone all basic blocks of the original loop
    */
-  auto topLoop = LDI->getLoopSummary();
+  auto topLoop = LDI->getLoopStructure();
   for (auto originBB : topLoop->orderedBBs) {
 
     /*
@@ -444,7 +444,7 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
   /*
    * Fetch the header.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto liveOutBlock = liveOut->getParent();
 
   /*
@@ -622,7 +622,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
    * Fetch task information.
    */
   auto task = this->tasks[taskIndex];
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto headerClone = task->getCloneOfOriginalBasicBlock(loopHeader);
   auto loopPreHeader = loopSummary->getPreHeader();
@@ -822,7 +822,7 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
   /*
    * Fetch the loop summary.
    */
-  auto loopSummary = LDI.getLoopSummary();
+  auto loopSummary = LDI.getLoopStructure();
 
   std::set<BasicBlock *> bbs(loopSummary->orderedBBs.begin(), loopSummary->orderedBBs.end());
   DGPrinter::writeGraph<SubCFGs>("technique-original-loop-" + std::to_string(LDI.getID()) + ".dot", new SubCFGs(bbs));

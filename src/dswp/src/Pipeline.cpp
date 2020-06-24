@@ -104,7 +104,7 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par) {
   /*
    * Fetch the loop function.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopFunction = loopSummary->getFunction();
 
   /*

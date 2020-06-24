@@ -93,7 +93,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Fetch the header.
      */
-    auto loopSummary = loop->getLoopSummary();
+    auto loopSummary = loop->getLoopStructure();
     auto loopHeader = loopSummary->getHeader();
 
     /*
@@ -132,7 +132,7 @@ bool Parallelizer::runOnModule (Module &M) {
      * Check if the loop can be parallelized.
      * This depends on whether the metadata (e.g., LoopDependenceInfo) are correct, which depends on whether its inner loops have been modified or not.
      */
-    auto checkFunc = [&modifiedLoops](const LoopSummary &child) -> bool {
+    auto checkFunc = [&modifiedLoops](const LoopStructure &child) -> bool {
 
       /*
        * Fetch the ID of the subloop.

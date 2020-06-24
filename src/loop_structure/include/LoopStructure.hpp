@@ -16,16 +16,16 @@ using namespace llvm;
 
 namespace llvm {
 
-  class LoopSummary {
+  class LoopStructure {
     public:
 
-      LoopSummary (
+      LoopStructure (
         Loop *l
         );
 
-      LoopSummary (
+      LoopStructure (
         Loop *l,
-        LoopSummary *parentLoop
+        LoopStructure *parentLoop
         );
 
       uint64_t getID (void) const ;
@@ -42,13 +42,13 @@ namespace llvm {
        */
       uint32_t getNestingLevel (void) const ;
 
-      LoopSummary * getParentLoop (void) const ;
+      LoopStructure * getParentLoop (void) const ;
       
-      void setParentLoop (LoopSummary *parentLoop) ;
+      void setParentLoop (LoopStructure *parentLoop) ;
 
-      std::unordered_set<LoopSummary *> getChildren (void) const ;
+      std::unordered_set<LoopStructure *> getChildren (void) const ;
 
-      void addChild (LoopSummary *child) ;
+      void addChild (LoopStructure *child) ;
 
       std::unordered_set<BasicBlock *> getLatches (void) const ;
 
@@ -71,9 +71,9 @@ namespace llvm {
       BasicBlock *header;
       BasicBlock *preHeader;
       uint32_t depth;
-      LoopSummary *parent;
+      LoopStructure *parent;
       std::unordered_set<Instruction *> invariants;
-      std::unordered_set<LoopSummary *> children;
+      std::unordered_set<LoopStructure *> children;
       std::unordered_set<BasicBlock *> latchBBs;
       std::unordered_set<BasicBlock *> bbs;
 

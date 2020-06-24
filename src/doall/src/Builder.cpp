@@ -23,7 +23,7 @@ void DOALL::rewireLoopToIterateChunks (
   /*
    * Fetch loop and IV information.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto loopPreHeader = loopSummary->getPreHeader();
   auto preheaderClone = task->getCloneOfOriginalBasicBlock(loopPreHeader);

@@ -12,7 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "SCC.hpp"
-#include "LoopSummary.hpp"
+#include "LoopStructure.hpp"
 
 namespace llvm {
 
@@ -69,12 +69,12 @@ namespace llvm {
       /*
        * Return the total number of instructions executed excluding the instructions executed by the callees.
        */
-      uint64_t getSelfInstructions (LoopSummary *loop) const ;
+      uint64_t getSelfInstructions (LoopStructure *loop) const ;
 
       /*
        * Return the total number of instructions executed including the instructions executed by the callees.
        */
-      uint64_t getTotalInstructions (LoopSummary *loop) const ;
+      uint64_t getTotalInstructions (LoopStructure *loop) const ;
 
 
       /*

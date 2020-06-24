@@ -69,7 +69,7 @@ void DSWP::registerQueue (
 void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
   SCCDAG *sccdag = LDI->sccdagAttrs.getSCCDAG();
   std::set<DGNode<Value> *> conditionalBranchNodes;
-  auto loopExitBlocks = LDI->getLoopSummary()->getLoopExitBasicBlocks();
+  auto loopExitBlocks = LDI->getLoopStructure()->getLoopExitBasicBlocks();
   std::set<BasicBlock *> loopExitBlockSet(loopExitBlocks.begin(), loopExitBlocks.end());
 
   for (auto sccNode : sccdag->getNodes()) {

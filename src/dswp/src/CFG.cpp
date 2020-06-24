@@ -18,7 +18,7 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
   /*
    * Fetch the header.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
 
   /*
@@ -60,7 +60,7 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
     }
   }
 
-  auto loopExitsVector = LDI->getLoopSummary()->getLoopExitBasicBlocks();
+  auto loopExitsVector = LDI->getLoopStructure()->getLoopExitBasicBlocks();
   std::set<BasicBlock *> loopExits(loopExitsVector.begin(), loopExitsVector.end());
   std::queue<BasicBlock *> queueToFindMissingBBs;
   std::set<BasicBlock *> visitedBBs(loopExits.begin(), loopExits.end());

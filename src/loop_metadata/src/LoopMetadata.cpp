@@ -40,7 +40,7 @@ bool LoopMetadataPass::tagLoops (
      *
      * Fetch the loop summary.
      */
-    auto loopSummary = loopInfo->getLoopSummary();
+    auto loopSummary = loopInfo->getLoopStructure();
 
     /*
      * Fetch the header.

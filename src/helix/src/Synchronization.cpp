@@ -25,7 +25,7 @@ void HELIX::addSynchronizations (
   /*
    * Fetch the header.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
 
   /*
@@ -44,7 +44,7 @@ void HELIX::addSynchronizations (
    * Assert that the preamble dictates control flow of loop iterations
    */
   std::set<Instruction *> exitingTerms;
-  for (auto exitBB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) {
+  for (auto exitBB : LDI->getLoopStructure()->getLoopExitBasicBlocks()) {
     for (auto predBB : predecessors(exitBB)) {
       exitingTerms.insert(predBB->getTerminator());
     }

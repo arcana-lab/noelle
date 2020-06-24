@@ -402,7 +402,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
   /*
    * Requirement: all instructions of the SCC belong to the same loop.
    */
-  LoopSummary *loopOfSCC = nullptr;
+  LoopStructure *loopOfSCC = nullptr;
   for (auto instNodePair : scc->internalNodePairs()){
     if (auto inst = dyn_cast<Instruction>(instNodePair.first)){
       auto currentLoop = LIS.getLoop(*inst);

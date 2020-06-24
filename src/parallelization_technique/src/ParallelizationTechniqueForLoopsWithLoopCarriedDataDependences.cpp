@@ -84,7 +84,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   /*
    * Ensure no memory edges go across subsets so no synchronization is necessary
    */
-  this->partition = new SCCDAGPartition(LDI->sccdagAttrs.getSCCDAG(), &LDI->sccdagAttrs, LDI->getLoopSummary(), subsets);
+  this->partition = new SCCDAGPartition(LDI->sccdagAttrs.getSCCDAG(), &LDI->sccdagAttrs, LDI->getLoopStructure(), subsets);
   while (partition->mergeAlongMemoryEdges());
 
   /*

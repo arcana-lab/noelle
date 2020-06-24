@@ -14,7 +14,7 @@
 using namespace llvm;
 
 InductionVariable::InductionVariable  (
-  LoopSummary *LS,
+  LoopStructure *LS,
   ScalarEvolution &SE,
   PHINode *loopEntryPHI,
   SCC &scc,
@@ -97,7 +97,7 @@ InductionVariable::InductionVariable  (
 }
 
 void InductionVariable::collectValuesInternalAndExternalToLoopAndSCC (
-  LoopSummary *LS,
+  LoopStructure *LS,
   LoopEnvironment &loopEnvironment
 ) {
 
@@ -141,7 +141,7 @@ void InductionVariable::collectValuesInternalAndExternalToLoopAndSCC (
  * representing the SCEV or expand values to represent it
  */
 void InductionVariable::deriveStepValue (
-  LoopSummary *LS,
+  LoopStructure *LS,
   ScalarEvolution &SE,
   ScalarEvolutionReferentialExpander &referentialExpander,
   LoopEnvironment &loopEnv
@@ -189,7 +189,7 @@ void InductionVariable::deriveStepValueFromSCEVConstant (const SCEVConstant *sce
   this->isComputedStepValueLoopInvariant = true;
 }
 
-void InductionVariable::deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev, LoopSummary *LS) {
+void InductionVariable::deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev, LoopStructure *LS) {
   this->singleStepValue = scev->getValue();
   this->isComputedStepValueLoopInvariant = LS->isLoopInvariant(this->singleStepValue);
 }
@@ -197,7 +197,7 @@ void InductionVariable::deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev,
 bool InductionVariable::deriveStepValueFromCompositeSCEV (
   const SCEV *scev,
   ScalarEvolutionReferentialExpander &referentialExpander,
-  LoopSummary *LS
+  LoopStructure *LS
 ) {
 
   // auto M = headerPHI->getFunction()->getParent();

@@ -26,7 +26,7 @@ bool LoopUnroll::fullyUnrollLoop (
   /*
    * Fetch the loop summary
    */
-  auto ls = LDI.getLoopSummary();
+  auto ls = LDI.getLoopStructure();
 
   /*
    * Check if the loop has compile time known trip count.

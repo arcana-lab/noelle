@@ -90,7 +90,7 @@ bool DOALL::canBeAppliedToLoop (
    * all induction variables must have step sizes that are loop invariant
    */
   auto IVManager = LDI->getInductionVariableManager();
-  for (auto IV : IVManager->getInductionVariables(*LDI->getLoopSummary())) {
+  for (auto IV : IVManager->getInductionVariables(*LDI->getLoopStructure())) {
     if (IV->isStepValueLoopInvariant()) {
       continue;
     }
@@ -171,7 +171,7 @@ bool DOALL::apply (
   /*
    * Fetch the headers.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto loopPreHeader = loopSummary->getPreHeader();
 

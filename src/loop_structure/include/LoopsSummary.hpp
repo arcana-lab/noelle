@@ -11,21 +11,21 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "LoopSummary.hpp"
+#include "LoopStructure.hpp"
 
 namespace llvm {
 
   class LoopsSummary {
     public:
-      std::set<std::shared_ptr<LoopSummary>> loops;
+      std::set<std::shared_ptr<LoopStructure>> loops;
 
       LoopsSummary ();
 
-      LoopSummary * getLoop (Instruction &instIncludedInLoop) const ;
+      LoopStructure * getLoop (Instruction &instIncludedInLoop) const ;
 
-      LoopSummary * getLoop (BasicBlock &bbIncludedInLoop) const ;
+      LoopStructure * getLoop (BasicBlock &bbIncludedInLoop) const ;
 
-      LoopSummary * getLoopNestingTreeRoot (void) const ;
+      LoopStructure * getLoopNestingTreeRoot (void) const ;
 
       void populate (
         Loop *loop
@@ -34,20 +34,20 @@ namespace llvm {
       void print (raw_ostream &stream) const ;
 
     private:
-      LoopSummary *topLoop;
+      LoopStructure *topLoop;
 
       /*
        * Fields.
        */
-      std::unordered_map<BasicBlock *, LoopSummary *> bbToLoop;
+      std::unordered_map<BasicBlock *, LoopStructure *> bbToLoop;
       std::unordered_map<BasicBlock *, Loop *> headerLoops;
 
       /*
        * Methods.
        */
-      LoopSummary *createSummary (
+      LoopStructure *createSummary (
         Loop *l, 
-        LoopSummary *parentLoop
+        LoopStructure *parentLoop
         );
   };
 

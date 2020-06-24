@@ -64,7 +64,7 @@ namespace llvm {
       /*
        * Return the object that describes the loop in terms of induction variables, trip count, and control structure (e.g., latches, header)
        */
-      LoopSummary * getLoopSummary (void) const ;
+      LoopStructure * getLoopStructure (void) const ;
 
       /*
        * Get the dependence graph of the loop.
@@ -101,7 +101,7 @@ namespace llvm {
        * This will go through children of children etc...
        */
       bool iterateOverSubLoopsRecursively (
-        std::function<bool (const LoopSummary &child)> funcToInvoke
+        std::function<bool (const LoopStructure &child)> funcToInvoke
         );
 
       /*

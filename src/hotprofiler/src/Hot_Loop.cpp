@@ -15,7 +15,7 @@
 
 using namespace llvm ;
 
-uint64_t Hot::getSelfInstructions (LoopSummary *loop) const {
+uint64_t Hot::getSelfInstructions (LoopStructure *loop) const {
   uint64_t insts = 0;
 
   for (auto bb : loop->getBasicBlocks()){
@@ -25,7 +25,7 @@ uint64_t Hot::getSelfInstructions (LoopSummary *loop) const {
   return insts;
 }
 
-uint64_t Hot::getTotalInstructions (LoopSummary *loop) const {
+uint64_t Hot::getTotalInstructions (LoopStructure *loop) const {
   uint64_t insts = 0;
 
   for (auto bb : loop->getBasicBlocks()){

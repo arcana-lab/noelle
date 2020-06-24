@@ -135,7 +135,7 @@ bool DSWP::canBeAppliedToLoop (
   /*
    * Check if the parallelization is worth it.
    */
-  auto loopTotalInsts = profiles->getTotalInstructions(LDI->getLoopSummary());
+  auto loopTotalInsts = profiles->getTotalInstructions(LDI->getLoopStructure());
   auto biggestSCCCoverage = ((double)biggestSCC) / ((double)loopTotalInsts);
   if (biggestSCCCoverage >= 0.8){
 
@@ -168,7 +168,7 @@ bool DSWP::apply (
   /*
    * Fetch the header.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
 
   /*
