@@ -86,6 +86,8 @@ namespace llvm {
 
       Type * getVoidType (void) const ;
 
+      uint32_t getMaximumNumberOfCores (void) const ;
+
       /*
        * Check whether a transformation is enabled.
        */
@@ -100,6 +102,7 @@ namespace llvm {
       Hot *profiles;
       PDG *programDependenceGraph;
       std::set<Transformation> enabledTransformations;
+      uint32_t maxCores;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream

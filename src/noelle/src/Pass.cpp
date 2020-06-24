@@ -16,6 +16,7 @@ using namespace llvm;
 
 static cl::opt<int> Verbose("noelle-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal)"));
 static cl::opt<int> MinimumHotness("noelle-min-hot", cl::ZeroOrMore, cl::Hidden, cl::desc("Minimum hotness of code to be parallelized"));
+static cl::opt<int> MaximumCores("noelle-max-cores", cl::ZeroOrMore, cl::Hidden, cl::desc("Maximum number of logical cores that Noelle can use"));
 static cl::opt<bool> DisableDSWP("noelle-disable-dswp", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DSWP"));
 static cl::opt<bool> DisableHELIX("noelle-disable-helix", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable HELIX"));
 static cl::opt<bool> DisableDOALL("noelle-disable-doall", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DOALL"));
@@ -28,6 +29,10 @@ bool Noelle::doInitialization (Module &M) {
    */
   this->verbose = static_cast<Verbosity>(Verbose.getValue());
   this->minHot = ((double)(MinimumHotness.getValue())) / 100;
+  auto optMaxCores = MaximumCores.getValue();
+  if (optMaxCores > 0){
+    this->maxCores = optMaxCores;
+  }
   if (DisableDOALL.getNumOccurrences() == 0){
     this->enabledTransformations.insert(DOALL_ID);
   }

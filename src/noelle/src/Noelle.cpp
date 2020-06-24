@@ -42,6 +42,7 @@ Noelle::Noelle()
     , program{nullptr}
     , profiles{nullptr}
     , programDependenceGraph{nullptr}
+    , maxCores{Architecture::getNumberOfPhysicalCores()}
   {
 
   return ;
@@ -222,7 +223,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE);
+        auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE, this->maxCores);
 
         allLoops->push_back(ldi);
         currentLoopIndex++;
@@ -264,7 +265,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
        *
        * Allocate the loop wrapper.
        */
-      auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE);
+      auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE, maximumNumberOfCoresForTheParallelization);
 
       /*
        * Set the loop constraints specified by INDEX_FILE.
@@ -272,11 +273,6 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
        * DOALL chunk size is the one defined by INDEX_FILE + 1. This is because chunk size must start from 1.
        */
       ldi->DOALLChunkSize = DOALLChunkSize[currentLoopIndex] + 1;
-
-      /*
-       * Set the maximum number of threads that we can extract from the current loop.
-       */
-      ldi->maximumNumberOfCoresForTheParallelization = maximumNumberOfCoresForTheParallelization;
 
       /*
        * Set the techniques that are enabled.
@@ -725,6 +721,10 @@ PDG * Noelle::getFunctionDependenceGraph (Function *f) {
   auto FDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*f);
 
   return FDG;
+}
+
+uint32_t Noelle::getMaximumNumberOfCores (void) const {
+  return this->maxCores;
 }
 
 Noelle::~Noelle(){
