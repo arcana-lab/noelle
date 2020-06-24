@@ -35,7 +35,7 @@ bool Parallelizer::parallelizeLoop (
   /*
    * Fetch the loop headers.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto loopPreHeader = loopSummary->getPreHeader();
 
@@ -142,7 +142,7 @@ bool Parallelizer::parallelizeLoop (
     errs() << "Parallelizer:  Link the parallelize loop\n";
   }
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
-  auto loopExitBlocks = LDI->getLoopSummary()->getLoopExitBasicBlocks();
+  auto loopExitBlocks = LDI->getLoopStructure()->getLoopExitBasicBlocks();
   par.linkTransformedLoopToOriginalFunction(
     loopFunction->getParent(),
     loopPreHeader,

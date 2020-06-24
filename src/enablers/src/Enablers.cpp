@@ -152,7 +152,7 @@ bool EnablersManager::applyDevirtualizer (
   /*
    * Fetch the loop information.
    */
-  auto ls = LDI->getLoopSummary();
+  auto ls = LDI->getLoopStructure();
   auto IVM = LDI->getInductionVariableManager();
 
   /*

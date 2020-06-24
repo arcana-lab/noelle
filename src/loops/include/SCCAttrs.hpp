@@ -164,7 +164,7 @@ namespace llvm {
       bool isClonable;
       bool hasIV;
   
-      void collectPHIsAndAccumulators (LoopSummary &LS);
+      void collectPHIsAndAccumulators (LoopStructure &LS);
       void collectControlFlowInstructions (void);
   };
 

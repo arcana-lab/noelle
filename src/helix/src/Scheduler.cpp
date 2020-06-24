@@ -93,11 +93,11 @@ void collectIDomsAndIPostDoms (
   /*
    * Fetch the loop function.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopFunction = loopSummary->getFunction();
 
   std::set<BasicBlock *> exitBBs;
-  for (auto exitBB : LDI->getLoopSummary()->getLoopExitBasicBlocks()) exitBBs.insert(exitBB);
+  for (auto exitBB : LDI->getLoopStructure()->getLoopExitBasicBlocks()) exitBBs.insert(exitBB);
   traverseDomination(preds, succs, iPostDoms, exitBBs, &*loopFunction->begin());
 
   std::set<BasicBlock *> startBBs = { loopHeader };
@@ -161,7 +161,7 @@ void HELIX::squeezeSequentialSegment (
   /*
    * Fetch the header.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
 
   /*

@@ -15,7 +15,7 @@ using namespace llvm;
 SCCDAGPartition::SCCDAGPartition (
   SCCDAG *dag,
   SCCDAGAttrs *attrs,
-  LoopSummary *loopSummary,
+  LoopStructure *loopSummary,
   std::set<SCCset *> *sets
 ) : loop{loopSummary}, sccdag{dag}, dagAttrs{attrs} {
   resetPartition(sets);

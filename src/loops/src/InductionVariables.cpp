@@ -92,11 +92,11 @@ InductionVariableManager::~InductionVariableManager () {
   loopToGoverningIVMap.clear();
 }
 
-std::set<InductionVariable *> InductionVariableManager::getInductionVariables (LoopSummary &LS) {
+std::set<InductionVariable *> InductionVariableManager::getInductionVariables (LoopStructure &LS) {
   return loopToIVsMap.at(&LS);
 }
 
-InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable (LoopSummary &LS) {
+InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable (LoopStructure &LS) {
   if (loopToGoverningIVMap.find(&LS) == loopToGoverningIVMap.end()) return nullptr;
   return loopToGoverningIVMap.at(&LS);
 }

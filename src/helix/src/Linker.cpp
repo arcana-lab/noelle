@@ -22,7 +22,7 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Fetch the loop function.
    */
-  auto loopSummary = LDI->getLoopSummary();
+  auto loopSummary = LDI->getLoopStructure();
   auto loopFunction = loopSummary->getFunction();
 
   /*

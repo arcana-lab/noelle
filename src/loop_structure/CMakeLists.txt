@@ -30,7 +30,7 @@ add_subdirectory(src)
 
 # Install
 install(PROGRAMS 
-  include/LoopSummary.hpp 
+  include/LoopStructure.hpp 
   include/LoopsSummary.hpp 
   include/LoopEnvironment.hpp
   include/EnvBuilder.hpp

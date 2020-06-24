@@ -1,6 +1,6 @@
 # Sources
 set(Srcs 
-  LoopSummary.cpp
+  LoopStructure.cpp
   LoopsSummary.cpp
   LoopEnvironment.cpp
   EnvBuilder.cpp

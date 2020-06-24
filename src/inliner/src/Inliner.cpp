@@ -299,7 +299,7 @@ bool llvm::Inliner::inlineCallsInMassiveSCCsOfLoops (void) {
     auto &allSummaries = *preOrderedLoops[F];
 
     bool inlined = false;
-    std::set<LoopSummary *> removeSummaries;
+    std::set<LoopStructure *> removeSummaries;
     auto &toCheck = loopsToCheck[F];
     for (auto summary : toCheck) {
       auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
@@ -552,7 +552,7 @@ void llvm::Inliner::adjustLoopOrdersAfterInline (Function *parentF, Function *ch
   bool parentHasLoops = preOrderedLoops.find(parentF) != preOrderedLoops.end();
   bool childHasLoops = preOrderedLoops.find(childF) != preOrderedLoops.end();
   if (!childHasLoops || preOrderedLoops[childF]->size() == 0) return ;
-  if (!parentHasLoops) preOrderedLoops[parentF] = new std::vector<LoopSummary *>();
+  if (!parentHasLoops) preOrderedLoops[parentF] = new std::vector<LoopStructure *>();
 
   /*
    * NOTE(angelo): Starting after the loop in the parent function, index all loops in the
@@ -786,16 +786,16 @@ void llvm::Inliner::createPreOrderedLoopSummariesFor (Function *F) {
   };
 
   // Create summaries for the loops
-  preOrderedLoops[F] = new std::vector<LoopSummary *>();
+  preOrderedLoops[F] = new std::vector<LoopStructure *>();
   auto &orderedLoops = *preOrderedLoops[F];
-  std::unordered_map<Loop *, LoopSummary *> summaryMap;
+  std::unordered_map<Loop *, LoopStructure *> summaryMap;
   for (auto i = 0; i < loops->size(); ++i) {
 
     /*
      * Create the summary loop
      */
     auto loop = (*loops)[i];
-    auto summary = new LoopSummary(loop);
+    auto summary = new LoopStructure(loop);
 
     /*
      * Keep track of the summary loop.
@@ -808,8 +808,8 @@ void llvm::Inliner::createPreOrderedLoopSummariesFor (Function *F) {
   // Associate loop summaries with parent and children loop summaries
   for (auto pair : summaryMap) {
     auto parentLoop = pair.first->getParentLoop();
-    auto parentLoopSummary = parentLoop ? summaryMap[parentLoop] : nullptr;
-    pair.second->setParentLoop(parentLoopSummary);
+    auto parentLoopStructure = parentLoop ? summaryMap[parentLoop] : nullptr;
+    pair.second->setParentLoop(parentLoopStructure);
     for (auto childLoop : pair.first->getSubLoops()) {
       pair.second->addChild(summaryMap[childLoop]);
     }

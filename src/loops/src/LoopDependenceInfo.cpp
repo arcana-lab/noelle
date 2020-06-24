@@ -34,7 +34,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Fetch the PDG of the loop and its SCCDAG.
    */
   this->fetchLoopAndBBInfo(l, SE);
-  auto loopExitBlocks = getLoopSummary()->getLoopExitBasicBlocks();
+  auto loopExitBlocks = getLoopStructure()->getLoopExitBasicBlocks();
   auto DGs = this->createDGsForLoop(l, fG);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
@@ -82,7 +82,7 @@ void LoopDependenceInfo::addMetadata (const std::string &metadataName){
   /*
    * Fetch the loop summary.
    */
-  auto ls = this->getLoopSummary();
+  auto ls = this->getLoopStructure();
 
   /*
    * Fetch the header terminator.
@@ -132,7 +132,7 @@ void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *oth
  * Fetch the number of exit blocks.
  */
 uint32_t LoopDependenceInfo::numberOfExits (void) const{
-  return this->getLoopSummary()->getLoopExitBasicBlocks().size();
+  return this->getLoopStructure()->getLoopExitBasicBlocks().size();
 }
 
 void LoopDependenceInfo::fetchLoopAndBBInfo (
@@ -247,7 +247,7 @@ PDG * LoopDependenceInfo::getLoopDG (void){
 }
 
 bool LoopDependenceInfo::iterateOverSubLoopsRecursively (
-  std::function<bool (const LoopSummary &child)> funcToInvoke
+  std::function<bool (const LoopStructure &child)> funcToInvoke
   ){
 
   /*
@@ -301,7 +301,7 @@ bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) cons
   return true;
 }
 
-LoopSummary * LoopDependenceInfo::getLoopSummary (void) const {
+LoopStructure * LoopDependenceInfo::getLoopStructure (void) const {
   return this->liSummary.getLoopNestingTreeRoot();
 }
 

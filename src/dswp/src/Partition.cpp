@@ -63,7 +63,7 @@ void DSWP::clusterSubloops (LoopDependenceInfo *LDI) {
   auto loop = li.bbToLoop[LDI->header];
   auto loopDepth = loop->depth;
 
-  unordered_map<LoopSummary *, std::set<SCC *>> loopSets;
+  unordered_map<LoopStructure *, std::set<SCC *>> loopSets;
   for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
     if (LDI->sccdagAttrs.canBeCloned(sccNode->getT())) continue;
 

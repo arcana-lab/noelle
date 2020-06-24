@@ -61,7 +61,7 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Fetch the function that contains the current loop.
      */
-    auto loopSummary = loop->getLoopSummary();
+    auto loopSummary = loop->getLoopStructure();
     auto f = loopSummary->getFunction();
 
     /*

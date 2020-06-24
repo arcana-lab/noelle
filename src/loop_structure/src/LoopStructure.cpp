@@ -8,24 +8,24 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "LoopSummary.hpp"
+#include "LoopStructure.hpp"
 
 using namespace llvm;
 
-uint64_t LoopSummary::globalID = 0;
+uint64_t LoopStructure::globalID = 0;
 
-LoopSummary::LoopSummary (
+LoopStructure::LoopStructure (
   Loop *l
   ) 
-  : LoopSummary(l, nullptr)
+  : LoopStructure(l, nullptr)
   {
 
   return ;
 }
 
-LoopSummary::LoopSummary (
+LoopStructure::LoopStructure (
   Loop *l,
-  LoopSummary *parentLoop
+  LoopStructure *parentLoop
   ) 
   : parent{parentLoop}
   {
@@ -33,7 +33,7 @@ LoopSummary::LoopSummary (
   /*
    * Set the ID
    */
-  this->ID = LoopSummary::globalID++;
+  this->ID = LoopStructure::globalID++;
 
   /*
    * Set the nesting level
@@ -79,51 +79,51 @@ LoopSummary::LoopSummary (
   return ;
 }
 
-BasicBlock * LoopSummary::getHeader (void) const {
+BasicBlock * LoopStructure::getHeader (void) const {
   return this->header;
 }
  
-BasicBlock * LoopSummary::getPreHeader (void) const {
+BasicBlock * LoopStructure::getPreHeader (void) const {
   return this->preHeader;
 }
 
-uint32_t LoopSummary::getNestingLevel (void) const {
+uint32_t LoopStructure::getNestingLevel (void) const {
   return this->depth;
 }
       
-LoopSummary * LoopSummary::getParentLoop (void) const {
+LoopStructure * LoopStructure::getParentLoop (void) const {
   return this->parent;
 }
       
-void LoopSummary::setParentLoop (LoopSummary *parentLoop) {
+void LoopStructure::setParentLoop (LoopStructure *parentLoop) {
   this->parent = parentLoop;
 
   return ;
 }
       
-std::unordered_set<LoopSummary *> LoopSummary::getChildren (void) const {
+std::unordered_set<LoopStructure *> LoopStructure::getChildren (void) const {
   return this->children;
 }
       
-void LoopSummary::addChild (LoopSummary *child) {
+void LoopStructure::addChild (LoopStructure *child) {
   this->children.insert(child);
 
   return ;
 }
       
-std::unordered_set<BasicBlock *> LoopSummary::getLatches (void) const {
+std::unordered_set<BasicBlock *> LoopStructure::getLatches (void) const {
   return this->latchBBs;
 }
       
-std::unordered_set<BasicBlock *> LoopSummary::getBasicBlocks (void) const {
+std::unordered_set<BasicBlock *> LoopStructure::getBasicBlocks (void) const {
   return this->bbs;
 }
 
-std::vector<BasicBlock *> LoopSummary::getLoopExitBasicBlocks (void) const {
+std::vector<BasicBlock *> LoopStructure::getLoopExitBasicBlocks (void) const {
   return this->exitBlocks;
 }
 
-bool LoopSummary::isLoopInvariant (Value *value) const {
+bool LoopStructure::isLoopInvariant (Value *value) const {
   if (auto inst = dyn_cast<Instruction>(value)) {
     if (!isBasicBlockWithin(inst->getParent())) return true;
     return isContainedInstructionLoopInvariant(inst);
@@ -137,7 +137,7 @@ bool LoopSummary::isLoopInvariant (Value *value) const {
   return false;
 }
 
-bool LoopSummary::isContainedInstructionLoopInvariant (Instruction *inst) const {
+bool LoopStructure::isContainedInstructionLoopInvariant (Instruction *inst) const {
 
   /*
    * Currently, we are as naive as LLVM, not including loop internal instructions
@@ -147,24 +147,24 @@ bool LoopSummary::isContainedInstructionLoopInvariant (Instruction *inst) const 
   return this->invariants.find(inst) != this->invariants.end();
 }
 
-bool LoopSummary::isBasicBlockWithin (BasicBlock *bb) const {
+bool LoopStructure::isBasicBlockWithin (BasicBlock *bb) const {
   auto found = this->bbs.find(bb) != this->bbs.end();
 
   return found;
 }
       
-void LoopSummary::print (raw_ostream &stream) {
+void LoopStructure::print (raw_ostream &stream) {
   stream << "Loop summary: " << this->ID << ", depth: " << depth << "\n";
   header->begin()->print(stream); stream << "\n";
 
   return ;
 }
 
-uint64_t LoopSummary::getID (void) const {
+uint64_t LoopStructure::getID (void) const {
   return this->ID;
 }
    
-Function * LoopSummary::getFunction (void) const {
+Function * LoopStructure::getFunction (void) const {
   auto f = this->header->getParent();
   return f;
 }

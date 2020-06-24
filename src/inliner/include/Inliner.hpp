@@ -91,7 +91,7 @@ namespace llvm {
     std::vector<Function *> depthOrderedFns;
     std::set<Function *> recursiveChainEntranceFns;
     std::unordered_map<Function *, int> fnOrders;
-    std::unordered_map<Function *, std::vector<LoopSummary *> *> preOrderedLoops;
+    std::unordered_map<Function *, std::vector<LoopStructure *> *> preOrderedLoops;
 
     /*
      * Tracking functions that had a CallInst of theirs inlined
@@ -105,13 +105,13 @@ namespace llvm {
     /*
      * Tracking the functions and loops to affect
      */
-    std::unordered_map<Function *, std::vector<LoopSummary *>> loopsToCheck;
+    std::unordered_map<Function *, std::vector<LoopStructure *>> loopsToCheck;
     std::set<Function *> fnsToCheck;
 
     /*
      * Internal structures owned by the pass
      */
-    std::set<LoopSummary *> loopSummaries;
+    std::set<LoopStructure *> loopSummaries;
     Verbosity verbose;
   };
 

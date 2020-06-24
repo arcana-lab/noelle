@@ -41,24 +41,24 @@ namespace llvm {
       /*
        * Return all induction variables including the loop-governing one.
        */
-      std::set<InductionVariable *> getInductionVariables (LoopSummary &LS) ;
+      std::set<InductionVariable *> getInductionVariables (LoopStructure &LS) ;
 
-      InductionVariable * getLoopGoverningInductionVariable (LoopSummary &LS) ;
+      InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) ;
 
       bool doesContributeToComputeAnInductionVaraible (Instruction *i) ;
 
       ~InductionVariableManager ();
 
     private:
-      std::unordered_map<LoopSummary *, std::set<InductionVariable *>> loopToIVsMap;
-      std::unordered_map<LoopSummary *, InductionVariable *> loopToGoverningIVMap;
+      std::unordered_map<LoopStructure *, std::set<InductionVariable *>> loopToIVsMap;
+      std::unordered_map<LoopStructure *, InductionVariable *> loopToGoverningIVMap;
   };
 
   class InductionVariable {
     public:
 
       InductionVariable  (
-        LoopSummary *LS,
+        LoopStructure *LS,
         ScalarEvolution &SE,
         PHINode *loopEntryPHI,
         SCC &scc,
@@ -156,23 +156,23 @@ namespace llvm {
       std::set<Value *> valuesToReferenceInComputingStepValue;
       std::set<Value *> valuesInScopeOfInductionVariable;
       void collectValuesInternalAndExternalToLoopAndSCC (
-        LoopSummary *LS,
+        LoopStructure *LS,
         LoopEnvironment &loopEnvironment
       ) ;
 
       void deriveStepValue (
-        LoopSummary *LS,
+        LoopStructure *LS,
         ScalarEvolution &SE,
         ScalarEvolutionReferentialExpander &referentialExpander,
         LoopEnvironment &loopEnv
       ) ;
 
       void deriveStepValueFromSCEVConstant (const SCEVConstant *scev) ;
-      void deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev, LoopSummary *LS) ;
+      void deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev, LoopStructure *LS) ;
       bool deriveStepValueFromCompositeSCEV (
         const SCEV *scev,
         ScalarEvolutionReferentialExpander &referentialExpander,
-        LoopSummary *LS
+        LoopStructure *LS
       ) ;
 
   };

@@ -203,7 +203,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
        */
       if (profiles.isAvailable()){
         auto mInsts = profiles.getTotalInstructions();
-        LoopSummary loopS{loop};
+        LoopStructure loopS{loop};
         auto lInsts = profiles.getTotalInstructions(&loopS);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness < minimumHotness){
@@ -405,7 +405,7 @@ uint32_t Noelle::getNumberOfProgramLoops (
        */
        if (profiles.isAvailable()){
         auto mInsts = profiles.getTotalInstructions();
-        LoopSummary loopS{loop};
+        LoopStructure loopS{loop};
         auto lInsts = profiles.getTotalInstructions(&loopS);
         auto hotness = ((double)lInsts) / ((double)mInsts);
         if (hotness <= minimumHotness){
