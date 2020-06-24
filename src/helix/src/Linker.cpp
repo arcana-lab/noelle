@@ -46,7 +46,7 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Fetch the number of cores
    */
-  auto numCores = ConstantInt::get(par.int64, LDI->maximumNumberOfCoresForTheParallelization);
+  auto numCores = ConstantInt::get(par.int64, LDI->getMaximumNumberOfCores());
 
   /*
    * Fetch the chunk size.

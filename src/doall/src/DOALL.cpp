@@ -185,7 +185,7 @@ bool DOALL::apply (
    */
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Start the parallelization\n";
-    errs() << "DOALL:   Number of threads to extract = " << LDI->maximumNumberOfCoresForTheParallelization << "\n";
+    errs() << "DOALL:   Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
     errs() << "DOALL:   Chunk size = " << LDI->DOALLChunkSize << "\n";
   }
 
@@ -194,7 +194,7 @@ bool DOALL::apply (
    */
   auto chunkerTask = new DOALLTask(this->taskType, this->module);
   this->generateEmptyTasks(LDI, { chunkerTask });
-  this->numTaskInstances = LDI->maximumNumberOfCoresForTheParallelization;
+  this->numTaskInstances = LDI->getMaximumNumberOfCores();
 
   /*
    * Allocate memory for all environment variables
@@ -287,7 +287,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Fetch the number of cores
    */
-  auto numCores = ConstantInt::get(par.int64, LDI->maximumNumberOfCoresForTheParallelization);
+  auto numCores = ConstantInt::get(par.int64, LDI->getMaximumNumberOfCores());
 
   /*
    * Fetch the chunk size.
