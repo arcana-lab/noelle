@@ -53,7 +53,8 @@ namespace llvm {
         PDG *fG,
         Loop *l,
         DominatorSummary &DS,
-        ScalarEvolution &SE
+        ScalarEvolution &SE,
+        uint32_t maxCores
       );
 
       /*

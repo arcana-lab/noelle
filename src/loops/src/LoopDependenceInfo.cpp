@@ -19,9 +19,10 @@ LoopDependenceInfo::LoopDependenceInfo(
   PDG *fG,
   Loop *l,
   DominatorSummary &DS,
-  ScalarEvolution &SE
+  ScalarEvolution &SE,
+  uint32_t maxCores
 ) : DOALLChunkSize{8},
-    maximumNumberOfCoresForTheParallelization{Architecture::getNumberOfPhysicalCores()},
+    maximumNumberOfCoresForTheParallelization{maxCores},
     liSummary{}
   {
 

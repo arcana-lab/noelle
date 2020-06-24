@@ -305,7 +305,7 @@ bool llvm::Inliner::inlineCallsInMassiveSCCsOfLoops (void) {
       auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
       auto loopInd = loopIter - allSummaries.begin();
       auto loop = (*loopsPreorder)[loopInd];
-      auto LDI = new LoopDependenceInfo(fdg, loop, DS, SE);
+      auto LDI = new LoopDependenceInfo(fdg, loop, DS, SE, 2);
       bool inlinedCall = inlineCallsInMassiveSCCs(F, LDI);
       if (!inlinedCall) {
         removeSummaries.insert(summary);
