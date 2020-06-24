@@ -52,7 +52,7 @@ function runningTests {
     ./baseline `cat input.txt` &> output_baseline.txt ;
 
     # Transformation
-    ./parallelized `cat input.txt` &> output_parallelized.txt ;
+    timeout 30m ./parallelized `cat input.txt` &> output_parallelized.txt ;
 
     # Check the output ;
     cmp output_baseline.txt output_parallelized.txt &> /dev/null ;
