@@ -325,3 +325,7 @@ bool LoopDependenceInfo::doesHaveCompileTimeKnownTripCount (void) const {
 uint64_t LoopDependenceInfo::getCompileTimeTripCount (void) const {
   return this->tripCount;
 }
+
+uint32_t LoopDependenceInfo::getMaximumNumberOfCores (void) const {
+  return this->maximumNumberOfCoresForTheParallelization;
+}

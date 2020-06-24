@@ -43,7 +43,6 @@ namespace llvm {
       /*
        * Parallelization options
        */
-      uint32_t maximumNumberOfCoresForTheParallelization;
       uint32_t DOALLChunkSize;
 
       /*
@@ -129,6 +128,8 @@ namespace llvm {
        */
       std::string getMetadata (const std::string &metadataName) const ;
 
+      uint32_t getMaximumNumberOfCores (void) const ;
+
       /*
        * Deconstructor.
        */
@@ -144,6 +145,8 @@ namespace llvm {
       PDG *loopDG;                            /* Dependence graph of the loop. 
                                                * This graph does not include instructions outside the loop (i.e., no external dependences are included).  
                                                */
+
+      uint32_t maximumNumberOfCoresForTheParallelization;
 
       LoopsSummary liSummary;                 /* This field describes the loops with the current one as outermost.
                                                * Each loop is described in terms of induction variables, trip count, and control structure (e.g., latches, header).

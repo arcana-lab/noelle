@@ -127,7 +127,7 @@ void HELIX::createParallelizableTask (
    */
   if (this->verbose != Verbosity::Disabled) {
     errs() << "HELIX: Start the parallelization\n";
-    errs() << "HELIX:   Number of threads to extract = " << LDI->maximumNumberOfCoresForTheParallelization << "\n";
+    errs() << "HELIX:   Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
     if (this->verbose != Verbosity::Disabled) {
       auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDependencies();
       for (auto scc : nonDOALLSCCs) {
@@ -179,7 +179,7 @@ void HELIX::createParallelizableTask (
    */
   auto helixTask = new HELIXTask(this->taskType, this->module);
   this->generateEmptyTasks(LDI, { helixTask });
-  this->numTaskInstances = LDI->maximumNumberOfCoresForTheParallelization;
+  this->numTaskInstances = LDI->getMaximumNumberOfCores();
   assert(helixTask == this->tasks[0]);
 
   /*
