@@ -81,7 +81,8 @@ bool LoopDistribution::splitLoop (
   }
 
   /*
-   * Collect control instructions that are dependencies of conditional branches
+   * Require that all terminators in the loop are branches and collect control instructions that
+   *   are dependencies of conditional branches
    */
   for (auto BB : LDI.getLoopSummary()->getBasicBlocks()) {
     if (auto branch = dyn_cast<BranchInst>(BB->getTerminator())) {
@@ -92,6 +93,8 @@ bool LoopDistribution::splitLoop (
           this->recursivelyCollectDependencies(condition, controlInstructions);
         }      
       }
+    } else {
+      errs() << "LoopDistribution: Abort: Non-branch terminator " << *BB->getTerminator() << "\n";
     }
   }
 
@@ -190,7 +193,8 @@ bool LoopDistribution::splitLoop (
 
 
 /*
- * Add every instruction that is a dependency of inst to the set toPopulate
+ * Add every instruction that is a dependency of inst to the set toPopulate. We don't need to worry
+ *   about aliasing because no cloned instruction is allowed to write to memory
  */
 void LoopDistribution::recursivelyCollectDependencies (
   Instruction * inst,
@@ -262,7 +266,6 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
      * Ignore dependencies between instructions we are pulling out. It is okay to have a 
      *   to have a from-dependence with a control instruction or a sub loop instruction
      *   because those instructions will still be present in the new loop.
-     *   TODO(lukas): Confirm the above
      */
     if (true
         && instsToPullOut.find(i) == instsToPullOut.end()
@@ -357,7 +360,7 @@ void LoopDistribution::doSplit (
     bbMap[BB] = cloneBB;
     IRBuilder<> builder(cloneBB);
     for (auto &I : *BB) {
-      if (isa<BranchInst>(I)) { // TODO(lukas): Should this be all terminators?
+      if (isa<BranchInst>(I)) {
         continue;
       }
       if (false
@@ -509,7 +512,6 @@ void LoopDistribution::doSplit (
    *   It is always correct to do this because we have already confirmed that there are no uses of
    *   this instruction within the original loop, so any other remaning references are about to 
    *   become null.
-   *   TODO(lukas): Confirm this
    */
   for (auto inst : instsToPullOut) {
     if (true
