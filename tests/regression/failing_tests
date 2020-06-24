@@ -45,6 +45,7 @@ regression_6/DependentIterations -noelle-verbose=3 -noelle-disable-helix -noelle
 regression_6/Exit_call3 -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/IndependentIterations7 -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/IndependentIterations8 -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
+regression_6/NestedLoops -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/ReductionIterations4 -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_default/CondControlMemory -noelle-verbose=3
 regression_default/3mm_polybench -noelle-verbose=3
