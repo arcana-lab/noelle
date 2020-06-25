@@ -1,0 +1,19 @@
+Next is what we would like to do or avoid in our codebase:
+- No function body in the headers
+
+- No use of integer builtin data types (e.g., int, long int), but use the ones that make the bitwidth explicit (e.g., uint32_t, int32_t)
+
+- The scopes of control structures must be within {}.
+  For example, no 
+    while (condition) f();
+  instead, write
+    while (condition) {
+      f();
+    }
+
+  Also, no
+    if (condition) something();
+  instead, write
+    if (condition) {
+      something();
+    }
