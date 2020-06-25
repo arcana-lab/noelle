@@ -87,6 +87,8 @@ namespace llvm {
 
       uint32_t getMaximumNumberOfCores (void) const ;
 
+      uint64_t numberOfProgramInstructions (void) const ;
+
       /*
        * Check whether a transformation is enabled.
        */
