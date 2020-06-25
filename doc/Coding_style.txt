@@ -1,7 +1,7 @@
 Next is what we would like to do or avoid in our codebase:
 - No function body in the headers
 
-- No use of integer builtin data types (e.g., int, long int), but use the ones that make the bitwidth explicit (e.g., uint32_t, int32_t)
+- No use of integer built-in data types (e.g., int, long int), but use the ones that make the bitwidth explicit (e.g., uint32_t, int32_t)
 
 - The scopes of control structures must be within {}.
   For example, no 
@@ -17,3 +17,15 @@ Next is what we would like to do or avoid in our codebase:
     if (condition) {
       something();
     }
+
+- Always create and name temporary variables.
+  Avoid coding like 
+    myF(myG())
+
+  Instead, create a temporary variable and name it to help the reader understanding the meaning of that value.
+  Something like:
+    auto loopToParallelize = myG();
+    myF(loopToParallelize)
+
+- Name your variables in the most meaningful way.
+  Variable names are used to read and understand the code. Take advantage of it to make enjoyable reading your code.
