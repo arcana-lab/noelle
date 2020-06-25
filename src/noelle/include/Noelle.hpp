@@ -15,6 +15,7 @@
 #include "LoopDependenceInfo.hpp"
 #include "Queue.hpp"
 #include "HotProfiler.hpp"
+#include "DataFlow.hpp"
 
 using namespace llvm;
 
@@ -60,16 +61,6 @@ namespace llvm {
         double minimumHotness
         );
 
-      void linkTransformedLoopToOriginalFunction (
-        Module *module, 
-        BasicBlock *originalPreHeader, 
-        BasicBlock *startOfParLoopInOriginalFunc,
-        BasicBlock *endOfParLoopInOriginalFunc,
-        Value *envArray,
-        Value *envIndexForExitVariable,
-        std::vector<BasicBlock *> &loopExitBlocks
-        );
-
       Function * getEntryFunction (void) const ;
 
       Hot * getProfiles (void) ;
@@ -77,6 +68,10 @@ namespace llvm {
       PDG * getProgramDependenceGraph (void) ;
 
       PDG * getFunctionDependenceGraph (Function *f) ;
+
+      DataFlowAnalysis getDataFlowAnalyses (void) const ;
+
+      DataFlowEngine getDataFlowEngine (void) const ;
 
       Verbosity getVerbosity (void) const ;
 
@@ -92,6 +87,16 @@ namespace llvm {
        * Check whether a transformation is enabled.
        */
       bool isTransformationEnabled (Transformation transformation);
+
+      void linkTransformedLoopToOriginalFunction (
+        Module *module, 
+        BasicBlock *originalPreHeader, 
+        BasicBlock *startOfParLoopInOriginalFunc,
+        BasicBlock *endOfParLoopInOriginalFunc,
+        Value *envArray,
+        Value *envIndexForExitVariable,
+        std::vector<BasicBlock *> &loopExitBlocks
+        );
 
       ~Noelle();
 

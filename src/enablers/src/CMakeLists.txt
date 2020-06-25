@@ -43,6 +43,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_whilifier/include
   ../../talkdown/include
   ../../noelle/include
+  ../../dataflow/include
   ./
   )
 

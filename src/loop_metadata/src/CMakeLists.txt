@@ -32,6 +32,7 @@ include_directories(
   ../../loop_structure/include
   ../../hotprofiler/include
   ../../noelle/include
+  ../../dataflow/include
   )
 
 # Declare the LLVM pass to compile
