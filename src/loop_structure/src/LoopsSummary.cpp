@@ -91,8 +91,13 @@ void LoopsSummary::populate (
     /*
      * Create the summary of the current loop.
      */
-    auto summary = this->createSummary(l, loopToSummary[parent]);
-    loopToSummary[l] = summary;
+    auto parentStructure = loopToSummary[parent];
+    auto childStructure = this->createSummary(l, parentStructure);
+    loopToSummary[l] = childStructure;
+
+    if (parentStructure) {
+      parentStructure->addChild(childStructure);
+    }
 
     /*
      * Iterate over the subloops of the current loop.
