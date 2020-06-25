@@ -149,7 +149,7 @@ namespace llvm {
       uint32_t maximumNumberOfCoresForTheParallelization;
 
       LoopsSummary liSummary;                 /* This field describes the loops with the current one as outermost.
-                                               * Each loop is described in terms of induction variables, trip count, and control structure (e.g., latches, header).
+                                               * Each loop is described in terms of its control structure (e.g., latches, header).
                                                */
 
       std::unordered_map<std::string, std::string> metadata;

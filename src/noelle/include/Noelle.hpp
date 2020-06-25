@@ -55,6 +55,10 @@ namespace llvm {
         double minimumHotness
         );
 
+      void sortByHotness (
+        std::vector<LoopDependenceInfo *> & loops
+        ) ;
+
       uint32_t getNumberOfProgramLoops (void);
 
       uint32_t getNumberOfProgramLoops (

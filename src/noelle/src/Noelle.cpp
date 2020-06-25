@@ -668,6 +668,33 @@ bool Noelle::filterOutLoops (
   return filterLoops;
 }
 
+void Noelle::sortByHotness (std::vector<LoopDependenceInfo *> & loops) {
+
+  /*
+   * Fetch the profiles.
+   */
+  auto hot = this->getProfiles();
+
+  /*
+   * Define the order between loops.
+   */
+  auto compareLoops = [hot] (LoopDependenceInfo *a, LoopDependenceInfo *b) -> bool {
+    auto aLS = a->getLoopStructure();
+    auto bLS = b->getLoopStructure();
+    auto aInsts = hot->getTotalInstructions(aLS);
+    auto bInsts = hot->getTotalInstructions(bLS);
+
+    return aInsts >= bInsts;
+  };
+
+  /*
+   * Sort the loops.
+   */
+  std::sort(loops.begin(), loops.end(), compareLoops);
+
+  return ;
+}
+
 Verbosity Noelle::getVerbosity (void) const {
   return this->verbose;
 }
