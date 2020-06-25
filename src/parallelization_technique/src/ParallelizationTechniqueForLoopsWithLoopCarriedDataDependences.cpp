@@ -23,6 +23,24 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::ParallelizationT
   return ;
 }
 
+bool ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeAppliedToLoop (
+  LoopDependenceInfo *LDI, 
+  Noelle &par, 
+  Heuristics *h
+  ) const {
+
+  /*
+   * We do not handle loops with no successors.
+   */
+  auto ls = LDI->getLoopStructure();
+  auto exits = ls->getLoopExitBasicBlocks();
+  if (exits.size() == 0){
+    return false;
+  }
+
+  return true;
+}
+
 ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::~ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences () {
   this->reset();
 

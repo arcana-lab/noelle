@@ -165,15 +165,36 @@ void SCCAttrs::collectControlFlowInstructions (void){
    * Collect the terminators of the SCC that are involved in dependences.
    */
   for (auto iNodePair : this->scc->internalNodePairs()) {
-    if (iNodePair.second->numOutgoingEdges() == 0) {
+
+    /*
+     * Check if there are dependences from this SCC to another.
+     */
+    auto sccValue = iNodePair.first;
+    auto sccNode = iNodePair.second;
+    if (sccNode->numOutgoingEdges() == 0) {
       continue;
     }
-    auto currentValue = iNodePair.first;
-    if (auto currentInst = dyn_cast<Instruction>(currentValue)){
-      if (currentInst->isTerminator()){
-        this->controlFlowInsts.insert(currentInst);
-      }
+
+    /*
+     * Check if the current SCC node is an instruction.
+     */
+    auto currentValue = sccValue;
+    if (!isa<Instruction>(currentValue)){
+      continue ;
     }
+    auto currentInst = cast<Instruction>(currentValue);
+
+    /*
+     * Check if the instruction is a terminator.
+     */
+    if (!currentInst->isTerminator()){
+      continue ;
+    }
+
+    /*
+     * The instruction is a terminator that have a dependence that leaves its SCC.
+     */
+    this->controlFlowInsts.insert(currentInst);
   }
 
   /*

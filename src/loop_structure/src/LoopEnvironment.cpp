@@ -17,9 +17,9 @@ LoopEnvironment::LoopEnvironment (
   std::vector<BasicBlock *> &exitBlocks
   ) {
 
-  assert(exitBlocks.size() > 0);
-  auto &cxt = exitBlocks[0]->getContext();
-
+  /*
+   * Initialize the environment of the loop.
+   */
   for (auto nodeI : loopDG->externalNodePairs()) {
 
     /*
@@ -58,8 +58,13 @@ LoopEnvironment::LoopEnvironment (
     }
   }
 
+  /*
+   * Check if there are multiple exits for this loop.
+   * In this case, we need an extra variable to keep track of which exit has been taken.
+   */
   this->hasExitBlockEnv = exitBlocks.size() > 1;
   if (this->hasExitBlockEnv) {
+    auto &cxt = exitBlocks[0]->getContext();
     this->exitBlockType = IntegerType::get(cxt, 32);
   }
 
