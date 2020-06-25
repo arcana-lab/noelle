@@ -43,6 +43,7 @@ regression_5/Exit_call3 -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-i
 regression_5/IndependentIterations7 -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner
 regression_5/IndependentIterations8 -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner
 regression_5/NestedLoops -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner
+regression_5/ReductionIterations5 -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner
 regression_6/CondControlMemory -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/CondControl -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/DependentIterations -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
