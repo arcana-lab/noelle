@@ -17,6 +17,7 @@ function identifyElementsOutsideSet {
 
   outsideElements="" ;
   while IFS= read -r line; do
+    line=$(trim "$line") ;
     grep -Fxq "$line" $setFile ;
     if test $? -ne 0 ; then
       outsideElements="${outsideElements}\n\t$line" ;
@@ -50,8 +51,14 @@ origDir="`pwd`" ;
 origDirLength=`echo "${#origDir} + 2" | bc` ;
 
 # Fetch the local results
+currentResultsToTrim="`mktemp`" ; 
+cat regression*/*.txt  | sort | cut -c ${origDirLength}- > $currentResultsToTrim ;
 currentResults="`mktemp`" ; 
-cat regression*/*.txt  | sort | cut -c ${origDirLength}- > $currentResults ;
+while IFS= read -r line; do
+  line=$(trim "$line") ;
+  echo "$line" >> $currentResults ;
+done < "$currentResultsToTrim"
+rm $currentResultsToTrim ;
 
 # Compare with the known one
 newTestsFailed="" ;
@@ -149,3 +156,6 @@ else
     echo "  They are still running" ;
   fi
 fi
+
+# Clean 
+rm $currentResults ;
