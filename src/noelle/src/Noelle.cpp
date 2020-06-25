@@ -741,6 +741,20 @@ DataFlowAnalysis Noelle::getDataFlowAnalyses (void) const {
 DataFlowEngine Noelle::getDataFlowEngine (void) const {
   return DataFlowEngine{};
 }
+      
+uint64_t Noelle::numberOfProgramInstructions (void) const {
+  uint64_t t = 0;
+  for (auto &F : *this->program){
+    if (F.empty()){
+      continue ;
+    }
+    for (auto &BB : F){
+      t += BB.size();
+    }
+  }
+
+  return t;
+}
 
 Noelle::~Noelle(){
   return ;
