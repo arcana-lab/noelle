@@ -113,7 +113,7 @@ int LoopEnvironment::envSize (void) const {
   return envProducers.size() + (hasExitBlockEnv ? 1 : 0);
 }
 
-std::set<Value *> & LoopEnvironment::consumersOf (Value *prod) {
+std::set<Value *> LoopEnvironment::consumersOf (Value *prod) {
   return prodConsumers[prod];
 }
 
@@ -127,4 +127,8 @@ iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIndicesOfLiveInVa
       
 iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIndicesOfLiveOutVars (void) { 
   return make_range(liveOutInds.begin(), liveOutInds.end());
+}
+
+Value * LoopEnvironment::producerAt (uint32_t ind) { 
+  return envProducers[ind]; 
 }
