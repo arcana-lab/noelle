@@ -32,4 +32,9 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/DataFlow.hpp include/DataFlowAnalysis.hpp include/DataFlowResult.hpp DESTINATION include)
+install(PROGRAMS 
+  include/DataFlow.hpp 
+  include/DataFlowAnalysis.hpp 
+  include/DataFlowEngine.hpp 
+  include/DataFlowResult.hpp 
+  DESTINATION include)
