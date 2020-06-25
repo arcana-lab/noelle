@@ -12,7 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "LoopDependenceInfo.hpp"
-#include "LoopSummary.hpp"
+#include "LoopStructure.hpp"
 #include "SCC.hpp"
 
 namespace llvm {
@@ -61,7 +61,7 @@ namespace llvm {
       );
 
       bool splitWouldBeTrivial (
-        LoopSummary * const loopSummary,
+        LoopStructure * const loopStructure,
         std::set<Instruction *> const &instsToPullOut,
         std::set<Instruction *> const &controlInstructions,
         std::set<Instruction *> const &subLoopInstructions
