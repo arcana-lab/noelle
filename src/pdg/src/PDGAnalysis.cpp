@@ -920,40 +920,6 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, A
   }
 }
 
-void PDGAnalysis::constructEdgesFromControl (PDG *pdg, Module &M){
-  for (auto &F : M) {
-    if (F.empty()) continue ;
-    auto &postDomTree = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
-    this->constructEdgesFromControlForFunction(pdg, F, postDomTree);
-  }
-}
-
-void PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree) {
-  for (auto &B : F)
-  {
-    SmallVector<BasicBlock *, 10> dominatedBBs;
-    postDomTree.getDescendants(&B, dominatedBBs);
-
-    /*
-     * For each basic block that B post dominates, check if B doesn't stricly post dominate its predecessor
-     * If it does not, then there is a control dependency from the predecessor to B 
-     */
-    for (auto dominatedBB : dominatedBBs)
-    {
-      for (auto predBB : make_range(pred_begin(dominatedBB), pred_end(dominatedBB)))
-      {
-        if (postDomTree.properlyDominates(&B, predBB)) continue;
-        auto controlTerminator = predBB->getTerminator();
-        for (auto &I : B)
-        {
-          auto edge = pdg->addEdge((Value*)controlTerminator, (Value*)&I);
-          edge->setControl(true);
-        }
-      }
-    }
-  }
-}
-
 void PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {
   std::set<DGEdge<Value> *> removeEdges;
 

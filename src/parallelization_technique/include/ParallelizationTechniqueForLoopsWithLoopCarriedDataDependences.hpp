@@ -27,6 +27,12 @@ namespace llvm {
         Verbosity v
       );
 
+      bool canBeAppliedToLoop (
+        LoopDependenceInfo *LDI,
+        Noelle &par,
+        Heuristics *h
+      ) const override ;
+
       void reset () override ;
 
       /*

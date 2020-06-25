@@ -80,6 +80,14 @@ void HELIX::reset () {
 }
 
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Noelle &par, Heuristics *h) const {
+
+  /*
+   * Check the parent class.
+   */
+  if (!ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeAppliedToLoop(LDI, par, h)){
+    return false;
+  }
+
   return true ;
 }
 

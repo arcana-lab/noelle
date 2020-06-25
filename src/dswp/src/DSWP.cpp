@@ -69,6 +69,13 @@ bool DSWP::canBeAppliedToLoop (
 ) const {
 
   /*
+   * Check the parent class.
+   */
+  if (!ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeAppliedToLoop(LDI, par, h)){
+    return false;
+  }
+
+  /*
    * Fetch the profiles
    */
   auto profiles = par.getProfiles();
