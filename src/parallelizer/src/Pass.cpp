@@ -17,6 +17,7 @@ using namespace llvm;
  */
 static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
+static cl::opt<bool> DisableLoopSorting("noelle-parallelizer-disable-loop-sorting", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable sorting loops to parallelize"));
 
 Parallelizer::Parallelizer()
   :
@@ -31,6 +32,7 @@ Parallelizer::Parallelizer()
 bool Parallelizer::doInitialization (Module &M) {
   this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
   this->forceNoSCCPartition |= (ForceNoSCCPartition.getNumOccurrences() > 0);
+  this->disableLoopSorting |= (DisableLoopSorting.getNumOccurrences() > 0);
 
   return false; 
 }
@@ -88,6 +90,13 @@ bool Parallelizer::runOnModule (Module &M) {
    */
   auto loopsToParallelize = noelle.getProgramLoops();
   errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
+
+  /*
+   * Sort them by their hotness.
+   */
+  if (this->disableLoopSorting){
+    noelle.sortByHotness(*loopsToParallelize);
+  }
   for (auto loop : *loopsToParallelize){
 
     /*
@@ -104,6 +113,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Print information about this loop.
      */
+    errs() << "Parallelizer:    ID: " << loop->getID() << "\n";
     errs() << "Parallelizer:    Function: \"" << loopFunction->getName() << "\"\n";
     errs() << "Parallelizer:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
     if (!profiles->isAvailable()){
@@ -122,56 +132,47 @@ bool Parallelizer::runOnModule (Module &M) {
 
   /*
    * Parallelize the loops selected.
+   *
+   * Parallelize the loops starting from the outermost to the inner ones.
+   * This is accomplished by having sorted the loops above.
    */
   errs() << "Parallelizer:  Parallelize " << loopsToParallelize->size() << " loops, one at a time\n";
   auto modified = false;
-  std::unordered_map<uint64_t, bool> modifiedLoops;
+  std::unordered_map<BasicBlock *, bool> modifiedBBs;
   for (auto loop : *loopsToParallelize){
 
     /*
-     * Check if the loop can be parallelized.
-     * This depends on whether the metadata (e.g., LoopDependenceInfo) are correct, which depends on whether its inner loops have been modified or not.
+     * Check if we can parallelize this loop.
      */
-    auto checkFunc = [&modifiedLoops](const LoopStructure &child) -> bool {
-
-      /*
-       * Fetch the ID of the subloop.
-       */
-      auto childID = child.getID();
-
-      /*
-       * Check if the sub-loop has been modified
-       */
-      if (modifiedLoops[childID]){
-
-        /*
-         * The subloop has been modified
-         */
-        return true;
+    auto safe = true;
+    auto ls = loop->getLoopStructure();
+    for (auto bb : ls->getBasicBlocks()){
+      if (modifiedBBs[bb]){
+        safe = false;
+        break ;
       }
-
-      /*
-       * The subloop has not been modified
-       */
-      return false;
-    };
-    if (loop->iterateOverSubLoopsRecursively(checkFunc)){
-
-      /*
-       * A subloop has been modified.
-       * Hence, we cannot trust the metadata of "loop".
-       */
+    }
+    if (!safe){
+      errs() << "Parallelizer:    Loop " << loop->getID() << " cannot be parallelized because one of its parent has been parallelized already\n";
       continue ;
     }
+    
+    /*
+     * Parallelize the current loop.
+     */
+    auto loopIsParallelized = this->parallelizeLoop(loop, noelle, dswp, doall, helix, heuristics);
 
     /*
-     * Parallelize the current loop with Parallelizer.
+     * Keep track of the parallelization.
      */
-    auto loopID = loop->getID();
-    modifiedLoops[loopID] |= this->parallelizeLoop(loop, noelle, dswp, doall, helix, heuristics);
-    modified |= modifiedLoops[loopID];
+    if (loopIsParallelized){
+      errs() << "Parallelizer:    Loop " << loop->getID() << " has been parallelized\n";
+      modified = true;
+      for (auto bb : ls->getBasicBlocks()){
+        modifiedBBs[bb] = true;
+      }
+    }
   }
-  errs() << "Parallelizer:  Parallelization complete\n";
 
   /*
    * Free the memory.
