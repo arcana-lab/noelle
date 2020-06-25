@@ -10,19 +10,14 @@
  */
 #pragma once
 
-#include <unordered_map>
-#include <vector>
-#include <set>
-
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-
+#include "SystemHeaders.hpp"
 #include "PDG.hpp"
 
 namespace llvm {
 
   class LoopEnvironment {
     public:
+
       LoopEnvironment (PDG *loopDG, std::vector<BasicBlock *> &exitBlocks);
 
       iterator_range<std::vector<Value *>::iterator> getProducers (void) ;
@@ -38,13 +33,13 @@ namespace llvm {
 
       int indexOfExitBlock (void) const ;
 
-      Type *typeOfEnv (int index) const ;
+      Type * typeOfEnv (int index) const ;
 
       bool isLiveIn (Value *val);
 
-      inline Value *producerAt (int ind) { return envProducers[ind]; }
+      Value * producerAt (uint32_t ind) ;
 
-      std::set<Value *> &consumersOf (Value *prod);
+      std::set<Value *> consumersOf (Value *prod);
 
       bool isProducer (Value *producer) const ;
 
