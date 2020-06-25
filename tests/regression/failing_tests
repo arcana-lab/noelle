@@ -51,6 +51,12 @@ regression_6/IndependentIterations7 -noelle-verbose=3 -noelle-disable-helix -noe
 regression_6/IndependentIterations8 -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/NestedLoops -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/ReductionIterations4 -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
+regression_7/3mm_polybench -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-max-cores=2
+regression_8/CondControlMemory -noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2
+regression_8/Exit_call3 -noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2
+regression_8/GlobalUsed -noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2
+regression_8/NestedLoops -noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2
+regression_8/ReductionIterations4 -noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2
 regression_default/CondControlMemory -noelle-verbose=3
 regression_default/3mm_polybench -noelle-verbose=3
 regression_default/Correlation_polybench -noelle-verbose=3
