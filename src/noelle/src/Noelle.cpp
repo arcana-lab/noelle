@@ -8,26 +8,6 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <unordered_map>
-#include <set>
-#include <queue>
-#include <deque>
-#include <sstream>
-#include <thread>
-
-#include "llvm/Pass.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include "llvm/Analysis/AliasAnalysis.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/PostDominators.h"
-#include "llvm/Analysis/CallGraph.h"
-#include "llvm/Support/MemoryBuffer.h"
-
 #include "Noelle.hpp"
 #include "PDGAnalysis.hpp"
 #include "HotProfiler.hpp"
@@ -725,6 +705,14 @@ PDG * Noelle::getFunctionDependenceGraph (Function *f) {
 
 uint32_t Noelle::getMaximumNumberOfCores (void) const {
   return this->maxCores;
+}
+
+DataFlowAnalysis Noelle::getDataFlowAnalyses (void) const {
+  return DataFlowAnalysis{};
+}
+
+DataFlowEngine Noelle::getDataFlowEngine (void) const {
+  return DataFlowEngine{};
 }
 
 Noelle::~Noelle(){

@@ -32,10 +32,15 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->enableAllTransformations();
 
   /*
+   * Fetch the loop structure.
+   */
+  auto ls = getLoopStructure();
+
+  /*
    * Fetch the PDG of the loop and its SCCDAG.
    */
   this->fetchLoopAndBBInfo(l, SE);
-  auto loopExitBlocks = getLoopStructure()->getLoopExitBasicBlocks();
+  auto loopExitBlocks = ls->getLoopExitBasicBlocks();
   auto DGs = this->createDGsForLoop(l, fG);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;

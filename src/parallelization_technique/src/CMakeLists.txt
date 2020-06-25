@@ -34,6 +34,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../heuristics/include 
   ../../hotprofiler/include 
   ../../noelle/include
+  ../../dataflow/include
   ../include 
   ./
   )

@@ -35,6 +35,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_structure/include 
   ../../talkdown/include
   ../../loops/include
+  ../../dataflow/include
   ../include 
   )
 
