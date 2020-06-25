@@ -1,0 +1,29 @@
+==== SOFTWARE ENGINEERING
+- Extract function order in call graph that is memoized in DGSimplify for use
+  elsewhere (in Parallelization currently)
+  - The data structures in question: 
+    parentFns, childrenFns, orderedCalled, preOrderedLoops
+  - Consolidate LoopSummary * generated in this ordering with LoopInfoSummary
+
+- Output results indexed by the above memoization for debug purposes, as well
+  as to use in more advanced regression tests
+  - Instead of just program correctness, tests can ensure certain loops are
+    parallelized using a specific parallelization scheme
+
+
+==== Renaming
+generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
+
+
+==== OTHER PARALLELIZATION SCHEMES
+- Implement PS-DSWP
+
+- Complete HELIX
+
+
+==== PDG
+- Implement the detection of loop-carried data dependences in PDGAnalysis
+
+
+==== OPTIMIZATIONS
+- Packing/unpacking pushes and pops
