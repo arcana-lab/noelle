@@ -54,11 +54,14 @@ bool LoopDistribution::splitLoop (
   std::set<Instruction *> &instructionsAdded
   ){
   errs() << "LoopDistribution: Attempting Loop Distribution\n";
+  auto loopStructure = LDI.getLoopStructure();
+  errs() << "LoopDistribution: The nesting level is " << loopStructure->getNestingLevel() << "\n";
+  errs() << "LoopDistribution: Number of child loops is " << loopStructure->getChildren().size() << "\n";
 
   /*
    * Assert that all instructions in instsToPullOut are actually within the loop
    */
-  auto loopBBs = LDI.getLoopSummary()->getBasicBlocks();
+  auto loopBBs = loopStructure->getBasicBlocks();
   for (auto inst : instsToPullOut) {
     auto parent = inst->getParent();
     errs() << "LoopDistribution: Asked to pull out " << *inst << "\n";
@@ -84,7 +87,7 @@ bool LoopDistribution::splitLoop (
    * Require that all terminators in the loop are branches and collect control instructions that
    *   are dependencies of conditional branches
    */
-  for (auto BB : LDI.getLoopSummary()->getBasicBlocks()) {
+  for (auto BB : loopStructure->getBasicBlocks()) {
     if (auto branch = dyn_cast<BranchInst>(BB->getTerminator())) {
       if (branch->isConditional()) {
         if (auto condition = dyn_cast<Instruction>(branch->getCondition())) {
@@ -117,12 +120,16 @@ bool LoopDistribution::splitLoop (
       errs() << "LoopDistribution: Removed " << *controlInst << " from instsToPullOut\n";
     }
   }
+  if (instsToPullOut.size() == 0) {
+    errs() << "LoopDistribution: Abort: Every instruction was a control instruction\n";
+    return false;
+  }
 
   /*
    * Require that all instructions in sub loops are clonable, and collect them
    */
   std::set<Instruction *> subLoopInstructions{};
-  for (auto childLoopSummary : LDI.getLoopSummary()->getChildren()) {
+  for (auto childLoopSummary : loopStructure->getChildren()) {
     errs() << "LoopDistribution: New sub loop\n";
     for (auto &childBB : childLoopSummary->getBasicBlocks()) {
       for (auto &childI : *childBB) {
@@ -153,7 +160,7 @@ bool LoopDistribution::splitLoop (
    *   the instructions we are pulling out. This avoids an infinite loop of splits
    */
   if (this->splitWouldBeTrivial(
-      LDI.getLoopSummary(),
+      loopStructure,
       instsToPullOut,
       controlInstructions,
       subLoopInstructions
@@ -222,13 +229,13 @@ void LoopDistribution::recursivelyCollectDependencies (
  *   that is not a branch or part of a sub loop (since we will replicate those anyway)
  */
 bool LoopDistribution::splitWouldBeTrivial (
-  LoopSummary * const loopSummary,
+  LoopStructure * const loopStructure,
   std::set<Instruction *> const &instsToPullOut,
   std::set<Instruction *> const &controlInstructions,
   std::set<Instruction *> const &subLoopInstructions
   ){
   bool result = true;
-  for (auto &BB : loopSummary->getBasicBlocks()) {
+  for (auto &BB : loopStructure->getBasicBlocks()) {
     for (auto &I : *BB) {
       if (true
           && instsToPullOut.find(&I) == instsToPullOut.end()
@@ -254,7 +261,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
   std::set<Instruction *> const &controlInstructions,
   std::set<Instruction *> const &subLoopInstructions
   ){
-  auto BBs = LDI.getLoopSummary()->getBasicBlocks();
+  auto BBs = LDI.getLoopStructure()->getBasicBlocks();
   auto fromFn = [&BBs, &instsToPullOut, &controlInstructions, &subLoopInstructions]
     (Value *from, DataDependenceType ddType) -> bool {
     if (!isa<Instruction>(from)) {
@@ -345,9 +352,9 @@ void LoopDistribution::doSplit (
   std::set<Instruction *> &instructionsRemoved,
   std::set<Instruction *> &instructionsAdded
   ){
-  auto loopSummary = LDI.getLoopSummary();
-  auto &cxt = loopSummary->getFunction()->getContext();
-  errs() << "LoopDistribution: About to do split of " << *loopSummary->getFunction() << "\n";
+  auto loopStructure = LDI.getLoopStructure();
+  auto &cxt = loopStructure->getFunction()->getContext();
+  errs() << "LoopDistribution: About to do split of " << *loopStructure->getFunction() << "\n";
 
   /*
    * Duplicate the basic blocks of the loop and insert clones of all necessary
@@ -355,8 +362,8 @@ void LoopDistribution::doSplit (
    */
   std::unordered_map<Instruction *, Instruction *> instMap{};
   std::unordered_map<BasicBlock *, BasicBlock *> bbMap{};
-  for (auto &BB : loopSummary->getBasicBlocks()) {
-    auto cloneBB = BasicBlock::Create(cxt, "", loopSummary->getFunction());
+  for (auto &BB : loopStructure->getBasicBlocks()) {
+    auto cloneBB = BasicBlock::Create(cxt, "", loopStructure->getFunction());
     bbMap[BB] = cloneBB;
     IRBuilder<> builder(cloneBB);
     for (auto &I : *BB) {
@@ -381,7 +388,7 @@ void LoopDistribution::doSplit (
    *   before we add branches to the new loop or getSinglePredecessor won't work
    */
   std::unordered_map<BasicBlock *, BasicBlock *> exitBlockToExitingBlock{};
-  for (auto exitBlock : loopSummary->getLoopExitBasicBlocks()) {
+  for (auto exitBlock : loopStructure->getLoopExitBasicBlocks()) {
     auto exitingBlock = exitBlock->getSinglePredecessor();
     assert(exitingBlock);
     exitBlockToExitingBlock[exitBlock] = exitingBlock;
@@ -392,7 +399,7 @@ void LoopDistribution::doSplit (
    * Map the original loop exit blocks to themselves so in the next section the new loop
    *   will have branches to the original exits
    */
-  for (auto loopExitBlock : loopSummary->getLoopExitBasicBlocks()) {
+  for (auto loopExitBlock : loopStructure->getLoopExitBasicBlocks()) {
     bbMap[loopExitBlock] = loopExitBlock;
   }
 
@@ -400,7 +407,7 @@ void LoopDistribution::doSplit (
    * Duplicate all branch instructions (with correct successors).
    *   Cloned branches are not added to instMap because they don't produce values
    */
-  for (auto &BB : loopSummary->getBasicBlocks()) {
+  for (auto &BB : loopStructure->getBasicBlocks()) {
     IRBuilder<> builder(bbMap.at(BB));
     auto terminator = BB->getTerminator();
     auto cloneTerminator = builder.Insert(terminator->clone());
@@ -423,17 +430,17 @@ void LoopDistribution::doSplit (
    *   New exit blocks are added so that we maintain the single predecessor invarient. These new
    *   exit blocks branch to a preheader which then branches to the new loop's header.
    */
-  auto newPreHeader = BasicBlock::Create(cxt, "", loopSummary->getFunction());
-  auto newLoopHeader = bbMap.at(loopSummary->getHeader());
+  auto newPreHeader = BasicBlock::Create(cxt, "", loopStructure->getFunction());
+  auto newLoopHeader = bbMap.at(loopStructure->getHeader());
   auto newPreHeaderBranch = BranchInst::Create(newLoopHeader, newPreHeader);
   instructionsAdded.insert(newPreHeaderBranch);
-  bbMap[loopSummary->getPreHeader()] = newPreHeader;
+  bbMap[loopStructure->getPreHeader()] = newPreHeader;
   for (auto pair : exitBlockToExitingBlock) {
     auto oldExitBlock = pair.first;
     auto exitingBlock = pair.second;
     assert(isa<BranchInst>(exitingBlock->getTerminator()));
     auto exitBranch = cast<BranchInst>(exitingBlock->getTerminator());
-    auto newExitBlock = BasicBlock::Create(cxt, "", loopSummary->getFunction());
+    auto newExitBlock = BasicBlock::Create(cxt, "", loopStructure->getFunction());
     auto newExitBlockBranch = BranchInst::Create(newPreHeader, newExitBlock);
     instructionsAdded.insert(newExitBlockBranch);
     for (unsigned idx = 0; idx < exitBranch->getNumSuccessors(); idx++) {
@@ -448,7 +455,7 @@ void LoopDistribution::doSplit (
   /*
    * Fix data flows for all instructions in the loop
    */
-  for (auto &BB : loopSummary->getBasicBlocks()) {
+  for (auto &BB : loopStructure->getBasicBlocks()) {
     auto cloneBB = bbMap.at(BB);
     for (auto &cloneI : *cloneBB) {
 
@@ -483,7 +490,7 @@ void LoopDistribution::doSplit (
   /*
    * Fix data flows for all instructions in exit blocks (only need to fix phi nodes)
    */
-  for (auto loopExitBlock : loopSummary->getLoopExitBasicBlocks()) {
+  for (auto loopExitBlock : loopStructure->getLoopExitBasicBlocks()) {
     for (auto &I : *loopExitBlock) {
       if (auto PHI = dyn_cast<PHINode>(&I)) {
 
@@ -527,6 +534,6 @@ void LoopDistribution::doSplit (
   }
   errs() << "LoopDistribution: Finished removing instructions from the original loop\n";
 
-  errs() << "LoopDistribution: Success: Finished split of " << *loopSummary->getFunction() << "\n";
+  errs() << "LoopDistribution: Success: Finished split of " << *loopStructure->getFunction() << "\n";
   return ;
 }
