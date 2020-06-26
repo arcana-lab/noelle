@@ -56,12 +56,17 @@ Variable::Variable (
   PDG &loopDG,
   SCC &sccContainingVariable,
   PHINode *declarationPHI
-) : outermostLoopOfVariable{loop}, declarationValue{declarationPHI}, isDataVariable{true} {
+) : outermostLoopOfVariable{loop}, declarationValue{declarationPHI}, isDataVariable{true}, isValid{false} {
 
   assert(sccContainingVariable.isInternal(declarationPHI)
     && "Declaration PHI node is not internal to the SCC provided!");
 
+  /*
+   * Ensure the loop is in a normalized form
+   */
   auto preHeaderBlock = outermostLoopOfVariable.getPreHeader();
+  if (!preHeaderBlock
+    || declarationPHI->getBasicBlockIndex(preHeaderBlock) == -1) return ;
   this->initialValue = declarationPHI->getIncomingValueForBlock(preHeaderBlock);
 
   /*
@@ -162,7 +167,7 @@ Variable::Variable (
     loopCarriedVariableUpdates.insert(variableUpdate);
   }
 
-  return;
+  this->isValid = true;
 }
 
 /*
@@ -174,9 +179,13 @@ Variable::Variable (
   PDG &loopDG,
   SCC &variableSCC,
   Value *memoryLocation
-) : outermostLoopOfVariable{loop}, declarationValue{memoryLocation}, isDataVariable{false} {}
+) : outermostLoopOfVariable{loop}, declarationValue{memoryLocation}, isDataVariable{false} {
+  this->isValid = false;
+}
 
 bool Variable::isEvolutionReducibleAcrossLoopIterations (void) const {
+
+  if (!isValid) return false;
 
   // declarationValue->print(errs() << "Declaration: "); errs() << "\n";
   // sccOfDataAndMemoryVariableValuesOnly->printMinimal(errs() << "Data and memory SCC\n");
