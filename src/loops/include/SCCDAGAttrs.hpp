@@ -20,14 +20,29 @@
 #include "LoopGoverningIVAttribution.hpp"
 #include "LoopEnvironment.hpp"
 #include "LoopCarriedDependencies.hpp"
+#include "Variable.hpp"
 
 using namespace std;
 using namespace llvm;
 
 namespace llvm {
 
+  /*
+   * HACK: Remove once LoopDependenceInfo doesn't require argument-less SCCDAGAttrs constructor.
+   */ 
+  class LoopDependenceInfo;
+
   class SCCDAGAttrs {
     public:
+
+      SCCDAGAttrs (
+        PDG *loopDG,
+        SCCDAG *loopSCCDAG,
+        LoopsSummary &LIS,
+        ScalarEvolution &SE,
+        LoopCarriedDependencies &LCD,
+        InductionVariableManager &IV
+      ) ;
 
       /*
        * Graph wide structures
@@ -46,11 +61,6 @@ namespace llvm {
       std::set<SCC *> clonableSCCs;
       std::unordered_map<SCC *, std::set<SCC *>> parentsViaClones;
       std::unordered_map<SCC *, std::set<DGEdge<SCC> *>> edgesViaClones;
-
-      /*
-       * Constructors.
-       */
-      void populate (SCCDAG *loopSCCDAG, LoopsSummary &LIS, ScalarEvolution &SE, LoopCarriedDependencies &LCD, InductionVariableManager &IV);
 
       /*
        * Methods on SCCDAG.
@@ -92,7 +102,14 @@ namespace llvm {
 
     private:
       std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
+      PDG *loopDG;
       SCCDAG *sccdag;     /* SCCDAG of the related loop.  */
+
+      /*
+       * HACK: Remove once LoopDependenceInfo doesn't produce empty SCCDAGAttrs on construction
+       */
+      friend class LoopDependenceInfo;
+      SCCDAGAttrs () {}
 
       /*
        * Helper methods on SCCDAG
@@ -103,7 +120,7 @@ namespace llvm {
       /*
        * Helper methods on single SCC
        */
-      bool checkIfReducible (SCC *scc, LoopsSummary &LIS);
+      bool checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDependencies &LCD);
       bool checkIfIndependent (SCC *scc);
       bool checkIfSCCOnlyContainsInductionVariables (
         SCC *scc,
@@ -117,12 +134,6 @@ namespace llvm {
       bool isClonableByCmpBrInstrs (SCC *scc) const ;
       bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(SCC *scc, LoopsSummary &LIS) const ;
 
-      /*
-       * Helper methods on single values within SCCs
-       */
-      bool isDerivedWithinSCC (Value *V, SCC *scc) const ;
-      bool isDerivedPHIOrAccumulator (Value *V, SCC *scc) const ;
-      bool collectDerivationChain (std::vector<Instruction *> &chain, SCC *scc);
   };
 
 }

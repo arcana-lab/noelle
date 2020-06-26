@@ -1,5 +1,6 @@
 # Sources
 set(Srcs 
+  Variable.cpp
   AccumulatorOpInfo.cpp
   InductionVariables.cpp
   InductionVariable.cpp
