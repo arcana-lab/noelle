@@ -86,6 +86,12 @@ BasicBlock * LoopStructure::getHeader (void) const {
 BasicBlock * LoopStructure::getPreHeader (void) const {
   return this->preHeader;
 }
+      
+Instruction * LoopStructure::getEntryInstruction (void) const {
+  auto header = this->getHeader();
+  auto firstInst = &*header->begin();
+  return firstInst;
+}
 
 uint32_t LoopStructure::getNestingLevel (void) const {
   return this->depth;
