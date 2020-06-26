@@ -159,8 +159,6 @@ PDG * PDGAnalysis::getPDG (void){
 }
 
 bool PDGAnalysis::hasPDGAsMetadata(Module &M) {
-  errs() << "Check if PDG has been embeded as metadata\n";
-  
   if (NamedMDNode *n = M.getNamedMetadata("noelle.module.pdg")) {
     if (MDNode *m = dyn_cast<MDNode>(n->getOperand(0))) {
       if (cast<MDString>(m->getOperand(0))->getString() == "true") {
@@ -173,7 +171,9 @@ bool PDGAnalysis::hasPDGAsMetadata(Module &M) {
 }
 
 PDG * PDGAnalysis::constructPDGFromAnalysis(Module &M) {
-  errs() << "Construct PDG from Analysis\n";
+  if (verbose >= PDGVerbosity::Maximal) {
+    errs() << "PDGAnalysis: Construct PDG from Analysis\n";
+  }
 
   auto pdg = new PDG(M);
 
@@ -187,7 +187,9 @@ PDG * PDGAnalysis::constructPDGFromAnalysis(Module &M) {
 }
 
 PDG * PDGAnalysis::constructPDGFromMetadata(Module &M) {
-  errs() << "Construct PDG from Metadata\n";
+  if (verbose >= PDGVerbosity::Maximal) {
+    errs() << "PDGAnalysis: Construct PDG from Metadata\n";
+  }
 
   /*
    * Create the PDG.
