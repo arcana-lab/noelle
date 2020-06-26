@@ -54,6 +54,11 @@ namespace llvm {
       ) ;
 
       /*
+       * A flag to ensure the variable is fully understood
+       */
+      bool isValid;
+
+      /*
        * We track the outer-most loop and make claims about the Variable's evolution across iterations
        * by virtue of loop carried updates (values that produce loop carried dependencies)
        */

@@ -395,6 +395,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
    * 
    * NOTE: We don't handle memory variables yet
    */
+  auto rootLoop = LIS.getLoopNestingTreeRoot();
   PHINode *singleLoopCarriedPHI = nullptr;
   for (auto dependency : sccToInternalLoopCarriedDependencies.at(scc)) {
     if (dependency->isMemoryDependence()) return false;
@@ -405,6 +406,11 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
       && "All consumers of loop carried data dependencies must be PHIs");
     auto consumerPHI = cast<PHINode>(consumer);
 
+    /*
+     * Ignore sub loops as they do not need to be reduced
+     */
+    if (!rootLoop->isIncluded(consumerPHI)) continue;
+
     if (singleLoopCarriedPHI == consumerPHI) continue;
     if (singleLoopCarriedPHI) return false;
 
@@ -413,7 +419,6 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
 
   if (!singleLoopCarriedPHI) return false;
 
-  auto rootLoop = LIS.getLoopNestingTreeRoot();
   Variable variable(*rootLoop, LCD, *loopDG, *scc, singleLoopCarriedPHI);
   return variable.isEvolutionReducibleAcrossLoopIterations();
 }
