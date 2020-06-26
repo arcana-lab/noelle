@@ -31,7 +31,7 @@ make input.txt
 ./baseline `cat input.txt` &> output_baseline.txt ;
 
 # Transformation
-timeout 30m ./parallelized `cat input.txt` &> output_parallelized.txt ;
+timeout 10m ./parallelized `cat input.txt` &> output_parallelized.txt ;
 if test $? -ne 0 ; then
   echo "ERROR: the test didn't pass because it timed out" ;
   echo "$testDir $noelleOptions $parallelizationOptions" >> $errorFile ;
