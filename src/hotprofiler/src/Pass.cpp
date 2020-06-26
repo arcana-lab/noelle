@@ -28,20 +28,12 @@ bool HotProfiler::doInitialization (Module &M) {
 }
 
 bool HotProfiler::runOnModule (Module &M) {
-  errs() << "HotProfiler: Start\n" ;
 
   /*
    * Compute the profilers.
    */
   this->analyzeProfiles(M);
 
-  /*
-   * Print the total number of instructions executed.
-   */
-  auto totalInsts = this->hot.getSelfInstructions();
-  errs() << "HotProfiler:   Total instructions = " << totalInsts << "\n" ;
-
-  errs() << "HotProfiler: Exit\n" ;
   return false;
 }
 

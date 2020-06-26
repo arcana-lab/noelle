@@ -74,8 +74,6 @@ void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool Noelle::runOnModule (Module &M){
-  errs() << "Noelle at \"runOnModule\"\n" ;
-
   return false;
 }
 

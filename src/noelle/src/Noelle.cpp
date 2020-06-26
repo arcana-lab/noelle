@@ -126,7 +126,9 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
    * Append loops of each function.
    */
   auto currentLoopIndex = 0;
-  errs() << "Parallelizer: Filter out cold code\n" ;
+  if (this->verbose >= Verbosity::Maximal){
+    errs() << "Parallelizer: Filter out cold code\n" ;
+  }
   for (auto function : *functions){
 
     /*
