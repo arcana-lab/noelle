@@ -36,6 +36,8 @@ namespace llvm {
 
       BasicBlock * getPreHeader (void) const ;
 
+      Instruction * getEntryInstruction (void) const ;
+
       /*
        * Return the nesting level of the loop.
        * 1 means outermost loop.
