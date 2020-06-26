@@ -180,16 +180,21 @@ bool PDGAnalysis::compareNodes(PDG *pdg1, PDG *pdg2) {
 }
 
 bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
-  errs() << "Compare PDG Edges\n";
+  if (verbose >= PDGVerbosity::Maximal) {
+    errs() << "Compare PDG Edges\n";
+  }
 
   if (pdg1->numEdges() != pdg2->numEdges()) {
-    errs() << " number of pdg edges are not the same\n";
+    std::string errorPrefix{"PDG: Comparing two PDGs: "};
+    errs() << errorPrefix << "Number of pdg edges are not the same\n";
+    errs() << errorPrefix << "  " << pdg1->numEdges() << "\n";
+    errs() << errorPrefix << "  " << pdg2->numEdges() << "\n";
     return false;
   }
 
   for (auto &edge1 : pdg1->getEdges()) {
-    DGNode<Value> *outgoingNode = pdg2->fetchNode(edge1->getOutgoingT());
-    DGNode<Value> *incomingNode = pdg2->fetchNode(edge1->getIncomingT());
+    auto outgoingNode = pdg2->fetchNode(edge1->getOutgoingT());
+    auto incomingNode = pdg2->fetchNode(edge1->getIncomingT());
     if (!outgoingNode || !incomingNode) {
       return false;
     }
@@ -198,7 +203,7 @@ bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
       return false;
     }
 
-    bool match = false;
+    auto match = false;
     for (auto &edge2 : edgeSet) {
       if (edge1->isMemoryDependence() == edge2->isMemoryDependence() &&
           edge1->isMustDependence() == edge2->isMustDependence() &&
