@@ -91,8 +91,13 @@ namespace llvm {
 
       uint64_t numberOfProgramInstructions (void) const ;
 
-      /*
-       * Check whether a transformation is enabled.
+      /**
+       * \brief Check whether a transformation is enabled.
+       *
+       * This method returns true if the transformation \param transformation is enabled.
+       *
+       * \param transformation The transformation to consider.
+       * \return true if the transformation is enabled. False otherwise.
        */
       bool isTransformationEnabled (Transformation transformation);
 
