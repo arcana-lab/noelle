@@ -83,6 +83,8 @@ namespace llvm {
 
       Type * getIntegerType (uint32_t bitwidth) const ;
 
+      Type * getVoidPointerType (void) const ;
+
       Type * getVoidType (void) const ;
 
       uint32_t getMaximumNumberOfCores (void) const ;
