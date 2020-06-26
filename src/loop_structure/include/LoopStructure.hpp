@@ -60,7 +60,9 @@ namespace llvm {
 
       bool isContainedInstructionLoopInvariant (Instruction *inst) const ;
 
-      bool isBasicBlockWithin (BasicBlock *bb) const ;
+      bool isIncluded (BasicBlock *bb) const ;
+
+      bool isIncluded (Instruction *inst) const ;
 
       void print (raw_ostream &stream);
       

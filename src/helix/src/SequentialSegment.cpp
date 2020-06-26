@@ -240,7 +240,7 @@ SequentialSegment::SequentialSegment (
         /*
          * Check if succBB belongs to the loop being parallelized.
          */
-        if (!loopSummary->isBasicBlockWithin(succBB)){
+        if (!loopSummary->isIncluded(succBB)){
 
           /*
            * succBB doesn't belong to the loop being parallelized.

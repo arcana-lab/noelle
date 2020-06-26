@@ -79,7 +79,7 @@ void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
     /*
      * Check if the basic block belongs to the outermost loop.
      */
-    if (!topLoop->isBasicBlockWithin(bb)){
+    if (!topLoop->isIncluded(bb)){
 
       /*
        * The basic block does not belong to the outermost loop, so we can skip it.
