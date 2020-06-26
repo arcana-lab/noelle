@@ -125,7 +125,7 @@ std::vector<BasicBlock *> LoopStructure::getLoopExitBasicBlocks (void) const {
 
 bool LoopStructure::isLoopInvariant (Value *value) const {
   if (auto inst = dyn_cast<Instruction>(value)) {
-    if (!isBasicBlockWithin(inst->getParent())) return true;
+    if (!this->isIncluded(inst->getParent())) return true;
     return isContainedInstructionLoopInvariant(inst);
   } else if (auto arg = dyn_cast<Argument>(value)) {
     return true;
@@ -147,10 +147,17 @@ bool LoopStructure::isContainedInstructionLoopInvariant (Instruction *inst) cons
   return this->invariants.find(inst) != this->invariants.end();
 }
 
-bool LoopStructure::isBasicBlockWithin (BasicBlock *bb) const {
+bool LoopStructure::isIncluded (BasicBlock *bb) const {
   auto found = this->bbs.find(bb) != this->bbs.end();
 
   return found;
+}
+      
+bool LoopStructure::isIncluded (Instruction *i) const {
+  auto bb = i->getParent();
+  auto contained = this->isIncluded(bb);
+
+  return contained;
 }
       
 void LoopStructure::print (raw_ostream &stream) {
