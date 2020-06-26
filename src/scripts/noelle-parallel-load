@@ -8,4 +8,6 @@ PARALLELIZATION_TECHNIQUES="-load ${installDir}/lib/ParallelizationTechnique.so 
 # Set the command to execute
 cmdToExecute="noelle-load -load ${installDir}/lib/Heuristics.so ${PARALLELIZATION_TECHNIQUES} ${@}"
 echo $cmdToExecute ;
+
+# Execute
 eval $cmdToExecute ;
