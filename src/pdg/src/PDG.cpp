@@ -123,7 +123,7 @@ PDG * PDG::createFunctionSubgraph(Function &F) {
   /*
    * Recreate all edges connected to internal nodes of function
    */
-  copyEdgesInto(functionPDG, /*linkToExternal=*/ true);
+  copyEdgesInto(functionPDG, /*linkToExternal=*/ true, {});
 
   return functionPDG;
 }
@@ -138,22 +138,32 @@ PDG * PDG::createLoopsSubgraph(Loop *loop) {
   /*
    * Recreate all edges connected to internal nodes of loop
    */
-  copyEdgesInto(loopsPDG, /*linkToExternal=*/ true);
+  copyEdgesInto(loopsPDG, /*linkToExternal=*/ true, {});
 
   return loopsPDG;
 }
 
 PDG * PDG::createSubgraphFromValues (std::vector<Value *> &valueList, bool linkToExternal) {
+  return createSubgraphFromValues(valueList, linkToExternal, {});
+}
+
+PDG * PDG::createSubgraphFromValues (
+  std::vector<Value *> &valueList,
+  bool linkToExternal,
+  std::unordered_set<DGEdge<Value> *> edgesToIgnore
+) {
   if (valueList.empty()) return nullptr;
   auto newPDG = new PDG(valueList);
 
-  copyEdgesInto(newPDG, linkToExternal);
+  copyEdgesInto(newPDG, linkToExternal, edgesToIgnore);
 
   return newPDG;
 }
 
-void PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal) {
+void PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal, std::unordered_set<DGEdge<Value> *> edgesToIgnore) {
   for (auto *oldEdge : allEdges) {
+    if (edgesToIgnore.find(oldEdge) != edgesToIgnore.end()) continue;
+
     auto nodePair = oldEdge->getNodePair();
     auto fromT = nodePair.first->getT();
     auto toT = nodePair.second->getT();

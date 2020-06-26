@@ -30,6 +30,7 @@ add_subdirectory(src)
 
 # Install
 install(PROGRAMS 
+    include/Variable.hpp
     include/LoopDependenceInfo.hpp
     include/InductionVariables.hpp
     include/LoopCarriedDependencies.hpp

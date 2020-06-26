@@ -13,18 +13,14 @@
 
 using namespace llvm;
 
-void SCCDAGAttrs::populate (
+SCCDAGAttrs::SCCDAGAttrs (
+  PDG *loopDG,
   SCCDAG *loopSCCDAG,
   LoopsSummary &LIS,
   ScalarEvolution &SE,
   LoopCarriedDependencies &LCD,
   InductionVariableManager &IV
-) {
-
-  /*
-   * Set the SCCDAG.
-   */
-  this->sccdag = loopSCCDAG;
+) : loopDG{loopDG}, sccdag{loopSCCDAG} {
 
   /*
    * Partition dependences between intra-iteration and iter-iteration ones.
@@ -58,7 +54,7 @@ void SCCDAGAttrs::populate (
   /*
    * Tag SCCs depending on their characteristics.
    */
-  loopSCCDAG->iterateOverSCCs([this, &SE, &LIS, &ivs, &loopGoverningIVs](SCC *scc) -> bool {
+  loopSCCDAG->iterateOverSCCs([this, &SE, &LIS, &ivs, &loopGoverningIVs, &LCD](SCC *scc) -> bool {
 
     /*
      * Allocate the metadata about this SCC.
@@ -79,7 +75,7 @@ void SCCDAGAttrs::populate (
      */
     if (this->checkIfIndependent(scc)) {
       sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
-    } else if (this->checkIfReducible(scc, LIS)) {
+    } else if (this->checkIfReducible(scc, LIS, LCD)) {
       sccInfo->setType(SCCAttrs::SCCType::REDUCIBLE);
     } else {
       sccInfo->setType(SCCAttrs::SCCType::SEQUENTIAL);
@@ -391,207 +387,35 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
   return true;
 }
 
-// TODO: Consolidate this logic and its equivalent in PDGAnalysis
-bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
+bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDependencies &LCD) {
 
   /*
-   * Fetch the attributes of the current SCC.
+   * Only one loop carried data value per SCC can be reduced
+   * If there is only one, check if that Variable is reducible
+   * 
+   * NOTE: We don't handle memory variables yet
    */
-  auto sccInfo = this->getSCCAttrs(scc);
+  PHINode *singleLoopCarriedPHI = nullptr;
+  for (auto dependency : sccToInternalLoopCarriedDependencies.at(scc)) {
+    if (dependency->isMemoryDependence()) return false;
 
-  /*
-   * Requirement: all instructions of the SCC belong to the same loop.
-   */
-  LoopStructure *loopOfSCC = nullptr;
-  for (auto instNodePair : scc->internalNodePairs()){
-    if (auto inst = dyn_cast<Instruction>(instNodePair.first)){
-      auto currentLoop = LIS.getLoop(*inst);
-      if (loopOfSCC == nullptr){
-        loopOfSCC = currentLoop ;
-        continue ;
-      }
-      if (loopOfSCC != currentLoop){
-        return false;
-      }
-    }
+    if (dependency->isControlDependence()) continue;
+    auto consumer = dependency->getIncomingT();
+    assert(isa<PHINode>(consumer)
+      && "All consumers of loop carried data dependencies must be PHIs");
+    auto consumerPHI = cast<PHINode>(consumer);
+
+    if (singleLoopCarriedPHI == consumerPHI) continue;
+    if (singleLoopCarriedPHI) return false;
+
+    singleLoopCarriedPHI = consumerPHI;
   }
 
-  /*
-   * Requirement: There are no memory dependences that connect an instruction of the SCC with another one outside that SCC.
-   * Requirement: There are no outgoing control or data dependencies to any non-trivial SCC
-   * TODO: improvement: we can also accept if a memory dependence exists from an instruction of the SCC with another one outside the loop the SCC is contained in (and any sub-loop of it).
-   */
-  auto sccNode = sccdag->fetchNode(scc);
-  for (auto edge : sccNode->getAllConnectedEdges()) {
-    for (auto subEdge : edge->getSubEdges()) {
-      if (subEdge->isMemoryDependence()) {
-        return false;
-      }
-    }
-  }
+  if (!singleLoopCarriedPHI) return false;
 
-  for (auto edge : sccNode->getOutgoingEdges()) {
-    auto dependentSCC = edge->getIncomingT();
-    if (dependentSCC == scc) continue;
-
-    /*
-    * TODO: This is a bit conservative. Ideally, we would check that all transitively dependent SCCs
-    * are trivial, which still allows this SCC to be reduced.
-    */
-    auto dependentSCCNode = edge->getIncomingNode();
-    if (dependentSCC->numInternalNodes() > 1 || dependentSCCNode->numOutgoingEdges() > 0) {
-      return false;
-    }
-  }
-
-  /*
-   * Requirement: There is a single loop-carried data dependence between instructions of the SCC via variables.
-   */
-  uint32_t loopCarriedDataDeps = 0;
-  if (sccToInternalLoopCarriedDependencies.find(scc) == sccToInternalLoopCarriedDependencies.end()) {
-    return false;
-  }
-  for (auto edge : sccToInternalLoopCarriedDependencies.at(scc)) {
-
-    /*
-     * Check that the loop-carried dependence is a data dependence one.
-     */
-    if (edge->isControlDependence()) {
-      return false;
-    }
-
-    /*
-     * Check that the loop-carried data dependence is through variables.
-     */
-    if (edge->isMemoryDependence()) {
-      return false;
-    }
-
-    /*
-     * Check that the source and destination of the dependence are instructions.
-     */
-    auto outI = isa<Instruction>(edge->getOutgoingT())
-      ? cast<Instruction>(edge->getOutgoingT()) : nullptr;
-    auto inI = isa<Instruction>(edge->getIncomingT())
-      ? cast<Instruction>(edge->getIncomingT()) : nullptr;
-    if (!outI || !inI) {
-      return false;
-    }
-
-    /*
-     * Increase the counter.
-     */
-    loopCarriedDataDeps++;
-  }
-  if (loopCarriedDataDeps > 1) {
-    return false;
-  }
-
-  /*
-   * Requirement: Control flow is intra-iteration; conditions are
-   * determined externally to the SCC
-   */
-  for (auto pair : sccInfo->controlPairs) {
-    if (scc->isInternal(pair.first)) {
-      return false;
-    }
-  }
-
-  /*
-   * Requirement: all PHI incoming values from within a loop iteration
-   * are from other internal PHIs (no PHI = constant, etc... business)
-   * so that accumulation is truly expressed solely by accumulators
-   */
-  for (auto phi : sccInfo->getPHIs()) {
-
-    /*
-     * Fetch the loop that contains the current PHI.
-     */
-    auto loopOfPHI = LIS.getLoop(*phi);
-
-    /*
-     * Check all incoming values of the current PHI.
-     */
-    for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
-
-      /*
-       * Fetch the current incoming value.
-       */
-      auto incomingValue = phi->getIncomingValue(i);
-      auto incomingBB = phi->getIncomingBlock(i);
-      auto loopOfIncoming = LIS.getLoop(*incomingBB);
-
-      /*
-       * Check whether the incoming value is from any loop.
-       */
-      if (loopOfIncoming == nullptr){
-
-        /*
-         * It is from outside any loop, so it is not a problem as being loop invariant.
-         */
-        continue ;
-      }
-
-      /*
-       * Check if the incoming value is from a different loop of the one that contains the PHI.
-       */
-      if (loopOfIncoming != loopOfPHI) {
-        continue;
-      }
-
-      /*
-       * The incoming value is from the same loop of the PHI.
-       * Check if it comes from a different PHI or a unique accumulator of the current SCC.
-       */
-      if (!this->isDerivedPHIOrAccumulator(incomingValue, scc)) {
-        return false;
-      }
-    }
-  }
-
-  /*
-   * Requirement: 1+ accumulators that are all side effect free
-   * Requirement: all accumulators act on one PHI/accumulator in the SCC
-   *  and one constant or external value
-   */
-  if (sccInfo->numberOfAccumulators() == 0) {
-    return false;
-  }
-  auto accums = sccInfo->getAccumulators();
-  for (auto accum : accums) {
-    unsigned opCode = accum->getOpcode();
-    if (accumOpInfo.sideEffectFreeOps.find(opCode) == accumOpInfo.sideEffectFreeOps.end()) {
-      return false;
-    }
-
-    auto opL = accum->getOperand(0);
-    auto opR = accum->getOperand(1);
-    if (!(isDerivedWithinSCC(opL, scc) ^ isDerivedWithinSCC(opR, scc))) {
-      return false;
-    }
-    if (!(isDerivedPHIOrAccumulator(opL, scc) ^ isDerivedPHIOrAccumulator(opR, scc))) {
-      return false;
-    }
-  }
-
-  /*
-   * Requirement: instructions are all Add/Sub or all Mul
-   * Requirement: second operand of subtraction must be external
-   */
-  bool isFirstMul = accumOpInfo.isMulOp((*accums.begin())->getOpcode());
-  for (auto accum : accums) {
-    bool isMul = accumOpInfo.isMulOp(accum->getOpcode());
-    if (isMul ^ isFirstMul) {
-      return false;
-    }
-    if (accumOpInfo.isSubOp(accum->getOpcode())) {
-      if (scc->isInternal(accum->getOperand(1))) {
-        return false;
-      }
-    }
-  }
-
-  return true;
+  auto rootLoop = LIS.getLoopNestingTreeRoot();
+  Variable variable(*rootLoop, LCD, *loopDG, *scc, singleLoopCarriedPHI);
+  return variable.isEvolutionReducibleAcrossLoopIterations();
 }
 
 /*
@@ -690,145 +514,6 @@ bool SCCDAGAttrs::isClonableByCmpBrInstrs (SCC *scc) const {
     }
     return false;
   }
-  return true;
-}
-
-/*
- * NOTE: Derivation within an SCC requires inclusion in the SCC object
- * and dependency to a value in the strongly connected component, in the cycle
- * TODO: Derivation should only consider data dependency cycles, not control
- */
-bool SCCDAGAttrs::isDerivedWithinSCC (Value *val, SCC *scc) const {
-  if (!scc->isInternal(val)) {
-    return false;
-  }
-
-  auto &sccInfo = sccToInfo.find(scc)->second;
-  auto isStrongly = sccInfo->stronglyConnectedDataValues.find(val)
-    != sccInfo->stronglyConnectedDataValues.end();
-  auto isWeakly = sccInfo->weaklyConnectedDataValues.find(val)
-    != sccInfo->weaklyConnectedDataValues.end();
-  if (isStrongly) return true;
-  if (isWeakly) {
-    return false;
-  }
-
-  // Traversing both outgoing OR incoming edges leads back to the node
-  // if it is in the SCC; otherwise, it is just a merged in node
-  auto startNode = scc->fetchNode(val);
-  std::queue<DGNode<Value> *> toOutgoing;
-  std::set<DGNode<Value> *> seen;
-  toOutgoing.push(startNode);
-  bool inCycle = false;
-  while (!toOutgoing.empty()) {
-    auto node = toOutgoing.front();
-    toOutgoing.pop();
-
-    for (auto edge : node->getOutgoingEdges()) {
-      if (edge->isControlDependence()) continue;
-      auto inNode = edge->getIncomingNode();
-      if (scc->isExternal(inNode->getT())) continue;
-      if (inNode == startNode) inCycle = true;
-      if (seen.find(inNode) == seen.end()) {
-        // inNode->getT()->print(errs() << "GOING TO: "); errs() << "\n";
-        seen.insert(inNode);
-        toOutgoing.push(inNode);
-      }
-    }
-    if (inCycle) break;
-  }
-  // errs() << "IN CYCLE with outgoings: " << inCycle << "\n";
-
-  if (!inCycle) {
-    sccInfo->weaklyConnectedDataValues.insert(val);
-    // val->print(errs() << "WEAKLY CONNECTED: "); errs() << "\n";
-    return false;
-  }
-
-  inCycle = false;
-  seen.clear();
-  std::queue<DGNode<Value> *> toIncoming;
-  toIncoming.push(startNode);
-  while (!toIncoming.empty()) {
-    auto node = toIncoming.front();
-    toIncoming.pop();
-
-    for (auto edge : node->getIncomingEdges()) {
-      if (edge->isControlDependence()) continue;
-      auto outNode = edge->getOutgoingNode();
-      if (scc->isExternal(outNode->getT())) continue;
-      if (outNode == startNode) inCycle = true;
-      if (seen.find(outNode) == seen.end()) {
-        // outNode->getT()->print(errs() << "GOING TO: "); errs() << "\n";
-        seen.insert(outNode);
-        toIncoming.push(outNode);
-      }
-    }
-    if (inCycle) break;
-  }
-  // errs() << "IN CYCLE with incomings: " << inCycle << "\n";
-
-  if (!inCycle) {
-    sccInfo->weaklyConnectedDataValues.insert(val);
-    // val->print(errs() << "WEAKLY CONNECTED: "); errs() << "\n";
-    return false;
-  }
-
-  sccInfo->stronglyConnectedDataValues.insert(val);
-  return true;
-}
-
-bool SCCDAGAttrs::isDerivedPHIOrAccumulator (Value *val, SCC *scc) const {
-  auto derived = val;
-  if (auto cast = dyn_cast<CastInst>(val)) {
-    derived = cast->getOperand(0);
-  }
-
-  auto &sccInfo = this->sccToInfo.find(scc)->second;
-  bool isInternalPHI = isa<PHINode>(derived) && sccInfo->doesItContainThisPHI(cast<PHINode>(derived));
-  bool isInternalAccum = isa<Instruction>(derived) && sccInfo->doesItContainThisInstructionAsAccumulator(cast<Instruction>(derived));
-
-  return isDerivedWithinSCC(derived, scc) && (isInternalPHI || isInternalAccum);
-}
-
-bool SCCDAGAttrs::collectDerivationChain (std::vector<Instruction *> &chain, SCC *scc) {
-  Instruction *deriving = chain[0];
-  if (!scc->isInternal(deriving)) return true;
-
-  std::set<Instruction *> valuesSeen;
-  chain.pop_back();
-  while (scc->isInternal(deriving)) {
-    chain.push_back(deriving);
-    if (valuesSeen.find(deriving) != valuesSeen.end()) {
-      return false;
-    }
-    valuesSeen.insert(deriving);
-
-    auto node = scc->fetchNode(deriving);
-    std::set<Value *> incomingDataDeps;
-    for (auto edge : node->getIncomingEdges()) {
-      if (edge->isControlDependence()) {
-        continue;
-      }
-      auto instructionSrc = edge->getOutgoingT();
-      incomingDataDeps.insert(instructionSrc);
-    }
-    incomingDataDeps.erase(deriving);
-
-    /*
-     * Continue down the dependency graph only if it is a linear chain
-     */
-    if (incomingDataDeps.size() == 0) break;
-    if (incomingDataDeps.size() != 1) {
-      return false;
-    }
-    auto V = *incomingDataDeps.begin();
-    if (!isa<Instruction>(V)) {
-      return false;
-    }
-    deriving = (Instruction*)V;
-  }
-
   return true;
 }
 
