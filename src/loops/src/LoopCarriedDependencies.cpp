@@ -16,7 +16,7 @@ LoopCarriedDependencies::LoopCarriedDependencies (
   const LoopsSummary &LIS,
   const DominatorSummary &DS,
   SCCDAG &sccdagForLoops
-) {
+) : loopCarriedDependenciesMap{} {
 
   for (auto &loop : LIS.loops) {
     loopCarriedDependenciesMap[loop.get()] = Criticisms();
@@ -54,7 +54,7 @@ LoopCarriedDependencies::LoopCarriedDependencies (
 
 }
 
-Criticisms LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (LoopStructure &LS) {
+Criticisms LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const {
   assert(loopCarriedDependenciesMap.find(&LS) != loopCarriedDependenciesMap.end());
   return loopCarriedDependenciesMap.at(&LS);
 }

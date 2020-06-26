@@ -120,7 +120,6 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   SCCDAGNormalizer normalizer(*sccdagTopLoopNorm, LIS, lcd);
   normalizer.normalizeInPlace();
 
-  this->attrs = new SCCDAGAttrs();
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
   auto loopExitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
   auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
@@ -128,7 +127,7 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
 
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
   // TODO: Test attribution on normalized SCCDAG as well
-  this->attrs->populate(sccdag, LIS, *SE, lcd, IV);
+  this->attrs = new SCCDAGAttrs(loopDG, sccdag, LIS, *SE, lcd, IV);
 
   // PDGPrinter printer;
   // printer.writeGraph<SCCDAG>("graph-top-loop.dot", sccdagTopLoopNorm);

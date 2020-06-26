@@ -122,7 +122,13 @@ namespace llvm {
        */
       PDG * createFunctionSubgraph (Function &F);
       PDG * createLoopsSubgraph (Loop *loop);
+
       PDG * createSubgraphFromValues (std::vector<Value *> &valueList, bool linkToExternal);
+      PDG * createSubgraphFromValues (
+        std::vector<Value *> &valueList,
+        bool linkToExternal,
+        std::unordered_set<DGEdge<Value> *> edgesToIgnore
+      );
 
       /*
        * Destructor
@@ -132,7 +138,7 @@ namespace llvm {
     protected:
       void addNodesOf (Function &F);
       void setEntryPointAt (Function &F);
-      void copyEdgesInto (PDG *newPDG, bool linkToExternal = true);
+      void copyEdgesInto (PDG *newPDG, bool linkToExternal, std::unordered_set<DGEdge<Value> *> edgesToIgnore);
   };
 
 }

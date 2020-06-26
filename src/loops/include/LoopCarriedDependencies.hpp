@@ -24,10 +24,10 @@ namespace llvm {
     public:
       LoopCarriedDependencies (const LoopsSummary &LIS, const DominatorSummary &DS, SCCDAG &sccdagForLoops) ;
 
-      Criticisms getLoopCarriedDependenciesForLoop (LoopStructure &LS) ;
+      Criticisms getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const ;
 
     private:
-      std::unordered_map<LoopStructure *, Criticisms> loopCarriedDependenciesMap;
+      std::unordered_map<const LoopStructure *, Criticisms> loopCarriedDependenciesMap;
   };
 
 }
