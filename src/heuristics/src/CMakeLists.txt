@@ -39,6 +39,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../hotprofiler/include
   ../../noelle/include
   ../../dataflow/include
+  ../include
   )
 
 # Declare the LLVM pass to compile

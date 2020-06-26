@@ -17,10 +17,10 @@
 #include "SCCDAGPartition.hpp"
 #include "Noelle.hpp"
 
-#include "../src/InvocationLatency.hpp"
-#include "../src/PartitionCostAnalysis.hpp"
-#include "../src/SmallestSizePartitionAnalysis.hpp"
-#include "../src/MinMaxSizePartitionAnalysis.hpp"
+#include "InvocationLatency.hpp"
+#include "PartitionCostAnalysis.hpp"
+#include "SmallestSizePartitionAnalysis.hpp"
+#include "MinMaxSizePartitionAnalysis.hpp"
 
 using namespace std;
 

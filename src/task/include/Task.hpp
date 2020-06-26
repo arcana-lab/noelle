@@ -105,7 +105,7 @@ namespace llvm {
        */
       Value * getEnvironment (void) const ;
 
-      virtual void extractFuncArgs () = 0;
+      virtual void extractFuncArgs (void) = 0;
 
 
     protected:

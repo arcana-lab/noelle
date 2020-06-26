@@ -22,6 +22,13 @@ Type * Noelle::getIntegerType (uint32_t bitwidth) const {
   return intType;
 }
 
+Type * Noelle::getVoidPointerType (void) const {
+  auto int8 = this->getIntegerType(8);
+  auto t = PointerType::getUnqual(int8);
+
+  return t;
+}
+
 Type * Noelle::getVoidType (void) const {
   auto& ctx = this->program->getContext();
 

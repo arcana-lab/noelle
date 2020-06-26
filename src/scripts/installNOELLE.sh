@@ -25,6 +25,7 @@ fi
 mkdir -p ${installDir}/bin ;
 
 patchInstallDir "noelle-load" ;
+patchInstallDir "noelle-parallel-load" ;
 patchInstallDir "noelle-norm" ;
 patchInstallDir "noelle-pre" ;
 patchInstallDir "noelle-parallelizer" ;
