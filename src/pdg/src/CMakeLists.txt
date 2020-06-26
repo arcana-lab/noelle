@@ -3,6 +3,7 @@ set(Srcs
   Pass.cpp
   PDGAnalysis.cpp
   PDGAnalysis_controlDependences.cpp
+  PDGAnalysis_compare.cpp
   AnalysisPass.cpp
   SubCFGs.cpp
   PDG.cpp
