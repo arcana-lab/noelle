@@ -124,13 +124,13 @@ Variable::Variable (
   for (auto node : sccOfVariableOnly->getNodes()) {
     auto value = node->getT();
 
-    if (auto switchInst = dyn_cast<SwitchInst>(value)) {
+    if (auto selectInst = dyn_cast<SelectInst>(value)) {
 
       /*
-       * Switch instructions contain a condition that controls the evolution of the variable 
+       * Select instructions contain a condition that controls the evolution of the variable 
        * There is no need to check them for producing control dependencies, so we continue
        */
-      this->controlValuesGoverningEvolution.insert(switchInst->getCondition());
+      this->controlValuesGoverningEvolution.insert(selectInst->getCondition());
       continue;
     }
 
@@ -275,10 +275,10 @@ VariableUpdate::VariableUpdate (Instruction *updateInstruction, SCC *dataMemoryV
 }
 
 bool VariableUpdate::mayUpdateBeOverride (void) const {
-  if (isa<SwitchInst>(updateInstruction) || isa<PHINode>(updateInstruction)) {
+  if (isa<SelectInst>(updateInstruction) || isa<PHINode>(updateInstruction)) {
 
     /*
-     * If any operand in the switch or phi instruction is external,
+     * If any operand in the select or phi instruction is external,
      * then the instruction can possibly override the variable
      */
     return externalValuesUsed.size() > 0;
@@ -301,13 +301,13 @@ bool VariableUpdate::mayUpdateBeOverride (void) const {
 
   /*
    * Comparisons are not considered overriding as long as they
-   * are immediately used by switch instructions only
+   * are immediately used by select instructions only
    * 
-   * This defers the decision of overriding to the switch instruction's VariableUpdate
+   * This defers the decision of overriding to the select instruction's VariableUpdate
    */
   if (isa<CmpInst>(updateInstruction)) {
     for (auto user : updateInstruction->users()) {
-      if (isa<SwitchInst>(user)) continue;
+      if (isa<SelectInst>(user)) continue;
       return true;
     }
     return false;
