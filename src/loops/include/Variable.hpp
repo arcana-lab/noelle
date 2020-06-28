@@ -19,18 +19,46 @@
 
 namespace llvm {
 
-  class VariableUpdate;
+  class EvolutionUpdate;
 
   /*
-   * A Variable is an evolving value over some loop context
+   * A LoopCarriedCycle is an evolving value over some loop context
    * 
    * Since LLVM IR is in SSA and because we are trying to generalize the evolution of a value
    * through some context even if it isn't a memory location, we operate at some loop level,
    * describing the evolution of a data OR memory value
    */
-  class Variable {
+  class LoopCarriedCycle {
     public:
-      Variable (
+
+      virtual bool isEvolutionReducibleAcrossLoopIterations (void) const = 0;
+
+  };
+
+  class LoopCarriedMemoryLocation : LoopCarriedCycle {
+    public:
+
+      /*
+       * TODO: Implement
+       */
+      LoopCarriedMemoryLocation (
+        const LoopStructure &loop,
+        const LoopCarriedDependencies &LCD,
+        PDG &loopDG,
+        SCC &memoryLocationSCC,
+        Value *memoryLocation
+      ) ;
+
+      /*
+       * TODO: Implement
+       */
+      bool isEvolutionReducibleAcrossLoopIterations (void) const override ;
+
+  };
+
+  class LoopCarriedVariable : LoopCarriedCycle {
+    public:
+      LoopCarriedVariable (
         const LoopStructure &loop,
         const LoopCarriedDependencies &LCD,
         PDG &loopDG,
@@ -38,20 +66,11 @@ namespace llvm {
         PHINode *declarationPHI
       ) ;
 
-      bool isEvolutionReducibleAcrossLoopIterations (void) const ;
+      bool isEvolutionReducibleAcrossLoopIterations (void) const override ;
 
     private:
 
-      /*
-       * TODO: Implement and make public
-       */
-      Variable (
-        const LoopStructure &loop,
-        const LoopCarriedDependencies &LCD,
-        PDG &loopDG,
-        SCC &variableSCC,
-        Value *memoryLocation
-      ) ;
+      PDG *produceDataAndMemoryOnlyDGFromVariableDG(PDG &variableDG) const ;
 
       /*
        * A flag to ensure the variable is fully understood
@@ -74,27 +93,24 @@ namespace llvm {
       /*
        * This is the declaration of the variable
        * For data variables, this is the loop entry PHI
-       * For memory variables, this is an allocation of memory always updated contiguously while in the loop
        */
       Value *declarationValue;
-      bool isDataVariable;
 
       /*
        * The initial value of the variable at the time of its declaration
        * For data variables, this is the loop entry's preheader value
-       * For memory variables, this is optionally the value used to instantiate the allocated memory
        */
       Value *initialValue;
 
       /*
        * This is the complete set of possible updates made to the variable within any given loop iteration
        */ 
-      std::unordered_set<VariableUpdate *> variableUpdates;
+      std::unordered_set<EvolutionUpdate *> variableUpdates;
 
       /*
        * This is the set of possible updates that can be loop carried
        */
-      std::unordered_set<VariableUpdate *> loopCarriedVariableUpdates;
+      std::unordered_set<EvolutionUpdate *> loopCarriedVariableUpdates;
 
       /*
        * Any control values (terminator instructions, select instruction predicates, etc...)
@@ -105,12 +121,12 @@ namespace llvm {
   };
 
   /*
-   * Information about an instruction that contributes to the evolution of the Variable
+   * Information about an instruction that contributes to the evolution of the LoopCarriedCycle
    */
-  class VariableUpdate {
+  class EvolutionUpdate {
     public:
 
-      VariableUpdate (Instruction *updateInstruction, SCC *dataMemoryVariableSCC) ;
+      EvolutionUpdate (Instruction *updateInstruction, SCC *dataMemoryVariableSCC) ;
 
       bool mayUpdateBeOverride (void) const ;
 
@@ -118,9 +134,9 @@ namespace llvm {
 
       bool isAssociativeWithSelf (void) const ;
 
-      bool isTransformablyCommutativeWith (const VariableUpdate &otherUpdate) const ;
+      bool isTransformablyCommutativeWith (const EvolutionUpdate &otherUpdate) const ;
 
-      bool isAssociativeWith (const VariableUpdate &otherUpdate) const ;
+      bool isAssociativeWith (const EvolutionUpdate &otherUpdate) const ;
 
       bool isTransformablyCommutativeWithSelf (void) const ;
 
@@ -128,9 +144,9 @@ namespace llvm {
 
     private:
 
-      bool isBothUpdatesAddOrSub (const VariableUpdate &otherUpdate) const ;
-      bool isBothUpdatesMul (const VariableUpdate &otherUpdate) const ;
-      bool isBothUpdatesSameBitwiseLogicalOp (const VariableUpdate &otherUpdate) const ;
+      bool isBothUpdatesAddOrSub (const EvolutionUpdate &otherUpdate) const ;
+      bool isBothUpdatesMul (const EvolutionUpdate &otherUpdate) const ;
+      bool isBothUpdatesSameBitwiseLogicalOp (const EvolutionUpdate &otherUpdate) const ;
 
       bool isAdd (void) const ;
       bool isMul (void) const ;
@@ -143,15 +159,15 @@ namespace llvm {
       Instruction *updateInstruction;
 
       /*
-       * For data variables, this is the instruction itself.
-       * For memory variables, this is what is stored into the memory location
+       * For variables, this is the instruction itself.
+       * For memory locations, this is what is stored into the memory location
        */
-      Value *newVariableValue;
+      Value *newValue;
 
       /*
-       * This is all previous values of the variable used in determining the new value
+       * This is all previous values of the variable/memory location used in determining the new value
        */
-      std::unordered_set<Use *> oldVariableValuesUsed;
+      std::unordered_set<Use *> internalValuesUsed;
 
       /*
        * This is all external values used in determining the new value

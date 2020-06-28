@@ -12,51 +12,13 @@
 
 using namespace llvm;
 
-PDG *produceDataAndMemoryOnlyDGFromVariableDG(PDG &variableDG) {
-
-  /*
-   * Collect values that do NOT produce a control dependency
-   */
-  std::vector<Value *> dataAndMemoryValues{};
-  for (auto nodePair : variableDG.internalNodePairs()) {
-
-    auto node = nodePair.second;
-    auto producesControlDependency = false;
-    for (auto edge : node->getOutgoingEdges()) {
-      if (edge->isControlDependence()) {
-        producesControlDependency = true;
-        break;
-      }
-    }
-
-    /*
-     * Ignore control nodes altogether
-     */
-    if (producesControlDependency) continue;
-
-    /*
-     * If no data or memory dependency is produced, keep the node just in case
-     * the variable happens to be a trivial, unevolving one
-     * 
-     * While non-controlling terminator instructions will still pass along,
-     * they can be ignored, as it was a node merged into the SCC and will not remain
-     * in the SCC containing the variable when the new SCCDAG is computed
-     * 
-     */
-    auto value = node->getT();
-    dataAndMemoryValues.push_back(value);
-  }
-
-  return variableDG.createSubgraphFromValues(dataAndMemoryValues, true);
-}
-
-Variable::Variable (
+LoopCarriedVariable::LoopCarriedVariable (
   const LoopStructure &loop,
   const LoopCarriedDependencies &LCD,
   PDG &loopDG,
   SCC &sccContainingVariable,
   PHINode *declarationPHI
-) : outermostLoopOfVariable{loop}, declarationValue{declarationPHI}, isDataVariable{true}, isValid{false} {
+) : outermostLoopOfVariable{loop}, declarationValue{declarationPHI}, isValid{false} {
 
   assert(sccContainingVariable.isInternal(declarationPHI)
     && "Declaration PHI node is not internal to the SCC provided!");
@@ -160,7 +122,7 @@ Variable::Variable (
     if (isa<CastInst>(value)) continue;
     if (isa<LoadInst>(value)) continue;
 
-    auto variableUpdate = new VariableUpdate(cast<Instruction>(value), sccOfDataAndMemoryVariableValuesOnly);
+    auto variableUpdate = new EvolutionUpdate(cast<Instruction>(value), sccOfDataAndMemoryVariableValuesOnly);
     variableUpdates.insert(variableUpdate);
 
     if (loopCarriedValues.find(value) == loopCarriedValues.end()) continue;
@@ -170,20 +132,7 @@ Variable::Variable (
   this->isValid = true;
 }
 
-/*
- * TODO: Implement
- */
-Variable::Variable (
-  const LoopStructure &loop,
-  const LoopCarriedDependencies &LCD,
-  PDG &loopDG,
-  SCC &variableSCC,
-  Value *memoryLocation
-) : outermostLoopOfVariable{loop}, declarationValue{memoryLocation}, isDataVariable{false} {
-  this->isValid = false;
-}
-
-bool Variable::isEvolutionReducibleAcrossLoopIterations (void) const {
+bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const {
 
   if (!isValid) return false;
 
@@ -206,7 +155,7 @@ bool Variable::isEvolutionReducibleAcrossLoopIterations (void) const {
   /*
    * Collect updates that do not just propagate other updates
    */
-  std::unordered_set<VariableUpdate *> arithmeticUpdates;
+  std::unordered_set<EvolutionUpdate *> arithmeticUpdates;
   for (auto update : variableUpdates) {
 
     /*
@@ -259,11 +208,68 @@ bool Variable::isEvolutionReducibleAcrossLoopIterations (void) const {
   return true;
 }
 
+PDG *LoopCarriedVariable::produceDataAndMemoryOnlyDGFromVariableDG(PDG &variableDG) const {
+
+  /*
+   * Collect values that do NOT produce a control dependency
+   */
+  std::vector<Value *> dataAndMemoryValues{};
+  for (auto nodePair : variableDG.internalNodePairs()) {
+
+    auto node = nodePair.second;
+    auto producesControlDependency = false;
+    for (auto edge : node->getOutgoingEdges()) {
+      if (edge->isControlDependence()) {
+        producesControlDependency = true;
+        break;
+      }
+    }
+
+    /*
+     * Ignore control nodes altogether
+     */
+    if (producesControlDependency) continue;
+
+    /*
+     * If no data or memory dependency is produced, keep the node just in case
+     * the variable happens to be a trivial, unevolving one
+     * 
+     * While non-controlling terminator instructions will still pass along,
+     * they can be ignored, as it was a node merged into the SCC and will not remain
+     * in the SCC containing the variable when the new SCCDAG is computed
+     * 
+     */
+    auto value = node->getT();
+    dataAndMemoryValues.push_back(value);
+  }
+
+  return variableDG.createSubgraphFromValues(dataAndMemoryValues, true);
+}
+
+/************************************************************************************
+ * LoopCarriedMemoryLocation implementation
+ */
+
+/*
+ * TODO: Implement
+ */
+LoopCarriedMemoryLocation::LoopCarriedMemoryLocation (
+  const LoopStructure &loop,
+  const LoopCarriedDependencies &LCD,
+  PDG &loopDG,
+  SCC &memoryLocationSCC,
+  Value *memoryLocation
+) {}
+
+bool LoopCarriedMemoryLocation::isEvolutionReducibleAcrossLoopIterations (void) const {
+  return false;
+}
+
 /************************************************************************************
  * VariableUpdate implementation
  */
 
-VariableUpdate::VariableUpdate (Instruction *updateInstruction, SCC *dataMemoryVariableSCC)
+EvolutionUpdate::EvolutionUpdate (Instruction *updateInstruction, SCC *dataMemoryVariableSCC)
   : updateInstruction{updateInstruction} {
 
   if (auto storeUpdate = dyn_cast<StoreInst>(updateInstruction)) {
@@ -272,23 +278,23 @@ VariableUpdate::VariableUpdate (Instruction *updateInstruction, SCC *dataMemoryV
      * No understanding from the StoreInst of the values used to derive this stored value
      * needs to be found. It will be found in the VariableUpdate producing the stored value.
      */
-    this->newVariableValue = storeUpdate->getValueOperand();
+    this->newValue = storeUpdate->getValueOperand();
     return;
   }
-  this->newVariableValue = updateInstruction;
+  this->newValue = updateInstruction;
 
   for (auto &use : updateInstruction->operands()) {
     auto usedValue = use.get();
 
     if (dataMemoryVariableSCC->isInternal(usedValue)) {
-      oldVariableValuesUsed.insert(&use);
+      internalValuesUsed.insert(&use);
     } else {
       externalValuesUsed.insert(&use);
     }
   }
 }
 
-bool VariableUpdate::mayUpdateBeOverride (void) const {
+bool EvolutionUpdate::mayUpdateBeOverride (void) const {
   if (isa<SelectInst>(updateInstruction) || isa<PHINode>(updateInstruction)) {
 
     /*
@@ -310,7 +316,7 @@ bool VariableUpdate::mayUpdateBeOverride (void) const {
    * this update isn't overriding
    */
   if (updateInstruction->isBinaryOp()) {
-    return oldVariableValuesUsed.size() == 0;
+    return internalValuesUsed.size() == 0;
   }
 
   /*
@@ -334,24 +340,24 @@ bool VariableUpdate::mayUpdateBeOverride (void) const {
   return true;
 }
 
-bool VariableUpdate::isCommutativeWithSelf (void) const {
+bool EvolutionUpdate::isCommutativeWithSelf (void) const {
   if (mayUpdateBeOverride()) return false;
   return updateInstruction->isCommutative();
 }
 
-bool VariableUpdate::isAdd (void) const {
+bool EvolutionUpdate::isAdd (void) const {
   auto op = updateInstruction->getOpcode();
   return Instruction::Add == op
     || Instruction::FAdd == op;
 }
 
-bool VariableUpdate::isMul (void) const {
+bool EvolutionUpdate::isMul (void) const {
   auto op = updateInstruction->getOpcode();
   return Instruction::Mul == op
     || Instruction::FMul == op;
 }
 
-bool VariableUpdate::isSub (void) const {
+bool EvolutionUpdate::isSub (void) const {
   auto op = updateInstruction->getOpcode();
   return Instruction::Sub == op
     || Instruction::FSub == op;
@@ -362,20 +368,20 @@ bool VariableUpdate::isSub (void) const {
  * considers subtraction by an external value equivalent to
  * addition of the negative of that external value
  */
-bool VariableUpdate::isSubTransformableToAdd () const {
+bool EvolutionUpdate::isSubTransformableToAdd () const {
   if (!isSub()) return false;
   auto &useOfValueBeingSubtracted = updateInstruction->getOperandUse(1);
   return externalValuesUsed.find(&useOfValueBeingSubtracted) != externalValuesUsed.end();
 }
 
-bool VariableUpdate::isTransformablyCommutativeWithSelf (void) const {
+bool EvolutionUpdate::isTransformablyCommutativeWithSelf (void) const {
   if (mayUpdateBeOverride()) return false;
   if (updateInstruction->isCommutative()) return true;
 
   return isSubTransformableToAdd();
 }
 
-bool VariableUpdate::isAssociativeWithSelf (void) const {
+bool EvolutionUpdate::isAssociativeWithSelf (void) const {
   if (mayUpdateBeOverride()) return false;
   if (updateInstruction->isAssociative()) return true;
 
@@ -389,7 +395,7 @@ bool VariableUpdate::isAssociativeWithSelf (void) const {
   return isSubTransformableToAdd();
 }
 
-bool VariableUpdate::isTransformablyCommutativeWith (const VariableUpdate &otherUpdate) const {
+bool EvolutionUpdate::isTransformablyCommutativeWith (const EvolutionUpdate &otherUpdate) const {
 
   /*
    * A pre-requisite is that both updates are commutative on their own
@@ -412,7 +418,7 @@ bool VariableUpdate::isTransformablyCommutativeWith (const VariableUpdate &other
   return false;
 }
 
-bool VariableUpdate::isAssociativeWith (const VariableUpdate &otherUpdate) const {
+bool EvolutionUpdate::isAssociativeWith (const EvolutionUpdate &otherUpdate) const {
 
   /*
    * A pre-requisite is that both updates are associative on their own
@@ -435,18 +441,18 @@ bool VariableUpdate::isAssociativeWith (const VariableUpdate &otherUpdate) const
   return false;
 }
 
-bool VariableUpdate::isBothUpdatesAddOrSub (const VariableUpdate &otherUpdate) const {
+bool EvolutionUpdate::isBothUpdatesAddOrSub (const EvolutionUpdate &otherUpdate) const {
   auto isThisAddOrSub = this->isAdd() || otherUpdate.isSub();
   auto isOtherAddOrSub = this->isAdd() || otherUpdate.isSub();
   return isThisAddOrSub && isOtherAddOrSub;
 }
 
-bool VariableUpdate::isBothUpdatesMul (const VariableUpdate &otherUpdate) const {
+bool EvolutionUpdate::isBothUpdatesMul (const EvolutionUpdate &otherUpdate) const {
   return this->isMul()
     && otherUpdate.isMul();
 }
 
-bool VariableUpdate::isBothUpdatesSameBitwiseLogicalOp (const VariableUpdate &otherUpdate) const {
+bool EvolutionUpdate::isBothUpdatesSameBitwiseLogicalOp (const EvolutionUpdate &otherUpdate) const {
   auto thisOp = this->updateInstruction->getOpcode();
   auto otherOp = otherUpdate.updateInstruction->getOpcode();
   auto isThisLogicalOp = this->updateInstruction->isBitwiseLogicOp();
@@ -455,6 +461,6 @@ bool VariableUpdate::isBothUpdatesSameBitwiseLogicalOp (const VariableUpdate &ot
     && thisOp == otherOp;
 }
 
-Instruction *VariableUpdate::getUpdateInstruction (void) const {
+Instruction *EvolutionUpdate::getUpdateInstruction (void) const {
   return updateInstruction;
 }
