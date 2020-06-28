@@ -27,6 +27,9 @@ namespace llvm {
       Criticisms getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const ;
 
     private:
+
+      bool canBasicBlockReachHeaderBeforeOther (const LoopStructure &LS, BasicBlock *I, BasicBlock *J) const ;
+
       std::unordered_map<const LoopStructure *, Criticisms> loopCarriedDependenciesMap;
   };
 
