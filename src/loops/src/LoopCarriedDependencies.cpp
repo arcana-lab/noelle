@@ -41,11 +41,24 @@ LoopCarriedDependencies::LoopCarriedDependencies (
         auto consumerLevel = consumerLoop->getNestingLevel();
         auto isMemoryDependenceThusCanCrossLoops = edge->isMemoryDependence();
         auto isControlDependence = edge->isControlDependence();
+
         assert( (isControlDependence 
                   || isMemoryDependenceThusCanCrossLoops 
                   || (producerLevel <= consumerLevel)
                 )
                 && "Producer of loop carried data dependency is NOT in the same loop or an inner-more loop than the consumer");
+
+        /*
+         * If a data dependence producer cannot reach the header of the loop without
+         * reaching the consumer, then this is a false positive match
+         */
+        if (edge->isDataDependence()) {
+          auto producerB = producerI->getParent();
+          auto consumerB = consumerI->getParent();
+          bool mustProducerReachConsumerBeforeHeader = !canBasicBlockReachHeaderBeforeOther(*consumerLoop, producerB, consumerB);
+
+          if (mustProducerReachConsumerBeforeHeader) continue;
+        }
 
         loopCarriedDependenciesMap[consumerLoop].insert(edge);
       }
@@ -57,4 +70,66 @@ LoopCarriedDependencies::LoopCarriedDependencies (
 Criticisms LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const {
   assert(loopCarriedDependenciesMap.find(&LS) != loopCarriedDependenciesMap.end());
   return loopCarriedDependenciesMap.at(&LS);
+}
+
+bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther (
+  const LoopStructure &LS,
+  BasicBlock *I,
+  BasicBlock *J
+) const {
+
+  assert(LS.isIncluded(I) && LS.isIncluded(J));
+
+  // I->print(errs() << "Source:\n");
+  // J->print(errs() << "Destination:\n");
+
+  /*
+   * If the source is the destination, the loop must be at a later iteration
+   */
+  if (I == J) {
+    return true;
+  }
+
+  auto header = LS.getHeader();
+  auto exitsVector = LS.getLoopExitBasicBlocks();
+  std::set<BasicBlock *> exits(exitsVector.begin(), exitsVector.end());
+  std::queue<BasicBlock *> queue;
+  std::unordered_set<BasicBlock *> enqueued;
+  queue.push(I);
+  enqueued.insert(I);
+  bool isJReached = false;
+
+  while (!queue.empty()) {
+    auto B = queue.front();
+    queue.pop();
+
+    /*
+     * Check if the successor is the header block
+     * Check if the successor is an exit block; if so, do not traverse further
+     * Check if the destination is reached; if so, do not traverse further
+     */
+    if (B == header) return true;
+    if (exits.find(B) != exits.end()) continue;
+    if (B == J) {
+      isJReached = true;
+      continue;
+    }
+
+    for (auto succIter = succ_begin(B); succIter != succ_end(B); ++succIter) {
+      auto succ = *succIter;
+
+      /*
+       * Do not re-traverse enqueued blocks
+       */
+      if (enqueued.find(succ) != enqueued.end()) continue;
+      queue.push(succ);
+      enqueued.insert(succ);
+    }
+  }
+
+  /*
+   * The header was never reached
+   */
+  assert(isJReached);
+  return false;
 }

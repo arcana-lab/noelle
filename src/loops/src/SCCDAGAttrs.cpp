@@ -389,6 +389,8 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
 
 bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDependencies &LCD) {
 
+  scc->printMinimal(errs() << "Is this reducible?\n");
+
   /*
    * Only one loop carried data value per SCC can be reduced
    * If there is only one, check if that Variable is reducible
@@ -405,6 +407,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
     assert(isa<PHINode>(consumer)
       && "All consumers of loop carried data dependencies must be PHIs");
     auto consumerPHI = cast<PHINode>(consumer);
+    dependency->print(errs() << "Consumer of loop carried dep\n"); errs() << "\n";
 
     /*
      * Ignore sub loops as they do not need to be reduced
