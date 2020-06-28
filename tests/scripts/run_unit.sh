@@ -62,7 +62,6 @@ function runTest {
   llvm-profdata merge default.profraw -output=$TEST_PROFILE
 
   noelle-meta-prof-embed $TEST_PROFILE test_pre.bc -o test_prof.bc &> compiler_output.txt
-  ${CC} -O0 -fprofile-instr-generate test_prof.bc -o test_prof
 
   opt ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} test_pre.bc -o test.bc &> /dev/null
   llvm-dis test.bc -o test.ll
