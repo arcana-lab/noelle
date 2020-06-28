@@ -52,6 +52,11 @@ bool PDGAnalysis::runOnModule (Module &M){
   this->M = &M;
 
   /*
+   * Initialize DataFlowAnalysis.
+   */
+  this->dfa = new DataFlowAnalysis();
+
+  /*
    * Initialize SVF.
    */
   initializeSVF(M);

@@ -18,6 +18,7 @@
 #include "AllocAA.hpp"
 #include "PDGPrinter.hpp"
 #include "TalkDown.hpp"
+#include "DataFlow.hpp"
 
 #include "MemoryModel/PointerAnalysis.h"
 #include "Util/PTACallGraph.h"
@@ -52,6 +53,7 @@ namespace llvm {
       AllocAA *allocAA;
       std::set<Function *> CGUnderMain;
       TalkDown *talkdown;
+      DataFlowAnalysis *dfa;
       PDGVerbosity verbose;
       bool embedPDG;
       bool dumpPDG;
@@ -95,23 +97,21 @@ namespace llvm {
       // TODO: Find a way to extract this into a helper module for all passes in the PDG project
       void collectCGUnderFunctionMain (Module &M);
 
-      template <class InstI, class InstJ>
-      void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, InstI *, InstJ *, bool WAW);
-
-      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, StoreInst *, CallInst *);
-      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, LoadInst *, CallInst *);
-      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallInst *, CallInst *);
-
-      void iterateInstForStoreAliases(PDG *, Function &, AAResults &, StoreInst *);
-      void iterateInstForLoadAliases(PDG *, Function &, AAResults &, LoadInst *);
-      void iterateInstForModRef(PDG *, Function &, AAResults &, CallInst &);
-
       PDG * constructPDGFromAnalysis(Module &M);
       void constructEdgesFromUseDefs (PDG *pdg);
       void constructEdgesFromAliases (PDG *pdg, Module &M);
       void constructEdgesFromControl (PDG *pdg, Module &M);
-      void constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA);
+      void constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr);
       void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
+
+      void iterateInstForStoreAliases(PDG *, Function &, AAResults &, DataFlowResult *, StoreInst *);
+      void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, DataFlowResult *, StoreInst *, LoadInst *);
+      void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, StoreInst *, StoreInst *);
+
+      void iterateInstForModRef(PDG *, Function &, AAResults &, DataFlowResult *, CallInst *);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, DataFlowResult *, CallInst *, StoreInst *);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, DataFlowResult *, CallInst *, LoadInst *);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallInst *, CallInst *);
 
       void removeEdgesNotUsedByParSchemes (PDG *pdg);
 
