@@ -413,7 +413,7 @@ bool EvolutionUpdate::isTransformablyCommutativeWith (const EvolutionUpdate &oth
    */
   if (isBothUpdatesAddOrSub(otherUpdate)) return true;
   if (isBothUpdatesMul(otherUpdate)) return true;
-  if (isBothUpdatesSameBitwiseLogicalOp(otherUpdate)); return true;
+  if (isBothUpdatesSameBitwiseLogicalOp(otherUpdate)) return true;
 
   return false;
 }
@@ -436,14 +436,14 @@ bool EvolutionUpdate::isAssociativeWith (const EvolutionUpdate &otherUpdate) con
    */
   if (isBothUpdatesAddOrSub(otherUpdate)) return true;
   if (isBothUpdatesMul(otherUpdate)) return true;
-  if (isBothUpdatesSameBitwiseLogicalOp(otherUpdate)); return true;
+  if (isBothUpdatesSameBitwiseLogicalOp(otherUpdate)) return true;
 
   return false;
 }
 
 bool EvolutionUpdate::isBothUpdatesAddOrSub (const EvolutionUpdate &otherUpdate) const {
-  auto isThisAddOrSub = this->isAdd() || otherUpdate.isSub();
-  auto isOtherAddOrSub = this->isAdd() || otherUpdate.isSub();
+  auto isThisAddOrSub = this->isAdd() || this->isSub();
+  auto isOtherAddOrSub = otherUpdate.isAdd() || otherUpdate.isSub();
   return isThisAddOrSub && isOtherAddOrSub;
 }
 
