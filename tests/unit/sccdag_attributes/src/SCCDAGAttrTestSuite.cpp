@@ -59,39 +59,6 @@ void SCCDAGAttrTestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
 }
 
-void computeTripCounts (
-  Loop *l,
-  ScalarEvolution &SE,
-  std::unordered_map<Loop *, uint64_t> & loopTripCounts
-  ){
-
-  /*
-   * Fetch the trip count of the loop given as input.
-   */
-  auto tripCount = SE.getSmallConstantTripCount(l);
-
-  /*
-   * Check if the trip count is known at compile time.
-   */
-  if (tripCount > 0){
-
-    /*
-     * The trip count is known at compile time.
-     * Store it.
-     */
-    loopTripCounts[l] = tripCount;
-  }
-
-  /*
-   * Compute the trip counts of all sub-loops.
-   */
-  for (auto subLoop : l->getSubLoops()) {
-    computeTripCounts(subLoop, SE, loopTripCounts);
-  }
-
-  return ;
-}
-
 bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   errs() << "SCCDAGAttrTestSuite: Start\n";
   auto mainFunction = M.getFunction("main");
@@ -103,8 +70,6 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   LoopsSummary LIS{};
   Loop *topLoop = LI->getLoopsInPreorder()[0];
 
-  std::unordered_map<Loop *, uint64_t> tripCounts{};
-  computeTripCounts(topLoop, *SE, tripCounts);
   LIS.populate(topLoop);
   auto *DT = &getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
   auto *PDT = &getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
