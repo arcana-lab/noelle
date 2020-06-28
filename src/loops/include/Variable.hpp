@@ -124,6 +124,8 @@ namespace llvm {
 
       bool isTransformablyCommutativeWithSelf (void) const ;
 
+      Instruction *getUpdateInstruction (void) const ;
+
     private:
 
       bool isBothUpdatesAddOrSub (const VariableUpdate &otherUpdate) const ;

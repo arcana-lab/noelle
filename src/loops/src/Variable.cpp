@@ -203,6 +203,10 @@ bool Variable::isEvolutionReducibleAcrossLoopIterations (void) const {
     if (sccOfVariableOnly->isInternal(controlValue)) return false;
   }
 
+  /*
+   * Collect updates that do not just propagate other updates
+   */
+  std::unordered_set<VariableUpdate *> arithmeticUpdates;
   for (auto update : variableUpdates) {
 
     /*
@@ -210,15 +214,25 @@ bool Variable::isEvolutionReducibleAcrossLoopIterations (void) const {
      */
     if (update->mayUpdateBeOverride()) return false;
 
-    /*
-     * All updates must be mutually commutative and associative
-     * TODO: does transitivity of those two properties allow only checking one update against all others?
-     */
-    for (auto otherUpdate : variableUpdates) {
+    auto updateInstruction = update->getUpdateInstruction();
+    if (isa<PHINode>(updateInstruction) || isa<SelectInst>(updateInstruction)) continue;
+    arithmeticUpdates.insert(update);
+  }
+
+  /*
+   * Ignore a value that does not evolve and is just propagated; its last execution is its current value
+   */
+  if (arithmeticUpdates.size() == 0) return false;
+
+  /*
+   * All arithmetic updates must be mutually commutative and associative
+   * TODO: does transitivity of those two properties allow only checking one update against all others?
+   */
+  for (auto update : arithmeticUpdates) {
+    for (auto otherUpdate : arithmeticUpdates) {
       if (!update->isTransformablyCommutativeWith(*otherUpdate)) return false;
       if (!update->isAssociativeWith(*otherUpdate)) return false;
     }
-
   }
 
   /*
@@ -441,3 +455,6 @@ bool VariableUpdate::isBothUpdatesSameBitwiseLogicalOp (const VariableUpdate &ot
     && thisOp == otherOp;
 }
 
+Instruction *VariableUpdate::getUpdateInstruction (void) const {
+  return updateInstruction;
+}
