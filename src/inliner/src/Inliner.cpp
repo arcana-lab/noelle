@@ -11,7 +11,7 @@
 #include "Inliner.hpp"
 #include "Noelle.hpp"
 
-bool llvm::Inliner::runOnModule (Module &M) {
+bool Inliner::runOnModule (Module &M) {
   if (this->verbose != Verbosity::Disabled) {
     errs() << "Inliner: Start\n";
   }
@@ -89,9 +89,8 @@ bool llvm::Inliner::runOnModule (Module &M) {
       childrenFns.clear();
       orderedCalled.clear();
       orderedCalls.clear();
-      auto m = M.getFunction("main");
-      collectFnGraph(m);
-      collectInDepthOrderFns(m);
+      collectFnGraph(main);
+      collectInDepthOrderFns(main);
       printFnOrder();
     }
 
@@ -112,6 +111,13 @@ bool llvm::Inliner::runOnModule (Module &M) {
   }
 
   /*
+   * Check if we should hoist loops to main.
+   */
+  if (!noelle.shouldLoopsBeHoistToMain()){
+    return false;
+  }
+
+  /*
    * Inline functions containing targeted loops so the loop is in main
    */
   ifstream doHoistFile("dgsimplify_do_hoist.txt");
@@ -129,9 +135,8 @@ bool llvm::Inliner::runOnModule (Module &M) {
       childrenFns.clear();
       orderedCalled.clear();
       orderedCalls.clear();
-      auto m = M.getFunction("main");
-      collectFnGraph(m);
-      collectInDepthOrderFns(m);
+      collectFnGraph(main);
+      collectInDepthOrderFns(main);
       printFnOrder();
     }
 
@@ -152,7 +157,7 @@ bool llvm::Inliner::runOnModule (Module &M) {
 /*
  * Progress Tracking using file system
  */
-void llvm::Inliner::getLoopsToInline (std::string filename) {
+void Inliner::getLoopsToInline (std::string filename) {
   loopsToCheck.clear();
   ifstream infile(filename);
   if (infile.good()) {
@@ -195,7 +200,7 @@ void llvm::Inliner::getLoopsToInline (std::string filename) {
   }
 }
 
-void llvm::Inliner::getFunctionsToInline (std::string filename) {
+void Inliner::getFunctionsToInline (std::string filename) {
   fnsToCheck.clear();
   ifstream infile(filename);
   if (infile.good()) {
@@ -213,7 +218,7 @@ void llvm::Inliner::getFunctionsToInline (std::string filename) {
   }
 }
 
-bool llvm::Inliner::registerRemainingLoops (std::string filename) {
+bool Inliner::registerRemainingLoops (std::string filename) {
   remove(filename.c_str());
   if (loopsToCheck.empty()) return false;
 
@@ -250,7 +255,7 @@ bool llvm::Inliner::registerRemainingLoops (std::string filename) {
   return true;
 }
 
-bool llvm::Inliner::registerRemainingFunctions (std::string filename) {
+bool Inliner::registerRemainingFunctions (std::string filename) {
   remove(filename.c_str());
   if (fnsToCheck.empty()) return false;
 
@@ -268,7 +273,7 @@ bool llvm::Inliner::registerRemainingFunctions (std::string filename) {
 /*
  * Inlining
  */
-bool llvm::Inliner::inlineCallsInMassiveSCCsOfLoops (void) {
+bool Inliner::inlineCallsInMassiveSCCsOfLoops (void) {
   auto &PDGA = getAnalysis<PDGAnalysis>();
   bool anyInlined = false;
 
@@ -360,7 +365,7 @@ bool llvm::Inliner::inlineCallsInMassiveSCCsOfLoops (void) {
  * try inlining the function call in that SCC with the
  * most memory edges to other internal/external values
  */
-bool llvm::Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
+bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
 
   /*
    * Fetch the SCCDAG
@@ -419,15 +424,17 @@ bool llvm::Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *L
   return inlineCall && inlineFunctionCall(F, inlineCall->getCalledFunction(), inlineCall);
 }
 
-bool llvm::Inliner::inlineFnsOfLoopsToCGRoot () {
+bool Inliner::inlineFnsOfLoopsToCGRoot () {
   std::vector<Function *> orderedFns;
-  for (auto F : fnsToCheck) orderedFns.push_back(F);
+  for (auto F : fnsToCheck) {
+    orderedFns.push_back(F);
+  }
   sortInDepthOrderFns(orderedFns);
 
   int fnIndex = 0;
   std::set<Function *> fnsWillCheck(orderedFns.begin(), orderedFns.end());
   std::set<Function *> fnsToAvoid;
-  bool inlined = false;
+  auto inlined = false;
   while (fnIndex < orderedFns.size()) {
     auto childF = orderedFns[fnIndex++];
 
@@ -495,16 +502,20 @@ bool llvm::Inliner::inlineFnsOfLoopsToCGRoot () {
   return inlined;
 }
 
-bool llvm::Inliner::canInlineWithoutRecursiveLoop (Function *parentF, Function *childF) {
+bool Inliner::canInlineWithoutRecursiveLoop (Function *parentF, Function *childF) {
   // NOTE(angelo): Prevent inlining a call to the entry of a recursive chain of functions
   if (recursiveChainEntranceFns.find(childF) != recursiveChainEntranceFns.end()) return false ;
   return true;
 }
 
-bool llvm::Inliner::inlineFunctionCall (Function *F, Function *childF, CallInst *call) {
+bool Inliner::inlineFunctionCall (Function *F, Function *childF, CallInst *call) {
   // NOTE(angelo): Prevent inlining a call within a function already altered by inlining
-  if (fnsAffected.find(F) != fnsAffected.end()) return false ;
-  if (!canInlineWithoutRecursiveLoop(F, childF)) return false ;
+  if (fnsAffected.find(F) != fnsAffected.end()) {
+    return false ;
+  }
+  if (!canInlineWithoutRecursiveLoop(F, childF)) {
+    return false ;
+  }
 
   if (this->verbose != Verbosity::Disabled) {
     call->print(errs() << "Inliner:   Inlining in: " << F->getName() << ", ");
@@ -525,7 +536,7 @@ bool llvm::Inliner::inlineFunctionCall (Function *F, Function *childF, CallInst 
   return false;
 }
 
-int llvm::Inliner::getNextPreorderLoopAfter (Function *F, CallInst *call) {
+int Inliner::getNextPreorderLoopAfter (Function *F, CallInst *call) {
   if (preOrderedLoops.find(F) == preOrderedLoops.end()) return 0;
 
   auto &summaries = *preOrderedLoops[F];
@@ -548,7 +559,7 @@ int llvm::Inliner::getNextPreorderLoopAfter (Function *F, CallInst *call) {
 /*
  * Function and loop ordering
  */
-void llvm::Inliner::adjustLoopOrdersAfterInline (Function *parentF, Function *childF, int nextLoopInd) {
+void Inliner::adjustLoopOrdersAfterInline (Function *parentF, Function *childF, int nextLoopInd) {
   bool parentHasLoops = preOrderedLoops.find(parentF) != preOrderedLoops.end();
   bool childHasLoops = preOrderedLoops.find(childF) != preOrderedLoops.end();
   if (!childHasLoops || preOrderedLoops[childF]->size() == 0) return ;
@@ -580,7 +591,7 @@ void llvm::Inliner::adjustLoopOrdersAfterInline (Function *parentF, Function *ch
 // childrenFns and parentFns [collectFnGraph] and therefore depthOrdered and fnOrder [in collectInDepthOrderFns] doesn't
 // take into account the defferent function that never got an order. This causes the number to be out between successive
 // iterations of this inliner.
-void llvm::Inliner::adjustFnGraphAfterInline (Function *parentF, Function *childF, int callInd) {
+void Inliner::adjustFnGraphAfterInline (Function *parentF, Function *childF, int callInd) {
   auto &parentCalled = orderedCalled[parentF];
   auto &childCalled = orderedCalled[childF];
 
@@ -613,7 +624,7 @@ void llvm::Inliner::adjustFnGraphAfterInline (Function *parentF, Function *child
   }
 }
 
-void llvm::Inliner::collectFnGraph (Function *main) {
+void Inliner::collectFnGraph (Function *main) {
   auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
   std::queue<Function *> funcToTraverse;
   std::set<Function *> reached;
@@ -650,7 +661,7 @@ void llvm::Inliner::collectFnGraph (Function *main) {
   }
 }
 
-void llvm::Inliner::collectFnCallsAndCalled (CallGraph &CG, Function *parentF) {
+void Inliner::collectFnCallsAndCalled (CallGraph &CG, Function *parentF) {
 
   // Collect call instructions to already linked functions
   std::set<CallInst *> unorderedCalls;
@@ -701,7 +712,7 @@ void llvm::Inliner::collectFnCallsAndCalled (CallGraph &CG, Function *parentF) {
  *  after all other directed acyclic portions of the call graph (starting
  *  from their common ancestor) is traversed.
  */
-void llvm::Inliner::collectInDepthOrderFns (Function *main) {
+void Inliner::collectInDepthOrderFns (Function *main) {
   depthOrderedFns.clear();
   recursiveChainEntranceFns.clear();
   fnOrders.clear();
@@ -765,7 +776,7 @@ void llvm::Inliner::collectInDepthOrderFns (Function *main) {
   delete deferred;
 }
 
-void llvm::Inliner::createPreOrderedLoopSummariesFor (Function *F) {
+void Inliner::createPreOrderedLoopSummariesFor (Function *F) {
   // NOTE(angelo): Enforce managing order instead of recalculating it entirely
   if (preOrderedLoops.find(F) != preOrderedLoops.end()) {
     errs() << "Inliner:   Misuse! Do not collect ordered loops more than once. Manage current ordering.\n";
@@ -819,7 +830,7 @@ void llvm::Inliner::createPreOrderedLoopSummariesFor (Function *F) {
   preOrderedLoops[F] = &orderedLoops;
 }
 
-std::vector<Loop *> *llvm::Inliner::collectPreOrderedLoopsFor (Function *F, LoopInfo &LI) {
+std::vector<Loop *> *Inliner::collectPreOrderedLoopsFor (Function *F, LoopInfo &LI) {
   // Collect loops in program forward order
   auto loops = new std::vector<Loop *>();
   for (auto &B : *F) {
@@ -829,7 +840,7 @@ std::vector<Loop *> *llvm::Inliner::collectPreOrderedLoopsFor (Function *F, Loop
   return loops;
 }
 
-void llvm::Inliner::sortInDepthOrderFns (std::vector<Function *> &inOrder) {
+void Inliner::sortInDepthOrderFns (std::vector<Function *> &inOrder) {
   std::sort(inOrder.begin(), inOrder.end(), [this](Function *a, Function *b) {
     // NOTE(angelo): Sort functions deepest first
     return fnOrders[a] > fnOrders[b];
