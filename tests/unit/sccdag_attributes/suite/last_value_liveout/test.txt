@@ -15,3 +15,4 @@ br i1 %4, label %5, label %10 ; br i1 %4, label %5, label %10
 %7 = add nsw i32 %6, 5 ; %.01 = phi i32 [ 0, %2 ], [ %7, %8 ]
 %9 = add nsw i32 %.0, 1 ; %.0 = phi i32 [ 0, %2 ], [ %9, %8 ]
 
+reducible SCC
