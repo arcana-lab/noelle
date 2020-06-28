@@ -22,17 +22,8 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 set(RootPath ../../../..)
-set(PassesPath ${RootPath}/src)
 set(SVFDep ${RootPath}/external/svf/include)
-set(UtilDep ${PassesPath}/basic_utilities/include)
-set(DGDep ${PassesPath}/alloc_aa/include ${PassesPath}/pdg/include ${PassesPath}/talkdown/include)
-set(LoopDep ${PassesPath}/loops/include ${PassesPath}/loop_structure/include ${PassesPath}/loop_metadata/include)
-set(InlinerDep ${PassesPath}/inliner/include)
-set(ParTechniqueDep ${PassesPath}/parallelization_technique/include)
-set(DOALLDep ${PassesPath}/doall/include)
-set(DSWPDep ${PassesPath}/dswp/include)
-set(HELIXep ${PassesPath}/helix/include)
-include_directories(${LLVM_INCLUDE_DIRS} ${DGDep} ${UtilDep} ${SVFDep} ../../helpers/include ../include ./)
+include_directories(${LLVM_INCLUDE_DIRS} ${RootPath}/install/include ${SVFDep} ../../helpers/include ../include ./)
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})
