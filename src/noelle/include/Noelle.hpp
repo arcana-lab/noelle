@@ -101,6 +101,8 @@ namespace llvm {
        */
       bool isTransformationEnabled (Transformation transformation);
 
+      bool shouldLoopsBeHoistToMain (void) const ;
+
       void linkTransformedLoopToOriginalFunction (
         Module *module, 
         BasicBlock *originalPreHeader, 
@@ -121,6 +123,7 @@ namespace llvm {
       PDG *programDependenceGraph;
       std::set<Transformation> enabledTransformations;
       uint32_t maxCores;
+      bool hoistLoopsToMain;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream
