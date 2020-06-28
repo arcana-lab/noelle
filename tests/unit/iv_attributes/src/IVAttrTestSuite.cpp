@@ -53,39 +53,6 @@ void IVAttrTestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
 }
 
-void computeTripCounts (
-  Loop *l,
-  ScalarEvolution &SE,
-  std::unordered_map<Loop *, uint64_t> & loopTripCounts
-  ){
-
-  /*
-   * Fetch the trip count of the loop given as input.
-   */
-  auto tripCount = SE.getSmallConstantTripCount(l);
-
-  /*
-   * Check if the trip count is known at compile time.
-   */
-  if (tripCount > 0){
-
-    /*
-     * The trip count is known at compile time.
-     * Store it.
-     */
-    loopTripCounts[l] = tripCount;
-  }
-
-  /*
-   * Compute the trip counts of all sub-loops.
-   */
-  for (auto subLoop : l->getSubLoops()) {
-    computeTripCounts(subLoop, SE, loopTripCounts);
-  }
-
-  return ;
-}
-
 bool IVAttrTestSuite::runOnModule (Module &M) {
   errs() << "IVAttrTestSuite: Start\n";
   auto mainFunction = M.getFunction("main");
@@ -99,8 +66,6 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   this->sccdag = new SCCDAG(loopDG);
 
   this->LIS = new LoopsSummary();
-  std::unordered_map<Loop *, uint64_t> tripCounts{};
-  computeTripCounts(topLoop, *SE, tripCounts);
   LIS->populate(topLoop);
 
   errs() << "IVAttrTestSuite: Running IV analysis\n";
