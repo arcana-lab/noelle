@@ -35,6 +35,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
 					 ../../loops/include
 					 ../../alloc_aa/include 
 					 ../../talkdown/include 
+           ../../dataflow/include
 					 ../include
            ../../../external/svf/include
                      )
