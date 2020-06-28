@@ -49,10 +49,10 @@ LoopCarriedDependencies::LoopCarriedDependencies (
                 && "Producer of loop carried data dependency is NOT in the same loop or an inner-more loop than the consumer");
 
         /*
-         * If a data dependence producer cannot reach the header of the loop without
+         * If a memory-less data dependence producer cannot reach the header of the loop without
          * reaching the consumer, then this is a false positive match
          */
-        if (edge->isDataDependence()) {
+        if (!edge->isMemoryDependence() && edge->isDataDependence()) {
           auto producerB = producerI->getParent();
           auto consumerB = consumerI->getParent();
           bool mustProducerReachConsumerBeforeHeader = !canBasicBlockReachHeaderBeforeOther(*consumerLoop, producerB, consumerB);
