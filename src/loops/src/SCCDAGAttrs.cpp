@@ -422,7 +422,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
 
   if (!singleLoopCarriedPHI) return false;
 
-  Variable variable(*rootLoop, LCD, *loopDG, *scc, singleLoopCarriedPHI);
+  LoopCarriedVariable variable(*rootLoop, LCD, *loopDG, *scc, singleLoopCarriedPHI);
   return variable.isEvolutionReducibleAcrossLoopIterations();
 }
 
