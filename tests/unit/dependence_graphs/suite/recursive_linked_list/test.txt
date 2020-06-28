@@ -1,25 +1,27 @@
 pdg root values
+%1 = call noalias i8* @malloc(i64 16) #4
 br label %4
 %18 = getelementptr [4 x i8], [4 x i8]* @.str, i64 0, i64 0
 ret i32 0
 
 sccdag internal nodes (of outermost loop)
-  %.01 = phi %struct._N* [ %2, %0 ], [ %16, %13 ] | %5 = icmp ne %struct._N* %.01, null | br i1 %5, label %6, label %17 |
-    %15 = getelementptr inbounds %struct._N, %struct._N* %.01, i32 0, i32 1 | %16 = load %struct._N*, %struct._N** %15, align 8 |
-    %7 = getelementptr inbounds %struct._N, %struct._N* %.01, i32 0, i32 0 | %8 = load i32, i32* %7, align 8 |
-    %19 = call i32 (i8*, ...) @printf(i8* %18, i32 %.02.lcssa) |
-    call void @_Z10appendNodeP2_Nii(%struct._N* %2, i32 42, i32 99) |
-    %1 = call noalias i8* @malloc(i64 16) #4 |
-    store i32 41, i32* %3, align 8
-  %9 = icmp slt i32 %8, 40
-  br i1 %9, label %10, label %13
-  %11 = mul nsw i32 2, %8
-  %12 = add nsw i32 %11, 3
-  %.02 = phi i32 [ 0, %0 ], [ %14, %13 ] | %14 = add nsw i32 %.02, %.0
-  %.0 = phi i32 [ %12, %10 ], [ %8, %6 ]
-  br label %13
-  br label %4
+%.01 = phi %struct._N* [ %2, %0 ], [ %16, %13 ] | %5 = icmp ne %struct._N* %.01, null | br i1 %5, label %6, label %17 |
+  %15 = getelementptr inbounds %struct._N, %struct._N* %.01, i32 0, i32 1 | %16 = load %struct._N*, %struct._N** %15, align 8
+%7 = getelementptr inbounds %struct._N, %struct._N* %.01, i32 0, i32 0
+%8 = load i32, i32* %7, align 8
+%9 = icmp slt i32 %8, 40
+br i1 %9, label %10, label %13
+%11 = mul nsw i32 2, %8
+%12 = add nsw i32 %11, 3
+%.02 = phi i32 [ 0, %0 ], [ %14, %13 ] | %14 = add nsw i32 %.02, %.0
+%.0 = phi i32 [ %12, %10 ], [ %8, %6 ]
+br label %13
+br label %4
 
 sccdag external nodes (of outermost loop)
+%1 = call noalias i8* @malloc(i64 16) #4
 %2 = bitcast i8* %1 to %struct._N*
+call void @_Z10appendNodeP2_Nii(%struct._N* %2, i32 42, i32 99)
+store i32 41, i32* %3, align 8
 %.02.lcssa = phi i32 [ %.02, %4 ]
+%19 = call i32 (i8*, ...) @printf(i8* %18, i32 %.02.lcssa)
