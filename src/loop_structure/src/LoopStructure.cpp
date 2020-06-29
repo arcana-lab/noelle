@@ -181,3 +181,32 @@ Function * LoopStructure::getFunction (void) const {
   auto f = this->header->getParent();
   return f;
 }
+
+bool LoopStructure::isIncludedInItsSubLoops (Instruction *inst) const {
+
+  /*
+   * Check if the instruction is part of the loop.
+   */
+  if (!this->isIncluded(inst)){
+    return false;
+  }
+
+  /*
+   * Check its children.
+   */
+  for (auto subLoop : this->children){
+
+    /*
+     * Check if the instruction belongs to the current child.
+     */
+    if (subLoop->isIncluded(inst)){
+      return true;
+    }
+
+    /*
+     * The instruction does not belong to the current child.
+     */
+  }
+
+  return false;
+}
