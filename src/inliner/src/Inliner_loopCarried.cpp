@@ -13,7 +13,9 @@
 bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
   auto anyInlined = false;
 
-  // NOTE(angelo): Order these functions to prevent duplicating loops yet to be checked
+  /*
+   * Order these functions to prevent duplicating loops yet to be checked
+   */
   std::vector<Function *> orderedFns;
   for (auto fnLoops : loopsToCheck) {
     orderedFns.push_back(fnLoops.first);
@@ -22,7 +24,10 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
 
   std::set<Function *> fnsToAvoid;
   for (auto F : orderedFns) {
-    // NOTE(angelo): If we avoid this function until next pass, we do the same with its parents
+    
+    /*
+     * If we avoid this function until next pass, we do the same with its parents
+     */
     if (fnsToAvoid.find(F) != fnsToAvoid.end()) {
       for (auto parentF : parentFns[F]) {
         fnsToAvoid.insert(parentF);
@@ -71,10 +76,6 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
        * Inline the call.
        */
       auto inlinedCall = this->inlineCallsInMassiveSCCs(F, LDI);
-      if (!inlinedCall) {
-        removeSummaries.insert(summary);
-      }
-
       inlined |= inlinedCall;
       if (inlined) break;
     }
@@ -101,28 +102,8 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
         fnsToAvoid.insert(parentF);
       }
     }
-
-    /*
-     * Do not re-check loops that weren't inlined within after a check 
-     */
-    std::vector<int> removeInds;
-    for (auto i = 0; i < toCheck.size(); ++i) {
-      if (removeSummaries.find(toCheck[i]) != removeSummaries.end())
-        removeInds.push_back(i);
-    }
-    std::sort(removeInds.begin(), removeInds.end());
-    for (auto i = 0; i < removeInds.size(); ++i) {
-      toCheck.erase(toCheck.begin() + removeInds[removeInds.size() - i - 1]);
-    }
-
-    /*
-     * Clear function entries without any more loops to check
-     */
-    if (toCheck.size() == 0) {
-      loopsToCheck.erase(F);
-    }
   }
-
+    
   return anyInlined;
 }
 

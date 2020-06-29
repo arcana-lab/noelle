@@ -46,7 +46,7 @@ namespace llvm {
     /*
      * Inlining procedure
      */
-    void getLoopsToInline (std::string filename) ;
+    void getLoopsToInline (void) ;
     bool registerRemainingLoops (std::string filename) ;
     bool inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) ;
     bool inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) ;

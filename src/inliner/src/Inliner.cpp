@@ -70,51 +70,29 @@ bool Inliner::runOnModule (Module &M) {
   /*
    * Inline calls involved in loop-carried data dependences.
    */
-  ifstream doCallInlineFile("dgsimplify_do_scc_call_inline.txt");
-  bool doInline = doCallInlineFile.good();
-  doCallInlineFile.close();
-  if (doInline) {
-    std::string filename = "dgsimplify_scc_call_inlining.txt";
-    getLoopsToInline(filename);
+  getLoopsToInline();
 
-    /*
-     * Fetch the PDG.
-     */
-    auto PDG = noelle.getProgramDependenceGraph();
+  /*
+   * Fetch the PDG.
+   */
+  auto PDG = noelle.getProgramDependenceGraph();
 
-    /*
-     * Perform the inlining.
-     */
-    auto inlined = this->inlineCallsInvolvedInLoopCarriedDataDependences(noelle);
-    if (inlined) {
-      // NOTE(joe) temporary fix which makes sure that before writing fnOrders to a file
-      // that the order match the order read in by the next pass. See adjustFnOrder.
-      getAnalysis<CallGraphWrapperPass>().runOnModule(M);
-      getAnalysis<PDGAnalysis>().runOnModule(M);
-      parentFns.clear();
-      childrenFns.clear();
-      orderedCalled.clear();
-      orderedCalls.clear();
-      collectFnGraph(main);
-      collectInDepthOrderFns(main);
-      printFnOrder();
-    }
-
-    auto remaining = registerRemainingLoops(filename);
-    if (remaining) {
-      writeToContinueFile();
-    }
-
-    printFnInfo();
-    if (  true
-          && (!remaining)  
-          && (this->verbose != Verbosity::Disabled)
-      ){
-      errs() << "Inliner:   No remaining call inlining in SCCs\n";
-    }
-
-    return inlined;
+  /*
+   * Perform the inlining.
+   */
+  auto inlined = this->inlineCallsInvolvedInLoopCarriedDataDependences(noelle);
+  if (inlined){
+    writeToContinueFile();
+    return true;
   }
+
+  /*
+   * No more calls need to be inlined for loop-carried dependences.
+   */
+  if (this->verbose != Verbosity::Disabled){
+    errs() << "Inliner:   No remaining call inlining in SCCs\n";
+  }
+  printFnInfo();
 
   /*
    * Check if we should hoist loops to main.
@@ -163,45 +141,11 @@ bool Inliner::runOnModule (Module &M) {
 /*
  * Progress Tracking using file system
  */
-void Inliner::getLoopsToInline (std::string filename) {
-  loopsToCheck.clear();
-  ifstream infile(filename);
-  if (infile.good()) {
-    std::string line;
-    std::string delimiter = ",";
-    std::unordered_map<int, std::vector<int>> allInds;
-    while(getline(infile, line)) {
-      size_t i = line.find(delimiter);
-      int fnInd = std::stoi(line.substr(0, i));
-      int loopInd = std::stoi(line.substr(i + delimiter.length()));
-      allInds[fnInd].push_back(loopInd);
-    }
-
-    for (const auto &fnLoopInds : allInds) {
-      auto fnInd = fnLoopInds.first;
-      auto loopInds = fnLoopInds.second;
-      assert(fnInd >= 0 && fnInd < depthOrderedFns.size());
-      auto F = depthOrderedFns[fnInd];
-      auto iter = preOrderedLoops.find(F);
-      if (iter == preOrderedLoops.end() || (*iter).second == nullptr) {
-        continue;
-      }
-      auto &loops = *preOrderedLoops[F];
-      std::sort(loopInds.begin(), loopInds.end());
-      assert(loopInds[0] >= 0);
-      assert(loopInds[loopInds.size() - 1] < loops.size());
-      for (auto loopInd : loopInds) {
-        loopsToCheck[F].push_back(loops[loopInd]);
-      }
-    }
-
-  } else {
-    // NOTE(angelo): Default to selecting all loops in the program
-    for (auto funcLoops : preOrderedLoops) {
-      auto F = funcLoops.first;
-      for (auto summary : *funcLoops.second) {
-        loopsToCheck[F].push_back(summary);
-      }
+void Inliner::getLoopsToInline (void) {
+  for (auto funcLoops : preOrderedLoops) {
+    auto F = funcLoops.first;
+    for (auto summary : *funcLoops.second) {
+      loopsToCheck[F].push_back(summary);
     }
   }
 }
@@ -222,43 +166,6 @@ void Inliner::getFunctionsToInline (std::string filename) {
       fnsToCheck.insert(funcLoops.first);
     }
   }
-}
-
-bool Inliner::registerRemainingLoops (std::string filename) {
-  remove(filename.c_str());
-  if (loopsToCheck.empty()) return false;
-
-  ofstream outfile(filename);
-  for (const auto &funcLoops : loopsToCheck) {
-    int fnInd = fnOrders[funcLoops.first];
-    auto &allLoops = *preOrderedLoops[funcLoops.first];
-
-    auto &F = *funcLoops.first;
-    auto &DomTree = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
-    auto LI = LoopInfo();
-    LI.analyze(DomTree);
-
-    // NOTE(joe): loop indices can be out of range since the Inline Function call can remove loops.
-    // if there are loops(P) and loops(C) then loops(P') <= loops(P) and loops(C). Where P is the parent function,
-    // C the child function, P' the parent function with C inlined and loops(F) is a returns the number of loops.
-    for (auto summaryIter = funcLoops.second.rbegin(); summaryIter != funcLoops.second.rend(); summaryIter++) {
-      auto summary = *summaryIter;
-      auto loopInd = std::find(allLoops.begin(), allLoops.end(), summary);
-      auto dist = std::distance(allLoops.begin(), loopInd);
-      auto loopPre = LI.getLoopsInPreorder().size();
-      // Loop index out-of-bounds, so report that all loops should be inlined.
-      if ( dist >= loopPre ) {
-        for (int i = 0; i < loopPre; i++) {
-          outfile << fnInd << "," << i << '\n';
-        }
-        break;
-      } else {
-        outfile << fnInd << "," << dist << '\n';
-      }
-    }
-  }
-  outfile.close();
-  return true;
 }
 
 bool Inliner::registerRemainingFunctions (std::string filename) {
