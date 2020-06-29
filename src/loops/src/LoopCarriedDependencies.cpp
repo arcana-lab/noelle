@@ -42,22 +42,17 @@ LoopCarriedDependencies::LoopCarriedDependencies (
         auto isMemoryDependenceThusCanCrossLoops = edge->isMemoryDependence();
         auto isControlDependence = edge->isControlDependence();
 
-        assert( (isControlDependence 
-                  || isMemoryDependenceThusCanCrossLoops 
-                  || (producerLevel <= consumerLevel)
-                )
-                && "Producer of loop carried data dependency is NOT in the same loop or an inner-more loop than the consumer");
-
         /*
-         * If a memory-less data dependence producer cannot reach the header of the loop without
-         * reaching the consumer, then this is a false positive match
+         * If a memory-less data dependence producer cannot reach the header of the loop without reaching the consumer, then this is a false positive match.
          */
         if (!edge->isMemoryDependence() && edge->isDataDependence()) {
           auto producerB = producerI->getParent();
           auto consumerB = consumerI->getParent();
           bool mustProducerReachConsumerBeforeHeader = !canBasicBlockReachHeaderBeforeOther(*consumerLoop, producerB, consumerB);
 
-          if (mustProducerReachConsumerBeforeHeader) continue;
+          if (mustProducerReachConsumerBeforeHeader) {
+            continue;
+          }
         }
 
         loopCarriedDependenciesMap[consumerLoop].insert(edge);
