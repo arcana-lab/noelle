@@ -73,11 +73,6 @@ bool Inliner::runOnModule (Module &M) {
   getLoopsToInline();
 
   /*
-   * Fetch the PDG.
-   */
-  auto PDG = noelle.getProgramDependenceGraph();
-
-  /*
    * Perform the inlining.
    */
   auto inlined = this->inlineCallsInvolvedInLoopCarriedDataDependences(noelle);
