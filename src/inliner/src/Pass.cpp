@@ -30,8 +30,6 @@ void Inliner::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<PostDominatorTreeWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
 
   return ;
 }
