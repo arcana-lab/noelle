@@ -130,16 +130,6 @@ bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
   });
 
   /*
-   * NOTE: if there are more than two non-trivial SCCs, then
-   * there is less incentive to continue trying to inline.
-   * Why 2? Because 2 is always a simple non-trivial number
-   * to start a heuristic at.
-   */
-  if (sccsToCheck.size() > 2) {
-    return false;
-  }
-
-  /*
    * Check every sequential SCC.
    */
   int64_t maxMemEdges = 0;
