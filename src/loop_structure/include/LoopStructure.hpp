@@ -66,6 +66,8 @@ namespace llvm {
 
       bool isIncluded (Instruction *inst) const ;
 
+      bool isIncludedInItsSubLoops (Instruction *inst) const ;
+
       void print (raw_ostream &stream);
       
       std::vector<BasicBlock *> orderedBBs;

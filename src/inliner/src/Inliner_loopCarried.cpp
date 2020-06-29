@@ -120,6 +120,11 @@ bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
    */
   auto SCCDAG = LDI->sccdagAttrs.getSCCDAG();
 
+  /*
+   * Fetch the loop structure.
+   */
+  auto loopStructure = LDI->getLoopStructure();
+
   std::set<SCC *> sccsToCheck;
   SCCDAG->iterateOverSCCs([LDI, &sccsToCheck](SCC *scc) -> bool{
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
@@ -183,6 +188,13 @@ bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
        */
       if (fnOrders[callF] < fnOrders[F]) {
         continue;
+      }
+
+      /*
+       * If the call instruction belongs to a sub-loop, then its inlining is likely to be useless.
+       */
+      if (loopStructure->isIncludedInItsSubLoops(call)){
+        continue ;
       }
 
       /*
