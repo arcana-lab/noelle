@@ -19,17 +19,13 @@ namespace llvm {
     public:
       std::set<std::shared_ptr<LoopStructure>> loops;
 
-      LoopsSummary ();
+      LoopsSummary (Loop *l);
 
       LoopStructure * getLoop (Instruction &instIncludedInLoop) const ;
 
       LoopStructure * getLoop (BasicBlock &bbIncludedInLoop) const ;
 
       LoopStructure * getLoopNestingTreeRoot (void) const ;
-
-      void populate (
-        Loop *loop
-        );
 
       void print (raw_ostream &stream) const ;
 
