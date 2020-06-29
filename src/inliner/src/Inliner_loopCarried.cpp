@@ -33,8 +33,6 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
     /*
      * Fetch all loops of the current function.
      */
-    errs() << "AAA " << F->getName() << "\n";
-    errs() << *F ;
     auto allLoops = noelle.getLoops(F);
 
     auto& LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
