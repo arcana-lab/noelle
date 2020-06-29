@@ -592,10 +592,10 @@ void Noelle::sortByStaticNumberOfInstructions (std::vector<LoopDependenceInfo *>
   auto compareLoops = [] (LoopDependenceInfo *a, LoopDependenceInfo *b) -> bool {
     auto aLS = a->getLoopStructure();
     auto bLS = b->getLoopStructure();
-    auto aInsts = aLS->getInstructions();
-    auto bInsts = bLS->getInstructions();
+    auto aInsts = aLS->getNumberOfInstructions();
+    auto bInsts = bLS->getNumberOfInstructions();
 
-    return aInsts.size() >= bInsts.size();
+    return aInsts > bInsts;
   };
 
   /*

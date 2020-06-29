@@ -57,6 +57,8 @@ namespace llvm {
       std::unordered_set<BasicBlock *> getBasicBlocks (void) const ;
 
       std::unordered_set<Instruction *> getInstructions (void) const ;
+      
+      uint64_t getNumberOfInstructions (void) const ;
 
       std::vector<BasicBlock *> getLoopExitBasicBlocks (void) const ;
 

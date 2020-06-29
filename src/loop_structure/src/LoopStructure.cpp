@@ -135,6 +135,15 @@ std::unordered_set<Instruction *> LoopStructure::getInstructions (void) const {
 
   return insts;
 }
+      
+uint64_t LoopStructure::getNumberOfInstructions (void) const {
+  uint64_t t = 0;
+  for (auto bb : this->bbs){
+    t += bb->size();
+  }
+
+  return t;
+}
 
 std::vector<BasicBlock *> LoopStructure::getLoopExitBasicBlocks (void) const {
   return this->exitBlocks;
