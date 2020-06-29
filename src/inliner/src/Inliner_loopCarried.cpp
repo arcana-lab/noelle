@@ -35,35 +35,35 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
      */
     auto allLoops = noelle.getLoops(F);
 
-    auto& LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
-    auto loopsPreorder = collectPreOrderedLoopsFor(F, LI);
-    auto &allSummaries = *preOrderedLoops[F];
+    /*
+     * Sort the loops by hotness.
+     * This makes the loops sorted by scope as well (from outer to inner loops).
+     */
+    noelle.sortByHotness(*allLoops);
 
+    /*
+     * Fetch the set of loops that are enabled.
+     */
+    auto &toCheck = loopsToCheck[F];
+
+    /*
+     * Inline calls that are involved in loop-carried data dependences for the enabled loops.
+     */
     auto inlined = false;
     std::set<LoopStructure *> removeSummaries;
-    auto &toCheck = loopsToCheck[F];
-    for (auto summary : toCheck) {
-      auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
-      auto loopInd = loopIter - allSummaries.begin();
-      auto loop = (*loopsPreorder)[loopInd];
+    for (auto LDI : *allLoops){
 
       /*
-       * Fetch the LDI
+       * Check if the current loop has been enabled.
        */
-      LoopDependenceInfo *LDI = nullptr;
-      for (auto tempLDI : *allLoops){
-        auto LS = tempLDI->getLoopStructure();
-        if (LS->getHeader() == loop->getHeader()){
-          LDI = tempLDI;
+      LoopStructure *summary = nullptr;
+      for (auto enabledLoop : toCheck){
+        if (enabledLoop->getHeader() == LDI->getLoopStructure()->getHeader()){
+          summary = enabledLoop;
           break ;
         }
       }
-      if (LDI == nullptr){
-
-        /*
-         * We couldn't find the loop.
-         * This means the loop has been filter out for its coldness.
-         */
+      if (summary == nullptr){
         continue ;
       }
 
@@ -86,7 +86,6 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
       delete tempLDI;
     }
     delete allLoops ;
-    delete loopsPreorder;
 
     /*
      * Keep track of the inlining.
