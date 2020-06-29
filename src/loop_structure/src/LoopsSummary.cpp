@@ -61,6 +61,7 @@ LoopsSummary::LoopsSummary (
   /*
    * Set the root of the tree
    */
+  assert(loopToSummary.find(loop) != loopToSummary.end());
   this->topLoop = loopToSummary[loop];
 
   return ;
