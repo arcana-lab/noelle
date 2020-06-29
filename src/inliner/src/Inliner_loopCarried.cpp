@@ -41,10 +41,10 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
     auto allLoops = noelle.getLoops(F);
 
     /*
-     * Sort the loops by hotness.
+     * Sort the loops by size.
      * This makes the loops sorted by scope as well (from outer to inner loops).
      */
-    noelle.sortByHotness(*allLoops);
+    noelle.sortByStaticNumberOfInstructions(*allLoops);
 
     /*
      * Fetch the set of loops that are enabled.
