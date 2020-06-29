@@ -35,12 +35,18 @@ regressionFinished="0" ;
 stillRunning="`mktemp`" ;
 condor_q `whoami` -l | grep ^Arguments | grep "`pwd`" | grep regression > $stillRunning ;
 if test -s $stillRunning ; then
-  echo "    The following tests are still running" ;
-  while IFS= read -r line; do
-    testRunning=`echo $line | awk '{print $4}'` ;
-    echo "      $testRunning" ;
-  done < "$stillRunning"
+  stillRunningJobs=`wc -l $stillRunning | awk '{print $1}'` ;
+  tooManyJobs=`echo "$stillRunningJobs > 12" | bc` ;
+  if test $tooManyJobs == "0" ; then
+    echo "    The following tests are still running" ;
+    while IFS= read -r line; do
+      testRunning=`echo $line | awk '{print $4}'` ;
+      echo "      $testRunning" ;
+    done < "$stillRunning"
 
+  else
+    echo "    There are $stillRunningJobs jobs that are still running" ;
+  fi
 else
   echo "    All tests finished" ;
   regressionFinished="1" ;
