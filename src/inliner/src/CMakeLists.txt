@@ -2,6 +2,7 @@
 set(Srcs 
   Pass.cpp
   Inliner.cpp
+  Inliner_loopCarried.cpp
   Printer.cpp
 )
 
