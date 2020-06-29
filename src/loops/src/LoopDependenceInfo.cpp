@@ -23,7 +23,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   uint32_t maxCores
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{maxCores},
-    liSummary{}
+    liSummary{l}
   {
 
   /*
@@ -153,11 +153,6 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (
   } else {
     this->compileTimeKnownTripCount = false;
   }
-
-  /*
-   * Create a LoopInfo summary
-   */
-  this->liSummary.populate(l);
 
   return ;
 }

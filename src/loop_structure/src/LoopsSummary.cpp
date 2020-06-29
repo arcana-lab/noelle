@@ -13,55 +13,6 @@
 using namespace llvm;
       
 LoopsSummary::LoopsSummary (
-  ) {
-
-  return ;
-}
-
-LoopStructure * LoopsSummary::getLoop (Instruction &instIncludedInLoop) const {
-  auto instBB = instIncludedInLoop.getParent();
-  auto l = this->getLoop(*instBB);
-  return l;
-}
-
-LoopStructure * LoopsSummary::getLoop (BasicBlock &bbIncludedInLoop) const {
-  auto lIter = this->bbToLoop.find(&bbIncludedInLoop);
-  if (lIter == this->bbToLoop.end()){
-    return nullptr;
-  }
-  auto l = this->bbToLoop.at(&bbIncludedInLoop);
-  return l;
-}
-
-LoopStructure * LoopsSummary::createSummary (
-  Loop *l, 
-  LoopStructure *parentLoop
-  ) {
-
-  /*
-   * Fetch the loop header.
-   */
-  auto header = l->getHeader();
-
-  /*
-   * Allocate the LoopStructure
-   */
-  std::shared_ptr<LoopStructure> lSummary;
-  lSummary = std::make_shared<LoopStructure>(l, parentLoop);
-
-  /*
-   * Create the map from basic blocks to loop.
-   */
-  auto lPtr = lSummary.get();
-  for (auto bb : l->blocks()) {
-    this->bbToLoop[bb] = lPtr;
-  }
-  auto ls = this->loops.insert(std::move(lSummary)).first->get();
-
-  return ls;
-}
-      
-void LoopsSummary::populate (
   Loop *loop
   ) {
   std::unordered_map<Loop *, LoopStructure *> loopToSummary;
@@ -115,6 +66,49 @@ void LoopsSummary::populate (
   return ;
 }
 
+LoopStructure * LoopsSummary::getLoop (Instruction &instIncludedInLoop) const {
+  auto instBB = instIncludedInLoop.getParent();
+  auto l = this->getLoop(*instBB);
+  return l;
+}
+
+LoopStructure * LoopsSummary::getLoop (BasicBlock &bbIncludedInLoop) const {
+  auto lIter = this->bbToLoop.find(&bbIncludedInLoop);
+  if (lIter == this->bbToLoop.end()){
+    return nullptr;
+  }
+  auto l = this->bbToLoop.at(&bbIncludedInLoop);
+  return l;
+}
+
+LoopStructure * LoopsSummary::createSummary (
+  Loop *l, 
+  LoopStructure *parentLoop
+  ) {
+
+  /*
+   * Fetch the loop header.
+   */
+  auto header = l->getHeader();
+
+  /*
+   * Allocate the LoopStructure
+   */
+  std::shared_ptr<LoopStructure> lSummary;
+  lSummary = std::make_shared<LoopStructure>(l, parentLoop);
+
+  /*
+   * Create the map from basic blocks to loop.
+   */
+  auto lPtr = lSummary.get();
+  for (auto bb : l->blocks()) {
+    this->bbToLoop[bb] = lPtr;
+  }
+  auto ls = this->loops.insert(std::move(lSummary)).first->get();
+
+  return ls;
+}
+      
 void LoopsSummary::print (raw_ostream &stream) const {
   stream << "Loop summaries:\n";
   for (auto &loop : loops) {
@@ -125,5 +119,7 @@ void LoopsSummary::print (raw_ostream &stream) const {
 }
       
 LoopStructure * LoopsSummary::getLoopNestingTreeRoot (void) const {
+  assert(this->topLoop != nullptr);
+
   return this->topLoop;
 }
