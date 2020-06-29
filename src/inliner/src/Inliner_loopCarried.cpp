@@ -30,12 +30,14 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
       continue;
     }
 
-    auto& DT = getAnalysis<DominatorTreeWrapperPass>(*F).getDomTree();
-    auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*F).getPostDomTree();
-    DominatorSummary DS(DT, PDT);
+    /*
+     * Fetch all loops of the current function.
+     */
+    errs() << "AAA " << F->getName() << "\n";
+    errs() << *F ;
+    auto allLoops = noelle.getLoops(F);
+
     auto& LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
-    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*F).getSE();
-    auto fdg = noelle.getFunctionDependenceGraph(F);
     auto loopsPreorder = collectPreOrderedLoopsFor(F, LI);
     auto &allSummaries = *preOrderedLoops[F];
 
@@ -46,19 +48,51 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
       auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
       auto loopInd = loopIter - allSummaries.begin();
       auto loop = (*loopsPreorder)[loopInd];
-      auto LDI = new LoopDependenceInfo(fdg, loop, DS, SE, 2);
-      bool inlinedCall = this->inlineCallsInMassiveSCCs(F, LDI);
+
+      /*
+       * Fetch the LDI
+       */
+      LoopDependenceInfo *LDI = nullptr;
+      for (auto tempLDI : *allLoops){
+        auto LS = tempLDI->getLoopStructure();
+        if (LS->getHeader() == loop->getHeader()){
+          LDI = tempLDI;
+          break ;
+        }
+      }
+      if (LDI == nullptr){
+
+        /*
+         * We couldn't find the loop.
+         * This means the loop has been filter out for its coldness.
+         */
+        continue ;
+      }
+
+      /*
+       * Inline the call.
+       */
+      auto inlinedCall = this->inlineCallsInMassiveSCCs(F, LDI);
       if (!inlinedCall) {
         removeSummaries.insert(summary);
       }
 
       inlined |= inlinedCall;
-      delete LDI;
       if (inlined) break;
     }
 
-    delete fdg;
+    /*
+     * Free the memory.
+     */
+    for (auto tempLDI : *allLoops){
+      delete tempLDI;
+    }
+    delete allLoops ;
     delete loopsPreorder;
+
+    /*
+     * Keep track of the inlining.
+     */
     anyInlined |= inlined;
 
     /*
