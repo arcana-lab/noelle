@@ -9,7 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Inliner.hpp"
-#include "Noelle.hpp"
 
 bool Inliner::runOnModule (Module &M) {
   if (this->verbose != Verbosity::Disabled) {
@@ -49,7 +48,6 @@ bool Inliner::runOnModule (Module &M) {
    */
   collectFnGraph(main);
   collectInDepthOrderFns(main);
-  // OPTIMIZATION(angelo): Do this lazily, depending on what functions are considered in algorithms
   for (auto func : depthOrderedFns) {
     createPreOrderedLoopSummariesFor(func);
   }
@@ -70,7 +68,7 @@ bool Inliner::runOnModule (Module &M) {
   };
 
   /*
-   * Inline calls within large SCCs of targeted loops
+   * Inline calls involved in loop-carried data dependences.
    */
   ifstream doCallInlineFile("dgsimplify_do_scc_call_inline.txt");
   bool doInline = doCallInlineFile.good();
@@ -79,7 +77,15 @@ bool Inliner::runOnModule (Module &M) {
     std::string filename = "dgsimplify_scc_call_inlining.txt";
     getLoopsToInline(filename);
 
-    auto inlined = inlineCallsInMassiveSCCsOfLoops();
+    /*
+     * Fetch the PDG.
+     */
+    auto PDG = noelle.getProgramDependenceGraph();
+
+    /*
+     * Perform the inlining.
+     */
+    auto inlined = inlineCallsInvolvedInLoopCarriedDataDependences(noelle);
     if (inlined) {
       // NOTE(joe) temporary fix which makes sure that before writing fnOrders to a file
       // that the order match the order read in by the next pass. See adjustFnOrder.
@@ -268,160 +274,6 @@ bool Inliner::registerRemainingFunctions (std::string filename) {
   }
   outfile.close();
   return true;
-}
-
-/*
- * Inlining
- */
-bool Inliner::inlineCallsInMassiveSCCsOfLoops (void) {
-  auto &PDGA = getAnalysis<PDGAnalysis>();
-  bool anyInlined = false;
-
-  // NOTE(angelo): Order these functions to prevent duplicating loops yet to be checked
-  std::vector<Function *> orderedFns;
-  for (auto fnLoops : loopsToCheck) {
-    orderedFns.push_back(fnLoops.first);
-  }
-  sortInDepthOrderFns(orderedFns);
-
-  std::set<Function *> fnsToAvoid;
-  for (auto F : orderedFns) {
-    // NOTE(angelo): If we avoid this function until next pass, we do the same with its parents
-    if (fnsToAvoid.find(F) != fnsToAvoid.end()) {
-      for (auto parentF : parentFns[F]) {
-        fnsToAvoid.insert(parentF);
-      }
-      continue;
-    }
-
-    auto& DT = getAnalysis<DominatorTreeWrapperPass>(*F).getDomTree();
-    auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*F).getPostDomTree();
-    DominatorSummary DS(DT, PDT);
-    auto& LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
-    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*F).getSE();
-    auto *fdg = PDGA.getFunctionPDG(*F);
-    auto *loopsPreorder = collectPreOrderedLoopsFor(F, LI);
-    auto &allSummaries = *preOrderedLoops[F];
-
-    bool inlined = false;
-    std::set<LoopStructure *> removeSummaries;
-    auto &toCheck = loopsToCheck[F];
-    for (auto summary : toCheck) {
-      auto loopIter = std::find(allSummaries.begin(), allSummaries.end(), summary);
-      auto loopInd = loopIter - allSummaries.begin();
-      auto loop = (*loopsPreorder)[loopInd];
-      auto LDI = new LoopDependenceInfo(fdg, loop, DS, SE, 2);
-      bool inlinedCall = inlineCallsInMassiveSCCs(F, LDI);
-      if (!inlinedCall) {
-        removeSummaries.insert(summary);
-      }
-
-      inlined |= inlinedCall;
-      delete LDI;
-      if (inlined) break;
-    }
-
-    delete fdg;
-    delete loopsPreorder;
-    anyInlined |= inlined;
-
-    /*
-     * Avoid parents of affected functions.
-     * This is because we are not finished with the affected functions.
-     */
-    if (inlined) {
-      for (auto parentF : parentFns[F]) {
-        fnsToAvoid.insert(parentF);
-      }
-    }
-
-    /*
-     * Do not re-check loops that weren't inlined within after a check 
-     */
-    std::vector<int> removeInds;
-    for (auto i = 0; i < toCheck.size(); ++i) {
-      if (removeSummaries.find(toCheck[i]) != removeSummaries.end())
-        removeInds.push_back(i);
-    }
-    std::sort(removeInds.begin(), removeInds.end());
-    for (auto i = 0; i < removeInds.size(); ++i) {
-      toCheck.erase(toCheck.begin() + removeInds[removeInds.size() - i - 1]);
-    }
-
-    /*
-     * Clear function entries without any more loops to check
-     */
-    if (toCheck.size() == 0) {
-      loopsToCheck.erase(F);
-    }
-  }
-
-  return anyInlined;
-}
-
-/*
- * GOAL: Go through loops in function
- * If there is only one non-clonable/reducable SCC,
- * try inlining the function call in that SCC with the
- * most memory edges to other internal/external values
- */
-bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
-
-  /*
-   * Fetch the SCCDAG
-   */
-  auto SCCDAG = LDI->sccdagAttrs.getSCCDAG();
-
-  std::set<SCC *> sccsToCheck;
-  SCCDAG->iterateOverSCCs([LDI, &sccsToCheck](SCC *scc) -> bool{
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
-    if (  true
-          && (!sccInfo->canExecuteReducibly())
-          && (!sccInfo->canExecuteIndependently())
-          && (!sccInfo->canBeCloned())
-      ){
-      sccsToCheck.insert(scc);
-    }
-
-    return false;
-  });
-
-  /*
-   * NOTE: if there are more than two non-trivial SCCs, then
-   * there is less incentive to continue trying to inline.
-   * Why 2? Because 2 is always a simple non-trivial number
-   * to start a heuristic at.
-   */
-  if (sccsToCheck.size() > 2) return false;
-
-  int64_t maxMemEdges = 0;
-  CallInst *inlineCall = nullptr;
-  for (auto scc : sccsToCheck) {
-    for (auto valNode : scc->getNodes()) {
-      auto val = valNode->getT();
-      if (auto call = dyn_cast<CallInst>(val)) {
-        auto callF = call->getCalledFunction();
-        if (!callF || callF->empty()) continue;
-
-        // NOTE(angelo): Do not consider inlining a recursive function call
-        if (callF == F) continue;
-
-        // NOTE(angelo): Do not consider inlining calls to functions of lower depth
-        if (fnOrders[callF] < fnOrders[F]) continue;
-
-        auto memEdgeCount = 0;
-        for (auto edge : valNode->getAllConnectedEdges()) {
-          if (edge->isMemoryDependence()) memEdgeCount++;
-        }
-        if (memEdgeCount > maxMemEdges) {
-          maxMemEdges = memEdgeCount;
-          inlineCall = call;
-        }
-      }
-    }
-  }
-
-  return inlineCall && inlineFunctionCall(F, inlineCall->getCalledFunction(), inlineCall);
 }
 
 bool Inliner::inlineFnsOfLoopsToCGRoot () {
