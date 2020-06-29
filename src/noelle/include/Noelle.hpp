@@ -49,6 +49,15 @@ namespace llvm {
         Function *startingPoint
         );
 
+      std::vector<LoopDependenceInfo *> * getLoops (
+        Function *function
+        );
+
+      std::vector<LoopDependenceInfo *> * getLoops (
+        Function *function,
+        double minimumHotness
+        );
+
       std::vector<LoopDependenceInfo *> * getProgramLoops (void) ;
 
       std::vector<LoopDependenceInfo *> * getProgramLoops (
