@@ -59,6 +59,7 @@ regression_9/Exit_call3 -noelle-verbose=3 -noelle-disable-doall -noelle-disable-
 regression_9/NestedLoops -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2
 regression_9/Recursive -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2
 regression_10/CondControlMemory -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-disable-loop-sorting
+regression_10/DependentIterations -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-disable-loop-sorting
 regression_10/Exit_call2 -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-disable-loop-sorting
 regression_10/Exit_call3 -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-disable-loop-sorting
 regression_10/NestedLoops -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-disable-loop-sorting
