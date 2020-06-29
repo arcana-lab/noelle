@@ -583,3 +583,25 @@ void Noelle::sortByHotness (std::vector<LoopDependenceInfo *> & loops) {
 
   return ;
 }
+
+void Noelle::sortByStaticNumberOfInstructions (std::vector<LoopDependenceInfo *> & loops) {
+
+  /*
+   * Define the order between loops.
+   */
+  auto compareLoops = [] (LoopDependenceInfo *a, LoopDependenceInfo *b) -> bool {
+    auto aLS = a->getLoopStructure();
+    auto bLS = b->getLoopStructure();
+    auto aInsts = aLS->getInstructions();
+    auto bInsts = bLS->getInstructions();
+
+    return aInsts.size() >= bInsts.size();
+  };
+
+  /*
+   * Sort the loops.
+   */
+  std::sort(loops.begin(), loops.end(), compareLoops);
+
+  return ;
+}

@@ -68,6 +68,10 @@ namespace llvm {
         std::vector<LoopDependenceInfo *> & loops
         ) ;
 
+      void sortByStaticNumberOfInstructions (
+        std::vector<LoopDependenceInfo *> & loops
+        ) ;
+
       uint32_t getNumberOfProgramLoops (void);
 
       uint32_t getNumberOfProgramLoops (

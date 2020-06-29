@@ -124,6 +124,17 @@ std::unordered_set<BasicBlock *> LoopStructure::getLatches (void) const {
 std::unordered_set<BasicBlock *> LoopStructure::getBasicBlocks (void) const {
   return this->bbs;
 }
+      
+std::unordered_set<Instruction *> LoopStructure::getInstructions (void) const {
+  std::unordered_set<Instruction *> insts{};
+  for (auto bb : this->bbs){
+    for (auto &inst : *bb){
+      insts.insert(&inst);
+    }
+  }
+
+  return insts;
+}
 
 std::vector<BasicBlock *> LoopStructure::getLoopExitBasicBlocks (void) const {
   return this->exitBlocks;
