@@ -85,7 +85,7 @@ bool Inliner::runOnModule (Module &M) {
     /*
      * Perform the inlining.
      */
-    auto inlined = inlineCallsInvolvedInLoopCarriedDataDependences(noelle);
+    auto inlined = this->inlineCallsInvolvedInLoopCarriedDataDependences(noelle);
     if (inlined) {
       // NOTE(joe) temporary fix which makes sure that before writing fnOrders to a file
       // that the order match the order read in by the next pass. See adjustFnOrder.
@@ -682,7 +682,7 @@ void Inliner::createPreOrderedLoopSummariesFor (Function *F) {
   preOrderedLoops[F] = &orderedLoops;
 }
 
-std::vector<Loop *> *Inliner::collectPreOrderedLoopsFor (Function *F, LoopInfo &LI) {
+std::vector<Loop *> * Inliner::collectPreOrderedLoopsFor (Function *F, LoopInfo &LI) {
   // Collect loops in program forward order
   auto loops = new std::vector<Loop *>();
   for (auto &B : *F) {
