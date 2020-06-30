@@ -34,3 +34,11 @@ uint64_t Hot::getTotalInstructions (LoopStructure *loop) const {
 
   return insts;
 }
+
+double Hot::getDynamicTotalInstructionCoverage (LoopStructure *loop) const {
+  auto mInsts = this->getTotalInstructions();
+  auto lInsts = this->getTotalInstructions(loop);
+  auto hotness = ((double)lInsts) / ((double)mInsts);
+
+  return hotness;
+}

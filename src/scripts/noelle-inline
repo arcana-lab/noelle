@@ -20,13 +20,19 @@ function runSimplify {
   local FILE_NAME=$(expand_rel_path "$2") &> /dev/null ;
   local ITER=0 ;
 
+  # Create the temporary file
+  fileToModify=`mktemp` ;
+
+  # Set the initial bitcode
+  cp $FILE_NAME $fileToModify ;
+
   rm -f dgsimplify_**
   touch "dgsimplify_continue.txt"
   while test -e "dgsimplify_continue.txt" ; do
     rm "dgsimplify_continue.txt"
     let ITER=ITER+1 
     printf "Running Inliner to inline calls within SCCs, iteration: $ITER\n"
-    noelle-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $FILE_NAME "-o" $FILE_NAME
+    noelle-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $fileToModify "-o" $fileToModify
   done
 
   ITER=0
@@ -37,10 +43,15 @@ function runSimplify {
     rm "dgsimplify_continue.txt"
     let ITER=ITER+1 
     printf "Running Inliner to hoist loops to main, iteration: $ITER\n"
-    noelle-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $FILE_NAME "-o" $FILE_NAME
+    noelle-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $fileToModify "-o" $fileToModify
   done
 
+  # Copy the inlined bitcode to the final one
+  cp $fileToModify $FILE_NAME ;
+
+  # Clean
   rm -f dgsimplify_**
+  rm $fileToModify ;
 }
 
 runSimplify "$1" "$2"
