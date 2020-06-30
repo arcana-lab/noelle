@@ -68,9 +68,14 @@ bool Inliner::runOnModule (Module &M) {
   };
 
   /*
+   * Fetch the profiles.
+   */
+  auto profiles = noelle.getProfiles();
+
+  /*
    * Inline calls involved in loop-carried data dependences.
    */
-  getLoopsToInline();
+  getLoopsToInline(noelle, profiles);
 
   /*
    * Perform the inlining.
@@ -136,10 +141,30 @@ bool Inliner::runOnModule (Module &M) {
 /*
  * Progress Tracking using file system
  */
-void Inliner::getLoopsToInline (void) {
+void Inliner::getLoopsToInline (Noelle &noelle, Hot *profiles) {
+  assert(profiles != nullptr);
+
   for (auto funcLoops : preOrderedLoops) {
     auto F = funcLoops.first;
     for (auto summary : *funcLoops.second) {
+
+      /*
+       * Check if the profile is available.
+       */
+      if (profiles->isAvailable()){
+        
+        /* 
+         * Check if the loop is hot enough.
+         */
+        auto hotness = profiles->getDynamicTotalInstructionCoverage(summary);
+        if (hotness < noelle.getMinimumHotness()){
+
+          /*
+           * The loop isn't hot enough.
+           */
+          continue ;
+        }
+      }
       loopsToCheck[F].push_back(summary);
     }
   }
