@@ -71,6 +71,13 @@ bool Inliner::runOnModule (Module &M) {
    * Fetch the profiles.
    */
   auto profiles = noelle.getProfiles();
+  if (this->verbose != Verbosity::Disabled) {
+    if (profiles->isAvailable()){
+      errs() << "Inliner:   Profiles are available and will be used\n";
+    } else{
+      errs() << "Inliner:   Profiles are not available\n";
+    }
+  }
 
   /*
    * Inline calls involved in loop-carried data dependences.
