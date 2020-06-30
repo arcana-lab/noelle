@@ -141,19 +141,23 @@ void DOALL::rewireLoopToIterateChunks (
   /*
    * The exit condition value does not need to be computed each iteration
    * and so the value's derivation can be hoisted into the preheader
+   * 
+   * NOTE: As of now, instructions which the PDG states are independent can include
+   * PHI nodes containing the re-loading of a global. Without further analysis,
+   * the following simplification would hoist that PHI out of its block.
    */
-  auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
-  if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
-    auto &derivation = ivUtility.getConditionValueDerivation();
-    for (auto I : derivation) {
-      auto cloneI = task->getCloneOfOriginalInstruction(I);
-      cloneI->removeFromParent();
-      entryBuilder.Insert(cloneI);
-    }
+  // auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
+  // if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
+  //   auto &derivation = ivUtility.getConditionValueDerivation();
+  //   for (auto I : derivation) {
+  //     auto cloneI = task->getCloneOfOriginalInstruction(I);
+  //     cloneI->removeFromParent();
+  //     entryBuilder.Insert(cloneI);
+  //   }
 
-    exitConditionInst->removeFromParent();
-    entryBuilder.Insert(exitConditionInst);
-  }
+  //   exitConditionInst->removeFromParent();
+  //   entryBuilder.Insert(exitConditionInst);
+  // }
 
   /*
    * NOTE: When loop governing IV attribution allows for any bther instructions in the header
