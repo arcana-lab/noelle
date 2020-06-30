@@ -67,10 +67,9 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
 
   // TODO: Grab first loop and produce attributes on it
-  LoopsSummary LIS{};
   Loop *topLoop = LI->getLoopsInPreorder()[0];
+  LoopsSummary LIS{topLoop};
 
-  LIS.populate(topLoop);
   auto *DT = &getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
   auto *PDT = &getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
   DominatorSummary DS(*DT, *PDT);
