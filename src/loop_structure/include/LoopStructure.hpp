@@ -64,8 +64,6 @@ namespace llvm {
 
       bool isLoopInvariant (Value *value) const ;
 
-      bool isContainedInstructionLoopInvariant (Instruction *inst) const ;
-
       bool isIncluded (BasicBlock *bb) const ;
 
       bool isIncluded (Instruction *inst) const ;
@@ -97,6 +95,8 @@ namespace llvm {
       static uint64_t globalID;
 
       void instantiateIDsAndBasicBlocks(Loop *llvmLoop) ;
+
+      bool isContainedInstructionLoopInvariant (Instruction *inst) const ;
   };
 
 }

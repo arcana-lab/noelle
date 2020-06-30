@@ -150,10 +150,26 @@ std::vector<BasicBlock *> LoopStructure::getLoopExitBasicBlocks (void) const {
 }
 
 bool LoopStructure::isLoopInvariant (Value *value) const {
+
+  /*
+   * Check if value is an instruction.
+   */
   if (auto inst = dyn_cast<Instruction>(value)) {
-    if (!this->isIncluded(inst->getParent())) return true;
-    return isContainedInstructionLoopInvariant(inst);
-  } else if (auto arg = dyn_cast<Argument>(value)) {
+
+    /*
+     * Check if the instruction is not included in the loop.
+     */
+    if (!this->isIncluded(inst->getParent())) {
+      return true;
+    }
+
+    return this->isContainedInstructionLoopInvariant(inst);
+  } 
+
+  /*
+   * Check if value is an argument.
+   */
+  if (auto arg = dyn_cast<Argument>(value)) {
     return true;
   }
 
