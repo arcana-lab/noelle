@@ -65,8 +65,7 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   this->sccdag = new SCCDAG(loopDG);
 
-  this->LIS = new LoopsSummary();
-  LIS->populate(topLoop);
+  this->LIS = new LoopsSummary(topLoop);
 
   errs() << "IVAttrTestSuite: Running IV analysis\n";
   auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
