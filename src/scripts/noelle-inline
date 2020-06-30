@@ -21,7 +21,6 @@ function runSimplify {
   local ITER=0 ;
 
   rm -f dgsimplify_**
-  touch "dgsimplify_do_scc_call_inline.txt"
   touch "dgsimplify_continue.txt"
   while test -e "dgsimplify_continue.txt" ; do
     rm "dgsimplify_continue.txt"
