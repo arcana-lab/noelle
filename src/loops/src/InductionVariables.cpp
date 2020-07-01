@@ -56,7 +56,7 @@ InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvo
   }
 }
 
-bool InductionVariableManager::doesContributeToComputeAnInductionVaraible (Instruction *i) {
+bool InductionVariableManager::doesContributeToComputeAnInductionVariable (Instruction *i) {
 
   /*
    * Iterate over every loop and their induction variables.

@@ -21,9 +21,6 @@
 #include "DominatorSummary.hpp"
 #include "ScalarEvolutionReferencer.hpp"
 
-using namespace std;
-using namespace llvm;
-
 namespace llvm {
 
   class InductionVariable;
@@ -45,7 +42,7 @@ namespace llvm {
 
       InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) ;
 
-      bool doesContributeToComputeAnInductionVaraible (Instruction *i) ;
+      bool doesContributeToComputeAnInductionVariable (Instruction *i) ;
 
       ~InductionVariableManager ();
 

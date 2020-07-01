@@ -217,7 +217,7 @@ bool EnablersManager::applyDevirtualizer (
           continue ;
         }
         auto instIdx = cast<Instruction>(idx);
-        if (IVM->doesContributeToComputeAnInductionVaraible(instIdx)){
+        if (IVM->doesContributeToComputeAnInductionVariable(instIdx)){
           fullyUnroll = true;
           break ;
         }

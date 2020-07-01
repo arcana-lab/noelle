@@ -17,13 +17,13 @@ using namespace llvm;
 
 Noelle::Noelle() 
   : ModulePass{ID}
-    , verbose{Verbosity::Disabled}
-    , minHot{0.0}
-    , program{nullptr}
-    , profiles{nullptr}
-    , programDependenceGraph{nullptr}
-    , maxCores{Architecture::getNumberOfPhysicalCores()}
-  {
+  , verbose{Verbosity::Disabled}
+  , minHot{0.0}
+  , program{nullptr}
+  , profiles{nullptr}
+  , programDependenceGraph{nullptr}
+  , maxCores{Architecture::getNumberOfPhysicalCores()}
+{
 
   return ;
 }
@@ -87,14 +87,14 @@ std::vector<Function *> * Noelle::getModuleFunctionsReachableFrom (Module *modul
 }
 
 void Noelle::linkTransformedLoopToOriginalFunction (
-  Module *module,
-  BasicBlock *originalPreHeader,
-  BasicBlock *startOfParLoopInOriginalFunc,
-  BasicBlock *endOfParLoopInOriginalFunc,
-  Value *envArray,
-  Value *envIndexForExitVariable,
-  std::vector<BasicBlock *> &loopExitBlocks
-  ){
+    Module *module,
+    BasicBlock *originalPreHeader,
+    BasicBlock *startOfParLoopInOriginalFunc,
+    BasicBlock *endOfParLoopInOriginalFunc,
+    Value *envArray,
+    Value *envIndexForExitVariable,
+    std::vector<BasicBlock *> &loopExitBlocks
+    ){
 
   /*
    * Create the global variable for the parallelized loop.
@@ -120,10 +120,10 @@ void Noelle::linkTransformedLoopToOriginalFunction (
   auto globalLoad = loopSwitchBuilder.CreateLoad(globalBool);
   auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(globalLoad, const0);
   loopSwitchBuilder.CreateCondBr(
-    compareInstruction,
-    startOfParLoopInOriginalFunc,
-    originalHeader
-  );
+      compareInstruction,
+      startOfParLoopInOriginalFunc,
+      originalHeader
+      );
   originalTerminator->eraseFromParent();
 
   IRBuilder<> endBuilder(endOfParLoopInOriginalFunc);
@@ -141,12 +141,12 @@ void Noelle::linkTransformedLoopToOriginalFunction (
     auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
 
     auto exitEnvPtr = endBuilder.CreateInBoundsGEP(
-      envArray,
-      ArrayRef<Value*>({
-        cast<Value>(ConstantInt::get(int64, 0)),
-        endBuilder.CreateMul(envIndexForExitVariable, ConstantInt::get(int64, valuesInCacheLine))
-      })
-    );
+        envArray,
+        ArrayRef<Value*>({
+          cast<Value>(ConstantInt::get(int64, 0)),
+          endBuilder.CreateMul(envIndexForExitVariable, ConstantInt::get(int64, valuesInCacheLine))
+          })
+        );
     auto exitEnvCast = endBuilder.CreateIntCast(endBuilder.CreateLoad(exitEnvPtr), int32, /*isSigned=*/false);
     auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
     for (int i = 1; i < loopExitBlocks.size(); ++i) {
@@ -198,7 +198,7 @@ uint32_t Noelle::fetchTheNextValue (std::stringstream &stream){
    */
   auto peekChar = stream.peek();
   if (  (peekChar == ' ')   ||
-        (peekChar == '\n')  ){
+      (peekChar == '\n')  ){
     stream.ignore();
   }
 
@@ -212,13 +212,13 @@ uint32_t Noelle::fetchTheNextValue (std::stringstream &stream){
    */
   peekChar = stream.peek();
   if (  (peekChar == ' ')   ||
-        (peekChar == '\n')  ){
+      (peekChar == '\n')  ){
     stream.ignore();
   }
 
   return currentValueRead;
 }
-      
+
 Verbosity Noelle::getVerbosity (void) const {
   return this->verbose;
 }
@@ -231,7 +231,7 @@ Function * Noelle::getEntryFunction (void) const {
   auto f = this->program->getFunction("main");
   return f;
 }
-      
+
 Hot * Noelle::getProfiles (void) {
   if (this->profiles == nullptr){
     this->profiles = &getAnalysis<HotProfiler>().getHot();
@@ -239,15 +239,15 @@ Hot * Noelle::getProfiles (void) {
 
   return this->profiles;
 }
-      
+
 PDG * Noelle::getProgramDependenceGraph (void) {
   if (this->programDependenceGraph == nullptr){
     this->programDependenceGraph = getAnalysis<PDGAnalysis>().getPDG();
   }
-  
+
   return this->programDependenceGraph;
 }
-      
+
 PDG * Noelle::getFunctionDependenceGraph (Function *f) {
   auto FDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*f);
 
@@ -265,7 +265,7 @@ DataFlowAnalysis Noelle::getDataFlowAnalyses (void) const {
 DataFlowEngine Noelle::getDataFlowEngine (void) const {
   return DataFlowEngine{};
 }
-      
+
 uint64_t Noelle::numberOfProgramInstructions (void) const {
   uint64_t t = 0;
   for (auto &F : *this->program){
