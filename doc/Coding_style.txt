@@ -1,4 +1,5 @@
 Next is what we would like to do or avoid in our codebase:
+
 - No function body in the headers
 
 - No use of integer built-in data types (e.g., int, long int), but use the ones that make the bitwidth explicit (e.g., uint32_t, int32_t)
@@ -29,3 +30,6 @@ Next is what we would like to do or avoid in our codebase:
 
 - Name your variables in the most meaningful way.
   Variable names are used to read and understand the code. Take advantage of it to make enjoyable reading your code.
+
+- Make inputs of a function as explicit as possible. 
+  Implicit inputs (e.g., object fields) makes often the code harder to understand.
