@@ -94,10 +94,10 @@ void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies (void) {
       /*
       * Check the consumer SCC.
       */
-      if (!isLastValuePHI(consumerSCC)) {
-        errs() << "SCCDAGNormalizer:  Unknown SCC with external loop carried dependence edge!\n";
-        edge->print(errs()) << "\n";
-      }
+      // if (!isLastValuePHI(consumerSCC)) {
+      //   errs() << "SCCDAGNormalizer:  Unknown SCC with external loop carried dependence edge!\n";
+      //   edge->print(errs()) << "\n";
+      // }
 
       /*
       * Merge @produerSCC with @consumerSCC

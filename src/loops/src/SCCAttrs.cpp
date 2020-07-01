@@ -25,6 +25,7 @@ SCCAttrs::SCCAttrs (
     , accumulators{}
     , controlFlowInsts{}
     , controlPairs{}
+    , loopCarriedVariables{}
     , isClonable{0}
     , hasIV{0}
   {
@@ -54,6 +55,12 @@ SCCAttrs::SCCAttrs (
   this->collectPHIsAndAccumulators(*LIS.getLoopNestingTreeRoot());
 
   return;
+}
+
+SCCAttrs::~SCCAttrs () {
+  for (auto var : loopCarriedVariables) {
+    delete var;
+  }
 }
  
 SCCAttrs::SCCType SCCAttrs::getType (void) const {
@@ -316,3 +323,13 @@ void SCCAttrs::setSCCToBeClonable (bool isClonable){
   this->isClonable = isClonable;
   return;
 }
+
+void SCCAttrs::addLoopCarriedVariable (LoopCarriedVariable *variable) {
+  loopCarriedVariables.insert(variable);
+}
+
+LoopCarriedVariable * SCCAttrs::getSingleLoopCarriedVariable (void) const {
+  if (loopCarriedVariables.size() != 1) return nullptr;
+  return *loopCarriedVariables.begin();
+}
+

@@ -31,11 +31,11 @@ namespace llvm {
   class LoopCarriedCycle {
     public:
 
-      virtual bool isEvolutionReducibleAcrossLoopIterations (void) const = 0;
+      virtual bool isEvolutionReducibleAcrossLoopIterations (void) const ;
 
   };
 
-  class LoopCarriedMemoryLocation : LoopCarriedCycle {
+  class LoopCarriedMemoryLocation : public LoopCarriedCycle {
     public:
 
       /*
@@ -56,7 +56,7 @@ namespace llvm {
 
   };
 
-  class LoopCarriedVariable : LoopCarriedCycle {
+  class LoopCarriedVariable : public LoopCarriedCycle {
     public:
       LoopCarriedVariable (
         const LoopStructure &loop,
@@ -70,9 +70,15 @@ namespace llvm {
 
       bool isEvolutionReducibleAcrossLoopIterations (void) const override ;
 
+      PHINode *getLoopEntryPHIForValueOfVariable (Value *value) const ;
+
     private:
 
-      PDG *produceDataAndMemoryOnlyDGFromVariableDG(PDG &variableDG) const ;
+      PDG *produceDataAndMemoryOnlyDGFromVariableDG (PDG &variableDG) const ;
+
+      std::unordered_set<Value *> getConsumersOfVariable (void) const ;
+
+      bool isValuePropagatingVariableIntermediateOutsideLoop (Value *value) const ;
 
       /*
        * A flag to ensure the variable is fully understood

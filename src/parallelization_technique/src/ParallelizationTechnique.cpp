@@ -150,11 +150,9 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     auto binOpCode = firstAccumI->getOpcode();
     reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
 
-    PHINode *headerProducerPHI = LDI->sccdagAttrs.getSCCAttrs(producerSCC)->getSingleHeaderPHI();
-    assert(headerProducerPHI != nullptr &&
-      "The reducible variable should be described by a single PHI in the header");
-    auto initValPHIIndex = headerProducerPHI->getBasicBlockIndex(loopPreHeader);
-    initialValues[envInd] = headerProducerPHI->getIncomingValue(initValPHIIndex);
+    PHINode *loopEntryProducerPHI = fetchLoopEntryPHIOfProducer(LDI, producer);
+    auto initValPHIIndex = loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
+    initialValues[envInd] = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
@@ -648,15 +646,12 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
      * location of the initial value that needs to be changed
      */
     auto producer = LDI->environment->producerAt(envInd);
-    auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
-    PHINode *headerProducerPHI = LDI->sccdagAttrs.getSCCAttrs(producerSCC)->getSingleHeaderPHI();
-    assert(headerProducerPHI != nullptr &&
-      "The reducible variable should be described by a single PHI in the header");
+    PHINode *loopEntryProducerPHI = fetchLoopEntryPHIOfProducer(LDI, producer);
 
     /*
      * Fetch the related instruction of the producer that has been created (cloned) and stored in the parallelized version of the loop.
      */
-    auto producerClone = cast<PHINode>(task->getCloneOfOriginalInstruction(headerProducerPHI));
+    auto producerClone = cast<PHINode>(task->getCloneOfOriginalInstruction(loopEntryProducerPHI));
 
     /*
      * Fetch the cloned pre-header index
@@ -677,6 +672,25 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
   }
 
   return ;
+}
+
+
+PHINode * ParallelizationTechnique::fetchLoopEntryPHIOfProducer (
+  LoopDependenceInfo *LDI,
+  Value *producer
+){
+
+  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
+  auto producerSCC = sccdag->sccOfValue(producer);
+
+  auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+  auto reducibleVariable = sccInfo->getSingleLoopCarriedVariable();
+  assert(reducibleVariable != nullptr);
+
+  PHINode *headerProducerPHI = reducibleVariable->getLoopEntryPHIForValueOfVariable(producer);
+  assert(headerProducerPHI != nullptr &&
+    "The reducible variable should be described by a single PHI in the header");
+  return headerProducerPHI;
 }
 
 Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
