@@ -19,7 +19,17 @@
 using namespace llvm;
 
 PDGAnalysis::PDGAnalysis()
-  : ModulePass{ID}, M{nullptr}, programDependenceGraph{nullptr}, CGUnderMain{}, printer{} {
+  : ModulePass{ID}
+    , M{nullptr}
+    , programDependenceGraph{nullptr}
+    , CGUnderMain{}
+    , dfa{}
+    , embedPDG{false}
+    , dumpPDG{false}
+    , performThePDGComparison{false}
+    , printer{} 
+  {
+
   return ;
 }
 
@@ -135,7 +145,15 @@ PDG * PDGAnalysis::getPDG (void){
      * Load the embedded PDG.
      */
     this->programDependenceGraph = constructPDGFromMetadata(*this->M);
-    assert(this->comparePDGs(constructPDGFromAnalysis(*this->M), this->programDependenceGraph) && "PDGs constructed are not the same");
+    if (this->performThePDGComparison){
+      auto PDGFromAnalysis = constructPDGFromAnalysis(*this->M);
+      auto arePDGsEquivalent = this->comparePDGs(PDGFromAnalysis, this->programDependenceGraph);
+      if (!arePDGsEquivalent){
+        errs() << "PDGAnalysis: Error = PDGs constructed are not the same";
+        abort();
+      }
+      delete PDGFromAnalysis ;
+    }
 
   } else {
 
@@ -151,7 +169,15 @@ PDG * PDGAnalysis::getPDG (void){
      */
     if (this->embedPDG){
       embedPDGAsMetadata(this->programDependenceGraph);
-      assert(this->comparePDGs(this->programDependenceGraph, constructPDGFromMetadata(*this->M)) && "PDGs constructed are not the same");
+      if (this->performThePDGComparison){
+        auto PDGFromMetadata = this->constructPDGFromMetadata(*this->M);
+        auto arePDGsEquivalen = this->comparePDGs(this->programDependenceGraph, PDGFromMetadata);
+        if (!arePDGsEquivalen){
+          errs() << "PDGAnalysis: Error = PDGs constructed are not the same";
+          abort();
+        }
+        delete PDGFromMetadata;
+      }
     }
   }
 
@@ -893,7 +919,7 @@ void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
   for (auto &F : M) {
     if (F.empty()) continue ;
     auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
-    auto dfr = this->dfa->runReachableAnalysis(&F);
+    auto dfr = this->dfa.runReachableAnalysis(&F);
     constructEdgesFromAliasesForFunction(pdg, F, AA, dfr);
     delete dfr;
   }
