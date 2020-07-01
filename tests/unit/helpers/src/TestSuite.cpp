@@ -38,9 +38,7 @@ TestSuite::TestSuite (
 
 }
 
-TestSuite::~TestSuite() {
-  delete this->comparator;
-}
+TestSuite::~TestSuite() {}
 
 void TestSuite::runTests (ModulePass &pass) {
   std::error_code EC;
