@@ -12,6 +12,10 @@
 
 using namespace llvm;
 
+bool LoopCarriedCycle::isEvolutionReducibleAcrossLoopIterations (void) const {
+  return false;
+}
+
 LoopCarriedVariable::LoopCarriedVariable (
   const LoopStructure &loop,
   const LoopCarriedDependencies &LCD,
@@ -195,24 +199,14 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
   }
 
   /*
-   * A reducible variable cannot have produce any dependencies in the loop
+   * All consumers must be live out intermediate values of the variable
+   * that do not perform further computation within the loop, as that consumer would
+   * prevent reducing the variable and collecting it outside the loop
    */
-  for (auto externalNodePair : sccOfVariableOnly->externalNodePairs()) {
-    auto value = externalNodePair.first;
-    if (!isa<Instruction>(value)) continue;
-
-    /*
-     * Ignore externals outside the loop, such as live outs
-     * They won't prevent reducibility
-     */
-    auto inst = cast<Instruction>(value);
-    if (!outermostLoopOfVariable.isIncluded(inst)) continue;
-
-    auto node = externalNodePair.second;
-    for (auto edge : node->getIncomingEdges()) {
-      auto producer = edge->getOutgoingT();
-      if (sccOfVariableOnly->isInternal(producer)) return false;
-    }
+  auto consumers = getConsumersOfVariable();
+  for (auto consumer : consumers) {
+    if (isValuePropagatingVariableIntermediateOutsideLoop(consumer)) continue;
+    return false;
   }
 
   return true;
@@ -254,6 +248,100 @@ PDG *LoopCarriedVariable::produceDataAndMemoryOnlyDGFromVariableDG(PDG &variable
   }
 
   return variableDG.createSubgraphFromValues(dataAndMemoryValues, true);
+}
+
+std::unordered_set<Value *> LoopCarriedVariable::getConsumersOfVariable (void) const {
+  std::unordered_set<Value *> consumers;
+
+  for (auto externalNodePair : sccOfVariableOnly->externalNodePairs()) {
+    auto value = externalNodePair.first;
+    if (!isa<Instruction>(value)) continue;
+
+    /*
+     * Ignore loop externals outside the loop, such as live outs
+     */
+    auto consumer = cast<Instruction>(value);
+    if (!outermostLoopOfVariable.isIncluded(consumer)) continue;
+
+    auto node = externalNodePair.second;
+    for (auto edge : node->getIncomingEdges()) {
+      auto producer = edge->getOutgoingT();
+      if (sccOfVariableOnly->isExternal(producer)) continue;
+
+      /*
+       * This is a loop internal consumer of the variable
+       */
+      consumers.insert(consumer);
+    }
+  }
+
+  return consumers;
+}
+
+bool LoopCarriedVariable::isValuePropagatingVariableIntermediateOutsideLoop (Value *value) const {
+
+  // value->print(errs() << "Checking consumer: "); errs() << "\n";
+
+  /*
+   * Ensure the value propagates an intermediate value of the variable
+   */
+  if (auto cast = dyn_cast<CastInst>(value)) {
+    auto valueToCast = cast->getOperand(0);
+    if (sccOfDataAndMemoryVariableValuesOnly->isExternal(valueToCast)) return false;
+
+  } else if (auto phi = dyn_cast<PHINode>(value)) {
+
+    auto loopPreheader = outermostLoopOfVariable.getPreHeader();
+    for (int32_t i = 0; i < phi->getNumIncomingValues(); ++i) {
+      auto incomingBlock = phi->getIncomingBlock(i);
+      auto incomingValue = phi->getIncomingValue(i);
+      // incomingValue->print(errs() << "Checking incoming value: "); errs() << "\n";
+
+      /*
+       * NOTE: The incoming value must be loop external or belong to the variable
+       */
+      if (incomingBlock == loopPreheader) continue;
+      if (sccOfDataAndMemoryVariableValuesOnly->isExternal(incomingValue)) return false;
+    }
+
+  } else return false;
+
+  /*
+   * Ensure the value isn't used inside the loop for further computation
+   */
+  for (auto user : value->users()) {
+    if (!isa<Instruction>(user)) continue;
+    auto userI = cast<Instruction>(user);
+    auto userBlock = userI->getParent();
+
+    if (!outermostLoopOfVariable.isIncluded(userBlock)) continue;
+    // userI->print(errs() << "Checking user: "); errs() << "\n";
+    if (!isValuePropagatingVariableIntermediateOutsideLoop(user)) return false;
+  }
+
+  // value->print(errs() << "Checked consumer: "); errs() << "\n";
+  return true;
+}
+
+PHINode *LoopCarriedVariable::getLoopEntryPHIForValueOfVariable (Value *value) const {
+
+  if (!sccOfVariableOnly->isInGraph(value)) return nullptr;
+
+  /*
+   * If the value is external, fetch the loop entry PHI of the variable
+   * that is consumed by this value
+   */
+  if (sccOfVariableOnly->isExternal(value)) {
+    if (auto phi = dyn_cast<PHINode>(value)) {
+      return phi;
+    }
+
+    // TODO: Implement graph traversal from value up to producing PHI 
+    return nullptr;
+  }
+
+  assert(isa<PHINode>(declarationValue));
+  return cast<PHINode>(declarationValue);
 }
 
 /************************************************************************************

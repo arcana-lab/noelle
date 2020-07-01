@@ -14,6 +14,7 @@
 #include "LoopsSummary.hpp"
 #include "AccumulatorOpInfo.hpp"
 #include "SCC.hpp"
+#include "Variable.hpp"
 
 namespace llvm {
 
@@ -47,6 +48,8 @@ namespace llvm {
         AccumulatorOpInfo &opInfo,
         LoopsSummary &LIS
         );
+
+      ~SCCAttrs () ;
 
       /*
        * Get the SCC.
@@ -134,6 +137,16 @@ namespace llvm {
       uint32_t numberOfAccumulators (void);
 
       /*
+       * If only one loop carried variable is contained, return that variable
+       */
+      LoopCarriedVariable * getSingleLoopCarriedVariable (void) const ;
+
+      /*
+       * Add a loop carried cycle
+       */
+      void addLoopCarriedVariable (LoopCarriedVariable *variable) ;
+
+      /*
        * Set the type of SCC.
        */
       void setType (SCCType t);
@@ -161,6 +174,7 @@ namespace llvm {
       std::set<PHINode *> PHINodes;
       std::set<Instruction *> accumulators;
       std::set<PHINode *> headerPHINodes;
+      std::unordered_set<LoopCarriedVariable *> loopCarriedVariables;
       bool isClonable;
       bool hasIV;
   
