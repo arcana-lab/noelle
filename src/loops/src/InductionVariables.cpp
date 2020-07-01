@@ -91,6 +91,30 @@ InductionVariableManager::~InductionVariableManager () {
   loopToIVsMap.clear();
   loopToGoverningIVMap.clear();
 }
+      
+InductionVariable * InductionVariableManager::getInductionVariable (LoopStructure &LS, Instruction *i){
+
+  /*
+   * Fetch all induction variables.
+   */
+  auto IVs = this->getInductionVariables(LS);
+
+  /*
+   * Check each induction variable.
+   */
+  for (auto IV : IVs){
+    auto insts = IV->getAllInstructions();
+    if (insts.find(i) != insts.end()){
+
+      /*
+       * We found an induction variable that involves the instruction given as input.
+       */
+      return IV;
+    }
+  }
+
+  return nullptr;
+}
 
 std::set<InductionVariable *> InductionVariableManager::getInductionVariables (LoopStructure &LS) {
   return loopToIVsMap.at(&LS);
