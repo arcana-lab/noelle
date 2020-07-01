@@ -649,3 +649,7 @@ bool SCCAttrs::canBeCloned (void) const {
 bool SCCAttrs::isInductionVariableSCC (void) const {
   return this->hasIV;
 }
+
+SCCDAGAttrs::~SCCDAGAttrs (){
+  return ;
+}

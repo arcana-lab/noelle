@@ -100,6 +100,8 @@ namespace llvm {
        */
       void dumpToFile (int id) ;
 
+      ~SCCDAGAttrs ();
+
     private:
       std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
       PDG *loopDG;

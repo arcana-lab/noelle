@@ -178,6 +178,9 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Free the memory.
    */
+  for (auto loop : *loopsToParallelize){
+    delete loop;
+  }
   delete loopsToParallelize;
 
   return modified;
