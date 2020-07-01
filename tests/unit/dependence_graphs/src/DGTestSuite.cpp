@@ -78,6 +78,11 @@ bool DGTestSuite::runOnModule (Module &M) {
   errs() << "DGTestSuite: Running tests\n";
   suite->runTests((ModulePass &)*this);
 
+  errs() << "DGTestSuite: Clean-up dependence graphs\n";
+  delete this->fdg;
+  delete loopDG;
+	delete this->sccdagOutermostLoop;
+
   return false;
 }
 
