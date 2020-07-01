@@ -44,6 +44,8 @@ namespace llvm {
 
       bool doesContributeToComputeAnInductionVariable (Instruction *i) ;
 
+      InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i);
+
       ~InductionVariableManager ();
 
     private:
