@@ -11,7 +11,7 @@
 #include "Parallelizer.hpp"
 
 using namespace llvm;
-  
+ 
 bool Parallelizer::parallelizeLoop (
   LoopDependenceInfo *LDI, 
   Noelle &par, 

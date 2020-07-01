@@ -23,16 +23,17 @@ Parallelizer::Parallelizer()
   :
   ModulePass{ID}, 
   forceParallelization{false},
-  forceNoSCCPartition{false}
+  forceNoSCCPartition{false},
+  disableLoopSorting{false}
   {
 
   return ;
 }
 
 bool Parallelizer::doInitialization (Module &M) {
-  this->forceParallelization |= (ForceParallelization.getNumOccurrences() > 0);
-  this->forceNoSCCPartition |= (ForceNoSCCPartition.getNumOccurrences() > 0);
-  this->disableLoopSorting |= (DisableLoopSorting.getNumOccurrences() > 0);
+  this->forceParallelization = (ForceParallelization.getNumOccurrences() > 0);
+  this->forceNoSCCPartition = (ForceNoSCCPartition.getNumOccurrences() > 0);
+  this->disableLoopSorting = (DisableLoopSorting.getNumOccurrences() > 0);
 
   return false; 
 }

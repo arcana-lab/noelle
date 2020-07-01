@@ -45,20 +45,7 @@ namespace llvm {
   struct Parallelizer : public ModulePass {
     public:
 
-      /*
-       * Class fields
-       */
-      static char ID;
-
-      /*
-       * Object fields
-       */
-      Function *printReachedI, *printPushedP, *printPulledP;
-
-      /*
-       * Methods
-       */
-      Parallelizer();
+      Parallelizer ();
 
       bool doInitialization (Module &M) override ;
 
@@ -66,6 +53,10 @@ namespace llvm {
 
       void getAnalysisUsage (AnalysisUsage &AU) const override ;
 
+      /*
+       * Class fields
+       */
+      static char ID;
 
     private:
 
