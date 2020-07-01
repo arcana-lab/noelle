@@ -269,7 +269,7 @@ void PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unordered_ma
   if (MDNode *edgesM = F.getMetadata("noelle.pdg.edges")) {
     for (auto &operand : edgesM->operands()) {
       if (MDNode *edgeM = dyn_cast<MDNode>(operand)) {
-        DGEdge<Value> *edge = constructEdgeFromMetadata(pdg, edgeM, IDNodeMap);
+        auto edge = constructEdgeFromMetadata(pdg, edgeM, IDNodeMap);
   
         /*
          * Construct subEdges and set attributes
@@ -287,6 +287,11 @@ void PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unordered_ma
          * Add edge to pdg
          */ 
         pdg->copyAddEdge(*edge);
+
+        /*
+         * Free the memory.
+         */
+        delete edge;
       }
     }
   }
