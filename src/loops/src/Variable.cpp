@@ -74,11 +74,11 @@ LoopCarriedVariable::LoopCarriedVariable (
    * 
    * This will identify updates to and only to the variable
    */
-  this->dataDGOfVariable = produceDataAndOnlyDGFromVariableDG(*dgOfVariable);
+  this->dataDGOfVariable = produceDataOnlyDGFromVariableDG(*dgOfVariable);
   this->dataSCCDAGOfVariable = new SCCDAG(dataDGOfVariable);
   assert(dataSCCDAGOfVariable->sccOfValue(declarationPHI) != nullptr
     && "Declaration PHI was not persisted in derived data only SCCDAG");
-  this->sccOfDataAndVariableValuesOnly = dataSCCDAGOfVariable->sccOfValue(declarationPHI);
+  this->sccOfDataVariableValuesOnly = dataSCCDAGOfVariable->sccOfValue(declarationPHI);
 
   /*
    * Identify all control values, internal or external, to the variable SCC
