@@ -29,7 +29,7 @@ using namespace llvm;
 namespace llvm {
   enum class PDGVerbosity { Disabled, Minimal, Maximal, MaximalAndPDG };
 
-  struct PDGAnalysis : public ModulePass {
+  class PDGAnalysis : public ModulePass {
     public:
       static char ID;
 
@@ -53,10 +53,11 @@ namespace llvm {
       AllocAA *allocAA;
       std::set<Function *> CGUnderMain;
       TalkDown *talkdown;
-      DataFlowAnalysis *dfa;
+      DataFlowAnalysis dfa;
       PDGVerbosity verbose;
       bool embedPDG;
       bool dumpPDG;
+      bool performThePDGComparison;
       PDGPrinter printer;
       PointerAnalysis *pta;
       PTACallGraph *callGraph;

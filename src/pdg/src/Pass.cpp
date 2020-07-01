@@ -21,11 +21,13 @@ using namespace llvm;
 static cl::opt<int> PDGVerbose("noelle-pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal, 3:maximal plus dumping PDG"));
 static cl::opt<bool> PDGEmbed("noelle-pdg-embed", cl::ZeroOrMore, cl::Hidden, cl::desc("Embed the PDG"));
 static cl::opt<bool> PDGDump("noelle-pdg-dump", cl::ZeroOrMore, cl::Hidden, cl::desc("Dump the PDG"));
+static cl::opt<bool> PDGCheck("noelle-pdg-check", cl::ZeroOrMore, cl::Hidden, cl::desc("Check the PDG"));
 
 bool PDGAnalysis::doInitialization (Module &M){
   this->verbose = static_cast<PDGVerbosity>(PDGVerbose.getValue());
   this->embedPDG = (PDGEmbed.getNumOccurrences() > 0) ? true : false;
   this->dumpPDG = (PDGDump.getNumOccurrences() > 0) ? true : false;
+  this->performThePDGComparison = (PDGCheck.getNumOccurrences() > 0) ? true : false;
 
   return false;
 }
@@ -50,11 +52,6 @@ bool PDGAnalysis::runOnModule (Module &M){
    * Store global information.
    */
   this->M = &M;
-
-  /*
-   * Initialize DataFlowAnalysis.
-   */
-  this->dfa = new DataFlowAnalysis();
 
   /*
    * Initialize SVF.

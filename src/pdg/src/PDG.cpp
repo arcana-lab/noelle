@@ -23,7 +23,8 @@
 
 using namespace llvm ;
 
-PDG::PDG (Module &M) {
+PDG::PDG (Module &M) 
+  {
 
   /*
    * Create a node per instruction and function argument
