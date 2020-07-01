@@ -1,15 +1,13 @@
 # Sources
 set(Srcs 
-  Pass.cpp
-  Enablers.cpp
-  EnablersManager.cpp
+  LoopExtraction.cpp
 )
 
 # Compilation flags
-set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
+set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Enablers")
+set(PassName "LoopExtraction")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -29,23 +27,14 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../transformations/include
   ../../alloc_aa/include 
   ../../pdg/include 
-  ../../threadpool/include 
   ../../loop_structure/include
   ../../loops/include 
-  ../../heuristics/include 
-  ../../parallelization_technique/include 
-  ../../dswp/include 
-  ../../doall/include 
-  ../../helix/include 
-  ../../hotprofiler/include
-  ../../loop_distribution/include
-  ../../loop_unroll/include
-  ../../loop_whilifier/include
-  ../../loop_extraction/include
+  ../../hotprofiler/include 
   ../../talkdown/include
-  ../../noelle/include
   ../../dataflow/include
-  ./
+  ../../noelle/include
+  ../include/ 
+  ./ 
   )
 
 # Declare the LLVM pass to compile
