@@ -16,6 +16,7 @@
 #include "SCCDAG.hpp"
 #include "LoopsSummary.hpp"
 #include "InductionVariables.hpp"
+#include "Invariants.hpp"
 #include "LoopGoverningIVAttribution.hpp"
 #include "SCCDAGAttrs.hpp"
 #include "SCCDAGNormalizer.hpp"
@@ -69,7 +70,7 @@ namespace llvm {
       /*
        * Get the dependence graph of the loop.
        */
-      PDG * getLoopDG (void);
+      PDG * getLoopDG (void) const ;
 
       /*
        * Copy all options from otherLDI to "this".
@@ -114,6 +115,8 @@ namespace llvm {
 
       InductionVariableManager * getInductionVariableManager (void) const ;
 
+      InvariantManager * getInvariantManager (void) const ;
+
       bool doesHaveCompileTimeKnownTripCount (void) const ;
       
       uint64_t getCompileTimeTripCount (void) const ;
@@ -155,6 +158,8 @@ namespace llvm {
       std::unordered_map<std::string, std::string> metadata;
 
       InductionVariableManager *inductionVariables;
+
+      InvariantManager *invariantManager;
 
       LoopGoverningIVAttribution *loopGoverningIVAttribution;
 

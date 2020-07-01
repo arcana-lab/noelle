@@ -2,6 +2,7 @@
 set(Srcs 
   Variable.cpp
   AccumulatorOpInfo.cpp
+  InvariantManager.cpp
   InductionVariables.cpp
   InductionVariable.cpp
   LoopCarriedDependencies.cpp
