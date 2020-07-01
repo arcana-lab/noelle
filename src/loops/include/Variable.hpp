@@ -66,6 +66,8 @@ namespace llvm {
         PHINode *declarationPHI
       ) ;
 
+      ~LoopCarriedVariable () ;
+
       bool isEvolutionReducibleAcrossLoopIterations (void) const override ;
 
     private:
