@@ -44,6 +44,7 @@ void PDGAnalysis::initializeSVF(Module &M) {
 }
 
 void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
+
   /*
    * Collect internal and unhandled external functions.
    */
@@ -72,6 +73,7 @@ void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
 }
 
 void PDGAnalysis::printFunctionReachabilityResult() {
+
   /*
    * Print internal and unhandled external functions.
    */
