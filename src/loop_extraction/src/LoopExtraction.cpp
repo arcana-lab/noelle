@@ -15,8 +15,6 @@
 
 using namespace llvm;
 
-int counter = 0;
-
 LoopExtraction::LoopExtraction(Noelle &noelle)
   : noelle{noelle}
   {
@@ -30,8 +28,6 @@ bool LoopExtraction::extractValuesFromLoop (
   auto modified = false;
 
   modified |= hoistStoreOfLastValueLiveOut(LDI);
-
-  counter++;
 
   return modified;
 }
@@ -56,11 +52,6 @@ bool LoopExtraction::hoistStoreOfLastValueLiveOut (
   auto sccdag = LDI.sccdagAttrs.getSCCDAG();
   std::unordered_set<StoreInst *> independentStoresExecutedEveryIteration;
 
-  /*
-   * TODO: Prevent stores that alias with these from being hoisted
-   */
-  std::unordered_set<StoreInst *> independentStoresExecutedSomeIterations;
-
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
     auto sccInfo = LDI.sccdagAttrs.getSCCAttrs(scc);
@@ -81,11 +72,11 @@ bool LoopExtraction::hoistStoreOfLastValueLiveOut (
       stores.insert(cast<StoreInst>(value));
     }
 
-    // if (stores.size() > 0) {
-    //   std::set<BasicBlock *> bbs(loopSummary->orderedBBs.begin(), loopSummary->orderedBBs.end());
-    //   DGPrinter::writeGraph<SubCFGs>("technique-original-loop-" + std::to_string(counter) + ".dot", new SubCFGs(bbs));
-    //   DGPrinter::writeGraph<SCCDAG>("technique-sccdag-loop-" + std::to_string(counter) + ".dot", LDI.sccdagAttrs.getSCCDAG());
-    // }
+    /*
+     * Alias-ing stores require further analysis to hoist
+     * Ensure only one store exists in the SCC
+     */
+    if (stores.size() != 1) continue;
 
     /*
      * Determine if the store is executed every iteration
@@ -114,7 +105,6 @@ bool LoopExtraction::hoistStoreOfLastValueLiveOut (
   for (auto store : independentStoresExecutedEveryIteration) {
     auto storedValue = store->getValueOperand();
     auto pointerOperand = store->getPointerOperand();
-    // store->print(errs() << "ENABLERS:  Hoisting"); errs() << "\n";
     store->eraseFromParent();
 
     auto initialValue = preHeaderBuilder.CreateLoad(pointerOperand);
