@@ -13,9 +13,6 @@
 using namespace llvm;
 
 bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes (Module &M, Noelle &par) {
-  printReachedI = M.getFunction("printReachedI");
-  printPushedP = M.getFunction("printPushedP");
-  printPulledP = M.getFunction("printPulledP");
   std::string pushers[4] = { "queuePush8", "queuePush16", "queuePush32", "queuePush64" };
   std::string poppers[4] = { "queuePop8", "queuePop16", "queuePop32", "queuePop64" };
   for (auto pusher : pushers) {
