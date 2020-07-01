@@ -1239,6 +1239,13 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
 }
 
 PDGAnalysis::~PDGAnalysis() {
-  if (this->programDependenceGraph)
+  if (this->programDependenceGraph) {
     delete this->programDependenceGraph;
+	}
+  if (this->pta) {
+    delete this->pta;
+  }
+  if (this->mssa) {
+    delete this->mssa;
+  }
 }
