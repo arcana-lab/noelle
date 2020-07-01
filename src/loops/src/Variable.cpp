@@ -133,9 +133,9 @@ LoopCarriedVariable::LoopCarriedVariable (
 }
 
 LoopCarriedVariable::~LoopCarriedVariable () {
-  if (dataDGOfVariable) delete dataDGOfVariable;
-	if (sccdagOfVariable) delete sccdagOfVariable;
-	if (dataSCCDAGOfVariable) delete dataSCCDAGOfVariable;
+  // if (dataDGOfVariable) delete dataDGOfVariable;
+	// if (sccdagOfVariable) delete sccdagOfVariable;
+	// if (dataSCCDAGOfVariable) delete dataSCCDAGOfVariable;
 
 	for (auto variableUpdate : variableUpdates) {
 	  delete variableUpdate;
