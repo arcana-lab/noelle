@@ -330,10 +330,12 @@ LoopDependenceInfo::~LoopDependenceInfo() {
   delete this->loopDG;
   delete this->environment;
 
-  assert(this->inductionVariables);
-  delete this->inductionVariables;
-  assert(this->loopGoverningIVAttribution);
-  delete this->loopGoverningIVAttribution;
+  if (this->inductionVariables){
+    delete this->inductionVariables;
+  }
+  if (this->loopGoverningIVAttribution){
+    delete this->loopGoverningIVAttribution;
+  }
 
   assert(this->invariantManager);
   delete this->invariantManager;
