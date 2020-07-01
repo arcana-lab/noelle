@@ -132,6 +132,16 @@ LoopCarriedVariable::LoopCarriedVariable (
   this->isValid = true;
 }
 
+LoopCarriedVariable::~LoopCarriedVariable () {
+  // if (dataDGOfVariable) delete dataDGOfVariable;
+	// if (sccdagOfVariable) delete sccdagOfVariable;
+	// if (dataSCCDAGOfVariable) delete dataSCCDAGOfVariable;
+
+	for (auto variableUpdate : variableUpdates) {
+	  delete variableUpdate;
+	}
+}
+
 bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const {
 
   if (!isValid) return false;
