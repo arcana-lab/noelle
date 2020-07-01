@@ -78,6 +78,13 @@ bool DGTestSuite::runOnModule (Module &M) {
   errs() << "DGTestSuite: Running tests\n";
   suite->runTests((ModulePass &)*this);
 
+  errs() << "DGTestSuite: Clean-up dependence graphs\n";
+  delete this->fdg;
+  delete loopDG;
+  delete this->sccdagOutermostLoop;
+
+  delete this->suite;
+
   return false;
 }
 
@@ -151,7 +158,10 @@ Values DGTestSuite::pdgIdentifiesDisconnectedValueSets (ModulePass &pass, TestSu
       setName += suite.unorderedValueDelimiter + valueNames[i];
     }
     valueSetNames.insert(setName);
+
+    delete disjointSet;
   }
+
   return valueSetNames;
 }
 

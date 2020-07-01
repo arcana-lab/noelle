@@ -299,6 +299,8 @@ SCCDAG::~SCCDAG() {
 
   for (auto *node : allNodes){
     if (node) {
+      auto scc = node->getT();
+      delete scc;
       delete node;
     }
   }
