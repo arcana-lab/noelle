@@ -17,7 +17,8 @@ bool EnablersManager::applyEnablers (
     Noelle &par,
     LoopDistribution &loopDist,
     LoopUnroll &loopUnroll,
-    LoopWhilifier &loopWhilifier
+    LoopWhilifier &loopWhilifier,
+    LoopExtraction &loopExtraction
   ){
 
   /*
@@ -44,6 +45,15 @@ bool EnablersManager::applyEnablers (
   errs() << "EnablersManager:   Try to whilify loops\n";
   if (this->applyLoopWhilifier(LDI, par, loopWhilifier)){
     errs() << "EnablersManager:     The loop has been whilified\n";
+    return true;
+  }
+
+  /*
+   * Run the extraction.
+   */
+  errs() << "EnablersManager:   Try to extract values out of loops\n";
+  if (loopExtraction.extractValuesFromLoop(*LDI)){
+    errs() << "EnablersManager:     Loop values have been extracted\n";
     return true;
   }
 
