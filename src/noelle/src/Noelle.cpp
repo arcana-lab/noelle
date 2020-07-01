@@ -285,5 +285,9 @@ bool Noelle::shouldLoopsBeHoistToMain (void) const {
 }
 
 Noelle::~Noelle(){
+  if (this->profiles){
+    delete this->profiles;
+  }
+
   return ;
 }
