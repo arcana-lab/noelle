@@ -36,6 +36,7 @@ int main (int argc, char *argv[]){
   auto iterations = atoll(argv[1]);
   if (iterations == 0) return 0;
 
+  iterations *= 10;
   long long int *array = (long long int *) calloc(0, sizeof(long long int) * iterations);
 
   computeSum(array, iterations, 2, 2);
