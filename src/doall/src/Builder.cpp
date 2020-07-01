@@ -175,29 +175,76 @@ void DOALL::rewireLoopToIterateChunks (
    */
 
   /*
-   * Move any non-IV instructions in the header to the loop body and the header exit block
+	 * Identify any instructions in the header that are NOT sensitive to the number of times they execute:
+	 * 1) IV instructions, including the comparison and branch of the loop governing IV
+	 * 2) The PHI used to chunk iterations 
+	 * 3) Any PHIs of reducible variables
+	 * 4) Any loop invariant instructions that belong to independent-execution SCCs
    */
-  std::set<Instruction *> ivInstructions;
+  std::set<Instruction *> repeatableInstructions;
+
+	/*
+	 * Collect (1) by iterating the InductionVariableManager
+	 */
   auto sccdag = LDI->sccdagAttrs.getSCCDAG();
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     for (auto I : ivInfo->getAllInstructions()) {
-      ivInstructions.insert(task->getCloneOfOriginalInstruction(I));
+      repeatableInstructions.insert(task->getCloneOfOriginalInstruction(I));
     }
   }
+  repeatableInstructions.insert(cmpInst);
+  repeatableInstructions.insert(brInst);
+
+	/*
+	 * Collect (2)
+	 */
+  repeatableInstructions.insert(chunkPHI);
+
+	/*
+	 * Collect (3) by identifying all reducible SCCs
+	 */
   auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
     if (!sccInfo->canExecuteReducibly()) continue;
-    assert(sccInfo->getSingleHeaderPHI());
-    ivInstructions.insert(task->getCloneOfOriginalInstruction(sccInfo->getSingleHeaderPHI()));
+
+    // HACK:
+    for (auto nodePair : scc->internalNodePairs()) {
+      auto value = nodePair.first;
+      auto inst = cast<Instruction>(value);
+      if (inst->getParent() != loopHeader) continue;
+
+      auto instClone = task->getCloneOfOriginalInstruction(inst);
+      repeatableInstructions.insert(instClone);
+    }
+
+    // assert(sccInfo->getSingleHeaderPHI());
+    // repeatableInstructions.insert(task->getCloneOfOriginalInstruction(sccInfo->getSingleHeaderPHI()));
   }
-  ivInstructions.insert(chunkPHI);
-  ivInstructions.insert(cmpInst);
-  ivInstructions.insert(brInst);
+
+	/*
+	 * Collect (4) by identifying header instructions belonging to independent SCCs that are loop invariant
+	 * NOTE: This should be done with an API call to LoopStructure, but until that API is
+	 * more robust, we simply check that the instruction consumes no data dependencies in the SCCDAG
+	 */
+  for (auto &I : *loopHeader) {
+		auto scc = sccdag->sccOfValue(&I);
+    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+		if (!sccInfo->canExecuteIndependently()) continue;
+
+		auto node = scc->fetchNode(&I);
+		bool consumesDataDependence = true;
+		for (auto edge : node->getIncomingEdges()) {
+			consumesDataDependence |= edge->isDataDependence();
+		}
+		if (consumesDataDependence) continue;
+
+		repeatableInstructions.insert(task->getCloneOfOriginalInstruction(&I));
+	}
 
   bool requiresConditionBeforeEnteringHeader = false;
   for (auto &I : *headerClone) {
-    if (ivInstructions.find(&I) == ivInstructions.end()) {
+    if (repeatableInstructions.find(&I) == repeatableInstructions.end()) {
       assert(!isa<PHINode>(I)
         && "All PHIs (which have loop carried dependencies) must be chunked or reducible");
       requiresConditionBeforeEnteringHeader = true;

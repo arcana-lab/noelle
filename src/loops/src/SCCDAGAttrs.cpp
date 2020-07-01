@@ -389,11 +389,12 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
 
 bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDependencies &LCD) {
 
-  scc->printMinimal(errs() << "Is this reducible?\n");
-
   /*
-   * Only one loop carried data value per SCC can be reduced
-   * If there is only one, check if that Variable is reducible
+   * A reducible variable consists of one loop carried value
+   * that tracks the evolution of the reducible value
+   * 
+   * NOTE: Because last-iteration independent SCC are merged into their parent SCC
+   * by the SCCDAGNormalizer, we must ignore such PHIs
    * 
    * NOTE: We don't handle memory variables yet
    */
@@ -407,14 +408,20 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
     assert(isa<PHINode>(consumer)
       && "All consumers of loop carried data dependencies must be PHIs");
     auto consumerPHI = cast<PHINode>(consumer);
-    dependency->print(errs() << "Consumer of loop carried dep\n"); errs() << "\n";
 
     /*
      * Ignore sub loops as they do not need to be reduced
      */
     if (!rootLoop->isIncluded(consumerPHI)) continue;
 
+    /*
+     * Ignore last-iteration propagating PHIs merged into this SCC
+     * These can be identified by checking whether no SCC internal dependency is produced
+     */
+    auto consumerPHINode = scc->fetchNode(consumerPHI);
+    if (consumerPHINode->numOutgoingEdges() == 0) continue;
     if (singleLoopCarriedPHI == consumerPHI) continue;
+
     if (singleLoopCarriedPHI) return false;
 
     singleLoopCarriedPHI = consumerPHI;
@@ -422,8 +429,15 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
 
   if (!singleLoopCarriedPHI) return false;
 
-  LoopCarriedVariable variable(*rootLoop, LCD, *loopDG, *scc, singleLoopCarriedPHI);
-  return variable.isEvolutionReducibleAcrossLoopIterations();
+  auto variable = new LoopCarriedVariable(*rootLoop, LCD, *loopDG, *scc, singleLoopCarriedPHI);
+  if (!variable->isEvolutionReducibleAcrossLoopIterations()) {
+    delete variable;
+    return false;
+  }
+
+  auto sccInfo = this->getSCCAttrs(scc);
+  sccInfo->addLoopCarriedVariable(variable);
+  return true;
 }
 
 /*
