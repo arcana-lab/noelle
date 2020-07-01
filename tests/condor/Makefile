@@ -7,77 +7,77 @@ regression: regression_enablers regression_default regression_1 regression_2 reg
 
 regression_enablers:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall" " " ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall" " " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_default:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3" " " ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3" " " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_1:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-helix" "-dswp-force" ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix" "-dswp-force" ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_2:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-helix" "-dswp-force -dswp-no-scc-merge" ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix" "-dswp-force -dswp-no-scc-merge" ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_3:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-dswp" "-dswp-force" ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp" "-dswp-force" ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_4:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-dswp" "-dswp-force -dswp-no-scc-merge " ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp" "-dswp-force -dswp-no-scc-merge " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_5:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner" " " ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner" " " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_6:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner" " " ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner" " " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_7:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-max-cores=2" " " ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-max-cores=2" " " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_8:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2" " " ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2" " " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_9:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2" " " ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2" " " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_10:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-dswp" "-noelle-parallelizer-disable-loop-sorting" ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp" "-noelle-parallelizer-disable-loop-sorting" ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_11:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-disable-helix" "-noelle-parallelizer-disable-loop-sorting" ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix" "-noelle-parallelizer-disable-loop-sorting" ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_12:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main" " " ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main" " " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 regression_13:
 	cd ../ ; cp -r regression $@ ;
-	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix" " " ${EMAIL};
+	python2 scripts/generateCondorScript.py scripts/$(CONDOR_FILE) ./$@.con "$@" "-noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix" " " ${EMAIL};
 	./scripts/appendTests.sh $@.con ;
 
 unit.con:
