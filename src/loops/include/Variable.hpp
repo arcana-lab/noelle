@@ -66,11 +66,13 @@ namespace llvm {
         PHINode *declarationPHI
       ) ;
 
+      ~LoopCarriedVariable () ;
+
       bool isEvolutionReducibleAcrossLoopIterations (void) const override ;
 
     private:
 
-      PDG *produceDataAndMemoryOnlyDGFromVariableDG(PDG &variableDG) const ;
+      PDG *produceDataOnlyDGFromVariableDG(PDG &variableDG) const ;
 
       /*
        * A flag to ensure the variable is fully understood
@@ -87,8 +89,11 @@ namespace llvm {
        * We compute the strongly connected component containing only updates to the variable
        * This removes loop carried dependencies to other variables contained within the provided SCC
        */
+      PDG *dataDGOfVariable;
+      SCCDAG *sccdagOfVariable;
+      SCCDAG *dataSCCDAGOfVariable;
       SCC *sccOfVariableOnly;
-      SCC *sccOfDataAndMemoryVariableValuesOnly;
+      SCC *sccOfDataVariableValuesOnly;
 
       /*
        * This is the declaration of the variable
@@ -126,7 +131,7 @@ namespace llvm {
   class EvolutionUpdate {
     public:
 
-      EvolutionUpdate (Instruction *updateInstruction, SCC *dataMemoryVariableSCC) ;
+      EvolutionUpdate (Instruction *updateInstruction, SCC *dataVariableSCC) ;
 
       bool mayUpdateBeOverride (void) const ;
 

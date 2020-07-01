@@ -64,21 +64,21 @@ LoopCarriedVariable::LoopCarriedVariable (
     allPossibleInternalValues.push_back(value);
   }
   auto dgOfVariable = loopDG.createSubgraphFromValues(allPossibleInternalValues, true, loopCarriedDependenciesNotOfVariable);
-  auto sccdagOfVariable = new SCCDAG(dgOfVariable);
+  this->sccdagOfVariable = new SCCDAG(dgOfVariable);
   this->sccOfVariableOnly = sccdagOfVariable->sccOfValue(declarationPHI);
 
   /*
-   * We are interested in the SCC containing data/memory values
+   * We are interested in the SCC containing data values
    * with loop carried dependencies only pertaining to the variable declaration
-   * thereby dropping all control cycles along with any data/memory cycles not pertaining to the variable
+   * thereby dropping all control cycles along with any data cycles not pertaining to the variable
    * 
    * This will identify updates to and only to the variable
    */
-  auto dataMemoryDGOfVariable = produceDataAndMemoryOnlyDGFromVariableDG(*dgOfVariable);
-  auto dataMemorySCCDAGOfVariable = new SCCDAG(dataMemoryDGOfVariable);
-  assert(dataMemorySCCDAGOfVariable->sccOfValue(declarationPHI) != nullptr
-    && "Declaration PHI was not persisted in derived data and memory only SCCDAG");
-  this->sccOfDataAndMemoryVariableValuesOnly = dataMemorySCCDAGOfVariable->sccOfValue(declarationPHI);
+  this->dataDGOfVariable = produceDataAndOnlyDGFromVariableDG(*dgOfVariable);
+  this->dataSCCDAGOfVariable = new SCCDAG(dataDGOfVariable);
+  assert(dataSCCDAGOfVariable->sccOfValue(declarationPHI) != nullptr
+    && "Declaration PHI was not persisted in derived data only SCCDAG");
+  this->sccOfDataAndVariableValuesOnly = dataSCCDAGOfVariable->sccOfValue(declarationPHI);
 
   /*
    * Identify all control values, internal or external, to the variable SCC
@@ -110,8 +110,8 @@ LoopCarriedVariable::LoopCarriedVariable (
   /*
    * Catalog all internal values in the variable's data/memory only SCC as VariableUpdate
    */
-  for (auto dataOrMemoryNodePair : sccOfDataAndMemoryVariableValuesOnly->internalNodePairs()) {
-    auto value = dataOrMemoryNodePair.first;
+  for (auto dataNodePair : sccOfDataVariableValuesOnly->internalNodePairs()) {
+    auto value = dataNodePair.first;
     if (value == declarationValue) continue;
 
     assert(isa<Instruction>(value));
@@ -122,7 +122,7 @@ LoopCarriedVariable::LoopCarriedVariable (
     if (isa<CastInst>(value)) continue;
     if (isa<LoadInst>(value)) continue;
 
-    auto variableUpdate = new EvolutionUpdate(cast<Instruction>(value), sccOfDataAndMemoryVariableValuesOnly);
+    auto variableUpdate = new EvolutionUpdate(cast<Instruction>(value), sccOfDataVariableValuesOnly);
     variableUpdates.insert(variableUpdate);
 
     if (loopCarriedValues.find(value) == loopCarriedValues.end()) continue;
@@ -132,12 +132,22 @@ LoopCarriedVariable::LoopCarriedVariable (
   this->isValid = true;
 }
 
+LoopCarriedVariable::~LoopCarriedVariable () {
+  if (dataDGOfVariable) delete dataDGOfVariable;
+	if (sccdagOfVariable) delete sccdagOfVariable;
+	if (dataSCCDAGOfVariable) delete dataSCCDAGOfVariable;
+
+	for (auto variableUpdate : variableUpdates) {
+	  delete variableUpdate;
+	}
+}
+
 bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const {
 
   if (!isValid) return false;
 
   // declarationValue->print(errs() << "Declaration: "); errs() << "\n";
-  // sccOfDataAndMemoryVariableValuesOnly->printMinimal(errs() << "Data and memory SCC\n");
+  // sccOfDataVariableValuesOnly->printMinimal(errs() << "Data and memory SCC\n");
   // errs() << "Number of internal control values: " << controlValuesGoverningEvolution.size() << "\n";
   // for (auto controlValue : controlValuesGoverningEvolution) {
   //   controlValue->print(errs() << "Control value: "); errs() << "\n";
@@ -208,12 +218,12 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
   return true;
 }
 
-PDG *LoopCarriedVariable::produceDataAndMemoryOnlyDGFromVariableDG(PDG &variableDG) const {
+PDG *LoopCarriedVariable::produceDataOnlyDGFromVariableDG(PDG &variableDG) const {
 
   /*
    * Collect values that do NOT produce a control dependency
    */
-  std::vector<Value *> dataAndMemoryValues{};
+  std::vector<Value *> dataValues{};
   for (auto nodePair : variableDG.internalNodePairs()) {
 
     auto node = nodePair.second;
@@ -240,10 +250,10 @@ PDG *LoopCarriedVariable::produceDataAndMemoryOnlyDGFromVariableDG(PDG &variable
      * 
      */
     auto value = node->getT();
-    dataAndMemoryValues.push_back(value);
+    dataValues.push_back(value);
   }
 
-  return variableDG.createSubgraphFromValues(dataAndMemoryValues, true);
+  return variableDG.createSubgraphFromValues(dataValues, true);
 }
 
 /************************************************************************************
@@ -269,7 +279,7 @@ bool LoopCarriedMemoryLocation::isEvolutionReducibleAcrossLoopIterations (void) 
  * VariableUpdate implementation
  */
 
-EvolutionUpdate::EvolutionUpdate (Instruction *updateInstruction, SCC *dataMemoryVariableSCC)
+EvolutionUpdate::EvolutionUpdate (Instruction *updateInstruction, SCC *dataVariableSCC)
   : updateInstruction{updateInstruction} {
 
   if (auto storeUpdate = dyn_cast<StoreInst>(updateInstruction)) {
@@ -286,7 +296,7 @@ EvolutionUpdate::EvolutionUpdate (Instruction *updateInstruction, SCC *dataMemor
   for (auto &use : updateInstruction->operands()) {
     auto usedValue = use.get();
 
-    if (dataMemoryVariableSCC->isInternal(usedValue)) {
+    if (dataVariableSCC->isInternal(usedValue)) {
       internalValuesUsed.insert(&use);
     } else {
       externalValuesUsed.insert(&use);
