@@ -452,6 +452,11 @@ uint32_t Noelle::getNumberOfProgramLoops (
     }
   }
 
+  /*
+   * Free the memory.
+   */
+  delete functions ;
+
   return counter;
 }
 

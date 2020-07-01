@@ -53,13 +53,13 @@ LoopDependenceInfo::LoopDependenceInfo(
   LoopCarriedDependencies lcd(this->liSummary, DS, *loopSCCDAG);
   SCCDAGNormalizer normalizer{*loopSCCDAG, this->liSummary, lcd};
   normalizer.normalizeInPlace();
-  inductionVariables = new InductionVariableManager(liSummary, SE, *loopSCCDAG, *environment);
+  this->inductionVariables = new InductionVariableManager(liSummary, SE, *loopSCCDAG, *environment);
   this->sccdagAttrs = SCCDAGAttrs(loopDG, loopSCCDAG, this->liSummary, SE, lcd, *inductionVariables);
 
   /*
    * Collect induction variable information
    */
-  auto iv = inductionVariables->getLoopGoverningInductionVariable(*liSummary.getLoop(*l->getHeader()));
+  auto iv = this->inductionVariables->getLoopGoverningInductionVariable(*liSummary.getLoop(*l->getHeader()));
   loopGoverningIVAttribution = iv == nullptr ? nullptr
     : new LoopGoverningIVAttribution(*iv, *loopSCCDAG->sccOfValue(iv->getLoopEntryPHI()), loopExitBlocks);
 
@@ -330,8 +330,13 @@ LoopDependenceInfo::~LoopDependenceInfo() {
   delete this->loopDG;
   delete this->environment;
 
-  if (this->inductionVariables) delete this->inductionVariables;
-  if (this->loopGoverningIVAttribution) delete this->loopGoverningIVAttribution;
+  assert(this->inductionVariables);
+  delete this->inductionVariables;
+  assert(this->loopGoverningIVAttribution);
+  delete this->loopGoverningIVAttribution;
+
+  assert(this->invariantManager);
+  delete this->invariantManager;
 
   return ;
 }
