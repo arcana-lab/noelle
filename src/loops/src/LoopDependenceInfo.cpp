@@ -71,6 +71,12 @@ LoopDependenceInfo::LoopDependenceInfo(
   }
 
   /*
+   * Create the invariant manager.
+   */
+  auto topLoop = this->liSummary.getLoopNestingTreeRoot();
+  this->invariantManager = new InvariantManager(topLoop, this->loopDG);
+
+  /*
    * Fetch the metadata.
    */
   this->addMetadata("noelle.loop_ID");
@@ -108,16 +114,6 @@ void LoopDependenceInfo::addMetadata (const std::string &metadataName){
    * Add the metadata.
    */
   this->metadata[metadataName] = metaString;
-
-  return ;
-}
-
-LoopDependenceInfo::~LoopDependenceInfo() {
-  delete this->loopDG;
-  delete this->environment;
-
-  if (this->inductionVariables) delete this->inductionVariables;
-  if (this->loopGoverningIVAttribution) delete this->loopGoverningIVAttribution;
 
   return ;
 }
@@ -239,7 +235,7 @@ void LoopDependenceInfo::disableTransformation (Transformation transformationToD
   return ;
 }
 
-PDG * LoopDependenceInfo::getLoopDG (void){
+PDG * LoopDependenceInfo::getLoopDG (void) const {
   return this->loopDG;
 }
 
@@ -324,4 +320,18 @@ uint64_t LoopDependenceInfo::getCompileTimeTripCount (void) const {
 
 uint32_t LoopDependenceInfo::getMaximumNumberOfCores (void) const {
   return this->maximumNumberOfCoresForTheParallelization;
+}
+
+InvariantManager * LoopDependenceInfo::getInvariantManager (void) const {
+  return this->invariantManager;
+}
+
+LoopDependenceInfo::~LoopDependenceInfo() {
+  delete this->loopDG;
+  delete this->environment;
+
+  if (this->inductionVariables) delete this->inductionVariables;
+  if (this->loopGoverningIVAttribution) delete this->loopGoverningIVAttribution;
+
+  return ;
 }

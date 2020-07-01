@@ -33,6 +33,7 @@ install(PROGRAMS
     include/Variable.hpp
     include/LoopDependenceInfo.hpp
     include/InductionVariables.hpp
+    include/Invariants.hpp
     include/LoopCarriedDependencies.hpp
     include/LoopGoverningIVAttribution.hpp
     include/IVStepperUtility.hpp
