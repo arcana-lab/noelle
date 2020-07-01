@@ -18,7 +18,8 @@ LoopCarriedVariable::LoopCarriedVariable (
   PDG &loopDG,
   SCC &sccContainingVariable,
   PHINode *declarationPHI
-) : outermostLoopOfVariable{loop}, declarationValue{declarationPHI}, isValid{false} {
+) : outermostLoopOfVariable{loop}, declarationValue{declarationPHI}, isValid{false},
+    dataDGOfVariable{nullptr}, sccdagOfVariable{nullptr}, dataSCCDAGOfVariable{nullptr} {
 
   assert(sccContainingVariable.isInternal(declarationPHI)
     && "Declaration PHI node is not internal to the SCC provided!");
