@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.4.3)
-project(LoopExtraction)
+project(LoopInvariantCodeMotion)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -29,6 +29,7 @@ add_subdirectory(src)
 
 # Install
 install(PROGRAMS
-         include/LoopExtraction.hpp
+         include/Mem2RegNonAlloca.hpp
+         include/LoopInvariantCodeMotion.hpp
          DESTINATION include)
 
