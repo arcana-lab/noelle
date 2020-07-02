@@ -18,7 +18,7 @@ bool EnablersManager::applyEnablers (
     LoopDistribution &loopDist,
     LoopUnroll &loopUnroll,
     LoopWhilifier &loopWhilifier,
-    LoopExtraction &loopExtraction
+    LoopInvariantCodeMotion &loopInvariantCodeMotion
   ){
 
   /*
@@ -51,9 +51,9 @@ bool EnablersManager::applyEnablers (
   /*
    * Run the extraction.
    */
-  errs() << "EnablersManager:   Try to extract values out of loops\n";
-  if (loopExtraction.extractValuesFromLoop(*LDI)){
-    errs() << "EnablersManager:     Loop values have been extracted\n";
+  errs() << "EnablersManager:   Try to extract invariants out of loops\n";
+  if (loopInvariantCodeMotion.extractInvariantsFromLoop(*LDI)){
+    errs() << "EnablersManager:     Loop invariants have been extracted\n";
     return true;
   }
 

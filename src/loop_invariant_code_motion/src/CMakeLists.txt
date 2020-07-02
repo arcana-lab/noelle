@@ -1,13 +1,16 @@
 # Sources
 set(Srcs 
-  LoopExtraction.cpp
+  Mem2RegNonAlloca.cpp
+  LoopInvariantCodeMotion.cpp
+  LoopInvariantHoister.cpp
+  LastLiveOutStoreHoister.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopExtraction")
+set(PassName "LoopInvariantCodeMotion")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
