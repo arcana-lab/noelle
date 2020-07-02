@@ -21,8 +21,7 @@
 
 #include "llvm/ADT/iterator_range.h"
 
-#include "../include/HeuristicsPass.hpp"
-#include "PDGAnalysis.hpp"
+#include "HeuristicsPass.hpp"
 
 using namespace llvm;
 
@@ -33,7 +32,6 @@ bool llvm::HeuristicsPass::doInitialization (Module &M){
 }
 
 void llvm::HeuristicsPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<PDGAnalysis>();
   AU.setPreservesAll();
   return ;
 }
