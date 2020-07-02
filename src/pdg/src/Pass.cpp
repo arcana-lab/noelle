@@ -47,6 +47,10 @@ void PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool PDGAnalysis::runOnModule (Module &M){
+
+  /*
+   * Check if the pass has already run.
+   */
   if (this->M != nullptr) {
     return false;
   }
