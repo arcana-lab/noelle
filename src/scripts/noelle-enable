@@ -6,7 +6,7 @@ installDir
 ENABLERS="-load ${installDir}/lib/LoopDistribution.so \
   -load ${installDir}/lib/LoopUnroll.so \
   -load ${installDir}/lib/LoopWhilify.so \
-  -load ${installDir}/lib/LoopExtraction.so \
+  -load ${installDir}/lib/LoopInvariantCodeMotion.so \
 "
 
 # Set the file names
