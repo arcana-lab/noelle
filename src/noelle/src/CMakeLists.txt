@@ -2,6 +2,7 @@
 set(Srcs 
   Pass.cpp
   Noelle.cpp
+  Noelle_function.cpp
   Noelle_loops.cpp
   Noelle_types.cpp
   Noelle_transformations.cpp

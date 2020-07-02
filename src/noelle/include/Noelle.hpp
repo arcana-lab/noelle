@@ -89,6 +89,8 @@ namespace llvm {
       DataFlowAnalysis getDataFlowAnalyses (void) const ;
 
       DataFlowEngine getDataFlowEngine (void) const ;
+    
+      DominatorSummary * getDominators (Function *f) ;
 
       Verbosity getVerbosity (void) const ;
 
