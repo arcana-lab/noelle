@@ -119,7 +119,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
   /*
    * Fetch the profiles.
    */
-  auto& profiles = getAnalysis<HotProfiler>().getHot();
+  auto profiles = this->getProfiles();
 
   /*
    * Allocate the vector of loops.
@@ -154,10 +154,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
     /*
      * Check if the function is hot.
      */
-    if (profiles.isAvailable()){
-      auto mInsts = profiles.getTotalInstructions();
-      auto fInsts = profiles.getTotalInstructions(function);
-      auto hotness = ((double)fInsts) / ((double)mInsts);
+    if (profiles->isAvailable()){
+      auto hotness = profiles->getDynamicTotalInstructionCoverage(function);
       if (hotness < minimumHotness){
         errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
         continue ;
@@ -179,9 +177,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
     /*
      * Fetch the function dependence graph.
      */
-    // FIXME: Possible memory leak, this is the only pointer t funcPDG (so owner)
-    // FIXME: LDI doesn't clean up funcPDG
-    auto funcPDG = getAnalysis<PDGAnalysis>().getFunctionPDG(*function);
+    auto PDG = this->getProgramDependenceGraph();
+    auto funcPDG = PDG->createFunctionSubgraph(*function);
 
     /*
      * Fetch the post dominators and scalar evolutions
@@ -204,11 +201,9 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
       /*
        * Check if the loop is hot enough.
        */
-      if (profiles.isAvailable()){
-        auto mInsts = profiles.getTotalInstructions();
+      if (profiles->isAvailable()){
         LoopStructure loopS{loop};
-        auto lInsts = profiles.getTotalInstructions(&loopS);
-        auto hotness = ((double)lInsts) / ((double)mInsts);
+        auto hotness = profiles->getDynamicTotalInstructionCoverage(&loopS);
         if (hotness < minimumHotness){
           errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
           currentLoopIndex++;
@@ -323,7 +318,17 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
       allLoops->push_back(ldi);
       currentLoopIndex++;
     }
+
+    /*
+     * Free the memory.
+     */
+    delete funcPDG;
   }
+
+  /*
+   * Free the memory.
+   */
+  delete functions;
 
   return allLoops;
 }
@@ -340,7 +345,7 @@ uint32_t Noelle::getNumberOfProgramLoops (
   /*
    * Fetch the profiles.
    */
-  auto& profiles = getAnalysis<HotProfiler>().getHot();
+  auto profiles = this->getProfiles();
 
   /*
    * Fetch the list of functions of the module.
@@ -379,10 +384,8 @@ uint32_t Noelle::getNumberOfProgramLoops (
     /*
      * Check if the function is hot.
      */
-    if (profiles.isAvailable()){
-      auto mInsts = profiles.getTotalInstructions();
-      auto fInsts = profiles.getTotalInstructions(function);
-      auto hotness = ((double)fInsts) / ((double)mInsts);
+    if (profiles->isAvailable()){
+      auto hotness = profiles->getDynamicTotalInstructionCoverage(function);
       if (hotness <= minimumHotness){
         continue ;
       }
@@ -401,11 +404,9 @@ uint32_t Noelle::getNumberOfProgramLoops (
       /*
        * Check if the loop is hot enough.
        */
-       if (profiles.isAvailable()){
-        auto mInsts = profiles.getTotalInstructions();
+       if (profiles->isAvailable()){
         LoopStructure loopS{loop};
-        auto lInsts = profiles.getTotalInstructions(&loopS);
-        auto hotness = ((double)lInsts) / ((double)mInsts);
+        auto hotness = profiles->getDynamicTotalInstructionCoverage(&loopS);
         if (hotness <= minimumHotness){
           currentLoopIndex++;
           continue ;
