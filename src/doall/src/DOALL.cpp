@@ -244,7 +244,7 @@ bool DOALL::apply (
    */
   this->generateCodeToStoreLiveOutVariables(LDI, 0);
 
-  addChunkFunctionExecutionAsideOriginalLoop(LDI, loopFunction, par);
+  this->addChunkFunctionExecutionAsideOriginalLoop(LDI, loopFunction, par);
 
   /*
    * Final printing.
@@ -267,11 +267,6 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   Function *loopFunction,
   Noelle &par
 ) {
-
-  /*
-   * Create the entry and exit points of the function that will include the parallelized loop.
-   */
-  auto &cxt = loopFunction->getContext();
 
   /*
    * Create the environment.
