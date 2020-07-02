@@ -2,7 +2,14 @@
 
 installDir
 
+# Process the raw data
+outputFile=`mktemp` ;
+llvm-profdata merge $1 -output=$outputFile ;
+
 # Run HotProfiler
-cmdToExecute="noelle-load -pgo-test-profile-file=$1 -block-freq -pgo-instr-use -HotProfiler ${@:2}"
+cmdToExecute="opt -pgo-test-profile-file=${outputFile} -block-freq -pgo-instr-use ${@:2}"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
+
+# Clean
+rm $outputFile ;
