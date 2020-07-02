@@ -15,31 +15,15 @@
 
 namespace llvm {
 
-  class LoopExtraction {
+  class Mem2RegNonAlloca {
     public:
 
-      /*
-       * Methods
-       */
-      LoopExtraction(Noelle &noelle);
+      Mem2RegNonAlloca (LoopDependenceInfo const &LDI) ;
 
-      bool extractValuesFromLoop (
-        LoopDependenceInfo const &LDI
-        );
+      bool promoteMemoryToRegister () ;
 
     private:
-
-      /*
-       * Fields
-       */
-      Noelle &noelle;
-
-      /*
-       * Methods
-       */
-      bool hoistStoreOfLastValueLiveOut (
-        LoopDependenceInfo const &LDI
-      ) ;
+      LoopDependenceInfo const &LDI;
 
   };
 
