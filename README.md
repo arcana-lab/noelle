@@ -5,7 +5,7 @@
 LLVM 9.0.0
 
 To enable it on the Zythos cluster: 
-  - source /project/llvm/9.0.0/enable
+  - source /project/extra/llvm/9.0.0/enable
 
 
 ## Build
