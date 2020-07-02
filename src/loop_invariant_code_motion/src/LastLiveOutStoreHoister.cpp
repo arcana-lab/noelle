@@ -8,31 +8,11 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "LoopExtraction.hpp"
-
-#include "PDGPrinter.hpp"
-#include "SubCFGs.hpp"
+#include "LoopInvariantCodeMotion.hpp"
 
 using namespace llvm;
 
-LoopExtraction::LoopExtraction(Noelle &noelle)
-  : noelle{noelle}
-  {
-  return ;
-}
-
-bool LoopExtraction::extractValuesFromLoop (
-  LoopDependenceInfo const &LDI
-  ){
-  
-  auto modified = false;
-
-  modified |= hoistStoreOfLastValueLiveOut(LDI);
-
-  return modified;
-}
-
-bool LoopExtraction::hoistStoreOfLastValueLiveOut (
+bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut (
   LoopDependenceInfo const &LDI
 ){
 
@@ -48,7 +28,10 @@ bool LoopExtraction::hoistStoreOfLastValueLiveOut (
     loopEntrySuccessors.insert(B);
   }
 
+  DominatorTree DT(*header->getParent());
   PostDominatorTree PDT(*header->getParent());
+  DominatorSummary DS(DT, PDT);
+
   auto sccdag = LDI.sccdagAttrs.getSCCDAG();
   std::unordered_set<StoreInst *> independentStoresExecutedEveryIteration;
 
@@ -74,28 +57,48 @@ bool LoopExtraction::hoistStoreOfLastValueLiveOut (
 
     /*
      * Alias-ing stores require further analysis to hoist
-     * Ensure only one store exists in the SCC
+     * 
+     * For now, as long as the pointer operand is the same
+     * and one store post dominates the rest, hoist that one
      */
-    if (stores.size() != 1) continue;
+    StoreInst *singleLastStore = nullptr;
+    Value *singlePointerOperand = nullptr;
+    for (auto store : stores) {
+      auto pointerOp = store->getPointerOperand();
+      if (!singlePointerOperand) {
+        singlePointerOperand = pointerOp;
+        singleLastStore = store;
+        continue;
+      }
+
+      if (pointerOp == singlePointerOperand) {
+        if (DS.PDT.dominates(singleLastStore, store)) continue;
+        if (DS.PDT.dominates(store, singleLastStore)) {
+          singleLastStore = store;
+          continue;
+        }
+      }
+
+      singleLastStore = nullptr;
+      break;
+    }
+    if (!singleLastStore) continue;
 
     /*
      * Determine if the store is executed every iteration
      * This is true if the store basic block post dominates
      * all loop-internal successor blocks of the loop entry block
      */
-    for (auto store : stores) {
-      auto storeBlock = store->getParent();
-      bool postDominatesAll = true;
-      // store->print(errs() << "ENABLERS:  Might hoist"); errs() << "\n";
+    singleLastStore->print(errs() << "ENABLERS:  Might hoist"); errs() << "\n";
+    auto storeBlock = singleLastStore->getParent();
+    bool postDominatesAll = true;
 
-      for (auto B : loopEntrySuccessors) {
-        postDominatesAll &= PDT.dominates(storeBlock, B);
-      }
-      if (!postDominatesAll) continue;
-
-      independentStoresExecutedEveryIteration.insert(store);
+    for (auto B : loopEntrySuccessors) {
+      postDominatesAll &= DS.PDT.dominates(storeBlock, B);
     }
+    if (!postDominatesAll) continue;
 
+    independentStoresExecutedEveryIteration.insert(singleLastStore);
   }
 
   modified = independentStoresExecutedEveryIteration.size() > 0;
@@ -105,7 +108,16 @@ bool LoopExtraction::hoistStoreOfLastValueLiveOut (
   for (auto store : independentStoresExecutedEveryIteration) {
     auto storedValue = store->getValueOperand();
     auto pointerOperand = store->getPointerOperand();
-    store->eraseFromParent();
+
+    /*
+     * Erase this store and any other in its SCC
+     */
+    auto scc = sccdag->sccOfValue(store);
+    for (auto nodePair : scc->internalNodePairs()) {
+      auto value = nodePair.first;
+      assert(isa<StoreInst>(value));
+      cast<StoreInst>(value)->eraseFromParent();
+    }
 
     auto initialValue = preHeaderBuilder.CreateLoad(pointerOperand);
 

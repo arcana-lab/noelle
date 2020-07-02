@@ -41,7 +41,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_distribution/include
   ../../loop_unroll/include
   ../../loop_whilifier/include
-  ../../loop_extraction/include
+  ../../loop_invariant_code_motion/include
   ../../talkdown/include
   ../../noelle/include
   ../../dataflow/include
