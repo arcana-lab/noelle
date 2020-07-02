@@ -35,9 +35,33 @@ InvariantManager::InvariantManager (
     }
 
     /*
+     * Check if the values of a PHI are equivalent
+     * If they are not, the PHI controls which value to use and is NOT loop invariant
+     * TODO: Be more flexible than a strict equivalence
+     */
+    if (auto phi = dyn_cast<PHINode>(inst)) {
+      Value *singleValue = nullptr;
+      for (auto &incomingUse : phi->incoming_values()) {
+        auto incomingValue = incomingUse.get();
+
+        if (!singleValue) {
+          singleValue = incomingValue;
+          continue;
+        }
+
+        if (singleValue != incomingValue) {
+          singleValue = nullptr;
+          break;
+        }
+      }
+
+      if (!singleValue) continue;
+    }
+
+    /*
      * Check if @value is loop invariant according to the dependence graph.
      */
-    auto checkValueFunc = [loop] (Value *toValue, DataDependenceType ddType) -> bool {
+    auto checkIfCanEvolve = [loop] (Value *toValue, DataDependenceType ddType) -> bool {
 
       /*
        * Check if @toValue isn't an instruction.
@@ -62,7 +86,8 @@ InvariantManager::InvariantManager (
 
       return true;
     };
-    auto canEvolve = loopDG->iterateOverDependencesTo(inst, false, true, true, checkValueFunc);
+
+    auto canEvolve = loopDG->iterateOverDependencesTo(inst, false, true, true, checkIfCanEvolve);
     auto isInvariant = !canEvolve;
     if (isInvariant){
       this->invariants.insert(inst);
