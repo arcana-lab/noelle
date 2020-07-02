@@ -63,7 +63,7 @@ baseline.bc: test.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
 	llvm-dis $@
 
-baseline_with_metadata.bc: output.prof baseline_pre.bc
+baseline_with_metadata.bc: default.profraw baseline_pre.bc
 	noelle-meta-prof-embed $^ -o $@
 	noelle-meta-pdg-embed $@ -o $@
 	llvm-dis $@
@@ -72,9 +72,6 @@ baseline_pre.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
 	noelle-pre $@ $(NOELLE_OPTIONS)
 	llvm-dis $@
-
-output.prof: default.profraw
-	llvm-profdata merge $^ -output=$@
 
 default.profraw: baseline_pre_prof input.txt
 	./$< `cat input.txt` 
