@@ -53,3 +53,11 @@ bool Hot::hasBeenExecuted (Function *f) const {
 
   return true;
 }
+
+double Hot::getDynamicTotalInstructionCoverage (Function *f) const {
+  auto mInsts = this->getTotalInstructions();
+  auto lInsts = this->getTotalInstructions(f);
+  auto hotness = ((double)lInsts) / ((double)mInsts);
+
+  return hotness;
+}

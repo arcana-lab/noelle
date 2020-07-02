@@ -91,6 +91,8 @@ namespace llvm {
 
       uint64_t getTotalInstructions (Function *f) const ;
 
+      double getDynamicTotalInstructionCoverage (Function *f) const ;
+
 
       /*
        * =========================== Module ======================================
