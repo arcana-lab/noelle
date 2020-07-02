@@ -303,5 +303,7 @@ SCCDAG::~SCCDAG() {
     }
   }
 
+  this->clear();
+
   return ;
 }

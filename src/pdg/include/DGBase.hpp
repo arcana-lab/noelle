@@ -355,7 +355,7 @@ namespace llvm {
   template <class T>
   DGNode<T> *DG<T>::addNode(T *theT, bool inclusion)
   {
-    auto *node = new DGNode<T>(nodeIdCounter++, theT);
+    auto node = new DGNode<T>(nodeIdCounter++, theT);
     allNodes.insert(node);
     auto &map = inclusion ? internalNodeMap : externalNodeMap;
     map[theT] = node;
