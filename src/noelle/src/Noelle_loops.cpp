@@ -68,9 +68,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   /*
    * Fetch the post dominators and scalar evolutions
    */
-  auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
-  auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
-  DominatorSummary DS{DT, PDT};
+  auto DS = this->getDominators(function);
   auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
   /*
@@ -99,9 +97,14 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Allocate the loop wrapper.
      */
-    auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE, this->maxCores);
+    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
     allLoops->push_back(ldi);
   }
+
+  /*
+   * Free the memory.
+   */
+  delete DS ;
 
   return allLoops;
 }
@@ -183,9 +186,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
     /*
      * Fetch the post dominators and scalar evolutions
      */
-    auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
-    auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
-    DominatorSummary DS{DT, PDT};
+    auto DS = this->getDominators(function);
     auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
     /*
@@ -220,7 +221,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE, this->maxCores);
+        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
 
         allLoops->push_back(ldi);
         currentLoopIndex++;
@@ -262,7 +263,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
        *
        * Allocate the loop wrapper.
        */
-      auto ldi = new LoopDependenceInfo(funcPDG, loop, DS, SE, maximumNumberOfCoresForTheParallelization);
+      auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, maximumNumberOfCoresForTheParallelization);
 
       /*
        * Set the loop constraints specified by INDEX_FILE.
@@ -323,6 +324,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
      * Free the memory.
      */
     delete funcPDG;
+    delete DS;
   }
 
   /*
