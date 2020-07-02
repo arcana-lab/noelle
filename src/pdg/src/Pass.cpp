@@ -47,6 +47,9 @@ void PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool PDGAnalysis::runOnModule (Module &M){
+  if (this->M != nullptr) {
+    return false;
+  }
 
   /*
    * Store global information.
