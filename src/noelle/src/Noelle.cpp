@@ -9,7 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Noelle.hpp"
-#include "PDGAnalysis.hpp"
 #include "HotProfiler.hpp"
 #include "Architecture.hpp"
 
@@ -238,29 +237,6 @@ Hot * Noelle::getProfiles (void) {
   }
 
   return this->profiles;
-}
-
-PDG * Noelle::getProgramDependenceGraph (void) {
-  if (this->programDependenceGraph == nullptr){
-    this->programDependenceGraph = getAnalysis<PDGAnalysis>().getPDG();
-  }
-
-  return this->programDependenceGraph;
-}
-
-PDG * Noelle::getFunctionDependenceGraph (Function *f) {
-
-  /*
-   * Fetch the whole PDG.
-   */
-  auto wholePDG = this->getProgramDependenceGraph();
-
-  /*
-   * Create the FDG.
-   */
-  auto FDG = wholePDG->createFunctionSubgraph(*f);
-
-  return FDG;
 }
 
 uint32_t Noelle::getMaximumNumberOfCores (void) const {
