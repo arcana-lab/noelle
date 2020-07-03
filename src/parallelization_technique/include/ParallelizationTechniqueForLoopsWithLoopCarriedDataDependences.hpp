@@ -43,16 +43,17 @@ namespace llvm {
     protected:
 
       /*
+       * Fields
+       */
+      SCCDAGPartition *partition;
+
+      /*
        * Partition SCCDAG.
        */
       void partitionSCCDAG (
         LoopDependenceInfo *LDI
       );
 
-      /*
-       * Fields
-       */
-      SCCDAGPartition *partition;
     };
 
 }
