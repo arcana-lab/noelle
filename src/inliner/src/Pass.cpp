@@ -28,7 +28,6 @@ void Inliner::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<Noelle>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<PDGAnalysis>();
   AU.addRequired<DominatorTreeWrapperPass>();
 
   return ;
