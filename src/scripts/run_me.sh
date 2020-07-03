@@ -46,4 +46,7 @@ if test -d include ; then
   fi
   popd ;
 fi
-ln -s build/compile_commands.json
+
+if ! test -e build/compile_commands.json ; then
+  ln -s build/compile_commands.json
+fi
