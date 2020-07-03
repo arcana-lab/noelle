@@ -38,10 +38,10 @@ if test -s $stillRunning ; then
   stillRunningJobs=`wc -l $stillRunning | awk '{print $1}'` ;
   tooManyJobs=`echo "$stillRunningJobs > 12" | bc` ;
   if test $tooManyJobs == "0" ; then
-    echo "    The following tests are still running" ;
+    echo "    The following $stillRunningJobs tests are still running" ;
     while IFS= read -r line; do
       testRunning=`echo $line | awk '{print $4}'` ;
-      echo "      $testRunning" ;
+      echo "        $testRunning" ;
     done < "$stillRunning"
 
   else
