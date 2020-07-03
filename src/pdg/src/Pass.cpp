@@ -51,7 +51,10 @@ bool PDGAnalysis::runOnModule (Module &M){
   /*
    * Check if the pass has already run.
    */
-  if (this->M != nullptr) {
+  if (  false
+        || (this->M != nullptr)
+        || (this->programDependenceGraph != nullptr)
+    ){
     return false;
   }
 
