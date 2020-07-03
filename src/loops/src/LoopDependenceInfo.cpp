@@ -210,9 +210,8 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
   }
   #endif
 
-  return make_pair(loopDG, loopSCCDAG);
+  return std::make_pair(loopDG, loopSCCDAG);
 }
-
   
 bool LoopDependenceInfo::isTransformationEnabled (Transformation transformation){
   auto exist = this->enabledTransformations.find(transformation) != this->enabledTransformations.end();
