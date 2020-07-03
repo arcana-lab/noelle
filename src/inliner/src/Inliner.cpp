@@ -121,7 +121,6 @@ bool Inliner::runOnModule (Module &M) {
     bool inlined = inlineFnsOfLoopsToCGRoot();
     if (inlined) {
       getAnalysis<CallGraphWrapperPass>().runOnModule(M);
-      getAnalysis<PDGAnalysis>().runOnModule(M);
       parentFns.clear();
       childrenFns.clear();
       orderedCalled.clear();
