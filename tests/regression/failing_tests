@@ -3,6 +3,7 @@ regression_1/CondControlMemory -noelle-pdg-check -noelle-verbose=3 -noelle-disab
 regression_1/3mm_polybench -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force
 regression_1/Correlation_polybench -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force
 regression_1/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force
+regression_1/IndependentIterations10 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force
 regression_1/NestedLoops -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force
 regression_1/GlobalUsed -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force
 regression_1/Exit_call2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force
@@ -16,6 +17,7 @@ regression_2/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-dis
 regression_2/Exit_call2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force -dswp-no-scc-merge
 regression_2/Exit_call3 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force -dswp-no-scc-merge
 regression_2/GlobalUsed -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force -dswp-no-scc-merge
+regression_2/IndependentIterations10 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force -dswp-no-scc-merge
 regression_2/NestedLoops -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force -dswp-no-scc-merge
 regression_2/ReductionIterations4 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -dswp-force -dswp-no-scc-merge
 regression_3/CondControlMemory -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -dswp-force
@@ -45,9 +47,11 @@ regression_6/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-dis
 regression_6/Exit_call3 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/IndependentIterations7 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/IndependentIterations8 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
+regression_6/IndependentIterations10 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/NestedLoops -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_6/ReductionIterations4 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner
 regression_7/3mm_polybench -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-max-cores=2
+regression_7/IndependentIterations10 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-max-cores=2
 regression_8/CondControlMemory -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2
 regression_8/Exit_call3 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2
 regression_8/GlobalUsed -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2
@@ -69,6 +73,7 @@ regression_11/CondControlMemory -noelle-pdg-check -noelle-verbose=3 -noelle-disa
 regression_11/CondControl -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-parallelizer-disable-loop-sorting
 regression_11/Exit_call3 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-parallelizer-disable-loop-sorting
 regression_11/GlobalUsed -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-parallelizer-disable-loop-sorting
+regression_11/IndependentIterations10 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-parallelizer-disable-loop-sorting
 regression_11/NestedLoops -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-parallelizer-disable-loop-sorting
 regression_11/Recursive -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-parallelizer-disable-loop-sorting
 regression_11/ReductionIterations4 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-parallelizer-disable-loop-sorting
@@ -88,6 +93,7 @@ regression_13/IndependentIterations7 -noelle-pdg-check -noelle-verbose=3 -noelle
 regression_13/IndependentIterations8 -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix
 regression_13/NestedLoops -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix
 regression_13/ReductionIterations4 -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix
+regression_13/IndependentIterations10 -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix
 regression_default/CondControlMemory -noelle-pdg-check -noelle-verbose=3
 regression_default/3mm_polybench -noelle-pdg-check -noelle-verbose=3
 regression_default/Correlation_polybench -noelle-pdg-check -noelle-verbose=3
