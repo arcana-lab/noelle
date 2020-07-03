@@ -181,7 +181,22 @@ bool DSWP::apply (
   /*
    * Partition the SCCDAG.
    */
-  partitionSCCDAG(LDI, h);
+  this->partitionSCCDAG(LDI, h);
+
+  /*
+   * Check if the parallelization is worth it.
+   */
+  if (this->partition->numberOfPartitions() == 1){
+
+    /*
+     * The parallelization isn't worth it as there is only one pipeline stage.
+     */
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "DSWP:  There is only 1 partition and therefore the parallelization isn't worth it.\n";
+    }
+
+    return false;
+  }
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DSWP:  There are " << this->partition->numberOfPartitions() << " partitions in the SCCDAG\n";
   }
