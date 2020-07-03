@@ -62,7 +62,7 @@ namespace llvm {
       /*
        * Stores new pipeline execution
        */
-      unordered_map<SCC *, DSWPTask *> sccToStage;
+      std::unordered_map<SCC *, DSWPTask *> sccToStage;
       std::vector<std::unique_ptr<QueueInfo>> queues;
 
       /*
