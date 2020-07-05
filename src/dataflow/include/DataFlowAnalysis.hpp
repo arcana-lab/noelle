@@ -25,6 +25,8 @@ namespace llvm {
       DataFlowAnalysis ();
 
       DataFlowResult * runReachableAnalysis (Function *f);
+
+      DataFlowResult * runReachableAnalysis (Function *f, std::function<bool (Instruction *i)> filter);
   };
 
 }
