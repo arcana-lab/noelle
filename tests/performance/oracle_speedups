@@ -1,5 +1,5 @@
-DOALL_devirtualizer 8.224
-DOALL_limit	20.827
+DOALL_devirtualizer 13.094
+DOALL_limit	21.435
 DOALL_reduction	2.455
 DSWP_limit	6.743
-Streamcluster_hotloops	1.025
+Streamcluster_hotloops	0.607
