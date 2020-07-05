@@ -504,10 +504,46 @@ void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
    * Use alias analysis on stores, loads, and function calls to construct PDG edges
    */
   for (auto &F : M) {
+
+    /*
+     * Check if the function has a body.
+     */
     if (F.empty()) continue ;
+
+    /*
+     * Fetch the alias analysis.
+     */
     auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
-    auto dfr = this->dfa.runReachableAnalysis(&F);
+
+    /*
+     * Run the reachable analysis.
+     */
+    auto onlyMemoryInstructionFilter = [](Instruction *i) -> bool {
+      if (isa<LoadInst>(i)){
+        return true;
+      }
+      if (isa<StoreInst>(i)){
+        return true;
+      }
+      if (isa<CallInst>(i)){
+        return true;
+      }
+      if (isa<InvokeInst>(i)){
+        return true;
+      }
+      return true; 
+      return false;
+    };
+    auto dfr = this->dfa.runReachableAnalysis(&F, onlyMemoryInstructionFilter);
+
+    /*
+     * Add the edges to the PDG.
+     */
     constructEdgesFromAliasesForFunction(pdg, F, AA, dfr);
+
+    /*
+     * Free the memory.
+     */
     delete dfr;
   }
 }
