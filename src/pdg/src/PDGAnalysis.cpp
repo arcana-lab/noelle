@@ -498,57 +498,112 @@ void PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
   }
 }
 
-void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store, LoadInst *load) {
-  auto must = false;
+void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
 
   /*
-   * Query the LLVM alias analyses.
+   * Use alias analysis on stores, loads, and function calls to construct PDG edges
    */
-  switch (AA.alias(MemoryLocation::get(store), MemoryLocation::get(load))) {
-    case NoAlias:
-      return ;
-    case PartialAlias:
-    case MayAlias:
-      break;
-    case MustAlias:
-      must = true;
-      break;
+  for (auto &F : M) {
+    if (F.empty()) continue ;
+    auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+    auto dfr = this->dfa.runReachableAnalysis(&F);
+    constructEdgesFromAliasesForFunction(pdg, F, AA, dfr);
+    delete dfr;
   }
-
-  /*
-   * Check other alias analyses
-   */
-  switch (this->pta->alias(MemoryLocation::get(store), MemoryLocation::get(load))) {
-    case NoAlias:
-      return;
-    case PartialAlias:
-    case MayAlias:
-      break;
-    case MustAlias:
-      must = true;
-      break;
-  }
-
-  /*
-   * There is a dependence.
-   */
-  if (dfr->OUT(store).count(load)) {
-    pdg->addEdge((Value*)store, (Value*)load)->setMemMustType(true, must, DG_DATA_RAW);
-  }
-  if (dfr->OUT(load).count(store)) {
-    pdg->addEdge((Value*)load, (Value*)store)->setMemMustType(true, must, DG_DATA_WAR);
-  }
-
-  return ;
 }
 
-void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, StoreInst *store, StoreInst *otherStore) {
+void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr){
+  for (auto &B : F) {
+    for (auto &I : B) {
+      if (auto store = dyn_cast<StoreInst>(&I)) {
+        iterateInstForStore(pdg, F, AA, dfr, store);
+      } else if (auto load = dyn_cast<LoadInst>(&I)) {
+        iterateInstForLoad(pdg, F, AA, dfr, load);
+      } else if (auto call = dyn_cast<CallInst>(&I)) {
+        iterateInstForCall(pdg, F, AA, dfr, call);
+      }
+    }
+  }
+}
+
+void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store) {
+  for (auto I : dfr->OUT(store)) {
+    /*
+     * Check stores.
+     */
+    if (auto otherStore = dyn_cast<StoreInst>(I)) {
+      if (store != otherStore) {
+        addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg, F, AA, store, otherStore, DG_DATA_WAW);
+      }
+    }
+
+    /* 
+     * Check loads.
+     */
+    else if (auto load = dyn_cast<LoadInst>(I)) {
+      addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg, F, AA, store, load, DG_DATA_RAW);
+    }
+
+    /*
+     * Check calls.
+     */
+    else if (auto call = dyn_cast<CallInst>(I)) {
+      addEdgeFromFunctionModRef(pdg, F, AA, call, store, false);
+    }
+  }
+}
+
+void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, LoadInst *load) {
+  for (auto I : dfr->OUT(load)) {
+    /*
+     * Check stores.
+     */
+    if (auto store = dyn_cast<StoreInst>(I)) {
+      addEdgeFromMemoryAlias<LoadInst, StoreInst>(pdg, F, AA, load, store, DG_DATA_WAR);
+    }
+
+    /*
+     * Check calls.
+     */
+    else if (auto call = dyn_cast<CallInst>(I)) {
+      addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
+    }
+  }
+}
+
+void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallInst *call) {
+  for (auto I : dfr->OUT(call)) {
+    /*
+     * Check stores.
+     */
+    if (auto store = dyn_cast<StoreInst>(I)) {
+      addEdgeFromFunctionModRef(pdg, F, AA, call, store, true);
+    }
+
+    /*
+     * Check loads.
+     */
+    else if (auto load = dyn_cast<LoadInst>(I)) {
+      addEdgeFromFunctionModRef(pdg, F, AA, call, load, true);
+    }
+
+    /*
+     * Check calls.
+     */
+    else if (auto otherCall = dyn_cast<CallInst>(I)) {
+      addEdgeFromFunctionModRef(pdg, F, AA, call, otherCall);
+    }
+  }
+}
+
+template<class InstI, class InstJ>
+void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, InstI *instI, InstJ *instJ, DataDependenceType dataDependenceType) {
   auto must = false;
 
   /*
    * Query the LLVM alias analyses.
    */
-  switch (AA.alias(MemoryLocation::get(store), MemoryLocation::get(otherStore))) {
+  switch (AA.alias(MemoryLocation::get(instI), MemoryLocation::get(instJ))) {
     case NoAlias:
       return ;
     case PartialAlias:
@@ -562,7 +617,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
   /*
    * Check other alias analyses
    */
-  switch (this->pta->alias(MemoryLocation::get(store), MemoryLocation::get(otherStore))) {
+  switch (this->pta->alias(MemoryLocation::get(instI), MemoryLocation::get(instJ))) {
     case NoAlias:
       return;
     case PartialAlias:
@@ -576,7 +631,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
   /*
    * There is a dependence.
    */
-  pdg->addEdge((Value*)store, (Value*)otherStore)->setMemMustType(true, must, DG_DATA_WAW);
+  pdg->addEdge((Value*)instI, (Value*)instJ)->setMemMustType(true, must, dataDependenceType);
 
   return ;
 }
@@ -632,7 +687,7 @@ bool PDGAnalysis::hasNoMemoryOperations(CallInst *call) {
   return false;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallInst *call, StoreInst *store) {
+void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, StoreInst *store, bool addEdgeFromCall) {
   BitVector bv(3, false);
   auto makeRefEdge = false, makeModEdge = false;
 
@@ -690,18 +745,16 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    * There is a dependence.
    */
   if (makeRefEdge) {
-    if (dfr->OUT(call).count(store)) {
+    if (addEdgeFromCall) {
       pdg->addEdge((Value*)call, (Value*)store)->setMemMustType(true, false, DG_DATA_WAR);
-    }
-    if (dfr->OUT(store).count(call)) {
+    } else {
       pdg->addEdge((Value*)store, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
     }
   }
   if (makeModEdge) {
-    if (dfr->OUT(call).count(store)) {
+    if (addEdgeFromCall) {
       pdg->addEdge((Value*)call, (Value*)store)->setMemMustType(true, false, DG_DATA_WAW);
-    }
-    if (dfr->OUT(store).count(call)) {
+    } else {
       pdg->addEdge((Value*)store, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
     }
   }
@@ -709,7 +762,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   return ;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallInst *call, LoadInst *load) {
+void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, LoadInst *load, bool addEdgeFromCall) {
   BitVector bv(3, false);
 
   /*
@@ -741,10 +794,9 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   /*
    * There is a dependence.
    */
-  if (dfr->OUT(call).count(load)) {
+  if (addEdgeFromCall) {
     pdg->addEdge((Value*)call, (Value*)load)->setMemMustType(true, false, DG_DATA_RAW);
-  }
-  if (dfr->OUT(load).count(call)) {
+  } else {
     pdg->addEdge((Value*)load, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
   }
 
@@ -875,73 +927,6 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   }
 
   return ;
-}
-
-void PDGAnalysis::iterateInstForStoreAliases (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store) {
-  for (auto &B : F) {
-    for (auto &I : B) {
-
-      /* 
-       * Check loads.
-       */
-      if (auto load = dyn_cast<LoadInst>(&I)) {
-        addEdgeFromMemoryAlias(pdg, F, AA, dfr, store, load);
-      }
-
-      /*
-       * Check stores.
-       */
-      if (auto otherStore = dyn_cast<StoreInst>(&I)) {
-        if (store != otherStore){
-          if (dfr->OUT(store).count(otherStore)) {
-            addEdgeFromMemoryAlias(pdg, F, AA, store, otherStore);
-          }
-        }
-      }
-    }
-  }
-}
-
-void PDGAnalysis::iterateInstForModRef(PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallInst *call) {
-  for (auto &B : F) {
-    for (auto &I : B) {
-      if (auto *store = dyn_cast<StoreInst>(&I)) {
-        addEdgeFromFunctionModRef(pdg, F, AA, dfr, call, store);
-      } else if (auto *load = dyn_cast<LoadInst>(&I)) {
-        addEdgeFromFunctionModRef(pdg, F, AA, dfr, call, load);
-      } else if (auto *otherCall = dyn_cast<CallInst>(&I)) {
-        if (dfr->OUT(call).count(otherCall)) {
-          addEdgeFromFunctionModRef(pdg, F, AA, call, otherCall);
-        }
-      }
-    }
-  }
-}
-
-void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
-
-  /*
-   * Use alias analysis on stores, loads, and function calls to construct PDG edges
-   */
-  for (auto &F : M) {
-    if (F.empty()) continue ;
-    auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
-    auto dfr = this->dfa.runReachableAnalysis(&F);
-    constructEdgesFromAliasesForFunction(pdg, F, AA, dfr);
-    delete dfr;
-  }
-}
-
-void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr){
-  for (auto &B : F) {
-    for (auto &I : B) {
-      if (auto store = dyn_cast<StoreInst>(&I)) {
-        iterateInstForStoreAliases(pdg, F, AA, dfr, store);
-      } else if (auto call = dyn_cast<CallInst>(&I)) {
-        iterateInstForModRef(pdg, F, AA, dfr, call);
-      }
-    }
-  }
 }
 
 void PDGAnalysis::removeEdgesNotUsedByParSchemes (PDG *pdg) {

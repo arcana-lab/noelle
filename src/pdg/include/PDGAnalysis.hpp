@@ -105,13 +105,14 @@ namespace llvm {
       void constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr);
       void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
 
-      void iterateInstForStoreAliases(PDG *, Function &, AAResults &, DataFlowResult *, StoreInst *);
-      void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, DataFlowResult *, StoreInst *, LoadInst *);
-      void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, StoreInst *, StoreInst *);
-
-      void iterateInstForModRef(PDG *, Function &, AAResults &, DataFlowResult *, CallInst *);
-      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, DataFlowResult *, CallInst *, StoreInst *);
-      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, DataFlowResult *, CallInst *, LoadInst *);
+      void iterateInstForStore(PDG *, Function &, AAResults &, DataFlowResult *, StoreInst *);
+      void iterateInstForLoad(PDG *, Function &, AAResults &, DataFlowResult *, LoadInst *);
+      void iterateInstForCall(PDG *, Function &, AAResults &, DataFlowResult *, CallInst *);
+      
+      template<class InstI, class InstJ>
+      void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, InstI *, InstJ *, DataDependenceType);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallInst *, StoreInst *, bool);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallInst *, LoadInst *, bool);
       void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallInst *, CallInst *);
 
       void removeEdgesNotUsedByParSchemes (PDG *pdg);
