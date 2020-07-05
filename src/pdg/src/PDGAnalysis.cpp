@@ -528,6 +528,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, A
 
 void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store) {
   for (auto I : dfr->OUT(store)) {
+
     /*
      * Check stores.
      */
