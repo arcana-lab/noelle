@@ -527,6 +527,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, A
 }
 
 void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store) {
+
   for (auto I : dfr->OUT(store)) {
 
     /*
@@ -536,65 +537,83 @@ void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, Dat
       if (store != otherStore) {
         addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg, F, AA, store, otherStore, DG_DATA_WAW);
       }
+      continue ;
     }
 
     /* 
      * Check loads.
      */
-    else if (auto load = dyn_cast<LoadInst>(I)) {
+    if (auto load = dyn_cast<LoadInst>(I)) {
       addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg, F, AA, store, load, DG_DATA_RAW);
+      continue ;
     }
 
     /*
      * Check calls.
      */
-    else if (auto call = dyn_cast<CallInst>(I)) {
+    if (auto call = dyn_cast<CallInst>(I)) {
       addEdgeFromFunctionModRef(pdg, F, AA, call, store, false);
+      continue ;
     }
   }
+
+  return ;
 }
 
 void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, LoadInst *load) {
+
   for (auto I : dfr->OUT(load)) {
+
     /*
      * Check stores.
      */
     if (auto store = dyn_cast<StoreInst>(I)) {
       addEdgeFromMemoryAlias<LoadInst, StoreInst>(pdg, F, AA, load, store, DG_DATA_WAR);
+      continue ;
     }
 
     /*
      * Check calls.
      */
-    else if (auto call = dyn_cast<CallInst>(I)) {
+    if (auto call = dyn_cast<CallInst>(I)) {
       addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
+      continue ;
     }
   }
+
+  return ;
 }
 
 void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallInst *call) {
+
   for (auto I : dfr->OUT(call)) {
+
     /*
      * Check stores.
      */
     if (auto store = dyn_cast<StoreInst>(I)) {
       addEdgeFromFunctionModRef(pdg, F, AA, call, store, true);
+      continue ;
     }
 
     /*
      * Check loads.
      */
-    else if (auto load = dyn_cast<LoadInst>(I)) {
+    if (auto load = dyn_cast<LoadInst>(I)) {
       addEdgeFromFunctionModRef(pdg, F, AA, call, load, true);
+      continue ;
     }
 
     /*
      * Check calls.
      */
-    else if (auto otherCall = dyn_cast<CallInst>(I)) {
+    if (auto otherCall = dyn_cast<CallInst>(I)) {
       addEdgeFromFunctionModRef(pdg, F, AA, call, otherCall);
+      continue ;
     }
   }
+
+  return ;
 }
 
 template<class InstI, class InstJ>
