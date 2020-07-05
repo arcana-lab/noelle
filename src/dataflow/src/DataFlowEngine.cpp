@@ -17,21 +17,21 @@ DataFlowEngine::DataFlowEngine (){
 }
 
 DataFlowResult * DataFlowEngine::applyForward (
-  Function *f,
-  std::function<void (Instruction *, DataFlowResult *)> computeGEN,
-  std::function<void (Instruction *, DataFlowResult *)> computeKILL,
-  std::function<void (Instruction *inst, std::set<Value *>& IN)> initializeIN,
-  std::function<void (Instruction *inst, std::set<Value *>& OUT)> initializeOUT,
-  std::function<void (Instruction *inst, std::set<Value *>& IN, Instruction *predecessor, DataFlowResult *df)> computeIN,
-  std::function<void (Instruction *inst, std::set<Value *>& OUT, DataFlowResult *df)> computeOUT
-  ){
+    Function *f,
+    std::function<void (Instruction *, DataFlowResult *)> computeGEN,
+    std::function<void (Instruction *, DataFlowResult *)> computeKILL,
+    std::function<void (Instruction *inst, std::set<Value *>& IN)> initializeIN,
+    std::function<void (Instruction *inst, std::set<Value *>& OUT)> initializeOUT,
+    std::function<void (Instruction *inst, std::set<Value *>& IN, Instruction *predecessor, DataFlowResult *df)> computeIN,
+    std::function<void (Instruction *inst, std::set<Value *>& OUT, DataFlowResult *df)> computeOUT
+    ){
 
   /*
    * Define the customization.
    */
   auto appendBB = [](std::list<BasicBlock *> &workingList, BasicBlock *bb){ 
     workingList.push_back(bb);
-    };
+  };
 
   auto getFirstInst = [](BasicBlock *bb) -> Instruction *{
     return &*bb->begin();
@@ -44,28 +44,28 @@ DataFlowResult * DataFlowEngine::applyForward (
    * Run the pass.
    */
   auto dfaResult = this->applyCustomizableForwardAnalysis(
-    f, 
-    computeGEN, 
-    computeKILL, 
-    initializeIN, 
-    initializeOUT, 
-    computeIN, 
-    computeOUT,
-    appendBB,
-    getFirstInst,
-    getLastInst
-    );
+      f, 
+      computeGEN, 
+      computeKILL, 
+      initializeIN, 
+      initializeOUT, 
+      computeIN, 
+      computeOUT,
+      appendBB,
+      getFirstInst,
+      getLastInst
+      );
 
   return dfaResult;
 }
 
 DataFlowResult * DataFlowEngine::applyBackward (
-  Function *f,
-  std::function<void (Instruction *, DataFlowResult *)> computeGEN,
-  std::function<void (Instruction *, DataFlowResult *)> computeKILL,
-  std::function<void (std::set<Value *>& IN, Instruction *inst, DataFlowResult *df)> computeIN,
-  std::function<void (std::set<Value *>& OUT, Instruction *successor, DataFlowResult *df)> computeOUT
-  ){
+    Function *f,
+    std::function<void (Instruction *, DataFlowResult *)> computeGEN,
+    std::function<void (Instruction *, DataFlowResult *)> computeKILL,
+    std::function<void (std::set<Value *>& IN, Instruction *inst, DataFlowResult *df)> computeIN,
+    std::function<void (std::set<Value *>& OUT, Instruction *successor, DataFlowResult *df)> computeOUT
+    ){
 
   /*
    * Compute the GENs and KILLs
@@ -78,6 +78,7 @@ DataFlowResult * DataFlowEngine::applyBackward (
    *
    * Create the working list by adding all basic blocks to it.
    */
+  std::unordered_set<BasicBlock *> computedOnce;
   std::list<BasicBlock *> workingList;
   for (auto& bb : *f){
     workingList.push_front(&bb);
@@ -132,7 +133,15 @@ DataFlowResult * DataFlowEngine::applyBackward (
     /* 
      * Check if IN[inst] changed.
      */
-    if (inSetOfInst.size() > oldSize){
+    if (  false
+        || (inSetOfInst.size() > oldSize)
+        || (computedOnce.find(bb) == computedOnce.end())
+       ){
+
+      /*
+       * Remember that we have now computed this basic block.
+       */
+      computedOnce.insert(bb);
 
       /* 
        * Propagate the new IN[inst] to the rest of the instructions of the current basic block.
@@ -182,11 +191,11 @@ DataFlowResult * DataFlowEngine::applyBackward (
 }
 
 void DataFlowEngine::computeGENAndKILL (
-  Function *f, 
-  std::function<void (Instruction *, DataFlowResult *)> computeGEN,
-  std::function<void (Instruction *, DataFlowResult *)> computeKILL,
-  DataFlowResult *df
-  ){
+    Function *f, 
+    std::function<void (Instruction *, DataFlowResult *)> computeGEN,
+    std::function<void (Instruction *, DataFlowResult *)> computeKILL,
+    DataFlowResult *df
+    ){
 
   /*
    * Compute the GENs and KILLs
@@ -202,17 +211,17 @@ void DataFlowEngine::computeGENAndKILL (
 }
 
 DataFlowResult * DataFlowEngine::applyCustomizableForwardAnalysis (
-  Function *f,
-  std::function<void (Instruction *, DataFlowResult *)> computeGEN,
-  std::function<void (Instruction *, DataFlowResult *)> computeKILL,
-  std::function<void (Instruction *inst, std::set<Value *>& IN)> initializeIN,
-  std::function<void (Instruction *inst, std::set<Value *>& OUT)> initializeOUT,
-  std::function<void (Instruction *inst, std::set<Value *>& IN, Instruction *predecessor, DataFlowResult *df)> computeIN,
-  std::function<void (Instruction *inst, std::set<Value *>& OUT, DataFlowResult *df)> computeOUT,
-  std::function<void (std::list<BasicBlock *> &workingList, BasicBlock *bb)> appendBB,
-  std::function<Instruction * (BasicBlock *bb)> getFirstInstruction,
-  std::function<Instruction * (BasicBlock *bb)> getLastInstruction
-  ){
+    Function *f,
+    std::function<void (Instruction *, DataFlowResult *)> computeGEN,
+    std::function<void (Instruction *, DataFlowResult *)> computeKILL,
+    std::function<void (Instruction *inst, std::set<Value *>& IN)> initializeIN,
+    std::function<void (Instruction *inst, std::set<Value *>& OUT)> initializeOUT,
+    std::function<void (Instruction *inst, std::set<Value *>& IN, Instruction *predecessor, DataFlowResult *df)> computeIN,
+    std::function<void (Instruction *inst, std::set<Value *>& OUT, DataFlowResult *df)> computeOUT,
+    std::function<void (std::list<BasicBlock *> &workingList, BasicBlock *bb)> appendBB,
+    std::function<Instruction * (BasicBlock *bb)> getFirstInstruction,
+    std::function<Instruction * (BasicBlock *bb)> getLastInstruction
+    ){
 
   /*
    * Initialize IN and OUT sets.
@@ -298,11 +307,11 @@ DataFlowResult * DataFlowEngine::applyCustomizableForwardAnalysis (
     computeOUT(inst, outSetOfInst, df);
 
     /* Check if the OUT of the first instruction of the current basic block changed.
-     */
+    */
     if (  false
-          || (!alreadyVisited[inst])
-          || (outSetOfInst.size() != oldSize)
-      ){
+        || (!alreadyVisited[inst])
+        || (outSetOfInst.size() != oldSize)
+       ){
       alreadyVisited[inst] = true;
 
       /* 
