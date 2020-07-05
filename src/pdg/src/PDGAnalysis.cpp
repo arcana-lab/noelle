@@ -531,7 +531,6 @@ void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
       if (isa<InvokeInst>(i)){
         return true;
       }
-      return true; 
       return false;
     };
     auto dfr = this->dfa.runReachableAnalysis(&F, onlyMemoryInstructionFilter);
