@@ -16,7 +16,10 @@ DataFlowAnalysis::DataFlowAnalysis (){
   return ;
 }
 
-DataFlowResult * DataFlowAnalysis::runReachableAnalysis (Function *f){
+DataFlowResult * DataFlowAnalysis::runReachableAnalysis (
+    Function *f, 
+    std::function<bool (Instruction *i)> filter
+    ){
 
   /*
    * Allocate the engine
@@ -26,9 +29,21 @@ DataFlowResult * DataFlowAnalysis::runReachableAnalysis (Function *f){
   /*
    * Define the data-flow equations
    */
-  auto computeGEN = [](Instruction *i, DataFlowResult *df) {
+  auto computeGEN = [filter](Instruction *i, DataFlowResult *df) {
+
+    /*
+     * Check if the instruction should be considered.
+     */
+    if (!filter(i)){
+      return ;
+    }
+
+    /*
+     * Add the instruction to the GEN set.
+     */
     auto& gen = df->GEN(i);
     gen.insert(i);
+
     return ;
   };
   auto computeKILL = [](Instruction *, DataFlowResult *) {
@@ -58,4 +73,21 @@ DataFlowResult * DataFlowAnalysis::runReachableAnalysis (Function *f){
   auto df = dfa.applyBackward(f, computeGEN, computeKILL, computeIN, computeOUT);
 
   return df;
+}
+
+DataFlowResult * DataFlowAnalysis::runReachableAnalysis (Function *f){
+
+  /*
+   * Create the function that doesn't filter out instructions.
+   */
+  auto noFilter = [](Instruction *i) -> bool {
+    return true;
+  };
+
+  /*
+   * Run the analysis
+   */
+  auto dfr = this->runReachableAnalysis(f, noFilter);
+
+  return dfr;
 }
