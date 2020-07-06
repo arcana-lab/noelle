@@ -35,14 +35,14 @@ bool Parallelizer::parallelizeLoop (
   /*
    * Fetch the loop headers.
    */
-  auto loopSummary = LDI->getLoopStructure();
-  auto loopHeader = loopSummary->getHeader();
-  auto loopPreHeader = loopSummary->getPreHeader();
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
+  auto loopPreHeader = loopStructure->getPreHeader();
 
   /*
    * Fetch the loop function.
    */
-  auto loopFunction = loopSummary->getFunction();
+  auto loopFunction = loopStructure->getFunction();
 
   /*
    * Print
@@ -51,7 +51,7 @@ bool Parallelizer::parallelizeLoop (
     errs() << "Parallelizer: Start\n";
     errs() << "Parallelizer:  Function = \"" << loopFunction->getName() << "\"\n";
     errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *loopHeader->getFirstNonPHI() << "\"\n";
-    errs() << "Parallelizer:  Nesting level = " << loopSummary->getNestingLevel() << "\n";
+    errs() << "Parallelizer:  Nesting level = " << loopStructure->getNestingLevel() << "\n";
   }
 
   /*
@@ -142,7 +142,7 @@ bool Parallelizer::parallelizeLoop (
     errs() << "Parallelizer:  Link the parallelize loop\n";
   }
   auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
-  auto loopExitBlocks = LDI->getLoopStructure()->getLoopExitBasicBlocks();
+  auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   par.linkTransformedLoopToOriginalFunction(
     loopFunction->getParent(),
     loopPreHeader,
