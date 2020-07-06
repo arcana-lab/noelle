@@ -238,10 +238,6 @@ PDG * LoopDependenceInfo::getLoopDG (void) const {
   return this->loopDG;
 }
 
-PDG * LoopDependenceInfo::getLoopDG (void) const {
-  return this->loopDG;
-}
-
 bool LoopDependenceInfo::iterateOverSubLoopsRecursively (
   std::function<bool (const LoopStructure &child)> funcToInvoke
   ){
