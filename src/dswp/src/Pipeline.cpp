@@ -13,9 +13,18 @@
 using namespace llvm;
 
 void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
+  assert(LDI != nullptr);
+
+  /*
+   * Fetch the identified stages.
+   */
   std::vector<Task *> techniqueTasks;
   auto &depthOrdered = this->partition->getDepthOrderedSubsets();
   auto taskID = 0;
+
+  /*
+   * Create the tasks.
+   */
   for (auto subset : depthOrdered) {
 
     /*
@@ -29,10 +38,11 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
       this->sccToStage[scc] = task;
     }
   }
-
   this->generateEmptyTasks(LDI, techniqueTasks);
   this->numTaskInstances = techniqueTasks.size();
   assert(this->numTaskInstances == this->partition->numberOfPartitions());
+
+  return ;
 }
 
 void DSWP::addClonableSCCsToStages (LoopDependenceInfo *LDI) {
@@ -112,6 +122,9 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par) {
    */
   auto M = loopFunction->getParent();
 
+  /*
+   * Allocate the environment array and add its live-in values.
+   */
   this->allocateEnvironmentArray(LDI);
   this->populateLiveInEnvironment(LDI);
   auto envPtr = envBuilder->getEnvArrayInt8Ptr();
@@ -149,7 +162,7 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par) {
   /*
    * Propagate live-out values to the caller of the loop.
    */
-  auto latestBBAfterCall =  this->propagateLiveOutEnvironment(LDI, numThreadsUsed);
+  auto latestBBAfterCall = this->propagateLiveOutEnvironment(LDI, numThreadsUsed);
 
   IRBuilder<> afterCallBuilder{latestBBAfterCall};
   afterCallBuilder.CreateBr(this->exitPointOfParallelizedLoop);

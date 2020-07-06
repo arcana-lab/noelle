@@ -204,7 +204,11 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     }
   }
 
+  /*
+   * Free the memory.
+   */
   delete afterReductionBuilder;
+
   return afterReductionB;
 }
 
