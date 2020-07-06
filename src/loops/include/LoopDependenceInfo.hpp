@@ -70,7 +70,6 @@ namespace llvm {
       /*
        * Get the dependence graph of the loop.
        */
-      PDG * getLoopDG (void);
       PDG * getLoopDG (void) const;
 
       /*
