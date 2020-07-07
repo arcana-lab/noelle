@@ -236,7 +236,7 @@ bool canWhilify (
    * Check if loop is in do-while form
    */ 
   if (canWhilify) {
-    canWhilify = this->isDoWhile(LDI);
+    canWhilify &= this->isDoWhile(LDI);
   }
 
 
