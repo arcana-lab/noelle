@@ -110,7 +110,18 @@ void LoopStructure::setParentLoop (LoopStructure *parentLoop) {
 std::unordered_set<LoopStructure *> LoopStructure::getChildren (void) const {
   return this->children;
 }
-      
+
+std::unordered_set<LoopStructure *> LoopStructure::getDescendants (void) const {
+  std::unordered_set<LoopStructure *> descendants;
+  for (auto child : this->children) {
+    descendants.insert(child);
+    auto childDescendants = child->getDescendants();
+    descendants.insert(childDescendants.begin(), childDescendants.end());
+  }
+
+  return descendants;
+}
+
 void LoopStructure::addChild (LoopStructure *child) {
   this->children.insert(child);
 
