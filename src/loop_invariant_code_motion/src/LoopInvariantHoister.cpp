@@ -63,6 +63,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
    */
   IRBuilder<> preHeaderBuilder(preHeader->getTerminator());
   for (auto I : instructionsToHoistToPreheader) {
+    I->removeFromParent();
     preHeaderBuilder.Insert(I);
   }
 
