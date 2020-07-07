@@ -87,6 +87,7 @@ bool LoopDistribution::splitLoop (
    */
   for (auto BB : loopStructure->getBasicBlocks()) {
     if (auto branch = dyn_cast<BranchInst>(BB->getTerminator())) {
+      instsToClone.insert(branch);
       if (branch->isConditional()) {
         if (auto condition = dyn_cast<Instruction>(branch->getCondition())) {
           errs () << "LoopDistribution: Colecting dependencies of  " <<  *condition << "\n";
