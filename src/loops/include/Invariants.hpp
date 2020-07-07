@@ -28,6 +28,39 @@ namespace llvm {
 
     private:
       std::unordered_set<Instruction *> invariants;
+
+      /*
+       * This inner class defines methods to determine whether values are invariant
+       * and relies on the dependence graph passed to the invariant manager. However,
+       * that graph may become invalidated later on, so to prevent keeping that pointer
+       * around after the construction of InvariantManager, we encapsulate it in this inner class
+       */ 
+      class InvarianceChecker {
+        public:
+
+          InvarianceChecker (LoopStructure *loop, PDG *loopDG, std::unordered_set<Instruction *> &invariants) ;
+
+        private:
+          LoopStructure *loop;
+          PDG *loopDG;
+          std::unordered_set<Instruction *> &invariants;
+
+          /*
+           * Used to cache instructions already checked and known NOT to be invariant
+           */
+          std::unordered_set<Instruction *> notInvariants;
+
+          /*
+           * To pass as a lambda to a dependence iteration function on PDG,
+           * we bind isEvolvingValue to this member variable
+           */
+          std::function<bool(Value *toValue, DataDependenceType ddType)> isEvolving;
+          bool isEvolvingValue (Value *toValue, DataDependenceType ddType) ;
+
+          bool arePHIIncomingValuesEquivalent (PHINode *phi) ;
+
+      };
+
   };
 
 }
