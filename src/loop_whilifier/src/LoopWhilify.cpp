@@ -27,18 +27,22 @@ bool LoopWhilifier::whilifyLoop (
   /*
    * Check if the loop can be whilified
    */ 
-  BasicBlock *Header = *Latch = *Exit = nullptr;
-  if (!(this->canWhilify(LDI, Header, Latch, Exit))) {
+  BasicBlock *Header = nullptr,
+             *Latch = nullptr,
+             *Exit = nullptr;
+  
+  LoopStructure *LS = LDI.getLoopStructure();
+
+  if (!(this->canWhilify(LS, Header, Latch, Exit))) {
     return modified;
   }
 
   /*
    * Acquire all other necessary info to whilify
    */ 
-  const LoopStructure *LS = LDI.getLoopStructure();
-  const InductionVariableManager *IVM = LDI.getInductionVariableManager();
+  InductionVariableManager *IVM = LDI.getInductionVariableManager();
   InductionVariable *IV = IVM->getLoopGoverningInductionVariable(*LS);
-  const PHINode *GoverningPHI = IV->getLoopEntryPHI();
+  PHINode *GoverningPHI = IV->getLoopEntryPHI();
 
 
   /* 
@@ -47,7 +51,7 @@ bool LoopWhilifier::whilifyLoop (
    */
 
 
-  while (!(this->isDoWhile(LDI, Latch))) {
+  while (!(this->isDoWhile(LS, Latch))) {
 
     /*
      * TOP LEVEL --- Insert the condition at the top of the 
@@ -160,8 +164,8 @@ bool LoopWhilifier::whilifyLoop (
 /*
  * NOTE --- Based on isLoopExiting from LoopInfo.h
  */  
-bool isDoWhile(
-  LoopDependenceInfo const &LDI,
+bool LoopWhilifier::isDoWhile(
+  LoopStructure * const LS,
   BasicBlock * const Latch
 ) {
 
@@ -176,8 +180,8 @@ bool isDoWhile(
    * exiting
    */  
 
-  for (const auto *SuccBB : successors(Latch)) {
-    if (!(LDI.isIncluded(SuccBB))) {
+  for (auto *SuccBB : successors(Latch)) {
+    if (!(LS->isIncluded(SuccBB))) {
       isDoWhile |= true;
       return isDoWhile;
     }
@@ -188,8 +192,8 @@ bool isDoWhile(
 }
 
 
-bool canWhilify (
-  LoopDependenceInfo const &LDI,
+bool LoopWhilifier::canWhilify (
+  LoopStructure * const LS,
   BasicBlock *&Header,
   BasicBlock *&Latch,
   BasicBlock *&Exit
@@ -206,14 +210,14 @@ bool canWhilify (
   /*
    * Acquire header
    */ 
-  Header = LDI.getHeader();
-  canWhilify &= Header;
+  Header = LS->getHeader();
+  canWhilify &= !!Header;
 
 
   /*
    * Acquire latch
    */ 
-  auto Latches = LDI.getLatches();
+  auto Latches = LS->getLatches();
   if (Latches.size() != 1) {
     canWhilify &= false;
   } else {
@@ -224,7 +228,7 @@ bool canWhilify (
   /*
    * Acquire exit
    */ 
-  auto Exits = LDI.getLoopExitBasicBlocks();
+  auto Exits = LS->getLoopExitBasicBlocks();
   if (Exits.size() != 1) {
     canWhilify &= false;
   } else {
@@ -236,7 +240,7 @@ bool canWhilify (
    * Check if loop is in do-while form
    */ 
   if (canWhilify) {
-    canWhilify &= this->isDoWhile(LDI);
+    canWhilify &= this->isDoWhile(LS, Latch);
   }
 
 
@@ -245,7 +249,7 @@ bool canWhilify (
 }
 
 
-void getLatchInfo (
+void LoopWhilifier::getLatchInfo (
   BasicBlock * const Latch,
   CmpInst *&LatchCmpInst,
   BranchInst *&LatchTerm
