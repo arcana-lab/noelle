@@ -73,6 +73,11 @@ namespace llvm {
       PDG * getLoopDG (void) const;
 
       /*
+       * Get the scc dependence graph of the loop.
+       */
+      SCCDAG * getLoopSCCDAG (void) const ;
+
+      /*
        * Copy all options from otherLDI to "this".
        */
       void copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) ;
@@ -98,6 +103,11 @@ namespace llvm {
       void disableTransformation (Transformation transformationToDisable);
 
       /*
+       * Get nested-most loop for an instruction
+       */
+      LoopStructure * getNestedMostLoopStructure (Instruction *I) const ;
+
+      /*
        * Iterate over children of "this" recursively following the loop nesting tree rooted by "this".
        * This will go through children of children etc...
        */
@@ -114,6 +124,8 @@ namespace llvm {
       LoopGoverningIVAttribution * getLoopGoverningIVAttribution (void) const ;
 
       InductionVariableManager * getInductionVariableManager (void) const ;
+
+      LoopCarriedDependencies * getLoopCarriedDependencies (void) const ;
 
       InvariantManager * getInvariantManager (void) const ;
 
@@ -148,6 +160,16 @@ namespace llvm {
       PDG *loopDG;                            /* Dependence graph of the loop. 
                                                * This graph does not include instructions outside the loop (i.e., no external dependences are included).  
                                                */
+
+      /*
+       * The loopSCCDAG is strictly computed from loopDG
+       * The normalizedSCCDAG is a hack where we merge SCCS based on some normalization assumptions
+       * TODO: The normalizedSCCDAG is exposed through SCCDAGAttrs. Do not expose it here or there. Remove it altogether
+       */
+      SCCDAG *loopSCCDAG;
+      SCCDAG *normalizedSCCDAG;
+
+      LoopCarriedDependencies *loopCarriedDependencies;
 
       uint32_t maximumNumberOfCoresForTheParallelization;
 

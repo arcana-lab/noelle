@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,44 +10,53 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
-#include "Noelle.hpp"
-#include "Mem2RegNonAlloca.hpp"
+#include "llvm/Pass.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
 
+#include "TestSuite.hpp"
 #include "PDGPrinter.hpp"
-#include "SubCFGs.hpp"
+#include "PDG.hpp"
+#include "SCC.hpp"
+#include "SCCDAG.hpp"
+#include "PDGAnalysis.hpp"
+#include "LoopDependenceInfo.hpp"
+#include "Mem2RegNonAlloca.hpp"
+#include "Noelle.hpp"
+
+#include <sstream>
+#include <vector>
+#include <string>
+
+using namespace parallelizertests;
 
 namespace llvm {
 
-  class LoopInvariantCodeMotion {
+  class LICMTestSuite : public ModulePass {
     public:
 
-      /*
-       * Methods
-       */
-      LoopInvariantCodeMotion(Noelle &noelle);
+      LICMTestSuite() : ModulePass{ID} {}
 
-      bool extractInvariantsFromLoop (
-        LoopDependenceInfo const &LDI
-        );
+      /*
+       * Class fields
+       */
+      static char ID;
+      static const char *tests[];
+      static parallelizertests::TestFunction testFns[];
+
+      bool doInitialization (Module &M) override ;
+      bool runOnModule (Module &M) override ;
+      void getAnalysisUsage (AnalysisUsage &AU) const override ;
 
     private:
+      static Values loadsAndStoresAreHoistedFromLoop (ModulePass &pass, TestSuite &suite) ;
 
-      /*
-       * Fields
-       */
-      Noelle &noelle;
-
-      /*
-       * Methods
-       */
-      bool hoistStoreOfLastValueLiveOut (
-        LoopDependenceInfo const &LDI
-      ) ;
-
-      bool hoistInvariantValues (
-        LoopDependenceInfo const &LDI
-      );
+      TestSuite *suite;
+      Module *M;
+      Function *mainF;
+      PDG *fdg;
+      LoopDependenceInfo *ldi;
+      Mem2RegNonAlloca *mem2Reg;
   };
-
 }
