@@ -58,11 +58,6 @@ namespace llvm {
         BranchInst *&LatchTerm
       );
 
-      bool isLatchLoopExiting (
-        LoopDependenceInfo const &LDI,
-        BasicBlock * const Latch
-      );
-
   };
 
 }
