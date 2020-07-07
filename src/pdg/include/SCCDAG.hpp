@@ -39,10 +39,8 @@ namespace llvm {
 
       /*
        * Constructor.
-       * TODO: Make copy constructor argument 'const' when getters on DGBase are all const
        */
       SCCDAG (PDG *loopDependenceGraph) ;
-      // SCCDAG (SCCDAG &sccdag) ;
 
       /*
        * Check if @inst is included in the SCCDAG.

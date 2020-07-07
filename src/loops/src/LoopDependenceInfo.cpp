@@ -23,8 +23,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   uint32_t maxCores
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{maxCores},
-    liSummary{l},
-    loopGoverningIVAttribution{nullptr}
+    liSummary{l}
   {
 
   /*
@@ -40,7 +39,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
   auto DGs = this->createDGsForLoop(l, fG);
   this->loopDG = DGs.first;
-  this->loopSCCDAG = DGs.second;
+  auto loopSCCDAG = DGs.second;
 
   /*
    * Create the environment for the loop.
@@ -51,29 +50,18 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
-  this->loopCarriedDependencies = new LoopCarriedDependencies(this->liSummary, DS, *this->loopSCCDAG);
-  SCCDAGNormalizer normalizer{*this->normalizedSCCDAG, this->liSummary, *this->loopCarriedDependencies};
+  LoopCarriedDependencies lcd(this->liSummary, DS, *loopSCCDAG);
+  SCCDAGNormalizer normalizer{*loopSCCDAG, this->liSummary, lcd};
   normalizer.normalizeInPlace();
-  this->inductionVariables = new InductionVariableManager(liSummary, SE, *this->normalizedSCCDAG, *environment);
-  this->sccdagAttrs = SCCDAGAttrs(
-    loopDG,
-    this->normalizedSCCDAG,
-    this->liSummary,
-    SE,
-    *this->loopCarriedDependencies,
-    *inductionVariables
-  );
+  this->inductionVariables = new InductionVariableManager(liSummary, SE, *loopSCCDAG, *environment);
+  this->sccdagAttrs = SCCDAGAttrs(loopDG, loopSCCDAG, this->liSummary, SE, lcd, *inductionVariables);
 
   /*
    * Collect induction variable information
    */
-  auto loopStructure = *liSummary.getLoop(*l->getHeader());
-  auto iv = this->inductionVariables->getLoopGoverningInductionVariable(loopStructure);
-  if (iv != nullptr) {
-    auto entryPHI = iv->getLoopEntryPHI();
-    auto sccOfIV = this->normalizedSCCDAG->sccOfValue(entryPHI);
-    loopGoverningIVAttribution = new LoopGoverningIVAttribution(*iv, *sccOfIV, loopExitBlocks);
-  }
+  auto iv = this->inductionVariables->getLoopGoverningInductionVariable(*liSummary.getLoop(*l->getHeader()));
+  loopGoverningIVAttribution = iv == nullptr ? nullptr
+    : new LoopGoverningIVAttribution(*iv, *loopSCCDAG->sccOfValue(iv->getLoopEntryPHI()), loopExitBlocks);
 
   /*
    * Cache the post-dominator tree.
@@ -193,8 +181,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
       loopInternals.push_back(internalNode.first);
   }
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
-  auto loopInternalSCCDAG = new SCCDAG(loopInternalDG);
-  this->normalizedSCCDAG = new SCCDAG(loopInternalDG);
+  auto loopSCCDAG = new SCCDAG(loopInternalDG);
 
   /*
    * Safety check: check that the SCCDAG includes all instructions of the loop given as input.
@@ -210,7 +197,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
     for (auto &I : *bbIter){
       assert(std::find(loopInternals.begin(), loopInternals.end(), &I) != loopInternals.end());
       assert(loopInternalDG->isInternal(&I));
-      assert(loopInternalSCCDAG->doesItContain(&I));
+      assert(loopSCCDAG->doesItContain(&I));
       numberOfInstructionsInLoop++;
     }
   }
@@ -223,7 +210,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
   }
   #endif
 
-  return std::make_pair(loopDG, loopInternalSCCDAG);
+  return std::make_pair(loopDG, loopSCCDAG);
 }
   
 bool LoopDependenceInfo::isTransformationEnabled (Transformation transformation){
@@ -249,10 +236,6 @@ void LoopDependenceInfo::disableTransformation (Transformation transformationToD
 
 PDG * LoopDependenceInfo::getLoopDG (void) const {
   return this->loopDG;
-}
-
-SCCDAG * LoopDependenceInfo::getLoopSCCDAG (void) const {
-  return this->loopSCCDAG;
 }
 
 bool LoopDependenceInfo::iterateOverSubLoopsRecursively (
@@ -310,10 +293,6 @@ bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) cons
   return true;
 }
 
-LoopStructure * LoopDependenceInfo::getNestedMostLoopStructure (Instruction *I) const {
-  return this->liSummary.getLoop(*I);
-}
-
 LoopStructure * LoopDependenceInfo::getLoopStructure (void) const {
   return this->liSummary.getLoopNestingTreeRoot();
 }
@@ -328,10 +307,6 @@ InductionVariableManager * LoopDependenceInfo::getInductionVariableManager (void
 
 LoopGoverningIVAttribution * LoopDependenceInfo::getLoopGoverningIVAttribution (void) const {
   return loopGoverningIVAttribution;
-}
-
-LoopCarriedDependencies * LoopDependenceInfo::getLoopCarriedDependencies (void) const {
-  return this->loopCarriedDependencies;
 }
 
 bool LoopDependenceInfo::doesHaveCompileTimeKnownTripCount (void) const {
@@ -351,11 +326,8 @@ InvariantManager * LoopDependenceInfo::getInvariantManager (void) const {
 }
 
 LoopDependenceInfo::~LoopDependenceInfo() {
-  delete this->loopSCCDAG;
-  delete this->normalizedSCCDAG;
   delete this->loopDG;
   delete this->environment;
-  delete this->loopCarriedDependencies;
 
   if (this->inductionVariables){
     delete this->inductionVariables;

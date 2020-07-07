@@ -49,29 +49,6 @@ SCC::SCC(std::set<DGNode<Value> *> internalNodes, std::set<DGNode<Value> *> exte
   copyNodesAndEdges(internalNodes, externalNodes);
 }
 
-// SCC::SCC (SCC &scc) {
-
-//   for (auto node : scc.getNodes()) {
-//     auto value = node->getT();
-//     auto isInternal = scc.isInternal(value);
-//     this->addNode(value, isInternal);
-//   }
-
-//   this->entryNode = nullptr;
-//   if (scc.numNodes() > 0) {
-//     auto originalEntryNode = scc.getEntryNode();
-//     if (originalEntryNode != nullptr) {
-//       auto entryValue = originalEntryNode->getT();
-//       this->entryNode = this->fetchNode(entryValue);
-//     }
-//   }
-
-//   for (auto edge : scc.getEdges()) {
-//     this->copyAddEdge(*edge);
-//   }
-
-// }
-
 void SCC::copyNodesAndEdges(std::set<DGNode<Value> *> internalNodes, std::set<DGNode<Value> *> externalNodes) {
 
 	/*
