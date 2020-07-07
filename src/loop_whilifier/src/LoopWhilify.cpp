@@ -45,20 +45,14 @@ bool LoopWhilifier::whilifyLoop (
   PHINode *GoverningPHI = IV->getLoopEntryPHI();
 
 
-  /* 
-   * *** MAJOR TODO *** --- Update all data structures with new 
-   * instructions and blocks when transforming
-   */
-
+  /*
+   * TOP LEVEL --- Insert the condition at the top of the 
+   * header --- compare to the appropriate PHINode instead 
+   * of the iterator instruction, delete the condition in 
+   * the loop latch
+   */ 
 
   while (!(this->isDoWhile(LS, Latch))) {
-
-    /*
-     * TOP LEVEL --- Insert the condition at the top of the 
-     * header --- compare to the appropriate PHINode instead 
-     * of the iterator instruction, delete the condition in 
-     * the loop latch
-     */ 
 
     /* 
      * Get the compare instruction that's used by the branch
