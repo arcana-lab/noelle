@@ -38,7 +38,6 @@ namespace llvm {
       /*
        * Methods
        */
-
       bool isDoWhile (
         LoopDependenceInfo const &LDI,
         BasicBlock * const Latch
