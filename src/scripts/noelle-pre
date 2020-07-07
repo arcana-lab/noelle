@@ -29,7 +29,7 @@ echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Run the enablers
-cmdToExecute="noelle-enable $notOptions $notOptions"
+cmdToExecute="noelle-enable $notOptions $notOptions $options"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
