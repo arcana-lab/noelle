@@ -28,7 +28,7 @@ bool LoopWhilifier::whilifyLoop (
    * Check if the loop can be whilified
    */ 
   BasicBlock *Header = *Latch = *Exit = nullptr;
-  if (!canWhilify(LDI, Header, Latch, Exit)) {
+  if (!(this->canWhilify(LDI, Header, Latch, Exit))) {
     return modified;
   }
 
