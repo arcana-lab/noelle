@@ -260,9 +260,9 @@ void getLatchInfo (
   LatchTerm = dyn_cast<BranchInst>(Latch->getTerminator());
 
   if (LatchTerm) {
-      if (LatchTerm->isConditional()) {
-          LatchCmpInst = dyn_cast<CmpInst>(LatchTerm->getCondition());
-      }
+    if (LatchTerm->isConditional()) {
+      LatchCmpInst = dyn_cast<CmpInst>(LatchTerm->getCondition());
+    }
   }
 
   return;
