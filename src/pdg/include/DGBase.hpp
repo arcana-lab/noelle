@@ -38,11 +38,11 @@ namespace llvm {
     public:
       DG () : nodeIdCounter{0} {}
 
-      typedef typename set<DGNode<T> *>::iterator nodes_iterator;
-      typedef typename set<DGNode<T> *>::const_iterator nodes_const_iterator;
+      typedef typename std::unordered_set<DGNode<T> *>::iterator nodes_iterator;
+      typedef typename std::unordered_set<DGNode<T> *>::const_iterator nodes_const_iterator;
 
-      typedef typename set<DGEdge<T> *>::iterator edges_iterator;
-      typedef typename set<DGEdge<T> *>::const_iterator edges_const_iterator;
+      typedef typename std::unordered_set<DGEdge<T> *>::iterator edges_iterator;
+      typedef typename std::unordered_set<DGEdge<T> *>::const_iterator edges_const_iterator;
 
       typedef typename unordered_map<T *, DGNode<T> *>::iterator node_map_iterator;
 
@@ -146,31 +146,31 @@ namespace llvm {
       const DGNode<T> *fetchConstNode(T *theT) const;
 
       DGEdge<T> *addEdge(T *from, T *to);
-      std::set<DGEdge<T> *> fetchEdges(DGNode<T> *From, DGNode<T> *To);
+      std::unordered_set<DGEdge<T> *> fetchEdges(DGNode<T> *From, DGNode<T> *To);
       DGEdge<T> *copyAddEdge(DGEdge<T> &edgeToCopy);
 
       /*
        * Merging/Extracting Graphs
        */
-      std::set<DGNode<T> *> getTopLevelNodes(bool onlyInternal = false);
-      std::set<DGNode<T> *> getLeafNodes(bool onlyInternal = false);
-      std::vector<std::set<DGNode<T> *> *> getDisconnectedSubgraphs();
-      std::set<DGNode<T> *> getNextDepthNodes(DGNode<T> *node);
-      std::set<DGNode<T> *> getPreviousDepthNodes(DGNode<T> *node);
+      std::unordered_set<DGNode<T> *> getTopLevelNodes(bool onlyInternal = false);
+      std::unordered_set<DGNode<T> *> getLeafNodes(bool onlyInternal = false);
+      std::vector<std::unordered_set<DGNode<T> *> *> getDisconnectedSubgraphs();
+      std::unordered_set<DGNode<T> *> getNextDepthNodes(DGNode<T> *node);
+      std::unordered_set<DGNode<T> *> getPreviousDepthNodes(DGNode<T> *node);
       void removeNode(DGNode<T> *node);
       void removeEdge(DGEdge<T> *edge);
-      void copyNodesIntoNewGraph(DG<T> &newGraph, std::set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode);
+      void copyNodesIntoNewGraph(DG<T> &newGraph, std::unordered_set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode);
       void clear();
 
       raw_ostream & print(raw_ostream &stream);
 
     protected:
       int32_t nodeIdCounter;
-      std::set<DGNode<T> *> allNodes;
-      std::set<DGEdge<T> *> allEdges;
+      std::unordered_set<DGNode<T> *> allNodes;
+      std::unordered_set<DGEdge<T> *> allEdges;
       DGNode<T> *entryNode;
-      unordered_map<T *, DGNode<T> *> internalNodeMap;
-      unordered_map<T *, DGNode<T> *> externalNodeMap;
+      std::unordered_map<T *, DGNode<T> *> internalNodeMap;
+      std::unordered_map<T *, DGNode<T> *> externalNodeMap;
   };
 
   template <class T>
@@ -178,8 +178,8 @@ namespace llvm {
   {
     public:
       typedef typename std::vector<DGNode<T> *>::iterator nodes_iterator;
-      typedef typename std::set<DGEdge<T> *>::iterator edges_iterator;
-      typedef typename std::set<DGEdge<T> *>::const_iterator edges_const_iterator;
+      typedef typename std::unordered_set<DGEdge<T> *>::iterator edges_iterator;
+      typedef typename std::unordered_set<DGEdge<T> *>::const_iterator edges_const_iterator;
 
       edges_iterator begin_edges() { return allConnectedEdges.begin(); }
       edges_iterator end_edges() { return allConnectedEdges.end(); }
@@ -205,7 +205,7 @@ namespace llvm {
       getIncomingEdges() { return make_range(incomingEdges.begin(), incomingEdges.end()); }
 
       T *getT() const { return theT; }
-      std::set<DGEdge<T> *> & getEdgesToAndFromNode(DGNode<T> *node) { return nodeToEdgesMap[node]; }
+      std::unordered_set<DGEdge<T> *> & getEdgesToAndFromNode(DGNode<T> *node) { return nodeToEdgesMap[node]; }
 
       unsigned numConnectedEdges() { return allConnectedEdges.size(); }
       unsigned numOutgoingEdges() { return outgoingEdges.size(); }
@@ -230,15 +230,15 @@ namespace llvm {
 
       int32_t ID;
       T *theT;
-      std::set<DGEdge<T> *> allConnectedEdges;
-      std::set<DGEdge<T> *> outgoingEdges;
-      std::set<DGEdge<T> *> incomingEdges;
+      std::unordered_set<DGEdge<T> *> allConnectedEdges;
+      std::unordered_set<DGEdge<T> *> outgoingEdges;
+      std::unordered_set<DGEdge<T> *> incomingEdges;
 
       // For use in unconventional graph iteration for LLVM SCCIterator
       std::vector<DGNode<T> *> outgoingNodeInstances;
       std::vector<DGEdge<T> *> outgoingEdgeInstances;
 
-      unordered_map<DGNode<T> *, std::set<DGEdge<T> *>> nodeToEdgesMap;
+      unordered_map<DGNode<T> *, std::unordered_set<DGEdge<T> *>> nodeToEdgesMap;
 
     friend class DG<T>;
   };
@@ -261,8 +261,8 @@ namespace llvm {
            isRemovable(false), minRemovalCost(LONG_MAX) {}
      DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
-     typedef typename std::set<DGEdge<SubT> *>::iterator edges_iterator;
-     typedef typename std::set<DGEdge<SubT> *>::const_iterator edges_const_iterator;
+     typedef typename std::unordered_set<DGEdge<SubT> *>::iterator edges_iterator;
+     typedef typename std::unordered_set<DGEdge<SubT> *>::const_iterator edges_const_iterator;
 
      edges_iterator begin_sub_edges() { return subEdges.begin(); }
      edges_iterator end_sub_edges() { return subEdges.end(); }
@@ -338,7 +338,7 @@ namespace llvm {
    protected:
     DGNode<T> *from;
     DGNode<T> *to;
-    std::set<DGEdge<SubT> *> subEdges;
+    std::unordered_set<DGEdge<SubT> *> subEdges;
     bool memory;
     bool must;
     bool isControl;
@@ -396,8 +396,8 @@ namespace llvm {
   }
 
   template <class T>
-  std::set<DGEdge<T> *> DG<T>::fetchEdges(DGNode<T> *From, DGNode<T> *To) {
-    std::set<DGEdge<T> *> edgeSet;
+  std::unordered_set<DGEdge<T> *> DG<T>::fetchEdges(DGNode<T> *From, DGNode<T> *To) {
+    std::unordered_set<DGEdge<T> *> edgeSet;
 
     for (auto &edge : From->getOutgoingEdges()) {
       if (edge->getIncomingNode() == To) {
@@ -428,9 +428,9 @@ namespace llvm {
   }
 
   template <class T>
-  std::set<DGNode<T> *> DG<T>::getTopLevelNodes(bool onlyInternal)
+  std::unordered_set<DGNode<T> *> DG<T>::getTopLevelNodes(bool onlyInternal)
   {
-    std::set<DGNode<T> *> topLevelNodes;
+    std::unordered_set<DGNode<T> *> topLevelNodes;
 
     /*
      * Add all nodes that have no incoming nodes
@@ -455,7 +455,7 @@ namespace llvm {
      * Nodes not reachable are in cycles, to be dealt with shortly^M
      * External nodes are marked visited if onlyInternal = true^M
      */
-    std::set<DGNode<T> *> visitedNodes;
+    std::unordered_set<DGNode<T> *> visitedNodes;
     std::queue<DGNode<T> *> traverseQueue;
     for (auto root : topLevelNodes) traverseQueue.push(root);
     while (!traverseQueue.empty())
@@ -512,9 +512,9 @@ namespace llvm {
   }
 
   template <class T>
-  std::set<DGNode<T> *> DG<T>::getLeafNodes(bool onlyInternal)
+  std::unordered_set<DGNode<T> *> DG<T>::getLeafNodes(bool onlyInternal)
   {
-    std::set<DGNode<T> *> leafNodes;
+    std::unordered_set<DGNode<T> *> leafNodes;
     if (onlyInternal) {
       for (auto selfNode : allNodes) {
         bool noChildNode = true;
@@ -538,10 +538,10 @@ namespace llvm {
   }
 
   template <class T>
-  std::vector<std::set<DGNode<T> *> *> DG<T>::getDisconnectedSubgraphs()
+  std::vector<std::unordered_set<DGNode<T> *> *> DG<T>::getDisconnectedSubgraphs()
   {
-    std::vector<std::set<DGNode<T> *> *> connectedComponents;
-    std::set<DGNode<T> *> visitedNodes;
+    std::vector<std::unordered_set<DGNode<T> *> *> connectedComponents;
+    std::unordered_set<DGNode<T> *> visitedNodes;
 
     for (auto node : allNodes)
     {
@@ -550,7 +550,7 @@ namespace llvm {
       /*
        * Perform BFS to find the connected component this node belongs to
        */
-      auto component = new std::set<DGNode<T> *>();
+      auto component = new std::unordered_set<DGNode<T> *>();
       std::queue<DGNode<T> *> connectedNodes;
 
       visitedNodes.insert(node);
@@ -578,12 +578,12 @@ namespace llvm {
   }
 
   template <class T>
-  std::set<DGNode<T> *> DG<T>::getNextDepthNodes(DGNode<T> *node)
+  std::unordered_set<DGNode<T> *> DG<T>::getNextDepthNodes(DGNode<T> *node)
   {
-    std::set<DGNode<T> *> incomingNodes;
+    std::unordered_set<DGNode<T> *> incomingNodes;
     for (auto edge : node->getOutgoingEdges()) incomingNodes.insert(edge->getIncomingNode());
 
-    std::set<DGNode<T> *> nextDepthNodes;
+    std::unordered_set<DGNode<T> *> nextDepthNodes;
     for (auto incoming : incomingNodes)
     {
       /*
@@ -603,12 +603,12 @@ namespace llvm {
   }
 
   template <class T>
-  std::set<DGNode<T> *> DG<T>::getPreviousDepthNodes(DGNode<T> *node)
+  std::unordered_set<DGNode<T> *> DG<T>::getPreviousDepthNodes(DGNode<T> *node)
   {
-    std::set<DGNode<T> *> outgoingNodes;
+    std::unordered_set<DGNode<T> *> outgoingNodes;
     for (auto edge : node->getIncomingEdges()) outgoingNodes.insert(edge->getOutgoingNode());
 
-    std::set<DGNode<T> *> previousDepthNodes;
+    std::unordered_set<DGNode<T> *> previousDepthNodes;
     for (auto outgoing : outgoingNodes)
     {
       /*
@@ -638,9 +638,9 @@ namespace llvm {
     /*
      * Collect edges to operate on before doing deletes
      */
-    std::set<DGEdge<T> *> incomingToNode;
-    std::set<DGEdge<T> *> outgoingFromNode;
-    std::set<DGEdge<T> *> allToAndFromNode;
+    std::unordered_set<DGEdge<T> *> incomingToNode;
+    std::unordered_set<DGEdge<T> *> outgoingFromNode;
+    std::unordered_set<DGEdge<T> *> allToAndFromNode;
     for (auto edge : node->getIncomingEdges()) incomingToNode.insert(edge);
     for (auto edge : node->getOutgoingEdges()) outgoingFromNode.insert(edge);
     for (auto edge : node->getAllConnectedEdges()) allToAndFromNode.insert(edge);
@@ -669,7 +669,7 @@ namespace llvm {
   }
 
   template <class T>
-  void DG<T>::copyNodesIntoNewGraph(DG<T> &newGraph, std::set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode)
+  void DG<T>::copyNodesIntoNewGraph(DG<T> &newGraph, std::unordered_set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode)
   {
     for (auto node : nodesToPartition)
     {

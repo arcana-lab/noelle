@@ -124,7 +124,7 @@ PDG * PDG::createFunctionSubgraph(Function &F) {
   /*
    * Recreate all edges connected to internal nodes of function
    */
-  copyEdgesInto(functionPDG, /*linkToExternal=*/ true, {});
+  copyEdgesInto(functionPDG, /*linkToExternal=*/ true);
 
   return functionPDG;
 }
@@ -139,7 +139,7 @@ PDG * PDG::createLoopsSubgraph(Loop *loop) {
   /*
    * Recreate all edges connected to internal nodes of loop
    */
-  copyEdgesInto(loopsPDG, /*linkToExternal=*/ true, {});
+  copyEdgesInto(loopsPDG, /*linkToExternal=*/ true);
 
   return loopsPDG;
 }
@@ -161,9 +161,17 @@ PDG * PDG::createSubgraphFromValues (
   return newPDG;
 }
 
-void PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal, std::unordered_set<DGEdge<Value> *> edgesToIgnore) {
+void PDG::copyEdgesInto (PDG *newPDG, bool linkToExternal) {
+  this->copyEdgesInto(newPDG, linkToExternal, {});
+
+  return ;
+}
+
+void PDG::copyEdgesInto (PDG *newPDG, bool linkToExternal, std::unordered_set<DGEdge<Value> *> const & edgesToIgnore) {
   for (auto *oldEdge : allEdges) {
-    if (edgesToIgnore.find(oldEdge) != edgesToIgnore.end()) continue;
+    if (edgesToIgnore.find(oldEdge) != edgesToIgnore.end()) {
+      continue;
+    }
 
     auto nodePair = oldEdge->getNodePair();
     auto fromT = nodePair.first->getT();
@@ -172,10 +180,14 @@ void PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal, std::unordered_set<DGE
     /*
      * Check whether edge belongs to nodes within function F
      */
-    bool fromInclusion = newPDG->isInternal(fromT);
-    bool toInclusion = newPDG->isInternal(toT);
-    if (!fromInclusion && !toInclusion) continue;
-    if (!linkToExternal && (!fromInclusion || !toInclusion)) continue;
+    auto fromInclusion = newPDG->isInternal(fromT);
+    auto toInclusion = newPDG->isInternal(toT);
+    if (!fromInclusion && !toInclusion) {
+      continue;
+    }
+    if (!linkToExternal && (!fromInclusion || !toInclusion)) {
+      continue;
+    }
     
     /*
      * Create appropriate external nodes and associate edge to them
@@ -188,6 +200,8 @@ void PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal, std::unordered_set<DGE
      */
     newPDG->copyAddEdge(*oldEdge);
   }
+
+  return ;
 }
 
 int64_t PDG::getNumberOfInstructionsIncluded (void) const {
