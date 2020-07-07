@@ -150,13 +150,13 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
 
   if (!isValid) return false;
 
-  declarationValue->print(errs() << "Declaration: "); errs() << "\n";
-  sccOfDataAndMemoryVariableValuesOnly->printMinimal(errs() << "Data and memory SCC\n");
+  // declarationValue->print(errs() << "Declaration: "); errs() << "\n";
+  // sccOfDataAndMemoryVariableValuesOnly->printMinimal(errs() << "Data and memory SCC\n");
   // errs() << "Number of internal control values: " << controlValuesGoverningEvolution.size() << "\n";
   // for (auto controlValue : controlValuesGoverningEvolution) {
   //   controlValue->print(errs() << "Control value: "); errs() << "\n";
   // }
-  errs() << "Number of variable updates: " << variableUpdates.size() << "\n";
+  // errs() << "Number of variable updates: " << variableUpdates.size() << "\n";
 
   /*
    * No control values internal to the variable can be involved in the evolution
