@@ -40,12 +40,31 @@ bool LoopWhilifier::whilifyLoop (
 }
 
 
+/*
+ * NOTE --- Based on isLoopExiting from LoopInfo.h
+ */  
 bool isDoWhile(
   LoopDependenceInfo const &LDI,
   BasicBlock * const Latch
 ) {
 
-  bool isDoWhile = this->isLatchLoopExiting(LDI, Latch);
+  bool isDoWhile = false;
+
+  /*
+   * TOP --- If any of the successors of the latch are not part 
+   * of the loop --- the latch must be an intra-loop edge to an 
+   * exit block
+   * 
+   * The loop is a do-while loop as long as the latch is loop-
+   * exiting
+   */  
+
+  for (const auto *SuccBB : successors(Latch)) {
+    if (!(LDI.isIncluded(SuccBB))) {
+      isDoWhile |= true;
+      return isDoWhile;
+    }
+  }
 
   return isDoWhile;
 
@@ -121,23 +140,4 @@ void getLatchInfo (
 }
 
 
-/*
- * Based on isLoopExiting from LoopInfo.h
- */  
-bool isLatchLoopExiting (
-  LoopDependenceInfo const &LDI,
-  BasicBlock * const Latch
-) {
 
-  bool isLatchLoopExiting = false;
-
-  for (const auto *SuccBB : successors(Latch)) {
-    if (!(LDI.isIncluded(SuccBB))) {
-      isLatchLoopExiting |= true;
-      return isLatchLoopExiting;
-    }
-  }
-
-  return isLatchLoopExiting;
-
-}
