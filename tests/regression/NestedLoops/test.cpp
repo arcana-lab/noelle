@@ -37,11 +37,13 @@ int main (int argc, char *argv[]){
   if (iterations == 0) return 0;
 
   iterations *= 10;
-  long long int *array = (long long int *) calloc(0, sizeof(long long int) * iterations);
+  long long int *array = (long long int *) calloc(1, sizeof(long long int) * iterations);
+  auto boundedArgc = argc < iterations ? argc : iterations - 5;
+  array[boundedArgc] = argc;
 
   computeSum(array, iterations, 2, 2);
   auto s = *array;
-  printf("%lld %lld\n", s, array[iterations/2]);
+  printf("%lld, %lld\n", s, array[boundedArgc]);
 
   return 0;
 }
