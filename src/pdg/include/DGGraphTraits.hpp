@@ -158,7 +158,7 @@ namespace llvm {
   struct DGGraphTraits {
     using NodeRef = DGNode<T> *;
     using ChildIteratorType = typename std::vector<DGNode<T> *>::iterator;
-    using nodes_iterator = typename std::set<DGNode<T> *>::iterator;
+    using nodes_iterator = typename std::unordered_set<DGNode<T> *>::iterator;
 
     static DGNode<T> *getEntryNode(DG *dg) { return dg->getEntryNode(); }
 
