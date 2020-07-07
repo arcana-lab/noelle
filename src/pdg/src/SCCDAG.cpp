@@ -69,37 +69,7 @@ SCCDAG::SCCDAG(PDG *pdg) {
 
   return ;
 }
-
-// SCCDAG::SCCDAG(SCCDAG &sccdag) {
-  
-//   // TODO: Use this once the entryNode is set in default constructor of SCCDAG
-//   // auto originalEntrySCCNode = sccdag.getEntryNode();
-//   // auto originalEntrySCC = originalEntrySCCNode->getT();
-//   this->entryNode = nullptr;
-//   for (auto node : sccdag.getNodes()) {
-//     auto originalSCC = node->getT();
-//     auto copySCC = new SCC(*originalSCC); 
-//     auto clonedNode = this->addNode(copySCC, sccdag.isInternal(originalSCC));
-
-//     // TODO: Use this once the entryNode is set in default constructor of SCCDAG
-//     // if (originalEntrySCC == originalSCC) {
-//     //   this->entryNode = clonedNode;
-//     // }
-//   }
-
-//   /*
-//    * Create the map from a Value to an SCC included in the SCCDAG.
-//    */
-//   this->markValuesInSCC();
-
-//   /*
-//    * Create dependences between nodes of the SCCDAG.
-//    */
-//   this->markEdgesAndSubEdges();
-
-//   return ;
-// }
-
+      
 bool SCCDAG::doesItContain (Instruction *inst) const {
 
   /*

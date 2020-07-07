@@ -47,221 +47,221 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
   : LDI{LDI}, noelle{noelle} {
 }
 
-bool LastLiveOutPeeler::peelLastLiveOutComputation () {
+// bool LastLiveOutPeeler::peelLastLiveOutComputation () {
 
-  /*
-   * Ensure the loop entry is the only block to exit the loop
-   */
-  auto loopStructure = LDI.getLoopStructure();
-  auto loopHeader = loopStructure->getHeader(); 
-  auto exitBlocks = loopStructure->getLoopExitBasicBlocks();
-  if (exitBlocks.size() != 1) return false;
+//   /*
+//    * Ensure the loop entry is the only block to exit the loop
+//    */
+//   auto loopStructure = LDI.getLoopStructure();
+//   auto loopHeader = loopStructure->getHeader(); 
+//   auto exitBlocks = loopStructure->getLoopExitBasicBlocks();
+//   if (exitBlocks.size() != 1) return false;
 
-  auto singleExitBlock = exitBlocks[0];
-  bool onlyExitsFromHeader = true;
-  bool exitsFromHeader = false;
-  for (auto exitPred : predecessors(singleExitBlock)) {
-    exitsFromHeader |= exitPred == loopHeader;
-    onlyExitsFromHeader = !loopStructure->isIncluded(exitPred) || exitPred == loopHeader;
-  }
-  if (!exitsFromHeader || !onlyExitsFromHeader) return false;
+//   auto singleExitBlock = exitBlocks[0];
+//   bool onlyExitsFromHeader = true;
+//   bool exitsFromHeader = false;
+//   for (auto exitPred : predecessors(singleExitBlock)) {
+//     exitsFromHeader |= exitPred == loopHeader;
+//     onlyExitsFromHeader = !loopStructure->isIncluded(exitPred) || exitPred == loopHeader;
+//   }
+//   if (!exitsFromHeader || !onlyExitsFromHeader) return false;
 
-  /*
-   * Ensure the loop is governed by an IV
-   */
-  auto loopGoverningIVAttribution = LDI.getLoopGoverningIVAttribution();
-  if (!loopGoverningIVAttribution) return false;
+//   /*
+//    * Ensure the loop is governed by an IV
+//    */
+//   auto loopGoverningIVAttribution = LDI.getLoopGoverningIVAttribution();
+//   if (!loopGoverningIVAttribution) return false;
 
-  /*
-   * Determine if there is any live out computation that can be peeled
-   */
-  fetchSCCsOfLastLiveOuts();
-  if (this->sccsOfLastLiveOuts.size() == 0) return false;
+//   /*
+//    * Determine if there is any live out computation that can be peeled
+//    */
+//   fetchSCCsOfLastLiveOuts();
+//   if (this->sccsOfLastLiveOuts.size() == 0) return false;
 
-  /*
-   * Ensure that the control flow of the loop is governed by IVs and fully understood
-   */
-  auto controlFlowGovernedByIVs = fetchNormalizedSCCsGoverningControlFlowOfLoop();
-  if (!controlFlowGovernedByIVs) return false;
+//   /*
+//    * Ensure that the control flow of the loop is governed by IVs and fully understood
+//    */
+//   auto controlFlowGovernedByIVs = fetchNormalizedSCCsGoverningControlFlowOfLoop();
+//   if (!controlFlowGovernedByIVs) return false;
 
-  /*
-   * Identify induction variable SCCs in all sub-loops
-   */
-  auto ivManager = LDI.getInductionVariableManager();
-  std::unordered_set<InductionVariable *> allIVsInLoop{};
-  auto loops = loopStructure->getDescendants();
-  for (auto loop : loops) {
-    auto ivs = ivManager->getInductionVariables(*loop);
-    allIVsInLoop.insert(ivs.begin(), ivs.end());
-  }
-  auto loopGoverningIV = loopGoverningIVAttribution->getInductionVariable();
-  // TODO: Clone this later:
-  loopGoverningIV.getComputationOfStepValue();
+//   /*
+//    * Identify induction variable SCCs in all sub-loops
+//    */
+//   auto ivManager = LDI.getInductionVariableManager();
+//   std::unordered_set<InductionVariable *> allIVsInLoop{};
+//   auto loops = loopStructure->getDescendants();
+//   for (auto loop : loops) {
+//     auto ivs = ivManager->getInductionVariables(*loop);
+//     allIVsInLoop.insert(ivs.begin(), ivs.end());
+//   }
+//   auto loopGoverningIV = loopGoverningIVAttribution->getInductionVariable();
+//   // TODO: Clone this later:
+//   loopGoverningIV.getComputationOfStepValue();
 
-  // TODO: Everything
+//   // TODO: Everything
 
-  return true;
-}
+//   return true;
+// }
 
-bool LastLiveOutPeeler::fetchNormalizedSCCsGoverningControlFlowOfLoop (void) {
+// bool LastLiveOutPeeler::fetchNormalizedSCCsGoverningControlFlowOfLoop (void) {
 
-  auto loopStructure = LDI.getLoopStructure();
-  auto normalizedSCCDAG = LDI.sccdagAttrs.getSCCDAG();
-  auto ivManager = LDI.getInductionVariableManager();
+//   auto loopStructure = LDI.getLoopStructure();
+//   auto normalizedSCCDAG = LDI.sccdagAttrs.getSCCDAG();
+//   auto ivManager = LDI.getInductionVariableManager();
 
-  for (auto loopBlock : loopStructure->getBasicBlocks()) {
-    auto terminator = loopBlock->getTerminator();
-    assert(terminator != nullptr
-      && "LastLiveOutPeeler: Loop is not well formed, having an un-terminated basic block");
+//   for (auto loopBlock : loopStructure->getBasicBlocks()) {
+//     auto terminator = loopBlock->getTerminator();
+//     assert(terminator != nullptr
+//       && "LastLiveOutPeeler: Loop is not well formed, having an un-terminated basic block");
 
-    /*
-     * Currently, we only support un-conditional or conditional branches w/conditions that are
-     * loop invariants OR instructions using IVs and loop invariants only
-     */
-    if (!isa<BranchInst>(terminator)) return false;
-    auto brInst = cast<BranchInst>(terminator);
-    if (brInst->isUnconditional()) continue;
+//     /*
+//      * Currently, we only support un-conditional or conditional branches w/conditions that are
+//      * loop invariants OR instructions using IVs and loop invariants only
+//      */
+//     if (!isa<BranchInst>(terminator)) return false;
+//     auto brInst = cast<BranchInst>(terminator);
+//     if (brInst->isUnconditional()) continue;
 
-    auto sccOfTerminator = normalizedSCCDAG->sccOfValue(terminator);
-    auto sccInfoOfTerminator = LDI.sccdagAttrs.getSCCAttrs(sccOfTerminator);
-    if (sccInfoOfTerminator->isInductionVariableSCC()) {
-      normalizedSCCsOfGoverningIVs.insert(sccOfTerminator);
-      continue;
-    }
+//     auto sccOfTerminator = normalizedSCCDAG->sccOfValue(terminator);
+//     auto sccInfoOfTerminator = LDI.sccdagAttrs.getSCCAttrs(sccOfTerminator);
+//     if (sccInfoOfTerminator->isInductionVariableSCC()) {
+//       normalizedSCCsOfGoverningIVs.insert(sccOfTerminator);
+//       continue;
+//     }
 
-    /*
-     * The condition must be loop invariant or an instruction using IVs and loop invariants only
-     */
-    auto condition = brInst->getCondition();
-    if (!isa<Instruction>(condition)) {
-      if (!loopStructure->isLoopInvariant(condition)) return false;
-      continue;
-    }
+//     /*
+//      * The condition must be loop invariant or an instruction using IVs and loop invariants only
+//      */
+//     auto condition = brInst->getCondition();
+//     if (!isa<Instruction>(condition)) {
+//       if (!loopStructure->isLoopInvariant(condition)) return false;
+//       continue;
+//     }
 
-    auto conditionInst = cast<Instruction>(condition);
-    auto sccOfCondition = normalizedSCCDAG->sccOfValue(condition);
-    normalizedSCCsOfConditionsAndBranchesDependentOnIVSCCs.insert(sccOfTerminator);
-    normalizedSCCsOfConditionsAndBranchesDependentOnIVSCCs.insert(sccOfCondition);
+//     auto conditionInst = cast<Instruction>(condition);
+//     auto sccOfCondition = normalizedSCCDAG->sccOfValue(condition);
+//     normalizedSCCsOfConditionsAndBranchesDependentOnIVSCCs.insert(sccOfTerminator);
+//     normalizedSCCsOfConditionsAndBranchesDependentOnIVSCCs.insert(sccOfCondition);
 
-    for (auto &op : conditionInst->operands()) {
-      auto value = op.get();
-      if (loopStructure->isLoopInvariant(value)) continue;
+//     for (auto &op : conditionInst->operands()) {
+//       auto value = op.get();
+//       if (loopStructure->isLoopInvariant(value)) continue;
 
-      if (!isa<Instruction>(value)) return false;
-      auto inst = cast<Instruction>(value);
-      auto loopOfValue = LDI.getNestedMostLoopStructure(inst);
-      auto ivOfValue = ivManager->getInductionVariable(*loopOfValue, inst);
-      if (ivOfValue) continue;
+//       if (!isa<Instruction>(value)) return false;
+//       auto inst = cast<Instruction>(value);
+//       auto loopOfValue = LDI.getNestedMostLoopStructure(inst);
+//       auto ivOfValue = ivManager->getInductionVariable(*loopOfValue, inst);
+//       if (ivOfValue) continue;
 
-      return false;
-    }
-  }
+//       return false;
+//     }
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
-/*
- * We are interested in any last live outs with meaningful computation contained in the chain (excludes PHIs, casts)
- */
-void LastLiveOutPeeler::fetchSCCsOfLastLiveOuts (void) {
+// /*
+//  * We are interested in any last live outs with meaningful computation contained in the chain (excludes PHIs, casts)
+//  */
+// void LastLiveOutPeeler::fetchSCCsOfLastLiveOuts (void) {
 
-  auto loopStructure = LDI.getLoopStructure();
-  auto loopHeader = loopStructure->getHeader();
-  auto loopSCCDAG = LDI.getLoopSCCDAG();
-  auto normalizedSCCDAG = LDI.sccdagAttrs.getSCCDAG();
+//   auto loopStructure = LDI.getLoopStructure();
+//   auto loopHeader = loopStructure->getHeader();
+//   auto loopSCCDAG = LDI.getLoopSCCDAG();
+//   auto normalizedSCCDAG = LDI.sccdagAttrs.getSCCDAG();
 
-  auto loopCarriedDependencies = LDI.getLoopCarriedDependencies();
-  auto outermostLoopCarriedDependencies = loopCarriedDependencies->getLoopCarriedDependenciesForLoop(*loopStructure);
-  std::unordered_set<Value *> loopCarriedConsumers{};
-  for (auto dependency : outermostLoopCarriedDependencies) {
-    auto consumer = dependency->getIncomingT();
-    this->loopCarriedConsumers.insert(consumer);
-  }
+//   auto loopCarriedDependencies = LDI.getLoopCarriedDependencies();
+//   auto outermostLoopCarriedDependencies = loopCarriedDependencies->getLoopCarriedDependenciesForLoop(*loopStructure);
+//   std::unordered_set<Value *> loopCarriedConsumers{};
+//   for (auto dependency : outermostLoopCarriedDependencies) {
+//     auto consumer = dependency->getIncomingT();
+//     this->loopCarriedConsumers.insert(consumer);
+//   }
 
-  /*
-   * Last live outs can only result in leaf nodes
-   * Their computation CAN span a chain of SCCs though, all of which must only produce last live out loop carried dependencies
-   * 
-   * To be sure the parent SCCs/instructions up that chain we collect ONLY contain last live outs,
-   * we use the strict SCCDAG, not the normalized SCCDAG
-   */
-  for (auto leafSCCNode : loopSCCDAG->getLeafNodes()) {
-    auto leafSCC = leafSCCNode->getT();
+//   /*
+//    * Last live outs can only result in leaf nodes
+//    * Their computation CAN span a chain of SCCs though, all of which must only produce last live out loop carried dependencies
+//    * 
+//    * To be sure the parent SCCs/instructions up that chain we collect ONLY contain last live outs,
+//    * we use the strict SCCDAG, not the normalized SCCDAG
+//    */
+//   for (auto leafSCCNode : loopSCCDAG->getLeafNodes()) {
+//     auto leafSCC = leafSCCNode->getT();
 
-    /*
-     * The leaf SCC must be a single loop carried PHI
-     */
-    if (leafSCC->numInternalNodes() > 1) continue;
-    auto singleValue = leafSCC->internalNodePairs().begin()->first;
-    if (!isa<PHINode>(singleValue)) continue;
-    auto singlePHI = cast<PHINode>(singleValue);
-    if (singlePHI->getParent() != loopHeader) continue;
+//     /*
+//      * The leaf SCC must be a single loop carried PHI
+//      */
+//     if (leafSCC->numInternalNodes() > 1) continue;
+//     auto singleValue = leafSCC->internalNodePairs().begin()->first;
+//     if (!isa<PHINode>(singleValue)) continue;
+//     auto singlePHI = cast<PHINode>(singleValue);
+//     if (singlePHI->getParent() != loopHeader) continue;
 
-    auto chainOfSCCs = fetchChainOfSCCsForLastLiveOutLeafSCC(leafSCCNode);
-    this->sccsOfLastLiveOuts.insert(chainOfSCCs.begin(), chainOfSCCs.end());
-  }
+//     auto chainOfSCCs = fetchChainOfSCCsForLastLiveOutLeafSCC(leafSCCNode);
+//     this->sccsOfLastLiveOuts.insert(chainOfSCCs.begin(), chainOfSCCs.end());
+//   }
 
-  return;
-}
+//   return;
+// }
 
-std::unordered_set<SCC *> LastLiveOutPeeler::fetchChainOfSCCsForLastLiveOutLeafSCC (DGNode<SCC> *sccNode) {
+// std::unordered_set<SCC *> LastLiveOutPeeler::fetchChainOfSCCsForLastLiveOutLeafSCC (DGNode<SCC> *sccNode) {
 
-  /*
-   * Traverse up the graph, collecting as many SCC nodes that ONLY contribute loop carried
-   * dependencies to last live out values. Keep track if any of those SCCs contain meaningful computation
-   */
-  bool hasMeaningfulComputation = false;
-  std::unordered_set<SCC *> computationOfLastLiveOut{};
-  std::queue<DGNode<SCC> *> queueOfLastLiveOutComputation{};
-  queueOfLastLiveOutComputation.push(sccNode);
+//   /*
+//    * Traverse up the graph, collecting as many SCC nodes that ONLY contribute loop carried
+//    * dependencies to last live out values. Keep track if any of those SCCs contain meaningful computation
+//    */
+//   bool hasMeaningfulComputation = false;
+//   std::unordered_set<SCC *> computationOfLastLiveOut{};
+//   std::queue<DGNode<SCC> *> queueOfLastLiveOutComputation{};
+//   queueOfLastLiveOutComputation.push(sccNode);
 
-  /*
-   * For the sake of efficiency, even if the SCCDAG is acyclic, don't re-process SCCs
-   */
-  std::unordered_set<DGNode<SCC> *> visited{};
-  visited.insert(sccNode);
+//   /*
+//    * For the sake of efficiency, even if the SCCDAG is acyclic, don't re-process SCCs
+//    */
+//   std::unordered_set<DGNode<SCC> *> visited{};
+//   visited.insert(sccNode);
 
-  while (!queueOfLastLiveOutComputation.empty()) {
-    auto sccNode = queueOfLastLiveOutComputation.front();
-    queueOfLastLiveOutComputation.pop();
+//   while (!queueOfLastLiveOutComputation.empty()) {
+//     auto sccNode = queueOfLastLiveOutComputation.front();
+//     queueOfLastLiveOutComputation.pop();
 
-    auto scc = sccNode->getT();
-    bool isLoopCarried = false;
-    bool hasComputation = false;
-    for (auto nodePair : scc->internalNodePairs()) {
-      auto value = nodePair.first;
-      if (!isa<Instruction>(value)) continue;
-      auto inst = cast<Instruction>(value);
+//     auto scc = sccNode->getT();
+//     bool isLoopCarried = false;
+//     bool hasComputation = false;
+//     for (auto nodePair : scc->internalNodePairs()) {
+//       auto value = nodePair.first;
+//       if (!isa<Instruction>(value)) continue;
+//       auto inst = cast<Instruction>(value);
 
-      if (!isa<PHINode>(inst) && !isa<CastInst>(inst)) {
-        hasComputation = true;
-      }
+//       if (!isa<PHINode>(inst) && !isa<CastInst>(inst)) {
+//         hasComputation = true;
+//       }
 
-      if (loopCarriedConsumers.find(inst) != loopCarriedConsumers.end()) {
-        isLoopCarried = true;
-        break;
-      }
-    }
+//       if (loopCarriedConsumers.find(inst) != loopCarriedConsumers.end()) {
+//         isLoopCarried = true;
+//         break;
+//       }
+//     }
 
-    /*
-     * Do not include SCCs with loop carried values
-     */
-    if (isLoopCarried) continue;
+//     /*
+//      * Do not include SCCs with loop carried values
+//      */
+//     if (isLoopCarried) continue;
 
-    hasMeaningfulComputation |= hasComputation;
-    computationOfLastLiveOut.insert(scc);
+//     hasMeaningfulComputation |= hasComputation;
+//     computationOfLastLiveOut.insert(scc);
 
-    for (auto edge : sccNode->getIncomingEdges()) {
-      auto producerSCCNode = edge->getOutgoingNode();
-      if (visited.find(producerSCCNode) != visited.end()) continue;
-      queueOfLastLiveOutComputation.push(producerSCCNode);
-      visited.insert(producerSCCNode);
-    }
-  }
+//     for (auto edge : sccNode->getIncomingEdges()) {
+//       auto producerSCCNode = edge->getOutgoingNode();
+//       if (visited.find(producerSCCNode) != visited.end()) continue;
+//       queueOfLastLiveOutComputation.push(producerSCCNode);
+//       visited.insert(producerSCCNode);
+//     }
+//   }
 
-  /*
-   * Only return a non-empty set if those SCCs are worth peeling
-   */
-  if (!hasMeaningfulComputation) computationOfLastLiveOut.clear();
-  return computationOfLastLiveOut;
-}
+//   /*
+//    * Only return a non-empty set if those SCCs are worth peeling
+//    */
+//   if (!hasMeaningfulComputation) computationOfLastLiveOut.clear();
+//   return computationOfLastLiveOut;
+// }
