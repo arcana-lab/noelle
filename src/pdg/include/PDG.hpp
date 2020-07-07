@@ -136,9 +136,14 @@ namespace llvm {
       ~PDG() ;
       
     protected:
+
       void addNodesOf (Function &F);
+
       void setEntryPointAt (Function &F);
-      void copyEdgesInto (PDG *newPDG, bool linkToExternal, std::unordered_set<DGEdge<Value> *> edgesToIgnore);
+
+      void copyEdgesInto (PDG *newPDG, bool linkToExternal);
+
+      void copyEdgesInto (PDG *newPDG, bool linkToExternal, std::unordered_set<DGEdge<Value> *> const & edgesToIgnore);
   };
 
 }
