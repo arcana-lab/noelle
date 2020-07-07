@@ -20,20 +20,137 @@ LoopWhilifier::LoopWhilifier(Noelle &noelle)
 
 bool LoopWhilifier::whilifyLoop (
   LoopDependenceInfo const &LDI
-  ) {
+) {
 
   auto modified = false;
 
   /*
-   * Check if the loop can be whilified, 
+   * Check if the loop can be whilified
    */ 
   BasicBlock *Header = *Latch = *Exit = nullptr;
   if (!canWhilify(LDI, Header, Latch, Exit)) {
     return modified;
   }
 
-  // Acquire all necessary info
+  /*
+   * Acquire all other necessary info to whilify
+   */ 
   const LoopStructure *LS = LDI.getLoopStructure();
+  const InductionVariableManager *IVM = LDI.getInductionVariableManager();
+  InductionVariable *IV = IVM->getLoopGoverningInductionVariable(*LS);
+  const PHINode *GoverningPHI = IV->getLoopEntryPHI();
+
+
+  /* 
+   * *** MAJOR TODO *** --- Update all data structures with new 
+   * instructions and blocks when transforming
+   */
+
+
+  while (!(this->isDoWhile(LDI, Latch))) {
+
+    /*
+     * TOP LEVEL --- Insert the condition at the top of the 
+     * header --- compare to the appropriate PHINode instead 
+     * of the iterator instruction, delete the condition in 
+     * the loop latch
+     */ 
+
+    /* 
+     * Get the compare instruction that's used by the branch
+     * in the latch
+     */
+    CmpInst *LatchCmpInst = nullptr;
+    BranchInst *LatchTerm = nullptr;
+
+    this->getLatchInfo(Latch, LatchCmpInst, LatchTerm);
+
+    if (false
+        || (!LatchCmpInst) 
+        || (!LatchTerm)) {
+
+      errs() << "LatchCmpInst and/or LatchTerm is toast!\n";
+      return modified;
+
+    }
+
+
+    /*
+     * Insert a new compare instruction that compare directly with
+     * the governing PHINode --- this will function as the new 
+     * condition
+     */ 
+    Instruction *HeaderInsertionPoint = Header->getFirstNonPHI();
+    if (!HeaderInsertionPoint) {
+
+      errs() << "HeaderInsertionPoint is toast!\n";
+      return modified;
+
+    }
+
+    IRBuilder<> HeaderBuilder{HeaderInsertionPoint};
+    Value *NewHeaderCmp = HeaderBuilder.CreateICmp(
+      LatchCmpInst->getPredicate(), /* Original predicate */
+      GoverningPHI, /* New LHS */
+      LatchCmpInst->getOperand(1), /* Original RHS */
+      LatchCmpInst->getName() /* Original name */
+    );
+
+
+    /*
+     * Split the header --- contains a true edge to the block
+     * that will contain the rest of the original header; has a 
+     * false edge to the exit block
+     */ 
+    Instruction *NewHeaderCmpInst = dyn_cast<CmpInst>(NewHeaderCmp),
+                *SplitPoint = (NewHeaderCmpInst) ?
+                              (NewHeaderCmpInst->getNextNode()) : 
+                              (HeaderInsertionPoint); // Header->getFirstNonPHI()
+
+    BasicBlock *RestOfHeaderBlock = SplitBlock(Header, SplitPoint); 
+    
+    // Reset state --- Suspicious
+    if (Header == Latch) { 
+      Latch = RestOfHeaderBlock; 
+    }
+
+
+    /*
+     * Repalce the default unconditional branch at the end of the 
+     * new header block with the condition (described in the 
+     * previous comment)
+     */ 
+    Instruction *NewHeaderTerm = Header->getTerminator();
+    IRBuilder<> NewHeaderBranchBuilder{NewHeaderTerm};
+    BranchInst *NewHeaderBranchTerm = NewHeaderBranchBuilder.CreateCondBr(
+      NewHeaderCmp,
+      RestOfHeaderBlock,
+      Exit
+    );
+
+
+    // *** NOTE *** --- All removes after this line have
+    // been declared as suspicious
+
+    NewHeaderTerm->eraseFromParent(); // Removes default unconditional
+
+
+    /*
+     * Remove the original condition and original branch in
+     * the original latch block
+     */ 
+    IRBuilder<> NewLatchBranchBuilder{LatchTerm};
+    BranchInst *NewLatchBranchTerm = NewLatchBranchBuilder.CreateBr(Header);
+
+    LatchTerm->eraseFromParent(); // Remove original latch terminator
+    if (!(LatchCmpInst->getNumUses())) { 
+      LatchCmpInst->eraseFromParent(); // Remove original compare instruction
+    }
+
+
+    modified |= true;
+
+  }
 
   return modified;
 
