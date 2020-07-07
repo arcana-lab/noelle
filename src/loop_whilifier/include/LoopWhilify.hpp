@@ -52,7 +52,6 @@ namespace llvm {
       );
 
       void getLatchInfo (
-        LoopDependenceInfo const &LDI,
         BasicBlock * const Latch,
         CmpInst *&LatchCmpInst,
         BranchInst *&LatchTerm
