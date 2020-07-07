@@ -35,6 +35,7 @@ install(  PROGRAMS
           include/Queue.hpp
           include/ScalarEvolutionExpander.h
           include/ScalarEvolutionReferencer.hpp
+          include/BitMatrix.h
           DESTINATION 
           include
         )
