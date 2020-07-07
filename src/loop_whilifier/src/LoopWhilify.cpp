@@ -129,11 +129,24 @@ bool canWhilify (
 
 
 void getLatchInfo (
-  LoopDependenceInfo const &LDI,
   BasicBlock * const Latch,
   CmpInst *&LatchCmpInst,
   BranchInst *&LatchTerm
 ) {
+
+  /*
+   * TOP --- acquire the terminator instruction in the latch, only
+   * if it exists as a conditional branch; get the compare instruction 
+   * associated with the conditional branch
+   */ 
+
+  LatchTerm = dyn_cast<BranchInst>(Latch->getTerminator());
+
+  if (LatchTerm) {
+      if (LatchTerm->isConditional()) {
+          LatchCmpInst = dyn_cast<CmpInst>(LatchTerm->getCondition());
+      }
+  }
 
   return;
 
