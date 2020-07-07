@@ -19,11 +19,12 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   bool modified = false;
 
   auto invariantManager = LDI.getInvariantManager();
-  auto loopSummary = LDI.getLoopStructure();
-  auto preHeader = loopSummary->getPreHeader();
+  auto loopStructure = LDI.getLoopStructure();
+  auto header = loopStructure->getHeader();
+  auto preHeader = loopStructure->getPreHeader();
 
   std::vector<Instruction *> instructionsToHoistToPreheader{};
-  for (auto B : loopSummary->getBasicBlocks()) {
+  for (auto B : loopStructure->getBasicBlocks()) {
     for (auto &I : *B) {
       if (!invariantManager->isLoopInvariant(&I)) continue;
 
@@ -49,9 +50,13 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   /*
    * Sort invariants to hoist in order of dominance to preserve execution order
    */
-  // LDI.getDominator
-  // auto dominanceCmpFunc = [&LDI]
-  // std::sort (instructionsToHoistToPreheader.begin(), instructionsToHoistToPreheader.end(), dominanceCmpFunc);
+  DominatorTree DT(*header->getParent());
+  PostDominatorTree PDT(*header->getParent());
+  DominatorSummary DS(DT, PDT);
+  auto dominanceCmpFunc = [&DS] (Instruction *I, Instruction *J) -> bool {
+    return DS.DT.dominates(I, J);
+  };
+  std::sort (instructionsToHoistToPreheader.begin(), instructionsToHoistToPreheader.end(), dominanceCmpFunc);
 
   /*
    * Hoist each instruction into the preheader

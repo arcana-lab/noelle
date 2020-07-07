@@ -11,46 +11,44 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "LoopDependenceInfo.hpp"
-#include "Invariants.hpp"
 #include "Noelle.hpp"
+#include "LoopDependenceInfo.hpp"
 
 #include "PDGPrinter.hpp"
 #include "SubCFGs.hpp"
-#include "SCCDAG.hpp"
 
 namespace llvm {
 
-  class Mem2RegNonAlloca {
+  class LastLiveOutPeeler {
     public:
+      LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noelle) ;
 
-      Mem2RegNonAlloca (LoopDependenceInfo const &LDI, Noelle &noelle) ;
-
-      bool promoteMemoryToRegister () ;
+      bool peelLastLiveOutComputation () ;
 
     private:
       LoopDependenceInfo const &LDI;
       Noelle &noelle;
-      InvariantManager &invariants;
-
-      std::unordered_map<Value *, SCC *> findSCCsWithSingleMemoryLocations (void) ;
-
-      bool hoistMemoryInstructionsRelyingOnExistingRegisterValues (SCC *scc, Value *memoryLocation) ;
-      bool promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLocation) ;
-
-      std::unordered_map<BasicBlock *, std::vector<Instruction *>> collectOrderedMemoryInstsByBlock (SCC *scc) ;
-
-      void removeRedundantPHIs (
-        std::unordered_set<PHINode *> phis,
-        std::unordered_map<BasicBlock *, Value *> lastRegisterValueByBlock
-      ) ;
 
       /*
-       * Can ONLY be used before stores/loads are erased, as this invalidates the LDI
-       * TODO: Store a flag indicating whether LDI is invalidated
+       * We used normalized SCCs when analyzing the loop structure to determine if peeling is possible
+       * This is simply because SCCDAGAttrs uses the normalized SCCDAG. We wouldn't need to otherwise
+       * 
+       * We use strict SCCs from the not normalized SCCDAG for last live out analysis as
+       * SCCDAGAttrs does not have such an analysis
        */
-      void assertAndDumpLogsOnFailure (std::function<bool(void)> assertion, std::string errorString) ;
-      void dumpLogs (void) ;
+      std::unordered_set<SCC *> normalizedSCCsOfGoverningIVs;
+      std::unordered_set<SCC *> normalizedSCCsOfConditionsAndBranchesDependentOnIVSCCs;
+      std::unordered_set<SCC *> sccsOfLastLiveOuts;
+
+      bool fetchNormalizedSCCsGoverningControlFlowOfLoop (void) ;
+
+      /*
+       * Determining last live out instructions
+       */
+      void fetchSCCsOfLastLiveOuts (void) ;
+      std::unordered_set<SCC *> fetchChainOfSCCsForLastLiveOutLeafSCC (DGNode<SCC> *sccNode) ;
+
+      std::unordered_set<Value *> loopCarriedConsumers;
 
   };
 

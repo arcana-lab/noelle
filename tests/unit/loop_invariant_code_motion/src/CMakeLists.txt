@@ -1,13 +1,13 @@
 # Sources
 set(Srcs 
-  IVAttrTestSuite.cpp
+  LICMTestSuite.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "iv_attributes")
+set(PassName "loop_invariant_code_motion")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
