@@ -453,6 +453,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
     if (!consumesInternalDependency || !producesInternalDependency) continue;
     allInternalCyclicValues.push_back(value);
   }
+  if (allInternalCyclicValues.size() == 0) return false;
 
   auto dgOfInternals = loopDG->createSubgraphFromValues(allInternalCyclicValues, false);
   auto sccdagOfInternals = new SCCDAG(dgOfInternals);
@@ -466,7 +467,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
    */
   PHINode *rootLoopCarriedPHI = nullptr;
   for (auto phi : loopCarriedPHIs) {
-    phi->print(errs() << "Loop carried PHI: "); errs() << "\n";
+    // phi->print(errs() << "Loop carried PHI: "); errs() << "\n";
 
     /*
      * If the loop carried PHI was external, it will not appear in the SCCDAG
@@ -493,6 +494,9 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
     if (!onlyOnePHI || (rootLoopCarriedPHI && rootLoopCarriedPHI != phi)) continue;
     rootLoopCarriedPHI = phi;
   }
+
+  delete dgOfInternals;
+  delete sccdagOfInternals;
 
   if (!rootLoopCarriedPHI) return false;
 

@@ -33,66 +33,12 @@ InvariantManager::InvariantManager (
       this->invariants.insert(inst);
       continue ;
     }
-
-    /*
-     * Check if the values of a PHI are equivalent
-     * If they are not, the PHI controls which value to use and is NOT loop invariant
-     * TODO: Be more flexible than a strict equivalence
-     */
-    if (auto phi = dyn_cast<PHINode>(inst)) {
-      Value *singleValue = nullptr;
-      for (auto &incomingUse : phi->incoming_values()) {
-        auto incomingValue = incomingUse.get();
-
-        if (!singleValue) {
-          singleValue = incomingValue;
-          continue;
-        }
-
-        if (singleValue != incomingValue) {
-          singleValue = nullptr;
-          break;
-        }
-      }
-
-      if (!singleValue) continue;
-    }
-
-    /*
-     * Check if @value is loop invariant according to the dependence graph.
-     */
-    auto checkIfCanEvolve = [loop] (Value *toValue, DataDependenceType ddType) -> bool {
-
-      /*
-       * Check if @toValue isn't an instruction.
-       */
-      if (!isa<Instruction>(toValue)){
-        return false;
-      }
-      auto toInst = cast<Instruction>(toValue);
-
-      /*
-       * If the instruction is not included in the loop, then we can skip this dependence.
-       */
-      if (!loop->isIncluded(toInst)){
-        return false;
-      }
-
-      /*
-       * @toInst is part of the loop.
-       * We need to check if @toInst is a loop invariant.
-       */
-      //TODO
-
-      return true;
-    };
-
-    auto canEvolve = loopDG->iterateOverDependencesTo(inst, false, true, true, checkIfCanEvolve);
-    auto isInvariant = !canEvolve;
-    if (isInvariant){
-      this->invariants.insert(inst);
-    }
   }
+
+  /*
+   * Traverse the dependence graph to identify loop invariants the LoopStructure conservatively didn't identify
+   */
+  InvarianceChecker checker{loop, loopDG, this->invariants};
 
   return ;
 }
@@ -111,4 +57,107 @@ bool InvariantManager::isLoopInvariant (Value *value) const {
 
 std::unordered_set<Instruction *> InvariantManager::getLoopInstructionsThatAreLoopInvariants (void) const {
   return this->invariants;
+}
+
+InvariantManager::InvarianceChecker::InvarianceChecker (
+  LoopStructure *loop,
+  PDG *loopDG,
+  std::unordered_set<Instruction *> &invariants
+) : loop{loop}, loopDG{loopDG}, invariants{invariants} {
+
+  this->isEvolving = std::bind(&InvarianceChecker::isEvolvingValue, this, std::placeholders::_1, std::placeholders::_2);
+
+  for (auto inst : loop->getInstructions()){
+    if (this->invariants.find(inst) != this->invariants.end()) continue;
+
+    auto canEvolve = loopDG->iterateOverDependencesTo(inst, false, true, true, isEvolving);
+    if (!canEvolve){
+      this->invariants.insert(inst);
+    }
+  }
+
+}
+
+bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DataDependenceType ddType) {
+
+  /*
+   * Check if @toValue isn't an instruction.
+   */
+  if (!isa<Instruction>(toValue)){
+    return false;
+  }
+  auto toInst = cast<Instruction>(toValue);
+
+  /*
+   * If the instruction is not included in the loop, then we can skip this dependence.
+   */
+  if (!loop->isIncluded(toInst)){
+    return false;
+  }
+
+  /*
+   * Check if the values of a PHI are equivalent
+   * If they are not, the PHI controls which value to use and is NOT loop invariant
+   */
+  if (auto phi = dyn_cast<PHINode>(toInst)) {
+    if (!arePHIIncomingValuesEquivalent(phi)) return true;
+  }
+
+  /*
+   * @toInst is part of the loop.
+   * We need to check if @toInst is a loop invariant.
+   */
+  if (invariants.find(toInst) != invariants.end()){
+    return false;
+  }
+  if (notInvariants.find(toInst) != notInvariants.end()){
+    return true;
+  }
+
+  bool canEvolve = loopDG->iterateOverDependencesTo(toInst, false, true, true, isEvolving);
+  if (canEvolve) {
+    notInvariants.insert(toInst);
+  } else {
+    invariants.insert(toInst);
+  }
+
+  return canEvolve;
+}
+
+bool InvariantManager::InvarianceChecker::arePHIIncomingValuesEquivalent (PHINode *phi) {
+
+  std::unordered_set<Value *> incomingValues{};
+  for (auto &incomingUse : phi->incoming_values()) {
+    auto incomingValue = incomingUse.get();
+    incomingValues.insert(incomingValue);
+  }
+
+  /*
+   * If all incoming values are strictly the same value, this set will be one element
+   */
+  if (incomingValues.size() == 1) return true;
+
+  /*
+   * If all incoming values are loads of the same global, we consider this equivalent
+   * Whether these loads are loop invariant is up to checks on the dependence graph
+   */
+  GlobalValue *singleGlobalLoaded = nullptr;
+  for (auto incomingValue : incomingValues) {
+    if (auto load = dyn_cast<LoadInst>(incomingValue)) {
+      auto loadedValue = load->getPointerOperand();
+      if (auto global = dyn_cast<GlobalValue>(loadedValue)) {
+        if (singleGlobalLoaded == nullptr || singleGlobalLoaded == global) {
+          singleGlobalLoaded = global;
+          continue;
+        }
+      }
+    }
+
+    singleGlobalLoaded = nullptr;
+    break;
+  }
+
+  if (singleGlobalLoaded != nullptr) return true;
+
+  return false;
 }
