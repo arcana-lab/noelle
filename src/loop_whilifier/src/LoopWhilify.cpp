@@ -42,9 +42,10 @@ bool LoopWhilifier::whilifyLoop (
 
 bool isDoWhile(
   LoopDependenceInfo const &LDI,
+  BasicBlock * const Latch
 ) {
 
-  bool isDoWhile = false;
+  bool isDoWhile = this->isLatchLoopExiting(LDI, Latch);
 
   return isDoWhile;
 
@@ -99,7 +100,7 @@ bool canWhilify (
    * Check if loop is in do-while form
    */ 
   if (canWhilify) {
-    canWhilify = _isDoWhile(LDI);
+    canWhilify = this->isDoWhile(LDI);
   }
 
 
