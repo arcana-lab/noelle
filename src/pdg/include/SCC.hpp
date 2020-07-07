@@ -27,9 +27,11 @@ namespace llvm {
 
       /*
        * Constructors.
+       * TODO: Make copy constructor argument 'const' when getters on DGBase are all const
        */
       SCC (std::set<DGNode<Value> *> internalNodes) ;
       SCC (std::set<DGNode<Value> *> internalNodes, std::set<DGNode<Value> *> externalNodes) ;
+      // SCC (SCC &scc) ;
 
       /*
        * Iterate over values inside the SCC until @funcToInvoke returns true or no other one exists.

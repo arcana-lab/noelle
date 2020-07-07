@@ -24,6 +24,7 @@ static cl::opt<bool> DisableInliner("noelle-disable-inliner", cl::ZeroOrMore, cl
 static cl::opt<bool> InlinerDisableHoistToMain("noelle-inliner-avoid-hoist-to-main", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 
 bool Noelle::doInitialization (Module &M) {
+  errs() << "NOELLE:  Initialize\n";
 
   /*
    * Fetch the command line options.

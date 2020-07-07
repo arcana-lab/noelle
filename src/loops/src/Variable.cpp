@@ -150,13 +150,13 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
 
   if (!isValid) return false;
 
-  // declarationValue->print(errs() << "Declaration: "); errs() << "\n";
-  // sccOfDataAndMemoryVariableValuesOnly->printMinimal(errs() << "Data and memory SCC\n");
+  declarationValue->print(errs() << "Declaration: "); errs() << "\n";
+  sccOfDataAndMemoryVariableValuesOnly->printMinimal(errs() << "Data and memory SCC\n");
   // errs() << "Number of internal control values: " << controlValuesGoverningEvolution.size() << "\n";
   // for (auto controlValue : controlValuesGoverningEvolution) {
   //   controlValue->print(errs() << "Control value: "); errs() << "\n";
   // }
-  // errs() << "Number of variable updates: " << variableUpdates.size() << "\n";
+  errs() << "Number of variable updates: " << variableUpdates.size() << "\n";
 
   /*
    * No control values internal to the variable can be involved in the evolution
@@ -204,7 +204,10 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
    * prevent reducing the variable and collecting it outside the loop
    */
   auto consumers = getConsumersOfVariable();
+  // TODO: Until cycles among consumers are handled, we must return false
+  if (consumers.size() > 0) return false;
   for (auto consumer : consumers) {
+    // TODO: Allow value propagating other values (pass consumers set to function)
     if (isValuePropagatingVariableIntermediateOutsideLoop(consumer)) continue;
     return false;
   }
@@ -283,7 +286,7 @@ bool LoopCarriedVariable::isValuePropagatingVariableIntermediateOutsideLoop (Val
   // value->print(errs() << "Checking consumer: "); errs() << "\n";
 
   /*
-   * Ensure the value propagates an intermediate value of the variable
+   * Ensure the value propagates an intermediate value of the variable or is contained within 
    */
   if (auto cast = dyn_cast<CastInst>(value)) {
     auto valueToCast = cast->getOperand(0);
