@@ -4,6 +4,7 @@ set(Srcs
   LoopInvariantCodeMotion.cpp
   LoopInvariantHoister.cpp
   LastLiveOutStoreHoister.cpp
+  LastLiveOutPeeler.cpp
 )
 
 # Compilation flags

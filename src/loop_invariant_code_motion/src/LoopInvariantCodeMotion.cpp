@@ -25,7 +25,10 @@ bool LoopInvariantCodeMotion::extractInvariantsFromLoop (
   auto modified = false;
 
   modified |= hoistInvariantValues(LDI);
-  modified |= hoistStoreOfLastValueLiveOut(LDI);
+  // modified |= hoistStoreOfLastValueLiveOut(LDI);
+
+  Mem2RegNonAlloca mem2Reg(LDI, noelle);
+  modified |= mem2Reg.promoteMemoryToRegister();
 
   return modified;
 }

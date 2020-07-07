@@ -50,6 +50,8 @@ namespace llvm {
 
       std::unordered_set<LoopStructure *> getChildren (void) const ;
 
+      std::unordered_set<LoopStructure *> getDescendants (void) const ;
+
       void addChild (LoopStructure *child) ;
 
       std::unordered_set<BasicBlock *> getLatches (void) const ;

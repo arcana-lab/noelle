@@ -97,8 +97,14 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Allocate the loop wrapper.
      */
-    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
-    allLoops->push_back(ldi);
+    // auto headerTerm = loop->getHeader()->getTerminator();
+    // auto metaNode = headerTerm->getMetadata("noelle.loop_ID");
+    // auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
+    // auto ID = std::stoul(metaString);
+    // if (ID == 0) {
+      auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
+      allLoops->push_back(ldi);
+    // }
   }
 
   /*
@@ -221,10 +227,17 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
+
+    // auto headerTerm = loop->getHeader()->getTerminator();
+    // auto metaNode = headerTerm->getMetadata("noelle.loop_ID");
+    // auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
+    // auto ID = std::stoul(metaString);
+    // if (ID == 0) {
+      auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
 
         allLoops->push_back(ldi);
         currentLoopIndex++;
+    // }
         continue ;
       }
 
@@ -263,7 +276,13 @@ std::vector<LoopDependenceInfo *> * Noelle::getProgramLoops (
        *
        * Allocate the loop wrapper.
        */
-      auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, maximumNumberOfCoresForTheParallelization);
+
+    // auto headerTerm = loop->getHeader()->getTerminator();
+    // auto metaNode = headerTerm->getMetadata("noelle.loop_ID");
+    // auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
+    // auto ID = std::stoul(metaString);
+    // if (ID != 0) continue;
+    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, maximumNumberOfCoresForTheParallelization);
 
       /*
        * Set the loop constraints specified by INDEX_FILE.
