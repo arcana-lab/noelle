@@ -40,7 +40,8 @@ namespace llvm {
        */
 
       bool isDoWhile (
-        LoopDependenceInfo const &LDI
+        LoopDependenceInfo const &LDI,
+        BasicBlock * const Latch
       );
 
       bool canWhilify (
