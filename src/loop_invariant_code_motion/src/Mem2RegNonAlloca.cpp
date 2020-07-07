@@ -45,13 +45,20 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister () {
       memorySCC->printMinimal(errs() << "Mem2Reg:  SCC:\n"); errs() << "\n";
     }
 
-    if (hoistMemoryInstructionsRelyingOnExistingRegisterValues(memorySCC, memoryInst)) {
-      modified = true;
-      continue;
-    }
+    // if (hoistMemoryInstructionsRelyingOnExistingRegisterValues(memorySCC, memoryInst)) {
+    //   modified = true;
+    //   continue;
+    // }
 
-    modified |= promoteMemoryToRegisterForSCC(memorySCC, memoryInst);
+    bool promoted = promoteMemoryToRegisterForSCC(memorySCC, memoryInst);
+    modified |= promoted;
+
+    if (noelle.getVerbosity() >= Verbosity::Maximal) {
+      memoryInst->print(errs() << "Mem2Reg:  Loop invariant memory location loads/stores promoted: " << promoted << " ");
+      errs() << "\n";
+    }
   }
+
 
   return modified;
 }
@@ -168,6 +175,10 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
   std::unordered_set<PHINode *> placeholderPHIs{};
   std::unordered_set<PHINode *> allPHIs{};
 
+  if (noelle.getVerbosity() >= Verbosity::Maximal) {
+    errs() << "Mem2Reg: Iterating basic blocks to determine last stored values\n";
+  }
+
   while (!queue.empty()) {
     auto B = queue.front();
     queue.pop();
@@ -182,7 +193,10 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
       for (auto predBlock : predecessors(B)) {
         if (lastRegisterValueByBlock.find(predBlock) != lastRegisterValueByBlock.end()) continue;
 
-        B->printAsOperand(errs() << "Mem2Reg: placeholder PHI required: "); errs() << "\n";
+        if (noelle.getVerbosity() >= Verbosity::Maximal) {
+          B->printAsOperand(errs() << "Mem2Reg: placeholder PHI required: "); errs() << "\n";
+        }
+
         IRBuilder<> builder(B->getFirstNonPHIOrDbgOrLifetime());
         int32_t numPreds = pred_size(B);
         auto phi = builder.CreatePHI(initialLoad->getType(), numPreds);
@@ -194,6 +208,10 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
       }
     }
 
+    if (noelle.getVerbosity() >= Verbosity::Maximal) {
+      B->printAsOperand(errs() << "Mem2Reg:  checking for last value entering block: "); errs() << "\n";
+    }
+
     /*
      * Fetch the current register value that would be in the memory location
      * If the last register value for the block is ALREADY set, it will be the loop/sub-loop entry
@@ -201,7 +219,6 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
      * For all other blocks, their already-traversed predecessors will have last register values
      * If there is more than 1 predecessor, create a PHI to collect those predecessor's last values
      */
-    B->printAsOperand(errs() << "Mem2Reg:  checking for last value entering block: "); errs() << "\n";
     Value *lastValue = nullptr;
     if (lastRegisterValueByBlock.find(B) != lastRegisterValueByBlock.end()) {
       lastValue = lastRegisterValueByBlock.at(B);
@@ -371,12 +388,51 @@ bool Mem2RegNonAlloca::hoistMemoryInstructionsRelyingOnExistingRegisterValues (S
 
   auto loopStructure = LDI.getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
-  std::queue<BasicBlock *> queue;
-  std::unordered_set<BasicBlock *> visited;
 
   // Build a list of basic blocks that collect 2+ unique stored values (store merging blocks)
+  std::unordered_map<BasicBlock *, StoreInst *> blockToLastStoreMap;
+  std::queue<BasicBlock *> blocksToTraverse;
+  std::unordered_set<BasicBlock *> blocksMergingStores;
+
+  for (auto memoryInstsByBlock : orderedMemoryInstsByBlock) {
+    auto block = memoryInstsByBlock.first;
+    auto memoryInsts = memoryInstsByBlock.second;
+
+    StoreInst *lastStore = nullptr;
+    for (auto instIter = memoryInsts.rbegin(); instIter != memoryInsts.rend(); --instIter) {
+      auto inst = *instIter;
+      if (auto store = dyn_cast<StoreInst>(inst)) {
+        lastStore = store;
+        break;
+      }
+    }
+
+    if (!lastStore) continue;
+    blockToLastStoreMap.insert(std::make_pair(block, lastStore));
+    blocksToTraverse.push(block);
+  }
+
+  while (!blocksToTraverse.empty()) {
+    auto block = blocksToTraverse.front();
+    blocksToTraverse.pop();
+
+    for (auto succBlock : successors(block)) {
+      if (pred_size(succBlock) > 1) {
+        blocksMergingStores.insert(succBlock);
+        continue;
+      }
+
+      /*
+       * This check is needed, even if the only way a block points to itself in our traversal
+       * is if our traversal started in that block
+       */
+      if (succBlock == block) continue;
+      blocksToTraverse.push(succBlock);
+    }
+  }
 
   // Locate candidate SCCs that have single header PHIs and consume stored values
+  // TODO:
 
   // Filter candidates:
   // The header PHI's pre-header incoming value must be the initial value at the memory location
@@ -400,6 +456,10 @@ void Mem2RegNonAlloca::removeRedundantPHIs (
 }
 
 std::unordered_map<BasicBlock *, std::vector<Instruction *>> Mem2RegNonAlloca::collectOrderedMemoryInstsByBlock (SCC *scc) {
+
+  if (noelle.getVerbosity() >= Verbosity::Maximal) {
+    errs() << "Mem2Reg:  Collecting and ordering memory loads/stores by basic block\n";
+  }
 
   /*
    * Index memory values by their basic block

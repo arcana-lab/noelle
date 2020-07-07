@@ -224,20 +224,15 @@ void DOALL::rewireLoopToIterateChunks (
 
 	/*
 	 * Collect (4) by identifying header instructions belonging to independent SCCs that are loop invariant
-	 * NOTE: This should be done with an API call to LoopStructure, but until that API is
-	 * more robust, we simply check that the instruction consumes no data dependencies in the SCCDAG
 	 */
+  auto invariantManager = LDI->getInvariantManager();
   for (auto &I : *loopHeader) {
 		auto scc = sccdag->sccOfValue(&I);
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
 		if (!sccInfo->canExecuteIndependently()) continue;
 
-		auto node = scc->fetchNode(&I);
-		bool consumesDataDependence = true;
-		for (auto edge : node->getIncomingEdges()) {
-			consumesDataDependence |= edge->isDataDependence();
-		}
-		if (consumesDataDependence) continue;
+    auto isInvariant = invariantManager->isLoopInvariant(&I);
+    if (!isInvariant) continue;
 
 		repeatableInstructions.insert(task->getCloneOfOriginalInstruction(&I));
 	}
