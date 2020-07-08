@@ -77,14 +77,6 @@ br label %14
 %15 = add i32 %.0, 1
 br label %6
 
-pdg root values
-i32 %0
-i8** %1
-br label %6
-%.0 = phi i32 [ 0, %2 ], [ %15, %14 ]
-%17 = getelementptr [8 x i8], [8 x i8]* @.str, i64 0, i64 0
-ret i32 0
-
 pdg leaf values
 i8** %1
 br label %6
