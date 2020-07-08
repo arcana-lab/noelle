@@ -139,125 +139,71 @@ SequentialSegment::SequentialSegment (
   auto dfr = dfa.applyBackward(loopFunction, computeGEN, computeKILL, computeIN, computeOUT);
 
   /*
-   * Identify the locations where signal and wait instructions should be placed.
+   * For instructions in the SS, derive the set of instructions containing it in their reachable list
+   * Alternatively, a second data flow analysis could be performed to achieve this
    */
-  std::list<Instruction *> workingList;
-  std::unordered_map<Instruction *, bool> visited;
-  for (auto I : ssInstructions) {
-    visited[I] = true;
-    workingList.push_back(I);
+  std::unordered_map<Instruction *, std::unordered_set<Instruction *>> beforeInstructionMap{};
+  for (auto ssInst : ssInstructions) {
+    std::unordered_set<Instruction *> empty;
+    beforeInstructionMap.insert(std::make_pair(ssInst, empty));
   }
-  while (!workingList.empty()){
-
-    /*
-     * Fetch the current instruction to consider.
-     */
-    auto I = workingList.front();
-    workingList.pop_front();
-    assert(visited[I] == true);
-
-    /*
-     * Check OUT[I]
-     */
-    auto &afterInstructions = dfr->OUT(I);
-    std::set<Instruction *> inSS;
+  for (auto ssInst : ssInstructions) {
+    auto &afterInstructions = dfr->OUT(ssInst);
     for (auto afterV : afterInstructions) {
       auto afterI = cast<Instruction>(afterV);
-      if (I == afterI) continue;
+      if (ssInst == afterI) continue;
+      if (ssInstructions.find(afterI) == ssInstructions.end()) continue;
+
+      beforeInstructionMap.at(afterI).insert(ssInst);
+    }
+  }
+
+  /*
+   * Use beforeInstructionMap to determine all entries to the SS
+   * All entries cannot be reached by any other instruction in the SS
+   */
+  for (auto pair : beforeInstructionMap) {
+    auto entryInst = pair.first;
+    auto &beforeInstructions = pair.second;
+    if (beforeInstructions.size() != 0) continue;
+
+    /*
+     * NOTE: Do not include PHIs in a sequential segment. Let the PHI redirect data properly before
+     * entry into the sequential segment. This knowledge would be lost after the entry because
+     * of the insertion of control flow checking whether to wait before entering the segment
+     */
+    auto firstI = (!isa<PHINode>(entryInst) && !isa<DbgInfoIntrinsic>(entryInst) && !entryInst->isLifetimeStartOrEnd())
+      ? entryInst : entryInst->getParent()->getFirstNonPHIOrDbgOrLifetime();
+    this->entries.insert(firstI);
+  }
+
+  /*
+   * Use afterInstructions result from data flow analysis to determine all exits to the SS
+   * All exits cannot reach any other instruction in the SS
+   */
+  for (auto ssInst : ssInstructions) {
+    auto &afterInstructions = dfr->OUT(ssInst);
+
+    bool hasAfterInstructions = false;
+    for (auto afterV : afterInstructions) {
+      auto afterI = cast<Instruction>(afterV);
+      if (ssInst == afterI) continue;
 
       if (ssInstructions.find(afterI) != ssInstructions.end()) {
-        inSS.insert(afterI);
+        hasAfterInstructions = true;
+        break;
       }
     }
+    if (hasAfterInstructions) continue;
 
     /*
-     * Check if I is an entry of the current sequential segment.
+     * NOTE: Include all PHIs of a basic block before the exit of a sequential segment.
+     * No instruction, such as the 'signal' call instruction at the end of a sequential segment,
+     * can be placed before all PHIs of a basic block
      */
-    bool allInSS = (inSS.size() + 1) == ssInstructions.size();
-    if (  true
-          && allInSS
-          && (ssInstructions.find(I) != ssInstructions.end())
-          ) {
-
-      /*
-       * NOTE: Do not include PHIs in a sequential segment. Let the PHI redirect data properly before
-       * entry into the sequential segment. This knowledge would be lost after the entry because
-       * of the insertion of control flow checking whether to wait before entering the segment
-       */
-      auto firstI = I->getParent()->getFirstNonPHIOrDbgOrLifetime();
-      this->entries.insert(firstI);
-    }
-
-    /*
-     * Check if I is an exit of the current sequential segment.
-     */
-    bool noneInSS = inSS.size() == 0;
-    if (noneInSS) {
-
-      /*
-       * NOTE: Include all PHIs of a basic block before the exit of a sequential segment.
-       * No instruction, such as the 'signal' call instruction at the end of a sequential segment,
-       * can be placed before all PHIs of a basic block
-       */
-      auto lastI = (!isa<PHINode>(I) && !isa<DbgInfoIntrinsic>(I) && !I->isLifetimeStartOrEnd())
-        ? I : I->getParent()->getFirstNonPHIOrDbgOrLifetime();
-
-      this->exits.insert(lastI);
-
-      /*
-       * If I is an exit, there is no need to continue along successors
-       */
-      continue ;
-    }
-
-    /*
-     * Add the successors of I to the working list.
-     */
-    auto bb = I->getParent();
-    if (bb->getTerminator() != I){
-
-      /*
-       * I is inside a basic block.
-       *
-       * Fetch the next instruction within the same basic block.
-       */
-      BasicBlock::iterator iter(I);
-      iter++;
-      auto succI = &*iter;
-      if (visited.find(succI) == visited.end()){
-        workingList.push_back(succI);
-        visited[succI] = true;
-      }
-
-    } else {
-
-      /*
-       * I is the terminator of a basic block.
-       * We need to add the first instructions of the basic block successors if they belong to the loop.
-       */
-      for (auto succBB : successors(bb)){
-
-        /*
-         * Check if succBB belongs to the loop being parallelized.
-         */
-        if (!loopSummary->isIncluded(succBB)){
-
-          /*
-           * succBB doesn't belong to the loop being parallelized.
-           */
-          continue ;
-        }
-
-        /*
-         * succBB belongs to the loop being parallelized.
-         */
-        auto succI = succBB->getFirstNonPHIOrDbgOrLifetime();
-        if (visited.find(succI) == visited.end()){
-          workingList.push_back(succI);
-          visited[succI] = true;
-        }
-      }
-    }
+    auto lastI = (!isa<PHINode>(ssInst) && !isa<DbgInfoIntrinsic>(ssInst) && !ssInst->isLifetimeStartOrEnd())
+      ? ssInst : ssInst->getParent()->getFirstNonPHIOrDbgOrLifetime();
+    this->exits.insert(lastI);
   }
 
   assert(this->entries.size() > 0
