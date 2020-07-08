@@ -33,8 +33,6 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister () {
     if (isa<ReturnInst>(terminator)) return false;
   }
 
-  // TODO: Consider the implications of promoting memory to register on the LDI data structure
-  bool modified = false;
   auto singleMemoryLocationsBySCC = findSCCsWithSingleMemoryLocations();
   for (auto memoryAndSCCPair : singleMemoryLocationsBySCC) {
     auto memoryInst = memoryAndSCCPair.first;
@@ -51,16 +49,14 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister () {
     // }
 
     bool promoted = promoteMemoryToRegisterForSCC(memorySCC, memoryInst);
-    modified |= promoted;
-
     if (noelle.getVerbosity() >= Verbosity::Maximal) {
       memoryInst->print(errs() << "Mem2Reg:  Loop invariant memory location loads/stores promoted: " << promoted << " ");
       errs() << "\n";
     }
+    if (promoted) return true;
   }
 
-
-  return modified;
+  return false;
 }
 
 std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (void) {
