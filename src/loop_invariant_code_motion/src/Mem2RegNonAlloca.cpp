@@ -21,6 +21,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister () {
   auto loopStructure = LDI.getLoopStructure();
   if (noelle.getVerbosity() >= Verbosity::Maximal) {
     auto terminator = loopStructure->getHeader()->getTerminator();
+    if (!terminator) return false;
     terminator->print(errs() << "Mem2Reg: Checking loop: "); errs() << "\n";
   }
 
@@ -29,7 +30,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister () {
    */
   for (auto B : loopStructure->getBasicBlocks()) {
     auto terminator = B->getTerminator();
-    if (!terminator) continue;
+    if (!terminator) return false;
     if (isa<ReturnInst>(terminator)) return false;
   }
 
