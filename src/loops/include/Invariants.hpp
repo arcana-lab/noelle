@@ -57,6 +57,12 @@ namespace llvm {
           std::function<bool(Value *toValue, DataDependenceType ddType)> isEvolving;
           bool isEvolvingValue (Value *toValue, DataDependenceType ddType) ;
 
+          /*
+           * For each top level call to isEvolvingValue, track values checked
+           * In case of a cycle of dependencies
+           */
+          std::unordered_set<Instruction *> dependencyValuesBeingChecked;
+
           bool arePHIIncomingValuesEquivalent (PHINode *phi) ;
 
       };
