@@ -204,13 +204,7 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
    * prevent reducing the variable and collecting it outside the loop
    */
   auto consumers = getConsumersOfVariable();
-  // TODO: Until cycles among consumers are handled, we must return false
-  if (consumers.size() > 0) return false;
-  for (auto consumer : consumers) {
-    // TODO: Allow value propagating other values (pass consumers set to function)
-    if (isValuePropagatingVariableIntermediateOutsideLoop(consumer)) continue;
-    return false;
-  }
+  if (!areValuesPropagatingVariableIntermediatesOutsideLoop(consumers)) return false;
 
   return true;
 }
@@ -281,48 +275,75 @@ std::unordered_set<Value *> LoopCarriedVariable::getConsumersOfVariable (void) c
   return consumers;
 }
 
-bool LoopCarriedVariable::isValuePropagatingVariableIntermediateOutsideLoop (Value *value) const {
+bool LoopCarriedVariable::areValuesPropagatingVariableIntermediatesOutsideLoop (std::unordered_set<Value *> values) const {
 
-  // value->print(errs() << "Checking consumer: "); errs() << "\n";
-
-  /*
-   * Ensure the value propagates an intermediate value of the variable or is contained within 
-   */
-  if (auto cast = dyn_cast<CastInst>(value)) {
-    auto valueToCast = cast->getOperand(0);
-    if (sccOfDataAndMemoryVariableValuesOnly->isExternal(valueToCast)) return false;
-
-  } else if (auto phi = dyn_cast<PHINode>(value)) {
-
-    auto loopPreheader = outermostLoopOfVariable.getPreHeader();
-    for (int32_t i = 0; i < phi->getNumIncomingValues(); ++i) {
-      auto incomingBlock = phi->getIncomingBlock(i);
-      auto incomingValue = phi->getIncomingValue(i);
-      // incomingValue->print(errs() << "Checking incoming value: "); errs() << "\n";
-
-      /*
-       * NOTE: The incoming value must be loop external or belong to the variable
-       */
-      if (incomingBlock == loopPreheader) continue;
-      if (sccOfDataAndMemoryVariableValuesOnly->isExternal(incomingValue)) return false;
-    }
-
-  } else return false;
-
-  /*
-   * Ensure the value isn't used inside the loop for further computation
-   */
-  for (auto user : value->users()) {
-    if (!isa<Instruction>(user)) continue;
-    auto userI = cast<Instruction>(user);
-    auto userBlock = userI->getParent();
-
-    if (!outermostLoopOfVariable.isIncluded(userBlock)) continue;
-    // userI->print(errs() << "Checking user: "); errs() << "\n";
-    if (!isValuePropagatingVariableIntermediateOutsideLoop(user)) return false;
+  auto loopHeader = outermostLoopOfVariable.getHeader();
+  auto loopPreheader = outermostLoopOfVariable.getPreHeader();
+  std::queue<Value *> valuesToCheck;
+  std::unordered_set<Value *> valuesChecked;
+  for (auto value : values) {
+    valuesToCheck.push(value);
+    valuesChecked.insert(value);
   }
 
-  // value->print(errs() << "Checked consumer: "); errs() << "\n";
+  while (!valuesToCheck.empty()) {
+    auto value = valuesToCheck.front();
+    valuesToCheck.pop();
+
+    // value->print(errs() << "Checking value: "); errs() << "\n";
+
+    /*
+     * Ensure the value propagates an intermediate value of the variable or is contained within 
+     */
+    if (auto cast = dyn_cast<CastInst>(value)) {
+      auto valueToCast = cast->getOperand(0);
+      if (sccOfDataAndMemoryVariableValuesOnly->isExternal(valueToCast)) return false;
+
+    } else if (auto phi = dyn_cast<PHINode>(value)) {
+
+      /*
+       * The PHI cannot encapsulate any control. Therefore, the PHI must be in the header
+       * and all incoming values must be the same (except for the pre header incoming value)
+       */
+      if (loopHeader != phi->getParent()) return false;
+
+      Value *singleIncomingValue = nullptr;
+      for (int32_t i = 0; i < phi->getNumIncomingValues(); ++i) {
+        auto incomingBlock = phi->getIncomingBlock(i);
+        auto incomingValue = phi->getIncomingValue(i);
+        // incomingValue->print(errs() << "Checking incoming value: "); errs() << "\n";
+
+        if (incomingBlock == loopPreheader) continue;
+        if (singleIncomingValue == nullptr || incomingValue == singleIncomingValue) {
+          singleIncomingValue = incomingValue;
+          continue;
+        }
+
+        singleIncomingValue = nullptr;
+        break;
+      }
+
+      if (!singleIncomingValue) return false;
+      if (sccOfDataAndMemoryVariableValuesOnly->isExternal(singleIncomingValue)) return false;
+
+    } else return false;
+
+    /*
+     * Ensure the value isn't used inside the loop for further computation
+     */
+    for (auto user : value->users()) {
+      if (!isa<Instruction>(user)) continue;
+      auto userI = cast<Instruction>(user);
+      auto userBlock = userI->getParent();
+
+      if (!outermostLoopOfVariable.isIncluded(userBlock)) continue;
+      if (valuesChecked.find(userI) != valuesChecked.end()) continue;
+      valuesToCheck.push(userI);
+      valuesChecked.insert(userI);
+    }
+
+  }
+
   return true;
 }
 
