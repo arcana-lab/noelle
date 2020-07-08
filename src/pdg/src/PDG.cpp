@@ -270,7 +270,7 @@ bool PDG::iterateOverDependencesFrom (
      */
     if (  true
         && includeRegisterDataDependences
-        && (!edge->isMemoryDependence())
+        && (!edge->isMemoryDependence() && !edge->isControlDependence())
       ){
       if (functionToInvokePerDependence(destValue, edge->dataDependenceType())){
         return true;
@@ -340,7 +340,7 @@ bool PDG::iterateOverDependencesTo (
      */
     if (  true
         && includeRegisterDataDependences
-        && (!edge->isMemoryDependence())
+        && (!edge->isMemoryDependence() && !edge->isControlDependence())
       ){
       if (functionToInvokePerDependence(srcValue, edge->dataDependenceType())){
         return true;
