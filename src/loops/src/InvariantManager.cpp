@@ -69,7 +69,10 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
 
   for (auto inst : loop->getInstructions()){
     if (this->invariants.find(inst) != this->invariants.end()) continue;
+    if (this->notInvariants.find(inst) != this->notInvariants.end()) continue;
 
+    this->dependencyValuesBeingChecked.clear();
+    this->dependencyValuesBeingChecked.insert(inst);
     auto canEvolve = loopDG->iterateOverDependencesTo(inst, false, true, true, isEvolving);
     if (!canEvolve){
       this->invariants.insert(inst);
@@ -93,6 +96,20 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DataD
    */
   if (!loop->isIncluded(toInst)){
     return false;
+  }
+
+  /*
+   * A cycle has occurred in our dependence graph traversal. The cycle may evolve
+   */
+  if (this->dependencyValuesBeingChecked.find(toInst) != this->dependencyValuesBeingChecked.end()){
+    return true;
+  }
+
+  /*
+   * If the instruction is included in the loop and this is a memory dependence, the value may evolve
+   */
+  if (ddType != DataDependenceType::DG_DATA_NONE){
+    return true;
   }
 
   /*

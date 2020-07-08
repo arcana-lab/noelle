@@ -24,6 +24,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   auto preHeader = loopStructure->getPreHeader();
 
   std::vector<Instruction *> instructionsToHoistToPreheader{};
+  std::unordered_set<PHINode *> phisToRemove{};
   for (auto B : loopStructure->getBasicBlocks()) {
     for (auto &I : *B) {
       if (!invariantManager->isLoopInvariant(&I)) continue;
@@ -34,17 +35,30 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
         
         /*
          * All PHI invariants are equivalent, so choose any to replace the PHI
-         * If the replacement is not an Instruction, it doesn't need to be hoisted
          */
         auto valueToReplacePHI = phi->getIncomingValue(0);
-        for (auto user : phi->users()) {
+
+        /*
+         * Note, the users are modified, so we must cache them first
+         */
+        std::unordered_set<User *> users(phi->user_begin(), phi->user_end());
+        for (auto user : users) {
           user->replaceUsesOfWith(phi, valueToReplacePHI);
         }
+        phisToRemove.insert(phi);
+
+        /*
+         * If the replacement is not an Instruction, it doesn't need to be hoisted
+         */
         if (!isa<Instruction>(valueToReplacePHI)) continue;
       }
 
       instructionsToHoistToPreheader.push_back(&I);
     }
+  }
+
+  for (auto phi : phisToRemove) {
+    phi->eraseFromParent();
   }
 
   /*
