@@ -370,6 +370,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
         I->print(errs() << "Mem2Reg:  Removing\n"); errs() << "\n";
       }
 
+      assert(I->user_empty() && "Mem2Reg: Removing instruction but failed to replace all its uses");
       I->eraseFromParent();
     }
   }
