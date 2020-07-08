@@ -99,13 +99,6 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DataD
   }
 
   /*
-   * A cycle has occurred in our dependence graph traversal. The cycle may evolve
-   */
-  if (this->dependencyValuesBeingChecked.find(toInst) != this->dependencyValuesBeingChecked.end()){
-    return true;
-  }
-
-  /*
    * If the instruction is included in the loop and this is a memory dependence, the value may evolve
    */
   if (ddType != DataDependenceType::DG_DATA_NONE){
@@ -130,6 +123,14 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DataD
   if (notInvariants.find(toInst) != notInvariants.end()){
     return true;
   }
+
+  /*
+   * A cycle has occurred in our dependence graph traversal. The cycle may evolve
+   */
+  if (this->dependencyValuesBeingChecked.find(toInst) != this->dependencyValuesBeingChecked.end()){
+    return true;
+  }
+  this->dependencyValuesBeingChecked.insert(toInst);
 
   bool canEvolve = loopDG->iterateOverDependencesTo(toInst, false, true, true, isEvolving);
   if (canEvolve) {
