@@ -136,7 +136,7 @@ namespace llvm {
       Module *program;
       Hot *profiles;
       PDG *programDependenceGraph;
-      std::set<Transformation> enabledTransformations;
+      std::unordered_set<Transformation> enabledTransformations;
       uint32_t maxCores;
       bool hoistLoopsToMain;
 

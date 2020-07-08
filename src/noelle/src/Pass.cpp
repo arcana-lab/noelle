@@ -20,10 +20,19 @@ static cl::opt<int> MaximumCores("noelle-max-cores", cl::ZeroOrMore, cl::Hidden,
 static cl::opt<bool> DisableDSWP("noelle-disable-dswp", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DSWP"));
 static cl::opt<bool> DisableHELIX("noelle-disable-helix", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable HELIX"));
 static cl::opt<bool> DisableDOALL("noelle-disable-doall", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DOALL"));
+static cl::opt<bool> DisableDistribution("noelle-disable-loop-distribution", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the loop distribution"));
 static cl::opt<bool> DisableInliner("noelle-disable-inliner", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 static cl::opt<bool> InlinerDisableHoistToMain("noelle-inliner-avoid-hoist-to-main", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 
 bool Noelle::doInitialization (Module &M) {
+
+  /*
+   * Default configuration
+   */
+  for (auto i = (uint32_t)Transformation::First; i <= (uint32_t)Transformation::Last; i++){
+    auto transformationID = static_cast<Transformation>(i);
+    this->enabledTransformations.insert(transformationID);
+  }
 
   /*
    * Fetch the command line options.
@@ -34,17 +43,20 @@ bool Noelle::doInitialization (Module &M) {
   if (optMaxCores > 0){
     this->maxCores = optMaxCores;
   }
-  if (DisableDOALL.getNumOccurrences() == 0){
-    this->enabledTransformations.insert(DOALL_ID);
+  if (DisableDOALL.getNumOccurrences() > 0){
+    this->enabledTransformations.erase(DOALL_ID);
   }
-  if (DisableDSWP.getNumOccurrences() == 0){
-    this->enabledTransformations.insert(DSWP_ID);
+  if (DisableDSWP.getNumOccurrences() > 0){
+    this->enabledTransformations.erase(DSWP_ID);
   }
-  if (DisableHELIX.getNumOccurrences() == 0){
-    this->enabledTransformations.insert(HELIX_ID);
+  if (DisableHELIX.getNumOccurrences() > 0){
+    this->enabledTransformations.erase(HELIX_ID);
   }
-  if (DisableInliner.getNumOccurrences() == 0){
-    this->enabledTransformations.insert(INLINER_ID);
+  if (DisableDistribution.getNumOccurrences() > 0){
+    this->enabledTransformations.erase(LOOP_DISTRIBUTION_ID);
+  }
+  if (DisableInliner.getNumOccurrences() > 0){
+    this->enabledTransformations.erase(INLINER_ID);
   }
   if (InlinerDisableHoistToMain.getNumOccurrences() == 0){
     this->hoistLoopsToMain = true;
