@@ -138,33 +138,86 @@ SequentialSegment::SequentialSegment (
   };
   auto dfr = dfa.applyBackward(loopFunction, computeGEN, computeKILL, computeIN, computeOUT);
 
+  determineEntriesAndExitsFromReachabilityDfr(LDI, ssInstructions, dfr);
+
+  assert(this->entries.size() > 0
+    && "The data flow analysis did not identify any per-iteration entry to the sequential segment!\n");
+  assert(this->exits.size() > 0
+    && "The data flow analysis did not identify any per-iteration exit to the sequential segment!\n");
+
+  return ;
+}
+
+void SequentialSegment::determineEntriesAndExitsFromReachabilityDfr (
+  LoopDependenceInfo *LDI,
+  std::set<Instruction *> &ssInstructions,
+  DataFlowResult *dfr
+) {
+
   /*
    * For instructions in the SS, derive the set of instructions containing it in their reachable list
    * Alternatively, a second data flow analysis could be performed to achieve this
    */
   std::unordered_map<Instruction *, std::unordered_set<Instruction *>> beforeInstructionMap{};
-  for (auto ssInst : ssInstructions) {
-    std::unordered_set<Instruction *> empty;
-    beforeInstructionMap.insert(std::make_pair(ssInst, empty));
-  }
-  for (auto ssInst : ssInstructions) {
-    auto &afterInstructions = dfr->OUT(ssInst);
-    for (auto afterV : afterInstructions) {
-      auto afterI = cast<Instruction>(afterV);
-      if (ssInst == afterI) continue;
-      if (ssInstructions.find(afterI) == ssInstructions.end()) continue;
-
-      beforeInstructionMap.at(afterI).insert(ssInst);
+  auto outermostLoopStructure = LDI->getLoopStructure();
+  for (auto B : outermostLoopStructure->getBasicBlocks()) {
+    for (auto &I : *B) {
+      std::unordered_set<Instruction *> empty;
+      beforeInstructionMap.insert(std::make_pair(&I, empty));
     }
   }
+
+  for (auto B : outermostLoopStructure->getBasicBlocks()) {
+    for (auto &I : *B) {
+      auto &afterInstructions = dfr->OUT(&I);
+      for (auto afterV : afterInstructions) {
+        auto afterI = cast<Instruction>(afterV);
+        if (&I == afterI) continue;
+        if (ssInstructions.find(afterI) == ssInstructions.end()) continue;
+
+        beforeInstructionMap.at(afterI).insert(&I);
+      }
+    }
+  }
+
+  /*
+   * Determine instructions to attempt classifying as entries and exits;
+   * 
+   * All instructions in the SS not in sub-loops are candidates.
+   * SS instructions in sub-loops require further analysis to sort out,
+   * as all all instructions in a sub-loop are reachable by all others,
+   * so for now we include instructions in the pre-header and
+   * loop exits of those sub-loops as candidates (a conservative measure)
+   */
+  std::unordered_set<Instruction *> instructionsToCheck{};
+  for (auto ssInst : ssInstructions) {
+    auto nestedMostLoop = LDI->getNestedMostLoopStructure(ssInst);
+    if (nestedMostLoop == outermostLoopStructure) {
+      instructionsToCheck.insert(ssInst);
+      continue;
+    }
+
+    auto preheader = nestedMostLoop->getPreHeader();
+    instructionsToCheck.insert(preheader->getTerminator());
+    for (auto loopExitBlock : nestedMostLoop->getLoopExitBasicBlocks()) {
+      instructionsToCheck.insert(loopExitBlock->getFirstNonPHIOrDbgOrLifetime());
+    }
+  }
+
+  auto getInstructionThatDoesNotSplitPHIs = [&](Instruction *originalBarrierInst) -> Instruction * {
+    return (!isa<PHINode>(originalBarrierInst)
+      && !isa<DbgInfoIntrinsic>(originalBarrierInst)
+      && !originalBarrierInst->isLifetimeStartOrEnd())
+        ? originalBarrierInst
+        : originalBarrierInst->getParent()->getFirstNonPHIOrDbgOrLifetime();
+  };
 
   /*
    * Use beforeInstructionMap to determine all entries to the SS
    * All entries cannot be reached by any other instruction in the SS
    */
-  for (auto pair : beforeInstructionMap) {
-    auto entryInst = pair.first;
-    auto &beforeInstructions = pair.second;
+  for (auto instToCheck : instructionsToCheck) {
+    auto &beforeInstructions = beforeInstructionMap.at(instToCheck);
     if (beforeInstructions.size() != 0) continue;
 
     /*
@@ -172,8 +225,7 @@ SequentialSegment::SequentialSegment (
      * entry into the sequential segment. This knowledge would be lost after the entry because
      * of the insertion of control flow checking whether to wait before entering the segment
      */
-    auto firstI = (!isa<PHINode>(entryInst) && !isa<DbgInfoIntrinsic>(entryInst) && !entryInst->isLifetimeStartOrEnd())
-      ? entryInst : entryInst->getParent()->getFirstNonPHIOrDbgOrLifetime();
+    auto firstI = getInstructionThatDoesNotSplitPHIs(instToCheck);
     this->entries.insert(firstI);
   }
 
@@ -181,13 +233,13 @@ SequentialSegment::SequentialSegment (
    * Use afterInstructions result from data flow analysis to determine all exits to the SS
    * All exits cannot reach any other instruction in the SS
    */
-  for (auto ssInst : ssInstructions) {
-    auto &afterInstructions = dfr->OUT(ssInst);
+  for (auto instToCheck : instructionsToCheck) {
+    auto &afterInstructions = dfr->OUT(instToCheck);
 
     bool hasAfterInstructions = false;
     for (auto afterV : afterInstructions) {
       auto afterI = cast<Instruction>(afterV);
-      if (ssInst == afterI) continue;
+      if (instToCheck == afterI) continue;
 
       if (ssInstructions.find(afterI) != ssInstructions.end()) {
         hasAfterInstructions = true;
@@ -201,17 +253,11 @@ SequentialSegment::SequentialSegment (
      * No instruction, such as the 'signal' call instruction at the end of a sequential segment,
      * can be placed before all PHIs of a basic block
      */
-    auto lastI = (!isa<PHINode>(ssInst) && !isa<DbgInfoIntrinsic>(ssInst) && !ssInst->isLifetimeStartOrEnd())
-      ? ssInst : ssInst->getParent()->getFirstNonPHIOrDbgOrLifetime();
+    auto lastI = getInstructionThatDoesNotSplitPHIs(instToCheck);
     this->exits.insert(lastI);
   }
 
-  assert(this->entries.size() > 0
-    && "The data flow analysis did not identify any per-iteration entry to the sequential segment!\n");
-  assert(this->exits.size() > 0
-    && "The data flow analysis did not identify any per-iteration exit to the sequential segment!\n");
-
-  return ;
+  return;
 }
 
 void SequentialSegment::forEachEntry (
