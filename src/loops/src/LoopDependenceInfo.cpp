@@ -297,6 +297,10 @@ LoopStructure * LoopDependenceInfo::getLoopStructure (void) const {
   return this->liSummary.getLoopNestingTreeRoot();
 }
 
+LoopStructure * LoopDependenceInfo::getNestedMostLoopStructure (Instruction *I) const {
+  return this->liSummary.getLoop(*I);
+}
+
 bool LoopDependenceInfo::isSCCContainedInSubloop (SCC *scc) const {
   return this->sccdagAttrs.isSCCContainedInSubloop(this->liSummary, scc);
 }
