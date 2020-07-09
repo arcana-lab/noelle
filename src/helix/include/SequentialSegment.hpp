@@ -35,6 +35,13 @@ namespace llvm {
       SCCset *sccs;
       int32_t ID;
       Verbosity verbosity;
+
+      void determineEntriesAndExitsFromReachabilityDfr (
+        LoopDependenceInfo *LDI,
+        std::set<Instruction *> &ssInstructions,
+        DataFlowResult *dfr
+      );
+
   };
 
 }
