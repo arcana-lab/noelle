@@ -29,6 +29,12 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
     for (auto &I : *B) {
       if (!invariantManager->isLoopInvariant(&I)) continue;
 
+      /*
+       * There is no benefit to hoisting GEPs, and it seems that
+       * other normalizing transformations bring GEPs next to their usages
+       */
+      if (isa<GetElementPtrInst>(&I)) continue;
+
       modified = true;
 
       if (auto phi = dyn_cast<PHINode>(&I)) {
