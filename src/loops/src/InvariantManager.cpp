@@ -68,7 +68,21 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
   this->isEvolving = std::bind(&InvarianceChecker::isEvolvingValue, this, std::placeholders::_1, std::placeholders::_2);
 
   for (auto inst : loop->getInstructions()){
+
+    /*
+     * Since we iterate over data dependencies, we must explicitly exclude control values
+     */
+
     if (inst->isTerminator()) continue;
+
+    /*
+     * Since we iterate over data dependencies that are loop values, and a PHI may be comprised of constants,
+     * we must explicitly check that all PHI incoming values are equivalent
+     */
+    if (auto phi = dyn_cast<PHINode>(inst)) {
+      if (!arePHIIncomingValuesEquivalent(phi)) continue;
+    }
+
     if (this->invariants.find(inst) != this->invariants.end()) continue;
     if (this->notInvariants.find(inst) != this->notInvariants.end()) continue;
 
