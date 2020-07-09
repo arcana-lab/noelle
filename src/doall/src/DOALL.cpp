@@ -124,13 +124,6 @@ bool DOALL::canBeAppliedToLoop (
     if (sccInfo->canBeCloned()){
       continue ;
     }
-    
-    /*
-     * If the SCC is of the sub-loop, then it does not block the loop to be a DOALL.
-     */
-    if (LDI->isSCCContainedInSubloop(scc)) {
-      continue ;
-    }
 
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
