@@ -68,6 +68,11 @@ namespace llvm {
       LoopStructure * getLoopStructure (void) const ;
 
       /*
+       * Return the nested-most loop for this instruction
+       */
+      LoopStructure * getNestedMostLoopStructure (Instruction *I) const ;
+
+      /*
        * Get the dependence graph of the loop.
        */
       PDG * getLoopDG (void) const;
