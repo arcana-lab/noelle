@@ -198,7 +198,9 @@ void SequentialSegment::determineEntriesAndExitsFromReachabilityDfr (
 
     auto preheader = nestedMostLoop->getPreHeader();
     instructionsToCheck.insert(preheader->getTerminator());
+
     for (auto loopExitBlock : nestedMostLoop->getLoopExitBasicBlocks()) {
+      if (!outermostLoopStructure->isIncluded(loopExitBlock)) continue;
       instructionsToCheck.insert(loopExitBlock->getFirstNonPHIOrDbgOrLifetime());
     }
   }
