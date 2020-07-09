@@ -96,18 +96,17 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
         || isa<CastInst>(value)
         || isa<PHINode>(value)) continue;
 
+      Value *loadOrStoreLocation = nullptr;
       if (auto load = dyn_cast<LoadInst>(value)) {
-        auto loadLocation = load->getPointerOperand();
-        if (!memoryLocation || loadLocation == memoryLocation) {
-          isSingleMemoryLocation = true;
-          memoryLocation = loadLocation;
-          continue;
-        }
+        loadOrStoreLocation = load->getPointerOperand();
       } else if (auto store = dyn_cast<StoreInst>(value)) {
-        auto storeLocation = store->getPointerOperand();
-        if (!memoryLocation || storeLocation == memoryLocation) {
+        loadOrStoreLocation = store->getPointerOperand();
+      }
+
+      if (loadOrStoreLocation) {
+        if (!memoryLocation || loadOrStoreLocation == memoryLocation) {
           isSingleMemoryLocation = true;
-          memoryLocation = storeLocation;
+          memoryLocation = loadOrStoreLocation;
           continue;
         }
       }
@@ -120,6 +119,27 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
      * Memory location access must be the same across the loads/stores, and loop invariant
      */
     if (!isSingleMemoryLocation) continue;
+
+    /*
+     * Ensure no memory aliases with any SCC externals
+     */
+    bool hasExternalMemoryDependence = false;
+    for (auto nodePair : scc->internalNodePairs()) {
+      auto node = nodePair.second;
+
+      for (auto edge : node->getAllConnectedEdges()) {
+        auto producer = edge->getOutgoingT();
+        auto consumer = edge->getIncomingT();
+        if (scc->isInternal(consumer) && scc->isInternal(producer)) continue;
+        if (!edge->isMemoryDependence()) continue;
+
+        hasExternalMemoryDependence = true;
+        break;
+      }
+
+      if (hasExternalMemoryDependence) break;
+    }
+    if (hasExternalMemoryDependence) continue;
 
     if (noelle.getVerbosity() >= Verbosity::Maximal) {
       memoryLocation->print(errs() << "Mem2Reg:  Possible loop invariant memory location: "); errs() << "\n";
