@@ -81,5 +81,5 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
     preHeaderBuilder.Insert(I);
   }
 
-  return false;
+  return modified;
 }
