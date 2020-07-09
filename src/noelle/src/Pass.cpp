@@ -21,6 +21,7 @@ static cl::opt<bool> DisableDSWP("noelle-disable-dswp", cl::ZeroOrMore, cl::Hidd
 static cl::opt<bool> DisableHELIX("noelle-disable-helix", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable HELIX"));
 static cl::opt<bool> DisableDOALL("noelle-disable-doall", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable DOALL"));
 static cl::opt<bool> DisableDistribution("noelle-disable-loop-distribution", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the loop distribution"));
+static cl::opt<bool> DisableInvCM("noelle-disable-loop-invariant-code-motion", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the loop distribution"));
 static cl::opt<bool> DisableInliner("noelle-disable-inliner", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 static cl::opt<bool> InlinerDisableHoistToMain("noelle-inliner-avoid-hoist-to-main", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 
@@ -54,6 +55,9 @@ bool Noelle::doInitialization (Module &M) {
   }
   if (DisableDistribution.getNumOccurrences() > 0){
     this->enabledTransformations.erase(LOOP_DISTRIBUTION_ID);
+  }
+  if (DisableInvCM.getNumOccurrences() > 0){
+    this->enabledTransformations.erase(LOOP_INVARIANT_CODE_MOTION_ID);
   }
   if (DisableInliner.getNumOccurrences() > 0){
     this->enabledTransformations.erase(INLINER_ID);
