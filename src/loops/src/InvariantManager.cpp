@@ -68,6 +68,7 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
   this->isEvolving = std::bind(&InvarianceChecker::isEvolvingValue, this, std::placeholders::_1, std::placeholders::_2);
 
   for (auto inst : loop->getInstructions()){
+    if (inst->isTerminator()) continue;
     if (this->invariants.find(inst) != this->invariants.end()) continue;
     if (this->notInvariants.find(inst) != this->notInvariants.end()) continue;
 
