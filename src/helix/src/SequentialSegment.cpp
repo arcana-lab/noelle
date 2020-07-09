@@ -155,7 +155,8 @@ void SequentialSegment::determineEntriesAndExitsFromReachabilityDfr (
 ) {
 
   /*
-   * For instructions in the SS, derive the set of instructions containing it in their reachable list
+   * For instructions in the loop, derive the set of SS instructions containing that instructions
+   * in the SS instruction's reachable list
    * Alternatively, a second data flow analysis could be performed to achieve this
    */
   std::unordered_map<Instruction *, std::unordered_set<Instruction *>> beforeInstructionMap{};
@@ -167,16 +168,14 @@ void SequentialSegment::determineEntriesAndExitsFromReachabilityDfr (
     }
   }
 
-  for (auto B : outermostLoopStructure->getBasicBlocks()) {
-    for (auto &I : *B) {
-      auto &afterInstructions = dfr->OUT(&I);
-      for (auto afterV : afterInstructions) {
-        auto afterI = cast<Instruction>(afterV);
-        if (&I == afterI) continue;
-        if (ssInstructions.find(afterI) == ssInstructions.end()) continue;
+  for (auto I : ssInstructions) {
+    auto &afterInstructions = dfr->OUT(I);
+    for (auto afterV : afterInstructions) {
+      auto afterI = cast<Instruction>(afterV);
+      if (I == afterI) continue;
+      if (!outermostLoopStructure->isIncluded(afterI)) continue;
 
-        beforeInstructionMap.at(afterI).insert(&I);
-      }
+      beforeInstructionMap.at(afterI).insert(I);
     }
   }
 
