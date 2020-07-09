@@ -76,7 +76,10 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
     aliasStoresAndLoadsOfMemoryLocation(spill->environmentStores, loads);
   }
 
-  DGPrinter::writeGraph<PDG>("technique-task-fdg-" + std::to_string(LDI->getID()) + ".dot", taskFunctionDG);
+  if (this->verbose >= Verbosity::Maximal) {
+    DGPrinter::writeGraph<PDG>("technique-task-fdg-" + std::to_string(LDI->getID()) + ".dot", taskFunctionDG);
+  }
+
   return this->taskFunctionDG;
 }
 
