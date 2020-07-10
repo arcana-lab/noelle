@@ -522,6 +522,10 @@ extern "C" {
     void *localQueues;
   } NOELLE_DSWP_args_t ;
 
+  void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ 
+    return stage(env, queues);
+  }
+
   void NOELLE_DSWPTrampoline (void *args){
 
     /*
