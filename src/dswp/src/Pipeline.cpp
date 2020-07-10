@@ -148,7 +148,7 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par) {
   auto stagesCount = cast<Value>(ConstantInt::get(par.int64, this->numTaskInstances));
 
   /*
-   * Add the call to the task dispatcher: "stageDispatcher" (see DSWP constructor)
+   * Add the call to the task dispatcher
    */
   auto runtimeCall = builder.CreateCall(taskDispatcher, ArrayRef<Value*>({
     envPtr,
