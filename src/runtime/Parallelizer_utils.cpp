@@ -484,11 +484,35 @@ extern "C" {
     return ;
   }
 
+  typedef struct {
+    stageFunctionPtr_t funcToInvoke;
+    void *env;
+    void *localQueues;
+  } NOELLE_DSWP_args_t ;
+
+  void NOELLE_DSWPTrampoline (void *args){
+
+    /*
+     * Fetch the arguments.
+     */
+    auto DSWPArgs = (NOELLE_DSWP_args_t *) args;
+
+    /*
+     * Invoke
+     */
+    DSWPArgs->funcToInvoke(DSWPArgs->env, DSWPArgs->localQueues);
+
+    return ;
+  }
+
   DispatcherInfo stageDispatcher (void *env, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
     #ifdef RUNTIME_PRINT
     std::cerr << "Starting dispatcher: num stages " << numberOfStages << ", num queues: " << numberOfQueues << std::endl;
     #endif
 
+    /*
+     * Allocate the communication queues.
+     */
     void *localQueues[numberOfQueues];
     for (auto i = 0; i < numberOfQueues; ++i) {
       switch (queueSizes[i]) {
@@ -517,11 +541,30 @@ extern "C" {
     std::cerr << "Made queues" << std::endl;
     #endif
 
+    /*
+     * Allocate the memory to store the arguments.
+     */
+    auto argsForAllCores = (NOELLE_DSWP_args_t *) malloc(sizeof(NOELLE_DSWP_args_t) * numberOfStages);
+
+    /*
+     * Submit DSWP tasks
+     */
     std::vector<MARC::TaskFuture<void>> localFutures;
     auto allStages = (void **)stages;
     for (auto i = 0; i < numberOfStages; ++i) {
-      auto stagePtr = reinterpret_cast<stageFunctionPtr_t>(reinterpret_cast<long long>(allStages[i]));
-      localFutures.push_back(pool.submit(stagePtr, env, (void*)localQueues));
+
+      /*
+       * Prepare the arguments.
+       */
+      auto argsPerCore = &argsForAllCores[i];
+      argsPerCore->funcToInvoke = reinterpret_cast<stageFunctionPtr_t>(reinterpret_cast<long long>(allStages[i]));
+      argsPerCore->env = env;
+      argsPerCore->localQueues = (void *) localQueues;
+
+      /*
+       * Submit
+       */
+      localFutures.push_back(pool.submit(NOELLE_DSWPTrampoline, argsPerCore));
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted stage" << std::endl;
       #endif
@@ -530,6 +573,9 @@ extern "C" {
     std::cerr << "Submitted pool" << std::endl;
     #endif
 
+    /*
+     * Wait for the tasks to complete.
+     */
     for (auto& future : localFutures){
       future.get();
     }
@@ -537,6 +583,9 @@ extern "C" {
     std::cerr << "Got all futures" << std::endl;
     #endif
 
+    /*
+     * Free the memory.
+     */
     for (int i = 0; i < numberOfQueues; ++i) {
       switch (queueSizes[i]) {
         case 1:
@@ -556,6 +605,7 @@ extern "C" {
           break;
       }
     }
+    free(argsForAllCores);
 
     #ifdef DSWP_STATS
     std::cout << "DSWP: 1 Byte pushes = " << numberOfPushes8 << std::endl;
