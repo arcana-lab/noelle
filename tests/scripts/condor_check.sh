@@ -144,13 +144,31 @@ else
 
     else
       echo "  All performance tests compiled correctly" ;
-      grep -i "Performance degradation" compiler_output_performance.txt &> /dev/null ;
+      tempSpeedups=`mktemp` ;
+      tempOracle=`mktemp` ;
+      tempCompare=`mktemp` ;
+      tempOutput=`mktemp` ;
+      sort performance/speedups.txt > $tempSpeedups ;
+      sort performance/oracle_speedups > $tempOracle ;
+      paste $tempSpeedups $tempOracle > $tempCompare ;
+      awk '{
+            if ($2 < ($4 * 0.9)){
+            printf("  Performance degradation for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
+          }
+        }' $tempCompare > $tempOutput ;
+      grep -i "Performance degradation" $tempOutput &> /dev/null ;
       if test $? -eq 0 ; then
         echo -e "  Next are the performance tests that run ${RED}slower${NC}:" ;
-        grep -i "Performance degradation" compiler_output_performance.txt ;
+        grep -i "Performance degradation" $tempOutput ;
       else 
         echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
       fi
+
+      # Remove the files
+      rm $tempOracle ;
+      rm $tempSpeedups ;
+      rm $tempCompare ;
+      rm $tempOutput ;
     fi
 
   else 
