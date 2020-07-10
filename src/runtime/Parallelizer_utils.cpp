@@ -61,33 +61,33 @@ extern "C" {
 
   /******************************************** NOELLE API implementations ***********************************************/
 
-  /*
-   * HELIX helper thread.
-   */
-  void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
 
-    while ((*theLoopIsOver) == 0){
+
+  /**********************************************************************
+   *                MISC
+   **********************************************************************/
+  int32_t NOELLE_getNumberOfCores (void){
+    static int32_t cores = 0;
+
+    /*
+     * Check if we have already computed the number of cores.
+     */
+    if (cores == 0){
 
       /*
-       * Prefetch all sequential segment cache lines of the current loop iteration.
+       * Compute the number of cores.
        */
-      for (auto i = 0 ; ((*theLoopIsOver) == 0) && (i < numOfsequentialSegments); i++){
-
-        /*
-         * Fetch the pointer.
-         */
-        auto ptr = (uint64_t *)(((uint64_t)ssArray) + (i * CACHE_LINE_SIZE));
-
-        /*
-         * Prefetch the cache line for the current sequential segment.
-         */
-        while (((*theLoopIsOver) == 0) && ((*ptr) == 0)) ;
+      auto envVar = getenv("NOELLE_CORES");
+      if (envVar == nullptr){
+        cores = std::thread::hardware_concurrency();
+      } else {
+        cores = atoi(envVar);
       }
     }
 
-    return ;
+    return cores;
   }
-    
+ 
   typedef void (*stageFunctionPtr_t)(void *, void*);
 
   void printReachedS(std::string s)
@@ -167,10 +167,10 @@ extern "C" {
     return ;
   }
 
-  void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ 
-    return stage(env, queues);
-  }
 
+  /**********************************************************************
+   *                DOALL
+   **********************************************************************/
   typedef struct {
     void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
     void *env ;
@@ -266,6 +266,34 @@ extern "C" {
   #ifdef RUNTIME_PRINT
   void *mySSGlobal = nullptr;
   #endif
+
+
+  /**********************************************************************
+   *                HELIX
+   **********************************************************************/
+  void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
+
+    while ((*theLoopIsOver) == 0){
+
+      /*
+       * Prefetch all sequential segment cache lines of the current loop iteration.
+       */
+      for (auto i = 0 ; ((*theLoopIsOver) == 0) && (i < numOfsequentialSegments); i++){
+
+        /*
+         * Fetch the pointer.
+         */
+        auto ptr = (uint64_t *)(((uint64_t)ssArray) + (i * CACHE_LINE_SIZE));
+
+        /*
+         * Prefetch the cache line for the current sequential segment.
+         */
+        while (((*theLoopIsOver) == 0) && ((*ptr) == 0)) ;
+      }
+    }
+
+    return ;
+  }
 
   DispatcherInfo HELIX_dispatcher (
     void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
@@ -484,6 +512,10 @@ extern "C" {
     return ;
   }
 
+
+  /**********************************************************************
+   *                DSWP
+   **********************************************************************/
   typedef struct {
     stageFunctionPtr_t funcToInvoke;
     void *env;
@@ -505,7 +537,7 @@ extern "C" {
     return ;
   }
 
-  DispatcherInfo stageDispatcher (void *env, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
+  DispatcherInfo  NOELLE_DSWPDispatcher (void *env, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
     #ifdef RUNTIME_PRINT
     std::cerr << "Starting dispatcher: num stages " << numberOfStages << ", num queues: " << numberOfQueues << std::endl;
     #endif
@@ -617,28 +649,6 @@ extern "C" {
     DispatcherInfo dispatcherInfo;
     dispatcherInfo.numberOfThreadsUsed = numberOfStages;
     return dispatcherInfo;
-  }
-
-  int32_t NOELLE_getNumberOfCores (void){
-    static int32_t cores = 0;
-
-    /*
-     * Check if we have already computed the number of cores.
-     */
-    if (cores == 0){
-
-      /*
-       * Compute the number of cores.
-       */
-      auto envVar = getenv("NOELLE_CORES");
-      if (envVar == nullptr){
-        cores = std::thread::hardware_concurrency();
-      } else {
-        cores = atoi(envVar);
-      }
-    }
-
-    return cores;
   }
 
 }
