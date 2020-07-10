@@ -171,6 +171,29 @@ extern "C" {
     return stage(env, queues);
   }
 
+  typedef struct {
+    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
+    void *env ;
+    int64_t coreID ;
+    int64_t numCores;
+    int64_t chunkSize ;
+  } DOALL_args_t ;
+
+  void NOELLE_DOALLTrampoline (void *args){
+
+    /*
+     * Fetch the arguments.
+     */
+    auto DOALLArgs = (DOALL_args_t *) args;
+
+    /*
+     * Invoke
+     */
+    DOALLArgs->parallelizedLoop(DOALLArgs->env, DOALLArgs->coreID, DOALLArgs->numCores, DOALLArgs->chunkSize);
+
+    return ;
+  }
+
   DispatcherInfo NOELLE_DOALLDispatcher (
     void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), 
     void *env, 
@@ -188,11 +211,30 @@ extern "C" {
     #endif
 
     /*
+     * Allocate the memory to store the arguments.
+     */
+    auto argsForAllCores = (DOALL_args_t *) malloc(sizeof(DOALL_args_t) * numCores);
+
+    /*
      * Submit DOALL tasks.
      */
     std::vector<MARC::TaskFuture<void>> localFutures;
     for (auto i = 0; i < numCores; ++i) {
-      localFutures.push_back(pool.submit(parallelizedLoop, env, i, numCores, chunkSize));
+
+      /*
+       * Prepare the arguments.
+       */
+      auto argsPerCore = &argsForAllCores[i];
+      argsPerCore->parallelizedLoop = parallelizedLoop;
+      argsPerCore->env = env;
+      argsPerCore->coreID = i;
+      argsPerCore->numCores = numCores;
+      argsPerCore->chunkSize = chunkSize;
+
+      /*
+       * Submit
+       */
+      localFutures.push_back(pool.submit(NOELLE_DOALLTrampoline, argsPerCore));
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted DOALL task on core " << i << std::endl;
       #endif
@@ -210,6 +252,11 @@ extern "C" {
     #ifdef RUNTIME_PRINT
     std::cerr << "Got all futures" << std::endl;
     #endif
+
+    /*
+     * Free the memory.
+     */
+    free(argsForAllCores);
 
     DispatcherInfo dispatcherInfo;
     dispatcherInfo.numberOfThreadsUsed = numCores;
