@@ -68,3 +68,12 @@ regression_16/CondControl -noelle-pdg-check -noelle-verbose=3 -noelle-disable-lo
 regression_17/CondControlMemory -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-helix
 regression_17/CondControl -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-helix
 regression_17/IndependentIterations10 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-helix
+regression_10/NestedLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-disable-loop-sorting
+regression_12/NestedLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main
+regression_15/NestedLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-disable-doall
+regression_18/NestedLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp
+regression_3/NestedLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -dswp-force
+regression_4/NestedLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -dswp-force -dswp-no-scc-merge
+regression_5/NestedLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner
+regression_9/NestedLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2
+regression_default/NestedLoops2 -noelle-pdg-check -noelle-verbose=3
