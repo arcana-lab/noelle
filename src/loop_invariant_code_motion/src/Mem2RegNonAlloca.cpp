@@ -30,8 +30,15 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister () {
    */
   for (auto B : loopStructure->getBasicBlocks()) {
     auto terminator = B->getTerminator();
-    if (!terminator) return false;
-    if (isa<ReturnInst>(terminator)) return false;
+    if (!terminator) {
+      return false;
+    }
+    if (isa<ReturnInst>(terminator)) {
+      return false;
+    }
+    if (isa<InvokeInst>(terminator)){
+      return false;
+    }
   }
 
   auto singleMemoryLocationsBySCC = findSCCsWithSingleMemoryLocations();
