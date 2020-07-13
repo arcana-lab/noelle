@@ -1,6 +1,7 @@
 # Sources
 set(Srcs
   CleanMetadata.cpp 
+  Pass.cpp
 )
 
 # Compilation flags
