@@ -33,3 +33,27 @@ Next is what we would like to do or avoid in our codebase:
 
 - Make inputs of a function as explicit as possible. 
   Implicit inputs (e.g., object fields) makes often the code harder to understand.
+
+- Name headers *.hpp because NOELLE is written in C++
+
+- Use "#pragma once" rather than the old style 
+    #ifdef MYFILE_H
+    #define MYFILE_H
+
+    ...
+    #endif
+
+- Name APIs using the camel case as NOELLE is developed following the object oriented paradigma
+  e.g., myFunction (...)
+  rather than my_function (...)
+
+- Avoid adding paths (relative or not) in the include command
+  E.g., avoid doing the following:
+  #include "../include/MyAPI.h"
+  
+  Instead, write
+  #include "MyAPI.h"
+  and then modify the cmake file to add the include directory in the command line
+
+- Include "SystemHeaders.hpp" in your Header file. SystemHeaders.hpp includes the most common C++ and LLVM headers.
+  Then, include your header file in your .cpp
