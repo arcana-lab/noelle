@@ -5,7 +5,7 @@
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
@@ -25,6 +25,7 @@
 #include "DGBase.hpp"
 #include "SCC.hpp"
 #include "PDG.hpp"
+#include "BitMatrix.h"
 
 using namespace std;
 using namespace llvm;
@@ -99,11 +100,46 @@ namespace llvm {
        */
       ~SCCDAG() ;
 
+      /*
+       * Define a collection of SCCs type.
+       */
+      typedef std::vector<SCC *> SCCSet;
+
+      /*
+       * Compute transitive dependences between nodes of the SCCDAG.
+       */
+      void computeReachabilityAmongSCCs();
+
+      /*
+       * Compute ordering between nodes of the SCCDAG.
+       */
+      bool orderedBefore(const SCC *earlySCC, const SCCSet &lates) const;
+      bool orderedBefore(const SCCSet &earlies, const SCC *lateSCC) const;
+      bool orderedBefore(const SCC *earlySCC, const SCC *lateSCC) const;
+
+      /*
+       * Get the index of a node of the SCCDAG.
+       */
+      unsigned getSCCIndex(const SCC *scc) const;
 
     protected:
       void markValuesInSCC (void);
       void markEdgesAndSubEdges (void);
 
       unordered_map<Value *, DGNode<SCC> *> valueToSCCNode;
+
+    private:
+      /*
+       * BitMatrix for keeping the topological order of the SCCDAG nodes.
+       */
+      BitMatrix ordered;
+
+      /*
+       * ordered_dirty is true if the ordering of SCCDAG nodes is invalid.
+       */
+      bool ordered_dirty;
+
+      // SCC nodes to Ids map.
+      std::unordered_map<const SCC *, unsigned> sccIndexes;
   };
 }
