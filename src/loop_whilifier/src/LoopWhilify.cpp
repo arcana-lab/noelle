@@ -151,6 +151,7 @@ bool LoopWhilifier::whilifyLoop (
   this->resolveNewHeaderDependencies(
     Latch, 
     NewHeader, 
+    LoopBlocks,
     BodyToPeelMap,
     ResolvedDependencyMapping
   );
@@ -305,6 +306,7 @@ void LoopWhilifier::transformSingleBlockLoop(
   Latch = NewLatch;
 
   LoopBlocks.push_back(Latch);
+
   for (auto Edge : ExitEdges) {
 
     if (Edge.first == Header) {
@@ -361,7 +363,7 @@ void LoopWhilifier::buildAnchors(
 
 bool containsInOriginalLoop(
   BasicBlock *BB, 
-  SmallVector<BasicBlock *, 16> &OriginalLoopBlocks
+  std::vector<BasicBlock *> &OriginalLoopBlocks
 ) {
 
   /*
@@ -389,7 +391,7 @@ void LoopWhilifier::cloneLoopBlocks(
   BasicBlock *OriginalLatch,
   BasicBlock *OriginalPreHeader,
   Function *F,
-  SmallVector<BasicBlock *, 16> &LoopBlocks,
+  std::vector<BasicBlock *> &LoopBlocks,
   std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges,
   SmallVectorImpl<BasicBlock *> &NewBlocks, 
   ValueToValueMapTy &BodyToPeelMap
@@ -549,8 +551,8 @@ void LoopWhilifier::resolveNewHeaderPHIDependencies(
 
 
 void LoopWhilifier::findNonPHIOriginalLatchDependencies(
-  Loop *L, 
   BasicBlock *Latch,
+  std::vector<BasicBlock *> &LoopBlocks
   DenseMap<Instruction *, 
            DenseMap<Instruction *, 
            uint32_t>> &DependenciesInLoop
@@ -586,8 +588,10 @@ void LoopWhilifier::findNonPHIOriginalLatchDependencies(
         continue;
       }
 
-      if ((L->contains(Dependence))
-          && (Dependence->getParent() != Latch)) {
+      BasicBlock *DependenceParent = Dependence->getParent();
+
+      if ((this->containsInOriginalLoop((DependenceParent, LoopBlocks)))
+          && (DependenceParent != Latch)) {
         (DependenciesInLoop[Dependence])[&I] = OpNo;
       }
 
@@ -670,6 +674,7 @@ void LoopWhilifier::resolveNewHeaderNonPHIDependencies(
 void LoopWhilifier::resolveNewHeaderDependencies(
   BasicBlock *Latch,
   BasicBlock *NewHeader,
+  std::vector<BasicBlock *> &LoopBlocks,
   ValueToValueMap &BodyToPeelMap,
   DenseMap<Value *, Value *> &ResolvedDependencyMapping
 ) {
@@ -701,8 +706,9 @@ void LoopWhilifier::resolveNewHeaderDependencies(
            DenseMap<Instruction *, 
                     uint32_t>> OriginalLatchDependencies;
   
-  this->findNonPHIOriginalLatchDependencies(L, 
+  this->findNonPHIOriginalLatchDependencies( 
     Latch, 
+    LoopBlocks,
     OriginalLatchDependencies
   );
 
