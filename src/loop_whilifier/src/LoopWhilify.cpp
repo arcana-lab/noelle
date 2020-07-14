@@ -145,7 +145,7 @@ bool LoopWhilifier::whilifyLoop (
    * *** NOTE *** --- the "peeled" latch (the mapping from the
    * original latch to the "peeled" iteration) == NEW HEADER
    */ 
-  BasicBlock *PeeledLatch = cast<BasicBlock>(BodyToPeelMap[Latch]); // show
+  BasicBlock *PeeledLatch = cast<BasicBlock>(BodyToPeelMap[Latch]), // show
              *NewHeader = PeeledLatch;
 
   this->resolveNewHeaderDependencies(
@@ -288,7 +288,7 @@ void LoopWhilifier::transformSingleBlockLoop(
   BasicBlock *&Header,
   BasicBlock *&Latch,
   std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges,
-  SmallVector<BasicBlock *, 16> &LoopBlocks
+  std::vector<BasicBlock *> &LoopBlocks
 ) {
 
   /*
@@ -432,7 +432,7 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
    * anchor instead
    */ 
   BasicBlock *PeelLatch = cast<BasicBlock>(BodyToPeelMap[OriginalLatch]);
-  BranchInst *PeelLatchBR = cast<BranchInst>(PeelLatch->getTerminator());
+  BranchInst *PeelLatchTerm = cast<BranchInst>(PeelLatch->getTerminator());
 
   for (uint32_t SuccNo = 0; 
        SuccNo < PeelLatchTerm->getNumSuccessors(); 
@@ -510,7 +510,7 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
 
 void LoopWhilifier::resolveNewHeaderPHIDependencies(
   BasicBlock * const Latch, 
-  ValueToValueMap &BodyToPeelMap
+  ValueToValueMapTy &BodyToPeelMap
 ) {
 
   /*
@@ -590,7 +590,7 @@ void LoopWhilifier::findNonPHIOriginalLatchDependencies(
 
       BasicBlock *DependenceParent = Dependence->getParent();
 
-      if ((this->containsInOriginalLoop((DependenceParent, LoopBlocks)))
+      if ((this->containsInOriginalLoop(DependenceParent, LoopBlocks))
           && (DependenceParent != Latch)) {
         (DependenciesInLoop[Dependence])[&I] = OpNo;
       }
@@ -605,7 +605,7 @@ void LoopWhilifier::findNonPHIOriginalLatchDependencies(
 void LoopWhilifier::resolveNewHeaderNonPHIDependencies(
   BasicBlock *Latch,
   BasicBlock *NewHeader,
-  ValueToValueMap &BodyToPeelMap,
+  ValueToValueMapTy &BodyToPeelMap,
   DenseMap<Value *, Value *> &ResolvedDependencyMapping,
   DenseMap<Instruction *, 
            DenseMap<Instruction *, 
@@ -675,7 +675,7 @@ void LoopWhilifier::resolveNewHeaderDependencies(
   BasicBlock *Latch,
   BasicBlock *NewHeader,
   std::vector<BasicBlock *> &LoopBlocks,
-  ValueToValueMap &BodyToPeelMap,
+  ValueToValueMapTy &BodyToPeelMap,
   DenseMap<Value *, Value *> &ResolvedDependencyMapping
 ) {
 
@@ -734,7 +734,7 @@ void LoopWhilifier::resolveOriginalHeaderPHIs(
   BasicBlock *Header,
   BasicBlock *PreHeader,
   BasicBlock *Latch,
-  ValueToValueMap &BodyToPeelMap,
+  ValueToValueMapTy &BodyToPeelMap,
   DenseMap<Value *, Value *> &ResolvedDependencyMapping
 ) {
 
