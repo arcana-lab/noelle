@@ -362,8 +362,8 @@ void LoopWhilifier::buildAnchors(
 
 
 bool containsInOriginalLoop(
-  BasicBlock *BB, 
-  std::vector<BasicBlock *> &OriginalLoopBlocks
+  BasicBlock * const BB, 
+  std::vector<BasicBlock *> const &OriginalLoopBlocks
 ) {
 
   /*
@@ -509,7 +509,7 @@ void LoopWhilifier::cloneLoopBlocks(
 
 
 void LoopWhilifier::resolveNewHeaderPHIDependencies(
-  BasicBlock *Latch, 
+  BasicBlock * const Latch, 
   ValueToValueMap &BodyToPeelMap
 ) {
 
@@ -552,7 +552,7 @@ void LoopWhilifier::resolveNewHeaderPHIDependencies(
 
 void LoopWhilifier::findNonPHIOriginalLatchDependencies(
   BasicBlock *Latch,
-  std::vector<BasicBlock *> &LoopBlocks
+  std::vector<BasicBlock *> &LoopBlocks,
   DenseMap<Instruction *, 
            DenseMap<Instruction *, 
            uint32_t>> &DependenciesInLoop
@@ -609,7 +609,7 @@ void LoopWhilifier::resolveNewHeaderNonPHIDependencies(
   DenseMap<Value *, Value *> &ResolvedDependencyMapping,
   DenseMap<Instruction *, 
            DenseMap<Instruction *, 
-                    uint32_t>> &OriginalLatchDependencies;
+                    uint32_t>> &OriginalLatchDependencies
 ) {
 
   /*

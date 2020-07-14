@@ -13,6 +13,9 @@
 #include "SystemHeaders.hpp"
 #include "Noelle.hpp"
 
+#define EXTRA_ANCHOR 0
+#define FIX_BLOCK_PLACEMENT 1
+
 namespace llvm {
 
   class LoopWhilifier {
@@ -28,6 +31,7 @@ namespace llvm {
         LoopDependenceInfo const &LDI
       );
 
+
     private:
 
       /*
@@ -38,7 +42,8 @@ namespace llvm {
       /*
        * Methods
        */
-      bool isDoWhile (
+
+      bool isDoWhile(
         LoopStructure * const LS,
         BasicBlock * const Latch
       );
@@ -47,13 +52,86 @@ namespace llvm {
         LoopStructure * const LS,
         BasicBlock *&Header,
         BasicBlock *&Latch,
-        BasicBlock *&Exit
+        BasicBlock *&PreHeader,
+        std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges
       );
 
-      void getLatchInfo (
-        BasicBlock * const Latch,
-        CmpInst *&LatchCmpInst,
-        BranchInst *&LatchTerm
+      void transformSingleBlockLoop(
+        BasicBlock *&Header,
+        BasicBlock *&Latch,
+        std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges,
+        SmallVector<BasicBlock *, 16> &LoopBlocks
+      );
+
+      void buildAnchors(
+        BasicBlock *Header,
+        BasicBlock *&PreHeader,
+        BasicBlock *&InsertTop,
+        BasicBlock *&InsertBot
+      );
+
+      bool containsInOriginalLoop(
+        BasicBlock * const BB, 
+        std::vector<BasicBlock *> const &OriginalLoopBlocks
+      );
+
+      void cloneLoopBlocks(
+        BasicBlock *InsertTop, 
+        BasicBlock *InsertBot,
+        BasicBlock *OriginalHeader,
+        BasicBlock *OriginalLatch,
+        BasicBlock *OriginalPreHeader,
+        Function *F,
+        std::vector<BasicBlock *> &LoopBlocks,
+        std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges,
+        SmallVectorImpl<BasicBlock *> &NewBlocks, 
+        ValueToValueMapTy &BodyToPeelMap
+      );
+
+      void resolveNewHeaderPHIDependencies(
+        BasicBlock * const Latch, 
+        ValueToValueMap &BodyToPeelMap
+      );
+
+      void findNonPHIOriginalLatchDependencies(
+        BasicBlock *Latch,
+        std::vector<BasicBlock *> &LoopBlocks,
+        DenseMap<Instruction *, 
+                 DenseMap<Instruction *, 
+                          uint32_t>> &DependenciesInLoop
+      );
+
+
+      void resolveNewHeaderNonPHIDependencies(
+        BasicBlock *Latch,
+        BasicBlock *NewHeader,
+        ValueToValueMap &BodyToPeelMap,
+        DenseMap<Value *, Value *> &ResolvedDependencyMapping,
+        DenseMap<Instruction *, 
+                 DenseMap<Instruction *, 
+                          uint32_t>> &OriginalLatchDependencies
+      );
+
+      void resolveNewHeaderDependencies(
+        BasicBlock *Latch,
+        BasicBlock *NewHeader,
+        std::vector<BasicBlock *> &LoopBlocks,
+        ValueToValueMap &BodyToPeelMap,
+        DenseMap<Value *, Value *> &ResolvedDependencyMapping
+      );
+
+      void resolveOriginalHeaderPHIs(
+        BasicBlock *Header,
+        BasicBlock *PreHeader,
+        BasicBlock *Latch,
+        ValueToValueMap &BodyToPeelMap,
+        DenseMap<Value *, Value *> &ResolvedDependencyMapping
+      );
+
+      void rerouteLoopBranches(
+        BasicBlock *Header,
+        ValueToValueMap &BodyToPeelMap,
+        DenseMap<Value *, Value *> &ResolvedDependencyMapping
       );
 
   };
