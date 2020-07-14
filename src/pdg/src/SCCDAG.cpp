@@ -5,7 +5,7 @@
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <SystemHeaders.hpp>
@@ -67,9 +67,15 @@ SCCDAG::SCCDAG(PDG *pdg) {
    */
   this->markEdgesAndSubEdges();
 
+  /*
+   * Compute transitive dependences between nodes of the SCCDAG.
+   */
+	ordered_dirty = true;
+	this->computeReachabilityAmongSCCs();
+
   return ;
 }
-      
+
 bool SCCDAG::doesItContain (Instruction *inst) const {
 
   /*
@@ -141,7 +147,7 @@ void SCCDAG::markEdgesAndSubEdges (void) {
 void SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
 {
   if (sccSet.size() < 2) return;
-  
+
   std::set<DGNode<Value> *> mergeNodes;
   for (auto sccNode : sccSet)
   {
@@ -280,7 +286,7 @@ bool SCCDAG::iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke){
 
   return false ;
 }
-      
+
 std::unordered_set<SCC *> SCCDAG::getSCCs (void) {
   std::unordered_set<SCC *> s;
   for (auto sccNode : this->getNodes()){
@@ -306,4 +312,67 @@ SCCDAG::~SCCDAG() {
   this->clear();
 
   return ;
+}
+
+bool SCCDAG::orderedBefore(const SCC *earlySCC, const SCCSet &lates) const {
+  for (auto lscc : lates)
+    if (orderedBefore(earlySCC, lscc))
+      return true;
+  return false;
+}
+
+bool SCCDAG::orderedBefore(const SCCSet &earlies, const SCC *lateSCC) const {
+  for (auto escc : earlies)
+    if (orderedBefore(escc, lateSCC))
+      return true;
+  return false;
+}
+
+/*
+ * Returns true if there is a path of dependences from earlySCC to lateSCC.
+ * O(1) complexity thanks to the precomputation of the bitMatrix.
+ */
+bool SCCDAG::orderedBefore(const SCC *earlySCC, const SCC *lateSCC) const {
+  assert(!ordered_dirty && "Must run computeReachabilityAmongSCCs() first");
+  auto earlySCCid = sccIndexes.find(earlySCC)->second;
+  auto lateSCCid = sccIndexes.find(lateSCC)->second;
+  return ordered.test(earlySCCid, lateSCCid);
+}
+
+void SCCDAG::computeReachabilityAmongSCCs() {
+  ordered_dirty = false;
+  const unsigned N_scc = this->numNodes();
+
+	/*
+	 * Compute indices for all SCC nodes.
+	*/
+  unsigned index = 0;
+  for (const auto *SCCNode : this->getNodes()) {
+    sccIndexes[SCCNode->getT()] = index;
+    index++;
+  }
+
+	/*
+	 * Resize bitMatrix (NxN), where N is the number of SCC nodes.
+	*/
+  ordered.resize(N_scc);
+
+	/*
+	 * Populate bitMatrix with all reported dependences among SCC nodes.
+	*/
+  for (auto *SCCEdge : this->getEdges()) {
+    const SCC *srcSCC = SCCEdge->getOutgoingT();
+    const SCC *dstSCC = SCCEdge->getIncomingT();
+    ordered.set(sccIndexes[srcSCC], sccIndexes[dstSCC]);
+  }
+
+	/*
+	 * Compute transitive closure of the bitMatrix.
+	*/
+  ordered.transitive_closure();
+}
+
+unsigned SCCDAG::getSCCIndex(const SCC *scc) const {
+	auto sccF = sccIndexes.find(scc);
+	return sccF->second;
 }
