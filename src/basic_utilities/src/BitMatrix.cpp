@@ -32,9 +32,9 @@ bool BitMatrix::test(uint32_t row, uint32_t col) const {
   return bv.test(i);
 }
 
-int BitMatrix::firstSuccessor(uint32_t row) const {
+int32_t BitMatrix::firstSuccessor(uint32_t row) const {
   const uint32_t rowBegin = N * row;
-  int next = -1;
+  int32_t next = -1;
 
   if (0 == rowBegin) {
     next = bv.find_first();
@@ -54,8 +54,8 @@ int BitMatrix::firstSuccessor(uint32_t row) const {
   return next - rowBegin;
 }
 
-int BitMatrix::nextSuccessor(uint32_t row, uint32_t prev) const {
-  int next = bv.find_next(N * row + prev);
+int32_t BitMatrix::nextSuccessor(uint32_t row, uint32_t prev) const {
+  int32_t next = bv.find_next(N * row + prev);
   if (-1 == next) {
     return -1;
   }
@@ -85,11 +85,11 @@ void BitMatrix::transitiveClosure() {
     bool changedI = false;
 
     // (i->j)
-    for (int j = firstSuccessor(i); j != -1; j = nextSuccessor(i, j)) {
+    for (int32_t j = firstSuccessor(i); j != -1; j = nextSuccessor(i, j)) {
       // bit-wise or row[i] |= row[j]
 
       // (j->k)
-      for (int k = firstSuccessor(j); k != -1; k = nextSuccessor(j, k)) {
+      for (int32_t k = firstSuccessor(j); k != -1; k = nextSuccessor(j, k)) {
         // but not (i->k)
         if (!test(i, k)) {
           changedI = true;
