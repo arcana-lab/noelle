@@ -22,6 +22,43 @@ bool LoopWhilifier::whilifyLoop (
   LoopDependenceInfo const &LDI
 ) {
 
+  bool AnyTransformed = false;
+
+  /*
+   * Handle subloops --- return if there is any
+   * change to a subloop
+   */ 
+  LoopStructure *LS = LDI.getLoopStructure();
+
+  auto SubLoops = LS->getChildren();
+  for (auto SL : SubLoops) {
+
+    /*
+     * Invoke the driver on any loop structure
+     */
+    AnyTransformed |= this->whilifyLoopDriver(SL);
+
+    if (AnyTransformed) {
+      break;
+    }
+
+  }
+
+  /*
+   * Execute on parent loop
+   */ 
+  if (!AnyTransformed) {
+    AnyTransformed |= this->whilifyLoopDriver(LS);
+  }
+
+  return AnyTransformed;
+
+}
+
+bool LoopWhilifier::whilifyLoopDriver(
+  LoopStructure * const LS
+) {
+
   auto Transformed = false;
 
   /*
@@ -33,8 +70,6 @@ bool LoopWhilifier::whilifyLoop (
 
   std::vector<std::pair<BasicBlock *, BasicBlock *>> ExitEdges;
   
-  LoopStructure *LS = LDI.getLoopStructure();
-
   if (!(this->canWhilify(
                 LS, 
                 Header, 
