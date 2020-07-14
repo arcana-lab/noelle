@@ -39,11 +39,11 @@ private:
 
   // For a given row returns the first col that is set.
   // Returns -1 if none found.
-  int firstSuccessor(uint32_t row) const;
+  int32_t firstSuccessor(uint32_t row) const;
 
   // For a given row returns the first col after prev (col>prev) that is set.
   // Returns -1 if none found.
-  int nextSuccessor(uint32_t row, uint32_t prev) const;
+  int32_t nextSuccessor(uint32_t row, uint32_t prev) const;
 
   // Returns the index corresponding to a pair (row.col)
   // i.e., idx = row * N + col
