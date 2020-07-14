@@ -87,7 +87,7 @@ extern "C" {
 
     return cores;
   }
- 
+
   typedef void (*stageFunctionPtr_t)(void *, void*);
 
   void printReachedS(std::string s)
