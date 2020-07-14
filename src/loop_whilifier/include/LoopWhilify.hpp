@@ -31,6 +31,9 @@ namespace llvm {
         LoopDependenceInfo const &LDI
       );
 
+      bool LoopWhilifier::whilifyLoopDriver(
+        LoopStructure * const LS
+      );
 
     private:
 
