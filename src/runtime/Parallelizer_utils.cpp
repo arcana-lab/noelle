@@ -179,7 +179,7 @@ extern "C" {
     int64_t chunkSize ;
   } DOALL_args_t ;
 
-  void NOELLE_DOALLTrampoline (void *args){
+  static void NOELLE_DOALLTrampoline (void *args){
 
     /*
      * Fetch the arguments.
@@ -213,7 +213,8 @@ extern "C" {
     /*
      * Allocate the memory to store the arguments.
      */
-    auto argsForAllCores = (DOALL_args_t *) malloc(sizeof(DOALL_args_t) * numCores);
+    DOALL_args_t *argsForAllCores;
+    posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(DOALL_args_t) * numCores);
 
     /*
      * Submit DOALL tasks.
