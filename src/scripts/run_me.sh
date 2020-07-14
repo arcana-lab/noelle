@@ -8,12 +8,7 @@ fi
 mkdir -p $installDir ;
 
 # Check the cmake binary
-command -v cmake3
-if test $? -eq 1 ; then
-  CMAKE="cmake" ;
-else
-  CMAKE="cmake3" ;
-fi
+CMAKE="cmake" ;
 
 # Set the compiler
 export CC=clang
