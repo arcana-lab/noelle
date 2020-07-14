@@ -384,7 +384,7 @@ bool containsInOriginalLoop(
 /*
  * Based on LoopUnrollPeel.cpp : cloneLoopBlocks
  */
-void LoopWhilifier::cloneLoopBlocks(
+void LoopWhilifier::cloneLoopBlocksForWhilifying(
   BasicBlock *InsertTop, 
   BasicBlock *InsertBot,
   BasicBlock *OriginalHeader,
@@ -775,9 +775,8 @@ void LoopWhilifier::resolveOriginalHeaderPHIs(
 }
 
 void LoopWhilifier::rerouteLoopBranches(
-  BasicBlock *Header,
-  ValueToValueMap &BodyToPeelMap,
-  DenseMap<Value *, Value *> &ResolvedDependencyMapping
+  BasicBlock *Latch,
+  BasicBlock *NewHeader
 ) {
 
   /*

@@ -75,7 +75,7 @@ namespace llvm {
         std::vector<BasicBlock *> const &OriginalLoopBlocks
       );
 
-      void cloneLoopBlocks(
+      void cloneLoopBlocksForWhilifying(
         BasicBlock *InsertTop, 
         BasicBlock *InsertBot,
         BasicBlock *OriginalHeader,
@@ -129,9 +129,8 @@ namespace llvm {
       );
 
       void rerouteLoopBranches(
-        BasicBlock *Header,
-        ValueToValueMap &BodyToPeelMap,
-        DenseMap<Value *, Value *> &ResolvedDependencyMapping
+        BasicBlock *Latch,
+        BasicBlock *NewHeader
       );
 
   };
