@@ -235,7 +235,8 @@ extern "C" {
       /*
        * Submit
        */
-      localFutures.push_back(pool.submit(NOELLE_DOALLTrampoline, argsPerCore));
+      //localFutures.push_back(pool.submit(NOELLE_DOALLTrampoline, argsPerCore));
+      localFutures.push_back(pool.submit(parallelizedLoop, env, i, numCores, chunkSize));
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted DOALL task on core " << i << std::endl;
       #endif
