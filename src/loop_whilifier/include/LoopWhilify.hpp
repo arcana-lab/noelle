@@ -60,7 +60,7 @@ namespace llvm {
         BasicBlock *&Header,
         BasicBlock *&Latch,
         std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges,
-        SmallVector<BasicBlock *, 16> &LoopBlocks
+        std::vector<BasicBlock *> &LoopBlocks
       );
 
       void buildAnchors(
@@ -90,7 +90,7 @@ namespace llvm {
 
       void resolveNewHeaderPHIDependencies(
         BasicBlock * const Latch, 
-        ValueToValueMap &BodyToPeelMap
+        ValueToValueMapTy &BodyToPeelMap
       );
 
       void findNonPHIOriginalLatchDependencies(
@@ -105,7 +105,7 @@ namespace llvm {
       void resolveNewHeaderNonPHIDependencies(
         BasicBlock *Latch,
         BasicBlock *NewHeader,
-        ValueToValueMap &BodyToPeelMap,
+        ValueToValueMapTy &BodyToPeelMap,
         DenseMap<Value *, Value *> &ResolvedDependencyMapping,
         DenseMap<Instruction *, 
                  DenseMap<Instruction *, 
@@ -116,7 +116,7 @@ namespace llvm {
         BasicBlock *Latch,
         BasicBlock *NewHeader,
         std::vector<BasicBlock *> &LoopBlocks,
-        ValueToValueMap &BodyToPeelMap,
+        ValueToValueMapTy &BodyToPeelMap,
         DenseMap<Value *, Value *> &ResolvedDependencyMapping
       );
 
@@ -124,7 +124,7 @@ namespace llvm {
         BasicBlock *Header,
         BasicBlock *PreHeader,
         BasicBlock *Latch,
-        ValueToValueMap &BodyToPeelMap,
+        ValueToValueMapTy &BodyToPeelMap,
         DenseMap<Value *, Value *> &ResolvedDependencyMapping
       );
 
