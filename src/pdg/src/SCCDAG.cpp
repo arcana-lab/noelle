@@ -70,7 +70,7 @@ SCCDAG::SCCDAG(PDG *pdg) {
   /*
    * Compute transitive dependences between nodes of the SCCDAG.
    */
-	ordered_dirty = true;
+	orderedDirty = true;
 	this->computeReachabilityAmongSCCs();
 
   return ;
@@ -337,20 +337,20 @@ bool SCCDAG::orderedBefore(const SCCSet &earlies, const SCC *lateSCC) const {
  * O(1) complexity thanks to the precomputation of the bitMatrix.
  */
 bool SCCDAG::orderedBefore(const SCC *earlySCC, const SCC *lateSCC) const {
-  assert(!ordered_dirty && "Must run computeReachabilityAmongSCCs() first");
+  assert(!orderedDirty && "Must run computeReachabilityAmongSCCs() first");
   auto earlySCCid = sccIndexes.find(earlySCC)->second;
   auto lateSCCid = sccIndexes.find(lateSCC)->second;
   return ordered.test(earlySCCid, lateSCCid);
 }
 
 void SCCDAG::computeReachabilityAmongSCCs() {
-  ordered_dirty = false;
-  const unsigned N_scc = this->numNodes();
+  orderedDirty = false;
+  const uint32_t Nscc = this->numNodes();
 
   /*
    * Compute indices for all SCC nodes.
    */
-  unsigned index = 0;
+  uint32_t index = 0;
   for (const auto *SCCNode : this->getNodes()) {
     sccIndexes[SCCNode->getT()] = index;
     index++;
@@ -359,7 +359,7 @@ void SCCDAG::computeReachabilityAmongSCCs() {
   /*
    * Resize bitMatrix (NxN), where N is the number of SCC nodes.
    */
-  ordered.resize(N_scc);
+  ordered.resize(Nscc);
 
   /*
    * Populate bitMatrix with all reported dependences among SCC nodes.
@@ -373,10 +373,10 @@ void SCCDAG::computeReachabilityAmongSCCs() {
   /*
    * Compute transitive closure of the bitMatrix.
    */
-  ordered.transitive_closure();
+  ordered.transitiveClosure();
 }
 
-unsigned SCCDAG::getSCCIndex(const SCC *scc) const {
+uint32_t SCCDAG::getSCCIndex(const SCC *scc) const {
   auto sccF = sccIndexes.find(scc);
   return sccF->second;
 }
