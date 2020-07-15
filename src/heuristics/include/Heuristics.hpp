@@ -32,6 +32,8 @@ namespace llvm {
       /*
        * Methods
        */
+      Heuristics (Noelle &noelle);
+
       void adjustParallelizationPartitionForDSWP (
         SCCDAGPartition *partition,
         SCCDAGAttrs &attrs,
