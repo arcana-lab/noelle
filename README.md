@@ -2,7 +2,7 @@
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
-- [Build NOELLE](#build_noelle)
+- [Build NOELLE](#build-noelle)
 - [Testing](#testing)
 - [Structure](#structure)
 - [License](#license)
