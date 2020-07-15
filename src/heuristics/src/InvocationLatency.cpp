@@ -11,19 +11,28 @@
 #include "InvocationLatency.hpp"
 
 using namespace llvm;
+ 
+InvocationLatency::InvocationLatency (Hot *hot)
+  : profiles{hot}
+  {
+  return ;
+}
 
 uint64_t InvocationLatency::latencyPerInvocation (SCC *scc){
-  if (sccToCost.find(scc) != sccToCost.end()) {
-    return sccToCost[scc];
+
+  /*
+   * Check if we have already computed the latency of this SCC.
+   */
+  if (this->sccToCost.find(scc) != this->sccToCost.end()) {
+    return this->sccToCost[scc];
   }
 
-  uint64_t cost = 0;
-  for (auto nodePair : scc->internalNodePairs()) {
-    auto I = cast<Instruction>(nodePair.first);
-    cost += this->latencyPerInvocation(I);
-  }
-
+  /*
+   * Compute the latency of the SCC.
+   */
+  auto cost = this->profiles->getTotalInstructions(scc);
   sccToCost[scc] = cost;
+
   return cost;
 }
 
@@ -76,67 +85,9 @@ uint64_t InvocationLatency::latencyPerInvocation (Instruction *inst){
   }
 
   /*
-   * Estimate the latency of the instruction.
+   * Estimate the latency.
    */
-  uint64_t latency;
-  if (isa<StoreInst>(inst) || isa<LoadInst>(inst)) {
-    latency = 10;
-  } else if (inst->isTerminator()) {
-    latency = 5;
-  } else {
-    latency = 1;
-  }
-
-  /*
-   * Handle call instructions.
-   * For them, we have to add the estimate of the latency of the callee.
-   */
-  if (auto call = dyn_cast<CallInst>(inst)) {
-
-    /*
-     * Check if we know the callee.
-     */
-    auto F = call->getCalledFunction();
-    auto calleeLatency = 0;
-    if (  (F != nullptr)  &&
-          (!F->empty())   ){
-
-      /*
-       * Compute the latency of the callee without checking its callees recursively.
-       *
-       * Check if we have already computed it.
-       */
-      if (funcToCost.find(F) == funcToCost.end()) {
-
-        /*
-         * Compute the latency.
-         */
-        for (auto &B : *F) {
-          for (auto &J : B) {
-            if (!isSyntacticSugar(&J)) {
-              calleeLatency++;
-            }
-          }
-        }
-        funcToCost[F] = calleeLatency;
-
-      } else {
-
-        /*
-         * Fetch the latency we have computed it during past invocations.
-         */
-        calleeLatency = funcToCost[F];
-      }
-
-    } else {
-      calleeLatency = 50;
-    }
-
-    /*
-     * Add the latency of the callee.
-     */
-    latency += calleeLatency;
-  }
+  auto latency = this->profiles->getTotalInstructions(inst);
 
   return latency;
 }
