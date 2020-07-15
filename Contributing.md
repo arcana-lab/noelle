@@ -1,4 +1,4 @@
-# Nautilus Contribution Guidelines
+# NOELLE Contribution Guidelines
 
 We are happy to have contributors to our project. 
 If you'd like to contribute a feature, bug fix, or other component to Nautilus, we ask that you first read these guidelines.
@@ -48,9 +48,12 @@ Next is what we would like to do or avoid in our codebase:
 7 - Name headers with the suffix `.hpp` because NOELLE is written in C++
 
 8 - Use 
-```#pragma once
-```
+    ```
+    #pragma once
+    ```
+
     on top of your header file rather than the old style 
+
     ```
     #ifdef MYFILE_H
     #define MYFILE_H
