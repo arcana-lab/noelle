@@ -25,7 +25,7 @@
 #include "DGBase.hpp"
 #include "SCC.hpp"
 #include "PDG.hpp"
-#include "BitMatrix.h"
+#include "BitMatrix.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -120,7 +120,7 @@ namespace llvm {
       /*
        * Get the index of a node of the SCCDAG.
        */
-      unsigned getSCCIndex(const SCC *scc) const;
+      uint32_t getSCCIndex(const SCC *scc) const;
 
     protected:
       void markValuesInSCC (void);
@@ -137,9 +137,9 @@ namespace llvm {
       /*
        * ordered_dirty is true if the ordering of SCCDAG nodes is invalid.
        */
-      bool ordered_dirty;
+      bool orderedDirty;
 
       // SCC nodes to Ids map.
-      std::unordered_map<const SCC *, unsigned> sccIndexes;
+      std::unordered_map<const SCC *, uint32_t> sccIndexes;
   };
 }
