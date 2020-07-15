@@ -77,6 +77,7 @@ bool LoopDistribution::splitLoop (
       if (auto controlInst = dyn_cast<Instruction>(pair.second->getT())) {
         errs () << "LoopDistribution: Control instruction from SCC: " <<  *controlInst << "\n";
         instsToClone.insert(controlInst);
+        this->recursivelyCollectDependencies(controlInst, instsToClone, LDI);
       }
     }
   }
@@ -87,16 +88,12 @@ bool LoopDistribution::splitLoop (
    */
   for (auto BB : loopStructure->getBasicBlocks()) {
     if (auto branch = dyn_cast<BranchInst>(BB->getTerminator())) {
+      errs () << "LoopDistribution: Branch instruction: " <<  *branch << "\n";
       instsToClone.insert(branch);
-      if (branch->isConditional()) {
-        if (auto condition = dyn_cast<Instruction>(branch->getCondition())) {
-          errs () << "LoopDistribution: Colecting dependencies of  " <<  *condition << "\n";
-          instsToClone.insert(condition);
-          this->recursivelyCollectDependencies(condition, instsToClone, LDI);
-        }      
-      }
+      this->recursivelyCollectDependencies(branch, instsToClone, LDI);
     } else {
       errs() << "LoopDistribution: Abort: Non-branch terminator " << *BB->getTerminator() << "\n";
+      return false;
     }
   }
 
@@ -151,7 +148,7 @@ bool LoopDistribution::splitLoop (
     }
   }
   if (instsToPullOut.size() == 0) {
-    errs() << "LoopDistribution: Abort: Every instruction would have been cloned\n";
+    errs() << "LoopDistribution: Abort: All instructions requested would have to be cloned\n";
     return false;
   }
 
@@ -208,6 +205,7 @@ void LoopDistribution::recursivelyCollectDependencies (
     */
     auto parent = i->getParent();
     if (BBs.find(parent) == BBs.end()) {
+      errs() << "LoopDistribution: Ignoring dependency outside the loop: " << *i << "\n";
       return false;
     }
 
@@ -273,9 +271,11 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
   auto fromFn = [&BBs, &instsToPullOut, &instsToClone]
     (Value *from, DataDependenceType ddType) -> bool {
     if (!isa<Instruction>(from)) {
+      errs() << "Ignoring non-instruction (source) " << *from << "\n";
       return false;
     }
     auto i = cast<Instruction>(from);
+    errs() << "From dependency (source) is " << *i << "\n";
 
     /*
      * Ignore dependencies between instructions we are pulling out. It is okay to have a 
@@ -301,9 +301,11 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
   };
   auto toFn = [&BBs, &instsToPullOut](Value *to, DataDependenceType ddType) -> bool {
     if (!isa<Instruction>(to)) {
+      errs() << "Ignoring non-instruction (consumes) " << *to << "\n";
       return false;
     }
     auto i = cast<Instruction>(to);
+    errs() << "To dependency (consumes) is " << *i << "\n";
 
     /*
      * Ignore dependencies between instructions we are pulling out. We can't have dependencies to
@@ -325,6 +327,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
   };
   auto pdg = LDI.getLoopDG();
   for (auto inst : instsToPullOut) {
+    errs() << "Considering dependencies for " << *inst << "\n";
     bool isSourceOfExternalDataDependency = pdg->iterateOverDependencesFrom(
       inst,
       false, // Control
