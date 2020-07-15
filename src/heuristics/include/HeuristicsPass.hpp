@@ -31,6 +31,6 @@ namespace llvm {
 
       bool runOnModule (Module &M) override ;
 
-      Heuristics * getHeuristics () ;
+      Heuristics * getHeuristics (Noelle &noelle) ;
   };
 }

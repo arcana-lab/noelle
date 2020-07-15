@@ -44,7 +44,7 @@ bool Parallelizer::runOnModule (Module &M) {
    * Fetch the outputs of the passes we rely on.
    */
   auto& noelle = getAnalysis<Noelle>();
-  auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
+  auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics(noelle);
 
   /*
    * Fetch the profiles.
