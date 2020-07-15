@@ -1,5 +1,11 @@
 # NOELLE: A Compilation Layer for Next Generation Code Analysis and Transformation
 
+## Table of Contents
+- [Prerequisites](#prerequisites)
+- [Build NOELLE](#build_noelle)
+- [Testing](#testing)
+- [Structure](#structure)
+- [License](#license)
 
 ## Prerequisites
 LLVM 9.0.0
@@ -10,7 +16,7 @@ source /project/extra/llvm/9.0.0/enable
 ```
 
 
-## Build
+## Build NOELLE
 To build, run from the repository root directory: `make`
 
 Follow the next steps from the root directory to build NOELLE in parallel among the cores of your machine:
@@ -24,7 +30,7 @@ Run `make clean` from the root directory to clean the repository.
 Run `make uninstall` from the root directory to uninstall the NOELLE installation
 
 
-## Test
+## Testing
 To test NOELLE, go to "tests" and run "maker".
 
 To test NOELLE using condor to run all tests in parallel, go to "tests" and run "make condor".
