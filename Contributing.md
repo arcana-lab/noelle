@@ -1,3 +1,14 @@
+# Nautilus Contribution Guidelines
+
+We are happy to have contributors to our project. 
+If you'd like to contribute a feature, bug fix, or other component to Nautilus, we ask that you first read these guidelines.
+
+
+## Table of Contents
+- [Coding style](#coding_style)
+
+
+## Coding Style
 Next is what we would like to do or avoid in our codebase:
 
 1 - No function body in the headers
@@ -34,14 +45,18 @@ Next is what we would like to do or avoid in our codebase:
 6 - Make inputs of a function as explicit as possible. 
   Implicit inputs (e.g., object fields) makes often the code harder to understand.
 
-7 - Name headers *.hpp because NOELLE is written in C++
+7 - Name headers with the suffix `.hpp` because NOELLE is written in C++
 
-8 - Use "#pragma once" rather than the old style 
+8 - Use 
+```#pragma once
+```
+    on top of your header file rather than the old style 
+    ```
     #ifdef MYFILE_H
     #define MYFILE_H
 
-    ...
     #endif
+    ```
 
 9 - Name APIs using the camel case as NOELLE is developed following the object oriented paradigma
   e.g., myFunction (...)
