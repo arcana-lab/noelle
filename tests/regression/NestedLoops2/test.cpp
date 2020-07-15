@@ -38,11 +38,17 @@ int main (int argc, char *argv[]){
   auto iterations = atoll(argv[1]);
   if (iterations == 0) return 0;
 
-  long long int *array = (long long int *) calloc(iterations * iterations * iterations, sizeof(long long int) * iterations);
+  long long int *array = (long long int *) calloc(iterations * iterations * iterations, sizeof(long long int));
+  if (array == NULL){
+    fprintf(stderr, "Cannot allocate memory\n");
+    return 0;
+  }
   auto boundedArgc = argc < iterations ? argc : iterations - 5;
   array[boundedArgc] = argc;
 
-  computeSum(array, iterations, iterations, iterations);
+  for (auto i=0; i < iterations; i++){
+    computeSum(array, iterations, iterations, iterations);
+  }
   auto s = *array;
   printf("%lld, %lld\n", s, array[boundedArgc]);
 
