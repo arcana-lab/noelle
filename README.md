@@ -30,5 +30,18 @@ To test NOELLE, go to "tests" and run "maker".
 To test NOELLE using condor to run all tests in parallel, go to "tests" and run "make condor".
 
 
+## Structure
+The directory `src` includes sources of the noelle framework.
+
+The directory `external` includes libraries that are external to noelle that are used by noelle.
+Some of these libraries are patched and/or extended for noelle.
+
+The directory `tests` includes unit tests, integration tests, and performance tests.
+Furthermore, this directory includes the scripts to run all these tests in parallel via condor.
+
+The directory `users` includes examples of LLVM passes (and their tests) that rely on the noelle framework.
+
+Finally, the directory `doc` includes the documentation of noelle.
+
 ## License
 MIT License
