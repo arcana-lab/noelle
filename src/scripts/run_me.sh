@@ -24,6 +24,12 @@ make -j;
 make install ;
 popd ;
 
+# Check if anything has been built
+if ! test -e build/compile_commands.json ; then
+  exit 0;
+fi
+
+# Add the link to the compiler commands file
 if test -d src ; then
   pushd ./ ;
   cd src ;
