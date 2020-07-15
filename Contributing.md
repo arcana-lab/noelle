@@ -47,31 +47,36 @@ Next is what we would like to do or avoid in our codebase:
 
 7 - Name headers with the suffix `.hpp` because NOELLE is written in C++
 
-8 - Use 
-    ```
-    #pragma once
-    ```
+8 - Add on top of your header file the following:
 
-    on top of your header file rather than the old style 
+```
+#pragma once
+```
 
-    ```
-    #ifdef MYFILE_H
-    #define MYFILE_H
+This is a replacement of the old style approach:
 
-    #endif
-    ```
+```
+#ifdef MYFILE_H
+#define MYFILE_H
 
-9 - Name APIs using the camel case as NOELLE is developed following the object oriented paradigma
-  e.g., myFunction (...)
-  rather than my_function (...)
+#endif
+```
+
+9 - Name APIs using the camel case as NOELLE is developed following the object oriented paradigm
+  e.g., `myFunction()` rather than `my_function()`
 
 10 - Avoid adding paths (relative or not) in the include command
   E.g., avoid doing the following:
-  #include "../include/MyAPI.h"
+```
+#include "../include/MyAPI.h"
+```
   
   Instead, write
-  #include "MyAPI.h"
-  and then modify the cmake file to add the include directory in the command line
+```
+#include "MyAPI.h"
+```
+and then modify the cmake file to add the include directory in the command line
 
-11 - Include "SystemHeaders.hpp" in your Header file. SystemHeaders.hpp includes the most common C++ and LLVM headers.
-  Then, include your header file in your .cpp
+11 - Include `SystemHeaders.hpp` in your header file. 
+`SystemHeaders.hpp` includes the most common C++ and LLVM headers.
+Then, include your header file in your `.cpp`.
