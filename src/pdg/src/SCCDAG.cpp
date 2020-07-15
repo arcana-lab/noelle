@@ -70,8 +70,8 @@ SCCDAG::SCCDAG(PDG *pdg) {
   /*
    * Compute transitive dependences between nodes of the SCCDAG.
    */
-	orderedDirty = true;
-	this->computeReachabilityAmongSCCs();
+  orderedDirty = true;
+  this->computeReachabilityAmongSCCs();
 
   return ;
 }
