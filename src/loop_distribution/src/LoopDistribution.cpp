@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Simone Campanoni
+ * Copyright 2019 - 2020  Lukas Gross, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -53,8 +53,10 @@ bool LoopDistribution::splitLoop (
   std::set<Instruction *> &instructionsRemoved,
   std::set<Instruction *> &instructionsAdded
   ){
-  errs() << "LoopDistribution: Attempting Loop Distribution\n";
   auto loopStructure = LDI.getLoopStructure();
+  errs() << "LoopDistribution: Attempting Loop Distribution in "
+         << loopStructure->getFunction()->getName()
+         << "\n";
 
   /*
    * Assert that all instructions in instsToPullOut are actually within the loop
@@ -83,9 +85,8 @@ bool LoopDistribution::splitLoop (
   }
 
   /*
-   * Collect all sub-loop instructions and their dependencies
-   *   TODO(lukas): This does not capture sub-sub loops, but those BBs should still be in the
-   *   level 2 loops
+   * Collect all sub-loop instructions and their dependencies. This does not capture sub-sub loops,
+   *   but those BBs should still be in the level 2 loops
    */
   std::set<BasicBlock *> subLoopBBs{};
   for (auto childLoopStructure : loopStructure->getChildren()) {
@@ -190,7 +191,6 @@ void LoopDistribution::recursivelyCollectDependencies (
     */
     auto parent = i->getParent();
     if (BBs.find(parent) == BBs.end()) {
-      errs() << "LoopDistribution: Ignoring dependency outside the loop: " << *i << "\n";
       return false;
     }
 
@@ -220,7 +220,7 @@ void LoopDistribution::recursivelyCollectDependencies (
 
 /*
  * Checks if the union of instsToPullOut and instsToClone covers every instruction in the loop
- *   that is not a branch or part of a sub loop (since we will replicate those anyway)
+ *   that is not a branch (since we will replicate those anyway)
  */
 bool LoopDistribution::splitWouldBeTrivial (
   LoopStructure * const loopStructure,
@@ -256,11 +256,9 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
   auto fromFn = [&BBs, &instsToPullOut, &instsToClone]
     (Value *from, DataDependenceType ddType) -> bool {
     if (!isa<Instruction>(from)) {
-      errs() << "Ignoring non-instruction (source) " << *from << "\n";
       return false;
     }
     auto i = cast<Instruction>(from);
-    errs() << "From dependency (source) is " << *i << "\n";
 
     /*
      * Ignore dependencies between instructions we are pulling out. It is okay to have a 
@@ -286,11 +284,9 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
   };
   auto toFn = [&BBs, &instsToPullOut](Value *to, DataDependenceType ddType) -> bool {
     if (!isa<Instruction>(to)) {
-      errs() << "Ignoring non-instruction (consumes) " << *to << "\n";
       return false;
     }
     auto i = cast<Instruction>(to);
-    errs() << "To dependency (consumes) is " << *i << "\n";
 
     /*
      * Ignore dependencies between instructions we are pulling out. We can't have dependencies to
@@ -312,7 +308,6 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
   };
   auto pdg = LDI.getLoopDG();
   for (auto inst : instsToPullOut) {
-    errs() << "Considering dependencies for " << *inst << "\n";
     bool isSourceOfExternalDataDependency = pdg->iterateOverDependencesFrom(
       inst,
       false, // Control
