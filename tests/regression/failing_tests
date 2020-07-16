@@ -58,3 +58,4 @@ regression_default/Exit_call2 -noelle-pdg-check -noelle-verbose=3
 regression_default/Exit_call3 -noelle-pdg-check -noelle-verbose=3
 regression_default/GoToLoops2 -noelle-pdg-check -noelle-verbose=3
 regression_enablers/GoToLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall
+regression_18/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp
