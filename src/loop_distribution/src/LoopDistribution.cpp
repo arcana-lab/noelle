@@ -65,22 +65,7 @@ bool LoopDistribution::splitLoop (
     errs() << "LoopDistribution: Asked to pull out " << *inst << "\n";
     assert(std::find(loopBBs.begin(), loopBBs.end(), parent) != loopBBs.end());
   }
-
-  /*
-   * Collect control instructions from the SCCs with loop-carried control dependencies
-   */
-  auto controlSCCs = LDI.sccdagAttrs.getSCCsWithLoopCarriedControlDependencies();
   std::set<Instruction *> instsToClone{};
-  for (auto controlSCC : controlSCCs) {
-    errs() << "LoopDistribution: New Control SCC\n";
-    for (auto pair : controlSCC->internalNodePairs()) {
-      if (auto controlInst = dyn_cast<Instruction>(pair.second->getT())) {
-        errs () << "LoopDistribution: Control instruction from SCC: " <<  *controlInst << "\n";
-        instsToClone.insert(controlInst);
-        this->recursivelyCollectDependencies(controlInst, instsToClone, LDI);
-      }
-    }
-  }
 
   /*
    * Require that all terminators in the loop are branches and collect instructions that
