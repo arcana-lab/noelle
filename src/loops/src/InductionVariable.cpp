@@ -15,6 +15,7 @@ using namespace llvm;
 
 InductionVariable::InductionVariable  (
   LoopStructure *LS,
+  InvariantManager &IVM,
   ScalarEvolution &SE,
   PHINode *loopEntryPHI,
   SCC &scc,
@@ -22,6 +23,26 @@ InductionVariable::InductionVariable  (
   ScalarEvolutionReferentialExpander &referentialExpander
 ) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{nullptr},
     stepSCEV{nullptr}, computationOfStepValue{}, isComputedStepValueLoopInvariant{false} {
+
+  /*
+   * Fetch initial value of induction variable
+   */
+  auto bbs = LS->getBasicBlocks();
+  for (auto i = 0; i < loopEntryPHI->getNumIncomingValues(); ++i) {
+    auto incomingBB = loopEntryPHI->getIncomingBlock(i);
+    if (bbs.find(incomingBB) == bbs.end()) {
+      this->startValue = loopEntryPHI->getIncomingValue(i);
+      break;
+    }
+  }
+
+  traverseCycleThroughLoopEntryPHIToGetAllIVInstructions();
+  traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
+  collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
+  deriveStepValue(LS, SE, referentialExpander, loopEnv);
+}
+
+void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions () {
 
   /*
    * Collect intermediate values of the IV within the loop (by traversing its strongly connected component)
@@ -80,20 +101,71 @@ InductionVariable::InductionVariable  (
   }
   this->allInstructions.insert(castsToAdd.begin(), castsToAdd.end());
 
-  /*
-   * Fetch initial value of induction variable
-   */
-  auto bbs = LS->getBasicBlocks();
-  for (auto i = 0; i < loopEntryPHI->getNumIncomingValues(); ++i) {
-    auto incomingBB = loopEntryPHI->getIncomingBlock(i);
-    if (bbs.find(incomingBB) == bbs.end()) {
-      this->startValue = loopEntryPHI->getIncomingValue(i);
-      break;
+  return;
+}
+
+void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions (
+  LoopStructure *LS,
+  InvariantManager &IVM,
+  ScalarEvolution &SE
+) {
+
+  std::queue<Instruction *> intermediates;
+  std::unordered_set<Instruction *> visited;
+  for (auto ivInst : allInstructions) {
+    intermediates.push(ivInst);
+    visited.insert(ivInst);
+  }
+
+  while (!intermediates.empty()) {
+    auto I = intermediates.front();
+    intermediates.pop();
+
+    for (auto user : I->users()) {
+      if (auto userInst = dyn_cast<Instruction>(user)) {
+
+        /*
+         * Only check SCEVable values inside the loop
+         */
+        if (!SE.isSCEVable(userInst->getType())) continue;
+        if (!LS->isIncluded(userInst)) continue;
+
+        /*
+         * We only handle unary/binary operations on IV instructions.
+         */
+        auto userSCEV = SE.getSCEV(userInst);
+        if (!isa<SCEVCastExpr>(userSCEV) &&
+          !isa<SCEVNAryExpr>(userSCEV) &&
+          !isa<SCEVUDivExpr>(userSCEV)) continue;
+
+        bool isOperationDerivingFromIVConstantsAndExternals = true;
+        for (auto &userOp : userInst->operands()) {
+
+          /*
+           * Allow using IV instructions, previously derived instructions, or constants/loop invariants
+           */
+          if (isa<ConstantInt>(userOp)) continue;
+          if (auto userOpInst = dyn_cast<Instruction>(userOp)) {
+            if (this->isIVInstruction(userOpInst)) continue;
+            if (this->isDerivedFromIVInstructions(userOpInst)) continue;
+            if (!IVM.isLoopInvariant(userOpInst)) continue;
+          }
+
+          isOperationDerivingFromIVConstantsAndExternals = false;
+          break;
+        }
+
+        if (!isOperationDerivingFromIVConstantsAndExternals) continue;
+        derivedSCEVInstructions.insert(userInst);
+
+        if (visited.find(userInst) != visited.end()) continue;
+        visited.insert(userInst);
+        intermediates.push(userInst);
+      }
     }
   }
 
-  collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
-  deriveStepValue(LS, SE, referentialExpander, loopEnv);
+  return;
 }
 
 void InductionVariable::collectValuesInternalAndExternalToLoopAndSCC (
@@ -266,16 +338,20 @@ PHINode * InductionVariable::getLoopEntryPHI (void) const {
   return loopEntryPHI;
 }
 
-std::set<PHINode *> InductionVariable::getPHIs (void) const {
+std::unordered_set<PHINode *> InductionVariable::getPHIs (void) const {
   return PHIs;
 }
 
-std::set<Instruction *> InductionVariable::getNonPHIIntermediateValues (void) const {
+std::unordered_set<Instruction *> InductionVariable::getNonPHIIntermediateValues (void) const {
   return nonPHIIntermediateValues;
 }
 
-std::set<Instruction *> InductionVariable::getAllInstructions(void) const {
+std::unordered_set<Instruction *> InductionVariable::getAllInstructions(void) const {
   return allInstructions;
+}
+
+std::unordered_set<Instruction *> InductionVariable::getDerivedSCEVInstructions(void) const {
+  return derivedSCEVInstructions;
 }
 
 Value *InductionVariable::getStartValue (void) const {
@@ -296,4 +372,12 @@ std::vector<Instruction *> InductionVariable::getComputationOfStepValue(void) co
 
 bool InductionVariable::isStepValueLoopInvariant (void) const {
   return isComputedStepValueLoopInvariant;
+}
+
+bool InductionVariable::isIVInstruction (Instruction *I) const {
+  return allInstructions.find(I) != allInstructions.end();
+}
+
+bool InductionVariable::isDerivedFromIVInstructions (Instruction *I) const {
+  return derivedSCEVInstructions.find(I) != derivedSCEVInstructions.end();
 }
