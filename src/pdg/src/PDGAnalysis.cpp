@@ -665,8 +665,8 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
     case MayAlias:
       break;
     case MustAlias:
-      must = true;
-      break;
+      pdg->addEdge((Value*)instI, (Value*)instJ)->setMemMustType(true, true, dataDependenceType);
+      return ;
   }
 
   /*
