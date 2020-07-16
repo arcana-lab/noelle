@@ -1,8 +1,8 @@
-DOALL_almost_lbm 22.191
-DOALL_devirtualizer 13.094
-DOALL_dispatcher 0.01
-DOALL_lbm 1
-DOALL_limit	21.435
-DOALL_reduction	2.455
-DOALL_streamclusters 12.161
-DSWP_limit	6.743
+DOALL_almost_lbm      22.191
+DOALL_devirtualizer   13.094
+DOALL_dispatcher       0.01
+DOALL_lbm              1
+DOALL_limit	      21.435
+DOALL_reduction	       2.455
+DOALL_streamclusters  12.161
+DSWP_limit	       6.743
