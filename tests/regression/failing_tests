@@ -60,3 +60,12 @@ regression_default/GoToLoops2 -noelle-pdg-check -noelle-verbose=3
 regression_enablers/GoToLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall
 regression_18/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp
 regression_4/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -dswp-force -dswp-no-scc-merge
+regression_10/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-disable-loop-sorting
+regression_12/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main
+regression_15/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-disable-doall
+regression_18/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp
+regression_3/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -dswp-force
+regression_4/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -dswp-force -dswp-no-scc-merge
+regression_5/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner
+regression_9/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2
+regression_default/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3
