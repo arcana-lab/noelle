@@ -125,6 +125,31 @@ bool DOALL::canBeAppliedToLoop (
       continue ;
     }
 
+    /*
+     * If all loop carried data dependencies within the SCC do not overlap between
+     * iterations, then DOALL can ignore them
+     */
+    bool areAllDataLCDsFromDisjointMemoryAccesses = true;
+    auto domainSpaceAnalysis = LDI->getLoopIterationDomainSpaceAnalysis();
+    LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [
+      &areAllDataLCDsFromDisjointMemoryAccesses, domainSpaceAnalysis
+    ](DGEdge<Value> *dep) -> bool {
+      if (!dep->isMemoryDependence()) {
+        return areAllDataLCDsFromDisjointMemoryAccesses = false;
+      }
+
+      auto fromInst = dyn_cast<Instruction>(dep->getOutgoingT());
+      auto toInst = dyn_cast<Instruction>(dep->getIncomingT());
+      return areAllDataLCDsFromDisjointMemoryAccesses = fromInst && toInst && domainSpaceAnalysis->
+        areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst);
+    });
+    if (areAllDataLCDsFromDisjointMemoryAccesses) {
+      if (this->verbose >= Verbosity::Maximal) {
+        scc->printMinimal(errs() << "SCC has memory LCDs that are disjoint between iterations!\n"); errs() << "\n";
+      }
+      continue;
+    }
+
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
       if (this->verbose >= Verbosity::Maximal) {
