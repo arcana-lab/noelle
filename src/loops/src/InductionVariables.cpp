@@ -13,8 +13,13 @@
 
 using namespace llvm;
 
-InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvolution &SE, SCCDAG &sccdag, LoopEnvironment &loopEnv)
-  : loopToIVsMap{}, loopToGoverningIVMap{} {
+InductionVariableManager::InductionVariableManager (
+  LoopsSummary &LIS,
+  InvariantManager &IVM,
+  ScalarEvolution &SE,
+  SCCDAG &sccdag,
+  LoopEnvironment &loopEnv
+) : loopToIVsMap{}, loopToGoverningIVMap{} {
 
   Function &F = *LIS.getLoopNestingTreeRoot()->getHeader()->getParent();
   ScalarEvolutionReferentialExpander referentialExpander(SE, F);
@@ -36,7 +41,7 @@ InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvo
       if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) continue;
 
       auto sccContainingIV = sccdag.sccOfValue(&phi);
-      auto IV = new InductionVariable(loop.get(), SE, &phi, *sccContainingIV, loopEnv, referentialExpander); 
+      auto IV = new InductionVariable(loop.get(), IVM, SE, &phi, *sccContainingIV, loopEnv, referentialExpander); 
 
       /*
        * Only save IVs for which the step size is understood
@@ -135,6 +140,25 @@ InductionVariable * InductionVariableManager::getInductionVariable (LoopStructur
 
 std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVariables (LoopStructure &LS) const {
   return this->loopToIVsMap.at(&LS);
+}
+
+InductionVariable * InductionVariableManager::getDerivingInductionVariable (
+  LoopStructure &LS,
+  Instruction *derivedInstruction
+) {
+
+  for (auto IV : this->getInductionVariables(LS)){
+    auto insts = IV->getDerivedSCEVInstructions();
+    if (insts.find(derivedInstruction) != insts.end()){
+
+      /*
+       * We found an induction variable that derives the instruction given as input.
+       */
+      return IV;
+    }
+  }
+
+  return nullptr;
 }
 
 InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable (LoopStructure &LS) const {
