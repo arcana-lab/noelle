@@ -125,6 +125,9 @@ bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
    */
   auto loopStructure = LDI->getLoopStructure();
 
+  /*
+   * Fetch the set of sequential SCCs.
+   */
   std::set<SCC *> sccsToCheck;
   SCCDAG->iterateOverSCCs([LDI, &sccsToCheck](SCC *scc) -> bool{
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
