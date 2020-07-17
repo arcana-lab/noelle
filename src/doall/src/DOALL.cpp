@@ -135,13 +135,17 @@ bool DOALL::canBeAppliedToLoop (
       &areAllDataLCDsFromDisjointMemoryAccesses, domainSpaceAnalysis
     ](DGEdge<Value> *dep) -> bool {
       if (!dep->isMemoryDependence()) {
-        return areAllDataLCDsFromDisjointMemoryAccesses = false;
+        areAllDataLCDsFromDisjointMemoryAccesses = false;
+        return true;
       }
 
       auto fromInst = dyn_cast<Instruction>(dep->getOutgoingT());
       auto toInst = dyn_cast<Instruction>(dep->getIncomingT());
-      return areAllDataLCDsFromDisjointMemoryAccesses = fromInst && toInst && domainSpaceAnalysis->
+      // fromInst->print(errs() << "F: "); errs() << "\n";
+      // toInst->print(errs() << "T: "); errs() << "\n";
+      areAllDataLCDsFromDisjointMemoryAccesses &= fromInst && toInst && domainSpaceAnalysis->
         areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst);
+      return !areAllDataLCDsFromDisjointMemoryAccesses;
     });
     if (areAllDataLCDsFromDisjointMemoryAccesses) {
       if (this->verbose >= Verbosity::Maximal) {
