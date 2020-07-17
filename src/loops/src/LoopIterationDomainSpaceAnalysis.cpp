@@ -70,7 +70,6 @@ bool LoopIterationDomainSpaceAnalysis::isMemoryAccessSpaceEquivalentForTopLoopIV
   // space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs() << "\n";
 
   auto getLoopForIV = [&](InductionVariable *iv) -> LoopStructure * {
-    if (!iv) return nullptr;
     auto loopEntryPHI = iv->getLoopEntryPHI();
     return loops.getLoop(*loopEntryPHI);
   };
@@ -209,10 +208,17 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
     if (memAccessSpace->subscripts.size() == 0) {
       if (auto gep = dyn_cast<GetElementPtrInst>(memAccessSpace->memoryAccessor)) {
         SmallVector<int, 4> sizes;
-        // TODO: Determine exactly under what conditions size isn't returned from this API
         ScalarEvolutionDelinearization::getIndexExpressionsFromGEP(SE, gep, memAccessSpace->subscripts, sizes);
         for (auto size : sizes) {
           memAccessSpace->sizes.push_back(SE.getConstant(accessFunction->getType(), size));
+        }
+
+        /*
+         * TODO: Determine exactly under what conditions size isn't returned from this API
+         * For now, at least include the element size if it is a one dimensional access
+         */
+        if (sizes.empty()) {
+          memAccessSpace->sizes.push_back(memAccessSpace->elementSize);
         }
       }
     }
@@ -242,38 +248,59 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
 
   for (auto &memAccessSpace : this->accessSpaces) {
     if (memAccessSpace->subscriptIVs.size() == 0) continue;
+    if (memAccessSpace->subscriptIVs.size() != memAccessSpace->sizes.size()) continue;
 
     // memAccessSpace->memoryAccessor->print(errs() << "Checking accessor for overlapping: "); errs() << "\n";
 
+    if (!isInnerDimensionSubscriptsBounded(SE, memAccessSpace.get())) continue;
+
+    // errs() << "\tAccessor has bounded inner dimension accesses\n";
+
     /*
      * At least one dimension's subscript's IV must evolve in the top-most loop
-     * This guarantees that for every iteration of the loop, the space accessed is unique
+     * All dimension's subscripts must be governed by an IV and be bounded by the dimension's size
      */
-    bool atLeastOneTopLevelIV = false;
+    bool atLeastOneTopLevelNonOverlappingIV = false;
     auto rootLoopStructure = loops.getLoopNestingTreeRoot();
-    for (auto instIVPair : memAccessSpace->subscriptIVs) {
+    for (auto idx = 0; idx < memAccessSpace->subscriptIVs.size(); ++idx) {
+      auto instIVPair = memAccessSpace->subscriptIVs[idx];
+      auto inst = instIVPair.first;
       auto iv = instIVPair.second;
       if (!iv) continue;
 
+      // inst->print(errs() << "Checking if I is non-overlapping root subscript: "); errs() << "\n";
+
       auto loopEntryPHI = iv->getLoopEntryPHI();
+      auto loopEntryPHISCEV = cast<SCEVAddRecExpr>(SE.getSCEV(loopEntryPHI));
       auto loopStructure = loops.getLoop(*loopEntryPHI);
-      if (rootLoopStructure != loopStructure) continue;
+      bool isRootLoopIV = (rootLoopStructure == loopStructure);
+      if (!isRootLoopIV) continue;
+
+      // SE.getSCEV(inst)->print(errs() << "\tSCEV for root I: "); errs() << "\n";
 
       /*
-       * The instruction pertaining to this IV must either be
-       * 1) an instruction that matches the IV's evolution
-       * 2) an instruction that derives from the IV through a one-to-one function to guarantee no overlap
+       * If the IV is the root loop's IV, the accesses must be one-to-one
        */
-      auto inst = instIVPair.first;
-      // inst->print(errs() << "Checking if I is non-overlapping root subscript: "); errs() << "\n";
-      // SE.getSCEV(inst)->print(errs() << "SCEV for I: "); errs() << "\n";
-      if (iv->isIVInstruction(inst) ||
-        (iv->isDerivedFromIVInstructions(inst) &&
-          isOneToOneFunctionOnIV(rootLoopStructure, iv, inst))) {
-        atLeastOneTopLevelIV = true;
+      bool isIV = iv->isIVInstruction(inst);
+      bool isDerivedFromIV = iv->isDerivedFromIVInstructions(inst);
+      assert((isIV || isDerivedFromIV)
+        && "Subscript associated to IV has invalid associated instruction");
+
+      bool isOneToOne;
+      if (isIV) {
+        bool isWrapping = !loopEntryPHISCEV->hasNoSelfWrap() && !loopEntryPHISCEV->hasNoUnsignedWrap()
+          && !loopEntryPHISCEV->hasNoSelfWrap();
+        isOneToOne = !isWrapping;
+      } else {
+        isOneToOne = isOneToOneFunctionOnIV(rootLoopStructure, iv, inst);
       }
+
+      // errs() << "\t Is one to one? : " << isOneToOne << "\n";
+
+      if (!isOneToOne) continue;
+      atLeastOneTopLevelNonOverlappingIV |= isRootLoopIV;
     }
-    if (!atLeastOneTopLevelIV) continue;
+    if (!atLeastOneTopLevelNonOverlappingIV) continue;
 
     nonOverlappingAccessesBetweenIterations.insert(memAccessSpace.get());
   }
@@ -419,6 +446,56 @@ bool LoopIterationDomainSpaceAnalysis::isOneToOneFunctionOnIV(
       if (visited.find(usedInst) != visited.end()) continue;
       visited.insert(usedInst);
       derivingInsts.push(usedInst);
+    }
+  }
+
+  return true;
+}
+
+bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
+  ScalarEvolution &SE,
+  MemoryAccessSpace *space
+) {
+
+  if (space->subscriptIVs.size() == 0 || space->subscriptIVs.size() != space->sizes.size()) {
+    return false;
+  }
+
+  auto strictUpperBoundPred = ICmpInst::Predicate::ICMP_SLT;
+  auto strictLowerBoundPred = ICmpInst::Predicate::ICMP_SGT;
+  auto looseUpperBoundPred = CmpInst::getNonStrictPredicate(strictUpperBoundPred);
+  auto looseLowerBoundPred = CmpInst::getNonStrictPredicate(strictLowerBoundPred);
+
+  /*
+   * All accesses except for the outer-most dimension must be checked for bounded-ness
+   * We assume program correctness for the outer-most dimension, as the base program containing
+   * memory corruption is out of our hands
+   */
+  for (auto i = 1; i < space->sizes.size(); ++i) {
+
+    auto sizeSCEV = space->sizes[i - 1];
+    auto subscriptSCEV = space->subscripts[i];
+    auto instIVPair = space->subscriptIVs[i];
+    auto inst = instIVPair.first;
+    auto iv = instIVPair.second;
+    auto zeroAPInt = APInt(subscriptSCEV->getType()->getPrimitiveSizeInBits(), (int64_t)0);
+    auto zeroSCEV = SE.getConstant(zeroAPInt);
+
+    // sizeSCEV->print(errs() << "Checking if bounded by 0 and ");
+    // subscriptSCEV->print(errs() << " : ");
+    // errs() << "\n";
+
+    if (iv && iv->isIVInstruction(inst)) {
+      auto startValue = iv->getStartValue();
+      auto startSCEV = SE.getSCEV(startValue);
+      bool isStartAtDimensionSize = startSCEV = sizeSCEV;
+
+      auto predOnSize = isStartAtDimensionSize ? looseUpperBoundPred : strictUpperBoundPred;
+      if (!SE.isKnownPredicate(looseLowerBoundPred, subscriptSCEV, zeroSCEV)) return false;
+      if (!SE.isKnownPredicate(predOnSize, subscriptSCEV, sizeSCEV)) return false;
+    } else {
+      if (!SE.isKnownPredicate(looseLowerBoundPred, subscriptSCEV, zeroSCEV)) return false;
+      if (!SE.isKnownPredicate(strictUpperBoundPred, subscriptSCEV, sizeSCEV)) return false;
     }
   }
 

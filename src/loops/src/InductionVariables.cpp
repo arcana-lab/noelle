@@ -19,7 +19,7 @@ InductionVariableManager::InductionVariableManager (
   ScalarEvolution &SE,
   SCCDAG &sccdag,
   LoopEnvironment &loopEnv
-) : loopToIVsMap{}, loopToGoverningIVMap{} {
+) : loopToIVsMap{}, loopToGoverningIVAttrMap{} {
 
   Function &F = *LIS.getLoopNestingTreeRoot()->getHeader()->getParent();
   ScalarEvolutionReferentialExpander referentialExpander(SE, F);
@@ -53,9 +53,11 @@ InductionVariableManager::InductionVariableManager (
 
       loopToIVsMap[loop.get()].insert(IV);
       auto exitBlocks = LIS.getLoop(phi)->getLoopExitBasicBlocks();
-      LoopGoverningIVAttribution attribution(*IV, *sccContainingIV, exitBlocks);
-      if (attribution.isSCCContainingIVWellFormed()) {
-        loopToGoverningIVMap[loop.get()] = IV;
+      LoopGoverningIVAttribution *attribution = new LoopGoverningIVAttribution(*IV, *sccContainingIV, exitBlocks);
+      if (attribution->isSCCContainingIVWellFormed()) {
+        loopToGoverningIVAttrMap[loop.get()] = attribution;
+      } else {
+        delete attribution;
       }
     }
   }
@@ -102,18 +104,21 @@ bool InductionVariableManager::doesContributeToComputeAnInductionVariable (Instr
 }
 
 InductionVariableManager::~InductionVariableManager () {
+  for (auto ivAttributions : loopToGoverningIVAttrMap) {
+    delete ivAttributions.second;
+  }
+  loopToGoverningIVAttrMap.clear();
+
   for (auto loopIVs : loopToIVsMap) {
     for (auto IV : loopIVs.second) {
       delete IV;
     }
   }
-
   loopToIVsMap.clear();
-  loopToGoverningIVMap.clear();
 
   return ;
 }
-      
+
 InductionVariable * InductionVariableManager::getInductionVariable (LoopStructure &LS, Instruction *i) const {
 
   /*
@@ -144,7 +149,7 @@ std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVa
 InductionVariable * InductionVariableManager::getDerivingInductionVariable (
   LoopStructure &LS,
   Instruction *derivedInstruction
-) {
+) const {
 
   for (auto IV : this->getInductionVariables(LS)){
     if (IV->isDerivedFromIVInstructions(derivedInstruction)){
@@ -160,6 +165,12 @@ InductionVariable * InductionVariableManager::getDerivingInductionVariable (
 }
 
 InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable (LoopStructure &LS) const {
-  if (loopToGoverningIVMap.find(&LS) == loopToGoverningIVMap.end()) return nullptr;
-  return loopToGoverningIVMap.at(&LS);
+  if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) return nullptr;
+  auto attribution = loopToGoverningIVAttrMap.at(&LS);
+  return &attribution->getInductionVariable();
+}
+
+LoopGoverningIVAttribution * InductionVariableManager::getLoopGoverningIVAttribution (LoopStructure &LS) const {
+  if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) return nullptr;
+  return loopToGoverningIVAttrMap.at(&LS);
 }
