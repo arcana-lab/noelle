@@ -74,15 +74,24 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
     if (!AR->isAffine())
       return;
 
-  // CUSTOM ADDITION: Peel casts if possible
+  /*
+   * HACK: Ignore casts on subscripts
+   * This is extremely dangerous for small integer sizes, so we guard
+   * against any integer sizes < 32
+   */
   std::function<const SCEV *(const SCEV *Res, const SCEV *Den)> peelCasts;
   peelCasts = [&peelCasts, &SE](const SCEV *Res, const SCEV *Den) -> const SCEV * {
+
+    auto originalRes = Res;
+
+    if (Res->getType()->getPrimitiveSizeInBits() < 32) return originalRes;
 
     // Res->print(errs() << "Res: " << Den->getType()->getIntegerBitWidth() << " "); errs() << "\n";
     // Den->print(errs() << "Den: " << Den->getType()->getIntegerBitWidth() << " "); errs() << "\n";
 
-    if (auto castResult = dyn_cast<SCEVCastExpr>(Res)) {
-      Res = peelCasts(castResult->getOperand(), Den);
+    if (isa<SCEVSignExtendExpr>(Res) || isa<SCEVTruncateExpr>(Res) || isa<SCEVZeroExtendExpr>(Res)) {
+      Res = peelCasts(dyn_cast<SCEVCastExpr>(Res)->getOperand(), Den);
+      if (Res->getType()->getPrimitiveSizeInBits() < 32) return originalRes;
     }
 
     if (isa<SCEVAddExpr>(Res) || isa<SCEVMulExpr>(Res) || isa<SCEVAddRecExpr>(Res)) {
@@ -99,7 +108,8 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
         }
 
         if (isa<SCEVConstant>(opI) && opI->getType() != Den->getType()) {
-          opI = SE.getConstant(Den->getType(), cast<SCEVConstant>(opI)->getValue()->getZExtValue());
+          auto oldOpI = cast<SCEVConstant>(opI);
+          opI = SE.getConstant(Den->getType(), oldOpI->getValue()->getZExtValue());
           changedOperand = true;
         }
 
@@ -119,21 +129,24 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
         opI = peelCasts(opI, Den);
         changedOperand |= oldOpI != opI;
 
+        if (opI->getType()->getPrimitiveSizeInBits() < 32) return originalRes;
+
         ops.push_back(opI);
       }
 
       if (changedOperand) {
         const SCEVAddRecExpr *addRecExpr;
+        llvm::SCEV::NoWrapFlags flags = SCEVAddRecExpr::NoWrapMask;
         switch (Res->getSCEVType()) {
           case scAddRecExpr:
             addRecExpr = cast<SCEVAddRecExpr>(Res);
-            Res = SE.getAddRecExpr(ops, addRecExpr->getLoop(), naryResult->getNoWrapFlags());
+            Res = SE.getAddRecExpr(ops, addRecExpr->getLoop(), flags);
             break;
           case scAddExpr:
-            Res = SE.getAddExpr(ops);
+            Res = SE.getAddExpr(ops, flags);
             break;
           case scMulExpr:
-            Res = SE.getMulExpr(ops);
+            Res = SE.getMulExpr(ops, flags);
             break;
         }
       }

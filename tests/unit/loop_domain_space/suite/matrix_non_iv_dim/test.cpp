@@ -15,7 +15,7 @@ int main (int argc, char *argv[]){
   for (int64_t i = 0; i < iterations; ++i) {
 
     /*
-     * Constant index is understood
+     * Constant index is NOT understood yet
      */
     matrix[i * iterations2] = i * (i + iterations);
     matrix[i * iterations2 + 3] = i * (i + iterations);
@@ -23,8 +23,10 @@ int main (int argc, char *argv[]){
     for (int64_t j = 5; j < iterations2; ++j) {
 
       /*
-       * Function on sub-loop index is "understood"
-       * NOTE: Program correctness is assumed, that this index does not overflow
+       * Function on sub-loop index is determined to be bounded,
+       * and IV derived, so even if it isn't an induction variable itself,
+       * it is allowed
+       * This is NOT understood yet though
        */
       int boundedI = (int)std::fmin(i, iterations2 - 1);
       matrix[i * iterations2 + boundedI] = i * (i + iterations);
