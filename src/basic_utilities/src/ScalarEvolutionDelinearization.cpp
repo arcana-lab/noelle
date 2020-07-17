@@ -75,64 +75,73 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
       return;
 
   // CUSTOM ADDITION: Peel casts if possible
-  auto peelCastsAndDivide = [&](const SCEV *Res, const SCEV *Den, const SCEV **Q, const SCEV **R) -> void {
+  std::function<const SCEV *(const SCEV *Res, const SCEV *Den)> peelCasts;
+  peelCasts = [&peelCasts, &SE](const SCEV *Res, const SCEV *Den) -> const SCEV * {
 
-    auto originalRes = Res;
-
-    Res->print(errs() << "Res: " << Den->getType()->getIntegerBitWidth() << " "); errs() << "\n";
-    Den->print(errs() << "Den: " << Den->getType()->getIntegerBitWidth() << " "); errs() << "\n";
+    // Res->print(errs() << "Res: " << Den->getType()->getIntegerBitWidth() << " "); errs() << "\n";
+    // Den->print(errs() << "Den: " << Den->getType()->getIntegerBitWidth() << " "); errs() << "\n";
 
     if (auto castResult = dyn_cast<SCEVCastExpr>(Res)) {
-      Res = castResult->getOperand();
+      Res = peelCasts(castResult->getOperand(), Den);
     }
 
     if (isa<SCEVAddExpr>(Res) || isa<SCEVMulExpr>(Res) || isa<SCEVAddRecExpr>(Res)) {
       auto naryResult = dyn_cast<SCEVNAryExpr>(Res);
       SmallVector<const SCEV *, 4> ops;
-      bool matchableTypeToDen = true;
+      bool changedOperand = false;
       for (auto i = 0; i < naryResult->getNumOperands(); ++i) {
         auto opI = naryResult->getOperand(i);
+        // opI->print(errs() << "\tOp: " << opI->getType()->getIntegerBitWidth() << " "); errs() << "\n";
+
         if (isa<SCEVSignExtendExpr>(opI) || isa<SCEVTruncateExpr>(opI) || isa<SCEVZeroExtendExpr>(opI)) {
-          errs() << " Is cast: " << "\n";
           opI = dyn_cast<SCEVCastExpr>(opI)->getOperand();
+          changedOperand = true;
         }
 
         if (isa<SCEVConstant>(opI) && opI->getType() != Den->getType()) {
-          errs() << " Is constant: " << "\n";
           opI = SE.getConstant(Den->getType(), cast<SCEVConstant>(opI)->getValue()->getZExtValue());
+          changedOperand = true;
         }
-        opI->print(errs() << "\tOp: " << opI->getType()->getIntegerBitWidth() << " "); errs() << "\n";
+
+        if (isa<SCEVAddExpr>(opI) || isa<SCEVMulExpr>(opI) || isa<SCEVAddRecExpr>(opI)) {
+          auto oldOpI = opI;
+          opI = peelCasts(opI, Den);
+          changedOperand |= oldOpI != opI;
+        }
 
         if (opI->getType() != Den->getType()) {
-          matchableTypeToDen = false;
+          // opI->print(errs() << "NOT DENOM TYPE: "); errs() << "\n";
+          changedOperand = false;
           break;
         }
+
+        auto oldOpI = opI;
+        opI = peelCasts(opI, Den);
+        changedOperand |= oldOpI != opI;
+
         ops.push_back(opI);
       }
-      if (!matchableTypeToDen) {
-        *Q = SE.getZero(originalRes->getType());
-        *R = originalRes;
-        return;
-      }
 
-      const SCEVAddRecExpr *addRecExpr;
-      switch (Res->getSCEVType()) {
-        case scAddRecExpr:
-          addRecExpr = cast<SCEVAddRecExpr>(Res);
-          Res = SE.getAddRecExpr(ops, addRecExpr->getLoop(), naryResult->getNoWrapFlags());
-          break;
-        case scAddExpr:
-          Res = SE.getAddExpr(ops);
-          break;
-        case scMulExpr:
-          Res = SE.getMulExpr(ops);
-          break;
+      if (changedOperand) {
+        const SCEVAddRecExpr *addRecExpr;
+        switch (Res->getSCEVType()) {
+          case scAddRecExpr:
+            addRecExpr = cast<SCEVAddRecExpr>(Res);
+            Res = SE.getAddRecExpr(ops, addRecExpr->getLoop(), naryResult->getNoWrapFlags());
+            break;
+          case scAddExpr:
+            Res = SE.getAddExpr(ops);
+            break;
+          case scMulExpr:
+            Res = SE.getMulExpr(ops);
+            break;
+        }
       }
     }
 
-    Res->print(errs() << "\tRES peeled: "); errs() << "\n";
+    // Res->print(errs() << "\tRES peeled: "); errs() << "\n";
 
-    SCEVDivision::divide(SE, Res, Den, Q, R);
+    return Res;
   };
 
   const SCEV *Res = Expr;
@@ -140,8 +149,8 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
   for (int i = Last; i >= 0; i--) {
 
     const SCEV *Q, *R;
-    // SCEVDivision::divide(SE, Res, Sizes[i], &Q, &R);
-    peelCastsAndDivide(Res, Sizes[i], &Q, &R);
+    Res = peelCasts(Res, Sizes[i]);
+    SCEVDivision::divide(SE, Res, Sizes[i], &Q, &R);
 
     // LLVM_DEBUG({
     //   dbgs() << "Res: " << *Res << "\n";
