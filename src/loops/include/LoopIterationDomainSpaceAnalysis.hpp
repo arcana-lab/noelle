@@ -15,6 +15,7 @@
 #include "SCC.hpp"
 #include "LoopsSummary.hpp"
 #include "InductionVariables.hpp"
+#include "ScalarEvolutionDelinearization.hpp"
 
 namespace llvm {
 
@@ -52,6 +53,7 @@ namespace llvm {
        */
       std::unordered_map<const SCEV *, std::unordered_set<Instruction *>> ivInstructionsBySCEV;
       std::unordered_map<const SCEV *, std::unordered_set<Instruction *>> derivedInstructionsFromIVsBySCEV;
+      std::unordered_map<Instruction *, InductionVariable *> ivsByInstruction;
 
       void indexIVInstructionSCEVs (ScalarEvolution &SE) ;
 
@@ -102,17 +104,6 @@ namespace llvm {
       void identifyNonOverlappingAccessesBetweenIterationsAcrossOneLoopInvocation (ScalarEvolution &SE) ;
 
       bool isMemoryAccessSpaceEquivalentForTopLoopIVSubscript (MemoryAccessSpace *space1, MemoryAccessSpace *space2) const ;
-
-      /*
-       * TODO: This is from lib/Analysis/ScalarEvolution.cpp from LLVM 11 extracted here as this was implemented on LLVM 9
-       * Once on LLVM 11, just use the API directly instead of this hack
-       */
-      bool getIndexExpressionsFromGEP(
-        ScalarEvolution &SE,
-        const GetElementPtrInst *GEP,
-        SmallVectorImpl<const SCEV *> &Subscripts,
-        SmallVectorImpl<int> &Sizes
-      ) ;
 
       bool isOneToOneFunctionOnIV(LoopStructure *LS, InductionVariable *IV, Instruction *derivedInstruction) ;
 

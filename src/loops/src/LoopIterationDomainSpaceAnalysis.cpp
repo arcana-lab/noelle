@@ -70,6 +70,7 @@ bool LoopIterationDomainSpaceAnalysis::isMemoryAccessSpaceEquivalentForTopLoopIV
   space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs() << "\n";
 
   auto getLoopForIV = [&](InductionVariable *iv) -> LoopStructure * {
+    if (!iv) return nullptr;
     auto loopEntryPHI = iv->getLoopEntryPHI();
     return loops.getLoop(*loopEntryPHI);
   };
@@ -102,23 +103,33 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution 
       for (auto inst : iv->getAllInstructions()) {
         assert(SE.isSCEVable(inst->getType()) && "IV instruction is not SCEV-able!");
         auto scev = SE.getSCEV(inst);
-        // scev->print(errs() << "IV instruction SCEV: "); inst->print(errs() << "\tIV I: "); errs() << "\n";
+
+        scev->getType()->print(errs() << "IV instruction SCEV: ");
+        scev->print(errs() << " ");
+        inst->print(errs() << "\n\tIV I: "); errs() << "\n";
+
         if (ivInstructionsBySCEV.find(scev) == ivInstructionsBySCEV.end()) {
           ivInstructionsBySCEV.insert(std::make_pair(scev, std::unordered_set<Instruction *>{ inst }));
         } else {
           ivInstructionsBySCEV.at(scev).insert(inst);
         }
+        ivsByInstruction.insert(std::make_pair(inst, iv));
       }
 
       for (auto inst : iv->getDerivedSCEVInstructions()) {
         assert(SE.isSCEVable(inst->getType()) && "Derived instruction is not SCEV-able!");
         auto scev = SE.getSCEV(inst);
-        // scev->print(errs() << "IV derived instruction SCEV: "); inst->print(errs() << "\tIV derived I: "); errs() << "\n";
+
+        scev->getType()->print(errs() << "IV derived instruction SCEV: ");
+        scev->print(errs() << " ");
+        inst->print(errs() << "\n\tIV derived I: "); errs() << "\n";
+
         if (derivedInstructionsFromIVsBySCEV.find(scev) == derivedInstructionsFromIVsBySCEV.end()) {
           derivedInstructionsFromIVsBySCEV.insert(std::make_pair(scev, std::unordered_set<Instruction *>{ inst }));
         } else {
           derivedInstructionsFromIVsBySCEV.at(scev).insert(inst);
         }
+        ivsByInstruction.insert(std::make_pair(inst, iv));
       }
     }
   }
@@ -187,7 +198,8 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
     auto accessFunction = SE.getMinusSCEV(memAccessSpace->memoryAccessorSCEV, basePointer);
     // TODO: Break apart usage of different steps in delinearization and modify the third
     // so that casts on subscripts is supported
-    SE.delinearize(
+    ScalarEvolutionDelinearization::delinearize(
+      SE,
       accessFunction,
       memAccessSpace->subscripts,
       memAccessSpace->sizes,
@@ -198,7 +210,7 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
       if (auto gep = dyn_cast<GetElementPtrInst>(memAccessSpace->memoryAccessor)) {
         SmallVector<int, 4> sizes;
         // TODO: Determine exactly under what conditions size isn't returned from this API
-        getIndexExpressionsFromGEP(SE, gep, memAccessSpace->subscripts, sizes);
+        ScalarEvolutionDelinearization::getIndexExpressionsFromGEP(SE, gep, memAccessSpace->subscripts, sizes);
         for (auto size : sizes) {
           memAccessSpace->sizes.push_back(SE.getConstant(accessFunction->getType(), size));
         }
@@ -208,10 +220,14 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
     basePointer->print(errs() << "Base pointer: "); errs() << "\n";
     accessFunction->print(errs() << "Access function: "); errs() << "\n";
     for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
-      memAccessSpace->subscripts[i]->print(errs() << "Subscript " << i << ": "); errs() << "\n";
+      auto subscript = memAccessSpace->subscripts[i];
+      subscript->getType()->print(errs() << "Subscript " << i << ": ");
+      subscript->print(errs() << " " ); errs() << "\n";
     }
     for (auto i = 0; i < memAccessSpace->sizes.size(); ++i) {
-      memAccessSpace->sizes[i]->print(errs() << "Size " << i << ": "); errs() << "\n";
+      auto size = memAccessSpace->sizes[i];
+      size->getType()->print(errs() << "Size " << i << ": ");
+      size->print(errs() << " " ); errs() << "\n";
     }
     errs() << "---------\n";
 
@@ -277,6 +293,14 @@ void LoopIterationDomainSpaceAnalysis::identifyIVForMemoryAccessSubscripts (Scal
     auto emptyPair = std::make_pair(nullptr, nullptr);
     if (isa<SCEVConstant>(subscriptSCEV)) return emptyPair;
 
+    auto scevsMatch = [](const SCEV *scev1, const SCEV *scev2) -> bool {
+      if (scev1 == scev2) return true;
+      auto scevConstant1 = dyn_cast<SCEVConstant>(scev1);
+      auto scevConstant2 = dyn_cast<SCEVConstant>(scev2);
+      if (!scevConstant1 || !scevConstant2) return false;
+      return scevConstant1->getValue()->getZExtValue() == scevConstant2->getValue()->getZExtValue();
+    };
+
     /*
      * Identify an InductionVariable this SCEV belongs to by looking only within
      * the SCEV's loop
@@ -284,30 +308,45 @@ void LoopIterationDomainSpaceAnalysis::identifyIVForMemoryAccessSubscripts (Scal
      * NOTE: This could result in one of several IVs being found if there exist
      * more than one evolving in lock-step
      */
-    auto findInstructionInLoopForSCEV = [](
+    auto findInstructionInLoopForSCEV = [&SE, &scevsMatch](
       std::unordered_map<const SCEV *, std::unordered_set<Instruction *>> &scevToInstMap,
       const SCEV *subscriptSCEV
     ) -> Instruction * {
-      if (scevToInstMap.find(subscriptSCEV) == scevToInstMap.end()) return nullptr;
-      auto matchingIVInstruction = *scevToInstMap.at(subscriptSCEV).begin();
-      return matchingIVInstruction;
+      if (scevToInstMap.find(subscriptSCEV) != scevToInstMap.end()) {
+        auto matchingIVInstruction = *scevToInstMap.at(subscriptSCEV).begin();
+        return matchingIVInstruction;
+      }
+
+      if (auto addRecSubscriptSCEV = dyn_cast<SCEVAddRecExpr>(subscriptSCEV)) {
+        auto loopHeader = addRecSubscriptSCEV->getLoop()->getHeader();
+        for (auto scevInstPair : scevToInstMap) {
+          auto otherSCEV = scevInstPair.first;
+          if (auto otherAddRecSCEV = dyn_cast<SCEVAddRecExpr>(otherSCEV)) {
+            if (otherAddRecSCEV->getLoop()->getHeader() != loopHeader) continue;
+            if (!scevsMatch(addRecSubscriptSCEV->getStart(), addRecSubscriptSCEV->getStart())) continue;
+            if (!scevsMatch(addRecSubscriptSCEV->getStepRecurrence(SE), addRecSubscriptSCEV->getStepRecurrence(SE))) continue;
+          }
+
+          return *scevInstPair.second.begin();
+        }
+      }
+
+      return nullptr;
     };
 
     subscriptSCEV->print(errs() << "Searching for instruction matching subscript SCEV: "); errs() << "\n";
     auto ivInst = findInstructionInLoopForSCEV(this->ivInstructionsBySCEV, subscriptSCEV);
     if (ivInst) {
-      auto loopStructure = loops.getLoop(*ivInst->getParent());
-      auto iv = ivManager.getInductionVariable(*loopStructure, ivInst);
       ivInst->print(errs() << "IV INST: "); errs() << "\n";
+      auto iv = ivsByInstruction.at(ivInst);
       iv->getLoopEntryPHI()->print(errs() << "IV LOOP ENTRY PHI: "); errs() << "\n";
       return std::make_pair(ivInst, iv);
     }
 
     auto derivedInst = findInstructionInLoopForSCEV(this->derivedInstructionsFromIVsBySCEV, subscriptSCEV);
     if (derivedInst) {
-      auto loopStructure = loops.getLoop(*derivedInst->getParent());
-      auto derivingIV = ivManager.getDerivingInductionVariable(*loopStructure, derivedInst);
       derivedInst->print(errs() << "DERIVED IV INST: "); errs() << "\n";
+      auto derivingIV = ivsByInstruction.at(derivedInst);
       derivingIV->getLoopEntryPHI()->print(errs() << "DERIVING IV LOOP ENTRY PHI: "); errs() << "\n";
       return std::make_pair(derivedInst, derivingIV);
     }
@@ -332,54 +371,6 @@ LoopIterationDomainSpaceAnalysis::MemoryAccessSpace::MemoryAccessSpace (Instruct
 LoopIterationDomainSpaceAnalysis::~LoopIterationDomainSpaceAnalysis () {
   accessSpaces.clear();
 }
-
-bool LoopIterationDomainSpaceAnalysis::getIndexExpressionsFromGEP(
-  ScalarEvolution &SE,
-  const GetElementPtrInst *GEP,
-  SmallVectorImpl<const SCEV *> &Subscripts,
-  SmallVectorImpl<int> &Sizes
-) {
-   assert(Subscripts.empty() && Sizes.empty() &&
-          "Expected output lists to be empty on entry to this function.");
-   assert(GEP && "getIndexExpressionsFromGEP called with a null GEP");
-   Type *Ty = GEP->getPointerOperandType();
-   bool DroppedFirstDim = false;
-   for (unsigned i = 1; i < GEP->getNumOperands(); i++) {
-     const SCEV *Expr = SE.getSCEV(GEP->getOperand(i));
-     if (i == 1) {
-       if (auto *PtrTy = dyn_cast<PointerType>(Ty)) {
-         Ty = PtrTy->getElementType();
-       } else if (auto *ArrayTy = dyn_cast<ArrayType>(Ty)) {
-         Ty = ArrayTy->getElementType();
-       } else {
-         Subscripts.clear();
-         Sizes.clear();
-         return false;
-       }
-       if (auto *Const = dyn_cast<SCEVConstant>(Expr))
-         if (Const->getValue()->isZero()) {
-           DroppedFirstDim = true;
-           continue;
-         }
-       Subscripts.push_back(Expr);
-       continue;
-     }
- 
-     auto *ArrayTy = dyn_cast<ArrayType>(Ty);
-     if (!ArrayTy) {
-       Subscripts.clear();
-       Sizes.clear();
-       return false;
-     }
- 
-     Subscripts.push_back(Expr);
-     if (!(DroppedFirstDim && i == 2))
-       Sizes.push_back(ArrayTy->getNumElements());
- 
-     Ty = ArrayTy->getElementType();
-   }
-   return !Subscripts.empty();
- }
 
 bool LoopIterationDomainSpaceAnalysis::isOneToOneFunctionOnIV(
   LoopStructure *loopStructure,
