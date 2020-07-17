@@ -125,8 +125,7 @@ InductionVariable * InductionVariableManager::getInductionVariable (LoopStructur
    * Check each induction variable.
    */
   for (auto IV : IVs){
-    auto insts = IV->getAllInstructions();
-    if (insts.find(i) != insts.end()){
+    if (IV->isIVInstruction(i)){
 
       /*
        * We found an induction variable that involves the instruction given as input.
@@ -148,8 +147,7 @@ InductionVariable * InductionVariableManager::getDerivingInductionVariable (
 ) {
 
   for (auto IV : this->getInductionVariables(LS)){
-    auto insts = IV->getDerivedSCEVInstructions();
-    if (insts.find(derivedInstruction) != insts.end()){
+    if (IV->isDerivedFromIVInstructions(derivedInstruction)){
 
       /*
        * We found an induction variable that derives the instruction given as input.
