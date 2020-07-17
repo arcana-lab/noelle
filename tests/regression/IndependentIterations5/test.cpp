@@ -1,6 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+extern "C" int nk_vc_printf (...);
+extern "C" long atol (...);
 
 long long int *array;
 
@@ -25,15 +24,11 @@ int main (int argc, char *argv[]){
   /*
    * Check the inputs.
    */
-  if (argc < 3){
-    fprintf(stderr, "USAGE: %s LOOP_ITERATIONS NESTED_LOOP_ITERATIONS\n", argv[0]);
-    return -1;
-  }
-  auto iterations = atoll(argv[1]);
-  auto inner_iterations = atoll(argv[2]);
+  auto iterations = atol(argv[1]);
+  auto inner_iterations = atol(argv[2]);
 
   auto s = computeSum(array, iterations, inner_iterations);
-  printf("%lld\n", s);
+  nk_vc_printf("%lld\n", s);
 
   return 0;
 }

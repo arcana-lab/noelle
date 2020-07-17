@@ -19,6 +19,7 @@ HELIX::HELIX (
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, v},
     loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr}
   {
+  return ;
 
   /*
    * Fetch the LLVM context.
