@@ -36,7 +36,7 @@ install(  PROGRAMS
           include/ScalarEvolutionExpander.h
           include/ScalarEvolutionReferencer.hpp
           include/ScalarEvolutionDelinearization.hpp
-          include/BitMatrix.h
+          include/BitMatrix.hpp
           DESTINATION 
           include
         )
