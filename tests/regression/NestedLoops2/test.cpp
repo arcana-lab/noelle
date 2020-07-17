@@ -11,13 +11,13 @@ void computeSum (long long int *a, long long int SIZE_Z, long long int SIZE_X, l
 				if( x == 0 || x == SIZE_X-1 ||
 				    y == 0 || y == SIZE_Y-1 ||
 				    z == 0 || z == SIZE_Z-1 ) {
-          int offset = x + SIZE_X * y + z * SIZE_Z;
+          int offset = x + SIZE_X * y + z * (SIZE_X * SIZE_Y);
 					a[offset] += x + y + z;
 				} else {
 					if( (z == 1 || z == SIZE_Z-2) &&
 					     x > 1 && x < SIZE_X-2 &&
 					     y > 1 && y < SIZE_Y-2 ) {
-            int offset = x + SIZE_X * y + z * SIZE_Z;
+            int offset = x + SIZE_X * y + z * (SIZE_X * SIZE_Y);
 					  a[offset] += x + y - z;
 					}
 				}
