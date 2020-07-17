@@ -42,7 +42,9 @@ namespace llvm {
 
       InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) ;
 
-      bool doesContributeToComputeAnInductionVariable (Instruction *i) ;
+      bool doesContributeToComputeAnInductionVariable (Instruction *i) const ;
+      
+      InductionVariable * getTheInductionVariableThatThisInstructionContributesTo (Instruction *i) const ;
 
       InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i);
 
@@ -83,7 +85,7 @@ namespace llvm {
 
       bool isStepValueLoopInvariant (void) const;
 
-      const SCEV *getStepSCEV (void) const;
+      const SCEV * getStepSCEV (void) const;
 
       ~InductionVariable ();
 

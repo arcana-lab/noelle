@@ -56,7 +56,7 @@ InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvo
   }
 }
 
-bool InductionVariableManager::doesContributeToComputeAnInductionVariable (Instruction *i) {
+InductionVariable * InductionVariableManager::getTheInductionVariableThatThisInstructionContributesTo (Instruction *i) const {
 
   /*
    * Iterate over every loop and their induction variables.
@@ -74,12 +74,25 @@ bool InductionVariableManager::doesContributeToComputeAnInductionVariable (Instr
     for (auto IV : IVs){
       auto insts = IV->getAllInstructions();
       if (insts.find(i) != insts.end()){
-        return true;
+        return IV;
       }
     }
   }
 
-  return false;
+  return nullptr;
+}
+
+bool InductionVariableManager::doesContributeToComputeAnInductionVariable (Instruction *i) const {
+
+  /*
+   * Fetch the induction variable that @i contributes to.
+   */
+  auto IV = this->getTheInductionVariableThatThisInstructionContributesTo(i);
+  if (IV == nullptr){
+    return false;
+  }
+
+  return true;
 }
 
 InductionVariableManager::~InductionVariableManager () {
@@ -88,8 +101,11 @@ InductionVariableManager::~InductionVariableManager () {
       delete IV;
     }
   }
+
   loopToIVsMap.clear();
   loopToGoverningIVMap.clear();
+
+  return ;
 }
       
 InductionVariable * InductionVariableManager::getInductionVariable (LoopStructure &LS, Instruction *i){
