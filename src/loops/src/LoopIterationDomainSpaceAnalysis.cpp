@@ -101,7 +101,7 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution 
   for (auto loop : loops.loops) {
     for (auto iv : ivManager.getInductionVariables(*loop.get())) {
       for (auto inst : iv->getAllInstructions()) {
-        assert(SE.isSCEVable(inst->getType()) && "IV instruction is not SCEV-able!");
+        if (!SE.isSCEVable(inst->getType())) continue;
         auto scev = SE.getSCEV(inst);
 
         // scev->getType()->print(errs() << "IV instruction SCEV: ");
@@ -117,7 +117,7 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution 
       }
 
       for (auto inst : iv->getDerivedSCEVInstructions()) {
-        assert(SE.isSCEVable(inst->getType()) && "Derived instruction is not SCEV-able!");
+        if (!SE.isSCEVable(inst->getType())) continue;
         auto scev = SE.getSCEV(inst);
 
         // scev->getType()->print(errs() << "IV derived instruction SCEV: ");

@@ -59,6 +59,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   LoopCarriedDependencies lcd(this->liSummary, DS, *loopSCCDAG);
   SCCDAGNormalizer normalizer{*loopSCCDAG, this->liSummary, lcd};
   normalizer.normalizeInPlace();
+  lcd = LoopCarriedDependencies(this->liSummary, DS, *loopSCCDAG);
   this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAG, *environment);
   this->sccdagAttrs = SCCDAGAttrs(loopDG, loopSCCDAG, this->liSummary, SE, lcd, *inductionVariables);
 
