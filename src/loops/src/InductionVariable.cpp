@@ -286,7 +286,7 @@ Value *InductionVariable::getSingleComputedStepValue (void) const {
   return singleStepValue;
 }
 
-const SCEV *InductionVariable::getStepSCEV (void) const {
+const SCEV * InductionVariable::getStepSCEV (void) const {
   return stepSCEV;
 }
 
