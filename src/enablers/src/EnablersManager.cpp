@@ -49,7 +49,7 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = noelle.getProgramLoops();
+  auto loopsToParallelize = noelle.getLoops();
   errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
 
   /*
