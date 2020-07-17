@@ -25,6 +25,7 @@
 namespace llvm {
 
   class InductionVariable;
+  class LoopGoverningIVAttribution;
 
   class InductionVariableManager {
     public:
@@ -53,13 +54,15 @@ namespace llvm {
 
       bool doesContributeToComputeAnInductionVariable (Instruction *i) const ;
 
-      InductionVariable * getDerivingInductionVariable (LoopStructure &LS, Instruction *derivedInstruction);
+      LoopGoverningIVAttribution * getLoopGoverningIVAttribution (LoopStructure &LS) const ;
+
+      InductionVariable * getDerivingInductionVariable (LoopStructure &LS, Instruction *derivedInstruction) const ;
 
       ~InductionVariableManager ();
 
     private:
       std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
-      std::unordered_map<LoopStructure *, InductionVariable *> loopToGoverningIVMap;
+      std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *> loopToGoverningIVAttrMap;
   };
 
   class InductionVariable {

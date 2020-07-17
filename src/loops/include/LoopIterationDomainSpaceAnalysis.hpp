@@ -107,6 +107,8 @@ namespace llvm {
 
       bool isOneToOneFunctionOnIV(LoopStructure *LS, InductionVariable *IV, Instruction *derivedInstruction) ;
 
+      bool isInnerDimensionSubscriptsBounded (ScalarEvolution &SE, MemoryAccessSpace *space) ;
+
   };
 
 }
