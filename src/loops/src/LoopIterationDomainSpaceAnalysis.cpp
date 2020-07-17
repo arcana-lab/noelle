@@ -66,8 +66,8 @@ bool LoopIterationDomainSpaceAnalysis::isMemoryAccessSpaceEquivalentForTopLoopIV
   if (space1->subscriptIVs.size() == 0) return false;
   if (space1->subscriptIVs.size() != space2->subscriptIVs.size()) return false;
 
-  space1->memoryAccessor->print(errs() << "Space 1 accessor: "); errs() << "\t";
-  space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs() << "\n";
+  // space1->memoryAccessor->print(errs() << "Space 1 accessor: "); errs() << "\t";
+  // space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs() << "\n";
 
   auto getLoopForIV = [&](InductionVariable *iv) -> LoopStructure * {
     if (!iv) return nullptr;
@@ -104,9 +104,9 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution 
         assert(SE.isSCEVable(inst->getType()) && "IV instruction is not SCEV-able!");
         auto scev = SE.getSCEV(inst);
 
-        scev->getType()->print(errs() << "IV instruction SCEV: ");
-        scev->print(errs() << " ");
-        inst->print(errs() << "\n\tIV I: "); errs() << "\n";
+        // scev->getType()->print(errs() << "IV instruction SCEV: ");
+        // scev->print(errs() << " ");
+        // inst->print(errs() << "\n\tIV I: "); errs() << "\n";
 
         if (ivInstructionsBySCEV.find(scev) == ivInstructionsBySCEV.end()) {
           ivInstructionsBySCEV.insert(std::make_pair(scev, std::unordered_set<Instruction *>{ inst }));
@@ -120,9 +120,9 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution 
         assert(SE.isSCEVable(inst->getType()) && "Derived instruction is not SCEV-able!");
         auto scev = SE.getSCEV(inst);
 
-        scev->getType()->print(errs() << "IV derived instruction SCEV: ");
-        scev->print(errs() << " ");
-        inst->print(errs() << "\n\tIV derived I: "); errs() << "\n";
+        // scev->getType()->print(errs() << "IV derived instruction SCEV: ");
+        // scev->print(errs() << " ");
+        // inst->print(errs() << "\n\tIV derived I: "); errs() << "\n";
 
         if (derivedInstructionsFromIVsBySCEV.find(scev) == derivedInstructionsFromIVsBySCEV.end()) {
           derivedInstructionsFromIVsBySCEV.insert(std::make_pair(scev, std::unordered_set<Instruction *>{ inst }));
