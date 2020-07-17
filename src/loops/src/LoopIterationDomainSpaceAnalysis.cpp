@@ -184,8 +184,8 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
     memAccessSpace->memoryAccessorSCEV = SE.getSCEV(memAccessSpace->memoryAccessor);
     memAccessSpace->elementSize = SE.getElementSize(storeOrLoadUsingAccessor);
 
-    memAccessSpace->memoryAccessor->print(errs() << "Accessor: "); errs() << "\n";
-    memAccessSpace->memoryAccessorSCEV->print(errs() << "Accessor SCEV: "); errs() << "\n";
+    // memAccessSpace->memoryAccessor->print(errs() << "Accessor: "); errs() << "\n";
+    // memAccessSpace->memoryAccessorSCEV->print(errs() << "Accessor SCEV: "); errs() << "\n";
 
     if (!memAccessSpace->elementSize) continue;
 
@@ -217,19 +217,19 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
       }
     }
 
-    basePointer->print(errs() << "Base pointer: "); errs() << "\n";
-    accessFunction->print(errs() << "Access function: "); errs() << "\n";
-    for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
-      auto subscript = memAccessSpace->subscripts[i];
-      subscript->getType()->print(errs() << "Subscript " << i << ": ");
-      subscript->print(errs() << " " ); errs() << "\n";
-    }
-    for (auto i = 0; i < memAccessSpace->sizes.size(); ++i) {
-      auto size = memAccessSpace->sizes[i];
-      size->getType()->print(errs() << "Size " << i << ": ");
-      size->print(errs() << " " ); errs() << "\n";
-    }
-    errs() << "---------\n";
+    // basePointer->print(errs() << "Base pointer: "); errs() << "\n";
+    // accessFunction->print(errs() << "Access function: "); errs() << "\n";
+    // for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
+    //   auto subscript = memAccessSpace->subscripts[i];
+    //   subscript->getType()->print(errs() << "Subscript " << i << ": ");
+    //   subscript->print(errs() << " " ); errs() << "\n";
+    // }
+    // for (auto i = 0; i < memAccessSpace->sizes.size(); ++i) {
+    //   auto size = memAccessSpace->sizes[i];
+    //   size->getType()->print(errs() << "Size " << i << ": ");
+    //   size->print(errs() << " " ); errs() << "\n";
+    // }
+    // errs() << "---------\n";
 
   }
 
@@ -265,8 +265,8 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
        * 2) an instruction that derives from the IV through a one-to-one function to guarantee no overlap
        */
       auto inst = instIVPair.first;
-      inst->print(errs() << "Checking if I is non-overlapping root subscript: "); errs() << "\n";
-      SE.getSCEV(inst)->print(errs() << "SCEV for I: "); errs() << "\n";
+      // inst->print(errs() << "Checking if I is non-overlapping root subscript: "); errs() << "\n";
+      // SE.getSCEV(inst)->print(errs() << "SCEV for I: "); errs() << "\n";
       if (iv->isIVInstruction(inst) ||
         (iv->isDerivedFromIVInstructions(inst) &&
           isOneToOneFunctionOnIV(rootLoopStructure, iv, inst))) {
@@ -334,20 +334,20 @@ void LoopIterationDomainSpaceAnalysis::identifyIVForMemoryAccessSubscripts (Scal
       return nullptr;
     };
 
-    subscriptSCEV->print(errs() << "Searching for instruction matching subscript SCEV: "); errs() << "\n";
+    // subscriptSCEV->print(errs() << "Searching for instruction matching subscript SCEV: "); errs() << "\n";
     auto ivInst = findInstructionInLoopForSCEV(this->ivInstructionsBySCEV, subscriptSCEV);
     if (ivInst) {
-      ivInst->print(errs() << "IV INST: "); errs() << "\n";
+      // ivInst->print(errs() << "IV INST: "); errs() << "\n";
       auto iv = ivsByInstruction.at(ivInst);
-      iv->getLoopEntryPHI()->print(errs() << "IV LOOP ENTRY PHI: "); errs() << "\n";
+      // iv->getLoopEntryPHI()->print(errs() << "IV LOOP ENTRY PHI: "); errs() << "\n";
       return std::make_pair(ivInst, iv);
     }
 
     auto derivedInst = findInstructionInLoopForSCEV(this->derivedInstructionsFromIVsBySCEV, subscriptSCEV);
     if (derivedInst) {
-      derivedInst->print(errs() << "DERIVED IV INST: "); errs() << "\n";
+      // derivedInst->print(errs() << "DERIVED IV INST: "); errs() << "\n";
       auto derivingIV = ivsByInstruction.at(derivedInst);
-      derivingIV->getLoopEntryPHI()->print(errs() << "DERIVING IV LOOP ENTRY PHI: "); errs() << "\n";
+      // derivingIV->getLoopEntryPHI()->print(errs() << "DERIVING IV LOOP ENTRY PHI: "); errs() << "\n";
       return std::make_pair(derivedInst, derivingIV);
     }
 
@@ -391,7 +391,7 @@ bool LoopIterationDomainSpaceAnalysis::isOneToOneFunctionOnIV(
 
     if (IV->isIVInstruction(inst)) continue;
 
-    inst->print(errs() << "Checking if derived inst is a one-to-one operation: "); errs() << "\n";
+    // inst->print(errs() << "Checking if derived inst is a one-to-one operation: "); errs() << "\n";
 
     /*
      * TODO: Make this far less naive
