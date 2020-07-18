@@ -450,26 +450,27 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
   auto liveOutBlock = liveOut->getParent();
 
   /*
-   * If the live out is reduced, then insert the store right before the task completes
-   * Otherwise, only insert stores in loop exit blocks the live out dominates
+   * Insert stores in loop exit blocks
+   * If the live out is reducible, it is fine that the live out value does not dominate the exit
+   * as some other intermediate is guaranteed to
    */
   std::set<BasicBlock *> insertPoints;
-  std::unordered_set<BasicBlock *> clonedLoopExitBlocks{};
   for (auto BB : loopSummary->getLoopExitBasicBlocks()) {
     auto cloneBB = task->getCloneOfOriginalBasicBlock(BB);
-    clonedLoopExitBlocks.insert(cloneBB);
-    if (!taskDS.DT.dominates(liveOutBlock, cloneBB)) continue;
+    auto liveOutDominatesExit = taskDS.DT.dominates(liveOutBlock, cloneBB);
+    if (!isReduced && !liveOutDominatesExit) continue;
     insertPoints.insert(cloneBB);
   }
 
   /*
-   * If the parallelization scheme introduced other loop exiting blocks, detect them
+   * If the parallelization scheme introduced other loop exiting blocks,
+   * and this live out is reducible, we must store the latest intermediate value for them
    */
-  for (auto predecessor : predecessors(task->getExit())) {
-    if (predecessor == task->getEntry()) continue;
-    if (clonedLoopExitBlocks.find(predecessor) != clonedLoopExitBlocks.end()) continue;
-    if (!taskDS.DT.dominates(liveOutBlock, predecessor)) continue;
-    insertPoints.insert(predecessor);
+  if (isReduced) {
+    for (auto predecessor : predecessors(task->getExit())) {
+      if (predecessor == task->getEntry()) continue;
+      insertPoints.insert(predecessor);
+    }
   }
 
   return insertPoints;
