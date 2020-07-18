@@ -134,6 +134,8 @@ bool DOALL::canBeAppliedToLoop (
     LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [
       &areAllDataLCDsFromDisjointMemoryAccesses, domainSpaceAnalysis
     ](DGEdge<Value> *dep) -> bool {
+      if (dep->isControlDependence()) return false;
+
       if (!dep->isMemoryDependence()) {
         areAllDataLCDsFromDisjointMemoryAccesses = false;
         return true;

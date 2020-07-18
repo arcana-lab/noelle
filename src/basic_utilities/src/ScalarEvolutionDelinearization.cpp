@@ -109,7 +109,7 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
 
         if (isa<SCEVConstant>(opI) && opI->getType() != Den->getType()) {
           auto oldOpI = cast<SCEVConstant>(opI);
-          opI = SE.getConstant(Den->getType(), oldOpI->getValue()->getZExtValue());
+          opI = SE.getConstant(Den->getType(), oldOpI->getValue()->getSExtValue());
           changedOperand = true;
         }
 
