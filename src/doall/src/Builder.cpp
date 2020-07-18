@@ -254,8 +254,6 @@ void DOALL::rewireLoopToIterateChunks (
   bool requiresConditionBeforeEnteringHeader = false;
   for (auto &I : *headerClone) {
     if (repeatableInstructions.find(&I) == repeatableInstructions.end()) {
-      assert(!isa<PHINode>(I)
-        && "All PHIs (which have loop carried dependencies) must be chunked or reducible");
       requiresConditionBeforeEnteringHeader = true;
       break;
     }
