@@ -66,8 +66,8 @@ bool LoopIterationDomainSpaceAnalysis::isMemoryAccessSpaceEquivalentForTopLoopIV
   if (space1->subscriptIVs.size() == 0) return false;
   if (space1->subscriptIVs.size() != space2->subscriptIVs.size()) return false;
 
-  // space1->memoryAccessor->print(errs() << "Space 1 accessor: "); errs() << "\t";
-  // space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs() << "\n";
+  space1->memoryAccessor->print(errs() << "Space 1 accessor: "); errs() << "\t";
+  space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs() << "\n";
 
   auto getLoopForIV = [&](InductionVariable *iv) -> LoopStructure * {
     auto loopEntryPHI = iv->getLoopEntryPHI();
@@ -103,9 +103,9 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution 
         if (!SE.isSCEVable(inst->getType())) continue;
         auto scev = SE.getSCEV(inst);
 
-        // scev->getType()->print(errs() << "IV instruction SCEV: ");
-        // scev->print(errs() << " ");
-        // inst->print(errs() << "\n\tIV I: "); errs() << "\n";
+        scev->getType()->print(errs() << "IV instruction SCEV: ");
+        scev->print(errs() << " ");
+        inst->print(errs() << "\n\tIV I: "); errs() << "\n";
 
         if (ivInstructionsBySCEV.find(scev) == ivInstructionsBySCEV.end()) {
           ivInstructionsBySCEV.insert(std::make_pair(scev, std::unordered_set<Instruction *>{ inst }));
@@ -119,9 +119,9 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution 
         if (!SE.isSCEVable(inst->getType())) continue;
         auto scev = SE.getSCEV(inst);
 
-        // scev->getType()->print(errs() << "IV derived instruction SCEV: ");
-        // scev->print(errs() << " ");
-        // inst->print(errs() << "\n\tIV derived I: "); errs() << "\n";
+        scev->getType()->print(errs() << "IV derived instruction SCEV: ");
+        scev->print(errs() << " ");
+        inst->print(errs() << "\n\tIV derived I: "); errs() << "\n";
 
         if (derivedInstructionsFromIVsBySCEV.find(scev) == derivedInstructionsFromIVsBySCEV.end()) {
           derivedInstructionsFromIVsBySCEV.insert(std::make_pair(scev, std::unordered_set<Instruction *>{ inst }));
@@ -223,19 +223,19 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
       }
     }
 
-    // basePointer->print(errs() << "Base pointer: "); errs() << "\n";
-    // accessFunction->print(errs() << "Access function: "); errs() << "\n";
-    // for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
-    //   auto subscript = memAccessSpace->subscripts[i];
-    //   subscript->getType()->print(errs() << "Subscript " << i << ": ");
-    //   subscript->print(errs() << " " ); errs() << "\n";
-    // }
-    // for (auto i = 0; i < memAccessSpace->sizes.size(); ++i) {
-    //   auto size = memAccessSpace->sizes[i];
-    //   size->getType()->print(errs() << "Size " << i << ": ");
-    //   size->print(errs() << " " ); errs() << "\n";
-    // }
-    // errs() << "---------\n";
+    basePointer->print(errs() << "Base pointer: "); errs() << "\n";
+    accessFunction->print(errs() << "Access function: "); errs() << "\n";
+    for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
+      auto subscript = memAccessSpace->subscripts[i];
+      subscript->getType()->print(errs() << "Subscript " << i << ": ");
+      subscript->print(errs() << " " ); errs() << "\n";
+    }
+    for (auto i = 0; i < memAccessSpace->sizes.size(); ++i) {
+      auto size = memAccessSpace->sizes[i];
+      size->getType()->print(errs() << "Size " << i << ": ");
+      size->print(errs() << " " ); errs() << "\n";
+    }
+    errs() << "---------\n";
 
   }
 
@@ -250,7 +250,7 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
     if (memAccessSpace->subscriptIVs.size() == 0) continue;
     if (memAccessSpace->subscriptIVs.size() != memAccessSpace->sizes.size()) continue;
 
-    // memAccessSpace->memoryAccessor->print(errs() << "Checking accessor for overlapping: "); errs() << "\n";
+    memAccessSpace->memoryAccessor->print(errs() << "Checking accessor for overlapping: "); errs() << "\n";
 
     if (!isInnerDimensionSubscriptsBounded(SE, memAccessSpace.get())) continue;
 
@@ -302,6 +302,8 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
     }
     if (!atLeastOneTopLevelNonOverlappingIV) continue;
 
+    errs() << "Is non-overlapping\n";
+
     nonOverlappingAccessesBetweenIterations.insert(memAccessSpace.get());
   }
 
@@ -325,7 +327,7 @@ void LoopIterationDomainSpaceAnalysis::identifyIVForMemoryAccessSubscripts (Scal
       auto scevConstant1 = dyn_cast<SCEVConstant>(scev1);
       auto scevConstant2 = dyn_cast<SCEVConstant>(scev2);
       if (!scevConstant1 || !scevConstant2) return false;
-      return scevConstant1->getValue()->getZExtValue() == scevConstant2->getValue()->getZExtValue();
+      return scevConstant1->getValue()->getSExtValue() == scevConstant2->getValue()->getSExtValue();
     };
 
     /*
@@ -350,8 +352,8 @@ void LoopIterationDomainSpaceAnalysis::identifyIVForMemoryAccessSubscripts (Scal
           auto otherSCEV = scevInstPair.first;
           if (auto otherAddRecSCEV = dyn_cast<SCEVAddRecExpr>(otherSCEV)) {
             if (otherAddRecSCEV->getLoop()->getHeader() != loopHeader) continue;
-            if (!scevsMatch(addRecSubscriptSCEV->getStart(), addRecSubscriptSCEV->getStart())) continue;
-            if (!scevsMatch(addRecSubscriptSCEV->getStepRecurrence(SE), addRecSubscriptSCEV->getStepRecurrence(SE))) continue;
+            if (!scevsMatch(addRecSubscriptSCEV->getStart(), otherAddRecSCEV->getStart())) continue;
+            if (!scevsMatch(addRecSubscriptSCEV->getStepRecurrence(SE), otherAddRecSCEV->getStepRecurrence(SE))) continue;
           }
 
           return *scevInstPair.second.begin();
@@ -461,10 +463,33 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
     return false;
   }
 
+  auto equalPred = ICmpInst::Predicate::ICMP_EQ;
   auto strictUpperBoundPred = ICmpInst::Predicate::ICMP_SLT;
   auto strictLowerBoundPred = ICmpInst::Predicate::ICMP_SGT;
   auto looseUpperBoundPred = CmpInst::getNonStrictPredicate(strictUpperBoundPred);
   auto looseLowerBoundPred = CmpInst::getNonStrictPredicate(strictLowerBoundPred);
+
+  // for (auto i = 1; i < space->sizes.size(); ++i) {
+  //   auto sizeSCEV = space->sizes[i - 1];
+  //   auto instIVPair = space->subscriptIVs[i];
+  //   auto inst = instIVPair.first;
+  //   auto subscriptSCEV = SE.getSCEV(inst);
+  //   if (!inst) {
+  //     errs() << "No inst: " << i << "\n";
+  //     continue;
+  //   }
+  //   sizeSCEV->print(errs() << "SIZE "); errs() << "\n";
+  //   subscriptSCEV->print(errs() << "Subscript " << i << ": "); errs() << "\n";
+  //   inst->print(errs() << "\tInst: "); errs() << "\n";
+  // }
+
+  auto scevsMatch = [](const SCEV *scev1, const SCEV *scev2) -> bool {
+    if (scev1 == scev2) return true;
+    auto scevConstant1 = dyn_cast<SCEVConstant>(scev1);
+    auto scevConstant2 = dyn_cast<SCEVConstant>(scev2);
+    if (!scevConstant1 || !scevConstant2) return false;
+    return scevConstant1->getValue()->getSExtValue() == scevConstant2->getValue()->getSExtValue();
+  };
 
   /*
    * All accesses except for the outer-most dimension must be checked for bounded-ness
@@ -474,30 +499,120 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
   for (auto i = 1; i < space->sizes.size(); ++i) {
 
     auto sizeSCEV = space->sizes[i - 1];
-    auto subscriptSCEV = space->subscripts[i];
     auto instIVPair = space->subscriptIVs[i];
     auto inst = instIVPair.first;
     auto iv = instIVPair.second;
-    auto zeroAPInt = APInt(subscriptSCEV->getType()->getPrimitiveSizeInBits(), (int64_t)0);
-    auto zeroSCEV = SE.getConstant(zeroAPInt);
+    if (!inst) return false;
 
-    // sizeSCEV->print(errs() << "Checking if bounded by 0 and ");
-    // subscriptSCEV->print(errs() << " : ");
-    // errs() << "\n";
-
-    if (iv && iv->isIVInstruction(inst)) {
-      auto startValue = iv->getStartValue();
-      auto startSCEV = SE.getSCEV(startValue);
-      bool isStartAtDimensionSize = startSCEV = sizeSCEV;
-
-      auto predOnSize = isStartAtDimensionSize ? looseUpperBoundPred : strictUpperBoundPred;
-      if (!SE.isKnownPredicate(looseLowerBoundPred, subscriptSCEV, zeroSCEV)) return false;
-      if (!SE.isKnownPredicate(predOnSize, subscriptSCEV, sizeSCEV)) return false;
-    } else {
-      if (!SE.isKnownPredicate(looseLowerBoundPred, subscriptSCEV, zeroSCEV)) return false;
-      if (!SE.isKnownPredicate(strictUpperBoundPred, subscriptSCEV, sizeSCEV)) return false;
+    /*
+     * In case the subscript SCEV was composed by the Delinearization class
+     * which might not use ScalarEvolution cache, we fetch the cached SCEV via the matched instruction
+     */
+    auto subscriptSCEV = SE.getSCEV(inst);
+    if (isa<SCEVSignExtendExpr>(subscriptSCEV) || isa<SCEVTruncateExpr>(subscriptSCEV) || isa<SCEVZeroExtendExpr>(subscriptSCEV)) {
+      subscriptSCEV = cast<SCEVCastExpr>(subscriptSCEV)->getOperand();
     }
+    auto zeroConstant = (ConstantInt *)ConstantInt::get(subscriptSCEV->getType(), (int64_t)0);
+    auto zeroSCEV = SE.getConstant(zeroConstant);
+
+    sizeSCEV->print(errs() << "Checking if bounded by 0 and ");
+    subscriptSCEV->print(errs() << ", Subscript " << i << ": ");
+    inst->print(errs() << "\tInst: ");
+    errs() << "\n";
+    if (auto ar = dyn_cast<SCEVAddRecExpr>(subscriptSCEV)) {
+      iv->getLoopEntryPHI()->getParent()->printAsOperand(errs() << "\tfrom loop: "); errs() << "\n";
+    }
+    errs() << "\tEqual to instruction SCEV: " << (subscriptSCEV == SE.getSCEV(inst)) << "\n";
+
+    if (SE.isKnownPredicate(looseLowerBoundPred, subscriptSCEV, zeroSCEV)
+      && SE.isKnownPredicate(strictUpperBoundPred, subscriptSCEV, sizeSCEV)) continue;
+
+    if (iv && iv->isIVInstruction(inst) && isa<SCEVAddRecExpr>(subscriptSCEV)) {
+      auto subscriptRecSCEV = cast<SCEVAddRecExpr>(subscriptSCEV);
+      auto loopEntryPHI = iv->getLoopEntryPHI();
+      auto loopEntryPHISCEV = cast<SCEVAddRecExpr>(SE.getSCEV(loopEntryPHI));
+
+      loopEntryPHISCEV->print(errs() << "Loop entry SCEV: "); errs() << "\n";
+      subscriptRecSCEV->print(errs() << "Subscript SCEV: "); errs() << "\n";
+
+      /*
+       * If the step recurrence is negative and the AddRecExpr starts at the size - 1, it is bounded
+       */
+      auto startSCEV = subscriptRecSCEV->getStart();
+      auto stepSCEV = subscriptRecSCEV->getStepRecurrence(SE);
+      auto constantStepSCEV = dyn_cast<SCEVConstant>(stepSCEV);
+      if (constantStepSCEV && constantStepSCEV->getValue()->isNegative()) {
+        // TODO:
+      }
+
+      /*
+       * If the AddRecExpr is exactly that of the loop entry PHI for the IV, and that IV's attribution
+       * identifies an exit condition value equal to the size, it is bounded
+       */
+      if (scevsMatch(subscriptRecSCEV->getStart(), loopEntryPHISCEV->getStart())
+        && scevsMatch(subscriptRecSCEV->getStepRecurrence(SE), loopEntryPHISCEV->getStepRecurrence(SE))) {
+        auto loopHeader = loopEntryPHI->getParent();
+        auto loopStructure = loops.getLoop(*loopHeader);
+        auto attr = ivManager.getLoopGoverningIVAttribution(*loopStructure);
+        attr->getInductionVariable().getLoopEntryPHI()->print(errs() << "ATTR PHI: "); errs() << "\n";
+        if (attr != nullptr && iv == &attr->getInductionVariable()) {
+          auto loopGoverningIV = &attr->getInductionVariable();
+          if (constantStepSCEV && !constantStepSCEV->getValue()->isNegative()) {
+            auto conditionValue = attr->getHeaderCmpInstConditionValue();
+            auto cmpInst = attr->getHeaderCmpInst();
+            auto predicate = cmpInst->getPredicate();
+
+            auto exitBlock = attr->getExitBlockFromHeader();
+            BasicBlock *falseSuccessor = *(++succ_begin(loopHeader));
+            bool exitOnFalse = exitBlock == falseSuccessor;
+            bool isConditionLHS = cmpInst->getOperand(0) == conditionValue;
+
+            errs() << "\t\tEOF: " << exitOnFalse << "\n";
+            cmpInst->print(errs() << "\t\tCmpI: "); errs() << "\n";
+            SE.getSCEV(conditionValue)->print(errs() << "\t\tCondition value SCEV: "); errs() << "\n";
+
+            if (predicate == ICmpInst::Predicate::ICMP_ULE || predicate == ICmpInst::Predicate::ICMP_SLE) {
+              predicate = ICmpInst::Predicate::ICMP_UGT;
+              isConditionLHS = !isConditionLHS;
+            } else if (predicate == ICmpInst::Predicate::ICMP_UGE || predicate == ICmpInst::Predicate::ICMP_SGE) {
+              predicate = ICmpInst::Predicate::ICMP_ULT;
+              isConditionLHS = !isConditionLHS;
+            }
+
+            bool isUpperBoundedByEq = (!exitOnFalse && predicate == ICmpInst::Predicate::ICMP_EQ)
+              || (exitOnFalse && predicate == ICmpInst::Predicate::ICMP_NE);
+            bool isUpperBoundedByLT = exitOnFalse && !isConditionLHS 
+              && (predicate == ICmpInst::Predicate::ICMP_ULT || predicate == ICmpInst::Predicate::ICMP_SLT);
+            bool isUpperBoundedByFlippedGT = exitOnFalse && isConditionLHS
+              && (predicate == ICmpInst::Predicate::ICMP_UGT || predicate == ICmpInst::Predicate::ICMP_SGT);
+            bool isUpperBounded = isUpperBoundedByEq || isUpperBoundedByLT || isUpperBoundedByFlippedGT;
+
+            if (isUpperBounded) {
+              auto conditionSCEVBase = SE.getSCEV(conditionValue);
+              auto sizeSCEVBase = sizeSCEV;
+              auto opI = conditionSCEVBase;
+              if (isa<SCEVSignExtendExpr>(opI) || isa<SCEVTruncateExpr>(opI) || isa<SCEVZeroExtendExpr>(opI)) {
+                conditionSCEVBase = cast<SCEVCastExpr>(opI)->getOperand();
+              }
+              opI = sizeSCEVBase;
+              if (isa<SCEVSignExtendExpr>(opI) || isa<SCEVTruncateExpr>(opI) || isa<SCEVZeroExtendExpr>(opI)) {
+                sizeSCEVBase = cast<SCEVCastExpr>(opI)->getOperand();
+              }
+
+              conditionSCEVBase->print(errs() << "Condition SCEV "); errs() << "\n";
+              sizeSCEVBase->print(errs() << "Size SCEV "); errs() << "\n";
+
+              if (conditionSCEVBase == sizeSCEVBase) continue;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
   }
+
+  errs() << "Is bounded\n";
 
   return true;
 }

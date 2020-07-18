@@ -16,6 +16,8 @@
 #include "LoopsSummary.hpp"
 #include "InductionVariables.hpp"
 #include "ScalarEvolutionDelinearization.hpp"
+#include "LoopGoverningIVAttribution.hpp"
+#include "IVStepperUtility.hpp"
 
 namespace llvm {
 
@@ -108,6 +110,8 @@ namespace llvm {
       bool isOneToOneFunctionOnIV(LoopStructure *LS, InductionVariable *IV, Instruction *derivedInstruction) ;
 
       bool isInnerDimensionSubscriptsBounded (ScalarEvolution &SE, MemoryAccessSpace *space) ;
+
+      // bool isIVRelatedSCEVBounded (ScalarEvolution &SE, MemoryAccessSpace *space) ;
 
   };
 
