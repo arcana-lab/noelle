@@ -72,7 +72,6 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
     /*
      * Since we iterate over data dependencies, we must explicitly exclude control values
      */
-
     if (inst->isTerminator()) continue;
 
     /*
@@ -80,7 +79,9 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
      * we must explicitly check that all PHI incoming values are equivalent
      */
     if (auto phi = dyn_cast<PHINode>(inst)) {
-      if (!arePHIIncomingValuesEquivalent(phi)) continue;
+      // TODO: Handle confirming all equivalent instructions are also invariant themselves
+      // if (!arePHIIncomingValuesEquivalent(phi)) continue;
+      continue;
     }
 
     if (this->invariants.find(inst) != this->invariants.end()) continue;
@@ -125,7 +126,9 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DataD
    * If they are not, the PHI controls which value to use and is NOT loop invariant
    */
   if (auto phi = dyn_cast<PHINode>(toInst)) {
-    if (!arePHIIncomingValuesEquivalent(phi)) return true;
+    return true;
+    // TODO: Handle confirming all equivalent instructions are also invariant themselves
+    // if (!arePHIIncomingValuesEquivalent(phi)) return true;
   }
 
   /*
