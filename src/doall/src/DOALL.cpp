@@ -143,8 +143,6 @@ bool DOALL::canBeAppliedToLoop (
 
       auto fromInst = dyn_cast<Instruction>(dep->getOutgoingT());
       auto toInst = dyn_cast<Instruction>(dep->getIncomingT());
-      // fromInst->print(errs() << "F: "); errs() << "\n";
-      // toInst->print(errs() << "T: "); errs() << "\n";
       areAllDataLCDsFromDisjointMemoryAccesses &= fromInst && toInst && domainSpaceAnalysis->
         areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst);
       return !areAllDataLCDsFromDisjointMemoryAccesses;

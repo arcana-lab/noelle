@@ -66,8 +66,8 @@ bool LoopIterationDomainSpaceAnalysis::isMemoryAccessSpaceEquivalentForTopLoopIV
   if (space1->subscriptIVs.size() == 0) return false;
   if (space1->subscriptIVs.size() != space2->subscriptIVs.size()) return false;
 
-  space1->memoryAccessor->print(errs() << "Space 1 accessor: "); errs() << "\t";
-  space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs() << "\n";
+  // space1->memoryAccessor->print(errs() << "Space 1 accessor: "); errs() << "\t";
+  // space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs() << "\n";
 
   auto getLoopForIV = [&](InductionVariable *iv) -> LoopStructure * {
     auto loopEntryPHI = iv->getLoopEntryPHI();
@@ -103,9 +103,9 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution 
         if (!SE.isSCEVable(inst->getType())) continue;
         auto scev = SE.getSCEV(inst);
 
-        scev->getType()->print(errs() << "IV instruction SCEV: ");
-        scev->print(errs() << " ");
-        inst->print(errs() << "\n\tIV I: "); errs() << "\n";
+        // scev->getType()->print(errs() << "IV instruction SCEV: ");
+        // scev->print(errs() << " ");
+        // inst->print(errs() << "\n\tIV I: "); errs() << "\n";
 
         if (ivInstructionsBySCEV.find(scev) == ivInstructionsBySCEV.end()) {
           ivInstructionsBySCEV.insert(std::make_pair(scev, std::unordered_set<Instruction *>{ inst }));
@@ -119,9 +119,9 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution 
         if (!SE.isSCEVable(inst->getType())) continue;
         auto scev = SE.getSCEV(inst);
 
-        scev->getType()->print(errs() << "IV derived instruction SCEV: ");
-        scev->print(errs() << " ");
-        inst->print(errs() << "\n\tIV derived I: "); errs() << "\n";
+        // scev->getType()->print(errs() << "IV derived instruction SCEV: ");
+        // scev->print(errs() << " ");
+        // inst->print(errs() << "\n\tIV derived I: "); errs() << "\n";
 
         if (derivedInstructionsFromIVsBySCEV.find(scev) == derivedInstructionsFromIVsBySCEV.end()) {
           derivedInstructionsFromIVsBySCEV.insert(std::make_pair(scev, std::unordered_set<Instruction *>{ inst }));
@@ -223,19 +223,19 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
       }
     }
 
-    basePointer->print(errs() << "Base pointer: "); errs() << "\n";
-    accessFunction->print(errs() << "Access function: "); errs() << "\n";
-    for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
-      auto subscript = memAccessSpace->subscripts[i];
-      subscript->getType()->print(errs() << "Subscript " << i << ": ");
-      subscript->print(errs() << " " ); errs() << "\n";
-    }
-    for (auto i = 0; i < memAccessSpace->sizes.size(); ++i) {
-      auto size = memAccessSpace->sizes[i];
-      size->getType()->print(errs() << "Size " << i << ": ");
-      size->print(errs() << " " ); errs() << "\n";
-    }
-    errs() << "---------\n";
+    // basePointer->print(errs() << "Base pointer: "); errs() << "\n";
+    // accessFunction->print(errs() << "Access function: "); errs() << "\n";
+    // for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
+    //   auto subscript = memAccessSpace->subscripts[i];
+    //   subscript->getType()->print(errs() << "Subscript " << i << ": ");
+    //   subscript->print(errs() << " " ); errs() << "\n";
+    // }
+    // for (auto i = 0; i < memAccessSpace->sizes.size(); ++i) {
+    //   auto size = memAccessSpace->sizes[i];
+    //   size->getType()->print(errs() << "Size " << i << ": ");
+    //   size->print(errs() << " " ); errs() << "\n";
+    // }
+    // errs() << "---------\n";
 
   }
 
@@ -250,7 +250,7 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
     if (memAccessSpace->subscriptIVs.size() == 0) continue;
     if (memAccessSpace->subscriptIVs.size() != memAccessSpace->sizes.size()) continue;
 
-    memAccessSpace->memoryAccessor->print(errs() << "Checking accessor for overlapping: "); errs() << "\n";
+    // memAccessSpace->memoryAccessor->print(errs() << "Checking accessor for overlapping: "); errs() << "\n";
 
     if (!isInnerDimensionSubscriptsBounded(SE, memAccessSpace.get())) continue;
 
@@ -302,7 +302,7 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
     }
     if (!atLeastOneTopLevelNonOverlappingIV) continue;
 
-    errs() << "Is non-overlapping\n";
+    // errs() << "Is non-overlapping\n";
 
     nonOverlappingAccessesBetweenIterations.insert(memAccessSpace.get());
   }
