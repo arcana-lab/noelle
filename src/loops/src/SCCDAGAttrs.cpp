@@ -459,8 +459,8 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
   auto sccdagOfInternals = new SCCDAG(dgOfInternals);
 
   // errs() << "Writing graphs\n";
-  // DGPrinter::writeGraph<PDG>("pdg-internal.dot", dgOfInternals);
-  // DGPrinter::writeGraph<SCCDAG>("sccdag-internal.dot", sccdagOfInternals);
+  // DGPrinter::writeGraph<PDG, Value>("pdg-internal.dot", dgOfInternals);
+  // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-internal.dot", sccdagOfInternals);
 
   /*
    * Identify root internal SCC and its single loop carried PHI
@@ -711,7 +711,7 @@ void SCCDAGAttrs::dumpToFile (int id) {
     stageGraph.addEdge(outgoingDesc, incomingDesc);
   }
 
-  DGPrinter::writeGraph<DG<DGString>>(filename, &stageGraph);
+  DGPrinter::writeGraph<DG<DGString>, DGString>(filename, &stageGraph);
   for (auto elem : elements) delete elem;
 }
 

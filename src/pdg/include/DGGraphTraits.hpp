@@ -14,48 +14,178 @@
 #include "SCC.hpp"
 #include "PDG.hpp"
 #include "SCCDAG.hpp"
-
-using namespace llvm;
+#include "SubCFGs.hpp"
 
 namespace llvm {
-  /*
-   * ElementTraits<NodeType>: Dependence Graph's node/edge level base traits
-   */
+
   template <class T>
-  struct ElementTraits : public DefaultDOTGraphTraits {
-    explicit ElementTraits(bool isSimple=false) : DefaultDOTGraphTraits(isSimple) {}
-    
-    std::string getNodeLabel(DGNode<T> *node, DGNode<T> *entry) {
-      return node->toString();
+  class DGElementWrapper {
+    public:
+      DGElementWrapper(T elem) : element{elem} {};
+
+      void print(llvm::raw_ostream &ros) {
+        ros << element;
+      }
+
+    private:
+      T element;
+  };
+  using DGString = DGElementWrapper<std::string>;
+
+  template <class T> class DGNodeWrapper ;
+
+  template <class DG, class T>
+  class DGGraphWrapper {
+    public:
+      DGGraphWrapper (DG *graph) : wrappedGraph{graph}, entryNode{nullptr} {
+        std::unordered_map<DGNode<T> *, DGNodeWrapper<T> *> nodeToWrapperMap;
+        for (auto node : graph->getNodes()) {
+          auto wrappedNode = new DGNodeWrapper<T>(node);
+          this->nodes.insert(wrappedNode);
+          nodeToWrapperMap.insert(std::make_pair(node, wrappedNode));
+        }
+
+        auto unwrappedEntryNode = graph->getEntryNode();
+        if (nodeToWrapperMap.find(unwrappedEntryNode) != nodeToWrapperMap.end()) {
+          this->entryNode = nodeToWrapperMap.at(unwrappedEntryNode);
+        }
+
+        for (auto node : this->nodes) {
+          auto wrapped = node->wrappedNode;
+          std::set<DGEdge<T> *> allOutgoingEdges{wrapped->begin_outgoing_edges(), wrapped->end_outgoing_edges()};
+          for (auto edge : allOutgoingEdges) {
+            auto unwrappedOtherNode = edge->getIncomingNode();
+            if (nodeToWrapperMap.find(unwrappedOtherNode) != nodeToWrapperMap.end()) {
+              auto wrappedOtherNode = nodeToWrapperMap.at(unwrappedOtherNode);
+              node->outgoingNodeInstances.push_back(wrappedOtherNode);
+              node->outgoingEdgeInstances.push_back(edge);
+            }
+          }
+        }
+      }
+
+      ~DGGraphWrapper () {
+        for (auto node : this->nodes) delete node;
+        this->nodes.clear();
+      }
+
+      using NodeRef = DGNodeWrapper<T> *;
+      using ChildIteratorType = typename std::vector<NodeRef>::iterator;
+      using nodes_iterator = typename std::unordered_set<NodeRef>::iterator;
+
+      nodes_iterator nodes_begin() { return nodes.begin(); }
+
+      nodes_iterator nodes_end() { return nodes.end(); }
+
+      DG *wrappedGraph;
+      NodeRef entryNode;
+      std::unordered_set<NodeRef> nodes;
+  };
+
+  template <class T>
+  class DGNodeWrapper {
+    public:
+      DGNodeWrapper (DGNode<T> *node) : wrappedNode{node} {}
+
+      void print(llvm::raw_ostream &ros) {
+        wrappedNode->print(ros);
+      }
+
+      using NodeRef = DGNodeWrapper<T> *;
+      using ChildIteratorType = typename std::vector<NodeRef>::iterator;
+
+      ChildIteratorType child_begin() { return outgoingNodeInstances.begin(); }
+
+      ChildIteratorType child_end() { return outgoingNodeInstances.end(); }
+
+      DGNode<T> *wrappedNode;
+      std::vector<NodeRef> outgoingNodeInstances;
+      std::vector<DGEdge<T> *> outgoingEdgeInstances;
+  };
+
+
+  /***************************************************************************************************
+   * ElementTraits templates
+   ***************************************************************************************************/
+
+  template <class GraphType, class NodeType, class T>
+  struct ElementTraitsBase : public DefaultDOTGraphTraits {
+    using NodeRef = NodeType *;
+    using nodes_iterator = typename std::vector<NodeRef>::iterator;
+
+    explicit ElementTraitsBase (bool isSimple=false) : DefaultDOTGraphTraits(isSimple) {}
+
+    static std::string getNodeAttributes(NodeRef nodeWrapper, GraphType *dgWrapper) {
+      auto node = nodeWrapper->wrappedNode;
+      auto dg = dgWrapper->wrappedGraph;
+      std::string color = dg->isExternal(node->getT()) ? "color=gray" : "color=black";
+
+      std::string subgraph = "printercluster=";
+      if (dg->isExternal(node->getT())) {
+        bool isIncoming = node->numOutgoingEdges() > 0;
+        subgraph += isIncoming ? "incomingExternal" : "outgoingExternal";
+      } else {
+        subgraph += "internal";
+      }
+
+      return color + "," + subgraph;
     }
 
-    std::string getEdgeSourceLabel(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter) {
-      return node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes())->toString();
+    static std::string getEdgeAttributes(NodeRef nodeWrapper, nodes_iterator nodeIter, GraphType *dgWrapper) {
+
+      auto dg = dgWrapper->wrappedGraph;
+      auto edge = nodeWrapper->outgoingEdgeInstances[nodeIter - nodeWrapper->outgoingNodeInstances.begin()];
+
+      const std::string cntColor = "color=blue";
+      const std::string memColor = "color=red";
+      const std::string varColor = "color=black";
+      std::string attrsStr;
+      raw_string_ostream ros(attrsStr);
+      ros << (edge->isControlDependence() ? cntColor : (edge->isMemoryDependence() ? memColor : varColor));
+      if (dg->isExternal(edge->getOutgoingT()) || dg->isExternal(edge->getIncomingT())) ros << ",style=dotted";
+      return ros.str();
     }
   };
 
-  /*
-   * Strongly Connected Components ElementTraits specialization
-   */
-  template <>
-  struct ElementTraits<SCC> : public DefaultDOTGraphTraits {
-    explicit ElementTraits(bool isSimple=false) : DefaultDOTGraphTraits(isSimple) {}
+  template <class GraphType, class NodeType, class T>
+  struct ElementTraits : public ElementTraitsBase<GraphType, NodeType, T> {
+    using NodeRef = NodeType *;
+    using nodes_iterator = typename std::vector<NodeRef>::iterator;
 
-    std::string getNodeLabel(DGNode<SCC> *node, DGNode<SCC> *entry) {
+    explicit ElementTraits (bool isSimple=false) : ElementTraitsBase<GraphType, NodeType, T>(isSimple) {}
+
+    static std::string getNodeLabel(NodeRef nodeWrapper, GraphType *entry) {
+      return nodeWrapper->wrappedNode->toString();
+    }
+
+    static std::string getEdgeSourceLabel(NodeRef nodeWrapper, nodes_iterator nodeIter) {
+      auto edge = nodeWrapper->outgoingEdgeInstances[nodeIter - nodeWrapper->outgoingNodeInstances.begin()];
+      return edge->toString();
+    }
+  };
+
+  template <class GraphType, class NodeType>
+  struct ElementTraits<GraphType, NodeType, SCC> : public ElementTraitsBase<GraphType, NodeType, SCC> {
+    using NodeRef = NodeType *;
+    using nodes_iterator = typename std::vector<NodeRef>::iterator;
+
+    explicit ElementTraits (bool isSimple=false) : ElementTraitsBase<GraphType, NodeType, SCC>(isSimple) {}
+
+    static std::string getNodeLabel(NodeRef nodeWrapper, GraphType *entry) {
       std::string nodeStr;
       raw_string_ostream ros(nodeStr);
-      for (auto nodePair : node->getT()->internalNodePairs()) {
+      for (auto nodePair : nodeWrapper->wrappedNode->getT()->internalNodePairs()) {
         nodePair.first->print(ros);
         ros << "\n";
       }
       return ros.str();
     }
 
-    std::string getEdgeSourceLabel(DGNode<SCC> *node, typename std::vector<DGNode<SCC> *>::iterator nodeIter) {
+    static std::string getEdgeSourceLabel(NodeRef nodeWrapper, nodes_iterator nodeIter) {
       std::string edgeStr;
       raw_string_ostream ros(edgeStr);
-      DGEdge<SCC> *edgesBetweenSCC = node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes());
-      for (DGEdge<Value> *edge : edgesBetweenSCC->getSubEdges()) {
+      auto edge = nodeWrapper->outgoingEdgeInstances[nodeIter - nodeWrapper->outgoingNodeInstances.begin()];
+      for (DGEdge<Value> *edge : edge->getSubEdges()) {
         printValueStr(edge->getOutgoingT(), ros);
         printValueStr(edge->getIncomingT(), ros << " -> ");
         ros << " ; ";
@@ -63,7 +193,7 @@ namespace llvm {
       return ros.str();
     }
 
-    void printValueStr(Value *value, raw_ostream &ros) {
+    static void printValueStr(Value *value, raw_ostream &ros) {
       if (auto brI = dyn_cast<BranchInst>(value)) {
         if (brI->isUnconditional()) {
           value->print(ros);
@@ -78,139 +208,65 @@ namespace llvm {
   };
 
   /*
-   * DGDOTGraphTraits<GraphType, NodeType>: Dependence Graph's base traits
+   * GraphTraitsBase template
    */
-  template <class DG, class T>
-  struct DGDOTGraphTraits : public ElementTraits<T> {
-    DGDOTGraphTraits (bool isSimple=false) : ElementTraits<T>(isSimple) {}
 
-    std::string getNodeLabel(DGNode<T> *node, DG *dg) {
-      return ElementTraits<T>::getNodeLabel(node, dg->getEntryNode());
-    }
+  template<class DGWrapper, class NodeType, class T>
+  struct GraphTraitsBase {
+    using NodeRef = NodeType *;
+    using ChildIteratorType = typename std::vector<NodeRef>::iterator;
+    using nodes_iterator = typename std::unordered_set<NodeRef>::iterator;
 
-    static std::string getNodeAttributes(DGNode<T> *node, DG *dg) {
-      std::string color = dg->isExternal(node->getT()) ? "color=gray" : "color=black";
+    static NodeRef getEntryNode(DGWrapper *dg) { return dg->entryNode; }
 
-      std::string subgraph = "printercluster=";
-      if (dg->isExternal(node->getT())) {
-        bool isIncoming = node->numOutgoingEdges() > 0;
-        subgraph += isIncoming ? "incomingExternal" : "outgoingExternal";
-      } else {
-        subgraph += "internal";
-      }
+    static nodes_iterator nodes_begin(DGWrapper *dg) { return dg->nodes_begin(); }
 
-      return color + "," + subgraph;
-    }
+    static nodes_iterator nodes_end(DGWrapper *dg) { return dg->nodes_end(); }
 
-    static std::string getEdgeAttributes(DGNode<T> *node, typename std::vector<DGNode<T> *>::iterator nodeIter, DG *dg) {
-      const std::string cntColor = "color=blue";
-      const std::string memColor = "color=red";
-      const std::string varColor = "color=black";
-      std::string attrsStr;
-      raw_string_ostream ros(attrsStr);
-      auto edge = node->getEdgeInstance(nodeIter - node->begin_outgoing_nodes());
-      ros << (edge->isControlDependence() ? cntColor : (edge->isMemoryDependence() ? memColor : varColor));
-      if (dg->isExternal(edge->getOutgoingT()) || dg->isExternal(edge->getIncomingT())) ros << ",style=dotted";
-      return ros.str();
-    }
-  };
-  
-  /*
-   * Program Dependence Graph DOTGraphTraits specialization
-   */
-  template<>
-  struct DOTGraphTraits<PDG *> : DGDOTGraphTraits<PDG, Value> {
-    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<PDG, Value>(isSimple) {}
+    static ChildIteratorType child_begin(NodeRef node) { return node->child_begin(); }
 
-    static std::string getGraphName(PDG *dg) {
-      return "Program Dependence Graph";
-    }
+    static ChildIteratorType child_end(NodeRef node) { return node->child_end(); }
   };
 
   /*
-   * Strongly Connected Component DOTGraphTraits specialization
+   * Specializations for GraphTraits and DOTGraphTraits using GraphTraitsBase and ElementTraits
    */
-  template<>
-  struct DOTGraphTraits<SCC *> : DGDOTGraphTraits<SCC, Value> {
-    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<SCC, Value>(isSimple) {}
 
-    static std::string getGraphName(SCC *dg) {
-      return "Strongly Connected Component";
-    }
+  template<> struct DOTGraphTraits<DGGraphWrapper<PDG, Value> *> :
+    public ElementTraits<DGGraphWrapper<PDG, Value>, DGNodeWrapper<Value>, Value> {
+      DOTGraphTraits (bool isSimple=false) : ElementTraits<DGGraphWrapper<PDG, Value>, DGNodeWrapper<Value>, Value>(isSimple) {}
   };
+  template<> struct GraphTraits<DGGraphWrapper<PDG, Value> *> : 
+    public GraphTraitsBase<DGGraphWrapper<PDG, Value>, DGNodeWrapper<Value>, Value> {};
 
-  /*
-   * Strongly Connected Components Graph DOTGraphTraits specialization
-   */
-  template<>
-  struct DOTGraphTraits<SCCDAG *>  : DGDOTGraphTraits<SCCDAG, SCC> {
-    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<SCCDAG, SCC>(isSimple) {}
-
-    static std::string getGraphName(SCCDAG *dg) {
-      return "Strongly Connected Component Graph";
-    }
+  template<> struct DOTGraphTraits<DGGraphWrapper<SCC, Value> *> :
+    public ElementTraits<DGGraphWrapper<SCC, Value>, DGNodeWrapper<Value>, Value> {
+      DOTGraphTraits (bool isSimple=false) : ElementTraits<DGGraphWrapper<SCC, Value>, DGNodeWrapper<Value>, Value>(isSimple) {}
   };
+  template<> struct GraphTraits<DGGraphWrapper<SCC, Value> *> : 
+    public GraphTraitsBase<DGGraphWrapper<SCC, Value>, DGNodeWrapper<Value>, Value> {};
 
-  /*
-   * DGGraphTraits<GraphType, NodeType>: Dependence Graph's node iteration traits
-   */
-  template <class DG, class T>
-  struct DGGraphTraits {
-    using NodeRef = DGNode<T> *;
-    using ChildIteratorType = typename std::vector<DGNode<T> *>::iterator;
-    using nodes_iterator = typename std::unordered_set<DGNode<T> *>::iterator;
-
-    static DGNode<T> *getEntryNode(DG *dg) { return dg->getEntryNode(); }
-
-    static nodes_iterator nodes_begin(DG *dg) {
-      return dg->begin_nodes();
-    }
-
-    static nodes_iterator nodes_end(DG *dg) {
-      return dg->end_nodes();
-    }
-
-    static ChildIteratorType child_begin(NodeRef node) { 
-      return node->begin_outgoing_nodes(); 
-    }
-
-    static ChildIteratorType child_end(NodeRef node) { 
-      return node->end_outgoing_nodes();
-    }
+  template<> struct DOTGraphTraits<DGGraphWrapper<SCCDAG, SCC> *> :
+    public ElementTraits<DGGraphWrapper<SCCDAG, SCC>, DGNodeWrapper<SCC>, SCC> {
+      DOTGraphTraits (bool isSimple=false) : ElementTraits<DGGraphWrapper<SCCDAG, SCC>, DGNodeWrapper<SCC>, SCC>(isSimple) {}
   };
+  template<> struct GraphTraits<DGGraphWrapper<SCCDAG, SCC> *> : 
+    public GraphTraitsBase<DGGraphWrapper<SCCDAG, SCC>, DGNodeWrapper<SCC>, SCC> {};
 
-  /*
-   * GraphTraits specializations for PDG, SCC, and SCCDAG
-   */
-  template<> struct GraphTraits<PDG *> : DGGraphTraits<PDG, Value> {};
-  template<> struct GraphTraits<SCC *> : DGGraphTraits<SCC, Value> {};
-  template<> struct GraphTraits<SCCDAG *> : DGGraphTraits<SCCDAG, SCC> {};
-
-  /*
-   * GraphTraits specialization for generic element
-   */
-  template <class T>
-  class DGElementWrapper {
-    public:
-      DGElementWrapper(T elem) : element{elem} {};
-
-      void print(llvm::raw_ostream &ros) {
-        ros << element;
-      }
-
-    private:
-      T element;
+  template<> struct DOTGraphTraits<DGGraphWrapper<DG<DGString>, DGString> *> :
+    public ElementTraits<DGGraphWrapper<DG<DGString>, DGString>, DGNodeWrapper<DGString>, DGString> {
+      DOTGraphTraits (bool isSimple=false) :
+        ElementTraits<DGGraphWrapper<DG<DGString>, DGString>, DGNodeWrapper<DGString>, DGString>(isSimple) {}
   };
+  template<> struct GraphTraits<DGGraphWrapper<DG<DGString>, DGString> *> : 
+    public GraphTraitsBase<DGGraphWrapper<DG<DGString>, DGString>, DGNodeWrapper<DGString>, DGString> {};
 
-  using DGString = DGElementWrapper<std::string>;
-  template<> struct GraphTraits<DG<DGString> *> : DGGraphTraits<DG<DGString>, DGString> {};
-
-  template<>
-  struct DOTGraphTraits<DG<DGString> *> : DGDOTGraphTraits<DG<DGString>, DGString> {
-    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<DG<DGString>, DGString>(isSimple) {}
-
-    static std::string getGraphName(DG<DGString> *dg) {
-      return "Raw String Graph";
-    }
+  template<> struct DOTGraphTraits<DGGraphWrapper<SubCFGs, BasicBlock> *> :
+    public ElementTraits<DGGraphWrapper<SubCFGs, BasicBlock>, DGNodeWrapper<BasicBlock>, BasicBlock> {
+      DOTGraphTraits (bool isSimple=false) :
+        ElementTraits<DGGraphWrapper<SubCFGs, BasicBlock>, DGNodeWrapper<BasicBlock>, BasicBlock>(isSimple) {}
   };
+  template<> struct GraphTraits<DGGraphWrapper<SubCFGs, BasicBlock> *> : 
+    public GraphTraitsBase<DGGraphWrapper<SubCFGs, BasicBlock>, DGNodeWrapper<BasicBlock>, BasicBlock> {};
+
 }
