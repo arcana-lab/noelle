@@ -94,7 +94,7 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   this->attrs = new SCCDAGAttrs(loopDG, sccdag, LIS, *SE, lcd, IV);
 
   // PDGPrinter printer;
-  // printer.writeGraph<SCCDAG>("graph-top-loop.dot", sccdagTopLoopNorm);
+  // printer.writeGraph<SCCDAG, SCC>("graph-top-loop.dot", sccdagTopLoopNorm);
 
   errs() << "SCCDAGAttrTestSuite: Running suite\n";
   suite->runTests((ModulePass &)*this);

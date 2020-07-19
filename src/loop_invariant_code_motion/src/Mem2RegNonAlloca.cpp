@@ -555,7 +555,7 @@ void Mem2RegNonAlloca::dumpLogs (void) {
     ros.flush();
   }
 
-  // DGPrinter::writeGraph<SCCDAG>("mem2reg-sccdag-loop-" + loopId + ".dot", LDI.sccdagAttrs.getSCCDAG());
+  // DGPrinter::writeGraph<SCCDAG, SCC>("mem2reg-sccdag-loop-" + loopId + ".dot", LDI.sccdagAttrs.getSCCDAG());
   // std::set<BasicBlock *> basicBlocksSet(basicBlocks.begin(), basicBlocks.end());
-  // DGPrinter::writeGraph<SubCFGs>("mem2reg-current-loop-" + loopId + ".dot", new SubCFGs(basicBlocksSet));
+  // DGPrinter::writeGraph<SubCFGs, BasicBlock>("mem2reg-current-loop-" + loopId + ".dot", new SubCFGs(basicBlocksSet));
 }
