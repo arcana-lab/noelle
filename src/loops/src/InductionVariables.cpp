@@ -20,7 +20,7 @@ InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvo
   ScalarEvolutionReferentialExpander referentialExpander(SE, F);
 
   for (auto &loop : LIS.loops) {
-    loopToIVsMap[loop.get()] = std::set<InductionVariable *>();
+    loopToIVsMap[loop.get()] = std::unordered_set<InductionVariable *>();
 
     /*
      * Fetch the loop header.
@@ -56,7 +56,8 @@ InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvo
   }
 }
 
-InductionVariable * InductionVariableManager::getTheInductionVariableThatThisInstructionContributesTo (Instruction *i) const {
+std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVariables (Instruction *i) const {
+  std::unordered_set<InductionVariable *> s{};
 
   /*
    * Iterate over every loop and their induction variables.
@@ -74,12 +75,12 @@ InductionVariable * InductionVariableManager::getTheInductionVariableThatThisIns
     for (auto IV : IVs){
       auto insts = IV->getAllInstructions();
       if (insts.find(i) != insts.end()){
-        return IV;
+        s.insert(IV);
       }
     }
   }
 
-  return nullptr;
+  return s;
 }
 
 bool InductionVariableManager::doesContributeToComputeAnInductionVariable (Instruction *i) const {
@@ -87,8 +88,8 @@ bool InductionVariableManager::doesContributeToComputeAnInductionVariable (Instr
   /*
    * Fetch the induction variable that @i contributes to.
    */
-  auto IV = this->getTheInductionVariableThatThisInstructionContributesTo(i);
-  if (IV == nullptr){
+  auto IVs = this->getInductionVariables(i);
+  if (IVs.size() == 0){
     return false;
   }
 
@@ -108,7 +109,7 @@ InductionVariableManager::~InductionVariableManager () {
   return ;
 }
       
-InductionVariable * InductionVariableManager::getInductionVariable (LoopStructure &LS, Instruction *i){
+InductionVariable * InductionVariableManager::getInductionVariable (LoopStructure &LS, Instruction *i) const {
 
   /*
    * Fetch all induction variables.
@@ -132,11 +133,11 @@ InductionVariable * InductionVariableManager::getInductionVariable (LoopStructur
   return nullptr;
 }
 
-std::set<InductionVariable *> InductionVariableManager::getInductionVariables (LoopStructure &LS) {
-  return loopToIVsMap.at(&LS);
+std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVariables (LoopStructure &LS) const {
+  return this->loopToIVsMap.at(&LS);
 }
 
-InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable (LoopStructure &LS) {
+InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable (LoopStructure &LS) const {
   if (loopToGoverningIVMap.find(&LS) == loopToGoverningIVMap.end()) return nullptr;
   return loopToGoverningIVMap.at(&LS);
 }

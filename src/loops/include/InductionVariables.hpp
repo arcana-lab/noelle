@@ -38,20 +38,23 @@ namespace llvm {
       /*
        * Return all induction variables including the loop-governing one.
        */
-      std::set<InductionVariable *> getInductionVariables (LoopStructure &LS) ;
+      std::unordered_set<InductionVariable *> getInductionVariables (LoopStructure &LS) const ;
 
-      InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) ;
+      /*
+       * Return all induction variables that @i is involved in for any loop/sub-loop related to this manager.
+       */
+      std::unordered_set<InductionVariable *> getInductionVariables (Instruction *i) const ;
+
+      InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i) const ;
+
+      InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) const ;
 
       bool doesContributeToComputeAnInductionVariable (Instruction *i) const ;
       
-      InductionVariable * getTheInductionVariableThatThisInstructionContributesTo (Instruction *i) const ;
-
-      InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i);
-
       ~InductionVariableManager ();
 
     private:
-      std::unordered_map<LoopStructure *, std::set<InductionVariable *>> loopToIVsMap;
+      std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
       std::unordered_map<LoopStructure *, InductionVariable *> loopToGoverningIVMap;
   };
 
