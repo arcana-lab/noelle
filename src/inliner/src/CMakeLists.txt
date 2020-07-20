@@ -28,6 +28,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../../external/svf/include
   ../../basic_utilities/include 
   ../../transformations/include
+  ../../task/include 
   ../../alloc_aa/include 
   ../../pdg/include 
   ../../loop_structure/include
@@ -36,6 +37,9 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../hotprofiler/include
   ../../noelle/include
   ../../dataflow/include
+  ../../doall/include
+  ../../parallelization_technique/include 
+  ../../heuristics/include 
   ../include 
   )
 

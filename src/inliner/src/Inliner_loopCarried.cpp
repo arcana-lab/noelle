@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Inliner.hpp"
+#include "DOALL.hpp"
 
 bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
   auto anyInlined = false;
@@ -69,6 +70,46 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
         }
       }
       if (summary == nullptr){
+        continue ;
+      }
+
+      /*
+       * Check if the current loop is a DOALL.
+       * If it is, then we disable all sub-loops to be considered because DOALL always takes priority and we don't parallelize nested loops at the moment.
+       */
+      DOALL doall{
+        *noelle.getProgram(),
+        *noelle.getProfiles(),
+        noelle.getVerbosity()
+      };
+      if (doall.canBeAppliedToLoop(LDI, noelle, nullptr)){
+
+        /*
+         * The loop is a doall.
+         *
+         * Disable all sub-loops
+         */
+        auto disableSubLoop = [&toCheck] (const LoopStructure &child) -> bool{
+
+          /*
+           * Check if the sub-loop is enabled.
+           */
+          if (std::find(toCheck.begin(), toCheck.end(), &child) == toCheck.end()){
+            return false;
+          }
+
+          /*
+           * The sub-loop is enabled.
+           *
+           * Disable it.
+           */
+          errs() << "AAAAAA YAY\n";
+          std::remove(toCheck.begin(), toCheck.end(), &child);
+
+          return false;
+        };
+        LDI->iterateOverSubLoopsRecursively(disableSubLoop);
+
         continue ;
       }
 
