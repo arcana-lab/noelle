@@ -30,24 +30,33 @@ SCCDAG::SCCDAG(PDG *pdg) {
     if (visited.find(nodeToVisit) != visited.end()) continue;
 
     pdg->setEntryNode(nodeToVisit);
-    for (auto pdgI = scc_begin(pdg); pdgI != scc_end(pdg); ++pdgI) {
+
+    DGGraphWrapper<PDG, Value> pdgWrapper(pdg);
+
+    for (auto pdgI = scc_begin(&pdgWrapper); pdgI != scc_end(&pdgWrapper); ++pdgI) {
 
       /*
        * Identify a new SCC.
        */
-      const std::vector<DGNode<Value> *> &sccNodes = *pdgI;
-      if (visited.find(*sccNodes.begin()) != visited.end()) {
+      const std::vector<DGNodeWrapper<Value> *> &sccNodes = *pdgI;
+      auto firstNodeWrapper = *sccNodes.begin();
+      auto firstNode = firstNodeWrapper->wrappedNode;
+      if (visited.find(firstNode) != visited.end()) {
         continue;
+      }
+
+      std::set<DGNode<Value> *> unwrappedNodes{};
+      for (auto sccNode : sccNodes) {
+        unwrappedNodes.insert(sccNode->wrappedNode);
       }
 
       /*
        * Add a new SCC to the SCCDAG.
        */
-      std::set<DGNode<Value> *> nodes(sccNodes.begin(), sccNodes.end());
-      visited.insert(nodes.begin(), nodes.end());
-      auto scc = new SCC(nodes);
+      visited.insert(unwrappedNodes.begin(), unwrappedNodes.end());
+      auto scc = new SCC(unwrappedNodes);
       auto isInternal = false;
-      for (auto node : nodes) {
+      for (auto node : unwrappedNodes) {
         isInternal |= pdg->isInternal(node->getT());
       }
 
@@ -128,7 +137,15 @@ void SCCDAG::markEdgesAndSubEdges (void) {
       /*
        * Find or create unique edge between the two connected SCC
        */
-      auto edgeSet = outgoingSCCNode->getEdgesToAndFromNode(incomingSCCNode);
+      std::unordered_set<DGEdge<SCC> *> edgeSet;
+      for (auto edge : outgoingSCCNode->getOutgoingEdges()) {
+        if (edge->getIncomingNode() != incomingSCCNode) continue;
+        edgeSet.insert(edge);
+      }
+      for (auto edge : outgoingSCCNode->getIncomingEdges()) {
+        if (edge->getOutgoingNode() != incomingSCCNode) continue;
+        edgeSet.insert(edge);
+      }
       auto sccEdge = edgeSet.empty() ? this->addEdge(outgoingSCC, incomingSCC) : (*edgeSet.begin());
 
       /*
