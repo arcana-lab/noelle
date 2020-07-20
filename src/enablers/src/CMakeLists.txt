@@ -42,6 +42,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_unroll/include
   ../../loop_whilifier/include
   ../../loop_invariant_code_motion/include
+  ../../scev_simplification/include
   ../../talkdown/include
   ../../noelle/include
   ../../dataflow/include
