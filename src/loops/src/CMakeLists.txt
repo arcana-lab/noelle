@@ -7,6 +7,7 @@ set(Srcs
   InductionVariable.cpp
   LoopCarriedDependencies.cpp
   LoopGoverningIVAttribution.cpp
+  LoopIterationDomainSpaceAnalysis.cpp
   IVStepperUtility.cpp
   SCCAttrs.cpp
   SCCDAGAttrs.cpp

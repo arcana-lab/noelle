@@ -66,11 +66,12 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   this->sccdag = new SCCDAG(loopDG);
 
   this->LIS = new LoopsSummary(topLoop);
+  InvariantManager invariantManager(LIS->getLoopNestingTreeRoot(), loopDG);
 
   errs() << "IVAttrTestSuite: Running IV analysis\n";
   auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
   auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
-  this->IVs = new InductionVariableManager(*LIS, *SE, *sccdag, *environment);
+  this->IVs = new InductionVariableManager(*LIS, invariantManager, *SE, *sccdag, *environment);
   errs() << "IVAttrTestSuite: Finished IV analysis\n";
 
   suite->runTests((ModulePass &)*this);

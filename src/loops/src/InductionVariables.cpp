@@ -13,8 +13,13 @@
 
 using namespace llvm;
 
-InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvolution &SE, SCCDAG &sccdag, LoopEnvironment &loopEnv)
-  : loopToIVsMap{}, loopToGoverningIVMap{} {
+InductionVariableManager::InductionVariableManager (
+  LoopsSummary &LIS,
+  InvariantManager &IVM,
+  ScalarEvolution &SE,
+  SCCDAG &sccdag,
+  LoopEnvironment &loopEnv
+) : loopToIVsMap{}, loopToGoverningIVAttrMap{} {
 
   Function &F = *LIS.getLoopNestingTreeRoot()->getHeader()->getParent();
   ScalarEvolutionReferentialExpander referentialExpander(SE, F);
@@ -36,7 +41,7 @@ InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvo
       if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) continue;
 
       auto sccContainingIV = sccdag.sccOfValue(&phi);
-      auto IV = new InductionVariable(loop.get(), SE, &phi, *sccContainingIV, loopEnv, referentialExpander); 
+      auto IV = new InductionVariable(loop.get(), IVM, SE, &phi, *sccContainingIV, loopEnv, referentialExpander); 
 
       /*
        * Only save IVs for which the step size is understood
@@ -48,9 +53,11 @@ InductionVariableManager::InductionVariableManager (LoopsSummary &LIS, ScalarEvo
 
       loopToIVsMap[loop.get()].insert(IV);
       auto exitBlocks = LIS.getLoop(phi)->getLoopExitBasicBlocks();
-      LoopGoverningIVAttribution attribution(*IV, *sccContainingIV, exitBlocks);
-      if (attribution.isSCCContainingIVWellFormed()) {
-        loopToGoverningIVMap[loop.get()] = IV;
+      LoopGoverningIVAttribution *attribution = new LoopGoverningIVAttribution(*IV, *sccContainingIV, exitBlocks);
+      if (attribution->isSCCContainingIVWellFormed()) {
+        loopToGoverningIVAttrMap[loop.get()] = attribution;
+      } else {
+        delete attribution;
       }
     }
   }
@@ -97,18 +104,21 @@ bool InductionVariableManager::doesContributeToComputeAnInductionVariable (Instr
 }
 
 InductionVariableManager::~InductionVariableManager () {
+  for (auto ivAttributions : loopToGoverningIVAttrMap) {
+    delete ivAttributions.second;
+  }
+  loopToGoverningIVAttrMap.clear();
+
   for (auto loopIVs : loopToIVsMap) {
     for (auto IV : loopIVs.second) {
       delete IV;
     }
   }
-
   loopToIVsMap.clear();
-  loopToGoverningIVMap.clear();
 
   return ;
 }
-      
+
 InductionVariable * InductionVariableManager::getInductionVariable (LoopStructure &LS, Instruction *i) const {
 
   /*
@@ -120,8 +130,7 @@ InductionVariable * InductionVariableManager::getInductionVariable (LoopStructur
    * Check each induction variable.
    */
   for (auto IV : IVs){
-    auto insts = IV->getAllInstructions();
-    if (insts.find(i) != insts.end()){
+    if (IV->isIVInstruction(i)){
 
       /*
        * We found an induction variable that involves the instruction given as input.
@@ -137,7 +146,31 @@ std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVa
   return this->loopToIVsMap.at(&LS);
 }
 
+InductionVariable * InductionVariableManager::getDerivingInductionVariable (
+  LoopStructure &LS,
+  Instruction *derivedInstruction
+) const {
+
+  for (auto IV : this->getInductionVariables(LS)){
+    if (IV->isDerivedFromIVInstructions(derivedInstruction)){
+
+      /*
+       * We found an induction variable that derives the instruction given as input.
+       */
+      return IV;
+    }
+  }
+
+  return nullptr;
+}
+
 InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable (LoopStructure &LS) const {
-  if (loopToGoverningIVMap.find(&LS) == loopToGoverningIVMap.end()) return nullptr;
-  return loopToGoverningIVMap.at(&LS);
+  if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) return nullptr;
+  auto attribution = loopToGoverningIVAttrMap.at(&LS);
+  return &attribution->getInductionVariable();
+}
+
+LoopGoverningIVAttribution * InductionVariableManager::getLoopGoverningIVAttribution (LoopStructure &LS) const {
+  if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) return nullptr;
+  return loopToGoverningIVAttrMap.at(&LS);
 }
