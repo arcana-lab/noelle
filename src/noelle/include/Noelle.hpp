@@ -78,6 +78,8 @@ namespace llvm {
         double minimumHotness
         );
 
+      Module * getProgram (void) const ;
+
       Function * getEntryFunction (void) const ;
 
       Hot * getProfiles (void) ;
