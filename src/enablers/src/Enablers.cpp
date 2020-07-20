@@ -69,7 +69,7 @@ bool EnablersManager::applyEnablers (
   /*
    * Run the SCEV simplification pass
    */
-  if (par.isTransformationEnabled(Transformation::SCEV_SIMPLIFICATIION_ID)){
+  if (par.isTransformationEnabled(Transformation::SCEV_SIMPLIFICATION_ID)){
     errs() << "EnablersManager:   Try to simplify IV related SCEVs and their corresponding instructions in loops\n";
     if (scevSimplification.simplifyIVRelatedSCEVs(*LDI)){
       errs() << "EnablersManager:     Loop IV related SCEVs have been simplified\n";
