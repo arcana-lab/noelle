@@ -1,0 +1,4 @@
+verifyDisjointAccessBetweenIterations
+%25 = load i32, i32* %24, align 4 | store i32 %17, i32* %19, align 4
+%25 = load i32, i32* %24, align 4 | store i32 %26, i32* %24, align 4
+store i32 %17, i32* %19, align 4 | store i32 %26, i32* %24, align 4

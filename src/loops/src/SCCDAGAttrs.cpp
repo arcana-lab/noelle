@@ -313,6 +313,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarried
       auto consumerSCC = this->sccdag->sccOfValue(consumer);
 
       sccToLoopCarriedDependencies[producerSCC].insert(edge);
+      sccToLoopCarriedDependencies[consumerSCC].insert(edge);
 
       if (producerSCC != consumerSCC) continue;
       sccToInternalLoopCarriedDependencies[producerSCC].insert(edge);
