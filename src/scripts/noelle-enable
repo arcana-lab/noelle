@@ -7,6 +7,7 @@ ENABLERS="-load ${installDir}/lib/LoopDistribution.so \
   -load ${installDir}/lib/LoopUnroll.so \
   -load ${installDir}/lib/LoopWhilify.so \
   -load ${installDir}/lib/LoopInvariantCodeMotion.so \
+  -load ${installDir}/lib/SCEVSimplification.so \
 "
 
 # Set the file names
