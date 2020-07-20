@@ -82,7 +82,10 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
         *noelle.getProfiles(),
         noelle.getVerbosity()
       };
-      if (doall.canBeAppliedToLoop(LDI, noelle, nullptr)){
+      if (  true
+            && (summary->getNumberOfSubLoops() >= 1)
+            && doall.canBeAppliedToLoop(LDI, noelle, nullptr)
+        ){
 
         /*
          * The loop is a doall.
@@ -103,7 +106,6 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
            *
            * Disable it.
            */
-          errs() << "AAAAAA YAY\n";
           std::remove(toCheck.begin(), toCheck.end(), &child);
 
           return false;
@@ -118,7 +120,9 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
        */
       auto inlinedCall = this->inlineCallsInMassiveSCCs(F, LDI);
       inlined |= inlinedCall;
-      if (inlined) break;
+      if (inlined) {
+        break;
+      }
     }
 
     /*
