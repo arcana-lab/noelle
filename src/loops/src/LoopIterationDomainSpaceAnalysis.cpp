@@ -49,13 +49,21 @@ bool LoopIterationDomainSpaceAnalysis::areInstructionsAccessingDisjointMemoryLoc
 
   auto accessSpaceI = accessSpaceByInstruction.at(I);
   auto accessSpaceJ = accessSpaceByInstruction.at(J);
-  if (nonOverlappingAccessesBetweenIterations.find(accessSpaceI) ==
-    nonOverlappingAccessesBetweenIterations.end()) return false;
-  if (nonOverlappingAccessesBetweenIterations.find(accessSpaceJ) ==
-    nonOverlappingAccessesBetweenIterations.end()) return false;
 
-  return accessSpaceI == accessSpaceJ ||
-    isMemoryAccessSpaceEquivalentForTopLoopIVSubscript(accessSpaceI, accessSpaceJ);
+  // accessSpaceI->memoryAccessor->print(errs() << "Space I accessor: "); errs() << "\n";
+  // accessSpaceJ->memoryAccessor->print(errs() << "Space J accessor: "); errs() << "\n";
+
+  // errs() << "Size: " << nonOverlappingAccessesBetweenIterations.size()  << "\n";
+  // for (auto access : nonOverlappingAccessesBetweenIterations) {
+  //   access->memoryAccessor->print(errs() << "Accessor that doesn't overlap: "); errs() << "\n";
+  // }
+
+  if (nonOverlappingAccessesBetweenIterations.find(accessSpaceI) == nonOverlappingAccessesBetweenIterations.end()) return false;
+  // errs() << "Space I is fine\n";
+  if (nonOverlappingAccessesBetweenIterations.find(accessSpaceJ) == nonOverlappingAccessesBetweenIterations.end()) return false;
+  // errs() << "Space J is fine\n";
+
+  return (accessSpaceI == accessSpaceJ) || isMemoryAccessSpaceEquivalentForTopLoopIVSubscript(accessSpaceI, accessSpaceJ);
 }
 
 bool LoopIterationDomainSpaceAnalysis::isMemoryAccessSpaceEquivalentForTopLoopIVSubscript (
@@ -195,8 +203,6 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
     if (!basePointer) continue;
 
     auto accessFunction = SE.getMinusSCEV(memAccessSpace->memoryAccessorSCEV, basePointer);
-    // TODO: Break apart usage of different steps in delinearization and modify the third
-    // so that casts on subscripts is supported
     ScalarEvolutionDelinearization::delinearize(
       SE,
       accessFunction,
@@ -288,8 +294,9 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
 
       bool isOneToOne;
       if (isIV) {
-        bool isWrapping = !loopEntryPHISCEV->hasNoSelfWrap() && !loopEntryPHISCEV->hasNoUnsignedWrap()
-          && !loopEntryPHISCEV->hasNoSelfWrap();
+        // HACK: Currently relies on de-linearization to determine if wrap is likely
+        // TODO: Also check loop governing IV attribution for signed guard
+        bool isWrapping = false;
         isOneToOne = !isWrapping;
       } else {
         isOneToOne = isOneToOneFunctionOnIV(rootLoopStructure, iv, inst);
@@ -302,10 +309,15 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
     }
     if (!atLeastOneTopLevelNonOverlappingIV) continue;
 
-    // errs() << "Is non-overlapping\n";
+    // memAccessSpace->memoryAccessor->print(errs() << "Is non-overlapping: "); errs() << "\n";
 
     nonOverlappingAccessesBetweenIterations.insert(memAccessSpace.get());
   }
+
+  // errs() << "Non overlappinig size: " << nonOverlappingAccessesBetweenIterations.size() << "\n";
+  // for (auto space : nonOverlappingAccessesBetweenIterations) {
+  //   space->memoryAccessor->print(errs() << "Non overlapping space: "); errs() << "\n";
+  // }
 
   return;
 }
@@ -515,14 +527,14 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
     auto zeroConstant = (ConstantInt *)ConstantInt::get(subscriptSCEV->getType(), (int64_t)0);
     auto zeroSCEV = SE.getConstant(zeroConstant);
 
-    sizeSCEV->print(errs() << "Checking if bounded by 0 and ");
-    subscriptSCEV->print(errs() << ", Subscript " << i << ": ");
-    inst->print(errs() << "\tInst: ");
-    errs() << "\n";
-    if (auto ar = dyn_cast<SCEVAddRecExpr>(subscriptSCEV)) {
-      iv->getLoopEntryPHI()->getParent()->printAsOperand(errs() << "\tfrom loop: "); errs() << "\n";
-    }
-    errs() << "\tEqual to instruction SCEV: " << (subscriptSCEV == SE.getSCEV(inst)) << "\n";
+    // sizeSCEV->print(errs() << "Checking if bounded by 0 and ");
+    // subscriptSCEV->print(errs() << ", Subscript " << i << ": ");
+    // inst->print(errs() << "\tInst: ");
+    // errs() << "\n";
+    // if (auto ar = dyn_cast<SCEVAddRecExpr>(subscriptSCEV)) {
+    //   iv->getLoopEntryPHI()->getParent()->printAsOperand(errs() << "\tfrom loop: "); errs() << "\n";
+    // }
+    // errs() << "\tEqual to instruction SCEV: " << (subscriptSCEV == SE.getSCEV(inst)) << "\n";
 
     if (SE.isKnownPredicate(looseLowerBoundPred, subscriptSCEV, zeroSCEV)
       && SE.isKnownPredicate(strictUpperBoundPred, subscriptSCEV, sizeSCEV)) continue;
@@ -532,8 +544,8 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
       auto loopEntryPHI = iv->getLoopEntryPHI();
       auto loopEntryPHISCEV = cast<SCEVAddRecExpr>(SE.getSCEV(loopEntryPHI));
 
-      loopEntryPHISCEV->print(errs() << "Loop entry SCEV: "); errs() << "\n";
-      subscriptRecSCEV->print(errs() << "Subscript SCEV: "); errs() << "\n";
+      // loopEntryPHISCEV->print(errs() << "Loop entry SCEV: "); errs() << "\n";
+      // subscriptRecSCEV->print(errs() << "Subscript SCEV: "); errs() << "\n";
 
       /*
        * If the step recurrence is negative and the AddRecExpr starts at the size - 1, it is bounded
@@ -554,7 +566,9 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
         auto loopHeader = loopEntryPHI->getParent();
         auto loopStructure = loops.getLoop(*loopHeader);
         auto attr = ivManager.getLoopGoverningIVAttribution(*loopStructure);
-        attr->getInductionVariable().getLoopEntryPHI()->print(errs() << "ATTR PHI: "); errs() << "\n";
+
+        // attr->getInductionVariable().getLoopEntryPHI()->print(errs() << "ATTR PHI: "); errs() << "\n";
+
         if (attr != nullptr && iv == &attr->getInductionVariable()) {
           auto loopGoverningIV = &attr->getInductionVariable();
           if (constantStepSCEV && !constantStepSCEV->getValue()->isNegative()) {
@@ -567,9 +581,9 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
             bool exitOnFalse = exitBlock == falseSuccessor;
             bool isConditionLHS = cmpInst->getOperand(0) == conditionValue;
 
-            errs() << "\t\tEOF: " << exitOnFalse << "\n";
-            cmpInst->print(errs() << "\t\tCmpI: "); errs() << "\n";
-            SE.getSCEV(conditionValue)->print(errs() << "\t\tCondition value SCEV: "); errs() << "\n";
+            // errs() << "\t\tEOF: " << exitOnFalse << "\n";
+            // cmpInst->print(errs() << "\t\tCmpI: "); errs() << "\n";
+            // SE.getSCEV(conditionValue)->print(errs() << "\t\tCondition value SCEV: "); errs() << "\n";
 
             if (predicate == ICmpInst::Predicate::ICMP_ULE || predicate == ICmpInst::Predicate::ICMP_SLE) {
               predicate = ICmpInst::Predicate::ICMP_UGT;
@@ -599,8 +613,8 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
                 sizeSCEVBase = cast<SCEVCastExpr>(opI)->getOperand();
               }
 
-              conditionSCEVBase->print(errs() << "Condition SCEV "); errs() << "\n";
-              sizeSCEVBase->print(errs() << "Size SCEV "); errs() << "\n";
+              // conditionSCEVBase->print(errs() << "Condition SCEV "); errs() << "\n";
+              // sizeSCEVBase->print(errs() << "Size SCEV "); errs() << "\n";
 
               if (conditionSCEVBase == sizeSCEVBase) continue;
             }
@@ -612,7 +626,7 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
     return false;
   }
 
-  errs() << "Is bounded\n";
+  // errs() << "Is bounded\n";
 
   return true;
 }
