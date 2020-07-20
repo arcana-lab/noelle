@@ -20,7 +20,6 @@
 #include <set>
 
 #include "DGBase.hpp"
-#include "DGGraphTraits.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -57,14 +56,4 @@ namespace llvm {
       void connectBasicBlockNodes() ;
   };
 
-  template<>
-  struct DOTGraphTraits<SubCFGs *> : DGDOTGraphTraits<SubCFGs, BasicBlock> {
-    DOTGraphTraits (bool isSimple=false) : DGDOTGraphTraits<SubCFGs, BasicBlock>(isSimple) {}
-
-    static std::string getGraphName(SubCFGs *dg) {
-      return "Execution Graph";
-    }
-  };
-
-  template<> struct GraphTraits<SubCFGs *> : DGGraphTraits<SubCFGs, BasicBlock> {};
 }
