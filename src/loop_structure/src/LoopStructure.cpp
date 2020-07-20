@@ -257,3 +257,25 @@ bool LoopStructure::isIncludedInItsSubLoops (Instruction *inst) const {
 
   return false;
 }
+
+uint32_t LoopStructure::getNumberOfSubLoops (void) const {
+
+  /*
+   * Check its children.
+   */
+  uint32_t subloops = 0;
+  for (auto subLoop : this->children){
+
+    /*
+     * Account for the current sub-loop.
+     */
+    subloops++;
+
+    /*
+     * Account for the sub-loops of the current sub-loop.
+     */
+    subloops += subLoop->getNumberOfSubLoops();
+  }
+
+  return subloops;
+}
