@@ -91,7 +91,14 @@ bool LoopIterationDomainSpaceAnalysis::isMemoryAccessSpaceEquivalentForTopLoopIV
   auto rootLoopStructure = loops.getLoopNestingTreeRoot();
   for (auto subscriptIdx = 0; subscriptIdx < space1->subscriptIVs.size(); ++subscriptIdx) {
     auto iv1 = space1->subscriptIVs[subscriptIdx].second;
+    if (iv1 == nullptr){
+      return false;
+    }
     auto iv2 = space2->subscriptIVs[subscriptIdx].second;
+    if (iv2 == nullptr){
+      return false;
+    }
+
     auto loop1 = getLoopForIV(iv1);
     auto loop2 = getLoopForIV(iv2);
     if (rootLoopStructure == loop1 ^ rootLoopStructure == loop2) return false;
