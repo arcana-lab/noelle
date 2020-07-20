@@ -45,6 +45,7 @@ bool EnablersManager::runOnModule (Module &M) {
   auto loopUnroll = LoopUnroll();
   auto loopWhilify = LoopWhilifier(noelle);
   auto loopInvariantCodeMotion = LoopInvariantCodeMotion(noelle);
+  auto scevSimplification = SCEVSimplification(noelle);
 
   /*
    * Fetch all the loops we want to parallelize.
@@ -76,7 +77,15 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Improve the current loop.
      */
-    modifiedFunctions[f] |= this->applyEnablers(loop, noelle, loopDist, loopUnroll, loopWhilify, loopInvariantCodeMotion);
+    modifiedFunctions[f] |= this->applyEnablers(
+      loop,
+      noelle,
+      loopDist,
+      loopUnroll,
+      loopWhilify,
+      loopInvariantCodeMotion,
+      scevSimplification
+    );
     modified |= modifiedFunctions[f];
   }
 

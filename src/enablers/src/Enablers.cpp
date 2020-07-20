@@ -18,7 +18,8 @@ bool EnablersManager::applyEnablers (
     LoopDistribution &loopDist,
     LoopUnroll &loopUnroll,
     LoopWhilifier &loopWhilifier,
-    LoopInvariantCodeMotion &loopInvariantCodeMotion
+    LoopInvariantCodeMotion &loopInvariantCodeMotion,
+    SCEVSimplification &scevSimplification
     ){
 
   /*
@@ -64,6 +65,18 @@ bool EnablersManager::applyEnablers (
       return true;
     }
   }
+
+  /*
+   * Run the SCEV simplification pass
+   */
+  if (par.isTransformationEnabled(Transformation::SCEV_SIMPLIFICATIION_ID)){
+    errs() << "EnablersManager:   Try to simplify IV related SCEVs and their corresponding instructions in loops\n";
+    if (scevSimplification.simplifyIVRelatedSCEVs(*LDI)){
+      errs() << "EnablersManager:     Loop IV related SCEVs have been simplified\n";
+      return true;
+    }
+  }
+
 
   return false;
 }
