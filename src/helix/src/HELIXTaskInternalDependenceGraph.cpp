@@ -77,7 +77,7 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
   }
 
   if (this->verbose >= Verbosity::Maximal) {
-    DGPrinter::writeGraph<PDG>("technique-task-fdg-" + std::to_string(LDI->getID()) + ".dot", taskFunctionDG);
+    DGPrinter::writeGraph<PDG, Value>("technique-task-fdg-" + std::to_string(LDI->getID()) + ".dot", taskFunctionDG);
   }
 
   return this->taskFunctionDG;

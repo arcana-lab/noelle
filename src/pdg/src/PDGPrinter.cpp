@@ -51,7 +51,7 @@ void PDGPrinter::printPDG (
   /*
    * Print the PDG
    */
-  DGPrinter::writeClusteredGraph<PDG>("pdg-full.dot", graph);
+  DGPrinter::writeClusteredGraph<PDG, Value>("pdg-full.dot", graph);
   for (auto F : funcToGraph) {
     auto& LI = getLoopInfo(F);
     printGraphsForFunction(*F, graph, LI);
@@ -94,7 +94,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
   raw_string_ostream ros(filename);
   ros << "pdg-function-" << F.getName() << ".dot";
   auto subgraph = graph->createFunctionSubgraph(F);
-  DGPrinter::writeClusteredGraph<PDG>(ros.str(), subgraph);
+  DGPrinter::writeClusteredGraph<PDG, Value>(ros.str(), subgraph);
   delete subgraph;
 
   /*
@@ -114,7 +114,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
     filename.clear();
     ros << "pdg-function-" << F.getName() << "-loop" << loopCount << ".dot";
     subgraph = graph->createLoopsSubgraph(currentLoop);
-    DGPrinter::writeClusteredGraph<PDG>(ros.str(), subgraph);
+    DGPrinter::writeClusteredGraph<PDG, Value>(ros.str(), subgraph);
 
     /*
      * Print the SCCDAG of the loop.
@@ -122,7 +122,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
     filename.clear();
     ros << "pdg-function-" << F.getName() << "-loop" << loopCount << "-SCCDAG.dot";
     auto sccSubgraph = new SCCDAG(subgraph);
-    DGPrinter::writeClusteredGraph<SCCDAG>(ros.str(), sccSubgraph);
+    DGPrinter::writeClusteredGraph<SCCDAG, SCC>(ros.str(), sccSubgraph);
 
     /*
      * Print each SCC within the loop SCCDAG.
@@ -131,7 +131,7 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
     for (auto scc : sccSubgraph->getSCCs()){
       filename.clear();
       ros << "pdg-function-" << F.getName() << "-loop" << loopCount << "-SCCDAG-SCC" << sccCount << ".dot";
-      DGPrinter::writeClusteredGraph<SCC>(ros.str(), scc);
+      DGPrinter::writeClusteredGraph<SCC, Value>(ros.str(), scc);
       sccCount++;
     }
     
