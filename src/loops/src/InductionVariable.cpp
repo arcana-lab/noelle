@@ -110,6 +110,75 @@ void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInst
   ScalarEvolution &SE
 ) {
 
+  /*
+   * Recursive search up uses of an instruction to determine if derived
+   * Since we do not have the SCC that pertains to children IVs, we only
+   * label acyclic dependent computation on this IV as "derived"
+   */
+  std::unordered_set<Instruction *> checked;
+  std::function<bool(Instruction *)> checkIfDerived;
+  checkIfDerived = [&](Instruction *I) -> bool {
+
+    /*
+     * Check the cache of confirmed derived values,
+     * and then what we have already traversed to prevent traversing a cycle
+     */
+    if (derivedSCEVInstructions.find(I) != derivedSCEVInstructions.end()) {
+      return true;
+    }
+    if (checked.find(I) != checked.end()) {
+      return false;
+    }
+    checked.insert(I);
+
+    /*
+     * Only check SCEVable values in the loop
+     */
+    if (!SE.isSCEVable(I->getType())) return false;
+    if (!LS->isIncluded(I)) return false;
+
+    /*
+     * We only handle unary/binary operations on IV instructions.
+     */
+    auto scev = SE.getSCEV(I);
+    if (!isa<SCEVCastExpr>(scev) && !isa<SCEVNAryExpr>(scev) && !isa<SCEVUDivExpr>(scev)) return false;
+
+    /*
+     * Ensure the instruction uses the IV at least once, and only this IV,
+     * apart from constants and loop invariants
+     */
+    bool usesAtLeastOneIVInstruction = false;
+    for (auto &use : I->operands()) {
+      auto usedValue = use.get();
+
+      if (isa<ConstantInt>(usedValue)) continue;
+      if (IVM.isLoopInvariant(usedValue)) continue;
+
+      if (auto usedInst = dyn_cast<Instruction>(usedValue)) {
+        auto isIVUse = this->isIVInstruction(usedInst);
+        auto isDerivedUse = checkIfDerived(usedInst);
+        if (isIVUse || isDerivedUse) {
+          usesAtLeastOneIVInstruction = true;
+          continue;
+        }
+      }
+
+      return false;
+    }
+
+    if (!usesAtLeastOneIVInstruction) return false;
+
+    /*
+     * Cache the result
+     */
+    derivedSCEVInstructions.insert(I);
+
+    return true;
+  };
+
+  /*
+   * Queue traversal through users of IV instructions to find all derived instructions
+   */
   std::queue<Instruction *> intermediates;
   std::unordered_set<Instruction *> visited;
   for (auto ivInst : allInstructions) {
@@ -123,43 +192,13 @@ void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInst
 
     for (auto user : I->users()) {
       if (auto userInst = dyn_cast<Instruction>(user)) {
-
-        /*
-         * Only check SCEVable values inside the loop
-         */
-        if (!SE.isSCEVable(userInst->getType())) continue;
-        if (!LS->isIncluded(userInst)) continue;
-
-        /*
-         * We only handle unary/binary operations on IV instructions.
-         */
-        auto userSCEV = SE.getSCEV(userInst);
-        if (!isa<SCEVCastExpr>(userSCEV) &&
-          !isa<SCEVNAryExpr>(userSCEV) &&
-          !isa<SCEVUDivExpr>(userSCEV)) continue;
-
-        bool isOperationDerivingFromIVConstantsAndExternals = true;
-        for (auto &userOp : userInst->operands()) {
-
-          /*
-           * Allow using IV instructions, previously derived instructions, or constants/loop invariants
-           */
-          if (isa<ConstantInt>(userOp)) continue;
-          if (auto userOpInst = dyn_cast<Instruction>(userOp)) {
-            if (this->isIVInstruction(userOpInst)) continue;
-            if (this->isDerivedFromIVInstructions(userOpInst)) continue;
-            if (!IVM.isLoopInvariant(userOpInst)) continue;
-          }
-
-          isOperationDerivingFromIVConstantsAndExternals = false;
-          break;
-        }
-
-        if (!isOperationDerivingFromIVConstantsAndExternals) continue;
-        derivedSCEVInstructions.insert(userInst);
-
         if (visited.find(userInst) != visited.end()) continue;
         visited.insert(userInst);
+
+        /*
+         * If the user isn't derived, do not continue traversing users
+         */
+        if (!checkIfDerived(userInst)) continue;
         intermediates.push(userInst);
       }
     }
