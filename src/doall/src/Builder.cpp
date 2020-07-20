@@ -23,6 +23,7 @@ void DOALL::rewireLoopToIterateChunks (
   /*
    * Fetch loop and IV information.
    */
+  auto invariantManager = LDI->getInvariantManager();
   auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto loopPreHeader = loopSummary->getPreHeader();
@@ -156,22 +157,32 @@ void DOALL::rewireLoopToIterateChunks (
    * The exit condition value does not need to be computed each iteration
    * and so the value's derivation can be hoisted into the preheader
    * 
-   * NOTE: As of now, instructions which the PDG states are independent can include
-   * PHI nodes containing the re-loading of a global. Without further analysis,
-   * the following simplification would hoist that PHI out of its block.
+   * Instructions which the PDG states are independent can include PHI nodes
+   * Assert that any PHIs are invariant. Hoise one of those values (if instructions) to the preheader.
    */
-  // auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
-  // if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
-  //   auto &derivation = ivUtility.getConditionValueDerivation();
-  //   for (auto I : derivation) {
-  //     auto cloneI = task->getCloneOfOriginalInstruction(I);
-  //     cloneI->removeFromParent();
-  //     entryBuilder.Insert(cloneI);
-  //   }
+  auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
+  if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
+    auto &derivation = ivUtility.getConditionValueDerivation();
+    for (auto I : derivation) {
+      auto cloneI = task->getCloneOfOriginalInstruction(I);
+      assert(invariantManager->isLoopInvariant(cloneI)
+        && "DOALL exit condition value is not derived from loop invariant values!");
 
-  //   exitConditionInst->removeFromParent();
-  //   entryBuilder.Insert(exitConditionInst);
-  // }
+      if (auto clonePHI = dyn_cast<PHINode>(cloneI)) {
+        auto usedValue = clonePHI->getIncomingValue(0);
+        clonePHI->replaceAllUsesWith(usedValue);
+        clonePHI->eraseFromParent();
+        cloneI = dyn_cast<Instruction>(usedValue);
+        if (!cloneI) continue;
+      }
+
+      cloneI->removeFromParent();
+      entryBuilder.Insert(cloneI);
+    }
+
+    exitConditionInst->removeFromParent();
+    entryBuilder.Insert(exitConditionInst);
+  }
 
   /*
    * NOTE: When loop governing IV attribution allows for any bther instructions in the header
@@ -239,7 +250,6 @@ void DOALL::rewireLoopToIterateChunks (
 	/*
 	 * Collect (4) by identifying header instructions belonging to independent SCCs that are loop invariant
 	 */
-  auto invariantManager = LDI->getInvariantManager();
   for (auto &I : *loopHeader) {
 		auto scc = sccdag->sccOfValue(&I);
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);

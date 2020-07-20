@@ -42,7 +42,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
         instructionsToHoistToPreheader.push_back(&I);
         continue;
       }
-        
+
       /*
        * All PHI invariants are equivalent, so choose any to replace the PHI
        */
