@@ -4,6 +4,7 @@ set(Srcs
   ScalarEvolutionExpander.cpp
   ScalarEvolutionReferencer.cpp
   ScalarEvolutionReferenceTreeExpander.cpp
+  ScalarEvolutionDelinearization.cpp
   BitMatrix.cpp
 )
 

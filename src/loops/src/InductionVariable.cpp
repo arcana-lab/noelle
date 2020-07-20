@@ -15,6 +15,7 @@ using namespace llvm;
 
 InductionVariable::InductionVariable  (
   LoopStructure *LS,
+  InvariantManager &IVM,
   ScalarEvolution &SE,
   PHINode *loopEntryPHI,
   SCC &scc,
@@ -22,6 +23,26 @@ InductionVariable::InductionVariable  (
   ScalarEvolutionReferentialExpander &referentialExpander
 ) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{nullptr},
     stepSCEV{nullptr}, computationOfStepValue{}, isComputedStepValueLoopInvariant{false} {
+
+  /*
+   * Fetch initial value of induction variable
+   */
+  auto bbs = LS->getBasicBlocks();
+  for (auto i = 0; i < loopEntryPHI->getNumIncomingValues(); ++i) {
+    auto incomingBB = loopEntryPHI->getIncomingBlock(i);
+    if (bbs.find(incomingBB) == bbs.end()) {
+      this->startValue = loopEntryPHI->getIncomingValue(i);
+      break;
+    }
+  }
+
+  traverseCycleThroughLoopEntryPHIToGetAllIVInstructions();
+  traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
+  collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
+  deriveStepValue(LS, SE, referentialExpander, loopEnv);
+}
+
+void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions () {
 
   /*
    * Collect intermediate values of the IV within the loop (by traversing its strongly connected component)
@@ -80,20 +101,110 @@ InductionVariable::InductionVariable  (
   }
   this->allInstructions.insert(castsToAdd.begin(), castsToAdd.end());
 
+  return;
+}
+
+void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions (
+  LoopStructure *LS,
+  InvariantManager &IVM,
+  ScalarEvolution &SE
+) {
+
   /*
-   * Fetch initial value of induction variable
+   * Recursive search up uses of an instruction to determine if derived
+   * Since we do not have the SCC that pertains to children IVs, we only
+   * label acyclic dependent computation on this IV as "derived"
    */
-  auto bbs = LS->getBasicBlocks();
-  for (auto i = 0; i < loopEntryPHI->getNumIncomingValues(); ++i) {
-    auto incomingBB = loopEntryPHI->getIncomingBlock(i);
-    if (bbs.find(incomingBB) == bbs.end()) {
-      this->startValue = loopEntryPHI->getIncomingValue(i);
-      break;
+  std::unordered_set<Instruction *> checked;
+  std::function<bool(Instruction *)> checkIfDerived;
+  checkIfDerived = [&](Instruction *I) -> bool {
+
+    /*
+     * Check the cache of confirmed derived values,
+     * and then what we have already traversed to prevent traversing a cycle
+     */
+    if (derivedSCEVInstructions.find(I) != derivedSCEVInstructions.end()) {
+      return true;
+    }
+    if (checked.find(I) != checked.end()) {
+      return false;
+    }
+    checked.insert(I);
+
+    /*
+     * Only check SCEVable values in the loop
+     */
+    if (!SE.isSCEVable(I->getType())) return false;
+    if (!LS->isIncluded(I)) return false;
+
+    /*
+     * We only handle unary/binary operations on IV instructions.
+     */
+    auto scev = SE.getSCEV(I);
+    if (!isa<SCEVCastExpr>(scev) && !isa<SCEVNAryExpr>(scev) && !isa<SCEVUDivExpr>(scev)) return false;
+
+    /*
+     * Ensure the instruction uses the IV at least once, and only this IV,
+     * apart from constants and loop invariants
+     */
+    bool usesAtLeastOneIVInstruction = false;
+    for (auto &use : I->operands()) {
+      auto usedValue = use.get();
+
+      if (isa<ConstantInt>(usedValue)) continue;
+      if (IVM.isLoopInvariant(usedValue)) continue;
+
+      if (auto usedInst = dyn_cast<Instruction>(usedValue)) {
+        auto isIVUse = this->isIVInstruction(usedInst);
+        auto isDerivedUse = checkIfDerived(usedInst);
+        if (isIVUse || isDerivedUse) {
+          usesAtLeastOneIVInstruction = true;
+          continue;
+        }
+      }
+
+      return false;
+    }
+
+    if (!usesAtLeastOneIVInstruction) return false;
+
+    /*
+     * Cache the result
+     */
+    derivedSCEVInstructions.insert(I);
+
+    return true;
+  };
+
+  /*
+   * Queue traversal through users of IV instructions to find all derived instructions
+   */
+  std::queue<Instruction *> intermediates;
+  std::unordered_set<Instruction *> visited;
+  for (auto ivInst : allInstructions) {
+    intermediates.push(ivInst);
+    visited.insert(ivInst);
+  }
+
+  while (!intermediates.empty()) {
+    auto I = intermediates.front();
+    intermediates.pop();
+
+    for (auto user : I->users()) {
+      if (auto userInst = dyn_cast<Instruction>(user)) {
+        if (visited.find(userInst) != visited.end()) continue;
+        visited.insert(userInst);
+
+        /*
+         * If the user isn't derived, do not continue traversing users
+         */
+        if (!checkIfDerived(userInst)) continue;
+        intermediates.push(userInst);
+      }
     }
   }
 
-  collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
-  deriveStepValue(LS, SE, referentialExpander, loopEnv);
+  return;
 }
 
 void InductionVariable::collectValuesInternalAndExternalToLoopAndSCC (
@@ -266,16 +377,20 @@ PHINode * InductionVariable::getLoopEntryPHI (void) const {
   return loopEntryPHI;
 }
 
-std::set<PHINode *> InductionVariable::getPHIs (void) const {
+std::unordered_set<PHINode *> InductionVariable::getPHIs (void) const {
   return PHIs;
 }
 
-std::set<Instruction *> InductionVariable::getNonPHIIntermediateValues (void) const {
+std::unordered_set<Instruction *> InductionVariable::getNonPHIIntermediateValues (void) const {
   return nonPHIIntermediateValues;
 }
 
-std::set<Instruction *> InductionVariable::getAllInstructions(void) const {
+std::unordered_set<Instruction *> InductionVariable::getAllInstructions(void) const {
   return allInstructions;
+}
+
+std::unordered_set<Instruction *> InductionVariable::getDerivedSCEVInstructions(void) const {
+  return derivedSCEVInstructions;
 }
 
 Value *InductionVariable::getStartValue (void) const {
@@ -296,4 +411,12 @@ std::vector<Instruction *> InductionVariable::getComputationOfStepValue(void) co
 
 bool InductionVariable::isStepValueLoopInvariant (void) const {
   return isComputedStepValueLoopInvariant;
+}
+
+bool InductionVariable::isIVInstruction (Instruction *I) const {
+  return allInstructions.find(I) != allInstructions.end();
+}
+
+bool InductionVariable::isDerivedFromIVInstructions (Instruction *I) const {
+  return derivedSCEVInstructions.find(I) != derivedSCEVInstructions.end();
 }
