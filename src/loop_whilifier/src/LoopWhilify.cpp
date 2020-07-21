@@ -228,6 +228,25 @@ bool LoopWhilifier::whilifyLoopDriver(
 }
 
 
+bool LoopWhilifier::containsInOriginalLoop(
+  WhilifierContext * const WC,
+  BasicBlock * const BB 
+) {
+
+  /*
+   * TOP --- Perform a simple find through the
+   * blocks to perform "contains" --- can't rely
+   * on the loop structure, as that info is invalid
+   * during whilification
+   */
+
+  return llvm::find(
+    (WC->LoopBlocks),
+    BB) != (WC->LoopBlocks).end();
+
+}
+
+
 bool LoopWhilifier::isDoWhile(
   LoopStructure * const LS,
   BasicBlock * const Latch
@@ -392,26 +411,6 @@ void LoopWhilifier::buildAnchors(
 
 
   return;
-
-}
-
-
-bool containsInOriginalLoop(
-  BasicBlock * const BB, 
-  std::vector<BasicBlock *> const &OriginalLoopBlocks
-) {
-
-  /*
-   * TOP --- Perform a simple find through the
-   * blocks to perform "contains" --- can't rely
-   * on the loop structure, as that info is invalid
-   * during whilification
-   */
-
-  return std::find(
-    OriginalLoopBlocks.begin(), 
-    OriginalLoopBlocks.end(),
-    BB) != OriginalLoopBlocks.end();
 
 }
 

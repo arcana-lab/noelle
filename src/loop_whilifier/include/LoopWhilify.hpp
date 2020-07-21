@@ -96,6 +96,11 @@ namespace llvm {
        * Methods
        */
 
+      bool containsInOriginalLoop(
+        WhilifierContext * const WC,
+        BasicBlock * const BB 
+      );
+
       bool isDoWhile(
         LoopStructure * const LS,
         BasicBlock * const Latch
@@ -121,11 +126,6 @@ namespace llvm {
         BasicBlock *&PreHeader,
         BasicBlock *&InsertTop,
         BasicBlock *&InsertBot
-      );
-
-      bool containsInOriginalLoop(
-        BasicBlock * const BB, 
-        std::vector<BasicBlock *> const &OriginalLoopBlocks
       );
 
       void cloneLoopBlocksForWhilifying(
