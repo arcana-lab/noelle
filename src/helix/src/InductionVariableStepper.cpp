@@ -105,7 +105,6 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     auto startOfIV = fetchClone(ivInfo->getStartValue());
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto originalIVPHI = ivInfo->getLoopEntryPHI();
-    originalIVPHI->print(errs() << "Original: "); errs() << "\n";
     auto ivPHI = cast<PHINode>(fetchClone(originalIVPHI));
 
     auto nthCoreOffset = entryBuilder.CreateMul(
@@ -128,7 +127,6 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
   for (auto ivInfo : ivInfos) {
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto originalIVPHI = ivInfo->getLoopEntryPHI();
-    originalIVPHI->print(errs() << "Original: "); errs() << "\n";
     auto ivPHI = cast<PHINode>(fetchClone(originalIVPHI));
 
     auto jumpStepSize = entryBuilder.CreateMul(
@@ -160,8 +158,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
    * 2) all non-clonable instructions in the header instead execute in the body and after exiting the loop
    */
   auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
-  if (loopGoverningIVAttr && false) {
-    auto loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
+  if (loopGoverningIVAttr) {
+    auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
     LoopGoverningIVUtility ivUtility(loopGoverningIV, *loopGoverningIVAttr);
 
     auto originalCmpInst = loopGoverningIVAttr->getHeaderCmpInst();
@@ -174,8 +172,10 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
 
     auto headerSuccTrue = brInst->getSuccessor(0);
     auto headerSuccFalse = brInst->getSuccessor(1);
-    auto entryIntoBody = headerSuccTrue == cloneHeaderExit ? headerSuccFalse : headerSuccTrue;
+    auto isTrueExiting = headerSuccTrue == cloneHeaderExit;
+    auto entryIntoBody = isTrueExiting ? headerSuccFalse : headerSuccTrue;
     ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(cmpInst, brInst, cloneHeaderExit);
+    auto updatedCmpInst = cmpInst;
 
     /*
      * Collect instructions that cannot be in the header
@@ -210,6 +210,9 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     /*
      * Clone these instructions and execute them after exiting the loop ONLY IF
      * the previous iteration's IV value passes the loop guard.
+     * 
+     * Any of these that are live out values must replace their equivalent in the loop body
+     * within the task's instruction mapping
      */
     auto taskFunction = task->getTaskBody();
     auto &cxt = taskFunction->getContext();
@@ -219,13 +222,34 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     for (auto I : instsToMoveAndClone) {
       auto cloneI = I->clone();
       lastHeaderSequentialExecutionBuilder.Insert(cloneI);
+      task->addInstruction(I, cloneI);
     }
+    lastHeaderSequentialExecutionBuilder.CreateBr(cloneHeaderExit);
 
     brInst->replaceSuccessorWith(cloneHeaderExit, checkForLastExecutionBlock);
     IRBuilder<> checkForLastExecutionBuilder(checkForLastExecutionBlock);
-    // checkForLastExecutionBuilder.CreateCondBr();
+
+    /*
+     * Compute the loop governing IV's value the previous iteration
+     * (regardless of what core it would have executed on)
+     */
+    auto originalGoverningPHI = loopGoverningIV.getLoopEntryPHI();
+    auto cloneGoverningPHI = task->getCloneOfOriginalInstruction(originalGoverningPHI);
+    auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
+    auto prevIterIVValue = checkForLastExecutionBuilder.CreateSub(cloneGoverningPHI, stepSize);
+
+    /*
+     * Guard against this previous iteration.
+     * If the condition would have exited the loop, go straight to the task exit
+     * If not, this was the last execution of the header
+     */
+    auto prevIterGuard = updatedCmpInst->clone();
+    prevIterGuard->replaceUsesOfWith(cloneGoverningPHI, prevIterIVValue);
+    checkForLastExecutionBuilder.Insert(prevIterGuard);
 
     auto exitBlock = task->getExit();
-    lastHeaderSequentialExecutionBuilder.CreateBr(exitBlock);
+    auto condTrueSuccessor = isTrueExiting ? exitBlock : lastHeaderSequentialExecutionBlock;
+    auto condFalseSuccessor = isTrueExiting ? lastHeaderSequentialExecutionBlock : exitBlock;
+    checkForLastExecutionBuilder.CreateCondBr(prevIterGuard, condTrueSuccessor, condFalseSuccessor);
   }
 }
