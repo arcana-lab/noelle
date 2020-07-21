@@ -665,8 +665,8 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
     case MayAlias:
       break;
     case MustAlias:
-      must = true;
-      break;
+      pdg->addEdge((Value*)instI, (Value*)instJ)->setMemMustType(true, true, dataDependenceType);
+      return ;
   }
 
   /*
@@ -1062,7 +1062,7 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge) {
 
   bool loopCarried = true;
   if (isMemoryAccessIntoDifferentArrays(edge) ||
-      (store && load && isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store)) ||
+      // (store && load && isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store)) ||
       isBackedgeIntoSameGlobal(edge)) {
     loopCarried = false;
   }

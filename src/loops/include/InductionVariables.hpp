@@ -20,16 +20,19 @@
 #include "LoopEnvironment.hpp"
 #include "DominatorSummary.hpp"
 #include "ScalarEvolutionReferencer.hpp"
+#include "Invariants.hpp"
 
 namespace llvm {
 
   class InductionVariable;
+  class LoopGoverningIVAttribution;
 
   class InductionVariableManager {
     public:
 
       InductionVariableManager (
         LoopsSummary &LIS,
+        InvariantManager &IVM,
         ScalarEvolution &SE,
         SCCDAG &sccdag,
         LoopEnvironment &loopEnv
@@ -38,19 +41,28 @@ namespace llvm {
       /*
        * Return all induction variables including the loop-governing one.
        */
-      std::set<InductionVariable *> getInductionVariables (LoopStructure &LS) ;
+      std::unordered_set<InductionVariable *> getInductionVariables (LoopStructure &LS) const ;
 
-      InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) ;
+      /*
+       * Return all induction variables that @i is involved in for any loop/sub-loop related to this manager.
+       */
+      std::unordered_set<InductionVariable *> getInductionVariables (Instruction *i) const ;
 
-      bool doesContributeToComputeAnInductionVariable (Instruction *i) ;
+      InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i) const ;
 
-      InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i);
+      InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) const ;
+
+      bool doesContributeToComputeAnInductionVariable (Instruction *i) const ;
+
+      LoopGoverningIVAttribution * getLoopGoverningIVAttribution (LoopStructure &LS) const ;
+
+      InductionVariable * getDerivingInductionVariable (LoopStructure &LS, Instruction *derivedInstruction) const ;
 
       ~InductionVariableManager ();
 
     private:
-      std::unordered_map<LoopStructure *, std::set<InductionVariable *>> loopToIVsMap;
-      std::unordered_map<LoopStructure *, InductionVariable *> loopToGoverningIVMap;
+      std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
+      std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *> loopToGoverningIVAttrMap;
   };
 
   class InductionVariable {
@@ -58,6 +70,7 @@ namespace llvm {
 
       InductionVariable  (
         LoopStructure *LS,
+        InvariantManager &IVM,
         ScalarEvolution &SE,
         PHINode *loopEntryPHI,
         SCC &scc,
@@ -69,11 +82,13 @@ namespace llvm {
 
       PHINode * getLoopEntryPHI (void) const ;
 
-      std::set<PHINode *> getPHIs (void) const ;
+      std::unordered_set<PHINode *> getPHIs (void) const ;
 
-      std::set<Instruction *> getNonPHIIntermediateValues (void) const ;
+      std::unordered_set<Instruction *> getNonPHIIntermediateValues (void) const ;
 
-      std::set<Instruction *> getAllInstructions(void) const ;
+      std::unordered_set<Instruction *> getAllInstructions(void) const ;
+
+      std::unordered_set<Instruction *> getDerivedSCEVInstructions(void) const ;
 
       Value * getStartValue (void) const;
 
@@ -83,7 +98,11 @@ namespace llvm {
 
       bool isStepValueLoopInvariant (void) const;
 
-      const SCEV *getStepSCEV (void) const;
+      const SCEV * getStepSCEV (void) const;
+
+      bool isIVInstruction (Instruction *I) const;
+
+      bool isDerivedFromIVInstructions (Instruction *I) const;
 
       ~InductionVariable ();
 
@@ -103,17 +122,22 @@ namespace llvm {
       /*
        * All PHIs, whether intermediate or the loop entry PHI
        */
-      std::set<PHINode *> PHIs;
+      std::unordered_set<PHINode *> PHIs;
 
       /*
        * All non-PHI intermediate values of the IV
        */
-      std::set<Instruction *> nonPHIIntermediateValues;
+      std::unordered_set<Instruction *> nonPHIIntermediateValues;
 
       /*
        * All PHI/non-PHI intermediate values AND all casts of the IV
        */
-      std::set<Instruction *> allInstructions;
+      std::unordered_set<Instruction *> allInstructions;
+
+      /*
+       * Derived SCEV instructions relying solely on loop invariants, constants, and this IV
+       */
+      std::unordered_set<Instruction *> derivedSCEVInstructions;
 
       /*
        * Start value (the incoming value to the loop entry PHI from the preheader)
@@ -172,6 +196,14 @@ namespace llvm {
         const SCEV *scev,
         ScalarEvolutionReferentialExpander &referentialExpander,
         LoopStructure *LS
+      ) ;
+
+      void traverseCycleThroughLoopEntryPHIToGetAllIVInstructions () ;
+
+      void traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions (
+        LoopStructure *LS,
+        InvariantManager &IVM,
+        ScalarEvolution &SE
       ) ;
 
   };

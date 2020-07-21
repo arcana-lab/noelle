@@ -1,0 +1,4 @@
+loads and stores are hoisted
+%27 = load i64, i64* %18, align 8
+store i64 %13, i64* %18, align 8
+store i64 %38, i64* %18, align 8

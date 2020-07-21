@@ -12,6 +12,13 @@
 
 using namespace llvm;
 
+Heuristics::Heuristics (Noelle &noelle)
+  : invocationLatency{noelle.getProfiles()}
+  {
+
+  return ;
+}
+
 void Heuristics::adjustParallelizationPartitionForDSWP (
   SCCDAGPartition *partition,
   SCCDAGAttrs &attrs,

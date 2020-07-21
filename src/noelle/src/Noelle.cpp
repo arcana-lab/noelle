@@ -26,6 +26,10 @@ Noelle::Noelle()
 
   return ;
 }
+      
+Module * Noelle::getProgram (void) const {
+  return this->program;
+}
 
 std::vector<Function *> * Noelle::getModuleFunctionsReachableFrom (Module *module, Function *startingPoint){
   auto functions = new std::vector<Function *>();

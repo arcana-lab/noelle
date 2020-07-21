@@ -44,7 +44,7 @@ bool Parallelizer::runOnModule (Module &M) {
    * Fetch the outputs of the passes we rely on.
    */
   auto& noelle = getAnalysis<Noelle>();
-  auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics();
+  auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics(noelle);
 
   /*
    * Fetch the profiles.
@@ -89,7 +89,7 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = noelle.getProgramLoops();
+  auto loopsToParallelize = noelle.getLoops();
   errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
 
   /*

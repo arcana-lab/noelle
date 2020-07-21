@@ -270,7 +270,7 @@ void HELIX::createParallelizableTask (
 
   if (this->verbose >= Verbosity::Maximal) {
     SubCFGs execGraph(*helixTask->getTaskBody());
-    DGPrinter::writeGraph<SubCFGs>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    DGPrinter::writeGraph<SubCFGs, BasicBlock>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;
@@ -290,6 +290,9 @@ void HELIX::synchronizeTask (
   /*
    * Identify the sequential segments.
    */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "HELIX:  Identifying sequential segments\n";
+  }
   auto sequentialSegments = this->identifySequentialSegments(LDI);
 
   /*
@@ -305,12 +308,18 @@ void HELIX::synchronizeTask (
   /*
    * Add synchronization instructions.
    */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "HELIX:  Synchronizing sequential segments\n";
+  }
   this->addSynchronizations(LDI, &sequentialSegments);
 
   /*
    * Store final results of loop live-out variables. 
    * Note this occurs after data flow is adjusted.  TODO: is this a must? if so, let's say it explicitely
    */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "HELIX:  Storing live out variables and exit block index\n";
+  }
   this->generateCodeToStoreLiveOutVariables(this->originalLDI, 0);
 
   /*
@@ -321,6 +330,9 @@ void HELIX::synchronizeTask (
   /*
    * Link the parallelize code to the original one.
    */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "HELIX:  Linking task function\n";
+  }
   this->addChunkFunctionExecutionAsideOriginalLoop(this->originalLDI, par, sequentialSegments.size());
 
   /*
@@ -335,7 +347,7 @@ void HELIX::synchronizeTask (
     helixTask->getTaskBody()->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
     errs() << "HELIX: Exit\n";
     SubCFGs execGraph(*helixTask->getTaskBody());
-    DGPrinter::writeGraph<SubCFGs>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;

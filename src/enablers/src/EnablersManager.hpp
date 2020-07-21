@@ -21,6 +21,8 @@
 #include "LoopDistribution.hpp"
 #include "LoopUnroll.hpp"
 #include "LoopWhilify.hpp"
+#include "LoopInvariantCodeMotion.hpp"
+#include "SCEVSimplification.hpp"
 
 namespace llvm {
 
@@ -60,7 +62,9 @@ namespace llvm {
         Noelle &par,
         LoopDistribution &loopDist,
         LoopUnroll &loopUnroll,
-        LoopWhilifier &LoopWhilifier
+        LoopWhilifier &LoopWhilifier,
+        LoopInvariantCodeMotion &loopInvariantCodeMotion,
+        SCEVSimplification &scevSimplification
         );
 
       bool applyLoopWhilifier (
