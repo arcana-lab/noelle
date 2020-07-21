@@ -18,6 +18,56 @@
 
 namespace llvm {
 
+  typedef struct WhilifierContext {
+
+    public:
+
+      /*
+       * Methods
+       */ 
+      WhilifierContext (
+        LoopStructure * const LS
+      );
+
+      void Dump(void);
+
+
+      /*
+       * Context for loop body to whlify
+       */
+      BasicBlock *OriginalHeader;
+      BasicBlock *OriginalPreHeader;
+      BasicBlock *OriginalLatch;
+      uint32_t NumLatches;
+      std::vector<std::pair<BasicBlock *, BasicBlock *>> ExitEdges;
+      std::vector<BasicBlock *> LoopBlocks;
+      Function *F;
+
+
+      /*
+       * Context for whilification process
+       */ 
+      BasicBlock *TopAnchor;
+      BasicBlock *BottomAnchor;
+      ValueToValueMapTy BodyToPeelMap;
+      SmallVector<BasicBlock *, 16> NewBlocks;
+
+
+      /*
+       * Analysis for whilification process
+       */ 
+      bool IsDoWhile;
+      bool IsSingleBlockLoop;
+      bool ConsolidatedOriginalLatch;
+      bool ResolvedLatch;
+      DenseMap<Value *, Value *> ResolvedDependencyMapping;
+      DenseMap<Instruction *, 
+               DenseMap<Instruction *, 
+                        uint32_t>> OriginalLatchDependencies;
+
+
+  } WhilifierContext;
+
   class LoopWhilifier {
 
     public:
