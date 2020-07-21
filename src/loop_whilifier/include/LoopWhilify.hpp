@@ -13,6 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "Noelle.hpp"
 
+#define EXTRA_ANCHOR 0
 #define FIX_BLOCK_PLACEMENT 1
 
 namespace llvm {
@@ -80,7 +81,7 @@ namespace llvm {
         LoopDependenceInfo const &LDI
       );
 
-      bool LoopWhilifier::whilifyLoopDriver(
+      bool whilifyLoopDriver(
         LoopStructure * const LS
       );
 
@@ -114,83 +115,46 @@ namespace llvm {
         WhilifierContext *WC
       );
 
-      bool canWhilify (
-        LoopStructure * const LS,
-        BasicBlock *&Header,
-        BasicBlock *&Latch,
-        BasicBlock *&PreHeader,
-        std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges
+      bool canWhilify(
+        WhilifierContext *WC
       );
 
       void transformSingleBlockLoop(
-        BasicBlock *&Header,
-        BasicBlock *&Latch,
-        std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges,
-        std::vector<BasicBlock *> &LoopBlocks
+        WhilifierContext *WC
       );
 
       void buildAnchors(
-        BasicBlock *Header,
-        BasicBlock *&PreHeader,
-        BasicBlock *&InsertTop,
-        BasicBlock *&InsertBot
+        WhilifierContext *WC
       );
 
       void cloneLoopBlocksForWhilifying(
-        BasicBlock *InsertTop, 
-        BasicBlock *InsertBot,
-        BasicBlock *OriginalHeader,
-        BasicBlock *OriginalLatch,
-        BasicBlock *OriginalPreHeader,
-        Function *F,
-        std::vector<BasicBlock *> &LoopBlocks,
-        std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges,
-        SmallVectorImpl<BasicBlock *> &NewBlocks, 
-        ValueToValueMapTy &BodyToPeelMap
+        WhilifierContext *WC
       );
 
       void resolveNewHeaderPHIDependencies(
-        BasicBlock * const Latch, 
-        ValueToValueMapTy &BodyToPeelMap
+        WhilifierContext *WC
       );
 
       void findNonPHIOriginalLatchDependencies(
-        BasicBlock *Latch,
-        std::vector<BasicBlock *> &LoopBlocks,
-        DenseMap<Instruction *, 
-                 DenseMap<Instruction *, 
-                          uint32_t>> &DependenciesInLoop
+        WhilifierContext *WC
       );
 
-
       void resolveNewHeaderNonPHIDependencies(
-        BasicBlock *Latch,
-        BasicBlock *NewHeader,
-        ValueToValueMapTy &BodyToPeelMap,
-        DenseMap<Value *, Value *> &ResolvedDependencyMapping,
-        DenseMap<Instruction *, 
-                 DenseMap<Instruction *, 
-                          uint32_t>> &OriginalLatchDependencies
+        WhilifierContext *WC,
+        BasicBlock *NewHeader
       );
 
       void resolveNewHeaderDependencies(
-        BasicBlock *Latch,
-        BasicBlock *NewHeader,
-        std::vector<BasicBlock *> &LoopBlocks,
-        ValueToValueMapTy &BodyToPeelMap,
-        DenseMap<Value *, Value *> &ResolvedDependencyMapping
+        WhilifierContext *WC,
+        BasicBlock *NewHeader
       );
 
       void resolveOriginalHeaderPHIs(
-        BasicBlock *Header,
-        BasicBlock *PreHeader,
-        BasicBlock *Latch,
-        ValueToValueMapTy &BodyToPeelMap,
-        DenseMap<Value *, Value *> &ResolvedDependencyMapping
+        WhilifierContext *WC
       );
 
       void rerouteLoopBranches(
-        BasicBlock *Latch,
+        WhilifierContext *WC,
         BasicBlock *NewHeader
       );
 
