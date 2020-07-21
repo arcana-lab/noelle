@@ -52,10 +52,19 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     auto loopEntryPHI = ivInfo->getLoopEntryPHI();
 
     /*
+     * FIXME: If we identify an IV as reducible, we produce a reducible execution
+     * for it even if that is unnecessary. Fix that, then remove this check
+     */ 
+    auto scc = sccdag->sccOfValue(loopEntryPHI);
+    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    if (sccInfo->canExecuteReducibly()) continue;
+
+    /*
      * If the instruction was spilled, its clone will not be a PHI, rather a load
      */
     auto clonePHI = task->getCloneOfOriginalInstruction(loopEntryPHI);
     if (!isa<PHINode>(clonePHI)) continue;
+
     ivInfos.insert(ivInfo);
   }
 
@@ -66,34 +75,48 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
    */
   std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
   for (auto ivInfo : ivInfos) {
-    Value *clonedStepValue = nullptr;
-    if (ivInfo->getSingleComputedStepValue()) {
-      clonedStepValue = fetchClone(ivInfo->getSingleComputedStepValue());
-    } else {
 
-      /*
-       * The step size is a composite SCEV. Fetch its instruction expansion,
-       * cloning into the entry block of the function
-       * 
-       * NOTE: The step size is expected to be loop invariant
-       */
-      auto expandedInsts = ivInfo->getComputationOfStepValue();
-      assert(expandedInsts.size() > 0);
-      for (auto expandedInst : expandedInsts) {
-        auto clonedInst = expandedInst->clone();
-        task->addInstruction(expandedInst, clonedInst);
-        entryBuilder.Insert(clonedInst);
+    /*
+     * If the step value is constant or a value present in the original loop, use its clone
+     * TODO: Refactor this logic as a helper: tryAndFetchClone that doesn't assert a clone must exist
+     */
+    auto singleComputedStepValue = ivInfo->getSingleComputedStepValue();
+    if (singleComputedStepValue) {
+      Value *clonedStepValue = nullptr;
+      if (isa<ConstantData>(singleComputedStepValue)
+        || task->isAnOriginalLiveIn(singleComputedStepValue)) {
+        clonedStepValue = singleComputedStepValue;
+      } else if (auto singleComputedStepInst = dyn_cast<Instruction>(singleComputedStepValue)) {
+        clonedStepValue = task->getCloneOfOriginalInstruction(singleComputedStepInst);
       }
 
-      /*
-       * Wire the instructions in the expansion to use the cloned values
-       */
-      for (auto expandedInst : expandedInsts) {
-        adjustDataFlowToUseClones(task->getCloneOfOriginalInstruction(expandedInst), 0);
+      if (clonedStepValue) {
+        clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
+        continue;
       }
-      clonedStepValue = task->getCloneOfOriginalInstruction(expandedInsts.back());
     }
 
+    /*
+     * The step size is a composite SCEV. Fetch its instruction expansion,
+     * cloning into the entry block of the function
+     * 
+     * NOTE: The step size is expected to be loop invariant
+     */
+    auto expandedInsts = ivInfo->getComputationOfStepValue();
+    assert(expandedInsts.size() > 0);
+    for (auto expandedInst : expandedInsts) {
+      auto clonedInst = expandedInst->clone();
+      task->addInstruction(expandedInst, clonedInst);
+      entryBuilder.Insert(clonedInst);
+    }
+
+    /*
+     * Wire the instructions in the expansion to use the cloned values
+     */
+    for (auto expandedInst : expandedInsts) {
+      adjustDataFlowToUseClones(task->getCloneOfOriginalInstruction(expandedInst), 0);
+    }
+    auto clonedStepValue = task->getCloneOfOriginalInstruction(expandedInsts.back());
     clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
   }
 
