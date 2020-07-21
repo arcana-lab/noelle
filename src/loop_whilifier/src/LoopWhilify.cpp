@@ -152,12 +152,6 @@ bool LoopWhilifier::whilifyLoopDriver(
    */ 
   InsertTop = InsertBot;
 
-#if EXTRA_ANCHOR
-  InsertBot = SplitBlock(InsertBot, InsertBot->getTerminator());
-  InsertBot->setName(Header->getName() + ".whilify.next");
-#endif
-
-
   /*
    * Fix block placement --- set the peeled iteration before  
    * the loop body itself --- also optional

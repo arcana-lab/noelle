@@ -13,7 +13,6 @@
 #include "SystemHeaders.hpp"
 #include "Noelle.hpp"
 
-#define EXTRA_ANCHOR 0
 #define FIX_BLOCK_PLACEMENT 1
 
 namespace llvm {
