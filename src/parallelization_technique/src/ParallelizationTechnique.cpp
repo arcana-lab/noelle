@@ -421,7 +421,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     for (auto BB : insertBBs) {
 
       auto producerValueToStore = isReduced
-        ? generatePHIOfIntermediateProducerValuesForReducibleLiveOutVariable(LDI, taskIndex, envIndex, BB, taskDS)
+        ? fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(LDI, taskIndex, envIndex, BB, taskDS)
         : prodClone;
 
       IRBuilder<> liveOutBuilder(BB);
@@ -450,24 +450,33 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
   auto liveOutBlock = liveOut->getParent();
 
   /*
-   * If the live out is reduced, then insert the store right before the task completes
-   * Otherwise, only insert stores in loop exit blocks the live out dominates
+   * Insert stores in loop exit blocks
+   * If the live out is reducible, it is fine that the live out value does not dominate the exit
+   * as some other intermediate is guaranteed to
    */
   std::set<BasicBlock *> insertPoints;
+  for (auto BB : loopSummary->getLoopExitBasicBlocks()) {
+    auto cloneBB = task->getCloneOfOriginalBasicBlock(BB);
+    auto liveOutDominatesExit = taskDS.DT.dominates(liveOutBlock, cloneBB);
+    if (!isReduced && !liveOutDominatesExit) continue;
+    insertPoints.insert(cloneBB);
+  }
+
+  /*
+   * If the parallelization scheme introduced other loop exiting blocks,
+   * and this live out is reducible, we must store the latest intermediate value for them
+   */
   if (isReduced) {
-    insertPoints.insert(task->getExit());
-  } else {
-    for (auto BB : loopSummary->getLoopExitBasicBlocks()) {
-      auto cloneBB = task->getCloneOfOriginalBasicBlock(BB);
-      if (!taskDS.DT.dominates(liveOutBlock, cloneBB)) continue;
-      insertPoints.insert(cloneBB);
+    for (auto predecessor : predecessors(task->getExit())) {
+      if (predecessor == task->getEntry()) continue;
+      insertPoints.insert(predecessor);
     }
   }
 
   return insertPoints;
 }
 
-PHINode * ParallelizationTechnique::generatePHIOfIntermediateProducerValuesForReducibleLiveOutVariable (
+Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable (
   LoopDependenceInfo *LDI, 
   int taskIndex,
   int envIndex,
@@ -494,6 +503,19 @@ PHINode * ParallelizationTechnique::generatePHIOfIntermediateProducerValuesForRe
   }
 
   /*
+   * If in the insert block there already exists a single intermediate,
+   * return that intermediate
+   */
+  Instruction *lastIntermediateAtInsertBlock = nullptr;
+  for (auto intermediateValue : intermediateValues) {
+    if (intermediateValue->getParent() != insertBasicBlock) continue;
+    if (lastIntermediateAtInsertBlock &&
+      DT.dominates(intermediateValue, lastIntermediateAtInsertBlock)) continue;
+    lastIntermediateAtInsertBlock = intermediateValue;
+  }
+  if (lastIntermediateAtInsertBlock) return lastIntermediateAtInsertBlock;
+
+  /*
    * Produce PHI at the insert point
    */
   IRBuilder<> builder(insertBasicBlock->getFirstNonPHIOrDbgOrLifetime());
@@ -501,16 +523,14 @@ PHINode * ParallelizationTechnique::generatePHIOfIntermediateProducerValuesForRe
   auto phiNode = builder.CreatePHI(producerType, pred_size(insertBasicBlock));
 
   /*
-   * Fetch all incoming blocks to the PHI node basic block
-   * Determine all intermediate values post dominated by this block
-   * Determine the intermediate value of this set that dominates all the others
-   * NOTE: If this is a well-formed insert point for the live out, exactly one such intermediate value must exist
+   * Fetch all PHI node basic block predecessors
+   * Determine all intermediate values dominating each predecessor
+   * Determine the intermediate value of this set that dominates no other intermediates in the set
    */
-  std::set<BasicBlock *> preds{pred_begin(insertBasicBlock), pred_end(insertBasicBlock)};
   for (auto predIter = pred_begin(insertBasicBlock); predIter != pred_end(insertBasicBlock); ++predIter) {
     auto predecessor = *predIter;
 
-    std::set<Instruction *> dominatingValues{};
+    std::unordered_set<Instruction *> dominatingValues{};
     for (auto intermediateValue : intermediateValues) {
       auto intermediateBlock = intermediateValue->getParent();
       if (DT.dominates(intermediateBlock, predecessor)) {
@@ -521,15 +541,23 @@ PHINode * ParallelizationTechnique::generatePHIOfIntermediateProducerValuesForRe
     assert(dominatingValues.size() > 0
       && "Cannot store reducible live out where no producer value dominates the point");
 
-    Instruction *lastDominatingIntermediateValue = *dominatingValues.begin();
+    std::unordered_set<Instruction *> lastDominatingValues{};
     for (auto value : dominatingValues) {
-      if (!DT.dominates(lastDominatingIntermediateValue, value)) {
-        assert(DT.dominates(value, lastDominatingIntermediateValue)
-          && "Cannot store reducible live out where no producer value post-dominates the others");
-        continue;
+      bool isDominatingOthers = false;
+      for (auto otherValue : dominatingValues) {
+        if (value == otherValue) continue;
+        if (!DT.dominates(value, otherValue)) continue;
+        isDominatingOthers = true;
+        break;
       }
-      lastDominatingIntermediateValue = value;
+
+      if (isDominatingOthers) continue;
+      lastDominatingValues.insert(value);
     }
+
+    assert(lastDominatingValues.size() == 1
+      && "Cannot store reducible live out where no last produced value is known");
+    auto lastDominatingIntermediateValue = *lastDominatingValues.begin();
 
     auto predecessorTerminator = predecessor->getTerminator();
     IRBuilder<> builderAtValue(predecessorTerminator);
@@ -843,8 +871,8 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
   auto loopSummary = LDI.getLoopStructure();
 
   std::set<BasicBlock *> bbs(loopSummary->orderedBBs.begin(), loopSummary->orderedBBs.end());
-  DGPrinter::writeGraph<SubCFGs>("technique-original-loop-" + std::to_string(LDI.getID()) + ".dot", new SubCFGs(bbs));
-  DGPrinter::writeGraph<SCCDAG>("technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot", LDI.sccdagAttrs.getSCCDAG());
+  DGPrinter::writeGraph<SubCFGs, BasicBlock>("technique-original-loop-" + std::to_string(LDI.getID()) + ".dot", new SubCFGs(bbs));
+  DGPrinter::writeGraph<SCCDAG, SCC>("technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot", LDI.sccdagAttrs.getSCCDAG());
 
   for (int i = 0; i < tasks.size(); ++i) {
     auto task = tasks[i];

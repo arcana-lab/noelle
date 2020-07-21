@@ -36,6 +36,7 @@ install(PROGRAMS
     include/Invariants.hpp
     include/LoopCarriedDependencies.hpp
     include/LoopGoverningIVAttribution.hpp
+    include/LoopIterationDomainSpaceAnalysis.hpp
     include/IVStepperUtility.hpp
     include/SCCDAGAttrs.hpp
     include/SCCDAGNormalizer.hpp

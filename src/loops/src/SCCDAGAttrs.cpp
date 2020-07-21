@@ -313,6 +313,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarried
       auto consumerSCC = this->sccdag->sccOfValue(consumer);
 
       sccToLoopCarriedDependencies[producerSCC].insert(edge);
+      sccToLoopCarriedDependencies[consumerSCC].insert(edge);
 
       if (producerSCC != consumerSCC) continue;
       sccToInternalLoopCarriedDependencies[producerSCC].insert(edge);
@@ -392,18 +393,26 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
   /*
    * A reducible variable consists of one loop carried value
    * that tracks the evolution of the reducible value
-   * 
-   * NOTE: Because last-iteration independent SCC are merged into their parent SCC
-   * by the SCCDAGNormalizer, we must ignore such PHIs
-   * 
-   * NOTE: We don't handle memory variables yet
    */
   auto rootLoop = LIS.getLoopNestingTreeRoot();
-  PHINode *singleLoopCarriedPHI = nullptr;
+  auto rootLoopHeader = rootLoop->getHeader();
+  std::set<PHINode *> loopCarriedPHIs{};
   for (auto dependency : sccToInternalLoopCarriedDependencies.at(scc)) {
+
+    /*
+     * We do not handle reducibility of memory locations
+     */
     if (dependency->isMemoryDependence()) return false;
 
-    if (dependency->isControlDependence()) continue;
+    /*
+     * Ingore external control dependencies, do not allow internal ones
+     */
+    auto producer = dependency->getOutgoingT();
+    if (dependency->isControlDependence()) {
+      if (scc->isInternal(producer)) return false;
+      continue;
+    }
+
     auto consumer = dependency->getIncomingT();
     assert(isa<PHINode>(consumer)
       && "All consumers of loop carried data dependencies must be PHIs");
@@ -412,24 +421,87 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
     /*
      * Ignore sub loops as they do not need to be reduced
      */
-    if (!rootLoop->isIncluded(consumerPHI)) continue;
+    if (rootLoopHeader != consumerPHI->getParent()) continue;
+
+    loopCarriedPHIs.insert(consumerPHI);
+  }
+  if (loopCarriedPHIs.size() == 0) return false;
+
+  /*
+   * NOTE: Because last-iteration independent SCC are merged into their parent SCC
+   * by the SCCDAGNormalizer, we must ignore last-iteration propagating PHIs
+   * 
+   * These can be identified by reproducing the SCCDAG just for internal instructions of this SCC
+   */
+  std::vector<Value *> allInternalCyclicValues{};
+  for (auto nodePair : scc->internalNodePairs()) {
+    auto value = nodePair.first;
+    auto node = nodePair.second;
 
     /*
-     * Ignore last-iteration propagating PHIs merged into this SCC
-     * These can be identified by checking whether no SCC internal dependency is produced
+     * Ensure both internal dependency production and consumption
      */
-    auto consumerPHINode = scc->fetchNode(consumerPHI);
-    if (consumerPHINode->numOutgoingEdges() == 0) continue;
-    if (singleLoopCarriedPHI == consumerPHI) continue;
+    bool consumesInternalDependency = false;
+    bool producesInternalDependency = false;
+    for (auto edge : node->getIncomingEdges()) {
+      auto producer = edge->getOutgoingT();
+      consumesInternalDependency |= scc->isInternal(producer);
+    }
+    for (auto edge : node->getOutgoingEdges()) {
+      auto consumer = edge->getIncomingT();
+      producesInternalDependency |= scc->isInternal(consumer);
+    }
+    if (!consumesInternalDependency || !producesInternalDependency) continue;
+    allInternalCyclicValues.push_back(value);
+  }
+  if (allInternalCyclicValues.size() == 0) return false;
 
-    if (singleLoopCarriedPHI) return false;
+  auto dgOfInternals = loopDG->createSubgraphFromValues(allInternalCyclicValues, false);
+  auto sccdagOfInternals = new SCCDAG(dgOfInternals);
 
-    singleLoopCarriedPHI = consumerPHI;
+  // errs() << "Writing graphs\n";
+  // DGPrinter::writeGraph<PDG, Value>("pdg-internal.dot", dgOfInternals);
+  // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-internal.dot", sccdagOfInternals);
+
+  /*
+   * Identify root internal SCC and its single loop carried PHI
+   */
+  PHINode *rootLoopCarriedPHI = nullptr;
+  for (auto phi : loopCarriedPHIs) {
+    // phi->print(errs() << "Loop carried PHI: "); errs() << "\n";
+
+    /*
+     * If the loop carried PHI was external, it will not appear in the SCCDAG
+     */
+    auto sccOfPHI = sccdagOfInternals->sccOfValue(phi);
+    if (!sccOfPHI) continue;
+
+    /*
+     * Ensure the SCC is a root of the SCCDAG
+     */
+    auto sccNode = sccdagOfInternals->fetchNode(sccOfPHI);
+    if (sccNode->numIncomingEdges() > 0) continue;
+
+    /*
+     * Ensure the SCC contains only one loop carried PHI and is the only root
+     */
+    bool onlyOnePHI = true;
+    for (auto otherPHI : loopCarriedPHIs) {
+      if (otherPHI == phi) continue;
+      if (!sccOfPHI->isInternal(otherPHI)) continue;
+      onlyOnePHI = false;
+      break;
+    }
+    if (!onlyOnePHI || (rootLoopCarriedPHI && rootLoopCarriedPHI != phi)) continue;
+    rootLoopCarriedPHI = phi;
   }
 
-  if (!singleLoopCarriedPHI) return false;
+  delete dgOfInternals;
+  delete sccdagOfInternals;
 
-  auto variable = new LoopCarriedVariable(*rootLoop, LCD, *loopDG, *scc, singleLoopCarriedPHI);
+  if (!rootLoopCarriedPHI) return false;
+
+  auto variable = new LoopCarriedVariable(*rootLoop, LCD, *loopDG, *scc, rootLoopCarriedPHI);
   if (!variable->isEvolutionReducibleAcrossLoopIterations()) {
     delete variable;
     return false;
@@ -640,7 +712,7 @@ void SCCDAGAttrs::dumpToFile (int id) {
     stageGraph.addEdge(outgoingDesc, incomingDesc);
   }
 
-  DGPrinter::writeGraph<DG<DGString>>(filename, &stageGraph);
+  DGPrinter::writeGraph<DG<DGString>, DGString>(filename, &stageGraph);
   for (auto elem : elements) delete elem;
 }
 

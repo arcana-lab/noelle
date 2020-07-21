@@ -17,35 +17,66 @@ bool EnablersManager::applyEnablers (
     Noelle &par,
     LoopDistribution &loopDist,
     LoopUnroll &loopUnroll,
-    LoopWhilifier &loopWhilifier
-  ){
+    LoopWhilifier &loopWhilifier,
+    LoopInvariantCodeMotion &loopInvariantCodeMotion,
+    SCEVSimplification &scevSimplification
+    ){
 
   /*
    * Apply loop distribution.
    */
-  errs() << "EnablersManager:   Try to apply loop distribution\n";
-  if (this->applyLoopDistribution(LDI, par, loopDist)){
-    errs() << "EnablersManager:     Distributed loop\n";
-    return true;
+  if (par.isTransformationEnabled(Transformation::LOOP_DISTRIBUTION_ID)){
+    errs() << "EnablersManager:   Try to apply loop distribution\n";
+    if (this->applyLoopDistribution(LDI, par, loopDist)){
+      errs() << "EnablersManager:     Distributed loop\n";
+      return true;
+    }
   }
 
   /*
    * Try to devirtualize functions.
    */
-  errs() << "EnablersManager:   Try to devirtualize indirect calls\n";
-  if (this->applyDevirtualizer(LDI, par, loopUnroll)){
-    errs() << "EnablersManager:     Some calls have been devirtualized\n";
-    return true;
+  if (par.isTransformationEnabled(Transformation::DEVIRTUALIZER_ID)){
+    errs() << "EnablersManager:   Try to devirtualize indirect calls\n";
+    if (this->applyDevirtualizer(LDI, par, loopUnroll)){
+      errs() << "EnablersManager:     Some calls have been devirtualized\n";
+      return true;
+    }
   }
 
   /*
    * Run the whilifier.
    */
   errs() << "EnablersManager:   Try to whilify loops\n";
-  if (this->applyLoopWhilifier(LDI, par, loopWhilifier)){
-    errs() << "EnablersManager:     The loop has been whilified\n";
-    return true;
+  if (par.isTransformationEnabled(Transformation::LOOP_WHILIFIER_ID)){
+    if (this->applyLoopWhilifier(LDI, par, loopWhilifier)){
+      errs() << "EnablersManager:     The loop has been whilified\n";
+      return true;
+    }
   }
+
+  /*
+   * Run the extraction.
+   */
+  if (par.isTransformationEnabled(Transformation::LOOP_INVARIANT_CODE_MOTION_ID)){
+    errs() << "EnablersManager:   Try to extract invariants out of loops\n";
+    if (loopInvariantCodeMotion.extractInvariantsFromLoop(*LDI)){
+      errs() << "EnablersManager:     Loop invariants have been extracted\n";
+      return true;
+    }
+  }
+
+  /*
+   * Run the SCEV simplification pass
+   */
+  if (par.isTransformationEnabled(Transformation::SCEV_SIMPLIFICATION_ID)){
+    errs() << "EnablersManager:   Try to simplify IV related SCEVs and their corresponding instructions in loops\n";
+    if (scevSimplification.simplifyIVRelatedSCEVs(*LDI)){
+      errs() << "EnablersManager:     Loop IV related SCEVs have been simplified\n";
+      return true;
+    }
+  }
+
 
   return false;
 }
@@ -54,7 +85,7 @@ bool EnablersManager::applyLoopWhilifier (
     LoopDependenceInfo *LDI,
     Noelle &par,
     LoopWhilifier &loopWhilifier
-  ){
+    ){
 
   auto modified = loopWhilifier.whilifyLoop(*LDI);
 
@@ -65,7 +96,7 @@ bool EnablersManager::applyLoopDistribution (
     LoopDependenceInfo *LDI,
     Noelle &par,
     LoopDistribution &loopDist
-  ){
+    ){
 
   /*
    * Fetch the SCCDAG of the loop.
@@ -126,7 +157,7 @@ bool EnablersManager::applyLoopDistribution (
      */
     return true;
   }
-  
+
   return false;
 }
 
@@ -134,7 +165,7 @@ bool EnablersManager::applyDevirtualizer (
     LoopDependenceInfo *LDI,
     Noelle &par,
     LoopUnroll &loopUnroll
-  ){
+    ){
 
   /*
    * We want to fully unroll a loop if this can help the parallelization of an outer loop that includes it.
@@ -240,6 +271,6 @@ bool EnablersManager::applyDevirtualizer (
   auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(loopFunction).getSE();
   auto& AC = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(loopFunction);
   auto modified = loopUnroll.fullyUnrollLoop(*LDI, LS, DT, SE, AC);
-   
+
   return modified;
 }

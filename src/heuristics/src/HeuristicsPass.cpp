@@ -25,31 +25,29 @@
 
 using namespace llvm;
 
-using namespace llvm;
-
-bool llvm::HeuristicsPass::doInitialization (Module &M){
+bool HeuristicsPass::doInitialization (Module &M){
   return false;
 }
 
-void llvm::HeuristicsPass::getAnalysisUsage(AnalysisUsage &AU) const {
+void HeuristicsPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
   return ;
 }
 
-bool llvm::HeuristicsPass::runOnModule (Module &M){
+bool HeuristicsPass::runOnModule (Module &M){
   return false;
 }
 
-llvm::HeuristicsPass::HeuristicsPass() : ModulePass{ID}{
+HeuristicsPass::HeuristicsPass() : ModulePass{ID}{
   return ;
 }
 
-llvm::Heuristics * llvm::HeuristicsPass::getHeuristics (){
-  return new Heuristics();
+Heuristics * HeuristicsPass::getHeuristics (Noelle &noelle){
+  return new Heuristics(noelle);
 }
 
 // Next there is code to register your pass to "opt"
-char llvm::HeuristicsPass::ID = 0;
+char HeuristicsPass::ID = 0;
 static RegisterPass<HeuristicsPass> X("heuristics", "Heuristics about code");
 
 // Next there is code to register your pass to "clang"

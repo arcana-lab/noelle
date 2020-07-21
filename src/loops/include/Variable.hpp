@@ -78,7 +78,7 @@ namespace llvm {
 
       std::unordered_set<Value *> getConsumersOfVariable (void) const ;
 
-      bool isValuePropagatingVariableIntermediateOutsideLoop (Value *value) const ;
+      bool areValuesPropagatingVariableIntermediatesOutsideLoop (std::unordered_set<Value *> values) const ;
 
       /*
        * A flag to ensure the variable is fully understood

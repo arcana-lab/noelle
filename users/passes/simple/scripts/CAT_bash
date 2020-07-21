@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Adds LLVM 9.0.1 to PATH
+LLVM_HOME=/home/software/llvm-9.0.1
+PATH=$LLVM_HOME/bin:$PATH
+
+# Adds LLVM 9.0.1 to LD_LIBRARY_PATH
+if [ -z "$LD_LIBRARY_PATH" ]
+then
+  LD_LIBRARY_PATH=$LLVM_HOME/lib
+else
+  LD_LIBRARY_PATH=$LLVM_HOME/lib:$LD_LIBRARY_PATH
+fi
+
+# Adds cat-c to PATH
+PATH=~/CAT/bin:$PATH
+

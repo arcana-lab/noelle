@@ -18,6 +18,7 @@
 #include "InductionVariables.hpp"
 #include "Invariants.hpp"
 #include "LoopGoverningIVAttribution.hpp"
+#include "LoopIterationDomainSpaceAnalysis.hpp"
 #include "SCCDAGAttrs.hpp"
 #include "SCCDAGNormalizer.hpp"
 #include "LoopEnvironment.hpp"
@@ -66,6 +67,11 @@ namespace llvm {
        * Return the object that describes the loop in terms of induction variables, trip count, and control structure (e.g., latches, header)
        */
       LoopStructure * getLoopStructure (void) const ;
+
+      /*
+       * Return the nested-most loop for this instruction
+       */
+      LoopStructure * getNestedMostLoopStructure (Instruction *I) const ;
 
       /*
        * Get the dependence graph of the loop.
@@ -117,6 +123,8 @@ namespace llvm {
 
       InvariantManager * getInvariantManager (void) const ;
 
+      LoopIterationDomainSpaceAnalysis * getLoopIterationDomainSpaceAnalysis (void) const ;
+
       bool doesHaveCompileTimeKnownTripCount (void) const ;
       
       uint64_t getCompileTimeTripCount (void) const ;
@@ -162,6 +170,8 @@ namespace llvm {
       InvariantManager *invariantManager;
 
       LoopGoverningIVAttribution *loopGoverningIVAttribution;
+
+      LoopIterationDomainSpaceAnalysis *domainSpaceAnalysis;
 
       std::unordered_set<Value *> invariants;
 

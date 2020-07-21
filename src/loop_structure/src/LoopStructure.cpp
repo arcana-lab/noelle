@@ -114,7 +114,18 @@ void LoopStructure::setParentLoop (LoopStructure *parentLoop) {
 std::unordered_set<LoopStructure *> LoopStructure::getChildren (void) const {
   return this->children;
 }
-      
+
+std::unordered_set<LoopStructure *> LoopStructure::getDescendants (void) const {
+  std::unordered_set<LoopStructure *> descendants;
+  for (auto child : this->children) {
+    descendants.insert(child);
+    auto childDescendants = child->getDescendants();
+    descendants.insert(childDescendants.begin(), childDescendants.end());
+  }
+
+  return descendants;
+}
+
 void LoopStructure::addChild (LoopStructure *child) {
   this->children.insert(child);
 
@@ -253,4 +264,26 @@ bool LoopStructure::isIncludedInItsSubLoops (Instruction *inst) const {
   }
 
   return false;
+}
+
+uint32_t LoopStructure::getNumberOfSubLoops (void) const {
+
+  /*
+   * Check its children.
+   */
+  uint32_t subloops = 0;
+  for (auto subLoop : this->children){
+
+    /*
+     * Account for the current sub-loop.
+     */
+    subloops++;
+
+    /*
+     * Account for the sub-loops of the current sub-loop.
+     */
+    subloops += subLoop->getNumberOfSubLoops();
+  }
+
+  return subloops;
 }
