@@ -262,6 +262,8 @@ void HELIX::createParallelizableTask (
    */
   this->spillLoopCarriedDataDependencies(LDI);
 
+  this->rewireLoopForIVsToIterateNthIterations(LDI);
+
   /*
    * Add the final return instruction to the single task's exit block.
    */
