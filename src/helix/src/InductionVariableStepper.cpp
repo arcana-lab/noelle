@@ -193,12 +193,14 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     auto originalHeaderExit = loopGoverningIVAttr->getExitBlockFromHeader();
     auto cloneHeaderExit = task->getCloneOfOriginalBasicBlock(originalHeaderExit);
 
-    auto headerSuccTrue = brInst->getSuccessor(0);
-    auto headerSuccFalse = brInst->getSuccessor(1);
-    auto isTrueExiting = headerSuccTrue == cloneHeaderExit;
-    auto entryIntoBody = isTrueExiting ? headerSuccFalse : headerSuccTrue;
     ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(cmpInst, brInst, cloneHeaderExit);
     auto updatedCmpInst = cmpInst;
+    auto updatedBrInst = brInst;
+
+    auto headerSuccTrue = updatedBrInst->getSuccessor(0);
+    auto headerSuccFalse = updatedBrInst->getSuccessor(1);
+    auto isTrueExiting = headerSuccTrue == cloneHeaderExit;
+    auto entryIntoBody = isTrueExiting ? headerSuccFalse : headerSuccTrue;
 
     /*
      * Collect instructions that cannot be in the header
@@ -265,7 +267,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     }
 
     lastHeaderSequentialExecutionBuilder.CreateBr(cloneHeaderExit);
-    brInst->replaceSuccessorWith(cloneHeaderExit, checkForLastExecutionBlock);
+    updatedBrInst->replaceSuccessorWith(cloneHeaderExit, checkForLastExecutionBlock);
     IRBuilder<> checkForLastExecutionBuilder(checkForLastExecutionBlock);
 
     /*
@@ -285,8 +287,13 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     auto prevIterGuard = updatedCmpInst->clone();
     prevIterGuard->replaceUsesOfWith(cloneGoverningPHI, prevIterIVValue);
     checkForLastExecutionBuilder.Insert(prevIterGuard);
-    auto condTrueSuccessor = isTrueExiting ? cloneHeaderExit : lastHeaderSequentialExecutionBlock;
-    auto condFalseSuccessor = isTrueExiting ? lastHeaderSequentialExecutionBlock : cloneHeaderExit;
-    checkForLastExecutionBuilder.CreateCondBr(prevIterGuard, condTrueSuccessor, condFalseSuccessor);
+    auto prevIterGuardTrueSucc = isTrueExiting ? cloneHeaderExit : lastHeaderSequentialExecutionBlock;
+    auto prevIterGuardFalseSucc = isTrueExiting ? lastHeaderSequentialExecutionBlock : cloneHeaderExit;
+    cmpInst->printAsOperand(errs() << "Cmp inst: "); errs() << "\n";
+    cloneHeaderExit->printAsOperand(errs() << "Header exit: "); errs() << "\n";
+    lastHeaderSequentialExecutionBlock->printAsOperand(errs() << "Last exec exit: "); errs() << "\n";
+    prevIterGuardTrueSucc->printAsOperand(errs() << "Block if prev guard is true: "); errs() << "\n";
+    prevIterGuardFalseSucc->printAsOperand(errs() << "Block if prev guard is false: "); errs() << "\n";
+    checkForLastExecutionBuilder.CreateCondBr(prevIterGuard, prevIterGuardTrueSucc, prevIterGuardFalseSucc);
   }
 }

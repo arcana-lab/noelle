@@ -58,6 +58,7 @@ namespace llvm {
       CmpInst::Predicate nonStrictPredicate;
       bool doesOriginalCmpInstHaveIVAsLeftOperand;
       bool flipOperandsToUseNonStrictPredicate;
+      bool flipBrSuccessorsToUseNonStrictPredicate;
   };
 
 }
