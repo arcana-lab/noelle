@@ -529,9 +529,11 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
       PHI.addIncoming(LatchVal, cast<BasicBlock>(BodyToPeelMap[Edge.first]));
 
       /* 
-       * Remove incoming for old latch
+       * Remove incoming for old latch if possible
        */ 
-      PHI.removeIncomingValue(Edge.first);
+      if (Edge.first == OriginalLatch) {
+        PHI.removeIncomingValue(Edge.first);
+      }
 
     }
 
