@@ -33,8 +33,8 @@ int multiExits (int count) {
   return 0;
 }
 
-int main (){
-  multiExits(5);
+int main (int argc, char *argv[]){
+  multiExits(argc);
 
   return 0;
 }
