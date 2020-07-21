@@ -17,12 +17,22 @@ int main (int argc, char *argv[]){
   for (auto i = 0; i < iterations; ++i) {
     int accumValue = sqrt(i);
     for (auto j = 0; j < iterations * iterations; ++j) {
-      accumValue += (sqrt(i + j) - j)/2;
+      auto inc = 0;
+      accumValue += sqrt(i + j + inc++);
+      accumValue -= sqrt(i + j + inc++);
+      accumValue += sqrt(i + j + inc++);
+      accumValue -= sqrt(i + j + inc++);
+      accumValue += sqrt(i + j + inc++);
+      accumValue -= sqrt(i + j + inc++);
+      accumValue += sqrt(i + j + inc++);
+      accumValue -= sqrt(i + j + inc++);
+      accumValue += sqrt(i + j + inc++);
+      accumValue -= sqrt(i + j + inc++);
     }
 
     bool isEven = accumValue % 2 == 0;
     if (isEven) {
-      tinySCCValue += 1;
+      tinySCCValue += accumValue % 10;
     } else {
       tinySCCValue *= 0.9;
     }
