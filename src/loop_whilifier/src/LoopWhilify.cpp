@@ -492,13 +492,19 @@ void LoopWhilifier::transformSingleBlockLoop(
 
   LoopBlocks.push_back(Latch);
 
+  std::vector<std::pair<BasicBlock *, BasicBlock *>> NewExitEdges;
   for (auto Edge : ExitEdges) {
 
     if (Edge.first == Header) {
-      Edge.first = Latch;
+      NewExitEdges.push_back({ NewLatch, Edge.second });
+    } else {
+      NewExitEdges.push_back(Edge);
     }
 
   }
+
+  ExitEdges = NewExitEdges;
+
 
   return;
 
