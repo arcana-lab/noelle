@@ -78,7 +78,7 @@ LoopStructure::LoopStructure (
 
   SmallVector<std::pair<BasicBlock *, BasicBlock *>, 10> exitEdges;
   l->getExitEdges(exitEdges);
-  this->exitEdges = std::vector<std::pair<BasicBlock *, BasicBlock *>>(exitEdges.begin(), exits.end());
+  this->exitEdges = std::vector<std::pair<BasicBlock *, BasicBlock *>>(exitEdges.begin(), exitEdges.end());
 
   return ;
 }
