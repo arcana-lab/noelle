@@ -207,14 +207,16 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     for (auto &I : *loopHeader) {
 		  auto scc = sccdag->sccOfValue(&I);
       auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+      auto sccType = sccInfo->getType();
 
       /*
-       * Ensure the instruction is sequential and was not a spilled PHI
-       * (spilled loads can be left in the header)
+       * Ensure the original instruction was sequential, not a PHI, not clonable
+       * and not part of this loop governing IV attribution
        */
-      if (sccInfo->canExecuteReducibly()) continue;
+      if (sccType != SCCAttrs::SEQUENTIAL) continue;
       if (sccInfo->canBeCloned()) continue;
       if (isa<PHINode>(&I)) continue;
+      if (originalCmpInst == &I || originalBrInst == &I) continue;
 
       auto cloneI = task->getCloneOfOriginalInstruction(&I);
       instsToMoveAndClone.push_back(cloneI);
@@ -230,6 +232,12 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       firstBodyInst = inst;
     }
 
+    auto taskFunction = task->getTaskBody();
+    auto &cxt = taskFunction->getContext();
+    auto checkForLastExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
+    auto lastHeaderSequentialExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
+    IRBuilder<> lastHeaderSequentialExecutionBuilder(lastHeaderSequentialExecutionBlock);
+
     /*
      * Clone these instructions and execute them after exiting the loop ONLY IF
      * the previous iteration's IV value passes the loop guard.
@@ -237,18 +245,26 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      * Any of these that are live out values must replace their equivalent in the loop body
      * within the task's instruction mapping
      */
-    auto taskFunction = task->getTaskBody();
-    auto &cxt = taskFunction->getContext();
-    auto checkForLastExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
-    auto lastHeaderSequentialExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
-    IRBuilder<> lastHeaderSequentialExecutionBuilder(lastHeaderSequentialExecutionBlock);
     for (auto I : instsToMoveAndClone) {
       auto cloneI = I->clone();
       lastHeaderSequentialExecutionBuilder.Insert(cloneI);
       task->addInstruction(I, cloneI);
     }
-    lastHeaderSequentialExecutionBuilder.CreateBr(cloneHeaderExit);
 
+    /*
+     * Re-wire the cloned last execution instructions together
+     */
+    for (auto I : instsToMoveAndClone) {
+      auto cloneI = task->getCloneOfOriginalInstruction(I);
+      for (auto J : instsToMoveAndClone) {
+        if (I == J) continue;
+
+        auto cloneJ = task->getCloneOfOriginalInstruction(J);
+        cloneI->replaceUsesOfWith(J, cloneJ);
+      }
+    }
+
+    lastHeaderSequentialExecutionBuilder.CreateBr(cloneHeaderExit);
     brInst->replaceSuccessorWith(cloneHeaderExit, checkForLastExecutionBlock);
     IRBuilder<> checkForLastExecutionBuilder(checkForLastExecutionBlock);
 
@@ -263,16 +279,14 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
 
     /*
      * Guard against this previous iteration.
-     * If the condition would have exited the loop, go straight to the task exit
+     * If the condition would have exited the loop, skip the last execution block
      * If not, this was the last execution of the header
      */
     auto prevIterGuard = updatedCmpInst->clone();
     prevIterGuard->replaceUsesOfWith(cloneGoverningPHI, prevIterIVValue);
     checkForLastExecutionBuilder.Insert(prevIterGuard);
-
-    auto exitBlock = task->getExit();
-    auto condTrueSuccessor = isTrueExiting ? exitBlock : lastHeaderSequentialExecutionBlock;
-    auto condFalseSuccessor = isTrueExiting ? lastHeaderSequentialExecutionBlock : exitBlock;
+    auto condTrueSuccessor = isTrueExiting ? cloneHeaderExit : lastHeaderSequentialExecutionBlock;
+    auto condFalseSuccessor = isTrueExiting ? lastHeaderSequentialExecutionBlock : cloneHeaderExit;
     checkForLastExecutionBuilder.CreateCondBr(prevIterGuard, condTrueSuccessor, condFalseSuccessor);
   }
 }
