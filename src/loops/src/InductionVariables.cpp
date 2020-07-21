@@ -36,9 +36,24 @@ InductionVariableManager::InductionVariableManager (
      * Iterate over all phis within the loop header.
      */
     for (auto &phi : header->phis()) {
-      // phi.print(errs() << "Checking PHI: "); errs() << "\n";
+
+      /*
+       * Check if the PHI node can be analyzed by the SCEV analysis.
+       */
+      if (!SE.isSCEVable(phi.getType())){
+        continue ;
+      }
+
+      /*
+       * Fetch the SCEV.
+       */
       auto scev = SE.getSCEV(&phi);
-      if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) continue;
+      if (!scev){
+        continue ;
+      }
+      if (scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
+        continue;
+      }
 
       auto sccContainingIV = sccdag.sccOfValue(&phi);
       auto IV = new InductionVariable(loop.get(), IVM, SE, &phi, *sccContainingIV, loopEnv, referentialExpander); 
