@@ -35,18 +35,6 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   auto sccdag = LDI->sccdagAttrs.getSCCDAG();
 
   /*
-   * TODO: Remove when handling all loop governing IVs
-   */
-  bool isHeaderRepeatable = true;
-  for (auto &I : *loopHeader) {
-    auto scc = sccdag->sccOfValue(&I);
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
-    if (sccInfo->getType() != SCCAttrs::SEQUENTIAL) continue;
-    isHeaderRepeatable = false;
-    break;
-  }
-
-  /*
    * Collect all PHIs in the loop header; they are local variables
    * with loop carried data dependencies and need to be spilled
    * NOTE: There need not be a single loop carried PHI that needs spilling.
@@ -57,19 +45,9 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   for (auto &phi : loopHeader->phis()) {
     auto phiSCC = sccdag->sccOfValue(cast<Value>(&phi));
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(phiSCC);
-    if (sccInfo->canExecuteReducibly()) continue;
 
-    /*
-     * TODO: Implement moving sequential instructions in the header to the
-     * body entry and loop exit to enable not spilling loop governing IVs in such a case
-     */
-    // if (sccInfo->isInductionVariableSCC()) continue;
-    if (sccInfo->isInductionVariableSCC()) {
-      auto ivManager = LDI->getInductionVariableManager();
-      auto loopGoverningIVAttr = ivManager->getLoopGoverningIVAttribution(*loopSummary);
-      if (!loopGoverningIVAttr) continue;
-      if (!loopGoverningIVAttr->getInductionVariable().isIVInstruction(&phi)) continue;
-    }
+    if (sccInfo->canExecuteReducibly()) continue;
+    if (sccInfo->isInductionVariableSCC()) continue;
 
     originalLoopCarriedPHIs.push_back(&phi);
     auto clonePHI = (PHINode *)(helixTask->getCloneOfOriginalInstruction(&phi));

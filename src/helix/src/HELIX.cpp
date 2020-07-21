@@ -262,6 +262,9 @@ void HELIX::createParallelizableTask (
    */
   this->spillLoopCarriedDataDependencies(LDI);
 
+  /*
+   * For IVs that were not spilled, adjust their step size appropriately
+   */
   this->rewireLoopForIVsToIterateNthIterations(LDI);
 
   /*
