@@ -11,18 +11,22 @@
 #include "LoopWhilify.hpp"
 
 using namespace llvm;
- 
+
+
 LoopWhilifier::LoopWhilifier(Noelle &noelle)
   : noelle{noelle}
   {
   return ;
 }
 
+
 bool LoopWhilifier::whilifyLoop (
   LoopDependenceInfo const &LDI
 ) {
 
   bool AnyTransformed = false;
+
+  errs() << "LoopWhilifier: Starting ... \n";
 
   /*
    * Handle subloops --- return if there is any
@@ -44,6 +48,7 @@ bool LoopWhilifier::whilifyLoop (
 
   }
 
+
   /*
    * Execute on parent loop
    */ 
@@ -51,9 +56,11 @@ bool LoopWhilifier::whilifyLoop (
     AnyTransformed |= this->whilifyLoopDriver(LS);
   }
 
+
   return AnyTransformed;
 
 }
+
 
 bool LoopWhilifier::whilifyLoopDriver(
   LoopStructure * const LS
@@ -64,45 +71,28 @@ bool LoopWhilifier::whilifyLoopDriver(
   /*
    * Check if the loop can be whilified
    */ 
-  BasicBlock *Header = nullptr,
-             *Latch = nullptr,
-             *PreHeader = nullptr;
 
-  std::vector<std::pair<BasicBlock *, BasicBlock *>> ExitEdges;
-  
-  if (!(this->canWhilify(
-                LS, 
-                Header, 
-                Latch, 
-                PreHeader, 
-                ExitEdges
-              ))) { 
+  WhilifierContext *WC = new WhilifierContext(LS);
+
+  if (!(this->canWhilify(WC))) { 
+    
+    errs() << "LoopWhilifier: Can't whilify\n";
     return Transformed; 
+
   }
-
-
-  /*
-   * Acquire all other necessary info to whilify
-   */ 
-  std::vector<BasicBlock *> LoopBlocks;
-  for (auto NextBB : LS->orderedBBs) {
-    LoopBlocks.push_back(NextBB);
-  }
-
-  Function *F = Header->getParent();
 
 
   /*
    * If the loop is a single block, perform necessary transforms
    * for whilifying the loop --- use collected data structures
    */ 
-  if (Header == Latch) { 
-    this->transformSingleBlockLoop(
-      Header, 
-      Latch, 
-      ExitEdges, 
-      LoopBlocks
-    ); 
+  if (WC->OriginalHeader == WC->OriginalLatch) { 
+
+    errs() << "LoopWhilifier: Transforming single block loop\n";
+
+    this->transformSingleBlockLoop(WC);
+    WC->IsSingleBlockLoop |= true;
+
   }
 
 
@@ -110,94 +100,62 @@ bool LoopWhilifier::whilifyLoopDriver(
    * Split into anchors and new preheader, name anchors and new 
    * preheader, update preheader pointer
    */
-  BasicBlock *InsertTop = nullptr,
-             *InsertBot = nullptr;
-  
-  this->buildAnchors(
-    Header, 
-    PreHeader, 
-    InsertTop, 
-    InsertBot
-  );
+  this->buildAnchors(WC);
 
 
   /*
    * Clone loop blocks and remap instructions
    */ 
-  SmallVector<BasicBlock *, 16> NewBlocks;
-  ValueToValueMapTy BodyToPeelMap;
+  this->cloneLoopBlocksForWhilifying(WC);
 
-  this->cloneLoopBlocksForWhilifying(
-    InsertTop, 
-    InsertBot, 
-    Header, 
-    Latch, 
-    PreHeader,
-    F,
-    LoopBlocks, 
-    ExitEdges, 
-    NewBlocks, 
-    BodyToPeelMap
-  );
-  
   llvm::remapInstructionsInBlocks(
-    NewBlocks, 
-    BodyToPeelMap
+    WC->NewBlocks, 
+    WC->BodyToPeelMap
   );
 
-
-  /*
-   * Introduce another block to anchor the "peeled" 
-   * iteration --- optional here
-   */ 
-  InsertTop = InsertBot;
 
   /*
    * Fix block placement --- set the peeled iteration before  
    * the loop body itself --- also optional
    */  
+  WC->TopAnchor = WC->BottomAnchor; // For block placement
+
 #if FIX_BLOCK_PLACEMENT
-  F->getBasicBlockList().splice(InsertTop->getIterator(),
+  Function *F = WC->F;
+  F->getBasicBlockList().splice(WC->TopAnchor->getIterator(),
                                 F->getBasicBlockList(),
-                                NewBlocks[0]->getIterator(), F->end());
+                                (WC->NewBlocks)[0]->getIterator(), F->end());
 #endif
+
+  errs() << "LoopWhilifier: Built anchors, cloned blocks, fixed block placement:\n";
+  WC->Dump();
 
 
   /*
    * Find dependencies in the original latch that are defined
    * elsewhere in the loop --- necessary to build PHINodes for
    * the new header, and fix old header's incoming values
-   */  
-  DenseMap<Value *, Value *> ResolvedDependencyMapping;
-
-  /*
+   * 
    * *** NOTE *** --- the "peeled" latch (the mapping from the
    * original latch to the "peeled" iteration) == NEW HEADER
    */ 
-  BasicBlock *PeeledLatch = cast<BasicBlock>(BodyToPeelMap[Latch]), // show
+  BasicBlock *PeeledLatch = cast<BasicBlock>((WC->BodyToPeelMap)[WC->OriginalLatch]), // show
              *NewHeader = PeeledLatch;
 
   this->resolveNewHeaderDependencies(
-    Latch, 
-    NewHeader, 
-    LoopBlocks,
-    BodyToPeelMap,
-    ResolvedDependencyMapping
+    WC, 
+    NewHeader
   );
     
+  errs() << "LoopWhilifier: Resolved new header dependencies\n";
+  WC->Dump(); 
 
   /*
    * Resolve old header PHINodes --- remove references to the
    * old latch, update any incoming values with new header
    * PHINodes whenever possible
    */ 
-  this->resolveOriginalHeaderPHIs(
-    Header,
-    PreHeader,
-    Latch,
-    BodyToPeelMap,
-    ResolvedDependencyMapping
-  );
+  this->resolveOriginalHeaderPHIs(WC);
 
 
   /*
@@ -205,17 +163,22 @@ bool LoopWhilifier::whilifyLoopDriver(
    * the old latch, target predecessors of old latch
    */ 
   this->rerouteLoopBranches(
-    Latch,
+    WC,
     NewHeader
   );
+
+  errs() << "LoopWhilifier: Resolved original header PHIs, rerouted branches\n";
+  WC->Dump(); 
 
 
   /*
    * Erase old latch
    */ 
-  Latch->eraseFromParent();
-  Transformed |= true;
+  (WC->OriginalLatch)->eraseFromParent();
+  WC->ResolvedLatch |= true;
 
+  Transformed |= true;
+  errs() << "LoopWhilifier: Whilified\n";
 
   return Transformed;
 
@@ -239,6 +202,7 @@ bool LoopWhilifier::containsInOriginalLoop(
     BB) != (WC->LoopBlocks).end();
 
 }
+
 
 void LoopWhilifier::compressStructuralLatch(
   WhilifierContext *WC,
@@ -442,16 +406,14 @@ bool LoopWhilifier::isDoWhile(
 }
 
 
-
 bool LoopWhilifier::canWhilify (
-  LoopStructure * const LS,
-  BasicBlock *&Header,
-  BasicBlock *&Latch,
-  BasicBlock *&PreHeader,
-  std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges
+  WhilifierContext *WC
 ) {
 
   bool canWhilify = true;
+
+  errs() << "LoopWhilifier: canWhilify --- " 
+         << std::to_string(canWhilify) + "\n";
 
   /*
    * TOP --- Require valid header, preheader, and single latch, 
@@ -462,41 +424,66 @@ bool LoopWhilifier::canWhilify (
   /*
    * Acquire header
    */ 
-  Header = LS->getHeader();
-  canWhilify &= !!Header;
+  canWhilify &= !!(WC->OriginalHeader);
+
+  errs() << "LoopWhilifier: after HEADER, canWhilify --- " 
+         << std::to_string(canWhilify) << "\n";
+
+  if (canWhilify) {
+    (WC->OriginalHeader)->print(errs());
+  }
 
 
   /*
    * Acquire latch
    */ 
-  auto Latches = LS->getLatches();
-  Latch = *(Latches.begin());
-  canWhilify &= (Latches.size() == 1);
+  canWhilify &= (WC->NumLatches == 1);
+
+  errs() << "LoopWhilifier: after LATCH, canWhilify --- "
+         << std::to_string(canWhilify) + "\n";
+
+  if (canWhilify) {
+    (WC->OriginalLatch)->print(errs());
+  }
 
 
   /*
    * Acquire preheader
    */ 
-  PreHeader = LS->getPreHeader();
-  canWhilify &= !!PreHeader;
+  canWhilify &= !!(WC->OriginalPreHeader);
+
+  errs() << "LoopWhilifier: after PREHEADER, canWhilify --- "
+         << std::to_string(canWhilify) + "\n";
+
+  if (canWhilify) {
+    (WC->OriginalPreHeader)->print(errs());
+  }
 
 
   /*
    * Acquire exits
    */ 
-  auto AllExitEdges = LS->getLoopExitEdges();
-  for (auto EE : AllExitEdges) {
-    ExitEdges.push_back(EE);
-  }
-  canWhilify &= (AllExitEdges.size() > 0);
+  canWhilify &= ((WC->ExitEdges).size() > 0);
+
+  errs() << "LoopWhilifier: after EXITS, canWhilify --- " 
+         << std::to_string(canWhilify) + "\n";
 
 
   /*
    * Check if loop is in do-while form
    */ 
   if (canWhilify) {
-    canWhilify &= this->isDoWhile(LS, Latch);
+    canWhilify &= this->isDoWhile(WC);
   }
+
+  errs() << "LoopWhilifier: after LoopWhilifier::isDoWhile, canWhilify --- "
+         << std::to_string(canWhilify) + "\n";
+
+
+  /*
+   * Set context
+   */ 
+  WC->IsDoWhile |= canWhilify;
 
 
   return canWhilify;
@@ -505,16 +492,15 @@ bool LoopWhilifier::canWhilify (
 
 
 void LoopWhilifier::transformSingleBlockLoop(
-  BasicBlock *&Header,
-  BasicBlock *&Latch,
-  std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges,
-  std::vector<BasicBlock *> &LoopBlocks
+  WhilifierContext *WC
 ) {
 
   /*
    * Split the header at the terminator --- new block will
    * be the new latch
    */ 
+  BasicBlock *Header = WC->OriginalHeader;
+
   Instruction *SplitPoint = Header->getTerminator();
   BasicBlock *NewLatch = SplitBlock(Header, SplitPoint);
   NewLatch->setName(".new.latch");
@@ -523,12 +509,12 @@ void LoopWhilifier::transformSingleBlockLoop(
   /*
    * Update latch, loop blocks, and exit blocks
    */ 
-  Latch = NewLatch;
+  WC->OriginalLatch = NewLatch;
 
-  LoopBlocks.push_back(Latch);
+  (WC->LoopBlocks).push_back(NewLatch);
 
   std::vector<std::pair<BasicBlock *, BasicBlock *>> NewExitEdges;
-  for (auto Edge : ExitEdges) {
+  for (auto Edge : WC->ExitEdges) {
 
     if (Edge.first == Header) {
       NewExitEdges.push_back({ NewLatch, Edge.second });
@@ -538,7 +524,7 @@ void LoopWhilifier::transformSingleBlockLoop(
 
   }
 
-  ExitEdges = NewExitEdges;
+  WC->ExitEdges = NewExitEdges; /* FIX --- Copy */
 
 
   return;
@@ -547,10 +533,7 @@ void LoopWhilifier::transformSingleBlockLoop(
 
 
 void LoopWhilifier::buildAnchors(
-  BasicBlock *Header,
-  BasicBlock *&PreHeader,
-  BasicBlock *&InsertTop,
-  BasicBlock *&InsertBot
+  WhilifierContext *WC
 ) {
 
   /*
@@ -563,9 +546,14 @@ void LoopWhilifier::buildAnchors(
    * old) loop is customary --- remnant of llvm::peelLoop
    */ 
 
-  InsertTop = SplitEdge(PreHeader, Header);
-  InsertBot = SplitBlock(InsertTop, InsertTop->getTerminator());
-  BasicBlock *NewPreHeader = SplitBlock(InsertBot, InsertBot->getTerminator());
+  errs() << "LoopWhilifier: Building anchors ...\n";
+
+  BasicBlock *Header = WC->OriginalHeader,
+             *PreHeader = WC->OriginalPreHeader,
+
+             *InsertTop = SplitEdge(PreHeader, Header),
+             *InsertBot = SplitBlock(InsertTop, InsertTop->getTerminator()),
+             *NewPreHeader = SplitBlock(InsertBot, InsertBot->getTerminator());
 
 
   /*
@@ -577,9 +565,17 @@ void LoopWhilifier::buildAnchors(
 
 
   /*
-   * Update old loop's preheader
+   * Update context
    */ 
-  PreHeader = NewPreHeader;
+  WC->TopAnchor = InsertTop;
+  WC->BottomAnchor = InsertBot;
+  WC->OriginalPreHeader = NewPreHeader;
+
+
+  errs() << "LoopWhilifier: TopAnchor: " << *InsertTop << "\n"
+         << "LoopWhilifier: BottomAnchor: " << *InsertBot << "\n"
+         << "LoopWhilifier: WhilifiedPreheader: " << *NewPreHeader << "\n"
+         << "LoopWhilifier: Done building anchors\n";
 
 
   return;
@@ -591,33 +587,33 @@ void LoopWhilifier::buildAnchors(
  * Based on LoopUnrollPeel.cpp : cloneLoopBlocks
  */
 void LoopWhilifier::cloneLoopBlocksForWhilifying(
-  BasicBlock *InsertTop, 
-  BasicBlock *InsertBot,
-  BasicBlock *OriginalHeader,
-  BasicBlock *OriginalLatch,
-  BasicBlock *OriginalPreHeader,
-  Function *F,
-  std::vector<BasicBlock *> &LoopBlocks,
-  std::vector<std::pair<BasicBlock *, BasicBlock *>> &ExitEdges,
-  SmallVectorImpl<BasicBlock *> &NewBlocks, 
-  ValueToValueMapTy &BodyToPeelMap
+  WhilifierContext *WC
 ) {
+
+  BasicBlock *InsertTop = WC->TopAnchor,
+             *InsertBot = WC->BottomAnchor,
+             *OriginalHeader = WC->OriginalHeader,
+             *OriginalLatch = WC->OriginalLatch,
+             *OriginalPreHeader = WC->OriginalPreHeader;
+
+  Function *F = WC->F;
+
 
   /*
    * For each block in the original loop, create a new copy,
    * and update the value map with the newly created values.
    */
-  for (auto OrigBB : LoopBlocks) {
+  for (auto OrigBB : WC->LoopBlocks) {
   
     BasicBlock *PeelBB = CloneBasicBlock(
       OrigBB, 
-      BodyToPeelMap, 
+      (WC->BodyToPeelMap), 
       ".whilify", 
       F
     );
 
-    NewBlocks.push_back(PeelBB);
-    BodyToPeelMap[OrigBB] = PeelBB;
+    (WC->NewBlocks).push_back(PeelBB);
+    (WC->BodyToPeelMap)[OrigBB] = PeelBB;
 
   }
 
@@ -627,7 +623,7 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
    * to the "peeled header" --- pulled from the ValueToValueMap
    */ 
   InsertTop->getTerminator()->setSuccessor(
-    0, cast<BasicBlock>(BodyToPeelMap[OriginalHeader])
+    0, cast<BasicBlock>((WC->BodyToPeelMap)[OriginalHeader])
   );
 
 
@@ -637,7 +633,7 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
    * to the exit block --- this must be rerouted to the bottom 
    * anchor instead
    */ 
-  BasicBlock *PeelLatch = cast<BasicBlock>(BodyToPeelMap[OriginalLatch]);
+  BasicBlock *PeelLatch = cast<BasicBlock>((WC->BodyToPeelMap)[OriginalLatch]);
   BranchInst *PeelLatchTerm = cast<BranchInst>(PeelLatch->getTerminator());
 
   for (uint32_t SuccNo = 0; 
@@ -660,12 +656,11 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
    * Update the ValueToValueMap to map the original PHINodes to the 
    * static incoming values from the preheader
    */
-
   for (PHINode &PHI : OriginalHeader->phis()) {
 
-    PHINode *PeelPHI = cast<PHINode>(BodyToPeelMap[&PHI]);
-    BodyToPeelMap[&PHI] = PeelPHI->getIncomingValueForBlock(OriginalPreHeader);
-    cast<BasicBlock>(BodyToPeelMap[OriginalHeader])->getInstList().erase(PeelPHI);
+    PHINode *PeelPHI = cast<PHINode>((WC->BodyToPeelMap)[&PHI]);
+    (WC->BodyToPeelMap)[&PHI] = PeelPHI->getIncomingValueForBlock(OriginalPreHeader);
+    cast<BasicBlock>((WC->BodyToPeelMap)[OriginalHeader])->getInstList().erase(PeelPHI);
   
   }
 
@@ -679,7 +674,7 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
    * in the loop body --- if so, we must propagate the corresponding
    * value from the "peeled" block
    */ 
-  for (auto Edge : ExitEdges) {
+  for (auto Edge : WC->ExitEdges) {
 
     for (PHINode &PHI : Edge.second->phis()) {
 
@@ -687,17 +682,14 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
       Instruction *LatchInst = dyn_cast<Instruction>(LatchVal);
 
       if (LatchInst 
-          && (this->containsInOriginalLoop(
-                LatchInst->getParent(), 
-                LoopBlocks
-              ))) {
-        LatchVal = BodyToPeelMap[LatchVal];
+          && (this->containsInOriginalLoop(WC, LatchInst->getParent()))) {
+        LatchVal = (WC->BodyToPeelMap)[LatchVal];
       }
       
       /* 
        * Add incoming for the "peeled latch" --- will become new header
        */ 
-      PHI.addIncoming(LatchVal, cast<BasicBlock>(BodyToPeelMap[Edge.first]));
+      PHI.addIncoming(LatchVal, cast<BasicBlock>((WC->BodyToPeelMap)[Edge.first]));
 
       /* 
        * Remove incoming for old latch if possible
@@ -715,10 +707,8 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
 }
 
 
-
 void LoopWhilifier::resolveNewHeaderPHIDependencies(
-  BasicBlock * const Latch, 
-  ValueToValueMapTy &BodyToPeelMap
+  WhilifierContext *WC
 ) {
 
   /*
@@ -732,9 +722,11 @@ void LoopWhilifier::resolveNewHeaderPHIDependencies(
    * the loop body as well
    */
 
+  BasicBlock *Latch = WC->OriginalLatch;
+
   for (PHINode &OriginalPHI : Latch->phis()) {
 
-    PHINode *PeeledPHI = cast<PHINode>(BodyToPeelMap[&OriginalPHI]);
+    PHINode *PeeledPHI = cast<PHINode>((WC->BodyToPeelMap)[&OriginalPHI]);
 
     for (uint32_t PHINo = 0; 
          PHINo < OriginalPHI.getNumIncomingValues(); 
@@ -759,11 +751,7 @@ void LoopWhilifier::resolveNewHeaderPHIDependencies(
 
 
 void LoopWhilifier::findNonPHIOriginalLatchDependencies(
-  BasicBlock *Latch,
-  std::vector<BasicBlock *> &LoopBlocks,
-  DenseMap<Instruction *, 
-           DenseMap<Instruction *, 
-           uint32_t>> &DependenciesInLoop
+  WhilifierContext *WC
 ) {
 
   /*
@@ -772,6 +760,8 @@ void LoopWhilifier::findNonPHIOriginalLatchDependencies(
    * original latch but ARE defined elsewhere in the 
    * original loop body
    */ 
+  BasicBlock *Latch = WC->OriginalLatch;
+
   for (auto &I : *Latch) {
 
     /*
@@ -798,9 +788,9 @@ void LoopWhilifier::findNonPHIOriginalLatchDependencies(
 
       BasicBlock *DependenceParent = Dependence->getParent();
 
-      if ((this->containsInOriginalLoop(DependenceParent, LoopBlocks))
+      if ((this->containsInOriginalLoop(WC, DependenceParent))
           && (DependenceParent != Latch)) {
-        (DependenciesInLoop[Dependence])[&I] = OpNo;
+        ((WC->OriginalLatchDependencies)[Dependence])[&I] = OpNo;
       }
 
     }
@@ -810,14 +800,10 @@ void LoopWhilifier::findNonPHIOriginalLatchDependencies(
   
 }
 
+
 void LoopWhilifier::resolveNewHeaderNonPHIDependencies(
-  BasicBlock *Latch,
-  BasicBlock *NewHeader,
-  ValueToValueMapTy &BodyToPeelMap,
-  DenseMap<Value *, Value *> &ResolvedDependencyMapping,
-  DenseMap<Instruction *, 
-           DenseMap<Instruction *, 
-                    uint32_t>> &OriginalLatchDependencies
+  WhilifierContext *WC,
+  BasicBlock *NewHeader
 ) {
 
   /*
@@ -830,11 +816,12 @@ void LoopWhilifier::resolveNewHeaderNonPHIDependencies(
    * 
    * Record the resolved dependencies in a map
    */ 
+  BasicBlock *Latch = WC->OriginalLatch;
 
   IRBuilder<> PHIBuilder{NewHeader->getFirstNonPHI()};
 
-  for (auto const &[D, Uses] : OriginalLatchDependencies) {
-    
+  for (auto const &[D, Uses] : WC->OriginalLatchDependencies) {
+
     /*
      * Build the new PHINode
      */ 
@@ -845,7 +832,7 @@ void LoopWhilifier::resolveNewHeaderNonPHIDependencies(
      * Populate PHINode --- add incoming values based on the
      * predecessors of both the original and peeled latch
      */ 
-    Instruction *PeeledDependency = cast<Instruction>(BodyToPeelMap[D]);
+    Value *PeeledDependency = cast<Value>((WC->BodyToPeelMap)[D]);
     for (auto *PredBB : predecessors(NewHeader)) {
       DependencyPHI->addIncoming(PeeledDependency, PredBB);
     }
@@ -860,7 +847,7 @@ void LoopWhilifier::resolveNewHeaderNonPHIDependencies(
      * corresponding to instructions in the peeled latch 
      */ 
     for (auto const &[I, OpNo] : Uses) {
-      Instruction *CorrespondingI = cast<Instruction>(BodyToPeelMap[I]);
+      Instruction *CorrespondingI = cast<Instruction>((WC->BodyToPeelMap)[I]);
       CorrespondingI->setOperand(OpNo, DependencyPHI);
     }
 
@@ -869,8 +856,8 @@ void LoopWhilifier::resolveNewHeaderNonPHIDependencies(
      * Save the mapping between D, PeeledDependency and the 
      * DependencyPHI instruction
      */ 
-    ResolvedDependencyMapping[D] = 
-      ResolvedDependencyMapping[PeeledDependency] = 
+    (WC->ResolvedDependencyMapping)[D] = 
+      (WC->ResolvedDependencyMapping)[PeeledDependency] = 
         DependencyPHI;
 
   }
@@ -879,12 +866,10 @@ void LoopWhilifier::resolveNewHeaderNonPHIDependencies(
 
 }
 
+
 void LoopWhilifier::resolveNewHeaderDependencies(
-  BasicBlock *Latch,
-  BasicBlock *NewHeader,
-  std::vector<BasicBlock *> &LoopBlocks,
-  ValueToValueMapTy &BodyToPeelMap,
-  DenseMap<Value *, Value *> &ResolvedDependencyMapping
+  WhilifierContext *WC,
+  BasicBlock *NewHeader
 ) {
 
   /*
@@ -899,10 +884,7 @@ void LoopWhilifier::resolveNewHeaderDependencies(
   /*
    * Start with PHINodes of the latch
    */ 
-  this->resolveNewHeaderPHIDependencies(
-    Latch, 
-    BodyToPeelMap
-  );
+  this->resolveNewHeaderPHIDependencies(WC);
 
 
   /*
@@ -910,26 +892,15 @@ void LoopWhilifier::resolveNewHeaderDependencies(
    * elsewhere in the loop --- necessary to build PHINodes for
    * the new header, and fix old header's incoming values
    */  
-  DenseMap<Instruction *, 
-           DenseMap<Instruction *, 
-                    uint32_t>> OriginalLatchDependencies;
-  
-  this->findNonPHIOriginalLatchDependencies( 
-    Latch, 
-    LoopBlocks,
-    OriginalLatchDependencies
-  );
+  this->findNonPHIOriginalLatchDependencies(WC);
 
 
   /*
    * Now build PHINodes for all other dependencies in the new header
    */ 
   this->resolveNewHeaderNonPHIDependencies(
-    Latch, 
-    NewHeader, 
-    BodyToPeelMap,
-    ResolvedDependencyMapping, 
-    OriginalLatchDependencies
+    WC,
+    NewHeader
   );
 
 
@@ -939,11 +910,7 @@ void LoopWhilifier::resolveNewHeaderDependencies(
 
 
 void LoopWhilifier::resolveOriginalHeaderPHIs(
-  BasicBlock *Header,
-  BasicBlock *PreHeader,
-  BasicBlock *Latch,
-  ValueToValueMapTy &BodyToPeelMap,
-  DenseMap<Value *, Value *> &ResolvedDependencyMapping
+  WhilifierContext *WC
 ) {
 
   /*
@@ -961,16 +928,20 @@ void LoopWhilifier::resolveOriginalHeaderPHIs(
    * of the old header --- pulled from the ResolvedDependencyMap
    */ 
 
+  BasicBlock *Header = WC->OriginalHeader,
+             *PreHeader = WC->OriginalPreHeader,
+             *Latch = WC->OriginalLatch;
+
   for (PHINode &OriginalPHI : Header->phis()) {
 
     Value *Incoming = OriginalPHI.getIncomingValueForBlock(Latch);
     Instruction *IncomingInst = dyn_cast<Instruction>(Incoming);
 
     if (IncomingInst) {
-      Value *Resolved = ResolvedDependencyMapping[Incoming];
+      Value *Resolved = (WC->ResolvedDependencyMapping)[Incoming];
       Incoming = (Resolved) ? 
                  (Resolved) : 
-                 cast<Value>(BodyToPeelMap[IncomingInst]);
+                 cast<Value>((WC->BodyToPeelMap)[IncomingInst]);
     }
 
     OriginalPHI.setIncomingValueForBlock(PreHeader, Incoming);
@@ -982,8 +953,9 @@ void LoopWhilifier::resolveOriginalHeaderPHIs(
 
 }
 
+
 void LoopWhilifier::rerouteLoopBranches(
-  BasicBlock *Latch,
+  WhilifierContext *WC,
   BasicBlock *NewHeader
 ) {
 
@@ -993,6 +965,8 @@ void LoopWhilifier::rerouteLoopBranches(
    * 
    * Necessary because the original latch will be erased
    */ 
+
+  BasicBlock *Latch = WC->OriginalLatch;
 
   SmallVector<BasicBlock *, 32> Preds;
   for (auto *PredBB : predecessors(Latch)) {
@@ -1023,4 +997,92 @@ void LoopWhilifier::rerouteLoopBranches(
 }
 
 
+WhilifierContext::WhilifierContext(
+  LoopStructure * const LS
+) {
+
+  /*
+   * Only set loop body context
+   */ 
+  this->OriginalHeader = LS->getHeader();
+
+  this->OriginalPreHeader = LS->getPreHeader();
+
+  auto Latches = LS->getLatches();
+  this->OriginalLatch = *(Latches.begin());
+  this->NumLatches = Latches.size();
+
+  auto AllExitEdges = LS->getLoopExitEdges();
+  for (auto EE : AllExitEdges) {
+    this->ExitEdges.push_back(EE);
+  }
+
+  for (auto NextBB : LS->orderedBBs) {
+    this->LoopBlocks.push_back(NextBB);
+  }
+
+  this->F = LS->getFunction();
+
+
+  /*
+   * Set analysis results to false
+   */ 
+  this->IsDoWhile = 
+    this->IsSingleBlockLoop = 
+      this->ConsolidatedOriginalLatch = 
+        this->ResolvedLatch = false;
+
+
+  return;
+
+}
+
+
+void WhilifierContext::Dump()
+{
+
+  errs() << "LoopWhilifier: Current Context\n";
+
+  /*
+   * Loop body info
+   */ 
+  if (this->OriginalHeader) {
+    errs() << "LoopWhilifier:   OriginalHeader " << *(this->OriginalHeader) << "\n";
+  }
+
+  if (this->OriginalLatch && !(this->ResolvedLatch)) {
+    errs() << "LoopWhilifier:   OriginalLatch " << *(this->OriginalLatch) << "\n";
+  }
+
+  if (this->OriginalPreHeader) {
+    errs() << "LoopWhilifier:   OriginalPreHeader " << *(this->OriginalPreHeader) << "\n";
+  }
+
+  errs() << "LoopWhilifier:   ExitEdges:\n";
+  for (auto EE : this->ExitEdges) {
+    errs() << "---\nLoopWhilifier:     From: " << *(EE.first) << "\n"
+           << "LoopWhilifier:     To: " << *(EE.second) << "\n---\n";
+  }
+
+  errs() << "---\nLoopWhilifier:   LoopBlocks:\n";
+  for (auto BB : LoopBlocks) {
+    errs() << *BB << "\n";
+  }
+  errs() << "---\n";
+
+  errs() << "LoopWhilifier:   Current Function:\n" << *F << "\n";
+
+
+  /*
+   * Whilification info
+   */ 
+  errs() << "LoopWhilifier:   IsDoWhile: " << std::to_string(this->IsDoWhile) << "\n"
+         << "LoopWhilifier:   IsSingleBlockLoop: " << std::to_string(this->IsSingleBlockLoop) << "\n"
+         << "LoopWhilifier:   ConsolidatedOriginalLatch: " << std::to_string(this->ConsolidatedOriginalLatch) << "\n";
+
+
+  return;
+
+
+}
 
