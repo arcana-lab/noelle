@@ -473,6 +473,16 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
     }
   }
 
+  /*
+   * HACK: If no exit block is dominated by the live out, the scheme is doing
+   * short-circuiting logic of some sort on the loop's execution. State the live out's
+   * block itself as a safe-guard.
+   * TODO: Provide a way for each scheme to provide such an override instead of this blanket catch
+   */
+  if (insertPoints.empty()) {
+    insertPoints.insert(liveOut->getParent());
+  }
+
   return insertPoints;
 }
 
