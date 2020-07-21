@@ -373,8 +373,7 @@ bool LoopWhilifier::isSemanticLatch(
 
 
 bool LoopWhilifier::isDoWhile(
-  LoopStructure * const LS,
-  BasicBlock * const Latch
+  WhilifierContext *WC
 ) {
 
   bool isDoWhile = false;
@@ -386,20 +385,62 @@ bool LoopWhilifier::isDoWhile(
    * 
    * The loop is a do-while loop as long as the latch is loop-
    * exiting
+   * 
+   * Often times the latch selected is not the semantic latch, so
+   * this must be identified first
    */  
 
-  for (auto *SuccBB : successors(Latch)) {
+
+  /*
+   * First, check if the semantic latch is the structural latch,
+   * need to use the predecessor basic block in the do-while 
+   * check otherwise
+   */ 
+  BasicBlock *CurrentLatch = WC->OriginalLatch,
+             *CurrentLatchPred = nullptr;
+
+  bool NeedToChangeLatch = !(this->isSemanticLatch(WC, CurrentLatchPred));
+
+  BasicBlock *SemanticLatch = (NeedToChangeLatch) ?
+                              (CurrentLatchPred) :
+                              (CurrentLatch);
+
+  errs() << "LoopWhilifier: NeedToChangeLatch " 
+         << std::to_string(NeedToChangeLatch) << "\n"
+         << "LoopWhilifier: SemanticLatch " << *SemanticLatch << "\n";
+
+
+  /*
+   * Next, check the do-while condition --- is the latch loop
+   * exiting?
+   */ 
+  for (auto *SuccBB : successors(SemanticLatch)) {
     
-    if (!(LS->isIncluded(SuccBB))) {
+    if (!(this->containsInOriginalLoop(WC, SuccBB))) {
       isDoWhile |= true;
-      return isDoWhile;
     }
 
   }
 
+  errs() << "LoopWhilifier: isDoWhile (Latch --- loop exiting): "
+         << std::to_string(isDoWhile) << "\n";
+
+
+  /* 
+   * Is a do-while loop --- transform the structural latch
+   * if necessary
+   */ 
+  if (NeedToChangeLatch && isDoWhile) {
+    this->compressStructuralLatch(WC, SemanticLatch);
+    WC->ConsolidatedOriginalLatch |= true;
+  }
+
+  WC->Dump();
+
   return isDoWhile;
 
 }
+
 
 
 bool LoopWhilifier::canWhilify (
