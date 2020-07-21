@@ -205,7 +205,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     /*
      * Collect instructions that cannot be in the header
      */
-    std::vector<Instruction *> instsToMoveAndClone;
+    std::vector<Instruction *> originalInstsBeingDuplicated;
     for (auto &I : *loopHeader) {
 		  auto scc = sccdag->sccOfValue(&I);
       auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
@@ -220,18 +220,18 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       if (isa<PHINode>(&I)) continue;
       if (originalCmpInst == &I || originalBrInst == &I) continue;
 
-      auto cloneI = task->getCloneOfOriginalInstruction(&I);
-      instsToMoveAndClone.push_back(cloneI);
+      originalInstsBeingDuplicated.push_back(&I);
     }
 
     /*
      * Move those instructions to the loop body (right at the beginning, in order)
      */
     auto firstBodyInst = entryIntoBody->getFirstNonPHIOrDbgOrLifetime();
-    for (auto iIter = instsToMoveAndClone.rbegin(); iIter != instsToMoveAndClone.rend(); ++iIter) {
-      auto inst = *iIter;
-      inst->moveBefore(firstBodyInst);
-      firstBodyInst = inst;
+    for (auto iIter = originalInstsBeingDuplicated.rbegin(); iIter != originalInstsBeingDuplicated.rend(); ++iIter) {
+      auto originalI = *iIter;
+      auto cloneI = task->getCloneOfOriginalInstruction(originalI);
+      cloneI->moveBefore(firstBodyInst);
+      firstBodyInst = cloneI;
     }
 
     auto taskFunction = task->getTaskBody();
@@ -243,26 +243,25 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     /*
      * Clone these instructions and execute them after exiting the loop ONLY IF
      * the previous iteration's IV value passes the loop guard.
-     * 
-     * Any of these that are live out values must replace their equivalent in the loop body
-     * within the task's instruction mapping
      */
-    for (auto I : instsToMoveAndClone) {
-      auto cloneI = I->clone();
-      lastHeaderSequentialExecutionBuilder.Insert(cloneI);
-      task->addInstruction(I, cloneI);
+    for (auto originalI : originalInstsBeingDuplicated) {
+      auto cloneI = task->getCloneOfOriginalInstruction(originalI);
+      auto duplicateI = cloneI->clone();
+      lastHeaderSequentialExecutionBuilder.Insert(duplicateI);
+      this->lastIterationExecutionDuplicateMap.insert(std::make_pair(originalI, duplicateI));
     }
 
     /*
      * Re-wire the cloned last execution instructions together
      */
-    for (auto I : instsToMoveAndClone) {
-      auto cloneI = task->getCloneOfOriginalInstruction(I);
-      for (auto J : instsToMoveAndClone) {
-        if (I == J) continue;
+    for (auto originalI : originalInstsBeingDuplicated) {
+      auto duplicateI = this->lastIterationExecutionDuplicateMap.at(originalI);
+      for (auto originalJ : originalInstsBeingDuplicated) {
+        if (originalI == originalJ) continue;
 
-        auto cloneJ = task->getCloneOfOriginalInstruction(J);
-        cloneI->replaceUsesOfWith(J, cloneJ);
+        auto cloneJ = task->getCloneOfOriginalInstruction(originalJ);
+        auto duplicateJ = this->lastIterationExecutionDuplicateMap.at(originalJ);
+        duplicateI->replaceUsesOfWith(cloneJ, duplicateJ);
       }
     }
 

@@ -116,6 +116,7 @@ namespace llvm {
 
       EnvBuilder *loopCarriedEnvBuilder;
       std::unordered_set<SpilledLoopCarriedDependency *> spills;
+      std::unordered_map<Instruction *, Instruction *> lastIterationExecutionDuplicateMap;
 
       void squeezeSequentialSegment (
         LoopDependenceInfo *LDI,
