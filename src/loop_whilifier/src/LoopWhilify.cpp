@@ -246,6 +246,137 @@ bool LoopWhilifier::containsInOriginalLoop(
 
 }
 
+void LoopWhilifier::compressStructuralLatch(
+  WhilifierContext *WC,
+  BasicBlock *&SemanticLatch
+) {
+
+  /*
+   * Get the original (structural) latch from the context
+   */ 
+  BasicBlock *StructuralLatch = WC->OriginalLatch;
+
+
+  /*
+   * Resolve the branch in the semantic latch to 
+   * jump to the successor of the structural latch
+   */
+  BasicBlock *StructuralLatchSucc = StructuralLatch->getSingleSuccessor();
+
+  BranchInst *SemanticLatchTerm = dyn_cast<BranchInst>(SemanticLatch->getTerminator());
+  
+  for (uint32_t SuccNo = 0; 
+       SuccNo < SemanticLatchTerm->getNumSuccessors();
+       ++SuccNo) {
+    
+    BasicBlock *SuccBB = SemanticLatchTerm->getSuccessor(SuccNo);
+    if (SuccBB == StructuralLatch) {
+      SemanticLatchTerm->setSuccessor(SuccNo, StructuralLatchSucc);
+      break;
+    }
+
+  }
+
+
+  /*
+   * Resolve PHINodes in successors to use semantic latch
+   */ 
+  StructuralLatch->replaceSuccessorsPhiUsesWith(SemanticLatch);
+
+
+  /*
+   * Update context --- remove the structural latch from 
+   * the loop blocks
+   */ 
+  (WC->LoopBlocks).erase(llvm::find((WC->LoopBlocks), StructuralLatch));
+
+
+  /*
+   * Erase the structural latch
+   */ 
+  StructuralLatch->eraseFromParent();
+
+
+  /*
+   * Update context --- set the latch to be the semantic latch
+   */ 
+  WC->OriginalLatch = SemanticLatch;
+
+
+  errs() << "LoopWhilifier: compressStructuralLatch, New latch is: " 
+         << *(WC->OriginalLatch) << "\n";
+
+
+  return;
+
+}
+
+
+bool LoopWhilifier::isSemanticLatch(
+  WhilifierContext * const WC,
+  BasicBlock *&LatchPred
+) {
+
+  /*
+   * NOTE --- This method denotes the latch from the parameters
+   * as the semantic latch unless all checks fail --- at
+   * which point, the structural latch needs to be combined
+   * with the semantic latch and then passed to isDoWhile
+   */ 
+
+  BasicBlock *CurrentLatch = WC->OriginalLatch;
+
+  errs() << "LoopWhilifier: Current latch:\n" 
+         << *CurrentLatch << "\n";
+
+  bool KeepLatch = true;
+
+
+  /*
+   * Check if the latch is empty (apart from the terminator)
+   */ 
+  if (!(CurrentLatch->getInstList().size() == 1)) {
+
+    errs() << "LoopWhilifier: Keeping latch --- latch not empty\n";
+    return KeepLatch;
+
+  }
+
+
+  /*
+   * Check if the latch has a single predecessor
+   */
+  LatchPred = CurrentLatch->getSinglePredecessor();
+  if (!LatchPred) {
+
+    errs() << "LoopWhilifier: Keeping latch --- has multiple predecessors\n";
+    return KeepLatch;
+
+  }
+  
+
+  /*
+   * Check if the latch terminator is an unconditional branch
+   */  
+  BranchInst *LatchTerm = dyn_cast<BranchInst>(CurrentLatch->getTerminator());
+  if (false 
+      || (!LatchTerm)
+      || (LatchTerm->isConditional())) {
+    
+    errs() << "LoopWhilifier: Keeping latch --- terminator not unconditional branch\n";
+    return KeepLatch;
+
+  }
+
+
+  /*
+   * Structural latch is not the semantic latch --- return
+   * the result
+   */ 
+  return (KeepLatch & false);
+
+}
+
 
 bool LoopWhilifier::isDoWhile(
   LoopStructure * const LS,
