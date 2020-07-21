@@ -530,9 +530,9 @@ void LoopWhilifier::buildAnchors(
   /*
    * Naming
    */ 
-  InsertTop->setName(Header->getName() + ".whilify.top.anchor");
-  InsertBot->setName(Header->getName() + ".whilify.bottom.anchor");
-  NewPreHeader->setName(PreHeader->getName() + ".whilify.ph.old.loop");
+  InsertTop->setName("whilify.top.anchor." + Header->getName());
+  InsertBot->setName("whilify.bottom.anchor." + Header->getName());
+  NewPreHeader->setName("whilify.ph.old.loop." + PreHeader->getName());
 
 
   /*
