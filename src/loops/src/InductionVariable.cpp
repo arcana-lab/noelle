@@ -340,7 +340,7 @@ bool InductionVariable::deriveStepValueFromCompositeSCEV (
     }
   }
 
-  finalValue->print(errs() << "Expanded final value: "); errs() << "\n";
+  // finalValue->print(errs() << "Expanded final value: "); errs() << "\n";
 
   /*
    * If no instruction was expanded (where a value is referenced instead)
