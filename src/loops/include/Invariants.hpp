@@ -22,6 +22,8 @@ namespace llvm {
         PDG *loopDG
       );
       
+      InvariantManager () = delete;
+
       bool isLoopInvariant (Value *value) const ;
 
       std::unordered_set<Instruction *> getLoopInstructionsThatAreLoopInvariants (void) const ;
