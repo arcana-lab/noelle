@@ -36,17 +36,12 @@ stillRunning="`mktemp`" ;
 condor_q `whoami` -l | grep ^Arguments | grep "`pwd`" | grep regression > $stillRunning ;
 if test -s $stillRunning ; then
   stillRunningJobs=`wc -l $stillRunning | awk '{print $1}'` ;
-  tooManyJobs=`echo "$stillRunningJobs > 12" | bc` ;
-  if test $tooManyJobs == "0" ; then
-    echo "    The following $stillRunningJobs tests are still running" ;
-    while IFS= read -r line; do
-      testRunning=`echo $line | awk '{print $4}'` ;
-      echo "        $testRunning" ;
-    done < "$stillRunning"
+  echo "    There are $stillRunningJobs jobs that are still running and they are the following ones:" ;
+  while IFS= read -r line; do
+    testRunning=`echo $line | awk '{print $4}'` ;
+    echo "        $testRunning" ;
+  done < "$stillRunning"
 
-  else
-    echo "    There are $stillRunningJobs jobs that are still running" ;
-  fi
 else
   echo "    All tests finished" ;
   regressionFinished="1" ;
@@ -149,13 +144,31 @@ else
 
     else
       echo "  All performance tests compiled correctly" ;
-      grep -i "Performance degradation" compiler_output_performance.txt &> /dev/null ;
+      tempSpeedups=`mktemp` ;
+      tempOracle=`mktemp` ;
+      tempCompare=`mktemp` ;
+      tempOutput=`mktemp` ;
+      sort performance/speedups.txt > $tempSpeedups ;
+      sort performance/oracle_speedups > $tempOracle ;
+      paste $tempSpeedups $tempOracle > $tempCompare ;
+      awk '{
+            if ($2 < ($4 * 0.9)){
+            printf("  Performance degradation for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
+          }
+        }' $tempCompare > $tempOutput ;
+      grep -i "Performance degradation" $tempOutput &> /dev/null ;
       if test $? -eq 0 ; then
         echo -e "  Next are the performance tests that run ${RED}slower${NC}:" ;
-        grep -i "Performance degradation" compiler_output_performance.txt ;
+        grep -i "Performance degradation" $tempOutput ;
       else 
         echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
       fi
+
+      # Remove the files
+      rm $tempOracle ;
+      rm $tempSpeedups ;
+      rm $tempCompare ;
+      rm $tempOutput ;
     fi
 
   else 

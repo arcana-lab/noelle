@@ -55,7 +55,7 @@ bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
     if (!outgoingNode || !incomingNode) {
       return false;
     }
-    set<DGEdge<Value> *> edgeSet = pdg2->fetchEdges(outgoingNode, incomingNode);
+    auto edgeSet = pdg2->fetchEdges(outgoingNode, incomingNode);
     if (edgeSet.empty()) {
       return false;
     }

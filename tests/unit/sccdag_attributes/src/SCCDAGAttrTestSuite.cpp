@@ -87,14 +87,15 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
   auto loopExitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
   auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
-  InductionVariableManager IV{LIS, *SE, *sccdag, *environment};
+  InvariantManager invariantManager(LIS.getLoopNestingTreeRoot(), loopDG);
+  InductionVariableManager IV{LIS, invariantManager, *SE, *sccdag, *environment};
 
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
   // TODO: Test attribution on normalized SCCDAG as well
   this->attrs = new SCCDAGAttrs(loopDG, sccdag, LIS, *SE, lcd, IV);
 
   // PDGPrinter printer;
-  // printer.writeGraph<SCCDAG>("graph-top-loop.dot", sccdagTopLoopNorm);
+  // printer.writeGraph<SCCDAG, SCC>("graph-top-loop.dot", sccdagTopLoopNorm);
 
   errs() << "SCCDAGAttrTestSuite: Running suite\n";
   suite->runTests((ModulePass &)*this);

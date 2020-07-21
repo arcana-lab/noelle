@@ -22,7 +22,6 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 set(RootPath ../../../..)
-set(PassesPath ${RootPath}/src)
 set(SVFDep ${RootPath}/external/svf/include)
 include_directories(${LLVM_INCLUDE_DIRS} ${RootPath}/install/include ${SVFDep} ../../helpers/include ../include ./)
 

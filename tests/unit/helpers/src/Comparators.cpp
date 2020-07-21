@@ -44,22 +44,27 @@ FileComparator::FileComparator (std::string filename, std::string unordered, std
   std::string group = "";
   std::vector<std::string> lineSplits{};
   while (getline(file, line)) {
+    Parser::trim(line);
     if (line == "") {
       group = "";
+      continue;
+    }
+
+    if (line[0] == '#') {
+      continue;
+    }
+
+    if (group == "") {
+      group = line;
+      groupValues[group].clear();
     } else {
-      if (group == "") {
-        group = line;
-        groupValues[group].clear();
-      } else {
-        Parser::trim(line);
-        lineSplits.push_back(line);
-        std::string lastCharacter(1, line[line.length() - 1]);
-        if (lineContinuations.find(lastCharacter) == lineContinuations.end()) {
-          std::string fullLine;
-          for (auto l : lineSplits) fullLine += l;
-          lineSplits.clear();
-          groupValues[group].insert(processDelimitedRow(fullLine));
-        }
+      lineSplits.push_back(line);
+      std::string lastCharacter(1, line[line.length() - 1]);
+      if (lineContinuations.find(lastCharacter) == lineContinuations.end()) {
+        std::string fullLine;
+        for (auto l : lineSplits) fullLine += l;
+        lineSplits.clear();
+        groupValues[group].insert(processDelimitedRow(fullLine));
       }
     }
   }

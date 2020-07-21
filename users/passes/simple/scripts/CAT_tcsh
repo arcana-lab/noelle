@@ -1,0 +1,21 @@
+#!/bin/tcsh
+
+# Adds LLVM 9.0.1 to PATH
+setenv LLVM_HOME /home/software/llvm-9.0.1
+setenv PATH $LLVM_HOME/bin\:$PATH
+
+# Adds LLVM 9.0.1 to LD_LIBRARY_PATH
+if (! $?LD_LIBRARY_PATH) then       
+  setenv LD_LIBRARY_PATH $LLVM_HOME/lib
+else
+  setenv LD_LIBRARY_PATH $LLVM_HOME/lib\:$LD_LIBRARY_PATH
+endif
+
+# Adds cat-c to PATH
+setenv PATH ~/CAT/bin\:$PATH
+
+# Launches Bash shell
+echo "Launching Bash Shell"
+setenv SHELL /bin/bash
+exec /bin/bash
+

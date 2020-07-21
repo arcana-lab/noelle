@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Inliner.hpp"
+#include "DOALL.hpp"
 
 bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
   auto anyInlined = false;
@@ -73,11 +74,55 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
       }
 
       /*
+       * Check if the current loop is a DOALL.
+       * If it is, then we disable all sub-loops to be considered because DOALL always takes priority and we don't parallelize nested loops at the moment.
+       */
+      DOALL doall{
+        *noelle.getProgram(),
+        *noelle.getProfiles(),
+        noelle.getVerbosity()
+      };
+      if (  true
+            && (summary->getNumberOfSubLoops() >= 1)
+            && doall.canBeAppliedToLoop(LDI, noelle, nullptr)
+        ){
+
+        /*
+         * The loop is a doall.
+         *
+         * Disable all sub-loops
+         */
+        auto disableSubLoop = [&toCheck] (const LoopStructure &child) -> bool{
+
+          /*
+           * Check if the sub-loop is enabled.
+           */
+          if (std::find(toCheck.begin(), toCheck.end(), &child) == toCheck.end()){
+            return false;
+          }
+
+          /*
+           * The sub-loop is enabled.
+           *
+           * Disable it.
+           */
+          std::remove(toCheck.begin(), toCheck.end(), &child);
+
+          return false;
+        };
+        LDI->iterateOverSubLoopsRecursively(disableSubLoop);
+
+        continue ;
+      }
+
+      /*
        * Inline the call.
        */
       auto inlinedCall = this->inlineCallsInMassiveSCCs(F, LDI);
       inlined |= inlinedCall;
-      if (inlined) break;
+      if (inlined) {
+        break;
+      }
     }
 
     /*
@@ -125,6 +170,9 @@ bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
    */
   auto loopStructure = LDI->getLoopStructure();
 
+  /*
+   * Fetch the set of sequential SCCs.
+   */
   std::set<SCC *> sccsToCheck;
   SCCDAG->iterateOverSCCs([LDI, &sccsToCheck](SCC *scc) -> bool{
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);

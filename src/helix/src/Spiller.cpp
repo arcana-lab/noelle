@@ -36,6 +36,8 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   /*
    * Collect all PHIs in the loop header; they are local variables
    * with loop carried data dependencies and need to be spilled
+   * NOTE: There need not be a single loop carried PHI that needs spilling.
+   * Non-independent function calls and already-in-memory data are such examples.
    */
   std::vector<PHINode *> originalLoopCarriedPHIs;
   std::vector<PHINode *> clonedLoopCarriedPHIs;
@@ -46,8 +48,6 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
     auto clonePHI = (PHINode *)(helixTask->getCloneOfOriginalInstruction(&phi));
     clonedLoopCarriedPHIs.push_back(clonePHI);
   }
-  assert(clonedLoopCarriedPHIs.size() > 0
-    && "There should be loop carried data dependencies for a HELIX loop");
 
   /*
    * Register each PHI as part of the loop carried environment

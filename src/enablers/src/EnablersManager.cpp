@@ -44,11 +44,13 @@ bool EnablersManager::runOnModule (Module &M) {
   auto loopDist = LoopDistribution();
   auto loopUnroll = LoopUnroll();
   auto loopWhilify = LoopWhilifier(noelle);
+  auto loopInvariantCodeMotion = LoopInvariantCodeMotion(noelle);
+  auto scevSimplification = SCEVSimplification(noelle);
 
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = noelle.getProgramLoops();
+  auto loopsToParallelize = noelle.getLoops();
   errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
 
   /*
@@ -75,7 +77,15 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Improve the current loop.
      */
-    modifiedFunctions[f] |= this->applyEnablers(loop, noelle, loopDist, loopUnroll, loopWhilify);
+    modifiedFunctions[f] |= this->applyEnablers(
+      loop,
+      noelle,
+      loopDist,
+      loopUnroll,
+      loopWhilify,
+      loopInvariantCodeMotion,
+      scevSimplification
+    );
     modified |= modifiedFunctions[f];
   }
 

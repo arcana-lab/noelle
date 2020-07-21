@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Simone Campanoni
+ * Copyright 2019 - 2020  Lukas Gross, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -53,8 +53,10 @@ bool LoopDistribution::splitLoop (
   std::set<Instruction *> &instructionsRemoved,
   std::set<Instruction *> &instructionsAdded
   ){
-  errs() << "LoopDistribution: Attempting Loop Distribution\n";
   auto loopStructure = LDI.getLoopStructure();
+  errs() << "LoopDistribution: Attempting Loop Distribution in "
+         << loopStructure->getFunction()->getName()
+         << "\n";
 
   /*
    * Assert that all instructions in instsToPullOut are actually within the loop
@@ -65,21 +67,7 @@ bool LoopDistribution::splitLoop (
     errs() << "LoopDistribution: Asked to pull out " << *inst << "\n";
     assert(std::find(loopBBs.begin(), loopBBs.end(), parent) != loopBBs.end());
   }
-
-  /*
-   * Collect control instructions from the SCCs with loop-carried control dependencies
-   */
-  auto controlSCCs = LDI.sccdagAttrs.getSCCsWithLoopCarriedControlDependencies();
   std::set<Instruction *> instsToClone{};
-  for (auto controlSCC : controlSCCs) {
-    errs() << "LoopDistribution: New Control SCC\n";
-    for (auto pair : controlSCC->internalNodePairs()) {
-      if (auto controlInst = dyn_cast<Instruction>(pair.second->getT())) {
-        errs () << "LoopDistribution: Control instruction from SCC: " <<  *controlInst << "\n";
-        instsToClone.insert(controlInst);
-      }
-    }
-  }
 
   /*
    * Require that all terminators in the loop are branches and collect instructions that
@@ -87,22 +75,18 @@ bool LoopDistribution::splitLoop (
    */
   for (auto BB : loopStructure->getBasicBlocks()) {
     if (auto branch = dyn_cast<BranchInst>(BB->getTerminator())) {
-      if (branch->isConditional()) {
-        if (auto condition = dyn_cast<Instruction>(branch->getCondition())) {
-          errs () << "LoopDistribution: Colecting dependencies of  " <<  *condition << "\n";
-          instsToClone.insert(condition);
-          this->recursivelyCollectDependencies(condition, instsToClone, LDI);
-        }      
-      }
+      errs () << "LoopDistribution: Branch instruction: " <<  *branch << "\n";
+      instsToClone.insert(branch);
+      this->recursivelyCollectDependencies(branch, instsToClone, LDI);
     } else {
       errs() << "LoopDistribution: Abort: Non-branch terminator " << *BB->getTerminator() << "\n";
+      return false;
     }
   }
 
   /*
-   * Collect all sub-loop instructions and their dependencies
-   *   TODO(lukas): This does not capture sub-sub loops, but those BBs should still be in the
-   *   level 2 loops
+   * Collect all sub-loop instructions and their dependencies. This does not capture sub-sub loops,
+   *   but those BBs should still be in the level 2 loops
    */
   std::set<BasicBlock *> subLoopBBs{};
   for (auto childLoopStructure : loopStructure->getChildren()) {
@@ -150,7 +134,7 @@ bool LoopDistribution::splitLoop (
     }
   }
   if (instsToPullOut.size() == 0) {
-    errs() << "LoopDistribution: Abort: Every instruction would have been cloned\n";
+    errs() << "LoopDistribution: Abort: All instructions requested would have to be cloned\n";
     return false;
   }
 
@@ -236,7 +220,7 @@ void LoopDistribution::recursivelyCollectDependencies (
 
 /*
  * Checks if the union of instsToPullOut and instsToClone covers every instruction in the loop
- *   that is not a branch or part of a sub loop (since we will replicate those anyway)
+ *   that is not a branch (since we will replicate those anyway)
  */
 bool LoopDistribution::splitWouldBeTrivial (
   LoopStructure * const loopStructure,

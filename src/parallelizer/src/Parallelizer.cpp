@@ -89,7 +89,17 @@ bool Parallelizer::parallelizeLoop (
     auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
     auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
     auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+
+    if (par.getVerbosity() >= Verbosity::Maximal) {
+      errs() << "HELIX:  Constructing task dependence graph\n";
+    }
+
     auto taskFunctionDG = helix.constructTaskInternalDependenceGraphFromOriginalLoopDG(LDI, PDT);
+
+    if (par.getVerbosity() >= Verbosity::Maximal) {
+      errs() << "HELIX:  Constructing task loop dependence info\n";
+    }
+
     DominatorSummary DS{DT, PDT};
     auto l = LI.getLoopsInPreorder()[0];
     auto newLDI = new LoopDependenceInfo(taskFunctionDG, l, DS, SE, par.getMaximumNumberOfCores());
