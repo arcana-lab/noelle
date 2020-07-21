@@ -105,6 +105,10 @@ namespace llvm {
         void
       );
 
+      void rewireLoopForIVsToIterateNthIterations (
+        LoopDependenceInfo *LDI
+      );
+
     private:
       Function *waitSSCall, *signalSSCall;
       LoopDependenceInfo *originalLDI;
