@@ -346,13 +346,14 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
 
   /*
    * If a contained IV is loop governing, ensure loop governance is well formed
+   * TODO: Remove this, as this loop governing attribution isn't necessary for all users of SCCDAGAttrs 
    */
   for (auto containedIV : containedIVs) {
     if (loopGoverningIVs.find(containedIV) == loopGoverningIVs.end()) continue;
     auto exitBlocks = LIS.getLoop(*containedIV->getLoopEntryPHI()->getParent())->getLoopExitBasicBlocks();
     LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
     if (!attribution.isSCCContainingIVWellFormed()) {
-      // errs() << "Not well formed SCC for loop governing IV!\n";
+      // containedIV->getLoopEntryPHI()->print(errs() << "Not well formed SCC for loop governing IV!\n"); errs() << "\n";
       return false;
     }
     containedInsts.insert(attribution.getHeaderCmpInst());
