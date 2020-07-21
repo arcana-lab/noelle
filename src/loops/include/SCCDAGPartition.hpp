@@ -26,6 +26,8 @@ class SCCDAGPartition {
       std::set<SCCset *> *sets
     );
 
+    SCCDAGPartition () = delete ;
+
     void resetPartition (std::set<SCCset *> *subsets);
 
     SCCset *mergePairAndCycles (SCCset *subsetA, SCCset *subsetB);

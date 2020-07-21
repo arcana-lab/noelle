@@ -58,6 +58,8 @@ namespace llvm {
         uint32_t maxCores
       );
 
+      LoopDependenceInfo () = delete ;
+
       /*
        * Return the ID of the loop.
        */
