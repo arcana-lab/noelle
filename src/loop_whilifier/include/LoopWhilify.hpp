@@ -111,8 +111,7 @@ namespace llvm {
       );
 
       bool isDoWhile(
-        LoopStructure * const LS,
-        BasicBlock * const Latch
+        WhilifierContext *WC
       );
 
       bool canWhilify (
