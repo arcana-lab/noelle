@@ -24,6 +24,8 @@ namespace llvm {
     public:
       LoopCarriedDependencies (const LoopsSummary &LIS, const DominatorSummary &DS, SCCDAG &sccdagForLoops) ;
 
+      LoopCarriedDependencies () = delete ;
+
       Criticisms getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const ;
 
     private:
