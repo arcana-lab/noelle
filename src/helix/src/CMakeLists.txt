@@ -5,6 +5,7 @@ set(Srcs
   HELIXTaskInternalDependenceGraph.cpp
   Linker.cpp
   Spiller.cpp
+  InductionVariableStepper.cpp
   SequentialSegments.cpp
   SequentialSegment.cpp
   Scheduler.cpp
