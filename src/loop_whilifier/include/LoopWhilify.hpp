@@ -101,6 +101,16 @@ namespace llvm {
         BasicBlock * const BB 
       );
 
+      void compressStructuralLatch(
+        WhilifierContext *WC,
+        BasicBlock *&SemanticLatch
+      );
+
+      bool isSemanticLatch(
+        WhilifierContext * const WC,
+        BasicBlock *&LatchPred
+      );
+
       bool isDoWhile(
         LoopStructure * const LS,
         BasicBlock * const Latch
