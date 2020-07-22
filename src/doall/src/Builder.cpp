@@ -23,6 +23,7 @@ void DOALL::rewireLoopToIterateChunks (
   /*
    * Fetch loop and IV information.
    */
+  auto invariantManager = LDI->getInvariantManager();
   auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto loopPreHeader = loopSummary->getPreHeader();
@@ -49,34 +50,48 @@ void DOALL::rewireLoopToIterateChunks (
    */
   std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
-    Value *clonedStepValue = nullptr;
-    if (ivInfo->getSingleComputedStepValue()) {
-      clonedStepValue = fetchClone(ivInfo->getSingleComputedStepValue());
-    } else {
 
-      /*
-       * The step size is a composite SCEV. Fetch its instruction expansion,
-       * cloning into the entry block of the function
-       * 
-       * NOTE: The step size is expected to be loop invariant
-       */
-      auto expandedInsts = ivInfo->getComputationOfStepValue();
-      assert(expandedInsts.size() > 0);
-      for (auto expandedInst : expandedInsts) {
-        auto clonedInst = expandedInst->clone();
-        task->addInstruction(expandedInst, clonedInst);
-        entryBuilder.Insert(clonedInst);
+    /*
+     * If the step value is constant or a value present in the original loop, use its clone
+     * TODO: Refactor this logic as a helper: tryAndFetchClone that doesn't assert a clone must exist
+     */
+    auto singleComputedStepValue = ivInfo->getSingleComputedStepValue();
+    if (singleComputedStepValue) {
+      Value *clonedStepValue = nullptr;
+      if (isa<ConstantData>(singleComputedStepValue)
+        || task->isAnOriginalLiveIn(singleComputedStepValue)) {
+        clonedStepValue = singleComputedStepValue;
+      } else if (auto singleComputedStepInst = dyn_cast<Instruction>(singleComputedStepValue)) {
+        clonedStepValue = task->getCloneOfOriginalInstruction(singleComputedStepInst);
       }
 
-      /*
-       * Wire the instructions in the expansion to use the cloned values
-       */
-      for (auto expandedInst : expandedInsts) {
-        adjustDataFlowToUseClones(task->getCloneOfOriginalInstruction(expandedInst), 0);
+      if (clonedStepValue) {
+        clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
+        continue;
       }
-      clonedStepValue = task->getCloneOfOriginalInstruction(expandedInsts.back());
     }
 
+    /*
+     * The step size is a composite SCEV. Fetch its instruction expansion,
+     * cloning into the entry block of the function
+     * 
+     * NOTE: The step size is expected to be loop invariant
+     */
+    auto expandedInsts = ivInfo->getComputationOfStepValue();
+    assert(expandedInsts.size() > 0);
+    for (auto expandedInst : expandedInsts) {
+      auto clonedInst = expandedInst->clone();
+      task->addInstruction(expandedInst, clonedInst);
+      entryBuilder.Insert(clonedInst);
+    }
+
+    /*
+     * Wire the instructions in the expansion to use the cloned values
+     */
+    for (auto expandedInst : expandedInsts) {
+      adjustDataFlowToUseClones(task->getCloneOfOriginalInstruction(expandedInst), 0);
+    }
+    auto clonedStepValue = task->getCloneOfOriginalInstruction(expandedInsts.back());
     clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
   }
 
@@ -142,22 +157,32 @@ void DOALL::rewireLoopToIterateChunks (
    * The exit condition value does not need to be computed each iteration
    * and so the value's derivation can be hoisted into the preheader
    * 
-   * NOTE: As of now, instructions which the PDG states are independent can include
-   * PHI nodes containing the re-loading of a global. Without further analysis,
-   * the following simplification would hoist that PHI out of its block.
+   * Instructions which the PDG states are independent can include PHI nodes
+   * Assert that any PHIs are invariant. Hoise one of those values (if instructions) to the preheader.
    */
-  // auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
-  // if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
-  //   auto &derivation = ivUtility.getConditionValueDerivation();
-  //   for (auto I : derivation) {
-  //     auto cloneI = task->getCloneOfOriginalInstruction(I);
-  //     cloneI->removeFromParent();
-  //     entryBuilder.Insert(cloneI);
-  //   }
+  auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
+  if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
+    auto &derivation = ivUtility.getConditionValueDerivation();
+    for (auto I : derivation) {
+      auto cloneI = task->getCloneOfOriginalInstruction(I);
+      assert(invariantManager->isLoopInvariant(cloneI)
+        && "DOALL exit condition value is not derived from loop invariant values!");
 
-  //   exitConditionInst->removeFromParent();
-  //   entryBuilder.Insert(exitConditionInst);
-  // }
+      if (auto clonePHI = dyn_cast<PHINode>(cloneI)) {
+        auto usedValue = clonePHI->getIncomingValue(0);
+        clonePHI->replaceAllUsesWith(usedValue);
+        clonePHI->eraseFromParent();
+        cloneI = dyn_cast<Instruction>(usedValue);
+        if (!cloneI) continue;
+      }
+
+      cloneI->removeFromParent();
+      entryBuilder.Insert(cloneI);
+    }
+
+    exitConditionInst->removeFromParent();
+    entryBuilder.Insert(exitConditionInst);
+  }
 
   /*
    * NOTE: When loop governing IV attribution allows for any bther instructions in the header
@@ -225,7 +250,6 @@ void DOALL::rewireLoopToIterateChunks (
 	/*
 	 * Collect (4) by identifying header instructions belonging to independent SCCs that are loop invariant
 	 */
-  auto invariantManager = LDI->getInvariantManager();
   for (auto &I : *loopHeader) {
 		auto scc = sccdag->sccOfValue(&I);
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
@@ -240,8 +264,6 @@ void DOALL::rewireLoopToIterateChunks (
   bool requiresConditionBeforeEnteringHeader = false;
   for (auto &I : *headerClone) {
     if (repeatableInstructions.find(&I) == repeatableInstructions.end()) {
-      assert(!isa<PHINode>(I)
-        && "All PHIs (which have loop carried dependencies) must be chunked or reducible");
       requiresConditionBeforeEnteringHeader = true;
       break;
     }
