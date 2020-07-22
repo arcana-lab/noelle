@@ -60,6 +60,7 @@ namespace llvm {
       bool IsSingleBlockLoop;
       bool ConsolidatedOriginalLatch;
       bool ResolvedLatch;
+      DenseMap<PHINode *, Value *> ExitDependencies;
       DenseMap<Value *, Value *> ResolvedDependencyMapping;
       DenseMap<Instruction *, 
                DenseMap<Instruction *, 
@@ -129,6 +130,16 @@ namespace llvm {
 
       void cloneLoopBlocksForWhilifying(
         WhilifierContext *WC
+      );
+
+      PHINode *buildNewHeaderDependencyPHI(
+        WhilifierContext *WC,
+        Value *Dependency
+      );
+
+      void resolveExitEdgeDependencies(
+        WhilifierContext *WC,
+        BasicBlock *NewHeader
       );
 
       void resolveNewHeaderPHIDependencies(
