@@ -105,6 +105,10 @@ namespace llvm {
         void
       );
 
+      void rewireLoopForIVsToIterateNthIterations (
+        LoopDependenceInfo *LDI
+      );
+
     private:
       Function *waitSSCall, *signalSSCall;
       LoopDependenceInfo *originalLDI;
@@ -112,6 +116,7 @@ namespace llvm {
 
       EnvBuilder *loopCarriedEnvBuilder;
       std::unordered_set<SpilledLoopCarriedDependency *> spills;
+      std::unordered_map<Instruction *, Instruction *> lastIterationExecutionDuplicateMap;
 
       void squeezeSequentialSegment (
         LoopDependenceInfo *LDI,
