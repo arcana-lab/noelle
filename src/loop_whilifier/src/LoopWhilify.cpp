@@ -130,25 +130,38 @@ bool LoopWhilifier::whilifyLoopDriver(
   errs() << "LoopWhilifier: Built anchors, cloned blocks, fixed block placement:\n";
   WC->Dump();
 
-
   /*
-   * Find dependencies in the original latch that are defined
-   * elsewhere in the loop --- necessary to build PHINodes for
-   * the new header, and fix old header's incoming values
-   * 
    * *** NOTE *** --- the "peeled" latch (the mapping from the
    * original latch to the "peeled" iteration) == NEW HEADER
    */ 
   BasicBlock *PeeledLatch = cast<BasicBlock>((WC->BodyToPeelMap)[WC->OriginalLatch]), // show
              *NewHeader = PeeledLatch;
 
+
+  /*
+   * Resolve all dependencies for exit edges --- all exit blocks'
+   * PHINodes must reflect incoming values that are handled from
+   * the new header
+   */ 
+  this->resolveExitEdgeDependencies(
+    WC,
+    NewHeader
+  );
+
+
+  /*
+   * Find dependencies in the original latch that are defined
+   * elsewhere in the loop --- necessary to build PHINodes for
+   * the new header, and fix old header's incoming values
+   */ 
   this->resolveNewHeaderDependencies(
     WC, 
     NewHeader
   );
     
-  errs() << "LoopWhilifier: Resolved new header dependencies\n";
+  errs() << "LoopWhilifier: Resolved new header and exit edge dependencies\n";
   WC->Dump(); 
+
 
   /*
    * Resolve old header PHINodes --- remove references to the
@@ -395,8 +408,10 @@ bool LoopWhilifier::isDoWhile(
    * if necessary
    */ 
   if (NeedToChangeLatch && isDoWhile) {
+
     this->compressStructuralLatch(WC, SemanticLatch);
     WC->ConsolidatedOriginalLatch |= true;
+
   }
 
   WC->Dump();
@@ -673,28 +688,62 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
    * The incoming value depends on if the value was defined
    * in the loop body --- if so, we must propagate the corresponding
    * value from the "peeled" block
+   * 
+   * Resolve all latch-exit dependencies here  
+   * 
+   * NEEDS ENGINEERING FIX --- CODE REPETITION --- TODO
+   * 
    */ 
+  F->print(errs());
   for (auto Edge : WC->ExitEdges) {
 
     for (PHINode &PHI : Edge.second->phis()) {
 
-      Value *LatchVal = PHI.getIncomingValueForBlock(Edge.first);
-      Instruction *LatchInst = dyn_cast<Instruction>(LatchVal);
+      /*
+       * Need to determine if the incoming value
+       * must be removed 
+       */ 
+      auto NeedToRemoveIncoming = false;
 
-      if (LatchInst 
-          && (this->containsInOriginalLoop(WC, LatchInst->getParent()))) {
-        LatchVal = (WC->BodyToPeelMap)[LatchVal];
+      Value *Incoming = PHI.getIncomingValueForBlock(Edge.first),
+            *Propagating = Incoming;
+
+      Instruction *IncomingInst = dyn_cast<Instruction>(Incoming);
+
+      if (IncomingInst 
+          && (this->containsInOriginalLoop(WC, IncomingInst->getParent()))) {
+
+        Propagating = (WC->BodyToPeelMap)[Incoming];
+
+        /*
+         * If the exit edge source is the OriginalLatch, the incoming
+         * value must be removed
+         */ 
+        if (Edge.first == OriginalLatch) {
+
+          /*
+           * If the incoming value itself is not defined in the 
+           * original latch --- it needs a dependency PHINode
+           * to be propagated to the exit block
+           * 
+           * For now --- mark this in the ExitDependencies map, 
+           * and add the Propagating value to the exit block PHI
+           * 
+           * This must be resolved post remapInstructionsInBlocks
+           */ 
+          if (IncomingInst->getParent() != OriginalLatch) {
+            (WC->ExitDependencies)[&PHI] = Incoming;
+          }
+
+          NeedToRemoveIncoming |= true;
+
+        }
+
       }
-      
-      /* 
-       * Add incoming for the "peeled latch" --- will become new header
-       */ 
-      PHI.addIncoming(LatchVal, cast<BasicBlock>((WC->BodyToPeelMap)[Edge.first]));
 
-      /* 
-       * Remove incoming for old latch if possible
-       */ 
-      if (Edge.first == OriginalLatch) {
+      PHI.addIncoming(Propagating, cast<BasicBlock>((WC->BodyToPeelMap)[Edge.first]));
+
+      if (NeedToRemoveIncoming) {
         PHI.removeIncomingValue(Edge.first);
       }
 
@@ -704,6 +753,77 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
 
 
   return;
+
+}
+
+
+PHINode * LoopWhilifier::buildNewHeaderDependencyPHI(
+  WhilifierContext *WC,
+  Value *Dependency
+) {
+
+  /*
+   * Get necessary blocks
+   */  
+  BasicBlock *Latch = WC->OriginalLatch,
+             *NewHeader = cast<BasicBlock>((WC->BodyToPeelMap)[Latch]);
+
+  /*
+   * Build the new PHINode
+   */ 
+  IRBuilder<> NewHeaderBuilder{NewHeader->getFirstNonPHI()};
+  PHINode *DependencyPHI = NewHeaderBuilder.CreatePHI(Dependency->getType(), 0);
+
+
+  /*
+   * Populate PHINode --- add incoming values based on the
+   * predecessors of both the original and peeled latch
+   */ 
+  Value *MappedDependency = cast<Value>((WC->BodyToPeelMap)[Dependency]);
+
+  for (auto *PredBB : predecessors(NewHeader)) {
+    DependencyPHI->addIncoming(MappedDependency, PredBB);
+  }
+
+  for (auto *PredBB : predecessors(Latch)) {
+    DependencyPHI->addIncoming(Dependency, PredBB);
+  }
+
+
+  return DependencyPHI;
+
+}
+
+
+void LoopWhilifier::resolveExitEdgeDependencies(
+  WhilifierContext *WC,
+  BasicBlock *NewHeader
+) {
+
+  /*
+   * For each exit dependency --- which consists of the 
+   * exit block PHINode and the incoming value that needs to
+   * be handled --- build a new PHINode in the header to 
+   * handle values from the "peeled" iteration and the original
+   * loop body
+   * 
+   * Propagate this new PHINode as the incoming value in the
+   * Phi for the exit block
+   */ 
+
+  for (auto const &[PHI, Incoming] : WC->ExitDependencies) {
+
+    PHINode *ExitDependencyPHI = this->buildNewHeaderDependencyPHI(
+      WC,
+      Incoming
+    );
+
+    PHI->setIncomingValueForBlock(NewHeader, ExitDependencyPHI);
+
+  }
+
+  return;
+
 }
 
 
@@ -816,30 +936,18 @@ void LoopWhilifier::resolveNewHeaderNonPHIDependencies(
    * 
    * Record the resolved dependencies in a map
    */ 
-  BasicBlock *Latch = WC->OriginalLatch;
-
-  IRBuilder<> PHIBuilder{NewHeader->getFirstNonPHI()};
-
   for (auto const &[D, Uses] : WC->OriginalLatchDependencies) {
 
     /*
      * Build the new PHINode
      */ 
-    PHINode *DependencyPHI = PHIBuilder.CreatePHI(D->getType(), 0);
+    PHINode *DependencyPHI = this->buildNewHeaderDependencyPHI(WC, D);
 
 
     /*
-     * Populate PHINode --- add incoming values based on the
-     * predecessors of both the original and peeled latch
+     * Get corresponding value for the dependency in "peeled" iteration
      */ 
     Value *PeeledDependency = cast<Value>((WC->BodyToPeelMap)[D]);
-    for (auto *PredBB : predecessors(NewHeader)) {
-      DependencyPHI->addIncoming(PeeledDependency, PredBB);
-    }
-
-    for (auto *PredBB : predecessors(Latch)) {
-      DependencyPHI->addIncoming(D, PredBB);
-    }
 
 
     /*
@@ -938,10 +1046,46 @@ void LoopWhilifier::resolveOriginalHeaderPHIs(
     Instruction *IncomingInst = dyn_cast<Instruction>(Incoming);
 
     if (IncomingInst) {
-      Value *Resolved = (WC->ResolvedDependencyMapping)[Incoming];
-      Incoming = (Resolved) ? 
-                 (Resolved) : 
-                 cast<Value>((WC->BodyToPeelMap)[IncomingInst]);
+
+      BasicBlock *IncomingParent = IncomingInst->getParent();
+
+      /*
+       * If the incoming value is found in the ResolvedDependencyMapping,
+       * then the value (PHINode) to propagate already exists --- and
+       * incoming can be set properly
+       */ 
+      if ((WC->ResolvedDependencyMapping).find(Incoming) !=
+          (WC->ResolvedDependencyMapping).end()) {
+        Incoming = (WC->ResolvedDependencyMapping)[Incoming];
+      } 
+
+      /*
+       * If the incoming value is defined in the loop body but outside
+       * the latch, a new dependency PHINode must be generated to 
+       * handle "peeled" incoming values and incoming values from the 
+       * rest of the loop body --- set incoming accordingly
+       */ 
+      else if ((IncomingParent != Latch)
+                && (this->containsInOriginalLoop(WC, IncomingParent))) {
+        
+        PHINode *DependencyPHI = this->buildNewHeaderDependencyPHI(
+          WC,
+          Incoming
+        );
+
+        Incoming = DependencyPHI;
+
+      } 
+
+      /*
+       * Otherwise, set incoming to be the corresponding value from the
+       * ValueToValueMap --- prevent using the original latch value, since 
+       * the original latch will be erased
+       */ 
+      else {
+        Incoming = (WC->BodyToPeelMap)[IncomingInst];
+      }
+
     }
 
     OriginalPHI.setIncomingValueForBlock(PreHeader, Incoming);
