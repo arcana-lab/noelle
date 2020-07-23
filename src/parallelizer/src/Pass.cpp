@@ -124,11 +124,10 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Print the coverage of this loop.
      */
-    auto mInsts = profiles->getTotalInstructions();
-    auto loopInsts = profiles->getTotalInstructions(loopSummary);
-    auto hotness = ((double)loopInsts) / ((double)mInsts);
-    hotness *= 100;
+    auto hotness = profiles->getDynamicTotalInstructionCoverage(loopSummary) * 100;
     errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
+    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
+    errs() << "Parallelizer:      Average instructions per invocation = " << averageInstsPerInvocation << " %\n"; 
   }
 
   /*
@@ -161,12 +160,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Check if the latency of each loop invocation is enough to justify the parallelization.
      */
-    auto loopInvocations = profiles->getInvocations(ls);
-    auto loopTotal = profiles->getTotalInstructions(ls);
-    uint64_t averageInstsPerInvocation = 0;
-    if (loopInvocations > 0){
-      averageInstsPerInvocation = loopTotal / loopInvocations;
-    }
+    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
     errs() << "Parallelizer:    Loop " << loop->getID() << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
     if (  true
           && (!this->forceParallelization)
