@@ -126,7 +126,7 @@ bool Parallelizer::runOnModule (Module &M) {
      */
     auto hotness = profiles->getDynamicTotalInstructionCoverage(loopSummary) * 100;
     errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
-    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
+    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(loopSummary);
     errs() << "Parallelizer:      Average instructions per invocation = " << averageInstsPerInvocation << " %\n"; 
   }
 
