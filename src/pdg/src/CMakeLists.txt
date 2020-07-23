@@ -36,9 +36,10 @@ include_directories(${LLVM_INCLUDE_DIRS}
 					 ../../alloc_aa/include 
 					 ../../talkdown/include 
            ../../dataflow/include
-					 ../include
+           ../../callgraph/include
            ../../../external/svf/include
-                     )
+					 ../include
+           )
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})
