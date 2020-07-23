@@ -321,7 +321,7 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
     nonOverlappingAccessesBetweenIterations.insert(memAccessSpace.get());
   }
 
-  // errs() << "Non overlappinig size: " << nonOverlappingAccessesBetweenIterations.size() << "\n";
+  // errs() << "Non overlapping size: " << nonOverlappingAccessesBetweenIterations.size() << "\n";
   // for (auto space : nonOverlappingAccessesBetweenIterations) {
   //   space->memoryAccessor->print(errs() << "Non overlapping space: "); errs() << "\n";
   // }
@@ -492,11 +492,11 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
   //   auto sizeSCEV = space->sizes[i - 1];
   //   auto instIVPair = space->subscriptIVs[i];
   //   auto inst = instIVPair.first;
-  //   auto subscriptSCEV = SE.getSCEV(inst);
   //   if (!inst) {
-  //     errs() << "No inst: " << i << "\n";
+  //     // errs() << "No inst: " << i << "\n";
   //     continue;
   //   }
+  //   auto subscriptSCEV = SE.getSCEV(inst);
   //   sizeSCEV->print(errs() << "SIZE "); errs() << "\n";
   //   subscriptSCEV->print(errs() << "Subscript " << i << ": "); errs() << "\n";
   //   inst->print(errs() << "\tInst: "); errs() << "\n";

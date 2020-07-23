@@ -186,6 +186,12 @@ PDG * PDGAnalysis::getPDG (void){
   return this->programDependenceGraph;
 }
 
+PDG *PDGAnalysis::recomputePDGFromAnalysis (void) {
+  if (this->programDependenceGraph) delete this->programDependenceGraph;
+  this->programDependenceGraph = constructPDGFromAnalysis(*this->M);
+  return this->programDependenceGraph;
+}
+
 bool PDGAnalysis::hasPDGAsMetadata(Module &M) {
   if (NamedMDNode *n = M.getNamedMetadata("noelle.module.pdg")) {
     if (MDNode *m = dyn_cast<MDNode>(n->getOperand(0))) {

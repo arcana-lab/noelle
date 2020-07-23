@@ -18,23 +18,50 @@ SCEVSimplification::SCEVSimplification (Noelle &noelle)
   auto &cxt = M->getContext();
   auto &dataLayout = M->getDataLayout();
   this->ptrSizeInBits = dataLayout.getPointerSizeInBits();
+  errs() << "Ptr size: " << this->ptrSizeInBits << "\n";
   this->intTypeForPtrSize = IntegerType::get(cxt, this->ptrSizeInBits);
 }
 
 bool SCEVSimplification::simplifyIVRelatedSCEVs (
   LoopDependenceInfo const &LDI
 ) {
-
   return false;
+
+  auto rootLoop = LDI.getLoopStructure();
+  auto invariantManager = LDI.getInvariantManager();
+  auto ivManager = LDI.getInductionVariableManager();
+  return simplifyIVRelatedSCEVs(rootLoop, invariantManager, ivManager);
+}
+
+bool SCEVSimplification::simplifyIVRelatedSCEVs (
+  LoopStructure *rootLoop,
+  InvariantManager *invariantManager,
+  InductionVariableManager *ivManager
+) {
 
   if (noelle.getVerbosity() >= Verbosity::Maximal) {
     errs() << "SCEVSimplification:  Start\n";
   }
 
-  auto ivManager = LDI.getInductionVariableManager();
-  auto invariantManager = LDI.getInvariantManager();
-  auto rootLoop = LDI.getLoopStructure();
+  /*
+   * TODO: Remove, ahahaha
+   */
+  auto currFunction = rootLoop->getHeader()->getParent();
+  auto mainFunction = currFunction->getParent()->getFunction("main");
+  if (currFunction != mainFunction) {
+    errs() << "Not main; skipping\n";
+    return false;
+  }
+
   cacheIVInfo(rootLoop, ivManager);
+  searchForInstructionsDerivedFromMultipleIVs(rootLoop, invariantManager);
+
+  for (auto instIVPair : ivCache.ivByInstruction) {
+    instIVPair.first->print(errs() << "IV instruction: "); errs() << "\n";
+  }
+  for (auto derivedI : ivCache.instsDerivedFromMultipleIVs) {
+    derivedI->print(errs() << "I from multiple IVs: "); errs() << "\n";
+  }
 
   /*
    * Identify all GEPs to loads or stores within the loop
@@ -50,6 +77,16 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
       } else continue;
 
       if (auto gep = dyn_cast<GetElementPtrInst>(memoryAccessorValue)) {
+
+        /*
+         * Spot checks before further examining:
+         * 1) Ensure the indices are integer typed
+         * 2) TODO, add more to make this enabler efficient
+         */
+        auto index0 = gep->indices().begin()->get();
+        auto indexType = index0->getType();
+        if (!indexType->isIntegerTy()) continue;
+
         geps.insert(gep);
       }
     }
@@ -60,14 +97,23 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
    * Up cast GEP derivations whenever the IV integer size is smaller than the pointer size
    */
   bool modified = false;
+  std::unordered_set<GEPIndexDerivation *> validGepsToUpCast;
   for (auto gep : geps) {
-    SCEVSimplification::GEPIndexDerivation gepDerivation{gep, invariantManager, ivCache};
-    if (!isUpCastPossible(gepDerivation)) continue;
-    upCastIVRelatedInstructionsDerivingGEP(rootLoop, gepDerivation);
-    modified = true;
+    auto gepDerivation = new SCEVSimplification::GEPIndexDerivation{gep, rootLoop, invariantManager, ivCache};
+    if (!isUpCastPossible(gepDerivation, rootLoop, *invariantManager)) {
+      delete gepDerivation;
+      continue;
+    }
+    validGepsToUpCast.insert(gepDerivation);
   }
 
-  return modified;
+  upCastIVRelatedInstructionsDerivingGEP(rootLoop, ivManager, invariantManager, validGepsToUpCast);
+
+  for (auto gepDerivation : validGepsToUpCast) {
+    delete gepDerivation;
+  }
+
+  return true;
 }
 
 void SCEVSimplification::cacheIVInfo (LoopStructure *rootLoop, InductionVariableManager *ivManager) {
@@ -86,29 +132,276 @@ void SCEVSimplification::cacheIVInfo (LoopStructure *rootLoop, InductionVariable
     ivCache.loopGoverningAttrByIV.insert(std::make_pair(loopGoverningIV, loopGoverningIVAttr));
 
     for (auto inst : loopGoverningIV->getAllInstructions()) {
-      ivCache.ivByInstruction.insert(std::make_pair(inst, loopGoverningIV));
+      ivCache.ivByInstruction.insert(
+        std::make_pair(inst, loopGoverningIV)
+      );
     }
     for (auto inst : loopGoverningIV->getDerivedSCEVInstructions()) {
-      ivCache.ivByInstruction.insert(std::make_pair(inst, loopGoverningIV));
+      ivCache.ivByInstruction.insert(
+        std::make_pair(inst, loopGoverningIV)
+      );
     }
   }
 }
 
-void SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
+/*
+ * REFACTOR: Notice the similarity between this and the InductionVariable derived instruction search
+ */
+void SCEVSimplification::searchForInstructionsDerivedFromMultipleIVs (
   LoopStructure *rootLoop,
-  SCEVSimplification::GEPIndexDerivation &gepDerivation
+  InvariantManager *invariantManager
 ) {
 
-  /*
-   * Up cast all collected loop invariants and IV deriving instructions
-   * Replace their uses with the casted instruction
-   * Remove any truncations now made unnecessary by up casting
-   * Remove any shl-ashr pairs that act as truncations
-   */
+  std::unordered_set<Instruction *> checked;
+  std::function<bool(Instruction *)> checkIfDerived;
+  checkIfDerived = [&](Instruction *I) -> bool {
 
-  auto &index0 = *gepDerivation.gep->indices().begin();
-  assert(index0->getType()->getIntegerBitWidth() == this->ptrSizeInBits
-    && "SCEVSimplification: GEP index size is misunderstood");
+    /*
+     * Check the cache of confirmed derived values,
+     * and then what we have already traversed to prevent traversing a cycle
+     */
+    if (ivCache.ivByInstruction.find(I) != ivCache.ivByInstruction.end()) {
+      return true;
+    }
+    if (ivCache.instsDerivedFromMultipleIVs.find(I) != ivCache.instsDerivedFromMultipleIVs.end()) {
+      return true;
+    }
+    if (checked.find(I) != checked.end()) {
+      return false;
+    }
+    checked.insert(I);
+
+    // I->print(errs() << "Derived check: " << (isa<CastInst>(I) || I->isBinaryOp()) << ": "); errs() << "\n";
+
+    /*
+     * Only check values in the loop
+     */
+    if (!rootLoop->isIncluded(I)) return false;
+
+    /*
+     * We only handle unary/binary operations on IV instructions.
+     */
+    if (!isa<CastInst>(I) && !I->isBinaryOp()) return false;
+
+    /*
+     * Ensure the instruction uses the IV at least once, and only this IV,
+     * apart from constants and loop invariants
+     */
+    bool usesAtLeastOneIVInstruction = false;
+    for (auto &use : I->operands()) {
+      auto usedValue = use.get();
+
+      if (isa<ConstantInt>(usedValue)) continue;
+      if (invariantManager->isLoopInvariant(usedValue)) continue;
+
+      if (auto usedInst = dyn_cast<Instruction>(usedValue)) {
+        if (!rootLoop->isIncluded(usedInst)) continue;
+        auto isDerivedUse = checkIfDerived(usedInst);
+        if (isDerivedUse) {
+          usesAtLeastOneIVInstruction = true;
+          continue;
+        }
+      }
+
+      // usedValue->print(errs() << "Doesn't use only derived inst: "); errs() << "\n";
+
+      return false;
+    }
+
+    // errs() << "Uses at least one derived: " << usesAtLeastOneIVInstruction << "\n";
+
+    if (!usesAtLeastOneIVInstruction) return false;
+
+    /*
+     * Cache the result
+     */
+    ivCache.instsDerivedFromMultipleIVs.insert(I);
+
+    // I->print(errs() << "Adding: "); errs() << "\n";
+
+    return true;
+  };
+
+  std::queue<Instruction *> intermediates;
+  std::unordered_set<Instruction *> visited;
+  for (auto instIVPair : ivCache.ivByInstruction) {
+    auto inst = instIVPair.first;
+    intermediates.push(inst);
+    visited.insert(inst);
+  }
+
+  while (!intermediates.empty()) {
+    auto I = intermediates.front();
+    intermediates.pop();
+
+    for (auto user : I->users()) {
+      if (auto userInst = dyn_cast<Instruction>(user)) {
+        if (visited.find(userInst) != visited.end()) continue;
+        visited.insert(userInst);
+
+        /*
+         * If the user isn't derived, do not continue traversing users
+         */
+        if (!checkIfDerived(userInst)) continue;
+        intermediates.push(userInst);
+      }
+    }
+  }
+}
+
+/*
+ * Up cast all collected loop invariants and IV deriving instructions
+ * Replace their uses with the casted instruction
+ * Remove any truncations now made unnecessary by up casting
+ * Remove any shl-ashr pairs that act as truncations
+ */
+bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
+  LoopStructure *rootLoop,
+  InductionVariableManager *ivManager,
+  InvariantManager *invariantManager,
+  std::unordered_set<GEPIndexDerivation *> gepDerivations
+) {
+
+  std::unordered_map<BasicBlock *, LoopStructure *> headerToLoopMap;
+  auto rootLoopHeader = rootLoop->getHeader();
+  headerToLoopMap.insert(std::make_pair(rootLoopHeader, rootLoop));
+  for (auto subLoop : rootLoop->getDescendants()) {
+    auto subLoopHeader = subLoop->getHeader();
+    headerToLoopMap.insert(std::make_pair(subLoopHeader, subLoop));
+  }
+
+  /*
+   * Get loop governing IV that will need their loop guards updated
+   */
+  std::unordered_set<LoopGoverningIVAttribution *> loopGoverningAttrsToUpdate;
+  for (auto gepDerivation : gepDerivations) {
+    for (auto IV : gepDerivation->derivingIVs) {
+      auto header = IV->getLoopEntryPHI()->getParent();
+      auto loop = headerToLoopMap.at(header);
+      auto loopGoverningAttr = ivManager->getLoopGoverningIVAttribution(*loop);
+      if (!loopGoverningAttr) continue;
+      auto loopGoverningIV = &loopGoverningAttr->getInductionVariable();
+      if (loopGoverningIV != IV) continue;
+      loopGoverningAttrsToUpdate.insert(loopGoverningAttr);
+    }
+  }
+
+  /*
+   * Collect IV related instructions that will be effected
+   */
+  std::unordered_set<Value *> loopInvariantsToConvert;
+  std::unordered_set<PHINode *> phisToConvert;
+  std::unordered_set<Instruction *> nonPHIsToConvert;
+  std::unordered_set<Instruction *> castsToRemove;
+  auto collectInstructionToConvert = [&](Instruction *inst) -> void {
+
+    inst->print(errs() << "Collecting to convert: "); errs() << "\n";
+
+    if (auto phi = dyn_cast<PHINode>(inst)) {
+      phisToConvert.insert(phi);
+      return;
+    }
+
+    /*
+      * Remove deriving casts/truncations that will be obsolete after casting up
+      */
+    if (isa<TruncInst>(inst)
+      || isa<ZExtInst>(inst)
+      || isa<SExtInst>(inst)
+      || isPartOfShlShrTruncationPair(inst)) {
+      castsToRemove.insert(inst);
+      return;
+    }
+
+    nonPHIsToConvert.insert(inst);
+  };
+
+  /*
+   * Fetch any IV instructions, casts on them, and derived computation
+   * Fetch loop governing IV guard condition derivation
+   */
+  for (auto gepDerivation : gepDerivations) {
+    for (auto inst : gepDerivation->ivDerivingInstructions) {
+      collectInstructionToConvert(inst);
+    }
+    for (auto invariant : gepDerivation->loopInvariantsUsed) {
+      loopInvariantsToConvert.insert(invariant);
+    }
+  }
+
+  // for (auto loopGoverningAttr : loopGoverningAttrsToUpdate) {
+  //   auto conditionDerivationInsts = loopGoverningAttr->getConditionValueDerivation();
+  //   auto conditionValue = loopGoverningAttr->getHeaderCmpInstConditionValue();
+  //   if (auto conditionInst = dyn_cast<Instruction>(conditionValue)) {
+  //     conditionDerivationInsts.insert(conditionInst);
+  //   } else {
+  //     loopInvariantsToConvert.insert(conditionValue);
+  //   }
+
+  //   /*
+  //    * HACK: The IV used in the comparison instruction could itself be a casted instruction
+  //    * Remove that instruction if so
+  //    * 
+  //    * TODO: Really, we should be traversing all used instructions by the comparison
+  //    * in search for instructions to convert and casts to remove until we reach loop
+  //    * invariants/externals> That would clean up this and the condition derivation nonsense
+  //    */
+  //   auto cmpInst = loopGoverningAttr->getHeaderCmpInst();
+  //   auto cmpLHS = cmpInst->getOperand(0);
+  //   auto cmpRHS = cmpInst->getOperand(1);
+  //   auto loopGoverningIV = &loopGoverningAttr->getInductionVariable();
+  //   auto ivInstUsed = (isa<Instruction>(cmpLHS)
+  //     && loopGoverningIV->isIVInstruction(cast<Instruction>(cmpLHS))) ? cmpLHS : cmpRHS;
+  //   if (auto cast = dyn_cast<CastInst>(ivInstUsed)) {
+  //     castsToRemove.insert(cast);
+  //   }
+
+  //   for (auto inst : conditionDerivationInsts) {
+  //     if (rootLoop->isIncluded(inst)
+  //       && !invariantManager->isLoopInvariant(inst)) {
+  //       collectInstructionToConvert(inst);
+
+  //       /*
+  //        * Get loop invariants used by the condition value derivation
+  //        * NOTE: Since the derivation is all instructions in the loop needed
+  //        * to compute the value, a simple search of direct operands on conditions is sufficient
+  //        */
+  //       for (auto &op : inst->operands()) {
+  //         auto opValue = op.get();
+  //         auto opInst = dyn_cast<Instruction>(opValue);
+  //         if ((opInst && !rootLoop->isIncluded(opInst))
+  //           || invariantManager->isLoopInvariant(opValue)) {
+  //           loopInvariantsToConvert.insert(opValue);
+  //         }
+  //       }
+
+  //       loopInvariantsToConvert.insert(inst);
+  //     } else {
+  //       loopInvariantsToConvert.insert(inst);
+  //     }
+  //   }
+  // }
+
+  for (auto invariant : loopInvariantsToConvert) {
+    invariant->print(errs() << "Invariant to convert: "); errs() << "\n";
+  }
+  for (auto phi : phisToConvert) {
+    phi->print(errs() << "PHI to convert: "); errs() << "\n";
+  }
+  for (auto nonPHI : nonPHIsToConvert) {
+    nonPHI->print(errs() << "Non phi to convert: "); errs() << "\n";
+  }
+  for (auto inst : castsToRemove) {
+    inst->print(errs() << "Cast to remove: "); errs() << "\n";
+  }
+
+  /*
+   * Build a map from old to new typed values
+   * First invariants, then PHIs, then a queue of instructions that keeps
+   * searching for the next instruction that can be created (whose operands
+   * all have been created already)
+   */
+  std::unordered_map<Value *, Value *> oldToNewTypedMap;
 
   /*
    * Insert casts on invariants in the loop preheader and replace uses
@@ -116,98 +409,276 @@ void SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   auto preheaderBlock = rootLoop->getPreHeader();
   IRBuilder<> preheaderBuilder(preheaderBlock->getTerminator());
   const bool isSigned = true;
-  for (auto invariant : gepDerivation.loopInvariantsUsed) {
-    if (invariant->getType()->getIntegerBitWidth() == this->ptrSizeInBits) continue;
+  for (auto invariant : loopInvariantsToConvert) {
+    if (invariant->getType()->getIntegerBitWidth() == this->ptrSizeInBits) {
+      invariant->print(errs() << "Invariant not needing conversion: "); errs() << "\n";
+      oldToNewTypedMap.insert(std::make_pair(invariant, invariant));
+      continue;
+    }
 
     auto castedInvariant = preheaderBuilder.CreateIntCast(invariant, this->intTypeForPtrSize, isSigned);
-    std::unordered_set<User *> invariantUsers(invariant->user_begin(), invariant->user_end());
-    for (auto user : invariantUsers) {
-      if (!gepDerivation.isDerivingInstruction(user)) continue;
-      user->replaceUsesOfWith(invariant, castedInvariant);
-    }
-  }
-
-  /*
-   * Collect IV related instructions that will be effected
-   */
-  std::unordered_set<PHINode *> phisToConvert;
-  std::unordered_set<Instruction *> nonPHIsToConvert;
-  std::unordered_set<Instruction *> castsToRemove;
-  for (auto IV : gepDerivation.derivingIVs) {
-    std::unordered_set<Instruction *> instsToConvert;
-    for (auto phi : IV->getPHIs()) {
-      phisToConvert.insert(phi);
-    }
-    for (auto nonPHI : IV->getNonPHIIntermediateValues()) {
-      nonPHIsToConvert.insert(nonPHI);
-    }
-
-    for (auto inst : IV->getDerivedSCEVInstructions()) {
-      if (auto phi = dyn_cast<PHINode>(inst)) {
-        phisToConvert.insert(phi);
-        continue;
-      }
-
-      /*
-       * Remove deriving casts/truncations that will be obsolete after casting up
-       */
-      if (isa<TruncInst>(inst) || isa<ZExtInst>(inst) || isa<SExtInst>(inst)) {
-        castsToRemove.insert(inst);
-        continue;
-      }
-
-      instsToConvert.insert(inst);
-    }
+    invariant->print(errs() << "Invariant casted: "); errs() << "\n";
+    oldToNewTypedMap.insert(std::make_pair(invariant, castedInvariant));
   }
 
   /*
    * Replace original PHIs with newly typed PHIs, remove casts
    */
+  for (auto phi : phisToConvert) {
+    IRBuilder<> builder(phi);
+    auto numIncomingValues = phi->getNumIncomingValues();
+    auto newlyTypedPHI = builder.CreatePHI(intTypeForPtrSize, numIncomingValues);
+    oldToNewTypedMap.insert(std::make_pair(phi, newlyTypedPHI));
+  }
 
-  // std::unordered_map<Instruction *, Instruction *> ivInstToConvertedMap;
-  // for (auto inst : instsToConvert) {
-  //   auto B = inst->getParent();
-  //   IRBuilder<> builder(inst);
-  //   Value * placeholder = nullptr;
+  std::unordered_set<Instruction *> valuesLeft;
+  for (auto nonPHI : nonPHIsToConvert) {
+    valuesLeft.insert(nonPHI);
+  }
+  for (auto cast : castsToRemove) {
+    valuesLeft.insert(cast);
+  }
 
-  //   if (auto phi = dyn_cast<PHINode>(inst)) {
-  //     placeholder = builder.CreatePHI(this->intTypeForPtrSize, phi->getNumIncomingValues());
-  //   } else {
-  //     auto opCode = inst->getOpcode();
-  //     if (inst->isUnaryOp()) {
-  //       auto unaryOpCode = dyn_cast<Instruction::UnaryOps>(opCode);
-  //       placeholder = builder.CreateUnOp(unaryOpCode, inst->getOperand(0));
-  //     } else if (inst->isBinaryOp()) {
-  //       auto binaryOpCode = dyn_cast<Instruction::BinaryOps>(opCode);
-  //       placeholder = builder.CreateBinOp(binaryOpCode, inst->getOperand(0), inst->getOperand(1));
-  //     } else {
-  //       assert(false && "IV derived instruction is not a PHI, unary, or binary operator!");
-  //     }
+  auto tryAndMapOldOpToNewOp = [&](Value *oldTypedOp) -> Value * {
+    // oldTypedOp->print(errs() << "\t\tMapping: "); errs() << "\n";
+    if (auto constOp = dyn_cast<ConstantInt>(oldTypedOp)) {
+      auto constPtrSize = ConstantInt::get(intTypeForPtrSize, constOp->getValue().getSExtValue(), isSigned);
+      // constPtrSize->print(errs() << "\t\t\tIs constant: "); errs() << "\n";
+      return constPtrSize;
+    }
+
+    if (oldToNewTypedMap.find(oldTypedOp) == oldToNewTypedMap.end()) return nullptr;
+    // errs() << "\t\t\tIs already mapped\n";
+    return oldToNewTypedMap.at(oldTypedOp);
+  };
+
+  auto prevValuesLeft = 0;
+  while (prevValuesLeft != valuesLeft.size() && valuesLeft.size() > 0) {
+    prevValuesLeft = valuesLeft.size();
+    std::queue<Instruction *> valuesToConvert{};
+    for (auto valueLeft : valuesLeft) {
+      valuesToConvert.push(valueLeft);
+    }
+
+    while (!valuesToConvert.empty()) {
+      auto I = valuesToConvert.front();
+      valuesToConvert.pop();
+
+      I->print(errs() << "Converting: "); errs() << "\n";
+
+      /*
+       * Ensure all operands used by this value are already converted
+       */
+      std::vector<Value *> newTypedOps;
+      for (auto &op : I->operands()) {
+        auto oldTypedOp = op.get();
+        auto newTypedOp = tryAndMapOldOpToNewOp(oldTypedOp);
+        if (!newTypedOp) {
+          oldTypedOp->print(errs() << "\tCant find new type value for: "); errs() << "\n";
+          break;
+        }
+        newTypedOps.push_back(newTypedOp);
+      }
+
+      bool allOperandsAbleToConvert = newTypedOps.size() == I->getNumOperands();
+      errs() << "\tAble to convert?  " << allOperandsAbleToConvert << "\n";
+      if (!allOperandsAbleToConvert) continue;
+
+
+      /*
+       * To remove casts, map the operand being casted to its newly typed operand
+       */
+      if (castsToRemove.find(I) != castsToRemove.end()) {
+        auto valuePreviouslyCasted = I->getOperand(0);
+        auto newTypedPreviousValue = oldToNewTypedMap.at(valuePreviouslyCasted);
+        oldToNewTypedMap.insert(std::make_pair(I, newTypedPreviousValue));
+        valuesLeft.erase(I);
+        I->print(errs() << "\tRemoved: ");
+        newTypedPreviousValue->print(errs() << "\t and will use: "); errs() << "\n";
+        continue;
+      }
+
+      /*
+       * For all other instructions, create a copy pointing to newly typed operands
+       */
+      auto opCode = I->getOpcode();
+      Value *newInst = nullptr;
+      IRBuilder<> builder(I);
+      if (I->isUnaryOp()) {
+        auto unaryOpCode = static_cast<Instruction::UnaryOps>(opCode);
+        newInst = builder.CreateUnOp(unaryOpCode, newTypedOps[0]);
+      } else if (I->isBinaryOp()) {
+        auto binaryOpCode = static_cast<Instruction::BinaryOps>(opCode);
+        newInst = builder.CreateBinOp(binaryOpCode, newTypedOps[0], newTypedOps[1]);
+      } else {
+        assert(false && "SCEVSimplification: instruction being up-casted is not an unary or binary operator!");
+      }
+
+      I->print(errs() << "\tswapping: ");
+      newInst->print(errs() << "\t with inst: "); errs() << "\n";
+
+      oldToNewTypedMap.insert(std::make_pair(I, newInst));
+      valuesLeft.erase(I);
+    }
+
+    for (auto valueLeft : valuesLeft) {
+      valueLeft->print(errs() << "Value left: "); errs() << "\n";
+    }
+    errs() << "----\n";
+  }
+
+  assert(valuesLeft.size() == 0 && "SCEVSimplification: failed mid-way in simplifying");
+
+  // auto upCastOrGetMappedUpCast = [&](Value *value) -> Value *{
+  //   auto fetchedUpCast = tryAndMapOldOpToNewOp(value);
+  //   if (fetchedUpCast) {
+  //     return fetchedUpCast;
   //   }
 
-  //   auto placeholderInst = cast<Instruction>(placeholder);
-  //   ivInstToConvertedMap.insert(std::make_pair(inst, placeholderInst));
+  //   auto inst = dyn_cast<Instruction>(value);
+  //   if (!inst) {
+  //     auto preHeader = rootLoop->getPreHeader();
+  //     IRBuilder<> entry(preHeader->getTerminator());
+  //     return entry.CreateIntCast(value, this->intTypeForPtrSize, isSigned);
+  //   }
+
+  //   if (!rootLoop->isIncluded(inst)) {
+  //     IRBuilder<> builder(inst);
+  //     return builder.CreateIntCast(inst, this->intTypeForPtrSize, isSigned);
+  //   }
+
+  //   return nullptr;
+  // };
+
+  /*
+   * Update loop guards with newly typed operands created
+   */
+  // for (auto loopGoverningAttr : loopGoverningAttrsToUpdate) {
+  //   auto cmpInst = loopGoverningAttr->getHeaderCmpInst();
+  //   IRBuilder<> builder(cmpInst);
+  //   auto predicate = cmpInst->getPredicate();
+  //   auto oldTypedLHS = cmpInst->getOperand(0);
+  //   auto newTypedLHS = upCastOrGetMappedUpCast(oldTypedLHS);
+  //   auto oldTypedRHS = cmpInst->getOperand(1);
+  //   auto newTypedRHS = upCastOrGetMappedUpCast(oldTypedRHS);
+
+  //   oldTypedLHS->print(errs() << "Old LHS: "); errs() << "\n";
+  //   oldTypedRHS->print(errs() << "Old RHS: "); errs() << "\n";
+  //   newTypedLHS->print(errs() << "New LHS: "); errs() << "\n";
+  //   newTypedRHS->print(errs() << "New RHS: "); errs() << "\n";
+
+  //   assert(newTypedLHS && newTypedRHS && "Guard of up-casted IV could not be updated");
+
+  //   auto newTypedCmp = builder.CreateICmp(predicate, newTypedLHS, newTypedRHS);
+  //   cmpInst->replaceAllUsesWith(newTypedCmp);
+  //   cmpInst->eraseFromParent();
   // }
 
   /*
    * Catch all users of effected instructions that need to use a truncation of the up-casted instructions
-   * This does not include the CmpInst for these loop governing IVs which should be updated itself
    */
+  std::unordered_map<Instruction *, Instruction *> upCastedToTruncatedInstMap;
+  auto truncateUpCastedValueForUsersOf = [&](
+    Instruction *originalI,
+    Instruction *upCastedI
+  ) -> void {
 
-  return;
+    originalI->print(errs() << "Original instruction reviewing users of: "); errs() << "\n";
+
+    std::unordered_set<User *> allUsers(originalI->user_begin(), originalI->user_end());
+    for (auto user : allUsers) {
+
+      user->print(errs() << "\tAddressing user: "); errs() << "\n";
+
+      /*
+       * Prevent creating a truncation for a cast that will be removed
+       * or an instruction already converted
+       */
+      if (oldToNewTypedMap.find(user) != oldToNewTypedMap.end()) continue;
+      if (auto cast = dyn_cast<CastInst>(user)) {
+        if (user->getType() == intTypeForPtrSize) {
+          cast->replaceAllUsesWith(upCastedI);
+          cast->eraseFromParent();
+        }
+      }
+
+      if (user->getType() == intTypeForPtrSize) {
+        user->replaceUsesOfWith(originalI, upCastedI);
+        continue;
+      }
+
+      errs() << "Not the same integer type nor already converted\n";
+
+      Instruction * truncatedI = nullptr;
+      if (upCastedToTruncatedInstMap.find(upCastedI) == upCastedToTruncatedInstMap.end()) {
+        Instruction *afterI = upCastedI->getNextNode();
+        assert(afterI && "Cannot up cast terminators");
+        if (isa<PHINode>(afterI)) {
+          afterI = upCastedI->getParent()->getFirstNonPHIOrDbgOrLifetime();
+        }
+
+        IRBuilder<> builder(afterI);
+        truncatedI = cast<Instruction>(builder.CreateTrunc(upCastedI, originalI->getType()));
+        upCastedToTruncatedInstMap.insert(std::make_pair(upCastedI, truncatedI));
+      } else {
+        truncatedI = upCastedToTruncatedInstMap.at(upCastedI);
+      }
+
+      user->replaceUsesOfWith(originalI, truncatedI);
+    }
+  };
+
+  for (auto gepDerivation : gepDerivations) {
+    for (auto i = 1; i < gepDerivation->gep->getNumOperands(); ++i) {
+      auto oldIndexValue = gepDerivation->gep->getOperand(i);
+      auto newIndexValue = tryAndMapOldOpToNewOp(oldIndexValue);
+      gepDerivation->gep->setOperand(i, newIndexValue);
+    }
+  }
+
+  for (auto oldPHI : phisToConvert) {
+    auto newValue = oldToNewTypedMap.at(oldPHI);
+    auto newPHI = dyn_cast<PHINode>(newValue);
+    assert(newPHI && "Mapping was from non-phi to phi");
+
+    for (auto i = 0; i < oldPHI->getNumIncomingValues(); ++i) {
+      auto incomingBlock = oldPHI->getIncomingBlock(i);
+      auto oldIncomingValue = oldPHI->getIncomingValue(i);
+      auto newIncomingValue = tryAndMapOldOpToNewOp(oldIncomingValue);
+      assert(newIncomingValue);
+      newPHI->addIncoming(newIncomingValue, incomingBlock);
+    }
+
+    truncateUpCastedValueForUsersOf(oldPHI, newPHI);
+    oldPHI->eraseFromParent();
+  }
+  for (auto oldInst : nonPHIsToConvert) {
+    auto newValue = tryAndMapOldOpToNewOp(oldInst);
+    assert(newValue);
+    auto newInst = dyn_cast<Instruction>(newValue);
+    assert(newInst && "Mapping was from non-instruction to instruction");
+
+    truncateUpCastedValueForUsersOf(oldInst, newInst);
+    oldInst->eraseFromParent();
+  }
+  for (auto obsoleteCast : castsToRemove) {
+    obsoleteCast->eraseFromParent();
+  }
+
+  errs() << "Done\n";
+  rootLoop->getHeader()->getParent()->print(errs() << "FUNCTION:\n"); errs() << "\n";
+
+  return true;
 }
-
 
 SCEVSimplification::GEPIndexDerivation::GEPIndexDerivation (
   GetElementPtrInst *gep,
+  LoopStructure *rootLoop,
   InvariantManager *invariantManager,
   IVCachedInfo &ivCache
 ) : gep{gep}, isDerived{false} {
 
-  /*
-   * Identify the GEP itself as a deriving value for symmetry of normalizations
-   */
-  this->derivingInstructions.insert(gep);
+  gep->print(errs() << "Checking: "); errs() << "\n";
 
   /*
    * Queue up to check that all GEP indices have IV derivations
@@ -224,35 +695,49 @@ SCEVSimplification::GEPIndexDerivation::GEPIndexDerivation (
     auto derivingValue = derivationQueue.front();
     derivationQueue.pop();
 
-    /*
-     * If the value is loop invariant, cache and continue
-     */
-    if (invariantManager->isLoopInvariant(derivingValue)) {
-      this->loopInvariantsUsed.insert(derivingValue);
-      continue;
-    }
+    // derivingValue->print(errs() << "Queued: "); errs() << "\n";
 
     if (isa<ConstantInt>(derivingValue)) continue;
 
     /*
-     * Ensure the value is an instruction associated to the IV
+     * If the value is loop invariant, cache and continue
      */
     auto derivingInst = dyn_cast<Instruction>(derivingValue);
-    if (!derivingInst) return ;
-    if (ivCache.ivByInstruction.find(derivingInst) == ivCache.ivByInstruction.end()) return;
-
-    this->derivingInstructions.insert(derivingInst);
-    auto derivingIV = ivCache.ivByInstruction.at(derivingInst);
-    this->derivingIVs.insert(derivingIV);
+    if ((derivingInst && !rootLoop->isIncluded(derivingInst))
+      || invariantManager->isLoopInvariant(derivingValue)) {
+      this->loopInvariantsUsed.insert(derivingValue);
+      continue;
+    }
 
     /*
-     * Only traverse up uses if the instruction isn't part of the IV evolution to prevent
-     * entering that cycle
+     * Ensure the value is an instruction associated to the IV
      */
-    if (derivingIV->isIVInstruction(derivingInst)) continue;
-    for (auto &use : derivingValue->uses()) {
-      auto usedValue = use.get();
+    if (!derivingInst) return ;
+
+    bool isDerivedFromOneIV = ivCache.ivByInstruction.find(derivingInst) !=
+      ivCache.ivByInstruction.end();
+    bool isDerivedFromManyIV = ivCache.instsDerivedFromMultipleIVs.find(derivingInst) !=
+      ivCache.instsDerivedFromMultipleIVs.end();
+
+    // derivingInst->print(errs() << "Deriving I: "); errs() << "\n";
+
+    if (isDerivedFromOneIV) {
+      auto derivingIV = ivCache.ivByInstruction.at(derivingInst);
+      this->derivingIVs.insert(derivingIV);
+      // errs() << "\tIs from 1 IV\n";
+    } else if (isDerivedFromManyIV) {
+      // errs() << "\tIs from 2+ IV\n";
+    } else {
+      // errs() << "\t Is not an IV instruction\n";
+      return;
+    }
+
+    this->ivDerivingInstructions.insert(derivingInst);
+    for (auto &op : derivingInst->operands()) {
+      auto usedValue = op.get();
       if (visited.find(usedValue) != visited.end()) continue;
+
+      // usedValue->print(errs() << "Used value: "); errs() << "\n";
 
       visited.insert(usedValue);
       derivationQueue.push(usedValue);
@@ -263,49 +748,53 @@ SCEVSimplification::GEPIndexDerivation::GEPIndexDerivation (
   return;
 }
 
-bool SCEVSimplification::GEPIndexDerivation::isDerivingInstruction (Value *value) const {
-  if (auto inst = dyn_cast<Instruction>(value)) {
-    return derivingInstructions.find(inst) != derivingInstructions.end();
-  }
-  return false;
-}
-
 bool SCEVSimplification::isUpCastPossible (
-  SCEVSimplification::GEPIndexDerivation &gepDerivation
+  GEPIndexDerivation *gepDerivation,
+  LoopStructure *rootLoop,
+  InvariantManager &invariantManager
 ) const {
-  if (!gepDerivation.isDerived) return false;
+  if (!gepDerivation->isDerived) return false;
 
   /*
-   * Ensure the indices are integer typed
+   * Ensure the IVs deriving the indices are all a smaller
+   * type than the target (pointer size) type
    */
-  auto index0 = gepDerivation.gep->indices().begin()->get();
-  auto indexType = index0->getType();
-  if (!indexType->isIntegerTy()) return false;
-
-  /*
-   * Ensure the IVs deriving the indices are all guarded by signed comparisons
-   */
-  for (auto IV : gepDerivation.derivingIVs) {
-    if (ivCache.loopGoverningAttrByIV.find(IV) == ivCache.loopGoverningAttrByIV.end()) return false;
-    auto attr = ivCache.loopGoverningAttrByIV.at(IV);
-    auto cmpInst = attr->getHeaderCmpInst();
-    if (cmpInst->isUnsigned()) return false;
+  for (auto IV : gepDerivation->derivingIVs) {
+    if (IV->getLoopEntryPHI()->getType()->getIntegerBitWidth() > ptrSizeInBits) return false;
   }
 
   /*
-   * Ensure all PHIs have no wrapping ???
+   * HACK: Ensure that any truncations on loop variants are:
+   * from no larger than the pointer size
+   * to no smaller than MIN_BIT_SIZE bits
    */
+  const int MIN_BIT_SIZE = ptrSizeInBits < 32 ? ptrSizeInBits : 32;
+  const int MAX_BIT_SHIFT = ptrSizeInBits - MIN_BIT_SIZE;
+  auto isValidOperationWhenUpCasted = [&](Instruction *inst) -> bool {
+    auto firstOp = inst->getOperand(0);
+    auto srcTy = firstOp->getType();
+    auto destTy = inst->getType();
+    assert(destTy->isIntegerTy() && srcTy->isIntegerTy());
+    if (srcTy->getIntegerBitWidth() < MIN_BIT_SIZE) return false;
+    if (destTy->getIntegerBitWidth() < MIN_BIT_SIZE) return false;
 
-  /*
-   * Ensure that no casts/truncations exist from/to above the pointer size
-   * or from/to below ???
-   */
-  for (auto inst : gepDerivation.derivingInstructions) {
-    if (auto trunc = dyn_cast<TruncInst>(inst)) {
-      // trunc->getDestTy()
+    /*
+     * Ensure the number of bits shifted doesn't reduce the value bit width below MIN_BIT_SIZE
+     */
+    if (isPartOfShlShrTruncationPair(inst)) {
+      auto bitsShiftedValue = inst->getOperand(1);
+      auto bitsShiftedConst = dyn_cast<ConstantInt>(bitsShiftedValue);
+      if (!bitsShiftedConst) return false;
+      auto bitsShifted = bitsShiftedConst->getValue().getSExtValue();
+      if (bitsShifted > MAX_BIT_SHIFT) return false;
     }
-  }
 
+    return true;
+  };
+
+  for (auto inst : gepDerivation->ivDerivingInstructions) {
+    if (!isValidOperationWhenUpCasted(inst)) return false;
+  }
   return true;
 }
 

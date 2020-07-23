@@ -47,6 +47,8 @@ namespace llvm {
 
       noelle::CallGraph * getProgramCallGraph (void);
 
+      PDG *recomputePDGFromAnalysis (void) ;
+
     private:
       Module *M;
       PDG *programDependenceGraph;

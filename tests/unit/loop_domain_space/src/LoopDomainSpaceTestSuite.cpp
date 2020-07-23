@@ -11,6 +11,7 @@
 #include "LoopDomainSpaceTestSuite.hpp"
 
 using namespace llvm;
+using namespace parallelizertests;
 
 // Register pass to "opt"
 char LoopDomainSpaceTestSuite::ID = 0;
@@ -26,11 +27,13 @@ static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel
         if(!_PassMaker){ PM.add(_PassMaker = new LoopDomainSpaceTestSuite());}});// ** for -O0
 
 const char *LoopDomainSpaceTestSuite::tests[] = {
-  "verifyDisjointAccessBetweenIterations"
+  "verifyDisjointAccessBetweenIterations",
+  "verifyDisjointAccessBetweenIterationsAfterSCEVSimplification"
 };
 
 TestFunction LoopDomainSpaceTestSuite::testFns[] = {
-  LoopDomainSpaceTestSuite::verifyDisjointAccessBetweenIterations
+  LoopDomainSpaceTestSuite::verifyDisjointAccessBetweenIterations,
+  LoopDomainSpaceTestSuite::verifyDisjointAccessBetweenIterationsAfterSCEVSimplification
 };
 
 bool LoopDomainSpaceTestSuite::doInitialization (Module &M) {
@@ -42,6 +45,7 @@ bool LoopDomainSpaceTestSuite::doInitialization (Module &M) {
 }
 
 void LoopDomainSpaceTestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
+  AU.addRequired<Noelle>();
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
@@ -50,35 +54,31 @@ void LoopDomainSpaceTestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
 bool LoopDomainSpaceTestSuite::runOnModule (Module &M) {
   errs() << "LoopDomainSpaceTestSuite: Start\n";
 
-  auto mainFunction = M.getFunction("main");
-  auto LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
-  auto SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
-  auto fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
-  Loop *topLoop = LI->getLoopsInPreorder()[0];
-  auto loopDG = fdg->createLoopsSubgraph(topLoop);
-  auto loopSCCDAG = new SCCDAG(loopDG);
-
-  this->LIS = new LoopsSummary(topLoop);
-  auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
-  auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
-  InvariantManager invariantManager(LIS->getLoopNestingTreeRoot(), loopDG);
-  auto IVs = new InductionVariableManager(*LIS, invariantManager, *SE, *loopSCCDAG, *environment);
-  this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(*LIS, *IVs, *SE);
-
   suite->runTests((ModulePass &)*this);
 
-  delete this->domainSpaceAnalysis;
-  delete IVs;
-  delete this->LIS;
-  delete environment;
-  delete loopSCCDAG;
-  delete loopDG;
-  delete fdg;
+  if (this->LIS) { delete this->LIS; this->LIS = nullptr; }
+  if (this->IVM) { delete this->IVM; this->IVM = nullptr; }
+  if (this->domainSpaceAnalysis) { delete this->domainSpaceAnalysis; this->domainSpaceAnalysis = nullptr; }
 
   return false;
 }
 
 Values LoopDomainSpaceTestSuite::verifyDisjointAccessBetweenIterations (ModulePass &pass, TestSuite &suite) {
+  LoopDomainSpaceTestSuite &attrPass = static_cast<LoopDomainSpaceTestSuite &>(pass);
+  attrPass.computeAnalysisWithoutSCEVSimplification ();
+  return attrPass.collectDisjointAccessesBetweenIterations(pass, suite);
+}
+
+Values LoopDomainSpaceTestSuite::verifyDisjointAccessBetweenIterationsAfterSCEVSimplification (
+  ModulePass &pass,
+  TestSuite &suite
+) {
+  LoopDomainSpaceTestSuite &attrPass = static_cast<LoopDomainSpaceTestSuite &>(pass);
+  attrPass.computeAnalysisWithSCEVSimplification ();
+  return attrPass.collectDisjointAccessesBetweenIterations(pass, suite);
+}
+
+Values LoopDomainSpaceTestSuite::collectDisjointAccessesBetweenIterations (ModulePass &pass, TestSuite &suite) {
   LoopDomainSpaceTestSuite &attrPass = static_cast<LoopDomainSpaceTestSuite &>(pass);
 
   Values disjointBetweenIterations;
@@ -107,4 +107,71 @@ Values LoopDomainSpaceTestSuite::verifyDisjointAccessBetweenIterations (ModulePa
   }
 
   return disjointBetweenIterations;
+}
+
+void LoopDomainSpaceTestSuite::computeAnalysisWithoutSCEVSimplification (void) {
+  assert(!modifiedCodeWithSCEVSimplification && "Can't compute non-simplified analysis after simplifying!");
+
+  if (this->LIS) { delete this->LIS; this->LIS = nullptr; }
+  if (this->IVM) { delete this->IVM; this->IVM = nullptr; }
+  if (this->domainSpaceAnalysis) { delete this->domainSpaceAnalysis; this->domainSpaceAnalysis = nullptr; }
+
+  auto mainFunction = M->getFunction("main");
+  auto LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
+  auto SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
+  getAnalysis<PDGAnalysis>().recomputePDGFromAnalysis();
+  auto fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
+  Loop *topLoop = LI->getLoopsInPreorder()[0];
+  auto loopDG = fdg->createLoopsSubgraph(topLoop);
+  SCCDAG loopSCCDAG(loopDG);
+
+  errs() << "Constructing Loops summary\n";
+  this->LIS = new LoopsSummary(topLoop);
+  auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+  errs() << "Constructing environment\n";
+  LoopEnvironment environment(loopDG, loopExitBlocks);
+  errs() << "Constructing invariant manager\n";
+  InvariantManager invariantManager(LIS->getLoopNestingTreeRoot(), loopDG);
+  errs() << "Constructing IV manager\n";
+  this->IVM = new InductionVariableManager(*LIS, invariantManager, *SE, loopSCCDAG, environment);
+  errs() << "Constructing loop iteration domain space analysis\n";
+  this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(*LIS, *IVM, *SE);
+  errs() << "Finished\n";
+}
+
+void LoopDomainSpaceTestSuite::computeAnalysisWithSCEVSimplification (void) {
+  assert(!modifiedCodeWithSCEVSimplification && "Can only simplify once!");
+
+  if (this->LIS) { delete this->LIS; this->LIS = nullptr; }
+  if (this->IVM) { delete this->IVM; this->IVM = nullptr; }
+  if (this->domainSpaceAnalysis) { delete this->domainSpaceAnalysis; this->domainSpaceAnalysis = nullptr; }
+
+  auto mainFunction = M->getFunction("main");
+  auto LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
+  auto SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
+  getAnalysis<PDGAnalysis>().recomputePDGFromAnalysis();
+  auto fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
+  Loop *topLoop = LI->getLoopsInPreorder()[0];
+  auto loopDG = fdg->createLoopsSubgraph(topLoop);
+  SCCDAG loopSCCDAG(loopDG);
+
+  errs() << "Constructing Loops summary\n";
+  this->LIS = new LoopsSummary(topLoop);
+  auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+  errs() << "Constructing environment\n";
+  LoopEnvironment environment(loopDG, loopExitBlocks);
+  errs() << "Constructing invariant manager\n";
+  InvariantManager invariantManager(LIS->getLoopNestingTreeRoot(), loopDG);
+  errs() << "Constructing IV manager\n";
+  this->IVM = new InductionVariableManager(*LIS, invariantManager, *SE, loopSCCDAG, environment);
+
+  auto& noelle = getAnalysis<Noelle>();
+  SCEVSimplification scevSimplify(noelle);
+  errs() << "Running SCEVSimplification\n";
+  scevSimplify.simplifyIVRelatedSCEVs(LIS->getLoopNestingTreeRoot(), &invariantManager, IVM);
+
+  computeAnalysisWithoutSCEVSimplification();
+  errs() << "Finished with simplification\n";
+
+  modifiedCodeWithSCEVSimplification = true;
 }
