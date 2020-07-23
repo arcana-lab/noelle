@@ -70,10 +70,28 @@ double Hot::getAverageLoopIterationsPerInvocation (LoopStructure *loop) const {
   }
 
   /*
-   * Fetch the total number of iterations executed.
+   * Fetch the invocations of the header and its successors within the loop.
    */
   auto loopHeader = loop->getHeader();
-  auto loopIterations = this->getInvocations(loopHeader);
+  auto headerInvocations = this->getInvocations(loopHeader);
+  uint64_t succInvocations = 0;
+  for (auto succBB : successors(loopHeader)){
+    if (!loop->isIncluded(succBB)){
+      continue ;
+    }
+    succInvocations += this->getInvocations(succBB);
+  }
+
+  /*
+   * Compute the total number of iterations executed.
+   */
+  uint64_t loopIterations = 0;
+  if (headerInvocations == succInvocations){
+    loopIterations = headerInvocations;
+
+  } else {
+    loopIterations = headerInvocations - 1;
+  }
 
   /*
    * Compute the stats.
