@@ -58,3 +58,46 @@ double Hot::getDynamicTotalInstructionCoverage (LoopStructure *loop) const {
 
   return hotness;
 }
+      
+double Hot::getAverageLoopIterationsPerInvocation (LoopStructure *loop) const {
+
+  /*
+   * Fetch the number of times the loop is invoked.
+   */
+  auto loopInvocations = this->getInvocations(loop);
+  if (loopInvocations == 0){
+    return 0;
+  }
+
+  /*
+   * Fetch the total number of iterations executed.
+   */
+  auto loopHeader = loop->getHeader();
+  auto loopIterations = this->getInvocations(loopHeader);
+
+  /*
+   * Compute the stats.
+   */
+  auto stats = ((double)loopIterations) / ((double)loopInvocations);
+
+  return stats;
+}
+
+double Hot::getAverageTotalInstructionsPerInvocation (LoopStructure *loop) const {
+
+  /*
+   * Fetch the number of times the loop is invoked.
+   */
+  auto loopInvocations = this->getInvocations(loop);
+  if (loopInvocations == 0){
+    return 0;
+  }
+
+  /*
+   * Compute the stats.
+   */
+  auto loopTotal = this->getTotalInstructions(loop);
+  auto averageInstsPerInvocation = ((double)loopTotal) / ((double)loopInvocations);
+
+  return averageInstsPerInvocation;
+}
