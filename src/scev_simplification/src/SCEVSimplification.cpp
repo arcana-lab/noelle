@@ -18,7 +18,6 @@ SCEVSimplification::SCEVSimplification (Noelle &noelle)
   auto &cxt = M->getContext();
   auto &dataLayout = M->getDataLayout();
   this->ptrSizeInBits = dataLayout.getPointerSizeInBits();
-  errs() << "Ptr size: " << this->ptrSizeInBits << "\n";
   this->intTypeForPtrSize = IntegerType::get(cxt, this->ptrSizeInBits);
 }
 
@@ -43,16 +42,6 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
     errs() << "SCEVSimplification:  Start\n";
   }
 
-  /*
-   * TODO: Remove, ahahaha
-   */
-  auto currFunction = rootLoop->getHeader()->getParent();
-  auto mainFunction = currFunction->getParent()->getFunction("main");
-  if (currFunction != mainFunction) {
-    errs() << "Not main; skipping\n";
-    return false;
-  }
-
   cacheIVInfo(rootLoop, ivManager);
   searchForInstructionsDerivedFromMultipleIVs(rootLoop, invariantManager);
 
@@ -69,14 +58,7 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
   std::unordered_set<GetElementPtrInst *> geps;
   for (auto B : rootLoop->getBasicBlocks()) {
     for (auto &I : *B) {
-      Value *memoryAccessorValue; 
-      if (auto store = dyn_cast<StoreInst>(&I)) {
-        memoryAccessorValue = store->getPointerOperand();
-      } else if (auto load = dyn_cast<LoadInst>(&I)) {
-        memoryAccessorValue = load->getPointerOperand();
-      } else continue;
-
-      if (auto gep = dyn_cast<GetElementPtrInst>(memoryAccessorValue)) {
+      if (auto gep = dyn_cast<GetElementPtrInst>(&I)) {
 
         /*
          * Spot checks before further examining:
@@ -754,6 +736,22 @@ bool SCEVSimplification::isUpCastPossible (
   InvariantManager &invariantManager
 ) const {
   if (!gepDerivation->isDerived) return false;
+
+  auto gep = gepDerivation->gep;
+
+  // gep->print(errs() << "GEP that isn't being accessed as an array pointer: "); errs() << "\n";
+  // gep->getType()->print(errs() << "GEP type: "); errs() << "\n";
+  // gep->getOperand(0)->print(errs() << "Element: "); errs() << "\n";
+  // gep->getOperand(0)->getType()->print(errs() << "Element type: "); errs() << "\n";
+
+  /*
+   * Ensure the element being accessed is being accessed as some type of contiguous memory,
+   * that is, an access of ptrSizeInBits integer type
+   */
+  auto firstIdxValue = gep->indices().begin()->get();
+  if (firstIdxValue->getType()->getIntegerBitWidth() != ptrSizeInBits) {
+    return false;
+  }
 
   /*
    * Ensure the IVs deriving the indices are all a smaller
