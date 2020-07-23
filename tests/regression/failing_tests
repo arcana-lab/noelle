@@ -64,6 +64,7 @@ regression_8/ReductionIterations4 -noelle-pdg-check -noelle-verbose=3 -noelle-di
 regression_9/Exit_call2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2 -noelle-parallelizer-force
 regression_9/Exit_call3 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2 -noelle-parallelizer-force
 regression_9/GoToLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2 -noelle-parallelizer-force
+regression_15/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force
 regression_default/Exit_call2 -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force
 regression_default/Exit_call3 -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force
 regression_default/GoToLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force
