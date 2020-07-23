@@ -1,4 +1,4 @@
-UTILS=transformations basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats
+UTILS=transformations basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats callgraph
 ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure
 PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
 ENABLERS=enablers loop_distribution loop_unroll inliner loop_whilifier loop_invariant_code_motion scev_simplification
@@ -40,6 +40,9 @@ architecture:
 	cd $@ ; ../scripts/run_me.sh
 
 pdg:
+	cd $@ ; ../scripts/run_me.sh
+
+callgraph:
 	cd $@ ; ../scripts/run_me.sh
 
 alloc_aa:

@@ -237,6 +237,7 @@ PDG * PDGAnalysis::constructPDGFromMetadata(Module &M) {
 }
 
 void PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unordered_map<MDNode *, Value *> &IDNodeMap) {
+
   /*
    * Construct id to node map and add nodes of arguments to pdg
    */
@@ -263,6 +264,7 @@ void PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unordered_ma
 }
 
 void PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unordered_map<MDNode *, Value *> &IDNodeMap) {
+
   /*
    * Construct edges and set attributes
    */
@@ -300,7 +302,7 @@ void PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unordered_ma
 }
 
 DGEdge<Value> * PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *edgeM, unordered_map<MDNode *, Value *> &IDNodeMap) {
-  DGEdge<Value> *edge;  
+  DGEdge<Value> *edge = nullptr;
 
   if (MDNode *fromM = dyn_cast<MDNode>(edgeM->getOperand(0))) {
     if (MDNode *toM = dyn_cast<MDNode>(edgeM->getOperand(1))) {
@@ -324,13 +326,13 @@ DGEdge<Value> * PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *edgeM, 
 void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
   errs() << "Embed PDG as Metadata\n";
 
-  LLVMContext &C = this->M->getContext();
+  auto &C = this->M->getContext();
   unordered_map<Value *, MDNode *> nodeIDMap;
 
   embedNodesAsMetadata(pdg, C, nodeIDMap);
   embedEdgesAsMetadata(pdg, C, nodeIDMap);
 
-  NamedMDNode *n = this->M->getOrInsertNamedMetadata("noelle.module.pdg");
+  auto n = this->M->getOrInsertNamedMetadata("noelle.module.pdg");
   n->addOperand(MDNode::get(C, MDString::get(C, "true")));
 
   return;
@@ -1276,6 +1278,12 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
   auto callName = getCallFnName(call);
   return isa<LoadInst>(mem) && isFunctionNonWriting(callName)
     || isa<StoreInst>(mem) && isFunctionMemoryless(callName);
+}
+      
+noelle::CallGraph * PDGAnalysis::getProgramCallGraph (void){
+  auto cg = new noelle::CallGraph(*M, this->callGraph);
+
+  return cg;
 }
 
 PDGAnalysis::~PDGAnalysis() {

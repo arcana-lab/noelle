@@ -1,17 +1,14 @@
 # Sources
 set(Srcs 
-  Mem2RegNonAlloca.cpp
-  LoopInvariantCodeMotion.cpp
-  LoopInvariantHoister.cpp
-  LastLiveOutStoreHoister.cpp
-  LastLiveOutPeeler.cpp
+  CallGraph.cpp
+  CallGraphNode.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopInvariantCodeMotion")
+set(PassName "CallGraph")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -25,22 +22,11 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} 
-  ../../../external/svf/include
-  ../../basic_utilities/include 
-  ../../transformations/include
-  ../../alloc_aa/include 
-  ../../pdg/include 
-  ../../loop_structure/include
-  ../../loops/include 
-  ../../hotprofiler/include 
-  ../../talkdown/include
-  ../../dataflow/include
-  ../../noelle/include
-  ../../callgraph/include
-  ../include/ 
-  ./ 
-  )
+include_directories(${LLVM_INCLUDE_DIRS}
+           ../../basic_utilities/include
+           ../../../external/svf/include
+					 ../include
+            )
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})

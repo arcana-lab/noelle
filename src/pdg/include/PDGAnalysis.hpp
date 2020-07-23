@@ -10,15 +10,13 @@
  */
 #pragma once
 
-#include "llvm/IR/Module.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-
+#include "SystemHeaders.hpp"
 #include "PDG.hpp"
 #include "AllocAA.hpp"
 #include "PDGPrinter.hpp"
 #include "TalkDown.hpp"
 #include "DataFlow.hpp"
+#include "CallGraph.hpp"
 
 #include "MemoryModel/PointerAnalysis.h"
 #include "Util/PTACallGraph.h"
@@ -46,6 +44,8 @@ namespace llvm {
       PDG * getFunctionPDG (Function &F) ;
 
       PDG * getPDG (void) ;
+
+      noelle::CallGraph * getProgramCallGraph (void);
 
     private:
       Module *M;
