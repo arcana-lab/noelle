@@ -81,8 +81,16 @@ namespace llvm {
        */
       uint64_t getTotalInstructions (LoopStructure *loop) const ;
 
+      /*
+       * Return the coverage of @loop
+       *
+       * @return Between 0 and 1
+       */
       double getDynamicTotalInstructionCoverage (LoopStructure *loop) const ;
 
+      double getAverageTotalInstructionsPerInvocation (LoopStructure *loop) const ;
+
+      double getAverageLoopIterationsPerInvocation (LoopStructure *loop) const ;
 
       /*
        * =========================== Functions ==================================
