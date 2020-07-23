@@ -58,6 +58,10 @@ namespace {
       //auto loops = noelle.getLoops(mainF);
       if (this->printLoops){
         for (auto loop : *loops){
+
+          /*
+           * Print the loop ID.
+           */
           auto LS = loop->getLoopStructure();
           auto entryInst = LS->getEntryInstruction();
           errs() << "Loop " << *entryInst << "\n";
@@ -94,10 +98,25 @@ namespace {
       if (hot->isAvailable()){
         errs() << "The profiler is available\n";
         for (auto loop : *loops){
+
+          /*
+           * Print the loop ID.
+           */
           auto LS = loop->getLoopStructure();
           auto entryInst = LS->getEntryInstruction();
           errs() << " Loop " << *entryInst << "\n";
 
+          /*
+           * Print loop statistics.
+           */
+          errs() << "   Number of invocations of the loop = " << hot->getInvocations(LS) << "\n";
+          errs() << "   Average number of iterations per invocations = " << hot->getAverageLoopIterationsPerInvocation(LS) << "\n";
+          errs() << "   Average number of total instructions per invocations = " << hot->getAverageTotalInstructionsPerInvocation(LS) << "\n";
+          errs() << "   Coverage in terms of total instructions = " << (hot->getDynamicTotalInstructionCoverage(LS) * 100) << "%\n";
+
+          /*
+           * Print the coverage per instruction of the loop.
+           */
           for (auto bb : LS->getBasicBlocks()){
             for (auto &inst : *bb){
               errs() << "   [" << hot->getTotalInstructions(&inst) << "] " << inst << "\n";

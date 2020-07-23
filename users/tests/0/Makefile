@@ -7,8 +7,7 @@ test.bc: test.c
 	llvm-dis $@
 
 test_pre.bc: test.bc
-	noelle-pre $^
-	cp $^ $@
+	noelle-norm $^ -o $@
 	llvm-dis $@
 
 test_pre_prof: test_pre.bc
