@@ -65,6 +65,11 @@ namespace llvm {
       /*
        * =========================== Loops =======================================
        */
+      
+      /*
+       * Return the number of times the loop @l has been executed.
+       */
+      uint64_t getInvocations (LoopStructure *l) const ;
 
       /*
        * Return the total number of instructions executed excluding the instructions executed by the callees.

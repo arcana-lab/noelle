@@ -14,6 +14,22 @@
 #include "Hot.hpp"
 
 using namespace llvm ;
+      
+uint64_t Hot::getInvocations (LoopStructure *l) const {
+
+  /*
+   * Fetch the pre-header.
+   */
+  auto preH = l->getPreHeader();
+
+  /*
+   * Fetch the number of invocations of the preheader. 
+   * This is the same as the invocations of the loop.
+   */
+  auto preHInvocations = this->getInvocations(preH);
+
+  return preHInvocations;
+}
 
 uint64_t Hot::getSelfInstructions (LoopStructure *loop) const {
   uint64_t insts = 0;

@@ -15,7 +15,7 @@ using namespace llvm;
 /*
  * Options of the Parallelizer pass.
  */
-static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
+static cl::opt<bool> ForceParallelization("noelle-parallelizer-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
 static cl::opt<bool> DisableLoopSorting("noelle-parallelizer-disable-loop-sorting", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable sorting loops to parallelize"));
 
@@ -155,6 +155,24 @@ bool Parallelizer::runOnModule (Module &M) {
     }
     if (!safe){
       errs() << "Parallelizer:    Loop " << loop->getID() << " cannot be parallelized because one of its parent has been parallelized already\n";
+      continue ;
+    }
+
+    /*
+     * Check if the latency of each loop invocation is enough to justify the parallelization.
+     */
+    auto loopInvocations = profiles->getInvocations(ls);
+    auto loopTotal = profiles->getTotalInstructions(ls);
+    uint64_t averageInstsPerInvocation = 0;
+    if (loopInvocations > 0){
+      averageInstsPerInvocation = loopTotal / loopInvocations;
+    }
+    errs() << "Parallelizer:    Loop " << loop->getID() << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
+    if (  true
+          && (!this->forceParallelization)
+          && (averageInstsPerInvocation < 100)
+      ){
+      errs() << "Parallelizer:      It is too low\n";
       continue ;
     }
     
