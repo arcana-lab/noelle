@@ -45,12 +45,12 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
   cacheIVInfo(rootLoop, ivManager);
   searchForInstructionsDerivedFromMultipleIVs(rootLoop, invariantManager);
 
-  for (auto instIVPair : ivCache.ivByInstruction) {
-    instIVPair.first->print(errs() << "IV instruction: "); errs() << "\n";
-  }
-  for (auto derivedI : ivCache.instsDerivedFromMultipleIVs) {
-    derivedI->print(errs() << "I from multiple IVs: "); errs() << "\n";
-  }
+  // for (auto instIVPair : ivCache.ivByInstruction) {
+  //   instIVPair.first->print(errs() << "IV instruction: "); errs() << "\n";
+  // }
+  // for (auto derivedI : ivCache.instsDerivedFromMultipleIVs) {
+  //   derivedI->print(errs() << "I from multiple IVs: "); errs() << "\n";
+  // }
 
   /*
    * Identify all GEPs to loads or stores within the loop
@@ -277,7 +277,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   std::unordered_set<Instruction *> castsToRemove;
   auto collectInstructionToConvert = [&](Instruction *inst) -> void {
 
-    inst->print(errs() << "Collecting to convert: "); errs() << "\n";
+    // inst->print(errs() << "Collecting to convert: "); errs() << "\n";
 
     if (auto phi = dyn_cast<PHINode>(inst)) {
       phisToConvert.insert(phi);
@@ -364,18 +364,18 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   //   }
   // }
 
-  for (auto invariant : loopInvariantsToConvert) {
-    invariant->print(errs() << "Invariant to convert: "); errs() << "\n";
-  }
-  for (auto phi : phisToConvert) {
-    phi->print(errs() << "PHI to convert: "); errs() << "\n";
-  }
-  for (auto nonPHI : nonPHIsToConvert) {
-    nonPHI->print(errs() << "Non phi to convert: "); errs() << "\n";
-  }
-  for (auto inst : castsToRemove) {
-    inst->print(errs() << "Cast to remove: "); errs() << "\n";
-  }
+  // for (auto invariant : loopInvariantsToConvert) {
+  //   invariant->print(errs() << "Invariant to convert: "); errs() << "\n";
+  // }
+  // for (auto phi : phisToConvert) {
+  //   phi->print(errs() << "PHI to convert: "); errs() << "\n";
+  // }
+  // for (auto nonPHI : nonPHIsToConvert) {
+  //   nonPHI->print(errs() << "Non phi to convert: "); errs() << "\n";
+  // }
+  // for (auto inst : castsToRemove) {
+  //   inst->print(errs() << "Cast to remove: "); errs() << "\n";
+  // }
 
   /*
    * Build a map from old to new typed values
@@ -393,13 +393,13 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   const bool isSigned = true;
   for (auto invariant : loopInvariantsToConvert) {
     if (invariant->getType()->getIntegerBitWidth() == this->ptrSizeInBits) {
-      invariant->print(errs() << "Invariant not needing conversion: "); errs() << "\n";
+      // invariant->print(errs() << "Invariant not needing conversion: "); errs() << "\n";
       oldToNewTypedMap.insert(std::make_pair(invariant, invariant));
       continue;
     }
 
     auto castedInvariant = preheaderBuilder.CreateIntCast(invariant, this->intTypeForPtrSize, isSigned);
-    invariant->print(errs() << "Invariant casted: "); errs() << "\n";
+    // invariant->print(errs() << "Invariant casted: "); errs() << "\n";
     oldToNewTypedMap.insert(std::make_pair(invariant, castedInvariant));
   }
 
@@ -446,7 +446,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
       auto I = valuesToConvert.front();
       valuesToConvert.pop();
 
-      I->print(errs() << "Converting: "); errs() << "\n";
+      // I->print(errs() << "Converting: "); errs() << "\n";
 
       /*
        * Ensure all operands used by this value are already converted
@@ -456,14 +456,14 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
         auto oldTypedOp = op.get();
         auto newTypedOp = tryAndMapOldOpToNewOp(oldTypedOp);
         if (!newTypedOp) {
-          oldTypedOp->print(errs() << "\tCant find new type value for: "); errs() << "\n";
+          // oldTypedOp->print(errs() << "\tCant find new type value for: "); errs() << "\n";
           break;
         }
         newTypedOps.push_back(newTypedOp);
       }
 
       bool allOperandsAbleToConvert = newTypedOps.size() == I->getNumOperands();
-      errs() << "\tAble to convert?  " << allOperandsAbleToConvert << "\n";
+      // errs() << "\tAble to convert?  " << allOperandsAbleToConvert << "\n";
       if (!allOperandsAbleToConvert) continue;
 
 
@@ -475,8 +475,8 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
         auto newTypedPreviousValue = oldToNewTypedMap.at(valuePreviouslyCasted);
         oldToNewTypedMap.insert(std::make_pair(I, newTypedPreviousValue));
         valuesLeft.erase(I);
-        I->print(errs() << "\tRemoved: ");
-        newTypedPreviousValue->print(errs() << "\t and will use: "); errs() << "\n";
+        // I->print(errs() << "\tRemoved: ");
+        // newTypedPreviousValue->print(errs() << "\t and will use: "); errs() << "\n";
         continue;
       }
 
@@ -496,17 +496,17 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
         assert(false && "SCEVSimplification: instruction being up-casted is not an unary or binary operator!");
       }
 
-      I->print(errs() << "\tswapping: ");
-      newInst->print(errs() << "\t with inst: "); errs() << "\n";
+      // I->print(errs() << "\tswapping: ");
+      // newInst->print(errs() << "\t with inst: "); errs() << "\n";
 
       oldToNewTypedMap.insert(std::make_pair(I, newInst));
       valuesLeft.erase(I);
     }
 
-    for (auto valueLeft : valuesLeft) {
-      valueLeft->print(errs() << "Value left: "); errs() << "\n";
-    }
-    errs() << "----\n";
+    // for (auto valueLeft : valuesLeft) {
+    //   valueLeft->print(errs() << "Value left: "); errs() << "\n";
+    // }
+    // errs() << "----\n";
   }
 
   assert(valuesLeft.size() == 0 && "SCEVSimplification: failed mid-way in simplifying");
@@ -570,7 +570,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
     std::unordered_set<User *> allUsers(originalI->user_begin(), originalI->user_end());
     for (auto user : allUsers) {
 
-      user->print(errs() << "\tAddressing user: "); errs() << "\n";
+      // user->print(errs() << "\tAddressing user: "); errs() << "\n";
 
       /*
        * Prevent creating a truncation for a cast that will be removed
@@ -589,7 +589,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
         continue;
       }
 
-      errs() << "Not the same integer type nor already converted\n";
+      // errs() << "Not the same integer type nor already converted\n";
 
       Instruction * truncatedI = nullptr;
       if (upCastedToTruncatedInstMap.find(upCastedI) == upCastedToTruncatedInstMap.end()) {
@@ -618,6 +618,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
     }
   }
 
+  std::unordered_set<Instruction *> oldInstructionsToDelete{};
   for (auto oldPHI : phisToConvert) {
     auto newValue = oldToNewTypedMap.at(oldPHI);
     auto newPHI = dyn_cast<PHINode>(newValue);
@@ -632,7 +633,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
     }
 
     truncateUpCastedValueForUsersOf(oldPHI, newPHI);
-    oldPHI->eraseFromParent();
+    oldInstructionsToDelete.insert(oldPHI);
   }
   for (auto oldInst : nonPHIsToConvert) {
     auto newValue = tryAndMapOldOpToNewOp(oldInst);
@@ -641,14 +642,18 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
     assert(newInst && "Mapping was from non-instruction to instruction");
 
     truncateUpCastedValueForUsersOf(oldInst, newInst);
-    oldInst->eraseFromParent();
+    oldInstructionsToDelete.insert(oldInst);
   }
   for (auto obsoleteCast : castsToRemove) {
-    obsoleteCast->eraseFromParent();
+    oldInstructionsToDelete.insert(obsoleteCast);
   }
 
-  errs() << "Done\n";
-  rootLoop->getHeader()->getParent()->print(errs() << "FUNCTION:\n"); errs() << "\n";
+  for (auto oldInst : oldInstructionsToDelete) {
+    oldInst->eraseFromParent();
+  }
+
+  // errs() << "Done\n";
+  // rootLoop->getHeader()->getParent()->print(errs() << "FUNCTION:\n"); errs() << "\n";
 
   return true;
 }
@@ -660,7 +665,7 @@ SCEVSimplification::GEPIndexDerivation::GEPIndexDerivation (
   IVCachedInfo &ivCache
 ) : gep{gep}, isDerived{false} {
 
-  gep->print(errs() << "Checking: "); errs() << "\n";
+  // gep->print(errs() << "Checking: "); errs() << "\n";
 
   /*
    * Queue up to check that all GEP indices have IV derivations
