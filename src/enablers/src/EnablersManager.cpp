@@ -50,7 +50,7 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = noelle.getLoops();
+  auto loopsToParallelize = noelle.getFilteredLoopStructures();
   errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
 
   /*
@@ -58,13 +58,14 @@ bool EnablersManager::runOnModule (Module &M) {
    */
   auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
-  for (auto loop : *loopsToParallelize){
+  for (auto i = 0; i < loopsToParallelize->size(); ++i){
 
     /*
      * Fetch the function that contains the current loop.
      */
-    auto loopSummary = loop->getLoopStructure();
-    auto f = loopSummary->getFunction();
+    auto loopStructure = (*loopsToParallelize)[i];
+    auto header = loopStructure->getHeader();
+    auto f = header->getParent();
 
     /*
      * Check if we have already modified the function.
@@ -75,10 +76,15 @@ bool EnablersManager::runOnModule (Module &M) {
     }
 
     /*
+     * Compute loop dependence info
+     */
+    auto ldi = noelle.getFilteredLoopDependenceInfo(loopStructure, i);
+
+    /*
      * Improve the current loop.
      */
     modifiedFunctions[f] |= this->applyEnablers(
-      loop,
+      ldi,
       noelle,
       loopDist,
       loopUnroll,
