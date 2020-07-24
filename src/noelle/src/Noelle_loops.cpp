@@ -230,7 +230,22 @@ LoopDependenceInfo * Noelle::getFilteredLoopDependenceInfo (
   assert(this->loopHeaderToLoopIndexMap.find(header) != this->loopHeaderToLoopIndexMap.end()
     && "This loop isn't a filtered loop! Filtered loops are gotten fromo getFilteredLoopStructures");
   auto loopIndex = this->loopHeaderToLoopIndexMap.at(header);
-  if (this->hasReadFilterFile && loopIndex >= this->loopThreads.size()){
+
+  /*
+   * No filter file was provided. Construct LDI without profiler configurables
+   */
+  if (!this->hasReadFilterFile) {
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores);
+
+    delete DS;
+    delete funcPDG;
+    return ldi;
+  }
+
+  /*
+   * Ensure loop configurables exist for this loop index
+   */
+  if (loopIndex >= this->loopThreads.size()){
     errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << this->loopThreads.size()
       << " loops available in the program\n";
     abort();
