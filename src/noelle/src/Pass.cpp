@@ -102,6 +102,8 @@ void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool Noelle::runOnModule (Module &M){
+  this->pdgAnalysis = &getAnalysis<PDGAnalysis>();
+
   return false;
 }
 
