@@ -230,7 +230,7 @@ LoopDependenceInfo * Noelle::getFilteredLoopDependenceInfo (
   assert(this->loopHeaderToLoopIndexMap.find(header) != this->loopHeaderToLoopIndexMap.end()
     && "This loop isn't a filtered loop! Filtered loops are gotten fromo getFilteredLoopStructures");
   auto loopIndex = this->loopHeaderToLoopIndexMap.at(header);
-  if (loopIndex >= this->loopThreads.size()){
+  if (this->hasReadFilterFile && loopIndex >= this->loopThreads.size()){
     errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << this->loopThreads.size()
       << " loops available in the program\n";
     abort();
