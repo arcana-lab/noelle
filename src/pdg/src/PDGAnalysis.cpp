@@ -43,6 +43,11 @@ void PDGAnalysis::initializeSVF(Module &M) {
   return;
 }
 
+void PDGAnalysis::releaseMemory () {
+  if (this->programDependenceGraph) delete this->programDependenceGraph;
+  this->programDependenceGraph = nullptr;
+}
+
 void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
 
   /*
@@ -183,12 +188,6 @@ PDG * PDGAnalysis::getPDG (void){
     }
   }
 
-  return this->programDependenceGraph;
-}
-
-PDG *PDGAnalysis::recomputePDGFromAnalysis (void) {
-  if (this->programDependenceGraph) delete this->programDependenceGraph;
-  this->programDependenceGraph = constructPDGFromAnalysis(*this->M);
   return this->programDependenceGraph;
 }
 
