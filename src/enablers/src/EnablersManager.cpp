@@ -78,7 +78,7 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Compute loop dependence info
      */
-    auto ldi = noelle.getFilteredLoopDependenceInfo(loopStructure, i);
+    auto ldi = noelle.getFilteredLoopDependenceInfo(loopStructure);
 
     /*
      * Improve the current loop.

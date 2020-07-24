@@ -83,7 +83,7 @@ std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (
   /*
    * Append loops of each function.
    */
-  auto currentLoopIndex = 0;
+  auto nextLoopIndex = 0;
   if (this->verbose >= Verbosity::Maximal){
     errs() << "Parallelizer: Filter out cold code\n" ;
   }
@@ -110,14 +110,15 @@ std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (
      */
     auto loops = LI.getLoopsInPreorder();
     for (auto loop : loops){
+      auto currentLoopIndex = nextLoopIndex++;
 
       /*
        * Check if the loop is hot enough.
        */
       auto loopStructure = new LoopStructure{loop};
+      auto loopHeader = loopStructure->getHeader();
       if (!isLoopHot(loopStructure, minimumHotness)){
         errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
-        currentLoopIndex++;
         delete loopStructure;
         continue ;
       }
@@ -134,7 +135,7 @@ std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (
          * Allocate the loop wrapper.
          */
         allLoops->push_back(loopStructure);
-        currentLoopIndex++;
+        this->loopHeaderToLoopIndexMap.insert(std::make_pair(loopHeader, currentLoopIndex));
         continue ;
       }
 
@@ -150,10 +151,7 @@ std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (
         /*
          * Only one thread has been assigned to the current loop.
          * Hence, the current loop will not be parallelized.
-         */
-        currentLoopIndex++;
-
-        /*
+         *
          * Jump to the next loop.
          */
         delete loopStructure;
@@ -163,7 +161,7 @@ std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (
       /*
        * Safety code.
        */
-      if (this->hasReadFilterFile && currentLoopIndex >= loopThreads.size()){
+      if (currentLoopIndex >= loopThreads.size()){
         errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
         abort();
       }
@@ -172,7 +170,7 @@ std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (
        * The current loop needs to be considered as specified by the user.
        */
       allLoops->push_back(loopStructure);
-      currentLoopIndex++;
+      this->loopHeaderToLoopIndexMap.insert(std::make_pair(loopHeader, currentLoopIndex));
     }
   }
 
@@ -208,8 +206,7 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfo (
 }
 
 LoopDependenceInfo * Noelle::getFilteredLoopDependenceInfo (
-  LoopStructure *loop,
-  int loopIndex
+  LoopStructure *loop
 ) {
 
   /*
@@ -230,7 +227,10 @@ LoopDependenceInfo * Noelle::getFilteredLoopDependenceInfo (
   /*
    * Safety code to ensure loopIndex provided is within bounds
    */
-  if (this->hasReadFilterFile && loopIndex >= this->loopThreads.size()){
+  assert(this->loopHeaderToLoopIndexMap.find(header) != this->loopHeaderToLoopIndexMap.end()
+    && "This loop isn't a filtered loop! Filtered loops are gotten fromo getFilteredLoopStructures");
+  auto loopIndex = this->loopHeaderToLoopIndexMap.at(header);
+  if (loopIndex >= this->loopThreads.size()){
     errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << this->loopThreads.size()
       << " loops available in the program\n";
     abort();
@@ -377,7 +377,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getFilteredLoopDependenceInfos (
   /*
    * Append loops of each function.
    */
-  auto currentLoopIndex = 0;
+  auto nextLoopIndex = 0;
   if (this->verbose >= Verbosity::Maximal){
     errs() << "Parallelizer: Filter out cold code\n" ;
   }
@@ -424,6 +424,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getFilteredLoopDependenceInfos (
      * Consider these loops.
      */
     for (auto loop : loops){
+      auto currentLoopIndex = nextLoopIndex++;
 
       /*
        * Check if the loop is hot enough.
@@ -431,7 +432,6 @@ std::vector<LoopDependenceInfo *> * Noelle::getFilteredLoopDependenceInfos (
       LoopStructure loopS{loop};
       if (!isLoopHot(&loopS, minimumHotness)){
         errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
-        currentLoopIndex++;
         continue ;
       }
 
@@ -449,7 +449,6 @@ std::vector<LoopDependenceInfo *> * Noelle::getFilteredLoopDependenceInfos (
         auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
 
         allLoops->push_back(ldi);
-        currentLoopIndex++;
         continue ;
       }
 
@@ -465,10 +464,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getFilteredLoopDependenceInfos (
         /*
          * Only one thread has been assigned to the current loop.
          * Hence, the current loop will not be parallelized.
-         */
-        currentLoopIndex++;
-
-        /*
+         *
          * Jump to the next loop.
          */
         continue ;
@@ -496,7 +492,6 @@ std::vector<LoopDependenceInfo *> * Noelle::getFilteredLoopDependenceInfos (
        * The current loop needs to be considered as specified by the user.
        */
       allLoops->push_back(ldi);
-      currentLoopIndex++;
     }
 
     /*
