@@ -10,6 +10,10 @@
  */
 #pragma once
 
+#include "MemoryModel/PointerAnalysis.h"
+#include "Util/PTACallGraph.h"
+#include "MSSA/MemSSA.h"
+
 #include "SystemHeaders.hpp"
 #include "PDG.hpp"
 #include "AllocAA.hpp"
@@ -17,10 +21,6 @@
 #include "TalkDown.hpp"
 #include "DataFlow.hpp"
 #include "CallGraph.hpp"
-
-#include "MemoryModel/PointerAnalysis.h"
-#include "Util/PTACallGraph.h"
-#include "MSSA/MemSSA.h"
 
 using namespace llvm;
 
