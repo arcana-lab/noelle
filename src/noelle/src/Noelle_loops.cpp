@@ -163,7 +163,7 @@ std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (
       /*
        * Safety code.
        */
-      if (currentLoopIndex >= loopThreads.size()){
+      if (this->hasReadFilterFile && currentLoopIndex >= loopThreads.size()){
         errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
         abort();
       }
@@ -230,7 +230,7 @@ LoopDependenceInfo * Noelle::getFilteredLoopDependenceInfo (
   /*
    * Safety code to ensure loopIndex provided is within bounds
    */
-  if (loopIndex >= this->loopThreads.size()){
+  if (this->hasReadFilterFile && loopIndex >= this->loopThreads.size()){
     errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << this->loopThreads.size()
       << " loops available in the program\n";
     abort();
@@ -477,7 +477,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getFilteredLoopDependenceInfos (
       /*
        * Safety code.
        */
-      if (currentLoopIndex >= loopThreads.size()){
+      if (this->hasReadFilterFile && currentLoopIndex >= loopThreads.size()){
         errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
         abort();
       }
@@ -641,7 +641,6 @@ bool Noelle::checkToGetLoopFilteringInfo (void) {
   if (!this->filterFileName || this->hasReadFilterFile){
     return false;
   }
-  this->hasReadFilterFile = true;
 
   /*
    * We need to filter out loops.
@@ -728,6 +727,7 @@ bool Noelle::checkToGetLoopFilteringInfo (void) {
     }
   }
   
+  this->hasReadFilterFile = true;
   return filterLoops;
 }
 
