@@ -50,20 +50,48 @@ namespace llvm {
         Function *startingPoint
         );
 
-      std::vector<LoopDependenceInfo *> * getLoops (
+      std::vector<LoopStructure *> * getLoopStructures (
         Function *function
-        );
+      );
 
-      std::vector<LoopDependenceInfo *> * getLoops (
+      std::vector<LoopStructure *> * getLoopStructures (
         Function *function,
         double minimumHotness
-        );
+      );
 
-      std::vector<LoopDependenceInfo *> * getLoops (void) ;
+      std::vector<LoopStructure *> * getFilteredLoopStructures (void) ;
 
-      std::vector<LoopDependenceInfo *> * getLoops (
+      std::vector<LoopStructure *> * getFilteredLoopStructures (
         double minimumHotness
-        );
+      );
+
+      LoopDependenceInfo * getLoopDependenceInfo (
+        LoopStructure *loop
+      );
+
+      LoopDependenceInfo * getFilteredLoopDependenceInfo (
+        LoopStructure *loop,
+        int loopIndex
+      );
+
+      std::vector<LoopDependenceInfo *> * getLoopDependenceInfos (
+        Function *function
+      );
+
+      std::vector<LoopDependenceInfo *> * getLoopDependenceInfos (
+        Function *function,
+        double minimumHotness
+      );
+
+      std::vector<LoopDependenceInfo *> * getFilteredLoopDependenceInfos (void) ;
+
+      std::vector<LoopDependenceInfo *> * getFilteredLoopDependenceInfos (
+        double minimumHotness
+      );
+
+      void sortByHotness (
+        std::vector<LoopStructure *> & loops
+        ) ;
 
       void sortByHotness (
         std::vector<LoopDependenceInfo *> & loops
@@ -147,16 +175,31 @@ namespace llvm {
       noelle::CallGraph *pcg;
       PDGAnalysis *pdgAnalysis;
 
+      char *filterFileName;
+      bool hasReadFilterFile;
+      std::vector<uint32_t> loopThreads;
+      std::vector<uint32_t> techniquesToDisable;
+      std::vector<uint32_t> DOALLChunkSize;
+
       uint32_t fetchTheNextValue (
         std::stringstream &stream
         );
 
-      bool filterOutLoops (
-        char *fileName,
-        std::vector<uint32_t>& loopThreads,
-        std::vector<uint32_t>& techniquesToDisable,
-        std::vector<uint32_t>& DOALLChunkSize
-        );
+      bool checkToGetLoopFilteringInfo (void) ;
+
+      LoopDependenceInfo * getLoopDependenceInfoForLoop (
+        Loop *loop,
+        PDG *functionPDG,
+        DominatorSummary *DS,
+        ScalarEvolution *SE,
+        uint32_t techniquesToDisable,
+        uint32_t DOALLChunkSize,
+        uint32_t maxCores
+      );
+
+      bool isLoopHot (LoopStructure *loopStructure, double minimumHotness) ;
+      bool isFunctionHot (Function *function, double minimumHotness) ;
+
   };
 
 }

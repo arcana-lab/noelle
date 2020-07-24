@@ -39,7 +39,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
     /*
      * Fetch all loops of the current function.
      */
-    auto allLoops = noelle.getLoops(F);
+    auto allLoops = noelle.getLoopDependenceInfos(F);
 
     /*
      * Sort the loops by size.
