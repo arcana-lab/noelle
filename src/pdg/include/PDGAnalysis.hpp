@@ -39,6 +39,8 @@ namespace llvm {
 
       void getAnalysisUsage(AnalysisUsage &AU) const override ;
 
+      void releaseMemory () override ;
+
       bool runOnModule (Module &M) override ;
 
       PDG * getFunctionPDG (Function &F) ;
@@ -46,8 +48,6 @@ namespace llvm {
       PDG * getPDG (void) ;
 
       noelle::CallGraph * getProgramCallGraph (void);
-
-      PDG *recomputePDGFromAnalysis (void) ;
 
     private:
       Module *M;
