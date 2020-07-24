@@ -14,8 +14,9 @@ namespace {
   struct CAT : public ModulePass {
     static char ID; 
     bool printDependences = false;
-    bool printLoops = false;
+    bool printLoops = true;
     bool printDFA = false;
+    bool printProfile = false;
 
     CAT() : ModulePass(ID) {}
 
@@ -67,6 +68,13 @@ namespace {
           errs() << "Loop " << *entryInst << "\n";
 
           /*
+           * Print some information about the loop.
+           */
+          errs() << " Function = " << LS->getFunction()->getName() << "\n";
+          errs() << " Nesting level = " << LS->getNestingLevel() << "\n";
+          errs() << " This loop has " << LS->getNumberOfSubLoops() << " sub-loops (including sub-loops of sub-loops)\n";
+
+          /*
            * Induction variables.
            */
           errs() << " Induction variables\n";
@@ -88,38 +96,71 @@ namespace {
           for (auto inv : IM->getLoopInstructionsThatAreLoopInvariants()){
             errs() << "   " << *inv << "\n";
           }
+          
+          /*
+           * Trip count.
+           */
+          if (loop->doesHaveCompileTimeKnownTripCount()){
+            errs() << " Trip count = " << loop->getCompileTimeTripCount() << "\n";
+          }
+
+          /*
+           * Dependences.
+           */
+          errs() << " SCCDAG\n";
+          auto SCCDAG = loop->sccdagAttrs.getSCCDAG();
+          auto sccIterator = [](SCC *scc) -> bool {
+            if (!scc->hasCycle()){
+              return false;
+            }
+
+            /*
+             * Print the beginning of a new SCC.
+             */
+            errs() << "   New SCC\n";
+            auto mySCCIter = [](Instruction *i) -> bool {
+              errs() << "     " << *i << "\n";
+              return false;
+            };
+
+            scc->iterateOverInstructions(mySCCIter);
+            return false;
+          };
+          SCCDAG->iterateOverSCCs(sccIterator);
         }
       }
 
       /*
        * Print profiles.
        */
-      auto hot = noelle.getProfiles();
-      if (hot->isAvailable()){
-        errs() << "The profiler is available\n";
-        for (auto loop : *loops){
+      if (this->printProfile){
+        auto hot = noelle.getProfiles();
+        if (hot->isAvailable()){
+          errs() << "The profiler is available\n";
+          for (auto loop : *loops){
 
-          /*
-           * Print the loop ID.
-           */
-          auto LS = loop->getLoopStructure();
-          auto entryInst = LS->getEntryInstruction();
-          errs() << " Loop " << *entryInst << "\n";
+            /*
+             * Print the loop ID.
+             */
+            auto LS = loop->getLoopStructure();
+            auto entryInst = LS->getEntryInstruction();
+            errs() << " Loop " << *entryInst << "\n";
 
-          /*
-           * Print loop statistics.
-           */
-          errs() << "   Number of invocations of the loop = " << hot->getInvocations(LS) << "\n";
-          errs() << "   Average number of iterations per invocations = " << hot->getAverageLoopIterationsPerInvocation(LS) << "\n";
-          errs() << "   Average number of total instructions per invocations = " << hot->getAverageTotalInstructionsPerInvocation(LS) << "\n";
-          errs() << "   Coverage in terms of total instructions = " << (hot->getDynamicTotalInstructionCoverage(LS) * 100) << "%\n";
+            /*
+             * Print loop statistics.
+             */
+            errs() << "   Number of invocations of the loop = " << hot->getInvocations(LS) << "\n";
+            errs() << "   Average number of iterations per invocations = " << hot->getAverageLoopIterationsPerInvocation(LS) << "\n";
+            errs() << "   Average number of total instructions per invocations = " << hot->getAverageTotalInstructionsPerInvocation(LS) << "\n";
+            errs() << "   Coverage in terms of total instructions = " << (hot->getDynamicTotalInstructionCoverage(LS) * 100) << "%\n";
 
-          /*
-           * Print the coverage per instruction of the loop.
-           */
-          for (auto bb : LS->getBasicBlocks()){
-            for (auto &inst : *bb){
-              errs() << "   [" << hot->getTotalInstructions(&inst) << "] " << inst << "\n";
+            /*
+             * Print the coverage per instruction of the loop.
+             */
+            for (auto bb : LS->getBasicBlocks()){
+              for (auto &inst : *bb){
+                errs() << "   [" << hot->getTotalInstructions(&inst) << "] " << inst << "\n";
+              }
             }
           }
         }
