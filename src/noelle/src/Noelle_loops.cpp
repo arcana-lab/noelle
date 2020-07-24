@@ -13,15 +13,257 @@
 #include "HotProfiler.hpp"
 #include "Architecture.hpp"
 
-std::vector<LoopDependenceInfo *> * Noelle::getLoops (
+std::vector<LoopStructure *> * Noelle::getLoopStructures (
+  Function *function
+) {
+  return this->getLoopStructures(function, this->minHot);
+}
+
+std::vector<LoopStructure *> * Noelle::getLoopStructures (
+  Function *function,
+  double minimumHotness
+) {
+
+  /*
+   * Check if the function has loops.
+   */
+  auto allLoops = new std::vector<LoopStructure *>();
+  auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+  if (std::distance(LI.begin(), LI.end()) == 0){
+    return allLoops;
+  }
+
+  /*
+   * Fetch all loops of the current function.
+   */
+  auto loops = LI.getLoopsInPreorder();
+  for (auto loop : loops){
+
+    /*
+     * Check if the loop is hot enough.
+     */
+    auto loopStructure = new LoopStructure{loop};
+    if (!isLoopHot(loopStructure, minimumHotness)) {
+      delete loopStructure;
+      continue;
+    }
+
+    /*
+     * Allocate the loop wrapper.
+     */
+    allLoops->push_back(loopStructure);
+  }
+
+  return allLoops;
+}
+
+std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (void) {
+  return this->getFilteredLoopStructures(this->minHot);
+}
+
+std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (
+  double minimumHotness
+) {
+
+  auto profiles = this->getProfiles();
+  auto allLoops = new std::vector<LoopStructure *>();
+
+  /*
+   * Fetch the list of functions of the module.
+   */
+  auto mainFunction = this->getEntryFunction();
+  assert(mainFunction != nullptr);
+  auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
+
+  /*
+   * Check if we should filter out loops.
+   */
+  auto filterLoops = this->checkToGetLoopFilteringInfo();
+
+  /*
+   * Append loops of each function.
+   */
+  auto currentLoopIndex = 0;
+  if (this->verbose >= Verbosity::Maximal){
+    errs() << "Parallelizer: Filter out cold code\n" ;
+  }
+  for (auto function : *functions){
+
+    /*
+     * Check if the function is hot.
+     */
+    if (!isFunctionHot(function, minimumHotness)){
+      errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
+      continue ;
+    }
+
+    /*
+     * Check if the function has loops.
+     */
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+    if (std::distance(LI.begin(), LI.end()) == 0){
+      continue ;
+    }
+
+    /*
+     * Consider all loops of the current function.
+     */
+    auto loops = LI.getLoopsInPreorder();
+    for (auto loop : loops){
+
+      /*
+       * Check if the loop is hot enough.
+       */
+      auto loopStructure = new LoopStructure{loop};
+      if (!isLoopHot(loopStructure, minimumHotness)){
+        errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
+        currentLoopIndex++;
+        delete loopStructure;
+        continue ;
+      }
+
+      // TODO: Print out more information than just loop hotness, perhaps the loop header label
+      // errs() << "Parallelizer:  Loop hotness = " << hotness << "\n" ;
+
+      /*
+       * Check if we have to filter loops.
+       */
+      if (!filterLoops){
+
+        /*
+         * Allocate the loop wrapper.
+         */
+        allLoops->push_back(loopStructure);
+        currentLoopIndex++;
+        continue ;
+      }
+
+      /*
+       * We need to filter loops.
+       *
+       * Check if more than one thread is assigned to the current loop.
+       * If that's the case, then we have to enable that loop.
+       */
+      auto maximumNumberOfCoresForTheParallelization = this->loopThreads[currentLoopIndex];
+      if (maximumNumberOfCoresForTheParallelization <= 1){
+
+        /*
+         * Only one thread has been assigned to the current loop.
+         * Hence, the current loop will not be parallelized.
+         */
+        currentLoopIndex++;
+
+        /*
+         * Jump to the next loop.
+         */
+        delete loopStructure;
+        continue ;
+      }
+
+      /*
+       * Safety code.
+       */
+      if (currentLoopIndex >= loopThreads.size()){
+        errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << loopThreads.size() << " loops available in the program\n";
+        abort();
+      }
+
+      /*
+       * The current loop needs to be considered as specified by the user.
+       */
+      allLoops->push_back(loopStructure);
+      currentLoopIndex++;
+    }
+  }
+
+  delete functions;
+
+  return allLoops;
+}
+
+LoopDependenceInfo * Noelle::getLoopDependenceInfo (
+  LoopStructure *loop
+) {
+
+  /*
+   * Fetch the the function dependence graph, post dominators, and scalar evolution
+   */
+  auto header = loop->getHeader();
+  auto function = header->getParent();
+  auto funcPDG = this->getFunctionDependenceGraph(function);
+  auto DS = this->getDominators(function);
+  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+
+  /*
+   * Fetch the llvm loop corresponding to the loop structure
+   */
+  auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+  auto llvmLoop = LI.getLoopFor(header);
+
+  auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores);
+  
+  delete DS;
+  delete funcPDG;
+  return ldi;
+}
+
+LoopDependenceInfo * Noelle::getFilteredLoopDependenceInfo (
+  LoopStructure *loop,
+  int loopIndex
+) {
+
+  /*
+   * Fetch the the function dependence graph, post dominators, and scalar evolution
+   */
+  auto header = loop->getHeader();
+  auto function = header->getParent();
+  auto funcPDG = this->getFunctionDependenceGraph(function);
+  auto DS = this->getDominators(function);
+  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+
+  /*
+   * Fetch the llvm loop corresponding to the loop structure
+   */
+  auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+  auto llvmLoop = LI.getLoopFor(header);
+
+  /*
+   * Safety code to ensure loopIndex provided is within bounds
+   */
+  if (loopIndex >= this->loopThreads.size()){
+    errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << this->loopThreads.size()
+      << " loops available in the program\n";
+    abort();
+  }
+
+  auto maximumNumberOfCoresForTheParallelization = this->loopThreads[loopIndex];
+  assert(maximumNumberOfCoresForTheParallelization > 1
+    && "Noelle: passed user a filtered loop yet it only has max cores <= 1");
+
+  auto ldi = getLoopDependenceInfoForLoop(
+    llvmLoop,
+    funcPDG,
+    DS,
+    &SE,
+    this->techniquesToDisable[loopIndex],
+    this->DOALLChunkSize[loopIndex],
+    maximumNumberOfCoresForTheParallelization
+  );
+
+  delete DS;
+  delete funcPDG;
+  return ldi;
+}
+
+std::vector<LoopDependenceInfo *> * Noelle::getLoopDependenceInfos (
   Function *function
   ){
-  auto v = this->getLoops(function, this->minHot);
+  auto v = this->getLoopDependenceInfos(function, this->minHot);
 
   return v;
 }
 
-std::vector<LoopDependenceInfo *> * Noelle::getLoops (
+std::vector<LoopDependenceInfo *> * Noelle::getLoopDependenceInfos (
   Function *function,
   double minimumHotness
   ){
@@ -39,13 +281,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   /*
    * Check if the function is hot.
    */
-  if (profiles->isAvailable()){
-    auto mInsts = profiles->getTotalInstructions();
-    auto fInsts = profiles->getTotalInstructions(function);
-    auto hotness = ((double)fInsts) / ((double)mInsts);
-    if (hotness < minimumHotness){
-      return allLoops ;
-    }
+  if (!isFunctionHot(function, minimumHotness)){
+    return allLoops ;
   }
 
   /*
@@ -84,14 +321,9 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Check if the loop is hot enough.
      */
-    if (profiles->isAvailable()){
-      auto mInsts = profiles->getTotalInstructions();
-      LoopStructure loopS{loop};
-      auto lInsts = profiles->getTotalInstructions(&loopS);
-      auto hotness = ((double)lInsts) / ((double)mInsts);
-      if (hotness < minimumHotness){
-        continue ;
-      }
+    LoopStructure loopS{loop};
+    if (!isLoopHot(&loopS, minimumHotness)){
+      continue ;
     }
 
     /*
@@ -105,17 +337,18 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
    * Free the memory.
    */
   delete DS ;
+  delete funcPDG;
 
   return allLoops;
 }
 
-std::vector<LoopDependenceInfo *> * Noelle::getLoops (void){
-  auto v = this->getLoops(this->minHot);
+std::vector<LoopDependenceInfo *> * Noelle::getFilteredLoopDependenceInfos (void){
+  auto v = this->getFilteredLoopDependenceInfos(this->minHot);
 
   return v;
 }
 
-std::vector<LoopDependenceInfo *> * Noelle::getLoops (
+std::vector<LoopDependenceInfo *> * Noelle::getFilteredLoopDependenceInfos (
   double minimumHotness
   ){
 
@@ -139,11 +372,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   /*
    * Check if we should filter out loops.
    */
-  std::vector<uint32_t> loopThreads{};
-  std::vector<uint32_t> DOALLChunkSize{};
-  std::vector<uint32_t> techniquesToDisable{};
-  auto indexFileName = getenv("INDEX_FILE");
-  auto filterLoops = this->filterOutLoops(indexFileName, loopThreads, techniquesToDisable, DOALLChunkSize);
+  auto filterLoops = this->checkToGetLoopFilteringInfo();
 
   /*
    * Append loops of each function.
@@ -157,12 +386,9 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Check if the function is hot.
      */
-    if (profiles->isAvailable()){
-      auto hotness = profiles->getDynamicTotalInstructionCoverage(function);
-      if (hotness < minimumHotness){
-        errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
-        continue ;
-      }
+    if (!isFunctionHot(function, minimumHotness)){
+      errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
+      continue ;
     }
 
     /*
@@ -202,16 +428,15 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
       /*
        * Check if the loop is hot enough.
        */
-      if (profiles->isAvailable()){
-        LoopStructure loopS{loop};
-        auto hotness = profiles->getDynamicTotalInstructionCoverage(&loopS);
-        if (hotness < minimumHotness){
-          errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
-          currentLoopIndex++;
-          continue ;
-        }
-        errs() << "Parallelizer:  Loop hotness = " << hotness << "\n" ;
+      LoopStructure loopS{loop};
+      if (!isLoopHot(&loopS, minimumHotness)){
+        errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
+        currentLoopIndex++;
+        continue ;
       }
+
+      // TODO: Print out more information than just loop hotness, perhaps the loop header label
+      // errs() << "Parallelizer:  Loop hotness = " << hotness << "\n" ;
 
       /*
        * Check if we have to filter loops.
@@ -234,7 +459,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
        * Check if more than one thread is assigned to the current loop.
        * If that's the case, then we have to enable that loop.
        */
-      auto maximumNumberOfCoresForTheParallelization = loopThreads[currentLoopIndex];
+      auto maximumNumberOfCoresForTheParallelization = this->loopThreads[currentLoopIndex];
       if (maximumNumberOfCoresForTheParallelization <= 1){
 
         /*
@@ -257,61 +482,15 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
         abort();
       }
 
-      /*
-       * The current loop has more than one core assigned to it.
-       * Therefore, we need to parallelize this loop.
-       *
-       * Allocate the loop wrapper.
-       */
-      auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, maximumNumberOfCoresForTheParallelization);
-
-      /*
-       * Set the loop constraints specified by INDEX_FILE.
-       *
-       * DOALL chunk size is the one defined by INDEX_FILE + 1. This is because chunk size must start from 1.
-       */
-      ldi->DOALLChunkSize = DOALLChunkSize[currentLoopIndex] + 1;
-
-      /*
-       * Set the techniques that are enabled.
-       */
-      auto disableTransformations = techniquesToDisable[currentLoopIndex];
-      switch (disableTransformations){
-
-        case 0:
-          ldi->enableAllTransformations();
-          break ;
-
-        case 1:
-          ldi->disableTransformation(DSWP_ID);
-          break ;
-
-        case 2:
-          ldi->disableTransformation(HELIX_ID);
-          break ;
-
-        case 3:
-          ldi->disableTransformation(DOALL_ID);
-          break ;
-
-        case 4:
-          ldi->disableTransformation(DSWP_ID);
-          ldi->disableTransformation(HELIX_ID);
-          break ;
-
-        case 5:
-          ldi->disableTransformation(DSWP_ID);
-          ldi->disableTransformation(DOALL_ID);
-          break ;
-
-        case 6:
-          ldi->disableTransformation(HELIX_ID);
-          ldi->disableTransformation(DOALL_ID);
-          break ;
-
-        default:
-          abort();
-      }
+      auto ldi = getLoopDependenceInfoForLoop(
+        loop,
+        funcPDG,
+        DS,
+        &SE,
+        this->techniquesToDisable[currentLoopIndex],
+        this->DOALLChunkSize[currentLoopIndex],
+        maximumNumberOfCoresForTheParallelization
+      );
 
       /*
        * The current loop needs to be considered as specified by the user.
@@ -359,11 +538,7 @@ uint32_t Noelle::getNumberOfProgramLoops (
   /*
    * Check if we should filter out loops.
    */
-  std::vector<uint32_t> loopThreads{};
-  std::vector<uint32_t> techniquesToDisable{};
-  std::vector<uint32_t> DOALLChunkSize{};
-  auto indexFileName = getenv("INDEX_FILE");
-  auto filterLoops = this->filterOutLoops(indexFileName, loopThreads, techniquesToDisable, DOALLChunkSize);
+  auto filterLoops = this->checkToGetLoopFilteringInfo();
 
   /*
    * Append loops of each function.
@@ -386,11 +561,8 @@ uint32_t Noelle::getNumberOfProgramLoops (
     /*
      * Check if the function is hot.
      */
-    if (profiles->isAvailable()){
-      auto hotness = profiles->getDynamicTotalInstructionCoverage(function);
-      if (hotness <= minimumHotness){
-        continue ;
-      }
+    if (!isFunctionHot(function, minimumHotness)){
+      continue ;
     }
 
     /*
@@ -406,13 +578,10 @@ uint32_t Noelle::getNumberOfProgramLoops (
       /*
        * Check if the loop is hot enough.
        */
-       if (profiles->isAvailable()){
-        LoopStructure loopS{loop};
-        auto hotness = profiles->getDynamicTotalInstructionCoverage(&loopS);
-        if (hotness <= minimumHotness){
-          currentLoopIndex++;
-          continue ;
-        }
+      LoopStructure loopStructure{loop};
+      if (!isLoopHot(&loopStructure, minimumHotness)) {
+        currentLoopIndex++;
+        continue ;
       }
 
       /*
@@ -463,28 +632,25 @@ uint32_t Noelle::getNumberOfProgramLoops (
   return counter;
 }
 
-bool Noelle::filterOutLoops (
-  char *fileName,
-  std::vector<uint32_t>& loopThreads,
-  std::vector<uint32_t>& techniquesToDisable,
-  std::vector<uint32_t>& DOALLChunkSize
-  ){
+bool Noelle::checkToGetLoopFilteringInfo (void) {
 
   /*
    * Check the name of the file that lists the loops to consider.
+   * Check that the file hasn't been read already
    */
-  if (!fileName){
+  if (!this->filterFileName || this->hasReadFilterFile){
     return false;
   }
+  this->hasReadFilterFile = true;
 
   /*
    * We need to filter out loops.
    *
    * Open the file that specifies which loops to keep.
    */
-  auto indexBuf = MemoryBuffer::getFileAsStream(fileName);
+  auto indexBuf = MemoryBuffer::getFileAsStream(this->filterFileName);
   if (auto ec = indexBuf.getError()){
-    errs() << "Failed to read INDEX_FILE = \"" << fileName << "\":" << ec.message() << "\n";
+    errs() << "Failed to read INDEX_FILE = \"" << this->filterFileName << "\":" << ec.message() << "\n";
     abort();
   }
 
@@ -551,14 +717,14 @@ bool Noelle::filterOutLoops (
      */
     if (  (shouldBeParallelized)    &&
           (cores >= 2)              ){
-      loopThreads.push_back(cores);
-      techniquesToDisable.push_back(technique);
-      DOALLChunkSize.push_back(DOALLChunkFactor);
+      this->loopThreads.push_back(cores);
+      this->techniquesToDisable.push_back(technique);
+      this->DOALLChunkSize.push_back(DOALLChunkFactor);
 
     } else{
-      loopThreads.push_back(1);
-      techniquesToDisable.push_back(0);
-      DOALLChunkSize.push_back(0);
+      this->loopThreads.push_back(1);
+      this->techniquesToDisable.push_back(0);
+      this->DOALLChunkSize.push_back(0);
     }
   }
   
@@ -592,6 +758,31 @@ void Noelle::sortByHotness (std::vector<LoopDependenceInfo *> & loops) {
   return ;
 }
 
+void Noelle::sortByHotness (std::vector<LoopStructure *> & loops) {
+
+  /*
+   * Fetch the profiles.
+   */
+  auto hot = this->getProfiles();
+
+  /*
+   * Define the order between loops.
+   */
+  auto compareLoops = [hot] (LoopStructure *a, LoopStructure *b) -> bool {
+    auto aInsts = hot->getTotalInstructions(a);
+    auto bInsts = hot->getTotalInstructions(b);
+    return aInsts >= bInsts;
+  };
+
+  /*
+   * Sort the loops.
+   */
+  std::sort(loops.begin(), loops.end(), compareLoops);
+
+  return;
+}
+
+
 void Noelle::sortByStaticNumberOfInstructions (std::vector<LoopDependenceInfo *> & loops) {
 
   /*
@@ -612,4 +803,79 @@ void Noelle::sortByStaticNumberOfInstructions (std::vector<LoopDependenceInfo *>
   std::sort(loops.begin(), loops.end(), compareLoops);
 
   return ;
+}
+
+LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
+  Loop *loop,
+  PDG *functionPDG,
+  DominatorSummary *DS,
+  ScalarEvolution *SE,
+  uint32_t techniquesToDisableForLoop,
+  uint32_t DOALLChunkSizeForLoop,
+  uint32_t maxCores
+) {
+
+  auto ldi = new LoopDependenceInfo(functionPDG, loop, *DS, *SE, maxCores);
+
+  /*
+   * Set the loop constraints specified by INDEX_FILE.
+   *
+   * DOALL chunk size is the one defined by INDEX_FILE + 1. This is because chunk size must start from 1.
+   */
+  ldi->DOALLChunkSize = DOALLChunkSizeForLoop + 1;
+
+  /*
+   * Set the techniques that are enabled.
+   */
+  auto disableTransformations = techniquesToDisableForLoop;
+  switch (disableTransformations){
+
+    case 0:
+      ldi->enableAllTransformations();
+      break ;
+
+    case 1:
+      ldi->disableTransformation(DSWP_ID);
+      break ;
+
+    case 2:
+      ldi->disableTransformation(HELIX_ID);
+      break ;
+
+    case 3:
+      ldi->disableTransformation(DOALL_ID);
+      break ;
+
+    case 4:
+      ldi->disableTransformation(DSWP_ID);
+      ldi->disableTransformation(HELIX_ID);
+      break ;
+
+    case 5:
+      ldi->disableTransformation(DSWP_ID);
+      ldi->disableTransformation(DOALL_ID);
+      break ;
+
+    case 6:
+      ldi->disableTransformation(HELIX_ID);
+      ldi->disableTransformation(DOALL_ID);
+      break ;
+
+    default:
+      abort();
+  }
+
+  return ldi;
+}
+
+bool Noelle::isLoopHot (LoopStructure *loopStructure, double minimumHotness) {
+  if (!profiles->isAvailable()) return true;
+  auto hotness = profiles->getDynamicTotalInstructionCoverage(loopStructure);
+  return hotness >= minimumHotness;
+}
+
+bool Noelle::isFunctionHot (Function *function, double minimumHotness) {
+  if (!profiles->isAvailable()) return true;
+  auto hotness = profiles->getDynamicTotalInstructionCoverage(function);
+  return hotness >= minimumHotness;
 }

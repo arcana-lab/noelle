@@ -55,8 +55,8 @@ namespace {
       /*
        * Print loop induction variables and invariant.
        */
-      auto loops = noelle.getLoops();
-      //auto loops = noelle.getLoops(mainF);
+      auto loops = noelle.getFilteredLoopDependenceInfos();
+      //auto loops = noelle.getAllLoopDependenceInfos(mainF);
       if (this->printLoops){
         for (auto loop : *loops){
 
