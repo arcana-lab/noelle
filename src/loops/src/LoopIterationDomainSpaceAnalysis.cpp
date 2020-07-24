@@ -276,19 +276,19 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
       memAccessSpace->sizes.clear();
     }
 
-    basePointer->print(errs() << "Base pointer: "); errs() << "\n";
-    accessFunction->print(errs() << "Access function: "); errs() << "\n";
-    for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
-      auto subscript = memAccessSpace->subscripts[i];
-      subscript->getType()->print(errs() << "Subscript " << i << ": ");
-      subscript->print(errs() << " " ); errs() << "\n";
-    }
-    for (auto i = 0; i < memAccessSpace->sizes.size(); ++i) {
-      auto size = memAccessSpace->sizes[i];
-      size->getType()->print(errs() << "Size " << i << ": ");
-      size->print(errs() << " " ); errs() << "\n";
-    }
-    errs() << "---------\n";
+    // basePointer->print(errs() << "Base pointer: "); errs() << "\n";
+    // accessFunction->print(errs() << "Access function: "); errs() << "\n";
+    // for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
+    //   auto subscript = memAccessSpace->subscripts[i];
+    //   subscript->getType()->print(errs() << "Subscript " << i << ": ");
+    //   subscript->print(errs() << " " ); errs() << "\n";
+    // }
+    // for (auto i = 0; i < memAccessSpace->sizes.size(); ++i) {
+    //   auto size = memAccessSpace->sizes[i];
+    //   size->getType()->print(errs() << "Size " << i << ": ");
+    //   size->print(errs() << " " ); errs() << "\n";
+    // }
+    // errs() << "---------\n";
 
   }
 
@@ -306,14 +306,14 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
     if (memAccessSpace->subscriptIVs.size() == 0) continue;
     if (memAccessSpace->subscriptIVs.size() != memAccessSpace->sizes.size()) continue;
 
-    memAccessSpace->memoryAccessor->print(errs() << "Checking accessor for overlapping: "); errs() << "\n";
+    // memAccessSpace->memoryAccessor->print(errs() << "Checking accessor for overlapping: "); errs() << "\n";
 
     /*
      * Each inner dimension's accesses must be bounded not to spill over into another dimension 
      */
     if (!isInnerDimensionSubscriptsBounded(SE, memAccessSpace.get())) continue;
 
-    errs() << "\tAccessor has bounded inner dimension accesses\n";
+    // errs() << "\tAccessor has bounded inner dimension accesses\n";
 
     /*
      * At least one dimension's subscript's IV must evolve in the top-most loop
@@ -362,12 +362,12 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
     }
     if (!atLeastOneTopLevelNonOverlappingIV) continue;
 
-    memAccessSpace->memoryAccessor->print(errs() << "Is non-overlapping: "); errs() << "\n";
+    // memAccessSpace->memoryAccessor->print(errs() << "Is non-overlapping: "); errs() << "\n";
 
     nonOverlappingAccessesBetweenIterations.insert(memAccessSpace.get());
   }
 
-  errs() << "Non overlapping size: " << nonOverlappingAccessesBetweenIterations.size() << "\n";
+  // errs() << "Non overlapping size: " << nonOverlappingAccessesBetweenIterations.size() << "\n";
   // for (auto space : nonOverlappingAccessesBetweenIterations) {
   //   space->memoryAccessor->print(errs() << "Non overlapping space: "); errs() << "\n";
   // }
@@ -526,21 +526,21 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
   MemoryAccessSpace *space
 ) {
 
-  errs() << "Num subscripts: " << space->subscriptIVs.size() << "\n";
-  errs() << "Num dimensions: " << space->sizes.size() << "\n";
-  for (auto i = 1; i < space->sizes.size(); ++i) {
-    auto sizeSCEV = space->sizes[i - 1];
-    auto instIVPair = space->subscriptIVs[i];
-    auto inst = instIVPair.first;
-    if (!inst) {
-      // errs() << "No inst: " << i << "\n";
-      continue;
-    }
-    auto subscriptSCEV = SE.getSCEV(inst);
-    sizeSCEV->print(errs() << "SIZE "); errs() << "\n";
-    subscriptSCEV->print(errs() << "Subscript " << i << ": "); errs() << "\n";
-    inst->print(errs() << "\tInst: "); errs() << "\n";
-  }
+  // errs() << "Num subscripts: " << space->subscriptIVs.size() << "\n";
+  // errs() << "Num dimensions: " << space->sizes.size() << "\n";
+  // for (auto i = 1; i < space->sizes.size(); ++i) {
+  //   auto sizeSCEV = space->sizes[i - 1];
+  //   auto instIVPair = space->subscriptIVs[i];
+  //   auto inst = instIVPair.first;
+  //   if (!inst) {
+  //     // errs() << "No inst: " << i << "\n";
+  //     continue;
+  //   }
+  //   auto subscriptSCEV = SE.getSCEV(inst);
+  //   sizeSCEV->print(errs() << "SIZE "); errs() << "\n";
+  //   subscriptSCEV->print(errs() << "Subscript " << i << ": "); errs() << "\n";
+  //   inst->print(errs() << "\tInst: "); errs() << "\n";
+  // }
 
   if (space->subscriptIVs.size() == 0 || space->subscriptIVs.size() != space->sizes.size()) {
     return false;
@@ -584,14 +584,14 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
     auto zeroConstant = (ConstantInt *)ConstantInt::get(subscriptSCEV->getType(), (int64_t)0);
     auto zeroSCEV = SE.getConstant(zeroConstant);
 
-    sizeSCEV->print(errs() << "Checking if bounded by 0 and ");
-    subscriptSCEV->print(errs() << ", Subscript " << i << ": ");
-    inst->print(errs() << "\tInst: ");
-    errs() << "\n";
-    if (auto ar = dyn_cast<SCEVAddRecExpr>(subscriptSCEV)) {
-      iv->getLoopEntryPHI()->getParent()->printAsOperand(errs() << "\tfrom loop: "); errs() << "\n";
-    }
-    errs() << "\tEqual to instruction SCEV: " << (subscriptSCEV == SE.getSCEV(inst)) << "\n";
+    // sizeSCEV->print(errs() << "Checking if bounded by 0 and ");
+    // subscriptSCEV->print(errs() << ", Subscript " << i << ": ");
+    // inst->print(errs() << "\tInst: ");
+    // errs() << "\n";
+    // if (auto ar = dyn_cast<SCEVAddRecExpr>(subscriptSCEV)) {
+    //   iv->getLoopEntryPHI()->getParent()->printAsOperand(errs() << "\tfrom loop: "); errs() << "\n";
+    // }
+    // errs() << "\tEqual to instruction SCEV: " << (subscriptSCEV == SE.getSCEV(inst)) << "\n";
 
     if (SE.isKnownPredicate(looseLowerBoundPred, subscriptSCEV, zeroSCEV)
       && SE.isKnownPredicate(strictUpperBoundPred, subscriptSCEV, sizeSCEV)) continue;
