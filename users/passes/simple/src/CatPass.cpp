@@ -14,7 +14,7 @@ namespace {
   struct CAT : public ModulePass {
     static char ID; 
     bool printDependences = false;
-    bool printLoops = true;
+    bool printLoops = false;
     bool printDFA = false;
     bool printProfile = false;
 
@@ -109,21 +109,46 @@ namespace {
            */
           errs() << " SCCDAG\n";
           auto SCCDAG = loop->sccdagAttrs.getSCCDAG();
-          auto sccIterator = [](SCC *scc) -> bool {
+          auto sccIterator = [loop](SCC *scc) -> bool {
             if (!scc->hasCycle()){
               return false;
             }
 
             /*
-             * Print the beginning of a new SCC.
+             * We found a new SCC.
              */
             errs() << "   New SCC\n";
+
+            /*
+             * Print the instructions that compose the SCC.
+             */
+            errs() << "     Instructions:\n";
             auto mySCCIter = [](Instruction *i) -> bool {
-              errs() << "     " << *i << "\n";
+              errs() << "       " << *i << "\n";
               return false;
             };
-
             scc->iterateOverInstructions(mySCCIter);
+
+            /*
+             * Fetch the SCC information.
+             */
+            auto sccInfo = loop->sccdagAttrs.getSCCAttrs(scc);
+            if (sccInfo->isInductionVariableSCC()){
+              errs() << "     It is due to the computation of an induction variable\n";
+
+            } else if (sccInfo->canExecuteReducibly()){
+              errs() << "     It can be reduced\n";
+
+            } else if (sccInfo->canExecuteIndependently()){
+              errs() << "     It doesn't have loop-carried data dependences\n";
+
+            } else if (sccInfo->mustExecuteSequentially()){
+              errs() << "     It must be executed sequentially\n";
+
+            } else {
+              errs() << "     It can run in parallel\n";
+            }
+
             return false;
           };
           SCCDAG->iterateOverSCCs(sccIterator);
@@ -261,8 +286,6 @@ namespace {
       return false;
     }
 
-    // We don't modify the program, so we preserve all analyses.
-    // The LLVM IR of functions isn't ready at this point
     void getAnalysisUsage(AnalysisUsage &AU) const override {
       AU.addRequired<Noelle>();
     }
