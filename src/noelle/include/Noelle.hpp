@@ -70,8 +70,7 @@ namespace llvm {
       );
 
       LoopDependenceInfo * getFilteredLoopDependenceInfo (
-        LoopStructure *loop,
-        int loopIndex
+        LoopStructure *loop
       );
 
       std::vector<LoopDependenceInfo *> * getLoopDependenceInfos (
@@ -180,6 +179,7 @@ namespace llvm {
       std::vector<uint32_t> loopThreads;
       std::vector<uint32_t> techniquesToDisable;
       std::vector<uint32_t> DOALLChunkSize;
+      std::unordered_map<BasicBlock *, uint32_t> loopHeaderToLoopIndexMap;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream
