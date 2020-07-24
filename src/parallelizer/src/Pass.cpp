@@ -90,12 +90,6 @@ bool Parallelizer::runOnModule (Module &M) {
    * Fetch all the loops we want to parallelize.
    */
   auto loopsToParallelize = noelle.getFilteredLoopStructures();
-  std::unordered_map<LoopStructure *, int> loopsToOrderMap;
-  for (auto i = 0; i < loopsToParallelize->size(); ++i) {
-    auto loop = (*loopsToParallelize)[i];
-    loopsToOrderMap.insert(std::make_pair(loop, i));
-  }
-
   errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
 
   auto getLoopID = [](LoopStructure *loopStructure) -> std::string {
@@ -181,7 +175,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Parallelize the current loop.
      */
-    auto ldi = noelle.getFilteredLoopDependenceInfo(ls, loopsToOrderMap.at(ls));
+    auto ldi = noelle.getFilteredLoopDependenceInfo(ls);
     auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, dswp, doall, helix, heuristics);
 
     /*
