@@ -44,6 +44,11 @@ bool Inliner::runOnModule (Module &M) {
   }
 
   /*
+   * Fetch the call graph.
+   */
+  auto pcg = noelle.getProgramCallGraph();
+
+  /*
    * Collect function and loop ordering to track inlining progress
    */
   collectFnGraph(main);

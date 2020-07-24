@@ -12,6 +12,7 @@
 
 #include "SystemHeaders.hpp"
 
+#include "PDGAnalysis.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "Queue.hpp"
 #include "HotProfiler.hpp"
@@ -94,6 +95,8 @@ namespace llvm {
     
       DominatorSummary * getDominators (Function *f) ;
 
+      noelle::CallGraph * getProgramCallGraph (void) ;
+
       Verbosity getVerbosity (void) const ;
 
       double getMinimumHotness (void) const ;
@@ -141,6 +144,8 @@ namespace llvm {
       std::unordered_set<Transformation> enabledTransformations;
       uint32_t maxCores;
       bool hoistLoopsToMain;
+      noelle::CallGraph *pcg;
+      PDGAnalysis *pdgAnalysis;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream
