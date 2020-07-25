@@ -57,11 +57,11 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
   return allLoops;
 }
 
-std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (void) {
-  return this->getFilteredLoopStructures(this->minHot);
+std::vector<LoopStructure *> * Noelle::getLoopStructures (void) {
+  return this->getLoopStructures(this->minHot);
 }
 
-std::vector<LoopStructure *> * Noelle::getFilteredLoopStructures (
+std::vector<LoopStructure *> * Noelle::getLoopStructures (
   double minimumHotness
 ) {
 
@@ -228,7 +228,7 @@ LoopDependenceInfo * Noelle::getFilteredLoopDependenceInfo (
    * Safety code to ensure loopIndex provided is within bounds
    */
   assert(this->loopHeaderToLoopIndexMap.find(header) != this->loopHeaderToLoopIndexMap.end()
-    && "This loop isn't a filtered loop! Filtered loops are gotten fromo getFilteredLoopStructures");
+    && "This loop isn't a filtered loop! Filtered loops are gotten fromo getLoopStructures");
   auto loopIndex = this->loopHeaderToLoopIndexMap.at(header);
 
   /*
