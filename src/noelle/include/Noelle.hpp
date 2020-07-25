@@ -82,9 +82,9 @@ namespace llvm {
         double minimumHotness
       );
 
-      std::vector<LoopDependenceInfo *> * getFilteredLoopDependenceInfos (void) ;
+      std::vector<LoopDependenceInfo *> * getLoops (void) ;
 
-      std::vector<LoopDependenceInfo *> * getFilteredLoopDependenceInfos (
+      std::vector<LoopDependenceInfo *> * getLoops (
         double minimumHotness
       );
 
