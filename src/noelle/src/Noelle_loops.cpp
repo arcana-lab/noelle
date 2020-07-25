@@ -270,15 +270,15 @@ LoopDependenceInfo * Noelle::getFilteredLoopDependenceInfo (
   return ldi;
 }
 
-std::vector<LoopDependenceInfo *> * Noelle::getLoopDependenceInfos (
+std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   Function *function
   ){
-  auto v = this->getLoopDependenceInfos(function, this->minHot);
+  auto v = this->getLoops(function, this->minHot);
 
   return v;
 }
 
-std::vector<LoopDependenceInfo *> * Noelle::getLoopDependenceInfos (
+std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   Function *function,
   double minimumHotness
   ){

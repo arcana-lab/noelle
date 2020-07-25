@@ -73,11 +73,11 @@ namespace llvm {
         LoopStructure *loop
       );
 
-      std::vector<LoopDependenceInfo *> * getLoopDependenceInfos (
+      std::vector<LoopDependenceInfo *> * getLoops (
         Function *function
       );
 
-      std::vector<LoopDependenceInfo *> * getLoopDependenceInfos (
+      std::vector<LoopDependenceInfo *> * getLoops (
         Function *function,
         double minimumHotness
       );
