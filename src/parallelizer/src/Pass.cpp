@@ -92,12 +92,6 @@ bool Parallelizer::runOnModule (Module &M) {
   auto loopsToParallelize = noelle.getLoopStructures();
   errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
 
-  auto getLoopID = [](LoopStructure *loopStructure) -> std::string {
-    auto headerTerm = loopStructure->getHeader()->getTerminator();
-    auto metaNode = headerTerm->getMetadata("noelle.loop_ID");
-    return cast<MDString>(metaNode->getOperand(0))->getString();
-  };
-
   /*
    * Sort them by their hotness.
    */
@@ -115,7 +109,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Print information about this loop.
      */
-    auto loopID = getLoopID(loopStructure);
+    auto loopID = loopStructure->getID();
     errs() << "Parallelizer:    ID: " << loopID << "\n";
     errs() << "Parallelizer:    Function: \"" << loopFunction->getName() << "\"\n";
     errs() << "Parallelizer:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
@@ -153,7 +147,7 @@ bool Parallelizer::runOnModule (Module &M) {
         break ;
       }
     }
-    auto loopID = getLoopID(ls);
+    auto loopID = ls->getID();
     if (!safe){
       errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
       continue ;
