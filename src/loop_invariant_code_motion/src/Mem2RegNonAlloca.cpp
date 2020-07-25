@@ -546,7 +546,7 @@ void Mem2RegNonAlloca::dumpLogs (void) {
    * Identify loop
    */
   std::string loopId;
-  if (LDI.doesHaveMetadata("noelle.loop_ID")) {
+  if (loop->doesHaveMetadata("noelle.loop_ID")) {
     loopId = std::to_string(LDI.getID());
   } else {
     auto terminatingCondition = loop->getHeader()->getTerminator()->getOperand(0);
