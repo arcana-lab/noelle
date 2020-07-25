@@ -45,10 +45,26 @@ namespace llvm {
 
       bool runOnModule (Module &M) override ;
 
-      std::vector<Function *> * getModuleFunctionsReachableFrom (
-        Module *module, 
-        Function *startingPoint
-        );
+      std::vector<LoopDependenceInfo *> * getLoops (void) ;
+
+      std::vector<LoopDependenceInfo *> * getLoops (
+        double minimumHotness
+      );
+
+      std::vector<LoopDependenceInfo *> * getLoops (
+        Function *function
+      );
+
+      std::vector<LoopDependenceInfo *> * getLoops (
+        Function *function,
+        double minimumHotness
+      );
+
+      std::vector<LoopStructure *> * getLoopStructures (void) ;
+
+      std::vector<LoopStructure *> * getLoopStructures (
+        double minimumHotness
+      );
 
       std::vector<LoopStructure *> * getLoopStructures (
         Function *function
@@ -56,12 +72,6 @@ namespace llvm {
 
       std::vector<LoopStructure *> * getLoopStructures (
         Function *function,
-        double minimumHotness
-      );
-
-      std::vector<LoopStructure *> * getFilteredLoopStructures (void) ;
-
-      std::vector<LoopStructure *> * getFilteredLoopStructures (
         double minimumHotness
       );
 
@@ -73,38 +83,23 @@ namespace llvm {
         LoopStructure *loop
       );
 
-      std::vector<LoopDependenceInfo *> * getLoops (
-        Function *function
-      );
-
-      std::vector<LoopDependenceInfo *> * getLoops (
-        Function *function,
-        double minimumHotness
-      );
-
-      std::vector<LoopDependenceInfo *> * getLoops (void) ;
-
-      std::vector<LoopDependenceInfo *> * getLoops (
-        double minimumHotness
-      );
-
-      void sortByHotness (
-        std::vector<LoopStructure *> & loops
-        ) ;
-
-      void sortByHotness (
-        std::vector<LoopDependenceInfo *> & loops
-        ) ;
-
-      void sortByStaticNumberOfInstructions (
-        std::vector<LoopDependenceInfo *> & loops
-        ) ;
-
       uint32_t getNumberOfProgramLoops (void);
 
       uint32_t getNumberOfProgramLoops (
         double minimumHotness
         );
+
+      void sortByHotness (
+        std::vector<LoopDependenceInfo *> & loops
+        ) ;
+
+      void sortByHotness (
+        std::vector<LoopStructure *> & loops
+        ) ;
+
+      void sortByStaticNumberOfInstructions (
+        std::vector<LoopDependenceInfo *> & loops
+        ) ;
 
       Module * getProgram (void) const ;
 
@@ -149,6 +144,11 @@ namespace llvm {
       bool isTransformationEnabled (Transformation transformation);
 
       bool shouldLoopsBeHoistToMain (void) const ;
+
+      std::vector<Function *> * getModuleFunctionsReachableFrom (
+        Module *module, 
+        Function *startingPoint
+        );
 
       void linkTransformedLoopToOriginalFunction (
         Module *module, 

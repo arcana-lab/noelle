@@ -24,7 +24,7 @@ bool LoopMetadataPass::tagLoops (
   /*
    * Fetch all the loops of the program.
    */
-  auto loopStructuresToParallelize = par.getFilteredLoopStructures(0.0);
+  auto loopStructuresToParallelize = par.getLoopStructures(0.0);
 
   /*
    * Tag all loops.
