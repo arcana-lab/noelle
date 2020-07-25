@@ -58,14 +58,12 @@ bool EnablersManager::runOnModule (Module &M) {
    */
   auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
-  for (auto i = 0; i < loopsToParallelize->size(); ++i){
+  for (auto loopStructure : *loopsToParallelize){
 
     /*
      * Fetch the function that contains the current loop.
      */
-    auto loopStructure = (*loopsToParallelize)[i];
-    auto header = loopStructure->getHeader();
-    auto f = header->getParent();
+    auto f = loopStructure->getFunction();
 
     /*
      * Check if we have already modified the function.
@@ -78,13 +76,13 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Compute loop dependence info
      */
-    auto ldi = noelle.getFilteredLoopDependenceInfo(loopStructure);
+    auto loop = noelle.getFilteredLoopDependenceInfo(loopStructure);
 
     /*
      * Improve the current loop.
      */
     modifiedFunctions[f] |= this->applyEnablers(
-      ldi,
+      loop,
       noelle,
       loopDist,
       loopUnroll,
