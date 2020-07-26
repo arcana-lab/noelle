@@ -83,6 +83,13 @@ namespace llvm {
         LoopDependenceInfo *LDI
       );
 
+      void createLoadsAndStoresToSpilledLCD (
+        LoopDependenceInfo *LDI,
+        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+        SpilledLoopCarriedDependency *spill,
+        Value *spillEnvPtr
+      );
+
       std::vector<SequentialSegment *> identifySequentialSegments (
         LoopDependenceInfo *LDI
       );
