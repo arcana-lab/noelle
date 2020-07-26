@@ -24,28 +24,23 @@ bool LoopMetadataPass::tagLoops (
   /*
    * Fetch all the loops of the program.
    */
-  auto loopsToParallelize = par.getLoops(0.0);
+  auto loopStructuresToParallelize = par.getLoopStructures(0.0);
 
   /*
    * Tag all loops.
    */
   auto modified = false;
   auto loopID = 0;
-  for (auto loopInfo : *loopsToParallelize){
+  for (auto loopStructure : *loopStructuresToParallelize){
 
     /*
      * We cannot attach metadata to loops in the current LLVM infrastructure.
      * We cannot attach metadata to basic blocks in the current LLVM infrastructure.
      * Hence, we attach metadata to the terminator of the header of the loop to represent the metadata of the loop.
-     *
-     * Fetch the loop summary.
-     */
-    auto loopSummary = loopInfo->getLoopStructure();
-
-    /*
+     * 
      * Fetch the header.
      */
-    auto header = loopSummary->getHeader();
+    auto header = loopStructure->getHeader();
 
     /*
      * Fetch the terminator.
