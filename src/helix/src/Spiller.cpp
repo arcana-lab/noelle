@@ -145,7 +145,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
       Instruction *insertPoint = incomingBB->getFirstNonPHIOrDbgOrLifetime();
       if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
         insertPoint = incomingI->getNextNode();
-        if (isa<PHINode>(insertPoint) || !isa<DbgInfoIntrinsic>(insertPoint) && !insertPoint->isLifetimeStartOrEnd()) {
+        if (isa<PHINode>(insertPoint) || isa<DbgInfoIntrinsic>(insertPoint) || insertPoint->isLifetimeStartOrEnd()) {
           insertPoint = incomingI->getParent()->getFirstNonPHIOrDbgOrLifetime();
         }
       }
