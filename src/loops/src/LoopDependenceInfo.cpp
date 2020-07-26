@@ -296,6 +296,10 @@ bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) cons
   return true;
 }
 
+const LoopsSummary * LoopDependenceInfo::getLoopStructureSummary (void) const {
+  return &(this->liSummary);
+}
+
 LoopStructure * LoopDependenceInfo::getLoopStructure (void) const {
   return this->liSummary.getLoopNestingTreeRoot();
 }

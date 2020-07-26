@@ -21,6 +21,11 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
   ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSCCDAG(LDI);
 
   /*
+   * Compute reachability analysis
+   */
+  auto reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
+
+  /*
    * Fetch the subsets.
    */
   auto& subsets = this->partition->getDepthOrderedSubsets();
@@ -63,7 +68,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
     /*
      * Allocate a sequential segment.
      */
-    auto ss = new SequentialSegment(LDI, subset, ssID, this->verbose);
+    auto ss = new SequentialSegment(LDI, reachabilityDFR, subset, ssID, this->verbose);
 
     /*
      * Insert the new sequential segment to the list.
@@ -71,6 +76,8 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
     ssID++;
     sss.push_back(ss);
   }
+
+  delete reachabilityDFR;
 
   return sss;
 }

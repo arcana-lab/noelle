@@ -22,7 +22,7 @@
 #include "llvm/Support/GenericDomTree.h"
 
 #include "TestSuite.hpp"
-#include "LoopInfoSummary.hpp"
+#include "LoopsSummary.hpp"
 #include "DominatorSummary.hpp"
 #include "ControlFlowEquivalence.hpp"
 
@@ -52,7 +52,7 @@ namespace llvm {
 
     private:
 
-      static Values hasCorrectCFESets (ModulePass &pass) ;
+      static Values hasCorrectCFESets (ModulePass &pass, TestSuite &suite) ;
 
       TestSuite *suite;
       Module *M;

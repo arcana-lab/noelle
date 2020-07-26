@@ -13,226 +13,80 @@
 
 using namespace llvm ;
 
-template <typename T>
-bool reachesTargetFirst (
-  T bbIterator,
-  BasicBlock *startB,
-  BasicBlock *targetB,
-  BasicBlock *terminalB
-){
-  bool reachedTarget = false;
-
-  std::queue<BasicBlock *> nexts;
-  std::set<BasicBlock *> seen;
-  nexts.push(startB);
-  while (!nexts.empty()) {
-    auto B = nexts.front();
-    nexts.pop();
-
-    if (seen.find(B) != seen.end()) continue;
-    seen.insert(B);
-
-    // B->printAsOperand(errs() << "Reach B:\n", false); errs() << "\n";
-
-    if (B == targetB) {
-      reachedTarget = true;
-      continue;
-    }
-    if (B == terminalB) return false;
-
-    for (auto next : bbIterator(B)) {
-      nexts.push(next);
-    }
-  }
-
-  assert(reachedTarget && "Basic Block traversal reached neither expected value\n");
-  return true;
-}
-
-template <typename Forward, typename Backward, typename DomMap>
-void traverseDomination (
-  Forward forwardBBIter,
-  Backward backwardBBIter,
-  DomMap &domMap,
-  std::set<BasicBlock *> startBs,
-  BasicBlock *terminalB
-){
-  std::queue<BasicBlock *> workList;
-  std::set<BasicBlock *> seenList;
-  for (auto B : startBs) workList.push(B);
-
-  while (!workList.empty()) {
-    auto B = workList.front();
-    workList.pop();
-
-    if (seenList.find(B) != seenList.end()) continue;
-    seenList.insert(B);
-
-    // B->printAsOperand(errs() << "Traverse B: ", false); errs() << "\n";
-
-    for (auto next : forwardBBIter(B)) {
-      // next->printAsOperand(errs() << "Next B: ", false); errs() << "\n";
-      if (reachesTargetFirst(backwardBBIter, next, B, terminalB)) {
-        // errs() << "In Dom map\n";
-        workList.push(next);
-        domMap[next] = B;
-      }
-    }
-  }
-}
-
-void collectIDomsAndIPostDoms (
-  LoopDependenceInfo *LDI,
-  BasicBlock *loopHeader,
-  std::unordered_map<BasicBlock *, BasicBlock *> &iDoms,
-  std::unordered_map<BasicBlock *, BasicBlock *> &iPostDoms
-){
-  pred_range (*preds)(BasicBlock *) = predecessors;
-  succ_range (*succs)(BasicBlock *) = successors;
-
-  /*
-   * Fetch the loop function.
-   */
-  auto loopSummary = LDI->getLoopStructure();
-  auto loopFunction = loopSummary->getFunction();
-
-  std::set<BasicBlock *> exitBBs;
-  for (auto exitBB : LDI->getLoopStructure()->getLoopExitBasicBlocks()) exitBBs.insert(exitBB);
-  traverseDomination(preds, succs, iPostDoms, exitBBs, &*loopFunction->begin());
-
-  std::set<BasicBlock *> startBBs = { loopHeader };
-  traverseDomination(succs, preds, iDoms, startBBs, &*loopFunction->end());
-
-  for (auto B : loopSummary->orderedBBs){
-    // B->printAsOperand(errs() << "Basic block in loop: ", false); errs() << "\n";
-    assert(iPostDoms.find(B) != iPostDoms.end()
-      && "ERROR: Ad-hoc PDT analysis came up short on helix task's loop basic blocks");
-    assert(iDoms.find(B) != iDoms.end()
-      && "ERROR: Ad-hoc DT analysis came up short on helix task's loop basic blocks");
-  }
-}
 
 /*
- * Not working yet but would improve performance greatly
- *
-
-template <typename iDomMap, typename tDomMap, typename Iter>
-void propagateTransitiveDomination (
-  iDomMap &iDoms,
-  tDomMap &tDoms,
-  Iter bbIter,
-  std::set<BasicBlock *> leafBs
-){
-
-  for (auto iDomPair : iDoms) {
-    tDoms[iDomPair.first].insert(iDomPair.second);
-  }
-
-  std::queue<BasicBlock *> workList;
-  for (auto B : leafBs) workList.push(B);
-
-  while (!workList.empty()) {
-    auto B = workList.front();
-    workList.pop();
-
-    std::set<BasicBlock *> transitives;
-    for (auto domB : tDoms[B]) {
-      auto domDoms = tDoms[domB];
-      transitives.insert(domDoms.begin(), domDoms.end());
-    }
-    tDoms[B].insert(transitives.begin(), transitives.end());
-
-    for (auto next : bbIter(B)) {
-      workList.push(next);
-    }
-  }
-}
-
-*/
-
+ * Heuristic used: push furthest outlier instructions closer to the rest of the sequential segment
+ * by moving between control flow equivalent sets of basic blocks
+ */
 void HELIX::squeezeSequentialSegment (
   LoopDependenceInfo *LDI,
+  DataFlowResult *reachabilityDFR,
   SequentialSegment *ss
   ){
 
-  //TODO
-  return ;
+  /*
+   * Fetch ControlFlowEquivalence and dependence graph
+   * TODO: Move this to LDI
+   */
+  auto loops = LDI->getLoopStructureSummary();
+  auto rootLoop = loops->getLoopNestingTreeRoot();
+  auto taskFunction = rootLoop->getHeader()->getParent();
+  auto taskDG = LDI->getLoopDG();
+  DominatorTree taskDT(*taskFunction);
+  PostDominatorTree taskPDT(*taskFunction);
+  DominatorSummary taskDS(taskDT, taskPDT);
+  ControlFlowEquivalence cfe(&taskDS, loops, rootLoop);
 
   /*
-   * Fetch the header.
+   * Consider all un-moved instructions in the working queue
    */
-  auto loopSummary = LDI->getLoopStructure();
-  auto loopHeader = loopSummary->getHeader();
+  auto ssInstructions = ss->getInstructions();
+  std::queue<Instruction *> instructionsToMove{};
+  for (auto I : ssInstructions) {
+    instructionsToMove.push(I);
+  }
 
-  /*
-   * HACK: The LLVM post dominator pass cannot be run on newly created bitcode, so we
-   * will re-create a map of immediate post dominators for the basic blocks in question
-   */
-  // LDI->function->print(errs() << "Function up until now: \n");
-  std::unordered_map<BasicBlock *, BasicBlock *> iDoms, iPostDoms;
-  collectIDomsAndIPostDoms(LDI, loopHeader, iDoms, iPostDoms);
-
-  /*
-   * TODO: Propagate domination information through loop basic blocks
-   */
-  // std::unordered_map<BasicBlock *, std::set<BasicBlock *>> doms, postDoms;
-
-  auto propagateThroughPDs = [&](SequentialSegment *ss, Instruction *I) -> void {
-    // Collect instructions dependent on I within the sequential segment 
-    std::set<Instruction *> dependents;
-    for (auto scc : ss->getSCCs()) {
-      if (!scc->isInternal(I)) continue;
-      auto node = scc->fetchNode(I);
-      for (auto edge : node->getOutgoingEdges()) {
-        dependents.insert(cast<Instruction>(edge->getIncomingT()));
-      }
-    }
-
-    std::set<BasicBlock *> dependentBBs;
-    for (auto depI : dependents) dependentBBs.insert(depI->getParent());
+  while (!instructionsToMove.empty()) {
+    auto I = instructionsToMove.front();
+    instructionsToMove.pop();
 
     /*
-     * Identify common dominator of dependents
+     * Determine whether the instruction has more produced or consumed dependencies from its SS
+     * If it has more produced, push it towards the end of the loop's iteration
+     * If it has more consumed, push it towards the beginning of the loop's iteration
      */
-  };
+    std::unordered_set<Instruction *> producersOfI{};
+    std::unordered_set<Instruction *> consumersOfI{};
+    auto ssProducers = 0, ssConsumers = 0;
+    auto nodeI = taskDG->fetchNode(I);
+    for (auto edgeProducedByI : nodeI->getOutgoingEdges()) {
+      auto consumerValue = edgeProducedByI->getIncomingT();
+      auto consumerInst = cast<Instruction>(consumerValue);
+      consumersOfI.insert(consumerInst);
 
-  /*
-   * TODO: For each SCC of each SS:
-   * Ensure all externals are outside the sequential segment
-   * whether before (incoming) or after (outgoing)
-   * Why do that when you can just try to squeeze firsts and lasts
-   * as close to each other as possible given their dependencies!
-   */
-    for (auto scc : ss->getSCCs()) {
-      // Determine first and last instructions
-      std::set<Value *> firsts, lasts;
-      auto &backEdges = LDI->sccdagAttrs.sccToLoopCarriedDependencies[scc];
-      for (auto edge : backEdges) {
-        lasts.insert(edge->getOutgoingT());
-        firsts.insert(edge->getIncomingT());
-      }
-
-      std::set<Value *> extractBefore, extractAfter;
-
-      for (auto externalPair : scc->externalNodePairs()) {
-        auto externalV = externalPair.first;
-        if (externalPair.second->numOutgoingEdges() > 0) {
-          // Confirm the external is before the first instructions in the SCC
-          auto executesBefore = false;
-          for (auto first : firsts) {
-            // TODO: Determine execution order between first and externalV
-          }
-          if (!executesBefore) extractBefore.insert(externalV);
-        } else {
-          // Confirm the external is after the last instructions in the SCC
-          auto executesAfter = false;
-          for (auto last : lasts) {
-            // TODO: Determine execution order between last and externalV
-          }
-          if (!executesAfter) extractAfter.insert(externalV);
-        }
-      }
+      if (ssInstructions.find(consumerInst) == ssInstructions.end()) continue;
+      ssConsumers++;
     }
+    for (auto edgeConsumedByI : nodeI->getIncomingEdges()) {
+      auto producerValue = edgeConsumedByI->getIncomingT();
+      auto producerInst = cast<Instruction>(producerValue);
+      producersOfI.insert(producerInst);
+
+      if (ssInstructions.find(producerInst) == ssInstructions.end()) continue;
+      ssProducers++;
+    }
+
+
+    /*
+     * For each instruction to go towards, traverse CFE basic blocks
+     */
+    bool isMovingTowardsProducers = ssProducers >= ssConsumers;
+    bool isInsertingAfterInsts = isMovingTowardsProducers;
+    auto instsToPushTowards = isMovingTowardsProducers ? producersOfI : consumersOfI;
+    // TODO:
+
+  }
+
 }
 
 void HELIX::squeezeSequentialSegments (
@@ -240,11 +94,21 @@ void HELIX::squeezeSequentialSegments (
   std::vector<SequentialSegment *> *sss
   ){
 
+  // TODO:
+  return;
+
+  /*
+   * Compute reachability across a single iteration of the loop
+   */
+  auto reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
+
   /*
    * Squeeze all sequential segments.
+   * NOTE: Reachability does NOT need to be re-computed after each squeezing
+   * as a sequential segment does not care about SS's instructions
    */
   for (auto ss : *sss){
-    this->squeezeSequentialSegment(LDI, ss);
+    this->squeezeSequentialSegment(LDI, reachabilityDFR, ss);
   }
 
   return ;

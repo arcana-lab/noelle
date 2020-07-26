@@ -21,6 +21,7 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"
+#include "ControlFlowEquivalence.hpp"
 
 namespace llvm {
 
@@ -120,16 +121,20 @@ namespace llvm {
 
       void squeezeSequentialSegment (
         LoopDependenceInfo *LDI,
+        DataFlowResult *reachabilityDFR,
         SequentialSegment *ss
       );
+
+      DataFlowResult *computeReachabilityFromInstructions (LoopDependenceInfo *LDI) ;
+
   };
 
   class SpilledLoopCarriedDependency {
     public:
       PHINode *originalLoopCarriedPHI;
       PHINode *loopCarriedPHI;
-      LoadInst *environmentLoad;
-      std::set<StoreInst *> environmentStores;
+      std::unordered_set<LoadInst *> environmentLoads;
+      std::unordered_set<StoreInst *> environmentStores;
   };
 
 }
