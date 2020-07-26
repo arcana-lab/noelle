@@ -75,7 +75,7 @@ namespace llvm {
         double minimumHotness
       );
 
-      LoopDependenceInfo * getLoopDependenceInfo (
+      LoopDependenceInfo * getLoop (
         LoopStructure *loop
       );
 
