@@ -30,6 +30,7 @@ add_subdirectory(src)
 
 # Install
 install(PROGRAMS 
+    include/MemoryCloningAnalysis.hpp
     include/Variable.hpp
     include/ControlFlowEquivalence.hpp
     include/LoopDependenceInfo.hpp

@@ -21,6 +21,7 @@
 #include "LoopEnvironment.hpp"
 #include "LoopCarriedDependencies.hpp"
 #include "Variable.hpp"
+#include "MemoryCloningAnalysis.hpp"
 
 using namespace std;
 using namespace llvm;
