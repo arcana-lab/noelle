@@ -169,7 +169,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Parallelize the current loop.
      */
-    auto ldi = noelle.getFilteredLoopDependenceInfo(ls);
+    auto ldi = noelle.getLoop(ls);
     auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, dswp, doall, helix, heuristics);
 
     /*
