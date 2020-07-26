@@ -161,39 +161,40 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
      */
     LoadInst * liveOutLoad = nullptr;
     auto loopExits = loopSummary->getLoopExitBasicBlocks();
-    if (loopExits.size() > 1) {
+    // if (loopExits.size() > 1) {
       liveOutLoad = headerBuilder.CreateLoad(envPtr);
-    } else {
-      auto loopExitBlock = *loopExits.begin();
-      auto clonedLoopExitBlock = helixTask->getCloneOfOriginalBasicBlock(loopExitBlock);
-      IRBuilder<> loopExitBuilder(clonedLoopExitBlock->getFirstNonPHIOrDbgOrLifetime());
-      liveOutLoad = loopExitBuilder.CreateLoad(envPtr);
-    }
+    // } else {
+    //   auto loopExitBlock = *loopExits.begin();
+    //   auto clonedLoopExitBlock = helixTask->getCloneOfOriginalBasicBlock(loopExitBlock);
+    //   IRBuilder<> loopExitBuilder(clonedLoopExitBlock->getFirstNonPHIOrDbgOrLifetime());
+    //   liveOutLoad = loopExitBuilder.CreateLoad(envPtr);
+    // }
     spilled->environmentLoads.insert(liveOutLoad);
 
     std::unordered_set<User *> phiUsers{phi->user_begin(), phi->user_end()};
     for (auto user : phiUsers) {
-      auto userInst = cast<Instruction>(user);
-      auto insertPoint = userInst;
 
       /*
        * TODO: Find a better way to determine incoming block of PHI user
        * This is done because a load cannot be inserted before a PHI in the PHI's own block
        */
-      if (auto userPHI = dyn_cast<PHINode>(insertPoint)) {
-        auto incomingIdx = -1;
-        for (auto i = 0; i < userPHI->getNumIncomingValues(); ++i) {
-          if (userPHI->getIncomingValue(i) != phi) continue;
-          incomingIdx = i;
-        }
-        assert(incomingIdx != -1);
-        auto incomingBB = userPHI->getIncomingBlock(incomingIdx);
-        insertPoint = incomingBB->getTerminator();
-      }
+      // if (auto userPHI = dyn_cast<PHINode>(user)) {
+      //   for (auto i = 0; i < userPHI->getNumIncomingValues(); ++i) {
+      //     if (userPHI->getIncomingValue(i) != phi) continue;
+      //     auto incomingBB = userPHI->getIncomingBlock(i);
+      //     IRBuilder<> spillValueBuilder(incomingBB->getTerminator());
+      //     auto spillLoad = spillValueBuilder.CreateLoad(envPtr);
+      //     spilled->environmentLoads.insert(spillLoad);
+      //     userPHI->setIncomingValue(i, spillLoad);
+      //   }
+      //   continue;
+      // }
 
-      IRBuilder<> spillValueBuilder(insertPoint);
-      auto spillLoad = spillValueBuilder.CreateLoad(envPtr);
-      spilled->environmentLoads.insert(spillLoad);
+      auto userInst = cast<Instruction>(user);
+      IRBuilder<> spillValueBuilder(userInst);
+      // auto spillLoad = spillValueBuilder.CreateLoad(envPtr);
+      // spilled->environmentLoads.insert(spillLoad);
+      auto spillLoad = liveOutLoad;
       userInst->replaceUsesOfWith(phi, spillLoad);
     }
 
