@@ -1,7 +1,7 @@
 /*
  * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publoopsh, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "LoopInfoSummary.hpp"
+#include "LoopsSummary.hpp"
 #include "DominatorSummary.hpp"
 #include <memory>
 
@@ -21,34 +21,32 @@ namespace llvm {
    public:
 
     ControlFlowEquivalence (
-      DominatorSummary &ds,
-      LoopInfoSummary &lis,
+      const DominatorSummary *ds,
+      const LoopsSummary *loops,
       Function &F
     );
 
     ControlFlowEquivalence (
-      DominatorSummary &ds,
-      LoopInfoSummary &lis,
-      LoopSummary &ls
+      const DominatorSummary *ds,
+      const LoopsSummary *loops,
+      const LoopStructure *loopStructure
     );
 
-    std::set<BasicBlock *> &getEquivalences (BasicBlock *bb);
+    std::unordered_set<BasicBlock *> getEquivalences (BasicBlock *bb) const ;
 
-    raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "");
+    raw_ostream &print (raw_ostream &stream, std::string prefixToUse = "") const ;
 
    private:
 
-    void calculateControlFlowEquivalences ();
+    void calculateControlFlowEquivalences (const DominatorSummary *DS, const LoopsSummary *loops);
 
     void createEquivalenceSet (BasicBlock *singleB);
 
     void mergeEquivalenceSets (BasicBlock *a, BasicBlock *b);
 
-    DominatorSummary &DS;
-    LoopInfoSummary &LIS;
     std::set<BasicBlock *> startBBs, endBBs;
 
-    std::set<std::unique_ptr<std::set<BasicBlock *>>> equivalentBBs;
-    std::unordered_map<BasicBlock *, std::set<BasicBlock *> *> bbToEquivalence;
+    std::unordered_set<std::unique_ptr<std::unordered_set<BasicBlock *>>> equivalentBBs;
+    std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *> *> bbToEquivalence;
   };
 }
