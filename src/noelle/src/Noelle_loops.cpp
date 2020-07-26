@@ -198,8 +198,56 @@ LoopDependenceInfo * Noelle::getLoop (
   auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
   auto llvmLoop = LI.getLoopFor(header);
 
-  auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores);
-  
+  /*
+   * Check of loopIndex provided is within bounds
+   */
+  if (this->loopHeaderToLoopIndexMap.find(header) == this->loopHeaderToLoopIndexMap.end()){
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores);
+    
+    delete DS;
+    delete funcPDG;
+    return ldi;
+  }
+
+  /*
+   * Fetch the loop index.
+   */
+  auto loopIndex = this->loopHeaderToLoopIndexMap.at(header);
+
+  /*
+   * No filter file was provided. Construct LDI without profiler configurables
+   */
+  if (!this->hasReadFilterFile) {
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores);
+
+    delete DS;
+    delete funcPDG;
+    return ldi;
+  }
+
+  /*
+   * Ensure loop configurables exist for this loop index
+   */
+  if (loopIndex >= this->loopThreads.size()){
+    errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than " << this->loopThreads.size()
+      << " loops available in the program\n";
+    abort();
+  }
+
+  auto maximumNumberOfCoresForTheParallelization = this->loopThreads[loopIndex];
+  assert(maximumNumberOfCoresForTheParallelization > 1
+    && "Noelle: passed user a filtered loop yet it only has max cores <= 1");
+
+  auto ldi = getLoopDependenceInfoForLoop(
+    llvmLoop,
+    funcPDG,
+    DS,
+    &SE,
+    this->techniquesToDisable[loopIndex],
+    this->DOALLChunkSize[loopIndex],
+    maximumNumberOfCoresForTheParallelization
+  );
+
   delete DS;
   delete funcPDG;
   return ldi;
