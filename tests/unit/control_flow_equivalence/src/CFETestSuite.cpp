@@ -51,7 +51,7 @@ bool CFETestSuite::runOnModule (Module &M) {
   auto mainFunction = M.getFunction("main");
 
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
-  LoopInfoSummary LIS(LI, LI.getLoopsInPreorder()[0]);
+  LoopsSummary LIS(LI.getLoopsInPreorder()[0]);
   auto &DT = getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
   auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
   DominatorSummary DS(DT, PDT);
@@ -89,7 +89,7 @@ bool CFETestSuite::runOnModule (Module &M) {
   }
   */
 
-  this->CFE = new ControlFlowEquivalence(DS, LIS, *mainFunction);
+  this->CFE = new ControlFlowEquivalence(&DS, &LIS, *mainFunction);
 
   suite->runTests((ModulePass &)*this);
 
@@ -98,15 +98,15 @@ bool CFETestSuite::runOnModule (Module &M) {
   return false;
 }
 
-Values CFETestSuite::hasCorrectCFESets (ModulePass &pass) {
+Values CFETestSuite::hasCorrectCFESets (ModulePass &pass, TestSuite &suite) {
   auto &cfePass = static_cast<CFETestSuite &>(pass);
   auto mainFunction = cfePass.M->getFunction("main");
   Values eqSets;
   for (auto &B : *mainFunction) {
-    auto &eqSet = cfePass.CFE->getEquivalences(&B);
+    auto eqSet = cfePass.CFE->getEquivalences(&B);
     std::string eqSetStr;
     for (auto eqB : eqSet) {
-      eqSetStr += cfePass.suite->printAsOperandToString(eqB) += cfePass.suite->unorderedValueDelimiter;
+      eqSetStr += suite.printAsOperandToString(eqB) += suite.unorderedValueDelimiter;
     }
     eqSets.insert(eqSetStr.substr(0, eqSetStr.length() - 1));
   }

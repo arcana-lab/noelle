@@ -13,36 +13,40 @@
 using namespace llvm;
 
 ControlFlowEquivalence::ControlFlowEquivalence (
-  DominatorSummary &ds,
-  LoopInfoSummary &lis,
+  const DominatorSummary *ds,
+  const LoopsSummary *loops,
   Function &F
-) : DS{ds}, LIS{lis} {
-  startBBs.insert(&F.getEntryBlock());
-  calculateControlFlowEquivalences();
+) {
+  auto functionEntry = &F.getEntryBlock();
+  startBBs.insert(functionEntry);
+  calculateControlFlowEquivalences(ds, loops);
 }
 
 ControlFlowEquivalence::ControlFlowEquivalence (
-  DominatorSummary &ds,
-  LoopInfoSummary &lis,
-  LoopSummary &ls
-) : DS{ds}, LIS{lis} {
-  startBBs.insert(ls.header);
-  endBBs.insert(ls.exitBBs.begin(), ls.exitBBs.end());
-  calculateControlFlowEquivalences();
+  const DominatorSummary *ds,
+  const LoopsSummary *loops,
+  const LoopStructure *loopStructure
+) {
+  startBBs.insert(loopStructure->getHeader());
+  auto exitBlocks = loopStructure->getLoopExitBasicBlocks();
+  endBBs.insert(exitBlocks.begin(), exitBlocks.end());
+  calculateControlFlowEquivalences(ds, loops);
 }
 
 /*
  * Goal: Traverse DT, merging equivalent sets where
  * node n's parent in the PDT is one of n's children in the DT
  */
-void
-ControlFlowEquivalence::calculateControlFlowEquivalences () {
+void ControlFlowEquivalence::calculateControlFlowEquivalences (
+  const DominatorSummary *DS,
+  const LoopsSummary *loops
+) {
 
   /*
    * Create trivial equivalence sets
    */
   std::queue<BasicBlock *> bbWorklist;
-  std::set<BasicBlock *> bbSeen;
+  std::unordered_set<BasicBlock *> bbSeen;
   for (auto start : startBBs) bbWorklist.push(start);
   while (!bbWorklist.empty()) {
     auto B = bbWorklist.front();
@@ -63,7 +67,7 @@ ControlFlowEquivalence::calculateControlFlowEquivalences () {
    *   A |- B, B -| A, A & B are in the same inner-most loop
    */
   std::queue<DomNodeSummary *> dtWorklist;
-  for (auto start : startBBs) dtWorklist.push(DS.DT.getNode(start));
+  for (auto start : startBBs) dtWorklist.push(DS->DT.getNode(start));
   while (!dtWorklist.empty()) {
     auto dtNode = dtWorklist.front();
     dtWorklist.pop();
@@ -75,18 +79,18 @@ ControlFlowEquivalence::calculateControlFlowEquivalences () {
     // dtBlock->printAsOperand(errs() << "CFE: Iterating: "); errs() << "\n";
     if (endBBs.find(dtBlock) != endBBs.end()) continue;
 
-    std::set<BasicBlock *> dtChildrenBlocks{};
+    std::unordered_set<BasicBlock *> dtChildrenBlocks{};
     for (auto dtChildNode : dtNode->getChildren()) {
       dtChildrenBlocks.insert(dtChildNode->getBlock());
     }
 
-    auto dtBlockLoop = LIS.bbToLoop.find(dtBlock);
-    auto dtBlockInLoop = dtBlockLoop != LIS.bbToLoop.end();
+    auto dtBlockLoop = loops->getLoop(*dtBlock);
+    auto dtBlockInLoop = dtBlockLoop != nullptr;
 
     /*
      * Iterate PDT parents of A, those that qualify for condition B -| A
      */
-    auto pdtNode = DS.PDT.getNode(dtBlock);
+    auto pdtNode = DS->PDT.getNode(dtBlock);
     auto pdtParentNode = pdtNode->getParent();
     while (pdtParentNode != nullptr) {
       auto pdtBlock = pdtParentNode->getBlock();
@@ -99,7 +103,7 @@ ControlFlowEquivalence::calculateControlFlowEquivalences () {
         break;
       } else {
         dtChildrenBlocks.clear();
-        for (auto dtChildNode : DS.DT.getNode(pdtBlock)->getChildren()) {
+        for (auto dtChildNode : DS->DT.getNode(pdtBlock)->getChildren()) {
           dtChildrenBlocks.insert(dtChildNode->getBlock());
         }
       }
@@ -107,11 +111,11 @@ ControlFlowEquivalence::calculateControlFlowEquivalences () {
       /*
        * Check if A and B are in the same inner-most loop
        */
-      auto pdtBlockLoop = LIS.bbToLoop.find(pdtBlock);
-      auto pdtBlockInLoop = pdtBlockLoop != LIS.bbToLoop.end();
+      auto pdtBlockLoop = loops->getLoop(*pdtBlock);
+      auto pdtBlockInLoop = pdtBlockLoop != nullptr;
       if (dtBlockInLoop ^ pdtBlockInLoop) continue;
       if (dtBlockInLoop && pdtBlockInLoop
-          && dtBlockLoop->second != pdtBlockLoop->second) continue;
+          && dtBlockLoop != pdtBlockLoop) continue;
 
       mergeEquivalenceSets(dtBlock, pdtBlock);
       break;
@@ -127,17 +131,15 @@ ControlFlowEquivalence::calculateControlFlowEquivalences () {
   }
 }
 
-std::set<BasicBlock *> &
-ControlFlowEquivalence::getEquivalences (BasicBlock *bb) {
+std::unordered_set<BasicBlock *> ControlFlowEquivalence::getEquivalences (BasicBlock *bb) const {
   // TODO: Check if BB is in an equivalence set
-  return *bbToEquivalence[bb];
+  return *bbToEquivalence.at(bb);
 }
 
-raw_ostream &
-ControlFlowEquivalence::print (
+raw_ostream & ControlFlowEquivalence::print (
   raw_ostream &stream,
   std::string prefixToUse
-) {
+) const {
   stream << prefixToUse << "Control Flow Equivalent sets\n";
   for (auto &bbSet : equivalentBBs) {
     stream << prefixToUse << "Set:\n" << prefixToUse;
@@ -153,7 +155,7 @@ void
 ControlFlowEquivalence::createEquivalenceSet (
   BasicBlock *singleB
 ) {
-  auto eqSet = std::make_unique<std::set<BasicBlock *>>();
+  auto eqSet = std::make_unique<std::unordered_set<BasicBlock *>>();
   eqSet->insert(singleB);
   bbToEquivalence[singleB] = equivalentBBs.insert(std::move(eqSet)).first->get();
 }
