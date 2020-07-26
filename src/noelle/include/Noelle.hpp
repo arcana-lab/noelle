@@ -79,10 +79,6 @@ namespace llvm {
         LoopStructure *loop
       );
 
-      LoopDependenceInfo * getFilteredLoopDependenceInfo (
-        LoopStructure *loop
-      );
-
       uint32_t getNumberOfProgramLoops (void);
 
       uint32_t getNumberOfProgramLoops (
