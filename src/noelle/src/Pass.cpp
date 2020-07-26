@@ -40,6 +40,8 @@ bool Noelle::doInitialization (Module &M) {
   /*
    * Fetch the command line options.
    */
+  this->filterFileName = getenv("INDEX_FILE");
+  this->hasReadFilterFile = false;
   this->verbose = static_cast<Verbosity>(Verbose.getValue());
   this->minHot = ((double)(MinimumHotness.getValue())) / 100;
   auto optMaxCores = MaximumCores.getValue();
