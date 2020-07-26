@@ -179,7 +179,7 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
   return allLoops;
 }
 
-LoopDependenceInfo * Noelle::getLoopDependenceInfo (
+LoopDependenceInfo * Noelle::getLoop (
   LoopStructure *loop
 ) {
 
