@@ -131,16 +131,6 @@ namespace llvm {
       
       uint64_t getCompileTimeTripCount (void) const ;
 
-      /*
-       * Return true if the loop has the metadata requested.
-       */
-      bool doesHaveMetadata (const std::string &metadataName) const ;
-
-      /*
-       * Fetch the metadata attached to the loop.
-       */
-      std::string getMetadata (const std::string &metadataName) const ;
-
       uint32_t getMaximumNumberOfCores (void) const ;
 
       /*
@@ -164,8 +154,6 @@ namespace llvm {
       LoopsSummary liSummary;                 /* This field describes the loops with the current one as outermost.
                                                * Each loop is described in terms of its control structure (e.g., latches, header).
                                                */
-
-      std::unordered_map<std::string, std::string> metadata;
 
       InductionVariableManager *inductionVariables;
 
@@ -193,10 +181,6 @@ namespace llvm {
         Loop *l, 
         PDG *functionDG
         ) ;
-
-      void addMetadata (
-        const std::string &metadataName
-        );
 
       uint64_t computeTripCounts (
         Loop *l,
