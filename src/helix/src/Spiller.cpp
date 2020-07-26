@@ -153,9 +153,8 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
   auto loopStructure = LDI->getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
   auto loopPreHeader = loopStructure->getPreHeader();
+  auto headerClone = helixTask->getCloneOfOriginalBasicBlock(loopHeader);
   auto preHeaderClone = helixTask->getCloneOfOriginalBasicBlock(loopPreHeader);
-  auto firstNonPHI = helixTask->getCloneOfOriginalInstruction(loopHeader->getFirstNonPHI());
-  IRBuilder<> headerBuilder(firstNonPHI);
 
   /*
    * Store loop carried values of the PHI into the environment
@@ -191,7 +190,6 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
   PostDominatorTree originalLoopPDT(*originalLoopFunction);
   DominatorSummary DS(originalLoopDT, originalLoopPDT);
   BasicBlock * originalStoreDominatingBlock = nullptr;
-  originalLoopFunction->print(errs() << "Function\n"); errs() << "\n";
   for (auto store : spill->environmentStores) {
     auto cloneStoreBlock = store->getParent();
     auto originalStoreBlock = cloneToOriginalBlockMap.at(cloneStoreBlock);
@@ -199,7 +197,6 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     /*
      * The block is at the root loop level. Consider the block for nearest common domination search
      */
-    store->print(errs() << "Store: "); errs() << "\n";
     auto nestedMostLoop = LDI->getNestedMostLoopStructure(originalStoreBlock->getTerminator());
     if (nestedMostLoop == loopStructure) {
       originalStoreDominatingBlock = !originalStoreDominatingBlock ? originalStoreBlock
@@ -226,10 +223,18 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
    * Determine which load is available upon exiting the loop
    * TODO: Improve determining how many loads are needed if there isn't just one exit from the header
    */
+  IRBuilder<> headerBuilder(headerClone->getFirstNonPHIOrDbgOrLifetime());
   LoadInst * liveOutLoad = nullptr;
   auto loopExits = loopStructure->getLoopExitBasicBlocks();
   if (loopExits.size() > 1) {
     liveOutLoad = headerBuilder.CreateLoad(spillEnvPtr);
+
+    std::unordered_set<User *> phiUsers{spill->loopCarriedPHI->user_begin(), spill->loopCarriedPHI->user_end()};
+    for (auto user : phiUsers) {
+      auto userInst = cast<Instruction>(user);
+      userInst->replaceUsesOfWith(spill->loopCarriedPHI, liveOutLoad);
+    }
+
   } else {
     auto loopExitBlock = *loopExits.begin();
     auto clonedLoopExitBlock = helixTask->getCloneOfOriginalBasicBlock(loopExitBlock);
