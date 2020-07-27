@@ -91,6 +91,7 @@ namespace llvm {
       );
 
       std::vector<SequentialSegment *> identifySequentialSegments (
+        LoopDependenceInfo *originalLDI,
         LoopDependenceInfo *LDI
       );
  
