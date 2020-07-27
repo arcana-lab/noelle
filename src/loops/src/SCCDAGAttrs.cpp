@@ -13,6 +13,10 @@
 
 using namespace llvm;
 
+SCCDAGAttrs::SCCDAGAttrs ()
+  : loopDG{nullptr}, sccdag{nullptr}, memoryCloningAnalysis{nullptr} {
+}
+
 SCCDAGAttrs::SCCDAGAttrs (
   PDG *loopDG,
   SCCDAG *loopSCCDAG,
@@ -21,7 +25,7 @@ SCCDAGAttrs::SCCDAGAttrs (
   LoopCarriedDependencies &LCD,
   InductionVariableManager &IV,
   DominatorSummary &DS
-) : loopDG{loopDG}, sccdag{loopSCCDAG} {
+) : loopDG{loopDG}, sccdag{loopSCCDAG}, memoryCloningAnalysis{nullptr} {
 
   /*
    * Partition dependences between intra-iteration and iter-iteration ones.
@@ -790,8 +794,5 @@ bool SCCAttrs::isInductionVariableSCC (void) const {
 }
 
 SCCDAGAttrs::~SCCDAGAttrs (){
-
-  if (memoryCloningAnalysis) delete memoryCloningAnalysis;
-
   return ;
 }
