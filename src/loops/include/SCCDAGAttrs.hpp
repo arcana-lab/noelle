@@ -114,7 +114,7 @@ namespace llvm {
        * HACK: Remove once LoopDependenceInfo doesn't produce empty SCCDAGAttrs on construction
        */
       friend class LoopDependenceInfo;
-      SCCDAGAttrs () {}
+      SCCDAGAttrs () ;
 
       /*
        * Helper methods on SCCDAG
