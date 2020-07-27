@@ -12,7 +12,11 @@
 
 using namespace llvm ;
 
-std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependenceInfo *LDI){
+std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
+  LoopDependenceInfo *originalLDI,
+  LoopDependenceInfo *LDI
+){
+
   std::vector<SequentialSegment *> sss;
 
   /*
@@ -24,6 +28,15 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
    * Compute reachability analysis
    */
   auto reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
+
+  /*
+   * Identify the loop's preamble, and whether the original loop was IV governed
+   */
+  auto loopSCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  auto preambleSCCNodes = loopSCCDAG->getTopLevelNodes();
+  assert(preambleSCCNodes.size() == 1 && "The loop internal SCCDAG should only have one preamble");
+  auto preambleSCC = (*preambleSCCNodes.begin())->getT();
+  bool wasOriginalLoopIVGoverned = originalLDI->getLoopGoverningIVAttribution() != nullptr;
 
   /*
    * Fetch the subsets.
@@ -51,6 +64,23 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (LoopDependen
        * Fetch the type of the SCC.
        */
       auto sccType = sccInfo->getType();
+
+      /*
+       * Do not synchronize induction variables
+       */
+      if (sccInfo->isInductionVariableSCC()) {
+        continue;
+      }
+
+      /*
+       * HACK: Our loop governing IV attribution class is not powerful
+       * enough to understand our manipulation of the loop governing IV,
+       * so we ignore the preamble SCC if the original LDI's attribution was compute-able
+       */
+      if (wasOriginalLoopIVGoverned && scc == preambleSCC) {
+        errs() << "Skipping preamble synchronization\n";
+        continue;
+      }
 
       /*
        * Only sequential SCC can generate a sequential segment.
