@@ -51,24 +51,6 @@ void HELIX::addSynchronizations (
   DominatorTree DT(*loopFunction);
   PostDominatorTree PDT(*loopFunction);
   DominatorSummary DS(DT, PDT);
-  std::set<Instruction *> ssEntries;
-  std::set<Instruction *> firstInsts;
-  for (auto ss : *sss) {
-    ss->forEachEntry([&ssEntries](Instruction *i) -> void {
-      ssEntries.insert(i);
-    });
-  }
-  firstInsts.insert(*ssEntries.begin());
-  for (auto entryInst : ssEntries) {
-    bool isDominatedBy = false;
-    for (auto otherEntry : ssEntries) {
-      if (entryInst == otherEntry) continue;
-      isDominatedBy |= DS.DT.dominates(otherEntry, entryInst);
-    }
-
-    if (isDominatedBy) continue;
-    firstInsts.insert(entryInst);
-  }
 
   /*
    * Optimization: If the preamble SCC is not part of a sequential segment,
@@ -79,16 +61,17 @@ void HELIX::addSynchronizations (
   assert(preambleSCCNodes.size() == 1 && "The loop internal SCCDAG should only have one preamble");
   auto preambleSCC = (*preambleSCCNodes.begin())->getT();
   // preambleSCC->printMinimal(errs() << "Preamble SCC:\n");
-  bool isPreambleSynchronized = false;
+  SequentialSegment *preambleSS = nullptr;
   for (auto ss : *sss){
     for (auto scc : ss->getSCCs()) {
       if (scc == preambleSCC) {
-        isPreambleSynchronized = true;
+        preambleSS = ss;
+        break;
         // errs() << "Preamble is included\n";
       }
     }
+    if (preambleSS != nullptr) break;
   }
-  if (!isPreambleSynchronized) firstInsts.clear();
 
   /*
    * Define a helper to fetch the appropriate ss entry in synchronization arrays
@@ -124,7 +107,9 @@ void HELIX::addSynchronizations (
      * We call this new variable, ssState.
      * This new variable is reponsible to store the information about whether a wait instruction of the current sequential segment has already been executed in the current iteration for the current thread.
      */
-    ssStates.push_back(entryBuilder.CreateAlloca(int64));
+    auto ssStateAlloca = entryBuilder.CreateAlloca(int64);
+    ssStateAlloca->moveBefore(helixTask->getEntry()->getFirstNonPHIOrDbgOrLifetime());
+    ssStates.push_back(ssStateAlloca);
   }
 
   /*
@@ -193,43 +178,25 @@ void HELIX::addSynchronizations (
 
     /*
      * Inject a call to HELIX_signal just after "justBeforeExit" 
+     * NOTE: If the exit is not an unconditional branch, inject the signal in every successor block
      */
-    auto terminator = justBeforeExit->getParent()->getTerminator();
-    Instruction *insertPoint = terminator == justBeforeExit ? terminator : justBeforeExit->getNextNode();
-    IRBuilder<> beforeExitBuilder(insertPoint);
-    auto signal = beforeExitBuilder.CreateCall(this->signalSSCall, { ssFuturePtrs.at(ss->getID()) });
+    auto block = justBeforeExit->getParent();
+    auto terminator = block->getTerminator();
+    auto justBeforeExitBr = dyn_cast<BranchInst>(justBeforeExit);
+    if (!justBeforeExitBr || justBeforeExitBr->isUnconditional()) {
+      Instruction *insertPoint = terminator == justBeforeExit ? terminator : justBeforeExit->getNextNode();
+      IRBuilder<> beforeExitBuilder(insertPoint);
+      auto signal = beforeExitBuilder.CreateCall(this->signalSSCall, { ssFuturePtrs.at(ss->getID()) });
+      helixTask->signals.insert(cast<CallInst>(signal));
+      return;
+    }
 
-    /*
-     * Track the call to signal
-     */
-    helixTask->signals.insert(cast<CallInst>(signal));
+    for (auto successorBlock : successors(block)) {
+      IRBuilder<> beforeExitBuilder(successorBlock->getFirstNonPHIOrDbgOrLifetime());
+      auto signal = beforeExitBuilder.CreateCall(this->signalSSCall, { ssFuturePtrs.at(ss->getID()) });
+      helixTask->signals.insert(cast<CallInst>(signal));
+    }
   };
-
-  /*
-   * Iterate over sequential segments.
-   */
-  for (auto ss : *sss){
-
-    /*
-     * Reset the value of ssState at the beginning of the iteration (i.e., loop header)
-     */
-    IRBuilder<> headerBuilder(loopHeader->getFirstNonPHIOrDbgOrLifetime());
-    headerBuilder.CreateStore(ConstantInt::get(int64, 0), ssStates.at(ss->getID()));
-
-    /*
-     * Inject waits.
-     */
-    ss->forEachEntry([ss, &injectWait](Instruction *justAfterEntry) -> void {
-      injectWait(ss, justAfterEntry);
-    });
-
-    /*
-     * Inject signals at sequential segment exits
-     */
-    ss->forEachExit([ss, &injectSignal](Instruction *justBeforeExit) -> void {
-      injectSignal(ss, justBeforeExit);
-    });
-  }
 
   /*
    * On finishing the task, set the loop-is-over flag to true.
@@ -241,9 +208,9 @@ void HELIX::addSynchronizations (
       helixTask->loopIsOverFlagArg
     );
   };
+
   for (auto i = 0; i < helixTask->getNumberOfLastBlocks(); ++i) {
     auto loopExitTerminator = helixTask->getLastBlock(i)->getTerminator();
-    injectExitFlagSet(loopExitTerminator);
     for (auto ss : *sss) injectSignal(ss, loopExitTerminator);
   }
 
@@ -252,6 +219,11 @@ void HELIX::addSynchronizations (
    * Exit the loop if so, signaling preamble SS synchronization to avoid deadlock
    */
   auto injectExitFlagCheck = [&](Instruction *justAfterEntry) -> void {
+
+    /*
+     * We must wait on the preamble SCC to complete in order to know whether the check exit flag was set
+     */
+    injectWait(preambleSS, justAfterEntry);
 
     auto beforeCheckBB = justAfterEntry->getParent();
     auto afterCheckBB = BasicBlock::Create(cxt, "SS-passed-checkexit", loopFunction);
@@ -287,7 +259,48 @@ void HELIX::addSynchronizations (
     for (auto ss : *sss) injectSignal(ss, brToExit);
   };
 
-  for (auto firstInst : firstInsts) injectExitFlagCheck(firstInst);
+  /*
+   * If the preamble is not synchronized, then there is no need for the exit flag
+   * Otherwise, inject a check at loop entry and inject a set BEFORE every exit to the preamble SS
+   */
+  if (preambleSS != nullptr) {
+    auto loopEntry = loopHeader->getFirstNonPHIOrDbgOrLifetime();
+    injectExitFlagCheck(loopEntry);
+
+    for (auto i = 0; i < helixTask->getNumberOfLastBlocks(); ++i) {
+      auto loopExitBlock = helixTask->getLastBlock(i);
+      injectExitFlagSet(loopExitBlock->getFirstNonPHIOrDbgOrLifetime());
+    }
+  }
+
+  /*
+   * Once the preamble has been synchronized, if that was necessary, synchronize each sequential segment
+   */
+  for (auto ss : *sss){
+
+    /*
+     * Reset the value of ssState at the beginning of the iteration
+     * NOTE: This has to be done BEFORE any preamble synchronization, so this
+     * insertion comes after the check exit logic has already been inserted
+     */
+    IRBuilder<> headerBuilder(loopHeader->getFirstNonPHIOrDbgOrLifetime());
+    headerBuilder.CreateStore(ConstantInt::get(int64, 0), ssStates.at(ss->getID()));
+
+    /*
+     * Inject waits.
+     */
+    ss->forEachEntry([ss, &injectWait](Instruction *justAfterEntry) -> void {
+      injectWait(ss, justAfterEntry);
+    });
+
+    /*
+     * Inject signals at sequential segment exits
+     */
+    ss->forEachExit([ss, &injectSignal](Instruction *justBeforeExit) -> void {
+      injectSignal(ss, justBeforeExit);
+    });
+  }
+
 
   return ;
 }
