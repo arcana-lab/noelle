@@ -35,6 +35,8 @@ namespace llvm {
 
         CallGraphFunctionNode * getFunctionNode (Function *f) const ;
 
+        bool doesItBelongToASCC (Function *f) ;
+
       private:
         Module &m;
         std::unordered_map<Function *, CallGraphFunctionNode *> functions;
