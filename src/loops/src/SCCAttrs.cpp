@@ -27,6 +27,7 @@ SCCAttrs::SCCAttrs (
     , controlPairs{}
     , loopCarriedVariables{}
     , isClonable{0}
+    , isSCCClonableIntoLocalMemory{0}
     , hasIV{0}
   {
 
@@ -333,3 +334,22 @@ LoopCarriedVariable * SCCAttrs::getSingleLoopCarriedVariable (void) const {
   return *loopCarriedVariables.begin();
 }
 
+void SCCAttrs::setSCCToBeClonableUsingLocalMemory (void) {
+  this->isSCCClonableIntoLocalMemory = true;
+}
+
+bool SCCAttrs::canBeClonedUsingLocalMemoryLocations (void) const {
+  return this->isSCCClonableIntoLocalMemory;
+}
+
+void SCCAttrs::addClonableMemoryLocationsContainedInSCC (std::unordered_set<const ClonableMemoryLocation *> locations) {
+  this->clonableMemoryLocations = locations;
+}
+
+std::unordered_set<AllocaInst *> SCCAttrs::getMemoryLocationsToClone (void) const {
+  std::unordered_set<AllocaInst *> allocations;
+  for (auto location : clonableMemoryLocations) {
+    allocations.insert(location->getAllocation());
+  }
+  return allocations;
+}
