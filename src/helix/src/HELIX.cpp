@@ -298,7 +298,7 @@ void HELIX::synchronizeTask (
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "HELIX:  Identifying sequential segments\n";
   }
-  auto sequentialSegments = this->identifySequentialSegments(LDI);
+  auto sequentialSegments = this->identifySequentialSegments(originalLDI, LDI);
 
   /*
    * Schedule the code to minimize the instructions within each sequential segment.
