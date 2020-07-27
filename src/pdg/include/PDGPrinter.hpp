@@ -45,16 +45,18 @@ namespace llvm {
   class DGPrinter {
     public:
 
-      template <class GT>
+      template <class GT, class T>
       static bool writeGraph(const std::string& filename, GT *graph) {
         errs() << "Writing '" << filename << "'...\n";
 
+        DGGraphWrapper<GT, T> graphWrapper(graph);
+
         std::error_code EC;
         raw_fd_ostream File(filename, EC, sys::fs::F_Text);
-        std::string Title = DOTGraphTraits<GT *>::getGraphName(graph);
+        std::string Title = filename; // TODO: DOTGraphTraits<GT *>::getGraphName(graphWrapper);
 
         if (!EC) {
-          WriteGraph(File, graph, false, Title);
+          WriteGraph(File, &graphWrapper, false, Title);
 					File.close();
           return true;
         }
@@ -63,10 +65,10 @@ namespace llvm {
         return false;
       }
 
-      template <class GT>
+      template <class GT, class T>
       static bool writeClusteredGraph(const std::string& filename, GT *graph) {
         const std::string unclusteredFilename = "_unclustered_" + filename;
-        if (writeGraph<GT>(unclusteredFilename, graph)) {
+        if (writeGraph<GT, T>(unclusteredFilename, graph)) {
           addClusteringToDotFile(unclusteredFilename, filename);
           return true;
         }

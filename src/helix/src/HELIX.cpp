@@ -263,6 +263,11 @@ void HELIX::createParallelizableTask (
   this->spillLoopCarriedDataDependencies(LDI);
 
   /*
+   * For IVs that were not spilled, adjust their step size appropriately
+   */
+  this->rewireLoopForIVsToIterateNthIterations(LDI);
+
+  /*
    * Add the final return instruction to the single task's exit block.
    */
   IRBuilder<> exitB(helixTask->getExit());
@@ -270,7 +275,7 @@ void HELIX::createParallelizableTask (
 
   if (this->verbose >= Verbosity::Maximal) {
     SubCFGs execGraph(*helixTask->getTaskBody());
-    DGPrinter::writeGraph<SubCFGs>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    DGPrinter::writeGraph<SubCFGs, BasicBlock>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;
@@ -320,7 +325,29 @@ void HELIX::synchronizeTask (
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "HELIX:  Storing live out variables and exit block index\n";
   }
+
+  /*
+   * HACK: swap the mapping so that original loop instructions map to possible duplicates
+   * that were created should the original header have had sequential instructions that
+   * were moved to the loop body and duplicated after exiting the loop
+   *
+   * Once live out storing is finished, restore the mapping
+   */
+  std::unordered_map<Instruction *, Instruction *> loopBodyExecutionMap;
+  for (auto lastExecutionInstPair : this->lastIterationExecutionDuplicateMap) {
+    auto originalI = lastExecutionInstPair.first;
+    auto exitCloneI = lastExecutionInstPair.second;
+    auto loopBodyCloneI = helixTask->getCloneOfOriginalInstruction(originalI);
+    helixTask->addInstruction(originalI, exitCloneI);
+    loopBodyExecutionMap.insert(std::make_pair(originalI, loopBodyCloneI));
+  }
   this->generateCodeToStoreLiveOutVariables(this->originalLDI, 0);
+  for (auto loopBodyExecutionInstPair : loopBodyExecutionMap) {
+    auto originalI = loopBodyExecutionInstPair.first;
+    auto loopBodyCloneI = loopBodyExecutionInstPair.second;
+    auto exitCloneI = helixTask->getCloneOfOriginalInstruction(originalI);
+    helixTask->addInstruction(originalI, loopBodyCloneI);
+  }
 
   /*
    * Generate a store to propagate information about which exit block the parallelized loop took.
@@ -347,7 +374,7 @@ void HELIX::synchronizeTask (
     helixTask->getTaskBody()->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
     errs() << "HELIX: Exit\n";
     SubCFGs execGraph(*helixTask->getTaskBody());
-    DGPrinter::writeGraph<SubCFGs>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;

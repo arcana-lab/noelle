@@ -32,7 +32,7 @@ function runSimplify {
     rm "dgsimplify_continue.txt"
     let ITER=ITER+1 
     printf "Running Inliner to inline calls within SCCs, iteration: $ITER\n"
-    noelle-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $fileToModify "-o" $fileToModify
+    noelle-parallel-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $fileToModify "-o" $fileToModify
   done
 
   ITER=0
@@ -43,7 +43,7 @@ function runSimplify {
     rm "dgsimplify_continue.txt"
     let ITER=ITER+1 
     printf "Running Inliner to hoist loops to main, iteration: $ITER\n"
-    noelle-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $fileToModify "-o" $fileToModify
+    noelle-parallel-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $fileToModify "-o" $fileToModify
   done
 
   # Copy the inlined bitcode to the final one

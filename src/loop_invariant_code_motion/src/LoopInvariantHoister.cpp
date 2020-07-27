@@ -37,29 +37,32 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
 
       modified = true;
 
-      if (auto phi = dyn_cast<PHINode>(&I)) {
-        
-        /*
-         * All PHI invariants are equivalent, so choose any to replace the PHI
-         */
-        auto valueToReplacePHI = phi->getIncomingValue(0);
-
-        /*
-         * Note, the users are modified, so we must cache them first
-         */
-        std::unordered_set<User *> users(phi->user_begin(), phi->user_end());
-        for (auto user : users) {
-          user->replaceUsesOfWith(phi, valueToReplacePHI);
-        }
-        phisToRemove.insert(phi);
-
-        /*
-         * If the replacement is not an Instruction, it doesn't need to be hoisted
-         */
-        if (!isa<Instruction>(valueToReplacePHI)) continue;
+      auto phi = dyn_cast<PHINode>(&I);
+      if (!phi) {
+        instructionsToHoistToPreheader.push_back(&I);
+        continue;
       }
 
-      instructionsToHoistToPreheader.push_back(&I);
+      /*
+       * All PHI invariants are equivalent, so choose any to replace the PHI
+       */
+      auto valueToReplacePHI = phi->getIncomingValue(0);
+
+      /*
+       * Note, the users are modified, so we must cache them first
+       */
+      std::unordered_set<User *> users(phi->user_begin(), phi->user_end());
+      for (auto user : users) {
+        user->replaceUsesOfWith(phi, valueToReplacePHI);
+      }
+      phisToRemove.insert(phi);
+
+      /*
+       * If the replacement is an Instruction, it needs to be hoisted
+       */
+      if (auto instToReplacePHI = dyn_cast<Instruction>(valueToReplacePHI)) {
+        instructionsToHoistToPreheader.push_back(instToReplacePHI);
+      }
     }
   }
 
