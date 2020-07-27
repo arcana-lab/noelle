@@ -211,15 +211,18 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
       auto sccType = sccInfo->getType();
 
+      I.print(errs() << "Investigating: "); errs() << "\n";
+
       /*
-       * Ensure the original instruction was sequential, not a PHI, not clonable
+       * Ensure the original instruction was not independent, not a PHI, not clonable
        * and not part of this loop governing IV attribution
        */
-      if (sccType != SCCAttrs::SEQUENTIAL) continue;
+      if (sccType == SCCAttrs::INDEPENDENT) continue;
       if (sccInfo->canBeCloned()) continue;
       if (isa<PHINode>(&I)) continue;
       if (originalCmpInst == &I || originalBrInst == &I) continue;
 
+      I.print(errs() << "Duplicating: "); errs() << "\n";
       originalInstsBeingDuplicated.push_back(&I);
     }
 
@@ -286,13 +289,16 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     auto prevIterGuard = updatedCmpInst->clone();
     prevIterGuard->replaceUsesOfWith(cloneGoverningPHI, prevIterIVValue);
     checkForLastExecutionBuilder.Insert(prevIterGuard);
+    auto shortCircuitExit = task->getExit();
     auto prevIterGuardTrueSucc = isTrueExiting ? cloneHeaderExit : lastHeaderSequentialExecutionBlock;
     auto prevIterGuardFalseSucc = isTrueExiting ? lastHeaderSequentialExecutionBlock : cloneHeaderExit;
-    cmpInst->printAsOperand(errs() << "Cmp inst: "); errs() << "\n";
-    cloneHeaderExit->printAsOperand(errs() << "Header exit: "); errs() << "\n";
-    lastHeaderSequentialExecutionBlock->printAsOperand(errs() << "Last exec exit: "); errs() << "\n";
-    prevIterGuardTrueSucc->printAsOperand(errs() << "Block if prev guard is true: "); errs() << "\n";
-    prevIterGuardFalseSucc->printAsOperand(errs() << "Block if prev guard is false: "); errs() << "\n";
     checkForLastExecutionBuilder.CreateCondBr(prevIterGuard, prevIterGuardTrueSucc, prevIterGuardFalseSucc);
+
+    // cmpInst->printAsOperand(errs() << "Cmp inst: "); errs() << "\n";
+    // cloneHeaderExit->printAsOperand(errs() << "Header exit: "); errs() << "\n";
+    // lastHeaderSequentialExecutionBlock->printAsOperand(errs() << "Last exec exit: "); errs() << "\n";
+    // prevIterGuardTrueSucc->printAsOperand(errs() << "Block if prev guard is true: "); errs() << "\n";
+    // prevIterGuardFalseSucc->printAsOperand(errs() << "Block if prev guard is false: "); errs() << "\n";
+
   }
 }
