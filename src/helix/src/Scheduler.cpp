@@ -28,14 +28,14 @@ void HELIX::squeezeSequentialSegment (
    * Fetch ControlFlowEquivalence and dependence graph
    * TODO: Move this to LDI
    */
-  auto loops = LDI->getLoopStructureSummary();
-  auto rootLoop = loops->getLoopNestingTreeRoot();
+  auto loops = LDI->getLoopHierarchyStructures();
+  auto rootLoop = loops.getLoopNestingTreeRoot();
   auto taskFunction = rootLoop->getHeader()->getParent();
   auto taskDG = LDI->getLoopDG();
   DominatorTree taskDT(*taskFunction);
   PostDominatorTree taskPDT(*taskFunction);
   DominatorSummary taskDS(taskDT, taskPDT);
-  ControlFlowEquivalence cfe(&taskDS, loops, rootLoop);
+  ControlFlowEquivalence cfe(&taskDS, &loops, rootLoop);
 
   /*
    * Consider all un-moved instructions in the working queue

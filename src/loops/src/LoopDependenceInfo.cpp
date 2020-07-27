@@ -273,6 +273,10 @@ LoopIterationDomainSpaceAnalysis * LoopDependenceInfo::getLoopIterationDomainSpa
   return this->domainSpaceAnalysis;
 }
 
+const LoopsSummary & LoopDependenceInfo::getLoopHierarchyStructures (void) const {
+  return this->liSummary;
+}
+
 LoopDependenceInfo::~LoopDependenceInfo() {
   delete this->loopDG;
   delete this->environment;
