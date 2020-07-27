@@ -24,8 +24,6 @@ SCEVSimplification::SCEVSimplification (Noelle &noelle)
 bool SCEVSimplification::simplifyIVRelatedSCEVs (
   LoopDependenceInfo const &LDI
 ) {
-  return false;
-
   auto rootLoop = LDI.getLoopStructure();
   auto invariantManager = LDI.getInvariantManager();
   auto ivManager = LDI.getInductionVariableManager();
@@ -45,12 +43,14 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
   cacheIVInfo(rootLoop, ivManager);
   searchForInstructionsDerivedFromMultipleIVs(rootLoop, invariantManager);
 
-  // for (auto instIVPair : ivCache.ivByInstruction) {
-  //   instIVPair.first->print(errs() << "IV instruction: "); errs() << "\n";
-  // }
-  // for (auto derivedI : ivCache.instsDerivedFromMultipleIVs) {
-  //   derivedI->print(errs() << "I from multiple IVs: "); errs() << "\n";
-  // }
+  /*
+  for (auto instIVPair : ivCache.ivByInstruction) {
+    instIVPair.first->print(errs() << "IV instruction: "); errs() << "\n";
+  }
+  for (auto derivedI : ivCache.instsDerivedFromMultipleIVs) {
+    derivedI->print(errs() << "I from multiple IVs: "); errs() << "\n";
+  }
+  */
 
   /*
    * Identify all GEPs to loads or stores within the loop
@@ -78,7 +78,6 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
    * Filter out GEPs not derived from loop governing IVs or loop invariants
    * Up cast GEP derivations whenever the IV integer size is smaller than the pointer size
    */
-  bool modified = false;
   std::unordered_set<GEPIndexDerivation *> validGepsToUpCast;
   for (auto gep : geps) {
     auto gepDerivation = new SCEVSimplification::GEPIndexDerivation{gep, rootLoop, invariantManager, ivCache};
@@ -89,13 +88,13 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
     validGepsToUpCast.insert(gepDerivation);
   }
 
-  upCastIVRelatedInstructionsDerivingGEP(rootLoop, ivManager, invariantManager, validGepsToUpCast);
+  bool modified = upCastIVRelatedInstructionsDerivingGEP(rootLoop, ivManager, invariantManager, validGepsToUpCast);
 
   for (auto gepDerivation : validGepsToUpCast) {
     delete gepDerivation;
   }
 
-  return true;
+  return modified;
 }
 
 void SCEVSimplification::cacheIVInfo (LoopStructure *rootLoop, InductionVariableManager *ivManager) {
@@ -279,19 +278,31 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
 
     // inst->print(errs() << "Collecting to convert: "); errs() << "\n";
 
-    if (auto phi = dyn_cast<PHINode>(inst)) {
-      phisToConvert.insert(phi);
-      return;
-    }
-
     /*
-      * Remove deriving casts/truncations that will be obsolete after casting up
-      */
+     * Remove deriving casts/truncations that will be obsolete after casting up
+     */
     if (isa<TruncInst>(inst)
       || isa<ZExtInst>(inst)
       || isa<SExtInst>(inst)
       || isPartOfShlShrTruncationPair(inst)) {
       castsToRemove.insert(inst);
+      return;
+    }
+
+    /*
+     * Only convert instructions of the wrong size
+     */
+    auto typeSize = inst->getType()->getIntegerBitWidth();
+    if (typeSize == this->ptrSizeInBits) return;
+
+    if (auto phi = dyn_cast<PHINode>(inst)) {
+
+      /*
+       * Only convert PHIs of the wrong size
+       */
+      if (typeSize == this->ptrSizeInBits) return;
+
+      phisToConvert.insert(phi);
       return;
     }
 
@@ -307,75 +318,38 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
       collectInstructionToConvert(inst);
     }
     for (auto invariant : gepDerivation->loopInvariantsUsed) {
+      if (invariant->getType()->getIntegerBitWidth() == this->ptrSizeInBits) continue;
       loopInvariantsToConvert.insert(invariant);
     }
   }
 
-  // for (auto loopGoverningAttr : loopGoverningAttrsToUpdate) {
-  //   auto conditionDerivationInsts = loopGoverningAttr->getConditionValueDerivation();
-  //   auto conditionValue = loopGoverningAttr->getHeaderCmpInstConditionValue();
-  //   if (auto conditionInst = dyn_cast<Instruction>(conditionValue)) {
-  //     conditionDerivationInsts.insert(conditionInst);
-  //   } else {
-  //     loopInvariantsToConvert.insert(conditionValue);
-  //   }
+  /*
+  for (auto invariant : loopInvariantsToConvert) {
+    invariant->print(errs() << "Invariant to convert: "); errs() << "\n";
+  }
+  for (auto phi : phisToConvert) {
+    phi->print(errs() << "PHI to convert: "); errs() << "\n";
+  }
+  for (auto nonPHI : nonPHIsToConvert) {
+    nonPHI->print(errs() << "Non phi to convert: "); errs() << "\n";
+  }
+  for (auto inst : castsToRemove) {
+    inst->print(errs() << "Cast to remove: "); errs() << "\n";
+  }
+  */
 
-  //   /*
-  //    * HACK: The IV used in the comparison instruction could itself be a casted instruction
-  //    * Remove that instruction if so
-  //    * 
-  //    * TODO: Really, we should be traversing all used instructions by the comparison
-  //    * in search for instructions to convert and casts to remove until we reach loop
-  //    * invariants/externals> That would clean up this and the condition derivation nonsense
-  //    */
-  //   auto cmpInst = loopGoverningAttr->getHeaderCmpInst();
-  //   auto cmpLHS = cmpInst->getOperand(0);
-  //   auto cmpRHS = cmpInst->getOperand(1);
-  //   auto loopGoverningIV = &loopGoverningAttr->getInductionVariable();
-  //   auto ivInstUsed = (isa<Instruction>(cmpLHS)
-  //     && loopGoverningIV->isIVInstruction(cast<Instruction>(cmpLHS))) ? cmpLHS : cmpRHS;
-  //   if (auto cast = dyn_cast<CastInst>(ivInstUsed)) {
-  //     castsToRemove.insert(cast);
-  //   }
+  if (phisToConvert.size() == 0 && nonPHIsToConvert.size() == 0 && castsToRemove.size() == 0) {
+    return false;
+  }
 
-  //   for (auto inst : conditionDerivationInsts) {
-  //     if (rootLoop->isIncluded(inst)
-  //       && !invariantManager->isLoopInvariant(inst)) {
-  //       collectInstructionToConvert(inst);
-
-  //       /*
-  //        * Get loop invariants used by the condition value derivation
-  //        * NOTE: Since the derivation is all instructions in the loop needed
-  //        * to compute the value, a simple search of direct operands on conditions is sufficient
-  //        */
-  //       for (auto &op : inst->operands()) {
-  //         auto opValue = op.get();
-  //         auto opInst = dyn_cast<Instruction>(opValue);
-  //         if ((opInst && !rootLoop->isIncluded(opInst))
-  //           || invariantManager->isLoopInvariant(opValue)) {
-  //           loopInvariantsToConvert.insert(opValue);
-  //         }
-  //       }
-
-  //       loopInvariantsToConvert.insert(inst);
-  //     } else {
-  //       loopInvariantsToConvert.insert(inst);
-  //     }
-  //   }
-  // }
-
-  // for (auto invariant : loopInvariantsToConvert) {
-  //   invariant->print(errs() << "Invariant to convert: "); errs() << "\n";
-  // }
-  // for (auto phi : phisToConvert) {
-  //   phi->print(errs() << "PHI to convert: "); errs() << "\n";
-  // }
-  // for (auto nonPHI : nonPHIsToConvert) {
-  //   nonPHI->print(errs() << "Non phi to convert: "); errs() << "\n";
-  // }
-  // for (auto inst : castsToRemove) {
-  //   inst->print(errs() << "Cast to remove: "); errs() << "\n";
-  // }
+  /*
+   * Immediately remove all truncations
+   */
+  for (auto obsoleteCast : castsToRemove) {
+    auto castedValue = obsoleteCast->getOperand(0);
+    obsoleteCast->replaceAllUsesWith(castedValue);
+    obsoleteCast->eraseFromParent();
+  }
 
   /*
    * Build a map from old to new typed values
@@ -392,12 +366,6 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   IRBuilder<> preheaderBuilder(preheaderBlock->getTerminator());
   const bool isSigned = true;
   for (auto invariant : loopInvariantsToConvert) {
-    if (invariant->getType()->getIntegerBitWidth() == this->ptrSizeInBits) {
-      // invariant->print(errs() << "Invariant not needing conversion: "); errs() << "\n";
-      oldToNewTypedMap.insert(std::make_pair(invariant, invariant));
-      continue;
-    }
-
     auto castedInvariant = preheaderBuilder.CreateIntCast(invariant, this->intTypeForPtrSize, isSigned);
     // invariant->print(errs() << "Invariant casted: "); errs() << "\n";
     oldToNewTypedMap.insert(std::make_pair(invariant, castedInvariant));
@@ -417,11 +385,15 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   for (auto nonPHI : nonPHIsToConvert) {
     valuesLeft.insert(nonPHI);
   }
-  for (auto cast : castsToRemove) {
-    valuesLeft.insert(cast);
-  }
 
   auto tryAndMapOldOpToNewOp = [&](Value *oldTypedOp) -> Value * {
+
+    /*
+     * There won't be an entry in the map for instructions not needing a conversion
+     */
+    auto oldTypeSizeInBits = oldTypedOp->getType()->getIntegerBitWidth();
+    if (oldTypeSizeInBits == this->ptrSizeInBits) return oldTypedOp;
+
     // oldTypedOp->print(errs() << "\t\tMapping: "); errs() << "\n";
     if (auto constOp = dyn_cast<ConstantInt>(oldTypedOp)) {
       auto constPtrSize = ConstantInt::get(intTypeForPtrSize, constOp->getValue().getSExtValue(), isSigned);
@@ -466,22 +438,8 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
       // errs() << "\tAble to convert?  " << allOperandsAbleToConvert << "\n";
       if (!allOperandsAbleToConvert) continue;
 
-
       /*
-       * To remove casts, map the operand being casted to its newly typed operand
-       */
-      if (castsToRemove.find(I) != castsToRemove.end()) {
-        auto valuePreviouslyCasted = I->getOperand(0);
-        auto newTypedPreviousValue = oldToNewTypedMap.at(valuePreviouslyCasted);
-        oldToNewTypedMap.insert(std::make_pair(I, newTypedPreviousValue));
-        valuesLeft.erase(I);
-        // I->print(errs() << "\tRemoved: ");
-        // newTypedPreviousValue->print(errs() << "\t and will use: "); errs() << "\n";
-        continue;
-      }
-
-      /*
-       * For all other instructions, create a copy pointing to newly typed operands
+       * Create a copy pointing to newly typed operands
        */
       auto opCode = I->getOpcode();
       Value *newInst = nullptr;
@@ -511,51 +469,6 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
 
   assert(valuesLeft.size() == 0 && "SCEVSimplification: failed mid-way in simplifying");
 
-  // auto upCastOrGetMappedUpCast = [&](Value *value) -> Value *{
-  //   auto fetchedUpCast = tryAndMapOldOpToNewOp(value);
-  //   if (fetchedUpCast) {
-  //     return fetchedUpCast;
-  //   }
-
-  //   auto inst = dyn_cast<Instruction>(value);
-  //   if (!inst) {
-  //     auto preHeader = rootLoop->getPreHeader();
-  //     IRBuilder<> entry(preHeader->getTerminator());
-  //     return entry.CreateIntCast(value, this->intTypeForPtrSize, isSigned);
-  //   }
-
-  //   if (!rootLoop->isIncluded(inst)) {
-  //     IRBuilder<> builder(inst);
-  //     return builder.CreateIntCast(inst, this->intTypeForPtrSize, isSigned);
-  //   }
-
-  //   return nullptr;
-  // };
-
-  /*
-   * Update loop guards with newly typed operands created
-   */
-  // for (auto loopGoverningAttr : loopGoverningAttrsToUpdate) {
-  //   auto cmpInst = loopGoverningAttr->getHeaderCmpInst();
-  //   IRBuilder<> builder(cmpInst);
-  //   auto predicate = cmpInst->getPredicate();
-  //   auto oldTypedLHS = cmpInst->getOperand(0);
-  //   auto newTypedLHS = upCastOrGetMappedUpCast(oldTypedLHS);
-  //   auto oldTypedRHS = cmpInst->getOperand(1);
-  //   auto newTypedRHS = upCastOrGetMappedUpCast(oldTypedRHS);
-
-  //   oldTypedLHS->print(errs() << "Old LHS: "); errs() << "\n";
-  //   oldTypedRHS->print(errs() << "Old RHS: "); errs() << "\n";
-  //   newTypedLHS->print(errs() << "New LHS: "); errs() << "\n";
-  //   newTypedRHS->print(errs() << "New RHS: "); errs() << "\n";
-
-  //   assert(newTypedLHS && newTypedRHS && "Guard of up-casted IV could not be updated");
-
-  //   auto newTypedCmp = builder.CreateICmp(predicate, newTypedLHS, newTypedRHS);
-  //   cmpInst->replaceAllUsesWith(newTypedCmp);
-  //   cmpInst->eraseFromParent();
-  // }
-
   /*
    * Catch all users of effected instructions that need to use a truncation of the up-casted instructions
    */
@@ -565,7 +478,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
     Instruction *upCastedI
   ) -> void {
 
-    originalI->print(errs() << "Original instruction reviewing users of: "); errs() << "\n";
+    // originalI->print(errs() << "Original instruction reviewing users of: "); errs() << "\n";
 
     std::unordered_set<User *> allUsers(originalI->user_begin(), originalI->user_end());
     for (auto user : allUsers) {
@@ -577,13 +490,22 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
        * or an instruction already converted
        */
       if (oldToNewTypedMap.find(user) != oldToNewTypedMap.end()) continue;
+
+      /*
+       * Prevent creating a cast from the same type to the same type
+       */
       if (auto cast = dyn_cast<CastInst>(user)) {
         if (user->getType() == intTypeForPtrSize) {
           cast->replaceAllUsesWith(upCastedI);
           cast->eraseFromParent();
+          continue;
         }
       }
 
+      /*
+       * If no truncation is needed, as the up-casted type matches the user type,
+       * just use the up-casted instruction
+       */
       if (user->getType() == intTypeForPtrSize) {
         user->replaceUsesOfWith(originalI, upCastedI);
         continue;
@@ -591,6 +513,9 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
 
       // errs() << "Not the same integer type nor already converted\n";
 
+      /*
+       * Truncate the up-casted instruction to match the user's type
+       */
       Instruction * truncatedI = nullptr;
       if (upCastedToTruncatedInstMap.find(upCastedI) == upCastedToTruncatedInstMap.end()) {
         Instruction *afterI = upCastedI->getNextNode();
@@ -643,9 +568,6 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
 
     truncateUpCastedValueForUsersOf(oldInst, newInst);
     oldInstructionsToDelete.insert(oldInst);
-  }
-  for (auto obsoleteCast : castsToRemove) {
-    oldInstructionsToDelete.insert(obsoleteCast);
   }
 
   for (auto oldInst : oldInstructionsToDelete) {
@@ -731,6 +653,8 @@ SCEVSimplification::GEPIndexDerivation::GEPIndexDerivation (
     }
   }
 
+  // errs() << "Is derived\n";
+
   isDerived = true;
   return;
 }
@@ -774,6 +698,9 @@ bool SCEVSimplification::isUpCastPossible (
   const int MIN_BIT_SIZE = ptrSizeInBits < 32 ? ptrSizeInBits : 32;
   const int MAX_BIT_SHIFT = ptrSizeInBits - MIN_BIT_SIZE;
   auto isValidOperationWhenUpCasted = [&](Instruction *inst) -> bool {
+
+    // inst->print(errs() << "Checking validity of: "); errs() << "\n";
+
     auto firstOp = inst->getOperand(0);
     auto srcTy = firstOp->getType();
     auto destTy = inst->getType();
@@ -798,6 +725,9 @@ bool SCEVSimplification::isUpCastPossible (
   for (auto inst : gepDerivation->ivDerivingInstructions) {
     if (!isValidOperationWhenUpCasted(inst)) return false;
   }
+
+  // errs() << "Can up cast\n";
+
   return true;
 }
 
