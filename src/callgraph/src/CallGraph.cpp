@@ -19,7 +19,7 @@ noelle::CallGraph::CallGraph (Module &M, PTACallGraph *callGraph)
   {
 
   /*
-   * Create the nodes.
+   * Create the function nodes.
    */
   for (auto &F: M){
 
@@ -29,6 +29,137 @@ noelle::CallGraph::CallGraph (Module &M, PTACallGraph *callGraph)
     auto newNode = new CallGraphFunctionNode(F);
     this->functions[&F] = newNode;
   }
+
+  /*
+   * Create the edges.
+   */
+  for (auto &F : M){
+
+    /*
+     * Fetch the node of the current function.
+     */
+    auto fromNode = this->functions[&F];
+
+    /*
+     * Add the edges from this function.
+     */
+    for (auto &inst : instructions(&F)){
+
+      /*
+       * Handle call instructions.
+       */
+      if (auto callInst = dyn_cast<CallInst>(&inst)){
+        this->handleCallInstruction(fromNode, callInst);
+        continue ;
+      }
+
+      /*
+       * Handle invoke instructions.
+       */
+      if (auto callInst = dyn_cast<InvokeInst>(&inst)){
+        this->handleCallInstruction(fromNode, callInst);
+        continue ;
+      }
+    }
+  }
+
+  return ;
+}
+
+std::unordered_set<CallGraphFunctionNode *> noelle::CallGraph::getFunctionNodes (void) const {
+  std::unordered_set<CallGraphFunctionNode *> s;
+
+  for (auto pair : this->functions){
+    s.insert(pair.second);
+  }
+
+  return s;
+}
+
+std::unordered_set<CallGraphEdge *> noelle::CallGraph::getEdges (void) const {
+  return this->edges;
+}
+
+CallGraphFunctionNode * noelle::CallGraph::getFunctionNode (Function *f) const {
+  if (this->functions.find(f) == this->functions.end()){
+    return nullptr;
+  }
+  auto n = this->functions.at(f);
+
+  return n;
+}
+
+void noelle::CallGraph::handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst){
+
+  /*
+   * Fetch the callee.
+   */
+  auto callee = callInst->getCalledFunction();
+  if (callee != nullptr){
+
+    /*
+     * Fetch the callee node.
+     */
+    assert(this->functions.find(callee) != this->functions.end());
+    auto toNode = this->functions.at(callee);
+
+    /*
+     * Create the sub-edge.
+     */
+    auto instNode = this->instructionNodes[callInst];
+    if (instNode == nullptr){
+      instNode = new CallGraphInstructionNode(callInst);
+      this->instructionNodes[callInst] = instNode;
+    }
+    auto subEdge = new CallGraphInstructionFunctionEdge(instNode, toNode, true);
+
+    /*
+     * Check if the edge already exists.
+     */
+    auto existingEdge = fromNode->getCallEdgeTo(toNode);
+    if (existingEdge == nullptr){
+
+      /*
+       * The edge from @fromNode to @toNode doesn't exist yet.
+       *
+       * Create a new edge.
+       */
+      auto newEdge = new CallGraphFunctionFunctionEdge(fromNode, toNode, true);
+      this->edges.insert(newEdge);
+
+      /*
+       * Add the new edge.
+       */
+      fromNode->addOutgoingEdge(newEdge);
+      toNode->addIncomingEdge(newEdge);
+
+      /*
+       * Add the sub-edge.
+       */
+      newEdge->addSubEdge(subEdge);
+
+      return ;
+    }
+
+    /*
+     * The edge from @fromNode to @toNode already exists.
+     *
+     * Change its flag to must.
+     */
+    existingEdge->setMust();
+
+      /*
+     * Add the sub-edge.
+     */
+    existingEdge->addSubEdge(subEdge);
+
+    return ;
+  }
+
+  /*
+   * The callee is unknown.
+   */
+  //TODO
 
   return ;
 }
