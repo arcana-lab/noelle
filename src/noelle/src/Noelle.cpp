@@ -22,6 +22,7 @@ Noelle::Noelle()
   , profiles{nullptr}
   , programDependenceGraph{nullptr}
   , maxCores{Architecture::getNumberOfPhysicalCores()}
+  , pcg{nullptr}
 {
 
   return ;
