@@ -70,6 +70,26 @@ void HELIX::addSynchronizations (
   }
 
   /*
+   * Optimization: If the preamble SCC is not part of a sequential segment,
+   * then determining whether the loop exited does not need to be synchronized
+   */
+  auto loopSCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  auto preambleSCCNodes = loopSCCDAG->getTopLevelNodes();
+  assert(preambleSCCNodes.size() == 1 && "The loop internal SCCDAG should only have one preamble");
+  auto preambleSCC = (*preambleSCCNodes.begin())->getT();
+  // preambleSCC->printMinimal(errs() << "Preamble SCC:\n");
+  bool isPreambleSynchronized = false;
+  for (auto ss : *sss){
+    for (auto scc : ss->getSCCs()) {
+      if (scc == preambleSCC) {
+        isPreambleSynchronized = true;
+        // errs() << "Preamble is included\n";
+      }
+    }
+  }
+  if (!isPreambleSynchronized) firstInsts.clear();
+
+  /*
    * Define a helper to fetch the appropriate ss entry in synchronization arrays
    */
   auto fetchEntry = [&entryBuilder, int64](Value *ssArray, int32_t ssID) -> Value * {

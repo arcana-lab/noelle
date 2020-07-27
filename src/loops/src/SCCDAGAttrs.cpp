@@ -383,9 +383,11 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
     if (auto inst = dyn_cast<Instruction>(value)) {
       if (containedInsts.find(inst) != containedInsts.end()) continue;
 
-      if (auto br = dyn_cast<BranchInst>(value)) {
+      if (auto br = dyn_cast<BranchInst>(inst)) {
         if (br->isUnconditional()) continue;
-      } else if (isa<GetElementPtrInst>(inst) || isa<PHINode>(inst) || isa<CastInst>(inst)) {
+      }
+
+      if (isa<GetElementPtrInst>(inst) || isa<PHINode>(inst) || isa<CastInst>(inst) || isa<CmpInst>(inst)) {
         continue;
       }
     }
