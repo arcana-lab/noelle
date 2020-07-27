@@ -66,6 +66,11 @@ namespace llvm {
       uint64_t getID (void) const ;
 
       /*
+       * Return the object containing all loop structures at and nested within this loop
+       */
+      const LoopsSummary & getLoopHierarchyStructures (void) const ;
+
+      /*
        * Return the object that describes the loop in terms of induction variables, trip count, and control structure (e.g., latches, header)
        */
       LoopStructure * getLoopStructure (void) const ;
