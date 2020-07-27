@@ -240,8 +240,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     auto taskFunction = task->getTaskBody();
     auto &cxt = taskFunction->getContext();
     auto checkForLastExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
-    auto lastHeaderSequentialExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
-    IRBuilder<> lastHeaderSequentialExecutionBuilder(lastHeaderSequentialExecutionBlock);
+    this->lastIterationExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
+    IRBuilder<> lastIterationExecutionBuilder(this->lastIterationExecutionBlock);
 
     /*
      * Clone these instructions and execute them after exiting the loop ONLY IF
@@ -250,7 +250,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     for (auto originalI : originalInstsBeingDuplicated) {
       auto cloneI = task->getCloneOfOriginalInstruction(originalI);
       auto duplicateI = cloneI->clone();
-      lastHeaderSequentialExecutionBuilder.Insert(duplicateI);
+      lastIterationExecutionBuilder.Insert(duplicateI);
       this->lastIterationExecutionDuplicateMap.insert(std::make_pair(originalI, duplicateI));
     }
 
@@ -268,7 +268,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       }
     }
 
-    lastHeaderSequentialExecutionBuilder.CreateBr(cloneHeaderExit);
+    lastIterationExecutionBuilder.CreateBr(cloneHeaderExit);
     updatedBrInst->replaceSuccessorWith(cloneHeaderExit, checkForLastExecutionBlock);
     IRBuilder<> checkForLastExecutionBuilder(checkForLastExecutionBlock);
 
@@ -290,8 +290,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     prevIterGuard->replaceUsesOfWith(cloneGoverningPHI, prevIterIVValue);
     checkForLastExecutionBuilder.Insert(prevIterGuard);
     auto shortCircuitExit = task->getExit();
-    auto prevIterGuardTrueSucc = isTrueExiting ? cloneHeaderExit : lastHeaderSequentialExecutionBlock;
-    auto prevIterGuardFalseSucc = isTrueExiting ? lastHeaderSequentialExecutionBlock : cloneHeaderExit;
+    auto prevIterGuardTrueSucc = isTrueExiting ? cloneHeaderExit : this->lastIterationExecutionBlock;
+    auto prevIterGuardFalseSucc = isTrueExiting ? this->lastIterationExecutionBlock : cloneHeaderExit;
     checkForLastExecutionBuilder.CreateCondBr(prevIterGuard, prevIterGuardTrueSucc, prevIterGuardFalseSucc);
 
     // cmpInst->printAsOperand(errs() << "Cmp inst: "); errs() << "\n";
