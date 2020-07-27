@@ -283,6 +283,60 @@ namespace {
         }
       }
 
+      /*
+       * Call graph.
+       */
+      errs() << "Program call graph\n";
+      auto pcf = noelle.getProgramCallGraph();
+      for (auto node : pcf->getFunctionNodes()){
+
+        /*
+         * Fetch the next program's function.
+         */
+        auto f = node->getFunction();
+        if (f->empty()){
+          continue ;
+        }
+
+        /*
+         * Fetch the outgoing edges.
+         */
+        auto outEdges = node->getOutgoingEdges();
+        if (outEdges.size() == 0){
+          errs() << " The function \"" << f->getName() << "\" has no calls\n";
+          continue ;
+        }
+
+        /*
+         * Print the outgoing edges.
+         */
+        errs() << " The function \"" << f->getName() << "\" invokes the following functions:\n";
+        for (auto callEdge : outEdges){
+          auto calleeNode = callEdge->getCallee();
+          auto calleeF = calleeNode->getFunction();
+          errs() << "   [" ;
+          if (callEdge->isAMustCall()){
+            errs() << "must";
+          } else {
+            errs() << "may";
+          }
+          errs() << "] \"" << calleeF->getName() << "\"\n";
+
+          /*
+           * Print the sub-edges.
+           */
+          for (auto subEdge : callEdge->getSubEdges()){
+            auto callerSubEdge = subEdge->getCaller();
+            errs() << "     [";
+            if (subEdge->isAMustCall()){
+              errs() << "must";
+            } else {
+              errs() << "may";
+            }
+            errs() << "] " << *callerSubEdge->getInstruction() << "\n";
+          }
+        }
+      }
       return false;
     }
 

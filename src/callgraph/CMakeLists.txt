@@ -31,4 +31,5 @@ add_subdirectory(src)
 install(PROGRAMS
   include/CallGraph.hpp
   include/CallGraphNode.hpp
+  include/CallGraphEdge.hpp
   DESTINATION include)

@@ -1,15 +1,13 @@
 # Sources
 set(Srcs 
-  CallGraph.cpp
-  CallGraphNode.cpp
-  CallGraphEdge.cpp
+  CFETestSuite.cpp
 )
 
 # Compilation flags
-set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
+set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "CallGraph")
+set(PassName "control_flow_equivalence")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -23,11 +21,9 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS}
-           ../../basic_utilities/include
-           ../../../external/svf/include
-					 ../include
-            )
+set(RootPath ../../../..)
+set(SVFDep ${RootPath}/external/svf/include)
+include_directories(${LLVM_INCLUDE_DIRS} ${RootPath}/install/include ${SVFDep} ../../helpers/include ../include ./)
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})

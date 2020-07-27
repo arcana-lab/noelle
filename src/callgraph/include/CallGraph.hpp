@@ -12,6 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "CallGraphNode.hpp"
+#include "CallGraphEdge.hpp"
 
 #include "MemoryModel/PointerAnalysis.h"
 #include "Util/PTACallGraph.h"
@@ -28,9 +29,19 @@ namespace llvm {
       public:
         CallGraph (Module &M, PTACallGraph *callGraph);
 
+        std::unordered_set<CallGraphFunctionNode *> getFunctionNodes (void) const ;
+
+        std::unordered_set<CallGraphEdge *> getEdges (void) const ;
+
+        CallGraphFunctionNode * getFunctionNode (Function *f) const ;
+
       private:
         Module &m;
         std::unordered_map<Function *, CallGraphFunctionNode *> functions;
+        std::unordered_map<Instruction *, CallGraphInstructionNode *> instructionNodes;
+        std::unordered_set<CallGraphEdge *> edges;
+
+        void handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst);
     };
 
   }
