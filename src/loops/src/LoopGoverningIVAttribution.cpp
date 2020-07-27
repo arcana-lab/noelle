@@ -39,7 +39,12 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
     if (loopGoverningTerminator) return;
     loopGoverningTerminator = br;
   }
+
+  /*
+   * Ensure the branch is in the header as this analysis does not understand do-while loops
+   */
   if (!loopGoverningTerminator) return;
+  if (loopGoverningTerminator->getParent() != headerPHI->getParent()) return;
   this->headerBr = loopGoverningTerminator;
 
   /*
