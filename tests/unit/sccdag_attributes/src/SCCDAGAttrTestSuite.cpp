@@ -30,6 +30,7 @@ const char *SCCDAGAttrTestSuite::tests[] = {
   "scc with IV",
   "reducible SCC",
   "clonable SCC",
+  "clonable SCC into local memory",
   "loop carried dependencies (top loop)",
   "normalized top loop sccdag"
 };
@@ -38,6 +39,7 @@ TestFunction SCCDAGAttrTestSuite::testFns[] = {
   SCCDAGAttrTestSuite::sccsWithIVAreFound,
   SCCDAGAttrTestSuite::reducibleSCCsAreFound,
   SCCDAGAttrTestSuite::clonableSCCsAreFound,
+  SCCDAGAttrTestSuite::clonableSCCsIntoLocalMemoryAreFound,
   SCCDAGAttrTestSuite::loopCarriedDependencies,
   SCCDAGAttrTestSuite::normalizedTopLoopSCCDAG
 };
@@ -92,10 +94,9 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
 
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
   // TODO: Test attribution on normalized SCCDAG as well
-  this->attrs = new SCCDAGAttrs(loopDG, sccdag, LIS, *SE, lcd, IV);
+  this->attrs = new SCCDAGAttrs(loopDG, sccdag, LIS, *SE, lcd, IV, DS);
 
-  // PDGPrinter printer;
-  // printer.writeGraph<SCCDAG, SCC>("graph-top-loop.dot", sccdagTopLoopNorm);
+  // DGPrinter::writeGraph<SCCDAG, SCC>("graph-loop.dot", sccdag);
 
   errs() << "SCCDAGAttrTestSuite: Running suite\n";
   suite->runTests((ModulePass &)*this);
@@ -157,6 +158,18 @@ Values SCCDAGAttrTestSuite::clonableSCCsAreFound (ModulePass &pass, TestSuite &s
   for (auto node : attrPass.sccdag->getNodes()) {
     SCCAttrs *sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
     if (sccAttrs->canBeCloned()) sccs.insert(node->getT());
+  }
+
+  return SCCDAGAttrTestSuite::printSCCs(pass, suite, sccs);
+}
+
+Values SCCDAGAttrTestSuite::clonableSCCsIntoLocalMemoryAreFound (ModulePass &pass, TestSuite &suite) {
+  SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
+
+  std::set<SCC *> sccs;
+  for (auto node : attrPass.sccdag->getNodes()) {
+    SCCAttrs *sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
+    if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) sccs.insert(node->getT());
   }
 
   return SCCDAGAttrTestSuite::printSCCs(pass, suite, sccs);
