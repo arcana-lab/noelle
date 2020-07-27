@@ -334,12 +334,18 @@ void HELIX::synchronizeTask (
    * Once live out storing is finished, restore the mapping
    */
   std::unordered_map<Instruction *, Instruction *> loopBodyExecutionMap;
+  BasicBlock *cloneLastExecutionBlock = nullptr;
   for (auto lastExecutionInstPair : this->lastIterationExecutionDuplicateMap) {
     auto originalI = lastExecutionInstPair.first;
     auto exitCloneI = lastExecutionInstPair.second;
+    cloneLastExecutionBlock = exitCloneI->getParent();
     auto loopBodyCloneI = helixTask->getCloneOfOriginalInstruction(originalI);
     helixTask->addInstruction(originalI, exitCloneI);
     loopBodyExecutionMap.insert(std::make_pair(originalI, loopBodyCloneI));
+  }
+  if (cloneLastExecutionBlock) {
+    auto originalLastExecutionBlock = *originalLDI->getLoopStructure()->getLoopExitBasicBlocks().begin();
+    helixTask->addBasicBlock(originalLastExecutionBlock, cloneLastExecutionBlock);
   }
   this->generateCodeToStoreLiveOutVariables(this->originalLDI, 0);
   for (auto loopBodyExecutionInstPair : loopBodyExecutionMap) {
