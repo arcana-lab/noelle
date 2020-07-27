@@ -2,6 +2,7 @@
 set(Srcs 
   CallGraph.cpp
   CallGraphNode.cpp
+  CallGraphEdge.cpp
 )
 
 # Compilation flags
