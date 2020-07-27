@@ -118,7 +118,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
       /*
        * Inline the call.
        */
-      auto inlinedCall = this->inlineCallsInMassiveSCCs(F, LDI);
+      auto inlinedCall = this->inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(F, LDI, pcg);
       inlined |= inlinedCall;
       if (inlined) {
         break;
@@ -158,7 +158,9 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
  * try inlining the function call in that SCC with the
  * most memory edges to other internal/external values
  */
-bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
+bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (Function *F, LoopDependenceInfo *LDI, noelle::CallGraph *pcg) {
+  assert(pcg != nullptr);
+  assert(LDI != nullptr);
 
   /*
    * Fetch the SCCDAG
@@ -242,6 +244,13 @@ bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
        * If the call instruction belongs to a sub-loop, then its inlining is likely to be useless.
        */
       if (loopStructure->isIncludedInItsSubLoops(call)){
+        continue ;
+      }
+
+      /*
+       * Do not consider inlining calls that are in a cycle within the program call graph.
+       */
+      if (pcg->doesItBelongToASCC(callF)){
         continue ;
       }
 
