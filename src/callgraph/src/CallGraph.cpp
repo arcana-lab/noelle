@@ -15,7 +15,8 @@ using namespace llvm;
 using namespace noelle;
 
 noelle::CallGraph::CallGraph (Module &M, PTACallGraph *callGraph)
-  : m{M}
+  : m{M},
+    scccag{nullptr}
   {
 
   /*
