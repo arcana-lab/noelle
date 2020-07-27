@@ -25,6 +25,8 @@
 #include "PDGPrinter.hpp"
 #include "SCCDAGAttrs.hpp"
 #include "SCCDAGNormalizer.hpp"
+#include "Invariants.hpp"
+#include "InductionVariables.hpp"
 
 #include "TestSuite.hpp"
 

@@ -18,6 +18,7 @@
 #include "InductionVariables.hpp"
 #include "Invariants.hpp"
 #include "LoopGoverningIVAttribution.hpp"
+#include "LoopIterationDomainSpaceAnalysis.hpp"
 #include "SCCDAGAttrs.hpp"
 #include "SCCDAGNormalizer.hpp"
 #include "LoopEnvironment.hpp"
@@ -122,6 +123,8 @@ namespace llvm {
 
       InvariantManager * getInvariantManager (void) const ;
 
+      LoopIterationDomainSpaceAnalysis * getLoopIterationDomainSpaceAnalysis (void) const ;
+
       bool doesHaveCompileTimeKnownTripCount (void) const ;
       
       uint64_t getCompileTimeTripCount (void) const ;
@@ -167,6 +170,8 @@ namespace llvm {
       InvariantManager *invariantManager;
 
       LoopGoverningIVAttribution *loopGoverningIVAttribution;
+
+      LoopIterationDomainSpaceAnalysis *domainSpaceAnalysis;
 
       std::unordered_set<Value *> invariants;
 
