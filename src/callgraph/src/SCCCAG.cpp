@@ -35,7 +35,24 @@ bool SCCCAGNode_Function::isAnSCC (void) const {
 }
 
 noelle::SCCCAG::SCCCAG (noelle::CallGraph *cg){
-  //TODO
+  
+  /*
+   * Iterate over all function nodes.
+   */
+  for (auto funcNode : cg->getFunctionNodes()){
+
+    /*
+     * Identifiy the SCCs.
+     */
+    //TODO
+
+    /*
+     * The current function doesn't belong to an SCC.
+     */
+    auto singleNode = new SCCCAGNode_Function(*funcNode->getFunction());
+    this->nodes[funcNode] = singleNode;
+  }
+
   return ;
 }
 
