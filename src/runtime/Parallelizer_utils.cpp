@@ -470,9 +470,9 @@ extern "C" {
      * Fetch the spinlock
      */
     auto ss = (pthread_spinlock_t *) sequentialSegment;
-    assert(ss != NULL);
 
     #ifdef RUNTIME_PRINT
+    assert(ss != NULL);
     fprintf(stderr, "HelixDispatcher: Waiting on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
     #endif
 
@@ -496,9 +496,9 @@ extern "C" {
      * Fetch the spinlock
      */
     auto ss = (pthread_spinlock_t *) sequentialSegment;
-    assert(ss != NULL);
 
     #ifdef RUNTIME_PRINT
+    assert(ss != NULL);
     fprintf(stderr, "HelixDispatcher: Signaling on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
     #endif
 
