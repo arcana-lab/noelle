@@ -163,7 +163,48 @@ void noelle::CallGraph::handleCallInstruction (CallGraphFunctionNode *fromNode, 
 
   return ;
 }
+        
+SCCCAG * noelle::CallGraph::getSCCCAG (void) {
+
+  /*
+   * Check if we have already computed it.
+   */
+  if (this->scccag != nullptr){
+    return this->scccag;
+  }
+
+  /*
+   * Compute the SCCCAG.
+   */
+  this->scccag = new SCCCAG(this);
+
+  return this->scccag;
+}
 
 bool noelle::CallGraph::doesItBelongToASCC (Function *f) {
+
+  /*
+   * Fetch the SCCCAG.
+   */
+  auto localAG = this->getSCCCAG();
+
+  /*
+   * Fetch the SCCCAG node of @f.
+   */
+  auto callGraphNode = this->getFunctionNode(f);
+  assert(callGraphNode != nullptr);
+  auto localAGNode = localAG->getNode(callGraphNode);
+  assert(localAGNode != nullptr);
+
+  /*
+   * Check if the node belongs to an SCC.
+   */
+  if (localAGNode->isAnSCC()){
+    return true;
+  }
+
+  /*
+   * The node doesn't belong to an SCC.
+   */
   return false;
 }
