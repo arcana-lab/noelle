@@ -62,6 +62,7 @@ void HELIX::addSynchronizations (
   for (auto entryInst : ssEntries) {
     bool isDominatedBy = false;
     for (auto otherEntry : ssEntries) {
+      if (entryInst == otherEntry) continue;
       isDominatedBy |= DS.DT.dominates(otherEntry, entryInst);
     }
 
