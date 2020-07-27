@@ -22,9 +22,85 @@ CallGraphFunctionNode::CallGraphFunctionNode (Function &func)
 
   return ;
 }
+        
+Function * CallGraphFunctionNode::getFunction (void) const {
+  auto ptr = &(this->f);
+
+  return ptr;
+}
+
+void noelle::CallGraphFunctionNode::addOutgoingEdge (CallGraphFunctionFunctionEdge *edge){
+  assert(edge->getCaller() == this);
+
+  /*
+   * Add the edge.
+   */
+  this->outgoingEdges.insert(edge);
+
+  auto calleeNode = edge->getCallee();
+  this->outgoingEdgesMap[calleeNode] = edge;
+
+  return ;
+}
+
+void noelle::CallGraphFunctionNode::addIncomingEdge (CallGraphFunctionFunctionEdge *edge){
+  assert(edge->getCallee() == this);
+
+  /*
+   * Add the edge.
+   */
+  this->incomingEdges.insert(edge);
+
+  auto callerNode = edge->getCaller();
+  this->incomingEdgesMap[callerNode] = edge;
+
+  return ;
+}
+
+std::unordered_set<CallGraphFunctionFunctionEdge *> noelle::CallGraphFunctionNode::getIncomingEdges (void) const {
+  return this->incomingEdges;
+}
+
+std::unordered_set<CallGraphFunctionFunctionEdge *> noelle::CallGraphFunctionNode::getOutgoingEdges (void) const {
+  return this->outgoingEdges;
+}
+
+CallGraphFunctionFunctionEdge * CallGraphFunctionNode::getCallEdgeTo (CallGraphFunctionNode *callee) const {
+  if (this->outgoingEdgesMap.find(callee) == this->outgoingEdgesMap.end()){
+    return nullptr;
+  }
+  auto edge = this->outgoingEdgesMap.at(callee);
+
+  return edge;
+}
+
+CallGraphFunctionFunctionEdge * CallGraphFunctionNode::getCallEdgeFrom (CallGraphFunctionNode *caller) const {
+  if (this->incomingEdgesMap.find(caller) == this->incomingEdgesMap.end()){
+    return nullptr;
+  }
+  auto edge = this->incomingEdgesMap.at(caller);
+
+  return edge;
+}
 
 void CallGraphFunctionNode::print (void) {
   errs() << this->f.getName() << "\n";
+
+  return ;
+}
+
+CallGraphInstructionNode::CallGraphInstructionNode (Instruction *i)
+  :i{i}
+  {
+  return ;
+}
+
+Instruction * CallGraphInstructionNode::getInstruction (void) const {
+  return i;
+}
+
+void CallGraphInstructionNode::print (void) {
+  errs() << *this->i << "\n";
 
   return ;
 }
