@@ -11,7 +11,7 @@
 #include "Inliner.hpp"
 #include "DOALL.hpp"
 
-bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
+bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, noelle::CallGraph *pcg) {
   auto anyInlined = false;
 
   /*
