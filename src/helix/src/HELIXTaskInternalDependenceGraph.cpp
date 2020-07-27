@@ -27,8 +27,6 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
 
   auto copyEdgeUsingTaskClonedValues = [&](DGEdge<Value> *originalEdge) -> void {
       DGEdge<Value> edgeToPointToClones(*originalEdge);
-      // originalEdge->getOutgoingT()->print(errs() << "Fetching clone of: "); errs() << "\n";
-      // originalEdge->getIncomingT()->print(errs() << "Fetching clone of: "); errs() << "\n";
       edgeToPointToClones.setNodePair(
         this->taskFunctionDG->fetchNode(helixTask->getCloneOfOriginalInstruction(cast<Instruction>(originalEdge->getOutgoingT()))),
         this->taskFunctionDG->fetchNode(helixTask->getCloneOfOriginalInstruction(cast<Instruction>(originalEdge->getIncomingT())))
@@ -50,7 +48,10 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
     }
   }
 
-  auto aliasStoresAndLoadsOfMemoryLocation = [&](std::set<StoreInst *> &stores, std::set<LoadInst *> &loads) -> void {
+  auto aliasStoresAndLoadsOfMemoryLocation = [&](
+    std::unordered_set<StoreInst *> &stores,
+    std::unordered_set<LoadInst *> &loads
+  ) -> void {
     for (auto store : stores) {
       for (auto other : stores) {
         if (store == other) continue;
@@ -71,9 +72,7 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
    * Derive inter-iteration memory dependencies from the loop carried environment
    */
   for (auto spill : this->spills) {
-    std::set<LoadInst *> loads;
-    loads.insert(spill->environmentLoad);
-    aliasStoresAndLoadsOfMemoryLocation(spill->environmentStores, loads);
+    aliasStoresAndLoadsOfMemoryLocation(spill->environmentStores, spill->environmentLoads);
   }
 
   if (this->verbose >= Verbosity::Maximal) {

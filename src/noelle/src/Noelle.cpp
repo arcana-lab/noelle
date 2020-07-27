@@ -22,6 +22,7 @@ Noelle::Noelle()
   , profiles{nullptr}
   , programDependenceGraph{nullptr}
   , maxCores{Architecture::getNumberOfPhysicalCores()}
+  , pcg{nullptr}
 {
 
   return ;
@@ -271,6 +272,14 @@ uint64_t Noelle::numberOfProgramInstructions (void) const {
 
 bool Noelle::shouldLoopsBeHoistToMain (void) const {
   return this->hoistLoopsToMain;
+}
+      
+noelle::CallGraph * Noelle::getProgramCallGraph (void) {
+  if (this->pcg == nullptr){
+    this->pcg = this->pdgAnalysis->getProgramCallGraph();
+  }
+
+  return this->pcg;
 }
 
 Noelle::~Noelle(){

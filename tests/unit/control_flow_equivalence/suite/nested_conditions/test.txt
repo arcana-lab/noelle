@@ -1,0 +1,11 @@
+control flow equivalent sets
+label %2 | label %28
+label %3
+label %5 | label %25 | label %26
+label %8 | label %15
+label %9
+label %11 | label %13
+label %16 | label %24
+label %17
+label %20 | label %22
+

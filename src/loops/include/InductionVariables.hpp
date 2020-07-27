@@ -38,6 +38,8 @@ namespace llvm {
         LoopEnvironment &loopEnv
       );
 
+      InductionVariableManager () = delete;
+
       /*
        * Return all induction variables including the loop-governing one.
        */

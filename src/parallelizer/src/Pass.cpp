@@ -15,7 +15,7 @@ using namespace llvm;
 /*
  * Options of the Parallelizer pass.
  */
-static cl::opt<bool> ForceParallelization("dswp-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
+static cl::opt<bool> ForceParallelization("noelle-parallelizer-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
 static cl::opt<bool> DisableLoopSorting("noelle-parallelizer-disable-loop-sorting", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable sorting loops to parallelize"));
 
@@ -89,7 +89,7 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = noelle.getLoops();
+  auto loopsToParallelize = noelle.getLoopStructures();
   errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
 
   /*
@@ -98,23 +98,19 @@ bool Parallelizer::runOnModule (Module &M) {
   if (this->disableLoopSorting){
     noelle.sortByHotness(*loopsToParallelize);
   }
-  for (auto loop : *loopsToParallelize){
+  for (auto loopStructure : *loopsToParallelize){
 
     /*
-     * Fetch the header.
+     * Fetch the header and function
      */
-    auto loopSummary = loop->getLoopStructure();
-    auto loopHeader = loopSummary->getHeader();
-
-    /*
-     * Fetch the function.
-     */
-    auto loopFunction = loopSummary->getFunction();
+    auto loopHeader = loopStructure->getHeader();
+    auto loopFunction = loopStructure->getFunction();
 
     /*
      * Print information about this loop.
      */
-    errs() << "Parallelizer:    ID: " << loop->getID() << "\n";
+    auto loopID = loopStructure->getID();
+    errs() << "Parallelizer:    ID: " << loopID << "\n";
     errs() << "Parallelizer:    Function: \"" << loopFunction->getName() << "\"\n";
     errs() << "Parallelizer:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
     if (!profiles->isAvailable()){
@@ -124,11 +120,10 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Print the coverage of this loop.
      */
-    auto mInsts = profiles->getTotalInstructions();
-    auto loopInsts = profiles->getTotalInstructions(loopSummary);
-    auto hotness = ((double)loopInsts) / ((double)mInsts);
-    hotness *= 100;
+    auto hotness = profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100;
     errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
+    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(loopStructure);
+    errs() << "Parallelizer:      Average instructions per invocation = " << averageInstsPerInvocation << " %\n"; 
   }
 
   /*
@@ -140,34 +135,48 @@ bool Parallelizer::runOnModule (Module &M) {
   errs() << "Parallelizer:  Parallelize " << loopsToParallelize->size() << " loops, one at a time\n";
   auto modified = false;
   std::unordered_map<BasicBlock *, bool> modifiedBBs;
-  for (auto loop : *loopsToParallelize){
+  for (auto ls : *loopsToParallelize){
 
     /*
      * Check if we can parallelize this loop.
      */
     auto safe = true;
-    auto ls = loop->getLoopStructure();
     for (auto bb : ls->getBasicBlocks()){
       if (modifiedBBs[bb]){
         safe = false;
         break ;
       }
     }
+    auto loopID = ls->getID();
     if (!safe){
-      errs() << "Parallelizer:    Loop " << loop->getID() << " cannot be parallelized because one of its parent has been parallelized already\n";
+      errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
+      continue ;
+    }
+
+    /*
+     * Check if the latency of each loop invocation is enough to justify the parallelization.
+     */
+    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
+    errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
+    if (  true
+          && (!this->forceParallelization)
+          && (averageInstsPerInvocation < 100)
+      ){
+      errs() << "Parallelizer:      It is too low\n";
       continue ;
     }
     
     /*
      * Parallelize the current loop.
      */
-    auto loopIsParallelized = this->parallelizeLoop(loop, noelle, dswp, doall, helix, heuristics);
+    auto ldi = noelle.getLoop(ls);
+    auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, dswp, doall, helix, heuristics);
 
     /*
      * Keep track of the parallelization.
      */
     if (loopIsParallelized){
-      errs() << "Parallelizer:    Loop " << loop->getID() << " has been parallelized\n";
+      errs() << "Parallelizer:    Loop " << loopID << " has been parallelized\n";
       modified = true;
       for (auto bb : ls->getBasicBlocks()){
         modifiedBBs[bb] = true;
