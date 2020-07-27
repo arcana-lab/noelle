@@ -49,6 +49,8 @@ namespace llvm {
         LoopsSummary &LIS
         );
 
+      SCCAttrs () = delete ;
+
       ~SCCAttrs () ;
 
       /*

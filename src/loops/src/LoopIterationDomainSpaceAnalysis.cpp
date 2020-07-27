@@ -161,6 +161,8 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
         memoryAccessorValue = store->getPointerOperand();
       } else if (auto load = dyn_cast<LoadInst>(&I)) {
         memoryAccessorValue = load->getPointerOperand();
+      } else if (auto gep = dyn_cast<GetElementPtrInst>(&I)) {
+        memoryAccessorValue = gep;
       } else continue;
 
       if (auto memoryAccessor = dyn_cast<Instruction>(memoryAccessorValue)) {
@@ -170,7 +172,8 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
   }
 
   for (auto memoryAccessor : memoryAccessors) {
-    
+    if (!SE.isSCEVable(memoryAccessor->getType())) continue;
+
     /*
      * Construct memory space object to track this accessor
      */
@@ -179,24 +182,41 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
     ));
     auto memAccessSpace = (*element.first).get();
     accessSpaceByInstruction.insert(std::make_pair(memoryAccessor, memAccessSpace));
+    memAccessSpace->memoryAccessorSCEV = SE.getSCEV(memAccessSpace->memoryAccessor);
 
     /*
-     * Catalog stores and loads that pertain to this memory accessor/space
-     * De-linearize step 0: get element size
+     * Catalog accesses that pertain to this memory space
      */
-    Instruction *storeOrLoadUsingAccessor = nullptr;
     for (auto user : memoryAccessor->users()) {
-      if (auto store = dyn_cast<StoreInst>(user)) {
-        storeOrLoadUsingAccessor = store;
-        accessSpaceByInstruction.insert(std::make_pair(store, memAccessSpace));
-      } else if (auto load = dyn_cast<LoadInst>(user)) {
-        storeOrLoadUsingAccessor = load;
-        accessSpaceByInstruction.insert(std::make_pair(load, memAccessSpace));
+      if (isa<StoreInst>(user) || isa<LoadInst>(user) || isa<GetElementPtrInst>(user)) {
+        Instruction *accessor = cast<Instruction>(user);
+        accessSpaceByInstruction.insert(std::make_pair(accessor, memAccessSpace));
       }
     }
-    assert(storeOrLoadUsingAccessor != nullptr);
-    memAccessSpace->memoryAccessorSCEV = SE.getSCEV(memAccessSpace->memoryAccessor);
-    memAccessSpace->elementSize = SE.getElementSize(storeOrLoadUsingAccessor);
+
+    /*
+     * Determine the accessed type
+     */
+    Type *accessedType = nullptr;
+    for (auto accesses : accessSpaceByInstruction) {
+      Instruction *accessor = accesses.first;
+      if (auto store = dyn_cast<StoreInst>(accessor)) {
+        accessedType = store->getValueOperand()->getType();
+      } else if (auto load = dyn_cast<LoadInst>(accessor)) {
+        accessedType = load->getType();
+      } else if (auto gep = dyn_cast<GetElementPtrInst>(accessor)) {
+        accessedType = gep->getType();
+      } else continue;
+      break;
+    }
+    if (!accessedType) continue;
+
+    /*
+     * De-linearize step 0: get element size
+     */
+    auto ptrToAccessedType = PointerType::getUnqual(accessedType);
+    auto efType = SE.getEffectiveSCEVType(ptrToAccessedType);
+    memAccessSpace->elementSize = SE.getSizeOfExpr(efType, accessedType);
 
     // memAccessSpace->memoryAccessor->print(errs() << "Accessor: "); errs() << "\n";
     // memAccessSpace->memoryAccessorSCEV->print(errs() << "Accessor SCEV: "); errs() << "\n";
@@ -236,6 +256,26 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
       }
     }
 
+    /*
+     * All dimension's subscripts must be single add-recursive expressions
+     * i.e. delinearization must have been factored out all dimensions
+     */
+    bool isFullyDelinearized = true;
+    for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
+      auto subscriptI = memAccessSpace->subscripts[i];
+      if (auto addRecSubscript = dyn_cast<SCEVAddRecExpr>(subscriptI)) {
+        if (isa<SCEVAddRecExpr>(addRecSubscript->getStart())
+          || isa<SCEVAddRecExpr>(addRecSubscript->getStepRecurrence(SE))) {
+          isFullyDelinearized = false;
+          break;
+        }
+      }
+    }
+    if (!isFullyDelinearized) {
+      memAccessSpace->subscripts.clear();
+      memAccessSpace->sizes.clear();
+    }
+
     // basePointer->print(errs() << "Base pointer: "); errs() << "\n";
     // accessFunction->print(errs() << "Access function: "); errs() << "\n";
     // for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
@@ -255,6 +295,9 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution
   return;
 }
 
+// TODO: Make this examine the IV and the subscript SCEV separately
+// The IV should be used in conjunction with the subscript SCEV to determine boundedness
+// The subscript SCEV alone should be used to determine whether it is one to one
 void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIterationsAcrossOneLoopInvocation(
   ScalarEvolution &SE
 ) {
@@ -265,6 +308,9 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
 
     // memAccessSpace->memoryAccessor->print(errs() << "Checking accessor for overlapping: "); errs() << "\n";
 
+    /*
+     * Each inner dimension's accesses must be bounded not to spill over into another dimension 
+     */
     if (!isInnerDimensionSubscriptsBounded(SE, memAccessSpace.get())) continue;
 
     // errs() << "\tAccessor has bounded inner dimension accesses\n";
@@ -321,7 +367,7 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
     nonOverlappingAccessesBetweenIterations.insert(memAccessSpace.get());
   }
 
-  // errs() << "Non overlappinig size: " << nonOverlappingAccessesBetweenIterations.size() << "\n";
+  // errs() << "Non overlapping size: " << nonOverlappingAccessesBetweenIterations.size() << "\n";
   // for (auto space : nonOverlappingAccessesBetweenIterations) {
   //   space->memoryAccessor->print(errs() << "Non overlapping space: "); errs() << "\n";
   // }
@@ -443,6 +489,8 @@ bool LoopIterationDomainSpaceAnalysis::isOneToOneFunctionOnIV(
 
     /*
      * TODO: Make this far less naive
+     * FIXME: Ensure the IV is affine and that no multiplication of the IV to itself occurs
+     * FIXME: Ensure that no multiplication by 0 occurs
      */
     auto op = inst->getOpcode();
     bool isOneToOne = (op == Instruction::Add ||
@@ -478,6 +526,22 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
   MemoryAccessSpace *space
 ) {
 
+  // errs() << "Num subscripts: " << space->subscriptIVs.size() << "\n";
+  // errs() << "Num dimensions: " << space->sizes.size() << "\n";
+  // for (auto i = 1; i < space->sizes.size(); ++i) {
+  //   auto sizeSCEV = space->sizes[i - 1];
+  //   auto instIVPair = space->subscriptIVs[i];
+  //   auto inst = instIVPair.first;
+  //   if (!inst) {
+  //     // errs() << "No inst: " << i << "\n";
+  //     continue;
+  //   }
+  //   auto subscriptSCEV = SE.getSCEV(inst);
+  //   sizeSCEV->print(errs() << "SIZE "); errs() << "\n";
+  //   subscriptSCEV->print(errs() << "Subscript " << i << ": "); errs() << "\n";
+  //   inst->print(errs() << "\tInst: "); errs() << "\n";
+  // }
+
   if (space->subscriptIVs.size() == 0 || space->subscriptIVs.size() != space->sizes.size()) {
     return false;
   }
@@ -487,20 +551,6 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
   auto strictLowerBoundPred = ICmpInst::Predicate::ICMP_SGT;
   auto looseUpperBoundPred = CmpInst::getNonStrictPredicate(strictUpperBoundPred);
   auto looseLowerBoundPred = CmpInst::getNonStrictPredicate(strictLowerBoundPred);
-
-  // for (auto i = 1; i < space->sizes.size(); ++i) {
-  //   auto sizeSCEV = space->sizes[i - 1];
-  //   auto instIVPair = space->subscriptIVs[i];
-  //   auto inst = instIVPair.first;
-  //   auto subscriptSCEV = SE.getSCEV(inst);
-  //   if (!inst) {
-  //     errs() << "No inst: " << i << "\n";
-  //     continue;
-  //   }
-  //   sizeSCEV->print(errs() << "SIZE "); errs() << "\n";
-  //   subscriptSCEV->print(errs() << "Subscript " << i << ": "); errs() << "\n";
-  //   inst->print(errs() << "\tInst: "); errs() << "\n";
-  // }
 
   auto scevsMatch = [](const SCEV *scev1, const SCEV *scev2) -> bool {
     if (scev1 == scev2) return true;

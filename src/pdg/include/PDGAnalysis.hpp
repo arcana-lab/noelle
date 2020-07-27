@@ -10,19 +10,17 @@
  */
 #pragma once
 
-#include "llvm/IR/Module.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
+#include "MemoryModel/PointerAnalysis.h"
+#include "Util/PTACallGraph.h"
+#include "MSSA/MemSSA.h"
 
+#include "SystemHeaders.hpp"
 #include "PDG.hpp"
 #include "AllocAA.hpp"
 #include "PDGPrinter.hpp"
 #include "TalkDown.hpp"
 #include "DataFlow.hpp"
-
-#include "MemoryModel/PointerAnalysis.h"
-#include "Util/PTACallGraph.h"
-#include "MSSA/MemSSA.h"
+#include "CallGraph.hpp"
 
 using namespace llvm;
 
@@ -41,11 +39,15 @@ namespace llvm {
 
       void getAnalysisUsage(AnalysisUsage &AU) const override ;
 
+      void releaseMemory () override ;
+
       bool runOnModule (Module &M) override ;
 
       PDG * getFunctionPDG (Function &F) ;
 
       PDG * getPDG (void) ;
+
+      noelle::CallGraph * getProgramCallGraph (void);
 
     private:
       Module *M;

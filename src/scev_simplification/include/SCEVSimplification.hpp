@@ -24,6 +24,12 @@ namespace llvm {
         LoopDependenceInfo const &LDI
       );
 
+      bool simplifyIVRelatedSCEVs (
+        LoopStructure *rootLoop,
+        InvariantManager *invariantManager,
+        InductionVariableManager *ivManager
+      );
+
     private:
 
       /*
@@ -32,12 +38,14 @@ namespace llvm {
       struct IVCachedInfo {
         std::unordered_map<Instruction *, InductionVariable *> ivByInstruction;
         std::unordered_map<InductionVariable *, LoopGoverningIVAttribution *> loopGoverningAttrByIV;
+        std::unordered_set<Instruction *> instsDerivedFromMultipleIVs;
       };
 
       class GEPIndexDerivation {
         public:
           GEPIndexDerivation (
             GetElementPtrInst *gep,
+            LoopStructure *rootLoop,
             InvariantManager *invariantManager,
             IVCachedInfo &ivCache
             ) ;
@@ -49,19 +57,31 @@ namespace llvm {
 
           std::unordered_set<Value *> loopInvariantsUsed;
           std::unordered_set<InductionVariable *> derivingIVs;
-          std::unordered_set<Instruction *> derivingInstructions;
+          std::unordered_set<Instruction *> ivDerivingInstructions;
 
       };
 
       void cacheIVInfo (LoopStructure *rootLoop, InductionVariableManager *ivManager) ;
 
-      void upCastIVRelatedInstructionsDerivingGEP (
+      void searchForInstructionsDerivedFromMultipleIVs (
         LoopStructure *rootLoop,
-        GEPIndexDerivation &gepDerivation
+        InvariantManager *invariantManager
+      ) ;
+
+      bool upCastIVRelatedInstructionsDerivingGEP (
+        LoopStructure *rootLoop,
+        InductionVariableManager *ivManager,
+        InvariantManager *invariantManager,
+        std::unordered_set<GEPIndexDerivation *> gepDerivations
       );
 
-      bool isUpCastPossible (GEPIndexDerivation &gepDerivation) const ;
+      bool isUpCastPossible (
+        GEPIndexDerivation *gepDerivation,
+        LoopStructure *rootLoop,
+        InvariantManager &invariantManager
+      ) const ;
       bool isPartOfShlShrTruncationPair (Instruction *I) const ;
+
 
       /*
        * Fields
