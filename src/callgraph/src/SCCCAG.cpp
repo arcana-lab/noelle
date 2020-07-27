@@ -14,18 +14,28 @@
 using namespace llvm;
 using namespace noelle;
 
-noelle::SCCDAGNode_SCC::SCCDAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes)
+noelle::SCCCAGNode_SCC::SCCCAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes)
   : nodes{nodes}
   {
   return ;
 }
         
-bool noelle::SCCDAGNode_SCC::isAnSCC (void) const {
+bool noelle::SCCCAGNode_SCC::isAnSCC (void) const {
   return true;
 }
 
-noelle::SCCCAG::SCCCAG (noelle::CallGraph *cg){
+SCCCAGNode_Function::SCCCAGNode_Function (Function & F) 
+  : func{F}
+  {
+  return ;
+}
 
+bool SCCCAGNode_Function::isAnSCC (void) const {
+  return false;
+}
+
+noelle::SCCCAG::SCCCAG (noelle::CallGraph *cg){
+  //TODO
   return ;
 }
 

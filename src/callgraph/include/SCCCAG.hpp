@@ -25,15 +25,26 @@ namespace llvm {
         virtual bool isAnSCC (void) const = 0;
     };
 
-    class SCCDAGNode_SCC : public SCCCAGNode {
+    class SCCCAGNode_SCC : public SCCCAGNode {
       public:
-        SCCDAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes);
+        SCCCAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes);
 
         bool isAnSCC (void) const override ;
 
       private:
         std::unordered_set<CallGraphNode *> nodes;
     };
+
+    class SCCCAGNode_Function : public SCCCAGNode {
+      public:
+        SCCCAGNode_Function (Function &F) ;
+
+        bool isAnSCC (void) const override ;
+
+      private:
+        Function &func;
+    };
+
 
     class SCCCAG {
       public:
