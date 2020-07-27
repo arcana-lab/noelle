@@ -126,7 +126,7 @@ namespace llvm {
         int taskIndex
       );
 
-      PHINode * generatePHIOfIntermediateProducerValuesForReducibleLiveOutVariable (
+      Instruction * fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable (
         LoopDependenceInfo *LDI, 
         int taskIndex,
         int envIndex,

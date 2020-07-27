@@ -181,9 +181,6 @@ namespace llvm {
       typedef typename std::unordered_set<DGEdge<T> *>::iterator edges_iterator;
       typedef typename std::unordered_set<DGEdge<T> *>::const_iterator edges_const_iterator;
 
-      edges_iterator begin_edges() { return allConnectedEdges.begin(); }
-      edges_iterator end_edges() { return allConnectedEdges.end(); }
-
       edges_iterator begin_outgoing_edges() { return outgoingEdges.begin(); }
       edges_iterator end_outgoing_edges() { return outgoingEdges.end(); }
       edges_const_iterator begin_outgoing_edges() const { return outgoingEdges.begin(); }
@@ -194,20 +191,20 @@ namespace llvm {
       edges_const_iterator begin_incoming_edges() const { return incomingEdges.begin(); }
       edges_const_iterator end_incoming_edges() const { return incomingEdges.end(); }
 
-      nodes_iterator begin_outgoing_nodes() { return outgoingNodeInstances.begin(); }
-      nodes_iterator end_outgoing_nodes() { return outgoingNodeInstances.end(); }
+      std::unordered_set<DGEdge<T> *> getAllConnectedEdges() { 
+        std::unordered_set<DGEdge<T> *> allConnectedEdges{outgoingEdges.begin(), outgoingEdges.end()};
+        allConnectedEdges.insert(incomingEdges.begin(), incomingEdges.end());
+        return allConnectedEdges;
+      }
 
-      inline iterator_range<edges_iterator>
-      getAllConnectedEdges() { return make_range(allConnectedEdges.begin(), allConnectedEdges.end()); }
       inline iterator_range<edges_iterator>
       getOutgoingEdges() { return make_range(outgoingEdges.begin(), outgoingEdges.end()); }
       inline iterator_range<edges_iterator>
       getIncomingEdges() { return make_range(incomingEdges.begin(), incomingEdges.end()); }
 
       T *getT() const { return theT; }
-      std::unordered_set<DGEdge<T> *> & getEdgesToAndFromNode(DGNode<T> *node) { return nodeToEdgesMap[node]; }
 
-      unsigned numConnectedEdges() { return allConnectedEdges.size(); }
+      unsigned numConnectedEdges() { return outgoingEdges.size() + incomingEdges.size(); }
       unsigned numOutgoingEdges() { return outgoingEdges.size(); }
       unsigned numIncomingEdges() { return incomingEdges.size(); }
 
@@ -216,8 +213,6 @@ namespace llvm {
       void removeConnectedEdge(DGEdge<T> *edge);
       void removeConnectedNode(DGNode<T> *node);
 
-      DGEdge<T> *getEdgeInstance(unsigned nodeInstance) { return outgoingEdgeInstances[nodeInstance]; }
-
       std::string toString();
       raw_ostream &print(raw_ostream &stream);
 
@@ -225,20 +220,10 @@ namespace llvm {
       DGNode(int32_t id) : ID{id}, theT(nullptr) {}
       DGNode(int32_t id, T *node) : ID{id}, theT(node) {}
 
-      void removeInstance(DGEdge<T> *edge);
-      void removeInstances(DGNode<T> *node);
-
       int32_t ID;
       T *theT;
-      std::unordered_set<DGEdge<T> *> allConnectedEdges;
       std::unordered_set<DGEdge<T> *> outgoingEdges;
       std::unordered_set<DGEdge<T> *> incomingEdges;
-
-      // For use in unconventional graph iteration for LLVM SCCIterator
-      std::vector<DGNode<T> *> outgoingNodeInstances;
-      std::vector<DGEdge<T> *> outgoingEdgeInstances;
-
-      unordered_map<DGNode<T> *, std::unordered_set<DGEdge<T> *>> nodeToEdgesMap;
 
     friend class DG<T>;
   };
@@ -290,13 +275,15 @@ namespace llvm {
     DataDependenceType dataDependenceType() const { return dataDepType; }
     bool isRemovableDependence() const { return isRemovable; }
     long getMinRemovalCost () const { return minRemovalCost; }
-    const SetOfRemedies &getRemedies() const { return remeds; }
+    // NOTE: Remedies are not yet implemented, so all methods/fields are commented out to conserve memory
+    // const SetOfRemedies &getRemedies() const { return remeds; }
 
     void setControl(bool ctrl) { isControl = ctrl; }
     void setMemMustType(bool mem, bool must, DataDependenceType dataDepType);
     void setLoopCarried(bool lc) { isLoopCarried = lc; }
-    void setRemedies(const SetOfRemedies &R) { remeds = R; }
-    void addRemedies(const Remedies_ptr &R) { remeds.insert(R); }
+    // NOTE: Remedies are not yet implemented, so all methods/fields are commented out to conserve memory
+    // void setRemedies(const SetOfRemedies &R) { remeds = R; }
+    // void addRemedies(const Remedies_ptr &R) { remeds.insert(R); }
     void setRemovable(bool rem) { isRemovable = rem; }
     void setMinRemovalCost (long cost) { minRemovalCost = cost; }
     void processNewRemovalCost(long cost) {
@@ -314,8 +301,9 @@ namespace llvm {
     void addSubEdge(DGEdge<SubT> *edge) {
       subEdges.insert(edge);
       isLoopCarried |= edge->isLoopCarriedDependence();
-      for (auto &r : edge->getRemedies())
-        remeds.insert(r);
+      // NOTE: Remedies are not yet implemented, so all methods/fields are commented out to conserve memory
+      // for (auto &r : edge->getRemedies())
+        // remeds.insert(r);
     }
 
     void removeSubEdge(DGEdge<SubT> *edge) { subEdges.erase(edge); }
@@ -339,14 +327,20 @@ namespace llvm {
     DGNode<T> *from;
     DGNode<T> *to;
     std::unordered_set<DGEdge<SubT> *> subEdges;
+
+    // TODO: Use LLVM's bit set (keep getters the same)
     bool memory;
     bool must;
     bool isControl;
     bool isLoopCarried;
     bool isRemovable;
+
     long minRemovalCost;
+
     DataDependenceType dataDepType;
-    SetOfRemedies remeds;
+
+    // NOTE: Remedies are not yet implemented, so all methods/fields are commented out to conserve memory
+    // SetOfRemedies remeds;
   };
 
   /*
@@ -722,40 +716,14 @@ namespace llvm {
   void DGNode<T>::addIncomingEdge(DGEdge<T> *edge)
   {
     incomingEdges.insert(edge);
-    allConnectedEdges.insert(edge);
     auto node = edge->getOutgoingNode();
-    nodeToEdgesMap[node].insert(edge);
   }
 
   template <class T>
   void DGNode<T>::addOutgoingEdge(DGEdge<T> *edge)
   {
     outgoingEdges.insert(edge);
-    allConnectedEdges.insert(edge);
     auto node = edge->getIncomingNode();
-    outgoingNodeInstances.push_back(node);
-    outgoingEdgeInstances.push_back(edge);
-    nodeToEdgesMap[node].insert(edge);
-  }
-
-  template <class T>
-  void DGNode<T>::removeInstance(DGEdge<T> *edge)
-  {
-    auto instanceIter = std::find(outgoingEdgeInstances.begin(), outgoingEdgeInstances.end(), edge);
-    auto nodeIter = outgoingNodeInstances.begin() + (instanceIter - outgoingEdgeInstances.begin());
-    outgoingEdgeInstances.erase(instanceIter);
-    outgoingNodeInstances.erase(nodeIter);
-  }
-
-  template <class T>
-  void DGNode<T>::removeInstances(DGNode<T> *node)
-  {
-    for (int i = outgoingNodeInstances.size() - 1; i >= 0; --i)
-    {
-      if (outgoingNodeInstances[i] != node) continue;
-      outgoingNodeInstances.erase(outgoingNodeInstances.begin() + i);
-      outgoingEdgeInstances.erase(outgoingEdgeInstances.begin() + i);
-    }
   }
 
   template <class T>
@@ -766,30 +734,36 @@ namespace llvm {
     {
       outgoingEdges.erase(edge);
       node = edge->getIncomingNode();
-      removeInstance(edge);
     }
     else
     {
       incomingEdges.erase(edge);
       node = edge->getOutgoingNode();
     }
-
-    allConnectedEdges.erase(edge);
-    nodeToEdgesMap[node].erase(edge);
-    if (nodeToEdgesMap[node].empty()) nodeToEdgesMap.erase(node);
   }
 
   template <class T>
   void DGNode<T>::removeConnectedNode(DGNode<T> *node)
   {
-    for (auto edge : nodeToEdgesMap[node])
-    {
-      outgoingEdges.erase(edge);
-      incomingEdges.erase(edge);
-      allConnectedEdges.erase(edge);
+    std::unordered_set<DGEdge<T> *> outgoingEdgesToRemove{};
+    for (auto edge : outgoingEdges) {
+      if (edge->getIncomingNode() == node) {
+        outgoingEdgesToRemove.insert(edge);
+      }
     }
-    nodeToEdgesMap.erase(node);
-    removeInstances(node);
+    for (auto edge : outgoingEdgesToRemove) {
+      outgoingEdges.erase(edge);
+    }
+
+    std::unordered_set<DGEdge<T> *> incomingEdgesToRemove{};
+    for (auto edge : incomingEdges) {
+      if (edge->getOutgoingNode() == node) {
+        incomingEdgesToRemove.insert(edge);
+      }
+    }
+    for (auto edge : incomingEdgesToRemove) {
+      incomingEdges.erase(edge);
+    }
   }
 
   template <class T>
@@ -833,7 +807,8 @@ namespace llvm {
     setLoopCarried(oldEdge.isLoopCarriedDependence());
     setRemovable(oldEdge.isRemovableDependence());
     setMinRemovalCost(oldEdge.getMinRemovalCost());
-    setRemedies(oldEdge.getRemedies());
+    // NOTE: Remedies are not yet implemented, so all methods/fields are commented out to conserve memory
+    // setRemedies(oldEdge.getRemedies());
     for (auto subEdge : oldEdge.subEdges) addSubEdge(subEdge);
   }
 

@@ -70,7 +70,8 @@ void IVUtility::chunkInductionVariablePHI(
  */
 
 LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGoverningIVAttribution &attribution)
-  : attribution{attribution}, conditionValueOrderedDerivation{}, flipOperandsToUseNonStrictPredicate{false} {
+  : attribution{attribution}, conditionValueOrderedDerivation{},
+    flipOperandsToUseNonStrictPredicate{false}, flipBrSuccessorsToUseNonStrictPredicate{false} {
 
   condition = attribution.getHeaderCmpInst();
   // TODO: Refer to whichever intermediate value is used in the comparison (known on attribution)
@@ -85,11 +86,14 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
   assert(IV.getSingleComputedStepValue() && isa<ConstantInt>(IV.getSingleComputedStepValue()));
   bool isStepValuePositive = cast<ConstantInt>(IV.getSingleComputedStepValue())->getValue().isStrictlyPositive();
   bool conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == attribution.getExitBlockFromHeader();
+  // errs() << "Exit predicate before exit check: " << condition->getPredicate() << "\n";
   auto exitPredicate = conditionExitsOnTrue ? condition->getPredicate() : condition->getInversePredicate();
   // errs() << "Exit predicate before operand check: " << exitPredicate << "\n";
   exitPredicate = doesOriginalCmpInstHaveIVAsLeftOperand ? exitPredicate : CmpInst::getSwappedPredicate(exitPredicate);
-  this->flipOperandsToUseNonStrictPredicate = !doesOriginalCmpInstHaveIVAsLeftOperand;
   // errs() << "Exit predicate after: " << exitPredicate << "\n";
+  this->flipOperandsToUseNonStrictPredicate = !doesOriginalCmpInstHaveIVAsLeftOperand;
+  this->flipBrSuccessorsToUseNonStrictPredicate = !conditionExitsOnTrue;
+  // errs() << "Flips: " << flipOperandsToUseNonStrictPredicate << " " << flipBrSuccessorsToUseNonStrictPredicate << "\n";
 
   // condition->print(errs() << "Condition (exits on true: " << conditionExitsOnTrue << "): "); errs() << "\n";
 
@@ -144,10 +148,11 @@ void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitVal
   }
   cmpToUpdate->setPredicate(nonStrictPredicate);
 
-  if (branchInst->getSuccessor(0) != exitBlock) {
-    branchInst->setSuccessor(1, branchInst->getSuccessor(0));
-    branchInst->setSuccessor(0, exitBlock);
+  // branchInst->print(errs() << "Branch before: "); errs() << "\n";
+  if (flipBrSuccessorsToUseNonStrictPredicate) {
+    branchInst->swapSuccessors();
   }
+  // branchInst->print(errs() << "Branch after: "); errs() << "\n";
 }
 
 void LoopGoverningIVUtility::cloneConditionalCheckFor(

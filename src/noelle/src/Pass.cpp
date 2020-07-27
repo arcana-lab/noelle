@@ -23,6 +23,7 @@ static cl::opt<bool> DisableDOALL("noelle-disable-doall", cl::ZeroOrMore, cl::Hi
 static cl::opt<bool> DisableDistribution("noelle-disable-loop-distribution", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the loop distribution"));
 static cl::opt<bool> DisableInvCM("noelle-disable-loop-invariant-code-motion", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the loop invariant code motion"));
 static cl::opt<bool> DisableWhilifier("noelle-disable-whilifier", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the loop whilifier"));
+static cl::opt<bool> DisableSCEVSimplification("noelle-disable-scev-simplification", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable IV related SCEV simplification"));
 static cl::opt<bool> DisableInliner("noelle-disable-inliner", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 static cl::opt<bool> InlinerDisableHoistToMain("noelle-inliner-avoid-hoist-to-main", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 
@@ -62,6 +63,9 @@ bool Noelle::doInitialization (Module &M) {
   }
   if (DisableWhilifier.getNumOccurrences() > 0){
     this->enabledTransformations.erase(LOOP_WHILIFIER_ID);
+  }
+  if (DisableSCEVSimplification.getNumOccurrences() > 0){
+    this->enabledTransformations.erase(SCEV_SIMPLIFICATION_ID);
   }
   if (DisableInliner.getNumOccurrences() > 0){
     this->enabledTransformations.erase(INLINER_ID);

@@ -47,14 +47,23 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->environment = new LoopEnvironment(loopDG, loopExitBlocks);
 
   /*
+   * Create the invariant manager.
+   */
+  auto topLoop = this->liSummary.getLoopNestingTreeRoot();
+  this->invariantManager = new InvariantManager(topLoop, this->loopDG);
+
+  /*
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
   LoopCarriedDependencies lcd(this->liSummary, DS, *loopSCCDAG);
   SCCDAGNormalizer normalizer{*loopSCCDAG, this->liSummary, lcd};
   normalizer.normalizeInPlace();
-  this->inductionVariables = new InductionVariableManager(liSummary, SE, *loopSCCDAG, *environment);
+  lcd = LoopCarriedDependencies(this->liSummary, DS, *loopSCCDAG);
+  this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAG, *environment);
   this->sccdagAttrs = SCCDAGAttrs(loopDG, loopSCCDAG, this->liSummary, SE, lcd, *inductionVariables);
+
+  this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(liSummary, *this->inductionVariables, SE);
 
   /*
    * Collect induction variable information
@@ -69,12 +78,6 @@ LoopDependenceInfo::LoopDependenceInfo(
   for (auto bb : l->blocks()) {
     loopBBtoPD[&*bb] = DS.PDT.getNode(&*bb)->getIDom()->getBlock();
   }
-
-  /*
-   * Create the invariant manager.
-   */
-  auto topLoop = this->liSummary.getLoopNestingTreeRoot();
-  this->invariantManager = new InvariantManager(topLoop, this->loopDG);
 
   /*
    * Fetch the metadata.
@@ -329,6 +332,10 @@ InvariantManager * LoopDependenceInfo::getInvariantManager (void) const {
   return this->invariantManager;
 }
 
+LoopIterationDomainSpaceAnalysis * LoopDependenceInfo::getLoopIterationDomainSpaceAnalysis (void) const {
+  return this->domainSpaceAnalysis;
+}
+
 LoopDependenceInfo::~LoopDependenceInfo() {
   delete this->loopDG;
   delete this->environment;
@@ -342,6 +349,8 @@ LoopDependenceInfo::~LoopDependenceInfo() {
 
   assert(this->invariantManager);
   delete this->invariantManager;
+
+  delete this->domainSpaceAnalysis;
 
   return ;
 }

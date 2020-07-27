@@ -313,6 +313,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarried
       auto consumerSCC = this->sccdag->sccOfValue(consumer);
 
       sccToLoopCarriedDependencies[producerSCC].insert(edge);
+      sccToLoopCarriedDependencies[consumerSCC].insert(edge);
 
       if (producerSCC != consumerSCC) continue;
       sccToInternalLoopCarriedDependencies[producerSCC].insert(edge);
@@ -345,13 +346,14 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
 
   /*
    * If a contained IV is loop governing, ensure loop governance is well formed
+   * TODO: Remove this, as this loop governing attribution isn't necessary for all users of SCCDAGAttrs 
    */
   for (auto containedIV : containedIVs) {
     if (loopGoverningIVs.find(containedIV) == loopGoverningIVs.end()) continue;
     auto exitBlocks = LIS.getLoop(*containedIV->getLoopEntryPHI()->getParent())->getLoopExitBasicBlocks();
     LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
     if (!attribution.isSCCContainingIVWellFormed()) {
-      // errs() << "Not well formed SCC for loop governing IV!\n";
+      // containedIV->getLoopEntryPHI()->print(errs() << "Not well formed SCC for loop governing IV!\n"); errs() << "\n";
       return false;
     }
     containedInsts.insert(attribution.getHeaderCmpInst());
@@ -459,8 +461,8 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
   auto sccdagOfInternals = new SCCDAG(dgOfInternals);
 
   // errs() << "Writing graphs\n";
-  // DGPrinter::writeGraph<PDG>("pdg-internal.dot", dgOfInternals);
-  // DGPrinter::writeGraph<SCCDAG>("sccdag-internal.dot", sccdagOfInternals);
+  // DGPrinter::writeGraph<PDG, Value>("pdg-internal.dot", dgOfInternals);
+  // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-internal.dot", sccdagOfInternals);
 
   /*
    * Identify root internal SCC and its single loop carried PHI
@@ -711,7 +713,7 @@ void SCCDAGAttrs::dumpToFile (int id) {
     stageGraph.addEdge(outgoingDesc, incomingDesc);
   }
 
-  DGPrinter::writeGraph<DG<DGString>>(filename, &stageGraph);
+  DGPrinter::writeGraph<DG<DGString>, DGString>(filename, &stageGraph);
   for (auto elem : elements) delete elem;
 }
 

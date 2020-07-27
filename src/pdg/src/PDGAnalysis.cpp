@@ -1062,7 +1062,7 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge) {
 
   bool loopCarried = true;
   if (isMemoryAccessIntoDifferentArrays(edge) ||
-      (store && load && isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store)) ||
+      // (store && load && isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store)) ||
       isBackedgeIntoSameGlobal(edge)) {
     loopCarried = false;
   }
