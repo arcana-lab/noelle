@@ -163,3 +163,7 @@ void noelle::CallGraph::handleCallInstruction (CallGraphFunctionNode *fromNode, 
 
   return ;
 }
+
+bool noelle::CallGraph::doesItBelongToASCC (Function *f) {
+  return false;
+}
