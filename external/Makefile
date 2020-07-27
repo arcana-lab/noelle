@@ -14,7 +14,7 @@ patch.tar: patch svf
 	cd $< ; tar cf $@ * ; mv $@ ../ ;
 
 scaf:
-	git clone https://github.com/sapostolakis/scaf.git scaf
+	git clone https://github.com/PrincetonUniversity/SCAF.git scaf
 
 clean:
 	./scripts/clean.sh
