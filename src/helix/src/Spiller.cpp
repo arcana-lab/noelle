@@ -266,7 +266,13 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
         DS.DT.findNearestCommonDominator(originalStoreDominatingBlock, originalUserBlock);
       auto cloneCommonDominatorBlock = helixTask->getCloneOfOriginalBasicBlock(originalCommonDominatorBlock);
 
-      auto insertPoint = cloneCommonDominatorBlock->getFirstNonPHIOrDbgOrLifetime();
+      /*
+       * Insert at the bottom of the block if this isn't the user's block
+       * Otherwise, insert right before the user
+       */
+      auto insertPoint = cloneUserBlock == cloneCommonDominatorBlock ? userInst
+        : cloneCommonDominatorBlock->getTerminator();
+
       IRBuilder<> spillValueBuilder(insertPoint);
       auto spillLoad = spillValueBuilder.CreateLoad(spillEnvPtr);
       spill->environmentLoads.insert(spillLoad);
