@@ -23,7 +23,9 @@ namespace llvm {
   class SCCDAGNormalizer {
     public:
 
-      SCCDAGNormalizer(SCCDAG &dag, LoopsSummary &lis, LoopCarriedDependencies &lcd) ;
+      SCCDAGNormalizer (SCCDAG &dag, LoopsSummary &lis, LoopCarriedDependencies &lcd) ;
+
+      SCCDAGNormalizer () = delete ;
 
       void normalizeInPlace (void) ;
 

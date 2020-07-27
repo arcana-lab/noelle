@@ -45,6 +45,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include
   ../../noelle/include
   ../../dataflow/include
+  ../../callgraph/include
   ../include 
   ./ 
   )

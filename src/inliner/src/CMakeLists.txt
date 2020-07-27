@@ -40,6 +40,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../doall/include
   ../../parallelization_technique/include 
   ../../heuristics/include 
+  ../../callgraph/include
   ../include 
   )
 

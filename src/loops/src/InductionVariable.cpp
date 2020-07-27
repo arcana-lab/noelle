@@ -155,6 +155,7 @@ void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInst
       if (IVM.isLoopInvariant(usedValue)) continue;
 
       if (auto usedInst = dyn_cast<Instruction>(usedValue)) {
+        if (!LS->isIncluded(usedInst)) continue;
         auto isIVUse = this->isIVInstruction(usedInst);
         auto isDerivedUse = checkIfDerived(usedInst);
         if (isIVUse || isDerivedUse) {

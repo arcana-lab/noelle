@@ -31,6 +31,7 @@ add_subdirectory(src)
 # Install
 install(PROGRAMS 
     include/Variable.hpp
+    include/ControlFlowEquivalence.hpp
     include/LoopDependenceInfo.hpp
     include/InductionVariables.hpp
     include/Invariants.hpp
