@@ -249,7 +249,7 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
 
       /*
        * If the user is a PHI, since a load cannot be placed before a PHI,
-       * consider the block of the user to be a strict dominator of the PHI
+       * identify a strictly dominating block of the user
        */
       if (auto userPHI = dyn_cast<PHINode>(user)) {
         for (auto i = 0; i < userPHI->getNumIncomingValues(); ++i) {
@@ -269,9 +269,20 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
       /*
        * Insert at the bottom of the block if this isn't the user's block
        * Otherwise, insert right before the user
+       * 
+       * NOTE: Do not insert past a store within that block, as the load has to
+       * be for the previous iteration's value
        */
-      auto insertPoint = cloneUserBlock == cloneCommonDominatorBlock ? userInst
-        : cloneCommonDominatorBlock->getTerminator();
+      auto insertPoint = cloneCommonDominatorBlock->getTerminator();
+      for (auto &I : *cloneCommonDominatorBlock) {
+        auto isUserInst = userInst == &I;
+        auto store = dyn_cast<StoreInst>(&I);
+        auto isStoreInst = store != nullptr
+          && spill->environmentStores.find(store) != spill->environmentStores.end();
+        if (!isUserInst && !isStoreInst) continue;
+        insertPoint = &I;
+        break;
+      }
 
       IRBuilder<> spillValueBuilder(insertPoint);
       auto spillLoad = spillValueBuilder.CreateLoad(spillEnvPtr);
