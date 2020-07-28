@@ -275,7 +275,7 @@ namespace llvm {
     bool isLoopCarriedDependence() const { return isLoopCarried; }
     DataDependenceType dataDependenceType() const { return dataDepType; }
     bool isRemovableDependence() const { return isRemovable; }
-    optional<SetOfRemedies> getRemedies() const {
+    std::optional<SetOfRemedies> getRemedies() const {
       return (remeds) ? std::make_optional<SetOfRemedies>(*remeds)
                       : std::nullopt;
     }
@@ -283,7 +283,7 @@ namespace llvm {
     void setControl(bool ctrl) { isControl = ctrl; }
     void setMemMustType(bool mem, bool must, DataDependenceType dataDepType);
     void setLoopCarried(bool lc) { isLoopCarried = lc; }
-    void setRemedies(optional<SetOfRemedies> R) {
+    void setRemedies(std::optional<SetOfRemedies> R) {
       if (R) {
         remeds = std::make_unique<SetOfRemedies>(*R);
         isRemovable = true;
