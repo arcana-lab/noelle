@@ -10,6 +10,15 @@
  */
 #include "Inliner.hpp"
 
+using namespace llvm;
+
+Inliner::Inliner ()
+  : ModulePass{ID}, fnsAffected{}, parentFns{}, childrenFns{}, loopsToCheck{}, depthOrderedFns{}, preOrderedLoops{}
+  {
+
+  return ;
+}
+
 bool Inliner::runOnModule (Module &M) {
   if (this->verbose != Verbosity::Disabled) {
     errs() << "Inliner: Start\n";
@@ -92,9 +101,15 @@ bool Inliner::runOnModule (Module &M) {
   /*
    * Perform the inlining.
    */
-  auto inlined = this->inlineCallsInvolvedInLoopCarriedDataDependences(noelle);
+  auto inlined = this->inlineCallsInvolvedInLoopCarriedDataDependences(noelle, pcg);
   if (inlined){
     writeToContinueFile();
+
+    /*
+     * Free the memory.
+     */
+    delete pcg;
+
     return true;
   }
 
@@ -110,6 +125,12 @@ bool Inliner::runOnModule (Module &M) {
    * Check if we should hoist loops to main.
    */
   if (!noelle.shouldLoopsBeHoistToMain()){
+
+    /*
+     * Free the memory.
+     */
+    delete pcg;
+
     return false;
   }
 
@@ -143,8 +164,18 @@ bool Inliner::runOnModule (Module &M) {
       errs() << "Inliner:   No remaining hoists\n";
     }
 
+    /*
+     * Free the memory.
+     */
+    delete pcg;
+
     return inlined;
   }
+
+  /*
+   * Free the memory.
+   */
+  delete pcg;
 
   return false;
 }
