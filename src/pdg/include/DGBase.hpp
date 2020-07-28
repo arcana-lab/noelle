@@ -813,7 +813,7 @@ namespace llvm {
     setControl(oldEdge.isControlDependence());
     setLoopCarried(oldEdge.isLoopCarriedDependence());
     setRemovable(oldEdge.isRemovableDependence());
-    setRemedies(oldEdge.getRemedies());
+    //setRemedies(oldEdge.getRemedies());
     for (auto subEdge : oldEdge.subEdges) addSubEdge(subEdge);
   }
 
