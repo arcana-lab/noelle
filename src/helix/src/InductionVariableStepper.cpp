@@ -216,11 +216,13 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       /*
        * Ensure the original instruction was not independent, not a PHI, not clonable
        * and not part of this loop governing IV attribution
+       * 
+       * HACK: We don't have a way to ask if an instruction is repeatable, so to be safe,
+       * anything that isn't belonging to an IV is duplicated
        */
-      if (sccType == SCCAttrs::INDEPENDENT) continue;
-      if (sccInfo->canBeCloned()) continue;
       if (isa<PHINode>(&I)) continue;
       if (originalCmpInst == &I || originalBrInst == &I) continue;
+      if (sccInfo->isInductionVariableSCC()) continue;
 
       I.print(errs() << "Duplicating: "); errs() << "\n";
       originalInstsBeingDuplicated.push_back(&I);
