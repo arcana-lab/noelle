@@ -274,14 +274,18 @@ namespace llvm {
     bool isLoopCarriedDependence() const { return isLoopCarried; }
     DataDependenceType dataDependenceType() const { return dataDepType; }
     bool isRemovableDependence() const { return isRemovable; }
-    const SetOfRemedies &getRemedies() const { return *remeds; }
+    optional<SetOfRemedies> getRemedies() const {
+      return (remeds) ? std::make_optional<SetOfRemedies>(*remeds)
+                      : std::nullopt;
+    }
 
     void setControl(bool ctrl) { isControl = ctrl; }
     void setMemMustType(bool mem, bool must, DataDependenceType dataDepType);
     void setLoopCarried(bool lc) { isLoopCarried = lc; }
-    void setRemedies(const SetOfRemedies &R) {
-      if (!R.empty()) {
-        remeds = std::make_unique<SetOfRemedies>(R);
+    void setRemedies(optional<SetOfRemedies> R) {
+      if (R) {
+        remeds = std::make_unique<SetOfRemedies>(*R);
+        isRemovable = true;
       }
     }
     void addRemedies(const Remedies_ptr &R) {
@@ -306,7 +310,7 @@ namespace llvm {
       if (edge->isRemovableDependence() &&
           (subEdges.size() == 1 || this->isRemovableDependence())) {
         isRemovable = true;
-        for (auto &r : edge->getRemedies())
+        for (auto &r : *(edge->getRemedies()))
           remeds->insert(r);
       } else {
         remeds = nullptr;
@@ -813,7 +817,7 @@ namespace llvm {
     setControl(oldEdge.isControlDependence());
     setLoopCarried(oldEdge.isLoopCarriedDependence());
     setRemovable(oldEdge.isRemovableDependence());
-    //setRemedies(oldEdge.getRemedies());
+    setRemedies(oldEdge.getRemedies());
     for (auto subEdge : oldEdge.subEdges) addSubEdge(subEdge);
   }
 
