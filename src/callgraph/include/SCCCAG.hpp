@@ -11,44 +11,51 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "CallGraphNode.hpp"
-#include "CallGraphEdge.hpp"
-#include "SCCCAG.hpp"
-
-#include "MemoryModel/PointerAnalysis.h"
-#include "Util/PTACallGraph.h"
-#include "MSSA/MemSSA.h"
+#include "CallGraph.hpp"
 
 namespace llvm {
 
   namespace noelle {
-    class SCCCAG;
+    class CallGraph;
 
-    /*
-     * Call graph.
-     */
-    class CallGraph {
+    class SCCCAGNode {
       public:
-        CallGraph (Module &M, PTACallGraph *callGraph);
+        SCCCAGNode() = default;
 
-        std::unordered_set<CallGraphFunctionNode *> getFunctionNodes (void) const ;
+        virtual bool isAnSCC (void) const = 0;
+    };
 
-        std::unordered_set<CallGraphEdge *> getEdges (void) const ;
+    class SCCCAGNode_SCC : public SCCCAGNode {
+      public:
+        SCCCAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes);
 
-        CallGraphFunctionNode * getFunctionNode (Function *f) const ;
-
-        SCCCAG * getSCCCAG (void) ;
-
-        bool doesItBelongToASCC (Function *f) ;
+        bool isAnSCC (void) const override ;
 
       private:
-        Module &m;
-        std::unordered_map<Function *, CallGraphFunctionNode *> functions;
-        std::unordered_map<Instruction *, CallGraphInstructionNode *> instructionNodes;
-        std::unordered_set<CallGraphEdge *> edges;
-        SCCCAG *scccag;
+        std::unordered_set<CallGraphNode *> nodes;
+    };
 
-        void handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst);
+    class SCCCAGNode_Function : public SCCCAGNode {
+      public:
+        SCCCAGNode_Function (Function &F) ;
+
+        bool isAnSCC (void) const override ;
+
+      private:
+        Function &func;
+    };
+
+
+    class SCCCAG {
+      public:
+        SCCCAG (noelle::CallGraph *cg);
+
+        SCCCAG () = delete ;
+
+        SCCCAGNode * getNode (CallGraphNode *n) const ;
+
+      private:
+        std::unordered_map<CallGraphNode *, SCCCAGNode *> nodes;
     };
 
   }

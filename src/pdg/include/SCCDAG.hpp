@@ -129,6 +129,7 @@ namespace llvm {
       unordered_map<Value *, DGNode<SCC> *> valueToSCCNode;
 
     private:
+
       /*
        * BitMatrix for keeping the topological order of the SCCDAG nodes.
        */
