@@ -77,6 +77,12 @@ void HELIX::reset () {
     delete spill;
   }
   spills.clear();
+
+  if (lastIterationExecutionBlock) {
+    lastIterationExecutionBlock = nullptr;
+  }
+  lastIterationExecutionDuplicateMap.clear();
+
 }
 
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Noelle &par, Heuristics *h) const {
