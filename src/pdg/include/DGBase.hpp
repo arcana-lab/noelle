@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <queue>
 #include <set>
+#include <optional>
 
 #include "Assumptions.h"
 
