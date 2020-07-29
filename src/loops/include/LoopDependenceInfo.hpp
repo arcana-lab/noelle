@@ -59,7 +59,7 @@ namespace llvm {
         DominatorSummary &DS,
         ScalarEvolution &SE,
         uint32_t maxCores,
-        LoopAA *aa = nullptr
+        liberty::LoopAA *aa = nullptr
       );
 
       LoopDependenceInfo () = delete ;
@@ -188,7 +188,8 @@ namespace llvm {
 
       std::pair<PDG *, SCCDAG *> createDGsForLoop (
         Loop *l,
-        PDG *functionDG
+        PDG *functionDG,
+        liberty::LoopAA *loopAA
         ) ;
 
       uint64_t computeTripCounts (

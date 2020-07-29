@@ -21,7 +21,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   DominatorSummary &DS,
   ScalarEvolution &SE,
   uint32_t maxCores,
-  LoopAA *aa
+  liberty::LoopAA *loopAA
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{maxCores},
     liSummary{l}
@@ -38,7 +38,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->fetchLoopAndBBInfo(l, SE);
   auto ls = getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
-  auto DGs = this->createDGsForLoop(l, fG, aa);
+  auto DGs = this->createDGsForLoop(l, fG, loopAA);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
 
