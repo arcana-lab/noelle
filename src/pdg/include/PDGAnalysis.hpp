@@ -52,6 +52,7 @@ namespace llvm {
     private:
       Module *M;
       PDG *programDependenceGraph;
+      std::unordered_map<Function *, PDG *> functionToFDGMap;
       AllocAA *allocAA;
       std::set<Function *> CGUnderMain;
       TalkDown *talkdown;
@@ -85,6 +86,7 @@ namespace llvm {
       bool hasPDGAsMetadata(Module &);
 
       PDG * constructPDGFromMetadata(Module &);
+      PDG * constructFunctionDGFromMetadata(Function &);
       void constructNodesFromMetadata(PDG *, Function &, unordered_map<MDNode *, Value *> &);
       void constructEdgesFromMetadata(PDG *, Function &, unordered_map<MDNode *, Value *> &);
       DGEdge<Value> * constructEdgeFromMetadata(PDG *, MDNode *, unordered_map<MDNode *, Value *> &);
@@ -101,11 +103,12 @@ namespace llvm {
       void collectCGUnderFunctionMain (Module &M);
 
       PDG * constructPDGFromAnalysis(Module &M);
+      PDG * constructFunctionDGFromAnalysis(Function &F);
       void constructEdgesFromUseDefs (PDG *pdg);
       void constructEdgesFromAliases (PDG *pdg, Module &M);
       void constructEdgesFromControl (PDG *pdg, Module &M);
-      void constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr);
-      void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
+      void constructEdgesFromAliasesForFunction (PDG *pdg, Function &F);
+      void constructEdgesFromControlForFunction (PDG *pdg, Function &F);
 
       void iterateInstForStore(PDG *, Function &, AAResults &, DataFlowResult *, StoreInst *);
       void iterateInstForLoad(PDG *, Function &, AAResults &, DataFlowResult *, LoadInst *);

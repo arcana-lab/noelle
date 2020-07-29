@@ -19,17 +19,6 @@ PDG * Noelle::getProgramDependenceGraph (void) {
 }
 
 PDG * Noelle::getFunctionDependenceGraph (Function *f) {
-
-  /*
-   * Fetch the whole PDG.
-   */
-  auto wholePDG = this->getProgramDependenceGraph();
-
-  /*
-   * Create the FDG.
-   */
-  auto FDG = wholePDG->createFunctionSubgraph(*f);
-
-  return FDG;
+  return this->pdgAnalysis->getFunctionPDG(*f);
 }
 
