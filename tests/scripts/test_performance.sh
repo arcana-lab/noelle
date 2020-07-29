@@ -1,5 +1,63 @@
 #!/bin/bash -e
 
+function measureTime {
+  local binaryName=$1 ;
+  local outputFileName=$2 ;
+
+  # Read input for arguments to performance runs
+  local ARGS=$(< perf_args.info) ;
+
+  # Create a temporary file
+  tempFile=`mktemp` ;
+  tempFile2=`mktemp` ;
+  tempFile3=`mktemp` ;
+
+  # Measure the execution times
+  for i in `seq 0 5` ; do
+
+    # Measure the time
+    { time ./$binaryName $ARGS ; } &> $tempFile ;
+
+    # Append the time
+    local MATCHER="/real\t(.*)m(.*)s/" ;
+    local PRINTER="{ print a[1] * 60 + a[2] }" ;
+    local GAWK_CMD=" match(\$0, ${MATCHER}, a) ${PRINTER} " ;
+    local timeMeasured=$(gawk "$GAWK_CMD" $tempFile) ;
+    echo $timeMeasured >> $tempFile2 ;
+
+  done
+  
+  # Sort the times
+  sort -g $tempFile2 > $tempFile3 ;
+
+  # Fetch the number of lines of the file
+  lines=`wc -l $tempFile3 | awk '{print $1}'` ;
+
+   # Compute the median
+  median=`echo "$lines / 2" | bc` ;
+
+  # Fetch the median
+  result=`awk -v median=$median '
+    BEGIN {
+      c = 0;
+    }{
+      if (c == median){
+        print ;
+      }
+      c++;
+    }' $tempFile3` ;
+
+  # Print the median
+  echo "$result" > $outputFileName ;
+
+  # Clean
+  rm $tempFile ;
+  rm $tempFile2 ;
+  rm $tempFile3 ;
+
+  return ;
+}
+
 function runningTests {
   echo $1 ;
   > $3 ;
@@ -27,18 +85,15 @@ function runningTests {
     # Read input for arguments to performance runs
     local ARGS=$(< perf_args.info) ;
 
-    # Capture times
+    # Measure the baseline
     echo -e "  Running baseline " ;
-    { time ./baseline $ARGS ; } &> time_baseline.txt ;
+    measureTime baseline time_baseline.txt 
+    local BASE=`cat time_baseline.txt` ;
+
+    # Measure the parallelized binary
     echo -e "  Running performance " ;
-    { time ./parallelized $ARGS ; } &> time_parallelized.txt ;
-
-    local MATCHER="/real\t(.*)m(.*)s/" ;
-    local PRINTER="{ print a[1] * 60 + a[2] }" ;
-    local GAWK_CMD=" match(\$0, ${MATCHER}, a) ${PRINTER} " ;
-
-    local BASE=$(gawk "$GAWK_CMD" time_baseline.txt) ;
-    local PAR=$(gawk "$GAWK_CMD" time_parallelized.txt) ;
+    measureTime parallelized time_parallelized.txt
+    local PAR=`cat time_parallelized.txt` ;
 
     cd ../ ;
 
