@@ -31,21 +31,21 @@ void PDGAnalysis::constructEdgesFromControl (PDG *pdg, Module &M){
     }
 
     /*
-     * Fetch the post-dominator tree of the function.
-     */
-    auto &postDomTree = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
-
-    /*
      * Compute the control dependences of the function based on its post-dominator tree.
      */
-    this->constructEdgesFromControlForFunction(pdg, F, postDomTree);
+    this->constructEdgesFromControlForFunction(pdg, F);
   }
 
   return ;
 }
 
-void PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree) {
+void PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function &F) {
   assert(pdg != nullptr);
+
+  /*
+   * Fetch the post-dominator tree of the function.
+   */
+  auto &postDomTree = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
 
   for (auto &B : F) {
 
