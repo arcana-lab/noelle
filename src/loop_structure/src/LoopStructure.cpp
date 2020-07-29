@@ -31,11 +31,6 @@ LoopStructure::LoopStructure (
   {
 
   /*
-   * Set the ID
-   */
-  this->ID = LoopStructure::globalID++;
-
-  /*
    * Set the nesting level
    */
   this->depth = l->getLoopDepth();
@@ -79,6 +74,32 @@ LoopStructure::LoopStructure (
   SmallVector<std::pair<BasicBlock *, BasicBlock *>, 10> exitEdges;
   l->getExitEdges(exitEdges);
   this->exitEdges = std::vector<std::pair<BasicBlock *, BasicBlock *>>(exitEdges.begin(), exitEdges.end());
+
+  /*
+   * Fetch the metadata.
+   */
+  this->addMetadata("noelle.loop_ID");
+  this->addMetadata("noelle.loop_optimize");
+
+  /*
+   * Check if there is metadata for the ID.
+   */
+  if (this->doesHaveMetadata("noelle.loop_ID")){
+
+    /*
+     * Fetch the ID from the metadata.
+     */
+    auto IDString = this->getMetadata("noelle.loop_ID");
+    this->ID = std::stoul(IDString);
+
+  } else {
+
+    /*
+     * There is no metadata.
+     * Hence, we assign an arbitrary ID.
+     */
+    this->ID = LoopStructure::globalID++;
+  }
 
   return ;
 }
@@ -286,4 +307,52 @@ uint32_t LoopStructure::getNumberOfSubLoops (void) const {
   }
 
   return subloops;
+}
+
+bool LoopStructure::doesHaveMetadata (const std::string &metadataName) const {
+  if (this->metadata.find(metadataName) == this->metadata.end()){
+    return false;
+  }
+
+  return true;
+}
+
+std::string LoopStructure::getMetadata (const std::string &metadataName) const {
+
+  /*
+   * Check if the metadata exists.
+   */
+  if (!this->doesHaveMetadata(metadataName)){
+    return "";
+  }
+
+  return this->metadata.at(metadataName);
+}
+
+void LoopStructure::addMetadata (const std::string &metadataName){
+
+  /*
+   * Fetch the header terminator.
+   */
+  auto headerTerm = this->getHeader()->getTerminator();
+
+  /*
+   * Fetch the metadata node.
+   */
+  auto metaNode = headerTerm->getMetadata(metadataName);
+  if (!metaNode){
+    return ;
+  }
+
+  /*
+   * Fetch the string.
+   */
+  auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
+
+  /*
+   * Add the metadata.
+   */
+  this->metadata[metadataName] = metaString;
+
+  return ;
 }

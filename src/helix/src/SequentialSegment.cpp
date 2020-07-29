@@ -16,6 +16,7 @@ using namespace llvm ;
 
 SequentialSegment::SequentialSegment (
   LoopDependenceInfo *LDI, 
+  DataFlowResult *reachabilityDFR,
   SCCset *sccs,
   int32_t ID,
   Verbosity verbosity
@@ -35,30 +36,12 @@ SequentialSegment::SequentialSegment (
   /*
    * Identify all dependent instructions that require synchronization
    */
-  std::set<Instruction *> ssInstructions;
-  for (auto scc : *sccs){
-
-    // NOTE: SCC sandwiched between two with cycles may be single instruction nodes without sycles.
-    // assert(scc->hasCycle());
-
-    /*
-     * Add all instructions of the current SCC to the set.
-     */
-    for (auto nodePair : scc->internalNodePairs()){
-
-      /*
-       * Fetch the LLVM value associated to the node
-       * NOTE: Values internal to an SCC are instructions
-       */
-      ssInstructions.insert(cast<Instruction>(nodePair.first));
-    }
-  }
+  std::unordered_set<Instruction *> ssInstructions = getInstructions();
   if (this->verbosity >= Verbosity::Maximal) {
     printSCCInfo(LDI, ssInstructions);
   }
 
-  auto dfr = this->computeReachabilityFromInstructions(LDI);
-  determineEntriesAndExits(LDI, dfr, ssInstructions);
+  determineEntriesAndExits(LDI, reachabilityDFR, ssInstructions);
 
   assert(this->entries.size() > 0
     && "The data flow analysis did not identify any per-iteration entry to the sequential segment!\n");
@@ -101,7 +84,7 @@ int32_t SequentialSegment::getID (void){
 void SequentialSegment::determineEntriesAndExits (
   LoopDependenceInfo *LDI,
   DataFlowResult *dfr,
-  std::set<Instruction *> &ssInstructions
+  std::unordered_set<Instruction *> &ssInstructions
 ) {
 
   auto loopStructure = LDI->getLoopStructure();
@@ -279,7 +262,7 @@ void SequentialSegment::determineEntriesAndExits (
   return;
 }
 
-DataFlowResult *SequentialSegment::computeReachabilityFromInstructions (LoopDependenceInfo *LDI) {
+DataFlowResult *HELIX::computeReachabilityFromInstructions (LoopDependenceInfo *LDI) {
 
   auto loopStructure = LDI->getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
@@ -327,7 +310,41 @@ DataFlowResult *SequentialSegment::computeReachabilityFromInstructions (LoopDepe
   return dfa.applyBackward(loopFunction, computeGEN, computeKILL, computeIN, computeOUT);
 }
 
-void SequentialSegment::printSCCInfo (LoopDependenceInfo *LDI, std::set<Instruction *> &ssInstructions) {
+iterator_range<SCCset::iterator> SequentialSegment::getSCCs(void) {
+  return make_range(sccs->begin(), sccs->end());
+}
+
+std::unordered_set<Instruction *> SequentialSegment::getInstructions (void) {
+  std::unordered_set<Instruction *> ssInstructions;
+  for (auto scc : *sccs){
+
+    /*
+     * Add all instructions of the current SCC to the set.
+     */
+    for (auto nodePair : scc->internalNodePairs()){
+      auto inst = cast<Instruction>(nodePair.first);
+
+      /*
+       * HACK: Exclude unconditional branches not in a cycle within the SCC, as
+       * they were merged into this SCC for dumb reasons in the past
+       * FIXME: Once SCC are truly only a single largest cycle of dependencies, remove this
+       */ 
+      if (auto brInst = dyn_cast<BranchInst>(inst)) {
+        if (brInst->isUnconditional()) continue;
+      }
+
+      /*
+       * Fetch the LLVM value associated to the node
+       * NOTE: Values internal to an SCC are instructions
+       */
+      ssInstructions.insert(inst);
+    }
+  }
+
+  return ssInstructions;
+}
+
+void SequentialSegment::printSCCInfo (LoopDependenceInfo *LDI, std::unordered_set<Instruction *> &ssInstructions) {
 
   errs() << "HELIX:   Sequential segment " << ID << "\n" ;
   errs() << "HELIX:     SCCs included in the current sequential segment\n";

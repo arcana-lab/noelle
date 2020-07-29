@@ -29,6 +29,8 @@ namespace llvm {
         ScalarEvolution &SE
       ) ;
 
+      LoopIterationDomainSpaceAnalysis () = delete ;
+
       ~LoopIterationDomainSpaceAnalysis () ;
 
       // TODO:

@@ -28,11 +28,14 @@ int main (int argc, char *argv[]){
     }
 
     for (int64_t j = 4; j < iterations2 - 2; ++j) {
-
-      /*
-       * Simple bounded arithmetic is allowed (TODO)
-       */
       int iBase = (i - 1) * iterations2;
+
+      // Different constants never overlap
+      int i2 = iBase + 2;
+      int i4 = iBase + 4;
+      matrix[i2]++;
+      matrix[i4]--;
+
       // Within max offsets allowed:
       int ij_0 = iBase + (j + 1);
       int ij_1 = iBase + (j - 1);

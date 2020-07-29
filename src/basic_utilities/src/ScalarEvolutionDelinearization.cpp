@@ -162,7 +162,7 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
   for (int i = Last; i >= 0; i--) {
 
     const SCEV *Q, *R;
-    Res = peelCasts(Res, Sizes[i]);
+    // Res = peelCasts(Res, Sizes[i]);
     SCEVDivision::divide(SE, Res, Sizes[i], &Q, &R);
 
     // LLVM_DEBUG({
