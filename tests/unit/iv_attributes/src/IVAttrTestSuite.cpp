@@ -80,7 +80,6 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   delete this->LIS;
   delete sccdag;
   delete loopDG;
-  delete fdg;
 
   return false;
 }
