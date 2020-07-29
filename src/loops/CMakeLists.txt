@@ -35,6 +35,7 @@ install(PROGRAMS
     include/LoopDependenceInfo.hpp
     include/InductionVariables.hpp
     include/Invariants.hpp
+    include/LoopAwareMemDepAnalysis.hpp
     include/LoopCarriedDependencies.hpp
     include/LoopGoverningIVAttribution.hpp
     include/LoopIterationDomainSpaceAnalysis.hpp
