@@ -24,6 +24,7 @@
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
 #include "Transformations.hpp"
+#include "LoopAwareMemDepAnalysis.hpp"
 
 #include "MemoryAnalysisModules/LoopAA.h"
 
