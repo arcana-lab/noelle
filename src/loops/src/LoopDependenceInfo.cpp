@@ -139,7 +139,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
   auto loopDG = functionDG->createLoopsSubgraph(l);
 
   /*
-   * Perform loop-aware memory dependence analysis with SCAF to refine loop PDG
+   * Perform loop-aware memory dependence analysis to refine loop PDG
    */
   if (aa) {
     refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, aa);
