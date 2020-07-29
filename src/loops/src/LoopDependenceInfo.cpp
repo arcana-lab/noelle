@@ -5,7 +5,7 @@
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "PDG.hpp"
@@ -20,7 +20,8 @@ LoopDependenceInfo::LoopDependenceInfo(
   Loop *l,
   DominatorSummary &DS,
   ScalarEvolution &SE,
-  uint32_t maxCores
+  uint32_t maxCores,
+  LoopAA *aa
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{maxCores},
     liSummary{l}
@@ -37,7 +38,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->fetchLoopAndBBInfo(l, SE);
   auto ls = getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
-  auto DGs = this->createDGsForLoop(l, fG);
+  auto DGs = this->createDGsForLoop(l, fG, aa);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
 
@@ -130,12 +131,19 @@ uint64_t LoopDependenceInfo::computeTripCounts (
   return tripCount;
 }
 
-std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG){
+std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG, LoopAA *aa){
 
   /*
    * Set the loop dependence graph.
    */
   auto loopDG = functionDG->createLoopsSubgraph(l);
+
+  /*
+   * Perform loop-aware memory dependence analysis with SCAF to refine loop PDG
+   */
+  if (aa) {
+    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, aa);
+  }
 
   /*
    * Build a SCCDAG of loop-internal instructions
@@ -176,7 +184,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
 
   return std::make_pair(loopDG, loopSCCDAG);
 }
-  
+
 bool LoopDependenceInfo::isTransformationEnabled (Transformation transformation){
   auto exist = this->enabledTransformations.find(transformation) != this->enabledTransformations.end();
 
