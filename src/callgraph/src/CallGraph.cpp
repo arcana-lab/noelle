@@ -81,6 +81,11 @@ std::unordered_set<CallGraphEdge *> noelle::CallGraph::getEdges (void) const {
   return this->edges;
 }
 
+CallGraphFunctionNode * noelle::CallGraph::getEntryNode (void) const {
+  Function *f = m.getFunction("main");
+  return this->getFunctionNode(f);
+}
+
 CallGraphFunctionNode * noelle::CallGraph::getFunctionNode (Function *f) const {
   if (this->functions.find(f) == this->functions.end()){
     return nullptr;

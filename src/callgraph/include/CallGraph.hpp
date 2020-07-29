@@ -35,6 +35,8 @@ namespace llvm {
 
         std::unordered_set<CallGraphEdge *> getEdges (void) const ;
 
+        CallGraphFunctionNode * getEntryNode (void) const ;
+
         CallGraphFunctionNode * getFunctionNode (Function *f) const ;
 
         SCCCAG * getSCCCAG (void) ;
