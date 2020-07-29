@@ -304,10 +304,13 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     // prevIterGuardFalseSucc->printAsOperand(errs() << "Block if prev guard is false: "); errs() << "\n";
 
     /*
-     * Create a PHI in the header exit block to represent potential reducible live out values properly
-     * This has to happen because we duplicated logic. The correct live out is EITHER:
-     * 1) the duplicated loop carried value within the last iteration block
-     * 2) the loop carried value within the body from the previous iteration executed on this core
+     * Track duplicated live out values properly
+     * This has to happen because we duplicated logic.
+     * 
+     * The correct live out for non-reducible live outs is simply the duplicated value
+     * The correct live out for reducible live outs is EITHER:
+     * 1) the duplicated value within the last iteration block
+     * 2) the original value moved to the body from the previous iteration executed on this core
      * 
      * NOTE: Helix only has one task, as each core executes the same task
      */
@@ -315,23 +318,40 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     auto envUser = this->envBuilder->getUser(0);
 
     for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
+
+      /*
+       * Only work with duplicated producers
+       */
       auto originalProducer = (Instruction*)LDI->environment->producerAt(envIndex);
       if (this->lastIterationExecutionDuplicateMap.find(originalProducer) == this->lastIterationExecutionDuplicateMap.end()) continue;
 
       /*
-       * This producer was duplicated. We need a PHI after the last iteration block to track whether
-       * the duplicate executed or not (whether this core executed the last iteration or not)
+       * If the producer isn't reducible, simply mapping to the duplicated value is sufficient,
+       * which is already done (stored in lastIterationExecutionDuplicateMap)
        */
-      auto cloneProducerInBody = task->getCloneOfOriginalInstruction(originalProducer);
+      auto isReduced = this->envBuilder->isReduced(envIndex);
+      if (!isReduced) {
+        continue;
+      }
+
+      /*
+       * We need a PHI after the last iteration block to track whether this core will
+       * store an intermediate of this reduced live out of the last iteration's value of it
+       */
+      auto originalIntermedateInHeader = this->fetchLoopEntryPHIOfProducer(LDI, originalProducer);
+      auto cloneIntermediateInHeader = task->getCloneOfOriginalInstruction(originalIntermedateInHeader);
       auto duplicateProducerInLastIterationBlock = this->lastIterationExecutionDuplicateMap.at(originalProducer);
       auto producerType = originalProducer->getType();
 
       /*
-       * Create a PHI, recieving the body value if the last iteration didn't execute on this core,
+       * Create a PHI, recieving the propagated body value if the last iteration didn't execute on this core,
        * and receiving the last iteration value if the last iteration did execute on this core
+       * 
+       * NOTE: We don't use the value moved to the body; that would not dominate this PHI. We use the
+       * PHI that propagates that value, for which there is one because this is a reducible live out
        */
       auto phi = cloneHeaderExitBuilder.CreatePHI(producerType, 2);
-      phi->addIncoming(cloneProducerInBody, checkForLastExecutionBlock);
+      phi->addIncoming(cloneIntermediateInHeader, checkForLastExecutionBlock);
       phi->addIncoming(duplicateProducerInLastIterationBlock, lastIterationExecutionBlock);
 
       /*
