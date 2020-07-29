@@ -9,11 +9,11 @@ AA="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa"
 ANALYSES="${AA} -scalar-evolution -loops -domtree -postdomtree"
 
 WPAPASS="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so -stat=false"
-PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/PDGAnalysis.so"
+PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/CallGraph.so -load ${installDir}/lib/PDGAnalysis.so"
 
 
 ########### Transformations
-OPTPASSES="${WPAPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/BasicUtilities.so -load ${installDir}/lib/Task.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/LoopStructure.so -load ${installDir}/lib/Loops.so -load ${installDir}/lib/Noelle.so"
+OPTPASSES="-load ${installDir}/lib/CallGraph.so  ${WPAPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/BasicUtilities.so -load ${installDir}/lib/Task.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/LoopStructure.so -load ${installDir}/lib/Loops.so -load ${installDir}/lib/Noelle.so"
 
 # Set the command to execute
 cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} ${@}"

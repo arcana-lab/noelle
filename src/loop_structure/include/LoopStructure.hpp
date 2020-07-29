@@ -80,6 +80,16 @@ namespace llvm {
        */
       uint32_t getNumberOfSubLoops (void) const ;
 
+      /*
+       * Return true if the loop has the metadata requested.
+       */
+      bool doesHaveMetadata (const std::string &metadataName) const ;
+
+      /*
+       * Fetch the metadata attached to the loop.
+       */
+      std::string getMetadata (const std::string &metadataName) const ;
+
       void print (raw_ostream &stream);
       
       std::vector<BasicBlock *> orderedBBs;
@@ -105,9 +115,16 @@ namespace llvm {
 
       static uint64_t globalID;
 
+      std::unordered_map<std::string, std::string> metadata;
+
       void instantiateIDsAndBasicBlocks(Loop *llvmLoop) ;
 
       bool isContainedInstructionLoopInvariant (Instruction *inst) const ;
+
+      void addMetadata (
+        const std::string &metadataName
+        );
+
   };
 
 }

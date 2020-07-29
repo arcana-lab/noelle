@@ -1,7 +1,7 @@
-verifyDisjointAccessBetweenIterations
-%47 = load i32, i32* %46, align 4 | %50 = load i32, i32* %49, align 4
-%47 = load i32, i32* %46, align 4 | store i32 %48, i32* %46, align 4
-%47 = load i32, i32* %46, align 4 | store i32 %51, i32* %49, align 4
-%50 = load i32, i32* %49, align 4 | store i32 %48, i32* %46, align 4
-%50 = load i32, i32* %49, align 4 | store i32 %51, i32* %49, align 4
-store i32 %48, i32* %46, align 4 | store i32 %51, i32* %49, align 4
+verifyDisjointAccessBetweenIterationsAfterSCEVSimplification
+%43 = load i32, i32* %42, align 4 ; %46 = load i32, i32* %45, align 4
+%43 = load i32, i32* %42, align 4 ; store i32 %44, i32* %42, align 4
+%43 = load i32, i32* %42, align 4 ; store i32 %47, i32* %45, align 4
+%46 = load i32, i32* %45, align 4 ; store i32 %44, i32* %42, align 4
+%46 = load i32, i32* %45, align 4 ; store i32 %47, i32* %45, align 4
+store i32 %44, i32* %42, align 4 ; store i32 %47, i32* %45, align 4

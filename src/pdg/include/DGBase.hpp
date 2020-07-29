@@ -191,7 +191,7 @@ namespace llvm {
       edges_const_iterator begin_incoming_edges() const { return incomingEdges.begin(); }
       edges_const_iterator end_incoming_edges() const { return incomingEdges.end(); }
 
-      std::unordered_set<DGEdge<T> *> getAllConnectedEdges() { 
+      std::unordered_set<DGEdge<T> *> getAllConnectedEdges() {
         std::unordered_set<DGEdge<T> *> allConnectedEdges{outgoingEdges.begin(), outgoingEdges.end()};
         allConnectedEdges.insert(incomingEdges.begin(), incomingEdges.end());
         return allConnectedEdges;
@@ -243,7 +243,7 @@ namespace llvm {
      DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
          : from(src), to(dst), memory(false), must(false),
            dataDepType(DG_DATA_NONE), isControl(false), isLoopCarried(false),
-           isRemovable(false), minRemovalCost(LONG_MAX) {}
+           isRemovable(false), remeds(nullptr) {}
      DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
      typedef typename std::unordered_set<DGEdge<SubT> *>::iterator edges_iterator;
@@ -274,22 +274,24 @@ namespace llvm {
     bool isLoopCarriedDependence() const { return isLoopCarried; }
     DataDependenceType dataDependenceType() const { return dataDepType; }
     bool isRemovableDependence() const { return isRemovable; }
-    long getMinRemovalCost () const { return minRemovalCost; }
-    // NOTE: Remedies are not yet implemented, so all methods/fields are commented out to conserve memory
-    // const SetOfRemedies &getRemedies() const { return remeds; }
+    const SetOfRemedies &getRemedies() const { return *remeds; }
 
     void setControl(bool ctrl) { isControl = ctrl; }
     void setMemMustType(bool mem, bool must, DataDependenceType dataDepType);
     void setLoopCarried(bool lc) { isLoopCarried = lc; }
-    // NOTE: Remedies are not yet implemented, so all methods/fields are commented out to conserve memory
-    // void setRemedies(const SetOfRemedies &R) { remeds = R; }
-    // void addRemedies(const Remedies_ptr &R) { remeds.insert(R); }
-    void setRemovable(bool rem) { isRemovable = rem; }
-    void setMinRemovalCost (long cost) { minRemovalCost = cost; }
-    void processNewRemovalCost(long cost) {
-      if (minRemovalCost > cost)
-        minRemovalCost = cost;
+    void setRemedies(const SetOfRemedies &R) {
+      if (!R.empty()) {
+        remeds = std::make_unique<SetOfRemedies>(R);
+      }
     }
+    void addRemedies(const Remedies_ptr &R) {
+      if (!remeds) {
+        remeds = std::make_unique<SetOfRemedies>();
+        isRemovable = true;
+      }
+      remeds->insert(R);
+    }
+    void setRemovable(bool rem) { isRemovable = rem; }
 
     void setEdgeAttributes(bool mem, bool must, std::string str, bool ctrl, bool lc, bool rm) {
       setMemMustType(mem, must, stringToDataDep(str));
@@ -301,9 +303,15 @@ namespace llvm {
     void addSubEdge(DGEdge<SubT> *edge) {
       subEdges.insert(edge);
       isLoopCarried |= edge->isLoopCarriedDependence();
-      // NOTE: Remedies are not yet implemented, so all methods/fields are commented out to conserve memory
-      // for (auto &r : edge->getRemedies())
-        // remeds.insert(r);
+      if (edge->isRemovableDependence() &&
+          (subEdges.size() == 1 || this->isRemovableDependence())) {
+        isRemovable = true;
+        for (auto &r : edge->getRemedies())
+          remeds->insert(r);
+      } else {
+        remeds = nullptr;
+        isRemovable = false;
+      }
     }
 
     void removeSubEdge(DGEdge<SubT> *edge) { subEdges.erase(edge); }
@@ -311,6 +319,8 @@ namespace llvm {
     void clearSubEdges() {
       subEdges.clear();
       setLoopCarried(false);
+      remeds = nullptr;
+      setRemovable(false);
     }
 
     std::string toString();
@@ -335,12 +345,9 @@ namespace llvm {
     bool isLoopCarried;
     bool isRemovable;
 
-    long minRemovalCost;
-
     DataDependenceType dataDepType;
 
-    // NOTE: Remedies are not yet implemented, so all methods/fields are commented out to conserve memory
-    // SetOfRemedies remeds;
+    SetOfRemedies_ptr remeds;
   };
 
   /*
@@ -806,9 +813,7 @@ namespace llvm {
     setControl(oldEdge.isControlDependence());
     setLoopCarried(oldEdge.isLoopCarriedDependence());
     setRemovable(oldEdge.isRemovableDependence());
-    setMinRemovalCost(oldEdge.getMinRemovalCost());
-    // NOTE: Remedies are not yet implemented, so all methods/fields are commented out to conserve memory
-    // setRemedies(oldEdge.getRemedies());
+    //setRemedies(oldEdge.getRemedies());
     for (auto subEdge : oldEdge.subEdges) addSubEdge(subEdge);
   }
 

@@ -49,6 +49,8 @@ namespace llvm {
         Value *memoryLocation
       ) ;
 
+      LoopCarriedMemoryLocation () = delete ;
+
       /*
        * TODO: Implement
        */
@@ -65,6 +67,8 @@ namespace llvm {
         SCC &variableSCC,
         PHINode *declarationPHI
       ) ;
+
+      LoopCarriedVariable () = delete ;
 
       ~LoopCarriedVariable () ;
 

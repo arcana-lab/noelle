@@ -22,6 +22,7 @@ function loadAndRunNoellePasses {
 
   local EXTRA_UNIT_TEST_PASSES="\
     -load ${LIB_DIR}/LoopInvariantCodeMotion.so \
+    -load ${LIB_DIR}/SCEVSimplification.so \
     -load ${LIB_DIR}/Parallelizer.so \
   "
 
