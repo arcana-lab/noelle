@@ -103,7 +103,6 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   delete this->attrs;
   delete this->sccdag;
   delete this->sccdagTopLoopNorm;
-  delete fdg;
 
   return false;
 }
