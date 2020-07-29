@@ -12,6 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "CallGraph.hpp"
+#include "CallGraphTraits.hpp"
 
 namespace llvm {
 
