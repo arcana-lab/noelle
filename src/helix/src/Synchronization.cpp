@@ -209,9 +209,21 @@ void HELIX::addSynchronizations (
     );
   };
 
+  /*
+   * For each loop exit, ensure all other execution of all other sequential segments
+   * is completed (by inserting waits) and then signal to the next core right before exiting
+   *
+   * NOTE: This is needed if live outs are being loaded from the loop carried environment
+   * before being stored in the live out environment. Since we do not store to the live out
+   * environment every iteration of the loop, this synchronization upon exiting is necessary
+   */
   for (auto i = 0; i < helixTask->getNumberOfLastBlocks(); ++i) {
-    auto loopExitTerminator = helixTask->getLastBlock(i)->getTerminator();
-    for (auto ss : *sss) injectSignal(ss, loopExitTerminator);
+    auto loopExitBlock = helixTask->getLastBlock(i);
+    auto loopExitTerminator = loopExitBlock->getTerminator();
+    for (auto ss : *sss) {
+      injectWait(ss, loopExitBlock->getFirstNonPHI());
+      injectSignal(ss, loopExitTerminator);
+    }
   }
 
   /*
