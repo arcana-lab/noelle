@@ -24,6 +24,7 @@
 #include "PDGAnalysis.hpp"
 #include "PDGPrinter.hpp"
 #include "LoopIterationDomainSpaceAnalysis.hpp"
+#include "SCEVSimplification.hpp"
 
 #include "TestSuite.hpp"
 
@@ -38,7 +39,9 @@ namespace llvm {
   class LoopDomainSpaceTestSuite : public ModulePass {
     public:
 
-      LoopDomainSpaceTestSuite() : ModulePass{ID} {}
+      LoopDomainSpaceTestSuite() : ModulePass{ID},
+        modifiedCodeWithSCEVSimplification{false}, LIS{nullptr}, IVM{nullptr},
+        domainSpaceAnalysis{nullptr} {}
 
       /*
        * Class fields
@@ -54,10 +57,19 @@ namespace llvm {
     private:
 
       static Values verifyDisjointAccessBetweenIterations (ModulePass &pass, TestSuite &suite) ;
+      static Values verifyDisjointAccessBetweenIterationsAfterSCEVSimplification (ModulePass &pass, TestSuite &suite) ;
+
+      Values collectDisjointAccessesBetweenIterations (ModulePass &pass, TestSuite &suite) ;
+
+      void computeAnalysisWithSCEVSimplification (void) ;
+      void computeAnalysisWithoutSCEVSimplification (void) ;
 
       TestSuite *suite;
       Module *M;
+
+      bool modifiedCodeWithSCEVSimplification;
       LoopsSummary *LIS;
+      InductionVariableManager *IVM;
       LoopIterationDomainSpaceAnalysis *domainSpaceAnalysis;
   };
 }
