@@ -211,7 +211,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
       auto sccType = sccInfo->getType();
 
-      I.print(errs() << "Investigating: "); errs() << "\n";
+      // I.print(errs() << "Investigating: "); errs() << "\n";
 
       /*
        * Ensure the original instruction was not independent, not a PHI, not clonable
@@ -224,7 +224,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       if (originalCmpInst == &I || originalBrInst == &I) continue;
       if (sccInfo->isInductionVariableSCC()) continue;
 
-      I.print(errs() << "Duplicating: "); errs() << "\n";
+      // I.print(errs() << "Duplicating: "); errs() << "\n";
+
       originalInstsBeingDuplicated.push_back(&I);
     }
 
@@ -301,6 +302,46 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     // lastHeaderSequentialExecutionBlock->printAsOperand(errs() << "Last exec exit: "); errs() << "\n";
     // prevIterGuardTrueSucc->printAsOperand(errs() << "Block if prev guard is true: "); errs() << "\n";
     // prevIterGuardFalseSucc->printAsOperand(errs() << "Block if prev guard is false: "); errs() << "\n";
+
+    /*
+     * Create a PHI in the header exit block to represent potential reducible live out values properly
+     * This has to happen because we duplicated logic. The correct live out is EITHER:
+     * 1) the duplicated loop carried value within the last iteration block
+     * 2) the loop carried value within the body from the previous iteration executed on this core
+     * 
+     * NOTE: Helix only has one task, as each core executes the same task
+     */
+    IRBuilder<> cloneHeaderExitBuilder(cloneHeaderExit->getFirstNonPHI());
+    auto envUser = this->envBuilder->getUser(0);
+
+    for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
+      auto originalProducer = (Instruction*)LDI->environment->producerAt(envIndex);
+      if (this->lastIterationExecutionDuplicateMap.find(originalProducer) == this->lastIterationExecutionDuplicateMap.end()) continue;
+
+      /*
+       * This producer was duplicated. We need a PHI after the last iteration block to track whether
+       * the duplicate executed or not (whether this core executed the last iteration or not)
+       */
+      auto cloneProducerInBody = task->getCloneOfOriginalInstruction(originalProducer);
+      auto duplicateProducerInLastIterationBlock = this->lastIterationExecutionDuplicateMap.at(originalProducer);
+      auto producerType = originalProducer->getType();
+
+      /*
+       * Create a PHI, recieving the body value if the last iteration didn't execute on this core,
+       * and receiving the last iteration value if the last iteration did execute on this core
+       */
+      auto phi = cloneHeaderExitBuilder.CreatePHI(producerType, 2);
+      phi->addIncoming(cloneProducerInBody, checkForLastExecutionBlock);
+      phi->addIncoming(duplicateProducerInLastIterationBlock, lastIterationExecutionBlock);
+
+      /*
+       * Map from the original value of this producer to the PHI tracking the last value of this producer
+       * NOTE: This is needed later when storing live outs
+       */
+      this->lastIterationExecutionDuplicateMap.erase(originalProducer);
+      this->lastIterationExecutionDuplicateMap.insert(std::make_pair(originalProducer, phi));
+
+    }
 
   }
 }
