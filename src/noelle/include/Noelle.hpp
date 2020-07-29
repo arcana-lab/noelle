@@ -171,7 +171,7 @@ namespace llvm {
       bool hoistLoopsToMain;
       noelle::CallGraph *pcg;
       PDGAnalysis *pdgAnalysis;
-      LoopAA *loopAA;
+      liberty::LoopAA *loopAA;
 
       char *filterFileName;
       bool hasReadFilterFile;
