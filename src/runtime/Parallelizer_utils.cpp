@@ -316,7 +316,7 @@ extern "C" {
     assert(parallelizedLoop != NULL);
     assert(env != NULL);
     assert(numCores > 1);
-    assert(numOfsequentialSegments > 0);
+    // assert(numOfsequentialSegments > 0);
 
     /*
      * Allocate the sequential segment arrays.
@@ -393,7 +393,7 @@ extern "C" {
        */
       auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
       auto ssArrayFuture = (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
-      assert(ssArrayPast != ssArrayFuture);
+      // assert(ssArrayPast != ssArrayFuture);
 
       #ifdef RUNTIME_PRINT
       fprintf(stderr, "HelixDispatcher: defined ss past and future arrays: %ld %ld\n", (int *)ssArrayPast - (int *)mySSGlobal, (int *)ssArrayFuture - (int *)mySSGlobal);
@@ -470,9 +470,9 @@ extern "C" {
      * Fetch the spinlock
      */
     auto ss = (pthread_spinlock_t *) sequentialSegment;
-    assert(ss != NULL);
 
     #ifdef RUNTIME_PRINT
+    assert(ss != NULL);
     fprintf(stderr, "HelixDispatcher: Waiting on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
     #endif
 
@@ -496,9 +496,9 @@ extern "C" {
      * Fetch the spinlock
      */
     auto ss = (pthread_spinlock_t *) sequentialSegment;
-    assert(ss != NULL);
 
     #ifdef RUNTIME_PRINT
+    assert(ss != NULL);
     fprintf(stderr, "HelixDispatcher: Signaling on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
     #endif
 

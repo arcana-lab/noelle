@@ -65,6 +65,7 @@ namespace llvm {
 
       static Values reducibleSCCsAreFound (ModulePass &pass, TestSuite &suite) ;
       static Values clonableSCCsAreFound (ModulePass &pass, TestSuite &suite) ;
+      static Values clonableSCCsIntoLocalMemoryAreFound (ModulePass &pass, TestSuite &suite) ;
 
       static Values loopCarriedDependencies (ModulePass &pass, TestSuite &suite) ;
 
