@@ -131,7 +131,7 @@ uint64_t LoopDependenceInfo::computeTripCounts (
   return tripCount;
 }
 
-std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG, LoopAA *aa){
+std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG, liberty::LoopAA *aa){
 
   /*
    * Set the loop dependence graph.
