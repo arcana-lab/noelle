@@ -17,10 +17,10 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
   // Iterate over all the edges of the loop PDG and
   // collect memory deps to be queried.
   // For each pair of instructions with a memory dependence map it to
-  // a tuple of found edges (0th element is for RAW, 1st for WAW, 2nd for WAR)
-	typedef std::tuple<DGEdge<Value>*,DGEdge<Value>*, DGEdge<Value>*> DepTuple;
-  map<pair<Instruction*, Instruction*>, DepTuple> memDeps;
-	for (auto edge : make_range(loopDG->begin_edges(), loopDG->end_edges())) {
+  // a small vector of found edges (0th element is for RAW, 1st for WAW, 2nd for WAR)
+  map<pair<Instruction *, Instruction *>, SmallVector<DGEdge<Value> *, 3>>
+      memDeps;
+  for (auto edge : make_range(loopDG->begin_edges(), loopDG->end_edges())) {
     if (!loopDG->isInternal(edge->getIncomingT()) ||
         !loopDG->isInternal(edge->getOutgoingT()))
       continue;
@@ -41,13 +41,13 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
 		}
 
 		if (edge->isRAWDependence()) {
-			std::get<0>(memDeps[{i,j}]) = edge;
+			memDeps[{i,j}][0] = edge;
 		}
 		else if (edge->isWAWDependence()) {
-			std::get<1>(memDeps[{i,j}]) = edge;
+			memDeps[{i,j}][1] = edge;
 		}
 		else if (edge->isWARDependence()) {
-			std::get<2>(memDeps[{i,j}]) = edge;
+			memDeps[{i,j}][2] = edge;
 		}
   }
 
@@ -63,7 +63,7 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
 		// set least significant bit for RAW, 2nd bit for WAW, 3rd bit for WAR
     uint8_t depTypes = 0;
 		for (uint8_t i = 0; i <= 2; ++i) {
-			if (std::get<i>(edges)) {
+			if (edges[i]) {
 				depTypes |= 1 << i;
 			}
 		}
@@ -74,7 +74,7 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
 		uint8_t lcDepTypes = depTypes - disprovedLCDepTypes;
 		for (uint8_t i = 0; i <= 2; ++i) {
 			if (lcDepTypes & (1 << i)) {
-				auto &e = std::get<i>(edges);
+				auto &e = edges[i];
 				e->setLoopCarried(true);
 			}
 		}
@@ -90,7 +90,7 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
       // intra-iteration version
       for (uint8_t i = 0; i <= 2; ++i) {
         if (disprovedIIDepTypes & (1 << i)) {
-          auto &e = std::get<i>(edges);
+          auto &e = edges[i];
           loopDG->removeEdge(e);
         }
 			}
@@ -100,7 +100,7 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
 			uint8_t iiDepTypes = disprovedLCDepTypes - disprovedIIDepTypes;
 			for (uint8_t i = 0; i <= 2; ++i) {
 				if (iiDepTypes & (1 << i)) {
-					auto &e = std::get<i>(edges);
+					auto &e = edges[i];
 					e->setLoopCarried(false);
 				}
 			}

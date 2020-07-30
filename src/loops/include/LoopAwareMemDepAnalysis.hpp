@@ -7,8 +7,6 @@
 #include "PDG.hpp"
 #include "MemoryAnalysisModules/LoopAA.h"
 
-#include <tuple>
-
 namespace llvm {
 
 // Perform loop-aware memory dependence analysis to refine the loop PDG
