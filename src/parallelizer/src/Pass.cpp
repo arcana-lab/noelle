@@ -124,6 +124,8 @@ bool Parallelizer::runOnModule (Module &M) {
     errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
     auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(loopStructure);
     errs() << "Parallelizer:      Average instructions per invocation = " << averageInstsPerInvocation << " %\n"; 
+    auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(loopStructure);
+    errs() << "Parallelizer:      Average iterations per invocation = " << averageIterations << " %\n"; 
   }
 
   /*
@@ -161,6 +163,19 @@ bool Parallelizer::runOnModule (Module &M) {
     if (  true
           && (!this->forceParallelization)
           && (averageInstsPerInvocation < 100)
+      ){
+      errs() << "Parallelizer:      It is too low\n";
+      continue ;
+    }
+
+    /*
+     * Check the number of iterations per invocation.
+     */
+    auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
+    errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
+    if (  true
+          && (!this->forceParallelization)
+          && (averageIterations < 3)
       ){
       errs() << "Parallelizer:      It is too low\n";
       continue ;
