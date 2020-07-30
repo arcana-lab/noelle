@@ -13,6 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "CallGraphNode.hpp"
 #include "CallGraphEdge.hpp"
+#include "SCCCAG.hpp"
 
 #include "MemoryModel/PointerAnalysis.h"
 #include "Util/PTACallGraph.h"
@@ -21,6 +22,7 @@
 namespace llvm {
 
   namespace noelle {
+    class SCCCAG;
 
     /*
      * Call graph.
@@ -33,13 +35,20 @@ namespace llvm {
 
         std::unordered_set<CallGraphEdge *> getEdges (void) const ;
 
+        CallGraphFunctionNode * getEntryNode (void) const ;
+
         CallGraphFunctionNode * getFunctionNode (Function *f) const ;
+
+        SCCCAG * getSCCCAG (void) ;
+
+        bool doesItBelongToASCC (Function *f) ;
 
       private:
         Module &m;
         std::unordered_map<Function *, CallGraphFunctionNode *> functions;
         std::unordered_map<Instruction *, CallGraphInstructionNode *> instructionNodes;
         std::unordered_set<CallGraphEdge *> edges;
+        SCCCAG *scccag;
 
         void handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst);
     };

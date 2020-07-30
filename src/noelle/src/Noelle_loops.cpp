@@ -206,7 +206,6 @@ LoopDependenceInfo * Noelle::getLoop (
                                       this->maxCores, this->loopAA);
 
     delete DS;
-    delete funcPDG;
     return ldi;
   }
 
@@ -223,7 +222,6 @@ LoopDependenceInfo * Noelle::getLoop (
                                       this->maxCores, this->loopAA);
 
     delete DS;
-    delete funcPDG;
     return ldi;
   }
 
@@ -251,7 +249,6 @@ LoopDependenceInfo * Noelle::getLoop (
   );
 
   delete DS;
-  delete funcPDG;
   return ldi;
 }
 
@@ -338,7 +335,6 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
    * Free the memory.
    */
   delete DS ;
-  delete funcPDG;
 
   return allLoops;
 }
@@ -407,8 +403,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Fetch the function dependence graph.
      */
-    auto PDG = this->getProgramDependenceGraph();
-    auto funcPDG = PDG->createFunctionSubgraph(*function);
+    auto funcPDG = this->getFunctionDependenceGraph(function);
 
     /*
      * Fetch the post dominators and scalar evolutions
@@ -499,7 +494,6 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Free the memory.
      */
-    delete funcPDG;
     delete DS;
   }
 

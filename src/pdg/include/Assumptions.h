@@ -104,6 +104,7 @@ struct RemediesCompare {
 };
 
 typedef std::set<Remedies_ptr, RemediesCompare> SetOfRemedies;
+typedef std::unique_ptr<SetOfRemedies> SetOfRemedies_ptr;
 
 }
 
