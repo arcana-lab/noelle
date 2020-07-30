@@ -81,13 +81,32 @@ noelle::SCCCAG::SCCCAG (noelle::CallGraph *cg){
        */
       visited.insert(cgNodes.begin(), cgNodes.end());
 
-      if (cgNodes.size() == 1) {
-        auto singleCGNode = static_cast<CallGraphFunctionNode *>(*cgNodes.begin());
+      /*
+       * Check if the current node is an SCC.
+       */
+      auto singleCGNode = static_cast<CallGraphFunctionNode *>(*cgNodes.begin());
+      auto thisIsAnSCC = false;
+      if (cgNodes.size() > 1) {
+        thisIsAnSCC = true;
+
+      } else {
+        for (auto edge : singleCGNode->getOutgoingEdges()){
+          if (edge->getCallee() == singleCGNode){
+            thisIsAnSCC = true;
+            break ;
+          }
+        }
+      }
+
+      /*
+       * Create the correct node and insert it into the SCCCAG.
+       * Possible nodes are an SCC or a single Function.
+       */
+      if (!thisIsAnSCC){
         auto sccNode = new SCCCAGNode_Function(*singleCGNode->getFunction());
         this->nodes[singleCGNode] = sccNode;
         continue;
       }
-
       auto sccNode = new SCCCAGNode_SCC(cgNodes);
       for (auto node : cgNodes) {
         this->nodes[node] = sccNode;
