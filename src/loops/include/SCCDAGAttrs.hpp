@@ -21,6 +21,7 @@
 #include "LoopEnvironment.hpp"
 #include "LoopCarriedDependencies.hpp"
 #include "Variable.hpp"
+#include "MemoryCloningAnalysis.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -41,7 +42,8 @@ namespace llvm {
         LoopsSummary &LIS,
         ScalarEvolution &SE,
         LoopCarriedDependencies &LCD,
-        InductionVariableManager &IV
+        InductionVariableManager &IV,
+        DominatorSummary &DS
       ) ;
 
       /*
@@ -106,12 +108,13 @@ namespace llvm {
       std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
       PDG *loopDG;
       SCCDAG *sccdag;     /* SCCDAG of the related loop.  */
+      MemoryCloningAnalysis *memoryCloningAnalysis;
 
       /*
        * HACK: Remove once LoopDependenceInfo doesn't produce empty SCCDAGAttrs on construction
        */
       friend class LoopDependenceInfo;
-      SCCDAGAttrs () {}
+      SCCDAGAttrs () ;
 
       /*
        * Helper methods on SCCDAG
@@ -131,6 +134,7 @@ namespace llvm {
         std::set<InductionVariable *> &IVs
       );
       void checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);
+      void checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS) ;
       bool isClonableByInductionVars (SCC *scc) const ;
       bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;
       bool isClonableByCmpBrInstrs (SCC *scc) const ;
