@@ -13,6 +13,7 @@
 #include "Architecture.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 Noelle::Noelle() 
   : ModulePass{ID}
@@ -254,6 +255,10 @@ DataFlowAnalysis Noelle::getDataFlowAnalyses (void) const {
 
 DataFlowEngine Noelle::getDataFlowEngine (void) const {
   return DataFlowEngine{};
+}
+
+Scheduler Noelle::getScheduler (void) const {
+  return Scheduler{};
 }
 
 uint64_t Noelle::numberOfProgramInstructions (void) const {
