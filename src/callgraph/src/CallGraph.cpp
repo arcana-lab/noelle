@@ -15,7 +15,8 @@ using namespace llvm;
 using namespace noelle;
 
 noelle::CallGraph::CallGraph (Module &M, PTACallGraph *callGraph)
-  : m{M}
+  : m{M},
+    scccag{nullptr}
   {
 
   /*
@@ -78,6 +79,11 @@ std::unordered_set<CallGraphFunctionNode *> noelle::CallGraph::getFunctionNodes 
 
 std::unordered_set<CallGraphEdge *> noelle::CallGraph::getEdges (void) const {
   return this->edges;
+}
+
+CallGraphFunctionNode * noelle::CallGraph::getEntryNode (void) const {
+  Function *f = m.getFunction("main");
+  return this->getFunctionNode(f);
 }
 
 CallGraphFunctionNode * noelle::CallGraph::getFunctionNode (Function *f) const {
@@ -162,4 +168,49 @@ void noelle::CallGraph::handleCallInstruction (CallGraphFunctionNode *fromNode, 
   //TODO
 
   return ;
+}
+        
+SCCCAG * noelle::CallGraph::getSCCCAG (void) {
+
+  /*
+   * Check if we have already computed it.
+   */
+  if (this->scccag != nullptr){
+    return this->scccag;
+  }
+
+  /*
+   * Compute the SCCCAG.
+   */
+  this->scccag = new SCCCAG(this);
+
+  return this->scccag;
+}
+
+bool noelle::CallGraph::doesItBelongToASCC (Function *f) {
+
+  /*
+   * Fetch the SCCCAG.
+   */
+  auto localAG = this->getSCCCAG();
+
+  /*
+   * Fetch the SCCCAG node of @f.
+   */
+  auto callGraphNode = this->getFunctionNode(f);
+  assert(callGraphNode != nullptr);
+  auto localAGNode = localAG->getNode(callGraphNode);
+  assert(localAGNode != nullptr);
+
+  /*
+   * Check if the node belongs to an SCC.
+   */
+  if (localAGNode->isAnSCC()){
+    return true;
+  }
+
+  /*
+   * The node doesn't belong to an SCC.
+   */
+  return false;
 }
