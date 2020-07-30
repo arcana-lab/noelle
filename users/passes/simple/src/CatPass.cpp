@@ -310,6 +310,9 @@ namespace {
         /*
          * Print the outgoing edges.
          */
+        if (pcf->doesItBelongToASCC(f)){
+          errs() << " The function \"" << f->getName() << "\" is involved in an SCC\n";
+        }
         errs() << " The function \"" << f->getName() << "\" invokes the following functions:\n";
         for (auto callEdge : outEdges){
           auto calleeNode = callEdge->getCallee();
