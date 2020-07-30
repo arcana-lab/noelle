@@ -32,5 +32,6 @@ install(PROGRAMS
   include/CallGraph.hpp
   include/CallGraphNode.hpp
   include/CallGraphEdge.hpp
+  include/CallGraphTraits.hpp
   include/SCCCAG.hpp
   DESTINATION include)

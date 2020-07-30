@@ -35,22 +35,83 @@ bool SCCCAGNode_Function::isAnSCC (void) const {
 }
 
 noelle::SCCCAG::SCCCAG (noelle::CallGraph *cg){
-  
+
   /*
    * Iterate over all function nodes.
+   *
+   * NOTE: The use of a call graph wrapper is because additional APIs are needed
+   * that don't belong on CallGraph for the use of GraphTraits and scc_iterator
    */
-  for (auto funcNode : cg->getFunctionNodes()){
+  std::unordered_set<CallGraphNode *> visited;
+  noelle::CallGraphWrapper cgWrapper(cg);
+  for (auto nodeWrapperIter = cgWrapper.nodes_begin(); nodeWrapperIter != cgWrapper.nodes_end(); ++nodeWrapperIter) {
 
     /*
-     * Identifiy the SCCs.
+     * For the next unvisited call graph node, set the entry to the call graph
+     * as that node so that scc_iterator can go from there in search for the next SCC
      */
-    //TODO
+    auto nodeWrapper = *nodeWrapperIter;
+    auto functionNode = nodeWrapper->wrappedNode;
+    if (visited.find(functionNode) != visited.end()) continue;
+    cgWrapper.entryNode = nodeWrapper;
 
-    /*
-     * The current function doesn't belong to an SCC.
-     */
-    auto singleNode = new SCCCAGNode_Function(*funcNode->getFunction());
-    this->nodes[funcNode] = singleNode;
+    for (auto cgI = scc_begin(&cgWrapper); cgI != scc_end(&cgWrapper); ++cgI) {
+
+      /*
+       * Collect the nodes identified as an SCC. Ensure they haven't been visited before
+       */
+      const std::vector<noelle::CallGraphNodeWrapper *> &wrappedCGNodes = *cgI;
+      auto firstNodeWrapper = *wrappedCGNodes.begin();
+      auto firstNode = firstNodeWrapper->wrappedNode;
+      if (visited.find(firstNode) != visited.end()) {
+        continue;
+      }
+
+      /*
+       * Unwrap the nodes
+       */
+      std::unordered_set<CallGraphNode *> cgNodes{};
+      for (auto wrappedCGNode : wrappedCGNodes) {
+        cgNodes.insert(wrappedCGNode->wrappedNode);
+      }
+
+      /*
+       * Track visited CG nodes.
+       * Create the SCC node
+       */
+      visited.insert(cgNodes.begin(), cgNodes.end());
+
+      /*
+       * Check if the current node is an SCC.
+       */
+      auto singleCGNode = static_cast<CallGraphFunctionNode *>(*cgNodes.begin());
+      auto thisIsAnSCC = false;
+      if (cgNodes.size() > 1) {
+        thisIsAnSCC = true;
+
+      } else {
+        for (auto edge : singleCGNode->getOutgoingEdges()){
+          if (edge->getCallee() == singleCGNode){
+            thisIsAnSCC = true;
+            break ;
+          }
+        }
+      }
+
+      /*
+       * Create the correct node and insert it into the SCCCAG.
+       * Possible nodes are an SCC or a single Function.
+       */
+      if (!thisIsAnSCC){
+        auto sccNode = new SCCCAGNode_Function(*singleCGNode->getFunction());
+        this->nodes[singleCGNode] = sccNode;
+        continue;
+      }
+      auto sccNode = new SCCCAGNode_SCC(cgNodes);
+      for (auto node : cgNodes) {
+        this->nodes[node] = sccNode;
+      }
+    }
   }
 
   return ;

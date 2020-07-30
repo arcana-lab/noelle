@@ -75,3 +75,4 @@ regression_18/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-di
 regression_5/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force
 regression_12/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force
 regression_5/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force
+regression_default/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force
