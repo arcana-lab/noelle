@@ -13,14 +13,19 @@
 
 using namespace llvm;
 
+SCCDAGAttrs::SCCDAGAttrs ()
+  : loopDG{nullptr}, sccdag{nullptr}, memoryCloningAnalysis{nullptr} {
+}
+
 SCCDAGAttrs::SCCDAGAttrs (
   PDG *loopDG,
   SCCDAG *loopSCCDAG,
   LoopsSummary &LIS,
   ScalarEvolution &SE,
   LoopCarriedDependencies &LCD,
-  InductionVariableManager &IV
-) : loopDG{loopDG}, sccdag{loopSCCDAG} {
+  InductionVariableManager &IV,
+  DominatorSummary &DS
+) : loopDG{loopDG}, sccdag{loopSCCDAG}, memoryCloningAnalysis{nullptr} {
 
   /*
    * Partition dependences between intra-iteration and iter-iteration ones.
@@ -50,6 +55,12 @@ SCCDAGAttrs::SCCDAGAttrs (
   //   iv->getHeaderPHI()->print(errs() << "IV: "); errs() << "\n";
   // }
   // errs() << "-------------\n";
+
+  /*
+   * Compute memory cloning location analysis
+   */
+  auto rootLoop = LIS.getLoopNestingTreeRoot();
+  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
 
   /*
    * Tag SCCs depending on their characteristics.
@@ -372,9 +383,11 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
     if (auto inst = dyn_cast<Instruction>(value)) {
       if (containedInsts.find(inst) != containedInsts.end()) continue;
 
-      if (auto br = dyn_cast<BranchInst>(value)) {
+      if (auto br = dyn_cast<BranchInst>(inst)) {
         if (br->isUnconditional()) continue;
-      } else if (isa<GetElementPtrInst>(inst) || isa<PHINode>(inst) || isa<CastInst>(inst)) {
+      }
+
+      if (isa<GetElementPtrInst>(inst) || isa<PHINode>(inst) || isa<CastInst>(inst) || isa<CmpInst>(inst)) {
         continue;
       }
     }
@@ -524,6 +537,7 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &
 
   /*
    * Check the simple cases.
+   * TODO: Separate out cases and catalog SCCs by those cases
    */
   if ( false
        || isClonableByInductionVars(scc)
@@ -535,6 +549,50 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &
     clonableSCCs.insert(scc);
     return ;
   }
+
+  /*
+   * Check for memory cloning case
+   */
+  checkIfClonableByUsingLocalMemory(scc, LIS) ;
+
+  return ;
+}
+
+void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS) {
+
+  /*
+   * HACK: Ignore SCC without loop carried dependencies
+   */
+  if (this->sccToInternalLoopCarriedDependencies.find(scc) == this->sccToInternalLoopCarriedDependencies.end()) {
+    return;
+  }
+
+  /*
+   * Ensure that loop carried dependencies belong to clonable memory locations
+   * NOTE: Ignore PHIs and unconditional branch instructions
+   */
+  std::unordered_set<const llvm::noelle::ClonableMemoryLocation *> locations;
+  for (auto dependency : this->sccToInternalLoopCarriedDependencies.at(scc)) {
+
+    auto inst = dyn_cast<Instruction>(dependency->getOutgoingT());
+    if (!inst) return;
+
+    /*
+     * Attempt to locate the instruction's clonable memory location they store/load from
+     */
+    auto location = this->memoryCloningAnalysis->getClonableMemoryLocationFor(inst);
+    // inst->print(errs() << "Instruction: "); errs() << "\n";
+    // if (!location) { errs() << "No location\n"; }
+    if (!location) return ;
+    // location->getAllocation()->print(errs() << "Location found: "); errs() << "\n";
+    locations.insert(location);
+  }
+
+  if (locations.size() == 0) return;
+
+  auto sccInfo = this->sccToInfo.at(scc);
+  sccInfo->setSCCToBeClonableUsingLocalMemory();
+  sccInfo->addClonableMemoryLocationsContainedInSCC(locations);
 
   return ;
 }
