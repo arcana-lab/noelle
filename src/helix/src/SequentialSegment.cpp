@@ -261,6 +261,48 @@ void SequentialSegment::determineEntryAndExitFrontier (
       successorTraversal.push(firstInst);
     }
   }
+
+  /*
+   * Extend the entry and exit frontier to cut through the entire CFG, not missing any branches
+   * going around SS instructions. This is done by choosing from a set of instructions which
+   * no SS instruction can reach and from which no SS instruction can be reached.
+   *
+   * The subset chosen to extend the entry frontier will not be dominated by any
+   * other element in the set
+   *
+   * The subset chosen to extend the exit frontier cannot reach or be reached by any
+   * other element in the set
+   *
+   * All basic blocks in the loop must be considered to ensure the frontier is fully encompassing
+   *
+   * First, find all instructions in the set of un-reachables. Only one instruction per basic
+   * block is needed to represent this set sufficiently
+   */
+  std::unordered_set<Instruction *> instructionsUnreachableToAndFromSS;
+  for (auto B : rootLoop->getBasicBlocks()) {
+    auto I = &*B->begin();
+
+    if (true
+      && checkIfBeforeEntryFrontier(I)
+      && checkIfAfterExitFrontier(I)
+    ) {
+      instructionsUnreachableToAndFromSS.insert(I);
+    }
+  }
+
+  /*
+   * Go through all unreachable instructions in search for necessary entries/exits
+   */
+  for (auto I : instructionsUnreachableToAndFromSS) {
+    auto nonInterferingPoint = getFrontierInstructionThatDoesNotSplitPHIs(I);
+    if (!isDominatedByOtherEntry(nonInterferingPoint)) {
+      this->entries.insert(nonInterferingPoint);
+    }
+    if (!isReachableFromOtherExit(nonInterferingPoint)) {
+      this->exits.insert(nonInterferingPoint);
+    }
+  }
+
 }
 
 /*
