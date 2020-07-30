@@ -37,6 +37,7 @@ include_directories(
   ../../noelle/include
   ../../dataflow/include
   ../../../external/svf/include
+  ../../../external/scaf/include
   )
 
 # Declare the LLVM pass to compile
