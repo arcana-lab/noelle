@@ -31,7 +31,7 @@ Run `make uninstall` from the root directory to uninstall the NOELLE installatio
 
 
 ## Testing
-To test NOELLE, go to "tests" and run "maker".
+To test NOELLE, go to "tests" and run "make".
 
 To test NOELLE using condor to run all tests in parallel, go to "tests" and run "make condor".
 

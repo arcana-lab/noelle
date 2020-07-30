@@ -1,0 +1,6 @@
+clonable SCC into local memory
+%51 = load i32, i32* %7, align 4 | %52 = add nsw i32 %51, 4 | %61 = load i32, i32* %7, align 4 |
+  call void @_Z7writeToRii(i32* dereferenceable(4) %7, i32 %52) | store i32 %.02, i32* %7, align 4
+%82 = load i64, i64* %81, align 8 | call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %79, i8* align 8 %80, i64 24, i1 false) |
+  store i16 %56, i16* %57, align 2 | store i64 %63, i64* %64, align 8 | store i64 %75, i64* %76, align 8 |
+  store i8 %53, i8* %54, align 8

@@ -23,7 +23,6 @@ SCCDAG::SCCDAG(PDG *pdg) {
    * Iterate over all nodes in the PDG to calculate strongly connected components (see Tarjan's DFS algo).
    */
   std::set<DGNode<Value> *> visited;
-  std::set<std::set<DGNode<Value> *>> sccs;
   DGNode<Value> *originalEntryNode = pdg->getEntryNode();
 
   for (auto nodeToVisit : pdg->getNodes()) {

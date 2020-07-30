@@ -17,8 +17,9 @@
 #include "Queue.hpp"
 #include "HotProfiler.hpp"
 #include "DataFlow.hpp"
+#include "Scheduler.hpp"
 
-using namespace llvm;
+using namespace llvm::noelle;
 
 namespace llvm {
 
@@ -110,6 +111,8 @@ namespace llvm {
       DataFlowAnalysis getDataFlowAnalyses (void) const ;
 
       DataFlowEngine getDataFlowEngine (void) const ;
+
+      Scheduler getScheduler (void) const ;
     
       DominatorSummary * getDominators (Function *f) ;
 

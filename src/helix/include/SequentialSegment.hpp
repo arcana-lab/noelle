@@ -43,11 +43,28 @@ namespace llvm {
       int32_t ID;
       Verbosity verbosity;
 
+      void determineEntryAndExitFrontier (
+        LoopDependenceInfo *LDI,
+        DominatorSummary &DS,
+        DataFlowResult *dfr,
+        std::unordered_set<Instruction *> &ssInstructions
+      );
+
+      /*
+       * TODO: Remove this once determineEntryAndExitFrontier is proven to work with more extensive testing
+       */
       void determineEntriesAndExits (
         LoopDependenceInfo *LDI,
         DataFlowResult *dfr,
         std::unordered_set<Instruction *> &ssInstructions
       );
+
+      Instruction * getFrontierInstructionThatDoesNotSplitPHIs (Instruction *originalBarrierInst) ;
+
+      std::unordered_map<Instruction *, std::unordered_set<Instruction *>> computeBeforeInstructionMap (
+        LoopDependenceInfo *LDI,
+        DataFlowResult *dfr
+      ) ;
 
       void printSCCInfo (LoopDependenceInfo *LDI, std::unordered_set<Instruction *> &ssInstructions) ;
 
