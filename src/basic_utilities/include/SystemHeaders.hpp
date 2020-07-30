@@ -25,6 +25,7 @@
 #include <thread>
 #include <sstream>
 #include <math.h>
+#include <optional>
 
 /*
  * LLVM headers.

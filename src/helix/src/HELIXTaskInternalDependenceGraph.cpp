@@ -54,7 +54,6 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
   ) -> void {
     for (auto store : stores) {
       for (auto other : stores) {
-        if (store == other) continue;
         this->taskFunctionDG->addEdge(store, other)->setMemMustType(true , true, DataDependenceType::DG_DATA_WAW);
         this->taskFunctionDG->addEdge(other, store)->setMemMustType(true , true, DataDependenceType::DG_DATA_WAW);
       }
@@ -76,7 +75,10 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
   }
 
   if (this->verbose >= Verbosity::Maximal) {
+    auto sccdag = new SCCDAG(taskFunctionDG);
     DGPrinter::writeGraph<PDG, Value>("technique-task-fdg-" + std::to_string(LDI->getID()) + ".dot", taskFunctionDG);
+    DGPrinter::writeGraph<SCCDAG, SCC>("technique-task-sccdag-" + std::to_string(LDI->getID()) + ".dot", sccdag);
+    delete sccdag;
   }
 
   return this->taskFunctionDG;

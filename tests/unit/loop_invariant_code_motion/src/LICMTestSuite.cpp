@@ -78,7 +78,6 @@ bool LICMTestSuite::runOnModule (Module &M) {
   errs() << "LICMTestSuite: Freeing memory\n";
   delete this->mem2Reg;
   delete this->ldi;
-  delete this->fdg;
   delete this->suite;
 
   return false;
