@@ -364,6 +364,11 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
   auto entryTerminator = entryBlock->getTerminator();
   IRBuilder<> entryBuilder(entryTerminator);
 
+  auto &taskFunction = *task->getTaskBody();
+  DominatorTree taskDT(taskFunction);
+  PostDominatorTree taskPDT(taskFunction);
+  DominatorSummary taskDS(taskDT, taskPDT);
+
   /*
    * Iterate over live-out variables and inject stores at the end of the execution of the function of the task to propagate the new live-out values back to the caller of the parallelized loop.
    */
@@ -412,10 +417,6 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      * that have reducible live outs, and this flexibility is ONLY permitted for reducible live outs
      * as non-reducible live outs can never store intermediate values of the producer.
      */
-    auto &taskFunction = *task->getTaskBody();
-    DominatorTree taskDT(taskFunction);
-    PostDominatorTree taskPDT(taskFunction);
-    DominatorSummary taskDS(taskDT, taskPDT);
     auto prodClone = task->getCloneOfOriginalInstruction(producer);
     auto insertBBs = this->determineLatestPointsToInsertLiveOutStore(LDI, taskIndex, prodClone, isReduced, taskDS);
     for (auto BB : insertBBs) {
