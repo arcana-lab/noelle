@@ -1,14 +1,13 @@
 # Sources
 set(Srcs 
-  ParallelizationTechnique.cpp
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.cpp
+  Scheduler.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "ParallelizationTechnique")
+set(PassName "Scheduler")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -23,24 +22,19 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
+  ../../../external/svf/include
   ../../basic_utilities/include 
   ../../transformations/include
-  ../../task/include 
   ../../alloc_aa/include 
   ../../pdg/include 
-  ../../threadpool/include 
   ../../loop_structure/include
   ../../loops/include 
-  ../../heuristics/include 
   ../../hotprofiler/include 
-  ../../noelle/include
+  ../../talkdown/include
   ../../dataflow/include
   ../../callgraph/include
-  ../../talkdown/include 
-  ../../scheduler/include
-  ../../../external/svf/include
-  ../include 
-  ./
+  ../include/ 
+  ./ 
   )
 
 # Declare the LLVM pass to compile

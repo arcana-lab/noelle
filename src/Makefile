@@ -1,4 +1,4 @@
-UTILS=transformations basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats callgraph
+UTILS=transformations basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats callgraph scheduler
 ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure
 PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
 ENABLERS=enablers loop_distribution loop_unroll inliner loop_whilifier loop_invariant_code_motion scev_simplification
@@ -31,6 +31,9 @@ loop_structure:
 	cd $@ ; ../scripts/run_me.sh
 
 task:
+	cd $@ ; ../scripts/run_me.sh
+
+scheduler:
 	cd $@ ; ../scripts/run_me.sh
 
 loops:

@@ -316,7 +316,6 @@ extern "C" {
     assert(parallelizedLoop != NULL);
     assert(env != NULL);
     assert(numCores > 1);
-    // assert(numOfsequentialSegments > 0);
 
     /*
      * Allocate the sequential segment arrays.
@@ -326,50 +325,55 @@ extern "C" {
     void *ssArrays = NULL;
     auto ssSize = CACHE_LINE_SIZE;
     auto ssArraySize = ssSize * numOfsequentialSegments;
-    posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize *  numOfSSArrays);
+    if (numOfsequentialSegments > 0){
+
+      /*
+       * Allocate the sequential segment arrays.
+       */
+      posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize *  numOfSSArrays);
+      if (ssArrays == NULL){
+        fprintf(stderr, "HELIX: dispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n", (long long)numCores);
+        abort();
+      }
+
+      /*
+       * Initialize the sequential segment arrays.
+       */
+      for (auto i = 0; i < numOfSSArrays; i++){
+
+        /*
+         * Fetch the current sequential segment array.
+         */
+        auto ssArray = (void *)(((uint64_t)ssArrays) + (i * ssArraySize));
+
+        /*
+         * Initialize the locks.
+         */
+        for (auto lockID = 0; lockID < numOfsequentialSegments; lockID++){
+
+          /*
+           * Fetch the pointer to the current lock.
+           */
+          auto lock = (pthread_spinlock_t *)(((uint64_t)ssArray) + (lockID * ssSize));
+
+          /*
+           * Initialize the lock.
+           */
+          pthread_spin_init(lock, PTHREAD_PROCESS_PRIVATE);
+
+          /*
+           * If the sequential segment is not for core 0, then we need to lock it.
+           */
+          if (i > 0){
+            pthread_spin_lock(lock);
+          }
+        }
+      }
+    }
 
     #ifdef RUNTIME_PRINT
     mySSGlobal = ssArrays;
     #endif
-
-    if (ssArrays == NULL){
-      fprintf(stderr, "HELIX: dispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n", (long long)numCores);
-      abort();
-    }
-
-    /*
-     * Initialize the sequential segment arrays.
-     */
-    for (auto i = 0; i < numOfSSArrays; i++){
-
-      /*
-       * Fetch the current sequential segment array.
-       */
-      auto ssArray = (void *)(((uint64_t)ssArrays) + (i * ssArraySize));
-
-      /*
-       * Initialize the locks.
-       */
-      for (auto lockID = 0; lockID < numOfsequentialSegments; lockID++){
-
-        /*
-         * Fetch the pointer to the current lock.
-         */
-        auto lock = (pthread_spinlock_t *)(((uint64_t)ssArray) + (lockID * ssSize));
-
-        /*
-         * Initialize the lock.
-         */
-        pthread_spin_init(lock, PTHREAD_PROCESS_PRIVATE);
-
-        /*
-         * If the sequential segment is not for core 0, then we need to lock it.
-         */
-        if (i > 0){
-          pthread_spin_lock(lock);
-        }
-      }
-    }
 
     /*
      * Launch threads
@@ -393,7 +397,6 @@ extern "C" {
        */
       auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
       auto ssArrayFuture = (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
-      // assert(ssArrayPast != ssArrayFuture);
 
       #ifdef RUNTIME_PRINT
       fprintf(stderr, "HelixDispatcher: defined ss past and future arrays: %ld %ld\n", (int *)ssArrayPast - (int *)mySSGlobal, (int *)ssArrayFuture - (int *)mySSGlobal);
