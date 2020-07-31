@@ -1,5 +1,5 @@
-extern "C" int nk_vc_printf (...);
-extern "C" long atol (...);
+#include <stdio.h>
+#include <stdlib.h>
 
 long long int *array;
 
@@ -24,11 +24,11 @@ int main (int argc, char *argv[]){
   /*
    * Check the inputs.
    */
-  auto iterations = atol(argv[1]);
-  auto inner_iterations = atol(argv[2]);
+  auto iterations = atoll(argv[1]);
+  auto inner_iterations = atoll(argv[2]);
 
   auto s = computeSum(array, iterations, inner_iterations);
-  nk_vc_printf("%lld\n", s);
+  printf("%lld\n", s);
 
   return 0;
 }
