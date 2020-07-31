@@ -58,6 +58,82 @@ extern "C" {
 
   typedef void (*stageFunctionPtr_t)(void *, void*);
 
+  void printReachedS(std::string s)
+  {
+    auto outS = "Reached: " + s;
+    printf("%s\n",outS.c_str());
+  }
+
+  void printReachedI(int i){
+    printf("Reached: %d\n",i);
+  }
+
+  void printPushedP(int32_t *p){
+    printf("Pushed: %p\n", p);
+  }
+
+  void printPulledP(int32_t *p){
+    printf("Pulled: %p\n", p);
+  }
+
+  void queuePush8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { 
+    queue->push(*val); 
+
+    #ifdef DSWP_STATS
+    numberOfPushes8++;
+    #endif
+
+    return ;
+  }
+
+  void queuePop8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { 
+    queue->waitPop(*val); 
+    return ;
+  }
+
+  void queuePush16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { 
+    queue->push(*val); 
+
+    #ifdef DSWP_STATS
+    numberOfPushes16++;
+    #endif
+
+    return ;
+  }
+
+  void queuePop16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { 
+    queue->waitPop(*val);
+  }
+
+  void queuePush32(ThreadSafeQueue<int32_t> *queue, int32_t *val) { 
+    queue->push(*val); 
+
+    #ifdef DSWP_STATS
+    numberOfPushes32++;
+    #endif
+
+    return ;
+  }
+
+  void queuePop32(ThreadSafeQueue<int32_t> *queue, int32_t *val) { 
+    queue->waitPop(*val);
+  }
+
+  void queuePush64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { 
+    queue->push(*val); 
+
+    #ifdef DSWP_STATS
+    numberOfPushes64++;
+    #endif
+
+    return ;
+  }
+
+  void queuePop64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { 
+    queue->waitPop(*val); 
+
+    return ;
+  }
 
 
   /**********************************************************************
