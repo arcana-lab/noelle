@@ -1,6 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+extern "C" int nk_vc_printf (...);
+extern "C" long atol (...);
 
 int main (int argc, char *argv[]){
 
@@ -8,17 +7,12 @@ int main (int argc, char *argv[]){
    * Check the inputs.
    */
   if (argc < 10){
-    fprintf(stderr, "USAGE: %s LOOP_ITERATIONS ", argv[0]);
-    for (auto i = 0; i < 8; i++){
-      fprintf(stderr, "SCC%d_ITERATIONS ", i);
-    }
-    fprintf(stderr, "\n");
     return -1;
   }
-  auto iterations = atoll(argv[1]);
-  int64_t sccIterations[8];
+  auto iterations = atol(argv[1]);
+  long long sccIterations[8];
   for (auto i = 0; i < 8; i++){
-    sccIterations[i] = atoll(argv[i+2]);
+    sccIterations[i] = atol(argv[i+2]);
   }
 
   auto v1 = argc;
@@ -82,7 +76,7 @@ int main (int argc, char *argv[]){
 
   }
 
-  printf("%d, %d, %d, %d, %d, %d, %d, %d\n", v1, v2, v3, v4, v5, v6, v7, v8);
+  nk_vc_printf("%d, %d, %d, %d, %d, %d, %d, %d\n", v1, v2, v3, v4, v5, v6, v7, v8);
 
   return 0;
 }
