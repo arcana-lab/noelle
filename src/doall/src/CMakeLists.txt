@@ -40,6 +40,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../noelle/include
   ../../dataflow/include
   ../../callgraph/include
+  ../../scheduler/include
   ../include 
   ./ 
   )

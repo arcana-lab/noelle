@@ -41,6 +41,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../parallelization_technique/include 
   ../../heuristics/include 
   ../../callgraph/include
+  ../../scheduler/include
   ../include 
   )
 
