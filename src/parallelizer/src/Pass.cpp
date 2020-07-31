@@ -175,7 +175,7 @@ bool Parallelizer::runOnModule (Module &M) {
     errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
     if (  true
           && (!this->forceParallelization)
-          && (averageIterations < 3)
+          && (averageIterations < 6)
       ){
       errs() << "Parallelizer:      It is too low\n";
       continue ;
