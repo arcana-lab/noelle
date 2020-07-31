@@ -1,0 +1,32 @@
+PDG (Program Dependence Graph) and PDGAnalysis
+
+Implementation
+  DGBase, DGGraphTraits
+    These provide templated classes DG<T>, DGNode<T>, DGEdge<T, SubT>,
+    and an interface to LLVM's GraphWriter to create .dot files of the graphs
+
+    It is important to note that the edge representation is that of SubT edges
+    constituting a top level T edge. An instance of this is SCCDAG edges
+    being of type DGEdge<SCC, Value> and SCC edges of type DGEdge<Value, Value>
+
+    NOTE: subedges are an entirely optional aspect of the API
+
+  PDG
+    This uses the DGBase at the LLVM Module abstraction level, although
+    instances of a PDG can be created at Function and Loop abstraction levels
+
+  SCC
+    This uses the DGBase to describe a single strongly connected component
+    formed by some group of LLVM Value
+
+  SCCDAG
+    This uses the DGBase to describe a directed acyclic graph of SCC
+
+  PDGAnalysis, AnalysisPass
+    Constructs a PDG of the whole module using LLVM UseDef to determine data
+    dependencies, LLVM AliasAnalysis to determine memory dependencies, and LLVM
+    PostDominatorTree to determine control dependencies.
+
+    NOTE: PDGAnalysis has minor built-in heuristics to trim overly-conservative
+    edges from the dependence graph. These heuristics will soon be moved to a
+    separate pass altogether to allow for toggling their use

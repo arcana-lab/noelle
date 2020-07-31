@@ -9,8 +9,9 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Inliner.hpp"
+#include "DOALL.hpp"
 
-bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
+bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, noelle::CallGraph *pcg) {
   auto anyInlined = false;
 
   /*
@@ -73,11 +74,55 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
       }
 
       /*
+       * Check if the current loop is a DOALL.
+       * If it is, then we disable all sub-loops to be considered because DOALL always takes priority and we don't parallelize nested loops at the moment.
+       */
+      DOALL doall{
+        *noelle.getProgram(),
+        *noelle.getProfiles(),
+        noelle.getVerbosity()
+      };
+      if (  true
+            && (summary->getNumberOfSubLoops() >= 1)
+            && doall.canBeAppliedToLoop(LDI, noelle, nullptr)
+        ){
+
+        /*
+         * The loop is a doall.
+         *
+         * Disable all sub-loops
+         */
+        auto disableSubLoop = [&toCheck] (const LoopStructure &child) -> bool{
+
+          /*
+           * Check if the sub-loop is enabled.
+           */
+          if (std::find(toCheck.begin(), toCheck.end(), &child) == toCheck.end()){
+            return false;
+          }
+
+          /*
+           * The sub-loop is enabled.
+           *
+           * Disable it.
+           */
+          std::remove(toCheck.begin(), toCheck.end(), &child);
+
+          return false;
+        };
+        LDI->iterateOverSubLoopsRecursively(disableSubLoop);
+
+        continue ;
+      }
+
+      /*
        * Inline the call.
        */
-      auto inlinedCall = this->inlineCallsInMassiveSCCs(F, LDI);
+      auto inlinedCall = this->inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(F, LDI, pcg);
       inlined |= inlinedCall;
-      if (inlined) break;
+      if (inlined) {
+        break;
+      }
     }
 
     /*
@@ -113,7 +158,9 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle) {
  * try inlining the function call in that SCC with the
  * most memory edges to other internal/external values
  */
-bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
+bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (Function *F, LoopDependenceInfo *LDI, noelle::CallGraph *pcg) {
+  assert(pcg != nullptr);
+  assert(LDI != nullptr);
 
   /*
    * Fetch the SCCDAG
@@ -197,6 +244,13 @@ bool Inliner::inlineCallsInMassiveSCCs (Function *F, LoopDependenceInfo *LDI) {
        * If the call instruction belongs to a sub-loop, then its inlining is likely to be useless.
        */
       if (loopStructure->isIncludedInItsSubLoops(call)){
+        continue ;
+      }
+
+      /*
+       * Do not consider inlining calls that are in a cycle within the program call graph.
+       */
+      if (pcg->doesItBelongToASCC(callF)){
         continue ;
       }
 

@@ -16,6 +16,7 @@ using namespace llvm ;
 
 SequentialSegment::SequentialSegment (
   LoopDependenceInfo *LDI, 
+  DataFlowResult *reachabilityDFR,
   SCCset *sccs,
   int32_t ID,
   Verbosity verbosity
@@ -33,32 +34,31 @@ SequentialSegment::SequentialSegment (
   this->sccs = sccs;
 
   /*
+   * Compute dominator information
+   */
+  DominatorTree dt(*loopFunction);
+  PostDominatorTree pdt(*loopFunction);
+  DominatorSummary ds(dt, pdt);
+
+  /*
    * Identify all dependent instructions that require synchronization
    */
-  std::set<Instruction *> ssInstructions;
-  for (auto scc : *sccs){
-
-    // NOTE: SCC sandwiched between two with cycles may be single instruction nodes without sycles.
-    // assert(scc->hasCycle());
-
-    /*
-     * Add all instructions of the current SCC to the set.
-     */
-    for (auto nodePair : scc->internalNodePairs()){
-
-      /*
-       * Fetch the LLVM value associated to the node
-       * NOTE: Values internal to an SCC are instructions
-       */
-      ssInstructions.insert(cast<Instruction>(nodePair.first));
-    }
-  }
+  std::unordered_set<Instruction *> ssInstructions = getInstructions();
   if (this->verbosity >= Verbosity::Maximal) {
     printSCCInfo(LDI, ssInstructions);
   }
 
-  auto dfr = this->computeReachabilityFromInstructions(LDI);
-  determineEntriesAndExits(LDI, dfr, ssInstructions);
+  determineEntryAndExitFrontier(LDI, ds, reachabilityDFR, ssInstructions);
+
+  /* 
+   * NOTE: Loop-exiting blocks, even if in nested loops, are the exception to the rule that all
+   * waits/signals must not be contained in a sub-loop as they only execute once
+   */
+  for (auto B : loopStructure->getBasicBlocks()) {
+    if (succ_size(B) != 0) continue;
+    auto instructionThatReturnsFromFunction = B->getTerminator();
+    this->exits.insert(instructionThatReturnsFromFunction);
+  }
 
   assert(this->entries.size() > 0
     && "The data flow analysis did not identify any per-iteration entry to the sequential segment!\n");
@@ -98,28 +98,240 @@ int32_t SequentialSegment::getID (void){
   return this->ID;
 }
 
-void SequentialSegment::determineEntriesAndExits (
+void SequentialSegment::determineEntryAndExitFrontier (
   LoopDependenceInfo *LDI,
+  DominatorSummary &DS,
   DataFlowResult *dfr,
-  std::set<Instruction *> &ssInstructions
+  std::unordered_set<Instruction *> &ssInstructions
+) {
+
+  auto rootLoop = LDI->getLoopStructure();
+  auto beforeInstructionMap = computeBeforeInstructionMap(LDI, dfr);
+
+  /*
+   * Instructions from which no other instruction in the SS can reach them are before the entry frontier
+   */
+  auto checkIfBeforeEntryFrontier = [&](Instruction *inst) -> bool {
+    auto &beforeInstructions = beforeInstructionMap.at(inst);
+    for (auto beforeI : beforeInstructions) {
+      if (beforeI == inst) continue;
+      if (ssInstructions.find(beforeI) != ssInstructions.end()) return false;
+    }
+    return true;
+  };
+
+  /*
+   * Instructions from which no other instruction in the SS can be reached are after the exit frontier
+   */
+  auto checkIfAfterExitFrontier = [&](Instruction *inst) -> bool {
+    auto &afterInstructions = dfr->OUT(inst);
+    for (auto afterV : afterInstructions) {
+      auto afterI = cast<Instruction>(afterV);
+      if (inst == afterI) continue;
+      if (ssInstructions.find(afterI) != ssInstructions.end()) return false;
+    }
+    return true;
+  };
+
+  /*
+   * Checking if an entry dominates this instruction is used to prevent
+   * marking unnecessary entries. This is an optimization.
+   */
+  auto isDominatedByOtherEntry = [&](Instruction *inst) -> bool {
+    for (auto entry : this->entries) {
+      if (DS.DT.dominates(entry, inst)) return true;
+    }
+    return false;
+  };
+
+  /*
+   * Checking if an exit can be reached from this instruction is used to prevent
+   * exit synchronization from being triggered more than once. This is for correctness.
+   */
+  auto isReachableFromOtherExit = [&](Instruction *inst) -> bool {
+    auto &beforeInstructions = beforeInstructionMap.at(inst);
+    for (auto beforeI : beforeInstructions) {
+      if (this->exits.find(beforeI) != this->exits.end()) return true;
+    }
+    return false;
+  };
+
+  /*
+   * Traverse all SS instructions and their predecessors in search for entries to form a frontier
+   * We consider an instruction an entry if
+   * 1) the instruction is NOT in a subloop
+   * 2) no SS instruction can reach it within the given loop iteration
+   * 3) no other entry dominates this entry
+   */
+  std::queue<Instruction *> predecessorTraversal;
+  std::unordered_set<Instruction *> predecessorVisited;
+  for (auto ssInst : ssInstructions) {
+    predecessorTraversal.push(ssInst);
+  }
+  while (!predecessorTraversal.empty()) {
+    auto potentialEntryI = predecessorTraversal.front();
+    predecessorTraversal.pop();
+
+    /*
+     * Ensure we do not re-visit a node; that would be a waste of time
+     */
+    if (predecessorVisited.find(potentialEntryI) != predecessorVisited.end()) continue;
+    predecessorVisited.insert(potentialEntryI);
+
+    /*
+     * Check if this is a valid entry. If so, do not proceed along its predecessors
+     */
+    auto nestedMostLoopOfI = LDI->getNestedMostLoopStructure(potentialEntryI);
+    if (true
+      && nestedMostLoopOfI == rootLoop
+      && checkIfBeforeEntryFrontier(potentialEntryI)
+      && !isDominatedByOtherEntry(potentialEntryI)
+    ) {
+      auto nonInterferingEntryPoint = getFrontierInstructionThatDoesNotSplitPHIs(potentialEntryI);
+      this->entries.insert(nonInterferingEntryPoint);
+      continue;
+    }
+
+    /*
+     * Proceed along all predecessors to ensure a complete frontier is found
+     * If there is a previous instruction, add that to the queue
+     * Else, add all predecessor basic block's terminators
+     */
+    auto prevInst = potentialEntryI->getPrevNonDebugInstruction();
+    if (prevInst) {
+      predecessorTraversal.push(prevInst);
+      continue;
+    }
+    auto B = potentialEntryI->getParent();
+    for (auto predecessor : predecessors(B)) {
+      auto terminator = predecessor->getTerminator();
+      predecessorTraversal.push(terminator);
+    }
+  }
+
+  /*
+   * Traverse all SS instructions and their successors in search for exits to form a frontier
+   * We consider an instruction an exit if
+   * 1) the instruction is NOT in a subloop
+   * 2) no SS instruction can be reached from it within the given loop iteration
+   * 3) no other exit can be reached from this exit within the given loop iteration
+   */
+  std::queue<Instruction *> successorTraversal;
+  std::unordered_set<Instruction *> successorVisited;
+  for (auto ssInst : ssInstructions) {
+    successorTraversal.push(ssInst);
+  }
+  while (!successorTraversal.empty()) {
+    auto potentialExitI = successorTraversal.front();
+    successorTraversal.pop();
+
+    /*
+     * Ensure we do not re-visit a node; that would be a waste of time
+     */
+    if (successorVisited.find(potentialExitI) != successorVisited.end()) continue;
+    successorVisited.insert(potentialExitI);
+
+    /*
+     * Check if this is a valid exit. If so, do not proceed along its successors
+     */
+    auto nestedMostLoopOfI = LDI->getNestedMostLoopStructure(potentialExitI);
+    if (true
+      && nestedMostLoopOfI == rootLoop
+      && checkIfAfterExitFrontier(potentialExitI)
+      && !isReachableFromOtherExit(potentialExitI)
+    ) {
+      auto nonInterferingExitPoint = getFrontierInstructionThatDoesNotSplitPHIs(potentialExitI);
+      this->exits.insert(nonInterferingExitPoint);
+      continue;
+    }
+
+    /*
+     * Proceed along all successors to ensure a complete frontier is found
+     * If there is a following instruction, add that to the queue
+     * Else, add all successor block's first instructions
+     */
+    auto nextInst = potentialExitI->getNextNonDebugInstruction();
+    if (nextInst) {
+      successorTraversal.push(nextInst);
+      continue;
+    }
+    auto B = potentialExitI->getParent();
+    for (auto successor : successors(B)) {
+      auto firstInst = &*successor->begin();
+      successorTraversal.push(firstInst);
+    }
+  }
+
+  /*
+   * Extend the entry and exit frontier to cut through the entire CFG, not missing any branches
+   * going around SS instructions. This is done by choosing from a set of instructions which
+   * no SS instruction can reach and from which no SS instruction can be reached.
+   *
+   * The subset chosen to extend the entry frontier will not be dominated by any
+   * other element in the set
+   *
+   * The subset chosen to extend the exit frontier cannot reach or be reached by any
+   * other element in the set
+   *
+   * All basic blocks in the loop must be considered to ensure the frontier is fully encompassing
+   *
+   * First, find all instructions in the set of un-reachables. Only one instruction per basic
+   * block is needed to represent this set sufficiently
+   */
+  std::unordered_set<Instruction *> instructionsUnreachableToAndFromSS;
+  for (auto B : rootLoop->getBasicBlocks()) {
+    auto I = &*B->begin();
+
+    if (true
+      && checkIfBeforeEntryFrontier(I)
+      && checkIfAfterExitFrontier(I)
+    ) {
+      instructionsUnreachableToAndFromSS.insert(I);
+    }
+  }
+
+  /*
+   * Go through all unreachable instructions in search for necessary entries/exits
+   */
+  for (auto I : instructionsUnreachableToAndFromSS) {
+    auto nonInterferingPoint = getFrontierInstructionThatDoesNotSplitPHIs(I);
+    if (!isDominatedByOtherEntry(nonInterferingPoint)) {
+      this->entries.insert(nonInterferingPoint);
+    }
+    if (!isReachableFromOtherExit(nonInterferingPoint)) {
+      this->exits.insert(nonInterferingPoint);
+    }
+  }
+
+}
+
+/*
+ * Do not separate PHIs with sequential segment boundaries. Let the PHIs redirect data properly before
+ * entry (where a wait is added) or before exit (where a signal is added).
+ */
+Instruction * SequentialSegment::getFrontierInstructionThatDoesNotSplitPHIs (Instruction *originalBarrierInst) {
+  return (false
+    || isa<PHINode>(originalBarrierInst)
+    || isa<DbgInfoIntrinsic>(originalBarrierInst)
+    || originalBarrierInst->isLifetimeStartOrEnd()
+  )
+    ? originalBarrierInst->getParent()->getFirstNonPHIOrDbgOrLifetime()
+    : originalBarrierInst;
+}
+
+/*
+ * For each instruction I in the loop, derive the set of instructions J "before" it,
+ * where each instruction of J is in the reachable set from I
+ * Alternatively, a second data flow analysis could be performed to achieve this
+ */
+std::unordered_map<Instruction *, std::unordered_set<Instruction *>> SequentialSegment::computeBeforeInstructionMap (
+  LoopDependenceInfo *LDI,
+  DataFlowResult *dfr
 ) {
 
   auto loopStructure = LDI->getLoopStructure();
-
-  /*
-   * For each instruction I in the loop, derive the set of instructions J "before" it,
-   * where each instruction of J is in the reachable set from I
-   * Alternatively, a second data flow analysis could be performed to achieve this
-   */
   std::unordered_map<Instruction *, std::unordered_set<Instruction *>> beforeInstructionMap{};
-  std::unordered_set<Instruction *> returningInstructions;
   for (auto B : loopStructure->getBasicBlocks()) {
-
-    if (succ_size(B) == 0) {
-      auto terminator = B->getTerminator();
-      returningInstructions.insert(terminator);
-    }
-
     for (auto &I : *B) {
       std::unordered_set<Instruction *> empty;
       beforeInstructionMap.insert(std::make_pair(&I, empty));
@@ -139,147 +351,10 @@ void SequentialSegment::determineEntriesAndExits (
     }
   }
 
-  /* 
-   * NOTE: Loop-exiting blocks, even if in nested loops, are the exception to the rule that all
-   * waits/signals must not be contained in a sub-loop as they only execute once
-   */
-  for (auto returningInst : returningInstructions) {
-    this->exits.insert(returningInst);
-  }
-
-  /*
-   * NOTE: Do not separate PHIs with sequential segment boundaries. Let the PHIs redirect data properly before
-   * entry (where a wait is added) or before exit (where a signal is added).
-  */
-  auto getInstructionThatDoesNotSplitPHIs = [&](Instruction *originalBarrierInst) -> Instruction * {
-    return (!isa<PHINode>(originalBarrierInst)
-      && !isa<DbgInfoIntrinsic>(originalBarrierInst)
-      && !originalBarrierInst->isLifetimeStartOrEnd())
-        ? originalBarrierInst
-        : originalBarrierInst->getParent()->getFirstNonPHIOrDbgOrLifetime();
-  };
-
-  /*
-   * Entries are instructions from which no other instruction in the SS can reach them
-   */
-  auto checkIfEntry = [&](Instruction *inst) -> bool {
-    auto &beforeInstructions = beforeInstructionMap.at(inst);
-    for (auto beforeI : beforeInstructions) {
-      if (beforeI == inst) continue;
-      if (ssInstructions.find(beforeI) != ssInstructions.end()) return false;
-    }
-    return true;
-  };
-
-  /*
-   * Exits are instructions from which no other instruction in the SS can be reached by them
-   */
-  auto checkIfExit = [&](Instruction *inst) -> bool {
-    auto &afterInstructions = dfr->OUT(inst);
-    for (auto afterV : afterInstructions) {
-      auto afterI = cast<Instruction>(afterV);
-      if (inst == afterI) continue;
-      if (ssInstructions.find(afterI) != ssInstructions.end()) return false;
-    }
-    return true;
-  };
-
-  auto addEntry = [&](Instruction *entry) -> void {
-    auto firstI = getInstructionThatDoesNotSplitPHIs(entry);
-    this->entries.insert(firstI);
-  };
-
-  auto addExit = [&](Instruction *exit) -> void {
-    auto lastI = getInstructionThatDoesNotSplitPHIs(exit);
-    this->exits.insert(lastI);
-  };
-
-  /*
-   * Attempt to see if entry and/or exit SS instructions can be found strictly using reachability.
-   * This is the case if entries/exits are not contained within sub-loops
-   */
-  for (auto ssInst : ssInstructions) {
-    if (!checkIfEntry(ssInst)) continue;
-    addEntry(ssInst);
-  }
-  for (auto ssInst : ssInstructions) {
-    if (!checkIfExit(ssInst)) continue;
-    addExit(ssInst);
-  }
-  if (this->entries.size() > 0 && this->exits.size() > 0) return;
-
-  /*
-   * If all potential entries and/or exits are in sub-loops,
-   * determine the following blocks contained only by the parallelized loop:
-   *   "entry" blocks: the set of precedessor blocks to all SS instructions
-   *   "exit" blocks: the set of successor blocks to all SS instructions
-   */
-  if (this->entries.size() == 0) {
-    std::queue<BasicBlock *> blocksPrecedingSSInsts{};
-    std::unordered_set<BasicBlock *> blocksVisited{};
-    for (auto ssInst : ssInstructions) {
-      auto block = ssInst->getParent();
-      blocksPrecedingSSInsts.push(block);
-      blocksVisited.insert(block);
-    }
-
-    while (!blocksPrecedingSSInsts.empty()) {
-      auto block = blocksPrecedingSSInsts.front();
-      blocksPrecedingSSInsts.pop();
-
-      auto firstInst = &*block->begin();
-      if (!loopStructure->isIncluded(firstInst)) continue;
-
-      auto nestedMostLoop = LDI->getNestedMostLoopStructure(firstInst);
-      auto isEntry = checkIfEntry(firstInst);
-      if (nestedMostLoop == loopStructure && isEntry) {
-        addEntry(firstInst);
-        continue;
-      }
-
-      for (auto predBlock : predecessors(block)) {
-        if (blocksVisited.find(predBlock) != blocksVisited.end()) continue;
-        blocksPrecedingSSInsts.push(predBlock);
-        blocksVisited.insert(predBlock);
-      }
-    }
-  }
-
-  if (this->exits.size() == 0) {
-    std::queue<BasicBlock *> blocksFollowingSSInsts{};
-    std::unordered_set<BasicBlock *> blocksVisited{};
-    for (auto ssInst : ssInstructions) {
-      auto block = ssInst->getParent();
-      blocksFollowingSSInsts.push(block);
-      blocksVisited.insert(block);
-    }
-
-    while (!blocksFollowingSSInsts.empty()) {
-      auto block = blocksFollowingSSInsts.front();
-      blocksFollowingSSInsts.pop();
-
-      auto terminator = block->getTerminator();
-      if (!loopStructure->isIncluded(terminator)) continue;
-
-      auto nestedMostLoop = LDI->getNestedMostLoopStructure(terminator);
-      auto isExit = checkIfExit(terminator);
-      if (nestedMostLoop == loopStructure && isExit) {
-        addExit(terminator);
-        continue;
-      }
-
-      for (auto succBlock : successors(block)) {
-        if (blocksVisited.find(succBlock) != blocksVisited.end()) continue;
-        blocksFollowingSSInsts.push(succBlock);
-        blocksVisited.insert(succBlock);
-      }
-    }
-  }
-
-  return;
+  return beforeInstructionMap;
 }
 
-DataFlowResult *SequentialSegment::computeReachabilityFromInstructions (LoopDependenceInfo *LDI) {
+DataFlowResult *HELIX::computeReachabilityFromInstructions (LoopDependenceInfo *LDI) {
 
   auto loopStructure = LDI->getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
@@ -327,7 +402,41 @@ DataFlowResult *SequentialSegment::computeReachabilityFromInstructions (LoopDepe
   return dfa.applyBackward(loopFunction, computeGEN, computeKILL, computeIN, computeOUT);
 }
 
-void SequentialSegment::printSCCInfo (LoopDependenceInfo *LDI, std::set<Instruction *> &ssInstructions) {
+iterator_range<SCCset::iterator> SequentialSegment::getSCCs(void) {
+  return make_range(sccs->begin(), sccs->end());
+}
+
+std::unordered_set<Instruction *> SequentialSegment::getInstructions (void) {
+  std::unordered_set<Instruction *> ssInstructions;
+  for (auto scc : *sccs){
+
+    /*
+     * Add all instructions of the current SCC to the set.
+     */
+    for (auto nodePair : scc->internalNodePairs()){
+      auto inst = cast<Instruction>(nodePair.first);
+
+      /*
+       * HACK: Exclude unconditional branches not in a cycle within the SCC, as
+       * they were merged into this SCC for dumb reasons in the past
+       * FIXME: Once SCC are truly only a single largest cycle of dependencies, remove this
+       */ 
+      if (auto brInst = dyn_cast<BranchInst>(inst)) {
+        if (brInst->isUnconditional()) continue;
+      }
+
+      /*
+       * Fetch the LLVM value associated to the node
+       * NOTE: Values internal to an SCC are instructions
+       */
+      ssInstructions.insert(inst);
+    }
+  }
+
+  return ssInstructions;
+}
+
+void SequentialSegment::printSCCInfo (LoopDependenceInfo *LDI, std::unordered_set<Instruction *> &ssInstructions) {
 
   errs() << "HELIX:   Sequential segment " << ID << "\n" ;
   errs() << "HELIX:     SCCs included in the current sequential segment\n";

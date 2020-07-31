@@ -1,0 +1,7 @@
+#verifyDisjointAccessBetweenIterationsAfterSCEVSimplification
+#%33 = load i32, i32* %32, align 4 | %40 = load i32, i32* %39, align 4
+#%33 = load i32, i32* %32, align 4 | store i32 %36, i32* %32, align 4
+#%33 = load i32, i32* %32, align 4 | store i32 %43, i32* %39, align 4
+#%40 = load i32, i32* %39, align 4 | store i32 %36, i32* %32, align 4
+#%40 = load i32, i32* %39, align 4 | store i32 %43, i32* %39, align 4
+#store i32 %36, i32* %32, align 4 | store i32 %43, i32* %39, align 4

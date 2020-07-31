@@ -47,14 +47,23 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->environment = new LoopEnvironment(loopDG, loopExitBlocks);
 
   /*
+   * Create the invariant manager.
+   */
+  auto topLoop = this->liSummary.getLoopNestingTreeRoot();
+  this->invariantManager = new InvariantManager(topLoop, this->loopDG);
+
+  /*
    * Merge SCCs where separation is unnecessary
    * Calculate various attributes on remaining SCCs
    */
   LoopCarriedDependencies lcd(this->liSummary, DS, *loopSCCDAG);
   SCCDAGNormalizer normalizer{*loopSCCDAG, this->liSummary, lcd};
   normalizer.normalizeInPlace();
-  this->inductionVariables = new InductionVariableManager(liSummary, SE, *loopSCCDAG, *environment);
-  this->sccdagAttrs = SCCDAGAttrs(loopDG, loopSCCDAG, this->liSummary, SE, lcd, *inductionVariables);
+  lcd = LoopCarriedDependencies(this->liSummary, DS, *loopSCCDAG);
+  this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAG, *environment);
+  this->sccdagAttrs = SCCDAGAttrs(loopDG, loopSCCDAG, this->liSummary, SE, lcd, *inductionVariables, DS);
+
+  this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(liSummary, *this->inductionVariables, SE);
 
   /*
    * Collect induction variable information
@@ -69,51 +78,6 @@ LoopDependenceInfo::LoopDependenceInfo(
   for (auto bb : l->blocks()) {
     loopBBtoPD[&*bb] = DS.PDT.getNode(&*bb)->getIDom()->getBlock();
   }
-
-  /*
-   * Create the invariant manager.
-   */
-  auto topLoop = this->liSummary.getLoopNestingTreeRoot();
-  this->invariantManager = new InvariantManager(topLoop, this->loopDG);
-
-  /*
-   * Fetch the metadata.
-   */
-  this->addMetadata("noelle.loop_ID");
-  this->addMetadata("noelle.loop_optimize");
-  
-  return ;
-}
-
-void LoopDependenceInfo::addMetadata (const std::string &metadataName){
-
-  /*
-   * Fetch the loop summary.
-   */
-  auto ls = this->getLoopStructure();
-
-  /*
-   * Fetch the header terminator.
-   */
-  auto headerTerm = ls->getHeader()->getTerminator();
-
-  /*
-   * Fetch the metadata node.
-   */
-  auto metaNode = headerTerm->getMetadata(metadataName);
-  if (!metaNode){
-    return ;
-  }
-
-  /*
-   * Fetch the string.
-   */
-  auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
-
-  /*
-   * Add the metadata.
-   */
-  this->metadata[metadataName] = metaString;
 
   return ;
 }
@@ -257,40 +221,16 @@ bool LoopDependenceInfo::iterateOverSubLoopsRecursively (
 uint64_t LoopDependenceInfo::getID (void) const {
 
   /*
-   * Check if there is metadata.
+   * Fetch the loop structure.
    */
-  uint64_t ID;
-  if (!this->doesHaveMetadata("noelle.loop_ID")){
-    abort();
-  }
+  auto ls = this->getLoopStructure();
 
   /*
-   * Fetch the ID from the metadata.
+   * Fetch the ID.
    */
-  auto IDString = this->getMetadata("noelle.loop_ID");
-  ID = std::stoul(IDString);
+  auto ID = ls->getID();
 
   return ID;
-}
-
-std::string LoopDependenceInfo::getMetadata (const std::string &metadataName) const {
-
-  /*
-   * Check if the metadata exists.
-   */
-  if (!this->doesHaveMetadata(metadataName)){
-    return "";
-  }
-
-  return this->metadata.at(metadataName);
-}
-
-bool LoopDependenceInfo::doesHaveMetadata (const std::string &metadataName) const {
-  if (this->metadata.find(metadataName) == this->metadata.end()){
-    return false;
-  }
-
-  return true;
 }
 
 LoopStructure * LoopDependenceInfo::getLoopStructure (void) const {
@@ -329,6 +269,14 @@ InvariantManager * LoopDependenceInfo::getInvariantManager (void) const {
   return this->invariantManager;
 }
 
+LoopIterationDomainSpaceAnalysis * LoopDependenceInfo::getLoopIterationDomainSpaceAnalysis (void) const {
+  return this->domainSpaceAnalysis;
+}
+
+const LoopsSummary & LoopDependenceInfo::getLoopHierarchyStructures (void) const {
+  return this->liSummary;
+}
+
 LoopDependenceInfo::~LoopDependenceInfo() {
   delete this->loopDG;
   delete this->environment;
@@ -342,6 +290,8 @@ LoopDependenceInfo::~LoopDependenceInfo() {
 
   assert(this->invariantManager);
   delete this->invariantManager;
+
+  delete this->domainSpaceAnalysis;
 
   return ;
 }

@@ -6,7 +6,7 @@ set(Srcs
 )
 
 # Compilation flags
-set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++14 -fPIC")
+set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
 set(PassName "Enablers")
@@ -42,9 +42,12 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_unroll/include
   ../../loop_whilifier/include
   ../../loop_invariant_code_motion/include
+  ../../scev_simplification/include
   ../../talkdown/include
   ../../noelle/include
   ../../dataflow/include
+  ../../callgraph/include
+  ../../scheduler/include
   ./
   )
 

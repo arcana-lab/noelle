@@ -5,6 +5,7 @@ set(Srcs
   HELIXTaskInternalDependenceGraph.cpp
   Linker.cpp
   Spiller.cpp
+  InductionVariableStepper.cpp
   SequentialSegments.cpp
   SequentialSegment.cpp
   Scheduler.cpp
@@ -48,6 +49,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../hotprofiler/include 
   ../../talkdown/include
   ../../noelle/include
+  ../../callgraph/include
+  ../../scheduler/include
   ../include 
   ./ 
   )

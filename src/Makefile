@@ -1,7 +1,7 @@
-UTILS=transformations basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats
+UTILS=transformations basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats callgraph scheduler
 ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure
 PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
-ENABLERS=enablers loop_distribution loop_unroll inliner loop_whilifier loop_invariant_code_motion
+ENABLERS=enablers loop_distribution loop_unroll inliner loop_whilifier loop_invariant_code_motion scev_simplification
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) $(PARALLELIZATION) hotprofiler unique_ir_marker noelle scripts
 
 all: $(ALL)
@@ -33,6 +33,9 @@ loop_structure:
 task:
 	cd $@ ; ../scripts/run_me.sh
 
+scheduler:
+	cd $@ ; ../scripts/run_me.sh
+
 loops:
 	cd $@ ; ../scripts/run_me.sh
 
@@ -40,6 +43,9 @@ architecture:
 	cd $@ ; ../scripts/run_me.sh
 
 pdg:
+	cd $@ ; ../scripts/run_me.sh
+
+callgraph:
 	cd $@ ; ../scripts/run_me.sh
 
 alloc_aa:
@@ -82,6 +88,9 @@ loop_distribution:
 	cd $@ ; ../scripts/run_me.sh
 
 loop_unroll:
+	cd $@ ; ../scripts/run_me.sh
+
+scev_simplification:
 	cd $@ ; ../scripts/run_me.sh
 
 loop_metadata:

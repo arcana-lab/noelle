@@ -64,6 +64,8 @@ namespace llvm {
 
       std::vector<BasicBlock *> getLoopExitBasicBlocks (void) const ;
 
+      std::vector<std::pair<BasicBlock *, BasicBlock *>> getLoopExitEdges (void) const ;
+
       bool isLoopInvariant (Value *value) const ;
 
       bool isIncluded (BasicBlock *bb) const ;
@@ -71,6 +73,22 @@ namespace llvm {
       bool isIncluded (Instruction *inst) const ;
 
       bool isIncludedInItsSubLoops (Instruction *inst) const ;
+
+      /*
+       * This function returns the total number of sub-loops contained by @this.
+       * This includes the sub-loops of sub-loops.
+       */
+      uint32_t getNumberOfSubLoops (void) const ;
+
+      /*
+       * Return true if the loop has the metadata requested.
+       */
+      bool doesHaveMetadata (const std::string &metadataName) const ;
+
+      /*
+       * Fetch the metadata attached to the loop.
+       */
+      std::string getMetadata (const std::string &metadataName) const ;
 
       void print (raw_ostream &stream);
       
@@ -93,12 +111,20 @@ namespace llvm {
        * with, so losing that ordering and re-establishing it from an unordered data structure is fraught.
        */
       std::vector<BasicBlock *> exitBlocks;
+      std::vector<std::pair<BasicBlock *, BasicBlock *>> exitEdges;
 
       static uint64_t globalID;
+
+      std::unordered_map<std::string, std::string> metadata;
 
       void instantiateIDsAndBasicBlocks(Loop *llvmLoop) ;
 
       bool isContainedInstructionLoopInvariant (Instruction *inst) const ;
+
+      void addMetadata (
+        const std::string &metadataName
+        );
+
   };
 
 }

@@ -32,6 +32,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
    * Fetch the loop function.
    */
   auto loopFunction = loopSummary->getFunction();
+  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
 
   /*
    * Collect all PHIs in the loop header; they are local variables
@@ -42,8 +43,12 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   std::vector<PHINode *> originalLoopCarriedPHIs;
   std::vector<PHINode *> clonedLoopCarriedPHIs;
   for (auto &phi : loopHeader->phis()) {
-    auto phiSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(cast<Value>(&phi));
-    if (LDI->sccdagAttrs.getSCCAttrs(phiSCC)->canExecuteReducibly()) continue;
+    auto phiSCC = sccdag->sccOfValue(cast<Value>(&phi));
+    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(phiSCC);
+
+    if (sccInfo->canExecuteReducibly()) continue;
+    if (sccInfo->isInductionVariableSCC()) continue;
+
     originalLoopCarriedPHIs.push_back(&phi);
     auto clonePHI = (PHINode *)(helixTask->getCloneOfOriginalInstruction(&phi));
     clonedLoopCarriedPHIs.push_back(clonePHI);
@@ -102,22 +107,25 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
     builder.CreateStore(preHeaderV, loopCarriedEnvBuilder->getEnvVar(envIndex));
   }
 
+  std::unordered_map<BasicBlock *, BasicBlock *> cloneToOriginalBlockMap;
+  for (auto originalB : helixTask->getOriginalBasicBlocks()) {
+    auto cloneB = helixTask->getCloneOfOriginalBasicBlock(originalB);
+    cloneToOriginalBlockMap.insert(std::make_pair(cloneB, originalB));
+  }
+
   /*
    * Generate code to store each incoming loop carried PHI value,
    * load the incoming value, and replace PHI uses with load uses
    * For the pre header edge case, store this initial value at time of
    * allocation of the environment
    */
-  auto preHeaderClone = helixTask->getCloneOfOriginalBasicBlock(loopPreHeader);
-  auto firstNonPHI = helixTask->getCloneOfOriginalInstruction(loopHeader->getFirstNonPHI());
-  IRBuilder<> headerBuilder(firstNonPHI);
   for (auto phiI = 0; phiI < clonedLoopCarriedPHIs.size(); phiI++) {
     auto originalPHI = originalLoopCarriedPHIs[phiI];
-    auto phi = clonedLoopCarriedPHIs[phiI];
+    auto clonePHI = clonedLoopCarriedPHIs[phiI];
     auto spilled = new SpilledLoopCarriedDependency();
     this->spills.insert(spilled);
     spilled->originalLoopCarriedPHI = originalPHI;
-    spilled->loopCarriedPHI = phi;
+    spilled->loopCarriedPHI = clonePHI;
 
     /*
      * Create GEP access of the environment variable at index i
@@ -125,53 +133,171 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
     envUser->createEnvPtr(entryBuilder, phiI, phiTypes[phiI]);
     auto envPtr = envUser->getEnvPtr(phiI);
 
-    /*
-     * Store loop carried values of the PHI into the environment
-     */
-    for (auto inInd = 0; inInd < phi->getNumIncomingValues(); ++inInd) {
-      auto incomingBB = phi->getIncomingBlock(inInd);
-      if (incomingBB == preHeaderClone) continue;
-
-      /*
-       * Determine the position of the incoming value's producer
-       * If it isn't an instruction, insert at the incoming block's entry
-       */
-      auto incomingV = phi->getIncomingValue(inInd);
-      Instruction *insertPoint = incomingBB->getFirstNonPHIOrDbgOrLifetime();
-      if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
-        if (!isa<PHINode>(incomingI) && !isa<DbgInfoIntrinsic>(incomingI) && !incomingI->isLifetimeStartOrEnd()) {
-          insertPoint = incomingI->getNextNode();
-        }
-      }
-
-      IRBuilder<> builder(insertPoint);
-      spilled->environmentStores.insert(builder.CreateStore(incomingV, envPtr));
-    }
-
-    /*
-     * Replace uses of PHI with environment load
-     */
-    spilled->environmentLoad = headerBuilder.CreateLoad(envPtr);
-    std::set<User *> phiUsers(phi->user_begin(), phi->user_end());
-    for (auto user : phiUsers) {
-      user->replaceUsesOfWith(phi, spilled->environmentLoad);
-    }
-    phi->eraseFromParent();
-  }
-
-  /*
-   * Erase record of spilled PHIs
-   */
-  for (auto phi : originalLoopCarriedPHIs) {
-    helixTask->removeOriginalInstruction(phi);
-  }
-
-  /*
-   * Translate instruction clone from cloned PHI to spilled load of that now removed cloned PHI
-   */
-  for (auto spill : this->spills) {
-    helixTask->addInstruction(spill->originalLoopCarriedPHI, spill->environmentLoad);
+    createLoadsAndStoresToSpilledLCD(LDI, cloneToOriginalBlockMap, spilled, envPtr);
   }
 
   return ;
+}
+
+void HELIX::createLoadsAndStoresToSpilledLCD (
+  LoopDependenceInfo *LDI,
+  std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+  SpilledLoopCarriedDependency *spill,
+  Value *spillEnvPtr
+) {
+
+  /*
+   * Fetch task and loop
+   */
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
+  auto loopPreHeader = loopStructure->getPreHeader();
+  auto headerClone = helixTask->getCloneOfOriginalBasicBlock(loopHeader);
+  auto preHeaderClone = helixTask->getCloneOfOriginalBasicBlock(loopPreHeader);
+
+  /*
+   * Store loop carried values of the PHI into the environment
+   */
+  for (auto inInd = 0; inInd < spill->loopCarriedPHI->getNumIncomingValues(); ++inInd) {
+    auto incomingBB = spill->loopCarriedPHI->getIncomingBlock(inInd);
+    if (incomingBB == preHeaderClone) continue;
+
+    /*
+     * Determine the position of the incoming value's producer
+     * If it isn't an instruction, insert at the incoming block's entry
+     */
+    auto incomingV = spill->loopCarriedPHI->getIncomingValue(inInd);
+    Instruction *insertPoint = incomingBB->getFirstNonPHIOrDbgOrLifetime();
+    if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
+      insertPoint = incomingI->getNextNode();
+      if (isa<PHINode>(insertPoint) || isa<DbgInfoIntrinsic>(insertPoint) || insertPoint->isLifetimeStartOrEnd()) {
+        insertPoint = incomingI->getParent()->getFirstNonPHIOrDbgOrLifetime();
+      }
+    }
+
+    IRBuilder<> builder(insertPoint);
+    spill->environmentStores.insert(builder.CreateStore(incomingV, spillEnvPtr));
+  }
+
+  /*
+   * Collect blocks dominating all stores and that are present at the root loop level.
+   * These are conservatively safe points to insert loads. Loads cannot be placed in sub-loops
+   * as the load has to always reflect the value of the spilled variable from the last iteration
+   */
+  auto originalLoopFunction = loopHeader->getParent();
+  DominatorTree originalLoopDT(*originalLoopFunction);
+  PostDominatorTree originalLoopPDT(*originalLoopFunction);
+  DominatorSummary DS(originalLoopDT, originalLoopPDT);
+  BasicBlock * originalStoreDominatingBlock = nullptr;
+  for (auto store : spill->environmentStores) {
+    auto cloneStoreBlock = store->getParent();
+    auto originalStoreBlock = cloneToOriginalBlockMap.at(cloneStoreBlock);
+
+    /*
+     * The block is at the root loop level. Consider the block for nearest common domination search
+     */
+    auto nestedMostLoop = LDI->getNestedMostLoopStructure(originalStoreBlock->getTerminator());
+    if (nestedMostLoop == loopStructure) {
+      originalStoreDominatingBlock = !originalStoreDominatingBlock ? originalStoreBlock
+        : DS.DT.findNearestCommonDominator(originalStoreDominatingBlock, originalStoreBlock);
+      continue;
+    }
+
+    /*
+     * Find the preheader to the direct child loop of the root loop level containing this store
+     */
+    auto childLoop = nestedMostLoop;
+    while (childLoop->getParentLoop() != loopStructure) {
+      childLoop = childLoop->getParentLoop();
+    }
+    auto childLoopPreheader = childLoop->getPreHeader();
+
+    originalStoreDominatingBlock = !originalStoreDominatingBlock ? childLoopPreheader
+      : DS.DT.findNearestCommonDominator(originalStoreDominatingBlock, childLoopPreheader);
+  }
+  BasicBlock *cloneStoreDominatingBlock = helixTask->getCloneOfOriginalBasicBlock(originalStoreDominatingBlock);
+
+  /*
+   * Replace uses of PHI with environment loads
+   * Determine which load is available upon exiting the loop
+   * TODO: Improve determining how many loads are needed if there isn't just one exit from the header
+   */
+  IRBuilder<> headerBuilder(headerClone->getFirstNonPHIOrDbgOrLifetime());
+  LoadInst * liveOutLoad = nullptr;
+  auto loopExits = loopStructure->getLoopExitBasicBlocks();
+  if (loopExits.size() > 1) {
+    liveOutLoad = headerBuilder.CreateLoad(spillEnvPtr);
+
+    std::unordered_set<User *> phiUsers{spill->loopCarriedPHI->user_begin(), spill->loopCarriedPHI->user_end()};
+    for (auto user : phiUsers) {
+      auto userInst = cast<Instruction>(user);
+      userInst->replaceUsesOfWith(spill->loopCarriedPHI, liveOutLoad);
+    }
+
+  } else {
+    auto loopExitBlock = *loopExits.begin();
+    auto clonedLoopExitBlock = helixTask->getCloneOfOriginalBasicBlock(loopExitBlock);
+    IRBuilder<> loopExitBuilder(clonedLoopExitBlock->getFirstNonPHIOrDbgOrLifetime());
+    liveOutLoad = loopExitBuilder.CreateLoad(spillEnvPtr);
+
+    std::unordered_set<User *> phiUsers{spill->loopCarriedPHI->user_begin(), spill->loopCarriedPHI->user_end()};
+    for (auto user : phiUsers) {
+      auto userInst = cast<Instruction>(user);
+      auto cloneUserBlock = userInst->getParent();
+      auto originalUserBlock = cloneToOriginalBlockMap.at(cloneUserBlock);
+
+      /*
+       * If the user is a PHI, since a load cannot be placed before a PHI,
+       * identify a strictly dominating block of the user
+       */
+      if (auto userPHI = dyn_cast<PHINode>(user)) {
+        for (auto i = 0; i < userPHI->getNumIncomingValues(); ++i) {
+          auto cloneIncomingBlock = userPHI->getIncomingBlock(i);
+          auto originalIncomingBlock = cloneToOriginalBlockMap.at(cloneIncomingBlock);
+          originalUserBlock = DS.DT.findNearestCommonDominator(originalUserBlock, originalIncomingBlock);
+        }
+      }
+
+      /*
+       * Find nearest common dominator of user and store dominator
+       */
+      auto originalCommonDominatorBlock =
+        DS.DT.findNearestCommonDominator(originalStoreDominatingBlock, originalUserBlock);
+      auto cloneCommonDominatorBlock = helixTask->getCloneOfOriginalBasicBlock(originalCommonDominatorBlock);
+
+      /*
+       * Insert at the bottom of the block if this isn't the user's block
+       * Otherwise, insert right before the user
+       * 
+       * NOTE: Do not insert past a store within that block, as the load has to
+       * be for the previous iteration's value
+       */
+      auto insertPoint = cloneCommonDominatorBlock->getTerminator();
+      for (auto &I : *cloneCommonDominatorBlock) {
+        auto isUserInst = userInst == &I;
+        auto store = dyn_cast<StoreInst>(&I);
+        auto isStoreInst = store != nullptr
+          && spill->environmentStores.find(store) != spill->environmentStores.end();
+        if (!isUserInst && !isStoreInst) continue;
+        insertPoint = &I;
+        break;
+      }
+
+      IRBuilder<> spillValueBuilder(insertPoint);
+      auto spillLoad = spillValueBuilder.CreateLoad(spillEnvPtr);
+      spill->environmentLoads.insert(spillLoad);
+      userInst->replaceUsesOfWith(spill->loopCarriedPHI, spillLoad);
+    }
+  }
+
+  spill->loopCarriedPHI->eraseFromParent();
+
+  /*
+   * Translate instruction clone from cloned PHI to spilled load that is available
+   * when exiting the loop
+   */
+  spill->environmentLoads.insert(liveOutLoad);
+  helixTask->addInstruction(spill->originalLoopCarriedPHI, liveOutLoad);
+
 }

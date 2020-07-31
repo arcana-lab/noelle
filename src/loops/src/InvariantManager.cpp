@@ -72,14 +72,15 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
     /*
      * Since we iterate over data dependencies, we must explicitly exclude control values
      */
-
     if (inst->isTerminator()) continue;
 
     /*
      * Since we iterate over data dependencies that are loop values, and a PHI may be comprised of constants,
      * we must explicitly check that all PHI incoming values are equivalent
      */
+    bool isPHI = false;
     if (auto phi = dyn_cast<PHINode>(inst)) {
+      isPHI = true;
       if (!arePHIIncomingValuesEquivalent(phi)) continue;
     }
 
@@ -88,8 +89,21 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
 
     this->dependencyValuesBeingChecked.clear();
     this->dependencyValuesBeingChecked.insert(inst);
+
+    /*
+     * If this instruction is a PHI, we claim it is invariant so should its equivalent
+     * values only have a data dependency on it, they correctly claim they are invariant instead
+     * of conservatively claiming variance due to the cycle
+     */
+    if (isPHI) {
+      this->invariants.insert(inst);
+    }
+
     auto canEvolve = loopDG->iterateOverDependencesTo(inst, false, true, true, isEvolving);
-    if (!canEvolve){
+    if (canEvolve){
+      this->invariants.erase(inst);
+      this->notInvariants.insert(inst);
+    } else {
       this->invariants.insert(inst);
     }
   }
@@ -124,7 +138,9 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DataD
    * Check if the values of a PHI are equivalent
    * If they are not, the PHI controls which value to use and is NOT loop invariant
    */
+  bool isPHI = false;
   if (auto phi = dyn_cast<PHINode>(toInst)) {
+    isPHI = true;
     if (!arePHIIncomingValuesEquivalent(phi)) return true;
   }
 
@@ -140,6 +156,15 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DataD
   }
 
   /*
+   * If this instruction is a PHI, we claim it is invariant so should its equivalent
+   * values only have a data dependency on it, they correctly claim they are invariant instead
+   * of conservatively claiming variance due to the cycle
+   */
+  if (isPHI) {
+    invariants.insert(toInst);
+  }
+
+  /*
    * A cycle has occurred in our dependence graph traversal. The cycle may evolve
    */
   if (this->dependencyValuesBeingChecked.find(toInst) != this->dependencyValuesBeingChecked.end()){
@@ -149,6 +174,7 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DataD
 
   bool canEvolve = loopDG->iterateOverDependencesTo(toInst, false, true, true, isEvolving);
   if (canEvolve) {
+    invariants.erase(toInst);
     notInvariants.insert(toInst);
   } else {
     invariants.insert(toInst);
@@ -164,11 +190,23 @@ bool InvariantManager::InvarianceChecker::arePHIIncomingValuesEquivalent (PHINod
     auto incomingValue = incomingUse.get();
     incomingValues.insert(incomingValue);
   }
+  if (incomingValues.size() == 0) return false;
 
   /*
    * If all incoming values are strictly the same value, this set will be one element
    */
   if (incomingValues.size() == 1) return true;
+
+  /*
+   * Check if all incoming values are strictly equivalent
+   */
+  Value *singleUniqueValue = *incomingValues.begin();
+  for (auto incomingValue : incomingValues) {
+    if (incomingValue == singleUniqueValue) continue;
+    singleUniqueValue = nullptr;
+    break;
+  }
+  if (singleUniqueValue) return true;
 
   /*
    * If all incoming values are loads of the same global, we consider this equivalent

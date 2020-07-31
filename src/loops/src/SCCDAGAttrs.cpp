@@ -13,14 +13,19 @@
 
 using namespace llvm;
 
+SCCDAGAttrs::SCCDAGAttrs ()
+  : loopDG{nullptr}, sccdag{nullptr}, memoryCloningAnalysis{nullptr} {
+}
+
 SCCDAGAttrs::SCCDAGAttrs (
   PDG *loopDG,
   SCCDAG *loopSCCDAG,
   LoopsSummary &LIS,
   ScalarEvolution &SE,
   LoopCarriedDependencies &LCD,
-  InductionVariableManager &IV
-) : loopDG{loopDG}, sccdag{loopSCCDAG} {
+  InductionVariableManager &IV,
+  DominatorSummary &DS
+) : loopDG{loopDG}, sccdag{loopSCCDAG}, memoryCloningAnalysis{nullptr} {
 
   /*
    * Partition dependences between intra-iteration and iter-iteration ones.
@@ -50,6 +55,12 @@ SCCDAGAttrs::SCCDAGAttrs (
   //   iv->getHeaderPHI()->print(errs() << "IV: "); errs() << "\n";
   // }
   // errs() << "-------------\n";
+
+  /*
+   * Compute memory cloning location analysis
+   */
+  auto rootLoop = LIS.getLoopNestingTreeRoot();
+  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
 
   /*
    * Tag SCCs depending on their characteristics.
@@ -313,6 +324,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarried
       auto consumerSCC = this->sccdag->sccOfValue(consumer);
 
       sccToLoopCarriedDependencies[producerSCC].insert(edge);
+      sccToLoopCarriedDependencies[consumerSCC].insert(edge);
 
       if (producerSCC != consumerSCC) continue;
       sccToInternalLoopCarriedDependencies[producerSCC].insert(edge);
@@ -345,13 +357,14 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
 
   /*
    * If a contained IV is loop governing, ensure loop governance is well formed
+   * TODO: Remove this, as this loop governing attribution isn't necessary for all users of SCCDAGAttrs 
    */
   for (auto containedIV : containedIVs) {
     if (loopGoverningIVs.find(containedIV) == loopGoverningIVs.end()) continue;
     auto exitBlocks = LIS.getLoop(*containedIV->getLoopEntryPHI()->getParent())->getLoopExitBasicBlocks();
     LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
     if (!attribution.isSCCContainingIVWellFormed()) {
-      // errs() << "Not well formed SCC for loop governing IV!\n";
+      // containedIV->getLoopEntryPHI()->print(errs() << "Not well formed SCC for loop governing IV!\n"); errs() << "\n";
       return false;
     }
     containedInsts.insert(attribution.getHeaderCmpInst());
@@ -370,9 +383,11 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
     if (auto inst = dyn_cast<Instruction>(value)) {
       if (containedInsts.find(inst) != containedInsts.end()) continue;
 
-      if (auto br = dyn_cast<BranchInst>(value)) {
+      if (auto br = dyn_cast<BranchInst>(inst)) {
         if (br->isUnconditional()) continue;
-      } else if (isa<GetElementPtrInst>(inst) || isa<PHINode>(inst) || isa<CastInst>(inst)) {
+      }
+
+      if (isa<GetElementPtrInst>(inst) || isa<PHINode>(inst) || isa<CastInst>(inst) || isa<CmpInst>(inst)) {
         continue;
       }
     }
@@ -459,8 +474,8 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
   auto sccdagOfInternals = new SCCDAG(dgOfInternals);
 
   // errs() << "Writing graphs\n";
-  // DGPrinter::writeGraph<PDG>("pdg-internal.dot", dgOfInternals);
-  // DGPrinter::writeGraph<SCCDAG>("sccdag-internal.dot", sccdagOfInternals);
+  // DGPrinter::writeGraph<PDG, Value>("pdg-internal.dot", dgOfInternals);
+  // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-internal.dot", sccdagOfInternals);
 
   /*
    * Identify root internal SCC and its single loop carried PHI
@@ -522,6 +537,7 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &
 
   /*
    * Check the simple cases.
+   * TODO: Separate out cases and catalog SCCs by those cases
    */
   if ( false
        || isClonableByInductionVars(scc)
@@ -533,6 +549,50 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &
     clonableSCCs.insert(scc);
     return ;
   }
+
+  /*
+   * Check for memory cloning case
+   */
+  checkIfClonableByUsingLocalMemory(scc, LIS) ;
+
+  return ;
+}
+
+void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS) {
+
+  /*
+   * HACK: Ignore SCC without loop carried dependencies
+   */
+  if (this->sccToInternalLoopCarriedDependencies.find(scc) == this->sccToInternalLoopCarriedDependencies.end()) {
+    return;
+  }
+
+  /*
+   * Ensure that loop carried dependencies belong to clonable memory locations
+   * NOTE: Ignore PHIs and unconditional branch instructions
+   */
+  std::unordered_set<const llvm::noelle::ClonableMemoryLocation *> locations;
+  for (auto dependency : this->sccToInternalLoopCarriedDependencies.at(scc)) {
+
+    auto inst = dyn_cast<Instruction>(dependency->getOutgoingT());
+    if (!inst) return;
+
+    /*
+     * Attempt to locate the instruction's clonable memory location they store/load from
+     */
+    auto location = this->memoryCloningAnalysis->getClonableMemoryLocationFor(inst);
+    // inst->print(errs() << "Instruction: "); errs() << "\n";
+    // if (!location) { errs() << "No location\n"; }
+    if (!location) return ;
+    // location->getAllocation()->print(errs() << "Location found: "); errs() << "\n";
+    locations.insert(location);
+  }
+
+  if (locations.size() == 0) return;
+
+  auto sccInfo = this->sccToInfo.at(scc);
+  sccInfo->setSCCToBeClonableUsingLocalMemory();
+  sccInfo->addClonableMemoryLocationsContainedInSCC(locations);
 
   return ;
 }
@@ -711,7 +771,7 @@ void SCCDAGAttrs::dumpToFile (int id) {
     stageGraph.addEdge(outgoingDesc, incomingDesc);
   }
 
-  DGPrinter::writeGraph<DG<DGString>>(filename, &stageGraph);
+  DGPrinter::writeGraph<DG<DGString>, DGString>(filename, &stageGraph);
   for (auto elem : elements) delete elem;
 }
 

@@ -15,6 +15,9 @@
 #include "AccumulatorOpInfo.hpp"
 #include "SCC.hpp"
 #include "Variable.hpp"
+#include "MemoryCloningAnalysis.hpp"
+
+using namespace llvm::noelle;
 
 namespace llvm {
 
@@ -49,6 +52,8 @@ namespace llvm {
         LoopsSummary &LIS
         );
 
+      SCCAttrs () = delete ;
+
       ~SCCAttrs () ;
 
       /*
@@ -82,8 +87,17 @@ namespace llvm {
       /*
        * Return true if it is safe to clone the SCC.
        * Return false otherwise.
+       * 
+       * TODO: Break apart into two separate APIs:
+       * canBeDirectlyClonedAndRepeatableEachIteration
+       * canBeDirectlyClonedButExecutedOnlyOnceEachIteration
        */
       bool canBeCloned (void) const ;
+
+      /*
+       * Return true if cloning is possible through memory AllocaInst cloning
+       */
+      bool canBeClonedUsingLocalMemoryLocations (void) const;
 
       /*
        * Return true if the SCC exists because of updates of an induction variable.
@@ -165,6 +179,12 @@ namespace llvm {
 
       const std::pair<Value *, Instruction *> * getSingleInstructionThatControlLoopExit (void);
 
+      void setSCCToBeClonableUsingLocalMemory (void) ;
+
+      void addClonableMemoryLocationsContainedInSCC (std::unordered_set<const ClonableMemoryLocation *> locations) ;
+
+      std::unordered_set<AllocaInst *> getMemoryLocationsToClone (void) const ;
+
     private:
       SCC *scc;
       SCCType sccType;
@@ -175,6 +195,10 @@ namespace llvm {
       std::set<Instruction *> accumulators;
       std::set<PHINode *> headerPHINodes;
       std::unordered_set<LoopCarriedVariable *> loopCarriedVariables;
+
+      std::unordered_set<const ClonableMemoryLocation *> clonableMemoryLocations;
+      bool isSCCClonableIntoLocalMemory;
+
       bool isClonable;
       bool hasIV;
   

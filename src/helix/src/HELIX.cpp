@@ -17,7 +17,7 @@ HELIX::HELIX (
   Verbosity v
   )
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, v},
-    loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr}
+    loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr}, lastIterationExecutionBlock{nullptr}
   {
   return ;
 
@@ -78,6 +78,12 @@ void HELIX::reset () {
     delete spill;
   }
   spills.clear();
+
+  if (lastIterationExecutionBlock) {
+    lastIterationExecutionBlock = nullptr;
+  }
+  lastIterationExecutionDuplicateMap.clear();
+
 }
 
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Noelle &par, Heuristics *h) const {
@@ -264,6 +270,11 @@ void HELIX::createParallelizableTask (
   this->spillLoopCarriedDataDependencies(LDI);
 
   /*
+   * For IVs that were not spilled, adjust their step size appropriately
+   */
+  this->rewireLoopForIVsToIterateNthIterations(LDI);
+
+  /*
    * Add the final return instruction to the single task's exit block.
    */
   IRBuilder<> exitB(helixTask->getExit());
@@ -271,7 +282,7 @@ void HELIX::createParallelizableTask (
 
   if (this->verbose >= Verbosity::Maximal) {
     SubCFGs execGraph(*helixTask->getTaskBody());
-    DGPrinter::writeGraph<SubCFGs>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    DGPrinter::writeGraph<SubCFGs, BasicBlock>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;
@@ -294,7 +305,7 @@ void HELIX::synchronizeTask (
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "HELIX:  Identifying sequential segments\n";
   }
-  auto sequentialSegments = this->identifySequentialSegments(LDI);
+  auto sequentialSegments = this->identifySequentialSegments(originalLDI, LDI);
 
   /*
    * Schedule the code to minimize the instructions within each sequential segment.
@@ -316,17 +327,67 @@ void HELIX::synchronizeTask (
 
   /*
    * Store final results of loop live-out variables. 
-   * Note this occurs after data flow is adjusted.  TODO: is this a must? if so, let's say it explicitely
+   *
+   * Note this occurs after synchronization has been put in place. This is to ensure
+   * that reducible variables not tracked in the loop carried environment are properly
+   * propagated as live outs even when check-exit fails and branches directly to the task function's
+   * exit block (it can't branch to the task loop's exit blocks because logic in those exit blocks
+   * should only be executed by the last iteration, not by all cores)
    */
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "HELIX:  Storing live out variables and exit block index\n";
   }
-  this->generateCodeToStoreLiveOutVariables(this->originalLDI, 0);
 
   /*
+   * HACK: swap the mapping so that original loop instructions map to possible duplicates
+   * that were created should the original header have had sequential instructions that
+   * were moved to the loop body and duplicated after exiting the loop
+   *
+   * Once live out storing is finished, restore the mapping
+   */
+  std::unordered_map<Instruction *, Instruction *> loopBodyExecutionMap;
+  for (auto lastExecutionInstPair : this->lastIterationExecutionDuplicateMap) {
+    auto originalI = lastExecutionInstPair.first;
+    auto exitCloneI = lastExecutionInstPair.second;
+    auto loopBodyCloneI = helixTask->getCloneOfOriginalInstruction(originalI);
+    helixTask->addInstruction(originalI, exitCloneI);
+    loopBodyExecutionMap.insert(std::make_pair(originalI, loopBodyCloneI));
+  }
+
+  /*
+   * NOTE: The assumption being made here is that if we have a last iteration execution block,
+   * it is because we have attributed a loop governing IV. Our attribution relies on there
+   * being only one loop exit that is controlled by an IV. Hence, we fetch the lone exit block
+   */
+  auto originalExitBlocks = originalLDI->getLoopStructure()->getLoopExitBasicBlocks();
+  auto originalSingleExitBlock = *originalExitBlocks.begin();
+  BasicBlock * cloneLoopExitBlock = nullptr;
+  if (this->lastIterationExecutionBlock) {
+    assert(originalExitBlocks.size() == 1 && "loop governing IV attribution relies on only one exit block!");
+    cloneLoopExitBlock = helixTask->getCloneOfOriginalBasicBlock(originalSingleExitBlock);
+    helixTask->addBasicBlock(originalSingleExitBlock, lastIterationExecutionBlock);
+  }
+
+  /*
+   * Generate stores for live out variables
    * Generate a store to propagate information about which exit block the parallelized loop took.
    */
+  this->generateCodeToStoreLiveOutVariables(this->originalLDI, 0);
   this->generateCodeToStoreExitBlockIndex(this->originalLDI, 0);
+
+  /*
+   * HACK: reset the last clone map to reflect the loop exit block which is the successor
+   * to the if else branch determining whether to execute the last iteration block before the loop exit block  
+   */
+  for (auto loopBodyExecutionInstPair : loopBodyExecutionMap) {
+    auto originalI = loopBodyExecutionInstPair.first;
+    auto loopBodyCloneI = loopBodyExecutionInstPair.second;
+    auto exitCloneI = helixTask->getCloneOfOriginalInstruction(originalI);
+    helixTask->addInstruction(originalI, loopBodyCloneI);
+  }
+  if (this->lastIterationExecutionBlock) {
+    helixTask->addBasicBlock(originalSingleExitBlock, cloneLoopExitBlock);
+  }
 
   /*
    * Link the parallelize code to the original one.
@@ -348,7 +409,7 @@ void HELIX::synchronizeTask (
     helixTask->getTaskBody()->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
     errs() << "HELIX: Exit\n";
     SubCFGs execGraph(*helixTask->getTaskBody());
-    DGPrinter::writeGraph<SubCFGs>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;

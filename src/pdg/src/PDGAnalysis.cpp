@@ -43,6 +43,17 @@ void PDGAnalysis::initializeSVF(Module &M) {
   return;
 }
 
+void PDGAnalysis::releaseMemory () {
+  if (this->programDependenceGraph) delete this->programDependenceGraph;
+  this->programDependenceGraph = nullptr;
+
+  for (auto functionFDGPair : this->functionToFDGMap) {
+    auto fdg = functionFDGPair.second;
+    delete fdg;
+  }
+  this->functionToFDGMap.clear();
+}
+
 void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
 
   /*
@@ -102,18 +113,44 @@ void PDGAnalysis::printFunctionReachabilityResult() {
 PDG * PDGAnalysis::getFunctionPDG (Function &F) {
 
   /*
-   * Make sure the module PDG has been constructed.
+   * If the module PDG has been built, take the subset related to the input function
+   * Else, construct the function DG from scratch (or from metadata)
    */
-  if (!this->programDependenceGraph){
-    this->getPDG();
-  }
+  PDG *pdg = nullptr;
+  if (this->programDependenceGraph){
 
-  /*
-   * The module PDG has been built.
-   *
-   * Take the subset related to the function given as input.
-   */
-  auto pdg = this->programDependenceGraph->createFunctionSubgraph(F);
+    /*
+     * Check and get/update the function cache
+     */
+    if (this->functionToFDGMap.find(&F) == this->functionToFDGMap.end()) {
+      pdg = this->programDependenceGraph->createFunctionSubgraph(F);
+      this->functionToFDGMap.insert(std::make_pair(&F, pdg));
+    } else {
+      pdg = this->functionToFDGMap.at(&F);
+    }
+
+  } else {
+
+    /*
+     * Check and get/update the function cache
+     */
+    if (this->functionToFDGMap.find(&F) == this->functionToFDGMap.end()) {
+
+      /*
+       * Determine whether metadata can be used to construct the graph
+       */
+      if (this->hasPDGAsMetadata(*this->M)) {
+        pdg = constructFunctionDGFromMetadata(F);
+      } else {
+        pdg = constructFunctionDGFromAnalysis(F);
+      }
+      this->functionToFDGMap.insert(std::make_pair(&F, pdg));
+
+    } else {
+      pdg = this->functionToFDGMap.at(&F);
+    }
+
+  }
 
   /*
    * Print the PDG
@@ -214,6 +251,19 @@ PDG * PDGAnalysis::constructPDGFromAnalysis(Module &M) {
   return pdg; 
 }
 
+PDG * PDGAnalysis::constructFunctionDGFromAnalysis(Function &F) {
+  if (verbose >= PDGVerbosity::Maximal) {
+    errs() << "PDGAnalysis: Construct function DG from Analysis\n";
+  }
+
+  auto pdg = new PDG(F);
+  constructEdgesFromUseDefs(pdg);
+  constructEdgesFromAliasesForFunction(pdg, F);
+  constructEdgesFromControlForFunction(pdg, F);
+
+  return pdg;
+}
+
 PDG * PDGAnalysis::constructPDGFromMetadata(Module &M) {
   if (verbose >= PDGVerbosity::Maximal) {
     errs() << "PDGAnalysis: Construct PDG from Metadata\n";
@@ -236,7 +286,20 @@ PDG * PDGAnalysis::constructPDGFromMetadata(Module &M) {
   return pdg;
 }
 
+PDG * PDGAnalysis::constructFunctionDGFromMetadata(Function &F) {
+  if (verbose >= PDGVerbosity::Maximal) {
+    errs() << "PDGAnalysis: Construct function DG from Metadata\n";
+  }
+
+  auto pdg = new PDG(F);
+  std::unordered_map<MDNode *, Value *> IDNodeMap;
+  constructNodesFromMetadata(pdg, F, IDNodeMap);
+  constructEdgesFromMetadata(pdg, F, IDNodeMap);
+  return pdg;
+}
+
 void PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unordered_map<MDNode *, Value *> &IDNodeMap) {
+
   /*
    * Construct id to node map and add nodes of arguments to pdg
    */
@@ -263,6 +326,7 @@ void PDGAnalysis::constructNodesFromMetadata(PDG *pdg, Function &F, unordered_ma
 }
 
 void PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unordered_map<MDNode *, Value *> &IDNodeMap) {
+
   /*
    * Construct edges and set attributes
    */
@@ -300,7 +364,7 @@ void PDGAnalysis::constructEdgesFromMetadata(PDG *pdg, Function &F, unordered_ma
 }
 
 DGEdge<Value> * PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *edgeM, unordered_map<MDNode *, Value *> &IDNodeMap) {
-  DGEdge<Value> *edge;  
+  DGEdge<Value> *edge = nullptr;
 
   if (MDNode *fromM = dyn_cast<MDNode>(edgeM->getOperand(0))) {
     if (MDNode *toM = dyn_cast<MDNode>(edgeM->getOperand(1))) {
@@ -324,13 +388,13 @@ DGEdge<Value> * PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *edgeM, 
 void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
   errs() << "Embed PDG as Metadata\n";
 
-  LLVMContext &C = this->M->getContext();
+  auto &C = this->M->getContext();
   unordered_map<Value *, MDNode *> nodeIDMap;
 
   embedNodesAsMetadata(pdg, C, nodeIDMap);
   embedEdgesAsMetadata(pdg, C, nodeIDMap);
 
-  NamedMDNode *n = this->M->getOrInsertNamedMetadata("noelle.module.pdg");
+  auto n = this->M->getOrInsertNamedMetadata("noelle.module.pdg");
   n->addOperand(MDNode::get(C, MDString::get(C, "true")));
 
   return;
@@ -511,43 +575,39 @@ void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
     if (F.empty()) continue ;
 
     /*
-     * Fetch the alias analysis.
-     */
-    auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
-
-    /*
-     * Run the reachable analysis.
-     */
-    auto onlyMemoryInstructionFilter = [](Instruction *i) -> bool {
-      if (isa<LoadInst>(i)){
-        return true;
-      }
-      if (isa<StoreInst>(i)){
-        return true;
-      }
-      if (isa<CallInst>(i)){
-        return true;
-      }
-      if (isa<InvokeInst>(i)){
-        return true;
-      }
-      return false;
-    };
-    auto dfr = this->dfa.runReachableAnalysis(&F, onlyMemoryInstructionFilter);
-
-    /*
      * Add the edges to the PDG.
      */
-    constructEdgesFromAliasesForFunction(pdg, F, AA, dfr);
-
-    /*
-     * Free the memory.
-     */
-    delete dfr;
+    constructEdgesFromAliasesForFunction(pdg, F);
   }
 }
 
-void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr){
+void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
+
+  /*
+   * Fetch the alias analysis.
+   */
+  auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+
+  /*
+   * Run the reachable analysis.
+   */
+  auto onlyMemoryInstructionFilter = [](Instruction *i) -> bool {
+    if (isa<LoadInst>(i)){
+      return true;
+    }
+    if (isa<StoreInst>(i)){
+      return true;
+    }
+    if (isa<CallInst>(i)){
+      return true;
+    }
+    if (isa<InvokeInst>(i)){
+      return true;
+    }
+    return false;
+  };
+  auto dfr = this->dfa.runReachableAnalysis(&F, onlyMemoryInstructionFilter);
+
   for (auto &B : F) {
     for (auto &I : B) {
       if (auto store = dyn_cast<StoreInst>(&I)) {
@@ -559,6 +619,11 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F, A
       }
     }
   }
+
+  /*
+   * Free the memory.
+   */
+  delete dfr;
 }
 
 void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store) {
@@ -1062,7 +1127,7 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge) {
 
   bool loopCarried = true;
   if (isMemoryAccessIntoDifferentArrays(edge) ||
-      (store && load && isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store)) ||
+      // (store && load && isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge, load, store)) ||
       isBackedgeIntoSameGlobal(edge)) {
     loopCarried = false;
   }
@@ -1277,8 +1342,20 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
   return isa<LoadInst>(mem) && isFunctionNonWriting(callName)
     || isa<StoreInst>(mem) && isFunctionMemoryless(callName);
 }
+      
+noelle::CallGraph * PDGAnalysis::getProgramCallGraph (void){
+  auto cg = new noelle::CallGraph(*M, this->callGraph);
+
+  return cg;
+}
 
 PDGAnalysis::~PDGAnalysis() {
   if (this->programDependenceGraph)
     delete this->programDependenceGraph;
+
+  for (auto functionFDGPair : this->functionToFDGMap) {
+    auto fdg = functionFDGPair.second;
+    delete fdg;
+  }
+  this->functionToFDGMap.clear();
 }

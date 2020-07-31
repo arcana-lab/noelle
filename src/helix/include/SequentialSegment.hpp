@@ -18,7 +18,13 @@ namespace llvm {
 
   class SequentialSegment {
     public:
-      SequentialSegment (LoopDependenceInfo *LDI, SCCset *sccs, int32_t ID, Verbosity verbosity) ;
+      SequentialSegment (
+        LoopDependenceInfo *LDI,
+        DataFlowResult *reachabilityDFR,
+        SCCset *sccs,
+        int32_t ID,
+        Verbosity verbosity
+      ) ;
 
       void forEachEntry (std::function <void (Instruction *justAfterEntry)> whatToDo);
 
@@ -26,8 +32,9 @@ namespace llvm {
 
       int32_t getID (void);
 
-      iterator_range<SCCset::iterator>
-      getSCCs() { return make_range(sccs->begin(), sccs->end()); }
+      iterator_range<SCCset::iterator> getSCCs(void) ; 
+
+      std::unordered_set<Instruction *> getInstructions (void) ;
 
     private:
       std::set<Instruction *> entries;
@@ -36,20 +43,35 @@ namespace llvm {
       int32_t ID;
       Verbosity verbosity;
 
+      void determineEntryAndExitFrontier (
+        LoopDependenceInfo *LDI,
+        DominatorSummary &DS,
+        DataFlowResult *dfr,
+        std::unordered_set<Instruction *> &ssInstructions
+      );
+
+      /*
+       * TODO: Remove this once determineEntryAndExitFrontier is proven to work with more extensive testing
+       */
       void determineEntriesAndExits (
         LoopDependenceInfo *LDI,
         DataFlowResult *dfr,
-        std::set<Instruction *> &ssInstructions
+        std::unordered_set<Instruction *> &ssInstructions
       );
 
-      void printSCCInfo (LoopDependenceInfo *LDI, std::set<Instruction *> &ssInstructions) ;
+      Instruction * getFrontierInstructionThatDoesNotSplitPHIs (Instruction *originalBarrierInst) ;
 
-      DataFlowResult *computeReachabilityFromInstructions (LoopDependenceInfo *LDI) ;
+      std::unordered_map<Instruction *, std::unordered_set<Instruction *>> computeBeforeInstructionMap (
+        LoopDependenceInfo *LDI,
+        DataFlowResult *dfr
+      ) ;
+
+      void printSCCInfo (LoopDependenceInfo *LDI, std::unordered_set<Instruction *> &ssInstructions) ;
 
       void classifyEntriesAndExitsUsingReachabilityResults (
         LoopStructure *loopContainingSSInstructions,
         DataFlowResult *dfr,
-        std::set<Instruction *> &ssInstructions
+        std::unordered_set<Instruction *> &ssInstructions
       );
   };
 

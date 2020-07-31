@@ -14,6 +14,22 @@
 #include "Hot.hpp"
 
 using namespace llvm ;
+      
+uint64_t Hot::getInvocations (LoopStructure *l) const {
+
+  /*
+   * Fetch the pre-header.
+   */
+  auto preH = l->getPreHeader();
+
+  /*
+   * Fetch the number of invocations of the preheader. 
+   * This is the same as the invocations of the loop.
+   */
+  auto preHInvocations = this->getInvocations(preH);
+
+  return preHInvocations;
+}
 
 uint64_t Hot::getSelfInstructions (LoopStructure *loop) const {
   uint64_t insts = 0;
@@ -41,4 +57,65 @@ double Hot::getDynamicTotalInstructionCoverage (LoopStructure *loop) const {
   auto hotness = ((double)lInsts) / ((double)mInsts);
 
   return hotness;
+}
+      
+double Hot::getAverageLoopIterationsPerInvocation (LoopStructure *loop) const {
+
+  /*
+   * Fetch the number of times the loop is invoked.
+   */
+  auto loopInvocations = this->getInvocations(loop);
+  if (loopInvocations == 0){
+    return 0;
+  }
+
+  /*
+   * Fetch the invocations of the header and its successors within the loop.
+   */
+  auto loopHeader = loop->getHeader();
+  auto headerInvocations = this->getInvocations(loopHeader);
+  uint64_t succInvocations = 0;
+  for (auto succBB : successors(loopHeader)){
+    if (!loop->isIncluded(succBB)){
+      continue ;
+    }
+    succInvocations += this->getInvocations(succBB);
+  }
+
+  /*
+   * Compute the total number of iterations executed.
+   */
+  uint64_t loopIterations = 0;
+  if (headerInvocations == succInvocations){
+    loopIterations = headerInvocations;
+
+  } else {
+    loopIterations = headerInvocations - 1;
+  }
+
+  /*
+   * Compute the stats.
+   */
+  auto stats = ((double)loopIterations) / ((double)loopInvocations);
+
+  return stats;
+}
+
+double Hot::getAverageTotalInstructionsPerInvocation (LoopStructure *loop) const {
+
+  /*
+   * Fetch the number of times the loop is invoked.
+   */
+  auto loopInvocations = this->getInvocations(loop);
+  if (loopInvocations == 0){
+    return 0;
+  }
+
+  /*
+   * Compute the stats.
+   */
+  auto loopTotal = this->getTotalInstructions(loop);
+  auto averageInstsPerInvocation = ((double)loopTotal) / ((double)loopInvocations);
+
+  return averageInstsPerInvocation;
 }

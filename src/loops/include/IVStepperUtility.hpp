@@ -36,6 +36,8 @@ namespace llvm {
     public:
       LoopGoverningIVUtility (InductionVariable &IV, LoopGoverningIVAttribution &attribution) ;
 
+      LoopGoverningIVUtility () = delete ;
+
       std::vector<Instruction *> &getConditionValueDerivation (void) ;
 
       void updateConditionAndBranchToCatchIteratingPastExitValue (
@@ -58,6 +60,7 @@ namespace llvm {
       CmpInst::Predicate nonStrictPredicate;
       bool doesOriginalCmpInstHaveIVAsLeftOperand;
       bool flipOperandsToUseNonStrictPredicate;
+      bool flipBrSuccessorsToUseNonStrictPredicate;
   };
 
 }

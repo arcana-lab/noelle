@@ -545,17 +545,9 @@ void Mem2RegNonAlloca::dumpLogs (void) {
   /*
    * Identify loop
    */
-  std::string loopId;
-  if (LDI.doesHaveMetadata("noelle.loop_ID")) {
-    loopId = std::to_string(LDI.getID());
-  } else {
-    auto terminatingCondition = loop->getHeader()->getTerminator()->getOperand(0);
-    raw_string_ostream ros(loopId);
-    terminatingCondition->print(ros);
-    ros.flush();
-  }
+  std::string loopId{std::to_string(loop->getID())};
 
-  // DGPrinter::writeGraph<SCCDAG>("mem2reg-sccdag-loop-" + loopId + ".dot", LDI.sccdagAttrs.getSCCDAG());
+  // DGPrinter::writeGraph<SCCDAG, SCC>("mem2reg-sccdag-loop-" + loopId + ".dot", LDI.sccdagAttrs.getSCCDAG());
   // std::set<BasicBlock *> basicBlocksSet(basicBlocks.begin(), basicBlocks.end());
-  // DGPrinter::writeGraph<SubCFGs>("mem2reg-current-loop-" + loopId + ".dot", new SubCFGs(basicBlocksSet));
+  // DGPrinter::writeGraph<SubCFGs, BasicBlock>("mem2reg-current-loop-" + loopId + ".dot", new SubCFGs(basicBlocksSet));
 }

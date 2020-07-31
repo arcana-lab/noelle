@@ -1,12 +1,15 @@
 # Sources
 set(Srcs 
+  MemoryCloningAnalysis.cpp
   Variable.cpp
   AccumulatorOpInfo.cpp
+  ControlFlowEquivalence.cpp
   InvariantManager.cpp
   InductionVariables.cpp
   InductionVariable.cpp
   LoopCarriedDependencies.cpp
   LoopGoverningIVAttribution.cpp
+  LoopIterationDomainSpaceAnalysis.cpp
   IVStepperUtility.cpp
   SCCAttrs.cpp
   SCCDAGAttrs.cpp

@@ -29,10 +29,15 @@ include_directories(
   ../../transformations/include
   ../../loops/include
   ../../pdg/include
+  ../../alloc_aa/include 
+  ../../callgraph/include
+  ../../talkdown/include
   ../../loop_structure/include
   ../../hotprofiler/include
   ../../noelle/include
   ../../dataflow/include
+  ../../scheduler/include
+  ../../../external/svf/include
   )
 
 # Declare the LLVM pass to compile

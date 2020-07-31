@@ -2,7 +2,7 @@
 file(GLOB CATPassSrc "*.cpp")
 
 # Compilation flags
-set_source_files_properties(${CATPassSrc} PROPERTIES COMPILE_FLAGS " -std=c++14")
+set_source_files_properties(${CATPassSrc} PROPERTIES COMPILE_FLAGS " -std=c++17")
 
 # Name of the LLVM pass
 set(CATPassName "CAT")
@@ -19,7 +19,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../../../install/include)
+include_directories(${LLVM_INCLUDE_DIRS} ../../../../install/include ../../../../install/include/svf)
 
 # Declare the LLVM pass to compile
 add_llvm_library(${CATPassName} MODULE ${CATPassSrc})

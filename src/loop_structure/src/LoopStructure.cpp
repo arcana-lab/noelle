@@ -31,11 +31,6 @@ LoopStructure::LoopStructure (
   {
 
   /*
-   * Set the ID
-   */
-  this->ID = LoopStructure::globalID++;
-
-  /*
    * Set the nesting level
    */
   this->depth = l->getLoopDepth();
@@ -70,11 +65,41 @@ LoopStructure::LoopStructure (
   }
 
   /*
-   * Set the loop exits.
+   * Set the loop exits and exit edges.
    */
   SmallVector<BasicBlock *, 10> exits;
   l->getExitBlocks(exits);
   this->exitBlocks = std::vector<BasicBlock *>(exits.begin(), exits.end());
+
+  SmallVector<std::pair<BasicBlock *, BasicBlock *>, 10> exitEdges;
+  l->getExitEdges(exitEdges);
+  this->exitEdges = std::vector<std::pair<BasicBlock *, BasicBlock *>>(exitEdges.begin(), exitEdges.end());
+
+  /*
+   * Fetch the metadata.
+   */
+  this->addMetadata("noelle.loop_ID");
+  this->addMetadata("noelle.loop_optimize");
+
+  /*
+   * Check if there is metadata for the ID.
+   */
+  if (this->doesHaveMetadata("noelle.loop_ID")){
+
+    /*
+     * Fetch the ID from the metadata.
+     */
+    auto IDString = this->getMetadata("noelle.loop_ID");
+    this->ID = std::stoul(IDString);
+
+  } else {
+
+    /*
+     * There is no metadata.
+     * Hence, we assign an arbitrary ID.
+     */
+    this->ID = LoopStructure::globalID++;
+  }
 
   return ;
 }
@@ -158,6 +183,10 @@ uint64_t LoopStructure::getNumberOfInstructions (void) const {
 
 std::vector<BasicBlock *> LoopStructure::getLoopExitBasicBlocks (void) const {
   return this->exitBlocks;
+}
+
+std::vector<std::pair<BasicBlock *, BasicBlock *>> LoopStructure::getLoopExitEdges (void) const {
+  return this->exitEdges;
 }
 
 bool LoopStructure::isLoopInvariant (Value *value) const {
@@ -256,4 +285,74 @@ bool LoopStructure::isIncludedInItsSubLoops (Instruction *inst) const {
   }
 
   return false;
+}
+
+uint32_t LoopStructure::getNumberOfSubLoops (void) const {
+
+  /*
+   * Check its children.
+   */
+  uint32_t subloops = 0;
+  for (auto subLoop : this->children){
+
+    /*
+     * Account for the current sub-loop.
+     */
+    subloops++;
+
+    /*
+     * Account for the sub-loops of the current sub-loop.
+     */
+    subloops += subLoop->getNumberOfSubLoops();
+  }
+
+  return subloops;
+}
+
+bool LoopStructure::doesHaveMetadata (const std::string &metadataName) const {
+  if (this->metadata.find(metadataName) == this->metadata.end()){
+    return false;
+  }
+
+  return true;
+}
+
+std::string LoopStructure::getMetadata (const std::string &metadataName) const {
+
+  /*
+   * Check if the metadata exists.
+   */
+  if (!this->doesHaveMetadata(metadataName)){
+    return "";
+  }
+
+  return this->metadata.at(metadataName);
+}
+
+void LoopStructure::addMetadata (const std::string &metadataName){
+
+  /*
+   * Fetch the header terminator.
+   */
+  auto headerTerm = this->getHeader()->getTerminator();
+
+  /*
+   * Fetch the metadata node.
+   */
+  auto metaNode = headerTerm->getMetadata(metadataName);
+  if (!metaNode){
+    return ;
+  }
+
+  /*
+   * Fetch the string.
+   */
+  auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
+
+  /*
+   * Add the metadata.
+   */
+  this->metadata[metadataName] = metaString;
+
+  return ;
 }

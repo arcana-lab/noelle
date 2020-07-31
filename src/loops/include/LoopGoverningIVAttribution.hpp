@@ -20,6 +20,8 @@ namespace llvm {
     public:
       LoopGoverningIVAttribution (InductionVariable &IV, SCC &scc, std::vector<BasicBlock *> &exitBlocks) ;
 
+      LoopGoverningIVAttribution () = delete ;
+
       InductionVariable &getInductionVariable(void) const;
 
       CmpInst *getHeaderCmpInst(void) const;

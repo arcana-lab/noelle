@@ -30,12 +30,15 @@ add_subdirectory(src)
 
 # Install
 install(PROGRAMS 
+    include/MemoryCloningAnalysis.hpp
     include/Variable.hpp
+    include/ControlFlowEquivalence.hpp
     include/LoopDependenceInfo.hpp
     include/InductionVariables.hpp
     include/Invariants.hpp
     include/LoopCarriedDependencies.hpp
     include/LoopGoverningIVAttribution.hpp
+    include/LoopIterationDomainSpaceAnalysis.hpp
     include/IVStepperUtility.hpp
     include/SCCDAGAttrs.hpp
     include/SCCDAGNormalizer.hpp

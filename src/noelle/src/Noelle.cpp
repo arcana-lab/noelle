@@ -13,6 +13,7 @@
 #include "Architecture.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 Noelle::Noelle() 
   : ModulePass{ID}
@@ -22,9 +23,14 @@ Noelle::Noelle()
   , profiles{nullptr}
   , programDependenceGraph{nullptr}
   , maxCores{Architecture::getNumberOfPhysicalCores()}
+  , pcg{nullptr}
 {
 
   return ;
+}
+      
+Module * Noelle::getProgram (void) const {
+  return this->program;
 }
 
 std::vector<Function *> * Noelle::getModuleFunctionsReachableFrom (Module *module, Function *startingPoint){
@@ -251,6 +257,10 @@ DataFlowEngine Noelle::getDataFlowEngine (void) const {
   return DataFlowEngine{};
 }
 
+Scheduler Noelle::getScheduler (void) const {
+  return Scheduler{};
+}
+
 uint64_t Noelle::numberOfProgramInstructions (void) const {
   uint64_t t = 0;
   for (auto &F : *this->program){
@@ -267,6 +277,14 @@ uint64_t Noelle::numberOfProgramInstructions (void) const {
 
 bool Noelle::shouldLoopsBeHoistToMain (void) const {
   return this->hoistLoopsToMain;
+}
+      
+noelle::CallGraph * Noelle::getProgramCallGraph (void) {
+  if (this->pcg == nullptr){
+    this->pcg = this->pdgAnalysis->getProgramCallGraph();
+  }
+
+  return this->pcg;
 }
 
 Noelle::~Noelle(){

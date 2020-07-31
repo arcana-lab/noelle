@@ -12,12 +12,14 @@
 
 #include "SystemHeaders.hpp"
 
+#include "PDGAnalysis.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "Queue.hpp"
 #include "HotProfiler.hpp"
 #include "DataFlow.hpp"
+#include "Scheduler.hpp"
 
-using namespace llvm;
+using namespace llvm::noelle;
 
 namespace llvm {
 
@@ -44,23 +46,43 @@ namespace llvm {
 
       bool runOnModule (Module &M) override ;
 
-      std::vector<Function *> * getModuleFunctionsReachableFrom (
-        Module *module, 
-        Function *startingPoint
-        );
+      std::vector<LoopDependenceInfo *> * getLoops (void) ;
+
+      std::vector<LoopDependenceInfo *> * getLoops (
+        double minimumHotness
+      );
 
       std::vector<LoopDependenceInfo *> * getLoops (
         Function *function
-        );
+      );
 
       std::vector<LoopDependenceInfo *> * getLoops (
         Function *function,
         double minimumHotness
-        );
+      );
 
-      std::vector<LoopDependenceInfo *> * getLoops (void) ;
+      std::vector<LoopStructure *> * getLoopStructures (void) ;
 
-      std::vector<LoopDependenceInfo *> * getLoops (
+      std::vector<LoopStructure *> * getLoopStructures (
+        double minimumHotness
+      );
+
+      std::vector<LoopStructure *> * getLoopStructures (
+        Function *function
+      );
+
+      std::vector<LoopStructure *> * getLoopStructures (
+        Function *function,
+        double minimumHotness
+      );
+
+      LoopDependenceInfo * getLoop (
+        LoopStructure *loop
+      );
+
+      uint32_t getNumberOfProgramLoops (void);
+
+      uint32_t getNumberOfProgramLoops (
         double minimumHotness
         );
 
@@ -68,15 +90,15 @@ namespace llvm {
         std::vector<LoopDependenceInfo *> & loops
         ) ;
 
+      void sortByHotness (
+        std::vector<LoopStructure *> & loops
+        ) ;
+
       void sortByStaticNumberOfInstructions (
         std::vector<LoopDependenceInfo *> & loops
         ) ;
 
-      uint32_t getNumberOfProgramLoops (void);
-
-      uint32_t getNumberOfProgramLoops (
-        double minimumHotness
-        );
+      Module * getProgram (void) const ;
 
       Function * getEntryFunction (void) const ;
 
@@ -89,8 +111,12 @@ namespace llvm {
       DataFlowAnalysis getDataFlowAnalyses (void) const ;
 
       DataFlowEngine getDataFlowEngine (void) const ;
+
+      Scheduler getScheduler (void) const ;
     
       DominatorSummary * getDominators (Function *f) ;
+
+      noelle::CallGraph * getProgramCallGraph (void) ;
 
       Verbosity getVerbosity (void) const ;
 
@@ -118,6 +144,11 @@ namespace llvm {
 
       bool shouldLoopsBeHoistToMain (void) const ;
 
+      std::vector<Function *> * getModuleFunctionsReachableFrom (
+        Module *module, 
+        Function *startingPoint
+        );
+
       void linkTransformedLoopToOriginalFunction (
         Module *module, 
         BasicBlock *originalPreHeader, 
@@ -139,17 +170,35 @@ namespace llvm {
       std::unordered_set<Transformation> enabledTransformations;
       uint32_t maxCores;
       bool hoistLoopsToMain;
+      noelle::CallGraph *pcg;
+      PDGAnalysis *pdgAnalysis;
+
+      char *filterFileName;
+      bool hasReadFilterFile;
+      std::vector<uint32_t> loopThreads;
+      std::vector<uint32_t> techniquesToDisable;
+      std::vector<uint32_t> DOALLChunkSize;
+      std::unordered_map<BasicBlock *, uint32_t> loopHeaderToLoopIndexMap;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream
         );
 
-      bool filterOutLoops (
-        char *fileName,
-        std::vector<uint32_t>& loopThreads,
-        std::vector<uint32_t>& techniquesToDisable,
-        std::vector<uint32_t>& DOALLChunkSize
-        );
+      bool checkToGetLoopFilteringInfo (void) ;
+
+      LoopDependenceInfo * getLoopDependenceInfoForLoop (
+        Loop *loop,
+        PDG *functionPDG,
+        DominatorSummary *DS,
+        ScalarEvolution *SE,
+        uint32_t techniquesToDisable,
+        uint32_t DOALLChunkSize,
+        uint32_t maxCores
+      );
+
+      bool isLoopHot (LoopStructure *loopStructure, double minimumHotness) ;
+      bool isFunctionHot (Function *function, double minimumHotness) ;
+
   };
 
 }

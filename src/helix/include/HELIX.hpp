@@ -21,6 +21,7 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"
+#include "ControlFlowEquivalence.hpp"
 
 namespace llvm {
 
@@ -82,7 +83,15 @@ namespace llvm {
         LoopDependenceInfo *LDI
       );
 
+      void createLoadsAndStoresToSpilledLCD (
+        LoopDependenceInfo *LDI,
+        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+        SpilledLoopCarriedDependency *spill,
+        Value *spillEnvPtr
+      );
+
       std::vector<SequentialSegment *> identifySequentialSegments (
+        LoopDependenceInfo *originalLDI,
         LoopDependenceInfo *LDI
       );
  
@@ -105,6 +114,10 @@ namespace llvm {
         void
       );
 
+      void rewireLoopForIVsToIterateNthIterations (
+        LoopDependenceInfo *LDI
+      );
+
     private:
       Function *waitSSCall, *signalSSCall;
       LoopDependenceInfo *originalLDI;
@@ -112,19 +125,25 @@ namespace llvm {
 
       EnvBuilder *loopCarriedEnvBuilder;
       std::unordered_set<SpilledLoopCarriedDependency *> spills;
+      std::unordered_map<Instruction *, Instruction *> lastIterationExecutionDuplicateMap;
+      BasicBlock *lastIterationExecutionBlock;
 
       void squeezeSequentialSegment (
         LoopDependenceInfo *LDI,
+        DataFlowResult *reachabilityDFR,
         SequentialSegment *ss
       );
+
+      DataFlowResult *computeReachabilityFromInstructions (LoopDependenceInfo *LDI) ;
+
   };
 
   class SpilledLoopCarriedDependency {
     public:
       PHINode *originalLoopCarriedPHI;
       PHINode *loopCarriedPHI;
-      LoadInst *environmentLoad;
-      std::set<StoreInst *> environmentStores;
+      std::unordered_set<LoadInst *> environmentLoads;
+      std::unordered_set<StoreInst *> environmentStores;
   };
 
 }
