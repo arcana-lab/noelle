@@ -58,24 +58,6 @@ extern "C" {
 
   typedef void (*stageFunctionPtr_t)(void *, void*);
 
-  void printReachedS(std::string s)
-  {
-    auto outS = "Reached: " + s;
-    printf("%s\n",outS.c_str());
-  }
-
-  void printReachedI(int i){
-    printf("Reached: %d\n",i);
-  }
-
-  void printPushedP(int32_t *p){
-    printf("Pushed: %p\n", p);
-  }
-
-  void printPulledP(int32_t *p){
-    printf("Pulled: %p\n", p);
-  }
-
   void queuePush8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { 
     queue->push(*val); 
 
@@ -263,158 +245,7 @@ extern "C" {
     int64_t numCores, 
     int64_t numOfsequentialSegments
     ){
-    #ifdef RUNTIME_PRINT
-    std::cerr << "HELIX: dispatcher: Start" << std::endl;
-    std::cerr << "HELIX: dispatcher:  Number of sequential segments = " << numOfsequentialSegments << std::endl;
-    std::cerr << "HELIX: dispatcher:  Number of cores = " << numCores << std::endl;
-    #endif
-
-    /*
-     * Assumptions.
-     */
-    assert(parallelizedLoop != NULL);
-    assert(env != NULL);
-    assert(numCores > 1);
-
-    /*
-     * Allocate the sequential segment arrays.
-     * We need numCores - 1 arrays.
-     */
-    auto numOfSSArrays = numCores;
-    void *ssArrays = NULL;
-    auto ssSize = CACHE_LINE_SIZE;
-    auto ssArraySize = ssSize * numOfsequentialSegments;
-    if (numOfsequentialSegments > 0){
-
-      /*
-       * Allocate the sequential segment arrays.
-       */
-      posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize *  numOfSSArrays);
-      if (ssArrays == NULL){
-        fprintf(stderr, "HELIX: dispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n", (long long)numCores);
-        abort();
-      }
-
-      /*
-       * Initialize the sequential segment arrays.
-       */
-      for (auto i = 0; i < numOfSSArrays; i++){
-
-        /*
-         * Fetch the current sequential segment array.
-         */
-        auto ssArray = (void *)(((uint64_t)ssArrays) + (i * ssArraySize));
-
-        /*
-         * Initialize the locks.
-         */
-        for (auto lockID = 0; lockID < numOfsequentialSegments; lockID++){
-
-          /*
-           * Fetch the pointer to the current lock.
-           */
-          auto lock = (pthread_spinlock_t *)(((uint64_t)ssArray) + (lockID * ssSize));
-
-          /*
-           * Initialize the lock.
-           */
-          pthread_spin_init(lock, PTHREAD_PROCESS_PRIVATE);
-
-          /*
-           * If the sequential segment is not for core 0, then we need to lock it.
-           */
-          if (i > 0){
-            pthread_spin_lock(lock);
-          }
-        }
-      }
-    }
-
-    #ifdef RUNTIME_PRINT
-    mySSGlobal = ssArrays;
-    #endif
-
-    /*
-     * Launch threads
-     */
-    uint64_t loopIsOverFlag = 0;
-    cpu_set_t cores;
-    std::vector<MARC::TaskFuture<void>> localFutures;
-    for (auto i = 0; i < numCores; ++i) {
-      #ifdef RUNTIME_PRINT
-      fprintf(stderr, "HelixDispatcher: Creating future for core %d\n", i);
-      #endif
-
-      /*
-       * Identify the past and future sequential segment arrays.
-       */
-      auto pastID = i;
-      auto futureID = (i + 1) % numCores;
-
-      /*
-       * Fetch the sequential segment array for the current thread.
-       */
-      auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
-      auto ssArrayFuture = (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
-
-      #ifdef RUNTIME_PRINT
-      fprintf(stderr, "HelixDispatcher: defined ss past and future arrays: %ld %ld\n", (int *)ssArrayPast - (int *)mySSGlobal, (int *)ssArrayFuture - (int *)mySSGlobal);
-      #endif
-
-      /*
-       * Set the affinity for both the thread and its helper.
-       */
-      CPU_ZERO(&cores);
-      auto physicalCore = i * 2;
-      CPU_SET(physicalCore, &cores);
-      CPU_SET(physicalCore + 1, &cores);
-
-      /*
-       * Launch the thread.
-       */
-      localFutures.push_back(pool.submitToCores(
-        cores,
-        parallelizedLoop,
-        env, loopCarriedArray,
-        ssArrayPast, ssArrayFuture,
-        i, numCores,
-        &loopIsOverFlag
-      ));
-
-      /*
-       * Launch the helper thread.
-       */
-      continue ;
-      localFutures.push_back(pool.submitToCores(
-        cores,
-        HELIX_helperThread, 
-        ssArrayPast,
-        numOfsequentialSegments,
-        &loopIsOverFlag
-      ));
-    }
-
-    #ifdef RUNTIME_PRINT
-    std::cerr << "Submitted pool\n";
-    int futureGotten = 0;
-    #endif
-
-    /*
-     * Wait for the threads to end
-     */
-    for (auto& future : localFutures){
-      future.get();
-
-      #ifdef RUNTIME_PRINT
-      fprintf(stderr, "Got future: %d\n", futureGotten++);
-      #endif
-    }
-
-    /*
-     * Free the memory.
-     */
-    free(ssArrays);
-
+    abort(); //TODO
     DispatcherInfo dispatcherInfo;
     dispatcherInfo.numberOfThreadsUsed = numCores;
     return dispatcherInfo;
@@ -429,19 +260,11 @@ extern "C" {
      */
     auto ss = (pthread_spinlock_t *) sequentialSegment;
 
-    #ifdef RUNTIME_PRINT
-    assert(ss != NULL);
-    fprintf(stderr, "HelixDispatcher: Waiting on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
-    #endif
-
     /*
      * Wait
      */
-    pthread_spin_lock(ss);
-
-    #ifdef RUNTIME_PRINT
-    fprintf(stderr, "HelixDispatcher: Waited on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
-    #endif
+    //pthread_spin_lock(ss);
+    abort(); //TODO
 
     return ;
   }
@@ -455,19 +278,10 @@ extern "C" {
      */
     auto ss = (pthread_spinlock_t *) sequentialSegment;
 
-    #ifdef RUNTIME_PRINT
-    assert(ss != NULL);
-    fprintf(stderr, "HelixDispatcher: Signaling on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
-    #endif
-
     /*
      * Signal
      */
-    pthread_spin_unlock(ss);
-
-    #ifdef RUNTIME_PRINT
-    fprintf(stderr, "HelixDispatcher: Signaled on sequential segment: %ld\n", (int *)sequentialSegment - (int *)mySSGlobal);
-    #endif
+    abort(); //TODO
 
     return ;
   }
@@ -545,7 +359,7 @@ extern "C" {
     /*
      * Submit DSWP tasks
      */
-    std::vector<MARC::TaskFuture<void>> localFutures;
+    auto localFutures = (nk_virgil_task_t *) malloc(sizeof(nk_virgil_task_t) * numberOfStages);
     auto allStages = (void **)stages;
     for (auto i = 0; i < numberOfStages; ++i) {
 
@@ -560,24 +374,16 @@ extern "C" {
       /*
        * Submit
        */
-      localFutures.push_back(pool.submit(NOELLE_DSWPTrampoline, argsPerCore));
-      #ifdef RUNTIME_PRINT
-      std::cerr << "Submitted stage" << std::endl;
-      #endif
+      localFutures[i] = nk_virgil_submit_task_to_any_cpu(NOELLE_DSWPTrampoline, argsPerCore);
     }
-    #ifdef RUNTIME_PRINT
-    std::cerr << "Submitted pool" << std::endl;
-    #endif
 
     /*
      * Wait for the tasks to complete.
      */
-    for (auto& future : localFutures){
-      future.get();
+    for (auto i = 0; i < numberOfStages; ++i) {
+      void *outputMemory;
+      nk_virgil_wait_for_task_completion(localFutures[i], &outputMemory);
     }
-    #ifdef RUNTIME_PRINT
-    std::cerr << "Got all futures" << std::endl;
-    #endif
 
     /*
      * Free the memory.
