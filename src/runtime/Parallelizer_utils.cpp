@@ -4,6 +4,8 @@
 
 #include "rt/virgil/virgil.h"
 
+#define CACHE_LINE_SIZE 64
+
 extern "C" {
 
   /******************************************** NOELLE APIs ***********************************************/

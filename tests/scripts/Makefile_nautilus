@@ -1,0 +1,81 @@
+# Commands
+CC=clang
+CPP=clang++
+OPT=opt
+
+# Libraries
+LIBS=-lm
+
+# OS
+NAUTILUS=/nfs-scratch/simonec/interweaving/openmp/nautilus
+
+# Set the runtime flags
+RUNTIME_CFLAGS="-DDEBUG"
+#RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DDSWP_STATS"
+#RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DRUNTIME_PRINT"
+
+# Parallelization options
+# 	- To dump the PDG: -noelle-pdg-dump
+PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -dswp-force 
+NOELLE_OPTIONS=-noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
+OPT_LEVEL=-O0 -g
+
+# Front-end flags
+NAUTILUS_FLAGS=-fno-omit-frame-pointer -ffreestanding -fno-stack-protector -fno-strict-aliasing -fno-strict-overflow -mno-red-zone -mcmodel=large 
+#FRONTEND_FLAGS=-emit-llvm -O0 -Xclang -disable-O0-optnone $(NAUTILUS_FLAGS)
+FRONTEND_FLAGS=-emit-llvm -O0 -Xclang -disable-O0-optnone
+INCLUDES=-I$(NAUTILUS)/include -I$(NAUTILUS)/include/rt/virgil
+
+THREADER=Parallelizer_utils
+OPTIMIZED=parallelized.o
+PRINT_OUTPUT_FILE=test.txt
+
+# Fetch the list of files to compile
+CPP_FILES := $(wildcard *.cpp)
+BC_FILES := $(notdir $(CPP_FILES:.cpp=.bc))
+
+all: $(OPTIMIZED)
+
+%.bc: %.c
+	$(CC) $(INCLUDES) $(FRONTEND_FLAGS) -c $< -o $@
+	llvm-dis $@
+
+%.bc: %.cpp
+	$(CPP) $(INCLUDES) $(FRONTEND_FLAGS) -std=c++14 -c $< -o $@
+	llvm-dis $@
+
+$(THREADER).bc: $(THREADER).cpp
+	$(CPP) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
+
+$(OPTIMIZED): test_parallelized.bc
+	$(CPP) -std=c++14 -c $(OPT_LEVEL) $^ $(LIBS) $(NAUTILUS_FLAGS) -o $@
+
+test_parallelized_unoptimized.bc: baseline_with_metadata.bc
+	noelle-parallelizer $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
+	llvm-dis $@
+
+test_parallelized.bc: test_parallelized_unoptimized.bc
+	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
+	llvm-dis $@
+
+baseline_with_metadata.bc: baseline_pre.bc
+	cp $< $@
+	noelle-meta-pdg-embed $@ -o $@
+	llvm-dis $@
+
+baseline_with_runtime.bc: test.bc $(THREADER).bc
+	llvm-link $^ -o $@
+	llvm-dis $@
+
+baseline_pre.bc: baseline_with_runtime.bc
+	cp $< $@
+	noelle-pre $@ $(NOELLE_OPTIONS)
+	llvm-dis $@
+
+input.txt:
+	@../../scripts/create_input.sh $@
+
+clean:
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
+
+.PHONY: test_correctness clean
