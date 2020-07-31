@@ -190,12 +190,12 @@ LoopDependenceInfo * Noelle::getLoop (
   auto function = header->getParent();
   auto funcPDG = this->getFunctionDependenceGraph(function);
   auto DS = this->getDominators(function);
-  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
   /*
    * Fetch the llvm loop corresponding to the loop structure
    */
   auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
   auto llvmLoop = LI.getLoopFor(header);
 
   /*
