@@ -27,6 +27,22 @@ DSWP::DSWP (
   zeroIndexForBaseArray{nullptr}
   {
 
+  /*
+   * Fetch the function that dispatch the parallelized loop.
+   */
+  this->taskDispatcher = module.getFunction("NOELLE_DSWPDispatcher");
+
+  /*
+   * Fetch the function that executes a stage.
+   */
+  auto taskExecuter = module.getFunction("stageExecuter");
+
+  /*
+   * Define its signature.
+   */
+  auto taskArgType = taskExecuter->arg_begin()->getType();
+  this->taskType = cast<FunctionType>(cast<PointerType>(taskArgType)->getElementType());
+
   return ;
 }
 

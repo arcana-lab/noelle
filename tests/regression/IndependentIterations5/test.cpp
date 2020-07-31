@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 long long int *array;
 
@@ -24,6 +25,10 @@ int main (int argc, char *argv[]){
   /*
    * Check the inputs.
    */
+  if (argc < 3){
+    fprintf(stderr, "USAGE: %s LOOP_ITERATIONS NESTED_LOOP_ITERATIONS\n", argv[0]);
+    return -1;
+  }
   auto iterations = atoll(argv[1]);
   auto inner_iterations = atoll(argv[2]);
 
