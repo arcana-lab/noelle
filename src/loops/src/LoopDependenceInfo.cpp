@@ -21,9 +21,19 @@ LoopDependenceInfo::LoopDependenceInfo(
   DominatorSummary &DS,
   ScalarEvolution &SE,
   uint32_t maxCores
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}} {}
+
+LoopDependenceInfo::LoopDependenceInfo(
+  PDG *fG,
+  Loop *l,
+  DominatorSummary &DS,
+  ScalarEvolution &SE,
+  uint32_t maxCores,
+  std::unordered_set<LoopDependenceInfoOptimization> optimizations
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{maxCores},
-    liSummary{l}
+    liSummary{l},
+    enabledOptimizations{optimizations}
   {
 
   /*
@@ -37,7 +47,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->fetchLoopAndBBInfo(l, SE);
   auto ls = getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
-  auto DGs = this->createDGsForLoop(l, fG);
+  auto DGs = this->createDGsForLoop(l, fG, DS);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
 
@@ -130,7 +140,7 @@ uint64_t LoopDependenceInfo::computeTripCounts (
   return tripCount;
 }
 
-std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG){
+std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG, DominatorSummary &DS){
 
   /*
    * Set the loop dependence graph.
@@ -145,6 +155,9 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
       loopInternals.push_back(internalNode.first);
   }
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
+  if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {
+    removeUnnecessaryDependenciesThatCloningMemoryNegates(loopInternalDG, DS);
+  }
   auto loopSCCDAG = new SCCDAG(loopInternalDG);
 
   /*
@@ -176,7 +189,40 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
 
   return std::make_pair(loopDG, loopSCCDAG);
 }
-  
+
+void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
+  PDG *loopInternalDG,
+  DominatorSummary &DS
+) {
+  auto rootLoop = liSummary.getLoopNestingTreeRoot();
+  LoopCarriedDependencies lcd(liSummary, DS, *loopInternalDG);
+  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
+
+  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  for (auto edge : lcd.getLoopCarriedDependenciesForLoop(*rootLoop)) {
+    if (!edge->isMemoryDependence()) continue;
+
+    auto producer = dyn_cast<Instruction>(edge->getOutgoingT());
+    auto consumer = dyn_cast<Instruction>(edge->getIncomingT());
+    if (!producer || !consumer) continue;
+
+    auto locationProducer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(producer);
+    auto locationConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(consumer);
+    if (!locationProducer || !locationConsumer) continue;
+
+    // producer->print(errs() << "Found alloca location for producer: "); errs() << "\n";
+    // consumer->print(errs() << "Found alloca location for consumer: "); errs() << "\n";
+    // locationProducer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
+    // locationConsumer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
+
+    edgesToRemove.insert(edge);
+  }
+
+  for (auto edge : edgesToRemove) {
+    loopInternalDG->removeEdge(edge);
+  }
+}
+ 
 bool LoopDependenceInfo::isTransformationEnabled (Transformation transformation){
   auto exist = this->enabledTransformations.find(transformation) != this->enabledTransformations.end();
 
@@ -196,6 +242,11 @@ void LoopDependenceInfo::disableTransformation (Transformation transformationToD
   this->enabledTransformations.erase(transformationToDisable);
 
   return ;
+}
+
+bool LoopDependenceInfo::isOptimizationEnabled (LoopDependenceInfoOptimization optimization) {
+  auto enabled = this->enabledOptimizations.find(optimization) != this->enabledOptimizations.end();
+  return enabled;
 }
 
 PDG * LoopDependenceInfo::getLoopDG (void) const {
@@ -251,6 +302,12 @@ InductionVariableManager * LoopDependenceInfo::getInductionVariableManager (void
 
 LoopGoverningIVAttribution * LoopDependenceInfo::getLoopGoverningIVAttribution (void) const {
   return loopGoverningIVAttribution;
+}
+
+MemoryCloningAnalysis * LoopDependenceInfo::getMemoryCloningAnalysis (void) const {
+  assert(this->memoryCloningAnalysis != nullptr
+    && "Requesting memory cloning analysis without having specified LoopDependenceInfoOptimization::MEMORY_CLONING");
+  return this->memoryCloningAnalysis;
 }
 
 bool LoopDependenceInfo::doesHaveCompileTimeKnownTripCount (void) const {
