@@ -113,6 +113,11 @@ namespace llvm {
         std::set<Instruction *> subset
       );
 
+      void cloneMemoryLocationsLocallyAndRewireLoop (
+        LoopDependenceInfo *LDI,
+        int taskIndex
+      );
+
       /*
        * Task helpers for environment usage
        */

@@ -24,11 +24,15 @@ namespace llvm {
     public:
       LoopCarriedDependencies (const LoopsSummary &LIS, const DominatorSummary &DS, SCCDAG &sccdagForLoops) ;
 
+      LoopCarriedDependencies (const LoopsSummary &LIS, const DominatorSummary &DS, PDG &dgForLoop) ;
+
       LoopCarriedDependencies () = delete ;
 
       Criticisms getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const ;
 
     private:
+
+      LoopStructure * getLoopOfLCD(const LoopsSummary &LIS, const DominatorSummary &DS, DGEdge<Value> *edge) ;
 
       bool canBasicBlockReachHeaderBeforeOther (const LoopStructure &LS, BasicBlock *I, BasicBlock *J) const ;
 

@@ -30,6 +30,8 @@ namespace noelle {
 
       const ClonableMemoryLocation * getClonableMemoryLocationFor (Instruction *I) const ;
 
+      std::unordered_set<ClonableMemoryLocation *> getClonableMemoryLocations (void) const ;
+
     private:
       std::unordered_set<std::unique_ptr<ClonableMemoryLocation>> clonableMemoryLocations;
   };
@@ -45,7 +47,11 @@ namespace noelle {
 
       AllocaInst *getAllocation (void) const ;
 
-      bool isInstructionAssociatedToLocation (Instruction *I) const ;
+      std::unordered_set<Instruction *> getLoopInstructionsUsingLocation (void) const ;
+
+      bool isInstructionCastOrGEPOfLocation (Instruction *I) const ;
+      bool isInstructionStoringLocation (Instruction *I) const ;
+      bool isInstructionLoadingLocation (Instruction *I) const ;
 
       bool isClonableLocation (void) const ;
 
@@ -55,13 +61,14 @@ namespace noelle {
       AllocaInst *allocation;
       Type *allocatedType;
       uint64_t sizeInBits;
+      LoopStructure *loop;
       bool isClonable;
 
       std::unordered_set<Instruction *> castsAndGEPs;
       std::unordered_set<Instruction *> storingInstructions;
       std::unordered_set<Instruction *> nonStoringInstructions;
 
-      bool identifyStoresAndOtherUsers (LoopStructure *loop) ;
+      bool identifyStoresAndOtherUsers (LoopStructure *loop, DominatorSummary &DS) ;
 
       /*
        * A set of storing instructions that completely override the allocation's
