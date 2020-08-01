@@ -80,6 +80,11 @@ namespace llvm {
         LoopStructure *loop
       );
 
+      LoopDependenceInfo * getLoop (
+        LoopStructure *loop,
+        std::unordered_set<LoopDependenceInfoOptimization> optimizations
+      );
+
       uint32_t getNumberOfProgramLoops (void);
 
       uint32_t getNumberOfProgramLoops (

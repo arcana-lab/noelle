@@ -323,6 +323,100 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
   }
 }
 
+void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
+  LoopDependenceInfo *LDI,
+  int taskIndex
+){
+
+  auto task = this->tasks[taskIndex];
+  auto rootLoop = LDI->getLoopStructure();
+  auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
+
+  for (auto location : memoryCloningAnalysis->getClonableMemoryLocations()) {
+
+    /*
+     * Check if this is an allocation used by this task
+     */
+    auto loopInstructionsRequiringClonedOperands = location->getLoopInstructionsUsingLocation();
+    std::unordered_set<Instruction *> taskInstructions;
+    for (auto I : loopInstructionsRequiringClonedOperands) {
+      if (!task->isAnOriginalInstruction(I)) continue;
+      taskInstructions.insert(I);
+    }
+    if (taskInstructions.size() == 0) continue;
+
+    /*
+     * If so, traverse operands of loop instructions to clone
+     * all live-in references (casts and GEPs) of the allocation to clone
+     * State all cloned instructions in the task's instruction map for data flow adjustment later
+     */
+    auto alloca = location->getAllocation();
+    auto &entryBlock = (*task->getTaskBody()->begin());
+    IRBuilder<> entryBuilder(&entryBlock);
+    std::queue<Instruction *> instructionsToConvertOperandsOf;
+    for (auto I : taskInstructions) {
+      instructionsToConvertOperandsOf.push(I);
+    }
+    while (!instructionsToConvertOperandsOf.empty()) {
+      auto I = instructionsToConvertOperandsOf.front();
+      instructionsToConvertOperandsOf.pop();
+
+      for (auto i = 0; i < I->getNumOperands(); ++i) {
+        auto op = I->getOperand(i);
+
+        /*
+         * Ensure the instruction is outside the loop and not already cloned
+         * FIXME: Checking task's instruction map would be mis-leading, as live-in values
+         * could be listed as clones to these values. Find a way to ensure that wouldn't happen
+         */
+        auto opI = dyn_cast<Instruction>(op);
+        if (!opI || rootLoop->isIncluded(opI)) continue;
+
+        /*
+         * Ensure the operand is a reference of the allocation
+         * NOTE: Ignore checking for the allocation. That is cloned separately
+         */
+        if (!location->isInstructionCastOrGEPOfLocation(opI)) continue;
+
+        /*
+         * Ensure the instruction hasn't been cloned yet
+         */
+        if (task->isAnOriginalInstruction(opI)) continue;
+
+        /*
+         * Clone operand and then add to queue
+         * NOTE: The operand clone is inserted before the insert point which
+         * then gets set to itself. This ensures that any operand using it that has
+         * already been traversed will come after
+         */
+        auto opCloneI = opI->clone();
+        entryBuilder.Insert(opCloneI);
+        entryBuilder.SetInsertPoint(opCloneI);
+        instructionsToConvertOperandsOf.push(opI);
+
+        /*
+         * Swap the operand's live in mapping with this clone so the live-in allocation from
+         * the caller of the dispatcher is NOT used; instead, we want the cloned allocation to be used
+         *
+         * NOTE: Add the instruction to the loop instruction map for data flow adjusting
+         * to re-wire operands correctly
+         */
+        task->addLiveIn(opI, opCloneI);
+        task->addInstruction(opI, opCloneI);
+      }
+    }
+
+    /*
+     * Clone the allocation and all other necessary instructions
+     */
+    auto allocaClone = alloca->clone();
+    auto firstInst = &*entryBlock.begin();
+    entryBuilder.SetInsertPoint(firstInst);
+    entryBuilder.Insert(allocaClone);
+    task->addInstruction(alloca, allocaClone);
+  }
+}
+
 void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
   LoopDependenceInfo *LDI, 
   int taskIndex

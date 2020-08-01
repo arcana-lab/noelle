@@ -53,16 +53,44 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (LoopStructure *loop, DominatorSumm
   }
 }
 
+std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClonableMemoryLocations (void) const {
+  std::unordered_set<ClonableMemoryLocation *> locations{};
+  for (auto &location : this->clonableMemoryLocations) {
+    locations.insert(location.get());
+  }
+  return locations;
+}
+
 const ClonableMemoryLocation * MemoryCloningAnalysis::getClonableMemoryLocationFor (Instruction *I) const {
 
   /*
    * TODO: Determine if it is worth mapping from instructions to locations
    */
   for (auto &location : clonableMemoryLocations) {
-    if (location->isInstructionAssociatedToLocation(I)) return location.get();
+    if (location->getAllocation() == I) return location.get();
+    if (location->isInstructionCastOrGEPOfLocation(I)) return location.get();
+    if (location->isInstructionLoadingLocation(I)) return location.get();
+    if (location->isInstructionStoringLocation(I)) return location.get();
   }
 
   return nullptr;
+}
+
+std::unordered_set<Instruction *> ClonableMemoryLocation::getLoopInstructionsUsingLocation (void) const {
+  std::unordered_set<Instruction *> instructions;
+  for (auto I : this->castsAndGEPs) {
+    if (!loop->isIncluded(I)) continue;
+    instructions.insert(I);
+  }
+  for (auto I : this->storingInstructions) {
+    if (!loop->isIncluded(I)) continue;
+    instructions.insert(I);
+  }
+  for (auto I : this->nonStoringInstructions) {
+    if (!loop->isIncluded(I)) continue;
+    instructions.insert(I);
+  }
+  return instructions;
 }
 
 ClonableMemoryLocation::ClonableMemoryLocation (
@@ -70,15 +98,17 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   uint64_t sizeInBits,
   LoopStructure *loop,
   DominatorSummary &DS
-) : allocation{allocation}, sizeInBits{sizeInBits}, isClonable{false} {
+) : allocation{allocation}, sizeInBits{sizeInBits}, loop{loop}, isClonable{false} {
 
   /*
    * TODO: Remove this when array/vector types are supported
    */
   this->allocatedType = allocation->getAllocatedType();
+  // this->allocation->print(errs() << "Allocation: "); errs() << "\n";
+  // this->allocatedType->print(errs() << "Allocation type: "); errs() << "\n";
   if (!allocatedType->isStructTy() && !allocatedType->isIntegerTy()) return;
 
-  if (!identifyStoresAndOtherUsers(loop)) return;
+  if (!identifyStoresAndOtherUsers(loop, DS)) return;
 
   identifyInitialStoringInstructions(DS);
 
@@ -96,12 +126,18 @@ bool ClonableMemoryLocation::isClonableLocation (void) const {
   return this->isClonable;
 }
 
-bool ClonableMemoryLocation::isInstructionAssociatedToLocation (Instruction *I) const {
-  if (allocation == I) return true;
-  if (storingInstructions.find(I) != storingInstructions.end()) return true;
-  if (nonStoringInstructions.find(I) != nonStoringInstructions.end()) return true;
+bool ClonableMemoryLocation::isInstructionCastOrGEPOfLocation (Instruction *I) const {
   if (castsAndGEPs.find(I) != castsAndGEPs.end()) return true;
+  return false;
+}
 
+bool ClonableMemoryLocation::isInstructionStoringLocation (Instruction *I) const {
+  if (storingInstructions.find(I) != storingInstructions.end()) return true;
+  return false;
+}
+
+bool ClonableMemoryLocation::isInstructionLoadingLocation (Instruction *I) const {
+  if (nonStoringInstructions.find(I) != nonStoringInstructions.end()) return true;
   return false;
 }
 
@@ -112,7 +148,7 @@ bool ClonableMemoryLocation::isMemCpyInstrinsicCall (CallInst *call) {
   return nameString.find("llvm.memcpy") != std::string::npos;
 }
 
-bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop) {
+bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, DominatorSummary &DS) {
 
   /*
    * Determine all stores and non-store uses
@@ -162,6 +198,12 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop) {
       } else if (auto call = dyn_cast<CallInst>(user)) {
 
         /*
+         * Ignore lifetime instructions
+         * TODO: Make use of them to better understand memory liveness
+         */
+        if (call->isLifetimeStartOrEnd()) continue;
+
+        /*
          * We consider llvm.memcpy as a storing instruction if the use is the dest (first operand) 
          */
         bool isMemCpy = ClonableMemoryLocation::isMemCpyInstrinsicCall(call);
@@ -179,6 +221,8 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop) {
 
       } else {
 
+        // user->print(errs() << "Unknown user: "); errs() << "\n";
+
         /*
          * All users must be instructions
          */
@@ -186,10 +230,16 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop) {
       }
 
       /*
-       * All users must be within the loop
+       * All users must be within the loop or dominate the loop
+       * TODO: Once clonable memory can characterize if it is live out, remove this check
        */
       auto inst = cast<Instruction>(user);
-      if (!loop->isIncluded(inst)) return false;
+      // if (!loop->isIncluded(inst)) { inst->print(errs() << "Outside loop!: "); errs() << "\n"; }
+      if (!loop->isIncluded(inst)) {
+        auto block = inst->getParent();
+        auto header = loop->getHeader();
+        if (!DS.DT.dominates(block, header)) return false;
+      }
 
       /*
        * No InvokeInst can receive the allocation in any form
@@ -354,7 +404,7 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace (
   if (this->allocation->getAllocatedType()->isStructTy()) {
 
     // errs() << "Number of elements covered: " << structElementsStoredTo.size()
-    //   << " versus struct element number: " << this->allocatedType->getStructNumElements() << "\n";
+      // << " versus struct element number: " << this->allocatedType->getStructNumElements() << "\n";
 
     if (structElementsStoredTo.size() == this->allocatedType->getStructNumElements()) return true;
   }
