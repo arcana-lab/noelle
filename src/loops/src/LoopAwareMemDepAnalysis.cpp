@@ -6,14 +6,14 @@
 
 using namespace llvm;
 
-void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG, Loop *l,
-                                          liberty::LoopAA *loopAA) {
+void llvm::refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG, Loop *l,
+                                                liberty::LoopAA *loopAA) {
   // TODO: add here other types of loopAware refinements of the PDG
 
   refinePDGWithSCAF(loopDG, l, loopAA);
 }
 
-void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
+void llvm::refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
   // Iterate over all the edges of the loop PDG and
   // collect memory deps to be queried.
   // For each pair of instructions with a memory dependence map it to
