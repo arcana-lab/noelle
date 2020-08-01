@@ -40,3 +40,4 @@ patchInstallDir "noelle-pdg-stats" ;
 patchInstallDir "noelle-enable" ;
 patchInstallDir "noelle-prof-coverage" ;
 patchInstallDir "noelle-config" ;
+patchInstallDir "loopaa" ;
