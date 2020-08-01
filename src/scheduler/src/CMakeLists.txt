@@ -1,13 +1,13 @@
 # Sources
 set(Srcs 
-  SCEVSimplification.cpp
+  Scheduler.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "SCEVSimplification")
+set(PassName "Scheduler")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -23,7 +23,6 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../../../external/svf/include
-  ../../../external/scaf/include
   ../../basic_utilities/include 
   ../../transformations/include
   ../../alloc_aa/include 
@@ -33,9 +32,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../hotprofiler/include 
   ../../talkdown/include
   ../../dataflow/include
-  ../../noelle/include
   ../../callgraph/include
-  ../../scheduler/include
   ../include/ 
   ./ 
   )

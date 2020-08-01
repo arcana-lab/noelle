@@ -64,6 +64,8 @@ namespace llvm {
 
       std::vector<BasicBlock *> getLoopExitBasicBlocks (void) const ;
 
+      std::vector<std::pair<BasicBlock *, BasicBlock *>> getLoopExitEdges (void) const ;
+
       bool isLoopInvariant (Value *value) const ;
 
       bool isIncluded (BasicBlock *bb) const ;
@@ -109,6 +111,7 @@ namespace llvm {
        * with, so losing that ordering and re-establishing it from an unordered data structure is fraught.
        */
       std::vector<BasicBlock *> exitBlocks;
+      std::vector<std::pair<BasicBlock *, BasicBlock *>> exitEdges;
 
       static uint64_t globalID;
 
