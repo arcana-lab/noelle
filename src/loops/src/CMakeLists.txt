@@ -1,5 +1,6 @@
 # Sources
 set(Srcs 
+  MemoryCloningAnalysis.cpp
   Variable.cpp
   AccumulatorOpInfo.cpp
   ControlFlowEquivalence.cpp

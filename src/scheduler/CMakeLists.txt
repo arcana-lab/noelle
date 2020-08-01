@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.4.3)
-project(Loops)
+project(Scheduler)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -15,7 +15,6 @@ add_definitions(
 )
 
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
-
 include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -29,21 +28,6 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS 
-    include/MemoryCloningAnalysis.hpp
-    include/Variable.hpp
-    include/ControlFlowEquivalence.hpp
-    include/LoopDependenceInfo.hpp
-    include/InductionVariables.hpp
-    include/Invariants.hpp
-    include/LoopAwareMemDepAnalysis.hpp
-    include/LoopCarriedDependencies.hpp
-    include/LoopGoverningIVAttribution.hpp
-    include/LoopIterationDomainSpaceAnalysis.hpp
-    include/IVStepperUtility.hpp
-    include/SCCDAGAttrs.hpp
-    include/SCCDAGNormalizer.hpp
-    include/SCCDAGPartition.hpp
-    include/SCCAttrs.hpp
-    include/AccumulatorOpInfo.hpp
-    DESTINATION include)
+install(PROGRAMS
+  include/Scheduler.hpp
+  DESTINATION include)

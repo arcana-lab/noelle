@@ -36,6 +36,7 @@ include_directories(
   ../../hotprofiler/include
   ../../noelle/include
   ../../dataflow/include
+  ../../scheduler/include
   ../../../external/svf/include
   ../../../external/scaf/include
   )
