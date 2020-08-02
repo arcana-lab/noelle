@@ -668,6 +668,13 @@ bool SCEVSimplification::isUpCastPossible (
 
   auto gep = gepDerivation->gep;
 
+  auto resultElementType = gep->getSourceElementType();
+  if (!resultElementType->isDoubleTy() &&
+    !resultElementType->isFloatingPointTy() &&
+    !resultElementType->isIntegerTy()) {
+    return false;
+  }
+
   // gep->print(errs() << "GEP that isn't being accessed as an array pointer: "); errs() << "\n";
   // gep->getType()->print(errs() << "GEP type: "); errs() << "\n";
   // gep->getOperand(0)->print(errs() << "Element: "); errs() << "\n";

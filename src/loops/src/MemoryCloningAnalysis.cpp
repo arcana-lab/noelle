@@ -107,6 +107,7 @@ bool ClonableMemoryLocation::isInstructionAssociatedToLocation (Instruction *I) 
 
 bool ClonableMemoryLocation::isMemCpyInstrinsicCall (CallInst *call) {
   auto calledFn = call->getCalledFunction();
+  if (!calledFn || !calledFn->hasName()) return false;
   auto name = calledFn->getName();
   std::string nameString = std::string(name.bytes_begin(), name.bytes_end());
   return nameString.find("llvm.memcpy") != std::string::npos;
