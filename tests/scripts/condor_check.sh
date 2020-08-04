@@ -63,17 +63,19 @@ rm $currentResultsToTrim ;
 
 # Compare with the known one
 newTestsFailed="" ;
+newTestsFailedCounter="0" ;
 while IFS= read -r line; do
   line=$(trim "$line") ;
   grep -Fxq "$line" regression/failing_tests ;
   if test $? -ne 0 ; then
     newTestsFailed="${newTestsFailed}\n\t$line" ;
+    newTestsFailedCounter=`echo "$newTestsFailedCounter + 1" | bc` ;
   fi
 done < "$currentResults"
 
 # Check the results
 if test "$newTestsFailed" != "" ; then
-  echo -e "    New tests ${RED}failed${NC}: $newTestsFailed" ;
+  echo -e "    $newTestsFailedCounter new tests ${RED}failed${NC}: $newTestsFailed" ;
   echo -e "    The regression tests ${RED}failed${NC}" ;
 
 else
