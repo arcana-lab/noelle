@@ -15,6 +15,23 @@ using namespace llvm;
 LoopCarriedDependencies::LoopCarriedDependencies (
   const LoopsSummary &LIS,
   const DominatorSummary &DS,
+  PDG &dgForLoops
+) : loopCarriedDependenciesMap{} {
+
+  for (auto &loop : LIS.loops) {
+    loopCarriedDependenciesMap[loop.get()] = Criticisms();
+  }
+
+  for (auto edge : dgForLoops.getEdges()) {
+    auto loop = getLoopOfLCD(LIS, DS, edge);
+    if (!loop) continue;
+    loopCarriedDependenciesMap[loop].insert(edge);
+  }
+}
+
+LoopCarriedDependencies::LoopCarriedDependencies (
+  const LoopsSummary &LIS,
+  const DominatorSummary &DS,
   SCCDAG &sccdagForLoops
 ) : loopCarriedDependenciesMap{} {
 
@@ -25,41 +42,48 @@ LoopCarriedDependencies::LoopCarriedDependencies (
   for (auto sccNode : sccdagForLoops.getNodes()) {
     auto scc = sccNode->getT();
     for (auto edge : scc->getEdges()) {
-      auto producer = edge->getOutgoingT();
-      auto consumer = edge->getIncomingT();
-      if (!isa<Instruction>(producer)) continue ;
-      if (!isa<Instruction>(consumer)) continue ;
-
-      auto producerI = dyn_cast<Instruction>(producer);
-      auto consumerI = dyn_cast<Instruction>(consumer);
-      auto producerLoop = LIS.getLoop(*producerI);
-      auto consumerLoop = LIS.getLoop(*consumerI);
-      if (!producerLoop || !consumerLoop) continue;
-
-      if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
-        auto producerLevel = producerLoop->getNestingLevel();
-        auto consumerLevel = consumerLoop->getNestingLevel();
-        auto isMemoryDependenceThusCanCrossLoops = edge->isMemoryDependence();
-        auto isControlDependence = edge->isControlDependence();
-
-        /*
-         * If a memory-less data dependence producer cannot reach the header of the loop without reaching the consumer, then this is a false positive match.
-         */
-        if (!edge->isMemoryDependence() && edge->isDataDependence()) {
-          auto producerB = producerI->getParent();
-          auto consumerB = consumerI->getParent();
-          bool mustProducerReachConsumerBeforeHeader = !canBasicBlockReachHeaderBeforeOther(*consumerLoop, producerB, consumerB);
-
-          if (mustProducerReachConsumerBeforeHeader) {
-            continue;
-          }
-        }
-
-        loopCarriedDependenciesMap[consumerLoop].insert(edge);
-      }
+      auto loop = getLoopOfLCD(LIS, DS, edge);
+      if (!loop) continue;
+      loopCarriedDependenciesMap[loop].insert(edge);
     }
   }
+}
 
+LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, const DominatorSummary &DS, DGEdge<Value> *edge) {
+  auto producer = edge->getOutgoingT();
+  auto consumer = edge->getIncomingT();
+  if (!isa<Instruction>(producer)) return nullptr ;
+  if (!isa<Instruction>(consumer)) return nullptr ;
+
+  auto producerI = dyn_cast<Instruction>(producer);
+  auto consumerI = dyn_cast<Instruction>(consumer);
+  auto producerLoop = LIS.getLoop(*producerI);
+  auto consumerLoop = LIS.getLoop(*consumerI);
+  if (!producerLoop || !consumerLoop) return nullptr ;
+
+  if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
+    auto producerLevel = producerLoop->getNestingLevel();
+    auto consumerLevel = consumerLoop->getNestingLevel();
+    auto isMemoryDependenceThusCanCrossLoops = edge->isMemoryDependence();
+    auto isControlDependence = edge->isControlDependence();
+
+    /*
+     * If a memory-less data dependence producer cannot reach the header of the loop without reaching the consumer, then this is a false positive match.
+     */
+    if (!edge->isMemoryDependence() && edge->isDataDependence()) {
+      auto producerB = producerI->getParent();
+      auto consumerB = consumerI->getParent();
+      bool mustProducerReachConsumerBeforeHeader = !canBasicBlockReachHeaderBeforeOther(*consumerLoop, producerB, consumerB);
+
+      if (mustProducerReachConsumerBeforeHeader) {
+        return nullptr ;
+      }
+    }
+
+    return consumerLoop;
+  }
+
+  return nullptr ;
 }
 
 Criticisms LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const {

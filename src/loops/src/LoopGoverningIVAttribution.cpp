@@ -27,6 +27,11 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto ivInstructions = iv.getAllInstructions();
 
   /*
+   * This attribution only understands integer typed induction variables
+   */
+  if (!headerPHI->getType()->isIntegerTy()) return;
+
+  /*
    * Fetch the loop governing terminator.
    * NOTE: It should be the only conditional branch in the IV's SCC
    */

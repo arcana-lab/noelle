@@ -31,4 +31,8 @@ namespace llvm {
     Last=DEVIRTUALIZER_ID
   };
 
+  enum LoopDependenceInfoOptimization {
+    MEMORY_CLONING_ID
+  };
+
 }
