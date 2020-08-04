@@ -72,12 +72,13 @@ std::pair<Value *, Value *> ReferenceTreeExpander::visitTwoOperands(const SCEVNA
   currentNode = currentNodeHolder->getChildReference(0);
   Value *LHS = visit(S->getOperand(0));
   currentNode = currentNodeHolder->getChildReference(1);
-  Value *RHS = visit(S->getOperand(0));
+  Value *RHS = visit(S->getOperand(1));
   currentNode = currentNodeHolder;
 
   if (!LHS || !RHS) {
-    if (LHS) LHS->deleteValue();
-    if (RHS) RHS->deleteValue();
+    // TODO: Properly handle deleting values that are created by this class and not SE scevs
+    // if (LHS) LHS->deleteValue();
+    // if (RHS) RHS->deleteValue();
     return std::make_pair(nullptr, nullptr);
   }
   return std::make_pair(LHS, RHS);
