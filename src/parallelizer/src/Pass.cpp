@@ -184,7 +184,8 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Parallelize the current loop.
      */
-    auto ldi = noelle.getLoop(ls);
+    auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID };
+    auto ldi = noelle.getLoop(ls, optimizations);
     auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, dswp, doall, helix, heuristics);
 
     /*

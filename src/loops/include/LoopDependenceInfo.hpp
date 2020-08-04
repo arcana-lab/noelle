@@ -62,6 +62,16 @@ namespace llvm {
         liberty::LoopAA *aa = nullptr
       );
 
+      LoopDependenceInfo (
+        PDG *fG,
+        Loop *l,
+        DominatorSummary &DS,
+        ScalarEvolution &SE,
+        uint32_t maxCores,
+        std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+        liberty::LoopAA *aa = nullptr
+      );
+
       LoopDependenceInfo () = delete ;
 
       /*
@@ -115,6 +125,11 @@ namespace llvm {
       void disableTransformation (Transformation transformationToDisable);
 
       /*
+       * Check whether an optimization is enabled
+       */
+      bool isOptimizationEnabled (LoopDependenceInfoOptimization optimization);
+
+      /*
        * Iterate over children of "this" recursively following the loop nesting tree rooted by "this".
        * This will go through children of children etc...
        */
@@ -136,6 +151,8 @@ namespace llvm {
 
       LoopIterationDomainSpaceAnalysis * getLoopIterationDomainSpaceAnalysis (void) const ;
 
+      MemoryCloningAnalysis * getMemoryCloningAnalysis (void) const ;
+
       bool doesHaveCompileTimeKnownTripCount (void) const ;
 
       uint64_t getCompileTimeTripCount (void) const ;
@@ -153,6 +170,7 @@ namespace llvm {
        * Fields
        */
       std::set<Transformation> enabledTransformations;  /* Transformations enabled. */
+      std::unordered_set<LoopDependenceInfoOptimization> enabledOptimizations;  /* Optimizations enabled. */
 
       PDG *loopDG;                            /* Dependence graph of the loop.
                                                * This graph does not include instructions outside the loop (i.e., no external dependences are included).
@@ -172,6 +190,8 @@ namespace llvm {
 
       LoopIterationDomainSpaceAnalysis *domainSpaceAnalysis;
 
+      MemoryCloningAnalysis *memoryCloningAnalysis;
+
       std::unordered_set<Value *> invariants;
 
       bool compileTimeKnownTripCount;
@@ -189,6 +209,7 @@ namespace llvm {
       std::pair<PDG *, SCCDAG *> createDGsForLoop (
         Loop *l,
         PDG *functionDG,
+        DominatorSummary &DS,
         liberty::LoopAA *loopAA
         ) ;
 
@@ -196,6 +217,11 @@ namespace llvm {
         Loop *l,
         ScalarEvolution &SE
         );
+
+      void removeUnnecessaryDependenciesThatCloningMemoryNegates (
+        PDG *loopInternalDG,
+        DominatorSummary &DS
+      ) ;
 
   };
 

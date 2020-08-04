@@ -250,6 +250,14 @@ void HELIX::createParallelizableTask (
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 
   /*
+   * HACK: For now, this must follow loading live-ins as this re-wiring overrides
+   * the live-in mapping to use locally cloned memory instructions that are live-in to the loop
+   */
+  if (LDI->isOptimizationEnabled(LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
+    this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, 0);
+  }
+
+  /*
    * The operands of the cloned instructions still refer to the original ones.
    *
    * Fix the data flow within the parallelized loop by redirecting operands of cloned instructions to refer to the other cloned instructions. 

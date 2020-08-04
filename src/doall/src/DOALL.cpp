@@ -158,6 +158,7 @@ bool DOALL::canBeAppliedToLoop (
       errs() << "DOALL:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
       if (this->verbose >= Verbosity::Maximal) {
         scc->printMinimal(errs(), "DOALL:     ") ;
+        DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
         errs() << "DOALL:     Loop-carried data dependences\n";
         LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
@@ -243,6 +244,14 @@ bool DOALL::apply (
     envUser->addLiveOutIndex(envIndex);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
+
+  /*
+   * HACK: For now, this must follow loading live-ins as this re-wiring overrides
+   * the live-in mapping to use locally cloned memory instructions that are live-in to the loop
+   */
+  if (LDI->isOptimizationEnabled(LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
+    this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, 0);
+  }
 
   /*
    * Fix the data flow within the parallelized loop by redirecting operands of
