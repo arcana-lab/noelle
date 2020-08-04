@@ -91,6 +91,31 @@ void llvm::refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
       for (uint8_t i = 0; i <= 2; ++i) {
         if (disprovedIIDepTypes & (1 << i)) {
           auto &e = edges[i];
+
+          // HACK: this is to avoid the SCAF bug for dependences between calls to printf
+          auto src = e->getOutgoingT();
+          auto dst = e->getIncomingT();
+          if (isa<CallInst>(src)){
+            auto srcCall = cast<CallInst>(src);
+            auto callee = srcCall->getCalledFunction();
+            if (  true
+                  && (callee != nullptr)
+                  && (callee->empty())
+                ){
+              continue ;
+            }
+          }
+          if (isa<CallInst>(dst)){
+            auto dstCall = cast<CallInst>(dst);
+            auto callee = dstCall->getCalledFunction();
+            if (  true
+                  && (callee != nullptr)
+                  && (callee->empty())
+                ){
+              continue ;
+            }
+          }
+
           loopDG->removeEdge(e);
         }
 			}

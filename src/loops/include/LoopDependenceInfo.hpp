@@ -58,8 +58,25 @@ namespace llvm {
         Loop *l,
         DominatorSummary &DS,
         ScalarEvolution &SE,
+        uint32_t maxCores
+      );
+
+      LoopDependenceInfo (
+        PDG *fG,
+        Loop *l,
+        DominatorSummary &DS,
+        ScalarEvolution &SE,
         uint32_t maxCores,
-        liberty::LoopAA *aa = nullptr
+        liberty::LoopAA *aa
+      );
+
+      LoopDependenceInfo (
+        PDG *fG,
+        Loop *l,
+        DominatorSummary &DS,
+        ScalarEvolution &SE,
+        uint32_t maxCores,
+        std::unordered_set<LoopDependenceInfoOptimization> optimizations
       );
 
       LoopDependenceInfo (
@@ -69,7 +86,7 @@ namespace llvm {
         ScalarEvolution &SE,
         uint32_t maxCores,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations,
-        liberty::LoopAA *aa = nullptr
+        liberty::LoopAA *aa
       );
 
       LoopDependenceInfo () = delete ;
