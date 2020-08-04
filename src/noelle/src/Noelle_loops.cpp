@@ -182,6 +182,13 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
 LoopDependenceInfo * Noelle::getLoop (
   LoopStructure *loop
 ) {
+  return getLoop(loop, {});
+}
+
+LoopDependenceInfo * Noelle::getLoop (
+  LoopStructure *loop,
+  std::unordered_set<LoopDependenceInfoOptimization> optimizations
+) {
 
   /*
    * Fetch the the function dependence graph, post dominators, and scalar evolution
@@ -218,8 +225,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * No filter file was provided. Construct LDI without profiler configurables
    */
   if (!this->hasReadFilterFile) {
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE,
-                                      this->maxCores, this->loopAA);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, optimizations, this->loopAA);
 
     delete DS;
     return ldi;
