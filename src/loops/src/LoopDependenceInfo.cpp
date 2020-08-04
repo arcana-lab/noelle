@@ -20,9 +20,32 @@ LoopDependenceInfo::LoopDependenceInfo(
   Loop *l,
   DominatorSummary &DS,
   ScalarEvolution &SE,
+  uint32_t maxCores
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, nullptr} {
+
+  return ;
+}
+
+LoopDependenceInfo::LoopDependenceInfo(
+  PDG *fG,
+  Loop *l,
+  DominatorSummary &DS,
+  ScalarEvolution &SE,
   uint32_t maxCores,
-  liberty::LoopAA *aa = nullptr
+  liberty::LoopAA *aa
 ) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, aa} {
+
+  return ;
+}
+
+LoopDependenceInfo::LoopDependenceInfo(
+  PDG *fG,
+  Loop *l,
+  DominatorSummary &DS,
+  ScalarEvolution &SE,
+  uint32_t maxCores,
+  std::unordered_set<LoopDependenceInfoOptimization> optimizations
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, optimizations, nullptr} {
 
   return ;
 }
