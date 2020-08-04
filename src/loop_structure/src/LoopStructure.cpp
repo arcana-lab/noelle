@@ -65,11 +65,15 @@ LoopStructure::LoopStructure (
   }
 
   /*
-   * Set the loop exits.
+   * Set the loop exits and exit edges.
    */
   SmallVector<BasicBlock *, 10> exits;
   l->getExitBlocks(exits);
   this->exitBlocks = std::vector<BasicBlock *>(exits.begin(), exits.end());
+
+  SmallVector<std::pair<BasicBlock *, BasicBlock *>, 10> exitEdges;
+  l->getExitEdges(exitEdges);
+  this->exitEdges = std::vector<std::pair<BasicBlock *, BasicBlock *>>(exitEdges.begin(), exitEdges.end());
 
   /*
    * Fetch the metadata.
@@ -179,6 +183,10 @@ uint64_t LoopStructure::getNumberOfInstructions (void) const {
 
 std::vector<BasicBlock *> LoopStructure::getLoopExitBasicBlocks (void) const {
   return this->exitBlocks;
+}
+
+std::vector<std::pair<BasicBlock *, BasicBlock *>> LoopStructure::getLoopExitEdges (void) const {
+  return this->exitEdges;
 }
 
 bool LoopStructure::isLoopInvariant (Value *value) const {
