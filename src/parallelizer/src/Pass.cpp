@@ -162,7 +162,7 @@ bool Parallelizer::runOnModule (Module &M) {
     errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
     if (  true
           && (!this->forceParallelization)
-          && (averageInstsPerInvocation < 100)
+          && (averageInstsPerInvocation < 2000)
       ){
       errs() << "Parallelizer:      It is too low\n";
       continue ;
