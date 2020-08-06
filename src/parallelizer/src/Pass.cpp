@@ -90,7 +90,7 @@ bool Parallelizer::runOnModule (Module &M) {
    * Fetch all the loops we want to parallelize.
    */
   auto loopsToParallelize = noelle.getLoopStructures();
-  errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
+  errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops in the program we are going to consider\n";
 
   /*
    * Sort them by their hotness.
@@ -98,6 +98,50 @@ bool Parallelizer::runOnModule (Module &M) {
   if (this->disableLoopSorting){
     noelle.sortByHotness(*loopsToParallelize);
   }
+
+  /*
+   * Filter out loops that are not worth parallelizing.
+   */
+  auto filter = [this, profiles](LoopStructure *ls) -> bool{
+
+    /*
+     * Fetch the loop ID.
+     */
+    auto loopID = ls->getID();
+
+    /*
+     * Check if the latency of each loop invocation is enough to justify the parallelization.
+     */
+    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
+    errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
+    if (  true
+          && (!this->forceParallelization)
+          && (averageInstsPerInvocation < 2000)
+      ){
+      return true;
+    }
+
+    /*
+     * Check the number of iterations per invocation.
+     */
+    auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
+    errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
+    if (  true
+          && (!this->forceParallelization)
+          && (averageIterations < 6)
+      ){
+      errs() << "Parallelizer:      It is too low\n";
+      return true;
+    }
+
+    return false;
+  };
+  noelle.filterOutLoops(*loopsToParallelize, filter);
+
+  /*
+   * Print the loops.
+   */
+  errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
   for (auto loopStructure : *loopsToParallelize){
 
     /*
@@ -154,33 +198,7 @@ bool Parallelizer::runOnModule (Module &M) {
       errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
       continue ;
     }
-
-    /*
-     * Check if the latency of each loop invocation is enough to justify the parallelization.
-     */
-    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
-    errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
-    if (  true
-          && (!this->forceParallelization)
-          && (averageInstsPerInvocation < 2000)
-      ){
-      errs() << "Parallelizer:      It is too low\n";
-      continue ;
-    }
-
-    /*
-     * Check the number of iterations per invocation.
-     */
-    auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
-    errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
-    if (  true
-          && (!this->forceParallelization)
-          && (averageIterations < 6)
-      ){
-      errs() << "Parallelizer:      It is too low\n";
-      continue ;
-    }
-    
+ 
     /*
      * Parallelize the current loop.
      */
