@@ -47,8 +47,8 @@ bool EnablersManager::applyEnablers (
   /*
    * Run the whilifier.
    */
-  errs() << "EnablersManager:   Try to whilify loops\n";
   if (par.isTransformationEnabled(Transformation::LOOP_WHILIFIER_ID)){
+    errs() << "EnablersManager:   Try to whilify loops\n";
     if (this->applyLoopWhilifier(LDI, par, loopWhilifier)){
       errs() << "EnablersManager:     The loop has been whilified\n";
       return true;
@@ -71,7 +71,9 @@ bool EnablersManager::applyEnablers (
    */
   if (par.isTransformationEnabled(Transformation::SCEV_SIMPLIFICATION_ID)){
     errs() << "EnablersManager:   Try to simplify IV related SCEVs and their corresponding instructions in loops\n";
-    if (scevSimplification.simplifyIVRelatedSCEVs(*LDI)){
+    auto function = LDI->getLoopStructure()->getFunction();
+    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+    if (scevSimplification.simplifyLoopGoverningIVGuards(*LDI, SE)){
       errs() << "EnablersManager:     Loop IV related SCEVs have been simplified\n";
       return true;
     }
