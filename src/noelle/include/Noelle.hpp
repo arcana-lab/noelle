@@ -105,6 +105,11 @@ namespace llvm {
         std::vector<LoopDependenceInfo *> & loops
         ) ;
 
+      void filterOutLoops (
+        std::vector<LoopStructure *> & loops,
+        std::function<bool (LoopStructure *)> filter
+        ) ;
+
       Module * getProgram (void) const ;
 
       Function * getEntryFunction (void) const ;
