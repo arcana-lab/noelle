@@ -1,5 +1,6 @@
 # dependencies
 threadpool
+*compile_commands.json
 
 # build artifacts
 src/**/build

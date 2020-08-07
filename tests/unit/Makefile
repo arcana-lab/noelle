@@ -1,6 +1,6 @@
 UTIL_UNITS=empty_template helpers control_flow_equivalence dominator_summary
 ENABLER_UNITS=loop_invariant_code_motion
-ANALYSIS_UNITS=dependence_graphs iv_attributes sccdag_attributes
+ANALYSIS_UNITS=dependence_graphs iv_attributes sccdag_attributes loop_domain_space
 ALL_UNITS=$(UTIL_UNITS) $(ENABLER_UNITS) $(ANALYSIS_UNITS)
 
 all: setup $(ALL_UNITS)
