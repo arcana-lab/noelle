@@ -71,7 +71,6 @@ bool LoopWhilifier::whilifyLoopDriver(
   /*
    * Check if the loop can be whilified
    */ 
-
   WhilifierContext *WC = new WhilifierContext(LS);
 
   if (!(this->canWhilify(WC))) { 
@@ -349,11 +348,110 @@ bool LoopWhilifier::isSemanticLatch(
 }
 
 
+bool LoopWhilifier::isAppropriateToWhilify(
+  WhilifierContext *WC,
+  BasicBlock * const SemanticLatch
+) {
+
+  /*
+   * TOP --- To determine if it is ***appropriate*** to whilify,
+   * two conditions must be met:
+   * 
+   * 1. The new latch(es) must not be loop exiting. 
+   * 
+   *    Otherwise, the loop will be whilified again in a future
+   *    invocation of the EnablerManager, and there is no gain 
+   *    from the whilifier.
+   * 
+   * 2. The loop prologue must shrink. 
+   * 
+   *    In a implementation built on completeness, the loop prologue
+   *    must be computed from the post-dominator tree (or the CDG from 
+   *    the PDG), and the "whilification" should compare to the current
+   *    prologue to determine if the new prologue is smaller.
+   * 
+   * However, both of these conditions can be possibly be met by 
+   * computing if the predecessors of the semantic latch are loop
+   * exiting. 
+   * 
+   * If they are not, the first condition is immediately met. 
+   * 
+   * Additionally, this must mean that new prologue will shrink.
+   * Because the semantic latch will become the new header, the
+   * dominance relation between the semantic latch (to-be new header)
+   * and its predecessors will be reversed in the whilified loop. 
+   * Since the predecessors are not loop-exiting, no instruction
+   * in the whilified loop will be control-dependent on those blocks.
+   * As a result, the blocks will be removed from the prologue in 
+   * the whilified loop --- generating at least *some* shrinkage.
+   * 
+   * If the predecessors were loop-exiting, the prologue cannot
+   * shrink because the predecessors would become the new latch(es)
+   * of the whilified loop.
+   * 
+   * It is worth noting that if all instructions in the loop are 
+   * control-dependent on the semantic latch terminator, then the
+   * enabling mechanism from the whilifier is maximized for 
+   * parallelization.
+   */ 
+
+
+  /*
+   * Get necessary predecessors of the semantic latch
+   * 
+   * Ignore blocks that are:
+   * a. Not part of the current loop
+   * b. The semantic latch itself
+   */
+  SmallVector<BasicBlock *, 16> SemanticLatchPreds;
+
+  for (auto *PredBB : predecessors(SemanticLatch)) {
+
+    if (false
+        || PredBB == SemanticLatch
+        || !(this->containsInOriginalLoop(WC, PredBB))) {
+      continue;
+    }
+
+    SemanticLatchPreds.push_back(PredBB);
+
+  }
+
+
+  /*
+   * Compute if they are loop exiting --- NEEDS OPTIMIZATION
+   */ 
+  bool IsAppropriate = true;
+
+  for (auto *PredBB : SemanticLatchPreds) {
+
+    for (auto *SuccBB : successors(PredBB)) {
+
+      if (!(this->containsInOriginalLoop(WC, SuccBB))) {
+        IsAppropriate &= false;;
+      }
+      
+    }
+
+  }
+
+
+  /*
+   * Update context
+   */
+  WC->IsAppropriateToWhilify = IsAppropriate;
+
+
+  return IsAppropriate;
+
+}
+
+
 bool LoopWhilifier::isDoWhile(
   WhilifierContext *WC
 ) {
 
-  bool isDoWhile = false;
+  bool IsDoWhile = false;
 
   /*
    * TOP --- If any of the successors of the latch are not part 
@@ -394,20 +492,31 @@ bool LoopWhilifier::isDoWhile(
   for (auto *SuccBB : successors(SemanticLatch)) {
     
     if (!(this->containsInOriginalLoop(WC, SuccBB))) {
-      isDoWhile |= true;
+      IsDoWhile |= true;
     }
 
   }
 
-  errs() << "LoopWhilifier: isDoWhile (Latch --- loop exiting): "
-         << std::to_string(isDoWhile) << "\n";
+  errs() << "LoopWhilifier: IsDoWhile (Latch --- loop exiting): "
+         << std::to_string(IsDoWhile) << "\n";
+
+
+  /*
+   * Check if loop is appropriate to whilify
+   */ 
+  bool IsAppropriateToWhilify = this->isAppropriateToWhilify(WC, SemanticLatch);
+
+  errs() << "LoopWhilifier: IsDoWhile (Appropriate to whilify): "
+         << std::to_string(IsAppropriateToWhilify) + "\n";
 
 
   /* 
-   * Is a do-while loop --- transform the structural latch
-   * if necessary
+   * Is a do-while loop and appropriate to whilify --- transform
+   * the structural latch if necessary
    */ 
-  if (NeedToChangeLatch && isDoWhile) {
+  if (NeedToChangeLatch 
+      && IsDoWhile
+      && IsAppropriateToWhilify) {
 
     this->compressStructuralLatch(WC, SemanticLatch);
     WC->ConsolidatedOriginalLatch |= true;
@@ -416,7 +525,7 @@ bool LoopWhilifier::isDoWhile(
 
   WC->Dump();
 
-  return isDoWhile;
+  return IsDoWhile & IsAppropriateToWhilify;
 
 }
 
@@ -1172,9 +1281,10 @@ WhilifierContext::WhilifierContext(
    * Set analysis results to false
    */ 
   this->IsDoWhile = 
-    this->IsSingleBlockLoop = 
-      this->ConsolidatedOriginalLatch = 
-        this->ResolvedLatch = false;
+    this->IsAppropriateToWhilify =
+      this->IsSingleBlockLoop = 
+        this->ConsolidatedOriginalLatch = 
+          this->ResolvedLatch = false;
 
 
   return;
@@ -1221,6 +1331,7 @@ void WhilifierContext::Dump()
    * Whilification info
    */ 
   errs() << "LoopWhilifier:   IsDoWhile: " << std::to_string(this->IsDoWhile) << "\n"
+         << "LoopWhilifier:   IsAppropriateToWhilify: " << std::to_string(this->IsAppropriateToWhilify) << "\n"
          << "LoopWhilifier:   IsSingleBlockLoop: " << std::to_string(this->IsSingleBlockLoop) << "\n"
          << "LoopWhilifier:   ConsolidatedOriginalLatch: " << std::to_string(this->ConsolidatedOriginalLatch) << "\n";
 
