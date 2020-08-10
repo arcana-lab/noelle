@@ -4,6 +4,7 @@ set(Srcs
   Parallelizer.cpp
   Helper.cpp
   Printer.cpp
+  LoopSelector.cpp
 )
 
 # Compilation flags

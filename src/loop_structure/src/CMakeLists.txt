@@ -4,6 +4,7 @@ set(Srcs
   LoopsSummary.cpp
   LoopEnvironment.cpp
   EnvBuilder.cpp
+  StayConnectedNestedLoopForest.cpp
 )
 
 # Compilation flags
