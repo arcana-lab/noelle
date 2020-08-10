@@ -83,6 +83,11 @@ namespace llvm {
 
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Noelle &par) ;
 
+      std::vector<LoopDependenceInfo *> selectTheOrderOfLoopsToParallelize (
+        Noelle &noelle, 
+        noelle::StayConnectedNestedLoopForestNode *tree
+        ) ;
+
       /*
        * Debug utilities
        */
