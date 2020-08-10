@@ -18,6 +18,7 @@
 #include "HotProfiler.hpp"
 #include "DataFlow.hpp"
 #include "Scheduler.hpp"
+#include "StayConnectedNestedLoopForest.hpp"
 
 using namespace llvm::noelle;
 
@@ -103,8 +104,17 @@ namespace llvm {
         std::vector<LoopDependenceInfo *> & loops
         ) ;
 
+      noelle::StayConnectedNestedLoopForest * organizeLoopsInTheirNestingForest (
+        std::vector<LoopStructure *> const & loops
+        ) ;
+
       void filterOutLoops (
         std::vector<LoopStructure *> & loops,
+        std::function<bool (LoopStructure *)> filter
+        ) ;
+
+      void filterOutLoops (
+        noelle::StayConnectedNestedLoopForest *f, 
         std::function<bool (LoopStructure *)> filter
         ) ;
 

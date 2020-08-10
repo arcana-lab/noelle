@@ -34,4 +34,5 @@ install(PROGRAMS
   include/LoopsSummary.hpp 
   include/LoopEnvironment.hpp
   include/EnvBuilder.hpp
+  include/StayConnectedNestedLoopForest.hpp
   DESTINATION include)
