@@ -58,12 +58,6 @@ SCCAttrs::SCCAttrs (
   return;
 }
 
-SCCAttrs::~SCCAttrs () {
-  for (auto var : loopCarriedVariables) {
-    delete var;
-  }
-}
- 
 SCCAttrs::SCCType SCCAttrs::getType (void) const {
   return this->sccType;
 }
@@ -352,4 +346,30 @@ std::unordered_set<AllocaInst *> SCCAttrs::getMemoryLocationsToClone (void) cons
     allocations.insert(location->getAllocation());
   }
   return allocations;
+}
+
+bool SCCAttrs::mustExecuteSequentially (void) const {
+  return this->getType() == SCCAttrs::SCCType::SEQUENTIAL;
+}
+
+bool SCCAttrs::canExecuteReducibly (void) const {
+  return this->getType() == SCCAttrs::SCCType::REDUCIBLE;
+}
+
+bool SCCAttrs::canExecuteIndependently (void) const {
+  return this->getType() == SCCAttrs::SCCType::INDEPENDENT;
+}
+
+bool SCCAttrs::canBeCloned (void) const {
+  return this->isClonable;
+}
+
+bool SCCAttrs::isInductionVariableSCC (void) const {
+  return this->hasIV;
+}
+
+SCCAttrs::~SCCAttrs () {
+  for (auto var : loopCarriedVariables) {
+    delete var;
+  }
 }
