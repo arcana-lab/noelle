@@ -70,6 +70,7 @@ namespace llvm {
       std::set<SCC *> getSCCsWithLoopCarriedDependencies (void) const ;
       std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
       std::set<SCC *> getSCCsWithLoopCarriedControlDependencies (void) const ;
+      std::unordered_set<SCCAttrs *> getSCCsOfType (SCCAttrs::SCCType sccType);
       bool isLoopGovernedBySCC (SCC *scc) const ;
       bool areAllLiveOutValuesReducable (LoopEnvironment *env) const ;
 
