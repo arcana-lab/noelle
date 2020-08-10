@@ -72,6 +72,11 @@ namespace llvm {
       uint64_t getInvocations (LoopStructure *l) const ;
 
       /*
+       * Return the total number of iterations executed by @l among all its invocations.
+       */
+      uint64_t getIterations (LoopStructure *l) const ;
+
+      /*
        * Return the total number of instructions executed excluding the instructions executed by the callees.
        */
       uint64_t getSelfInstructions (LoopStructure *loop) const ;
@@ -91,6 +96,8 @@ namespace llvm {
       double getAverageTotalInstructionsPerInvocation (LoopStructure *loop) const ;
 
       double getAverageLoopIterationsPerInvocation (LoopStructure *loop) const ;
+
+      double getAverageTotalInstructionsPerIteration (LoopStructure *loop) const ;
 
       /*
        * =========================== Functions ==================================

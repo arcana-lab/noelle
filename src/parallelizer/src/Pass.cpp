@@ -202,7 +202,7 @@ bool Parallelizer::runOnModule (Module &M) {
       errs() << prefix << "  Average instructions per invocation = " << averageInstsPerInvocation << " %\n"; 
       auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(loopStructure);
       errs() << prefix << "  Average iterations per invocation = " << averageIterations << " %\n"; 
-      errs() << "\n";
+      errs() << prefix << "\n";
 
       return false;
     };
@@ -222,7 +222,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
      * Select the loops to parallelize.
      */
-    auto loopsToParallelize = this->selectTheOrderOfLoopsToParallelize(noelle, tree);
+    auto loopsToParallelize = this->selectTheOrderOfLoopsToParallelize(noelle, profiles, tree);
 
     /*
      * Parallelize the loops.
