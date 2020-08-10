@@ -780,27 +780,24 @@ void SCCDAGAttrs::dumpToFile (int id) {
   }
 
   DGPrinter::writeGraph<DG<DGString>, DGString>(filename, &stageGraph);
-  for (auto elem : elements) delete elem;
+  for (auto elem : elements) {
+    delete elem;
+  }
+
+  return ;
 }
 
-bool SCCAttrs::mustExecuteSequentially (void) const {
-  return this->getType() == SCCAttrs::SCCType::SEQUENTIAL;
-}
+std::unordered_set<SCCAttrs *> SCCDAGAttrs::getSCCsOfType (SCCAttrs::SCCType sccType){
+  std::unordered_set<SCCAttrs *> SCCs{};
 
-bool SCCAttrs::canExecuteReducibly (void) const {
-  return this->getType() == SCCAttrs::SCCType::REDUCIBLE;
-}
+  for (auto pair : this->sccToInfo){
+    auto sccAttrs = pair.second;
+    if (sccAttrs->mustExecuteSequentially()){
+      SCCs.insert(sccAttrs);
+    }
+  }
 
-bool SCCAttrs::canExecuteIndependently (void) const {
-  return this->getType() == SCCAttrs::SCCType::INDEPENDENT;
-}
-
-bool SCCAttrs::canBeCloned (void) const {
-  return this->isClonable;
-}
-
-bool SCCAttrs::isInductionVariableSCC (void) const {
-  return this->hasIV;
+  return SCCs;
 }
 
 SCCDAGAttrs::~SCCDAGAttrs (){
