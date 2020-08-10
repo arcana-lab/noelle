@@ -15,22 +15,24 @@ int main (int argc, char *argv[]){
   /*
    * Fetch the inputs.
    */
-  auto iterations = atoll(argv[1]);
-  if (iterations < 1){
-    iterations = 1;
+  auto input = atoll(argv[1]);
+  if (input < 1){
+    input = 1;
+  }
+  auto iterations = input * 100;
+  auto outerIterations = input;
+  if (outerIterations > 10){
+    outerIterations = 20;
   }
   auto seed = atoll(argv[2]);
 
   int *ar = (int *)malloc(sizeof(int) * iterations);
-  for (auto i=0; i < iterations; i++){
+  for (auto i=0; i < outerIterations; i++){
     if (seed == 14324){
       printf("Hello\n");
     }
     
     float f = (float)(i * rand());
-    f = sqrt(f);
-    f = sqrt(f);
-    f = sqrt(f);
     f = sqrt(f);
 
     for (auto j=0; j < iterations; j++){
@@ -39,11 +41,48 @@ int main (int argc, char *argv[]){
       ar[j] /= 2 + seed;
       ar[j] /= 3 - seed;
       ar[j] *= 41;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
+      ar[j] += i * 23;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
     }
 
     for (auto j=0; j < iterations; j++){
       ar[j] += i * seed;
       ar[j] += i * 23;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
+      ar[j] += i * seed;
+      ar[j] += i * 23;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
+      ar[j] += i * 23;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
+      ar[j] /= 2 + seed;
+      ar[j] /= 3 - seed;
+      ar[j] *= 41;
       ar[j] /= 2 + seed;
       ar[j] /= 3 - seed;
       ar[j] *= 41;
@@ -51,11 +90,7 @@ int main (int argc, char *argv[]){
 
   }
  
-  unsigned long long int t;
-  for (auto j=0; j < iterations; j++){
-    t += ar[j];
-  }
-  printf("%lld\n", t);
+  printf("%lld\n", ar[iterations/2]);
 
   return 0;
 }
