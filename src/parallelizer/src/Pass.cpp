@@ -89,20 +89,20 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = noelle.getLoopStructures();
-  errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops in the program we are going to consider\n";
+  auto programLoops = noelle.getLoopStructures();
+  errs() << "Parallelizer:  There are " << programLoops->size() << " loops in the program we are going to consider\n";
 
   /*
    * Sort them by their hotness.
    */
   if (this->disableLoopSorting){
-    noelle.sortByHotness(*loopsToParallelize);
+    noelle.sortByHotness(*programLoops);
   }
 
   /*
    * Compute the nesting forest.
    */
-  auto forest = noelle.organizeLoopsInTheirNestingForest(*loopsToParallelize);
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*programLoops);
 
   /*
    * Filter out loops that are not worth parallelizing.
@@ -152,7 +152,7 @@ bool Parallelizer::runOnModule (Module &M) {
     return false;
   };
   noelle.filterOutLoops(forest, filter);
-  noelle.filterOutLoops(*loopsToParallelize, filter);
+  noelle.filterOutLoops(*programLoops, filter);
 
   /*
    * Print the loops.
@@ -224,53 +224,62 @@ bool Parallelizer::runOnModule (Module &M) {
    * Parallelize the loops starting from the outermost to the inner ones.
    * This is accomplished by having sorted the loops above.
    */
-  errs() << "Parallelizer:  Parallelize " << loopsToParallelize->size() << " loops, one at a time\n";
+  errs() << "Parallelizer:  Parallelize " << programLoops->size() << " loops, one at a time\n";
   auto modified = false;
-  std::unordered_map<BasicBlock *, bool> modifiedBBs;
-  for (auto ls : *loopsToParallelize){
+  std::unordered_map<BasicBlock *, bool> modifiedBBs{};
+  for (auto tree : forest->getTrees()){
 
     /*
-     * Check if we can parallelize this loop.
+     * Select the loops to parallelize.
      */
-    auto safe = true;
-    for (auto bb : ls->getBasicBlocks()){
-      if (modifiedBBs[bb]){
-        safe = false;
-        break ;
-      }
-    }
-    auto loopID = ls->getID();
-    if (!safe){
-      errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
-      continue ;
-    }
- 
-    /*
-     * Parallelize the current loop.
-     */
-    auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID };
-    auto ldi = noelle.getLoop(ls, optimizations);
-    auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, dswp, doall, helix, heuristics);
+    auto loopsToParallelize = this->selectTheOrderOfLoopsToParallelize(noelle, tree);
 
     /*
-     * Keep track of the parallelization.
+     * Parallelize the loops.
      */
-    if (loopIsParallelized){
-      errs() << "Parallelizer:    Loop " << loopID << " has been parallelized\n";
-      modified = true;
+    for (auto ldi : loopsToParallelize){
+
+      /*
+       * Check if we can parallelize this loop.
+       */
+      auto ls = ldi->getLoopStructure();
+      auto safe = true;
       for (auto bb : ls->getBasicBlocks()){
-        modifiedBBs[bb] = true;
+        if (modifiedBBs[bb]){
+          safe = false;
+          break ;
+        }
+      }
+      auto loopID = ls->getID();
+      if (!safe){
+        errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
+        continue ;
+      }
+
+      /*
+       * Parallelize the current loop.
+       */
+      auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, dswp, doall, helix, heuristics);
+
+      /*
+       * Keep track of the parallelization.
+       */
+      if (loopIsParallelized){
+        errs() << "Parallelizer:    Loop " << loopID << " has been parallelized\n";
+        modified = true;
+        for (auto bb : ls->getBasicBlocks()){
+          modifiedBBs[bb] = true;
+        }
       }
     }
-  }
 
-  /*
-   * Free the memory.
-   */
-  for (auto loop : *loopsToParallelize){
-    delete loop;
+    /*
+     * Free the memory.
+     */
+    for (auto loop : loopsToParallelize){
+      delete loop;
+    }
   }
-  delete loopsToParallelize;
 
   return modified;
 }
