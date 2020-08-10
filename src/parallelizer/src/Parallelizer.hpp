@@ -84,6 +84,7 @@ namespace llvm {
 
       std::vector<LoopDependenceInfo *> selectTheOrderOfLoopsToParallelize (
         Noelle &noelle, 
+        Hot *profiles,
         noelle::StayConnectedNestedLoopForestNode *tree
         ) ;
 

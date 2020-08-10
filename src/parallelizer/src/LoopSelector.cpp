@@ -14,11 +14,16 @@ using namespace llvm;
 
 std::vector<LoopDependenceInfo *> Parallelizer::selectTheOrderOfLoopsToParallelize (
   Noelle &noelle, 
+  Hot *profiles,
   noelle::StayConnectedNestedLoopForestNode *tree
   ) {
   std::vector<LoopDependenceInfo *> selectedLoops{};
 
-  auto selector = [&noelle, &selectedLoops](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
+  /*
+   * Compute the amount of time that can be saved by a parallelization technique per loop.
+   */
+  std::map<LoopDependenceInfo *, uint64_t> timeSavedLoops;
+  auto selector = [&noelle, &timeSavedLoops, profiles](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
 
     /*
      * Fetch the loop.
@@ -28,14 +33,119 @@ std::vector<LoopDependenceInfo *> Parallelizer::selectTheOrderOfLoopsToParalleli
     auto ldi = noelle.getLoop(ls, optimizations);
 
     /*
-     * Add it.
+     * Fetch the set of sequential SCCs.
      */
-    selectedLoops.push_back(ldi);
+    auto SCCManager = ldi->getSCCManager();
+    auto sequentialSCCs = SCCManager->getSCCsOfType(SCCAttrs::SCCType::SEQUENTIAL);
+
+    /*
+     * Find the biggest sequential SCC.
+     */
+    uint64_t biggestSCCTime = 0;
+    for (auto sequentialSCC : sequentialSCCs){
+      assert(sequentialSCC->mustExecuteSequentially());
+
+      /*
+       * Fetch the SCC.
+       */
+      auto currentSCC = sequentialSCC->getSCC();
+
+      /*
+       * Check if the SCC can be removed by a transformation.
+       */
+      if (sequentialSCC->isInductionVariableSCC()){
+        continue ;
+      }
+      if (sequentialSCC->canBeCloned()){
+        continue ;
+      }
+      if (sequentialSCC->canBeClonedUsingLocalMemoryLocations()){
+        continue ;
+      }
+
+      auto areAllDataLCDsFromDisjointMemoryAccesses = true;
+      auto domainSpaceAnalysis = ldi->getLoopIterationDomainSpaceAnalysis();
+      ldi->sccdagAttrs.iterateOverLoopCarriedDataDependences(currentSCC, [
+        &areAllDataLCDsFromDisjointMemoryAccesses, domainSpaceAnalysis
+      ](DGEdge<Value> *dep) -> bool {
+        if (dep->isControlDependence()) return false;
+
+        if (!dep->isMemoryDependence()) {
+          areAllDataLCDsFromDisjointMemoryAccesses = false;
+          return true;
+        }
+
+        auto fromInst = dyn_cast<Instruction>(dep->getOutgoingT());
+        auto toInst = dyn_cast<Instruction>(dep->getIncomingT());
+        areAllDataLCDsFromDisjointMemoryAccesses &= fromInst && toInst && domainSpaceAnalysis->
+          areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst);
+        return !areAllDataLCDsFromDisjointMemoryAccesses;
+      });
+      if (areAllDataLCDsFromDisjointMemoryAccesses) {
+        continue;
+      }
+
+      /*
+       * Fetch the time spent in the current SCC.
+       */
+      auto currentSCCTime = profiles->getTotalInstructions(currentSCC);
+
+      /*
+       * Compute the biggest SCC.
+       */
+      if (currentSCCTime > biggestSCCTime){
+        biggestSCCTime = currentSCCTime;
+      }
+    }
+
+    /*
+     * Compute the maximum amount of time saved by any parallelization technique.
+     */
+    timeSavedLoops[ldi] = 0;
+    if (profiles->getIterations(ls) > 0){
+      auto instsPerIteration = profiles->getAverageTotalInstructionsPerIteration(ls);
+      auto instsInBiggestSCCPerIteration = ((double)biggestSCCTime) / ((double)profiles->getIterations(ls));
+      assert(instsInBiggestSCCPerIteration <= instsPerIteration);
+      auto timeSavedPerIteration = (double)(instsPerIteration - instsInBiggestSCCPerIteration);
+      auto timeSaved = timeSavedPerIteration * profiles->getIterations(ls);
+      timeSavedLoops[ldi] = (uint64_t)timeSaved;
+    }
 
     return false;
   };
-
   tree->visitPreOrder(selector);
+
+  /*
+   * Sort the loops depending on the amount of time that can be saved by a parallelization technique.
+   */
+  for (auto loopPair : timeSavedLoops){
+
+    /*
+     * Fetch the loop.
+     */
+    auto ldi = loopPair.first;
+
+    /*
+     * Add it.
+     */
+    selectedLoops.push_back(ldi);
+  }
+  auto compareOperator = [&timeSavedLoops](LoopDependenceInfo *l1, LoopDependenceInfo *l2){
+    auto s1 = timeSavedLoops[l1];
+    auto s2 = timeSavedLoops[l2];
+    if (s1 != s2){
+      return s1 > s2;
+    }
+
+    /*
+     * The loops have the same saved time.
+     * Sort them by nesting level.
+     */
+    auto l1LS = l1->getLoopStructure();
+    auto l2LS = l2->getLoopStructure();
+    return l1LS->getNestingLevel() < l2LS->getNestingLevel();
+  };
+  std::sort(selectedLoops.begin(), selectedLoops.end(), compareOperator);
 
   return selectedLoops;
 }
