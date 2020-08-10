@@ -12,6 +12,7 @@
 #include "PDGAnalysis.hpp"
 #include "HotProfiler.hpp"
 #include "Architecture.hpp"
+#include "StayConnectedNestedLoopForest.hpp"
 
 std::vector<LoopStructure *> * Noelle::getLoopStructures (
     Function *function
@@ -884,9 +885,9 @@ bool Noelle::isFunctionHot (Function *function, double minimumHotness) {
 }
 
 void Noelle::filterOutLoops (
-  std::vector<LoopStructure *> & loops,
-  std::function<bool (LoopStructure *)> filter
-  ) {
+    std::vector<LoopStructure *> & loops,
+    std::function<bool (LoopStructure *)> filter
+    ) {
 
   /*
    * Tag the loops that need to be removed.
@@ -908,4 +909,65 @@ void Noelle::filterOutLoops (
   }
 
   return ;
+}
+
+void Noelle::filterOutLoops (
+  noelle::StayConnectedNestedLoopForest *f, 
+  std::function<bool (LoopStructure *)> filter
+  ) {
+
+  /*
+   * Iterate over the trees and find the nodes to delete.
+   */
+  std::vector<noelle::StayConnectedNestedLoopForestNode *> toDelete{};
+  for (auto tree : f->getTrees()){
+    auto myF = [&filter, &toDelete](noelle::StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
+      auto ls = n->getLoop();
+      if (filter(ls)){
+        toDelete.push_back(n);
+      }
+      return false;
+    };
+    tree->visitPreOrder(myF);
+  }
+
+  /*
+   * Delete the nodes.
+   */
+  for (auto n : toDelete){
+    delete n;
+  }
+
+  return ;
+}
+
+noelle::StayConnectedNestedLoopForest * Noelle::organizeLoopsInTheirNestingForest (
+  std::vector<LoopStructure *> const & loops
+  ) {
+
+  /*
+   * Compute the dominators.
+   */
+  std::unordered_map<Function *, DominatorSummary *> doms{};
+  for (auto loop : loops){
+    auto f = loop->getFunction();
+    if (doms.find(f) != doms.end()){
+      continue ;
+    }
+    doms[f] = this->getDominators(f);
+  }
+
+  /*
+   * Compute the forest.
+   */
+  auto n = new noelle::StayConnectedNestedLoopForest(loops, doms);
+
+  /*
+   * Free the memory.
+   */
+  for (auto pair : doms){
+    delete pair.second;
+  }
+
+  return n;
 }
