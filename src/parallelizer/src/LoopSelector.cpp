@@ -19,9 +19,17 @@ std::vector<LoopDependenceInfo *> Parallelizer::selectTheOrderOfLoopsToParalleli
   std::vector<LoopDependenceInfo *> selectedLoops{};
 
   auto selector = [&noelle, &selectedLoops](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
+
+    /*
+     * Fetch the loop.
+     */
     auto ls = n->getLoop();
     auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID };
     auto ldi = noelle.getLoop(ls, optimizations);
+
+    /*
+     * Add it.
+     */
     selectedLoops.push_back(ldi);
 
     return false;

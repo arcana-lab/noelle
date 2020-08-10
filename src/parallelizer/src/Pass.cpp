@@ -175,7 +175,7 @@ bool Parallelizer::runOnModule (Module &M) {
        */
       std::string prefix{"Parallelizer:    "};
       for (auto i = 1 ; i < treeLevel; i++){
-        prefix.append("   ");
+        prefix.append("  ");
       }
 
       /*
@@ -202,6 +202,7 @@ bool Parallelizer::runOnModule (Module &M) {
       errs() << prefix << "  Average instructions per invocation = " << averageInstsPerInvocation << " %\n"; 
       auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(loopStructure);
       errs() << prefix << "  Average iterations per invocation = " << averageIterations << " %\n"; 
+      errs() << "\n";
 
       return false;
     };
