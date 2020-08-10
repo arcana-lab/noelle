@@ -17,14 +17,12 @@ using namespace llvm;
  */
 static cl::opt<bool> ForceParallelization("noelle-parallelizer-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
-static cl::opt<bool> DisableLoopSorting("noelle-parallelizer-disable-loop-sorting", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable sorting loops to parallelize"));
 
 Parallelizer::Parallelizer()
   :
   ModulePass{ID}, 
   forceParallelization{false},
-  forceNoSCCPartition{false},
-  disableLoopSorting{false}
+  forceNoSCCPartition{false}
   {
 
   return ;
@@ -33,7 +31,6 @@ Parallelizer::Parallelizer()
 bool Parallelizer::doInitialization (Module &M) {
   this->forceParallelization = (ForceParallelization.getNumOccurrences() > 0);
   this->forceNoSCCPartition = (ForceNoSCCPartition.getNumOccurrences() > 0);
-  this->disableLoopSorting = (DisableLoopSorting.getNumOccurrences() > 0);
 
   return false; 
 }
@@ -93,16 +90,10 @@ bool Parallelizer::runOnModule (Module &M) {
   errs() << "Parallelizer:  There are " << programLoops->size() << " loops in the program we are going to consider\n";
 
   /*
-   * Sort them by their hotness.
-   */
-  if (this->disableLoopSorting){
-    noelle.sortByHotness(*programLoops);
-  }
-
-  /*
    * Compute the nesting forest.
    */
   auto forest = noelle.organizeLoopsInTheirNestingForest(*programLoops);
+  delete programLoops ;
 
   /*
    * Filter out loops that are not worth parallelizing.
@@ -152,7 +143,6 @@ bool Parallelizer::runOnModule (Module &M) {
     return false;
   };
   noelle.filterOutLoops(forest, filter);
-  noelle.filterOutLoops(*programLoops, filter);
 
   /*
    * Print the loops.
@@ -224,7 +214,6 @@ bool Parallelizer::runOnModule (Module &M) {
    * Parallelize the loops starting from the outermost to the inner ones.
    * This is accomplished by having sorted the loops above.
    */
-  errs() << "Parallelizer:  Parallelize " << programLoops->size() << " loops, one at a time\n";
   auto modified = false;
   std::unordered_map<BasicBlock *, bool> modifiedBBs{};
   for (auto tree : forest->getTrees()){
