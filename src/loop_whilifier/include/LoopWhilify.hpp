@@ -57,6 +57,7 @@ namespace llvm {
        * Analysis for whilification process
        */ 
       bool IsDoWhile;
+      bool IsAppropriateToWhilify;
       bool IsSingleBlockLoop;
       bool ConsolidatedOriginalLatch;
       bool ResolvedLatch;
@@ -110,6 +111,11 @@ namespace llvm {
       bool isSemanticLatch(
         WhilifierContext * const WC,
         BasicBlock *&LatchPred
+      );
+
+      bool isAppropriateToWhilify(
+        WhilifierContext * const WC,
+        BasicBlock * const SemanticLatch
       );
 
       bool isDoWhile(
