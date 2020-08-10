@@ -129,7 +129,7 @@ bool DOALL::canBeAppliedToLoop (
      * If all loop carried data dependencies within the SCC do not overlap between
      * iterations, then DOALL can ignore them
      */
-    bool areAllDataLCDsFromDisjointMemoryAccesses = true;
+    auto areAllDataLCDsFromDisjointMemoryAccesses = true;
     auto domainSpaceAnalysis = LDI->getLoopIterationDomainSpaceAnalysis();
     LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [
       &areAllDataLCDsFromDisjointMemoryAccesses, domainSpaceAnalysis

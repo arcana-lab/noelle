@@ -65,7 +65,6 @@ namespace llvm {
        */
       bool forceParallelization;
       bool forceNoSCCPartition;
-      bool disableLoopSorting;
 
       /*
        * Methods
@@ -82,6 +81,12 @@ namespace llvm {
       std::vector<LoopDependenceInfo *> getLoopsToParallelize (Module &M, Noelle &par) ;
 
       bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Noelle &par) ;
+
+      std::vector<LoopDependenceInfo *> selectTheOrderOfLoopsToParallelize (
+        Noelle &noelle, 
+        Hot *profiles,
+        noelle::StayConnectedNestedLoopForestNode *tree
+        ) ;
 
       /*
        * Debug utilities

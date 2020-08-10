@@ -17,14 +17,12 @@ using namespace llvm;
  */
 static cl::opt<bool> ForceParallelization("noelle-parallelizer-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
-static cl::opt<bool> DisableLoopSorting("noelle-parallelizer-disable-loop-sorting", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable sorting loops to parallelize"));
 
 Parallelizer::Parallelizer()
   :
   ModulePass{ID}, 
   forceParallelization{false},
-  forceNoSCCPartition{false},
-  disableLoopSorting{false}
+  forceNoSCCPartition{false}
   {
 
   return ;
@@ -33,7 +31,6 @@ Parallelizer::Parallelizer()
 bool Parallelizer::doInitialization (Module &M) {
   this->forceParallelization = (ForceParallelization.getNumOccurrences() > 0);
   this->forceNoSCCPartition = (ForceNoSCCPartition.getNumOccurrences() > 0);
-  this->disableLoopSorting = (DisableLoopSorting.getNumOccurrences() > 0);
 
   return false; 
 }
@@ -89,20 +86,20 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = noelle.getLoopStructures();
-  errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops in the program we are going to consider\n";
+  auto programLoops = noelle.getLoopStructures();
+  errs() << "Parallelizer:  There are " << programLoops->size() << " loops in the program we are going to consider\n";
 
   /*
-   * Sort them by their hotness.
+   * Compute the nesting forest.
    */
-  if (this->disableLoopSorting){
-    noelle.sortByHotness(*loopsToParallelize);
-  }
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*programLoops);
+  delete programLoops ;
 
   /*
    * Filter out loops that are not worth parallelizing.
    */
-  auto filter = [this, profiles](LoopStructure *ls) -> bool{
+  errs() << "Parallelizer:  Filter out loops not worth considering\n";
+  auto filter = [this, forest, profiles](LoopStructure *ls) -> bool{
 
     /*
      * Fetch the loop ID.
@@ -113,11 +110,16 @@ bool Parallelizer::runOnModule (Module &M) {
      * Check if the latency of each loop invocation is enough to justify the parallelization.
      */
     auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
-    errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
     if (  true
           && (!this->forceParallelization)
           && (averageInstsPerInvocation < 2000)
       ){
+      errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
+      errs() << "Parallelizer:      It is too low\n";
+
+      /*
+       * Remove the loop.
+       */
       return true;
     }
 
@@ -125,51 +127,86 @@ bool Parallelizer::runOnModule (Module &M) {
      * Check the number of iterations per invocation.
      */
     auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
-    errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
     if (  true
           && (!this->forceParallelization)
           && (averageIterations < 12)
       ){
+      errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
       errs() << "Parallelizer:      It is too low\n";
+
+      /*
+       * Remove the loop.
+       */
       return true;
     }
 
     return false;
   };
-  noelle.filterOutLoops(*loopsToParallelize, filter);
+  noelle.filterOutLoops(forest, filter);
 
   /*
    * Print the loops.
    */
-  errs() << "Parallelizer:  There are " << loopsToParallelize->size() << " loops to parallelize\n";
-  for (auto loopStructure : *loopsToParallelize){
+  auto trees = forest->getTrees();
+  errs() << "Parallelizer:  There are " << trees.size() << " loop nesting trees in the program\n";
+  for (auto tree : trees){
 
     /*
-     * Fetch the header and function
+     * Print the root.
      */
-    auto loopHeader = loopStructure->getHeader();
-    auto loopFunction = loopStructure->getFunction();
-
-    /*
-     * Print information about this loop.
-     */
+    auto loopStructure = tree->getLoop();
     auto loopID = loopStructure->getID();
-    errs() << "Parallelizer:    ID: " << loopID << "\n";
-    errs() << "Parallelizer:    Function: \"" << loopFunction->getName() << "\"\n";
-    errs() << "Parallelizer:    Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
-    if (!profiles->isAvailable()){
-      continue ;
-    }
 
     /*
-     * Print the coverage of this loop.
+     * Print the tree.
      */
-    auto hotness = profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100;
-    errs() << "Parallelizer:      Hotness = " << hotness << " %\n"; 
-    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(loopStructure);
-    errs() << "Parallelizer:      Average instructions per invocation = " << averageInstsPerInvocation << " %\n"; 
-    auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(loopStructure);
-    errs() << "Parallelizer:      Average iterations per invocation = " << averageIterations << " %\n"; 
+    auto printTree = [profiles](noelle::StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) {
+
+      /*
+       * Fetch the loop information.
+       */
+      auto loopStructure = n->getLoop();
+      auto loopID = loopStructure->getID();
+      auto loopFunction = loopStructure->getFunction();
+      auto loopHeader = loopStructure->getHeader();
+
+      /*
+       * Compute the print prefix.
+       */
+      std::string prefix{"Parallelizer:    "};
+      for (auto i = 1 ; i < treeLevel; i++){
+        prefix.append("  ");
+      }
+
+      /*
+       * Print the loop.
+       */
+      errs() << prefix << "ID: " << loopID << " (" << treeLevel << ")\n";
+      errs() << prefix << "  Function: \"" << loopFunction->getName() << "\"\n";
+      errs() << prefix << "  Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
+      errs() << prefix << "  Loop nesting level: " << loopStructure->getNestingLevel() << "\n";
+
+      /*
+       * Check if there are profiles.
+       */
+      if (!profiles->isAvailable()){
+        return false;
+      }
+
+      /*
+       * Print the coverage of this loop.
+       */
+      auto hotness = profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100;
+      errs() << prefix << "  Hotness = " << hotness << " %\n"; 
+      auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(loopStructure);
+      errs() << prefix << "  Average instructions per invocation = " << averageInstsPerInvocation << " %\n"; 
+      auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(loopStructure);
+      errs() << prefix << "  Average iterations per invocation = " << averageIterations << " %\n"; 
+      errs() << prefix << "\n";
+
+      return false;
+    };
+    tree->visitPreOrder(printTree);
   }
 
   /*
@@ -178,53 +215,61 @@ bool Parallelizer::runOnModule (Module &M) {
    * Parallelize the loops starting from the outermost to the inner ones.
    * This is accomplished by having sorted the loops above.
    */
-  errs() << "Parallelizer:  Parallelize " << loopsToParallelize->size() << " loops, one at a time\n";
   auto modified = false;
-  std::unordered_map<BasicBlock *, bool> modifiedBBs;
-  for (auto ls : *loopsToParallelize){
+  std::unordered_map<BasicBlock *, bool> modifiedBBs{};
+  for (auto tree : forest->getTrees()){
 
     /*
-     * Check if we can parallelize this loop.
+     * Select the loops to parallelize.
      */
-    auto safe = true;
-    for (auto bb : ls->getBasicBlocks()){
-      if (modifiedBBs[bb]){
-        safe = false;
-        break ;
-      }
-    }
-    auto loopID = ls->getID();
-    if (!safe){
-      errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
-      continue ;
-    }
- 
-    /*
-     * Parallelize the current loop.
-     */
-    auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID };
-    auto ldi = noelle.getLoop(ls, optimizations);
-    auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, dswp, doall, helix, heuristics);
+    auto loopsToParallelize = this->selectTheOrderOfLoopsToParallelize(noelle, profiles, tree);
 
     /*
-     * Keep track of the parallelization.
+     * Parallelize the loops.
      */
-    if (loopIsParallelized){
-      errs() << "Parallelizer:    Loop " << loopID << " has been parallelized\n";
-      modified = true;
+    for (auto ldi : loopsToParallelize){
+
+      /*
+       * Check if we can parallelize this loop.
+       */
+      auto ls = ldi->getLoopStructure();
+      auto safe = true;
       for (auto bb : ls->getBasicBlocks()){
-        modifiedBBs[bb] = true;
+        if (modifiedBBs[bb]){
+          safe = false;
+          break ;
+        }
+      }
+      auto loopID = ls->getID();
+      if (!safe){
+        errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
+        continue ;
+      }
+
+      /*
+       * Parallelize the current loop.
+       */
+      auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, dswp, doall, helix, heuristics);
+
+      /*
+       * Keep track of the parallelization.
+       */
+      if (loopIsParallelized){
+        errs() << "Parallelizer:    Loop " << loopID << " has been parallelized\n";
+        modified = true;
+        for (auto bb : ls->getBasicBlocks()){
+          modifiedBBs[bb] = true;
+        }
       }
     }
-  }
 
-  /*
-   * Free the memory.
-   */
-  for (auto loop : *loopsToParallelize){
-    delete loop;
+    /*
+     * Free the memory.
+     */
+    for (auto loop : loopsToParallelize){
+      delete loop;
+    }
   }
-  delete loopsToParallelize;
 
   return modified;
 }
