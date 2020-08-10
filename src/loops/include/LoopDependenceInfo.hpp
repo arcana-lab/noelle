@@ -164,6 +164,8 @@ namespace llvm {
 
       InductionVariableManager * getInductionVariableManager (void) const ;
 
+      SCCDAGAttrs * getSCCManager (void) ;
+
       InvariantManager * getInvariantManager (void) const ;
 
       LoopIterationDomainSpaceAnalysis * getLoopIterationDomainSpaceAnalysis (void) const ;

@@ -70,28 +70,9 @@ double Hot::getAverageLoopIterationsPerInvocation (LoopStructure *loop) const {
   }
 
   /*
-   * Fetch the invocations of the header and its successors within the loop.
+   * Fetch the total number of iterations executed.
    */
-  auto loopHeader = loop->getHeader();
-  auto headerInvocations = this->getInvocations(loopHeader);
-  uint64_t succInvocations = 0;
-  for (auto succBB : successors(loopHeader)){
-    if (!loop->isIncluded(succBB)){
-      continue ;
-    }
-    succInvocations += this->getInvocations(succBB);
-  }
-
-  /*
-   * Compute the total number of iterations executed.
-   */
-  uint64_t loopIterations = 0;
-  if (headerInvocations == succInvocations){
-    loopIterations = headerInvocations;
-
-  } else {
-    loopIterations = headerInvocations - 1;
-  }
+  auto loopIterations = this->getIterations(loop);
 
   /*
    * Compute the stats.
@@ -118,4 +99,60 @@ double Hot::getAverageTotalInstructionsPerInvocation (LoopStructure *loop) const
   auto averageInstsPerInvocation = ((double)loopTotal) / ((double)loopInvocations);
 
   return averageInstsPerInvocation;
+}
+
+double Hot::getAverageTotalInstructionsPerIteration (LoopStructure *loop) const {
+
+  /*
+   * Fetch the average number of instructions per invocation.
+   */
+  auto instsPerInvocation = this->getAverageTotalInstructionsPerInvocation(loop);
+  if (instsPerInvocation == 0){
+    return 0;
+  }
+
+  /*
+   * Fetch the average number of iterations per invocation.
+   */
+  auto itersPerInvocation = this->getAverageLoopIterationsPerInvocation(loop);
+
+  /*
+   * Compute the average instructions per iteration.
+   */
+  auto instsPerIteration = instsPerInvocation / itersPerInvocation;
+
+  return instsPerIteration;
+}
+
+uint64_t Hot::getIterations (LoopStructure *l) const {
+
+  /*
+   * Fetch the header.
+   */
+  auto loopHeader = l->getHeader();
+
+  /*
+   * Fetch the invocations of the header and its successors within the loop.
+   */
+  auto headerInvocations = this->getInvocations(loopHeader);
+  uint64_t succInvocations = 0;
+  for (auto succBB : successors(loopHeader)){
+    if (!l->isIncluded(succBB)){
+      continue ;
+    }
+    succInvocations += this->getInvocations(succBB);
+  }
+
+  /*
+   * Compute the total number of iterations executed.
+   */
+  uint64_t loopIterations = 0;
+  if (headerInvocations == succInvocations){
+    loopIterations = headerInvocations;
+
+  } else {
+    loopIterations = headerInvocations - 1;
+  }
+
+  return loopIterations;
 }
