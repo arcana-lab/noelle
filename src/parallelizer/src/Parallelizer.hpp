@@ -65,7 +65,6 @@ namespace llvm {
        */
       bool forceParallelization;
       bool forceNoSCCPartition;
-      bool disableLoopSorting;
 
       /*
        * Methods
