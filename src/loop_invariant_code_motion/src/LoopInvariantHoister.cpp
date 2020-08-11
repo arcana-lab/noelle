@@ -27,14 +27,17 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   std::unordered_set<PHINode *> phisToRemove{};
   for (auto B : loopStructure->getBasicBlocks()) {
     for (auto &I : *B) {
-      if (!invariantManager->isLoopInvariant(&I)) continue;
+      if (!invariantManager->isLoopInvariant(&I)) {
+        continue;
+      }
 
       /*
        * There is no benefit to hoisting GEPs, and it seems that
        * other normalizing transformations bring GEPs next to their usages
        */
-      if (isa<GetElementPtrInst>(&I)) continue;
-
+      if (isa<GetElementPtrInst>(&I)) {
+        continue;
+      }
       modified = true;
 
       auto phi = dyn_cast<PHINode>(&I);
