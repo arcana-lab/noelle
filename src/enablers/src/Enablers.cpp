@@ -71,9 +71,10 @@ bool EnablersManager::applyEnablers (
    */
   if (par.isTransformationEnabled(Transformation::SCEV_SIMPLIFICATION_ID)){
     errs() << "EnablersManager:   Try to simplify IV related SCEVs and their corresponding instructions in loops\n";
-    auto function = LDI->getLoopStructure()->getFunction();
+    if (scevSimplification.simplifyIVRelatedSCEVs(*LDI)){
+    /*auto function = LDI->getLoopStructure()->getFunction();
     auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
-    if (scevSimplification.simplifyLoopGoverningIVGuards(*LDI, SE)){
+    if (scevSimplification.simplifyLoopGoverningIVGuards(*LDI, SE)){*/
       errs() << "EnablersManager:     Loop IV related SCEVs have been simplified\n";
       return true;
     }
