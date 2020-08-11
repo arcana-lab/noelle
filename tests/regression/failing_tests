@@ -73,3 +73,5 @@ regression_default/GoToLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-parall
 regression_default/Multiloops_3 -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force
 regression_enablers/Exit_call2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall
 regression_enablers/GoToLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall
+regression_10/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force
+regression_13/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force
