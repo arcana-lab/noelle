@@ -593,8 +593,8 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
     // }
     // errs() << "\tEqual to instruction SCEV: " << (subscriptSCEV == SE.getSCEV(inst)) << "\n";
 
-    if (SE.isKnownPredicate(looseLowerBoundPred, subscriptSCEV, zeroSCEV)
-      && SE.isKnownPredicate(strictUpperBoundPred, subscriptSCEV, sizeSCEV)) continue;
+    // if (SE.isKnownPredicate(looseLowerBoundPred, subscriptSCEV, zeroSCEV)
+    //   && SE.isKnownPredicate(strictUpperBoundPred, subscriptSCEV, sizeSCEV)) continue;
 
     if (iv && iv->isIVInstruction(inst) && isa<SCEVAddRecExpr>(subscriptSCEV)) {
       auto subscriptRecSCEV = cast<SCEVAddRecExpr>(subscriptSCEV);
