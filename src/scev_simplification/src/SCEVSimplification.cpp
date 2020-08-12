@@ -486,10 +486,35 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   }
 
   /*
-   * Immediately remove all truncations
+   * Immediately remove all GEP's uses and transitive uses of truncations
+   * If that leaves the truncation use-less, erase it
    */
   for (auto obsoleteCast : castsToRemove) {
+    auto isUsedOtherThanByGEP = false;
     auto castedValue = obsoleteCast->getOperand(0);
+
+    std::unordered_set<User *> castUsers{obsoleteCast->user_begin(), obsoleteCast->user_end()};
+    for (auto user : castUsers) {
+      auto userInst = dyn_cast<Instruction>(user);
+      if (!userInst) continue;
+
+      bool isUsedByGEP = false;
+      for (auto gepDerivation : gepDerivations) {
+        if (gepDerivation->ivDerivingInstructions.find(userInst) != gepDerivation->ivDerivingInstructions.end()) {
+          isUsedByGEP = true;
+          break;
+        }
+      }
+
+      if (!isUsedByGEP) {
+        isUsedOtherThanByGEP = true;
+        continue;
+      }
+
+      user->replaceUsesOfWith(obsoleteCast, castedValue);
+    }
+
+    if (isUsedOtherThanByGEP) continue;
     obsoleteCast->replaceAllUsesWith(castedValue);
     obsoleteCast->eraseFromParent();
   }
@@ -629,8 +654,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
       // user->print(errs() << "\tAddressing user: "); errs() << "\n";
 
       /*
-       * Prevent creating a truncation for a cast that will be removed
-       * or an instruction already converted
+       * Prevent creating a truncation for an instruction already converted
        */
       if (oldToNewTypedMap.find(user) != oldToNewTypedMap.end()) continue;
 
