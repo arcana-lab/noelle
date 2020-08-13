@@ -21,11 +21,13 @@ namespace llvm::noelle {
     public:
 
       /*
-       * Constructor
+       * Methods
        */
       LoopSchedulerContext(
         LoopStructure * const LS
       );
+
+      void Dump (void) const ;
 
 
       /*
@@ -38,9 +40,8 @@ namespace llvm::noelle {
        * Derived analysis state
        */
       BasicBlock *OriginalLatch;
-      std::unordered_set<BasicBlock *> Blocks;
+      std::set<BasicBlock *> Blocks;
       std::vector<std::pair<BasicBlock *, BasicBlock *>> ExitEdges;
-
 
 
       /*
@@ -50,8 +51,8 @@ namespace llvm::noelle {
       bool BodyCalculated=false;
       bool DiscrepancyExists=false;  /* Discrepancy between analysis
                                         state and loop structure */
-      std::unordered_set<BasicBlock *> Prologue;
-      std::unordered_set<BasicBlock *> Body;
+      std::set<BasicBlock *> Prologue;
+      std::set<BasicBlock *> Body;
 
   };
 
@@ -75,21 +76,24 @@ namespace llvm::noelle {
       Scheduler ();
 
       bool shrinkLoopPrologue (
-        LoopDependenceInfo const &LDI,
-        DomTreeSummary const &PDT
-      ) const ;
-
-      std::vector<BasicBlock *> getLoopPrologue (
         LoopStructure * const LS,
         DomTreeSummary const &PDT,
         LoopSchedulerContext *LSC=nullptr
       ) const ;
 
-      std::vector<BasicBlock *> getLoopBody (
-        LoopDependenceInfo const &LDI,
+      std::set<BasicBlock *> getLoopPrologue (
+        LoopStructure * const LS,
         DomTreeSummary const &PDT,
         LoopSchedulerContext *LSC=nullptr,
-        std::vector<BasicBlock *> *Prologue=nullptr
+        bool UpdateContext=false
+      ) const ;
+
+      std::set<BasicBlock *> getLoopBody (
+        LoopStructure * const LS,
+        DomTreeSummary const &PDT,
+        LoopSchedulerContext *LSC=nullptr,
+        bool UpdateContext=false,
+        std::set<BasicBlock *> *PassedPrologue=nullptr
       ) const ;
 
   };
