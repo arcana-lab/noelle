@@ -15,24 +15,68 @@
 
 namespace llvm::noelle {
 
+  class LoopSchedulerContext {
+
+    public:
+
+      /*
+       * Constructor
+       */
+      LoopSchedulerContext(
+        LoopDependenceInfo *LDI
+      );
+
+
+      /*
+       * Pass analysis state
+       */ 
+      LoopDependenceInfo *LDI;
+
+
+      /*
+       * New analysis state
+       */
+      std::vector<BasicBlock *> Prologue;
+      std::vector<BasicBlock *> Body;
+
+  };
+
   class Scheduler {
+
     public:
 
       /*
        * Methods
        */
+
+      /*
+       * For simplicity and time --- the scheduler has 
+       * NOT been interfaced properly. The sole concern
+       * of the scheduler is to shrink the loop prologue
+       * at this time
+       * 
+       * TODO --- Engine, generalization
+       * 
+       */ 
       Scheduler ();
 
+      Scheduler getScheduler(void) const ;
 
-    private:
+      bool shrinkLoopPrologue (
+        LoopDependenceInfo &LDI,
+        DomTreeSummary &PDT
+      ) const ;
 
-      /*
-       * Fields
-       */
+      std::vector<BasicBlock *> getLoopPrologue (
+        LoopDependenceInfo &LDI,
+        DomTreeSummary &PDT
+      ) const ;
 
-      /*
-       * Methods
-       */
+      std::vector<BasicBlock *> getLoopBody (
+        LoopDependenceInfo &LDI,
+        DomTreeSummary &PDT,
+        std::vector<BasicBlock *> *Prologue=nullptr
+      ) const ;
 
   };
 
