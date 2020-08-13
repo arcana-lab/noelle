@@ -12,6 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "LoopDependenceInfo.hpp"
+#include "DominatorSummary.hpp"
 
 namespace llvm::noelle {
 
@@ -23,21 +24,34 @@ namespace llvm::noelle {
        * Constructor
        */
       LoopSchedulerContext(
-        LoopDependenceInfo *LDI
+        LoopStructure * const LS
       );
 
 
       /*
        * Pass analysis state
        */ 
-      LoopDependenceInfo *LDI;
+      LoopStructure *TheLoop;
+
+
+      /*
+       * Derived analysis state
+       */
+      BasicBlock *OriginalLatch;
+      std::unordered_set<BasicBlock *> Blocks;
+      std::vector<std::pair<BasicBlock *, BasicBlock *>> ExitEdges;
+
 
 
       /*
        * New analysis state
        */
-      std::vector<BasicBlock *> Prologue;
-      std::vector<BasicBlock *> Body;
+      bool PrologueCalculated=false;
+      bool BodyCalculated=false;
+      bool DiscrepancyExists=false;  /* Discrepancy between analysis
+                                        state and loop structure */
+      std::unordered_set<BasicBlock *> Prologue;
+      std::unordered_set<BasicBlock *> Body;
 
   };
 
@@ -60,21 +74,21 @@ namespace llvm::noelle {
        */ 
       Scheduler ();
 
-      Scheduler getScheduler(void) const ;
-
       bool shrinkLoopPrologue (
-        LoopDependenceInfo &LDI,
-        DomTreeSummary &PDT
+        LoopDependenceInfo const &LDI,
+        DomTreeSummary const &PDT
       ) const ;
 
       std::vector<BasicBlock *> getLoopPrologue (
-        LoopDependenceInfo &LDI,
-        DomTreeSummary &PDT
+        LoopStructure * const LS,
+        DomTreeSummary const &PDT,
+        LoopSchedulerContext *LSC=nullptr
       ) const ;
 
       std::vector<BasicBlock *> getLoopBody (
-        LoopDependenceInfo &LDI,
-        DomTreeSummary &PDT,
+        LoopDependenceInfo const &LDI,
+        DomTreeSummary const &PDT,
+        LoopSchedulerContext *LSC=nullptr,
         std::vector<BasicBlock *> *Prologue=nullptr
       ) const ;
 
