@@ -71,54 +71,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
   /*
    * Collect clones of step size deriving values for all induction variables
    * of the top level loop
-   * TODO: Refactor this, as DOALL does the same
    */
-  std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
-  for (auto ivInfo : ivInfos) {
-
-    /*
-     * If the step value is constant or a value present in the original loop, use its clone
-     * TODO: Refactor this logic as a helper: tryAndFetchClone that doesn't assert a clone must exist
-     */
-    auto singleComputedStepValue = ivInfo->getSingleComputedStepValue();
-    if (singleComputedStepValue) {
-      Value *clonedStepValue = nullptr;
-      if (isa<ConstantData>(singleComputedStepValue)
-        || task->isAnOriginalLiveIn(singleComputedStepValue)) {
-        clonedStepValue = singleComputedStepValue;
-      } else if (auto singleComputedStepInst = dyn_cast<Instruction>(singleComputedStepValue)) {
-        clonedStepValue = task->getCloneOfOriginalInstruction(singleComputedStepInst);
-      }
-
-      if (clonedStepValue) {
-        clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
-        continue;
-      }
-    }
-
-    /*
-     * The step size is a composite SCEV. Fetch its instruction expansion,
-     * cloning into the entry block of the function
-     * 
-     * NOTE: The step size is expected to be loop invariant
-     */
-    auto expandedInsts = ivInfo->getComputationOfStepValue();
-    assert(expandedInsts.size() > 0);
-    for (auto expandedInst : expandedInsts) {
-      auto clonedInst = expandedInst->clone();
-      task->addInstruction(expandedInst, clonedInst);
-      entryBuilder.Insert(clonedInst);
-    }
-
-    /*
-     * Wire the instructions in the expansion to use the cloned values
-     */
-    for (auto expandedInst : expandedInsts) {
-      adjustDataFlowToUseClones(task->getCloneOfOriginalInstruction(expandedInst), 0);
-    }
-    auto clonedStepValue = task->getCloneOfOriginalInstruction(expandedInsts.back());
-    clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
-  }
+  auto clonedStepSizeMap = cloneIVStepValueComputation(LDI, 0, entryBuilder);
 
   /*
    * Determine start value of the IV for the task
@@ -134,12 +88,12 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       stepOfIV,
       entryBuilder.CreateZExtOrTrunc(
         task->coreArg,
-        ivPHI->getType()
+        stepOfIV->getType()
       ),
       "stepSize_X_coreIdx"
     );
-    auto offsetStartValue = entryBuilder.CreateAdd(startOfIV, nthCoreOffset, "startPlusOffset");
 
+    auto offsetStartValue = IVUtility::offsetIVPHI(preheaderClone, ivPHI, startOfIV, nthCoreOffset);
     ivPHI->setIncomingValueForBlock(preheaderClone, offsetStartValue);
   }
 
@@ -157,22 +111,14 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       entryBuilder.CreateSub(
         entryBuilder.CreateZExtOrTrunc(
           task->numCoresArg,
-          ivPHI->getType()
+          stepOfIV->getType()
         ),
-        ConstantInt::get(ivPHI->getType(), 1)
+        ConstantInt::get(stepOfIV->getType(), 1)
       ),
       "nCoresStepSize"
     );
 
-    for (auto i = 0; i < ivPHI->getNumIncomingValues(); ++i) {
-      auto B = ivPHI->getIncomingBlock(i);
-      if (preheaderClone == B) continue;
-
-      IRBuilder<> latchBuilder(B->getTerminator());
-      auto prevStepRecurrence = ivPHI->getIncomingValue(i);
-      auto batchStepRecurrence = latchBuilder.CreateAdd(prevStepRecurrence, jumpStepSize, "nextStep");
-      ivPHI->setIncomingValue(i, batchStepRecurrence);
-    }
+    IVUtility::stepInductionVariablePHI(preheaderClone, ivPHI, jumpStepSize);
   }
 
   /*
