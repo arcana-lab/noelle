@@ -92,9 +92,13 @@ namespace llvm::noelle {
         ScheduleOption Option=ScheduleOption::Shrink
       ) const ;
 
+
+      /*
+       * Transformations
+       */ 
+      
       bool pushInstructionOut(
-        Instruction *I,
-        BasicBlock *Block
+        Instruction *I
       ) const ;
 
 
