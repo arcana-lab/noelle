@@ -18,17 +18,33 @@ namespace llvm {
 
   class IVUtility {
     public:
+
       static PHINode *createChunkPHI (
         BasicBlock *preheaderBlock,
         BasicBlock *headerBlock,
         Type *chunkPHIType,
-        Value *chunkSize) ;
+        Value *chunkSize
+      ) ;
 
       static void chunkInductionVariablePHI (
         BasicBlock *preheaderBlock,
         PHINode *ivPHI,
         PHINode *chunkPHI,
-        Value *chunkStepSize) ;
+        Value *chunkStepSize
+      ) ;
+
+      static Value *offsetIVPHI (
+        BasicBlock *insertBlock,
+        PHINode *ivPHI,
+        Value *startValue,
+        Value *offsetValue
+      );
+
+      static void stepInductionVariablePHI (
+        BasicBlock *preheaderBlock,
+        PHINode *ivPHI,
+        Value *additionalStepSize
+      );
 
   };
 
