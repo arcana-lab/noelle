@@ -16,6 +16,11 @@
 
 namespace llvm::noelle {
 
+  enum ScheduleOption {
+    Shrink=0,
+    Expand
+  };
+
   class LoopSchedulerContext {
 
     public:
@@ -61,10 +66,6 @@ namespace llvm::noelle {
     public:
 
       /*
-       * Methods
-       */
-
-      /*
        * For simplicity and time --- the scheduler has 
        * NOT been interfaced properly. The sole concern
        * of the scheduler is to shrink the loop prologue
@@ -73,11 +74,39 @@ namespace llvm::noelle {
        * TODO --- Engine, generalization
        * 
        */ 
+
+      /*
+       * Constructors
+       */ 
+
       Scheduler ();
+
+
+      /*
+       * Drivers
+       */
+
+      bool scheduleBasicBlock(
+        BasicBlock *Block,
+        PDG *ThePDG,
+        ScheduleOption Option=ScheduleOption::Shrink
+      ) const ;
+
+      bool pushInstructionOut(
+        Instruction *I,
+        BasicBlock *Block
+      ) const ;
+
+
+      /*
+       * Methods
+       */
 
       bool shrinkLoopPrologue (
         LoopStructure * const LS,
         DomTreeSummary const &PDT,
+        Function *F,
+        PDG *ThePDG,
         LoopSchedulerContext *LSC=nullptr
       ) const ;
 
