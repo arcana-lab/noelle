@@ -42,7 +42,8 @@ void IVUtility::chunkInductionVariablePHI(
   BasicBlock *preheaderBlock,
   PHINode *ivPHI,
   PHINode *chunkPHI,
-  Value *chunkStepSize) {
+  Value *chunkStepSize
+) {
 
   for (auto i = 0; i < ivPHI->getNumIncomingValues(); ++i) {
     auto B = ivPHI->getIncomingBlock(i);
@@ -52,17 +53,68 @@ void IVUtility::chunkInductionVariablePHI(
     auto chunkIncomingIdx = chunkPHI->getBasicBlockIndex(B);
     Value *isChunkCompleted = cast<SelectInst>(chunkPHI->getIncomingValue(chunkIncomingIdx))->getCondition();
 
+    auto initialLatchValue = ivPHI->getIncomingValue(i);
+    auto ivOffsetByChunk = offsetIVPHI(B, ivPHI, initialLatchValue, chunkStepSize);
+
     /*
-      * Iterate to next chunk if necessary
-      */
+     * Iterate to next chunk if necessary
+     */
     ivPHI->setIncomingValue(i, latchBuilder.CreateSelect(
       isChunkCompleted,
-      latchBuilder.CreateAdd(ivPHI->getIncomingValue(i), chunkStepSize),
-      ivPHI->getIncomingValue(i),
+      ivOffsetByChunk,
+      initialLatchValue, 
       "nextStepOrNextChunk"
     ));
 
   }
+}
+
+void IVUtility::stepInductionVariablePHI (
+  BasicBlock *preheaderBlock,
+  PHINode *ivPHI,
+  Value *additionalStepSize
+) {
+
+  for (auto i = 0; i < ivPHI->getNumIncomingValues(); ++i) {
+    auto B = ivPHI->getIncomingBlock(i);
+    if (preheaderBlock == B) continue;
+
+    auto prevStepRecurrence = ivPHI->getIncomingValue(i);
+    auto batchStepRecurrence = offsetIVPHI(B, ivPHI, prevStepRecurrence, additionalStepSize);
+    ivPHI->setIncomingValue(i, batchStepRecurrence);
+  }
+}
+
+Value *IVUtility::offsetIVPHI (
+  BasicBlock *insertBlock,
+  PHINode *ivPHI,
+  Value *startValue,
+  Value *offsetValue
+) {
+
+  IRBuilder<> insertBuilder(insertBlock->getTerminator());
+  Value *offsetStartValue = nullptr;
+
+  /*
+   * For pointer arithmetic, use ptrtoint - inttoptr paradigm
+   */
+  auto ivType = ivPHI->getType();
+  if (ivType->isPointerTy()) {
+    offsetStartValue = insertBuilder.CreateIntToPtr(
+      insertBuilder.CreateAdd(
+        insertBuilder.CreatePtrToInt(
+          startValue,
+          offsetValue->getType()
+        ),
+        offsetValue
+      ),
+      ivType
+    );
+  } else {
+    offsetStartValue = insertBuilder.CreateAdd(startValue, offsetValue);
+  }
+
+  return offsetStartValue;
 }
 
 /*
