@@ -17,9 +17,207 @@ Scheduler::Scheduler() {
 }
 
 
+/*
+ * ------------------------------------------------------------------ 
+ * Drivers
+ * ------------------------------------------------------------------
+ */
+
+bool Scheduler::scheduleBasicBlock(
+  BasicBlock *Block,
+  PDG *ThePDG,
+  ScheduleOption Option
+) const {
+  
+  /*
+   * TOP --- Iteratively determine if any instructions can
+   * be pushed out of the basic block by analyzing the 
+   * register and memory data dependences
+   * 
+   * Iterate backwards through the instructions in the 
+   * block
+   */
+  
+
+  /*
+   * Set up necessary data structures:
+   * - Keeps --- Instructions to stay in the block
+   * - Pushes --- Instructions to push out of the block
+   * - NotProcessed --- Instructions in the queue not 
+   *   yet processed in the algorithm
+   * 
+   * - WorkList --- Instructions to process
+   */
+  std::set<Instruction *> Keeps,
+                          Pushes,
+                          NotProcessed;
+
+  queue<Instruction *> WorkList;
+
+
+  /*
+   * Algorithm:
+   * 
+   * for I in all instructions (starting at the terminator):
+   *    a. if I is a PHINode or terminator, add I to Keeps 
+   *       and continue 
+   *    b. iterate over instructions that depend on I. if 
+   *       any dependence is a member of the NotProcessed 
+   *       or Keeps set or not part of the basic block, add I 
+   *       to keep and continue. Otherwise, add I to Pushes 
+   *       and continue.
+   * 
+   * NOTE --- there are options to increase efficiency:
+   * - Chaining --- this is tricky because it's possible 
+   *   to miss depedences from instructions that are skipped 
+   * - More efficient to push dependence cycles within a basic 
+   *   block out entirely --- current algorithm is too simple
+   *   for that
+   */
+  
+  
+  /*
+   * Set up worklist --- reverse instruction iteration
+   */ 
+  for (auto IIT = Block->rbegin(); 
+       IIT != Block->rend();
+       ++IIT) {
+    
+    Instruction &I = *IIT;
+
+    WorkList.push(&I);
+    NotProcessed.insert(&I);
+    
+  }
+
+
+  /*
+   * Set up lambda for iterating over instruction dependences
+   */ 
+  auto Iterator = 
+    [Block, Keeps, NotProcessed]
+    (Value *DependsOn, DataDependenceType D) -> bool {
+
+    errs() << "   " << *DependsOn << "\n";
+
+    /*
+     * Arguments, globals, and other values are outside
+     * of the basic block already, ignore
+     */
+    Instruction *DependsOnInst = dyn_cast<Instruction>(DependsOn);
+    if (!DependsOnInst) {
+      return false;
+    }
+
+
+    /*
+     * If the instruction is not part of the block, ignore
+     */
+    if (DependsOnInst->getParent() != Block) {
+      return false;
+    }
+
+
+    /*
+     * If the instruction is part of the Keeps or NotProcessed
+     * set, return true immediately
+     */ 
+    if (false
+        || (Keeps.find(DependsOnInst) != Keeps.end())
+        || (NotProcessed.find(DependsOnInst) != NotProcessed.end())) {
+      
+      return true;
+
+    }
+
+
+    return false;
+
+  };
+
+  /*
+   * Iterate over all instructions in the block
+   */
+  while (!WorkList.empty()) {
+
+    /*
+     * Start processing
+     */
+    Instruction *I = WorkList.front();
+    WorkList.pop();
+
+    errs() << "LoopScheduler: Current I: " << *I << "\n";
+
+    NotProcessed.erase(
+      NotProcessed.find(I)
+    );
+
+
+    /*
+     * <Part a.>
+     */  
+    if (false
+        || isa<PHINode>(I)
+        || I->isTerminator()) {
+
+      errs() << "LoopScheduler:   Keep --- (a)\n"; 
+
+      Keeps.insert(I);
+      continue;
+
+    }
+
+
+    /*
+     * <Part b.> 
+     */
+    auto ShouldKeep = 
+      ThePDG->iterateOverDependencesFrom(I, 
+        false, /* Control dependences */
+        true, /* Memory dependences */
+        true, /* Register dependences */
+        Iterator
+      );
+
+    if (ShouldKeep) {
+
+      errs() << "LoopScheduler:   Keep --- (b)\n";
+      Keeps.insert(I);
+
+    } else {
+
+      errs() << "LoopScheduler:   Push\n";
+      Pushes.insert(I);
+
+    }
+      
+  }
+
+  /*
+   * Debugging
+   */
+  errs() << "LoopScheduler: Instructions to push:\n";
+  for (auto Push : Pushes) {
+    errs() << "   " << *Push << "\n";
+  }
+
+
+  return false;
+
+}
+
+
+/*
+ * ------------------------------------------------------------------ 
+ * Methods
+ * ------------------------------------------------------------------
+ */
+
 bool Scheduler::shrinkLoopPrologue (
   LoopStructure * const LS,
   DomTreeSummary const &PDT,
+  Function *F,
+  PDG *ThePDG,
   LoopSchedulerContext *LSC
 ) const {
 
@@ -56,6 +254,37 @@ bool Scheduler::shrinkLoopPrologue (
    * Dump analyzed context
    */ 
   TheLSC->Dump();
+
+
+  /*
+   * Dependences
+   */
+  auto iterF = [](Value *src, DataDependenceType d) -> bool {
+    errs() << "   'builds' " << *src << "\n";
+    return false;
+  };
+
+  for (auto *Block : ThePrologue) {
+
+    for (auto &I : *Block) {
+      errs() << "The inst: " << I << "\n";
+      ThePDG->iterateOverDependencesFrom(&I, false, true, true, iterF);
+    }
+
+  }
+
+
+  for (auto *Block : ThePrologue) {
+
+    errs() << *Block << "\n";
+
+    this->scheduleBasicBlock(
+      Block,
+      ThePDG
+    );
+
+  }
+
 
 
   return false;
@@ -188,9 +417,9 @@ std::set<BasicBlock *> Scheduler::getLoopBody (
 
 
 /*
- * --------------------------------- 
+ * ------------------------------------------------------------------ 
  * LoopSchedulerContext
- * ---------------------------------
+ * ------------------------------------------------------------------
  */
 LoopSchedulerContext::LoopSchedulerContext(
   LoopStructure * const LS
