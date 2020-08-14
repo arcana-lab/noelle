@@ -47,12 +47,16 @@ bool Scheduler::scheduleBasicBlock(
    *   yet processed in the algorithm
    * 
    * - WorkList --- Instructions to process
+   * 
+   * - CurrentInstruction --- For PDG iterator
    */
   std::set<Instruction *> Keeps,
                           Pushes,
                           NotProcessed;
 
   queue<Instruction *> WorkList;
+
+  Instruction *CurrentInstruction = nullptr;
 
 
   /*
@@ -95,7 +99,7 @@ bool Scheduler::scheduleBasicBlock(
    * Set up lambda for iterating over instruction dependences
    */ 
   auto Iterator = 
-    [Block, Keeps, NotProcessed]
+    [Block, CurrentInstruction, Keeps, NotProcessed]
     (Value *DependsOn, DataDependenceType D) -> bool {
 
     errs() << "   " << *DependsOn << "\n";
@@ -106,6 +110,14 @@ bool Scheduler::scheduleBasicBlock(
      */
     Instruction *DependsOnInst = dyn_cast<Instruction>(DependsOn);
     if (!DependsOnInst) {
+      return false;
+    }
+
+
+    /*
+     * If an instruction depends on itself, ignore *** FIX ***
+     */ 
+    if (DependsOnInst == CurrentInstruction) {
       return false;
     }
 
@@ -144,6 +156,7 @@ bool Scheduler::scheduleBasicBlock(
      * Start processing
      */
     Instruction *I = WorkList.front();
+    CurrentInstruction = I;
     WorkList.pop();
 
     errs() << "LoopScheduler: Current I: " << *I << "\n";
