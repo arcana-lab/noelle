@@ -38,6 +38,7 @@ include_directories(
   ../../dataflow/include
   ../../scheduler/include
   ../../../external/svf/include
+  ../../../external/scaf/include
   )
 
 # Declare the LLVM pass to compile

@@ -5,7 +5,7 @@
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "PDG.hpp"
@@ -21,7 +21,22 @@ LoopDependenceInfo::LoopDependenceInfo(
   DominatorSummary &DS,
   ScalarEvolution &SE,
   uint32_t maxCores
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}} {}
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, nullptr} {
+
+  return ;
+}
+
+LoopDependenceInfo::LoopDependenceInfo(
+  PDG *fG,
+  Loop *l,
+  DominatorSummary &DS,
+  ScalarEvolution &SE,
+  uint32_t maxCores,
+  liberty::LoopAA *aa
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, aa} {
+
+  return ;
+}
 
 LoopDependenceInfo::LoopDependenceInfo(
   PDG *fG,
@@ -30,6 +45,19 @@ LoopDependenceInfo::LoopDependenceInfo(
   ScalarEvolution &SE,
   uint32_t maxCores,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, optimizations, nullptr} {
+
+  return ;
+}
+
+LoopDependenceInfo::LoopDependenceInfo(
+  PDG *fG,
+  Loop *l,
+  DominatorSummary &DS,
+  ScalarEvolution &SE,
+  uint32_t maxCores,
+  std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+  liberty::LoopAA *loopAA
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{maxCores},
     liSummary{l},
@@ -47,7 +75,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->fetchLoopAndBBInfo(l, SE);
   auto ls = getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
-  auto DGs = this->createDGsForLoop(l, fG, DS);
+  auto DGs = this->createDGsForLoop(l, fG, DS, loopAA);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
 
@@ -140,12 +168,19 @@ uint64_t LoopDependenceInfo::computeTripCounts (
   return tripCount;
 }
 
-std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG, DominatorSummary &DS){
+std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG, DominatorSummary &DS, liberty::LoopAA *aa){
 
   /*
    * Set the loop dependence graph.
    */
   auto loopDG = functionDG->createLoopsSubgraph(l);
+
+  /*
+   * Perform loop-aware memory dependence analysis to refine loop PDG
+   */
+  if (aa) {
+    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, aa);
+  }
 
   /*
    * Build a SCCDAG of loop-internal instructions

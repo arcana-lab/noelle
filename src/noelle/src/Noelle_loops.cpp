@@ -5,7 +5,7 @@
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Noelle.hpp"
@@ -210,7 +210,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * Check of loopIndex provided is within bounds
    */
   if (this->loopHeaderToLoopIndexMap.find(header) == this->loopHeaderToLoopIndexMap.end()){
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, this->loopAA);
 
     delete DS;
     return ldi;
@@ -225,7 +225,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * No filter file was provided. Construct LDI without profiler configurables
    */
   if (!this->hasReadFilterFile) {
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, optimizations);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, optimizations, this->loopAA);
 
     delete DS;
     return ldi;
@@ -332,7 +332,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Allocate the loop wrapper.
      */
-    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
+    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores,
+                                      this->loopAA);
     allLoops->push_back(ldi);
   }
 
@@ -447,7 +448,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
+        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE,
+                                          this->maxCores, this->loopAA);
 
         allLoops->push_back(ldi);
         continue ;
@@ -810,7 +812,8 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
     uint32_t maxCores
     ) {
 
-  auto ldi = new LoopDependenceInfo(functionPDG, loop, *DS, *SE, maxCores);
+  auto ldi = new LoopDependenceInfo(functionPDG, loop, *DS, *SE, maxCores,
+                                    this->loopAA);
 
   /*
    * Set the loop constraints specified by INDEX_FILE.
