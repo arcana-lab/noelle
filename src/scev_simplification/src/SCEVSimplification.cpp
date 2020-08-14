@@ -500,7 +500,8 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
 
       bool isUsedByGEP = false;
       for (auto gepDerivation : gepDerivations) {
-        if (gepDerivation->ivDerivingInstructions.find(userInst) != gepDerivation->ivDerivingInstructions.end()) {
+        if (gepDerivation->gep == userInst
+          || gepDerivation->ivDerivingInstructions.find(userInst) != gepDerivation->ivDerivingInstructions.end()) {
           isUsedByGEP = true;
           break;
         }
@@ -515,7 +516,6 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
     }
 
     if (isUsedOtherThanByGEP) continue;
-    obsoleteCast->replaceAllUsesWith(castedValue);
     obsoleteCast->eraseFromParent();
   }
 
