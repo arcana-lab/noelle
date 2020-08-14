@@ -30,7 +30,14 @@ namespace llvm {
         InductionVariableManager *ivManager
       );
 
+      bool simplifyLoopGoverningIVGuards (
+        LoopDependenceInfo const &LDI,
+        ScalarEvolution &SE
+      );
+
     private:
+
+      const SCEV *getOffsetBetween (ScalarEvolution &SE, const SCEV *startSCEV, const SCEV *intermediateSCEV) ;
 
       /*
        * IV cache for quick IV lookup

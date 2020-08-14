@@ -5,7 +5,7 @@
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
@@ -24,6 +24,9 @@
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
 #include "Transformations.hpp"
+#include "LoopAwareMemDepAnalysis.hpp"
+
+#include "MemoryAnalysisModules/LoopAA.h"
 
 namespace llvm {
 
@@ -64,7 +67,26 @@ namespace llvm {
         DominatorSummary &DS,
         ScalarEvolution &SE,
         uint32_t maxCores,
+        liberty::LoopAA *aa
+      );
+
+      LoopDependenceInfo (
+        PDG *fG,
+        Loop *l,
+        DominatorSummary &DS,
+        ScalarEvolution &SE,
+        uint32_t maxCores,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations
+      );
+
+      LoopDependenceInfo (
+        PDG *fG,
+        Loop *l,
+        DominatorSummary &DS,
+        ScalarEvolution &SE,
+        uint32_t maxCores,
+        std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+        liberty::LoopAA *aa
       );
 
       LoopDependenceInfo () = delete ;
@@ -151,7 +173,7 @@ namespace llvm {
       MemoryCloningAnalysis * getMemoryCloningAnalysis (void) const ;
 
       bool doesHaveCompileTimeKnownTripCount (void) const ;
-      
+
       uint64_t getCompileTimeTripCount (void) const ;
 
       uint32_t getMaximumNumberOfCores (void) const ;
@@ -169,8 +191,8 @@ namespace llvm {
       std::set<Transformation> enabledTransformations;  /* Transformations enabled. */
       std::unordered_set<LoopDependenceInfoOptimization> enabledOptimizations;  /* Optimizations enabled. */
 
-      PDG *loopDG;                            /* Dependence graph of the loop. 
-                                               * This graph does not include instructions outside the loop (i.e., no external dependences are included).  
+      PDG *loopDG;                            /* Dependence graph of the loop.
+                                               * This graph does not include instructions outside the loop (i.e., no external dependences are included).
                                                */
 
       uint32_t maximumNumberOfCoresForTheParallelization;
@@ -199,14 +221,15 @@ namespace llvm {
        * Methods
        */
       void fetchLoopAndBBInfo (
-        Loop *l, 
+        Loop *l,
         ScalarEvolution &SE
         );
 
       std::pair<PDG *, SCCDAG *> createDGsForLoop (
-        Loop *l, 
+        Loop *l,
         PDG *functionDG,
-        DominatorSummary &DS
+        DominatorSummary &DS,
+        liberty::LoopAA *loopAA
         ) ;
 
       uint64_t computeTripCounts (
