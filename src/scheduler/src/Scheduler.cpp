@@ -68,7 +68,7 @@ bool Scheduler::scheduleBasicBlock(
    *    b. iterate over instructions that depend on I. if 
    *       any dependence is a member of the NotProcessed 
    *       or Keeps set or not part of the basic block, add I 
-   *       to keep and continue. Otherwise, add I to Pushes 
+   *       to Keeps and continue. Otherwise, add I to Pushes 
    *       and continue.
    * 
    * NOTE --- there are options to increase efficiency:
@@ -102,7 +102,7 @@ bool Scheduler::scheduleBasicBlock(
     [Block, CurrentInstruction, Keeps, NotProcessed]
     (Value *DependsOn, DataDependenceType D) -> bool {
 
-    errs() << "   " << *DependsOn << "\n";
+    errs() << "   D: " << *DependsOn << "\n";
 
     /*
      * Arguments, globals, and other values are outside
@@ -147,6 +147,7 @@ bool Scheduler::scheduleBasicBlock(
 
   };
 
+
   /*
    * Iterate over all instructions in the block
    */
@@ -156,7 +157,6 @@ bool Scheduler::scheduleBasicBlock(
      * Start processing
      */
     Instruction *I = WorkList.front();
-    CurrentInstruction = I;
     WorkList.pop();
 
     errs() << "LoopScheduler: Current I: " << *I << "\n";
@@ -206,16 +206,178 @@ bool Scheduler::scheduleBasicBlock(
       
   }
 
+
   /*
    * Debugging
    */
-  errs() << "LoopScheduler: Instructions to push:\n";
-  for (auto Push : Pushes) {
-    errs() << "   " << *Push << "\n";
+  errs() << "LoopScheduler: Instructions to push: " 
+         << Pushes.size() << "\n";
+
+  for (auto ToPush : Pushes) {
+    errs() << "   " << *ToPush << "\n";
+    this->pushInstructionOut(ToPush);
   }
 
 
   return false;
+
+}
+
+
+/*
+ * ------------------------------------------------------------------ 
+ * Transformations
+ * ------------------------------------------------------------------
+ */
+
+bool Scheduler::pushInstructionOut(
+  Instruction *I
+) const {
+
+  /*
+   * TOP --- Push instruction @I out of the basic block @Block
+   * 
+   * There are conditions when the push isn't possible even
+   * though the scheduler algorithm determined @I should be
+   * pushed
+   */ 
+
+  BasicBlock *Block = I->getParent();
+  bool Pushed = false;
+
+  errs() << "LoopScheduler: Attempting to push: " << *I << "\n";
+
+  /*
+   * If the terminator of the basic block is an invoke instruction,
+   * keep the instruction in the block --- precaution
+   * 
+   * *** FIX *** 
+   * 
+   */
+  if (isa<InvokeInst>(Block->getTerminator())) {
+
+    errs() << "LoopScheduler: Aborting push --- terminator is InvokeInst\n";
+    return Pushed;
+
+  }
+
+
+  /*
+   * Loop through the successors of @Block. If any successor
+   * is part of a critical edge with another basic block, then
+   * keep the instruction in the block
+   */
+  auto Successors = std::set<BasicBlock *>();
+
+  for (auto *SuccBB : successors(Block)) {
+    
+    /*
+     * If there isn't a single predecessor, abort the
+     * push --- there exists a critical edge with SuccBB
+     * as a node in the edge
+     */
+    auto SinglePred = SuccBB->getSinglePredecessor();
+
+    if (!SinglePred) {
+
+      errs() << "LoopScheduler: Aborting push --- successor(s) part of critical edge\n";
+      return Pushed;
+
+    }
+
+  }
+
+
+  /*
+   * Perform the push transformation
+   */
+  for (auto *SuccBB : successors(Block)) {
+
+    errs() << "LoopScheduler: Before " << *SuccBB << "\n";
+
+    /*
+     * Inject the instruction
+     */ 
+    Instruction *InsertionPoint = SuccBB->getFirstNonPHI(),
+                *Clone = I->clone();
+    
+    Clone->insertBefore(InsertionPoint);
+
+    errs() << "PushedInstruction" << *Clone << "\n";
+
+
+    /*
+     * Resolve any PHINodes with single incoming values
+     * where incoming == I
+     */
+    std::set<PHINode *> PHIsToResolve;
+    for (auto &PHI : SuccBB->phis()) {
+      
+      /*
+       * Sanity check --- should have returned already
+       * if more than 1 incoming value 
+       */ 
+      assert(PHI.getNumIncomingValues() == 1
+             && "LoopScheduler: PHI to resolve should only have 1 incoming value!");
+      
+
+      /*
+       * Process the incoming value
+       */ 
+      Value *Incoming = PHI.getIncomingValue(0);
+      Instruction *IncomingInst = dyn_cast<Instruction>(Incoming);
+      if (!IncomingInst) {
+        continue;
+      }
+
+
+      /*
+       * If the incoming value == I, the PHINode should 
+       * be folded, and all uses should be replaced with
+       * the pushed instr
+       */ 
+      if (I == IncomingInst) {
+        PHIsToResolve.insert(&PHI);
+      }
+
+    }
+
+
+    for (auto PHI : PHIsToResolve) {
+
+      /*
+       * Replace all uses
+       */
+      PHI->replaceAllUsesWith(Clone);
+
+
+      /*
+       * Fold the PHINode
+       */ 
+      const uint32_t IndexToRemove = 0;
+      PHI->removeIncomingValue(
+        IndexToRemove, 
+        true /* DeletePHIIfEmpty */
+      );
+
+    }
+
+
+    errs() << "LoopScheduler: After " << *SuccBB << "\n";
+
+  }
+
+
+  /*
+    * Erase the original instruction
+    */ 
+  I->eraseFromParent();
+
+  errs() << "LoopScheduler: The block: " << *Block << "\n";
+
+  abort();
+
+  return Pushed;
 
 }
 
