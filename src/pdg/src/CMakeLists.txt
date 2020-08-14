@@ -38,6 +38,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dataflow/include
   ../../callgraph/include
   ../../../external/svf/include
+  ../../../external/scaf/include
   ../include
   )
 

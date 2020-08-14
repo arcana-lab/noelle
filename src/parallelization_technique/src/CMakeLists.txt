@@ -39,6 +39,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include 
   ../../scheduler/include
   ../../../external/svf/include
+  ../../../external/scaf/include
   ../include 
   ./
   )
