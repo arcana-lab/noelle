@@ -961,6 +961,102 @@ void ParallelizationTechnique::doNestedInlineOfCalls (
   }
 }
 
+std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::cloneIVStepValueComputation (
+  LoopDependenceInfo *LDI,
+  int taskIndex,
+  IRBuilder<> &insertBlock
+) {
+
+  auto task = tasks[taskIndex];
+  auto loopSummary = LDI->getLoopStructure();
+  auto allIVInfo = LDI->getInductionVariableManager();
+  std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
+
+  /*
+   * Clone each IV's step value described by the InductionVariable class
+   */
+  for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
+
+    /*
+     * If the step value is constant or a value present in the original loop, use its clone
+     * TODO: Refactor this logic as a helper: tryAndFetchClone that doesn't assert a clone must exist
+     */
+    auto singleComputedStepValue = ivInfo->getSingleComputedStepValue();
+    if (singleComputedStepValue) {
+      Value *clonedStepValue = nullptr;
+      if (isa<ConstantData>(singleComputedStepValue)
+        || task->isAnOriginalLiveIn(singleComputedStepValue)) {
+        clonedStepValue = singleComputedStepValue;
+      } else if (auto singleComputedStepInst = dyn_cast<Instruction>(singleComputedStepValue)) {
+        clonedStepValue = task->getCloneOfOriginalInstruction(singleComputedStepInst);
+      }
+
+      if (clonedStepValue) {
+        clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
+        continue;
+      }
+    }
+
+    /*
+     * The step size is a composite SCEV. Fetch its instruction expansion,
+     * cloning into the entry block of the function
+     * 
+     * NOTE: The step size is expected to be loop invariant
+     */
+    auto expandedInsts = ivInfo->getComputationOfStepValue();
+    assert(expandedInsts.size() > 0);
+    for (auto expandedInst : expandedInsts) {
+      auto clonedInst = expandedInst->clone();
+      task->addInstruction(expandedInst, clonedInst);
+      insertBlock.Insert(clonedInst);
+    }
+
+    /*
+     * Wire the instructions in the expansion to use the cloned values
+     */
+    for (auto expandedInst : expandedInsts) {
+      adjustDataFlowToUseClones(task->getCloneOfOriginalInstruction(expandedInst), 0);
+    }
+    auto clonedStepValue = task->getCloneOfOriginalInstruction(expandedInsts.back());
+    clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
+  }
+
+  this->adjustStepValueOfPointerTypeIVToReflectPointerArithmetic(clonedStepSizeMap, insertBlock);
+
+  return clonedStepSizeMap;
+}
+
+void ParallelizationTechnique::adjustStepValueOfPointerTypeIVToReflectPointerArithmetic (
+  std::unordered_map<InductionVariable *, Value *> clonedStepValueMap,
+  IRBuilder<> &insertBlock
+) {
+
+  /*
+   * If the IV's type is pointer, then the SCEV of the step value for the IV is
+   * pointer arithmetic and needs to be multiplied by the bit size of pointers to
+   * reflect the exact change of the value
+   * 
+   * This occurs because GEP information is lost to ScalarEvolution analysis when it
+   * computes the step value as a SCEV
+   */
+  auto &DL = this->module.getDataLayout();
+  auto ptrSizeInBytes = DL.getPointerSize();
+  for (auto ivAndStepValuePair : clonedStepValueMap) {
+    auto iv = ivAndStepValuePair.first;
+    auto value = ivAndStepValuePair.second;
+
+    auto loopEntryPHI = iv->getLoopEntryPHI();
+    if (!loopEntryPHI->getType()->isPointerTy()) continue;
+
+    auto ptrSizeValue = ConstantInt::get(value->getType(), ptrSizeInBytes, false);
+    auto adjustedStepValue = insertBlock.CreateMul(value, ptrSizeValue);
+    clonedStepValueMap[iv] = adjustedStepValue;
+  }
+
+  return ;
+}
+
+
 void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
   std::error_code EC;
   raw_fd_ostream File("technique-dump-loop-" + std::to_string(LDI.getID()) + ".txt", EC, sys::fs::F_Text);
