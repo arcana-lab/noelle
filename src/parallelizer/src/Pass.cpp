@@ -112,7 +112,7 @@ bool Parallelizer::runOnModule (Module &M) {
     auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
     if (  true
           && (!this->forceParallelization)
-          && (averageInstsPerInvocation < 6000)
+          && (averageInstsPerInvocation < 2000)
       ){
       errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
       errs() << "Parallelizer:      It is too low\n";
