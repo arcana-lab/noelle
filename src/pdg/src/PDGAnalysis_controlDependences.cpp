@@ -148,7 +148,8 @@ void PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function &F) {
       for (auto producer : controlProducers) {
         if (currentControlProducersOnPHI.find(producer) != currentControlProducersOnPHI.end()) continue;
 
-        pdg->addEdge(producer, &phi);
+        auto edge = pdg->addEdge(producer, &phi);
+        edge->setControl(true);
       }
     }
   }
