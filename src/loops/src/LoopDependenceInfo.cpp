@@ -12,6 +12,7 @@
 #include "SCCDAG.hpp"
 #include "Architecture.hpp"
 #include "LoopDependenceInfo.hpp"
+#include "LoopAwareMemDepAnalysis.hpp"
 
 using namespace llvm;
 
