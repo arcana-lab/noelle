@@ -129,18 +129,25 @@ void llvm::refinePDGWithLIDS(
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
 
-  errs() << "Refining PDG using LIDS\n";
+  std::unordered_set<DGEdge<Value> *> edgesThatExist;
+  for (auto edge : loopDG->getEdges()) {
+    edgesThatExist.insert(edge);
+  }
 
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
   for (auto dependency : LCD.getLoopCarriedDependenciesForLoop(*loopStructure)) {
+
+    /*
+     * The edge could have already been removed by another refining step
+     * Check that the edge still exists
+     */
+    if (edgesThatExist.find(dependency) == edgesThatExist.end()) continue;
+
     auto fromInst = dyn_cast<Instruction>(dependency->getOutgoingT());
     auto toInst = dyn_cast<Instruction>(dependency->getIncomingT());
     if (!fromInst || !toInst) continue;
 
-    fromInst->print(errs() << "From: "); errs() << "\n";
-    toInst->print(errs() << "to: "); errs() << "\n";
     if (LIDS->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst)) {
-      dependency->print(errs() << "Going to remove: "); errs() << "\n";
       edgesToRemove.insert(dependency);
     }
   }
@@ -148,4 +155,5 @@ void llvm::refinePDGWithLIDS(
   for (auto edge : edgesToRemove) {
     loopDG->removeEdge(edge);
   }
+
 }
