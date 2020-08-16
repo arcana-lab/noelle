@@ -10,35 +10,40 @@
  */
 #include "LoopStats.hpp"
 
-void LoopStats::collectStatsOnNoelleIVs (LoopDependenceInfo &LDI, Stats *statsForLoop) {
+void LoopStats::collectStatsOnNoelleIVs (Hot *profiles, LoopDependenceInfo &LDI, Stats *statsForLoop) {
   auto loopStructure = LDI.getLoopStructure();
   auto ivManager = LDI.getInductionVariableManager();
   auto ivs = ivManager->getInductionVariables(*loopStructure);
 
   statsForLoop->numberOfIVs = ivs.size();
   for (auto iv : ivs) {
-    statsForLoop->numberOfComputingInstructionsForIVs += iv->getAllInstructions().size();
+    auto phiNode = iv->getLoopEntryPHI();
+    statsForLoop->numberOfDynamicIVs += profiles->getTotalInstructions(phiNode);
   }
 
-  statsForLoop->isGovernedByIV = ivManager->getLoopGoverningIVAttribution(*loopStructure) != nullptr;
+  if (ivManager->getLoopGoverningIVAttribution(*loopStructure) != nullptr){
+    statsForLoop->isGovernedByIV = 1;
+  }
 
   return ;
 }
 
-void LoopStats::collectStatsOnLLVMIVs (ScalarEvolution &SE, Loop &llvmLoop, Stats *statsForLoop) {
+void LoopStats::collectStatsOnLLVMIVs (Hot *profiles, ScalarEvolution &SE, Loop &llvmLoop, Stats *statsForLoop) {
+  /*
+   * Note: LLVM does not provide a way to collect all instructions used in computing IVs
+   */
+
   for (auto &phi : llvmLoop.getHeader()->phis()) {
     if (llvmLoop.isAuxiliaryInductionVariable(phi, SE)) {
       statsForLoop->numberOfIVs++;
     }
+    statsForLoop->numberOfDynamicIVs = profiles->getTotalInstructions(&phi);
   }
 
   auto governingIV = llvmLoop.getInductionVariable(SE);
-  statsForLoop->isGovernedByIV = governingIV != nullptr;
-
-  /*
-   * LLVM does not provide a way to collect all instructions used in computing IVs
-   */
-  statsForLoop->numberOfComputingInstructionsForIVs = -1;
+  if (governingIV != nullptr){
+    statsForLoop->isGovernedByIV = 1;
+  }
 
   return ;
 }
