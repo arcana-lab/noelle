@@ -1,6 +1,11 @@
 # Sources
 set(Srcs
   LoopStats.cpp 
+  Pass.cpp
+  LoopStats_InductionVariables.cpp
+  LoopStats_Invariants.cpp
+  LoopStats_Dependences.cpp
+  LoopStats_Printer.cpp
 )
 
 # Compilation flags
