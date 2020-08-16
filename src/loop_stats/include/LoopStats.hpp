@@ -32,32 +32,45 @@ namespace llvm {
       struct Stats {
         int64_t loopID = -1;
         int64_t numberOfIVs = 0;
-        bool isGovernedByIV = false;
-        int64_t numberOfComputingInstructionsForIVs = 0;
+        int64_t isGovernedByIV = 0;
+        int64_t numberOfDynamicIVs = 0;
         int64_t numberOfInvariantsContainedWithinTheLoop = 0;
         int64_t numberOfNodesInSCCDAG = 0;
         int64_t numberOfSCCs = 0;
         int64_t numberOfSequentialSCCs = 0;
+
+        Stats operator + (Stats const &obj) {
+          Stats res;
+          res.numberOfIVs = this->numberOfIVs + obj.numberOfIVs;
+          res.isGovernedByIV = this->isGovernedByIV + obj.isGovernedByIV;
+          res.numberOfDynamicIVs = this->numberOfDynamicIVs + obj.numberOfDynamicIVs;
+          res.numberOfInvariantsContainedWithinTheLoop = this->numberOfInvariantsContainedWithinTheLoop + obj.numberOfInvariantsContainedWithinTheLoop;
+          res.numberOfNodesInSCCDAG = this->numberOfNodesInSCCDAG + obj.numberOfNodesInSCCDAG;
+          res.numberOfSCCs = this->numberOfSCCs + obj.numberOfSCCs;
+          res.numberOfSequentialSCCs = this->numberOfSequentialSCCs + obj.numberOfSequentialSCCs;
+
+          return res;
+        }
       };
       std::unordered_map<int, Stats *> statsByLoopAccordingToLLVM;
       std::unordered_map<int, Stats *> statsByLoopAccordingToNoelle;
 
       void collectStatsForLoops (Noelle &noelle, std::vector<LoopDependenceInfo *> const & loops);
 
-      void collectStatsForLoop (int id, ScalarEvolution &SE, PDG *loopDG, Loop &llvmLoop);
-      void collectStatsForLoop (LoopDependenceInfo &LDI);
+      void collectStatsForLoop (Hot *profiles, int id, ScalarEvolution &SE, PDG *loopDG, Loop &llvmLoop);
+      void collectStatsForLoop (Hot *profiles, LoopDependenceInfo &LDI);
 
       void collectStatsOnLLVMSCCs (PDG *loopDG, Stats *statsForLoop);
-      void collectStatsOnLLVMIVs (ScalarEvolution &SE, Loop &llvmLoop, Stats *stats);
+      void collectStatsOnLLVMIVs (Hot *profiles, ScalarEvolution &SE, Loop &llvmLoop, Stats *stats);
       void collectStatsOnLLVMInvariants (Loop &llvmLoop, Stats *stats);
 
-      void collectStatsOnNoelleIVs (LoopDependenceInfo &LDI, Stats *stats);
+      void collectStatsOnNoelleIVs (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats);
       void collectStatsOnNoelleSCCs (LoopDependenceInfo &LDI, Stats *stats);
       void collectStatsOnNoelleInvariants (LoopDependenceInfo &LDI, Stats *stats);
 
       void collectStatsOnSCCDAG (SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, Stats *statsForLoop);
 
-      void printStats (Stats *stats);
+      void printPerLoopStats (Stats *stats);
       void printStatsHumanReadable (void);
 
   };

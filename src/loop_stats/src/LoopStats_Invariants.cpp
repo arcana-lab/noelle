@@ -26,4 +26,6 @@ void LoopStats::collectStatsOnLLVMInvariants (Loop &llvmLoop, Stats *statsForLoo
       statsForLoop->numberOfInvariantsContainedWithinTheLoop++;
     }
   }
+
+  return ;
 }
