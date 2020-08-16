@@ -12,18 +12,26 @@
 
 using namespace llvm;
 
-void LoopStats::collectStatsOnNoelleInvariants (LoopDependenceInfo &LDI, Stats *stats) {
+void LoopStats::collectStatsOnNoelleInvariants (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats) {
   auto invariantManager = LDI.getInvariantManager();
-  stats->numberOfInvariantsContainedWithinTheLoop = invariantManager->getLoopInstructionsThatAreLoopInvariants().size();
+  auto loopInvariants = invariantManager->getLoopInstructionsThatAreLoopInvariants();
+  stats->numberOfInvariants = loopInvariants.size();
+  for (auto inv : loopInvariants){
+    stats->numberOfDynamicInvariants += profiles->getSelfInstructions(inv);
+  }
 
   return ;
 }
 
-void LoopStats::collectStatsOnLLVMInvariants (Loop &llvmLoop, Stats *statsForLoop) {
+void LoopStats::collectStatsOnLLVMInvariants (Hot *profiles, Loop &llvmLoop, Stats *statsForLoop) {
   for (auto &B : llvmLoop.getBlocks()) {
     for (auto &I : *B) {
-      if (!llvmLoop.isLoopInvariant(&I)) continue;
-      statsForLoop->numberOfInvariantsContainedWithinTheLoop++;
+      if (!llvmLoop.isLoopInvariant(&I)) {
+        continue;
+      }
+
+      statsForLoop->numberOfInvariants++;
+      statsForLoop->numberOfDynamicInvariants += profiles->getSelfInstructions(&I);
     }
   }
 

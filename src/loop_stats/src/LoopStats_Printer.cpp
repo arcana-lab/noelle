@@ -19,9 +19,11 @@ void LoopStats::printPerLoopStats (Stats *stats) {
   errs() << "    Induction variables (IVs):\n";
   errs() << "      Number of IVs: " << stats->numberOfIVs << "\n";
   errs() << "      Number of dynamic IVs: " << stats->numberOfDynamicIVs << "\n";
-  errs() << "      Has loop governing IV: " << stats->isGovernedByIV << "\n";
+  errs() << "      Number of loop governing IVs: " << stats->isGovernedByIV << "\n";
+  errs() << "      Number of dynamic loop governing IVs: " << stats->numberOfDynamicGovernedIVs << "\n";
   errs() << "    Invariants\n";
-  errs() << "      Number of invariants contained within loop: " << stats->numberOfInvariantsContainedWithinTheLoop << "\n";
+  errs() << "      Number of invariants: " << stats->numberOfInvariants << "\n";
+  errs() << "      Number of dynamic invariants: " << stats->numberOfDynamicInvariants << "\n";
   errs() << "    Dependences\n";
   errs() << "      Number of nodes in SCCDAG: " << stats->numberOfNodesInSCCDAG << "\n";
   errs() << "      Number of SCCs: " << stats->numberOfSCCs << "\n";
