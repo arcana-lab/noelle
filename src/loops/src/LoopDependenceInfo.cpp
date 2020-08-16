@@ -76,7 +76,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->fetchLoopAndBBInfo(l, SE);
   auto ls = getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
-  auto DGs = this->createDGsForLoop(l, fG, DS, loopAA);
+  auto DGs = this->createDGsForLoop(l, fG, DS, SE, loopAA);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
 
@@ -169,31 +169,53 @@ uint64_t LoopDependenceInfo::computeTripCounts (
   return tripCount;
 }
 
-std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *functionDG, DominatorSummary &DS, liberty::LoopAA *aa){
+std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
+  Loop *l,
+  PDG *functionDG,
+  DominatorSummary &DS,
+  ScalarEvolution &SE,
+  liberty::LoopAA *aa
+) {
 
   /*
    * Set the loop dependence graph.
    */
   auto loopDG = functionDG->createLoopsSubgraph(l);
-
-  /*
-   * Perform loop-aware memory dependence analysis to refine loop PDG
-   */
-  if (aa) {
-    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, aa);
-  }
-
-  /*
-   * Build a SCCDAG of loop-internal instructions
-   */
   std::vector<Value *> loopInternals;
   for (auto internalNode : loopDG->internalNodePairs()) {
       loopInternals.push_back(internalNode.first);
   }
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
+
+  /*
+   * Perform loop-aware memory dependence analysis to refine loop PDG
+   *
+   * HACK: The reason LoopCarriedDependencies is constructed SPECIFICALLY with the DG
+   * that is used to query it is because it holds references to edges copied to that specific
+   * instance of the DG. Edges are NOT referential to a single DG source.
+   * When they are, this won't need to be done
+   *
+   * HACK: The SCCDAG is constructed with a loop internal DG to avoid external nodes in the loop DG
+   * which provide context (live-ins/live-outs) but which complicate analyzing the resulting SCCDAG 
+   */
+  LoopCarriedDependencies lcdUsingLoopDGEdges(liSummary, DS, *loopDG);
+  auto loopStructure = liSummary.getLoopNestingTreeRoot();
+  auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
+  auto env = LoopEnvironment(loopDG, loopExitBlocks);
+  auto invManager = InvariantManager(loopStructure, loopDG);
+  auto preRefinedSCCDAG = SCCDAG(loopInternalDG);
+  auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
+  auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
+  refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, lcdUsingLoopDGEdges, aa, &domainSpace);
+
   if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {
-    removeUnnecessaryDependenciesThatCloningMemoryNegates(loopInternalDG, DS);
+    removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS, lcdUsingLoopDGEdges);
   }
+
+  /*
+   * Build a SCCDAG of loop-internal instructions
+   */
+  loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
   auto loopSCCDAG = new SCCDAG(loopInternalDG);
 
   /*
@@ -228,10 +250,10 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (Loop *l, PDG *f
 
 void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   PDG *loopInternalDG,
-  DominatorSummary &DS
+  DominatorSummary &DS,
+  LoopCarriedDependencies &lcd
 ) {
   auto rootLoop = liSummary.getLoopNestingTreeRoot();
-  LoopCarriedDependencies lcd(liSummary, DS, *loopInternalDG);
   this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
 
   std::unordered_set<DGEdge<Value> *> edgesToRemove;

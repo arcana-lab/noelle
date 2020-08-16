@@ -228,6 +228,7 @@ namespace llvm {
         Loop *l,
         PDG *functionDG,
         DominatorSummary &DS,
+        ScalarEvolution &SE,
         liberty::LoopAA *loopAA
         ) ;
 
@@ -238,7 +239,8 @@ namespace llvm {
 
       void removeUnnecessaryDependenciesThatCloningMemoryNegates (
         PDG *loopInternalDG,
-        DominatorSummary &DS
+        DominatorSummary &DS,
+        LoopCarriedDependencies &LCD
       ) ;
 
   };

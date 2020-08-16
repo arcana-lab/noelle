@@ -6,11 +6,25 @@
 
 using namespace llvm;
 
-void llvm::refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG, Loop *l,
-                                                liberty::LoopAA *loopAA) {
+void llvm::refinePDGWithLoopAwareMemDepAnalysis(
+  PDG *loopDG,
+  Loop *l,
+  LoopStructure *loopStructure,
+  LoopCarriedDependencies &LCD,
+  liberty::LoopAA *loopAA,
+  LoopIterationDomainSpaceAnalysis *LIDS
+) {
+
   // TODO: add here other types of loopAware refinements of the PDG
 
-  refinePDGWithSCAF(loopDG, l, loopAA);
+  if (loopAA) {
+    refinePDGWithSCAF(loopDG, l, loopAA);
+  }
+
+  if (LIDS) {
+    refinePDGWithLIDS(loopDG, loopStructure, LCD, LIDS);
+  }
+
 }
 
 void llvm::refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
@@ -106,4 +120,32 @@ void llvm::refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
 			}
 		}
 	}
+}
+
+void llvm::refinePDGWithLIDS(
+  PDG *loopDG,
+  LoopStructure *loopStructure,
+  LoopCarriedDependencies &LCD,
+  LoopIterationDomainSpaceAnalysis *LIDS
+) {
+
+  errs() << "Refining PDG using LIDS\n";
+
+  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  for (auto dependency : LCD.getLoopCarriedDependenciesForLoop(*loopStructure)) {
+    auto fromInst = dyn_cast<Instruction>(dependency->getOutgoingT());
+    auto toInst = dyn_cast<Instruction>(dependency->getIncomingT());
+    if (!fromInst || !toInst) continue;
+
+    fromInst->print(errs() << "From: "); errs() << "\n";
+    toInst->print(errs() << "to: "); errs() << "\n";
+    if (LIDS->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst)) {
+      dependency->print(errs() << "Going to remove: "); errs() << "\n";
+      edgesToRemove.insert(dependency);
+    }
+  }
+
+  for (auto edge : edgesToRemove) {
+    loopDG->removeEdge(edge);
+  }
 }
