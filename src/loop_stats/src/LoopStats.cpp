@@ -64,7 +64,7 @@ void LoopStats::collectStatsForLoop (Hot *profiles, int id, ScalarEvolution &SE,
   auto loopFunction = llvmLoop.getHeader()->getParent();
 
   collectStatsOnLLVMIVs(profiles, SE, llvmLoop, statsForLoop);
-  collectStatsOnLLVMInvariants(llvmLoop, statsForLoop);
+  collectStatsOnLLVMInvariants(profiles, llvmLoop, statsForLoop);
   collectStatsOnLLVMSCCs(loopDG, statsForLoop);
 
   return ;
@@ -78,7 +78,7 @@ void LoopStats::collectStatsForLoop (Hot *profiles, LoopDependenceInfo &LDI) {
 
   collectStatsOnNoelleIVs(profiles, LDI, statsForLoop);
   collectStatsOnNoelleSCCs(LDI, statsForLoop);
-  collectStatsOnNoelleInvariants(LDI, statsForLoop);
+  collectStatsOnNoelleInvariants(profiles, LDI, statsForLoop);
 
   return ;
 }
