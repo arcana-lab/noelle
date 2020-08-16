@@ -42,6 +42,8 @@ namespace llvm {
       std::unordered_map<int, Stats *> statsByLoopAccordingToLLVM;
       std::unordered_map<int, Stats *> statsByLoopAccordingToNoelle;
 
+      void collectStatsForLoops (Noelle &noelle, std::vector<LoopDependenceInfo *> const & loops);
+
       void collectStatsForLoop (int id, ScalarEvolution &SE, PDG *loopDG, Loop &llvmLoop);
       void collectStatsForLoop (LoopDependenceInfo &LDI);
 
