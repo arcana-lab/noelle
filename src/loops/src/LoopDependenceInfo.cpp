@@ -209,7 +209,12 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, lcdUsingLoopDGEdges, aa, &domainSpace);
 
   if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {
-    removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS, lcdUsingLoopDGEdges);
+
+    /*
+     * HACK: Recompute LCD as the previous computed LCD may be holding onto edges deleted above
+     */
+    LoopCarriedDependencies recomputedLCDOnLoopDG(liSummary, DS, *loopDG);
+    removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS, recomputedLCDOnLoopDG);
   }
 
   /*
