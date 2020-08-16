@@ -17,13 +17,18 @@ using namespace llvm;
 void LoopStats::collectStatsForLoops (Noelle &noelle, std::vector<LoopDependenceInfo *> const & loops){
 
   /*
+   * Fetch the profiles.
+   */
+  auto profiles = noelle.getProfiles();
+
+  /*
    * Collect statistics about each loop using noelle's abstractions.
    */
   for (auto loop : loops) {
     if (noelle.getVerbosity() > Verbosity::Disabled) {
       errs() << "LoopStats: Collecting stats for: \n";
     }
-    collectStatsForLoop(*loop);
+    collectStatsForLoop(profiles, *loop);
   }
 
   /*
@@ -40,7 +45,7 @@ void LoopStats::collectStatsForLoops (Noelle &noelle, std::vector<LoopDependence
     auto llvmLoop = LI.getLoopFor(loopHeader);
     auto loopDG = LDI->getLoopDG();
 
-    collectStatsForLoop(id, SE, loopDG, *llvmLoop);
+    collectStatsForLoop(profiles, id, SE, loopDG, *llvmLoop);
   }
 
   /*
@@ -51,27 +56,27 @@ void LoopStats::collectStatsForLoops (Noelle &noelle, std::vector<LoopDependence
   return ;
 }
 
-void LoopStats::collectStatsForLoop (int id, ScalarEvolution &SE, PDG *loopDG, Loop &llvmLoop) {
+void LoopStats::collectStatsForLoop (Hot *profiles, int id, ScalarEvolution &SE, PDG *loopDG, Loop &llvmLoop) {
   auto statsForLoop = new Stats();
   statsByLoopAccordingToLLVM.insert(std::make_pair(id, statsForLoop));
   statsForLoop->loopID = id;
 
   auto loopFunction = llvmLoop.getHeader()->getParent();
 
-  collectStatsOnLLVMIVs(SE, llvmLoop, statsForLoop);
+  collectStatsOnLLVMIVs(profiles, SE, llvmLoop, statsForLoop);
   collectStatsOnLLVMInvariants(llvmLoop, statsForLoop);
   collectStatsOnLLVMSCCs(loopDG, statsForLoop);
 
   return ;
 }
 
-void LoopStats::collectStatsForLoop (LoopDependenceInfo &LDI) {
+void LoopStats::collectStatsForLoop (Hot *profiles, LoopDependenceInfo &LDI) {
   auto loopStructure = LDI.getLoopStructure();
   auto statsForLoop = new Stats();
   statsByLoopAccordingToNoelle.insert(std::make_pair(LDI.getID(), statsForLoop));
   statsForLoop->loopID = loopStructure->getID();
 
-  collectStatsOnNoelleIVs(LDI, statsForLoop);
+  collectStatsOnNoelleIVs(profiles, LDI, statsForLoop);
   collectStatsOnNoelleSCCs(LDI, statsForLoop);
   collectStatsOnNoelleInvariants(LDI, statsForLoop);
 

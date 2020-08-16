@@ -12,11 +12,13 @@
 
 using namespace llvm;
 
-void LoopStats::printStats (Stats *stats) {
-  errs() << "  Loop: " << stats->loopID << "\n";
+void LoopStats::printPerLoopStats (Stats *stats) {
+  if (stats->loopID != -1){
+    errs() << "  Loop: " << stats->loopID << "\n";
+  }
   errs() << "    Induction variables (IVs):\n";
   errs() << "      Number of IVs: " << stats->numberOfIVs << "\n";
-  errs() << "      Number of instructions in those IVs: " << stats->numberOfComputingInstructionsForIVs << "\n";
+  errs() << "      Number of dynamic IVs: " << stats->numberOfDynamicIVs << "\n";
   errs() << "      Has loop governing IV: " << stats->isGovernedByIV << "\n";
   errs() << "    Invariants\n";
   errs() << "      Number of invariants contained within loop: " << stats->numberOfInvariantsContainedWithinTheLoop << "\n";
@@ -27,15 +29,42 @@ void LoopStats::printStats (Stats *stats) {
 }
 
 void LoopStats::printStatsHumanReadable (void) {
+  Stats totalInfoNoelle{};
+  Stats totalInfoLLVM{};
+
+  errs() << "Per loop statistics\n";
   for (auto idAndNoelleLoop : statsByLoopAccordingToNoelle) {
+
+    /*
+     * Fetch the loop information.
+     */
     auto id = idAndNoelleLoop.first;
     auto noelleStats = idAndNoelleLoop.second;
     auto llvmStats = statsByLoopAccordingToLLVM.at(id);
-    errs() << "Noelle:\n";
-    printStats(noelleStats);
-    errs() << "LLVM:\n";
-    printStats(llvmStats);
+
+    /*
+     * Print the per loop statistics.
+     */
+    errs() << " Noelle:\n";
+    printPerLoopStats(noelleStats);
+    errs() << " LLVM:\n";
+    printPerLoopStats(llvmStats);
+
+    /*
+     * Update the total statistics.
+     */
+    totalInfoNoelle = totalInfoNoelle + *noelleStats;
+    totalInfoLLVM = totalInfoLLVM + *llvmStats;
   }
+
+  /*
+   * Print the total statistics.
+   */
+  errs() << "Total statistics\n";
+  errs() << " Noelle:\n";
+  printPerLoopStats(&totalInfoNoelle);
+  errs() << " LLVM:\n";
+  printPerLoopStats(&totalInfoLLVM);
 
   return;
 }
