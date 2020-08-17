@@ -12,7 +12,6 @@ tests/performance/**/*.bc
 tests/regression/**/*.ll
 tests/performance/**/*.ll
 tests/regression/**/*.txt
-tests/performance/**/*.txt
 tests/regression/**/*.dot
 tests/performance/**/*.dot
 tests/unit/**/suite/**/*_output.txt
