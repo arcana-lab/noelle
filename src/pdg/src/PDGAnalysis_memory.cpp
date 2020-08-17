@@ -410,17 +410,19 @@ bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) {
   if (this->callGraph->hasIndCSCallees(call)) {
     const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
     for (auto &callee : callees) {
-      if (isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
+      if (this->isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
         return false;
       }
     }
+
   } else {
-    Function *callee = call->getCalledFunction();
+    auto callee = call->getCalledFunction();
     if (!callee) {
       bv[2] = true; // ModRef bit is set
       return false;
     }
-    else if (isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
+
+    if (this->isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
       return false;
     }
   }
