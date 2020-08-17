@@ -13,32 +13,170 @@
 #include "SystemHeaders.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "DominatorSummary.hpp"
+#include <set>
 
 namespace llvm::noelle {
 
-  enum ScheduleOption {
-    Shrink=0,
-    Expand
+  enum ScheduleDirection {
+    
+    Up=0,
+    Down
+
   };
 
-  class LoopSchedulerContext {
+  /*
+   * Forward declarations
+   */ 
+  class LoopScheduler;
+
+
+  /*
+   * Scheduler = per Noelle object
+   */ 
+  class Scheduler {
+
+    public: 
+
+      /*
+       * Constructors
+       */ 
+      Scheduler ();
+
+
+      /*
+       * Scheduler builder methods --- FIX
+       */ 
+      LoopScheduler getNewLoopScheduler(
+        LoopStructure * const LS,
+        DominatorSummary const &DS
+      ) const ;
+
+
+      /*
+       * Driver methods
+       */ 
+      bool canScheduleBlock(
+        BasicBlock * const Block  
+      ) const ;
+
+      std::set<Instruction *> getInstructionsThatCanMove(
+        BasicBlock * const Block,
+        PDG * const ThePDG,
+        ScheduleDirection Direction=ScheduleDirection::Down
+      ) const ;
+
+      bool canMoveInstruction(
+        Instruction * const I
+      ) const ;
+
+      std::set<Instruction *> getRequirementsToMoveInstruction(
+        Instruction * const I,
+        PDG * const ThePDG,
+        ScheduleDirection Direction=ScheduleDirection::Down
+      ) const ;
+
+
+      /*
+       * Transformation methods
+       */ 
+      bool moveFromBlock(
+        Instruction * const I,
+        PDG * const ThePDG,
+        DominatorSummary const &DS
+      ) const ;
+
+
+      /*
+       * Analysis methods
+       */ 
+      bool isControlEquivalent(
+        BasicBlock * const First,
+        BasicBlock * const Second,
+        DominatorSummary const &DS
+      ) const ;
+
+      std::set<Value *> getOutgoingDependences(
+        Instruction * const I,
+        PDG * const ThePDG
+      ) const ;
+
+      std::set<Instruction *> getOutgoingDependencesInParent(
+        Instruction * const I,
+        PDG * const ThePDG
+      ) const ;
+    
+
+  };
+
+  /*
+   * LoopScheduler = per invocation/per loop
+   */ 
+  class LoopScheduler : public Scheduler {
 
     public:
 
       /*
-       * Methods
-       */
-      LoopSchedulerContext(
-        LoopStructure * const LS
-      );
+       * --- Public Methods ---
+       */ 
 
-      void Dump (void) const ;
+      /*
+       * Constructors
+       */ 
+      LoopScheduler(
+        LoopStructure * const LS,
+        DominatorSummary const &DS
+      );
 
 
       /*
-       * Pass analysis state
+       * Getter methods
+       */ 
+      LoopStructure * getPassedLoop (void) const ;
+      
+      std::set<BasicBlock *> getLoopPrologue (void) const ;
+
+      std::set<BasicBlock *> getLoopBody (void) const ;
+
+
+      /*
+       * Transformation methods
+       */ 
+      bool shrinkLoopPrologue (
+        PDG * const ThePDG
+      ) const ;
+
+
+      /*
+       * Debugging
+       */ 
+      void Dump (void) const ;
+      
+
+    private:
+
+      /*
+       * --- Private Methods ---
+       */ 
+
+      /*
+       * Analysis methods
+       */ 
+      void gatherNecessaryLoopState (void) ;
+
+      void calculateLoopPrologue (void) ;
+
+      void calculateLoopBody (void) ;
+
+      
+      /*
+       * --- Private Fields ---
+       */ 
+
+      /*
+       * Passed state
        */ 
       LoopStructure *TheLoop;
+      const DominatorSummary *DS;
 
 
       /*
@@ -52,82 +190,10 @@ namespace llvm::noelle {
       /*
        * New analysis state
        */
-      bool PrologueCalculated=false;
-      bool BodyCalculated=false;
       bool DiscrepancyExists=false;  /* Discrepancy between analysis
                                         state and loop structure */
       std::set<BasicBlock *> Prologue;
       std::set<BasicBlock *> Body;
-
-  };
-
-  class Scheduler {
-
-    public:
-
-      /*
-       * For simplicity and time --- the scheduler has 
-       * NOT been interfaced properly. The sole concern
-       * of the scheduler is to shrink the loop prologue
-       * at this time
-       * 
-       * TODO --- Engine, generalization
-       * 
-       */ 
-
-      /*
-       * Constructors
-       */ 
-
-      Scheduler ();
-
-
-      /*
-       * Drivers
-       */
-
-      bool scheduleBasicBlock(
-        BasicBlock *Block,
-        PDG *ThePDG,
-        ScheduleOption Option=ScheduleOption::Shrink
-      ) const ;
-
-
-      /*
-       * Transformations
-       */ 
-      
-      bool pushInstructionOut(
-        Instruction *I
-      ) const ;
-
-
-      /*
-       * Methods
-       */
-
-      bool shrinkLoopPrologue (
-        LoopStructure * const LS,
-        DomTreeSummary const &PDT,
-        Function *F,
-        PDG *ThePDG,
-        LoopSchedulerContext *LSC=nullptr
-      ) const ;
-
-      std::set<BasicBlock *> getLoopPrologue (
-        LoopStructure * const LS,
-        DomTreeSummary const &PDT,
-        LoopSchedulerContext *LSC=nullptr,
-        bool UpdateContext=false
-      ) const ;
-
-      std::set<BasicBlock *> getLoopBody (
-        LoopStructure * const LS,
-        DomTreeSummary const &PDT,
-        LoopSchedulerContext *LSC=nullptr,
-        bool UpdateContext=false,
-        std::set<BasicBlock *> *PassedPrologue=nullptr
-      ) const ;
 
   };
 
