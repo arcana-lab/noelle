@@ -31,10 +31,11 @@ void SCCDAGNormalizer::normalizeInPlace (void) {
    */
   mergeSCCsWithExternalInterIterationDependencies();
 
+  mergeSingleSyntacticSugarInstrs();
+  mergeBranchesWithoutOutgoingEdges();
+
   collapseIntroducedCycles();
 
-  // mergeSingleSyntacticSugarInstrs();
-  // mergeBranchesWithoutOutgoingEdges();
 }
 
 void SCCDAGNormalizer::mergeLCSSAPhis () {
@@ -174,9 +175,9 @@ void SCCDAGNormalizer::mergeBranchesWithoutOutgoingEdges (void) {
 
     /*
      * Merging this CmpInst and/or terminator containing SCC node is only done
-     * when there is no child SCC and only one parent SCC
+     * when there is no child SCC and at least one parent SCC
      */
-    if (sccNode->numIncomingEdges() != 1 || sccNode->numOutgoingEdges() > 0) continue ;
+    if (sccNode->numIncomingEdges() == 0 || sccNode->numOutgoingEdges() > 0) continue ;
 
     bool allCmpOrBr = true;
     for (auto nodePair : scc->internalNodePairs()){
