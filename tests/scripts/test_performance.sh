@@ -60,7 +60,7 @@ function measureTime {
 
 function runningTests {
   echo $1 ;
-  > $3 ;
+  > $4 ;
 
   # Export autotuner specifications for parallelization
   export INDEX_FILE="autotuner.info" ;
@@ -80,7 +80,7 @@ function runningTests {
 
     # Compile
     # echo "   Make " ;
-    make PARALLELIZATION_OPTIONS="$2" >> compiler_output.txt 2>&1 ;
+    make NOELLE_OPTIONS="$2" PARALLELIZATION_OPTIONS="$3" >> compiler_output.txt 2>&1 ;
 
     # Read input for arguments to performance runs
     local ARGS=$(< perf_args.info) ;
@@ -97,10 +97,10 @@ function runningTests {
 
     cd ../ ;
 
-    echo -ne "$i\\t" >> $3 ;
+    echo -ne "$i\\t" >> $4 ;
     local SPEEDUP=$(bc <<< " scale=3; $BASE / $PAR ") ;
     echo -e "  Speedup: $SPEEDUP" ;
-    echo $SPEEDUP >> $3 ;
+    echo $SPEEDUP >> $4 ;
   done
 
   echo "Done"
@@ -110,7 +110,7 @@ export PATH=`pwd`/../install/bin:$PATH ;
 
 # Run
 cd performance ;
-runningTests "Measuring the default configuration" "-noelle-verbose=3" "speedups.txt" ;
+runningTests "Measuring the default configuration" "-noelle-verbose=3" " " "speedups.txt" ;
 
 cd ../ ;
 
