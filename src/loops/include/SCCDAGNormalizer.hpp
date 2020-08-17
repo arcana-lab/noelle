@@ -16,7 +16,7 @@
 #include "LoopsSummary.hpp"
 #include "LoopCarriedDependencies.hpp"
 #include "SCCDAG.hpp"
-#include "SCCDAGAttrs.hpp"
+#include "SCCDAGPartition.hpp"
 
 namespace llvm {
 
@@ -49,5 +49,11 @@ namespace llvm {
 
           void merge(DGNode<SCC> *sccNode1, DGNode<SCC> *sccNode2) ;
       };
+
+      /*
+       * TODO: Refactor with similar logic in SCCDAGPartition
+       */
+      void collapseIntroducedCycles (void) ;
+
   };
 }
