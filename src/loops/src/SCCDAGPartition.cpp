@@ -147,6 +147,7 @@ void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
   /*
    * Ensure the initial specified configuration has no cycles.
    */
+  resetSubsetGraph();
   if (hasCycle()) {
     mergeCycles();
   }
@@ -502,7 +503,7 @@ bool SCCDAGPartition::traverseAndMerge (std::vector<SCCset *> &path) {
         auto newEndIter = subIter;
         SCCset *mergedCycle = *subIter;
         while (++subIter != path.end()) {
-          mergedCycle = mergePair(mergedCycle, *subIter);
+          mergedCycle = mergePair(mergedCycle, *subIter, false);
         }
         path.erase(newEndIter, path.end());
         path.push_back(mergedCycle);
