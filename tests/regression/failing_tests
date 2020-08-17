@@ -50,20 +50,4 @@ regression_default/GoToLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-parall
 regression_enablers/Exit_call2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall
 regression_enablers/GoToLoops2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall
 regression_10/PossibleNewHelixBug -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force
-regression_13/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force
-regression_16/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-parallelizer-force
 regression_3/ReductionIterations2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-force
-regression_default/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force
-regression_10/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force
-regression_11/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix -noelle-parallelizer-force
-regression_15/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-helix -noelle-parallelizer-force
-regression_1/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-parallelizer-force
-regression_2/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-parallelizer-force -dswp-no-scc-merge
-regression_3/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-force
-regression_4/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-force -dswp-no-scc-merge
-regression_5/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force
-regression_6/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force
-regression_7/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-max-cores=2 -noelle-parallelizer-force
-regression_8/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-doall -noelle-max-cores=2 -noelle-parallelizer-force
-regression_9/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2 -noelle-parallelizer-force
-regression_enablers/DoWhile2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall
