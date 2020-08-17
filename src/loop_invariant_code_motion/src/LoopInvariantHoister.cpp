@@ -15,8 +15,7 @@ using namespace llvm;
 bool LoopInvariantCodeMotion::hoistInvariantValues (
   LoopDependenceInfo const &LDI
 ) {
-
-  bool modified = false;
+  auto modified = false;
 
   auto invariantManager = LDI.getInvariantManager();
   auto loopStructure = LDI.getLoopStructure();
@@ -27,6 +26,10 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   std::unordered_set<PHINode *> phisToRemove{};
   for (auto B : loopStructure->getBasicBlocks()) {
     for (auto &I : *B) {
+
+      /*
+       * Check if the current instruction is a loop invariant.
+       */
       if (!invariantManager->isLoopInvariant(&I)) {
         continue;
       }
