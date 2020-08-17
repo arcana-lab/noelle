@@ -31,7 +31,9 @@ void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
    */
   for (auto &F : M) {
     if (F.empty()) {
-      if (this->externalFuncsHaveNoSideEffectOrHandledBySVF.count(F.getName())) continue;
+      if (this->externalFuncsHaveNoSideEffectOrHandledBySVF.count(F.getName())) {
+        continue;
+      }
       this->unhandledExternalFuncs.insert(&F);
     }
     else {
@@ -57,12 +59,12 @@ bool PDGAnalysis::cannotReachUnhandledExternalFunction(CallInst *call) {
   if (this->callGraph->hasIndCSCallees(call)) {
     const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
     for (auto &callee : callees) {
-      if (isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) return false;
+      if (this->isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) return false;
     }
-  }
-  else {
-    Function *callee = call->getCalledFunction();
-    if (!callee || isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) return false;
+
+  } else {
+    auto callee = call->getCalledFunction();
+    if (!callee || this->isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) return false;
   }
 
   return true;
