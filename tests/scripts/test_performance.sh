@@ -89,8 +89,8 @@ function runningTests {
     if ! test -f time_baseline.txt ; then 
       echo -e "  Running baseline " ;
       measureTime baseline time_baseline.txt 
-      local BASE=`cat time_baseline.txt` ;
     fi
+    local BASE=`cat time_baseline.txt` ;
 
     # Measure the parallelized binary
     echo -e "  Running performance " ;
