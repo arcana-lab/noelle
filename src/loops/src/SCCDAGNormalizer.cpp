@@ -25,11 +25,16 @@ void SCCDAGNormalizer::normalizeInPlace (void) {
    */
   mergeLCSSAPhis();
 
-  mergeSingleSyntacticSugarInstrs();
-  mergeBranchesWithoutOutgoingEdges();
+  /*
+   * NOTE: The merging of external loop carried dependencies between SCC is
+   * necessary for parallelization techniques
+   */
   mergeSCCsWithExternalInterIterationDependencies();
 
   collapseIntroducedCycles();
+
+  // mergeSingleSyntacticSugarInstrs();
+  // mergeBranchesWithoutOutgoingEdges();
 }
 
 void SCCDAGNormalizer::mergeLCSSAPhis () {
@@ -167,7 +172,11 @@ void SCCDAGNormalizer::mergeBranchesWithoutOutgoingEdges (void) {
     auto scc = sccPair.first;
     auto sccNode = sccPair.second;
 
-    if (sccNode->numIncomingEdges() == 0 || sccNode->numOutgoingEdges() > 0) continue ;
+    /*
+     * Merging this CmpInst and/or terminator containing SCC node is only done
+     * when there is no child SCC and only one parent SCC
+     */
+    if (sccNode->numIncomingEdges() != 1 || sccNode->numOutgoingEdges() > 0) continue ;
 
     bool allCmpOrBr = true;
     for (auto nodePair : scc->internalNodePairs()){

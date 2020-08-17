@@ -456,64 +456,6 @@ namespace llvm {
       if (noOtherIncoming) topLevelNodes.insert(node);
     }
 
-    /*
-     * Register all nodes that are reachable from the above nodes^M
-     * Nodes not reachable are in cycles, to be dealt with shortly^M
-     * External nodes are marked visited if onlyInternal = true^M
-     */
-    std::unordered_set<DGNode<T> *> visitedNodes;
-    std::queue<DGNode<T> *> traverseQueue;
-    for (auto root : topLevelNodes) traverseQueue.push(root);
-    while (!traverseQueue.empty())
-    {
-      auto node = traverseQueue.front();
-      traverseQueue.pop();
-      visitedNodes.insert(node);
-      for (auto edge : node->getOutgoingEdges())
-      {
-        auto incomingNode = edge->getIncomingNode();
-        if (visitedNodes.find(incomingNode) != visitedNodes.end()) continue;
-        traverseQueue.push(incomingNode);
-      }
-    }
-
-    if (onlyInternal)
-    {
-      for (auto nodePair : externalNodePairs())
-      {
-        visitedNodes.insert(nodePair.second);
-      }
-    }
-
-    /*
-     * Traverse each unvisited node, collect nodes part of its cycle,
-     * and choose the 'first' node from each cycle (based on its id)
-     */
-    for (auto node : allNodes)
-    {
-      if (visitedNodes.find(node) != visitedNodes.end()) continue;
-
-      std::queue<DGNode<T> *> nodeToTraverse;
-      nodeToTraverse.push(node);
-      DGNode<T> *rootInCycle = node;
-      while (!nodeToTraverse.empty())
-      {
-        auto traverseN = nodeToTraverse.front();
-        visitedNodes.insert(traverseN);
-        nodeToTraverse.pop();
-        if (traverseN->ID < rootInCycle->ID) rootInCycle = traverseN;
-
-        for (auto outgoingE : traverseN->getOutgoingEdges())
-        {
-          auto incomingN = outgoingE->getIncomingNode();
-          if (visitedNodes.find(incomingN) != visitedNodes.end()) continue;
-          nodeToTraverse.push(incomingN);
-        }
-      }
-
-      topLevelNodes.insert(rootInCycle);
-    }
-
     return topLevelNodes;
   }
 
