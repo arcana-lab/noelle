@@ -27,6 +27,7 @@ PDGAnalysis::PDGAnalysis()
     , embedPDG{false}
     , dumpPDG{false}
     , performThePDGComparison{false}
+    , disableSVF{false}
     , printer{} 
   {
 
@@ -34,7 +35,7 @@ PDGAnalysis::PDGAnalysis()
 }
 
 void PDGAnalysis::initializeSVF(Module &M) {
-  SVFModule svfModule(M);
+  SVFModule svfModule{M};
   this->pta = new AndersenWaveDiff();
   this->pta->analyze(svfModule);
   this->callGraph = this->pta->getPTACallGraph();
@@ -52,35 +53,8 @@ void PDGAnalysis::releaseMemory () {
     delete fdg;
   }
   this->functionToFDGMap.clear();
-}
 
-void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
-
-  /*
-   * Collect internal and unhandled external functions.
-   */
-  for (auto &F : M) {
-    if (F.empty()) {
-      if (this->externalFuncsHaveNoSideEffectOrHandledBySVF.count(F.getName())) continue;
-      this->unhandledExternalFuncs.insert(&F);
-    }
-    else {
-      this->internalFuncs.insert(&F);
-    }
-  }
-
-  /*
-   * Identify function reachability.
-   */
-  for (auto &internal : this->internalFuncs) {
-    for (auto &external : this->unhandledExternalFuncs) {
-      if (this->callGraph->isReachableBetweenFunctions(internal, external)) {
-        this->reachableUnhandledExternalFuncs[internal].insert(external);
-      }
-    }
-  }
-
-  return;
+  return ;
 }
 
 void PDGAnalysis::printFunctionReachabilityResult() {
@@ -224,8 +198,8 @@ PDG * PDGAnalysis::getPDG (void){
 }
 
 bool PDGAnalysis::hasPDGAsMetadata(Module &M) {
-  if (NamedMDNode *n = M.getNamedMetadata("noelle.module.pdg")) {
-    if (MDNode *m = dyn_cast<MDNode>(n->getOperand(0))) {
+  if (auto n = M.getNamedMetadata("noelle.module.pdg")) {
+    if (auto m = dyn_cast<MDNode>(n->getOperand(0))) {
       if (cast<MDString>(m->getOperand(0))->getString() == "true") {
         return true;
       }
@@ -383,84 +357,6 @@ DGEdge<Value> * PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *edgeM, 
   }
 
   return edge;
-}
-
-void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
-  errs() << "Embed PDG as Metadata\n";
-
-  auto &C = this->M->getContext();
-  unordered_map<Value *, MDNode *> nodeIDMap;
-
-  embedNodesAsMetadata(pdg, C, nodeIDMap);
-  embedEdgesAsMetadata(pdg, C, nodeIDMap);
-
-  auto n = this->M->getOrInsertNamedMetadata("noelle.module.pdg");
-  n->addOperand(MDNode::get(C, MDString::get(C, "true")));
-
-  return;
-}
-
-void PDGAnalysis::embedNodesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
-  uint64_t i = 0;
-  unordered_map<Function *, unordered_map<uint64_t, Metadata *>> functionArgsIDMap;
-
-  /*
-   * Construct node to id map and embed metadata of instruction nodes to instruction
-   */
-  for (auto &node : pdg->getNodes()) {
-    Value *v = node->getT();
-    Constant *id = ConstantInt::get(Type::getInt64Ty(C), i++);
-    MDNode *m = MDNode::get(C, ConstantAsMetadata::get(id));
-    if (Argument *arg = dyn_cast<Argument>(v)) {
-      functionArgsIDMap[arg->getParent()][arg->getArgNo()] = m;
-    }
-    else if (Instruction *inst = dyn_cast<Instruction>(v)) {
-      inst->setMetadata("noelle.pdg.inst.id", m);
-    }
-    nodeIDMap[v] = m;
-  }
-
-  /*
-   * Embed metadta of argument nodes to function
-   */
-  for (auto &funArgs : functionArgsIDMap) {
-    vector<Metadata *> argsVec;
-    for (uint64_t i = 0; i < funArgs.second.size(); i++) {
-      argsVec.push_back(funArgs.second[i]);
-    }
-
-    MDNode *m = MDTuple::get(C, argsVec);
-    funArgs.first->setMetadata("noelle.pdg.args.id", m);
-  }
-
-  return;
-}
-
-void PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
-  unordered_map<Function *, vector<Metadata *>> functionEdgesMap;
-
-  /*
-   * Construct edge metadata
-   */
-  for (auto &edge : pdg->getEdges()) {
-    MDNode *edgeM = getEdgeMetadata(edge, C, nodeIDMap);
-    if (Argument *arg = dyn_cast<Argument>(edge->getOutgoingT())) {
-      functionEdgesMap[arg->getParent()].push_back(edgeM);
-    }
-    else if (Instruction *inst = dyn_cast<Instruction>(edge->getOutgoingT())) {
-      functionEdgesMap[inst->getFunction()].push_back(edgeM);
-    }
-  }
-
-  /*
-   * Embed metadata of edges to function
-   */
-  for (auto &funEdge : functionEdgesMap) {
-    MDNode *m = MDTuple::get(C, funEdge.second);
-    funEdge.first->setMetadata("noelle.pdg.edges", m);
-  }
-
-  return;
 }
 
 MDNode * PDGAnalysis::getEdgeMetadata(DGEdge<Value> *edge, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
@@ -626,64 +522,6 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
   delete dfr;
 }
 
-void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store) {
-
-  for (auto I : dfr->OUT(store)) {
-
-    /*
-     * Check stores.
-     */
-    if (auto otherStore = dyn_cast<StoreInst>(I)) {
-      if (store != otherStore) {
-        addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg, F, AA, store, otherStore, DG_DATA_WAW);
-      }
-      continue ;
-    }
-
-    /* 
-     * Check loads.
-     */
-    if (auto load = dyn_cast<LoadInst>(I)) {
-      addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg, F, AA, store, load, DG_DATA_RAW);
-      continue ;
-    }
-
-    /*
-     * Check calls.
-     */
-    if (auto call = dyn_cast<CallInst>(I)) {
-      addEdgeFromFunctionModRef(pdg, F, AA, call, store, false);
-      continue ;
-    }
-  }
-
-  return ;
-}
-
-void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, LoadInst *load) {
-
-  for (auto I : dfr->OUT(load)) {
-
-    /*
-     * Check stores.
-     */
-    if (auto store = dyn_cast<StoreInst>(I)) {
-      addEdgeFromMemoryAlias<LoadInst, StoreInst>(pdg, F, AA, load, store, DG_DATA_WAR);
-      continue ;
-    }
-
-    /*
-     * Check calls.
-     */
-    if (auto call = dyn_cast<CallInst>(I)) {
-      addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
-      continue ;
-    }
-  }
-
-  return ;
-}
-
 void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallInst *call) {
 
   for (auto I : dfr->OUT(call)) {
@@ -711,339 +549,6 @@ void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, Data
       addEdgeFromFunctionModRef(pdg, F, AA, call, otherCall);
       continue ;
     }
-  }
-
-  return ;
-}
-
-template<class InstI, class InstJ>
-void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, InstI *instI, InstJ *instJ, DataDependenceType dataDependenceType) {
-  auto must = false;
-
-  /*
-   * Query the LLVM alias analyses.
-   */
-  switch (AA.alias(MemoryLocation::get(instI), MemoryLocation::get(instJ))) {
-    case NoAlias:
-      return ;
-    case PartialAlias:
-    case MayAlias:
-      break;
-    case MustAlias:
-      pdg->addEdge((Value*)instI, (Value*)instJ)->setMemMustType(true, true, dataDependenceType);
-      return ;
-  }
-
-  /*
-   * Check other alias analyses
-   */
-  switch (this->pta->alias(MemoryLocation::get(instI), MemoryLocation::get(instJ))) {
-    case NoAlias:
-      return;
-    case PartialAlias:
-    case MayAlias:
-      break;
-    case MustAlias:
-      must = true;
-      break;
-  }
-
-  /*
-   * There is a dependence.
-   */
-  pdg->addEdge((Value*)instI, (Value*)instJ)->setMemMustType(true, must, dataDependenceType);
-
-  return ;
-}
-
-bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) {
-  if (this->callGraph->hasIndCSCallees(call)) {
-    const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
-    for (auto &callee : callees) {
-      if (isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
-        return false;
-      }
-    }
-  }
-  else {
-    Function *callee = call->getCalledFunction();
-    if (!callee) {
-      bv[2] = true; // ModRef bit is set
-      return false;
-    }
-    else if (isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool PDGAnalysis::isUnhandledExternalFunction(const Function *F) {
-  return F->empty() && !this->externalFuncsHaveNoSideEffectOrHandledBySVF.count(F->getName());
-}
-
-bool PDGAnalysis::isInternalFunctionThatReachUnhandledExternalFunction(const Function *F) {
-  return !F->empty() && !this->reachableUnhandledExternalFuncs[F].empty();
-}
-
-bool PDGAnalysis::cannotReachUnhandledExternalFunction(CallInst *call) {
-  if (this->callGraph->hasIndCSCallees(call)) {
-    const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
-    for (auto &callee : callees) {
-      if (isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) return false;
-    }
-  }
-  else {
-    Function *callee = call->getCalledFunction();
-    if (!callee || isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) return false;
-  }
-
-  return true;
-}
-
-bool PDGAnalysis::hasNoMemoryOperations(CallInst *call) {
-  if (this->mssa->getMRGenerator()->getModRefInfo(call) == ModRefInfo::NoModRef) return true;
-  return false;
-}
-
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, StoreInst *store, bool addEdgeFromCall) {
-  BitVector bv(3, false);
-  auto makeRefEdge = false, makeModEdge = false;
-
-  /*
-   * Query the LLVM alias analyses.
-   */
-  switch (AA.getModRefInfo(call, MemoryLocation::get(store))) {
-    case ModRefInfo::NoModRef:
-      return;
-    case ModRefInfo::Ref:
-      bv[0] = true;
-      break;
-    case ModRefInfo::Mod:
-      bv[1] = true;
-      break;
-    case ModRefInfo::ModRef:
-      bv[2] = true;
-      break;
-  }
-
-  /*
-   * Check other alias analyses
-   */
-  if (isSafeToQueryModRefOfSVF(call, bv)) {
-    switch (this->mssa->getMRGenerator()->getModRefInfo(call, MemoryLocation::get(store))) {
-      case ModRefInfo::NoModRef:
-        return;
-      case ModRefInfo::Ref:
-        bv[0] = true;
-        break;
-      case ModRefInfo::Mod:
-        bv[1] = true;
-        break;
-      case ModRefInfo::ModRef:
-        bv[2] = true;
-        break;
-    }
-  }
-
-  // NoModRef when one says Mod and another says Ref
-  if (bv[0] && bv[1]) {
-    return; 
-  }
-  else if (bv[0]) {
-    makeRefEdge = true;
-  }
-  else if (bv[1]) {
-    makeModEdge = true;
-  }
-  else {
-    makeRefEdge = makeModEdge = true;
-  }
-
-  /*
-   * There is a dependence.
-   */
-  if (makeRefEdge) {
-    if (addEdgeFromCall) {
-      pdg->addEdge((Value*)call, (Value*)store)->setMemMustType(true, false, DG_DATA_WAR);
-    } else {
-      pdg->addEdge((Value*)store, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
-    }
-  }
-  if (makeModEdge) {
-    if (addEdgeFromCall) {
-      pdg->addEdge((Value*)call, (Value*)store)->setMemMustType(true, false, DG_DATA_WAW);
-    } else {
-      pdg->addEdge((Value*)store, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
-    }
-  }
-
-  return ;
-}
-
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, LoadInst *load, bool addEdgeFromCall) {
-  BitVector bv(3, false);
-
-  /*
-   * Query the LLVM alias analyses.
-   */
-  switch (AA.getModRefInfo(call, MemoryLocation::get(load))) {
-    case ModRefInfo::NoModRef:
-    case ModRefInfo::Ref:
-      return;
-    case ModRefInfo::Mod:
-    case ModRefInfo::ModRef:
-      break;
-  }
-
-  /*
-   * Check other alias analyses
-   */
-  if (isSafeToQueryModRefOfSVF(call, bv)) {
-    switch (this->mssa->getMRGenerator()->getModRefInfo(call, MemoryLocation::get(load))) {
-      case ModRefInfo::NoModRef:
-      case ModRefInfo::Ref:
-        return;
-      case ModRefInfo::Mod:
-      case ModRefInfo::ModRef:
-        break;
-    }
-  }
-
-  /*
-   * There is a dependence.
-   */
-  if (addEdgeFromCall) {
-    pdg->addEdge((Value*)call, (Value*)load)->setMemMustType(true, false, DG_DATA_RAW);
-  } else {
-    pdg->addEdge((Value*)load, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
-  }
-
-  return ;
-}
-
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, CallInst *otherCall) {
-  BitVector bv(3, false);
-  BitVector rbv(3, false);
-  auto makeRefEdge = false, makeModEdge = false, makeModRefEdge = false;
-  auto reverseRefEdge = false, reverseModEdge = false, reverseModRefEdge = false;
-
-  /*
-   * Query the LLVM alias analyses.
-   */
-  switch (AA.getModRefInfo(call, otherCall)) {
-    case ModRefInfo::NoModRef:
-      return;
-    case ModRefInfo::Ref:
-      bv[0] = true;
-      break;
-    case ModRefInfo::Mod:
-      bv[1] = true;
-      switch (AA.getModRefInfo(otherCall, call)) {
-        case ModRefInfo::NoModRef:
-          return;
-        case ModRefInfo::Ref:
-          rbv[0] = true;
-          break;
-        case ModRefInfo::Mod:
-          rbv[1] = true;
-          break;
-        case ModRefInfo::ModRef:
-          rbv[2] = true;
-          break;
-      }
-      break;
-    case ModRefInfo::ModRef:
-      bv[2] = true;
-      break;
-  }
-
-  /*
-   * Check other alias analyses
-   */
-  if (cannotReachUnhandledExternalFunction(call) && hasNoMemoryOperations(call)) {
-    return;
-  }
-
-  if (isSafeToQueryModRefOfSVF(call, bv) && isSafeToQueryModRefOfSVF(otherCall, bv)) {
-    switch (this->mssa->getMRGenerator()->getModRefInfo(call, otherCall)) {
-      case ModRefInfo::NoModRef:
-        return;
-      case ModRefInfo::Ref:
-        bv[0] = true;
-        break;
-      case ModRefInfo::Mod:
-        bv[1] = true;
-        switch (this->mssa->getMRGenerator()->getModRefInfo(otherCall, call)) {
-          case ModRefInfo::NoModRef:
-            return;
-          case ModRefInfo::Ref:
-            rbv[0] = true;
-            break;
-          case ModRefInfo::Mod:
-            rbv[1] = true;
-            break;
-          case ModRefInfo::ModRef:
-            rbv[2] = true;
-            break;
-        }
-        break;
-      case ModRefInfo::ModRef:
-        bv[2] = true;
-        break;
-    }
-  }
-
-  if (bv[0] && bv[1]) {
-    return;
-  }
-  else if (bv[0]) {
-    makeRefEdge = true;
-  }
-  else if (bv[1]) {
-    makeModEdge = true ;
-    if (rbv[0] && rbv[1]) {
-      return ;
-    }
-    else if (rbv[0]) {
-      reverseRefEdge = true;
-    }
-    else if (rbv[1]) {
-      reverseModEdge = true;
-    }
-    else {
-      reverseModRefEdge = true;
-    }
-  }
-  else {
-    makeModRefEdge = true;
-  }
-
-  /*
-   * There is a dependence.
-   */
-  if (makeRefEdge) {
-    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
-  }
-  else if (makeModEdge) {
-    /*
-     * Dependency of Mod result between call and otherCall is depend on the reverse getModRefInfo result
-     */
-    if (reverseRefEdge) {
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_RAW);
-    }
-    else if (reverseModEdge) {
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
-    }
-    else if (reverseModRefEdge) {
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_RAW);
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
-    }
-  }
-  else if (makeModRefEdge) {
-    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
-    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
   }
 
   return ;
@@ -1343,12 +848,6 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
     || isa<StoreInst>(mem) && isFunctionMemoryless(callName);
 }
       
-noelle::CallGraph * PDGAnalysis::getProgramCallGraph (void){
-  auto cg = new noelle::CallGraph(*M, this->callGraph);
-
-  return cg;
-}
-
 PDGAnalysis::~PDGAnalysis() {
   if (this->programDependenceGraph)
     delete this->programDependenceGraph;
