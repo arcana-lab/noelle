@@ -14,6 +14,10 @@ int main (int argc, char *argv[]){
     return -1;
   }
   auto iterations = atoll(argv[1]);
+  if (iterations < 1){
+    iterations = 1;
+  }
+  iterations *= 100;
 
   clock_t start, stop;
   double ct, cmin = DBL_MAX, cmax = 0;
