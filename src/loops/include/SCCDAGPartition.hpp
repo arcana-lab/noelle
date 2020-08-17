@@ -21,7 +21,7 @@ class SCCDAGPartition {
   public:
     SCCDAGPartition (
       SCCDAG *dag,
-      SCCDAGAttrs *attrs,
+      std::unordered_map<SCC *, std::set<SCC *>> sccToParentMap,
       LoopStructure *loopSummary,
       std::set<SCCset *> *sets
     );
@@ -68,6 +68,7 @@ class SCCDAGPartition {
      * Subset mapping
      */
     std::set<SCCset *> *subsets;
+    std::unordered_map<SCC *, std::set<SCC *>> sccToParentMap;
     std::unordered_map<SCC *, SCCset *> SCCToSet;
     std::vector<SCC *> SCCDebugOrder;
     std::unordered_map<SCC *, int> SCCDebugIndex;

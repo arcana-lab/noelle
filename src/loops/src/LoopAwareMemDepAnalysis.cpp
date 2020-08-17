@@ -194,6 +194,11 @@ void llvm::refinePDGWithLIDS(
      */
     if (edgesThatExist.find(dependency) == edgesThatExist.end()) continue;
 
+    /*
+     * Do not waste time on edges that aren't memory dependencies
+     */
+    if (!dependency->isMemoryDependence()) continue;
+
     auto fromInst = dyn_cast<Instruction>(dependency->getOutgoingT());
     auto toInst = dyn_cast<Instruction>(dependency->getIncomingT());
     if (!fromInst || !toInst) continue;

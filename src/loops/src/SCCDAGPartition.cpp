@@ -14,10 +14,10 @@ using namespace llvm;
 
 SCCDAGPartition::SCCDAGPartition (
   SCCDAG *dag,
-  SCCDAGAttrs *attrs,
+  std::unordered_map<SCC *, std::set<SCC *>> sccToParentMap,
   LoopStructure *loopSummary,
   std::set<SCCset *> *sets
-) : loop{loopSummary}, sccdag{dag}, dagAttrs{attrs} {
+) : loop{loopSummary}, sccdag{dag}, sccToParentMap{sccToParentMap} {
   resetPartition(sets);
 
   return ;
@@ -333,7 +333,7 @@ void SCCDAGPartition::collectSubsetGraph () {
      */
     std::set<SCCset *> parents;
     for (auto scc : *subset) {
-      for (auto parentSCC : dagAttrs->parentsViaClones[scc]) {
+      for (auto parentSCC : this->sccToParentMap[scc]) {
         auto subsetIter = SCCToSet.find(parentSCC);
         if (subsetIter != SCCToSet.end()) {
           parents.insert(subsetIter->second);
