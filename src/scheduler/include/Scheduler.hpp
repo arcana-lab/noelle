@@ -174,7 +174,11 @@ namespace llvm::noelle {
       /*
        * Transformation methods
        */ 
-      bool moveFromBlock(
+      bool shrinkPrologueBlock(
+        BasicBlock *Block
+      );
+
+      bool moveFromPrologueBlock(
         Instruction *I,
         ScheduleDirection Direction=ScheduleDirection::Down
       );
