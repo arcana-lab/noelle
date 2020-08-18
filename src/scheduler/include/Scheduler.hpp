@@ -48,7 +48,8 @@ namespace llvm::noelle {
        */ 
       LoopScheduler getNewLoopScheduler(
         LoopStructure * const LS,
-        DominatorSummary const &DS
+        DominatorSummary * const DS,
+        PDG * const ThePDG
       ) const ;
 
 
@@ -77,13 +78,8 @@ namespace llvm::noelle {
 
 
       /*
-       * Transformation methods
+       * Transformation methods --- FIX
        */ 
-      bool moveFromBlock(
-        Instruction * const I,
-        PDG * const ThePDG,
-        DominatorSummary const &DS
-      ) const ;
 
 
       /*
@@ -124,7 +120,8 @@ namespace llvm::noelle {
        */ 
       LoopScheduler(
         LoopStructure * const LS,
-        DominatorSummary const &DS
+        DominatorSummary * const DS,
+        PDG * const ThePDG
       );
 
 
@@ -136,6 +133,12 @@ namespace llvm::noelle {
       std::set<BasicBlock *> getLoopPrologue (void) const ;
 
       std::set<BasicBlock *> getLoopBody (void) const ;
+
+
+      /*
+       * Analysis methods
+       */ 
+      bool canScheduleLoop (void) const;
 
 
       /*
@@ -167,6 +170,30 @@ namespace llvm::noelle {
 
       void calculateLoopBody (void) ;
 
+
+      /*
+       * Transformation methods
+       */ 
+      bool moveFromBlock(
+        Instruction *I,
+        ScheduleDirection Direction=ScheduleDirection::Down
+      );
+
+      bool moveIntoSuccessor(
+        Instruction *I,
+        BasicBlock *Successor
+      );
+
+      bool cloneIntoSuccessor(
+        Instruction *I,
+        BasicBlock *Successor
+      );
+
+      void resolveSuccessorPHIs(
+        Instruction * const Moved,
+        Instruction * const Replacement,
+        BasicBlock *SuccBB
+      );
       
       /*
        * --- Private Fields ---
@@ -176,7 +203,8 @@ namespace llvm::noelle {
        * Passed state
        */ 
       LoopStructure *TheLoop;
-      const DominatorSummary *DS;
+      DominatorSummary *DS;
+      PDG *ThePDG;
 
 
       /*
