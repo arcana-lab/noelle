@@ -31,10 +31,11 @@ Scheduler::Scheduler() {
 
 LoopScheduler Scheduler::getNewLoopScheduler(
   LoopStructure * const LS,
-  DominatorSummary const &DS
+  DominatorSummary * const DS,
+  PDG * const ThePDG
 ) const {
 
-  return LoopScheduler(LS, DS);
+  return LoopScheduler(LS, DS, PDG);
 
 }
 
@@ -252,12 +253,12 @@ std::set<Instruction *> Scheduler::getInstructionsThatCanMove(
 
     if (ShouldKeep) {
 
-      errs() << "LoopScheduler:       Keep --- Dependence(s) can't be moved!\n";
+      errs() << "Scheduler:       Keep --- Dependence(s) can't be moved!\n";
       Keeps.insert(Next);
 
     } else {
 
-      errs() << "LoopScheduler:       Move!\n";
+      errs() << "Scheduler:       Move!\n";
       Moves.insert(Next);
 
     }
@@ -268,7 +269,8 @@ std::set<Instruction *> Scheduler::getInstructionsThatCanMove(
   /*
    * Debugging
    */ 
-  errs() << "Scheduler: getInstructionsThatCanMove --- All moves: \n";
+  errs() << "Scheduler: getInstructionsThatCanMove --- All moves ("
+         << Moves.size() << "): \n";
   
   for (auto Move : Moves) {
     errs() << "Scheduler:   " << *Move << "\n";
@@ -439,24 +441,6 @@ std::set<Instruction *> Scheduler::getRequirementsToMoveInstruction(
 }
 
 
-
-/*
- * ------------------------------------------------------------------ 
- * PUBLIC --- Transformation Methods
- * ------------------------------------------------------------------
- */
-bool Scheduler::moveFromBlock(
-  Instruction * const I,
-  PDG * const ThePDG,
-  DominatorSummary const &DS
-) const {
-
-  return false;
-
-}
-
-
-
 /*
  * ------------------------------------------------------------------ 
  * PUBLIC --- Analysis Methods
@@ -492,9 +476,9 @@ bool Scheduler::isControlEquivalent(
   /*
    * Debugging
    */
-  errs() << "LoopScheduler: First --- \n" << *First << "\n"
-         << "LoopScheduler: Second --- \n" << *Second << "\n"
-         << "LoopScheduler: IsControlEquivalent --- " 
+  errs() << "Scheduler: First --- \n" << *First << "\n"
+         << "Scheduler: Second --- \n" << *Second << "\n"
+         << "Scheduler: IsControlEquivalent --- " 
          << IsControlEquivalent << "\n";
 
 
@@ -639,14 +623,16 @@ std::set<Instruction *> Scheduler::getOutgoingDependencesInParent(
  */
 LoopScheduler::LoopScheduler(
   LoopStructure * const LS,
-  DominatorSummary const &DS
+  DominatorSummary * const DS,
+  PDG * const ThePDG
 ) {
 
   /*
    * Save passed analysis state
    */
   this->TheLoop = LS;
-  this->DS = &DS;
+  this->DS = DS;
+  this->ThePDG = ThePDG;
 
 
   /*
@@ -670,12 +656,173 @@ LoopScheduler::LoopScheduler(
 
 /*
  * ------------------------------------------------------------------ 
+ * PUBLIC --- Analysis Methods
+ * ------------------------------------------------------------------
+ */
+bool canScheduleLoop (void) const {
+
+  /*
+   * Scheduling instructions into/out of a loop is currently a 
+   * constrained process --- the following constraints are checked:
+   * 
+   * 1. If the body is empty, the loop can't be scheduled (try 
+   *    whilifying the loop first)
+   * 
+   * 2. TBD
+   */ 
+
+  errs() << "LoopScheduler:   canScheduleLoop\n";
+
+  /*
+   * <Constraint 1.>
+   */ 
+  if (!(this->Body.size())) {
+  
+    errs() << "LoopScheduler:     No! Loop body is empty\n";
+    return false;
+
+  }
+
+
+  errs() << "LoopScheduler:     Yes! Loop can be scheduled\n";
+  return true;
+
+}
+
+
+/*
+ * ------------------------------------------------------------------ 
  * PUBLIC --- Transformation Methods
  * ------------------------------------------------------------------
  */
 bool LoopScheduler::shrinkLoopPrologue (
   PDG * const ThePDG
 ) const {
+
+  bool Modified = false;
+
+  /*
+   * Check constraints
+   */  
+  if (!(this->canScheduleLoop())) {
+
+    errs() << "LoopScheduler:     Abort! Can't schedule the loop\n";
+    return Modified;
+
+  }
+
+
+  /*
+   * Set up a worklist --- try shrinking the prologue --- if
+   * there is any modification to any block, return immediately
+   * 
+   * Iteration is bottom-up --- FIX
+   */ 
+  std::queue<BasicBlock *> WorkList;
+  std::set<BasicBlock *> ProcessedBlocks,
+                         CannotProcessBlocks;
+
+  /*
+   * Set up
+   */
+  for (auto BlockIT = this->Prologue.rbegin();
+       BlockIT != this->Prologue.rend();
+       ++BlockIT) {
+
+    BasicBlock *Block = *BlockIT;
+    WorkList.push(Block);
+
+  }
+
+  /*
+   * Iterate over the worklist
+   */
+  while(!WorkList.empty()) {
+
+    /*
+     * Get next basic block, check:
+     * 
+     * 1. Check block scheduling constraints --- if Next can't be
+     *    scheduled, add to CannotProcessBlocks and continue
+     * 
+     * 2. If any successor can't be processed (in CannotProcessBlocks),
+     *    don't process Next --- add to CannotProcessBlocks and 
+     *    continue
+     * 
+     * 3. If any successor that is in the prologue has not been
+     *    processed first (in ProcessedBlocks) --- don't process
+     *    Next --- push it to the back of the worklist
+     */ 
+
+    BasicBlock *Next = WorkList.front();
+    WorkList.pop();
+
+    errs() << "LoopScheduler:       Next: " << *Next << "\n";
+
+
+    /*
+     * <Constraint 1.> 
+     */ 
+    if (!(this->canScheduleBlock(Next))) {
+
+      CannotProcessBlocks.insert(Next);
+      continue;
+      
+    }
+
+
+    bool ReadyToProcess = true,
+         CannotProcess = false;
+
+    for (auto *SuccBB : successors(Next)) {
+
+      /*
+       * <Constraint 2.>
+       */ 
+      if (CannotProcessBlocks.find(SuccBB) != CannotProcessBlocks.end()) {
+        
+        CannotProcess |= true;
+        break;
+
+      }
+
+      /*
+       * <Constraint 3.>
+       */
+      if (true 
+          && this->Prologue.find(SuccBB) != this->Prologue.end()
+          && ProcessedBlocks.find(SuccBB) == ProcessedBlocks.end()) {
+        
+        ReadyToProcess &= false;
+        break;
+
+      }
+
+    }
+
+
+    if (CannotProcess) { /* <Constraint 2.> */
+      
+      CannotProcessBlocks.insert(Next);
+      continue;
+
+    } else if (!ReadyToProcess) { /* <Constraint 3.> */
+
+      WorkList.push(Next);
+      continue;
+
+    }
+
+
+
+    /*
+     * Now, schedule Next --- 
+     */ 
+
+
+
+  }
+
 
   return false;
 
@@ -797,7 +944,7 @@ void LoopScheduler::calculateLoopPrologue (void) {
    /*
    * Get the post-dominator tree
    */  
-  auto PDT = DS->PDT;
+  auto PDT = this->DS->PDT;
 
 
   /*
@@ -838,3 +985,264 @@ void LoopScheduler::calculateLoopBody (void) {
 
 }
 
+
+/*
+ * ------------------------------------------------------------------ 
+ * PRIVATE --- Transformation Methods
+ * ------------------------------------------------------------------
+ */
+bool LoopScheduler::moveFromBlock(
+  Instruction *I,
+  ScheduleDirection Direction
+) const {
+
+  /*
+   * TOP --- Main transformation method for moving an instruction 
+   * outside of a basic block
+   * 
+   * Users --- LoopScheduler::shrinkLoopPrologue
+   * 
+   * Constraints:
+   * 
+   * 1. Scheduling direction --- moving out of a basic block is
+   *    constrained to the ScheduleDirection::Down direction
+   * 
+   * 2. Because the current use case of this method is to shrink
+   *    the loop prologue, there are constraints for where an 
+   *    instruction can be moved down to:
+   *    
+   *    a. If @I's parent has a single successor --- moving is 
+   *       allowed and trivial
+   * 
+   *    b. If @I's parent has a pair of successors (confirm 2), 
+   *       confirm that one successor is inside the loop and 
+   *       the other successor is an exit block
+   * 
+   *       NOTE --- this is quite a strong constraint, as the 
+   *       LoopScheduler needs to address only certain, common
+   *       loop CFG patterns (temporarily)
+   * 
+   * Other notes:
+   * - Replacing uses is non-trivial in a general case. However, for the
+   *   aforementioned common loop CFG pattern, there's a shortcut to 
+   *   replacing uses:
+   *    
+   *   1. For the successor block inside the loop, @I can simply 
+   *      be moved into the successor
+   *   2. For the successor block outside the loop, @I needs to be 
+   *      cloned and placed into the successor. However, because this
+   *      is an exit block, noelle-norm must have already placed the 
+   *      loop in lcssa form --- meaning the exit block's uses of @I
+   *      are in its PHI nodes. As a result, simply resolving the uses
+   *      in the exit block PHIs will suffice.
+   * 
+   * - Other common CFG patterns (if-then-else, etc.) should be
+   *   handled using the dominator summary and reachability 
+   *   analysis
+   */ 
+
+  BasicBlock *Parent = I->getParent();
+
+  errs() << "LoopScheduler:   moveFromBlock --- @I: " << *I << "\n";
+
+
+  /*
+   * CASE 1
+   */ 
+  if (Direction != ScheduleDirection::Down) {
+      
+    errs() << "LoopScheduler:     No instructions --- Direction to move is not down!\n" << *Block << "\n";
+    return false;
+
+  }
+
+
+  /*
+   * CASE 2a. --- Parent has only one successor
+   */ 
+  BasicBlock *SingleSuccessor = Parent->getSingleSucessor();
+
+  if (SingleSuccessor) {
+    return this->moveToSuccessor(I, SingleSuccessor);
+  }
+
+
+  /*
+   * CASE 2b. --- Parent has two successors
+   */ 
+  
+  /*
+   * <Constraint 2b.> --- Sanity check number of successors
+   */ 
+  assert(succ_size(Parent) == 2
+         && "LoopScheduler --- moveFromBlock --- Case 2: Parent of @I should only have 2 successors!\n");
+
+  
+  /*
+   * <Constraint 2b.> --- Position of successors
+   */  
+  uint32_t NumSuccessorsInside = 0;
+  BasicBlock *InsideBlock = nullptr,
+             *OutsideBlock = nullptr;
+
+  for (auto *SuccBB : successors(SuccBB)) {
+
+    if (this->TheLoop->isIncluded(SuccBB)) {
+
+      NumSuccessorsInside++;
+      InsideBlock = SuccBB;
+
+    } else {
+      OutsideBlock = SuccBB;
+    }
+
+  }
+
+  assert(NumSuccessorsInside == 1
+         && "LoopScheduler --- moveFromBlock --- Constraint 2a.: Should have one successor inside the loop, one outside the loop!\n");
+
+
+  /*
+   * Perform move for InsideBlock
+   */ 
+  bool SuccessfullyMoved = this->moveIntoSuccessor(I, InsideBlock);
+  
+  
+  /*
+   * Perform move for OutsideBlock
+   */ 
+  SuccessfullyMove |= this->cloneIntoSuccessor(I, OutsideBlock);
+
+
+  return SuccessfullyMove;
+
+}
+
+
+bool LoopScheduler::moveIntoSuccessor(
+  Instruction *I,
+  BasicBlock *Successor
+) {
+
+  /*
+   * Move the instruction to the correct insertion point
+   */ 
+  Instruction *InsertionPoint = Successor->getFirstNonPHI();
+  I->moveBefore(InsertionPoint);
+
+
+  /*
+   * Resolve any successor PHINodes
+   */ 
+  this->resolveSuccessorPHIs(I, I, Successor);
+
+
+  /*
+   * Return success
+   */ 
+  errs() << "LoopScheduler:     Success! Moved @I to successor\n";
+  return true;
+
+}
+
+
+bool LoopScheduler::cloneIntoSuccessor(
+  Instruction *I,
+  BasicBlock *Successor
+) {
+
+  /*
+   * Clone the instruction into the correct insertion point
+   */ 
+  Instruction *InsertionPoint = Successor->getFirstNonPHI(),
+              *Clone = I->clone();
+
+  Clone->insertBefore(InsertionPoint);
+
+
+  /*
+   * Resolve any successor PHINodes
+   */ 
+  this->resolveSuccessorPHIs(I, Clone, Successor);
+
+
+  /*
+   * Return success
+   */ 
+  errs() << "LoopScheduler:     Success! Moved @I to successor\n";
+  return true;
+
+}
+
+
+void LoopScheduler::resolveSuccessorPHIs(
+  Instruction * const Moved,
+  Instruction * const Replacement,
+  BasicBlock *SuccBB
+) const {
+
+  /*
+   * TOP --- Record any single incoming PHIs that need to be
+   * folded because of a moved instruction (@Moved), replace all 
+   * uses with the moved instruction
+   */ 
+
+
+  /*
+   * Sanity check --- should have already determined @SuccBB is fit
+   * to resolve in another Scheduler analysis method --- should have
+   * a single predecessor
+   */
+  BasicBlock *Pred = SuccBB->getSinglePredecessor();
+  assert(Pred && "Scheduler: @SuccBB should only have a single predecessor!");
+
+
+  std::set<PHINode *> PHIsToResolve;
+
+  for (auto &PHI : SuccBB->phis()) {
+
+    /*
+     * Process the incoming value
+     */ 
+    Value *Incoming = PHI.getIncomingValue(0);
+    Instruction *IncomingInst = dyn_cast<Instruction>(Incoming);
+    if (!IncomingInst) {
+      continue;
+    }
+
+
+    /*
+     * If the incoming value == I, the PHINode should 
+     * be folded, and all uses should be replaced with
+     * the pushed instr
+     */ 
+    if (IncomingInst == Moved) {
+      PHIsToResolve.insert(&PHI);
+    }
+
+  }
+
+
+  for (auto PHI : PHIsToResolve) {
+
+    /*
+     * Replace all uses
+     */
+    PHI->replaceAllUsesWith(Replacement);
+
+
+    /*
+     * Fold the PHINode
+     */ 
+    const uint32_t IndexToRemove = 0;
+    PHI->removeIncomingValue(
+      IndexToRemove, 
+      true /* DeletePHIIfEmpty */
+    );
+
+  }
+
+
+  return;
+
+}
