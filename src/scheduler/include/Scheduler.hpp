@@ -144,9 +144,7 @@ namespace llvm::noelle {
       /*
        * Transformation methods
        */ 
-      bool shrinkLoopPrologue (
-        PDG * const ThePDG
-      ) const ;
+      bool shrinkLoopPrologue (void) ;
 
 
       /*

@@ -695,9 +695,7 @@ bool canScheduleLoop (void) const {
  * PUBLIC --- Transformation Methods
  * ------------------------------------------------------------------
  */
-bool LoopScheduler::shrinkLoopPrologue (
-  PDG * const ThePDG
-) const {
+bool LoopScheduler::shrinkLoopPrologue (void) {
 
   bool Modified = false;
 
