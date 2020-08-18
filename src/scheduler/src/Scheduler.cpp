@@ -35,7 +35,7 @@ LoopScheduler Scheduler::getNewLoopScheduler(
   PDG * const ThePDG
 ) const {
 
-  return LoopScheduler(LS, DS, PDG);
+  return LoopScheduler(LS, DS, ThePDG);
 
 }
 
@@ -659,7 +659,7 @@ LoopScheduler::LoopScheduler(
  * PUBLIC --- Analysis Methods
  * ------------------------------------------------------------------
  */
-bool canScheduleLoop (void) const {
+bool LoopScheduler::canScheduleLoop (void) const {
 
   /*
    * Scheduling instructions into/out of a loop is currently a 
@@ -821,7 +821,7 @@ bool LoopScheduler::shrinkLoopPrologue (void) {
      */ 
     Modified |= this->shrinkPrologueBlock(Next);
 
-    if (Modififed) {
+    if (Modified) {
       return Modified;
     }
 
@@ -997,7 +997,7 @@ void LoopScheduler::calculateLoopBody (void) {
  * PRIVATE --- Transformation Methods
  * ------------------------------------------------------------------
  */
-bool shrinkPrologueBlock(
+bool LoopScheduler::shrinkPrologueBlock(
   BasicBlock *Block
 ) {
 
@@ -1048,7 +1048,7 @@ bool shrinkPrologueBlock(
 bool LoopScheduler::moveFromPrologueBlock(
   Instruction *I,
   ScheduleDirection Direction
-) const {
+) {
 
   /*
    * TOP --- Main transformation method for moving an instruction 
@@ -1105,7 +1105,7 @@ bool LoopScheduler::moveFromPrologueBlock(
    */ 
   if (Direction != ScheduleDirection::Down) {
       
-    errs() << "LoopScheduler:     No instructions --- Direction to move is not down!\n" << *Block << "\n";
+    errs() << "LoopScheduler:     No instructions --- Direction to move is not down!\n";
     return false;
 
   }
@@ -1114,10 +1114,10 @@ bool LoopScheduler::moveFromPrologueBlock(
   /*
    * CASE 2a. --- Parent has only one successor
    */ 
-  BasicBlock *SingleSuccessor = Parent->getSingleSucessor();
+  BasicBlock *SingleSuccessor = Parent->getSingleSuccessor();
 
   if (SingleSuccessor) {
-    return this->moveToSuccessor(I, SingleSuccessor);
+    return this->moveIntoSuccessor(I, SingleSuccessor);
   }
 
 
@@ -1139,7 +1139,7 @@ bool LoopScheduler::moveFromPrologueBlock(
   BasicBlock *InsideBlock = nullptr,
              *OutsideBlock = nullptr;
 
-  for (auto *SuccBB : successors(SuccBB)) {
+  for (auto *SuccBB : successors(Parent)) {
 
     if (this->TheLoop->isIncluded(SuccBB)) {
 
@@ -1165,10 +1165,10 @@ bool LoopScheduler::moveFromPrologueBlock(
   /*
    * Perform move for OutsideBlock
    */ 
-  SuccessfullyMove |= this->cloneIntoSuccessor(I, OutsideBlock);
+  SuccessfullyMoved |= this->cloneIntoSuccessor(I, OutsideBlock);
 
 
-  return SuccessfullyMove;
+  return SuccessfullyMoved;
 
 }
 
@@ -1233,7 +1233,7 @@ void LoopScheduler::resolveSuccessorPHIs(
   Instruction * const Moved,
   Instruction * const Replacement,
   BasicBlock *SuccBB
-) const {
+) {
 
   /*
    * TOP --- Record any single incoming PHIs that need to be
