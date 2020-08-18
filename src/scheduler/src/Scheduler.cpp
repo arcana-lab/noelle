@@ -771,6 +771,10 @@ bool LoopScheduler::shrinkLoopPrologue (
     }
 
 
+    /*
+     * FOLLOWING FUNCTIONALITY NEEDS A HUGE FIX
+     */
+
     bool ReadyToProcess = true,
          CannotProcess = false;
 
@@ -800,7 +804,6 @@ bool LoopScheduler::shrinkLoopPrologue (
 
     }
 
-
     if (CannotProcess) { /* <Constraint 2.> */
       
       CannotProcessBlocks.insert(Next);
@@ -814,17 +817,22 @@ bool LoopScheduler::shrinkLoopPrologue (
     }
 
 
-
     /*
-     * Now, schedule Next --- 
+     * If there was a move, return immediately --- otherwise 
+     * add Next to the ProcessedBlocks set, and continue
      */ 
+    Modified |= this->shrinkPrologueBlock(Next);
 
+    if (Modififed) {
+      return Modified;
+    }
 
+    ProcessedBlocks.insert(Next);
 
   }
 
 
-  return false;
+  return Modified;
 
 }
 
@@ -991,7 +999,55 @@ void LoopScheduler::calculateLoopBody (void) {
  * PRIVATE --- Transformation Methods
  * ------------------------------------------------------------------
  */
-bool LoopScheduler::moveFromBlock(
+bool shrinkPrologueBlock(
+  BasicBlock *Block
+) {
+
+  bool Modified = false;
+
+  /*
+   * Find all instructions to move from @Block --- FIX --- VERY INEFFIEICNT
+   */ 
+  auto InstructionsToMove = 
+    this->getInstructionsThatCanMove(
+      Block,
+      this->ThePDG 
+    );
+
+
+  /*
+   * Nothing to move from the block
+   */ 
+  if (!(InstructionsToMove.size())) {
+    return Modified;
+  }
+
+
+  /*
+   * Move all possible instructions --- Horrible
+   */ 
+  for (auto IIT = Block->rbegin(); 
+       IIT != Block->rend();
+       ++IIT) {
+  
+    Instruction &Move = *IIT;
+    
+    if (InstructionsToMove.find(&Move) != InstructionsToMove.end()) {
+
+      this->moveFromPrologueBlock(&Move);
+      Modified |= true;
+
+    }
+  
+  }
+
+
+  return Modified;
+
+} 
+
+
+bool LoopScheduler::moveFromPrologueBlock(
   Instruction *I,
   ScheduleDirection Direction
 ) const {
@@ -1043,7 +1099,7 @@ bool LoopScheduler::moveFromBlock(
 
   BasicBlock *Parent = I->getParent();
 
-  errs() << "LoopScheduler:   moveFromBlock --- @I: " << *I << "\n";
+  errs() << "LoopScheduler:   moveFromPrologueBlock --- @I: " << *I << "\n";
 
 
   /*
@@ -1075,7 +1131,7 @@ bool LoopScheduler::moveFromBlock(
    * <Constraint 2b.> --- Sanity check number of successors
    */ 
   assert(succ_size(Parent) == 2
-         && "LoopScheduler --- moveFromBlock --- Case 2: Parent of @I should only have 2 successors!\n");
+         && "LoopScheduler --- moveFromPrologueBlock --- Case 2: Parent of @I should only have 2 successors!\n");
 
   
   /*
@@ -1099,7 +1155,7 @@ bool LoopScheduler::moveFromBlock(
   }
 
   assert(NumSuccessorsInside == 1
-         && "LoopScheduler --- moveFromBlock --- Constraint 2a.: Should have one successor inside the loop, one outside the loop!\n");
+         && "LoopScheduler --- moveFromPrologueBlock --- Constraint 2a.: Should have one successor inside the loop, one outside the loop!\n");
 
 
   /*
@@ -1169,7 +1225,7 @@ bool LoopScheduler::cloneIntoSuccessor(
   /*
    * Return success
    */ 
-  errs() << "LoopScheduler:     Success! Moved @I to successor\n";
+  errs() << "LoopScheduler:     Success! Cloned @I to successor\n";
   return true;
 
 }
