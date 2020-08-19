@@ -54,7 +54,7 @@ namespace llvm::noelle {
 
       void handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst, PTACallGraph *callGraph);
 
-      CallGraphFunctionFunctionEdge * fetchOrCreateEdge (CallGraphFunctionNode *fromNode, CallBase *callInst, Function *callee, bool isMust);
+      CallGraphFunctionFunctionEdge * fetchOrCreateEdge (CallGraphFunctionNode *fromNode, CallBase *callInst, Function & callee, bool isMust);
 
   };
 
