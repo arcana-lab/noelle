@@ -192,6 +192,16 @@ namespace llvm::noelle {
     std::unordered_map<Function *, CallGraph *> islands{};
 
     /*
+     * Identify the islands in the call graph by inspecting call/invoke instructions.
+     */
+    this->identifyCallGraphIslandsByCallInstructions(islands);
+
+    return islands;
+  }
+
+  void CallGraph::identifyCallGraphIslandsByCallInstructions (std::unordered_map<Function *, CallGraph *> &islands) const {
+
+    /*
      * Define the code to execute every time we add a function to an island.
      */
     std::unordered_set<Function *> visited{};
@@ -315,7 +325,7 @@ namespace llvm::noelle {
       }
     }
 
-    return islands;
+    return ;
   }
 
   CallGraphFunctionFunctionEdge * CallGraph::fetchOrCreateEdge (CallGraphFunctionNode *fromNode, CallBase *callInst, Function & callee, bool isMust){
