@@ -15,6 +15,10 @@
 #include "DominatorSummary.hpp"
 #include <set>
 
+
+// TODO NOW --- FIX ABSTRACTIONS
+
+
 namespace llvm::noelle {
 
   enum ScheduleDirection {
@@ -56,20 +60,24 @@ namespace llvm::noelle {
       /*
        * Driver methods
        */ 
-      bool canScheduleBlock(
-        BasicBlock * const Block  
+      /* canMoveAnyInstructionsOutsideBasicBlock */
+      bool canScheduleBlock( 
+        BasicBlock * const Block
       ) const ;
 
+      /* getInstructionsThatCanMoveOutsideBasicBlock */
       std::set<Instruction *> getInstructionsThatCanMove(
         BasicBlock * const Block,
         PDG * const ThePDG,
         ScheduleDirection Direction=ScheduleDirection::Down
       ) const ;
 
+      /* canMoveInstructionOutsideBasicBlock */
       bool canMoveInstruction(
         Instruction * const I
       ) const ;
 
+      /* ??? */
       std::set<Instruction *> getRequirementsToMoveInstruction(
         Instruction * const I,
         PDG * const ThePDG,
@@ -96,6 +104,7 @@ namespace llvm::noelle {
         PDG * const ThePDG
       ) const ;
 
+      /* getOutgoingDependencesInBasicBlock */
       std::set<Instruction *> getOutgoingDependencesInParent(
         Instruction * const I,
         PDG * const ThePDG
@@ -128,6 +137,7 @@ namespace llvm::noelle {
       /*
        * Getter methods
        */ 
+      /* getLoop */
       LoopStructure * getPassedLoop (void) const ;
       
       std::set<BasicBlock *> getLoopPrologue (void) const ;
@@ -138,12 +148,26 @@ namespace llvm::noelle {
       /*
        * Analysis methods
        */ 
+      /* canMoveAnyInstructionsOutsideLoop */
       bool canScheduleLoop (void) const;
 
 
       /*
        * Transformation methods
        */ 
+
+      /* FIX --- separate policy and trnasformation
+       * 
+       * Want to return to the user what instructions
+       * would be moved outside of a prologue --- leave
+       * it up the user to pull the trigger --- SPLIT into
+       * two operations
+       * 
+       * What do i need to shrink the prologue
+       * 
+       * shrink the prologue
+       */ 
+
       bool shrinkLoopPrologue (void) ;
 
 
@@ -172,12 +196,16 @@ namespace llvm::noelle {
       /*
        * Transformation methods
        */ 
+      /* shrinkPrologueBasicBlock --- "shrink" should change */
       bool shrinkPrologueBlock(
         BasicBlock *Block
       );
 
+      /* shrinkPrologueBasicBlock --- fix rest */
       bool moveFromPrologueBlock(
         Instruction *I,
+        ValueToValueMapTy &OriginalToClones,
+        std::set<Instruction *> &Clones,
         ScheduleDirection Direction=ScheduleDirection::Down
       );
 
@@ -188,7 +216,14 @@ namespace llvm::noelle {
 
       bool cloneIntoSuccessor(
         Instruction *I,
-        BasicBlock *Successor
+        BasicBlock *Successor,
+        ValueToValueMapTy &OriginalsToClones,
+        std::set<Instruction *> &Clones
+      );
+
+      void remapClonedInstructions(
+        ValueToValueMapTy &OriginalToClones,
+        std::set<Instruction *> &Clones
       );
 
       void resolveSuccessorPHIs(
