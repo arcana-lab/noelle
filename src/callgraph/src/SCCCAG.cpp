@@ -11,117 +11,118 @@
 #include "SystemHeaders.hpp"
 #include "SCCCAG.hpp"
 
-using namespace llvm;
-using namespace noelle;
+namespace llvm::noelle {
 
-noelle::SCCCAGNode_SCC::SCCCAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes)
-  : nodes{nodes}
-  {
-  return ;
-}
-        
-bool noelle::SCCCAGNode_SCC::isAnSCC (void) const {
-  return true;
-}
+  SCCCAGNode_SCC::SCCCAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes)
+    : nodes{nodes}
+    {
+    return ;
+  }
+          
+  bool SCCCAGNode_SCC::isAnSCC (void) const {
+    return true;
+  }
 
-SCCCAGNode_Function::SCCCAGNode_Function (Function & F) 
-  : func{F}
-  {
-  return ;
-}
+  SCCCAGNode_Function::SCCCAGNode_Function (Function & F) 
+    : func{F}
+    {
+    return ;
+  }
 
-bool SCCCAGNode_Function::isAnSCC (void) const {
-  return false;
-}
+  bool SCCCAGNode_Function::isAnSCC (void) const {
+    return false;
+  }
 
-noelle::SCCCAG::SCCCAG (noelle::CallGraph *cg){
-
-  /*
-   * Iterate over all function nodes.
-   *
-   * NOTE: The use of a call graph wrapper is because additional APIs are needed
-   * that don't belong on CallGraph for the use of GraphTraits and scc_iterator
-   */
-  std::unordered_set<CallGraphNode *> visited;
-  noelle::CallGraphWrapper cgWrapper(cg);
-  for (auto nodeWrapperIter = cgWrapper.nodes_begin(); nodeWrapperIter != cgWrapper.nodes_end(); ++nodeWrapperIter) {
+  SCCCAG::SCCCAG (CallGraph *cg){
 
     /*
-     * For the next unvisited call graph node, set the entry to the call graph
-     * as that node so that scc_iterator can go from there in search for the next SCC
+     * Iterate over all function nodes.
+     *
+     * NOTE: The use of a call graph wrapper is because additional APIs are needed
+     * that don't belong on CallGraph for the use of GraphTraits and scc_iterator
      */
-    auto nodeWrapper = *nodeWrapperIter;
-    auto functionNode = nodeWrapper->wrappedNode;
-    if (visited.find(functionNode) != visited.end()) continue;
-    cgWrapper.entryNode = nodeWrapper;
-
-    for (auto cgI = scc_begin(&cgWrapper); cgI != scc_end(&cgWrapper); ++cgI) {
+    std::unordered_set<CallGraphNode *> visited;
+    CallGraphWrapper cgWrapper(cg);
+    for (auto nodeWrapperIter = cgWrapper.nodes_begin(); nodeWrapperIter != cgWrapper.nodes_end(); ++nodeWrapperIter) {
 
       /*
-       * Collect the nodes identified as an SCC. Ensure they haven't been visited before
+       * For the next unvisited call graph node, set the entry to the call graph
+       * as that node so that scc_iterator can go from there in search for the next SCC
        */
-      const std::vector<noelle::CallGraphNodeWrapper *> &wrappedCGNodes = *cgI;
-      auto firstNodeWrapper = *wrappedCGNodes.begin();
-      auto firstNode = firstNodeWrapper->wrappedNode;
-      if (visited.find(firstNode) != visited.end()) {
-        continue;
-      }
+      auto nodeWrapper = *nodeWrapperIter;
+      auto functionNode = nodeWrapper->wrappedNode;
+      if (visited.find(functionNode) != visited.end()) continue;
+      cgWrapper.entryNode = nodeWrapper;
 
-      /*
-       * Unwrap the nodes
-       */
-      std::unordered_set<CallGraphNode *> cgNodes{};
-      for (auto wrappedCGNode : wrappedCGNodes) {
-        cgNodes.insert(wrappedCGNode->wrappedNode);
-      }
+      for (auto cgI = scc_begin(&cgWrapper); cgI != scc_end(&cgWrapper); ++cgI) {
 
-      /*
-       * Track visited CG nodes.
-       * Create the SCC node
-       */
-      visited.insert(cgNodes.begin(), cgNodes.end());
+        /*
+         * Collect the nodes identified as an SCC. Ensure they haven't been visited before
+         */
+        const std::vector<CallGraphNodeWrapper *> &wrappedCGNodes = *cgI;
+        auto firstNodeWrapper = *wrappedCGNodes.begin();
+        auto firstNode = firstNodeWrapper->wrappedNode;
+        if (visited.find(firstNode) != visited.end()) {
+          continue;
+        }
 
-      /*
-       * Check if the current node is an SCC.
-       */
-      auto singleCGNode = static_cast<CallGraphFunctionNode *>(*cgNodes.begin());
-      auto thisIsAnSCC = false;
-      if (cgNodes.size() > 1) {
-        thisIsAnSCC = true;
+        /*
+         * Unwrap the nodes
+         */
+        std::unordered_set<CallGraphNode *> cgNodes{};
+        for (auto wrappedCGNode : wrappedCGNodes) {
+          cgNodes.insert(wrappedCGNode->wrappedNode);
+        }
 
-      } else {
-        for (auto edge : singleCGNode->getOutgoingEdges()){
-          if (edge->getCallee() == singleCGNode){
-            thisIsAnSCC = true;
-            break ;
+        /*
+         * Track visited CG nodes.
+         * Create the SCC node
+         */
+        visited.insert(cgNodes.begin(), cgNodes.end());
+
+        /*
+         * Check if the current node is an SCC.
+         */
+        auto singleCGNode = static_cast<CallGraphFunctionNode *>(*cgNodes.begin());
+        auto thisIsAnSCC = false;
+        if (cgNodes.size() > 1) {
+          thisIsAnSCC = true;
+
+        } else {
+          for (auto edge : singleCGNode->getOutgoingEdges()){
+            if (edge->getCallee() == singleCGNode){
+              thisIsAnSCC = true;
+              break ;
+            }
           }
         }
-      }
 
-      /*
-       * Create the correct node and insert it into the SCCCAG.
-       * Possible nodes are an SCC or a single Function.
-       */
-      if (!thisIsAnSCC){
-        auto sccNode = new SCCCAGNode_Function(*singleCGNode->getFunction());
-        this->nodes[singleCGNode] = sccNode;
-        continue;
-      }
-      auto sccNode = new SCCCAGNode_SCC(cgNodes);
-      for (auto node : cgNodes) {
-        this->nodes[node] = sccNode;
+        /*
+         * Create the correct node and insert it into the SCCCAG.
+         * Possible nodes are an SCC or a single Function.
+         */
+        if (!thisIsAnSCC){
+          auto sccNode = new SCCCAGNode_Function(*singleCGNode->getFunction());
+          this->nodes[singleCGNode] = sccNode;
+          continue;
+        }
+        auto sccNode = new SCCCAGNode_SCC(cgNodes);
+        for (auto node : cgNodes) {
+          this->nodes[node] = sccNode;
+        }
       }
     }
+
+    return ;
   }
 
-  return ;
-}
+  SCCCAGNode * SCCCAG::getNode (CallGraphNode *n) const {
+    if (this->nodes.find(n) == this->nodes.end()){
+      return nullptr;
+    }
 
-SCCCAGNode * SCCCAG::getNode (CallGraphNode *n) const {
-  if (this->nodes.find(n) == this->nodes.end()){
-    return nullptr;
+    auto node = this->nodes.at(n);
+    return node;
   }
 
-  auto node = this->nodes.at(n);
-  return node;
 }
