@@ -39,6 +39,8 @@ namespace llvm {
 
         CallGraphFunctionNode * getFunctionNode (Function *f) const ;
 
+        std::unordered_map<Function *, CallGraph *> getIslands (void) const ;
+
         SCCCAG * getSCCCAG (void) ;
 
         bool doesItBelongToASCC (Function *f) ;
@@ -49,6 +51,8 @@ namespace llvm {
         std::unordered_map<Instruction *, CallGraphInstructionNode *> instructionNodes;
         std::unordered_set<CallGraphEdge *> edges;
         SCCCAG *scccag;
+
+        CallGraph (Module &M);
 
         void handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst);
     };
