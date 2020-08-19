@@ -21,12 +21,13 @@ LoopWhilifier::LoopWhilifier(Noelle &noelle)
 
 
 bool LoopWhilifier::whilifyLoop (
-  LoopDependenceInfo const &LDI
+  LoopDependenceInfo &LDI
 ) {
 
   bool AnyTransformed = false;
 
   errs() << "LoopWhilifier: Starting ... \n";
+
 
   /*
    * Handle subloops --- return if there is any
@@ -67,6 +68,31 @@ bool LoopWhilifier::whilifyLoopDriver(
 ) {
 
   auto Transformed = false;
+
+
+#if 1
+
+  errs() << "THE SCHEDULER\n";
+
+  auto Func = LS->getFunction();
+  auto Scheduler = noelle.getScheduler();
+  auto DS = noelle.getDominators(Func);
+  
+  auto LSched = Scheduler.getNewLoopScheduler(
+    LS,
+    DS,
+    noelle.getFunctionDependenceGraph(Func)
+  );
+
+  auto Result = LSched.shrinkLoopPrologue();
+  
+  if (Result) {
+    return Result;
+  }
+
+#endif
+
+
 
   /*
    * Check if the loop can be whilified

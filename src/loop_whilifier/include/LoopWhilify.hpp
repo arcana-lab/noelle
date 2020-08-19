@@ -80,7 +80,7 @@ namespace llvm {
       LoopWhilifier(Noelle &noelle);
 
       bool whilifyLoop (
-        LoopDependenceInfo const &LDI
+        LoopDependenceInfo &LDI
       );
 
       bool whilifyLoopDriver(
