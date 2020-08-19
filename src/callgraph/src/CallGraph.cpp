@@ -56,7 +56,7 @@ namespace llvm::noelle {
          * Handle call instructions.
          */
         if (auto callInst = dyn_cast<CallInst>(&inst)){
-          this->handleCallInstruction(fromNode, callInst);
+          this->handleCallInstruction(fromNode, callInst, callGraph);
           continue ;
         }
 
@@ -64,7 +64,7 @@ namespace llvm::noelle {
          * Handle invoke instructions.
          */
         if (auto callInst = dyn_cast<InvokeInst>(&inst)){
-          this->handleCallInstruction(fromNode, callInst);
+          this->handleCallInstruction(fromNode, callInst, callGraph);
           continue ;
         }
       }
@@ -101,7 +101,7 @@ namespace llvm::noelle {
     return n;
   }
 
-  void CallGraph::handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst){
+  void CallGraph::handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst, PTACallGraph *callGraph){
 
     /*
      * Fetch the callee.
@@ -110,64 +110,9 @@ namespace llvm::noelle {
     if (callee != nullptr){
 
       /*
-       * Fetch the callee node.
+       * Add the edge if it doesn't exist.
        */
-      assert(this->functions.find(callee) != this->functions.end());
-      auto toNode = this->functions.at(callee);
-
-      /*
-       * Create the sub-edge.
-       */
-      auto instNode = this->instructionNodes[callInst];
-      if (instNode == nullptr){
-        instNode = new CallGraphInstructionNode(callInst);
-        this->instructionNodes[callInst] = instNode;
-      }
-      auto subEdge = new CallGraphInstructionFunctionEdge(instNode, toNode, true);
-
-      /*
-       * Check if the edge already exists.
-       */
-      auto existingEdge = fromNode->getCallEdgeTo(toNode);
-      if (existingEdge == nullptr){
-
-        /*
-         * The edge from @fromNode to @toNode doesn't exist yet.
-         *
-         * Create a new edge.
-         */
-        auto newEdge = new CallGraphFunctionFunctionEdge(fromNode, toNode, true);
-        this->edges.insert(newEdge);
-
-        /*
-         * Add the new edge.
-         */
-        fromNode->addOutgoingEdge(newEdge);
-        toNode->addIncomingEdge(newEdge);
-        for (auto cucu : toNode->getEdges()){
-          auto caller = cucu->getCaller();
-          auto callee = cucu->getCallee();
-        }
-
-        /*
-         * Add the sub-edge.
-         */
-        newEdge->addSubEdge(subEdge);
-
-        return ;
-      }
-
-      /*
-       * The edge from @fromNode to @toNode already exists.
-       *
-       * Change its flag to must.
-       */
-      existingEdge->setMust();
-
-        /*
-       * Add the sub-edge.
-       */
-      existingEdge->addSubEdge(subEdge);
+      this->fetchOrCreateEdge(fromNode, callInst, callee, true);
 
       return ;
     }
@@ -175,7 +120,25 @@ namespace llvm::noelle {
     /*
      * The callee is unknown.
      */
-    //TODO
+    if (isa<CallInst>(callInst)){
+      auto callInstCast = cast<CallInst>(callInst);
+      if (!callGraph->hasIndCSCallees(callInstCast)) {
+        //abort();
+        return ;
+      }
+
+      /*
+       * Iterate over the possible callees.
+       */
+      auto const callees = callGraph->getIndCSCallees(callInstCast);
+      for (auto &callee : callees) {
+
+        /*
+         * Add the edge if it doesn't exist.
+         */
+        //this->fetchOrCreateEdge(fromNode, callInst, &callee, false);
+      }
+    }
 
     return ;
   }
@@ -353,6 +316,73 @@ namespace llvm::noelle {
     }
 
     return islands;
+  }
+
+  CallGraphFunctionFunctionEdge * CallGraph::fetchOrCreateEdge (CallGraphFunctionNode *fromNode, CallBase *callInst, Function *callee, bool isMust){
+
+    /*
+     * Fetch the callee node.
+     */
+    assert(this->functions.find(callee) != this->functions.end());
+    auto toNode = this->functions.at(callee);
+
+    /*
+     * Create the sub-edge.
+     */
+    auto instNode = this->instructionNodes[callInst];
+    if (instNode == nullptr){
+      instNode = new CallGraphInstructionNode(callInst);
+      this->instructionNodes[callInst] = instNode;
+    }
+    auto subEdge = new CallGraphInstructionFunctionEdge(instNode, toNode, isMust);
+
+    /*
+     * Check if the edge already exists.
+     */
+    auto existingEdge = fromNode->getCallEdgeTo(toNode);
+    if (existingEdge == nullptr){
+
+      /*
+       * The edge from @fromNode to @toNode doesn't exist yet.
+       *
+       * Create a new edge.
+       */
+      auto newEdge = new CallGraphFunctionFunctionEdge(fromNode, toNode, isMust);
+      this->edges.insert(newEdge);
+
+      /*
+       * Add the new edge.
+       */
+      fromNode->addOutgoingEdge(newEdge);
+      toNode->addIncomingEdge(newEdge);
+
+      /*
+       * Add the sub-edge.
+       */
+      newEdge->addSubEdge(subEdge);
+
+      return newEdge;
+    }
+
+    /*
+     * The edge from @fromNode to @toNode already exists.
+     *
+     * Check if we need to change its flag to must.
+     */
+    if (isMust){
+
+      /*
+       * Change the flag to must.
+       */
+      existingEdge->setMust();
+    }
+
+      /*
+     * Add the sub-edge.
+     */
+    existingEdge->addSubEdge(subEdge);
+
+    return existingEdge;
   }
 
 }

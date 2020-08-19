@@ -52,7 +52,10 @@ namespace llvm::noelle {
 
       CallGraph (Module &M);
 
-      void handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst);
+      void handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst, PTACallGraph *callGraph);
+
+      CallGraphFunctionFunctionEdge * fetchOrCreateEdge (CallGraphFunctionNode *fromNode, CallBase *callInst, Function *callee, bool isMust);
+
   };
 
 }
