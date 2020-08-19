@@ -112,7 +112,7 @@ namespace llvm::noelle {
       /*
        * Add the edge if it doesn't exist.
        */
-      this->fetchOrCreateEdge(fromNode, callInst, callee, true);
+      this->fetchOrCreateEdge(fromNode, callInst, *callee, true);
 
       return ;
     }
@@ -123,20 +123,20 @@ namespace llvm::noelle {
     if (isa<CallInst>(callInst)){
       auto callInstCast = cast<CallInst>(callInst);
       if (!callGraph->hasIndCSCallees(callInstCast)) {
-        //abort();
         return ;
       }
 
       /*
        * Iterate over the possible callees.
        */
-      auto const callees = callGraph->getIndCSCallees(callInstCast);
+      auto callees = callGraph->getIndCSCallees(callInstCast);
       for (auto &callee : callees) {
 
         /*
          * Add the edge if it doesn't exist.
          */
-        //this->fetchOrCreateEdge(fromNode, callInst, &callee, false);
+        auto nonConstCallee = const_cast<Function *>(callee);
+        this->fetchOrCreateEdge(fromNode, callInst, *nonConstCallee, false);
       }
     }
 
@@ -318,13 +318,13 @@ namespace llvm::noelle {
     return islands;
   }
 
-  CallGraphFunctionFunctionEdge * CallGraph::fetchOrCreateEdge (CallGraphFunctionNode *fromNode, CallBase *callInst, Function *callee, bool isMust){
+  CallGraphFunctionFunctionEdge * CallGraph::fetchOrCreateEdge (CallGraphFunctionNode *fromNode, CallBase *callInst, Function & callee, bool isMust){
 
     /*
      * Fetch the callee node.
      */
-    assert(this->functions.find(callee) != this->functions.end());
-    auto toNode = this->functions.at(callee);
+    assert(this->functions.find(&callee) != this->functions.end());
+    auto toNode = this->functions.at(&callee);
 
     /*
      * Create the sub-edge.
