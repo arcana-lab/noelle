@@ -56,6 +56,7 @@ namespace llvm::noelle {
 
       CallGraphFunctionFunctionEdge * fetchOrCreateEdge (CallGraphFunctionNode *fromNode, CallBase *callInst, Function & callee, bool isMust);
 
+      void identifyCallGraphIslandsByCallInstructions (std::unordered_map<Function *, CallGraph *> &islands) const ;
   };
 
 }
