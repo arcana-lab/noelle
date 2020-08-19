@@ -1022,8 +1022,10 @@ bool LoopScheduler::shrinkPrologueBlock(
 
 
   /*
-   * Move all possible instructions --- Horrible
+   * Get correct order for all possible instructions to move --- Horrible
    */ 
+  std::vector<Instruction *> OrderedInstructionsToMove;
+
   for (auto IIT = Block->rbegin(); 
        IIT != Block->rend();
        ++IIT) {
@@ -1031,12 +1033,45 @@ bool LoopScheduler::shrinkPrologueBlock(
     Instruction &Move = *IIT;
     
     if (InstructionsToMove.find(&Move) != InstructionsToMove.end()) {
-
-      this->moveFromPrologueBlock(&Move);
-      Modified |= true;
-
+      OrderedInstructionsToMove.push_back(&Move);
     }
   
+  }
+
+
+  /*
+   * Perform the move or clone --- Terrible
+   */ 
+  ValueToValueMapTy OriginalToClones;
+  std::set<Instruction *> Clones;
+
+  for (auto Move : OrderedInstructionsToMove) {
+
+    errs() << "LoopScheduler:       Next instruction to move: " << Move << "\n";
+
+    this->moveFromPrologueBlock(
+      Move,
+      OriginalToClones,
+      Clones
+    );
+
+    Modified |= true;
+
+  }
+
+
+  /*
+   * Remap all cloned instructions if necessary --- Attrocious
+   */ 
+  this->remapClonedInstructions(
+    OriginalToClones,
+    Clones
+  );
+
+
+  if (Modified) {
+    this->Dump();
+    errs() << *(this->TheLoop->getFunction()) << "\n";
   }
 
 
@@ -1047,6 +1082,8 @@ bool LoopScheduler::shrinkPrologueBlock(
 
 bool LoopScheduler::moveFromPrologueBlock(
   Instruction *I,
+  ValueToValueMapTy &OriginalToClones,
+  std::set<Instruction *> &Clones,
   ScheduleDirection Direction
 ) {
 
@@ -1163,9 +1200,15 @@ bool LoopScheduler::moveFromPrologueBlock(
   
   
   /*
-   * Perform move for OutsideBlock
+   * Perform clones for OutsideBlock
    */ 
-  SuccessfullyMoved |= this->cloneIntoSuccessor(I, OutsideBlock);
+  SuccessfullyMoved |= 
+    this->cloneIntoSuccessor(
+      I, 
+      OutsideBlock,
+      OriginalToClones,
+      Clones
+    );
 
 
   return SuccessfullyMoved;
@@ -1202,7 +1245,9 @@ bool LoopScheduler::moveIntoSuccessor(
 
 bool LoopScheduler::cloneIntoSuccessor(
   Instruction *I,
-  BasicBlock *Successor
+  BasicBlock *Successor,
+  ValueToValueMapTy &OriginalsToClones,
+  std::set<Instruction *> &Clones
 ) {
 
   /*
@@ -1221,10 +1266,74 @@ bool LoopScheduler::cloneIntoSuccessor(
 
 
   /*
+   * Fill out the entry in the ValueToValueMap, insert 
+   * into Clones set
+   */ 
+  OriginalsToClones[I] = Clone;
+  Clones.insert(Clone);
+
+
+  /*
    * Return success
    */ 
   errs() << "LoopScheduler:     Success! Cloned @I to successor\n";
   return true;
+
+}
+
+
+void LoopScheduler::remapClonedInstructions(
+  ValueToValueMapTy &OriginalToClones,
+  std::set<Instruction *> &Clones
+) {
+
+  std::set<Value *> ValuesToEnter;
+
+  /*
+   * Find all possible operands across the moved instructions
+   * that are not already in the ValueToValueMap --- these must
+   * be entered so llvm:remapInstruction can work properly --- FIX
+   */ 
+  for (auto const &[Original, Clone] : OriginalToClones) {
+
+    auto OriginalInstruction = cast<Instruction>(Original);
+
+    for (auto Index = 0; 
+         Index < OriginalInstruction->getNumOperands();
+         ++Index) {
+
+      /*
+       * Record the operand to enter if it doesn't already exist
+       * in the ValueToValueMap
+       */ 
+      Value *Operand = OriginalInstruction->getOperand(Index);
+
+      if (OriginalToClones.find(Operand) == OriginalToClones.end()) {
+        ValuesToEnter.insert(Operand);
+      }
+      
+    }
+
+  }
+
+
+  /*
+   * Make the entries
+   */ 
+  for (auto V : ValuesToEnter) {
+    OriginalToClones[V] = V;
+  }
+
+
+  /*
+   * For each clone, remap the operands
+   */
+  for (auto Clone : Clones) {
+    llvm::RemapInstruction(Clone, OriginalToClones);
+  }
+
+
+  return;
 
 }
 
@@ -1241,6 +1350,7 @@ void LoopScheduler::resolveSuccessorPHIs(
    * uses with the moved instruction
    */ 
 
+  errs() << "LoopScheduler:         resolveSuccessorPHIs for " << *SuccBB << "\n";
 
   /*
    * Sanity check --- should have already determined @SuccBB is fit
