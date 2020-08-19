@@ -56,6 +56,8 @@ namespace llvm {
 
         std::unordered_set<CallGraphFunctionFunctionEdge *> getOutgoingEdges (void) const ;
 
+        std::unordered_set<CallGraphFunctionFunctionEdge *> getEdges (void) const ;
+
         void print (void) override ;
 
       private:

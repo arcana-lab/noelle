@@ -65,6 +65,13 @@ std::unordered_set<CallGraphFunctionFunctionEdge *> noelle::CallGraphFunctionNod
   return this->outgoingEdges;
 }
 
+std::unordered_set<CallGraphFunctionFunctionEdge *> noelle::CallGraphFunctionNode::getEdges (void) const {
+  std::unordered_set<CallGraphFunctionFunctionEdge *> edges{this->incomingEdges};
+  edges.insert(this->outgoingEdges.begin(), this->outgoingEdges.end());
+
+  return edges;
+}
+
 CallGraphFunctionFunctionEdge * CallGraphFunctionNode::getCallEdgeTo (CallGraphFunctionNode *callee) const {
   if (this->outgoingEdgesMap.find(callee) == this->outgoingEdgesMap.end()){
     return nullptr;
