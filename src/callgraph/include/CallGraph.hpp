@@ -19,43 +19,40 @@
 #include "Util/PTACallGraph.h"
 #include "MSSA/MemSSA.h"
 
-namespace llvm {
+namespace llvm::noelle {
+  class SCCCAG;
 
-  namespace noelle {
-    class SCCCAG;
+  /*
+   * Call graph.
+   */
+  class CallGraph {
+    public:
+      CallGraph (Module &M, PTACallGraph *callGraph);
 
-    /*
-     * Call graph.
-     */
-    class CallGraph {
-      public:
-        CallGraph (Module &M, PTACallGraph *callGraph);
+      std::unordered_set<CallGraphFunctionNode *> getFunctionNodes (void) const ;
 
-        std::unordered_set<CallGraphFunctionNode *> getFunctionNodes (void) const ;
+      std::unordered_set<CallGraphEdge *> getEdges (void) const ;
 
-        std::unordered_set<CallGraphEdge *> getEdges (void) const ;
+      CallGraphFunctionNode * getEntryNode (void) const ;
 
-        CallGraphFunctionNode * getEntryNode (void) const ;
+      CallGraphFunctionNode * getFunctionNode (Function *f) const ;
 
-        CallGraphFunctionNode * getFunctionNode (Function *f) const ;
+      std::unordered_map<Function *, CallGraph *> getIslands (void) const ;
 
-        std::unordered_map<Function *, CallGraph *> getIslands (void) const ;
+      SCCCAG * getSCCCAG (void) ;
 
-        SCCCAG * getSCCCAG (void) ;
+      bool doesItBelongToASCC (Function *f) ;
 
-        bool doesItBelongToASCC (Function *f) ;
+    private:
+      Module &m;
+      std::unordered_map<Function *, CallGraphFunctionNode *> functions;
+      std::unordered_map<Instruction *, CallGraphInstructionNode *> instructionNodes;
+      std::unordered_set<CallGraphEdge *> edges;
+      SCCCAG *scccag;
 
-      private:
-        Module &m;
-        std::unordered_map<Function *, CallGraphFunctionNode *> functions;
-        std::unordered_map<Instruction *, CallGraphInstructionNode *> instructionNodes;
-        std::unordered_set<CallGraphEdge *> edges;
-        SCCCAG *scccag;
+      CallGraph (Module &M);
 
-        CallGraph (Module &M);
+      void handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst);
+  };
 
-        void handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst);
-    };
-
-  }
 }

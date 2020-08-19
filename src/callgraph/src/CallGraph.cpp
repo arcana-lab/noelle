@@ -13,14 +13,14 @@
 
 namespace llvm::noelle {
 
-  noelle::CallGraph::CallGraph (Module &M)
+  CallGraph::CallGraph (Module &M)
     : m{M},
       scccag{nullptr}
     {
     return ;
   }
 
-  noelle::CallGraph::CallGraph (Module &M, PTACallGraph *callGraph)
+  CallGraph::CallGraph (Module &M, PTACallGraph *callGraph)
     : m{M},
       scccag{nullptr}
     {
@@ -73,7 +73,7 @@ namespace llvm::noelle {
     return ;
   }
 
-  std::unordered_set<CallGraphFunctionNode *> noelle::CallGraph::getFunctionNodes (void) const {
+  std::unordered_set<CallGraphFunctionNode *> CallGraph::getFunctionNodes (void) const {
     std::unordered_set<CallGraphFunctionNode *> s;
 
     for (auto pair : this->functions){
@@ -83,16 +83,16 @@ namespace llvm::noelle {
     return s;
   }
 
-  std::unordered_set<CallGraphEdge *> noelle::CallGraph::getEdges (void) const {
+  std::unordered_set<CallGraphEdge *> CallGraph::getEdges (void) const {
     return this->edges;
   }
 
-  CallGraphFunctionNode * noelle::CallGraph::getEntryNode (void) const {
+  CallGraphFunctionNode * CallGraph::getEntryNode (void) const {
     Function *f = m.getFunction("main");
     return this->getFunctionNode(f);
   }
 
-  CallGraphFunctionNode * noelle::CallGraph::getFunctionNode (Function *f) const {
+  CallGraphFunctionNode * CallGraph::getFunctionNode (Function *f) const {
     if (this->functions.find(f) == this->functions.end()){
       return nullptr;
     }
@@ -101,7 +101,7 @@ namespace llvm::noelle {
     return n;
   }
 
-  void noelle::CallGraph::handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst){
+  void CallGraph::handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst){
 
     /*
      * Fetch the callee.
@@ -180,7 +180,7 @@ namespace llvm::noelle {
     return ;
   }
           
-  SCCCAG * noelle::CallGraph::getSCCCAG (void) {
+  SCCCAG * CallGraph::getSCCCAG (void) {
 
     /*
      * Check if we have already computed it.
@@ -197,7 +197,7 @@ namespace llvm::noelle {
     return this->scccag;
   }
 
-  bool noelle::CallGraph::doesItBelongToASCC (Function *f) {
+  bool CallGraph::doesItBelongToASCC (Function *f) {
 
     /*
      * Fetch the SCCCAG.
