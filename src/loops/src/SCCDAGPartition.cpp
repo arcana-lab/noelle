@@ -212,7 +212,8 @@ std::vector<SCCSet *> SCCDAGPartition::getDepthOrderedSets (void) {
   std::vector<SCCSet *> depthOrderedSets;
   std::unordered_set<SCCSet *> encountered;
   auto rootNodes = this->getTopLevelNodes();
-  assert(rootNodes.size() != 0);
+  assert(rootNodes.size() != 0
+    && "A cycle exists and SCCDAGPartition sets cannot be depth ordered");
 
   std::queue<SCCSet *> setsToCheck;
   for (auto rootNode : rootNodes) {
@@ -224,6 +225,8 @@ std::vector<SCCSet *> SCCDAGPartition::getDepthOrderedSets (void) {
     auto set = setsToCheck.front();
     auto node = this->fetchNode(set);
     setsToCheck.pop();
+
+    if (encountered.find(set) != encountered.end()) continue;
 
     /*
      * Confirm all parents have been encountered before counting this node
@@ -249,7 +252,6 @@ std::vector<SCCSet *> SCCDAGPartition::getDepthOrderedSets (void) {
     depthOrderedSets.push_back(set);
     for (auto edge : node->getOutgoingEdges()) {
       auto childSet = edge->getIncomingT();
-      if (encountered.find(childSet) != encountered.end()) continue;
       setsToCheck.push(childSet);
     }
   }

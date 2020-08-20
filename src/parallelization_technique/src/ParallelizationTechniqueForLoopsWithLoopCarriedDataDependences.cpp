@@ -63,8 +63,10 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   /*
    * Print
    */
+  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
   if (this->verbose >= Verbosity::Minimal) {
     errs() << "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Start\n";
+    // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-to-partition-" + std::to_string(LDI->getID()) + ".dot", sccdag);
   }
 
   /*
@@ -75,7 +77,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   /*
    * Assign SCCs that have no partition to their own partitions.
    */
-  for (auto nodePair : LDI->sccdagAttrs.getSCCDAG()->internalNodePairs()) {
+  for (auto nodePair : sccdag->internalNodePairs()) {
 
     /*
      * Fetch the current node in the SCCDAG.
@@ -100,7 +102,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   }
 
   this->partitioner = new SCCDAGPartitioner(
-    LDI->sccdagAttrs.getSCCDAG(),
+    sccdag,
     initialSets,
     LDI->sccdagAttrs.parentsViaClones,
     LDI->getLoopStructure()
