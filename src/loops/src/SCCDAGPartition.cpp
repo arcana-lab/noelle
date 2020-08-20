@@ -265,6 +265,10 @@ std::vector<SCCSet *> SCCDAGPartition::getDepthOrderedSets (void) {
   return depthOrderedSets;
 }
 
+SCCDAG *SCCDAGPartition::getSCCDAG (void) const {
+  return this->sccdag;
+}
+
 SCCDAGPartitioner::SCCDAGPartitioner (
   SCCDAG *sccdag,
   std::unordered_set<SCCSet *> initialSets,
@@ -536,6 +540,8 @@ void SCCDAGPartitioner::mergeLCSSAPhisWithTheValuesTheyPropagate (void) {
   std::set<std::pair<SCC *, SCC *>> lcssaPairs{};
   for (auto phi : lcssaPHIs) {
     auto consumerSCC = this->partition->sccOfValue(phi);
+    if (!this->partition->isIncludedInPartitioning(consumerSCC)) continue;
+
     for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
       auto incomingValue = phi->getIncomingValue(i);
       auto producerSCC = this->partition->sccOfValue(incomingValue);
@@ -559,48 +565,28 @@ raw_ostream &SCCSet::print (raw_ostream &stream) {
   return stream;
 }
 
-/*
- * Iterate subsets, merging subsets that share a memory edge
- * Then, remove any cycles that were formed in the partition via further merging
- */
-// bool SCCDAGPartition::mergeAlongMemoryEdges () {
-//   auto fetchAlongMemoryEdge = [&](SCCset *subset) -> SCCset * {
-//     for (auto scc : *subset) {
-//       for (auto edge : sccdag->fetchNode(scc)->getOutgoingEdges()) {
-//         bool hasMemEdge = false;
-//         for (auto subEdge : edge->getSubEdges()) {
-//           hasMemEdge |= subEdge->isMemoryDependence();
-//         }
-//         if (!hasMemEdge) continue;
-//         auto otherSubset = SCCToSet[edge->getIncomingT()];
-//         if (otherSubset == subset) continue;
-//         return otherSubset;
-//       }
-//     }
-//     return nullptr;
-//   };
+void SCCDAGPartitioner::mergeAlongMemoryEdges (void) {
+  std::set<std::pair<SCC *, SCC *>> memoryPairs{};
+  for (auto edge : this->partition->getSCCDAG()->getEdges()) {
 
-//   std::queue<SCCset *> subToCheck;
-//   for (auto root : roots) subToCheck.push(root);
-//   while (!subToCheck.empty()) {
-//     auto subset = subToCheck.front();
-//     subToCheck.pop();
-//     if (childrenSubsets.find(subset) == childrenSubsets.end()) continue;
+    bool containsMemoryDependence = false;
+    for (auto subEdge : edge->getSubEdges()) {
+      if (!subEdge->isMemoryDependence()) continue;
+      containsMemoryDependence = true;
+      break;
+    }
+    if (!containsMemoryDependence) continue;
 
-//     /*
-//      * Find the first subset to merge with
-//      */
-//     SCCset *mergeWith = fetchAlongMemoryEdge(subset);
-//     if (mergeWith) {
-//       auto mergedSub = mergePairAndCycles(subset, mergeWith);
-//       return true;
-//     }
-//     for (auto child : childrenSubsets[subset]) subToCheck.push(child);
-//   }
+    auto producerSCC = edge->getOutgoingT();
+    auto consumerSCC = edge->getIncomingT();
+    if (!this->partition->isIncludedInPartitioning(producerSCC)) continue;
+    if (!this->partition->isIncludedInPartitioning(consumerSCC)) continue;
 
-//   return false;
-// }
+    memoryPairs.insert(std::make_pair(producerSCC, consumerSCC));
+  }
 
+  mergeAllPairs(memoryPairs);
+}
 
 // raw_ostream &SCCDAGPartition::print (raw_ostream &stream, std::string prefix) {
 //   printSCCIndices(stream, prefix);
