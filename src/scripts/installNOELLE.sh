@@ -39,6 +39,7 @@ patchInstallDir "noelle-meta-prof-embed" ;
 patchInstallDir "noelle-pdg-stats" ;
 patchInstallDir "noelle-loop-stats" ;
 patchInstallDir "noelle-enable" ;
+patchInstallDir "noelle-deadcode" ;
 patchInstallDir "noelle-prof-coverage" ;
 patchInstallDir "noelle-config" ;
 patchInstallDir "loopaa" ;
