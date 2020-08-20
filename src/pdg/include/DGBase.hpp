@@ -311,8 +311,9 @@ namespace llvm {
       if (edge->isRemovableDependence() &&
           (subEdges.size() == 1 || this->isRemovableDependence())) {
         isRemovable = true;
-        for (auto &r : *(edge->getRemedies()))
-          remeds->insert(r);
+        for (auto &r : *(edge->getRemedies())) {
+          this->addRemedies(r);
+        }
       } else {
         remeds = nullptr;
         isRemovable = false;
