@@ -24,8 +24,18 @@ void DSWP::partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) {
    */
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  Before partitioning the SCCDAG\n";
-    partition->print(errs(), "DSWP:   ");
+    partitioner->getPartitionGraph()->print(errs());
   }
+
+  /*
+   * NOTE: To prevent queues pushing/popping data unevenly, merge all LCSSA PHIs
+   * with their incoming values so that the value produced by that partitioned set is
+   * at the same loop nesting level as the consumer of that LCSSA PHI
+   *
+   * NOTE: For memory dependencies, queue pushes and pops require analysis to
+   * determine placement and so are handled elsewhere
+   */
+  partitioner->mergeLCSSAPhisWithTheValuesTheyPropagate();
 
   /*
    * Check if we can cluster SCCs.
@@ -36,7 +46,7 @@ void DSWP::partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) {
      * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
      */
     h->adjustParallelizationPartitionForDSWP(
-      partition,
+      partitioner,
       LDI->sccdagAttrs,
       /*numThreads=*/LDI->getMaximumNumberOfCores(),
       this->verbose
@@ -47,45 +57,12 @@ void DSWP::partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) {
    * Print the partitioned SCCDAG.
    */
   if (this->verbose >= Verbosity::Minimal) {
-    errs() << "DSWP:  Final number of partitions: " << this->partition->numberOfPartitions() << "\n";
+    errs() << "DSWP:  Final number of partitions: " << this->partitioner->numberOfPartitions() << "\n";
   }
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  After partitioning the SCCDAG\n";
-    partition->print(errs(), "DSWP:   ");
+    partitioner->getPartitionGraph()->print(errs());
   }
 
   return ;
 }
-
-/*
-void DSWP::clusterSubloops (LoopDependenceInfo *LDI) {
-  auto &li = LDI->liSummary;
-  auto loop = li.bbToLoop[LDI->header];
-  auto loopDepth = loop->depth;
-
-  unordered_map<LoopStructure *, std::set<SCC *>> loopSets;
-  for (auto sccNode : LDI->loopSCCDAG->getNodes()) {
-    if (LDI->sccdagAttrs.canBeCloned(sccNode->getT())) continue;
-
-    for (auto iNodePair : sccNode->getT()->internalNodePairs()) {
-      auto bb = cast<Instruction>(iNodePair.first)->getParent();
-      auto subL = li.bbToLoop[bb];
-      auto subDepth = subL->depth;
-      if (subL == loop) continue;
-      assert(loopDepth < subDepth);
-
-      while (subDepth - 1 > loopDepth) {
-        subL = subL->parent;
-        subDepth--;
-      }
-      loopSets[subL].insert(sccNode->getT());
-      break;
-    }
-  }
-
-  if (loopSets.size() == 1) return;
-  for (auto loopSetPair : loopSets) {
-    partition.addSubset(loopSetPair.second);
-  }
-}
-*/

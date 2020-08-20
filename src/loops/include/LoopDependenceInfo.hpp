@@ -20,7 +20,6 @@
 #include "LoopGoverningIVAttribution.hpp"
 #include "LoopIterationDomainSpaceAnalysis.hpp"
 #include "SCCDAGAttrs.hpp"
-#include "SCCDAGNormalizer.hpp"
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
 #include "Transformations.hpp"

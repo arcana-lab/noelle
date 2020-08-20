@@ -271,43 +271,43 @@ void SCCDAGNormalizer::MergeGroups::merge(DGNode<SCC> *sccNode1, DGNode<SCC> *sc
   }
 }
 
-void SCCDAGNormalizer::collapseIntroducedCycles () {
+// void SCCDAGNormalizer::collapseIntroducedCycles () {
 
-  /*
-   * Construct SCC relations needed for SCCDAGPartition to process
-   * each SCC as its own subset and to handle any potential cycles
-   * we may have introduced by merging SCCs
-   */
-  std::unordered_map<SCC *, std::set<SCC *>> sccToParentMap;
-  std::set<std::set<SCC *> *> singleSCCs;
-  for (auto consumerNode : sccdag.getNodes()) {
-    auto consumerSCC = consumerNode->getT();
-    std::set<SCC *> * singleSCC = new std::set<SCC *>();
-    singleSCC->insert(consumerSCC);
-    singleSCCs.insert(singleSCC);
-    for (auto edge : consumerNode->getIncomingEdges()) {
-      auto producerSCC = edge->getOutgoingT();
-      sccToParentMap[consumerSCC].insert(producerSCC);
-    }
-  }
+//   /*
+//    * Construct SCC relations needed for SCCDAGPartition to process
+//    * each SCC as its own subset and to handle any potential cycles
+//    * we may have introduced by merging SCCs
+//    */
+//   std::unordered_map<SCC *, std::set<SCC *>> sccToParentMap;
+//   std::set<std::set<SCC *> *> singleSCCs;
+//   for (auto consumerNode : sccdag.getNodes()) {
+//     auto consumerSCC = consumerNode->getT();
+//     std::set<SCC *> * singleSCC = new std::set<SCC *>();
+//     singleSCC->insert(consumerSCC);
+//     singleSCCs.insert(singleSCC);
+//     for (auto edge : consumerNode->getIncomingEdges()) {
+//       auto producerSCC = edge->getOutgoingT();
+//       sccToParentMap[consumerSCC].insert(producerSCC);
+//     }
+//   }
 
-  /*
-   * Use the partition to collapse cycles.
-   * Merge any resulting subsets that aren't individual SCCs
-   */
-  SCCDAGPartition partition(&sccdag, sccToParentMap, LIS.getLoopNestingTreeRoot(), &singleSCCs);
-  for (auto subset : *partition.getSubsets()) {
-    if (subset->size() == 1) continue;
+//   /*
+//    * Use the partition to collapse cycles.
+//    * Merge any resulting subsets that aren't individual SCCs
+//    */
+//   SCCDAGPartition partition(&sccdag, sccToParentMap, LIS.getLoopNestingTreeRoot(), &singleSCCs);
+//   for (auto subset : *partition.getSubsets()) {
+//     if (subset->size() == 1) continue;
 
-    std::set<DGNode<SCC> *> nodesToMerge;
-    for (auto scc : *subset) {
-      nodesToMerge.insert(sccdag.fetchNode(scc));
-    }
+//     std::set<DGNode<SCC> *> nodesToMerge;
+//     for (auto scc : *subset) {
+//       nodesToMerge.insert(sccdag.fetchNode(scc));
+//     }
 
-    sccdag.mergeSCCs(nodesToMerge);
-  }
+//     sccdag.mergeSCCs(nodesToMerge);
+//   }
 
-  for (auto singleSCC : singleSCCs) {
-    delete singleSCC;
-  }
-}
+//   for (auto singleSCC : singleSCCs) {
+//     delete singleSCC;
+//   }
+// }

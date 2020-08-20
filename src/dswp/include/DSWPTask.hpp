@@ -72,15 +72,18 @@ namespace llvm {
     int fromStage, toStage;
     Type *dependentType;
     int bitLength;
+    bool isMemoryDependence;
 
     Instruction * producer;
     std::set<Instruction *> consumers;
     unordered_map<Instruction *, int> consumerToPushIndex;
 
-    QueueInfo(Instruction *p, Instruction *c, Type *type)
-        : producer{p}, dependentType{type} {
+    QueueInfo(Instruction *p, Instruction *c, Type *type, bool isMemoryDependence)
+        : producer{p}, dependentType{type}, isMemoryDependence{isMemoryDependence} {
       consumers.insert(c);
-      if (dependentType->isPointerTy()) {
+      if (isMemoryDependence) {
+        bitLength = 1;
+      } else if (dependentType->isPointerTy()) {
         bitLength = DataLayout(p->getModule()).getTypeAllocSize(dependentType) * 8;
       } else {
         bitLength = dependentType->getPrimitiveSizeInBits();

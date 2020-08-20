@@ -232,6 +232,9 @@ bool DOALL::apply (
    * Clone loop into the single task used by DOALL
    */
   this->cloneSequentialLoop(LDI, 0);
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "DOALL:  Cloned loop\n";
+  }
 
   /*
    * Load all loop live-in values at the entry point of the task.
@@ -259,8 +262,15 @@ bool DOALL::apply (
    * they still refer to the original loop's instructions.
    */
   this->adjustDataFlowToUseClones(LDI, 0);
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "DOALL:  Adjusted data flow\n";
+  }
+
   this->setReducableVariablesToBeginAtIdentityValue(LDI, 0);
   this->rewireLoopToIterateChunks(LDI);
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "DOALL:  Rewired induction variables and reducible variables\n";
+  }
 
   /*
    * Add the final return to the single task's exit block.
@@ -274,6 +284,10 @@ bool DOALL::apply (
    * outer loop might affect the values stored
    */
   this->generateCodeToStoreLiveOutVariables(LDI, 0);
+
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "DOALL:  Stored live outs\n";
+  }
 
   this->addChunkFunctionExecutionAsideOriginalLoop(LDI, loopFunction, par);
 

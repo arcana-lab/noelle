@@ -18,7 +18,8 @@ void DSWP::registerQueue (
   DSWPTask *fromStage,
   DSWPTask *toStage,
   Instruction *producer,
-  Instruction *consumer
+  Instruction *consumer,
+  bool isMemoryDependence
 ) {
 
   /*
@@ -33,7 +34,7 @@ void DSWP::registerQueue (
     break;
   }
   if (queueIndex == this->queues.size()) {
-    this->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType())));
+    this->queues.push_back(std::move(std::make_unique<QueueInfo>(producer, consumer, producer->getType(), isMemoryDependence)));
     fromStage->producerToQueues[producer].insert(queueIndex);
     queueInfo = this->queues[queueIndex].get();
 
@@ -101,11 +102,12 @@ void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
 
     /*
      * Identify the single condition for this conditional branch
+     * FIXME: Figure out how to handle more complex terminators
      */
     std::set<Instruction *> conditionsOfConditionalBranch;
     for (auto conditionToBranchDependency : conditionalBranchNode->getIncomingEdges()) {
       assert(!conditionToBranchDependency->isMemoryDependence()
-        && "DSWP requires that no memory dependencies exist across tasks!");
+        && "Node producing control dependencies is expected not to consume a memory dependence");
       if (conditionToBranchDependency->isControlDependence()) continue;
 
       auto condition = conditionToBranchDependency->getOutgoingT();
@@ -142,7 +144,7 @@ void DSWP::collectControlQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
       if (taskOfCondition == taskControlledByCondition) continue;
 
       for (auto condition : conditionsOfConditionalBranch) {
-        registerQueue(par, LDI, taskOfCondition, taskControlledByCondition, condition, conditionalBranch);
+        registerQueue(par, LDI, taskOfCondition, taskControlledByCondition, condition, conditionalBranch, false);
       }
     }
   }
@@ -194,7 +196,7 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks (
   return tasksControlledByCondition;
 }
 
-void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
+void DSWP::collectDataAndMemoryQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
   for (auto techniqueTask : this->tasks) {
     auto toStage = (DSWPTask *)techniqueTask;
     std::set<SCC *> allSCCs(toStage->clonableSCCs.begin(), toStage->clonableSCCs.end());
@@ -213,12 +215,12 @@ void DSWP::collectDataQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
          * Create value queues for each dependency of the form: producer -> consumers
          */
         for (auto instructionEdge : sccEdge->getSubEdges()) {
-          assert(!instructionEdge->isMemoryDependence()
-            && "DSWP requires that no memory dependencies exist across tasks!");
           if (instructionEdge->isControlDependence()) continue;
+
           auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
           auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
-          registerQueue(par, LDI, fromStage, toStage, producer, consumer);
+          auto isMemoryDependence = instructionEdge->isMemoryDependence();
+          registerQueue(par, LDI, fromStage, toStage, producer, consumer, isMemoryDependence);
         }
       }
     }
@@ -297,8 +299,10 @@ void DSWP::generateLoadsOfQueuePointers (
   for (auto queueIndex : task->popValueQueues) loadQueuePtrFromIndex(queueIndex);
 }
 
-void DSWP::popValueQueues (Noelle &par, int taskIndex) {
+void DSWP::popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
+  auto originalHeader = LDI->getLoopStructure()->getHeader();
+  auto cloneHeader = task->getCloneOfOriginalBasicBlock(originalHeader);
 
   for (auto queueIndex : task->popValueQueues) {
     auto &queueInfo = this->queues[queueIndex];
@@ -313,27 +317,16 @@ void DSWP::popValueQueues (Noelle &par, int taskIndex) {
     auto clonedB = task->getCloneOfOriginalBasicBlock(originalB);
 
     /*
-     * Determine the insertion point of the queue pop. We either:
-     * 1) Insert right before the first consumer in the producer's basic block
-     * 2) Insert at the end of the basic block if no such consumer is found
-     * 
-     * NOTE: Such a consumer CANNOT be a PHI. If it were, the producer would not
-     * be a PHI, and therefore would be in a previous basic block
+     * If a memory queue, simply pop at the header
+     * Otherwise, pop right before the terminator of the producer's basic block
      */
-    std::set<Instruction *> consumers{};
-    Instruction *earliestConsumer = nullptr;
-    for (auto consumer : queueInfo->consumers) {
-      if (consumer->getParent() != originalB) continue;
-      consumers.insert(consumer);
-    }
-    for (auto &I : *originalB) {
-      if (consumers.find(&I) == consumers.end()) continue;
-      earliestConsumer = &I;
-      break;
+    Instruction *insertionPoint = nullptr;
+    if (queueInfo->isMemoryDependence) {
+      insertionPoint = cloneHeader->getFirstNonPHIOrDbgOrLifetime();
+    } else {
+      insertionPoint = clonedB->getTerminator();
     }
 
-    auto insertionPoint = earliestConsumer
-      ? task->getCloneOfOriginalInstruction(earliestConsumer) : clonedB->getTerminator();
     IRBuilder<> builder(insertionPoint);
     auto queuePopFunction = par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]];
     queueInstrs->queueCall = builder.CreateCall(queuePopFunction, queueCallArgs);
@@ -346,30 +339,42 @@ void DSWP::popValueQueues (Noelle &par, int taskIndex) {
   }
 }
 
-void DSWP::pushValueQueues (Noelle &par, int taskIndex) {
+void DSWP::pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
+  auto originalLatches = LDI->getLoopStructure()->getLatches();
 
   for (auto queueIndex : task->pushValueQueues) {
     auto queueInstrs = task->queueInstrMap[queueIndex].get();
     auto queueInfo = this->queues[queueIndex].get();
     auto queueCallArgs = ArrayRef<Value*>({ queueInstrs->queuePtr, queueInstrs->allocaCast });
-    
-    auto pClone = task->getCloneOfOriginalInstruction(queueInfo->producer);
-    auto pCloneBB = pClone->getParent();
-    IRBuilder<> builder(pCloneBB);
-    auto store = builder.CreateStore(pClone, queueInstrs->alloca);
     auto queuePushFunction = par.queues.queuePushes[par.queues.queueSizeToIndex[queueInfo->bitLength]];
-    queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
 
-    bool pastProducer = false;
-    for (auto &I : *pCloneBB) {
-      if (&I == pClone) pastProducer = true;
-      else if (auto phi = dyn_cast<PHINode>(&I)) continue;
-      else if (pastProducer) {
-        store->moveBefore(&I);
-        cast<Instruction>(queueInstrs->queueCall)->moveBefore(&I);
-        break;
+    /*
+     * If a memory queue, push at every latch
+     */
+    if (queueInfo->isMemoryDependence) {
+
+      /*
+       * FIXME: Track multiple queue calls
+       */
+      for (auto originalLatch : originalLatches) {
+        auto cloneLatch = task->getCloneOfOriginalBasicBlock(originalLatch);
+        IRBuilder<> builder(cloneLatch);
+        queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
       }
+
+    } else {
+
+      /*
+       * If a data/control queue, push at the end of the producer's basic block
+       * TODO: Change this to push at every latch, pushing the value for all
+       * latches it dominates, and pushing garbage otherwise
+       */
+      auto pClone = task->getCloneOfOriginalInstruction(queueInfo->producer);
+      auto pCloneBB = pClone->getParent();
+      IRBuilder<> builder(pCloneBB->getTerminator());
+      auto store = builder.CreateStore(pClone, queueInstrs->alloca);
+      queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
     }
   }
 }

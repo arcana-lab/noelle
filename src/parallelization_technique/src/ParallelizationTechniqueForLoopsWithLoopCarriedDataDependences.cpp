@@ -17,7 +17,7 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::ParallelizationT
   Hot &p,
   Verbosity v
   )
-  : ParallelizationTechnique{module, p, v}, partition{nullptr}
+  : ParallelizationTechnique{module, p, v}, partitioner{nullptr}
   {
 
   return ;
@@ -48,9 +48,9 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::~Parallelization
 }
 
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::reset () {
-  if (partition != nullptr){
-    delete partition;
-    partition = nullptr;
+  if (partitioner != nullptr){
+    delete partitioner;
+    partitioner = nullptr;
   }
 
   ParallelizationTechnique::reset();
@@ -70,7 +70,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   /*
    * Initial the partition structure with the merged SCCDAG
    */
-  auto subsets = new std::set<std::set<SCC *> *>();
+  auto initialSets = std::unordered_set<SCCSet *>();
 
   /*
    * Assign SCCs that have no partition to their own partitions.
@@ -94,23 +94,40 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
     /*
      * The current SCC cannot be removed.
      */
-    auto singleSet = new std::set<SCC *>();
-    singleSet->insert(currentSCC);
-    subsets->insert(singleSet);
+    auto singleSet = new SCCSet();
+    singleSet->sccs.insert(currentSCC);
+    initialSets.insert(singleSet);
   }
 
+  this->partitioner = new SCCDAGPartitioner(
+    LDI->sccdagAttrs.getSCCDAG(),
+    initialSets,
+    LDI->sccdagAttrs.parentsViaClones,
+    LDI->getLoopStructure()
+  );
+
   /*
-   * Ensure no memory edges go across subsets so no synchronization is necessary
+   * HACK: For correctness, we enforce that SCCs with LCDs between them belong to the same set  
    */
-  this->partition = new SCCDAGPartition(LDI->sccdagAttrs.getSCCDAG(), LDI->sccdagAttrs.parentsViaClones, LDI->getLoopStructure(), subsets);
-  while (partition->mergeAlongMemoryEdges());
+  // auto loopHierarchy = &LDI->getLoopHierarchyStructures();
+  // auto function = loopHierarchy->getLoopNestingTreeRoot()->getFunction();
+  // DominatorTree DT(*function);
+  // PostDominatorTree PDT(*function);
+  // DominatorSummary DS(DT, PDT);
+  // LoopCarriedDependencies lcd(*loopHierarchy, DS, *LDI->sccdagAttrs.getSCCDAG());
+  // this->partitioner->mergeLoopCarriedDependencies(&lcd);
 
   /*
    * Print the number of partitions.
    */
   if (this->verbose >= Verbosity::Minimal) {
-    errs() << "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences:  Initial number of partitions: " << subsets->size() << "\n";
+    errs() << "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences:  Initial number of partitions: "
+      << initialSets.size() << "\n";
     errs() << "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Exit\n";
+  }
+
+  for (auto set : initialSets) {
+    delete set; 
   }
 
   return ;

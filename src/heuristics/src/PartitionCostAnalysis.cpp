@@ -14,20 +14,20 @@ const std::string llvm::PartitionCostAnalysis::prefix = "Heuristic:   PCA: ";
 
 llvm::PartitionCostAnalysis::PartitionCostAnalysis (
   InvocationLatency &il,
-  SCCDAGPartition &p,
+  SCCDAGPartitioner &p,
   SCCDAGAttrs &attrs,
   int cores,
   Verbosity v
 ) : totalCost{0}, totalInstCount{0}, IL{il},
-    partition{p}, dagAttrs{attrs}, numCores{cores}, verbose{v} {
+    partitioner{p}, dagAttrs{attrs}, numCores{cores}, verbose{v} {
 
   /*
-   * Estimate the current latency for executing the pipeline of the current SCCDAG partition once.
+   * Estimate the current latency for executing the pipeline of the current SCCDAG partitioner once.
    */
-  for (auto subset : *partition.getSubsets()) {
+  for (auto subset : partitioner.getSets()) {
     uint64_t instCount = 0;
-    for (auto scc : *subset) instCount += scc->numInternalNodes();
-    std::set<SCCset *> single = { subset };
+    for (auto scc : subset->sccs) instCount += scc->numInternalNodes();
+    std::unordered_set<SCCSet *> single = { subset };
     uint64_t cost = IL.latencyPerInvocation(&dagAttrs, single);
 
     subsetCost[subset] = cost;
@@ -41,11 +41,11 @@ llvm::PartitionCostAnalysis::PartitionCostAnalysis (
 void llvm::PartitionCostAnalysis::traverseAllPartitionSubsets () {
 
   /*
-   * Collect all subsets of the current SCCDAG partition.
+   * Collect all subsets of the current SCCDAG partitioner.
    */
-  std::queue<SCCset *> subToCheck;
-  std::set<SCCset *> alreadyChecked;
-  for (auto root : *partition.getRoots()) {
+  std::queue<SCCSet *> subToCheck;
+  std::set<SCCSet *> alreadyChecked;
+  for (auto root : partitioner.getRoots()) {
     subToCheck.push(root);
     alreadyChecked.insert(root);
   }
@@ -53,14 +53,13 @@ void llvm::PartitionCostAnalysis::traverseAllPartitionSubsets () {
   while (!subToCheck.empty()) {
     auto sub = subToCheck.front();
     subToCheck.pop();
-    auto children = partition.getChildren(sub);
-    if (!children) continue;
+    auto children = partitioner.getChildren(sub);
 
     /*
      * Check merge criteria on children
      * Traverse them in turn
      */
-    for (auto child : *children) {
+    for (auto child : children) {
       checkIfShouldMerge(sub, child);
       if (alreadyChecked.find(child) == alreadyChecked.end()){
         subToCheck.push(child);
@@ -80,7 +79,7 @@ void llvm::PartitionCostAnalysis::resetCandidateSubsetInfo () {
 bool llvm::PartitionCostAnalysis::mergeCandidateSubsets () {
   if (!minSubsetA) return false;
 
-  auto mergedSub = partition.mergePair(minSubsetA, minSubsetB);
+  auto mergedSub = partitioner.mergePair(minSubsetA, minSubsetB);
 
   /*
    * Readjust subset cost tracking
@@ -98,9 +97,9 @@ void llvm::PartitionCostAnalysis::printCandidate (raw_ostream &stream) {
     stream << prefix << "No candidates\n";
     return;
   }
-  stream << prefix << "Min subsets:\n";
-  stream << prefix << partition.subsetStr(minSubsetA)
-    << " " << partition.subsetStr(minSubsetB) << "\n";
+  // stream << prefix << "Min subsets:\n";
+  // stream << prefix << partitioner.subsetStr(minSubsetA)
+  //   << " " << partitioner.subsetStr(minSubsetB) << "\n";
   stream << prefix << "Lowered cost: " << loweredCost
     << " Merged subset cost: " << mergedSubsetCost
     << " Instruction count: " << instCount << "\n";

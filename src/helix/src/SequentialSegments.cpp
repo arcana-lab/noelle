@@ -41,7 +41,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   /*
    * Fetch the subsets.
    */
-  auto& subsets = this->partition->getDepthOrderedSubsets();
+  auto sets = this->partitioner->getDepthOrderedSets();
 
   /*
    * Fetch the set of SCCs that have loop-carried data dependences.
@@ -52,13 +52,13 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
    * Allocate the sequential segments, one per partition.
    */
   int32_t ssID = 0;
-  for (auto subset : subsets){
+  for (auto set : sets){
 
     /*
      * Check if the current set of SCCs require a sequential segments.
      */
     auto requireSS = false;
-    for (auto scc : *subset){
+    for (auto scc : set->sccs){
 
       /*
        * Fetch the SCC metadata.
@@ -113,7 +113,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
     /*
      * Allocate a sequential segment.
      */
-    auto ss = new SequentialSegment(LDI, reachabilityDFR, subset, ssID, this->verbose);
+    auto ss = new SequentialSegment(LDI, reachabilityDFR, set, ssID, this->verbose);
 
     /*
      * Insert the new sequential segment to the list.
