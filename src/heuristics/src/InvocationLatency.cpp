@@ -43,14 +43,15 @@ uint64_t InvocationLatency::latencyPerInvocation (SCC *scc){
  */
 uint64_t InvocationLatency::latencyPerInvocation (
   SCCDAGAttrs *attrs,
-  std::set<std::set<SCC *> *> &subsets
+  std::unordered_set<SCCSet *> &subsets
 ) {
   uint64_t maxInternalCost = 0;
   std::set<Value *> queueValues;
   std::set<SCC *> allSCCs;
-  for (auto sccs : subsets) {
-    std::set<SCC *> subsetSCCs(sccs->begin(), sccs->end());
-    for (auto scc : *sccs) {
+  for (auto set : subsets) {
+    auto &sccs = set->sccs;
+    std::set<SCC *> subsetSCCs(sccs.begin(), sccs.end());
+    for (auto scc : sccs) {
       auto &parents = memoizeParents(attrs, scc);
       subsetSCCs.insert(parents.begin(), parents.end());
     }

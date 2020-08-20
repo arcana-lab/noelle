@@ -13,6 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "SCC.hpp"
 #include "SCCDAGAttrs.hpp"
+#include "SCCDAGPartition.hpp"
 #include "Hot.hpp"
 
 namespace llvm {
@@ -23,7 +24,7 @@ namespace llvm {
 
       uint64_t latencyPerInvocation (SCC *scc);
 
-      uint64_t latencyPerInvocation (SCCDAGAttrs *, std::set<std::set<SCC *> *> &subsets);
+      uint64_t latencyPerInvocation (SCCDAGAttrs *, std::unordered_set<SCCSet *> &subsets);
 
       uint64_t latencyPerInvocation (Instruction *inst);
 

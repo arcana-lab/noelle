@@ -55,14 +55,13 @@ namespace llvm {
        * Dependencies in graph
        */
       std::unordered_map<SCC *, Criticisms> sccToLoopCarriedDependencies;
-      std::unordered_map<SCC *, std::set<DGEdge<Value> *>> sccToInternalLoopCarriedDependencies;
 
       /*
        * Isolated clonable SCCs and resulting inherited parents
        */
       std::set<SCC *> clonableSCCs;
-      std::unordered_map<SCC *, std::set<SCC *>> parentsViaClones;
-      std::unordered_map<SCC *, std::set<DGEdge<SCC> *>> edgesViaClones;
+      std::unordered_map<SCC *, std::unordered_set<SCC *>> parentsViaClones;
+      std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC> *>> edgesViaClones;
 
       /*
        * Methods on SCCDAG.

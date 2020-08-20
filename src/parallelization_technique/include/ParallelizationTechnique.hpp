@@ -185,9 +185,11 @@ namespace llvm {
 
       Value *getIdentityValueForEnvironmentValue (
         LoopDependenceInfo *LDI,
-        int taskIndex,
-        int environmentIndex
+        int environmentIndex,
+        Type *typeForValue
       );
+
+      Value *castToCorrectReducibleType (IRBuilder<> &builder, Value *value, Type *targetType) ;
 
       /*
        * Partition SCCDAG.

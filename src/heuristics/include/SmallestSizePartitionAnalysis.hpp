@@ -28,12 +28,12 @@ namespace llvm {
    public:
     SmallestSizePartitionAnalysis (
       InvocationLatency &IL,
-      SCCDAGPartition &p,
+      SCCDAGPartitioner &p,
       SCCDAGAttrs &attrs,
       int cores,
       Verbosity v
     ) : PartitionCostAnalysis{IL, p, attrs, cores, v} {};
 
-    void checkIfShouldMerge (SCCset *sA, SCCset *sB);
+    void checkIfShouldMerge (SCCSet *sA, SCCSet *sB);
   };
 }

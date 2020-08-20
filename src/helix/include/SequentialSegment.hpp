@@ -21,7 +21,7 @@ namespace llvm {
       SequentialSegment (
         LoopDependenceInfo *LDI,
         DataFlowResult *reachabilityDFR,
-        SCCset *sccs,
+        SCCSet *sccs,
         int32_t ID,
         Verbosity verbosity
       ) ;
@@ -32,14 +32,14 @@ namespace llvm {
 
       int32_t getID (void);
 
-      iterator_range<SCCset::iterator> getSCCs(void) ; 
+      iterator_range<unordered_set<SCC *>::iterator> getSCCs(void) ; 
 
       std::unordered_set<Instruction *> getInstructions (void) ;
 
     private:
       std::set<Instruction *> entries;
       std::set<Instruction *> exits;
-      SCCset *sccs;
+      SCCSet *sccs;
       int32_t ID;
       Verbosity verbosity;
 
