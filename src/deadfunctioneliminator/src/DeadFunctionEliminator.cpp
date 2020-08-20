@@ -33,6 +33,94 @@ namespace llvm::noelle {
     auto pcg = noelle.getProgramCallGraph();
 
     /*
+     * Check if there are functions with only one caller.
+     * Inline them.
+     */
+    for (auto node : pcg->getFunctionNodes()){
+
+      /*
+       * Fetch the node.
+       */
+      auto nodeFunction = node->getFunction();
+
+      /*
+       * Check the function has a body.
+       */
+      if (nodeFunction->empty()){
+        continue ;
+      }
+
+      /*
+       * Check how many other functions can invoke @nodeFunction
+       */
+      auto callerNodes = node->getIncomingEdges();
+      if (callerNodes.size() != 1){
+        continue ;
+      }
+
+      /*
+       * We found a function that has only one other function that can invoke it.
+       *
+       * Check how many callers this function includes.
+       */
+      auto callingEdge = *callerNodes.begin();
+      auto callerEdges = callingEdge->getSubEdges();
+      if (callerEdges.size() != 1) {
+        continue ;
+      }
+
+      /*
+       * @node has only one caller.
+       *
+       * Fetch the caller.
+       */
+      auto callerEdge = *callerEdges.begin();
+      auto callerNode = callerEdge->getCaller();
+      auto callerInst = callerNode->getInstruction();
+
+      /*
+       * Check the single caller isn't part of the same function of @node.
+       */
+      if (callerInst->getFunction() == nodeFunction){
+        continue ;
+      }
+
+      /*
+       * Check the instruction isn't an invoke.
+       */
+      if (isa<InvokeInst>(callerInst)){
+
+        /*
+         * We cannot inline invoke instructions to preserve the exception handling mechanisms.
+         */
+        continue ;
+      }
+
+      /*
+       * We can inline @nodeFunction without increasing the size of the binary.
+       *
+       * Check if we need to translate an indirect call to a direct call.
+       */
+      auto callInst = cast<CallInst>(callerInst);
+      if (callInst->getCalledFunction() == nullptr){
+
+        /*
+         * This is an indirect call.
+         * Translate it to a direct call.
+         */
+        //TODO
+        continue ;
+      }
+      assert(callInst->getCalledFunction() == nodeFunction);
+      InlineFunctionInfo IFI;
+      errs() << "DeadFunctionEliminator: Inline " << *callInst << " into " << callInst->getFunction()->getName() << "\n";
+      //modified |= InlineFunction(callInst, IFI);
+    }
+    if (modified) {
+      return true;
+    }
+
+    /*
      * Fetch the islands.
      */
     auto islands = pcg->getIslands();
