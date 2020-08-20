@@ -220,6 +220,7 @@ void DSWP::collectDataAndMemoryQueueInfo (LoopDependenceInfo *LDI, Noelle &par) 
           auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
           auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
           auto isMemoryDependence = instructionEdge->isMemoryDependence();
+          assert(!isMemoryDependence && "FIXME: Support memory synchronization with queues");
           registerQueue(par, LDI, fromStage, toStage, producer, consumer, isMemoryDependence);
         }
       }

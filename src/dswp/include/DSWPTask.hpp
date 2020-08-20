@@ -82,6 +82,7 @@ namespace llvm {
         : producer{p}, dependentType{type}, isMemoryDependence{isMemoryDependence} {
       consumers.insert(c);
       if (isMemoryDependence) {
+        dependentType = IntegerType::get(c->getContext(), 1);
         bitLength = 1;
       } else if (dependentType->isPointerTy()) {
         bitLength = DataLayout(p->getModule()).getTypeAllocSize(dependentType) * 8;
