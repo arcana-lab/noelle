@@ -196,7 +196,93 @@ namespace llvm::noelle {
      */
     this->identifyCallGraphIslandsByCallInstructions(islands);
 
+    /*
+     * Merge islands due to escaped functions.
+     */
+    this->mergeCallGraphIslandsForEscapedFunctions(islands);
+
     return islands;
+  }
+
+  void CallGraph::mergeCallGraphIslandsForEscapedFunctions (std::unordered_map<Function *, CallGraph *> &islands) const {
+    
+    /*
+     * Identify the functions that are stored in memory.
+     */
+    for (auto fPair : this->functions){
+      auto f = fPair.first;
+
+      /*
+       * Check every use of the current function.
+       */
+      for (auto &use : f->uses()){
+
+        /*
+         * Fetch the next instruction.
+         */
+        auto user = use.getUser();
+        if (!isa<Instruction>(user)){
+          continue ;
+        }
+        auto inst = cast<Instruction>(user);
+
+        /*
+         * Ignore call instructions that invoke @f.
+         */
+        if (isa<CallInst>(user)){
+          auto callInstUser = cast<CallInst>(user);
+          if (callInstUser->getCalledFunction() == f){
+            continue ;
+          }
+
+        } else if (isa<InvokeInst>(user)){
+          auto callInstUser = cast<InvokeInst>(user);
+          if (callInstUser->getCalledFunction() == f){
+            continue ;
+          }
+        }
+
+        /*
+         * The function escapes.
+         * Merge the island that holds the current instruction that stores the current function and the function's one.
+         */
+        auto instFunction = inst->getFunction();
+        auto instIsland = islands[instFunction];
+        assert(instIsland != nullptr);
+        auto fIsland = islands[f];
+        assert(fIsland != nullptr);
+        if (instIsland == fIsland){
+          continue ;
+        }
+        std::vector<std::pair<Function *, CallGraphFunctionNode *>> toDelete{};
+        for (auto instIsland_function_pair : instIsland->functions){
+
+          /*
+           * Fetch the node from the island that is going to be deleted.
+           */
+          auto instIsland_function = instIsland_function_pair.first;
+          auto instIsland_functionNode = instIsland_function_pair.second;
+
+          /*
+           * Move the node to the final island.
+           */
+          fIsland->functions[instIsland_function] = instIsland_functionNode;
+          islands[instIsland_function] = fIsland;
+          toDelete.push_back(instIsland_function_pair);
+        }
+
+        /*
+         * Delete the island that includes the current store instruction.
+         */
+        for (auto fNPair : toDelete){
+          instIsland->functions[fNPair.first] = nullptr;
+          instIsland->functions.erase(fNPair.first);
+        }
+        delete instIsland;
+      }
+    }
+
+    return ;
   }
 
   void CallGraph::identifyCallGraphIslandsByCallInstructions (std::unordered_map<Function *, CallGraph *> &islands) const {
