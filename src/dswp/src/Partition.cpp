@@ -32,10 +32,11 @@ void DSWP::partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) {
    * with their incoming values so that the value produced by that partitioned set is
    * at the same loop nesting level as the consumer of that LCSSA PHI
    *
-   * NOTE: For memory dependencies, queue pushes and pops require analysis to
-   * determine placement and so are handled elsewhere
+   * NOTE: For memory dependencies, synchronization needs to be in place; until then,
+   * merge all memory dependencies into single sets
    */
   partitioner->mergeLCSSAPhisWithTheValuesTheyPropagate();
+  partitioner->mergeAlongMemoryEdges();
 
   /*
    * Check if we can cluster SCCs.

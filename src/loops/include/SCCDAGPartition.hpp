@@ -51,6 +51,8 @@ namespace noelle {
 
       std::vector<SCCSet *> getDepthOrderedSets (void) ;
 
+      SCCDAG *getSCCDAG (void) const ;
+
     private:
 
       void mergeSets (std::unordered_set<SCCSet *> sets) ;
@@ -98,13 +100,13 @@ namespace noelle {
 
       void mergeLCSSAPhisWithTheValuesTheyPropagate (void) ;
 
+      void mergeAlongMemoryEdges (void) ;
+
       // raw_ostream &print (raw_ostream &stream, std::string prefix) ;
       // std::string subsetStr (SCCset *subset);
       // raw_ostream &printSCCIndices (raw_ostream &stream, std::string prefix);
       // raw_ostream &printNodeInGraph (raw_ostream &stream, std::string prefix, SCCset *subset);
       // raw_ostream &printGraph (raw_ostream &stream, std::string prefix);
-
-      // bool mergeAlongMemoryEdges ();
 
     private:
 
