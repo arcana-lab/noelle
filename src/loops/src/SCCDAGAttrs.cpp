@@ -434,6 +434,14 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
     auto consumerPHI = cast<PHINode>(consumer);
 
     /*
+     * Look for an internal consumer of a loop carried dependence
+     *
+     * NOTE: External consumers may be last-live out propagations of a reducible variable
+     * or could disqualify this from reducibility: let the LoopCarriedVariable analysis determine this
+     */
+    if (!scc->isInternal(consumerPHI)) continue;
+
+    /*
      * Ignore sub loops as they do not need to be reduced
      */
     if (rootLoopHeader != consumerPHI->getParent()) continue;
