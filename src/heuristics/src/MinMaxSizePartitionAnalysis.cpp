@@ -10,25 +10,25 @@
  */
 #include "MinMaxSizePartitionAnalysis.hpp"
 
-void llvm::MinMaxSizePartitionAnalysis::checkIfShouldMerge (SCCset *sA, SCCset *sB) {
-  bool yieldsCycle = partition.mergeYieldsCycle(sA, sB);
+void llvm::MinMaxSizePartitionAnalysis::checkIfShouldMerge (SCCSet *sA, SCCSet *sB) {
+  bool yieldsCycle = partitioner.isMergeIntroducingCycle(sA, sB);
 
-  if (verbose >= Verbosity::Maximal) {
-    std::string subsetStrs = partition.subsetStr(sA) + " " + partition.subsetStr(sB);
-    errs() << prefix << "Checking: " << subsetStrs;
-    if (yieldsCycle) errs() << "\n";
-    errs() << " Is possible\n";
-  }
+  // if (verbose >= Verbosity::Maximal) {
+  //   std::string subsetStrs = partitioner.subsetStr(sA) + " " + partitioner.subsetStr(sB);
+  //   errs() << prefix << "Checking: " << subsetStrs;
+  //   if (yieldsCycle) errs() << "\n";
+  //   errs() << " Is possible\n";
+  // }
 
   if (yieldsCycle) return ;
 
   auto current = subsetCost[sA] + subsetCost[sB];
   auto insts = subsetInstCount[sA] + subsetInstCount[sB];
-  std::set<SCCset *> subsets = { sA, sB };
+  std::unordered_set<SCCSet *> subsets = { sA, sB };
   uint64_t merge = IL.latencyPerInvocation(&dagAttrs, subsets);
   uint64_t lowered = current - merge;
 
-  if (partition.getSubsets()->size() <= numCores) return ;
+  if (partitioner.getPartitionGraph()->numNodes() <= numCores) return ;
 
   if (verbose >= Verbosity::Maximal) {
     errs() << prefix << "Lowered cost: " << lowered

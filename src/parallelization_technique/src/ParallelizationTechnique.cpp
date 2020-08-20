@@ -152,7 +152,8 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
 
     PHINode *loopEntryProducerPHI = fetchLoopEntryPHIOfProducer(LDI, producer);
     auto initValPHIIndex = loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
-    initialValues[envInd] = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
+    auto initialValue = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
+    initialValues[envInd] = castToCorrectReducibleType(*builder, initialValue, producer->getType());
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
@@ -495,7 +496,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
        * Fetch the operator of the accumulator instruction for this reducable variable
        * Store the identity value of the operator
        */
-      auto identityV = getIdentityValueForEnvironmentValue(LDI, taskIndex, envIndex);
+      auto identityV = getIdentityValueForEnvironmentValue(LDI, envIndex, envType);
       entryBuilder.CreateStore(identityV, envPtr);
     }
 
@@ -666,13 +667,30 @@ Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerV
 
     auto predecessorTerminator = predecessor->getTerminator();
     IRBuilder<> builderAtValue(predecessorTerminator);
-    auto correctlyTypedValue = lastDominatingIntermediateValue->getType() == producerType
-      ? lastDominatingIntermediateValue
-      : builderAtValue.CreateBitCast(lastDominatingIntermediateValue, producerType);
+
+    auto correctlyTypedValue = castToCorrectReducibleType(
+      builderAtValue, lastDominatingIntermediateValue, producer->getType());
     phiNode->addIncoming(correctlyTypedValue, predecessor);
   } 
 
   return phiNode;
+}
+
+Value *ParallelizationTechnique::castToCorrectReducibleType (IRBuilder<> &builder, Value *value, Type *targetType) {
+  auto valueTy = value->getType();
+  if (valueTy == targetType) return value;
+
+  if (valueTy->isIntegerTy() && targetType->isIntegerTy()) {
+    return builder.CreateBitCast(value, targetType);
+  } else if (valueTy->isIntegerTy() && targetType->isFloatingPointTy()) {
+    return builder.CreateSIToFP(value, targetType);
+  } else if (valueTy->isFloatingPointTy() && targetType->isIntegerTy()) {
+    return builder.CreateFPToSI(value, targetType);
+  } else if (valueTy->isFloatingPointTy() && targetType->isFloatingPointTy()) {
+    return builder.CreateFPCast(value, targetType);
+  } else assert(false && "Cannot cast to non-reducible type");
+
+  return nullptr;
 }
 
 void ParallelizationTechnique::adjustDataFlowToUseClones (
@@ -709,6 +727,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
       auto incomingBB = phi->getIncomingBlock(i);
       if (incomingBB->getParent() == task->getTaskBody()) continue;
+      assert(task->isAnOriginalBasicBlock(incomingBB));
       auto cloneBB = task->getCloneOfOriginalBasicBlock(incomingBB);
       phi->setIncomingBlock(i, cloneBB);
     }
@@ -800,7 +819,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
      * Fetch the identity constant for the operation reduced.
      * For example, if the variable reduced is an accumulator where "+" is used to accumulate values, then "0" is the identity.
      */
-    auto identityV = this->getIdentityValueForEnvironmentValue(LDI, taskIndex, envInd);
+    auto identityV = this->getIdentityValueForEnvironmentValue(LDI, envInd, loopEntryProducerPHI->getType());
 
     /*
      * Set the initial value for the private variable.
@@ -810,7 +829,6 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
 
   return ;
 }
-
 
 PHINode * ParallelizationTechnique::fetchLoopEntryPHIOfProducer (
   LoopDependenceInfo *LDI,
@@ -832,8 +850,8 @@ PHINode * ParallelizationTechnique::fetchLoopEntryPHIOfProducer (
 
 Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
   LoopDependenceInfo *LDI,
-  int taskIndex,
-  int environmentIndex
+  int environmentIndex,
+  Type *typeForValue
 ){
 
   /*
@@ -863,7 +881,7 @@ Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
    */
   auto identityValue = LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(
     firstAccumI,
-    producer->getType()
+    typeForValue
   );
 
   return identityValue;

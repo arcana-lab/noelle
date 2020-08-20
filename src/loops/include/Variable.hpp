@@ -133,6 +133,12 @@ namespace llvm {
        */
       std::set<Value *> controlValuesGoverningEvolution;
 
+      /*
+       * Collect all casts made on the variable that propagate iteration to iteration to ensure that
+       * no rounding is done disguised as a cast
+       */
+      std::unordered_set<CastInst *> castsInternalToVariableComputation;
+
   };
 
   /*

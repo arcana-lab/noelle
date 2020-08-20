@@ -123,8 +123,11 @@ LoopCarriedVariable::LoopCarriedVariable (
     /*
      * Ignore instructions that have no effect on the evolution of the variable
      */
-    if (isa<CastInst>(value)) continue;
     if (isa<LoadInst>(value)) continue;
+    if (auto cast = dyn_cast<CastInst>(value)) {
+      castsInternalToVariableComputation.insert(cast);
+      continue;
+    }
 
     auto variableUpdate = new EvolutionUpdate(cast<Instruction>(value), sccOfDataAndMemoryVariableValuesOnly);
     variableUpdates.insert(variableUpdate);
@@ -165,6 +168,18 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
   for (auto controlValue : controlValuesGoverningEvolution) {
     if (sccOfVariableOnly->isInternal(controlValue)) return false;
   }
+
+  /*
+   * Do not allow any casts to cause rounding error if the variable is reduced
+   */
+  bool isIntegerTypedCast = false;
+  bool isFloatingPointTypedCast = false;
+  for (auto cast : castsInternalToVariableComputation) {
+    auto castTy = cast->getType();
+    isIntegerTypedCast |= castTy->isIntegerTy();
+    isFloatingPointTypedCast |= castTy->isFloatingPointTy();
+  }
+  if (isIntegerTypedCast && isFloatingPointTypedCast) return false;
 
   /*
    * Collect updates that do not just propagate other updates

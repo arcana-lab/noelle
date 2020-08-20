@@ -11,21 +11,21 @@
 #include "SmallestSizePartitionAnalysis.hpp"
 
 /*
- * Prioritize merge that best lowers overall cost without yielding a too costly partition
+ * Prioritize merge that best lowers overall cost without yielding a too costly partitioner
  */
-void llvm::SmallestSizePartitionAnalysis::checkIfShouldMerge (SCCset *sA, SCCset *sB) {
-  if (partition.mergeYieldsCycle(sA, sB)) return ;
+void llvm::SmallestSizePartitionAnalysis::checkIfShouldMerge (SCCSet *sA, SCCSet *sB) {
+  if (partitioner.isMergeIntroducingCycle(sA, sB)) return ;
 
   /*
    * Determine cost of merge
    */
   auto current = subsetCost[sA] + subsetCost[sB];
   auto insts = subsetInstCount[sA] + subsetInstCount[sB];
-  std::set<SCCset *> subsets = { sA, sB };
+  std::unordered_set<SCCSet *> subsets = { sA, sB };
   uint64_t merge = IL.latencyPerInvocation(&dagAttrs, subsets);
   uint64_t lowered = current - merge;
 
-  if (merge > totalCost / 1 || partition.getSubsets()->size() == numCores) return ;
+  if (merge > totalCost / 1 || partitioner.getPartitionGraph()->numNodes() == numCores) return ;
 
   /*
    * Only merge if it best lowers cost
