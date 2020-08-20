@@ -161,7 +161,8 @@ std::vector<LoopDependenceInfo *> Parallelizer::selectTheOrderOfLoopsToParalleli
     for (auto l : selectedLoops){
       auto ls = l->getLoopStructure();
       auto savedTimeRelative = ((double)timeSavedLoops[l]) / ((double) profiles->getTotalInstructions(ls));
-      errs() << "Parallelizer: LoopSelector:    Loop " << l->getID() << " savings = " << savedTimeRelative << "\n";
+      savedTimeRelative *= 100;
+      errs() << "Parallelizer: LoopSelector:    Loop " << l->getID() << " savings = " << savedTimeRelative << "%\n";
     }
     errs() << "Parallelizer: LoopSelector: End\n";
   }
