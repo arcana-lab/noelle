@@ -177,6 +177,10 @@ bool DSWP::apply (
    */
   auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
+  auto loopFunction = loopHeader->getParent();
+  DominatorTree dt(*loopFunction);
+  PostDominatorTree pdt(*loopFunction);
+  this->originalFunctionDS = new DominatorSummary(dt, pdt);
 
   /*
    * Partition the SCCDAG.
@@ -357,6 +361,8 @@ bool DSWP::apply (
     errs() << "DSWP:  Link pipeline stages\n";
   }
   createPipelineFromStages(LDI, par);
+
+  delete this->originalFunctionDS;
 
   /*
    * Exit

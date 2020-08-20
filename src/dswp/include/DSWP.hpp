@@ -73,6 +73,11 @@ namespace llvm {
       Value *zeroIndexForBaseArray;
 
       /*
+       * TODO: Dominator information to be fetched from LDI
+       */
+      DominatorSummary *originalFunctionDS;
+
+      /*
        * Pipeline
        */
       void partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) ;

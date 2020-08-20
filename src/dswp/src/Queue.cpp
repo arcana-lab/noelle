@@ -317,16 +317,9 @@ void DSWP::popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) 
     auto clonedB = task->getCloneOfOriginalBasicBlock(originalB);
 
     /*
-     * If a memory queue, simply pop at the header
-     * Otherwise, pop right before the terminator of the producer's basic block
+     * Simply pop at the header.
      */
-    Instruction *insertionPoint = nullptr;
-    if (queueInfo->isMemoryDependence) {
-      insertionPoint = cloneHeader->getFirstNonPHIOrDbgOrLifetime();
-    } else {
-      insertionPoint = clonedB->getTerminator();
-    }
-
+    Instruction *insertionPoint = cloneHeader->getFirstNonPHIOrDbgOrLifetime();
     IRBuilder<> builder(insertionPoint);
     auto queuePopFunction = par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]];
     queueInstrs->queueCall = builder.CreateCall(queuePopFunction, queueCallArgs);
@@ -342,6 +335,7 @@ void DSWP::popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) 
 void DSWP::pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
   auto originalLatches = LDI->getLoopStructure()->getLatches();
+  auto originalExits = LDI->getLoopStructure()->getLoopExitBasicBlocks();
 
   for (auto queueIndex : task->pushValueQueues) {
     auto queueInstrs = task->queueInstrMap[queueIndex].get();
@@ -350,31 +344,34 @@ void DSWP::pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex)
     auto queuePushFunction = par.queues.queuePushes[par.queues.queueSizeToIndex[queueInfo->bitLength]];
 
     /*
-     * If a memory queue, push at every latch
+     * Simply push at every latch AND all exits
+     * Pushing in exits is to allow for popping in the header which will be done 1 more time
+     * than a push to latches
      */
-    if (queueInfo->isMemoryDependence) {
-
-      /*
-       * FIXME: Track multiple queue calls
-       */
-      for (auto originalLatch : originalLatches) {
-        auto cloneLatch = task->getCloneOfOriginalBasicBlock(originalLatch);
-        IRBuilder<> builder(cloneLatch);
-        queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
+    auto producerBlock = queueInfo->producer->getParent();
+    auto producerClone = task->getCloneOfOriginalInstruction(queueInfo->producer);
+    auto pushQueue = [&](BasicBlock *originalInsertBlock, IRBuilder<> &builder) -> void {
+      if (!queueInfo->isMemoryDependence) {
+        auto insertBlock = builder.GetInsertBlock();
+        if (this->originalFunctionDS->DT.dominates(producerBlock, originalInsertBlock)) {
+          builder.CreateStore(producerClone, queueInstrs->alloca);
+        }
       }
-
-    } else {
-
-      /*
-       * If a data/control queue, push at the end of the producer's basic block
-       * TODO: Change this to push at every latch, pushing the value for all
-       * latches it dominates, and pushing garbage otherwise
-       */
-      auto pClone = task->getCloneOfOriginalInstruction(queueInfo->producer);
-      auto pCloneBB = pClone->getParent();
-      IRBuilder<> builder(pCloneBB->getTerminator());
-      auto store = builder.CreateStore(pClone, queueInstrs->alloca);
       queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
+    };
+
+    /*
+     * FIXME: Track multiple queue calls
+     */
+    for (auto originalLatch : originalLatches) {
+      auto cloneLatch = task->getCloneOfOriginalBasicBlock(originalLatch);
+      IRBuilder<> builder(cloneLatch->getTerminator());
+      pushQueue(originalLatch, builder);
+    }
+    for (auto exitBlock : originalExits) {
+      auto cloneExit = task->getCloneOfOriginalBasicBlock(exitBlock);
+      IRBuilder<> builder(cloneExit->getFirstNonPHIOrDbgOrLifetime());
+      pushQueue(exitBlock, builder);
     }
   }
 }
