@@ -168,13 +168,9 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
      * If it isn't an instruction, insert at the incoming block's entry
      */
     auto incomingV = spill->loopCarriedPHI->getIncomingValue(inInd);
-    Instruction *insertPoint = incomingBB->getFirstNonPHIOrDbgOrLifetime();
-    if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
-      insertPoint = incomingI->getNextNode();
-      if (isa<PHINode>(insertPoint) || isa<DbgInfoIntrinsic>(insertPoint) || insertPoint->isLifetimeStartOrEnd()) {
-        insertPoint = incomingI->getParent()->getFirstNonPHIOrDbgOrLifetime();
-      }
-    }
+    Instruction *insertPoint = isa<PHINode>(incomingV)
+      ? incomingBB->getFirstNonPHIOrDbgOrLifetime()
+      : incomingBB->getTerminator();
 
     IRBuilder<> builder(insertPoint);
     spill->environmentStores.insert(builder.CreateStore(incomingV, spillEnvPtr));
