@@ -14,7 +14,7 @@ for var in "$@" ; do
 done
 
 # Normalize the code
-cmdToExecute="noelle-norm $notOptions -o $notOptions"
+cmdToExecute="noelle-simplification $notOptions -o $notOptions"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
@@ -24,7 +24,7 @@ echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Normalize the code
-cmdToExecute="noelle-norm $notOptions -o $notOptions"
+cmdToExecute="noelle-simplification $notOptions -o $notOptions"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
@@ -34,7 +34,7 @@ echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Normalize the code
-cmdToExecute="noelle-norm $notOptions -o $notOptions"
+cmdToExecute="noelle-simplification $notOptions -o $notOptions"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 

@@ -42,4 +42,5 @@ patchInstallDir "noelle-enable" ;
 patchInstallDir "noelle-deadcode" ;
 patchInstallDir "noelle-prof-coverage" ;
 patchInstallDir "noelle-config" ;
+patchInstallDir "noelle-simplification" ;
 patchInstallDir "loopaa" ;
