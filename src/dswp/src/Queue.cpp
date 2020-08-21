@@ -234,8 +234,8 @@ void DSWP::collectDataAndMemoryQueueInfo (LoopDependenceInfo *LDI, Noelle &par) 
            * NOTE: We rely on the producer/consumer to be at the same loop level
            * for simplicity in pushing/popping from queues. Assert that
            */
-          assert(allLoops.getLoop(*producer) == allLoops.getLoop(*consumer)
-            && "DSWP: Loop nesting level for all queue producer/consumer pairs must be the same");
+          assert(allLoops.getLoop(*producer)->getNestingLevel() <= allLoops.getLoop(*consumer)->getNestingLevel()
+            && "DSWP: Loop nesting level for all queue producers must be less than its consumers");
 
           registerQueue(par, LDI, fromStage, toStage, producer, consumer, isMemoryDependence);
         }
@@ -335,8 +335,8 @@ void DSWP::popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) 
     /*
      * Simply pop at the header
      *
-     * NOTE: This is done at the loop level of the producer/consumer. We partition tasks
-     * such that dependencies do not propagate across loop levels.
+     * NOTE: This is done at the loop level of the producer. We partition tasks
+     * such that dependencies do not propagate up loop levels.
      */
     auto loop = allLoops.getLoop(*originalB);
     auto originalHeader = loop->getHeader();
@@ -369,7 +369,12 @@ void DSWP::pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex)
      */
     auto producerBlock = queueInfo->producer->getParent();
     auto producerClone = task->getCloneOfOriginalInstruction(queueInfo->producer);
-    IRBuilder<> builder(producerClone->getNextNode());
+    auto producerCloneBlock = producerClone->getParent();
+    auto insertPoint = producerClone->getNextNode();
+    if (isa<PHINode>(insertPoint)) {
+      insertPoint = producerCloneBlock->getFirstNonPHIOrDbgOrLifetime();
+    }
+    IRBuilder<> builder(insertPoint);
     builder.CreateStore(producerClone, queueInstrs->alloca);
 
     /*
@@ -377,8 +382,8 @@ void DSWP::pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex)
      * Pushing in exits is to allow for popping in the header which will be done 1 more time
      * than a push to latches
      *
-     * NOTE: This is done at the loop level of the producer/consumer. We partition tasks
-     * such that dependencies do not propagate across loop levels.
+     * NOTE: This is done at the loop level of the producer. We partition tasks
+     * such that dependencies do not propagate up loop levels.
      *
      * FIXME: Track multiple queue calls
      */
