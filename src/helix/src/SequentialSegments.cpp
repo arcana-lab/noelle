@@ -26,29 +26,41 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   std::unordered_map<SCC *, SCC*> taskToOriginalFunctionSCCMap;
   auto originalSCCDAG = originalLDI->sccdagAttrs.getSCCDAG();
   auto taskSCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-original-" + std::to_string(LDI->getID()) + ".dot", originalSCCDAG);
+  DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-task-" + std::to_string(LDI->getID()) + ".dot", taskSCCDAG);
   for (auto originalNode : originalSCCDAG->getNodes()) {
 
     /*
      * Get clones of original instructions for the given SCC
+     * HACK: Since we spill loop carried PHIs, we must gloss over mappings to the initial loaded value
+     * of that loop carried PHI
      */
     auto originalSCC = originalNode->getT();
-    auto anyOriginalInst = cast<Instruction>(originalSCC->begin_internal_node_map()->first);
-    Instruction *anyClonedInst = helixTask->getCloneOfOriginalInstruction(anyOriginalInst);
-    // std::unordered_set<Instruction *> clonedInsts;
-    // for (auto nodePair : originalSCC->internalNodePairs()) {
-    //   auto originalInst = cast<Instruction>(nodePair.first);
-    //   clonedInsts.insert(helixTask->getCloneOfOriginalInstruction(originalInst));
-    // }
+    Instruction *anyClonedInstInLoop = nullptr;
+    auto clonedLoop = LDI->getLoopStructure();
+    for (auto nodePair : originalSCC->internalNodePairs()) {
+      auto originalInst = cast<Instruction>(nodePair.first);
+      auto clonedInst = helixTask->getCloneOfOriginalInstruction(originalInst);
+      if (!clonedLoop->isIncluded(clonedInst)) continue;
+      anyClonedInstInLoop = clonedInst;
+      break;
+    }
+    assert(anyClonedInstInLoop != nullptr);
 
     SCC *singleMappingSCC = nullptr;
     for (auto taskNode : taskSCCDAG->getNodes()) {
       auto taskSCC = taskNode->getT();
-      bool hasOverlappingInstruction = taskSCC->isInternal(anyClonedInst);
+      bool hasOverlappingInstruction = taskSCC->isInternal(anyClonedInstInLoop);
       if (!hasOverlappingInstruction) continue;
 
       assert(singleMappingSCC == nullptr);
       singleMappingSCC = taskSCC;
     }
+
+    // if (singleMappingSCC == nullptr) {
+    //   originalSCC->print(errs() << "Original SCC:\n");
+    //   anyClonedInstInLoop->print(errs() << "Any cloned INST: "); errs() << "\n";
+    // }
 
     assert(singleMappingSCC != nullptr);
     taskToOriginalFunctionSCCMap.insert(std::make_pair(singleMappingSCC, originalSCC));
@@ -102,6 +114,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
        */
       auto originalSCC = taskToOriginalFunctionSCCMap.at(scc);
       auto originalSCCInfo = originalLDI->sccdagAttrs.getSCCAttrs(originalSCC);
+      originalSCCInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
 
       /*
        * Do not synchronize induction variables
