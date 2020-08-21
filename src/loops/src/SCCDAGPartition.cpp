@@ -98,14 +98,16 @@ void SCCDAGPartition::mergeSets (std::unordered_set<SCCSet *> sets) {
    * Add this set to a new node in the graph
    */
   auto mergedSet = new SCCSet();
+  // errs() << "Merging:\n";
   for (auto set : sets) {
     mergedSet->sccs.insert(set->sccs.begin(), set->sccs.end());
 
     for (auto scc : set->sccs) {
+      // scc->printMinimal(errs() << "SCC:\n"); errs() << "\n";
       this->sccToSetMap[scc] = mergedSet;
     }
   }
-  this->addNode(mergedSet, /*inclusion=*/true);
+  auto mergedSetNode = this->addNode(mergedSet, /*inclusion=*/true);
 
   /*
    * For each set's node,
@@ -125,8 +127,8 @@ void SCCDAGPartition::mergeSets (std::unordered_set<SCCSet *> sets) {
       auto anySCCInParentSet = *parentSet->sccs.begin();
       if (this->sccToSetMap.at(anySCCInParentSet) == mergedSet) continue;
 
-      if (this->fetchEdges(parentNode, setNode).size() != 0) continue;
-      this->addEdge(parentSet, set);
+      if (this->fetchEdges(parentNode, mergedSetNode).size() != 0) continue;
+      this->addEdge(parentSet, mergedSet);
     }
 
     for (auto edge : setNode->getOutgoingEdges()) {
@@ -136,8 +138,8 @@ void SCCDAGPartition::mergeSets (std::unordered_set<SCCSet *> sets) {
       auto anySCCInChildSet = *childSet->sccs.begin();
       if (this->sccToSetMap.at(anySCCInChildSet) == mergedSet) continue;
 
-      if (this->fetchEdges(setNode, childNode).size() != 0) continue;
-      this->addEdge(set, childSet);
+      if (this->fetchEdges(mergedSetNode, childNode).size() != 0) continue;
+      this->addEdge(mergedSet, childSet);
     }
   }
 
@@ -168,7 +170,7 @@ void SCCDAGPartition::collapseCycles (void) {
      */
     setEntryNode(nodeToVisit);
     DGGraphWrapper<SCCDAGPartition, SCCSet> wrapper(this);
-    nodeToVisit->print(errs() << "Visiting node using scc_iterator\n") << "\n";
+    // nodeToVisit->print(errs() << "Visiting node using scc_iterator\n");
 
     /*
      * scc_iterator collects all cycles found from the entry node to leaves of the graph
@@ -189,7 +191,11 @@ void SCCDAGPartition::collapseCycles (void) {
       auto unwrappedSets = new std::unordered_set<SCCSet *>();
       for (auto setWrapper : setNodes) {
         auto unwrappedNode = setWrapper->wrappedNode;
-        unwrappedSets->insert(unwrappedNode->getT());
+        auto unwrappedSet = unwrappedNode->getT();
+        unwrappedSets->insert(unwrappedSet);
+        // for (auto scc : unwrappedSet->sccs) {
+        //   scc->printMinimal(errs() << "Contained SCC:\n");
+        // }
       }
 
       /*
