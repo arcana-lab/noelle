@@ -45,14 +45,15 @@ SCCDAGAttrs::SCCDAGAttrs (
     if (loopGoverningIV) loopGoverningIVs.insert(loopGoverningIV);
   }
 
+  // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag.dot", sccdag);
   // errs() << "IVs: " << ivs.size() << "\n";
   // for (auto iv : ivs) {
-  //   iv->getHeaderPHI()->print(errs() << "IV: "); errs() << "\n";
+  //   iv->getLoopEntryPHI()->print(errs() << "IV: "); errs() << "\n";
   // }
   // errs() << "-------------\n";
   // errs() << "Loop governing IVs: " << loopGoverningIVs.size() << "\n";
   // for (auto iv : loopGoverningIVs) {
-  //   iv->getHeaderPHI()->print(errs() << "IV: "); errs() << "\n";
+  //   iv->getLoopEntryPHI()->print(errs() << "IV: "); errs() << "\n";
   // }
   // errs() << "-------------\n";
 

@@ -14,33 +14,30 @@
  * Prioritize merge that best lowers overall cost without yielding a too costly partitioner
  */
 void llvm::SmallestSizePartitionAnalysis::checkIfShouldMerge (SCCSet *sA, SCCSet *sB) {
-  if (partitioner.isMergeIntroducingCycle(sA, sB)) return ;
 
-  /*
-   * Determine cost of merge
-   */
-  auto current = subsetCost[sA] + subsetCost[sB];
-  auto insts = subsetInstCount[sA] + subsetInstCount[sB];
-  std::unordered_set<SCCSet *> subsets = { sA, sB };
-  uint64_t merge = IL.latencyPerInvocation(&dagAttrs, subsets);
-  uint64_t lowered = current - merge;
+  // TODO:
+  return ;
 
-  if (merge > totalCost / 1 || partitioner.getPartitionGraph()->numNodes() == numCores) return ;
+  // /*
+  //  * Determine cost of merge
+  //  */
+  // auto current = subsetCost[sA] + subsetCost[sB];
+  // auto insts = subsetInstCount[sA] + subsetInstCount[sB];
+  // std::unordered_set<SCCSet *> subsets = { sA, sB };
+  // uint64_t merge = IL.latencyPerInvocation(&dagAttrs, subsets);
+  // uint64_t lowered = current - merge;
 
-  /*
-   * Only merge if it best lowers cost
-   */
-  if (lowered < loweredCost) return ;
+  // if (merge > totalCost / 1 || partitioner.getPartitionGraph()->numNodes() == numCores) return ;
 
-  /*
-   * Only merge if it is the smallest of equally cost effective merges
-   */
-  if (lowered == loweredCost && insts > instCount) return ;
+  // /*
+  //  * Only merge if it best lowers cost
+  //  */
+  // if (lowered < loweredCost) return ;
 
-  minSubsetA = sA;
-  minSubsetB = sB;
-  loweredCost = lowered;
-  instCount = insts;
-  mergedSubsetCost = merge;
+  // /*
+  //  * Only merge if it is the smallest of equally cost effective merges
+  //  */
+  // if (lowered == loweredCost && insts > instCount) return ;
+
 };
 

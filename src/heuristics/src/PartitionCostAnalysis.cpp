@@ -18,24 +18,21 @@ llvm::PartitionCostAnalysis::PartitionCostAnalysis (
   SCCDAGAttrs &attrs,
   int cores,
   Verbosity v
-) : totalCost{0}, totalInstCount{0}, IL{il},
+) : costIfAllSetsRunOnSeparateCores{0}, totalInstructionCount{0}, IL{il}, sccToInstructionCountMap{},
     partitioner{p}, dagAttrs{attrs}, numCores{cores}, verbose{v} {
 
   /*
    * Estimate the current latency for executing the pipeline of the current SCCDAG partitioner once.
    */
-  for (auto subset : partitioner.getSets()) {
-    uint64_t instCount = 0;
-    for (auto scc : subset->sccs) instCount += scc->numInternalNodes();
-    std::unordered_set<SCCSet *> single = { subset };
-    uint64_t cost = IL.latencyPerInvocation(&dagAttrs, single);
-
-    subsetCost[subset] = cost;
-    subsetInstCount[subset] = instCount;
-
-    totalInstCount += instCount;
-    totalCost += cost;
+  auto allSets = partitioner.getSets();
+  for (auto set : allSets) {
+    for (auto scc : set->sccs) {
+      auto instCount = scc->numInternalNodes();
+      totalInstructionCount += instCount;
+      sccToInstructionCountMap.insert(std::make_pair(scc, instCount));
+    }
   }
+  costIfAllSetsRunOnSeparateCores = IL.latencyPerInvocation(&dagAttrs, allSets);
 }
 
 void llvm::PartitionCostAnalysis::traverseAllPartitionSubsets () {
@@ -70,37 +67,33 @@ void llvm::PartitionCostAnalysis::traverseAllPartitionSubsets () {
 }
 
 void llvm::PartitionCostAnalysis::resetCandidateSubsetInfo () {
-  minSubsetA = minSubsetB = nullptr;
-  loweredCost = 0;
-  mergedSubsetCost = totalCost;
-  instCount = totalInstCount;
+  minSetsToMerge.clear();
+  savedCostByMerging = 0;
+  costOfMergedSet = UINT64_MAX;
+  numInstructionsInSetsBeingMerged = UINT64_MAX;
 }
 
 bool llvm::PartitionCostAnalysis::mergeCandidateSubsets () {
-  if (!minSubsetA) return false;
+  if (minSetsToMerge.size() == 0) return false;
 
-  auto mergedSub = partitioner.mergePair(minSubsetA, minSubsetB);
-
-  /*
-   * Readjust subset cost tracking
-   */
-  subsetCost[mergedSub] = mergedSubsetCost;
-  subsetInstCount[mergedSub] = instCount;
-  totalCost -= loweredCost;
+  partitioner.getPartitionGraph()->mergeSetsAndCollapseResultingCycles(minSetsToMerge);
+  auto allSets = partitioner.getSets();
+  costIfAllSetsRunOnSeparateCores = IL.latencyPerInvocation(&dagAttrs, allSets);
   return true;
 }
 
 void llvm::PartitionCostAnalysis::printCandidate (raw_ostream &stream) {
   if (verbose == Verbosity::Disabled) return;
 
-  if (!minSubsetA || !minSubsetB) {
+  if (minSetsToMerge.size() == 0) {
     stream << prefix << "No candidates\n";
     return;
   }
+
   // stream << prefix << "Min subsets:\n";
   // stream << prefix << partitioner.subsetStr(minSubsetA)
   //   << " " << partitioner.subsetStr(minSubsetB) << "\n";
-  stream << prefix << "Lowered cost: " << loweredCost
-    << " Merged subset cost: " << mergedSubsetCost
-    << " Instruction count: " << instCount << "\n";
+  stream << prefix << "Saved cost: " << savedCostByMerging
+    << " Merged set cost: " << costOfMergedSet
+    << " Instruction count: " << numInstructionsInSetsBeingMerged << "\n";
 }

@@ -11,44 +11,56 @@
 #include "MinMaxSizePartitionAnalysis.hpp"
 
 void llvm::MinMaxSizePartitionAnalysis::checkIfShouldMerge (SCCSet *sA, SCCSet *sB) {
-  bool yieldsCycle = partitioner.isMergeIntroducingCycle(sA, sB);
 
-  // if (verbose >= Verbosity::Maximal) {
-  //   std::string subsetStrs = partitioner.subsetStr(sA) + " " + partitioner.subsetStr(sB);
-  //   errs() << prefix << "Checking: " << subsetStrs;
-  //   if (yieldsCycle) errs() << "\n";
-  //   errs() << " Is possible\n";
-  // }
-
-  if (yieldsCycle) return ;
-
-  auto current = subsetCost[sA] + subsetCost[sB];
-  auto insts = subsetInstCount[sA] + subsetInstCount[sB];
-  std::unordered_set<SCCSet *> subsets = { sA, sB };
-  uint64_t merge = IL.latencyPerInvocation(&dagAttrs, subsets);
-  uint64_t lowered = current - merge;
-
+  /*
+   * Hard stop merging once we have fewer partitions than cores
+   */
   if (partitioner.getPartitionGraph()->numNodes() <= numCores) return ;
 
-  if (verbose >= Verbosity::Maximal) {
-    errs() << prefix << "Lowered cost: " << lowered
-      << " Merged cost: " << merge
-      << " Instruction count: " << insts << "\n";
+  /*
+   * Compute all sets that have to be merged if the two target sets are merged
+   */
+  std::unordered_set<SCCSet *> setsInMerge = partitioner.getCycleIntroducedByMerging(sA, sB);
+
+  errs() << "Size of merge: " << setsInMerge.size() << "\n";
+
+  /*
+   * Compute the cost of running all these sets on one core
+   */
+  SCCSet potentialMerge;
+  uint64_t instCountOfMerge = 0;
+  for (auto set : setsInMerge) {
+    potentialMerge.sccs.insert(set->sccs.begin(), set->sccs.end());
+    for (auto scc : set->sccs) {
+      instCountOfMerge += this->sccToInstructionCountMap.at(scc);
+    }
   }
+  std::unordered_set<SCCSet *> singleSet = { &potentialMerge };
+  uint64_t costOnceMerged = IL.latencyPerInvocation(&dagAttrs, singleSet);
 
   /*
    * Only merge if it is the cheapest of the merges
    */
-  if (merge > mergedSubsetCost) return ;
+  if (costOnceMerged > this->costOfMergedSet) return ;
 
   /*
    * Only merge if it is the smallest of equally cost effective merges
    */
-  if (merge == mergedSubsetCost && insts > instCount) return ;
+  if (costOnceMerged == this->costOfMergedSet
+    && instCountOfMerge > this->numInstructionsInSetsBeingMerged) return ;
 
-  minSubsetA = sA;
-  minSubsetB = sB;
-  loweredCost = lowered;
-  instCount = insts;
-  mergedSubsetCost = merge;
+  /*
+   * Save merge candidate
+   * TODO: Compute saved cost by merging
+   */
+  this->minSetsToMerge = setsInMerge;
+  this->costOfMergedSet = costOnceMerged;
+  this->numInstructionsInSetsBeingMerged = instCountOfMerge;
+
+  if (verbose >= Verbosity::Maximal) {
+    errs() << prefix << "Lowered cost: " << savedCostByMerging
+      << " Merged cost: " << costOfMergedSet
+      << " Instruction count: " << instCountOfMerge << "\n";
+  }
+
 };
