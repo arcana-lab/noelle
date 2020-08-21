@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "HELIX.hpp"
+#include "HELIXTask.hpp"
 
 using namespace llvm ;
 
@@ -16,6 +17,42 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   LoopDependenceInfo *originalLDI,
   LoopDependenceInfo *LDI
 ){
+
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+
+  /*
+   * Map from old to new SCCs (for use in determining what SCC can be left out of sequential segments)
+   */
+  std::unordered_map<SCC *, SCC*> taskToOriginalFunctionSCCMap;
+  auto originalSCCDAG = originalLDI->sccdagAttrs.getSCCDAG();
+  auto taskSCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  for (auto originalNode : originalSCCDAG->getNodes()) {
+
+    /*
+     * Get clones of original instructions for the given SCC
+     */
+    auto originalSCC = originalNode->getT();
+    auto anyOriginalInst = cast<Instruction>(originalSCC->begin_internal_node_map()->first);
+    Instruction *anyClonedInst = helixTask->getCloneOfOriginalInstruction(anyOriginalInst);
+    // std::unordered_set<Instruction *> clonedInsts;
+    // for (auto nodePair : originalSCC->internalNodePairs()) {
+    //   auto originalInst = cast<Instruction>(nodePair.first);
+    //   clonedInsts.insert(helixTask->getCloneOfOriginalInstruction(originalInst));
+    // }
+
+    SCC *singleMappingSCC = nullptr;
+    for (auto taskNode : taskSCCDAG->getNodes()) {
+      auto taskSCC = taskNode->getT();
+      bool hasOverlappingInstruction = taskSCC->isInternal(anyClonedInst);
+      if (!hasOverlappingInstruction) continue;
+
+      assert(singleMappingSCC == nullptr);
+      singleMappingSCC = taskSCC;
+    }
+
+    assert(singleMappingSCC != nullptr);
+    taskToOriginalFunctionSCCMap.insert(std::make_pair(singleMappingSCC, originalSCC));
+  }
 
   std::vector<SequentialSegment *> sss;
 
@@ -63,22 +100,13 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
       /*
        * Fetch the SCC metadata.
        */
-      auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+      auto originalSCC = taskToOriginalFunctionSCCMap.at(scc);
+      auto originalSCCInfo = originalLDI->sccdagAttrs.getSCCAttrs(originalSCC);
 
       /*
        * Do not synchronize induction variables
        */
-      if (sccInfo->isInductionVariableSCC()) {
-        continue;
-      }
-
-      /*
-       * HACK: Our loop governing IV attribution class is not powerful
-       * enough to understand our manipulation of the loop governing IV,
-       * so we ignore the preamble SCC if the original LDI's attribution was compute-able
-       */
-      if (wasOriginalLoopIVGoverned && scc == preambleSCC) {
-        errs() << "HELIX:   Skipping preamble synchronization\n";
+      if (originalSCCInfo->isInductionVariableSCC()) {
         continue;
       }
 
@@ -95,7 +123,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
       /*
        * Fetch the type of the SCC.
        */
-      auto sccType = sccInfo->getType();
+      auto sccType = originalSCCInfo->getType();
 
       /*
        * Only sequential SCC can generate a sequential segment.
