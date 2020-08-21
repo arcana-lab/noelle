@@ -268,6 +268,18 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
     auto locationConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(consumer);
     if (!locationProducer || !locationConsumer) continue;
 
+    bool isRAW = edge->isRAWDependence()
+      && locationProducer->isInstructionStoringLocation(producer)
+      && locationConsumer->isInstructionLoadingLocation(consumer);
+    bool isWAR = edge->isWARDependence()
+      && locationConsumer->isInstructionLoadingLocation(producer)
+      && locationProducer->isInstructionStoringLocation(consumer);
+    bool isWAW = edge->isWAWDependence()
+      && locationConsumer->isInstructionStoringLocation(producer)
+      && locationProducer->isInstructionStoringLocation(consumer);
+
+    if (!isRAW && !isWAR && !isWAW) continue;
+
     // producer->print(errs() << "Found alloca location for producer: "); errs() << "\n";
     // consumer->print(errs() << "Found alloca location for consumer: "); errs() << "\n";
     // locationProducer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
