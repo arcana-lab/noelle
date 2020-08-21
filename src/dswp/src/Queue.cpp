@@ -327,21 +327,12 @@ void DSWP::popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) 
 
     /*
      * Determine the clone of the basic block of the original producer
+     * Insert load right there
      */
     auto originalB = queueInfo->producer->getParent();
     assert(task->isAnOriginalBasicBlock(originalB));
     auto clonedB = task->getCloneOfOriginalBasicBlock(originalB);
-
-    /*
-     * Simply pop at the header
-     *
-     * NOTE: This is done at the loop level of the producer. We partition tasks
-     * such that dependencies do not propagate up loop levels.
-     */
-    auto loop = allLoops.getLoop(*originalB);
-    auto originalHeader = loop->getHeader();
-    auto cloneHeader = task->getCloneOfOriginalBasicBlock(originalHeader);
-    Instruction *insertionPoint = cloneHeader->getFirstNonPHIOrDbgOrLifetime();
+    Instruction *insertionPoint = clonedB->getFirstNonPHIOrDbgOrLifetime();
     IRBuilder<> builder(insertionPoint);
     auto queuePopFunction = par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]];
     queueInstrs->queueCall = builder.CreateCall(queuePopFunction, queueCallArgs);
@@ -366,6 +357,7 @@ void DSWP::pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex)
 
     /*
      * Store the produced value immediately
+     * Push the value immediately
      */
     auto producerBlock = queueInfo->producer->getParent();
     auto producerClone = task->getCloneOfOriginalInstruction(queueInfo->producer);
@@ -376,34 +368,7 @@ void DSWP::pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex)
     }
     IRBuilder<> builder(insertPoint);
     builder.CreateStore(producerClone, queueInstrs->alloca);
-
-    /*
-     * Simply push at every latch AND all exits
-     * Pushing in exits is to allow for popping in the header which will be done 1 more time
-     * than a push to latches
-     *
-     * NOTE: This is done at the loop level of the producer. We partition tasks
-     * such that dependencies do not propagate up loop levels.
-     *
-     * FIXME: Track multiple queue calls
-     */
-    auto loop = allLoops.getLoop(*producerBlock);
-    auto originalLatches = loop->getLatches();
-    auto originalExits = loop->getLoopExitBasicBlocks();
-    auto pushQueue = [&](IRBuilder<> &builder) -> void {
-      queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
-    };
-
-    for (auto originalLatch : originalLatches) {
-      auto cloneLatch = task->getCloneOfOriginalBasicBlock(originalLatch);
-      IRBuilder<> builder(cloneLatch->getTerminator());
-      pushQueue(builder);
-    }
-    for (auto exitBlock : originalExits) {
-      auto cloneExit = task->getCloneOfOriginalBasicBlock(exitBlock);
-      IRBuilder<> builder(cloneExit->getFirstNonPHIOrDbgOrLifetime());
-      pushQueue(builder);
-    }
+    queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
 
   }
 }
