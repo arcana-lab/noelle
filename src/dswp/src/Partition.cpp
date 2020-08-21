@@ -24,7 +24,7 @@ void DSWP::partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) {
    */
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  Before partitioning the SCCDAG\n";
-    partitioner->getPartitionGraph()->print(errs());
+    // partitioner->getPartitionGraph()->print(errs());
   }
 
   /*
@@ -62,7 +62,7 @@ void DSWP::partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) {
   }
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DSWP:  After partitioning the SCCDAG\n";
-    partitioner->getPartitionGraph()->print(errs());
+    // partitioner->getPartitionGraph()->print(errs());
   }
 
   return ;

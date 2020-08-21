@@ -92,7 +92,17 @@ namespace noelle {
       std::unordered_set<SCCSet *> getRoots (void) ;
       std::vector<SCCSet *> getDepthOrderedSets (void) ;
 
-      bool isMergeIntroducingCycle (SCCSet *subsetA, SCCSet *subsetB) ;
+      bool isMergeIntroducingCycle (SCCSet *setA, SCCSet *setB) ;
+
+      std::unordered_set<SCCSet *> getCycleIntroducedByMerging (SCCSet *setA, SCCSet *setB) ;
+
+      bool isAncestor (SCCSet *parentTarget, SCCSet *target) ;
+
+      std::pair<SCCSet *, SCCSet *> getParentChildPair (SCCSet *setA, SCCSet *setB) ;
+
+      std::unordered_set<SCCSet *> getDescendants (SCCSet *set) ;
+      std::unordered_set<SCCSet *> getAncestors (SCCSet *set) ;
+      std::unordered_set<SCCSet *> getOverlap(std::unordered_set<SCCSet *> setsA, std::unordered_set<SCCSet *> setsB) ;
 
       SCCSet *mergePair (SCCSet *setA, SCCSet *setB) ;
 
@@ -101,6 +111,8 @@ namespace noelle {
       void mergeLCSSAPhisWithTheValuesTheyPropagate (void) ;
 
       void mergeAlongMemoryEdges (void) ;
+
+      raw_ostream &printSet (raw_ostream &stream, SCCSet *set) ;
 
       // raw_ostream &print (raw_ostream &stream, std::string prefix) ;
       // std::string subsetStr (SCCset *subset);

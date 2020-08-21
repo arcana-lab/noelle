@@ -404,29 +404,118 @@ void SCCDAGPartitioner::resetPartitioner (void) {
   return ;
 }
 
-bool SCCDAGPartitioner::isMergeIntroducingCycle (SCCSet *subsetA, SCCSet *subsetB) {
-  auto isAncestor = [&](SCCSet *parentTarget, SCCSet *target) -> bool {
-    std::queue<SCCSet *> setToCheck;
-    setToCheck.push(target);
+bool SCCDAGPartitioner::isAncestor (SCCSet *parentTarget, SCCSet *target) {
+  std::queue<SCCSet *> setToCheck;
+  setToCheck.push(target);
 
-    while (!setToCheck.empty()) {
-      auto set = setToCheck.front();
-      setToCheck.pop();
+  while (!setToCheck.empty()) {
+    auto set = setToCheck.front();
+    setToCheck.pop();
 
-      auto node = partition->fetchNode(set);
-      if (node->numIncomingEdges() == 0) continue;
+    auto node = partition->fetchNode(set);
+    if (node->numIncomingEdges() == 0) continue;
 
-      for (auto edge : node->getIncomingEdges()) {
-        auto parentSet = edge->getOutgoingT();
-        if (parentSet == parentTarget) return true;
-        setToCheck.push(parentSet);
-      }
+    for (auto edge : node->getIncomingEdges()) {
+      auto parentSet = edge->getOutgoingT();
+      if (parentSet == parentTarget) return true;
+      setToCheck.push(parentSet);
     }
+  }
 
-    return false;
-  };
+  return false;
+}
 
-  return isAncestor(subsetA, subsetB) || isAncestor(subsetB, subsetA);
+std::pair<SCCSet *, SCCSet *> SCCDAGPartitioner::getParentChildPair (SCCSet *setA, SCCSet *setB) {
+  SCCSet * parent;
+  SCCSet * child;
+  if (isAncestor(setA, setB)) {
+    return std::make_pair(setA, setB);
+  } else if (isAncestor(setB, setA)) {
+    return std::make_pair(setB, setA);
+  } else return std::make_pair(nullptr, nullptr);
+}
+
+std::unordered_set<SCCSet *> SCCDAGPartitioner::getOverlap(std::unordered_set<SCCSet *> setsA, std::unordered_set<SCCSet *> setsB) {
+  std::unordered_set<SCCSet *> overlap;
+  for (auto set : setsA) {
+    if (setsB.find(set) == setsB.end()) continue;
+    overlap.insert(set);
+  }
+  return overlap;
+}
+
+bool SCCDAGPartitioner::isMergeIntroducingCycle (SCCSet *setA, SCCSet *setB) {
+  auto parentChild = getParentChildPair(setA, setB);
+  if (parentChild.first == nullptr) return false;
+
+  /*
+   * If one set is the ancestor of another, no cycle is created ONLY if
+   * no set can be reached by the parent that can reach the child
+   */
+  auto parentDescendants = getDescendants(parentChild.first);
+  auto childAncestors = getAncestors(parentChild.second);
+  auto overlap = getOverlap(parentDescendants, childAncestors);
+  return overlap.size() > 0;
+}
+
+std::unordered_set<SCCSet *> SCCDAGPartitioner::getCycleIntroducedByMerging (SCCSet *setA, SCCSet *setB) {
+  auto parentChild = getParentChildPair(setA, setB);
+  if (parentChild.first == nullptr) {
+    return { setA, setB };
+  }
+
+  auto parentDescendants = getDescendants(parentChild.first);
+  auto childAncestors = getAncestors(parentChild.second);
+  auto overlap = getOverlap(parentDescendants, childAncestors);
+  overlap.insert(parentChild.first);
+  overlap.insert(parentChild.second);
+  return overlap;
+}
+
+std::unordered_set<SCCSet *> SCCDAGPartitioner::getDescendants (SCCSet *startingSet) {
+  std::unordered_set<SCCSet *> descendants;
+  std::queue<SCCSet *> setToCheck;
+  setToCheck.push(startingSet);
+
+  while (!setToCheck.empty()) {
+    auto set = setToCheck.front();
+    setToCheck.pop();
+
+    auto node = partition->fetchNode(set);
+    if (node->numOutgoingEdges() == 0) continue;
+
+    for (auto edge : node->getOutgoingEdges()) {
+      auto childSet = edge->getIncomingT();
+      if (descendants.find(childSet) != descendants.end()) continue;
+      setToCheck.push(childSet);
+      descendants.insert(childSet);
+    }
+  }
+
+  return descendants;
+}
+
+std::unordered_set<SCCSet *> SCCDAGPartitioner::getAncestors (SCCSet *startingSet) {
+  std::unordered_set<SCCSet *> ancestors;
+  std::queue<SCCSet *> setToCheck;
+  setToCheck.push(startingSet);
+
+  while (!setToCheck.empty()) {
+    auto set = setToCheck.front();
+    setToCheck.pop();
+
+    auto node = partition->fetchNode(set);
+    if (node->numIncomingEdges() == 0) continue;
+
+    for (auto edge : node->getIncomingEdges()) {
+      auto parentSet = edge->getOutgoingT();
+      if (ancestors.find(parentSet) != ancestors.end()) continue;
+      setToCheck.push(parentSet);
+      ancestors.insert(parentSet);
+    }
+  }
+
+  return ancestors;
 }
 
 SCCDAGPartition *SCCDAGPartitioner::getPartitionGraph (void) {
@@ -592,6 +681,14 @@ void SCCDAGPartitioner::mergeAlongMemoryEdges (void) {
   }
 
   mergeAllPairs(memoryPairs);
+}
+
+raw_ostream &SCCDAGPartitioner::printSet (raw_ostream &stream, SCCSet *set) {
+  stream << "Set: ";
+  for (auto scc : set->sccs) {
+    stream << this->SCCDebugIndex[scc] << " ";
+  }
+  return stream << "\n";
 }
 
 // raw_ostream &SCCDAGPartition::print (raw_ostream &stream, std::string prefix) {

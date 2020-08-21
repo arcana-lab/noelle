@@ -26,8 +26,6 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   std::unordered_map<SCC *, SCC*> taskToOriginalFunctionSCCMap;
   auto originalSCCDAG = originalLDI->sccdagAttrs.getSCCDAG();
   auto taskSCCDAG = LDI->sccdagAttrs.getSCCDAG();
-  DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-original-" + std::to_string(LDI->getID()) + ".dot", originalSCCDAG);
-  DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-task-" + std::to_string(LDI->getID()) + ".dot", taskSCCDAG);
   for (auto originalNode : originalSCCDAG->getNodes()) {
 
     /*
