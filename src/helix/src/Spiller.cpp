@@ -172,7 +172,8 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     Instruction *insertPoint = incomingBB->getTerminator();
     if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
       auto blockOfIncomingI = incomingI->getParent();
-      if (loopStructure->isIncluded(blockOfIncomingI)) {
+      auto originalBlockOfIncomingI = cloneToOriginalBlockMap.at(blockOfIncomingI);
+      if (loopStructure->isIncluded(originalBlockOfIncomingI)) {
         insertPoint = isa<PHINode>(incomingI)
           ? blockOfIncomingI->getFirstNonPHIOrDbgOrLifetime() : incomingI->getNextNode();
       }
