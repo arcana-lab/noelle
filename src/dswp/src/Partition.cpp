@@ -35,7 +35,7 @@ void DSWP::partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) {
    * NOTE: For memory dependencies, synchronization needs to be in place; until then,
    * merge all memory dependencies into single sets
    */
-  partitioner->mergeLCSSAPhisWithTheValuesTheyPropagate();
+  // partitioner->mergeLCSSAPhisWithTheValuesTheyPropagate();
   partitioner->mergeAlongMemoryEdges();
 
   /*
