@@ -230,13 +230,6 @@ void DSWP::collectDataAndMemoryQueueInfo (LoopDependenceInfo *LDI, Noelle &par) 
           auto isMemoryDependence = instructionEdge->isMemoryDependence();
           assert(!isMemoryDependence && "FIXME: Support memory synchronization with queues");
 
-          /*
-           * NOTE: We rely on the producer/consumer to be at the same loop level
-           * for simplicity in pushing/popping from queues. Assert that
-           */
-          assert(allLoops.getLoop(*producer)->getNestingLevel() <= allLoops.getLoop(*consumer)->getNestingLevel()
-            && "DSWP: Loop nesting level for all queue producers must be less than its consumers");
-
           registerQueue(par, LDI, fromStage, toStage, producer, consumer, isMemoryDependence);
         }
       }
