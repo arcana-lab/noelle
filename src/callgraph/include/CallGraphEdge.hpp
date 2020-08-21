@@ -12,63 +12,58 @@
 
 #include "SystemHeaders.hpp"
 #include "CallGraphNode.hpp"
-#include <unordered_set>
 
-namespace llvm {
+namespace llvm::noelle {
+  class CallGraphFunctionNode;
+  class CallGraphInstructionNode;
 
-  namespace noelle {
-    class CallGraphFunctionNode;
-    class CallGraphInstructionNode;
+  class CallGraphEdge {
+    public:
+      CallGraphEdge() = default;
 
-    class CallGraphEdge {
-      public:
-        CallGraphEdge() = default;
+      void setMust (void) ;
 
-        void setMust (void) ;
+      void unsetMust (void);
 
-        void unsetMust (void);
+      bool isAMustCall (void) const ;
 
-        bool isAMustCall (void) const ;
+      CallGraphFunctionNode * getCallee (void) const ;
 
-        CallGraphFunctionNode * getCallee (void) const ;
+      virtual void print (void) = 0;
 
-        virtual void print (void) = 0;
+    protected:
+      bool isMust;
+      CallGraphFunctionNode *callee;
+  };
 
-      protected:
-        bool isMust;
-        CallGraphFunctionNode *callee;
-    };
+  class CallGraphInstructionFunctionEdge : public CallGraphEdge {
+    public:
+      CallGraphInstructionFunctionEdge (CallGraphInstructionNode *caller, CallGraphFunctionNode *callee, bool isMust);
 
-    class CallGraphInstructionFunctionEdge : public CallGraphEdge {
-      public:
-        CallGraphInstructionFunctionEdge (CallGraphInstructionNode *caller, CallGraphFunctionNode *callee, bool isMust);
+      CallGraphInstructionNode * getCaller (void) const ;
 
-        CallGraphInstructionNode * getCaller (void) const ;
+      void print (void) override ;
 
-        void print (void) override ;
+    private:
+      CallGraphInstructionNode *caller;
+  };
 
-      private:
-        CallGraphInstructionNode *caller;
-    };
+  class CallGraphFunctionFunctionEdge : public CallGraphEdge {
+    public:
+      CallGraphFunctionFunctionEdge (CallGraphFunctionNode *caller, CallGraphFunctionNode *callee, bool isMust);
 
-    class CallGraphFunctionFunctionEdge : public CallGraphEdge {
-      public:
-        CallGraphFunctionFunctionEdge (CallGraphFunctionNode *caller, CallGraphFunctionNode *callee, bool isMust);
+      CallGraphFunctionNode * getCaller (void) const ;
 
-        CallGraphFunctionNode * getCaller (void) const ;
+      std::unordered_set<CallGraphInstructionFunctionEdge *> getSubEdges (void) const ;
 
-        std::unordered_set<CallGraphInstructionFunctionEdge *> getSubEdges (void) const ;
+      void addSubEdge (CallGraphInstructionFunctionEdge *subEdge);
 
-        void addSubEdge (CallGraphInstructionFunctionEdge *subEdge);
+      void print (void) override ;
 
-        void print (void) override ;
-
-      private:
-        CallGraphFunctionNode *caller;
-        std::unordered_set<CallGraphInstructionFunctionEdge *> subEdges;
-        std::unordered_map<Instruction *, CallGraphInstructionFunctionEdge *> subEdgesMap;
-    };
-
-  }
+    private:
+      CallGraphFunctionNode *caller;
+      std::unordered_set<CallGraphInstructionFunctionEdge *> subEdges;
+      std::unordered_map<Instruction *, CallGraphInstructionFunctionEdge *> subEdgesMap;
+  };
 
 }

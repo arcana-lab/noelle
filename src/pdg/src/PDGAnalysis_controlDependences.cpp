@@ -103,5 +103,56 @@ void PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function &F) {
     }
   }
 
+  auto getControlProducers = [&](Value *V) -> std::unordered_set<Value *> {
+    std::unordered_set<Value *> controlProducers;
+    auto node = pdg->fetchNode(V);
+    for (auto edge : node->getIncomingEdges()) {
+      if (!edge->isControlDependence()) continue;
+      auto controlProducer = edge->getOutgoingT();
+      controlProducers.insert(controlProducer);
+    }
+    return controlProducers;
+  };
+
+  /*
+   * For PHI nodes with incoming values that do not reside in their respective incoming block,
+   * add control edges on the incoming block's terminator to the PHI
+   */
+  for (auto &B : F) {
+    for (auto &phi : B.phis()) {
+
+      /*
+       * Locate control producers of incoming blocks to PHIs
+       * where the incoming value doesn't reside in incoming block
+       */
+      std::unordered_set<Value *> controlProducers;
+      for (auto i = 0; i < phi.getNumIncomingValues(); ++i) {
+        auto incomingValue = phi.getIncomingValue(i);
+        if (!incomingValue) continue;
+
+        auto incomingInst = dyn_cast<Instruction>(incomingValue);
+        auto incomingBlock = phi.getIncomingBlock(i);
+        if (incomingInst && incomingInst->getParent() == incomingBlock) continue;
+
+        auto terminator = incomingBlock->getTerminator();
+        auto terminatorControlProducers = getControlProducers(terminator);
+        controlProducers.insert(terminatorControlProducers.begin(), terminatorControlProducers.end());
+      }
+      if (controlProducers.size() == 0) continue;
+
+      /*
+       * Determine which of these control producers do NOT have a control edge to the PHI already
+       * Add a control edge from those producers to the PHI
+       */
+      std::unordered_set<Value *> currentControlProducersOnPHI = getControlProducers(&phi);
+      for (auto producer : controlProducers) {
+        if (currentControlProducersOnPHI.find(producer) != currentControlProducersOnPHI.end()) continue;
+
+        auto edge = pdg->addEdge(producer, &phi);
+        edge->setControl(true);
+      }
+    }
+  }
+
   return ;
 }

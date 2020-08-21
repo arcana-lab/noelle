@@ -142,48 +142,46 @@ void HELIX::createParallelizableTask (
   if (this->verbose != Verbosity::Disabled) {
     errs() << "HELIX: Start the parallelization\n";
     errs() << "HELIX:   Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
-    if (this->verbose != Verbosity::Disabled) {
-      auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDependencies();
-      for (auto scc : nonDOALLSCCs) {
+    auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDependencies();
+    for (auto scc : nonDOALLSCCs) {
 
-        /*
-         * Fetch the SCC metadata.
-         */
-        auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+      /*
+       * Fetch the SCC metadata.
+       */
+      auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
 
-        /*
-         * Check the SCC.
-         */
-        if (sccInfo->canExecuteReducibly()){
-          continue ;
-        }
-        if (sccInfo->canBeCloned()){
-          continue ;
-        }
-        if (LDI->isSCCContainedInSubloop(scc)) {
-          continue ;
-        }
+      /*
+       * Check the SCC.
+       */
+      if (sccInfo->canExecuteReducibly()){
+        continue ;
+      }
+      if (sccInfo->canBeCloned()){
+        continue ;
+      }
+      if (LDI->isSCCContainedInSubloop(scc)) {
+        continue ;
+      }
 
-        /*
-         * The current SCC needs to create a sequential segment.
-         */
-        errs() << "HELIX:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
-        if (this->verbose >= Verbosity::Maximal) {
-          errs() << "HELIX:     SCC:\n";
-          scc->printMinimal(errs(), "HELIX:       ") ;
-          errs() << "HELIX:       Loop-carried data dependences\n";
-          LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
-            auto fromInst = dep->getOutgoingT();
-            auto toInst = dep->getIncomingT();
-            errs() << "HELIX:       " << *fromInst << " ---> " << *toInst ;
-            if (dep->isMemoryDependence()){
-              errs() << " via memory\n";
-            } else {
-              errs() << " via variable\n";
-            }
-            return false;
-              });
-        }
+      /*
+       * The current SCC needs to create a sequential segment.
+       */
+      errs() << "HELIX:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
+      if (this->verbose >= Verbosity::Maximal) {
+        errs() << "HELIX:     SCC:\n";
+        scc->printMinimal(errs(), "HELIX:       ") ;
+        errs() << "HELIX:       Loop-carried data dependences\n";
+        LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+          auto fromInst = dep->getOutgoingT();
+          auto toInst = dep->getIncomingT();
+          errs() << "HELIX:       " << *fromInst << " ---> " << *toInst ;
+          if (dep->isMemoryDependence()){
+            errs() << " via memory\n";
+          } else {
+            errs() << " via variable\n";
+          }
+          return false;
+            });
       }
     }
   }
@@ -248,6 +246,14 @@ void HELIX::createParallelizableTask (
     envUser->addLiveOutIndex(envIndex);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
+
+  /*
+   * HACK: For now, this must follow loading live-ins as this re-wiring overrides
+   * the live-in mapping to use locally cloned memory instructions that are live-in to the loop
+   */
+  if (LDI->isOptimizationEnabled(LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
+    this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, 0);
+  }
 
   /*
    * The operands of the cloned instructions still refer to the original ones.

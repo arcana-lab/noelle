@@ -7,6 +7,7 @@ set(Srcs
   InvariantManager.cpp
   InductionVariables.cpp
   InductionVariable.cpp
+  LoopAwareMemDepAnalysis.cpp
   LoopCarriedDependencies.cpp
   LoopGoverningIVAttribution.cpp
   LoopIterationDomainSpaceAnalysis.cpp
@@ -38,8 +39,10 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../../../external/svf/include
+  ../../../external/scaf/include
   ../../basic_utilities/include 
   ../../transformations/include
+  ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 
   ../../pdg/include 

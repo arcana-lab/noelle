@@ -22,12 +22,14 @@ static cl::opt<int> PDGVerbose("noelle-pdg-verbose", cl::ZeroOrMore, cl::Hidden,
 static cl::opt<bool> PDGEmbed("noelle-pdg-embed", cl::ZeroOrMore, cl::Hidden, cl::desc("Embed the PDG"));
 static cl::opt<bool> PDGDump("noelle-pdg-dump", cl::ZeroOrMore, cl::Hidden, cl::desc("Dump the PDG"));
 static cl::opt<bool> PDGCheck("noelle-pdg-check", cl::ZeroOrMore, cl::Hidden, cl::desc("Check the PDG"));
+static cl::opt<bool> PDGSVFDisable("noelle-disable-pdg-svf", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable SVF"));
 
 bool PDGAnalysis::doInitialization (Module &M){
   this->verbose = static_cast<PDGVerbosity>(PDGVerbose.getValue());
   this->embedPDG = (PDGEmbed.getNumOccurrences() > 0) ? true : false;
   this->dumpPDG = (PDGDump.getNumOccurrences() > 0) ? true : false;
   this->performThePDGComparison = (PDGCheck.getNumOccurrences() > 0) ? true : false;
+  this->disableSVF = (PDGSVFDisable.getNumOccurrences() > 0) ? true : false;
 
   return false;
 }

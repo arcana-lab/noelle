@@ -21,6 +21,149 @@ SCEVSimplification::SCEVSimplification (Noelle &noelle)
   this->intTypeForPtrSize = IntegerType::get(cxt, this->ptrSizeInBits);
 }
 
+bool SCEVSimplification::simplifyLoopGoverningIVGuards (
+  LoopDependenceInfo const &LDI,
+  ScalarEvolution &SE
+) {
+
+  if (noelle.getVerbosity() >= Verbosity::Maximal) {
+    errs() << "SCEVSimplification:  Start\n";
+  }
+
+  /*
+   * Attempt to find a branch instruction contained within an IV's SCC
+   * That IV must have a constant step size for this simplification to be possible
+   */
+  InductionVariable *loopGoverningIV = nullptr;
+  BranchInst *loopGoverningBranchInst = nullptr;
+  auto rootLoop = LDI.getLoopStructure();
+  auto ivManager = LDI.getInductionVariableManager();
+  for (auto iv : ivManager->getInductionVariables(*rootLoop)) {
+    auto stepValue = iv->getSingleComputedStepValue();
+    if (!stepValue || !isa<ConstantInt>(stepValue)) continue;
+
+    /*
+     * NOTE: Investigate whether there could be an IV that is not integer typed.
+     * This is likely a mis-classification by InductionVariable
+     */
+    auto headerPHI = iv->getLoopEntryPHI();
+    auto ivInstructions = iv->getAllInstructions();
+    if (!headerPHI->getType()->isIntegerTy()) continue;
+
+    /*
+     * Fetch the loop governing terminator.
+     * NOTE: It should be the only conditional branch in the IV's SCC
+     */
+    BranchInst *loopGoverningTerminator = nullptr;
+    bool hasSingleTerminator = true;
+    for (auto internalNodePair : iv->getSCC()->internalNodePairs()) {
+      auto value = internalNodePair.first;
+      auto br = dyn_cast<BranchInst>(value);
+      if (!br || !br->isConditional()) continue;
+
+      if (loopGoverningTerminator) {
+        hasSingleTerminator = false;
+        break;
+      }
+      loopGoverningTerminator = br;
+    }
+
+    if (!hasSingleTerminator || !loopGoverningTerminator) continue;
+    loopGoverningBranchInst = loopGoverningTerminator;
+    loopGoverningIV = iv;
+    break;
+  }
+
+  /*
+   * The branch condition must be a CmpInst on an intermediate value of the loop governing IV
+   */
+  if (!loopGoverningIV) return false;
+  auto cmpInst = dyn_cast<CmpInst>(loopGoverningBranchInst->getCondition());
+  if (!cmpInst) return false;
+
+  /*
+   * Find the intermediate value used in the guard
+   */
+  auto ivInstructions = loopGoverningIV->getAllInstructions();
+  auto opL = cmpInst->getOperand(0);
+  auto opR = cmpInst->getOperand(1);
+  auto isOpLHSAnIntermediate = isa<Instruction>(opL)
+    && ivInstructions.find(cast<Instruction>(opL)) != ivInstructions.end();
+  auto isOpRHSAnIntermediate = isa<Instruction>(opR)
+    && ivInstructions.find(cast<Instruction>(opR)) != ivInstructions.end();
+  if (!(isOpLHSAnIntermediate ^ isOpRHSAnIntermediate)) return false;
+
+  /*
+   * If it is the loop entry PHI, there is no simplification to do
+   */
+  auto intermediateValueUsedInCompare = cast<Instruction>(isOpLHSAnIntermediate ? opL : opR);
+  auto loopEntryPHI = loopGoverningIV->getLoopEntryPHI();
+  if (intermediateValueUsedInCompare == loopEntryPHI) return false;
+
+  /*
+   * Determine the step offset between the intermediate and the loop entry PHI
+   */
+  auto loopEntryPHIStartSCEV = cast<SCEVAddRecExpr>(SE.getSCEV(loopEntryPHI))->getStart();
+  auto intermediateStartSCEV = cast<SCEVAddRecExpr>(SE.getSCEV(intermediateValueUsedInCompare))->getStart();
+  auto offsetSCEV = getOffsetBetween(SE, loopEntryPHIStartSCEV, intermediateStartSCEV);
+  if (!offsetSCEV) return false;
+
+  Value *offsetValue;
+  if (auto constSCEV = dyn_cast<SCEVConstant>(offsetSCEV)) {
+    offsetValue = constSCEV->getValue();
+  } else if (auto valueSCEV = dyn_cast<SCEVUnknown>(offsetSCEV)) {
+    offsetValue = valueSCEV->getValue();
+  } else {
+
+    /*
+     * TODO: Handle fetching values for cast and nary SCEVs
+     */
+    return false;
+  }
+
+  /*
+   * Subtract the step offset from the condition used in loop guard
+   * Replace comparison on intermediate with a comparison on the loop entry PHI
+   */
+  IRBuilder<> loopEntryBuilder(cmpInst);
+  auto ivOp = isOpLHSAnIntermediate ? 0 : 1;
+  auto conditionValueOp = isOpLHSAnIntermediate ? 1 : 0;
+  auto conditionValue = cmpInst->getOperand(conditionValueOp);
+  auto adjustedConditionValue = loopEntryBuilder.CreateSub(conditionValue, offsetValue);
+  cmpInst->setOperand(ivOp, loopEntryPHI);
+  cmpInst->setOperand(conditionValueOp, adjustedConditionValue);
+
+  if (noelle.getVerbosity() >= Verbosity::Maximal) {
+    cmpInst->print(errs() << "SCEVSimplification:  Simplified to use loop entry PHI: ");
+    errs() << "\n";
+  }
+
+  return true;
+}
+
+/*
+ * TODO: Find a LLVM solution for this. Don't try to re-invent the wheel
+ */
+const SCEV *SCEVSimplification::getOffsetBetween (ScalarEvolution &SE, const SCEV *startSCEV, const SCEV *intermediateSCEV) {
+  if (auto intermediateConstSCEV = dyn_cast<SCEVConstant>(intermediateSCEV)) {
+    auto startConstSCEV = dyn_cast<SCEVConstant>(startSCEV);
+    if (!startConstSCEV) return nullptr;
+
+    auto startConst = startConstSCEV->getValue()->getSExtValue();
+    auto intermediateConst = intermediateConstSCEV->getValue()->getSExtValue();
+    return SE.getConstant(startSCEV->getType(), intermediateConst - startConst, true);
+  }
+
+  auto addSCEV = dyn_cast<SCEVAddExpr>(intermediateSCEV);
+  if (!addSCEV || addSCEV->getNumOperands() != 2) return nullptr;
+  auto lhs = addSCEV->getOperand(0);
+  auto rhs = addSCEV->getOperand(1);
+  if (!(lhs == startSCEV ^ rhs == startSCEV)) return nullptr;
+
+  auto offset = lhs == startSCEV ? rhs : lhs;
+  return offset;
+}
+
 bool SCEVSimplification::simplifyIVRelatedSCEVs (
   LoopDependenceInfo const &LDI
 ) {
@@ -343,11 +486,36 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   }
 
   /*
-   * Immediately remove all truncations
+   * Immediately remove all GEP's uses and transitive uses of truncations
+   * If that leaves the truncation use-less, erase it
    */
   for (auto obsoleteCast : castsToRemove) {
+    auto isUsedOtherThanByGEP = false;
     auto castedValue = obsoleteCast->getOperand(0);
-    obsoleteCast->replaceAllUsesWith(castedValue);
+
+    std::unordered_set<User *> castUsers{obsoleteCast->user_begin(), obsoleteCast->user_end()};
+    for (auto user : castUsers) {
+      auto userInst = dyn_cast<Instruction>(user);
+      if (!userInst) continue;
+
+      bool isUsedByGEP = false;
+      for (auto gepDerivation : gepDerivations) {
+        if (gepDerivation->gep == userInst
+          || gepDerivation->ivDerivingInstructions.find(userInst) != gepDerivation->ivDerivingInstructions.end()) {
+          isUsedByGEP = true;
+          break;
+        }
+      }
+
+      if (!isUsedByGEP) {
+        isUsedOtherThanByGEP = true;
+        continue;
+      }
+
+      user->replaceUsesOfWith(obsoleteCast, castedValue);
+    }
+
+    if (isUsedOtherThanByGEP) continue;
     obsoleteCast->eraseFromParent();
   }
 
@@ -486,8 +654,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
       // user->print(errs() << "\tAddressing user: "); errs() << "\n";
 
       /*
-       * Prevent creating a truncation for a cast that will be removed
-       * or an instruction already converted
+       * Prevent creating a truncation for an instruction already converted
        */
       if (oldToNewTypedMap.find(user) != oldToNewTypedMap.end()) continue;
 
@@ -667,6 +834,13 @@ bool SCEVSimplification::isUpCastPossible (
   if (!gepDerivation->isDerived) return false;
 
   auto gep = gepDerivation->gep;
+
+  auto resultElementType = gep->getSourceElementType();
+  if (!resultElementType->isDoubleTy() &&
+    !resultElementType->isFloatingPointTy() &&
+    !resultElementType->isIntegerTy()) {
+    return false;
+  }
 
   // gep->print(errs() << "GEP that isn't being accessed as an array pointer: "); errs() << "\n";
   // gep->getType()->print(errs() << "GEP type: "); errs() << "\n";

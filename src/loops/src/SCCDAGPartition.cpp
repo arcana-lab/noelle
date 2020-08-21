@@ -14,10 +14,10 @@ using namespace llvm;
 
 SCCDAGPartition::SCCDAGPartition (
   SCCDAG *dag,
-  SCCDAGAttrs *attrs,
+  std::unordered_map<SCC *, std::set<SCC *>> sccToParentMap,
   LoopStructure *loopSummary,
   std::set<SCCset *> *sets
-) : loop{loopSummary}, sccdag{dag}, dagAttrs{attrs} {
+) : loop{loopSummary}, sccdag{dag}, sccToParentMap{sccToParentMap} {
   resetPartition(sets);
 
   return ;
@@ -147,6 +147,7 @@ void SCCDAGPartition::resetPartition (std::set<SCCset *> *sets) {
   /*
    * Ensure the initial specified configuration has no cycles.
    */
+  resetSubsetGraph();
   if (hasCycle()) {
     mergeCycles();
   }
@@ -333,7 +334,7 @@ void SCCDAGPartition::collectSubsetGraph () {
      */
     std::set<SCCset *> parents;
     for (auto scc : *subset) {
-      for (auto parentSCC : dagAttrs->parentsViaClones[scc]) {
+      for (auto parentSCC : this->sccToParentMap[scc]) {
         auto subsetIter = SCCToSet.find(parentSCC);
         if (subsetIter != SCCToSet.end()) {
           parents.insert(subsetIter->second);
@@ -502,7 +503,7 @@ bool SCCDAGPartition::traverseAndMerge (std::vector<SCCset *> &path) {
         auto newEndIter = subIter;
         SCCset *mergedCycle = *subIter;
         while (++subIter != path.end()) {
-          mergedCycle = mergePair(mergedCycle, *subIter);
+          mergedCycle = mergePair(mergedCycle, *subIter, false);
         }
         path.erase(newEndIter, path.end());
         path.push_back(mergedCycle);

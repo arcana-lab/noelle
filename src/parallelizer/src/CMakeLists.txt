@@ -4,6 +4,7 @@ set(Srcs
   Parallelizer.cpp
   Helper.cpp
   Printer.cpp
+  LoopSelector.cpp
 )
 
 # Compilation flags
@@ -24,9 +25,10 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} 
+include_directories(${LLVM_INCLUDE_DIRS}
   ../../../external/svf/include
-  ../../basic_utilities/include 
+  ../../../external/scaf/include
+  ../../basic_utilities/include
   ../../transformations/include
   ../../task/include 
   ../../alloc_aa/include 

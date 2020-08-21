@@ -44,6 +44,11 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   auto& subsets = this->partition->getDepthOrderedSubsets();
 
   /*
+   * Fetch the set of SCCs that have loop-carried data dependences.
+   */
+  auto depsSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
+
+  /*
    * Allocate the sequential segments, one per partition.
    */
   int32_t ssID = 0;
@@ -61,11 +66,6 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
       auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
 
       /*
-       * Fetch the type of the SCC.
-       */
-      auto sccType = sccInfo->getType();
-
-      /*
        * Do not synchronize induction variables
        */
       if (sccInfo->isInductionVariableSCC()) {
@@ -78,9 +78,24 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
        * so we ignore the preamble SCC if the original LDI's attribution was compute-able
        */
       if (wasOriginalLoopIVGoverned && scc == preambleSCC) {
-        errs() << "Skipping preamble synchronization\n";
+        errs() << "HELIX:   Skipping preamble synchronization\n";
         continue;
       }
+
+      /*
+       * If the SCC is due to a control dependence, but the number of iterations can be computed just before executing the loop, then we can skip it.
+       */
+      if (  true
+            && wasOriginalLoopIVGoverned
+            && (depsSCCs.find(scc) == depsSCCs.end())
+         ){
+        continue ;
+      }
+
+      /*
+       * Fetch the type of the SCC.
+       */
+      auto sccType = sccInfo->getType();
 
       /*
        * Only sequential SCC can generate a sequential segment.

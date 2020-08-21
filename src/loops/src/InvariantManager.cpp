@@ -100,9 +100,24 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
     }
 
     auto canEvolve = loopDG->iterateOverDependencesTo(inst, false, true, true, isEvolving);
+
+    /*
+     * Check if the instruction is a call to a library function.
+     */
+    if (auto callInst = dyn_cast<CallInst>(inst)){
+      auto callee = callInst->getCalledFunction();
+      if (  true
+          && (callee != nullptr)
+          && (callee->empty())  ){
+        if (callee->getName() == "malloc" || callee->getName() == "rand"){
+          canEvolve = true;
+        }
+      }
+    }
     if (canEvolve){
       this->invariants.erase(inst);
       this->notInvariants.insert(inst);
+
     } else {
       this->invariants.insert(inst);
     }

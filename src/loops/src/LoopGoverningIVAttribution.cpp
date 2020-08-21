@@ -27,6 +27,11 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto ivInstructions = iv.getAllInstructions();
 
   /*
+   * This attribution only understands integer typed induction variables
+   */
+  if (!headerPHI->getType()->isIntegerTy()) return;
+
+  /*
    * Fetch the loop governing terminator.
    * NOTE: It should be the only conditional branch in the IV's SCC
    */
@@ -53,15 +58,24 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
   auto headerCondition = headerBr->getCondition();
   if (!isa<CmpInst>(headerCondition)) return;
 
+  /*
+   * HACK: We do not handle intermediate values being used in the comparison properly,
+   * so for now we will make this check more strict to ensure the loop entry PHI is used
+   */
   this->headerCmp = cast<CmpInst>(headerCondition);
   auto opL = headerCmp->getOperand(0), opR = headerCmp->getOperand(1);
-  auto isOpLHSAnIntermediate = isa<Instruction>(opL)
-    && ivInstructions.find(cast<Instruction>(opL)) != ivInstructions.end();
-  auto isOpRHSAnIntermediate = isa<Instruction>(opR)
-    && ivInstructions.find(cast<Instruction>(opR)) != ivInstructions.end();
-  if (!(isOpLHSAnIntermediate ^ isOpRHSAnIntermediate)) return;
-  this->conditionValue = isOpLHSAnIntermediate ? opR : opL;
-  this->intermediateValueUsedInCompare = cast<Instruction>(isOpLHSAnIntermediate ? opL : opR);
+  auto isOpLHSLoopEntryPHI = isa<Instruction>(opL) && headerPHI == cast<Instruction>(opL);
+  auto isOpRHSLoopEntryPHI = isa<Instruction>(opR) && headerPHI == cast<Instruction>(opR);
+  if (!(isOpLHSLoopEntryPHI ^ isOpRHSLoopEntryPHI)) return;
+  this->conditionValue = isOpLHSLoopEntryPHI ? opR : opL;
+  this->intermediateValueUsedInCompare = cast<Instruction>(isOpLHSLoopEntryPHI ? opL : opR);
+  // auto isOpLHSAnIntermediate = isa<Instruction>(opL)
+  //   && ivInstructions.find(cast<Instruction>(opL)) != ivInstructions.end();
+  // auto isOpRHSAnIntermediate = isa<Instruction>(opR)
+  //   && ivInstructions.find(cast<Instruction>(opR)) != ivInstructions.end();
+  // if (!(isOpLHSAnIntermediate ^ isOpRHSAnIntermediate)) return;
+  // this->conditionValue = isOpLHSAnIntermediate ? opR : opL;
+  // this->intermediateValueUsedInCompare = cast<Instruction>(isOpLHSAnIntermediate ? opL : opR);
 
   std::set<BasicBlock *> exitBlockSet(exitBlocks.begin(), exitBlocks.end());
   if (exitBlockSet.find(headerBr->getSuccessor(0)) != exitBlockSet.end()) {

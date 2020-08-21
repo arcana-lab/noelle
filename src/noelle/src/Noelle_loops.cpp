@@ -5,24 +5,25 @@
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Noelle.hpp"
 #include "PDGAnalysis.hpp"
 #include "HotProfiler.hpp"
 #include "Architecture.hpp"
+#include "StayConnectedNestedLoopForest.hpp"
 
 std::vector<LoopStructure *> * Noelle::getLoopStructures (
-  Function *function
-) {
+    Function *function
+    ) {
   return this->getLoopStructures(function, this->minHot);
 }
 
 std::vector<LoopStructure *> * Noelle::getLoopStructures (
-  Function *function,
-  double minimumHotness
-) {
+    Function *function,
+    double minimumHotness
+    ) {
 
   /*
    * Check if the function has loops.
@@ -62,8 +63,8 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (void) {
 }
 
 std::vector<LoopStructure *> * Noelle::getLoopStructures (
-  double minimumHotness
-) {
+    double minimumHotness
+    ) {
 
   auto profiles = this->getProfiles();
   auto allLoops = new std::vector<LoopStructure *>();
@@ -180,8 +181,15 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
 }
 
 LoopDependenceInfo * Noelle::getLoop (
-  LoopStructure *loop
-) {
+    LoopStructure *loop
+    ) {
+  return getLoop(loop, {});
+}
+
+LoopDependenceInfo * Noelle::getLoop (
+    LoopStructure *loop,
+    std::unordered_set<LoopDependenceInfoOptimization> optimizations
+    ) {
 
   /*
    * Fetch the the function dependence graph, post dominators, and scalar evolution
@@ -202,8 +210,8 @@ LoopDependenceInfo * Noelle::getLoop (
    * Check of loopIndex provided is within bounds
    */
   if (this->loopHeaderToLoopIndexMap.find(header) == this->loopHeaderToLoopIndexMap.end()){
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores);
-    
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, this->loopAA);
+
     delete DS;
     return ldi;
   }
@@ -217,7 +225,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * No filter file was provided. Construct LDI without profiler configurables
    */
   if (!this->hasReadFilterFile) {
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, optimizations, this->loopAA);
 
     delete DS;
     return ldi;
@@ -234,34 +242,34 @@ LoopDependenceInfo * Noelle::getLoop (
 
   auto maximumNumberOfCoresForTheParallelization = this->loopThreads[loopIndex];
   assert(maximumNumberOfCoresForTheParallelization > 1
-    && "Noelle: passed user a filtered loop yet it only has max cores <= 1");
+      && "Noelle: passed user a filtered loop yet it only has max cores <= 1");
 
   auto ldi = getLoopDependenceInfoForLoop(
-    llvmLoop,
-    funcPDG,
-    DS,
-    &SE,
-    this->techniquesToDisable[loopIndex],
-    this->DOALLChunkSize[loopIndex],
-    maximumNumberOfCoresForTheParallelization
-  );
+      llvmLoop,
+      funcPDG,
+      DS,
+      &SE,
+      this->techniquesToDisable[loopIndex],
+      this->DOALLChunkSize[loopIndex],
+      maximumNumberOfCoresForTheParallelization
+      );
 
   delete DS;
   return ldi;
 }
 
 std::vector<LoopDependenceInfo *> * Noelle::getLoops (
-  Function *function
-  ){
+    Function *function
+    ){
   auto v = this->getLoops(function, this->minHot);
 
   return v;
 }
 
 std::vector<LoopDependenceInfo *> * Noelle::getLoops (
-  Function *function,
-  double minimumHotness
-  ){
+    Function *function,
+    double minimumHotness
+    ){
 
   /*
    * Fetch the profiles.
@@ -324,7 +332,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Allocate the loop wrapper.
      */
-    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
+    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores,
+                                      this->loopAA);
     allLoops->push_back(ldi);
   }
 
@@ -343,8 +352,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (void){
 }
 
 std::vector<LoopDependenceInfo *> * Noelle::getLoops (
-  double minimumHotness
-  ){
+    double minimumHotness
+    ){
 
   /*
    * Fetch the profiles.
@@ -439,7 +448,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores);
+        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE,
+                                          this->maxCores, this->loopAA);
 
         allLoops->push_back(ldi);
         continue ;
@@ -472,14 +482,14 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
       }
 
       auto ldi = getLoopDependenceInfoForLoop(
-        loop,
-        funcPDG,
-        DS,
-        &SE,
-        this->techniquesToDisable[currentLoopIndex],
-        this->DOALLChunkSize[currentLoopIndex],
-        maximumNumberOfCoresForTheParallelization
-      );
+          loop,
+          funcPDG,
+          DS,
+          &SE,
+          this->techniquesToDisable[currentLoopIndex],
+          this->DOALLChunkSize[currentLoopIndex],
+          maximumNumberOfCoresForTheParallelization
+          );
 
       /*
        * The current loop needs to be considered as specified by the user.
@@ -506,8 +516,8 @@ uint32_t Noelle::getNumberOfProgramLoops (void) {
 }
 
 uint32_t Noelle::getNumberOfProgramLoops (
-  double minimumHotness
-  ){
+    double minimumHotness
+    ){
   uint32_t counter = 0;
 
   /*
@@ -702,7 +712,7 @@ bool Noelle::checkToGetLoopFilteringInfo (void) {
      * If the loop needs to be parallelized, then we enable it.
      */
     if (  (shouldBeParallelized)    &&
-          (cores >= 2)              ){
+        (cores >= 2)              ){
       this->loopThreads.push_back(cores);
       this->techniquesToDisable.push_back(technique);
       this->DOALLChunkSize.push_back(DOALLChunkFactor);
@@ -713,7 +723,7 @@ bool Noelle::checkToGetLoopFilteringInfo (void) {
       this->DOALLChunkSize.push_back(0);
     }
   }
-  
+
   this->hasReadFilterFile = true;
   return filterLoops;
 }
@@ -793,16 +803,17 @@ void Noelle::sortByStaticNumberOfInstructions (std::vector<LoopDependenceInfo *>
 }
 
 LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
-  Loop *loop,
-  PDG *functionPDG,
-  DominatorSummary *DS,
-  ScalarEvolution *SE,
-  uint32_t techniquesToDisableForLoop,
-  uint32_t DOALLChunkSizeForLoop,
-  uint32_t maxCores
-) {
+    Loop *loop,
+    PDG *functionPDG,
+    DominatorSummary *DS,
+    ScalarEvolution *SE,
+    uint32_t techniquesToDisableForLoop,
+    uint32_t DOALLChunkSizeForLoop,
+    uint32_t maxCores
+    ) {
 
-  auto ldi = new LoopDependenceInfo(functionPDG, loop, *DS, *SE, maxCores);
+  auto ldi = new LoopDependenceInfo(functionPDG, loop, *DS, *SE, maxCores,
+                                    this->loopAA);
 
   /*
    * Set the loop constraints specified by INDEX_FILE.
@@ -856,13 +867,107 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
 }
 
 bool Noelle::isLoopHot (LoopStructure *loopStructure, double minimumHotness) {
-  if (!profiles->isAvailable()) return true;
+  if (!profiles->isAvailable()) {
+    return true;
+  }
+
   auto hotness = profiles->getDynamicTotalInstructionCoverage(loopStructure);
   return hotness >= minimumHotness;
 }
 
 bool Noelle::isFunctionHot (Function *function, double minimumHotness) {
-  if (!profiles->isAvailable()) return true;
+  if (!profiles->isAvailable()) {
+    return true;
+  }
+
   auto hotness = profiles->getDynamicTotalInstructionCoverage(function);
   return hotness >= minimumHotness;
+}
+
+void Noelle::filterOutLoops (
+    std::vector<LoopStructure *> & loops,
+    std::function<bool (LoopStructure *)> filter
+    ) {
+
+  /*
+   * Tag the loops that need to be removed.
+   */
+  std::vector<uint64_t> toDelete{};
+  uint64_t currentIndex = 0;
+  for (auto loop : loops){
+    if (filter(loop)){
+      toDelete.insert(toDelete.begin(), currentIndex);
+    }
+    currentIndex++;
+  }
+
+  /*
+   * Remove the loops.
+   */
+  for (auto index : toDelete){
+    loops.erase(loops.begin() + index);
+  }
+
+  return ;
+}
+
+void Noelle::filterOutLoops (
+  noelle::StayConnectedNestedLoopForest *f, 
+  std::function<bool (LoopStructure *)> filter
+  ) {
+
+  /*
+   * Iterate over the trees and find the nodes to delete.
+   */
+  std::vector<noelle::StayConnectedNestedLoopForestNode *> toDelete{};
+  for (auto tree : f->getTrees()){
+    auto myF = [&filter, &toDelete](noelle::StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
+      auto ls = n->getLoop();
+      if (filter(ls)){
+        toDelete.push_back(n);
+      }
+      return false;
+    };
+    tree->visitPreOrder(myF);
+  }
+
+  /*
+   * Delete the nodes.
+   */
+  for (auto n : toDelete){
+    delete n;
+  }
+
+  return ;
+}
+
+noelle::StayConnectedNestedLoopForest * Noelle::organizeLoopsInTheirNestingForest (
+  std::vector<LoopStructure *> const & loops
+  ) {
+
+  /*
+   * Compute the dominators.
+   */
+  std::unordered_map<Function *, DominatorSummary *> doms{};
+  for (auto loop : loops){
+    auto f = loop->getFunction();
+    if (doms.find(f) != doms.end()){
+      continue ;
+    }
+    doms[f] = this->getDominators(f);
+  }
+
+  /*
+   * Compute the forest.
+   */
+  auto n = new noelle::StayConnectedNestedLoopForest(loops, doms);
+
+  /*
+   * Free the memory.
+   */
+  for (auto pair : doms){
+    delete pair.second;
+  }
+
+  return n;
 }

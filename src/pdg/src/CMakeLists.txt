@@ -2,8 +2,11 @@
 set(Srcs 
   Pass.cpp
   PDGAnalysis.cpp
+  PDGAnalysis_embedder.cpp
   PDGAnalysis_controlDependences.cpp
   PDGAnalysis_compare.cpp
+  PDGAnalysis_memory.cpp
+  PDGAnalysis_callGraph.cpp
   AnalysisPass.cpp
   SubCFGs.cpp
   PDG.cpp
@@ -38,6 +41,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dataflow/include
   ../../callgraph/include
   ../../../external/svf/include
+  ../../../external/scaf/include
   ../include
   )
 

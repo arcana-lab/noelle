@@ -428,6 +428,11 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
     }
 
     auto consumer = dependency->getIncomingT();
+    if (!isa<PHINode>(consumer)) {
+      producer->print(errs() << "Producer of LCD: "); errs() << "\n";
+      consumer->print(errs() << "Consumer of LCD: "); errs() << "\n";
+      cast<Instruction>(producer)->getParent()->getParent()->print(errs() << "Function\n");
+    }
     assert(isa<PHINode>(consumer)
       && "All consumers of loop carried data dependencies must be PHIs");
     auto consumerPHI = cast<PHINode>(consumer);
@@ -582,7 +587,10 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS)
      */
     auto location = this->memoryCloningAnalysis->getClonableMemoryLocationFor(inst);
     // inst->print(errs() << "Instruction: "); errs() << "\n";
-    // if (!location) { errs() << "No location\n"; }
+    // if (!location) { 
+    //   errs() << "No location\n";
+    //   scc->print(errs() << "Getting close\n", "", 100); errs() << "\n";
+    // }
     if (!location) return ;
     // location->getAllocation()->print(errs() << "Location found: "); errs() << "\n";
     locations.insert(location);
@@ -772,27 +780,24 @@ void SCCDAGAttrs::dumpToFile (int id) {
   }
 
   DGPrinter::writeGraph<DG<DGString>, DGString>(filename, &stageGraph);
-  for (auto elem : elements) delete elem;
+  for (auto elem : elements) {
+    delete elem;
+  }
+
+  return ;
 }
 
-bool SCCAttrs::mustExecuteSequentially (void) const {
-  return this->getType() == SCCAttrs::SCCType::SEQUENTIAL;
-}
+std::unordered_set<SCCAttrs *> SCCDAGAttrs::getSCCsOfType (SCCAttrs::SCCType sccType){
+  std::unordered_set<SCCAttrs *> SCCs{};
 
-bool SCCAttrs::canExecuteReducibly (void) const {
-  return this->getType() == SCCAttrs::SCCType::REDUCIBLE;
-}
+  for (auto pair : this->sccToInfo){
+    auto sccAttrs = pair.second;
+    if (sccAttrs->mustExecuteSequentially()){
+      SCCs.insert(sccAttrs);
+    }
+  }
 
-bool SCCAttrs::canExecuteIndependently (void) const {
-  return this->getType() == SCCAttrs::SCCType::INDEPENDENT;
-}
-
-bool SCCAttrs::canBeCloned (void) const {
-  return this->isClonable;
-}
-
-bool SCCAttrs::isInductionVariableSCC (void) const {
-  return this->hasIV;
+  return SCCs;
 }
 
 SCCDAGAttrs::~SCCDAGAttrs (){

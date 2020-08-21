@@ -113,6 +113,22 @@ namespace llvm {
         std::set<Instruction *> subset
       );
 
+      void cloneMemoryLocationsLocallyAndRewireLoop (
+        LoopDependenceInfo *LDI,
+        int taskIndex
+      );
+
+      std::unordered_map<InductionVariable *, Value *> cloneIVStepValueComputation (
+        LoopDependenceInfo *LDI,
+        int taskIndex,
+        IRBuilder<> &insertBlock
+      );
+
+      void adjustStepValueOfPointerTypeIVToReflectPointerArithmetic (
+        std::unordered_map<InductionVariable *, Value *> clonedStepValueMap,
+        IRBuilder<> &insertBlock
+      );
+
       /*
        * Task helpers for environment usage
        */
