@@ -197,10 +197,13 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks (
 }
 
 void DSWP::collectDataAndMemoryQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
+
+  auto &allLoops = LDI->getLoopHierarchyStructures();
   for (auto techniqueTask : this->tasks) {
     auto toStage = (DSWPTask *)techniqueTask;
     std::set<SCC *> allSCCs(toStage->clonableSCCs.begin(), toStage->clonableSCCs.end());
     allSCCs.insert(toStage->stageSCCs.begin(), toStage->stageSCCs.end());
+
     for (auto scc : allSCCs) {
       for (auto sccEdge : LDI->sccdagAttrs.getSCCDAG()->fetchNode(scc)->getIncomingEdges()) {
         auto fromSCC = sccEdge->getOutgoingT();
@@ -208,6 +211,7 @@ void DSWP::collectDataAndMemoryQueueInfo (LoopDependenceInfo *LDI, Noelle &par) 
         if (fromSCCInfo->canBeCloned()) {
           continue;
         }
+
         auto fromStage = this->sccToStage[fromSCC];
         if (fromStage == toStage) continue;
 
@@ -219,8 +223,20 @@ void DSWP::collectDataAndMemoryQueueInfo (LoopDependenceInfo *LDI, Noelle &par) 
 
           auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
           auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
+
+          /*
+           * TODO: Handle memory dependencies and enable synchronization queues
+           */
           auto isMemoryDependence = instructionEdge->isMemoryDependence();
           assert(!isMemoryDependence && "FIXME: Support memory synchronization with queues");
+
+          /*
+           * NOTE: We rely on the producer/consumer to be at the same loop level
+           * for simplicity in pushing/popping from queues. Assert that
+           */
+          assert(allLoops.getLoop(*producer) == allLoops.getLoop(*consumer)
+            && "DSWP: Loop nesting level for all queue producer/consumer pairs must be the same");
+
           registerQueue(par, LDI, fromStage, toStage, producer, consumer, isMemoryDependence);
         }
       }
@@ -302,8 +318,7 @@ void DSWP::generateLoadsOfQueuePointers (
 
 void DSWP::popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
-  auto originalHeader = LDI->getLoopStructure()->getHeader();
-  auto cloneHeader = task->getCloneOfOriginalBasicBlock(originalHeader);
+  auto &allLoops = LDI->getLoopHierarchyStructures();
 
   for (auto queueIndex : task->popValueQueues) {
     auto &queueInfo = this->queues[queueIndex];
@@ -318,8 +333,14 @@ void DSWP::popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) 
     auto clonedB = task->getCloneOfOriginalBasicBlock(originalB);
 
     /*
-     * Simply pop at the header.
+     * Simply pop at the header
+     *
+     * NOTE: This is done at the loop level of the producer/consumer. We partition tasks
+     * such that dependencies do not propagate across loop levels.
      */
+    auto loop = allLoops.getLoop(*originalB);
+    auto originalHeader = loop->getHeader();
+    auto cloneHeader = task->getCloneOfOriginalBasicBlock(originalHeader);
     Instruction *insertionPoint = cloneHeader->getFirstNonPHIOrDbgOrLifetime();
     IRBuilder<> builder(insertionPoint);
     auto queuePopFunction = par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]];
@@ -335,8 +356,7 @@ void DSWP::popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) 
 
 void DSWP::pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
-  auto originalLatches = LDI->getLoopStructure()->getLatches();
-  auto originalExits = LDI->getLoopStructure()->getLoopExitBasicBlocks();
+  auto &allLoops = LDI->getLoopHierarchyStructures();
 
   for (auto queueIndex : task->pushValueQueues) {
     auto queueInstrs = task->queueInstrMap[queueIndex].get();
@@ -345,34 +365,40 @@ void DSWP::pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex)
     auto queuePushFunction = par.queues.queuePushes[par.queues.queueSizeToIndex[queueInfo->bitLength]];
 
     /*
-     * Simply push at every latch AND all exits
-     * Pushing in exits is to allow for popping in the header which will be done 1 more time
-     * than a push to latches
+     * Store the produced value immediately
      */
     auto producerBlock = queueInfo->producer->getParent();
     auto producerClone = task->getCloneOfOriginalInstruction(queueInfo->producer);
-    auto pushQueue = [&](BasicBlock *originalInsertBlock, IRBuilder<> &builder) -> void {
-      if (!queueInfo->isMemoryDependence) {
-        auto insertBlock = builder.GetInsertBlock();
-        if (this->originalFunctionDS->DT.dominates(producerBlock, originalInsertBlock)) {
-          builder.CreateStore(producerClone, queueInstrs->alloca);
-        }
-      }
+    IRBuilder<> builder(producerClone->getNextNode());
+    builder.CreateStore(producerClone, queueInstrs->alloca);
+
+    /*
+     * Simply push at every latch AND all exits
+     * Pushing in exits is to allow for popping in the header which will be done 1 more time
+     * than a push to latches
+     *
+     * NOTE: This is done at the loop level of the producer/consumer. We partition tasks
+     * such that dependencies do not propagate across loop levels.
+     *
+     * FIXME: Track multiple queue calls
+     */
+    auto loop = allLoops.getLoop(*producerBlock);
+    auto originalLatches = loop->getLatches();
+    auto originalExits = loop->getLoopExitBasicBlocks();
+    auto pushQueue = [&](IRBuilder<> &builder) -> void {
       queueInstrs->queueCall = builder.CreateCall(queuePushFunction, queueCallArgs);
     };
 
-    /*
-     * FIXME: Track multiple queue calls
-     */
     for (auto originalLatch : originalLatches) {
       auto cloneLatch = task->getCloneOfOriginalBasicBlock(originalLatch);
       IRBuilder<> builder(cloneLatch->getTerminator());
-      pushQueue(originalLatch, builder);
+      pushQueue(builder);
     }
     for (auto exitBlock : originalExits) {
       auto cloneExit = task->getCloneOfOriginalBasicBlock(exitBlock);
       IRBuilder<> builder(cloneExit->getFirstNonPHIOrDbgOrLifetime());
-      pushQueue(exitBlock, builder);
+      pushQueue(builder);
     }
+
   }
 }
