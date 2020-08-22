@@ -165,14 +165,17 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
 
     /*
      * Determine the position of the incoming value's producer
-     * If it isn't an instruction, insert at the incoming block's entry
+     * If it s an instruction computed within the loop, insert the store at that point
+     * Otherwise, insert at the incoming block's entry
      */
     auto incomingV = spill->loopCarriedPHI->getIncomingValue(inInd);
-    Instruction *insertPoint = incomingBB->getFirstNonPHIOrDbgOrLifetime();
+    Instruction *insertPoint = incomingBB->getTerminator();
     if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
-      insertPoint = incomingI->getNextNode();
-      if (isa<PHINode>(insertPoint) || isa<DbgInfoIntrinsic>(insertPoint) || insertPoint->isLifetimeStartOrEnd()) {
-        insertPoint = incomingI->getParent()->getFirstNonPHIOrDbgOrLifetime();
+      auto blockOfIncomingI = incomingI->getParent();
+      auto originalBlockOfIncomingI = cloneToOriginalBlockMap.at(blockOfIncomingI);
+      if (loopStructure->isIncluded(originalBlockOfIncomingI)) {
+        insertPoint = isa<PHINode>(incomingI)
+          ? blockOfIncomingI->getFirstNonPHIOrDbgOrLifetime() : incomingI->getNextNode();
       }
     }
 

@@ -123,8 +123,11 @@ LoopCarriedVariable::LoopCarriedVariable (
     /*
      * Ignore instructions that have no effect on the evolution of the variable
      */
-    if (isa<CastInst>(value)) continue;
     if (isa<LoadInst>(value)) continue;
+    if (auto cast = dyn_cast<CastInst>(value)) {
+      castsInternalToVariableComputation.insert(cast);
+      continue;
+    }
 
     auto variableUpdate = new EvolutionUpdate(cast<Instruction>(value), sccOfDataAndMemoryVariableValuesOnly);
     variableUpdates.insert(variableUpdate);
@@ -181,6 +184,11 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
     if (isa<PHINode>(updateInstruction) || isa<SelectInst>(updateInstruction)) continue;
     arithmeticUpdates.insert(update);
   }
+
+  /*
+   * Do not allow any casts to cause rounding error if the variable is reduced
+   */
+  if (hasRoundingError(arithmeticUpdates)) return false;
 
   /*
    * Ignore a value that does not evolve and is just propagated; its last execution is its current value
@@ -366,6 +374,40 @@ PHINode *LoopCarriedVariable::getLoopEntryPHIForValueOfVariable (Value *value) c
 
   assert(isa<PHINode>(declarationValue));
   return cast<PHINode>(declarationValue);
+}
+
+bool LoopCarriedVariable::hasRoundingError (std::unordered_set<EvolutionUpdate *> &arithmeticUpdates) const {
+
+  /*
+   * If casts to and from different precision types are present, further analysis is needed
+   */
+  bool isIntegerTypedCast = false;
+  bool isFloatingPointTypedCast = false;
+  for (auto cast : castsInternalToVariableComputation) {
+    auto castTy = cast->getType();
+    isIntegerTypedCast |= castTy->isIntegerTy();
+    isFloatingPointTypedCast |= castTy->isFloatingPointTy();
+  }
+  if (!isIntegerTypedCast || !isFloatingPointTypedCast) return false;
+
+  /*
+   * Handle the simple case where the accumulation is additive and cast up from integer to floating point
+   * Rounding from floating point to integer in this case is only impacting the value added
+   * each iteration and is not propagated iteration to iteration
+   */
+  auto accumulationType = declarationValue->getType();
+  bool onlyAddition = true;
+  for (auto update : arithmeticUpdates) {
+    onlyAddition &= update->isAdd() || update->isSubTransformableToAdd();
+  }
+  if (accumulationType->isIntegerTy() && onlyAddition) {
+    return false;
+  }
+
+  /*
+   * TODO: have a better understanding of what constitutes rounding error
+   */ 
+  return true;
 }
 
 /************************************************************************************

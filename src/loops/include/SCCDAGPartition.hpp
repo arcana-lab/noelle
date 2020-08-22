@@ -12,81 +12,141 @@
 
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
-#include "SCCDAGAttrs.hpp"
+#include "DGGraphTraits.hpp"
+#include "LoopCarriedDependencies.hpp"
 #include "LoopStructure.hpp"
 
-typedef typename std::set<SCC *> SCCset;
+namespace llvm {
+namespace noelle {
 
-class SCCDAGPartition {
-  public:
-    SCCDAGPartition (
-      SCCDAG *dag,
-      std::unordered_map<SCC *, std::set<SCC *>> sccToParentMap,
-      LoopStructure *loopSummary,
-      std::set<SCCset *> *sets
-    );
+  struct SCCSet {
+    std::unordered_set<SCC *> sccs;
 
-    SCCDAGPartition () = delete ;
+    raw_ostream &print (raw_ostream &stream) ;
+  };
 
-    void resetPartition (std::set<SCCset *> *subsets);
+  class SCCDAGPartition : public DG<SCCSet> {
+    public:
 
-    SCCset *mergePairAndCycles (SCCset *subsetA, SCCset *subsetB);
+      /*
+       * sccToParentsMap: A custom relation mapping that allows certain SCC to be ignored during
+       * partitioning (i.e. SCC which are not to be partitioned such as clonable SCC simply aren't
+       * mentioned in this relation and are not given a node in this graph)
+       */
+      SCCDAGPartition (
+        SCCDAG *sccdag,
+        std::unordered_set<SCCSet *> initialSets,
+        std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap
+      ) ;
 
-    SCCset *mergePair (SCCset *subsetA, SCCset *subsetB, bool doReorder = true);
+      ~SCCDAGPartition () ;
 
-    bool mergeYieldsCycle (SCCset *subsetA, SCCset *subsetB);
+      SCC *sccOfValue (Value *V) ;
 
-    bool mergeAlongMemoryEdges ();
+      bool isIncludedInPartitioning (SCC *scc) ;
 
-    uint64_t numberOfPartitions (void);
+      SCCSet *setOfSCC (SCC *scc) ;
 
-    std::set<SCCset *> *getSubsets() { return subsets; }
-    std::set<SCCset *> *getRoots() { return &roots; }
-    std::set<SCCset *> *getParents(SCCset *subset);
-    std::set<SCCset *> *getChildren(SCCset *subset);
-    std::vector<SCCset *> &getDepthOrderedSubsets () {
-      return depthOrderedSubsets;
-    }
+      void mergeSetsAndCollapseResultingCycles (std::unordered_set<SCCSet *> sets) ;
 
-    raw_ostream &print (raw_ostream &stream, std::string prefix);
-    std::string subsetStr (SCCset *subset);
-    raw_ostream &printSCCIndices (raw_ostream &stream, std::string prefix);
-    raw_ostream &printNodeInGraph (raw_ostream &stream, std::string prefix, SCCset *subset);
-    raw_ostream &printGraph (raw_ostream &stream, std::string prefix);
+      std::vector<SCCSet *> getDepthOrderedSets (void) ;
 
-  private:
+      SCCDAG *getSCCDAG (void) const ;
 
-    void resetSubsetGraph ();
-    void collectSubsetGraph ();
-    bool hasCycle ();
-    void orderSubsets ();
+    private:
 
-    bool mergeCycles ();
-    bool traverseAndMerge (std::vector<SCCset *> &path);
+      void mergeSets (std::unordered_set<SCCSet *> sets) ;
+      void collapseCycles (void) ;
 
-    /*
-     * Subset mapping
-     */
-    std::set<SCCset *> *subsets;
-    std::unordered_map<SCC *, std::set<SCC *>> sccToParentMap;
-    std::unordered_map<SCC *, SCCset *> SCCToSet;
-    std::vector<SCC *> SCCDebugOrder;
-    std::unordered_map<SCC *, int> SCCDebugIndex;
+      /*
+       * The SCCDAG being partitioned
+       */
+      SCCDAG *sccdag;
 
-    /*
-     * Mappings at the end point in history
-     */
-    std::set<SCCset *> roots;
-    std::unordered_map<SCCset *, std::set<SCCset *>> parentSubsets;
-    std::unordered_map<SCCset *, std::set<SCCset *>> childrenSubsets;
+      /*
+       * A mapping from SCC to its set in the partitioning
+       */
+      std::unordered_map<SCC *, SCCSet *> sccToSetMap;
 
-    std::unordered_map<SCCset *, int> subsetDepths;
-    std::vector<SCCset *> depthOrderedSubsets;
+  };
 
-    /*
-     * Static reference information
-     */
-    SCCDAG *sccdag;
-    SCCDAGAttrs *dagAttrs;
-    LoopStructure *loop;
-};
+  class SCCDAGPartitioner {
+    public:
+      SCCDAGPartitioner (
+        SCCDAG *sccdag,
+        std::unordered_set<SCCSet *> initialSets,
+        std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap,
+        LoopStructure *loop
+      );
+
+      SCCDAGPartitioner () = delete ;
+
+      ~SCCDAGPartitioner () ;
+
+      uint64_t numberOfPartitions (void);
+
+      SCCDAGPartition *getPartitionGraph (void) ;
+      std::unordered_set<SCCSet *> getParents (SCCSet *set) ;
+      std::unordered_set<SCCSet *> getChildren (SCCSet *set) ;
+      std::unordered_set<SCCSet *> getSets (void) ;
+      std::unordered_set<SCCSet *> getRoots (void) ;
+      std::vector<SCCSet *> getDepthOrderedSets (void) ;
+
+      bool isMergeIntroducingCycle (SCCSet *setA, SCCSet *setB) ;
+
+      std::unordered_set<SCCSet *> getCycleIntroducedByMerging (SCCSet *setA, SCCSet *setB) ;
+
+      bool isAncestor (SCCSet *parentTarget, SCCSet *target) ;
+
+      std::pair<SCCSet *, SCCSet *> getParentChildPair (SCCSet *setA, SCCSet *setB) ;
+
+      std::unordered_set<SCCSet *> getDescendants (SCCSet *set) ;
+      std::unordered_set<SCCSet *> getAncestors (SCCSet *set) ;
+      std::unordered_set<SCCSet *> getOverlap(std::unordered_set<SCCSet *> setsA, std::unordered_set<SCCSet *> setsB) ;
+
+      SCCSet *mergePair (SCCSet *setA, SCCSet *setB) ;
+
+      void mergeLoopCarriedDependencies (LoopCarriedDependencies *LCD) ;
+
+      void mergeLCSSAPhisWithTheValuesTheyPropagate (void) ;
+
+      void mergeAlongMemoryEdges (void) ;
+
+      raw_ostream &printSet (raw_ostream &stream, SCCSet *set) ;
+
+      // raw_ostream &print (raw_ostream &stream, std::string prefix) ;
+      // std::string subsetStr (SCCset *subset);
+      // raw_ostream &printSCCIndices (raw_ostream &stream, std::string prefix);
+      // raw_ostream &printNodeInGraph (raw_ostream &stream, std::string prefix, SCCset *subset);
+      // raw_ostream &printGraph (raw_ostream &stream, std::string prefix);
+
+    private:
+
+      void resetPartitioner (void);
+
+      void mergeAllPairs (std::set<std::pair<SCC *, SCC *>> pairs) ;
+
+      /*
+       * Debug information at the SCC level
+       */
+      std::vector<SCC *> SCCDebugOrder;
+      std::unordered_map<SCC *, int> SCCDebugIndex;
+
+      SCCDAGPartition *partition;
+      LoopStructure *rootLoop;
+      std::unordered_set<LoopStructure *> allLoops;
+  };
+
+}
+}
+
+namespace llvm {
+
+  template<> struct GraphTraits<DGGraphWrapper<llvm::noelle::SCCDAGPartition, llvm::noelle::SCCSet> *> : 
+    public GraphTraitsBase<
+      DGGraphWrapper<llvm::noelle::SCCDAGPartition, llvm::noelle::SCCSet>,
+      DGNodeWrapper<llvm::noelle::SCCSet>,
+      llvm::noelle::SCCSet
+    > {};
+
+}

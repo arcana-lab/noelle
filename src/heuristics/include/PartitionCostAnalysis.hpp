@@ -27,7 +27,7 @@ namespace llvm {
    public:
     PartitionCostAnalysis (
       InvocationLatency &IL,
-      SCCDAGPartition &p,
+      SCCDAGPartitioner &p,
       SCCDAGAttrs &,
       int numCores,
       Verbosity verbose
@@ -35,7 +35,7 @@ namespace llvm {
 
     void traverseAllPartitionSubsets ();
 
-    virtual void checkIfShouldMerge (SCCset *sA, SCCset *sB) = 0;
+    virtual void checkIfShouldMerge (SCCSet *sA, SCCSet *sB) = 0;
 
     void resetCandidateSubsetInfo ();
 
@@ -47,20 +47,18 @@ namespace llvm {
    protected:
 
     InvocationLatency &IL;
-    SCCDAGPartition &partition;
+    SCCDAGPartitioner &partitioner;
     SCCDAGAttrs &dagAttrs;
     int numCores;
 
-    uint64_t totalCost;
-    uint64_t totalInstCount;
-    std::unordered_map<SCCset *, uint64_t> subsetCost;
-    std::unordered_map<SCCset *, uint64_t> subsetInstCount;
+    std::unordered_map<SCC *, uint64_t> sccToInstructionCountMap;
+    uint64_t costIfAllSetsRunOnSeparateCores;
+    uint64_t totalInstructionCount;
 
-    SCCset *minSubsetA;
-    SCCset *minSubsetB;
-    uint64_t loweredCost;
-    uint64_t instCount;
-    uint64_t mergedSubsetCost;
+    std::unordered_set<SCCSet *> minSetsToMerge;
+    uint64_t numInstructionsInSetsBeingMerged;
+    uint64_t savedCostByMerging;
+    uint64_t costOfMergedSet;
 
     Verbosity verbose;
   };

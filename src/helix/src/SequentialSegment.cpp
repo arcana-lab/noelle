@@ -17,7 +17,7 @@ using namespace llvm ;
 SequentialSegment::SequentialSegment (
   LoopDependenceInfo *LDI, 
   DataFlowResult *reachabilityDFR,
-  SCCset *sccs,
+  SCCSet *sccs,
   int32_t ID,
   Verbosity verbosity
   ) :
@@ -402,13 +402,13 @@ DataFlowResult *HELIX::computeReachabilityFromInstructions (LoopDependenceInfo *
   return dfa.applyBackward(loopFunction, computeGEN, computeKILL, computeIN, computeOUT);
 }
 
-iterator_range<SCCset::iterator> SequentialSegment::getSCCs(void) {
-  return make_range(sccs->begin(), sccs->end());
+iterator_range<std::unordered_set<SCC *>::iterator> SequentialSegment::getSCCs(void) {
+  return make_range(sccs->sccs.begin(), sccs->sccs.end());
 }
 
 std::unordered_set<Instruction *> SequentialSegment::getInstructions (void) {
   std::unordered_set<Instruction *> ssInstructions;
-  for (auto scc : *sccs){
+  for (auto scc : sccs->sccs){
 
     /*
      * Add all instructions of the current SCC to the set.
@@ -441,7 +441,7 @@ void SequentialSegment::printSCCInfo (LoopDependenceInfo *LDI, std::unordered_se
   errs() << "HELIX:   Sequential segment " << ID << "\n" ;
   errs() << "HELIX:     SCCs included in the current sequential segment\n";
 
-  for (auto scc : *sccs){
+  for (auto scc : sccs->sccs){
 
     auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
 
