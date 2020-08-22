@@ -22,8 +22,6 @@ void llvm::MinMaxSizePartitionAnalysis::checkIfShouldMerge (SCCSet *sA, SCCSet *
    */
   std::unordered_set<SCCSet *> setsInMerge = partitioner.getCycleIntroducedByMerging(sA, sB);
 
-  errs() << "Size of merge: " << setsInMerge.size() << "\n";
-
   /*
    * Compute the cost of running all these sets on one core
    */
