@@ -22,18 +22,34 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
 
   /*
    * Map from old to new SCCs (for use in determining what SCC can be left out of sequential segments)
+   *
+   * NOTE: Account for spilled PHIs in particular, because their instruction mapping in the task
+   * is to the load in the pre-header. All stores to the spill environment are in the loop and contained
+   * in the task's loop SCCDAG, so use one of them
    */
   std::unordered_map<SCC *, SCC*> taskToOriginalFunctionSCCMap;
+  std::unordered_set<SCC *> spillSCCs;
   auto originalSCCDAG = originalLDI->sccdagAttrs.getSCCDAG();
   auto taskSCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  for (auto spill : spills) {
+    auto originalSpillSCC = originalSCCDAG->sccOfValue(spill->originalLoopCarriedPHI);
+    auto clonedInstructionInLoop = *spill->environmentStores.begin();
+    auto clonedSpillSCC = taskSCCDAG->sccOfValue(clonedInstructionInLoop);
+    assert(originalSpillSCC && clonedSpillSCC);
+    spillSCCs.insert(originalSpillSCC);
+    taskToOriginalFunctionSCCMap.insert(std::make_pair(clonedSpillSCC, originalSpillSCC));
+  }
   for (auto originalNode : originalSCCDAG->getNodes()) {
 
     /*
-     * Get clones of original instructions for the given SCC
-     * HACK: Since we spill loop carried PHIs, we must gloss over mappings to the initial loaded value
-     * of that loop carried PHI
+     * Skip already mapped spill SCCs
      */
     auto originalSCC = originalNode->getT();
+    if (spillSCCs.find(originalSCC) != spillSCCs.end()) continue;
+
+    /*
+     * Get clones of original instructions for the given SCC
+     */
     Instruction *anyClonedInstInLoop = nullptr;
     auto clonedLoop = LDI->getLoopStructure();
     for (auto nodePair : originalSCC->internalNodePairs()) {
