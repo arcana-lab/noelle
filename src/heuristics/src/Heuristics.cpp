@@ -20,23 +20,23 @@ Heuristics::Heuristics (Noelle &noelle)
 }
 
 void Heuristics::adjustParallelizationPartitionForDSWP (
-  SCCDAGPartition *partition,
+  SCCDAGPartitioner *partitioner,
   SCCDAGAttrs &attrs,
   uint64_t numThreads,
   Verbosity verbose
 ) {
-  // smallestSizeMergePartition(*partition, attrs, idealThreads, verbose);
-  minMaxMergePartition(*partition, attrs, numThreads, verbose);
+  // smallestSizeMergePartition(*partitioner, attrs, idealThreads, verbose);
+  minMaxMergePartition(*partitioner, attrs, numThreads, verbose);
 }
 
 void Heuristics::minMaxMergePartition (
-  SCCDAGPartition &partition,
+  SCCDAGPartitioner &partitioner,
   SCCDAGAttrs &attrs,
   uint64_t numThreads,
   Verbosity verbose
 ) {
   auto modified = false;
-  MinMaxSizePartitionAnalysis PCA(invocationLatency, partition, attrs, numThreads, verbose);
+  MinMaxSizePartitionAnalysis PCA(invocationLatency, partitioner, attrs, numThreads, verbose);
   do {
     modified = false;
 
@@ -48,13 +48,13 @@ void Heuristics::minMaxMergePartition (
 }
 
 void Heuristics::smallestSizeMergePartition (
-  SCCDAGPartition &partition,
+  SCCDAGPartitioner &partitioner,
   SCCDAGAttrs &attrs,
   uint64_t numThreads,
   Verbosity verbose
 ) {
   auto modified = false;
-  SmallestSizePartitionAnalysis PCA(invocationLatency, partition, attrs, numThreads, verbose);
+  SmallestSizePartitionAnalysis PCA(invocationLatency, partitioner, attrs, numThreads, verbose);
   do {
     modified = false;
 

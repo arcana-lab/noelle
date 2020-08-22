@@ -73,6 +73,11 @@ namespace llvm {
       Value *zeroIndexForBaseArray;
 
       /*
+       * TODO: Dominator information to be fetched from LDI
+       */
+      DominatorSummary *originalFunctionDS;
+
+      /*
        * Pipeline
        */
       void partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) ;
@@ -82,8 +87,8 @@ namespace llvm {
       bool isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const ;
       void generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex);
       void generateLoadsOfQueuePointers (Noelle &par, int taskIndex);
-      void popValueQueues (Noelle &par, int taskIndex);
-      void pushValueQueues (Noelle &par, int taskIndex);
+      void popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex);
+      void pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex);
       void createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par);
       Value * createStagesArrayFromStages (
         LoopDependenceInfo *LDI,
@@ -104,7 +109,7 @@ namespace llvm {
       /*
        * Information collection helpers
        */
-      void collectDataQueueInfo (LoopDependenceInfo *LDI, Noelle &par);
+      void collectDataAndMemoryQueueInfo (LoopDependenceInfo *LDI, Noelle &par);
       void collectControlQueueInfo (LoopDependenceInfo *LDI, Noelle &par);
       std::set<Task *> collectTransitivelyControlledTasks (
         LoopDependenceInfo *LDI,
@@ -116,7 +121,8 @@ namespace llvm {
         DSWPTask *fromStage,
         DSWPTask *toStage,
         Instruction *producer,
-        Instruction *consumer
+        Instruction *consumer,
+        bool isMemoryDependence
       );
       void collectLiveInEnvInfo (LoopDependenceInfo *LDI);
       void collectLiveOutEnvInfo (LoopDependenceInfo *LDI);

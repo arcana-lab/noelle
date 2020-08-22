@@ -84,6 +84,8 @@ namespace llvm {
 
       bool areValuesPropagatingVariableIntermediatesOutsideLoop (std::unordered_set<Value *> values) const ;
 
+      bool hasRoundingError (std::unordered_set<EvolutionUpdate *> &arithmeticUpdates) const ;
+
       /*
        * A flag to ensure the variable is fully understood
        */
@@ -133,6 +135,12 @@ namespace llvm {
        */
       std::set<Value *> controlValuesGoverningEvolution;
 
+      /*
+       * Collect all casts made on the variable that propagate iteration to iteration to ensure that
+       * no rounding is done disguised as a cast
+       */
+      std::unordered_set<CastInst *> castsInternalToVariableComputation;
+
   };
 
   /*
@@ -157,16 +165,16 @@ namespace llvm {
 
       Instruction *getUpdateInstruction (void) const ;
 
+      bool isAdd (void) const ;
+      bool isMul (void) const ;
+      bool isSub (void) const ;
+      bool isSubTransformableToAdd (void) const ;
+
     private:
 
       bool isBothUpdatesAddOrSub (const EvolutionUpdate &otherUpdate) const ;
       bool isBothUpdatesMul (const EvolutionUpdate &otherUpdate) const ;
       bool isBothUpdatesSameBitwiseLogicalOp (const EvolutionUpdate &otherUpdate) const ;
-
-      bool isAdd (void) const ;
-      bool isMul (void) const ;
-      bool isSub (void) const ;
-      bool isSubTransformableToAdd (void) const ;
 
       /*
        * The instruction that constitutes the update
