@@ -45,14 +45,15 @@ SCCDAGAttrs::SCCDAGAttrs (
     if (loopGoverningIV) loopGoverningIVs.insert(loopGoverningIV);
   }
 
+  // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag.dot", sccdag);
   // errs() << "IVs: " << ivs.size() << "\n";
   // for (auto iv : ivs) {
-  //   iv->getHeaderPHI()->print(errs() << "IV: "); errs() << "\n";
+  //   iv->getLoopEntryPHI()->print(errs() << "IV: "); errs() << "\n";
   // }
   // errs() << "-------------\n";
   // errs() << "Loop governing IVs: " << loopGoverningIVs.size() << "\n";
   // for (auto iv : loopGoverningIVs) {
-  //   iv->getHeaderPHI()->print(errs() << "IV: "); errs() << "\n";
+  //   iv->getLoopEntryPHI()->print(errs() << "IV: "); errs() << "\n";
   // }
   // errs() << "-------------\n";
 
@@ -102,7 +103,7 @@ SCCDAGAttrs::SCCDAGAttrs (
 
 std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDependencies (void) const {
   std::set<SCC *> sccs;
-  for (auto &sccDependencies : this->sccToInternalLoopCarriedDependencies) {
+  for (auto &sccDependencies : this->sccToLoopCarriedDependencies) {
     sccs.insert(sccDependencies.first);
   }
   return sccs;
@@ -114,7 +115,7 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies (void) co
   /*
    * Iterate over SCCs with loop-carried data dependences.
    */
-  for (auto &sccDependencies : this->sccToInternalLoopCarriedDependencies) {
+  for (auto &sccDependencies : this->sccToLoopCarriedDependencies) {
 
     /*
      * Fetch the SCC.
@@ -150,7 +151,7 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const
   /*
    * Iterate over SCCs with loop-carried data dependences.
    */
-  for (auto &sccDependencies : this->sccToInternalLoopCarriedDependencies) {
+  for (auto &sccDependencies : this->sccToLoopCarriedDependencies) {
 
     /*
      * Fetch the SCC.
@@ -325,10 +326,6 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarried
 
       sccToLoopCarriedDependencies[producerSCC].insert(edge);
       sccToLoopCarriedDependencies[consumerSCC].insert(edge);
-
-      if (producerSCC != consumerSCC) continue;
-      sccToInternalLoopCarriedDependencies[producerSCC].insert(edge);
-
     }
   }
 
@@ -410,8 +407,8 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
    */
   auto rootLoop = LIS.getLoopNestingTreeRoot();
   auto rootLoopHeader = rootLoop->getHeader();
-  std::set<PHINode *> loopCarriedPHIs{};
-  for (auto dependency : sccToInternalLoopCarriedDependencies.at(scc)) {
+  std::unordered_set<PHINode *> loopCarriedPHIs{};
+  for (auto dependency : sccToLoopCarriedDependencies.at(scc)) {
 
     /*
      * We do not handle reducibility of memory locations
@@ -438,89 +435,25 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
     auto consumerPHI = cast<PHINode>(consumer);
 
     /*
+     * Look for an internal consumer of a loop carried dependence
+     *
+     * NOTE: External consumers may be last-live out propagations of a reducible variable
+     * or could disqualify this from reducibility: let the LoopCarriedVariable analysis determine this
+     */
+    if (!scc->isInternal(consumerPHI)) continue;
+
+    /*
      * Ignore sub loops as they do not need to be reduced
      */
     if (rootLoopHeader != consumerPHI->getParent()) continue;
 
     loopCarriedPHIs.insert(consumerPHI);
   }
-  if (loopCarriedPHIs.size() == 0) return false;
 
-  /*
-   * NOTE: Because last-iteration independent SCC are merged into their parent SCC
-   * by the SCCDAGNormalizer, we must ignore last-iteration propagating PHIs
-   * 
-   * These can be identified by reproducing the SCCDAG just for internal instructions of this SCC
-   */
-  std::vector<Value *> allInternalCyclicValues{};
-  for (auto nodePair : scc->internalNodePairs()) {
-    auto value = nodePair.first;
-    auto node = nodePair.second;
+  if (loopCarriedPHIs.size() != 1) return false;
+  auto singleLoopCarriedPHI = *loopCarriedPHIs.begin();
 
-    /*
-     * Ensure both internal dependency production and consumption
-     */
-    bool consumesInternalDependency = false;
-    bool producesInternalDependency = false;
-    for (auto edge : node->getIncomingEdges()) {
-      auto producer = edge->getOutgoingT();
-      consumesInternalDependency |= scc->isInternal(producer);
-    }
-    for (auto edge : node->getOutgoingEdges()) {
-      auto consumer = edge->getIncomingT();
-      producesInternalDependency |= scc->isInternal(consumer);
-    }
-    if (!consumesInternalDependency || !producesInternalDependency) continue;
-    allInternalCyclicValues.push_back(value);
-  }
-  if (allInternalCyclicValues.size() == 0) return false;
-
-  auto dgOfInternals = loopDG->createSubgraphFromValues(allInternalCyclicValues, false);
-  auto sccdagOfInternals = new SCCDAG(dgOfInternals);
-
-  // errs() << "Writing graphs\n";
-  // DGPrinter::writeGraph<PDG, Value>("pdg-internal.dot", dgOfInternals);
-  // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-internal.dot", sccdagOfInternals);
-
-  /*
-   * Identify root internal SCC and its single loop carried PHI
-   */
-  PHINode *rootLoopCarriedPHI = nullptr;
-  for (auto phi : loopCarriedPHIs) {
-    // phi->print(errs() << "Loop carried PHI: "); errs() << "\n";
-
-    /*
-     * If the loop carried PHI was external, it will not appear in the SCCDAG
-     */
-    auto sccOfPHI = sccdagOfInternals->sccOfValue(phi);
-    if (!sccOfPHI) continue;
-
-    /*
-     * Ensure the SCC is a root of the SCCDAG
-     */
-    auto sccNode = sccdagOfInternals->fetchNode(sccOfPHI);
-    if (sccNode->numIncomingEdges() > 0) continue;
-
-    /*
-     * Ensure the SCC contains only one loop carried PHI and is the only root
-     */
-    bool onlyOnePHI = true;
-    for (auto otherPHI : loopCarriedPHIs) {
-      if (otherPHI == phi) continue;
-      if (!sccOfPHI->isInternal(otherPHI)) continue;
-      onlyOnePHI = false;
-      break;
-    }
-    if (!onlyOnePHI || (rootLoopCarriedPHI && rootLoopCarriedPHI != phi)) continue;
-    rootLoopCarriedPHI = phi;
-  }
-
-  delete dgOfInternals;
-  delete sccdagOfInternals;
-
-  if (!rootLoopCarriedPHI) return false;
-
-  auto variable = new LoopCarriedVariable(*rootLoop, LCD, *loopDG, *scc, rootLoopCarriedPHI);
+  auto variable = new LoopCarriedVariable(*rootLoop, LCD, *loopDG, *scc, singleLoopCarriedPHI);
   if (!variable->isEvolutionReducibleAcrossLoopIterations()) {
     delete variable;
     return false;
@@ -535,7 +468,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
  * The SCC is independent if it doesn't have loop carried data dependencies
  */
 bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
-  return sccToInternalLoopCarriedDependencies.find(scc) == sccToInternalLoopCarriedDependencies.end();
+  return sccToLoopCarriedDependencies.find(scc) == sccToLoopCarriedDependencies.end();
 }
 
 void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS) {
@@ -568,7 +501,7 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS)
   /*
    * HACK: Ignore SCC without loop carried dependencies
    */
-  if (this->sccToInternalLoopCarriedDependencies.find(scc) == this->sccToInternalLoopCarriedDependencies.end()) {
+  if (this->sccToLoopCarriedDependencies.find(scc) == this->sccToLoopCarriedDependencies.end()) {
     return;
   }
 
@@ -577,7 +510,7 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS)
    * NOTE: Ignore PHIs and unconditional branch instructions
    */
   std::unordered_set<const llvm::noelle::ClonableMemoryLocation *> locations;
-  for (auto dependency : this->sccToInternalLoopCarriedDependencies.at(scc)) {
+  for (auto dependency : this->sccToLoopCarriedDependencies.at(scc)) {
 
     auto inst = dyn_cast<Instruction>(dependency->getOutgoingT());
     if (!inst) return;
@@ -617,10 +550,10 @@ bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies (SCC *
     if (edge->isMemoryDependence()) return false;
   }
 
-  if (sccToInternalLoopCarriedDependencies.find(scc) == sccToInternalLoopCarriedDependencies.end()) return true;
+  if (sccToLoopCarriedDependencies.find(scc) == sccToLoopCarriedDependencies.end()) return true;
 
   auto topLoop = LIS.getLoopNestingTreeRoot();
-  for (auto loopCarriedDependency : sccToInternalLoopCarriedDependencies.at(scc)) {
+  for (auto loopCarriedDependency : sccToLoopCarriedDependencies.at(scc)) {
     auto valueFrom = loopCarriedDependency->getOutgoingT();
     auto valueTo = loopCarriedDependency->getIncomingT();
     assert(isa<Instruction>(valueFrom) && isa<Instruction>(valueTo));

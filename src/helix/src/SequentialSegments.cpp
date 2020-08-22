@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "HELIX.hpp"
+#include "HELIXTask.hpp"
 
 using namespace llvm ;
 
@@ -16,6 +17,68 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   LoopDependenceInfo *originalLDI,
   LoopDependenceInfo *LDI
 ){
+
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+
+  /*
+   * Map from old to new SCCs (for use in determining what SCC can be left out of sequential segments)
+   *
+   * NOTE: Account for spilled PHIs in particular, because their instruction mapping in the task
+   * is to the load in the pre-header. All stores to the spill environment are in the loop and contained
+   * in the task's loop SCCDAG, so use one of them
+   */
+  std::unordered_map<SCC *, SCC*> taskToOriginalFunctionSCCMap;
+  std::unordered_set<SCC *> spillSCCs;
+  auto originalSCCDAG = originalLDI->sccdagAttrs.getSCCDAG();
+  auto taskSCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  for (auto spill : spills) {
+    auto originalSpillSCC = originalSCCDAG->sccOfValue(spill->originalLoopCarriedPHI);
+    auto clonedInstructionInLoop = *spill->environmentStores.begin();
+    auto clonedSpillSCC = taskSCCDAG->sccOfValue(clonedInstructionInLoop);
+    assert(originalSpillSCC && clonedSpillSCC);
+    spillSCCs.insert(originalSpillSCC);
+    taskToOriginalFunctionSCCMap.insert(std::make_pair(clonedSpillSCC, originalSpillSCC));
+  }
+  for (auto originalNode : originalSCCDAG->getNodes()) {
+
+    /*
+     * Skip already mapped spill SCCs
+     */
+    auto originalSCC = originalNode->getT();
+    if (spillSCCs.find(originalSCC) != spillSCCs.end()) continue;
+
+    /*
+     * Get clones of original instructions for the given SCC
+     */
+    Instruction *anyClonedInstInLoop = nullptr;
+    auto clonedLoop = LDI->getLoopStructure();
+    for (auto nodePair : originalSCC->internalNodePairs()) {
+      auto originalInst = cast<Instruction>(nodePair.first);
+      auto clonedInst = helixTask->getCloneOfOriginalInstruction(originalInst);
+      if (!clonedLoop->isIncluded(clonedInst)) continue;
+      anyClonedInstInLoop = clonedInst;
+      break;
+    }
+    assert(anyClonedInstInLoop != nullptr);
+
+    SCC *singleMappingSCC = nullptr;
+    for (auto taskNode : taskSCCDAG->getNodes()) {
+      auto taskSCC = taskNode->getT();
+      bool hasOverlappingInstruction = taskSCC->isInternal(anyClonedInstInLoop);
+      if (!hasOverlappingInstruction) continue;
+
+      assert(singleMappingSCC == nullptr);
+      singleMappingSCC = taskSCC;
+    }
+
+    // if (singleMappingSCC == nullptr) {
+    //   originalSCC->print(errs() << "Original SCC:\n");
+    //   anyClonedInstInLoop->print(errs() << "Any cloned INST: "); errs() << "\n";
+    // }
+
+    assert(singleMappingSCC != nullptr);
+    taskToOriginalFunctionSCCMap.insert(std::make_pair(singleMappingSCC, originalSCC));
+  }
 
   std::vector<SequentialSegment *> sss;
 
@@ -41,7 +104,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   /*
    * Fetch the subsets.
    */
-  auto& subsets = this->partition->getDepthOrderedSubsets();
+  auto sets = this->partitioner->getDepthOrderedSets();
 
   /*
    * Fetch the set of SCCs that have loop-carried data dependences.
@@ -52,33 +115,24 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
    * Allocate the sequential segments, one per partition.
    */
   int32_t ssID = 0;
-  for (auto subset : subsets){
+  for (auto set : sets){
 
     /*
      * Check if the current set of SCCs require a sequential segments.
      */
     auto requireSS = false;
-    for (auto scc : *subset){
+    for (auto scc : set->sccs){
 
       /*
        * Fetch the SCC metadata.
        */
-      auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+      auto originalSCC = taskToOriginalFunctionSCCMap.at(scc);
+      auto originalSCCInfo = originalLDI->sccdagAttrs.getSCCAttrs(originalSCC);
 
       /*
        * Do not synchronize induction variables
        */
-      if (sccInfo->isInductionVariableSCC()) {
-        continue;
-      }
-
-      /*
-       * HACK: Our loop governing IV attribution class is not powerful
-       * enough to understand our manipulation of the loop governing IV,
-       * so we ignore the preamble SCC if the original LDI's attribution was compute-able
-       */
-      if (wasOriginalLoopIVGoverned && scc == preambleSCC) {
-        errs() << "HELIX:   Skipping preamble synchronization\n";
+      if (originalSCCInfo->isInductionVariableSCC()) {
         continue;
       }
 
@@ -95,7 +149,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
       /*
        * Fetch the type of the SCC.
        */
-      auto sccType = sccInfo->getType();
+      auto sccType = originalSCCInfo->getType();
 
       /*
        * Only sequential SCC can generate a sequential segment.
@@ -113,7 +167,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
     /*
      * Allocate a sequential segment.
      */
-    auto ss = new SequentialSegment(LDI, reachabilityDFR, subset, ssID, this->verbose);
+    auto ss = new SequentialSegment(LDI, reachabilityDFR, set, ssID, this->verbose);
 
     /*
      * Insert the new sequential segment to the list.
