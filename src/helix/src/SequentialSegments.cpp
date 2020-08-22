@@ -128,7 +128,6 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
        */
       auto originalSCC = taskToOriginalFunctionSCCMap.at(scc);
       auto originalSCCInfo = originalLDI->sccdagAttrs.getSCCAttrs(originalSCC);
-      originalSCCInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
 
       /*
        * Do not synchronize induction variables
