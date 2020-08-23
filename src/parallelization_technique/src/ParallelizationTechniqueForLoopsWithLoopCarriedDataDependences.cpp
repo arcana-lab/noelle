@@ -15,9 +15,10 @@ using namespace llvm;
 ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences (
   Module &module, 
   Hot &p,
+  bool forceParallelization,
   Verbosity v
   )
-  : ParallelizationTechnique{module, p, v}, partitioner{nullptr}
+  : ParallelizationTechnique{module, p, v}, partitioner{nullptr}, forceParallelization{forceParallelization}
   {
 
   return ;
@@ -38,23 +39,23 @@ bool ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeApplie
     return false;
   }
 
-  /*
-   * Check the number of instructions per iteration
-   */
-  auto profiles = par.getProfiles();
-  auto loopID = LDI->getID();
-  auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(ls);
-  auto averageInstructionThreshold = 15;
-  if (true
-      && (averageInstructions < averageInstructionThreshold)
-    ){
-    errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstructions << " number of instructions on average per loop iteration\n";
-    errs() << "Parallelizer:      It is too low for parallelization techniques with loop carried dependencies. The threshold is " << averageInstructionThreshold << "\n";
+  if (!this->forceParallelization) {
 
-    /*
-     * Remove the loop.
-     */
-    return true;
+   /*
+    * Check the number of instructions per iteration
+    */
+    auto profiles = par.getProfiles();
+    auto loopID = LDI->getID();
+    auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(ls);
+    auto averageInstructionThreshold = 20;
+    if (true
+        && (averageInstructions < averageInstructionThreshold)
+      ){
+      errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstructions << " number of instructions on average per loop iteration\n";
+      errs() << "Parallelizer:      It is too low for parallelization techniques with loop carried dependencies. The threshold is " << averageInstructionThreshold << "\n";
+
+      return false;
+    }
   }
 
   return true;
