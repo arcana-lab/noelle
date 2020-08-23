@@ -71,6 +71,7 @@ bool Parallelizer::runOnModule (Module &M) {
   HELIX helix{
     M,
     *profiles,
+    this->forceParallelization,
     verbosity
   };
 

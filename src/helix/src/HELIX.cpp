@@ -14,10 +14,12 @@
 HELIX::HELIX (
   Module &module, 
   Hot &p,
+  bool forceParallelization,
   Verbosity v
   )
-  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, v},
-    loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr}, lastIterationExecutionBlock{nullptr}
+  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, forceParallelization, v},
+    loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr},
+    lastIterationExecutionBlock{nullptr}
   {
 
   /*

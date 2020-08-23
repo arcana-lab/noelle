@@ -56,7 +56,6 @@ namespace llvm {
       /*
        * CLI Options
        */
-      bool forceParallelization;
       bool enableMergingSCC;
 
       /*
