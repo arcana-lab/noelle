@@ -118,6 +118,17 @@ namespace llvm {
         int taskIndex
       );
 
+      std::unordered_map<InductionVariable *, Value *> cloneIVStepValueComputation (
+        LoopDependenceInfo *LDI,
+        int taskIndex,
+        IRBuilder<> &insertBlock
+      );
+
+      void adjustStepValueOfPointerTypeIVToReflectPointerArithmetic (
+        std::unordered_map<InductionVariable *, Value *> clonedStepValueMap,
+        IRBuilder<> &insertBlock
+      );
+
       /*
        * Task helpers for environment usage
        */
@@ -174,9 +185,11 @@ namespace llvm {
 
       Value *getIdentityValueForEnvironmentValue (
         LoopDependenceInfo *LDI,
-        int taskIndex,
-        int environmentIndex
+        int environmentIndex,
+        Type *typeForValue
       );
+
+      Value *castToCorrectReducibleType (IRBuilder<> &builder, Value *value, Type *targetType) ;
 
       /*
        * Partition SCCDAG.

@@ -48,52 +48,7 @@ void DOALL::rewireLoopToIterateChunks (
    * Collect clones of step size deriving values for all induction variables
    * of the top level loop
    */
-  std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
-  for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
-
-    /*
-     * If the step value is constant or a value present in the original loop, use its clone
-     * TODO: Refactor this logic as a helper: tryAndFetchClone that doesn't assert a clone must exist
-     */
-    auto singleComputedStepValue = ivInfo->getSingleComputedStepValue();
-    if (singleComputedStepValue) {
-      Value *clonedStepValue = nullptr;
-      if (isa<ConstantData>(singleComputedStepValue)
-        || task->isAnOriginalLiveIn(singleComputedStepValue)) {
-        clonedStepValue = singleComputedStepValue;
-      } else if (auto singleComputedStepInst = dyn_cast<Instruction>(singleComputedStepValue)) {
-        clonedStepValue = task->getCloneOfOriginalInstruction(singleComputedStepInst);
-      }
-
-      if (clonedStepValue) {
-        clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
-        continue;
-      }
-    }
-
-    /*
-     * The step size is a composite SCEV. Fetch its instruction expansion,
-     * cloning into the entry block of the function
-     * 
-     * NOTE: The step size is expected to be loop invariant
-     */
-    auto expandedInsts = ivInfo->getComputationOfStepValue();
-    assert(expandedInsts.size() > 0);
-    for (auto expandedInst : expandedInsts) {
-      auto clonedInst = expandedInst->clone();
-      task->addInstruction(expandedInst, clonedInst);
-      entryBuilder.Insert(clonedInst);
-    }
-
-    /*
-     * Wire the instructions in the expansion to use the cloned values
-     */
-    for (auto expandedInst : expandedInsts) {
-      adjustDataFlowToUseClones(task->getCloneOfOriginalInstruction(expandedInst), 0);
-    }
-    auto clonedStepValue = task->getCloneOfOriginalInstruction(expandedInsts.back());
-    clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
-  }
+  auto clonedStepSizeMap = cloneIVStepValueComputation(LDI, 0, entryBuilder);
 
   /*
    * Determine start value of the IV for the task
@@ -108,12 +63,12 @@ void DOALL::rewireLoopToIterateChunks (
       stepOfIV,
       entryBuilder.CreateZExtOrTrunc(
         entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg, "coreIdx_X_chunkSize"),
-        ivPHI->getType()
+        stepOfIV->getType()
       ),
       "stepSize_X_coreIdx_X_chunkSize"
     );
-    auto offsetStartValue = entryBuilder.CreateAdd(startOfIV, nthCoreOffset, "startPlusOffset");
 
+    auto offsetStartValue = IVUtility::offsetIVPHI(preheaderClone, ivPHI, startOfIV, nthCoreOffset);
     ivPHI->setIncomingValueForBlock(preheaderClone, offsetStartValue);
   }
 
@@ -135,7 +90,7 @@ void DOALL::rewireLoopToIterateChunks (
           task->chunkSizeArg,
           "numCoresMinus1_X_chunkSize"
         ),
-        ivPHI->getType()
+        stepOfIV->getType()
       ),
       "stepSizeToNextChunk"
     );

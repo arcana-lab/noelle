@@ -20,6 +20,11 @@ std::vector<LoopDependenceInfo *> Parallelizer::selectTheOrderOfLoopsToParalleli
   std::vector<LoopDependenceInfo *> selectedLoops{};
 
   /*
+   * Fetch the verbosity.
+   */
+  auto verbose = noelle.getVerbosity();
+
+  /*
    * Compute the amount of time that can be saved by a parallelization technique per loop.
    */
   std::map<LoopDependenceInfo *, uint64_t> timeSavedLoops;
@@ -146,6 +151,21 @@ std::vector<LoopDependenceInfo *> Parallelizer::selectTheOrderOfLoopsToParalleli
     return l1LS->getNestingLevel() < l2LS->getNestingLevel();
   };
   std::sort(selectedLoops.begin(), selectedLoops.end(), compareOperator);
+
+  /*
+   * Print the order and the savings.
+   */
+  if (verbose != Verbosity::Disabled) {
+    errs() << "Parallelizer: LoopSelector: Start\n";
+    errs() << "Parallelizer: LoopSelector:   Order of loops and their maximum savings\n";
+    for (auto l : selectedLoops){
+      auto ls = l->getLoopStructure();
+      auto savedTimeRelative = ((double)timeSavedLoops[l]) / ((double) profiles->getTotalInstructions(ls));
+      savedTimeRelative *= 100;
+      errs() << "Parallelizer: LoopSelector:    Loop " << l->getID() << " savings = " << savedTimeRelative << "%\n";
+    }
+    errs() << "Parallelizer: LoopSelector: End\n";
+  }
 
   return selectedLoops;
 }

@@ -1,7 +1,7 @@
-UTILS=transformations basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats callgraph scheduler
+UTILS=transformations basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats callgraph scheduler loop_stats
 ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure
 PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
-ENABLERS=enablers loop_distribution loop_unroll inliner loop_whilifier loop_invariant_code_motion scev_simplification
+ENABLERS=enablers loop_distribution loop_unroll inliner loop_whilifier loop_invariant_code_motion scev_simplification deadfunctioneliminator
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) $(PARALLELIZATION) hotprofiler unique_ir_marker noelle scripts
 
 all: $(ALL)
@@ -10,6 +10,9 @@ scripts:
 	./scripts/installNOELLE.sh
 
 noelle:
+	cd $@ ; ../scripts/run_me.sh
+
+deadfunctioneliminator:
 	cd $@ ; ../scripts/run_me.sh
 
 unique_ir_marker:
@@ -100,6 +103,9 @@ clean_metadata:
 	cd $@ ; ../scripts/run_me.sh
 
 pdg_stats:
+	cd $@ ; ../scripts/run_me.sh
+
+loop_stats:
 	cd $@ ; ../scripts/run_me.sh
 
 uninstall:

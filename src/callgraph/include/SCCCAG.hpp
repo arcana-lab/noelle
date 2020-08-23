@@ -14,50 +14,46 @@
 #include "CallGraph.hpp"
 #include "CallGraphTraits.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
+  class CallGraph;
 
-  namespace noelle {
-    class CallGraph;
+  class SCCCAGNode {
+    public:
+      SCCCAGNode() = default;
 
-    class SCCCAGNode {
-      public:
-        SCCCAGNode() = default;
+      virtual bool isAnSCC (void) const = 0;
+  };
 
-        virtual bool isAnSCC (void) const = 0;
-    };
+  class SCCCAGNode_SCC : public SCCCAGNode {
+    public:
+      SCCCAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes);
 
-    class SCCCAGNode_SCC : public SCCCAGNode {
-      public:
-        SCCCAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes);
+      bool isAnSCC (void) const override ;
 
-        bool isAnSCC (void) const override ;
+    private:
+      std::unordered_set<CallGraphNode *> nodes;
+  };
 
-      private:
-        std::unordered_set<CallGraphNode *> nodes;
-    };
+  class SCCCAGNode_Function : public SCCCAGNode {
+    public:
+      SCCCAGNode_Function (Function &F) ;
 
-    class SCCCAGNode_Function : public SCCCAGNode {
-      public:
-        SCCCAGNode_Function (Function &F) ;
+      bool isAnSCC (void) const override ;
 
-        bool isAnSCC (void) const override ;
+    private:
+      Function &func;
+  };
 
-      private:
-        Function &func;
-    };
+  class SCCCAG {
+    public:
+      SCCCAG (noelle::CallGraph *cg);
 
+      SCCCAG () = delete ;
 
-    class SCCCAG {
-      public:
-        SCCCAG (noelle::CallGraph *cg);
+      SCCCAGNode * getNode (CallGraphNode *n) const ;
 
-        SCCCAG () = delete ;
+    private:
+      std::unordered_map<CallGraphNode *, SCCCAGNode *> nodes;
+  };
 
-        SCCCAGNode * getNode (CallGraphNode *n) const ;
-
-      private:
-        std::unordered_map<CallGraphNode *, SCCCAGNode *> nodes;
-    };
-
-  }
 }

@@ -24,7 +24,6 @@
 #include "PDGAnalysis.hpp"
 #include "PDGPrinter.hpp"
 #include "SCCDAGAttrs.hpp"
-#include "SCCDAGNormalizer.hpp"
 #include "Invariants.hpp"
 #include "InductionVariables.hpp"
 
@@ -57,7 +56,6 @@ namespace llvm {
     private:
 
       static Values sccdagHasCorrectSCCs (ModulePass &pass, TestSuite &suite) ;
-      static Values normalizedTopLoopSCCDAG (ModulePass &pass, TestSuite &suite) ;
       Values getValuesOfSCCDAG (SCCDAG &sccdag) ;
 
       static Values sccsWithIVAreFound (ModulePass &pass, TestSuite &suite) ;
@@ -77,7 +75,6 @@ namespace llvm {
       LoopInfo *LI;
       PDG *fdg;
       SCCDAG *sccdag;
-      SCCDAG *sccdagTopLoopNorm;
       SCCDAGAttrs *attrs;
   };
 }

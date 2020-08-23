@@ -294,11 +294,12 @@ int main (int argc, char *argv[]){
   }
   auto iterations = atoll(argv[1]);
   if (iterations == 0) return 0;
+  iterations *= 100;
   auto seed = atoll(argv[2]);
 
   long long int *array = (long long int *) calloc(iterations, sizeof(long long int));
   for (auto i=0; i < iterations; i++){
-    array[i] = rand();
+    array[i] = i * 5;
   }
 
   auto s = computeSum(array, iterations, seed);

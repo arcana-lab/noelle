@@ -1,16 +1,31 @@
 // TODO: add copyright
 
 #include "LoopAwareMemDepAnalysis.hpp"
+#include "DataFlow.hpp"
 
 #include "Utilities/PDGQueries.h"
 
 using namespace llvm;
 
-void llvm::refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG, Loop *l,
-                                                liberty::LoopAA *loopAA) {
+void llvm::refinePDGWithLoopAwareMemDepAnalysis(
+  PDG *loopDG,
+  Loop *l,
+  LoopStructure *loopStructure,
+  LoopCarriedDependencies &LCD,
+  liberty::LoopAA *loopAA,
+  LoopIterationDomainSpaceAnalysis *LIDS
+) {
+
   // TODO: add here other types of loopAware refinements of the PDG
 
-  refinePDGWithSCAF(loopDG, l, loopAA);
+  if (loopAA) {
+    refinePDGWithSCAF(loopDG, l, loopAA);
+  }
+
+  if (LIDS) {
+    refinePDGWithLIDS(loopDG, loopStructure, LCD, LIDS);
+  }
+
 }
 
 void llvm::refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
@@ -106,4 +121,103 @@ void llvm::refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
 			}
 		}
 	}
+}
+
+// TODO: Refactor along with HELIX's exact same implementation of this method
+DataFlowResult *computeReachabilityFromInstructions (LoopStructure *loopStructure) {
+
+  auto loopHeader = loopStructure->getHeader();
+  auto loopFunction = loopStructure->getFunction();
+
+  /*
+   * Run the data flow analysis needed to identify the locations where signal instructions will be placed.
+   */
+  auto dfa = DataFlowEngine{};
+  auto computeGEN = [](Instruction *i, DataFlowResult *df) {
+    auto& gen = df->GEN(i);
+    gen.insert(i);
+    return ;
+  };
+  auto computeKILL = [](Instruction *, DataFlowResult *) {
+    return ;
+  };
+  auto computeOUT = [loopHeader](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
+
+    /*
+     * Check if the successor is the header.
+     * In this case, we do not propagate the reachable instructions.
+     * We do this because we are interested in understanding the reachability of instructions within a single iteration.
+     */
+    auto succBB = succ->getParent();
+    if (succ == &*loopHeader->begin()) {
+      return ;
+    }
+
+    /*
+     * Propagate the data flow values.
+     */
+    auto& inS = df->IN(succ);
+    OUT.insert(inS.begin(), inS.end());
+    return ;
+  } ;
+  auto computeIN = [](std::set<Value *>& IN, Instruction *inst, DataFlowResult *df) {
+    auto& genI = df->GEN(inst);
+    auto& outI = df->OUT(inst);
+    IN.insert(outI.begin(), outI.end());
+    IN.insert(genI.begin(), genI.end());
+    return ;
+  };
+
+  return dfa.applyBackward(loopFunction, computeGEN, computeKILL, computeIN, computeOUT);
+}
+
+void llvm::refinePDGWithLIDS(
+  PDG *loopDG,
+  LoopStructure *loopStructure,
+  LoopCarriedDependencies &LCD,
+  LoopIterationDomainSpaceAnalysis *LIDS
+) {
+
+  auto dfr = computeReachabilityFromInstructions(loopStructure);
+
+  std::unordered_set<DGEdge<Value> *> edgesThatExist;
+  for (auto edge : loopDG->getEdges()) {
+    edgesThatExist.insert(edge);
+  }
+
+  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  for (auto dependency : LCD.getLoopCarriedDependenciesForLoop(*loopStructure)) {
+
+    /*
+     * The edge could have already been removed by another refining step
+     * Check that the edge still exists
+     */
+    if (edgesThatExist.find(dependency) == edgesThatExist.end()) continue;
+
+    /*
+     * Do not waste time on edges that aren't memory dependencies
+     */
+    if (!dependency->isMemoryDependence()) continue;
+
+    auto fromInst = dyn_cast<Instruction>(dependency->getOutgoingT());
+    auto toInst = dyn_cast<Instruction>(dependency->getIncomingT());
+    if (!fromInst || !toInst) continue;
+
+    /*
+     * Loop carried dependencies are conservatively marked as such; we can only
+     * remove dependencies between a producer and consumer where we know the producer
+     * can NEVER reach the consumer during the same iteration
+     */
+    auto &afterInstructions = dfr->OUT(fromInst);
+    if (afterInstructions.find(toInst) != afterInstructions.end()) continue;
+
+    if (LIDS->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst)) {
+      edgesToRemove.insert(dependency);
+    }
+  }
+
+  for (auto edge : edgesToRemove) {
+    loopDG->removeEdge(edge);
+  }
+
 }
