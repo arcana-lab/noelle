@@ -48,7 +48,7 @@ LoopScheduler Scheduler::getNewLoopScheduler(
 /*
  * BasicBlock Drivers
  */  
-bool Scheduler::canScheduleBlock(
+bool Scheduler::canMoveAnyInstOutOfBasicBlock(
   BasicBlock * const Block
 ) const {
 
@@ -58,7 +58,7 @@ bool Scheduler::canScheduleBlock(
    * Instructions in @Block can be scheduled only if the
    * following conditions are held:
    * 
-   * 1. If the basic block does NOT end in anything other than a BranchInst
+   * 1. If the basic block only ends in a BranchInst
    *    - InvokeInst --- (want to avoid possible fiascos involving 
    *      exceptional control flow)
    *    - IndirectBr --- (want to avoid numerous possible landing points)
@@ -74,7 +74,7 @@ bool Scheduler::canScheduleBlock(
    *    - TODO : Relax this constraint
    */ 
   
-  errs() << "Scheduler: canScheduleBlock --- @Block: " << *Block << "\n";
+  errs() << "Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: " << *Block << "\n";
 
 
   /*
@@ -108,20 +108,20 @@ bool Scheduler::canScheduleBlock(
 
 
   errs() << "Scheduler:     Yes!\n"
-         << "Scheduler:     Success for canScheduleBlock...\n";
+         << "Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...\n";
 
   return true;
 
 }
 
 
-std::set<Instruction *> Scheduler::getInstructionsThatCanMove(
+std::set<Instruction *> Scheduler::getAllInstsMoveableOutOfBasicBlock(
   BasicBlock * const Block,
   PDG * const ThePDG,
   ScheduleDirection Direction
 ) const {
 
-  errs() << "Scheduler: getInstructionsThatCanMove --- @Block: " << *Block << "\n";
+  errs() << "Scheduler: getAllInstsMoveableOutOfBasicBlock --- @Block: " << *Block << "\n";
 
   auto Moves = std::set<Instruction *>();
 
@@ -141,7 +141,7 @@ std::set<Instruction *> Scheduler::getInstructionsThatCanMove(
    */ 
   errs() << "Scheduler:     Checking the block ...\n";
 
-  if (!(this->canScheduleBlock(Block))) {
+  if (!(this->canMoveAnyInstOutOfBasicBlock(Block))) {
     
     errs() << "Scheduler:     No instructions --- Block can't be scheduled!\n" << *Block << "\n";
     return Moves;
@@ -205,7 +205,7 @@ std::set<Instruction *> Scheduler::getInstructionsThatCanMove(
      * Check if the instruction can be moved, if not 
      * add to the Keeps set and continue
      */ 
-    if (!(this->canMoveInstruction(Next))) {
+    if (!(this->canMoveInstOutOfBasicBlock(Next))) {
 
       errs() << "Scheduler:         Keep --- Can't move Next!\n";
 
@@ -221,7 +221,7 @@ std::set<Instruction *> Scheduler::getInstructionsThatCanMove(
     errs() << "Scheduler:       Now the dependences...\n";
 
     auto Outgoing =
-      this->getOutgoingDependencesInParent(
+      this->getOutgoingDependencesInParentBasicBlock(
         Next,
         ThePDG
       );
@@ -241,7 +241,7 @@ std::set<Instruction *> Scheduler::getInstructionsThatCanMove(
        * case
        */ 
       if (false
-          || !(this->canMoveInstruction(D))
+          || !(this->canMoveInstOutOfBasicBlock(D))
           || Keeps.find(D) != Keeps.end()) {
 
         ShouldKeep |= true;
@@ -269,7 +269,7 @@ std::set<Instruction *> Scheduler::getInstructionsThatCanMove(
   /*
    * Debugging
    */ 
-  errs() << "Scheduler: getInstructionsThatCanMove --- All moves ("
+  errs() << "Scheduler: getAllInstsMoveableOutOfBasicBlock --- All moves ("
          << Moves.size() << "): \n";
   
   for (auto Move : Moves) {
@@ -285,7 +285,7 @@ std::set<Instruction *> Scheduler::getInstructionsThatCanMove(
 /*
  * Instruction Drivers
  */  
-bool Scheduler::canMoveInstruction(
+bool Scheduler::canMoveInstOutOfBasicBlock(
   Instruction * const I
 ) const {
 
@@ -295,7 +295,7 @@ bool Scheduler::canMoveInstruction(
    * @I can only be moved if it is NOT a PHINode or a terminator
    */ 
 
-  errs() << "Scheduler: canMoveInstruction --- @I: " << *I << "\n";
+  errs() << "Scheduler: canMoveInstOutOfBasicBlock --- @I: " << *I << "\n";
 
   /*
    * <Constraint>
@@ -311,14 +311,14 @@ bool Scheduler::canMoveInstruction(
 
 
   errs() << "Scheduler:     Yes!\n"
-         << "Scheduler:     Success for canMoveInstruction...\n";
+         << "Scheduler:     Success for canMoveInstOutOfBasicBlock...\n";
 
   return true;
 
 }
 
 
-std::set<Instruction *> Scheduler::getRequirementsToMoveInstruction(
+std::set<Instruction *> Scheduler::getAllInstsToMoveForSpecifiedInst(
   Instruction * const I,
   PDG * const ThePDG,
   ScheduleDirection Direction
@@ -348,7 +348,7 @@ std::set<Instruction *> Scheduler::getRequirementsToMoveInstruction(
 
   auto Requirements = std::set<Instruction *>();
 
-  errs() << "Scheduler: getRequirementsToMoveInstruction --- @I: " << *I << "\n";
+  errs() << "Scheduler: getAllInstsToMoveForSpecifiedInst --- @I: " << *I << "\n";
 
   /*
    * <Constraint 1.>
@@ -364,7 +364,7 @@ std::set<Instruction *> Scheduler::getRequirementsToMoveInstruction(
   /*
    * Sanity check @I
    */ 
-  if (!(this->canMoveInstruction(I))) {
+  if (!(this->canMoveInstOutOfBasicBlock(I))) {
 
     errs() << "Scheduler:     Can't get requirements --- @I can't be moved!\n";
     return Requirements;
@@ -377,7 +377,7 @@ std::set<Instruction *> Scheduler::getRequirementsToMoveInstruction(
    *   1. Iterate through dependences of the next instruction in 
    *      the worklist, adding to the Requirements set when necessary, 
    *   2. Add outgoing dependences to the worklist according to 
-   *      Scheduler::getOutgoingDependencesInParent
+   *      Scheduler::getOutgoingDependencesInParentBasicBlock
    */ 
   BasicBlock *Parent = I->getParent();
 
@@ -402,7 +402,7 @@ std::set<Instruction *> Scheduler::getRequirementsToMoveInstruction(
      * Get the outgoing dependence instructions
      */ 
     auto Outgoing =
-      this->getOutgoingDependencesInParent(
+      this->getOutgoingDependencesInParentBasicBlock(
         Next,
         ThePDG
       );
@@ -418,7 +418,7 @@ std::set<Instruction *> Scheduler::getRequirementsToMoveInstruction(
       /*
        * If the instruction can't be moved abort the computation
        */ 
-      if (!(this->canMoveInstruction(D))) {
+      if (!(this->canMoveInstOutOfBasicBlock(D))) {
 
         errs() << "Scheduler:         Can't get requirements --- A dependence can't be moved!\n";
         return std::set<Instruction *>();
@@ -468,7 +468,7 @@ bool Scheduler::isControlEquivalent(
 
 
   /*
-   * Check if @Second post-dominate @First
+   * Check if @Second post-dominates @First
    */
   IsControlEquivalent &= PDT.dominates(Second, First);
 
@@ -487,7 +487,7 @@ bool Scheduler::isControlEquivalent(
 }
 
 
-std::set<Value *> Scheduler::getOutgoingDependences(
+std::set<Value *> Scheduler::getAllOutgoingDependences(
   Instruction * const I,
   PDG * const ThePDG
 ) const {
@@ -536,7 +536,7 @@ std::set<Value *> Scheduler::getOutgoingDependences(
 
 
 
-std::set<Instruction *> Scheduler::getOutgoingDependencesInParent(
+std::set<Instruction *> Scheduler::getOutgoingDependencesInParentBasicBlock(
   Instruction * const I,
   PDG * const ThePDG
 ) const {
@@ -659,7 +659,7 @@ LoopScheduler::LoopScheduler(
  * PUBLIC --- Analysis Methods
  * ------------------------------------------------------------------
  */
-bool LoopScheduler::canScheduleLoop (void) const {
+bool LoopScheduler::canMoveAnyInstOutOfLoop (void) const {
 
   /*
    * Scheduling instructions into/out of a loop is currently a 
@@ -668,10 +668,10 @@ bool LoopScheduler::canScheduleLoop (void) const {
    * 1. If the body is empty, the loop can't be scheduled (try 
    *    whilifying the loop first)
    * 
-   * 2. TBD
+   * 2. Nothing else (for now)
    */ 
 
-  errs() << "LoopScheduler:   canScheduleLoop\n";
+  errs() << "LoopScheduler:   canMoveAnyInstOutOfLoop\n";
 
   /*
    * <Constraint 1.>
@@ -702,7 +702,7 @@ bool LoopScheduler::shrinkLoopPrologue (void) {
   /*
    * Check constraints
    */  
-  if (!(this->canScheduleLoop())) {
+  if (!(this->canMoveAnyInstOutOfLoop())) {
 
     errs() << "LoopScheduler:     Abort! Can't schedule the loop\n";
     return Modified;
@@ -713,8 +713,11 @@ bool LoopScheduler::shrinkLoopPrologue (void) {
   /*
    * Set up a worklist --- try shrinking the prologue --- if
    * there is any modification to any block, return immediately
+   * (let noelle-enable start a new invocation to avoid the 
+   * headaches of invalidated noelle analysis info) --- INEFFICIENT
    * 
-   * Iteration is bottom-up --- FIX
+   * Iteration is bottom-up --- FIX (modified inorder traversal 
+   * is more efficient but unwise given the current setup)
    */ 
   std::queue<BasicBlock *> WorkList;
   std::set<BasicBlock *> ProcessedBlocks,
@@ -744,7 +747,7 @@ bool LoopScheduler::shrinkLoopPrologue (void) {
      *    scheduled, add to CannotProcessBlocks and continue
      * 
      * 2. If any successor can't be processed (in CannotProcessBlocks),
-     *    don't process Next --- add to CannotProcessBlocks and 
+     *    don't process Next --- add Next to CannotProcessBlocks and 
      *    continue
      * 
      * 3. If any successor that is in the prologue has not been
@@ -761,7 +764,7 @@ bool LoopScheduler::shrinkLoopPrologue (void) {
     /*
      * <Constraint 1.> 
      */ 
-    if (!(this->canScheduleBlock(Next))) {
+    if (!(this->canMoveAnyInstOutOfBasicBlock(Next))) {
 
       CannotProcessBlocks.insert(Next);
       continue;
@@ -817,9 +820,9 @@ bool LoopScheduler::shrinkLoopPrologue (void) {
 
     /*
      * If there was a move, return immediately --- otherwise 
-     * add Next to the ProcessedBlocks set, and continue
+     * add Next to the ProcessedBlocks set and continue
      */ 
-    Modified |= this->shrinkPrologueBlock(Next);
+    Modified |= this->shrinkPrologueBasicBlock(Next);
 
     if (Modified) {
       return Modified;
@@ -892,7 +895,7 @@ void LoopScheduler::Dump (void) const {
  * PUBLIC --- Getter Methods
  * ------------------------------------------------------------------
  */
-LoopStructure * LoopScheduler::getPassedLoop (void) const {
+LoopStructure * LoopScheduler::getLoop (void) const {
   return this->TheLoop;
 }
 
@@ -997,7 +1000,7 @@ void LoopScheduler::calculateLoopBody (void) {
  * PRIVATE --- Transformation Methods
  * ------------------------------------------------------------------
  */
-bool LoopScheduler::shrinkPrologueBlock(
+bool LoopScheduler::shrinkPrologueBasicBlock(
   BasicBlock *Block
 ) {
 
@@ -1007,7 +1010,7 @@ bool LoopScheduler::shrinkPrologueBlock(
    * Find all instructions to move from @Block --- FIX --- VERY INEFFIEICNT
    */ 
   auto InstructionsToMove = 
-    this->getInstructionsThatCanMove(
+    this->getAllInstsMoveableOutOfBasicBlock(
       Block,
       this->ThePDG 
     );
@@ -1049,7 +1052,7 @@ bool LoopScheduler::shrinkPrologueBlock(
 
     errs() << "LoopScheduler:       Next instruction to move: " << Move << "\n";
 
-    this->moveFromPrologueBlock(
+    this->moveInstOutOfPrologueBasicBlock(
       Move,
       OriginalToClones,
       Clones
@@ -1080,7 +1083,7 @@ bool LoopScheduler::shrinkPrologueBlock(
 } 
 
 
-bool LoopScheduler::moveFromPrologueBlock(
+bool LoopScheduler::moveInstOutOfPrologueBasicBlock(
   Instruction *I,
   ValueToValueMapTy &OriginalToClones,
   std::set<Instruction *> &Clones,
@@ -1129,12 +1132,12 @@ bool LoopScheduler::moveFromPrologueBlock(
    * 
    * - Other common CFG patterns (if-then-else, etc.) should be
    *   handled using the dominator summary and reachability 
-   *   analysis
+   *   analysis (not implemented)
    */ 
 
   BasicBlock *Parent = I->getParent();
 
-  errs() << "LoopScheduler:   moveFromPrologueBlock --- @I: " << *I << "\n";
+  errs() << "LoopScheduler:   moveInstOutOfPrologueBasicBlock --- @I: " << *I << "\n";
 
 
   /*
@@ -1154,7 +1157,7 @@ bool LoopScheduler::moveFromPrologueBlock(
   BasicBlock *SingleSuccessor = Parent->getSingleSuccessor();
 
   if (SingleSuccessor) {
-    return this->moveIntoSuccessor(I, SingleSuccessor);
+    return this->moveInstIntoSuccessor(I, SingleSuccessor);
   }
 
 
@@ -1166,7 +1169,7 @@ bool LoopScheduler::moveFromPrologueBlock(
    * <Constraint 2b.> --- Sanity check number of successors
    */ 
   assert(succ_size(Parent) == 2
-         && "LoopScheduler --- moveFromPrologueBlock --- Case 2: Parent of @I should only have 2 successors!\n");
+         && "LoopScheduler --- moveInstOutOfPrologueBasicBlock --- Case 2: Parent of @I should only have 2 successors!\n");
 
   
   /*
@@ -1190,20 +1193,20 @@ bool LoopScheduler::moveFromPrologueBlock(
   }
 
   assert(NumSuccessorsInside == 1
-         && "LoopScheduler --- moveFromPrologueBlock --- Constraint 2a.: Should have one successor inside the loop, one outside the loop!\n");
+         && "LoopScheduler --- moveInstOutOfPrologueBasicBlock --- Constraint 2a.: Should have one successor inside the loop, one outside the loop!\n");
 
 
   /*
    * Perform move for InsideBlock
    */ 
-  bool SuccessfullyMoved = this->moveIntoSuccessor(I, InsideBlock);
+  bool SuccessfullyMoved = this->moveInstIntoSuccessor(I, InsideBlock);
   
   
   /*
    * Perform clones for OutsideBlock
    */ 
   SuccessfullyMoved |= 
-    this->cloneIntoSuccessor(
+    this->cloneInstIntoSuccessor(
       I, 
       OutsideBlock,
       OriginalToClones,
@@ -1216,7 +1219,7 @@ bool LoopScheduler::moveFromPrologueBlock(
 }
 
 
-bool LoopScheduler::moveIntoSuccessor(
+bool LoopScheduler::moveInstIntoSuccessor(
   Instruction *I,
   BasicBlock *Successor
 ) {
@@ -1243,7 +1246,7 @@ bool LoopScheduler::moveIntoSuccessor(
 }
 
 
-bool LoopScheduler::cloneIntoSuccessor(
+bool LoopScheduler::cloneInstIntoSuccessor(
   Instruction *I,
   BasicBlock *Successor,
   ValueToValueMapTy &OriginalsToClones,
@@ -1293,6 +1296,8 @@ void LoopScheduler::remapClonedInstructions(
    * Find all possible operands across the moved instructions
    * that are not already in the ValueToValueMap --- these must
    * be entered so llvm:remapInstruction can work properly --- FIX
+   * 
+   * FIX --- POSSIBLY REFACTOR
    */ 
   for (auto const &[Original, Clone] : OriginalToClones) {
 
@@ -1348,6 +1353,8 @@ void LoopScheduler::resolveSuccessorPHIs(
    * TOP --- Record any single incoming PHIs that need to be
    * folded because of a moved instruction (@Moved), replace all 
    * uses with the moved instruction
+   * 
+   * NEEDS REFACTORING
    */ 
 
   errs() << "LoopScheduler:         resolveSuccessorPHIs for " << *SuccBB << "\n";
