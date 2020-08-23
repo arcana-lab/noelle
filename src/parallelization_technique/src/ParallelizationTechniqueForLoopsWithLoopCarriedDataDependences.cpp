@@ -38,6 +38,25 @@ bool ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeApplie
     return false;
   }
 
+  /*
+   * Check the number of instructions per iteration
+   */
+  auto profiles = par.getProfiles();
+  auto loopID = LDI->getID();
+  auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(ls);
+  auto averageInstructionThreshold = 15;
+  if (true
+      && (averageInstructions < averageInstructionThreshold)
+    ){
+    errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstructions << " number of instructions on average per loop iteration\n";
+    errs() << "Parallelizer:      It is too low for parallelization techniques with loop carried dependencies. The threshold is " << averageInstructionThreshold << "\n";
+
+    /*
+     * Remove the loop.
+     */
+    return true;
+  }
+
   return true;
 }
 
