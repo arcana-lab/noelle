@@ -19,7 +19,7 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
    * Fetch the identified stages.
    */
   std::vector<Task *> techniqueTasks;
-  auto &depthOrdered = this->partition->getDepthOrderedSubsets();
+  auto depthOrdered = this->partitioner->getDepthOrderedSets();
   auto taskID = 0;
 
   /*
@@ -33,14 +33,14 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
     auto task = new DSWPTask(taskID, this->taskType, this->module);
     taskID++;
     techniqueTasks.push_back(task);
-    for (auto scc : *subset) {
+    for (auto scc : subset->sccs) {
       task->stageSCCs.insert(scc);
       this->sccToStage[scc] = task;
     }
   }
   this->generateEmptyTasks(LDI, techniqueTasks);
   this->numTaskInstances = techniqueTasks.size();
-  assert(this->numTaskInstances == this->partition->numberOfPartitions());
+  assert(this->numTaskInstances == this->partitioner->numberOfPartitions());
 
   return ;
 }

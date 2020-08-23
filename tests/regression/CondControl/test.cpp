@@ -20,7 +20,7 @@ int main (int argc, char *argv[]) {
 
   auto iterations = atoi(argv[1]);
 
-  int x = 3;
+  int x = 3, y = 0;
   for (int i = 0; i < iterations; ++i) {
     int xPlus;
     if (x < argc * 3) {
@@ -31,7 +31,19 @@ int main (int argc, char *argv[]) {
       iPreventTheBlockFromCollapsingAlso();
     }
 
+    for (auto j = 5; j < iterations + 5; ++j) {
+      xPlus += j / (j - 1);
+      xPlus += sqrt(3 + j);
+    }
+
+    int yPlus = 0;
+    for (auto j = 10; j < iterations + 10; ++j) {
+      yPlus += j / (j - 1);
+      yPlus += sqrt(3 + j);
+    }
+
     x += xPlus;
+    y += yPlus;
   }
 
   printf("value = %d\n", x);

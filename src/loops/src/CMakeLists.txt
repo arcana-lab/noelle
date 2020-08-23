@@ -42,6 +42,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../../external/scaf/include
   ../../basic_utilities/include 
   ../../transformations/include
+  ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 
   ../../pdg/include 
