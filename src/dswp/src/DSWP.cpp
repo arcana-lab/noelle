@@ -19,8 +19,7 @@ DSWP::DSWP (
   bool enableSCCMerging,
   Verbosity v
 ) :
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, v},
-  forceParallelization{forceParallelization},
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, forceParallelization, v},
   enableMergingSCC{enableSCCMerging},
   queues{}, queueArrayType{nullptr},
   sccToStage{}, stageArrayType{nullptr},

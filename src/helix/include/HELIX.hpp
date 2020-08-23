@@ -36,6 +36,7 @@ namespace llvm {
       HELIX (
         Module &module,
         Hot &p,
+        bool forceParallelization,
         Verbosity v
       );
 
