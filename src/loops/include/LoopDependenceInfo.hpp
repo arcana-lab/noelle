@@ -20,11 +20,9 @@
 #include "LoopGoverningIVAttribution.hpp"
 #include "LoopIterationDomainSpaceAnalysis.hpp"
 #include "SCCDAGAttrs.hpp"
-#include "SCCDAGNormalizer.hpp"
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
 #include "Transformations.hpp"
-#include "LoopAwareMemDepAnalysis.hpp"
 
 #include "MemoryAnalysisModules/LoopAA.h"
 
@@ -229,6 +227,7 @@ namespace llvm {
         Loop *l,
         PDG *functionDG,
         DominatorSummary &DS,
+        ScalarEvolution &SE,
         liberty::LoopAA *loopAA
         ) ;
 
@@ -239,7 +238,8 @@ namespace llvm {
 
       void removeUnnecessaryDependenciesThatCloningMemoryNegates (
         PDG *loopInternalDG,
-        DominatorSummary &DS
+        DominatorSummary &DS,
+        LoopCarriedDependencies &LCD
       ) ;
 
   };

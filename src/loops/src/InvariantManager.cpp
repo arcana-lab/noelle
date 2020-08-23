@@ -109,7 +109,7 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
       if (  true
           && (callee != nullptr)
           && (callee->empty())  ){
-        if (callee->getName() == "malloc"){
+        if (callee->getName() == "malloc" || callee->getName() == "rand"){
           canEvolve = true;
         }
       }

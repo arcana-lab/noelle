@@ -13,83 +13,84 @@
 #include "SystemHeaders.hpp"
 #include "CallGraphEdge.hpp"
 
-using namespace llvm;
-using namespace noelle;
+namespace llvm::noelle{
 
-void noelle::CallGraphEdge::setMust (void) {
-  this->isMust = true;
+  void CallGraphEdge::setMust (void) {
+    this->isMust = true;
 
-  return ;
-}
+    return ;
+  }
 
-void noelle::CallGraphEdge::unsetMust (void){
-  this->isMust = false;
+  void CallGraphEdge::unsetMust (void){
+    this->isMust = false;
 
-  return ;
-}
+    return ;
+  }
 
-bool CallGraphEdge::isAMustCall (void) const {
-  return this->isMust;
-}
+  bool CallGraphEdge::isAMustCall (void) const {
+    return this->isMust;
+  }
 
-CallGraphFunctionNode * CallGraphEdge::getCallee (void) const {
-  return this->callee;
-}
+  CallGraphFunctionNode * CallGraphEdge::getCallee (void) const {
+    return this->callee;
+  }
 
-CallGraphFunctionFunctionEdge::CallGraphFunctionFunctionEdge (CallGraphFunctionNode *caller, CallGraphFunctionNode *callee, bool isMust)
-  : caller{caller}
-  {
-  this->isMust = isMust;
-  this->callee = callee;
+  CallGraphFunctionFunctionEdge::CallGraphFunctionFunctionEdge (CallGraphFunctionNode *caller, CallGraphFunctionNode *callee, bool isMust)
+    : caller{caller}
+    {
+    this->isMust = isMust;
+    this->callee = callee;
 
-  return ;
-}
+    return ;
+  }
 
-CallGraphFunctionNode * CallGraphFunctionFunctionEdge::getCaller (void) const {
-  return this->caller;
-}
+  CallGraphFunctionNode * CallGraphFunctionFunctionEdge::getCaller (void) const {
+    return this->caller;
+  }
 
-void CallGraphFunctionFunctionEdge::print (void) {
-  errs() << "TODO\n";
+  void CallGraphFunctionFunctionEdge::print (void) {
+    errs() << "TODO\n";
 
-  return ;
-}
+    return ;
+  }
 
-void CallGraphFunctionFunctionEdge::addSubEdge (CallGraphInstructionFunctionEdge *subEdge){
+  void CallGraphFunctionFunctionEdge::addSubEdge (CallGraphInstructionFunctionEdge *subEdge){
 
-  /*
-   * Fetch the caller.
-   */
-  auto instNode = subEdge->getCaller();
-  auto inst = instNode->getInstruction();
+    /*
+     * Fetch the caller.
+     */
+    auto instNode = subEdge->getCaller();
+    auto inst = instNode->getInstruction();
 
-  /*
-   * Add the sub-edge.
-   */
-  this->subEdges.insert(subEdge);
-  this->subEdgesMap[inst] = subEdge;
+    /*
+     * Add the sub-edge.
+     */
+    this->subEdges.insert(subEdge);
+    this->subEdgesMap[inst] = subEdge;
 
-  return ;
-}
+    return ;
+  }
 
-std::unordered_set<CallGraphInstructionFunctionEdge *> CallGraphFunctionFunctionEdge::getSubEdges (void) const {
-  return this->subEdges;
-}
-        
-CallGraphInstructionFunctionEdge::CallGraphInstructionFunctionEdge (CallGraphInstructionNode *caller, CallGraphFunctionNode *callee, bool isMust){
-  this->caller = caller;
-  this->callee = callee;
-  this->isMust = isMust;
+  std::unordered_set<CallGraphInstructionFunctionEdge *> CallGraphFunctionFunctionEdge::getSubEdges (void) const {
+    return this->subEdges;
+  }
+          
+  CallGraphInstructionFunctionEdge::CallGraphInstructionFunctionEdge (CallGraphInstructionNode *caller, CallGraphFunctionNode *callee, bool isMust){
+    this->caller = caller;
+    this->callee = callee;
+    this->isMust = isMust;
 
-  return ;
-}
+    return ;
+  }
 
-CallGraphInstructionNode * CallGraphInstructionFunctionEdge::getCaller (void) const {
-  return this->caller;
-}
+  CallGraphInstructionNode * CallGraphInstructionFunctionEdge::getCaller (void) const {
+    return this->caller;
+  }
 
-void CallGraphInstructionFunctionEdge::print (void) {
-  errs() << "TODO\n";
+  void CallGraphInstructionFunctionEdge::print (void) {
+    errs() << "TODO\n";
 
-  return ;
+    return ;
+  }
+
 }

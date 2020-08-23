@@ -45,7 +45,7 @@ namespace llvm {
       /*
        * Fields
        */
-      SCCDAGPartition *partition;
+      SCCDAGPartitioner *partitioner;
 
       /*
        * Partition SCCDAG.

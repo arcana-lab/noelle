@@ -1,0 +1,64 @@
+#!/bin/bash -e
+
+installDir
+
+# Set the file names
+IRFileInput="`mktemp`" ;
+IRFileInputLL="`mktemp`" ;
+IRFileOutput="`mktemp`" ;
+IRFileOutputLL="`mktemp`" ;
+
+# Print
+echo "NOELLE: DeadFunctions: Start" ;
+echo "NOELLE: DeadFunctions:   Input: $1" ;
+echo "NOELLE: DeadFunctions:   Output: $2" ;
+echo "NOELLE: DeadFunctions:   Temporary input: $IRFileInput (.ll version is $IRFileInputLL)" ;
+echo "NOELLE: DeadFunctions:   Temporary output: $IRFileOutput (.ll version is $IRFileOutputLL)" ;
+
+
+# Copy the initial input file
+cp $1 $IRFileInput ;
+
+# Normalize the code
+cmdToExecute="noelle-norm $IRFileInput -o $IRFileOutput" ;
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+cp $IRFileOutput $IRFileInput ;
+
+# Delete dead functions
+while true ; do
+
+  # Delete dead functions
+  echo "NOELLE: DeadFunctions:   Delete dead functions";
+  cmdToExecute="noelle-load -load ${installDir}/lib/DeadFunction.so -noelle-dfe $IRFileInput -o $IRFileOutput" ;
+  echo $cmdToExecute ;
+  eval $cmdToExecute ;
+
+  # Check if we got an error
+  if test $? -ne 0 ; then
+    echo "ERROR" ;
+    exit 1;
+  fi
+
+  # Check if the bitcode has been modified
+  llvm-dis $IRFileInput -o $IRFileInputLL ;
+  llvm-dis $IRFileOutput -o $IRFileOutputLL ;
+  linesDifferent=`diff ${IRFileInputLL} ${IRFileOutputLL} | wc -l | awk '{print $1}'` ;
+  if test "$linesDifferent" == "4" ; then
+
+    # Copy the final output
+    cp $IRFileOutput $2 ;
+    break ;
+  fi
+
+  # Normalize the code
+  cmdToExecute="noelle-norm $IRFileOutput -o $IRFileOutput" ;
+  echo $cmdToExecute ;
+  eval $cmdToExecute ;
+
+  # Copy the output to the input
+  cp $IRFileOutput $IRFileInput ;
+done
+
+# Clean
+rm $IRFileInput $IRFileInputLL $IRFileOutput $IRFileOutputLL ;

@@ -13,94 +13,102 @@
 #include "SystemHeaders.hpp"
 #include "CallGraphNode.hpp"
 
-using namespace llvm;
-using namespace noelle;
+namespace llvm::noelle {
 
-CallGraphFunctionNode::CallGraphFunctionNode (Function &func)
-  : f{func}
-  {
+  CallGraphFunctionNode::CallGraphFunctionNode (Function &func)
+    : f{func}
+    {
 
-  return ;
-}
-        
-Function * CallGraphFunctionNode::getFunction (void) const {
-  auto ptr = &(this->f);
-
-  return ptr;
-}
-
-void noelle::CallGraphFunctionNode::addOutgoingEdge (CallGraphFunctionFunctionEdge *edge){
-  assert(edge->getCaller() == this);
-
-  /*
-   * Add the edge.
-   */
-  this->outgoingEdges.insert(edge);
-
-  auto calleeNode = edge->getCallee();
-  this->outgoingEdgesMap[calleeNode] = edge;
-
-  return ;
-}
-
-void noelle::CallGraphFunctionNode::addIncomingEdge (CallGraphFunctionFunctionEdge *edge){
-  assert(edge->getCallee() == this);
-
-  /*
-   * Add the edge.
-   */
-  this->incomingEdges.insert(edge);
-
-  auto callerNode = edge->getCaller();
-  this->incomingEdgesMap[callerNode] = edge;
-
-  return ;
-}
-
-std::unordered_set<CallGraphFunctionFunctionEdge *> noelle::CallGraphFunctionNode::getIncomingEdges (void) const {
-  return this->incomingEdges;
-}
-
-std::unordered_set<CallGraphFunctionFunctionEdge *> noelle::CallGraphFunctionNode::getOutgoingEdges (void) const {
-  return this->outgoingEdges;
-}
-
-CallGraphFunctionFunctionEdge * CallGraphFunctionNode::getCallEdgeTo (CallGraphFunctionNode *callee) const {
-  if (this->outgoingEdgesMap.find(callee) == this->outgoingEdgesMap.end()){
-    return nullptr;
+    return ;
   }
-  auto edge = this->outgoingEdgesMap.at(callee);
+          
+  Function * CallGraphFunctionNode::getFunction (void) const {
+    auto ptr = &(this->f);
 
-  return edge;
-}
-
-CallGraphFunctionFunctionEdge * CallGraphFunctionNode::getCallEdgeFrom (CallGraphFunctionNode *caller) const {
-  if (this->incomingEdgesMap.find(caller) == this->incomingEdgesMap.end()){
-    return nullptr;
+    return ptr;
   }
-  auto edge = this->incomingEdgesMap.at(caller);
 
-  return edge;
-}
+  void CallGraphFunctionNode::addOutgoingEdge (CallGraphFunctionFunctionEdge *edge){
+    assert(edge->getCaller() == this);
 
-void CallGraphFunctionNode::print (void) {
-  errs() << this->f.getName() << "\n";
+    /*
+     * Add the edge.
+     */
+    this->outgoingEdges.insert(edge);
 
-  return ;
-}
+    auto calleeNode = edge->getCallee();
+    this->outgoingEdgesMap[calleeNode] = edge;
 
-CallGraphInstructionNode::CallGraphInstructionNode (Instruction *i)
-  :i{i}
-  {
-  return ;
-}
+    return ;
+  }
 
-Instruction * CallGraphInstructionNode::getInstruction (void) const {
-  return i;
-}
+  void CallGraphFunctionNode::addIncomingEdge (CallGraphFunctionFunctionEdge *edge){
+    assert(edge->getCallee() == this);
 
-void CallGraphInstructionNode::print (void) {
-  errs() << *this->i << "\n";
+    /*
+     * Add the edge.
+     */
+    this->incomingEdges.insert(edge);
 
-  return ;
+    auto callerNode = edge->getCaller();
+    this->incomingEdgesMap[callerNode] = edge;
+
+    return ;
+  }
+
+  std::unordered_set<CallGraphFunctionFunctionEdge *> CallGraphFunctionNode::getIncomingEdges (void) const {
+    return this->incomingEdges;
+  }
+
+  std::unordered_set<CallGraphFunctionFunctionEdge *> CallGraphFunctionNode::getOutgoingEdges (void) const {
+    return this->outgoingEdges;
+  }
+
+  std::unordered_set<CallGraphFunctionFunctionEdge *> CallGraphFunctionNode::getEdges (void) const {
+    std::unordered_set<CallGraphFunctionFunctionEdge *> edges{this->incomingEdges};
+    edges.insert(this->outgoingEdges.begin(), this->outgoingEdges.end());
+
+    return edges;
+  }
+
+  CallGraphFunctionFunctionEdge * CallGraphFunctionNode::getCallEdgeTo (CallGraphFunctionNode *callee) const {
+    if (this->outgoingEdgesMap.find(callee) == this->outgoingEdgesMap.end()){
+      return nullptr;
+    }
+    auto edge = this->outgoingEdgesMap.at(callee);
+
+    return edge;
+  }
+
+  CallGraphFunctionFunctionEdge * CallGraphFunctionNode::getCallEdgeFrom (CallGraphFunctionNode *caller) const {
+    if (this->incomingEdgesMap.find(caller) == this->incomingEdgesMap.end()){
+      return nullptr;
+    }
+    auto edge = this->incomingEdgesMap.at(caller);
+
+    return edge;
+  }
+
+  void CallGraphFunctionNode::print (void) {
+    errs() << this->f.getName() << "\n";
+
+    return ;
+  }
+
+  CallGraphInstructionNode::CallGraphInstructionNode (Instruction *i)
+    :i{i}
+    {
+    return ;
+  }
+
+  Instruction * CallGraphInstructionNode::getInstruction (void) const {
+    return i;
+  }
+
+  void CallGraphInstructionNode::print (void) {
+    errs() << *this->i << "\n";
+
+    return ;
+  }
+
 }

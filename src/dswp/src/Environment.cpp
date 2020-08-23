@@ -13,54 +13,66 @@
 using namespace llvm;
 
 void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
+  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
   for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
     auto producer = LDI->environment->producerAt(envIndex);
 
     for (auto consumer : LDI->environment->consumersOf(producer)) {
-      bool isSharedInst = false;
-      for (auto scc : LDI->sccdagAttrs.clonableSCCs) {
-        if (!scc->isInternal(consumer)) continue;
-        isSharedInst = true;
+
+      /*
+       * Clonable consumers must be loaded into every task that uses them
+       */
+      auto consumerSCC = sccdag->sccOfValue(consumer);
+      auto consumerSCCAttrs = LDI->sccdagAttrs.getSCCAttrs(consumerSCC);
+      if (consumerSCCAttrs->canBeCloned()) {
         for (auto i = 0; i < tasks.size(); ++i) {
+          auto task = (DSWPTask *)tasks[i];
+          if (task->clonableSCCs.find(consumerSCC) == task->clonableSCCs.end()) continue;
           envBuilder->getUser(i)->addLiveInIndex(envIndex);
         }
-        break;
+
+        continue;
       }
 
-      if (!isSharedInst) {
-        for (auto i = 0; i < this->tasks.size(); ++i) {
-          auto task = (DSWPTask *)this->tasks[i];
-          bool isInternal = false;
-          for (auto scc : task->stageSCCs) isInternal |= scc->isInternal(consumer);
-          if (isInternal) envBuilder->getUser(i)->addLiveInIndex(envIndex);
-        }
-      }
+      /*
+       * If not clonable, one and only task uses the consumer and must load it
+       */
+      assert(this->sccToStage.find(consumerSCC) != this->sccToStage.end());
+      auto task = this->sccToStage.at(consumerSCC);
+      auto id = task->getID();
+      envBuilder->getUser(id)->addLiveInIndex(envIndex);
     }
   }
 }
 
 void DSWP::collectLiveOutEnvInfo (LoopDependenceInfo *LDI) {
+  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
   for (auto envIndex : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto producer = LDI->environment->producerAt(envIndex);
 
-    bool isSharedInst = false;
-    for (auto scc : LDI->sccdagAttrs.clonableSCCs) {
-      if (!scc->isInternal(producer)) continue;
-      isSharedInst = true;
-      envBuilder->getUser(0)->addLiveOutIndex(envIndex);
-      break;
+    /*
+     * Clonable producers all produce the same live out value.
+     * Arbitrarily choose the first task that clones the producer to store it live out
+     */
+    auto producerSCC = sccdag->sccOfValue(producer);
+    auto producerSCCAttrs = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+    if (producerSCCAttrs->canBeCloned()) {
+      for (auto i = 0; i < tasks.size(); ++i) {
+        auto task = (DSWPTask *)tasks[i];
+        if (task->clonableSCCs.find(producerSCC) == task->clonableSCCs.end()) continue;
+        envBuilder->getUser(i)->addLiveOutIndex(envIndex);
+        break;
+      }
+
+      continue;
     }
 
-    if (!isSharedInst) {
-      for (auto i = 0; i < this->tasks.size(); ++i) {
-        auto task = (DSWPTask *)this->tasks[i];
-        bool isInternal = false;
-        for (auto scc : task->stageSCCs) isInternal |= scc->isInternal(producer);
-        if (isInternal) {
-          envBuilder->getUser(i)->addLiveOutIndex(envIndex);
-          break;
-        }
-      }
-    }
+    /*
+     * If not clonable, one and only task produces the value and must store it live out
+     */
+    assert(this->sccToStage.find(producerSCC) != this->sccToStage.end());
+    auto task = this->sccToStage.at(producerSCC);
+    auto id = task->getID();
+    envBuilder->getUser(id)->addLiveOutIndex(envIndex);
   }
 }

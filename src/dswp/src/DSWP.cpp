@@ -177,6 +177,10 @@ bool DSWP::apply (
    */
   auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
+  auto loopFunction = loopHeader->getParent();
+  DominatorTree dt(*loopFunction);
+  PostDominatorTree pdt(*loopFunction);
+  this->originalFunctionDS = new DominatorSummary(dt, pdt);
 
   /*
    * Partition the SCCDAG.
@@ -186,7 +190,7 @@ bool DSWP::apply (
   /*
    * Check if the parallelization is worth it.
    */
-  if (this->partition->numberOfPartitions() == 1){
+  if (this->partitioner->numberOfPartitions() == 1){
 
     /*
      * The parallelization isn't worth it as there is only one pipeline stage.
@@ -198,7 +202,7 @@ bool DSWP::apply (
     return false;
   }
   if (this->verbose != Verbosity::Disabled) {
-    errs() << "DSWP:  There are " << this->partition->numberOfPartitions() << " partitions in the SCCDAG\n";
+    errs() << "DSWP:  There are " << this->partitioner->numberOfPartitions() << " partitions in the SCCDAG\n";
   }
 
   /*
@@ -218,7 +222,7 @@ bool DSWP::apply (
    *  optimization requires non-control queue information to be collected
    *  prior to its execution. Hence, its weird placement:
    */
-  collectDataQueueInfo(LDI, par);
+  collectDataAndMemoryQueueInfo(LDI, par);
   collectControlQueueInfo(LDI, par);
   // assert(areQueuesAcyclical());
   writeStageQueuesAsDot(*LDI);
@@ -286,8 +290,8 @@ bool DSWP::apply (
     /*
      * Add push/pop operations from queues between the current pipeline stage and the connected ones
      */
-    popValueQueues(par, i);
-    pushValueQueues(par, i);
+    popValueQueues(LDI, par, i);
+    pushValueQueues(LDI, par, i);
     if (this->verbose >= Verbosity::Maximal) {
       errs() << "DSWP:  Added queue pop and push instructions\n";
     }
@@ -357,6 +361,8 @@ bool DSWP::apply (
     errs() << "DSWP:  Link pipeline stages\n";
   }
   createPipelineFromStages(LDI, par);
+
+  delete this->originalFunctionDS;
 
   /*
    * Exit

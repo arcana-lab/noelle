@@ -4,23 +4,6 @@
 #include <time.h>
 #include <float.h>
 
-typedef struct {
-  float *coord;
-  unsigned long long int a;
-  unsigned long long int c;
-  unsigned long long int w;
-} Point;
-
-float computeDist (Point p1, Point p2, int dim){
-  float result = 0.0;
-  for (auto i=0; i < dim; i++){
-    auto toAdd = (p1.coord[i] - p2.coord[i]) * (p1.coord[i] - p2.coord[i]);
-    result += toAdd;
-  }
-
-  return result;
-}
-
 int main (int argc, char *argv[]){
 
   /*
@@ -31,13 +14,17 @@ int main (int argc, char *argv[]){
     return -1;
   }
   auto iterations = atoll(argv[1]);
+  if (iterations < 1){
+    iterations = 1;
+  }
+  iterations *= 100;
 
   clock_t start, stop;
   double ct, cmin = DBL_MAX, cmax = 0;
   int i, cminix, cmaxix;
   long j, n, seed;
   
-  for (i = 0; i < 100; i++) {
+  for (i = 0; i < 10; i++) {
     start = (iterations * i) / 2;
     
     for (j = n = 0, seed = rand(); j < iterations; j++, seed += 13){

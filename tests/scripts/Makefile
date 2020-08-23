@@ -101,6 +101,7 @@ test_correctness: input.txt baseline $(OPTIMIZED)
 	echo "Success"
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
+	rm -f time_parallelized.txt compiler_output.txt input.txt ;
 
 .PHONY: test_correctness clean

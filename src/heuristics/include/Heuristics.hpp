@@ -35,7 +35,7 @@ namespace llvm {
       Heuristics (Noelle &noelle);
 
       void adjustParallelizationPartitionForDSWP (
-        SCCDAGPartition *partition,
+        SCCDAGPartitioner *partitioner,
         SCCDAGAttrs &attrs,
         uint64_t numThreads,
         Verbosity verbose
@@ -44,14 +44,14 @@ namespace llvm {
      private:
 
       void minMaxMergePartition (
-        SCCDAGPartition &partition,
+        SCCDAGPartitioner &partitioner,
         SCCDAGAttrs &attrs,
         uint64_t numThreads,
         Verbosity verbose
       );
 
       void smallestSizeMergePartition (
-        SCCDAGPartition &partition,
+        SCCDAGPartitioner &partitioner,
         SCCDAGAttrs &attrs,
         uint64_t numThreads,
         Verbosity verbose

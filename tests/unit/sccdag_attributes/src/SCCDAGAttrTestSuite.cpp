@@ -31,8 +31,7 @@ const char *SCCDAGAttrTestSuite::tests[] = {
   "reducible SCC",
   "clonable SCC",
   "clonable SCC into local memory",
-  "loop carried dependencies (top loop)",
-  "normalized top loop sccdag"
+  "loop carried dependencies (top loop)"
 };
 TestFunction SCCDAGAttrTestSuite::testFns[] = {
   SCCDAGAttrTestSuite::sccdagHasCorrectSCCs,
@@ -40,8 +39,7 @@ TestFunction SCCDAGAttrTestSuite::testFns[] = {
   SCCDAGAttrTestSuite::reducibleSCCsAreFound,
   SCCDAGAttrTestSuite::clonableSCCsAreFound,
   SCCDAGAttrTestSuite::clonableSCCsIntoLocalMemoryAreFound,
-  SCCDAGAttrTestSuite::loopCarriedDependencies,
-  SCCDAGAttrTestSuite::normalizedTopLoopSCCDAG
+  SCCDAGAttrTestSuite::loopCarriedDependencies
 };
 
 bool SCCDAGAttrTestSuite::doInitialization (Module &M) {
@@ -79,12 +77,6 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
   this->sccdag = new SCCDAG(fdg);
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
-  this->sccdagTopLoopNorm = new SCCDAG(loopDG);
-
-  LoopCarriedDependencies lcd(LIS, DS, *sccdag);
-  errs() << "SCCDAGAttrTestSuite: Normalizing sccdag\n";
-  SCCDAGNormalizer normalizer(*sccdagTopLoopNorm, LIS, lcd);
-  normalizer.normalizeInPlace();
 
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
   auto loopExitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
@@ -94,6 +86,7 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
 
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
   // TODO: Test attribution on normalized SCCDAG as well
+  LoopCarriedDependencies lcd(LIS, DS, *sccdag);
   this->attrs = new SCCDAGAttrs(loopDG, sccdag, LIS, *SE, lcd, IV, DS);
 
   // DGPrinter::writeGraph<SCCDAG, SCC>("graph-loop.dot", sccdag);
@@ -103,7 +96,6 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
 
   delete this->attrs;
   delete this->sccdag;
-  delete this->sccdagTopLoopNorm;
 
   return false;
 }
@@ -111,11 +103,6 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
 Values SCCDAGAttrTestSuite::sccdagHasCorrectSCCs (ModulePass &pass, TestSuite &suite) {
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   return attrPass.getValuesOfSCCDAG(*attrPass.sccdag);
-}
-
-Values SCCDAGAttrTestSuite::normalizedTopLoopSCCDAG (ModulePass &pass, TestSuite &suite) {
-  SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
-  return attrPass.getValuesOfSCCDAG(*attrPass.sccdagTopLoopNorm);
 }
 
 Values SCCDAGAttrTestSuite::getValuesOfSCCDAG (SCCDAG &dag) {
