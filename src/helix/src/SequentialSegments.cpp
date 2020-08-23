@@ -125,14 +125,19 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
 
       /*
        * Fetch the SCC metadata.
+       * NOTE: If no original SCC mapping exists, default to analyzing the newly constructed SCC
        */
-      auto originalSCC = taskToOriginalFunctionSCCMap.at(scc);
-      auto originalSCCInfo = originalLDI->sccdagAttrs.getSCCAttrs(originalSCC);
+      auto sccToAnalyze = scc;
+      SCCAttrs *sccInfo = LDI->sccdagAttrs.getSCCAttrs(sccToAnalyze);
+      if (taskToOriginalFunctionSCCMap.find(scc) != taskToOriginalFunctionSCCMap.end()) {
+        sccToAnalyze = taskToOriginalFunctionSCCMap.at(scc);
+        sccInfo = originalLDI->sccdagAttrs.getSCCAttrs(sccToAnalyze);
+      }
 
       /*
        * Do not synchronize induction variables
        */
-      if (originalSCCInfo->isInductionVariableSCC()) {
+      if (sccInfo->isInductionVariableSCC()) {
         continue;
       }
 
@@ -149,7 +154,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
       /*
        * Fetch the type of the SCC.
        */
-      auto sccType = originalSCCInfo->getType();
+      auto sccType = sccInfo->getType();
 
       /*
        * Only sequential SCC can generate a sequential segment.
