@@ -13,10 +13,6 @@
 #include "SystemHeaders.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "DominatorSummary.hpp"
-#include <set>
-
-
-// TODO NOW --- FIX ABSTRACTIONS
 
 
 namespace llvm::noelle {
@@ -60,34 +56,25 @@ namespace llvm::noelle {
       /*
        * Driver methods
        */ 
-      /* canMoveAnyInstructionsOutsideBasicBlock */
-      bool canScheduleBlock( 
+      bool canMoveAnyInstOutOfBasicBlock( 
         BasicBlock * const Block
       ) const ;
 
-      /* getInstructionsThatCanMoveOutsideBasicBlock */
-      std::set<Instruction *> getInstructionsThatCanMove(
+      std::set<Instruction *> getAllInstsMoveableOutOfBasicBlock(
         BasicBlock * const Block,
         PDG * const ThePDG,
         ScheduleDirection Direction=ScheduleDirection::Down
       ) const ;
 
-      /* canMoveInstructionOutsideBasicBlock */
-      bool canMoveInstruction(
+      bool canMoveInstOutOfBasicBlock(
         Instruction * const I
       ) const ;
 
-      /* ??? */
-      std::set<Instruction *> getRequirementsToMoveInstruction(
+      std::set<Instruction *> getAllInstsToMoveForSpecifiedInst(
         Instruction * const I,
         PDG * const ThePDG,
         ScheduleDirection Direction=ScheduleDirection::Down
       ) const ;
-
-
-      /*
-       * Transformation methods --- FIX
-       */ 
 
 
       /*
@@ -99,13 +86,12 @@ namespace llvm::noelle {
         DominatorSummary const &DS
       ) const ;
 
-      std::set<Value *> getOutgoingDependences(
+      std::set<Value *> getAllOutgoingDependences(
         Instruction * const I,
         PDG * const ThePDG
       ) const ;
 
-      /* getOutgoingDependencesInBasicBlock */
-      std::set<Instruction *> getOutgoingDependencesInParent(
+      std::set<Instruction *> getOutgoingDependencesInParentBasicBlock(
         Instruction * const I,
         PDG * const ThePDG
       ) const ;
@@ -137,8 +123,7 @@ namespace llvm::noelle {
       /*
        * Getter methods
        */ 
-      /* getLoop */
-      LoopStructure * getPassedLoop (void) const ;
+      LoopStructure * getLoop (void) const ;
       
       std::set<BasicBlock *> getLoopPrologue (void) const ;
 
@@ -148,26 +133,32 @@ namespace llvm::noelle {
       /*
        * Analysis methods
        */ 
-      /* canMoveAnyInstructionsOutsideLoop */
-      bool canScheduleLoop (void) const;
+      bool canMoveAnyInstOutOfLoop (void) const;
 
 
       /*
        * Transformation methods
        */ 
 
-      /* FIX --- separate policy and trnasformation
+      /*
+       * FIX --- This method performs the mechanism, but does
+       * not give the user an option to decide whether or not
+       * the prologue should be shrunk --- want to separate 
+       * user policy from the mechanism
        * 
-       * Want to return to the user what instructions
-       * would be moved outside of a prologue --- leave
-       * it up the user to pull the trigger --- SPLIT into
-       * two operations
-       * 
-       * What do i need to shrink the prologue
-       * 
-       * shrink the prologue
+       * Complications:
+       * - The LoopScheduler takes advantage of noelle-enable's 
+       *   reinvocation scheme (the LoopScheduler currently to be
+       *   called from enabler passes). As a result, providing
+       *   an API that returns the set of instructions that 
+       *   can be moved, and possibly where those instructions
+       *   will be moved to (upon a fixed point) is non-trivial
+       *   to calculate
+       * - The user can decide to move instructions out of 
+       *   prologue basic blocks based on the Scheduler method
+       *   getAllInstsMoveableOutOfBasicBlock. However, this is
+       *   not entirely obvious or completely useful to users.
        */ 
-
       bool shrinkLoopPrologue (void) ;
 
 
@@ -196,25 +187,23 @@ namespace llvm::noelle {
       /*
        * Transformation methods
        */ 
-      /* shrinkPrologueBasicBlock --- "shrink" should change */
-      bool shrinkPrologueBlock(
+      bool shrinkPrologueBasicBlock(
         BasicBlock *Block
       );
 
-      /* shrinkPrologueBasicBlock --- fix rest */
-      bool moveFromPrologueBlock(
+      bool moveInstOutOfPrologueBasicBlock(
         Instruction *I,
         ValueToValueMapTy &OriginalToClones,
         std::set<Instruction *> &Clones,
         ScheduleDirection Direction=ScheduleDirection::Down
       );
 
-      bool moveIntoSuccessor(
+      bool moveInstIntoSuccessor(
         Instruction *I,
         BasicBlock *Successor
       );
 
-      bool cloneIntoSuccessor(
+      bool cloneInstIntoSuccessor(
         Instruction *I,
         BasicBlock *Successor,
         ValueToValueMapTy &OriginalsToClones,
@@ -227,8 +216,8 @@ namespace llvm::noelle {
       );
 
       void resolveSuccessorPHIs(
-        Instruction * const Moved,
-        Instruction * const Replacement,
+        Instruction * const Moved, /* Find PHIs to resolve using @Moved */
+        Instruction * const Replacement, /* Replace uses with @Replacement */
         BasicBlock *SuccBB
       );
       
