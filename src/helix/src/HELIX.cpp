@@ -170,8 +170,8 @@ void HELIX::createParallelizableTask (
        */
       errs() << "HELIX:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
       if (this->verbose >= Verbosity::Maximal) {
-        errs() << "HELIX:     SCC:\n";
-        scc->printMinimal(errs(), "HELIX:       ") ;
+        // errs() << "HELIX:     SCC:\n";
+        // scc->printMinimal(errs(), "HELIX:       ") ;
         errs() << "HELIX:       Loop-carried data dependences\n";
         LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
@@ -289,7 +289,7 @@ void HELIX::createParallelizableTask (
 
   if (this->verbose >= Verbosity::Maximal) {
     SubCFGs execGraph(*helixTask->getTaskBody());
-    DGPrinter::writeGraph<SubCFGs, BasicBlock>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;
@@ -407,16 +407,16 @@ void HELIX::synchronizeTask (
   /*
    * Inline calls to HELIX functions.
    */
-  this->inlineCalls();
+  // this->inlineCalls();
 
   /*
    * Print the HELIX task.
    */
   if (this->verbose >= Verbosity::Maximal) {
     helixTask->getTaskBody()->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
-    errs() << "HELIX: Exit\n";
-    SubCFGs execGraph(*helixTask->getTaskBody());
-    DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    // errs() << "HELIX: Exit\n";
+    // SubCFGs execGraph(*helixTask->getTaskBody());
+    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;

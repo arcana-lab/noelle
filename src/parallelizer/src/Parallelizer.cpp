@@ -162,9 +162,9 @@ bool Parallelizer::parallelizeLoop (
     exitIndex,
     loopExitBlocks
   );
-  if (verbose >= Verbosity::Maximal) {
-    loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
-  }
+  // if (verbose >= Verbosity::Maximal) {
+  //   loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
+  // }
 
   /*
    * Return
