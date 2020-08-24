@@ -246,7 +246,7 @@ bool DSWP::apply (
   collectLiveInEnvInfo(LDI);
   collectLiveOutEnvInfo(LDI);
 
-  if (this->verbose >= Verbosity::Maximal) {
+  if (this->verbose >= Verbosity::Minimal) {
     printStageSCCs(LDI);
   }
   if (this->verbose >= Verbosity::Minimal) {
@@ -274,9 +274,9 @@ bool DSWP::apply (
      * Add instructions of the current pipeline stage to the task function
      */
     generateLoopSubsetForStage(LDI, i);
-    if (this->verbose >= Verbosity::Maximal) {
-      printStageClonedValues(*LDI, i);
-    }
+    // if (this->verbose >= Verbosity::Maximal) {
+      // printStageClonedValues(*LDI, i);
+    // }
 
     /*
      * Load pointers of all queues for the current pipeline stage at the function's entry
@@ -302,6 +302,10 @@ bool DSWP::apply (
     if (this->verbose >= Verbosity::Maximal) {
       errs() << "DSWP:  Loaded live-in variables\n";
     }
+
+    // SubCFGs execGraph(*task->getTaskBody());
+    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("dswp-loop-" + std::to_string(LDI->getID()) + "-task-" + std::to_string(i) + ".dot", &execGraph);
+    // dumpToFile(*LDI);
 
     /*
      * HACK: For now, this must follow loading live-ins as this re-wiring overrides
@@ -350,6 +354,9 @@ bool DSWP::apply (
 
     if (this->verbose >= Verbosity::Maximal) {
       task->getTaskBody()->print(errs() << "Pipeline stage " << i << ":\n"); errs() << "\n";
+      // SubCFGs execGraph(*task->getTaskBody());
+      // std::string name = "dswp-task-" + std::to_string(task->getID()) + "-loop-" + std::to_string(LDI->getID()) + ".dot";
+      // DGPrinter::writeGraph<SubCFGs, BasicBlock>(name , &execGraph);
     }
   }
 
