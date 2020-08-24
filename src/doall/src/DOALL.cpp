@@ -148,17 +148,17 @@ bool DOALL::canBeAppliedToLoop (
       return !areAllDataLCDsFromDisjointMemoryAccesses;
     });
     if (areAllDataLCDsFromDisjointMemoryAccesses) {
-      if (this->verbose >= Verbosity::Maximal) {
-        scc->printMinimal(errs() << "SCC has memory LCDs that are disjoint between iterations!\n"); errs() << "\n";
-      }
+      // if (this->verbose >= Verbosity::Maximal) {
+      //   scc->printMinimal(errs() << "SCC has memory LCDs that are disjoint between iterations!\n"); errs() << "\n";
+      // }
       continue;
     }
 
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
       if (this->verbose >= Verbosity::Maximal) {
-        scc->printMinimal(errs(), "DOALL:     ") ;
-        DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
+        // scc->printMinimal(errs(), "DOALL:     ") ;
+        // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
         errs() << "DOALL:     Loop-carried data dependences\n";
         LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
@@ -295,10 +295,14 @@ bool DOALL::apply (
    * Final printing.
    */
   if (this->verbose >= Verbosity::Maximal) {
-    loopFunction->print(errs() << "DOALL:  Final outside-loop code:\n" );
-    errs() << "\n";
+    // loopFunction->print(errs() << "DOALL:  Final outside-loop code:\n" );
+    // errs() << "\n";
     tasks[0]->getTaskBody()->print(errs() << "DOALL:  Final parallelized loop:\n"); 
     errs() << "\n";
+    // SubCFGs execGraph(*chunkerTask->getTaskBody());
+    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("doalltask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    // SubCFGs execGraph2(*loopFunction);
+    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("doall-loop-" + std::to_string(LDI->getID()) + "-function.dot", &execGraph);
   }
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Exit\n";
