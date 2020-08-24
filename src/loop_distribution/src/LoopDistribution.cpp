@@ -54,9 +54,9 @@ bool LoopDistribution::splitLoop (
   std::set<Instruction *> &instructionsAdded
   ){
   auto loopStructure = LDI.getLoopStructure();
-  errs() << "LoopDistribution: Attempting Loop Distribution in "
-         << loopStructure->getFunction()->getName()
-         << "\n";
+  // errs() << "LoopDistribution: Attempting Loop Distribution in "
+  //        << loopStructure->getFunction()->getName()
+  //        << "\n";
 
   /*
    * Assert that all instructions in instsToPullOut are actually within the loop
@@ -64,7 +64,7 @@ bool LoopDistribution::splitLoop (
   auto loopBBs = loopStructure->getBasicBlocks();
   for (auto inst : instsToPullOut) {
     auto parent = inst->getParent();
-    errs() << "LoopDistribution: Asked to pull out " << *inst << "\n";
+    // errs() << "LoopDistribution: Asked to pull out " << *inst << "\n";
     assert(std::find(loopBBs.begin(), loopBBs.end(), parent) != loopBBs.end());
   }
   std::set<Instruction *> instsToClone{};
@@ -75,11 +75,11 @@ bool LoopDistribution::splitLoop (
    */
   for (auto BB : loopStructure->getBasicBlocks()) {
     if (auto branch = dyn_cast<BranchInst>(BB->getTerminator())) {
-      errs () << "LoopDistribution: Branch instruction: " <<  *branch << "\n";
+      // errs () << "LoopDistribution: Branch instruction: " <<  *branch << "\n";
       instsToClone.insert(branch);
       this->recursivelyCollectDependencies(branch, instsToClone, LDI);
     } else {
-      errs() << "LoopDistribution: Abort: Non-branch terminator " << *BB->getTerminator() << "\n";
+      // errs() << "LoopDistribution: Abort: Non-branch terminator " << *BB->getTerminator() << "\n";
       return false;
     }
   }
@@ -90,11 +90,11 @@ bool LoopDistribution::splitLoop (
    */
   std::set<BasicBlock *> subLoopBBs{};
   for (auto childLoopStructure : loopStructure->getChildren()) {
-    errs() << "LoopDistribution: New sub loop\n";
+    // errs() << "LoopDistribution: New sub loop\n";
     for (auto &childBB : childLoopStructure->getBasicBlocks()) {
       subLoopBBs.insert(childBB);
       for (auto &childI : *childBB) {
-        errs() << "LoopDistribution: Sub loop instruction: " << childI << "\n";
+        // errs() << "LoopDistribution: Sub loop instruction: " << childI << "\n";
         instsToClone.insert(&childI);
         this->recursivelyCollectDependencies(&childI, instsToClone, LDI);
       }
@@ -108,7 +108,7 @@ bool LoopDistribution::splitLoop (
   for (auto inst : instsToPullOut) {
     auto parent = inst->getParent();
     if (subLoopBBs.find(parent) != subLoopBBs.end()) {
-      errs() << "LoopDistribution: Abort: Tried to remove sub loop instruction " << *inst << "\n";
+      // errs() << "LoopDistribution: Abort: Tried to remove sub loop instruction " << *inst << "\n";
       return false;
     }
   }
@@ -119,10 +119,10 @@ bool LoopDistribution::splitLoop (
    */
   for (auto inst : instsToClone) {
     if (inst->mayHaveSideEffects()){
-      errs() << "LoopDistribution: Abort: Unclonable instruction " << *inst << "\n";
+      // errs() << "LoopDistribution: Abort: Unclonable instruction " << *inst << "\n";
       return false;
     }
-    errs () << "LoopDistribution: Will clone: " <<  *inst << "\n";
+    // errs () << "LoopDistribution: Will clone: " <<  *inst << "\n";
   }
 
   /*
@@ -130,11 +130,11 @@ bool LoopDistribution::splitLoop (
    */
   for (auto inst : instsToClone) {
     if (instsToPullOut.erase(inst)) {
-      errs() << "LoopDistribution: Removed " << *inst << " from instsToPullOut\n";
+      // errs() << "LoopDistribution: Removed " << *inst << " from instsToPullOut\n";
     }
   }
   if (instsToPullOut.size() == 0) {
-    errs() << "LoopDistribution: Abort: All instructions requested would have to be cloned\n";
+    // errs() << "LoopDistribution: Abort: All instructions requested would have to be cloned\n";
     return false;
   }
 
@@ -143,7 +143,7 @@ bool LoopDistribution::splitLoop (
    *   the instructions we are pulling out. This avoids an infinite loop of splits
    */
   if (this->splitWouldBeTrivial(loopStructure, instsToPullOut, instsToClone)) {
-    errs() << "LoopDistribution: Abort: Request is trivial and could lead to an infinite loop\n";
+    // errs() << "LoopDistribution: Abort: Request is trivial and could lead to an infinite loop\n";
     return false;
   }
 
@@ -151,7 +151,7 @@ bool LoopDistribution::splitLoop (
    * Require that there are no data dependencies between instsToPullOut and the rest of the loop
    */
   if (this->splitWouldRequireForwardingDataDependencies(LDI, instsToPullOut, instsToClone)) {
-    errs() << "LoopDistribution: Abort: Distribution would require forwarding data dependencies\n";
+    // errs() << "LoopDistribution: Abort: Distribution would require forwarding data dependencies\n";
     return false;
   }
 
@@ -198,7 +198,7 @@ void LoopDistribution::recursivelyCollectDependencies (
     * Ignore duplicates
     */
     if (toPopulate.find(i) == toPopulate.end()) {
-      errs() << "LoopDistribution: Found dependency: " << *i << "\n";
+      // errs() << "LoopDistribution: Found dependency: " << *i << "\n";
       toPopulate.insert(i);
       queue.push_back(i);
     }
@@ -235,7 +235,7 @@ bool LoopDistribution::splitWouldBeTrivial (
           && instsToClone.find(&I) == instsToClone.end()
           && (!isa<BranchInst>(&I))
         ) {
-        errs() << "LoopDistribution: Not trivial because of " << I << "\n";
+        // errs() << "LoopDistribution: Not trivial because of " << I << "\n";
         result =  false;
       }
     }
@@ -275,8 +275,8 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
        * Only dependencies inside the loop should cause us to abort
        */
       if (std::find(BBs.begin(), BBs.end(), bb) != BBs.end()) {
-        errs() << "LoopDistribution: Instruction "
-               << *i << " is the source of a data dependency that would need to be forwarded\n";
+        // errs() << "LoopDistribution: Instruction "
+              //  << *i << " is the source of a data dependency that would need to be forwarded\n";
         return true;
       }
     }
@@ -299,8 +299,8 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
        * Only dependencies inside the loop should cause us to abort
        */
       if (std::find(BBs.begin(), BBs.end(), bb) != BBs.end()) {
-        errs() << "LoopDistribution: Instruction "
-               << *i << " consumes a data dependency that would need to be forwarded\n";
+        // errs() << "LoopDistribution: Instruction "
+              //  << *i << " consumes a data dependency that would need to be forwarded\n";
         return true;
       }
     }
@@ -316,7 +316,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
       toFn
     );
     if (isSourceOfExternalDataDependency) {
-      errs() << "LoopDistribution: Problem was dependency from " << *inst << "\n";
+      // errs() << "LoopDistribution: Problem was dependency from " << *inst << "\n";
       return true;
     }
     bool isDestinationOfExternalDataDependency = pdg->iterateOverDependencesTo(
@@ -327,7 +327,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies (
       fromFn
     );
     if (isDestinationOfExternalDataDependency) {
-      errs() << "LoopDistribution: Problem was dependency to " << *inst << "\n";
+      // errs() << "LoopDistribution: Problem was dependency to " << *inst << "\n";
       return true;
     }
   }
@@ -343,7 +343,7 @@ void LoopDistribution::doSplit (
   ){
   auto loopStructure = LDI.getLoopStructure();
   auto &cxt = loopStructure->getFunction()->getContext();
-  errs() << "LoopDistribution: About to do split of " << *loopStructure->getFunction() << "\n";
+  // errs() << "LoopDistribution: About to do split of " << *loopStructure->getFunction() << "\n";
 
   /*
    * Duplicate the basic blocks of the loop and insert clones of all necessary
@@ -369,7 +369,7 @@ void LoopDistribution::doSplit (
       }
     }
   }
-  errs() << "LoopDistribution: Finished cloning non-branch instructions\n";
+  // errs() << "LoopDistribution: Finished cloning non-branch instructions\n";
 
   /*
    * Collect the exiting basic blocks of the original loop. This needs to happen
@@ -381,7 +381,7 @@ void LoopDistribution::doSplit (
     assert(exitingBlock);
     exitBlockToExitingBlock[exitBlock] = exitingBlock;
   }
-  errs() << "LoopDistribution: Finished collecting exit branches\n";
+  // errs() << "LoopDistribution: Finished collecting exit branches\n";
 
   /*
    * Map the original loop exit blocks to themselves so in the next section the new loop
@@ -409,7 +409,7 @@ void LoopDistribution::doSplit (
       cloneBranch->setSuccessor(idx, newBB);
     }
   }
-  errs() << "LoopDistribution: Finished stitching together the new loop CFG\n";
+  // errs() << "LoopDistribution: Finished stitching together the new loop CFG\n";
 
   /*
    * Connect the original loop to the new loop using the branches we found earlier. This needs
@@ -438,7 +438,7 @@ void LoopDistribution::doSplit (
       }
     }
   }
-  errs() << "LoopDistribution: Finished connecting original loop to new loop\n";
+  // errs() << "LoopDistribution: Finished connecting original loop to new loop\n";
 
   /*
    * Fix data flows for all instructions in the loop
@@ -472,7 +472,7 @@ void LoopDistribution::doSplit (
       }
     }
   }
-  errs() << "LoopDistribution: Finished fixing instruction dependencies in the new loop\n";
+  // errs() << "LoopDistribution: Finished fixing instruction dependencies in the new loop\n";
 
 
   /*
@@ -498,7 +498,7 @@ void LoopDistribution::doSplit (
       }
     }
   }
-  errs() << "LoopDistribution: Finished fixing instruction dependencies in exit blocks\n";
+  // errs() << "LoopDistribution: Finished fixing instruction dependencies in exit blocks\n";
 
   /*
    * Remove instructions from the original loop if they were not cloned and are not branches.
@@ -519,7 +519,7 @@ void LoopDistribution::doSplit (
       inst->eraseFromParent();
     }
   }
-  errs() << "LoopDistribution: Finished removing instructions from the original loop\n";
+  // errs() << "LoopDistribution: Finished removing instructions from the original loop\n";
 
   errs() << "LoopDistribution: Success: Finished split of " << *loopStructure->getFunction() << "\n";
   return ;
