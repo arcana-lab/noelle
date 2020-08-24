@@ -69,9 +69,9 @@ bool ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeApplie
     auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(ls);
     auto averageInstructionThreshold = 20;
     bool hasSequentialExecution = sequentialFraction > 0;
-    bool hasLittleSequentialExecution = (averageInstructions * sequentialFraction) < averageInstructionThreshold;
+    bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
     bool hasProportionallySignificantSequentialExecution = sequentialFraction >= .2;
-    if (hasSequentialExecution && hasLittleSequentialExecution && hasProportionallySignificantSequentialExecution) {
+    if (hasSequentialExecution && hasLittleExecution && hasProportionallySignificantSequentialExecution) {
       errs() << "Parallelizer:    Loop " << loopID << " has "
         << averageInstructions << " number of sequential instructions on average per loop iteration\n";
       errs() << "Parallelizer:      It is too low for parallelization techniques with loop carried dependencies. The threshold is "
