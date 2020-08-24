@@ -74,12 +74,12 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
     aliasStoresAndLoadsOfMemoryLocation(spill->environmentStores, spill->environmentLoads);
   }
 
-  if (this->verbose >= Verbosity::Maximal) {
-    auto sccdag = new SCCDAG(taskFunctionDG);
-    DGPrinter::writeGraph<PDG, Value>("technique-task-fdg-" + std::to_string(LDI->getID()) + ".dot", taskFunctionDG);
-    DGPrinter::writeGraph<SCCDAG, SCC>("technique-task-sccdag-" + std::to_string(LDI->getID()) + ".dot", sccdag);
-    delete sccdag;
-  }
+  // if (this->verbose >= Verbosity::Maximal) {
+  //   auto sccdag = new SCCDAG(taskFunctionDG);
+  //   DGPrinter::writeGraph<PDG, Value>("technique-task-fdg-" + std::to_string(LDI->getID()) + ".dot", taskFunctionDG);
+  //   DGPrinter::writeGraph<SCCDAG, SCC>("technique-task-sccdag-" + std::to_string(LDI->getID()) + ".dot", sccdag);
+  //   delete sccdag;
+  // }
 
   return this->taskFunctionDG;
 }
