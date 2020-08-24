@@ -41,18 +41,41 @@ bool ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeApplie
 
   if (!this->forceParallelization) {
 
-   /*
-    * Check the number of instructions per iteration
-    */
+    /*
+     * Check the number of sequential instructions per iteration
+     * NOTE: We use the profiler to determine the total instruction count per iteration
+     * and then multiply by the fraction of loop instructions in sequential SCCs
+     */
+    auto sccManager = LDI->getSCCManager();
+    auto sccdag = sccManager->getSCCDAG();
+    float totalInstructionCount = 0, sequentialInstructionCount = 0, sequentialFraction = 0;
+    for (auto sccNode : sccdag->getNodes()) {
+      auto scc = sccNode->getT();
+      auto sccInfo = sccManager->getSCCAttrs(scc);
+      auto sccType = sccInfo->getType();
+
+      auto numInstructionsInSCC = scc->numInternalNodes();
+      totalInstructionCount += numInstructionsInSCC;
+      bool mustBeSynchronized = sccType == SCCAttrs::SCCType::SEQUENTIAL
+        && !sccInfo->canBeCloned();
+      if (mustBeSynchronized) {
+        sequentialInstructionCount += numInstructionsInSCC;
+      }
+    }
+    sequentialFraction = sequentialInstructionCount / totalInstructionCount;
+
     auto profiles = par.getProfiles();
     auto loopID = LDI->getID();
     auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(ls);
     auto averageInstructionThreshold = 20;
-    if (true
-        && (averageInstructions < averageInstructionThreshold)
-      ){
-      errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstructions << " number of instructions on average per loop iteration\n";
-      errs() << "Parallelizer:      It is too low for parallelization techniques with loop carried dependencies. The threshold is " << averageInstructionThreshold << "\n";
+    bool hasSequentialExecution = sequentialFraction > 0;
+    bool hasLittleSequentialExecution = (averageInstructions * sequentialFraction) < averageInstructionThreshold;
+    bool hasProportionallySignificantSequentialExecution = sequentialFraction >= .2;
+    if (hasSequentialExecution && hasLittleSequentialExecution && hasProportionallySignificantSequentialExecution) {
+      errs() << "Parallelizer:    Loop " << loopID << " has "
+        << averageInstructions << " number of sequential instructions on average per loop iteration\n";
+      errs() << "Parallelizer:      It is too low for parallelization techniques with loop carried dependencies. The threshold is "
+        << averageInstructionThreshold << "\n";
 
       return false;
     }
