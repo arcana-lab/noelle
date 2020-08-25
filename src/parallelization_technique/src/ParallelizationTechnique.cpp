@@ -1074,6 +1074,30 @@ void ParallelizationTechnique::adjustStepValueOfPointerTypeIVToReflectPointerAri
   return ;
 }
 
+float ParallelizationTechnique::computeSequentialFractionOfExecution (
+  LoopDependenceInfo *LDI,
+  Noelle &par
+) const {
+
+  auto sccManager = LDI->getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
+  float totalInstructionCount = 0, sequentialInstructionCount = 0;
+  for (auto sccNode : sccdag->getNodes()) {
+    auto scc = sccNode->getT();
+    auto sccInfo = sccManager->getSCCAttrs(scc);
+    auto sccType = sccInfo->getType();
+
+    auto numInstructionsInSCC = scc->numInternalNodes();
+    totalInstructionCount += numInstructionsInSCC;
+    bool mustBeSynchronized = sccType == SCCAttrs::SCCType::SEQUENTIAL
+      && !sccInfo->canBeCloned();
+    if (mustBeSynchronized) {
+      sequentialInstructionCount += numInstructionsInSCC;
+    }
+  }
+
+  return sequentialInstructionCount / totalInstructionCount;
+}
 
 void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
   std::error_code EC;

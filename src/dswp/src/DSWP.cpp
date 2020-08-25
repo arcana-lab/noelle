@@ -153,6 +153,29 @@ bool DSWP::canBeAppliedToLoop (
   }
 
   /*
+   * Ensure there is not too little execution that is too proportionally iteration-independent for DSWP
+   */
+  auto loopID = LDI->getID();
+  auto loopStructure = LDI->getLoopStructure();
+  auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(loopStructure);
+  auto averageInstructionThreshold = 20;
+  bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
+  auto minimumSequentialFraction = .5;
+  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI, par);
+  bool hasProportionallyInsignificantSequentialExecution = sequentialFraction < minimumSequentialFraction;
+  if (hasLittleExecution && hasProportionallyInsignificantSequentialExecution) {
+    errs() << "Parallelizer:    Loop " << loopID << " has "
+      << averageInstructions << " number of sequential instructions on average per loop iteration\n";
+    errs() << "Parallelizer:    Loop " << loopID << " has "
+      << sequentialFraction << " % sequential execution per loop iteration\n";
+    errs() << "Parallelizer:      It will not be partitioned enough for DSWP. The thresholds are at least "
+      << averageInstructionThreshold << " instructions per iteration or at least "
+      << minimumSequentialFraction << " % sequential execution." << "\n";
+
+    return false;
+  }
+
+  /*
    * DSWP is applicable.
    */
   return true ;
