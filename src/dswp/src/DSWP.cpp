@@ -209,7 +209,7 @@ bool DSWP::apply (
    */
   generateStagesFromPartitionedSCCs(LDI);
   addClonableSCCsToStages(LDI);
-  writeStageGraphsAsDot(*LDI);
+  // writeStageGraphsAsDot(*LDI);
   assert(isCompleteAndValidStageStructure(LDI));
 
   /*
@@ -224,7 +224,7 @@ bool DSWP::apply (
   collectDataAndMemoryQueueInfo(LDI, par);
   collectControlQueueInfo(LDI, par);
   // assert(areQueuesAcyclical());
-  writeStageQueuesAsDot(*LDI);
+  // writeStageQueuesAsDot(*LDI);
 
   /*
    * Collect information on stages' environments
