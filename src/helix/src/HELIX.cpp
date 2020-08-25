@@ -96,6 +96,41 @@ bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Noelle &par, Heuristics
     return false;
   }
 
+  /*
+   * Check if we are forced to parallelize
+   */
+  if (this->forceParallelization){
+
+    /*
+     * HELIX is applicable.
+     */
+    return true;
+  }
+
+  /*
+   * Ensure there is not too little execution that is too proportionally sequential for HELIX 
+   */
+  auto profiles = par.getProfiles();
+  auto loopID = LDI->getID();
+  auto loopStructure = LDI->getLoopStructure();
+  auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(loopStructure);
+  auto averageInstructionThreshold = 20;
+  bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
+  auto maximumSequentialFraction = .2;
+  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI, par);
+  bool hasProportionallySignificantSequentialExecution = sequentialFraction >= maximumSequentialFraction;
+  if (hasLittleExecution && hasProportionallySignificantSequentialExecution) {
+    errs() << "Parallelizer:    Loop " << loopID << " has "
+      << averageInstructions << " number of sequential instructions on average per loop iteration\n";
+    errs() << "Parallelizer:    Loop " << loopID << " has "
+      << sequentialFraction << " % sequential execution per loop iteration\n";
+    errs() << "Parallelizer:      It will be too heavily synchronized for HELIX. The thresholds are at least "
+      << averageInstructionThreshold << " instructions per iteration or less than "
+      << maximumSequentialFraction << " % sequential execution." << "\n";
+
+    return false;
+  }
+
   return true ;
 }
 
