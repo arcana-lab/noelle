@@ -212,7 +212,7 @@ bool DSWP::apply (
   /*
    * Check if the parallelization is worth it.
    */
-  if (this->partitioner->numberOfPartitions() == 1){
+  if (!this->forceParallelization && this->partitioner->numberOfPartitions() == 1){
 
     /*
      * The parallelization isn't worth it as there is only one pipeline stage.

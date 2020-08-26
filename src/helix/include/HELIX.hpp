@@ -68,7 +68,7 @@ namespace llvm {
         Heuristics *h
       );
 
-      void synchronizeTask (
+      bool synchronizeTask (
         LoopDependenceInfo *LDI,
         Noelle &par, 
         Heuristics *h
