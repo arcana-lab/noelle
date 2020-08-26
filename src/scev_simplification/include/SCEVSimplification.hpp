@@ -35,6 +35,10 @@ namespace llvm {
         ScalarEvolution &SE
       );
 
+      bool simplifyConstantPHIs (
+        LoopDependenceInfo const &LDI
+      );
+
     private:
 
       const SCEV *getOffsetBetween (ScalarEvolution &SE, const SCEV *startSCEV, const SCEV *intermediateSCEV) ;

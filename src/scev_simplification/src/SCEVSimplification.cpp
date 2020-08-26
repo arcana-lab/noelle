@@ -933,3 +933,100 @@ bool SCEVSimplification::isPartOfShlShrTruncationPair (Instruction *I) const {
   if (shl->getOperand(1) != shr->getOperand(1)) return false;
   return true;
 }
+
+bool SCEVSimplification::simplifyConstantPHIs (
+  LoopDependenceInfo const &LDI
+) {
+  bool modified = false;
+
+  auto loopStructure = LDI.getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
+  auto loopPreheader = loopStructure->getPreHeader();
+  std::unordered_set<PHINode *> headerPHIs;
+  for (auto &headerPHI : loopHeader->phis()) {
+    headerPHIs.insert(&headerPHI);
+  }
+
+  std::unordered_set<PHINode *> removedPHIs;
+  for (auto headerPHI : headerPHIs) {
+    if (removedPHIs.find(headerPHI) != removedPHIs.end()) continue;
+
+    Value *liveInValue = headerPHI->getIncomingValueForBlock(loopPreheader);
+    bool isPHIPropagation = true;
+    std::queue<PHINode *> dependentTraversal;
+    std::unordered_set<PHINode *> phiCycle;
+    dependentTraversal.push(headerPHI);
+    phiCycle.insert(headerPHI);
+    while (!dependentTraversal.empty()) {
+      auto dependentPHI = dependentTraversal.front();
+      dependentTraversal.pop();
+
+      for (auto idx = 0; idx < dependentPHI->getNumIncomingValues(); ++idx) {
+        auto incomingValue = dependentPHI->getIncomingValue(idx);
+        if (incomingValue) {
+          if (liveInValue == incomingValue) continue;
+          if (auto incomingPHI = dyn_cast<PHINode>(incomingValue)) {
+            if (phiCycle.find(incomingPHI) != phiCycle.end()) continue;
+            dependentTraversal.push(incomingPHI);
+            phiCycle.insert(incomingPHI);
+            continue;
+          }
+        }
+
+        isPHIPropagation = false;
+        break;
+      }
+      if (!isPHIPropagation) break;
+    }
+    if (!isPHIPropagation) continue;
+
+    headerPHI->print(errs() << "PHI is part of PHI-only propagation: "); errs() << "\n";
+    for (auto phi : phiCycle) {
+      phi->print(errs() << "\tpart of PHI-only propagation: "); errs() << "\n";
+    }
+
+    /*
+     * Identify whether the live in value just gets propagated between PHIs in the SCC
+     * without the PHIs ever changing value
+     */
+    bool isConstantPropagation = true;
+    for (auto phi : phiCycle) {
+      for (auto idx = 0; idx < phi->getNumIncomingValues(); ++idx) {
+        auto incomingValue = phi->getIncomingValue(idx);
+        if (liveInValue == incomingValue) continue;
+
+        if (auto incomingPHI = dyn_cast<PHINode>(incomingValue)) {
+          if (phiCycle.find(incomingPHI) != phiCycle.end()) continue;
+        } 
+
+        isConstantPropagation = false;
+        break;
+      }
+      if (!isConstantPropagation) break;
+    }
+    if (!isConstantPropagation) continue;
+
+    for (auto phi : phiCycle) {
+      std::unordered_set<User *> nonCycleUsers;
+      for (auto user : phi->users()) {
+        if (auto phi = dyn_cast<PHINode>(user)) {
+          if (phiCycle.find(phi) != phiCycle.end()) continue;
+        }
+        nonCycleUsers.insert(user);
+      }
+
+      for (auto nonCycleUser : nonCycleUsers) {
+        nonCycleUser->replaceUsesOfWith(phi, liveInValue);
+      }
+    }
+
+    for (auto phi : phiCycle) {
+      phi->eraseFromParent();
+      removedPHIs.insert(phi);
+    }
+
+    modified = true;
+  }
+
+  return modified;
+}
