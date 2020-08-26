@@ -148,11 +148,10 @@ bool HELIX::apply (
    */
   if (this->tasks.size() == 0) {
     this->createParallelizableTask(LDI, par, h);
-  } else {
-    this->synchronizeTask(LDI, par, h);
+    return true;
   }
 
-  return true;
+  return this->synchronizeTask(LDI, par, h);
 }
 
 void HELIX::createParallelizableTask (
@@ -330,7 +329,7 @@ void HELIX::createParallelizableTask (
   return ;
 }
 
-void HELIX::synchronizeTask (
+bool HELIX::synchronizeTask (
   LoopDependenceInfo *LDI,
   Noelle &par, 
   Heuristics *h
@@ -358,6 +357,30 @@ void HELIX::synchronizeTask (
    * Schedule the sequential segments to overlap parallel and sequential segments.
    */
   this->scheduleSequentialSegments(LDI, &sequentialSegments);
+
+  /*
+   * Check if any sequential segment's entry and exit frontier spans the entire loop execution
+   * If so, do not parallelize
+   */
+  if (!this->forceParallelization) {
+    auto loopSummary = LDI->getLoopStructure();
+    auto loopHeader = loopSummary->getHeader();
+    auto loopLatches = loopSummary->getLatches();
+    for (auto sequentialSegment : sequentialSegments) {
+      bool entryAtHeader = false, exitAtLatch = false;
+      sequentialSegment->forEachEntry([&](Instruction *entry) -> void {
+        auto entryBlock = entry->getParent();
+        entryAtHeader |= loopHeader == entryBlock;
+        exitAtLatch |= loopLatches.find(entryBlock) != loopLatches.end();
+      });
+      if (!entryAtHeader || !exitAtLatch) continue;
+
+      if (this->verbose != Verbosity::Disabled) {
+        errs() << "HELIX: There is a sequential segment spanning the entire loop; therefore, the parallelization isn't worth it.\n";
+      }
+      return false;
+    }
+  }
 
   /*
    * Add synchronization instructions.
@@ -454,7 +477,7 @@ void HELIX::synchronizeTask (
     // DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
-  return ;
+  return true;
 }
 
 Function * HELIX::getTaskFunction (void) const {
