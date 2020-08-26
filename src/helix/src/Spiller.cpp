@@ -244,8 +244,18 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     IRBuilder<> loopExitBuilder(clonedLoopExitBlock->getFirstNonPHIOrDbgOrLifetime());
     liveOutLoad = loopExitBuilder.CreateLoad(spillEnvPtr);
 
-    std::unordered_set<User *> phiUsers{spill->loopCarriedPHI->user_begin(), spill->loopCarriedPHI->user_end()};
-    for (auto user : phiUsers) {
+    /*
+     * Translate instruction clone from cloned PHI to spilled load that is available
+     * when exiting the loop
+     */
+    spill->environmentLoads.insert(liveOutLoad);
+    helixTask->addInstruction(spill->originalLoopCarriedPHI, liveOutLoad);
+
+    /*
+     * Identify basic blocks to add loads, tracking the uses of that load to be created
+     */
+    std::unordered_map<BasicBlock *, std::unordered_set<Instruction *>> blockToUserMap;
+    for (auto user : spill->loopCarriedPHI->users()) {
       auto userInst = cast<Instruction>(user);
       auto cloneUserBlock = userInst->getParent();
       auto originalUserBlock = cloneToOriginalBlockMap.at(cloneUserBlock);
@@ -268,17 +278,23 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
       auto originalCommonDominatorBlock =
         DS.DT.findNearestCommonDominator(originalStoreDominatingBlock, originalUserBlock);
       auto cloneCommonDominatorBlock = helixTask->getCloneOfOriginalBasicBlock(originalCommonDominatorBlock);
+      blockToUserMap[cloneCommonDominatorBlock].insert(userInst);
+    }
+
+    /*
+     * Insert a load before the first user in each block requiring one
+     */
+    for (auto blockAndUsers : blockToUserMap) {
+      auto block = blockAndUsers.first;
+      auto users = blockAndUsers.second;
 
       /*
-       * Insert at the bottom of the block if this isn't the user's block
-       * Otherwise, insert right before the user
-       * 
-       * NOTE: Do not insert past a store within that block, as the load has to
-       * be for the previous iteration's value
+       * Insert at the bottom of the block if no user or spill store are in the block
+       * Otherwise, insert right before the first user/store
        */
-      auto insertPoint = cloneCommonDominatorBlock->getTerminator();
-      for (auto &I : *cloneCommonDominatorBlock) {
-        auto isUserInst = userInst == &I;
+      auto insertPoint = block->getTerminator();
+      for (auto &I : *block) {
+        auto isUserInst = users.find(&I) != users.end();
         auto store = dyn_cast<StoreInst>(&I);
         auto isStoreInst = store != nullptr
           && spill->environmentStores.find(store) != spill->environmentStores.end();
@@ -287,20 +303,20 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
         break;
       }
 
+      /*
+       * Do not create duplicate loads in the same basic block
+       * Ensure the load dominates all uses of it
+       */
       IRBuilder<> spillValueBuilder(insertPoint);
       auto spillLoad = spillValueBuilder.CreateLoad(spillEnvPtr);
       spill->environmentLoads.insert(spillLoad);
-      userInst->replaceUsesOfWith(spill->loopCarriedPHI, spillLoad);
+
+      for (auto user : users) {
+        user->replaceUsesOfWith(spill->loopCarriedPHI, spillLoad);
+      }
     }
   }
 
   spill->loopCarriedPHI->eraseFromParent();
-
-  /*
-   * Translate instruction clone from cloned PHI to spilled load that is available
-   * when exiting the loop
-   */
-  spill->environmentLoads.insert(liveOutLoad);
-  helixTask->addInstruction(spill->originalLoopCarriedPHI, liveOutLoad);
 
 }

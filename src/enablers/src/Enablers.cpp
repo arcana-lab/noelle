@@ -78,8 +78,12 @@ bool EnablersManager::applyEnablers (
       errs() << "EnablersManager:     Loop IV related SCEVs have been simplified\n";
       return true;
     }
+    errs() << "EnablersManager:   Try to simplify constant SCEVs and their corresponding instructions in loops\n";
+    if (scevSimplification.simplifyConstantPHIs(*LDI)){
+      errs() << "EnablersManager:     Loop constant PHIs have been simplified\n";
+      return true;
+    }
   }
-
 
   return false;
 }
