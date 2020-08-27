@@ -93,6 +93,7 @@ namespace llvm {
        * Fields
        */
       Noelle &noelle;
+      uint32_t NumHandled=0;
 
       /*
        * Methods
