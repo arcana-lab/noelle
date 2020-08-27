@@ -884,6 +884,13 @@ void LoopScheduler::Dump (void) const {
   }
 
 
+  /*
+   * Dump the parent function
+   */ 
+  errs() << "LoopScheduler: Parent Function\n"
+         << *(this->TheLoop->getFunction()) << "\n";
+
+
   errs() << "LoopScheduler: End dump ...\n";
   return;
 
@@ -1005,6 +1012,11 @@ bool LoopScheduler::shrinkPrologueBasicBlock(
 ) {
 
   bool Modified = false;
+ 
+  // DEBUGGING
+  const uint32_t NumInstToMove = 4;
+  uint32_t NumMoved = 0;
+
 
   /*
    * Find all instructions to move from @Block --- FIX --- VERY INEFFIEICNT
@@ -1037,8 +1049,16 @@ bool LoopScheduler::shrinkPrologueBasicBlock(
     
     if (InstructionsToMove.find(&Move) != InstructionsToMove.end()) {
       OrderedInstructionsToMove.push_back(&Move);
+
+      // DEBUGGING
+      NumMoved++;
     }
-  
+
+#if 0
+    // DEBUGGING
+    if (NumMoved == NumInstToMove) break;
+#endif
+
   }
 
 
@@ -1357,7 +1377,7 @@ void LoopScheduler::resolveSuccessorPHIs(
    * NEEDS REFACTORING
    */ 
 
-  errs() << "LoopScheduler:         resolveSuccessorPHIs for " << *SuccBB << "\n";
+  // errs() << "LoopScheduler:         resolveSuccessorPHIs for " << *SuccBB << "\n";
 
   /*
    * Sanity check --- should have already determined @SuccBB is fit
