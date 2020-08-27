@@ -245,13 +245,6 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     liveOutLoad = loopExitBuilder.CreateLoad(spillEnvPtr);
 
     /*
-     * Translate instruction clone from cloned PHI to spilled load that is available
-     * when exiting the loop
-     */
-    spill->environmentLoads.insert(liveOutLoad);
-    helixTask->addInstruction(spill->originalLoopCarriedPHI, liveOutLoad);
-
-    /*
      * Identify basic blocks to add loads, tracking the uses of that load to be created
      */
     std::unordered_map<BasicBlock *, std::unordered_set<Instruction *>> blockToUserMap;
@@ -317,6 +310,12 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     }
   }
 
+  /*
+   * Translate instruction clone from cloned PHI to spilled load that is available
+   * when exiting the loop
+   */
+  spill->environmentLoads.insert(liveOutLoad);
+  helixTask->addInstruction(spill->originalLoopCarriedPHI, liveOutLoad);
   spill->loopCarriedPHI->eraseFromParent();
 
 }
