@@ -19,6 +19,8 @@ LoopWhilifier::LoopWhilifier(Noelle &noelle)
   return ;
 }
 
+#define NOELLE_TEST_WHILIFIER 1
+#define MAX_HANDLED_WHILIFIER 0
 
 bool LoopWhilifier::whilifyLoop (
   LoopDependenceInfo &LDI
@@ -26,7 +28,41 @@ bool LoopWhilifier::whilifyLoop (
 
   bool AnyTransformed = false;
 
+  // return AnyTransformed;
+
   errs() << "LoopWhilifier: Starting ... \n";
+
+
+#if 0
+  if(const char *env_p = std::getenv("noelletest"))
+  {   
+    int test = std::atoi(env_p);
+    errs() << "Numerically: " << test << '\n';
+
+#if 1
+    if (test > NOELLE_TEST_WHILIFIER) { /* 6+ */
+      errs() << "LoopWhilifier: Cutting ...\n";
+      return AnyTransformed;
+    }
+#endif
+
+#if 1
+    if (test == NOELLE_TEST_WHILIFIER) { /* 5. */
+      errs() << "LoopWhilifier: Need to restrict NumHandled: currently ---"
+             << this->NumHandled << "\n";
+
+      if (this->NumHandled >= MAX_HANDLED_WHILIFIER) {
+        errs() << "LoopWhilifier: NumHandled greater than MAX_HANDLED_WHILIFIER --- cutting...\n"; 
+        return AnyTransformed;
+      }
+      
+    }
+
+#endif
+
+  }   
+  else errs() << "noelletest is not found" << '\n';
+#endif
 
 
   /*
@@ -84,15 +120,18 @@ bool LoopWhilifier::whilifyLoopDriver(
     noelle.getFunctionDependenceGraph(Func)
   );
 
+  LSched.Dump();
   auto Result = LSched.shrinkLoopPrologue();
   
   if (Result) {
+    errs() << "SCHEDULED\n";
+    LSched.Dump();
     return Result;
   }
 
 #endif
 
-
+  return false;
 
   /*
    * Check if the loop can be whilified
@@ -105,6 +144,9 @@ bool LoopWhilifier::whilifyLoopDriver(
     return Transformed; 
 
   }
+
+  errs() << "BEFORE\n";
+  WC->Dump();
 
 
   /*
@@ -153,7 +195,7 @@ bool LoopWhilifier::whilifyLoopDriver(
 #endif
 
   errs() << "LoopWhilifier: Built anchors, cloned blocks, fixed block placement:\n";
-  WC->Dump();
+  // WC->Dump();
 
   /*
    * *** NOTE *** --- the "peeled" latch (the mapping from the
@@ -185,7 +227,7 @@ bool LoopWhilifier::whilifyLoopDriver(
   );
     
   errs() << "LoopWhilifier: Resolved new header and exit edge dependencies\n";
-  WC->Dump(); 
+  // WC->Dump(); 
 
 
   /*
@@ -206,7 +248,7 @@ bool LoopWhilifier::whilifyLoopDriver(
   );
 
   errs() << "LoopWhilifier: Resolved original header PHIs, rerouted branches\n";
-  WC->Dump(); 
+  // WC->Dump(); 
 
 
   /*
@@ -214,6 +256,8 @@ bool LoopWhilifier::whilifyLoopDriver(
    */ 
   (WC->OriginalLatch)->eraseFromParent();
   WC->ResolvedLatch |= true;
+
+  errs() << "AFTER\n" << *(WC->F) << "\n";
 
   Transformed |= true;
   errs() << "LoopWhilifier: Whilified\n";
@@ -549,7 +593,7 @@ bool LoopWhilifier::isDoWhile(
 
   }
 
-  WC->Dump();
+  // WC->Dump();
 
   return IsDoWhile & IsAppropriateToWhilify;
 
@@ -580,7 +624,7 @@ bool LoopWhilifier::canWhilify (
          << std::to_string(canWhilify) << "\n";
 
   if (canWhilify) {
-    (WC->OriginalHeader)->print(errs());
+    // (WC->OriginalHeader)->print(errs());
   }
 
 
@@ -593,7 +637,7 @@ bool LoopWhilifier::canWhilify (
          << std::to_string(canWhilify) + "\n";
 
   if (canWhilify) {
-    (WC->OriginalLatch)->print(errs());
+    // (WC->OriginalLatch)->print(errs());
   }
 
 
@@ -606,7 +650,7 @@ bool LoopWhilifier::canWhilify (
          << std::to_string(canWhilify) + "\n";
 
   if (canWhilify) {
-    (WC->OriginalPreHeader)->print(errs());
+    // (WC->OriginalPreHeader)->print(errs());
   }
 
 
