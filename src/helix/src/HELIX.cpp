@@ -268,6 +268,9 @@ void HELIX::createParallelizableTask (
   /*
    * Clone the sequential loop and store the cloned instructions/basic blocks within the single task of HELIX.
    */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "HELIX:  Cloning loop in task\n";
+  }
   this->cloneSequentialLoop(LDI, 0);
 
   /*
@@ -308,11 +311,17 @@ void HELIX::createParallelizableTask (
   /*
    * Spill loop carried dependencies into a separate environment array
    */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "HELIX:  Spilling loop carried dependencies\n";
+  }
   this->spillLoopCarriedDataDependencies(LDI);
 
   /*
    * For IVs that were not spilled, adjust their step size appropriately
    */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "HELIX:  Adjusting loop IVs\n";
+  }
   this->rewireLoopForIVsToIterateNthIterations(LDI);
 
   /*
