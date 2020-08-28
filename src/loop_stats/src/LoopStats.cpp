@@ -51,7 +51,7 @@ void LoopStats::collectStatsForLoops (Noelle &noelle, std::vector<LoopDependence
   /*
    * Print the statistics.
    */
-  printStatsHumanReadable();
+  printStatsHumanReadable(profiles);
 
   return ;
 }
@@ -65,7 +65,7 @@ void LoopStats::collectStatsForLoop (Hot *profiles, int id, ScalarEvolution &SE,
 
   collectStatsOnLLVMIVs(profiles, SE, llvmLoop, statsForLoop);
   collectStatsOnLLVMInvariants(profiles, llvmLoop, statsForLoop);
-  collectStatsOnLLVMSCCs(loopDG, statsForLoop);
+  collectStatsOnLLVMSCCs(profiles, loopDG, statsForLoop);
 
   return ;
 }
@@ -77,7 +77,7 @@ void LoopStats::collectStatsForLoop (Hot *profiles, LoopDependenceInfo &LDI) {
   statsForLoop->loopID = loopStructure->getID();
 
   collectStatsOnNoelleIVs(profiles, LDI, statsForLoop);
-  collectStatsOnNoelleSCCs(LDI, statsForLoop);
+  collectStatsOnNoelleSCCs(profiles, LDI, statsForLoop);
   collectStatsOnNoelleInvariants(profiles, LDI, statsForLoop);
 
   return ;
