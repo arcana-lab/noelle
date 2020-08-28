@@ -5,6 +5,7 @@ set(Srcs
   LoopStats_InductionVariables.cpp
   LoopStats_Invariants.cpp
   LoopStats_Dependences.cpp
+  LoopStats_Loops.cpp
   LoopStats_Printer.cpp
 )
 

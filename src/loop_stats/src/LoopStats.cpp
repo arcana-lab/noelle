@@ -56,33 +56,6 @@ void LoopStats::collectStatsForLoops (Noelle &noelle, std::vector<LoopDependence
   return ;
 }
 
-void LoopStats::collectStatsForLoop (Hot *profiles, int id, ScalarEvolution &SE, PDG *loopDG, Loop &llvmLoop) {
-  auto statsForLoop = new Stats();
-  statsByLoopAccordingToLLVM.insert(std::make_pair(id, statsForLoop));
-  statsForLoop->loopID = id;
-
-  auto loopFunction = llvmLoop.getHeader()->getParent();
-
-  collectStatsOnLLVMIVs(profiles, SE, llvmLoop, statsForLoop);
-  collectStatsOnLLVMInvariants(profiles, llvmLoop, statsForLoop);
-  collectStatsOnLLVMSCCs(profiles, loopDG, statsForLoop);
-
-  return ;
-}
-
-void LoopStats::collectStatsForLoop (Hot *profiles, LoopDependenceInfo &LDI) {
-  auto loopStructure = LDI.getLoopStructure();
-  auto statsForLoop = new Stats();
-  statsByLoopAccordingToNoelle.insert(std::make_pair(LDI.getID(), statsForLoop));
-  statsForLoop->loopID = loopStructure->getID();
-
-  collectStatsOnNoelleIVs(profiles, LDI, statsForLoop);
-  collectStatsOnNoelleSCCs(profiles, LDI, statsForLoop);
-  collectStatsOnNoelleInvariants(profiles, LDI, statsForLoop);
-
-  return ;
-}
-
 LoopStats::LoopStats()
   : ModulePass{ID} {
   return;
