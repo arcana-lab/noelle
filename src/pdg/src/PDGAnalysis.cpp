@@ -28,6 +28,7 @@ PDGAnalysis::PDGAnalysis()
     , dumpPDG{false}
     , performThePDGComparison{false}
     , disableSVF{false}
+    , disableRA{false}
     , printer{} 
   {
 
@@ -502,7 +503,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
     }
     return false;
   };
-  auto dfr = this->dfa.runReachableAnalysis(&F, onlyMemoryInstructionFilter);
+  auto dfr = this->disableRA ? this->dfa.getFullSets(&F) : this->dfa.runReachableAnalysis(&F, onlyMemoryInstructionFilter);
 
   for (auto &B : F) {
     for (auto &I : B) {
