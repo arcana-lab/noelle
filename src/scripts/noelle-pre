@@ -13,6 +13,11 @@ for var in "$@" ; do
   fi
 done
 
+# Strip debugging symbols 
+cmdToExecute="opt --strip-debug --strip-debug-declare $notOptions -o $notOptions"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Normalize the code
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
 echo $cmdToExecute ;
