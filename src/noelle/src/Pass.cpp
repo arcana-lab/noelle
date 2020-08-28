@@ -24,6 +24,7 @@ static cl::opt<bool> DisableDistribution("noelle-disable-loop-distribution", cl:
 static cl::opt<bool> DisableInvCM("noelle-disable-loop-invariant-code-motion", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the loop invariant code motion"));
 static cl::opt<bool> DisableWhilifier("noelle-disable-whilifier", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the loop whilifier"));
 static cl::opt<bool> DisableSCEVSimplification("noelle-disable-scev-simplification", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable IV related SCEV simplification"));
+static cl::opt<bool> DisableLoopAwareDependenceAnalyses("noelle-disable-loop-aware-dependence-analyses", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable loop aware dependence analyses"));
 static cl::opt<bool> DisableInliner("noelle-disable-inliner", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 static cl::opt<bool> InlinerDisableHoistToMain("noelle-inliner-avoid-hoist-to-main", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the function inliner"));
 
@@ -74,6 +75,9 @@ bool Noelle::doInitialization (Module &M) {
   }
   if (InlinerDisableHoistToMain.getNumOccurrences() == 0){
     this->hoistLoopsToMain = true;
+  }
+  if (DisableLoopAwareDependenceAnalyses.getNumOccurrences() == 0){
+    this->loopAwareDependenceAnalysis = true;
   }
 
   /*

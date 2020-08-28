@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void LoopStats::printPerLoopStats (Stats *stats) {
+void LoopStats::printPerLoopStats (Hot *profiles, Stats *stats) {
   if (stats->loopID != -1){
     errs() << "  Loop: " << stats->loopID << "\n";
   }
@@ -28,9 +28,15 @@ void LoopStats::printPerLoopStats (Stats *stats) {
   errs() << "      Number of nodes in SCCDAG: " << stats->numberOfNodesInSCCDAG << "\n";
   errs() << "      Number of SCCs: " << stats->numberOfSCCs << "\n";
   errs() << "      Number of sequential SCCs: " << stats->numberOfSequentialSCCs << "\n";
+  errs() << "      Number of dynamic instructions executed in sequential SCCs: " << stats->dynamicInstructionsOfSequentialSCCs << "\n";
+  auto coverageSequentialSCC = ((double)stats->dynamicInstructionsOfSequentialSCCs) / ((double)profiles->getTotalInstructions());
+  coverageSequentialSCC *= 100;
+  errs() << "      Coverage of sequential SCCs: " << coverageSequentialSCC << " %\n";
+
+  return ;
 }
 
-void LoopStats::printStatsHumanReadable (void) {
+void LoopStats::printStatsHumanReadable (Hot *profiles) {
   Stats totalInfoNoelle{};
   Stats totalInfoLLVM{};
 
@@ -48,9 +54,9 @@ void LoopStats::printStatsHumanReadable (void) {
      * Print the per loop statistics.
      */
     errs() << " Noelle:\n";
-    printPerLoopStats(noelleStats);
+    printPerLoopStats(profiles, noelleStats);
     errs() << " LLVM:\n";
-    printPerLoopStats(llvmStats);
+    printPerLoopStats(profiles, llvmStats);
 
     /*
      * Update the total statistics.
@@ -64,9 +70,9 @@ void LoopStats::printStatsHumanReadable (void) {
    */
   errs() << "Total statistics\n";
   errs() << " Noelle:\n";
-  printPerLoopStats(&totalInfoNoelle);
+  printPerLoopStats(profiles, &totalInfoNoelle);
   errs() << " LLVM:\n";
-  printPerLoopStats(&totalInfoLLVM);
+  printPerLoopStats(profiles, &totalInfoLLVM);
 
   return;
 }
