@@ -94,7 +94,7 @@ void LoopStats::collectStatsOnSCCDAG (Hot *profiles, SCCDAG *sccdag, SCCDAGAttrs
       if (sccAttrs->getType() != SCCAttrs::SCCType::SEQUENTIAL) continue;
     }
     statsForLoop->numberOfSequentialSCCs++;
-    statsForLoop->dynamicInstructionsOfSequentialSCCs += profiles->getSelfInstructions(scc);
+    statsForLoop->dynamicInstructionsOfSequentialSCCs += profiles->getTotalInstructions(scc);
   }
 
   return ;
