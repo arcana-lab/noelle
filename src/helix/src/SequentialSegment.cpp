@@ -50,8 +50,24 @@ SequentialSegment::SequentialSegment (
 
   determineEntryAndExitFrontier(LDI, ds, reachabilityDFR, ssInstructions);
 
+  /*
+   * NOTE: Because instructions contained in the preamble may not be contained
+   * at the top of the loop entry block, we add the first instruction in the loop
+   * as an entry to the preamble SS.
+   * This is so that instructions in the loop entry block are preceded by the preamble SS
+   */
+  auto loopSCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  auto preambleSCCNodes = loopSCCDAG->getTopLevelNodes();
+  assert(preambleSCCNodes.size() == 1 && "The loop internal SCCDAG should only have one preamble");
+  auto preambleSCC = (*preambleSCCNodes.begin())->getT();
+  bool isPreambleSS = sccs->sccs.find(preambleSCC) != sccs->sccs.end();
+  if (isPreambleSS) {
+    this->entries.clear();
+    this->entries.insert(loopHeader->getFirstNonPHIOrDbgOrLifetime());
+  }
+
   /* 
-   * NOTE: Loop-exiting blocks, even if in nested loops, are the exception to the rule that all
+   * NOTE: Function-exiting blocks, even if in nested loops, are the exception to the rule that all
    * waits/signals must not be contained in a sub-loop as they only execute once
    */
   for (auto B : loopStructure->getBasicBlocks()) {

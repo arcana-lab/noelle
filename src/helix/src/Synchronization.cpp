@@ -292,13 +292,24 @@ void HELIX::addSynchronizations (
 
     /*
      * Inject signals at sequential segment exits
-     * Also inject an exit flag set for the preamble's loop exits (BEFORE the signal so the set is synchronized)
+     * Also inject an exit flag set for the preamble's loop exits
+     * (AFTER the call to injectSignal so the setter is placed before the signal call)
      */
-    ss->forEachExit([ss, loopStructure, &injectSignal, &injectExitFlagSet](Instruction *justBeforeExit) -> void {
-      if (!loopStructure->isIncluded(justBeforeExit)) {
-        injectExitFlagSet(justBeforeExit);
-      }
+    ss->forEachExit([preambleSS, ss, loopStructure, &injectSignal, &injectExitFlagSet](Instruction *justBeforeExit) -> void {
       injectSignal(ss, justBeforeExit);
+
+      if (preambleSS == ss) {
+        auto block = justBeforeExit->getParent();
+        auto terminator = block->getTerminator();
+        if (terminator == justBeforeExit) {
+          for (auto successor : successors(block)) {
+            if (!loopStructure->isIncluded(successor)) {
+              auto beginningOfLoopExit = successor->getFirstNonPHIOrDbgOrLifetime();
+              injectExitFlagSet(beginningOfLoopExit);
+            }
+          }
+        }
+      }
     });
   }
 
