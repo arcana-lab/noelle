@@ -23,6 +23,7 @@ static cl::opt<bool> PDGEmbed("noelle-pdg-embed", cl::ZeroOrMore, cl::Hidden, cl
 static cl::opt<bool> PDGDump("noelle-pdg-dump", cl::ZeroOrMore, cl::Hidden, cl::desc("Dump the PDG"));
 static cl::opt<bool> PDGCheck("noelle-pdg-check", cl::ZeroOrMore, cl::Hidden, cl::desc("Check the PDG"));
 static cl::opt<bool> PDGSVFDisable("noelle-disable-pdg-svf", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable SVF"));
+static cl::opt<bool> PDGRADisable("noelle-disable-pdg-reaching-analysis", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable the use of reaching analysis to compute the PDG"));
 
 bool PDGAnalysis::doInitialization (Module &M){
   this->verbose = static_cast<PDGVerbosity>(PDGVerbose.getValue());
@@ -30,6 +31,7 @@ bool PDGAnalysis::doInitialization (Module &M){
   this->dumpPDG = (PDGDump.getNumOccurrences() > 0) ? true : false;
   this->performThePDGComparison = (PDGCheck.getNumOccurrences() > 0) ? true : false;
   this->disableSVF = (PDGSVFDisable.getNumOccurrences() > 0) ? true : false;
+  this->disableRA = (PDGRADisable.getNumOccurrences() > 0) ? true : false;
 
   return false;
 }
