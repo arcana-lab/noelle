@@ -84,7 +84,8 @@ namespace llvm {
         ScalarEvolution &SE,
         uint32_t maxCores,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations,
-        liberty::LoopAA *aa
+        liberty::LoopAA *aa,
+        bool enableLoopAwareDependenceAnalyses
       );
 
       LoopDependenceInfo () = delete ;
@@ -188,6 +189,7 @@ namespace llvm {
        */
       std::set<Transformation> enabledTransformations;  /* Transformations enabled. */
       std::unordered_set<LoopDependenceInfoOptimization> enabledOptimizations;  /* Optimizations enabled. */
+      bool areLoopAwareAnalysesEnabled;
 
       PDG *loopDG;                            /* Dependence graph of the loop.
                                                * This graph does not include instructions outside the loop (i.e., no external dependences are included).
