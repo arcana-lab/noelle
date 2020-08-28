@@ -232,11 +232,6 @@ void HELIX::addSynchronizations (
    */
   auto injectExitFlagCheck = [&](Instruction *justAfterEntry) -> void {
 
-    /*
-     * We must wait on the preamble SCC to complete in order to know whether the check exit flag was set
-     */
-    injectWait(preambleSS, justAfterEntry);
-
     auto beforeCheckBB = justAfterEntry->getParent();
     auto afterCheckBB = BasicBlock::Create(cxt, "SS-passed-checkexit", loopFunction);
     auto failedCheckBB = BasicBlock::Create(cxt, "SS-failed-checkexit", loopFunction);
@@ -272,20 +267,6 @@ void HELIX::addSynchronizations (
   };
 
   /*
-   * If the preamble is not synchronized, then there is no need for the exit flag
-   * Otherwise, inject a check at loop entry and inject a set BEFORE every exit to the preamble SS
-   */
-  if (preambleSS != nullptr) {
-    auto loopEntry = loopHeader->getFirstNonPHIOrDbgOrLifetime();
-    injectExitFlagCheck(loopEntry);
-
-    for (auto i = 0; i < helixTask->getNumberOfLastBlocks(); ++i) {
-      auto loopExitBlock = helixTask->getLastBlock(i);
-      injectExitFlagSet(loopExitBlock->getFirstNonPHIOrDbgOrLifetime());
-    }
-  }
-
-  /*
    * Once the preamble has been synchronized, if that was necessary, synchronize each sequential segment
    */
   for (auto ss : *sss){
@@ -300,19 +281,26 @@ void HELIX::addSynchronizations (
 
     /*
      * Inject waits.
+     * Also inject an exit flag check for the preamble (AFTER the wait so the check is synchronized)
      */
-    ss->forEachEntry([ss, &injectWait](Instruction *justAfterEntry) -> void {
+    ss->forEachEntry([preambleSS, ss, &injectWait, &injectExitFlagCheck](Instruction *justAfterEntry) -> void {
       injectWait(ss, justAfterEntry);
+      if (preambleSS == ss) {
+        injectExitFlagCheck(justAfterEntry);
+      }
     });
 
     /*
      * Inject signals at sequential segment exits
+     * Also inject an exit flag set for the preamble's loop exits (BEFORE the signal so the set is synchronized)
      */
-    ss->forEachExit([ss, &injectSignal](Instruction *justBeforeExit) -> void {
+    ss->forEachExit([ss, loopStructure, &injectSignal, &injectExitFlagSet](Instruction *justBeforeExit) -> void {
+      if (!loopStructure->isIncluded(justBeforeExit)) {
+        injectExitFlagSet(justBeforeExit);
+      }
       injectSignal(ss, justBeforeExit);
     });
   }
-
 
   return ;
 }
