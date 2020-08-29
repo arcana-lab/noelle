@@ -239,10 +239,6 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     }
 
   } else {
-    auto loopExitBlock = *loopExits.begin();
-    auto clonedLoopExitBlock = helixTask->getCloneOfOriginalBasicBlock(loopExitBlock);
-    IRBuilder<> loopExitBuilder(clonedLoopExitBlock->getFirstNonPHIOrDbgOrLifetime());
-    liveOutLoad = loopExitBuilder.CreateLoad(spillEnvPtr);
 
     /*
      * Identify basic blocks to add loads, tracking the uses of that load to be created
@@ -277,6 +273,7 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     /*
      * Insert a load before the first user in each block requiring one
      */
+    std::unordered_map<BasicBlock *, LoadInst *> blockToLoadMap;
     for (auto blockAndUsers : blockToUserMap) {
       auto block = blockAndUsers.first;
       auto users = blockAndUsers.second;
@@ -302,11 +299,27 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
        */
       IRBuilder<> spillValueBuilder(insertPoint);
       auto spillLoad = spillValueBuilder.CreateLoad(spillEnvPtr);
+      blockToLoadMap.insert({block, spillLoad});
       spill->environmentLoads.insert(spillLoad);
 
       for (auto user : users) {
         user->replaceUsesOfWith(spill->loopCarriedPHI, spillLoad);
       }
+    }
+
+    /*
+     * Insert or find a spill load dominating the exit block (and all stores to prevent
+     * the load from not reflecting the loop entry PHI)
+     */
+    auto loopExitBlock = *loopExits.begin();
+    auto dominatorOfExitAndStores =
+      DS.DT.findNearestCommonDominator(originalStoreDominatingBlock, loopExitBlock);
+    auto clonedDominator = helixTask->getCloneOfOriginalBasicBlock(dominatorOfExitAndStores);
+    if (blockToLoadMap.find(clonedDominator) == blockToLoadMap.end()) {
+      IRBuilder<> loopExitBuilder(clonedDominator->getFirstNonPHIOrDbgOrLifetime());
+      liveOutLoad = loopExitBuilder.CreateLoad(spillEnvPtr);
+    } else {
+      liveOutLoad = blockToLoadMap.at(clonedDominator);
     }
   }
 
