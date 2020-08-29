@@ -20,6 +20,9 @@ void LoopStats::collectStatsForLoops (Noelle &noelle, std::vector<LoopDependence
    * Fetch the profiles.
    */
   auto profiles = noelle.getProfiles();
+  if (!profiles->isAvailable()){
+    errs() << "LoopStats: WARNING: the profiles are not available\n";
+  }
 
   /*
    * Collect statistics about each loop using noelle's abstractions.
