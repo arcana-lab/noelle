@@ -203,6 +203,11 @@ namespace llvm {
        */
       void doNestedInlineOfCalls (Function *F, std::set<CallInst *> &calls);
 
+      float computeSequentialFractionOfExecution (
+        LoopDependenceInfo *LDI,
+        Noelle &par
+      ) const ;
+
       /*
        * Debug
        */

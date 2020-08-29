@@ -27,6 +27,8 @@ namespace llvm {
       DataFlowResult * runReachableAnalysis (Function *f);
 
       DataFlowResult * runReachableAnalysis (Function *f, std::function<bool (Instruction *i)> filter);
+
+      DataFlowResult * getFullSets (Function *f);
   };
 
 }

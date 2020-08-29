@@ -28,8 +28,6 @@ bool LoopWhilifier::whilifyLoop (
 
   bool AnyTransformed = false;
 
-  // return AnyTransformed;
-
   errs() << "LoopWhilifier: Starting ... \n";
 
 
@@ -105,33 +103,51 @@ bool LoopWhilifier::whilifyLoopDriver(
 
   auto Transformed = false;
 
-
+  /*
+   * Scheduler invocation --- try to shrink the 
+   * loop prologue before whilifying --- FIX
+   */ 
 #if 1
 
   errs() << "THE SCHEDULER\n";
 
+  /*
+   * Get necessary info to invoke scheduler
+   */ 
   auto Func = LS->getFunction();
   auto Scheduler = noelle.getScheduler();
   auto DS = noelle.getDominators(Func);
   
+
+  /*
+   * Set up the loop scheduler
+   */ 
   auto LSched = Scheduler.getNewLoopScheduler(
     LS,
     DS,
     noelle.getFunctionDependenceGraph(Func)
   );
 
+
+  /*
+   * Shrink the loop prologue (with debugging), return 
+   * true immediately
+   */ 
   LSched.Dump();
-  auto Result = LSched.shrinkLoopPrologue();
+
+  Transformed |= LSched.shrinkLoopPrologue();
   
-  if (Result) {
+  if (Transformed) {
+
     errs() << "SCHEDULED\n";
     LSched.Dump();
-    return Result;
+
+    return Transformed;
+
   }
 
 #endif
 
-  return false;
 
   /*
    * Check if the loop can be whilified
@@ -140,7 +156,7 @@ bool LoopWhilifier::whilifyLoopDriver(
 
   if (!(this->canWhilify(WC))) { 
     
-    errs() << "LoopWhilifier: Can't whilify\n";
+    // errs() << "LoopWhilifier: Can't whilify\n";
     return Transformed; 
 
   }
@@ -155,7 +171,7 @@ bool LoopWhilifier::whilifyLoopDriver(
    */ 
   if (WC->OriginalHeader == WC->OriginalLatch) { 
 
-    errs() << "LoopWhilifier: Transforming single block loop\n";
+    // errs() << "LoopWhilifier: Transforming single block loop\n";
 
     this->transformSingleBlockLoop(WC);
     WC->IsSingleBlockLoop |= true;
@@ -260,7 +276,7 @@ bool LoopWhilifier::whilifyLoopDriver(
   errs() << "AFTER\n" << *(WC->F) << "\n";
 
   Transformed |= true;
-  errs() << "LoopWhilifier: Whilified\n";
+  // errs() << "LoopWhilifier: Whilified\n";
 
   return Transformed;
 
@@ -343,8 +359,8 @@ void LoopWhilifier::compressStructuralLatch(
   WC->OriginalLatch = SemanticLatch;
 
 
-  errs() << "LoopWhilifier: compressStructuralLatch, New latch is: " 
-         << *(WC->OriginalLatch) << "\n";
+  // errs() << "LoopWhilifier: compressStructuralLatch, New latch is: " 
+  //        << *(WC->OriginalLatch) << "\n";
 
 
   return;
@@ -366,8 +382,8 @@ bool LoopWhilifier::isSemanticLatch(
 
   BasicBlock *CurrentLatch = WC->OriginalLatch;
 
-  errs() << "LoopWhilifier: Current latch:\n" 
-         << *CurrentLatch << "\n";
+  // errs() << "LoopWhilifier: Current latch:\n" 
+  //        << *CurrentLatch << "\n";
 
   bool KeepLatch = true;
 
@@ -377,7 +393,7 @@ bool LoopWhilifier::isSemanticLatch(
    */ 
   if (!(CurrentLatch->getInstList().size() == 1)) {
 
-    errs() << "LoopWhilifier: Keeping latch --- latch not empty\n";
+    // errs() << "LoopWhilifier: Keeping latch --- latch not empty\n";
     return KeepLatch;
 
   }
@@ -389,7 +405,7 @@ bool LoopWhilifier::isSemanticLatch(
   LatchPred = CurrentLatch->getSinglePredecessor();
   if (!LatchPred) {
 
-    errs() << "LoopWhilifier: Keeping latch --- has multiple predecessors\n";
+    // errs() << "LoopWhilifier: Keeping latch --- has multiple predecessors\n";
     return KeepLatch;
 
   }
@@ -403,7 +419,7 @@ bool LoopWhilifier::isSemanticLatch(
       || (!LatchTerm)
       || (LatchTerm->isConditional())) {
     
-    errs() << "LoopWhilifier: Keeping latch --- terminator not unconditional branch\n";
+    // errs() << "LoopWhilifier: Keeping latch --- terminator not unconditional branch\n";
     return KeepLatch;
 
   }
@@ -550,9 +566,9 @@ bool LoopWhilifier::isDoWhile(
                               (CurrentLatchPred) :
                               (CurrentLatch);
 
-  errs() << "LoopWhilifier: NeedToChangeLatch " 
-         << std::to_string(NeedToChangeLatch) << "\n"
-         << "LoopWhilifier: SemanticLatch " << *SemanticLatch << "\n";
+  // errs() << "LoopWhilifier: NeedToChangeLatch " 
+        //  << std::to_string(NeedToChangeLatch) << "\n"
+        //  << "LoopWhilifier: SemanticLatch " << *SemanticLatch << "\n";
 
 
   /*
@@ -567,8 +583,8 @@ bool LoopWhilifier::isDoWhile(
 
   }
 
-  errs() << "LoopWhilifier: IsDoWhile (Latch --- loop exiting): "
-         << std::to_string(IsDoWhile) << "\n";
+  // errs() << "LoopWhilifier: IsDoWhile (Latch --- loop exiting): "
+        //  << std::to_string(IsDoWhile) << "\n";
 
 
   /*
@@ -576,8 +592,8 @@ bool LoopWhilifier::isDoWhile(
    */ 
   bool IsAppropriateToWhilify = this->isAppropriateToWhilify(WC, SemanticLatch);
 
-  errs() << "LoopWhilifier: IsDoWhile (Appropriate to whilify): "
-         << std::to_string(IsAppropriateToWhilify) + "\n";
+  // errs() << "LoopWhilifier: IsDoWhile (Appropriate to whilify): "
+  //        << std::to_string(IsAppropriateToWhilify) + "\n";
 
 
   /* 
@@ -606,9 +622,6 @@ bool LoopWhilifier::canWhilify (
 
   bool canWhilify = true;
 
-  errs() << "LoopWhilifier: canWhilify --- " 
-         << std::to_string(canWhilify) + "\n";
-
   /*
    * TOP --- Require valid header, preheader, and single latch, 
    * then check if the loop is in do-while form
@@ -620,25 +633,11 @@ bool LoopWhilifier::canWhilify (
    */ 
   canWhilify &= !!(WC->OriginalHeader);
 
-  errs() << "LoopWhilifier: after HEADER, canWhilify --- " 
-         << std::to_string(canWhilify) << "\n";
-
-  if (canWhilify) {
-    // (WC->OriginalHeader)->print(errs());
-  }
-
 
   /*
    * Acquire latch
    */ 
   canWhilify &= (WC->NumLatches == 1);
-
-  errs() << "LoopWhilifier: after LATCH, canWhilify --- "
-         << std::to_string(canWhilify) + "\n";
-
-  if (canWhilify) {
-    // (WC->OriginalLatch)->print(errs());
-  }
 
 
   /*
@@ -646,21 +645,11 @@ bool LoopWhilifier::canWhilify (
    */ 
   canWhilify &= !!(WC->OriginalPreHeader);
 
-  errs() << "LoopWhilifier: after PREHEADER, canWhilify --- "
-         << std::to_string(canWhilify) + "\n";
-
-  if (canWhilify) {
-    // (WC->OriginalPreHeader)->print(errs());
-  }
-
 
   /*
    * Acquire exits
    */ 
   canWhilify &= ((WC->ExitEdges).size() > 0);
-
-  errs() << "LoopWhilifier: after EXITS, canWhilify --- " 
-         << std::to_string(canWhilify) + "\n";
 
 
   /*
@@ -669,9 +658,6 @@ bool LoopWhilifier::canWhilify (
   if (canWhilify) {
     canWhilify &= this->isDoWhile(WC);
   }
-
-  errs() << "LoopWhilifier: after LoopWhilifier::isDoWhile, canWhilify --- "
-         << std::to_string(canWhilify) + "\n";
 
 
   /*
@@ -740,7 +726,7 @@ void LoopWhilifier::buildAnchors(
    * old) loop is customary --- remnant of llvm::peelLoop
    */ 
 
-  errs() << "LoopWhilifier: Building anchors ...\n";
+  // errs() << "LoopWhilifier: Building anchors ...\n";
 
   BasicBlock *Header = WC->OriginalHeader,
              *PreHeader = WC->OriginalPreHeader,
@@ -766,10 +752,10 @@ void LoopWhilifier::buildAnchors(
   WC->OriginalPreHeader = NewPreHeader;
 
 
-  errs() << "LoopWhilifier: TopAnchor: " << *InsertTop << "\n"
-         << "LoopWhilifier: BottomAnchor: " << *InsertBot << "\n"
-         << "LoopWhilifier: WhilifiedPreheader: " << *NewPreHeader << "\n"
-         << "LoopWhilifier: Done building anchors\n";
+  // errs() << "LoopWhilifier: TopAnchor: " << *InsertTop << "\n"
+  //        << "LoopWhilifier: BottomAnchor: " << *InsertBot << "\n"
+  //        << "LoopWhilifier: WhilifiedPreheader: " << *NewPreHeader << "\n"
+  //        << "LoopWhilifier: Done building anchors\n";
 
 
   return;
@@ -873,7 +859,7 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(
    * NEEDS ENGINEERING FIX --- CODE REPETITION --- TODO
    * 
    */ 
-  F->print(errs());
+  // F->print(errs());
   for (auto Edge : WC->ExitEdges) {
 
     for (PHINode &PHI : Edge.second->phis()) {
