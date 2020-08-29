@@ -91,6 +91,39 @@ namespace llvm {
         Value *spillEnvPtr
       );
 
+      BasicBlock *insertStoresToSpilledLCD (
+        LoopDependenceInfo *LDI,
+        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+        SpilledLoopCarriedDependency *spill,
+        Value *spillEnvPtr,
+        DominatorSummary *originalLoopDS
+      );
+
+      void defineFrontierForLoadsToSpilledLCD (
+        LoopDependenceInfo *LDI,
+        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+        SpilledLoopCarriedDependency *spill,
+        DominatorSummary *originalLoopDS,
+        std::unordered_set<BasicBlock *> &originalFrontierBlocks,
+        BasicBlock *originalStoreDominatingBlock
+      );
+
+      void replaceUsesOfSpilledPHIWithLoads (
+        LoopDependenceInfo *LDI,
+        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+        SpilledLoopCarriedDependency *spill,
+        Value *spillEnvPtr,
+        DominatorSummary *originalLoopDS,
+        std::unordered_set<BasicBlock *> &originalFrontierBlocks
+      );
+
+      std::unordered_map<BasicBlock *, Instruction *> propagateLoadsOfSpilledLCDToLoopExits (
+        LoopDependenceInfo *LDI,
+        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+        SpilledLoopCarriedDependency *spill,
+        Value *spillEnvPtr
+      );
+
       std::vector<SequentialSegment *> identifySequentialSegments (
         LoopDependenceInfo *originalLDI,
         LoopDependenceInfo *LDI
@@ -143,6 +176,7 @@ namespace llvm {
     public:
       PHINode *originalLoopCarriedPHI;
       PHINode *loopCarriedPHI;
+      Value *clonedInitialValue;
       std::unordered_set<LoadInst *> environmentLoads;
       std::unordered_set<StoreInst *> environmentStores;
   };
