@@ -76,7 +76,7 @@ namespace llvm {
       void collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats);
       void collectStatsOnNoelleInvariants (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats);
 
-      void collectStatsOnSCCDAG (Hot *profiles, SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, Stats *statsForLoop);
+      void collectStatsOnSCCDAG (Hot *profiles, SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, LoopDependenceInfo *ldi, Stats *statsForLoop) ;
 
       void printPerLoopStats (Hot *profiles, Stats *stats);
       void printStatsHumanReadable (Hot *profiles);
