@@ -227,6 +227,13 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (Functio
       }
 
       /*
+       * Check if the callee is an intrinsic.
+       */
+      if (callF->isIntrinsic()){
+        continue ;
+      }
+
+      /*
        * Do not consider inlining a recursive function call
        */
       if (callF == F) {

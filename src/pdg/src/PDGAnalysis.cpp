@@ -28,6 +28,8 @@ PDGAnalysis::PDGAnalysis()
     , dumpPDG{false}
     , performThePDGComparison{false}
     , disableSVF{false}
+    , disableAllocAA{false}
+    , disableRA{false}
     , printer{} 
   {
 
@@ -398,10 +400,17 @@ MDNode * PDGAnalysis::getSubEdgesMetadata(DGEdge<Value> *edge, LLVMContext &C, u
 void PDGAnalysis::trimDGUsingCustomAliasAnalysis (PDG *pdg) {
 
   /*
-   * Invoke AllocAA
+   * Fetch AllocAA
    */
   collectCGUnderFunctionMain(*this->M);
   this->allocAA = &getAnalysis<AllocAA>();
+  if (this->disableAllocAA){
+    return ;
+  }
+
+  /*
+   * Invoke AllocAA
+   */
   removeEdgesNotUsedByParSchemes(pdg);
 
   /*
@@ -502,7 +511,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
     }
     return false;
   };
-  auto dfr = this->dfa.runReachableAnalysis(&F, onlyMemoryInstructionFilter);
+  auto dfr = this->disableRA ? this->dfa.getFullSets(&F) : this->dfa.runReachableAnalysis(&F, onlyMemoryInstructionFilter);
 
   for (auto &B : F) {
     for (auto &I : B) {

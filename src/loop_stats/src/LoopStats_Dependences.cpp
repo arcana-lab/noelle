@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-void LoopStats::collectStatsOnLLVMSCCs (PDG *loopDG, Stats *statsForLoop) {
+void LoopStats::collectStatsOnLLVMSCCs (Hot *profiles, PDG *loopDG, Stats *statsForLoop) {
 
   /*
    * Construct loop internal SCCDAG (it uses LLVM's scc_iterator)
@@ -23,12 +23,12 @@ void LoopStats::collectStatsOnLLVMSCCs (PDG *loopDG, Stats *statsForLoop) {
   }
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
   auto loopInternalSCCDAG = SCCDAG(loopInternalDG);
-  collectStatsOnSCCDAG(&loopInternalSCCDAG, nullptr, statsForLoop);
+  collectStatsOnSCCDAG(profiles, &loopInternalSCCDAG, nullptr, nullptr, statsForLoop);
 
   return ;
 }
 
-void LoopStats::collectStatsOnNoelleSCCs (LoopDependenceInfo &LDI, Stats *statsForLoop) {
+void LoopStats::collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI, Stats *statsForLoop) {
 
   /*
    * HACK: we need to re-compute SCCDAGAttrs instead of using the one provided by LDI
@@ -60,11 +60,13 @@ void LoopStats::collectStatsOnNoelleSCCs (LoopDependenceInfo &LDI, Stats *statsF
   auto inductionVariables = InductionVariableManager(loopHierarchy, *invariantManager, SE, loopInternalSCCDAG, environment);
   auto sccdagAttrs = SCCDAGAttrs(loopDG, &loopInternalSCCDAG, loopHierarchy, SE, lcd, inductionVariables, DS);
 
-  DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-" + std::to_string(LDI.getID()) + ".dot", &loopInternalSCCDAG);
-  collectStatsOnSCCDAG(&loopInternalSCCDAG, &sccdagAttrs, statsForLoop);
+  //DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-" + std::to_string(LDI.getID()) + ".dot", &loopInternalSCCDAG);
+  collectStatsOnSCCDAG(profiles, &loopInternalSCCDAG, &sccdagAttrs, &LDI, statsForLoop);
+
+  return ;
 }
 
-void LoopStats::collectStatsOnSCCDAG (SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, Stats *statsForLoop) {
+void LoopStats::collectStatsOnSCCDAG (Hot *profiles, SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, LoopDependenceInfo *ldi, Stats *statsForLoop) {
 
   /*
    * For every SCC object contained in an un-merged SCCDAG, we need to determine
@@ -76,7 +78,7 @@ void LoopStats::collectStatsOnSCCDAG (SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, 
 
     statsForLoop->numberOfNodesInSCCDAG++;
 
-    bool isSCC = false;
+    auto isSCC = false;
     for (auto edge : scc->getEdges()) {
       if (scc->isInternal(edge->getOutgoingT()) && scc->isInternal(edge->getIncomingT())) {
         isSCC = true;
@@ -88,10 +90,37 @@ void LoopStats::collectStatsOnSCCDAG (SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, 
     statsForLoop->numberOfSCCs++;
 
     if (sccdagAttrs) {
+      assert(ldi != nullptr);
+
+      /*
+       * Fetch the SCC attributes
+       */
       auto sccAttrs = sccdagAttrs->getSCCAttrs(scc);
-      if (sccAttrs->getType() != SCCAttrs::SCCType::SEQUENTIAL) continue;
+
+      /*
+       * Skip SCC that will not be executed sequentially
+       */
+      if (!sccAttrs->mustExecuteSequentially()){
+        continue ;
+      }
+      if (sccAttrs->isInductionVariableSCC()){
+        continue ;
+      }
+      if (sccAttrs->canBeCloned()){
+        continue ;
+      }
+      if (sccAttrs->canExecuteReducibly()) {
+        continue ;
+      }
+      if (sccAttrs->canBeClonedUsingLocalMemoryLocations()){
+        continue ;
+      }
+      if (sccAttrs->getType() != SCCAttrs::SCCType::SEQUENTIAL) {
+        continue ;
+      }
     }
     statsForLoop->numberOfSequentialSCCs++;
+    statsForLoop->dynamicInstructionsOfSequentialSCCs += profiles->getTotalInstructions(scc);
   }
 
   return ;

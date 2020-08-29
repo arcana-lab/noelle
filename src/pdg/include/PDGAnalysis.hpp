@@ -62,6 +62,8 @@ namespace llvm {
       bool dumpPDG;
       bool performThePDGComparison;
       bool disableSVF;
+      bool disableAllocAA;
+      bool disableRA;
       PDGPrinter printer;
       PointerAnalysis *pta;
       PTACallGraph *callGraph;

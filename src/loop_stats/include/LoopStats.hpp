@@ -40,6 +40,8 @@ namespace llvm {
         int64_t numberOfNodesInSCCDAG = 0;
         int64_t numberOfSCCs = 0;
         int64_t numberOfSequentialSCCs = 0;
+        int64_t dynamicInstructionsOfSequentialSCCs = 0;
+        uint64_t dynamicTotalInstructions = 0;
 
         Stats operator + (Stats const &obj) {
           Stats res;
@@ -52,6 +54,8 @@ namespace llvm {
           res.numberOfNodesInSCCDAG = this->numberOfNodesInSCCDAG + obj.numberOfNodesInSCCDAG;
           res.numberOfSCCs = this->numberOfSCCs + obj.numberOfSCCs;
           res.numberOfSequentialSCCs = this->numberOfSequentialSCCs + obj.numberOfSequentialSCCs;
+          res.dynamicInstructionsOfSequentialSCCs = this->dynamicInstructionsOfSequentialSCCs + obj.dynamicInstructionsOfSequentialSCCs;
+          res.dynamicTotalInstructions = this->dynamicTotalInstructions + obj.dynamicTotalInstructions;
 
           return res;
         }
@@ -64,18 +68,18 @@ namespace llvm {
       void collectStatsForLoop (Hot *profiles, int id, ScalarEvolution &SE, PDG *loopDG, Loop &llvmLoop);
       void collectStatsForLoop (Hot *profiles, LoopDependenceInfo &LDI);
 
-      void collectStatsOnLLVMSCCs (PDG *loopDG, Stats *statsForLoop);
+      void collectStatsOnLLVMSCCs (Hot *profiles, PDG *loopDG, Stats *statsForLoop);
       void collectStatsOnLLVMIVs (Hot *profiles, ScalarEvolution &SE, Loop &llvmLoop, Stats *stats);
       void collectStatsOnLLVMInvariants (Hot *profiles, Loop &llvmLoop, Stats *stats);
 
       void collectStatsOnNoelleIVs (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats);
-      void collectStatsOnNoelleSCCs (LoopDependenceInfo &LDI, Stats *stats);
+      void collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats);
       void collectStatsOnNoelleInvariants (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats);
 
-      void collectStatsOnSCCDAG (SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, Stats *statsForLoop);
+      void collectStatsOnSCCDAG (Hot *profiles, SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, LoopDependenceInfo *ldi, Stats *statsForLoop) ;
 
-      void printPerLoopStats (Stats *stats);
-      void printStatsHumanReadable (void);
+      void printPerLoopStats (Hot *profiles, Stats *stats);
+      void printStatsHumanReadable (Hot *profiles);
 
   };
 

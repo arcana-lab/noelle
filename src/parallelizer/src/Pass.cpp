@@ -71,6 +71,7 @@ bool Parallelizer::runOnModule (Module &M) {
   HELIX helix{
     M,
     *profiles,
+    this->forceParallelization,
     verbosity
   };
 
@@ -110,12 +111,13 @@ bool Parallelizer::runOnModule (Module &M) {
      * Check if the latency of each loop invocation is enough to justify the parallelization.
      */
     auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
+    auto averageInstsPerInvocationThreshold = 2000;
     if (  true
           && (!this->forceParallelization)
-          && (averageInstsPerInvocation < 2000)
+          && (averageInstsPerInvocation < averageInstsPerInvocationThreshold)
       ){
       errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
-      errs() << "Parallelizer:      It is too low\n";
+      errs() << "Parallelizer:      It is too low. The threshold is " << averageInstsPerInvocationThreshold << "\n";
 
       /*
        * Remove the loop.
@@ -127,12 +129,13 @@ bool Parallelizer::runOnModule (Module &M) {
      * Check the number of iterations per invocation.
      */
     auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
+    auto averageIterationThreshold = 12;
     if (  true
           && (!this->forceParallelization)
-          && (averageIterations < 12)
+          && (averageIterations < averageIterationThreshold)
       ){
       errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
-      errs() << "Parallelizer:      It is too low\n";
+      errs() << "Parallelizer:      It is too low. The threshold is " << averageIterationThreshold << "\n";
 
       /*
        * Remove the loop.

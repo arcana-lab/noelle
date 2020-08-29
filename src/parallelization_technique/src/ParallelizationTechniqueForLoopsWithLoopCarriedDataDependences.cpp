@@ -15,9 +15,10 @@ using namespace llvm;
 ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences (
   Module &module, 
   Hot &p,
+  bool forceParallelization,
   Verbosity v
   )
-  : ParallelizationTechnique{module, p, v}, partitioner{nullptr}
+  : ParallelizationTechnique{module, p, v}, partitioner{nullptr}, forceParallelization{forceParallelization}
   {
 
   return ;

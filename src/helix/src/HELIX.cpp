@@ -14,10 +14,12 @@
 HELIX::HELIX (
   Module &module, 
   Hot &p,
+  bool forceParallelization,
   Verbosity v
   )
-  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, v},
-    loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr}, lastIterationExecutionBlock{nullptr}
+  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, forceParallelization, v},
+    loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr},
+    lastIterationExecutionBlock{nullptr}
   {
 
   /*
@@ -94,6 +96,41 @@ bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Noelle &par, Heuristics
     return false;
   }
 
+  /*
+   * Check if we are forced to parallelize
+   */
+  if (this->forceParallelization){
+
+    /*
+     * HELIX is applicable.
+     */
+    return true;
+  }
+
+  /*
+   * Ensure there is not too little execution that is too proportionally sequential for HELIX 
+   */
+  auto profiles = par.getProfiles();
+  auto loopID = LDI->getID();
+  auto loopStructure = LDI->getLoopStructure();
+  auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(loopStructure);
+  auto averageInstructionThreshold = 20;
+  bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
+  auto maximumSequentialFraction = .2;
+  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI, par);
+  bool hasProportionallySignificantSequentialExecution = sequentialFraction >= maximumSequentialFraction;
+  if (hasLittleExecution && hasProportionallySignificantSequentialExecution) {
+    errs() << "Parallelizer:    Loop " << loopID << " has "
+      << averageInstructions << " number of sequential instructions on average per loop iteration\n";
+    errs() << "Parallelizer:    Loop " << loopID << " has "
+      << sequentialFraction << " % sequential execution per loop iteration\n";
+    errs() << "Parallelizer:      It will be too heavily synchronized for HELIX. The thresholds are at least "
+      << averageInstructionThreshold << " instructions per iteration or less than "
+      << maximumSequentialFraction << " % sequential execution." << "\n";
+
+    return false;
+  }
+
   return true ;
 }
 
@@ -111,11 +148,10 @@ bool HELIX::apply (
    */
   if (this->tasks.size() == 0) {
     this->createParallelizableTask(LDI, par, h);
-  } else {
-    this->synchronizeTask(LDI, par, h);
+    return true;
   }
 
-  return true;
+  return this->synchronizeTask(LDI, par, h);
 }
 
 void HELIX::createParallelizableTask (
@@ -168,8 +204,8 @@ void HELIX::createParallelizableTask (
        */
       errs() << "HELIX:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
       if (this->verbose >= Verbosity::Maximal) {
-        errs() << "HELIX:     SCC:\n";
-        scc->printMinimal(errs(), "HELIX:       ") ;
+        // errs() << "HELIX:     SCC:\n";
+        // scc->printMinimal(errs(), "HELIX:       ") ;
         errs() << "HELIX:       Loop-carried data dependences\n";
         LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
@@ -232,6 +268,9 @@ void HELIX::createParallelizableTask (
   /*
    * Clone the sequential loop and store the cloned instructions/basic blocks within the single task of HELIX.
    */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "HELIX:  Cloning loop in task\n";
+  }
   this->cloneSequentialLoop(LDI, 0);
 
   /*
@@ -272,11 +311,17 @@ void HELIX::createParallelizableTask (
   /*
    * Spill loop carried dependencies into a separate environment array
    */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "HELIX:  Spilling loop carried dependencies\n";
+  }
   this->spillLoopCarriedDataDependencies(LDI);
 
   /*
    * For IVs that were not spilled, adjust their step size appropriately
    */
+  if (this->verbose >= Verbosity::Maximal) {
+    errs() << "HELIX:  Adjusting loop IVs\n";
+  }
   this->rewireLoopForIVsToIterateNthIterations(LDI);
 
   /*
@@ -287,13 +332,13 @@ void HELIX::createParallelizableTask (
 
   if (this->verbose >= Verbosity::Maximal) {
     SubCFGs execGraph(*helixTask->getTaskBody());
-    DGPrinter::writeGraph<SubCFGs, BasicBlock>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   return ;
 }
 
-void HELIX::synchronizeTask (
+bool HELIX::synchronizeTask (
   LoopDependenceInfo *LDI,
   Noelle &par, 
   Heuristics *h
@@ -321,6 +366,30 @@ void HELIX::synchronizeTask (
    * Schedule the sequential segments to overlap parallel and sequential segments.
    */
   this->scheduleSequentialSegments(LDI, &sequentialSegments);
+
+  /*
+   * Check if any sequential segment's entry and exit frontier spans the entire loop execution
+   * If so, do not parallelize
+   */
+  if (!this->forceParallelization) {
+    auto loopSummary = LDI->getLoopStructure();
+    auto loopHeader = loopSummary->getHeader();
+    auto loopLatches = loopSummary->getLatches();
+    for (auto sequentialSegment : sequentialSegments) {
+      bool entryAtHeader = false, exitAtLatch = false;
+      sequentialSegment->forEachEntry([&](Instruction *entry) -> void {
+        auto entryBlock = entry->getParent();
+        entryAtHeader |= loopHeader == entryBlock;
+        exitAtLatch |= loopLatches.find(entryBlock) != loopLatches.end();
+      });
+      if (!entryAtHeader || !exitAtLatch) continue;
+
+      if (this->verbose != Verbosity::Disabled) {
+        errs() << "HELIX: There is a sequential segment spanning the entire loop; therefore, the parallelization isn't worth it.\n";
+      }
+      return false;
+    }
+  }
 
   /*
    * Add synchronization instructions.
@@ -405,19 +474,19 @@ void HELIX::synchronizeTask (
   /*
    * Inline calls to HELIX functions.
    */
-  this->inlineCalls();
+  // this->inlineCalls();
 
   /*
    * Print the HELIX task.
    */
   if (this->verbose >= Verbosity::Maximal) {
     helixTask->getTaskBody()->print(errs() << "HELIX:  Task code:\n"); errs() << "\n";
-    errs() << "HELIX: Exit\n";
-    SubCFGs execGraph(*helixTask->getTaskBody());
-    DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
+    // errs() << "HELIX: Exit\n";
+    // SubCFGs execGraph(*helixTask->getTaskBody());
+    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
-  return ;
+  return true;
 }
 
 Function * HELIX::getTaskFunction (void) const {
