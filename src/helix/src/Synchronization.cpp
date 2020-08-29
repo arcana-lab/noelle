@@ -276,41 +276,68 @@ void HELIX::addSynchronizations (
      * NOTE: This has to be done BEFORE any preamble synchronization, so this
      * insertion comes after the check exit logic has already been inserted
      */
-    IRBuilder<> headerBuilder(loopHeader->getFirstNonPHIOrDbgOrLifetime());
+    auto firstLoopInst = loopHeader->getFirstNonPHIOrDbgOrLifetime();
+    IRBuilder<> headerBuilder(firstLoopInst);
     headerBuilder.CreateStore(ConstantInt::get(int64, 0), ssStates.at(ss->getID()));
 
     /*
      * Inject waits.
+     *
+     * NOTE: If this is the preamble, simply insert the wait at the entry to the loop
      * Also inject an exit flag check for the preamble (AFTER the wait so the check is synchronized)
      */
-    ss->forEachEntry([preambleSS, ss, &injectWait, &injectExitFlagCheck](Instruction *justAfterEntry) -> void {
-      injectWait(ss, justAfterEntry);
-      if (preambleSS == ss) {
-        injectExitFlagCheck(justAfterEntry);
+    if (preambleSS != ss) {
+      ss->forEachEntry([preambleSS, ss, &injectWait, &injectExitFlagCheck](Instruction *justAfterEntry) -> void {
+        injectWait(ss, justAfterEntry);
+      });
+    } else {
+      injectWait(ss, firstLoopInst);
+      injectExitFlagCheck(firstLoopInst);
+    }
+
+    /*
+     * NOTE: To prevent double counting successor blocks for signals,
+     * when the exit is a conditional terminator, add the first instruction in all successors
+     * to a set of all exits; then signal at all unique exits determined
+     */
+    std::unordered_set<Instruction *> exits;
+    ss->forEachExit([&exits](Instruction *justBeforeExit) -> void {
+      auto block = justBeforeExit->getParent();
+      auto terminator = block->getTerminator();
+      if (terminator != justBeforeExit || terminator->getNumSuccessors() == 1) {
+        exits.insert(justBeforeExit);
+        return ;
+      }
+
+      for (auto successor : successors(block)) {
+        auto beginningOfSuccessor = successor->getFirstNonPHIOrDbgOrLifetime();
+        exits.insert(beginningOfSuccessor);
       }
     });
 
     /*
-     * Inject signals at sequential segment exits
-     * Also inject an exit flag set for the preamble's loop exits
-     * (AFTER the call to injectSignal so the setter is placed before the signal call)
+     * NOTE: If this is the preamble, also insert signals after all loop exits
      */
-    ss->forEachExit([preambleSS, ss, loopStructure, &injectSignal, &injectExitFlagSet](Instruction *justBeforeExit) -> void {
-      injectSignal(ss, justBeforeExit);
-
-      if (preambleSS == ss) {
-        auto block = justBeforeExit->getParent();
-        auto terminator = block->getTerminator();
-        if (terminator == justBeforeExit) {
-          for (auto successor : successors(block)) {
-            if (!loopStructure->isIncluded(successor)) {
-              auto beginningOfLoopExit = successor->getFirstNonPHIOrDbgOrLifetime();
-              injectExitFlagSet(beginningOfLoopExit);
-            }
-          }
-        }
+    if (preambleSS == ss) {
+      for (auto exitBlock : loopStructure->getLoopExitBasicBlocks()) {
+        auto beginningOfExitBlock = exitBlock->getFirstNonPHIOrDbgOrLifetime();
+        exits.insert(beginningOfExitBlock);
       }
-    });
+    }
+
+    /*
+     * Inject signals at sequential segment exits
+     *
+     * NOTE: For the preamble, jnject the exit flag set after injecting the signal
+     * so that the set instruction is placed before the signal call
+     */
+    for (auto exit : exits) {
+      injectSignal(ss, exit);
+      if (preambleSS == ss &&
+        !loopStructure->isIncluded(exit)) {
+        injectExitFlagSet(exit);
+      }
+    }
   }
 
   return ;
