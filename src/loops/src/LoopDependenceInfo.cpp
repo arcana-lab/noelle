@@ -22,7 +22,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   DominatorSummary &DS,
   ScalarEvolution &SE,
   uint32_t maxCores
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, nullptr} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, nullptr, true} {
 
   return ;
 }
@@ -34,7 +34,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   ScalarEvolution &SE,
   uint32_t maxCores,
   liberty::LoopAA *aa
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, aa} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, aa, true} {
 
   return ;
 }
@@ -46,7 +46,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   ScalarEvolution &SE,
   uint32_t maxCores,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, optimizations, nullptr} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, optimizations, nullptr, true} {
 
   return ;
 }
@@ -58,11 +58,13 @@ LoopDependenceInfo::LoopDependenceInfo(
   ScalarEvolution &SE,
   uint32_t maxCores,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations,
-  liberty::LoopAA *loopAA
+  liberty::LoopAA *loopAA,
+  bool enableLoopAwareDependenceAnalyses
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{maxCores},
     liSummary{l},
-    enabledOptimizations{optimizations}
+    enabledOptimizations{optimizations},
+    areLoopAwareAnalysesEnabled{enableLoopAwareDependenceAnalyses}
   {
 
   /*
@@ -118,8 +120,9 @@ LoopDependenceInfo::LoopDependenceInfo(
 
 void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) {
   this->DOALLChunkSize = otherLDI->DOALLChunkSize;
-  this->maximumNumberOfCoresForTheParallelization = otherLDI->maximumNumberOfCoresForTheParallelization;
   this->enabledTransformations = otherLDI->enabledTransformations;
+  this->maximumNumberOfCoresForTheParallelization = otherLDI->maximumNumberOfCoresForTheParallelization;
+  this->areLoopAwareAnalysesEnabled = otherLDI->areLoopAwareAnalysesEnabled;
 
   return ;
 }
@@ -201,7 +204,9 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto preRefinedSCCDAG = SCCDAG(loopInternalDG);
   auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
-  refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, lcdUsingLoopDGEdges, aa, &domainSpace);
+  if (this->areLoopAwareAnalysesEnabled){
+    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, lcdUsingLoopDGEdges, aa, &domainSpace);
+  }
 
   if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {
 

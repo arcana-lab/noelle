@@ -24,6 +24,7 @@ namespace llvm {
       ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences (
         Module &module, 
         Hot &p,
+        bool forceParallelization,
         Verbosity v
       );
 
@@ -46,6 +47,7 @@ namespace llvm {
        * Fields
        */
       SCCDAGPartitioner *partitioner;
+      bool forceParallelization;
 
       /*
        * Partition SCCDAG.

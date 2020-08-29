@@ -19,8 +19,7 @@ DSWP::DSWP (
   bool enableSCCMerging,
   Verbosity v
 ) :
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, v},
-  forceParallelization{forceParallelization},
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, forceParallelization, v},
   enableMergingSCC{enableSCCMerging},
   queues{}, queueArrayType{nullptr},
   sccToStage{}, stageArrayType{nullptr},
@@ -154,6 +153,29 @@ bool DSWP::canBeAppliedToLoop (
   }
 
   /*
+   * Ensure there is not too little execution that is too proportionally iteration-independent for DSWP
+   */
+  auto loopID = LDI->getID();
+  auto loopStructure = LDI->getLoopStructure();
+  auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(loopStructure);
+  auto averageInstructionThreshold = 20;
+  bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
+  auto minimumSequentialFraction = .5;
+  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI, par);
+  bool hasProportionallyInsignificantSequentialExecution = sequentialFraction < minimumSequentialFraction;
+  if (hasLittleExecution && hasProportionallyInsignificantSequentialExecution) {
+    errs() << "Parallelizer:    Loop " << loopID << " has "
+      << averageInstructions << " number of sequential instructions on average per loop iteration\n";
+    errs() << "Parallelizer:    Loop " << loopID << " has "
+      << sequentialFraction << " % sequential execution per loop iteration\n";
+    errs() << "Parallelizer:      It will not be partitioned enough for DSWP. The thresholds are at least "
+      << averageInstructionThreshold << " instructions per iteration or at least "
+      << minimumSequentialFraction << " % sequential execution." << "\n";
+
+    return false;
+  }
+
+  /*
    * DSWP is applicable.
    */
   return true ;
@@ -190,7 +212,7 @@ bool DSWP::apply (
   /*
    * Check if the parallelization is worth it.
    */
-  if (this->partitioner->numberOfPartitions() == 1){
+  if (!this->forceParallelization && this->partitioner->numberOfPartitions() == 1){
 
     /*
      * The parallelization isn't worth it as there is only one pipeline stage.
@@ -210,7 +232,7 @@ bool DSWP::apply (
    */
   generateStagesFromPartitionedSCCs(LDI);
   addClonableSCCsToStages(LDI);
-  writeStageGraphsAsDot(*LDI);
+  // writeStageGraphsAsDot(*LDI);
   assert(isCompleteAndValidStageStructure(LDI));
 
   /*
@@ -225,7 +247,7 @@ bool DSWP::apply (
   collectDataAndMemoryQueueInfo(LDI, par);
   collectControlQueueInfo(LDI, par);
   // assert(areQueuesAcyclical());
-  writeStageQueuesAsDot(*LDI);
+  // writeStageQueuesAsDot(*LDI);
 
   /*
    * Collect information on stages' environments
@@ -247,7 +269,7 @@ bool DSWP::apply (
   collectLiveInEnvInfo(LDI);
   collectLiveOutEnvInfo(LDI);
 
-  if (this->verbose >= Verbosity::Maximal) {
+  if (this->verbose >= Verbosity::Minimal) {
     printStageSCCs(LDI);
   }
   if (this->verbose >= Verbosity::Minimal) {
@@ -275,9 +297,9 @@ bool DSWP::apply (
      * Add instructions of the current pipeline stage to the task function
      */
     generateLoopSubsetForStage(LDI, i);
-    if (this->verbose >= Verbosity::Maximal) {
-      printStageClonedValues(*LDI, i);
-    }
+    // if (this->verbose >= Verbosity::Maximal) {
+      // printStageClonedValues(*LDI, i);
+    // }
 
     /*
      * Load pointers of all queues for the current pipeline stage at the function's entry
@@ -303,6 +325,10 @@ bool DSWP::apply (
     if (this->verbose >= Verbosity::Maximal) {
       errs() << "DSWP:  Loaded live-in variables\n";
     }
+
+    // SubCFGs execGraph(*task->getTaskBody());
+    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("dswp-loop-" + std::to_string(LDI->getID()) + "-task-" + std::to_string(i) + ".dot", &execGraph);
+    // dumpToFile(*LDI);
 
     /*
      * HACK: For now, this must follow loading live-ins as this re-wiring overrides
@@ -351,6 +377,9 @@ bool DSWP::apply (
 
     if (this->verbose >= Verbosity::Maximal) {
       task->getTaskBody()->print(errs() << "Pipeline stage " << i << ":\n"); errs() << "\n";
+      // SubCFGs execGraph(*task->getTaskBody());
+      // std::string name = "dswp-task-" + std::to_string(task->getID()) + "-loop-" + std::to_string(LDI->getID()) + ".dot";
+      // DGPrinter::writeGraph<SubCFGs, BasicBlock>(name , &execGraph);
     }
   }
 

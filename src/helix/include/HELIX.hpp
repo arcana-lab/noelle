@@ -36,6 +36,7 @@ namespace llvm {
       HELIX (
         Module &module,
         Hot &p,
+        bool forceParallelization,
         Verbosity v
       );
 
@@ -67,7 +68,7 @@ namespace llvm {
         Heuristics *h
       );
 
-      void synchronizeTask (
+      bool synchronizeTask (
         LoopDependenceInfo *LDI,
         Noelle &par, 
         Heuristics *h

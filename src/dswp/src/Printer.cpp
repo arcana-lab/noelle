@@ -21,7 +21,10 @@ void llvm::DSWP::printStageSCCs (LoopDependenceInfo *LDI) const {
     auto task = (DSWPTask *)techniqueTask;
     errs() << "DSWP:    Stage: " << task->getID() << "\n";
     for (auto scc : task->stageSCCs) {
-      scc->print(errs(), "DSWP:     ", /*maxEdges=*/15);
+      errs() << "DSWP:    SCC\n";
+      for (auto nodePair : scc->internalNodePairs()) {
+        nodePair.second->print(errs() << "DSWP:    ") << "\n";
+      }
       errs() << "DSWP:    \n" ;
     }
   }

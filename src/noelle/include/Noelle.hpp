@@ -192,6 +192,7 @@ namespace llvm {
       std::unordered_set<Transformation> enabledTransformations;
       uint32_t maxCores;
       bool hoistLoopsToMain;
+      bool loopAwareDependenceAnalysis;
       noelle::CallGraph *pcg;
       PDGAnalysis *pdgAnalysis;
       liberty::LoopAA *loopAA;
