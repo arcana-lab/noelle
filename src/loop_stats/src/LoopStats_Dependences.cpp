@@ -23,7 +23,7 @@ void LoopStats::collectStatsOnLLVMSCCs (Hot *profiles, PDG *loopDG, Stats *stats
   }
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
   auto loopInternalSCCDAG = SCCDAG(loopInternalDG);
-  collectStatsOnSCCDAG(profiles, &loopInternalSCCDAG, nullptr, statsForLoop);
+  collectStatsOnSCCDAG(profiles, &loopInternalSCCDAG, nullptr, nullptr, statsForLoop);
 
   return ;
 }
@@ -61,12 +61,12 @@ void LoopStats::collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI
   auto sccdagAttrs = SCCDAGAttrs(loopDG, &loopInternalSCCDAG, loopHierarchy, SE, lcd, inductionVariables, DS);
 
   //DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-" + std::to_string(LDI.getID()) + ".dot", &loopInternalSCCDAG);
-  collectStatsOnSCCDAG(profiles, &loopInternalSCCDAG, &sccdagAttrs, statsForLoop);
+  collectStatsOnSCCDAG(profiles, &loopInternalSCCDAG, &sccdagAttrs, &LDI, statsForLoop);
 
   return ;
 }
 
-void LoopStats::collectStatsOnSCCDAG (Hot *profiles, SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, Stats *statsForLoop) {
+void LoopStats::collectStatsOnSCCDAG (Hot *profiles, SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, LoopDependenceInfo *ldi, Stats *statsForLoop) {
 
   /*
    * For every SCC object contained in an un-merged SCCDAG, we need to determine
@@ -78,7 +78,7 @@ void LoopStats::collectStatsOnSCCDAG (Hot *profiles, SCCDAG *sccdag, SCCDAGAttrs
 
     statsForLoop->numberOfNodesInSCCDAG++;
 
-    bool isSCC = false;
+    auto isSCC = false;
     for (auto edge : scc->getEdges()) {
       if (scc->isInternal(edge->getOutgoingT()) && scc->isInternal(edge->getIncomingT())) {
         isSCC = true;
@@ -90,8 +90,34 @@ void LoopStats::collectStatsOnSCCDAG (Hot *profiles, SCCDAG *sccdag, SCCDAGAttrs
     statsForLoop->numberOfSCCs++;
 
     if (sccdagAttrs) {
+      assert(ldi != nullptr);
+
+      /*
+       * Fetch the SCC attributes
+       */
       auto sccAttrs = sccdagAttrs->getSCCAttrs(scc);
-      if (sccAttrs->getType() != SCCAttrs::SCCType::SEQUENTIAL) continue;
+
+      /*
+       * Skip SCC that will not be executed sequentially
+       */
+      if (!sccAttrs->mustExecuteSequentially()){
+        continue ;
+      }
+      if (sccAttrs->isInductionVariableSCC()){
+        continue ;
+      }
+      if (sccAttrs->canBeCloned()){
+        continue ;
+      }
+      if (sccAttrs->canExecuteReducibly()) {
+        continue ;
+      }
+      if (sccAttrs->canBeClonedUsingLocalMemoryLocations()){
+        continue ;
+      }
+      if (sccAttrs->getType() != SCCAttrs::SCCType::SEQUENTIAL) {
+        continue ;
+      }
     }
     statsForLoop->numberOfSequentialSCCs++;
     statsForLoop->dynamicInstructionsOfSequentialSCCs += profiles->getTotalInstructions(scc);
