@@ -28,6 +28,7 @@ PDGAnalysis::PDGAnalysis()
     , dumpPDG{false}
     , performThePDGComparison{false}
     , disableSVF{false}
+    , disableAllocAA{false}
     , disableRA{false}
     , printer{} 
   {
@@ -399,10 +400,17 @@ MDNode * PDGAnalysis::getSubEdgesMetadata(DGEdge<Value> *edge, LLVMContext &C, u
 void PDGAnalysis::trimDGUsingCustomAliasAnalysis (PDG *pdg) {
 
   /*
-   * Invoke AllocAA
+   * Fetch AllocAA
    */
   collectCGUnderFunctionMain(*this->M);
   this->allocAA = &getAnalysis<AllocAA>();
+  if (this->disableAllocAA){
+    return ;
+  }
+
+  /*
+   * Invoke AllocAA
+   */
   removeEdgesNotUsedByParSchemes(pdg);
 
   /*
