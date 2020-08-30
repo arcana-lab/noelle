@@ -46,6 +46,16 @@ namespace llvm {
 
       void addLiveIn (Value *original, Value *internal) ;
 
+      /*
+       * Live-out instructions
+       */
+      bool doesOriginalLiveOutHaveManyClones (Instruction *I) const ;
+
+      std::unordered_set<Instruction *> getClonesOfOriginalLiveOut (Instruction *I) const ;
+
+      void addLiveOut (Instruction *original, Instruction *internal) ;
+
+      void removeLiveOut (Instruction *original, Instruction *removed) ;
 
       /*
        * Instructions
@@ -111,14 +121,34 @@ namespace llvm {
     protected:
       uint32_t ID;
       Function *F;
+
+      /*
+       * There is a one-to-one mapping between the original live in value and a pointer
+       * to the environment where that original live in value is stored for use by the task
+       */
       std::unordered_map<Value *, Value *> liveInClones;
+
+      /*
+       * With few exceptions, the clone of the live out value is used directly, stored
+       * into the environment for use after the task executes. When that value is duplicated
+       * by tasks doing more complicated transformations, this structure holds the mapping
+       * between the original live out instruction and all its duplicates
+       */
+      std::unordered_map<Instruction *, std::unordered_set<Instruction *>> liveOutClones;
+
+      /*
+       * This is a one-to-one mapping between the original loop's structure and the
+       * task's cloned loop structure
+       * TODO: Provide a one-to-many mapping for use by more complex transformations
+       */
       std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
+      std::unordered_map<Instruction *, Instruction *> instructionClones;
+
       Value *instanceIndexV;
       Value *envArg;
       BasicBlock *entryBlock;
       BasicBlock *exitBlock;
       std::vector<BasicBlock *> lastBlocks;
-      std::unordered_map<Instruction *, Instruction *> instructionClones;
 
       LLVMContext & getLLVMContext (void) const ;
   };
