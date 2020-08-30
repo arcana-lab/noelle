@@ -472,8 +472,21 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
 
     /*
      * Fetch the producer of the current live-out variable.
+     * Fetch the clones of the producer. If none are specified in the one-to-many mapping,
+     * assume the direct cloning of the producer is the only clone
+     * TODO: Find a better place to map this single clone (perhaps when the original loop's values are cloned)
      */
     auto producer = (Instruction*)LDI->environment->producerAt(envIndex);
+    if (!task->doesOriginalLiveOutHaveManyClones(producer)) {
+      auto singleProducerClone = task->getCloneOfOriginalInstruction(producer);
+      task->addLiveOut(producer, singleProducerClone);
+    }
+    auto producerClones = task->getClonesOfOriginalLiveOut(producer);
+
+    producer->print(errs() << "Original producer: "); errs() << "\n";
+    for (auto producerClone : producerClones) {
+      producerClone->print(errs() << "Cloned producer: "); errs() << "\n";
+    }
 
     /*
      * Create GEP access of the single, or reducable, environment variable
@@ -512,18 +525,20 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      * that have reducible live outs, and this flexibility is ONLY permitted for reducible live outs
      * as non-reducible live outs can never store intermediate values of the producer.
      */
-    auto prodClone = task->getCloneOfOriginalInstruction(producer);
-    auto insertBBs = this->determineLatestPointsToInsertLiveOutStore(LDI, taskIndex, prodClone, isReduced, taskDS);
-    for (auto BB : insertBBs) {
+    for (auto producerClone : producerClones) {
 
-      auto producerValueToStore = isReduced
-        ? fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(LDI, taskIndex, envIndex, BB, taskDS)
-        : prodClone;
+      auto insertBBs = this->determineLatestPointsToInsertLiveOutStore(LDI, taskIndex, producerClone, isReduced, taskDS);
+      for (auto BB : insertBBs) {
 
-      IRBuilder<> liveOutBuilder(BB);
-      auto store = (StoreInst*)liveOutBuilder.CreateStore(producerValueToStore, envPtr);
-      store->removeFromParent();
-      store->insertBefore(BB->getTerminator());
+        auto producerValueToStore = isReduced
+          ? fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(LDI, taskIndex, envIndex, BB, taskDS)
+          : producerClone;
+
+        IRBuilder<> liveOutBuilder(BB);
+        auto store = (StoreInst*)liveOutBuilder.CreateStore(producerValueToStore, envPtr);
+        store->removeFromParent();
+        store->insertBefore(BB->getTerminator());
+      }
     }
   }
 

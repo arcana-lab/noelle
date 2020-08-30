@@ -223,6 +223,15 @@ void HELIX::createParallelizableTask (
   }
 
   /*
+   * Compute reachability so that determining whether spill loads placed in loop
+   * exit blocks could be invalidated by spill stores in the loop. If so,
+   * they will have to be placed within the loop (which is less optimal)
+   * NOTE: This is computed BEFORE generateEmptyTasks creates an empty basic block
+   * in the original function which will be used to link this task
+   */
+  auto reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
+
+  /*
    * Generate empty tasks for the HELIX execution.
    */
   auto helixTask = new HELIXTask(this->taskType, this->module);
@@ -314,7 +323,7 @@ void HELIX::createParallelizableTask (
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "HELIX:  Spilling loop carried dependencies\n";
   }
-  this->spillLoopCarriedDataDependencies(LDI);
+  this->spillLoopCarriedDataDependencies(LDI, reachabilityDFR);
 
   /*
    * For IVs that were not spilled, adjust their step size appropriately
