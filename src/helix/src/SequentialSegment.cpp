@@ -42,8 +42,18 @@ SequentialSegment::SequentialSegment (
 
   /*
    * Identify all dependent instructions that require synchronization
+   * NOTE: Exclude PHINode instructions (TODO: determine other instructions
+   * that do not have any influence on the defining of entry/exit frontiers)
    */
   std::unordered_set<Instruction *> ssInstructions = getInstructions();
+  std::unordered_set<Instruction *> excludedInstructions;
+  for (auto I : ssInstructions) {
+    if (!isa<PHINode>(I)) continue;
+    excludedInstructions.insert(I);
+  }
+  for (auto excludedI : excludedInstructions) {
+    ssInstructions.erase(excludedI);
+  }
   if (this->verbosity >= Verbosity::Maximal) {
     printSCCInfo(LDI, ssInstructions);
   }
@@ -51,7 +61,7 @@ SequentialSegment::SequentialSegment (
   determineEntryAndExitFrontier(LDI, ds, reachabilityDFR, ssInstructions);
 
   /* 
-   * NOTE: Loop-exiting blocks, even if in nested loops, are the exception to the rule that all
+   * NOTE: Function-exiting blocks, even if in nested loops, are the exception to the rule that all
    * waits/signals must not be contained in a sub-loop as they only execute once
    */
   for (auto B : loopStructure->getBasicBlocks()) {
@@ -415,15 +425,6 @@ std::unordered_set<Instruction *> SequentialSegment::getInstructions (void) {
      */
     for (auto nodePair : scc->internalNodePairs()){
       auto inst = cast<Instruction>(nodePair.first);
-
-      /*
-       * HACK: Exclude unconditional branches not in a cycle within the SCC, as
-       * they were merged into this SCC for dumb reasons in the past
-       * FIXME: Once SCC are truly only a single largest cycle of dependencies, remove this
-       */ 
-      if (auto brInst = dyn_cast<BranchInst>(inst)) {
-        if (brInst->isUnconditional()) continue;
-      }
 
       /*
        * Fetch the LLVM value associated to the node
