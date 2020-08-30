@@ -668,7 +668,9 @@ bool LoopScheduler::canMoveAnyInstOutOfLoop (void) const {
    * 1. If the body is empty, the loop can't be scheduled (try 
    *    whilifying the loop first)
    * 
-   * 2. Nothing else (for now)
+   * 2. Handle performance concerns --- make sure that the number 
+   *    of basic blocks in the prologue is not larger than 
+   *    MaxPrologueSizeToHandle.
    */ 
 
   errs() << "LoopScheduler:   canMoveAnyInstOutOfLoop\n";
@@ -679,6 +681,17 @@ bool LoopScheduler::canMoveAnyInstOutOfLoop (void) const {
   if (!(this->Body.size())) {
   
     errs() << "LoopScheduler:     No! Loop body is empty\n";
+    return false;
+
+  }
+
+
+  /*
+   * <Constraint 2.>
+   */ 
+  if (this->Prologue.size() > this->MaxPrologueSizeToHandle) {
+    
+    errs() << "LoopScheduler:     No! Too many blocks in the loop prologue\n";
     return false;
 
   }
