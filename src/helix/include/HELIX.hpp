@@ -81,31 +81,32 @@ namespace llvm {
       );
 
       void spillLoopCarriedDataDependencies (
-        LoopDependenceInfo *LDI
+        LoopDependenceInfo *LDI,
+        DataFlowResult *reachabilityDFR
       );
 
       void createLoadsAndStoresToSpilledLCD (
+        LoopDependenceInfo *LDI,
+        DataFlowResult *reachabilityDFR,
+        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+        SpilledLoopCarriedDependency *spill,
+        Value *spillEnvPtr
+      );
+
+      void insertStoresToSpilledLCD (
         LoopDependenceInfo *LDI,
         std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
         SpilledLoopCarriedDependency *spill,
         Value *spillEnvPtr
       );
 
-      BasicBlock *insertStoresToSpilledLCD (
-        LoopDependenceInfo *LDI,
-        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-        SpilledLoopCarriedDependency *spill,
-        Value *spillEnvPtr,
-        DominatorSummary *originalLoopDS
-      );
-
       void defineFrontierForLoadsToSpilledLCD (
         LoopDependenceInfo *LDI,
+        DataFlowResult *reachabilityDFR,
         std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
         SpilledLoopCarriedDependency *spill,
         DominatorSummary *originalLoopDS,
-        std::unordered_set<BasicBlock *> &originalFrontierBlocks,
-        BasicBlock *originalStoreDominatingBlock
+        std::unordered_set<BasicBlock *> &originalFrontierBlocks
       );
 
       void replaceUsesOfSpilledPHIWithLoads (
@@ -115,13 +116,6 @@ namespace llvm {
         Value *spillEnvPtr,
         DominatorSummary *originalLoopDS,
         std::unordered_set<BasicBlock *> &originalFrontierBlocks
-      );
-
-      std::unordered_map<BasicBlock *, Instruction *> propagateLoadsOfSpilledLCDToLoopExits (
-        LoopDependenceInfo *LDI,
-        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-        SpilledLoopCarriedDependency *spill,
-        Value *spillEnvPtr
       );
 
       std::vector<SequentialSegment *> identifySequentialSegments (
