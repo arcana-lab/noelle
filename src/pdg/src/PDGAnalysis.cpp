@@ -461,7 +461,7 @@ void PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
 
       if (isa<Instruction>(user) || isa<Argument>(user)) {
         auto edge = pdg->addEdge(pdgValue, user);
-        edge->setMemMustType(false, true, DG_DATA_RAW);
+        edge->setMemMustType(false, true, DG_DATA_NONE);
       }
     }
   }
