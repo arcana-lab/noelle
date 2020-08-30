@@ -27,6 +27,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
   auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto loopPreHeader = loopSummary->getPreHeader();
+  auto clonedPreheader = helixTask->getCloneOfOriginalBasicBlock(loopPreHeader);
 
   /*
    * Fetch the loop function.
@@ -128,6 +129,11 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI) {
     spilled->loopCarriedPHI = clonePHI;
 
     /*
+     * Track the initial value of this spilled variable
+     */
+    spilled->clonedInitialValue = clonePHI->getIncomingValueForBlock(clonedPreheader);
+
+    /*
      * Create GEP access of the environment variable at index i
      */
     envUser->createEnvPtr(entryBuilder, phiI, phiTypes[phiI]);
@@ -149,6 +155,102 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
   /*
    * Fetch task and loop
    */
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
+  auto originalLoopFunction = loopHeader->getParent();
+  DominatorTree originalLoopDT(*originalLoopFunction);
+  PostDominatorTree originalLoopPDT(*originalLoopFunction);
+  DominatorSummary DS(originalLoopDT, originalLoopPDT);
+
+  /*
+   * Store loop carried dependencies into the spill environment
+   * Identify the basic block dominating all stores to the spill environment
+   */
+  auto originalStoreDominatingBlock = insertStoresToSpilledLCD(
+    LDI,
+    cloneToOriginalBlockMap,
+    spill,
+    spillEnvPtr,
+    &DS
+  );
+
+  /*
+   * HACK: We cannot handle communicating to ParallelizationTechnique that an original
+   * value is cloned in multiple places, so if there are more than one exit, we have to
+   * default to producing the spill load in the header (which is NOT efficient at all when synchronizing)
+   */
+  if (loopStructure->getLoopExitBasicBlocks().size() > 1) {
+    auto clonedHeader = helixTask->getCloneOfOriginalBasicBlock(loopHeader);
+    IRBuilder<> headerBuilder(clonedHeader->getFirstNonPHIOrDbgOrLifetime());
+    auto headerLoad = headerBuilder.CreateLoad(spillEnvPtr);
+    spill->environmentLoads.insert(headerLoad);
+    helixTask->addInstruction(spill->originalLoopCarriedPHI, headerLoad);
+    spill->loopCarriedPHI->replaceAllUsesWith(headerLoad);
+    spill->loopCarriedPHI->eraseFromParent();
+    return;
+  }
+
+  /*
+   * Define a frontier across the loop extending out from users of the spill
+   * This frontier will determine where to insert any needed loads
+   * so that the value of the spill environment is known every iteration and
+   * can be propagated to the header for potential use in the live out environment
+   */
+  std::unordered_set<BasicBlock *> originalFrontierBlocks;
+  defineFrontierForLoadsToSpilledLCD(
+    LDI,
+    cloneToOriginalBlockMap,
+    spill,
+    &DS,
+    originalFrontierBlocks,
+    originalStoreDominatingBlock
+  );
+
+  for (auto frontierBlock : originalFrontierBlocks) {
+    frontierBlock->print(errs() << "Frontier block:\n"); errs() << "\n";
+  }
+
+  replaceUsesOfSpilledPHIWithLoads(
+    LDI,
+    cloneToOriginalBlockMap,
+    spill,
+    spillEnvPtr,
+    &DS,
+    originalFrontierBlocks
+  );
+
+  auto exitBlockToValueMap = propagateLoadsOfSpilledLCDToLoopExits(
+    LDI,
+    cloneToOriginalBlockMap,
+    spill,
+    spillEnvPtr
+  );
+
+  /*
+   * Due to the limitation mentioned above, this approach is only used when there is one exit
+   */
+  auto singleExit = *loopStructure->getLoopExitBasicBlocks().begin();
+  auto clonedSingleExit = helixTask->getCloneOfOriginalBasicBlock(singleExit);
+  auto exitValue = exitBlockToValueMap.at(clonedSingleExit);
+  helixTask->addInstruction(spill->originalLoopCarriedPHI, exitValue);
+  spill->loopCarriedPHI->eraseFromParent();
+
+  for (auto load : spill->environmentLoads) {
+    load->print(errs() << "Load: "); errs() << "\n";
+  }
+
+  return ;
+}
+
+BasicBlock *HELIX::insertStoresToSpilledLCD (
+  LoopDependenceInfo *LDI,
+  std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+  SpilledLoopCarriedDependency *spill,
+  Value *spillEnvPtr,
+  DominatorSummary *originalLoopDS
+) {
+
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
   auto loopStructure = LDI->getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
@@ -188,10 +290,6 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
    * These are conservatively safe points to insert loads. Loads cannot be placed in sub-loops
    * as the load has to always reflect the value of the spilled variable from the last iteration
    */
-  auto originalLoopFunction = loopHeader->getParent();
-  DominatorTree originalLoopDT(*originalLoopFunction);
-  PostDominatorTree originalLoopPDT(*originalLoopFunction);
-  DominatorSummary DS(originalLoopDT, originalLoopPDT);
   BasicBlock * originalStoreDominatingBlock = nullptr;
   for (auto store : spill->environmentStores) {
     auto cloneStoreBlock = store->getParent();
@@ -203,7 +301,7 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     auto nestedMostLoop = LDI->getNestedMostLoopStructure(originalStoreBlock->getTerminator());
     if (nestedMostLoop == loopStructure) {
       originalStoreDominatingBlock = !originalStoreDominatingBlock ? originalStoreBlock
-        : DS.DT.findNearestCommonDominator(originalStoreDominatingBlock, originalStoreBlock);
+        : originalLoopDS->DT.findNearestCommonDominator(originalStoreDominatingBlock, originalStoreBlock);
       continue;
     }
 
@@ -217,105 +315,360 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     auto childLoopPreheader = childLoop->getPreHeader();
 
     originalStoreDominatingBlock = !originalStoreDominatingBlock ? childLoopPreheader
-      : DS.DT.findNearestCommonDominator(originalStoreDominatingBlock, childLoopPreheader);
+      : originalLoopDS->DT.findNearestCommonDominator(originalStoreDominatingBlock, childLoopPreheader);
   }
-  BasicBlock *cloneStoreDominatingBlock = helixTask->getCloneOfOriginalBasicBlock(originalStoreDominatingBlock);
+
+  return originalStoreDominatingBlock;
+}
+
+void HELIX::defineFrontierForLoadsToSpilledLCD (
+  LoopDependenceInfo *LDI,
+  std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+  SpilledLoopCarriedDependency *spill,
+  DominatorSummary *originalLoopDS,
+  std::unordered_set<BasicBlock *> &originalFrontierBlocks,
+  BasicBlock *originalStoreDominatingBlock
+) {
+
+  auto &loopHierarchy = LDI->getLoopHierarchyStructures();
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
 
   /*
-   * Replace uses of PHI with environment loads
-   * Determine which load is available upon exiting the loop
-   * TODO: Improve determining how many loads are needed if there isn't just one exit from the header
+   * Collect a partial frontier as close to users of the spill,
+   * blocks that dominate the stores to the spill environment
    */
-  IRBuilder<> headerBuilder(headerClone->getFirstNonPHIOrDbgOrLifetime());
-  LoadInst * liveOutLoad = nullptr;
-  auto loopExits = loopStructure->getLoopExitBasicBlocks();
-  if (loopExits.size() > 1) {
-    liveOutLoad = headerBuilder.CreateLoad(spillEnvPtr);
-
-    std::unordered_set<User *> phiUsers{spill->loopCarriedPHI->user_begin(), spill->loopCarriedPHI->user_end()};
-    for (auto user : phiUsers) {
-      auto userInst = cast<Instruction>(user);
-      userInst->replaceUsesOfWith(spill->loopCarriedPHI, liveOutLoad);
-    }
-
-  } else {
-    auto loopExitBlock = *loopExits.begin();
-    auto clonedLoopExitBlock = helixTask->getCloneOfOriginalBasicBlock(loopExitBlock);
-    IRBuilder<> loopExitBuilder(clonedLoopExitBlock->getFirstNonPHIOrDbgOrLifetime());
-    liveOutLoad = loopExitBuilder.CreateLoad(spillEnvPtr);
+  for (auto user : spill->loopCarriedPHI->users()) {
+    auto userInst = cast<Instruction>(user);
+    auto cloneUserBlock = userInst->getParent();
+    auto originalUserBlock = cloneToOriginalBlockMap.at(cloneUserBlock);
 
     /*
-     * Identify basic blocks to add loads, tracking the uses of that load to be created
+     * If the user is a PHI, since a load cannot be placed before a PHI,
+     * identify a strictly dominating block of the user
      */
-    std::unordered_map<BasicBlock *, std::unordered_set<Instruction *>> blockToUserMap;
-    for (auto user : spill->loopCarriedPHI->users()) {
-      auto userInst = cast<Instruction>(user);
-      auto cloneUserBlock = userInst->getParent();
-      auto originalUserBlock = cloneToOriginalBlockMap.at(cloneUserBlock);
+    if (auto userPHI = dyn_cast<PHINode>(user)) {
+      for (auto i = 0; i < userPHI->getNumIncomingValues(); ++i) {
+        auto cloneIncomingBlock = userPHI->getIncomingBlock(i);
+        auto originalIncomingBlock = cloneToOriginalBlockMap.at(cloneIncomingBlock);
+        originalUserBlock = originalLoopDS->DT.findNearestCommonDominator(originalUserBlock, originalIncomingBlock);
+      }
+    }
+
+    /*
+     * Ensure the user block to be part of the frontier is not in a nested loop
+     */
+    auto userLoop = loopHierarchy.getLoop(*originalUserBlock);
+    if (userLoop != loopStructure) {
+      while (userLoop->getParentLoop() != loopStructure) {
+        userLoop = userLoop->getParentLoop();
+      }
+      originalUserBlock = userLoop->getPreHeader();
+    }
+
+    /*
+     * Find nearest common dominator of the blocks dominating users and stores
+     */
+    auto originalCommonDominatorBlock =
+      originalLoopDS->DT.findNearestCommonDominator(originalStoreDominatingBlock, originalUserBlock);
+    originalFrontierBlocks.insert(originalCommonDominatorBlock);
+  }
+
+  /*
+   * Heuristic for extending out the frontier:
+   * - Traverse basic blocks (via BFS) from the loop entry tracking the minimum
+   *   depth it takes to reach each block (exclude nested loop blocks)
+   * - Take the minimum depth of all basic blocks in the partial frontier (call this depth D1)
+   * - Identify the minimum depth of any latch (call this depth D2)
+   * - Identify the minimum depth of any loop block that can exit (call this depth D3)
+   * - Add all basic blocks at a depth of min(D1, D2, D3)
+   */
+  std::unordered_map<BasicBlock *, int> blockToMinimumDepthMap;
+  std::queue<BasicBlock *> blockQueue;
+  blockToMinimumDepthMap.insert({loopHeader, 0});
+  blockQueue.push(loopHeader);
+  while (!blockQueue.empty()) {
+    auto block = blockQueue.front();
+    blockQueue.pop();
+
+    assert(blockToMinimumDepthMap.find(block) != blockToMinimumDepthMap.end());
+    auto depth = blockToMinimumDepthMap.at(block);
+
+
+    std::unordered_set<BasicBlock *> successorsToTraverse;
+    for (auto successor : successors(block)) {
 
       /*
-       * If the user is a PHI, since a load cannot be placed before a PHI,
-       * identify a strictly dominating block of the user
+       * Skip blocks not in the loop
+       * Skip to nested loop exits so the frontier is exclusive to root loop blocks
        */
-      if (auto userPHI = dyn_cast<PHINode>(user)) {
-        for (auto i = 0; i < userPHI->getNumIncomingValues(); ++i) {
-          auto cloneIncomingBlock = userPHI->getIncomingBlock(i);
-          auto originalIncomingBlock = cloneToOriginalBlockMap.at(cloneIncomingBlock);
-          originalUserBlock = DS.DT.findNearestCommonDominator(originalUserBlock, originalIncomingBlock);
+      if (!loopStructure->isIncluded(successor)) continue;
+      auto loopContainingSuccessor = loopHierarchy.getLoop(*successor);
+      if (loopContainingSuccessor == loopStructure) {
+        successorsToTraverse.insert(successor);
+        continue;
+      }
+
+      for (auto exit : loopContainingSuccessor->getLoopExitBasicBlocks()) {
+        successorsToTraverse.insert(exit);
+      }
+    }
+
+    /*
+     * For all successors in the root loop, traverse and increment the depth
+     */
+    for (auto successor : successorsToTraverse) {
+
+      /*
+       * Default the depth to max int if the block has never been reached yet
+       */
+      int successorDepth = INT32_MAX;
+      if (blockToMinimumDepthMap.find(successor) != blockToMinimumDepthMap.end()) {
+        successorDepth = blockToMinimumDepthMap.at(successor);
+      }
+
+      if (successorDepth > depth + 1) {
+        blockToMinimumDepthMap.insert({successor, depth + 1});
+        blockQueue.push(successor);
+      }
+    }
+  }
+
+  for (auto blockDepth : blockToMinimumDepthMap) {
+    blockDepth.first->print(errs() << "Block with depth: " << blockDepth.second << "\n");
+  }
+  originalStoreDominatingBlock->print(errs() << "Original store dominating Block\n");
+  for (auto frontierBlock : originalFrontierBlocks) {
+    frontierBlock->print(errs() << "Frontier Block\n");
+  }
+
+  /*
+   * Determine the minimum depth at which to collect blocks for the frontier
+   * NOTE: Exclude the loop entry exit. In that special case, the value loaded
+   * within the loop body does NOT necessarily reflect the last iteration's store
+   * to the spill environment. A load in that exit block is necessary.
+   */
+  int minDepth = INT32_MAX;
+  for (auto frontierBlock : originalFrontierBlocks) {
+    assert(blockToMinimumDepthMap.find(frontierBlock) != blockToMinimumDepthMap.end());
+    auto frontierDepth = blockToMinimumDepthMap.at(frontierBlock);
+    minDepth = min(minDepth, frontierDepth);
+  }
+  for (auto edge : loopStructure->getLoopExitEdges()) {
+    if (edge.first == loopHeader) continue;
+    assert(blockToMinimumDepthMap.find(edge.first) != blockToMinimumDepthMap.end());
+    auto loopInternalExitingDepth = blockToMinimumDepthMap.at(edge.first);
+    minDepth = min(minDepth, loopInternalExitingDepth);
+  }
+  for (auto latch : loopStructure->getLatches()) {
+    assert(blockToMinimumDepthMap.find(latch) != blockToMinimumDepthMap.end());
+    auto latchDepth = blockToMinimumDepthMap.at(latch);
+    minDepth = min(minDepth, latchDepth);
+  }
+
+  /*
+   * Collect all blocks at the minimum depth
+   */
+  for (auto blockDepthPair : blockToMinimumDepthMap) {
+    auto block = blockDepthPair.first;
+    auto depth = blockDepthPair.second;
+    if (depth != minDepth) continue;
+
+    originalFrontierBlocks.insert(block);
+  }
+
+  /*
+   * Optimization: remove any blocks in the frontier dominated by other blocks in the frontier
+   */
+  std::unordered_set<BasicBlock *> unnecessaryFrontierBlocks;
+  for (auto block : originalFrontierBlocks) {
+    for (auto otherBlock : originalFrontierBlocks) {
+      if (block == otherBlock) continue;
+      if (!originalLoopDS->DT.dominates(otherBlock, block)) continue;
+      unnecessaryFrontierBlocks.insert(block);
+      break;
+    }
+  }
+  for (auto block : unnecessaryFrontierBlocks) {
+    originalFrontierBlocks.erase(block);
+  }
+
+  // TODO: Traverse the loop and assert the header cannot be reached without passing through the frontier
+
+  return;
+}
+
+void HELIX::replaceUsesOfSpilledPHIWithLoads (
+  LoopDependenceInfo *LDI,
+  std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+  SpilledLoopCarriedDependency *spill,
+  Value *spillEnvPtr,
+  DominatorSummary *originalLoopDS,
+  std::unordered_set<BasicBlock *> &originalFrontierBlocks
+) {
+
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+
+  /*
+   * Insert a load in each frontier block, placed before any user/store in that block
+   */
+  std::unordered_set<User *> spillUsers{spill->loopCarriedPHI->user_begin(), spill->loopCarriedPHI->user_end()};
+  for (auto originalBlock : originalFrontierBlocks) {
+    auto cloneBlock = helixTask->getCloneOfOriginalBasicBlock(originalBlock);
+
+    /*
+     * Insert at the bottom of the block if no user or spill store are in the block
+     * Otherwise, insert right before the first user/store
+     */
+    auto insertPoint = cloneBlock->getTerminator();
+    for (auto &I : *cloneBlock) {
+      auto isUserInst = spillUsers.find(&I) != spillUsers.end();
+      auto store = dyn_cast<StoreInst>(&I);
+      auto isStoreInst = store != nullptr
+        && spill->environmentStores.find(store) != spill->environmentStores.end();
+      if (!isUserInst && !isStoreInst) continue;
+      insertPoint = &I;
+      break;
+    }
+
+    IRBuilder<> spillValueBuilder(insertPoint);
+    auto spillLoad = spillValueBuilder.CreateLoad(spillEnvPtr);
+    spill->environmentLoads.insert(spillLoad);
+
+    /*
+     * Map uses for users that are dominated by this frontier block's load
+     */
+    for (auto user : spillUsers) {
+      auto cloneUserBlock = cast<Instruction>(user)->getParent();
+      auto originalUserBlock = cloneToOriginalBlockMap.at(cloneUserBlock);
+      if (!originalLoopDS->DT.dominates(originalBlock, originalUserBlock)) continue;
+      user->replaceUsesOfWith(spill->loopCarriedPHI, spillLoad);
+    }
+  }
+
+  /*
+   * Ensure no uses of the spilled PHI exist anymore
+   */
+  assert(spill->loopCarriedPHI->user_begin() == spill->loopCarriedPHI->user_end());
+
+  return ;
+}
+
+std::unordered_map<BasicBlock *, Instruction *> HELIX::propagateLoadsOfSpilledLCDToLoopExits (
+  LoopDependenceInfo *LDI,
+  std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+  SpilledLoopCarriedDependency *spill,
+  Value *spillEnvPtr
+) {
+
+  std::unordered_map<BasicBlock *, Instruction *> exitToPropagatedValueMap;
+
+  /*
+   * Collect spill loads on the frontier. They are the values
+   * to be propagated to loop exits (EXCLUDING a loop entry block's exit) using PHINode instructions
+   */
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
+  auto clonedHeader = helixTask->getCloneOfOriginalBasicBlock(loopHeader);
+  Type *valueType = nullptr;
+  std::unordered_map<BasicBlock *, Value *> blockToPropagatedValueMap;
+  std::queue<BasicBlock *> blockQueue;
+  for (auto load : spill->environmentLoads) {
+    auto loadBlock = load->getParent();
+    blockToPropagatedValueMap.insert({loadBlock, load});
+    blockQueue.push(loadBlock);
+    valueType = load->getType();
+  }
+
+  /*
+   * Propagate values through to exits (ignoring the loop entry and its possible exit)
+   */
+  while (!blockQueue.empty()) {
+    auto block = blockQueue.front();
+    blockQueue.pop();
+
+    /*
+     * If this block does NOT have a propagated value, aggregate one from predecessors
+     */
+    if (blockToPropagatedValueMap.find(block) == blockToPropagatedValueMap.end()) {
+
+      /*
+       * Consolidate predecessor propagated values
+       * If only 1, do not create a trivial PHI
+       */
+      std::unordered_set<Value *> uniqueValues;
+      std::unordered_map<BasicBlock *, Value *> predecessorToValueMap;
+      for (auto predecessor : predecessors(block)) {
+        auto predecessorValue = blockToPropagatedValueMap.at(predecessor);
+        predecessorToValueMap.insert({predecessor, predecessorValue});
+        uniqueValues.insert(predecessorValue);
+      }
+
+      if (uniqueValues.size() > 1) {
+        IRBuilder<> builder(block->getFirstNonPHIOrDbgOrLifetime());
+        auto phi = builder.CreatePHI(valueType, predecessorToValueMap.size());
+        blockToPropagatedValueMap.insert({block, phi});
+        for (auto predecessorAndValue : predecessorToValueMap) {
+          phi->addIncoming(predecessorAndValue.second, predecessorAndValue.first);
+        }
+      } else {
+        auto uniqueValue = *uniqueValues.begin();
+        blockToPropagatedValueMap.insert({block, uniqueValue});
+      }
+    }
+
+    /*
+     * Only traverse successors for which all predecessors have been traversed
+     * Do not traverse successors of exits
+     */
+    auto originalBlock = cloneToOriginalBlockMap.at(block);
+    if (!loopStructure->isIncluded(originalBlock)) continue;
+    for (auto successor : successors(block)) {
+
+      /*
+       * Do not traverse through latches back to the header
+       */
+      if (block == clonedHeader) continue;
+
+      bool allPredecessorsTraversed = true;
+      for (auto predecessor : predecessors(successor)) {
+        if (blockToPropagatedValueMap.find(predecessor) == blockToPropagatedValueMap.end()) {
+          allPredecessorsTraversed = false;
+          break;
         }
       }
+      if (!allPredecessorsTraversed) continue;
 
-      /*
-       * Find nearest common dominator of user and store dominator
-       */
-      auto originalCommonDominatorBlock =
-        DS.DT.findNearestCommonDominator(originalStoreDominatingBlock, originalUserBlock);
-      auto cloneCommonDominatorBlock = helixTask->getCloneOfOriginalBasicBlock(originalCommonDominatorBlock);
-      blockToUserMap[cloneCommonDominatorBlock].insert(userInst);
-    }
-
-    /*
-     * Insert a load before the first user in each block requiring one
-     */
-    for (auto blockAndUsers : blockToUserMap) {
-      auto block = blockAndUsers.first;
-      auto users = blockAndUsers.second;
-
-      /*
-       * Insert at the bottom of the block if no user or spill store are in the block
-       * Otherwise, insert right before the first user/store
-       */
-      auto insertPoint = block->getTerminator();
-      for (auto &I : *block) {
-        auto isUserInst = users.find(&I) != users.end();
-        auto store = dyn_cast<StoreInst>(&I);
-        auto isStoreInst = store != nullptr
-          && spill->environmentStores.find(store) != spill->environmentStores.end();
-        if (!isUserInst && !isStoreInst) continue;
-        insertPoint = &I;
-        break;
-      }
-
-      /*
-       * Do not create duplicate loads in the same basic block
-       * Ensure the load dominates all uses of it
-       */
-      IRBuilder<> spillValueBuilder(insertPoint);
-      auto spillLoad = spillValueBuilder.CreateLoad(spillEnvPtr);
-      spill->environmentLoads.insert(spillLoad);
-
-      for (auto user : users) {
-        user->replaceUsesOfWith(spill->loopCarriedPHI, spillLoad);
-      }
+      blockQueue.push(successor);
     }
   }
 
   /*
-   * Translate instruction clone from cloned PHI to spilled load that is available
-   * when exiting the loop
+   * If the loop entry has an exit and no load is present in the header,
+   * a load in that exit is added
    */
-  spill->environmentLoads.insert(liveOutLoad);
-  helixTask->addInstruction(spill->originalLoopCarriedPHI, liveOutLoad);
-  spill->loopCarriedPHI->eraseFromParent();
+  for (auto exitEdge : loopStructure->getLoopExitEdges()) {
+    auto exitingBlock = helixTask->getCloneOfOriginalBasicBlock(exitEdge.first);
+    auto exitBlock = helixTask->getCloneOfOriginalBasicBlock(exitEdge.second);
+    Instruction * exitValue = nullptr;
+    if (blockToPropagatedValueMap.find(exitBlock) != blockToPropagatedValueMap.end()) {
+      exitValue = cast<Instruction>(blockToPropagatedValueMap.at(exitBlock));
+    } else {
+      assert(exitingBlock == clonedHeader);
+      if (blockToPropagatedValueMap.find(clonedHeader) != blockToPropagatedValueMap.end()) {
+        exitValue = cast<Instruction>(blockToPropagatedValueMap.at(clonedHeader));
+      } else {
+        IRBuilder<> exitBuilder(exitBlock->getFirstNonPHIOrDbgOrLifetime());
+        exitValue = exitBuilder.CreateLoad(spillEnvPtr);
+        spill->environmentLoads.insert(cast<LoadInst>(exitValue));
+      }
+    }
 
+    exitToPropagatedValueMap.insert({ exitBlock, exitValue });
+    exitBlock->print(errs() << "Exit block:\n");
+    exitValue->print(errs() << "Exit value: "); errs() << "\n";
+  }
+
+  return exitToPropagatedValueMap;
 }
