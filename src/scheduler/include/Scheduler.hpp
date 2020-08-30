@@ -244,6 +244,7 @@ namespace llvm::noelle {
       /*
        * New analysis state
        */
+      const uint32_t MaxPrologueSizeToHandle=16; /* Arbitrary, for performance concerns */
       bool DiscrepancyExists=false;  /* Discrepancy between analysis
                                         state and loop structure */
       std::set<BasicBlock *> Prologue;
