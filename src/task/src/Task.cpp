@@ -71,6 +71,30 @@ std::unordered_set<Value *> Task::getOriginalLiveIns (void) const {
   return s;
 }
 
+bool Task::doesOriginalLiveOutHaveManyClones (Instruction *I) const {
+  return liveOutClones.find(I) != liveOutClones.end();
+}
+
+std::unordered_set<Instruction *> Task::getClonesOfOriginalLiveOut (Instruction *I) const {
+  if (liveOutClones.find(I) == liveOutClones.end()) {
+    return {};
+  }
+
+  return liveOutClones.at(I);
+}
+
+void Task::addLiveOut (Instruction *original, Instruction *internal) {
+  liveOutClones[original].insert(internal);
+}
+
+void Task::removeLiveOut (Instruction *original, Instruction *removed) {
+  if (liveOutClones.find(original) == liveOutClones.end()) {
+    return ;
+  }
+
+  liveOutClones[original].erase(removed);
+}
+
 bool Task::isAnOriginalBasicBlock (BasicBlock *o) const {
   if (this->basicBlockClones.find(o) == this->basicBlockClones.end()){
     return false;
