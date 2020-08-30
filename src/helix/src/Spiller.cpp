@@ -184,6 +184,7 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     auto clonedHeader = helixTask->getCloneOfOriginalBasicBlock(loopHeader);
     IRBuilder<> headerBuilder(clonedHeader->getFirstNonPHIOrDbgOrLifetime());
     auto headerLoad = headerBuilder.CreateLoad(spillEnvPtr);
+    spill->environmentLoads.insert(headerLoad);
     helixTask->addInstruction(spill->originalLoopCarriedPHI, headerLoad);
     spill->loopCarriedPHI->replaceAllUsesWith(headerLoad);
     spill->loopCarriedPHI->eraseFromParent();
@@ -660,6 +661,7 @@ std::unordered_map<BasicBlock *, Instruction *> HELIX::propagateLoadsOfSpilledLC
       } else {
         IRBuilder<> exitBuilder(exitBlock->getFirstNonPHIOrDbgOrLifetime());
         exitValue = exitBuilder.CreateLoad(spillEnvPtr);
+        spill->environmentLoads.insert(cast<LoadInst>(exitValue));
       }
     }
 
