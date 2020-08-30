@@ -60,10 +60,9 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     if (sccInfo->canExecuteReducibly()) continue;
 
     /*
-     * If the instruction was spilled, its clone will not be a PHI, rather a load
+     * If the instruction was spilled, it will not have a unique cloned instruction equivalent
      */
-    auto clonePHI = task->getCloneOfOriginalInstruction(loopEntryPHI);
-    if (!isa<PHINode>(clonePHI)) continue;
+    if (!task->isAnOriginalInstruction(loopEntryPHI)) continue;
 
     ivInfos.insert(ivInfo);
   }
