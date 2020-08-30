@@ -175,6 +175,11 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     spillEnvPtr
   );
 
+  // helixTask->getTaskBody()->print(errs() << "Task before:\n"); errs() << "\n";
+  // for (auto store : spill->environmentStores) {
+    // store->getParent()->print(errs() << "Store block: "); errs() << "\n";
+  // }
+
   /*
    * Define a frontier across the loop extending out from users of the spill
    * This frontier will determine where to insert any needed loads
@@ -200,12 +205,13 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
     originalFrontierBlocks
   );
 
-  for (auto load : spill->environmentLoads) {
-    load->print(errs() << "Load: "); errs() << "\n";
-  }
-  for (auto clonedLiveOut : helixTask->getClonesOfOriginalLiveOut(spill->originalLoopCarriedPHI)) {
-    clonedLiveOut->print(errs() << "Cloned live out: "); errs() << "\n";
-  }
+  // for (auto load : spill->environmentLoads) {
+    // load->getParent()->print(errs() << "Load block: "); errs() << "\n";
+  // }
+  // for (auto clonedLiveOut : helixTask->getClonesOfOriginalLiveOut(spill->originalLoopCarriedPHI)) {
+    // clonedLiveOut->print(errs() << "Cloned live out: "); errs() << "\n";
+  // }
+  // helixTask->getTaskBody()->print(errs() << "Task after:\n"); errs() << "\n";
 
   return ;
 }
@@ -279,13 +285,26 @@ void HELIX::defineFrontierForLoadsToSpilledLCD (
   for (auto store : spill->environmentStores) {
     auto cloneBlock = store->getParent();
     auto originalBlock = cloneToOriginalBlockMap.at(cloneBlock);
-    originalBlock->print(errs() << "Store block:\n"); errs() << "\n";
 
     for (auto successorToStoreBlock : successors(originalBlock)) {
+
+      /*
+       * Ignore loop exits and the loop header
+       */
+      if (successorToStoreBlock == loopHeader) continue;
       if (!loopStructure->isIncluded(successorToStoreBlock)) continue;
 
+      /*
+       * Track each loop internal successor block as being invalidated
+       * Check its terminator's reachability
+       * TODO: Find an easier way to isolate an instruction in this successor block
+       * that is guaranteed NOT to be a store just inserted but has instructions in
+       * this block in its OUT set so that we don't have to individually add successors
+       * to the invalidated set
+       */
+      invalidatedBlocks.insert(successorToStoreBlock);
       auto terminator = successorToStoreBlock->getTerminator();
-      terminator->print(errs() << "Terminator: "); errs() << "\n";
+
       for (auto reachableI : reachabilityDFR->OUT(terminator)) {
         if (!isa<Instruction>(reachableI)) continue;
         auto reachableBlock = cast<Instruction>(reachableI)->getParent();
@@ -440,6 +459,7 @@ void HELIX::replaceUsesOfSpilledPHIWithLoads (
    */
   assert(spill->loopCarriedPHI->user_begin() == spill->loopCarriedPHI->user_end());
   spill->loopCarriedPHI->eraseFromParent();
+  helixTask->removeOriginalInstruction(spill->originalLoopCarriedPHI);
 
   /*
    * Ensure all live out blocks have an available load

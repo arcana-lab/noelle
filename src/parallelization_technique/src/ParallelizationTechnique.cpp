@@ -483,11 +483,6 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     }
     auto producerClones = task->getClonesOfOriginalLiveOut(producer);
 
-    producer->print(errs() << "Original producer: "); errs() << "\n";
-    for (auto producerClone : producerClones) {
-      producerClone->print(errs() << "Cloned producer: "); errs() << "\n";
-    }
-
     /*
      * Create GEP access of the single, or reducable, environment variable
      */
