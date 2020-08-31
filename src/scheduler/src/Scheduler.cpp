@@ -668,12 +668,11 @@ bool LoopScheduler::canMoveAnyInstOutOfLoop (void) const {
    * 1. If the body is empty, the loop can't be scheduled (try 
    *    whilifying the loop first)
    * 
-   * 2. Handle performance concerns --- make sure that the number 
-   *    of basic blocks in the prologue is not larger than 
-   *    MaxPrologueSizeToHandle.
+   * 2. Nothing else yet
    */ 
 
   errs() << "LoopScheduler:   canMoveAnyInstOutOfLoop\n";
+
 
   /*
    * <Constraint 1.>
@@ -686,9 +685,22 @@ bool LoopScheduler::canMoveAnyInstOutOfLoop (void) const {
   }
 
 
-  /*
-   * <Constraint 2.>
-   */ 
+  errs() << "LoopScheduler:     Yes! Loop can be scheduled\n";
+  return true;
+
+}
+
+
+bool LoopScheduler::canQuicklyHandleLoop(void) const {
+
+  /* 
+   * TOP --- To handle performance concerns --- make sure that 
+   * the number of basic blocks in the prologue is not larger 
+   * than MaxPrologueSizeToHandle.
+   * 
+   * Do not handle loops where this constraint is not held.
+   */  
+
   if (this->Prologue.size() > this->MaxPrologueSizeToHandle) {
     
     errs() << "LoopScheduler:     No! Too many blocks in the loop prologue\n";
@@ -696,8 +708,7 @@ bool LoopScheduler::canMoveAnyInstOutOfLoop (void) const {
 
   }
 
-
-  errs() << "LoopScheduler:     Yes! Loop can be scheduled\n";
+  errs() << "LoopScheduler:     Yes! Loop can be quickly handled\n";
   return true;
 
 }
@@ -718,6 +729,23 @@ bool LoopScheduler::shrinkLoopPrologue (void) {
   if (!(this->canMoveAnyInstOutOfLoop())) {
 
     errs() << "LoopScheduler:     Abort! Can't schedule the loop\n";
+    return Modified;
+
+  }
+
+  
+  if (!(this->canQuicklyHandleLoop())) {
+
+    errs() << "LoopScheduler:     Can't seem to quickly handle this loop\n";
+
+    /*
+     * Attempt to merge prologue blocks to handle the issue, return
+     * immediately anyway (if false == abort, if true == some merging
+     * has occurred)
+     */ 
+    Modified |= this->mergePrologueBasicBlocks(); 
+    this->SafeToDump &= false; /* Debugging */
+
     return Modified;
 
   }
@@ -857,6 +885,13 @@ bool LoopScheduler::shrinkLoopPrologue (void) {
  * ------------------------------------------------------------------
  */
 void LoopScheduler::Dump (void) const {
+
+  if (!(this->SafeToDump)) {
+
+    errs() << "LoopScheduler: Not safe to dump --- returning...\n";
+    return;
+
+  }
 
   errs() << "LoopScheduler: Starting dump ...\n";
 
@@ -1020,6 +1055,30 @@ void LoopScheduler::calculateLoopBody (void) {
  * PRIVATE --- Transformation Methods
  * ------------------------------------------------------------------
  */
+bool LoopScheduler::mergePrologueBasicBlocks(void) {
+
+  /*
+   * TOP --- Merge prologue basic blocks whenever possible
+   * 
+   * This alleviates compilation time bottlenecks, since the 
+   * scheduler currently relies on noelle-enable's reinvocation
+   * scheme and returns after modification at a basic block
+   * granularity
+   */ 
+
+  bool Modified = false;
+
+  errs() << "LoopScheduler:       Attempting to merge prologue blocks\n";
+
+  for (auto Block : Prologue) {
+    Modified |= llvm::MergeBlockIntoPredecessor(Block);
+  }
+
+  return Modified;
+
+}
+
+
 bool LoopScheduler::shrinkPrologueBasicBlock(
   BasicBlock *Block
 ) {
