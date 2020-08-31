@@ -22,6 +22,10 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   auto header = loopStructure->getHeader();
   auto preHeader = loopStructure->getPreHeader();
 
+  DominatorTree DT(*header->getParent());
+  PostDominatorTree PDT(*header->getParent());
+  DominatorSummary DS(DT, PDT);
+
   std::vector<Instruction *> instructionsToHoistToPreheader{};
   std::unordered_set<PHINode *> phisToRemove{};
   for (auto B : loopStructure->getBasicBlocks()) {
@@ -50,9 +54,17 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
       }
 
       /*
-       * All PHI invariants are equivalent, so choose any to replace the PHI
+       * All PHI invariants are equivalent, but to ensure dominance of the replacing value,
+       * choose the first incoming value that dominates the PHI. If none exist, do not hoist the PHI
        */
-      auto valueToReplacePHI = phi->getIncomingValue(0);
+      Value *valueToReplacePHI = nullptr;
+      for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
+        auto incomingBlock = phi->getIncomingBlock(i);
+        if (!DS.DT.dominates(incomingBlock, B)) continue;
+        valueToReplacePHI = phi->getIncomingValue(i);
+        break;
+      }
+      if (!valueToReplacePHI) continue;
 
       /*
        * Note, the users are modified, so we must cache them first
@@ -64,10 +76,12 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
       phisToRemove.insert(phi);
 
       /*
-       * If the replacement is an Instruction, it needs to be hoisted
+       * If the replacement is an Instruction and in the loop, it needs to be hoisted
        */
       if (auto instToReplacePHI = dyn_cast<Instruction>(valueToReplacePHI)) {
-        instructionsToHoistToPreheader.push_back(instToReplacePHI);
+        if (loopStructure->isIncluded(instToReplacePHI)) {
+          instructionsToHoistToPreheader.push_back(instToReplacePHI);
+        }
       }
     }
   }
@@ -79,9 +93,6 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   /*
    * Sort invariants to hoist in order of dominance to preserve execution order
    */
-  DominatorTree DT(*header->getParent());
-  PostDominatorTree PDT(*header->getParent());
-  DominatorSummary DS(DT, PDT);
   auto dominanceCmpFunc = [&DS] (Instruction *I, Instruction *J) -> bool {
     return DS.DT.dominates(I, J);
   };
