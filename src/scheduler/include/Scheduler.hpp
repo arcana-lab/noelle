@@ -136,6 +136,13 @@ namespace llvm::noelle {
       bool canMoveAnyInstOutOfLoop (void) const;
 
 
+      bool canQuicklyHandleLoop(void) const ;/* 
+                                              * An arbitrary method to confirm 
+                                              * that the scheduler does not become 
+                                              * a compilation bottleneck  
+                                              */ 
+
+
       /*
        * Transformation methods
        */ 
@@ -187,6 +194,8 @@ namespace llvm::noelle {
       /*
        * Transformation methods
        */ 
+      bool mergePrologueBasicBlocks(void) ;
+
       bool shrinkPrologueBasicBlock(
         BasicBlock *Block
       );
@@ -245,6 +254,7 @@ namespace llvm::noelle {
        * New analysis state
        */
       const uint32_t MaxPrologueSizeToHandle=16; /* Arbitrary, for performance concerns */
+      bool SafeToDump=true;
       bool DiscrepancyExists=false;  /* Discrepancy between analysis
                                         state and loop structure */
       std::set<BasicBlock *> Prologue;
