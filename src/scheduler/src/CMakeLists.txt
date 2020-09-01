@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   Scheduler.cpp
+  SCCPartitionScheduler.cpp
 )
 
 # Compilation flags

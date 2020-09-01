@@ -344,6 +344,11 @@ void HELIX::createParallelizableTask (
     // DGPrinter::writeGraph<SubCFGs, BasicBlock>("unsync-helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
+  /*
+   * Delete reachability results
+   */
+  delete reachabilityDFR;
+
   return ;
 }
 
@@ -359,22 +364,40 @@ bool HELIX::synchronizeTask (
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
   /*
+   * Compute reachability analysis for computing SS frontiers and scheduling SS instructions
+   */
+  auto reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
+
+  /*
+   * Schedule the code to minimize the instructions within each sequential segment.
+   * HACK: Entries and exits are determined when identifying a sequential segment. They
+   * aren't adjusted after squeezing. Delay computing entry and exit frontiers for identified
+   * sequential segments until AFTER squeezing.
+   */
+  auto sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
+  this->squeezeSequentialSegments(LDI, &sequentialSegments, reachabilityDFR);
+  delete reachabilityDFR;
+  for (auto ss : sequentialSegments) delete ss;
+
+  /*
+   * Re-compute reachability analysis after squeezing sequential segments
    * Identify the sequential segments.
    */
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "HELIX:  Identifying sequential segments\n";
   }
-  auto sequentialSegments = this->identifySequentialSegments(originalLDI, LDI);
-
-  /*
-   * Schedule the code to minimize the instructions within each sequential segment.
-   */
-  this->squeezeSequentialSegments(LDI, &sequentialSegments);
+  reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
+  sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
 
   /*
    * Schedule the sequential segments to overlap parallel and sequential segments.
    */
-  this->scheduleSequentialSegments(LDI, &sequentialSegments);
+  this->scheduleSequentialSegments(LDI, &sequentialSegments, reachabilityDFR);
+
+  /*
+   * Delete reachability results here before we decide whether to continue with the HELIX parallelization
+   */
+  delete reachabilityDFR;
 
   /*
    * Check if any sequential segment's entry and exit frontier spans the entire loop execution
@@ -396,6 +419,8 @@ bool HELIX::synchronizeTask (
       if (this->verbose != Verbosity::Disabled) {
         errs() << "HELIX: There is a sequential segment spanning the entire loop; therefore, the parallelization isn't worth it.\n";
       }
+
+      for (auto ss : sequentialSegments) delete ss;
       return false;
     }
   }
@@ -494,6 +519,8 @@ bool HELIX::synchronizeTask (
     // SubCFGs execGraph(*helixTask->getTaskBody());
     // DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
+
+  for (auto ss : sequentialSegments) delete ss;
 
   return true;
 }

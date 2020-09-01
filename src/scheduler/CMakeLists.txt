@@ -30,4 +30,5 @@ add_subdirectory(src)
 # Install
 install(PROGRAMS
   include/Scheduler.hpp
+  include/SCCPartitionScheduler.hpp
   DESTINATION include)

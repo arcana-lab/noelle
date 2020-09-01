@@ -15,7 +15,8 @@ using namespace llvm ;
 
 std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   LoopDependenceInfo *originalLDI,
-  LoopDependenceInfo *LDI
+  LoopDependenceInfo *LDI,
+  DataFlowResult *reachabilityDFR
 ){
 
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
@@ -86,11 +87,6 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
    * Prepare the initial partition.
    */
   ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSCCDAG(LDI);
-
-  /*
-   * Compute reachability analysis
-   */
-  auto reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
 
   /*
    * Identify the loop's preamble, and whether the original loop was IV governed
@@ -180,8 +176,6 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
     ssID++;
     sss.push_back(ss);
   }
-
-  delete reachabilityDFR;
 
   return sss;
 }
