@@ -40,9 +40,11 @@ namespace llvm {
       int64_t numberOfVariableDependence = 0;
       int64_t numberOfMemoryDependence = 0;
       int64_t numberOfMemoryMustDependence = 0;
+      int64_t numberOfPotentialMemoryDependences = 0;
       int64_t numberOfControlDependence = 0;
 
       void collectStatsForNodes(Function &F);
+      void collectStatsForPotentialEdges (Function &F) ;
       void collectStatsForEdges(Function &F);
       bool edgeIsDependenceOf(MDNode *edgeM, EDGE_ATTRIBUTE edgeAttribute);
       void printStats();

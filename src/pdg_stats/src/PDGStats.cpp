@@ -25,6 +25,7 @@ void PDGStats::getAnalysisUsage(AnalysisUsage &AU) const {
 bool PDGStats::runOnModule(Module &M) {
   for (auto &F : M) {
     collectStatsForNodes(F);
+    collectStatsForPotentialEdges(F);
     collectStatsForEdges(F);
   }
   printStats();
@@ -48,8 +49,25 @@ void PDGStats::collectStatsForNodes(Function &F) {
   return;
 }
 
+void PDGStats::collectStatsForPotentialEdges (Function &F) {
+  uint64_t totMemoryInsts = 0;
+  for (auto& inst : instructions(F)){
+    if (  false
+          || isa<LoadInst>(&inst)
+          || isa<StoreInst>(&inst)
+          || isa<CallInst>(&inst)
+          || isa<InvokeInst>(&inst)
+      ){
+      totMemoryInsts++;
+    }
+  }
+  this->numberOfPotentialMemoryDependences += (totMemoryInsts * totMemoryInsts);
+
+  return ;
+}
+
 void PDGStats::collectStatsForEdges(Function &F) {
-  if (MDNode *edgesM = F.getMetadata("noelle.pdg.edges")) {
+  if (auto edgesM = F.getMetadata("noelle.pdg.edges")) {
     this->numberOfEdges += edgesM->getNumOperands();
 
     for (auto &operand : edgesM->operands()) {
@@ -98,6 +116,7 @@ void PDGStats::printStats() {
   errs() << "   Number of memory dependences: " << this->numberOfMemoryDependence << "\n";
   errs() << "     Number of memory must dependences: " << this->numberOfMemoryMustDependence << "\n";
   errs() << "     Number of memory may dependences: " << this->numberOfMemoryDependence - this->numberOfMemoryMustDependence << "\n";
+  errs() << "     Number of potential memory dependences: " << this->numberOfPotentialMemoryDependences << "\n";
 
   return;
 }
