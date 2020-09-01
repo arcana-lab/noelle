@@ -102,6 +102,7 @@ bool SCCPartitionScheduler::squeezePartitions (void) {
 
         partitionInstructions.insert(&I);
         for (auto dependedOnI : collectDependedOnInstructionsWithinBlock(&I)) {
+          if (isa<PHINode>(dependedOnI) || dependedOnI->isTerminator()) continue;
           dependedOnInstructions.insert(dependedOnI);
         }
       }
