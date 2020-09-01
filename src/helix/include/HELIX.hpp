@@ -120,17 +120,20 @@ namespace llvm {
 
       std::vector<SequentialSegment *> identifySequentialSegments (
         LoopDependenceInfo *originalLDI,
-        LoopDependenceInfo *LDI
+        LoopDependenceInfo *LDI,
+        DataFlowResult *reachabilityDFR
       );
  
       void squeezeSequentialSegments (
         LoopDependenceInfo *LDI,
-        std::vector<SequentialSegment *> *sss
+        std::vector<SequentialSegment *> *sss,
+        DataFlowResult *reachabilityDFR
       );
 
       void scheduleSequentialSegments (
         LoopDependenceInfo *LDI,
-        std::vector<SequentialSegment *> *sss
+        std::vector<SequentialSegment *> *sss,
+        DataFlowResult *reachabilityDFR
       );
 
       void addSynchronizations (
