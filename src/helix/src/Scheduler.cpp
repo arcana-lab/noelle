@@ -10,6 +10,7 @@
  */
 #include "HELIX.hpp"
 #include "llvm/IR/CFG.h"
+#include "SCCPartitionScheduler.hpp"
 
 using namespace llvm ;
 
@@ -37,78 +38,30 @@ void HELIX::squeezeSequentialSegment (
   DominatorSummary taskDS(taskDT, taskPDT);
   ControlFlowEquivalence cfe(&taskDS, &loops, rootLoop);
 
-  /*
-   * Consider all un-moved instructions in the working queue
-   */
-  auto ssInstructions = ss->getInstructions();
-  std::queue<Instruction *> instructionsToMove{};
-  for (auto I : ssInstructions) {
-    instructionsToMove.push(I);
-  }
-
-  while (!instructionsToMove.empty()) {
-    auto I = instructionsToMove.front();
-    instructionsToMove.pop();
-
-    /*
-     * Determine whether the instruction has more produced or consumed dependencies from its SS
-     * If it has more produced, push it towards the end of the loop's iteration
-     * If it has more consumed, push it towards the beginning of the loop's iteration
-     */
-    std::unordered_set<Instruction *> producersOfI{};
-    std::unordered_set<Instruction *> consumersOfI{};
-    auto ssProducers = 0, ssConsumers = 0;
-    auto nodeI = taskDG->fetchNode(I);
-    for (auto edgeProducedByI : nodeI->getOutgoingEdges()) {
-      auto consumerValue = edgeProducedByI->getIncomingT();
-      auto consumerInst = cast<Instruction>(consumerValue);
-      consumersOfI.insert(consumerInst);
-
-      if (ssInstructions.find(consumerInst) == ssInstructions.end()) continue;
-      ssConsumers++;
-    }
-    for (auto edgeConsumedByI : nodeI->getIncomingEdges()) {
-      auto producerValue = edgeConsumedByI->getIncomingT();
-      auto producerInst = cast<Instruction>(producerValue);
-      producersOfI.insert(producerInst);
-
-      if (ssInstructions.find(producerInst) == ssInstructions.end()) continue;
-      ssProducers++;
-    }
-
-
-    /*
-     * For each instruction to go towards, traverse CFE basic blocks
-     */
-    bool isMovingTowardsProducers = ssProducers >= ssConsumers;
-    bool isInsertingAfterInsts = isMovingTowardsProducers;
-    auto instsToPushTowards = isMovingTowardsProducers ? producersOfI : consumersOfI;
-    // TODO:
-
-  }
-
 }
 
 void HELIX::squeezeSequentialSegments (
   LoopDependenceInfo *LDI,
-  std::vector<SequentialSegment *> *sss
+  std::vector<SequentialSegment *> *sss,
+  DataFlowResult *reachabilityDFR
   ){
 
-  // TODO:
-  return;
+  auto sccdagAttribution = LDI->getSCCManager();
+  auto sccdag = sccdagAttribution->getSCCDAG();
+  std::unordered_set<SCCSet *> sccPartitions;
+  for (auto ss : *sss) {
+    auto ssPartition = new SCCSet();
+    for (auto scc : ss->getSCCs()) {
+      ssPartition->sccs.insert(scc);
+    }
+    sccPartitions.insert(ssPartition);
+  }
 
-  /*
-   * Compute reachability across a single iteration of the loop
-   */
-  auto reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
+  SCCPartitionScheduler scheduler(sccdag, sccPartitions, reachabilityDFR);
+  scheduler.squeezePartitions();
 
-  /*
-   * Squeeze all sequential segments.
-   * NOTE: Reachability does NOT need to be re-computed after each squeezing
-   * as a sequential segment does not care about SS's instructions
-   */
-  for (auto ss : *sss){
-    this->squeezeSequentialSegment(LDI, reachabilityDFR, ss);
+  for (auto ssPartition : sccPartitions) {
+    delete ssPartition;
   }
 
   return ;
@@ -116,7 +69,8 @@ void HELIX::squeezeSequentialSegments (
 
 void HELIX::scheduleSequentialSegments (
   LoopDependenceInfo *LDI,
-  std::vector<SequentialSegment *> *sss
+  std::vector<SequentialSegment *> *sss,
+  DataFlowResult *reachabilityDFR
   ){
   //TODO
 
