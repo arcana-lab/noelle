@@ -12,10 +12,12 @@
 
 #include "Noelle.hpp"
 
-using namespace llvm;
+namespace llvm::noelle {
 
 bool Noelle::isTransformationEnabled (Transformation transformation){
   auto exist = this->enabledTransformations.find(transformation) != this->enabledTransformations.end();
 
   return exist;
+}
+
 }

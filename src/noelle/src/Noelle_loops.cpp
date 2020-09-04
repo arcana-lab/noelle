@@ -14,6 +14,8 @@
 #include "Architecture.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
 
+namespace llvm::noelle {
+
 std::vector<LoopStructure *> * Noelle::getLoopStructures (
     Function *function
     ) {
@@ -967,4 +969,6 @@ noelle::StayConnectedNestedLoopForest * Noelle::organizeLoopsInTheirNestingFores
   }
 
   return n;
+}
+
 }

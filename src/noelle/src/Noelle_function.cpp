@@ -11,7 +11,7 @@
 #include "SystemHeaders.hpp"
 #include "Noelle.hpp"
 
-using namespace llvm;
+namespace llvm::noelle {
       
 DominatorSummary * Noelle::getDominators (Function *f) {
 
@@ -27,4 +27,6 @@ DominatorSummary * Noelle::getDominators (Function *f) {
   auto ds = new DominatorSummary(DT, PDT);
 
   return ds;
+}
+
 }

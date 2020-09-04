@@ -12,7 +12,7 @@
 
 #include "Noelle.hpp"
 
-using namespace llvm;
+namespace llvm::noelle {
       
 Type * Noelle::getIntegerType (uint32_t bitwidth) const {
   auto& ctx = this->program->getContext();
@@ -35,4 +35,6 @@ Type * Noelle::getVoidType (void) const {
   auto voidType = Type::getVoidTy(ctx);
 
   return voidType;
+}
+
 }
