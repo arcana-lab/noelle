@@ -13,8 +13,7 @@
 ## Description
 NOELLE provides abstractions to help build advanced code analyses and transformations.
 
-The full implementation of NOELLE is not yet integrated in this repository. 
-While most of NOELLE is here, a few tools, performance tests, and abstractions are still missing.
+NOELLE is in active development so more tools, tests, and abstractions will be added.
 
 
 ## Prerequisites
