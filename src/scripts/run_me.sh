@@ -3,7 +3,7 @@
 # Set the installation directory
 installDir=$PDG_INSTALL_DIR ;
 if test "$installDir" == "" ; then
-  installDir="`realpath ../../install`"  ;
+  installDir="`git rev-parse --show-toplevel`/install"  ;
 fi
 mkdir -p $installDir ;
 
