@@ -49,6 +49,8 @@ To test NOELLE using condor to run all tests in parallel, go to "tests" and run 
 
 ## Structure
 The directory `src` includes sources of the noelle framework.
+Within this directory, `src/core` includes the abstractions provided by NOELLE.
+Also, `src/tools` includes code transformations that rely on the NOELLE's abstractions to modify the code.
 
 The directory `external` includes libraries that are external to noelle that are used by noelle.
 Some of these libraries are patched and/or extended for noelle.
