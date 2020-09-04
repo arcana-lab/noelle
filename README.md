@@ -63,8 +63,8 @@ The directory `examples` includes examples of LLVM passes (and their tests) that
 Finally, the directory `doc` includes the documentation of noelle.
 
 
-### Users
-LLVM passes in the directory `users/passes` shows use cases of NOELLE.
+### Examples of using NOELLE
+LLVM passes in the directory `examples/passes` shows use cases of NOELLE.
 
 If you have any trouble using this framework feel free to reach out to us for help (contact simone.campanoni@northwestern.edu).
 
