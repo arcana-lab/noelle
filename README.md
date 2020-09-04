@@ -41,6 +41,7 @@ cd tests ;
 make condor ;
 ```
 To monitor how tests are doing: `cd tests ; make condor_watch`
+
 To find out if all tests passed: `cd tests ; make condor_check`
 
 To test NOELLE using condor to run all tests in parallel, go to "tests" and run "make condor".
