@@ -26,7 +26,7 @@ source /project/extra/llvm/9.0.0/enable
 
 
 ## Build NOELLE
-To build and install from the repository root directory: `make`
+To build and install: run `make` from the repository root directory.
 
 Run `make clean` from the root directory to clean the repository.
 
