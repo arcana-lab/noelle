@@ -58,7 +58,7 @@ Some of these libraries are patched and/or extended for noelle.
 The directory `tests` includes unit tests, integration tests, and performance tests.
 Furthermore, this directory includes the scripts to run all these tests in parallel via condor.
 
-The directory `users` includes examples of LLVM passes (and their tests) that rely on the noelle framework.
+The directory `examples` includes examples of LLVM passes (and their tests) that rely on the noelle framework.
 
 Finally, the directory `doc` includes the documentation of noelle.
 
