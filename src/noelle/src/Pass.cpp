@@ -12,7 +12,7 @@
 #include "PDGAnalysis.hpp"
 #include "HotProfiler.hpp"
 
-using namespace llvm;
+namespace llvm::noelle {
 
 static cl::opt<int> Verbose("noelle-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal)"));
 static cl::opt<int> MinimumHotness("noelle-min-hot", cl::ZeroOrMore, cl::Hidden, cl::desc("Minimum hotness of code to be parallelized"));
@@ -127,3 +127,5 @@ static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
 static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
         if(!_PassMaker){ PM.add(_PassMaker = new Noelle());}});// ** for -O0
+
+}

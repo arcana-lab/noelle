@@ -22,9 +22,7 @@
 
 #include "MemoryAnalysisModules/LoopAA.h"
 
-using namespace llvm::noelle;
-
-namespace llvm {
+namespace llvm::noelle {
 
   enum class Verbosity { Disabled, Minimal, Maximal };
 
@@ -106,7 +104,7 @@ namespace llvm {
         std::vector<LoopDependenceInfo *> & loops
         ) ;
 
-      noelle::StayConnectedNestedLoopForest * organizeLoopsInTheirNestingForest (
+      StayConnectedNestedLoopForest * organizeLoopsInTheirNestingForest (
         std::vector<LoopStructure *> const & loops
         ) ;
 
@@ -116,7 +114,7 @@ namespace llvm {
         ) ;
 
       void filterOutLoops (
-        noelle::StayConnectedNestedLoopForest *f, 
+        StayConnectedNestedLoopForest *f, 
         std::function<bool (LoopStructure *)> filter
         ) ;
 
@@ -138,7 +136,7 @@ namespace llvm {
 
       DominatorSummary * getDominators (Function *f) ;
 
-      noelle::CallGraph * getProgramCallGraph (void) ;
+      CallGraph * getProgramCallGraph (void) ;
 
       Verbosity getVerbosity (void) const ;
 
@@ -193,7 +191,7 @@ namespace llvm {
       uint32_t maxCores;
       bool hoistLoopsToMain;
       bool loopAwareDependenceAnalysis;
-      noelle::CallGraph *pcg;
+      CallGraph *pcg;
       PDGAnalysis *pdgAnalysis;
       liberty::LoopAA *loopAA;
 
