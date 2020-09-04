@@ -74,4 +74,4 @@ We welcome contributions from the community to improve this framework and evolve
 
 
 ## License
-SCAF is licensed under the [MIT License](./LICENSE.md).
+NOELLE is licensed under the [MIT License](./LICENSE.md).
