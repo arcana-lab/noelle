@@ -12,8 +12,7 @@
 #include "HotProfiler.hpp"
 #include "Architecture.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle{
 
 Noelle::Noelle() 
   : ModulePass{ID}
@@ -292,4 +291,6 @@ noelle::CallGraph * Noelle::getProgramCallGraph (void) {
 Noelle::~Noelle(){
 
   return ;
+}
+
 }

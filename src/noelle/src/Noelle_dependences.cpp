@@ -10,6 +10,8 @@
  */
 #include "Noelle.hpp"
 
+namespace llvm::noelle{
+
 PDG * Noelle::getProgramDependenceGraph (void) {
   if (this->programDependenceGraph == nullptr){
     this->programDependenceGraph = this->pdgAnalysis->getPDG();
@@ -22,3 +24,4 @@ PDG * Noelle::getFunctionDependenceGraph (Function *f) {
   return this->pdgAnalysis->getFunctionPDG(*f);
 }
 
+}
