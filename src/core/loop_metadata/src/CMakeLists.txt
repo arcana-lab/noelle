@@ -1,15 +1,14 @@
 # Sources
-set(Srcs 
-  Pass.cpp
-  Enablers.cpp
-  EnablersManager.cpp
+set(Srcs
+  LoopMetadataPass.cpp
+  LoopMetadata.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Enablers")
+set(PassName "LoopMetadata")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -22,15 +21,24 @@ include(HandleLLVMOptions)
 include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
-message(STATUS "Installation directory is ${CMAKE_INSTALL_PREFIX}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} 
+include_directories(
+  ${LLVM_INCLUDE_DIRS} 
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
-  ../../loop_invariant_code_motion/include
-  ../../scev_simplification/include
-  ../include
-  ./
+  ../include 
+  ../../basic_utilities/include 
+  ../../transformations/include
+  ../../loops/include
+  ../../pdg/include
+  ../../alloc_aa/include 
+  ../../callgraph/include
+  ../../talkdown/include
+  ../../loop_structure/include
+  ../../hotprofiler/include
+  ../../noelle/include
+  ../../dataflow/include
+  ../../scheduler/include
   )
 
 # Declare the LLVM pass to compile
