@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 # Set the installation directory
-installDir="`realpath ../../install`"  ;
+installDir="`git rev-parse --show-toplevel`/install"  ;
 mkdir -p $installDir ;
 export PDG_INSTALL_DIR="$installDir" ;
 

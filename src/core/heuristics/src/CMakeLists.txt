@@ -1,15 +1,18 @@
 # Sources
 set(Srcs 
-  Pass.cpp
-  Enablers.cpp
-  EnablersManager.cpp
+  InvocationLatency.cpp
+  PartitionCostAnalysis.cpp
+  MinMaxSizePartitionAnalysis.cpp
+  SmallestSizePartitionAnalysis.cpp
+  Heuristics.cpp
+  HeuristicsPass.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Enablers")
+set(PassName "Heuristics")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -22,15 +25,24 @@ include(HandleLLVMOptions)
 include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
-message(STATUS "Installation directory is ${CMAKE_INSTALL_PREFIX}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
-  ../../loop_invariant_code_motion/include
-  ../../scev_simplification/include
+  ../../basic_utilities/include 
+  ../../transformations/include
+  ../../alloc_aa/include 
+  ../../pdg/include 
+  ../../threadpool/include 
+  ../../loop_structure/include
+  ../../loops/include 
+  ../../talkdown/include
+  ../../hotprofiler/include
+  ../../noelle/include
+  ../../dataflow/include
+  ../../callgraph/include
+  ../../scheduler/include
   ../include
-  ./
   )
 
 # Declare the LLVM pass to compile

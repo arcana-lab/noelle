@@ -13,7 +13,7 @@ clean:
 	cd external ; make clean ; 
 	cd src ; make clean ; 
 	cd tests ; make clean; 
-	cd users ; make clean ; 
+	cd examples ; make clean ; 
 	find ./ -name .clangd -exec rm -rv {} +
 
 uninstall:

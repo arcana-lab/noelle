@@ -1,15 +1,19 @@
 # Sources
 set(Srcs 
   Pass.cpp
-  Enablers.cpp
-  EnablersManager.cpp
+  Noelle.cpp
+  Noelle_dependences.cpp
+  Noelle_function.cpp
+  Noelle_loops.cpp
+  Noelle_types.cpp
+  Noelle_transformations.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Enablers")
+set(PassName "Noelle")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -22,15 +26,23 @@ include(HandleLLVMOptions)
 include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
-message(STATUS "Installation directory is ${CMAKE_INSTALL_PREFIX}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
-  ../../loop_invariant_code_motion/include
-  ../../scev_simplification/include
-  ../include
-  ./
+  ../../basic_utilities/include 
+  ../../transformations/include
+  ../../architecture/include 
+  ../../alloc_aa/include 
+  ../../pdg/include 
+  ../../hotprofiler/include 
+  ../../loop_structure/include 
+  ../../talkdown/include
+  ../../loops/include
+  ../../dataflow/include
+  ../../callgraph/include
+  ../../scheduler/include
+  ../include 
   )
 
 # Declare the LLVM pass to compile
