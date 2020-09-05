@@ -1,17 +1,21 @@
 # Sources
-set(Srcs 
+set(Srcs
+  LoopStats.cpp 
   Pass.cpp
-  Enablers.cpp
-  EnablersManager.cpp
+  LoopStats_InductionVariables.cpp
+  LoopStats_Invariants.cpp
+  LoopStats_Dependences.cpp
+  LoopStats_Loops.cpp
+  LoopStats_Printer.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Enablers")
+set(PassName "LoopStats")
 
-# configure LLVM 
+# configure LLVM
 find_package(LLVM REQUIRED CONFIG)
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
@@ -22,16 +26,25 @@ include(HandleLLVMOptions)
 include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
-message(STATUS "Installation directory is ${CMAKE_INSTALL_PREFIX}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} 
+include_directories(${LLVM_INCLUDE_DIRS}
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
-  ../../loop_invariant_code_motion/include
-  ../../scev_simplification/include
+  ../../alloc_aa/include 
+  ../../architecture/include 
+  ../../basic_utilities/include
+  ../../callgraph/include
+  ../../dataflow/include
+  ../../hotprofiler/include 
+  ../../loops/include
+  ../../loop_structure/include 
+  ../../noelle/include
+  ../../pdg/include 
+  ../../scheduler/include
+  ../../talkdown/include
+  ../../transformations/include
   ../include
-  ./
-  )
+)
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})
