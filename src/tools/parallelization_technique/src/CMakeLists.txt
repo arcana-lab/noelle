@@ -25,21 +25,7 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 include_directories(${LLVM_INCLUDE_DIRS} 
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
-  ../../basic_utilities/include 
-  ../../transformations/include
-  ../../task/include 
-  ../../alloc_aa/include 
-  ../../pdg/include 
-  ../../threadpool/include 
-  ../../loop_structure/include
-  ../../loops/include 
   ../../heuristics/include 
-  ../../hotprofiler/include 
-  ../../noelle/include
-  ../../dataflow/include
-  ../../callgraph/include
-  ../../talkdown/include 
-  ../../scheduler/include
   ../include 
   ./
   )

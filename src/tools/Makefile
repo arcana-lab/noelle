@@ -1,9 +1,13 @@
-ALL=enablers deadfunctioneliminator loop_invariant_code_motion scev_simplification inliner
+PARALLELIZER=parallelizer heuristics parallelization_technique dswp doall helix
+ALL=enablers deadfunctioneliminator loop_invariant_code_motion scev_simplification inliner $(PARALLELIZER)
 
 all: $(ALL)
 
 scripts:
 	..//scripts/installNOELLE.sh
+
+parallelizer:
+	cd $@ ; ../../scripts/run_me.sh
 
 enablers:
 	cd $@ ; ../../scripts/run_me.sh
@@ -18,6 +22,21 @@ scev_simplification:
 	cd $@ ; ../../scripts/run_me.sh
 
 inliner:
+	cd $@ ; ../../scripts/run_me.sh
+
+heuristics:
+	cd $@ ; ../../scripts/run_me.sh
+
+parallelization_technique:
+	cd $@ ; ../../scripts/run_me.sh
+
+dswp:
+	cd $@ ; ../../scripts/run_me.sh
+
+doall:
+	cd $@ ; ../../scripts/run_me.sh
+
+helix:
 	cd $@ ; ../../scripts/run_me.sh
 
 clean:
