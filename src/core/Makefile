@@ -70,6 +70,7 @@ pdg_stats:
 
 clean:
 	rm -rf */build */*.json ; 
+	rm -rf */build */*/*.json ; 
 
 .PHONY: $(ALL)
 
