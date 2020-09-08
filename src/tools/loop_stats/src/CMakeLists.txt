@@ -30,20 +30,8 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 include_directories(${LLVM_INCLUDE_DIRS}
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
-  ../../alloc_aa/include 
-  ../../architecture/include 
-  ../../basic_utilities/include
-  ../../callgraph/include
-  ../../dataflow/include
-  ../../hotprofiler/include 
-  ../../loops/include
-  ../../loop_structure/include 
-  ../../noelle/include
-  ../../pdg/include 
-  ../../scheduler/include
-  ../../talkdown/include
-  ../../transformations/include
   ../include
+  ./
 )
 
 # Declare the LLVM pass to compile
