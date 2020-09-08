@@ -1,21 +1,17 @@
 # Sources
 set(Srcs 
-  DSWP.cpp
-  CFG.cpp
-  Environment.cpp
-  Inliner.cpp
-  Partition.cpp
-  Pipeline.cpp
+  Pass.cpp
+  Parallelizer.cpp
+  Helper.cpp
   Printer.cpp
-  Queue.cpp
-  DSWPTask.cpp
+  LoopSelector.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "DSWP")
+set(PassName "Parallelizer")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -29,27 +25,18 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} 
+include_directories(${LLVM_INCLUDE_DIRS}
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
-  ../../basic_utilities/include 
-  ../../transformations/include
-  ../../task/include 
-  ../../alloc_aa/include 
-  ../../pdg/include 
-  ../../threadpool/include 
-  ../../loop_structure/include
-  ../../loops/include 
   ../../heuristics/include 
   ../../parallelization_technique/include 
-  ../../hotprofiler/include 
+  ../../dswp/include 
+  ../../doall/include 
+  ../../helix/include 
+  ../../loop_distribution/include
   ../../talkdown/include
-  ../../noelle/include
-  ../../dataflow/include
-  ../../callgraph/include
-  ../../scheduler/include
-  ../include 
-  ./ 
+  ../include
+  ./
   )
 
 # Declare the LLVM pass to compile

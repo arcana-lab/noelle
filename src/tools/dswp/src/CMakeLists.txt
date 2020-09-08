@@ -1,23 +1,21 @@
 # Sources
 set(Srcs 
-  HELIX.cpp
-  HELIXTask.cpp
-  HELIXTaskInternalDependenceGraph.cpp
-  Linker.cpp
-  Spiller.cpp
-  InductionVariableStepper.cpp
-  SequentialSegments.cpp
-  SequentialSegment.cpp
-  Scheduler.cpp
-  Synchronization.cpp
+  DSWP.cpp
+  CFG.cpp
+  Environment.cpp
   Inliner.cpp
+  Partition.cpp
+  Pipeline.cpp
+  Printer.cpp
+  Queue.cpp
+  DSWPTask.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "HELIX")
+set(PassName "DSWP")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -34,22 +32,8 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 include_directories(${LLVM_INCLUDE_DIRS} 
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
-  ../../task/include 
-  ../../dataflow/include 
-  ../../alloc_aa/include 
-  ../../pdg/include 
-  ../../threadpool/include 
-  ../../loop_structure/include
-  ../../loops/include 
-  ../../architecture/include  
   ../../heuristics/include 
   ../../parallelization_technique/include 
-  ../../doall/include 
-  ../../hotprofiler/include 
-  ../../talkdown/include
-  ../../noelle/include
-  ../../callgraph/include
-  ../../scheduler/include
   ../include 
   ./ 
   )
