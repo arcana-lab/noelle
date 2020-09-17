@@ -1,4 +1,4 @@
-# <u>N</u>OELLE Offers Empowering LLVM Extensions
+# <u>N</u>OELLE <u>O</u>ffers <u>E</u>mpowering <u>LL</u>VM <u>E</u>xtensions
 
 
 ## Table of Contents
