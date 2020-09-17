@@ -1,4 +1,4 @@
-# NOELLE Offers Empowering LLVM Extensions
+# <u>N</u>OELLE Offers Empowering LLVM Extensions
 
 
 ## Table of Contents
