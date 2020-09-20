@@ -6,12 +6,10 @@ void myG (void){
 
 void myF (void){
   myG();
-  myG();
 }
 
 int main (){
-  printf("Start\n");
+  printf("This is fun\n");
   myF();
-  printf("End\n");
   return 0;
 }
