@@ -17,15 +17,23 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
 ) {
   auto modified = false;
 
+  /*
+   * Fetch the information.
+   */
   auto invariantManager = LDI.getInvariantManager();
   auto loopStructure = LDI.getLoopStructure();
   auto header = loopStructure->getHeader();
   auto preHeader = loopStructure->getPreHeader();
+  auto loopFunction = header->getParent();
 
-  DominatorTree DT(*header->getParent());
-  PostDominatorTree PDT(*header->getParent());
-  DominatorSummary DS(DT, PDT);
+  /*
+   * Compute the dominators.
+   */
+  auto DS = this->noelle.getDominators(loopFunction);
 
+  /*
+   * Identify the instructions to hoist outside the loop.
+   */
   std::vector<Instruction *> instructionsToHoistToPreheader{};
   std::unordered_set<PHINode *> phisToRemove{};
   for (auto B : loopStructure->getBasicBlocks()) {
@@ -60,7 +68,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
       Value *valueToReplacePHI = nullptr;
       for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
         auto incomingBlock = phi->getIncomingBlock(i);
-        if (!DS.DT.dominates(incomingBlock, B)) continue;
+        if (!DS->DT.dominates(incomingBlock, B)) continue;
         valueToReplacePHI = phi->getIncomingValue(i);
         break;
       }
@@ -86,17 +94,25 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
     }
   }
 
+  /*
+   * Remove the dead PHIs.
+   */
   for (auto phi : phisToRemove) {
     phi->eraseFromParent();
   }
 
   /*
+   * Re-compute the dominators.
+   */
+  auto newDS = this->noelle.getDominators(loopFunction);
+
+  /*
    * Sort invariants to hoist in order of dominance to preserve execution order
    */
-  auto dominanceCmpFunc = [&DS] (Instruction *I, Instruction *J) -> bool {
-    return DS.DT.dominates(I, J);
+  auto dominanceCmpFunc = [newDS] (Instruction *I, Instruction *J) -> bool {
+    return newDS->DT.dominates(I, J);
   };
-  std::sort (instructionsToHoistToPreheader.begin(), instructionsToHoistToPreheader.end(), dominanceCmpFunc);
+  std::sort(instructionsToHoistToPreheader.begin(), instructionsToHoistToPreheader.end(), dominanceCmpFunc);
 
   /*
    * Hoist each instruction into the preheader
@@ -106,6 +122,12 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
     I->removeFromParent();
     preHeaderBuilder.Insert(I);
   }
+
+  /*
+   * Free the memory.
+   */
+  delete DS;
+  delete newDS;
 
   return modified;
 }
