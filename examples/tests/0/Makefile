@@ -2,7 +2,11 @@ LIBS=
 
 all: test_opt
 
-test.bc: test.c
+%.bc: %.cpp
+	clang++ -O0 -Xclang -disable-O0-optnone -emit-llvm -c $< -o $@
+	llvm-dis $@
+
+%.bc: %.c
 	clang -O0 -Xclang -disable-O0-optnone -emit-llvm -c $< -o $@
 	llvm-dis $@
 
