@@ -13,9 +13,6 @@ CMAKE="cmake" ;
 # Set the compiler
 export CC=clang
 export CXX=clang++
-if test -d build ; then
-  exit 0;
-fi
 
 # Install
 pushd ./ ;
