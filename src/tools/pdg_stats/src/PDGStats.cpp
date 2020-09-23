@@ -10,15 +10,29 @@
  */
 #include "SystemHeaders.hpp"
 #include "PDGStats.hpp"
+#include "Noelle.hpp"
 
 using namespace llvm;
 
 bool PDGStats::runOnModule(Module &M) {
+
+  /*
+   * Fetch the NOELLE framework.
+   */
+  auto& noelle = getAnalysis<Noelle>();
+
+  /*
+   * Collect the statistics.
+   */
   for (auto &F : M) {
     collectStatsForNodes(F);
     collectStatsForPotentialEdges(F);
     collectStatsForEdges(F);
   }
+
+  /*
+   * Print the statistics.
+   */
   printStats();
 
   return false;

@@ -10,11 +10,11 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
+#include "Noelle.hpp"
 
 namespace llvm {
   
-  struct PDGStats : public ModulePass {
+  class PDGStats : public ModulePass {
     public:
       enum EDGE_ATTRIBUTE {
         IS_MEMORY_DEPENDENCE = 2,
