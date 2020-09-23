@@ -22,12 +22,21 @@ bool PDGStats::runOnModule(Module &M) {
   auto& noelle = getAnalysis<Noelle>();
 
   /*
+   * Compute the loops for all functions.
+   */
+  std::unordered_map<Function *, StayConnectedNestedLoopForest *> programLoops;
+  for (auto &F : M) {
+    auto loops = noelle.getLoops(&F);
+    programLoops[&F] = noelle.organizeLoopsInTheirNestingForest(loops);
+  }
+
+  /*
    * Collect the statistics.
    */
   for (auto &F : M) {
     collectStatsForNodes(F);
     collectStatsForPotentialEdges(F);
-    collectStatsForEdges(noelle, F);
+    collectStatsForEdges(noelle, programLoops, F);
   }
 
   /*
@@ -71,7 +80,7 @@ void PDGStats::collectStatsForPotentialEdges (Function &F) {
   return ;
 }
 
-void PDGStats::collectStatsForEdges (Noelle &noelle, Function &F){
+void PDGStats::collectStatsForEdges (Noelle &noelle, std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F){
   if (auto edgesM = F.getMetadata("noelle.pdg.edges")) {
     this->numberOfEdges += edgesM->getNumOperands();
 

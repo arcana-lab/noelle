@@ -43,7 +43,7 @@ namespace llvm {
 
       void collectStatsForNodes(Function &F);
       void collectStatsForPotentialEdges (Function &F) ;
-      void collectStatsForEdges (Noelle &noelle, Function &F);
+      void collectStatsForEdges (Noelle &noelle, std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F);
       bool edgeIsDependenceOf(MDNode *edgeM, EDGE_ATTRIBUTE edgeAttribute);
       void printStats();
   };
