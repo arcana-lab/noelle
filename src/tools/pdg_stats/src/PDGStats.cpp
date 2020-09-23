@@ -63,7 +63,7 @@ void PDGStats::collectStatsForNodes(Function &F) {
   return;
 }
 
-void PDGStats::collectStatsForPotentialEdges (Function &F) {
+void PDGStats::collectStatsForPotentialEdges (std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F) {
   uint64_t totMemoryInsts = 0;
   for (auto& inst : instructions(F)){
     if (  false
