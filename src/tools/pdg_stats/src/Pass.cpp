@@ -10,6 +10,7 @@
  */
 #include "SystemHeaders.hpp"
 #include "PDGStats.hpp"
+#include "Noelle.hpp"
 
 using namespace llvm;
 
@@ -18,6 +19,7 @@ bool PDGStats::doInitialization(Module &M) {
 }
 
 void PDGStats::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<Noelle>();
   AU.setPreservesAll();
   return;
 }
