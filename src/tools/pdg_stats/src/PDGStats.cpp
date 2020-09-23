@@ -27,7 +27,7 @@ bool PDGStats::runOnModule(Module &M) {
   for (auto &F : M) {
     collectStatsForNodes(F);
     collectStatsForPotentialEdges(F);
-    collectStatsForEdges(F);
+    collectStatsForEdges(noelle, F);
   }
 
   /*
@@ -71,7 +71,7 @@ void PDGStats::collectStatsForPotentialEdges (Function &F) {
   return ;
 }
 
-void PDGStats::collectStatsForEdges(Function &F) {
+void PDGStats::collectStatsForEdges (Noelle &noelle, Function &F){
   if (auto edgesM = F.getMetadata("noelle.pdg.edges")) {
     this->numberOfEdges += edgesM->getNumOperands();
 
