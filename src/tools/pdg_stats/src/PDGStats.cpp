@@ -13,15 +13,6 @@
 
 using namespace llvm;
 
-bool PDGStats::doInitialization(Module &M) {
-  return false;
-}
-
-void PDGStats::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.setPreservesAll();
-  return;
-}
-
 bool PDGStats::runOnModule(Module &M) {
   for (auto &F : M) {
     collectStatsForNodes(F);
@@ -129,16 +120,3 @@ PDGStats::PDGStats()
 PDGStats::~PDGStats() {
   return;
 }
-
-// Next there is code to register your pass to "opt"
-char PDGStats::ID = 0;
-static RegisterPass<PDGStats> X("PDGStats", "Generate statistics output of PDG");
-
-// Next there is code to register your pass to "clang"
-static PDGStats * _PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new PDGStats());}}); // ** for -Ox
-static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new PDGStats()); }}); // ** for -O0
