@@ -15,6 +15,15 @@ function expand_rel_path {
   echo $NEWVAL ;
 }
 
+function invoke_inliner {
+  local BITCODE_FILE=$1 ;
+
+  noelle-parallel-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $BITCODE_FILE "-o" $BITCODE_FILE ;
+  noelle-norm $BITCODE_FILE "-o" $BITCODE_FILE ;
+
+  return 0;
+}
+
 function runSimplify {
   local OPTIONS=$1 ;
   local FILE_NAME=$(expand_rel_path "$2") &> /dev/null ;
@@ -32,7 +41,7 @@ function runSimplify {
     rm "dgsimplify_continue.txt"
     let ITER=ITER+1 
     printf "Running Inliner to inline calls within SCCs, iteration: $ITER\n"
-    noelle-parallel-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $fileToModify "-o" $fileToModify
+    invoke_inliner $fileToModify ;
   done
 
   ITER=0
@@ -43,7 +52,7 @@ function runSimplify {
     rm "dgsimplify_continue.txt"
     let ITER=ITER+1 
     printf "Running Inliner to hoist loops to main, iteration: $ITER\n"
-    noelle-parallel-load -load ${installDir}/lib/Inliner.so "-inliner" $OPTIONS $fileToModify "-o" $fileToModify
+    invoke_inliner $fileToModify ;
   done
 
   # Copy the inlined bitcode to the final one
