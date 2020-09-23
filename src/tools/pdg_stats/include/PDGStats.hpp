@@ -10,9 +10,7 @@
  */
 #pragma once
 
-#include "llvm/IR/Module.h"
-
-using namespace llvm;
+#include "SystemHeaders.hpp"
 
 namespace llvm {
   

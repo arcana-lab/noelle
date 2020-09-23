@@ -1,6 +1,7 @@
 # Sources
 set(Srcs
   PDGStats.cpp 
+  Pass.cpp
 )
 
 # Compilation flags
