@@ -24,10 +24,31 @@ bool PDGStats::runOnModule(Module &M) {
   /*
    * Compute the loops for all functions.
    */
-  std::unordered_map<Function *, StayConnectedNestedLoopForest *> programLoops;
+  std::unordered_map<Function *, StayConnectedNestedLoopForest *> programLoopForests;
+  std::unordered_map<Function *, std::vector<LoopDependenceInfo *> programLoops;
   for (auto &F : M) {
-    auto loops = noelle.getLoops(&F);
-    programLoops[&F] = noelle.organizeLoopsInTheirNestingForest(loops);
+
+    /*
+     * Fetch all loops within the current function.
+     */
+    programLoops[&F] = noelle.getLoops(&F);
+
+    /*
+     * Create the map from loop structure to LDI.
+     */
+    std::unordered_map<LoopStructure *, LoopDependenceInfo *> lsToLDI;
+    std::unordered_map<Function *, std::vector<LoopStructure *> programLoopStructures;
+    auto &loopStructures = programLoopStructures[&F];
+    for (auto LDI : programLoops[&F]){
+      auto ls = LDI->getLoopStructure();
+      lsToLDI[ls] = LDI;
+      loopStructures.push_back(ls);
+    }
+
+    /*
+     * Organize the loops in a forest.
+     */
+    programLoopForests[&F] = noelle.organizeLoopsInTheirNestingForest(loopStructures);
   }
 
   /*
