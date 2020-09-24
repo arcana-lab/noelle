@@ -40,7 +40,7 @@
 #include "DOALL.hpp"
 #include "HELIX.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   struct Parallelizer : public ModulePass {
     public:
