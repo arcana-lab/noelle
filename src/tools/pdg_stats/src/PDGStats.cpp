@@ -25,7 +25,7 @@ bool PDGStats::runOnModule(Module &M) {
    * Compute the loops for all functions.
    */
   std::unordered_map<Function *, StayConnectedNestedLoopForest *> programLoopForests;
-  std::unordered_map<Function *, std::vector<LoopDependenceInfo *> programLoops;
+  std::unordered_map<Function *, std::vector<LoopDependenceInfo *> *> programLoops;
   for (auto &F : M) {
 
     /*
@@ -37,9 +37,9 @@ bool PDGStats::runOnModule(Module &M) {
      * Create the map from loop structure to LDI.
      */
     std::unordered_map<LoopStructure *, LoopDependenceInfo *> lsToLDI;
-    std::unordered_map<Function *, std::vector<LoopStructure *> programLoopStructures;
+    std::unordered_map<Function *, std::vector<LoopStructure *>> programLoopStructures;
     auto &loopStructures = programLoopStructures[&F];
-    for (auto LDI : programLoops[&F]){
+    for (auto LDI : *programLoops[&F]){
       auto ls = LDI->getLoopStructure();
       lsToLDI[ls] = LDI;
       loopStructures.push_back(ls);
@@ -56,8 +56,8 @@ bool PDGStats::runOnModule(Module &M) {
    */
   for (auto &F : M) {
     collectStatsForNodes(F);
-    collectStatsForPotentialEdges(F);
-    collectStatsForEdges(noelle, programLoops, F);
+    collectStatsForPotentialEdges(programLoopForests, F);
+    collectStatsForEdges(noelle, programLoopForests, F);
   }
 
   /*
