@@ -340,6 +340,27 @@ namespace {
           }
         }
       }
+
+      /*
+       * Fetch the islands.
+       */
+      errs() << "Islands of the program call graph\n";
+      auto islands = pcf->getIslands();
+      auto islandOfMain = islands[mainF];
+      for (auto& F : M){
+        auto islandOfF = islands[&F];
+        if (islandOfF != islandOfMain){
+          errs() << " Function " << F.getName() << " is not in the same island of main\n";
+        }
+      }
+
+      /*
+       * Fetch the SCCCAG
+       */
+      auto sccCAG = pcf->getSCCCAG();
+      auto mainNode = pcf->getFunctionNode(mainF);
+      auto sccOfMain = sccCAG->getNode(mainNode);
+
       return false;
     }
 
