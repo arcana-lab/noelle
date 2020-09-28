@@ -1,10 +1,14 @@
 PARALLELIZER=parallelizer heuristics parallelization_technique dswp doall helix
-ALL=enablers deadfunctioneliminator loop_invariant_code_motion scev_simplification inliner $(PARALLELIZER) loop_stats loop_metadata
+TOOLS=pdg_stats
+ALL=$(TOOLS) enablers deadfunctioneliminator loop_invariant_code_motion scev_simplification inliner $(PARALLELIZER) loop_stats loop_metadata
 
 all: $(ALL)
 
 scripts:
 	..//scripts/installNOELLE.sh
+
+pdg_stats:
+	cd $@ ; ../../scripts/run_me.sh
 
 loop_metadata:
 	cd $@ ; ../../scripts/run_me.sh

@@ -10,24 +10,59 @@
  */
 #include "SystemHeaders.hpp"
 #include "PDGStats.hpp"
+#include "Noelle.hpp"
 
 using namespace llvm;
 
-bool PDGStats::doInitialization(Module &M) {
-  return false;
-}
-
-void PDGStats::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.setPreservesAll();
-  return;
-}
-
 bool PDGStats::runOnModule(Module &M) {
+
+  /*
+   * Fetch the NOELLE framework.
+   */
+  auto& noelle = getAnalysis<Noelle>();
+
+  /*
+   * Compute the loops for all functions.
+   */
+  std::unordered_map<Function *, StayConnectedNestedLoopForest *> programLoopForests;
+  std::unordered_map<Function *, std::vector<LoopDependenceInfo *> *> programLoops;
+  for (auto &F : M) {
+
+    /*
+     * Fetch all loops within the current function.
+     */
+    programLoops[&F] = noelle.getLoops(&F);
+
+    /*
+     * Create the map from loop structure to LDI.
+     */
+    std::unordered_map<LoopStructure *, LoopDependenceInfo *> lsToLDI;
+    std::unordered_map<Function *, std::vector<LoopStructure *>> programLoopStructures;
+    auto &loopStructures = programLoopStructures[&F];
+    for (auto LDI : *programLoops[&F]){
+      auto ls = LDI->getLoopStructure();
+      lsToLDI[ls] = LDI;
+      loopStructures.push_back(ls);
+    }
+
+    /*
+     * Organize the loops in a forest.
+     */
+    programLoopForests[&F] = noelle.organizeLoopsInTheirNestingForest(loopStructures);
+  }
+
+  /*
+   * Collect the statistics.
+   */
   for (auto &F : M) {
     collectStatsForNodes(F);
-    collectStatsForPotentialEdges(F);
-    collectStatsForEdges(F);
+    collectStatsForPotentialEdges(programLoopForests, F);
+    collectStatsForEdges(noelle, programLoopForests, F);
   }
+
+  /*
+   * Print the statistics.
+   */
   printStats();
 
   return false;
@@ -49,7 +84,7 @@ void PDGStats::collectStatsForNodes(Function &F) {
   return;
 }
 
-void PDGStats::collectStatsForPotentialEdges (Function &F) {
+void PDGStats::collectStatsForPotentialEdges (std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F) {
   uint64_t totMemoryInsts = 0;
   for (auto& inst : instructions(F)){
     if (  false
@@ -66,7 +101,7 @@ void PDGStats::collectStatsForPotentialEdges (Function &F) {
   return ;
 }
 
-void PDGStats::collectStatsForEdges(Function &F) {
+void PDGStats::collectStatsForEdges (Noelle &noelle, std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F){
   if (auto edgesM = F.getMetadata("noelle.pdg.edges")) {
     this->numberOfEdges += edgesM->getNumOperands();
 
@@ -129,16 +164,3 @@ PDGStats::PDGStats()
 PDGStats::~PDGStats() {
   return;
 }
-
-// Next there is code to register your pass to "opt"
-char PDGStats::ID = 0;
-static RegisterPass<PDGStats> X("PDGStats", "Generate statistics output of PDG");
-
-// Next there is code to register your pass to "clang"
-static PDGStats * _PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new PDGStats());}}); // ** for -Ox
-static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new PDGStats()); }}); // ** for -O0
