@@ -24,7 +24,7 @@
 #include "LoopInvariantCodeMotion.hpp"
 #include "SCEVSimplification.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class EnablersManager : public ModulePass {
     public:
