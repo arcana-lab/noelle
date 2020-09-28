@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Yian Su
+ * Copyright 2016 - 2020  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,13 +10,11 @@
  */
 #pragma once
 
-#include "llvm/IR/Module.h"
-
-using namespace llvm;
+#include "Noelle.hpp"
 
 namespace llvm {
   
-  struct PDGStats : public ModulePass {
+  class PDGStats : public ModulePass {
     public:
       enum EDGE_ATTRIBUTE {
         IS_MEMORY_DEPENDENCE = 2,
@@ -44,8 +42,8 @@ namespace llvm {
       int64_t numberOfControlDependence = 0;
 
       void collectStatsForNodes(Function &F);
-      void collectStatsForPotentialEdges (Function &F) ;
-      void collectStatsForEdges(Function &F);
+      void collectStatsForPotentialEdges (std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F) ;
+      void collectStatsForEdges (Noelle &noelle, std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F);
       bool edgeIsDependenceOf(MDNode *edgeM, EDGE_ATTRIBUTE edgeAttribute);
       void printStats();
   };
