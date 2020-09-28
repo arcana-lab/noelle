@@ -28,4 +28,4 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/PDGStats.hpp DESTINATION include)
+install(PROGRAMS DESTINATION)
