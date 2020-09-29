@@ -263,6 +263,9 @@ LoopDependenceInfo * Noelle::getLoop (
 std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     Function *function
     ){
+  if (function->empty()){
+    return {};
+  }
   auto v = this->getLoops(function, this->minHot);
 
   return v;
