@@ -85,7 +85,11 @@ void PDGStats::collectStatsForNodes(Function &F) {
 }
 
 void PDGStats::collectStatsForPotentialEdges (std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F) {
-  uint64_t totMemoryInsts = 0;
+
+  /*
+   * Compute the total number of memory dependences between instructions outside the context of loops.
+   */
+  uint64_t totMemoryDepdsForPDG = 0;
   for (auto& inst : instructions(F)){
     if (  false
           || isa<LoadInst>(&inst)
@@ -93,10 +97,14 @@ void PDGStats::collectStatsForPotentialEdges (std::unordered_map<Function *, Sta
           || isa<CallInst>(&inst)
           || isa<InvokeInst>(&inst)
       ){
-      totMemoryInsts++;
+      totMemoryDepdsForPDG++;
     }
   }
-  this->numberOfPotentialMemoryDependences += (totMemoryInsts * totMemoryInsts);
+  this->numberOfPotentialMemoryDependences += (totMemoryDepdsForPDG * totMemoryDepdsForPDG);
+
+  /*
+   * Compute the total number of memory dependences between instructions within the context of loops.
+   */
 
   return ;
 }
