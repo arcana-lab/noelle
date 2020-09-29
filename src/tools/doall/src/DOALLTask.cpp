@@ -20,7 +20,7 @@ DOALLTask::DOALLTask (
   return ;
 }
 
-void llvm::DOALLTask::extractFuncArgs (void) {
+void DOALLTask::extractFuncArgs (void) {
   auto argIter = this->F->arg_begin();
   this->envArg = (Value *) &*(argIter++);
   this->coreArg = (Value *) &*(argIter++); 
