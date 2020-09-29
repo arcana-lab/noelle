@@ -73,10 +73,10 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->enableAllTransformations();
 
   /*
-   * Fetch the PDG of the loop and its SCCDAG.
+   * Fetch the loop dependence graph (i.e., the subset of the PDG that relates to the loop @l) and its SCCDAG.
    */
   this->fetchLoopAndBBInfo(l, SE);
-  auto ls = getLoopStructure();
+  auto ls = this->getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
   auto DGs = this->createDGsForLoop(l, fG, DS, SE, loopAA);
   this->loopDG = DGs.first;
@@ -176,7 +176,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
 ) {
 
   /*
-   * Set the loop dependence graph.
+   * Create the loop dependence graph.
    */
   auto loopDG = functionDG->createLoopsSubgraph(l);
   std::vector<Value *> loopInternals;
@@ -186,7 +186,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
 
   /*
-   * Perform loop-aware memory dependence analysis to refine loop PDG
+   * Detect the loop-carried data dependences.
    *
    * HACK: The reason LoopCarriedDependencies is constructed SPECIFICALLY with the DG
    * that is used to query it is because it holds references to edges copied to that specific
@@ -197,11 +197,15 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
    * which provide context (live-ins/live-outs) but which complicate analyzing the resulting SCCDAG 
    */
   LoopCarriedDependencies lcdUsingLoopDGEdges(liSummary, DS, *loopDG);
+
+  /*
+   * Perform loop-aware memory dependence analysis to refine the loop dependence graph.
+   */
   auto loopStructure = liSummary.getLoopNestingTreeRoot();
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto env = LoopEnvironment(loopDG, loopExitBlocks);
-  auto invManager = InvariantManager(loopStructure, loopDG);
   auto preRefinedSCCDAG = SCCDAG(loopInternalDG);
+  auto invManager = InvariantManager(loopStructure, loopDG);
   auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
