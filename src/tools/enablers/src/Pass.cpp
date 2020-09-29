@@ -19,7 +19,6 @@ using namespace llvm;
 static cl::opt<bool> DisableEnablers("noelle-disable-enablers", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable all enablers"));
 
 namespace llvm::noelle {
-
   bool EnablersManager::doInitialization (Module &M) {
     this->enableEnablers = (DisableEnablers.getNumOccurrences() == 0) ? true : false;
 
@@ -45,15 +44,15 @@ namespace llvm::noelle {
   }
 }
 
-  // Next there is code to register your pass to "opt"
-  char llvm::noelle::EnablersManager::ID = 0;
-  static RegisterPass<EnablersManager> X("enablers", "Transformations designed to enable automatic parallelization of sequential code", false, false);
+// Next there is code to register your pass to "opt"
+char llvm::noelle::EnablersManager::ID = 0;
+static RegisterPass<EnablersManager> X("enablers", "Transformations designed to enable automatic parallelization of sequential code", false, false);
 
-  // Next there is code to register your pass to "clang"
-  static EnablersManager * _PassMaker = NULL;
-  static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-      [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-          if(!_PassMaker){ PM.add(_PassMaker = new EnablersManager());}}); // ** for -Ox
-  static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-      [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-          if(!_PassMaker){ PM.add(_PassMaker = new EnablersManager());}});// ** for -O0
+// Next there is code to register your pass to "clang"
+static EnablersManager * _PassMaker = NULL;
+static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
+    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
+        if(!_PassMaker){ PM.add(_PassMaker = new EnablersManager());}}); // ** for -Ox
+static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
+    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
+        if(!_PassMaker){ PM.add(_PassMaker = new EnablersManager());}});// ** for -O0
