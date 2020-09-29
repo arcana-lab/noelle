@@ -14,7 +14,7 @@
 #include "Noelle.hpp"
 #include "LoopDependenceInfo.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class SCEVSimplification {
     public:
