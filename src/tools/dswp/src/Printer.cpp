@@ -11,7 +11,7 @@
 #include "SCCDAG.hpp"
 #include "DSWP.hpp"
 
-void llvm::DSWP::printStageSCCs (LoopDependenceInfo *LDI) const {
+void DSWP::printStageSCCs (LoopDependenceInfo *LDI) const {
   if (this->verbose == Verbosity::Disabled) {
     return ;
   }
@@ -32,7 +32,7 @@ void llvm::DSWP::printStageSCCs (LoopDependenceInfo *LDI) const {
   return ;
 }
 
-void llvm::DSWP::printStageQueues (LoopDependenceInfo *LDI) const {
+void DSWP::printStageQueues (LoopDependenceInfo *LDI) const {
 
   /*
    * Check if we should print.
@@ -77,7 +77,7 @@ void llvm::DSWP::printStageQueues (LoopDependenceInfo *LDI) const {
   return ;
 }
 
-void llvm::DSWP::printEnv (LoopDependenceInfo *LDI) const {
+void DSWP::printEnv (LoopDependenceInfo *LDI) const {
 
   /*
    * Check if we should print.
@@ -105,7 +105,7 @@ void llvm::DSWP::printEnv (LoopDependenceInfo *LDI) const {
   return ;
 }
 
-void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
+void DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
 
   DG<DGString> stageGraph;
   std::set<DGString *> elements;
@@ -169,7 +169,7 @@ void llvm::DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
   for (auto elem : elements) delete elem;
 }
 
-void llvm::DSWP::writeStageQueuesAsDot (const LoopDependenceInfo &LDI) const {
+void DSWP::writeStageQueuesAsDot (const LoopDependenceInfo &LDI) const {
 
   DG<DGString> queueGraph;
   std::set<DGString *> elements;
@@ -199,7 +199,7 @@ void llvm::DSWP::writeStageQueuesAsDot (const LoopDependenceInfo &LDI) const {
   for (auto elem : elements) delete elem;
 }
 
-void llvm::DSWP::printStageClonedValues (const LoopDependenceInfo &LDI, int taskIndex) const {
+void DSWP::printStageClonedValues (const LoopDependenceInfo &LDI, int taskIndex) const {
   raw_ostream &stream = errs();
   auto task = (DSWPTask *)this->tasks[taskIndex];
 

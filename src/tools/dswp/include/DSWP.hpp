@@ -21,7 +21,7 @@
 #include "DSWPTask.hpp"
 #include "LoopDependenceInfo.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class DSWP : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
     public:
