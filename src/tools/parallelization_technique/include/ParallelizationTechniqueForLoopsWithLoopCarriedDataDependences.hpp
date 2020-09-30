@@ -13,7 +13,7 @@
 #include "ParallelizationTechnique.hpp"
 #include "SCCDAGPartition.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences : public ParallelizationTechnique {
     public:
