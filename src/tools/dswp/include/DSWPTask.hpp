@@ -17,7 +17,7 @@
 
 using namespace std;
 
-namespace llvm {
+namespace llvm::noelle {
 
   struct QueueInfo;
   struct QueueInstrs;
