@@ -1,6 +1,3 @@
-//#include "test.h"
-//extern int func(int);
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -15,8 +12,6 @@ int* myFunction2(int num) {
 }
 
 int process(int num) {
-//  num = myFunction(num);
-//  num = myFunction2(num);
   i = (*(num % 2 == 1 ? myFunction : myFunction2))(num);
   return num;
 }
