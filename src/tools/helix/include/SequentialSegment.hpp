@@ -14,7 +14,7 @@
 #include "SCCDAGPartition.hpp"
 #include "llvm/ADT/iterator_range.h"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class SequentialSegment {
     public:
