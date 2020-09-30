@@ -22,7 +22,7 @@
 #include "PDGPrinter.hpp"
 #include "SubCFGs.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class ParallelizationTechnique {
     public:
