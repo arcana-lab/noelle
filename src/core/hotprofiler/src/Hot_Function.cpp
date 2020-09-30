@@ -41,6 +41,9 @@ bool Hot::isFunctionTotalInstructionsAvailable (Function &F) const {
 }
 
 uint64_t Hot::getTotalInstructions (Function *f) const {
+  if (!this->isFunctionTotalInstructionsAvailable(*f)){
+    return 0;
+  }
   auto t = this->functionTotalInstructions.at(f);
 
   return t;
