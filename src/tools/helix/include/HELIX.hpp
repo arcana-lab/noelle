@@ -23,7 +23,7 @@
 #include "SequentialSegment.hpp"
 #include "ControlFlowEquivalence.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class SpilledLoopCarriedDependency;
 

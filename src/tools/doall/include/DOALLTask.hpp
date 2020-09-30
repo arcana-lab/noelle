@@ -13,7 +13,7 @@
 #include "Task.hpp"
 #include "SCCDAGAttrs.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class DOALLTask : public Task {
     public:

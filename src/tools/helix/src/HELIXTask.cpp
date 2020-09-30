@@ -20,7 +20,7 @@ HELIXTask::HELIXTask(
   return ;
 }
 
-void llvm::HELIXTask::extractFuncArgs (void) {
+void HELIXTask::extractFuncArgs (void) {
 
   /*
    * Fetch the arguments of the function that implements the task.
