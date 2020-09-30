@@ -218,14 +218,10 @@ uint64_t PDGStats::computePotentialEdges (uint64_t totLoads, uint64_t totStores,
   uint64_t tot = 0;
 
   /*
-   * Compute the total number of memory instructions.
-   */
-  auto totMemoryInsts = totLoads + totStores;
-
-  /*
    * Add the total number of dependences that could exist between memory instructions.
    */
-  tot += (totMemoryInsts * totMemoryInsts);
+  tot += (totStores * totStores);
+  tot += (totLoads * totStores * 2);
 
   /*
    * Add the total number of dependences that could exist between the call instructions.
