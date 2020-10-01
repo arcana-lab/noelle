@@ -1,0 +1,18 @@
+#!/bin/bash
+
+installDir
+
+OPT="opt" ;
+
+########### Analyses
+AA_BASE="-basicaa"
+EXTRA_LIBS="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so"
+
+
+########### Transformations
+NORMALIZATION_PASSES="${EXTRA_LIBS} ${AA_BASE} -mem2reg -simplifycfg-sink-common=false -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars"
+
+cmdToExecute="${OPT} ${NORMALIZATION_PASSES} $@"
+echo $cmdToExecute ;
+
+eval $cmdToExecute 

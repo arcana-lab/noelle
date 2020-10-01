@@ -10,7 +10,7 @@ function linkParUtils {
     cd $i ;
     echo "  $i" ;
     if ! test -f Parallelizer_utils.cpp ; then
-      ln -s ../../../src/runtime/Parallelizer_utils.cpp ;
+      ln -s ${rootDir}/src/core/runtime/Parallelizer_utils.cpp ;
     fi
     if ! test -f Makefile ; then
       ln -s ../../scripts/Makefile ;
@@ -20,6 +20,9 @@ function linkParUtils {
 
   cd ../ ;
 }
+
+
+rootDir="`git rev-parse --show-toplevel`" ;
 
 echo "Adding symbolic links for regression tests" ;
 linkParUtils regression
