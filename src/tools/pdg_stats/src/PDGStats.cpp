@@ -26,6 +26,7 @@ bool PDGStats::runOnModule(Module &M) {
    */
   std::unordered_map<Function *, StayConnectedNestedLoopForest *> programLoopForests;
   std::unordered_map<Function *, std::vector<LoopDependenceInfo *> *> programLoops;
+  std::unordered_map<LoopStructure *, LoopDependenceInfo *> lsToLDI;
   for (auto &F : M) {
 
     /*
@@ -39,7 +40,6 @@ bool PDGStats::runOnModule(Module &M) {
     /*
      * Create the map from loop structure to LDI.
      */
-    std::unordered_map<LoopStructure *, LoopDependenceInfo *> lsToLDI;
     std::unordered_map<Function *, std::vector<LoopStructure *>> programLoopStructures;
     auto &loopStructures = programLoopStructures[&F];
     for (auto LDI : *programLoops[&F]){
@@ -59,32 +59,11 @@ bool PDGStats::runOnModule(Module &M) {
    */
   auto PDG = noelle.getProgramDependenceGraph();
   for (auto edge : PDG->getEdges()){
-    this->numberOfEdges++;
         
     /*
-     * Handle memory dependences.
+     * Handle dependence.
      */
-    if (edge->isMemoryDependence()){
-      this->numberOfMemoryDependence++;
-      if (edge->isMustDependence()){
-        this->numberOfMemoryMustDependence++;
-      }
-      continue ;
-    }
-
-    /*
-     * Handle variable dependences.
-     */
-    if (edge->isDataDependence()){
-      this->numberOfVariableDependence++;
-    }
-
-    /*
-     * Handle control dependences.
-     */
-    if (edge->isControlDependence()){
-      this->numberOfControlDependence++;
-    }
+    this->analyzeDependence(edge);
   }
 
   /*
@@ -93,7 +72,7 @@ bool PDGStats::runOnModule(Module &M) {
   for (auto &F : M) {
     this->collectStatsForNodes(F);
     this->collectStatsForPotentialEdges(programLoopForests, F);
-    this->collectStatsForLoopEdges(noelle, programLoopForests, F);
+    this->collectStatsForLoopEdges(noelle, programLoopForests, lsToLDI, F);
   }
 
   /*
@@ -180,8 +159,46 @@ void PDGStats::collectStatsForPotentialEdges (std::unordered_map<Function *, Sta
   return ;
 }
 
-void PDGStats::collectStatsForLoopEdges (Noelle &noelle, std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F){
-  //TODO
+void PDGStats::collectStatsForLoopEdges (
+  Noelle &noelle, 
+  std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, 
+  std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+  Function &F
+  ){
+
+  /*
+   * Check every loop of the program.
+   */
+  for (auto funcLoops : programLoops){
+    auto loopForest = funcLoops.second;
+    for (auto loopTree : loopForest->getTrees()){
+      auto visitor = [this, &lsToLDI](StayConnectedNestedLoopForestNode *n, uint32_t level) -> bool {
+
+        /*
+         * Fetch the loop.
+         */
+        auto currentLoop = n->getLoop();
+        auto currentLDI = lsToLDI[currentLoop];
+        assert(currentLDI != nullptr);
+
+        /*
+         * Fetch the loop dependence graph.
+         */
+        auto loopDG = currentLDI->getLoopDG();
+
+        /*
+         * Iterate over the dependences.
+         */
+        for (auto edge : loopDG->getEdges()){
+          this->analyzeDependence(edge);
+        }
+
+        return false;
+      };
+      loopTree->visitPreOrder(visitor);
+    }
+  }
+
   return;
 }
 
@@ -236,6 +253,39 @@ uint64_t PDGStats::computePotentialEdges (uint64_t totLoads, uint64_t totStores,
   tot += (totCalls * totLoads * 2);
 
   return tot;
+}
+
+void PDGStats::analyzeDependence (DGEdge<Value> *edge){
+  this->numberOfEdges++;
+
+  /*
+   * Handle memory dependences.
+   */
+  if (edge->isMemoryDependence()){
+    this->numberOfMemoryDependence++;
+    if (edge->isMustDependence()){
+      this->numberOfMemoryMustDependence++;
+    }
+    return ;
+  }
+
+  /*
+   * Handle variable dependences.
+   */
+  if (edge->isDataDependence()){
+    this->numberOfVariableDependence++;
+    return ;
+  }
+
+  /*
+   * Handle control dependences.
+   */
+  if (edge->isControlDependence()){
+    this->numberOfControlDependence++;
+    return ;
+  }
+
+  return ;
 }
 
 PDGStats::~PDGStats() {
