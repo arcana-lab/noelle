@@ -3,7 +3,7 @@
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "DataFlow.hpp"
 
-#include "Utilities/PDGQueries.h"
+#include "scaf/Utilities/PDGQueries.h"
 
 using namespace llvm;
 
