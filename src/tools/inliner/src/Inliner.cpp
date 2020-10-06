@@ -491,7 +491,7 @@ void Inliner::collectFnGraph (Function *main) {
   }
 }
 
-void Inliner::collectFnCallsAndCalled (CallGraph &CG, Function *parentF) {
+void Inliner::collectFnCallsAndCalled (llvm::CallGraph &CG, Function *parentF) {
 
   // Collect call instructions to already linked functions
   std::set<CallInst *> unorderedCalls;
