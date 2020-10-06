@@ -73,3 +73,4 @@ regression_9/LICM -noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noe
 regression_default/LICM -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force
 regression_enablers/LICM -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall
 regression_4/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-force -dswp-no-scc-merge
+regression_default/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force
