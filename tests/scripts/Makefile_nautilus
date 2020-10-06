@@ -10,7 +10,7 @@ LIBS=-lm
 NAUTILUS=/nfs-scratch/simonec/interweaving/openmp/nautilus
 
 # Set the runtime flags
-RUNTIME_CFLAGS="-DDEBUG"
+RUNTIME_CFLAGS="-DNDEBUG"
 #RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DDSWP_STATS"
 #RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DRUNTIME_PRINT"
 
