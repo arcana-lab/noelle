@@ -312,8 +312,17 @@ bool Inliner::inlineFnsOfLoopsToCGRoot () {
       // NOTE(angelo): Insert parent to affect (in depth order, if not already present)
       if (fnsWillCheck.find(parentF) != fnsWillCheck.end()) continue;
       fnsWillCheck.insert(parentF);
-      int insertIndex = -1;
-      while (fnOrders[orderedFns[++insertIndex]] > fnOrders[parentF]);
+      auto insertIndex = 0;
+      assert(fnOrders.find(parentF) != fnOrders.end());
+      auto parentFnOrder = fnOrders[parentF];
+      for (auto insertIndex = 0; insertIndex < orderedFns.size() ; insertIndex++){
+        auto currentFunction = orderedFns[insertIndex];
+        auto currentFunctionFnOrder = fnOrders[currentFunction];
+        if (currentFunctionFnOrder > parentFnOrder){
+          break ;
+        }
+      }
+      assert(insertIndex < orderedFns.size());
       orderedFns.insert(orderedFns.begin() + insertIndex, parentF);
     }
 

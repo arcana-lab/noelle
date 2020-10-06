@@ -1,0 +1,1445 @@
+clang -I../../include/threadpool/include -emit-llvm -O0 -Xclang -disable-O0-optnone -c test.c -o test.bc
+test.c:9:73: warning: data argument not used by format string [-Wformat-extra-args]
+    fprintf(stderr, "USAGE: %s ITERATIONS INNER_ITERATIONS\n", argv[0], argv[1]);
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~           ^
+test.c:12:8: warning: type specifier missing, defaults to 'int' [-Wimplicit-int]
+  auto iterations = atoll(argv[1]);
+  ~~~~ ^
+test.c:12:21: warning: implicit declaration of function 'atoll' is invalid in C99 [-Wimplicit-function-declaration]
+  auto iterations = atoll(argv[1]);
+                    ^
+test.c:13:8: warning: type specifier missing, defaults to 'int' [-Wimplicit-int]
+  auto innerIterations = atoll(argv[2]);
+  ~~~~ ^
+test.c:18:21: warning: implicitly declaring library function 'calloc' with type 'void *(unsigned long, unsigned long)' [-Wimplicit-function-declaration]
+  int *ptr = (int *)calloc(iterations, sizeof(int));
+                    ^
+test.c:18:21: note: include the header <stdlib.h> or explicitly provide a declaration for 'calloc'
+test.c:27:13: warning: type specifier missing, defaults to 'int' [-Wimplicit-int]
+  for (auto i=0; i < iterations; i++){
+       ~~~~ ^
+test.c:28:15: warning: type specifier missing, defaults to 'int' [-Wimplicit-int]
+    for (auto j=0; j < innerIterations; j++){
+         ~~~~ ^
+7 warnings generated.
+llvm-dis test.bc
+clang++ -O3 -c -emit-llvm test.bc -o baseline.bc
+llvm-dis baseline.bc
+clang++ -O3 baseline.bc -o baseline
+clang++ "-DDEBUG" -I../../include/threadpool/include -std=c++14 -emit-llvm -O3 -c Parallelizer_utils.cpp -o Parallelizer_utils.bc
+llvm-link test.bc Parallelizer_utils.bc -o baseline_with_runtime.bc
+llvm-dis baseline_with_runtime.bc
+noelle-prof-coverage baseline_with_runtime.bc baseline_with_runtime_prof -lm -lstdc++ -lpthread
+./baseline_with_runtime_prof `cat input.txt` 
+mv default.profraw pre_profiles.profraw
+noelle-meta-prof-embed pre_profiles.profraw baseline_with_runtime.bc -o baseline_pre.bc
+opt -pgo-test-profile-file=/tmp/tmp.sLM3RYEDUE -block-freq -pgo-instr-use baseline_with_runtime.bc -o baseline_pre.bc
+noelle-pre baseline_pre.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
+opt --strip-debug --strip-debug-declare baseline_pre.bc -o baseline_pre.bc
+noelle-simplification baseline_pre.bc -o baseline_pre.bc
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -basicaa -mem2reg -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa baseline_pre.bc -o baseline_pre.bc
+noelle-inline "-noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0" baseline_pre.bc
+Running Inliner to inline calls within SCCs, iteration: 1
+noelle-load -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Heuristics.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/ParallelizationTechnique.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DSWP.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DOALL.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HELIX.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Inliner.so -inliner -noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 /tmp/tmp.BbhOdL4laq -o /tmp/tmp.BbhOdL4laq
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -stat=false -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libMemoryAnalysisModules.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/AllocAA.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/TalkDown.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/PDGAnalysis.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Architecture.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/BasicUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Task.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DataFlow.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HotProfiler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopStructure.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Loops.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Scheduler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Heuristics.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/ParallelizationTechnique.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DSWP.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DOALL.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HELIX.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Inliner.so -inliner -noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 /tmp/tmp.BbhOdL4laq -o /tmp/tmp.BbhOdL4laq
+Inliner: Start
+Inliner:   Profiles are available and will be used
+DOALL: Checking if the loop is DOALL
+DOALL:   We found an SCC of type 0 of the loop that is non clonable and non commutative
+DOALL:     Loop-carried data dependences
+DOALL:         store i32 %33, i32* %.03, align 4 --->   %32 = load i32, i32* %.03, align 4 via memory
+Inliner:   No remaining call inlining in SCCs
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -basicaa -mem2reg -simplifycfg-sink-common=false -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars /tmp/tmp.BbhOdL4laq -o /tmp/tmp.BbhOdL4laq
+Running Inliner to hoist loops to main, iteration: 1
+noelle-load -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Heuristics.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/ParallelizationTechnique.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DSWP.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DOALL.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HELIX.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Inliner.so -inliner -noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 /tmp/tmp.BbhOdL4laq -o /tmp/tmp.BbhOdL4laq
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -stat=false -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libMemoryAnalysisModules.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/AllocAA.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/TalkDown.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/PDGAnalysis.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Architecture.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/BasicUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Task.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DataFlow.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HotProfiler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopStructure.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Loops.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Scheduler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Heuristics.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/ParallelizationTechnique.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DSWP.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DOALL.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HELIX.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Inliner.so -inliner -noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 /tmp/tmp.BbhOdL4laq -o /tmp/tmp.BbhOdL4laq
+Inliner: Start
+Inliner:   Profiles are available and will be used
+DOALL: Checking if the loop is DOALL
+DOALL:   We found an SCC of type 0 of the loop that is non clonable and non commutative
+DOALL:     Loop-carried data dependences
+DOALL:         store i32 %33, i32* %.03, align 4 --->   %32 = load i32, i32* %.03, align 4 via memory
+Inliner:   No remaining call inlining in SCCs
+Inliner:   No remaining hoists
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -basicaa -mem2reg -simplifycfg-sink-common=false -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars /tmp/tmp.BbhOdL4laq -o /tmp/tmp.BbhOdL4laq
+noelle-simplification baseline_pre.bc -o baseline_pre.bc
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -basicaa -mem2reg -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa baseline_pre.bc -o baseline_pre.bc
+noelle-enable baseline_pre.bc baseline_pre.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
+NOELLE: Enablers: Start
+NOELLE: Enablers:   Input: baseline_pre.bc
+NOELLE: Enablers:   Output: baseline_pre.bc
+NOELLE: Enablers:   Temporary input: /tmp/tmp.ADJtV9UB1i (.ll version is /tmp/tmp.ySMM7i82Lg)
+NOELLE: Enablers:   Temporary output: /tmp/tmp.wgYnnMbWCi (.ll version is /tmp/tmp.68xABLr9ht)
+NOELLE: Enablers:   Start invoking enablers
+NOELLE: Enablers:     Invocation 0
+noelle-load -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopDistribution.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopUnroll.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopWhilify.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopInvariantCodeMotion.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/SCEVSimplification.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Enablers.so -enablers /tmp/tmp.ADJtV9UB1i -o /tmp/tmp.wgYnnMbWCi -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -stat=false -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libMemoryAnalysisModules.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/AllocAA.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/TalkDown.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/PDGAnalysis.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Architecture.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/BasicUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Task.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DataFlow.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HotProfiler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopStructure.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Loops.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Scheduler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopDistribution.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopUnroll.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopWhilify.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopInvariantCodeMotion.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/SCEVSimplification.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Enablers.so -enablers /tmp/tmp.ADJtV9UB1i -o /tmp/tmp.wgYnnMbWCi -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
+EnablersManager: Start
+Parallelizer: Filter out cold code
+EnablersManager:  Try to improve all 2 loops, one at a time
+EnablersManager:   Try to apply loop distribution
+EnablersManager:   Try to devirtualize indirect calls
+EnablersManager:   Try to whilify loops
+LoopWhilifier: Starting ... 
+THE SCHEDULER
+LoopScheduler: Starting dump ...
+LoopScheduler: Blocks
+
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Latch
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Prologue
+
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+LoopScheduler: Body
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Parent Function
+
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @main(i32, i8**) local_unnamed_addr #0 !prof !29 {
+  %3 = icmp slt i32 %0, 3
+  br i1 %3, label %4, label %11, !prof !30
+
+4:                                                ; preds = %2
+  %5 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %6 = load i8*, i8** %1, align 8
+  %7 = getelementptr inbounds i8*, i8** %1, i64 1
+  %8 = load i8*, i8** %7, align 8
+  %9 = getelementptr [39 x i8], [39 x i8]* @.str, i64 0, i64 0
+  %10 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %5, i8* %9, i8* %6, i8* %8) #27
+  br label %.loopexit
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds i8*, i8** %1, i64 1
+  %13 = load i8*, i8** %12, align 8
+  %14 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %13) #28
+  %15 = getelementptr inbounds i8*, i8** %1, i64 2
+  %16 = load i8*, i8** %15, align 8
+  %17 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %16) #28
+  %18 = sext i32 %14 to i64
+  %19 = tail call i8* @calloc(i64 %18, i64 4) #28
+  %20 = icmp eq i8* %19, null
+  br i1 %20, label %22, label %.preheader4, !prof !30
+
+.preheader4:                                      ; preds = %11
+  %21 = bitcast i8* %19 to i32*
+  br label %26
+
+22:                                               ; preds = %11
+  %23 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %24 = getelementptr [42 x i8], [42 x i8]* @.str.1, i64 0, i64 0
+  %25 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %23, i8* %24, i32 %14) #27
+  br label %.loopexit
+
+26:                                               ; preds = %.preheader4, %34
+  %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+  %27 = icmp slt i32 %.02, %14
+  br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+.preheader.preheader:                             ; preds = %26
+  br label %.preheader
+
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+34:                                               ; preds = %.preheader
+  %35 = getelementptr inbounds i32, i32* %.03, i64 1
+  %36 = add nuw nsw i32 %.02, 1
+  br label %26
+
+.loopexit.loopexit:                               ; preds = %26
+  br label %.loopexit
+
+.loopexit:                                        ; preds = %.loopexit.loopexit, %22, %4
+  %.0 = phi i32 [ 1, %4 ], [ 1, %22 ], [ 0, %.loopexit.loopexit ]
+  ret i32 %.0
+}
+
+LoopScheduler: End dump ...
+LoopScheduler:   canMoveAnyInstOutOfLoop
+LoopScheduler:     Yes! Loop can be scheduled
+LoopScheduler:     Yes! Loop can be quickly handled
+LoopScheduler:       Next: 
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+Scheduler:     Checking the block ...
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler:     Now the worklist...
+Scheduler:       Next:   br i1 %28, label %29, label %34, !prof !32
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %28, label %29, label %34, !prof !32
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler:       Next:   %28 = icmp slt i32 %.01, %17
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %28 = icmp slt i32 %.01, %17
+Scheduler:     Yes!
+Scheduler:     Success for canMoveInstOutOfBasicBlock...
+Scheduler:       Now the dependences...
+         D:   br i1 %28, label %29, label %34, !prof !32
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %28, label %29, label %34, !prof !32
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:       Keep --- Dependence(s) can't be moved!
+Scheduler:       Next:   %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- All moves (0): 
+THE SCHEDULER
+LoopScheduler: Starting dump ...
+LoopScheduler: Blocks
+
+26:                                               ; preds = %.preheader4, %34
+  %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+  %27 = icmp slt i32 %.02, %14
+  br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+
+.preheader.preheader:                             ; preds = %26
+  br label %.preheader
+
+
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+
+34:                                               ; preds = %.preheader
+  %35 = getelementptr inbounds i32, i32* %.03, i64 1
+  %36 = add nuw nsw i32 %.02, 1
+  br label %26
+
+LoopScheduler: Latch
+
+34:                                               ; preds = %.preheader
+  %35 = getelementptr inbounds i32, i32* %.03, i64 1
+  %36 = add nuw nsw i32 %.02, 1
+  br label %26
+
+LoopScheduler: Prologue
+
+26:                                               ; preds = %.preheader4, %34
+  %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+  %27 = icmp slt i32 %.02, %14
+  br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+LoopScheduler: Body
+
+.preheader.preheader:                             ; preds = %26
+  br label %.preheader
+
+
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+
+34:                                               ; preds = %.preheader
+  %35 = getelementptr inbounds i32, i32* %.03, i64 1
+  %36 = add nuw nsw i32 %.02, 1
+  br label %26
+
+LoopScheduler: Parent Function
+
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @main(i32, i8**) local_unnamed_addr #0 !prof !29 {
+  %3 = icmp slt i32 %0, 3
+  br i1 %3, label %4, label %11, !prof !30
+
+4:                                                ; preds = %2
+  %5 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %6 = load i8*, i8** %1, align 8
+  %7 = getelementptr inbounds i8*, i8** %1, i64 1
+  %8 = load i8*, i8** %7, align 8
+  %9 = getelementptr [39 x i8], [39 x i8]* @.str, i64 0, i64 0
+  %10 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %5, i8* %9, i8* %6, i8* %8) #27
+  br label %.loopexit
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds i8*, i8** %1, i64 1
+  %13 = load i8*, i8** %12, align 8
+  %14 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %13) #28
+  %15 = getelementptr inbounds i8*, i8** %1, i64 2
+  %16 = load i8*, i8** %15, align 8
+  %17 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %16) #28
+  %18 = sext i32 %14 to i64
+  %19 = tail call i8* @calloc(i64 %18, i64 4) #28
+  %20 = icmp eq i8* %19, null
+  br i1 %20, label %22, label %.preheader4, !prof !30
+
+.preheader4:                                      ; preds = %11
+  %21 = bitcast i8* %19 to i32*
+  br label %26
+
+22:                                               ; preds = %11
+  %23 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %24 = getelementptr [42 x i8], [42 x i8]* @.str.1, i64 0, i64 0
+  %25 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %23, i8* %24, i32 %14) #27
+  br label %.loopexit
+
+26:                                               ; preds = %.preheader4, %34
+  %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+  %27 = icmp slt i32 %.02, %14
+  br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+.preheader.preheader:                             ; preds = %26
+  br label %.preheader
+
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+34:                                               ; preds = %.preheader
+  %35 = getelementptr inbounds i32, i32* %.03, i64 1
+  %36 = add nuw nsw i32 %.02, 1
+  br label %26
+
+.loopexit.loopexit:                               ; preds = %26
+  br label %.loopexit
+
+.loopexit:                                        ; preds = %.loopexit.loopexit, %22, %4
+  %.0 = phi i32 [ 1, %4 ], [ 1, %22 ], [ 0, %.loopexit.loopexit ]
+  ret i32 %.0
+}
+
+LoopScheduler: End dump ...
+LoopScheduler:   canMoveAnyInstOutOfLoop
+LoopScheduler:     Yes! Loop can be scheduled
+LoopScheduler:     Yes! Loop can be quickly handled
+LoopScheduler:       Next: 
+26:                                               ; preds = %.preheader4, %34
+  %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+  %27 = icmp slt i32 %.02, %14
+  br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+26:                                               ; preds = %.preheader4, %34
+  %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+  %27 = icmp slt i32 %.02, %14
+  br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- @Block: 
+26:                                               ; preds = %.preheader4, %34
+  %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+  %27 = icmp slt i32 %.02, %14
+  br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+Scheduler:     Checking the block ...
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+26:                                               ; preds = %.preheader4, %34
+  %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+  %27 = icmp slt i32 %.02, %14
+  br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler:     Now the worklist...
+Scheduler:       Next:   br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler:       Next:   %27 = icmp slt i32 %.02, %14
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %27 = icmp slt i32 %.02, %14
+Scheduler:     Yes!
+Scheduler:     Success for canMoveInstOutOfBasicBlock...
+Scheduler:       Now the dependences...
+         D:   br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:       Keep --- Dependence(s) can't be moved!
+Scheduler:       Next:   %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler:       Next:   %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- All moves (0): 
+EnablersManager:   Try to extract invariants out of loops
+Mem2Reg: Checking loop:   br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+Mem2Reg:  Possible loop invariant memory location:   %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+EnablersManager:   Try to simplify IV related SCEVs and their corresponding instructions in loops
+SCEVSimplification:  Start
+EnablersManager:   Try to simplify constant SCEVs and their corresponding instructions in loops
+EnablersManager:   Try to apply loop distribution
+EnablersManager:   Try to devirtualize indirect calls
+EnablersManager:   Try to whilify loops
+LoopWhilifier: Starting ... 
+THE SCHEDULER
+LoopScheduler: Starting dump ...
+LoopScheduler: Blocks
+
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Latch
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Prologue
+
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+LoopScheduler: Body
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Parent Function
+
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @main(i32, i8**) local_unnamed_addr #0 !prof !29 {
+  %3 = icmp slt i32 %0, 3
+  br i1 %3, label %4, label %11, !prof !30
+
+4:                                                ; preds = %2
+  %5 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %6 = load i8*, i8** %1, align 8
+  %7 = getelementptr inbounds i8*, i8** %1, i64 1
+  %8 = load i8*, i8** %7, align 8
+  %9 = getelementptr [39 x i8], [39 x i8]* @.str, i64 0, i64 0
+  %10 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %5, i8* %9, i8* %6, i8* %8) #27
+  br label %.loopexit
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds i8*, i8** %1, i64 1
+  %13 = load i8*, i8** %12, align 8
+  %14 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %13) #28
+  %15 = getelementptr inbounds i8*, i8** %1, i64 2
+  %16 = load i8*, i8** %15, align 8
+  %17 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %16) #28
+  %18 = sext i32 %14 to i64
+  %19 = tail call i8* @calloc(i64 %18, i64 4) #28
+  %20 = icmp eq i8* %19, null
+  br i1 %20, label %22, label %.preheader4, !prof !30
+
+.preheader4:                                      ; preds = %11
+  %21 = bitcast i8* %19 to i32*
+  br label %26
+
+22:                                               ; preds = %11
+  %23 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %24 = getelementptr [42 x i8], [42 x i8]* @.str.1, i64 0, i64 0
+  %25 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %23, i8* %24, i32 %14) #27
+  br label %.loopexit
+
+26:                                               ; preds = %.preheader4, %34
+  %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %36, %34 ], [ 0, %.preheader4 ]
+  %27 = icmp slt i32 %.02, %14
+  br i1 %27, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+.preheader.preheader:                             ; preds = %26
+  br label %.preheader
+
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+29:                                               ; preds = %.preheader
+  %30 = mul nsw i32 %.01, 42
+  %31 = load i32, i32* %.03, align 4
+  %32 = add nsw i32 %31, %30
+  store i32 %32, i32* %.03, align 4
+  %33 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+34:                                               ; preds = %.preheader
+  %35 = getelementptr inbounds i32, i32* %.03, i64 1
+  %36 = add nuw nsw i32 %.02, 1
+  br label %26
+
+.loopexit.loopexit:                               ; preds = %26
+  br label %.loopexit
+
+.loopexit:                                        ; preds = %.loopexit.loopexit, %22, %4
+  %.0 = phi i32 [ 1, %4 ], [ 1, %22 ], [ 0, %.loopexit.loopexit ]
+  ret i32 %.0
+}
+
+LoopScheduler: End dump ...
+LoopScheduler:   canMoveAnyInstOutOfLoop
+LoopScheduler:     Yes! Loop can be scheduled
+LoopScheduler:     Yes! Loop can be quickly handled
+LoopScheduler:       Next: 
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+Scheduler:     Checking the block ...
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %29
+  %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+  %28 = icmp slt i32 %.01, %17
+  br i1 %28, label %29, label %34, !prof !32
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler:     Now the worklist...
+Scheduler:       Next:   br i1 %28, label %29, label %34, !prof !32
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %28, label %29, label %34, !prof !32
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler:       Next:   %28 = icmp slt i32 %.01, %17
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %28 = icmp slt i32 %.01, %17
+Scheduler:     Yes!
+Scheduler:     Success for canMoveInstOutOfBasicBlock...
+Scheduler:       Now the dependences...
+         D:   br i1 %28, label %29, label %34, !prof !32
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %28, label %29, label %34, !prof !32
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:       Keep --- Dependence(s) can't be moved!
+Scheduler:       Next:   %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %.01 = phi i32 [ %33, %29 ], [ 0, %.preheader.preheader ]
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- All moves (0): 
+EnablersManager:   Try to extract invariants out of loops
+Mem2Reg: Checking loop:   br i1 %28, label %29, label %34, !prof !32
+Mem2Reg:  Possible loop invariant memory location:   %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+Mem2Reg:  Loop invariant memory location:   %.03 = phi i32* [ %35, %34 ], [ %21, %.preheader4 ]
+Mem2Reg:  SCC:
+Internal nodes: 3
+	  %32 = add nsw i32 %31, %30
+	  store i32 %32, i32* %.03, align 4
+	  %31 = load i32, i32* %.03, align 4
+External nodes: 2
+	  br i1 %28, label %29, label %34, !prof !32
+	  %30 = mul nsw i32 %.01, 42
+Edges: 8
+
+Mem2Reg:  Collecting and ordering memory loads/stores by basic block
+Mem2Reg: Iterating basic blocks to determine last stored values
+Mem2Reg: placeholder PHI required: label %.preheader
+Mem2Reg:  checking for last value entering block: label %.preheader
+Mem2Reg:  Last value entering block: label %.preheader	  %29 = phi i32 
+Mem2Reg:  checking for last value entering block: label %31
+Mem2Reg:  Last value entering block: label %31	  %29 = phi i32 
+Mem2Reg:  Value updated:   %34 = add nsw i32 %29, %32
+Mem2Reg:  Removing
+  %33 = load i32, i32* %.03, align 4
+Mem2Reg:  Removing
+  store i32 %33, i32* %.03, align 4
+Mem2Reg:  Loop invariant memory location loads/stores promoted: 1   %.03 = phi i32* [ %36, %35 ], [ %21, %.preheader4 ]
+EnablersManager:     Loop invariants have been extracted
+EnablersManager: Exit
+NOELLE: Enablers:       Normalize the code
+noelle-norm /tmp/tmp.wgYnnMbWCi -o /tmp/tmp.wgYnnMbWCi
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -basicaa -mem2reg -simplifycfg-sink-common=false -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars /tmp/tmp.wgYnnMbWCi -o /tmp/tmp.wgYnnMbWCi
+NOELLE: Enablers:     Invocation 1
+noelle-load -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopDistribution.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopUnroll.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopWhilify.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopInvariantCodeMotion.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/SCEVSimplification.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Enablers.so -enablers /tmp/tmp.ADJtV9UB1i -o /tmp/tmp.wgYnnMbWCi -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -stat=false -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libMemoryAnalysisModules.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/AllocAA.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/TalkDown.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/PDGAnalysis.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Architecture.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/BasicUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Task.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DataFlow.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HotProfiler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopStructure.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Loops.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Scheduler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopDistribution.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopUnroll.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopWhilify.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopInvariantCodeMotion.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/SCEVSimplification.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Enablers.so -enablers /tmp/tmp.ADJtV9UB1i -o /tmp/tmp.wgYnnMbWCi -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
+EnablersManager: Start
+Parallelizer: Filter out cold code
+EnablersManager:  Try to improve all 2 loops, one at a time
+EnablersManager:   Try to apply loop distribution
+EnablersManager:   Try to devirtualize indirect calls
+EnablersManager:   Try to whilify loops
+LoopWhilifier: Starting ... 
+THE SCHEDULER
+LoopScheduler: Starting dump ...
+LoopScheduler: Blocks
+
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Latch
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Prologue
+
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+LoopScheduler: Body
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Parent Function
+
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @main(i32, i8**) local_unnamed_addr #0 !prof !29 {
+  %3 = icmp slt i32 %0, 3
+  br i1 %3, label %4, label %11, !prof !30
+
+4:                                                ; preds = %2
+  %5 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %6 = load i8*, i8** %1, align 8
+  %7 = getelementptr inbounds i8*, i8** %1, i64 1
+  %8 = load i8*, i8** %7, align 8
+  %9 = getelementptr [39 x i8], [39 x i8]* @.str, i64 0, i64 0
+  %10 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %5, i8* %9, i8* %6, i8* %8) #27
+  br label %.loopexit
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds i8*, i8** %1, i64 1
+  %13 = load i8*, i8** %12, align 8
+  %14 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %13) #28
+  %15 = getelementptr inbounds i8*, i8** %1, i64 2
+  %16 = load i8*, i8** %15, align 8
+  %17 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %16) #28
+  %18 = sext i32 %14 to i64
+  %19 = tail call i8* @calloc(i64 %18, i64 4) #28
+  %20 = icmp eq i8* %19, null
+  br i1 %20, label %30, label %.preheader4, !prof !30
+
+.preheader4:                                      ; preds = %11
+  %21 = bitcast i8* %19 to i32*
+  %22 = icmp sgt i32 %17, 0
+  %smax = select i1 %22, i32 %17, i32 0
+  %23 = zext i32 %smax to i33
+  %24 = add nsw i32 %smax, -1
+  %25 = zext i32 %24 to i33
+  %26 = mul i33 %23, %25
+  %27 = lshr i33 %26, 1
+  %28 = trunc i33 %27 to i32
+  %29 = mul i32 %28, 42
+  br label %34
+
+30:                                               ; preds = %11
+  %31 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %32 = getelementptr [42 x i8], [42 x i8]* @.str.1, i64 0, i64 0
+  %33 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %31, i8* %32, i32 %14) #27
+  br label %.loopexit
+
+34:                                               ; preds = %.preheader4, %40
+  %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+  %35 = icmp slt i32 %.02, %14
+  br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+.preheader.preheader:                             ; preds = %34
+  %36 = load i32, i32* %.03
+  br label %.preheader
+
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+40:                                               ; preds = %.preheader
+  %41 = add i32 %29, %36
+  store i32 %41, i32* %.03
+  %42 = getelementptr inbounds i32, i32* %.03, i64 1
+  %43 = add nuw nsw i32 %.02, 1
+  br label %34
+
+.loopexit.loopexit:                               ; preds = %34
+  br label %.loopexit
+
+.loopexit:                                        ; preds = %.loopexit.loopexit, %30, %4
+  %.0 = phi i32 [ 1, %4 ], [ 1, %30 ], [ 0, %.loopexit.loopexit ]
+  ret i32 %.0
+}
+
+LoopScheduler: End dump ...
+LoopScheduler:   canMoveAnyInstOutOfLoop
+LoopScheduler:     Yes! Loop can be scheduled
+LoopScheduler:     Yes! Loop can be quickly handled
+LoopScheduler:       Next: 
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+Scheduler:     Checking the block ...
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler:     Now the worklist...
+Scheduler:       Next:   br i1 %37, label %38, label %40, !prof !32
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %37, label %38, label %40, !prof !32
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler:       Next:   %37 = icmp slt i32 %.01, %17
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %37 = icmp slt i32 %.01, %17
+Scheduler:     Yes!
+Scheduler:     Success for canMoveInstOutOfBasicBlock...
+Scheduler:       Now the dependences...
+         D:   br i1 %37, label %38, label %40, !prof !32
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %37, label %38, label %40, !prof !32
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:       Keep --- Dependence(s) can't be moved!
+Scheduler:       Next:   %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- All moves (0): 
+THE SCHEDULER
+LoopScheduler: Starting dump ...
+LoopScheduler: Blocks
+
+34:                                               ; preds = %.preheader4, %40
+  %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+  %35 = icmp slt i32 %.02, %14
+  br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+
+.preheader.preheader:                             ; preds = %34
+  %36 = load i32, i32* %.03
+  br label %.preheader
+
+
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+
+40:                                               ; preds = %.preheader
+  %41 = add i32 %29, %36
+  store i32 %41, i32* %.03
+  %42 = getelementptr inbounds i32, i32* %.03, i64 1
+  %43 = add nuw nsw i32 %.02, 1
+  br label %34
+
+LoopScheduler: Latch
+
+40:                                               ; preds = %.preheader
+  %41 = add i32 %29, %36
+  store i32 %41, i32* %.03
+  %42 = getelementptr inbounds i32, i32* %.03, i64 1
+  %43 = add nuw nsw i32 %.02, 1
+  br label %34
+
+LoopScheduler: Prologue
+
+34:                                               ; preds = %.preheader4, %40
+  %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+  %35 = icmp slt i32 %.02, %14
+  br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+LoopScheduler: Body
+
+.preheader.preheader:                             ; preds = %34
+  %36 = load i32, i32* %.03
+  br label %.preheader
+
+
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+
+40:                                               ; preds = %.preheader
+  %41 = add i32 %29, %36
+  store i32 %41, i32* %.03
+  %42 = getelementptr inbounds i32, i32* %.03, i64 1
+  %43 = add nuw nsw i32 %.02, 1
+  br label %34
+
+LoopScheduler: Parent Function
+
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @main(i32, i8**) local_unnamed_addr #0 !prof !29 {
+  %3 = icmp slt i32 %0, 3
+  br i1 %3, label %4, label %11, !prof !30
+
+4:                                                ; preds = %2
+  %5 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %6 = load i8*, i8** %1, align 8
+  %7 = getelementptr inbounds i8*, i8** %1, i64 1
+  %8 = load i8*, i8** %7, align 8
+  %9 = getelementptr [39 x i8], [39 x i8]* @.str, i64 0, i64 0
+  %10 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %5, i8* %9, i8* %6, i8* %8) #27
+  br label %.loopexit
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds i8*, i8** %1, i64 1
+  %13 = load i8*, i8** %12, align 8
+  %14 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %13) #28
+  %15 = getelementptr inbounds i8*, i8** %1, i64 2
+  %16 = load i8*, i8** %15, align 8
+  %17 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %16) #28
+  %18 = sext i32 %14 to i64
+  %19 = tail call i8* @calloc(i64 %18, i64 4) #28
+  %20 = icmp eq i8* %19, null
+  br i1 %20, label %30, label %.preheader4, !prof !30
+
+.preheader4:                                      ; preds = %11
+  %21 = bitcast i8* %19 to i32*
+  %22 = icmp sgt i32 %17, 0
+  %smax = select i1 %22, i32 %17, i32 0
+  %23 = zext i32 %smax to i33
+  %24 = add nsw i32 %smax, -1
+  %25 = zext i32 %24 to i33
+  %26 = mul i33 %23, %25
+  %27 = lshr i33 %26, 1
+  %28 = trunc i33 %27 to i32
+  %29 = mul i32 %28, 42
+  br label %34
+
+30:                                               ; preds = %11
+  %31 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %32 = getelementptr [42 x i8], [42 x i8]* @.str.1, i64 0, i64 0
+  %33 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %31, i8* %32, i32 %14) #27
+  br label %.loopexit
+
+34:                                               ; preds = %.preheader4, %40
+  %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+  %35 = icmp slt i32 %.02, %14
+  br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+.preheader.preheader:                             ; preds = %34
+  %36 = load i32, i32* %.03
+  br label %.preheader
+
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+40:                                               ; preds = %.preheader
+  %41 = add i32 %29, %36
+  store i32 %41, i32* %.03
+  %42 = getelementptr inbounds i32, i32* %.03, i64 1
+  %43 = add nuw nsw i32 %.02, 1
+  br label %34
+
+.loopexit.loopexit:                               ; preds = %34
+  br label %.loopexit
+
+.loopexit:                                        ; preds = %.loopexit.loopexit, %30, %4
+  %.0 = phi i32 [ 1, %4 ], [ 1, %30 ], [ 0, %.loopexit.loopexit ]
+  ret i32 %.0
+}
+
+LoopScheduler: End dump ...
+LoopScheduler:   canMoveAnyInstOutOfLoop
+LoopScheduler:     Yes! Loop can be scheduled
+LoopScheduler:     Yes! Loop can be quickly handled
+LoopScheduler:       Next: 
+34:                                               ; preds = %.preheader4, %40
+  %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+  %35 = icmp slt i32 %.02, %14
+  br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+34:                                               ; preds = %.preheader4, %40
+  %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+  %35 = icmp slt i32 %.02, %14
+  br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- @Block: 
+34:                                               ; preds = %.preheader4, %40
+  %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+  %35 = icmp slt i32 %.02, %14
+  br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+Scheduler:     Checking the block ...
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+34:                                               ; preds = %.preheader4, %40
+  %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+  %35 = icmp slt i32 %.02, %14
+  br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler:     Now the worklist...
+Scheduler:       Next:   br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler:       Next:   %35 = icmp slt i32 %.02, %14
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %35 = icmp slt i32 %.02, %14
+Scheduler:     Yes!
+Scheduler:     Success for canMoveInstOutOfBasicBlock...
+Scheduler:       Now the dependences...
+         D:   br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:       Keep --- Dependence(s) can't be moved!
+Scheduler:       Next:   %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler:       Next:   %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- All moves (0): 
+EnablersManager:   Try to extract invariants out of loops
+Mem2Reg: Checking loop:   br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+Mem2Reg:  Possible loop invariant memory location:   %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+EnablersManager:   Try to simplify IV related SCEVs and their corresponding instructions in loops
+SCEVSimplification:  Start
+EnablersManager:   Try to simplify constant SCEVs and their corresponding instructions in loops
+EnablersManager:   Try to apply loop distribution
+EnablersManager:   Try to devirtualize indirect calls
+EnablersManager:   Try to whilify loops
+LoopWhilifier: Starting ... 
+THE SCHEDULER
+LoopScheduler: Starting dump ...
+LoopScheduler: Blocks
+
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Latch
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Prologue
+
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+LoopScheduler: Body
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+LoopScheduler: Parent Function
+
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @main(i32, i8**) local_unnamed_addr #0 !prof !29 {
+  %3 = icmp slt i32 %0, 3
+  br i1 %3, label %4, label %11, !prof !30
+
+4:                                                ; preds = %2
+  %5 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %6 = load i8*, i8** %1, align 8
+  %7 = getelementptr inbounds i8*, i8** %1, i64 1
+  %8 = load i8*, i8** %7, align 8
+  %9 = getelementptr [39 x i8], [39 x i8]* @.str, i64 0, i64 0
+  %10 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %5, i8* %9, i8* %6, i8* %8) #27
+  br label %.loopexit
+
+11:                                               ; preds = %2
+  %12 = getelementptr inbounds i8*, i8** %1, i64 1
+  %13 = load i8*, i8** %12, align 8
+  %14 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %13) #28
+  %15 = getelementptr inbounds i8*, i8** %1, i64 2
+  %16 = load i8*, i8** %15, align 8
+  %17 = tail call i32 (i8*, ...) bitcast (i32 (...)* @atoll to i32 (i8*, ...)*)(i8* %16) #28
+  %18 = sext i32 %14 to i64
+  %19 = tail call i8* @calloc(i64 %18, i64 4) #28
+  %20 = icmp eq i8* %19, null
+  br i1 %20, label %30, label %.preheader4, !prof !30
+
+.preheader4:                                      ; preds = %11
+  %21 = bitcast i8* %19 to i32*
+  %22 = icmp sgt i32 %17, 0
+  %smax = select i1 %22, i32 %17, i32 0
+  %23 = zext i32 %smax to i33
+  %24 = add nsw i32 %smax, -1
+  %25 = zext i32 %24 to i33
+  %26 = mul i33 %23, %25
+  %27 = lshr i33 %26, 1
+  %28 = trunc i33 %27 to i32
+  %29 = mul i32 %28, 42
+  br label %34
+
+30:                                               ; preds = %11
+  %31 = load %struct._IO_FILE*, %struct._IO_FILE** @stderr, align 8
+  %32 = getelementptr [42 x i8], [42 x i8]* @.str.1, i64 0, i64 0
+  %33 = tail call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %31, i8* %32, i32 %14) #27
+  br label %.loopexit
+
+34:                                               ; preds = %.preheader4, %40
+  %.03 = phi i32* [ %42, %40 ], [ %21, %.preheader4 ]
+  %.02 = phi i32 [ %43, %40 ], [ 0, %.preheader4 ]
+  %35 = icmp slt i32 %.02, %14
+  br i1 %35, label %.preheader.preheader, label %.loopexit.loopexit, !prof !31
+
+.preheader.preheader:                             ; preds = %34
+  %36 = load i32, i32* %.03
+  br label %.preheader
+
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+38:                                               ; preds = %.preheader
+  %39 = add nuw nsw i32 %.01, 1
+  br label %.preheader
+
+40:                                               ; preds = %.preheader
+  %41 = add i32 %29, %36
+  store i32 %41, i32* %.03
+  %42 = getelementptr inbounds i32, i32* %.03, i64 1
+  %43 = add nuw nsw i32 %.02, 1
+  br label %34
+
+.loopexit.loopexit:                               ; preds = %34
+  br label %.loopexit
+
+.loopexit:                                        ; preds = %.loopexit.loopexit, %30, %4
+  %.0 = phi i32 [ 1, %4 ], [ 1, %30 ], [ 0, %.loopexit.loopexit ]
+  ret i32 %.0
+}
+
+LoopScheduler: End dump ...
+LoopScheduler:   canMoveAnyInstOutOfLoop
+LoopScheduler:     Yes! Loop can be scheduled
+LoopScheduler:     Yes! Loop can be quickly handled
+LoopScheduler:       Next: 
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+Scheduler:     Checking the block ...
+Scheduler: canMoveAnyInstOutOfBasicBlock --- @Block: 
+.preheader:                                       ; preds = %.preheader.preheader, %38
+  %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+  %37 = icmp slt i32 %.01, %17
+  br i1 %37, label %38, label %40, !prof !32
+
+Scheduler:     Yes!
+Scheduler:     Success for canMoveAnyInstOutOfBasicBlock...
+Scheduler:     Now the worklist...
+Scheduler:       Next:   br i1 %37, label %38, label %40, !prof !32
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %37, label %38, label %40, !prof !32
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler:       Next:   %37 = icmp slt i32 %.01, %17
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %37 = icmp slt i32 %.01, %17
+Scheduler:     Yes!
+Scheduler:     Success for canMoveInstOutOfBasicBlock...
+Scheduler:       Now the dependences...
+         D:   br i1 %37, label %38, label %40, !prof !32
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   br i1 %37, label %38, label %40, !prof !32
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:       Keep --- Dependence(s) can't be moved!
+Scheduler:       Next:   %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+Scheduler: canMoveInstOutOfBasicBlock --- @I:   %.01 = phi i32 [ %39, %38 ], [ 0, %.preheader.preheader ]
+Scheduler:     No! @I is a PHI or terminator
+Scheduler:         Keep --- Can't move Next!
+Scheduler: getAllInstsMoveableOutOfBasicBlock --- All moves (0): 
+EnablersManager:   Try to extract invariants out of loops
+Mem2Reg: Checking loop:   br i1 %37, label %38, label %40, !prof !32
+EnablersManager:   Try to simplify IV related SCEVs and their corresponding instructions in loops
+SCEVSimplification:  Start
+EnablersManager:   Try to simplify constant SCEVs and their corresponding instructions in loops
+EnablersManager: Exit
+NOELLE: Enablers: Exit
+noelle-simplification baseline_pre.bc -o baseline_pre.bc
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -basicaa -mem2reg -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa baseline_pre.bc -o baseline_pre.bc
+noelle-meta-loop-embed baseline_pre.bc -o baseline_pre.bc
+noelle-load -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopMetadata.so -LoopMetadata baseline_pre.bc -o baseline_pre.bc
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -stat=false -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libMemoryAnalysisModules.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/AllocAA.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/TalkDown.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/PDGAnalysis.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Architecture.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/BasicUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Task.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DataFlow.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HotProfiler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopStructure.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Loops.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Scheduler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopMetadata.so -LoopMetadata baseline_pre.bc -o baseline_pre.bc
+noelle-meta-clean baseline_pre.bc baseline_pre.bc
+noelle-load -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CleanMetadata.so -CleanMetadata -clean-prof-metadata=true -clean-pdg-metadata=true baseline_pre.bc -o baseline_pre.bc
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -stat=false -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libMemoryAnalysisModules.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/AllocAA.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/TalkDown.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/PDGAnalysis.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Architecture.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/BasicUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Task.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DataFlow.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HotProfiler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopStructure.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Loops.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Scheduler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CleanMetadata.so -CleanMetadata -clean-prof-metadata=true -clean-pdg-metadata=true baseline_pre.bc -o baseline_pre.bc
+Clean PDG Metadata
+Clean profiler metadata
+opt --strip-named-metadata baseline_pre.bc -o baseline_pre.bc
+llvm-dis baseline_pre.bc
+clang++ -std=c++14 -pthreads -O3 baseline_pre.bc -lm -lstdc++ -lpthread -o testseq
+noelle-prof-coverage baseline_pre.bc baseline_pre_prof -lm -lstdc++ -lpthread
+./baseline_pre_prof `cat input.txt` 
+noelle-meta-prof-embed default.profraw baseline_pre.bc -o baseline_with_metadata.bc
+opt -pgo-test-profile-file=/tmp/tmp.4heDwWEC27 -block-freq -pgo-instr-use baseline_pre.bc -o baseline_with_metadata.bc
+noelle-meta-pdg-embed baseline_with_metadata.bc -o baseline_with_metadata.bc
+noelle-load -PDGAnalysis -noelle-pdg-verbose=3 -noelle-pdg-embed baseline_with_metadata.bc -o baseline_with_metadata.bc
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -stat=false -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libMemoryAnalysisModules.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/AllocAA.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/TalkDown.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/PDGAnalysis.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Architecture.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/BasicUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Task.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DataFlow.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HotProfiler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopStructure.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Loops.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Scheduler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -PDGAnalysis -noelle-pdg-verbose=3 -noelle-pdg-embed baseline_with_metadata.bc -o baseline_with_metadata.bc
+PDGAnalysis: Construct PDG from Analysis
+Embed PDG as Metadata
+llvm-dis baseline_with_metadata.bc
+noelle-parallelizer baseline_with_metadata.bc -o test_parallelized_unoptimized.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -alloc-aa-verbose=1 -noelle-parallelizer-force
+noelle-parallel-load -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Parallelizer.so -parallelizer baseline_with_metadata.bc -o test_parallelized_unoptimized.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -alloc-aa-verbose=1 -noelle-parallelizer-force
+noelle-load -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Heuristics.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/ParallelizationTechnique.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DSWP.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DOALL.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HELIX.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Parallelizer.so -parallelizer baseline_with_metadata.bc -o test_parallelized_unoptimized.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -alloc-aa-verbose=1 -noelle-parallelizer-force
+opt -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libSvf.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libCudd.so -stat=false -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/libMemoryAnalysisModules.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/AllocAA.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/TalkDown.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/CallGraph.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/PDGAnalysis.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Architecture.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/BasicUtilities.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Task.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DataFlow.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HotProfiler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/LoopStructure.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Loops.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Scheduler.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Heuristics.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/ParallelizationTechnique.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DSWP.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/DOALL.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/HELIX.so -load /nfs-scratch/simonec/parallelism/parallelization/NOELLE/install/lib/Parallelizer.so -parallelizer baseline_with_metadata.bc -o test_parallelized_unoptimized.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -alloc-aa-verbose=1 -noelle-parallelizer-force
+AllocAA at "runOnModule"
+AllocAA:  GV value is a primitive integer array: 0, @.str = private unnamed_addr constant [39 x i8] c"USAGE: %s ITERATIONS INNER_ITERATIONS\0A\00", align 1
+AllocAA:  GV value is a primitive integer array: 0, @.str.1 = private unnamed_addr constant [42 x i8] c"ERROR: %d integers couldn't be allocated\0A\00", align 1
+AllocAA:  value is a primitive integer array: 0,   %19 = tail call i8* @calloc(i64 %18, i64 4) #27, !noelle.pdg.inst.id !41
+Parallelizer: Analyzing the module baseline_with_metadata.bc
+Parallelizer: Filter out cold code
+Parallelizer:  There are 1 loops in the program we are going to consider
+Parallelizer:  Filter out loops not worth considering
+Parallelizer:  There are 1 loop nesting trees in the program
+Parallelizer:    ID: 0 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %35 = icmp slt i32 %.02, %14, !noelle.pdg.inst.id !75"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 5.160220e-01 %
+Parallelizer:      Average instructions per invocation = 2.240000e+02 %
+Parallelizer:      Average iterations per invocation = 2.000000e+01 %
+Parallelizer:    
+Parallelizer: LoopSelector: Start
+Parallelizer: LoopSelector:   Order of loops and their maximum savings
+Parallelizer: LoopSelector:    Loop 0 savings = 7.321429e+01%
+Parallelizer: LoopSelector: End
+Parallelizer: Start
+Parallelizer:  Function = "main"
+Parallelizer:  Loop 0 = "  %35 = icmp slt i32 %.02, %14, !noelle.pdg.inst.id !75"
+Parallelizer:  Nesting level = 1
+DOALL: Checking if the loop is DOALL
+DOALL:   We found an SCC of type 0 of the loop that is non clonable and non commutative
+DOALL:     Loop-carried data dependences
+DOALL:         store i32 %38, i32* %.03, align 4, !noelle.pdg.inst.id !52 --->   %37 = load i32, i32* %.03, align 4, !noelle.pdg.inst.id !88 via memory
+HELIX: Start the parallelization
+HELIX:   Number of threads to extract = 28
+HELIX:   We found an SCC of type 0 of the loop that is non clonable and non commutative
+HELIX:       Loop-carried data dependences
+HELIX:         store i32 %38, i32* %.03, align 4, !noelle.pdg.inst.id !52 --->   %37 = load i32, i32* %.03, align 4, !noelle.pdg.inst.id !88 via memory
+HELIX:  Cloning loop in task
+HELIX:  Spilling loop carried dependencies
+HELIX:  Adjusting loop IVs
+HELIX:  Constructing task dependence graph
+HELIX:  Constructing task loop dependence info
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Start
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences:  Initial number of partitions: 3
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Exit
+HELIX:   Sequential segment 0
+HELIX:     SCCs included in the current sequential segment
+HELIX:       Type = 0
+HELIX:       Loop-carried data dependences
+HELIX:        "  store i32 %36, i32* %30, align 4, !noelle.pdg.inst.id !37" -> "  %35 = load i32, i32* %30, align 4, !noelle.pdg.inst.id !35"
+HELIX:     Instructions that belong to the SS
+HELIX:         %35 = load i32, i32* %30, align 4, !noelle.pdg.inst.id !35
+HELIX:         store i32 %36, i32* %30, align 4, !noelle.pdg.inst.id !37
+HELIX:         %36 = add i32 %11, %35, !noelle.pdg.inst.id !36
+HELIX:  Identifying sequential segments
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Start
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences:  Initial number of partitions: 3
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Exit
+HELIX:   Sequential segment 0
+HELIX:     SCCs included in the current sequential segment
+HELIX:       Type = 0
+HELIX:       Loop-carried data dependences
+HELIX:        "  store i32 %36, i32* %30, align 4, !noelle.pdg.inst.id !37" -> "  %35 = load i32, i32* %30, align 4, !noelle.pdg.inst.id !35"
+HELIX:     Instructions that belong to the SS
+HELIX:         %35 = load i32, i32* %30, align 4, !noelle.pdg.inst.id !35
+HELIX:         store i32 %36, i32* %30, align 4, !noelle.pdg.inst.id !37
+HELIX:         %36 = add i32 %11, %35, !noelle.pdg.inst.id !36
+HELIX:  Synchronizing sequential segments
+HELIX:  Storing live out variables and exit block index
+HELIX:  Linking task function
+HELIX:  Task code:
+
+define void @0(i8*, i8*, i8*, i8*, i64, i64, i64*) {
+  %8 = alloca i64
+  %9 = bitcast i8* %0 to [24 x i64]*
+  %10 = getelementptr inbounds [24 x i64], [24 x i64]* %9, i64 0, i64 0
+  %11 = bitcast i64* %10 to i32*
+  %12 = load i32, i32* %11
+  %13 = getelementptr inbounds [24 x i64], [24 x i64]* %9, i64 0, i64 8
+  %14 = bitcast i64* %13 to i32**
+  %15 = load i32*, i32** %14
+  %16 = getelementptr inbounds [24 x i64], [24 x i64]* %9, i64 0, i64 16
+  %17 = bitcast i64* %16 to i32*
+  %18 = load i32, i32* %17
+  %19 = bitcast i8* %1 to [0 x i64]*
+  %stepSize_X_coreIdx = mul i64 4, %4
+  %20 = ptrtoint i32* %15 to i64
+  %21 = add i64 %20, %stepSize_X_coreIdx
+  %22 = inttoptr i64 %21 to i32*
+  %23 = trunc i64 %4 to i32
+  %stepSize_X_coreIdx1 = mul i32 1, %23
+  %24 = add i32 0, %stepSize_X_coreIdx1
+  %25 = sub i64 %5, 1
+  %nCoresStepSize = mul i64 4, %25
+  %26 = trunc i64 %5 to i32
+  %27 = sub i32 %26, 1
+  %nCoresStepSize2 = mul i32 1, %27
+  %28 = ptrtoint i8* %2 to i64
+  %29 = add i64 0, %28
+  %30 = inttoptr i64 %29 to i8*
+  %31 = ptrtoint i8* %3 to i64
+  %32 = add i64 0, %31
+  %33 = inttoptr i64 %32 to i8*
+  br label %38
+
+34:                                               ; preds = %SS0-entry
+  ret void
+
+35:                                               ; preds = %46, %49
+  %36 = load i64, i64* %8
+  %37 = icmp eq i64 %36, 0
+  br i1 %37, label %SS0-wait, label %SS0-entry
+
+38:                                               ; preds = %7, %SS0-entry3
+  %39 = phi i32* [ %56, %SS0-entry3 ], [ %22, %7 ], !noelle.pdg.inst.id !28
+  %40 = phi i32 [ %57, %SS0-entry3 ], [ %24, %7 ], !noelle.pdg.inst.id !29
+  store i64 0, i64* %8
+  %41 = icmp sge i32 %40, %18, !noelle.pdg.inst.id !30
+  br i1 %41, label %46, label %42, !prof !31, !noelle.loop_ID !32, !noelle.loop_optimize !27, !noelle.pdg.inst.id !33
+
+42:                                               ; preds = %38
+  br label %43, !noelle.pdg.inst.id !34
+
+43:                                               ; preds = %42
+  %44 = load i64, i64* %8
+  %45 = icmp eq i64 %44, 0
+  br i1 %45, label %SS0-wait4, label %SS0-entry3
+
+46:                                               ; preds = %38
+  %47 = sub i32 %40, 1
+  %48 = icmp sge i32 %47, %18, !noelle.pdg.inst.id !30
+  br i1 %48, label %35, label %49
+
+49:                                               ; preds = %46
+  br label %35
+
+SS0-entry:                                        ; preds = %35, %SS0-wait
+  call void @HELIX_signal(i8* %33)
+  br label %34
+
+SS0-wait:                                         ; preds = %35
+  call void @HELIX_wait(i8* %30)
+  store i64 1, i64* %8
+  br label %SS0-entry
+
+SS0-entry3:                                       ; preds = %43, %SS0-wait4
+  %50 = load i32, i32* %39, align 4, !noelle.pdg.inst.id !35
+  %51 = add i32 %12, %50, !noelle.pdg.inst.id !36
+  store i32 %51, i32* %39, align 4, !noelle.pdg.inst.id !37
+  call void @HELIX_signal(i8* %33)
+  %52 = getelementptr inbounds i32, i32* %39, i64 1, !noelle.pdg.inst.id !38
+  %53 = add nuw nsw i32 %40, 1, !noelle.pdg.inst.id !39
+  %54 = ptrtoint i32* %52 to i64
+  %55 = add i64 %54, %nCoresStepSize
+  %56 = inttoptr i64 %55 to i32*
+  %57 = add i32 %53, %nCoresStepSize2
+  br label %38, !noelle.pdg.inst.id !40
+
+SS0-wait4:                                        ; preds = %43
+  call void @HELIX_wait(i8* %30)
+  store i64 1, i64* %8
+  br label %SS0-entry3
+}
+
+Parallelizer:  Link the parallelize loop
+Parallelizer: Exit
+Parallelizer:    Loop 0 has been parallelized
+llvm-dis test_parallelized_unoptimized.bc
+clang++ -O3 -c -emit-llvm test_parallelized_unoptimized.bc -o test_parallelized.bc
+llvm-dis test_parallelized.bc
+clang++ -std=c++14 -pthreads -O3 test_parallelized.bc -lm -lstdc++ -lpthread -o parallelized
