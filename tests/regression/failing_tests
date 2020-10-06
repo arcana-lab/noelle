@@ -73,3 +73,11 @@ regression_9/LICM -noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noe
 regression_default/LICM -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force
 regression_enablers/LICM -noelle-pdg-check -noelle-verbose=3 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall
 regression_4/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-force -dswp-no-scc-merge
+regression_10/DoWhile4 -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force
+regression_13/DoWhile4 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force
+regression_16/DoWhile4 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-parallelizer-force
+regression_3/DoWhile4 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-force
+regression_4/DoWhile4 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-force -dswp-no-scc-merge
+regression_5/DoWhile4 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force
+regression_9/DoWhile4 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2 -noelle-parallelizer-force
+regression_default/DoWhile4 -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force
