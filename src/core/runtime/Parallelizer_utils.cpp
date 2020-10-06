@@ -216,6 +216,10 @@ extern "C" {
   /**********************************************************************
    *                HELIX
    **********************************************************************/
+  typedef struct {
+    void *env;
+  } NOELLE_HELIX_args_t ;
+
   void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
 
     while ((*theLoopIsOver) == 0){
@@ -247,7 +251,130 @@ extern "C" {
     int64_t numCores, 
     int64_t numOfsequentialSegments
     ){
-    abort(); //TODO
+
+    /*
+     * Assumptions.
+     */
+
+    /*
+     * Allocate the sequential segment arrays.
+     * We need numCores - 1 arrays.
+     */
+    auto numOfSSArrays = numCores;
+    void *ssArrays = NULL;
+    auto ssSize = CACHE_LINE_SIZE;
+    auto ssArraySize = ssSize * numOfsequentialSegments;
+    if (numOfsequentialSegments > 0){
+
+      /*
+       * Allocate the sequential segment arrays.
+       */
+      posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize *  numOfSSArrays);
+      if (ssArrays == NULL){
+        abort();
+      }
+
+      /*
+       * Initialize the sequential segment arrays.
+       */
+      for (auto i = 0; i < numOfSSArrays; i++){
+
+        /*
+         * Fetch the current sequential segment array.
+         */
+        auto ssArray = (void *)(((uint64_t)ssArrays) + (i * ssArraySize));
+
+        /*
+         * Initialize the locks.
+         */
+        for (auto lockID = 0; lockID < numOfsequentialSegments; lockID++){
+
+          /*
+           * Fetch the pointer to the current lock.
+           */
+          auto lock = (nk_virgil_spinlock_t *)(((uint64_t)ssArray) + (lockID * ssSize));
+
+          /*
+           * Initialize the lock.
+           */
+          nk_virgil_spinlock_init(lock);
+
+          /*
+           * If the sequential segment is not for core 0, then we need to lock it.
+           */
+          if (i > 0){
+            nk_virgil_spinlock_lock(lock);
+          }
+        }
+      }
+    }
+
+    /*
+     * Allocate the memory to store the arguments.
+     */
+    auto argsForAllCores = (NOELLE_HELIX_args_t *) malloc(sizeof(NOELLE_HELIX_args_t) * numCores);
+
+    /*
+     * Launch threads
+     */
+    uint64_t loopIsOverFlag = 0;
+    //cpu_set_t cores;
+    auto localFutures = (nk_virgil_task_t *) malloc(sizeof(nk_virgil_task_t) * numCores);
+    for (auto i = 0; i < numCores; ++i) {
+
+      /*
+       * Identify the past and future sequential segment arrays.
+       */
+      auto pastID = i;
+      auto futureID = (i + 1) % numCores;
+
+      /*
+       * Fetch the sequential segment array for the current thread.
+       */
+      auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
+      auto ssArrayFuture = (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
+      auto argsPerCore = &argsForAllCores[i];
+      argsPerCore->env = env;
+
+      /*
+       * Launch the thread.
+       */
+      localFutures[i] = nk_virgil_submit_task_to_any_cpu(NOELLE_HELIXTrampoline, argsPerCore);
+      localFutures.push_back(pool.submitToCores(
+        cores,
+        parallelizedLoop,
+        env, loopCarriedArray,
+        ssArrayPast, ssArrayFuture,
+        i, numCores,
+        &loopIsOverFlag
+      ));
+
+      /*
+       * Launch the helper thread.
+       */
+      continue ;
+      /*localFutures.push_back(pool.submitToCores(
+        cores,
+        HELIX_helperThread, 
+        ssArrayPast,
+        numOfsequentialSegments,
+        &loopIsOverFlag
+      ));*/
+    }
+
+    /*
+     * Wait for the threads to end
+     */
+    for (auto& future : localFutures){
+      future.get();
+    }
+
+    /*
+     * Free the memory.
+     */
+    free(ssArrays);
+    free(argsForAllCores);
+
     DispatcherInfo dispatcherInfo;
     dispatcherInfo.numberOfThreadsUsed = numCores;
     return dispatcherInfo;
@@ -260,13 +387,12 @@ extern "C" {
     /*
      * Fetch the spinlock
      */
-    auto ss = (pthread_spinlock_t *) sequentialSegment;
+    auto ss = (nk_virgil_spinlock_t *) sequentialSegment;
 
     /*
      * Wait
      */
-    //pthread_spin_lock(ss);
-    abort(); //TODO
+    nk_virgil_spinlock_lock(ss);
 
     return ;
   }
@@ -278,12 +404,12 @@ extern "C" {
     /*
      * Fetch the spinlock
      */
-    auto ss = (pthread_spinlock_t *) sequentialSegment;
+    auto ss = (nk_virgil_spinlock_t *) sequentialSegment;
 
     /*
      * Signal
      */
-    abort(); //TODO
+    nk_virgil_spinlock_unlock(ss);
 
     return ;
   }
