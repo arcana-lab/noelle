@@ -89,7 +89,7 @@ namespace llvm {
         bool includeControlDependences,
         bool includeMemoryDataDependences,
         bool includeRegisterDataDependences,
-        std::function<bool (Value *toValue, DataDependenceType ddType)> functionToInvokePerDependence
+        std::function<bool (Value *to, DGEdge<Value> *dependence)> functionToInvokePerDependence
         );
 
       /*
@@ -106,7 +106,7 @@ namespace llvm {
         bool includeControlDependences,
         bool includeMemoryDataDependences,
         bool includeRegisterDataDependences,
-        std::function<bool (Value *fromValue, DataDependenceType ddType)> functionToInvokePerDependence
+        std::function<bool (Value *fromValue, DGEdge<Value> *dependence)> functionToInvokePerDependence
         );
 
       /*

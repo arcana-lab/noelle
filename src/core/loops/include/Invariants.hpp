@@ -56,8 +56,7 @@ namespace llvm {
            * To pass as a lambda to a dependence iteration function on PDG,
            * we bind isEvolvingValue to this member variable
            */
-          std::function<bool(Value *toValue, DataDependenceType ddType)> isEvolving;
-          bool isEvolvingValue (Value *toValue, DataDependenceType ddType) ;
+          bool isEvolvingValue (Value *toValue, DGEdge<Value> *dep) ;
 
           /*
            * For each top level call to isEvolvingValue, track values checked
