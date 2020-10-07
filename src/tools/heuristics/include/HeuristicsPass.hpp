@@ -18,7 +18,7 @@
 
 using namespace llvm;
 
-namespace llvm {
+namespace llvm::noelle {
   struct HeuristicsPass : public ModulePass {
     public:
       static char ID;
