@@ -13,7 +13,7 @@
 /*
  * Prioritize merge that best lowers overall cost without yielding a too costly partitioner
  */
-void llvm::SmallestSizePartitionAnalysis::checkIfShouldMerge (SCCSet *sA, SCCSet *sB) {
+void SmallestSizePartitionAnalysis::checkIfShouldMerge (SCCSet *sA, SCCSet *sB) {
 
   // TODO:
   return ;
