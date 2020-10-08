@@ -1,4 +1,4 @@
-DOALL_almost_lbm      26.499
+DOALL_almost_lbm      33.385
 DOALL_devirtualizer   13.632
 DOALL_dispatcher       0.01
 DOALL_lbm	       5.114
@@ -11,4 +11,6 @@ DSWP_limit	       6.743
 HELIX_challenge	       6.758
 HELIX_communication    1.488
 Loop_selection        18.482
-Scheduler              7.474
+Scheduler              6.8
+Scheduler2             5.342
+Scheduler3             0.9

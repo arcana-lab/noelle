@@ -504,7 +504,7 @@ std::set<Value *> Scheduler::getAllOutgoingDependences(
    */ 
   auto Iterator = 
     [&OutgoingDependences]
-    (Value *Outgoing, DataDependenceType D) -> bool {
+    (Value *Outgoing, DGEdge<Value> *dep) -> bool {
 
     // errs() << "   D: " << *Outgoing << "\n";
 
@@ -556,7 +556,7 @@ std::set<Instruction *> Scheduler::getOutgoingDependencesInParentBasicBlock(
    */ 
   auto Iterator = 
     [I, &OutgoingDependences]
-    (Value *Outgoing, DataDependenceType D) -> bool {
+    (Value *Outgoing, DGEdge<Value> *dep) -> bool {
 
     // errs() << "   D: " << *Outgoing << "\n";
 

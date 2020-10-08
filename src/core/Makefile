@@ -1,8 +1,7 @@
-UTILS=transformations basic_utilities task loops architecture loop_metadata clean_metadata pdg_stats callgraph scheduler loop_stats
+UTILS=transformations basic_utilities task loops architecture clean_metadata callgraph scheduler
 ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure
-PARALLELIZATION=parallelizer heuristics parallelization_technique dswp doall helix
 ENABLERS=loop_distribution loop_unroll loop_whilifier 
-ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) $(PARALLELIZATION) hotprofiler unique_ir_marker noelle scripts
+ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) hotprofiler unique_ir_marker noelle scripts
 
 all: $(ALL)
 
@@ -54,24 +53,6 @@ alloc_aa:
 talkdown:
 	cd $@ ; ../../scripts/run_me.sh
 
-heuristics:
-	cd $@ ; ../../scripts/run_me.sh
-
-parallelizer:
-	cd $@ ; ../../scripts/run_me.sh
-
-parallelization_technique:
-	cd $@ ; ../../scripts/run_me.sh
-
-dswp:
-	cd $@ ; ../../scripts/run_me.sh
-
-doall:
-	cd $@ ; ../../scripts/run_me.sh
-
-helix:
-	cd $@ ; ../../scripts/run_me.sh
-
 loop_whilifier:
 	cd $@ ; ../../scripts/run_me.sh
 
@@ -81,20 +62,12 @@ loop_distribution:
 loop_unroll:
 	cd $@ ; ../../scripts/run_me.sh
 
-loop_metadata:
-	cd $@ ; ../../scripts/run_me.sh
-
 clean_metadata:
-	cd $@ ; ../../scripts/run_me.sh
-
-pdg_stats:
-	cd $@ ; ../../scripts/run_me.sh
-
-loop_stats:
 	cd $@ ; ../../scripts/run_me.sh
 
 clean:
 	rm -rf */build */*.json ; 
+	rm -rf */build */*/*.json ; 
 
 .PHONY: $(ALL)
 
