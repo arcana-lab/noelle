@@ -38,16 +38,18 @@ all: $(OPTIMIZED)
 
 %.bc: %.c
 	$(CC) $(INCLUDES) $(FRONTEND_FLAGS) -c $< -o $@
-	llvm-dis $@
+
+%.ll: %.bc
+	llvm-dis $^
 
 %.bc: %.cpp
 	$(CPP) $(INCLUDES) $(FRONTEND_FLAGS) -std=c++14 -c $< -o $@
-	llvm-dis $@
 
 $(THREADER).bc: $(THREADER).cpp
 	$(CPP) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
 
-$(OPTIMIZED): test_parallelized.bc
+$(OPTIMIZED): test_parallelized.ll
+	sed -i 's/@main/@smain/g' $^ 
 	$(CPP) -std=c++14 -c $(OPT_LEVEL) $^ $(LIBS) $(NAUTILUS_FLAGS) -o $@
 
 test_parallelized_unoptimized.bc: baseline_with_metadata.bc
@@ -76,6 +78,8 @@ input.txt:
 	@../../scripts/create_input.sh $@
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o *.txt baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
+	rm -f time_parallelized.txt compiler_output.txt input.txt ;
+	rm -f output*.txt ;
 
 .PHONY: test_correctness clean
