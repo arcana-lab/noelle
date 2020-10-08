@@ -4,12 +4,16 @@
 
 using namespace llvm;
 
-class UniqueIRMarkerPass : public ModulePass {
- public:
-  static char ID;
+namespace llvm::noelle {
 
-  UniqueIRMarkerPass();
-  bool doInitialization (Module &M) override ;
-  void getAnalysisUsage(AnalysisUsage& ) const override;
-  bool runOnModule(Module& ) override;
-};
+  class UniqueIRMarkerPass : public ModulePass {
+  public:
+    static char ID;
+
+    UniqueIRMarkerPass();
+    bool doInitialization (Module &M) override ;
+    void getAnalysisUsage(AnalysisUsage& ) const override;
+    bool runOnModule(Module& ) override;
+  };
+
+}
