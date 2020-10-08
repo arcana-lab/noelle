@@ -21,7 +21,9 @@
 #include "Noelle.hpp"
 #include <fstream>
 
-namespace llvm {
+using namespace llvm;
+
+namespace llvm::noelle {
 
   class Inliner : public ModulePass {
     public:
@@ -64,7 +66,7 @@ namespace llvm {
        * Function and loop order tracking
        */
       void collectFnGraph (Function *main) ;
-      void collectFnCallsAndCalled (CallGraph &CG, Function *parentF) ;
+      void collectFnCallsAndCalled (llvm::CallGraph &CG, Function *parentF) ;
       void collectInDepthOrderFns (Function *main);
       void createPreOrderedLoopSummariesFor (Function *F) ;
       std::vector<Loop *> *collectPreOrderedLoopsFor (Function *F, LoopInfo &LI) ;
