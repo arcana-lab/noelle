@@ -216,6 +216,7 @@ extern "C" {
   /**********************************************************************
    *                HELIX
    **********************************************************************/
+  typedef struct {
     void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *);
     void *env ;
     void *loopCarriedArray;
@@ -226,7 +227,7 @@ extern "C" {
     uint64_t *loopIsOverFlag;
   } NOELLE_HELIX_args_t ;
 
-  void NOELLE_HELIXTrampoline (void *args){
+  void * NOELLE_HELIXTrampoline (void *args){
 
     /*
      * Fetch the arguments.
@@ -246,7 +247,7 @@ extern "C" {
       HELIX_args->loopIsOverFlag
       );
 
-    return ;
+    return NULL;
   }
 
   void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
@@ -339,11 +340,6 @@ extern "C" {
     }
 
     /*
-     * Allocate the memory to store the arguments.
-     */
-    auto argsForAllCores = (NOELLE_HELIX_args_t *) malloc(sizeof(NOELLE_HELIX_args_t) * numCores);
-
-    /*
      * Allocate the arguments for the cores.
      */
     NOELLE_HELIX_args_t *argsForAllCores;
@@ -353,7 +349,6 @@ extern "C" {
      * Launch threads
      */
     uint64_t loopIsOverFlag = 0;
-    //cpu_set_t cores;
     auto localFutures = (nk_virgil_task_t *) malloc(sizeof(nk_virgil_task_t) * numCores);
     for (auto i = 0; i < numCores; ++i) {
 
@@ -388,10 +383,12 @@ extern "C" {
       /*
        * Set the affinity for both the thread and its helper.
        */
-      CPU_ZERO(&cores);
+      //cpu_set_t cores;
+      /*CPU_ZERO(&cores);
       auto physicalCore = i * 2;
       CPU_SET(physicalCore, &cores);
       CPU_SET(physicalCore + 1, &cores);
+      */
 
       /*
        * Launch the thread.
@@ -414,8 +411,9 @@ extern "C" {
     /*
      * Wait for the threads to end
      */
-    for (auto& future : localFutures){
-      future.get();
+    for (auto i = 0; i < numCores; ++i) {
+      void *outputMemory;
+      nk_virgil_wait_for_task_completion(localFutures[i], &outputMemory);
     }
 
     /*
