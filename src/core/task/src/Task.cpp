@@ -12,246 +12,248 @@
 
 using namespace llvm;
 
-Task::Task (
-  uint32_t ID,
-  FunctionType *taskSignature,
-  Module &M
-  )
-  : ID{ID}
-  {
+namespace llvm::noelle {
+  Task::Task (
+    uint32_t ID,
+    FunctionType *taskSignature,
+    Module &M
+    )
+    : ID{ID}
+    {
 
-  /*
-   * Create the empty body of the task.
-   */
-  auto functionCallee = M.getOrInsertFunction("", taskSignature);
-  this->F = cast<Function>(functionCallee.getCallee());
+    /*
+    * Create the empty body of the task.
+    */
+    auto functionCallee = M.getOrInsertFunction("", taskSignature);
+    this->F = cast<Function>(functionCallee.getCallee());
 
-  /*
-   * Add the entry and exit basic blocks.
-   */
-  auto &cxt = M.getContext();
-  this->entryBlock = BasicBlock::Create(cxt, "", this->F);
-  this->exitBlock = BasicBlock::Create(cxt, "", this->F);
+    /*
+    * Add the entry and exit basic blocks.
+    */
+    auto &cxt = M.getContext();
+    this->entryBlock = BasicBlock::Create(cxt, "", this->F);
+    this->exitBlock = BasicBlock::Create(cxt, "", this->F);
 
-  return ;
-}
-
-uint32_t Task::getID (void) const {
-  return this->ID;
-}
-      
-bool Task::isAnOriginalLiveIn (Value *v) const {
-  if (this->liveInClones.find(v) == this->liveInClones.end()){
-    return false;
-  }
-
-  return true;
-}
-
-Value * Task::getCloneOfOriginalLiveIn (Value *o) const {
-  if (!this->isAnOriginalLiveIn(o)){
-    return nullptr;
-  }
-
-  return this->liveInClones.at(o);
-}
-
-void Task::addLiveIn (Value *original, Value *internal) {
-  this->liveInClones[original] = internal;
-
-  return ;
-}
-
-std::unordered_set<Value *> Task::getOriginalLiveIns (void) const {
-  std::unordered_set<Value *> s;
-  for (auto p : this->liveInClones){
-    s.insert(p.first);
-  }
-
-  return s;
-}
-
-bool Task::doesOriginalLiveOutHaveManyClones (Instruction *I) const {
-  return liveOutClones.find(I) != liveOutClones.end();
-}
-
-std::unordered_set<Instruction *> Task::getClonesOfOriginalLiveOut (Instruction *I) const {
-  if (liveOutClones.find(I) == liveOutClones.end()) {
-    return {};
-  }
-
-  return liveOutClones.at(I);
-}
-
-void Task::addLiveOut (Instruction *original, Instruction *internal) {
-  liveOutClones[original].insert(internal);
-}
-
-void Task::removeLiveOut (Instruction *original, Instruction *removed) {
-  if (liveOutClones.find(original) == liveOutClones.end()) {
     return ;
   }
 
-  liveOutClones[original].erase(removed);
-}
+  uint32_t Task::getID (void) const {
+    return this->ID;
+  }
+        
+  bool Task::isAnOriginalLiveIn (Value *v) const {
+    if (this->liveInClones.find(v) == this->liveInClones.end()){
+      return false;
+    }
 
-bool Task::isAnOriginalBasicBlock (BasicBlock *o) const {
-  if (this->basicBlockClones.find(o) == this->basicBlockClones.end()){
-    return false;
+    return true;
   }
 
-  return true;
-}
+  Value * Task::getCloneOfOriginalLiveIn (Value *o) const {
+    if (!this->isAnOriginalLiveIn(o)){
+      return nullptr;
+    }
 
-BasicBlock * Task::getCloneOfOriginalBasicBlock (BasicBlock *o) const {
-  if (!this->isAnOriginalBasicBlock(o)){
-    return nullptr;
+    return this->liveInClones.at(o);
   }
 
-  return this->basicBlockClones.at(o);
-}
+  void Task::addLiveIn (Value *original, Value *internal) {
+    this->liveInClones[original] = internal;
 
-void Task::removeOriginalBasicBlock (BasicBlock *b){
-  this->basicBlockClones.erase(b);
-
-  return ;
-}
-
-std::unordered_set<BasicBlock *> Task::getOriginalBasicBlocks (void) const {
-  std::unordered_set<BasicBlock *> s;
-  for (auto p : this->basicBlockClones){
-    s.insert(p.first);
+    return ;
   }
 
-  return s;
-}
+  std::unordered_set<Value *> Task::getOriginalLiveIns (void) const {
+    std::unordered_set<Value *> s;
+    for (auto p : this->liveInClones){
+      s.insert(p.first);
+    }
 
-void Task::addBasicBlock (BasicBlock *original, BasicBlock *internal) {
-  this->basicBlockClones[original] = internal;
-
-  return ;
-}
-
-BasicBlock * Task::addBasicBlockStub (BasicBlock *original){
-
-  /*
-   * Fetch the context.
-   */
-  auto &c = this->getLLVMContext();
-
-  /*
-   * Allocate a new basic block.
-   */
-  auto newBB = BasicBlock::Create(c, "", this->F);
-
-  /*
-   * Keep track of the mapping.
-   */
-  this->addBasicBlock(original, newBB);
-
-  return newBB;
-}
-
-BasicBlock * Task::cloneAndAddBasicBlock (BasicBlock *original){
-
-  /*
-   * Create a stub.
-   */
-  auto cloneBB = this->addBasicBlockStub(original);
-
-  /*
-   * Copy the original instructions into the cloned basic block.
-   */
-  IRBuilder<> builder(cloneBB);
-  for (auto &I : *original) {
-    auto cloneI = builder.Insert(I.clone());
-    this->instructionClones[&I] = cloneI;
+    return s;
   }
 
-  return cloneBB;
-}
-
-Value * Task::getTaskInstanceID (void) const {
-  return this->instanceIndexV;
-}
-
-Value * Task::getEnvironment (void) const {
-  return this->envArg;
-}
-
-Function * Task::getTaskBody (void) const {
-  return this->F;
-}
-
-BasicBlock * Task::getEntry (void) const {
-  return this->entryBlock;
-}
-
-BasicBlock * Task::getExit (void) const {
-  return this->exitBlock;
-}
-      
-void Task::tagBasicBlockAsLastBlock (BasicBlock *b) {
-  this->lastBlocks.push_back(b);
-
-  return ;
-}
-
-uint32_t Task::getNumberOfLastBlocks (void) const {
-  return this->lastBlocks.size();
-}
-      
-BasicBlock * Task::getLastBlock (uint32_t blockID) const {
-  return this->lastBlocks[blockID];
-}
-
-LLVMContext & Task::getLLVMContext (void) const {
-  auto& c = this->F->getContext();
-
-  return c;
-}
-
-Instruction * Task::getCloneOfOriginalInstruction (Instruction *o) const {
-  if (!this->isAnOriginalInstruction(o)){
-    return nullptr;
+  bool Task::doesOriginalLiveOutHaveManyClones (Instruction *I) const {
+    return liveOutClones.find(I) != liveOutClones.end();
   }
 
-  return this->instructionClones.at(o);
-}
+  std::unordered_set<Instruction *> Task::getClonesOfOriginalLiveOut (Instruction *I) const {
+    if (liveOutClones.find(I) == liveOutClones.end()) {
+      return {};
+    }
 
-bool Task::isAnOriginalInstruction (Instruction *i) const {
-  if (this->instructionClones.find(i) == this->instructionClones.end()){
-    return false;
+    return liveOutClones.at(I);
   }
 
-  return true;
-}
-
-void Task::addInstruction (Instruction *original, Instruction *internal) {
-  this->instructionClones[original] = internal;
-
-  return ;
-}
-
-std::unordered_set<Instruction *> Task::getOriginalInstructions (void) const {
-  std::unordered_set<Instruction *> s;
-  for (auto p : this->instructionClones){
-    s.insert(p.first);
+  void Task::addLiveOut (Instruction *original, Instruction *internal) {
+    liveOutClones[original].insert(internal);
   }
 
-  return s;
-}
+  void Task::removeLiveOut (Instruction *original, Instruction *removed) {
+    if (liveOutClones.find(original) == liveOutClones.end()) {
+      return ;
+    }
 
-Instruction * Task::cloneAndAddInstruction (Instruction *original){
-  auto cloneI = original->clone();
+    liveOutClones[original].erase(removed);
+  }
 
-  this->addInstruction(original, cloneI);
+  bool Task::isAnOriginalBasicBlock (BasicBlock *o) const {
+    if (this->basicBlockClones.find(o) == this->basicBlockClones.end()){
+      return false;
+    }
 
-  return cloneI;
-}
+    return true;
+  }
 
-void Task::removeOriginalInstruction (Instruction *o) {
-  this->instructionClones.erase(o);
+  BasicBlock * Task::getCloneOfOriginalBasicBlock (BasicBlock *o) const {
+    if (!this->isAnOriginalBasicBlock(o)){
+      return nullptr;
+    }
 
-  return ;
+    return this->basicBlockClones.at(o);
+  }
+
+  void Task::removeOriginalBasicBlock (BasicBlock *b){
+    this->basicBlockClones.erase(b);
+
+    return ;
+  }
+
+  std::unordered_set<BasicBlock *> Task::getOriginalBasicBlocks (void) const {
+    std::unordered_set<BasicBlock *> s;
+    for (auto p : this->basicBlockClones){
+      s.insert(p.first);
+    }
+
+    return s;
+  }
+
+  void Task::addBasicBlock (BasicBlock *original, BasicBlock *internal) {
+    this->basicBlockClones[original] = internal;
+
+    return ;
+  }
+
+  BasicBlock * Task::addBasicBlockStub (BasicBlock *original){
+
+    /*
+    * Fetch the context.
+    */
+    auto &c = this->getLLVMContext();
+
+    /*
+    * Allocate a new basic block.
+    */
+    auto newBB = BasicBlock::Create(c, "", this->F);
+
+    /*
+    * Keep track of the mapping.
+    */
+    this->addBasicBlock(original, newBB);
+
+    return newBB;
+  }
+
+  BasicBlock * Task::cloneAndAddBasicBlock (BasicBlock *original){
+
+    /*
+    * Create a stub.
+    */
+    auto cloneBB = this->addBasicBlockStub(original);
+
+    /*
+    * Copy the original instructions into the cloned basic block.
+    */
+    IRBuilder<> builder(cloneBB);
+    for (auto &I : *original) {
+      auto cloneI = builder.Insert(I.clone());
+      this->instructionClones[&I] = cloneI;
+    }
+
+    return cloneBB;
+  }
+
+  Value * Task::getTaskInstanceID (void) const {
+    return this->instanceIndexV;
+  }
+
+  Value * Task::getEnvironment (void) const {
+    return this->envArg;
+  }
+
+  Function * Task::getTaskBody (void) const {
+    return this->F;
+  }
+
+  BasicBlock * Task::getEntry (void) const {
+    return this->entryBlock;
+  }
+
+  BasicBlock * Task::getExit (void) const {
+    return this->exitBlock;
+  }
+        
+  void Task::tagBasicBlockAsLastBlock (BasicBlock *b) {
+    this->lastBlocks.push_back(b);
+
+    return ;
+  }
+
+  uint32_t Task::getNumberOfLastBlocks (void) const {
+    return this->lastBlocks.size();
+  }
+        
+  BasicBlock * Task::getLastBlock (uint32_t blockID) const {
+    return this->lastBlocks[blockID];
+  }
+
+  LLVMContext & Task::getLLVMContext (void) const {
+    auto& c = this->F->getContext();
+
+    return c;
+  }
+
+  Instruction * Task::getCloneOfOriginalInstruction (Instruction *o) const {
+    if (!this->isAnOriginalInstruction(o)){
+      return nullptr;
+    }
+
+    return this->instructionClones.at(o);
+  }
+
+  bool Task::isAnOriginalInstruction (Instruction *i) const {
+    if (this->instructionClones.find(i) == this->instructionClones.end()){
+      return false;
+    }
+
+    return true;
+  }
+
+  void Task::addInstruction (Instruction *original, Instruction *internal) {
+    this->instructionClones[original] = internal;
+
+    return ;
+  }
+
+  std::unordered_set<Instruction *> Task::getOriginalInstructions (void) const {
+    std::unordered_set<Instruction *> s;
+    for (auto p : this->instructionClones){
+      s.insert(p.first);
+    }
+
+    return s;
+  }
+
+  Instruction * Task::cloneAndAddInstruction (Instruction *original){
+    auto cloneI = original->clone();
+
+    this->addInstruction(original, cloneI);
+
+    return cloneI;
+  }
+
+  void Task::removeOriginalInstruction (Instruction *o) {
+    this->instructionClones.erase(o);
+
+    return ;
+  }
 }
