@@ -24,6 +24,7 @@ int main (int argc, char *argv[]){
   auto v7 = ((argc * 11) / 2) + 1;
   auto v8 = ((argc * 21) / 2) + 1;
 
+  nk_vc_printf("Start the loop\n");
   for (auto i = 0; i < iterations; ++i) {
 
     // SCC 1
