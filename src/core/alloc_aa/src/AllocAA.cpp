@@ -253,6 +253,8 @@ bool AllocAA::isPrimitiveArrayPointer (Value *V, std::set<Instruction *> &userIn
       // Confirm the store is of a contiguously allocated array unique to this value
       if (auto storedCall = dyn_cast<CallInst>(store->getValueOperand())) {
         auto callF = storedCall->getCalledFunction();
+        // Conservatively return false for indirect calls
+        if (!callF) { return false; }
         if (allocatorFunctionNames.find(callF->getName()) != allocatorFunctionNames.end()) {
           if (storedCall->hasOneUse()) continue;
         }

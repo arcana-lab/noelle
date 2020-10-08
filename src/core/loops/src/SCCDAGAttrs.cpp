@@ -83,12 +83,14 @@ SCCDAGAttrs::SCCDAGAttrs (
     this->checkIfClonable(scc, SE, LIS);
 
     /*
-     * Tag the current SCC.
+     * Categorize the current SCC.
      */
     if (this->checkIfIndependent(scc)) {
       sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
+
     } else if (this->checkIfReducible(scc, LIS, LCD)) {
       sccInfo->setType(SCCAttrs::SCCType::REDUCIBLE);
+
     } else {
       sccInfo->setType(SCCAttrs::SCCType::SEQUENTIAL);
     }
@@ -312,18 +314,32 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
 
 void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarriedDependencies &LCD) {
 
+  /*
+   * Iterate over all the loops contained within the one handled by @this
+   */
   for (auto &loop : LIS.loops) {
 
-    auto &loopRef = *loop.get();
+    /*
+     * Fetch the set of loop-carried data dependences of the current loop.
+     */
     auto loopCarriedEdges = LCD.getLoopCarriedDependenciesForLoop(*loop.get());
 
+    /*
+     * Make the map from SCCs to loop-carried data dependences.
+     */
     for (auto edge : loopCarriedEdges) {
 
+      /*
+       * Fetch the SCCs that contain the source and destination of the current loop-carried data dependence.
+       */
       auto producer = edge->getOutgoingT();
       auto consumer = edge->getIncomingT();
       auto producerSCC = this->sccdag->sccOfValue(producer);
       auto consumerSCC = this->sccdag->sccOfValue(consumer);
 
+      /*
+       * Make the mapping from SCCs to dependences explicit.
+       */
       sccToLoopCarriedDependencies[producerSCC].insert(edge);
       sccToLoopCarriedDependencies[consumerSCC].insert(edge);
     }
@@ -484,7 +500,6 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &
        || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc, LIS)
       ) {
     this->getSCCAttrs(scc)->setSCCToBeClonable();
-    clonableSCCs.insert(scc);
     return ;
   }
 
