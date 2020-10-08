@@ -5,29 +5,35 @@
 #include "UniqueIRConstants.hpp"
 #include "UniqueIRMarkerReader.hpp"
 
-class UniqueIRVerifier : public InstVisitor<UniqueIRVerifier> {
+using namespace llvm;
 
- public:
-  explicit UniqueIRVerifier(ModulePass& MP);
+namespace llvm::noelle {
 
-  void visitModule    (Module &M);
-  void visitFunction  (Function &F);
-  void visitInstruction(Instruction &I);
+  class UniqueIRVerifier : public InstVisitor<UniqueIRVerifier> {
 
-  constexpr static unsigned int IDSize = sizeof(IDType) * 8; // IDs are in bits
+  public:
+    explicit UniqueIRVerifier(ModulePass& MP);
 
-  bool verifyLoops();
+    void visitModule     (Module &M);
+    void visitFunction   (Function &F);
+    void visitInstruction(Instruction &I);
 
- private:
-  ModulePass& MP;
+    constexpr static unsigned int IDSize = sizeof(IDType) * 8; // IDs are in bits
 
-  // if the bitcode file already has a module 'VIA.M.ID' definition then this walker will instead verify that
-  // the metadata is correctly inserted.
-  bool AlreadyMarked = false;
+    bool verifyLoops();
 
-  std::set<IDType> LoopIDsFromLoopInfo;
-  std::set<IDType> LoopIDsFromPreviousMarkerPass;
+  private:
+    ModulePass& MP;
 
-  void checkFunction(Function &);
-  void checkInstruction(Instruction &);
-};
+    // if the bitcode file already has a module 'VIA.M.ID' definition then this walker will instead verify that
+    // the metadata is correctly inserted.
+    bool AlreadyMarked = false;
+
+    std::set<IDType> LoopIDsFromLoopInfo;
+    std::set<IDType> LoopIDsFromPreviousMarkerPass;
+
+    void checkFunction(Function &);
+    void checkInstruction(Instruction &);
+  };
+
+}
