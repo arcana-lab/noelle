@@ -20,7 +20,7 @@
 #include "Scheduler.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
 
-#include "MemoryAnalysisModules/LoopAA.h"
+#include "scaf/MemoryAnalysisModules/LoopAA.h"
 
 namespace llvm::noelle {
 
@@ -114,7 +114,7 @@ namespace llvm::noelle {
         ) ;
 
       void filterOutLoops (
-        StayConnectedNestedLoopForest *f, 
+        StayConnectedNestedLoopForest *f,
         std::function<bool (LoopStructure *)> filter
         ) ;
 
