@@ -5,7 +5,7 @@
 #include "SystemHeaders.hpp"
 
 #include "PDG.hpp"
-#include "MemoryAnalysisModules/LoopAA.h"
+#include "scaf/MemoryAnalysisModules/LoopAA.h"
 #include "LoopCarriedDependencies.hpp"
 #include "LoopIterationDomainSpaceAnalysis.hpp"
 #include "LoopsSummary.hpp"
