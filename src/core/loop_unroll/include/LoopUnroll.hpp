@@ -14,7 +14,7 @@
 #include "LoopDependenceInfo.hpp"
 #include "SCC.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class LoopUnroll {
     public:
