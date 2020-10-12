@@ -10,9 +10,9 @@
  */
 #include "PartitionCostAnalysis.hpp"
 
-const std::string llvm::PartitionCostAnalysis::prefix = "Heuristic:   PCA: ";
+const std::string PartitionCostAnalysis::prefix = "Heuristic:   PCA: ";
 
-llvm::PartitionCostAnalysis::PartitionCostAnalysis (
+PartitionCostAnalysis::PartitionCostAnalysis (
   InvocationLatency &il,
   SCCDAGPartitioner &p,
   SCCDAGAttrs &attrs,
@@ -35,7 +35,7 @@ llvm::PartitionCostAnalysis::PartitionCostAnalysis (
   costIfAllSetsRunOnSeparateCores = IL.latencyPerInvocation(&dagAttrs, allSets);
 }
 
-void llvm::PartitionCostAnalysis::traverseAllPartitionSubsets () {
+void PartitionCostAnalysis::traverseAllPartitionSubsets () {
 
   /*
    * Collect all subsets of the current SCCDAG partitioner.
@@ -66,14 +66,14 @@ void llvm::PartitionCostAnalysis::traverseAllPartitionSubsets () {
   }
 }
 
-void llvm::PartitionCostAnalysis::resetCandidateSubsetInfo () {
+void PartitionCostAnalysis::resetCandidateSubsetInfo () {
   minSetsToMerge.clear();
   savedCostByMerging = 0;
   costOfMergedSet = UINT64_MAX;
   numInstructionsInSetsBeingMerged = UINT64_MAX;
 }
 
-bool llvm::PartitionCostAnalysis::mergeCandidateSubsets () {
+bool PartitionCostAnalysis::mergeCandidateSubsets () {
   if (minSetsToMerge.size() == 0) return false;
 
   partitioner.getPartitionGraph()->mergeSetsAndCollapseResultingCycles(minSetsToMerge);
@@ -82,7 +82,7 @@ bool llvm::PartitionCostAnalysis::mergeCandidateSubsets () {
   return true;
 }
 
-void llvm::PartitionCostAnalysis::printCandidate (raw_ostream &stream) {
+void PartitionCostAnalysis::printCandidate (raw_ostream &stream) {
   if (verbose == Verbosity::Disabled) return;
 
   if (minSetsToMerge.size() == 0) {

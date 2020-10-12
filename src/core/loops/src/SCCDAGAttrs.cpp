@@ -83,12 +83,14 @@ SCCDAGAttrs::SCCDAGAttrs (
     this->checkIfClonable(scc, SE, LIS);
 
     /*
-     * Tag the current SCC.
+     * Categorize the current SCC.
      */
     if (this->checkIfIndependent(scc)) {
       sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
+
     } else if (this->checkIfReducible(scc, LIS, LCD)) {
       sccInfo->setType(SCCAttrs::SCCType::REDUCIBLE);
+
     } else {
       sccInfo->setType(SCCAttrs::SCCType::SEQUENTIAL);
     }
@@ -498,7 +500,6 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &
        || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc, LIS)
       ) {
     this->getSCCAttrs(scc)->setSCCToBeClonable();
-    clonableSCCs.insert(scc);
     return ;
   }
 
