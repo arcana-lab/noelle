@@ -19,7 +19,7 @@
 #include "SubCFGs.hpp"
 #include "SCCDAG.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class Mem2RegNonAlloca {
     public:

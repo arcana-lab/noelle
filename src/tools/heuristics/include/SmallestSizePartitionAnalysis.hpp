@@ -22,7 +22,7 @@
 
 using namespace std;
 
-namespace llvm {
+namespace llvm::noelle {
 
   class SmallestSizePartitionAnalysis : public PartitionCostAnalysis {
    public:
