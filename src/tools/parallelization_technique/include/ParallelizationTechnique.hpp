@@ -224,7 +224,7 @@ namespace llvm::noelle {
        * Parallel task related information.
        */
       Function *taskDispatcher;
-      FunctionType *taskType;
+      FunctionType *taskSignature;
       BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
       std::vector<Task *> tasks;
       int numTaskInstances;
