@@ -13,6 +13,7 @@
 #include "Noelle.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 bool PDGStats::doInitialization(Module &M) {
   return false;
