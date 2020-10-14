@@ -14,7 +14,7 @@
 #include "InductionVariables.hpp"
 #include "LoopGoverningIVAttribution.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class IVUtility {
     public:

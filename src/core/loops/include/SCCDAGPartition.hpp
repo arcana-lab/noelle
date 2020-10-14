@@ -16,8 +16,7 @@
 #include "LoopCarriedDependencies.hpp"
 #include "LoopStructure.hpp"
 
-namespace llvm {
-namespace noelle {
+namespace llvm::noelle {
 
   struct SCCSet {
     std::unordered_set<SCC *> sccs;
@@ -137,7 +136,6 @@ namespace noelle {
       std::unordered_set<LoopStructure *> allLoops;
   };
 
-}
 }
 
 namespace llvm {

@@ -11,6 +11,7 @@
 #include "Invariants.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 InvariantManager::InvariantManager (
   LoopStructure *loop,

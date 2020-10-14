@@ -17,9 +17,9 @@
 #include "Variable.hpp"
 #include "MemoryCloningAnalysis.hpp"
 
-using namespace llvm::noelle;
+using namespace llvm;
 
-namespace llvm {
+namespace llvm::noelle {
 
   class SCCAttrs {
     public:
