@@ -15,6 +15,7 @@
 #include "LoopAwareMemDepAnalysis.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 LoopDependenceInfo::LoopDependenceInfo(
   PDG *fG,
