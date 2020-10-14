@@ -40,7 +40,7 @@ DOALL::DOALL (
     int64,
     int64
   });
-  this->taskType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
+  this->taskSignature = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
 
   return ;
 }
@@ -194,14 +194,14 @@ bool DOALL::apply (
   /*
    * Fetch the headers.
    */
-  auto loopSummary = LDI->getLoopStructure();
-  auto loopHeader = loopSummary->getHeader();
-  auto loopPreHeader = loopSummary->getPreHeader();
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
+  auto loopPreHeader = loopStructure->getPreHeader();
 
   /*
    * Fetch the loop function.
    */
-  auto loopFunction = loopSummary->getFunction();
+  auto loopFunction = loopStructure->getFunction();
 
   /*
    * Print the parallelization request.
@@ -215,7 +215,7 @@ bool DOALL::apply (
   /*
    * Generate an empty task for the parallel DOALL execution.
    */
-  auto chunkerTask = new DOALLTask(this->taskType, this->module);
+  auto chunkerTask = new DOALLTask(this->taskSignature, this->module);
   this->generateEmptyTasks(LDI, { chunkerTask });
   this->numTaskInstances = LDI->getMaximumNumberOfCores();
 
