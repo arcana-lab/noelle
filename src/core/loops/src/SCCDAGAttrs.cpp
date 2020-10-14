@@ -12,6 +12,7 @@
 #include "PDGPrinter.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 SCCDAGAttrs::SCCDAGAttrs ()
   : loopDG{nullptr}, sccdag{nullptr}, memoryCloningAnalysis{nullptr} {

@@ -11,6 +11,7 @@
 #include "LoopGoverningIVAttribution.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, SCC &scc, std::vector<BasicBlock *> &exitBlocks)
   : IV{iv}, scc{scc}, headerCmp{nullptr}, conditionValueDerivation{},

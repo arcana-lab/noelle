@@ -14,7 +14,7 @@
 #include "InductionVariables.hpp"
 #include "SCC.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class LoopGoverningIVAttribution {
     public:

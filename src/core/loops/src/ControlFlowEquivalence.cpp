@@ -11,6 +11,7 @@
 #include "ControlFlowEquivalence.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 ControlFlowEquivalence::ControlFlowEquivalence (
   const DominatorSummary *ds,
