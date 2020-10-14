@@ -10,7 +10,7 @@
  */
 #include "SCCDAGAttrTestSuite.hpp"
 
-using namespace llvm;
+namespace llvm::noelle {
 
 // Register pass to "opt"
 char SCCDAGAttrTestSuite::ID = 0;
@@ -188,4 +188,6 @@ Values SCCDAGAttrTestSuite::loopCarriedDependencies (ModulePass &pass, TestSuite
   }
 
   return valueNames;
+}
+
 }
