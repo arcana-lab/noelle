@@ -13,7 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "PDG.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class LoopEnvironment {
     public:

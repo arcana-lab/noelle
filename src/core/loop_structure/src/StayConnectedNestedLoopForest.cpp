@@ -10,6 +10,9 @@
  */
 #include "StayConnectedNestedLoopForest.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 namespace llvm::noelle {
 
   StayConnectedNestedLoopForest::StayConnectedNestedLoopForest (
