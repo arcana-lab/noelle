@@ -10,6 +10,9 @@
  */
 #include "SCCPartitionScheduler.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 SCCPartitionScheduler::SCCPartitionScheduler(
   SCCDAG *loopSCCDAG,
   std::unordered_set<SCCSet *> sccPartitions,
