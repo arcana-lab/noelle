@@ -32,7 +32,7 @@
 
 using namespace parallelizertests;
 
-namespace llvm {
+namespace llvm::noelle {
 
   class CFETestSuite : public ModulePass {
     public:
