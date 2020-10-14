@@ -13,7 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "LoopStructure.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class LoopsSummary {
     public:

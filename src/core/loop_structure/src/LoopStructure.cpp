@@ -11,6 +11,7 @@
 #include "LoopStructure.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 uint64_t LoopStructure::globalID = 0;
 
