@@ -13,7 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "LoopEnvironment.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class EnvUserBuilder {
    public:

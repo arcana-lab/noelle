@@ -11,7 +11,8 @@
 #include "EnvBuilder.hpp"
 #include "Architecture.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 EnvUserBuilder::EnvUserBuilder ()
   : envIndexToPtr{}, liveInInds{}, liveOutInds{} {
