@@ -10,6 +10,9 @@
  */
 #include "HELIXTask.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 HELIXTask::HELIXTask(
   FunctionType *taskSignature,
   Module &M
