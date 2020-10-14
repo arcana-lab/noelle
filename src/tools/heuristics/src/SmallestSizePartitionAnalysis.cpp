@@ -10,6 +10,9 @@
  */
 #include "SmallestSizePartitionAnalysis.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 /*
  * Prioritize merge that best lowers overall cost without yielding a too costly partitioner
  */

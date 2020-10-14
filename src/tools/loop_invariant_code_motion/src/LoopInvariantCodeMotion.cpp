@@ -11,6 +11,7 @@
 #include "LoopInvariantCodeMotion.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 LoopInvariantCodeMotion::LoopInvariantCodeMotion(Noelle &noelle)
   : noelle{noelle}

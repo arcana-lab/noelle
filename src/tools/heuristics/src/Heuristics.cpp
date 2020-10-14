@@ -11,6 +11,7 @@
 #include "../include/Heuristics.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 Heuristics::Heuristics (Noelle &noelle)
   : invocationLatency{noelle.getProfiles()}

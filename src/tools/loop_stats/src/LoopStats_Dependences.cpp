@@ -11,6 +11,7 @@
 #include "LoopStats.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void LoopStats::collectStatsOnLLVMSCCs (Hot *profiles, PDG *loopDG, Stats *statsForLoop) {
 

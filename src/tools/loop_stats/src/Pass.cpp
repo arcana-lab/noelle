@@ -11,6 +11,7 @@
 #include "LoopStats.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 bool LoopStats::doInitialization(Module &M) {
   return false;

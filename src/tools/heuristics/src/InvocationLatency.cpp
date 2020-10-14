@@ -11,6 +11,7 @@
 #include "InvocationLatency.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
  
 InvocationLatency::InvocationLatency (Hot *hot)
   : profiles{hot}

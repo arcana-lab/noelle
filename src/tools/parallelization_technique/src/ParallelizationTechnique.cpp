@@ -11,6 +11,7 @@
 #include "ParallelizationTechnique.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 ParallelizationTechnique::ParallelizationTechnique (
   Module &module, 
