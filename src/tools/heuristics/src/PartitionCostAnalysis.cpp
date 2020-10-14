@@ -10,6 +10,9 @@
  */
 #include "PartitionCostAnalysis.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 const std::string PartitionCostAnalysis::prefix = "Heuristic:   PCA: ";
 
 PartitionCostAnalysis::PartitionCostAnalysis (

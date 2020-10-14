@@ -11,6 +11,7 @@
 #include "Mem2RegNonAlloca.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 Mem2RegNonAlloca::Mem2RegNonAlloca (LoopDependenceInfo const &LDI, Noelle &noelle)
   : LDI{LDI}, invariants{*LDI.getInvariantManager()}, noelle{noelle} {

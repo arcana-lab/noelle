@@ -11,6 +11,9 @@
 #include "SCCDAG.hpp"
 #include "DSWP.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 void DSWP::printStageSCCs (LoopDependenceInfo *LDI) const {
   if (this->verbose == Verbosity::Disabled) {
     return ;

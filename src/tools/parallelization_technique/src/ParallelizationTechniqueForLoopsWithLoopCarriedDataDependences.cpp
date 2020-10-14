@@ -11,6 +11,7 @@
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences (
   Module &module, 

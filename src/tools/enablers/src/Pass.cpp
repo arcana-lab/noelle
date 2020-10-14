@@ -15,37 +15,36 @@
 #include <unordered_map>
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 static cl::opt<bool> DisableEnablers("noelle-disable-enablers", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable all enablers"));
 
-namespace llvm::noelle {
-  bool EnablersManager::doInitialization (Module &M) {
-    this->enableEnablers = (DisableEnablers.getNumOccurrences() == 0) ? true : false;
+bool EnablersManager::doInitialization (Module &M) {
+  this->enableEnablers = (DisableEnablers.getNumOccurrences() == 0) ? true : false;
 
-    return false; 
-  }
+  return false; 
+}
 
-  void EnablersManager::getAnalysisUsage (AnalysisUsage &AU) const {
+void EnablersManager::getAnalysisUsage (AnalysisUsage &AU) const {
 
-    /*
-    * Analysis needed by this pass.
-    */
-    AU.addRequired<LoopInfoWrapperPass>();
-    AU.addRequired<DominatorTreeWrapperPass>();
-    AU.addRequired<ScalarEvolutionWrapperPass>();
-    AU.addRequired<AssumptionCacheTracker>();
+  /*
+  * Analysis needed by this pass.
+  */
+  AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<DominatorTreeWrapperPass>();
+  AU.addRequired<ScalarEvolutionWrapperPass>();
+  AU.addRequired<AssumptionCacheTracker>();
 
-    /*
-    * Noelle framework.
-    */
-    AU.addRequired<Noelle>();
+  /*
+  * Noelle framework.
+  */
+  AU.addRequired<Noelle>();
 
-    return ;
-  }
+  return ;
 }
 
 // Next there is code to register your pass to "opt"
-char llvm::noelle::EnablersManager::ID = 0;
+char EnablersManager::ID = 0;
 static RegisterPass<EnablersManager> X("enablers", "Transformations designed to enable automatic parallelization of sequential code", false, false);
 
 // Next there is code to register your pass to "clang"

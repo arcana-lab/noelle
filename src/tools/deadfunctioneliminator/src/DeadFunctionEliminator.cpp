@@ -10,188 +10,187 @@
  */
 #include "DeadFunctionEliminator.hpp"
 
-namespace llvm::noelle {
+using namespace llvm;
+using namespace llvm::noelle;
 
-  DeadFunctionEliminator::DeadFunctionEliminator ()
-    :
-    ModulePass{ID}
-    {
-    return ;
+DeadFunctionEliminator::DeadFunctionEliminator ()
+  :
+  ModulePass{ID}
+  {
+  return ;
+}
+
+bool DeadFunctionEliminator::runOnModule (Module &M) {
+  auto modified = false;
+
+  /*
+    * Fetch the outputs of the passes we rely on.
+    */
+  auto& noelle = getAnalysis<Noelle>();
+
+  /*
+    * Fetch the call graph.
+    */
+  auto pcg = noelle.getProgramCallGraph();
+
+  /*
+    * Check if there are functions with only one caller.
+    * Inline them.
+    */
+  for (auto node : pcg->getFunctionNodes()){
+
+    /*
+      * Fetch the node.
+      */
+    auto nodeFunction = node->getFunction();
+
+    /*
+      * Check the function has a body.
+      */
+    if (nodeFunction->empty()){
+      continue ;
+    }
+
+    /*
+      * Check how many other functions can invoke @nodeFunction
+      */
+    auto callerNodes = node->getIncomingEdges();
+    if (callerNodes.size() != 1){
+      continue ;
+    }
+
+    /*
+      * We found a function that has only one other function that can invoke it.
+      *
+      * Check how many callers this function includes.
+      */
+    auto callingEdge = *callerNodes.begin();
+    auto callerEdges = callingEdge->getSubEdges();
+    if (callerEdges.size() != 1) {
+      continue ;
+    }
+
+    /*
+      * @node has only one caller.
+      *
+      * Fetch the caller.
+      */
+    auto callerEdge = *callerEdges.begin();
+    auto callerNode = callerEdge->getCaller();
+    auto callerInst = callerNode->getInstruction();
+
+    /*
+      * Check the single caller isn't part of the same function of @node.
+      */
+    if (callerInst->getFunction() == nodeFunction){
+      continue ;
+    }
+
+    /*
+      * Check the instruction isn't an invoke.
+      */
+    if (isa<InvokeInst>(callerInst)){
+
+      /*
+        * We cannot inline invoke instructions to preserve the exception handling mechanisms.
+        */
+      continue ;
+    }
+
+    /*
+      * We can inline @nodeFunction without increasing the size of the binary.
+      *
+      * Check if we need to translate an indirect call to a direct call.
+      */
+    auto callInst = cast<CallInst>(callerInst);
+    if (callInst->getCalledFunction() == nullptr){
+
+      /*
+        * This is an indirect call.
+        * Translate it to a direct call.
+        */
+      //TODO
+      continue ;
+    }
+    assert(callInst->getCalledFunction() == nodeFunction);
+    InlineFunctionInfo IFI;
+    errs() << "DeadFunctionEliminator: Inline " << *callInst << " into " << callInst->getFunction()->getName() << "\n";
+    //modified |= InlineFunction(callInst, IFI);
+  }
+  if (modified) {
+    return true;
   }
 
-  bool DeadFunctionEliminator::runOnModule (Module &M) {
-    auto modified = false;
+  /*
+    * Fetch the islands.
+    */
+  auto islands = pcg->getIslands();
 
-    /*
-     * Fetch the outputs of the passes we rely on.
-     */
-    auto& noelle = getAnalysis<Noelle>();
+  /*
+    * Fetch the island of the entry method of the program.
+    */
+  auto entryF = noelle.getEntryFunction();
+  auto entryIsland = islands[entryF];
+  std::unordered_set<CallGraph *> liveIslands{entryIsland};
 
-    /*
-     * Fetch the call graph.
-     */
-    auto pcg = noelle.getProgramCallGraph();
-
-    /*
-     * Check if there are functions with only one caller.
-     * Inline them.
-     */
-    for (auto node : pcg->getFunctionNodes()){
+  /*
+    * Fetch the islands of all constructors.
+    */
+  auto globalCtor = M.getGlobalVariable("llvm.global_ctors");
+  if (globalCtor != nullptr){
+    auto init = globalCtor->getInitializer();
+    assert(init != nullptr);
+    auto initVector = cast<ConstantArray>(init);
+    assert(initVector != nullptr);
+    for (auto &V : initVector->operands()){
 
       /*
-       * Fetch the node.
-       */
-      auto nodeFunction = node->getFunction();
-
-      /*
-       * Check the function has a body.
-       */
-      if (nodeFunction->empty()){
+        * Fetch the next constructor.
+        */
+      if (isa<ConstantAggregateZero>(V)){
+        continue;
+      }
+      auto CS = cast<ConstantStruct>(V);
+      if (isa<ConstantPointerNull>(CS->getOperand(1))){
+        continue;
+      }
+      auto maybeFunction = CS->getOperand(1);
+      if (!isa<Function>(maybeFunction)){
         continue ;
       }
+      auto function = cast<Function>(maybeFunction);
+      errs() << "DeadFunctionEliminator:  Considering ctor " << function->getName() << " as entry function\n";
 
       /*
-       * Check how many other functions can invoke @nodeFunction
-       */
-      auto callerNodes = node->getIncomingEdges();
-      if (callerNodes.size() != 1){
-        continue ;
-      }
-
-      /*
-       * We found a function that has only one other function that can invoke it.
-       *
-       * Check how many callers this function includes.
-       */
-      auto callingEdge = *callerNodes.begin();
-      auto callerEdges = callingEdge->getSubEdges();
-      if (callerEdges.size() != 1) {
-        continue ;
-      }
-
-      /*
-       * @node has only one caller.
-       *
-       * Fetch the caller.
-       */
-      auto callerEdge = *callerEdges.begin();
-      auto callerNode = callerEdge->getCaller();
-      auto callerInst = callerNode->getInstruction();
-
-      /*
-       * Check the single caller isn't part of the same function of @node.
-       */
-      if (callerInst->getFunction() == nodeFunction){
-        continue ;
-      }
-
-      /*
-       * Check the instruction isn't an invoke.
-       */
-      if (isa<InvokeInst>(callerInst)){
-
-        /*
-         * We cannot inline invoke instructions to preserve the exception handling mechanisms.
-         */
-        continue ;
-      }
-
-      /*
-       * We can inline @nodeFunction without increasing the size of the binary.
-       *
-       * Check if we need to translate an indirect call to a direct call.
-       */
-      auto callInst = cast<CallInst>(callerInst);
-      if (callInst->getCalledFunction() == nullptr){
-
-        /*
-         * This is an indirect call.
-         * Translate it to a direct call.
-         */
-        //TODO
-        continue ;
-      }
-      assert(callInst->getCalledFunction() == nodeFunction);
-      InlineFunctionInfo IFI;
-      errs() << "DeadFunctionEliminator: Inline " << *callInst << " into " << callInst->getFunction()->getName() << "\n";
-      //modified |= InlineFunction(callInst, IFI);
+        * Fetch the island.
+        */
+      auto ctorIsland = islands[function];
+      assert(ctorIsland != nullptr);
+      liveIslands.insert(ctorIsland);
     }
-    if (modified) {
-      return true;
-    }
-
-    /*
-     * Fetch the islands.
-     */
-    auto islands = pcg->getIslands();
-
-    /*
-     * Fetch the island of the entry method of the program.
-     */
-    auto entryF = noelle.getEntryFunction();
-    auto entryIsland = islands[entryF];
-    std::unordered_set<CallGraph *> liveIslands{entryIsland};
-
-    /*
-     * Fetch the islands of all constructors.
-     */
-    auto globalCtor = M.getGlobalVariable("llvm.global_ctors");
-    if (globalCtor != nullptr){
-      auto init = globalCtor->getInitializer();
-      assert(init != nullptr);
-      auto initVector = cast<ConstantArray>(init);
-      assert(initVector != nullptr);
-      for (auto &V : initVector->operands()){
-
-        /*
-         * Fetch the next constructor.
-         */
-        if (isa<ConstantAggregateZero>(V)){
-          continue;
-        }
-        auto CS = cast<ConstantStruct>(V);
-        if (isa<ConstantPointerNull>(CS->getOperand(1))){
-          continue;
-        }
-        auto maybeFunction = CS->getOperand(1);
-        if (!isa<Function>(maybeFunction)){
-          continue ;
-        }
-        auto function = cast<Function>(maybeFunction);
-        errs() << "DeadFunctionEliminator:  Considering ctor " << function->getName() << " as entry function\n";
-
-        /*
-         * Fetch the island.
-         */
-        auto ctorIsland = islands[function];
-        assert(ctorIsland != nullptr);
-        liveIslands.insert(ctorIsland);
-      }
-    }
-
-    /*
-     * Delete dead functions.
-     */
-    std::vector<Function *>toDelete;
-    for (auto &F : M){
-      if (F.isIntrinsic()){
-        continue ;
-      }
-      if (F.empty()){
-        continue ;
-      }
-      auto n = pcg->getFunctionNode(&F);
-      if (liveIslands.find(islands[&F]) == liveIslands.end()){
-        errs() << "DeadFunctionEliminator: Function " << F.getName() << " is dead\n";
-        toDelete.push_back(&F);
-      }
-    }
-    for (auto f : toDelete){
-      f->eraseFromParent();
-      modified = true;
-    }
-
-    return modified;
   }
 
+  /*
+    * Delete dead functions.
+    */
+  std::vector<Function *>toDelete;
+  for (auto &F : M){
+    if (F.isIntrinsic()){
+      continue ;
+    }
+    if (F.empty()){
+      continue ;
+    }
+    auto n = pcg->getFunctionNode(&F);
+    if (liveIslands.find(islands[&F]) == liveIslands.end()){
+      errs() << "DeadFunctionEliminator: Function " << F.getName() << " is dead\n";
+      toDelete.push_back(&F);
+    }
+  }
+  for (auto f : toDelete){
+    f->eraseFromParent();
+    modified = true;
+  }
+
+  return modified;
 }

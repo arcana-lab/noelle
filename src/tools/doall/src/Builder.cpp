@@ -11,6 +11,9 @@
 #include "DOALL.hpp"
 #include "DOALLTask.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 void DOALL::rewireLoopToIterateChunks (
   LoopDependenceInfo *LDI
   ){
