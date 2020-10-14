@@ -41,7 +41,7 @@ DSWP::DSWP (
    * Define its signature.
    */
   auto taskArgType = taskExecuter->arg_begin()->getType();
-  this->taskType = cast<FunctionType>(cast<PointerType>(taskArgType)->getElementType());
+  this->taskSignature = cast<FunctionType>(cast<PointerType>(taskArgType)->getElementType());
 
   return ;
 }

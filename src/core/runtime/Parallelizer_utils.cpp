@@ -235,8 +235,7 @@ extern "C" {
       /*
        * Submit
        */
-      //localFutures.push_back(pool.submit(NOELLE_DOALLTrampoline, argsPerCore));
-      localFutures.push_back(pool.submit(parallelizedLoop, env, i, numCores, chunkSize));
+      localFutures.push_back(pool.submit(NOELLE_DOALLTrampoline, argsPerCore));
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted DOALL task on core " << i << std::endl;
       #endif
@@ -466,18 +465,7 @@ extern "C" {
       /*
        * Launch the thread.
        */
-      //localFutures.push_back(pool.submitToCores(cores, NOELLE_HELIXTrampoline, argsPerCore));
-      localFutures.push_back(pool.submitToCores(
-        cores,
-        argsPerCore->parallelizedLoop,
-        argsPerCore->env, 
-        argsPerCore->loopCarriedArray,
-        argsPerCore->ssArrayPast, 
-        argsPerCore->ssArrayFuture,
-        argsPerCore->coreID, 
-        argsPerCore->numCores,
-        argsPerCore->loopIsOverFlag
-      ));
+      localFutures.push_back(pool.submitToCores(cores, NOELLE_HELIXTrampoline, argsPerCore));
 
       /*
        * Launch the helper thread.
