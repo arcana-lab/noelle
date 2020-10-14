@@ -12,7 +12,7 @@
 
 #include "SystemHeaders.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class AccumulatorOpInfo {
     public:

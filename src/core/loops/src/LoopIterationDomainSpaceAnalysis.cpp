@@ -11,6 +11,7 @@
 #include "LoopIterationDomainSpaceAnalysis.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 LoopIterationDomainSpaceAnalysis::LoopIterationDomainSpaceAnalysis (
   LoopsSummary &loops,
