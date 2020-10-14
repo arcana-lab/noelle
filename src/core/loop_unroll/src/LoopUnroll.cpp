@@ -13,6 +13,7 @@
 #include "llvm/Transforms/Utils/UnrollLoop.h"
 
 using namespace llvm;
+using namespace llvm::noelle;
  
 bool LoopUnroll::fullyUnrollLoop (
   LoopDependenceInfo const &LDI,
