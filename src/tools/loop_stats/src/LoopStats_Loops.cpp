@@ -11,6 +11,7 @@
 #include "LoopStats.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void LoopStats::collectStatsForLoop (Hot *profiles, int id, ScalarEvolution &SE, PDG *loopDG, Loop &llvmLoop) {
   auto statsForLoop = new Stats();

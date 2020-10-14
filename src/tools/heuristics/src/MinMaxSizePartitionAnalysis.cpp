@@ -10,6 +10,9 @@
  */
 #include "MinMaxSizePartitionAnalysis.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 void MinMaxSizePartitionAnalysis::checkIfShouldMerge (SCCSet *sA, SCCSet *sB) {
 
   /*
