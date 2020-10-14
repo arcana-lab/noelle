@@ -13,7 +13,7 @@
 #include "PDG.hpp"
 #include "LoopsSummary.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class InvariantManager {
     public:

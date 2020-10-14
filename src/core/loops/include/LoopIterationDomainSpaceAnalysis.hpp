@@ -19,7 +19,7 @@
 #include "LoopGoverningIVAttribution.hpp"
 #include "IVStepperUtility.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class LoopIterationDomainSpaceAnalysis {
     public:

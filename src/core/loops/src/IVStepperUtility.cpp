@@ -11,6 +11,7 @@
 #include "IVStepperUtility.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 PHINode *IVUtility::createChunkPHI (BasicBlock *preheaderB, BasicBlock *headerB, Type *chunkPHIType, Value *chunkSize) {
 

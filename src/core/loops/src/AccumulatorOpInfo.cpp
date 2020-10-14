@@ -11,6 +11,7 @@
 #include "AccumulatorOpInfo.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 AccumulatorOpInfo::AccumulatorOpInfo () {
   this->sideEffectFreeOps = {
