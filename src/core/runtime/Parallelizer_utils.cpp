@@ -465,18 +465,7 @@ extern "C" {
       /*
        * Launch the thread.
        */
-      //localFutures.push_back(pool.submitToCores(cores, NOELLE_HELIXTrampoline, argsPerCore));
-      localFutures.push_back(pool.submitToCores(
-        cores,
-        argsPerCore->parallelizedLoop,
-        argsPerCore->env, 
-        argsPerCore->loopCarriedArray,
-        argsPerCore->ssArrayPast, 
-        argsPerCore->ssArrayFuture,
-        argsPerCore->coreID, 
-        argsPerCore->numCores,
-        argsPerCore->loopIsOverFlag
-      ));
+      localFutures.push_back(pool.submitToCores(cores, NOELLE_HELIXTrampoline, argsPerCore));
 
       /*
        * Launch the helper thread.
