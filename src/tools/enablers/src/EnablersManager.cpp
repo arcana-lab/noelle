@@ -13,92 +13,92 @@
 #include "LoopDistribution.hpp"
 #include "LoopUnroll.hpp"
 
-namespace llvm::noelle {
+using namespace llvm;
+using namespace llvm::noelle;
 
-  EnablersManager::EnablersManager()
-    :
-    ModulePass{ID}
-    {
+EnablersManager::EnablersManager()
+  :
+  ModulePass{ID}
+  {
 
-    return ;
+  return ;
+}
+
+bool EnablersManager::runOnModule (Module &M) {
+
+  /*
+  * Check if enablers have been enabled.
+  */
+  if (!this->enableEnablers){
+    return false;
   }
+  errs() << "EnablersManager: Start\n";
 
-  bool EnablersManager::runOnModule (Module &M) {
+  /*
+  * Fetch the outputs of the passes we rely on.
+  */
+  auto& noelle = getAnalysis<Noelle>();
 
-    /*
-    * Check if enablers have been enabled.
-    */
-    if (!this->enableEnablers){
-      return false;
-    }
-    errs() << "EnablersManager: Start\n";
+  /*
+  * Create the enablers.
+  */
+  auto loopDist = LoopDistribution();
+  auto loopUnroll = LoopUnroll();
+  auto loopWhilify = LoopWhilifier(noelle);
+  auto loopInvariantCodeMotion = LoopInvariantCodeMotion(noelle);
+  auto scevSimplification = SCEVSimplification(noelle);
 
-    /*
-    * Fetch the outputs of the passes we rely on.
-    */
-    auto& noelle = getAnalysis<Noelle>();
+  /*
+  * Fetch all the loops we want to parallelize.
+  */
+  auto loopsToParallelize = noelle.getLoopStructures();
+  errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
 
-    /*
-    * Create the enablers.
-    */
-    auto loopDist = LoopDistribution();
-    auto loopUnroll = LoopUnroll();
-    auto loopWhilify = LoopWhilifier(noelle);
-    auto loopInvariantCodeMotion = LoopInvariantCodeMotion(noelle);
-    auto scevSimplification = SCEVSimplification(noelle);
-
-    /*
-    * Fetch all the loops we want to parallelize.
-    */
-    auto loopsToParallelize = noelle.getLoopStructures();
-    errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
+  /*
+  * Parallelize the loops selected.
+  */
+  auto modified = false;
+  std::unordered_map<Function *, bool> modifiedFunctions;
+  for (auto loopStructure : *loopsToParallelize){
 
     /*
-    * Parallelize the loops selected.
+    * Fetch the function that contains the current loop.
     */
-    auto modified = false;
-    std::unordered_map<Function *, bool> modifiedFunctions;
-    for (auto loopStructure : *loopsToParallelize){
+    auto f = loopStructure->getFunction();
 
-      /*
-      * Fetch the function that contains the current loop.
-      */
-      auto f = loopStructure->getFunction();
-
-      /*
-      * Check if we have already modified the function.
-      */
-      if (modifiedFunctions[f]){
-        errs() << "EnablersManager:   The current loop belongs to the function " << f->getName() << " , which has already been modified.\n" ;
-        continue ;
-      }
-
-      /*
-      * Compute loop dependence info
-      */
-      auto loop = noelle.getLoop(loopStructure);
-
-      /*
-      * Improve the current loop.
-      */
-      modifiedFunctions[f] |= this->applyEnablers(
-        loop,
-        noelle,
-        loopDist,
-        loopUnroll,
-        loopWhilify,
-        loopInvariantCodeMotion,
-        scevSimplification
-      );
-      modified |= modifiedFunctions[f];
+    /*
+    * Check if we have already modified the function.
+    */
+    if (modifiedFunctions[f]){
+      errs() << "EnablersManager:   The current loop belongs to the function " << f->getName() << " , which has already been modified.\n" ;
+      continue ;
     }
 
     /*
-    * Free the memory.
+    * Compute loop dependence info
     */
-    delete loopsToParallelize;
+    auto loop = noelle.getLoop(loopStructure);
 
-    errs() << "EnablersManager: Exit\n";
-    return modified;
+    /*
+    * Improve the current loop.
+    */
+    modifiedFunctions[f] |= this->applyEnablers(
+      loop,
+      noelle,
+      loopDist,
+      loopUnroll,
+      loopWhilify,
+      loopInvariantCodeMotion,
+      scevSimplification
+    );
+    modified |= modifiedFunctions[f];
   }
+
+  /*
+  * Free the memory.
+  */
+  delete loopsToParallelize;
+
+  errs() << "EnablersManager: Exit\n";
+  return modified;
 }

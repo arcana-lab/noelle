@@ -11,32 +11,29 @@
 #include "DSWPTask.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
-namespace llvm::noelle {
+DSWPTask::DSWPTask (
+  uint32_t ID,
+  FunctionType *taskSignature,
+  Module &M
+  )
+  : Task{ID, taskSignature, M},
+    stageSCCs{},
+    clonableSCCs{}
+  {
 
-  DSWPTask::DSWPTask (
-    uint32_t ID,
-    FunctionType *taskSignature,
-    Module &M
-    )
-    : Task{ID, taskSignature, M},
-      stageSCCs{},
-      clonableSCCs{}
-    {
+  return ;
+}
+      
+void DSWPTask::extractFuncArgs (void) {
+  auto argIter = this->F->arg_begin();
+  this->envArg = (Value *) &*(argIter++);
+  this->queueArg = (Value *) &*(argIter++);
+  instanceIndexV = ConstantInt::get(
+    IntegerType::get(F->getContext(), 64),
+    this->getID()
+  );
 
-    return ;
-  }
-        
-  void DSWPTask::extractFuncArgs (void) {
-    auto argIter = this->F->arg_begin();
-    this->envArg = (Value *) &*(argIter++);
-    this->queueArg = (Value *) &*(argIter++);
-    instanceIndexV = ConstantInt::get(
-      IntegerType::get(F->getContext(), 64),
-      this->getID()
-    );
-
-    return ;
-  }
-
+  return ;
 }

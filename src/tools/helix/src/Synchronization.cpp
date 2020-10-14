@@ -12,7 +12,8 @@
 #include "HELIXTask.hpp"
 #include "Architecture.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 void HELIX::addSynchronizations (
   LoopDependenceInfo *LDI,

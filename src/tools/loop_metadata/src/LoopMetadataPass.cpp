@@ -12,6 +12,7 @@
 #include "LoopMetadataPass.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 LoopMetadataPass::LoopMetadataPass()
   :
