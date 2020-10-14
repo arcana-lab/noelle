@@ -46,6 +46,7 @@ LoopCarriedDependencies::LoopCarriedDependencies (
       auto loop = getLoopOfLCD(LIS, DS, edge);
       if (!loop) continue;
       loopCarriedDependenciesMap[loop].insert(edge);
+      edge->setLoopCarried(true);
     }
   }
 }
