@@ -11,7 +11,7 @@
 #include "MemoryCloningAnalysis.hpp"
 
 using namespace llvm;
-using namespace noelle;
+using namespace llvm::noelle;
 
 MemoryCloningAnalysis::MemoryCloningAnalysis (LoopStructure *loop, DominatorSummary &DS) {
 

@@ -22,7 +22,7 @@
 #include "ScalarEvolutionReferencer.hpp"
 #include "Invariants.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class InductionVariable;
   class LoopGoverningIVAttribution;

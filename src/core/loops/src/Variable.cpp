@@ -11,6 +11,7 @@
 #include "Variable.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 bool LoopCarriedCycle::isEvolutionReducibleAcrossLoopIterations (void) const {
   return false;
