@@ -11,6 +11,7 @@
 #include "Architecture.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 Architecture::Architecture (){
   return ;
