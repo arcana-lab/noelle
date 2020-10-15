@@ -235,8 +235,7 @@ extern "C" {
       /*
        * Submit
        */
-      //localFutures.push_back(pool.submit(NOELLE_DOALLTrampoline, argsPerCore));
-      localFutures.push_back(pool.submit(parallelizedLoop, env, i, numCores, chunkSize));
+      localFutures.push_back(pool.submit(NOELLE_DOALLTrampoline, argsPerCore));
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted DOALL task on core " << i << std::endl;
       #endif
@@ -273,6 +272,40 @@ extern "C" {
   /**********************************************************************
    *                HELIX
    **********************************************************************/
+  typedef struct {
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *);
+    void *env ;
+    void *loopCarriedArray;
+    void *ssArrayPast;
+    void *ssArrayFuture;
+    uint64_t coreID;
+    uint64_t numCores;
+    uint64_t *loopIsOverFlag;
+  } NOELLE_HELIX_args_t ;
+
+  void NOELLE_HELIXTrampoline (void *args){
+
+    /*
+     * Fetch the arguments.
+     */
+    auto HELIX_args = (NOELLE_HELIX_args_t *) args;
+
+    /*
+     * Invoke
+     */
+    HELIX_args->parallelizedLoop(
+      HELIX_args->env, 
+      HELIX_args->loopCarriedArray, 
+      HELIX_args->ssArrayPast, 
+      HELIX_args->ssArrayFuture, 
+      HELIX_args->coreID,
+      HELIX_args->numCores,
+      HELIX_args->loopIsOverFlag
+      );
+
+    return ;
+  }
+
   void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
 
     while ((*theLoopIsOver) == 0){
@@ -376,6 +409,12 @@ extern "C" {
     #endif
 
     /*
+     * Allocate the arguments for the cores.
+     */
+    NOELLE_HELIX_args_t *argsForAllCores;
+    posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(NOELLE_HELIX_args_t) * numCores);
+
+    /*
      * Launch threads
      */
     uint64_t loopIsOverFlag = 0;
@@ -403,6 +442,19 @@ extern "C" {
       #endif
 
       /*
+       * Prepare the arguments.
+       */
+      auto argsPerCore = &argsForAllCores[i];
+      argsPerCore->parallelizedLoop = parallelizedLoop;
+      argsPerCore->env = env;
+      argsPerCore->loopCarriedArray = loopCarriedArray;
+      argsPerCore->ssArrayPast = ssArrayPast;
+      argsPerCore->ssArrayFuture = ssArrayFuture;
+      argsPerCore->coreID = i;
+      argsPerCore->numCores = numCores;
+      argsPerCore->loopIsOverFlag = &loopIsOverFlag;
+
+      /*
        * Set the affinity for both the thread and its helper.
        */
       CPU_ZERO(&cores);
@@ -413,14 +465,7 @@ extern "C" {
       /*
        * Launch the thread.
        */
-      localFutures.push_back(pool.submitToCores(
-        cores,
-        parallelizedLoop,
-        env, loopCarriedArray,
-        ssArrayPast, ssArrayFuture,
-        i, numCores,
-        &loopIsOverFlag
-      ));
+      localFutures.push_back(pool.submitToCores(cores, NOELLE_HELIXTrampoline, argsPerCore));
 
       /*
        * Launch the helper thread.

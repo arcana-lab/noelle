@@ -31,7 +31,7 @@ namespace llvm::noelle {
 
 
   /*
-   * Scheduler = per Noelle object
+   * Scheduler abstraction
    */ 
   class Scheduler {
 
