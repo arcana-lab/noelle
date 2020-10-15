@@ -26,7 +26,6 @@ LoopCarriedDependencies::LoopCarriedDependencies (
     auto loop = getLoopOfLCD(LIS, DS, edge);
     if (!loop) continue;
     loopCarriedDependenciesMap[loop].insert(edge);
-    edge->setLoopCarried(true);
   }
 }
 
@@ -46,6 +45,35 @@ LoopCarriedDependencies::LoopCarriedDependencies (
       auto loop = getLoopOfLCD(LIS, DS, edge);
       if (!loop) continue;
       loopCarriedDependenciesMap[loop].insert(edge);
+    }   
+  }
+}
+
+void LoopCarriedDependencies::setLoopCarriedDependencies (
+  const LoopsSummary &LIS,
+  const DominatorSummary &DS,
+  PDG &dgForLoops
+) {
+
+  for (auto edge : dgForLoops.getEdges()) {
+    auto loop = getLoopOfLCD(LIS, DS, edge);
+    if (!loop) continue;
+    edge->setLoopCarried(true);
+  }
+}
+
+void LoopCarriedDependencies::setLoopCarriedDependencies (
+  const LoopsSummary &LIS,
+  const DominatorSummary &DS,
+  SCCDAG &sccdagForLoops
+) {
+
+  for (auto sccNode : sccdagForLoops.getNodes()) {
+    auto scc = sccNode->getT();
+    for (auto edge : scc->getEdges()) {
+      auto loop = getLoopOfLCD(LIS, DS, edge);
+      if (!loop) continue;
+      edge->setLoopCarried(true);
     }
   }
 }
@@ -87,6 +115,16 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
   return nullptr ;
 }
 
+std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (PDG &LoopDG) const {
+  std::set<DGEdge<Value> *> LCEdges;
+  for (auto edge : LoopDG.getEdges()) {
+    if (edge->isLoopCarriedDependence()) {
+      LCEdges.insert(edge);
+    }
+  }
+  return LCEdges;
+}
+
 Criticisms LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const {
   assert(loopCarriedDependenciesMap.find(&LS) != loopCarriedDependenciesMap.end());
   return loopCarriedDependenciesMap.at(&LS);
@@ -96,7 +134,7 @@ bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther (
   const LoopStructure &LS,
   BasicBlock *I,
   BasicBlock *J
-) const {
+) {
 
   assert(LS.isIncluded(I) && LS.isIncluded(J));
 
