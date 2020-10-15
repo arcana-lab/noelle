@@ -33,11 +33,12 @@ all: baseline testseq $(OPTIMIZED)
 
 %.bc: %.c
 	$(CC) $(INCLUDES) $(FRONTEND_FLAGS) -c $< -o $@
-	llvm-dis $@
+
+%.ll: %.bc
+	llvm-dis $^
 
 %.bc: %.cpp
 	$(CPP) $(INCLUDES) $(FRONTEND_FLAGS) -std=c++14 -c $< -o $@
-	llvm-dis $@
 
 baseline: baseline.bc
 	$(CPP) $(OPT_LEVEL) $^ -o $@
