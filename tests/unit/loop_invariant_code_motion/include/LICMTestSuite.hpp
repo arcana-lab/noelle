@@ -31,7 +31,7 @@
 
 using namespace parallelizertests;
 
-namespace llvm {
+namespace llvm::noelle {
 
   class LICMTestSuite : public ModulePass {
     public:

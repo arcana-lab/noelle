@@ -34,7 +34,7 @@
 
 using namespace parallelizertests;
 
-namespace llvm {
+namespace llvm::noelle {
 
   class LoopDomainSpaceTestSuite : public ModulePass {
     public:

@@ -10,7 +10,7 @@
  */
 #include "CFETestSuite.hpp"
 
-using namespace llvm;
+namespace llvm::noelle {
 
 // Register pass to "opt"
 char CFETestSuite::ID = 0;
@@ -111,4 +111,6 @@ Values CFETestSuite::hasCorrectCFESets (ModulePass &pass, TestSuite &suite) {
     eqSets.insert(eqSetStr.substr(0, eqSetStr.length() - 1));
   }
   return eqSets;
+}
+
 }
