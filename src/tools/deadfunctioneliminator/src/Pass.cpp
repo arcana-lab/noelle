@@ -10,28 +10,28 @@
  */
 #include "DeadFunctionEliminator.hpp" 
 
-namespace llvm::noelle {
+using namespace llvm;
+using namespace llvm::noelle;
 
-  bool DeadFunctionEliminator::doInitialization (Module &M) {
-    return false; 
-  }
-
-  void DeadFunctionEliminator::getAnalysisUsage (AnalysisUsage &AU) const {
-    AU.addRequired<Noelle>();
-    return ;
-  }
-
-  // Next there is code to register your pass to "opt"
-  char DeadFunctionEliminator::ID = 0;
-  static RegisterPass<DeadFunctionEliminator> X("noelle-dfe", "Dead function eliminator");
-
-  // Next there is code to register your pass to "clang"
-  static DeadFunctionEliminator * _PassMaker = NULL;
-  static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-      [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-          if(!_PassMaker){ PM.add(_PassMaker = new DeadFunctionEliminator());}}); // ** for -Ox
-  static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-      [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-          if(!_PassMaker){ PM.add(_PassMaker = new DeadFunctionEliminator());}});// ** for -O0
-
+bool DeadFunctionEliminator::doInitialization (Module &M) {
+  return false; 
 }
+
+void DeadFunctionEliminator::getAnalysisUsage (AnalysisUsage &AU) const {
+  AU.addRequired<Noelle>();
+  return ;
+}
+
+// Next there is code to register your pass to "opt"
+char DeadFunctionEliminator::ID = 0;
+static RegisterPass<DeadFunctionEliminator> X("noelle-dfe", "Dead function eliminator");
+
+// Next there is code to register your pass to "clang"
+static DeadFunctionEliminator * _PassMaker = NULL;
+static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
+    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
+        if(!_PassMaker){ PM.add(_PassMaker = new DeadFunctionEliminator());}}); // ** for -Ox
+static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
+    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
+        if(!_PassMaker){ PM.add(_PassMaker = new DeadFunctionEliminator());}});// ** for -O0
+

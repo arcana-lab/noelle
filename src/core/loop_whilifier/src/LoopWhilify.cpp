@@ -11,6 +11,7 @@
 #include "LoopWhilify.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 
 LoopWhilifier::LoopWhilifier(Noelle &noelle)

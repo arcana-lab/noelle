@@ -11,6 +11,7 @@
 #include "LoopCarriedDependencies.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 LoopCarriedDependencies::LoopCarriedDependencies (
   const LoopsSummary &LIS,
@@ -26,6 +27,7 @@ LoopCarriedDependencies::LoopCarriedDependencies (
     auto loop = getLoopOfLCD(LIS, DS, edge);
     if (!loop) continue;
     loopCarriedDependenciesMap[loop].insert(edge);
+    edge->setLoopCarried(true);
   }
 }
 

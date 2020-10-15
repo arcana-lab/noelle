@@ -11,6 +11,9 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 HELIX::HELIX (
   Module &module, 
   Hot &p,
@@ -60,7 +63,7 @@ HELIX::HELIX (
     int64,
     PointerType::getUnqual(int64)
   });
-  this->taskType = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
+  this->taskSignature = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
 
   return ;
 }
@@ -234,7 +237,7 @@ void HELIX::createParallelizableTask (
   /*
    * Generate empty tasks for the HELIX execution.
    */
-  auto helixTask = new HELIXTask(this->taskType, this->module);
+  auto helixTask = new HELIXTask(this->taskSignature, this->module);
   this->generateEmptyTasks(LDI, { helixTask });
   this->numTaskInstances = LDI->getMaximumNumberOfCores();
   assert(helixTask == this->tasks[0]);

@@ -18,7 +18,7 @@
 #include "SCCDAG.hpp"
 #include "SCCDAGPartition.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class SCCDAGNormalizer {
     public:

@@ -12,7 +12,7 @@
 
 #include "Noelle.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
   
   class PDGStats : public ModulePass {
     public:

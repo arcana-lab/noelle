@@ -22,6 +22,7 @@
 #include <fstream>
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 namespace llvm::noelle {
 

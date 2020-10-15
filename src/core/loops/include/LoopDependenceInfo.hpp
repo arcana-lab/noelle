@@ -24,9 +24,9 @@
 #include "EnvBuilder.hpp"
 #include "Transformations.hpp"
 
-#include "MemoryAnalysisModules/LoopAA.h"
+#include "scaf/MemoryAnalysisModules/LoopAA.h"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class LoopDependenceInfo {
     public:

@@ -12,6 +12,7 @@
 #include "LoopGoverningIVAttribution.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 InductionVariable::InductionVariable  (
   LoopStructure *LS,

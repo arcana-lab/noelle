@@ -17,7 +17,7 @@
 
 using namespace llvm;
 
-namespace llvm {
+namespace llvm::noelle {
   struct HotProfiler : public ModulePass {
     public:
       static char ID; 

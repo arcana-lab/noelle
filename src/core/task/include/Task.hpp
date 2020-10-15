@@ -13,8 +13,9 @@
 #include "SystemHeaders.hpp"
 
 using namespace std;
+using namespace llvm;
 
-namespace llvm {
+namespace llvm::noelle {
 
   class Task {
     public:

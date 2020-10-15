@@ -26,7 +26,7 @@
 using namespace std;
 using namespace llvm;
 
-namespace llvm {
+namespace llvm::noelle {
 
   /*
    * HACK: Remove once LoopDependenceInfo doesn't require argument-less SCCDAGAttrs constructor.

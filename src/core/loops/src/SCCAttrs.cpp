@@ -11,6 +11,7 @@
 #include "SCCAttrs.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 SCCAttrs::SCCAttrs (
     SCC *s, 

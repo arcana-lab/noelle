@@ -11,6 +11,7 @@
 #include "DSWP.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
   assert(LDI != nullptr);
@@ -30,7 +31,7 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
     /*
      * Create task (stage), populating its SCCs
      */
-    auto task = new DSWPTask(taskID, this->taskType, this->module);
+    auto task = new DSWPTask(taskID, this->taskSignature, this->module);
     taskID++;
     techniqueTasks.push_back(task);
     for (auto scc : subset->sccs) {

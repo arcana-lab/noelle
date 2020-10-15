@@ -14,6 +14,7 @@
 #include "LoopMetadataPass.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 bool LoopMetadataPass::tagLoops (
   LLVMContext &context,

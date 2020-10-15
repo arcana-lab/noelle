@@ -10,6 +10,9 @@
  */
 #include "LoopStats.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 void LoopStats::collectStatsOnNoelleIVs (Hot *profiles, LoopDependenceInfo &LDI, Stats *statsForLoop) {
   auto loopStructure = LDI.getLoopStructure();
   auto ivManager = LDI.getInductionVariableManager();
