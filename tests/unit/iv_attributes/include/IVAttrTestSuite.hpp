@@ -35,7 +35,7 @@
 
 using namespace parallelizertests;
 
-namespace llvm {
+namespace llvm::noelle {
 
   class IVAttrTestSuite : public ModulePass {
     public:

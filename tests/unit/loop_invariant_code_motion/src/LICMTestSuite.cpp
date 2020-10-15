@@ -10,7 +10,7 @@
  */
 #include "LICMTestSuite.hpp"
 
-using namespace llvm;
+namespace llvm::noelle {
 
 // Register pass to "opt"
 char LICMTestSuite::ID = 0;
@@ -123,4 +123,6 @@ Values LICMTestSuite::loadsAndStoresAreHoistedFromLoop (ModulePass &pass, TestSu
   }
 
   return hoistedValues;
+}
+
 }
