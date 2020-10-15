@@ -59,7 +59,6 @@ namespace llvm {
       /*
        * Isolated clonable SCCs and resulting inherited parents
        */
-      std::set<SCC *> clonableSCCs;
       std::unordered_map<SCC *, std::unordered_set<SCC *>> parentsViaClones;
       std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC> *>> edgesViaClones;
 

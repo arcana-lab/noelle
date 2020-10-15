@@ -16,7 +16,7 @@
 #include "SCCDAGPartition.hpp"
 #include "Hot.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class InvocationLatency {
     public:
