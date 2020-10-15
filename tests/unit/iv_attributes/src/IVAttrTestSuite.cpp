@@ -10,7 +10,7 @@
  */
 #include "IVAttrTestSuite.hpp"
 
-using namespace llvm;
+namespace llvm::noelle {
 
 // Register pass to "opt"
 char IVAttrTestSuite::ID = 0;
@@ -178,4 +178,6 @@ Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass, TestSuite &suite)
   }
 
   return loopGoverningInfos;
+}
+
 }
