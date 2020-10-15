@@ -393,7 +393,7 @@ extern "C" {
       /*
        * Launch the thread.
        */
-      localFutures[i] = nk_virgil_submit_task_to_any_cpu(NOELLE_HELIXTrampoline, argsPerCore);
+      localFutures[i] = nk_virgil_submit_task_to_specific_cpu(NOELLE_HELIXTrampoline, argsPerCore, i);
 
       /*
        * Launch the helper thread.
