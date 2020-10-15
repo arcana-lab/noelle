@@ -16,8 +16,8 @@ RUNTIME_CFLAGS="-DNDEBUG"
 
 # Parallelization options
 # 	- To dump the PDG: -noelle-pdg-dump
-PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -noelle-parallelizer-force
-NOELLE_OPTIONS=-noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
+PARALLELIZATION_OPTIONS=-noelle-parallelizer-force
+NOELLE_OPTIONS=-noelle-verbose=2 -noelle-min-hot=1 -noelle-max-cores=8
 OPT_LEVEL=-O0 -g
 
 # Front-end flags
