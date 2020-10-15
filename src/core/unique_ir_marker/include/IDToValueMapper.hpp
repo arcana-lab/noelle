@@ -4,30 +4,34 @@
 
 #include "UniqueIRMarker.hpp"
 
-class IDToInstructionMapper  : public InstVisitor<IDToInstructionMapper> {
- public:
-  explicit IDToInstructionMapper(Module &);
+namespace llvm::noelle {
 
-  std::unique_ptr<std::map<IDType, Instruction *>> idToValueMap(std::set<IDType> &);
+  class IDToInstructionMapper  : public InstVisitor<IDToInstructionMapper> {
+  public:
+    explicit IDToInstructionMapper(Module &);
 
-  void visitInstruction(Instruction &I);
+    std::unique_ptr<std::map<IDType, Instruction *>> idToValueMap(std::set<IDType> &);
 
- private:
-  std::set<IDType> *relevantIDs;
-  std::map<IDType, Instruction *> *mapping;
-  Module &Mod;
-};
+    void visitInstruction(Instruction &I);
 
-class IDToFunctionMapper : public InstVisitor<IDToFunctionMapper> {
- public:
-  explicit IDToFunctionMapper(Module &);
+  private:
+    std::set<IDType> *relevantIDs;
+    std::map<IDType, Instruction *> *mapping;
+    Module &Mod;
+  };
 
-  std::unique_ptr<std::map<IDType, Function *>> idToValueMap(std::set<IDType> &);
+  class IDToFunctionMapper : public InstVisitor<IDToFunctionMapper> {
+  public:
+    explicit IDToFunctionMapper(Module &);
 
-  void visitFunction(Function &I);
+    std::unique_ptr<std::map<IDType, Function *>> idToValueMap(std::set<IDType> &);
 
- private:
-  std::set<IDType> *relevantIDs;
-  std::map<IDType, Function *> *mapping;
-  Module &Mod;
-};
+    void visitFunction(Function &I);
+
+  private:
+    std::set<IDType> *relevantIDs;
+    std::map<IDType, Function *> *mapping;
+    Module &Mod;
+  };
+
+}

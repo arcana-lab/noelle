@@ -98,6 +98,12 @@ test_correctness: input.txt baseline $(OPTIMIZED)
 	./baseline `cat input.txt` &> output_baseline.txt ;
 	./parallelized `cat input.txt` &> output_parallelized.txt ;
 	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
+	./parallelized `cat input.txt` &> output_parallelized.txt ;
+	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
+	./parallelized `cat input.txt` &> output_parallelized.txt ;
+	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
+	./parallelized `cat input.txt` &> output_parallelized.txt ;
+	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
 	echo "Success"
 
 clean:

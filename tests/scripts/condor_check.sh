@@ -162,8 +162,15 @@ else
       if test $? -eq 0 ; then
         echo -e "  Next are the performance tests that run ${RED}slower${NC}:" ;
         grep -i "Performance degradation" $tempOutput ;
+
       else 
         echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
+        awk '{
+              if ($2 > ($4 * 1.1)){
+              printf("  Performance increase for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
+            }
+          }' $tempCompare > $tempOutput ;
+        cat $tempOutput ;
       fi
 
       # Remove the files

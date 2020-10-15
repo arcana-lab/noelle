@@ -30,7 +30,7 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
     /*
      * Create task (stage), populating its SCCs
      */
-    auto task = new DSWPTask(taskID, this->taskType, this->module);
+    auto task = new DSWPTask(taskID, this->taskSignature, this->module);
     taskID++;
     techniqueTasks.push_back(task);
     for (auto scc : subset->sccs) {
