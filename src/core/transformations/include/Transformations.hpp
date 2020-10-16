@@ -10,7 +10,7 @@
  */
 #pragma once
 
-namespace llvm {
+namespace llvm::noelle {
 
   /*
    * Transformations included in NOELLE
