@@ -115,13 +115,15 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
   return nullptr ;
 }
 
-std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (PDG &LoopDG) const {
+std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (PDG &LoopDG) {
+
   std::set<DGEdge<Value> *> LCEdges;
   for (auto edge : LoopDG.getEdges()) {
     if (edge->isLoopCarriedDependence()) {
       LCEdges.insert(edge);
     }
   }
+
   return LCEdges;
 }
 
