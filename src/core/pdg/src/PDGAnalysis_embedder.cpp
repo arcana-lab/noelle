@@ -17,6 +17,7 @@
 #include "PDGAnalysis.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
   errs() << "Embed PDG as Metadata\n";

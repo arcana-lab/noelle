@@ -17,6 +17,7 @@
 #include "PDGAnalysis.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 PDGAnalysis::PDGAnalysis()
   : ModulePass{ID}

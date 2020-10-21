@@ -14,6 +14,7 @@
 #include "PDGAnalysis.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 bool PDGAnalysis::comparePDGs(PDG *pdg1, PDG *pdg2) {
   return compareNodes(pdg1, pdg2) && compareEdges(pdg1, pdg2);

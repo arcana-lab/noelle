@@ -10,7 +10,8 @@
  */
 #include "SubCFGs.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 SubCFGs::SubCFGs (Module &M) {
   for (auto &F : M) {

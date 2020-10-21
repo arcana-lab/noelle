@@ -23,8 +23,9 @@
 #include "CallGraph.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
-namespace llvm {
+namespace llvm::noelle {
   enum class PDGVerbosity { Disabled, Minimal, Maximal, MaximalAndPDG };
 
   class PDGAnalysis : public ModulePass {
