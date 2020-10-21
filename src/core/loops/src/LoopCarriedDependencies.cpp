@@ -10,7 +10,6 @@
  */
 #include "LoopCarriedDependencies.hpp"
 
-using namespace llvm;
 using namespace llvm::noelle;
 
 LoopCarriedDependencies::LoopCarriedDependencies (
