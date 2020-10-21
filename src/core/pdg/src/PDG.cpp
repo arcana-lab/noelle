@@ -39,7 +39,7 @@ PDG::PDG (Module &M)
    */
   auto mainF = M.getFunction("main");
   assert(mainF != nullptr);
-  setEntryPointAt(*mainF);
+  this->setEntryPointAt(*mainF);
 
   return ;
 }
@@ -242,7 +242,7 @@ bool PDG::iterateOverDependencesFrom (
     /*
      * Check if this is a control dependence.
      */
-    if (  true
+    if (   true
         && includeControlDependences
         && edge->isControlDependence()
       ){
@@ -255,7 +255,7 @@ bool PDG::iterateOverDependencesFrom (
     /*
      * Check if this is a memory dependence.
      */
-    if (  true
+    if (   true
         && includeMemoryDataDependences
         && edge->isMemoryDependence()
       ){
@@ -270,8 +270,15 @@ bool PDG::iterateOverDependencesFrom (
      */
     if (  true
         && includeRegisterDataDependences
-        && (!edge->isMemoryDependence() && !edge->isControlDependence())
+        && (!edge->isMemoryDependence())
+        && (!edge->isControlDependence())
       ){
+      #ifdef DEBUG
+      if (edge->dataDependenceType() == DG_DATA_NONE){
+        auto sourceValue = edge->getOutgoingT();
+        assert(isa<Argument>(sourceValue));
+      }
+      #endif
       if (functionToInvokePerDependence(destValue, edge)){
         return true;
       }
@@ -312,7 +319,7 @@ bool PDG::iterateOverDependencesTo (
     /*
      * Check if this is a control dependence.
      */
-    if (  true
+    if (   true
         && includeControlDependences
         && edge->isControlDependence()
       ){
@@ -325,7 +332,7 @@ bool PDG::iterateOverDependencesTo (
     /*
      * Check if this is a memory dependence.
      */
-    if (  true
+    if (   true
         && includeMemoryDataDependences
         && edge->isMemoryDependence()
       ){
@@ -338,10 +345,17 @@ bool PDG::iterateOverDependencesTo (
     /*
      * Check if this is a register dependence.
      */
-    if (  true
+    if (   true
         && includeRegisterDataDependences
-        && (!edge->isMemoryDependence() && !edge->isControlDependence())
+        && (!edge->isMemoryDependence())
+        && (!edge->isControlDependence())
       ){
+      #ifdef DEBUG
+      if (edge->dataDependenceType() == DG_DATA_NONE){
+        auto sourceValue = edge->getOutgoingT();
+        assert(isa<Argument>(sourceValue));
+      }
+      #endif
       if (functionToInvokePerDependence(srcValue, edge)){
         return true;
       }
