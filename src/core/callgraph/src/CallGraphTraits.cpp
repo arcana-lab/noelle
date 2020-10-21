@@ -11,7 +11,7 @@
 #include "CallGraphTraits.hpp"
 
 using namespace llvm;
-using namespace noelle;
+using namespace llvm::noelle;
 
 CallGraphWrapper::CallGraphWrapper (CallGraph *graph)
   : wrappedGraph{graph}, entryNode{nullptr} {
