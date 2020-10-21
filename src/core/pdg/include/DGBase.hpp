@@ -303,6 +303,8 @@ namespace llvm::noelle {
       setControl(ctrl);
       setLoopCarried(lc);
       setRemovable(rm);
+
+      return ;
     }
 
     void addSubEdge(DGEdge<SubT> *edge) {
