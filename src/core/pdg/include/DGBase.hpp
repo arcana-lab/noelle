@@ -23,7 +23,7 @@
 using namespace std;
 using namespace llvm;
 
-namespace llvm {
+namespace llvm::noelle {
 
   /*
    * Program Dependence Graph Node and Edge

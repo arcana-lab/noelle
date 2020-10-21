@@ -21,7 +21,8 @@
 
 #include "../include/PDG.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 PDG::PDG (Module &M) 
   {
@@ -99,13 +100,13 @@ void PDG::addNodesOf (Function &F) {
   }
 }
 
-void llvm::PDG::setEntryPointAt (Function &F) {
+void PDG::setEntryPointAt (Function &F) {
   auto entryInstr = &*(F.begin()->begin());
   entryNode = internalNodeMap[entryInstr];
   assert(entryNode != nullptr);
 }
 
-llvm::DGEdge<Value> * llvm::PDG::addEdge (Value *from, Value *to) { 
+DGEdge<Value> * PDG::addEdge (Value *from, Value *to) { 
   return this->DG<Value>::addEdge(from, to); 
 }
 
