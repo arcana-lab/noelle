@@ -453,8 +453,9 @@ void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {
 void PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
   for (auto node : make_range(pdg->begin_nodes(), pdg->end_nodes())) {
     auto pdgValue = node->getT();
-    if (pdgValue->getNumUses() == 0)
+    if (pdgValue->getNumUses() == 0){
       continue;
+    }
 
     for (auto& U : pdgValue->uses()) {
       auto user = U.getUser();
@@ -465,6 +466,8 @@ void PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
       }
     }
   }
+
+  return ;
 }
 
 void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
