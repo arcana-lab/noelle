@@ -41,6 +41,11 @@ namespace llvm::noelle {
       InductionVariableManager () = delete;
 
       /*
+       * Return all induction variables including the loop-governing one of the outermost loop of the loop sub-tree related to @this.
+       */
+      std::unordered_set<InductionVariable *> getInductionVariables (void) const ;
+
+      /*
        * Return all induction variables including the loop-governing one.
        */
       std::unordered_set<InductionVariable *> getInductionVariables (LoopStructure &LS) const ;
@@ -63,6 +68,7 @@ namespace llvm::noelle {
       ~InductionVariableManager ();
 
     private:
+      LoopsSummary &LIS;
       std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
       std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *> loopToGoverningIVAttrMap;
   };
