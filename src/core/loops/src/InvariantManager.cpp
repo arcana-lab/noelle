@@ -144,10 +144,11 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DGEdg
   }
 
   /*
-   * If the instruction is included in the loop and this is a memory dependence, the value may evolve
+   * The instruction is included in the loop.
+   *
+   * If the instruction is a memory dependence, the value may evolve.
    */
-  auto sourceDep = dep->getOutgoingT();
-  if (isa<Instruction>(sourceDep)){
+  if (dep->isMemoryDependence()){
     return true;
   }
 
