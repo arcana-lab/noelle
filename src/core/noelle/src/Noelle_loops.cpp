@@ -337,6 +337,9 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Allocate the loop wrapper.
      */
+    for(auto edge : funcPDG->getEdges()) {
+      assert(!edge->isLoopCarriedDependence() && "Flag set");
+    }
     auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, {}, this->loopAA, this->loopAwareDependenceAnalysis);
     allLoops->push_back(ldi);
   }
