@@ -66,7 +66,9 @@ LoopDependenceInfo::LoopDependenceInfo(
     enabledOptimizations{optimizations},
     areLoopAwareAnalysesEnabled{enableLoopAwareDependenceAnalyses}
   {
-
+  for (auto edge : fG->getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+  }
   /*
    * Enable all transformations.
    */
@@ -178,7 +180,13 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   /*
    * Create the loop dependence graph.
    */
+  for (auto edge : functionDG->getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+  }
   auto loopDG = functionDG->createLoopsSubgraph(l);
+  for (auto edge : loopDG->getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+  }
   std::vector<Value *> loopInternals;
   for (auto internalNode : loopDG->internalNodePairs()) {
       loopInternals.push_back(internalNode.first);
@@ -196,8 +204,18 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
    * HACK: The SCCDAG is constructed with a loop internal DG to avoid external nodes in the loop DG
    * which provide context (live-ins/live-outs) but which complicate analyzing the resulting SCCDAG 
    */
+  for (auto edge : loopDG->getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+  }
   LoopCarriedDependencies lcdUsingLoopDGEdges(liSummary, DS, *loopDG);
+  for (auto edge : loopDG->getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+  }
   LoopCarriedDependencies::setLoopCarriedDependencies(liSummary, DS, *loopDG);
+
+  assert(lcdUsingLoopDGEdges.getLoopCarriedDependenciesForLoop(*(liSummary.getLoopNestingTreeRoot())) 
+          == LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*(liSummary.getLoopNestingTreeRoot()), liSummary,  *loopDG)
+         && "Loop carried edges from Map not equal to from Flag");
   /*
    * Perform loop-aware memory dependence analysis to refine the loop dependence graph.
    */

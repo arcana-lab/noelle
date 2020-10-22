@@ -40,6 +40,9 @@ PDG::PDG (Module &M)
   auto mainF = M.getFunction("main");
   assert(mainF != nullptr);
   setEntryPointAt(*mainF);
+  for (auto edge : this->getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+  }
 
   return ;
 }
@@ -125,7 +128,9 @@ PDG * PDG::createFunctionSubgraph(Function &F) {
    * Recreate all edges connected to internal nodes of function
    */
   copyEdgesInto(functionPDG, /*linkToExternal=*/ true);
-
+  for (auto edge : functionPDG->getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+  }
   return functionPDG;
 }
 
