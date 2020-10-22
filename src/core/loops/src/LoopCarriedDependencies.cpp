@@ -56,6 +56,10 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
 ) {
 
   for (auto edge : dgForLoops.getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+  }
+
+  for (auto edge : dgForLoops.getEdges()) {
     auto loop = getLoopOfLCD(LIS, DS, edge);
     if (!loop) continue;
     edge->setLoopCarried(true);
@@ -115,13 +119,22 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
   return nullptr ;
 }
 
-std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (PDG &LoopDG) {
-
+std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, PDG &LoopDG) {
+  
   std::set<DGEdge<Value> *> LCEdges;
   for (auto edge : LoopDG.getEdges()) {
-    if (edge->isLoopCarriedDependence()) {
-      LCEdges.insert(edge);
+    if (!edge->isLoopCarriedDependence()) { 
+      continue; 
     }
+
+    auto consumer = edge->getIncomingT();
+    auto consumerI = cast<Instruction>(consumer);
+    auto consumerLoop = LIS.getLoop(*consumerI);
+    if (consumerLoop != &LS) {
+      continue;
+    }
+
+    LCEdges.insert(edge);
   }
 
   return LCEdges;
