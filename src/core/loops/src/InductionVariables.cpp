@@ -20,7 +20,7 @@ InductionVariableManager::InductionVariableManager (
   ScalarEvolution &SE,
   SCCDAG &sccdag,
   LoopEnvironment &loopEnv
-) : loopToIVsMap{}, loopToGoverningIVAttrMap{} {
+) : LIS{LIS}, loopToIVsMap{}, loopToGoverningIVAttrMap{} {
 
   Function &F = *LIS.getLoopNestingTreeRoot()->getHeader()->getParent();
   ScalarEvolutionReferentialExpander referentialExpander(SE, F);
@@ -77,6 +77,21 @@ InductionVariableManager::InductionVariableManager (
       }
     }
   }
+}
+
+std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVariables (void) const {
+  
+  /*
+   * Fetch the outermost loop of @this.
+   */
+  auto loop = this->LIS.getLoopNestingTreeRoot();
+
+  /*
+   * Fetch the induction variables of the loop.
+   */
+  auto IVs = this->getInductionVariables(*loop);
+
+  return IVs;
 }
 
 std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVariables (Instruction *i) const {
