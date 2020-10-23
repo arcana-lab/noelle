@@ -274,12 +274,7 @@ bool PDG::iterateOverDependencesFrom (
         && (!edge->isMemoryDependence())
         && (!edge->isControlDependence())
       ){
-      #ifdef DEBUG
-      if (edge->dataDependenceType() == DG_DATA_NONE){
-        auto sourceValue = edge->getOutgoingT();
-        assert(isa<Argument>(sourceValue));
-      }
-      #endif
+      assert(edge->dataDependenceType() != DG_DATA_NONE);
       if (functionToInvokePerDependence(destValue, edge)){
         return true;
       }
@@ -351,12 +346,7 @@ bool PDG::iterateOverDependencesTo (
         && (!edge->isMemoryDependence())
         && (!edge->isControlDependence())
       ){
-      #ifdef DEBUG
-      if (edge->dataDependenceType() == DG_DATA_NONE){
-        auto sourceValue = edge->getOutgoingT();
-        assert(isa<Argument>(sourceValue));
-      }
-      #endif
+      assert(edge->dataDependenceType() != DG_DATA_NONE);
       if (functionToInvokePerDependence(srcValue, edge)){
         return true;
       }
