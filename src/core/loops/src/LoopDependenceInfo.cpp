@@ -227,7 +227,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
-    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, lcdUsingLoopDGEdges, aa, &domainSpace);
+    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, lcdUsingLoopDGEdges, liSummary, aa, &domainSpace);
   }
 
   if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {
