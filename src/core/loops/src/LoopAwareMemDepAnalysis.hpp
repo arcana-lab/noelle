@@ -18,6 +18,7 @@ void refinePDGWithLoopAwareMemDepAnalysis(
   Loop *l,
   LoopStructure *loopStructure,
   LoopCarriedDependencies &LCD,
+  LoopsSummary liSummary,
   liberty::LoopAA *loopAA,
   LoopIterationDomainSpaceAnalysis *LIDS
 );
@@ -29,6 +30,7 @@ void refinePDGWithLIDS(
   PDG *loopDG,
   LoopStructure *loopStructure,
   LoopCarriedDependencies &LCD,
+  LoopsSummary liSummary,
   LoopIterationDomainSpaceAnalysis *LIDS
 );
 
