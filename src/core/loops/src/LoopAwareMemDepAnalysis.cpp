@@ -12,6 +12,7 @@ void llvm::refinePDGWithLoopAwareMemDepAnalysis(
   Loop *l,
   LoopStructure *loopStructure,
   LoopCarriedDependencies &LCD,
+  LoopsSummary liSummary,
   liberty::LoopAA *loopAA,
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
@@ -23,7 +24,7 @@ void llvm::refinePDGWithLoopAwareMemDepAnalysis(
   }
 
   if (LIDS) {
-    refinePDGWithLIDS(loopDG, loopStructure, LCD, LIDS);
+    refinePDGWithLIDS(loopDG, loopStructure, LCD, liSummary, LIDS);
   }
 
 }
@@ -175,40 +176,15 @@ void llvm::refinePDGWithLIDS(
   PDG *loopDG,
   LoopStructure *loopStructure,
   LoopCarriedDependencies &LCD,
+  LoopsSummary liSummary,
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
 
   auto dfr = computeReachabilityFromInstructions(loopStructure);
 
-  std::unordered_set<DGEdge<Value> *> edgesThatExist;
-  for (auto edge : loopDG->getEdges()) {
-    edgesThatExist.insert(edge);
-  }
-
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
-  std::unordered_set<DGEdge<Value> *> edgesToRemove2;
-  for (auto dependency : LCD.getLoopCarriedDependenciesForLoop(*loopStructure)) {
-    if (edgesThatExist.find(dependency) == edgesThatExist.end()) continue;
-    if (!dependency->isMemoryDependence()) continue;
-    auto fromInst = dyn_cast<Instruction>(dependency->getOutgoingT());
-    auto toInst = dyn_cast<Instruction>(dependency->getIncomingT());
-    if (!fromInst || !toInst) continue;
 
-    auto &afterInstructions = dfr->OUT(fromInst);
-    if (afterInstructions.find(toInst) != afterInstructions.end()) continue;
-
-    if (LIDS->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst)) {
-      edgesToRemove2.insert(dependency);
-    }
-  }
-//  for (auto dependency : LCD.getLoopCarriedDependenciesForLoop(*loopStructure)) {
-  for (auto dependency : loopDG->getEdges()) {
-    /*
-     * The edge could have already been removed by another refining step
-     * Check that the edge still exists
-     */
- //   if (edgesThatExist.find(dependency) == edgesThatExist.end()) continue;
-    if(!dependency->isLoopCarriedDependence()) continue;
+  for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure, liSummary, *loopDG) ) {
     /*
      * Do not waste time on edges that aren't memory dependencies
      */
@@ -230,8 +206,7 @@ void llvm::refinePDGWithLIDS(
       edgesToRemove.insert(dependency);
     }
   }
-  
-  assert(edgesToRemove == edgesToRemove2 && "edgesToRemove are not equal");
+
   for (auto edge : edgesToRemove) {
     loopDG->removeEdge(edge);
   }
