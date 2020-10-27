@@ -10,7 +10,8 @@
  */
 #include "DataFlow.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 DataFlowAnalysis::DataFlowAnalysis (){
   return ;

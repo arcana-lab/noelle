@@ -10,7 +10,8 @@
  */
 #include "DataFlowEngine.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 DataFlowEngine::DataFlowEngine (){
   return ;
