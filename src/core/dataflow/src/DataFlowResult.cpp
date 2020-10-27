@@ -10,7 +10,8 @@
  */
 #include "DataFlowResult.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 DataFlowResult::DataFlowResult (){
   return ;
