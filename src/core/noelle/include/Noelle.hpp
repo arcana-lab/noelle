@@ -62,6 +62,16 @@ namespace llvm::noelle {
         double minimumHotness
       );
 
+      LoopDependenceInfo * getInnermostLoopThatContains (
+        const std::vector<LoopDependenceInfo *> &loops,
+        Instruction *inst
+        );
+
+      LoopDependenceInfo * getInnermostLoopThatContains (
+        const std::vector<LoopDependenceInfo *> &loops,
+        BasicBlock *bb
+        );
+
       std::vector<LoopStructure *> * getLoopStructures (void) ;
 
       std::vector<LoopStructure *> * getLoopStructures (
