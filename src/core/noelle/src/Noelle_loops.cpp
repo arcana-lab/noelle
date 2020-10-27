@@ -514,6 +514,59 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   return allLoops;
 }
 
+LoopDependenceInfo * Noelle::getInnermostLoopThatContains (
+  const std::vector<LoopDependenceInfo *> &loops,
+  BasicBlock *bb
+  ){
+
+  /*
+   * Fetch an instruction of @bb.
+   */
+  auto inst = &*bb->begin();
+
+  /*
+   * Fetch the loop.
+   */
+  auto l = this->getInnermostLoopThatContains(loops, inst);
+
+  return l;
+}
+
+LoopDependenceInfo * Noelle::getInnermostLoopThatContains (
+  const std::vector<LoopDependenceInfo *> &loops,
+  Instruction *inst
+  ){
+
+  /*
+   * Identify the innermost loop that contains @inst.
+   */
+  for (auto ldi : loops){
+
+    /*
+     * Check if @inst belongs to @ldi.
+     */
+    auto ls = ldi->getLoopStructure();
+    if (!ls->isIncluded(inst)){
+      continue ;
+    }
+
+    /*
+     * The instruction @inst belongs to @ldi.
+     * Check if @inst belongs to @ldi's sublops.
+     */
+    if (ls->isIncludedInItsSubLoops(inst)){
+      continue ;
+    }
+
+    /*
+     * This is the innermost loop that contains @inst.
+     */
+    return ldi;
+  }
+
+  return nullptr;
+}
+
 uint32_t Noelle::getNumberOfProgramLoops (void) {
   return this->getNumberOfProgramLoops(this->minHot);
 }
