@@ -80,7 +80,7 @@ bool Noelle::doInitialization (Module &M) {
   if (DisableLoopAwareDependenceAnalyses.getNumOccurrences() == 0){
     this->loopAwareDependenceAnalysis = true;
   }
-  if (DisableFloatAsReal.getNumOccurrences() == 0){
+  if (DisableFloatAsReal.getNumOccurrences() > 0){
     this->enableFloatAsReal = false;
   }
 
