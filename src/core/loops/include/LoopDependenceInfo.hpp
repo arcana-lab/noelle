@@ -56,7 +56,8 @@ namespace llvm::noelle {
         Loop *l,
         DominatorSummary &DS,
         ScalarEvolution &SE,
-        uint32_t maxCores
+        uint32_t maxCores,
+        bool enableFloatAsReal
       );
 
       LoopDependenceInfo (
@@ -65,6 +66,7 @@ namespace llvm::noelle {
         DominatorSummary &DS,
         ScalarEvolution &SE,
         uint32_t maxCores,
+        bool enableFloatAsReal,
         liberty::LoopAA *aa
       );
 
@@ -74,6 +76,7 @@ namespace llvm::noelle {
         DominatorSummary &DS,
         ScalarEvolution &SE,
         uint32_t maxCores,
+        bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations
       );
 
@@ -83,6 +86,7 @@ namespace llvm::noelle {
         DominatorSummary &DS,
         ScalarEvolution &SE,
         uint32_t maxCores,
+        bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations,
         liberty::LoopAA *aa,
         bool enableLoopAwareDependenceAnalyses

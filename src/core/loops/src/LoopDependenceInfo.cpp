@@ -22,8 +22,9 @@ LoopDependenceInfo::LoopDependenceInfo(
   Loop *l,
   DominatorSummary &DS,
   ScalarEvolution &SE,
-  uint32_t maxCores
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, nullptr, true} {
+  uint32_t maxCores,
+  bool enableFloatAsReal
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, nullptr, true} {
 
   return ;
 }
@@ -34,8 +35,9 @@ LoopDependenceInfo::LoopDependenceInfo(
   DominatorSummary &DS,
   ScalarEvolution &SE,
   uint32_t maxCores,
+  bool enableFloatAsReal,
   liberty::LoopAA *aa
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, aa, true} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, true} {
 
   return ;
 }
@@ -46,8 +48,9 @@ LoopDependenceInfo::LoopDependenceInfo(
   DominatorSummary &DS,
   ScalarEvolution &SE,
   uint32_t maxCores,
+  bool enableFloatAsReal,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, optimizations, nullptr, true} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, optimizations, nullptr, true} {
 
   return ;
 }
@@ -58,6 +61,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   DominatorSummary &DS,
   ScalarEvolution &SE,
   uint32_t maxCores,
+  bool enableFloatAsReal,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations,
   liberty::LoopAA *loopAA,
   bool enableLoopAwareDependenceAnalyses
@@ -99,7 +103,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    */
   LoopCarriedDependencies lcd(this->liSummary, DS, *loopSCCDAG);
   this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAG, *environment);
-  this->sccdagAttrs = SCCDAGAttrs(loopDG, loopSCCDAG, this->liSummary, SE, lcd, *inductionVariables, DS);
+  this->sccdagAttrs = SCCDAGAttrs(enableFloatAsReal, loopDG, loopSCCDAG, this->liSummary, SE, lcd, *inductionVariables, DS);
   this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(liSummary, *this->inductionVariables, SE);
 
   /*

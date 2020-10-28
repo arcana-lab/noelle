@@ -174,6 +174,8 @@ namespace llvm::noelle {
 
       bool shouldLoopsBeHoistToMain (void) const ;
 
+      bool canFloatsBeConsideredRealNumbers (void) const ;
+
       std::vector<Function *> * getModuleFunctionsReachableFrom (
         Module *module,
         Function *startingPoint
@@ -193,6 +195,7 @@ namespace llvm::noelle {
 
     private:
       Verbosity verbose;
+      bool enableFloatAsReal;
       double minHot;
       Module *program;
       Hot *profiles;
