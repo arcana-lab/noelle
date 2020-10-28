@@ -491,7 +491,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
    */
   auto variableType = singleLoopCarriedPHI->getType();
   if (  true
-        && variableType->isFloatTy()
+        && (variableType->isFloatTy() || variableType->isDoubleTy())
         && (!this->enableFloatAsReal)
     ){
 
