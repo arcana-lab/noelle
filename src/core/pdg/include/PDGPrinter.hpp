@@ -40,7 +40,7 @@
 
 using namespace llvm;
 
-namespace llvm {
+namespace llvm::noelle {
 
   class DGPrinter {
     public:

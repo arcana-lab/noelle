@@ -17,6 +17,7 @@
 #include "PDGAnalysis.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 PDGAnalysis::PDGAnalysis()
   : ModulePass{ID}
@@ -451,20 +452,36 @@ void PDGAnalysis::collectCGUnderFunctionMain (Module &M) {
 }
 
 void PDGAnalysis::constructEdgesFromUseDefs (PDG *pdg){
-  for (auto node : make_range(pdg->begin_nodes(), pdg->end_nodes())) {
-    auto pdgValue = node->getT();
-    if (pdgValue->getNumUses() == 0)
-      continue;
 
+  /*
+   * Add the dependences due to variables.
+   */
+  for (auto node : make_range(pdg->begin_nodes(), pdg->end_nodes())) {
+
+    /*
+     * Check the current definition has uses.
+     * If it doesn't, then there is no variable dependence.
+     */
+    auto pdgValue = node->getT();
+    if (pdgValue->getNumUses() == 0){
+      continue;
+    }
+
+    /*
+     * The current definition has uses.
+     * Add the uses.
+     */
     for (auto& U : pdgValue->uses()) {
       auto user = U.getUser();
 
       if (isa<Instruction>(user) || isa<Argument>(user)) {
         auto edge = pdg->addEdge(pdgValue, user);
-        edge->setMemMustType(false, true, DG_DATA_NONE);
+        edge->setMemMustType(false, true, DG_DATA_RAW);
       }
     }
   }
+
+  return ;
 }
 
 void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){

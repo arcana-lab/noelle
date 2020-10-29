@@ -212,7 +212,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * Check of loopIndex provided is within bounds
    */
   if (this->loopHeaderToLoopIndexMap.find(header) == this->loopHeaderToLoopIndexMap.end()){
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, {}, this->loopAA, this->loopAwareDependenceAnalysis);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, this->enableFloatAsReal, {}, this->loopAA, this->loopAwareDependenceAnalysis);
 
     delete DS;
     return ldi;
@@ -227,7 +227,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * No filter file was provided. Construct LDI without profiler configurables
    */
   if (!this->hasReadFilterFile) {
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, optimizations, this->loopAA, this->loopAwareDependenceAnalysis);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, this->enableFloatAsReal, optimizations, this->loopAA, this->loopAwareDependenceAnalysis);
 
     delete DS;
     return ldi;
@@ -337,7 +337,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Allocate the loop wrapper.
      */
-    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, {}, this->loopAA, this->loopAwareDependenceAnalysis);
+    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, this->enableFloatAsReal, {}, this->loopAA, this->loopAwareDependenceAnalysis);
     allLoops->push_back(ldi);
   }
 
@@ -452,7 +452,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, {}, this->loopAA, this->loopAwareDependenceAnalysis);
+        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, this->enableFloatAsReal, {}, this->loopAA, this->loopAwareDependenceAnalysis);
 
         allLoops->push_back(ldi);
         continue ;
@@ -512,6 +512,59 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   delete functions;
 
   return allLoops;
+}
+
+LoopDependenceInfo * Noelle::getInnermostLoopThatContains (
+  const std::vector<LoopDependenceInfo *> &loops,
+  BasicBlock *bb
+  ){
+
+  /*
+   * Fetch an instruction of @bb.
+   */
+  auto inst = &*bb->begin();
+
+  /*
+   * Fetch the loop.
+   */
+  auto l = this->getInnermostLoopThatContains(loops, inst);
+
+  return l;
+}
+
+LoopDependenceInfo * Noelle::getInnermostLoopThatContains (
+  const std::vector<LoopDependenceInfo *> &loops,
+  Instruction *inst
+  ){
+
+  /*
+   * Identify the innermost loop that contains @inst.
+   */
+  for (auto ldi : loops){
+
+    /*
+     * Check if @inst belongs to @ldi.
+     */
+    auto ls = ldi->getLoopStructure();
+    if (!ls->isIncluded(inst)){
+      continue ;
+    }
+
+    /*
+     * The instruction @inst belongs to @ldi.
+     * Check if @inst belongs to @ldi's sublops.
+     */
+    if (ls->isIncludedInItsSubLoops(inst)){
+      continue ;
+    }
+
+    /*
+     * This is the innermost loop that contains @inst.
+     */
+    return ldi;
+  }
+
+  return nullptr;
 }
 
 uint32_t Noelle::getNumberOfProgramLoops (void) {
@@ -815,7 +868,7 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
     uint32_t maxCores
     ) {
 
-  auto ldi = new LoopDependenceInfo(functionPDG, loop, *DS, *SE, maxCores, {}, this->loopAA, this->loopAwareDependenceAnalysis);
+  auto ldi = new LoopDependenceInfo(functionPDG, loop, *DS, *SE, maxCores, this->enableFloatAsReal, {}, this->loopAA, this->loopAwareDependenceAnalysis);
 
   /*
    * Set the loop constraints specified by INDEX_FILE.

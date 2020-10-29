@@ -19,7 +19,7 @@ static cl::opt<int> Verbose("alloc-aa-verbose", cl::ZeroOrMore, cl::Hidden, cl::
 bool llvm::AllocAA::doInitialization (Module &M) { 
   this->readOnlyFunctionNames = { };
   this->allocatorFunctionNames = { "malloc", "calloc" };
-  this->memorylessFunctionNames = { "sqrt", "sqrtf", "ceil", "floor", "log", "log10", "pow", "exp", "cos", "acos", "sin", "tanh", "atoll", "atoi" };
+  this->memorylessFunctionNames = { "sqrt", "sqrtf", "ceil", "floor", "log", "log10", "pow", "exp", "cos", "acos", "sin", "tanh", "atoll", "atoi", "atol" };
 
   this->verbose = static_cast<AllocAAVerbosity>(Verbose.getValue());
 

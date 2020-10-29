@@ -13,63 +13,64 @@
 #include "SystemHeaders.hpp"
 #include "CallGraph.hpp"
 
-namespace llvm {
-  namespace noelle {
+namespace llvm::noelle {
 
-    class CallGraphNodeWrapper ;
+  class CallGraphNodeWrapper ;
 
-    class CallGraphWrapper {
-      public:
-        CallGraphWrapper (CallGraph *graph) ;
+  class CallGraphWrapper {
+    public:
+      CallGraphWrapper (CallGraph *graph) ;
 
-        ~CallGraphWrapper () ;
+      ~CallGraphWrapper () ;
 
-        using NodeRef = CallGraphNodeWrapper *;
-        using ChildIteratorType = typename std::vector<NodeRef>::iterator;
-        using nodes_iterator = typename std::unordered_set<NodeRef>::iterator;
-
-        nodes_iterator nodes_begin() { return nodes.begin(); }
-
-        nodes_iterator nodes_end() { return nodes.end(); }
-
-        CallGraph *wrappedGraph;
-        NodeRef entryNode;
-        std::unordered_set<NodeRef> nodes;
-    };
-
-    class CallGraphNodeWrapper {
-      public:
-        CallGraphNodeWrapper (CallGraphFunctionNode *node) : wrappedNode{node} {}
-
-        using NodeRef = CallGraphNodeWrapper *;
-        using ChildIteratorType = typename std::vector<NodeRef>::iterator;
-
-        ChildIteratorType child_begin() { return outgoingNodeInstances.begin(); }
-
-        ChildIteratorType child_end() { return outgoingNodeInstances.end(); }
-
-        CallGraphFunctionNode *wrappedNode;
-        std::vector<NodeRef> outgoingNodeInstances;
-    };
-
-    struct CallGraphWrapperTraits {
       using NodeRef = CallGraphNodeWrapper *;
       using ChildIteratorType = typename std::vector<NodeRef>::iterator;
       using nodes_iterator = typename std::unordered_set<NodeRef>::iterator;
 
-      static NodeRef getEntryNode(CallGraphWrapper *graph) { return graph->entryNode; }
+      nodes_iterator nodes_begin() { return nodes.begin(); }
 
-      static nodes_iterator nodes_begin(CallGraphWrapper *graph) { return graph->nodes_begin(); }
+      nodes_iterator nodes_end() { return nodes.end(); }
 
-      static nodes_iterator nodes_end(CallGraphWrapper *graph) { return graph->nodes_end(); }
+      CallGraph *wrappedGraph;
+      NodeRef entryNode;
+      std::unordered_set<NodeRef> nodes;
+  };
 
-      static ChildIteratorType child_begin(NodeRef node) { return node->child_begin(); }
+  class CallGraphNodeWrapper {
+    public:
+      CallGraphNodeWrapper (CallGraphFunctionNode *node) : wrappedNode{node} {}
 
-      static ChildIteratorType child_end(NodeRef node) { return node->child_end(); }
-    };
+      using NodeRef = CallGraphNodeWrapper *;
+      using ChildIteratorType = typename std::vector<NodeRef>::iterator;
 
-  }
+      ChildIteratorType child_begin() { return outgoingNodeInstances.begin(); }
 
+      ChildIteratorType child_end() { return outgoingNodeInstances.end(); }
+
+      CallGraphFunctionNode *wrappedNode;
+      std::vector<NodeRef> outgoingNodeInstances;
+  };
+
+  struct CallGraphWrapperTraits {
+    using NodeRef = CallGraphNodeWrapper *;
+    using ChildIteratorType = typename std::vector<NodeRef>::iterator;
+    using nodes_iterator = typename std::unordered_set<NodeRef>::iterator;
+
+    static NodeRef getEntryNode(CallGraphWrapper *graph) { return graph->entryNode; }
+
+    static nodes_iterator nodes_begin(CallGraphWrapper *graph) { return graph->nodes_begin(); }
+
+    static nodes_iterator nodes_end(CallGraphWrapper *graph) { return graph->nodes_end(); }
+
+    static ChildIteratorType child_begin(NodeRef node) { return node->child_begin(); }
+
+    static ChildIteratorType child_end(NodeRef node) { return node->child_end(); }
+  };
+
+}
+
+namespace llvm {
+ 
   template<> struct GraphTraits<noelle::CallGraphWrapper *> : public noelle::CallGraphWrapperTraits {};
 
 }

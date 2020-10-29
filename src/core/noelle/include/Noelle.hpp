@@ -62,6 +62,16 @@ namespace llvm::noelle {
         double minimumHotness
       );
 
+      LoopDependenceInfo * getInnermostLoopThatContains (
+        const std::vector<LoopDependenceInfo *> &loops,
+        Instruction *inst
+        );
+
+      LoopDependenceInfo * getInnermostLoopThatContains (
+        const std::vector<LoopDependenceInfo *> &loops,
+        BasicBlock *bb
+        );
+
       std::vector<LoopStructure *> * getLoopStructures (void) ;
 
       std::vector<LoopStructure *> * getLoopStructures (
@@ -164,6 +174,8 @@ namespace llvm::noelle {
 
       bool shouldLoopsBeHoistToMain (void) const ;
 
+      bool canFloatsBeConsideredRealNumbers (void) const ;
+
       std::vector<Function *> * getModuleFunctionsReachableFrom (
         Module *module,
         Function *startingPoint
@@ -183,6 +195,7 @@ namespace llvm::noelle {
 
     private:
       Verbosity verbose;
+      bool enableFloatAsReal;
       double minHot;
       Module *program;
       Hot *profiles;
