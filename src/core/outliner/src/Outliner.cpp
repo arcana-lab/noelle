@@ -24,6 +24,44 @@ namespace llvm::noelle {
 
   Function * outline (std::unordered_set<BasicBlock *> const & basicBlocksToOutline, Instruction *injectCallJustBeforeThis){
     //TODO
+    //1. Collect data about basicblocks
+    // - check dependencies that enter basic blocks from the outside - input variables 
+    // - define input variables which are not modified inside basic block (pass by value)
+    // - define input variables which are modified inside basic block (pass by reference)
+    //2. Create noinline function
+    //3. Use llvm to rewire all variables
+    //4. Return new function
+
+
+    std::unordered_set<Instruction *> instructions; // we will need this for something?
+    std::unordered_set<Instruction *> inputs;
+    std::unordered_set<Instruction *> outputs;
+
+    for (auto *bb : basicBlocksToOutline){
+      for(auto &i : *bb) {
+        instructions.insert(&i); 
+        for(auto &op : i.operands()){
+          Value * val = op.get();
+          if(!isa<Instruction>(val)){
+            continue;
+          }
+
+          Instruction *op_instr = dyn_cast<Instruction>(val);
+          if(basicBlocksToOutline.find(op_instr->getParent()) == basicBlocksToOutline.end() ){
+            //now figure out if it's modified ????
+            //if it isn't
+            ///inputs.insert(op_instr);
+
+
+            //but if it is
+            //outputs.insert(op_instr);
+
+          }
+        }
+      }
+    }
+
+
     return nullptr;
   }
 
