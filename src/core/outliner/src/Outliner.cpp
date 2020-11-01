@@ -9,6 +9,9 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "OutlinerPass.hpp"
+#include "llvm/IR/Dominators.h"
+#include "llvm/Transforms/Utils/CodeExtractor.h"
+#include "llvm/Analysis/AssumptionCache.h"
 
 namespace llvm::noelle {
 
@@ -32,6 +35,25 @@ namespace llvm::noelle {
     //3. Use llvm to rewire all variables
     //4. Return new function
 
+    auto sourceF = basicBlocksToOutline.begin()->getParent();
+    auto DT = std::make_unique<DominatorTree>(sourceF);
+    AssumptionCache *AC = LookupAC(sourceF);
+    CodeExtractorAnalysisCache CEAC(sourceF);
+    CodeExtractor CE(basicBlocksToOutline, DT, /* AggregateArgs */ false, /* BFI */ nullptr,
+                   /* BPI */ nullptr, AC, /* AllowVarArgs */ false,
+                   /* AllowAlloca */ false,
+                   /* Suffix */ "outliner." /* + std::to_string(Count)*/);
+
+    // Extract code to new function
+    if (Function* newF = CE.extractCodeRegion(CEAC)) {
+      // Get Caller and set no inline
+      User *U = *OutF->user_begin();
+      CallInst *CI = cast<CallInst>(U);
+      CI->setIsNoInline();
+
+      // Return the new Function
+      return newF
+    }
 
     std::unordered_set<Instruction *> instructions; // we will need this for something?
     std::unordered_set<Instruction *> inputs;
