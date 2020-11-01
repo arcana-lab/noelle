@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "OutlinerPass.hpp"
+#include "llvm/Pass.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/Transforms/Utils/CodeExtractor.h"
 #include "llvm/Analysis/AssumptionCache.h"
@@ -25,7 +26,7 @@ namespace llvm::noelle {
     return nullptr;
   }
 
-  Function * outline (std::unordered_set<BasicBlock *> const & basicBlocksToOutline, Instruction *injectCallJustBeforeThis){
+  Function * outline (ArrayRef<BasicBlock *> const & basicBlocksToOutline, Instruction *injectCallJustBeforeThis, Function* sourceF, AssumptionCache * AC){
     //TODO
     //1. Collect data about basicblocks
     // - check dependencies that enter basic blocks from the outside - input variables 
@@ -35,26 +36,27 @@ namespace llvm::noelle {
     //3. Use llvm to rewire all variables
     //4. Return new function
 
-    auto sourceF = basicBlocksToOutline.begin()->getParent();
-    auto DT = std::make_unique<DominatorTree>(sourceF);
-    AssumptionCache *AC = LookupAC(sourceF);
-    CodeExtractorAnalysisCache CEAC(sourceF);
-    CodeExtractor CE(basicBlocksToOutline, DT, /* AggregateArgs */ false, /* BFI */ nullptr,
+//    Function* sourceF = (*(basicBlocksToOutline.begin()))->getParent();
+    auto DT = DominatorTree(*sourceF);
+//    auto *ACT = getAnalysisIfAvailable<AssumptionCacheTracker>();
+///    AssumptionCache *AC = ACT->loopupAssumptionCache(sourceF);
+//    CodeExtractorAnalysisCache CEAC(sourceF);
+    CodeExtractor CE(basicBlocksToOutline, &DT, /* AggregateArgs */ false, /* BFI */ nullptr,
                    /* BPI */ nullptr, AC, /* AllowVarArgs */ false,
                    /* AllowAlloca */ false,
                    /* Suffix */ "outliner." /* + std::to_string(Count)*/);
 
     // Extract code to new function
-    if (Function* newF = CE.extractCodeRegion(CEAC)) {
+    if (Function* newF = CE.extractCodeRegion()) {
       // Get Caller and set no inline
-      User *U = *OutF->user_begin();
+      User *U = *newF->user_begin();
       CallInst *CI = cast<CallInst>(U);
       CI->setIsNoInline();
 
       // Return the new Function
-      return newF
+      return newF;
     }
-
+    /*
     std::unordered_set<Instruction *> instructions; // we will need this for something?
     std::unordered_set<Instruction *> inputs;
     std::unordered_set<Instruction *> outputs;
@@ -84,7 +86,7 @@ namespace llvm::noelle {
     }
 
 
-    return nullptr;
+    return nullptr;*/
   }
 
 }
