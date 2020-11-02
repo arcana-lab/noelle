@@ -13,6 +13,7 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/Transforms/Utils/CodeExtractor.h"
 #include "llvm/Analysis/AssumptionCache.h"
+#include "llvm/IR/BasicBlock.h"
 
 namespace llvm::noelle {
 
@@ -21,9 +22,32 @@ namespace llvm::noelle {
     return ;
   }
 
-  Function * outline (std::unordered_set<Instruction *> const & instructionsToOutline, Instruction *injectCallJustBeforeThis){
+  Function * outline (std::unordered_set<Instruction *> const & instructionsToOutline, Instruction *injectCallJustBeforeThis, AssumptionCache * AC){
     //TODO
-    return nullptr;
+    //1. Assume that this is for reduction? and it already contains the instruction that we want to reduce
+    //2. Assume all instructions belong to the same basic block ? 
+    //3. Split basic block into three BBs  - can we do that? split it twice ??? Brian?
+    //4. move instruction to a separate basic block
+    //5. add this block to ArrayRef
+    //6. call outline with ArrayRef of basicblocks
+
+    BasicBlock* sourceBb = (*(instructionsToOutline.begin()))->getParent();
+    Function* sourceF = sourceBb->getParent();
+    BasicBlock* outBb = sourceBb->splitBasicBlock((*(instructionsToOutline.begin())), "outlinerBB");
+    //now all the instructions were added to the new basic block (even the ones that are not in our set)
+    //so we have to split it again but first find the first instruction that doesn't belong to this set?
+
+    for(auto &i : *outBb){
+      if(instructionsToOutline.find(&i) == instructionsToOutline.end()){ //this is the first instruction not in the list so we need to start a new basic block here
+        BasicBlock* remainderBb = sourceBb->splitBasicBlock(&i, "remainderBB");
+        break;
+      }
+    }
+    
+    //create ArrayRef
+    ArrayRef<BasicBlock *> basicBlocksToOutline = {outBb};
+    
+    return Outliner::outline(basicBlocksToOutline, injectCallJustBeforeThis, sourceF, AC);
   }
 
   Function * outline (ArrayRef<BasicBlock *> const & basicBlocksToOutline, Instruction *injectCallJustBeforeThis, Function* sourceF, AssumptionCache * AC){
@@ -56,37 +80,8 @@ namespace llvm::noelle {
       // Return the new Function
       return newF;
     }
-    /*
-    std::unordered_set<Instruction *> instructions; // we will need this for something?
-    std::unordered_set<Instruction *> inputs;
-    std::unordered_set<Instruction *> outputs;
 
-    for (auto *bb : basicBlocksToOutline){
-      for(auto &i : *bb) {
-        instructions.insert(&i); 
-        for(auto &op : i.operands()){
-          Value * val = op.get();
-          if(!isa<Instruction>(val)){
-            continue;
-          }
-
-          Instruction *op_instr = dyn_cast<Instruction>(val);
-          if(basicBlocksToOutline.find(op_instr->getParent()) == basicBlocksToOutline.end() ){
-            //now figure out if it's modified ????
-            //if it isn't
-            ///inputs.insert(op_instr);
-
-
-            //but if it is
-            //outputs.insert(op_instr);
-
-          }
-        }
-      }
-    }
-
-
-    return nullptr;*/
+    return nullptr;
   }
 
 }

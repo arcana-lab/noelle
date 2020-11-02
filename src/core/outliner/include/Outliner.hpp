@@ -18,9 +18,9 @@ namespace llvm::noelle {
     public:
       Outliner ();
 
-      Function * outline (std::unordered_set<Instruction *> const & instructionsToOutline, Instruction *injectCallJustBeforeThis);
+      static Function * outline (std::unordered_set<Instruction *> const & instructionsToOutline, Instruction *injectCallJustBeforeThis, AssumptionCache * AC);
 
-      Function * outline (std::unordered_set<BasicBlock *> const & basicBlocksToOutline, Instruction *injectCallJustBeforeThis);
+      static Function * outline (ArrayRef<BasicBlock *> const & basicBlocksToOutline, Instruction *injectCallJustBeforeThis, Function* sourceF, AssumptionCache * AC);
 
     private:
   };
