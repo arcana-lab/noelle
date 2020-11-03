@@ -212,6 +212,11 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
   LoopCarriedDependencies::setLoopCarriedDependencies(liSummary, DS, *loopDG);
+  errs() << "LoopDG ptr in LoopDependencyInfo: " << loopDG << '\n';
+
+  for (auto edge : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*(liSummary.getLoopNestingTreeRoot()), liSummary,  *loopDG)) {
+    errs() << "loop dg edge after setting: " << edge << '\n';
+  }
 
   assert(lcdUsingLoopDGEdges.getLoopCarriedDependenciesForLoop(*(liSummary.getLoopNestingTreeRoot())) 
           == LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*(liSummary.getLoopNestingTreeRoot()), liSummary,  *loopDG)
@@ -244,7 +249,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
    */
   loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
   auto loopSCCDAG = new SCCDAG(loopInternalDG);
-
+  LoopCarriedDependencies::setLoopCarriedDependencies(liSummary, DS, *loopSCCDAG);
   /*
    * Safety check: check that the SCCDAG includes all instructions of the loop given as input.
    */

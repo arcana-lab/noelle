@@ -21,6 +21,7 @@ LoopCarriedVariable::LoopCarriedVariable (
   const LoopCarriedDependencies &LCD,
   LoopsSummary liSummary,
   PDG &loopDG,
+  SCCDAG &sccdag,
   SCC &sccContainingVariable,
   PHINode *declarationPHI
 ) : outermostLoopOfVariable{loop}, declarationValue{declarationPHI}, isValid{false} {
@@ -44,7 +45,24 @@ LoopCarriedVariable::LoopCarriedVariable (
    */
   auto declarationNode = sccContainingVariable.fetchNode(declarationValue);
   auto loopCarriedDependencies = LCD.getLoopCarriedDependenciesForLoop(loop);
-  auto loopCarriedDependencies2 = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*(loop), liSummary,  *loopDG)
+  auto loopCarriedDependencies2 = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(loop, liSummary,  sccdag);
+
+  std::unordered_set<DGEdge<Value> *> edgesThatExist;
+  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  errs() << "LoopDG ptr in Variable: " << &loopDG << '\n';
+  for (auto edge : loopCarriedDependencies2) {
+    errs() << "loop dg edge: " << edge << '\n';
+  }
+
+  for(auto edge : loopCarriedDependencies) {
+    errs() << "LCD map edge: " << edge << '\n';
+  }
+
+//  for (auto edge : edgesToRemove) {
+  //  loopCarriedDependencies.erase(edge);
+//  }
+//  assert(loopCarriedDependencies == loopCarriedDependencies2 && "edges returned differ");
+
   std::unordered_set<Value *> loopCarriedValues{};
   std::unordered_set<Value *> loopCarriedValues2{};
   std::unordered_set<DGEdge<Value> *> loopCarriedDependenciesNotOfVariable{};
@@ -69,6 +87,8 @@ LoopCarriedVariable::LoopCarriedVariable (
     }   
   }
 
+  assert(loopCarriedValues2 == loopCarriedValues && "LoopCarriedValues are different");
+  assert(loopCarriedDependenciesNotOfVariable2 == loopCarriedDependenciesNotOfVariable && "loopCarriedDependenciesNotOfVariable  are different");
   /*
    * We are interested in the SCC containing data/memory/control values
    * with loop carried dependencies only pertaining to the variable definition
