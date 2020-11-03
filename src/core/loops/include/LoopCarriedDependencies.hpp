@@ -33,6 +33,7 @@ namespace llvm {
 
       Criticisms getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const ;
       static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, PDG &LoopDG) ;
+      static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, SCCDAG &sccdag);
 
     private:
 

@@ -63,7 +63,9 @@ namespace llvm {
       LoopCarriedVariable (
         const LoopStructure &loop,
         const LoopCarriedDependencies &LCD,
+        LoopsSummary liSummary,
         PDG &loopDG,
+        SCCDAG &sccdag,
         SCC &variableSCC,
         PHINode *declarationPHI
       ) ;

@@ -72,11 +72,21 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
   SCCDAG &sccdagForLoops
 ) {
 
+
   for (auto sccNode : sccdagForLoops.getNodes()) {
     auto scc = sccNode->getT();
     for (auto edge : scc->getEdges()) {
+      bool lc = false;
+      if (edge->isLoopCarriedDependence()) {
+        edge->setLoopCarried(false);
+        errs() << "SCCNode Edge already set\n";
+        lc = true;}
       auto loop = getLoopOfLCD(LIS, DS, edge);
-      if (!loop) continue;
+      if (!loop) {
+        if (lc){
+          errs() << "And it is not going set again?\n";
+        }
+        continue;}
       edge->setLoopCarried(true);
     }
   }
@@ -85,14 +95,14 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
 LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, const DominatorSummary &DS, DGEdge<Value> *edge) {
   auto producer = edge->getOutgoingT();
   auto consumer = edge->getIncomingT();
-  if (!isa<Instruction>(producer)) return nullptr ;
-  if (!isa<Instruction>(consumer)) return nullptr ;
+  if (!isa<Instruction>(producer)) {errs() << "produer not an inst\n"; return nullptr ;}
+  if (!isa<Instruction>(consumer)) {errs() << "consumer not an inst\n"; return nullptr ;}
 
   auto producerI = dyn_cast<Instruction>(producer);
   auto consumerI = dyn_cast<Instruction>(consumer);
   auto producerLoop = LIS.getLoop(*producerI);
   auto consumerLoop = LIS.getLoop(*consumerI);
-  if (!producerLoop || !consumerLoop) return nullptr ;
+  if (!producerLoop || !consumerLoop) {errs() << "producer or consumer no loop\n"; return nullptr ;}
 
   if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
     auto producerLevel = producerLoop->getNestingLevel();
@@ -109,12 +119,15 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
       bool mustProducerReachConsumerBeforeHeader = !canBasicBlockReachHeaderBeforeOther(*consumerLoop, producerB, consumerB);
 
       if (mustProducerReachConsumerBeforeHeader) {
+        errs() << "mustProducerReachConsumerBeforeHeader is true, don't set\n"; 
         return nullptr ;
       }
     }
 
     return consumerLoop;
   }
+
+  errs() << "didn't go into prod==cons || dominates\n";
 
   return nullptr ;
 }
@@ -137,6 +150,39 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesFor
     LCEdges.insert(edge);
   }
 
+  return LCEdges;
+}
+
+std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, SCCDAG &sccdag) {
+
+  std::set<DGEdge<Value> *> LCEdges;
+
+  for (auto sccNode : sccdag.getNodes()) {
+    auto scc = sccNode->getT();
+    for (auto edge : scc->getEdges()) {
+      if (!edge->isLoopCarriedDependence()) { 
+        continue; 
+      }
+
+      auto consumer = edge->getIncomingT();
+      auto consumerI = cast<Instruction>(consumer);
+      auto consumerLoop = LIS.getLoop(*consumerI);
+      if (consumerLoop != &LS) {
+        continue;
+      }
+
+      auto producer = edge->getOutgoingT();
+      auto producerI = dyn_cast<Instruction>(producer);
+      if(producerI == NULL) { continue; }
+
+      auto producerLoop = LIS.getLoop(*producerI);
+      if(!producerLoop) {continue;}
+      LCEdges.insert(edge);     
+   //   auto loop = getLoopOfLCD(LIS, DS, edge);
+     // if (!loop) continue;
+//      loopCarriedDependenciesMap[loop].insert(edge);
+    }   
+  }
   return LCEdges;
 }
 
