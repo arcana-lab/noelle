@@ -514,6 +514,36 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   return allLoops;
 }
 
+std::unordered_map<BasicBlock *, LoopDependenceInfo *> Noelle::getInnermostLoopsThatContains (
+  const std::vector<LoopDependenceInfo *> &loops) {
+  std::unordered_map<BasicBlock *, LoopDependenceInfo *> m{};
+
+  /*
+   * Iterate over all loops and map all basic blocks to the innermost ones.
+   */
+  for (auto ldi : loops){
+
+    /*
+     * Fetch the loop structure.
+     */
+    auto ls = ldi->getLoopStructure();
+
+    /*
+     * Iterate over the basic blocks of the current loop and add those that do not belong to innermost loops.
+     */
+    for (auto bb : ls->getBasicBlocks()){
+      auto firstInst = &*bb->begin();
+      if (ls->isIncludedInItsSubLoops(firstInst)){
+        continue ;
+      }
+      assert(m.find(bb) == m.end());
+      m[bb] = ldi;
+    }
+  }
+
+  return m;
+}
+
 LoopDependenceInfo * Noelle::getInnermostLoopThatContains (
   const std::vector<LoopDependenceInfo *> &loops,
   BasicBlock *bb
