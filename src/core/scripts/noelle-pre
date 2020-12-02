@@ -18,6 +18,11 @@ cmdToExecute="opt --strip-debug --strip-debug-declare $notOptions -o $notOptions
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
+# Delete dead functions
+cmdToExecute="noelle-deadcode $notOptions $notOptions"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Normalize the code
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
 echo $cmdToExecute ;
@@ -25,6 +30,16 @@ eval $cmdToExecute ;
 
 # Inline functions
 cmdToExecute="noelle-inline \"-noelle-inliner-verbose=1 $options\" $notOptions"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
+# Normalize the code
+cmdToExecute="noelle-simplification $notOptions -o $notOptions"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
+# Delete dead functions
+cmdToExecute="noelle-deadcode $notOptions $notOptions"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
