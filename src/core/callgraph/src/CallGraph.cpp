@@ -481,4 +481,58 @@ namespace llvm::noelle {
     return existingEdge;
   }
 
+  bool CallGraph::canFunctionEscape (Function *f) const {
+
+    /*
+     * Check all uses of @f
+     */
+    for (auto &use : f->uses()){
+
+      /*
+       * Fetch the next user that is an instruction.
+       */
+      auto user = use.getUser();
+      if (!isa<Instruction>(user)){
+        continue ;
+      }
+      auto userInst = cast<Instruction>(user);
+
+      /*
+       * Handle call and invoke instructions.
+       */
+      if (auto callInst = dyn_cast<CallBase>(userInst)){
+
+        /*
+         * Check what the reference of @f is used for.
+         */
+        auto canEscape = false;
+        for (auto argID = 0; argID < callInst->getNumArgOperands(); argID++){
+          auto arg = callInst->getArgOperand(argID);
+          if (arg == f){
+            canEscape = true;
+            break ;
+          }
+        }
+        if (canEscape){
+          return true;
+        }
+
+        /*
+         * The current reference to @f is for declaring the callee of @callInst.
+         * Hence, @f doesn't escape because of this use.
+         */
+        continue ;
+      }
+
+      /*
+       * Handle store instructions.
+       */
+      if (auto storeInst = dyn_cast<StoreInst>(userInst)){
+        return true;
+      }
+    }
+
+    return true;
+  }
+
 }
