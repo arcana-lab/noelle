@@ -12,6 +12,7 @@ void llvm::refinePDGWithLoopAwareMemDepAnalysis(
   Loop *l,
   LoopStructure *loopStructure,
   LoopCarriedDependencies &LCD,
+  LoopsSummary liSummary,
   liberty::LoopAA *loopAA,
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
@@ -23,7 +24,7 @@ void llvm::refinePDGWithLoopAwareMemDepAnalysis(
   }
 
   if (LIDS) {
-    refinePDGWithLIDS(loopDG, loopStructure, LCD, LIDS);
+    refinePDGWithLIDS(loopDG, loopStructure, LCD, liSummary, LIDS);
   }
 
 }
@@ -167,25 +168,15 @@ void llvm::refinePDGWithLIDS(
   PDG *loopDG,
   LoopStructure *loopStructure,
   LoopCarriedDependencies &LCD,
+  LoopsSummary liSummary,
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
 
   auto dfr = computeReachabilityFromInstructions(loopStructure);
 
-  std::unordered_set<DGEdge<Value> *> edgesThatExist;
-  for (auto edge : loopDG->getEdges()) {
-    edgesThatExist.insert(edge);
-  }
-
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
-  for (auto dependency : LCD.getLoopCarriedDependenciesForLoop(*loopStructure)) {
 
-    /*
-     * The edge could have already been removed by another refining step
-     * Check that the edge still exists
-     */
-    if (edgesThatExist.find(dependency) == edgesThatExist.end()) continue;
-
+  for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure, liSummary, *loopDG) ) {
     /*
      * Do not waste time on edges that aren't memory dependencies
      */
