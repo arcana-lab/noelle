@@ -212,11 +212,6 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
   LoopCarriedDependencies::setLoopCarriedDependencies(liSummary, DS, *loopDG);
-  errs() << "LoopDG ptr in LoopDependencyInfo: " << loopDG << '\n';
-
-  for (auto edge : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*(liSummary.getLoopNestingTreeRoot()), liSummary,  *loopDG)) {
-    errs() << "loop dg edge after setting: " << edge << '\n';
-  }
 
   assert(lcdUsingLoopDGEdges.getLoopCarriedDependenciesForLoop(*(liSummary.getLoopNestingTreeRoot())) 
           == LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*(liSummary.getLoopNestingTreeRoot()), liSummary,  *loopDG)
@@ -321,6 +316,7 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   }
 
   for (auto edge : edgesToRemove) {
+    edge->setLoopCarried(false);
     loopInternalDG->removeEdge(edge);
   }
 }

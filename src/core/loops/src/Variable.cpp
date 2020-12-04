@@ -49,14 +49,6 @@ LoopCarriedVariable::LoopCarriedVariable (
 
   std::unordered_set<DGEdge<Value> *> edgesThatExist;
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
-  errs() << "LoopDG ptr in Variable: " << &loopDG << '\n';
-  for (auto edge : loopCarriedDependencies2) {
-    errs() << "loop dg edge: " << edge << '\n';
-  }
-
-  for(auto edge : loopCarriedDependencies) {
-    errs() << "LCD map edge: " << edge << '\n';
-  }
 
 //  for (auto edge : edgesToRemove) {
   //  loopCarriedDependencies.erase(edge);
