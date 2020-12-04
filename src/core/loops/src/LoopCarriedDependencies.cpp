@@ -75,7 +75,16 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
   for (auto sccNode : sccdagForLoops.getNodes()) {
     auto scc = sccNode->getT();
     for (auto edge : scc->getEdges()) {
+      bool wasLoopCarried = false;
+      if (edge->isLoopCarriedDependence()) {
+        wasLoopCarried = true;
+//        edge->setLoopCarried(false);
+      }
       auto loop = getLoopOfLCD(LIS, DS, edge);
+      if (wasLoopCarried && !loop) {
+        errs() << "Edge : " << edge->toString() << ", was loop carried but is no longer?\n";
+        exit(1);
+      }
       if (!loop) continue;
       edge->setLoopCarried(true);
     }
@@ -137,6 +146,39 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesFor
     LCEdges.insert(edge);
   }
 
+  return LCEdges;
+}
+
+std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, SCCDAG &sccdag) {
+
+  std::set<DGEdge<Value> *> LCEdges;
+
+  for (auto sccNode : sccdag.getNodes()) {
+    auto scc = sccNode->getT();
+    for (auto edge : scc->getEdges()) {
+      if (!edge->isLoopCarriedDependence()) {
+        continue;
+      }
+
+      auto consumer = edge->getIncomingT();
+      auto consumerI = cast<Instruction>(consumer);
+      auto consumerLoop = LIS.getLoop(*consumerI);
+      if (consumerLoop != &LS) {
+        continue;
+      }
+
+      auto producer = edge->getOutgoingT();
+      auto producerI = dyn_cast<Instruction>(producer);
+      if(producerI == NULL) { continue; }
+
+      auto producerLoop = LIS.getLoop(*producerI);
+      if(!producerLoop) {continue;}
+      LCEdges.insert(edge);
+   //   auto loop = getLoopOfLCD(LIS, DS, edge);
+     // if (!loop) continue;
+//      loopCarriedDependenciesMap[loop].insert(edge);
+    }
+  }
   return LCEdges;
 }
 
