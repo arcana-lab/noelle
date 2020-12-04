@@ -175,6 +175,38 @@ void llvm::refinePDGWithLIDS(
   auto dfr = computeReachabilityFromInstructions(loopStructure);
 
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  std::unordered_set<DGEdge<Value> *> edgesToRemove2;
+
+  std::unordered_set<DGEdge<Value> *> edgesThatExist;
+  for (auto edge : loopDG->getEdges()) {
+    edgesThatExist.insert(edge);
+  }
+
+  for (auto dependency : LCD.getLoopCarriedDependenciesForLoop(*loopStructure) ) {
+    if (edgesThatExist.find(dependency) == edgesThatExist.end()) continue;
+     
+     /*
+     * Do not waste time on edges that aren't memory dependencies
+     */
+    if (!dependency->isMemoryDependence()) continue;
+
+    auto fromInst = dyn_cast<Instruction>(dependency->getOutgoingT());
+    auto toInst = dyn_cast<Instruction>(dependency->getIncomingT());
+    if (!fromInst || !toInst) continue;
+
+    /*
+     * Loop carried dependencies are conservatively marked as such; we can only
+     * remove dependencies between a producer and consumer where we know the producer
+     * can NEVER reach the consumer during the same iteration
+     */
+    auto &afterInstructions = dfr->OUT(fromInst);
+    if (afterInstructions.find(toInst) != afterInstructions.end()) continue;
+
+    if (LIDS->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst)) {
+      edgesToRemove2.insert(dependency);
+    }
+  }
+ 
 
   for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure, liSummary, *loopDG) ) {
     /*
@@ -198,6 +230,8 @@ void llvm::refinePDGWithLIDS(
       edgesToRemove.insert(dependency);
     }
   }
+
+  assert(edgesToRemove == edgesToRemove2 && "edges to remove != new edges to remove"); 
 
   for (auto edge : edgesToRemove) {
     edge->setLoopCarried(false);

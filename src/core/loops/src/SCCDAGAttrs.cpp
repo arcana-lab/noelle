@@ -312,7 +312,7 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
   return ;
 }
 
-void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarriedDependencies &LCD) {
+void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarriedDependencies &LCD/*, SCCDAG *loopSCCDAG,*/) {
 
   /*
    * Iterate over all the loops contained within the one handled by @this
@@ -323,7 +323,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarried
      * Fetch the set of loop-carried data dependences of the current loop.
      */
     auto loopCarriedEdges = LCD.getLoopCarriedDependenciesForLoop(*loop.get());
-
+    assert(loopCarriedEdges == LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop.get(), LIS, *sccdag) && "lcd !=");
     /*
      * Make the map from SCCs to loop-carried data dependences.
      */
