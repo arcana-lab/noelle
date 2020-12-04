@@ -19,7 +19,9 @@ bool LoopCarriedCycle::isEvolutionReducibleAcrossLoopIterations (void) const {
 LoopCarriedVariable::LoopCarriedVariable (
   const LoopStructure &loop,
   const LoopCarriedDependencies &LCD,
+  LoopsSummary liSummary,
   PDG &loopDG,
+  SCCDAG &sccdag,
   SCC &sccContainingVariable,
   PHINode *declarationPHI
 ) : outermostLoopOfVariable{loop}, declarationValue{declarationPHI}, isValid{false} {
@@ -43,8 +45,20 @@ LoopCarriedVariable::LoopCarriedVariable (
    */
   auto declarationNode = sccContainingVariable.fetchNode(declarationValue);
   auto loopCarriedDependencies = LCD.getLoopCarriedDependenciesForLoop(loop);
+  auto loopCarriedDependencies2 = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(loop, liSummary,  sccdag);
+
+  std::unordered_set<DGEdge<Value> *> edgesThatExist;
+  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+
+//  for (auto edge : edgesToRemove) {
+  //  loopCarriedDependencies.erase(edge);
+//  }
+//  assert(loopCarriedDependencies == loopCarriedDependencies2 && "edges returned differ");
+
   std::unordered_set<Value *> loopCarriedValues{};
+  std::unordered_set<Value *> loopCarriedValues2{};
   std::unordered_set<DGEdge<Value> *> loopCarriedDependenciesNotOfVariable{};
+  std::unordered_set<DGEdge<Value> *> loopCarriedDependenciesNotOfVariable2{};
   for (auto dependency : loopCarriedDependencies) {
     auto consumer = dependency->getIncomingT();
     if (consumer == declarationValue) {
@@ -55,6 +69,18 @@ LoopCarriedVariable::LoopCarriedVariable (
     }
   }
 
+  for (auto dependency : loopCarriedDependencies2) {
+    auto consumer = dependency->getIncomingT();
+    if (consumer == declarationValue) {
+      auto producer = dependency->getOutgoingT();
+      loopCarriedValues2.insert(producer);
+    } else {
+      loopCarriedDependenciesNotOfVariable2.insert(dependency);
+    }   
+  }
+
+  assert(loopCarriedValues2 == loopCarriedValues && "LoopCarriedValues are different");
+  assert(loopCarriedDependenciesNotOfVariable2 == loopCarriedDependenciesNotOfVariable && "loopCarriedDependenciesNotOfVariable  are different");
   /*
    * We are interested in the SCC containing data/memory/control values
    * with loop carried dependencies only pertaining to the variable definition

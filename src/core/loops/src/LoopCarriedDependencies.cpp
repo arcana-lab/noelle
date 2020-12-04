@@ -72,19 +72,11 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
   SCCDAG &sccdagForLoops
 ) {
 
+
   for (auto sccNode : sccdagForLoops.getNodes()) {
     auto scc = sccNode->getT();
     for (auto edge : scc->getEdges()) {
-      bool wasLoopCarried = false;
-      if (edge->isLoopCarriedDependence()) {
-        wasLoopCarried = true;
-//        edge->setLoopCarried(false);
-      }
       auto loop = getLoopOfLCD(LIS, DS, edge);
-      if (wasLoopCarried && !loop) {
-        errs() << "Edge : " << edge->toString() << ", was loop carried but is no longer?\n";
-        exit(1);
-      }
       if (!loop) continue;
       edge->setLoopCarried(true);
     }
@@ -94,14 +86,21 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
 LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, const DominatorSummary &DS, DGEdge<Value> *edge) {
   auto producer = edge->getOutgoingT();
   auto consumer = edge->getIncomingT();
-  if (!isa<Instruction>(producer)) return nullptr ;
-  if (!isa<Instruction>(consumer)) return nullptr ;
+
+  if (!isa<Instruction>(producer)) {
+    return nullptr ;
+  }
+  if (!isa<Instruction>(consumer)) {
+    return nullptr ;
+  }
 
   auto producerI = dyn_cast<Instruction>(producer);
   auto consumerI = dyn_cast<Instruction>(consumer);
   auto producerLoop = LIS.getLoop(*producerI);
   auto consumerLoop = LIS.getLoop(*consumerI);
-  if (!producerLoop || !consumerLoop) return nullptr ;
+  if (!producerLoop || !consumerLoop) {
+    return nullptr ;
+  }
 
   if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
     auto producerLevel = producerLoop->getNestingLevel();
@@ -121,7 +120,6 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
         return nullptr ;
       }
     }
-
     return consumerLoop;
   }
 
@@ -174,9 +172,6 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesFor
       auto producerLoop = LIS.getLoop(*producerI);
       if(!producerLoop) {continue;}
       LCEdges.insert(edge);
-   //   auto loop = getLoopOfLCD(LIS, DS, edge);
-     // if (!loop) continue;
-//      loopCarriedDependenciesMap[loop].insert(edge);
     }
   }
   return LCEdges;

@@ -85,14 +85,6 @@ void llvm::refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
 		// Try to disprove all the reported loop-carried deps
     uint8_t disprovedLCDepTypes =
         disproveLoopCarriedMemoryDep(i, j, depTypes, l, loopAA);
-		// set LoopCarried bit for all the non-disproved LC edges
-		uint8_t lcDepTypes = depTypes - disprovedLCDepTypes;
-		for (uint8_t i = 0; i <= 2; ++i) {
-			if (lcDepTypes & (1 << i)) {
-				auto &e = edges[i];
-				e->setLoopCarried(true);
-			}
-		}
 
 		// for every disproved loop-carried dependence
     // check if there is a intra-iteration dependence
@@ -217,6 +209,7 @@ void llvm::refinePDGWithLIDS(
   }
 
   for (auto edge : edgesToRemove) {
+    edge->setLoopCarried(false);
     loopDG->removeEdge(edge);
   }
 
