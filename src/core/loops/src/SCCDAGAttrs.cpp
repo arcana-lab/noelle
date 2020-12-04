@@ -469,7 +469,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
   if (loopCarriedPHIs.size() != 1) return false;
   auto singleLoopCarriedPHI = *loopCarriedPHIs.begin();
 
-  auto variable = new LoopCarriedVariable(*rootLoop, LCD, *loopDG, *scc, singleLoopCarriedPHI);
+  auto variable = new LoopCarriedVariable(*rootLoop, LCD, LIS, *loopDG, *sccdag, *scc, singleLoopCarriedPHI);
   if (!variable->isEvolutionReducibleAcrossLoopIterations()) {
     delete variable;
     return false;
