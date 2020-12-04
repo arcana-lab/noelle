@@ -284,6 +284,39 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
 
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  std::unordered_set<DGEdge<Value> *> edgesToRemove2;
+
+  for (auto edge : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*rootLoop, liSummary, *loopInternalDG)) {
+    if (!edge->isMemoryDependence()) continue;
+
+    auto producer = dyn_cast<Instruction>(edge->getOutgoingT());
+    auto consumer = dyn_cast<Instruction>(edge->getIncomingT());
+    if (!producer || !consumer) continue;
+
+    auto locationProducer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(producer);
+    auto locationConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(consumer);
+    if (!locationProducer || !locationConsumer) continue;
+
+    bool isRAW = edge->isRAWDependence()
+      && locationProducer->isInstructionStoringLocation(producer)
+      && locationConsumer->isInstructionLoadingLocation(consumer);
+    bool isWAR = edge->isWARDependence()
+      && locationConsumer->isInstructionLoadingLocation(producer)
+      && locationProducer->isInstructionStoringLocation(consumer);
+    bool isWAW = edge->isWAWDependence()
+      && locationConsumer->isInstructionStoringLocation(producer)
+      && locationProducer->isInstructionStoringLocation(consumer);
+
+    if (!isRAW && !isWAR && !isWAW) continue;
+
+    // producer->print(errs() << "Found alloca location for producer: "); errs() << "\n";
+    // consumer->print(errs() << "Found alloca location for consumer: "); errs() << "\n";
+    // locationProducer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
+    // locationConsumer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
+
+    edgesToRemove2.insert(edge);
+  }
+
   for (auto edge : lcd.getLoopCarriedDependenciesForLoop(*rootLoop)) {
     if (!edge->isMemoryDependence()) continue;
 
@@ -314,6 +347,8 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
 
     edgesToRemove.insert(edge);
   }
+
+  assert(edgesToRemove == edgesToRemove2 && "Edges to remove differ");
 
   for (auto edge : edgesToRemove) {
     edge->setLoopCarried(false);
