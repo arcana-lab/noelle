@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -98,9 +98,8 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Calculate various attributes on SCCs
    */
-  LoopCarriedDependencies lcd(this->liSummary, DS, *loopSCCDAG);
   this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAG, *environment);
-  this->sccdagAttrs = SCCDAGAttrs(loopDG, loopSCCDAG, this->liSummary, SE, lcd, *inductionVariables, DS);
+  this->sccdagAttrs = SCCDAGAttrs(loopDG, loopSCCDAG, this->liSummary, SE, *inductionVariables, DS);
   this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(liSummary, *this->inductionVariables, SE);
 
   /*
@@ -187,6 +186,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   for (auto edge : loopDG->getEdges()) {
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
+
   std::vector<Value *> loopInternals;
   for (auto internalNode : loopDG->internalNodePairs()) {
       loopInternals.push_back(internalNode.first);
@@ -204,18 +204,8 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
    * HACK: The SCCDAG is constructed with a loop internal DG to avoid external nodes in the loop DG
    * which provide context (live-ins/live-outs) but which complicate analyzing the resulting SCCDAG 
    */
-  for (auto edge : loopDG->getEdges()) {
-    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
-  }
-  LoopCarriedDependencies lcdUsingLoopDGEdges(liSummary, DS, *loopDG);
-  for (auto edge : loopDG->getEdges()) {
-    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
-  }
   LoopCarriedDependencies::setLoopCarriedDependencies(liSummary, DS, *loopDG);
 
-  assert(lcdUsingLoopDGEdges.getLoopCarriedDependenciesForLoop(*(liSummary.getLoopNestingTreeRoot())) 
-          == LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*(liSummary.getLoopNestingTreeRoot()), liSummary,  *loopDG)
-         && "Loop carried edges from Map not equal to from Flag");
   /*
    * Perform loop-aware memory dependence analysis to refine the loop dependence graph.
    */
@@ -227,16 +217,12 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
-    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, lcdUsingLoopDGEdges, liSummary, aa, &domainSpace);
+    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, liSummary, aa, &domainSpace);
   }
 
   if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {
 
-    /*
-     * HACK: Recompute LCD as the previous computed LCD may be holding onto edges deleted above
-     */
-    LoopCarriedDependencies recomputedLCDOnLoopDG(liSummary, DS, *loopDG);
-    removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS, recomputedLCDOnLoopDG);
+    removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS);
   }
 
   /*
@@ -244,7 +230,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
    */
   loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
   auto loopSCCDAG = new SCCDAG(loopInternalDG);
-  LoopCarriedDependencies::setLoopCarriedDependencies(liSummary, DS, *loopSCCDAG);
+//  LoopCarriedDependencies::setLoopCarriedDependencies(liSummary, DS, *loopSCCDAG);
   /*
    * Safety check: check that the SCCDAG includes all instructions of the loop given as input.
    */
@@ -277,14 +263,12 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
 
 void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   PDG *loopInternalDG,
-  DominatorSummary &DS,
-  LoopCarriedDependencies &lcd
+  DominatorSummary &DS
 ) {
   auto rootLoop = liSummary.getLoopNestingTreeRoot();
   this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
 
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
-  std::unordered_set<DGEdge<Value> *> edgesToRemove2;
 
   for (auto edge : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*rootLoop, liSummary, *loopInternalDG)) {
     if (!edge->isMemoryDependence()) continue;
@@ -314,41 +298,8 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
     // locationProducer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
     // locationConsumer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
 
-    edgesToRemove2.insert(edge);
-  }
-
-  for (auto edge : lcd.getLoopCarriedDependenciesForLoop(*rootLoop)) {
-    if (!edge->isMemoryDependence()) continue;
-
-    auto producer = dyn_cast<Instruction>(edge->getOutgoingT());
-    auto consumer = dyn_cast<Instruction>(edge->getIncomingT());
-    if (!producer || !consumer) continue;
-
-    auto locationProducer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(producer);
-    auto locationConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(consumer);
-    if (!locationProducer || !locationConsumer) continue;
-
-    bool isRAW = edge->isRAWDependence()
-      && locationProducer->isInstructionStoringLocation(producer)
-      && locationConsumer->isInstructionLoadingLocation(consumer);
-    bool isWAR = edge->isWARDependence()
-      && locationConsumer->isInstructionLoadingLocation(producer)
-      && locationProducer->isInstructionStoringLocation(consumer);
-    bool isWAW = edge->isWAWDependence()
-      && locationConsumer->isInstructionStoringLocation(producer)
-      && locationProducer->isInstructionStoringLocation(consumer);
-
-    if (!isRAW && !isWAR && !isWAW) continue;
-
-    // producer->print(errs() << "Found alloca location for producer: "); errs() << "\n";
-    // consumer->print(errs() << "Found alloca location for consumer: "); errs() << "\n";
-    // locationProducer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
-    // locationConsumer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
-
     edgesToRemove.insert(edge);
   }
-
-  assert(edgesToRemove == edgesToRemove2 && "Edges to remove differ");
 
   for (auto edge : edgesToRemove) {
     edge->setLoopCarried(false);
