@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -11,43 +11,6 @@
 #include "LoopCarriedDependencies.hpp"
 
 using namespace llvm;
-
-LoopCarriedDependencies::LoopCarriedDependencies (
-  const LoopsSummary &LIS,
-  const DominatorSummary &DS,
-  PDG &dgForLoops
-) : loopCarriedDependenciesMap{} {
-
-  for (auto &loop : LIS.loops) {
-    loopCarriedDependenciesMap[loop.get()] = Criticisms();
-  }
-
-  for (auto edge : dgForLoops.getEdges()) {
-    auto loop = getLoopOfLCD(LIS, DS, edge);
-    if (!loop) continue;
-    loopCarriedDependenciesMap[loop].insert(edge);
-  }
-}
-
-LoopCarriedDependencies::LoopCarriedDependencies (
-  const LoopsSummary &LIS,
-  const DominatorSummary &DS,
-  SCCDAG &sccdagForLoops
-) : loopCarriedDependenciesMap{} {
-
-  for (auto &loop : LIS.loops) {
-    loopCarriedDependenciesMap[loop.get()] = Criticisms();
-  }
-
-  for (auto sccNode : sccdagForLoops.getNodes()) {
-    auto scc = sccNode->getT();
-    for (auto edge : scc->getEdges()) {
-      auto loop = getLoopOfLCD(LIS, DS, edge);
-      if (!loop) continue;
-      loopCarriedDependenciesMap[loop].insert(edge);
-    }   
-  }
-}
 
 void LoopCarriedDependencies::setLoopCarriedDependencies (
   const LoopsSummary &LIS,
@@ -66,6 +29,7 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
   }
 }
 
+/* Flags are already set from LoopDG
 void LoopCarriedDependencies::setLoopCarriedDependencies (
   const LoopsSummary &LIS,
   const DominatorSummary &DS,
@@ -82,7 +46,7 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
     }
   }
 }
-
+*/
 LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, const DominatorSummary &DS, DGEdge<Value> *edge) {
   auto producer = edge->getOutgoingT();
   auto consumer = edge->getIncomingT();
@@ -175,11 +139,6 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesFor
     }
   }
   return LCEdges;
-}
-
-Criticisms LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const {
-  assert(loopCarriedDependenciesMap.find(&LS) != loopCarriedDependenciesMap.end());
-  return loopCarriedDependenciesMap.at(&LS);
 }
 
 bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther (

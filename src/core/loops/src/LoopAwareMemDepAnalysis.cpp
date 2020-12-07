@@ -1,4 +1,13 @@
-// TODO: add copyright
+/*
+ * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni, Brian Homerding
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "DataFlow.hpp"
@@ -11,7 +20,6 @@ void llvm::refinePDGWithLoopAwareMemDepAnalysis(
   PDG *loopDG,
   Loop *l,
   LoopStructure *loopStructure,
-  LoopCarriedDependencies &LCD,
   LoopsSummary liSummary,
   liberty::LoopAA *loopAA,
   LoopIterationDomainSpaceAnalysis *LIDS
@@ -24,7 +32,7 @@ void llvm::refinePDGWithLoopAwareMemDepAnalysis(
   }
 
   if (LIDS) {
-    refinePDGWithLIDS(loopDG, loopStructure, LCD, liSummary, LIDS);
+    refinePDGWithLIDS(loopDG, loopStructure, liSummary, LIDS);
   }
 
 }
@@ -167,7 +175,6 @@ DataFlowResult *computeReachabilityFromInstructions (LoopStructure *loopStructur
 void llvm::refinePDGWithLIDS(
   PDG *loopDG,
   LoopStructure *loopStructure,
-  LoopCarriedDependencies &LCD,
   LoopsSummary liSummary,
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
@@ -175,38 +182,6 @@ void llvm::refinePDGWithLIDS(
   auto dfr = computeReachabilityFromInstructions(loopStructure);
 
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
-  std::unordered_set<DGEdge<Value> *> edgesToRemove2;
-
-  std::unordered_set<DGEdge<Value> *> edgesThatExist;
-  for (auto edge : loopDG->getEdges()) {
-    edgesThatExist.insert(edge);
-  }
-
-  for (auto dependency : LCD.getLoopCarriedDependenciesForLoop(*loopStructure) ) {
-    if (edgesThatExist.find(dependency) == edgesThatExist.end()) continue;
-     
-     /*
-     * Do not waste time on edges that aren't memory dependencies
-     */
-    if (!dependency->isMemoryDependence()) continue;
-
-    auto fromInst = dyn_cast<Instruction>(dependency->getOutgoingT());
-    auto toInst = dyn_cast<Instruction>(dependency->getIncomingT());
-    if (!fromInst || !toInst) continue;
-
-    /*
-     * Loop carried dependencies are conservatively marked as such; we can only
-     * remove dependencies between a producer and consumer where we know the producer
-     * can NEVER reach the consumer during the same iteration
-     */
-    auto &afterInstructions = dfr->OUT(fromInst);
-    if (afterInstructions.find(toInst) != afterInstructions.end()) continue;
-
-    if (LIDS->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst)) {
-      edgesToRemove2.insert(dependency);
-    }
-  }
- 
 
   for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure, liSummary, *loopDG) ) {
     /*
@@ -230,8 +205,6 @@ void llvm::refinePDGWithLIDS(
       edgesToRemove.insert(dependency);
     }
   }
-
-  assert(edgesToRemove == edgesToRemove2 && "edges to remove != new edges to remove"); 
 
   for (auto edge : edgesToRemove) {
     edge->setLoopCarried(false);
