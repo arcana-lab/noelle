@@ -10,8 +10,9 @@
  */
 #include "LoopDomainSpaceTestSuite.hpp"
 
-using namespace llvm;
 using namespace parallelizertests;
+
+namespace llvm::noelle {
 
 // Register pass to "opt"
 char LoopDomainSpaceTestSuite::ID = 0;
@@ -174,4 +175,6 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithSCEVSimplification (void) {
   errs() << "Finished with simplification\n";
 
   modifiedCodeWithSCEVSimplification = true;
+}
+
 }

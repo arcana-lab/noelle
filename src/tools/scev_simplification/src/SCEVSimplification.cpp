@@ -11,6 +11,7 @@
 #include "SCEVSimplification.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 SCEVSimplification::SCEVSimplification (Noelle &noelle)
   : noelle{noelle} {

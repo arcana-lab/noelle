@@ -10,7 +10,7 @@
  */
 #include "LoopCarriedDependencies.hpp"
 
-using namespace llvm;
+using namespace llvm::noelle;
 
 void LoopCarriedDependencies::setLoopCarriedDependencies (
   const LoopsSummary &LIS,

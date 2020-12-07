@@ -12,6 +12,7 @@
 #include "../include/SCC.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 SCC::SCC(std::set<DGNode<Value> *> internalNodes) {
 

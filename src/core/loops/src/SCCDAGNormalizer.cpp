@@ -11,6 +11,7 @@
 #include "SCCDAGNormalizer.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 SCCDAGNormalizer::SCCDAGNormalizer (SCCDAG &dag, LoopsSummary &lis)
   : LIS{lis}, sccdag{dag} {

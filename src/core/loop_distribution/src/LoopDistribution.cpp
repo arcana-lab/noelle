@@ -11,6 +11,7 @@
 #include "LoopDistribution.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
  
 bool LoopDistribution::splitLoop (
   LoopDependenceInfo const &LDI, 

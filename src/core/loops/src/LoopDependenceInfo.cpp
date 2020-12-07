@@ -15,14 +15,16 @@
 #include "LoopAwareMemDepAnalysis.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 LoopDependenceInfo::LoopDependenceInfo(
   PDG *fG,
   Loop *l,
   DominatorSummary &DS,
   ScalarEvolution &SE,
-  uint32_t maxCores
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, nullptr, true} {
+  uint32_t maxCores,
+  bool enableFloatAsReal
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, nullptr, true} {
 
   return ;
 }
@@ -33,8 +35,9 @@ LoopDependenceInfo::LoopDependenceInfo(
   DominatorSummary &DS,
   ScalarEvolution &SE,
   uint32_t maxCores,
+  bool enableFloatAsReal,
   liberty::LoopAA *aa
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, {}, aa, true} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, true} {
 
   return ;
 }
@@ -45,8 +48,9 @@ LoopDependenceInfo::LoopDependenceInfo(
   DominatorSummary &DS,
   ScalarEvolution &SE,
   uint32_t maxCores,
+  bool enableFloatAsReal,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, optimizations, nullptr, true} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, optimizations, nullptr, true} {
 
   return ;
 }
@@ -57,6 +61,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   DominatorSummary &DS,
   ScalarEvolution &SE,
   uint32_t maxCores,
+  bool enableFloatAsReal,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations,
   liberty::LoopAA *loopAA,
   bool enableLoopAwareDependenceAnalyses
@@ -99,7 +104,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Calculate various attributes on SCCs
    */
   this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAG, *environment);
-  this->sccdagAttrs = SCCDAGAttrs(loopDG, loopSCCDAG, this->liSummary, SE, *inductionVariables, DS);
+  this->sccdagAttrs = SCCDAGAttrs(enableFloatAsReal, loopDG, loopSCCDAG, this->liSummary, SE, *inductionVariables, DS);
   this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(liSummary, *this->inductionVariables, SE);
 
   /*
@@ -217,7 +222,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
-    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, liSummary, aa, &domainSpace);
+    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, aa, &domainSpace);
   }
 
   if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {

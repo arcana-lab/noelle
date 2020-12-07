@@ -24,9 +24,10 @@
 #include "../include/PDGAnalysis.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 // Next there is code to register your pass to "opt"
-char llvm::PDGAnalysis::ID = 0;
+char PDGAnalysis::ID = 0;
 static RegisterPass<PDGAnalysis> X("PDGAnalysis", "Computing the Program Dependence Graph");
 
 // Next there is code to register your pass to "clang"

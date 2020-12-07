@@ -42,6 +42,7 @@ using namespace llvm;
 #include "LastLiveOutPeeler.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noelle)
   : LDI{LDI}, noelle{noelle} {

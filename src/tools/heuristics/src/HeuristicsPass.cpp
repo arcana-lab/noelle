@@ -24,6 +24,7 @@
 #include "HeuristicsPass.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 bool HeuristicsPass::doInitialization (Module &M){
   return false;

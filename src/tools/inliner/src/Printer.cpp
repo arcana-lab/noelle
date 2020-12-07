@@ -11,6 +11,7 @@
 #include "Inliner.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void Inliner::printFnCallGraph () {
   if (this->verbose == Verbosity::Disabled) return;

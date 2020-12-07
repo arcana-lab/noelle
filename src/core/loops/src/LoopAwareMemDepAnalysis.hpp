@@ -19,26 +19,29 @@
 #include "LoopIterationDomainSpaceAnalysis.hpp"
 #include "LoopsSummary.hpp"
 
-namespace llvm {
+using namespace llvm;
+using namespace llvm::noelle;
 
-// Perform loop-aware memory dependence analysis to refine the loop PDG
-void refinePDGWithLoopAwareMemDepAnalysis(
-  PDG *loopDG,
-  Loop *l,
-  LoopStructure *loopStructure,
-  LoopsSummary liSummary,
-  liberty::LoopAA *loopAA,
-  LoopIterationDomainSpaceAnalysis *LIDS
-);
+namespace llvm::noelle {
 
-// Refine the loop PDG with SCAF
-void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA);
+  // Perform loop-aware memory dependence analysis to refine the loop PDG
+  void refinePDGWithLoopAwareMemDepAnalysis(
+    PDG *loopDG,
+    Loop *l,
+    LoopStructure *loopStructure,
+    LoopsSummary *liSummary,
+    liberty::LoopAA *loopAA,
+    LoopIterationDomainSpaceAnalysis *LIDS
+  );
 
-void refinePDGWithLIDS(
-  PDG *loopDG,
-  LoopStructure *loopStructure,
-  LoopsSummary liSummary,
-  LoopIterationDomainSpaceAnalysis *LIDS
-);
+  // Refine the loop PDG with SCAF
+  void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA);
 
-} // namespace llvm
+  void refinePDGWithLIDS(
+    PDG *loopDG,
+    LoopStructure *loopStructure,
+    LoopsSummary *liSummary,
+    LoopIterationDomainSpaceAnalysis *LIDS
+  );
+
+} // namespace llvm::noelle

@@ -19,8 +19,7 @@
 #include "Invariants.hpp"
 #include "DominatorSummary.hpp"
 
-namespace llvm {
-namespace noelle {
+namespace llvm::noelle {
 
   class ClonableMemoryLocation ;
 
@@ -89,5 +88,4 @@ namespace noelle {
 
   };
 
-}
 }

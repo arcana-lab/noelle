@@ -12,6 +12,7 @@
 #include "LoopGoverningIVAttribution.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 InductionVariableManager::InductionVariableManager (
   LoopsSummary &LIS,
@@ -19,13 +20,24 @@ InductionVariableManager::InductionVariableManager (
   ScalarEvolution &SE,
   SCCDAG &sccdag,
   LoopEnvironment &loopEnv
-) : loopToIVsMap{}, loopToGoverningIVAttrMap{} {
+) : LIS{LIS}, loopToIVsMap{}, loopToGoverningIVAttrMap{} {
 
-  Function &F = *LIS.getLoopNestingTreeRoot()->getHeader()->getParent();
+  /*
+   * Fetch the loop to analyze.
+   */
+  auto loopToAnalyze = LIS.getLoopNestingTreeRoot();
+
+  /*
+   * Fetch the function that includes the loop.
+   */
+  auto &F = *loopToAnalyze->getHeader()->getParent();
+
+  /*
+   * Identify the induction variables.
+   */
   ScalarEvolutionReferentialExpander referentialExpander(SE, F);
-
   for (auto &loop : LIS.loops) {
-    loopToIVsMap[loop.get()] = std::unordered_set<InductionVariable *>();
+    this->loopToIVsMap[loop.get()] = std::unordered_set<InductionVariable *>();
 
     /*
      * Fetch the loop header.
@@ -51,10 +63,17 @@ InductionVariableManager::InductionVariableManager (
       if (!scev){
         continue ;
       }
+
+      /*
+       * Check if the SCEV suggests this is an induction variable.
+       */
       if (scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
         continue;
       }
 
+      /*
+       * Allocate the induction variable.
+       */
       auto sccContainingIV = sccdag.sccOfValue(&phi);
       auto IV = new InductionVariable(loop.get(), IVM, SE, &phi, *sccContainingIV, loopEnv, referentialExpander); 
 
@@ -66,9 +85,12 @@ InductionVariableManager::InductionVariableManager (
         continue;
       }
 
-      loopToIVsMap[loop.get()].insert(IV);
+      /*
+       * Save the IV.
+       */
+      this->loopToIVsMap[loop.get()].insert(IV);
       auto exitBlocks = LIS.getLoop(phi)->getLoopExitBasicBlocks();
-      LoopGoverningIVAttribution *attribution = new LoopGoverningIVAttribution(*IV, *sccContainingIV, exitBlocks);
+      auto attribution = new LoopGoverningIVAttribution(*IV, *sccContainingIV, exitBlocks);
       if (attribution->isSCCContainingIVWellFormed()) {
         loopToGoverningIVAttrMap[loop.get()] = attribution;
       } else {
@@ -76,6 +98,23 @@ InductionVariableManager::InductionVariableManager (
       }
     }
   }
+
+  return ;
+}
+
+std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVariables (void) const {
+  
+  /*
+   * Fetch the outermost loop of @this.
+   */
+  auto loop = this->LIS.getLoopNestingTreeRoot();
+
+  /*
+   * Fetch the induction variables of the loop.
+   */
+  auto IVs = this->getInductionVariables(*loop);
+
+  return IVs;
 }
 
 std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVariables (Instruction *i) const {

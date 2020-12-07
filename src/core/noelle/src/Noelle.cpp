@@ -17,6 +17,7 @@ namespace llvm::noelle{
 Noelle::Noelle() 
   : ModulePass{ID}
   , verbose{Verbosity::Disabled}
+  , enableFloatAsReal{true}
   , minHot{0.0}
   , program{nullptr}
   , profiles{nullptr}
@@ -28,6 +29,10 @@ Noelle::Noelle()
 {
 
   return ;
+}
+      
+bool Noelle::canFloatsBeConsideredRealNumbers (void) const {
+  return this->enableFloatAsReal;
 }
       
 Module * Noelle::getProgram (void) const {

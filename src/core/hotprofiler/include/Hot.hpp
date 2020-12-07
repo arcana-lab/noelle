@@ -14,7 +14,7 @@
 #include "SCC.hpp"
 #include "LoopStructure.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class Hot {
     public:

@@ -13,7 +13,8 @@
 #include "SystemHeaders.hpp"
 #include "Hot.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 uint64_t Hot::getSelfInstructions (Function *f) const {
   auto insts = this->functionSelfInstructions.at(f);
