@@ -13,7 +13,8 @@
 #include "SystemHeaders.hpp"
 #include "Hot.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 Hot::Hot ()
   : moduleNumberOfInstructionsExecuted{0}

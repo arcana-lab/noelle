@@ -10,7 +10,8 @@
  */
 #include "LoopEnvironment.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 LoopEnvironment::LoopEnvironment (
   PDG *loopDG, 

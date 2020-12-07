@@ -11,6 +11,7 @@
 #include "Invariants.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 InvariantManager::InvariantManager (
   LoopStructure *loop,
@@ -143,9 +144,11 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DGEdg
   }
 
   /*
-   * If the instruction is included in the loop and this is a memory dependence, the value may evolve
+   * The instruction is included in the loop.
+   *
+   * If the instruction is a memory dependence, the value may evolve.
    */
-  if (dep->dataDependenceType() != DataDependenceType::DG_DATA_NONE){
+  if (dep->isMemoryDependence()){
     return true;
   }
 

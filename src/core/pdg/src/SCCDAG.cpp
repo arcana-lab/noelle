@@ -13,7 +13,8 @@
 #include "SCCDAG.hpp"
 #include "llvm/InitializePasses.h"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 SCCDAG::SCCDAG(PDG *pdg) {
 

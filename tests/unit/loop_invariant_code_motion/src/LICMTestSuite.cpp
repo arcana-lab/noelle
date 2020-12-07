@@ -10,7 +10,7 @@
  */
 #include "LICMTestSuite.hpp"
 
-using namespace llvm;
+namespace llvm::noelle {
 
 // Register pass to "opt"
 char LICMTestSuite::ID = 0;
@@ -64,7 +64,7 @@ bool LICMTestSuite::runOnModule (Module &M) {
   errs() << "LICMTestSuite: Instantiating LDI and LoopInvariantCodeMotion components\n";
   DominatorSummary DS{DT, PDT};
   auto l = LI.getLoopsInPreorder()[0];
-  this->ldi = new LoopDependenceInfo(fdg, l, DS, SE, noelle.getMaximumNumberOfCores());
+  this->ldi = new LoopDependenceInfo(fdg, l, DS, SE, noelle.getMaximumNumberOfCores(), true);
   this->mem2Reg = new Mem2RegNonAlloca(*this->ldi, noelle);
 
   // PDGPrinter pdgPrinter;
@@ -123,4 +123,6 @@ Values LICMTestSuite::loadsAndStoresAreHoistedFromLoop (ModulePass &pass, TestSu
   }
 
   return hoistedValues;
+}
+
 }

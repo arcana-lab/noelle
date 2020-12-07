@@ -26,8 +26,9 @@
 
 using namespace std;
 using namespace llvm;
+using namespace llvm::noelle;
 
-namespace llvm {
+namespace llvm::noelle {
 
   /*
    * Program Dependence Graph.

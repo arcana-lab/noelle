@@ -11,7 +11,8 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
 

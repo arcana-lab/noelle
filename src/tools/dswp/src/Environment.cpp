@@ -11,6 +11,7 @@
 #include "DSWP.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
   auto sccdag = LDI->sccdagAttrs.getSCCDAG();

@@ -11,6 +11,9 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 HELIX::HELIX (
   Module &module, 
   Hot &p,

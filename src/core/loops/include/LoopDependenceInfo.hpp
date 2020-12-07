@@ -26,7 +26,7 @@
 
 #include "scaf/MemoryAnalysisModules/LoopAA.h"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class LoopDependenceInfo {
     public:
@@ -56,7 +56,8 @@ namespace llvm {
         Loop *l,
         DominatorSummary &DS,
         ScalarEvolution &SE,
-        uint32_t maxCores
+        uint32_t maxCores,
+        bool enableFloatAsReal
       );
 
       LoopDependenceInfo (
@@ -65,6 +66,7 @@ namespace llvm {
         DominatorSummary &DS,
         ScalarEvolution &SE,
         uint32_t maxCores,
+        bool enableFloatAsReal,
         liberty::LoopAA *aa
       );
 
@@ -74,6 +76,7 @@ namespace llvm {
         DominatorSummary &DS,
         ScalarEvolution &SE,
         uint32_t maxCores,
+        bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations
       );
 
@@ -83,6 +86,7 @@ namespace llvm {
         DominatorSummary &DS,
         ScalarEvolution &SE,
         uint32_t maxCores,
+        bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations,
         liberty::LoopAA *aa,
         bool enableLoopAwareDependenceAnalyses

@@ -11,6 +11,7 @@
 #include "LoopStats.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void LoopStats::collectStatsOnLLVMSCCs (Hot *profiles, PDG *loopDG, Stats *statsForLoop) {
 
@@ -57,7 +58,7 @@ void LoopStats::collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI
   auto invariantManager = LDI.getInvariantManager();
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*loopFunction).getSE();
   auto inductionVariables = InductionVariableManager(loopHierarchy, *invariantManager, SE, loopInternalSCCDAG, environment);
-  auto sccdagAttrs = SCCDAGAttrs(loopDG, &loopInternalSCCDAG, loopHierarchy, SE, inductionVariables, DS);
+  auto sccdagAttrs = SCCDAGAttrs(true, loopDG, &loopInternalSCCDAG, loopHierarchy, SE, inductionVariables, DS);
 
   //DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-" + std::to_string(LDI.getID()) + ".dot", &loopInternalSCCDAG);
   collectStatsOnSCCDAG(profiles, &loopInternalSCCDAG, &sccdagAttrs, &LDI, statsForLoop);

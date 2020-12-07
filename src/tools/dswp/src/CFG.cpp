@@ -11,6 +11,7 @@
 #include "DSWP.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];

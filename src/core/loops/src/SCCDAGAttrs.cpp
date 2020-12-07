@@ -12,19 +12,23 @@
 #include "PDGPrinter.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 SCCDAGAttrs::SCCDAGAttrs ()
-  : loopDG{nullptr}, sccdag{nullptr}, memoryCloningAnalysis{nullptr} {
+  : enableFloatAsReal{true}, loopDG{nullptr}, sccdag{nullptr}, memoryCloningAnalysis{nullptr} {
 }
 
 SCCDAGAttrs::SCCDAGAttrs (
+  bool enableFloatAsReal,
   PDG *loopDG,
   SCCDAG *loopSCCDAG,
   LoopsSummary &LIS,
   ScalarEvolution &SE,
   InductionVariableManager &IV,
   DominatorSummary &DS
-) : loopDG{loopDG}, sccdag{loopSCCDAG}, memoryCloningAnalysis{nullptr} {
+) : 
+  enableFloatAsReal{enableFloatAsReal}, loopDG{loopDG}, sccdag{loopSCCDAG}, memoryCloningAnalysis{nullptr} 
+  {
 
   /*
    * Partition dependences between intra-iteration and iter-iteration ones.
@@ -464,7 +468,12 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
     loopCarriedPHIs.insert(consumerPHI);
   }
 
-  if (loopCarriedPHIs.size() != 1) return false;
+  /*
+   * Check if there are loop carried dependences related to PHI nodes.
+   */
+  if (loopCarriedPHIs.size() != 1) {
+    return false;
+  }
   auto singleLoopCarriedPHI = *loopCarriedPHIs.begin();
 
   auto variable = new LoopCarriedVariable(*rootLoop, LIS, *loopDG, *sccdag, *scc, singleLoopCarriedPHI);
@@ -473,6 +482,26 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
     return false;
   }
 
+  /*
+   * The SCC can be reduced.
+   *
+   * Check if the reducable variable is a floating point and check if floating point variables can be considered as real numbers.
+   */
+  auto variableType = singleLoopCarriedPHI->getType();
+  if (  true
+        && (variableType->isFloatTy() || variableType->isDoubleTy())
+        && (!this->enableFloatAsReal)
+    ){
+
+    /*
+     * Floating point values cannot be considered real numbers and therefore floating point variables cannot be reduced.
+     */
+    return false;
+  }
+
+  /*
+   * This SCC can be reduced.
+   */
   auto sccInfo = this->getSCCAttrs(scc);
   sccInfo->addLoopCarriedVariable(variable);
   return true;

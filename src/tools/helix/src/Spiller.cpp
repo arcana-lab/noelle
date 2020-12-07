@@ -12,7 +12,8 @@
 #include "HELIXTask.hpp"
 #include <set>
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowResult *reachabilityDFR) {
 

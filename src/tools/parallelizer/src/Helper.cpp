@@ -10,6 +10,9 @@
  */
 #include "Parallelizer.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 namespace llvm::noelle {
 
   bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes (Module &M, Noelle &par) {

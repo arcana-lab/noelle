@@ -12,7 +12,8 @@
 #include "HELIXTask.hpp"
 #include <set>
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 static void constructEdgesFromUseDefs (PDG *pdg);
 static void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);

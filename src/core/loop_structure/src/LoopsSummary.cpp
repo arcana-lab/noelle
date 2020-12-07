@@ -11,6 +11,7 @@
 #include "LoopsSummary.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
       
 LoopsSummary::LoopsSummary (
   Loop *loop
