@@ -16,8 +16,9 @@
 #include "DGBase.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
-namespace llvm {
+namespace llvm::noelle {
 
 	/*
 	 * Strongly Connected Component

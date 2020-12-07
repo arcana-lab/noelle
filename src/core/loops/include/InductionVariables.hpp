@@ -22,7 +22,7 @@
 #include "ScalarEvolutionReferencer.hpp"
 #include "Invariants.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class InductionVariable;
   class LoopGoverningIVAttribution;
@@ -39,6 +39,11 @@ namespace llvm {
       );
 
       InductionVariableManager () = delete;
+
+      /*
+       * Return all induction variables including the loop-governing one of the outermost loop of the loop sub-tree related to @this.
+       */
+      std::unordered_set<InductionVariable *> getInductionVariables (void) const ;
 
       /*
        * Return all induction variables including the loop-governing one.
@@ -63,6 +68,7 @@ namespace llvm {
       ~InductionVariableManager ();
 
     private:
+      LoopsSummary &LIS;
       std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
       std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *> loopToGoverningIVAttrMap;
   };

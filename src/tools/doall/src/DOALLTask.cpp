@@ -10,6 +10,9 @@
  */
 #include "DOALLTask.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 DOALLTask::DOALLTask (
   FunctionType *taskSignature,
   Module &M

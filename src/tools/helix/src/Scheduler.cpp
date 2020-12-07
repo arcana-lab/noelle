@@ -12,8 +12,8 @@
 #include "llvm/IR/CFG.h"
 #include "SCCPartitionScheduler.hpp"
 
-using namespace llvm ;
-
+using namespace llvm;
+using namespace llvm::noelle;
 
 /*
  * Heuristic used: push furthest outlier instructions closer to the rest of the sequential segment

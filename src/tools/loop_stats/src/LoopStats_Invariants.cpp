@@ -11,6 +11,7 @@
 #include "LoopStats.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void LoopStats::collectStatsOnNoelleInvariants (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats) {
   auto invariantManager = LDI.getInvariantManager();

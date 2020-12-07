@@ -11,6 +11,7 @@
 #include "Inliner.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 Inliner::Inliner ()
   : ModulePass{ID}, fnsAffected{}, parentFns{}, childrenFns{}, loopsToCheck{}, depthOrderedFns{}, preOrderedLoops{}

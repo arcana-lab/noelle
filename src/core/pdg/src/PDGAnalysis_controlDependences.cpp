@@ -17,6 +17,7 @@
 #include "PDGAnalysis.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void PDGAnalysis::constructEdgesFromControl (PDG *pdg, Module &M){
   assert(pdg != nullptr);

@@ -14,6 +14,7 @@
 #include "PDGPrinter.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 /*
  * Pass options.

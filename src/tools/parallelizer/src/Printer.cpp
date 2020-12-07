@@ -17,27 +17,28 @@
 #include "SCCDAG.hpp"
 #include "Parallelizer.hpp"
 
-namespace llvm::noelle {
-  void Parallelizer::printLoop (Loop *loop)
-  {
-    errs() << "Parallelizing the following loop\n" ;
-    auto header = loop->getHeader();
-    errs() << "Number of bbs: " << std::distance(loop->block_begin(), loop->block_end()) << "\n";
-    for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
-      auto bb = *bbi;
-      if (header == bb) {
-        errs() << "Header:\n";
-      } else if (loop->isLoopLatch(bb)) {
-        errs() << "Loop latch:\n";
-      } else if (loop->isLoopExiting(bb)) {
-        errs() << "Loop exiting:\n";
-      } else {
-        errs() << "Loop body:\n";
-      }
-      for (auto &I : *bb) {
-        I.print(errs());
-        errs() << "\n";
-      }
+using namespace llvm;
+using namespace llvm::noelle;
+
+void Parallelizer::printLoop (Loop *loop)
+{
+  errs() << "Parallelizing the following loop\n" ;
+  auto header = loop->getHeader();
+  errs() << "Number of bbs: " << std::distance(loop->block_begin(), loop->block_end()) << "\n";
+  for (auto bbi = loop->block_begin(); bbi != loop->block_end(); ++bbi){
+    auto bb = *bbi;
+    if (header == bb) {
+      errs() << "Header:\n";
+    } else if (loop->isLoopLatch(bb)) {
+      errs() << "Loop latch:\n";
+    } else if (loop->isLoopExiting(bb)) {
+      errs() << "Loop exiting:\n";
+    } else {
+      errs() << "Loop body:\n";
+    }
+    for (auto &I : *bb) {
+      I.print(errs());
+      errs() << "\n";
     }
   }
 }

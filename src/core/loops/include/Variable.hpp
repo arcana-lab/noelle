@@ -17,7 +17,7 @@
 #include "SCCDAG.hpp"
 #include "SCC.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class EvolutionUpdate;
 

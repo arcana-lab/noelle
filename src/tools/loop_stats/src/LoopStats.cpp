@@ -13,6 +13,7 @@
 #include "PDGPrinter.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
     
 void LoopStats::collectStatsForLoops (Noelle &noelle, std::vector<LoopDependenceInfo *> const & loops){
 

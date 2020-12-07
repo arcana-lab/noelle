@@ -17,6 +17,7 @@
 #include "PDGAnalysis.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store) {
 

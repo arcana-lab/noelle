@@ -12,6 +12,7 @@
 #include "Noelle.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 /*
  * Options of the dependence graph simplifier pass.

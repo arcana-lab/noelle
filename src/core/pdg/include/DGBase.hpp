@@ -23,7 +23,7 @@
 using namespace std;
 using namespace llvm;
 
-namespace llvm {
+namespace llvm::noelle {
 
   /*
    * Program Dependence Graph Node and Edge
@@ -303,6 +303,8 @@ namespace llvm {
       setControl(ctrl);
       setLoopCarried(lc);
       setRemovable(rm);
+
+      return ;
     }
 
     void addSubEdge(DGEdge<SubT> *edge) {

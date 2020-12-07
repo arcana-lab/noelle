@@ -15,7 +15,7 @@
 #include "DominatorSummary.hpp"
 #include <memory>
 
-namespace llvm {
+namespace llvm::noelle {
 
   class ControlFlowEquivalence {
    public:

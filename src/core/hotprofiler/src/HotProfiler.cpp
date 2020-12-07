@@ -13,6 +13,7 @@
 #include "HotProfiler.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 void HotProfiler::analyzeProfiles (Module &M){
 

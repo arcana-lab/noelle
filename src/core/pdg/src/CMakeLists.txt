@@ -34,15 +34,15 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS}
-  ${CMAKE_INSTALL_PREFIX}/include
-  ${CMAKE_INSTALL_PREFIX}/include/svf
+  ../include
   ../../basic_utilities/include
   ../../loops/include
   ../../alloc_aa/include 
   ../../talkdown/include 
   ../../dataflow/include
   ../../callgraph/include
-  ../include
+  ${CMAKE_INSTALL_PREFIX}/include
+  ${CMAKE_INSTALL_PREFIX}/include/svf
   )
 
 # Declare the LLVM pass to compile

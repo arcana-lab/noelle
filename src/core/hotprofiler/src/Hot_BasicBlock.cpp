@@ -13,7 +13,8 @@
 #include "SystemHeaders.hpp"
 #include "Hot.hpp"
 
-using namespace llvm ;
+using namespace llvm;
+using namespace llvm::noelle;
 
 void Hot::setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations){
 
