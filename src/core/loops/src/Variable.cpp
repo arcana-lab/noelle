@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -18,7 +18,6 @@ bool LoopCarriedCycle::isEvolutionReducibleAcrossLoopIterations (void) const {
 
 LoopCarriedVariable::LoopCarriedVariable (
   const LoopStructure &loop,
-  const LoopCarriedDependencies &LCD,
   LoopsSummary liSummary,
   PDG &loopDG,
   SCCDAG &sccdag,
@@ -44,21 +43,14 @@ LoopCarriedVariable::LoopCarriedVariable (
    *  These will be ignored when constructing the variable's data/memory SCC
    */
   auto declarationNode = sccContainingVariable.fetchNode(declarationValue);
-  auto loopCarriedDependencies = LCD.getLoopCarriedDependenciesForLoop(loop);
-  auto loopCarriedDependencies2 = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(loop, liSummary,  sccdag);
+  auto loopCarriedDependencies = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(loop, liSummary,  sccdag);
 
   std::unordered_set<DGEdge<Value> *> edgesThatExist;
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
 
-//  for (auto edge : edgesToRemove) {
-  //  loopCarriedDependencies.erase(edge);
-//  }
-//  assert(loopCarriedDependencies == loopCarriedDependencies2 && "edges returned differ");
-
   std::unordered_set<Value *> loopCarriedValues{};
-  std::unordered_set<Value *> loopCarriedValues2{};
   std::unordered_set<DGEdge<Value> *> loopCarriedDependenciesNotOfVariable{};
-  std::unordered_set<DGEdge<Value> *> loopCarriedDependenciesNotOfVariable2{};
+
   for (auto dependency : loopCarriedDependencies) {
     auto consumer = dependency->getIncomingT();
     if (consumer == declarationValue) {
@@ -69,18 +61,6 @@ LoopCarriedVariable::LoopCarriedVariable (
     }
   }
 
-  for (auto dependency : loopCarriedDependencies2) {
-    auto consumer = dependency->getIncomingT();
-    if (consumer == declarationValue) {
-      auto producer = dependency->getOutgoingT();
-      loopCarriedValues2.insert(producer);
-    } else {
-      loopCarriedDependenciesNotOfVariable2.insert(dependency);
-    }   
-  }
-
-  assert(loopCarriedValues2 == loopCarriedValues && "LoopCarriedValues are different");
-  assert(loopCarriedDependenciesNotOfVariable2 == loopCarriedDependenciesNotOfVariable && "loopCarriedDependenciesNotOfVariable  are different");
   /*
    * We are interested in the SCC containing data/memory/control values
    * with loop carried dependencies only pertaining to the variable definition
@@ -445,7 +425,6 @@ bool LoopCarriedVariable::hasRoundingError (std::unordered_set<EvolutionUpdate *
  */
 LoopCarriedMemoryLocation::LoopCarriedMemoryLocation (
   const LoopStructure &loop,
-  const LoopCarriedDependencies &LCD,
   PDG &loopDG,
   SCC &memoryLocationSCC,
   Value *memoryLocation
