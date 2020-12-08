@@ -86,8 +86,7 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
 
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
   // TODO: Test attribution on normalized SCCDAG as well
-  LoopCarriedDependencies lcd(LIS, DS, *sccdag);
-  this->attrs = new SCCDAGAttrs(true, loopDG, sccdag, LIS, *SE, lcd, IV, DS);
+  this->attrs = new SCCDAGAttrs(true, loopDG, sccdag, LIS, *SE, IV, DS);
 
   // DGPrinter::writeGraph<SCCDAG, SCC>("graph-loop.dot", sccdag);
 
