@@ -75,7 +75,7 @@ namespace llvm::noelle {
        * - an exit block, which is the only basic block that will exit the task
        * - one basic block per loop exit, which will jump to the exit block
        */
-      virtual void generateEmptyTasks (
+      virtual void addPredecessorAndSuccessorsBasicBlocksToTasks (
         LoopDependenceInfo *LDI, 
         std::vector<Task *> taskStructs
       );
