@@ -236,6 +236,11 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks (
   auto loopFunction = loopSummary->getFunction();
 
   /*
+   * Fetch the loop structure.
+   */
+  auto loopStructure = LDI->getLoopStructure();
+
+  /*
    * Setup original loop and task with functions and basic blocks for wiring
    */
   auto &cxt = loopFunction->getContext();
@@ -254,6 +259,14 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks (
     task->extractFuncArgs();
 
     /*
+     * Fetch the entry and exit basic blocks of the current task.
+     */
+    auto entryBB = task->getEntry();
+    auto exitBB = task->getExit();
+    assert(entryBB != nullptr);
+    assert(exitBB != nullptr);
+
+    /*
      * Map original preheader to entry block
      */
     task->addBasicBlock(loopPreHeader, task->getEntry());
@@ -262,13 +275,15 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks (
      * Create one basic block per loop exit, mapping between originals and clones,
      * and branching from them to the function exit block
      */
-    for (auto exitBB : LDI->getLoopStructure()->getLoopExitBasicBlocks()) {
+    for (auto exitBB : loopStructure->getLoopExitBasicBlocks()) {
       auto newExitBB = task->addBasicBlockStub(exitBB);
       task->tagBasicBlockAsLastBlock(newExitBB);
       IRBuilder<> builder(newExitBB);
       builder.CreateBr(task->getExit());
     }
   }
+
+  return ;
 }
 
 void ParallelizationTechnique::cloneSequentialLoop (
@@ -712,7 +727,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
 
   for (auto origI : task->getOriginalInstructions()) {
     auto cloneI = task->getCloneOfOriginalInstruction(origI);
-    adjustDataFlowToUseClones(cloneI, taskIndex);
+    this->adjustDataFlowToUseClones(cloneI, taskIndex);
   }
 }
 
@@ -748,6 +763,10 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     * Adjust values (other instructions and live-in values) used by clones
     */
   for (auto &op : cloneI->operands()) {
+
+    /*
+     * Fetch the current operand of @cloneI
+     */
     auto opV = op.get();
 
     /*
@@ -776,6 +795,8 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
       }
     }
   }
+
+  return ;
 }
 
 void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
