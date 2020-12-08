@@ -214,7 +214,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
   return afterReductionB;
 }
 
-void ParallelizationTechnique::generateEmptyTasks (
+void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks (
   LoopDependenceInfo *LDI,
   std::vector<Task *> taskStructs
 ) {

@@ -229,7 +229,7 @@ void HELIX::createParallelizableTask (
    * Compute reachability so that determining whether spill loads placed in loop
    * exit blocks could be invalidated by spill stores in the loop. If so,
    * they will have to be placed within the loop (which is less optimal)
-   * NOTE: This is computed BEFORE generateEmptyTasks creates an empty basic block
+   * NOTE: This is computed BEFORE addPredecessorAndSuccessorsBasicBlocksToTasks creates an empty basic block
    * in the original function which will be used to link this task
    */
   auto reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
@@ -238,7 +238,7 @@ void HELIX::createParallelizableTask (
    * Generate empty tasks for the HELIX execution.
    */
   auto helixTask = new HELIXTask(this->taskSignature, this->module);
-  this->generateEmptyTasks(LDI, { helixTask });
+  this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { helixTask });
   this->numTaskInstances = LDI->getMaximumNumberOfCores();
   assert(helixTask == this->tasks[0]);
 
@@ -380,7 +380,9 @@ bool HELIX::synchronizeTask (
   auto sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
   this->squeezeSequentialSegments(LDI, &sequentialSegments, reachabilityDFR);
   delete reachabilityDFR;
-  for (auto ss : sequentialSegments) delete ss;
+  for (auto ss : sequentialSegments) {
+    delete ss;
+  }
 
   /*
    * Re-compute reachability analysis after squeezing sequential segments
@@ -419,11 +421,20 @@ bool HELIX::synchronizeTask (
       });
       if (!entryAtHeader || !exitAtLatch) continue;
 
+      /*
+       * The HELIX parallelization isn't worth it.
+       */
       if (this->verbose != Verbosity::Disabled) {
         errs() << "HELIX: There is a sequential segment spanning the entire loop; therefore, the parallelization isn't worth it.\n";
       }
 
-      for (auto ss : sequentialSegments) delete ss;
+      /*
+       * Free the memory.
+       */
+      for (auto ss : sequentialSegments) {
+        delete ss;
+      }
+
       return false;
     }
   }
@@ -523,7 +534,12 @@ bool HELIX::synchronizeTask (
     // DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
-  for (auto ss : sequentialSegments) delete ss;
+  /*
+   * Free the memory.
+   */
+  for (auto ss : sequentialSegments) {
+    delete ss;
+  }
 
   return true;
 }
