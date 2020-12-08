@@ -227,6 +227,15 @@ namespace llvm::noelle {
 
     return true;
   }
+      
+  bool Task::isAClonedInstruction (Instruction *i) const {
+    if (i->getFunction() != this->getTaskBody()){
+      return false;
+    }
+    assert(this->instructionClones.find(i) != this->instructionClones.end());
+
+    return true;
+  }
 
   void Task::addInstruction (Instruction *original, Instruction *internal) {
     this->instructionClones[original] = internal;
