@@ -219,7 +219,7 @@ bool DOALL::apply (
    * Generate an empty task for the parallel DOALL execution.
    */
   auto chunkerTask = new DOALLTask(this->taskSignature, this->module);
-  this->generateEmptyTasks(LDI, { chunkerTask });
+  this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { chunkerTask });
   this->numTaskInstances = LDI->getMaximumNumberOfCores();
 
   /*
