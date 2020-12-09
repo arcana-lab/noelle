@@ -14,7 +14,6 @@
 
 #include "PDG.hpp"
 #include "LoopsSummary.hpp"
-#include "LoopCarriedDependencies.hpp"
 #include "SCCDAG.hpp"
 #include "SCCDAGPartition.hpp"
 

@@ -10,6 +10,7 @@
  */
 #include "SCCDAGAttrs.hpp"
 #include "PDGPrinter.hpp"
+#include "LoopCarriedDependencies.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
