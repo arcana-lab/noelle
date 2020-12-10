@@ -170,6 +170,11 @@ void HELIX::createParallelizableTask (
   auto loopHeader = loopSummary->getHeader();
 
   /*
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI->getSCCManager();
+
+  /*
    * NOTE: Keep around the original loops' LoopDependenceInfo for later phases
    * //TODO: we need to specify why this is necessary
    */
@@ -181,13 +186,13 @@ void HELIX::createParallelizableTask (
   if (this->verbose != Verbosity::Disabled) {
     errs() << "HELIX: Start the parallelization\n";
     errs() << "HELIX:   Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
-    auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDependencies();
+    auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDependencies();
     for (auto scc : nonDOALLSCCs) {
 
       /*
        * Fetch the SCC metadata.
        */
-      auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+      auto sccInfo = sccManager->getSCCAttrs(scc);
 
       /*
        * Check the SCC.
@@ -210,7 +215,7 @@ void HELIX::createParallelizableTask (
         // errs() << "HELIX:     SCC:\n";
         // scc->printMinimal(errs(), "HELIX:       ") ;
         errs() << "HELIX:       Loop-carried data dependences\n";
-        LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+        sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
           errs() << "HELIX:       " << *fromInst << " ---> " << *toInst ;
@@ -255,8 +260,8 @@ void HELIX::createParallelizableTask (
   std::set<int> reducableVars{};
   for (auto liveOutIndex : liveOutVars) {
     auto producer = LDI->environment->producerAt(liveOutIndex);
-    auto scc = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->getType() == SCCAttrs::SCCType::REDUCIBLE) {
       reducableVars.insert(liveOutIndex);
     } else {
@@ -379,6 +384,10 @@ bool HELIX::synchronizeTask (
    */
   auto sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
   this->squeezeSequentialSegments(LDI, &sequentialSegments, reachabilityDFR);
+
+  /*
+   * Free the memory.
+   */
   delete reachabilityDFR;
   for (auto ss : sequentialSegments) {
     delete ss;
@@ -481,7 +490,7 @@ bool HELIX::synchronizeTask (
    * it is because we have attributed a loop governing IV. Our attribution relies on there
    * being only one loop exit that is controlled by an IV. Hence, we fetch the lone exit block
    */
-  auto originalExitBlocks = originalLDI->getLoopStructure()->getLoopExitBasicBlocks();
+  auto originalExitBlocks = this->originalLDI->getLoopStructure()->getLoopExitBasicBlocks();
   auto originalSingleExitBlock = *originalExitBlocks.begin();
   BasicBlock * cloneLoopExitBlock = nullptr;
   if (this->lastIterationExecutionBlock) {
