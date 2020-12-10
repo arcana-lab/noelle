@@ -58,9 +58,14 @@ bool DOALL::canBeAppliedToLoop (
   }
 
   /*
+   * Fetch the loop structure.
+   */
+  auto loopStructure = LDI->getLoopStructure();
+
+  /*
    * The loop must have one single exit path.
    */
-  if (LDI->numberOfExits() > 1) { 
+  if (loopStructure->getLoopExitBasicBlocks().size() > 1){ 
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   More than 1 loop exit blocks\n";
     }
@@ -93,7 +98,7 @@ bool DOALL::canBeAppliedToLoop (
    * all induction variables must have step sizes that are loop invariant
    */
   auto IVManager = LDI->getInductionVariableManager();
-  for (auto IV : IVManager->getInductionVariables(*LDI->getLoopStructure())) {
+  for (auto IV : IVManager->getInductionVariables(*loopStructure)) {
     if (IV->isStepValueLoopInvariant()) {
       continue;
     }

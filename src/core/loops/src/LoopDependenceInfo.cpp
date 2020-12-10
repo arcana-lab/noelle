@@ -131,14 +131,6 @@ void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *oth
 
   return ;
 }
-
-/*
- * Fetch the number of exit blocks.
- */
-uint32_t LoopDependenceInfo::numberOfExits (void) const{
-  return this->getLoopStructure()->getLoopExitBasicBlocks().size();
-}
-
 void LoopDependenceInfo::fetchLoopAndBBInfo (
   Loop *l,
   ScalarEvolution &SE
