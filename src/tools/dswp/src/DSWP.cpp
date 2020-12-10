@@ -262,7 +262,7 @@ bool DSWP::apply (
   /*
    * Should an exit block environment variable be necessary, register one 
    */
-  if (loopSummary->getLoopExitBasicBlocks().size() > 1){ 
+  if (loopSummary->numberOfExitBasicBlocks() > 1){ 
     nonReducableVars.insert(LDI->environment->indexOfExitBlock());
   }
 

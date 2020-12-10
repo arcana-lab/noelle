@@ -65,7 +65,7 @@ bool DOALL::canBeAppliedToLoop (
   /*
    * The loop must have one single exit path.
    */
-  if (loopStructure->getLoopExitBasicBlocks().size() > 1){ 
+  if (loopStructure->numberOfExitBasicBlocks() > 1){ 
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   More than 1 loop exit blocks\n";
     }

@@ -273,7 +273,7 @@ void HELIX::createParallelizableTask (
    * Add the memory location of the environment used to store the exit block taken to leave the parallelized loop.
    * This location exists only if there is more than one loop exit.
    */
-  if (loopSummary->getLoopExitBasicBlocks().size() > 1){ 
+  if (loopSummary->numberOfExitBasicBlocks() > 1){ 
     nonReducableVars.insert(LDI->environment->indexOfExitBlock());
   }
 
