@@ -75,8 +75,9 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   DominatorSummary DS(*DT, *PDT);
 
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
-  this->sccdag = new SCCDAG(fdg);
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
+  LoopCarriedDependencies::setLoopCarriedDependencies(LIS, DS, *loopDG);
+  this->sccdag = new SCCDAG(loopDG);
 
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
   auto loopExitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
