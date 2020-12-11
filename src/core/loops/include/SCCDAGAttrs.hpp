@@ -19,7 +19,6 @@
 #include "InductionVariables.hpp"
 #include "LoopGoverningIVAttribution.hpp"
 #include "LoopEnvironment.hpp"
-#include "LoopCarriedDependencies.hpp"
 #include "Variable.hpp"
 #include "MemoryCloningAnalysis.hpp"
 
