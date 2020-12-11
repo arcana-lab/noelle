@@ -13,7 +13,6 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "DGGraphTraits.hpp"
-#include "LoopCarriedDependencies.hpp"
 #include "LoopStructure.hpp"
 
 namespace llvm {

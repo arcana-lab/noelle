@@ -10,6 +10,7 @@
  */
 #include "SCCDAGAttrs.hpp"
 #include "PDGPrinter.hpp"
+#include "LoopCarriedDependencies.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -326,6 +327,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS) {
      * Fetch the set of loop-carried data dependences of the current loop.
      */
     auto loopCarriedEdges = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop.get(), LIS, *sccdag);
+
     /*
      * Make the map from SCCs to loop-carried data dependences.
      */
