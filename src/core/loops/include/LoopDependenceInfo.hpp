@@ -125,11 +125,6 @@ namespace llvm::noelle {
       void copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) ;
 
       /*
-       * Return the number of exits of the loop.
-       */
-      uint32_t numberOfExits (void) const;
-
-      /*
        * Check whether a transformation is enabled.
        */
       bool isTransformationEnabled (Transformation transformation);

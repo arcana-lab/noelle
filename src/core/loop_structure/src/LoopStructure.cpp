@@ -357,3 +357,7 @@ void LoopStructure::addMetadata (const std::string &metadataName){
 
   return ;
 }
+
+uint64_t LoopStructure::numberOfExitBasicBlocks (void) const {
+  return this->exitBlocks.size();
+}
