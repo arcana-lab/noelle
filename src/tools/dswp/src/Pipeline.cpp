@@ -39,7 +39,7 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
       this->sccToStage[scc] = task;
     }
   }
-  this->generateEmptyTasks(LDI, techniqueTasks);
+  this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, techniqueTasks);
   this->numTaskInstances = techniqueTasks.size();
   assert(this->numTaskInstances == this->partitioner->numberOfPartitions());
 

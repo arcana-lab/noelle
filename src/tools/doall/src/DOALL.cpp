@@ -58,9 +58,14 @@ bool DOALL::canBeAppliedToLoop (
   }
 
   /*
+   * Fetch the loop structure.
+   */
+  auto loopStructure = LDI->getLoopStructure();
+
+  /*
    * The loop must have one single exit path.
    */
-  if (LDI->numberOfExits() > 1) { 
+  if (loopStructure->numberOfExitBasicBlocks() > 1){ 
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   More than 1 loop exit blocks\n";
     }
@@ -93,7 +98,7 @@ bool DOALL::canBeAppliedToLoop (
    * all induction variables must have step sizes that are loop invariant
    */
   auto IVManager = LDI->getInductionVariableManager();
-  for (auto IV : IVManager->getInductionVariables(*LDI->getLoopStructure())) {
+  for (auto IV : IVManager->getInductionVariables(*loopStructure)) {
     if (IV->isStepValueLoopInvariant()) {
       continue;
     }
@@ -207,6 +212,11 @@ bool DOALL::apply (
   auto loopFunction = loopStructure->getFunction();
 
   /*
+   * Fetch the environment of the loop.
+   */
+  auto loopEnvironment = LDI->environment;
+
+  /*
    * Print the parallelization request.
    */
   if (this->verbose != Verbosity::Disabled) {
@@ -219,14 +229,14 @@ bool DOALL::apply (
    * Generate an empty task for the parallel DOALL execution.
    */
   auto chunkerTask = new DOALLTask(this->taskSignature, this->module);
-  this->generateEmptyTasks(LDI, { chunkerTask });
+  this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { chunkerTask });
   this->numTaskInstances = LDI->getMaximumNumberOfCores();
 
   /*
    * Allocate memory for all environment variables
    */
-  auto preEnvRange = LDI->environment->getEnvIndicesOfLiveInVars();
-  auto postEnvRange = LDI->environment->getEnvIndicesOfLiveOutVars();
+  auto preEnvRange = loopEnvironment->getEnvIndicesOfLiveInVars();
+  auto postEnvRange = loopEnvironment->getEnvIndicesOfLiveOutVars();
   std::set<int> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
   std::set<int> reducableVars(postEnvRange.begin(), postEnvRange.end());
   this->initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
@@ -243,10 +253,10 @@ bool DOALL::apply (
    * Load all loop live-in values at the entry point of the task.
    */
   auto envUser = this->envBuilder->getUser(0);
-  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
+  for (auto envIndex : loopEnvironment->getEnvIndicesOfLiveInVars()) {
     envUser->addLiveInIndex(envIndex);
   }
-  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+  for (auto envIndex : loopEnvironment->getEnvIndicesOfLiveOutVars()) {
     envUser->addLiveOutIndex(envIndex);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);

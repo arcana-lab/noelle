@@ -62,6 +62,10 @@ namespace llvm::noelle {
         double minimumHotness
       );
 
+      std::unordered_map<BasicBlock *, LoopDependenceInfo *> getInnermostLoopsThatContains (
+        const std::vector<LoopDependenceInfo *> &loops
+        );
+
       LoopDependenceInfo * getInnermostLoopThatContains (
         const std::vector<LoopDependenceInfo *> &loops,
         Instruction *inst
