@@ -17,6 +17,16 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
+LoopDependenceInfo::LoopDependenceInfo (
+  PDG *fG,
+  Loop *l,
+  DominatorSummary &DS,
+  ScalarEvolution &SE
+) : LoopDependenceInfo{fG, l, DS, SE, Architecture::getNumberOfLogicalCores(), true, {}, nullptr, true} 
+  {
+  return ;
+}
+
 LoopDependenceInfo::LoopDependenceInfo(
   PDG *fG,
   Loop *l,
