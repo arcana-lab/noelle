@@ -55,6 +55,13 @@ namespace llvm::noelle {
         PDG *fG,
         Loop *l,
         DominatorSummary &DS,
+        ScalarEvolution &SE
+      );
+
+      LoopDependenceInfo (
+        PDG *fG,
+        Loop *l,
+        DominatorSummary &DS,
         ScalarEvolution &SE,
         uint32_t maxCores,
         bool enableFloatAsReal
