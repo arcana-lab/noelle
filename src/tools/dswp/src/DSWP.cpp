@@ -201,9 +201,7 @@ bool DSWP::apply (
   auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto loopFunction = loopHeader->getParent();
-  DominatorTree dt(*loopFunction);
-  PostDominatorTree pdt(*loopFunction);
-  this->originalFunctionDS = new DominatorSummary(dt, pdt);
+  this->originalFunctionDS = par.getDominators(loopFunction);
 
   /*
    * Partition the SCCDAG.
