@@ -124,13 +124,6 @@ LoopDependenceInfo::LoopDependenceInfo(
   loopGoverningIVAttribution = iv == nullptr ? nullptr
     : new LoopGoverningIVAttribution(*iv, *loopSCCDAG->sccOfValue(iv->getLoopEntryPHI()), loopExitBlocks);
 
-  /*
-   * Cache the post-dominator tree.
-   */
-  for (auto bb : l->blocks()) {
-    loopBBtoPD[&*bb] = DS.PDT.getNode(&*bb)->getIDom()->getBlock();
-  }
-
   return ;
 }
 

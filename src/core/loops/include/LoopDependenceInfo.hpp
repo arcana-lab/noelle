@@ -31,8 +31,6 @@ namespace llvm::noelle {
   class LoopDependenceInfo {
     public:
 
-      std::unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;  /*< From Basic block to its immediate post-dominatr.  */
-
       /*
        * Environment
        */
