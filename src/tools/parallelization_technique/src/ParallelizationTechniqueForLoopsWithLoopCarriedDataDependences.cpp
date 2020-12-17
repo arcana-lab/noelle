@@ -63,9 +63,14 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::reset () {
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSCCDAG (LoopDependenceInfo *LDI) {
 
   /*
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI->getSCCManager();
+
+  /*
    * Print
    */
-  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
+  auto sccdag = sccManager->getSCCDAG();
   if (this->verbose >= Verbosity::Minimal) {
     errs() << "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Start\n";
     // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-to-partition-" + std::to_string(LDI->getID()) + ".dot", sccdag);
@@ -85,7 +90,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
      * Fetch the current node in the SCCDAG.
      */
     auto currentSCC = nodePair.first;
-    auto currentSCCInfo = LDI->sccdagAttrs.getSCCAttrs(currentSCC);
+    auto currentSCCInfo = sccManager->getSCCAttrs(currentSCC);
 
     /*
      * Check if the current SCC can be removed (e.g., because it is due to induction variables).
@@ -106,7 +111,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   this->partitioner = new SCCDAGPartitioner(
     sccdag,
     initialSets,
-    LDI->sccdagAttrs.parentsViaClones,
+    sccManager->parentsViaClones,
     LDI->getLoopStructure()
   );
 
@@ -118,7 +123,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   // DominatorTree DT(*function);
   // PostDominatorTree PDT(*function);
   // DominatorSummary DS(DT, PDT);
-  // LoopCarriedDependencies lcd(*loopHierarchy, DS, *LDI->sccdagAttrs.getSCCDAG());
+  // LoopCarriedDependencies lcd(*loopHierarchy, DS, *sccManager->getSCCDAG());
   // this->partitioner->mergeLoopCarriedDependencies(&lcd);
 
   /*

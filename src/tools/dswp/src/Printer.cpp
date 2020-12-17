@@ -108,7 +108,7 @@ void DSWP::printEnv (LoopDependenceInfo *LDI) const {
   return ;
 }
 
-void DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
+void DSWP::writeStageGraphsAsDot (LoopDependenceInfo &LDI) const {
 
   DG<DGString> stageGraph;
   std::set<DGString *> elements;
@@ -135,7 +135,8 @@ void DSWP::writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const {
     return std::make_pair(tasksOwningSCC, tasksWithClonableSCC);
   };
 
-  auto sccdag = LDI.sccdagAttrs.getSCCDAG();
+  auto sccManager = LDI.getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
   for (auto sccNode : sccdag->getNodes()) {
     std::string sccDescription;
     raw_string_ostream ros(sccDescription);

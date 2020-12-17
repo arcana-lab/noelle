@@ -37,11 +37,6 @@ namespace llvm::noelle {
       LoopEnvironment *environment;
 
       /*
-       * SCCDAG.
-       */
-      SCCDAGAttrs sccdagAttrs;
-
-      /*
        * Parallelization options
        */
       uint32_t DOALLChunkSize;
@@ -167,7 +162,7 @@ namespace llvm::noelle {
 
       InductionVariableManager * getInductionVariableManager (void) const ;
 
-      SCCDAGAttrs * getSCCManager (void) ;
+      SCCDAGAttrs * getSCCManager (void) const ;
 
       InvariantManager * getInvariantManager (void) const ;
 
@@ -220,6 +215,8 @@ namespace llvm::noelle {
       bool compileTimeKnownTripCount;
 
       uint64_t tripCount;
+
+      SCCDAGAttrs *sccdagAttrs;
 
       /*
        * Methods
