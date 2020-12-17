@@ -15,10 +15,6 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
-SCCDAGAttrs::SCCDAGAttrs ()
-  : enableFloatAsReal{true}, loopDG{nullptr}, sccdag{nullptr}, memoryCloningAnalysis{nullptr} {
-}
-
 SCCDAGAttrs::SCCDAGAttrs (
   bool enableFloatAsReal,
   PDG *loopDG,

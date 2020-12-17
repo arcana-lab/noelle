@@ -27,11 +27,6 @@
 
   namespace llvm::noelle {
 
-    /*
-     * HACK: Remove once LoopDependenceInfo doesn't require argument-less SCCDAGAttrs constructor.
-     */ 
-    class LoopDependenceInfo;
-
     class SCCDAGAttrs {
       public:
 
@@ -44,6 +39,8 @@
           InductionVariableManager &IV,
           DominatorSummary &DS
         ) ;
+        
+        SCCDAGAttrs () = delete ;
 
         /*
          * Graph wide structures
@@ -108,12 +105,6 @@
         PDG *loopDG;
         SCCDAG *sccdag;     /* SCCDAG of the related loop.  */
         MemoryCloningAnalysis *memoryCloningAnalysis;
-
-        /*
-         * HACK: Remove once LoopDependenceInfo doesn't produce empty SCCDAGAttrs on construction
-         */
-        friend class LoopDependenceInfo;
-        SCCDAGAttrs () ;
 
         /*
          * Helper methods on SCCDAG

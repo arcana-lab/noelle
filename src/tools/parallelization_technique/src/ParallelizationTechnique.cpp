@@ -132,6 +132,11 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
   auto loopPreHeader = loopSummary->getPreHeader();
 
   /*
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI->getSCCManager();
+
+  /*
    * Collect reduction operation information needed to accumulate reducable variables after parallelization execution
    */
   std::unordered_map<int, int> reducableBinaryOps;
@@ -141,15 +146,15 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     if (!isReduced) continue;
 
     auto producer = LDI->environment->producerAt(envInd);
-    auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
-    auto producerSCCAttributes = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+    auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
+    auto producerSCCAttributes = sccManager->getSCCAttrs(producerSCC);
 
     /*
      * HACK: Need to get accumulator that feeds directly into producer PHI, not any intermediate one
      */
     auto firstAccumI = *(producerSCCAttributes->getAccumulators().begin());
     auto binOpCode = firstAccumI->getOpcode();
-    reducableBinaryOps[envInd] = LDI->sccdagAttrs.accumOpInfo.accumOpForType(binOpCode, producer->getType());
+    reducableBinaryOps[envInd] = sccManager->accumOpInfo.accumOpForType(binOpCode, producer->getType());
 
     PHINode *loopEntryProducerPHI = fetchLoopEntryPHIOfProducer(LDI, producer);
     auto initValPHIIndex = loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
@@ -616,6 +621,11 @@ Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerV
   DominatorSummary &taskDS
 ) {
 
+  /*
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI->getSCCManager();
+
   auto task = this->tasks[taskIndex];
   auto &DT = taskDS.DT;
   auto &PDT = taskDS.PDT;
@@ -624,13 +634,13 @@ Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerV
    * Fetch all clones of intermediate values of the producer
    */
   auto producer = (Instruction*)LDI->environment->producerAt(envIndex);
-  auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
+  auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
 
   std::set<Instruction *> intermediateValues{};
-  for (auto originalPHI : LDI->sccdagAttrs.getSCCAttrs(producerSCC)->getPHIs()) {
+  for (auto originalPHI : sccManager->getSCCAttrs(producerSCC)->getPHIs()) {
     intermediateValues.insert(task->getCloneOfOriginalInstruction(originalPHI));
   }
-  for (auto originalI : LDI->sccdagAttrs.getSCCAttrs(producerSCC)->getAccumulators()) {
+  for (auto originalI : sccManager->getSCCAttrs(producerSCC)->getAccumulators()) {
     intermediateValues.insert(task->getCloneOfOriginalInstruction(originalI));
   }
 
@@ -867,10 +877,15 @@ PHINode * ParallelizationTechnique::fetchLoopEntryPHIOfProducer (
   Value *producer
 ){
 
-  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
+  /*
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI->getSCCManager();
+
+  auto sccdag = sccManager->getSCCDAG();
   auto producerSCC = sccdag->sccOfValue(producer);
 
-  auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+  auto sccInfo = sccManager->getSCCAttrs(producerSCC);
   auto reducibleVariable = sccInfo->getSingleLoopCarriedVariable();
   assert(reducibleVariable != nullptr);
 
@@ -887,6 +902,11 @@ Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
 ){
 
   /*
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI->getSCCManager();
+
+  /*
    * Fetch the producer of new values of the current environment variable.
    */
   auto producer = LDI->environment->producerAt(environmentIndex);
@@ -894,13 +914,13 @@ Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
   /*
    * Fetch the SCC that this producer belongs to.
    */
-  auto producerSCC = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
+  auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
   assert(producerSCC != nullptr && "The environment value doesn't belong to a loop SCC");
 
   /*
    * Fetch the attributes about the producer SCC.
    */
-  auto sccAttrs = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+  auto sccAttrs = sccManager->getSCCAttrs(producerSCC);
   assert(sccAttrs->numberOfAccumulators() > 0 && "The environment value isn't accumulated!");
 
   /*
@@ -911,7 +931,7 @@ Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
   /*
    * Fetch the identity.
    */
-  auto identityValue = LDI->sccdagAttrs.accumOpInfo.generateIdentityFor(
+  auto identityValue = sccManager->accumOpInfo.generateIdentityFor(
     firstAccumI,
     typeForValue
   );
@@ -1141,13 +1161,18 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
   }
 
   /*
-   * Fetch the loop summary.
+   * Fetch the loop structure.
    */
   auto loopSummary = LDI.getLoopStructure();
 
+  /*
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI.getSCCManager();
+
   std::set<BasicBlock *> bbs(loopSummary->orderedBBs.begin(), loopSummary->orderedBBs.end());
   DGPrinter::writeGraph<SubCFGs, BasicBlock>("technique-original-loop-" + std::to_string(LDI.getID()) + ".dot", new SubCFGs(bbs));
-  DGPrinter::writeGraph<SCCDAG, SCC>("technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot", LDI.sccdagAttrs.getSCCDAG());
+  DGPrinter::writeGraph<SCCDAG, SCC>("technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot", sccManager->getSCCDAG());
 
   for (int i = 0; i < tasks.size(); ++i) {
     auto task = tasks[i];

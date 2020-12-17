@@ -47,13 +47,14 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
 }
 
 void DSWP::addClonableSCCsToStages (LoopDependenceInfo *LDI) {
+  auto sccManager = LDI->getSCCManager();
   for (auto techniqueTask : this->tasks) {
     auto task = (DSWPTask *)techniqueTask;
     std::set<DGNode<SCC> *> visitedNodes;
     std::queue<DGNode<SCC> *> dependentSCCNodes;
 
     for (auto scc : task->stageSCCs) {
-      dependentSCCNodes.push(LDI->sccdagAttrs.getSCCDAG()->fetchNode(scc));
+      dependentSCCNodes.push(sccManager->getSCCDAG()->fetchNode(scc));
     }
 
     while (!dependentSCCNodes.empty()) {
@@ -67,7 +68,7 @@ void DSWP::addClonableSCCsToStages (LoopDependenceInfo *LDI) {
         auto fromSCCNode = sccEdge->getOutgoingNode();
         auto fromSCC = fromSCCNode->getT();
         if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
-        auto fromSCCInfo = LDI->sccdagAttrs.getSCCAttrs(fromSCC);
+        auto fromSCCInfo = sccManager->getSCCAttrs(fromSCC);
         if (fromSCCInfo->canBeCloned()) {
           task->clonableSCCs.insert(fromSCC);
         }
@@ -96,8 +97,9 @@ bool DSWP::isCompleteAndValidStageStructure (LoopDependenceInfo *LDI) const {
     }
   }
 
-  for (auto node : LDI->sccdagAttrs.getSCCDAG()->getNodes()) {
-    if (LDI->sccdagAttrs.getSCCAttrs(node->getT())->canBeCloned()) {
+  auto sccManager = LDI->getSCCManager();
+  for (auto node : sccManager->getSCCDAG()->getNodes()) {
+    if (sccManager->getSCCAttrs(node->getT())->canBeCloned()) {
       continue ;
     }
 
