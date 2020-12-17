@@ -89,13 +89,14 @@ bool DSWP::canBeAppliedToLoop (
    */
   auto doesSequentialSCCExist = false;
   uint64_t biggestSCC = 0;
-  for (auto nodePair : LDI->sccdagAttrs.getSCCDAG()->internalNodePairs()) {
+  auto sccManager = LDI->getSCCManager();
+  for (auto nodePair : sccManager->getSCCDAG()->internalNodePairs()) {
 
     /*
      * Fetch the current SCC.
      */
     auto currentSCC = nodePair.first;
-    auto currentSCCInfo = LDI->sccdagAttrs.getSCCAttrs(currentSCC);
+    auto currentSCCInfo = sccManager->getSCCAttrs(currentSCC);
 
     /*
      * Check the coverage of the SCC.

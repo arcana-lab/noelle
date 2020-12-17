@@ -114,7 +114,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Calculate various attributes on SCCs
    */
   this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAG, *environment);
-  this->sccdagAttrs = SCCDAGAttrs(enableFloatAsReal, loopDG, loopSCCDAG, this->liSummary, SE, *inductionVariables, DS);
+  this->sccdagAttrs = new SCCDAGAttrs(enableFloatAsReal, loopDG, loopSCCDAG, this->liSummary, SE, *inductionVariables, DS);
   this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(liSummary, *this->inductionVariables, SE);
 
   /*
@@ -377,7 +377,7 @@ LoopStructure * LoopDependenceInfo::getNestedMostLoopStructure (Instruction *I) 
 }
 
 bool LoopDependenceInfo::isSCCContainedInSubloop (SCC *scc) const {
-  return this->sccdagAttrs.isSCCContainedInSubloop(this->liSummary, scc);
+  return this->sccdagAttrs->isSCCContainedInSubloop(this->liSummary, scc);
 }
 
 InductionVariableManager * LoopDependenceInfo::getInductionVariableManager (void) const {
@@ -418,8 +418,8 @@ const LoopsSummary & LoopDependenceInfo::getLoopHierarchyStructures (void) const
   return this->liSummary;
 }
 
-SCCDAGAttrs * LoopDependenceInfo::getSCCManager (void) {
-  return & (this->sccdagAttrs);
+SCCDAGAttrs * LoopDependenceInfo::getSCCManager (void) const {
+  return this->sccdagAttrs;
 }
 
 LoopDependenceInfo::~LoopDependenceInfo() {

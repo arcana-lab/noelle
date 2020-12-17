@@ -75,7 +75,8 @@ bool DOALL::canBeAppliedToLoop (
   /*
    * The loop must have all live-out variables to be reducable.
    */
-  if (!LDI->sccdagAttrs.areAllLiveOutValuesReducable(LDI->environment)) {
+  auto sccManager = LDI->getSCCManager();
+  if (!sccManager->areAllLiveOutValuesReducable(LDI->environment)) {
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   Some post environment value is not reducable\n";
     }
@@ -111,13 +112,13 @@ bool DOALL::canBeAppliedToLoop (
   /*
    * The compiler must be able to remove loop-carried data dependences of all SCCs with loop-carried data dependences.
    */
-  auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
+  auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
 
     /*
      * Fetch the SCC metadata.
      */
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
 
     /*
      * If the SCC is reducable, then it does not block the loop to be a DOALL.
@@ -139,7 +140,7 @@ bool DOALL::canBeAppliedToLoop (
      */
     auto areAllDataLCDsFromDisjointMemoryAccesses = true;
     auto domainSpaceAnalysis = LDI->getLoopIterationDomainSpaceAnalysis();
-    LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [
+    sccManager->iterateOverLoopCarriedDataDependences(scc, [
       &areAllDataLCDsFromDisjointMemoryAccesses, domainSpaceAnalysis
     ](DGEdge<Value> *dep) -> bool {
       if (dep->isControlDependence()) return false;
@@ -168,7 +169,7 @@ bool DOALL::canBeAppliedToLoop (
         // scc->printMinimal(errs(), "DOALL:     ") ;
         // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
         errs() << "DOALL:     Loop-carried data dependences\n";
-        LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+        sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
           errs() << "DOALL:       " << *fromInst << " ---> " << *toInst ;
