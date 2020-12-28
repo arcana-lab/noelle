@@ -11,8 +11,7 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle{
 
 HELIX::HELIX (
   Module &module, 
@@ -21,8 +20,10 @@ HELIX::HELIX (
   Verbosity v
   )
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, forceParallelization, v},
-    loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr},
-    lastIterationExecutionBlock{nullptr}
+    loopCarriedEnvBuilder{nullptr}, 
+    taskFunctionDG{nullptr},
+    lastIterationExecutionBlock{nullptr},
+    enableInliner{true}
   {
 
   /*
@@ -531,7 +532,7 @@ bool HELIX::synchronizeTask (
   /*
    * Inline calls to HELIX functions.
    */
-  // this->inlineCalls();
+  this->inlineCalls(helixTask);
 
   /*
    * Print the HELIX task.
@@ -555,4 +556,6 @@ bool HELIX::synchronizeTask (
 
 Function * HELIX::getTaskFunction (void) const {
   return tasks[0]->getTaskBody();
+}
+
 }
