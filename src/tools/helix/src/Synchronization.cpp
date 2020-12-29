@@ -20,6 +20,9 @@ void HELIX::addSynchronizations (
   std::vector<SequentialSegment *> *sss
   ){
 
+  /*
+   * Check if there are sequential segments.
+   */
   if (sss->size() == 0) {
     if (this->verbose != Verbosity::Disabled) {
       errs() << "HELIX: no sequential segments, skipping synchronization\n";
@@ -27,6 +30,9 @@ void HELIX::addSynchronizations (
     return;
   }
 
+  /*
+   * Fetch the HELIX task.
+   */
   assert(this->tasks.size() == 1);
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
   IRBuilder<> entryBuilder(helixTask->getEntry()->getTerminator());
