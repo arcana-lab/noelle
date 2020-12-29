@@ -88,7 +88,7 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
    */
   auto nextLoopIndex = 0;
   if (this->verbose >= Verbosity::Maximal){
-    errs() << "Parallelizer: Filter out cold code\n" ;
+    errs() << "Noelle: Filter out cold code\n" ;
   }
   for (auto function : *functions){
 
@@ -96,7 +96,9 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
      * Check if the function is hot.
      */
     if (!isFunctionHot(function, minimumHotness)){
-      errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
+      if (this->verbose >= Verbosity::Maximal){
+        errs() << "Noelle:  Disable \"" << function->getName() << "\" as cold function\n";
+      }
       continue ;
     }
 
@@ -105,6 +107,9 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
      */
     auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
     if (std::distance(LI.begin(), LI.end()) == 0){
+      if (this->verbose >= Verbosity::Maximal){
+        errs() << "Noelle:  Function \"" << function->getName() << "\" does not have loops\n";
+      }
       continue ;
     }
 
@@ -121,13 +126,13 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
       auto loopStructure = new LoopStructure{loop};
       auto loopHeader = loopStructure->getHeader();
       if (!isLoopHot(loopStructure, minimumHotness)){
-        errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
+        errs() << "Noelle:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
         delete loopStructure;
         continue ;
       }
 
       // TODO: Print out more information than just loop hotness, perhaps the loop header label
-      // errs() << "Parallelizer:  Loop hotness = " << hotness << "\n" ;
+      // errs() << "Noelle:  Loop hotness = " << hotness << "\n" ;
 
       /*
        * Check if we have to filter loops.
@@ -389,7 +394,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
    */
   auto nextLoopIndex = 0;
   if (this->verbose >= Verbosity::Maximal){
-    errs() << "Parallelizer: Filter out cold code\n" ;
+    errs() << "Noelle: Filter out cold code\n" ;
   }
   for (auto function : *functions){
 
@@ -397,7 +402,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
      * Check if the function is hot.
      */
     if (!isFunctionHot(function, minimumHotness)){
-      errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
+      errs() << "Noelle:  Disable \"" << function->getName() << "\" as cold function\n";
       continue ;
     }
 
@@ -440,12 +445,12 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
        */
       LoopStructure loopS{loop};
       if (!isLoopHot(&loopS, minimumHotness)){
-        errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
+        errs() << "Noelle:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
         continue ;
       }
 
       // TODO: Print out more information than just loop hotness, perhaps the loop header label
-      // errs() << "Parallelizer:  Loop hotness = " << hotness << "\n" ;
+      // errs() << "Noelle:  Loop hotness = " << hotness << "\n" ;
 
       /*
        * Check if we have to filter loops.
