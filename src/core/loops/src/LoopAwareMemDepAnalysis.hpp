@@ -9,6 +9,7 @@
 #include "LoopCarriedDependencies.hpp"
 #include "LoopIterationDomainSpaceAnalysis.hpp"
 #include "LoopsSummary.hpp"
+#include "TalkDown.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -22,6 +23,7 @@ namespace llvm::noelle {
     LoopStructure *loopStructure,
     LoopCarriedDependencies &LCD,
     liberty::LoopAA *loopAA,
+    TalkDown *talkdown,
     LoopIterationDomainSpaceAnalysis *LIDS
   );
 
@@ -34,5 +36,7 @@ namespace llvm::noelle {
     LoopCarriedDependencies &LCD,
     LoopIterationDomainSpaceAnalysis *LIDS
   );
+
+  void refinePDGWithTalkdown(PDG *loopDG, Loop *l, TalkDown *talkdown);
 
 } // namespace llvm::noelle

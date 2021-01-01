@@ -23,6 +23,7 @@ namespace llvm::noelle {
       static Function * outline (ArrayRef<BasicBlock *> const & basicBlocksToOutline, Instruction *injectCallJustBeforeThis, Function* sourceF, AssumptionCache * AC);
 
     private:
+      static int numOutlines;
   };
 
 }

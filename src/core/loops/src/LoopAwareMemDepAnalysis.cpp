@@ -8,6 +8,8 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
+static cl::opt<bool> TalkdownDisable("loop-aware-talkdown-disable", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable Talkdown loop aware dependence analyses"));
+
 namespace llvm::noelle {
 
   void refinePDGWithLoopAwareMemDepAnalysis(
@@ -16,6 +18,7 @@ namespace llvm::noelle {
     LoopStructure *loopStructure,
     LoopCarriedDependencies &LCD,
     liberty::LoopAA *loopAA,
+    TalkDown *talkdown,
     LoopIterationDomainSpaceAnalysis *LIDS
   ) {
 
@@ -29,6 +32,61 @@ namespace llvm::noelle {
       refinePDGWithLIDS(loopDG, loopStructure, LCD, LIDS);
     }
 
+    if (talkdown && TalkdownDisable.getNumOccurrences() == 0) {
+      refinePDGWithTalkdown(loopDG, l, talkdown);
+    }   
+
+  }
+
+  void refinePDGWithTalkdown(PDG *loopDG, Loop *l, TalkDown *talkdown)
+  {
+    errs() << "BRIAN, LETS REFINE THE PDG WITH TALKDOWN\n";
+
+    //auto Ftree = talkdown->findTreeForFunction(loop->getHeader()->getParent());
+
+    /* Brian: 
+     * 1. Get Function from loopDG
+     * 2. Get Tree for Function
+     * 3. for edge in LCD edges
+     * 4. If Incoming and Outgoing both have independent and not critical
+     * 5. unset LCD edge
+     */
+    
+    // XXX CHANGE THIS
+    // This is very naive, since the rodinia benchmarks have such simple pragmas
+    /* if ( !talkdown->containsAnnotation(l) ) */
+    /*   return; */
+
+    // XXX this is a hack since the loop pointer changed and Talkdown couldn't find the node for the loop
+/*    MDNode *lmd = l->getHeader()->getFirstNonPHIOrDbgOrLifetime()->getMetadata("note.noelle");
+    if ( !lmd )
+      return;
+    if ( l->getParentLoop() && lmd == l->getParentLoop()->getHeader()->getFirstNonPHIOrDbgOrLifetime()->getMetadata("note.noelle") )
+      return;
+
+    Instruction *first_inst = &*l->getHeader()->begin();
+    errs() << "Found real annotation for loop at " << *first_inst << "\n\t";
+    liberty::printInstDebugInfo(first_inst);
+    errs() << "\n";
+
+    for (auto edge : make_range(loopDG->begin_edges(), loopDG->end_edges())) {
+      if (!loopDG->isInternal(edge->getIncomingT()) ||
+          !loopDG->isInternal(edge->getOutgoingT()))
+        continue;
+*/
+      // only target memory dependences (???)
+      /* if (!edge->isMemoryDependence()) */
+      /*   continue; */
+
+      // don't remove edges that aren't loop-carried
+/*      if (!edge->isLoopCarriedDependence())
+        continue;
+
+      errs() << "Removed a LC dep with talkdown:\n";
+      edge->print(errs()) << "\n";
+      edge->setLoopCarried(false);
+      talkdownRemoved++;
+    }   */
   }
 
   void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {

@@ -23,6 +23,7 @@
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
 #include "Transformations.hpp"
+#include "TalkDown.hpp"
 
 #include "scaf/MemoryAnalysisModules/LoopAA.h"
 
@@ -89,6 +90,7 @@ namespace llvm::noelle {
         bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations,
         liberty::LoopAA *aa,
+        TalkDown *talkdown,
         bool enableLoopAwareDependenceAnalyses
       );
 
@@ -229,7 +231,8 @@ namespace llvm::noelle {
         PDG *functionDG,
         DominatorSummary &DS,
         ScalarEvolution &SE,
-        liberty::LoopAA *loopAA
+        liberty::LoopAA *loopAA,
+        TalkDown *talkdown
         ) ;
 
       uint64_t computeTripCounts (

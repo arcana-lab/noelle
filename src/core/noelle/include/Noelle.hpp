@@ -19,6 +19,7 @@
 #include "DataFlow.hpp"
 #include "Scheduler.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
+#include "TalkDown.hpp"
 
 #include "scaf/MemoryAnalysisModules/LoopAA.h"
 
@@ -211,6 +212,7 @@ namespace llvm::noelle {
       CallGraph *pcg;
       PDGAnalysis *pdgAnalysis;
       liberty::LoopAA *loopAA;
+      TalkDown *talkdown;
 
       char *filterFileName;
       bool hasReadFilterFile;

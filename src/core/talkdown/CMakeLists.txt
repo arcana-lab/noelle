@@ -32,4 +32,10 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/TalkDown.hpp DESTINATION include)
+install(PROGRAMS
+  include/TalkDown.hpp
+  include/Node.hpp
+  include/AnnotationParser.hpp
+  include/Tree.hpp
+  include/Annotation.hpp
+  DESTINATION include)

@@ -17,12 +17,14 @@
 
 namespace llvm::noelle {
 
-  Outliner::Outliner (){
+  Outliner::Outliner () {
   
     return ;
   }
 
-  Function * outline (std::unordered_set<Instruction *> const & instructionsToOutline, Instruction *injectCallJustBeforeThis, AssumptionCache * AC){
+  int Outliner::numOutlines { 0 };
+
+  Function * Outliner::outline (std::unordered_set<Instruction *> const & instructionsToOutline, Instruction *injectCallJustBeforeThis, AssumptionCache * AC){
     //TODO
     //1. Assume that this is for reduction? and it already contains the instruction that we want to reduce
     //2. Assume all instructions belong to the same basic block ? 
@@ -50,7 +52,7 @@ namespace llvm::noelle {
     return Outliner::outline(basicBlocksToOutline, injectCallJustBeforeThis, sourceF, AC);
   }
 
-  Function * outline (ArrayRef<BasicBlock *> const & basicBlocksToOutline, Instruction *injectCallJustBeforeThis, Function* sourceF, AssumptionCache * AC){
+  Function * Outliner::outline (ArrayRef<BasicBlock *> const & basicBlocksToOutline, Instruction *injectCallJustBeforeThis, Function* sourceF, AssumptionCache * AC){
     //TODO
     //1. Collect data about basicblocks
     // - check dependencies that enter basic blocks from the outside - input variables 
@@ -60,27 +62,32 @@ namespace llvm::noelle {
     //3. Use llvm to rewire all variables
     //4. Return new function
 
-//    Function* sourceF = (*(basicBlocksToOutline.begin()))->getParent();
+    // Verify that basic blocks are single entry
+    // Single exit?
+
     auto DT = DominatorTree(*sourceF);
-//    auto *ACT = getAnalysisIfAvailable<AssumptionCacheTracker>();
-///    AssumptionCache *AC = ACT->loopupAssumptionCache(sourceF);
-//    CodeExtractorAnalysisCache CEAC(sourceF);
     CodeExtractor CE(basicBlocksToOutline, &DT, /* AggregateArgs */ false, /* BFI */ nullptr,
                    /* BPI */ nullptr, AC, /* AllowVarArgs */ false,
                    /* AllowAlloca */ false,
-                   /* Suffix */ "outliner." /* + std::to_string(Count)*/);
+                   /* Suffix */ "outliner."  + std::to_string(numOutlines));
 
+    if (basicBlocksToOutline.empty()) { errs() << "It's empty? :(\n"; }
+    if ((*basicBlocksToOutline.begin())->getParent()->getFunctionType()->isVarArg()) {
+      errs() << "its a var arg\n";
+    }
+
+    errs() << "is eligible? " << CE.isEligible() << '\n';
     // Extract code to new function
     if (Function* newF = CE.extractCodeRegion()) {
       // Get Caller and set no inline
       User *U = *newF->user_begin();
       CallInst *CI = cast<CallInst>(U);
       CI->setIsNoInline();
-
+      numOutlines++;
       // Return the new Function
       return newF;
     }
-
+    errs() << "Failed to extract\n";
     return nullptr;
   }
 

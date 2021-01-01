@@ -12,9 +12,12 @@
 
 #include "SystemHeaders.hpp"
 #include "Outliner.hpp"
+#include "Annotation.hpp"
+
+using namespace llvm;
+using namespace llvm::noelle;
 
 namespace llvm::noelle {
-
   class OutlinerPass : public ModulePass {
     public:
       static char ID;
@@ -22,7 +25,7 @@ namespace llvm::noelle {
       /*
        * Methods.
        */
-      OutlinerPass();
+      OutlinerPass(): ModulePass{ID} {};
 
       bool doInitialization (Module &M) override ;
 
@@ -33,6 +36,23 @@ namespace llvm::noelle {
       Outliner * getOutliner (void) const ;
 
     private:
+      AutoMP::Annotation annotationToOutline;
+  };
+
+  class OutlinedInlinerPass : public ModulePass {
+    public:
+      static char ID;
+
+      /*
+       * Methods.
+       */
+      OutlinedInlinerPass(): ModulePass{ID} {};
+
+      bool doInitialization (Module &M) override ;
+
+      void getAnalysisUsage(AnalysisUsage &AU) const override ;
+
+      bool runOnModule (Module &M) override ;
 
   };
 
