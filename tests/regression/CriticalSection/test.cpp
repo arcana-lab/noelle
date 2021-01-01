@@ -12,6 +12,7 @@ int main (int argc, char *argv[]){
     return 1;
   }
   auto iters = atoll(argv[1]);
+  iters *= 10;
   printf("Running %lld iterations\n", iters);
 
   /*
