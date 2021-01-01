@@ -75,11 +75,12 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
    * along with any computation that does NOT alias the loads/stores
    */
   auto loopStructure = LDI.getLoopStructure();
-  auto sccdag = LDI.sccdagAttrs.getSCCDAG();
+  auto sccManager = LDI.getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
   std::unordered_map<Value *, SCC *> singleMemoryLocationsBySCC{};
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
-    auto sccInfo = LDI.sccdagAttrs.getSCCAttrs(scc);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
 
     // scc->printMinimal(errs() << "SCC: \n"); errs() << "\n";
     // for (auto edge : scc->getEdges()) {
@@ -548,7 +549,7 @@ void Mem2RegNonAlloca::dumpLogs (void) {
    */
   std::string loopId{std::to_string(loop->getID())};
 
-  // DGPrinter::writeGraph<SCCDAG, SCC>("mem2reg-sccdag-loop-" + loopId + ".dot", LDI.sccdagAttrs.getSCCDAG());
+  // DGPrinter::writeGraph<SCCDAG, SCC>("mem2reg-sccdag-loop-" + loopId + ".dot", sccManager->getSCCDAG());
   // std::set<BasicBlock *> basicBlocksSet(basicBlocks.begin(), basicBlocks.end());
   // DGPrinter::writeGraph<SubCFGs, BasicBlock>("mem2reg-current-loop-" + loopId + ".dot", new SubCFGs(basicBlocksSet));
 }

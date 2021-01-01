@@ -101,9 +101,15 @@ PDG * PDGAnalysis::getFunctionPDG (Function &F) {
      */
     if (this->functionToFDGMap.find(&F) == this->functionToFDGMap.end()) {
       pdg = this->programDependenceGraph->createFunctionSubgraph(F);
+      for (auto edge : pdg->getEdges()) {
+        assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+      }
       this->functionToFDGMap.insert(std::make_pair(&F, pdg));
     } else {
       pdg = this->functionToFDGMap.at(&F);
+      for (auto edge : pdg->getEdges()) {
+        assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+      }
     }
 
   } else {
@@ -118,13 +124,22 @@ PDG * PDGAnalysis::getFunctionPDG (Function &F) {
        */
       if (this->hasPDGAsMetadata(*this->M)) {
         pdg = constructFunctionDGFromMetadata(F);
+        for (auto edge : pdg->getEdges()) {
+          assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+        }
       } else {
         pdg = constructFunctionDGFromAnalysis(F);
+        for (auto edge : pdg->getEdges()) {
+          assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+        }
       }
       this->functionToFDGMap.insert(std::make_pair(&F, pdg));
 
     } else {
       pdg = this->functionToFDGMap.at(&F);
+      for (auto edge : pdg->getEdges()) {
+        assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+      }
     }
 
   }

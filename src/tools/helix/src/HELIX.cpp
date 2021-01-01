@@ -11,8 +11,7 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle{
 
 HELIX::HELIX (
   Module &module, 
@@ -21,8 +20,10 @@ HELIX::HELIX (
   Verbosity v
   )
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, forceParallelization, v},
-    loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr},
-    lastIterationExecutionBlock{nullptr}
+    loopCarriedEnvBuilder{nullptr}, 
+    taskFunctionDG{nullptr},
+    lastIterationExecutionBlock{nullptr},
+    enableInliner{true}
   {
 
   /*
@@ -166,8 +167,8 @@ void HELIX::createParallelizableTask (
   /*
    * Fetch the header.
    */
-  auto loopSummary = LDI->getLoopStructure();
-  auto loopHeader = loopSummary->getHeader();
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
 
   /*
    * Fetch the SCC manager.
@@ -273,7 +274,7 @@ void HELIX::createParallelizableTask (
    * Add the memory location of the environment used to store the exit block taken to leave the parallelized loop.
    * This location exists only if there is more than one loop exit.
    */
-  if (loopSummary->numberOfExitBasicBlocks() > 1){ 
+  if (loopStructure->numberOfExitBasicBlocks() > 1){ 
     nonReducableVars.insert(LDI->environment->indexOfExitBlock());
   }
 
@@ -418,9 +419,9 @@ bool HELIX::synchronizeTask (
    * If so, do not parallelize
    */
   if (!this->forceParallelization) {
-    auto loopSummary = LDI->getLoopStructure();
-    auto loopHeader = loopSummary->getHeader();
-    auto loopLatches = loopSummary->getLatches();
+    auto loopStructure = LDI->getLoopStructure();
+    auto loopHeader = loopStructure->getHeader();
+    auto loopLatches = loopStructure->getLatches();
     for (auto sequentialSegment : sequentialSegments) {
       bool entryAtHeader = false, exitAtLatch = false;
       sequentialSegment->forEachEntry([&](Instruction *entry) -> void {
@@ -531,7 +532,7 @@ bool HELIX::synchronizeTask (
   /*
    * Inline calls to HELIX functions.
    */
-  // this->inlineCalls();
+  this->inlineCalls(helixTask);
 
   /*
    * Print the HELIX task.
@@ -555,4 +556,6 @@ bool HELIX::synchronizeTask (
 
 Function * HELIX::getTaskFunction (void) const {
   return tasks[0]->getTaskBody();
+}
+
 }

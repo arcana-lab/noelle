@@ -43,8 +43,8 @@ namespace llvm::noelle {
       /*
       * Fetch the set of sequential SCCs.
       */
-      auto SCCManager = ldi->getSCCManager();
-      auto sequentialSCCs = SCCManager->getSCCsOfType(SCCAttrs::SCCType::SEQUENTIAL);
+      auto sccManager = ldi->getSCCManager();
+      auto sequentialSCCs = sccManager->getSCCsOfType(SCCAttrs::SCCType::SEQUENTIAL);
 
       /*
       * Find the biggest sequential SCC.
@@ -73,7 +73,7 @@ namespace llvm::noelle {
 
         auto areAllDataLCDsFromDisjointMemoryAccesses = true;
         auto domainSpaceAnalysis = ldi->getLoopIterationDomainSpaceAnalysis();
-        ldi->sccdagAttrs.iterateOverLoopCarriedDataDependences(currentSCC, [
+        sccManager->iterateOverLoopCarriedDataDependences(currentSCC, [
           &areAllDataLCDsFromDisjointMemoryAccesses, domainSpaceAnalysis
         ](DGEdge<Value> *dep) -> bool {
           if (dep->isControlDependence()) return false;

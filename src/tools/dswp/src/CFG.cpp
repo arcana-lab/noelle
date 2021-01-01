@@ -85,9 +85,8 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
     auto clonedB = task->getCloneOfOriginalBasicBlock(originalB);
 
     if (!clonedB->getTerminator() || !clonedB->getTerminator()->isTerminator()) {
-      auto postDominatingBB = LDI->loopBBtoPD.at(originalB);
-      assert(loopExits.find(postDominatingBB) == loopExits.end()
-        && "Loop exiting terminator not cloned by task!");
+      auto postDominatingBB = this->originalFunctionDS->PDT.getNode(originalB)->getIDom()->getBlock();
+      assert(loopExits.find(postDominatingBB) == loopExits.end() && "Loop exiting terminator not cloned by task!");
 
       IRBuilder<> builder(clonedB);
       builder.Insert(BranchInst::Create(task->getCloneOfOriginalBasicBlock(postDominatingBB)));
