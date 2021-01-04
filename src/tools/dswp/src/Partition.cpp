@@ -49,7 +49,7 @@ void DSWP::partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) {
      */
     h->adjustParallelizationPartitionForDSWP(
       partitioner,
-      LDI->sccdagAttrs,
+      *LDI->getSCCManager(),
       /*numThreads=*/LDI->getMaximumNumberOfCores(),
       this->verbose
     );

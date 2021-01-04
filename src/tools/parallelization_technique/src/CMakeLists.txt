@@ -23,11 +23,11 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
+  ./
+  ../include 
+  ../../heuristics/include 
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
-  ../../heuristics/include 
-  ../include 
-  ./
   )
 
 # Declare the LLVM pass to compile

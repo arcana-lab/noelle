@@ -46,6 +46,8 @@ clean:
 	find ./ -name *.ll -delete
 	find ./ -name output.prof -delete
 	find ./ -name default.profraw -delete
+	find ./ -name compiler_output.txt -delete
+	find ./ -name test_output.txt -delete
 
 .PHONY: $(ALL_UNITS)
 

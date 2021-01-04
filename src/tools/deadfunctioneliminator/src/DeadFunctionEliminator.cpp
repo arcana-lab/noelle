@@ -60,6 +60,13 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
     }
 
     /*
+     * Check if the function can escape.
+     */
+    if (pcg->canFunctionEscape(nodeFunction)){
+      continue ;
+    }
+
+    /*
       * We found a function that has only one other function that can invoke it.
       *
       * Check how many callers this function includes.
@@ -115,7 +122,7 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
     assert(callInst->getCalledFunction() == nodeFunction);
     InlineFunctionInfo IFI;
     errs() << "DeadFunctionEliminator: Inline " << *callInst << " into " << callInst->getFunction()->getName() << "\n";
-    //modified |= InlineFunction(callInst, IFI);
+    modified |= InlineFunction(callInst, IFI);
   }
   if (modified) {
     return true;
@@ -175,6 +182,10 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
     */
   std::vector<Function *>toDelete;
   for (auto &F : M){
+
+    /*
+     * Check if &F is dead
+     */
     if (F.isIntrinsic()){
       continue ;
     }
@@ -182,10 +193,15 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
       continue ;
     }
     auto n = pcg->getFunctionNode(&F);
-    if (liveIslands.find(islands[&F]) == liveIslands.end()){
-      errs() << "DeadFunctionEliminator: Function " << F.getName() << " is dead\n";
-      toDelete.push_back(&F);
+    if (liveIslands.find(islands[&F]) != liveIslands.end()){
+      continue ;
     }
+    if (pcg->canFunctionEscape(&F)){
+      continue ;
+    }
+
+    errs() << "DeadFunctionEliminator: Function " << F.getName() << " is dead\n";
+    toDelete.push_back(&F);
   }
   for (auto f : toDelete){
     f->eraseFromParent();

@@ -166,9 +166,14 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (Functio
   assert(LDI != nullptr);
 
   /*
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI->getSCCManager();
+
+  /*
    * Fetch the SCCDAG
    */
-  auto SCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  auto SCCDAG = sccManager->getSCCDAG();
 
   /*
    * Fetch the loop structure.
@@ -179,8 +184,8 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (Functio
    * Fetch the set of sequential SCCs.
    */
   std::set<SCC *> sccsToCheck;
-  SCCDAG->iterateOverSCCs([LDI, &sccsToCheck](SCC *scc) -> bool{
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+  SCCDAG->iterateOverSCCs([sccManager, &sccsToCheck](SCC *scc) -> bool{
+    auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->mustExecuteSequentially()){
       sccsToCheck.insert(scc);
     }
