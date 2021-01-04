@@ -33,12 +33,13 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut (
   PostDominatorTree PDT(*header->getParent());
   DominatorSummary DS(DT, PDT);
 
-  auto sccdag = LDI.sccdagAttrs.getSCCDAG();
+  auto sccManager = LDI.getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
   std::unordered_set<StoreInst *> independentStoresExecutedEveryIteration;
 
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
-    auto sccInfo = LDI.sccdagAttrs.getSCCAttrs(scc);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
     if (!sccInfo->canExecuteIndependently()) continue;
 
     /*

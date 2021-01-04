@@ -8,6 +8,7 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "LoopDependenceInfo.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
 namespace llvm::noelle {
@@ -75,19 +76,18 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   DominatorSummary DS(*DT, *PDT);
 
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
-  this->sccdag = new SCCDAG(fdg);
-  auto loopDG = fdg->createLoopsSubgraph(topLoop);
+  auto loopDI = new LoopDependenceInfo(fdg, topLoop, DS, *SE);
+  auto sccManager = loopDI->getSCCManager();
+
+  this->sccdag = sccManager->getSCCDAG();
 
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
-  auto loopExitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
-  auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
-  InvariantManager invariantManager(LIS.getLoopNestingTreeRoot(), loopDG);
-  InductionVariableManager IV{LIS, invariantManager, *SE, *sccdag, *environment};
+  auto IV = loopDI->getInvariantManager();
 
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
+
   // TODO: Test attribution on normalized SCCDAG as well
-  LoopCarriedDependencies lcd(LIS, DS, *sccdag);
-  this->attrs = new SCCDAGAttrs(loopDG, sccdag, LIS, *SE, lcd, IV, DS);
+  this->attrs = sccManager;
 
   // DGPrinter::writeGraph<SCCDAG, SCC>("graph-loop.dot", sccdag);
 

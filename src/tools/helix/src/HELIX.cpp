@@ -11,8 +11,7 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle{
 
 HELIX::HELIX (
   Module &module, 
@@ -21,8 +20,10 @@ HELIX::HELIX (
   Verbosity v
   )
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, forceParallelization, v},
-    loopCarriedEnvBuilder{nullptr}, taskFunctionDG{nullptr},
-    lastIterationExecutionBlock{nullptr}
+    loopCarriedEnvBuilder{nullptr}, 
+    taskFunctionDG{nullptr},
+    lastIterationExecutionBlock{nullptr},
+    enableInliner{true}
   {
 
   /*
@@ -166,8 +167,13 @@ void HELIX::createParallelizableTask (
   /*
    * Fetch the header.
    */
-  auto loopSummary = LDI->getLoopStructure();
-  auto loopHeader = loopSummary->getHeader();
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
+
+  /*
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI->getSCCManager();
 
   /*
    * NOTE: Keep around the original loops' LoopDependenceInfo for later phases
@@ -181,13 +187,13 @@ void HELIX::createParallelizableTask (
   if (this->verbose != Verbosity::Disabled) {
     errs() << "HELIX: Start the parallelization\n";
     errs() << "HELIX:   Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
-    auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDependencies();
+    auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDependencies();
     for (auto scc : nonDOALLSCCs) {
 
       /*
        * Fetch the SCC metadata.
        */
-      auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+      auto sccInfo = sccManager->getSCCAttrs(scc);
 
       /*
        * Check the SCC.
@@ -210,7 +216,7 @@ void HELIX::createParallelizableTask (
         // errs() << "HELIX:     SCC:\n";
         // scc->printMinimal(errs(), "HELIX:       ") ;
         errs() << "HELIX:       Loop-carried data dependences\n";
-        LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+        sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
           errs() << "HELIX:       " << *fromInst << " ---> " << *toInst ;
@@ -229,7 +235,7 @@ void HELIX::createParallelizableTask (
    * Compute reachability so that determining whether spill loads placed in loop
    * exit blocks could be invalidated by spill stores in the loop. If so,
    * they will have to be placed within the loop (which is less optimal)
-   * NOTE: This is computed BEFORE generateEmptyTasks creates an empty basic block
+   * NOTE: This is computed BEFORE addPredecessorAndSuccessorsBasicBlocksToTasks creates an empty basic block
    * in the original function which will be used to link this task
    */
   auto reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
@@ -238,7 +244,7 @@ void HELIX::createParallelizableTask (
    * Generate empty tasks for the HELIX execution.
    */
   auto helixTask = new HELIXTask(this->taskSignature, this->module);
-  this->generateEmptyTasks(LDI, { helixTask });
+  this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { helixTask });
   this->numTaskInstances = LDI->getMaximumNumberOfCores();
   assert(helixTask == this->tasks[0]);
 
@@ -255,8 +261,8 @@ void HELIX::createParallelizableTask (
   std::set<int> reducableVars{};
   for (auto liveOutIndex : liveOutVars) {
     auto producer = LDI->environment->producerAt(liveOutIndex);
-    auto scc = LDI->sccdagAttrs.getSCCDAG()->sccOfValue(producer);
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->getType() == SCCAttrs::SCCType::REDUCIBLE) {
       reducableVars.insert(liveOutIndex);
     } else {
@@ -268,7 +274,7 @@ void HELIX::createParallelizableTask (
    * Add the memory location of the environment used to store the exit block taken to leave the parallelized loop.
    * This location exists only if there is more than one loop exit.
    */
-  if (LDI->numberOfExits() > 1){ 
+  if (loopStructure->numberOfExitBasicBlocks() > 1){ 
     nonReducableVars.insert(LDI->environment->indexOfExitBlock());
   }
 
@@ -379,8 +385,14 @@ bool HELIX::synchronizeTask (
    */
   auto sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
   this->squeezeSequentialSegments(LDI, &sequentialSegments, reachabilityDFR);
+
+  /*
+   * Free the memory.
+   */
   delete reachabilityDFR;
-  for (auto ss : sequentialSegments) delete ss;
+  for (auto ss : sequentialSegments) {
+    delete ss;
+  }
 
   /*
    * Re-compute reachability analysis after squeezing sequential segments
@@ -407,9 +419,9 @@ bool HELIX::synchronizeTask (
    * If so, do not parallelize
    */
   if (!this->forceParallelization) {
-    auto loopSummary = LDI->getLoopStructure();
-    auto loopHeader = loopSummary->getHeader();
-    auto loopLatches = loopSummary->getLatches();
+    auto loopStructure = LDI->getLoopStructure();
+    auto loopHeader = loopStructure->getHeader();
+    auto loopLatches = loopStructure->getLatches();
     for (auto sequentialSegment : sequentialSegments) {
       bool entryAtHeader = false, exitAtLatch = false;
       sequentialSegment->forEachEntry([&](Instruction *entry) -> void {
@@ -419,11 +431,20 @@ bool HELIX::synchronizeTask (
       });
       if (!entryAtHeader || !exitAtLatch) continue;
 
+      /*
+       * The HELIX parallelization isn't worth it.
+       */
       if (this->verbose != Verbosity::Disabled) {
         errs() << "HELIX: There is a sequential segment spanning the entire loop; therefore, the parallelization isn't worth it.\n";
       }
 
-      for (auto ss : sequentialSegments) delete ss;
+      /*
+       * Free the memory.
+       */
+      for (auto ss : sequentialSegments) {
+        delete ss;
+      }
+
       return false;
     }
   }
@@ -470,7 +491,7 @@ bool HELIX::synchronizeTask (
    * it is because we have attributed a loop governing IV. Our attribution relies on there
    * being only one loop exit that is controlled by an IV. Hence, we fetch the lone exit block
    */
-  auto originalExitBlocks = originalLDI->getLoopStructure()->getLoopExitBasicBlocks();
+  auto originalExitBlocks = this->originalLDI->getLoopStructure()->getLoopExitBasicBlocks();
   auto originalSingleExitBlock = *originalExitBlocks.begin();
   BasicBlock * cloneLoopExitBlock = nullptr;
   if (this->lastIterationExecutionBlock) {
@@ -511,7 +532,7 @@ bool HELIX::synchronizeTask (
   /*
    * Inline calls to HELIX functions.
    */
-  // this->inlineCalls();
+  this->inlineCalls(helixTask);
 
   /*
    * Print the HELIX task.
@@ -523,11 +544,18 @@ bool HELIX::synchronizeTask (
     // DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
-  for (auto ss : sequentialSegments) delete ss;
+  /*
+   * Free the memory.
+   */
+  for (auto ss : sequentialSegments) {
+    delete ss;
+  }
 
   return true;
 }
 
 Function * HELIX::getTaskFunction (void) const {
   return tasks[0]->getTaskBody();
+}
+
 }

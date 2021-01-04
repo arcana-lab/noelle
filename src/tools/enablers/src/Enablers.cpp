@@ -107,9 +107,14 @@ bool EnablersManager::applyLoopDistribution (
     ){
 
   /*
-  * Fetch the SCCDAG of the loop.
-  */
-  auto SCCDAG = LDI->sccdagAttrs.getSCCDAG();
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI->getSCCManager();
+
+  /*
+   * Fetch the SCCDAG of the loop.
+   */
+  auto SCCDAG = sccManager->getSCCDAG();
 
   /*
   * Define the set of SCCs to bring outside the loop.
@@ -120,12 +125,12 @@ bool EnablersManager::applyLoopDistribution (
   * Collect all sequential SCCs.
   */
   std::set<SCC *> sequentialSCCs{};
-  auto collectSequentialSCCsFunction = [LDI,&sequentialSCCs](SCC *currentSCC) -> bool {
+  auto collectSequentialSCCsFunction = [sccManager,&sequentialSCCs](SCC *currentSCC) -> bool {
 
     /*
     * Fetch the SCC metadata.
     */
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(currentSCC);
+    auto sccInfo = sccManager->getSCCAttrs(currentSCC);
 
     /*
     * Check if the current SCC can be removed (e.g., because it is due to induction variables).

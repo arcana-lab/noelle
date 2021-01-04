@@ -66,6 +66,8 @@ namespace llvm::noelle {
 
       std::vector<std::pair<BasicBlock *, BasicBlock *>> getLoopExitEdges (void) const ;
 
+      uint64_t numberOfExitBasicBlocks (void) const ;
+
       bool isLoopInvariant (Value *value) const ;
 
       bool isIncluded (BasicBlock *bb) const ;

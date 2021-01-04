@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -9,12 +9,13 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "SCCDAGNormalizer.hpp"
+#include "LoopCarriedDependencies.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
 
-SCCDAGNormalizer::SCCDAGNormalizer (SCCDAG &dag, LoopsSummary &lis, LoopCarriedDependencies &lcd)
-  : LIS{lis}, loopCarriedDependencies{lcd}, sccdag{dag} {
+SCCDAGNormalizer::SCCDAGNormalizer (SCCDAG &dag, LoopsSummary &lis)
+  : LIS{lis}, sccdag{dag} {
 }
 
 void SCCDAGNormalizer::normalizeInPlace (void) {
@@ -81,7 +82,7 @@ void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies (void) {
   MergeGroups mergeGroups{};
   for (auto &loop : LIS.loops) {
     auto &loopRef = *loop.get();
-    auto loopCarriedEdges = loopCarriedDependencies.getLoopCarriedDependenciesForLoop(*loop.get());
+    auto loopCarriedEdges = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop.get(), LIS, sccdag);
     for (auto edge : loopCarriedEdges) {
       if (!edge->isDataDependence()) continue;
 

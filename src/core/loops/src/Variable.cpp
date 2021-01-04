@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Variable.hpp"
+#include "LoopCarriedDependencies.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -19,8 +20,9 @@ bool LoopCarriedCycle::isEvolutionReducibleAcrossLoopIterations (void) const {
 
 LoopCarriedVariable::LoopCarriedVariable (
   const LoopStructure &loop,
-  const LoopCarriedDependencies &LCD,
+  LoopsSummary liSummary,
   PDG &loopDG,
+  SCCDAG &sccdag,
   SCC &sccContainingVariable,
   PHINode *declarationPHI
 ) : outermostLoopOfVariable{loop}, declarationValue{declarationPHI}, isValid{false} {
@@ -43,9 +45,14 @@ LoopCarriedVariable::LoopCarriedVariable (
    *  These will be ignored when constructing the variable's data/memory SCC
    */
   auto declarationNode = sccContainingVariable.fetchNode(declarationValue);
-  auto loopCarriedDependencies = LCD.getLoopCarriedDependenciesForLoop(loop);
+  auto loopCarriedDependencies = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(loop, liSummary,  sccdag);
+
+  std::unordered_set<DGEdge<Value> *> edgesThatExist;
+  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+
   std::unordered_set<Value *> loopCarriedValues{};
   std::unordered_set<DGEdge<Value> *> loopCarriedDependenciesNotOfVariable{};
+
   for (auto dependency : loopCarriedDependencies) {
     auto consumer = dependency->getIncomingT();
     if (consumer == declarationValue) {
@@ -420,7 +427,6 @@ bool LoopCarriedVariable::hasRoundingError (std::unordered_set<EvolutionUpdate *
  */
 LoopCarriedMemoryLocation::LoopCarriedMemoryLocation (
   const LoopStructure &loop,
-  const LoopCarriedDependencies &LCD,
   PDG &loopDG,
   SCC &memoryLocationSCC,
   Value *memoryLocation
