@@ -427,9 +427,34 @@ namespace AutoMP
   }
 #endif
 
-  const AnnotationSet &FunctionTree::getAnnotationsForInst(Instruction *) const
+  Node* FunctionTree::findInst(Node* node, Instruction* I) const {
+    if (node->getBB() == I->getParent()) {
+      return node;
+    }
+
+    for (auto &child : node->getChildren()) {
+      auto n = findInst(child, I);
+      if (n != nullptr) {
+        return n;
+      }
+    }
+    return nullptr;
+  }
+
+  const AnnotationSet &FunctionTree::getAnnotationsForInst(Instruction * I) const
   {
-    assert(0 && "getAnnotationsForInst(llvm::Instruction *) not implemented yet");
+    auto root = getRoot();
+
+    auto Inode = findInst(root, I);
+    if (Inode != nullptr) {
+      return Inode->getAnnotations();
+    }
+    // from root
+    //
+    // if node-getBB == I-getParent
+    // return node->getAnnotations
+    //
+//    assert(0 && "getAnnotationsForInst(llvm::Instruction *) not implemented yet");
   }
 
   const AnnotationSet &FunctionTree::getAnnotationsForInst(Instruction *i, Loop *l) const

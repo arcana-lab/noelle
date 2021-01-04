@@ -49,6 +49,7 @@ namespace AutoMP {
 
     int num_nodes;
 
+    Node *findInst(Node*, llvm::Instruction *) const;
     Node *findNodeForLoop(Node *, llvm::Loop *) const; // level-order traversal
     Node *findNodeForBasicBlock(Node *, llvm::BasicBlock *) const;
     Node *findNodeForInstruction(Node *, llvm::Instruction *) const;
