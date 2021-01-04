@@ -42,17 +42,62 @@ namespace llvm::noelle {
     }
 
     if (talkdown && TalkdownDisable.getNumOccurrences() == 0) {
-      refinePDGWithTalkdown(loopDG, l, talkdown);
+      refinePDGWithTalkdown(loopDG, l, loopStructure, liSummary, talkdown);
     }   
 
   }
 
-  void refinePDGWithTalkdown(PDG *loopDG, Loop *l, TalkDown *talkdown)
+  void refinePDGWithTalkdown(PDG *loopDG, Loop *l, LoopStructure* loopStructure, LoopsSummary* liSummary, TalkDown *talkdown)
   {
     errs() << "BRIAN, LETS REFINE THE PDG WITH TALKDOWN\n";
 
-    //auto Ftree = talkdown->findTreeForFunction(loop->getHeader()->getParent());
+    auto Ftree = talkdown->findTreeForFunction(l->getHeader()->getParent());
+ 
+    for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure, *liSummary, *loopDG)) {
+      if (!dependency->isLoopCarriedDependence()) continue;
 
+      auto out = dependency->getOutgoingT();
+      auto in = dependency->getIncomingT();
+      if (auto outI = dyn_cast<Instruction>(out)) {
+        errs() << "It's an instruction, out.\n";
+      
+        auto outAnnot = Ftree->getAnnotationsForInst(outI);
+
+        for (auto &annot : outAnnot) {
+          if (annot.getKey() == "independent" && annot.getValue() == "1") {
+            errs() << "Brian: FOUND AN EDGE!!\n";
+            dependency->setLoopCarried(false);
+          }
+        }
+      }
+
+      if (auto inI = dyn_cast<Instruction>(in)) {
+        errs() << "It's an instruction, out.\n";
+      
+        auto inAnnot = Ftree->getAnnotationsForInst(inI);
+
+        for (auto &annot : inAnnot) {
+          if (annot.getKey() == "independent" && annot.getValue() == "1") {
+            errs() << "Brian: FOUND AN EDGE!!\n";
+            dependency->setLoopCarried(false);
+          }
+        }
+      }
+    }
+
+/*    auto Ftree = talkdown->findTreeForFunction(loop->getHeader()->getParent());
+    if (tree) {
+      auto leaves = tree->getLeaves();
+    for (auto & leaf : leaves) {
+      if (leaf->containsAnnotationWithKey("independent") {
+        for (auto A : leaf->getAnnotations()) {
+          if ("1" == A.getValue()) {
+            
+          }
+        }
+      }
+    }
+*/
     /* Brian: 
      * 1. Get Function from loopDG
      * 2. Get Tree for Function

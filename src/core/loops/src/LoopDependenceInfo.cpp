@@ -22,7 +22,7 @@ LoopDependenceInfo::LoopDependenceInfo (
   Loop *l,
   DominatorSummary &DS,
   ScalarEvolution &SE
-) : LoopDependenceInfo{fG, l, DS, SE, Architecture::getNumberOfLogicalCores(), true, {}, nullptr, true} 
+) : LoopDependenceInfo{fG, l, DS, SE, Architecture::getNumberOfLogicalCores(), true, {}, nullptr, nullptr, true} 
   {
   return ;
 }

@@ -46,6 +46,10 @@ namespace llvm::noelle {
     LoopIterationDomainSpaceAnalysis *LIDS
   );
 
-  void refinePDGWithTalkdown(PDG *loopDG, Loop *l, TalkDown *talkdown);
+  void refinePDGWithTalkdown(PDG *loopDG, 
+    Loop *l,
+    LoopStructure *loopStructure,
+    LoopsSummary *liSummary,
+    TalkDown *talkdown);
 
 } // namespace llvm::noelle
