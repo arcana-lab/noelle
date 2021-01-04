@@ -11,15 +11,27 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void HELIX::inlineCalls (
-  void
+  Task *task
   ){
-  auto task = (HELIXTask*)tasks[0];
-  doNestedInlineOfCalls(task->getTaskBody(), task->waits);
-  doNestedInlineOfCalls(task->getTaskBody(), task->signals);
+
+  /*
+   * Check if the inliner is enabled.
+   */
+  if (!this->enableInliner){
+    return ;
+  }
+
+  /*
+   * Inline the calls to HELIX runtime.
+   */
+  auto helixTask = static_cast<HELIXTask *>(task);
+  doNestedInlineOfCalls(helixTask->getTaskBody(), helixTask->waits);
+  doNestedInlineOfCalls(helixTask->getTaskBody(), helixTask->signals);
 
   return ;
+}
+
 }

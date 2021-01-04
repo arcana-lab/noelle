@@ -64,6 +64,8 @@ namespace llvm::noelle {
 
       bool isAnOriginalInstruction (Instruction *i) const ;
 
+      bool isAClonedInstruction (Instruction *i) const ;
+
       Instruction * getCloneOfOriginalInstruction (Instruction *o) const ;
 
       void addInstruction (Instruction *original, Instruction *internal) ;

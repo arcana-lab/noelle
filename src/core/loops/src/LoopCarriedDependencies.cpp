@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -12,55 +12,59 @@
 
 using namespace llvm::noelle;
 
-LoopCarriedDependencies::LoopCarriedDependencies (
+void LoopCarriedDependencies::setLoopCarriedDependencies (
   const LoopsSummary &LIS,
   const DominatorSummary &DS,
   PDG &dgForLoops
-) : loopCarriedDependenciesMap{} {
+) {
 
-  for (auto &loop : LIS.loops) {
-    loopCarriedDependenciesMap[loop.get()] = Criticisms();
+  for (auto edge : dgForLoops.getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
 
   for (auto edge : dgForLoops.getEdges()) {
     auto loop = getLoopOfLCD(LIS, DS, edge);
     if (!loop) continue;
-    loopCarriedDependenciesMap[loop].insert(edge);
     edge->setLoopCarried(true);
   }
 }
 
-LoopCarriedDependencies::LoopCarriedDependencies (
+/* Flags are already set from LoopDG
+void LoopCarriedDependencies::setLoopCarriedDependencies (
   const LoopsSummary &LIS,
   const DominatorSummary &DS,
   SCCDAG &sccdagForLoops
-) : loopCarriedDependenciesMap{} {
+) {
 
-  for (auto &loop : LIS.loops) {
-    loopCarriedDependenciesMap[loop.get()] = Criticisms();
-  }
 
   for (auto sccNode : sccdagForLoops.getNodes()) {
     auto scc = sccNode->getT();
     for (auto edge : scc->getEdges()) {
       auto loop = getLoopOfLCD(LIS, DS, edge);
       if (!loop) continue;
-      loopCarriedDependenciesMap[loop].insert(edge);
+      edge->setLoopCarried(true);
     }
   }
 }
-
+*/
 LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, const DominatorSummary &DS, DGEdge<Value> *edge) {
   auto producer = edge->getOutgoingT();
   auto consumer = edge->getIncomingT();
-  if (!isa<Instruction>(producer)) return nullptr ;
-  if (!isa<Instruction>(consumer)) return nullptr ;
+
+  if (!isa<Instruction>(producer)) {
+    return nullptr ;
+  }
+  if (!isa<Instruction>(consumer)) {
+    return nullptr ;
+  }
 
   auto producerI = dyn_cast<Instruction>(producer);
   auto consumerI = dyn_cast<Instruction>(consumer);
   auto producerLoop = LIS.getLoop(*producerI);
   auto consumerLoop = LIS.getLoop(*consumerI);
-  if (!producerLoop || !consumerLoop) return nullptr ;
+  if (!producerLoop || !consumerLoop) {
+    return nullptr ;
+  }
 
   if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
     auto producerLevel = producerLoop->getNestingLevel();
@@ -80,23 +84,68 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
         return nullptr ;
       }
     }
-
     return consumerLoop;
   }
 
   return nullptr ;
 }
 
-Criticisms LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS) const {
-  assert(loopCarriedDependenciesMap.find(&LS) != loopCarriedDependenciesMap.end());
-  return loopCarriedDependenciesMap.at(&LS);
+std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, PDG &LoopDG) {
+  
+  std::set<DGEdge<Value> *> LCEdges;
+  for (auto edge : LoopDG.getEdges()) {
+    if (!edge->isLoopCarriedDependence()) { 
+      continue; 
+    }
+
+    auto consumer = edge->getIncomingT();
+    auto consumerI = cast<Instruction>(consumer);
+    auto consumerLoop = LIS.getLoop(*consumerI);
+    if (consumerLoop != &LS) {
+      continue;
+    }
+
+    LCEdges.insert(edge);
+  }
+
+  return LCEdges;
+}
+
+std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, SCCDAG &sccdag) {
+
+  std::set<DGEdge<Value> *> LCEdges;
+
+  for (auto sccNode : sccdag.getNodes()) {
+    auto scc = sccNode->getT();
+    for (auto edge : scc->getEdges()) {
+      if (!edge->isLoopCarriedDependence()) {
+        continue;
+      }
+
+      auto consumer = edge->getIncomingT();
+      auto consumerI = cast<Instruction>(consumer);
+      auto consumerLoop = LIS.getLoop(*consumerI);
+      if (consumerLoop != &LS) {
+        continue;
+      }
+
+      auto producer = edge->getOutgoingT();
+      auto producerI = dyn_cast<Instruction>(producer);
+      if(producerI == NULL) { continue; }
+
+      auto producerLoop = LIS.getLoop(*producerI);
+      if(!producerLoop) {continue;}
+      LCEdges.insert(edge);
+    }
+  }
+  return LCEdges;
 }
 
 bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther (
   const LoopStructure &LS,
   BasicBlock *I,
   BasicBlock *J
-) const {
+) {
 
   assert(LS.isIncluded(I) && LS.isIncluded(J));
 

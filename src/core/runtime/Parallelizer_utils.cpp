@@ -503,6 +503,7 @@ extern "C" {
     /*
      * Free the memory.
      */
+    free(argsForAllCores);
     free(ssArrays);
 
     DispatcherInfo dispatcherInfo;

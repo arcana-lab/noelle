@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,28 +10,27 @@
  */
 #include "SCCDAGAttrs.hpp"
 #include "PDGPrinter.hpp"
+#include "LoopCarriedDependencies.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
 
-SCCDAGAttrs::SCCDAGAttrs ()
-  : loopDG{nullptr}, sccdag{nullptr}, memoryCloningAnalysis{nullptr} {
-}
-
 SCCDAGAttrs::SCCDAGAttrs (
+  bool enableFloatAsReal,
   PDG *loopDG,
   SCCDAG *loopSCCDAG,
   LoopsSummary &LIS,
   ScalarEvolution &SE,
-  LoopCarriedDependencies &LCD,
   InductionVariableManager &IV,
   DominatorSummary &DS
-) : loopDG{loopDG}, sccdag{loopSCCDAG}, memoryCloningAnalysis{nullptr} {
+) : 
+  enableFloatAsReal{enableFloatAsReal}, loopDG{loopDG}, sccdag{loopSCCDAG}, memoryCloningAnalysis{nullptr} 
+  {
 
   /*
    * Partition dependences between intra-iteration and iter-iteration ones.
    */
-  collectLoopCarriedDependencies(LIS, LCD);
+  collectLoopCarriedDependencies(LIS);
 
   /*
    * Collect flattened list of all IVs at all loop levels
@@ -67,7 +66,7 @@ SCCDAGAttrs::SCCDAGAttrs (
   /*
    * Tag SCCs depending on their characteristics.
    */
-  loopSCCDAG->iterateOverSCCs([this, &SE, &LIS, &ivs, &loopGoverningIVs, &LCD](SCC *scc) -> bool {
+  loopSCCDAG->iterateOverSCCs([this, &SE, &LIS, &ivs, &loopGoverningIVs](SCC *scc) -> bool {
 
     /*
      * Allocate the metadata about this SCC.
@@ -89,7 +88,7 @@ SCCDAGAttrs::SCCDAGAttrs (
     if (this->checkIfIndependent(scc)) {
       sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
 
-    } else if (this->checkIfReducible(scc, LIS, LCD)) {
+    } else if (this->checkIfReducible(scc, LIS)) {
       sccInfo->setType(SCCAttrs::SCCType::REDUCIBLE);
 
     } else {
@@ -313,7 +312,7 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
   return ;
 }
 
-void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarriedDependencies &LCD) {
+void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS) {
 
   /*
    * Iterate over all the loops contained within the one handled by @this
@@ -323,7 +322,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarried
     /*
      * Fetch the set of loop-carried data dependences of the current loop.
      */
-    auto loopCarriedEdges = LCD.getLoopCarriedDependenciesForLoop(*loop.get());
+    auto loopCarriedEdges = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop.get(), LIS, *sccdag);
 
     /*
      * Make the map from SCCs to loop-carried data dependences.
@@ -416,7 +415,7 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
   return true;
 }
 
-bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDependencies &LCD) {
+bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
 
   /*
    * A reducible variable consists of one loop carried value
@@ -467,15 +466,40 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDepe
     loopCarriedPHIs.insert(consumerPHI);
   }
 
-  if (loopCarriedPHIs.size() != 1) return false;
+  /*
+   * Check if there are loop carried dependences related to PHI nodes.
+   */
+  if (loopCarriedPHIs.size() != 1) {
+    return false;
+  }
   auto singleLoopCarriedPHI = *loopCarriedPHIs.begin();
 
-  auto variable = new LoopCarriedVariable(*rootLoop, LCD, *loopDG, *scc, singleLoopCarriedPHI);
+  auto variable = new LoopCarriedVariable(*rootLoop, LIS, *loopDG, *sccdag, *scc, singleLoopCarriedPHI);
   if (!variable->isEvolutionReducibleAcrossLoopIterations()) {
     delete variable;
     return false;
   }
 
+  /*
+   * The SCC can be reduced.
+   *
+   * Check if the reducable variable is a floating point and check if floating point variables can be considered as real numbers.
+   */
+  auto variableType = singleLoopCarriedPHI->getType();
+  if (  true
+        && (variableType->isFloatTy() || variableType->isDoubleTy())
+        && (!this->enableFloatAsReal)
+    ){
+
+    /*
+     * Floating point values cannot be considered real numbers and therefore floating point variables cannot be reduced.
+     */
+    return false;
+  }
+
+  /*
+   * This SCC can be reduced.
+   */
   auto sccInfo = this->getSCCAttrs(scc);
   sccInfo->addLoopCarriedVariable(variable);
   return true;

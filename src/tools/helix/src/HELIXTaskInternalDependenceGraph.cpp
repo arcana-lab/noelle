@@ -28,6 +28,10 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
 
   auto copyEdgeUsingTaskClonedValues = [&](DGEdge<Value> *originalEdge) -> void {
       DGEdge<Value> edgeToPointToClones(*originalEdge);
+
+      // Loop carry dependencies will be recomputed
+      edgeToPointToClones.setLoopCarried(false);
+
       edgeToPointToClones.setNodePair(
         this->taskFunctionDG->fetchNode(helixTask->getCloneOfOriginalInstruction(cast<Instruction>(originalEdge->getOutgoingT()))),
         this->taskFunctionDG->fetchNode(helixTask->getCloneOfOriginalInstruction(cast<Instruction>(originalEdge->getIncomingT())))

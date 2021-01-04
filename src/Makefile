@@ -1,6 +1,6 @@
 all: 
-	cd core ; make  ;
-	cd tools ; make  ;
+	cd core ; make ;
+	cd tools ; make ;
 
 uninstall:
 	rm -rf ../install ;
