@@ -186,7 +186,6 @@ void HELIX::createParallelizableTask (
    */
   if (this->verbose != Verbosity::Disabled) {
     errs() << "HELIX: Start the parallelization\n";
-    errs() << "HELIX:   Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
     auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDependencies();
     for (auto scc : nonDOALLSCCs) {
 
