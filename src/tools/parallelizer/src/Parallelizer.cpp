@@ -55,6 +55,7 @@ namespace llvm::noelle {
       errs() << "Parallelizer:  Function = \"" << loopFunction->getName() << "\"\n";
       errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *loopHeader->getFirstNonPHI() << "\"\n";
       errs() << "Parallelizer:  Nesting level = " << loopStructure->getNestingLevel() << "\n";
+      errs() << "Parallelizer:  Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
     }
 
     /*
