@@ -354,7 +354,11 @@ extern "C" {
      * Allocate the sequential segment arrays.
      * We need numCores - 1 arrays.
      */
+    auto LIO = true;
     auto numOfSSArrays = numCores;
+    if (!LIO){
+      numOfSSArrays = 1;
+    }
     void *ssArrays = NULL;
     auto ssSize = CACHE_LINE_SIZE;
     auto ssArraySize = ssSize * numOfsequentialSegments;
@@ -363,7 +367,7 @@ extern "C" {
       /*
        * Allocate the sequential segment arrays.
        */
-      posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize *  numOfSSArrays);
+      posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize * numOfSSArrays);
       if (ssArrays == NULL){
         fprintf(stderr, "HELIX: dispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n", (long long)numCores);
         abort();
@@ -428,8 +432,8 @@ extern "C" {
       /*
        * Identify the past and future sequential segment arrays.
        */
-      auto pastID = i;
-      auto futureID = (i + 1) % numCores;
+      auto pastID = i % numOfSSArrays;
+      auto futureID = (i + 1) % numOfSSArrays;
 
       /*
        * Fetch the sequential segment array for the current thread.
