@@ -28,7 +28,7 @@ cd ..
 
 # BITCODE has runtime and is annotated
 echo "SPLITING FOR TALKDOWN"
-noelle-load  -talkdown-split-basic-blocks $BITCODE -o ${BITCODE}_split.bc
+noelle-load  -talkdown-split-basic-blocks $BITCODE -o ${BITCODE}_split.bc  
 echo "OUTLINING"
 noelle-load -load $NOELLE_INSTALL/lib/OutlinerPass.so -outliner -outline-annotation=\"critical 1\" ${BITCODE}_split.bc -o ${BITCODE}_outlined.bc 
 
@@ -75,5 +75,5 @@ echo "NOELLE-PARALLELIZER"
 noelle-parallelizer ${BITCODE}_pdg_prof.bc -o ${BITCODE}_parallel.bc ${NOELLE_OPTIONS} ${PARALLELIZATION_OPTIONS}
 
 echo "FINAL BUILD"
-clang ${BITCODE}_parallel.bc -lm -lpthreads -lstdc++ -O3 -march=native -o parallelized_binary
+clang ${BITCODE}_parallel.bc -lm -lpthread -lstdc++ -O3 -march=native -o parallelized_binary
 

@@ -49,7 +49,7 @@ namespace llvm::noelle {
 
   void refinePDGWithTalkdown(PDG *loopDG, Loop *l, LoopStructure* loopStructure, LoopsSummary* liSummary, TalkDown *talkdown)
   {
-    errs() << "BRIAN, LETS REFINE THE PDG WITH TALKDOWN\n";
+//    errs() << "BRIAN, LETS REFINE THE PDG WITH TALKDOWN\n";
 
     auto Ftree = talkdown->findTreeForFunction(l->getHeader()->getParent());
  
@@ -59,26 +59,26 @@ namespace llvm::noelle {
       auto out = dependency->getOutgoingT();
       auto in = dependency->getIncomingT();
       if (auto outI = dyn_cast<Instruction>(out)) {
-        errs() << "It's an instruction, out.\n";
+        //errs() << "It's an instruction, out.\n";
       
         auto outAnnot = Ftree->getAnnotationsForInst(outI);
 
         for (auto &annot : outAnnot) {
           if (annot.getKey() == "independent" && annot.getValue() == "1") {
-            errs() << "Brian: FOUND AN EDGE!!\n";
+            errs() << "Brian: FOUND AN EDGE from OUT!!\n";
             dependency->setLoopCarried(false);
           }
         }
       }
 
       if (auto inI = dyn_cast<Instruction>(in)) {
-        errs() << "It's an instruction, out.\n";
+  //      errs() << "It's an instruction, out.\n";
       
         auto inAnnot = Ftree->getAnnotationsForInst(inI);
 
         for (auto &annot : inAnnot) {
           if (annot.getKey() == "independent" && annot.getValue() == "1") {
-            errs() << "Brian: FOUND AN EDGE!!\n";
+            errs() << "Brian: FOUND AN EDGE from IN!!\n";
             dependency->setLoopCarried(false);
           }
         }

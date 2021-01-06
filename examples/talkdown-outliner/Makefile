@@ -16,10 +16,10 @@
 all: src
 
 src:
-	.//noelle-mp omp-critical.ll ;
+	.//noelle-mp bt.ll ;
 
 clean:
-	rm omp-critical.ll_*
+	rm bt.ll_*
 	rm baseline*
 	rm default.profraw
 	rm Parallelizer_utils.*
