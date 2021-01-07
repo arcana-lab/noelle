@@ -12,9 +12,10 @@
 #include "../include/MemorySite.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 using namespace std;
 
-AllocAAResult llvm::MemorySiteInfo::doesAlias (Value *V1, Value *V2) {
+AllocAAResult MemorySiteInfo::doesAlias (Value *V1, Value *V2) {
 
   /*
    * One or both values is not understood
