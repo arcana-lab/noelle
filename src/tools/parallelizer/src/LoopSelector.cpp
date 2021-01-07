@@ -121,7 +121,16 @@ namespace llvm::noelle {
 
       return false;
     };
-    tree->visitPreOrder(selector);
+
+    auto selector_by_annotation = [&noelle, &timeSavedLoops, profiles](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
+      // We already targeted the loops with selected annoation
+      auto ls = n->getLoop();
+      auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID };
+      auto ldi = noelle.getLoop(ls, optimizations);
+      timeSavedLoops[ldi] = 10;
+      return true;
+    };
+    tree->visitPreOrder(selector_by_annotation);
 
     /*
     * Sort the loops depending on the amount of time that can be saved by a parallelization technique.

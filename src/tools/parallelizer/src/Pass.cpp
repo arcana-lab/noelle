@@ -9,7 +9,8 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Parallelizer.hpp"
-
+#include "Annotation.hpp"
+#include "AnnotationParser.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -161,7 +162,21 @@ bool Parallelizer::runOnModule (Module &M) {
 
     return false;
   };
-  noelle.filterOutLoops(forest, filter);
+
+  auto filter_by_annotation = [this, forest, profiles](LoopStructure *ls) -> bool{
+    auto head = ls->getHeader();
+    auto annots = parseAnnotationsForInst(&head->front());
+    for (auto A : annots) {
+      if (A.getKey() == "selected") {
+        if(A.getValue() == "1") {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+  noelle.filterOutLoops(forest, filter_by_annotation);
+//  noelle.filterOutLoops(forest, filter);
 
   /*
   * Print the loops.
