@@ -169,11 +169,11 @@ bool Parallelizer::runOnModule (Module &M) {
     for (auto A : annots) {
       if (A.getKey() == "selected") {
         if(A.getValue() == "1") {
-          return true;
+          return false;
         }
       }
     }
-    return false;
+    return true;
   };
   noelle.filterOutLoops(forest, filter_by_annotation);
 //  noelle.filterOutLoops(forest, filter);

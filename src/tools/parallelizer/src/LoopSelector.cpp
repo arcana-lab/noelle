@@ -163,7 +163,7 @@ namespace llvm::noelle {
       return l1LS->getNestingLevel() < l2LS->getNestingLevel();
     };
     std::sort(selectedLoops.begin(), selectedLoops.end(), compareOperator);
-
+    errs() << "Parallelizer: LoopSelector: Selected " << selectedLoops.size() << "\n";
     /*
     * Print the order and the savings.
     */
