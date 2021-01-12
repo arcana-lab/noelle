@@ -14,7 +14,7 @@
 
 using namespace llvm;
 
-namespace llvm {
+namespace llvm::noelle {
   
   struct CleanMetadata : public ModulePass {
     public:
