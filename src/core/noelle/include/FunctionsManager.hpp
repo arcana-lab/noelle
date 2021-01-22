@@ -21,7 +21,7 @@ namespace llvm::noelle {
 
       Function * getEntryFunction (void) const ;
 
-      bool isALibraryPureFunction (Function *libraryFunction);
+      bool isTheLibraryFunctionPure (Function *libraryFunction);
 
       CallGraph * getProgramCallGraph (void) ;
 

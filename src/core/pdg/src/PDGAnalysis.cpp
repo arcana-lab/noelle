@@ -888,7 +888,14 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
   return isa<LoadInst>(mem) && isFunctionNonWriting(callName)
     || isa<StoreInst>(mem) && isFunctionMemoryless(callName);
 }
-      
+ 
+bool PDGAnalysis::isTheLibraryFunctionPure (Function *libraryFunction){
+  if (this->externalFuncsHaveNoSideEffectOrHandledBySVF.count(libraryFunction->getName())){
+    return true;
+  }
+  return false;
+}
+
 PDGAnalysis::~PDGAnalysis() {
   if (this->programDependenceGraph)
     delete this->programDependenceGraph;

@@ -34,7 +34,7 @@ CallGraph * FunctionsManager::getProgramCallGraph (void) {
   return this->pcg;
 }
 
-bool FunctionsManager::isALibraryPureFunction (Function *libraryFunction){
+bool FunctionsManager::isTheLibraryFunctionPure (Function *libraryFunction){
 
   /*
    * Check if the function is a library function.
@@ -45,9 +45,16 @@ bool FunctionsManager::isALibraryPureFunction (Function *libraryFunction){
   if (!libraryFunction->empty()){
     return false;
   }
-  //TODO
+  
+  /*
+   * The function is a library function.
+   * Check if it is known to be pure.
+   */
+  if (this->pdgAnalysis.isTheLibraryFunctionPure(libraryFunction)){
+    return true;
+  }
 
-  return true;
+  return false;
 }
 
 }
