@@ -890,7 +890,7 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
 }
  
 bool PDGAnalysis::isTheLibraryFunctionPure (Function *libraryFunction){
-  if (this->externalFuncsHaveNoSideEffectOrHandledBySVF.count(libraryFunction->getName())){
+  if (PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF.count(libraryFunction->getName())){
     return true;
   }
   return false;

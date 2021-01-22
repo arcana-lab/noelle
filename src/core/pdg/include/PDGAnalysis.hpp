@@ -47,7 +47,7 @@ namespace llvm::noelle {
 
       noelle::CallGraph * getProgramCallGraph (void);
 
-      bool isTheLibraryFunctionPure (Function *libraryFunction);
+      static bool isTheLibraryFunctionPure (Function *libraryFunction);
 
     private:
       Module *M;
