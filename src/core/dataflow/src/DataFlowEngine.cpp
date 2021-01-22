@@ -20,6 +20,30 @@ DataFlowEngine::DataFlowEngine (){
 DataFlowResult * DataFlowEngine::applyForward (
     Function *f,
     std::function<void (Instruction *, DataFlowResult *)> computeGEN,
+    std::function<void (Instruction *inst, std::set<Value *>& IN)> initializeIN,
+    std::function<void (Instruction *inst, std::set<Value *>& OUT)> initializeOUT,
+    std::function<void (Instruction *inst, std::set<Value *>& IN, Instruction *predecessor, DataFlowResult *df)> computeIN,
+    std::function<void (Instruction *inst, std::set<Value *>& OUT, DataFlowResult *df)> computeOUT
+    ){
+
+  /*
+   * Define an empty KILL set.
+   */
+  auto computeKILL = [](Instruction *, DataFlowResult *) {
+    return ;
+  };
+
+  /*
+   * Run the data-flow analysis.
+   */
+  auto dfr = this->applyForward(f, computeGEN, computeKILL, initializeIN, initializeOUT, computeIN, computeOUT);
+
+  return dfr;
+}
+
+DataFlowResult * DataFlowEngine::applyForward (
+    Function *f,
+    std::function<void (Instruction *, DataFlowResult *)> computeGEN,
     std::function<void (Instruction *, DataFlowResult *)> computeKILL,
     std::function<void (Instruction *inst, std::set<Value *>& IN)> initializeIN,
     std::function<void (Instruction *inst, std::set<Value *>& OUT)> initializeOUT,
@@ -58,6 +82,28 @@ DataFlowResult * DataFlowEngine::applyForward (
       );
 
   return dfaResult;
+}
+
+DataFlowResult * DataFlowEngine::applyBackward (
+    Function *f,
+    std::function<void (Instruction *, DataFlowResult *)> computeGEN,
+    std::function<void (std::set<Value *>& IN, Instruction *inst, DataFlowResult *df)> computeIN,
+    std::function<void (std::set<Value *>& OUT, Instruction *successor, DataFlowResult *df)> computeOUT
+    ){
+
+  /*
+   * Define an empty KILL set.
+   */
+  auto computeKILL = [](Instruction *, DataFlowResult *) {
+    return ;
+  };
+
+  /*
+   * Run the data-flow analysis.
+   */
+  auto dfr = this->applyBackward(f, computeGEN, computeKILL, computeIN, computeOUT);
+
+  return dfr;
 }
 
 DataFlowResult * DataFlowEngine::applyBackward (
