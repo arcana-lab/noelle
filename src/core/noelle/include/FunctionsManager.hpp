@@ -17,13 +17,16 @@ namespace llvm::noelle {
 
   class FunctionsManager {
     public:
-      FunctionsManager(PDGAnalysis &noellePDGAnalysis);
+      FunctionsManager(Module &m, PDGAnalysis &noellePDGAnalysis);
+
+      Function * getEntryFunction (void) const ;
 
       bool isALibraryPureFunction (Function *libraryFunction);
 
       CallGraph * getProgramCallGraph (void) ;
 
     private:
+      Module &program;
       PDGAnalysis &pdgAnalysis;
       CallGraph *pcg;
   };

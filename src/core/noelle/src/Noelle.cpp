@@ -238,11 +238,6 @@ double Noelle::getMinimumHotness (void) const {
   return this->minHot;
 }
 
-Function * Noelle::getEntryFunction (void) const {
-  auto f = this->program->getFunction("main");
-  return f;
-}
-
 Hot * Noelle::getProfiles (void) {
   if (this->profiles == nullptr){
     this->profiles = &getAnalysis<HotProfiler>().getHot();
