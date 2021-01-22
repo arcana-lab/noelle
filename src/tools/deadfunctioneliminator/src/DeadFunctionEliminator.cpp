@@ -31,7 +31,8 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
   /*
     * Fetch the call graph.
     */
-  auto pcg = noelle.getProgramCallGraph();
+  auto fm = noelle.getFunctionsManager();
+  auto pcg = fm->getProgramCallGraph();
 
   /*
     * Check if there are functions with only one caller.
