@@ -380,9 +380,6 @@ DataFlowResult *HELIX::computeReachabilityFromInstructions (LoopDependenceInfo *
     gen.insert(i);
     return ;
   };
-  auto computeKILL = [](Instruction *, DataFlowResult *) {
-    return ;
-  };
   auto computeOUT = [LDI, loopHeader](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
 
     /*
@@ -410,7 +407,7 @@ DataFlowResult *HELIX::computeReachabilityFromInstructions (LoopDependenceInfo *
     return ;
   };
 
-  return dfa.applyBackward(loopFunction, computeGEN, computeKILL, computeIN, computeOUT);
+  return dfa.applyBackward(loopFunction, computeGEN, computeIN, computeOUT);
 }
 
 iterator_range<std::unordered_set<SCC *>::iterator> SequentialSegment::getSCCs(void) {

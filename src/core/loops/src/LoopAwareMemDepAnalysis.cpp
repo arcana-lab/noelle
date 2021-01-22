@@ -142,9 +142,6 @@ namespace llvm::noelle {
       gen.insert(i);
       return ;
     };
-    auto computeKILL = [](Instruction *, DataFlowResult *) {
-      return ;
-    };
     auto computeOUT = [loopHeader](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
 
       /*
@@ -172,7 +169,7 @@ namespace llvm::noelle {
       return ;
     };
 
-    return dfa.applyBackward(loopFunction, computeGEN, computeKILL, computeIN, computeOUT);
+    return dfa.applyBackward(loopFunction, computeGEN, computeIN, computeOUT);
   }
 
   void refinePDGWithLIDS(
