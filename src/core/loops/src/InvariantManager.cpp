@@ -126,6 +126,11 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
       if (  true
           && (callee != nullptr)
           && (callee->empty())  ){
+
+        /*
+         * The instruction is a call to a library function.
+         * Check if the function is pure.
+         */
         if (callee->getName() == "malloc" || callee->getName() == "rand"){
           canEvolve = true;
         }
