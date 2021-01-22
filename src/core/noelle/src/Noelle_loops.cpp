@@ -74,7 +74,8 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
   /*
    * Fetch the list of functions of the module.
    */
-  auto mainFunction = this->getEntryFunction();
+  this->getFunctionsManager();
+  auto mainFunction = this->fm->getEntryFunction();
   assert(mainFunction != nullptr);
   auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
 
@@ -380,7 +381,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   /*
    * Fetch the list of functions of the module.
    */
-  auto mainFunction = this->getEntryFunction();
+  this->getFunctionsManager();
+  auto mainFunction = this->fm->getEntryFunction();
   assert(mainFunction != nullptr);
   auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
 
@@ -622,7 +624,8 @@ uint32_t Noelle::getNumberOfProgramLoops (
   /*
    * Fetch the list of functions of the module.
    */
-  auto mainFunction = this->getEntryFunction();
+  this->getFunctionsManager();
+  auto mainFunction = this->fm->getEntryFunction();
   assert(mainFunction != nullptr);
   auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
 

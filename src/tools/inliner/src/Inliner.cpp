@@ -48,7 +48,8 @@ bool Inliner::runOnModule (Module &M) {
   /*
   * Fetch the entry point of the program.
   */
-  auto main = noelle.getEntryFunction();
+  auto fm = noelle.getFunctionsManager();
+  auto main = fm->getEntryFunction();
   if (main == nullptr){
     return false;
   }
@@ -56,7 +57,6 @@ bool Inliner::runOnModule (Module &M) {
   /*
   * Fetch the call graph.
   */
-  auto fm = noelle.getFunctionsManager();
   auto pcg = fm->getProgramCallGraph();
 
   /*

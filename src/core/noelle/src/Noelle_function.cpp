@@ -31,7 +31,7 @@ DominatorSummary * Noelle::getDominators (Function *f) {
       
 FunctionsManager * Noelle::getFunctionsManager (void) {
   if (!this->fm){
-    this->fm = new FunctionsManager(*this->pdgAnalysis);
+    this->fm = new FunctionsManager(*this->program, *this->pdgAnalysis);
   }
   return this->fm;
 }

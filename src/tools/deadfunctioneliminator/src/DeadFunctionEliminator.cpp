@@ -137,7 +137,7 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
   /*
     * Fetch the island of the entry method of the program.
     */
-  auto entryF = noelle.getEntryFunction();
+  auto entryF = fm->getEntryFunction();
   auto entryIsland = islands[entryF];
   std::unordered_set<CallGraph *> liveIslands{entryIsland};
 
