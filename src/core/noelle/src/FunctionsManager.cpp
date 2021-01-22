@@ -12,12 +12,18 @@
 
 namespace llvm::noelle {
       
-FunctionsManager::FunctionsManager (PDGAnalysis &noellePDGAnalysis)
+FunctionsManager::FunctionsManager (Module &m, PDGAnalysis &noellePDGAnalysis)
   : 
-    pdgAnalysis{noellePDGAnalysis}
+    program{m}
+    , pdgAnalysis{noellePDGAnalysis}
     , pcg{nullptr}
 {
   return ;
+}
+
+Function * FunctionsManager::getEntryFunction (void) const {
+  auto f = this->program.getFunction("main");
+  return f;
 }
 
 CallGraph * FunctionsManager::getProgramCallGraph (void) {

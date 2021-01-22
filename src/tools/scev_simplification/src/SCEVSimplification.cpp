@@ -15,7 +15,8 @@ using namespace llvm::noelle;
 
 SCEVSimplification::SCEVSimplification (Noelle &noelle)
   : noelle{noelle} {
-  auto M = noelle.getEntryFunction()->getParent();
+  auto fm = noelle.getFunctionsManager();
+  auto M = fm->getEntryFunction()->getParent();
   auto &cxt = M->getContext();
   auto &dataLayout = M->getDataLayout();
   this->ptrSizeInBits = dataLayout.getPointerSizeInBits();

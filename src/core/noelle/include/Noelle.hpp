@@ -137,8 +137,6 @@ namespace llvm::noelle {
 
       Module * getProgram (void) const ;
 
-      Function * getEntryFunction (void) const ;
-
       Hot * getProfiles (void) ;
 
       PDG * getProgramDependenceGraph (void) ;
