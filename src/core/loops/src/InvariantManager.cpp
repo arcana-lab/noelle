@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Invariants.hpp"
+#include "PDGAnalysis.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -131,7 +132,7 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
          * The instruction is a call to a library function.
          * Check if the function is pure.
          */
-        if (callee->getName() == "malloc" || callee->getName() == "rand"){
+        if (!PDGAnalysis::isTheLibraryFunctionPure(callee)){
           canEvolve = true;
         }
       }
