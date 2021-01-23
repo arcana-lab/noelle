@@ -153,8 +153,9 @@ else
       sort performance/speedups.txt > $tempSpeedups ;
       sort performance/oracle_speedups > $tempOracle ;
       paste $tempSpeedups $tempOracle > $tempCompare ;
-      awk '{
-            if ($2 < ($4 * 0.9)){
+      awk '
+        {
+          if (  ($2 < ($4 * 0.9)) && (($4 - $2) > 0.1)   ){
             printf("  Performance degradation for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
           }
         }' $tempCompare > $tempOutput ;
