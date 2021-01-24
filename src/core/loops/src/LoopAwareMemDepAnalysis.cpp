@@ -65,7 +65,7 @@ namespace llvm::noelle {
         auto outAnnot = Ftree->getAnnotationsForInst(outI);
 
         for (auto &annot : outAnnot) {
-          errs() << "BRIAN: Annotations are " << annot.getKey() << " : " << annot.getValue() << '\n';
+//          errs() << "BRIAN: Annotations are " << annot.getKey() << " : " << annot.getValue() << '\n';
           if (annot.getKey() == "independent" && annot.getValue() == "1") {
             errs() << "Brian: FOUND AN EDGE from OUT!!\n";
             errs() << "BRIAN: the out is " << out << '\n';
@@ -92,7 +92,7 @@ namespace llvm::noelle {
 
     if (edge->isMemoryDependence() ) { 
       if(edge->isLoopCarriedDependence()) { 
-        errs() << "This shouldn't fail 0 : " << edge << '\n'; 
+//        errs() << "This shouldn't fail 0 : " << edge << '\n'; 
       }   
 //        assert(!edge->isLoopCarriedDependence() && "flag was already set on loopDG"); 
     }   

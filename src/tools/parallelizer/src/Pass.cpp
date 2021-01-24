@@ -165,11 +165,13 @@ bool Parallelizer::runOnModule (Module &M) {
 
   auto filter_by_annotation = [this, forest, profiles](LoopStructure *ls) -> bool{
     auto head = ls->getHeader();
-    auto annots = parseAnnotationsForInst(&head->front());
-    for (auto A : annots) {
-      if (A.getKey() == "selected") {
-        if(A.getValue() == "1") {
-          return false;
+    for(auto &I : *head) {
+      auto annots = parseAnnotationsForInst(&I);
+      for (auto A : annots) {
+        if (A.getKey() == "selected") {
+          if(A.getValue() == "1") {
+            return false;
+          }
         }
       }
     }
@@ -262,7 +264,6 @@ bool Parallelizer::runOnModule (Module &M) {
     * Parallelize the loops.
     */
     for (auto ldi : loopsToParallelize){
-
       /*
       * Check if we can parallelize this loop.
       */
@@ -279,6 +280,13 @@ bool Parallelizer::runOnModule (Module &M) {
         errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
         continue ;
       }
+//      if (loopID < 251) {
+  //      continue;
+    //  }
+
+//      if (ls->getFunction()->getName() != "initialize") {
+  //      continue;
+    //  }
 
       /*
       * Parallelize the current loop.

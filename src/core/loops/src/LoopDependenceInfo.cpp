@@ -88,6 +88,8 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Enable all transformations.
    */
+
+  errs() << "BRIAN 6: " << *(l->getHeader()->getFirstNonPHI()) << '\n';
   this->enableAllTransformations();
 
   /*
@@ -109,7 +111,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Create the invariant manager.
    */
   auto topLoop = this->liSummary.getLoopNestingTreeRoot();
-  this->invariantManager = new InvariantManager(topLoop, this->loopDG);
+  this->invariantManager = new InvariantManager(topLoop, this->loopDG, talkdown);
 
   /*
    * Calculate various attributes on SCCs
@@ -186,13 +188,14 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   }
   auto loopDG = functionDG->createLoopsSubgraph(l);
   for (auto edge : loopDG->getEdges()) {
-    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+    assert(!edge->isLoopCarriedDependence() && "flag was already set");
   }
 
   std::vector<Value *> loopInternals;
   for (auto internalNode : loopDG->internalNodePairs()) {
       loopInternals.push_back(internalNode.first);
   }
+
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
 
   /*
@@ -215,10 +218,11 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto env = LoopEnvironment(loopDG, loopExitBlocks);
   auto preRefinedSCCDAG = SCCDAG(loopInternalDG);
-  auto invManager = InvariantManager(loopStructure, loopDG);
+  auto invManager = InvariantManager(loopStructure, loopDG, talkdown);
   auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
+    errs() << "BRIAN: Calling refine on" << this << "\n";
     refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, aa, talkdown, &domainSpace);
   }
 
@@ -227,11 +231,41 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
     removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS);
   }
 
+  for (auto edge : loopDG->getEdges()) {
+
+    if (edge->isMemoryDependence() ) {
+      if(edge->isLoopCarriedDependence()) {
+        errs() << "This shouldn't fail: " << edge << '\n';
+      }
+//        assert(!edge->isLoopCarriedDependence() && "flag was already set on loopDG");
+    }
+  }
+
   /*
    * Build a SCCDAG of loop-internal instructions
    */
   loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
+  
+  for (auto edge : loopInternalDG->getEdges()) {
+    if (edge->isMemoryDependence() ){
+       if(edge->isLoopCarriedDependence()) {
+        errs() << "This shouldn't fail NUMBER 2: " << edge << '\n';
+      }
+       //assert(!edge->isLoopCarriedDependence() && "flag was already set");
+    }
+  }
+
   auto loopSCCDAG = new SCCDAG(loopInternalDG);
+  errs() << "loopSCCDAAG ptr = " << loopSCCDAG << '\n';
+  for (auto sccNode : loopSCCDAG->getNodes()) {
+    auto scc = sccNode->getT();
+    for (auto edge : scc->getEdges()) {
+      if (!edge->isLoopCarriedDependence()) {
+        continue;
+      }   
+//      errs() << "NO, NOT AGAIN\n";
+    }
+  }
 
   /*
    * Safety check: check that the SCCDAG includes all instructions of the loop given as input.

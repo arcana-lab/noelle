@@ -322,6 +322,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS) {
     /*
      * Fetch the set of loop-carried data dependences of the current loop.
      */
+    errs() << "sccdag in collectLoopCarriedDependencies " << sccdag << '\n';
     auto loopCarriedEdges = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop.get(), LIS, *sccdag);
 
     /*
@@ -334,6 +335,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS) {
        */
       auto producer = edge->getOutgoingT();
       auto consumer = edge->getIncomingT();
+    //  errs() << "NOOOOOOOO " << producer << " and consumer " << consumer << '\n';
       auto producerSCC = this->sccdag->sccOfValue(producer);
       auto consumerSCC = this->sccdag->sccOfValue(consumer);
 
