@@ -31,7 +31,8 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
   /*
     * Fetch the call graph.
     */
-  auto pcg = noelle.getProgramCallGraph();
+  auto fm = noelle.getFunctionsManager();
+  auto pcg = fm->getProgramCallGraph();
 
   /*
     * Check if there are functions with only one caller.
@@ -136,7 +137,7 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
   /*
     * Fetch the island of the entry method of the program.
     */
-  auto entryF = noelle.getEntryFunction();
+  auto entryF = fm->getEntryFunction();
   auto entryIsland = islands[entryF];
   std::unordered_set<CallGraph *> liveIslands{entryIsland};
 

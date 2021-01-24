@@ -31,7 +31,7 @@
 
 using namespace llvm;
 
-namespace llvm {
+namespace llvm::noelle {
 
   enum class AllocAAVerbosity { Disabled, Minimal, Maximal };
 

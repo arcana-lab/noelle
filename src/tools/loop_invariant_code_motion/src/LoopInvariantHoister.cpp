@@ -48,14 +48,9 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
       }
 
       /*
-       * There is no benefit to hoisting GEPs, and it seems that
-       * other normalizing transformations bring GEPs next to their usages
+       * The current instruction is a loop invariant.
        */
-      if (isa<GetElementPtrInst>(&I)) {
-        continue;
-      }
       modified = true;
-
       auto phi = dyn_cast<PHINode>(&I);
       if (!phi) {
         instructionsToHoistToPreheader.push_back(&I);

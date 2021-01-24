@@ -25,7 +25,7 @@ Noelle::Noelle()
   , maxCores{Architecture::getNumberOfPhysicalCores()}
   , hoistLoopsToMain{false}
   , loopAwareDependenceAnalysis{false}
-  , pcg{nullptr}
+  , fm{nullptr}
 {
 
   return ;
@@ -238,11 +238,6 @@ double Noelle::getMinimumHotness (void) const {
   return this->minHot;
 }
 
-Function * Noelle::getEntryFunction (void) const {
-  auto f = this->program->getFunction("main");
-  return f;
-}
-
 Hot * Noelle::getProfiles (void) {
   if (this->profiles == nullptr){
     this->profiles = &getAnalysis<HotProfiler>().getHot();
@@ -283,14 +278,6 @@ uint64_t Noelle::numberOfProgramInstructions (void) const {
 
 bool Noelle::shouldLoopsBeHoistToMain (void) const {
   return this->hoistLoopsToMain;
-}
-
-noelle::CallGraph * Noelle::getProgramCallGraph (void) {
-  if (this->pcg == nullptr){
-    this->pcg = this->pdgAnalysis->getProgramCallGraph();
-  }
-
-  return this->pcg;
 }
 
 Noelle::~Noelle(){

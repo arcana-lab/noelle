@@ -20,6 +20,7 @@
 #include "Scheduler.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
 #include "TalkDown.hpp"
+#include "FunctionsManager.hpp"
 
 #include "scaf/MemoryAnalysisModules/LoopAA.h"
 
@@ -47,6 +48,8 @@ namespace llvm::noelle {
       void getAnalysisUsage(AnalysisUsage &AU) const override ;
 
       bool runOnModule (Module &M) override ;
+
+      FunctionsManager * getFunctionsManager (void) ;
 
       std::vector<LoopDependenceInfo *> * getLoops (void) ;
 
@@ -135,8 +138,6 @@ namespace llvm::noelle {
 
       Module * getProgram (void) const ;
 
-      Function * getEntryFunction (void) const ;
-
       Hot * getProfiles (void) ;
 
       PDG * getProgramDependenceGraph (void) ;
@@ -150,8 +151,6 @@ namespace llvm::noelle {
       Scheduler getScheduler (void) const ;
 
       DominatorSummary * getDominators (Function *f) ;
-
-      CallGraph * getProgramCallGraph (void) ;
 
       Verbosity getVerbosity (void) const ;
 
@@ -209,7 +208,6 @@ namespace llvm::noelle {
       uint32_t maxCores;
       bool hoistLoopsToMain;
       bool loopAwareDependenceAnalysis;
-      CallGraph *pcg;
       PDGAnalysis *pdgAnalysis;
       liberty::LoopAA *loopAA;
       TalkDown *talkdown;
@@ -220,6 +218,7 @@ namespace llvm::noelle {
       std::vector<uint32_t> techniquesToDisable;
       std::vector<uint32_t> DOALLChunkSize;
       std::unordered_map<BasicBlock *, uint32_t> loopHeaderToLoopIndexMap;
+      FunctionsManager *fm;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream

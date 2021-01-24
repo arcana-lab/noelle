@@ -14,7 +14,7 @@
 
 #include "DataFlowResult.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   class DataFlowAnalysis {
     public:

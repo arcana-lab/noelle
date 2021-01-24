@@ -12,6 +12,7 @@ int main (int argc, char *argv[]){
     return 1;
   }
   auto iters = atoll(argv[1]);
+  iters *= 10;
   printf("Running %lld iterations\n", iters);
 
   /*
@@ -25,6 +26,7 @@ int main (int argc, char *argv[]){
    */
   auto initial_value = (double) rand();
 
+  #pragma omp parallel for schedule(static, 1)
   for (int i=0; i < iters; i++){
     double v = initial_value;
 
@@ -60,6 +62,7 @@ int main (int argc, char *argv[]){
     /*
      * Critical section
      */
+    #pragma omp critical
     m[i%4] += (int)v;
   }
 
