@@ -424,7 +424,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
   auto rootLoop = LIS.getLoopNestingTreeRoot();
   auto rootLoopHeader = rootLoop->getHeader();
   std::unordered_set<PHINode *> loopCarriedPHIs{};
-  for (auto dependency : sccToLoopCarriedDependencies.at(scc)) {
+  for (auto dependency : this->sccToLoopCarriedDependencies.at(scc)) {
 
     /*
      * We do not handle reducibility of memory locations
@@ -432,7 +432,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
     if (dependency->isMemoryDependence()) return false;
 
     /*
-     * Ingore external control dependencies, do not allow internal ones
+     * Ignore external control dependencies, do not allow internal ones
      */
     auto producer = dependency->getOutgoingT();
     if (dependency->isControlDependence()) {
@@ -459,7 +459,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
     if (!scc->isInternal(consumerPHI)) continue;
 
     /*
-     * Ignore sub loops as they do not need to be reduced
+     * Ignore sub-loops as they do not need to be reduced
      */
     if (rootLoopHeader != consumerPHI->getParent()) continue;
 
@@ -509,7 +509,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
  * The SCC is independent if it doesn't have loop carried data dependencies
  */
 bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
-  return sccToLoopCarriedDependencies.find(scc) == sccToLoopCarriedDependencies.end();
+  return this->sccToLoopCarriedDependencies.find(scc) == this->sccToLoopCarriedDependencies.end();
 }
 
 void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS) {
