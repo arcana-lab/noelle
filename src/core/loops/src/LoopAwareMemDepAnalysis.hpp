@@ -30,7 +30,6 @@ namespace llvm::noelle {
     Loop *l,
     LoopStructure *loopStructure,
     LoopsSummary *liSummary,
-    liberty::LoopAA *loopAA,
     LoopIterationDomainSpaceAnalysis *LIDS
   );
 
