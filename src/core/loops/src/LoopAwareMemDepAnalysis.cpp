@@ -50,7 +50,6 @@ void refinePDGWithLoopAwareMemDepAnalysis(
   Loop *l,
   LoopStructure *loopStructure,
   LoopsSummary *liSummary,
-  liberty::LoopAA *loopAA,
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
 
