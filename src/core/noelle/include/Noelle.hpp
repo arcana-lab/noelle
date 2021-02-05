@@ -21,8 +21,6 @@
 #include "StayConnectedNestedLoopForest.hpp"
 #include "FunctionsManager.hpp"
 
-#include "scaf/MemoryAnalysisModules/LoopAA.h"
-
 namespace llvm::noelle {
 
   enum class Verbosity { Disabled, Minimal, Maximal };
@@ -208,7 +206,6 @@ namespace llvm::noelle {
       bool hoistLoopsToMain;
       bool loopAwareDependenceAnalysis;
       PDGAnalysis *pdgAnalysis;
-      liberty::LoopAA *loopAA;
 
       char *filterFileName;
       bool hasReadFilterFile;
