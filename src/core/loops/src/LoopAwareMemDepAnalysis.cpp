@@ -8,15 +8,11 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "DataFlow.hpp"
+
 #include "scaf/MemoryAnalysisModules/LoopAA.h"
-
 #include "scaf/Utilities/PDGQueries.h"
-
-using namespace llvm;
-using namespace llvm::noelle;
 
 namespace llvm::noelle {
     
@@ -53,9 +49,7 @@ void refinePDGWithLoopAwareMemDepAnalysis(
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
 
-  // TODO: add here other types of loopAware refinements of the PDG
-  assert(NoelleSCAFAA != nullptr);
-  refinePDGWithSCAF(loopDG, l, NoelleSCAFAA);
+  refinePDGWithSCAF(loopDG, l);
 
   if (LIDS) {
     refinePDGWithLIDS(loopDG, loopStructure, liSummary, LIDS);
@@ -63,7 +57,8 @@ void refinePDGWithLoopAwareMemDepAnalysis(
 
 }
 
-void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
+void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
+  assert(NoelleSCAFAA != nullptr);
   // Iterate over all the edges of the loop PDG and
   // collect memory deps to be queried.
   // For each pair of instructions with a memory dependence map it to
@@ -119,14 +114,14 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {
     }
     // Try to disprove all the reported loop-carried deps
     uint8_t disprovedLCDepTypes =
-        disproveLoopCarriedMemoryDep(i, j, depTypes, l, loopAA);
+        disproveLoopCarriedMemoryDep(i, j, depTypes, l, NoelleSCAFAA);
 
     // for every disproved loop-carried dependence
     // check if there is a intra-iteration dependence
     uint8_t disprovedIIDepTypes = 0;
     if (disprovedLCDepTypes) {
       disprovedIIDepTypes = disproveIntraIterationMemoryDep(
-          i, j, disprovedLCDepTypes, l, loopAA);
+          i, j, disprovedLCDepTypes, l, NoelleSCAFAA);
 
       // remove any edge that SCAF disproved both its loop-carried and
       // intra-iteration version

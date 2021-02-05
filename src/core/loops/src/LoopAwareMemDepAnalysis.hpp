@@ -14,7 +14,6 @@
 #include "SystemHeaders.hpp"
 
 #include "PDG.hpp"
-#include "scaf/MemoryAnalysisModules/LoopAA.h"
 #include "LoopCarriedDependencies.hpp"
 #include "LoopIterationDomainSpaceAnalysis.hpp"
 #include "LoopsSummary.hpp"
@@ -34,7 +33,10 @@ namespace llvm::noelle {
   );
 
   // Refine the loop PDG with SCAF
-  void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA);
+  void refinePDGWithSCAF(
+    PDG *loopDG, 
+    Loop *l
+  );
 
   void refinePDGWithLIDS(
     PDG *loopDG,
