@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 installDir
 
@@ -6,11 +6,16 @@ OPT="opt" ;
 
 ########### Analyses
 AA="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa"
-LOOPAA=`loopaa`
+###########    SCAF
+if test -f "${installDir}/lib/libSCAFUtilities.so" ; then
+  SCAFPASS="-load ${installDir}/lib/libSCAFUtilities.so -load ${installDir}/lib/libMemoryAnalysisModules.so" ;
+  LOOPAA=`loopaa`
+else
+  SCAFPASS="" ;
+  LOOPAA=" " ;
+fi
 ANALYSES="${AA} ${LOOPAA} -scalar-evolution -loops -domtree -postdomtree -noellescaf"
-
 WPAPASS="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so -stat=false"
-SCAFPASS="-load ${installDir}/lib/libSCAFUtilities.so -load ${installDir}/lib/libMemoryAnalysisModules.so"
 PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/CallGraph.so -load ${installDir}/lib/PDGAnalysis.so"
 
 

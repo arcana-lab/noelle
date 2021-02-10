@@ -1,7 +1,9 @@
+EXTERNAL_OPTIONS=
+
 all: src
 
 external:
-	cd external ; make ;
+	cd external ; make $(EXTERNAL_OPTIONS) ;
 
 src: external
 	cd src ; make ; 

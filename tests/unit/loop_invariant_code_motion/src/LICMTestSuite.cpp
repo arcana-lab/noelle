@@ -84,7 +84,7 @@ bool LICMTestSuite::runOnModule (Module &M) {
 }
 
 Values LICMTestSuite::loadsAndStoresAreHoistedFromLoop (ModulePass &pass, TestSuite &suite) {
-  LICMTestSuite &licmPass = static_cast<LICMTestSuite &>(pass);
+  auto &licmPass = static_cast<LICMTestSuite &>(pass);
 
   /*
    * Collect values before promotion
