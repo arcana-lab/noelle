@@ -34,7 +34,7 @@ Run `make uninstall` from the root directory to uninstall the NOELLE installatio
 
 
 ## Testing
-To run all tests in parallel using Condor:
+To run all tests in parallel using Condor, invoke the following commands:
 ```
 make clean ; 
 cd tests ;
