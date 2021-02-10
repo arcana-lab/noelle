@@ -7,6 +7,11 @@ compile: svf patch.tar scaf
 	./scripts/scaf_patch_make.sh
 	cd scaf ; make ;
 
+compile_without_scaf: svf patch.tar
+	cd svf ; tar xf ../patch.tar ;
+	./scripts/patch.sh
+	cd svf ; ./build.sh ;
+
 svf:
 	git clone -b SVF-1.8 https://github.com/SVF-tools/SVF.git svf
 
@@ -24,4 +29,4 @@ uninstall:
 	rm -rf svf ;
 	rm -rf scaf ;
 
-.PHONY: compile clean uninstall
+.PHONY: compile compile_without_scaf clean uninstall
