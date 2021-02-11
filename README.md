@@ -15,6 +15,18 @@ NOELLE provides abstractions to help build advanced code analyses and transforma
 
 NOELLE is in active development so more tools, tests, and abstractions will be added.
 
+We release NOELLE's source code in the hope of benefiting others. 
+You are kindly asked to acknowledge usage of the tool by citing the following paper:
+```
+@misc{matni2021noelle,
+      title={{NOELLE} {O}ffers {E}mpowering {LL}VM {E}xtensions},
+      author={Angelo Matni and Enrico Armenio Deiana and Yian Su and Lukas Gross and Souradip Ghosh and Sotiris Apostolakis and Ziyang Xu and Zujun Tan and Ishita Chaturvedi and David I. August and Simone Campanoni},
+      year={2021},
+      eprint={2102.05081},
+      archivePrefix={arXiv},
+      primaryClass={cs.PL}
+}
+```
 
 ## Prerequisites
 LLVM 9.0.0
