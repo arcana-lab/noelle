@@ -164,6 +164,14 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DGEdg
   auto toInst = cast<Instruction>(toValue);
 
   /*
+   * Store instructions may produce side effects
+   * Currently conservative
+   */
+  if (isa<StoreInst>(toValue)) {
+    return true;
+  }
+
+  /*
    * If the instruction is not included in the loop, then we can skip this dependence.
    */
   if (!loop->isIncluded(toInst)){
