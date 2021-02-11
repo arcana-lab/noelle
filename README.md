@@ -3,6 +3,7 @@
 
 ## Table of Contents
 - [Description](#description)
+- [Version](#version)
 - [Prerequisites](#prerequisites)
 - [Build NOELLE](#build-noelle)
 - [Testing](#testing)
@@ -28,13 +29,16 @@ You are kindly asked to acknowledge usage of the tool by citing the following pa
 }
 ```
 
-## Version Numbering Scheme
+## Version
+The latest stable version is 9.0.0 (tag = `v9.0.0`).
+
+### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
 - **Major**: Each major version matches a specific LLVM version (e.g., version 9 matches LLVM 9, version 11 matches LLVM 11)
 - **Minor**: Starts from 0, each minor version represents either one or more API replacements/removals that might impact the users OR a forced update every six months (the minimum minor update frequency)
 - **Revision**: Starts from 0; each revision version may include bug fixes or incremental improvements
 
-### Update Frequency
+#### Update Frequency
 - **Major**: Matches the LLVM releases on a best-effort basis
 - **Minor**: At least once per six months, at most once per month (1/month ~ 2/year)
 - **Revision**: At least once per month, at most twice per week (2/week ~ 1/month)
