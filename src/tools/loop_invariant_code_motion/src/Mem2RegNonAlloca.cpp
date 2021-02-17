@@ -35,9 +35,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
    */
   for (auto B : loopStructure->getBasicBlocks()) {
     auto terminator = B->getTerminator();
-    if (!terminator) {
-      return false;
-    }
+    assert(terminator != nullptr);
     if (isa<ReturnInst>(terminator)) {
       return false;
     }
@@ -46,7 +44,14 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
     }
   }
 
-  auto singleMemoryLocationsBySCC = findSCCsWithSingleMemoryLocations();
+  /*
+   * Fetch the SCCs of interest.
+   */
+  auto singleMemoryLocationsBySCC = this->findSCCsWithSingleMemoryLocations();
+
+  /*
+   * Promote memory locations to variables.
+   */
   for (auto memoryAndSCCPair : singleMemoryLocationsBySCC) {
     auto memoryInst = memoryAndSCCPair.first;
     auto memorySCC = memoryAndSCCPair.second;
@@ -61,12 +66,17 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
     //   continue;
     // }
 
-    bool promoted = promoteMemoryToRegisterForSCC(memorySCC, memoryInst);
+    /*
+     * Promote the single memory location used in the current SCC to variables.
+     */
+    auto promoted = this->promoteMemoryToRegisterForSCC(memorySCC, memoryInst);
     if (noelle.getVerbosity() >= Verbosity::Maximal) {
       memoryInst->print(errs() << "Mem2Reg:  Loop invariant memory location loads/stores promoted: " << promoted << " ");
       errs() << "\n";
     }
-    if (promoted) return true;
+    if (promoted) {
+      return true;
+    }
   }
 
   return false;
