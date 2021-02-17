@@ -15,10 +15,14 @@ using namespace llvm::noelle;
 
 Mem2RegNonAlloca::Mem2RegNonAlloca (LoopDependenceInfo const &LDI, Noelle &noelle)
   : LDI{LDI}, invariants{*LDI.getInvariantManager()}, noelle{noelle} {
+  return ;
 }
 
-bool Mem2RegNonAlloca::promoteMemoryToRegister () {
+bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
 
+  /*
+   * Fetch the loop structure.
+   */
   auto loopStructure = LDI.getLoopStructure();
   if (noelle.getVerbosity() >= Verbosity::Maximal) {
     auto terminator = loopStructure->getHeader()->getTerminator();
