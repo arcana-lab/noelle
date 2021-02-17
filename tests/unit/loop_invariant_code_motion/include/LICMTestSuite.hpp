@@ -22,7 +22,7 @@
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
 #include "LoopDependenceInfo.hpp"
-#include "Mem2RegNonAlloca.hpp"
+#include "LoopInvariantCodeMotion.hpp"
 #include "Noelle.hpp"
 
 #include <sstream>
@@ -57,6 +57,6 @@ namespace llvm::noelle {
       Function *mainF;
       PDG *fdg;
       LoopDependenceInfo *ldi;
-      Mem2RegNonAlloca *mem2Reg;
+      LoopInvariantCodeMotion *licm;
   };
 }
