@@ -58,7 +58,7 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
    * Call the function that incudes the parallelized loop.
    */
   IRBuilder<> helixBuilder(this->entryPointOfParallelizedLoop);
-  auto runtimeCall = helixBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
+  auto runtimeCall = helixBuilder.CreateCall(this->taskDispatcherSS, ArrayRef<Value *>({
     (Value *)tasks[0]->getTaskBody(),
     envPtr,
     loopCarriedEnvPtr,
