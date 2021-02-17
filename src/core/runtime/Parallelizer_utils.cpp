@@ -46,7 +46,7 @@ extern "C" {
   /*
    * Return the number of cores to use for the parallelization.
    */
-  int32_t NOELLE_getNumberOfCores (void);
+  static int32_t NOELLE_getNumberOfCores (void);
 
   /*
    * Dispatch threads to run a DOALL loop.
@@ -66,7 +66,7 @@ extern "C" {
   /**********************************************************************
    *                MISC
    **********************************************************************/
-  int32_t NOELLE_getNumberOfCores (void){
+  static int32_t NOELLE_getNumberOfCores (void){
     static int32_t cores = 0;
 
     /*
@@ -283,7 +283,7 @@ extern "C" {
     uint64_t *loopIsOverFlag;
   } NOELLE_HELIX_args_t ;
 
-  void NOELLE_HELIXTrampoline (void *args){
+  static void NOELLE_HELIXTrampoline (void *args){
 
     /*
      * Fetch the arguments.
@@ -306,7 +306,7 @@ extern "C" {
     return ;
   }
 
-  void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
+  static void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
 
     while ((*theLoopIsOver) == 0){
 
@@ -601,7 +601,7 @@ extern "C" {
     return stage(env, queues);
   }
 
-  void NOELLE_DSWPTrampoline (void *args){
+  static void NOELLE_DSWPTrampoline (void *args){
 
     /*
      * Fetch the arguments.
