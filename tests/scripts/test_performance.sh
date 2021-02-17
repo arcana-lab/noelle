@@ -13,7 +13,7 @@ function measureTime {
   tempFile3=`mktemp` ;
 
   # Measure the execution times
-  for j in `seq 0 5` ; do
+  for j in `seq 0 7` ; do
 
     # Measure the time
     { time ./$binaryName $ARGS ; } &> $tempFile ;

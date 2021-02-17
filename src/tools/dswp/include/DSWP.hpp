@@ -77,6 +77,11 @@ namespace llvm::noelle {
       DominatorSummary *originalFunctionDS;
 
       /*
+       * Dispatcher
+       */
+      Function *taskDispatcher;
+
+      /*
        * Pipeline
        */
       void partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) ;
