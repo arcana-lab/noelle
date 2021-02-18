@@ -349,8 +349,8 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
   LoopDependenceInfo *LDI,
   int taskIndex
 ){
-
   auto task = this->tasks[taskIndex];
+  assert(task != nullptr);
   auto rootLoop = LDI->getLoopStructure();
   auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
 
@@ -388,6 +388,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
 
         /*
          * Ensure the instruction is outside the loop and not already cloned
+         *
          * FIXME: Checking task's instruction map would be mis-leading, as live-in values
          * could be listed as clones to these values. Find a way to ensure that wouldn't happen
          */
@@ -407,6 +408,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
 
         /*
          * Clone operand and then add to queue
+         *
          * NOTE: The operand clone is inserted before the insert point which
          * then gets set to itself. This ensures that any operand using it that has
          * already been traversed will come after
@@ -437,6 +439,8 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
     entryBuilder.Insert(allocaClone);
     task->addInstruction(alloca, allocaClone);
   }
+
+  return ;
 }
 
 void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
