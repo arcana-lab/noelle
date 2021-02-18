@@ -9,6 +9,7 @@ int main (int argc, char *argv[]){
   }
   long long int iterations = atoll(argv[1]);
 
+  int winner = rand() % 100;
   long long int t = 0;
   for (long long int i=0; i < iterations; i++){
     long long int a[100];
@@ -46,42 +47,7 @@ int main (int argc, char *argv[]){
     a[index] += 10;
     a[index] *= i;
 
-    int index2 = i % 100;
-    a[index2] = iterations * i;
-    a[index2] = (long long int)sqrt((double)a[index2]);
-    a[index2] += 10;
-    a[index2] *= i;
-    a[index2] = (long long int)sqrt((double)a[index2]);
-    a[index2] += 10;
-    a[index2] *= i;
-    a[index2] = (long long int)sqrt((double)a[index2]);
-    a[index2] += 10;
-    a[index2] *= i;
-    a[index2] = (long long int)sqrt((double)a[index2]);
-    a[index2] += 10;
-    a[index2] *= i;
-    a[index2] = (long long int)sqrt((double)a[index2]);
-    a[index2] += 10;
-    a[index2] *= i;
-    a[index2] = (long long int)sqrt((double)a[index2]);
-    a[index2] += 10;
-    a[index2] *= i;
-    a[index2] = (long long int)sqrt((double)a[index2]);
-    a[index2] += 10;
-    a[index2] *= i;
-    a[index2] = (long long int)sqrt((double)a[index2]);
-    a[index2] += 10;
-    a[index2] *= i;
-    a[index2] = (long long int)sqrt((double)a[index2]);
-    a[index2] += 10;
-    a[index2] *= i;
-    a[index2] = (long long int)sqrt((double)a[index2]);
-    a[index2] += 10;
-    a[index2] *= i;
-
-    for (int j=0; j < 100; j++){
-      t += a[j];
-    }
+    t += a[winner];
   }
 
   printf("%d\n", t);
