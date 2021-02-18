@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Parallelizer.hpp"
+#include "llvm/IR/Verifier.h"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -29,6 +30,7 @@ namespace llvm::noelle {
     */
     assert(LDI != nullptr);
     assert(h != nullptr);
+    assert(!verifyFunction(*(LDI->getLoopStructure()->getFunction())));
 
     /*
     * Fetch the verbosity level.
@@ -176,6 +178,8 @@ namespace llvm::noelle {
     if (verbose != Verbosity::Disabled) {
       errs() << "Parallelizer: Exit\n";
     }
+
+    assert(!verifyFunction(*(LDI->getLoopStructure()->getFunction())));
     return true;
   }
 }

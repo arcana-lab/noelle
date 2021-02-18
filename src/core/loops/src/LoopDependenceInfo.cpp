@@ -82,6 +82,7 @@ LoopDependenceInfo::LoopDependenceInfo(
     enabledOptimizations{optimizations},
     areLoopAwareAnalysesEnabled{enableLoopAwareDependenceAnalyses}
   {
+  errs() << "BRIAN, constructing LDI: " << *(this->getLoopStructure()->getHeader()->getTerminator()) << '\n';
   for (auto edge : fG->getEdges()) {
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
@@ -89,7 +90,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Enable all transformations.
    */
 
-  errs() << "BRIAN 6: " << *(l->getHeader()->getFirstNonPHI()) << '\n';
+//  errs() << "BRIAN 6: " << *(l->getHeader()->getFirstNonPHI()) << '\n';
   this->enableAllTransformations();
 
   /*
@@ -222,7 +223,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
-    errs() << "BRIAN: Calling refine on" << this << "\n";
+//    errs() << "BRIAN: Calling refine on" << this << "\n";
     refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, aa, talkdown, &domainSpace);
   }
 
@@ -235,7 +236,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
 
     if (edge->isMemoryDependence() ) {
       if(edge->isLoopCarriedDependence()) {
-        errs() << "This shouldn't fail: " << edge << '\n';
+//        errs() << "This shouldn't fail: " << edge << '\n';
       }
 //        assert(!edge->isLoopCarriedDependence() && "flag was already set on loopDG");
     }
@@ -249,14 +250,14 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   for (auto edge : loopInternalDG->getEdges()) {
     if (edge->isMemoryDependence() ){
        if(edge->isLoopCarriedDependence()) {
-        errs() << "This shouldn't fail NUMBER 2: " << edge << '\n';
+//        errs() << "This shouldn't fail NUMBER 2: " << edge << '\n';
       }
        //assert(!edge->isLoopCarriedDependence() && "flag was already set");
     }
   }
 
   auto loopSCCDAG = new SCCDAG(loopInternalDG);
-  errs() << "loopSCCDAAG ptr = " << loopSCCDAG << '\n';
+//  errs() << "loopSCCDAAG ptr = " << loopSCCDAG << '\n';
   for (auto sccNode : loopSCCDAG->getNodes()) {
     auto scc = sccNode->getT();
     for (auto edge : scc->getEdges()) {

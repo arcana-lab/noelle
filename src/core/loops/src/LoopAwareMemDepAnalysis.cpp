@@ -11,7 +11,8 @@
 
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "DataFlow.hpp"
-
+#include "Annotation.hpp"
+#include "AnnotationParser.hpp"
 #include "scaf/Utilities/PDGQueries.h"
 
 using namespace llvm;
@@ -47,28 +48,60 @@ namespace llvm::noelle {
 
   }
 
+  bool isSelectedLoop(LoopStructure* ls, const FunctionTree* Ftree) {
+    auto head = ls->getHeader();
+    for(auto &I : *head) {
+      auto annots = parseAnnotationsForInst(&I);
+      for (auto A : annots) {
+        if (A.getKey() == "selected") {
+          if(A.getValue() == "1") {
+            return true;
+          }   
+        }   
+      }   
+    }   
+    return false;
+  }
+
   void refinePDGWithTalkdown(PDG *loopDG, Loop *l, LoopStructure* loopStructure, LoopsSummary* liSummary, TalkDown *talkdown)
   {
-    //errs() << "BRIAN, LETS REFINE THE PDG WITH TALKDOWN, ldi ptr = " << this << "\n";
+    errs() << "BRIAN, LETS REFINE THE PDG WITH TALKDOWN\n";
 
     auto Ftree = talkdown->findTreeForFunction(l->getHeader()->getParent());
- 
+
+    // early exit if current loop does not have selected
+    if (!isSelectedLoop(loopStructure, Ftree)) {
+      errs() << "Loop does not have selected\n";
+      errs() << *(loopStructure->getHeader());
+      return;
+    }
+
+    // If parent is selected loop also, then this loop is no longer independent
+    auto pl = loopStructure->getParentLoop();
+    if (pl && isSelectedLoop(pl, Ftree)) {
+      errs() << "Talkdown: parent loop is selected, inner loop is not independent\n";
+      return;
+    }
+
  //   for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure, *liSummary, *loopDG)) {
-   for (auto dependency : loopDG->getEdges()) {
+    for (auto dependency : loopDG->getEdges()) {
  //     if (!dependency->isLoopCarriedDependence()) continue;
+
+      // TODO: if (!isMemoryDependence()) then continue;
+      if (!dependency->isMemoryDependence()) { continue; }
 
       auto out = dependency->getOutgoingT();
       auto in = dependency->getIncomingT();
       if (auto outI = dyn_cast<Instruction>(out)) {
         //errs() << "It's an instruction, out.\n";
       
-        auto outAnnot = Ftree->getAnnotationsForInst(outI);
-
+//        auto outAnnot = Ftree->getAnnotationsForInst(outI);
+        auto outAnnot = parseAnnotationsForInst(outI);
         for (auto &annot : outAnnot) {
 //          errs() << "BRIAN: Annotations are " << annot.getKey() << " : " << annot.getValue() << '\n';
           if (annot.getKey() == "independent" && annot.getValue() == "1") {
             errs() << "Brian: FOUND AN EDGE from OUT!!\n";
-            errs() << "BRIAN: the out is " << out << '\n';
+            errs() << "BRIAN: the out is " << *out << '\n';
             dependency->setLoopCarried(false);
           }
         }
@@ -77,12 +110,13 @@ namespace llvm::noelle {
       if (auto inI = dyn_cast<Instruction>(in)) {
   //      errs() << "It's an instruction, out.\n";
       
-        auto inAnnot = Ftree->getAnnotationsForInst(inI);
+//        auto inAnnot = Ftree->getAnnotationsForInst(inI);
+        auto inAnnot = parseAnnotationsForInst(inI);
 
         for (auto &annot : inAnnot) {
           if (annot.getKey() == "independent" && annot.getValue() == "1") {
             errs() << "Brian: FOUND AN EDGE from IN!!\n";
-            errs() << "BRIAN: the in is " << in << '\n';
+            errs() << "BRIAN: the in is " << *in << '\n';
             dependency->setLoopCarried(false);
           }
         }
@@ -92,12 +126,34 @@ namespace llvm::noelle {
 
     if (edge->isMemoryDependence() ) { 
       if(edge->isLoopCarriedDependence()) { 
-//        errs() << "This shouldn't fail 0 : " << edge << '\n'; 
+        errs() << "This shouldn't fail 0 : " << edge->toString() << '\n'; 
+        auto out = edge->getOutgoingT();
+        auto in = edge->getIncomingT();
+        errs() << "Out = " << *out << '\n';
+        errs() << "In = " << *in << '\n';
+
+        if (auto outI = dyn_cast<Instruction>(out)) {
+          errs() << "It's Out is an Instruction, annotations are : \n";
+          auto outAnnot = parseAnnotationsForInst(outI);
+
+          for (auto &annot : outAnnot) {    
+            errs() << annot.getKey() << ": " << annot.getValue() << '\n';
+          }
+        }
+        if (auto inI = dyn_cast<Instruction>(out)) {
+          errs() << "It's In is an Instruction, annotations are : \n";
+          auto inAnnot = parseAnnotationsForInst(inI);
+
+          for (auto &annot : inAnnot) {    
+            errs() << annot.getKey() << ": " << annot.getValue() << '\n';
+          }
+        }
+      
       }   
 //        assert(!edge->isLoopCarriedDependence() && "flag was already set on loopDG"); 
     }   
   }
-    for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure,     *liSummary, *loopDG)) {
+/*    for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure,     *liSummary, *loopDG)) {
       auto out = dependency->getOutgoingT();
       auto in = dependency->getIncomingT();
 
@@ -119,7 +175,7 @@ namespace llvm::noelle {
       } 
     }
 
-/*    auto Ftree = talkdown->findTreeForFunction(loop->getHeader()->getParent());
+    auto Ftree = talkdown->findTreeForFunction(loop->getHeader()->getParent());
     if (tree) {
       auto leaves = tree->getLeaves();
     for (auto & leaf : leaves) {

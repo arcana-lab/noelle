@@ -27,6 +27,8 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   auto preHeader = loopStructure->getPreHeader();
   auto loopFunction = header->getParent();
 
+  errs() << "BRIAN 31: in LIH, function: \n" << *loopFunction << '\n';
+
   /*
    * Compute the dominators.
    */
@@ -40,10 +42,12 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   for (auto B : loopStructure->getBasicBlocks()) {
     for (auto &I : *B) {
 
+
       /*
        * Check if the current instruction is a loop invariant.
        */
       if (!invariantManager->isLoopInvariant(&I)) {
+        errs() <<  "BRIAN 32: I = " << I << '\n';
         continue;
       }
 
@@ -115,6 +119,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
    */
   IRBuilder<> preHeaderBuilder(preHeader->getTerminator());
   for (auto I : instructionsToHoistToPreheader) {
+    errs() << "BRIAN 30: Hoisting I= " << *I << '\n';
     I->removeFromParent();
     preHeaderBuilder.Insert(I);
   }

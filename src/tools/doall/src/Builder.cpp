@@ -14,6 +14,57 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
+bool arePHIIncomingValuesEquivalent (PHINode *phi) {
+
+  std::unordered_set<Value *> incomingValues{};
+  for (auto &incomingUse : phi->incoming_values()) {
+    auto incomingValue = incomingUse.get();
+    incomingValues.insert(incomingValue);
+  }
+  if (incomingValues.size() == 0) return false;
+
+  /*  
+   * If all incoming values are strictly the same value, this set will be one element
+   */
+  if (incomingValues.size() == 1) return true;
+
+  /*  
+   * Check if all incoming values are strictly equivalent
+   */
+  Value *singleUniqueValue = *incomingValues.begin();
+  for (auto incomingValue : incomingValues) {
+    if (incomingValue == singleUniqueValue) continue;
+    singleUniqueValue = nullptr;
+    break;
+  }
+  if (singleUniqueValue) return true;
+
+  /*  
+   * If all incoming values are loads of the same global, we consider this equivalent
+   * Whether these loads are loop invariant is up to checks on the dependence graph
+   */
+  GlobalValue *singleGlobalLoaded = nullptr;
+  for (auto incomingValue : incomingValues) {
+    if (auto load = dyn_cast<LoadInst>(incomingValue)) {
+      auto loadedValue = load->getPointerOperand();
+      if (auto global = dyn_cast<GlobalValue>(loadedValue)) {
+        if (singleGlobalLoaded == nullptr || singleGlobalLoaded == global) {
+          singleGlobalLoaded = global;
+          continue;
+        }   
+      }   
+    }   
+
+    singleGlobalLoaded = nullptr;
+    break;
+  }
+
+  if (singleGlobalLoaded != nullptr) return true;
+
+  return false;
+}
+
+
 void DOALL::rewireLoopToIterateChunks (
   LoopDependenceInfo *LDI
   ){
@@ -51,8 +102,9 @@ void DOALL::rewireLoopToIterateChunks (
    * Collect clones of step size deriving values for all induction variables
    * of the top level loop
    */
+  errs() << "BRIAN 10: Before cloneIV: " << *(task->getTaskBody());
   auto clonedStepSizeMap = cloneIVStepValueComputation(LDI, 0, entryBuilder);
-
+  errs() << "BRIAN 10 : After cloneIV: " << *(task->getTaskBody());
   /*
    * Determine start value of the IV for the task
    * core_start: original_start + original_step_size * core_id * chunk_size
@@ -101,6 +153,7 @@ void DOALL::rewireLoopToIterateChunks (
     IVUtility::chunkInductionVariablePHI(preheaderClone, ivPHI, chunkPHI, chunkStepSize);
   }
 
+  errs() << "BRIAN 15 after chunkInductionVariablePHI: " << *(task->getTaskBody());
   /*
    * The exit condition needs to be made non-strict to catch iterating past it
    */
@@ -120,11 +173,17 @@ void DOALL::rewireLoopToIterateChunks (
    */
   auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
+    errs() << "BRIAN 25: " << *exitConditionInst << '\n';
+    errs() << "BRIAN 25: Function: " << *(exitConditionInst->getParent()->getParent()) << '\n';
+    if (auto phi = dyn_cast<PHINode>(exitConditionInst)) {
+      errs() << "phi Incoming values are equivalent?: " << arePHIIncomingValuesEquivalent(phi) << '\n';
+    }
     auto &derivation = ivUtility.getConditionValueDerivation();
     for (auto I : derivation) {
       auto cloneI = task->getCloneOfOriginalInstruction(I);
-      assert(invariantManager->isLoopInvariant(I)
-        && "DOALL exit condition value is not derived from loop invariant values!");
+      errs() << "BRIAN 7: I = " << *I << ", cloneI = " << *cloneI << '\n'; 
+//      assert(invariantManager->isLoopInvariant(I)
+  //      && "DOALL exit condition value is not derived from loop invariant values!");
 
       if (auto clonePHI = dyn_cast<PHINode>(cloneI)) {
         auto usedValue = clonePHI->getIncomingValue(0);
@@ -134,6 +193,8 @@ void DOALL::rewireLoopToIterateChunks (
         if (!cloneI) continue;
       }
 
+
+
       cloneI->removeFromParent();
       entryBuilder.Insert(cloneI);
     }
@@ -142,6 +203,7 @@ void DOALL::rewireLoopToIterateChunks (
     entryBuilder.Insert(exitConditionInst);
   }
 
+  errs() << "BRIAN 16 : After exitConditionInst move: " << *(task->getTaskBody());
   /*
    * NOTE: When loop governing IV attribution allows for any bther instructions in the header
    * other than those of the IV and its comparison, those unrelated instructions should be
@@ -189,6 +251,7 @@ void DOALL::rewireLoopToIterateChunks (
 	 */
   auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
+    errs() << "BRIAN 20: Its a nonDOALLSCC\n";
     auto sccInfo = sccManager->getSCCAttrs(scc);
     if (!sccInfo->canExecuteReducibly()) continue;
 
@@ -215,7 +278,10 @@ void DOALL::rewireLoopToIterateChunks (
 		if (!sccInfo->canExecuteIndependently()) continue;
 
     auto isInvariant = invariantManager->isLoopInvariant(&I);
-    if (!isInvariant) continue;
+    if (!isInvariant) {
+      errs() << "BRIAN 23 isInvariant: I = " << I << '\n';
+      continue;
+    }
 
 		repeatableInstructions.insert(task->getCloneOfOriginalInstruction(&I));
 	}
@@ -229,6 +295,7 @@ void DOALL::rewireLoopToIterateChunks (
   }
 
   if (requiresConditionBeforeEnteringHeader) {
+    errs() << "BRIAN 24, in requiresConditionBeforeEnteringHeader\n";
     auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
     auto loopGoverningPHI = task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI());
     auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
@@ -273,5 +340,8 @@ void DOALL::rewireLoopToIterateChunks (
       task->getExit(),
       headerClone
     );
+
   }
+
+  errs() << "BRIAN 10 : At end of rewire: " << *(task->getTaskBody());
 }

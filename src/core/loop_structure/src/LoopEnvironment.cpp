@@ -29,6 +29,7 @@ LoopEnvironment::LoopEnvironment (
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
 
+
     /*
      * Determine whether the external value is a producer (i.e., live-in).
      */
@@ -41,6 +42,7 @@ LoopEnvironment::LoopEnvironment (
       this->prodConsumers[externalValue].insert(edge->getIncomingT());
     }
     if (isProducer) {
+      errs() << "BRIAN: Live In" << *externalValue << '\n';
       this->addLiveInProducer(externalValue);
     }
 
@@ -53,6 +55,7 @@ LoopEnvironment::LoopEnvironment (
       }
       auto internalValue = edge->getOutgoingT();
       if (!this->isProducer(internalValue)) {
+        errs() << "BRIAN: Live Out" << *internalValue << '\n';
         this->addLiveOutProducer(internalValue);
       }
       this->prodConsumers[internalValue].insert(externalValue);

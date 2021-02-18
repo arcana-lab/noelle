@@ -9,6 +9,8 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Parallelizer.hpp"
+#include "Annotation.hpp"
+#include "AnnotationParser.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -133,11 +135,44 @@ namespace llvm::noelle {
       errs() << "BRIAN: noelle.getLoop\n";
       auto ldi = noelle.getLoop(ls, optimizations);
       errs() << "BRIAN: LDI from selector ptr is " << ldi << '\n';
-      timeSavedLoops[ldi] = ls->getID();
-      errs() << "BRIAN: it's selected\n";
-      return true;
+
+    auto head = ls->getHeader();
+    for(auto &I : *head) {
+      auto annots = parseAnnotationsForInst(&I);
+      for (auto A : annots) {
+        if (A.getKey() == "selected") {
+          if(A.getValue() == "1") {
+            // Filter unless it's parent is also selected
+            auto p = ls->getParentLoop();
+            if (!p) {
+              timeSavedLoops[ldi] = ls->getID();
+              errs() << "BRIAN: it's selected\n";
+              return true;
+            }   
+            auto pHead = p->getHeader();
+            for(auto &I2 : *pHead) {
+              auto annots2 = parseAnnotationsForInst(&I2);
+              for (auto A2 : annots2) {
+                if (A2.getKey() == "selected") {
+                  if(A2.getValue() == "1") {
+                    return false;
+                  }   
+                }   
+              } 
+            }
+            timeSavedLoops[ldi] = ls->getID();
+            errs() << "BRIAN: it's selected\n";   
+            return true;
+          }   
+        }   
+      }   
+    } 
+
+
+      return false;
     };
     tree->visitPreOrder(selector_by_annotation);
+//    tree->visitPreOrder(selector);
 
     /*
     * Sort the loops depending on the amount of time that can be saved by a parallelization technique.

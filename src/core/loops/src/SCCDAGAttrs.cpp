@@ -243,6 +243,12 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
       continue ;
     }
 
+    errs() << "BRIAN 21: live out value is no reducable:\n";
+    errs() << "Producer: " << *producer << '\n';
+    errs() << "SCC: \n";
+    scc->print(errs());
+
+
     return false;
   }
 
@@ -504,6 +510,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
    */
   auto sccInfo = this->getSCCAttrs(scc);
   sccInfo->addLoopCarriedVariable(variable);
+  errs() << "BRIAN 50: Adding a LCV than can be reduced\n";
   return true;
 }
 
