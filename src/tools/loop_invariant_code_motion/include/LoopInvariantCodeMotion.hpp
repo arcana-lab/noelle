@@ -12,7 +12,6 @@
 
 #include "SystemHeaders.hpp"
 #include "Noelle.hpp"
-#include "Mem2RegNonAlloca.hpp"
 
 #include "PDGPrinter.hpp"
 #include "SubCFGs.hpp"
@@ -28,6 +27,10 @@ namespace llvm::noelle {
       LoopInvariantCodeMotion(Noelle &noelle);
 
       bool extractInvariantsFromLoop (
+        LoopDependenceInfo const &LDI
+        );
+
+      bool promoteMemoryLocationsToRegisters (
         LoopDependenceInfo const &LDI
         );
 

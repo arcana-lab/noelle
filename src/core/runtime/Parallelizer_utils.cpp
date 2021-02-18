@@ -46,7 +46,7 @@ extern "C" {
   /*
    * Return the number of cores to use for the parallelization.
    */
-  int32_t NOELLE_getNumberOfCores (void);
+  static int32_t NOELLE_getNumberOfCores (void);
 
   /*
    * Dispatch threads to run a DOALL loop.
@@ -66,7 +66,7 @@ extern "C" {
   /**********************************************************************
    *                MISC
    **********************************************************************/
-  int32_t NOELLE_getNumberOfCores (void){
+  static int32_t NOELLE_getNumberOfCores (void){
     static int32_t cores = 0;
 
     /*
@@ -283,7 +283,7 @@ extern "C" {
     uint64_t *loopIsOverFlag;
   } NOELLE_HELIX_args_t ;
 
-  void NOELLE_HELIXTrampoline (void *args){
+  static void NOELLE_HELIXTrampoline (void *args){
 
     /*
      * Fetch the arguments.
@@ -306,7 +306,7 @@ extern "C" {
     return ;
   }
 
-  void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
+  static void HELIX_helperThread (void *ssArray, uint32_t numOfsequentialSegments, uint64_t *theLoopIsOver){
 
     while ((*theLoopIsOver) == 0){
 
@@ -330,12 +330,13 @@ extern "C" {
     return ;
   }
 
-  DispatcherInfo HELIX_dispatcher (
+  static DispatcherInfo NOELLE_HELIX_dispatcher (
     void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
     void *env,
     void *loopCarriedArray,
     int64_t numCores, 
-    int64_t numOfsequentialSegments
+    int64_t numOfsequentialSegments,
+    bool LIO
     ){
     #ifdef RUNTIME_PRINT
     std::cerr << "HELIX: dispatcher: Start" << std::endl;
@@ -354,7 +355,6 @@ extern "C" {
      * Allocate the sequential segment arrays.
      * We need numCores - 1 arrays.
      */
-    auto LIO = true;
     auto numOfSSArrays = numCores;
     if (!LIO){
       numOfSSArrays = 1;
@@ -515,6 +515,26 @@ extern "C" {
     return dispatcherInfo;
   }
 
+  DispatcherInfo NOELLE_HELIX_dispatcher_sequentialSegments (
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
+    void *env,
+    void *loopCarriedArray,
+    int64_t numCores, 
+    int64_t numOfsequentialSegments
+    ){
+    return NOELLE_HELIX_dispatcher(parallelizedLoop, env, loopCarriedArray, numCores, numOfsequentialSegments, true);
+  }
+
+  DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections (
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
+    void *env,
+    void *loopCarriedArray,
+    int64_t numCores, 
+    int64_t numOfsequentialSegments
+    ){
+    return NOELLE_HELIX_dispatcher(parallelizedLoop, env, loopCarriedArray, numCores, numOfsequentialSegments, false);
+  }
+
   void HELIX_wait (
     void *sequentialSegment
     ){
@@ -581,7 +601,7 @@ extern "C" {
     return stage(env, queues);
   }
 
-  void NOELLE_DSWPTrampoline (void *args){
+  static void NOELLE_DSWPTrampoline (void *args){
 
     /*
      * Fetch the arguments.

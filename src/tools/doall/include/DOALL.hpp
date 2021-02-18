@@ -49,6 +49,7 @@ namespace llvm::noelle {
 
 
     protected:
+      Function *taskDispatcher;
 
       /*
        * DOALL specific generation
