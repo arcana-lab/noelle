@@ -134,56 +134,53 @@ echo "################################### PERFORMANCE TESTS:" ;
 grep -i error compiler_output_performance.txt &> /dev/null ;
 if test $? -eq 0 ; then
   echo -e "  At least one performance test ${RED}failed${NC} to compile" ;
-  
-else 
+fi
 
-  # Check if they are still running
-  if test -f performance/speedups.txt ; then
-    linesRunning=`wc -l performance/speedups.txt | awk '{print $1}'` ;
-    linesOracle=`wc -l performance/oracle_speedups | awk '{print $1}'` ;
-    if test "$linesOracle" != "$linesRunning" ; then
-      echo "  They are still running" ;
+# Check if they are still running
+if test -f performance/speedups.txt ; then
+  linesRunning=`wc -l performance/speedups.txt | awk '{print $1}'` ;
+  linesOracle=`wc -l performance/oracle_speedups | awk '{print $1}'` ;
+  if test "$linesOracle" != "$linesRunning" ; then
+    echo "  They are still running" ;
 
-    else
-      echo "  All performance tests compiled correctly" ;
-      tempSpeedups=`mktemp` ;
-      tempOracle=`mktemp` ;
-      tempCompare=`mktemp` ;
-      tempOutput=`mktemp` ;
-      sort performance/speedups.txt > $tempSpeedups ;
-      sort performance/oracle_speedups > $tempOracle ;
-      paste $tempSpeedups $tempOracle > $tempCompare ;
-      awk '
-        {
-          if (  ($2 < ($4 * 0.9)) && (($4 - $2) > 0.1)   ){
-            printf("  Performance degradation for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
-          }
-        }' $tempCompare > $tempOutput ;
-      grep -i "Performance degradation" $tempOutput &> /dev/null ;
-      if test $? -eq 0 ; then
-        echo -e "  Next are the performance tests that run ${RED}slower${NC}:" ;
-        grep -i "Performance degradation" $tempOutput ;
+  else
+    tempSpeedups=`mktemp` ;
+    tempOracle=`mktemp` ;
+    tempCompare=`mktemp` ;
+    tempOutput=`mktemp` ;
+    sort performance/speedups.txt > $tempSpeedups ;
+    sort performance/oracle_speedups > $tempOracle ;
+    paste $tempSpeedups $tempOracle > $tempCompare ;
+    awk '
+      {
+        if (  ($2 < ($4 * 0.9)) && (($4 - $2) > 0.1)   ){
+          printf("    Performance degradation for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
+        }
+      }' $tempCompare > $tempOutput ;
+    grep -i "Performance degradation" $tempOutput &> /dev/null ;
+    if test $? -eq 0 ; then
+      echo -e "  Next are the performance tests that run ${RED}slower${NC}:" ;
+      grep -i "Performance degradation" $tempOutput ;
 
-      else 
-        echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
-        awk '{
-              if ($2 > ($4 * 1.1)){
-              printf("  Performance increase for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
+    else 
+      echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
+      awk '{
+            if ($2 > ($4 * 1.1) || (($2 - $4) >= 1){
+              printf("    Performance increase for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
             }
-          }' $tempCompare > $tempOutput ;
-        cat $tempOutput ;
-      fi
-
-      # Remove the files
-      rm $tempOracle ;
-      rm $tempSpeedups ;
-      rm $tempCompare ;
-      rm $tempOutput ;
+        }' $tempCompare > $tempOutput ;
+      cat $tempOutput ;
     fi
 
-  else 
-    echo "  They are still running" ;
+    # Remove the files
+    rm $tempOracle ;
+    rm $tempSpeedups ;
+    rm $tempCompare ;
+    rm $tempOutput ;
   fi
+
+else 
+  echo "  They are still running" ;
 fi
 
 # Clean 
