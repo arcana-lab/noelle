@@ -51,6 +51,10 @@ namespace llvm::noelle {
       bool hoistInvariantValues (
         LoopDependenceInfo const &LDI
       );
+      
+      std::vector<Instruction *> getSourceDependenceInstructionsFrom (
+        LoopDependenceInfo const &LDI,
+        Instruction &I);
   };
 
 }

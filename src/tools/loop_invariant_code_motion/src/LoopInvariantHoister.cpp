@@ -17,6 +17,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   LoopDependenceInfo const &LDI
 ) {
   auto modified = false;
+  errs() << "LICM: Start\n";
 
   /*
    * Fetch the information.
@@ -26,6 +27,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   auto header = loopStructure->getHeader();
   auto preHeader = loopStructure->getPreHeader();
   auto loopFunction = header->getParent();
+  errs() << "LICM:  Loop \"" << *header->getTerminator() << "\"\n";
 
   /*
    * Compute the dominators.
@@ -46,9 +48,43 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
       if (!invariantManager->isLoopInvariant(&I)) {
         continue;
       }
+      errs() << "LICM:    Invariant = \"" << I << "\n";
 
       /*
        * The current instruction is a loop invariant.
+       *
+       * Check all instructions that directly-or-indirectly have a data dependence to @I.
+       * In other words, check all sources of all data dependence that have @I as destination.
+       * All of these instructions must be invariant for @I to be hoisted.
+       */
+      auto dependenceInstructions = this->getSourceDependenceInstructionsFrom(LDI, I);
+      auto isSafe = true;
+      errs() << "LICM:       Checking dependences\n";
+      for (auto depI : dependenceInstructions){
+        errs() << "LICM:        Dependent instruction = \"" << *depI << "\n";
+
+        /*
+         * We can skip instructions that are outside the target loop.
+         */
+        if (!loopStructure->isIncluded(depI)){
+          continue ;
+        }
+
+        /*
+         * If @depI isn't invariant, than we cannot hoist @I.
+         */
+        if (!invariantManager->isLoopInvariant(depI)){
+          isSafe = false;
+          break ;
+        }
+      }
+      if (!isSafe){
+        continue ;
+      }
+      errs() << "LICM:       The instruction can be hoisted\n";
+
+      /*
+       * The instruction @I is invariant and it is safe to hoist it.
        */
       modified = true;
       auto phi = dyn_cast<PHINode>(&I);
@@ -118,6 +154,9 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
     I->removeFromParent();
     preHeaderBuilder.Insert(I);
   }
+  if (modified){
+    errs() << "LICM:  The loop has been modified\n";
+  }
 
   /*
    * Free the memory.
@@ -125,5 +164,41 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   delete DS;
   delete newDS;
 
+  errs() << "LICM: Exit\n";
   return modified;
+}
+
+std::vector<Instruction *> LoopInvariantCodeMotion::getSourceDependenceInstructionsFrom (
+  LoopDependenceInfo const &LDI,
+  Instruction &I
+  ){
+  std::vector<Instruction *> s;
+
+  /*
+   * Fetch the loop structure.
+   */
+  auto ls = LDI.getLoopStructure();
+
+  /*
+   * Fetch the Loop DG.
+   */
+  auto ldg = LDI.getLoopDG();
+
+  /*
+   * Code to collect dependences.
+   */
+  auto collectF = [ls,&s](Value *f, DGEdge<Value> *d) -> bool{
+    auto fI = dyn_cast<Instruction>(f);
+    if (fI == nullptr){
+      return false;
+    }
+    if (!ls->isIncluded(fI)){
+      return false;
+    }
+    s.push_back(fI);
+    return false;
+  };
+  ldg->iterateOverDependencesTo(&I, false, true, true, collectF);
+
+  return s;
 }
