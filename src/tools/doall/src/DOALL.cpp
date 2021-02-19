@@ -89,7 +89,7 @@ bool DOALL::canBeAppliedToLoop (
    */
   if (!LDI->getLoopGoverningIVAttribution()) {
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   Loop does not have an IV\n";
+      errs() << "DOALL:   Loop does not have an induction variable to control the number of iterations\n";
     }
     return false;
   }
