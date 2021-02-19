@@ -1,1 +1,1 @@
-../../regression/StackPrivatization/test.c
+../../regression/StackPrivatization2/test.c
