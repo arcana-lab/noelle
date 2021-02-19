@@ -563,8 +563,46 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
   delete dfr;
 }
 
+bool PDGAnalysis::isActualCode (CallInst *call) const {
+
+  /*
+   * Fetch the callee.
+   */
+  auto callee = call->getCalledFunction();
+  if (callee == nullptr){
+    return true;
+  }
+
+  /*
+   * Check if the callee is an intrinsic.
+   */
+  if (!callee->isIntrinsic()){
+    return true;
+  }
+
+  /*
+   * Check the intrinsic.
+   */
+  auto calleeName = callee->getName();
+  if (calleeName.find("llvm.lifetime") != std::string::npos){
+    return false;
+  }
+
+  return true;
+}
+
 void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallInst *call) {
 
+  /*
+   * Check if the call instruction is not actual code.
+   */
+  if (!this->isActualCode(call)){
+    return ;
+  }
+
+  /*
+   * Identify all dependences with @call.
+   */
   for (auto I : dfr->OUT(call)) {
 
     /*
@@ -587,6 +625,9 @@ void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, Data
      * Check calls.
      */
     if (auto otherCall = dyn_cast<CallInst>(I)) {
+      if (!this->isActualCode(otherCall)){
+        continue ;
+      }
       addEdgeFromFunctionModRef(pdg, F, AA, call, otherCall);
       continue ;
     }
