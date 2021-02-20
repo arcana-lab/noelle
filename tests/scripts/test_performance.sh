@@ -1,8 +1,9 @@
-#!/bin/bash -e
+#!/bin/bash
 
 function measureTime {
   local binaryName=$1 ;
-  local outputFileName=$2 ;
+  local outputTimeFileName=$2 ;
+  local outputFileName=$3 ;
 
   # Read input for arguments to performance runs
   local ARGS=$(< perf_args.info) ;
@@ -18,6 +19,13 @@ function measureTime {
     # Measure the time
     { time ./$binaryName $ARGS ; } &> $tempFile ;
 
+    # Check if the execution crashed
+    if test $? -ne 0 ; then
+      echo "ERROR: `pwd` crashed" ;
+      echo "0" > $outputTimeFileName ;
+      return 1; 
+    fi
+
     # Append the time
     local MATCHER="/real\t(.*)m(.*)s/" ;
     local PRINTER="{ print a[1] * 60 + a[2] }" ;
@@ -26,7 +34,33 @@ function measureTime {
     echo $timeMeasured >> $tempFile2 ;
 
   done
-  
+
+  # Check if the baseline output already exists
+  if ! test -e $outputFileName ; then
+
+    # Check if the baseline output exists and it only needs to be decompressed
+    if test -e ${outputFileName}.xz ; then
+
+      # Decompress the file
+      xz --decompress ${outputFileName}.xz ; 
+
+    else
+
+      # Dump the output
+      ./$binaryName $ARGS &> $outputFileName ;
+
+      # Compress it
+      xz -- compress ${outputFileName} ;
+    fi
+  fi
+
+  # Check if the execution crashed
+  if test $? -ne 0 ; then
+    echo "ERROR: `pwd` crashed" ;
+    echo "0" > $outputTimeFileName ;
+    return 1; 
+  fi
+
   # Sort the times
   sort -g $tempFile2 > $tempFile3 ;
 
@@ -48,7 +82,7 @@ function measureTime {
     }' $tempFile3` ;
 
   # Print the median
-  echo "$result" > $outputFileName ;
+  echo "$result" > $outputTimeFileName ;
 
   # Clean
   rm $tempFile ;
@@ -69,10 +103,12 @@ function runningTests {
     if ! test -d $i ; then
       continue ;
     fi
+    echo -e " Testing `basename $i` " ;
+    echo -ne "$i\\t" >> $4 ;
 
     # Go to the test directory
+    pushd ./ ;
     cd $i ;
-    echo -e " Testing `basename $i` " ;
 
     # Clean
     # echo "   Make clean " ;
@@ -88,18 +124,31 @@ function runningTests {
     # Measure the baseline
     if ! test -f time_baseline.txt ; then 
       echo -e "  Running baseline " ;
-      measureTime baseline time_baseline.txt 
+      measureTime baseline time_baseline.txt baseline_output.txt ;
+      if test $? -ne 0 ; then
+        popd ;
+        echo "0" >> $4 ;
+        continue ;
+      fi
     fi
     local BASE=`cat time_baseline.txt` ;
 
     # Measure the parallelized binary
     echo -e "  Running performance " ;
-    measureTime parallelized time_parallelized.txt
+    measureTime parallelized time_parallelized.txt output_parallelized.txt ;
     local PAR=`cat time_parallelized.txt` ;
 
-    cd ../ ;
+    # Check if the outputs match
+	  cmp baseline_output.txt output_parallelized.txt &> /dev/null ;
+    if test $? -ne 0 ; then 
+      echo "ERROR: `pwd` did not generate the correct output" ;
+      popd ;
+      echo "0" >> $4 ;
+      continue ;
+    fi
+    popd ;
 
-    echo -ne "$i\\t" >> $4 ;
+    # Dump the speedup
     local SPEEDUP=$(bc <<< " scale=3; $BASE / $PAR ") ;
     echo -e "  Speedup: $SPEEDUP" ;
     echo $SPEEDUP >> $4 ;

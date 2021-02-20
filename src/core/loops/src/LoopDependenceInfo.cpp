@@ -227,8 +227,10 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
     refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, aa, talkdown, &domainSpace);
   }
 
+  /*
+   * Analyze the loop to identify opportunities of cloning stack objects.
+   */
   if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {
-
     removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS);
   }
 
@@ -302,11 +304,21 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   PDG *loopInternalDG,
   DominatorSummary &DS
 ) {
+
+  /*
+   * Fetch the loop sub-tree rooted at @this.
+   */
   auto rootLoop = liSummary.getLoopNestingTreeRoot();
+
+  /*
+   * Create the memory cloning analyzer.
+   */
   this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
 
+  /*
+   * Identify opportunities for cloning stack locations.
+   */
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
-
   for (auto edge : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*rootLoop, liSummary, *loopInternalDG)) {
     if (!edge->isMemoryDependence()) continue;
 
