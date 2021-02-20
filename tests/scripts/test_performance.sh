@@ -35,9 +35,23 @@ function measureTime {
 
   done
 
-  # Dump the output
+  # Check if the baseline output already exists
   if ! test -e $outputFileName ; then
-    ./$binaryName $ARGS &> $outputFileName ;
+
+    # Check if the baseline output exists and it only needs to be decompressed
+    if test -e ${outputFileName}.xz ; then
+
+      # Decompress the file
+      xz --decompress ${outputFileName}.xz ; 
+
+    else
+
+      # Dump the output
+      ./$binaryName $ARGS &> $outputFileName ;
+
+      # Compress it
+      xz -- compress ${outputFileName} ;
+    fi
   fi
 
   # Check if the execution crashed
