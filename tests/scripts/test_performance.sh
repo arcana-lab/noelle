@@ -36,7 +36,9 @@ function measureTime {
   done
 
   # Dump the output
-  ./$binaryName $ARGS &> $outputFileName ;
+  if ! test -e $outputFileName ; then
+    ./$binaryName $ARGS &> $outputFileName ;
+  fi
 
   # Check if the execution crashed
   if test $? -ne 0 ; then
@@ -108,7 +110,7 @@ function runningTests {
     # Measure the baseline
     if ! test -f time_baseline.txt ; then 
       echo -e "  Running baseline " ;
-      measureTime baseline time_baseline.txt output_baseline.txt ;
+      measureTime baseline time_baseline.txt baseline_output.txt ;
       if test $? -ne 0 ; then
         popd ;
         echo "0" >> $4 ;
@@ -123,7 +125,7 @@ function runningTests {
     local PAR=`cat time_parallelized.txt` ;
 
     # Check if the outputs match
-	  cmp output_baseline.txt output_parallelized.txt &> /dev/null ;
+	  cmp baseline_output.txt output_parallelized.txt &> /dev/null ;
     if test $? -ne 0 ; then 
       echo "ERROR: `pwd` did not generate the correct output" ;
       popd ;
