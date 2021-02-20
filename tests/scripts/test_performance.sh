@@ -38,27 +38,18 @@ function measureTime {
   # Check if the baseline output already exists
   if ! test -e $outputFileName ; then
 
-    # Check if the baseline output exists and it only needs to be decompressed
-    if test -e ${outputFileName}.xz ; then
+    # Dump the output
+    ./$binaryName $ARGS &> $outputFileName ;
 
-      # Decompress the file
-      xz --decompress ${outputFileName}.xz ; 
-
-    else
-
-      # Dump the output
-      ./$binaryName $ARGS &> $outputFileName ;
-
-      # Compress it
-      xz -- compress ${outputFileName} ;
+    # Check if the execution crashed
+    if test $? -ne 0 ; then
+      echo "ERROR: `pwd` crashed" ;
+      echo "0" > $outputTimeFileName ;
+      return 1; 
     fi
-  fi
 
-  # Check if the execution crashed
-  if test $? -ne 0 ; then
-    echo "ERROR: `pwd` crashed" ;
-    echo "0" > $outputTimeFileName ;
-    return 1; 
+    # Compress it
+    xz --compress ${outputFileName} ;
   fi
 
   # Sort the times
@@ -132,6 +123,12 @@ function runningTests {
       fi
     fi
     local BASE=`cat time_baseline.txt` ;
+    if ! test -e baseline_output.txt.xz ; then
+      echo "ERROR: `pwd` did not generate the output of the baseline binary" ;
+      popd ;
+      echo "0" >> $4 ;
+      continue ;
+    fi
 
     # Measure the parallelized binary
     echo -e "  Running performance " ;
@@ -139,7 +136,13 @@ function runningTests {
     local PAR=`cat time_parallelized.txt` ;
 
     # Check if the outputs match
-	  cmp baseline_output.txt output_parallelized.txt &> /dev/null ;
+    if ! test -e output_parallelized.txt.xz ; then
+      echo "ERROR: `pwd` did not generate the output of the parallelized binary" ;
+      popd ;
+      echo "0" >> $4 ;
+      continue ;
+    fi
+	  cmp baseline_output.txt.xz output_parallelized.txt.xz &> /dev/null ;
     if test $? -ne 0 ; then 
       echo "ERROR: `pwd` did not generate the correct output" ;
       popd ;
