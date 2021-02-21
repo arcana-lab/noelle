@@ -165,7 +165,7 @@ if test -f performance/speedups.txt ; then
     else 
       echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
       awk '{
-            if ($2 > ($4 * 1.1) || (($2 - $4) >= 1){
+            if ($2 > ($4 * 1.1) || (($2 - $4) >= 1)){
               printf("    Performance increase for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
             }
         }' $tempCompare > $tempOutput ;
