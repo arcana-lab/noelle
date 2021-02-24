@@ -95,9 +95,14 @@ LoopDependenceInfo::LoopDependenceInfo(
     enabledOptimizations{optimizations},
     areLoopAwareAnalysesEnabled{enableLoopAwareDependenceAnalyses}
   {
+
+  /*
+   * Assertions.
+   */
   for (auto edge : fG->getEdges()) {
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
+
   /*
    * Enable all transformations.
    */
