@@ -349,11 +349,19 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
   LoopDependenceInfo *LDI,
   int taskIndex
 ){
+  errs() << "XAN: cloneMemory\n";
+
+  /*
+   * Fetch the task and other loop-specific abstractions.
+   */
   auto task = this->tasks[taskIndex];
   assert(task != nullptr);
   auto rootLoop = LDI->getLoopStructure();
   auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
 
+  /*
+   * Check every stack object that can be safely cloned.
+   */
   for (auto location : memoryCloningAnalysis->getClonableMemoryLocations()) {
 
     /*
@@ -362,13 +370,25 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
     auto loopInstructionsRequiringClonedOperands = location->getLoopInstructionsUsingLocation();
     std::unordered_set<Instruction *> taskInstructions;
     for (auto I : loopInstructionsRequiringClonedOperands) {
-      if (!task->isAnOriginalInstruction(I)) continue;
+      if (!task->isAnOriginalInstruction(I)) {
+        continue;
+      }
       taskInstructions.insert(I);
     }
-    if (taskInstructions.size() == 0) continue;
+    if (taskInstructions.size() == 0) {
+
+      /*
+       * The current stack object is not used by the task/loop.
+       */
+      errs() << "XAN: NOOO " << *location->getAllocation() << "\n";
+      continue;
+    }
 
     /*
-     * If so, traverse operands of loop instructions to clone
+     *
+     * The stack object can be safely cloned (thanks to the object-cloning analysis) and it is used by our loop.
+     *
+     * Now we need to traverse operands of loop instructions to clone
      * all live-in references (casts and GEPs) of the allocation to clone
      * State all cloned instructions in the task's instruction map for data flow adjustment later
      */
@@ -434,6 +454,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
      * Clone the allocation and all other necessary instructions
      */
     auto allocaClone = alloca->clone();
+    errs() << "XAN: ALLOCATION " << *alloca << "\n";
     auto firstInst = &*entryBlock.begin();
     entryBuilder.SetInsertPoint(firstInst);
     entryBuilder.Insert(allocaClone);
