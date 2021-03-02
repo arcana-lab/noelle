@@ -100,3 +100,5 @@ Then, include your header file in your `.cpp`.
 ```
 https://github.com/scampanoni/vim_configuration
 ```
+
+14 - Avoid writing a long C++ file. A long C++ file suggests there is an opportunity to better design your code
