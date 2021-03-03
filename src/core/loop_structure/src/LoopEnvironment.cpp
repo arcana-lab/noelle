@@ -101,8 +101,21 @@ Type * LoopEnvironment::typeOfEnvironmentLocation (int64_t index) const {
 }
 
 void LoopEnvironment::addProducer (Value *producer, bool liveIn){
-  auto envIndex = envProducers.size();
-  envProducers.push_back(producer);
+
+  /*
+   * Make sure @producer isn't already part of the environment.
+   */
+  for (auto p : this->envProducers){
+    if (p == producer) {
+      return ;
+    }
+  }
+
+  /*
+   * Add @producer to the environment.
+   */
+  auto envIndex = this->envProducers.size();
+  this->envProducers.push_back(producer);
   producerIndexMap[producer] = envIndex;
   if (liveIn) {
     liveInInds.insert(envIndex);
