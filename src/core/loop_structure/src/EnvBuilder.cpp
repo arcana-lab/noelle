@@ -29,6 +29,10 @@ void EnvUserBuilder::createEnvPtr (
   int envIndex,
   Type *type
 ) {
+
+  /*
+   * Check the inputs.
+   */
   if (!this->envArray) {
     errs() << "A reference to the environment array has not been set for this user!\n";
     abort();
