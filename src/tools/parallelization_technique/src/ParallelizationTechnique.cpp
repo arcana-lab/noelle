@@ -349,7 +349,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
   LoopDependenceInfo *LDI,
   int taskIndex
 ){
-  errs() << "XAN: cloneMemory\n";
 
   /*
    * Fetch the task and other loop-specific abstractions.
@@ -399,14 +398,15 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
     for (auto I : taskInstructions) {
       instructionsToConvertOperandsOf.push(I);
     }
+    errs() << "XAN: CLONING: Stack location " << *alloca << "\n";
     while (!instructionsToConvertOperandsOf.empty()) {
       auto I = instructionsToConvertOperandsOf.front();
       instructionsToConvertOperandsOf.pop();
-      errs() << "XAN: CLONING: " << *I << "\n";
+      errs() << "XAN: CLONING:  Instruction to clone: " << *I << "\n";
 
       for (auto i = 0; i < I->getNumOperands(); ++i) {
         auto op = I->getOperand(i);
-        errs() << "XAN: CLONING:      Op " << *op << "\n";
+        errs() << "XAN: CLONING:          Operand " << *op << "\n";
 
         /*
          * Ensure the instruction is outside the loop and not already cloned
@@ -433,7 +433,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         if (task->isAnOriginalInstruction(opI)) {
           continue;
         }
-        errs() << "XAN: CLONING:      YAY " << *opI << "\n";
+        errs() << "XAN: CLONING:      Cloned into task the instruction " << *opI << "\n";
 
         /*
          * Clone operand and then add to queue
@@ -501,9 +501,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
            * The current operand must become a new live-in.
            */
           errs() << "XAN: CLONING:          NEW LIVE IN " << *opJ << "\n";
-          task->getTaskBody()->print(errs());
-          rootLoop->getFunction()->print(errs());
-          abort();
+          LDI->environment->addLiveInValue(opJ, {opI});
         }
       }
     }
@@ -512,15 +510,13 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
      * Clone the allocation and all other necessary instructions
      */
     auto allocaClone = alloca->clone();
-    errs() << "XAN: ALLOCATION " << *alloca << "\n";
     auto firstInst = &*entryBlock.begin();
     entryBuilder.SetInsertPoint(firstInst);
     entryBuilder.Insert(allocaClone);
     task->addInstruction(alloca, allocaClone);
   }
-
-  //task->getTaskBody()->print(errs());
-  //rootLoop->getFunction()->print(errs());
+  task->getTaskBody()->print(errs());
+  rootLoop->getFunction()->print(errs());
 
   return ;
 }
