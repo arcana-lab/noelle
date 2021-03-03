@@ -38,9 +38,9 @@ namespace llvm::noelle {
 
       bool isLiveIn (Value *val) const ;
 
-      Value * producerAt (uint32_t ind) ;
+      Value * producerAt (uint32_t ind) const ;
 
-      std::set<Value *> consumersOf (Value *prod);
+      std::set<Value *> consumersOf (Value *prod) const ;
 
       bool isProducer (Value *producer) const ;
 
