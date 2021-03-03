@@ -476,6 +476,13 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
           }
 
           /*
+           * Check if the current operand is the alloca instruction that will be cloned.
+           */
+          if (opJ == alloca){
+            continue ;
+          }
+
+          /*
            * Check if the current operand requires to become a live-in.
            */
           auto newLiveIn = true;
@@ -494,7 +501,9 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
            * The current operand must become a new live-in.
            */
           errs() << "XAN: CLONING:          NEW LIVE IN " << *opJ << "\n";
-          //abort();
+          task->getTaskBody()->print(errs());
+          rootLoop->getFunction()->print(errs());
+          abort();
         }
       }
     }
