@@ -58,8 +58,8 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
    * Collect the Type of each environment variable
    */
   std::vector<Type *> varTypes;
-  for (auto i = 0; i < LDI->environment->envSize(); ++i) {
-    varTypes.push_back(LDI->environment->typeOfEnv(i));
+  for (int64_t i = 0; i < LDI->environment->size(); ++i) {
+    varTypes.push_back(LDI->environment->typeOfEnvironmentLocation(i));
   }
 
   this->envBuilder = new EnvBuilder(module.getContext());
@@ -358,6 +358,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
   assert(task != nullptr);
   auto rootLoop = LDI->getLoopStructure();
   auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
+  auto envUser = this->envBuilder->getUser(taskIndex);
 
   /*
    * Check every stack object that can be safely cloned.
@@ -380,7 +381,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
       /*
        * The current stack object is not used by the task/loop.
        */
-      errs() << "XAN: NOOO " << *location->getAllocation() << "\n";
       continue;
     }
 
@@ -402,9 +402,11 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
     while (!instructionsToConvertOperandsOf.empty()) {
       auto I = instructionsToConvertOperandsOf.front();
       instructionsToConvertOperandsOf.pop();
+      errs() << "XAN: CLONING: " << *I << "\n";
 
       for (auto i = 0; i < I->getNumOperands(); ++i) {
         auto op = I->getOperand(i);
+        errs() << "XAN: CLONING:      Op " << *op << "\n";
 
         /*
          * Ensure the instruction is outside the loop and not already cloned
@@ -413,18 +415,25 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
          * could be listed as clones to these values. Find a way to ensure that wouldn't happen
          */
         auto opI = dyn_cast<Instruction>(op);
-        if (!opI || rootLoop->isIncluded(opI)) continue;
+        if (!opI || rootLoop->isIncluded(opI)) {
+          continue;
+        }
 
         /*
          * Ensure the operand is a reference of the allocation
          * NOTE: Ignore checking for the allocation. That is cloned separately
          */
-        if (!location->isInstructionCastOrGEPOfLocation(opI)) continue;
+        if (!location->isInstructionCastOrGEPOfLocation(opI)) {
+          continue;
+        }
 
         /*
          * Ensure the instruction hasn't been cloned yet
          */
-        if (task->isAnOriginalInstruction(opI)) continue;
+        if (task->isAnOriginalInstruction(opI)) {
+          continue;
+        }
+        errs() << "XAN: CLONING:      YAY " << *opI << "\n";
 
         /*
          * Clone operand and then add to queue
@@ -447,6 +456,46 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
          */
         task->addLiveIn(opI, opCloneI);
         task->addInstruction(opI, opCloneI);
+
+        /*
+         * Check if there are new live-in values we need to pass to the task.
+         */
+        for (auto j = 0; j < opI->getNumOperands(); ++j) {
+
+          /*
+           * Fetch the current operand.
+           */
+          auto opJ = opI->getOperand(j);
+          if (dyn_cast<Constant>(opJ)){
+
+            /*
+             * The current operand is a constant.
+             * There is no need for a live-in.
+             */
+            continue ;
+          }
+
+          /*
+           * Check if the current operand requires to become a live-in.
+           */
+          auto newLiveIn = true;
+          for (auto envIndex : envUser->getEnvIndicesOfLiveInVars()) {
+            auto producer = LDI->environment->producerAt(envIndex);
+            if (producer == opJ){
+              newLiveIn = false;
+              break;
+            }
+          }
+          if (!newLiveIn){
+            continue ;
+          }
+
+          /*
+           * The current operand must become a new live-in.
+           */
+          errs() << "XAN: CLONING:          NEW LIVE IN " << *opJ << "\n";
+          //abort();
+        }
       }
     }
 
@@ -460,6 +509,9 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
     entryBuilder.Insert(allocaClone);
     task->addInstruction(alloca, allocaClone);
   }
+
+  //task->getTaskBody()->print(errs());
+  //rootLoop->getFunction()->print(errs());
 
   return ;
 }
@@ -826,6 +878,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
         if (opI->getFunction() != task->getTaskBody()) {
           cloneI->print(errs() << "ERROR:   Instruction has op from another function: "); errs() << "\n";
           opI->print(errs() << "ERROR:   Op: "); errs() << "\n";
+          abort();
         }
       }
     }
@@ -983,13 +1036,13 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
    *
    * Fetch the pointer of the location where the exit block ID taken will be stored.
    */
-  auto exitBlockEnvIndex = LDI->environment->indexOfExitBlock();
+  auto exitBlockEnvIndex = LDI->environment->indexOfExitBlockTaken();
   assert(exitBlockEnvIndex != -1);
   auto envUser = this->envBuilder->getUser(taskIndex);
   auto entryTerminator = task->getEntry()->getTerminator();
   IRBuilder<> entryBuilder(entryTerminator);
 
-  auto envType = LDI->environment->typeOfEnv(exitBlockEnvIndex);
+  auto envType = LDI->environment->typeOfEnvironmentLocation(exitBlockEnvIndex);
   envUser->createEnvPtr(entryBuilder, exitBlockEnvIndex, envType);
 
   /*
