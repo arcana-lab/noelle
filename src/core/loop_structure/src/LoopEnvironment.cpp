@@ -33,15 +33,35 @@ LoopEnvironment::LoopEnvironment (
      * Determine whether the external value is a producer (i.e., live-in).
      */
     auto isProducer = false;
+    std::unordered_set<Instruction *> consumersOfLiveInValue;
     for (auto edge : externalNode->getOutgoingEdges()) {
+
+      /*
+       * Memory and control dependences can be skipped as they do not dictate live-in values.
+       */
       if (edge->isMemoryDependence() || edge->isControlDependence()) {
         continue;
       }
+
+      /*
+       * The current dependence from @externalNode to an instruction within a loop means we have a new live-in value.
+       */
       isProducer = true;
-      this->prodConsumers[externalValue].insert(edge->getIncomingT());
+
+      /*
+       * Fetch the current consumer of the new live-in value.
+       */
+      auto consumerOfNewLiveIn = edge->getIncomingT();
+      assert(isa<Instruction>(consumerOfNewLiveIn));
+      auto consumerOfNewLiveIn_inst = cast<Instruction>(consumerOfNewLiveIn);
+
+      /*
+       * Add the current consumer of the new live-in we have just found.
+       */
+      consumersOfLiveInValue.insert(consumerOfNewLiveIn_inst);
     }
     if (isProducer) {
-      this->addLiveInProducer(externalValue);
+      this->addLiveInValue(externalValue, consumersOfLiveInValue);
     }
 
     /*
@@ -72,7 +92,7 @@ LoopEnvironment::LoopEnvironment (
   return ;
 }
 
-Type * LoopEnvironment::typeOfEnv (int index) const {
+Type * LoopEnvironment::typeOfEnvironmentLocation (int64_t index) const {
   if (index < envProducers.size()) {
     return envProducers[index]->getType();
   }
@@ -92,13 +112,48 @@ void LoopEnvironment::addProducer (Value *producer, bool liveIn){
 
   return ;
 }
+      
+void LoopEnvironment::addLiveInValue (Value *newLiveInValue, const std::unordered_set<Instruction *> &consumers){
+
+  /*
+   * Add the live-in value.
+   */
+  this->addLiveInProducer(newLiveInValue);
+
+  /*
+   * Add the consumers.
+   */
+  for (auto consumerOfNewLiveIn : consumers){
+    this->prodConsumers[newLiveInValue].insert(consumerOfNewLiveIn);
+  }
+
+  return ;
+}
 
 bool LoopEnvironment::isProducer (Value *producer) const {
   return producerIndexMap.find(producer) != producerIndexMap.end();
 }
 
-bool LoopEnvironment::isLiveIn (Value *val) {
-  return isProducer(val) && liveInInds.find(producerIndexMap[val]) != liveInInds.end();
+bool LoopEnvironment::isLiveIn (Value *val) const {
+
+  /*
+   * Check if @val belongs to the environment.
+   */
+  if (producerIndexMap.find(val) == producerIndexMap.end()){
+    return false;
+  }
+
+  /*
+   * Fetch the index of @val.
+   */
+  auto indexOfVal = producerIndexMap.at(val);
+
+  /*
+   * Check if @val is a live-in.
+   */
+  auto isLiveIn = isProducer(val) && liveInInds.find(indexOfVal) != liveInInds.end();
+
+  return isLiveIn;
 }
 
 void LoopEnvironment::addLiveInProducer (Value *producer) { 
@@ -111,11 +166,11 @@ void LoopEnvironment::addLiveOutProducer (Value *producer) {
   return ;
 }
 
-int LoopEnvironment::indexOfExitBlock (void) const {
+int64_t LoopEnvironment::indexOfExitBlockTaken (void) const {
   return hasExitBlockEnv ? envProducers.size() : -1; 
 }
 
-int LoopEnvironment::envSize (void) const {
+int64_t LoopEnvironment::size (void) const {
   return envProducers.size() + (hasExitBlockEnv ? 1 : 0);
 }
 
