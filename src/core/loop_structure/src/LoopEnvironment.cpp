@@ -174,8 +174,14 @@ int64_t LoopEnvironment::size (void) const {
   return envProducers.size() + (hasExitBlockEnv ? 1 : 0);
 }
 
-std::set<Value *> LoopEnvironment::consumersOf (Value *prod) {
-  return prodConsumers[prod];
+std::set<Value *> LoopEnvironment::consumersOf (Value *prod) const {
+  std::set<Value *> s;
+  if (prodConsumers.find(prod) == prodConsumers.end()){
+    return s;
+  }
+
+  s = prodConsumers.at(prod);
+  return s;
 }
 
 iterator_range<std::vector<Value *>::iterator> LoopEnvironment::getProducers (void) { 
@@ -190,6 +196,7 @@ iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIndicesOfLiveOutV
   return make_range(liveOutInds.begin(), liveOutInds.end());
 }
 
-Value * LoopEnvironment::producerAt (uint32_t ind) { 
-  return envProducers[ind]; 
+Value * LoopEnvironment::producerAt (uint32_t ind) const { 
+  assert(ind < this->envProducers.size());
+  return envProducers[ind];
 }
