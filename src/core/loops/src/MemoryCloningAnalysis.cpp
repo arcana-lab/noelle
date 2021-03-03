@@ -135,8 +135,7 @@ ClonableMemoryLocation::ClonableMemoryLocation (
     return;
   }
 
-  if (!identifyStoresAndOtherUsers(loop, DS)) {
-    errs() << "XAN:   It is not clonable\n";
+  if (!this->identifyStoresAndOtherUsers(loop, DS)) {
     return;
   }
 
@@ -145,8 +144,7 @@ ClonableMemoryLocation::ClonableMemoryLocation (
    * In other words, there is no RAW loop-carried data dependences that involve this stack object.
    */
   identifyInitialStoringInstructions(DS);
-  if (!areOverrideSetsFullyCoveringTheAllocationSpace()) {
-    errs() << "XAN:   It is clonable2\n";
+  if (!this->areOverrideSetsFullyCoveringTheAllocationSpace()) {
     return;
   }
 
@@ -377,7 +375,9 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (DominatorSummar
 
 bool ClonableMemoryLocation::areOverrideSetsFullyCoveringTheAllocationSpace (void) const {
   for (auto &overrideSet : overrideSets) {
-    if (!isOverrideSetFullyCoveringTheAllocationSpace(overrideSet.get())) return false;
+    if (!this->isOverrideSetFullyCoveringTheAllocationSpace(overrideSet.get())) {
+      return false;
+    }
   }
 
   return true;
@@ -386,21 +386,27 @@ bool ClonableMemoryLocation::areOverrideSetsFullyCoveringTheAllocationSpace (voi
 bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace (
   ClonableMemoryLocation::OverrideSet *overrideSet
 ) const {
-
   std::unordered_set<int64_t> structElementsStoredTo;
-
   for (auto storingInstruction : overrideSet->initialStoringInstructions) {
     if (auto store = dyn_cast<StoreInst>(storingInstruction)) {
 
+      /*
+       * Fetch the pointer of the memory location modified by @store.
+       */
       auto pointerOperand = store->getPointerOperand();
-      if (auto allocation = dyn_cast<AllocaInst>(pointerOperand)) {
+
+      /*
+       * If the pointer is the returned value of an alloca, then @store is initializing the whole memory object.
+       */
+      if (dyn_cast<AllocaInst>(pointerOperand)) {
 
         /*
          * The allocation is stored directly to and is completely overriden
          */
         return true;
+      } 
 
-      } else if (auto gep = dyn_cast<GetElementPtrInst>(pointerOperand)) {
+      if (auto gep = dyn_cast<GetElementPtrInst>(pointerOperand)) {
 
         // gep->print(errs() << "Examining GEP for coverage: "); errs() << "\n";
 
