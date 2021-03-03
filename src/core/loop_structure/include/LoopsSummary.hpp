@@ -21,6 +21,8 @@ namespace llvm::noelle {
 
       LoopsSummary (Loop *l);
 
+      LoopsSummary () = delete;
+
       LoopStructure * getLoop (Instruction &instIncludedInLoop) const ;
 
       LoopStructure * getLoop (BasicBlock &bbIncludedInLoop) const ;
