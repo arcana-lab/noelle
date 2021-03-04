@@ -273,7 +273,7 @@ void HELIX::createParallelizableTask (
    * This location exists only if there is more than one loop exit.
    */
   if (loopStructure->numberOfExitBasicBlocks() > 1){ 
-    nonReducableVars.insert(LDI->environment->indexOfExitBlock());
+    nonReducableVars.insert(LDI->environment->indexOfExitBlockTaken());
   }
 
   /*

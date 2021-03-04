@@ -13,44 +13,69 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
-MemoryCloningAnalysis::MemoryCloningAnalysis (LoopStructure *loop, DominatorSummary &DS) {
+MemoryCloningAnalysis::MemoryCloningAnalysis (LoopStructure *loop, DominatorSummary &DS) { 
+  assert(loop != nullptr);
 
   /*
    * Collect allocations at the top of the function
+   *
    * NOTE: The assumption is that all AllocaInst are stated before any other instructions
    */
   std::unordered_set<AllocaInst *> allocations;
-  auto function = loop->getHeader()->getParent();
-  auto &entryBlock = function->getEntryBlock();
+  auto function = loop->getFunction();
+  auto& entryBlock = function->getEntryBlock();
   for (auto &I : entryBlock) {
-    if (auto alloca = dyn_cast<AllocaInst>(&I)) {
 
-      /*
-       * Only consider struct and integer types
-       * TODO: Expand this to array/vector types
-       */
-      auto allocatedType = alloca->getAllocatedType();
-      if (!allocatedType->isStructTy() && !allocatedType->isIntegerTy()) continue;
-
-      allocations.insert(alloca);
+    /*
+     * We only handle stack objects.
+     */
+    auto alloca = dyn_cast<AllocaInst>(&I);
+    if (alloca == nullptr){
+      continue ;
     }
+    allocations.insert(alloca);
   }
 
+  /*
+   * Now we need to check whether we can determine at compile time the size of the stack objects.
+   *
+   * To do this, we first need to fetch the data layout.
+   */
   auto &DL = function->getParent()->getDataLayout();
+
+  /*
+   * Check each stack object's size.
+   */
+  errs() << "XAN: LOOP " << *loop->getHeader()->getTerminator() << "\n";
   for (auto allocation : allocations) {
 
+    /*
+     * Check if we know the size in bits of the allocations.
+     */
     auto sizeInBitsOptional = allocation->getAllocationSizeInBits(DL);
-    if (!sizeInBitsOptional.hasValue()) continue;
+    if (!sizeInBitsOptional.hasValue()) {
+      continue;
+    }
 
+    /*
+     * Fetch the size of the stack location.
+     */
     auto sizeInBits = sizeInBitsOptional.getValue();
+
+    /*
+     * Check if the memory location is clonable.
+     */
     auto location = std::make_unique<ClonableMemoryLocation>(allocation, sizeInBits, loop, DS);
-    if (!location->isClonableLocation()) continue;
+    if (!location->isClonableLocation()) {
+      continue;
+    }
+    errs() << "XAN: this is clonable " << *allocation << "\n";
 
     this->clonableMemoryLocations.insert(std::move(location));
-
     // allocation->print(errs() << "Found clonable allocation: "); errs() << "\n";
-
   }
+
+  return ;
 }
 
 std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClonableMemoryLocations (void) const {
@@ -66,7 +91,7 @@ const ClonableMemoryLocation * MemoryCloningAnalysis::getClonableMemoryLocationF
   /*
    * TODO: Determine if it is worth mapping from instructions to locations
    */
-  for (auto &location : clonableMemoryLocations) {
+  for (auto &location : this->clonableMemoryLocations) {
     if (location->getAllocation() == I) return location.get();
     if (location->isInstructionCastOrGEPOfLocation(I)) return location.get();
     if (location->isInstructionLoadingLocation(I)) return location.get();
@@ -101,20 +126,34 @@ ClonableMemoryLocation::ClonableMemoryLocation (
 ) : allocation{allocation}, sizeInBits{sizeInBits}, loop{loop}, isClonable{false} {
 
   /*
+   * Only consider struct and integer types
    * TODO: Remove this when array/vector types are supported
    */
   this->allocatedType = allocation->getAllocatedType();
-  // this->allocation->print(errs() << "Allocation: "); errs() << "\n";
-  // this->allocatedType->print(errs() << "Allocation type: "); errs() << "\n";
-  if (!allocatedType->isStructTy() && !allocatedType->isIntegerTy()) return;
+  errs() << "XAN: Checking " << *allocation << "\n";
+  if (!allocatedType->isStructTy() && !allocatedType->isIntegerTy()) {
+    return;
+  }
 
-  if (!identifyStoresAndOtherUsers(loop, DS)) return;
+  if (!this->identifyStoresAndOtherUsers(loop, DS)) {
+    return;
+  }
 
+  /*
+   * Check if the stack object is completely initialized for every iteration.
+   * In other words, there is no RAW loop-carried data dependences that involve this stack object.
+   */
   identifyInitialStoringInstructions(DS);
+  if (!this->areOverrideSetsFullyCoveringTheAllocationSpace()) {
+    return;
+  }
 
-  if (!areOverrideSetsFullyCoveringTheAllocationSpace()) return;
+  /*
+   * The location is clonable.
+   */
+  errs() << "XAN:   It is clonable\n";
+  this->isClonable = true;
 
-  isClonable = true;
   return;
 }
 
@@ -239,14 +278,17 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
       if (!loop->isIncluded(inst)) {
         auto block = inst->getParent();
         auto header = loop->getHeader();
-        if (!DS.DT.dominates(block, header)) return false;
+        if (!DS.DT.dominates(block, header)) {
+          return false;
+        }
       }
 
       /*
        * No InvokeInst can receive the allocation in any form
        */
-      if (auto invokeInst = dyn_cast<InvokeInst>(inst)) return false;
-
+      if (auto invokeInst = dyn_cast<InvokeInst>(inst)) {
+        return false;
+      }
     }
   }
 
@@ -333,7 +375,9 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (DominatorSummar
 
 bool ClonableMemoryLocation::areOverrideSetsFullyCoveringTheAllocationSpace (void) const {
   for (auto &overrideSet : overrideSets) {
-    if (!isOverrideSetFullyCoveringTheAllocationSpace(overrideSet.get())) return false;
+    if (!this->isOverrideSetFullyCoveringTheAllocationSpace(overrideSet.get())) {
+      return false;
+    }
   }
 
   return true;
@@ -342,21 +386,27 @@ bool ClonableMemoryLocation::areOverrideSetsFullyCoveringTheAllocationSpace (voi
 bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace (
   ClonableMemoryLocation::OverrideSet *overrideSet
 ) const {
-
   std::unordered_set<int64_t> structElementsStoredTo;
-
   for (auto storingInstruction : overrideSet->initialStoringInstructions) {
     if (auto store = dyn_cast<StoreInst>(storingInstruction)) {
 
+      /*
+       * Fetch the pointer of the memory location modified by @store.
+       */
       auto pointerOperand = store->getPointerOperand();
-      if (auto allocation = dyn_cast<AllocaInst>(pointerOperand)) {
+
+      /*
+       * If the pointer is the returned value of an alloca, then @store is initializing the whole memory object.
+       */
+      if (dyn_cast<AllocaInst>(pointerOperand)) {
 
         /*
          * The allocation is stored directly to and is completely overriden
          */
         return true;
+      } 
 
-      } else if (auto gep = dyn_cast<GetElementPtrInst>(pointerOperand)) {
+      if (auto gep = dyn_cast<GetElementPtrInst>(pointerOperand)) {
 
         // gep->print(errs() << "Examining GEP for coverage: "); errs() << "\n";
 
