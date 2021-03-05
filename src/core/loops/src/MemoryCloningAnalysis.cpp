@@ -132,7 +132,7 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   this->allocatedType = allocation->getAllocatedType();
   errs() << "XAN: Checking " << *allocation << "\n";
   if (!allocatedType->isStructTy() && !allocatedType->isIntegerTy()) {
-//    return;
+    return;
   }
 
   if (!this->identifyStoresAndOtherUsers(loop, DS)) {
@@ -145,7 +145,7 @@ ClonableMemoryLocation::ClonableMemoryLocation (
    */
   identifyInitialStoringInstructions(DS);
   if (!this->areOverrideSetsFullyCoveringTheAllocationSpace()) {
-//    return;
+    return;
   }
 
   /*
