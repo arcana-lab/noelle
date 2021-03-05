@@ -140,8 +140,23 @@ ClonableMemoryLocation::ClonableMemoryLocation (
     return;
   }
 
+  /*
+   * Identify the instructions that access the stack location.
+   */
   if (!this->identifyStoresAndOtherUsers(loop, DS)) {
     return;
+  }
+
+  /*
+   * If there are casts or GEPs outside the loop, then we have aliases.
+   * At the moment, we don't support them, so it isn't safe to clone the related stack objects.
+   */
+  for (auto i : this->castsAndGEPs){
+    errs() << "XAN: AAA " << *i << "\n";
+    if (!loop->isIncluded(i)){
+      errs() << "XAN: AAA   not included\n";
+      return ;
+    }
   }
 
   /*
@@ -201,18 +216,23 @@ bool ClonableMemoryLocation::isMemCpyInstrinsicCall (CallInst *call) {
 bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, DominatorSummary &DS) {
 
   /*
-   * Determine all stores and non-store uses
-   * Ensure they only exist within the loop provided
+   * Determine all uses of the stack location.
+   * Ensure they only exist within the loop provided.
    */
   std::queue<Instruction *> allocationUses{};
-  allocationUses.push(allocation);
-
+  allocationUses.push(this->allocation);
   while (!allocationUses.empty()) {
+
+    /*
+     * Fetch the current instruction that uses the stack location.
+     */
     auto I = allocationUses.front();
     allocationUses.pop();
-
     // I->print(errs() << "Traversing user of allocation: "); errs() << "\n";
 
+    /*
+     * Check all users of the current instruction.
+     */
     for (auto user : I->users()) {
 
       /*
@@ -225,7 +245,7 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
          * We still check the cast's uses of course
          */
         allocationUses.push(cast);
-        castsAndGEPs.insert(cast);
+        this->castsAndGEPs.insert(cast);
         continue;
       }
       if (auto gep = dyn_cast<GetElementPtrInst>(user)) {
@@ -235,7 +255,7 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
          * We still check the GEP's uses of course
          */
         allocationUses.push(gep);
-        castsAndGEPs.insert(gep);
+        this->castsAndGEPs.insert(gep);
         continue;
       } 
       if (auto store = dyn_cast<StoreInst>(user)) {
@@ -265,9 +285,8 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
         /*
          * We consider llvm.memcpy as a storing instruction if the use is the dest (first operand) 
          */
-        bool isMemCpy = ClonableMemoryLocation::isMemCpyInstrinsicCall(call);
-        bool isUseTheDestinationOp = call->getNumArgOperands() == 4
-          && call->getArgOperand(0) == I;
+        auto isMemCpy = ClonableMemoryLocation::isMemCpyInstrinsicCall(call);
+        auto isUseTheDestinationOp = (call->getNumArgOperands() == 4) && (call->getArgOperand(0) == I);
         if (isMemCpy && isUseTheDestinationOp) {
           storingInstructions.insert(call);
         } else {
