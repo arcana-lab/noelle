@@ -38,7 +38,6 @@ namespace llvm::noelle {
       /*
        * Live-in values.
        */
-
       bool isAnOriginalLiveIn (Value *v) const ;
 
       Value * getCloneOfOriginalLiveIn (Value *o) const ;
@@ -46,6 +45,9 @@ namespace llvm::noelle {
       std::unordered_set<Value *> getOriginalLiveIns (void) const ;
 
       void addLiveIn (Value *original, Value *internal) ;
+
+      void removeLiveIn (Instruction *original);
+
 
       /*
        * Live-out instructions

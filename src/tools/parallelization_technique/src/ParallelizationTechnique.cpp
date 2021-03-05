@@ -18,29 +18,14 @@ ParallelizationTechnique::ParallelizationTechnique (
   Hot &p,
   Verbosity v
   )
-  : module{module}, verbose{v}, tasks{}, envBuilder{0}, profile{p}
+  : module{module}, verbose{v}, tasks{}, envBuilder{nullptr}, profile{p}
   {
 
   return ;
 }
 
-ParallelizationTechnique::~ParallelizationTechnique () {
-  reset();
-
-  return ;
-}
-
-void ParallelizationTechnique::reset () {
-  for (auto task : tasks) delete task;
-  tasks.clear();
-  numTaskInstances = 0;
-
-  if (envBuilder) {
-    delete envBuilder;
-    envBuilder = nullptr;
-  }
-
-  return ;
+Value * ParallelizationTechnique::getEnvArray (void) const { 
+  return envBuilder->getEnvArray(); 
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder (
@@ -96,8 +81,8 @@ void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI
   /*
    * Fetch the loop function.
    */
-  auto loopSummary = LDI->getLoopStructure();
-  auto loopFunction = loopSummary->getFunction();
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopFunction = loopStructure->getFunction();
 
   /*
    * Fetch the first instruction of the first basic block of the function that includes the loop we want to parallelized.
@@ -116,10 +101,35 @@ void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI
 }
 
 void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LDI) {
+
+  /*
+   * Fetch the loop environment.
+   */
+  auto env = LDI->environment;
+
+  /*
+   * Store live-in values into the environment just before jumping to the parallelized loop.
+   */
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
-  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
-    builder.CreateStore(LDI->environment->producerAt(envIndex), envBuilder->getEnvVar(envIndex));
+  for (auto envIndex : env->getEnvIndicesOfLiveInVars()) {
+
+    /*
+     * Fetch the value to store.
+     */
+    auto producerOfLiveIn = env->producerAt(envIndex);
+
+    /*
+     * Fetch the memory location inside the environment dedicated to the live-in value.
+     */
+    auto environmentVariable = this->envBuilder->getEnvVar(envIndex);
+
+    /*
+     * Store the value inside the environment.
+     */
+    builder.CreateStore(producerOfLiveIn, environmentVariable);
   }
+
+  return ;
 }
 
 BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
@@ -359,6 +369,10 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
   auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
   auto envUser = this->envBuilder->getUser(taskIndex);
 
+  errs() << "XAN: CLONING: Start\n";
+  task->getTaskBody()->print(errs());
+  rootLoop->getFunction()->print(errs());
+
   /*
    * Check every stack object that can be safely cloned.
    */
@@ -374,6 +388,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         continue;
       }
       taskInstructions.insert(I);
+      errs() << "XAN: CLONING: Instruction to patch : " << *I << "\n";
     }
     if (taskInstructions.size() == 0) {
 
@@ -387,12 +402,18 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
      *
      * The stack object can be safely cloned (thanks to the object-cloning analysis) and it is used by our loop.
      *
+     * First, we need to remove the alloca instruction to be a live-in.
+     */
+    auto alloca = location->getAllocation();
+    task->removeLiveIn(alloca);
+
+    /*
      * Now we need to traverse operands of loop instructions to clone
      * all live-in references (casts and GEPs) of the allocation to clone
      * State all cloned instructions in the task's instruction map for data flow adjustment later
      */
-    auto alloca = location->getAllocation();
     auto &entryBlock = (*task->getTaskBody()->begin());
+    auto firstInstruction = &*entryBlock.begin();
     IRBuilder<> entryBuilder(&entryBlock);
     std::queue<Instruction *> instructionsToConvertOperandsOf;
     for (auto I : taskInstructions) {
@@ -431,6 +452,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
          * Ensure the instruction hasn't been cloned yet
          */
         if (task->isAnOriginalInstruction(opI)) {
+          errs() << "XAN: CLONING:      This instruction has been cloned already " << *opI << "\n";
           continue;
         }
         errs() << "XAN: CLONING:      Cloned into task the instruction " << *opI << "\n";
@@ -499,20 +521,43 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
 
           /*
            * The current operand must become a new live-in.
+           *
+           * Make space in the environment for the new live-in.
            */
           errs() << "XAN: CLONING:          NEW LIVE IN " << *opJ << "\n";
-          LDI->environment->addLiveInValue(opJ, {opI});
+          auto newLiveInEnvironmentIndex = LDI->environment->addLiveInValue(opJ, {opI});
+          this->envBuilder->addVariableToEnvironment(newLiveInEnvironmentIndex, opJ->getType());
+
+          /*
+           * Declare the new live-in of the loop is also a new live-in for the user (i.e., task) of the environment specified bt the input (i.e., taskIndex).
+           */
+          envUser->addLiveInIndex(newLiveInEnvironmentIndex);
+
+          /*
+           * Add the load inside the task to load from the environment the new live-in.
+           */
+          envUser->createEnvPtr(entryBuilder, newLiveInEnvironmentIndex, opJ->getType());
+          auto environmentLocationLoad = entryBuilder.CreateLoad(envUser->getEnvPtr(newLiveInEnvironmentIndex));
+
+          /*
+           * Make the task aware that the new load represents the live-in value.
+           */
+          task->addLiveIn(opJ, environmentLocationLoad);
         }
       }
     }
 
     /*
-     * Clone the allocation and all other necessary instructions
+     * Clone the stack object at the beginning of the task.
      */
     auto allocaClone = alloca->clone();
     auto firstInst = &*entryBlock.begin();
     entryBuilder.SetInsertPoint(firstInst);
     entryBuilder.Insert(allocaClone);
+
+    /*
+     * Keep track of the original-clone mapping.
+     */
     task->addInstruction(alloca, allocaClone);
   }
   task->getTaskBody()->print(errs());
@@ -525,24 +570,46 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
   LoopDependenceInfo *LDI, 
   int taskIndex
 ){
+
+  /*
+   * Fetch the task.
+   */
   auto task = this->tasks[taskIndex];
-  IRBuilder<> builder(task->getEntry());
+
+  /*
+   * Fetch the user of the environment attached to the task.
+   */
   auto envUser = this->envBuilder->getUser(taskIndex);
+
+  /*
+   * Generate the loads to load values from the live-in environment variables.
+   */
+  IRBuilder<> builder(task->getEntry());
   for (auto envIndex : envUser->getEnvIndicesOfLiveInVars()) {
+
+    /*
+     * Fetch the current producer of the original code that generates the live-in value.
+     */
     auto producer = LDI->environment->producerAt(envIndex);
 
     /*
      * Create GEP access of the environment variable at the given index
      */
     envUser->createEnvPtr(builder, envIndex, producer->getType());
+    auto envPointer = envUser->getEnvPtr(envIndex);
 
     /*
-     * Load the environment pointer
+     * Load the live-in value from the environment pointer.
+     */
+    auto envLoad = builder.CreateLoad(envPointer);
+
+    /*
      * Register the load as a "clone" of the original producer
      */
-    auto envLoad = builder.CreateLoad(envUser->getEnvPtr(envIndex));
     task->addLiveIn(producer, envLoad);
   }
+
+  return ;
 }
 
 void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
@@ -815,18 +882,31 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
   LoopDependenceInfo *LDI,
   int taskIndex
 ){
+
+  /*
+   * Fetch the task.
+   */
   auto &task = tasks[taskIndex];
 
+  /*
+   * Rewire the data flows.
+   */
   for (auto origI : task->getOriginalInstructions()) {
     auto cloneI = task->getCloneOfOriginalInstruction(origI);
     this->adjustDataFlowToUseClones(cloneI, taskIndex);
   }
+
+  return ;
 }
 
 void ParallelizationTechnique::adjustDataFlowToUseClones (
   Instruction *cloneI,
   int taskIndex
 ){
+
+  /*
+   * Fetch the task.
+   */
   auto &task = tasks[taskIndex];
 
   /*
@@ -841,6 +921,9 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     }
   }
 
+  /*
+   * Handle PHI instructions.
+   */
   if (auto phi = dyn_cast<PHINode>(cloneI)) {
     for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
       auto incomingBB = phi->getIncomingBlock(i);
@@ -852,37 +935,53 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
   }
 
   /*
-    * Adjust values (other instructions and live-in values) used by clones
-    */
+   * Adjust values (other instructions and live-in values) used by clones
+   */
+  errs() << "XAN: REWIRE: " << *cloneI << "\n";
   for (auto &op : cloneI->operands()) {
 
     /*
      * Fetch the current operand of @cloneI
      */
     auto opV = op.get();
+    errs() << "XAN: REWIRE:     Operand " << *opV << "\n";
 
     /*
-     * If the value is a loop live-in one,
-     * set it to the value loaded outside the parallelized loop.
+     * If the value is a constant, then there is nothing we need to do.
+     */
+    if (dyn_cast<Constant>(opV)){
+      continue ;
+    }
+
+    /*
+     * If the value is a loop live-in one, set it to the value loaded from the loop environment passed to the task.
      */
     if (task->isAnOriginalLiveIn(opV)){
+      errs() << "XAN: REWIRE:       It is a live-in\n";
       auto internalValue = task->getCloneOfOriginalLiveIn(opV);
+      errs() << "XAN: REWIRE:       The cloned version is " << *internalValue << "\n";
       op.set(internalValue);
       continue ;
     }
 
     /*
-     * If the value is generated by another instruction inside the loop,
-     * set it to the equivalent cloned instruction.
+     * The value is not a live-in.
+     *
+     * If the value is generated by another instruction within the task, then set it to the equivalent cloned instruction.
      */
     if (auto opI = dyn_cast<Instruction>(opV)) {
       if (task->isAnOriginalInstruction(opI)){
+        errs() << "XAN: REWIRE:       It is original\n";
         auto cloneOpI = task->getCloneOfOriginalInstruction(opI);
         op.set(cloneOpI);
+
       } else {
+        errs() << "XAN: REWIRE:       It is not an original\n";
         if (opI->getFunction() != task->getTaskBody()) {
           cloneI->print(errs() << "ERROR:   Instruction has op from another function: "); errs() << "\n";
           opI->print(errs() << "ERROR:   Op: "); errs() << "\n";
+          task->getTaskBody()->print(errs() << "ERROR: Task body ");
+          opI->getFunction()->print(errs());
           abort();
         }
       }
@@ -1290,4 +1389,23 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
   }
 
   File.close();
+}
+
+void ParallelizationTechnique::reset () {
+  for (auto task : tasks) delete task;
+  tasks.clear();
+  numTaskInstances = 0;
+
+  if (envBuilder) {
+    delete envBuilder;
+    envBuilder = nullptr;
+  }
+
+  return ;
+}
+
+ParallelizationTechnique::~ParallelizationTechnique () {
+  reset();
+
+  return ;
 }
