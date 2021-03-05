@@ -13,8 +13,13 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
-MemoryCloningAnalysis::MemoryCloningAnalysis (LoopStructure *loop, DominatorSummary &DS) { 
+MemoryCloningAnalysis::MemoryCloningAnalysis (
+    LoopStructure *loop, 
+    DominatorSummary &DS,
+    PDG *ldg
+    ){ 
   assert(loop != nullptr);
+  assert(ldg != nullptr);
 
   /*
    * Collect allocations at the top of the function
@@ -46,7 +51,6 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (LoopStructure *loop, DominatorSumm
   /*
    * Check each stack object's size.
    */
-  errs() << "XAN: LOOP " << *loop->getHeader()->getTerminator() << "\n";
   for (auto allocation : allocations) {
 
     /*
@@ -65,7 +69,7 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (LoopStructure *loop, DominatorSumm
     /*
      * Check if the memory location is clonable.
      */
-    auto location = std::make_unique<ClonableMemoryLocation>(allocation, sizeInBits, loop, DS);
+    auto location = std::make_unique<ClonableMemoryLocation>(allocation, sizeInBits, loop, DS, ldg);
     if (!location->isClonableLocation()) {
       continue;
     }
@@ -122,7 +126,8 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   AllocaInst *allocation,
   uint64_t sizeInBits,
   LoopStructure *loop,
-  DominatorSummary &DS
+  DominatorSummary &DS,
+  PDG *ldg
 ) : allocation{allocation}, sizeInBits{sizeInBits}, loop{loop}, isClonable{false} {
 
   /*
@@ -141,10 +146,15 @@ ClonableMemoryLocation::ClonableMemoryLocation (
 
   /*
    * Check if the stack object is completely initialized for every iteration.
-   * In other words, there is no RAW loop-carried data dependences that involve this stack object.
+   * In other words, 
+   * 1) there is no RAW loop-carried data dependences that involve this stack object and
+   * 2) there is no RAW from outside the loop to inside it.
    */
   identifyInitialStoringInstructions(DS);
-  if (!this->areOverrideSetsFullyCoveringTheAllocationSpace()) {
+  if (  false
+        || (!this->areOverrideSetsFullyCoveringTheAllocationSpace())
+        || (this->isThereRAWThroughMemoryFromOutsideLoop(loop, allocation, ldg))
+    ){
     return;
   }
 
@@ -217,8 +227,8 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
         allocationUses.push(cast);
         castsAndGEPs.insert(cast);
         continue;
-
-      } else if (auto gep = dyn_cast<GetElementPtrInst>(user)) {
+      }
+      if (auto gep = dyn_cast<GetElementPtrInst>(user)) {
 
         /*
          * NOTE: Continue without checking if the gep is in the loop
@@ -227,13 +237,20 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
         allocationUses.push(gep);
         castsAndGEPs.insert(gep);
         continue;
-
-      } else if (auto store = dyn_cast<StoreInst>(user)) {
+      } 
+      if (auto store = dyn_cast<StoreInst>(user)) {
 
         /*
          * As straightforward as it gets
          */
-        storingInstructions.insert(store);
+        this->storingInstructions.insert(store);
+
+      } else if (auto load = dyn_cast<LoadInst>(user)){
+
+        /*
+         * This instruction reads from the stack object.
+         */
+        this->loadInstructions.insert(load);
 
       } else if (auto call = dyn_cast<CallInst>(user)) {
 
@@ -241,7 +258,9 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
          * Ignore lifetime instructions
          * TODO: Make use of them to better understand memory liveness
          */
-        if (call->isLifetimeStartOrEnd()) continue;
+        if (call->isLifetimeStartOrEnd()) {
+          continue;
+        }
 
         /*
          * We consider llvm.memcpy as a storing instruction if the use is the dest (first operand) 
@@ -295,18 +314,110 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
   return true;
 }
 
+bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (
+  LoopStructure *loop, 
+  AllocaInst *al, 
+  PDG *ldg, 
+  std::unordered_set<Instruction *> insts
+  ) const {
+
+  for (auto inst : insts){
+
+    /*
+     * Check if the inst is within the loop.
+     */
+    if (!loop->isIncluded(inst)){
+      continue ;
+    }
+
+    /*
+     * The inst is within the loop.
+     *
+     * Check if there is a memory dependence from an instruction outside the loop to this inst.
+     */
+    auto functor = [loop](Value *fromValue, DGEdge<Value> *d) -> bool{
+
+      /*
+       * Check if the source of the dependence is with an instruction.
+       */
+      auto inst = dyn_cast<Instruction>(fromValue);
+      if (inst == nullptr){
+        return false;
+      }
+
+      /*
+       * The source of the dependence is with an instruction.
+       *
+       * Check if the source of the dependence is outside the loop.
+       */
+      if (loop->isIncluded(inst)){
+
+        /*
+         * The source is within the loop.
+         */
+        return false;
+      }
+
+      /*
+       * The source of the dependence is with an instruction that is outside the loop.
+       *
+       * Check if the dependence is a RAW.
+       */
+      if (!d->isRAWDependence()){
+        return false;
+      }
+
+      /*
+       * We found a memory RAW from an instruction outside the loop to an instruction inside the loop.
+       *
+       * We can stop the iteration.
+       */
+      return true;
+    };
+    if (ldg->iterateOverDependencesTo(inst, false, true, false, functor)){
+
+      /*
+       * We found a memory RAW from outside the loop to inside that is related to our stack object.
+       */
+      return true;
+    }
+  }
+
+  return false;
+}
+        
+bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (LoopStructure *loop, AllocaInst *al, PDG *ldg) const {
+
+  /*
+   * Check every read of the stack object.
+   */
+  if (  false
+        || this->isThereRAWThroughMemoryFromOutsideLoop(loop, al, ldg, this->loadInstructions)
+        || this->isThereRAWThroughMemoryFromOutsideLoop(loop, al, ldg, this->nonStoringInstructions)
+     ){
+    return true;
+  }
+
+
+  return false;
+}
+
 bool ClonableMemoryLocation::identifyInitialStoringInstructions (DominatorSummary &DS) {
 
   /*
    * Group non-storing instructions by sets of dominating basic blocks
    * for which any two sets do not dominate each other
    */
-  for (auto nonStoringInstruction : nonStoringInstructions) {
+  for (auto nonStoringInstruction : this->nonStoringInstructions) {
+
+    /*
+     * Fetch the basic block of the current instruction.
+     */
     auto nonStoringBlock = nonStoringInstruction->getParent();
 
     // nonStoringInstruction->print(errs() << "Grouping non storing instruction: "); errs() << "\n";
 
-    bool belongsToExistingSet = false;
+    auto belongsToExistingSet = false;
     for (auto &overrideSet : overrideSets) {
       auto overrideSetDominatingBlock = overrideSet->dominatingBlockOfNonStoringInsts;
       if (DS.DT.dominates(overrideSetDominatingBlock, nonStoringBlock)) {
