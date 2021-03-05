@@ -379,6 +379,12 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
   for (auto location : memoryCloningAnalysis->getClonableMemoryLocations()) {
 
     /*
+     * Fetch the stack object.
+     */
+    auto alloca = location->getAllocation();
+    errs() << "XAN: CLONING: Stack location " << *alloca << "\n";
+
+    /*
      * Check if this is an allocation used by this task
      */
     auto loopInstructionsRequiringClonedOperands = location->getLoopInstructionsUsingLocation();
@@ -388,7 +394,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         continue;
       }
       taskInstructions.insert(I);
-      errs() << "XAN: CLONING: Instruction to patch : " << *I << "\n";
+      errs() << "XAN: CLONING:  Instruction to patch : " << *I << "\n";
     }
     if (taskInstructions.size() == 0) {
 
@@ -404,7 +410,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
      *
      * First, we need to remove the alloca instruction to be a live-in.
      */
-    auto alloca = location->getAllocation();
     task->removeLiveIn(alloca);
 
     /*
@@ -419,7 +424,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
     for (auto I : taskInstructions) {
       instructionsToConvertOperandsOf.push(I);
     }
-    errs() << "XAN: CLONING: Stack location " << *alloca << "\n";
     while (!instructionsToConvertOperandsOf.empty()) {
       auto I = instructionsToConvertOperandsOf.front();
       instructionsToConvertOperandsOf.pop();
