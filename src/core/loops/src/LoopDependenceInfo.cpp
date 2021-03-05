@@ -296,7 +296,7 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   /*
    * Create the memory cloning analyzer.
    */
-  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
+  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS, loopInternalDG);
 
   /*
    * Identify opportunities for cloning stack locations.
