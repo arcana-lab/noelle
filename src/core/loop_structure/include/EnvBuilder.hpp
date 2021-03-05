@@ -68,6 +68,7 @@ namespace llvm::noelle {
       std::set<int> &reducableVarIndices,
       int reducerCount
     );
+    void addVariableToEnvironment (uint64_t varIndex, Type *varType);
 
     /*
      * Generate code to create environment array/variable allocations
