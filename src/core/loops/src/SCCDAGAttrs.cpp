@@ -61,7 +61,7 @@ SCCDAGAttrs::SCCDAGAttrs (
    * Compute memory cloning location analysis
    */
   auto rootLoop = LIS.getLoopNestingTreeRoot();
-  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
+  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS, loopDG);
 
   /*
    * Tag SCCs depending on their characteristics.
