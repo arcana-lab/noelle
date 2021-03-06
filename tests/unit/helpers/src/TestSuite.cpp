@@ -71,8 +71,15 @@ void TestSuite::runTests (ModulePass &pass) {
       continue;
     }
 
-    Values actual = tests[testId](pass, *this);
-    numSuccess += checkTest(testId, actual, File) ? 1 : 0;
+    File << suiteName << ": Testing: " << testName << "\n";
+    auto actual = tests[testId](pass, *this);
+    auto succeded = checkTest(testId, actual, File) ? 1 : 0;
+    if (succeded){
+      File << suiteName << ":   Passed\n";
+    } else {
+      File << suiteName << ":   Not passed\n";
+    }
+    numSuccess += succeded;
   }
 
   File << suiteName << " Summary: Successes: " << numSuccess
@@ -83,21 +90,27 @@ void TestSuite::runTests (ModulePass &pass) {
 }
 
 bool TestSuite::checkTest (int testId, Values &actualValues, raw_fd_ostream &File) {
-  std::pair<Values, Values>
-  mismatchValues = comparator->nonIntersectingOfGroup(testNames[testId], actualValues);
+  std::pair<Values, Values> mismatchValues = comparator->nonIntersectingOfGroup(testNames[testId], actualValues);
 
-  bool testPassed = true;
+  auto testPassed = true;
   for (auto v : mismatchValues.second) {
     testPassed = false;
-    File << suiteName << ": Expected    : " << addSpacesBetweenDelimiters(v) << " not found.\n";
+    File << suiteName << ":   Expected    : " << addSpacesBetweenDelimiters(v) << " not found.\n";
   }
   for (auto v : mismatchValues.first) {
     testPassed = false;
-    File << suiteName << ": Not expected: " << addSpacesBetweenDelimiters(v) << " yet found\n";
+    File << suiteName << ":   Not expected: " << addSpacesBetweenDelimiters(v) << " yet found\n";
   }
 
-  if (testPassed) File << suiteName << ": Passed: " << testNames[testId] << "\n";
-  else File << suiteName << ": Failed: " << testNames[testId] << "\n";
+  if (testPassed) {
+    File << suiteName << ":   Passed: " << testNames[testId] << "\n";
+  } else {
+    File << suiteName << ":   Failed: " << testNames[testId] << "\n";
+    File << suiteName << ":     Obtained output:\n";
+    for (auto v : actualValues){
+      File << suiteName << ":       " << addSpacesBetweenDelimiters(v) << "\n";
+    }
+  }
 
   return testPassed;
 }
