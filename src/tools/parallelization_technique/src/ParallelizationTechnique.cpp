@@ -394,7 +394,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         continue;
       }
       taskInstructions.insert(I);
-      errs() << "XAN: CLONING:  Instruction to patch : " << *I << "\n";
     }
     if (taskInstructions.size() == 0) {
 
@@ -425,9 +424,13 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
       instructionsToConvertOperandsOf.push(I);
     }
     while (!instructionsToConvertOperandsOf.empty()) {
+
+      /*
+       * Fetch the current instruction that needs patching and/or cloning.
+       */
       auto I = instructionsToConvertOperandsOf.front();
       instructionsToConvertOperandsOf.pop();
-      errs() << "XAN: CLONING:  Instruction to clone: " << *I << "\n";
+      errs() << "XAN: CLONING:  Instruction to patch or clone: " << *I << "\n";
 
       for (auto i = 0; i < I->getNumOperands(); ++i) {
         auto op = I->getOperand(i);
@@ -456,10 +459,9 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
          * Ensure the instruction hasn't been cloned yet
          */
         if (task->isAnOriginalInstruction(opI)) {
-          errs() << "XAN: CLONING:      This instruction has been cloned already " << *opI << "\n";
           continue;
         }
-        errs() << "XAN: CLONING:      Cloned into task the instruction " << *opI << "\n";
+        errs() << "XAN: CLONING:          This instruction needs to be cloned into task " << *opI << "\n";
 
         /*
          * Clone operand and then add to queue
@@ -472,6 +474,8 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         entryBuilder.Insert(opCloneI);
         entryBuilder.SetInsertPoint(opCloneI);
         instructionsToConvertOperandsOf.push(opI);
+        errs() << "XAN: CLONING:          Instruction patched or cloned: " << *I << "\n";
+        errs() << "XAN: CLONING:          Cloned operand = " << *opCloneI << "\n";
 
         /*
          * Swap the operand's live in mapping with this clone so the live-in allocation from
@@ -486,6 +490,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         /*
          * Check if there are new live-in values we need to pass to the task.
          */
+        errs() << "XAN: CLONING:          Check for new live-ins\n";
         for (auto j = 0; j < opI->getNumOperands(); ++j) {
 
           /*
@@ -500,17 +505,20 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
              */
             continue ;
           }
+          errs() << "XAN: CLONING:            Operand to check for live-ins " << *opJ << "\n";
 
           /*
            * Check if the current operand is the alloca instruction that will be cloned.
            */
           if (opJ == alloca){
+            assert(!task->isAnOriginalLiveIn(opJ));
             continue ;
           }
 
           /*
            * Check if the current operand requires to become a live-in.
            */
+          errs() << "XAN: CLONING:              Checking\n";
           auto newLiveIn = true;
           for (auto envIndex : envUser->getEnvIndicesOfLiveInVars()) {
             auto producer = LDI->environment->producerAt(envIndex);
@@ -975,8 +983,8 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
      */
     if (auto opI = dyn_cast<Instruction>(opV)) {
       if (task->isAnOriginalInstruction(opI)){
-        errs() << "XAN: REWIRE:       It is original\n";
         auto cloneOpI = task->getCloneOfOriginalInstruction(opI);
+        errs() << "XAN: REWIRE:       It is original. The clone is " << *cloneOpI << "\n";
         op.set(cloneOpI);
 
       } else {
