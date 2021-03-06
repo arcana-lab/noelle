@@ -220,6 +220,7 @@ bool ClonableMemoryLocation::isInstructionStoringLocation (Instruction *I) const
 
 bool ClonableMemoryLocation::isInstructionLoadingLocation (Instruction *I) const {
   if (nonStoringInstructions.find(I) != nonStoringInstructions.end()) return true;
+  if (loadInstructions.find(I) != loadInstructions.end()) return true;
   return false;
 }
 
