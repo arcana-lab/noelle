@@ -29,6 +29,7 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (
   std::unordered_set<AllocaInst *> allocations;
   auto function = loop->getFunction();
   auto& entryBlock = function->getEntryBlock();
+  errs() << "XAN: START ANALYSIS\n";
   for (auto &I : entryBlock) {
 
     /*
@@ -54,7 +55,7 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (
   for (auto allocation : allocations) {
 
     /*
-     * Check if we know the size in bits of the allocations.
+     * Check if we know the size in bits of the stack object.
      */
     auto sizeInBitsOptional = allocation->getAllocationSizeInBits(DL);
     if (!sizeInBitsOptional.hasValue()) {
@@ -62,22 +63,25 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (
     }
 
     /*
-     * Fetch the size of the stack location.
+     * Fetch the size of the stack object.
      */
     auto sizeInBits = sizeInBitsOptional.getValue();
 
     /*
-     * Check if the memory location is clonable.
+     * Check if the stack object is clonable.
      */
     auto location = std::make_unique<ClonableMemoryLocation>(allocation, sizeInBits, loop, DS, ldg);
     if (!location->isClonableLocation()) {
       continue;
     }
-    errs() << "XAN: this is clonable " << *allocation << "\n";
 
+    /*
+     * The stack object is clonable.
+     */
+    errs() << "XAN: this is clonable " << *allocation << "\n";
     this->clonableMemoryLocations.insert(std::move(location));
-    // allocation->print(errs() << "Found clonable allocation: "); errs() << "\n";
   }
+  errs() << "XAN: END ANALYSIS\n";
 
   return ;
 }
@@ -105,6 +109,28 @@ const ClonableMemoryLocation * MemoryCloningAnalysis::getClonableMemoryLocationF
   return nullptr;
 }
 
+std::unordered_set<Instruction *> ClonableMemoryLocation::getInstructionsUsingLocationOutsideLoop (void) const {
+  std::unordered_set<Instruction *> instructions;
+  for (auto I : this->castsAndGEPs) {
+    if (loop->isIncluded(I)) continue;
+    instructions.insert(I);
+  }
+  for (auto I : this->storingInstructions) {
+    if (loop->isIncluded(I)) continue;
+    instructions.insert(I);
+  }
+  for (auto I : this->loadInstructions) {
+    if (loop->isIncluded(I)) continue;
+    instructions.insert(I);
+  }
+  for (auto I : this->nonStoringInstructions) {
+    if (loop->isIncluded(I)) continue;
+    instructions.insert(I);
+  }
+
+  return instructions;
+}
+
 std::unordered_set<Instruction *> ClonableMemoryLocation::getLoopInstructionsUsingLocation (void) const {
   std::unordered_set<Instruction *> instructions;
   for (auto I : this->castsAndGEPs) {
@@ -112,6 +138,10 @@ std::unordered_set<Instruction *> ClonableMemoryLocation::getLoopInstructionsUsi
     instructions.insert(I);
   }
   for (auto I : this->storingInstructions) {
+    if (!loop->isIncluded(I)) continue;
+    instructions.insert(I);
+  }
+  for (auto I : this->loadInstructions) {
     if (!loop->isIncluded(I)) continue;
     instructions.insert(I);
   }
@@ -148,24 +178,12 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   }
 
   /*
-   * If there are casts or GEPs outside the loop, then we have aliases.
-   * At the moment, we don't support them, so it isn't safe to clone the related stack objects.
-   */
-  for (auto i : this->castsAndGEPs){
-    errs() << "XAN: AAA " << *i << "\n";
-    if (!loop->isIncluded(i)){
-      errs() << "XAN: AAA   not included\n";
-      return ;
-    }
-  }
-
-  /*
    * Check if the stack object is completely initialized for every iteration.
    * In other words, 
    * 1) there is no RAW loop-carried data dependences that involve this stack object and
    * 2) there is no RAW from outside the loop to inside it.
    */
-  identifyInitialStoringInstructions(DS);
+  this->identifyInitialStoringInstructions(DS);
   if (  false
         || (!this->areOverrideSetsFullyCoveringTheAllocationSpace())
         || (this->isThereRAWThroughMemoryFromOutsideLoop(loop, allocation, ldg))

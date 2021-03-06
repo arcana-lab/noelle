@@ -45,9 +45,11 @@ namespace llvm::noelle {
         PDG *ldg
       ) ;
 
-      AllocaInst *getAllocation (void) const ;
+      AllocaInst * getAllocation (void) const ;
 
       std::unordered_set<Instruction *> getLoopInstructionsUsingLocation (void) const ;
+
+      std::unordered_set<Instruction *> getInstructionsUsingLocationOutsideLoop (void) const ;
 
       bool isInstructionCastOrGEPOfLocation (Instruction *I) const ;
       bool isInstructionStoringLocation (Instruction *I) const ;
