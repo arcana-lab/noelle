@@ -107,6 +107,9 @@ elif test "$stillRunningRegressionTests" == "0" ; then
     echo "" ;
     echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
   fi
+
+else
+  echo "    No new tests failed so far" ;
 fi
 echo "" ;
 echo "" ;
