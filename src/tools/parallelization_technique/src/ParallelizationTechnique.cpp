@@ -305,9 +305,26 @@ void ParallelizationTechnique::cloneSequentialLoop (
   LoopDependenceInfo *LDI,
   int taskIndex
 ){
+
+  /*
+   * Fetch the task.
+   */
   auto &cxt = module.getContext();
   auto task = tasks[taskIndex];
 
+  /*
+   * Code to filter out instructions we don't want to clone.
+   */
+  auto filter = [](Instruction *inst) -> bool{
+    if (auto call = dyn_cast<CallInst>(inst)){
+      if (call->isLifetimeStartOrEnd()){
+        return false;
+      }
+    }
+
+    return true;
+  };
+ 
   /*
    * Clone all basic blocks of the original loop
    */
@@ -317,8 +334,10 @@ void ParallelizationTechnique::cloneSequentialLoop (
     /*
      * Clone the basic block.
      */
-    task->cloneAndAddBasicBlock(originBB);
+    task->cloneAndAddBasicBlock(originBB, filter);
   }
+
+  return ;
 }
 
 void ParallelizationTechnique::cloneSequentialLoopSubset (
