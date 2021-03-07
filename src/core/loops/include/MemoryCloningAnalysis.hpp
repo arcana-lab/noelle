@@ -65,6 +65,7 @@ namespace llvm::noelle {
       uint64_t sizeInBits;
       LoopStructure *loop;
       bool isClonable;
+      bool isScopeWithinLoop;
 
       std::unordered_set<Instruction *> castsAndGEPs;
       std::unordered_set<Instruction *> storingInstructions;
@@ -103,6 +104,7 @@ namespace llvm::noelle {
 
       bool isOverrideSetFullyCoveringTheAllocationSpace (OverrideSet *overrideSet) const ;
 
+      void setObjectScope (void);
   };
 
 }

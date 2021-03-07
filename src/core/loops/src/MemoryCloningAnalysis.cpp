@@ -158,15 +158,29 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   LoopStructure *loop,
   DominatorSummary &DS,
   PDG *ldg
-) : allocation{allocation}, sizeInBits{sizeInBits}, loop{loop}, isClonable{false} {
+) : allocation{allocation}
+    ,sizeInBits{sizeInBits}
+    ,loop{loop}
+    ,isClonable{false}
+    ,isScopeWithinLoop{false}
+{
 
   /*
-   * Only consider struct and integer types
+   * Check if the current stack object's scope is the loop.
+   */
+  this->setObjectScope();
+
+  /*
+   * Only consider struct and integer types for objects that has scope outside the loop.
    * TODO: Remove this when array/vector types are supported
    */
   this->allocatedType = allocation->getAllocatedType();
   errs() << "XAN: Checking " << *allocation << "\n";
-  if (!allocatedType->isStructTy() && !allocatedType->isIntegerTy()) {
+  if (  true
+        && (!this->isScopeWithinLoop)
+        && (!allocatedType->isStructTy())
+        && (!allocatedType->isIntegerTy()) 
+     ){
     return;
   }
 
@@ -178,17 +192,19 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   }
 
   /*
-   * Check if the stack object is completely initialized for every iteration.
+   * For stack objects that have scope not fully contained within the target loop, we need to check if the stack object is completely initialized for every iteration.
    * In other words, 
    * 1) there is no RAW loop-carried data dependences that involve this stack object and
    * 2) there is no RAW from outside the loop to inside it.
    */
   this->identifyInitialStoringInstructions(DS);
-  if (  false
-        || (!this->areOverrideSetsFullyCoveringTheAllocationSpace())
-        || (this->isThereRAWThroughMemoryFromOutsideLoop(loop, allocation, ldg))
-    ){
-    return;
+  if (!this->isScopeWithinLoop){
+    if (  false
+          || (!this->areOverrideSetsFullyCoveringTheAllocationSpace())
+          || (this->isThereRAWThroughMemoryFromOutsideLoop(loop, allocation, ldg))
+      ){
+      return;
+    }
   }
 
   /*
@@ -200,7 +216,12 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   return;
 }
 
-AllocaInst *ClonableMemoryLocation::getAllocation (void) const {
+void ClonableMemoryLocation::setObjectScope (void) {
+
+  return ;
+}
+
+AllocaInst * ClonableMemoryLocation::getAllocation (void) const {
   return this->allocation;
 }
 
