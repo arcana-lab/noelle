@@ -95,6 +95,8 @@ namespace llvm::noelle {
 
       BasicBlock * cloneAndAddBasicBlock (BasicBlock *original);
 
+      BasicBlock * cloneAndAddBasicBlock (BasicBlock *original, std::function<bool (Instruction *origInst)> filter);
+
       void removeOriginalBasicBlock (BasicBlock *b);
 
       BasicBlock * getEntry (void) const ;
