@@ -54,6 +54,7 @@ $(OPTIMIZED): test_parallelized.bc
 
 test_parallelized_unoptimized.bc: baseline_with_metadata.bc
 	noelle-parallelizer $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
+	noelle-meta-clean $@ $@
 	llvm-dis $@
 
 test_parallelized.bc: test_parallelized_unoptimized.bc
