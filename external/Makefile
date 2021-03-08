@@ -1,9 +1,9 @@
 all: compile
 
 compile: svf patch.tar scaf
-	#cd svf ; tar xf ../patch.tar ;
-	#./scripts/patch.sh
-	#./scripts/scaf_patch_make.sh 
+	cd svf ; tar xf ../patch.tar ;
+	./scripts/patch.sh
+	./scripts/scaf_patch_make.sh 
 ifeq ($(DEBUG), "TRUE")
 	echo "Making debug SVF and SCAF"
 	cd svf ; ./build.sh debug;

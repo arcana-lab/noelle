@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.4.3)
-project(CPF)
+project(NOELLE-Core)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -12,7 +12,7 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -Weverything")
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Weverything")
-#set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 # Link with LLVM
 include_directories(${LLVM_INCLUDE_DIRS})
