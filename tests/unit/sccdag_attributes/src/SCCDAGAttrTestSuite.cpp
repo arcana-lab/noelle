@@ -151,19 +151,22 @@ Values SCCDAGAttrTestSuite::clonableSCCsAreFound (ModulePass &pass, TestSuite &s
 }
 
 Values SCCDAGAttrTestSuite::clonableSCCsIntoLocalMemoryAreFound (ModulePass &pass, TestSuite &suite) {
-  SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
+  auto &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
 
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
-    SCCAttrs *sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
-    if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) sccs.insert(node->getT());
+    auto scc = node->getT();
+    auto sccAttrs = attrPass.attrs->getSCCAttrs(scc);
+    if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) {
+      sccs.insert(node->getT());
+    }
   }
 
   return SCCDAGAttrTestSuite::printSCCs(pass, suite, sccs);
 }
 
 Values SCCDAGAttrTestSuite::printSCCs (ModulePass &pass, TestSuite &suite, std::set<SCC *> sccs) {
-  SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
+  auto &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   Values valueNames{};
   for (auto scc : sccs) {
     std::vector<std::string> sccValues;

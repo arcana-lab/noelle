@@ -61,7 +61,7 @@ SCCDAGAttrs::SCCDAGAttrs (
    * Compute memory cloning location analysis
    */
   auto rootLoop = LIS.getLoopNestingTreeRoot();
-  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
+  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS, loopDG);
 
   /*
    * Tag SCCs depending on their characteristics.
@@ -539,21 +539,28 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &
 void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS) {
 
   /*
-   * HACK: Ignore SCC without loop carried dependencies
+   * Ignore SCC without loop carried dependencies
    */
   if (this->sccToLoopCarriedDependencies.find(scc) == this->sccToLoopCarriedDependencies.end()) {
     return;
   }
 
   /*
-   * Ensure that loop carried dependencies belong to clonable memory locations
+   * Ensure that loop carried dependencies belong to clonable memory locations.
+   *
    * NOTE: Ignore PHIs and unconditional branch instructions
    */
   std::unordered_set<const llvm::noelle::ClonableMemoryLocation *> locations;
   for (auto dependency : this->sccToLoopCarriedDependencies.at(scc)) {
 
-    auto inst = dyn_cast<Instruction>(dependency->getOutgoingT());
-    if (!inst) return;
+    /*
+     * Fetch the next loop-carried dependence.
+     */
+    auto depValue = dependency->getOutgoingT();
+    auto inst = dyn_cast<Instruction>(depValue);
+    if (!inst) {
+      return;
+    }
 
     /*
      * Attempt to locate the instruction's clonable memory location they store/load from
@@ -564,12 +571,27 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS)
     //   errs() << "No location\n";
     //   scc->print(errs() << "Getting close\n", "", 100); errs() << "\n";
     // }
-    if (!location) return ;
+    if (!location) {
+
+      /*
+       * The current loop-carried dependence cannot be removed by cloning.
+       */
+      return ;
+    }
+
+    /*
+     * The current loop-carried dependence can be removed by cloning.
+     */
     // location->getAllocation()->print(errs() << "Location found: "); errs() << "\n";
     locations.insert(location);
   }
 
-  if (locations.size() == 0) return;
+  /*
+   * Check if all loop-carried dependences can be removed by cloning.
+   */
+  if (locations.size() == 0) {
+    return;
+  }
 
   auto sccInfo = this->sccToInfo.at(scc);
   sccInfo->setSCCToBeClonableUsingLocalMemory();
