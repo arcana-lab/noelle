@@ -168,7 +168,7 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   /*
    * Check if the current stack object's scope is the loop.
    */
-  this->setObjectScope();
+  this->setObjectScope(allocation, loop, DS);
 
   /*
    * Only consider struct and integer types for objects that has scope outside the loop.
@@ -216,7 +216,44 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   return;
 }
 
-void ClonableMemoryLocation::setObjectScope (void) {
+void ClonableMemoryLocation::setObjectScope (
+  AllocaInst *allocation,
+  LoopStructure *loop,
+  DominatorSummary &ds
+  ) {
+
+  /*
+   * Look for lifetime calls in the loop.
+   */
+  for (auto inst : loop->getInstructions()){
+
+    /*
+     * Check if the current instruction is a call to lifetime intrinsics.
+     */
+    auto call = dyn_cast<CallInst>(inst);
+    if (call == nullptr){
+      continue ;
+    }
+    if (!call->isLifetimeStartOrEnd()){
+      continue;
+    }
+
+    /*
+     * The current instruction is a call to lifetime intrinsics.
+     *
+     * Check if it is about the stack object we care.
+     */
+    auto objectUsed = call->getArgOperand(1);
+    errs() << "XAN: ZZZZ " << *objectUsed << "\n";
+    if (objectUsed == allocation){
+
+      /*
+       * We found a lifetime call about our stack object.
+       */
+      this->isScopeWithinLoop = true;
+      return ;
+    }
+  }
 
   return ;
 }
