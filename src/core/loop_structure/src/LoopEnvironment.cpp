@@ -92,7 +92,7 @@ LoopEnvironment::LoopEnvironment (
   return ;
 }
 
-Type * LoopEnvironment::typeOfEnvironmentLocation (int64_t index) const {
+Type * LoopEnvironment::typeOfEnvironmentLocation (uint64_t index) const {
   if (index < envProducers.size()) {
     return envProducers[index]->getType();
   }
@@ -100,15 +100,18 @@ Type * LoopEnvironment::typeOfEnvironmentLocation (int64_t index) const {
   return exitBlockType;
 }
 
-void LoopEnvironment::addProducer (Value *producer, bool liveIn){
+uint64_t LoopEnvironment::addProducer (Value *producer, bool liveIn){
 
   /*
    * Make sure @producer isn't already part of the environment.
    */
+  uint64_t c = 0;
   for (auto p : this->envProducers){
     if (p == producer) {
-      return ;
+      assert(this->envProducers[c] == producer);
+      return c;
     }
+    c++;
   }
 
   /*
@@ -123,15 +126,15 @@ void LoopEnvironment::addProducer (Value *producer, bool liveIn){
     liveOutInds.insert(envIndex);
   }
 
-  return ;
+  return envIndex;
 }
       
-void LoopEnvironment::addLiveInValue (Value *newLiveInValue, const std::unordered_set<Instruction *> &consumers){
+uint64_t LoopEnvironment::addLiveInValue (Value *newLiveInValue, const std::unordered_set<Instruction *> &consumers){
 
   /*
    * Add the live-in value.
    */
-  this->addLiveInProducer(newLiveInValue);
+  auto newIndex = this->addLiveInProducer(newLiveInValue);
 
   /*
    * Add the consumers.
@@ -140,7 +143,7 @@ void LoopEnvironment::addLiveInValue (Value *newLiveInValue, const std::unordere
     this->prodConsumers[newLiveInValue].insert(consumerOfNewLiveIn);
   }
 
-  return ;
+  return newIndex;
 }
 
 bool LoopEnvironment::isProducer (Value *producer) const {
@@ -169,9 +172,9 @@ bool LoopEnvironment::isLiveIn (Value *val) const {
   return isLiveIn;
 }
 
-void LoopEnvironment::addLiveInProducer (Value *producer) { 
-  addProducer(producer, true); 
-  return ;
+uint64_t LoopEnvironment::addLiveInProducer (Value *producer) { 
+  auto newIndex = addProducer(producer, true); 
+  return newIndex;
 }
 
 void LoopEnvironment::addLiveOutProducer (Value *producer) { 
@@ -183,7 +186,7 @@ int64_t LoopEnvironment::indexOfExitBlockTaken (void) const {
   return hasExitBlockEnv ? envProducers.size() : -1; 
 }
 
-int64_t LoopEnvironment::size (void) const {
+uint64_t LoopEnvironment::size (void) const {
   return envProducers.size() + (hasExitBlockEnv ? 1 : 0);
 }
 
@@ -209,7 +212,7 @@ iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIndicesOfLiveOutV
   return make_range(liveOutInds.begin(), liveOutInds.end());
 }
 
-Value * LoopEnvironment::producerAt (uint32_t ind) const { 
+Value * LoopEnvironment::producerAt (uint64_t ind) const { 
   assert(ind < this->envProducers.size());
   return envProducers[ind];
 }
