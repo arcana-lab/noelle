@@ -29,6 +29,10 @@ void EnvUserBuilder::createEnvPtr (
   int envIndex,
   Type *type
 ) {
+
+  /*
+   * Check the inputs.
+   */
   if (!this->envArray) {
     errs() << "A reference to the environment array has not been set for this user!\n";
     abort();
@@ -115,6 +119,7 @@ void EnvBuilder::createEnvUsers (int numUsers) {
   for (int i = 0; i < numUsers; ++i) {
     this->envUsers.push_back(new EnvUserBuilder());
   }
+  return ;
 }
 
 // TODO: Adjust users of createEnvVariables to pass the Type map
@@ -124,11 +129,23 @@ void EnvBuilder::createEnvVariables (
   std::set<int> &reducableVarIndices,
   int reducerCount
 ) {
-  assert(envSize == -1 && "Environment variables must be fully determined at once\n");
-  this->envSize = singleVarIndices.size() + reducableVarIndices.size();
 
+  /*
+   * Assertions.
+   */
+  assert(envSize == -1 
+      && "Environment variables must be fully determined at once\n");
+
+  /*
+   * Compute the size of the environment.
+   */
+  this->envSize = singleVarIndices.size() + reducableVarIndices.size();
   assert(this->envSize == varTypes.size()
     && "Environment variables must either be singular or reducible\n");
+
+  /*
+   * Store the types of each environment value.
+   */
   this->envTypes = std::vector<Type *>(varTypes.begin(), varTypes.end());
 
   /*
@@ -136,19 +153,58 @@ void EnvBuilder::createEnvVariables (
    */
   auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
 
+  /*
+   * Define the LLVM type for the array of environment values.
+   */
   auto int64 = IntegerType::get(this->CXT, 64);
   this->envArrayType = ArrayType::get(int64, this->envSize * valuesInCacheLine);
 
-  numReducers = reducerCount;
+  /*
+   * Keep track of the number of variables that are reduced.
+   */
+  this->numReducers = reducerCount;
+
+  /*
+   * Initialize the index-to-variable map.
+   */
   for (auto envIndex : singleVarIndices) {
-    envIndexToVar[envIndex] = nullptr;
+    this->envIndexToVar[envIndex] = nullptr;
   }
   for (auto envIndex : reducableVarIndices) {
-    envIndexToReducableVar[envIndex] = std::vector<Value *>();
+    this->envIndexToReducableVar[envIndex] = std::vector<Value *>();
   }
+
+  return ;
+}
+    
+void EnvBuilder::addVariableToEnvironment (uint64_t varIndex, Type *varType){
+  this->envSize++;
+  this->envTypes.push_back(varType);
+
+  /*
+   * Compute how many values can fit in a cache line.
+   */
+  auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
+
+  /*
+   * Define the LLVM type for the array of environment values.
+   */
+  auto int64 = IntegerType::get(this->CXT, 64);
+  this->envArrayType = ArrayType::get(int64, this->envSize * valuesInCacheLine);
+
+  /*
+   * Set the index-to-var map for the new variable.
+   */
+  this->envIndexToVar[varIndex] = nullptr;
+
+  return ;
 }
 
 void EnvBuilder::generateEnvArray (IRBuilder<> builder) {
+
+  /*
+   * Check that we have an environment.
+   */
   if(envSize == -1) {
     errs() << "Environment array variables must be specified!\n"
       << "\tSee the EnvBuilder API call createEnvVariables\n";
@@ -159,6 +215,8 @@ void EnvBuilder::generateEnvArray (IRBuilder<> builder) {
   auto ptrTy_int8 = PointerType::getUnqual(int8);
   this->envArray = builder.CreateAlloca(this->envArrayType);
   this->envArrayInt8Ptr = cast<Value>(builder.CreateBitCast(this->envArray, ptrTy_int8));
+
+  return ;
 }
 
 void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
@@ -205,7 +263,7 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
    * NOTE: Manipulation of the map cannot be done while iterating it
    */
   std::set<int> singleIndices;
-  for (auto indexVarPair : envIndexToVar){
+  for (auto indexVarPair : this->envIndexToVar){
     singleIndices.insert(indexVarPair.first);
   }
   for (auto envIndex : singleIndices) {
@@ -465,7 +523,7 @@ Value *EnvBuilder::getEnvArray () {
   return envArray;
 }
 
-Value *EnvBuilder::getEnvVar (int ind) {
+Value * EnvBuilder::getEnvVar (int ind) {
   auto iter = envIndexToVar.find(ind);
   assert(iter != envIndexToVar.end());
   return (*iter).second;

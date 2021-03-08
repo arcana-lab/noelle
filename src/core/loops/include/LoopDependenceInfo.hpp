@@ -88,6 +88,17 @@ namespace llvm::noelle {
         ScalarEvolution &SE,
         uint32_t maxCores,
         bool enableFloatAsReal,
+        liberty::LoopAA *aa,
+        bool enableLoopAwareDependenceAnalyses
+      );
+
+      LoopDependenceInfo (
+        PDG *fG,
+        Loop *l,
+        DominatorSummary &DS,
+        ScalarEvolution &SE,
+        uint32_t maxCores,
+        bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations,
         liberty::LoopAA *aa,
         TalkDown *talkdown,

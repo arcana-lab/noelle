@@ -54,7 +54,8 @@ namespace llvm::noelle {
         Heuristics *h
       ) const = 0 ;
 
-      Value * getEnvArray () { return envBuilder->getEnvArray(); }
+      Value * getEnvArray (void) const ;
+
       BasicBlock *getParLoopEntryPoint () { return entryPointOfParallelizedLoop; }
       BasicBlock *getParLoopExitPoint () { return exitPointOfParallelizedLoop; }
 

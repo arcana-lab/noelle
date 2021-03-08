@@ -65,6 +65,20 @@ LoopDependenceInfo::LoopDependenceInfo(
   return ;
 }
 
+LoopDependenceInfo::LoopDependenceInfo (
+  PDG *fG,
+  Loop *l,
+  DominatorSummary &DS,
+  ScalarEvolution &SE,
+  uint32_t maxCores,
+  bool enableFloatAsReal,
+  liberty::LoopAA *aa,
+  bool enableLoopAwareDependenceAnalyses
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, enableLoopAwareDependenceAnalyses}{
+
+  return ;
+}
+
 LoopDependenceInfo::LoopDependenceInfo(
   PDG *fG,
   Loop *l,
@@ -82,10 +96,14 @@ LoopDependenceInfo::LoopDependenceInfo(
     enabledOptimizations{optimizations},
     areLoopAwareAnalysesEnabled{enableLoopAwareDependenceAnalyses}
   {
-  errs() << "BRIAN, constructing LDI: " << *(this->getLoopStructure()->getHeader()->getTerminator()) << '\n';
+
+  /*
+   * Assertions.
+   */
   for (auto edge : fG->getEdges()) {
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
+
   /*
    * Enable all transformations.
    */
@@ -304,6 +322,7 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   PDG *loopInternalDG,
   DominatorSummary &DS
 ) {
+  errs() << "XAN: Remove deps\n";
 
   /*
    * Fetch the loop sub-tree rooted at @this.
@@ -313,19 +332,32 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   /*
    * Create the memory cloning analyzer.
    */
-  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
+  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS, loopInternalDG);
 
   /*
    * Identify opportunities for cloning stack locations.
    */
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
   for (auto edge : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*rootLoop, liSummary, *loopInternalDG)) {
-    if (!edge->isMemoryDependence()) continue;
 
+    /*
+     * Only memory dependences can be removed by cloning memory objects.
+     */
+    if (!edge->isMemoryDependence()) {
+      continue;
+    }
+
+    /*
+     * Only dependences between instructions can be removed by cloning memory objects.
+     */
     auto producer = dyn_cast<Instruction>(edge->getOutgoingT());
     auto consumer = dyn_cast<Instruction>(edge->getIncomingT());
-    if (!producer || !consumer) continue;
+    if (!producer || !consumer) {
+      continue;
+    }
 
+    errs() << "XAN: DEP SRC: " << *producer << "\n";
+    errs() << "XAN: DEP DST: " << *consumer << "\n";
     auto locationProducer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(producer);
     auto locationConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(consumer);
     if (!locationProducer || !locationConsumer) continue;

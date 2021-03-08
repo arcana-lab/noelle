@@ -20,6 +20,9 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   DataFlowResult *reachabilityDFR
 ){
 
+  /*
+   * Fetch the task.
+   */
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
   /*
