@@ -218,7 +218,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * Check of loopIndex provided is within bounds
    */
   if (this->loopHeaderToLoopIndexMap.find(header) == this->loopHeaderToLoopIndexMap.end()){
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, this->enableFloatAsReal, {}, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, this->enableFloatAsReal, optimizations, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
 
     delete DS;
     return ldi;
@@ -252,14 +252,15 @@ LoopDependenceInfo * Noelle::getLoop (
   assert(maximumNumberOfCoresForTheParallelization > 1
       && "Noelle: passed user a filtered loop yet it only has max cores <= 1");
 
-  auto ldi = getLoopDependenceInfoForLoop(
+  auto ldi = this->getLoopDependenceInfoForLoop(
       llvmLoop,
       funcPDG,
       DS,
       &SE,
       this->techniquesToDisable[loopIndex],
       this->DOALLChunkSize[loopIndex],
-      maximumNumberOfCoresForTheParallelization
+      maximumNumberOfCoresForTheParallelization,
+      optimizations
       );
 
   delete DS;
@@ -348,6 +349,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
       assert(!edge->isLoopCarriedDependence() && "Flag set");
     }
     auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, this->enableFloatAsReal, {}, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
+//    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, this->enableFloatAsReal, this->loopAA, this->loopAwareDependenceAnalysis);
     allLoops->push_back(ldi);
   }
 
@@ -464,6 +466,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
          * Allocate the loop wrapper.
          */
         auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, this->enableFloatAsReal, {}, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
+    //    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, this->enableFloatAsReal, this->loopAA, this->loopAwareDependenceAnalysis);
 
         allLoops->push_back(ldi);
         continue ;
@@ -502,7 +505,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
           &SE,
           this->techniquesToDisable[currentLoopIndex],
           this->DOALLChunkSize[currentLoopIndex],
-          maximumNumberOfCoresForTheParallelization
+          maximumNumberOfCoresForTheParallelization,
+          {}
           );
 
       /*
@@ -907,10 +911,24 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
     ScalarEvolution *SE,
     uint32_t techniquesToDisableForLoop,
     uint32_t DOALLChunkSizeForLoop,
-    uint32_t maxCores
+    uint32_t maxCores,
+    std::unordered_set<LoopDependenceInfoOptimization> optimizations
     ) {
 
-  auto ldi = new LoopDependenceInfo(functionPDG, loop, *DS, *SE, maxCores, this->enableFloatAsReal, {}, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
+  /*
+   * Allocate the LDI.
+   */
+  auto ldi = new LoopDependenceInfo(
+      functionPDG, 
+      loop, 
+      *DS, 
+      *SE, 
+      maxCores,
+      this->enableFloatAsReal, 
+      optimizations, 
+      this->loopAA,
+      this->talkdown,
+      this->loopAwareDependenceAnalysis);
 
   /*
    * Set the loop constraints specified by INDEX_FILE.

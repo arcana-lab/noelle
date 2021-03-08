@@ -25,7 +25,7 @@ namespace llvm::noelle {
 
   class MemoryCloningAnalysis {
     public:
-      MemoryCloningAnalysis (LoopStructure *loop, DominatorSummary &DS) ;
+      MemoryCloningAnalysis (LoopStructure *loop, DominatorSummary &DS, PDG *ldg);
 
       const ClonableMemoryLocation * getClonableMemoryLocationFor (Instruction *I) const ;
 
@@ -41,12 +41,15 @@ namespace llvm::noelle {
         AllocaInst *allocation,
         uint64_t sizeInBits,
         LoopStructure *loop,
-        DominatorSummary &DS
+        DominatorSummary &DS,
+        PDG *ldg
       ) ;
 
-      AllocaInst *getAllocation (void) const ;
+      AllocaInst * getAllocation (void) const ;
 
       std::unordered_set<Instruction *> getLoopInstructionsUsingLocation (void) const ;
+
+      std::unordered_set<Instruction *> getInstructionsUsingLocationOutsideLoop (void) const ;
 
       bool isInstructionCastOrGEPOfLocation (Instruction *I) const ;
       bool isInstructionStoringLocation (Instruction *I) const ;
@@ -62,12 +65,27 @@ namespace llvm::noelle {
       uint64_t sizeInBits;
       LoopStructure *loop;
       bool isClonable;
+      bool isScopeWithinLoop;
 
       std::unordered_set<Instruction *> castsAndGEPs;
       std::unordered_set<Instruction *> storingInstructions;
+      std::unordered_set<Instruction *> loadInstructions;
       std::unordered_set<Instruction *> nonStoringInstructions;
 
       bool identifyStoresAndOtherUsers (LoopStructure *loop, DominatorSummary &DS) ;
+
+      bool isThereRAWThroughMemoryFromOutsideLoop (
+          LoopStructure *loop, 
+          AllocaInst *al, 
+          PDG *ldg
+          ) const ;
+
+      bool isThereRAWThroughMemoryFromOutsideLoop (
+          LoopStructure *loop, 
+          AllocaInst *al, 
+          PDG *ldg,
+          std::unordered_set<Instruction *> insts
+          ) const ;
 
       /*
        * A set of storing instructions that completely override the allocation's
@@ -85,6 +103,12 @@ namespace llvm::noelle {
       bool areOverrideSetsFullyCoveringTheAllocationSpace (void) const ;
 
       bool isOverrideSetFullyCoveringTheAllocationSpace (OverrideSet *overrideSet) const ;
+
+      void setObjectScope (
+        AllocaInst *allocation,
+        LoopStructure *loop,
+        DominatorSummary &ds
+        );
 
   };
 

@@ -233,7 +233,8 @@ namespace llvm::noelle {
         ScalarEvolution *SE,
         uint32_t techniquesToDisable,
         uint32_t DOALLChunkSize,
-        uint32_t maxCores
+        uint32_t maxCores,
+        std::unordered_set<LoopDependenceInfoOptimization> optimizations
       );
 
       bool isLoopHot (LoopStructure *loopStructure, double minimumHotness) ;

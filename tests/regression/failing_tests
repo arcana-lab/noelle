@@ -93,3 +93,8 @@ regression_17/LICM -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noe
 regression_4/Simple -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-force -dswp-no-scc-merge
 regression_5/CondControl -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force
 regression_16/DoWhile3 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-parallelizer-force
+regression_10/StackPrivatization2 -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force
+regression_13/StackPrivatization2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force
+regression_16/StackPrivatization2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-loop-invariant-code-motion -noelle-disable-dswp -noelle-parallelizer-force
+regression_3/StackPrivatization2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-parallelizer-force
+regression_9/DoWhile3 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-doall -noelle-disable-dswp -noelle-max-cores=2 -noelle-parallelizer-force

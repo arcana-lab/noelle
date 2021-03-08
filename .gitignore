@@ -1,29 +1,2 @@
 # dependencies
 threadpool
-*compile_commands.json
-
-# build artifacts
-src/**/build
-
-# test output steps
-tests/regression/**/*.bc
-tests/performance/**/*.bc
-tests/regression/**/*.ll
-tests/performance/**/*.ll
-tests/regression/**/*.dot
-tests/performance/**/*.dot
-tests/**/*_prof
-
-# test output executables
-tests/regression/**/baseline
-tests/performance/**/baseline
-tests/regression/**/parallelized
-tests/performance/**/parallelized
-tests/regression/**/testseq
-tests/performance/**/testseq
-
-# linked files for testing
-tests/regression/**/Parallelizer_utils.cpp
-tests/performance/**/Parallelizer_utils.cpp
-tests/regression/**/Makefile
-tests/performance/**/Makefile
