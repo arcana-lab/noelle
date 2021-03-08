@@ -244,7 +244,9 @@ void ClonableMemoryLocation::setObjectScope (
      * Check if it is about the stack object we care.
      */
     auto objectUsed = call->getArgOperand(1);
-    errs() << "XAN: ZZZZ " << *objectUsed << "\n";
+    if (auto castInst = dyn_cast<CastInst>(objectUsed)){
+      objectUsed = castInst->getOperand(0);
+    }
     if (objectUsed == allocation){
 
       /*
