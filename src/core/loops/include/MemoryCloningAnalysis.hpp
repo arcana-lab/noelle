@@ -104,7 +104,12 @@ namespace llvm::noelle {
 
       bool isOverrideSetFullyCoveringTheAllocationSpace (OverrideSet *overrideSet) const ;
 
-      void setObjectScope (void);
+      void setObjectScope (
+        AllocaInst *allocation,
+        LoopStructure *loop,
+        DominatorSummary &ds
+        );
+
   };
 
 }
