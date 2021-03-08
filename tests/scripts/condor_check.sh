@@ -34,13 +34,18 @@ echo "  Checking the regression test results" ;
 regressionFinished="0" ;
 stillRunning="`mktemp`" ;
 condor_q `whoami` -l | grep ^Arguments | grep "`pwd`" | grep regression > $stillRunning ;
+stillRunningRegressionTests="0";
 if test -s $stillRunning ; then
   stillRunningJobs=`wc -l $stillRunning | awk '{print $1}'` ;
-  echo "    There are $stillRunningJobs jobs that are still running and they are the following ones:" ;
-  while IFS= read -r line; do
-    testRunning=`echo $line | awk '{print $4}'` ;
-    echo "        $testRunning" ;
-  done < "$stillRunning"
+  echo "    There are $stillRunningJobs jobs that are still running" ;
+  stillRunningRegressionTests=`echo "$stillRunningJobs < 20 | bc"` ;
+  if test "$stillRunningRegressionTests" == "1" ; then
+    echo "    The running jobs are the following ones:" ;
+    while IFS= read -r line; do
+      testRunning=`echo $line | awk '{print $4}'` ;
+      echo "        $testRunning" ;
+    done < "$stillRunning"
+  fi
 
 else
   echo "    All tests finished" ;
@@ -78,7 +83,7 @@ if test "$newTestsFailed" != "" ; then
   echo -e "    $newTestsFailedCounter new tests ${RED}failed${NC}: $newTestsFailed" ;
   echo -e "    The regression tests ${RED}failed${NC}" ;
 
-else
+elif test "$stillRunningRegressionTests" == "0" ; then
 
   # The regression passed
   # 
@@ -102,6 +107,9 @@ else
     echo "" ;
     echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
   fi
+
+else
+  echo "    No new tests failed so far" ;
 fi
 echo "" ;
 echo "" ;
@@ -165,7 +173,7 @@ if test -f performance/speedups.txt ; then
     else 
       echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
       awk '{
-            if ($2 > ($4 * 1.1) || (($2 - $4) >= 1){
+            if ($2 > ($4 * 1.1) || (($2 - $4) >= 1)){
               printf("    Performance increase for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
             }
         }' $tempCompare > $tempOutput ;

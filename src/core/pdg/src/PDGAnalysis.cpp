@@ -926,8 +926,20 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
     mem = outgoingT; 
   }
   auto callName = getCallFnName(call);
-  return isa<LoadInst>(mem) && isFunctionNonWriting(callName)
-    || isa<StoreInst>(mem) && isFunctionMemoryless(callName);
+  if (  true 
+        && isa<LoadInst>(mem) 
+        && isFunctionNonWriting(callName)
+     ){
+    return true;
+  }
+  if (  true
+        && isa<StoreInst>(mem) 
+        && isFunctionMemoryless(callName)
+     ){
+    return true;
+  }
+
+  return false;
 }
  
 bool PDGAnalysis::isTheLibraryFunctionPure (Function *libraryFunction){
