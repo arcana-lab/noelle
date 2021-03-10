@@ -12,7 +12,6 @@
 #include "SystemHeaders.hpp"
 #include "PDGStats.hpp"
 #include "Noelle.hpp"
-#include "llvm/Support/raw_ostream.h"
 #include <string>
 
 using namespace llvm;
