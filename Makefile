@@ -1,14 +1,17 @@
+DEBUG?=FALSE
+JOBS?=8
+
 all: src
 
 external:
-	cd external ; make ;
+	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS);
  
 src: external
 	cd src ; make ; 
 
 src-fast: external
-	cd src ; make core-fast ;
-	cd src ; make tools-fast ;
+	cd src ; make core-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
+	cd src ; make tools-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
 	
 tests: src
 	cd tests ; make ;
