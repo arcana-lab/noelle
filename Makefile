@@ -1,4 +1,4 @@
-DEBUG?=FALSE
+DEBUG?=0
 JOBS?=8
 
 all: src

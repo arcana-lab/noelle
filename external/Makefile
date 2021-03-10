@@ -1,4 +1,4 @@
-DEBUG?=FALSE
+DEBUG?=0
 JOBS?=8
 SVF_BRANCH?=SVF-1.8
 SCAF_BRANCH?=v9.1.0
@@ -9,7 +9,7 @@ compile: svf patch.tar scaf
 	cd svf ; tar xf ../patch.tar ;
 	./scripts/patch.sh
 	./scripts/scaf_patch_make.sh 
-ifeq ($(DEBUG), "TRUE")
+ifeq ($(DEBUG), 1)
 	echo "Making debug SVF and SCAF"
 	cd svf ; ./build.sh debug;
 	cd scaf ; make scaf-debug;
