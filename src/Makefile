@@ -1,3 +1,6 @@
+DEBUG?=FALSE
+JOBS?=8
+
 ifdef CLANG_BIN
 	CC:=$(CLANG_BIN)/clang
 	CXX:=$(CLANG_BIN)/clang++

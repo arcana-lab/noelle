@@ -1,3 +1,8 @@
+DEBUG?=FALSE
+JOBS?=8
+SVF_BRANCH?=SVF-1.8
+SCAF_BRANCH?=v9.1.0
+
 all: compile
 
 compile: svf patch.tar scaf
@@ -15,13 +20,13 @@ else
 endif
 
 svf:
-	git clone -b SVF-1.8 https://github.com/SVF-tools/SVF.git svf
+	git clone -b $(SVF_BRANCH) https://github.com/SVF-tools/SVF.git svf
 
 patch.tar: patch svf
 	cd $< ; tar cf $@ * ; mv $@ ../ ;
 
 scaf:
-	git clone -b v9.0.0 https://github.com/PrincetonUniversity/SCAF scaf
+	git clone -b $(SCAF_BRANCH) https://github.com/PrincetonUniversity/SCAF scaf
 
 clean:
 	./scripts/clean.sh
