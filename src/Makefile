@@ -1,4 +1,4 @@
-DEBUG?=FALSE
+DEBUG?=0
 JOBS?=8
 
 ifdef CLANG_BIN
@@ -16,7 +16,8 @@ all:
 core-fast: export CC:=$(CC)
 core-fast: export CXX:=$(CXX)
 core-fast: 
-ifeq ($(DEBUG), "TRUE")
+ifeq ($(DEBUG), 1)
+	echo $(DEBUG)
 	echo "Making debug NOELLE: core"
 	mkdir -p core-debug
 	cd core-debug&&\
@@ -24,6 +25,8 @@ ifeq ($(DEBUG), "TRUE")
 	make -j${JOBS} &&\
 	make install
 else
+	echo $(DEBUG)
+	echo "Making debug NOELLE: core"
 	echo "Making release NOELLE: core"
 	mkdir -p core-release
 	cd core-release&& \
@@ -36,7 +39,7 @@ endif
 tools-fast: export CC:=$(CC)
 tools-fast: export CXX:=$(CXX)
 tools-fast: core-fast
-ifeq ($(DEBUG), "TRUE")
+ifeq ($(DEBUG), 1)
 	echo "Making debug NOELLE: tools"
 	mkdir -p tools-debug
 	cd tools-debug&&\
