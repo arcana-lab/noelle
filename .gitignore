@@ -1,2 +1,9 @@
+.clangd
+install
+build
+compile_commands.json
+external/svf
+external/scaf
+external/patch.tar
 # dependencies
 threadpool
