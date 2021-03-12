@@ -14,10 +14,11 @@ def getArgs():
   args['testsPath'] = str(sys.argv[3])
   args['noelleOptions'] = str(sys.argv[4])
   args['parOptions'] = str(sys.argv[5])
+  args['FrontEndOptions'] = str(sys.argv[6])
 
   args['email'] = str(getpass.getuser()) + '@eecs.northwestern.edu'
-  if (numOfArgs > 6):
-    args['email'] = str(sys.argv[6])
+  if (numOfArgs > 7):
+    args['email'] = str(sys.argv[7])
 
   repoPath = ''
   for elem in str(os.path.dirname(os.path.abspath(__file__))).split(os.sep)[1:-2]:
@@ -40,6 +41,8 @@ def getNewFile(args):
         newFileAsStr += 'ParallelizationOptions = ' + args['parOptions'] + '\n'
       elif (line.startswith('NoelleOptions')):
         newFileAsStr += 'NoelleOptions = ' + args['noelleOptions'] + '\n'
+      elif (line.startswith('FrontEndOptions')):
+        newFileAsStr += 'FrontEndOptions = ' + args['FrontEndOptions'] + '\n'
       else:
         newFileAsStr += str(line)
 
