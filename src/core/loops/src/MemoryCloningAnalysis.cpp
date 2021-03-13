@@ -39,6 +39,7 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (
     if (alloca == nullptr){
       continue ;
     }
+
     allocations.insert(alloca);
   }
 
@@ -119,8 +120,11 @@ std::unordered_set<Instruction *> ClonableMemoryLocation::getInstructionsUsingLo
     if (loop->isIncluded(I)) continue;
     instructions.insert(I);
   }
+  errs() << "XAN: CLONING: LOADS = " << &this->loadInstructions << "\n";
   for (auto I : this->loadInstructions) {
+    errs() << "XAN: CLONING: AAAA\n";
     if (loop->isIncluded(I)) continue;
+    errs() << "XAN: CLONING: AAAA2\n";
     instructions.insert(I);
   }
   for (auto I : this->nonStoringInstructions) {
@@ -307,6 +311,7 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
      */
     auto I = allocationUses.front();
     allocationUses.pop();
+    errs() << "XAN: Identify uses: " << *I << "\n";
     // I->print(errs() << "Traversing user of allocation: "); errs() << "\n";
 
     /*
@@ -317,12 +322,14 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
       /*
        * Find storing and non-storing instructions
        */
+      errs() << "XAN: Identify uses:    User " << *user << "\n";
       if (auto cast = dyn_cast<CastInst>(user)) {
 
         /*
          * NOTE: Continue without checking if the cast is in the loop
          * We still check the cast's uses of course
          */
+        errs() << "XAN: Identify uses:      Cast\n";
         allocationUses.push(cast);
         this->castsAndGEPs.insert(cast);
         continue;
@@ -333,6 +340,7 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
          * NOTE: Continue without checking if the gep is in the loop
          * We still check the GEP's uses of course
          */
+        errs() << "XAN: Identify uses:      GEP\n";
         allocationUses.push(gep);
         this->castsAndGEPs.insert(gep);
         continue;
@@ -349,6 +357,7 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
         /*
          * This instruction reads from the stack object.
          */
+        errs() << "XAN: Identify uses:      LOAD" << &this->loadInstructions << "\n";
         this->loadInstructions.insert(load);
 
       } else if (auto call = dyn_cast<CallInst>(user)) {

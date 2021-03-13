@@ -135,7 +135,6 @@ void DOALL::rewireLoopToIterateChunks (
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getLoopEntryPHI()));
-
     auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
     auto chunkStepSize = entryBuilder.CreateMul(
       stepOfIV,
@@ -182,8 +181,13 @@ void DOALL::rewireLoopToIterateChunks (
     for (auto I : derivation) {
       auto cloneI = task->getCloneOfOriginalInstruction(I);
 //      errs() << "BRIAN 7: I = " << *I << ", cloneI = " << *cloneI << '\n'; 
-//      assert(invariantManager->isLoopInvariant(I)
-  //      && "DOALL exit condition value is not derived from loop invariant values!");
+      assert(invariantManager->isLoopInvariant(I)
+        && "DOALL exit condition value is not derived from loop invariant values!");
+
+      /*
+       * Fetch the clone of @I
+       */
+      auto cloneI = task->getCloneOfOriginalInstruction(I);
 
       if (auto clonePHI = dyn_cast<PHINode>(cloneI)) {
         auto usedValue = clonePHI->getIncomingValue(0);

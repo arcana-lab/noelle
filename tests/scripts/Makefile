@@ -17,9 +17,10 @@ PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -noelle-parallelizer-force
 NOELLE_OPTIONS=-noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
 OPT_LEVEL=-O3
 
-# Front-end flags
-FRONTEND_FLAGS=-emit-llvm -O0 -Xclang -disable-O0-optnone
+# Front-end
 INCLUDES=-I../../include/threadpool/include
+FRONTEND_OPTIONS=-O0 -Xclang -disable-O0-optnone
+FRONTEND_FLAGS=-emit-llvm $(FRONTEND_OPTIONS)
 
 THREADER=Parallelizer_utils
 OPTIMIZED=parallelized
@@ -112,5 +113,6 @@ clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
 	rm -f time_parallelized.txt compiler_output.txt input.txt ;
 	rm -f output*.txt ;
+	rm -f OUT ;
 
 .PHONY: test_correctness clean

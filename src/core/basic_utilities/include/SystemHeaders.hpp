@@ -62,3 +62,4 @@
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/CFG.h"
+#include <llvm/IR/Verifier.h>
