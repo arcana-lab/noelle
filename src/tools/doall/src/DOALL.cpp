@@ -90,7 +90,8 @@ bool DOALL::canBeAppliedToLoop (
    * The loop must have at least one induction variable.
    * This is because the trip count must be controlled by an induction variable.
    */
-  if (!LDI->getLoopGoverningIVAttribution()) {
+  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  if (!loopGoverningIVAttr){
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   Loop does not have an induction variable to control the number of iterations\n";
     }
@@ -110,6 +111,22 @@ bool DOALL::canBeAppliedToLoop (
       errs() << "DOALL:  Loop has an induction variable with step size that is not loop invariant\n";
     }
     return false;
+  }
+
+  /*
+   * Check if the final value of the induction variable is a loop invariant.
+   */
+  auto invariantManager = LDI->getInvariantManager();
+  LoopGoverningIVUtility ivUtility(loopGoverningIVAttr->getInductionVariable(), *loopGoverningIVAttr);
+  auto &derivation = ivUtility.getConditionValueDerivation();
+  for (auto I : derivation) {
+    if (!invariantManager->isLoopInvariant(I)){
+      if (this->verbose != Verbosity::Disabled) {
+        errs() << "DOALL:  Loop has the governing induction variable that is compared against a non-invariant\n";
+        errs() << "DOALL:     The non-invariant is = " << *I << "\n";
+      }
+      return false;
+    }
   }
 
   /*

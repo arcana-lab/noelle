@@ -136,7 +136,11 @@ bool EnablersManager::applyLoopDistribution (
     * Check if the current SCC can be removed (e.g., because it is due to induction variables).
     * If it is, then we do not need to remove it from the loop to be parallelized.
     */
-    if (!sccInfo->mustExecuteSequentially()) {
+    if (  false
+          || (!sccInfo->mustExecuteSequentially())
+          || (sccInfo->canBeCloned())
+          || (sccInfo->canBeClonedUsingLocalMemoryLocations())
+       ){
       return false;
     }
 

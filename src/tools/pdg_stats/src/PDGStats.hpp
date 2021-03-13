@@ -33,6 +33,7 @@ namespace llvm::noelle {
       bool runOnModule(Module &M) override;
     
     private:
+      bool dumpLoopDG = false;
       int64_t numberOfNodes = 0;
       int64_t numberOfEdges = 0;
       int64_t numberOfVariableDependence = 0;
@@ -43,6 +44,13 @@ namespace llvm::noelle {
 
       void collectStatsForNodes(Function &F);
       void collectStatsForPotentialEdges (std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F) ;
+
+      void printRefinedLoopGraphsForFunction(
+          Noelle &noelle, 
+          std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, 
+          std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+          Function &F
+          );
 
       void collectStatsForLoopEdges (
         Noelle &noelle, 
