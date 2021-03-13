@@ -11,10 +11,25 @@
 #include "Parallelizer.hpp"
 #include "llvm/IR/Verifier.h"
 
+#include "Annotation.hpp"
+#include "AnnotationParser.hpp"
+
 using namespace llvm;
 using namespace llvm::noelle;
 
 namespace llvm::noelle {
+
+  std::string getUserLabel(LoopStructure* ls) {
+    auto head = ls->getHeader();
+    for(auto &I : *head) {
+      auto annots = parseAnnotationsForInst(&I);
+      for (auto A : annots) {
+        if (A.getKey() == "label") {
+          return A.getValue();
+        }
+      }
+    }
+  }
   
   bool Parallelizer::parallelizeLoop (
     LoopDependenceInfo *LDI, 
@@ -56,6 +71,7 @@ namespace llvm::noelle {
       errs() << "Parallelizer: Start\n";
       errs() << "Parallelizer:  Function = \"" << loopFunction->getName() << "\"\n";
       errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *loopHeader->getFirstNonPHI() << "\"\n";
+      errs() << "Parallelizer:  User Label " << getUserLabel(loopStructure) << "\n";
       errs() << "Parallelizer:  Nesting level = " << loopStructure->getNestingLevel() << "\n";
       errs() << "Parallelizer:  Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
     }

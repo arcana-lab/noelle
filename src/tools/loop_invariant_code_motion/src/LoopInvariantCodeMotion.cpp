@@ -39,7 +39,7 @@ bool LoopInvariantCodeMotion::extractInvariantsFromLoop (
   }
 
   // BRIAN: HACK while isolating mem2reg bug
-  //return false;
+  return false;
 
   Mem2RegNonAlloca mem2Reg(LDI, noelle);
   if (mem2Reg.promoteMemoryToRegister()) {
