@@ -15,7 +15,10 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
+static cl::opt<bool> LoopDGDump("noelle-refined-loopdg-dump", cl::ZeroOrMore, cl::Hidden, cl::desc("Dump the refined Loop DG"));
+
 bool PDGStats::doInitialization(Module &M) {
+  this->dumpLoopDG = LoopDGDump;
   return false;
 }
 
