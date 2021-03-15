@@ -32,4 +32,5 @@ add_subdirectory(src)
 install(PROGRAMS
     include/Noelle.hpp
     include/FunctionsManager.hpp
+    include/TypesManager.hpp
     DESTINATION include)
