@@ -1,5 +1,7 @@
-SVF_VERSION:=SVF-1.8
-SCAF_VERSION:=v9.0.1
+DEBUG?=0
+JOBS?=8
+SVF_BRANCH?=SVF-1.8
+SCAF_BRANCH?=v9.1.0
 
 all: compile
 
@@ -7,7 +9,7 @@ compile: svf patch.tar scaf
 	cd svf ; tar xf ../patch.tar ;
 	./scripts/patch.sh
 	./scripts/scaf_patch_make.sh 
-ifeq ($(DEBUG), "TRUE")
+ifeq ($(DEBUG), 1)
 	echo "Making debug SVF and SCAF"
 	cd svf ; ./build.sh debug;
 	cd scaf ; make scaf-debug;
@@ -18,13 +20,13 @@ else
 endif
 
 svf:
-	git clone -b $(SVF_VERSION) https://github.com/SVF-tools/SVF.git svf
+	git clone -b $(SVF_BRANCH) https://github.com/SVF-tools/SVF.git svf
 
 patch.tar: patch svf
 	cd $< ; tar cf $@ * ; mv $@ ../ ;
 
 scaf:
-	git clone -b $(SCAF_VERSION) https://github.com/PrincetonUniversity/SCAF scaf
+	git clone -b $(SCAF_BRANCH) https://github.com/PrincetonUniversity/SCAF scaf
 
 clean:
 	./scripts/clean.sh
