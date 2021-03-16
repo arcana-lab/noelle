@@ -442,6 +442,10 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
     for (auto I : taskInstructions) {
       instructionsToConvertOperandsOf.push(I);
     }
+    auto locationOutsideUses = location->getInstructionsUsingLocationOutsideLoop();
+    for (auto I : locationOutsideUses) {
+      instructionsToConvertOperandsOf.push(I);
+    }
     while (!instructionsToConvertOperandsOf.empty()) {
 
       /*
@@ -1267,9 +1271,12 @@ std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::clone
     auto singleComputedStepValue = ivInfo->getSingleComputedStepValue();
     if (singleComputedStepValue) {
       Value *clonedStepValue = nullptr;
-      if (isa<ConstantData>(singleComputedStepValue)
-        || task->isAnOriginalLiveIn(singleComputedStepValue)) {
+      if (isa<ConstantData>(singleComputedStepValue)){
         clonedStepValue = singleComputedStepValue;
+
+      } else if (task->isAnOriginalLiveIn(singleComputedStepValue)){
+        clonedStepValue = task->getCloneOfOriginalLiveIn(singleComputedStepValue);
+
       } else if (auto singleComputedStepInst = dyn_cast<Instruction>(singleComputedStepValue)) {
         clonedStepValue = task->getCloneOfOriginalInstruction(singleComputedStepInst);
       }
