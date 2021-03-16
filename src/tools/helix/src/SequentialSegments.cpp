@@ -60,13 +60,42 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
     Instruction *anyClonedInstInLoop = nullptr;
     auto clonedLoop = LDI->getLoopStructure();
     for (auto nodePair : originalSCC->internalNodePairs()) {
+
+      /*
+       * Fetch the original instruction.
+       */
       auto originalInst = cast<Instruction>(nodePair.first);
+
+      /*
+       * Fetch the cloned one.
+       */
       auto clonedInst = helixTask->getCloneOfOriginalInstruction(originalInst);
-      if (!clonedLoop->isIncluded(clonedInst)) continue;
+
+      /*
+       * If there is no clone, then this instruction can be skipped.
+       */
+      if (clonedInst == nullptr){
+        continue ;
+      }
+      assert(clonedInst != nullptr);
+
+      /*
+       * There is a cloned instruction, so we must consider it.
+       */
+      if (!clonedLoop->isIncluded(clonedInst)) {
+        continue;
+      }
       anyClonedInstInLoop = clonedInst;
       break;
     }
-    assert(anyClonedInstInLoop != nullptr);
+
+    /*
+     * If there are no cloned instructions of the current SCC in the task, then it means this SCC doesn't need to exist
+     * in the parallelized version of the loop (e.g., a call to lifetime.start)
+     */
+    if (!anyClonedInstInLoop){
+      continue ;
+    }
 
     SCC *singleMappingSCC = nullptr;
     for (auto taskNode : taskSCCDAG->getNodes()) {
