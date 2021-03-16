@@ -8,9 +8,11 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "PDGPrinter.hpp"
 #include "SystemHeaders.hpp"
 #include "PDGStats.hpp"
 #include "Noelle.hpp"
+#include <string>
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -74,6 +76,11 @@ bool PDGStats::runOnModule(Module &M) {
     this->collectStatsForNodes(F);
     this->collectStatsForPotentialEdges(programLoopForests, F);
     this->collectStatsForLoopEdges(noelle, programLoopForests, lsToLDI, F);
+
+    if (this->dumpLoopDG) {
+      this->printRefinedLoopGraphsForFunction(noelle, programLoopForests, lsToLDI, F);
+    }
+      
   }
 
   /*
@@ -159,6 +166,50 @@ void PDGStats::collectStatsForPotentialEdges (std::unordered_map<Function *, Sta
 
   return ;
 }
+
+void PDGStats::printRefinedLoopGraphsForFunction(
+  Noelle &noelle, 
+  std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, 
+  std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+  Function &F
+  ){
+  auto loopCount = 0;
+  /*
+   * Check every loop of the program.
+   */
+  for (auto funcLoops : programLoops){
+    auto loopForest = funcLoops.second;
+    for (auto loopTree : loopForest->getTrees()){
+      auto visitor = [this, &lsToLDI, &loopCount, &F](StayConnectedNestedLoopForestNode *n, uint32_t level) -> bool {
+
+        /*
+         * Fetch the loop.
+         */
+        auto currentLoop = n->getLoop();
+        auto currentLDI = lsToLDI[currentLoop];
+        assert(currentLDI != nullptr);
+
+        /*
+         * Fetch the loop dependence graph.
+         */
+        auto loopDG = currentLDI->getLoopDG();
+
+        std::string filename;
+        raw_string_ostream ros(filename);
+        ros << "pdg-function-" << F.getName() << "-loop" << loopCount << "-refined.dot";
+        DGPrinter::writeClusteredGraph<PDG, Value>(ros.str(), loopDG);
+
+        loopCount++;
+
+        return false;
+      };
+      loopTree->visitPreOrder(visitor);
+    }
+  }
+
+  return;
+}
+
 
 void PDGStats::collectStatsForLoopEdges (
   Noelle &noelle, 
