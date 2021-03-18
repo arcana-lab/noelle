@@ -169,7 +169,7 @@ bool Parallelizer::runOnModule (Module &M) {
     /*
     * Check if the latency of each loop invocation is enough to justify the parallelization.
     */
-    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
+/*    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
     auto averageInstsPerInvocationThreshold = 2000;
     if (  true
           && (!this->forceParallelization)
@@ -177,17 +177,17 @@ bool Parallelizer::runOnModule (Module &M) {
       ){
       errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
       errs() << "Parallelizer:      It is too low. The threshold is " << averageInstsPerInvocationThreshold << "\n";
-
+*/
       /*
       * Remove the loop.
       */
-      return true;
+/*      return true;
     }
-
+*/
     /*
     * Check the number of iterations per invocation.
     */
-    auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
+/*    auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
     auto averageIterationThreshold = 12;
     if (  true
           && (!this->forceParallelization)
@@ -199,9 +199,9 @@ bool Parallelizer::runOnModule (Module &M) {
       /*
       * Remove the loop.
       */
-      return true;
+/*      return true;
     }  
-    
+  */  
     auto head = ls->getHeader();
     for(auto &I : *head) {
       auto annots = parseAnnotationsForInst(&I);
