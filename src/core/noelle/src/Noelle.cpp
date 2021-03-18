@@ -26,6 +26,7 @@ Noelle::Noelle()
   , hoistLoopsToMain{false}
   , loopAwareDependenceAnalysis{false}
   , fm{nullptr}
+  , tm{nullptr}
 {
 
   return ;
@@ -283,6 +284,13 @@ bool Noelle::shouldLoopsBeHoistToMain (void) const {
 Noelle::~Noelle(){
 
   return ;
+}
+
+TypesManager * Noelle::getTypesManager (void) {
+  if (!this->tm){
+    this->tm = new TypesManager(*this->program);
+  }
+  return this->tm;
 }
 
 }
