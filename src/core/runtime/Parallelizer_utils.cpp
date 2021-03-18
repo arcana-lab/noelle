@@ -30,8 +30,34 @@ static int64_t numberOfPushes16 = 0;
 static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
-
+    
 static ThreadPool pool{true, std::thread::hardware_concurrency()};
+
+class NoelleRuntime {
+  public:
+    NoelleRuntime ();
+
+    uint32_t reserveCores (uint32_t coresRequested);
+
+    void releaseCores (uint32_t coresReleased);
+
+  private:
+    uint32_t getMaximumNumberOfCores (void);
+
+    /*
+     * Current number of idle cores.
+     */
+    uint32_t NOELLE_idleCores;
+
+    /*
+     * Maximum number of cores.
+     */
+    uint32_t maxCores;
+
+    mutable pthread_spinlock_t spinLock;
+};
+
+static NoelleRuntime runtime{};
 
 extern "C" {
 
@@ -42,11 +68,6 @@ extern "C" {
       int32_t numberOfThreadsUsed;
       int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
   };
-
-  /*
-   * Return the number of cores to use for the parallelization.
-   */
-  static int32_t NOELLE_getNumberOfCores (void);
 
   /*
    * Dispatch threads to run a DOALL loop.
@@ -60,33 +81,6 @@ extern "C" {
 
 
   /******************************************** NOELLE API implementations ***********************************************/
-
-
-
-  /**********************************************************************
-   *                MISC
-   **********************************************************************/
-  static int32_t NOELLE_getNumberOfCores (void){
-    static int32_t cores = 0;
-
-    /*
-     * Check if we have already computed the number of cores.
-     */
-    if (cores == 0){
-
-      /*
-       * Compute the number of cores.
-       */
-      auto envVar = getenv("NOELLE_CORES");
-      if (envVar == nullptr){
-        cores = std::thread::hardware_concurrency();
-      } else {
-        cores = atoi(envVar);
-      }
-    }
-
-    return cores;
-  }
 
   typedef void (*stageFunctionPtr_t)(void *, void*);
 
@@ -204,8 +198,7 @@ extern "C" {
     /*
      * Set the number of cores to use.
      */
-    auto runtimeNumberOfCores = NOELLE_getNumberOfCores();
-    auto numCores = runtimeNumberOfCores > maxNumberOfCores ? maxNumberOfCores : runtimeNumberOfCores;
+    auto numCores = runtime.reserveCores(maxNumberOfCores);
     #ifdef RUNTIME_PRINT
     std::cerr << "Starting dispatcher: num cores " << numCores << ", chunk size: " << chunkSize << std::endl;
     #endif
@@ -253,6 +246,11 @@ extern "C" {
     #ifdef RUNTIME_PRINT
     std::cerr << "Got all futures" << std::endl;
     #endif
+
+    /*
+     * Free the cores
+     */
+    runtime.releaseCores(numCores);
 
     /*
      * Free the memory.
@@ -730,4 +728,56 @@ extern "C" {
     return dispatcherInfo;
   }
 
+}
+
+NoelleRuntime::NoelleRuntime(){
+  this->maxCores = this->getMaximumNumberOfCores();
+  this->NOELLE_idleCores = maxCores;
+
+  pthread_spin_init(&this->spinLock, 0);
+
+  return ;
+}
+
+uint32_t NoelleRuntime::reserveCores (uint32_t coresRequested){
+ 
+  /*
+   * Reserve the number of cores available.
+   */
+  pthread_spin_lock(&this->spinLock);
+  auto numCores = this->NOELLE_idleCores > coresRequested ? coresRequested : NOELLE_idleCores;
+  this->NOELLE_idleCores = std::max(this->NOELLE_idleCores - numCores, (uint32_t)1);
+  pthread_spin_unlock(&this->spinLock);
+
+  return numCores;
+}
+    
+void NoelleRuntime::releaseCores (uint32_t coresReleased){
+  pthread_spin_lock(&this->spinLock);
+  this->NOELLE_idleCores = std::min(this->maxCores, this->NOELLE_idleCores + coresReleased);
+  pthread_spin_unlock(&this->spinLock);
+
+  return ;
+}
+
+uint32_t NoelleRuntime::getMaximumNumberOfCores (void){
+  static int cores = 0;
+
+  /*
+   * Check if we have already computed the number of cores.
+   */
+  if (cores == 0){
+
+    /*
+     * Compute the number of cores.
+     */
+    auto envVar = getenv("NOELLE_CORES");
+    if (envVar == nullptr){
+      cores = std::thread::hardware_concurrency();
+    } else {
+      cores = atoi(envVar);
+    }
+  }
+
+  return cores;
 }
