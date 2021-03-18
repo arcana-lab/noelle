@@ -21,6 +21,7 @@
 #include "StayConnectedNestedLoopForest.hpp"
 #include "TalkDown.hpp"
 #include "FunctionsManager.hpp"
+#include "TypesManager.hpp"
 
 #include "scaf/MemoryAnalysisModules/LoopAA.h"
 
@@ -50,6 +51,8 @@ namespace llvm::noelle {
       bool runOnModule (Module &M) override ;
 
       FunctionsManager * getFunctionsManager (void) ;
+      
+      TypesManager * getTypesManager (void) ;
 
       std::vector<LoopDependenceInfo *> * getLoops (void) ;
 
@@ -156,12 +159,6 @@ namespace llvm::noelle {
 
       double getMinimumHotness (void) const ;
 
-      Type * getIntegerType (uint32_t bitwidth) const ;
-
-      Type * getVoidPointerType (void) const ;
-
-      Type * getVoidType (void) const ;
-
       uint32_t getMaximumNumberOfCores (void) const ;
 
       uint64_t numberOfProgramInstructions (void) const ;
@@ -219,6 +216,7 @@ namespace llvm::noelle {
       std::vector<uint32_t> DOALLChunkSize;
       std::unordered_map<BasicBlock *, uint32_t> loopHeaderToLoopIndexMap;
       FunctionsManager *fm;
+      TypesManager *tm;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream
