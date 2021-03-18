@@ -179,7 +179,7 @@ void DOALL::rewireLoopToIterateChunks (
     }
     auto &derivation = ivUtility.getConditionValueDerivation();
     for (auto I : derivation) {
-      auto cloneI = task->getCloneOfOriginalInstruction(I);
+//      auto cloneI = task->getCloneOfOriginalInstruction(I);
 //      errs() << "BRIAN 7: I = " << *I << ", cloneI = " << *cloneI << '\n'; 
       assert(invariantManager->isLoopInvariant(I)
         && "DOALL exit condition value is not derived from loop invariant values!");
