@@ -33,4 +33,5 @@ install(PROGRAMS
     include/Noelle.hpp
     include/FunctionsManager.hpp
     include/TypesManager.hpp
+    include/CompilationOptionsManager.hpp
     DESTINATION include)
