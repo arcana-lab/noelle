@@ -22,11 +22,11 @@ Noelle::Noelle()
   , program{nullptr}
   , profiles{nullptr}
   , programDependenceGraph{nullptr}
-  , maxCores{Architecture::getNumberOfPhysicalCores()}
   , hoistLoopsToMain{false}
   , loopAwareDependenceAnalysis{false}
   , fm{nullptr}
   , tm{nullptr}
+  , om{nullptr}
 {
 
   return ;
@@ -247,10 +247,6 @@ Hot * Noelle::getProfiles (void) {
   return this->profiles;
 }
 
-uint32_t Noelle::getMaximumNumberOfCores (void) const {
-  return this->maxCores;
-}
-
 DataFlowAnalysis Noelle::getDataFlowAnalyses (void) const {
   return DataFlowAnalysis{};
 }
@@ -291,6 +287,11 @@ TypesManager * Noelle::getTypesManager (void) {
     this->tm = new TypesManager(*this->program);
   }
   return this->tm;
+}
+      
+CompilationOptionsManager * Noelle::getCompilationOptionsManager (void) {
+  assert(this->om != nullptr);
+  return this->om;
 }
 
 }
