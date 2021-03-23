@@ -19,12 +19,20 @@ static void constructEdgesFromUseDefs (PDG *pdg);
 static void constructEdgesFromControlForFunction (PDG *pdg, Function &F, PostDominatorTree &postDomTree);
 
 PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDependenceInfo *LDI, PostDominatorTree &postDomTreeOfTaskFunction) {
-  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
-  this->taskFunctionDG = new PDG(*helixTask->getTaskBody());
+  /*
+   * Fetch the task.
+   */
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+  auto taskBody = helixTask->getTaskBody();
+
+  /*
+   * Create a new PDG for the internals of the task.
+   */
+  this->taskFunctionDG = new PDG(*taskBody);
   constructEdgesFromUseDefs(this->taskFunctionDG);
 
-  constructEdgesFromControlForFunction(this->taskFunctionDG, *helixTask->getTaskBody(), postDomTreeOfTaskFunction);
+  constructEdgesFromControlForFunction(this->taskFunctionDG, *taskBody, postDomTreeOfTaskFunction);
 
   auto copyEdgeUsingTaskClonedValues = [&](DGEdge<Value> *originalEdge) -> void {
       DGEdge<Value> edgeToPointToClones(*originalEdge);
@@ -43,13 +51,64 @@ PDG * HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG (LoopDepende
    * Derive intra-iteration memory dependencies from original dependence graph
    */
   for (auto nodePair : LDI->getLoopDG()->internalNodePairs()) {
+
+    /*
+     * Fetch the value.
+     */
     auto value = nodePair.first;
-    if (isa<StoreInst>(value) || isa<LoadInst>(value) || isa<CallInst>(value)) {
-      for (auto edge : nodePair.second->getOutgoingEdges()) {
-        if (LDI->getLoopDG()->isInternal(edge->getIncomingT()) && edge->isMemoryDependence()) {
-          copyEdgeUsingTaskClonedValues(edge);
+
+    /*
+     * We only care about instructions that can generate memory dependences.
+     */
+    if (  true
+          && (!isa<StoreInst>(value))
+          && (!isa<LoadInst>(value))
+          && (!isa<CallInst>(value))
+       ){
+      continue ;
+    }
+
+    /*
+     * Check the dependence.
+     */
+    for (auto edge : nodePair.second->getOutgoingEdges()) {
+
+      /*
+       * We only care about memory dependences.
+       */
+      if (!edge->isMemoryDependence()){
+        continue ;
+      }
+
+      /*
+       * This is a memory dependence.
+       *
+       * Check if it is due to lifetime intrinsics.
+       */
+      auto srcValue = edge->getIncomingT();
+      auto dstValue = edge->getOutgoingT();
+      if (auto valueAsCallInst = dyn_cast<CallInst>(srcValue)){
+        if (valueAsCallInst->isLifetimeStartOrEnd()){
+          continue ;
         }
       }
+      if (auto valueAsCallInst = dyn_cast<CallInst>(dstValue)){
+        if (valueAsCallInst->isLifetimeStartOrEnd()){
+          continue ;
+        }
+      }
+
+      /*
+       * We only care about instruction within the parallelized loop.
+       */
+      if (!LDI->getLoopDG()->isInternal(srcValue)) {
+        continue ;
+      }
+
+      /*
+       * Copy the dependence.
+       */
+      copyEdgeUsingTaskClonedValues(edge);
     }
   }
 
