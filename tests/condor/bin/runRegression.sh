@@ -34,7 +34,9 @@ make input.txt
 # Transformation
 timeout 10m ./parallelized `cat input.txt` &> output_parallelized.txt ;
 if test $? -ne 0 ; then
-  echo "ERROR: the test didn't pass because it timed out" ;
+  echo "ERROR: the following test did not pass because it timed out" ;
+  echo "  Test = `pwd`" ;
+  echo "  Node = `hostname`" ;
   echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions" >> $errorFile ;
   exit 0 ;
 fi

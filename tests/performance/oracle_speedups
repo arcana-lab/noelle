@@ -1,11 +1,11 @@
 DOALL_almost_lbm      33.385
-DOALL_devirtualizer   13.632
+DOALL_devirtualizer   14.468
 DOALL_dispatcher       0.01
-DOALL_lbm	       5.114
+DOALL_lbm	       8.626
 DOALL_limit	      21.435
 DOALL_object_cloning  12.091
-DOALL_reduction	       2.882
-DOALL_streamclusters  12.565
+DOALL_reduction	       3.011
+DOALL_streamclusters  13.096
 DSWP_communication     1.486
 DSWP_limit	       6.743
 HELIX_challenge	       6.758
@@ -15,4 +15,4 @@ Loop_selection        18.482
 Scheduler              7.603
 Scheduler2             5.5
 Scheduler3             1
-StackPrivatization     1
+StackPrivatization     19.856

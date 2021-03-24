@@ -155,6 +155,13 @@ bool DOALL::canBeAppliedToLoop (
     }
 
     /*
+     * If the SCC can be removed by cloning objects, then we can ignore it.
+     */
+    if (sccInfo->canBeClonedUsingLocalMemoryLocations()){
+      continue ;
+    }
+
+    /*
      * If all loop carried data dependencies within the SCC do not overlap between
      * iterations, then DOALL can ignore them
      */
