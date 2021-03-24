@@ -54,6 +54,8 @@ namespace llvm::noelle {
       bool isInstructionCastOrGEPOfLocation (Instruction *I) const ;
       bool isInstructionStoringLocation (Instruction *I) const ;
       bool isInstructionLoadingLocation (Instruction *I) const ;
+      
+      bool mustAliasAMemoryLocationWithinObject (Value *ptr) const ;
 
       bool isClonableLocation (void) const ;
 

@@ -101,10 +101,27 @@ const ClonableMemoryLocation * MemoryCloningAnalysis::getClonableMemoryLocationF
    * TODO: Determine if it is worth mapping from instructions to locations
    */
   for (auto &location : this->clonableMemoryLocations) {
-    if (location->getAllocation() == I) return location.get();
-    if (location->isInstructionCastOrGEPOfLocation(I)) return location.get();
-    if (location->isInstructionLoadingLocation(I)) return location.get();
-    if (location->isInstructionStoringLocation(I)) return location.get();
+    if (location->getAllocation() == I) {
+      return location.get();
+    }
+    if (location->isInstructionCastOrGEPOfLocation(I)) {
+      return location.get();
+    }
+    if (location->isInstructionLoadingLocation(I)) {
+      return location.get();
+    }
+    if (location->isInstructionStoringLocation(I)) {
+      return location.get();
+    }
+    if (auto callInst = dyn_cast<CallInst>(I)){
+      if (callInst->isLifetimeStartOrEnd()){
+        auto ptr = callInst->getArgOperand(1);
+        auto loc = location.get();
+        if (loc->mustAliasAMemoryLocationWithinObject(ptr)){
+          return loc;
+        }
+      }
+    }
   }
 
   return nullptr;
@@ -133,6 +150,27 @@ std::unordered_set<Instruction *> ClonableMemoryLocation::getInstructionsUsingLo
   }
 
   return instructions;
+}
+      
+bool ClonableMemoryLocation::mustAliasAMemoryLocationWithinObject (Value *ptr) const {
+
+  /*
+   * Same value.
+   */
+  if (ptr == this->allocation){
+    return true;
+  }
+
+  /*
+   * Aliases.
+   */
+  for (auto aliasPtr : this->castsAndGEPs){
+    if (aliasPtr == ptr){
+      return true;
+    }
+  }
+
+  return false;
 }
 
 std::unordered_set<Instruction *> ClonableMemoryLocation::getLoopInstructionsUsingLocation (void) const {
