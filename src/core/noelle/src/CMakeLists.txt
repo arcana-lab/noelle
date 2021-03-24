@@ -8,6 +8,7 @@ set(Srcs
   Noelle_transformations.cpp
   FunctionsManager.cpp
   TypesManager.cpp
+  CompilationOptionsManager.cpp
 )
 
 # Compilation flags
