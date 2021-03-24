@@ -580,14 +580,6 @@ bool PDGAnalysis::isActualCode (CallInst *call) const {
     return true;
   }
 
-  /*
-   * Check the intrinsic.
-   */
-  auto calleeName = callee->getName();
-  if (calleeName.find("llvm.lifetime") != std::string::npos){
-    return false;
-  }
-
   return true;
 }
 

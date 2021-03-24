@@ -20,11 +20,19 @@ Getenv = True
 # Set the repository
 RepoPath = 
 
+# Set the directories for the execution
+InitialDir = $(RepoPath)
+Executable = $(RepoPath)/condor/bin/runRegression.sh
+TestsPath  = 
+
 # Define the output directories
 LogDir = $(RepoPath)/condor/log
-Output = $(LogDir)/condor.out
-Error = $(LogDir)/condor.err
-Log = $(LogDir)/condor.log
+OutputFileName = out_$(TestsPath).txt
+ErrorFileName = err_$(TestsPath).txt
+LogFileName = log_$(TestsPath).txt
+Output = $(LogDir)/$(OutputFileName)
+Error = $(LogDir)/$(ErrorFileName)
+Log = $(LogDir)/$(LogFileName)
 
 # Each job requires access to the whole machine
 +IsWholeMachineJob      = false
@@ -32,11 +40,6 @@ Log = $(LogDir)/condor.log
 
 # Set the priority
 priority = 0
-
-# Set the directories for the execution
-InitialDir = $(RepoPath)
-Executable = $(RepoPath)/condor/bin/runRegression.sh
-TestsPath  = 
 
 # Arguments of run.sh
 ParallelizationOptions = 

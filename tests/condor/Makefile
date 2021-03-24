@@ -16,6 +16,6 @@ submit:
 	scripts/submit.sh 
 
 clean:
-	rm -rf log/*.out log/*.err log/*.log *~ ./*.con
+	rm -rf log/*.out log/*.err log/*.log *~ ./*.con log/*.txt 
 
 .PHONY: submit regression clean
