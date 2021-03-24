@@ -363,6 +363,25 @@ bool PDG::iterateOverDependencesTo (
   return false;
 }
 
+std::set<Value *> PDG::getSortedValues (void) {
+  std::set<Value *> s;
+
+  /*
+   * Fetch all nodes.
+   */
+  auto nodes = this->getNodes();
+
+  /*
+   * Create a sorted set of values.
+   */
+  for (auto node : nodes){
+    auto v = node->getT();
+    s.insert(v);
+  }
+
+  return s;
+}
+
 PDG::~PDG() {
   for (auto *edge : allEdges)
     if (edge) delete edge;
