@@ -320,11 +320,11 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
       continue;
     }
 
-    errs() << "XAN: DEP SRC: " << *producer << "\n";
-    errs() << "XAN: DEP DST: " << *consumer << "\n";
     auto locationProducer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(producer);
     auto locationConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(consumer);
-    if (!locationProducer || !locationConsumer) continue;
+    if (!locationProducer || !locationConsumer) {
+      continue;
+    }
 
     bool isRAW = edge->isRAWDependence()
       && locationProducer->isInstructionStoringLocation(producer)
@@ -336,8 +336,9 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
       && locationConsumer->isInstructionStoringLocation(producer)
       && locationProducer->isInstructionStoringLocation(consumer);
 
-    if (!isRAW && !isWAR && !isWAW) continue;
-
+    if (!isRAW && !isWAR && !isWAW) {
+      continue;
+    }
     // producer->print(errs() << "Found alloca location for producer: "); errs() << "\n";
     // consumer->print(errs() << "Found alloca location for consumer: "); errs() << "\n";
     // locationProducer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
