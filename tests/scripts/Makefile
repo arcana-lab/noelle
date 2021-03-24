@@ -19,7 +19,7 @@ OPT_LEVEL=-O3
 
 # Front-end
 INCLUDES=-I../../include/threadpool/include
-FRONTEND_OPTIONS=-O0 -Xclang -disable-O0-optnone
+FRONTEND_OPTIONS=-O1 -Xclang -disable-llvm-passes 
 FRONTEND_FLAGS=-emit-llvm $(FRONTEND_OPTIONS)
 
 THREADER=Parallelizer_utils
