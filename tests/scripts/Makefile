@@ -8,8 +8,6 @@ LIBS=-lm -lstdc++ -lpthread
 
 # Set the runtime flags
 RUNTIME_CFLAGS="-DDEBUG"
-#RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DDSWP_STATS"
-#RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DRUNTIME_PRINT"
 
 # Parallelization options
 # 	- To dump the PDG: -noelle-pdg-dump
