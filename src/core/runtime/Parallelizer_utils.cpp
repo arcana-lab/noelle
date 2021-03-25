@@ -24,6 +24,8 @@
  * OPTIONS
  */
 //#define RUNTIME_PROFILE
+//#define RUNTIME_PRINT
+//#define DSWP_STATS
 
 using namespace MARC;
 
@@ -38,6 +40,15 @@ static int64_t numberOfPushes64 = 0;
     
 static ThreadPool pool{true, std::thread::hardware_concurrency()};
 
+typedef struct {
+  void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
+  void *env ;
+  int64_t coreID ;
+  int64_t numCores;
+  int64_t chunkSize ;
+  //pthread_barrier_t *barrier;
+} DOALL_args_t ;
+
 class NoelleRuntime {
   public:
     NoelleRuntime ();
@@ -46,7 +57,16 @@ class NoelleRuntime {
 
     void releaseCores (uint32_t coresReleased);
 
+    DOALL_args_t * getDOALLArgs (uint32_t cores, uint32_t *index);
+
+    void releaseDOALLArgs (uint32_t index);
+
   private:
+    mutable pthread_spinlock_t doallMemoryLock;
+    std::vector<uint32_t> doallMemorySizes;
+    std::vector<bool> doallMemoryAvailability;
+    std::vector<DOALL_args_t *> doallMemory;
+
     uint32_t getMaximumNumberOfCores (void);
 
     /*
@@ -193,15 +213,6 @@ static __inline__ int64_t rdtsc_e(void)
   /**********************************************************************
    *                DOALL
    **********************************************************************/
-  typedef struct {
-    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
-    void *env ;
-    int64_t coreID ;
-    int64_t numCores;
-    int64_t chunkSize ;
-    //pthread_barrier_t *barrier;
-  } DOALL_args_t ;
-
   static void NOELLE_DOALLTrampoline (void *args){
     #ifdef RUNTIME_PROFILE
     auto clocks_start = rdtsc_s();
@@ -247,9 +258,8 @@ static __inline__ int64_t rdtsc_e(void)
     /*
      * Allocate the memory to store the arguments.
      */
-    DOALL_args_t *argsForAllCores;
-    posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(DOALL_args_t) * numCores);
-
+    uint32_t doallMemoryIndex;
+    auto argsForAllCores = runtime.getDOALLArgs(numCores, &doallMemoryIndex);
     //pthread_barrier_t barrier;
     //pthread_barrier_init(&barrier, NULL, numCores + 1);
 
@@ -265,7 +275,6 @@ static __inline__ int64_t rdtsc_e(void)
       auto argsPerCore = &argsForAllCores[i];
       argsPerCore->parallelizedLoop = parallelizedLoop;
       argsPerCore->env = env;
-      argsPerCore->coreID = i;
       argsPerCore->numCores = numCores;
       argsPerCore->chunkSize = chunkSize;
       //argsPerCore->barrier = &barrier;
@@ -305,15 +314,14 @@ static __inline__ int64_t rdtsc_e(void)
     #endif
 
     /*
-     * Free the cores
+     * Free the cores and memory.
      */
     runtime.releaseCores(numCores);
+    runtime.releaseDOALLArgs(doallMemoryIndex);
 
     /*
-     * Free the memory.
+     * Prepare the return value.
      */
-    free(argsForAllCores);
-
     DispatcherInfo dispatcherInfo;
     dispatcherInfo.numberOfThreadsUsed = numCores;
     #ifdef RUNTIME_PROFILE
@@ -837,10 +845,71 @@ NoelleRuntime::NoelleRuntime(){
   this->NOELLE_idleCores = maxCores;
 
   pthread_spin_init(&this->spinLock, 0);
+  pthread_spin_init(&this->doallMemoryLock, 0);
   #ifdef RUNTIME_PROFILE
   pthread_spin_init(&printLock, 0);
   #endif
 
+  return ;
+}
+
+DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
+  DOALL_args_t *argsForAllCores = nullptr;
+
+  /*
+   * Check if we can reuse a previously-allocated memory region.
+   */
+  pthread_spin_lock(&this->doallMemoryLock);
+  auto doallMemoryNumberOfChunks = this->doallMemoryAvailability.size();
+  for (auto i=0; i < doallMemoryNumberOfChunks; i++){
+    if (  true
+          && (this->doallMemoryAvailability[i])
+          && (this->doallMemorySizes[i] >= cores)
+       ){
+      argsForAllCores = this->doallMemory[i];
+      this->doallMemoryAvailability[i] = false;
+      (*index) = i;
+
+      pthread_spin_unlock(&this->doallMemoryLock);
+      return argsForAllCores;
+    }
+  }
+
+  /*
+   * We couldn't find anything available.
+   *
+   * Allocate a new memory region.
+   */
+  this->doallMemorySizes.push_back(cores);
+  this->doallMemoryAvailability.push_back(false);
+  posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(DOALL_args_t) * cores);
+  this->doallMemory.push_back(argsForAllCores);
+  pthread_spin_unlock(&this->doallMemoryLock);
+
+  /*
+   * Set the index.
+   */
+  if (doallMemoryNumberOfChunks == 0){
+    (*index) = 0;
+  } else {
+    (*index) = doallMemoryNumberOfChunks - 1;
+  }
+
+  /*
+   * Initialize the memory.
+   */ 
+  for (auto i = 0; i < cores; ++i) {
+    auto argsPerCore = &argsForAllCores[i];
+    argsPerCore->coreID = i;
+  }
+
+  return argsForAllCores;
+}
+    
+void NoelleRuntime::releaseDOALLArgs (uint32_t index){
+  pthread_spin_lock(&this->doallMemoryLock);
+  this->doallMemoryAvailability[index] = true;
+  pthread_spin_unlock(&this->doallMemoryLock);
   return ;
 }
 
