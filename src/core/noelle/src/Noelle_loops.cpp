@@ -350,7 +350,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
       assert(!edge->isLoopCarriedDependence() && "Flag set");
     }
 
-    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
+    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, {}, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
     allLoops->push_back(ldi);
   }
 
@@ -467,7 +467,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
          * Allocate the loop wrapper.
          */
 
-        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
+        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, {}, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
 
         allLoops->push_back(ldi);
         continue ;
