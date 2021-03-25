@@ -20,6 +20,11 @@
 #include <utility>
 #include <iostream>
 
+/*
+ * OPTIONS
+ */
+//#define RUNTIME_PROFILE
+
 using namespace MARC;
 
 #define CACHE_LINE_SIZE 64
@@ -57,6 +62,12 @@ class NoelleRuntime {
     mutable pthread_spinlock_t spinLock;
 };
 
+#ifdef RUNTIME_PROFILE
+pthread_spinlock_t printLock;
+uint64_t clocks_starts[64];
+uint64_t clocks_ends[64];
+#endif
+
 static NoelleRuntime runtime{};
 
 extern "C" {
@@ -78,6 +89,23 @@ extern "C" {
     int64_t maxNumberOfCores, 
     int64_t chunkSize
     );
+
+
+  static __inline__ int64_t rdtsc_s(void)
+{
+  unsigned a, d; 
+  asm volatile("cpuid" ::: "%rax", "%rbx", "%rcx", "%rdx");
+  asm volatile("rdtsc" : "=a" (a), "=d" (d)); 
+  return ((unsigned long)a) | (((unsigned long)d) << 32); 
+}
+
+static __inline__ int64_t rdtsc_e(void)
+{
+  unsigned a, d; 
+  asm volatile("rdtscp" : "=a" (a), "=d" (d)); 
+  asm volatile("cpuid" ::: "%rax", "%rbx", "%rcx", "%rdx");
+  return ((unsigned long)a) | (((unsigned long)d) << 32); 
+}
 
 
   /******************************************** NOELLE API implementations ***********************************************/
@@ -171,9 +199,13 @@ extern "C" {
     int64_t coreID ;
     int64_t numCores;
     int64_t chunkSize ;
+    //pthread_barrier_t *barrier;
   } DOALL_args_t ;
 
   static void NOELLE_DOALLTrampoline (void *args){
+    #ifdef RUNTIME_PROFILE
+    auto clocks_start = rdtsc_s();
+    #endif
 
     /*
      * Fetch the arguments.
@@ -184,7 +216,13 @@ extern "C" {
      * Invoke
      */
     DOALLArgs->parallelizedLoop(DOALLArgs->env, DOALLArgs->coreID, DOALLArgs->numCores, DOALLArgs->chunkSize);
+    #ifdef RUNTIME_PROFILE
+    auto clocks_end = rdtsc_e();
+    clocks_starts[DOALLArgs->coreID] = clocks_start;
+    clocks_ends[DOALLArgs->coreID] = clocks_end;
+    #endif
 
+    //pthread_barrier_wait(DOALLArgs->barrier);
     return ;
   }
 
@@ -194,6 +232,9 @@ extern "C" {
     int64_t maxNumberOfCores, 
     int64_t chunkSize
     ){
+    #ifdef RUNTIME_PROFILE
+    auto clocks_start = rdtsc_s();
+    #endif
 
     /*
      * Set the number of cores to use.
@@ -208,6 +249,9 @@ extern "C" {
      */
     DOALL_args_t *argsForAllCores;
     posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(DOALL_args_t) * numCores);
+
+    //pthread_barrier_t barrier;
+    //pthread_barrier_init(&barrier, NULL, numCores + 1);
 
     /*
      * Submit DOALL tasks.
@@ -224,11 +268,13 @@ extern "C" {
       argsPerCore->coreID = i;
       argsPerCore->numCores = numCores;
       argsPerCore->chunkSize = chunkSize;
+      //argsPerCore->barrier = &barrier;
 
       /*
        * Submit
        */
       localFutures.push_back(pool.submit(NOELLE_DOALLTrampoline, argsPerCore));
+      //pool.submitAndDetach(NOELLE_DOALLTrampoline, argsPerCore);
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted DOALL task on core " << i << std::endl;
       #endif
@@ -236,15 +282,26 @@ extern "C" {
     #ifdef RUNTIME_PRINT
     std::cerr << "Submitted pool" << std::endl;
     #endif
+    #ifdef RUNTIME_PROFILE
+    auto clocks_after_fork = rdtsc_e();
+    #endif
 
     /*
      * Wait for DOALL tasks.
      */
+    #ifdef RUNTIME_PROFILE
+    auto clocks_before_join = rdtsc_s();
+    #endif
+    //pthread_barrier_wait(&barrier);
     for (auto& future : localFutures){
       future.get();
     }
     #ifdef RUNTIME_PRINT
     std::cerr << "Got all futures" << std::endl;
+    #endif
+    #ifdef RUNTIME_PROFILE
+    auto clocks_after_join = rdtsc_e();
+    auto clocks_before_cleanup = rdtsc_s();
     #endif
 
     /*
@@ -259,6 +316,51 @@ extern "C" {
 
     DispatcherInfo dispatcherInfo;
     dispatcherInfo.numberOfThreadsUsed = numCores;
+    #ifdef RUNTIME_PROFILE
+    auto clocks_after_cleanup = rdtsc_s();
+    pthread_spin_lock(&printLock);
+    std::cerr << "XAN: Start         = " << clocks_start << "\n";
+    std::cerr << "XAN: Setup overhead         = " << clocks_after_fork - clocks_start << " clocks\n";
+    std::cerr << "XAN: Start joining = " << clocks_after_fork << "\n";
+    for (auto i=0; i < numCores; i++){
+      std::cerr << "Thread " << i << ": Start = " << clocks_starts[i] << "\n";
+      std::cerr << "Thread " << i << ": End   = " << clocks_ends[i] << "\n";
+      std::cerr << "Thread " << i << ": Delta = " << clocks_ends[i] - clocks_starts[i] << "\n";
+    }
+    std::cerr << "XAN: Joined        = " << clocks_after_join << "\n";
+    std::cerr << "XAN: Joining delta = " << clocks_after_join - clocks_before_join << "\n";
+
+    uint64_t start_min = 0;
+    uint64_t start_max = 0;
+    for (auto i=0; i < numCores; i++){
+      if (  false
+            || (start_min == 0)
+            || (clocks_starts[i] < start_min)
+        ){
+        start_min = clocks_starts[i];
+      }
+      if (clocks_starts[i] > start_max){
+        start_max = clocks_starts[i];
+      }
+    }
+    std::cerr << "XAN: Thread starts min = " << start_min << "\n";
+    std::cerr << "XAN: Thread starts max = " << start_max << "\n";
+    std::cerr << "XAN: Task starting overhead = " << start_max - start_min << "\n";
+
+    uint64_t end_max = 0;
+    uint64_t lastThreadID = 0;
+    for (auto i=0; i < numCores; i++){
+      if (clocks_ends[i] > end_max){
+        lastThreadID = i;
+        end_max = clocks_ends[i];
+      }
+    }
+    std::cerr << "XAN: Last thread ended = " << end_max << " (thread " << lastThreadID << ")\n";
+    std::cerr << "XAN: Joining overhead       = " << clocks_after_join - end_max << "\n";
+
+    pthread_spin_unlock(&printLock);
+    #endif
+
     return dispatcherInfo;
   }
 
@@ -735,6 +837,9 @@ NoelleRuntime::NoelleRuntime(){
   this->NOELLE_idleCores = maxCores;
 
   pthread_spin_init(&this->spinLock, 0);
+  #ifdef RUNTIME_PROFILE
+  pthread_spin_init(&printLock, 0);
+  #endif
 
   return ;
 }
