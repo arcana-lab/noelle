@@ -435,7 +435,7 @@ extern "C" {
     void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
     void *env,
     void *loopCarriedArray,
-    int64_t numCores, 
+    int64_t maxNumberOfCores, 
     int64_t numOfsequentialSegments,
     bool LIO
     ){
@@ -450,7 +450,13 @@ extern "C" {
      */
     assert(parallelizedLoop != NULL);
     assert(env != NULL);
-    assert(numCores > 1);
+    assert(maxNumberOfCores > 1);
+
+    /*
+     * Reserve the cores.
+     */
+    auto numCores = runtime.reserveCores(maxNumberOfCores);
+    assert(numCores >= 1);
 
     /*
      * Allocate the sequential segment arrays.
@@ -606,6 +612,11 @@ extern "C" {
     #endif
 
     /*
+     * Free the cores and memory.
+     */
+    runtime.releaseCores(numCores);
+
+    /*
      * Free the memory.
      */
     free(argsForAllCores);
@@ -717,10 +728,22 @@ extern "C" {
     return ;
   }
 
-  DispatcherInfo  NOELLE_DSWPDispatcher (void *env, int64_t *queueSizes, void *stages, int64_t numberOfStages, int64_t numberOfQueues){
+  DispatcherInfo NOELLE_DSWPDispatcher (
+    void *env, 
+    int64_t *queueSizes, 
+    void *stages, 
+    int64_t numberOfStages, 
+    int64_t numberOfQueues
+    ){
     #ifdef RUNTIME_PRINT
     std::cerr << "Starting dispatcher: num stages " << numberOfStages << ", num queues: " << numberOfQueues << std::endl;
     #endif
+
+    /*
+     * Reserve the cores.
+     */
+    auto numCores = runtime.reserveCores(numberOfStages);
+    assert(numCores >= 1);
 
     /*
      * Allocate the communication queues.
@@ -796,8 +819,9 @@ extern "C" {
     #endif
 
     /*
-     * Free the memory.
+     * Free the cores and memory.
      */
+    runtime.releaseCores(numberOfStages);
     for (int i = 0; i < numberOfQueues; ++i) {
       switch (queueSizes[i]) {
         case 1:
