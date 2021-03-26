@@ -73,7 +73,7 @@ class NoelleRuntime {
     /*
      * Current number of idle cores.
      */
-    uint32_t NOELLE_idleCores;
+    int32_t NOELLE_idleCores;
 
     /*
      * Maximum number of cores.
@@ -942,10 +942,10 @@ uint32_t NoelleRuntime::reserveCores (uint32_t coresRequested){
    */
   pthread_spin_lock(&this->spinLock);
   auto numCores = this->NOELLE_idleCores > coresRequested ? coresRequested : NOELLE_idleCores;
-  if (numCores == 0){
+  if (numCores < 1){
     numCores = 1;
   }
-  this->NOELLE_idleCores = std::max(this->NOELLE_idleCores - numCores, (uint32_t)0);
+  this->NOELLE_idleCores -= numCores;
   pthread_spin_unlock(&this->spinLock);
 
   return numCores;
@@ -953,7 +953,8 @@ uint32_t NoelleRuntime::reserveCores (uint32_t coresRequested){
     
 void NoelleRuntime::releaseCores (uint32_t coresReleased){
   pthread_spin_lock(&this->spinLock);
-  this->NOELLE_idleCores = std::min(this->maxCores, this->NOELLE_idleCores + coresReleased);
+  this->NOELLE_idleCores += coresReleased;
+  assert(this->NOELLE_idleCores <= this->maxCores);
   pthread_spin_unlock(&this->spinLock);
 
   return ;
