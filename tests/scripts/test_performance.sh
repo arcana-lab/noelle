@@ -107,7 +107,7 @@ function runningTests {
 
     # Compile
     # echo "   Make " ;
-    make NOELLE_OPTIONS="$2" PARALLELIZATION_OPTIONS="$3" >> compiler_output.txt 2>&1 ;
+    make NOELLE_OPTIONS="$2" PARALLELIZATION_OPTIONS="$3" RUNTIME_CFLAGS="" >> compiler_output.txt 2>&1 ;
 
     # Read input for arguments to performance runs
     local ARGS=$(< perf_args.info) ;
