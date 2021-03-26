@@ -1,4 +1,5 @@
 DOALL_almost_lbm      33.385
+DOALL_challenge        0.7
 DOALL_devirtualizer   14.468
 DOALL_dispatcher       0.01
 DOALL_lbm	       8.626
@@ -12,7 +13,7 @@ HELIX_challenge	       6.758
 HELIX_communication    1.488
 HELIX_criticalsection  0.232
 Loop_selection        18.482
-Scheduler              7.603
+Scheduler              8.800
 Scheduler2             5.5
 Scheduler3             1
 StackPrivatization     19.856
