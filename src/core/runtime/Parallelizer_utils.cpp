@@ -46,7 +46,7 @@ typedef struct {
   int64_t coreID ;
   int64_t numCores;
   int64_t chunkSize ;
-  pthread_barrier_t *barrier;
+  pthread_mutex_t endLock;
 } DOALL_args_t ;
 
 class NoelleRuntime {
@@ -66,7 +66,6 @@ class NoelleRuntime {
     std::vector<uint32_t> doallMemorySizes;
     std::vector<bool> doallMemoryAvailability;
     std::vector<DOALL_args_t *> doallMemory;
-    std::vector<pthread_barrier_t *> doallMemoryBarriers;
 
     uint32_t getMaximumNumberOfCores (void);
 
@@ -112,21 +111,20 @@ extern "C" {
     );
 
 
-  static __inline__ int64_t rdtsc_s(void)
-{
-  unsigned a, d; 
-  asm volatile("cpuid" ::: "%rax", "%rbx", "%rcx", "%rdx");
-  asm volatile("rdtsc" : "=a" (a), "=d" (d)); 
-  return ((unsigned long)a) | (((unsigned long)d) << 32); 
-}
-
-static __inline__ int64_t rdtsc_e(void)
-{
-  unsigned a, d; 
-  asm volatile("rdtscp" : "=a" (a), "=d" (d)); 
-  asm volatile("cpuid" ::: "%rax", "%rbx", "%rcx", "%rdx");
-  return ((unsigned long)a) | (((unsigned long)d) << 32); 
-}
+    #ifdef RUNTIME_PROFILE
+    static __inline__ int64_t rdtsc_s(void) {
+      unsigned a, d; 
+      asm volatile("cpuid" ::: "%rax", "%rbx", "%rcx", "%rdx");
+      asm volatile("rdtsc" : "=a" (a), "=d" (d)); 
+      return ((unsigned long)a) | (((unsigned long)d) << 32); 
+    }
+    static __inline__ int64_t rdtsc_e(void) {
+      unsigned a, d; 
+      asm volatile("rdtscp" : "=a" (a), "=d" (d)); 
+      asm volatile("cpuid" ::: "%rax", "%rbx", "%rcx", "%rdx");
+      return ((unsigned long)a) | (((unsigned long)d) << 32); 
+    }
+    #endif
 
 
   /******************************************** NOELLE API implementations ***********************************************/
@@ -234,7 +232,7 @@ static __inline__ int64_t rdtsc_e(void)
     clocks_ends[DOALLArgs->coreID] = clocks_end;
     #endif
 
-    //pthread_barrier_wait(DOALLArgs->barrier); FIXME
+    pthread_mutex_unlock(&(DOALLArgs->endLock));
     return ;
   }
 
@@ -261,12 +259,10 @@ static __inline__ int64_t rdtsc_e(void)
      */
     uint32_t doallMemoryIndex;
     auto argsForAllCores = runtime.getDOALLArgs(numCores, &doallMemoryIndex);
-    auto barrier = argsForAllCores[0].barrier;
 
     /*
      * Submit DOALL tasks.
      */
-    std::vector<MARC::TaskFuture<void>> localFutures; //FIXME
     for (auto i = 0; i < numCores; ++i) {
 
       /*
@@ -281,8 +277,7 @@ static __inline__ int64_t rdtsc_e(void)
       /*
        * Submit
        */
-      localFutures.push_back(pool.submit(NOELLE_DOALLTrampoline, argsPerCore));
-      //pool.submitAndDetachCFunction(NOELLE_DOALLTrampoline, argsPerCore);
+      pool.submitAndDetachCFunction(NOELLE_DOALLTrampoline, argsPerCore);
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted DOALL task on core " << i << std::endl;
       #endif
@@ -300,9 +295,8 @@ static __inline__ int64_t rdtsc_e(void)
     #ifdef RUNTIME_PROFILE
     auto clocks_before_join = rdtsc_s();
     #endif
-    //pthread_barrier_wait(barrier);
-    for (auto& future : localFutures){
-      future.get();
+    for (auto i = 0; i < numCores; ++i) {
+      pthread_mutex_lock(&(argsForAllCores[i].endLock));
     }
     #ifdef RUNTIME_PRINT
     std::cerr << "All tasks completed" << std::endl;
@@ -877,13 +871,7 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
        */
       this->doallMemoryAvailability[i] = false;
       (*index) = i;
-      auto existingBarrier = this->doallMemoryBarriers[i];
       pthread_spin_unlock(&this->doallMemoryLock);
-
-      /*
-       * Initialize the barrier.
-       */
-      pthread_barrier_init(existingBarrier, NULL, cores + 1);
 
       return argsForAllCores;
     }
@@ -898,8 +886,6 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
   this->doallMemoryAvailability.push_back(false);
   posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(DOALL_args_t) * cores);
   this->doallMemory.push_back(argsForAllCores);
-  auto newBarrier = (pthread_barrier_t *)malloc(sizeof(pthread_barrier_t));
-  this->doallMemoryBarriers.push_back(newBarrier);
   pthread_spin_unlock(&this->doallMemoryLock);
 
   /*
@@ -917,13 +903,9 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
   for (auto i = 0; i < cores; ++i) {
     auto argsPerCore = &argsForAllCores[i];
     argsPerCore->coreID = i;
-    argsPerCore->barrier = newBarrier;
+    pthread_mutex_init(&(argsPerCore->endLock), NULL);
+    pthread_mutex_lock(&(argsPerCore->endLock));
   }
-
-  /*
-   * Initialize the barrier.
-   */
-  pthread_barrier_init(newBarrier, NULL, cores + 1);
 
   return argsForAllCores;
 }
