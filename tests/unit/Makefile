@@ -46,6 +46,12 @@ clean:
 	find ./ -name *.ll -delete
 	find ./ -name output.prof -delete
 	find ./ -name default.profraw -delete
+	find ./ -name compiler_output.txt -delete
+	find ./ -name test_output.txt -delete
+	find ./ -name test_pre_prof -delete
+	find ./ -name .ycm_extra_conf.py -delete ;
+	find ./ -name compile_commands.json -delete ;
+	find ./ -name .clangd -exec rm -rv {} +
 
 .PHONY: $(ALL_UNITS)
 

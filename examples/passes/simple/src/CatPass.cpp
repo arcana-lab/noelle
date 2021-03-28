@@ -108,8 +108,9 @@ namespace {
            * Dependences.
            */
           errs() << " SCCDAG\n";
-          auto SCCDAG = loop->sccdagAttrs.getSCCDAG();
-          auto sccIterator = [loop](SCC *scc) -> bool {
+          auto sccManager = loop->getSCCManager();
+          auto SCCDAG = sccManager->getSCCDAG();
+          auto sccIterator = [sccManager](SCC *scc) -> bool {
             if (!scc->hasCycle()){
               return false;
             }
@@ -132,7 +133,7 @@ namespace {
             /*
              * Fetch the SCC information.
              */
-            auto sccInfo = loop->sccdagAttrs.getSCCAttrs(scc);
+            auto sccInfo = sccManager->getSCCAttrs(scc);
             if (sccInfo->isInductionVariableSCC()){
               errs() << "     It is due to the computation of an induction variable\n";
 

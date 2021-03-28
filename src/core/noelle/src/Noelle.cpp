@@ -22,10 +22,11 @@ Noelle::Noelle()
   , program{nullptr}
   , profiles{nullptr}
   , programDependenceGraph{nullptr}
-  , maxCores{Architecture::getNumberOfPhysicalCores()}
   , hoistLoopsToMain{false}
   , loopAwareDependenceAnalysis{false}
-  , pcg{nullptr}
+  , fm{nullptr}
+  , tm{nullptr}
+  , om{nullptr}
 {
 
   return ;
@@ -238,21 +239,12 @@ double Noelle::getMinimumHotness (void) const {
   return this->minHot;
 }
 
-Function * Noelle::getEntryFunction (void) const {
-  auto f = this->program->getFunction("main");
-  return f;
-}
-
 Hot * Noelle::getProfiles (void) {
   if (this->profiles == nullptr){
     this->profiles = &getAnalysis<HotProfiler>().getHot();
   }
 
   return this->profiles;
-}
-
-uint32_t Noelle::getMaximumNumberOfCores (void) const {
-  return this->maxCores;
 }
 
 DataFlowAnalysis Noelle::getDataFlowAnalyses (void) const {
@@ -285,17 +277,21 @@ bool Noelle::shouldLoopsBeHoistToMain (void) const {
   return this->hoistLoopsToMain;
 }
 
-noelle::CallGraph * Noelle::getProgramCallGraph (void) {
-  if (this->pcg == nullptr){
-    this->pcg = this->pdgAnalysis->getProgramCallGraph();
-  }
-
-  return this->pcg;
-}
-
 Noelle::~Noelle(){
 
   return ;
+}
+
+TypesManager * Noelle::getTypesManager (void) {
+  if (!this->tm){
+    this->tm = new TypesManager(*this->program);
+  }
+  return this->tm;
+}
+      
+CompilationOptionsManager * Noelle::getCompilationOptionsManager (void) {
+  assert(this->om != nullptr);
+  return this->om;
 }
 
 }

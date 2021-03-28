@@ -14,7 +14,8 @@ using namespace llvm;
 using namespace llvm::noelle;
 
 void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
-  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
+  auto sccManager = LDI->getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
   for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
     auto producer = LDI->environment->producerAt(envIndex);
 
@@ -24,7 +25,7 @@ void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
        * Clonable consumers must be loaded into every task that uses them
        */
       auto consumerSCC = sccdag->sccOfValue(consumer);
-      auto consumerSCCAttrs = LDI->sccdagAttrs.getSCCAttrs(consumerSCC);
+      auto consumerSCCAttrs = sccManager->getSCCAttrs(consumerSCC);
       if (consumerSCCAttrs->canBeCloned()) {
         for (auto i = 0; i < tasks.size(); ++i) {
           auto task = (DSWPTask *)tasks[i];
@@ -47,7 +48,8 @@ void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
 }
 
 void DSWP::collectLiveOutEnvInfo (LoopDependenceInfo *LDI) {
-  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
+  auto sccManager = LDI->getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
   for (auto envIndex : LDI->environment->getEnvIndicesOfLiveOutVars()) {
     auto producer = LDI->environment->producerAt(envIndex);
 
@@ -56,7 +58,7 @@ void DSWP::collectLiveOutEnvInfo (LoopDependenceInfo *LDI) {
      * Arbitrarily choose the first task that clones the producer to store it live out
      */
     auto producerSCC = sccdag->sccOfValue(producer);
-    auto producerSCCAttrs = LDI->sccdagAttrs.getSCCAttrs(producerSCC);
+    auto producerSCCAttrs = sccManager->getSCCAttrs(producerSCC);
     if (producerSCCAttrs->canBeCloned()) {
       for (auto i = 0; i < tasks.size(); ++i) {
         auto task = (DSWPTask *)tasks[i];

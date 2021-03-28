@@ -83,7 +83,6 @@ void DOALL::rewireLoopToIterateChunks (
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getLoopEntryPHI()));
-
     auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
     auto chunkStepSize = entryBuilder.CreateMul(
       stepOfIV,
@@ -122,9 +121,13 @@ void DOALL::rewireLoopToIterateChunks (
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
     auto &derivation = ivUtility.getConditionValueDerivation();
     for (auto I : derivation) {
-      auto cloneI = task->getCloneOfOriginalInstruction(I);
-      assert(invariantManager->isLoopInvariant(cloneI)
+      assert(invariantManager->isLoopInvariant(I)
         && "DOALL exit condition value is not derived from loop invariant values!");
+
+      /*
+       * Fetch the clone of @I
+       */
+      auto cloneI = task->getCloneOfOriginalInstruction(I);
 
       if (auto clonePHI = dyn_cast<PHINode>(cloneI)) {
         auto usedValue = clonePHI->getIncomingValue(0);
@@ -169,7 +172,8 @@ void DOALL::rewireLoopToIterateChunks (
 	/*
 	 * Collect (1) by iterating the InductionVariableManager
 	 */
-  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
+  auto sccManager = LDI->getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     for (auto I : ivInfo->getAllInstructions()) {
       repeatableInstructions.insert(task->getCloneOfOriginalInstruction(I));
@@ -186,9 +190,9 @@ void DOALL::rewireLoopToIterateChunks (
 	/*
 	 * Collect (3) by identifying all reducible SCCs
 	 */
-  auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
+  auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
     if (!sccInfo->canExecuteReducibly()) continue;
 
     // HACK:
@@ -210,7 +214,7 @@ void DOALL::rewireLoopToIterateChunks (
 	 */
   for (auto &I : *loopHeader) {
 		auto scc = sccdag->sccOfValue(&I);
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
 		if (!sccInfo->canExecuteIndependently()) continue;
 
     auto isInvariant = invariantManager->isLoopInvariant(&I);

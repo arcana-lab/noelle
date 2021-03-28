@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -14,7 +14,6 @@
 
 #include "PDG.hpp"
 #include "LoopsSummary.hpp"
-#include "LoopCarriedDependencies.hpp"
 #include "SCCDAG.hpp"
 #include "SCCDAGPartition.hpp"
 
@@ -23,7 +22,7 @@ namespace llvm::noelle {
   class SCCDAGNormalizer {
     public:
 
-      SCCDAGNormalizer (SCCDAG &dag, LoopsSummary &lis, LoopCarriedDependencies &lcd) ;
+      SCCDAGNormalizer (SCCDAG &dag, LoopsSummary &lis) ;
 
       SCCDAGNormalizer () = delete ;
 
@@ -31,7 +30,6 @@ namespace llvm::noelle {
 
     private:
       LoopsSummary &LIS;
-      LoopCarriedDependencies &loopCarriedDependencies;
       SCCDAG &sccdag;
 
       void mergeLCSSAPhis (void) ;

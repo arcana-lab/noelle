@@ -101,9 +101,15 @@ PDG * PDGAnalysis::getFunctionPDG (Function &F) {
      */
     if (this->functionToFDGMap.find(&F) == this->functionToFDGMap.end()) {
       pdg = this->programDependenceGraph->createFunctionSubgraph(F);
+      for (auto edge : pdg->getEdges()) {
+        assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+      }
       this->functionToFDGMap.insert(std::make_pair(&F, pdg));
     } else {
       pdg = this->functionToFDGMap.at(&F);
+      for (auto edge : pdg->getEdges()) {
+        assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+      }
     }
 
   } else {
@@ -118,13 +124,22 @@ PDG * PDGAnalysis::getFunctionPDG (Function &F) {
        */
       if (this->hasPDGAsMetadata(*this->M)) {
         pdg = constructFunctionDGFromMetadata(F);
+        for (auto edge : pdg->getEdges()) {
+          assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+        }
       } else {
         pdg = constructFunctionDGFromAnalysis(F);
+        for (auto edge : pdg->getEdges()) {
+          assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+        }
       }
       this->functionToFDGMap.insert(std::make_pair(&F, pdg));
 
     } else {
       pdg = this->functionToFDGMap.at(&F);
+      for (auto edge : pdg->getEdges()) {
+        assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+      }
     }
 
   }
@@ -548,8 +563,38 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
   delete dfr;
 }
 
+bool PDGAnalysis::isActualCode (CallInst *call) const {
+
+  /*
+   * Fetch the callee.
+   */
+  auto callee = call->getCalledFunction();
+  if (callee == nullptr){
+    return true;
+  }
+
+  /*
+   * Check if the callee is an intrinsic.
+   */
+  if (!callee->isIntrinsic()){
+    return true;
+  }
+
+  return true;
+}
+
 void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallInst *call) {
 
+  /*
+   * Check if the call instruction is not actual code.
+   */
+  if (!this->isActualCode(call)){
+    return ;
+  }
+
+  /*
+   * Identify all dependences with @call.
+   */
   for (auto I : dfr->OUT(call)) {
 
     /*
@@ -572,6 +617,9 @@ void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, Data
      * Check calls.
      */
     if (auto otherCall = dyn_cast<CallInst>(I)) {
+      if (!this->isActualCode(otherCall)){
+        continue ;
+      }
       addEdgeFromFunctionModRef(pdg, F, AA, call, otherCall);
       continue ;
     }
@@ -870,10 +918,29 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions (DGEdge<Value> *edge) {
     mem = outgoingT; 
   }
   auto callName = getCallFnName(call);
-  return isa<LoadInst>(mem) && isFunctionNonWriting(callName)
-    || isa<StoreInst>(mem) && isFunctionMemoryless(callName);
+  if (  true 
+        && isa<LoadInst>(mem) 
+        && isFunctionNonWriting(callName)
+     ){
+    return true;
+  }
+  if (  true
+        && isa<StoreInst>(mem) 
+        && isFunctionMemoryless(callName)
+     ){
+    return true;
+  }
+
+  return false;
 }
-      
+ 
+bool PDGAnalysis::isTheLibraryFunctionPure (Function *libraryFunction){
+  if (PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF.count(libraryFunction->getName())){
+    return true;
+  }
+  return false;
+}
+
 PDGAnalysis::~PDGAnalysis() {
   if (this->programDependenceGraph)
     delete this->programDependenceGraph;
@@ -884,3 +951,115 @@ PDGAnalysis::~PDGAnalysis() {
   }
   this->functionToFDGMap.clear();
 }
+
+// http://www.cplusplus.com/reference/clibrary/ and https://github.com/SVF-tools/SVF/blob/master/lib/Util/ExtAPI.cpp
+const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF {
+
+  // ctype.h
+  "isalnum",
+  "isalpha",
+  "isblank",
+  "iscntrl",
+  "isdigit",
+  "isgraph",
+  "islower",
+  "isprint",
+  "ispunct",
+  "isspace",
+  "isupper",
+  "isxdigit",
+  "tolower",
+  "toupper",
+
+  // math.h
+  "cos",
+  "sin",
+  "tan",
+  "acos",
+  "asin",
+  "atan",
+  "atan2",
+  "cosh",
+  "sinh",
+  "tanh",
+  "acosh",
+  "asinh",
+  "atanh",
+  "exp",
+  "ldexp",
+  "log",
+  "log10",
+  "exp2",
+  "expm1",
+  "ilogb",
+  "log1p",
+  "log2",
+  "logb",
+  "scalbn",
+  "scalbln",
+  "pow",
+  "sqrt",
+  "cbrt",
+  "hypot",
+  "erf",
+  "erfc",
+  "tgamma",
+  "lgamma",
+  "ceil",
+  "floor",
+  "fmod",
+  "trunc",
+  "round",
+  "lround",
+  "llround",
+  "nearbyint",
+  "remainder",
+  "copysign",
+  "nextafter",
+  "nexttoward",
+  "fdim",
+  "fmax",
+  "fmin",
+  "fabs",
+  "abs",
+  "fma",
+  "fpclassify",
+  "isfinite",
+  "isinf",
+  "isnan",
+  "isnormal",
+  "signbit",
+  "isgreater",
+  "isgreaterequal",
+  "isless",
+  "islessequal",
+  "islessgreater",
+  "isunordered",
+
+  // stdlib.h
+  "rand",
+  "srand",
+  
+  // time.h
+  "clock",
+  "difftime",
+
+  // wctype.h
+  "iswalnum",
+  "iswalpha",
+  "iswblank",
+  "iswcntrl",
+  "iswdigit",
+  "iswgraph",
+  "iswlower",
+  "iswprint",
+  "iswpunct",
+  "iswspace",
+  "iswupper",
+  "iswxdigit",
+  "towlower",
+  "towupper",
+  "iswctype",
+  "towctrans"
+};
+

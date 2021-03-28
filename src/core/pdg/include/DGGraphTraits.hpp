@@ -146,6 +146,7 @@ namespace llvm {
         std::string attrsStr;
         raw_string_ostream ros(attrsStr);
         ros << (edge->isControlDependence() ? cntColor : (edge->isMemoryDependence() ? memColor : varColor));
+        if (edge->isLoopCarriedDependence()) ros << ", penwidth=2";
         if (dg->isExternal(edge->getOutgoingT()) || dg->isExternal(edge->getIncomingT())) ros << ",style=dotted";
         return ros.str();
       }

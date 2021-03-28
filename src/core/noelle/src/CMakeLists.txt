@@ -5,8 +5,10 @@ set(Srcs
   Noelle_dependences.cpp
   Noelle_function.cpp
   Noelle_loops.cpp
-  Noelle_types.cpp
   Noelle_transformations.cpp
+  FunctionsManager.cpp
+  TypesManager.cpp
+  CompilationOptionsManager.cpp
 )
 
 # Compilation flags
@@ -28,8 +30,7 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
-  ${CMAKE_INSTALL_PREFIX}/include
-  ${CMAKE_INSTALL_PREFIX}/include/svf
+  ../include 
   ../../basic_utilities/include 
   ../../transformations/include
   ../../architecture/include 
@@ -42,7 +43,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dataflow/include
   ../../callgraph/include
   ../../scheduler/include
-  ../include 
+  ${CMAKE_INSTALL_PREFIX}/include
+  ${CMAKE_INSTALL_PREFIX}/include/svf
   )
 
 # Declare the LLVM pass to compile

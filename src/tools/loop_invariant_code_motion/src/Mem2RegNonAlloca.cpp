@@ -15,10 +15,14 @@ using namespace llvm::noelle;
 
 Mem2RegNonAlloca::Mem2RegNonAlloca (LoopDependenceInfo const &LDI, Noelle &noelle)
   : LDI{LDI}, invariants{*LDI.getInvariantManager()}, noelle{noelle} {
+  return ;
 }
 
-bool Mem2RegNonAlloca::promoteMemoryToRegister () {
+bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
 
+  /*
+   * Fetch the loop structure.
+   */
   auto loopStructure = LDI.getLoopStructure();
   if (noelle.getVerbosity() >= Verbosity::Maximal) {
     auto terminator = loopStructure->getHeader()->getTerminator();
@@ -31,9 +35,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister () {
    */
   for (auto B : loopStructure->getBasicBlocks()) {
     auto terminator = B->getTerminator();
-    if (!terminator) {
-      return false;
-    }
+    assert(terminator != nullptr);
     if (isa<ReturnInst>(terminator)) {
       return false;
     }
@@ -42,7 +44,14 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister () {
     }
   }
 
-  auto singleMemoryLocationsBySCC = findSCCsWithSingleMemoryLocations();
+  /*
+   * Fetch the SCCs of interest.
+   */
+  auto singleMemoryLocationsBySCC = this->findSCCsWithSingleMemoryLocations();
+
+  /*
+   * Promote memory locations to variables.
+   */
   for (auto memoryAndSCCPair : singleMemoryLocationsBySCC) {
     auto memoryInst = memoryAndSCCPair.first;
     auto memorySCC = memoryAndSCCPair.second;
@@ -57,12 +66,17 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister () {
     //   continue;
     // }
 
-    bool promoted = promoteMemoryToRegisterForSCC(memorySCC, memoryInst);
+    /*
+     * Promote the single memory location used in the current SCC to variables.
+     */
+    auto promoted = this->promoteMemoryToRegisterForSCC(memorySCC, memoryInst);
     if (noelle.getVerbosity() >= Verbosity::Maximal) {
       memoryInst->print(errs() << "Mem2Reg:  Loop invariant memory location loads/stores promoted: " << promoted << " ");
       errs() << "\n";
     }
-    if (promoted) return true;
+    if (promoted) {
+      return true;
+    }
   }
 
   return false;
@@ -75,11 +89,12 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
    * along with any computation that does NOT alias the loads/stores
    */
   auto loopStructure = LDI.getLoopStructure();
-  auto sccdag = LDI.sccdagAttrs.getSCCDAG();
+  auto sccManager = LDI.getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
   std::unordered_map<Value *, SCC *> singleMemoryLocationsBySCC{};
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
-    auto sccInfo = LDI.sccdagAttrs.getSCCAttrs(scc);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
 
     // scc->printMinimal(errs() << "SCC: \n"); errs() << "\n";
     // for (auto edge : scc->getEdges()) {
@@ -548,7 +563,7 @@ void Mem2RegNonAlloca::dumpLogs (void) {
    */
   std::string loopId{std::to_string(loop->getID())};
 
-  // DGPrinter::writeGraph<SCCDAG, SCC>("mem2reg-sccdag-loop-" + loopId + ".dot", LDI.sccdagAttrs.getSCCDAG());
+  // DGPrinter::writeGraph<SCCDAG, SCC>("mem2reg-sccdag-loop-" + loopId + ".dot", sccManager->getSCCDAG());
   // std::set<BasicBlock *> basicBlocksSet(basicBlocks.begin(), basicBlocks.end());
   // DGPrinter::writeGraph<SubCFGs, BasicBlock>("mem2reg-current-loop-" + loopId + ".dot", new SubCFGs(basicBlocksSet));
 }

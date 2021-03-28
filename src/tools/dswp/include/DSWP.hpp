@@ -77,6 +77,11 @@ namespace llvm::noelle {
       DominatorSummary *originalFunctionDS;
 
       /*
+       * Dispatcher
+       */
+      Function *taskDispatcher;
+
+      /*
        * Pipeline
        */
       void partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) ;
@@ -133,7 +138,7 @@ namespace llvm::noelle {
       void printStageSCCs (LoopDependenceInfo *LDI) const ;
       void printStageQueues (LoopDependenceInfo *LDI) const ;
       void printEnv (LoopDependenceInfo *LDI) const ;
-      void writeStageGraphsAsDot (const LoopDependenceInfo &LDI) const ;
+      void writeStageGraphsAsDot (LoopDependenceInfo &LDI) const ;
       void writeStageQueuesAsDot (const LoopDependenceInfo &LDI) const ;
       void printStageClonedValues (const LoopDependenceInfo &LDI, int taskIndex) const ;
   };

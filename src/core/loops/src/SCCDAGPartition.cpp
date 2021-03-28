@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -580,13 +580,13 @@ void SCCDAGPartitioner::mergeAllPairs (std::set<std::pair<SCC *, SCC *>> pairs) 
     this->partition->mergeSetsAndCollapseResultingCycles({ setProducer, setConsumer });
   }
 }
-
+/*
 void SCCDAGPartitioner::mergeLoopCarriedDependencies (LoopCarriedDependencies *LCD) {
 
   /*
    * Collect all pairs of SCC that need to be merged into the same set 
    */
-  std::set<std::pair<SCC *, SCC *>> lcdPairs{};
+/*  std::set<std::pair<SCC *, SCC *>> lcdPairs{};
   for (auto loop : allLoops) {
     auto loopCarriedEdges = LCD->getLoopCarriedDependenciesForLoop(*loop);
     for (auto edge : loopCarriedEdges) {
@@ -599,7 +599,7 @@ void SCCDAGPartitioner::mergeLoopCarriedDependencies (LoopCarriedDependencies *L
        * NOTE: All SCC with a loop carried dependency must be partition-able
        * if this API is being called to merge them together
        */
-      auto producerSCC = this->partition->sccOfValue(producer);
+/*      auto producerSCC = this->partition->sccOfValue(producer);
       auto consumerSCC = this->partition->sccOfValue(consumer);
       if (!this->partition->isIncludedInPartitioning(producerSCC)) continue;
       if (!this->partition->isIncludedInPartitioning(consumerSCC)) continue;
@@ -611,7 +611,7 @@ void SCCDAGPartitioner::mergeLoopCarriedDependencies (LoopCarriedDependencies *L
 
   mergeAllPairs(lcdPairs);
 }
-
+*/
 void SCCDAGPartitioner::mergeLCSSAPhisWithTheValuesTheyPropagate (void) {
 
   /*

@@ -40,7 +40,11 @@ PDG::PDG (Module &M)
    */
   auto mainF = M.getFunction("main");
   assert(mainF != nullptr);
+
   this->setEntryPointAt(*mainF);
+  for (auto edge : this->getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+  }
 
   return ;
 }
@@ -126,7 +130,9 @@ PDG * PDG::createFunctionSubgraph(Function &F) {
    * Recreate all edges connected to internal nodes of function
    */
   copyEdgesInto(functionPDG, /*linkToExternal=*/ true);
-
+  for (auto edge : functionPDG->getEdges()) {
+    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+  }
   return functionPDG;
 }
 
@@ -355,6 +361,67 @@ bool PDG::iterateOverDependencesTo (
   }
 
   return false;
+}
+
+std::vector<Value *> PDG::getSortedValues (void) {
+  std::vector<Value *> s;
+
+  /*
+   * Fetch all nodes.
+   */
+  auto nodes = this->getNodes();
+
+  /*
+   * Create a sorted set of values.
+   */
+  for (auto node : nodes){
+    auto v = node->getT();
+    s.push_back(v);
+  }
+
+  return s;
+}
+      
+std::vector<DGEdge<Value> *> PDG::getSortedDependences (void) {
+  std::vector<DGEdge<Value> *> v;
+
+  /*
+   * Fetch all edges.
+   */
+  auto edges = this->getEdges();
+  for (auto edge : edges){
+    v.push_back(edge);
+  }
+
+  /*
+   * Sort
+   */
+  auto sortingFunction = [](DGEdge<Value> *d1, DGEdge<Value> *d2) -> bool {
+    auto src1 = d1->getIncomingT();
+    auto src2 = d2->getIncomingT();
+    if (src1 < src2){
+      return true;
+    }
+    if (src1 > src2){
+      return false;
+    }
+    assert(src1 == src2);
+
+    auto dst1 = d1->getOutgoingT();
+    auto dst2 = d2->getOutgoingT();
+    if (dst1 < dst2){
+      return true;
+    }
+    if (dst1 > dst2){
+      return false;
+    }
+    assert(dst1 == dst2);
+
+    return true;
+  };
+  std::sort(v.begin(), v.end(), sortingFunction);
+
+  return v;
 }
 
 PDG::~PDG() {

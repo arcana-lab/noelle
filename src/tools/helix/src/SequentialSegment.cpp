@@ -380,9 +380,6 @@ DataFlowResult *HELIX::computeReachabilityFromInstructions (LoopDependenceInfo *
     gen.insert(i);
     return ;
   };
-  auto computeKILL = [](Instruction *, DataFlowResult *) {
-    return ;
-  };
   auto computeOUT = [LDI, loopHeader](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
 
     /*
@@ -410,7 +407,7 @@ DataFlowResult *HELIX::computeReachabilityFromInstructions (LoopDependenceInfo *
     return ;
   };
 
-  return dfa.applyBackward(loopFunction, computeGEN, computeKILL, computeIN, computeOUT);
+  return dfa.applyBackward(loopFunction, computeGEN, computeIN, computeOUT);
 }
 
 iterator_range<std::unordered_set<SCC *>::iterator> SequentialSegment::getSCCs(void) {
@@ -443,9 +440,10 @@ void SequentialSegment::printSCCInfo (LoopDependenceInfo *LDI, std::unordered_se
   errs() << "HELIX:   Sequential segment " << ID << "\n" ;
   errs() << "HELIX:     SCCs included in the current sequential segment\n";
 
+  auto sccManager = LDI->getSCCManager();
   for (auto scc : sccs->sccs){
 
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
 
     errs() << "HELIX:       Type = " << sccInfo->getType() << "\n";
     errs() << "HELIX:       Loop-carried data dependences\n";
@@ -456,7 +454,7 @@ void SequentialSegment::printSCCInfo (LoopDependenceInfo *LDI, std::unordered_se
       errs() << "HELIX:        \"" << *fromInst << "\" -> \"" << *toInst  << "\"\n";
       return false;
     };
-    LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, lcIterFunc);
+    sccManager->iterateOverLoopCarriedDataDependences(scc, lcIterFunc);
   }
 
   errs() << "HELIX:     Instructions that belong to the SS\n";

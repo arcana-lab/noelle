@@ -14,6 +14,7 @@ static cl::opt<bool> CleanPDGMetadata("clean-pdg-metadata", cl::init(false), cl:
 static cl::opt<bool> CleanProfileMetadata("clean-prof-metadata", cl::init(false), cl::desc("Clean metadata of profiles"));
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 bool CleanMetadata::doInitialization(Module &M) {
   this->cleanPDG = CleanPDGMetadata.getNumOccurrences() > 0 ? true : false;

@@ -11,22 +11,31 @@
 
 #include "../include/AllocAA.hpp"
 
+using namespace llvm;
+using namespace llvm::noelle;
+
 /*
  * Options of the custom allocation function based alias analysis pass.
  */
 static cl::opt<int> Verbose("alloc-aa-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
 
-bool llvm::AllocAA::doInitialization (Module &M) { 
+bool AllocAA::doInitialization (Module &M) { 
   this->readOnlyFunctionNames = { };
   this->allocatorFunctionNames = { "malloc", "calloc" };
-  this->memorylessFunctionNames = { "sqrt", "sqrtf", "ceil", "floor", "log", "log10", "pow", "exp", "cos", "acos", "sin", "tanh", "atoll", "atoi", "atol" };
+  this->memorylessFunctionNames = { 
+    "sqrt"
+    ,"sqrtf", "ceil", "floor", "log", "log10", "pow", "exp", "cos", "acos", "sin", "tanh", "atoll", "atoi", "atol" 
+
+    //C++
+    , "_ZSt4fmaxIiiEN9__gnu_cxx11__promote_2IT_T0_NS0_9__promoteIS2_Xsr3std12__is_integerIS2_EE7__valueEE6__typeENS4_IS3_Xsr3std12__is_integerIS3_EE7__valueEE6__typeEE6__typeES2_S3_"
+  };
 
   this->verbose = static_cast<AllocAAVerbosity>(Verbose.getValue());
 
   return false;
 }
 
-bool llvm::AllocAA::runOnModule (Module &M) {
+bool AllocAA::runOnModule (Module &M) {
   if (this->verbose != AllocAAVerbosity::Disabled) {
     errs() << "AllocAA at \"runOnModule\"\n";
   }
@@ -40,7 +49,7 @@ bool llvm::AllocAA::runOnModule (Module &M) {
   return false;
 }
 
-void llvm::AllocAA::getAnalysisUsage (AnalysisUsage &AU) const {
+void AllocAA::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
@@ -49,7 +58,7 @@ void llvm::AllocAA::getAnalysisUsage (AnalysisUsage &AU) const {
 }
 
 std::pair<Value *, GetElementPtrInst *>
-llvm::AllocAA::getPrimitiveArrayAccess (Value *V) {
+AllocAA::getPrimitiveArrayAccess (Value *V) {
   auto memOp = getMemoryPointerOperand(V);
   if (!memOp) return std::make_pair(nullptr, nullptr);
 
@@ -91,7 +100,7 @@ llvm::AllocAA::getPrimitiveArrayAccess (Value *V) {
  * Check that all non-constant indices of GEP are those of monotonic induction variables
  * TODO: Replace with more strict check that all uses of the GEP adhere to base type of pointer
  */
-bool llvm::AllocAA::areGEPIndicesConstantOrIV (GetElementPtrInst *gep) {
+bool AllocAA::areGEPIndicesConstantOrIV (GetElementPtrInst *gep) {
   Function *gepFunc = gep->getFunction();
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*gepFunc).getLoopInfo();
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*gepFunc).getSE();
@@ -106,7 +115,7 @@ bool llvm::AllocAA::areGEPIndicesConstantOrIV (GetElementPtrInst *gep) {
   return true;
 }
 
-bool llvm::AllocAA::areIdenticalGEPAccessesInSameLoop (GetElementPtrInst *gep1, GetElementPtrInst *gep2) {
+bool AllocAA::areIdenticalGEPAccessesInSameLoop (GetElementPtrInst *gep1, GetElementPtrInst *gep2) {
   if (gep1 == gep2) return true;
 
   if (gep1->getFunction() != gep2->getFunction()) return false;
@@ -134,15 +143,15 @@ bool llvm::AllocAA::areIdenticalGEPAccessesInSameLoop (GetElementPtrInst *gep1, 
   return true;
 }
 
-bool llvm::AllocAA::isReadOnly (StringRef functionName) {
+bool AllocAA::isReadOnly (StringRef functionName) {
   return readOnlyFunctionNames.find(functionName) != readOnlyFunctionNames.end();
 }
 
-bool llvm::AllocAA::isMemoryless (StringRef functionName) {
+bool AllocAA::isMemoryless (StringRef functionName) {
   return memorylessFunctionNames.find(functionName) != memorylessFunctionNames.end();
 }
 
-void llvm::AllocAA::collectCGUnderFunctionMain (Module &M, CallGraph &callGraph) {
+void AllocAA::collectCGUnderFunctionMain (Module &M, CallGraph &callGraph) {
   auto main = M.getFunction("main");
   std::queue<Function *> funcToTraverse;
   std::set<Function *> reached;
@@ -167,7 +176,7 @@ void llvm::AllocAA::collectCGUnderFunctionMain (Module &M, CallGraph &callGraph)
   CGUnderMain.insert(reached.begin(), reached.end());
 }
 
-void llvm::AllocAA::collectAllocations (Module &M, CallGraph &callGraph) {
+void AllocAA::collectAllocations (Module &M, CallGraph &callGraph) {
   std::set<Function *> allocatorFns;
   for (auto allocName : allocatorFunctionNames) {
     auto F = M.getFunction(allocName);
@@ -194,7 +203,7 @@ void AllocAA::collectFunctionCallsTo (
   }
 }
 
-bool llvm::AllocAA::collectUserInstructions (Value *V, std::set<Instruction *> &userInstructions) {
+bool AllocAA::collectUserInstructions (Value *V, std::set<Instruction *> &userInstructions) {
   for (auto user : V->users()) {
     Instruction *I = nullptr;
     if (isa<Instruction>(user)) {
@@ -214,7 +223,7 @@ bool llvm::AllocAA::collectUserInstructions (Value *V, std::set<Instruction *> &
   return true;
 }
 
-void llvm::AllocAA::collectPrimitiveArrayValues (Module &M) {
+void AllocAA::collectPrimitiveArrayValues (Module &M) {
 
   /*
    * Check global values used under the CG of function "main"
@@ -399,7 +408,7 @@ bool AllocAA::doesValueNotEscape (std::set<Instruction *> checked, Instruction *
   return true;
 }
 
-void llvm::AllocAA::collectMemorylessFunctions (Module &M) {
+void AllocAA::collectMemorylessFunctions (Module &M) {
   for (auto F : CGUnderMain) {
 
     bool isMemoryless = true;
@@ -433,12 +442,12 @@ void llvm::AllocAA::collectMemorylessFunctions (Module &M) {
   }
 }
 
-Value *llvm::AllocAA::getPrimitiveArray (Value *V) {
+Value *AllocAA::getPrimitiveArray (Value *V) {
   auto localArray = getLocalPrimitiveArray(V);
   return localArray ? localArray : getGlobalValuePrimitiveArray(V);
 }
 
-Value *llvm::AllocAA::getLocalPrimitiveArray (Value *V) {
+Value *AllocAA::getLocalPrimitiveArray (Value *V) {
   auto targetV = V;
   if (auto cast = dyn_cast<CastInst>(V)) targetV = cast->getOperand(0);
   if (auto I = dyn_cast<Instruction>(targetV)) {
@@ -449,7 +458,7 @@ Value *llvm::AllocAA::getLocalPrimitiveArray (Value *V) {
   return nullptr;
 }
 
-Value *llvm::AllocAA::getGlobalValuePrimitiveArray (Value *V) {
+Value *AllocAA::getGlobalValuePrimitiveArray (Value *V) {
   auto targetV = V;
   if (auto cast = dyn_cast<CastInst>(V)) targetV = cast->getOperand(0);
   if (auto GV = dyn_cast<GlobalValue>(targetV)) {
@@ -460,7 +469,7 @@ Value *llvm::AllocAA::getGlobalValuePrimitiveArray (Value *V) {
   return nullptr;
 }
 
-Value *llvm::AllocAA::getMemoryPointerOperand (Value *V) {
+Value *AllocAA::getMemoryPointerOperand (Value *V) {
   if (auto load = dyn_cast<LoadInst>(V)) {
     return load->getPointerOperand();
   }
@@ -471,7 +480,7 @@ Value *llvm::AllocAA::getMemoryPointerOperand (Value *V) {
 }
 
 // Next there is code to register your pass to "opt"
-char llvm::AllocAA::ID = 0;
+char AllocAA::ID = 0;
 static RegisterPass<AllocAA> X("AllocAA", "Dependence Graph modifier");
 
 // Next there is code to register your pass to "clang"

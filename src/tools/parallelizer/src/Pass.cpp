@@ -38,6 +38,7 @@ bool Parallelizer::doInitialization (Module &M) {
 }
 
 bool Parallelizer::runOnModule (Module &M) {
+  errs() << "Parallelizer: Start\n";
 
   /*
   * Fetch the outputs of the passes we rely on.
@@ -80,17 +81,30 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
   * Collect information about C++ code we link parallelized loops with.
   */
-  errs() << "Parallelizer: Analyzing the module " << M.getName() << "\n";
+  errs() << "Parallelizer:  Analyzing the module " << M.getName() << "\n";
   if (!collectThreadPoolHelperFunctionsAndTypes(M, noelle)) {
-    errs() << "Parallelizer utils not included!\n";
+    errs() << "Parallelizer:    ERROR: I could not find the runtime within the module\n";
     return false;
   }
 
   /*
   * Fetch all the loops we want to parallelize.
   */
+  errs() << "Parallelizer:  Fetching the program loops\n";
   auto programLoops = noelle.getLoopStructures();
-  errs() << "Parallelizer:  There are " << programLoops->size() << " loops in the program we are going to consider\n";
+  if (programLoops->size() == 0){
+    errs() << "Parallelizer:    There is no loop to consider\n";
+    
+    /*
+     * Free the memory.
+     */
+    delete programLoops;
+
+    errs() << "Parallelizer: Exit\n";
+    return false;
+  }
+
+  errs() << "Parallelizer:    There are " << programLoops->size() << " loops in the program we are going to consider\n";
 
   /*
   * Compute the nesting forest.
@@ -276,6 +290,7 @@ bool Parallelizer::runOnModule (Module &M) {
     }
   }
 
+  errs() << "Parallelizer: Exit\n";
   return modified;
 }
 

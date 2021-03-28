@@ -11,6 +11,7 @@
 #include "CleanMetadata.hpp"
 
 using namespace llvm;
+using namespace llvm::noelle;
 
 CleanMetadata::CleanMetadata()
   : ModulePass{ID},

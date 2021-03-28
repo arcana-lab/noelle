@@ -38,7 +38,6 @@ namespace llvm::noelle {
       /*
        * Live-in values.
        */
-
       bool isAnOriginalLiveIn (Value *v) const ;
 
       Value * getCloneOfOriginalLiveIn (Value *o) const ;
@@ -46,6 +45,9 @@ namespace llvm::noelle {
       std::unordered_set<Value *> getOriginalLiveIns (void) const ;
 
       void addLiveIn (Value *original, Value *internal) ;
+
+      void removeLiveIn (Instruction *original);
+
 
       /*
        * Live-out instructions
@@ -63,6 +65,8 @@ namespace llvm::noelle {
        */
 
       bool isAnOriginalInstruction (Instruction *i) const ;
+
+      bool isAClonedInstruction (Instruction *i) const ;
 
       Instruction * getCloneOfOriginalInstruction (Instruction *o) const ;
 
@@ -90,6 +94,8 @@ namespace llvm::noelle {
       BasicBlock * addBasicBlockStub (BasicBlock *original);
 
       BasicBlock * cloneAndAddBasicBlock (BasicBlock *original);
+
+      BasicBlock * cloneAndAddBasicBlock (BasicBlock *original, std::function<bool (Instruction *origInst)> filter);
 
       void removeOriginalBasicBlock (BasicBlock *b);
 

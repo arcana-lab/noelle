@@ -55,6 +55,7 @@ namespace llvm::noelle {
       errs() << "Parallelizer:  Function = \"" << loopFunction->getName() << "\"\n";
       errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *loopHeader->getFirstNonPHI() << "\"\n";
       errs() << "Parallelizer:  Nesting level = " << loopStructure->getNestingLevel() << "\n";
+      errs() << "Parallelizer:  Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
     }
 
     /*
@@ -105,7 +106,7 @@ namespace llvm::noelle {
 
       DominatorSummary DS{DT, PDT};
       auto l = LI.getLoopsInPreorder()[0];
-      auto newLDI = new LoopDependenceInfo(taskFunctionDG, l, DS, SE, par.getMaximumNumberOfCores(), par.canFloatsBeConsideredRealNumbers());
+      auto newLDI = new LoopDependenceInfo(taskFunctionDG, l, DS, SE, par.getCompilationOptionsManager()->getMaximumNumberOfCores(), par.canFloatsBeConsideredRealNumbers());
       newLDI->copyParallelizationOptionsFrom(LDI);
 
       codeModified = helix.apply(newLDI, par, h);
@@ -154,7 +155,7 @@ namespace llvm::noelle {
     if (verbose != Verbosity::Disabled) {
       errs() << "Parallelizer:  Link the parallelize loop\n";
     }
-    auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlock()));
+    auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlockTaken()));
     auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
     par.linkTransformedLoopToOriginalFunction(
       loopFunction->getParent(),

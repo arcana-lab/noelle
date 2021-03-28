@@ -34,7 +34,8 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
    * Fetch the loop function.
    */
   auto loopFunction = loopSummary->getFunction();
-  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
+  auto sccManager = LDI->getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
 
   /*
    * Collect all PHIs in the loop header; they are local variables
@@ -46,7 +47,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
   std::vector<PHINode *> clonedLoopCarriedPHIs;
   for (auto &phi : loopHeader->phis()) {
     auto phiSCC = sccdag->sccOfValue(cast<Value>(&phi));
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(phiSCC);
+    auto sccInfo = sccManager->getSCCAttrs(phiSCC);
 
     if (sccInfo->canExecuteReducibly()) continue;
     if (sccInfo->isInductionVariableSCC()) continue;
