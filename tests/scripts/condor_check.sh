@@ -34,13 +34,18 @@ echo "  Checking the regression test results" ;
 regressionFinished="0" ;
 stillRunning="`mktemp`" ;
 condor_q `whoami` -l | grep ^Arguments | grep "`pwd`" | grep regression > $stillRunning ;
+stillRunningRegressionTests="0";
 if test -s $stillRunning ; then
   stillRunningJobs=`wc -l $stillRunning | awk '{print $1}'` ;
-  echo "    There are $stillRunningJobs jobs that are still running and they are the following ones:" ;
-  while IFS= read -r line; do
-    testRunning=`echo $line | awk '{print $4}'` ;
-    echo "        $testRunning" ;
-  done < "$stillRunning"
+  echo "    There are $stillRunningJobs jobs that are still running" ;
+  stillRunningRegressionTests=`echo "$stillRunningJobs < 20 | bc"` ;
+  if test "$stillRunningRegressionTests" == "1" ; then
+    echo "    The running jobs are the following ones:" ;
+    while IFS= read -r line; do
+      testRunning=`echo $line | awk '{print $4}'` ;
+      echo "        $testRunning" ;
+    done < "$stillRunning"
+  fi
 
 else
   echo "    All tests finished" ;
@@ -78,7 +83,7 @@ if test "$newTestsFailed" != "" ; then
   echo -e "    $newTestsFailedCounter new tests ${RED}failed${NC}: $newTestsFailed" ;
   echo -e "    The regression tests ${RED}failed${NC}" ;
 
-else
+elif test "$stillRunningRegressionTests" == "0" ; then
 
   # The regression passed
   # 
@@ -102,6 +107,9 @@ else
     echo "" ;
     echo -e "  The regression tests passed ${GREEN}succesfully${NC}" ;
   fi
+
+else
+  echo "    No new tests failed so far" ;
 fi
 echo "" ;
 echo "" ;
@@ -134,56 +142,53 @@ echo "################################### PERFORMANCE TESTS:" ;
 grep -i error compiler_output_performance.txt &> /dev/null ;
 if test $? -eq 0 ; then
   echo -e "  At least one performance test ${RED}failed${NC} to compile" ;
-  
-else 
+fi
 
-  # Check if they are still running
-  if test -f performance/speedups.txt ; then
-    linesRunning=`wc -l performance/speedups.txt | awk '{print $1}'` ;
-    linesOracle=`wc -l performance/oracle_speedups | awk '{print $1}'` ;
-    if test "$linesOracle" != "$linesRunning" ; then
-      echo "  They are still running" ;
+# Check if they are still running
+if test -f performance/speedups.txt ; then
+  linesRunning=`wc -l performance/speedups.txt | awk '{print $1}'` ;
+  linesOracle=`wc -l performance/oracle_speedups | awk '{print $1}'` ;
+  if test "$linesOracle" != "$linesRunning" ; then
+    echo "  They are still running" ;
 
-    else
-      echo "  All performance tests compiled correctly" ;
-      tempSpeedups=`mktemp` ;
-      tempOracle=`mktemp` ;
-      tempCompare=`mktemp` ;
-      tempOutput=`mktemp` ;
-      sort performance/speedups.txt > $tempSpeedups ;
-      sort performance/oracle_speedups > $tempOracle ;
-      paste $tempSpeedups $tempOracle > $tempCompare ;
-      awk '
-        {
-          if (  ($2 < ($4 * 0.9)) && (($4 - $2) > 0.1)   ){
-            printf("  Performance degradation for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
-          }
-        }' $tempCompare > $tempOutput ;
-      grep -i "Performance degradation" $tempOutput &> /dev/null ;
-      if test $? -eq 0 ; then
-        echo -e "  Next are the performance tests that run ${RED}slower${NC}:" ;
-        grep -i "Performance degradation" $tempOutput ;
+  else
+    tempSpeedups=`mktemp` ;
+    tempOracle=`mktemp` ;
+    tempCompare=`mktemp` ;
+    tempOutput=`mktemp` ;
+    sort performance/speedups.txt > $tempSpeedups ;
+    sort performance/oracle_speedups > $tempOracle ;
+    paste $tempSpeedups $tempOracle > $tempCompare ;
+    awk '
+      {
+        if (  ($2 < ($4 * 0.9)) && (($4 - $2) > 0.1)   ){
+          printf("    Performance degradation for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
+        }
+      }' $tempCompare > $tempOutput ;
+    grep -i "Performance degradation" $tempOutput &> /dev/null ;
+    if test $? -eq 0 ; then
+      echo -e "  Next are the performance tests that run ${RED}slower${NC}:" ;
+      grep -i "Performance degradation" $tempOutput ;
 
-      else 
-        echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
-        awk '{
-              if ($2 > ($4 * 1.1)){
-              printf("  Performance increase for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
+    else 
+      echo -e "  All performance tests ${GREEN}succeded!${NC}" ;
+      awk '{
+            if ($2 > ($4 * 1.1) || (($2 - $4) >= 1)){
+              printf("    Performance increase for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
             }
-          }' $tempCompare > $tempOutput ;
-        cat $tempOutput ;
-      fi
-
-      # Remove the files
-      rm $tempOracle ;
-      rm $tempSpeedups ;
-      rm $tempCompare ;
-      rm $tempOutput ;
+        }' $tempCompare > $tempOutput ;
+      cat $tempOutput ;
     fi
 
-  else 
-    echo "  They are still running" ;
+    # Remove the files
+    rm $tempOracle ;
+    rm $tempSpeedups ;
+    rm $tempCompare ;
+    rm $tempOutput ;
   fi
+
+else 
+  echo "  They are still running" ;
 fi
 
 # Clean 

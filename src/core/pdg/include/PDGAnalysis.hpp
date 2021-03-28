@@ -140,6 +140,8 @@ namespace llvm::noelle {
 
       bool isInIndependentRegion(Instruction *, Instruction *);
 
+      bool isActualCode (CallInst *call) const ;
+
       static const StringSet<> externalFuncsHaveNoSideEffectOrHandledBySVF;
   };
 

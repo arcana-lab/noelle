@@ -11,6 +11,7 @@
 #include "Noelle.hpp"
 #include "PDGAnalysis.hpp"
 #include "HotProfiler.hpp"
+#include "Architecture.hpp"
 
 namespace llvm::noelle {
 
@@ -47,8 +48,8 @@ bool Noelle::doInitialization (Module &M) {
   this->verbose = static_cast<Verbosity>(Verbose.getValue());
   this->minHot = ((double)(MinimumHotness.getValue())) / 100;
   auto optMaxCores = MaximumCores.getValue();
-  if (optMaxCores > 0){
-    this->maxCores = optMaxCores;
+  if (optMaxCores == 0){
+    optMaxCores = Architecture::getNumberOfPhysicalCores();
   }
   if (DisableDOALL.getNumOccurrences() > 0){
     this->enabledTransformations.erase(DOALL_ID);
@@ -83,6 +84,11 @@ bool Noelle::doInitialization (Module &M) {
   if (DisableFloatAsReal.getNumOccurrences() > 0){
     this->enableFloatAsReal = false;
   }
+
+  /*
+   * Allocate the managers.
+   */
+  this->om = new CompilationOptionsManager(M, optMaxCores);
 
   /*
    * Store the module.

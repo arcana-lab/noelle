@@ -62,6 +62,32 @@ namespace llvm::noelle {
 
     return ;
   }
+      
+  void Task::removeLiveIn (Instruction *original){
+
+    /*
+     * Find the element in the map.
+     */
+    auto it = this->liveInClones.find(original);
+    if (it == this->liveInClones.end()){
+      return ;
+    }
+
+    /*
+     * Remove the load of the live-in
+     */
+    auto clonedValue = this->liveInClones[original];
+    if (auto loadInst = dyn_cast<Instruction>(clonedValue)){
+      loadInst->eraseFromParent();
+    }
+
+    /*
+     * Remove the live-in.
+     */
+    this->liveInClones.erase(it);
+
+    return ;
+  }
 
   std::unordered_set<Value *> Task::getOriginalLiveIns (void) const {
     std::unordered_set<Value *> s;
@@ -153,7 +179,16 @@ namespace llvm::noelle {
     return newBB;
   }
 
-  BasicBlock * Task::cloneAndAddBasicBlock (BasicBlock *original){
+  BasicBlock * Task::cloneAndAddBasicBlock (BasicBlock *original) {
+    auto f = [](Instruction *o) -> bool {
+      return true;
+    };
+    auto newBB = this->cloneAndAddBasicBlock(original, f);
+
+    return newBB;
+  }
+
+  BasicBlock * Task::cloneAndAddBasicBlock (BasicBlock *original, std::function<bool (Instruction *origInst)> filter){
 
     /*
     * Create a stub.
@@ -165,6 +200,17 @@ namespace llvm::noelle {
     */
     IRBuilder<> builder(cloneBB);
     for (auto &I : *original) {
+
+      /*
+       * Check if we should add the current instruction.
+       */
+      if (!filter(&I)){
+        continue ;
+      }
+
+      /*
+       * Add the current instruction to the task.
+       */
       auto cloneI = builder.Insert(I.clone());
       this->instructionClones[&I] = cloneI;
     }

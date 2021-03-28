@@ -34,13 +34,12 @@ HELIX::HELIX (
   /*
    * Fetch the dispatcher to use to jump to a parallelized HELIX loop.
    */
-  this->taskDispatcher = this->module.getFunction("HELIX_dispatcher");
+  this->taskDispatcherSS = this->module.getFunction("NOELLE_HELIX_dispatcher_sequentialSegments");
+  assert(this->taskDispatcherSS != nullptr);
+  this->taskDispatcherCS = this->module.getFunction("NOELLE_HELIX_dispatcher_criticalSections");
+  assert(this->taskDispatcherCS != nullptr);
   this->waitSSCall = this->module.getFunction("HELIX_wait");
   this->signalSSCall =  this->module.getFunction("HELIX_signal");
-  if (this->taskDispatcher == nullptr){
-    errs()<< "HELIX: ERROR = the function HELIX_dispatcher could not be found.\n" ;
-    abort();
-  }
   if (!this->waitSSCall  || !this->signalSSCall) {
     errs() << "HELIX: ERROR = sync functions HELIX_wait, HELIX_signal were not both found.\n";
     abort();
@@ -274,7 +273,7 @@ void HELIX::createParallelizableTask (
    * This location exists only if there is more than one loop exit.
    */
   if (loopStructure->numberOfExitBasicBlocks() > 1){ 
-    nonReducableVars.insert(LDI->environment->indexOfExitBlock());
+    nonReducableVars.insert(LDI->environment->indexOfExitBlockTaken());
   }
 
   /*

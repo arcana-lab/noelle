@@ -52,6 +52,20 @@ LoopDependenceInfo::LoopDependenceInfo(
   return ;
 }
 
+LoopDependenceInfo::LoopDependenceInfo (
+  PDG *fG,
+  Loop *l,
+  DominatorSummary &DS,
+  ScalarEvolution &SE,
+  uint32_t maxCores,
+  bool enableFloatAsReal,
+  liberty::LoopAA *aa,
+  bool enableLoopAwareDependenceAnalyses
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, enableLoopAwareDependenceAnalyses}{
+
+  return ;
+}
+
 LoopDependenceInfo::LoopDependenceInfo(
   PDG *fG,
   Loop *l,
@@ -67,9 +81,14 @@ LoopDependenceInfo::LoopDependenceInfo(
     enabledOptimizations{optimizations},
     areLoopAwareAnalysesEnabled{enableLoopAwareDependenceAnalyses}
   {
+
+  /*
+   * Assertions.
+   */
   for (auto edge : fG->getEdges()) {
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
+
   /*
    * Enable all transformations.
    */
@@ -205,8 +224,10 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
     refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, &domainSpace);
   }
 
+  /*
+   * Analyze the loop to identify opportunities of cloning stack objects.
+   */
   if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {
-
     removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS);
   }
 
@@ -250,21 +271,45 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   PDG *loopInternalDG,
   DominatorSummary &DS
 ) {
+  errs() << "XAN: Remove deps\n";
+
+  /*
+   * Fetch the loop sub-tree rooted at @this.
+   */
   auto rootLoop = liSummary.getLoopNestingTreeRoot();
-  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS);
 
+  /*
+   * Create the memory cloning analyzer.
+   */
+  this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS, loopInternalDG);
+
+  /*
+   * Identify opportunities for cloning stack locations.
+   */
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
-
   for (auto edge : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*rootLoop, liSummary, *loopInternalDG)) {
-    if (!edge->isMemoryDependence()) continue;
 
+    /*
+     * Only memory dependences can be removed by cloning memory objects.
+     */
+    if (!edge->isMemoryDependence()) {
+      continue;
+    }
+
+    /*
+     * Only dependences between instructions can be removed by cloning memory objects.
+     */
     auto producer = dyn_cast<Instruction>(edge->getOutgoingT());
     auto consumer = dyn_cast<Instruction>(edge->getIncomingT());
-    if (!producer || !consumer) continue;
+    if (!producer || !consumer) {
+      continue;
+    }
 
     auto locationProducer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(producer);
     auto locationConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(consumer);
-    if (!locationProducer || !locationConsumer) continue;
+    if (!locationProducer || !locationConsumer) {
+      continue;
+    }
 
     bool isRAW = edge->isRAWDependence()
       && locationProducer->isInstructionStoringLocation(producer)
@@ -276,8 +321,9 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
       && locationConsumer->isInstructionStoringLocation(producer)
       && locationProducer->isInstructionStoringLocation(consumer);
 
-    if (!isRAW && !isWAR && !isWAW) continue;
-
+    if (!isRAW && !isWAR && !isWAW) {
+      continue;
+    }
     // producer->print(errs() << "Found alloca location for producer: "); errs() << "\n";
     // consumer->print(errs() << "Found alloca location for consumer: "); errs() << "\n";
     // locationProducer->getAllocation()->print(errs() << "Alloca: "); errs() << "\n";
