@@ -363,8 +363,8 @@ bool PDG::iterateOverDependencesTo (
   return false;
 }
 
-std::set<Value *> PDG::getSortedValues (void) {
-  std::set<Value *> s;
+std::vector<Value *> PDG::getSortedValues (void) {
+  std::vector<Value *> s;
 
   /*
    * Fetch all nodes.
@@ -376,10 +376,52 @@ std::set<Value *> PDG::getSortedValues (void) {
    */
   for (auto node : nodes){
     auto v = node->getT();
-    s.insert(v);
+    s.push_back(v);
   }
 
   return s;
+}
+      
+std::vector<DGEdge<Value> *> PDG::getSortedDependences (void) {
+  std::vector<DGEdge<Value> *> v;
+
+  /*
+   * Fetch all edges.
+   */
+  auto edges = this->getEdges();
+  for (auto edge : edges){
+    v.push_back(edge);
+  }
+
+  /*
+   * Sort
+   */
+  auto sortingFunction = [](DGEdge<Value> *d1, DGEdge<Value> *d2) -> bool {
+    auto src1 = d1->getIncomingT();
+    auto src2 = d2->getIncomingT();
+    if (src1 < src2){
+      return true;
+    }
+    if (src1 > src2){
+      return false;
+    }
+    assert(src1 == src2);
+
+    auto dst1 = d1->getIncomingT();
+    auto dst2 = d2->getIncomingT();
+    if (dst1 < dst2){
+      return true;
+    }
+    if (dst1 > dst2){
+      return false;
+    }
+    assert(dst1 == dst2);
+
+    return true;
+  };
+  //std::sort(v.begin(), v.end(), sortingFunction);
+
+  return v;
 }
 
 PDG::~PDG() {
