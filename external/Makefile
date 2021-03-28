@@ -19,7 +19,7 @@ patch.tar: patch svf
 	cd $< ; tar cf $@ * ; mv $@ ../ ;
 
 scaf:
-	git clone -b v9.0.0 https://github.com/PrincetonUniversity/SCAF scaf
+	git clone -b v9.1.1 https://github.com/PrincetonUniversity/SCAF scaf
 
 clean:
 	./scripts/clean.sh

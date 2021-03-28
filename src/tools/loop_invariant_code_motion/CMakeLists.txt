@@ -29,8 +29,6 @@ add_subdirectory(src)
 
 # Install
 install(PROGRAMS
-         include/Mem2RegNonAlloca.hpp
-         include/LastLiveOutPeeler.hpp
          include/LoopInvariantCodeMotion.hpp
          DESTINATION include)
 

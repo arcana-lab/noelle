@@ -26,7 +26,7 @@ namespace llvm::noelle {
 
       Mem2RegNonAlloca (LoopDependenceInfo const &LDI, Noelle &noelle) ;
 
-      bool promoteMemoryToRegister () ;
+      bool promoteMemoryToRegister (void) ;
 
     private:
       LoopDependenceInfo const &LDI;

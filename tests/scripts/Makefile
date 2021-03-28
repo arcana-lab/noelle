@@ -8,8 +8,6 @@ LIBS=-lm -lstdc++ -lpthread
 
 # Set the runtime flags
 RUNTIME_CFLAGS="-DDEBUG"
-#RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DDSWP_STATS"
-#RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DRUNTIME_PRINT"
 
 # Parallelization options
 # 	- To dump the PDG: -noelle-pdg-dump
@@ -17,9 +15,10 @@ PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -noelle-parallelizer-force
 NOELLE_OPTIONS=-noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
 OPT_LEVEL=-O3
 
-# Front-end flags
-FRONTEND_FLAGS=-emit-llvm -O0 -Xclang -disable-O0-optnone
+# Front-end
 INCLUDES=-I../../include/threadpool/include
+FRONTEND_OPTIONS=-O1 -Xclang -disable-llvm-passes 
+FRONTEND_FLAGS=-emit-llvm $(FRONTEND_OPTIONS)
 
 THREADER=Parallelizer_utils
 OPTIMIZED=parallelized
@@ -54,6 +53,7 @@ $(OPTIMIZED): test_parallelized.bc
 
 test_parallelized_unoptimized.bc: baseline_with_metadata.bc
 	noelle-parallelizer $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
+	noelle-meta-clean $@ $@
 	llvm-dis $@
 
 test_parallelized.bc: test_parallelized_unoptimized.bc
@@ -111,5 +111,6 @@ clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
 	rm -f time_parallelized.txt compiler_output.txt input.txt ;
 	rm -f output*.txt ;
+	rm -f OUT ;
 
 .PHONY: test_correctness clean

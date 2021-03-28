@@ -45,6 +45,9 @@ void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, Dat
      * Check calls.
      */
     if (auto call = dyn_cast<CallInst>(I)) {
+      if (!this->isActualCode(call)){
+        continue ;
+      }
       addEdgeFromFunctionModRef(pdg, F, AA, call, store, false);
       continue ;
     }
@@ -69,6 +72,9 @@ void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, Data
      * Check calls.
      */
     if (auto call = dyn_cast<CallInst>(I)) {
+      if (!this->isActualCode(call)){
+        continue ;
+      }
       addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
       continue ;
     }

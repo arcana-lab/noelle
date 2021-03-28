@@ -158,8 +158,9 @@ namespace llvm::noelle {
       std::unordered_set<SpilledLoopCarriedDependency *> spills;
       std::unordered_map<Instruction *, Instruction *> lastIterationExecutionDuplicateMap;
       BasicBlock *lastIterationExecutionBlock;
-
       bool enableInliner;
+      Function *taskDispatcherSS;
+      Function *taskDispatcherCS;
 
       void squeezeSequentialSegment (
         LoopDependenceInfo *LDI,

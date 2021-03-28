@@ -9,7 +9,8 @@ repoDir="$1" ;
 testDir="$2" ;
 noelleOptions="$3" ;
 parallelizationOptions="$4" ;
-errorFile="$5" ;
+frontendOptions="$5" ;
+errorFile="$6" ;
 
 # Setup the environment
 source ~/.bash_profile ;
@@ -22,7 +23,7 @@ cd $testDir ;
 make clean ;
 
 # Compile
-make NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
+make FRONTEND_OPTIONS="$frontendOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
 
 # Generate the input
 make input.txt 
@@ -33,8 +34,10 @@ make input.txt
 # Transformation
 timeout 10m ./parallelized `cat input.txt` &> output_parallelized.txt ;
 if test $? -ne 0 ; then
-  echo "ERROR: the test didn't pass because it timed out" ;
-  echo "$testDir $noelleOptions $parallelizationOptions" >> $errorFile ;
+  echo "ERROR: the following test did not pass because it timed out" ;
+  echo "  Test = `pwd`" ;
+  echo "  Node = `hostname`" ;
+  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions" >> $errorFile ;
   exit 0 ;
 fi
 
@@ -42,5 +45,5 @@ fi
 cmp output_baseline.txt output_parallelized.txt ;
 if test $? -ne 0 ; then
   echo "ERROR: the test didn't pass" ;
-  echo "$testDir $noelleOptions $parallelizationOptions" >> $errorFile ;
+  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions" >> $errorFile ;
 fi
