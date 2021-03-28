@@ -407,8 +407,8 @@ std::vector<DGEdge<Value> *> PDG::getSortedDependences (void) {
     }
     assert(src1 == src2);
 
-    auto dst1 = d1->getIncomingT();
-    auto dst2 = d2->getIncomingT();
+    auto dst1 = d1->getOutgoingT();
+    auto dst2 = d2->getOutgoingT();
     if (dst1 < dst2){
       return true;
     }
@@ -419,7 +419,7 @@ std::vector<DGEdge<Value> *> PDG::getSortedDependences (void) {
 
     return true;
   };
-  //std::sort(v.begin(), v.end(), sortingFunction);
+  std::sort(v.begin(), v.end(), sortingFunction);
 
   return v;
 }
