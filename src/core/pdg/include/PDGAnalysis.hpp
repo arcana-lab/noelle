@@ -22,9 +22,6 @@
 #include "DataFlow.hpp"
 #include "CallGraph.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
-
 namespace llvm::noelle {
   enum class PDGVerbosity { Disabled, Minimal, Maximal, MaximalAndPDG };
 
@@ -49,6 +46,8 @@ namespace llvm::noelle {
       PDG * getPDG (void) ;
 
       noelle::CallGraph * getProgramCallGraph (void);
+
+      static bool isTheLibraryFunctionPure (Function *libraryFunction);
 
     private:
       Module *M;
@@ -141,114 +140,9 @@ namespace llvm::noelle {
 
       bool isInIndependentRegion(Instruction *, Instruction *);
 
-      // http://www.cplusplus.com/reference/clibrary/ and https://github.com/SVF-tools/SVF/blob/master/lib/Util/ExtAPI.cpp
-      const StringSet<> externalFuncsHaveNoSideEffectOrHandledBySVF {
-        // ctype.h
-        "isalnum",
-        "isalpha",
-        "isblank",
-        "iscntrl",
-        "isdigit",
-        "isgraph",
-        "islower",
-        "isprint",
-        "ispunct",
-        "isspace",
-        "isupper",
-        "isxdigit",
-        "tolower",
-        "toupper",
+      bool isActualCode (CallInst *call) const ;
 
-        // math.h
-        "cos",
-        "sin",
-        "tan",
-        "acos",
-        "asin",
-        "atan",
-        "atan2",
-        "cosh",
-        "sinh",
-        "tanh",
-        "acosh",
-        "asinh",
-        "atanh",
-        "exp",
-        "ldexp",
-        "log",
-        "log10",
-        "exp2",
-        "expm1",
-        "ilogb",
-        "log1p",
-        "log2",
-        "logb",
-        "scalbn",
-        "scalbln",
-        "pow",
-        "sqrt",
-        "cbrt",
-        "hypot",
-        "erf",
-        "erfc",
-        "tgamma",
-        "lgamma",
-        "ceil",
-        "floor",
-        "fmod",
-        "trunc",
-        "round",
-        "lround",
-        "llround",
-        "nearbyint",
-        "remainder",
-        "copysign",
-        "nextafter",
-        "nexttoward",
-        "fdim",
-        "fmax",
-        "fmin",
-        "fabs",
-        "abs",
-        "fma",
-        "fpclassify",
-        "isfinite",
-        "isinf",
-        "isnan",
-        "isnormal",
-        "signbit",
-        "isgreater",
-        "isgreaterequal",
-        "isless",
-        "islessequal",
-        "islessgreater",
-        "isunordered",
-
-        // stdlib.h
-        "rand",
-        "srand",
-        
-        // time.h
-        "clock",
-        "difftime",
-
-        // wctype.h
-        "iswalnum",
-        "iswalpha",
-        "iswblank",
-        "iswcntrl",
-        "iswdigit",
-        "iswgraph",
-        "iswlower",
-        "iswprint",
-        "iswpunct",
-        "iswspace",
-        "iswupper",
-        "iswxdigit",
-        "towlower",
-        "towupper",
-        "iswctype",
-        "towctrans"
-      };
+      static const StringSet<> externalFuncsHaveNoSideEffectOrHandledBySVF;
   };
+
 }

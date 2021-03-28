@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Invariants.hpp"
+#include "PDGAnalysis.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -65,25 +66,41 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
   PDG *loopDG,
   std::unordered_set<Instruction *> &invariants
 ) : loop{loop}, loopDG{loopDG}, invariants{invariants} {
+
+  /*
+   * Check all instructions.
+   */
   for (auto inst : loop->getInstructions()){
 
     /*
-     * Since we iterate over data dependencies, we must explicitly exclude control values
+     * Since we will rely on data dependencies to identify loop invariants, we exclude instructions that are involved in control dependencies.
+     * This means we will never identify loop invariant branches. 
+     * This limitation can be avoided by generalizing the next algorithm.
      */
-    if (inst->isTerminator()) continue;
-
-    /*
-     * Since we iterate over data dependencies that are loop values, and a PHI may be comprised of constants,
-     * we must explicitly check that all PHI incoming values are equivalent
-     */
-    bool isPHI = false;
-    if (auto phi = dyn_cast<PHINode>(inst)) {
-      isPHI = true;
-      if (!arePHIIncomingValuesEquivalent(phi)) continue;
+    if (inst->isTerminator()) {
+      continue;
     }
 
-    if (this->invariants.find(inst) != this->invariants.end()) continue;
-    if (this->notInvariants.find(inst) != this->notInvariants.end()) continue;
+    /*
+     * Since we iterate over data dependencies that are loop values, and a PHI may be comprised of constants, we must explicitly check that all PHI incoming values are equivalent.
+     */
+    auto isPHI = false;
+    if (auto phi = dyn_cast<PHINode>(inst)) {
+      isPHI = true;
+      if (!arePHIIncomingValuesEquivalent(phi)) {
+        continue;
+      }
+    }
+
+    /*
+     * Skip instructions that have already been analyzed and categorized.
+     */
+    if (this->invariants.find(inst) != this->invariants.end()) {
+      continue;
+    }
+    if (this->notInvariants.find(inst) != this->notInvariants.end()) {
+      continue;
+    }
 
     this->dependencyValuesBeingChecked.clear();
     this->dependencyValuesBeingChecked.insert(inst);
@@ -110,11 +127,20 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
       if (  true
           && (callee != nullptr)
           && (callee->empty())  ){
-        if (callee->getName() == "malloc" || callee->getName() == "rand"){
+
+        /*
+         * The instruction is a call to a library function.
+         * Check if the function is pure.
+         */
+        if (!PDGAnalysis::isTheLibraryFunctionPure(callee)){
           canEvolve = true;
         }
       }
     }
+
+    /*
+     * Categorize the instruction.
+     */
     if (canEvolve){
       this->invariants.erase(inst);
       this->notInvariants.insert(inst);
@@ -124,6 +150,7 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
     }
   }
 
+  return ;
 }
 
 bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DGEdge<Value> *dep) {
@@ -135,6 +162,14 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DGEdg
     return false;
   }
   auto toInst = cast<Instruction>(toValue);
+
+  /*
+   * Store instructions may produce side effects
+   * Currently conservative
+   */
+  if (isa<StoreInst>(toValue)) {
+    return true;
+  }
 
   /*
    * If the instruction is not included in the loop, then we can skip this dependence.
@@ -156,7 +191,7 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DGEdg
    * Check if the values of a PHI are equivalent
    * If they are not, the PHI controls which value to use and is NOT loop invariant
    */
-  bool isPHI = false;
+  auto isPHI = false;
   if (auto phi = dyn_cast<PHINode>(toInst)) {
     isPHI = true;
     if (!arePHIIncomingValuesEquivalent(phi)) return true;

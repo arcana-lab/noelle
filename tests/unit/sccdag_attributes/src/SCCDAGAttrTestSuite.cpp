@@ -8,6 +8,7 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "LoopDependenceInfo.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
 namespace llvm::noelle {
@@ -75,19 +76,18 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   DominatorSummary DS(*DT, *PDT);
 
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
-  this->sccdag = new SCCDAG(fdg);
-  auto loopDG = fdg->createLoopsSubgraph(topLoop);
+  auto loopDI = new LoopDependenceInfo(fdg, topLoop, DS, *SE);
+  auto sccManager = loopDI->getSCCManager();
+
+  this->sccdag = sccManager->getSCCDAG();
 
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
-  auto loopExitBlocks = LIS.getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
-  auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
-  InvariantManager invariantManager(LIS.getLoopNestingTreeRoot(), loopDG);
-  InductionVariableManager IV{LIS, invariantManager, *SE, *sccdag, *environment};
+  auto IV = loopDI->getInvariantManager();
 
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
+
   // TODO: Test attribution on normalized SCCDAG as well
-  LoopCarriedDependencies lcd(LIS, DS, *sccdag);
-  this->attrs = new SCCDAGAttrs(true, loopDG, sccdag, LIS, *SE, lcd, IV, DS);
+  this->attrs = sccManager;
 
   // DGPrinter::writeGraph<SCCDAG, SCC>("graph-loop.dot", sccdag);
 
@@ -151,19 +151,22 @@ Values SCCDAGAttrTestSuite::clonableSCCsAreFound (ModulePass &pass, TestSuite &s
 }
 
 Values SCCDAGAttrTestSuite::clonableSCCsIntoLocalMemoryAreFound (ModulePass &pass, TestSuite &suite) {
-  SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
+  auto &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
 
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
-    SCCAttrs *sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
-    if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) sccs.insert(node->getT());
+    auto scc = node->getT();
+    auto sccAttrs = attrPass.attrs->getSCCAttrs(scc);
+    if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) {
+      sccs.insert(node->getT());
+    }
   }
 
   return SCCDAGAttrTestSuite::printSCCs(pass, suite, sccs);
 }
 
 Values SCCDAGAttrTestSuite::printSCCs (ModulePass &pass, TestSuite &suite, std::set<SCC *> sccs) {
-  SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
+  auto &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   Values valueNames{};
   for (auto scc : sccs) {
     std::vector<std::string> sccValues;

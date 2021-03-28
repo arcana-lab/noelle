@@ -39,6 +39,8 @@ namespace llvm::noelle {
 
       std::unordered_map<Function *, CallGraph *> getIslands (void) const ;
 
+      bool canFunctionEscape (Function *f) const ;
+
       SCCCAG * getSCCCAG (void) ;
 
       bool doesItBelongToASCC (Function *f) ;

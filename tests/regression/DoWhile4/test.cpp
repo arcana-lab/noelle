@@ -9,7 +9,7 @@ long long int computeSum (long long int *a, long long int iters, long long int s
   long long int i=0;
   auto z = (rand() + 1) %20;
   do {
-    auto randValue = rand();
+    printf("Start iteration %lld\n", i);
  
     for (auto k=0; k < innerIters; k++){
       a[i] += j + 2;
@@ -33,7 +33,7 @@ long long int computeSum (long long int *a, long long int iters, long long int s
       a[i] *= 1000;
     }
 
-    printf("End iteration %lld: %d\n", i, randValue);
+    printf("End iteration %lld\n", i);
 
     i++;
 

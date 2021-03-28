@@ -1,5 +1,5 @@
   /*
-   * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+   * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
    *
    * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -19,7 +19,6 @@
 #include "InductionVariables.hpp"
 #include "LoopGoverningIVAttribution.hpp"
 #include "LoopEnvironment.hpp"
-#include "LoopCarriedDependencies.hpp"
 #include "Variable.hpp"
 #include "MemoryCloningAnalysis.hpp"
 
@@ -27,11 +26,6 @@
   using namespace llvm;
 
   namespace llvm::noelle {
-
-    /*
-     * HACK: Remove once LoopDependenceInfo doesn't require argument-less SCCDAGAttrs constructor.
-     */ 
-    class LoopDependenceInfo;
 
     class SCCDAGAttrs {
       public:
@@ -42,10 +36,11 @@
           SCCDAG *loopSCCDAG,
           LoopsSummary &LIS,
           ScalarEvolution &SE,
-          LoopCarriedDependencies &LCD,
           InductionVariableManager &IV,
           DominatorSummary &DS
         ) ;
+        
+        SCCDAGAttrs () = delete ;
 
         /*
          * Graph wide structures
@@ -95,7 +90,7 @@
          * Return the SCCDAG of the loop.
          */
         // TODO: Return const reference to SCCDAG, not a raw pointer
-        SCCDAG * getSCCDAG (void) const ;
+         SCCDAG * getSCCDAG (void) const ;
 
         /*
          * Debug methods
@@ -106,41 +101,35 @@
 
       private:
         bool enableFloatAsReal;
-      std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
-      PDG *loopDG;
-      SCCDAG *sccdag;     /* SCCDAG of the related loop.  */
-      MemoryCloningAnalysis *memoryCloningAnalysis;
+        std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
+        PDG *loopDG;
+        SCCDAG *sccdag;     /* SCCDAG of the related loop.  */
+        MemoryCloningAnalysis *memoryCloningAnalysis;
 
-      /*
-       * HACK: Remove once LoopDependenceInfo doesn't produce empty SCCDAGAttrs on construction
-       */
-      friend class LoopDependenceInfo;
-      SCCDAGAttrs () ;
+        /*
+         * Helper methods on SCCDAG
+         */
+        void collectSCCGraphAssumingDistributedClones ();
+        void collectLoopCarriedDependencies (LoopsSummary &LIS);
 
-      /*
-       * Helper methods on SCCDAG
-       */
-      void collectSCCGraphAssumingDistributedClones ();
-      void collectLoopCarriedDependencies (LoopsSummary &LIS, LoopCarriedDependencies &LCD);
+        /*
+         * Helper methods on single SCC
+         */
+        bool checkIfReducible (SCC *scc, LoopsSummary &LIS);
+        bool checkIfIndependent (SCC *scc);
+        bool checkIfSCCOnlyContainsInductionVariables (
+          SCC *scc,
+          LoopsSummary &LIS,
+          std::set<InductionVariable *> &loopGoverningIVs,
+          std::set<InductionVariable *> &IVs
+        );
+        void checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);
+        void checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS) ;
+        bool isClonableByInductionVars (SCC *scc) const ;
+        bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;
+        bool isClonableByCmpBrInstrs (SCC *scc) const ;
+        bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(SCC *scc, LoopsSummary &LIS) const ;
 
-      /*
-       * Helper methods on single SCC
-       */
-      bool checkIfReducible (SCC *scc, LoopsSummary &LIS, LoopCarriedDependencies &LCD);
-      bool checkIfIndependent (SCC *scc);
-      bool checkIfSCCOnlyContainsInductionVariables (
-        SCC *scc,
-        LoopsSummary &LIS,
-        std::set<InductionVariable *> &loopGoverningIVs,
-        std::set<InductionVariable *> &IVs
-      );
-      void checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);
-      void checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS) ;
-      bool isClonableByInductionVars (SCC *scc) const ;
-      bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;
-      bool isClonableByCmpBrInstrs (SCC *scc) const ;
-      bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(SCC *scc, LoopsSummary &LIS) const ;
+    };
 
-  };
-
-}
+  }

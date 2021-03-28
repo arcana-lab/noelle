@@ -74,7 +74,8 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
   /*
    * Fetch the list of functions of the module.
    */
-  auto mainFunction = this->getEntryFunction();
+  this->getFunctionsManager();
+  auto mainFunction = this->fm->getEntryFunction();
   assert(mainFunction != nullptr);
   auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
 
@@ -88,7 +89,7 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
    */
   auto nextLoopIndex = 0;
   if (this->verbose >= Verbosity::Maximal){
-    errs() << "Parallelizer: Filter out cold code\n" ;
+    errs() << "Noelle: Filter out cold code\n" ;
   }
   for (auto function : *functions){
 
@@ -96,7 +97,9 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
      * Check if the function is hot.
      */
     if (!isFunctionHot(function, minimumHotness)){
-      errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
+      if (this->verbose >= Verbosity::Maximal){
+        errs() << "Noelle:  Disable \"" << function->getName() << "\" as cold function\n";
+      }
       continue ;
     }
 
@@ -105,6 +108,9 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
      */
     auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
     if (std::distance(LI.begin(), LI.end()) == 0){
+      if (this->verbose >= Verbosity::Maximal){
+        errs() << "Noelle:  Function \"" << function->getName() << "\" does not have loops\n";
+      }
       continue ;
     }
 
@@ -121,13 +127,13 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
       auto loopStructure = new LoopStructure{loop};
       auto loopHeader = loopStructure->getHeader();
       if (!isLoopHot(loopStructure, minimumHotness)){
-        errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
+        errs() << "Noelle:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
         delete loopStructure;
         continue ;
       }
 
       // TODO: Print out more information than just loop hotness, perhaps the loop header label
-      // errs() << "Parallelizer:  Loop hotness = " << hotness << "\n" ;
+      // errs() << "Noelle:  Loop hotness = " << hotness << "\n" ;
 
       /*
        * Check if we have to filter loops.
@@ -212,7 +218,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * Check of loopIndex provided is within bounds
    */
   if (this->loopHeaderToLoopIndexMap.find(header) == this->loopHeaderToLoopIndexMap.end()){
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, this->enableFloatAsReal, {}, this->loopAA, this->loopAwareDependenceAnalysis);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, optimizations, this->loopAA, this->loopAwareDependenceAnalysis);
 
     delete DS;
     return ldi;
@@ -227,7 +233,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * No filter file was provided. Construct LDI without profiler configurables
    */
   if (!this->hasReadFilterFile) {
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->maxCores, this->enableFloatAsReal, optimizations, this->loopAA, this->loopAwareDependenceAnalysis);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, optimizations, this->loopAA, this->loopAwareDependenceAnalysis);
 
     delete DS;
     return ldi;
@@ -246,14 +252,15 @@ LoopDependenceInfo * Noelle::getLoop (
   assert(maximumNumberOfCoresForTheParallelization > 1
       && "Noelle: passed user a filtered loop yet it only has max cores <= 1");
 
-  auto ldi = getLoopDependenceInfoForLoop(
+  auto ldi = this->getLoopDependenceInfoForLoop(
       llvmLoop,
       funcPDG,
       DS,
       &SE,
       this->techniquesToDisable[loopIndex],
       this->DOALLChunkSize[loopIndex],
-      maximumNumberOfCoresForTheParallelization
+      maximumNumberOfCoresForTheParallelization,
+      optimizations
       );
 
   delete DS;
@@ -337,7 +344,10 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     /*
      * Allocate the loop wrapper.
      */
-    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, this->enableFloatAsReal, {}, this->loopAA, this->loopAwareDependenceAnalysis);
+    for(auto edge : funcPDG->getEdges()) {
+      assert(!edge->isLoopCarriedDependence() && "Flag set");
+    }
+    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, this->loopAA, this->loopAwareDependenceAnalysis);
     allLoops->push_back(ldi);
   }
 
@@ -372,7 +382,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   /*
    * Fetch the list of functions of the module.
    */
-  auto mainFunction = this->getEntryFunction();
+  this->getFunctionsManager();
+  auto mainFunction = this->fm->getEntryFunction();
   assert(mainFunction != nullptr);
   auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
 
@@ -386,7 +397,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
    */
   auto nextLoopIndex = 0;
   if (this->verbose >= Verbosity::Maximal){
-    errs() << "Parallelizer: Filter out cold code\n" ;
+    errs() << "Noelle: Filter out cold code\n" ;
   }
   for (auto function : *functions){
 
@@ -394,7 +405,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
      * Check if the function is hot.
      */
     if (!isFunctionHot(function, minimumHotness)){
-      errs() << "Parallelizer:  Disable \"" << function->getName() << "\" as cold function\n";
+      errs() << "Noelle:  Disable \"" << function->getName() << "\" as cold function\n";
       continue ;
     }
 
@@ -437,12 +448,12 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
        */
       LoopStructure loopS{loop};
       if (!isLoopHot(&loopS, minimumHotness)){
-        errs() << "Parallelizer:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
+        errs() << "Noelle:  Disable loop \"" << currentLoopIndex << "\" as cold code\n";
         continue ;
       }
 
       // TODO: Print out more information than just loop hotness, perhaps the loop header label
-      // errs() << "Parallelizer:  Loop hotness = " << hotness << "\n" ;
+      // errs() << "Noelle:  Loop hotness = " << hotness << "\n" ;
 
       /*
        * Check if we have to filter loops.
@@ -452,7 +463,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
         /*
          * Allocate the loop wrapper.
          */
-        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->maxCores, this->enableFloatAsReal, {}, this->loopAA, this->loopAwareDependenceAnalysis);
+        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, this->loopAA, this->loopAwareDependenceAnalysis);
 
         allLoops->push_back(ldi);
         continue ;
@@ -491,7 +502,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
           &SE,
           this->techniquesToDisable[currentLoopIndex],
           this->DOALLChunkSize[currentLoopIndex],
-          maximumNumberOfCoresForTheParallelization
+          maximumNumberOfCoresForTheParallelization,
+          {}
           );
 
       /*
@@ -512,6 +524,36 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   delete functions;
 
   return allLoops;
+}
+
+std::unordered_map<BasicBlock *, LoopDependenceInfo *> Noelle::getInnermostLoopsThatContains (
+  const std::vector<LoopDependenceInfo *> &loops) {
+  std::unordered_map<BasicBlock *, LoopDependenceInfo *> m{};
+
+  /*
+   * Iterate over all loops and map all basic blocks to the innermost ones.
+   */
+  for (auto ldi : loops){
+
+    /*
+     * Fetch the loop structure.
+     */
+    auto ls = ldi->getLoopStructure();
+
+    /*
+     * Iterate over the basic blocks of the current loop and add those that do not belong to innermost loops.
+     */
+    for (auto bb : ls->getBasicBlocks()){
+      auto firstInst = &*bb->begin();
+      if (ls->isIncludedInItsSubLoops(firstInst)){
+        continue ;
+      }
+      assert(m.find(bb) == m.end());
+      m[bb] = ldi;
+    }
+  }
+
+  return m;
 }
 
 LoopDependenceInfo * Noelle::getInnermostLoopThatContains (
@@ -584,7 +626,8 @@ uint32_t Noelle::getNumberOfProgramLoops (
   /*
    * Fetch the list of functions of the module.
    */
-  auto mainFunction = this->getEntryFunction();
+  this->getFunctionsManager();
+  auto mainFunction = this->fm->getEntryFunction();
   assert(mainFunction != nullptr);
   auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
 
@@ -865,10 +908,23 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
     ScalarEvolution *SE,
     uint32_t techniquesToDisableForLoop,
     uint32_t DOALLChunkSizeForLoop,
-    uint32_t maxCores
+    uint32_t maxCores,
+    std::unordered_set<LoopDependenceInfoOptimization> optimizations
     ) {
 
-  auto ldi = new LoopDependenceInfo(functionPDG, loop, *DS, *SE, maxCores, this->enableFloatAsReal, {}, this->loopAA, this->loopAwareDependenceAnalysis);
+  /*
+   * Allocate the LDI.
+   */
+  auto ldi = new LoopDependenceInfo(
+      functionPDG, 
+      loop, 
+      *DS, 
+      *SE, 
+      maxCores,
+      this->enableFloatAsReal, 
+      optimizations, 
+      this->loopAA, 
+      this->loopAwareDependenceAnalysis);
 
   /*
    * Set the loop constraints specified by INDEX_FILE.

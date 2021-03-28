@@ -20,6 +20,9 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   DataFlowResult *reachabilityDFR
 ){
 
+  /*
+   * Fetch the task.
+   */
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
   /*
@@ -31,8 +34,10 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
    */
   std::unordered_map<SCC *, SCC*> taskToOriginalFunctionSCCMap;
   std::unordered_set<SCC *> spillSCCs;
-  auto originalSCCDAG = originalLDI->sccdagAttrs.getSCCDAG();
-  auto taskSCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  auto originalSCCManager = originalLDI->getSCCManager();
+  auto originalSCCDAG = originalSCCManager->getSCCDAG();
+  auto sccManager = LDI->getSCCManager();
+  auto taskSCCDAG = sccManager->getSCCDAG();
   for (auto spill : spills) {
     auto originalSpillSCC = originalSCCDAG->sccOfValue(spill->originalLoopCarriedPHI);
     auto clonedInstructionInLoop = *spill->environmentStores.begin();
@@ -55,13 +60,42 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
     Instruction *anyClonedInstInLoop = nullptr;
     auto clonedLoop = LDI->getLoopStructure();
     for (auto nodePair : originalSCC->internalNodePairs()) {
+
+      /*
+       * Fetch the original instruction.
+       */
       auto originalInst = cast<Instruction>(nodePair.first);
+
+      /*
+       * Fetch the cloned one.
+       */
       auto clonedInst = helixTask->getCloneOfOriginalInstruction(originalInst);
-      if (!clonedLoop->isIncluded(clonedInst)) continue;
+
+      /*
+       * If there is no clone, then this instruction can be skipped.
+       */
+      if (clonedInst == nullptr){
+        continue ;
+      }
+      assert(clonedInst != nullptr);
+
+      /*
+       * There is a cloned instruction, so we must consider it.
+       */
+      if (!clonedLoop->isIncluded(clonedInst)) {
+        continue;
+      }
       anyClonedInstInLoop = clonedInst;
       break;
     }
-    assert(anyClonedInstInLoop != nullptr);
+
+    /*
+     * If there are no cloned instructions of the current SCC in the task, then it means this SCC doesn't need to exist
+     * in the parallelized version of the loop (e.g., a call to lifetime.start)
+     */
+    if (!anyClonedInstInLoop){
+      continue ;
+    }
 
     SCC *singleMappingSCC = nullptr;
     for (auto taskNode : taskSCCDAG->getNodes()) {
@@ -92,7 +126,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   /*
    * Identify the loop's preamble, and whether the original loop was IV governed
    */
-  auto loopSCCDAG = LDI->sccdagAttrs.getSCCDAG();
+  auto loopSCCDAG = sccManager->getSCCDAG();
   auto preambleSCCNodes = loopSCCDAG->getTopLevelNodes();
   assert(preambleSCCNodes.size() == 1 && "The loop internal SCCDAG should only have one preamble");
   auto preambleSCC = (*preambleSCCNodes.begin())->getT();
@@ -106,7 +140,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   /*
    * Fetch the set of SCCs that have loop-carried data dependences.
    */
-  auto depsSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
+  auto depsSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
 
   /*
    * Allocate the sequential segments, one per partition.
@@ -125,10 +159,10 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
        * NOTE: If no original SCC mapping exists, default to analyzing the newly constructed SCC
        */
       auto sccToAnalyze = scc;
-      SCCAttrs *sccInfo = LDI->sccdagAttrs.getSCCAttrs(sccToAnalyze);
+      SCCAttrs *sccInfo = sccManager->getSCCAttrs(sccToAnalyze);
       if (taskToOriginalFunctionSCCMap.find(scc) != taskToOriginalFunctionSCCMap.end()) {
         sccToAnalyze = taskToOriginalFunctionSCCMap.at(scc);
-        sccInfo = originalLDI->sccdagAttrs.getSCCAttrs(sccToAnalyze);
+        sccInfo = originalSCCManager->getSCCAttrs(sccToAnalyze);
       }
 
       /*

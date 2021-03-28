@@ -1,32 +1,9 @@
+.clangd
+install
+build
+compile_commands.json
+external/svf
+external/scaf
+external/patch.tar
 # dependencies
 threadpool
-*compile_commands.json
-
-# build artifacts
-src/**/build
-tests/unit/**/build
-
-# test output steps
-tests/regression/**/*.bc
-tests/performance/**/*.bc
-tests/regression/**/*.ll
-tests/performance/**/*.ll
-tests/regression/**/*.dot
-tests/performance/**/*.dot
-tests/unit/**/suite/**/*_output.txt
-tests/unit/**/*.dot
-tests/**/*_prof
-
-# test output executables
-tests/regression/**/baseline
-tests/performance/**/baseline
-tests/regression/**/parallelized
-tests/performance/**/parallelized
-tests/regression/**/testseq
-tests/performance/**/testseq
-
-# linked files for testing
-tests/regression/**/Parallelizer_utils.cpp
-tests/performance/**/Parallelizer_utils.cpp
-tests/regression/**/Makefile
-tests/performance/**/Makefile

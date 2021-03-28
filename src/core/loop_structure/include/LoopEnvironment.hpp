@@ -17,8 +17,9 @@ namespace llvm::noelle {
 
   class LoopEnvironment {
     public:
-
       LoopEnvironment (PDG *loopDG, std::vector<BasicBlock *> &exitBlocks);
+
+      LoopEnvironment() = delete;
 
       iterator_range<std::vector<Value *>::iterator> getProducers (void) ;
 
@@ -29,24 +30,26 @@ namespace llvm::noelle {
       /*
        * One per external dependent + one to track exit block
        */
-      int envSize (void) const ;
+      uint64_t size (void) const ;
 
-      int indexOfExitBlock (void) const ;
+      int64_t indexOfExitBlockTaken (void) const ;
 
-      Type * typeOfEnv (int index) const ;
+      Type * typeOfEnvironmentLocation (uint64_t index) const ;
 
-      bool isLiveIn (Value *val);
+      bool isLiveIn (Value *val) const ;
 
-      Value * producerAt (uint32_t ind) ;
+      Value * producerAt (uint64_t ind) const ;
 
-      std::set<Value *> consumersOf (Value *prod);
+      std::set<Value *> consumersOf (Value *prod) const ;
 
       bool isProducer (Value *producer) const ;
 
+      uint64_t addLiveInValue (Value *newLiveInValue, const std::unordered_set<Instruction *> &consumers);
+
     private:
-      void addLiveInProducer (Value *producer);
+      uint64_t addLiveInProducer (Value *producer);
       void addLiveOutProducer (Value *producer);
-      void addProducer (Value *producer, bool liveIn);
+      uint64_t addProducer (Value *producer, bool liveIn);
 
       /*
        * DEPRECATED(angelo): use of this API suggests poor environment 

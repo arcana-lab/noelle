@@ -3,6 +3,7 @@
 
 ## Table of Contents
 - [Description](#description)
+- [Version](#version)
 - [Prerequisites](#prerequisites)
 - [Build NOELLE](#build-noelle)
 - [Testing](#testing)
@@ -14,6 +15,33 @@
 NOELLE provides abstractions to help build advanced code analyses and transformations.
 
 NOELLE is in active development so more tools, tests, and abstractions will be added.
+
+We release NOELLE's source code in the hope of benefiting others. 
+You are kindly asked to acknowledge usage of the tool by citing the following paper:
+```
+@misc{matni2021noelle,
+      title={{NOELLE} {O}ffers {E}mpowering {LL}VM {E}xtensions},
+      author={Angelo Matni and Enrico Armenio Deiana and Yian Su and Lukas Gross and Souradip Ghosh and Sotiris Apostolakis and Ziyang Xu and Zujun Tan and Ishita Chaturvedi and David I. August and Simone Campanoni},
+      year={2021},
+      eprint={2102.05081},
+      archivePrefix={arXiv},
+      primaryClass={cs.PL}
+}
+```
+
+## Version
+The latest stable version is 9.0.0 (tag = `v9.0.0`).
+
+### Version Numbering Scheme
+The version number is in the form of \[v _Major.Minor.Revision_ \]
+- **Major**: Each major version matches a specific LLVM version (e.g., version 9 matches LLVM 9, version 11 matches LLVM 11)
+- **Minor**: Starts from 0, each minor version represents either one or more API replacements/removals that might impact the users OR a forced update every six months (the minimum minor update frequency)
+- **Revision**: Starts from 0; each revision version may include bug fixes or incremental improvements
+
+#### Update Frequency
+- **Major**: Matches the LLVM releases on a best-effort basis
+- **Minor**: At least once per six months, at most once per month (1/month ~ 2/year)
+- **Revision**: At least once per month, at most twice per week (2/week ~ 1/month)
 
 
 ## Prerequisites
@@ -34,7 +62,7 @@ Run `make uninstall` from the root directory to uninstall the NOELLE installatio
 
 
 ## Testing
-To run all tests in parallel using Condor:
+To run all tests in parallel using Condor, invoke the following commands:
 ```
 make clean ; 
 cd tests ;

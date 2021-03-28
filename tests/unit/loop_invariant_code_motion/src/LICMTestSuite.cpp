@@ -64,8 +64,9 @@ bool LICMTestSuite::runOnModule (Module &M) {
   errs() << "LICMTestSuite: Instantiating LDI and LoopInvariantCodeMotion components\n";
   DominatorSummary DS{DT, PDT};
   auto l = LI.getLoopsInPreorder()[0];
-  this->ldi = new LoopDependenceInfo(fdg, l, DS, SE, noelle.getMaximumNumberOfCores(), true);
-  this->mem2Reg = new Mem2RegNonAlloca(*this->ldi, noelle);
+  auto om = noelle.getCompilationOptionsManager();
+  this->ldi = new LoopDependenceInfo(fdg, l, DS, SE, om->getMaximumNumberOfCores(), true);
+  this->licm = new LoopInvariantCodeMotion(noelle);
 
   // PDGPrinter pdgPrinter;
   // pdgPrinter.printGraphsForFunction(*mainF, fdg, LI);
@@ -76,7 +77,7 @@ bool LICMTestSuite::runOnModule (Module &M) {
   suite->runTests((ModulePass &)*this);
 
   errs() << "LICMTestSuite: Freeing memory\n";
-  delete this->mem2Reg;
+  delete this->licm;
   delete this->ldi;
   delete this->suite;
 
@@ -84,7 +85,7 @@ bool LICMTestSuite::runOnModule (Module &M) {
 }
 
 Values LICMTestSuite::loadsAndStoresAreHoistedFromLoop (ModulePass &pass, TestSuite &suite) {
-  LICMTestSuite &licmPass = static_cast<LICMTestSuite &>(pass);
+  auto &licmPass = static_cast<LICMTestSuite &>(pass);
 
   /*
    * Collect values before promotion
@@ -100,7 +101,7 @@ Values LICMTestSuite::loadsAndStoresAreHoistedFromLoop (ModulePass &pass, TestSu
     }
   }
 
-  licmPass.mem2Reg->promoteMemoryToRegister();
+  licmPass.licm->promoteMemoryLocationsToRegisters(*ldi);
 
   /*
    * Collect remaining values after promotion

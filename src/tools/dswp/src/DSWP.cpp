@@ -89,13 +89,14 @@ bool DSWP::canBeAppliedToLoop (
    */
   auto doesSequentialSCCExist = false;
   uint64_t biggestSCC = 0;
-  for (auto nodePair : LDI->sccdagAttrs.getSCCDAG()->internalNodePairs()) {
+  auto sccManager = LDI->getSCCManager();
+  for (auto nodePair : sccManager->getSCCDAG()->internalNodePairs()) {
 
     /*
      * Fetch the current SCC.
      */
     auto currentSCC = nodePair.first;
-    auto currentSCCInfo = LDI->sccdagAttrs.getSCCAttrs(currentSCC);
+    auto currentSCCInfo = sccManager->getSCCAttrs(currentSCC);
 
     /*
      * Check the coverage of the SCC.
@@ -201,9 +202,7 @@ bool DSWP::apply (
   auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto loopFunction = loopHeader->getParent();
-  DominatorTree dt(*loopFunction);
-  PostDominatorTree pdt(*loopFunction);
-  this->originalFunctionDS = new DominatorSummary(dt, pdt);
+  this->originalFunctionDS = par.getDominators(loopFunction);
 
   /*
    * Partition the SCCDAG.
@@ -262,8 +261,8 @@ bool DSWP::apply (
   /*
    * Should an exit block environment variable be necessary, register one 
    */
-  if (LDI->numberOfExits() > 1){ 
-    nonReducableVars.insert(LDI->environment->indexOfExitBlock());
+  if (loopSummary->numberOfExitBasicBlocks() > 1){ 
+    nonReducableVars.insert(LDI->environment->indexOfExitBlockTaken());
   }
 
   initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);

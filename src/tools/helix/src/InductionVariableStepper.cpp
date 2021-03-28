@@ -47,7 +47,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
    * There are situations where the SCC containing an IV is not deemed fully clonable,
    * so we spill those IVs. Skip those when re-wiring the step size of IVs
    */
-  auto sccdag = LDI->sccdagAttrs.getSCCDAG();
+  auto sccManager = LDI->getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
   std::set<InductionVariable *> ivInfos;
   for (auto ivInfo : ivManager->getInductionVariables(*loopStructure)) {
     auto loopEntryPHI = ivInfo->getLoopEntryPHI();
@@ -57,7 +58,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      * for it even if that is unnecessary. Fix that, then remove this check
      */ 
     auto scc = sccdag->sccOfValue(loopEntryPHI);
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->canExecuteReducibly()) continue;
 
     /*
@@ -154,7 +155,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     std::vector<Instruction *> originalInstsBeingDuplicated;
     for (auto &I : *loopHeader) {
 		  auto scc = sccdag->sccOfValue(&I);
-      auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+      auto sccInfo = sccManager->getSCCAttrs(scc);
       auto sccType = sccInfo->getType();
 
       // I.print(errs() << "Investigating: "); errs() << "\n";

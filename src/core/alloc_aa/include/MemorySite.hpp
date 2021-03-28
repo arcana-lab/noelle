@@ -23,7 +23,7 @@
 using namespace llvm;
 using namespace std;
 
-namespace llvm {
+namespace llvm::noelle {
 
   /*
    * GOAL: Traverse call graph to explore memory sites.

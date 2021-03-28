@@ -31,7 +31,8 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
   /*
     * Fetch the call graph.
     */
-  auto pcg = noelle.getProgramCallGraph();
+  auto fm = noelle.getFunctionsManager();
+  auto pcg = fm->getProgramCallGraph();
 
   /*
     * Check if there are functions with only one caller.
@@ -56,6 +57,13 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
       */
     auto callerNodes = node->getIncomingEdges();
     if (callerNodes.size() != 1){
+      continue ;
+    }
+
+    /*
+     * Check if the function can escape.
+     */
+    if (pcg->canFunctionEscape(nodeFunction)){
       continue ;
     }
 
@@ -115,7 +123,7 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
     assert(callInst->getCalledFunction() == nodeFunction);
     InlineFunctionInfo IFI;
     errs() << "DeadFunctionEliminator: Inline " << *callInst << " into " << callInst->getFunction()->getName() << "\n";
-    //modified |= InlineFunction(callInst, IFI);
+    modified |= InlineFunction(callInst, IFI);
   }
   if (modified) {
     return true;
@@ -129,7 +137,7 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
   /*
     * Fetch the island of the entry method of the program.
     */
-  auto entryF = noelle.getEntryFunction();
+  auto entryF = fm->getEntryFunction();
   auto entryIsland = islands[entryF];
   std::unordered_set<CallGraph *> liveIslands{entryIsland};
 
@@ -175,6 +183,10 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
     */
   std::vector<Function *>toDelete;
   for (auto &F : M){
+
+    /*
+     * Check if &F is dead
+     */
     if (F.isIntrinsic()){
       continue ;
     }
@@ -182,10 +194,15 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
       continue ;
     }
     auto n = pcg->getFunctionNode(&F);
-    if (liveIslands.find(islands[&F]) == liveIslands.end()){
-      errs() << "DeadFunctionEliminator: Function " << F.getName() << " is dead\n";
-      toDelete.push_back(&F);
+    if (liveIslands.find(islands[&F]) != liveIslands.end()){
+      continue ;
     }
+    if (pcg->canFunctionEscape(&F)){
+      continue ;
+    }
+
+    errs() << "DeadFunctionEliminator: Function " << F.getName() << " is dead\n";
+    toDelete.push_back(&F);
   }
   for (auto f : toDelete){
     f->eraseFromParent();

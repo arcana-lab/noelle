@@ -58,9 +58,14 @@ bool DOALL::canBeAppliedToLoop (
   }
 
   /*
+   * Fetch the loop structure.
+   */
+  auto loopStructure = LDI->getLoopStructure();
+
+  /*
    * The loop must have one single exit path.
    */
-  if (LDI->numberOfExits() > 1) { 
+  if (loopStructure->numberOfExitBasicBlocks() > 1){ 
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   More than 1 loop exit blocks\n";
     }
@@ -70,7 +75,8 @@ bool DOALL::canBeAppliedToLoop (
   /*
    * The loop must have all live-out variables to be reducable.
    */
-  if (!LDI->sccdagAttrs.areAllLiveOutValuesReducable(LDI->environment)) {
+  auto sccManager = LDI->getSCCManager();
+  if (!sccManager->areAllLiveOutValuesReducable(LDI->environment)) {
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   Some post environment value is not reducable\n";
     }
@@ -81,9 +87,10 @@ bool DOALL::canBeAppliedToLoop (
    * The loop must have at least one induction variable.
    * This is because the trip count must be controlled by an induction variable.
    */
-  if (!LDI->getLoopGoverningIVAttribution()) {
+  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  if (!loopGoverningIVAttr){
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   Loop does not have an IV\n";
+      errs() << "DOALL:   Loop does not have an induction variable to control the number of iterations\n";
     }
     return false;
   }
@@ -93,7 +100,7 @@ bool DOALL::canBeAppliedToLoop (
    * all induction variables must have step sizes that are loop invariant
    */
   auto IVManager = LDI->getInductionVariableManager();
-  for (auto IV : IVManager->getInductionVariables(*LDI->getLoopStructure())) {
+  for (auto IV : IVManager->getInductionVariables(*loopStructure)) {
     if (IV->isStepValueLoopInvariant()) {
       continue;
     }
@@ -104,15 +111,31 @@ bool DOALL::canBeAppliedToLoop (
   }
 
   /*
+   * Check if the final value of the induction variable is a loop invariant.
+   */
+  auto invariantManager = LDI->getInvariantManager();
+  LoopGoverningIVUtility ivUtility(loopGoverningIVAttr->getInductionVariable(), *loopGoverningIVAttr);
+  auto &derivation = ivUtility.getConditionValueDerivation();
+  for (auto I : derivation) {
+    if (!invariantManager->isLoopInvariant(I)){
+      if (this->verbose != Verbosity::Disabled) {
+        errs() << "DOALL:  Loop has the governing induction variable that is compared against a non-invariant\n";
+        errs() << "DOALL:     The non-invariant is = " << *I << "\n";
+      }
+      return false;
+    }
+  }
+
+  /*
    * The compiler must be able to remove loop-carried data dependences of all SCCs with loop-carried data dependences.
    */
-  auto nonDOALLSCCs = LDI->sccdagAttrs.getSCCsWithLoopCarriedDataDependencies();
+  auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
   for (auto scc : nonDOALLSCCs) {
 
     /*
      * Fetch the SCC metadata.
      */
-    auto sccInfo = LDI->sccdagAttrs.getSCCAttrs(scc);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
 
     /*
      * If the SCC is reducable, then it does not block the loop to be a DOALL.
@@ -129,12 +152,19 @@ bool DOALL::canBeAppliedToLoop (
     }
 
     /*
+     * If the SCC can be removed by cloning objects, then we can ignore it.
+     */
+    if (sccInfo->canBeClonedUsingLocalMemoryLocations()){
+      continue ;
+    }
+
+    /*
      * If all loop carried data dependencies within the SCC do not overlap between
      * iterations, then DOALL can ignore them
      */
     auto areAllDataLCDsFromDisjointMemoryAccesses = true;
     auto domainSpaceAnalysis = LDI->getLoopIterationDomainSpaceAnalysis();
-    LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [
+    sccManager->iterateOverLoopCarriedDataDependences(scc, [
       &areAllDataLCDsFromDisjointMemoryAccesses, domainSpaceAnalysis
     ](DGEdge<Value> *dep) -> bool {
       if (dep->isControlDependence()) return false;
@@ -163,7 +193,7 @@ bool DOALL::canBeAppliedToLoop (
         // scc->printMinimal(errs(), "DOALL:     ") ;
         // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
         errs() << "DOALL:     Loop-carried data dependences\n";
-        LDI->sccdagAttrs.iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+        sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
           errs() << "DOALL:       " << *fromInst << " ---> " << *toInst ;
@@ -207,6 +237,11 @@ bool DOALL::apply (
   auto loopFunction = loopStructure->getFunction();
 
   /*
+   * Fetch the environment of the loop.
+   */
+  auto loopEnvironment = LDI->environment;
+
+  /*
    * Print the parallelization request.
    */
   if (this->verbose != Verbosity::Disabled) {
@@ -219,14 +254,14 @@ bool DOALL::apply (
    * Generate an empty task for the parallel DOALL execution.
    */
   auto chunkerTask = new DOALLTask(this->taskSignature, this->module);
-  this->generateEmptyTasks(LDI, { chunkerTask });
+  this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { chunkerTask });
   this->numTaskInstances = LDI->getMaximumNumberOfCores();
 
   /*
    * Allocate memory for all environment variables
    */
-  auto preEnvRange = LDI->environment->getEnvIndicesOfLiveInVars();
-  auto postEnvRange = LDI->environment->getEnvIndicesOfLiveOutVars();
+  auto preEnvRange = loopEnvironment->getEnvIndicesOfLiveInVars();
+  auto postEnvRange = loopEnvironment->getEnvIndicesOfLiveOutVars();
   std::set<int> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
   std::set<int> reducableVars(postEnvRange.begin(), postEnvRange.end());
   this->initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
@@ -243,10 +278,10 @@ bool DOALL::apply (
    * Load all loop live-in values at the entry point of the task.
    */
   auto envUser = this->envBuilder->getUser(0);
-  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
+  for (auto envIndex : loopEnvironment->getEnvIndicesOfLiveInVars()) {
     envUser->addLiveInIndex(envIndex);
   }
-  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+  for (auto envIndex : loopEnvironment->getEnvIndicesOfLiveOutVars()) {
     envUser->addLiveOutIndex(envIndex);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);

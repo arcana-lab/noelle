@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -31,17 +31,10 @@ namespace llvm::noelle {
   class LoopDependenceInfo {
     public:
 
-      std::unordered_map<BasicBlock *, BasicBlock *> loopBBtoPD;  /*< From Basic block to its immediate post-dominatr.  */
-
       /*
        * Environment
        */
       LoopEnvironment *environment;
-
-      /*
-       * SCCDAG.
-       */
-      SCCDAGAttrs sccdagAttrs;
 
       /*
        * Parallelization options
@@ -51,6 +44,13 @@ namespace llvm::noelle {
       /*
        * Constructors.
        */
+      LoopDependenceInfo (
+        PDG *fG,
+        Loop *l,
+        DominatorSummary &DS,
+        ScalarEvolution &SE
+      );
+
       LoopDependenceInfo (
         PDG *fG,
         Loop *l,
@@ -78,6 +78,17 @@ namespace llvm::noelle {
         uint32_t maxCores,
         bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations
+      );
+
+      LoopDependenceInfo (
+        PDG *fG,
+        Loop *l,
+        DominatorSummary &DS,
+        ScalarEvolution &SE,
+        uint32_t maxCores,
+        bool enableFloatAsReal,
+        liberty::LoopAA *aa,
+        bool enableLoopAwareDependenceAnalyses
       );
 
       LoopDependenceInfo (
@@ -125,11 +136,6 @@ namespace llvm::noelle {
       void copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) ;
 
       /*
-       * Return the number of exits of the loop.
-       */
-      uint32_t numberOfExits (void) const;
-
-      /*
        * Check whether a transformation is enabled.
        */
       bool isTransformationEnabled (Transformation transformation);
@@ -167,7 +173,7 @@ namespace llvm::noelle {
 
       InductionVariableManager * getInductionVariableManager (void) const ;
 
-      SCCDAGAttrs * getSCCManager (void) ;
+      SCCDAGAttrs * getSCCManager (void) const ;
 
       InvariantManager * getInvariantManager (void) const ;
 
@@ -221,6 +227,8 @@ namespace llvm::noelle {
 
       uint64_t tripCount;
 
+      SCCDAGAttrs *sccdagAttrs;
+
       /*
        * Methods
        */
@@ -244,8 +252,7 @@ namespace llvm::noelle {
 
       void removeUnnecessaryDependenciesThatCloningMemoryNegates (
         PDG *loopInternalDG,
-        DominatorSummary &DS,
-        LoopCarriedDependencies &LCD
+        DominatorSummary &DS
       ) ;
 
   };
