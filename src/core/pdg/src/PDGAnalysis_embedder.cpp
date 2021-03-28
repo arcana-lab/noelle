@@ -95,12 +95,11 @@ void PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<V
   /*
    * Construct edge metadata
    */
-  for (auto &edge : pdg->getEdges()) {
-    MDNode *edgeM = getEdgeMetadata(edge, C, nodeIDMap);
-    if (Argument *arg = dyn_cast<Argument>(edge->getOutgoingT())) {
+  for (auto &edge : pdg->getSortedDependences()) {
+    auto edgeM = getEdgeMetadata(edge, C, nodeIDMap);
+    if (auto arg = dyn_cast<Argument>(edge->getOutgoingT())) {
       functionEdgesMap[arg->getParent()].push_back(edgeM);
-    }
-    else if (Instruction *inst = dyn_cast<Instruction>(edge->getOutgoingT())) {
+    } else if (auto inst = dyn_cast<Instruction>(edge->getOutgoingT())) {
       functionEdgesMap[inst->getFunction()].push_back(edgeM);
     }
   }
@@ -109,7 +108,7 @@ void PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<V
    * Embed metadata of edges to function
    */
   for (auto &funEdge : functionEdgesMap) {
-    MDNode *m = MDTuple::get(C, funEdge.second);
+    auto m = MDTuple::get(C, funEdge.second);
     funEdge.first->setMetadata("noelle.pdg.edges", m);
   }
 
