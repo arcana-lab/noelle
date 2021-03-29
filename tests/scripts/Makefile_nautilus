@@ -18,12 +18,12 @@ RUNTIME_CFLAGS="-DNDEBUG"
 # 	- To dump the PDG: -noelle-pdg-dump
 PARALLELIZATION_OPTIONS=-noelle-parallelizer-force
 NOELLE_OPTIONS=-noelle-verbose=2 -noelle-min-hot=1 -noelle-max-cores=8
-OPT_LEVEL=-O0 -g
+OPT_LEVEL=-O3
 
 # Front-end flags
 NAUTILUS_FLAGS=-fno-omit-frame-pointer -ffreestanding -fno-stack-protector -fno-strict-aliasing -fno-strict-overflow -mno-red-zone -mcmodel=large 
-#FRONTEND_FLAGS=-emit-llvm -O0 -Xclang -disable-O0-optnone $(NAUTILUS_FLAGS)
-FRONTEND_FLAGS=-emit-llvm -O0 -Xclang -disable-O0-optnone
+FRONTEND_OPTIONS=-O1 -Xclang -disable-llvm-passes 
+FRONTEND_FLAGS=-emit-llvm $(FRONTEND_OPTIONS)
 INCLUDES=-I$(NAUTILUS)/include -I$(NAUTILUS)/include/rt/virgil
 
 THREADER=Parallelizer_utils
@@ -54,6 +54,7 @@ $(OPTIMIZED): test_parallelized.ll
 
 test_parallelized_unoptimized.bc: baseline_with_metadata.bc
 	noelle-parallelizer $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
+	noelle-meta-clean $@ $@
 	llvm-dis $@
 
 test_parallelized.bc: test_parallelized_unoptimized.bc
@@ -81,5 +82,6 @@ clean:
 	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
 	rm -f time_parallelized.txt compiler_output.txt input.txt ;
 	rm -f output*.txt ;
+	rm -f OUT ;
 
 .PHONY: test_correctness clean
