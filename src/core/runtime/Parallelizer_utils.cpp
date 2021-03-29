@@ -36,8 +36,8 @@ class NoelleRuntime {
 
   private:
     mutable nk_virgil_spinlock_t doallMemoryLock;
-    std::vector<uint32_t> doallMemorySizes;
-    std::vector<bool> doallMemoryAvailability;
+    uint32_t *doallMemorySizes;
+    bool *doallMemoryAvailability;
     std::vector<DOALL_args_t *> doallMemory;
     nk_virgil_task_t **doallMemoryTasks;
     uint32_t doallMemoryChunks;
@@ -190,9 +190,6 @@ extern "C" {
      * Set the number of cores to use.
      */
     auto numCores = runtime.reserveCores(maxNumberOfCores);
-    #ifdef RUNTIME_PRINT
-    std::cerr << "Starting dispatcher: num cores " << numCores << ", chunk size: " << chunkSize << std::endl;
-    #endif
 
     /*
      * Allocate the memory to store the arguments.
@@ -733,8 +730,10 @@ extern "C" {
 }
 
 NoelleRuntime::NoelleRuntime()
-  : 
-    doallMemoryChunks{0}
+  :
+    doallMemorySizes{nullptr}
+  , doallMemoryAvailability{nullptr}
+  , doallMemoryChunks{0}
   , doallMemoryTasks{nullptr}
   {
 
@@ -760,7 +759,7 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index, nk_
    * Check if we can reuse a previously-allocated memory region.
    */
   nk_virgil_spinlock_lock(&this->doallMemoryLock);
-  auto doallMemoryNumberOfChunks = this->doallMemoryAvailability.size();
+  auto doallMemoryNumberOfChunks = this->doallMemoryChunks;
   for (auto i=0; i < doallMemoryNumberOfChunks; i++){
     auto currentSize = this->doallMemorySizes[i];
     if (  true
@@ -808,12 +807,23 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index, nk_
   /*
    * Step3: allocate the memory about tagging whether a chunk is available or not.
    */
-  this->doallMemoryAvailability.push_back(false);
+  if (this->doallMemoryAvailability == nullptr){
+    this->doallMemoryAvailability = (bool *) malloc(sizeof(bool) * this->doallMemoryChunks);
+  } else {
+    this->doallMemoryAvailability = (bool *) realloc(this->doallMemoryAvailability, sizeof(bool) * this->doallMemoryChunks);
+  }
+  this->doallMemoryAvailability[doallMemoryNumberOfChunks] = false;
 
   /*
    * Step4: allocate the memory to use for DOALL.
    */
-  this->doallMemorySizes.push_back(cores);
+  if (this->doallMemorySizes == nullptr){
+    this->doallMemorySizes = (uint32_t *) malloc(sizeof(uint32_t) * this->doallMemoryChunks);
+  } else {
+    this->doallMemorySizes = (uint32_t *) realloc(this->doallMemorySizes, sizeof(uint32_t) * this->doallMemoryChunks);
+  }
+  this->doallMemorySizes[doallMemoryNumberOfChunks] = cores;
+
   posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(DOALL_args_t) * cores);
   this->doallMemory.push_back(argsForAllCores);
 
