@@ -59,9 +59,8 @@ LoopDependenceInfo::LoopDependenceInfo (
   ScalarEvolution &SE,
   uint32_t maxCores,
   bool enableFloatAsReal,
-  liberty::LoopAA *aa,
   bool enableLoopAwareDependenceAnalyses
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, enableLoopAwareDependenceAnalyses}{
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, enableLoopAwareDependenceAnalyses}{
 
   return ;
 }

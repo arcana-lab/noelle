@@ -75,7 +75,6 @@ namespace llvm::noelle {
         ScalarEvolution &SE,
         uint32_t maxCores,
         bool enableFloatAsReal,
-        liberty::LoopAA *aa,
         bool enableLoopAwareDependenceAnalyses
       );
 

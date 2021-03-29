@@ -11,12 +11,22 @@
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "DataFlow.hpp"
 
+/*
+ * SCAF headers
+ */
+#ifdef ENABLE_SCAF
 #include "scaf/MemoryAnalysisModules/LoopAA.h"
 #include "scaf/Utilities/PDGQueries.h"
+#endif
 
 namespace llvm::noelle {
-    
+
+/*
+ * SCAF
+ */
+#ifdef ENABLE_SCAF
 static liberty::LoopAA *NoelleSCAFAA = nullptr;
+#endif
 
 class NoelleSCAFIntegration : public ModulePass {
   public:
@@ -58,6 +68,7 @@ void refinePDGWithLoopAwareMemDepAnalysis(
 }
 
 void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
+  #ifdef ENABLE_SCAF
   assert(NoelleSCAFAA != nullptr);
   // Iterate over all the edges of the loop PDG and
   // collect memory deps to be queried.
@@ -143,6 +154,9 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
       }
     }
   }
+  #endif
+
+  return ;
 }
 
 // TODO: Refactor along with HELIX's exact same implementation of this method
@@ -242,12 +256,16 @@ bool NoelleSCAFIntegration::doInitialization (Module &M) {
 }
 
 void NoelleSCAFIntegration::getAnalysisUsage(AnalysisUsage &AU) const {
+  #ifdef ENABLE_SCAF
   AU.addRequired<liberty::LoopAA>();
+  #endif
   return ;
 }
       
 bool NoelleSCAFIntegration::runOnModule (Module &M) {
+  #ifdef ENABLE_SCAF
   NoelleSCAFAA = getAnalysis<liberty::LoopAA>().getTopAA();
+  #endif
 
   return false;
 }
