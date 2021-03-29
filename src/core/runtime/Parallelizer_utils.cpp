@@ -38,7 +38,7 @@ class NoelleRuntime {
     mutable nk_virgil_spinlock_t doallMemoryLock;
     uint32_t *doallMemorySizes;
     bool *doallMemoryAvailability;
-    std::vector<DOALL_args_t *> doallMemory;
+    DOALL_args_t ** doallMemory;
     nk_virgil_task_t **doallMemoryTasks;
     uint32_t doallMemoryChunks;
 
@@ -824,8 +824,16 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index, nk_
   }
   this->doallMemorySizes[doallMemoryNumberOfChunks] = cores;
 
+  /*
+   * Step5: allocate the memory used by tasks to run DOALL iterations
+   */
   posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(DOALL_args_t) * cores);
-  this->doallMemory.push_back(argsForAllCores);
+  if (this->doallMemory == nullptr){
+    this->doallMemory = (DOALL_args_t **) malloc(sizeof(DOALL_args_t *) * this->doallMemoryChunks);
+  } else {
+    this->doallMemory = (DOALL_args_t **) realloc(this->doallMemory, sizeof(DOALL_args_t *) * this->doallMemoryChunks);
+  }
+  this->doallMemory[doallMemoryNumberOfChunks] = argsForAllCores;
 
   nk_virgil_spinlock_unlock(&this->doallMemoryLock);
 
