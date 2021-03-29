@@ -821,7 +821,7 @@ extern "C" {
     /*
      * Free the cores and memory.
      */
-    runtime.releaseCores(numberOfStages);
+    runtime.releaseCores(numCores);
     for (int i = 0; i < numberOfQueues; ++i) {
       switch (queueSizes[i]) {
         case 1:
@@ -915,11 +915,7 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
   /*
    * Set the index.
    */
-  if (doallMemoryNumberOfChunks == 0){
-    (*index) = 0;
-  } else {
-    (*index) = doallMemoryNumberOfChunks;
-  }
+  (*index) = doallMemoryNumberOfChunks;
 
   /*
    * Initialize the memory.
@@ -933,7 +929,7 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
 
   return argsForAllCores;
 }
-    
+
 void NoelleRuntime::releaseDOALLArgs (uint32_t index){
   pthread_spin_lock(&this->doallMemoryLock);
   this->doallMemoryAvailability[index] = true;
