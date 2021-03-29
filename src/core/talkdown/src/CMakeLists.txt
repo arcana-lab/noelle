@@ -1,6 +1,10 @@
 # Sources
 set(Srcs 
   TalkDown.cpp
+  Node.cpp
+  Tree.cpp
+  Annotation.cpp
+  AnnotationParser.cpp
 )
 
 # Compilation flags
@@ -21,7 +25,20 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} ../../basic_utilities/include ../include)
+include_directories(
+  ../../basic_utilities/include
+  ../../loop_structure/include
+  ../../pdg/include
+  ../../alloca_aa/include
+  ../../dataflow/include
+  ../../callgraph/include
+  ../include
+  ./
+  ${CMAKE_INSTALL_PREFIX}/include
+  ${CMAKE_INSTALL_PREFIX}/include/svf
+  ${CMAKE_INSTALL_PREFIX}/include/scaf
+  ${LLVM_INCLUDE_DIRS}
+  )
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})

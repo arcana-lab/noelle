@@ -19,6 +19,7 @@
 #include "DataFlow.hpp"
 #include "Scheduler.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
+#include "TalkDown.hpp"
 #include "FunctionsManager.hpp"
 #include "TypesManager.hpp"
 #include "CompilationOptionsManager.hpp"
@@ -206,6 +207,7 @@ namespace llvm::noelle {
       bool loopAwareDependenceAnalysis;
       PDGAnalysis *pdgAnalysis;
       liberty::LoopAA *loopAA;
+      TalkDown *talkdown;
 
       char *filterFileName;
       bool hasReadFilterFile;

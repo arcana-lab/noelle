@@ -9,6 +9,8 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Parallelizer.hpp"
+#include "Annotation.hpp"
+#include "AnnotationParser.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -121,7 +123,56 @@ namespace llvm::noelle {
 
       return false;
     };
-    tree->visitPreOrder(selector);
+
+    auto selector_by_annotation = [&noelle, &timeSavedLoops, profiles](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
+      // We already targeted the loops with selected annoation
+      errs() << "BRIAN: n->getLoop\n";
+      auto ls = n->getLoop();
+//      if (ls->getNestingLevel() != 1) {
+  //      return false;
+    //  }
+      auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID };
+      errs() << "BRIAN: noelle.getLoop\n";
+      auto ldi = noelle.getLoop(ls, optimizations);
+      errs() << "BRIAN: LDI from selector ptr is " << ldi << '\n';
+
+    auto head = ls->getHeader();
+    for(auto &I : *head) {
+      auto annots = parseAnnotationsForInst(&I);
+      for (auto A : annots) {
+        if (A.getKey() == "selected") {
+          if(A.getValue() == "1") {
+            // Filter unless it's parent is also selected
+            auto p = ls->getParentLoop();
+            if (!p) {
+              timeSavedLoops[ldi] = ls->getID();
+              errs() << "BRIAN: it's selected\n";
+              return true;
+            }   
+            auto pHead = p->getHeader();
+            for(auto &I2 : *pHead) {
+              auto annots2 = parseAnnotationsForInst(&I2);
+              for (auto A2 : annots2) {
+                if (A2.getKey() == "selected") {
+                  if(A2.getValue() == "1") {
+                    return false;
+                  }   
+                }   
+              } 
+            }
+            timeSavedLoops[ldi] = ls->getID();
+            errs() << "BRIAN: it's selected\n";   
+            return true;
+          }   
+        }   
+      }   
+    } 
+
+
+      return false;
+    };
+    tree->visitPreOrder(selector_by_annotation);
+//    tree->visitPreOrder(selector);
 
     /*
     * Sort the loops depending on the amount of time that can be saved by a parallelization technique.
@@ -154,7 +205,7 @@ namespace llvm::noelle {
       return l1LS->getNestingLevel() < l2LS->getNestingLevel();
     };
     std::sort(selectedLoops.begin(), selectedLoops.end(), compareOperator);
-
+    errs() << "Parallelizer: LoopSelector: Selected " << selectedLoops.size() << "\n";
     /*
     * Print the order and the savings.
     */

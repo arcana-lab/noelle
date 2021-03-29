@@ -11,6 +11,8 @@
 #include "DOALL.hpp"
 #include "DOALLTask.hpp"
 
+#include "llvm/IR/Verifier.h"
+
 using namespace llvm;
 using namespace llvm::noelle;
 
@@ -56,7 +58,8 @@ bool DOALL::canBeAppliedToLoop (
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Checking if the loop is DOALL\n";
   }
-
+//  errs() << "BRIAN: Forcing DOALL\n";
+//  return true;
   /*
    * Fetch the loop structure.
    */
@@ -202,6 +205,7 @@ bool DOALL::canBeAppliedToLoop (
           } else {
             errs() << " via variable\n";
           }
+          errs() << "BRIAN: It's LCD flag is " << dep->isLoopCarriedDependence() << '\n';
           return false;
             });
       }
@@ -284,15 +288,21 @@ bool DOALL::apply (
   for (auto envIndex : loopEnvironment->getEnvIndicesOfLiveOutVars()) {
     envUser->addLiveOutIndex(envIndex);
   }
+
+  errs() << "BRIAN 16: before generateCodeToLoadLiveIn: " << *(chunkerTask->getTaskBody()) << '\n';
   this->generateCodeToLoadLiveInVariables(LDI, 0);
+  errs() << "BRIAN 16: before generateCodeToLoadLiveIn: " << *(chunkerTask->getTaskBody()) << '\n';
 
   /*
    * HACK: For now, this must follow loading live-ins as this re-wiring overrides
    * the live-in mapping to use locally cloned memory instructions that are live-in to the loop
    */
+
+  errs() << "BRIAN 15: before cloneMemoryLocation: " << *(chunkerTask->getTaskBody()) << '\n';
   if (LDI->isOptimizationEnabled(LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
     this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, 0);
   }
+  errs() << "BRIAN 15: after cloneMemoryLocation: " << *(chunkerTask->getTaskBody()) << '\n';
 
   /*
    * Fix the data flow within the parallelized loop by redirecting operands of
@@ -304,8 +314,14 @@ bool DOALL::apply (
     errs() << "DOALL:  Adjusted data flow\n";
   }
 
+  errs() << "BRIAN 14: before setRuducable: " << *(chunkerTask->getTaskBody()) << '\n';
   this->setReducableVariablesToBeginAtIdentityValue(LDI, 0);
+  errs() << "BRIAN 14: before setReducable: " << *(chunkerTask->getTaskBody()) << '\n';
+
+  errs() << "BRIAN 13: before rewireLoop: " << *(chunkerTask->getTaskBody()) << '\n';
   this->rewireLoopToIterateChunks(LDI);
+
+  errs() << "BRIAN 13: after rewireLoop: " << *(chunkerTask->getTaskBody()) << '\n';
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DOALL:  Rewired induction variables and reducible variables\n";
   }
@@ -321,14 +337,19 @@ bool DOALL::apply (
    * all other code is generated. Propagated PHIs through the generated
    * outer loop might affect the values stored
    */
+
+  errs() << "BRIAN 12: before storeLiveOut: " << *(chunkerTask->getTaskBody()) << '\n';
   this->generateCodeToStoreLiveOutVariables(LDI, 0);
+
+  errs() << "BRIAN 12: after storeLiveOut: " << *(chunkerTask->getTaskBody()) << '\n';
 
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DOALL:  Stored live outs\n";
   }
-
+  errs() << "BRIAN 11: before addChunkFunctionEx: " << *(chunkerTask->getTaskBody()) << '\n';
   this->addChunkFunctionExecutionAsideOriginalLoop(LDI, loopFunction, par);
 
+  errs() << "BRIAN 11: after addChunkFunctionEx: " << *(chunkerTask->getTaskBody()) << '\n';
   /*
    * Final printing.
    */
@@ -346,6 +367,7 @@ bool DOALL::apply (
     errs() << "DOALL: Exit\n";
   }
 
+  assert(!verifyFunction(*(chunkerTask->getTaskBody()), &errs()));
   return true;
 }
 

@@ -9,7 +9,8 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Parallelizer.hpp"
-
+#include "Annotation.hpp"
+#include "AnnotationParser.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -161,7 +162,77 @@ bool Parallelizer::runOnModule (Module &M) {
 
     return false;
   };
-  noelle.filterOutLoops(forest, filter);
+
+  auto filter_by_annotation = [this, forest, profiles](LoopStructure *ls) -> bool{
+    auto loopID = ls->getID();
+
+    /*
+    * Check if the latency of each loop invocation is enough to justify the parallelization.
+    */
+/*    auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
+    auto averageInstsPerInvocationThreshold = 2000;
+    if (  true
+          && (!this->forceParallelization)
+          && (averageInstsPerInvocation < averageInstsPerInvocationThreshold)
+      ){
+      errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
+      errs() << "Parallelizer:      It is too low. The threshold is " << averageInstsPerInvocationThreshold << "\n";
+*/
+      /*
+      * Remove the loop.
+      */
+/*      return true;
+    }
+*/
+    /*
+    * Check the number of iterations per invocation.
+    */
+/*    auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
+    auto averageIterationThreshold = 12;
+    if (  true
+          && (!this->forceParallelization)
+          && (averageIterations < averageIterationThreshold)
+      ){
+      errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
+      errs() << "Parallelizer:      It is too low. The threshold is " << averageIterationThreshold << "\n";
+
+      /*
+      * Remove the loop.
+      */
+/*      return true;
+    }  
+  */  
+    auto head = ls->getHeader();
+    for(auto &I : *head) {
+      auto annots = parseAnnotationsForInst(&I);
+      for (auto A : annots) {
+        if (A.getKey() == "selected") {
+          if(A.getValue() == "1") {
+            // Filter unless it's parent is also selected
+            auto p = ls->getParentLoop();
+            if (!p) {
+              return false;
+            }
+            auto pHead = p->getHeader();
+            for(auto &I2 : *pHead) {
+              auto annots2 = parseAnnotationsForInst(&I2);
+              for (auto A2 : annots2) {
+                if (A2.getKey() == "selected") {
+                  if(A2.getValue() == "1") {
+                    return true;
+                  }
+                }
+              }
+            }
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  };
+  noelle.filterOutLoops(forest, filter_by_annotation);
+//  noelle.filterOutLoops(forest, filter);
 
   /*
   * Print the loops.
@@ -247,7 +318,6 @@ bool Parallelizer::runOnModule (Module &M) {
     * Parallelize the loops.
     */
     for (auto ldi : loopsToParallelize){
-
       /*
       * Check if we can parallelize this loop.
       */
@@ -264,6 +334,13 @@ bool Parallelizer::runOnModule (Module &M) {
         errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
         continue ;
       }
+//      if (loopID < 251) {
+  //      continue;
+    //  }
+
+//      if (ls->getFunction()->getName() != "initialize") {
+  //      continue;
+    //  }
 
       /*
       * Parallelize the current loop.

@@ -1061,6 +1061,8 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
      * location of the initial value that needs to be changed
      */
     auto producer = LDI->environment->producerAt(envInd);
+    errs() << "BRIAN 40: producer of live-out variable " << *producer << '\n';
+    errs() << "BRIAN 41: producer function " << *(loopHeader->getParent()) << '\n';
     PHINode *loopEntryProducerPHI = fetchLoopEntryPHIOfProducer(LDI, producer);
 
     /*

@@ -1,6 +1,6 @@
-UTILS=transformations basic_utilities task loops architecture clean_metadata callgraph scheduler
+UTILS=transformations basic_utilities task callgraph loops architecture clean_metadata scheduler
 ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure
-ENABLERS=loop_distribution loop_unroll loop_whilifier outliner
+ENABLERS=loop_distribution loop_unroll loop_whilifier 
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) hotprofiler unique_ir_marker noelle scripts
 
 all: $(ALL)
@@ -12,9 +12,6 @@ noelle:
 	cd $@ ; ../../scripts/run_me.sh
 
 unique_ir_marker:
-	cd $@ ; ../../scripts/run_me.sh
-
-outliner:
 	cd $@ ; ../../scripts/run_me.sh
 
 dataflow:
