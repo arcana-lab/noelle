@@ -12,6 +12,7 @@
 
 #include "PDG.hpp"
 #include "LoopsSummary.hpp"
+#include "TalkDown.hpp"
 
 namespace llvm::noelle {
 
@@ -19,7 +20,8 @@ namespace llvm::noelle {
     public:
       InvariantManager (
         LoopStructure *loop,
-        PDG *loopDG
+        PDG *loopDG,
+        TalkDown *talkdown
       );
       
       InvariantManager () = delete;
@@ -66,6 +68,19 @@ namespace llvm::noelle {
 
           bool arePHIIncomingValuesEquivalent (PHINode *phi) ;
 
+      };
+
+      class TalkDownChecker {
+        public:
+
+          TalkDownChecker (LoopStructure *loop, PDG *loopDG, std::unordered_set<Instruction *> &invariants, TalkDown *talkdown) ;
+
+          bool checkBranchOps(Value * op, LoopStructure*l) ;
+
+        private:
+          LoopStructure *loop;
+          PDG *loopDG;
+          std::unordered_set<Instruction *> &invariants;
       };
 
   };

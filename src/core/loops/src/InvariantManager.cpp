@@ -14,9 +14,62 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
+bool arePHIIncomingValuesEquivalent (PHINode *phi) {
+
+  std::unordered_set<Value *> incomingValues{};
+  for (auto &incomingUse : phi->incoming_values()) {
+    auto incomingValue = incomingUse.get();
+    incomingValues.insert(incomingValue);
+//    errs() << "\nBRIAN 3: " << *incomingUse << '\n';
+//    errs() << "BRIAN 4: " << *incomingValue << '\n';
+  }
+  if (incomingValues.size() == 0) return false;
+
+  /*  
+   * If all incoming values are strictly the same value, this set will be one element
+   */
+  if (incomingValues.size() == 1) return true;
+
+  /*  
+   * Check if all incoming values are strictly equivalent
+   */
+  Value *singleUniqueValue = *incomingValues.begin();
+  for (auto incomingValue : incomingValues) {
+    if (incomingValue == singleUniqueValue) continue;
+    singleUniqueValue = nullptr;
+    break;
+  }
+  if (singleUniqueValue) return true;
+
+  /*  
+   * If all incoming values are loads of the same global, we consider this equivalent
+   * Whether these loads are loop invariant is up to checks on the dependence graph
+   */
+  GlobalValue *singleGlobalLoaded = nullptr;
+  for (auto incomingValue : incomingValues) {
+    if (auto load = dyn_cast<LoadInst>(incomingValue)) {
+      auto loadedValue = load->getPointerOperand();
+      if (auto global = dyn_cast<GlobalValue>(loadedValue)) {
+        if (singleGlobalLoaded == nullptr || singleGlobalLoaded == global) {
+          singleGlobalLoaded = global;
+          continue;
+        }
+      }
+    }
+
+    singleGlobalLoaded = nullptr;
+    break;
+  }
+
+  if (singleGlobalLoaded != nullptr) return true;
+
+  return false;
+}
+
 InvariantManager::InvariantManager (
   LoopStructure *loop,
-  PDG *loopDG
+  PDG *loopDG,
+  TalkDown *talkdown
   ){
 
   /*
@@ -42,6 +95,12 @@ InvariantManager::InvariantManager (
    */
   InvarianceChecker checker{loop, loopDG, this->invariants};
 
+  // get exit con
+  // if one of the cmp op is induction var
+  // the other is invariant if we have the meta data 
+//  if (talkdown) {
+    TalkDownChecker talkdownChecker{loop, loopDG, this->invariants, talkdown};
+//  }
   return ;
 }
 
@@ -50,6 +109,13 @@ bool InvariantManager::isLoopInvariant (Value *value) const {
     return true;
   }
   auto inst = cast<Instruction>(value);
+//  errs() << "BRIAN 1: " << *inst << '\n';
+  if (auto phi = dyn_cast<PHINode>(inst)) {
+  //    errs() << "phi Incoming values are equivalent?: " << arePHIIncomingValuesEquivalent(phi) << '\n';
+  }
+  for (auto &i : this->invariants) {
+//    errs() << "BRIAN 2, our invariants: " << *i << '\n';
+  }
   if (this->invariants.find(inst) != this->invariants.end()){
     return true;
   }
@@ -59,6 +125,102 @@ bool InvariantManager::isLoopInvariant (Value *value) const {
 
 std::unordered_set<Instruction *> InvariantManager::getLoopInstructionsThatAreLoopInvariants (void) const {
   return this->invariants;
+}
+
+bool InvariantManager::TalkDownChecker::checkBranchOps(Value *op, LoopStructure *l) {
+  if (auto I = dyn_cast<Instruction>(op)) {
+    if (!l->isIncluded(I)) {
+      return true;
+    }
+  }
+
+  if (isa<LoadInst>(op)) {
+    return true;
+  }
+
+  if (auto phi = dyn_cast<PHINode>(op)) {
+    auto v0 = phi->getIncomingValue(0);
+    if (checkBranchOps(v0, l)) {
+        return true;
+    }
+    auto v1 = phi->getIncomingValue(1);
+    if (checkBranchOps(v1, l)) {
+        return true;
+    }
+  }
+
+  return false;
+
+}
+
+InvariantManager::TalkDownChecker::TalkDownChecker (
+  LoopStructure *loop,
+  PDG *loopDG,
+  std::unordered_set<Instruction *> &invariants,
+  TalkDown *talkdown
+) : loop{loop}, loopDG{loopDG}, invariants{invariants} {
+
+//  errs() << "BRIAN 9, I'm in TalkDownChecker!\n";
+//  errs() << "BRIAN 9, Loop: " << '\n';
+  loop->print(errs());
+//  errs() << "BRIAN 9, Loop Header: " << *(loop->getHeader()) << '\n';
+  auto Ftree = talkdown->findTreeForFunction(loop->getHeader()->getParent());
+  bool independent = false;
+  for(auto &I : *(loop->getHeader())) {
+    auto annot = Ftree->getAnnotationsForInst(&I);
+    for (auto &an : annot) {
+//      errs() << "Annotation key = " << an.getKey() << ", value = " << an.getValue() << '\n';
+      if (an.getKey() == "independent" && an.getValue() == "1") {
+  //      errs() << "BRIAN 9, Found an independent loop\n";
+    //    errs() << "BRIAN 9, Loop = \n";
+        for (auto bb : loop->getBasicBlocks()) {
+          errs() << *bb << '\n';
+        }
+        independent = true;
+      }
+    }
+    if (independent) {
+      break;
+    }
+  }
+
+    for (auto bb :  loop->getLoopExitEdges() ) {
+//      errs() << "BRIAN 9, loop exit block:\n" << *(bb.first) << '\n';
+      if (auto BI = dyn_cast<BranchInst> (bb.first->getTerminator())) {
+  //      errs() << "BRIAN 9, branch inst = " << *BI << '\n';
+
+        if (independent) {
+        if(BI->isConditional()) {
+          if (auto cmp = dyn_cast<CmpInst>(BI->getCondition())) {
+            auto op0 = cmp->getOperand(0);
+            bool op0Invariant = false;
+            bool op1Invariant = false;
+            if (checkBranchOps(op0, loop)) {
+              if (auto I = dyn_cast<Instruction>(op0)) {
+                this->invariants.insert(I);
+                op0Invariant = true;
+              }
+            }
+
+            auto op1 = cmp->getOperand(1);
+            if (checkBranchOps(op1, loop)) {
+              if (auto I = dyn_cast<Instruction>(op1)) {
+                this->invariants.insert(I);
+                op1Invariant = true;
+              }
+            }
+
+            if (op0Invariant && op1Invariant) {
+//              errs() << "BRIAN 9: NOOOO, BOTH ops showed invariant";
+            }
+
+//            errs() << "BRIAN 8 cmp operands: \n" << *op0 << '\n' << *op1 << '\n'; 
+          }
+        }
+      }
+    }
+  }
+
 }
 
 InvariantManager::InvarianceChecker::InvarianceChecker (
@@ -84,10 +246,12 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
     /*
      * Since we iterate over data dependencies that are loop values, and a PHI may be comprised of constants, we must explicitly check that all PHI incoming values are equivalent.
      */
-    auto isPHI = false;
+//    errs() << "BRIAN 5: Invariant Manager " << *inst << '\n';
+    bool isPHI = false;
     if (auto phi = dyn_cast<PHINode>(inst)) {
       isPHI = true;
       if (!arePHIIncomingValuesEquivalent(phi)) {
+  //      errs() << "BRIAN 5: PHI incoming ar not Equiv\n";
         continue;
       }
     }
@@ -96,9 +260,11 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
      * Skip instructions that have already been analyzed and categorized.
      */
     if (this->invariants.find(inst) != this->invariants.end()) {
+      //  errs() << "BRIAN 5: Already in Invariants\n";
       continue;
     }
     if (this->notInvariants.find(inst) != this->notInvariants.end()) {
+//      errs() << "BRIAN 5: Already in NOT Invariants\n";
       continue;
     }
 
@@ -163,6 +329,10 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DGEdg
   }
   auto toInst = cast<Instruction>(toValue);
 
+
+  if (isa<StoreInst>(toValue)) {
+    return true;
+  }
   /*
    * Store instructions may produce side effects
    * Currently conservative
@@ -177,6 +347,24 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DGEdg
   if (!loop->isIncluded(toInst)){
     return false;
   }
+
+//  if (auto gep = dyn_cast<GetElementPtrInst>(toInst)) {
+//    errs() << "BRIAN 21: It's a GEP: " << *gep << '\n';
+  //  if (gep->hasAllConstantIndices()) {
+  //    errs() << "it has all constant indices\n";
+    //  errs() << "its operand is " << *(gep->getPointerOperand()) << "\n";
+    //  if (auto ptrI = dyn_cast<Instruction>(gep->getPointerOperand())) {
+      //  errs() << "  It's ptr operand is " << *ptrI << '\n';
+        //if (loop->isIncluded(ptrI)) {
+  //  //      errs() << "BRIAN 22: returning false on isEvolvignValue";
+        //  return false;
+        //}
+     // } else {
+//        errs() << "BRIAN 22: the gep ptr op is not an instruction, cannot be in our loop\n";
+//        return false;
+  //    }
+    //}
+//  }
 
   /*
    * The instruction is included in the loop.

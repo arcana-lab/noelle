@@ -11,11 +11,14 @@
 
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "DataFlow.hpp"
-
+#include "Annotation.hpp"
+#include "AnnotationParser.hpp"
 #include "scaf/Utilities/PDGQueries.h"
 
 using namespace llvm;
 using namespace llvm::noelle;
+
+static cl::opt<bool> TalkdownDisable("loop-aware-talkdown-disable", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable Talkdown loop aware dependence analyses"));
 
 namespace llvm::noelle {
 
@@ -25,6 +28,7 @@ namespace llvm::noelle {
     LoopStructure *loopStructure,
     LoopsSummary *liSummary,
     liberty::LoopAA *loopAA,
+    TalkDown *talkdown,
     LoopIterationDomainSpaceAnalysis *LIDS
   ) {
 
@@ -38,6 +42,195 @@ namespace llvm::noelle {
       refinePDGWithLIDS(loopDG, loopStructure, liSummary, LIDS);
     }
 
+    if (talkdown && TalkdownDisable.getNumOccurrences() == 0) {
+      refinePDGWithTalkdown(loopDG, l, loopStructure, liSummary, talkdown);
+    }   
+
+  }
+
+  bool isSelectedLoop(LoopStructure* ls, const FunctionTree* Ftree) {
+    auto head = ls->getHeader();
+    for(auto &I : *head) {
+      auto annots = parseAnnotationsForInst(&I);
+      for (auto A : annots) {
+        if (A.getKey() == "selected") {
+          if(A.getValue() == "1") {
+            return true;
+          }   
+        }   
+      }   
+    }   
+    return false;
+  }
+
+  void refinePDGWithTalkdown(PDG *loopDG, Loop *l, LoopStructure* loopStructure, LoopsSummary* liSummary, TalkDown *talkdown)
+  {
+    errs() << "BRIAN, LETS REFINE THE PDG WITH TALKDOWN\n";
+
+    auto Ftree = talkdown->findTreeForFunction(l->getHeader()->getParent());
+
+    // early exit if current loop does not have selected
+    if (!isSelectedLoop(loopStructure, Ftree)) {
+      errs() << "Loop does not have selected\n";
+      errs() << *(loopStructure->getHeader());
+      return;
+    }
+
+    // If parent is selected loop also, then this loop is no longer independent
+    auto pl = loopStructure->getParentLoop();
+    if (pl && isSelectedLoop(pl, Ftree)) {
+      errs() << "Talkdown: parent loop is selected, inner loop is not independent\n";
+      return;
+    }
+
+ //   for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure, *liSummary, *loopDG)) {
+    for (auto dependency : loopDG->getEdges()) {
+ //     if (!dependency->isLoopCarriedDependence()) continue;
+
+      // TODO: if (!isMemoryDependence()) then continue;
+      if (!dependency->isMemoryDependence()) { continue; }
+
+      auto out = dependency->getOutgoingT();
+      auto in = dependency->getIncomingT();
+      if (auto outI = dyn_cast<Instruction>(out)) {
+        //errs() << "It's an instruction, out.\n";
+      
+//        auto outAnnot = Ftree->getAnnotationsForInst(outI);
+        auto outAnnot = parseAnnotationsForInst(outI);
+        for (auto &annot : outAnnot) {
+//          errs() << "BRIAN: Annotations are " << annot.getKey() << " : " << annot.getValue() << '\n';
+          if (annot.getKey() == "independent" && annot.getValue() == "1") {
+            errs() << "Brian: FOUND AN EDGE from OUT!!\n";
+            errs() << "BRIAN: the out is " << *out << '\n';
+            dependency->setLoopCarried(false);
+          }
+        }
+      }
+
+      if (auto inI = dyn_cast<Instruction>(in)) {
+  //      errs() << "It's an instruction, out.\n";
+      
+//        auto inAnnot = Ftree->getAnnotationsForInst(inI);
+        auto inAnnot = parseAnnotationsForInst(inI);
+
+        for (auto &annot : inAnnot) {
+          if (annot.getKey() == "independent" && annot.getValue() == "1") {
+            errs() << "Brian: FOUND AN EDGE from IN!!\n";
+            errs() << "BRIAN: the in is " << *in << '\n';
+            dependency->setLoopCarried(false);
+          }
+        }
+      }
+    }
+  for (auto edge : loopDG->getEdges()) {
+
+    if (edge->isMemoryDependence() ) { 
+      if(edge->isLoopCarriedDependence()) { 
+        errs() << "This shouldn't fail 0 : " << edge->toString() << '\n'; 
+        auto out = edge->getOutgoingT();
+        auto in = edge->getIncomingT();
+        errs() << "Out = " << *out << '\n';
+        errs() << "In = " << *in << '\n';
+
+        if (auto outI = dyn_cast<Instruction>(out)) {
+          errs() << "It's Out is an Instruction, annotations are : \n";
+          auto outAnnot = parseAnnotationsForInst(outI);
+
+          for (auto &annot : outAnnot) {    
+            errs() << annot.getKey() << ": " << annot.getValue() << '\n';
+          }
+        }
+        if (auto inI = dyn_cast<Instruction>(out)) {
+          errs() << "It's In is an Instruction, annotations are : \n";
+          auto inAnnot = parseAnnotationsForInst(inI);
+
+          for (auto &annot : inAnnot) {    
+            errs() << annot.getKey() << ": " << annot.getValue() << '\n';
+          }
+        }
+      
+      }   
+//        assert(!edge->isLoopCarriedDependence() && "flag was already set on loopDG"); 
+    }   
+  }
+/*    for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure,     *liSummary, *loopDG)) {
+      auto out = dependency->getOutgoingT();
+      auto in = dependency->getIncomingT();
+
+      errs() << "BRIAN: OUT " << *out << '\n';
+      if (auto outI = dyn_cast<Instruction>(out)) {
+        auto outAnnot = Ftree->getAnnotationsForInst(outI);
+
+        for (auto &annot : outAnnot) {    
+          errs() << annot.getKey() << ": " << annot.getValue() << '\n';
+        }
+      }
+      errs() << "BRIAN: IN " << *in << '\n';
+      if (auto inI = dyn_cast<Instruction>(in)) {
+        auto inAnnot = Ftree->getAnnotationsForInst(inI);
+
+        for (auto &annot : inAnnot) {    
+          errs() << annot.getKey() << ": " << annot.getValue() << '\n';
+        }
+      } 
+    }
+
+    auto Ftree = talkdown->findTreeForFunction(loop->getHeader()->getParent());
+    if (tree) {
+      auto leaves = tree->getLeaves();
+    for (auto & leaf : leaves) {
+      if (leaf->containsAnnotationWithKey("independent") {
+        for (auto A : leaf->getAnnotations()) {
+          if ("1" == A.getValue()) {
+            
+          }
+          }
+      }
+    }
+*/
+    /* Brian: 
+     * 1. Get Function from loopDG
+     * 2. Get Tree for Function
+     * 3. for edge in LCD edges
+     * 4. If Incoming and Outgoing both have independent and not critical
+     * 5. unset LCD edge
+     */
+    
+    // XXX CHANGE THIS
+    // This is very naive, since the rodinia benchmarks have such simple pragmas
+    /* if ( !talkdown->containsAnnotation(l) ) */
+    /*   return; */
+
+    // XXX this is a hack since the loop pointer changed and Talkdown couldn't find the node for the loop
+/*    MDNode *lmd = l->getHeader()->getFirstNonPHIOrDbgOrLifetime()->getMetadata("note.noelle");
+    if ( !lmd )
+      return;
+    if ( l->getParentLoop() && lmd == l->getParentLoop()->getHeader()->getFirstNonPHIOrDbgOrLifetime()->getMetadata("note.noelle") )
+      return;
+
+    Instruction *first_inst = &*l->getHeader()->begin();
+    errs() << "Found real annotation for loop at " << *first_inst << "\n\t";
+    liberty::printInstDebugInfo(first_inst);
+    errs() << "\n";
+
+    for (auto edge : make_range(loopDG->begin_edges(), loopDG->end_edges())) {
+      if (!loopDG->isInternal(edge->getIncomingT()) ||
+          !loopDG->isInternal(edge->getOutgoingT()))
+        continue;
+*/
+      // only target memory dependences (???)
+      /* if (!edge->isMemoryDependence()) */
+      /*   continue; */
+
+      // don't remove edges that aren't loop-carried
+/*      if (!edge->isLoopCarriedDependence())
+        continue;
+
+      errs() << "Removed a LC dep with talkdown:\n";
+      edge->print(errs()) << "\n";
+      edge->setLoopCarried(false);
+      talkdownRemoved++;
+    }   */
   }
 
   void refinePDGWithSCAF(PDG *loopDG, Loop *l, liberty::LoopAA *loopAA) {

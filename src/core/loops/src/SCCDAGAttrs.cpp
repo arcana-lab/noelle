@@ -243,6 +243,12 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
       continue ;
     }
 
+    errs() << "BRIAN 21: live out value is no reducable:\n";
+    errs() << "Producer: " << *producer << '\n';
+    errs() << "SCC: \n";
+    scc->print(errs());
+
+
     return false;
   }
 
@@ -322,6 +328,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS) {
     /*
      * Fetch the set of loop-carried data dependences of the current loop.
      */
+    errs() << "sccdag in collectLoopCarriedDependencies " << sccdag << '\n';
     auto loopCarriedEdges = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop.get(), LIS, *sccdag);
 
     /*
@@ -334,6 +341,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS) {
        */
       auto producer = edge->getOutgoingT();
       auto consumer = edge->getIncomingT();
+    //  errs() << "NOOOOOOOO " << producer << " and consumer " << consumer << '\n';
       auto producerSCC = this->sccdag->sccOfValue(producer);
       auto consumerSCC = this->sccdag->sccOfValue(consumer);
 
@@ -502,6 +510,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
    */
   auto sccInfo = this->getSCCAttrs(scc);
   sccInfo->addLoopCarriedVariable(variable);
+  errs() << "BRIAN 50: Adding a LCV than can be reduced\n";
   return true;
 }
 

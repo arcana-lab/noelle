@@ -65,7 +65,25 @@ bool EnablersManager::runOnModule (Module &M) {
     * Fetch the function that contains the current loop.
     */
     auto f = loopStructure->getFunction();
+/*
+    bool selected = false;
 
+    auto head = loopStructure->getHeader();
+    for(auto &I : *head) {
+      auto annots = parseAnnotationsForInst(&I);
+      for (auto A : annots) {
+        if (A.getKey() == "selected") {
+          if(A.getValue() == "1") {
+            selected = true;
+          }   
+        }   
+      }   
+    }      
+
+    if (!selected) {
+      continue;
+    }
+*/
     /*
     * Check if we have already modified the function.
     */

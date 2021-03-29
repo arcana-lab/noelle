@@ -1,0 +1,2453 @@
+noelle-parallel-load -load /home/bdh2903/repo/outliner/noelle/install/lib/Parallelizer.so -parallelizer mg.ll_pdg_prof.bc -o mg.ll_parallel.bc -noelle-verbose=3 -noelle-pdg-verbose=1 -noelle-min-hot=0 -noelle-disable-helix -noelle-disable-dswp
+noelle-load -load /home/bdh2903/repo/outliner/noelle/install/lib/Heuristics.so -load /home/bdh2903/repo/outliner/noelle/install/lib/ParallelizationTechnique.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DSWP.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DOALL.so -load /home/bdh2903/repo/outliner/noelle/install/lib/HELIX.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Parallelizer.so -parallelizer mg.ll_pdg_prof.bc -o mg.ll_parallel.bc -noelle-verbose=3 -noelle-pdg-verbose=1 -noelle-min-hot=0 -noelle-disable-helix -noelle-disable-dswp
+opt -load /home/bdh2903/repo/outliner/noelle/install/lib/CallGraph.so -load /home/bdh2903/repo/outliner/noelle/install/lib/libSvf.so -load /home/bdh2903/repo/outliner/noelle/install/lib/libCudd.so -stat=false -load /home/bdh2903/repo/outliner/noelle/install/lib/libSCAFUtilities.so -load /home/bdh2903/repo/outliner/noelle/install/lib/libMemoryAnalysisModules.so -load /home/bdh2903/repo/outliner/noelle/install/lib/AllocAA.so -load /home/bdh2903/repo/outliner/noelle/install/lib/TalkDown.so -load /home/bdh2903/repo/outliner/noelle/install/lib/CallGraph.so -load /home/bdh2903/repo/outliner/noelle/install/lib/PDGAnalysis.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Architecture.so -load /home/bdh2903/repo/outliner/noelle/install/lib/BasicUtilities.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Task.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DataFlow.so -load /home/bdh2903/repo/outliner/noelle/install/lib/HotProfiler.so -load /home/bdh2903/repo/outliner/noelle/install/lib/LoopStructure.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Loops.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Scheduler.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -load /home/bdh2903/repo/outliner/noelle/install/lib/Heuristics.so -load /home/bdh2903/repo/outliner/noelle/install/lib/ParallelizationTechnique.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DSWP.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DOALL.so -load /home/bdh2903/repo/outliner/noelle/install/lib/HELIX.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Parallelizer.so -parallelizer mg.ll_pdg_prof.bc -o mg.ll_parallel.bc -noelle-verbose=3 -noelle-pdg-verbose=1 -noelle-min-hot=0 -noelle-disable-helix -noelle-disable-dswp
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parent loop contains same annotation as subloop
+Parallelizer: Start
+Parallelizer:  Analyzing the module mg.ll_pdg_prof.bc
+Parallelizer:  Fetching the program loops
+Noelle: Filter out cold code
+Noelle:  Function "c_print_results" does not have loops
+Noelle:  Function "elapsed_time" does not have loops
+Noelle:  Function "randlc" does not have loops
+Noelle:  Function "timer_clear" does not have loops
+Noelle:  Function "timer_read" does not have loops
+Noelle:  Function "timer_start" does not have loops
+Noelle:  Function "timer_stop" does not have loops
+Noelle:  Function "wtime_" does not have loops
+Parallelizer:    There are 364 loops in the program we are going to consider
+Parallelizer:  Filter out loops not worth considering
+Parallelizer:  There are 65 loop nesting trees in the program
+Parallelizer:    ID: 287 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %1182 = icmp slt i64 %indvars.iv9.i2, %993, !note.noelle !45424, !noelle.pdg.inst.id !4833"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 288 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %1185 = icmp slt i64 %indvars.iv7.i7, %995, !note.noelle !45424, !noelle.pdg.inst.id !611"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 289 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %1186 = icmp slt i64 %indvars.iv.i13, %997, !note.noelle !45424, !noelle.pdg.inst.id !605"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 252 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %589 = icmp sgt i64 %indvars.iv57.i, %579, !note.noelle !45424, !noelle.pdg.inst.id !1430"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 256 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %638 = icmp sgt i64 %indvars.iv55.i, %581, !note.noelle !45424, !noelle.pdg.inst.id !1370"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 257 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %643 = icmp sgt i64 %indvars.iv51.i, %583, !note.noelle !45424, !noelle.pdg.inst.id !31441"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 258 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %665 = icmp sgt i64 %indvars.iv53.i, %583, !note.noelle !45424, !noelle.pdg.inst.id !27689"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:      ID: 253 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %596 = icmp sgt i64 %indvars.iv49.i, %581, !note.noelle !45424, !noelle.pdg.inst.id !29654"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 254 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %601 = icmp sgt i64 %indvars.iv45.i, %583, !note.noelle !45424, !noelle.pdg.inst.id !31875"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 255 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %617 = icmp sgt i64 %indvars.iv47.i, %583, !note.noelle !45424, !noelle.pdg.inst.id !1396"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 282 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %1095 = icmp slt i64 %indvars.iv10.i1, %993, !note.noelle !45424, !noelle.pdg.inst.id !741"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 2.932513e-03 %
+Parallelizer:      Average instructions per invocation = 1.774950e+05 %
+Parallelizer:      Average iterations per invocation = 4.283333e+01 %
+Parallelizer:    
+Parallelizer:      ID: 284 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %1114 = icmp slt i64 %indvars.iv8.i11, %991, !note.noelle !45424, !noelle.pdg.inst.id !704"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.601776e-03 %
+Parallelizer:        Average instructions per invocation = 2.308333e+03 %
+Parallelizer:        Average iterations per invocation = 8.966270e+01 %
+Parallelizer:      
+Parallelizer:      ID: 283 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %1098 = icmp slt i64 %indvars.iv6.i4, %995, !note.noelle !45424, !noelle.pdg.inst.id !27060"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.325137e-03 %
+Parallelizer:        Average instructions per invocation = 1.909667e+03 %
+Parallelizer:        Average iterations per invocation = 8.766270e+01 %
+Parallelizer:      
+Parallelizer:    ID: 266 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %869 = icmp slt i64 %indvars.iv9.i, %863, !note.noelle !45424, !noelle.pdg.inst.id !1070"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 267 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %872 = icmp slt i64 %indvars.iv7.i, %865, !note.noelle !45424, !noelle.pdg.inst.id !29686"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 268 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %873 = icmp slt i64 %indvars.iv.i3, %867, !note.noelle !45424, !noelle.pdg.inst.id !1056"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 245 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %434 = icmp slt i64 %indvars.iv29.i, %429, !note.noelle !45424, !noelle.pdg.inst.id !24646"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 1.333607e-01 %
+Parallelizer:      Average instructions per invocation = 8.071865e+06 %
+Parallelizer:      Average iterations per invocation = 2.283333e+01 %
+Parallelizer:    
+Parallelizer:      ID: 246 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %442 = icmp slt i64 %indvars.iv27.i, %431, !note.noelle !45424, !noelle.pdg.inst.id !1626"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.333562e-01 %
+Parallelizer:        Average instructions per invocation = 3.668908e+05 %
+Parallelizer:        Average iterations per invocation = 4.431061e+01 %
+Parallelizer:      
+Parallelizer:        ID: 248 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %474 = icmp slt i64 %indvars.iv19.i, %433, !note.noelle !45424, !noelle.pdg.inst.id !1585"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 3.053648e-02 %
+Parallelizer:          Average instructions per invocation = 1.939422e+03 %
+Parallelizer:          Average iterations per invocation = 5.632616e+01 %
+Parallelizer:        
+Parallelizer:        ID: 251 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %552 = icmp slt i64 %indvars.iv25.i, %433, !note.noelle !45424, !noelle.pdg.inst.id !1487"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 2.443863e-02 %
+Parallelizer:          Average instructions per invocation = 1.552137e+03 %
+Parallelizer:          Average iterations per invocation = 5.632616e+01 %
+Parallelizer:        
+Parallelizer:        ID: 249 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %506 = icmp slt i64 %indvars.iv21.i, %433, !note.noelle !45424, !noelle.pdg.inst.id !1545"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 2.443863e-02 %
+Parallelizer:          Average instructions per invocation = 1.552137e+03 %
+Parallelizer:          Average iterations per invocation = 5.632616e+01 %
+Parallelizer:        
+Parallelizer:        ID: 247 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %445 = icmp slt i64 %indvars.iv.i1, %427, !note.noelle !45424, !noelle.pdg.inst.id !1615"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 2.931383e-02 %
+Parallelizer:          Average instructions per invocation = 1.861769e+03 %
+Parallelizer:          Average iterations per invocation = 5.732616e+01 %
+Parallelizer:        
+Parallelizer:        ID: 250 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %529 = icmp slt i64 %indvars.iv23.i, %433, !note.noelle !45424, !noelle.pdg.inst.id !1511"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 2.443863e-02 %
+Parallelizer:          Average instructions per invocation = 1.552137e+03 %
+Parallelizer:          Average iterations per invocation = 5.632616e+01 %
+Parallelizer:        
+Parallelizer:    ID: 259 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %699 = icmp sgt i64 %indvars.iv43.i, %579, !note.noelle !45424, !noelle.pdg.inst.id !1295"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 263 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %765 = icmp sgt i64 %indvars.iv41.i, %581, !note.noelle !45424, !noelle.pdg.inst.id !1203"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 265 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %803 = icmp sgt i64 %indvars.iv39.i, %583, !note.noelle !45424, !noelle.pdg.inst.id !24246"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 264 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %770 = icmp sgt i64 %indvars.iv37.i, %583, !note.noelle !45424, !noelle.pdg.inst.id !1197"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:      ID: 260 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %707 = icmp sgt i64 %indvars.iv35.i, %581, !note.noelle !45424, !noelle.pdg.inst.id !1284"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 262 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %735 = icmp sgt i64 %indvars.iv33.i, %583, !note.noelle !45424, !noelle.pdg.inst.id !7001"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 261 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %712 = icmp sgt i64 %indvars.iv31.i, %583, !note.noelle !45424, !noelle.pdg.inst.id !1272"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 285 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %1144 = icmp slt i64 %indvars.iv4.i14, %1137, !note.noelle !45424, !noelle.pdg.inst.id !25655"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 1.833029e-03 %
+Parallelizer:      Average instructions per invocation = 1.109470e+05 %
+Parallelizer:      Average iterations per invocation = 4.483333e+01 %
+Parallelizer:    
+Parallelizer:      ID: 286 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %1145 = icmp slt i64 %indvars.iv.i16, %991, !note.noelle !45424, !noelle.pdg.inst.id !660"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.828618e-03 %
+Parallelizer:        Average instructions per invocation = 2.515455e+03 %
+Parallelizer:        Average iterations per invocation = 8.763258e+01 %
+Parallelizer:      
+Parallelizer:    ID: 300 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %1396 = icmp slt i64 %indvars.iv4.i5, %1389, !note.noelle !45424, !noelle.pdg.inst.id !356"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 1.833029e-03 %
+Parallelizer:      Average instructions per invocation = 1.109470e+05 %
+Parallelizer:      Average iterations per invocation = 4.483333e+01 %
+Parallelizer:    
+Parallelizer:      ID: 301 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %1397 = icmp slt i64 %indvars.iv.i8, %1240, !note.noelle !45424, !noelle.pdg.inst.id !346"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.828618e-03 %
+Parallelizer:        Average instructions per invocation = 2.515455e+03 %
+Parallelizer:        Average iterations per invocation = 8.763258e+01 %
+Parallelizer:      
+Parallelizer:    ID: 141 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2069 = icmp slt i64 %indvars.iv9.i3.i, %1877, !note.noelle !263830, !noelle.pdg.inst.id !2026"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 142 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2072 = icmp slt i64 %indvars.iv7.i8.i, %1879, !note.noelle !263830, !noelle.pdg.inst.id !2017"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 143 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2073 = icmp slt i64 %indvars.iv.i14.i, %1881, !note.noelle !263830, !noelle.pdg.inst.id !2007"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 147 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2144 = icmp slt i64 %indvars.iv29.i, %2139, !note.noelle !263830, !noelle.pdg.inst.id !1892"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 3.604996e+00 %
+Parallelizer:      Average instructions per invocation = 3.272971e+08 %
+Parallelizer:      Average iterations per invocation = 1.297500e+02 %
+Parallelizer:    
+Parallelizer:      ID: 148 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2152 = icmp slt i64 %indvars.iv27.i, %2141, !note.noelle !263830, !noelle.pdg.inst.id !50679"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 3.604979e+00 %
+Parallelizer:        Average instructions per invocation = 2.537175e+06 %
+Parallelizer:        Average iterations per invocation = 1.299981e+02 %
+Parallelizer:      
+Parallelizer:        ID: 151 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2216 = icmp slt i64 %indvars.iv21.i, %2143, !note.noelle !263830, !noelle.pdg.inst.id !49840"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 6.625983e-01 %
+Parallelizer:          Average instructions per invocation = 3.615000e+03 %
+Parallelizer:          Average iterations per invocation = 1.300000e+02 %
+Parallelizer:        
+Parallelizer:        ID: 149 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2155 = icmp slt i64 %indvars.iv.i2, %2137, !note.noelle !263830, !noelle.pdg.inst.id !1875"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 7.868698e-01 %
+Parallelizer:          Average instructions per invocation = 4.293000e+03 %
+Parallelizer:          Average iterations per invocation = 1.310000e+02 %
+Parallelizer:        
+Parallelizer:        ID: 153 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2262 = icmp slt i64 %indvars.iv25.i, %2143, !note.noelle !263830, !noelle.pdg.inst.id !1736"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 6.625983e-01 %
+Parallelizer:          Average instructions per invocation = 3.615000e+03 %
+Parallelizer:          Average iterations per invocation = 1.300000e+02 %
+Parallelizer:        
+Parallelizer:        ID: 152 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2239 = icmp slt i64 %indvars.iv23.i, %2143, !note.noelle !263830, !noelle.pdg.inst.id !1774"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 6.625983e-01 %
+Parallelizer:          Average instructions per invocation = 3.615000e+03 %
+Parallelizer:          Average iterations per invocation = 1.300000e+02 %
+Parallelizer:        
+Parallelizer:        ID: 150 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2184 = icmp slt i64 %indvars.iv19.i, %2143, !note.noelle !263830, !noelle.pdg.inst.id !1845"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 8.281104e-01 %
+Parallelizer:          Average instructions per invocation = 4.518000e+03 %
+Parallelizer:          Average iterations per invocation = 1.300000e+02 %
+Parallelizer:        
+Parallelizer:    ID: 293 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %1247 = icmp slt i64 %indvars.iv8.i, %1242, !note.noelle !45424, !noelle.pdg.inst.id !21855"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 6.140360e-01 %
+Parallelizer:      Average instructions per invocation = 3.716550e+07 %
+Parallelizer:      Average iterations per invocation = 4.283333e+01 %
+Parallelizer:    
+Parallelizer:      ID: 294 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %1254 = icmp slt i64 %indvars.iv6.i, %1244, !note.noelle !45424, !noelle.pdg.inst.id !514"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 6.140284e-01 %
+Parallelizer:        Average instructions per invocation = 8.848819e+05 %
+Parallelizer:        Average iterations per invocation = 8.766270e+01 %
+Parallelizer:      
+Parallelizer:        ID: 295 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %1258 = icmp slt i64 %indvars.iv.i, %1240, !note.noelle !45424, !noelle.pdg.inst.id !500"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 3.361782e-01 %
+Parallelizer:          Average instructions per invocation = 5.590033e+03 %
+Parallelizer:          Average iterations per invocation = 1.127406e+02 %
+Parallelizer:        
+Parallelizer:        ID: 296 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %1303 = icmp slt i64 %indvars.iv4.i, %1246, !note.noelle !45424, !noelle.pdg.inst.id !31007"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 2.773669e-01 %
+Parallelizer:          Average instructions per invocation = 4.612108e+03 %
+Parallelizer:          Average iterations per invocation = 1.107406e+02 %
+Parallelizer:        
+Parallelizer:    ID: 108 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1543 = icmp slt i64 %indvars.iv9.i1.i, %1537, !note.noelle !263830, !noelle.pdg.inst.id !4863"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 109 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1546 = icmp slt i64 %indvars.iv7.i6.i, %1539, !note.noelle !263830, !noelle.pdg.inst.id !2793"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 110 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1547 = icmp slt i64 %indvars.iv.i10.i, %1541, !note.noelle !263830, !noelle.pdg.inst.id !4728"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 199 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %3047 = icmp slt i64 %indvars.iv10.i, %2700, !note.noelle !263830, !noelle.pdg.inst.id !691"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 3.483458e-02 %
+Parallelizer:      Average instructions per invocation = 3.162627e+06 %
+Parallelizer:      Average iterations per invocation = 2.567500e+02 %
+Parallelizer:    
+Parallelizer:      ID: 200 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %3050 = icmp slt i64 %indvars.iv6.i2, %2702, !note.noelle !263830, !noelle.pdg.inst.id !26400"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.588900e-02 %
+Parallelizer:        Average instructions per invocation = 5.635000e+03 %
+Parallelizer:        Average iterations per invocation = 2.569990e+02 %
+Parallelizer:      
+Parallelizer:      ID: 201 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %3066 = icmp slt i64 %indvars.iv8.i4, %2698, !note.noelle !263830, !noelle.pdg.inst.id !652"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.892299e-02 %
+Parallelizer:        Average instructions per invocation = 6.711000e+03 %
+Parallelizer:        Average iterations per invocation = 2.589990e+02 %
+Parallelizer:      
+Parallelizer:    ID: 187 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2856 = icmp slt i64 %indvars.iv4.i18, %2849, !note.noelle !263830, !noelle.pdg.inst.id !955"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 2.128741e-02 %
+Parallelizer:      Average instructions per invocation = 1.932681e+06 %
+Parallelizer:      Average iterations per invocation = 2.587500e+02 %
+Parallelizer:    
+Parallelizer:      ID: 188 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2857 = icmp slt i64 %indvars.iv.i21, %2698, !note.noelle !263830, !noelle.pdg.inst.id !949"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 2.127032e-02 %
+Parallelizer:        Average instructions per invocation = 7.485000e+03 %
+Parallelizer:        Average iterations per invocation = 2.589990e+02 %
+Parallelizer:      
+Parallelizer:    ID: 302 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %1434 = icmp slt i64 %indvars.iv9.i3, %1242, !note.noelle !45424, !noelle.pdg.inst.id !291"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 303 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %1437 = icmp slt i64 %indvars.iv7.i8, %1244, !note.noelle !45424, !noelle.pdg.inst.id !285"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 304 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %1438 = icmp slt i64 %indvars.iv.i14, %1246, !note.noelle !45424, !noelle.pdg.inst.id !281"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 319 (1)
+Parallelizer:      Function: "psinv"
+Parallelizer:      Loop: "  %19 = icmp slt i64 %indvars.iv8, %12, !note.noelle !923, !noelle.pdg.inst.id !190"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 4.270795e+00 %
+Parallelizer:      Average instructions per invocation = 7.754898e+08 %
+Parallelizer:      Average iterations per invocation = 1.295000e+02 %
+Parallelizer:    
+Parallelizer:      ID: 320 (2)
+Parallelizer:        Function: "psinv"
+Parallelizer:        Loop: "  %26 = icmp slt i64 %indvars.iv6, %14, !note.noelle !923, !noelle.pdg.inst.id !177"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 4.270787e+00 %
+Parallelizer:        Average instructions per invocation = 6.011538e+06 %
+Parallelizer:        Average iterations per invocation = 2.550271e+02 %
+Parallelizer:      
+Parallelizer:        ID: 322 (3)
+Parallelizer:          Function: "psinv"
+Parallelizer:          Loop: "  %75 = icmp slt i64 %indvars.iv4, %16, !note.noelle !923, !noelle.pdg.inst.id !116"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 1.940855e+00 %
+Parallelizer:          Average instructions per invocation = 1.075435e+04 %
+Parallelizer:          Average iterations per invocation = 2.569845e+02 %
+Parallelizer:        
+Parallelizer:        ID: 321 (3)
+Parallelizer:          Function: "psinv"
+Parallelizer:          Loop: "  %30 = icmp slt i64 %indvars.iv, %10, !note.noelle !923, !noelle.pdg.inst.id !165"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 2.328486e+00 %
+Parallelizer:          Average instructions per invocation = 1.290222e+04 %
+Parallelizer:          Average iterations per invocation = 2.589845e+02 %
+Parallelizer:        
+Parallelizer:    ID: 74 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %960 = icmp slt i64 %indvars.iv9.i, %768, !note.noelle !263830, !noelle.pdg.inst.id !3513"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 75 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %963 = icmp slt i64 %indvars.iv7.i, %770, !note.noelle !263830, !noelle.pdg.inst.id !14145"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 76 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %964 = icmp slt i64 %indvars.iv.i4, %772, !note.noelle !263830, !noelle.pdg.inst.id !34190"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 230 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %208 = icmp slt i64 %indvars.iv10.i2, %50, !note.noelle !45424, !noelle.pdg.inst.id !1964"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 2.933414e-03 %
+Parallelizer:      Average instructions per invocation = 1.521853e+05 %
+Parallelizer:      Average iterations per invocation = 3.714286e+01 %
+Parallelizer:    
+Parallelizer:      ID: 232 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %227 = icmp slt i64 %indvars.iv8.i13, %48, !note.noelle !45424, !noelle.pdg.inst.id !1927"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.602365e-03 %
+Parallelizer:        Average instructions per invocation = 2.291000e+03 %
+Parallelizer:        Average iterations per invocation = 8.899606e+01 %
+Parallelizer:      
+Parallelizer:      ID: 231 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %211 = icmp slt i64 %indvars.iv6.i5, %52, !note.noelle !45424, !noelle.pdg.inst.id !1960"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.325396e-03 %
+Parallelizer:        Average instructions per invocation = 1.895000e+03 %
+Parallelizer:        Average iterations per invocation = 8.699606e+01 %
+Parallelizer:      
+Parallelizer:    ID: 72 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %922 = icmp slt i64 %indvars.iv4.i19, %915, !note.noelle !263830, !noelle.pdg.inst.id !3570"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 5.540265e-06 %
+Parallelizer:      Average instructions per invocation = 5.030000e+02 %
+Parallelizer:      Average iterations per invocation = 4.750000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 73 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %923 = icmp slt i64 %indvars.iv.i22, %766, !note.noelle !263830, !noelle.pdg.inst.id !3567"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 5.242875e-06 %
+Parallelizer:        Average instructions per invocation = 1.190000e+02 %
+Parallelizer:        Average iterations per invocation = 4.937500e+00 %
+Parallelizer:      
+Parallelizer:    ID: 12 (1)
+Parallelizer:      Function: "interp"
+Parallelizer:      Loop: "  %179 = icmp sgt i64 %indvars.iv57, %169, !note.noelle !4203, !noelle.pdg.inst.id !386"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 16 (2)
+Parallelizer:        Function: "interp"
+Parallelizer:        Loop: "  %228 = icmp sgt i64 %indvars.iv55, %171, !note.noelle !4203, !noelle.pdg.inst.id !327"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 18 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %255 = icmp sgt i64 %indvars.iv53, %173, !note.noelle !4203, !noelle.pdg.inst.id !301"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 17 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %233 = icmp sgt i64 %indvars.iv51, %173, !note.noelle !4203, !noelle.pdg.inst.id !2843"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:      ID: 13 (2)
+Parallelizer:        Function: "interp"
+Parallelizer:        Loop: "  %186 = icmp sgt i64 %indvars.iv49, %171, !note.noelle !4203, !noelle.pdg.inst.id !381"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 15 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %207 = icmp sgt i64 %indvars.iv47, %173, !note.noelle !4203, !noelle.pdg.inst.id !2938"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 14 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %191 = icmp sgt i64 %indvars.iv45, %173, !note.noelle !4203, !noelle.pdg.inst.id !2610"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 5 (1)
+Parallelizer:      Function: "interp"
+Parallelizer:      Loop: "  %24 = icmp slt i64 %indvars.iv29, %19, !note.noelle !4203, !noelle.pdg.inst.id !552"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 9.012490e-01 %
+Parallelizer:      Average instructions per invocation = 3.272971e+08 %
+Parallelizer:      Average iterations per invocation = 1.290000e+02 %
+Parallelizer:    
+Parallelizer:      ID: 6 (2)
+Parallelizer:        Function: "interp"
+Parallelizer:        Loop: "  %32 = icmp slt i64 %indvars.iv27, %21, !note.noelle !4203, !noelle.pdg.inst.id !1812"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 9.012447e-01 %
+Parallelizer:        Average instructions per invocation = 2.537175e+06 %
+Parallelizer:        Average iterations per invocation = 1.299922e+02 %
+Parallelizer:      
+Parallelizer:        ID: 7 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %35 = icmp slt i64 %indvars.iv, %17, !note.noelle !4203, !noelle.pdg.inst.id !539"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 1.967175e-01 %
+Parallelizer:          Average instructions per invocation = 4.293000e+03 %
+Parallelizer:          Average iterations per invocation = 1.309999e+02 %
+Parallelizer:        
+Parallelizer:        ID: 11 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %142 = icmp slt i64 %indvars.iv25, %23, !note.noelle !4203, !noelle.pdg.inst.id !443"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 1.656496e-01 %
+Parallelizer:          Average instructions per invocation = 3.615000e+03 %
+Parallelizer:          Average iterations per invocation = 1.299999e+02 %
+Parallelizer:        
+Parallelizer:        ID: 9 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %96 = icmp slt i64 %indvars.iv21, %23, !note.noelle !4203, !noelle.pdg.inst.id !494"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 1.656496e-01 %
+Parallelizer:          Average instructions per invocation = 3.615000e+03 %
+Parallelizer:          Average iterations per invocation = 1.299999e+02 %
+Parallelizer:        
+Parallelizer:        ID: 10 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %119 = icmp slt i64 %indvars.iv23, %23, !note.noelle !4203, !noelle.pdg.inst.id !2011"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 1.656496e-01 %
+Parallelizer:          Average instructions per invocation = 3.615000e+03 %
+Parallelizer:          Average iterations per invocation = 1.299999e+02 %
+Parallelizer:        
+Parallelizer:        ID: 8 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %64 = icmp slt i64 %indvars.iv19, %23, !note.noelle !4203, !noelle.pdg.inst.id !2162"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 2.070276e-01 %
+Parallelizer:          Average instructions per invocation = 4.518000e+03 %
+Parallelizer:          Average iterations per invocation = 1.299999e+02 %
+Parallelizer:        
+Parallelizer:    ID: 0 (1)
+Parallelizer:      Function: "comm3"
+Parallelizer:      Loop: "  %18 = icmp slt i64 %indvars.iv10, %8, !note.noelle !464, !noelle.pdg.inst.id !127"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 4.354406e-02 %
+Parallelizer:      Average instructions per invocation = 2.635573e+06 %
+Parallelizer:      Average iterations per invocation = 2.145000e+02 %
+Parallelizer:    
+Parallelizer:      ID: 1 (2)
+Parallelizer:        Function: "comm3"
+Parallelizer:        Loop: "  %21 = icmp slt i64 %indvars.iv6, %10, !note.noelle !464, !noelle.pdg.inst.id !121"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 1.986145e-02 %
+Parallelizer:        Average instructions per invocation = 5.626268e+03 %
+Parallelizer:        Average iterations per invocation = 2.566030e+02 %
+Parallelizer:      
+Parallelizer:      ID: 2 (2)
+Parallelizer:        Function: "comm3"
+Parallelizer:        Loop: "  %37 = icmp slt i64 %indvars.iv8, %6, !note.noelle !464, !noelle.pdg.inst.id !99"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 2.365432e-02 %
+Parallelizer:        Average instructions per invocation = 6.700695e+03 %
+Parallelizer:        Average iterations per invocation = 2.586022e+02 %
+Parallelizer:      
+Parallelizer:    ID: 269 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %908 = icmp slt i64 %indvars.iv9.i1, %902, !note.noelle !45424, !noelle.pdg.inst.id !6857"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 270 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %911 = icmp slt i64 %indvars.iv7.i6, %904, !note.noelle !45424, !noelle.pdg.inst.id !995"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 271 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %912 = icmp slt i64 %indvars.iv.i10, %906, !note.noelle !45424, !noelle.pdg.inst.id !989"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 3 (1)
+Parallelizer:      Function: "comm3"
+Parallelizer:      Loop: "  %67 = icmp slt i64 %indvars.iv4, %60, !note.noelle !464, !noelle.pdg.inst.id !194"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 2.661064e-02 %
+Parallelizer:      Average instructions per invocation = 1.610651e+06 %
+Parallelizer:      Average iterations per invocation = 2.165000e+02 %
+Parallelizer:    
+Parallelizer:      ID: 4 (2)
+Parallelizer:        Function: "comm3"
+Parallelizer:        Loop: "  %68 = icmp slt i64 %indvars.iv, %6, !note.noelle !464, !noelle.pdg.inst.id !70"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 2.658922e-02 %
+Parallelizer:        Average instructions per invocation = 7.462230e+03 %
+Parallelizer:        Average iterations per invocation = 2.582141e+02 %
+Parallelizer:      
+Parallelizer:    ID: 354 (1)
+Parallelizer:      Function: "zran3"
+Parallelizer:      Loop: "  %258 = icmp slt i64 %indvars.iv20, %256, !note.noelle !1987, !noelle.pdg.inst.id !425"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 9.490968e-01 %
+Parallelizer:      Average instructions per invocation = 1.723368e+08 %
+Parallelizer:      Average iterations per invocation = 2.585000e+02 %
+Parallelizer:    
+Parallelizer:      ID: 355 (2)
+Parallelizer:        Function: "zran3"
+Parallelizer:        Loop: "  %261 = icmp slt i64 %indvars.iv18, %255, !note.noelle !1987, !noelle.pdg.inst.id !166"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 9.490868e-01 %
+Parallelizer:        Average instructions per invocation = 6.679649e+05 %
+Parallelizer:        Average iterations per invocation = 2.589981e+02 %
+Parallelizer:      
+Parallelizer:        ID: 356 (3)
+Parallelizer:          Function: "zran3"
+Parallelizer:          Loop: "  %262 = icmp slt i64 %indvars.iv16, %254, !note.noelle !1987, !noelle.pdg.inst.id !160"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 9.468831e-01 %
+Parallelizer:          Average instructions per invocation = 2.583000e+03 %
+Parallelizer:          Average iterations per invocation = 2.590000e+02 %
+Parallelizer:        
+Parallelizer:    ID: 19 (1)
+Parallelizer:      Function: "interp"
+Parallelizer:      Loop: "  %289 = icmp sgt i64 %indvars.iv43, %169, !note.noelle !4203, !noelle.pdg.inst.id !261"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 20 (2)
+Parallelizer:        Function: "interp"
+Parallelizer:        Loop: "  %297 = icmp sgt i64 %indvars.iv35, %171, !note.noelle !4203, !noelle.pdg.inst.id !1911"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 21 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %302 = icmp sgt i64 %indvars.iv31, %173, !note.noelle !4203, !noelle.pdg.inst.id !2567"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 22 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %325 = icmp sgt i64 %indvars.iv33, %173, !note.noelle !4203, !noelle.pdg.inst.id !215"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:      ID: 23 (2)
+Parallelizer:        Function: "interp"
+Parallelizer:        Loop: "  %355 = icmp sgt i64 %indvars.iv41, %171, !note.noelle !4203, !noelle.pdg.inst.id !2821"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 24 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %360 = icmp sgt i64 %indvars.iv37, %173, !note.noelle !4203, !noelle.pdg.inst.id !177"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 25 (3)
+Parallelizer:          Function: "interp"
+Parallelizer:          Loop: "  %393 = icmp sgt i64 %indvars.iv39, %173, !note.noelle !4203, !noelle.pdg.inst.id !2062"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 242 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %397 = icmp slt i64 %indvars.iv5.i1, %395, !note.noelle !45424, !noelle.pdg.inst.id !1687"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 7.026385e-02 %
+Parallelizer:      Average instructions per invocation = 4.252831e+06 %
+Parallelizer:      Average iterations per invocation = 4.483333e+01 %
+Parallelizer:    
+Parallelizer:      ID: 243 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %400 = icmp slt i64 %indvars.iv3.i3, %394, !note.noelle !45424, !noelle.pdg.inst.id !1679"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 7.025872e-02 %
+Parallelizer:        Average instructions per invocation = 9.664818e+04 %
+Parallelizer:        Average iterations per invocation = 8.763258e+01 %
+Parallelizer:      
+Parallelizer:        ID: 244 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %401 = icmp slt i64 %indvars.iv.i6, %393, !note.noelle !45424, !noelle.pdg.inst.id !33632"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 6.987865e-02 %
+Parallelizer:          Average instructions per invocation = 1.109527e+03 %
+Parallelizer:          Average iterations per invocation = 1.116526e+02 %
+Parallelizer:        
+Parallelizer:    ID: 42 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %266 = icmp slt i64 %indvars.iv9.i6, %260, !note.noelle !263830, !noelle.pdg.inst.id !76842"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 7.880828e-01 %
+Parallelizer:      Average instructions per invocation = 2.861998e+08 %
+Parallelizer:      Average iterations per invocation = 2.560000e+02 %
+Parallelizer:    
+Parallelizer:      ID: 43 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %269 = icmp slt i64 %indvars.iv7.i16, %262, !note.noelle !263830, !noelle.pdg.inst.id !4364"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 7.880751e-01 %
+Parallelizer:        Average instructions per invocation = 1.117957e+06 %
+Parallelizer:        Average iterations per invocation = 2.569961e+02 %
+Parallelizer:      
+Parallelizer:        ID: 44 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %270 = icmp slt i64 %indvars.iv.i24, %264, !note.noelle !263830, !noelle.pdg.inst.id !4350"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 7.862669e-01 %
+Parallelizer:          Average instructions per invocation = 4.356999e+03 %
+Parallelizer:          Average iterations per invocation = 2.569999e+02 %
+Parallelizer:        
+Parallelizer:    ID: 359 (1)
+Parallelizer:      Function: "zran3"
+Parallelizer:      Loop: "  %316 = icmp slt i64 %indvars.iv10.i, %143, !note.noelle !1987, !noelle.pdg.inst.id !821"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 1.741729e-02 %
+Parallelizer:      Average instructions per invocation = 3.162627e+06 %
+Parallelizer:      Average iterations per invocation = 2.565000e+02 %
+Parallelizer:    
+Parallelizer:      ID: 360 (2)
+Parallelizer:        Function: "zran3"
+Parallelizer:        Loop: "  %319 = icmp slt i64 %indvars.iv6.i, %145, !note.noelle !1987, !noelle.pdg.inst.id !120"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 7.944498e-03 %
+Parallelizer:        Average instructions per invocation = 5.635000e+03 %
+Parallelizer:        Average iterations per invocation = 2.569980e+02 %
+Parallelizer:      
+Parallelizer:      ID: 361 (2)
+Parallelizer:        Function: "zran3"
+Parallelizer:        Loop: "  %335 = icmp slt i64 %indvars.iv8.i, %254, !note.noelle !1987, !noelle.pdg.inst.id !1127"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 9.461496e-03 %
+Parallelizer:        Average instructions per invocation = 6.711000e+03 %
+Parallelizer:        Average iterations per invocation = 2.589980e+02 %
+Parallelizer:      
+Parallelizer:    ID: 84 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1069 = icmp slt i64 %indvars.iv29.i.i, %1064, !note.noelle !263830, !noelle.pdg.inst.id !3327"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 5.334426e-01 %
+Parallelizer:      Average instructions per invocation = 8.071865e+06 %
+Parallelizer:      Average iterations per invocation = 2.295833e+01 %
+Parallelizer:    
+Parallelizer:      ID: 85 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1077 = icmp slt i64 %indvars.iv27.i.i, %1066, !note.noelle !263830, !noelle.pdg.inst.id !115574"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 5.334250e-01 %
+Parallelizer:        Average instructions per invocation = 3.668908e+05 %
+Parallelizer:        Average iterations per invocation = 4.431629e+01 %
+Parallelizer:      
+Parallelizer:        ID: 86 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1080 = icmp slt i64 %indvars.iv.i1.i, %1062, !note.noelle !263830, !noelle.pdg.inst.id !3320"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 1.172553e-01 %
+Parallelizer:          Average instructions per invocation = 1.861769e+03 %
+Parallelizer:          Average iterations per invocation = 5.732629e+01 %
+Parallelizer:        
+Parallelizer:        ID: 88 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1141 = icmp slt i64 %indvars.iv21.i.i, %1068, !note.noelle !263830, !noelle.pdg.inst.id !3268"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 9.775454e-02 %
+Parallelizer:          Average instructions per invocation = 1.552137e+03 %
+Parallelizer:          Average iterations per invocation = 5.632629e+01 %
+Parallelizer:        
+Parallelizer:        ID: 90 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1187 = icmp slt i64 %indvars.iv25.i.i, %1068, !note.noelle !263830, !noelle.pdg.inst.id !3235"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 9.775454e-02 %
+Parallelizer:          Average instructions per invocation = 1.552137e+03 %
+Parallelizer:          Average iterations per invocation = 5.632629e+01 %
+Parallelizer:        
+Parallelizer:        ID: 87 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1109 = icmp slt i64 %indvars.iv19.i.i, %1068, !note.noelle !263830, !noelle.pdg.inst.id !5389"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 1.221459e-01 %
+Parallelizer:          Average instructions per invocation = 1.939422e+03 %
+Parallelizer:          Average iterations per invocation = 5.632629e+01 %
+Parallelizer:        
+Parallelizer:        ID: 89 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1164 = icmp slt i64 %indvars.iv23.i.i, %1068, !note.noelle !263830, !noelle.pdg.inst.id !113923"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 9.775454e-02 %
+Parallelizer:          Average instructions per invocation = 1.552137e+03 %
+Parallelizer:          Average iterations per invocation = 5.632629e+01 %
+Parallelizer:        
+Parallelizer:    ID: 98 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1334 = icmp sgt i64 %indvars.iv43.i.i, %1214, !note.noelle !263830, !noelle.pdg.inst.id !3055"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 102 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1400 = icmp sgt i64 %indvars.iv41.i.i, %1216, !note.noelle !263830, !noelle.pdg.inst.id !2964"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 104 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1438 = icmp sgt i64 %indvars.iv39.i.i, %1218, !note.noelle !263830, !noelle.pdg.inst.id !2920"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 103 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1405 = icmp sgt i64 %indvars.iv37.i.i, %1218, !note.noelle !263830, !noelle.pdg.inst.id !2952"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:      ID: 99 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1342 = icmp sgt i64 %indvars.iv35.i.i, %1216, !note.noelle !263830, !noelle.pdg.inst.id !50534"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 101 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1370 = icmp sgt i64 %indvars.iv33.i.i, %1218, !note.noelle !263830, !noelle.pdg.inst.id !3009"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 100 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1347 = icmp sgt i64 %indvars.iv31.i.i, %1218, !note.noelle !263830, !noelle.pdg.inst.id !3037"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 326 (1)
+Parallelizer:      Function: "rep_nrm"
+Parallelizer:      Loop: "  %21 = icmp slt i64 %indvars.iv9.i, %15, !note.noelle !235, !noelle.pdg.inst.id !169"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 327 (2)
+Parallelizer:        Function: "rep_nrm"
+Parallelizer:        Loop: "  %24 = icmp slt i64 %indvars.iv7.i, %17, !note.noelle !235, !noelle.pdg.inst.id !60"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 328 (3)
+Parallelizer:          Function: "rep_nrm"
+Parallelizer:          Loop: "  %25 = icmp slt i64 %indvars.iv.i, %19, !note.noelle !235, !noelle.pdg.inst.id !51"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 184 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2807 = icmp slt i64 %indvars.iv10.i1, %2700, !note.noelle !263830, !noelle.pdg.inst.id !1000"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 3.483458e-02 %
+Parallelizer:      Average instructions per invocation = 3.162627e+06 %
+Parallelizer:      Average iterations per invocation = 2.567500e+02 %
+Parallelizer:    
+Parallelizer:      ID: 185 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2810 = icmp slt i64 %indvars.iv6.i6, %2702, !note.noelle !263830, !noelle.pdg.inst.id !5003"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.588900e-02 %
+Parallelizer:        Average instructions per invocation = 5.635000e+03 %
+Parallelizer:        Average iterations per invocation = 2.569990e+02 %
+Parallelizer:      
+Parallelizer:      ID: 186 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2826 = icmp slt i64 %indvars.iv8.i15, %2698, !note.noelle !263830, !noelle.pdg.inst.id !42599"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.892299e-02 %
+Parallelizer:        Average instructions per invocation = 6.711000e+03 %
+Parallelizer:        Average iterations per invocation = 2.589990e+02 %
+Parallelizer:      
+Parallelizer:    ID: 171 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2615 = icmp slt i64 %indvars.iv9.i2, %2609, !note.noelle !263830, !noelle.pdg.inst.id !1269"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 172 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2618 = icmp slt i64 %indvars.iv7.i9, %2611, !note.noelle !263830, !noelle.pdg.inst.id !1254"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 173 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2619 = icmp slt i64 %indvars.iv.i16, %2613, !note.noelle !263830, !noelle.pdg.inst.id !1239"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 121 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1730 = icmp slt i64 %indvars.iv10.i1.i, %1628, !note.noelle !263830, !noelle.pdg.inst.id !2533"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 1.173005e-02 %
+Parallelizer:      Average instructions per invocation = 1.774950e+05 %
+Parallelizer:      Average iterations per invocation = 4.295833e+01 %
+Parallelizer:    
+Parallelizer:      ID: 122 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1733 = icmp slt i64 %indvars.iv6.i4.i, %1630, !note.noelle !263830, !noelle.pdg.inst.id !5143"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 5.300547e-03 %
+Parallelizer:        Average instructions per invocation = 1.909667e+03 %
+Parallelizer:        Average iterations per invocation = 8.766567e+01 %
+Parallelizer:      
+Parallelizer:      ID: 123 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1749 = icmp slt i64 %indvars.iv8.i11.i, %1626, !note.noelle !263830, !noelle.pdg.inst.id !2490"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 6.407102e-03 %
+Parallelizer:        Average instructions per invocation = 2.308333e+03 %
+Parallelizer:        Average iterations per invocation = 8.966567e+01 %
+Parallelizer:      
+Parallelizer:    ID: 297 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %1347 = icmp slt i64 %indvars.iv10.i, %1242, !note.noelle !45424, !noelle.pdg.inst.id !28701"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 2.932513e-03 %
+Parallelizer:      Average instructions per invocation = 1.774950e+05 %
+Parallelizer:      Average iterations per invocation = 4.283333e+01 %
+Parallelizer:    
+Parallelizer:      ID: 299 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %1366 = icmp slt i64 %indvars.iv8.i4, %1240, !note.noelle !45424, !noelle.pdg.inst.id !377"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.601776e-03 %
+Parallelizer:        Average instructions per invocation = 2.308333e+03 %
+Parallelizer:        Average iterations per invocation = 8.966270e+01 %
+Parallelizer:      
+Parallelizer:      ID: 298 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %1350 = icmp slt i64 %indvars.iv6.i2, %1244, !note.noelle !45424, !noelle.pdg.inst.id !407"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.325137e-03 %
+Parallelizer:        Average instructions per invocation = 1.909667e+03 %
+Parallelizer:        Average iterations per invocation = 8.766270e+01 %
+Parallelizer:      
+Parallelizer:    ID: 91 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1224 = icmp sgt i64 %indvars.iv57.i.i, %1214, !note.noelle !263830, !noelle.pdg.inst.id !3184"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 92 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1231 = icmp sgt i64 %indvars.iv49.i.i, %1216, !note.noelle !263830, !noelle.pdg.inst.id !84020"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 93 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1236 = icmp sgt i64 %indvars.iv45.i.i, %1218, !note.noelle !263830, !noelle.pdg.inst.id !3172"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 94 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1252 = icmp sgt i64 %indvars.iv47.i.i, %1218, !note.noelle !263830, !noelle.pdg.inst.id !3153"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:      ID: 95 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1273 = icmp sgt i64 %indvars.iv55.i.i, %1216, !note.noelle !263830, !noelle.pdg.inst.id !3124"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 96 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1278 = icmp sgt i64 %indvars.iv51.i.i, %1218, !note.noelle !263830, !noelle.pdg.inst.id !91827"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 97 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1300 = icmp sgt i64 %indvars.iv53.i.i, %1218, !note.noelle !263830, !noelle.pdg.inst.id !3091"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 315 (1)
+Parallelizer:      Function: "norm2u3"
+Parallelizer:      Loop: "  %17 = icmp slt i64 %indvars.iv9, %11, !note.noelle !214, !noelle.pdg.inst.id !97"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 2.364248e+00 %
+Parallelizer:      Average instructions per invocation = 2.861998e+08 %
+Parallelizer:      Average iterations per invocation = 2.566667e+02 %
+Parallelizer:    
+Parallelizer:      ID: 316 (2)
+Parallelizer:        Function: "norm2u3"
+Parallelizer:        Loop: "  %20 = icmp slt i64 %indvars.iv7, %13, !note.noelle !214, !noelle.pdg.inst.id !86"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 2.364225e+00 %
+Parallelizer:        Average instructions per invocation = 1.117957e+06 %
+Parallelizer:        Average iterations per invocation = 2.569987e+02 %
+Parallelizer:      
+Parallelizer:        ID: 317 (3)
+Parallelizer:          Function: "norm2u3"
+Parallelizer:          Loop: "  %21 = icmp slt i64 %indvars.iv, %15, !note.noelle !214, !noelle.pdg.inst.id !79"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 2.358801e+00 %
+Parallelizer:          Average instructions per invocation = 4.356999e+03 %
+Parallelizer:          Average iterations per invocation = 2.569999e+02 %
+Parallelizer:        
+Parallelizer:    ID: 69 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %873 = icmp slt i64 %indvars.iv10.i2, %768, !note.noelle !263830, !noelle.pdg.inst.id !3642"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 3.601723e-06 %
+Parallelizer:      Average instructions per invocation = 3.270000e+02 %
+Parallelizer:      Average iterations per invocation = 2.750000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 71 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %892 = icmp slt i64 %indvars.iv8.i16, %766, !note.noelle !263830, !noelle.pdg.inst.id !97787"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 2.357091e-06 %
+Parallelizer:        Average instructions per invocation = 1.070000e+02 %
+Parallelizer:        Average iterations per invocation = 4.875000e+00 %
+Parallelizer:      
+Parallelizer:      ID: 70 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %876 = icmp slt i64 %indvars.iv6.i7, %770, !note.noelle !263830, !noelle.pdg.inst.id !3633"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.035358e-06 %
+Parallelizer:        Average instructions per invocation = 4.700000e+01 %
+Parallelizer:        Average iterations per invocation = 2.875000e+00 %
+Parallelizer:      
+Parallelizer:    ID: 124 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1779 = icmp slt i64 %indvars.iv4.i14.i, %1772, !note.noelle !263830, !noelle.pdg.inst.id !2440"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 7.332117e-03 %
+Parallelizer:      Average instructions per invocation = 1.109470e+05 %
+Parallelizer:      Average iterations per invocation = 4.495833e+01 %
+Parallelizer:    
+Parallelizer:      ID: 125 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1780 = icmp slt i64 %indvars.iv.i16.i, %1626, !note.noelle !263830, !noelle.pdg.inst.id !2432"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 7.314472e-03 %
+Parallelizer:        Average instructions per invocation = 2.515455e+03 %
+Parallelizer:        Average iterations per invocation = 8.763542e+01 %
+Parallelizer:      
+Parallelizer:    ID: 362 (1)
+Parallelizer:      Function: "zran3"
+Parallelizer:      Loop: "  %364 = icmp slt i64 %indvars.iv4.i, %255, !note.noelle !1987, !noelle.pdg.inst.id !77"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 1.064370e-02 %
+Parallelizer:      Average instructions per invocation = 1.932681e+06 %
+Parallelizer:      Average iterations per invocation = 2.585000e+02 %
+Parallelizer:    
+Parallelizer:      ID: 363 (2)
+Parallelizer:        Function: "zran3"
+Parallelizer:        Loop: "  %365 = icmp slt i64 %indvars.iv.i2, %254, !note.noelle !1987, !noelle.pdg.inst.id !70"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 1.063516e-02 %
+Parallelizer:        Average instructions per invocation = 7.485000e+03 %
+Parallelizer:        Average iterations per invocation = 2.589981e+02 %
+Parallelizer:      
+Parallelizer:    ID: 214 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %3301 = icmp slt i64 %indvars.iv10.i3, %3194, !note.noelle !263830, !noelle.pdg.inst.id !334"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 3.483458e-02 %
+Parallelizer:      Average instructions per invocation = 3.162627e+06 %
+Parallelizer:      Average iterations per invocation = 2.567500e+02 %
+Parallelizer:    
+Parallelizer:      ID: 215 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %3304 = icmp slt i64 %indvars.iv6.i8, %3196, !note.noelle !263830, !noelle.pdg.inst.id !329"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.588900e-02 %
+Parallelizer:        Average instructions per invocation = 5.635000e+03 %
+Parallelizer:        Average iterations per invocation = 2.569990e+02 %
+Parallelizer:      
+Parallelizer:      ID: 216 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %3320 = icmp slt i64 %indvars.iv8.i17, %3192, !note.noelle !263830, !noelle.pdg.inst.id !319"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.892299e-02 %
+Parallelizer:        Average instructions per invocation = 6.711000e+03 %
+Parallelizer:        Average iterations per invocation = 2.589990e+02 %
+Parallelizer:      
+Parallelizer:    ID: 154 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2299 = icmp sgt i64 %indvars.iv57.i, %2289, !note.noelle !263830, !noelle.pdg.inst.id !1690"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 158 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2348 = icmp sgt i64 %indvars.iv55.i, %2291, !note.noelle !263830, !noelle.pdg.inst.id !1636"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 159 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2353 = icmp sgt i64 %indvars.iv51.i, %2293, !note.noelle !263830, !noelle.pdg.inst.id !1625"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 160 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2375 = icmp sgt i64 %indvars.iv53.i, %2293, !note.noelle !263830, !noelle.pdg.inst.id !1599"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:      ID: 155 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2306 = icmp sgt i64 %indvars.iv49.i, %2291, !note.noelle !263830, !noelle.pdg.inst.id !1680"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 156 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2311 = icmp sgt i64 %indvars.iv45.i, %2293, !note.noelle !263830, !noelle.pdg.inst.id !1673"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 157 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2327 = icmp sgt i64 %indvars.iv47.i, %2293, !note.noelle !263830, !noelle.pdg.inst.id !1655"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 62 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %748 = icmp slt i64 %indvars.iv5.i1, %746, !note.noelle !263830, !noelle.pdg.inst.id !3832"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 9.108945e-06 %
+Parallelizer:      Average instructions per invocation = 8.270000e+02 %
+Parallelizer:      Average iterations per invocation = 4.750000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 63 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %751 = icmp slt i64 %indvars.iv3.i3, %745, !note.noelle !263830, !noelle.pdg.inst.id !3829"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 8.767498e-06 %
+Parallelizer:        Average instructions per invocation = 1.990000e+02 %
+Parallelizer:        Average iterations per invocation = 4.937500e+00 %
+Parallelizer:      
+Parallelizer:        ID: 64 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %752 = icmp slt i64 %indvars.iv.i8, %744, !note.noelle !263830, !noelle.pdg.inst.id !63312"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 7.577938e-06 %
+Parallelizer:          Average instructions per invocation = 4.300000e+01 %
+Parallelizer:          Average iterations per invocation = 4.984375e+00 %
+Parallelizer:        
+Parallelizer:    ID: 204 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %3130 = icmp slt i64 %indvars.iv9.i3, %2700, !note.noelle !263830, !noelle.pdg.inst.id !551"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 205 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %3133 = icmp slt i64 %indvars.iv7.i10, %2702, !note.noelle !263830, !noelle.pdg.inst.id !540"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 206 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %3134 = icmp slt i64 %indvars.iv.i17, %2704, !note.noelle !263830, !noelle.pdg.inst.id !531"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 217 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %3350 = icmp slt i64 %indvars.iv4.i20, %3343, !note.noelle !263830, !noelle.pdg.inst.id !272"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 2.128741e-02 %
+Parallelizer:      Average instructions per invocation = 1.932681e+06 %
+Parallelizer:      Average iterations per invocation = 2.587500e+02 %
+Parallelizer:    
+Parallelizer:      ID: 218 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %3351 = icmp slt i64 %indvars.iv.i23, %3192, !note.noelle !263830, !noelle.pdg.inst.id !267"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 2.127032e-02 %
+Parallelizer:        Average instructions per invocation = 7.485000e+03 %
+Parallelizer:        Average iterations per invocation = 2.589990e+02 %
+Parallelizer:      
+Parallelizer:    ID: 161 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2409 = icmp sgt i64 %indvars.iv43.i, %2289, !note.noelle !263830, !noelle.pdg.inst.id !1543"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 162 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2417 = icmp sgt i64 %indvars.iv35.i, %2291, !note.noelle !263830, !noelle.pdg.inst.id !7715"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 164 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2445 = icmp sgt i64 %indvars.iv33.i, %2293, !note.noelle !263830, !noelle.pdg.inst.id !1489"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 163 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2422 = icmp sgt i64 %indvars.iv31.i, %2293, !note.noelle !263830, !noelle.pdg.inst.id !1523"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:      ID: 165 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2475 = icmp sgt i64 %indvars.iv41.i, %2291, !note.noelle !263830, !noelle.pdg.inst.id !1440"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 166 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2480 = icmp sgt i64 %indvars.iv37.i, %2293, !note.noelle !263830, !noelle.pdg.inst.id !5306"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:        ID: 167 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2513 = icmp sgt i64 %indvars.iv39.i, %2293, !note.noelle !263830, !noelle.pdg.inst.id !112703"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 132 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1882 = icmp slt i64 %indvars.iv8.i.i, %1877, !note.noelle !263830, !noelle.pdg.inst.id !2238"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 2.456144e+00 %
+Parallelizer:      Average instructions per invocation = 3.716550e+07 %
+Parallelizer:      Average iterations per invocation = 4.295833e+01 %
+Parallelizer:    
+Parallelizer:      ID: 133 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1889 = icmp slt i64 %indvars.iv6.i.i, %1879, !note.noelle !263830, !noelle.pdg.inst.id !2224"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 2.456113e+00 %
+Parallelizer:        Average instructions per invocation = 8.848819e+05 %
+Parallelizer:        Average iterations per invocation = 8.766567e+01 %
+Parallelizer:      
+Parallelizer:        ID: 135 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1938 = icmp slt i64 %indvars.iv4.i.i, %1881, !note.noelle !263830, !noelle.pdg.inst.id !2166"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 1.109468e+00 %
+Parallelizer:          Average instructions per invocation = 4.612108e+03 %
+Parallelizer:          Average iterations per invocation = 1.107406e+02 %
+Parallelizer:        
+Parallelizer:        ID: 134 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1893 = icmp slt i64 %indvars.iv.i.i, %1875, !note.noelle !263830, !noelle.pdg.inst.id !31324"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 1.344713e+00 %
+Parallelizer:          Average instructions per invocation = 5.590033e+03 %
+Parallelizer:          Average iterations per invocation = 1.127406e+02 %
+Parallelizer:        
+Parallelizer:    ID: 219 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %3387 = icmp slt i64 %indvars.iv9.i5, %3194, !note.noelle !263830, !noelle.pdg.inst.id !230"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 220 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %3390 = icmp slt i64 %indvars.iv7.i12, %3196, !note.noelle !263830, !noelle.pdg.inst.id !86460"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 221 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %3391 = icmp slt i64 %indvars.iv.i19, %3198, !note.noelle !263830, !noelle.pdg.inst.id !213"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 202 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %3093 = icmp slt i64 %indvars.iv4.i5, %2849, !note.noelle !263830, !noelle.pdg.inst.id !612"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 2.128741e-02 %
+Parallelizer:      Average instructions per invocation = 1.932681e+06 %
+Parallelizer:      Average iterations per invocation = 2.587500e+02 %
+Parallelizer:    
+Parallelizer:      ID: 203 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %3094 = icmp slt i64 %indvars.iv.i20, %2698, !note.noelle !263830, !noelle.pdg.inst.id !604"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 2.127032e-02 %
+Parallelizer:        Average instructions per invocation = 7.485000e+03 %
+Parallelizer:        Average iterations per invocation = 2.589990e+02 %
+Parallelizer:      
+Parallelizer:    ID: 195 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2952 = icmp slt i64 %indvars.iv8.i, %2700, !note.noelle !263830, !noelle.pdg.inst.id !4978"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 1.708316e+01 %
+Parallelizer:      Average instructions per invocation = 1.550978e+09 %
+Parallelizer:      Average iterations per invocation = 2.567500e+02 %
+Parallelizer:    
+Parallelizer:      ID: 196 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2959 = icmp slt i64 %indvars.iv6.i, %2702, !note.noelle !263830, !noelle.pdg.inst.id !53690"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.708313e+01 %
+Parallelizer:        Average instructions per invocation = 6.058498e+06 %
+Parallelizer:        Average iterations per invocation = 2.569990e+02 %
+Parallelizer:      
+Parallelizer:        ID: 197 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2963 = icmp slt i64 %indvars.iv.i1, %2698, !note.noelle !263830, !noelle.pdg.inst.id !789"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 9.313934e+00 %
+Parallelizer:          Average instructions per invocation = 1.290300e+04 %
+Parallelizer:          Average iterations per invocation = 2.590000e+02 %
+Parallelizer:        
+Parallelizer:        ID: 198 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %3008 = icmp slt i64 %indvars.iv4.i, %2704, !note.noelle !263830, !noelle.pdg.inst.id !8525"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 7.763416e+00 %
+Parallelizer:          Average instructions per invocation = 1.075500e+04 %
+Parallelizer:          Average iterations per invocation = 2.570000e+02 %
+Parallelizer:        
+Parallelizer:    ID: 65 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %773 = icmp slt i64 %indvars.iv8.i1, %768, !note.noelle !263830, !noelle.pdg.inst.id !3776"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 1.347067e-05 %
+Parallelizer:      Average instructions per invocation = 1.223000e+03 %
+Parallelizer:      Average iterations per invocation = 2.750000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 66 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %780 = icmp slt i64 %indvars.iv6.i3, %770, !note.noelle !263830, !noelle.pdg.inst.id !63497"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.319530e-05 %
+Parallelizer:        Average instructions per invocation = 5.990000e+02 %
+Parallelizer:        Average iterations per invocation = 2.875000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 68 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %829 = icmp slt i64 %indvars.iv4.i8, %772, !note.noelle !263830, !noelle.pdg.inst.id !78120"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 3.833027e-06 %
+Parallelizer:          Average instructions per invocation = 8.700000e+01 %
+Parallelizer:          Average iterations per invocation = 2.937500e+00 %
+Parallelizer:        
+Parallelizer:        ID: 67 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %784 = icmp slt i64 %indvars.iv.i5, %766, !note.noelle !263830, !noelle.pdg.inst.id !3752"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 8.943729e-06 %
+Parallelizer:          Average instructions per invocation = 2.030000e+02 %
+Parallelizer:          Average iterations per invocation = 4.937500e+00 %
+Parallelizer:        
+Parallelizer:    ID: 189 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2893 = icmp slt i64 %indvars.iv9.i4, %2700, !note.noelle !263830, !noelle.pdg.inst.id !904"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 190 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2896 = icmp slt i64 %indvars.iv7.i11, %2702, !note.noelle !263830, !noelle.pdg.inst.id !897"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 191 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2897 = icmp slt i64 %indvars.iv.i18, %2704, !note.noelle !263830, !noelle.pdg.inst.id !889"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 168 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2577 = icmp slt i64 %indvars.iv9.i1, %2571, !note.noelle !263830, !noelle.pdg.inst.id !5200"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 169 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2580 = icmp slt i64 %indvars.iv7.i8, %2573, !note.noelle !263830, !noelle.pdg.inst.id !1321"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 170 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %2581 = icmp slt i64 %indvars.iv.i15, %2575, !note.noelle !263830, !noelle.pdg.inst.id !110928"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 233 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %257 = icmp slt i64 %indvars.iv4.i16, %250, !note.noelle !45424, !noelle.pdg.inst.id !29627"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 1.834414e-03 %
+Parallelizer:      Average instructions per invocation = 9.516929e+04 %
+Parallelizer:      Average iterations per invocation = 3.914286e+01 %
+Parallelizer:    
+Parallelizer:      ID: 234 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %258 = icmp slt i64 %indvars.iv.i19, %48, !note.noelle !45424, !noelle.pdg.inst.id !1886"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 1.829929e-03 %
+Parallelizer:        Average instructions per invocation = 2.479687e+03 %
+Parallelizer:        Average iterations per invocation = 8.639925e+01 %
+Parallelizer:      
+Parallelizer:    ID: 54 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %641 = icmp slt i64 %indvars.iv4.i16.i, %634, !note.noelle !263830, !noelle.pdg.inst.id !48773"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 7.337658e-03 %
+Parallelizer:      Average instructions per invocation = 9.516929e+04 %
+Parallelizer:      Average iterations per invocation = 3.925000e+01 %
+Parallelizer:    
+Parallelizer:      ID: 55 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %642 = icmp slt i64 %indvars.iv.i19.i, %432, !note.noelle !263830, !noelle.pdg.inst.id !4026"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 7.319715e-03 %
+Parallelizer:        Average instructions per invocation = 2.479687e+03 %
+Parallelizer:        Average iterations per invocation = 8.640205e+01 %
+Parallelizer:      
+Parallelizer:    ID: 235 (1)
+Parallelizer:      Function: "mg3P"
+Parallelizer:      Loop: "  %297 = icmp slt i64 %indvars.iv9.i4, %50, !note.noelle !45424, !noelle.pdg.inst.id !1831"
+Parallelizer:      Loop nesting level: 2
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 236 (2)
+Parallelizer:        Function: "mg3P"
+Parallelizer:        Loop: "  %300 = icmp slt i64 %indvars.iv7.i10, %52, !note.noelle !45424, !noelle.pdg.inst.id !1826"
+Parallelizer:        Loop nesting level: 3
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 237 (3)
+Parallelizer:          Function: "mg3P"
+Parallelizer:          Loop: "  %301 = icmp slt i64 %indvars.iv.i18, %54, !note.noelle !45424, !noelle.pdg.inst.id !1805"
+Parallelizer:          Loop nesting level: 4
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 341 (1)
+Parallelizer:      Function: "zero3"
+Parallelizer:      Loop: "  %9 = icmp slt i64 %indvars.iv5, %7, !note.noelle !123, !noelle.pdg.inst.id !85"
+Parallelizer:      Loop nesting level: 1
+Parallelizer:      Hotness = 1.898196e+00 %
+Parallelizer:      Average instructions per invocation = 1.378696e+08 %
+Parallelizer:      Average iterations per invocation = 2.080000e+02 %
+Parallelizer:    
+Parallelizer:      ID: 342 (2)
+Parallelizer:        Function: "zero3"
+Parallelizer:        Loop: "  %12 = icmp slt i64 %indvars.iv3, %6, !note.noelle !123, !noelle.pdg.inst.id !48"
+Parallelizer:        Loop nesting level: 2
+Parallelizer:        Hotness = 1.898176e+00 %
+Parallelizer:        Average instructions per invocation = 6.653868e+05 %
+Parallelizer:        Average iterations per invocation = 2.580183e+02 %
+Parallelizer:      
+Parallelizer:        ID: 343 (3)
+Parallelizer:          Function: "zero3"
+Parallelizer:          Loop: "  %13 = icmp slt i64 %indvars.iv, %5, !note.noelle !123, !noelle.pdg.inst.id !44"
+Parallelizer:          Loop nesting level: 3
+Parallelizer:          Hotness = 1.893768e+00 %
+Parallelizer:          Average instructions per invocation = 2.582847e+03 %
+Parallelizer:          Average iterations per invocation = 2.589847e+02 %
+Parallelizer:        
+Parallelizer:    ID: 56 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %681 = icmp slt i64 %indvars.iv9.i4.i, %434, !note.noelle !263830, !noelle.pdg.inst.id !3959"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 57 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %684 = icmp slt i64 %indvars.iv7.i10.i, %436, !note.noelle !263830, !noelle.pdg.inst.id !3951"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 58 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %685 = icmp slt i64 %indvars.iv.i18.i, %438, !note.noelle !263830, !noelle.pdg.inst.id !37297"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 51 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %592 = icmp slt i64 %indvars.iv10.i2.i, %434, !note.noelle !263830, !noelle.pdg.inst.id !48394"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 1.173365e-02 %
+Parallelizer:      Average instructions per invocation = 1.521853e+05 %
+Parallelizer:      Average iterations per invocation = 3.725000e+01 %
+Parallelizer:    
+Parallelizer:      ID: 52 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %595 = icmp slt i64 %indvars.iv6.i5.i, %436, !note.noelle !263830, !noelle.pdg.inst.id !4103"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 5.301582e-03 %
+Parallelizer:        Average instructions per invocation = 1.895000e+03 %
+Parallelizer:        Average iterations per invocation = 8.699902e+01 %
+Parallelizer:      
+Parallelizer:      ID: 53 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %611 = icmp slt i64 %indvars.iv8.i13.i, %432, !note.noelle !263830, !noelle.pdg.inst.id !4087"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 6.409459e-03 %
+Parallelizer:        Average instructions per invocation = 2.291000e+03 %
+Parallelizer:        Average iterations per invocation = 8.899902e+01 %
+Parallelizer:      
+Parallelizer:    ID: 136 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1982 = icmp slt i64 %indvars.iv10.i.i, %1877, !note.noelle !263830, !noelle.pdg.inst.id !2131"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 1.173005e-02 %
+Parallelizer:      Average instructions per invocation = 1.774950e+05 %
+Parallelizer:      Average iterations per invocation = 4.295833e+01 %
+Parallelizer:    
+Parallelizer:      ID: 138 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2001 = icmp slt i64 %indvars.iv8.i4.i, %1875, !note.noelle !263830, !noelle.pdg.inst.id !2104"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 6.407102e-03 %
+Parallelizer:        Average instructions per invocation = 2.308333e+03 %
+Parallelizer:        Average iterations per invocation = 8.966567e+01 %
+Parallelizer:      
+Parallelizer:      ID: 137 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1985 = icmp slt i64 %indvars.iv6.i2.i, %1879, !note.noelle !263830, !noelle.pdg.inst.id !2120"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 5.300547e-03 %
+Parallelizer:        Average instructions per invocation = 1.909667e+03 %
+Parallelizer:        Average iterations per invocation = 8.766567e+01 %
+Parallelizer:      
+Parallelizer:    ID: 105 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1504 = icmp slt i64 %indvars.iv9.i.i, %1498, !note.noelle !263830, !noelle.pdg.inst.id !4111"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 106 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1507 = icmp slt i64 %indvars.iv7.i.i, %1500, !note.noelle !263830, !noelle.pdg.inst.id !4096"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 107 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1508 = icmp slt i64 %indvars.iv.i3.i, %1502, !note.noelle !263830, !noelle.pdg.inst.id !9565"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 126 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1817 = icmp slt i64 %indvars.iv9.i2.i, %1628, !note.noelle !263830, !noelle.pdg.inst.id !2382"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 0.000000e+00 %
+Parallelizer:      Average instructions per invocation = 0.000000e+00 %
+Parallelizer:      Average iterations per invocation = 0.000000e+00 %
+Parallelizer:    
+Parallelizer:      ID: 127 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1820 = icmp slt i64 %indvars.iv7.i7.i, %1630, !note.noelle !263830, !noelle.pdg.inst.id !2376"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 0.000000e+00 %
+Parallelizer:        Average instructions per invocation = 0.000000e+00 %
+Parallelizer:        Average iterations per invocation = 0.000000e+00 %
+Parallelizer:      
+Parallelizer:        ID: 128 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1821 = icmp slt i64 %indvars.iv.i13.i, %1632, !note.noelle !263830, !noelle.pdg.inst.id !5125"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 0.000000e+00 %
+Parallelizer:          Average instructions per invocation = 0.000000e+00 %
+Parallelizer:          Average iterations per invocation = 0.000000e+00 %
+Parallelizer:        
+Parallelizer:    ID: 81 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %1032 = icmp slt i64 %indvars.iv5.i1.i, %1030, !note.noelle !263830, !noelle.pdg.inst.id !3389"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 2.810554e-01 %
+Parallelizer:      Average instructions per invocation = 4.252831e+06 %
+Parallelizer:      Average iterations per invocation = 4.495833e+01 %
+Parallelizer:    
+Parallelizer:      ID: 82 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %1035 = icmp slt i64 %indvars.iv3.i3.i, %1029, !note.noelle !263830, !noelle.pdg.inst.id !4680"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 2.810349e-01 %
+Parallelizer:        Average instructions per invocation = 9.664818e+04 %
+Parallelizer:        Average iterations per invocation = 8.763542e+01 %
+Parallelizer:      
+Parallelizer:        ID: 83 (3)
+Parallelizer:          Function: "main"
+Parallelizer:          Loop: "  %1036 = icmp slt i64 %indvars.iv.i6.i, %1028, !note.noelle !263830, !noelle.pdg.inst.id !107831"
+Parallelizer:          Loop nesting level: 5
+Parallelizer:          Hotness = 2.795146e-01 %
+Parallelizer:          Average instructions per invocation = 1.109527e+03 %
+Parallelizer:          Average iterations per invocation = 1.116527e+02 %
+Parallelizer:        
+Parallelizer:    ID: 139 (1)
+Parallelizer:      Function: "main"
+Parallelizer:      Loop: "  %2031 = icmp slt i64 %indvars.iv4.i5.i, %2024, !note.noelle !263830, !noelle.pdg.inst.id !2063"
+Parallelizer:      Loop nesting level: 3
+Parallelizer:      Hotness = 7.332117e-03 %
+Parallelizer:      Average instructions per invocation = 1.109470e+05 %
+Parallelizer:      Average iterations per invocation = 4.495833e+01 %
+Parallelizer:    
+Parallelizer:      ID: 140 (2)
+Parallelizer:        Function: "main"
+Parallelizer:        Loop: "  %2032 = icmp slt i64 %indvars.iv.i8.i, %1875, !note.noelle !263830, !noelle.pdg.inst.id !52589"
+Parallelizer:        Loop nesting level: 4
+Parallelizer:        Hotness = 7.314472e-03 %
+Parallelizer:        Average instructions per invocation = 2.515455e+03 %
+Parallelizer:        Average iterations per invocation = 8.763542e+01 %
+Parallelizer:      
+BRIAN: n->getLoop
+BRIAN: noelle.getLoop
+BRIAN 6:   %1182 = icmp slt i64 %indvars.iv9.i2, %993, !note.noelle !45424, !noelle.pdg.inst.id !4833
+BRIAN 9, I'm in TalkDownChecker!
+BRIAN 9, Loop: 
+Loop summary: 364, depth: 2
+  %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+BRIAN 9, Loop Header: 
+1181:                                             ; preds = %1198, %1173
+  %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+  %.04.i3 = phi double [ %.15.i8.lcssa, %1198 ], [ 0.000000e+00, %1173 ], !noelle.pdg.inst.id !622
+  %.0.i4 = phi double [ %.1.i9.lcssa, %1198 ], [ 0.000000e+00, %1173 ], !noelle.pdg.inst.id !620
+  %1182 = icmp slt i64 %indvars.iv9.i2, %993, !note.noelle !45424, !noelle.pdg.inst.id !4833
+  br i1 %1182, label %.preheader1.i6, label %norm2u3.exit20, !note.noelle !45424, !noelle.pdg.inst.id !576
+
+BRIAN 9, loop exit block:
+
+1181:                                             ; preds = %1198, %1173
+  %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+  %.04.i3 = phi double [ %.15.i8.lcssa, %1198 ], [ 0.000000e+00, %1173 ], !noelle.pdg.inst.id !622
+  %.0.i4 = phi double [ %.1.i9.lcssa, %1198 ], [ 0.000000e+00, %1173 ], !noelle.pdg.inst.id !620
+  %1182 = icmp slt i64 %indvars.iv9.i2, %993, !note.noelle !45424, !noelle.pdg.inst.id !4833
+  br i1 %1182, label %.preheader1.i6, label %norm2u3.exit20, !note.noelle !45424, !noelle.pdg.inst.id !576
+
+BRIAN 9, branch inst =   br i1 %1182, label %.preheader1.i6, label %norm2u3.exit20, !note.noelle !45424, !noelle.pdg.inst.id !576
+BRIAN 8 cmp operands: 
+  %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+  %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %1190 = load double*, double** %1189, align 8, !noelle.pdg.inst.id !3471
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %1188 = load double**, double*** %1183, align 8, !noelle.pdg.inst.id !601
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %987 = load double***, double**** %986, align 8, !noelle.pdg.inst.id !2974
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %indvars.iv.next10.i19 = add nuw nsw i64 %indvars.iv9.i2, 1, !noelle.pdg.inst.id !579
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN: Calling refine on0x18143560
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872438
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871d10
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d10
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871d98
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872368
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872160
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871b08
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871270
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872160
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872298
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872530
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872298
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872368
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872298
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871f98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872068
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872438
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871b08
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871ec8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872160
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871ec8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871c48
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871c48
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872068
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872530
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872298
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872368
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871ec8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871270
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x88725b8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871b08
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871ba8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871b08
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871d10
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872438
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871d10
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871f98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872368
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872068
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872368
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871f98
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871c48
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871ba8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871f98
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x884f340
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871ec8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871b08
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872068
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871ec8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871d10
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871d98
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871ba8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871b08
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871c48
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871ec8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872298
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8870d50
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872068
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872438
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872160
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x88721e8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871ba8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871f98
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872298
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x884f860
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871ba8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88721e8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872530
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871c48
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8870d50
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872438
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872160
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x88721e8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872530
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872368
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872438
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8871f98
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8871d98
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x88721e8
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x88725b8
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872530
+Brian: FOUND AN EDGE from OUT!!
+BRIAN: the out is 0x8872068
+Brian: FOUND AN EDGE from IN!!
+BRIAN: the in is 0x8872438
+loopSCCDAAG ptr = 0x2cbf2200
+BRIAN 9, I'm in TalkDownChecker!
+BRIAN 9, Loop: 
+Loop summary: 364, depth: 2
+  %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+BRIAN 9, Loop Header: 
+1181:                                             ; preds = %1198, %1173
+  %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+  %.04.i3 = phi double [ %.15.i8.lcssa, %1198 ], [ 0.000000e+00, %1173 ], !noelle.pdg.inst.id !622
+  %.0.i4 = phi double [ %.1.i9.lcssa, %1198 ], [ 0.000000e+00, %1173 ], !noelle.pdg.inst.id !620
+  %1182 = icmp slt i64 %indvars.iv9.i2, %993, !note.noelle !45424, !noelle.pdg.inst.id !4833
+  br i1 %1182, label %.preheader1.i6, label %norm2u3.exit20, !note.noelle !45424, !noelle.pdg.inst.id !576
+
+BRIAN 9, loop exit block:
+
+1181:                                             ; preds = %1198, %1173
+  %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+  %.04.i3 = phi double [ %.15.i8.lcssa, %1198 ], [ 0.000000e+00, %1173 ], !noelle.pdg.inst.id !622
+  %.0.i4 = phi double [ %.1.i9.lcssa, %1198 ], [ 0.000000e+00, %1173 ], !noelle.pdg.inst.id !620
+  %1182 = icmp slt i64 %indvars.iv9.i2, %993, !note.noelle !45424, !noelle.pdg.inst.id !4833
+  br i1 %1182, label %.preheader1.i6, label %norm2u3.exit20, !note.noelle !45424, !noelle.pdg.inst.id !576
+
+BRIAN 9, branch inst =   br i1 %1182, label %.preheader1.i6, label %norm2u3.exit20, !note.noelle !45424, !noelle.pdg.inst.id !576
+BRIAN 8 cmp operands: 
+  %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+  %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %1190 = load double*, double** %1189, align 8, !noelle.pdg.inst.id !3471
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %1188 = load double**, double*** %1183, align 8, !noelle.pdg.inst.id !601
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %987 = load double***, double**** %986, align 8, !noelle.pdg.inst.id !2974
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %indvars.iv.next10.i19 = add nuw nsw i64 %indvars.iv9.i2, 1, !noelle.pdg.inst.id !579
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+BRIAN 1:   %indvars.iv9.i2 = phi i64 [ %indvars.iv.next10.i19, %1198 ], [ 1, %1173 ], !noelle.pdg.inst.id !21908
+BRIAN 2, our invariants:   %993 = sext i32 %992 to i64, !noelle.pdg.inst.id !31601
+sccdag in collectLoopCarriedDependencies 0x2cbf2200
+sccdag in collectLoopCarriedDependencies 0x2cbf2200
+sccdag in collectLoopCarriedDependencies 0x2cbf2200
+BRIAN: LDI from selector ptr is 0x18143560
+BRIAN: it's selected
+Parallelizer: LoopSelector: Selected 1
+Parallelizer: LoopSelector: Start
+Parallelizer: LoopSelector:   Order of loops and their maximum savings
+Parallelizer: LoopSelector:    Loop 364 savings = INF%
+Parallelizer: LoopSelector: End
+Parallelizer: Start
+Parallelizer:  Function = "mg3P"
+Parallelizer:  Loop 364 = "  %1182 = icmp slt i64 %indvars.iv9.i2, %993, !note.noelle !45424, !noelle.pdg.inst.id !4833"
+Parallelizer:  Nesting level = 2
+DOALL: Checking if the loop is DOALL
+DOALL:   The loop can be parallelized with DOALL
+DOALL: Start the parallelization
+DOALL:   Number of threads to extract = 28
+DOALL:   Chunk size = 8
+DOALL:  Cloned loop
+DOALL:  Adjusted data flow
+opt: /home/bdh2903/repo/outliner/noelle/src/tools/parallelization_technique/src/ParallelizationTechnique.cpp:890: PHINode *llvm::noelle::ParallelizationTechnique::fetchLoopEntryPHIOfProducer(llvm::noelle::LoopDependenceInfo *, llvm::Value *): Assertion `reducibleVariable != nullptr' failed.
+Stack dump:
+0.	Program arguments: opt -load /home/bdh2903/repo/outliner/noelle/install/lib/CallGraph.so -load /home/bdh2903/repo/outliner/noelle/install/lib/libSvf.so -load /home/bdh2903/repo/outliner/noelle/install/lib/libCudd.so -stat=false -load /home/bdh2903/repo/outliner/noelle/install/lib/libSCAFUtilities.so -load /home/bdh2903/repo/outliner/noelle/install/lib/libMemoryAnalysisModules.so -load /home/bdh2903/repo/outliner/noelle/install/lib/AllocAA.so -load /home/bdh2903/repo/outliner/noelle/install/lib/TalkDown.so -load /home/bdh2903/repo/outliner/noelle/install/lib/CallGraph.so -load /home/bdh2903/repo/outliner/noelle/install/lib/PDGAnalysis.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Architecture.so -load /home/bdh2903/repo/outliner/noelle/install/lib/BasicUtilities.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Task.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DataFlow.so -load /home/bdh2903/repo/outliner/noelle/install/lib/HotProfiler.so -load /home/bdh2903/repo/outliner/noelle/install/lib/LoopStructure.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Loops.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Scheduler.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -load /home/bdh2903/repo/outliner/noelle/install/lib/Heuristics.so -load /home/bdh2903/repo/outliner/noelle/install/lib/ParallelizationTechnique.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DSWP.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DOALL.so -load /home/bdh2903/repo/outliner/noelle/install/lib/HELIX.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Parallelizer.so -parallelizer mg.ll_pdg_prof.bc -o mg.ll_parallel.bc -noelle-verbose=3 -noelle-pdg-verbose=1 -noelle-min-hot=0 -noelle-disable-helix -noelle-disable-dswp 
+1.	Running pass 'Automatic parallelization of sequential code' on module 'mg.ll_pdg_prof.bc'.
+#0 0x000000000219868a llvm::sys::PrintStackTrace(llvm::raw_ostream&) (/project/extra/llvm/9.0.0/release/bin/opt+0x219868a)
+#1 0x0000000002196614 llvm::sys::RunSignalHandlers() (/project/extra/llvm/9.0.0/release/bin/opt+0x2196614)
+#2 0x0000000002196775 SignalHandler(int) (/project/extra/llvm/9.0.0/release/bin/opt+0x2196775)
+#3 0x00007fa1e576eb20 __restore_rt (/lib64/libpthread.so.0+0x12b20)
+#4 0x00007fa1e42517ff raise (/lib64/libc.so.6+0x377ff)
+#5 0x00007fa1e423bc35 abort (/lib64/libc.so.6+0x21c35)
+#6 0x00007fa1e423bb09 _nl_load_domain.cold.0 (/lib64/libc.so.6+0x21b09)
+#7 0x00007fa1e4249de6 (/lib64/libc.so.6+0x2fde6)
+#8 0x00007fa1e1069dac llvm::noelle::ParallelizationTechnique::fetchLoopEntryPHIOfProducer(llvm::noelle::LoopDependenceInfo*, llvm::Value*) /home/bdh2903/repo/outliner/noelle/src/tools/parallelization_technique/src/ParallelizationTechnique.cpp:892:32
+/home/bdh2903/repo/outliner/noelle/install/bin/noelle-load: line 25: 4019460 Aborted                 (core dumped) opt -load /home/bdh2903/repo/outliner/noelle/install/lib/CallGraph.so -load /home/bdh2903/repo/outliner/noelle/install/lib/libSvf.so -load /home/bdh2903/repo/outliner/noelle/install/lib/libCudd.so -stat=false -load /home/bdh2903/repo/outliner/noelle/install/lib/libSCAFUtilities.so -load /home/bdh2903/repo/outliner/noelle/install/lib/libMemoryAnalysisModules.so -load /home/bdh2903/repo/outliner/noelle/install/lib/AllocAA.so -load /home/bdh2903/repo/outliner/noelle/install/lib/TalkDown.so -load /home/bdh2903/repo/outliner/noelle/install/lib/CallGraph.so -load /home/bdh2903/repo/outliner/noelle/install/lib/PDGAnalysis.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Architecture.so -load /home/bdh2903/repo/outliner/noelle/install/lib/BasicUtilities.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Task.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DataFlow.so -load /home/bdh2903/repo/outliner/noelle/install/lib/HotProfiler.so -load /home/bdh2903/repo/outliner/noelle/install/lib/LoopStructure.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Loops.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Scheduler.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Noelle.so -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -load /home/bdh2903/repo/outliner/noelle/install/lib/Heuristics.so -load /home/bdh2903/repo/outliner/noelle/install/lib/ParallelizationTechnique.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DSWP.so -load /home/bdh2903/repo/outliner/noelle/install/lib/DOALL.so -load /home/bdh2903/repo/outliner/noelle/install/lib/HELIX.so -load /home/bdh2903/repo/outliner/noelle/install/lib/Parallelizer.so -parallelizer mg.ll_pdg_prof.bc -o mg.ll_parallel.bc -noelle-verbose=3 -noelle-pdg-verbose=1 -noelle-min-hot=0 -noelle-disable-helix -noelle-disable-dswp

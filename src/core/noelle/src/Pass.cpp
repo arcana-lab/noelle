@@ -113,6 +113,7 @@ void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<liberty::LoopAA>();
+  AU.addRequired<TalkDown>();
   AU.addRequired<HotProfiler>();
 
   return ;
@@ -121,7 +122,8 @@ void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
 bool Noelle::runOnModule (Module &M){
   this->pdgAnalysis = &getAnalysis<PDGAnalysis>();
   this->loopAA = getAnalysis<liberty::LoopAA>().getTopAA();
-
+  this->talkdown = &getAnalysis<TalkDown>();
+   
   return false;
 }
 

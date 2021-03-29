@@ -1,0 +1,79 @@
+#!/bin/bash
+
+BITCODE=$1
+NOELLE_INSTALL=$(noelle-config);
+echo $NOELLE_INSTALL
+
+NOELLE_OPTIONS="-noelle-verbose=3 -noelle-pdg-verbose=1 -noelle-min-hot=1 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall"
+
+noelleBin="`which noelle-config`";
+noelleDir=`dirname $noelleBin`/../../ ;
+noelleDir=`realpath $noelleDir` ;
+echo $noelleDir ;
+ln -s ${noelleDir}/src/core/runtime/Parallelizer_utils.cpp
+
+INCLUDES=-Iinclude/threadpool/include
+
+# Runtime
+RUNTIME_DIRNAME="threadpool"
+RUNTIME_GITREPO="https://github.com/scampanoni/virgil.git"
+RUNTIME_CFLAGS="-DNDEBUG"
+RUNTIME=Parallelizer_utils
+
+mkdir -p include
+cd include 
+../download.sh  "https://github.com/scampanoni/virgil.git" "threadpool"
+cd ..
+
+
+# BITCODE has runtime and is annotated
+echo "SPLITING FOR TALKDOWN"
+noelle-load  -talkdown-split-basic-blocks $BITCODE -o ${BITCODE}_split.bc  
+echo "OUTLINING"
+noelle-load -load $NOELLE_INSTALL/lib/OutlinerPass.so -outliner -outline-annotation=\"critical 1\" ${BITCODE}_split.bc -o ${BITCODE}_outlined.bc 
+
+echo "LINKING WITH RUNTIME"
+clang++ "-DNDEBUG" -Iinclude/threadpool/include -std=c++14 -emit-llvm -O3 -c ${RUNTIME}.cpp -o ${RUNTIME}.bc
+llvm-link ${BITCODE}_outlined.bc ${RUNTIME}.bc -o ${BITCODE}_runtime.bc
+
+echo "NOELLE-NORM"
+noelle-norm ${BITCODE}_runtime.bc -o ${BITCODE}_norm.bc
+
+echo "NOELLE-PROF-COVERAGE"
+noelle-prof-coverage ${BITCODE}_norm.bc baseline_pre_prof -lm -lpthread -lstdc++
+
+echo "RUN BASELINE_PRE_PROF"
+./baseline_pre_prof ${INPUTS}
+
+echo "NOELLE-META-PROF-EMBED"
+noelle-meta-prof-embed default.profraw ${BITCODE}_norm.bc -o ${BITCODE}_prof.bc
+echo "NOELLE-PRE"
+noelle-pre ${BITCODE}_prof.bc ${NOELLE_OPTIONS}
+
+#Inline our outlined
+#cp ${BITCODE}_prof.bc ${BITCODE}_inlined.bc
+echo "OUTLINED INLINING"
+noelle-load -load $NOELLE_INSTALL/lib/OutlinerPass.so -outlined-inliner ${BITCODE}_prof.bc -o ${BITCODE}_inlined.bc
+
+echo "NOELLE-META-CLEAN"
+noelle-meta-clean ${BITCODE}_inlined.bc ${BITCODE}_clean.bc
+#TODO: Check that the meta-clean does not remove the meta data we care about
+
+echo "NOELLE-PROF-COVERAGE 2"
+noelle-prof-coverage ${BITCODE}_clean.bc baseline_post_prof -lm -lpthread -lstdc++
+
+echo "RUN BASELINE_POST_PROF"
+./baseline_post_prof ${INPUTS}
+
+echo "NOELLE-META-PROF-EMBED"
+noelle-meta-prof-embed default.profraw ${BITCODE}_clean.bc -o ${BITCODE}_prof.bc
+
+echo "NOELLE-META-PDG-EMBED"
+noelle-meta-pdg-embed ${BITCODE}_prof.bc -o ${BITCODE}_pdg_prof.bc
+
+echo "NOELLE-PARALLELIZER"
+noelle-parallelizer ${BITCODE}_pdg_prof.bc -o ${BITCODE}_parallel.bc ${NOELLE_OPTIONS} ${PARALLELIZATION_OPTIONS}
+
+echo "FINAL BUILD"
+clang ${BITCODE}_parallel.bc -lm -lpthread -lstdc++ -O3 -march=native -o parallelized_binary
+

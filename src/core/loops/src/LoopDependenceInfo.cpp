@@ -22,7 +22,7 @@ LoopDependenceInfo::LoopDependenceInfo (
   Loop *l,
   DominatorSummary &DS,
   ScalarEvolution &SE
-) : LoopDependenceInfo{fG, l, DS, SE, Architecture::getNumberOfLogicalCores(), true, {}, nullptr, true} 
+) : LoopDependenceInfo{fG, l, DS, SE, Architecture::getNumberOfLogicalCores(), true, {}, nullptr, nullptr, true} 
   {
   return ;
 }
@@ -34,7 +34,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   ScalarEvolution &SE,
   uint32_t maxCores,
   bool enableFloatAsReal
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, nullptr, true} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, nullptr, nullptr, true} {
 
   return ;
 }
@@ -47,7 +47,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   uint32_t maxCores,
   bool enableFloatAsReal,
   liberty::LoopAA *aa
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, true} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, nullptr, true} {
 
   return ;
 }
@@ -60,7 +60,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   uint32_t maxCores,
   bool enableFloatAsReal,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, optimizations, nullptr, true} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, optimizations, nullptr, nullptr,true} {
 
   return ;
 }
@@ -74,7 +74,7 @@ LoopDependenceInfo::LoopDependenceInfo (
   bool enableFloatAsReal,
   liberty::LoopAA *aa,
   bool enableLoopAwareDependenceAnalyses
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, enableLoopAwareDependenceAnalyses}{
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, nullptr, enableLoopAwareDependenceAnalyses}{
 
   return ;
 }
@@ -88,6 +88,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   bool enableFloatAsReal,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations,
   liberty::LoopAA *loopAA,
+  TalkDown *talkdown,
   bool enableLoopAwareDependenceAnalyses
 ) : DOALLChunkSize{8},
     maximumNumberOfCoresForTheParallelization{maxCores},
@@ -106,6 +107,8 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Enable all transformations.
    */
+
+//  errs() << "BRIAN 6: " << *(l->getHeader()->getFirstNonPHI()) << '\n';
   this->enableAllTransformations();
 
   /*
@@ -114,7 +117,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->fetchLoopAndBBInfo(l, SE);
   auto ls = this->getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
-  auto DGs = this->createDGsForLoop(l, fG, DS, SE, loopAA);
+  auto DGs = this->createDGsForLoop(l, fG, DS, SE, loopAA, talkdown);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
 
@@ -127,7 +130,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Create the invariant manager.
    */
   auto topLoop = this->liSummary.getLoopNestingTreeRoot();
-  this->invariantManager = new InvariantManager(topLoop, this->loopDG);
+  this->invariantManager = new InvariantManager(topLoop, this->loopDG, talkdown);
 
   /*
    * Calculate various attributes on SCCs
@@ -192,7 +195,8 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   PDG *functionDG,
   DominatorSummary &DS,
   ScalarEvolution &SE,
-  liberty::LoopAA *aa
+  liberty::LoopAA *aa,
+  TalkDown *talkdown
 ) {
 
   /*
@@ -203,13 +207,14 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   }
   auto loopDG = functionDG->createLoopsSubgraph(l);
   for (auto edge : loopDG->getEdges()) {
-    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
+    assert(!edge->isLoopCarriedDependence() && "flag was already set");
   }
 
   std::vector<Value *> loopInternals;
   for (auto internalNode : loopDG->internalNodePairs()) {
       loopInternals.push_back(internalNode.first);
   }
+
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
 
   /*
@@ -232,11 +237,12 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto env = LoopEnvironment(loopDG, loopExitBlocks);
   auto preRefinedSCCDAG = SCCDAG(loopInternalDG);
-  auto invManager = InvariantManager(loopStructure, loopDG);
+  auto invManager = InvariantManager(loopStructure, loopDG, talkdown);
   auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
-    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, aa, &domainSpace);
+//    errs() << "BRIAN: Calling refine on" << this << "\n";
+    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, aa, talkdown, &domainSpace);
   }
 
   /*
@@ -246,11 +252,41 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
     removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS);
   }
 
+  for (auto edge : loopDG->getEdges()) {
+
+    if (edge->isMemoryDependence() ) {
+      if(edge->isLoopCarriedDependence()) {
+//        errs() << "This shouldn't fail: " << edge << '\n';
+      }
+//        assert(!edge->isLoopCarriedDependence() && "flag was already set on loopDG");
+    }
+  }
+
   /*
    * Build a SCCDAG of loop-internal instructions
    */
   loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
+  
+  for (auto edge : loopInternalDG->getEdges()) {
+    if (edge->isMemoryDependence() ){
+       if(edge->isLoopCarriedDependence()) {
+//        errs() << "This shouldn't fail NUMBER 2: " << edge << '\n';
+      }
+       //assert(!edge->isLoopCarriedDependence() && "flag was already set");
+    }
+  }
+
   auto loopSCCDAG = new SCCDAG(loopInternalDG);
+//  errs() << "loopSCCDAAG ptr = " << loopSCCDAG << '\n';
+  for (auto sccNode : loopSCCDAG->getNodes()) {
+    auto scc = sccNode->getT();
+    for (auto edge : scc->getEdges()) {
+      if (!edge->isLoopCarriedDependence()) {
+        continue;
+      }   
+//      errs() << "NO, NOT AGAIN\n";
+    }
+  }
 
   /*
    * Safety check: check that the SCCDAG includes all instructions of the loop given as input.
