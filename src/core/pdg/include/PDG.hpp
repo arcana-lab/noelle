@@ -131,6 +131,10 @@ namespace llvm::noelle {
         std::unordered_set<DGEdge<Value> *> edgesToIgnore
       );
 
+      std::vector<Value *> getSortedValues (void) ;
+
+      std::vector<DGEdge<Value> *> getSortedDependences (void) ;
+
       /*
        * Destructor
        */

@@ -8,8 +8,6 @@ LIBS=-lm -lstdc++ -lpthread
 
 # Set the runtime flags
 RUNTIME_CFLAGS="-DDEBUG"
-#RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DDSWP_STATS"
-#RUNTIME_CFLAGS="$(RUNTIME_CFLAGS) -DRUNTIME_PRINT"
 
 # Parallelization options
 # 	- To dump the PDG: -noelle-pdg-dump
@@ -19,7 +17,7 @@ OPT_LEVEL=-O3
 
 # Front-end
 INCLUDES=-I../../include/threadpool/include
-FRONTEND_OPTIONS=-O0 -Xclang -disable-O0-optnone
+FRONTEND_OPTIONS=-O1 -Xclang -disable-llvm-passes 
 FRONTEND_FLAGS=-emit-llvm $(FRONTEND_OPTIONS)
 
 THREADER=Parallelizer_utils

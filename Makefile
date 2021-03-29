@@ -24,6 +24,7 @@ clean:
 	find ./ -name .clangd -exec rm -rv {} +
 
 uninstall:
+	rm -f enable ;
 	rm -rf install ;
 	cd external ; make $@
 

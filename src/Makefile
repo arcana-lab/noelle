@@ -12,6 +12,7 @@ endif
 all: 
 	cd core ; make ;
 	cd tools ; make ;
+	./scripts/generate_enable_file.sh
 
 core-fast: export CC:=$(CC)
 core-fast: export CXX:=$(CXX)
