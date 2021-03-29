@@ -21,6 +21,7 @@
 #include "StayConnectedNestedLoopForest.hpp"
 #include "FunctionsManager.hpp"
 #include "TypesManager.hpp"
+#include "CompilationOptionsManager.hpp"
 
 #include "scaf/MemoryAnalysisModules/LoopAA.h"
 
@@ -50,6 +51,8 @@ namespace llvm::noelle {
       bool runOnModule (Module &M) override ;
 
       FunctionsManager * getFunctionsManager (void) ;
+
+      CompilationOptionsManager * getCompilationOptionsManager (void) ;
       
       TypesManager * getTypesManager (void) ;
 
@@ -158,8 +161,6 @@ namespace llvm::noelle {
 
       double getMinimumHotness (void) const ;
 
-      uint32_t getMaximumNumberOfCores (void) const ;
-
       uint64_t numberOfProgramInstructions (void) const ;
 
       /**
@@ -201,7 +202,6 @@ namespace llvm::noelle {
       Hot *profiles;
       PDG *programDependenceGraph;
       std::unordered_set<Transformation> enabledTransformations;
-      uint32_t maxCores;
       bool hoistLoopsToMain;
       bool loopAwareDependenceAnalysis;
       PDGAnalysis *pdgAnalysis;
@@ -215,6 +215,7 @@ namespace llvm::noelle {
       std::unordered_map<BasicBlock *, uint32_t> loopHeaderToLoopIndexMap;
       FunctionsManager *fm;
       TypesManager *tm;
+      CompilationOptionsManager *om;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream
