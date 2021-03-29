@@ -14,6 +14,7 @@
 /*
  * SCAF headers
  */
+#define ENABLE_SCAF
 #ifdef ENABLE_SCAF
 #include "scaf/MemoryAnalysisModules/LoopAA.h"
 #include "scaf/Utilities/PDGQueries.h"
