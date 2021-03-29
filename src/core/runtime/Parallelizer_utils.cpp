@@ -821,7 +821,7 @@ extern "C" {
     /*
      * Free the cores and memory.
      */
-    runtime.releaseCores(numberOfStages);
+    runtime.releaseCores(numCores);
     for (int i = 0; i < numberOfQueues; ++i) {
       switch (queueSizes[i]) {
         case 1:
