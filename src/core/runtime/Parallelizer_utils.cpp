@@ -36,7 +36,7 @@ class NoelleRuntime {
     void releaseDOALLArgs (uint32_t index);
 
   private:
-    mutable pthread_spinlock_t doallMemoryLock;
+    mutable nk_virgil_spinlock_t doallMemoryLock;
     std::vector<uint32_t> doallMemorySizes;
     std::vector<bool> doallMemoryAvailability;
     std::vector<DOALL_args_t *> doallMemory;
@@ -53,11 +53,11 @@ class NoelleRuntime {
      */
     uint32_t maxCores;
 
-    mutable pthread_spinlock_t spinLock;
+    mutable nk_virgil_spinlock_t spinLock;
 };
 
 #ifdef RUNTIME_PROFILE
-pthread_spinlock_t printLock;
+nk_virgil_spinlock_t printLock;
 uint64_t clocks_starts[64];
 uint64_t clocks_ends[64];
 #endif
@@ -177,7 +177,6 @@ extern "C" {
   /**********************************************************************
    *                DOALL
    **********************************************************************/
-  void * NOELLE_DOALLTrampoline (void *args){
   static void * NOELLE_DOALLTrampoline (void *args){
     #ifdef RUNTIME_PROFILE
     auto clocks_start = rdtsc_s();
@@ -276,7 +275,7 @@ extern "C" {
     dispatcherInfo.numberOfThreadsUsed = numCores;
     #ifdef RUNTIME_PROFILE
     auto clocks_after_cleanup = rdtsc_s();
-    pthread_spin_lock(&printLock);
+    nk_virgil_spinlock_lock(&printLock);
     std::cerr << "XAN: Start         = " << clocks_start << "\n";
     std::cerr << "XAN: Setup overhead         = " << clocks_after_fork - clocks_start << " clocks\n";
     std::cerr << "XAN: Start joining = " << clocks_after_fork << "\n";
@@ -316,7 +315,7 @@ extern "C" {
     std::cerr << "XAN: Last thread ended = " << end_max << " (thread " << lastThreadID << ")\n";
     std::cerr << "XAN: Joining overhead       = " << clocks_after_join - end_max << "\n";
 
-    pthread_spin_unlock(&printLock);
+    nk_virgil_spinlock_unlock(&printLock);
     #endif
 
     return dispatcherInfo;
@@ -398,17 +397,9 @@ extern "C" {
     ){
 
     /*
-     * Assumptions.
-     */
-    assert(parallelizedLoop != NULL);
-    assert(env != NULL);
-    assert(maxNumberOfCores > 1);
-
-    /*
      * Reserve the cores.
      */
     auto numCores = runtime.reserveCores(maxNumberOfCores);
-    assert(numCores >= 1);
 
     /*
      * Allocate the sequential segment arrays.
@@ -658,7 +649,6 @@ extern "C" {
      * Reserve the cores.
      */
     auto numCores = runtime.reserveCores(numberOfStages);
-    assert(numCores >= 1);
 
     /*
      * Allocate the communication queues.
@@ -769,10 +759,10 @@ NoelleRuntime::NoelleRuntime(){
   this->maxCores = this->getMaximumNumberOfCores();
   this->NOELLE_idleCores = maxCores;
 
-  pthread_spin_init(&this->spinLock, 0);
-  pthread_spin_init(&this->doallMemoryLock, 0);
+  nk_virgil_spinlock_init(&this->spinLock);
+  nk_virgil_spinlock_init(&this->doallMemoryLock);
   #ifdef RUNTIME_PROFILE
-  pthread_spin_init(&printLock, 0);
+  nk_virgil_spinlock_init(&printLock);
   #endif
 
   return ;
@@ -784,7 +774,7 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
   /*
    * Check if we can reuse a previously-allocated memory region.
    */
-  pthread_spin_lock(&this->doallMemoryLock);
+  nk_virgil_spinlock_lock(&this->doallMemoryLock);
   auto doallMemoryNumberOfChunks = this->doallMemoryAvailability.size();
   for (auto i=0; i < doallMemoryNumberOfChunks; i++){
     auto currentSize = this->doallMemorySizes[i];
@@ -803,7 +793,7 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
        */
       this->doallMemoryAvailability[i] = false;
       (*index) = i;
-      pthread_spin_unlock(&this->doallMemoryLock);
+      nk_virgil_spinlock_unlock(&this->doallMemoryLock);
 
       return argsForAllCores;
     }
@@ -818,7 +808,7 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
   this->doallMemoryAvailability.push_back(false);
   posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(DOALL_args_t) * cores);
   this->doallMemory.push_back(argsForAllCores);
-  pthread_spin_unlock(&this->doallMemoryLock);
+  nk_virgil_spinlock_unlock(&this->doallMemoryLock);
 
   /*
    * Set the index.
@@ -843,9 +833,9 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
 }
     
 void NoelleRuntime::releaseDOALLArgs (uint32_t index){
-  pthread_spin_lock(&this->doallMemoryLock);
+  nk_virgil_spinlock_lock(&this->doallMemoryLock);
   this->doallMemoryAvailability[index] = true;
-  pthread_spin_unlock(&this->doallMemoryLock);
+  nk_virgil_spinlock_unlock(&this->doallMemoryLock);
   return ;
 }
 
@@ -854,22 +844,21 @@ uint32_t NoelleRuntime::reserveCores (uint32_t coresRequested){
   /*
    * Reserve the number of cores available.
    */
-  pthread_spin_lock(&this->spinLock);
+  nk_virgil_spinlock_lock(&this->spinLock);
   auto numCores = this->NOELLE_idleCores > coresRequested ? coresRequested : NOELLE_idleCores;
   if (numCores < 1){
     numCores = 1;
   }
   this->NOELLE_idleCores -= numCores;
-  pthread_spin_unlock(&this->spinLock);
+  nk_virgil_spinlock_unlock(&this->spinLock);
 
   return numCores;
 }
     
 void NoelleRuntime::releaseCores (uint32_t coresReleased){
-  pthread_spin_lock(&this->spinLock);
+  nk_virgil_spinlock_lock(&this->spinLock);
   this->NOELLE_idleCores += coresReleased;
-  assert(this->NOELLE_idleCores <= this->maxCores);
-  pthread_spin_unlock(&this->spinLock);
+  nk_virgil_spinlock_unlock(&this->spinLock);
 
   return ;
 }
@@ -885,12 +874,7 @@ uint32_t NoelleRuntime::getMaximumNumberOfCores (void){
     /*
      * Compute the number of cores.
      */
-    auto envVar = getenv("NOELLE_CORES");
-    if (envVar == nullptr){
-      cores = std::thread::hardware_concurrency();
-    } else {
-      cores = atoi(envVar);
-    }
+    cores = nk_virgil_get_num_cpus();
   }
 
   return cores;
