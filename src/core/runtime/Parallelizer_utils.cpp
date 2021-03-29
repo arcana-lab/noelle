@@ -20,7 +20,6 @@ typedef struct {
   int64_t coreID ;
   int64_t numCores;
   int64_t chunkSize ;
-  pthread_mutex_t endLock;
 } DOALL_args_t ;
 
 class NoelleRuntime {
@@ -31,7 +30,7 @@ class NoelleRuntime {
 
     void releaseCores (uint32_t coresReleased);
 
-    DOALL_args_t * getDOALLArgs (uint32_t cores, uint32_t *index);
+    DOALL_args_t * getDOALLArgs (uint32_t cores, uint32_t *index, nk_virgil_task_t **taskIDs);
 
     void releaseDOALLArgs (uint32_t index);
 
@@ -40,6 +39,8 @@ class NoelleRuntime {
     std::vector<uint32_t> doallMemorySizes;
     std::vector<bool> doallMemoryAvailability;
     std::vector<DOALL_args_t *> doallMemory;
+    nk_virgil_task_t **doallMemoryTasks;
+    uint32_t doallMemoryChunks;
 
     uint32_t getMaximumNumberOfCores (void);
 
@@ -83,31 +84,6 @@ extern "C" {
     int64_t maxNumberOfCores, 
     int64_t chunkSize
     );
-
-
-  /******************************************** NOELLE API implementations ***********************************************/
-
-
-
-  /**********************************************************************
-   *                MISC
-   **********************************************************************/
-  int32_t NOELLE_getNumberOfCores (void){
-    static int32_t cores = 0;
-
-    /*
-     * Check if we have already computed the number of cores.
-     */
-    if (cores == 0){
-
-      /*
-       * Compute the number of cores.
-       */
-      cores = nk_virgil_get_num_cpus();
-    }
-
-    return cores;
-  }
 
 
   /******************************************** NOELLE API implementations ***********************************************/
@@ -197,7 +173,6 @@ extern "C" {
     clocks_ends[DOALLArgs->coreID] = clocks_end;
     #endif
 
-    pthread_mutex_unlock(&(DOALLArgs->endLock));
     return NULL;
   }
 
@@ -223,7 +198,8 @@ extern "C" {
      * Allocate the memory to store the arguments.
      */
     uint32_t doallMemoryIndex;
-    auto argsForAllCores = runtime.getDOALLArgs(numCores, &doallMemoryIndex);
+    nk_virgil_task_t *taskIDs;
+    auto argsForAllCores = runtime.getDOALLArgs(numCores, &doallMemoryIndex, &taskIDs);
 
     /*
      * Submit DOALL tasks.
@@ -242,7 +218,7 @@ extern "C" {
       /*
        * Submit
        */
-      nk_virgil_submit_task_to_any_cpu(NOELLE_DOALLTrampoline, argsPerCore);
+      taskIDs[i] = nk_virgil_submit_task_to_any_cpu(NOELLE_DOALLTrampoline, argsPerCore);
     }
     #ifdef RUNTIME_PROFILE
     auto clocks_after_fork = rdtsc_e();
@@ -255,7 +231,8 @@ extern "C" {
     auto clocks_before_join = rdtsc_s();
     #endif
     for (auto i = 0; i < numCores; ++i) {
-      pthread_mutex_lock(&(argsForAllCores[i].endLock));
+      void *outputMemory;
+      nk_virgil_wait_for_task_completion(taskIDs[i], &outputMemory);
     }
     #ifdef RUNTIME_PROFILE
     auto clocks_after_join = rdtsc_e();
@@ -755,7 +732,15 @@ extern "C" {
 
 }
 
-NoelleRuntime::NoelleRuntime(){
+NoelleRuntime::NoelleRuntime()
+  : 
+    doallMemoryChunks{0}
+  , doallMemoryTasks{nullptr}
+  {
+
+  /*
+   * Set the number of cores in the system.
+   */
   this->maxCores = this->getMaximumNumberOfCores();
   this->NOELLE_idleCores = maxCores;
 
@@ -768,7 +753,7 @@ NoelleRuntime::NoelleRuntime(){
   return ;
 }
 
-DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
+DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index, nk_virgil_task_t **taskIDs){
   DOALL_args_t *argsForAllCores = nullptr;
 
   /*
@@ -793,6 +778,7 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
        */
       this->doallMemoryAvailability[i] = false;
       (*index) = i;
+      (*taskIDs) = this->doallMemoryTasks[i];
       nk_virgil_spinlock_unlock(&this->doallMemoryLock);
 
       return argsForAllCores;
@@ -803,21 +789,40 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
    * We couldn't find anything available.
    *
    * Allocate a new memory region.
+   *
+   * Step1: increase the number of chunks
+   */
+  this->doallMemoryChunks++;
+
+  /*
+   * Step2: allocate the memory used to store task's IDs.
+   */
+  if (this->doallMemoryTasks == nullptr){
+    this->doallMemoryTasks = (nk_virgil_task_t **)malloc(sizeof(nk_virgil_task_t *) * this->doallMemoryChunks);
+  } else {
+    this->doallMemoryTasks = (nk_virgil_task_t **)realloc(this->doallMemoryTasks, sizeof(nk_virgil_task_t *) * this->doallMemoryChunks);
+  }
+  this->doallMemoryTasks[doallMemoryNumberOfChunks] = (nk_virgil_task_t *) malloc(sizeof(nk_virgil_task_t) * this->maxCores);
+  (*taskIDs) = this->doallMemoryTasks[doallMemoryNumberOfChunks];
+
+  /*
+   * Step3: allocate the memory about tagging whether a chunk is available or not.
+   */
+  this->doallMemoryAvailability.push_back(false);
+
+  /*
+   * Step4: allocate the memory to use for DOALL.
    */
   this->doallMemorySizes.push_back(cores);
-  this->doallMemoryAvailability.push_back(false);
   posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(DOALL_args_t) * cores);
   this->doallMemory.push_back(argsForAllCores);
+
   nk_virgil_spinlock_unlock(&this->doallMemoryLock);
 
   /*
    * Set the index.
    */
-  if (doallMemoryNumberOfChunks == 0){
-    (*index) = 0;
-  } else {
-    (*index) = doallMemoryNumberOfChunks;
-  }
+  (*index) = doallMemoryNumberOfChunks;
 
   /*
    * Initialize the memory.
@@ -825,13 +830,11 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
   for (auto i = 0; i < cores; ++i) {
     auto argsPerCore = &argsForAllCores[i];
     argsPerCore->coreID = i;
-    pthread_mutex_init(&(argsPerCore->endLock), NULL);
-    pthread_mutex_lock(&(argsPerCore->endLock));
   }
 
   return argsForAllCores;
 }
-    
+
 void NoelleRuntime::releaseDOALLArgs (uint32_t index){
   nk_virgil_spinlock_lock(&this->doallMemoryLock);
   this->doallMemoryAvailability[index] = true;
