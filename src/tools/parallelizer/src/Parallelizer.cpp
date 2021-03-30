@@ -29,6 +29,7 @@ namespace llvm::noelle {
         }
       }
     }
+    return "";
   }
   
   bool Parallelizer::parallelizeLoop (
