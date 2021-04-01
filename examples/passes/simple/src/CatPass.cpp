@@ -22,10 +22,15 @@ namespace {
     bool runOnModule (Module &M) override {
 
       /*
-       * Fetch noelle.
+       * Fetch NOELLE
        */
       auto& noelle = getAnalysis<Noelle>();
-      errs() << "The program has " << noelle.numberOfProgramInstructions() << " instructions\n";
+
+      /*
+       * Use NOELLE
+       */
+      auto insts = noelle.numberOfProgramInstructions();
+      errs() << "The program has " << insts << " instructions\n";
 
       return false;
     }
@@ -34,6 +39,7 @@ namespace {
       AU.addRequired<Noelle>();
     }
   };
+
 }
 
 // Next there is code to register your pass to "opt"
