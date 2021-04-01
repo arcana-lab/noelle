@@ -13,10 +13,6 @@ namespace {
 
   struct CAT : public ModulePass {
     static char ID; 
-    bool printDependences = false;
-    bool printLoops = false;
-    bool printDFA = false;
-    bool printProfile = false;
 
     CAT() : ModulePass(ID) {}
 
