@@ -13,7 +13,6 @@ namespace {
 
   struct CAT : public ModulePass {
     static char ID; 
-    bool printDependences = false;
     bool printLoops = false;
     bool printDFA = false;
     bool printProfile = false;
@@ -27,30 +26,16 @@ namespace {
     bool runOnModule (Module &M) override {
 
       /*
-       * Fetch noelle.
+       * Fetch NOELLE
        */
       auto& noelle = getAnalysis<Noelle>();
       errs() << "The program has " << noelle.numberOfProgramInstructions() << " instructions\n";
 
       /*
-       * Fetch the dependence graph of the entry function.
+       * Fetch the entry point.
        */
-      auto mainF = noelle.getEntryFunction();
-      auto FDG = noelle.getFunctionDependenceGraph(mainF);
-
-      /*
-       * Print dependences
-       */
-      if (this->printDependences){
-        auto iterF = [](Value *src, DGEdge<Value> *dep) -> bool {
-          errs() << "   needs " << *src << "\n";
-          return false;
-        };
-        for (auto& inst : instructions(mainF)){
-          errs() << inst << "\n";
-          FDG->iterateOverDependencesTo(&inst, false, true, true, iterF);
-        }
-      }
+      auto fm = noelle.getFunctionsManager();
+      auto mainF = fm->getEntryFunction();
 
       /*
        * Print loop induction variables and invariant.
@@ -288,7 +273,7 @@ namespace {
        * Call graph.
        */
       errs() << "Program call graph\n";
-      auto pcf = noelle.getProgramCallGraph();
+      auto pcf = fm->getProgramCallGraph();
       for (auto node : pcf->getFunctionNodes()){
 
         /*
