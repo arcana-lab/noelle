@@ -145,6 +145,7 @@ namespace {
        * Fetch the loops with only the loop structure abstraction.
        */
       auto loopStructures = noelle.getLoopStructures();
+      //auto loopStructures = noelle.getLoopStructures(mainF);
 
       /*
        * Iterate over all loops, and compute the LoopDependenceInfo only for those that we care.
@@ -168,7 +169,8 @@ namespace {
       /*
        * Define the iterator that will print all nodes of a tree.
        */
-      std::function<void (StayConnectedNestedLoopForestNode *)> printTree = [&printTree](StayConnectedNestedLoopForestNode *n){
+      std::function<void (StayConnectedNestedLoopForestNode *)> printTree = 
+        [&printTree](StayConnectedNestedLoopForestNode *n){
 
         /*
          * Print the current node.
