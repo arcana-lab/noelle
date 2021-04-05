@@ -92,10 +92,20 @@ namespace {
         /*
          * Dependences.
          */
+        auto LDG = loop->getLoopDG();
+
+        /*
+         * SCCDAG
+         */
         errs() << " SCCDAG\n";
         auto sccManager = loop->getSCCManager();
         auto SCCDAG = sccManager->getSCCDAG();
+
         auto sccIterator = [sccManager](SCC *scc) -> bool {
+
+          /*
+           * Check if @scc is a single instruction
+           */
           if (!scc->hasCycle()){
             return false;
           }
@@ -137,7 +147,9 @@ namespace {
 
           return false;
         };
+
         SCCDAG->iterateOverSCCs(sccIterator);
+
       }
       errs() << "\n";
 
@@ -148,7 +160,8 @@ namespace {
       //auto loopStructures = noelle.getLoopStructures(mainF);
 
       /*
-       * Iterate over all loops, and compute the LoopDependenceInfo only for those that we care.
+       * Iterate over all loops, 
+       * and compute the LoopDependenceInfo only for those that we care.
        */
       for (auto l : *loopStructures){
         if (l->getNestingLevel() > 1){
