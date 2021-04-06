@@ -35,24 +35,11 @@ namespace {
       auto mainF = fm->getEntryFunction();
 
       /*
-       * Data flow analysis
-       */
-      auto dfa = noelle.getDataFlowAnalyses();
-      auto dfr = dfa.runReachableAnalysis(mainF);
-      errs() << "Data flow reachable analysis\n";
-      for (auto& inst : instructions(mainF)){
-        errs() << " Next are the instructions reachable from " << inst << "\n";
-        auto& outSet = dfr->OUT(&inst);
-        for (auto reachInst : outSet){
-          errs() << "   " << *reachInst << "\n";
-        }
-      }
-
-      /*
        * New data flow analysis
        *
        * Fetch the hottest loop.
        */
+      auto loops = noelle.getLoops();
       noelle.sortByHotness(*loops);
       auto loop = (*loops)[0];
       auto loopStructure = loop->getLoopStructure();

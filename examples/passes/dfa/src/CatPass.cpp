@@ -80,13 +80,13 @@ namespace {
       /*
        * Print
        */
-      for (auto inst : instructions(mainF)){
-        if (!isa<LoadInst>(inst)){
+      for (auto& inst : instructions(mainF)){
+        if (!isa<LoadInst>(&inst)){
           continue ;
         }
-        auto insts = customDfr->OUT(inst);
+        auto insts = customDfr->OUT(&inst);
         errs() << " Next are the " << insts.size() << " instructions ";
-        errs() << "that could read the value loaded by " << *inst << "\n";
+        errs() << "that could read the value loaded by " << inst << "\n";
         for (auto possibleInst : insts){
           errs() << "   " << *possibleInst << "\n";
         }
