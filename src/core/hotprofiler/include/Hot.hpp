@@ -102,6 +102,8 @@ namespace llvm::noelle {
       /*
        * =========================== Functions ==================================
        */
+      
+      uint64_t getStaticInstructions (Function *f) const ;
 
       bool hasBeenExecuted (Function *f) const ;
 
