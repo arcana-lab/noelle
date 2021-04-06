@@ -152,8 +152,8 @@ extern "C" {
 
   /**********************************************************************
    *                DOALL
-   **********************************************************************/
-  static void * NOELLE_DOALLTrampoline (void *args){
+   **********************************************************************/ 
+  void * NOELLE_DOALLTrampoline (void *args){
     #ifdef RUNTIME_PROFILE
     auto clocks_start = rdtsc_s();
     #endif
