@@ -13,8 +13,6 @@ namespace {
 
   struct CAT : public ModulePass {
     static char ID; 
-    bool printDFA = false;
-    bool printProfile = false;
 
     CAT() : ModulePass(ID) {}
 
@@ -45,12 +43,24 @@ namespace {
         if (F.empty()){
           continue ;
         }
-        if (!hot->hasBeenExecuted(&F)){
-          errs() << "Function: \"" << F.getName() << "\" has not been executed\n";
+
+        /*
+         * Check if the function has been executed at all.
+         */
+        auto executed = hot->hasBeenExecuted(&F);
+        if (!executed){
           continue ;
         }
-        errs() << "Function: \"" << F.getName() << "\": Self  = " << hot->getSelfInstructions(&F) << "\n";
-        errs() << "Function: \"" << F.getName() << "\": Total = " << hot->getTotalInstructions(&F) << "\n";
+
+        /*
+         * The function has been executed.
+         * Print its profile.
+         */
+        errs() << "Function: \"" << F.getName() << "\": Invocations = " << hot->getInvocations(&F) << "\n";
+        errs() << "Function: \"" << F.getName() << "\": Static      = " << hot->getStaticInstructions(&F)  << "\n";
+        errs() << "Function: \"" << F.getName() << "\": Self        = " << hot->getSelfInstructions(&F)  << "\n";
+        errs() << "Function: \"" << F.getName() << "\": Total       = " << hot->getTotalInstructions(&F) << "\n";
+        errs() << "Function: \"" << F.getName() << "\": Coverage    = " << (hot->getDynamicTotalInstructionCoverage(&F)) * 100 << "%\n";
       }
 
       /*
