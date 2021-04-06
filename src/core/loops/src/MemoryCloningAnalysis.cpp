@@ -29,7 +29,6 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (
   std::unordered_set<AllocaInst *> allocations;
   auto function = loop->getFunction();
   auto& entryBlock = function->getEntryBlock();
-  errs() << "XAN: START ANALYSIS\n";
   for (auto &I : entryBlock) {
 
     /*
@@ -82,7 +81,6 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (
     errs() << "XAN: this is clonable " << *allocation << "\n";
     this->clonableMemoryLocations.insert(std::move(location));
   }
-  errs() << "XAN: END ANALYSIS\n";
 
   return ;
 }
