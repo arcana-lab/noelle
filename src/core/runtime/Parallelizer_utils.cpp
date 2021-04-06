@@ -3,8 +3,6 @@
 #include <sched.h>
 
 #include "rt/virgil/virgil.h"
-#include "rt/virgil/ThreadSafeQueue.hpp"
-#include "rt/virgil/ThreadSafeNautilusQueue.hpp"
 
 #define CACHE_LINE_SIZE 64
 
@@ -90,62 +88,33 @@ extern "C" {
 
   typedef void (*stageFunctionPtr_t)(void *, void*);
 
-  void queuePush8(MARC::ThreadSafeQueue<int8_t> *queue, int8_t *val) { 
-    queue->push(*val); 
-
-    #ifdef DSWP_STATS
-    numberOfPushes8++;
-    #endif
-
+  void queuePush8(void *queue, int8_t *val) { 
     return ;
   }
 
-  void queuePop8(MARC::ThreadSafeQueue<int8_t> *queue, int8_t *val) { 
-    queue->waitPop(*val); 
+  void queuePop8(void *queue, int8_t *val) { 
     return ;
   }
 
-  void queuePush16(MARC::ThreadSafeQueue<int16_t> *queue, int16_t *val) { 
-    queue->push(*val); 
-
-    #ifdef DSWP_STATS
-    numberOfPushes16++;
-    #endif
-
+  void queuePush16(void *queue, int16_t *val) { 
     return ;
   }
 
-  void queuePop16(MARC::ThreadSafeQueue<int16_t> *queue, int16_t *val) { 
-    queue->waitPop(*val);
+  void queuePop16(void *queue, int16_t *val) { 
   }
 
-  void queuePush32(MARC::ThreadSafeQueue<int32_t> *queue, int32_t *val) { 
-    queue->push(*val); 
-
-    #ifdef DSWP_STATS
-    numberOfPushes32++;
-    #endif
-
+  void queuePush32(void *queue, int32_t *val) { 
     return ;
   }
 
-  void queuePop32(MARC::ThreadSafeQueue<int32_t> *queue, int32_t *val) { 
-    queue->waitPop(*val);
+  void queuePop32(void *queue, int32_t *val) { 
   }
 
-  void queuePush64(MARC::ThreadSafeQueue<int64_t> *queue, int64_t *val) { 
-    queue->push(*val); 
-
-    #ifdef DSWP_STATS
-    numberOfPushes64++;
-    #endif
-
+  void queuePush64(void *queue, int64_t *val) { 
     return ;
   }
 
-  void queuePop64(MARC::ThreadSafeQueue<int64_t> *queue, int64_t *val) { 
-    queue->waitPop(*val); 
-
+  void queuePop64(void *queue, int64_t *val) { 
     return ;
   }
 
@@ -615,113 +584,6 @@ extern "C" {
     int64_t numberOfStages, 
     int64_t numberOfQueues
     ){
-    #ifdef RUNTIME_PRINT
-    std::cerr << "Starting dispatcher: num stages " << numberOfStages << ", num queues: " << numberOfQueues << std::endl;
-    #endif
-
-    /*
-     * Reserve the cores.
-     */
-    auto numCores = runtime.reserveCores(numberOfStages);
-
-    /*
-     * Allocate the communication queues.
-     */
-    void *localQueues[numberOfQueues];
-    for (auto i = 0; i < numberOfQueues; ++i) {
-      switch (queueSizes[i]) {
-        case 1:
-          localQueues[i] = new MARC::ThreadSafeNautilusQueue<int8_t>();
-          break;
-        case 8:
-          localQueues[i] = new MARC::ThreadSafeNautilusQueue<int8_t>();
-          break;
-        case 16:
-          localQueues[i] = new MARC::ThreadSafeNautilusQueue<int16_t>();
-          break;
-        case 32:
-          localQueues[i] = new MARC::ThreadSafeNautilusQueue<int32_t>();
-          break;
-        case 64:
-          localQueues[i] = new MARC::ThreadSafeNautilusQueue<int64_t>();
-          break;
-        default:
-          abort();
-          break;
-      }
-    }
-    #ifdef RUNTIME_PRINT
-    std::cerr << "Made queues" << std::endl;
-    #endif
-
-    /*
-     * Allocate the memory to store the arguments.
-     */
-    auto argsForAllCores = (NOELLE_DSWP_args_t *) malloc(sizeof(NOELLE_DSWP_args_t) * numberOfStages);
-
-    /*
-     * Submit DSWP tasks
-     */
-    auto localFutures = (nk_virgil_task_t *) malloc(sizeof(nk_virgil_task_t) * numberOfStages);
-    auto allStages = (void **)stages;
-    for (auto i = 0; i < numberOfStages; ++i) {
-
-      /*
-       * Prepare the arguments.
-       */
-      auto argsPerCore = &argsForAllCores[i];
-      argsPerCore->funcToInvoke = reinterpret_cast<stageFunctionPtr_t>(reinterpret_cast<long long>(allStages[i]));
-      argsPerCore->env = env;
-      argsPerCore->localQueues = (void *) localQueues;
-
-      /*
-       * Submit
-       */
-      localFutures[i] = nk_virgil_submit_task_to_specific_cpu(NOELLE_DSWPTrampoline, argsPerCore, i);
-    }
-
-    /*
-     * Wait for the tasks to complete.
-     */
-    for (auto i = 0; i < numberOfStages; ++i) {
-      void *outputMemory;
-      nk_virgil_wait_for_task_completion(localFutures[i], &outputMemory);
-    }
-
-    /*
-     * Free the cores and memory.
-     */
-    runtime.releaseCores(numberOfStages);
-    for (int i = 0; i < numberOfQueues; ++i) {
-      switch (queueSizes[i]) {
-        case 1:
-          delete (MARC::ThreadSafeNautilusQueue<int8_t> *)(localQueues[i]);
-          break;
-        case 8:
-          delete (MARC::ThreadSafeNautilusQueue<int8_t> *)(localQueues[i]);
-          break;
-        case 16:
-          delete (MARC::ThreadSafeNautilusQueue<int16_t> *)(localQueues[i]);
-          break;
-        case 32:
-          delete (MARC::ThreadSafeNautilusQueue<int32_t> *)(localQueues[i]);
-          break;
-        case 64:
-          delete (MARC::ThreadSafeNautilusQueue<int64_t> *)(localQueues[i]);
-          break;
-        default:
-          abort();
-      }
-    }
-    free(argsForAllCores);
-
-    #ifdef DSWP_STATS
-    std::cout << "DSWP: 1 Byte pushes = " << numberOfPushes8 << std::endl;
-    std::cout << "DSWP: 2 Bytes pushes = " << numberOfPushes16 << std::endl;
-    std::cout << "DSWP: 4 Bytes pushes = " << numberOfPushes32 << std::endl;
-    std::cout << "DSWP: 8 Bytes pushes = " << numberOfPushes64 << std::endl;
-    #endif
-
     DispatcherInfo dispatcherInfo;
     dispatcherInfo.numberOfThreadsUsed = numberOfStages;
     return dispatcherInfo;
