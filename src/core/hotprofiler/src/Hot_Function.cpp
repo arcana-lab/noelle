@@ -16,6 +16,17 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
+uint64_t Hot::getStaticInstructions (Function *f) const {
+  uint64_t t = 0;
+  for (auto &bb : *f){
+    auto bbLength = std::distance(bb.begin(), bb.end());
+    //t += this->getStaticInstructions(&bb);
+    t += bbLength;
+  }
+
+  return t;
+}
+
 uint64_t Hot::getSelfInstructions (Function *f) const {
   auto insts = this->functionSelfInstructions.at(f);
 
