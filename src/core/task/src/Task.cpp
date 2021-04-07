@@ -24,8 +24,11 @@ namespace llvm::noelle {
     /*
     * Create the empty body of the task.
     */
-    auto functionCallee = M.getOrInsertFunction("", taskSignature);
+    auto attrs = AttributeList{};
+    attrs.addAttribute(M.getContext(), AttributeList::FunctionIndex, Attribute::NoRedZone);
+    auto functionCallee = M.getOrInsertFunction("", taskSignature, attrs);
     this->F = cast<Function>(functionCallee.getCallee());
+    this->F->addFnAttr(Attribute::NoRedZone);
 
     /*
     * Add the entry and exit basic blocks.
