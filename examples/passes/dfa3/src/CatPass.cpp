@@ -26,7 +26,6 @@ namespace {
        * Fetch NOELLE
        */
       auto& noelle = getAnalysis<Noelle>();
-      errs() << "The program has " << noelle.numberOfProgramInstructions() << " instructions\n";
 
       /*
        * Fetch the entry point.
@@ -43,6 +42,10 @@ namespace {
       noelle.sortByHotness(*loops);
       auto loop = (*loops)[0];
       auto loopStructure = loop->getLoopStructure();
+      auto entryInst = loopStructure->getEntryInstruction();
+      errs() << "Loop:\n";
+      errs() << " Function: " << loopStructure->getFunction()->getName() << "\n";
+      errs() << " Entry instruction: " << *entryInst << "\n";
       auto loopHeader = loopStructure->getHeader();
       auto loopFunction = loopStructure->getFunction();
 
