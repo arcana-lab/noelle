@@ -26,7 +26,6 @@ namespace {
        * Fetch NOELLE
        */
       auto& noelle = getAnalysis<Noelle>();
-      errs() << "The program has " << noelle.numberOfProgramInstructions() << " instructions\n";
 
       /*
        * Fetch the entry point.
@@ -37,7 +36,6 @@ namespace {
       /*
        * Call graph.
        */
-      errs() << "Program call graph\n";
       auto pcf = fm->getProgramCallGraph();
       for (auto node : pcf->getFunctionNodes()){
 
@@ -64,7 +62,8 @@ namespace {
         if (pcf->doesItBelongToASCC(f)){
           errs() << " The function \"" << f->getName() << "\" is involved in an SCC\n";
         }
-        errs() << " The function \"" << f->getName() << "\" invokes the following functions:\n";
+        errs() << " The function \"" << f->getName() << "\"";
+        errs() << " invokes the following functions:\n";
         for (auto callEdge : outEdges){
           auto calleeNode = callEdge->getCallee();
           auto calleeF = calleeNode->getFunction();
