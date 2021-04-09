@@ -33,6 +33,7 @@ The only documentation available for NOELLE is:
 - the paper: https://arxiv.org/abs/2102.05081
 - the comments within the code
 - the slides we use in the "Advanced Topics in Compilers" class: www.cs.northwestern.edu/~simonec/ATC.html
+  (Projects students do in this class are built upon NOELLE)
 
 
 ## Version
