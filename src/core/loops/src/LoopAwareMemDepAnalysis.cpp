@@ -110,11 +110,14 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
 
   // For each memory depedence perform loop-aware dependence analysis to
   // disprove it. Queries for loop-carried and intra-iteration deps.
+  errs() << "AAA\n";
   for (auto memDep : memDeps) {
     auto instPair = memDep.first;
     Instruction *i = instPair.first;
     Instruction *j = instPair.second;
     auto edges = memDep.second;
+    errs() << "AAA i = " << *i << "\n";
+    errs() << "AAA j = " << *j << "\n";
 
     // encode the found dependences in a bit vector.
     // set least significant bit for RAW, 2nd bit for WAW, 3rd bit for WAR
@@ -140,6 +143,7 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
       for (uint8_t i = 0; i <= 2; ++i) {
         if (disprovedIIDepTypes & (1 << i)) {
           auto &e = edges[i];
+          errs() << "AAA remove edge\n";
           loopDG->removeEdge(e);
         }
       }
@@ -150,6 +154,7 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
       for (uint8_t i = 0; i <= 2; ++i) {
         if (iiDepTypes & (1 << i)) {
           auto &e = edges[i];
+          errs() << "AAA remove LC flag\n";
           e->setLoopCarried(false);
         }
       }
