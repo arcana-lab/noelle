@@ -3,6 +3,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include <algorithm>
 
 #include "Noelle.hpp"
 
@@ -25,12 +26,27 @@ namespace {
        * Fetch NOELLE
        */
       auto& noelle = getAnalysis<Noelle>();
+      errs() << "The program has " << noelle.numberOfProgramInstructions() << " instructions\n";
 
       /*
-       * Use NOELLE
+       * Fetch the entry point.
        */
-      auto insts = noelle.numberOfProgramInstructions();
-      errs() << "The program has " << insts << " instructions\n";
+      auto fm = noelle.getFunctionsManager();
+      auto mainF = fm->getEntryFunction();
+
+      /*
+       * Data flow analyses
+       */
+      auto dfa = noelle.getDataFlowAnalyses();
+      auto dfr = dfa.runReachableAnalysis(mainF);
+      errs() << "Data flow reachable analysis\n";
+      for (auto& inst : instructions(mainF)){
+        errs() << " Next are the instructions reachable from " << inst << "\n";
+        auto& outSet = dfr->OUT(&inst);
+        for (auto reachInst : outSet){
+          errs() << "   " << *reachInst << "\n";
+        }
+      }
 
       return false;
     }
@@ -39,7 +55,6 @@ namespace {
       AU.addRequired<Noelle>();
     }
   };
-
 }
 
 // Next there is code to register your pass to "opt"

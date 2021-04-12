@@ -3,6 +3,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include <algorithm>
 
 #include "Noelle.hpp"
 
@@ -27,10 +28,48 @@ namespace {
       auto& noelle = getAnalysis<Noelle>();
 
       /*
-       * Use NOELLE
+       * Fetch the PDG
        */
-      auto insts = noelle.numberOfProgramInstructions();
-      errs() << "The program has " << insts << " instructions\n";
+      auto PDG = noelle.getProgramDependenceGraph();
+
+      /*
+       * Fetch the FDG of "main"
+       */
+      auto fm = noelle.getFunctionsManager();
+      auto mainF = fm->getEntryFunction();
+      auto FDG = noelle.getFunctionDependenceGraph(mainF);
+
+      /*
+       * Iterate over the dependences
+       */
+      auto iterF = [](Value *src, DGEdge<Value> *dep) -> bool {
+        errs() << "   " << *src << " " ;
+        if (dep->isControlDependence()){
+          errs() << " CONTROL " ;
+        }
+        if (dep->isDataDependence()){
+          errs() << " DATA " ;
+          if (dep->isRAWDependence()){
+            errs() << " RAW " ;
+          }
+          if (dep->isWARDependence()){
+            errs() << " WAR " ;
+          }
+          if (dep->isWAWDependence()){
+            errs() << " WAW " ;
+          }
+        }
+        if (dep->isMemoryDependence()) {
+          errs() << " MEMORY " ;
+        }
+        
+        errs() << "\n";
+        return false;
+      };
+      for (auto& inst : instructions(mainF)){
+        errs() << "Instruction \"" << inst << "\" depends on\n";
+        FDG->iterateOverDependencesTo(&inst, true, true, true, iterF);
+      }
 
       return false;
     }
@@ -39,7 +78,6 @@ namespace {
       AU.addRequired<Noelle>();
     }
   };
-
 }
 
 // Next there is code to register your pass to "opt"
