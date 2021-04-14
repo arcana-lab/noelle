@@ -39,11 +39,6 @@ PDGAnalysis::PDGAnalysis()
 }
 
 void PDGAnalysis::initializeSVF(Module &M) {
-  SVFModule svfModule{M};
-  this->pta = new AndersenWaveDiff();
-  this->pta->analyze(svfModule);
-  this->mssa = new MemSSA((BVDataPTAImpl *)this->pta, false);
-
   return;
 }
 

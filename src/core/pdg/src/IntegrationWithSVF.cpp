@@ -93,5 +93,21 @@ bool NoelleSVFIntegration::isReachableBetweenFunctions (const Function *from, co
 
   return r;
 }
+    
+ModRefInfo NoelleSVFIntegration::getModRefInfo (CallInst *i){
+  return mssa->getMRGenerator()->getModRefInfo(i);
+}
+    
+ModRefInfo NoelleSVFIntegration::getModRefInfo (CallInst *i, const MemoryLocation &loc){
+  return mssa->getMRGenerator()->getModRefInfo(i, loc);
+}
+    
+ModRefInfo NoelleSVFIntegration::getModRefInfo (CallInst *i, CallInst *j){
+  return mssa->getMRGenerator()->getModRefInfo(i, j);
+}
+
+AliasResult NoelleSVFIntegration::alias (const MemoryLocation &loc1, const MemoryLocation &loc2){
+  return pta->alias(loc1, loc2);
+}
 
 }
