@@ -11,7 +11,6 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-
 #include "PDGAnalysis.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "Queue.hpp"
