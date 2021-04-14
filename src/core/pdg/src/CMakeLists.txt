@@ -13,6 +13,7 @@ set(Srcs
   SCCDAG.cpp
   SCC.cpp
   PDGPrinter.cpp
+  IntegrationWithSVF.cpp
 )
 
 # Compilation flags
