@@ -956,7 +956,7 @@ uint32_t NoelleRuntime::reserveCores (uint32_t coresRequested){
 void NoelleRuntime::releaseCores (uint32_t coresReleased){
   pthread_spin_lock(&this->spinLock);
   this->NOELLE_idleCores += coresReleased;
-  assert(this->NOELLE_idleCores <= this->maxCores);
+  assert(this->NOELLE_idleCores <= ((uint32_t)this->maxCores));
   pthread_spin_unlock(&this->spinLock);
 
   return ;
