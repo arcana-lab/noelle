@@ -31,7 +31,8 @@ PDGAnalysis::PDGAnalysis()
     , disableSVF{false}
     , disableAllocAA{false}
     , disableRA{false}
-    , printer{} 
+    , printer{}
+    , noelleCG{nullptr}
   {
 
   return ;
@@ -41,7 +42,6 @@ void PDGAnalysis::initializeSVF(Module &M) {
   SVFModule svfModule{M};
   this->pta = new AndersenWaveDiff();
   this->pta->analyze(svfModule);
-  this->callGraph = this->pta->getPTACallGraph();
   this->mssa = new MemSSA((BVDataPTAImpl *)this->pta, false);
 
   return;

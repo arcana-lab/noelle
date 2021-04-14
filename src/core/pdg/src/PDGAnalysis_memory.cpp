@@ -15,6 +15,7 @@
 #include "TalkDown.hpp"
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
+#include "IntegrationWithSVF.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -414,8 +415,8 @@ bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) {
     return false;
   }
 
-  if (this->callGraph->hasIndCSCallees(call)) {
-    const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
+  if (NoelleSVFIntegration::hasIndCSCallees(call)) {
+    auto callees = NoelleSVFIntegration::getIndCSCallees(call);
     for (auto &callee : callees) {
       if (this->isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
         return false;

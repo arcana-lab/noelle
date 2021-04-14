@@ -25,6 +25,9 @@ class NoelleSVFIntegration : public ModulePass {
     bool runOnModule (Module &M) override ;
 
     static noelle::CallGraph * getProgramCallGraph (Module &M) ;
+    static bool hasIndCSCallees (CallInst *call) ;
+    static const std::set<const Function *> getIndCSCallees (CallInst *call);
+    static bool isReachableBetweenFunctions (const Function *from, const Function *to);
 };
 
 }
