@@ -73,7 +73,7 @@ bool NoelleSVFIntegration::runOnModule (Module &M) {
 }
     
 noelle::CallGraph * NoelleSVFIntegration::getProgramCallGraph (Module &M) {
-  auto cg = new noelle::CallGraph(M, svfCallGraph);
+  auto cg = new noelle::CallGraph(M, NoelleSVFIntegration::hasIndCSCallees, NoelleSVFIntegration::getIndCSCallees);
 
   return cg;
 }
