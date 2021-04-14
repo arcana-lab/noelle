@@ -97,7 +97,7 @@ bool PDGAnalysis::hasNoMemoryOperations (CallInst *call) {
    * SVF is enabled.
    * We can use it.
    */
-  if (this->mssa->getMRGenerator()->getModRefInfo(call) == ModRefInfo::NoModRef) {
+  if (NoelleSVFIntegration::getModRefInfo(call) == ModRefInfo::NoModRef) {
     return true;
   }
 
@@ -145,7 +145,8 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
      * This is due to a bug in SVF that doesn't model I/O library calls correctly.
      */
     if (isSafeToQueryModRefOfSVF(call, bv)) {
-      switch (this->mssa->getMRGenerator()->getModRefInfo(call, MemoryLocation::get(store))) {
+      auto const &loc = MemoryLocation::get(store);
+      switch (NoelleSVFIntegration::getModRefInfo(call, loc)) {
         case ModRefInfo::NoModRef:
           return;
         case ModRefInfo::Ref:
@@ -231,7 +232,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
      * This is due to a bug in SVF that doesn't model I/O library calls correctly.
      */
     if (isSafeToQueryModRefOfSVF(call, bv)) {
-      switch (this->mssa->getMRGenerator()->getModRefInfo(call, MemoryLocation::get(load))) {
+      switch (NoelleSVFIntegration::getModRefInfo(call, MemoryLocation::get(load))) {
         case ModRefInfo::NoModRef:
         case ModRefInfo::Ref:
           return;
@@ -319,7 +320,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
           && isSafeToQueryModRefOfSVF(call, bv) 
           && isSafeToQueryModRefOfSVF(otherCall, bv)
       ) {
-      switch (this->mssa->getMRGenerator()->getModRefInfo(call, otherCall)) {
+      switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
         case ModRefInfo::NoModRef:
           return;
         case ModRefInfo::Ref:
@@ -327,7 +328,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
           break;
         case ModRefInfo::Mod:
           bv[1] = true;
-          switch (this->mssa->getMRGenerator()->getModRefInfo(otherCall, call)) {
+          switch (NoelleSVFIntegration::getModRefInfo(otherCall, call)) {
             case ModRefInfo::NoModRef:
               return;
             case ModRefInfo::Ref:
@@ -472,7 +473,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
     /*
      * SVF is enabled, so let's use it.
      */
-    switch (this->pta->alias(MemoryLocation::get(instI), MemoryLocation::get(instJ))) {
+    switch (NoelleSVFIntegration::alias(MemoryLocation::get(instI), MemoryLocation::get(instJ))) {
       case NoAlias:
         return;
       case PartialAlias:

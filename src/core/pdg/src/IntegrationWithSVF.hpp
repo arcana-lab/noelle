@@ -28,6 +28,10 @@ class NoelleSVFIntegration : public ModulePass {
     static bool hasIndCSCallees (CallInst *call) ;
     static const std::set<const Function *> getIndCSCallees (CallInst *call);
     static bool isReachableBetweenFunctions (const Function *from, const Function *to);
+    static ModRefInfo getModRefInfo (CallInst *i);
+    static ModRefInfo getModRefInfo (CallInst *i, const MemoryLocation &loc);
+    static ModRefInfo getModRefInfo (CallInst *i, CallInst *j);
+    static AliasResult alias (const MemoryLocation &loc1, const MemoryLocation &loc2);
 };
 
 }
