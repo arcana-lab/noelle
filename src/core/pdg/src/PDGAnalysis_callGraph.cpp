@@ -21,9 +21,11 @@ using namespace llvm;
 using namespace llvm::noelle;
 
 noelle::CallGraph * PDGAnalysis::getProgramCallGraph (void){
-  auto cg = NoelleSVFIntegration::getProgramCallGraph(*M);
+  if (this->noelleCG == nullptr){
+    this->noelleCG = NoelleSVFIntegration::getProgramCallGraph(*M);
+  }
 
-  return cg;
+  return this->noelleCG;
 }
 
 void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
@@ -48,7 +50,7 @@ void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
    */
   for (auto &internal : this->internalFuncs) {
     for (auto &external : this->unhandledExternalFuncs) {
-      if (this->callGraph->isReachableBetweenFunctions(internal, external)) {
+      if (NoelleSVFIntegration::isReachableBetweenFunctions(internal, external)) {
         this->reachableUnhandledExternalFuncs[internal].insert(external);
       }
     }
@@ -58,8 +60,8 @@ void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
 }
 
 bool PDGAnalysis::cannotReachUnhandledExternalFunction(CallInst *call) {
-  if (this->callGraph->hasIndCSCallees(call)) {
-    const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
+  if (NoelleSVFIntegration::hasIndCSCallees(call)) {
+    auto callees = NoelleSVFIntegration::getIndCSCallees(call);
     for (auto &callee : callees) {
       if (this->isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) return false;
     }

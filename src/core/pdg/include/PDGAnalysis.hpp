@@ -11,7 +11,6 @@
 #pragma once
 
 #include "MemoryModel/PointerAnalysis.h"
-#include "Util/PTACallGraph.h"
 #include "MSSA/MemSSA.h"
 
 #include "SystemHeaders.hpp"
@@ -66,7 +65,7 @@ namespace llvm::noelle {
       bool disableRA;
       PDGPrinter printer;
       PointerAnalysis *pta;
-      PTACallGraph *callGraph;
+      noelle::CallGraph *noelleCG;
       MemSSA *mssa;
 
       std::unordered_set<const Function *> internalFuncs;

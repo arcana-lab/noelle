@@ -77,5 +77,21 @@ noelle::CallGraph * NoelleSVFIntegration::getProgramCallGraph (Module &M) {
 
   return cg;
 }
+    
+bool NoelleSVFIntegration::hasIndCSCallees (CallInst *call) {
+  auto b = svfCallGraph->hasIndCSCallees(call);
+
+  return b;
+}
+    
+const std::set<const Function *> NoelleSVFIntegration::getIndCSCallees (CallInst *call){
+  return svfCallGraph->getIndCSCallees(call);
+}
+    
+bool NoelleSVFIntegration::isReachableBetweenFunctions (const Function *from, const Function *to){
+  auto r = svfCallGraph->isReachableBetweenFunctions(from, to);
+
+  return r;
+}
 
 }
