@@ -920,7 +920,7 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
       loop, 
       *DS, 
       *SE, 
-      this->om->getMaximumNumberOfCores(),
+      maxCores,
       this->enableFloatAsReal, 
       optimizations, 
       this->loopAwareDependenceAnalysis);
