@@ -65,7 +65,7 @@ bool LICMTestSuite::runOnModule (Module &M) {
   DominatorSummary DS{DT, PDT};
   auto l = LI.getLoopsInPreorder()[0];
   auto om = noelle.getCompilationOptionsManager();
-  this->ldi = new LoopDependenceInfo(fdg, l, DS, SE, om->getMaximumNumberOfCores(), true);
+  this->ldi = new LoopDependenceInfo(fdg, l, DS, SE, om->getMaximumNumberOfCores(), true, false);
   this->licm = new LoopInvariantCodeMotion(noelle);
 
   // PDGPrinter pdgPrinter;
