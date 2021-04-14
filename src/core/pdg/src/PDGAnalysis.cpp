@@ -1060,6 +1060,11 @@ const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF {
   "towlower",
   "towupper",
   "iswctype",
-  "towctrans"
+  "towctrans",
+
+  "atoi",
+  "exit",
+  "strcmp",
+  "strncmp"
 };
 
