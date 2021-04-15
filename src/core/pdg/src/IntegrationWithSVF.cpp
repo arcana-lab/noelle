@@ -55,8 +55,6 @@ bool NoelleSVFIntegration::doInitialization (Module &M) {
 }
 
 void NoelleSVFIntegration::getAnalysisUsage(AnalysisUsage &AU) const {
-  #ifdef ENABLE_SVF
-  #endif
   return ;
 }
       
@@ -79,35 +77,63 @@ noelle::CallGraph * NoelleSVFIntegration::getProgramCallGraph (Module &M) {
 }
     
 bool NoelleSVFIntegration::hasIndCSCallees (CallInst *call) {
-  auto b = svfCallGraph->hasIndCSCallees(call);
-
-  return b;
+  #ifdef ENABLE_SVF
+  return svfCallGraph->hasIndCSCallees(call);
+  #else
+  if (call->getCalledFunction() == nullptr){
+    return true;
+  }
+  return false;
+  #endif
 }
     
 const std::set<const Function *> NoelleSVFIntegration::getIndCSCallees (CallInst *call){
+  #ifdef ENABLE_SVF
   return svfCallGraph->getIndCSCallees(call);
+  #else
+  //TODO
+  return {};
+  #endif
 }
     
 bool NoelleSVFIntegration::isReachableBetweenFunctions (const Function *from, const Function *to){
-  auto r = svfCallGraph->isReachableBetweenFunctions(from, to);
-
-  return r;
+  #ifdef ENABLE_SVF
+  return svfCallGraph->isReachableBetweenFunctions(from, to);
+  #else
+  return true;
+  #endif
 }
     
 ModRefInfo NoelleSVFIntegration::getModRefInfo (CallInst *i){
+  #ifdef ENABLE_SVF
   return mssa->getMRGenerator()->getModRefInfo(i);
+  #else
+  return ModRefInfo::ModRef;
+  #endif
 }
     
 ModRefInfo NoelleSVFIntegration::getModRefInfo (CallInst *i, const MemoryLocation &loc){
+  #ifdef ENABLE_SVF
   return mssa->getMRGenerator()->getModRefInfo(i, loc);
+  #else
+  return ModRefInfo::ModRef;
+  #endif
 }
     
 ModRefInfo NoelleSVFIntegration::getModRefInfo (CallInst *i, CallInst *j){
+  #ifdef ENABLE_SVF
   return mssa->getMRGenerator()->getModRefInfo(i, j);
+  #else
+  return ModRefInfo::ModRef;
+  #endif
 }
 
 AliasResult NoelleSVFIntegration::alias (const MemoryLocation &loc1, const MemoryLocation &loc2){
+  #ifdef ENABLE_SVF
   return pta->alias(loc1, loc2);
+  #else
+  return AliasResult::MayAlias;
+  #endif
 }
 
 }
