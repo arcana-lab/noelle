@@ -14,7 +14,7 @@
 /*
  * SVF headers
  */
-#define ENABLE_SVF
+//#define ENABLE_SVF
 #ifdef ENABLE_SVF
 #include "Util/SVFModule.h"
 #include "Util/PTACallGraph.h"
