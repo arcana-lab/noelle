@@ -10,8 +10,7 @@
  */
 #pragma once
 
-// #include "llvm/Transforms/Utils/ScalarEvolutionExpander.h"
-#include "ScalarEvolutionExpander.h"
+#include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "SystemHeaders.hpp"
 #include "SCCDAG.hpp"
