@@ -10,26 +10,7 @@
  */
 #pragma once
 
-#include "llvm/Pass.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
-
-#include "llvm/IR/Module.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Operator.h"
-
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/CallGraph.h"
-#include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpressions.h"
-
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/ADT/iterator_range.h"
-#include <queue>
-#include <set>
-
-using namespace llvm;
+#include "SystemHeaders.hpp"
 
 namespace llvm::noelle {
 
