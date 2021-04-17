@@ -204,17 +204,6 @@ bool EnablersManager::applyDevirtualizer (
   auto IVM = LDI->getInductionVariableManager();
 
   /*
-  * Check if the loop belongs within another loop.
-  */
-  if (ls->getNestingLevel() == 1){
-
-    /*
-    * This is an outermost loop in a function.
-    */
-    return false;
-  }
-
-  /*
   * Check if the loop includes at least one call to unknown callee.
   */
   auto fullyUnroll = false;
