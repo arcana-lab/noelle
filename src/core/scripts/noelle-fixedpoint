@@ -15,13 +15,21 @@ IRFileOutputLL="`mktemp`" ;
 echo "NOELLE: FixedPoint: Start" ;
 echo "NOELLE: FixedPoint:   Input: $1" ;
 echo "NOELLE: FixedPoint:   Output: $2" ;
+echo "NOELLE: FixedPoint:   Temporary input: $IRFileInput (.ll version is $IRFileInputLL)" ;
+echo "NOELLE: FixedPoint:   Temporary output: $IRFileOutput (.ll version is $IRFileOutputLL)" ;
 
 # Copy the initial input file
 cp $1 $IRFileInput ;
 
+# Normalize the code
+echo "NOELLE: FixedPoint:   Normalize the code" ;
+cmdToExecute="noelle-norm $IRFileInput -o $IRFileOutput" ;
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+cp $IRFileOutput $IRFileInput ;
+
 # Invoke the enablers
-echo "NOELLE: FixedPoint:   Temporary input: $IRFileInput (.ll version is $IRFileInputLL)" ;
-echo "NOELLE: FixedPoint:   Temporary output: $IRFileOutput (.ll version is $IRFileOutputLL)" ;
+echo "NOELLE: FixedPoint:   Run until a fixed point is reached" ;
 let c=0; 
 while true ; do
   echo "NOELLE: FixedPoint:     Invocation $c" ;
