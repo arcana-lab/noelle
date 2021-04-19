@@ -66,6 +66,8 @@ namespace llvm::noelle {
        * =========================== Loops =======================================
        */
       
+      uint64_t getStaticInstructions (LoopStructure *l) const ;
+      
       /*
        * Return the number of times the loop @l has been executed.
        */
