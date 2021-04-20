@@ -30,7 +30,13 @@ namespace llvm::noelle {
 
       std::unordered_set<StayConnectedNestedLoopForestNode *> getDescendants (void) const ;
 
-      bool visitPreOrder (std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke) ;
+      bool visitPreOrder (
+        std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke
+        ) ;
+
+      bool visitPostOrder (
+        std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke
+        ) ;
 
       ~StayConnectedNestedLoopForestNode();
 
@@ -42,6 +48,7 @@ namespace llvm::noelle {
       std::unordered_set<StayConnectedNestedLoopForestNode *> descendants;
 
       bool visitPreOrder (std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke, uint32_t treeLevel) ;
+      bool visitPostOrder (std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke, uint32_t treeLevel) ;
   };
 
   class StayConnectedNestedLoopForest {
