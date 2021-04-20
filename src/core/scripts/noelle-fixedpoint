@@ -10,6 +10,7 @@ IRFileInput="`mktemp`" ;
 IRFileInputLL="`mktemp`" ;
 IRFileOutput="`mktemp`" ;
 IRFileOutputLL="`mktemp`" ;
+codeSize="`mktemp`" ;
 
 # Print
 echo "NOELLE: FixedPoint: Start" ;
@@ -46,15 +47,18 @@ while true ; do
   fi
 
   # Check if the bitcode has been modified
-  llvm-dis $IRFileInput -o $IRFileInputLL ;
-  llvm-dis $IRFileOutput -o $IRFileOutputLL ;
-  linesDifferent=`diff ${IRFileInputLL} ${IRFileOutputLL} | wc -l | awk '{print $1}'` ;
-  if test "$linesDifferent" == "4" ; then
+  noelle-codesize $IRFileInput > $codeSize ;
+  inputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
+  noelle-codesize $IRFileOutput > $codeSize ;
+  outputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
+  linesDifferent=`echo "$outputCodeLines - $inputCodeLines" | bc` ;
+  if test "$linesDifferent" == "0" ; then
 
     # Copy the final output
     cp $IRFileOutput $2 ;
     break ;
   fi
+  echo "NOELLE: FixedPoint:       There are $linesDifferent different lines of code" ;
 
   # Normalize the code
   echo "NOELLE: FixedPoint:       Normalize the code" ;
@@ -69,7 +73,7 @@ while true ; do
 done
 
 # Clean
-rm $IRFileInput $IRFileInputLL $IRFileOutput $IRFileOutputLL ;
+rm $IRFileInput $IRFileInputLL $IRFileOutput $IRFileOutputLL $codeSize ;
 
 # Exit
 echo "NOELLE: FixedPoint: Exit" ;
