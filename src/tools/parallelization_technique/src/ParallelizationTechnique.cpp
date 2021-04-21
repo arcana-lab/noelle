@@ -388,7 +388,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
   auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
   auto envUser = this->envBuilder->getUser(taskIndex);
 
-  errs() << "XAN: CLONING: Start\n";
   task->getTaskBody()->print(errs());
   rootLoop->getFunction()->print(errs());
 
@@ -401,7 +400,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
      * Fetch the stack object.
      */
     auto alloca = location->getAllocation();
-    errs() << "XAN: CLONING: Stack location " << *alloca << "\n";
 
     /*
      * Check if this is an allocation used by this task
@@ -453,11 +451,9 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
        */
       auto I = instructionsToConvertOperandsOf.front();
       instructionsToConvertOperandsOf.pop();
-      errs() << "XAN: CLONING:  Instruction to patch or clone: " << *I << "\n";
 
       for (auto i = 0; i < I->getNumOperands(); ++i) {
         auto op = I->getOperand(i);
-        errs() << "XAN: CLONING:          Operand " << *op << "\n";
 
         /*
          * Ensure the instruction is outside the loop and not already cloned
@@ -484,7 +480,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         if (task->isAnOriginalInstruction(opI)) {
           continue;
         }
-        errs() << "XAN: CLONING:          This instruction needs to be cloned into task " << *opI << "\n";
 
         /*
          * Clone operand and then add to queue
@@ -497,8 +492,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         entryBuilder.Insert(opCloneI);
         entryBuilder.SetInsertPoint(opCloneI);
         instructionsToConvertOperandsOf.push(opI);
-        errs() << "XAN: CLONING:          Instruction patched or cloned: " << *I << "\n";
-        errs() << "XAN: CLONING:          Cloned operand = " << *opCloneI << "\n";
 
         /*
          * Swap the operand's live in mapping with this clone so the live-in allocation from
@@ -513,7 +506,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         /*
          * Check if there are new live-in values we need to pass to the task.
          */
-        errs() << "XAN: CLONING:          Check for new live-ins\n";
         for (auto j = 0; j < opI->getNumOperands(); ++j) {
 
           /*
@@ -528,7 +520,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
              */
             continue ;
           }
-          errs() << "XAN: CLONING:            Operand to check for live-ins " << *opJ << "\n";
 
           /*
            * Check if the current operand is the alloca instruction that will be cloned.
@@ -541,7 +532,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
           /*
            * Check if the current operand requires to become a live-in.
            */
-          errs() << "XAN: CLONING:              Checking\n";
           auto newLiveIn = true;
           for (auto envIndex : envUser->getEnvIndicesOfLiveInVars()) {
             auto producer = LDI->environment->producerAt(envIndex);
@@ -559,7 +549,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
            *
            * Make space in the environment for the new live-in.
            */
-          errs() << "XAN: CLONING:          NEW LIVE IN " << *opJ << "\n";
           auto newLiveInEnvironmentIndex = LDI->environment->addLiveInValue(opJ, {opI});
           this->envBuilder->addVariableToEnvironment(newLiveInEnvironmentIndex, opJ->getType());
 
@@ -972,14 +961,12 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
   /*
    * Adjust values (other instructions and live-in values) used by clones
    */
-  errs() << "XAN: REWIRE: " << *cloneI << "\n";
   for (auto &op : cloneI->operands()) {
 
     /*
      * Fetch the current operand of @cloneI
      */
     auto opV = op.get();
-    errs() << "XAN: REWIRE:     Operand " << *opV << "\n";
 
     /*
      * If the value is a constant, then there is nothing we need to do.
@@ -992,9 +979,7 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
      * If the value is a loop live-in one, set it to the value loaded from the loop environment passed to the task.
      */
     if (task->isAnOriginalLiveIn(opV)){
-      errs() << "XAN: REWIRE:       It is a live-in\n";
       auto internalValue = task->getCloneOfOriginalLiveIn(opV);
-      errs() << "XAN: REWIRE:       The cloned version is " << *internalValue << "\n";
       op.set(internalValue);
       continue ;
     }
@@ -1007,11 +992,9 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     if (auto opI = dyn_cast<Instruction>(opV)) {
       if (task->isAnOriginalInstruction(opI)){
         auto cloneOpI = task->getCloneOfOriginalInstruction(opI);
-        errs() << "XAN: REWIRE:       It is original. The clone is " << *cloneOpI << "\n";
         op.set(cloneOpI);
 
       } else {
-        errs() << "XAN: REWIRE:       It is not an original\n";
         if (opI->getFunction() != task->getTaskBody()) {
           cloneI->print(errs() << "ERROR:   Instruction has op from another function: "); errs() << "\n";
           opI->print(errs() << "ERROR:   Op: "); errs() << "\n";
