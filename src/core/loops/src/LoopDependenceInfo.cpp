@@ -270,7 +270,6 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   PDG *loopInternalDG,
   DominatorSummary &DS
 ) {
-  errs() << "XAN: Remove deps\n";
 
   /*
    * Fetch the loop sub-tree rooted at @this.
