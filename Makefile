@@ -6,7 +6,7 @@ all: src
 
 external:
 	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS) $(EXTERNAL_OPTIONS);
- 
+
 src: external
 	cd src ; make ; 
 
