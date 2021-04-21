@@ -78,7 +78,6 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (
     /*
      * The stack object is clonable.
      */
-    errs() << "XAN: this is clonable " << *allocation << "\n";
     this->clonableMemoryLocations.insert(std::move(location));
   }
 
@@ -135,11 +134,8 @@ std::unordered_set<Instruction *> ClonableMemoryLocation::getInstructionsUsingLo
     if (loop->isIncluded(I)) continue;
     instructions.insert(I);
   }
-  errs() << "XAN: CLONING: LOADS = " << &this->loadInstructions << "\n";
   for (auto I : this->loadInstructions) {
-    errs() << "XAN: CLONING: AAAA\n";
     if (loop->isIncluded(I)) continue;
-    errs() << "XAN: CLONING: AAAA2\n";
     instructions.insert(I);
   }
   for (auto I : this->nonStoringInstructions) {
@@ -215,7 +211,6 @@ ClonableMemoryLocation::ClonableMemoryLocation (
    * TODO: Remove this when array/vector types are supported
    */
   this->allocatedType = allocation->getAllocatedType();
-  errs() << "XAN: Checking " << *allocation << "\n";
   if (  true
         && (!this->isScopeWithinLoop)
         && (!allocatedType->isStructTy())
@@ -250,7 +245,6 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   /*
    * The location is clonable.
    */
-  errs() << "XAN:   It is clonable\n";
   this->isClonable = true;
 
   return;
@@ -347,8 +341,6 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
      */
     auto I = allocationUses.front();
     allocationUses.pop();
-    errs() << "XAN: Identify uses: " << *I << "\n";
-    // I->print(errs() << "Traversing user of allocation: "); errs() << "\n";
 
     /*
      * Check all users of the current instruction.
@@ -358,14 +350,12 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
       /*
        * Find storing and non-storing instructions
        */
-      errs() << "XAN: Identify uses:    User " << *user << "\n";
       if (auto cast = dyn_cast<CastInst>(user)) {
 
         /*
          * NOTE: Continue without checking if the cast is in the loop
          * We still check the cast's uses of course
          */
-        errs() << "XAN: Identify uses:      Cast\n";
         allocationUses.push(cast);
         this->castsAndGEPs.insert(cast);
         continue;
@@ -376,7 +366,6 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
          * NOTE: Continue without checking if the gep is in the loop
          * We still check the GEP's uses of course
          */
-        errs() << "XAN: Identify uses:      GEP\n";
         allocationUses.push(gep);
         this->castsAndGEPs.insert(gep);
         continue;
@@ -393,7 +382,6 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
         /*
          * This instruction reads from the stack object.
          */
-        errs() << "XAN: Identify uses:      LOAD" << &this->loadInstructions << "\n";
         this->loadInstructions.insert(load);
 
       } else if (auto call = dyn_cast<CallInst>(user)) {
