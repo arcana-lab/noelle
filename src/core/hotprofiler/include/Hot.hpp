@@ -42,6 +42,11 @@ namespace llvm::noelle {
        */
       uint64_t getStaticInstructions (BasicBlock *bb) const ;
 
+      uint64_t getStaticInstructions (
+        BasicBlock *bb, 
+        std::function<bool (Instruction *i)> canIConsiderIt
+        ) const ;
+
       bool hasBeenExecuted (BasicBlock *bb) const ;
 
       uint64_t getInvocations (BasicBlock *bb) const ;
@@ -67,7 +72,12 @@ namespace llvm::noelle {
        */
       
       uint64_t getStaticInstructions (LoopStructure *l) const ;
-      
+ 
+      uint64_t getStaticInstructions (
+        LoopStructure *l,
+        std::function<bool (Instruction *i)> canIConsiderIt
+        ) const ;
+
       /*
        * Return the number of times the loop @l has been executed.
        */
@@ -106,6 +116,11 @@ namespace llvm::noelle {
        */
       
       uint64_t getStaticInstructions (Function *f) const ;
+
+      uint64_t getStaticInstructions (
+        Function *f,
+        std::function<bool (Instruction *i)> canIConsiderIt
+        ) const ;
 
       bool hasBeenExecuted (Function *f) const ;
 

@@ -27,6 +27,19 @@ uint64_t Hot::getStaticInstructions (Function *f) const {
   return t;
 }
 
+uint64_t Hot::getStaticInstructions (
+  Function *f,
+  std::function<bool (Instruction *i)> canIConsiderIt
+  ) const {
+  uint64_t t = 0;
+
+  for (auto& bb : *f){
+    t += this->getStaticInstructions(&bb, canIConsiderIt);
+  }
+
+  return t;
+}
+
 uint64_t Hot::getSelfInstructions (Function *f) const {
   auto insts = this->functionSelfInstructions.at(f);
 
