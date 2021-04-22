@@ -6,8 +6,20 @@ if test "$installDir" == "" ; then
   installDir="`realpath ../../install`"  ;
 fi
 mkdir -p $installDir ;
-export CC=clang
-export CPP=clang++
+
+# Set the clang to use
+if test "$CLANG_BIN" != "" ; then
+  export CC=$CLANG_BIN/clang
+  export CPP=$CLANG_BIN/clang++
+else
+  export CC=clang
+  export CPP=clang++
+fi
+
+# Set jobs if not set
+if test "$JOBS" == "" ; then
+  JOBS=8
+fi
 
 # Check the cmake binary
 command -v cmake3
@@ -36,8 +48,10 @@ export LLVM_DIR=$LLVMRELEASE
 export PATH=$LLVM_DIR/bin:$PATH
 Build=$BuildTY'-build'
 
-rm -rf $Build
-mkdir $Build
+
+# Don't remove SVF
+#rm -rf $Build
+mkdir -p $Build
 cd $Build
 
 if [[ $1 == 'debug' ]]
@@ -46,7 +60,6 @@ ${CMAKE} -D CMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_INSTALL_PREFIX="${installDir}"
 else
 ${CMAKE} -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
 fi
-${CMAKE} -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
-make -j8
+make -j${JOBS}
 
 make install 
