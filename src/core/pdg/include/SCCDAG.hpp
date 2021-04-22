@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,26 +10,11 @@
  */
 #pragma once
 
-#include "llvm/IR/Module.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/GraphWriter.h"
-#include "llvm/Analysis/AliasAnalysis.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/ADT/iterator_range.h"
-#include <set>
-#include <unordered_map>
-#include <unordered_set>
-
+#include "SystemHeaders.hpp"
 #include "DGBase.hpp"
 #include "SCC.hpp"
 #include "PDG.hpp"
 #include "BitMatrix.hpp"
-
-using namespace std;
-using namespace llvm;
-using namespace llvm::noelle;
 
 namespace llvm::noelle {
 
@@ -97,31 +82,26 @@ namespace llvm::noelle {
       SCC * sccOfValue (Value *val) const;
 
       /*
-       * Deconstructor.
-       */
-      ~SCCDAG() ;
-
-      /*
        * Define a collection of SCCs type.
        */
       typedef std::vector<SCC *> SCCSet;
 
       /*
-       * Compute transitive dependences between nodes of the SCCDAG.
-       */
-      void computeReachabilityAmongSCCs();
-
-      /*
        * Compute ordering between nodes of the SCCDAG.
        */
-      bool orderedBefore(const SCC *earlySCC, const SCCSet &lates) const;
-      bool orderedBefore(const SCCSet &earlies, const SCC *lateSCC) const;
-      bool orderedBefore(const SCC *earlySCC, const SCC *lateSCC) const;
+      bool orderedBefore (const SCC *earlySCC, const SCCSet &lates) const;
+      bool orderedBefore (const SCCSet &earlies, const SCC *lateSCC) const;
+      bool orderedBefore (const SCC *earlySCC, const SCC *lateSCC) const;
 
       /*
        * Get the index of a node of the SCCDAG.
        */
-      uint32_t getSCCIndex(const SCC *scc) const;
+      uint32_t getSCCIndex (const SCC *scc) const;
+
+      /*
+       * Deconstructor.
+       */
+      ~SCCDAG() ;
 
     protected:
       void markValuesInSCC (void);
@@ -143,5 +123,10 @@ namespace llvm::noelle {
 
       // SCC nodes to Ids map.
       std::unordered_map<const SCC *, uint32_t> sccIndexes;
+
+      /*
+       * Compute transitive dependences between nodes of the SCCDAG.
+       */
+      void computeReachabilityAmongSCCs(void);
   };
 }
