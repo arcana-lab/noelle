@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,23 +10,8 @@
  */
 #pragma once
 
-#include "llvm/IR/Module.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/GraphWriter.h"
-#include "llvm/Analysis/AliasAnalysis.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/PostDominators.h"
-#include "llvm/Analysis/CallGraph.h"
-#include "llvm/ADT/iterator_range.h"
-#include <set>
-
+#include "SystemHeaders.hpp"
 #include "DGBase.hpp"
-
-using namespace std;
-using namespace llvm;
-using namespace llvm::noelle;
 
 namespace llvm::noelle {
 
