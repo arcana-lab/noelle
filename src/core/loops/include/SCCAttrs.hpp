@@ -106,6 +106,12 @@ namespace llvm::noelle {
       bool isInductionVariableSCC (void) const ;
 
       /*
+       * Return true if the SCC is commutative
+       * Return false otherwise.
+       */
+      bool isCommutative (void) const ;
+
+      /*
        * Get the PHIs.
        */
       iterator_range<phi_iterator> getPHIs (void);
@@ -138,7 +144,7 @@ namespace llvm::noelle {
       /*
        * Return the single accumulator if it exists. nullptr otherwise.
        */
-      Instruction *getSingleAccumulator (void);
+      Instruction * getSingleAccumulator (void);
 
       /*
        * Check if the SCC contains an accumulator.
@@ -201,6 +207,7 @@ namespace llvm::noelle {
 
       bool isClonable;
       bool hasIV;
+      bool commutative;
   
       void collectPHIsAndAccumulators (LoopStructure &LS);
       void collectControlFlowInstructions (void);

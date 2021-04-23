@@ -10,13 +10,8 @@
  */
 #pragma once
 
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/raw_ostream.h"
-
+#include "SystemHeaders.hpp"
 #include "DGBase.hpp"
-
-using namespace llvm;
-using namespace llvm::noelle;
 
 namespace llvm::noelle {
 
