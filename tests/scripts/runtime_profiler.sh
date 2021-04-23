@@ -39,7 +39,7 @@ forking2Rel=`echo "scale=3; ($forking2 / $tot2) * 100" | bc` ;
 joining2Rel=`echo "scale=3; ($joining2 / $tot2) * 100" | bc` ;
 invocs=`grep overhead $2 | grep Setup | wc -l | awk '{print $1}'` ;
 tot2Avg=`echo "$tot2 / $invocs" | bc`;
-echo "$2 breakdown of $tot2Avg" ;
+echo "$2 breakdown of $tot2Avg clock cycles per invocation (among $invocs invocations)" ;
 echo "  $setup2Rel % (Setup)";
 echo "  $forking2Rel % (Forking)";
 echo "  $joining2Rel % (Joining)";
