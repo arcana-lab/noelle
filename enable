@@ -1,0 +1,5 @@
+#!/bin/bash
+
+NOELLE_HOME=/home/akg434/noelle
+export PATH=${NOELLE_HOME}/install/bin:$PATH
+export LD_LIBRARY_PATH=${NOELLE_HOME}/install/lib:$LD_LIBRARY_PATH
