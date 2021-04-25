@@ -25,12 +25,11 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 message(STATUS "Installation directory is ${CMAKE_INSTALL_PREFIX}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
-  ${CMAKE_INSTALL_PREFIX}/include
-  ${CMAKE_INSTALL_PREFIX}/include/svf
   ../../loop_invariant_code_motion/include
   ../../scev_simplification/include
   ../include
   ./
+  ${CMAKE_INSTALL_PREFIX}/include
   )
 
 # Declare the LLVM pass to compile

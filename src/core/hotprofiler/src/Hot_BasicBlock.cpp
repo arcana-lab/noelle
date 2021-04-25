@@ -77,6 +77,22 @@ uint64_t Hot::getStaticInstructions (BasicBlock *bb) const {
   return inv * bbLength;
 }
 
+uint64_t Hot::getStaticInstructions (
+  BasicBlock *bb, 
+  std::function<bool (Instruction *i)> canIConsiderIt
+  ) const {
+  uint64_t t = 0;
+
+  for (auto& i : *bb){
+    if (!canIConsiderIt(&i)){
+      continue ;
+    }
+    t++;
+  }
+
+  return t;
+}
+
 double Hot::getBranchFrequency (BasicBlock *sourceBB, BasicBlock *targetBB) const {
   auto &branchSuccessors = this->branchProbability.at(sourceBB);
   

@@ -9,9 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "SystemHeaders.hpp"
-
-#include "Util/SVFModule.h"
-#include "WPA/Andersen.h"
 #include "TalkDown.hpp"
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
@@ -31,19 +28,14 @@ PDGAnalysis::PDGAnalysis()
     , disableSVF{false}
     , disableAllocAA{false}
     , disableRA{false}
-    , printer{} 
+    , printer{}
+    , noelleCG{nullptr}
   {
 
   return ;
 }
 
 void PDGAnalysis::initializeSVF(Module &M) {
-  SVFModule svfModule{M};
-  this->pta = new AndersenWaveDiff();
-  this->pta->analyze(svfModule);
-  this->callGraph = this->pta->getPTACallGraph();
-  this->mssa = new MemSSA((BVDataPTAImpl *)this->pta, false);
-
   return;
 }
 
@@ -1060,6 +1052,11 @@ const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF {
   "towlower",
   "towupper",
   "iswctype",
-  "towctrans"
+  "towctrans",
+
+  "atoi",
+  "exit",
+  "strcmp",
+  "strncmp"
 };
 

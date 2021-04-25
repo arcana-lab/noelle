@@ -34,7 +34,6 @@ include_directories(
   ../../pdg/include 
   ../../hotprofiler/include 
   ${CMAKE_INSTALL_PREFIX}/include
-  ${CMAKE_INSTALL_PREFIX}/include/svf
   )
 
 # Declare the LLVM pass to compile

@@ -11,7 +11,6 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-
 #include "PDGAnalysis.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "Queue.hpp"
@@ -22,8 +21,6 @@
 #include "FunctionsManager.hpp"
 #include "TypesManager.hpp"
 #include "CompilationOptionsManager.hpp"
-
-#include "scaf/MemoryAnalysisModules/LoopAA.h"
 
 namespace llvm::noelle {
 
@@ -205,7 +202,6 @@ namespace llvm::noelle {
       bool hoistLoopsToMain;
       bool loopAwareDependenceAnalysis;
       PDGAnalysis *pdgAnalysis;
-      liberty::LoopAA *loopAA;
 
       char *filterFileName;
       bool hasReadFilterFile;

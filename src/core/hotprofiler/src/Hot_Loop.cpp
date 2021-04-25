@@ -15,7 +15,28 @@
 
 using namespace llvm;
 using namespace llvm::noelle;
-      
+
+uint64_t Hot::getStaticInstructions (LoopStructure *l) const {
+  uint64_t t = 0;
+  for (auto bb : l->getBasicBlocks()){
+    t += this->getStaticInstructions(bb);
+  }
+
+  return t;
+}
+
+uint64_t Hot::getStaticInstructions (
+  LoopStructure *l,
+  std::function<bool (Instruction *i)> canIConsiderIt
+  ) const {
+  uint64_t t = 0;
+  for (auto bb : l->getBasicBlocks()){
+    t += this->getStaticInstructions(bb, canIConsiderIt);
+  }
+
+  return t;
+}
+
 uint64_t Hot::getInvocations (LoopStructure *l) const {
 
   /*
