@@ -1,5 +1,6 @@
 PARALLELIZER=parallelizer heuristics parallelization_technique dswp doall helix
-TOOLS=pdg_stats
+
+TOOLS=pdg_stats codesize
 ALL=$(TOOLS) enablers deadfunctioneliminator loop_invariant_code_motion scev_simplification inliner $(PARALLELIZER) loop_stats loop_metadata outliner
 
 all: $(ALL)
@@ -14,6 +15,9 @@ outliner:
 	cd $@ ; ../../scripts/run_me.sh
 
 loop_metadata:
+	cd $@ ; ../../scripts/run_me.sh
+
+codesize:
 	cd $@ ; ../../scripts/run_me.sh
 
 parallelizer:

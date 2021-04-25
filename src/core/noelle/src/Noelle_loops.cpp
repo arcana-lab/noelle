@@ -218,7 +218,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * Check of loopIndex provided is within bounds
    */
   if (this->loopHeaderToLoopIndexMap.find(header) == this->loopHeaderToLoopIndexMap.end()){
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, optimizations, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, optimizations, this->talkdown, this->loopAwareDependenceAnalysis);
 
     delete DS;
     return ldi;
@@ -233,8 +233,7 @@ LoopDependenceInfo * Noelle::getLoop (
    * No filter file was provided. Construct LDI without profiler configurables
    */
   if (!this->hasReadFilterFile) {
-
-    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, optimizations, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
+    auto ldi = new LoopDependenceInfo(funcPDG, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, optimizations, this->talkdown, this->loopAwareDependenceAnalysis);
 
     delete DS;
     return ldi;
@@ -350,7 +349,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
       assert(!edge->isLoopCarriedDependence() && "Flag set");
     }
 
-    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, {}, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
+    auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, {}, this->talkdown, this->loopAwareDependenceAnalysis);
     allLoops->push_back(ldi);
   }
 
@@ -467,7 +466,7 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
          * Allocate the loop wrapper.
          */
 
-        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, {}, this->loopAA, this->talkdown, this->loopAwareDependenceAnalysis);
+        auto ldi = new LoopDependenceInfo(funcPDG, loop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, {}, this->talkdown, this->loopAwareDependenceAnalysis);
 
         allLoops->push_back(ldi);
         continue ;
@@ -927,7 +926,6 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
       maxCores,
       this->enableFloatAsReal, 
       optimizations, 
-      this->loopAA,
       this->talkdown,
       this->loopAwareDependenceAnalysis);
 

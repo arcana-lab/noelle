@@ -121,7 +121,6 @@ void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool Noelle::runOnModule (Module &M){
   this->pdgAnalysis = &getAnalysis<PDGAnalysis>();
-  this->loopAA = getAnalysis<liberty::LoopAA>().getTopAA();
   this->talkdown = &getAnalysis<TalkDown>();
    
   return false;

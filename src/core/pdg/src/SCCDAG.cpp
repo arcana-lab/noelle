@@ -360,7 +360,7 @@ bool SCCDAG::orderedBefore(const SCC *earlySCC, const SCC *lateSCC) const {
   return ordered.test(earlySCCid, lateSCCid);
 }
 
-void SCCDAG::computeReachabilityAmongSCCs() {
+void SCCDAG::computeReachabilityAmongSCCs (void) {
   orderedDirty = false;
   const uint32_t Nscc = this->numNodes();
 

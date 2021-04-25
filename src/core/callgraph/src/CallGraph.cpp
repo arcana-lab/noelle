@@ -20,7 +20,11 @@ namespace llvm::noelle {
     return ;
   }
 
-  CallGraph::CallGraph (Module &M, PTACallGraph *callGraph)
+  CallGraph::CallGraph (
+      Module &M
+    , std::function<bool (CallInst *)> hasIndCSCallees
+    , std::function<const std::set<const Function *> (CallInst *)> getIndCSCallees
+    )
     : m{M},
       scccag{nullptr}
     {
@@ -56,7 +60,7 @@ namespace llvm::noelle {
          * Handle call instructions.
          */
         if (auto callInst = dyn_cast<CallInst>(&inst)){
-          this->handleCallInstruction(fromNode, callInst, callGraph);
+          this->handleCallInstruction(fromNode, callInst, hasIndCSCallees, getIndCSCallees);
           continue ;
         }
 
@@ -64,7 +68,7 @@ namespace llvm::noelle {
          * Handle invoke instructions.
          */
         if (auto callInst = dyn_cast<InvokeInst>(&inst)){
-          this->handleCallInstruction(fromNode, callInst, callGraph);
+          this->handleCallInstruction(fromNode, callInst, hasIndCSCallees, getIndCSCallees);
           continue ;
         }
       }
@@ -101,7 +105,12 @@ namespace llvm::noelle {
     return n;
   }
 
-  void CallGraph::handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst, PTACallGraph *callGraph){
+  void CallGraph::handleCallInstruction (
+      CallGraphFunctionNode *fromNode
+    , CallBase *callInst
+    , std::function<bool (CallInst *)> hasIndCSCallees
+    , std::function<const std::set<const Function *> (CallInst *)> getIndCSCallees
+    ){
 
     /*
      * Fetch the callee.
@@ -122,14 +131,14 @@ namespace llvm::noelle {
      */
     if (isa<CallInst>(callInst)){
       auto callInstCast = cast<CallInst>(callInst);
-      if (!callGraph->hasIndCSCallees(callInstCast)) {
+      if (!hasIndCSCallees(callInstCast)) {
         return ;
       }
 
       /*
        * Iterate over the possible callees.
        */
-      auto callees = callGraph->getIndCSCallees(callInstCast);
+      auto callees = getIndCSCallees(callInstCast);
       for (auto &callee : callees) {
 
         /*

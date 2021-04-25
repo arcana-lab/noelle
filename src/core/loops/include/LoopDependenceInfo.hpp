@@ -25,8 +25,6 @@
 #include "Transformations.hpp"
 #include "TalkDown.hpp"
 
-#include "scaf/MemoryAnalysisModules/LoopAA.h"
-
 namespace llvm::noelle {
 
   class LoopDependenceInfo {
@@ -68,16 +66,6 @@ namespace llvm::noelle {
         ScalarEvolution &SE,
         uint32_t maxCores,
         bool enableFloatAsReal,
-        liberty::LoopAA *aa
-      );
-
-      LoopDependenceInfo (
-        PDG *fG,
-        Loop *l,
-        DominatorSummary &DS,
-        ScalarEvolution &SE,
-        uint32_t maxCores,
-        bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations
       );
 
@@ -88,7 +76,6 @@ namespace llvm::noelle {
         ScalarEvolution &SE,
         uint32_t maxCores,
         bool enableFloatAsReal,
-        liberty::LoopAA *aa,
         bool enableLoopAwareDependenceAnalyses
       );
 
@@ -100,7 +87,6 @@ namespace llvm::noelle {
         uint32_t maxCores,
         bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations,
-        liberty::LoopAA *aa,
         TalkDown *talkdown,
         bool enableLoopAwareDependenceAnalyses
       );
@@ -244,7 +230,6 @@ namespace llvm::noelle {
         PDG *functionDG,
         DominatorSummary &DS,
         ScalarEvolution &SE,
-        liberty::LoopAA *loopAA,
         TalkDown *talkdown
         ) ;
 

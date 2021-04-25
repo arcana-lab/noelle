@@ -33,7 +33,6 @@ install(  PROGRAMS
           include/SystemHeaders.hpp 
           include/DominatorSummary.hpp
           include/Queue.hpp
-          include/ScalarEvolutionExpander.h
           include/ScalarEvolutionReferencer.hpp
           include/ScalarEvolutionDelinearization.hpp
           include/BitMatrix.hpp

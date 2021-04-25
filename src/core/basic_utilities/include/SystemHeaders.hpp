@@ -30,6 +30,7 @@
 /*
  * LLVM headers.
  */
+#include "llvm/Support/CommandLine.h"
 #include "llvm/IR/InstrTypes.h"
 #include <llvm/ADT/StringRef.h>
 #include "llvm/ADT/iterator_range.h"
