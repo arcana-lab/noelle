@@ -62,6 +62,11 @@ namespace llvm::noelle {
       int64_t getNumberOfDependencesBetweenInstructions (void) const ;
 
       /*
+       * Fetch dependences between two values/instructions.
+       */
+      std::unordered_set<DGEdge<Value> *> getDependences (Value *v1, Value *v2) ;
+
+      /*
        * Iterator: iterate over the instructions that depend on @param fromValue until @functionToInvokePerDependence returns true or there is no other dependence to iterate.
        *
        * This means there is an edge from @param fromValue to @param toValue of the type specified by the other parameters.

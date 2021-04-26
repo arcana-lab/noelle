@@ -36,28 +36,12 @@ bool PDGAnalysis::compareNodes(PDG *pdg1, PDG *pdg2) {
 
   return true;
 }
-
-bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
-  if (verbose >= PDGVerbosity::Maximal) {
-    errs() << "Compare PDG Edges\n";
-  }
-
-  if (pdg1->numEdges() != pdg2->numEdges()) {
-    std::string errorPrefix{"PDG: Comparing two PDGs: "};
-    errs() << errorPrefix << "Number of pdg edges are not the same\n";
-    errs() << errorPrefix << "  " << pdg1->numEdges() << "\n";
-    errs() << errorPrefix << "  " << pdg2->numEdges() << "\n";
-    return false;
-  }
-
+      
+bool PDGAnalysis::compareEdges (PDG *pdg1, PDG *pdg2, std::function<void (DGEdge<Value *dependenceMissingInPdg2)> func){
   for (auto &edge1 : pdg1->getEdges()) {
-    auto outgoingNode = pdg2->fetchNode(edge1->getOutgoingT());
-    auto incomingNode = pdg2->fetchNode(edge1->getIncomingT());
-    if (!outgoingNode || !incomingNode) {
-      return false;
-    }
-    auto edgeSet = pdg2->fetchEdges(outgoingNode, incomingNode);
+    auto edgeSet = pdg2->getDependences(edge1->getOutgoingT(), edge1->getIncomingT());
     if (edgeSet.empty()) {
+      func(edge1);
       return false;
     }
 
@@ -74,6 +58,7 @@ bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
       }
     }
     if (!match) {
+      func(edge1);
       return false;
     }
   }
@@ -81,3 +66,50 @@ bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
   return true;
 }
 
+bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
+  assert(pdg1 != nullptr);
+  assert(pdg2 != nullptr);
+
+  /*
+   * Set the prefix string for the output.
+   */
+  std::string errorPrefix{"PDG: Comparing two PDGs: "};
+  if (verbose >= PDGVerbosity::Maximal) {
+    errs() << errorPrefix << "Start\n";
+  }
+
+  /*
+   * Code to invoke for missing dependences.
+   */
+  auto printErrorPDG1 = [](DGEdge<Value> *d){
+    errs() << errorPrefix << "  PDG2 does not have the following dependence that exists in PDG1:\n";
+    errs() << errorPrefix << "    From: " << *d->getOutgoingT() << "\n";
+    errs() << errorPrefix << "    To: " << *d->getIncomingT() << "\n";
+    return ;
+  };
+  auto printErrorPDG2 = [](DGEdge<Value> *d){
+    errs() << errorPrefix << "  PDG1 does not have the following dependence that exists in PDG2:\n";
+    errs() << errorPrefix << "    From: " << *d->getOutgoingT() << "\n";
+    errs() << errorPrefix << "    To: " << *d->getIncomingT() << "\n";
+    return ;
+  };
+
+  /*
+   * Check the number of dependences are the same between the two PDGs.
+   */
+  if (pdg1->numEdges() != pdg2->numEdges()) {
+    errs() << errorPrefix << "Number of pdg edges are not the same\n";
+    errs() << errorPrefix << "  " << pdg1->numEdges() << "\n";
+    errs() << errorPrefix << "  " << pdg2->numEdges() << "\n";
+    this->compareEdges(pdg1, pdg2, printErrorPDG1);
+    this->compareEdges(pdg2, pdg1, printErrorPDG2);
+    return false;
+  }
+
+  /*
+   * Check all dependences.
+   */
+  auto match = this->compareEdges(pdg1, pdg2, printErrorPDG1);
+
+  return match;
+}
