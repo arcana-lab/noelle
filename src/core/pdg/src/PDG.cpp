@@ -423,6 +423,25 @@ std::vector<DGEdge<Value> *> PDG::getSortedDependences (void) {
 
   return v;
 }
+      
+std::unordered_set<DGEdge<Value> *> PDG::getDependences (Value *from, Value *to) {
+
+  /*
+   * Fetch the nodes.
+   */
+  auto srcNode = this->fetchNode(from);
+  auto dstNode = this->fetchNode(to);
+  if (!srcNode || !dstNode) {
+    return {};
+  }
+
+  /*
+   * Fetch the dependences.
+   */
+  auto edgeSet = this->fetchEdges(srcNode, dstNode);
+
+  return edgeSet;
+}
 
 PDG::~PDG() {
   for (auto *edge : allEdges)
