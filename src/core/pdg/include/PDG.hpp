@@ -54,12 +54,12 @@ namespace llvm::noelle {
       /*
        * Return the number of instructions included in the PDG.
        */
-      int64_t getNumberOfInstructionsIncluded (void) const ;
+      uint64_t getNumberOfInstructionsIncluded (void) const ;
 
       /*
        * Return the number of dependences of the PDG including dependences that connect instructions outside the PDG.
        */
-      int64_t getNumberOfDependencesBetweenInstructions (void) const ;
+      uint64_t getNumberOfDependencesBetweenInstructions (void) const ;
 
       /*
        * Fetch dependences between two values/instructions.
