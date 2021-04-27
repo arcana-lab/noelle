@@ -370,6 +370,7 @@ DGEdge<Value> * PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *edgeM, 
 }
 
 MDNode * PDGAnalysis::getEdgeMetadata(DGEdge<Value> *edge, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
+  assert(edge != nullptr);
   Metadata *edgeM[] = {
     nodeIDMap[edge->getOutgoingT()],
     nodeIDMap[edge->getIncomingT()],
