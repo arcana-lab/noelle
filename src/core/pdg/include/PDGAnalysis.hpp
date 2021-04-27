@@ -79,7 +79,7 @@ namespace llvm::noelle {
       bool comparePDGs (PDG *pdg1, PDG *pdg2);
       bool compareNodes (PDG *pdg1, PDG *pdg2);
       bool compareEdges (PDG *pdg1, PDG *pdg2);
-      bool compareEdges (PDG *pdg1, PDG *pdg2, std::function<void (DGEdge<Value *dependenceMissingInPdg2)> func);
+      bool compareEdges (PDG *pdg1, PDG *pdg2, std::function<void (DGEdge<Value> *dependenceMissingInPdg2)> func);
 
       bool hasPDGAsMetadata(Module &);
 

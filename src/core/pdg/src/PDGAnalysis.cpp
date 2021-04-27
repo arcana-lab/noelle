@@ -169,10 +169,10 @@ PDG * PDGAnalysis::getPDG (void){
      */
     this->programDependenceGraph = constructPDGFromMetadata(*this->M);
     if (this->performThePDGComparison){
-      auto PDGFromAnalysis = constructPDGFromAnalysis(*this->M);
+      auto PDGFromAnalysis = this->constructPDGFromAnalysis(*this->M);
       auto arePDGsEquivalent = this->comparePDGs(PDGFromAnalysis, this->programDependenceGraph);
       if (!arePDGsEquivalent){
-        errs() << "PDGAnalysis: Error = PDGs constructed are not the same";
+        errs() << "PDGAnalysis: Error = PDGs constructed are not the same\n";
         abort();
       }
       delete PDGFromAnalysis ;
@@ -508,6 +508,8 @@ void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
      */
     constructEdgesFromAliasesForFunction(pdg, F);
   }
+
+  return ;
 }
 
 void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){

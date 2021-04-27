@@ -211,11 +211,11 @@ void PDG::copyEdgesInto (PDG *newPDG, bool linkToExternal, std::unordered_set<DG
   return ;
 }
 
-int64_t PDG::getNumberOfInstructionsIncluded (void) const {
+uint64_t PDG::getNumberOfInstructionsIncluded (void) const {
   return this->numInternalNodes();
 }
       
-int64_t PDG::getNumberOfDependencesBetweenInstructions (void) const {
+uint64_t PDG::getNumberOfDependencesBetweenInstructions (void) const {
   return this->numEdges();
 }
 
