@@ -397,6 +397,9 @@ std::vector<DGEdge<Value> *> PDG::getSortedDependences (void) {
    * Sort
    */
   auto sortingFunction = [](DGEdge<Value> *d1, DGEdge<Value> *d2) -> bool {
+    assert(d1 != nullptr);
+    assert(d2 != nullptr);
+
     auto src1 = d1->getIncomingT();
     auto src2 = d2->getIncomingT();
     if (src1 < src2){

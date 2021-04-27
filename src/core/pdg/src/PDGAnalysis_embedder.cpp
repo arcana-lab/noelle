@@ -17,10 +17,10 @@ using namespace llvm;
 using namespace llvm::noelle;
 
 void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
-  errs() << "Embed PDG as Metadata\n";
+  errs() << "Embed PDG as metadata\n";
 
   auto &C = this->M->getContext();
-  unordered_map<Value *, MDNode *> nodeIDMap;
+  std::unordered_map<Value *, MDNode *> nodeIDMap;
 
   embedNodesAsMetadata(pdg, C, nodeIDMap);
   embedEdgesAsMetadata(pdg, C, nodeIDMap);
@@ -93,7 +93,7 @@ void PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<V
    * Construct edge metadata
    */
   for (auto &edge : pdg->getSortedDependences()) {
-    auto edgeM = getEdgeMetadata(edge, C, nodeIDMap);
+    auto edgeM = this->getEdgeMetadata(edge, C, nodeIDMap);
     if (auto arg = dyn_cast<Argument>(edge->getOutgoingT())) {
       functionEdgesMap[arg->getParent()].push_back(edgeM);
     } else if (auto inst = dyn_cast<Instruction>(edge->getOutgoingT())) {
