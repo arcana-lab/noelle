@@ -22,6 +22,8 @@ cd $testDir ;
 # Clean
 make clean ;
 
+echo "Machine = `hostname`" > node.txt ;
+
 # Compile
 make FRONTEND_OPTIONS="$frontendOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
 
