@@ -12,7 +12,7 @@
 
 #include <ThreadSafeQueue.hpp>
 #include <ThreadSafeLockFreeQueue.hpp>
-#include <ThreadPool.hpp>
+#include <ThreadPoolForC.hpp>
 
 #include <condition_variable>
 #include <mutex>
@@ -38,7 +38,7 @@ static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
     
-static ThreadPool pool{true, std::thread::hardware_concurrency()};
+static ThreadPoolForC pool{true, std::thread::hardware_concurrency()};
 
 typedef struct {
   void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
@@ -86,6 +86,8 @@ class NoelleRuntime {
 pthread_spinlock_t printLock;
 uint64_t clocks_starts[64];
 uint64_t clocks_ends[64];
+uint64_t clocks_dispatch_starts[64];
+uint64_t clocks_dispatch_ends[64];
 #endif
 
 static NoelleRuntime runtime{};
@@ -274,10 +276,18 @@ extern "C" {
       argsPerCore->numCores = numCores;
       argsPerCore->chunkSize = chunkSize;
 
+      #ifdef RUNTIME_PROFILE
+      clocks_dispatch_starts[i] = rdtsc_s();
+      #endif
+
       /*
        * Submit
        */
-      pool.submitAndDetachCFunction(NOELLE_DOALLTrampoline, argsPerCore);
+      pool.submitAndDetach(NOELLE_DOALLTrampoline, argsPerCore);
+
+      #ifdef RUNTIME_PROFILE
+      clocks_dispatch_ends[i] = rdtsc_s();
+      #endif
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted DOALL task on core " << i << std::endl;
       #endif
@@ -322,6 +332,11 @@ extern "C" {
     pthread_spin_lock(&printLock);
     std::cerr << "XAN: Start         = " << clocks_start << "\n";
     std::cerr << "XAN: Setup overhead         = " << clocks_after_fork - clocks_start << " clocks\n";
+    uint64_t totalDispatch = 0;
+    for (auto i=0; i < numCores; i++){
+      totalDispatch += (clocks_dispatch_ends[i] - clocks_dispatch_starts[i]);
+    }
+    std::cerr << "XAN:    Dispatch overhead         = " << totalDispatch << " clocks\n";
     std::cerr << "XAN: Start joining = " << clocks_after_fork << "\n";
     for (auto i=0; i < numCores; i++){
       std::cerr << "Thread " << i << ": Start = " << clocks_starts[i] << "\n";
@@ -382,6 +397,7 @@ extern "C" {
     uint64_t coreID;
     uint64_t numCores;
     uint64_t *loopIsOverFlag;
+    pthread_mutex_t endLock;
   } NOELLE_HELIX_args_t ;
 
   static void NOELLE_HELIXTrampoline (void *args){
@@ -404,6 +420,7 @@ extern "C" {
       HELIX_args->loopIsOverFlag
       );
 
+    pthread_mutex_unlock(&(HELIX_args->endLock));
     return ;
   }
 
@@ -530,7 +547,6 @@ extern "C" {
      */
     uint64_t loopIsOverFlag = 0;
     cpu_set_t cores;
-    std::vector<MARC::TaskFuture<void>> localFutures;
     for (auto i = 0; i < numCores; ++i) {
       #ifdef RUNTIME_PRINT
       fprintf(stderr, "HelixDispatcher: Creating future for core %d\n", i);
@@ -564,31 +580,34 @@ extern "C" {
       argsPerCore->coreID = i;
       argsPerCore->numCores = numCores;
       argsPerCore->loopIsOverFlag = &loopIsOverFlag;
+      pthread_mutex_init(&(argsPerCore->endLock), NULL);
+      pthread_mutex_lock(&(argsPerCore->endLock));
 
       /*
        * Set the affinity for both the thread and its helper.
        */
-      CPU_ZERO(&cores);
+      /*CPU_ZERO(&cores);
       auto physicalCore = i * 2;
       CPU_SET(physicalCore, &cores);
       CPU_SET(physicalCore + 1, &cores);
+      */
 
       /*
        * Launch the thread.
        */
-      localFutures.push_back(pool.submitToCores(cores, NOELLE_HELIXTrampoline, argsPerCore));
+      pool.submitAndDetach(NOELLE_HELIXTrampoline, argsPerCore);
 
       /*
        * Launch the helper thread.
        */
       continue ;
-      localFutures.push_back(pool.submitToCores(
+      /*localFutures.push_back(pool.submitToCores(
         cores,
         HELIX_helperThread, 
         ssArrayPast,
         numOfsequentialSegments,
         &loopIsOverFlag
-      ));
+      ));*/
     }
 
     #ifdef RUNTIME_PRINT
@@ -599,12 +618,8 @@ extern "C" {
     /*
      * Wait for the threads to end
      */
-    for (auto& future : localFutures){
-      future.get();
-
-      #ifdef RUNTIME_PRINT
-      fprintf(stderr, "Got future: %d\n", futureGotten++);
-      #endif
+    for (auto i = 0; i < numCores; ++i) {
+      pthread_mutex_lock(&(argsForAllCores[i].endLock));
     }
 
     #ifdef RUNTIME_PRINT
@@ -707,6 +722,7 @@ extern "C" {
     stageFunctionPtr_t funcToInvoke;
     void *env;
     void *localQueues;
+    pthread_mutex_t endLock;
   } NOELLE_DSWP_args_t ;
 
   void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ 
@@ -725,6 +741,7 @@ extern "C" {
      */
     DSWPArgs->funcToInvoke(DSWPArgs->env, DSWPArgs->localQueues);
 
+    pthread_mutex_unlock(&(DSWPArgs->endLock));
     return ;
   }
 
@@ -784,7 +801,6 @@ extern "C" {
     /*
      * Submit DSWP tasks
      */
-    std::vector<MARC::TaskFuture<void>> localFutures;
     auto allStages = (void **)stages;
     for (auto i = 0; i < numberOfStages; ++i) {
 
@@ -795,11 +811,13 @@ extern "C" {
       argsPerCore->funcToInvoke = reinterpret_cast<stageFunctionPtr_t>(reinterpret_cast<long long>(allStages[i]));
       argsPerCore->env = env;
       argsPerCore->localQueues = (void *) localQueues;
+      pthread_mutex_init(&(argsPerCore->endLock), NULL);
+      pthread_mutex_lock(&(argsPerCore->endLock));
 
       /*
        * Submit
        */
-      localFutures.push_back(pool.submit(NOELLE_DSWPTrampoline, argsPerCore));
+      pool.submitAndDetach(NOELLE_DSWPTrampoline, argsPerCore);
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted stage" << std::endl;
       #endif
@@ -811,8 +829,8 @@ extern "C" {
     /*
      * Wait for the tasks to complete.
      */
-    for (auto& future : localFutures){
-      future.get();
+    for (auto i = 0; i < numberOfStages; ++i) {
+      pthread_mutex_lock(&(argsForAllCores[i].endLock));
     }
     #ifdef RUNTIME_PRINT
     std::cerr << "Got all futures" << std::endl;

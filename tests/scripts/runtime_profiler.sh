@@ -2,7 +2,7 @@
 
 # Fetch the inputs
 if test $# -lt 2 ; then
-  echo "USAGE: `basename $0` RUN1_OUTPUT RUN2_OUTPUT" ;
+  echo "USAGE: `basename $0` BASELINE_OUTPUT RUN2_OUTPUT" ;
   exit 1;
 fi
 

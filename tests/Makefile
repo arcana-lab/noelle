@@ -33,5 +33,6 @@ clean:
 	cd unit ; make clean ;
 	rm -f compiler_output* ;
 	find ./ -name output_parallelized.txt.xz -delete
+	find ./ -name vgcore* -delete
 
 .PHONY: condor condor_check regression performance unit download clean 

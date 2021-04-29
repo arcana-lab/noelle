@@ -54,12 +54,17 @@ namespace llvm::noelle {
       /*
        * Return the number of instructions included in the PDG.
        */
-      int64_t getNumberOfInstructionsIncluded (void) const ;
+      uint64_t getNumberOfInstructionsIncluded (void) const ;
 
       /*
        * Return the number of dependences of the PDG including dependences that connect instructions outside the PDG.
        */
-      int64_t getNumberOfDependencesBetweenInstructions (void) const ;
+      uint64_t getNumberOfDependencesBetweenInstructions (void) const ;
+
+      /*
+       * Fetch dependences between two values/instructions.
+       */
+      std::unordered_set<DGEdge<Value> *> getDependences (Value *v1, Value *v2) ;
 
       /*
        * Iterator: iterate over the instructions that depend on @param fromValue until @functionToInvokePerDependence returns true or there is no other dependence to iterate.
