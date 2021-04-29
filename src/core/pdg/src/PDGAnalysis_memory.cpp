@@ -91,6 +91,19 @@ bool PDGAnalysis::hasNoMemoryOperations (CallInst *call) {
   }
 
   /*
+   * Check if the callee is a library function.
+   */
+  auto calleeFunction = call->getCalledFunction();
+  if (calleeFunction != nullptr){
+    if (  true
+          && calleeFunction->empty()
+          && this->isTheLibraryFunctionPure(calleeFunction)
+       ){
+      return true ;
+    }
+  }
+
+  /*
    * SVF is enabled.
    * We can use it.
    */
@@ -305,7 +318,11 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
     /*
      * SVF is enabled; let's use it.
      */
-    if (cannotReachUnhandledExternalFunction(call) && hasNoMemoryOperations(call)) {
+    auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
+    if (  true
+          && weCanRelyOnSVF 
+          && hasNoMemoryOperations(call)
+      ) {
       return;
     }
 

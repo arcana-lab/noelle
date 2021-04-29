@@ -76,9 +76,10 @@ namespace llvm::noelle {
       bool cannotReachUnhandledExternalFunction(CallInst *call);
       bool hasNoMemoryOperations(CallInst *call);
 
-      bool comparePDGs(PDG *, PDG *);
-      bool compareNodes(PDG *, PDG *);
-      bool compareEdges(PDG *, PDG *);
+      bool comparePDGs (PDG *pdg1, PDG *pdg2);
+      bool compareNodes (PDG *pdg1, PDG *pdg2);
+      bool compareEdges (PDG *pdg1, PDG *pdg2);
+      bool compareEdges (PDG *pdg1, PDG *pdg2, std::function<void (DGEdge<Value> *dependenceMissingInPdg2)> func);
 
       bool hasPDGAsMetadata(Module &);
 
