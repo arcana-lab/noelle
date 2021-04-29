@@ -2,7 +2,7 @@
 
 # Fetch the inputs
 if test $# -lt 2 ; then
-  echo "USAGE: `basename $0` RUN1_OUTPUT RUN2_OUTPUT" ;
+  echo "USAGE: `basename $0` BASELINE_OUTPUT RUN2_OUTPUT" ;
   exit 1;
 fi
 
@@ -39,7 +39,7 @@ forking2Rel=`echo "scale=3; ($forking2 / $tot2) * 100" | bc` ;
 joining2Rel=`echo "scale=3; ($joining2 / $tot2) * 100" | bc` ;
 invocs=`grep overhead $2 | grep Setup | wc -l | awk '{print $1}'` ;
 tot2Avg=`echo "$tot2 / $invocs" | bc`;
-echo "$2 breakdown of $tot2Avg" ;
+echo "$2 breakdown of $tot2Avg clock cycles per invocation (among $invocs invocations)" ;
 echo "  $setup2Rel % (Setup)";
 echo "  $forking2Rel % (Forking)";
 echo "  $joining2Rel % (Joining)";

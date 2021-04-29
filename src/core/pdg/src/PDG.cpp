@@ -211,11 +211,11 @@ void PDG::copyEdgesInto (PDG *newPDG, bool linkToExternal, std::unordered_set<DG
   return ;
 }
 
-int64_t PDG::getNumberOfInstructionsIncluded (void) const {
+uint64_t PDG::getNumberOfInstructionsIncluded (void) const {
   return this->numInternalNodes();
 }
       
-int64_t PDG::getNumberOfDependencesBetweenInstructions (void) const {
+uint64_t PDG::getNumberOfDependencesBetweenInstructions (void) const {
   return this->numEdges();
 }
 
@@ -390,6 +390,7 @@ std::vector<DGEdge<Value> *> PDG::getSortedDependences (void) {
    */
   auto edges = this->getEdges();
   for (auto edge : edges){
+    assert(edge != nullptr);
     v.push_back(edge);
   }
 
@@ -397,8 +398,13 @@ std::vector<DGEdge<Value> *> PDG::getSortedDependences (void) {
    * Sort
    */
   auto sortingFunction = [](DGEdge<Value> *d1, DGEdge<Value> *d2) -> bool {
-    auto src1 = d1->getIncomingT();
-    auto src2 = d2->getIncomingT();
+    assert(d1 != nullptr);
+    assert(d2 != nullptr);
+
+    auto src1 = d1->getOutgoingT();
+    auto src2 = d2->getOutgoingT();
+    assert(src1 != nullptr);
+    assert(src2 != nullptr);
     if (src1 < src2){
       return true;
     }
@@ -407,8 +413,10 @@ std::vector<DGEdge<Value> *> PDG::getSortedDependences (void) {
     }
     assert(src1 == src2);
 
-    auto dst1 = d1->getOutgoingT();
-    auto dst2 = d2->getOutgoingT();
+    auto dst1 = d1->getIncomingT();
+    auto dst2 = d2->getIncomingT();
+    assert(dst1 != nullptr);
+    assert(dst2 != nullptr);
     if (dst1 < dst2){
       return true;
     }
@@ -417,11 +425,30 @@ std::vector<DGEdge<Value> *> PDG::getSortedDependences (void) {
     }
     assert(dst1 == dst2);
 
-    return true;
+    return false;
   };
   std::sort(v.begin(), v.end(), sortingFunction);
 
   return v;
+}
+      
+std::unordered_set<DGEdge<Value> *> PDG::getDependences (Value *from, Value *to) {
+
+  /*
+   * Fetch the nodes.
+   */
+  auto srcNode = this->fetchNode(from);
+  auto dstNode = this->fetchNode(to);
+  if (!srcNode || !dstNode) {
+    return {};
+  }
+
+  /*
+   * Fetch the dependences.
+   */
+  auto edgeSet = this->fetchEdges(srcNode, dstNode);
+
+  return edgeSet;
 }
 
 PDG::~PDG() {
