@@ -10,10 +10,8 @@
  */
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "DataFlow.hpp"
-<<<<<<< HEAD
 #include "Annotation.hpp"
 #include "AnnotationParser.hpp"
-=======
 
 /*
  * SCAF headers
@@ -21,7 +19,6 @@
 #define ENABLE_SCAF
 #ifdef ENABLE_SCAF
 #include "scaf/MemoryAnalysisModules/LoopAA.h"
->>>>>>> master
 #include "scaf/Utilities/PDGQueries.h"
 #endif
 

@@ -112,7 +112,6 @@ void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<PDGAnalysis>();
-  AU.addRequired<liberty::LoopAA>();
   AU.addRequired<TalkDown>();
   AU.addRequired<HotProfiler>();
 
