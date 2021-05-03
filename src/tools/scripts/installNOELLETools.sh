@@ -24,17 +24,11 @@ fi
 
 mkdir -p ${installDir}/bin ;
 
-patchInstallDir "noelle-norm" ;
-patchInstallDir "noelle-load" ;
-patchInstallDir "noelle-pdg" ;
-patchInstallDir "noelle-meta-clean" ;
-patchInstallDir "noelle-meta-pdg-clean " ;
-patchInstallDir "noelle-meta-loop-embed" ;
-patchInstallDir "noelle-meta-pdg-embed" ;
-patchInstallDir "noelle-meta-prof-embed" ;
-patchInstallDir "noelle-pdg-stats" ;
-patchInstallDir "noelle-loop-stats" ;
-patchInstallDir "noelle-prof-coverage" ;
-patchInstallDir "noelle-config" ;
-patchInstallDir "noelle-simplification" ;
-patchInstallDir "loopaa" ;
+patchInstallDir "noelle-parallel-load" ;
+patchInstallDir "noelle-parallelizer" ;
+patchInstallDir "noelle-inline" ;
+patchInstallDir "noelle-enable" ;
+patchInstallDir "noelle-pre" ;
+patchInstallDir "noelle-deadcode" ;
+patchInstallDir "noelle-codesize" ;
+patchInstallDir "noelle-fixedpoint" ;

@@ -94,6 +94,13 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
   for (auto function : *functions){
 
     /*
+     * Check if this is application code.
+     */
+    if (function->empty()){
+      continue ;
+    }
+
+    /*
      * Check if the function is hot.
      */
     if (!isFunctionHot(function, minimumHotness)){
@@ -400,6 +407,13 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     errs() << "Noelle: Filter out cold code\n" ;
   }
   for (auto function : *functions){
+
+    /*
+     * Check if this is application code.
+     */
+    if (function->empty()){
+      continue ;
+    }
 
     /*
      * Check if the function is hot.
