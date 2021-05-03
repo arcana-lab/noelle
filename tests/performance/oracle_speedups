@@ -1,7 +1,6 @@
 DOALL_almost_lbm      33.385
-DOALL_challenge        0.742
+DOALL_challenge        0
 DOALL_devirtualizer   15.723
-DOALL_dispatcher       0.01
 DOALL_lbm	       8.626
 DOALL_limit	      21.435
 DOALL_object_cloning  12.091
@@ -16,4 +15,4 @@ Loop_selection        18.482
 Scheduler              8.800
 Scheduler2             5.5
 Scheduler3             1
-StackPrivatization     19.856
+StackPrivatization    19.856

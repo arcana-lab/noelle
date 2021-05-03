@@ -54,11 +54,16 @@ The version number is in the form of \[v _Major.Minor.Revision_ \]
 ## Prerequisites
 LLVM 9.0.0
 
-For those that have access to the Zythos cluster at Northwestern: to enable the correct LLVM, run the following command from any node of the Zythos cluster:
+### Northwestern
+Next is the information for those that have access to the Zythos cluster at Northwestern.
+
+To enable the correct LLVM, run the following command from any node of the Zythos cluster:
 ```
 source /project/extra/llvm/9.0.0/enable
 ```
 
+The guide about the Zythos cluster can be downloaded here: 
+www.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf
 
 ## Build NOELLE
 To build and install: run `make` from the repository root directory.
