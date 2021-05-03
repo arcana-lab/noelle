@@ -63,9 +63,7 @@ source /project/extra/llvm/9.0.0/enable
 ```
 
 The guide about the Zythos cluster can be downloaded here: 
-```
 www.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf
-```
 
 ## Build NOELLE
 To build and install: run `make` from the repository root directory.
