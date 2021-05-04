@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -11,8 +11,7 @@
 #include "DOALL.hpp"
 #include "DOALLTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle{
 
 DOALL::DOALL (
   Module &module,
@@ -194,16 +193,21 @@ bool DOALL::canBeAppliedToLoop (
         // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
         errs() << "DOALL:     Loop-carried data dependences\n";
         sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+          assert(dep->isDataDependence());
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
-          errs() << "DOALL:       " << *fromInst << " ---> " << *toInst ;
+          errs() << "DOALL:       " ;
           if (dep->isMemoryDependence()){
-            errs() << " via memory\n";
+            errs() << "- Via memory :";
           } else {
-            errs() << " via variable\n";
+            errs() << "- Via variable :";
           }
+          errs() << "\n";
+          errs() << "DOALL:          From: " << *fromInst << "\n"; ;
+          errs() << "DOALL:          To  : " << *toInst << "\n"; ;
           return false;
-            });
+          }
+          );
       }
     }
     return false;
@@ -414,4 +418,6 @@ Value * DOALL::fetchClone (Value *original) const {
   auto iClone = task->getCloneOfOriginalInstruction(cast<Instruction>(original));
   assert(iClone != nullptr);
   return iClone;
+}
+
 }

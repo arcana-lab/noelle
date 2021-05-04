@@ -12,8 +12,7 @@
 #include "PDGPrinter.hpp"
 #include "LoopCarriedDependencies.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle{
 
 SCCDAGAttrs::SCCDAGAttrs (
   bool enableFloatAsReal,
@@ -698,7 +697,94 @@ void SCCDAGAttrs::iterateOverLoopCarriedDataDependences (
    * Iterate over internal edges of the SCC.
    */
   for (auto valuePair : scc->internalNodePairs()) {
-    for (auto edge : valuePair.second->getIncomingEdges()) {
+    auto sccInternalNode = valuePair.second; 
+    for (auto edge : sccInternalNode->getIncomingEdges()) {
+
+      /*
+       * Check if the current edge is a loop-carried data dependence.
+       */
+      if (!this->isALoopCarriedDependence(scc, edge)){
+        continue ;
+      }
+
+      /*
+       * Check if it is a data dependence.
+       */
+      if (!edge->isDataDependence()){
+        continue ;
+      }
+
+      /*
+       * The current edge is a loop-carried data dependence.
+       */
+      auto result = func(edge);
+
+      /*
+       * Check if the caller wants us to stop iterating.
+       */
+      if (result){
+        return ;
+      }
+    }
+  }
+
+  return ;
+}
+
+void SCCDAGAttrs::iterateOverLoopCarriedControlDependences (
+  SCC *scc, 
+  std::function<bool (DGEdge<Value> *dependence)> func
+  ){
+
+  /*
+   * Iterate over internal edges of the SCC.
+   */
+  for (auto valuePair : scc->internalNodePairs()) {
+    auto sccInternalNode = valuePair.second; 
+    for (auto edge : sccInternalNode->getIncomingEdges()) {
+
+      /*
+       * Check if the current edge is a loop-carried data dependence.
+       */
+      if (!this->isALoopCarriedDependence(scc, edge)){
+        continue ;
+      }
+
+      /*
+       * Check if it is a data dependence.
+       */
+      if (edge->isDataDependence()){
+        continue ;
+      }
+
+      /*
+       * The current edge is a loop-carried data dependence.
+       */
+      auto result = func(edge);
+
+      /*
+       * Check if the caller wants us to stop iterating.
+       */
+      if (result){
+        return ;
+      }
+    }
+  }
+
+  return ;
+}
+
+void SCCDAGAttrs::iterateOverLoopCarriedDependences (
+  SCC *scc, 
+  std::function<bool (DGEdge<Value> *dependence)> func
+  ){
+
+  /*
+   * Iterate over internal edges of the SCC.
+   */
+  for (auto valuePair : scc->internalNodePairs()) {
+    auto sccInternalNode = valuePair.second; 
+    for (auto edge : sccInternalNode->getIncomingEdges()) {
 
       /*
        * Check if the current edge is a loop-carried data dependence.
@@ -797,4 +883,6 @@ std::unordered_set<SCCAttrs *> SCCDAGAttrs::getSCCsOfType (SCCAttrs::SCCType scc
 
 SCCDAGAttrs::~SCCDAGAttrs (){
   return ;
+}
+
 }

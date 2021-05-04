@@ -84,7 +84,18 @@
          */
         void iterateOverLoopCarriedDataDependences (
           SCC *scc, 
-          std::function<bool (DGEdge<Value> *dependence)> func) ;
+          std::function<bool (DGEdge<Value> *dependence)> func
+          ) ;
+
+        void iterateOverLoopCarriedControlDependences (
+          SCC *scc, 
+          std::function<bool (DGEdge<Value> *dependence)> func
+          ) ;
+
+        void iterateOverLoopCarriedDependences (
+          SCC *scc, 
+          std::function<bool (DGEdge<Value> *dependence)> func
+          ) ;
 
         /*
          * Return the SCCDAG of the loop.
