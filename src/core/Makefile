@@ -1,5 +1,5 @@
 UTILS=transformations basic_utilities task loops architecture clean_metadata callgraph scheduler
-ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure
+ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure invariants
 ENABLERS=loop_distribution loop_unroll loop_whilifier outliner
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) hotprofiler unique_ir_marker noelle scripts
 
@@ -9,6 +9,9 @@ scripts:
 	./scripts/installNOELLE.sh
 
 noelle:
+	cd $@ ; ../../scripts/run_me.sh
+
+invariants:
 	cd $@ ; ../../scripts/run_me.sh
 
 unique_ir_marker:

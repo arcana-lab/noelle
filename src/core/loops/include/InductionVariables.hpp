@@ -12,13 +12,14 @@
 
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "ScalarEvolutionReferencer.hpp"
+
 #include "SystemHeaders.hpp"
 #include "SCCDAG.hpp"
 #include "SCC.hpp"
 #include "LoopsSummary.hpp"
 #include "LoopEnvironment.hpp"
 #include "DominatorSummary.hpp"
-#include "ScalarEvolutionReferencer.hpp"
 #include "Invariants.hpp"
 
 namespace llvm::noelle {

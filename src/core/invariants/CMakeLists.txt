@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.4.3)
-project(Loops)
+project(Invariants)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -30,17 +30,5 @@ add_subdirectory(src)
 
 # Install
 install(PROGRAMS 
-    include/MemoryCloningAnalysis.hpp
-    include/Variable.hpp
-    include/ControlFlowEquivalence.hpp
-    include/LoopDependenceInfo.hpp
-    include/InductionVariables.hpp
-    include/LoopGoverningIVAttribution.hpp
-    include/LoopIterationDomainSpaceAnalysis.hpp
-    include/IVStepperUtility.hpp
-    include/SCCDAGAttrs.hpp
-    include/SCCDAGNormalizer.hpp
-    include/SCCDAGPartition.hpp
-    include/SCCAttrs.hpp
-    include/AccumulatorOpInfo.hpp
+    include/Invariants.hpp
     DESTINATION include)

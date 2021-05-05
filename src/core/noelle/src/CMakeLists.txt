@@ -31,16 +31,12 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../include 
-  ../../basic_utilities/include 
   ../../transformations/include
   ../../architecture/include 
   ../../alloc_aa/include 
-  ../../pdg/include 
   ../../hotprofiler/include 
-  ../../loop_structure/include 
   ../../talkdown/include
   ../../loops/include
-  ../../dataflow/include
   ../../callgraph/include
   ../../scheduler/include
   ${CMAKE_INSTALL_PREFIX}/include
