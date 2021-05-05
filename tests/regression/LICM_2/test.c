@@ -1,43 +1,6 @@
-/*--------------------------------------------------------------------
-  
-  NAS Parallel Benchmarks 3.0 structured OpenMP C versions - BT
-
-  This benchmark is an OpenMP C version of the NPB BT code.
-  
-  The OpenMP C 2.3 versions are derived by RWCP from the serial Fortran versions 
-  in "NPB 2.3-serial" developed by NAS. 3.0 translation is performed by the UVSQ. 
-
-  Permission to use, copy, distribute and modify this software for any
-  purpose with or without fee is hereby granted.
-  This software is provided "as is" without express or implied warranty.
-
-  Information on OpenMP activities at RWCP is available at:
-
-           http://pdplab.trc.rwcp.or.jp/pdperf/Omni/
-  
-  Information on NAS Parallel Benchmarks 2.3 is available at:
-  
-           http://www.nas.nasa.gov/NAS/NPB/
-
---------------------------------------------------------------------*/
-/*--------------------------------------------------------------------
-
-  Authors: R. Van der Wijngaart
-           T. Harris
-           M. Yarrow
-
-  OpenMP C version: S. Satoh
-
-  3.0 structure translation: M. Popov
-  
---------------------------------------------------------------------*/
-
 #include "npb-C.h"
-
-/* global variables */
 #include "header.h"
 
-/* function declarations */
 static void add(void);
 static void adi(void);
 static void rhs_norm(double rms[5]);
