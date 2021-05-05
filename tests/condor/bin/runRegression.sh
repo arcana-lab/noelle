@@ -48,5 +48,5 @@ fi
 cmp output_baseline.txt output_parallelized.txt ;
 if test $? -ne 0 ; then
   echo "ERROR: the test didn't pass" ;
-  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions" >> $errorFile ;
+  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
 fi
