@@ -120,7 +120,9 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
        */
       if (auto instToReplacePHI = dyn_cast<Instruction>(valueToReplacePHI)) {
         if (loopStructure->isIncluded(instToReplacePHI)) {
-          instructionsToHoistToPreheader.push_back(instToReplacePHI);
+          if (std::find(instructionsToHoistToPreheader.begin(), instructionsToHoistToPreheader.end(), instToReplacePHI) == instructionsToHoistToPreheader.end()){
+            instructionsToHoistToPreheader.push_back(instToReplacePHI);
+          }
         }
       }
     }
@@ -141,10 +143,23 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
   /*
    * Sort invariants to hoist in order of dominance to preserve execution order
    */
-  auto dominanceCmpFunc = [newDS] (Instruction *I, Instruction *J) -> bool {
-    return newDS->DT.dominates(I, J);
-  };
-  std::sort(instructionsToHoistToPreheader.begin(), instructionsToHoistToPreheader.end(), dominanceCmpFunc);
+  if (instructionsToHoistToPreheader.size() > 0){
+    auto converged = false;
+    do {
+      converged = true;
+      for (auto i=0; i < (instructionsToHoistToPreheader.size() - 1); i++){
+        auto j = i + 1;
+        auto I = instructionsToHoistToPreheader[i];
+        auto J = instructionsToHoistToPreheader[j];
+        assert(I != J);
+        if (newDS->DT.dominates(J, I)){
+          instructionsToHoistToPreheader[i] = J;
+          instructionsToHoistToPreheader[j] = I;
+          converged = false;
+        }
+      }
+    } while (!converged);
+  }
 
   /*
    * Hoist each instruction into the preheader
