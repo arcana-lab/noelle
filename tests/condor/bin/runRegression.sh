@@ -40,7 +40,7 @@ if test $? -ne 0 ; then
   echo "ERROR: the following test did not pass because it timed out" ;
   echo "  Test = `pwd`" ;
   echo "  Node = `hostname`" ;
-  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions" >> $errorFile ;
+  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
   exit 0 ;
 fi
 
