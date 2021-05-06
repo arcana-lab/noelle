@@ -2,6 +2,7 @@
 set(Srcs 
   DOALL.cpp
   DOALLTask.cpp
+  DOALL_analysis.cpp
   Builder.cpp
 )
 

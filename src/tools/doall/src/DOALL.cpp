@@ -129,83 +129,33 @@ bool DOALL::canBeAppliedToLoop (
   /*
    * The compiler must be able to remove loop-carried data dependences of all SCCs with loop-carried data dependences.
    */
-  auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
-  for (auto scc : nonDOALLSCCs) {
-
-    /*
-     * Fetch the SCC metadata.
-     */
-    auto sccInfo = sccManager->getSCCAttrs(scc);
-
-    /*
-     * If the SCC is reducable, then it does not block the loop to be a DOALL.
-     */
-    if (sccInfo->canExecuteReducibly()){
-      continue ;
-    }
-
-    /*
-     * If the SCC can be cloned, then it does not block the loop to be a DOALL.
-     */
-    if (sccInfo->canBeCloned()){
-      continue ;
-    }
-
-    /*
-     * If the SCC can be removed by cloning objects, then we can ignore it.
-     */
-    if (sccInfo->canBeClonedUsingLocalMemoryLocations()){
-      continue ;
-    }
-
-    /*
-     * If all loop carried data dependencies within the SCC do not overlap between
-     * iterations, then DOALL can ignore them
-     */
-    auto areAllDataLCDsFromDisjointMemoryAccesses = true;
-    auto domainSpaceAnalysis = LDI->getLoopIterationDomainSpaceAnalysis();
-    sccManager->iterateOverLoopCarriedDataDependences(scc, [
-      &areAllDataLCDsFromDisjointMemoryAccesses, domainSpaceAnalysis
-    ](DGEdge<Value> *dep) -> bool {
-      if (dep->isControlDependence()) return false;
-
-      if (!dep->isMemoryDependence()) {
-        areAllDataLCDsFromDisjointMemoryAccesses = false;
-        return true;
-      }
-
-      auto fromInst = dyn_cast<Instruction>(dep->getOutgoingT());
-      auto toInst = dyn_cast<Instruction>(dep->getIncomingT());
-      areAllDataLCDsFromDisjointMemoryAccesses &= fromInst && toInst && domainSpaceAnalysis->
-        areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst);
-      return !areAllDataLCDsFromDisjointMemoryAccesses;
-    });
-    if (areAllDataLCDsFromDisjointMemoryAccesses) {
-      // if (this->verbose >= Verbosity::Maximal) {
-      //   scc->printMinimal(errs() << "SCC has memory LCDs that are disjoint between iterations!\n"); errs() << "\n";
-      // }
-      continue;
-    }
-
+  auto nonDOALLSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, par);
+  if (nonDOALLSCCs.size() > 0){
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
-      if (this->verbose >= Verbosity::Maximal) {
-        // scc->printMinimal(errs(), "DOALL:     ") ;
-        // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
-        errs() << "DOALL:     Loop-carried data dependences\n";
-        sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
-          auto fromInst = dep->getOutgoingT();
-          auto toInst = dep->getIncomingT();
-          errs() << "DOALL:       " << *fromInst << " ---> " << *toInst ;
-          if (dep->isMemoryDependence()){
-            errs() << " via memory\n";
-          } else {
-            errs() << " via variable\n";
-          }
-          return false;
-            });
+      for (auto scc : nonDOALLSCCs) {
+        errs() << "DOALL:   We found an SCC of the loop that is non clonable and non commutative\n" ;
+        if (this->verbose >= Verbosity::Maximal) {
+          // scc->printMinimal(errs(), "DOALL:     ") ;
+          // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
+          errs() << "DOALL:     Loop-carried data dependences\n";
+          sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+            auto fromInst = dep->getOutgoingT();
+            auto toInst = dep->getIncomingT();
+            errs() << "DOALL:       " << *fromInst << " ---> " << *toInst ;
+            if (dep->isMemoryDependence()){
+              errs() << " via memory\n";
+            } else {
+              errs() << " via variable\n";
+            }
+            return false;
+              });
+        }
       }
     }
+
+    /*
+     * There is at least one SCC that blocks DOALL to be applicable.
+     */
     return false;
   }
 
