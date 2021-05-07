@@ -89,8 +89,9 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
       modified = true;
       auto phi = dyn_cast<PHINode>(&I);
       if (!phi) {
-        assert(std::find(instructionsToHoistToPreheader.begin(), instructionsToHoistToPreheader.end(), &I) == instructionsToHoistToPreheader.end());
-        instructionsToHoistToPreheader.push_back(&I);
+        if (std::find(instructionsToHoistToPreheader.begin(), instructionsToHoistToPreheader.end(), &I) == instructionsToHoistToPreheader.end()){
+          instructionsToHoistToPreheader.push_back(&I);
+        }
         continue;
       }
 
