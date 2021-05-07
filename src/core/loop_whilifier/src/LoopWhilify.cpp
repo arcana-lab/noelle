@@ -10,12 +10,12 @@
  */
 #include "LoopWhilify.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
-
+namespace llvm::noelle{
 
 LoopWhilifier::LoopWhilifier(Noelle &noelle)
-  : noelle{noelle}
+  :   noelle{noelle}
+    , NumHandled{0}
+    , outputPrefix{"Whilifier: "}
   {
   return ;
 }
@@ -26,11 +26,8 @@ LoopWhilifier::LoopWhilifier(Noelle &noelle)
 bool LoopWhilifier::whilifyLoop (
   LoopDependenceInfo &LDI
 ) {
-
-  bool AnyTransformed = false;
-
-  errs() << "LoopWhilifier: Starting ... \n";
-
+  auto AnyTransformed = false;
+  errs() << this->outputPrefix << "Start\n";
 
 #if 0
   if(const char *env_p = std::getenv("noelletest"))
@@ -63,12 +60,11 @@ bool LoopWhilifier::whilifyLoop (
   else errs() << "noelletest is not found" << '\n';
 #endif
 
-
   /*
    * Handle subloops --- return if there is any
    * change to a subloop
    */ 
-  LoopStructure *LS = LDI.getLoopStructure();
+  auto LS = LDI.getLoopStructure();
 
   auto SubLoops = LS->getChildren();
   for (auto SL : SubLoops) {
@@ -84,33 +80,22 @@ bool LoopWhilifier::whilifyLoop (
 
   }
 
-
   /*
    * Execute on parent loop
    */ 
   if (!AnyTransformed) {
     AnyTransformed |= this->whilifyLoopDriver(LS);
   }
+  errs() << this->outputPrefix << " Transformed = " << AnyTransformed << "\n";
 
-
+  errs() << this->outputPrefix << "Exit\n";
   return AnyTransformed;
-
 }
-
 
 bool LoopWhilifier::whilifyLoopDriver(
   LoopStructure * const LS
 ) {
-
   auto Transformed = false;
-
-  /*
-   * Scheduler invocation --- try to shrink the 
-   * loop prologue before whilifying --- FIX
-   */ 
-#if 1
-
-  errs() << "THE SCHEDULER\n";
 
   /*
    * Get necessary info to invoke scheduler
@@ -118,7 +103,14 @@ bool LoopWhilifier::whilifyLoopDriver(
   auto Func = LS->getFunction();
   auto Scheduler = noelle.getScheduler();
   auto DS = noelle.getDominators(Func);
-  
+  auto firstInst = LS->getEntryInstruction();
+
+  /*
+   * Scheduler invocation --- try to shrink the loop prologue before whilifying
+   *
+   * Check if we need to shrink the prologue at all.
+   */
+  errs() << this->outputPrefix << " Try to shrink the loop prologue " << *firstInst << "\n";
 
   /*
    * Set up the loop scheduler
@@ -129,42 +121,28 @@ bool LoopWhilifier::whilifyLoopDriver(
     noelle.getFunctionDependenceGraph(Func)
   );
 
-
   /*
    * Shrink the loop prologue (with debugging), return 
    * true immediately
    */ 
-  LSched.Dump();
-
+  //LSched.Dump();
   Transformed |= LSched.shrinkLoopPrologue();
-  
   if (Transformed) {
-
-    errs() << "SCHEDULED\n";
-    LSched.Dump();
-
+    errs() << this->outputPrefix << "   The prologue has shrunk\n";
+    //LSched.Dump();
     return Transformed;
-
   }
-
-#endif
 
 
   /*
    * Check if the loop can be whilified
    */ 
-  WhilifierContext *WC = new WhilifierContext(LS);
-
+  errs() << this->outputPrefix << " Try to whilify " << *firstInst << "\n";
+  auto WC = new WhilifierContext(LS);
   if (!(this->canWhilify(WC))) { 
-    
-    // errs() << "LoopWhilifier: Can't whilify\n";
     return Transformed; 
-
   }
-
-  errs() << "BEFORE\n";
-  WC->Dump();
-
+  //WC->Dump();
 
   /*
    * If the loop is a single block, perform necessary transforms
@@ -210,8 +188,7 @@ bool LoopWhilifier::whilifyLoopDriver(
                                 F->getBasicBlockList(),
                                 (WC->NewBlocks)[0]->getIterator(), F->end());
 #endif
-
-  errs() << "LoopWhilifier: Built anchors, cloned blocks, fixed block placement:\n";
+  errs() << this->outputPrefix << "   Whilified\n";
   // WC->Dump();
 
   /*
@@ -242,10 +219,7 @@ bool LoopWhilifier::whilifyLoopDriver(
     WC, 
     NewHeader
   );
-    
-  errs() << "LoopWhilifier: Resolved new header and exit edge dependencies\n";
   // WC->Dump(); 
-
 
   /*
    * Resolve old header PHINodes --- remove references to the
@@ -264,25 +238,15 @@ bool LoopWhilifier::whilifyLoopDriver(
     NewHeader
   );
 
-  errs() << "LoopWhilifier: Resolved original header PHIs, rerouted branches\n";
-  // WC->Dump(); 
-
-
   /*
    * Erase old latch
    */ 
   (WC->OriginalLatch)->eraseFromParent();
   WC->ResolvedLatch |= true;
 
-  errs() << "AFTER\n" << *(WC->F) << "\n";
-
   Transformed |= true;
-  // errs() << "LoopWhilifier: Whilified\n";
-
   return Transformed;
-
 }
-
 
 bool LoopWhilifier::containsInOriginalLoop(
   WhilifierContext * const WC,
@@ -1398,3 +1362,4 @@ void WhilifierContext::Dump()
 
 }
 
+}
