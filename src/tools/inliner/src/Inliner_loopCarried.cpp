@@ -296,7 +296,6 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
   /*
    * Inline the call instruction.
    */
-  return true;
   auto inlined = inlineFunctionCall(F, inlineCall->getCalledFunction(), inlineCall);
 
   return inlined;
