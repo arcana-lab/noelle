@@ -47,6 +47,10 @@ namespace llvm::noelle {
         Heuristics *h
       ) const override ;
 
+      static std::unordered_set<SCC *> getSCCsThatBlockDOALLToBeApplicable (
+        LoopDependenceInfo *LDI,
+        Noelle &par
+      ) ;
 
     protected:
       Function *taskDispatcher;

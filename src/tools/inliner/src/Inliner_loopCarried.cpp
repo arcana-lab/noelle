@@ -11,8 +11,7 @@
 #include "Inliner.hpp"
 #include "DOALL.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, noelle::CallGraph *pcg) {
   auto anyInlined = false;
@@ -121,7 +120,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
       /*
        * Inline the call.
        */
-      auto inlinedCall = this->inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(F, LDI, pcg);
+      auto inlinedCall = this->inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(F, LDI, pcg, noelle);
       inlined |= inlinedCall;
       if (inlined) {
         break;
@@ -161,7 +160,12 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
  * try inlining the function call in that SCC with the
  * most memory edges to other internal/external values
  */
-bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (Function *F, LoopDependenceInfo *LDI, noelle::CallGraph *pcg) {
+bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
+    Function *F, 
+    LoopDependenceInfo *LDI, 
+    noelle::CallGraph *pcg,
+    Noelle &noelle
+    ) {
   assert(pcg != nullptr);
   assert(LDI != nullptr);
 
@@ -181,23 +185,12 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (Functio
   auto loopStructure = LDI->getLoopStructure();
 
   /*
-   * Fetch the set of sequential SCCs.
-   */
-  std::set<SCC *> sccsToCheck;
-  SCCDAG->iterateOverSCCs([sccManager, &sccsToCheck](SCC *scc) -> bool{
-    auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (sccInfo->mustExecuteSequentially()){
-      sccsToCheck.insert(scc);
-    }
-    return false;
-  });
-
-  /*
    * Check every sequential SCC.
    */
   int64_t maxMemEdges = 0;
   CallInst *inlineCall = nullptr;
-  for (auto scc : sccsToCheck) {
+  auto nonDOALLSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, noelle);
+  for (auto scc : nonDOALLSCCs) {
 
     /*
      * Check every instruction within the sequential SCC.
@@ -306,4 +299,6 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (Functio
   auto inlined = inlineFunctionCall(F, inlineCall->getCalledFunction(), inlineCall);
 
   return inlined;
+}
+
 }
