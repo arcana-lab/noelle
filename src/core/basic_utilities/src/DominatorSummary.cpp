@@ -223,7 +223,24 @@ BasicBlock *DomTreeSummary::findNearestCommonDominator (
   BasicBlock *B1,
   BasicBlock *B2
 ) const {
-  return findNearestCommonDominator(this->getNode(B1), this->getNode(B2))->B;
+  assert(B1 != nullptr);
+  assert(B2 != nullptr);
+
+  /*
+   * Fetch the nodes in the dominator tree.
+   */
+  auto n1 = this->getNode(B1);
+  auto n2 = this->getNode(B2);
+  assert(n1 != nullptr);
+  assert(n2 != nullptr);
+
+  /*
+   * Find the nearest common dominator.
+   */
+  auto c = findNearestCommonDominator(n1, n2);
+  assert(c != nullptr);
+
+  return c->B;
 }
 
 DomNodeSummary *DomTreeSummary::findNearestCommonDominator (

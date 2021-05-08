@@ -219,12 +219,26 @@ InductionVariable * InductionVariableManager::getDerivingInductionVariable (
 }
 
 InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable (LoopStructure &LS) const {
-  if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) return nullptr;
+
+  /*
+   * Check if the loop has the governing IV.
+   */
+  if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) {
+    return nullptr;
+  }
+
+  /*
+   * Fetch the governing IV.
+   */
   auto attribution = loopToGoverningIVAttrMap.at(&LS);
+
   return &attribution->getInductionVariable();
 }
 
 LoopGoverningIVAttribution * InductionVariableManager::getLoopGoverningIVAttribution (LoopStructure &LS) const {
-  if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) return nullptr;
+  if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) {
+    return nullptr;
+  }
+
   return loopToGoverningIVAttrMap.at(&LS);
 }

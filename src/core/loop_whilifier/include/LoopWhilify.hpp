@@ -83,10 +83,6 @@ namespace llvm::noelle {
         LoopDependenceInfo &LDI
       );
 
-      bool whilifyLoopDriver(
-        LoopStructure * const LS
-      );
-
     private:
 
       /*
@@ -99,6 +95,10 @@ namespace llvm::noelle {
       /*
        * Methods
        */
+      bool whilifyLoopDriver(
+        LoopStructure * const LS
+      );
+
       bool containsInOriginalLoop(
         WhilifierContext * const WC,
         BasicBlock * const BB 
