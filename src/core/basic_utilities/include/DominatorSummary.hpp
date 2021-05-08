@@ -12,7 +12,7 @@
 
 #include "SystemHeaders.hpp"
 
-namespace llvm {
+namespace llvm::noelle {
 
   namespace DTAliases {
     using Node = DomTreeNodeBase<BasicBlock>;
@@ -77,6 +77,7 @@ namespace llvm {
    private:
     std::set<DomNodeSummary *> nodes;
     std::unordered_map<BasicBlock *, DomNodeSummary *> bbNodeMap;
+    bool post;
   };
 
   class DominatorSummary {
