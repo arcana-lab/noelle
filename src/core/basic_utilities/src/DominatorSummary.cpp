@@ -67,18 +67,16 @@ DomNodeSummary *DomNodeSummary::getIDom (void) {
  */
 
 DomTreeSummary::DomTreeSummary (DominatorTree &DT) 
-  :
-      DomTreeSummary{collectNodesOfTree<DominatorTree>(DT)}
-    , post{false}
+  : DomTreeSummary{collectNodesOfTree<DominatorTree>(DT)}
 {
+  this->post = false;
   return ;
 }
 
 DomTreeSummary::DomTreeSummary (PostDominatorTree &PDT) 
-  :
-      DomTreeSummary{collectNodesOfTree<PostDominatorTree>(PDT)} 
-    , post{true}
+  : DomTreeSummary{collectNodesOfTree<PostDominatorTree>(PDT)} 
 {
+  this->post = true;
   return ;
 }
 
