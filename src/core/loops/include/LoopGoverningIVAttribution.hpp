@@ -22,7 +22,7 @@ namespace llvm::noelle {
 
       LoopGoverningIVAttribution () = delete ;
 
-      InductionVariable &getInductionVariable(void) const;
+      InductionVariable & getInductionVariable(void) const;
 
       CmpInst *getHeaderCmpInst(void) const;
 

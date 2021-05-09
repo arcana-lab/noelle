@@ -48,7 +48,12 @@ namespace llvm::noelle {
       void getLoopsToInline (Noelle &noelle, Hot *profiles) ;
       bool registerRemainingLoops (std::string filename) ;
       bool inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, noelle::CallGraph *pcg) ;
-      bool inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (Function *F, LoopDependenceInfo *LDI, noelle::CallGraph *pcg) ;
+      bool inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
+        Function *F, 
+        LoopDependenceInfo *LDI, 
+        noelle::CallGraph *pcg,
+        Noelle &noelle
+        ) ;
 
       void getFunctionsToInline (std::string filename) ;
       bool registerRemainingFunctions (std::string filename) ;

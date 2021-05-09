@@ -162,7 +162,7 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
 }
 
 // TODO: Refactor along with HELIX's exact same implementation of this method
-DataFlowResult *computeReachabilityFromInstructions (LoopStructure *loopStructure) {
+DataFlowResult * computeReachabilityFromInstructions (LoopStructure *loopStructure) {
 
   auto loopHeader = loopStructure->getHeader();
   auto loopFunction = loopStructure->getFunction();
@@ -213,6 +213,9 @@ void refinePDGWithLIDS(
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
 
+  /*
+   * Compute the reachability of instructions within the loop.
+   */
   auto dfr = computeReachabilityFromInstructions(loopStructure);
 
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
@@ -245,6 +248,12 @@ void refinePDGWithLIDS(
     loopDG->removeEdge(edge);
   }
 
+  /*
+   * Free the memory
+   */
+  delete dfr;
+
+  return ;
 }
       
 NoelleSCAFIntegration::NoelleSCAFIntegration ()

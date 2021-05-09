@@ -2,7 +2,7 @@
 
 # Fetch the inputs
 if test $# -lt 5 ; then
-  echo "USAGE: `basename $0` REPO_DIR TEST_DIR NOELLE_OPTIONS PARALLELIZATION_OPTIONS ERROR_FILE" ;
+  echo "USAGE: `basename $0` REPO_DIR TEST_DIR NOELLE_OPTIONS PARALLELIZATION_OPTIONS MIDDLE_END_OPTIONS ERROR_FILE" ;
   exit 1;
 fi
 repoDir="$1" ;
@@ -10,7 +10,8 @@ testDir="$2" ;
 noelleOptions="$3" ;
 parallelizationOptions="$4" ;
 frontendOptions="$5" ;
-errorFile="$6" ;
+meOptions="$6" ;
+errorFile="$7" ;
 
 # Setup the environment
 source ~/.bash_profile ;
@@ -25,7 +26,7 @@ make clean ;
 echo "Machine = `hostname`" > node.txt ;
 
 # Compile
-make FRONTEND_OPTIONS="$frontendOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
+make FRONTEND_OPTIONS="$frontendOptions" PRE_MIDDLEEND_OPTIONS="$meOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
 
 # Generate the input
 make input.txt 
@@ -39,7 +40,7 @@ if test $? -ne 0 ; then
   echo "ERROR: the following test did not pass because it timed out" ;
   echo "  Test = `pwd`" ;
   echo "  Node = `hostname`" ;
-  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions" >> $errorFile ;
+  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
   exit 0 ;
 fi
 
@@ -47,5 +48,5 @@ fi
 cmp output_baseline.txt output_parallelized.txt ;
 if test $? -ne 0 ; then
   echo "ERROR: the test didn't pass" ;
-  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions" >> $errorFile ;
+  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
 fi

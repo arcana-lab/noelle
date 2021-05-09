@@ -194,7 +194,9 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DGEdg
   auto isPHI = false;
   if (auto phi = dyn_cast<PHINode>(toInst)) {
     isPHI = true;
-    if (!arePHIIncomingValuesEquivalent(phi)) return true;
+    if (!arePHIIncomingValuesEquivalent(phi)) {
+      return true;
+    }
   }
 
   /*

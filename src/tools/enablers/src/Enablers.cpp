@@ -94,7 +94,27 @@ bool EnablersManager::applyLoopWhilifier (
     Noelle &par,
     LoopWhilifier &loopWhilifier
     ){
+  assert(LDI != nullptr);
 
+  /*
+   * Check if we need to whilify the loop.
+   */
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  if (  true
+        && (loopGoverningIVAttr != nullptr)
+        && (loopStructure->numberOfExitBasicBlocks() == 1)
+     ){
+
+    /*
+     * The prologue is empty and the loop is in while form already.
+     */
+    return false;
+  }
+
+  /*
+   * Whilify the loop
+   */
   auto modified = loopWhilifier.whilifyLoop(*LDI);
 
   return modified;

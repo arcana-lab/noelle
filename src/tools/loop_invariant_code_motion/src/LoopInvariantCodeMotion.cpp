@@ -34,7 +34,7 @@ bool LoopInvariantCodeMotion::extractInvariantsFromLoop (
   LoopDependenceInfo const &LDI
   ){
   
-  if (hoistInvariantValues(LDI)) {
+  if (this->hoistInvariantValues(LDI)) {
     return true;
   }
 

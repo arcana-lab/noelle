@@ -17,7 +17,8 @@ OPT_LEVEL=-O3
 
 # Front-end
 INCLUDES=-I../../include/threadpool/include
-FRONTEND_OPTIONS=-O1 -Xclang -disable-llvm-passes 
+FRONTEND_OPTIONS=-O1 -Xclang -disable-llvm-passes
+PRE_MIDDLEEND_OPTIONS=-O0
 FRONTEND_FLAGS=-emit-llvm $(FRONTEND_OPTIONS)
 
 THREADER=Parallelizer_utils
@@ -32,12 +33,14 @@ all: baseline testseq $(OPTIMIZED)
 
 %.bc: %.c
 	$(CC) $(INCLUDES) $(FRONTEND_FLAGS) -c $< -o $@
+	opt $(PRE_MIDDLEEND_OPTIONS) $@ -o $@
+
+%.bc: %.cpp
+	$(CPP) $(INCLUDES) $(FRONTEND_FLAGS) -c $< -o $@
+	opt $(PRE_MIDDLEEND_OPTIONS) $@ -o $@
 
 %.ll: %.bc
 	llvm-dis $^
-
-%.bc: %.cpp
-	$(CPP) $(INCLUDES) $(FRONTEND_FLAGS) -std=c++14 -c $< -o $@
 
 baseline: baseline.bc
 	$(CPP) $(OPT_LEVEL) $^ -o $@
