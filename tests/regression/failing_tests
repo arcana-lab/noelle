@@ -522,3 +522,5 @@ regression_86/LoopDistribution5 -noelle-pdg-check -noelle-verbose=3 -noelle-max-
 regression_87/LoopDistribution5 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
 regression_82/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
 regression_91/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_41/CondControl -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_64/Streamcluster_pgain3 -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
