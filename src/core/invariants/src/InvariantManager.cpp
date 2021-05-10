@@ -17,7 +17,8 @@ using namespace llvm::noelle;
 InvariantManager::InvariantManager (
   LoopStructure *loop,
   PDG *loopDG
-  ){
+  ) : ls{loop}
+{
 
   /*
    * Check every instruction of the loop.
@@ -46,10 +47,22 @@ InvariantManager::InvariantManager (
 }
 
 bool InvariantManager::isLoopInvariant (Value *value) const {
+
+  /*
+   * If the value is not an instruction, then it's an invariant.
+   */
   if (!isa<Instruction>(value)){
     return true;
   }
   auto inst = cast<Instruction>(value);
+
+  /*
+   * If the instruction is outside the loop, then it's a loop invariant.
+   */
+  if (!this->ls->isIncluded(inst)){
+    return true;
+  }
+
   if (this->invariants.find(inst) != this->invariants.end()){
     return true;
   }

@@ -30,6 +30,7 @@ namespace llvm::noelle {
 
     private:
       std::unordered_set<Instruction *> invariants;
+      LoopStructure *ls;
 
       /*
        * This inner class defines methods to determine whether values are invariant
