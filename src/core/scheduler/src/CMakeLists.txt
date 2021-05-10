@@ -33,6 +33,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include
   ../../dataflow/include
   ../../callgraph/include
+  ../../invariants/include
   ../include/ 
   ./ 
   ${CMAKE_INSTALL_PREFIX}/include

@@ -4,7 +4,6 @@ set(Srcs
   Variable.cpp
   AccumulatorOpInfo.cpp
   ControlFlowEquivalence.cpp
-  InvariantManager.cpp
   InductionVariables.cpp
   InductionVariable.cpp
   LoopAwareMemDepAnalysis.cpp
@@ -48,6 +47,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../talkdown/include
+  ../../invariants/include
   ../include 
   ${CMAKE_INSTALL_PREFIX}/include
   )

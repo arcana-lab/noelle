@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -11,7 +11,7 @@
 
 #include "DominatorSummary.hpp"
 
-using namespace llvm;
+namespace llvm::noelle {
 
 /*
  * Dominator Node Summary implementation
@@ -66,11 +66,19 @@ DomNodeSummary *DomNodeSummary::getIDom (void) {
  * Dominator Tree Summary implementation
  */
 
-DomTreeSummary::DomTreeSummary (DominatorTree &DT) :
-  DomTreeSummary{collectNodesOfTree<DominatorTree>(DT)} {}
+DomTreeSummary::DomTreeSummary (DominatorTree &DT) 
+  : DomTreeSummary{collectNodesOfTree<DominatorTree>(DT)}
+{
+  this->post = false;
+  return ;
+}
 
-DomTreeSummary::DomTreeSummary (PostDominatorTree &PDT) :
-  DomTreeSummary{collectNodesOfTree<PostDominatorTree>(PDT)} {}
+DomTreeSummary::DomTreeSummary (PostDominatorTree &PDT) 
+  : DomTreeSummary{collectNodesOfTree<PostDominatorTree>(PDT)} 
+{
+  this->post = true;
+  return ;
+}
 
 DomTreeSummary::DomTreeSummary (std::set<DTAliases::Node *> nodeSubset) :
   nodes{}, bbNodeMap{} {
@@ -176,17 +184,75 @@ DomNodeSummary *DomTreeSummary::getNode (BasicBlock *B) const {
 }
 
 bool DomTreeSummary::dominates (Instruction *I, Instruction *J) const {
-  BasicBlock *B1 = I->getParent(), *B2 = J->getParent();
+  auto B1 = I->getParent();
+  auto B2 = J->getParent();
+
+  /*
+   * Check if the instructions belong to the same basic block.
+   */
   if (B1 == B2) {
-    auto i = I;
-    while (i != nullptr) {
-      if (i == J) return true;
-      i = i->getNextNode();
+
+    /*
+     * Define the first and second instruction.
+     */
+    auto firstOne = I;
+    auto secondOne = J;
+
+    /*
+     * Check the dominance relation between I and J
+     */
+    while (firstOne != nullptr) {
+      if (firstOne == secondOne) {
+
+        /*
+         * The secondOne instruction is found after the first one.
+         * Hence, I dominates J.
+         * Also, J postdominates I.
+         */
+        if (this->post){
+
+          /*
+           * I does not post-dominate J.
+           */
+          return false;
+        }
+
+        /*
+         * I dominates J
+         */
+        return true;
+      }
+
+      firstOne = firstOne->getNextNode();
     }
+
+    /*
+     * The secondOne instruction has not been found after the first one.
+     * Hence, J dominates I.
+     * Also, I post-dominates J.
+     */
+    if (this->post){
+
+      /*
+       * I post-dominates J.
+       */
+      return true;
+    }
+
+    /*
+     * I does not dominates J.
+     */
     return false;
   }
 
-  return this->dominates(B1, B2);
+  /*
+   * The instructions belong to different basic blocks.
+   *
+   * Check if B1 dominates B2.
+   */
+  auto d = this->dominates(B1, B2);
+
+  return d;
 }
 
 bool DomTreeSummary::dominates (BasicBlock *B1, BasicBlock *B2) const {
@@ -223,7 +289,24 @@ BasicBlock *DomTreeSummary::findNearestCommonDominator (
   BasicBlock *B1,
   BasicBlock *B2
 ) const {
-  return findNearestCommonDominator(this->getNode(B1), this->getNode(B2))->B;
+  assert(B1 != nullptr);
+  assert(B2 != nullptr);
+
+  /*
+   * Fetch the nodes in the dominator tree.
+   */
+  auto n1 = this->getNode(B1);
+  auto n2 = this->getNode(B2);
+  assert(n1 != nullptr);
+  assert(n2 != nullptr);
+
+  /*
+   * Find the nearest common dominator.
+   */
+  auto c = findNearestCommonDominator(n1, n2);
+  assert(c != nullptr);
+
+  return c->B;
 }
 
 DomNodeSummary *DomTreeSummary::findNearestCommonDominator (
@@ -257,7 +340,9 @@ raw_ostream &DomTreeSummary::print (raw_ostream &stream, std::string prefixToUse
 DominatorSummary::DominatorSummary (
   DominatorTree &dt,
   PostDominatorTree &pdt
-) : DT{dt}, PDT{pdt} {}
+) : DT{dt}, PDT{pdt} {
+  return ;
+}
 
 DominatorSummary::DominatorSummary (
   DominatorSummary &ds,
@@ -269,4 +354,6 @@ void DominatorSummary::transferSummaryToClones (
 ) {
   DT.transferToClones(bbCloneMap);
   PDT.transferToClones(bbCloneMap);
+}
+
 }

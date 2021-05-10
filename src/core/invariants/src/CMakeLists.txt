@@ -1,13 +1,13 @@
 # Sources
 set(Srcs 
-  LoopWhilify.cpp
+  InvariantManager.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopWhilify")
+set(PassName "Invariants")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -22,16 +22,17 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
+  ../../basic_utilities/include 
   ../../transformations/include
-  ../../alloc_aa/include 
-  ../../loops/include 
-  ../../hotprofiler/include 
-  ../../talkdown/include
-  ../../noelle/include
   ../../callgraph/include
-  ../../scheduler/include
-  ../include/ 
-  ./ 
+  ../../dataflow/include
+  ../../architecture/include 
+  ../../alloc_aa/include 
+  ../../pdg/include 
+  ../../hotprofiler/include 
+  ../../loop_structure/include 
+  ../../talkdown/include
+  ../include 
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

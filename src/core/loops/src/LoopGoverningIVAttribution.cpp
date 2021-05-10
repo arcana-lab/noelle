@@ -10,8 +10,7 @@
  */
 #include "LoopGoverningIVAttribution.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, SCC &scc, std::vector<BasicBlock *> &exitBlocks)
   : IV{iv}, scc{scc}, headerCmp{nullptr}, conditionValueDerivation{},
@@ -83,7 +82,9 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, S
     this->exitBlock = headerBr->getSuccessor(0);
   } else if (exitBlockSet.find(headerBr->getSuccessor(1)) != exitBlockSet.end()) {
     this->exitBlock = headerBr->getSuccessor(1);
-  } else return ;
+  } else {
+    return ;
+  }
 
   if (scc.isInternal(conditionValue)) {
     std::queue<Instruction *> conditionDerivation;
@@ -166,4 +167,6 @@ std::set<Instruction *> &LoopGoverningIVAttribution::getConditionValueDerivation
 
 Instruction *LoopGoverningIVAttribution::getIntermediateValueUsedInCompare () {
   return intermediateValueUsedInCompare;
+}
+
 }
