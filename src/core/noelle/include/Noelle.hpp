@@ -174,11 +174,6 @@ namespace llvm::noelle {
 
       bool canFloatsBeConsideredRealNumbers (void) const ;
 
-      std::vector<Function *> * getModuleFunctionsReachableFrom (
-        Module *module,
-        Function *startingPoint
-        );
-
       void linkTransformedLoopToOriginalFunction (
         Module *module,
         BasicBlock *originalPreHeader,
@@ -233,6 +228,10 @@ namespace llvm::noelle {
       bool isLoopHot (LoopStructure *loopStructure, double minimumHotness) ;
       bool isFunctionHot (Function *function, double minimumHotness) ;
 
+      std::vector<Function *> * getModuleFunctionsReachableFrom (
+        Module *module,
+        Function *startingPoint
+        );
   };
 
 }

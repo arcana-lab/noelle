@@ -41,6 +41,7 @@
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/DerivedUser.h"
 #include "llvm/IR/LegacyPassManager.h"

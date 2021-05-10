@@ -10,8 +10,7 @@
  */
 #include "Scheduler.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 /*
  * ------------------------------------------------------------------ 
@@ -1508,5 +1507,7 @@ void LoopScheduler::resolveSuccessorPHIs(
 
 
   return;
+
+}
 
 }
