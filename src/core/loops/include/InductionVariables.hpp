@@ -11,7 +11,6 @@
 #pragma once
 
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
-#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "ScalarEvolutionReferencer.hpp"
 
 #include "SystemHeaders.hpp"
