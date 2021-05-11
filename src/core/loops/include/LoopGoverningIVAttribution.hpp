@@ -22,21 +22,21 @@ namespace llvm::noelle {
 
       LoopGoverningIVAttribution () = delete ;
 
-      InductionVariable & getInductionVariable(void) const;
+      InductionVariable & getInductionVariable (void) const;
 
       CmpInst *getHeaderCmpInst(void) const;
 
-      Value *getHeaderCmpInstConditionValue(void) const;
+      Value * getHeaderCmpInstConditionValue (void) const;
 
-      BranchInst *getHeaderBrInst(void) const;
+      BranchInst *getHeaderBrInst (void) const;
 
-      BasicBlock *getExitBlockFromHeader(void) const;
+      BasicBlock *getExitBlockFromHeader (void) const;
 
-      bool isSCCContainingIVWellFormed(void) const;
+      bool isSCCContainingIVWellFormed (void) const;
 
-      std::set<Instruction *> & getConditionValueDerivation(void) ;
+      std::set<Instruction *> getConditionValueDerivation(void) const ;
 
-      Instruction *getIntermediateValueUsedInCompare () ;
+      Instruction * getIntermediateValueUsedInCompare (void) const ;
 
     private:
       InductionVariable &IV;
