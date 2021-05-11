@@ -11,7 +11,6 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-
 #include "PDG.hpp"
 #include "SCCDAG.hpp"
 #include "LoopsSummary.hpp"
@@ -139,7 +138,7 @@ namespace llvm::noelle {
       /*
        * Check whether an optimization is enabled
        */
-      bool isOptimizationEnabled (LoopDependenceInfoOptimization optimization);
+      bool isOptimizationEnabled (LoopDependenceInfoOptimization optimization) const ;
 
       /*
        * Iterate over children of "this" recursively following the loop nesting tree rooted by "this".

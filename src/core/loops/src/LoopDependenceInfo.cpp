@@ -357,7 +357,7 @@ void LoopDependenceInfo::disableTransformation (Transformation transformationToD
   return ;
 }
 
-bool LoopDependenceInfo::isOptimizationEnabled (LoopDependenceInfoOptimization optimization) {
+bool LoopDependenceInfo::isOptimizationEnabled (LoopDependenceInfoOptimization optimization) const {
   auto enabled = this->enabledOptimizations.find(optimization) != this->enabledOptimizations.end();
   return enabled;
 }
