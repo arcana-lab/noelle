@@ -12,7 +12,7 @@ HELIX_challenge	       6.758
 HELIX_communication    1.488
 HELIX_criticalsection  0.232
 Loop_selection        18.482
-Scheduler              8.800
+Scheduler              6.169
 Scheduler2             5.5
-Scheduler3             1
+Scheduler3             0.043
 StackPrivatization    19.856

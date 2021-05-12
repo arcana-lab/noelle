@@ -161,11 +161,11 @@ bool LoopGoverningIVAttribution::isSCCContainingIVWellFormed(void) const {
   return isWellFormed;
 }
 
-std::set<Instruction *> &LoopGoverningIVAttribution::getConditionValueDerivation(void) { 
+std::set<Instruction *> LoopGoverningIVAttribution::getConditionValueDerivation(void) const { 
   return conditionValueDerivation;
 }
 
-Instruction *LoopGoverningIVAttribution::getIntermediateValueUsedInCompare () {
+Instruction * LoopGoverningIVAttribution::getIntermediateValueUsedInCompare (void) const {
   return intermediateValueUsedInCompare;
 }
 

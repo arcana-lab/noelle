@@ -318,6 +318,33 @@ bool LoopStructure::doesHaveMetadata (const std::string &metadataName) const {
   return true;
 }
 
+void LoopStructure::setMetadata (const std::string &metadataName, const std::string &metadataValue) const {
+
+  /*
+   * Fetch the header terminator.
+   */
+  auto headerTerm = this->getHeader()->getTerminator();
+
+  /*
+   * Check if the metadata node already exists.
+   */
+  auto metaNode = headerTerm->getMetadata(metadataName);
+  if (metaNode){
+    errs() << "LoopStructure::setMetadata: ERROR = the metadata \"" << metadataName << "\" already exists to " << *headerTerm << "\n";
+    abort();
+  }
+
+  /*
+   * Set the metadata
+   */
+  auto& cxt = headerTerm->getContext();
+  auto s = MDString::get(cxt, metadataValue);
+  auto n = MDNode::get(cxt, s);
+  headerTerm->setMetadata(metadataName, n);
+
+  return ;
+}
+
 std::string LoopStructure::getMetadata (const std::string &metadataName) const {
 
   /*

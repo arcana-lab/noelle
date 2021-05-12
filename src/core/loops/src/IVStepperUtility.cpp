@@ -130,7 +130,7 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
   // TODO: Refer to whichever intermediate value is used in the comparison (known on attribution)
   this->doesOriginalCmpInstHaveIVAsLeftOperand = condition->getOperand(0) == attribution.getIntermediateValueUsedInCompare();
 
-  auto &conditionValueDerivationSet = attribution.getConditionValueDerivation();
+  auto conditionValueDerivationSet = attribution.getConditionValueDerivation();
   for (auto &I : *condition->getParent()) {
     if (conditionValueDerivationSet.find(&I) == conditionValueDerivationSet.end()) continue;
     conditionValueOrderedDerivation.push_back(&I);

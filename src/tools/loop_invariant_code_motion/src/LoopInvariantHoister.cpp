@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Simone Campanoni
+ * Copyright 2019 - 2021  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,8 +10,7 @@
  */
 #include "LoopInvariantCodeMotion.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 bool LoopInvariantCodeMotion::hoistInvariantValues (
   LoopDependenceInfo const &LDI
@@ -49,6 +48,21 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
         continue;
       }
       errs() << "LICM:    Invariant = \"" << I << "\n";
+
+      /*
+       * Check if the instruction can generate unwanted side-effects if there is no guarantee it will execute at least once per loop invocation.
+       *
+       * Call instructions don't need to be checked because if they are invariants, it means they must have no memory data dependences between theirself.
+       * In other words, they cannot write to memory that can be loaded outside the loop.
+       */
+      auto mayWriteToMemory = false;
+      if (isa<StoreInst>(&I)){
+        mayWriteToMemory = true;
+      }
+      if (mayWriteToMemory){
+        errs() << "LICM:       The instruction might generate unwanted side-effects if it does not execute at least once per loop invocation\n";
+        continue ;
+      }
 
       /*
        * The current instruction is a loop invariant.
@@ -218,4 +232,6 @@ std::vector<Instruction *> LoopInvariantCodeMotion::getSourceDependenceInstructi
   ldg->iterateOverDependencesTo(&I, false, true, true, collectF);
 
   return s;
+}
+
 }
