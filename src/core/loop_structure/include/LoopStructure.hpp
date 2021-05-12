@@ -92,6 +92,13 @@ namespace llvm::noelle {
        */
       std::string getMetadata (const std::string &metadataName) const ;
 
+      /*
+       * Add metadata to the loop.
+       *
+       * Warning: this modifies the IR code.
+       */
+      void setMetadata (const std::string &metadataName, const std::string &metadataValue) const ;
+
       void print (raw_ostream &stream);
       
       std::vector<BasicBlock *> orderedBBs;
