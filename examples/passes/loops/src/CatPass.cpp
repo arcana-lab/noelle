@@ -193,7 +193,7 @@ namespace {
           errs() << "-" ;
         }
         errs() << "-> ";
-        errs() << *l->getEntryInstruction() << "\n";
+        errs() << "[ " << l->getFunction()->getName() << " ] " << *l->getEntryInstruction() << "\n";
         
         /*
          * Print the children
