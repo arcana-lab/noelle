@@ -311,8 +311,24 @@ uint32_t LoopStructure::getNumberOfSubLoops (void) const {
 }
 
 bool LoopStructure::doesHaveMetadata (const std::string &metadataName) const {
+
+  /*
+   * Check if we have already cached the metadata.
+   */
   if (this->metadata.find(metadataName) == this->metadata.end()){
-    return false;
+
+    /*
+     * Fetch the header terminator.
+     */
+    auto headerTerm = this->getHeader()->getTerminator();
+
+    /*
+     * Check if the metadata exists.
+     */
+    auto metaNode = headerTerm->getMetadata(metadataName);
+    if (!metaNode){
+      return false;
+    }
   }
 
   return true;
