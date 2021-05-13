@@ -13,8 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "Hot.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void Hot::setBasicBlockInvocations (BasicBlock *bb, uint64_t invocations){
 
@@ -48,6 +47,8 @@ bool Hot::hasBeenExecuted (BasicBlock *bb) const {
 }
 
 uint64_t Hot::getInvocations (BasicBlock *bb) const {
+  assert(bb != nullptr);
+
   auto inv = this->bbInvocations.at(bb);
 
   return inv;
@@ -122,4 +123,6 @@ void Hot::setBranchFrequency (BasicBlock *src, BasicBlock *dst, double branchFre
   branchSuccessors[dst] = branchFrequency;
 
   return ;
+}
+
 }
