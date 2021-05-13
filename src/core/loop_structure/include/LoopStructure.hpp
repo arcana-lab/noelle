@@ -97,7 +97,7 @@ namespace llvm::noelle {
        *
        * Warning: this modifies the IR code.
        */
-      void setMetadata (const std::string &metadataName, const std::string &metadataValue) const ;
+      void setMetadata (const std::string &metadataName, const std::string &metadataValue) ;
 
       void print (raw_ostream &stream);
       

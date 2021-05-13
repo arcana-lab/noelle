@@ -318,7 +318,7 @@ bool LoopStructure::doesHaveMetadata (const std::string &metadataName) const {
   return true;
 }
 
-void LoopStructure::setMetadata (const std::string &metadataName, const std::string &metadataValue) const {
+void LoopStructure::setMetadata (const std::string &metadataName, const std::string &metadataValue) {
 
   /*
    * Fetch the header terminator.
@@ -341,6 +341,11 @@ void LoopStructure::setMetadata (const std::string &metadataName, const std::str
   auto s = MDString::get(cxt, metadataValue);
   auto n = MDNode::get(cxt, s);
   headerTerm->setMetadata(metadataName, n);
+
+  /*
+   * Add the metadata to our mapping.
+   */
+  this->addMetadata(metadataName);
 
   return ;
 }

@@ -139,6 +139,7 @@ void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *oth
 
   return ;
 }
+
 void LoopDependenceInfo::fetchLoopAndBBInfo (
   Loop *l,
   ScalarEvolution &SE
@@ -154,6 +155,7 @@ void LoopDependenceInfo::fetchLoopAndBBInfo (
 
   } else {
     this->compileTimeKnownTripCount = false;
+    this->tripCount = 0;
   }
 
   return ;
