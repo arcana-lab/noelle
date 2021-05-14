@@ -21,6 +21,7 @@
 #include "FunctionsManager.hpp"
 #include "TypesManager.hpp"
 #include "CompilationOptionsManager.hpp"
+#include "MetadataManager.hpp"
 
 namespace llvm::noelle {
 
@@ -52,6 +53,8 @@ namespace llvm::noelle {
       CompilationOptionsManager * getCompilationOptionsManager (void) ;
       
       TypesManager * getTypesManager (void) ;
+
+      MetadataManager * getMetadataManager (void) const ;
 
       std::vector<LoopDependenceInfo *> * getLoops (void) ;
 
@@ -197,7 +200,6 @@ namespace llvm::noelle {
       bool hoistLoopsToMain;
       bool loopAwareDependenceAnalysis;
       PDGAnalysis *pdgAnalysis;
-
       char *filterFileName;
       bool hasReadFilterFile;
       std::vector<uint32_t> loopThreads;
@@ -207,6 +209,7 @@ namespace llvm::noelle {
       FunctionsManager *fm;
       TypesManager *tm;
       CompilationOptionsManager *om;
+      MetadataManager *mm;
 
       uint32_t fetchTheNextValue (
         std::stringstream &stream
