@@ -27,6 +27,7 @@ Noelle::Noelle()
   , fm{nullptr}
   , tm{nullptr}
   , om{nullptr}
+  , mm{}
 {
 
   return ;
@@ -292,6 +293,10 @@ TypesManager * Noelle::getTypesManager (void) {
 CompilationOptionsManager * Noelle::getCompilationOptionsManager (void) {
   assert(this->om != nullptr);
   return this->om;
+}
+
+MetadataManager * Noelle::getMetadataManager (void) const {
+  return this->mm;
 }
 
 }

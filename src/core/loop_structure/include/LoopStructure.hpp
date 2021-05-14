@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -11,8 +11,6 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-
-using namespace llvm;
 
 namespace llvm::noelle {
 
@@ -82,23 +80,6 @@ namespace llvm::noelle {
        */
       uint32_t getNumberOfSubLoops (void) const ;
 
-      /*
-       * Return true if the loop has the metadata requested.
-       */
-      bool doesHaveMetadata (const std::string &metadataName) const ;
-
-      /*
-       * Fetch the metadata attached to the loop.
-       */
-      std::string getMetadata (const std::string &metadataName) const ;
-
-      /*
-       * Add metadata to the loop.
-       *
-       * Warning: this modifies the IR code.
-       */
-      void setMetadata (const std::string &metadataName, const std::string &metadataValue) ;
-
       void print (raw_ostream &stream);
       
       std::vector<BasicBlock *> orderedBBs;
@@ -124,15 +105,9 @@ namespace llvm::noelle {
 
       static uint64_t globalID;
 
-      std::unordered_map<std::string, std::string> metadata;
-
       void instantiateIDsAndBasicBlocks(Loop *llvmLoop) ;
 
       bool isContainedInstructionLoopInvariant (Instruction *inst) const ;
-
-      void addMetadata (
-        const std::string &metadataName
-        );
 
   };
 

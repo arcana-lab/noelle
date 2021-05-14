@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,8 +10,7 @@
  */
 #include "LoopStructure.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle{ 
 
 uint64_t LoopStructure::globalID = 0;
 
@@ -77,30 +76,10 @@ LoopStructure::LoopStructure (
   this->exitEdges = std::vector<std::pair<BasicBlock *, BasicBlock *>>(exitEdges.begin(), exitEdges.end());
 
   /*
-   * Fetch the metadata.
+   * There is no metadata.
+   * Hence, we assign an arbitrary ID.
    */
-  this->addMetadata("noelle.loop_ID");
-  this->addMetadata("noelle.loop_optimize");
-
-  /*
-   * Check if there is metadata for the ID.
-   */
-  if (this->doesHaveMetadata("noelle.loop_ID")){
-
-    /*
-     * Fetch the ID from the metadata.
-     */
-    auto IDString = this->getMetadata("noelle.loop_ID");
-    this->ID = std::stoul(IDString);
-
-  } else {
-
-    /*
-     * There is no metadata.
-     * Hence, we assign an arbitrary ID.
-     */
-    this->ID = LoopStructure::globalID++;
-  }
+  this->ID = LoopStructure::globalID++;
 
   return ;
 }
@@ -310,102 +289,8 @@ uint32_t LoopStructure::getNumberOfSubLoops (void) const {
   return subloops;
 }
 
-bool LoopStructure::doesHaveMetadata (const std::string &metadataName) const {
-
-  /*
-   * Check if we have already cached the metadata.
-   */
-  if (this->metadata.find(metadataName) == this->metadata.end()){
-
-    /*
-     * Fetch the header terminator.
-     */
-    auto headerTerm = this->getHeader()->getTerminator();
-
-    /*
-     * Check if the metadata exists.
-     */
-    auto metaNode = headerTerm->getMetadata(metadataName);
-    if (!metaNode){
-      return false;
-    }
-  }
-
-  return true;
-}
-
-void LoopStructure::setMetadata (const std::string &metadataName, const std::string &metadataValue) {
-
-  /*
-   * Fetch the header terminator.
-   */
-  auto headerTerm = this->getHeader()->getTerminator();
-
-  /*
-   * Check if the metadata node already exists.
-   */
-  auto metaNode = headerTerm->getMetadata(metadataName);
-  if (metaNode){
-    errs() << "LoopStructure::setMetadata: ERROR = the metadata \"" << metadataName << "\" already exists to " << *headerTerm << "\n";
-    abort();
-  }
-
-  /*
-   * Set the metadata
-   */
-  auto& cxt = headerTerm->getContext();
-  auto s = MDString::get(cxt, metadataValue);
-  auto n = MDNode::get(cxt, s);
-  headerTerm->setMetadata(metadataName, n);
-
-  /*
-   * Add the metadata to our mapping.
-   */
-  this->addMetadata(metadataName);
-
-  return ;
-}
-
-std::string LoopStructure::getMetadata (const std::string &metadataName) const {
-
-  /*
-   * Check if the metadata exists.
-   */
-  if (!this->doesHaveMetadata(metadataName)){
-    return "";
-  }
-
-  return this->metadata.at(metadataName);
-}
-
-void LoopStructure::addMetadata (const std::string &metadataName){
-
-  /*
-   * Fetch the header terminator.
-   */
-  auto headerTerm = this->getHeader()->getTerminator();
-
-  /*
-   * Fetch the metadata node.
-   */
-  auto metaNode = headerTerm->getMetadata(metadataName);
-  if (!metaNode){
-    return ;
-  }
-
-  /*
-   * Fetch the string.
-   */
-  auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
-
-  /*
-   * Add the metadata.
-   */
-  this->metadata[metadataName] = metaString;
-
-  return ;
-}
-
 uint64_t LoopStructure::numberOfExitBasicBlocks (void) const {
   return this->exitBlocks.size();
+}
+
 }
