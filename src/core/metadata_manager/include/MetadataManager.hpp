@@ -18,7 +18,23 @@ namespace llvm::noelle {
 
   class MetadataManager {
     public:
-      MetadataManager ();
+      MetadataManager (Module &M);
+
+      /*
+       * Return true if the module has the metadata requested.
+       */
+      bool doesHaveMetadata (
+        const std::string &metadataName
+        ) const ;
+
+      /*
+       * Add metadata to the module.
+       *
+       * Warning: this modifies the IR code.
+       */
+      void addMetadata (
+        const std::string &metadataName
+        ) ;
 
       /*
        * Return true if the loop has the metadata requested.
@@ -70,6 +86,7 @@ namespace llvm::noelle {
         ) ;
 
     private:
+      Module &program;
       std::unordered_map<LoopStructure *, std::unordered_map<std::string, MetadataEntry *>> metadata;
 
       void addMetadata (

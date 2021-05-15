@@ -12,7 +12,9 @@
 
 namespace llvm::noelle {
 
-MetadataManager::MetadataManager (){
+MetadataManager::MetadataManager (Module &M)
+  : program{M}
+{
   return ;
 }
 
