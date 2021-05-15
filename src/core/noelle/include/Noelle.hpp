@@ -54,7 +54,7 @@ namespace llvm::noelle {
       
       TypesManager * getTypesManager (void) ;
 
-      MetadataManager * getMetadataManager (void) const ;
+      MetadataManager * getMetadataManager (void) ;
 
       std::vector<LoopDependenceInfo *> * getLoops (void) ;
 
