@@ -27,9 +27,8 @@ Noelle::Noelle()
   , fm{nullptr}
   , tm{nullptr}
   , om{nullptr}
+  , mm{nullptr}
 {
-  this->mm = new MetadataManager();
-
   return ;
 }
       
@@ -296,6 +295,9 @@ CompilationOptionsManager * Noelle::getCompilationOptionsManager (void) {
 }
 
 MetadataManager * Noelle::getMetadataManager (void) const {
+  if (!this->mm){
+    this->mm = new MetadataManager(this->getProgram());
+  }
   return this->mm;
 }
 
