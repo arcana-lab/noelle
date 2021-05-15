@@ -294,7 +294,7 @@ CompilationOptionsManager * Noelle::getCompilationOptionsManager (void) {
   return this->om;
 }
 
-MetadataManager * Noelle::getMetadataManager (void) const {
+MetadataManager * Noelle::getMetadataManager (void) {
   if (!this->mm){
     this->mm = new MetadataManager(*this->getProgram());
   }
