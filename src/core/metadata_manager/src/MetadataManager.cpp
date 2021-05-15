@@ -87,13 +87,84 @@ void MetadataManager::setMetadata (
    * Check if the metadata node already exists.
    */
   auto metaNode = headerTerm->getMetadata(metadataName);
-  if (metaNode){
-    errs() << "MetadataManager::setMetadata: ERROR = the metadata \"" << metadataName << "\" already exists in the loop " << *headerTerm << "\n";
+  if (!metaNode){
+    errs() << "MetadataManager::setMetadata: ERROR = the metadata \"" << metadataName << "\" does not exists in the loop " << *headerTerm << "\n";
     abort();
   }
 
   /*
    * Set the metadata
+   */
+  auto& cxt = headerTerm->getContext();
+  auto s = MDString::get(cxt, metadataValue);
+  auto n = MDNode::get(cxt, s);
+  headerTerm->setMetadata(metadataName, n);
+
+  /*
+   * Add the metadata to our mapping.
+   */
+  this->addMetadata(loop, metadataName);
+
+  return ;
+}
+
+void MetadataManager::deleteMetadata (
+  LoopStructure *loop,
+  const std::string &metadataName, 
+  const std::string &metadataValue
+  ) {
+
+  /*
+   * Fetch the header terminator.
+   */
+  auto headerTerm = loop->getHeader()->getTerminator();
+
+  /*
+   * Check if the metadata node already exists.
+   */
+  auto metaNode = headerTerm->getMetadata(metadataName);
+  if (!metaNode){
+    errs() << "MetadataManager::deleteMetadata: ERROR = the metadata \"" << metadataName << "\" does not exists in the loop " << *headerTerm << "\n";
+    abort();
+  }
+
+  /*
+   * Delete the metadata
+   */
+  headerTerm->setMetadata(metadataName, nullptr);
+
+  /*
+   * Remove the metadata from our mapping.
+   */
+  auto loopEntries = this->metadata[loop];
+  delete loopEntries[metadataName];
+  loopEntries.erase(metadataName);
+
+  return ;
+}
+
+void MetadataManager::addMetadata (
+  LoopStructure *loop,
+  const std::string &metadataName, 
+  const std::string &metadataValue
+  ) {
+
+  /*
+   * Fetch the header terminator.
+   */
+  auto headerTerm = loop->getHeader()->getTerminator();
+
+  /*
+   * Check if the metadata node already exists.
+   */
+  auto metaNode = headerTerm->getMetadata(metadataName);
+  if (metaNode){
+    errs() << "MetadataManager::addMetadata: ERROR = the metadata \"" << metadataName << "\" already exists in the loop " << *headerTerm << "\n";
+    abort();
+  }
+
+  /*
+   * Create the metadata and add it to the IR.
    */
   auto& cxt = headerTerm->getContext();
   auto s = MDString::get(cxt, metadataValue);

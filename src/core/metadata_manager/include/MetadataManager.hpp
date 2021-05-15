@@ -41,7 +41,29 @@ namespace llvm::noelle {
        *
        * Warning: this modifies the IR code.
        */
+      void addMetadata (
+        LoopStructure *loop,
+        const std::string &metadataName, 
+        const std::string &metadataValue
+        ) ;
+
+      /*
+       * Set an existing metadata of a loop.
+       *
+       * Warning: this modifies the IR code.
+       */
       void setMetadata (
+        LoopStructure *loop,
+        const std::string &metadataName, 
+        const std::string &metadataValue
+        ) ;
+
+      /*
+       * Delete metadata of a loop.
+       *
+       * Warning: this modifies the IR code.
+       */
+      void deleteMetadata (
         LoopStructure *loop,
         const std::string &metadataName, 
         const std::string &metadataValue
