@@ -27,8 +27,8 @@ Noelle::Noelle()
   , fm{nullptr}
   , tm{nullptr}
   , om{nullptr}
-  , mm{}
 {
+  this->mm = new MetadataManager();
 
   return ;
 }
