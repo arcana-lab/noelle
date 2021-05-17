@@ -51,7 +51,7 @@ bool DSTestSuite::runOnModule (Module &M) {
 
   this->dt = &getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
   this->pdt = &getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
-  this->ds = new DominatorSummary(*dt, *pdt);
+  this->ds = new noelle::DominatorSummary(*dt, *pdt);
 
   suite->runTests((ModulePass &)*this);
 
@@ -59,7 +59,7 @@ bool DSTestSuite::runOnModule (Module &M) {
   return false;
 }
 
-Values DSTestSuite::domNodeIsIdentical (DSTestSuite &pass, DomTreeNodeBase<BasicBlock> &node, DomNodeSummary &nodeS) {
+Values DSTestSuite::domNodeIsIdentical (DSTestSuite &pass, DomTreeNodeBase<BasicBlock> &node, noelle::DomNodeSummary &nodeS) {
   BasicBlock *bb = node.getBlock();
   BasicBlock *bbS = nodeS.getBlock();
   if (bb != bbS) {
@@ -94,7 +94,7 @@ Values DSTestSuite::domNodeIsIdentical (DSTestSuite &pass, DomTreeNodeBase<Basic
 }
 
 template <class DTBase>
-Values DSTestSuite::domTreeIsIdentical (DSTestSuite &pass, DTBase &DT, DomTreeSummary &DTS) {
+Values DSTestSuite::domTreeIsIdentical (DSTestSuite &pass, DTBase &DT, noelle::DomTreeSummary &DTS) {
   auto &roots = DT.getRoots();
   for (auto root : roots) {
     auto node = DT.getNode(root);
