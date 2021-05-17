@@ -33,7 +33,8 @@ namespace llvm::noelle {
        * Warning: this modifies the IR code.
        */
       void addMetadata (
-        const std::string &metadataName
+        const std::string &metadataName,
+        const std::string &metadataValue
         ) ;
 
       /*
