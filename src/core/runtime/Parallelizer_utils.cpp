@@ -38,7 +38,7 @@ static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
     
-static ThreadPoolForC pool{true, std::thread::hardware_concurrency() - 1};
+static ThreadPoolForC pool{false, std::thread::hardware_concurrency() - 1};
 
 typedef struct {
   void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
@@ -46,7 +46,7 @@ typedef struct {
   int64_t coreID ;
   int64_t numCores;
   int64_t chunkSize ;
-  pthread_mutex_t endLock;
+  pthread_spinlock_t endLock;
 } DOALL_args_t ;
 
 class NoelleRuntime {
@@ -234,7 +234,7 @@ extern "C" {
     clocks_ends[DOALLArgs->coreID] = clocks_end;
     #endif
 
-    pthread_mutex_unlock(&(DOALLArgs->endLock));
+    pthread_spin_unlock(&(DOALLArgs->endLock));
     return ;
   }
 
@@ -311,7 +311,7 @@ extern "C" {
     auto clocks_before_join = rdtsc_s();
     #endif
     for (auto i = 0; i < (numCores - 1); ++i) {
-      pthread_mutex_lock(&(argsForAllCores[i].endLock));
+      pthread_spin_lock(&(argsForAllCores[i].endLock));
     }
     #ifdef RUNTIME_PRINT
     std::cerr << "All tasks completed" << std::endl;
@@ -946,8 +946,8 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
   for (auto i = 0; i < cores; ++i) {
     auto argsPerCore = &argsForAllCores[i];
     argsPerCore->coreID = i;
-    pthread_mutex_init(&(argsPerCore->endLock), NULL);
-    pthread_mutex_lock(&(argsPerCore->endLock));
+    pthread_spin_init(&(argsPerCore->endLock), 0);
+    pthread_spin_lock(&(argsPerCore->endLock));
   }
 
   return argsForAllCores;
