@@ -38,7 +38,7 @@ static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
     
-static ThreadPoolForC pool{true, std::thread::hardware_concurrency()};
+static ThreadPoolForC pool{true, std::thread::hardware_concurrency() - 1};
 
 typedef struct {
   void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
@@ -260,12 +260,12 @@ extern "C" {
      * Allocate the memory to store the arguments.
      */
     uint32_t doallMemoryIndex;
-    auto argsForAllCores = runtime.getDOALLArgs(numCores, &doallMemoryIndex);
+    auto argsForAllCores = runtime.getDOALLArgs(numCores - 1, &doallMemoryIndex);
 
     /*
      * Submit DOALL tasks.
      */
-    for (auto i = 0; i < numCores; ++i) {
+    for (auto i = 0; i < (numCores - 1); ++i) {
 
       /*
        * Prepare the arguments.
@@ -300,12 +300,17 @@ extern "C" {
     #endif
 
     /*
-     * Wait for DOALL tasks.
+     * Run a task.
+     */
+    parallelizedLoop(env, numCores - 1, numCores, chunkSize);
+
+    /*
+     * Wait for the remaining DOALL tasks.
      */
     #ifdef RUNTIME_PROFILE
     auto clocks_before_join = rdtsc_s();
     #endif
-    for (auto i = 0; i < numCores; ++i) {
+    for (auto i = 0; i < (numCores - 1); ++i) {
       pthread_mutex_lock(&(argsForAllCores[i].endLock));
     }
     #ifdef RUNTIME_PRINT
@@ -333,12 +338,12 @@ extern "C" {
     std::cerr << "XAN: Start         = " << clocks_start << "\n";
     std::cerr << "XAN: Setup overhead         = " << clocks_after_fork - clocks_start << " clocks\n";
     uint64_t totalDispatch = 0;
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       totalDispatch += (clocks_dispatch_ends[i] - clocks_dispatch_starts[i]);
     }
     std::cerr << "XAN:    Dispatch overhead         = " << totalDispatch << " clocks\n";
     std::cerr << "XAN: Start joining = " << clocks_after_fork << "\n";
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       std::cerr << "Thread " << i << ": Start = " << clocks_starts[i] << "\n";
       std::cerr << "Thread " << i << ": End   = " << clocks_ends[i] << "\n";
       std::cerr << "Thread " << i << ": Delta = " << clocks_ends[i] - clocks_starts[i] << "\n";
@@ -348,7 +353,7 @@ extern "C" {
 
     uint64_t start_min = 0;
     uint64_t start_max = 0;
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       if (  false
             || (start_min == 0)
             || (clocks_starts[i] < start_min)
@@ -365,7 +370,7 @@ extern "C" {
 
     uint64_t end_max = 0;
     uint64_t lastThreadID = 0;
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       if (clocks_ends[i] > end_max){
         lastThreadID = i;
         end_max = clocks_ends[i];
