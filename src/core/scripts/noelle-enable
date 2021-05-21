@@ -10,64 +10,9 @@ ENABLERS="-load ${installDir}/lib/LoopDistribution.so \
   -load ${installDir}/lib/SCEVSimplification.so \
 "
 
-# Set the file names
-IRFileInput="`mktemp`" ;
-IRFileInputLL="`mktemp`" ;
-IRFileOutput="`mktemp`" ;
-IRFileOutputLL="`mktemp`" ;
-
-# Print
+# Run the enablers until a fixed point is reached
 echo "NOELLE: Enablers: Start" ;
-echo "NOELLE: Enablers:   Input: $1" ;
-echo "NOELLE: Enablers:   Output: $2" ;
-
-# Copy the initial input file
-cp $1 $IRFileInput ;
-
-# Invoke the enablers
-echo "NOELLE: Enablers:   Temporary input: $IRFileInput (.ll version is $IRFileInputLL)" ;
-echo "NOELLE: Enablers:   Temporary output: $IRFileOutput (.ll version is $IRFileOutputLL)" ;
-echo "NOELLE: Enablers:   Start invoking enablers" ;
-let c=0; 
-while true ; do
-  echo "NOELLE: Enablers:     Invocation $c" ;
-
-  # Set the command to execute the enablers
-  cmdToExecute="noelle-load ${ENABLERS} -load ${installDir}/lib/Enablers.so -enablers $IRFileInput -o $IRFileOutput ${@:3}"
-  echo $cmdToExecute ;
-  eval $cmdToExecute ;
-
-  # Check if we got an error
-  if test $? -ne 0 ; then
-    echo "ERROR" ;
-    exit 1;
-  fi
-
-  # Check if the bitcode has been modified
-  llvm-dis $IRFileInput -o $IRFileInputLL ;
-  llvm-dis $IRFileOutput -o $IRFileOutputLL ;
-  linesDifferent=`diff ${IRFileInputLL} ${IRFileOutputLL} | wc -l | awk '{print $1}'` ;
-  if test "$linesDifferent" == "4" ; then
-
-    # Copy the final output
-    cp $IRFileOutput $2 ;
-    break ;
-  fi
-
-  # Normalize the code
-  echo "NOELLE: Enablers:       Normalize the code" ;
-  cmdToExecute="noelle-norm $IRFileOutput -o $IRFileOutput"
-  echo $cmdToExecute ;
-  eval $cmdToExecute ;
-
-  # Copy the output to the input
-  cp $IRFileOutput $IRFileInput ;
-
-  let c=$c+1; 
-done
-
-# Clean
-rm $IRFileInput $IRFileInputLL $IRFileOutput $IRFileOutputLL ;
-
-# Exit
+cmdToExecute="noelle-fixedpoint $1 $2 ${ENABLERS} -load ${installDir}/lib/Enablers.so -enablers ${@:3}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
 echo "NOELLE: Enablers: Exit" ;

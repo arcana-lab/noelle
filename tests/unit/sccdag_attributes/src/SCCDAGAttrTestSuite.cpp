@@ -76,7 +76,7 @@ bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   DominatorSummary DS(*DT, *PDT);
 
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
-  auto loopDI = new LoopDependenceInfo(fdg, topLoop, DS, *SE);
+  auto loopDI = new LoopDependenceInfo(fdg, topLoop, DS, *SE, 2, true, false);
   auto sccManager = loopDI->getSCCManager();
 
   this->sccdag = sccManager->getSCCDAG();

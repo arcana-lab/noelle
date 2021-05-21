@@ -24,9 +24,10 @@ fi
 
 mkdir -p ${installDir}/bin ;
 
+patchInstallDir "noelle-norm" ;
 patchInstallDir "noelle-load" ;
 patchInstallDir "noelle-parallel-load" ;
-patchInstallDir "noelle-norm" ;
+patchInstallDir "noelle-fixedpoint" ;
 patchInstallDir "noelle-pre" ;
 patchInstallDir "noelle-parallelizer" ;
 patchInstallDir "noelle-seq" ;
@@ -44,4 +45,5 @@ patchInstallDir "noelle-deadcode" ;
 patchInstallDir "noelle-prof-coverage" ;
 patchInstallDir "noelle-config" ;
 patchInstallDir "noelle-simplification" ;
+patchInstallDir "noelle-codesize" ;
 patchInstallDir "loopaa" ;

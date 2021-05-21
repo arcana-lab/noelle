@@ -15,10 +15,6 @@
 #include "CallGraphEdge.hpp"
 #include "SCCCAG.hpp"
 
-#include "MemoryModel/PointerAnalysis.h"
-#include "Util/PTACallGraph.h"
-#include "MSSA/MemSSA.h"
-
 namespace llvm::noelle {
   class SCCCAG;
 
@@ -27,7 +23,11 @@ namespace llvm::noelle {
    */
   class CallGraph {
     public:
-      CallGraph (Module &M, PTACallGraph *callGraph);
+      CallGraph (
+          Module &M
+        , std::function<bool (CallInst *)> hasIndCSCallees
+        , std::function<const std::set<const Function *> (CallInst *)> getIndCSCallees
+        );
 
       std::unordered_set<CallGraphFunctionNode *> getFunctionNodes (void) const ;
 
@@ -54,7 +54,12 @@ namespace llvm::noelle {
 
       CallGraph (Module &M);
 
-      void handleCallInstruction (CallGraphFunctionNode *fromNode, CallBase *callInst, PTACallGraph *callGraph);
+      void handleCallInstruction (
+          CallGraphFunctionNode *fromNode
+        , CallBase *callInst
+        , std::function<bool (CallInst *)> hasIndCSCallees
+        , std::function<const std::set<const Function *> (CallInst *)> getIndCSCallees
+        );
 
       CallGraphFunctionFunctionEdge * fetchOrCreateEdge (CallGraphFunctionNode *fromNode, CallBase *callInst, Function & callee, bool isMust);
 

@@ -50,7 +50,6 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include
   ../include 
   ${CMAKE_INSTALL_PREFIX}/include
-  ${CMAKE_INSTALL_PREFIX}/include/svf
   )
 
 # Declare the LLVM pass to compile

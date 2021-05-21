@@ -241,7 +241,14 @@ namespace llvm::noelle {
     return this->visitPreOrder(funcToInvoke, 1);
   }
 
-  bool StayConnectedNestedLoopForestNode::visitPreOrder (std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke, uint32_t treeLevel) {
+  bool StayConnectedNestedLoopForestNode::visitPostOrder (std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke) {
+    return this->visitPostOrder(funcToInvoke, 1);
+  }
+
+  bool StayConnectedNestedLoopForestNode::visitPreOrder (
+    std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke, 
+    uint32_t treeLevel
+    ) {
 
     /*
      * Visit the root.
@@ -257,6 +264,30 @@ namespace llvm::noelle {
       if (child->visitPreOrder(funcToInvoke, treeLevel + 1)){
         return true ;
       }
+    }
+
+    return false ;
+  }
+
+  bool StayConnectedNestedLoopForestNode::visitPostOrder (
+    std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke, 
+    uint32_t treeLevel
+    ) {
+
+    /*
+     * Visit the children.
+     */
+    for (auto child : this->descendants){
+      if (child->visitPreOrder(funcToInvoke, treeLevel + 1)){
+        return true ;
+      }
+    }
+
+    /*
+     * Visit the root.
+     */
+    if (funcToInvoke(this, treeLevel)){
+      return true ;
     }
 
     return false ;

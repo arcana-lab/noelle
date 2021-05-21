@@ -9,20 +9,20 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "SystemHeaders.hpp"
-
-#include "Util/SVFModule.h"
-#include "WPA/Andersen.h"
 #include "TalkDown.hpp"
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
+#include "IntegrationWithSVF.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
 
 noelle::CallGraph * PDGAnalysis::getProgramCallGraph (void){
-  auto cg = new noelle::CallGraph(*M, this->callGraph);
+  if (this->noelleCG == nullptr){
+    this->noelleCG = NoelleSVFIntegration::getProgramCallGraph(*M);
+  }
 
-  return cg;
+  return this->noelleCG;
 }
 
 void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
@@ -47,7 +47,7 @@ void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
    */
   for (auto &internal : this->internalFuncs) {
     for (auto &external : this->unhandledExternalFuncs) {
-      if (this->callGraph->isReachableBetweenFunctions(internal, external)) {
+      if (NoelleSVFIntegration::isReachableBetweenFunctions(internal, external)) {
         this->reachableUnhandledExternalFuncs[internal].insert(external);
       }
     }
@@ -57,8 +57,8 @@ void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
 }
 
 bool PDGAnalysis::cannotReachUnhandledExternalFunction(CallInst *call) {
-  if (this->callGraph->hasIndCSCallees(call)) {
-    const set<const Function *> callees = this->callGraph->getIndCSCallees(call);
+  if (NoelleSVFIntegration::hasIndCSCallees(call)) {
+    auto callees = NoelleSVFIntegration::getIndCSCallees(call);
     for (auto &callee : callees) {
       if (this->isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) return false;
     }

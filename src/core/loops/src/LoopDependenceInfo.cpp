@@ -22,7 +22,7 @@ LoopDependenceInfo::LoopDependenceInfo (
   Loop *l,
   DominatorSummary &DS,
   ScalarEvolution &SE
-) : LoopDependenceInfo{fG, l, DS, SE, Architecture::getNumberOfLogicalCores(), true, {}, nullptr, nullptr, true} 
+) : LoopDependenceInfo{fG, l, DS, SE, Architecture::getNumberOfLogicalCores(), true, {}, nullptr, true} 
   {
   return ;
 }
@@ -34,20 +34,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   ScalarEvolution &SE,
   uint32_t maxCores,
   bool enableFloatAsReal
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, nullptr, nullptr, true} {
-
-  return ;
-}
-
-LoopDependenceInfo::LoopDependenceInfo(
-  PDG *fG,
-  Loop *l,
-  DominatorSummary &DS,
-  ScalarEvolution &SE,
-  uint32_t maxCores,
-  bool enableFloatAsReal,
-  liberty::LoopAA *aa
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, nullptr, true} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {},  nullptr, true} {
 
   return ;
 }
@@ -60,7 +47,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   uint32_t maxCores,
   bool enableFloatAsReal,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, optimizations, nullptr, nullptr,true} {
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, optimizations, nullptr,true} {
 
   return ;
 }
@@ -72,9 +59,8 @@ LoopDependenceInfo::LoopDependenceInfo (
   ScalarEvolution &SE,
   uint32_t maxCores,
   bool enableFloatAsReal,
-  liberty::LoopAA *aa,
   bool enableLoopAwareDependenceAnalyses
-) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, aa, nullptr, enableLoopAwareDependenceAnalyses}{
+) : LoopDependenceInfo{fG, l, DS, SE, maxCores, enableFloatAsReal, {}, nullptr, enableLoopAwareDependenceAnalyses}{
 
   return ;
 }
@@ -87,7 +73,6 @@ LoopDependenceInfo::LoopDependenceInfo(
   uint32_t maxCores,
   bool enableFloatAsReal,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations,
-  liberty::LoopAA *loopAA,
   TalkDown *talkdown,
   bool enableLoopAwareDependenceAnalyses
 ) : DOALLChunkSize{8},
@@ -117,7 +102,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->fetchLoopAndBBInfo(l, SE);
   auto ls = this->getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
-  auto DGs = this->createDGsForLoop(l, fG, DS, SE, loopAA, talkdown);
+  auto DGs = this->createDGsForLoop(l, fG, DS, SE, talkdown);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
 
@@ -195,7 +180,6 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   PDG *functionDG,
   DominatorSummary &DS,
   ScalarEvolution &SE,
-  liberty::LoopAA *aa,
   TalkDown *talkdown
 ) {
 
@@ -242,7 +226,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
 //    errs() << "BRIAN: Calling refine on" << this << "\n";
-    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, aa, talkdown, &domainSpace);
+    refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, talkdown, &domainSpace);
   }
 
   /*
@@ -322,7 +306,6 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   PDG *loopInternalDG,
   DominatorSummary &DS
 ) {
-  errs() << "XAN: Remove deps\n";
 
   /*
    * Fetch the loop sub-tree rooted at @this.

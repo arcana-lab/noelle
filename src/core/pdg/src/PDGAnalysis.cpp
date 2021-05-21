@@ -9,9 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "SystemHeaders.hpp"
-
-#include "Util/SVFModule.h"
-#include "WPA/Andersen.h"
 #include "TalkDown.hpp"
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
@@ -31,19 +28,14 @@ PDGAnalysis::PDGAnalysis()
     , disableSVF{false}
     , disableAllocAA{false}
     , disableRA{false}
-    , printer{} 
+    , printer{}
+    , noelleCG{nullptr}
   {
 
   return ;
 }
 
 void PDGAnalysis::initializeSVF(Module &M) {
-  SVFModule svfModule{M};
-  this->pta = new AndersenWaveDiff();
-  this->pta->analyze(svfModule);
-  this->callGraph = this->pta->getPTACallGraph();
-  this->mssa = new MemSSA((BVDataPTAImpl *)this->pta, false);
-
   return;
 }
 
@@ -177,10 +169,10 @@ PDG * PDGAnalysis::getPDG (void){
      */
     this->programDependenceGraph = constructPDGFromMetadata(*this->M);
     if (this->performThePDGComparison){
-      auto PDGFromAnalysis = constructPDGFromAnalysis(*this->M);
+      auto PDGFromAnalysis = this->constructPDGFromAnalysis(*this->M);
       auto arePDGsEquivalent = this->comparePDGs(PDGFromAnalysis, this->programDependenceGraph);
       if (!arePDGsEquivalent){
-        errs() << "PDGAnalysis: Error = PDGs constructed are not the same";
+        errs() << "PDGAnalysis: Error = PDGs constructed are not the same\n";
         abort();
       }
       delete PDGFromAnalysis ;
@@ -378,6 +370,7 @@ DGEdge<Value> * PDGAnalysis::constructEdgeFromMetadata(PDG *pdg, MDNode *edgeM, 
 }
 
 MDNode * PDGAnalysis::getEdgeMetadata(DGEdge<Value> *edge, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
+  assert(edge != nullptr);
   Metadata *edgeM[] = {
     nodeIDMap[edge->getOutgoingT()],
     nodeIDMap[edge->getIncomingT()],
@@ -516,6 +509,8 @@ void PDGAnalysis::constructEdgesFromAliases (PDG *pdg, Module &M){
      */
     constructEdgesFromAliasesForFunction(pdg, F);
   }
+
+  return ;
 }
 
 void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
@@ -1060,6 +1055,11 @@ const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF {
   "towlower",
   "towupper",
   "iswctype",
-  "towctrans"
+  "towctrans",
+
+  "atoi",
+  "exit",
+  "strcmp",
+  "strncmp"
 };
 

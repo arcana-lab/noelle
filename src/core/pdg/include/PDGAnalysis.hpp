@@ -10,10 +10,6 @@
  */
 #pragma once
 
-#include "MemoryModel/PointerAnalysis.h"
-#include "Util/PTACallGraph.h"
-#include "MSSA/MemSSA.h"
-
 #include "SystemHeaders.hpp"
 #include "PDG.hpp"
 #include "AllocAA.hpp"
@@ -65,9 +61,7 @@ namespace llvm::noelle {
       bool disableAllocAA;
       bool disableRA;
       PDGPrinter printer;
-      PointerAnalysis *pta;
-      PTACallGraph *callGraph;
-      MemSSA *mssa;
+      noelle::CallGraph *noelleCG;
 
       std::unordered_set<const Function *> internalFuncs;
       std::unordered_set<const Function *> unhandledExternalFuncs;
@@ -82,9 +76,10 @@ namespace llvm::noelle {
       bool cannotReachUnhandledExternalFunction(CallInst *call);
       bool hasNoMemoryOperations(CallInst *call);
 
-      bool comparePDGs(PDG *, PDG *);
-      bool compareNodes(PDG *, PDG *);
-      bool compareEdges(PDG *, PDG *);
+      bool comparePDGs (PDG *pdg1, PDG *pdg2);
+      bool compareNodes (PDG *pdg1, PDG *pdg2);
+      bool compareEdges (PDG *pdg1, PDG *pdg2);
+      bool compareEdges (PDG *pdg1, PDG *pdg2, std::function<void (DGEdge<Value> *dependenceMissingInPdg2)> func);
 
       bool hasPDGAsMetadata(Module &);
 

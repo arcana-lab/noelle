@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Yian Su, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -9,9 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "SystemHeaders.hpp"
-
-#include "Util/SVFModule.h"
-#include "WPA/Andersen.h"
 #include "TalkDown.hpp"
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
@@ -20,10 +17,10 @@ using namespace llvm;
 using namespace llvm::noelle;
 
 void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
-  errs() << "Embed PDG as Metadata\n";
+  errs() << "Embed PDG as metadata\n";
 
   auto &C = this->M->getContext();
-  unordered_map<Value *, MDNode *> nodeIDMap;
+  std::unordered_map<Value *, MDNode *> nodeIDMap;
 
   embedNodesAsMetadata(pdg, C, nodeIDMap);
   embedEdgesAsMetadata(pdg, C, nodeIDMap);
@@ -90,17 +87,16 @@ void PDGAnalysis::embedNodesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<V
 }
 
 void PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<Value *, MDNode *> &nodeIDMap) {
-  unordered_map<Function *, vector<Metadata *>> functionEdgesMap;
+  std::unordered_map<Function *, vector<Metadata *>> functionEdgesMap;
 
   /*
    * Construct edge metadata
    */
-  for (auto &edge : pdg->getEdges()) {
-    MDNode *edgeM = getEdgeMetadata(edge, C, nodeIDMap);
-    if (Argument *arg = dyn_cast<Argument>(edge->getOutgoingT())) {
+  for (auto &edge : pdg->getSortedDependences()) {
+    auto edgeM = this->getEdgeMetadata(edge, C, nodeIDMap);
+    if (auto arg = dyn_cast<Argument>(edge->getOutgoingT())) {
       functionEdgesMap[arg->getParent()].push_back(edgeM);
-    }
-    else if (Instruction *inst = dyn_cast<Instruction>(edge->getOutgoingT())) {
+    } else if (auto inst = dyn_cast<Instruction>(edge->getOutgoingT())) {
       functionEdgesMap[inst->getFunction()].push_back(edgeM);
     }
   }
@@ -109,7 +105,7 @@ void PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<V
    * Embed metadata of edges to function
    */
   for (auto &funEdge : functionEdgesMap) {
-    MDNode *m = MDTuple::get(C, funEdge.second);
+    auto m = MDTuple::get(C, funEdge.second);
     funEdge.first->setMetadata("noelle.pdg.edges", m);
   }
 

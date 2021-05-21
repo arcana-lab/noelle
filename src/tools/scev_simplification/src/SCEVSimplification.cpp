@@ -500,7 +500,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
       auto userInst = dyn_cast<Instruction>(user);
       if (!userInst) continue;
 
-      bool isUsedByGEP = false;
+      auto isUsedByGEP = false;
       for (auto gepDerivation : gepDerivations) {
         if (gepDerivation->gep == userInst
           || gepDerivation->ivDerivingInstructions.find(userInst) != gepDerivation->ivDerivingInstructions.end()) {
@@ -939,22 +939,38 @@ bool SCEVSimplification::isPartOfShlShrTruncationPair (Instruction *I) const {
 bool SCEVSimplification::simplifyConstantPHIs (
   LoopDependenceInfo const &LDI
 ) {
-  bool modified = false;
+  auto modified = false;
 
+  /*
+   * Fetch the loop information.
+   */
   auto loopStructure = LDI.getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
   auto loopPreheader = loopStructure->getPreHeader();
+
+  /*
+   * Fetch all PHIs of the header of the loop.
+   */
   std::unordered_set<PHINode *> headerPHIs;
   for (auto &headerPHI : loopHeader->phis()) {
     headerPHIs.insert(&headerPHI);
   }
 
+  /*
+   * Identify the PHIs that can be removed.
+   */
   std::unordered_set<PHINode *> removedPHIs;
   for (auto headerPHI : headerPHIs) {
-    if (removedPHIs.find(headerPHI) != removedPHIs.end()) continue;
+    if (removedPHIs.find(headerPHI) != removedPHIs.end()) {
+      continue;
+    }
 
-    Value *liveInValue = headerPHI->getIncomingValueForBlock(loopPreheader);
-    bool isPHIPropagation = true;
+    /*
+     * Fetch the live-in value of the current PHI.
+     */
+    auto liveInValue = headerPHI->getIncomingValueForBlock(loopPreheader);
+
+    auto isPHIPropagation = true;
     std::queue<PHINode *> dependentTraversal;
     std::unordered_set<PHINode *> phiCycle;
     dependentTraversal.push(headerPHI);
@@ -991,7 +1007,7 @@ bool SCEVSimplification::simplifyConstantPHIs (
      * Identify whether the live in value just gets propagated between PHIs in the SCC
      * without the PHIs ever changing value
      */
-    bool isConstantPropagation = true;
+    auto isConstantPropagation = true;
     for (auto phi : phiCycle) {
       for (auto idx = 0; idx < phi->getNumIncomingValues(); ++idx) {
         auto incomingValue = phi->getIncomingValue(idx);
@@ -1023,6 +1039,12 @@ bool SCEVSimplification::simplifyConstantPHIs (
     }
 
     for (auto phi : phiCycle) {
+      if (removedPHIs.find(phi) != removedPHIs.end()){
+        continue ;
+      }
+      for (auto& use : phi->uses()){
+        use.set(UndefValue::get(phi->getType()));
+      }
       phi->eraseFromParent();
       removedPHIs.insert(phi);
     }

@@ -135,8 +135,8 @@ void PDGStats::collectStatsForPotentialEdges (std::unordered_map<Function *, Sta
   totLoads = 0;
   totStores = 0;
   totCalls = 0;
-  for (auto funcLoops : programLoops){
-    auto loopForest = funcLoops.second;
+  if (programLoops.find(&F) != programLoops.end()) {
+    auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()){
       auto visitor = [&totLoads, &totStores, &totCalls](StayConnectedNestedLoopForestNode *n, uint32_t level) -> bool {
         auto currentLoop = n->getLoop();
@@ -177,8 +177,8 @@ void PDGStats::printRefinedLoopGraphsForFunction(
   /*
    * Check every loop of the program.
    */
-  for (auto funcLoops : programLoops){
-    auto loopForest = funcLoops.second;
+  if (programLoops.find(&F) != programLoops.end()) {
+    auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()){
       auto visitor = [this, &lsToLDI, &loopCount, &F](StayConnectedNestedLoopForestNode *n, uint32_t level) -> bool {
 
@@ -221,8 +221,8 @@ void PDGStats::collectStatsForLoopEdges (
   /*
    * Check every loop of the program.
    */
-  for (auto funcLoops : programLoops){
-    auto loopForest = funcLoops.second;
+  if (programLoops.find(&F) != programLoops.end()) {
+    auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()){
       auto visitor = [this, &lsToLDI](StayConnectedNestedLoopForestNode *n, uint32_t level) -> bool {
 
