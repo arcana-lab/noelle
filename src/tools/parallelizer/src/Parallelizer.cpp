@@ -77,11 +77,6 @@ namespace llvm::noelle {
       errs() << "Parallelizer:  Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
     }
 
-    int label = std::stoi(getUserLabel(loopStructure));
-    if (label > 8 && label <= 16) {
-      errs() << "Parallelizer: BRIAN: Exit due to label search (no code modified)\n";
-      return false;
-    }
 
     /*
     * Parallelize the loop.
