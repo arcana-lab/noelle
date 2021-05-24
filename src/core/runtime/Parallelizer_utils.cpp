@@ -12,7 +12,7 @@
 
 #include <ThreadSafeQueue.hpp>
 #include <ThreadSafeLockFreeQueue.hpp>
-#include <ThreadPoolForC.hpp>
+#include <ThreadPools.hpp>
 
 #include <condition_variable>
 #include <mutex>
@@ -38,7 +38,7 @@ static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
     
-static ThreadPoolForC pool{false, std::thread::hardware_concurrency() - 1};
+static ThreadPoolForCSingleQueue pool{false, std::thread::hardware_concurrency() - 1};
 
 typedef struct {
   void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
