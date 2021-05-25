@@ -165,12 +165,12 @@ extern "C" {
      */
     uint32_t doallMemoryIndex;
     nk_virgil_task_t *taskIDs;
-    auto argsForAllCores = runtime.getDOALLArgs(numCores, &doallMemoryIndex, &taskIDs);
+    auto argsForAllCores = runtime.getDOALLArgs(numCores - 1, &doallMemoryIndex, &taskIDs);
 
     /*
      * Submit DOALL tasks.
      */
-    for (auto i = 0; i < numCores; ++i) {
+    for (auto i = 0; i < (numCores - 1); ++i) {
 
       /*
        * Prepare the arguments.
@@ -191,12 +191,17 @@ extern "C" {
     #endif
 
     /*
+     * Run a task.
+     */
+    parallelizedLoop(env, numCores - 1, numCores, chunkSize);
+
+    /*
      * Wait for DOALL tasks.
      */
     #ifdef RUNTIME_PROFILE
     auto clocks_before_join = rdtsc_s();
     #endif
-    for (auto i = 0; i < numCores; ++i) {
+    for (auto i = 0; i < (numCores - 1); ++i) {
       void *outputMemory;
       nk_virgil_wait_for_task_completion(taskIDs[i], &outputMemory);
     }
@@ -222,7 +227,7 @@ extern "C" {
     std::cerr << "XAN: Start         = " << clocks_start << "\n";
     std::cerr << "XAN: Setup overhead         = " << clocks_after_fork - clocks_start << " clocks\n";
     std::cerr << "XAN: Start joining = " << clocks_after_fork << "\n";
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       std::cerr << "Thread " << i << ": Start = " << clocks_starts[i] << "\n";
       std::cerr << "Thread " << i << ": End   = " << clocks_ends[i] << "\n";
       std::cerr << "Thread " << i << ": Delta = " << clocks_ends[i] - clocks_starts[i] << "\n";
@@ -232,7 +237,7 @@ extern "C" {
 
     uint64_t start_min = 0;
     uint64_t start_max = 0;
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       if (  false
             || (start_min == 0)
             || (clocks_starts[i] < start_min)
@@ -249,7 +254,7 @@ extern "C" {
 
     uint64_t end_max = 0;
     uint64_t lastThreadID = 0;
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       if (clocks_ends[i] > end_max){
         lastThreadID = i;
         end_max = clocks_ends[i];
@@ -728,7 +733,7 @@ uint32_t NoelleRuntime::reserveCores (uint32_t coresRequested){
    * Reserve the number of cores available.
    */
   nk_virgil_spinlock_lock(&this->spinLock);
-  auto numCores = this->NOELLE_idleCores > coresRequested ? coresRequested : NOELLE_idleCores;
+  auto numCores = (this->NOELLE_idleCores >= coresRequested) ? coresRequested : NOELLE_idleCores;
   if (numCores < 1){
     numCores = 1;
   }
