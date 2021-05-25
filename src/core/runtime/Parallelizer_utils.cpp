@@ -184,7 +184,7 @@ extern "C" {
       /*
        * Submit
        */
-      taskIDs[i] = nk_virgil_submit_task_to_any_cpu(NOELLE_DOALLTrampoline, argsPerCore);
+      taskIDs[i] = nk_virgil_submit_task_to_specific_cpu(NOELLE_DOALLTrampoline, argsPerCore, i);
     }
     #ifdef RUNTIME_PROFILE
     auto clocks_after_fork = rdtsc_e();
