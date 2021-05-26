@@ -38,8 +38,6 @@ static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
     
-static ThreadPoolForCSingleQueue pool{false, std::thread::hardware_concurrency() - 1};
-
 typedef struct {
   void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
   void *env ;
@@ -60,6 +58,10 @@ class NoelleRuntime {
     DOALL_args_t * getDOALLArgs (uint32_t cores, uint32_t *index);
 
     void releaseDOALLArgs (uint32_t index);
+
+    ThreadPoolForCSingleQueue *virgil;
+
+    ~NoelleRuntime(void);
 
   private:
     mutable pthread_spinlock_t doallMemoryLock;
@@ -249,6 +251,11 @@ extern "C" {
     #endif
 
     /*
+     * Fetch VIRGIL
+     */
+    auto virgil = runtime.virgil;
+
+    /*
      * Set the number of cores to use.
      */
     auto numCores = runtime.reserveCores(maxNumberOfCores);
@@ -283,7 +290,7 @@ extern "C" {
       /*
        * Submit
        */
-      pool.submitAndDetach(NOELLE_DOALLTrampoline, argsPerCore);
+      virgil->submitAndDetach(NOELLE_DOALLTrampoline, argsPerCore);
 
       #ifdef RUNTIME_PROFILE
       clocks_dispatch_ends[i] = rdtsc_s();
@@ -475,6 +482,11 @@ extern "C" {
     assert(maxNumberOfCores > 1);
 
     /*
+     * Fetch VIRGIL
+     */
+    auto virgil = runtime.virgil;
+
+    /*
      * Reserve the cores.
      */
     auto numCores = runtime.reserveCores(maxNumberOfCores);
@@ -600,7 +612,7 @@ extern "C" {
       /*
        * Launch the thread.
        */
-      pool.submitAndDetach(NOELLE_HELIXTrampoline, argsPerCore);
+      virgil->submitAndDetach(NOELLE_HELIXTrampoline, argsPerCore);
 
       /*
        * Launch the helper thread.
@@ -762,6 +774,11 @@ extern "C" {
     #endif
 
     /*
+     * Fetch VIRGIL
+     */
+    auto virgil = runtime.virgil;
+
+    /*
      * Reserve the cores.
      */
     auto numCores = runtime.reserveCores(numberOfStages);
@@ -822,7 +839,7 @@ extern "C" {
       /*
        * Submit
        */
-      pool.submitAndDetach(NOELLE_DSWPTrampoline, argsPerCore);
+      virgil->submitAndDetach(NOELLE_DSWPTrampoline, argsPerCore);
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted stage" << std::endl;
       #endif
@@ -880,7 +897,7 @@ extern "C" {
 
 }
 
-NoelleRuntime::NoelleRuntime(){
+NoelleRuntime::NoelleRuntime() {
   this->maxCores = this->getMaximumNumberOfCores();
   this->NOELLE_idleCores = maxCores;
 
@@ -889,6 +906,11 @@ NoelleRuntime::NoelleRuntime(){
   #ifdef RUNTIME_PROFILE
   pthread_spin_init(&printLock, 0);
   #endif
+
+  /*
+   * Allocate VIRGIL
+   */
+  this->virgil = new ThreadPoolForCSingleQueue(false, maxCores);
 
   return ;
 }
@@ -1004,11 +1026,15 @@ uint32_t NoelleRuntime::getMaximumNumberOfCores (void){
      */
     auto envVar = getenv("NOELLE_CORES");
     if (envVar == nullptr){
-      cores = std::thread::hardware_concurrency();
+      cores = (std::thread::hardware_concurrency() / 2) - 1;
     } else {
       cores = atoi(envVar);
     }
   }
 
   return cores;
+}
+    
+NoelleRuntime::~NoelleRuntime(void){
+  delete this->virgil;
 }
