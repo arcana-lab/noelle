@@ -26,7 +26,7 @@ make clean ;
 echo "Machine = `hostname`" > node.txt ;
 
 # Compile
-timeout 60m make FRONTEND_OPTIONS="$frontendOptions" PRE_MIDDLEEND_OPTIONS="$meOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
+timeout 2h make FRONTEND_OPTIONS="$frontendOptions" PRE_MIDDLEEND_OPTIONS="$meOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
 if test $? -ne 0 ; then
   echo "ERROR: the following test did not pass because the compilation timed out" ;
   echo "  Test = `pwd`" ;
