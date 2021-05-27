@@ -166,12 +166,12 @@ extern "C" {
      */
     uint32_t doallMemoryIndex;
     nk_virgil_task_t *taskIDs;
-    auto argsForAllCores = runtime.getDOALLArgs(numCores - 1, &doallMemoryIndex, &taskIDs);
+    auto argsForAllCores = runtime.getDOALLArgs(numCores, &doallMemoryIndex, &taskIDs);
 
     /*
      * Submit DOALL tasks.
      */
-    for (auto i = 0; i < (numCores - 1); ++i) {
+    for (auto i = 0; i < numCores; ++i) {
 
       /*
        * Prepare the arguments.
@@ -192,17 +192,12 @@ extern "C" {
     #endif
 
     /*
-     * Run a task.
-     */
-    parallelizedLoop(env, numCores - 1, numCores, chunkSize);
-
-    /*
      * Wait for DOALL tasks.
      */
     #ifdef RUNTIME_PROFILE
     auto clocks_before_join = rdtsc_s();
     #endif
-    for (auto i = 0; i < (numCores - 1); ++i) {
+    for (auto i = 0; i < numCores; ++i) {
       void *outputMemory;
       nk_virgil_wait_for_task_completion(taskIDs[i], &outputMemory);
     }
@@ -222,51 +217,6 @@ extern "C" {
      */
     DispatcherInfo dispatcherInfo;
     dispatcherInfo.numberOfThreadsUsed = numCores;
-    #ifdef RUNTIME_PROFILE
-    auto clocks_after_cleanup = rdtsc_s();
-    nk_virgil_spinlock_lock(&printLock);
-    std::cerr << "XAN: Start         = " << clocks_start << "\n";
-    std::cerr << "XAN: Setup overhead         = " << clocks_after_fork - clocks_start << " clocks\n";
-    std::cerr << "XAN: Start joining = " << clocks_after_fork << "\n";
-    for (auto i=0; i < (numCores - 1); i++){
-      std::cerr << "Thread " << i << ": Start = " << clocks_starts[i] << "\n";
-      std::cerr << "Thread " << i << ": End   = " << clocks_ends[i] << "\n";
-      std::cerr << "Thread " << i << ": Delta = " << clocks_ends[i] - clocks_starts[i] << "\n";
-    }
-    std::cerr << "XAN: Joined        = " << clocks_after_join << "\n";
-    std::cerr << "XAN: Joining delta = " << clocks_after_join - clocks_before_join << "\n";
-
-    uint64_t start_min = 0;
-    uint64_t start_max = 0;
-    for (auto i=0; i < (numCores - 1); i++){
-      if (  false
-            || (start_min == 0)
-            || (clocks_starts[i] < start_min)
-        ){
-        start_min = clocks_starts[i];
-      }
-      if (clocks_starts[i] > start_max){
-        start_max = clocks_starts[i];
-      }
-    }
-    std::cerr << "XAN: Thread starts min = " << start_min << "\n";
-    std::cerr << "XAN: Thread starts max = " << start_max << "\n";
-    std::cerr << "XAN: Task starting overhead = " << start_max - start_min << "\n";
-
-    uint64_t end_max = 0;
-    uint64_t lastThreadID = 0;
-    for (auto i=0; i < (numCores - 1); i++){
-      if (clocks_ends[i] > end_max){
-        lastThreadID = i;
-        end_max = clocks_ends[i];
-      }
-    }
-    std::cerr << "XAN: Last thread ended = " << end_max << " (thread " << lastThreadID << ")\n";
-    std::cerr << "XAN: Joining overhead       = " << clocks_after_join - end_max << "\n";
-
-    nk_virgil_spinlock_unlock(&printLock);
-    #endif
-
     return dispatcherInfo;
   }
 

@@ -7,7 +7,7 @@ OPT=opt
 LIBS=-lm
 
 # OS
-NAUTILUS=/nfs-scratch/simonec/interweaving/openmp/nautilus
+NAUTILUS=/nfs-scratch/simonec/interweaving/openmp/nautilus-kmp
 
 # Set the runtime flags
 RUNTIME_CFLAGS="-DNDEBUG"
