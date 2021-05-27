@@ -26,7 +26,14 @@ make clean ;
 echo "Machine = `hostname`" > node.txt ;
 
 # Compile
-make FRONTEND_OPTIONS="$frontendOptions" PRE_MIDDLEEND_OPTIONS="$meOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
+timeout 2h make FRONTEND_OPTIONS="$frontendOptions" PRE_MIDDLEEND_OPTIONS="$meOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
+if test $? -ne 0 ; then
+  echo "ERROR: the following test did not pass because the compilation timed out" ;
+  echo "  Test = `pwd`" ;
+  echo "  Node = `hostname`" ;
+  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
+  exit 0 ;
+fi
 
 # Generate the input
 make input.txt 
@@ -34,19 +41,25 @@ make input.txt
 # Baseline
 ./baseline `cat input.txt` &> output_baseline.txt ;
 
-# Transformation
-timeout 10m ./parallelized `cat input.txt` &> output_parallelized.txt ;
-if test $? -ne 0 ; then
-  echo "ERROR: the following test did not pass because it timed out" ;
-  echo "  Test = `pwd`" ;
-  echo "  Node = `hostname`" ;
-  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
-  exit 0 ;
-fi
+# Test the parallelized binary
+for i in `seq 0 5` ; do
 
-# Check the output ;
-cmp output_baseline.txt output_parallelized.txt ;
-if test $? -ne 0 ; then
-  echo "ERROR: the test didn't pass" ;
-  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
-fi
+  # Run the parallelized binary
+  timeout 10m ./parallelized `cat input.txt` &> output_parallelized.txt ;
+  if test $? -ne 0 ; then
+    echo "ERROR: the following test did not pass because its parallel execution timed out" ;
+    echo "  Test = `pwd`" ;
+    echo "  Node = `hostname`" ;
+    echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
+    exit 0 ;
+  fi
+
+  # Check the output generated
+  cmp output_baseline.txt output_parallelized.txt ;
+  if test $? -ne 0 ; then
+    echo "ERROR: the test didn't pass" ;
+    echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
+    exit 0;
+  fi
+
+done
