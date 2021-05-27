@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <assert.h>
 
 #include <ThreadSafeQueue.hpp>
 #include <ThreadSafeLockFreeQueue.hpp>
@@ -806,7 +807,7 @@ extern "C" {
           localQueues[i] = new ThreadSafeLockFreeQueue<int64_t>();
           break;
         default:
-          std::cerr << "QUEUE SIZE INCORRECT!\n";
+          std::cerr << "NOELLE: Runtime: QUEUE SIZE INCORRECT" << std::endl;
           abort();
           break;
       }
