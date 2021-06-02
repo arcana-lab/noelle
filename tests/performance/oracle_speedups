@@ -5,7 +5,7 @@ DOALL_lbm	       5.59
 DOALL_limit	      20.118
 DOALL_object_cloning  19.124
 DOALL_reduction	       3.2
-DOALL_streamclusters  27.994
+DOALL_streamclusters  31.891
 DSWP_communication     1.221
 DSWP_limit	       7.059
 HELIX_challenge	       7.164
