@@ -9,10 +9,11 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <assert.h>
 
 #include <ThreadSafeQueue.hpp>
 #include <ThreadSafeLockFreeQueue.hpp>
-#include <ThreadPoolForC.hpp>
+#include <ThreadPools.hpp>
 
 #include <condition_variable>
 #include <mutex>
@@ -38,15 +39,13 @@ static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
     
-static ThreadPoolForC pool{true, std::thread::hardware_concurrency()};
-
 typedef struct {
   void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
   void *env ;
   int64_t coreID ;
   int64_t numCores;
   int64_t chunkSize ;
-  pthread_mutex_t endLock;
+  pthread_spinlock_t endLock;
 } DOALL_args_t ;
 
 class NoelleRuntime {
@@ -60,6 +59,10 @@ class NoelleRuntime {
     DOALL_args_t * getDOALLArgs (uint32_t cores, uint32_t *index);
 
     void releaseDOALLArgs (uint32_t index);
+
+    ThreadPoolForCSingleQueue *virgil;
+
+    ~NoelleRuntime(void);
 
   private:
     mutable pthread_spinlock_t doallMemoryLock;
@@ -234,7 +237,7 @@ extern "C" {
     clocks_ends[DOALLArgs->coreID] = clocks_end;
     #endif
 
-    pthread_mutex_unlock(&(DOALLArgs->endLock));
+    pthread_spin_unlock(&(DOALLArgs->endLock));
     return ;
   }
 
@@ -249,6 +252,11 @@ extern "C" {
     #endif
 
     /*
+     * Fetch VIRGIL
+     */
+    auto virgil = runtime.virgil;
+
+    /*
      * Set the number of cores to use.
      */
     auto numCores = runtime.reserveCores(maxNumberOfCores);
@@ -260,12 +268,12 @@ extern "C" {
      * Allocate the memory to store the arguments.
      */
     uint32_t doallMemoryIndex;
-    auto argsForAllCores = runtime.getDOALLArgs(numCores, &doallMemoryIndex);
+    auto argsForAllCores = runtime.getDOALLArgs(numCores - 1, &doallMemoryIndex);
 
     /*
      * Submit DOALL tasks.
      */
-    for (auto i = 0; i < numCores; ++i) {
+    for (auto i = 0; i < (numCores - 1); ++i) {
 
       /*
        * Prepare the arguments.
@@ -283,7 +291,7 @@ extern "C" {
       /*
        * Submit
        */
-      pool.submitAndDetach(NOELLE_DOALLTrampoline, argsPerCore);
+      virgil->submitAndDetach(NOELLE_DOALLTrampoline, argsPerCore);
 
       #ifdef RUNTIME_PROFILE
       clocks_dispatch_ends[i] = rdtsc_s();
@@ -300,13 +308,18 @@ extern "C" {
     #endif
 
     /*
-     * Wait for DOALL tasks.
+     * Run a task.
+     */
+    parallelizedLoop(env, numCores - 1, numCores, chunkSize);
+
+    /*
+     * Wait for the remaining DOALL tasks.
      */
     #ifdef RUNTIME_PROFILE
     auto clocks_before_join = rdtsc_s();
     #endif
-    for (auto i = 0; i < numCores; ++i) {
-      pthread_mutex_lock(&(argsForAllCores[i].endLock));
+    for (auto i = 0; i < (numCores - 1); ++i) {
+      pthread_spin_lock(&(argsForAllCores[i].endLock));
     }
     #ifdef RUNTIME_PRINT
     std::cerr << "All tasks completed" << std::endl;
@@ -333,12 +346,12 @@ extern "C" {
     std::cerr << "XAN: Start         = " << clocks_start << "\n";
     std::cerr << "XAN: Setup overhead         = " << clocks_after_fork - clocks_start << " clocks\n";
     uint64_t totalDispatch = 0;
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       totalDispatch += (clocks_dispatch_ends[i] - clocks_dispatch_starts[i]);
     }
     std::cerr << "XAN:    Dispatch overhead         = " << totalDispatch << " clocks\n";
     std::cerr << "XAN: Start joining = " << clocks_after_fork << "\n";
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       std::cerr << "Thread " << i << ": Start = " << clocks_starts[i] << "\n";
       std::cerr << "Thread " << i << ": End   = " << clocks_ends[i] << "\n";
       std::cerr << "Thread " << i << ": Delta = " << clocks_ends[i] - clocks_starts[i] << "\n";
@@ -348,7 +361,7 @@ extern "C" {
 
     uint64_t start_min = 0;
     uint64_t start_max = 0;
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       if (  false
             || (start_min == 0)
             || (clocks_starts[i] < start_min)
@@ -365,7 +378,7 @@ extern "C" {
 
     uint64_t end_max = 0;
     uint64_t lastThreadID = 0;
-    for (auto i=0; i < numCores; i++){
+    for (auto i=0; i < (numCores - 1); i++){
       if (clocks_ends[i] > end_max){
         lastThreadID = i;
         end_max = clocks_ends[i];
@@ -468,6 +481,11 @@ extern "C" {
     assert(parallelizedLoop != NULL);
     assert(env != NULL);
     assert(maxNumberOfCores > 1);
+
+    /*
+     * Fetch VIRGIL
+     */
+    auto virgil = runtime.virgil;
 
     /*
      * Reserve the cores.
@@ -595,7 +613,7 @@ extern "C" {
       /*
        * Launch the thread.
        */
-      pool.submitAndDetach(NOELLE_HELIXTrampoline, argsPerCore);
+      virgil->submitAndDetach(NOELLE_HELIXTrampoline, argsPerCore);
 
       /*
        * Launch the helper thread.
@@ -757,6 +775,11 @@ extern "C" {
     #endif
 
     /*
+     * Fetch VIRGIL
+     */
+    auto virgil = runtime.virgil;
+
+    /*
      * Reserve the cores.
      */
     auto numCores = runtime.reserveCores(numberOfStages);
@@ -784,7 +807,7 @@ extern "C" {
           localQueues[i] = new ThreadSafeLockFreeQueue<int64_t>();
           break;
         default:
-          std::cerr << "QUEUE SIZE INCORRECT!\n";
+          std::cerr << "NOELLE: Runtime: QUEUE SIZE INCORRECT" << std::endl;
           abort();
           break;
       }
@@ -817,7 +840,7 @@ extern "C" {
       /*
        * Submit
        */
-      pool.submitAndDetach(NOELLE_DSWPTrampoline, argsPerCore);
+      virgil->submitAndDetach(NOELLE_DSWPTrampoline, argsPerCore);
       #ifdef RUNTIME_PRINT
       std::cerr << "Submitted stage" << std::endl;
       #endif
@@ -875,7 +898,7 @@ extern "C" {
 
 }
 
-NoelleRuntime::NoelleRuntime(){
+NoelleRuntime::NoelleRuntime() {
   this->maxCores = this->getMaximumNumberOfCores();
   this->NOELLE_idleCores = maxCores;
 
@@ -884,6 +907,11 @@ NoelleRuntime::NoelleRuntime(){
   #ifdef RUNTIME_PROFILE
   pthread_spin_init(&printLock, 0);
   #endif
+
+  /*
+   * Allocate VIRGIL
+   */
+  this->virgil = new ThreadPoolForCSingleQueue(false, maxCores);
 
   return ;
 }
@@ -941,8 +969,8 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
   for (auto i = 0; i < cores; ++i) {
     auto argsPerCore = &argsForAllCores[i];
     argsPerCore->coreID = i;
-    pthread_mutex_init(&(argsPerCore->endLock), NULL);
-    pthread_mutex_lock(&(argsPerCore->endLock));
+    pthread_spin_init(&(argsPerCore->endLock), 0);
+    pthread_spin_lock(&(argsPerCore->endLock));
   }
 
   return argsForAllCores;
@@ -999,11 +1027,15 @@ uint32_t NoelleRuntime::getMaximumNumberOfCores (void){
      */
     auto envVar = getenv("NOELLE_CORES");
     if (envVar == nullptr){
-      cores = std::thread::hardware_concurrency();
+      cores = (std::thread::hardware_concurrency() / 2) - 1;
     } else {
       cores = atoi(envVar);
     }
   }
 
   return cores;
+}
+    
+NoelleRuntime::~NoelleRuntime(void){
+  delete this->virgil;
 }

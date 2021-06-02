@@ -49,14 +49,14 @@ namespace llvm {
 
       static Values domTreesAreIdentical (ModulePass &pass, TestSuite &suite);
 
-      static Values domNodeIsIdentical (DSTestSuite &pass, DomTreeNodeBase<BasicBlock> &node, DomNodeSummary &nodeS);
+      static Values domNodeIsIdentical (DSTestSuite &pass, DomTreeNodeBase<BasicBlock> &node, noelle::DomNodeSummary &nodeS);
 
       template <class DTBase>
-      static Values domTreeIsIdentical (DSTestSuite &pass, DTBase &DT, DomTreeSummary &DTS);
+      static Values domTreeIsIdentical (DSTestSuite &pass, DTBase &DT, noelle::DomTreeSummary &DTS);
 
       TestSuite *suite;
       Module *M;
-      DominatorSummary *ds;
+      noelle::DominatorSummary *ds;
       DominatorTree *dt;
       PostDominatorTree *pdt;
   };

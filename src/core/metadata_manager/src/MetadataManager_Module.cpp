@@ -27,10 +27,24 @@ bool MetadataManager::doesHaveMetadata (
 }
 
 void MetadataManager::addMetadata (
-  const std::string &metadataName
+  const std::string &metadataName,
+  const std::string &metadataValue
   ) {
 
-  this->program.getOrInsertNamedMetadata(metadataName);
+  /*
+   * Create the metadata.
+   */
+  auto n = this->program.getOrInsertNamedMetadata(metadataName);
+
+  /*
+   * Create the metadata value.
+   */
+  auto v = MDNode::get(this->program.getContext(), MDString::get(this->program.getContext(), metadataValue));
+
+  /*
+   * Set the metadata value.
+   */
+  n->addOperand(v);
 
   return ;
 }

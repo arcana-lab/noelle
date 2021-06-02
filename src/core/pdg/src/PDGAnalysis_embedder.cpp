@@ -13,8 +13,7 @@
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
   errs() << "Embed PDG as metadata\n";
@@ -110,4 +109,6 @@ void PDGAnalysis::embedEdgesAsMetadata(PDG *pdg, LLVMContext &C, unordered_map<V
   }
 
   return;
+}
+
 }

@@ -1,7 +1,7 @@
 DEBUG?=0
 JOBS?=8
 SVF_BRANCH?=SVF-1.8
-SCAF_BRANCH?=v9.1.2
+SCAF_BRANCH?=v9.1.3
 
 all: compile
 
