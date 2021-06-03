@@ -684,15 +684,11 @@ uint32_t NoelleRuntime::reserveCores (uint32_t coresRequested){
   /*
    * Reserve the number of cores available.
    */
-  static bool alreadyInvoked = false;
   nk_virgil_spinlock_lock(&this->spinLock);
-  if (!alreadyInvoked){
-    alreadyInvoked = true;
-    if (nk_virgil_get_num_available_cpus(&(this->startingCoreID), &(this->maxCores)) != 0){
-      abort();
-    }
-    this->NOELLE_idleCores = this->maxCores;
+  if (nk_virgil_get_num_available_cpus(&(this->startingCoreID), &(this->maxCores)) != 0){
+    abort();
   }
+  this->NOELLE_idleCores = this->maxCores;
   auto numCores = (this->NOELLE_idleCores >= coresRequested) ? coresRequested : NOELLE_idleCores;
   if (numCores < 1){
     numCores = 1;
