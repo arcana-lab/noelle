@@ -37,7 +37,7 @@ The only documentation available for NOELLE is:
 
 
 ## Version
-The latest stable version is 9.0.0 (tag = `v9.0.0`).
+The latest stable version is 9.2.0 (tag = `v9.2.0`).
 
 ### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
