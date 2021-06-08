@@ -56,14 +56,23 @@ namespace llvm::noelle {
         ) ;
 
       void getFunctionsToInline (std::string filename) ;
+
       bool registerRemainingFunctions (std::string filename) ;
-      bool inlineFnsOfLoopsToCGRoot () ;
+
+      bool inlineFnsOfLoopsToCGRoot (Hot *p) ;
 
       /*
        * Inline tracking
        */
       bool canInlineWithoutRecursiveLoop (Function *parentF, Function *childF) ;
-      bool inlineFunctionCall (Function *F, Function *childF, CallInst *call) ;
+
+      bool inlineFunctionCall (
+        Hot *p,
+        Function *F, 
+        Function *childF, 
+        CallInst *call
+        ) ;
+
       int getNextPreorderLoopAfter (Function *F, CallInst *call) ;
       void adjustLoopOrdersAfterInline (Function *F, Function *childF, int nextLoop) ;
       void adjustFnGraphAfterInline (Function *F, Function *childF, int callInd) ;

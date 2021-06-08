@@ -180,7 +180,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
   auto SCCDAG = sccManager->getSCCDAG();
 
   /*
-   * Fetch the loop structure.
+   *inlineFunctionCall Fetch the loop structure.
    */
   auto loopStructure = LDI->getLoopStructure();
 
@@ -296,7 +296,8 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
   /*
    * Inline the call instruction.
    */
-  auto inlined = inlineFunctionCall(F, inlineCall->getCalledFunction(), inlineCall);
+  auto hot = noelle.getProfiles();
+  auto inlined = inlineFunctionCall(hot, F, inlineCall->getCalledFunction(), inlineCall);
 
   return inlined;
 }

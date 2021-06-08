@@ -146,7 +146,7 @@ bool Inliner::runOnModule (Module &M) {
     std::string filename = "dgsimplify_loop_hoisting.txt";
     getFunctionsToInline(filename);
 
-    bool inlined = inlineFnsOfLoopsToCGRoot();
+    bool inlined = inlineFnsOfLoopsToCGRoot(profiles);
     if (inlined) {
       getAnalysis<CallGraphWrapperPass>().runOnModule(M);
       parentFns.clear();
@@ -247,7 +247,7 @@ bool Inliner::registerRemainingFunctions (std::string filename) {
   return true;
 }
 
-bool Inliner::inlineFnsOfLoopsToCGRoot () {
+bool Inliner::inlineFnsOfLoopsToCGRoot (Hot *hot) {
   std::vector<Function *> orderedFns;
   for (auto F : fnsToCheck) {
     orderedFns.push_back(F);
@@ -292,11 +292,16 @@ bool Inliner::inlineFnsOfLoopsToCGRoot () {
       //  the first call, indicating whether there are more calls to inline
       bool inlinedCalls = true;
       for (auto call : cachedCalls) {
-        if (call->getCalledFunction() != childF) continue;
-        bool inlinedCall = inlineFunctionCall(parentF, childF, call);
+        if (call->getCalledFunction() != childF) {
+          continue;
+        }
 
+        /*
+         * Try to inline
+         */
+        auto inlinedCall = inlineFunctionCall(hot, parentF, childF, call);
         if (inlinedCall && this->verbose != Verbosity::Disabled) {
-          errs() << "Inlined: " << childF->getName() << " into " << parentF->getName() << "\n";
+          errs() << "Inliner:   Inlined " << childF->getName() << " into " << parentF->getName() << "\n";
         }
 
         inlined |= inlinedCall;
@@ -340,24 +345,46 @@ bool Inliner::canInlineWithoutRecursiveLoop (Function *parentF, Function *childF
   return true;
 }
 
-bool Inliner::inlineFunctionCall (Function *F, Function *childF, CallInst *call) {
+bool Inliner::inlineFunctionCall (
+  Hot *p,
+  Function *F, 
+  Function *childF, 
+  CallInst *call
+  ){
+
   // NOTE(angelo): Prevent inlining a call within a function already altered by inlining
   if (fnsAffected.find(F) != fnsAffected.end()) {
     return false ;
   }
+
+  /*
+   * Avoid inlininig recursive calls.
+   */
   if (!canInlineWithoutRecursiveLoop(F, childF)) {
     return false ;
   }
 
-  if (this->verbose != Verbosity::Disabled) {
-    call->print(errs() << "Inliner:   Inlining in: " << F->getName() << ", ");
-    errs() << "\n";
+  /*
+   * Avoid inlining into a function that is too big.
+   */
+  if (p->getStaticInstructions(F) > 1000){
+    return false;
   }
 
+  /*
+   * Try to inline the function.
+   */
+  if (this->verbose != Verbosity::Disabled) {
+    call->print(errs() << "Inliner:   Inlining in: " << F->getName() << " (" << p->getStaticInstructions(F) << " instructions ), ");
+    errs() << "\n";
+  }
   int loopIndAfterCall = getNextPreorderLoopAfter(F, call);
   auto &parentCalls = orderedCalls[F];
   auto callInd = std::find(parentCalls.begin(), parentCalls.end(), call) - parentCalls.begin();
 
+  /*
+   * Inline the call.
+   */
   InlineFunctionInfo IFI;
   if (InlineFunction(call, IFI)) {
     fnsAffected.insert(F);
