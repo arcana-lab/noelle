@@ -73,7 +73,7 @@ void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, Data
       if (!this->isActualCode(call)){
         continue ;
       }
-      addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
+      addEdgeFromFunctionModRef(pdg, F, AA, call, load, true);
       continue ;
     }
   }
@@ -412,6 +412,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   } else if (makeModRefEdge) {
     pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
     pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_RAW);
   }
 
   return ;
