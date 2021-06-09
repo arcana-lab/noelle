@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <cassert>
 
 typedef struct Point{
   int x;
@@ -51,12 +52,20 @@ int main (int argc, char *argv[]){
     return -1;
   }
 
-  float tinySCCValue = 7;
+  int result = 0;
   for (auto i=0;i < iterations; i++){
     memcpy(p, ptrArr->pointArr[i], sizeof(Point));
-    tinySCCValue += SqrtOfSum(&indirectRef);
+    result += SqrtOfSum(&indirectRef);
   }
 
-  printf("%.2f\n", tinySCCValue);
+  int actualResult = 0;
+  for (auto i=0;i < iterations; i++){
+    p->x = ptrArr->pointArr[i]->x;
+    p->y = ptrArr->pointArr[i]->y;
+    actualResult += SqrtOfSum(&indirectRef);
+  }
+
+  assert(result == actualResult && "results do not match");
+  printf("%d\n", result);
   return 0;
 }
