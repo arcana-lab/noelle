@@ -579,3 +579,77 @@ regression_84/Outputs -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -n
 regression_87/Outputs -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
 regression_90/Outputs -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
 regression_93/Outputs -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_0/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_10/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_12/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_13/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_15/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_16/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_18/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_19/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_1/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_1/StackPrivatization2 -noelle-pdg-check -noelle-verbose=3  -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_21/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_22/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_24/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_25/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_27/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_28/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_30/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_31/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-doall -noelle-disable-helix -noelle-disable-inliner -noelle-disable-whilifier -noelle-disable-loop-distribution -noelle-disable-scev-simplification -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_32/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_33/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_35/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_36/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_38/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-dswp -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_39/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_3/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_41/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_42/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_44/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_45/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_47/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_48/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_49/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_4/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_50/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_51/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_53/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_54/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_56/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_57/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_59/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_60/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_62/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_63/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-doall -noelle-disable-helix -noelle-disable-inliner -noelle-disable-whilifier -noelle-disable-loop-distribution -noelle-disable-scev-simplification -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_64/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_65/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_67/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_68/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_69/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_6/CondControl -noelle-pdg-check -noelle-verbose=3  -noelle-disable-dswp -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_6/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-dswp -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_70/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-dswp -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_71/DoWhile3 -noelle-pdg-check -noelle-verbose=3  -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_71/DoWhile4 -noelle-pdg-check -noelle-verbose=3  -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_71/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_73/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_74/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_76/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_77/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_79/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_7/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_80/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_82/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_83/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_84/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_85/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_86/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_88/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_89/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_8/StackPrivatization2 -noelle-pdg-check -noelle-verbose=3  -noelle-disable-dswp -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_91/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_92/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_94/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_95/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-doall -noelle-disable-helix -noelle-disable-inliner -noelle-disable-whilifier -noelle-disable-loop-distribution -noelle-disable-scev-simplification -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_9/RAWCallToCall -noelle-pdg-check -noelle-verbose=3  -noelle-disable-helix -noelle-disable-dswp -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
