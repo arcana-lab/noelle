@@ -278,11 +278,22 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   switch (AA.getModRefInfo(call, otherCall)) {
     case ModRefInfo::NoModRef:
       return;
+
     case ModRefInfo::Ref:
+
+      /*
+       * @call may read memory locations written by @otherCall
+       */
       bv[0] = true;
       break;
+
     case ModRefInfo::Mod:
+
+      /*
+       * @call may write a memory location that can be read or written by @otherCall
+       */
       bv[1] = true;
+
       switch (AA.getModRefInfo(otherCall, call)) {
         case ModRefInfo::NoModRef:
           return;
@@ -297,7 +308,12 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
           break;
       }
       break;
+
     case ModRefInfo::ModRef:
+
+      /*
+       * @call may read or write a memory location that can be written by @otherCall
+       */
       bv[2] = true;
       break;
   }
@@ -337,11 +353,14 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
       switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
         case ModRefInfo::NoModRef:
           return;
+
         case ModRefInfo::Ref:
           bv[0] = true;
           break;
+
         case ModRefInfo::Mod:
           bv[1] = true;
+
           switch (NoelleSVFIntegration::getModRefInfo(otherCall, call)) {
             case ModRefInfo::NoModRef:
               return;
@@ -356,6 +375,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
               break;
           }
           break;
+
         case ModRefInfo::ModRef:
           bv[2] = true;
           break;
@@ -391,27 +411,65 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    * There is a dependence.
    */
   if (makeRefEdge) {
-    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+
+    /*
+     * @call reads a memory location that @otherCall writes.
+     * The sequence of execution is @call and then @otherCall.
+     * Hence, there is a WAR memory dependence from @call to @otherCall
+     */
+    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+
+    /*
+     * Check the unique case that @call and @otherCall are the same. 
+     * In this case, there is also a RAW dependence between them.
+     */
+    if (call == otherCall){
+      pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_RAW);
+    }
 
   } else if (makeModEdge) {
 
     /*
-     * Dependency of Mod result between call and otherCall is depend on the reverse getModRefInfo result
+     * Dependency of a Mod-result between call and otherCall depends on the reverse getModRefInfo result
      */
     if (reverseRefEdge) {
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+
+      /*
+       * Check the unique case that @call and @otherCall are the same. 
+       * In this case, there is also a WAR dependence between them.
+       */
+      if (call == otherCall){
+        pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_WAR);
+      }
 
     } else if (reverseModEdge) {
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
 
     } else if (reverseModRefEdge) {
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_RAW);
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+
+      /*
+       * Check the unique case that @call and @otherCall are the same. 
+       * In this case, there is also a WAR dependence between them.
+       */
+      if (call == otherCall){
+        pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_WAR);
+      }
     }
 
   } else if (makeModRefEdge) {
-    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
-    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+
+    /*
+     * Check the unique case that @call and @otherCall are the same. 
+     * In this case, there is also a RAW dependence between them.
+     */
+    if (call == otherCall){
+      pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_RAW);
+    }
   }
 
   return ;
