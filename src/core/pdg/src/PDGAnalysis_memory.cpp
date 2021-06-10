@@ -73,7 +73,7 @@ void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, Data
       if (!this->isActualCode(call)){
         continue ;
       }
-      addEdgeFromFunctionModRef(pdg, F, AA, call, load, true);
+      addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
       continue ;
     }
   }
