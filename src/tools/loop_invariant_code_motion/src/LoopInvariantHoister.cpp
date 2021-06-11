@@ -164,14 +164,15 @@ bool LoopInvariantCodeMotion::hoistInvariantValues (
     do {
       converged = true;
       for (auto i=0; i < (instructionsToHoistToPreheader.size() - 1); i++){
-        auto j = i + 1;
-        auto I = instructionsToHoistToPreheader[i];
-        auto J = instructionsToHoistToPreheader[j];
-        assert(I != J);
-        if (newDS->DT.dominates(J, I)){
-          instructionsToHoistToPreheader[i] = J;
-          instructionsToHoistToPreheader[j] = I;
-          converged = false;
+        for (auto j = i + 1; j < instructionsToHoistToPreheader.size(); j++){
+          auto I = instructionsToHoistToPreheader[i];
+          auto J = instructionsToHoistToPreheader[j];
+          assert(I != J);
+          if (newDS->DT.dominates(J, I)){
+            instructionsToHoistToPreheader[i] = J;
+            instructionsToHoistToPreheader[j] = I;
+            converged = false;
+          }
         }
       }
     } while (!converged);
