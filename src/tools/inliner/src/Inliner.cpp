@@ -51,6 +51,8 @@ bool Inliner::runOnModule (Module &M) {
   auto fm = noelle.getFunctionsManager();
   auto main = fm->getEntryFunction();
   if (main == nullptr){
+    errs() << "Inliner:   No entry function\n";
+    errs() << "Inliner: Exit\n";
     return false;
   }
 
@@ -105,6 +107,7 @@ bool Inliner::runOnModule (Module &M) {
   */
   auto inlined = this->inlineCallsInvolvedInLoopCarriedDataDependences(noelle, pcg);
   if (inlined){
+    errs() << "Inliner:   Inlined calls due to loop-carried data dependences\n";
     writeToContinueFile();
 
     /*
@@ -112,6 +115,7 @@ bool Inliner::runOnModule (Module &M) {
     */
     delete pcg;
 
+    errs() << "Inliner: Exit\n";
     return true;
   }
 
@@ -133,6 +137,7 @@ bool Inliner::runOnModule (Module &M) {
     */
     delete pcg;
 
+    errs() << "Inliner: Exit\n";
     return false;
   }
 
@@ -146,8 +151,9 @@ bool Inliner::runOnModule (Module &M) {
     std::string filename = "dgsimplify_loop_hoisting.txt";
     getFunctionsToInline(filename);
 
-    bool inlined = inlineFnsOfLoopsToCGRoot(profiles);
+    auto inlined = inlineFnsOfLoopsToCGRoot(profiles);
     if (inlined) {
+      errs() << "Inliner:   Inlined functions to hoist loops to the entry funtion of the program\n";
       getAnalysis<CallGraphWrapperPass>().runOnModule(M);
       parentFns.clear();
       childrenFns.clear();
@@ -158,7 +164,7 @@ bool Inliner::runOnModule (Module &M) {
       printFnOrder();
     }
 
-    bool remaining = registerRemainingFunctions(filename);
+    auto remaining = registerRemainingFunctions(filename);
     if (remaining) writeToContinueFile();
 
     printFnInfo();
@@ -171,6 +177,7 @@ bool Inliner::runOnModule (Module &M) {
     */
     delete pcg;
 
+    errs() << "Inliner: Exit\n";
     return inlined;
   }
 
@@ -179,6 +186,7 @@ bool Inliner::runOnModule (Module &M) {
   */
   delete pcg;
 
+  errs() << "Inliner: Exit\n";
   return false;
 }
 
