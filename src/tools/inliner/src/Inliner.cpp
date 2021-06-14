@@ -123,7 +123,7 @@ bool Inliner::runOnModule (Module &M) {
   * No more calls need to be inlined for loop-carried dependences.
   */
   if (this->verbose != Verbosity::Disabled){
-    errs() << "Inliner:   No remaining call inlining in SCCs\n";
+    errs() << "Inliner:   No remaining calls need to be inlined due to loop-carried data dependences\n";
   }
   printFnInfo();
 
@@ -131,6 +131,7 @@ bool Inliner::runOnModule (Module &M) {
   * Check if we should hoist loops to main.
   */
   if (!noelle.shouldLoopsBeHoistToMain()){
+    errs() << "Inliner:   The code has not been modified\n";
 
     /*
     * Free the memory.
