@@ -191,16 +191,16 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    */
   if (makeRefEdge) {
     if (addEdgeFromCall) {
-      pdg->addEdge((Value*)call, (Value*)store)->setMemMustType(true, false, DG_DATA_WAR);
+      pdg->addEdge(call, store)->setMemMustType(true, false, DG_DATA_WAR);
     } else {
-      pdg->addEdge((Value*)store, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_RAW);
     }
   }
   if (makeModEdge) {
     if (addEdgeFromCall) {
-      pdg->addEdge((Value*)call, (Value*)store)->setMemMustType(true, false, DG_DATA_WAW);
+      pdg->addEdge(call, store)->setMemMustType(true, false, DG_DATA_WAW);
     } else {
-      pdg->addEdge((Value*)store, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
+      pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_WAW);
     }
   }
 
@@ -258,9 +258,9 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    * There is a dependence.
    */
   if (addEdgeFromCall) {
-    pdg->addEdge((Value*)call, (Value*)load)->setMemMustType(true, false, DG_DATA_RAW);
+    pdg->addEdge(call, load)->setMemMustType(true, false, DG_DATA_RAW);
   } else {
-    pdg->addEdge((Value*)load, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
+    pdg->addEdge(load, call)->setMemMustType(true, false, DG_DATA_WAR);
   }
 
   return ;
@@ -525,7 +525,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
     case MayAlias:
       break;
     case MustAlias:
-      pdg->addEdge((Value*)instI, (Value*)instJ)->setMemMustType(true, true, dataDependenceType);
+      pdg->addEdge(instI, instJ)->setMemMustType(true, true, dataDependenceType);
       return ;
   }
 
@@ -560,7 +560,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
   /*
    * There is a dependence.
    */
-  pdg->addEdge((Value*)instI, (Value*)instJ)->setMemMustType(true, must, dataDependenceType);
+  pdg->addEdge(instI, instJ)->setMemMustType(true, must, dataDependenceType);
 
   return ;
 }
