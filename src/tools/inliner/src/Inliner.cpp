@@ -166,7 +166,9 @@ bool Inliner::runOnModule (Module &M) {
     }
 
     auto remaining = registerRemainingFunctions(filename);
-    if (remaining) writeToContinueFile();
+    if (remaining) {
+      writeToContinueFile();
+    }
 
     printFnInfo();
     if (!remaining && this->verbose != Verbosity::Disabled) {
