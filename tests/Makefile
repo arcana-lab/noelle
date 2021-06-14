@@ -1,5 +1,6 @@
 RUNTIME_DIRNAME="threadpool"
 RUNTIME_GITREPO="https://github.com/scampanoni/virgil.git"
+RUNTIME_VERSION="1.0.0"
 
 all: regression performance unit
 
@@ -22,7 +23,7 @@ unit:
 	cd unit ; make ;
 
 download:
-	mkdir -p include ; cd include ; ../scripts/download.sh "$(RUNTIME_GITREPO)" "$(RUNTIME_DIRNAME)" ;
+	mkdir -p include ; cd include ; ../scripts/download.sh "$(RUNTIME_GITREPO)" $(RUNTIME_VERSION) "$(RUNTIME_DIRNAME)" ;
 	./scripts/add_symbolic_link.sh ;
 
 clean:
