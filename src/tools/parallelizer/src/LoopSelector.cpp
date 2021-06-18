@@ -34,81 +34,39 @@ namespace llvm::noelle {
     auto selector = [&noelle, &timeSavedLoops, profiles](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
 
       /*
-      * Fetch the loop.
-      */
+       * Fetch the loop.
+       */
       auto ls = n->getLoop();
       auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID };
       auto ldi = noelle.getLoop(ls, optimizations);
 
       /*
-      * Fetch the set of sequential SCCs.
-      */
-      auto sccManager = ldi->getSCCManager();
-      auto sequentialSCCs = sccManager->getSCCsOfType(SCCAttrs::SCCType::SEQUENTIAL);
+       * Fetch the set of sequential SCCs.
+       */
+      auto sequentialSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(ldi, noelle);
 
       /*
-      * Find the biggest sequential SCC.
-      */
+       * Find the biggest sequential SCC.
+       */
       uint64_t biggestSCCTime = 0;
       for (auto sequentialSCC : sequentialSCCs){
-        assert(sequentialSCC->mustExecuteSequentially());
 
         /*
-        * Fetch the SCC.
-        */
-        auto currentSCC = sequentialSCC->getSCC();
+         * Fetch the time spent in the current SCC.
+         */
+        auto sequentialSCCTime = profiles->getTotalInstructions(sequentialSCC);
 
         /*
-        * Check if the SCC can be removed by a transformation.
-        */
-        if (sequentialSCC->isInductionVariableSCC()){
-          continue ;
-        }
-        if (sequentialSCC->canBeCloned()){
-          continue ;
-        }
-        if (sequentialSCC->canBeClonedUsingLocalMemoryLocations()){
-          continue ;
-        }
-
-        auto areAllDataLCDsFromDisjointMemoryAccesses = true;
-        auto domainSpaceAnalysis = ldi->getLoopIterationDomainSpaceAnalysis();
-        sccManager->iterateOverLoopCarriedDataDependences(currentSCC, [
-          &areAllDataLCDsFromDisjointMemoryAccesses, domainSpaceAnalysis
-        ](DGEdge<Value> *dep) -> bool {
-          if (dep->isControlDependence()) return false;
-
-          if (!dep->isMemoryDependence()) {
-            areAllDataLCDsFromDisjointMemoryAccesses = false;
-            return true;
-          }
-
-          auto fromInst = dyn_cast<Instruction>(dep->getOutgoingT());
-          auto toInst = dyn_cast<Instruction>(dep->getIncomingT());
-          areAllDataLCDsFromDisjointMemoryAccesses &= fromInst && toInst && domainSpaceAnalysis->
-            areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(fromInst, toInst);
-          return !areAllDataLCDsFromDisjointMemoryAccesses;
-        });
-        if (areAllDataLCDsFromDisjointMemoryAccesses) {
-          continue;
-        }
-
-        /*
-        * Fetch the time spent in the current SCC.
-        */
-        auto currentSCCTime = profiles->getTotalInstructions(currentSCC);
-
-        /*
-        * Compute the biggest SCC.
-        */
-        if (currentSCCTime > biggestSCCTime){
-          biggestSCCTime = currentSCCTime;
+         * Compute the biggest SCC.
+         */
+        if (sequentialSCCTime > biggestSCCTime){
+          biggestSCCTime = sequentialSCCTime;
         }
       }
 
       /*
-      * Compute the maximum amount of time saved by any parallelization technique.
-      */
+       * Compute the maximum amount of time saved by any parallelization technique.
+       */
       timeSavedLoops[ldi] = 0;
       if (profiles->getIterations(ls) > 0){
         auto instsPerIteration = profiles->getAverageTotalInstructionsPerIteration(ls);
@@ -124,20 +82,39 @@ namespace llvm::noelle {
     tree->visitPreOrder(selector);
 
     /*
-    * Sort the loops depending on the amount of time that can be saved by a parallelization technique.
-    */
+     * Filter out loops that should not be parallelized.
+     */
     for (auto loopPair : timeSavedLoops){
 
       /*
-      * Fetch the loop.
-      */
+       * Fetch the loop.
+       */
       auto ldi = loopPair.first;
 
       /*
-      * Add it.
-      */
+       * Compute the total amount of time saved by parallelizing this loop.
+       */
+      auto savedTimeTotal = ((double)timeSavedLoops[ldi]) / ((double) profiles->getTotalInstructions());
+      savedTimeTotal *= 100;
+      
+      /*
+       * Check if the time saved is enough.
+       */
+      if (savedTimeTotal < 2){
+        continue ;
+      }
+
+      /*
+       * The loop is worth parallelizing it.
+       *
+       * Add it.
+       */
       selectedLoops.push_back(ldi);
     }
+
+    /*
+     * Sort the loops depending on the amount of time that can be saved by a parallelization technique.
+     */
     auto compareOperator = [&timeSavedLoops](LoopDependenceInfo *l1, LoopDependenceInfo *l2){
       auto s1 = timeSavedLoops[l1];
       auto s2 = timeSavedLoops[l2];
@@ -146,9 +123,9 @@ namespace llvm::noelle {
       }
 
       /*
-      * The loops have the same saved time.
-      * Sort them by nesting level.
-      */
+       * The loops have the same saved time.
+       * Sort them by nesting level.
+       */
       auto l1LS = l1->getLoopStructure();
       auto l2LS = l2->getLoopStructure();
       return l1LS->getNestingLevel() < l2LS->getNestingLevel();
@@ -156,16 +133,37 @@ namespace llvm::noelle {
     std::sort(selectedLoops.begin(), selectedLoops.end(), compareOperator);
 
     /*
-    * Print the order and the savings.
-    */
+     * Print the order and the savings.
+     */
     if (verbose != Verbosity::Disabled) {
       errs() << "Parallelizer: LoopSelector: Start\n";
       errs() << "Parallelizer: LoopSelector:   Order of loops and their maximum savings\n";
       for (auto l : selectedLoops){
+
+        /*
+         * Fetch the loop information.
+         */
         auto ls = l->getLoopStructure();
+        auto loopHeader = ls->getHeader();
+        auto loopFunction = ls->getFunction();
+
+        /*
+         * Compute the savings
+         */
         auto savedTimeRelative = ((double)timeSavedLoops[l]) / ((double) profiles->getTotalInstructions(ls));
+        auto savedTimeTotal = ((double)timeSavedLoops[l]) / ((double) profiles->getTotalInstructions());
         savedTimeRelative *= 100;
-        errs() << "Parallelizer: LoopSelector:    Loop " << l->getID() << " savings = " << savedTimeRelative << "%\n";
+        savedTimeTotal *= 100;
+
+        /*
+         * Print
+         */
+        errs() << "Parallelizer: LoopSelector:    Loop " << l->getID() << " " << ls->getID() << "\n";
+        errs() << "Parallelizer: LoopSelector:      Function: \"" << loopFunction->getName() << "\"\n";
+        errs() << "Parallelizer: LoopSelector:      Loop nesting level: " << ls->getNestingLevel() << "\n";
+        errs() << "Parallelizer: LoopSelector:      \"" << *loopHeader->getFirstNonPHI() << "\"\n";
+        errs() << "Parallelizer: LoopSelector:      Whole-program savings = " << savedTimeTotal << "%\n";
+        errs() << "Parallelizer: LoopSelector:      Loop savings = " << savedTimeRelative << "%)\n";
       }
       errs() << "Parallelizer: LoopSelector: End\n";
     }
