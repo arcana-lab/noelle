@@ -37,7 +37,7 @@ namespace llvm::noelle {
        * Fetch the loop.
        */
       auto ls = n->getLoop();
-      auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID };
+      auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID, LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID};
       auto ldi = noelle.getLoop(ls, optimizations);
 
       /*

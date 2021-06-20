@@ -32,7 +32,8 @@ namespace llvm::noelle {
   };
 
   enum LoopDependenceInfoOptimization {
-    MEMORY_CLONING_ID
+    MEMORY_CLONING_ID,
+    THREAD_SAFE_LIBRARY_ID
   };
 
 }
