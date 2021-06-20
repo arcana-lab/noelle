@@ -150,7 +150,16 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
 
     /*
      * SVF is enabled; let's use it.
-     *
+     */
+    auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
+    if (  true
+          && weCanRelyOnSVF 
+          && hasNoMemoryOperations(call)
+      ) {
+      return;
+    }
+
+    /*
      * Check if it is safe to use SVF.
      * This is due to a bug in SVF that doesn't model I/O library calls correctly.
      */
@@ -237,7 +246,16 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
 
     /*
      * SVF is enabled; let's use it.
-     *
+     */
+    auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
+    if (  true
+          && weCanRelyOnSVF 
+          && hasNoMemoryOperations(call)
+      ) {
+      return;
+    }
+
+    /*
      * Check if it is safe to use SVF.
      * This is due to a bug in SVF that doesn't model I/O library calls correctly.
      */
@@ -338,6 +356,13 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
     if (  true
           && weCanRelyOnSVF 
           && hasNoMemoryOperations(call)
+      ) {
+      return;
+    }
+    weCanRelyOnSVF = cannotReachUnhandledExternalFunction(otherCall);
+    if (  true
+          && weCanRelyOnSVF 
+          && hasNoMemoryOperations(otherCall)
       ) {
       return;
     }

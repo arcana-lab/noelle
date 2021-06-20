@@ -239,6 +239,11 @@ namespace llvm::noelle {
         DominatorSummary &DS
       ) ;
 
+      void removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions (
+        PDG *loopDG,
+        DominatorSummary &DS
+      );
+
   };
 
 }

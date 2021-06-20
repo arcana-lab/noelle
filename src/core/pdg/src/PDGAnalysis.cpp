@@ -935,6 +935,13 @@ bool PDGAnalysis::isTheLibraryFunctionPure (Function *libraryFunction){
   }
   return false;
 }
+      
+bool PDGAnalysis::isTheLibraryFunctionThreadSafe (Function *libraryFunction){
+  if (PDGAnalysis::externalThreadSafeFunctions.count(libraryFunction->getName())){
+    return true;
+  }
+  return false;
+}
 
 PDGAnalysis::~PDGAnalysis() {
   if (this->programDependenceGraph)
@@ -1031,10 +1038,6 @@ const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF {
   "islessgreater",
   "isunordered",
 
-  // stdlib.h
-  "rand",
-  "srand",
-  
   // time.h
   "clock",
   "difftime",
@@ -1058,8 +1061,18 @@ const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF {
   "towctrans",
 
   "atoi",
+  "atoll",
   "exit",
   "strcmp",
-  "strncmp"
+  "strncmp",
+  "rand_r"
 };
 
+const StringSet<> PDGAnalysis::externalThreadSafeFunctions {
+
+  "malloc",
+  "calloc",
+  "realloc",
+  "free"
+
+};

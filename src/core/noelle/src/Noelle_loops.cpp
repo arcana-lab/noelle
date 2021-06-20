@@ -198,7 +198,20 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
 LoopDependenceInfo * Noelle::getLoop (
     LoopStructure *loop
     ) {
-  return getLoop(loop, {});
+
+  /*
+   * Check if the loop is valid.
+   */
+  if (loop == nullptr){
+    return nullptr;
+  }
+
+  /*
+   * Compute the LDI abstraction.
+   */
+  auto ldi = this->getLoop(loop, {});
+
+  return ldi;
 }
 
 LoopDependenceInfo * Noelle::getLoop (

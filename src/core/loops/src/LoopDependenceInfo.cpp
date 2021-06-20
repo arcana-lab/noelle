@@ -9,13 +9,13 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "PDG.hpp"
+#include "PDGAnalysis.hpp"
 #include "SCCDAG.hpp"
 #include "Architecture.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 LoopDependenceInfo::LoopDependenceInfo (
   PDG *fG,
@@ -229,7 +229,14 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
    * Analyze the loop to identify opportunities of cloning stack objects.
    */
   if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {
-    removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS);
+    this->removeUnnecessaryDependenciesThatCloningMemoryNegates(loopDG, DS);
+  }
+
+  /*
+   * Remove memory dependences with known thread-safe library functions.
+   */
+  if (enabledOptimizations.find(LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID) != enabledOptimizations.end()) {
+    this->removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(loopDG, DS);
   }
 
   /*
@@ -266,6 +273,69 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   #endif
 
   return std::make_pair(loopDG, loopSCCDAG);
+}
+
+void LoopDependenceInfo::removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions (
+  PDG *loopDG,
+  DominatorSummary &DS
+){
+
+  /*
+   * Fetch the loop sub-tree rooted at @this.
+   */
+  auto rootLoop = liSummary.getLoopNestingTreeRoot();
+
+  /*
+   * Identify the dependences to remove.
+   */
+  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  for (auto edge : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*rootLoop, liSummary, *loopDG)) {
+
+    /*
+     * Only memory dependences can be removed.
+     */
+    if (!edge->isMemoryDependence()) {
+      continue;
+    }
+
+    /*
+     * Only dependences between instructions can be removed.
+     */
+    auto producer = dyn_cast<Instruction>(edge->getOutgoingT());
+    auto consumer = dyn_cast<Instruction>(edge->getIncomingT());
+    if (!producer || !consumer) {
+      continue;
+    }
+
+    /*
+     * Only dependences with thread-safe library functions can be removed.
+     */
+    if (auto producerCall = dyn_cast<CallInst>(producer)){
+      auto callee = producerCall->getCalledFunction();
+      if (callee != nullptr){
+        if (PDGAnalysis::isTheLibraryFunctionThreadSafe(callee)){
+          edgesToRemove.insert(edge);
+          continue ;
+        }
+      }
+    }
+    if (auto consumerCall = dyn_cast<CallInst>(consumer)){
+      auto callee = consumerCall->getCalledFunction();
+      if (callee != nullptr){
+        if (PDGAnalysis::isTheLibraryFunctionThreadSafe(callee)){
+          edgesToRemove.insert(edge);
+          continue ;
+        }
+      }
+    }
+  }
+
+  for (auto edge : edgesToRemove) {
+    edge->setLoopCarried(false);
+    loopDG->removeEdge(edge);
+  }
+
+  return ;
 }
 
 void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
@@ -332,10 +402,15 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
     edgesToRemove.insert(edge);
   }
 
+  /*
+   * Remove the dependences.
+   */
   for (auto edge : edgesToRemove) {
     edge->setLoopCarried(false);
     loopInternalDG->removeEdge(edge);
   }
+
+  return ;
 }
  
 bool LoopDependenceInfo::isTransformationEnabled (Transformation transformation){
@@ -470,4 +545,6 @@ LoopDependenceInfo::~LoopDependenceInfo() {
   delete this->domainSpaceAnalysis;
 
   return ;
+}
+
 }
