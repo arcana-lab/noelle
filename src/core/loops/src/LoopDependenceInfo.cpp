@@ -308,6 +308,13 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesWithThreadSafeLibraryFunct
     }
 
     /*
+     * Only self-dependences can be removed.
+     */
+    if (producer != consumer){
+      continue ;
+    }
+
+    /*
      * Only dependences with thread-safe library functions can be removed.
      */
     if (auto producerCall = dyn_cast<CallInst>(producer)){
@@ -319,17 +326,11 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesWithThreadSafeLibraryFunct
         }
       }
     }
-    if (auto consumerCall = dyn_cast<CallInst>(consumer)){
-      auto callee = consumerCall->getCalledFunction();
-      if (callee != nullptr){
-        if (PDGAnalysis::isTheLibraryFunctionThreadSafe(callee)){
-          edgesToRemove.insert(edge);
-          continue ;
-        }
-      }
-    }
   }
 
+  /*
+   * Removed the identified dependences.
+   */
   for (auto edge : edgesToRemove) {
     edge->setLoopCarried(false);
     loopDG->removeEdge(edge);
