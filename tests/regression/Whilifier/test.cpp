@@ -14,7 +14,7 @@ int globalSqrt (int v) {
   }
   if (v == 0)
     return v;
-  return v + glob / v;
+  return v + 1042 / v;
 }
 
 int heavyComputation (int v){
@@ -22,7 +22,6 @@ int heavyComputation (int v){
   for (auto i = 0; i < 10000; i++) {
     e += globalSqrt(e);
   }
-
   v = (int)e;
   return v;
 }
