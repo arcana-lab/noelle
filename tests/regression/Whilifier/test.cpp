@@ -13,6 +13,7 @@ int heavyComputation (int v){
   double e = 0;
   for (auto i = 0; i < 10000; i++) {
     if (++glob > 10) {
+      glob = 0;
     }
     if (e != 0){
       e += (e + 1042 / v);
