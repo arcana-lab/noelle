@@ -18,8 +18,8 @@ using namespace llvm::noelle;
 
 EnablersManager::EnablersManager()
   :
-  ModulePass{ID}
-  {
+    ModulePass{ID}
+{
 
   return ;
 }
@@ -27,21 +27,21 @@ EnablersManager::EnablersManager()
 bool EnablersManager::runOnModule (Module &M) {
 
   /*
-  * Check if enablers have been enabled.
-  */
+   * Check if enablers have been enabled.
+   */
   if (!this->enableEnablers){
     return false;
   }
   errs() << "EnablersManager: Start\n";
 
   /*
-  * Fetch the outputs of the passes we rely on.
-  */
+   * Fetch the outputs of the passes we rely on.
+   */
   auto& noelle = getAnalysis<Noelle>();
 
   /*
-  * Create the enablers.
-  */
+   * Create the enablers.
+   */
   auto loopDist = LoopDistribution();
   auto loopUnroll = LoopUnroll();
   auto loopWhilify = LoopWhilifier(noelle);
@@ -49,54 +49,50 @@ bool EnablersManager::runOnModule (Module &M) {
   auto scevSimplification = SCEVSimplification(noelle);
 
   /*
-  * Fetch all the loops we want to parallelize.
-  */
-  auto loopsToParallelize = noelle.getLoopStructures();
+   * Fetch all the loops we want to parallelize.
+   */
+  auto loopsToParallelize = noelle.getLoops();
   errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
 
   /*
-  * Parallelize the loops selected.
-  */
+   * Parallelize the loops selected.
+   */
   auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
-  for (auto loopStructure : *loopsToParallelize){
+  for (auto loopToImprove : *loopsToParallelize){
 
     /*
-    * Fetch the function that contains the current loop.
-    */
+     * Fetch the function that contains the current loop.
+     */
+    auto loopStructure = loopToImprove->getLoopStructure();
     auto f = loopStructure->getFunction();
 
     /*
-    * Check if we have already modified the function.
-    */
+     * Check if we have already modified the function.
+     */
     if (modifiedFunctions[f]){
       errs() << "EnablersManager:   The current loop belongs to the function " << f->getName() << " , which has already been modified.\n" ;
       continue ;
     }
 
     /*
-    * Compute loop dependence info
-    */
-    auto loop = noelle.getLoop(loopStructure);
-
-    /*
-    * Improve the current loop.
-    */
+     * Improve the current loop.
+     */
     modifiedFunctions[f] |= this->applyEnablers(
-      loop,
-      noelle,
-      loopDist,
-      loopUnroll,
-      loopWhilify,
-      loopInvariantCodeMotion,
-      scevSimplification
-    );
+        &*loopToImprove,
+        noelle,
+        loopDist,
+        loopUnroll,
+        loopWhilify,
+        loopInvariantCodeMotion,
+        scevSimplification
+        );
     modified |= modifiedFunctions[f];
   }
 
   /*
-  * Free the memory.
-  */
+   * Free the memory.
+   */
   delete loopsToParallelize;
 
   errs() << "EnablersManager: Exit\n";
