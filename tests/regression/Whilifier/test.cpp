@@ -8,19 +8,16 @@ typedef struct _N {
 } N;
 
 int glob = 0;
-int globalSqrt (int v) {
-  if (++glob > 10) {
-    glob = 0;
-  }
-  if (v == 0)
-    return v;
-  return v + 1042 / v;
-}
 
 int heavyComputation (int v){
   double e = 0;
   for (auto i = 0; i < 10000; i++) {
-    e += globalSqrt(e);
+    if (++glob > 10) {
+      glob = 0;
+    }
+    if (e != 0){
+      e += (e + 1042 / v);
+    }
   }
   v = (int)e;
   return v;
