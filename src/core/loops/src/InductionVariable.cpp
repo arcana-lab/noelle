@@ -11,8 +11,7 @@
 #include "InductionVariables.hpp"
 #include "LoopGoverningIVAttribution.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle{
 
 InductionVariable::InductionVariable  (
   LoopStructure *LS,
@@ -421,4 +420,6 @@ bool InductionVariable::isIVInstruction (Instruction *I) const {
 
 bool InductionVariable::isDerivedFromIVInstructions (Instruction *I) const {
   return derivedSCEVInstructions.find(I) != derivedSCEVInstructions.end();
+}
+
 }

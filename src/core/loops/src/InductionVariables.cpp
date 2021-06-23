@@ -11,8 +11,7 @@
 #include "InductionVariables.hpp"
 #include "LoopGoverningIVAttribution.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 InductionVariableManager::InductionVariableManager (
   LoopsSummary &LIS,
@@ -241,4 +240,6 @@ LoopGoverningIVAttribution * InductionVariableManager::getLoopGoverningIVAttribu
   }
 
   return loopToGoverningIVAttrMap.at(&LS);
+}
+
 }
