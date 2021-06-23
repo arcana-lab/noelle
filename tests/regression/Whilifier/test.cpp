@@ -27,26 +27,13 @@ int heavyComputation (int v){
   return v;
 }
 
-void appendNode (N* tail, int newValue, int howManyMore){
-
-  N *newNode = (N *) malloc(sizeof(N));
-  newNode->v = newValue;
-  newNode->next = NULL;
-
-  tail->next = newNode ;
-
-  if (howManyMore > 0){
- //   appendNode(newNode, newValue+1, howManyMore - 1);
-  }
-
-  return ;
-}
-
 int main (){
   N *n0 = (N *) malloc(sizeof(N));
   n0->v = 41;
-
-  appendNode(n0, 42, 99);
+  N *newNode = (N *) malloc(sizeof(N));
+  newNode->v = 42;
+  newNode->next = NULL;
+  n0->next = newNode ;
 
   int vSum = 0;
   N *tmpN = n0;
