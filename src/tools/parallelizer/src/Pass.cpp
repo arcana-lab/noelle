@@ -15,17 +15,17 @@ using namespace llvm;
 using namespace llvm::noelle;
 
 /*
-* Options of the Parallelizer pass.
-*/
+ * Options of the Parallelizer pass.
+ */
 static cl::opt<bool> ForceParallelization("noelle-parallelizer-force", cl::ZeroOrMore, cl::Hidden, cl::desc("Force the parallelization"));
 static cl::opt<bool> ForceNoSCCPartition("dswp-no-scc-merge", cl::ZeroOrMore, cl::Hidden, cl::desc("Force no SCC merging when parallelizing"));
-  
+
 Parallelizer::Parallelizer()
   :
-  ModulePass{ID}, 
-  forceParallelization{false},
-  forceNoSCCPartition{false}
-  {
+    ModulePass{ID}, 
+    forceParallelization{false},
+    forceNoSCCPartition{false}
+{
 
   return ;
 }
@@ -41,46 +41,46 @@ bool Parallelizer::runOnModule (Module &M) {
   errs() << "Parallelizer: Start\n";
 
   /*
-  * Fetch the outputs of the passes we rely on.
-  */
+   * Fetch the outputs of the passes we rely on.
+   */
   auto& noelle = getAnalysis<Noelle>();
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics(noelle);
 
   /*
-  * Fetch the profiles.
-  */
+   * Fetch the profiles.
+   */
   auto profiles = noelle.getProfiles();
 
   /*
-  * Fetch the verbosity level.
-  */
+   * Fetch the verbosity level.
+   */
   auto verbosity = noelle.getVerbosity();
 
   /*
-  * Allocate the parallelization techniques.
-  */
+   * Allocate the parallelization techniques.
+   */
   DSWP dswp{
     M,
-    *profiles,
-    this->forceParallelization,
-    !this->forceNoSCCPartition,
-    verbosity
+      *profiles,
+      this->forceParallelization,
+      !this->forceNoSCCPartition,
+      verbosity
   };
   DOALL doall{
     M,
-    *profiles,
-    verbosity
+      *profiles,
+      verbosity
   };
   HELIX helix{
     M,
-    *profiles,
-    this->forceParallelization,
-    verbosity
+      *profiles,
+      this->forceParallelization,
+      verbosity
   };
 
   /*
-  * Collect information about C++ code we link parallelized loops with.
-  */
+   * Collect information about C++ code we link parallelized loops with.
+   */
   errs() << "Parallelizer:  Analyzing the module " << M.getName() << "\n";
   if (!collectThreadPoolHelperFunctionsAndTypes(M, noelle)) {
     errs() << "Parallelizer:    ERROR: I could not find the runtime within the module\n";
@@ -88,13 +88,13 @@ bool Parallelizer::runOnModule (Module &M) {
   }
 
   /*
-  * Fetch all the loops we want to parallelize.
-  */
+   * Fetch all the loops we want to parallelize.
+   */
   errs() << "Parallelizer:  Fetching the program loops\n";
   auto programLoops = noelle.getLoopStructures();
   if (programLoops->size() == 0){
     errs() << "Parallelizer:    There is no loop to consider\n";
-    
+
     /*
      * Free the memory.
      */
@@ -107,55 +107,55 @@ bool Parallelizer::runOnModule (Module &M) {
   errs() << "Parallelizer:    There are " << programLoops->size() << " loops in the program we are going to consider\n";
 
   /*
-  * Compute the nesting forest.
-  */
+   * Compute the nesting forest.
+   */
   auto forest = noelle.organizeLoopsInTheirNestingForest(*programLoops);
   delete programLoops ;
 
   /*
-  * Filter out loops that are not worth parallelizing.
-  */
+   * Filter out loops that are not worth parallelizing.
+   */
   errs() << "Parallelizer:  Filter out loops not worth considering\n";
   auto filter = [this, forest, profiles](LoopStructure *ls) -> bool{
 
     /*
-    * Fetch the loop ID.
-    */
+     * Fetch the loop ID.
+     */
     auto loopID = ls->getID();
 
     /*
-    * Check if the latency of each loop invocation is enough to justify the parallelization.
-    */
+     * Check if the latency of each loop invocation is enough to justify the parallelization.
+     */
     auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
     auto averageInstsPerInvocationThreshold = 2000;
     if (  true
-          && (!this->forceParallelization)
-          && (averageInstsPerInvocation < averageInstsPerInvocationThreshold)
-      ){
+        && (!this->forceParallelization)
+        && (averageInstsPerInvocation < averageInstsPerInvocationThreshold)
+       ){
       errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
       errs() << "Parallelizer:      It is too low. The threshold is " << averageInstsPerInvocationThreshold << "\n";
 
       /*
-      * Remove the loop.
-      */
+       * Remove the loop.
+       */
       return true;
     }
 
     /*
-    * Check the number of iterations per invocation.
-    */
+     * Check the number of iterations per invocation.
+     */
     auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
     auto averageIterationThreshold = 12;
     if (  true
-          && (!this->forceParallelization)
-          && (averageIterations < averageIterationThreshold)
-      ){
+        && (!this->forceParallelization)
+        && (averageIterations < averageIterationThreshold)
+       ){
       errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
       errs() << "Parallelizer:      It is too low. The threshold is " << averageIterationThreshold << "\n";
 
       /*
-      * Remove the loop.
-      */
+       * Remove the loop.
+       */
       return true;
     }
 
@@ -164,57 +164,57 @@ bool Parallelizer::runOnModule (Module &M) {
   noelle.filterOutLoops(forest, filter);
 
   /*
-  * Print the loops.
-  */
+   * Print the loops.
+   */
   auto trees = forest->getTrees();
   errs() << "Parallelizer:  There are " << trees.size() << " loop nesting trees in the program\n";
   for (auto tree : trees){
 
     /*
-    * Print the root.
-    */
+     * Print the root.
+     */
     auto loopStructure = tree->getLoop();
     auto loopID = loopStructure->getID();
 
     /*
-    * Print the tree.
-    */
+     * Print the tree.
+     */
     auto printTree = [profiles](noelle::StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) {
 
       /*
-      * Fetch the loop information.
-      */
+       * Fetch the loop information.
+       */
       auto loopStructure = n->getLoop();
       auto loopID = loopStructure->getID();
       auto loopFunction = loopStructure->getFunction();
       auto loopHeader = loopStructure->getHeader();
 
       /*
-      * Compute the print prefix.
-      */
+       * Compute the print prefix.
+       */
       std::string prefix{"Parallelizer:    "};
       for (auto i = 1 ; i < treeLevel; i++){
         prefix.append("  ");
       }
 
       /*
-      * Print the loop.
-      */
+       * Print the loop.
+       */
       errs() << prefix << "ID: " << loopID << " (" << treeLevel << ")\n";
       errs() << prefix << "  Function: \"" << loopFunction->getName() << "\"\n";
       errs() << prefix << "  Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
       errs() << prefix << "  Loop nesting level: " << loopStructure->getNestingLevel() << "\n";
 
       /*
-      * Check if there are profiles.
-      */
+       * Check if there are profiles.
+       */
       if (!profiles->isAvailable()){
         return false;
       }
 
       /*
-      * Print the coverage of this loop.
-      */
+       * Print the coverage of this loop.
+       */
       auto hotness = profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100;
       errs() << prefix << "  Hotness = " << hotness << " %\n"; 
       auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(loopStructure);
@@ -229,28 +229,28 @@ bool Parallelizer::runOnModule (Module &M) {
   }
 
   /*
-  * Parallelize the loops selected.
-  *
-  * Parallelize the loops starting from the outermost to the inner ones.
-  * This is accomplished by having sorted the loops above.
-  */
+   * Parallelize the loops selected.
+   *
+   * Parallelize the loops starting from the outermost to the inner ones.
+   * This is accomplished by having sorted the loops above.
+   */
   auto modified = false;
   std::unordered_map<BasicBlock *, bool> modifiedBBs{};
   for (auto tree : forest->getTrees()){
 
     /*
-    * Select the loops to parallelize.
-    */
+     * Select the loops to parallelize.
+     */
     auto loopsToParallelize = this->selectTheOrderOfLoopsToParallelize(noelle, profiles, tree);
 
     /*
-    * Parallelize the loops.
-    */
+     * Parallelize the loops.
+     */
     for (auto ldi : loopsToParallelize){
 
       /*
-      * Check if we can parallelize this loop.
-      */
+       * Check if we can parallelize this loop.
+       */
       auto ls = ldi->getLoopStructure();
       auto safe = true;
       for (auto bb : ls->getBasicBlocks()){
@@ -266,13 +266,13 @@ bool Parallelizer::runOnModule (Module &M) {
       }
 
       /*
-      * Parallelize the current loop.
-      */
+       * Parallelize the current loop.
+       */
       auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, dswp, doall, helix, heuristics);
 
       /*
-      * Keep track of the parallelization.
-      */
+       * Keep track of the parallelization.
+       */
       if (loopIsParallelized){
         errs() << "Parallelizer:    Loop " << loopID << " has been parallelized\n";
         modified = true;
@@ -283,8 +283,8 @@ bool Parallelizer::runOnModule (Module &M) {
     }
 
     /*
-    * Free the memory.
-    */
+     * Free the memory.
+     */
     for (auto loop : loopsToParallelize){
       delete loop;
     }
@@ -297,16 +297,16 @@ bool Parallelizer::runOnModule (Module &M) {
 void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
 
   /*
-  * Analyses.
-  */
+   * Analyses.
+   */
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
 
   /*
-  * Noelle.
-  */
+   * Noelle.
+   */
   AU.addRequired<Noelle>();
   AU.addRequired<HeuristicsPass>();
 
@@ -321,7 +321,7 @@ static RegisterPass<Parallelizer> X("parallelizer", "Automatic parallelization o
 static Parallelizer * _PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new Parallelizer());}}); // ** for -Ox
+    if(!_PassMaker){ PM.add(_PassMaker = new Parallelizer());}}); // ** for -Ox
 static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new Parallelizer());}});// ** for -O0
+    if(!_PassMaker){ PM.add(_PassMaker = new Parallelizer());}});// ** for -O0
