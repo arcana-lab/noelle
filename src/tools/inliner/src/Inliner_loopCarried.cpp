@@ -194,6 +194,17 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
 
     /*
      * Check every instruction within the sequential SCC.
+     *
+     * Do not inline a call that depends on itself because it is unlikely to make a difference.
+     * Most of the time such situation shows up as an SCC with a single node.
+     */
+    if (scc->numberOfInstructions() == 1){
+      continue ;
+    }
+
+    /*
+     * The SCC includes more than one instruction.
+     * Check its calls.
      */
     for (auto valNode : scc->getNodes()) {
 
