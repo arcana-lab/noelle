@@ -146,10 +146,6 @@ namespace llvm::noelle{
     if (!(this->canWhilify(WC))) { 
       return Transformed; 
     }
-    errs() << this->outputPrefix << "       LOOP = \n";
-    for (auto bb : LS->getBasicBlocks()){
-      errs() << *bb;
-    }
     //WC->Dump();
 
     /*
