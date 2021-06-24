@@ -64,8 +64,8 @@ namespace llvm::noelle{
      * Handle subloops --- return if there is any
      * change to a subloop
      */ 
+    errs() << this->outputPrefix << " Try to whilify sub-loops\n";
     auto LS = LDI.getLoopStructure();
-
     auto SubLoops = LS->getChildren();
     for (auto SL : SubLoops) {
 
@@ -74,16 +74,19 @@ namespace llvm::noelle{
        */
       AnyTransformed |= this->whilifyLoopDriver(SL);
 
+      /*
+       * Check if any sub-loop has been whilified.
+       */
       if (AnyTransformed) {
         break;
       }
-
     }
 
     /*
      * Execute on parent loop
      */ 
     if (!AnyTransformed) {
+      errs() << this->outputPrefix << " Try to whilify the target loop\n";
       AnyTransformed |= this->whilifyLoopDriver(LS);
     }
     errs() << this->outputPrefix << " Transformed = " << AnyTransformed << "\n";
@@ -104,13 +107,14 @@ namespace llvm::noelle{
     auto Scheduler = noelle.getScheduler();
     auto DS = noelle.getDominators(Func);
     auto firstInst = LS->getEntryInstruction();
+    errs() << this->outputPrefix << "   Loop: " << *firstInst << "\n";
 
     /*
      * Scheduler invocation --- try to shrink the loop prologue before whilifying
      *
      * Check if we need to shrink the prologue at all.
      */
-    errs() << this->outputPrefix << " Try to shrink the loop prologue " << *firstInst << "\n";
+    errs() << this->outputPrefix << "     Try to shrink the loop prologue " << *firstInst << "\n";
 
     /*
      * Set up the loop scheduler
@@ -128,7 +132,7 @@ namespace llvm::noelle{
     //LSched.Dump();
     Transformed |= LSched.shrinkLoopPrologue();
     if (Transformed) {
-      errs() << this->outputPrefix << "   The prologue has shrunk\n";
+      errs() << this->outputPrefix << "       The prologue has shrunk\n";
       //LSched.Dump();
       return Transformed;
     }
@@ -137,7 +141,7 @@ namespace llvm::noelle{
     /*
      * Check if the loop can be whilified
      */ 
-    errs() << this->outputPrefix << " Try to whilify " << *firstInst << "\n";
+    errs() << this->outputPrefix << "     Try to whilify " << *firstInst << "\n";
     auto WC = new WhilifierContext(LS);
     if (!(this->canWhilify(WC))) { 
       return Transformed; 
@@ -149,12 +153,9 @@ namespace llvm::noelle{
      * for whilifying the loop --- use collected data structures
      */ 
     if (WC->OriginalHeader == WC->OriginalLatch) { 
-
-      // errs() << "LoopWhilifier: Transforming single block loop\n";
-
+      errs() << this->outputPrefix << "       This is a single-block loop\n";
       this->transformSingleBlockLoop(WC);
       WC->IsSingleBlockLoop |= true;
-
     }
 
 
@@ -188,7 +189,7 @@ namespace llvm::noelle{
         F->getBasicBlockList(),
         (WC->NewBlocks)[0]->getIterator(), F->end());
 #endif
-    errs() << this->outputPrefix << "   Whilified\n";
+    errs() << this->outputPrefix << "     Whilified\n";
     // WC->Dump();
 
     /*
@@ -501,8 +502,7 @@ namespace llvm::noelle{
   bool LoopWhilifier::isDoWhile(
       WhilifierContext *WC
       ) {
-
-    bool IsDoWhile = false;
+    auto IsDoWhile = false;
 
     /*
      * TOP --- If any of the successors of the latch are not part 
@@ -584,8 +584,7 @@ namespace llvm::noelle{
   bool LoopWhilifier::canWhilify (
       WhilifierContext *WC
       ) {
-
-    bool canWhilify = true;
+    auto canWhilify = true;
 
     /*
      * TOP --- Require valid header, preheader, and single latch, 
