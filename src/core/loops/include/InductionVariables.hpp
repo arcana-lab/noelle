@@ -12,7 +12,6 @@
 
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "ScalarEvolutionReferencer.hpp"
-
 #include "SystemHeaders.hpp"
 #include "SCCDAG.hpp"
 #include "SCC.hpp"
@@ -23,54 +22,7 @@
 
 namespace llvm::noelle {
 
-  class InductionVariable;
   class LoopGoverningIVAttribution;
-
-  class InductionVariableManager {
-    public:
-
-      InductionVariableManager (
-        LoopsSummary &LIS,
-        InvariantManager &IVM,
-        ScalarEvolution &SE,
-        SCCDAG &sccdag,
-        LoopEnvironment &loopEnv
-      );
-
-      InductionVariableManager () = delete;
-
-      /*
-       * Return all induction variables including the loop-governing one of the outermost loop of the loop sub-tree related to @this.
-       */
-      std::unordered_set<InductionVariable *> getInductionVariables (void) const ;
-
-      /*
-       * Return all induction variables including the loop-governing one.
-       */
-      std::unordered_set<InductionVariable *> getInductionVariables (LoopStructure &LS) const ;
-
-      /*
-       * Return all induction variables that @i is involved in for any loop/sub-loop related to this manager.
-       */
-      std::unordered_set<InductionVariable *> getInductionVariables (Instruction *i) const ;
-
-      InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i) const ;
-
-      InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) const ;
-
-      bool doesContributeToComputeAnInductionVariable (Instruction *i) const ;
-
-      LoopGoverningIVAttribution * getLoopGoverningIVAttribution (LoopStructure &LS) const ;
-
-      InductionVariable * getDerivingInductionVariable (LoopStructure &LS, Instruction *derivedInstruction) const ;
-
-      ~InductionVariableManager ();
-
-    private:
-      LoopsSummary &LIS;
-      std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
-      std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *> loopToGoverningIVAttrMap;
-  };
 
   class InductionVariable {
     public:
@@ -213,6 +165,52 @@ namespace llvm::noelle {
         ScalarEvolution &SE
       ) ;
 
+  };
+
+  class InductionVariableManager {
+    public:
+
+      InductionVariableManager (
+        LoopsSummary &LIS,
+        InvariantManager &IVM,
+        ScalarEvolution &SE,
+        SCCDAG &sccdag,
+        LoopEnvironment &loopEnv
+      );
+
+      InductionVariableManager () = delete;
+
+      /*
+       * Return all induction variables including the loop-governing one of the outermost loop of the loop sub-tree related to @this.
+       */
+      std::unordered_set<InductionVariable *> getInductionVariables (void) const ;
+
+      /*
+       * Return all induction variables including the loop-governing one.
+       */
+      std::unordered_set<InductionVariable *> getInductionVariables (LoopStructure &LS) const ;
+
+      /*
+       * Return all induction variables that @i is involved in for any loop/sub-loop related to this manager.
+       */
+      std::unordered_set<InductionVariable *> getInductionVariables (Instruction *i) const ;
+
+      InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i) const ;
+
+      InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) const ;
+
+      bool doesContributeToComputeAnInductionVariable (Instruction *i) const ;
+
+      LoopGoverningIVAttribution * getLoopGoverningIVAttribution (LoopStructure &LS) const ;
+
+      InductionVariable * getDerivingInductionVariable (LoopStructure &LS, Instruction *derivedInstruction) const ;
+
+      ~InductionVariableManager ();
+
+    private:
+      LoopsSummary &LIS;
+      std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
+      std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *> loopToGoverningIVAttrMap;
   };
 
 }
