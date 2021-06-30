@@ -34,6 +34,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dataflow/include
   ../../callgraph/include
   ../../invariants/include
+  ../../induction_variables/include
   ../include/ 
   ./ 
   ${CMAKE_INSTALL_PREFIX}/include

@@ -1,24 +1,16 @@
 # Sources
 set(Srcs 
-  MemoryCloningAnalysis.cpp
-  Variable.cpp
-  AccumulatorOpInfo.cpp
-  ControlFlowEquivalence.cpp
-  LoopAwareMemDepAnalysis.cpp
-  LoopCarriedDependencies.cpp
-  LoopIterationDomainSpaceAnalysis.cpp
-  SCCAttrs.cpp
-  SCCDAGAttrs.cpp
-  SCCDAGNormalizer.cpp
-  LoopDependenceInfo.cpp
-  SCCDAGPartition.cpp
+  InductionVariables.cpp
+  InductionVariable.cpp
+  LoopGoverningIVAttribution.cpp
+  IVStepperUtility.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Loops")
+set(PassName "InductionVariables")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -44,7 +36,6 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_structure/include 
   ../../talkdown/include
   ../../invariants/include
-  ../../induction_variables/include
   ../include 
   ${CMAKE_INSTALL_PREFIX}/include
   )
