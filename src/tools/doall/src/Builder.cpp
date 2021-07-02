@@ -107,7 +107,8 @@ void DOALL::rewireLoopToIterateChunks (
   LoopGoverningIVUtility ivUtility(loopGoverningIVAttr->getInductionVariable(), *loopGoverningIVAttr);
   auto cmpInst = cast<CmpInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderCmpInst()));
   auto brInst = cast<BranchInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderBrInst()));
-  ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(cmpInst, brInst, task->getLastBlock(0));
+  auto basicBlockToJumpToWhenTheLoopEnds = task->getLastBlock(0);
+  ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(cmpInst, brInst, basicBlockToJumpToWhenTheLoopEnds);
   auto updatedCmpInst = cmpInst;
 
   /*
@@ -115,7 +116,7 @@ void DOALL::rewireLoopToIterateChunks (
    * and so the value's derivation can be hoisted into the preheader
    * 
    * Instructions which the PDG states are independent can include PHI nodes
-   * Assert that any PHIs are invariant. Hoise one of those values (if instructions) to the preheader.
+   * Assert that any PHIs are invariant. Hoist one of those values (if instructions) to the preheader.
    */
   auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {

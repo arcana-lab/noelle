@@ -30,7 +30,7 @@ namespace llvm::noelle {
 
       BranchInst *getHeaderBrInst (void) const;
 
-      BasicBlock *getExitBlockFromHeader (void) const;
+      BasicBlock * getExitBlockFromHeader (void) const;
 
       bool isSCCContainingIVWellFormed (void) const;
 

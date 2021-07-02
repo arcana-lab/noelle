@@ -28,14 +28,14 @@ namespace llvm::noelle {
     public:
 
       InductionVariable  (
-        LoopStructure *LS,
-        InvariantManager &IVM,
-        ScalarEvolution &SE,
-        PHINode *loopEntryPHI,
-        SCC &scc,
-        LoopEnvironment &loopEnvironment,
-        ScalarEvolutionReferentialExpander &referentialExpander
-      ) ;
+          LoopStructure *LS,
+          InvariantManager &IVM,
+          ScalarEvolution &SE,
+          PHINode *loopEntryPHI,
+          SCC &scc,
+          LoopEnvironment &loopEnvironment,
+          ScalarEvolutionReferentialExpander &referentialExpander
+          ) ;
 
       SCC * getSCC (void) const ;
 
@@ -45,9 +45,9 @@ namespace llvm::noelle {
 
       std::unordered_set<Instruction *> getNonPHIIntermediateValues (void) const ;
 
-      std::unordered_set<Instruction *> getAllInstructions(void) const ;
+      std::unordered_set<Instruction *> getAllInstructions (void) const ;
 
-      std::unordered_set<Instruction *> getDerivedSCEVInstructions(void) const ;
+      std::unordered_set<Instruction *> getDerivedSCEVInstructions (void) const ;
 
       Value * getStartValue (void) const;
 
@@ -138,32 +138,32 @@ namespace llvm::noelle {
       std::set<Value *> valuesToReferenceInComputingStepValue;
       std::set<Value *> valuesInScopeOfInductionVariable;
       void collectValuesInternalAndExternalToLoopAndSCC (
-        LoopStructure *LS,
-        LoopEnvironment &loopEnvironment
-      ) ;
+          LoopStructure *LS,
+          LoopEnvironment &loopEnvironment
+          ) ;
 
       void deriveStepValue (
-        LoopStructure *LS,
-        ScalarEvolution &SE,
-        ScalarEvolutionReferentialExpander &referentialExpander,
-        LoopEnvironment &loopEnv
-      ) ;
+          LoopStructure *LS,
+          ScalarEvolution &SE,
+          ScalarEvolutionReferentialExpander &referentialExpander,
+          LoopEnvironment &loopEnv
+          ) ;
 
       void deriveStepValueFromSCEVConstant (const SCEVConstant *scev) ;
       void deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev, LoopStructure *LS) ;
       bool deriveStepValueFromCompositeSCEV (
-        const SCEV *scev,
-        ScalarEvolutionReferentialExpander &referentialExpander,
-        LoopStructure *LS
-      ) ;
+          const SCEV *scev,
+          ScalarEvolutionReferentialExpander &referentialExpander,
+          LoopStructure *LS
+          ) ;
 
       void traverseCycleThroughLoopEntryPHIToGetAllIVInstructions () ;
 
       void traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions (
-        LoopStructure *LS,
-        InvariantManager &IVM,
-        ScalarEvolution &SE
-      ) ;
+          LoopStructure *LS,
+          InvariantManager &IVM,
+          ScalarEvolution &SE
+          ) ;
 
   };
 
@@ -171,12 +171,12 @@ namespace llvm::noelle {
     public:
 
       InductionVariableManager (
-        LoopsSummary &LIS,
-        InvariantManager &IVM,
-        ScalarEvolution &SE,
-        SCCDAG &sccdag,
-        LoopEnvironment &loopEnv
-      );
+          LoopsSummary &LIS,
+          InvariantManager &IVM,
+          ScalarEvolution &SE,
+          SCCDAG &sccdag,
+          LoopEnvironment &loopEnv
+          );
 
       InductionVariableManager () = delete;
 
