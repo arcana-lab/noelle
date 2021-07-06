@@ -130,7 +130,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
   auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
   if (loopGoverningIVAttr) {
     auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
-    LoopGoverningIVUtility ivUtility(loopGoverningIV, *loopGoverningIVAttr);
+    LoopGoverningIVUtility ivUtility(*loopGoverningIVAttr);
 
     auto originalCmpInst = loopGoverningIVAttr->getHeaderCmpInst();
     auto originalBrInst = loopGoverningIVAttr->getHeaderBrInst();

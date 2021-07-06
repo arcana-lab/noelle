@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -121,9 +121,17 @@ Value *IVUtility::offsetIVPHI (
  * LoopGoverningIVUtility implementation
  */
 
-LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGoverningIVAttribution &attribution)
-  : attribution{attribution}, conditionValueOrderedDerivation{},
-    flipOperandsToUseNonStrictPredicate{false}, flipBrSuccessorsToUseNonStrictPredicate{false} {
+LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attribution)
+  : attribution{attribution}
+  , conditionValueOrderedDerivation{}
+  , flipOperandsToUseNonStrictPredicate{false}
+  , flipBrSuccessorsToUseNonStrictPredicate{false} 
+{
+
+  /*
+   * Fetch the IV
+   */
+  auto IV = attribution.getInductionVariable();
 
   condition = attribution.getHeaderCmpInst();
   // TODO: Refer to whichever intermediate value is used in the comparison (known on attribution)
@@ -185,12 +193,14 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
       break;
   }
 
+  return ;
 }
 
 void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitValue(
   CmpInst *cmpToUpdate,
   BranchInst *branchInst,
-  BasicBlock *exitBlock) {
+  BasicBlock *exitBlock
+  ) {
 
   if (flipOperandsToUseNonStrictPredicate) {
     auto opL = cmpToUpdate->getOperand(0);
@@ -200,11 +210,11 @@ void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitVal
   }
   cmpToUpdate->setPredicate(nonStrictPredicate);
 
-  // branchInst->print(errs() << "Branch before: "); errs() << "\n";
   if (flipBrSuccessorsToUseNonStrictPredicate) {
     branchInst->swapSuccessors();
   }
-  // branchInst->print(errs() << "Branch after: "); errs() << "\n";
+
+  return ;
 }
 
 void LoopGoverningIVUtility::cloneConditionalCheckFor(
@@ -212,14 +222,23 @@ void LoopGoverningIVUtility::cloneConditionalCheckFor(
   Value *clonedCompareValue,
   BasicBlock *continueBlock,
   BasicBlock *exitBlock,
-  IRBuilder<> &cloneBuilder) {
+  IRBuilder<> &cloneBuilder
+  ) {
 
-  Value *cmpInst;
-  cmpInst = cloneBuilder.CreateICmp(nonStrictPredicate, recurrenceOfIV, clonedCompareValue);
+  /*
+   * Create the comparison instruction.
+   */
+  auto cmpInst = cloneBuilder.CreateICmp(nonStrictPredicate, recurrenceOfIV, clonedCompareValue);
+
+  /*
+   * Add the conditional branch
+   */
   cloneBuilder.CreateCondBr(cmpInst, exitBlock, continueBlock);
+
+  return ;
 }
 
-std::vector<Instruction *> &LoopGoverningIVUtility::getConditionValueDerivation (void) {
+std::vector<Instruction *> & LoopGoverningIVUtility::getConditionValueDerivation (void) {
   return conditionValueOrderedDerivation;
 }
 

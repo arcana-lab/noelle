@@ -11,8 +11,7 @@
 #include "DOALL.hpp"
 #include "DOALLTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle { 
 
 void DOALL::rewireLoopToIterateChunks (
   LoopDependenceInfo *LDI
@@ -104,7 +103,7 @@ void DOALL::rewireLoopToIterateChunks (
    * The exit condition needs to be made non-strict to catch iterating past it
    */
   auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
-  LoopGoverningIVUtility ivUtility(loopGoverningIVAttr->getInductionVariable(), *loopGoverningIVAttr);
+  LoopGoverningIVUtility ivUtility(*loopGoverningIVAttr);
   auto cmpInst = cast<CmpInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderCmpInst()));
   auto brInst = cast<BranchInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderBrInst()));
   auto basicBlockToJumpToWhenTheLoopEnds = task->getLastBlock(0);
@@ -278,4 +277,6 @@ void DOALL::rewireLoopToIterateChunks (
       headerClone
     );
   }
+}
+
 }

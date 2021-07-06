@@ -51,7 +51,7 @@ namespace llvm::noelle {
   class LoopGoverningIVUtility {
     public:
 
-      LoopGoverningIVUtility (InductionVariable &IV, LoopGoverningIVAttribution &attribution) ;
+      LoopGoverningIVUtility (LoopGoverningIVAttribution &GIV) ;
 
       LoopGoverningIVUtility () = delete ;
 
