@@ -57,6 +57,8 @@ namespace llvm::noelle {
 
       bool isStepValueLoopInvariant (void) const;
 
+      bool isStepValuePositive (void) const ;
+
       const SCEV * getStepSCEV (void) const;
 
       bool isIVInstruction (Instruction *I) const;

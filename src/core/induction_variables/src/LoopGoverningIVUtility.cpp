@@ -24,19 +24,34 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
    */
   auto IV = attribution.getInductionVariable();
 
-  condition = attribution.getHeaderCmpInst();
+  /*
+   * Fetch information about the condition to exit the loop.
+   *
+   * Check where the IV is in the comparison (left or right).
+   */
+  this->condition = attribution.getHeaderCmpInst();
   // TODO: Refer to whichever intermediate value is used in the comparison (known on attribution)
   this->doesOriginalCmpInstHaveIVAsLeftOperand = condition->getOperand(0) == attribution.getIntermediateValueUsedInCompare();
 
+  /*
+   * Collect the set of instructions that need to be executed to evaluate the loop exit condition for the subsequent iteration.
+   */
   auto conditionValueDerivationSet = attribution.getConditionValueDerivation();
   for (auto &I : *condition->getParent()) {
     if (conditionValueDerivationSet.find(&I) == conditionValueDerivationSet.end()) continue;
     conditionValueOrderedDerivation.push_back(&I);
   }
-
   assert(IV.getSingleComputedStepValue() && isa<ConstantInt>(IV.getSingleComputedStepValue()));
-  bool isStepValuePositive = cast<ConstantInt>(IV.getSingleComputedStepValue())->getValue().isStrictlyPositive();
-  bool conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == attribution.getExitBlockFromHeader();
+
+  /*
+   * Fetch information about the step value for the IV.
+   */
+  auto isStepValuePositive = IV.isStepValuePositive();
+
+  /*
+   * Fetch information about the predicate that when true the execution needs to leave the loop.
+   */
+  auto conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == attribution.getExitBlockFromHeader();
   // errs() << "Exit predicate before exit check: " << condition->getPredicate() << "\n";
   auto exitPredicate = conditionExitsOnTrue ? condition->getPredicate() : condition->getInversePredicate();
   // errs() << "Exit predicate before operand check: " << exitPredicate << "\n";
@@ -45,9 +60,7 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
   this->flipOperandsToUseNonStrictPredicate = !doesOriginalCmpInstHaveIVAsLeftOperand;
   this->flipBrSuccessorsToUseNonStrictPredicate = !conditionExitsOnTrue;
   // errs() << "Flips: " << flipOperandsToUseNonStrictPredicate << " " << flipBrSuccessorsToUseNonStrictPredicate << "\n";
-
   // condition->print(errs() << "Condition (exits on true: " << conditionExitsOnTrue << "): "); errs() << "\n";
-
   switch (exitPredicate) {
     case CmpInst::Predicate::ICMP_NE:
       // This predicate is non-strict and will result in either 0 or 1 iteration(s)
@@ -55,8 +68,7 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
       break;
     case CmpInst::Predicate::ICMP_EQ:
       // This predicate is strict and needs to be extended to LTE/GTE to catch jumping past the exiting value
-      this->nonStrictPredicate = isStepValuePositive
-        ? CmpInst::Predicate::ICMP_UGE : CmpInst::Predicate::ICMP_ULE;
+      this->nonStrictPredicate = isStepValuePositive ? CmpInst::Predicate::ICMP_UGE : CmpInst::Predicate::ICMP_ULE;
       break;
     case CmpInst::Predicate::ICMP_SLE:
     case CmpInst::Predicate::ICMP_SLT:
@@ -131,6 +143,35 @@ void LoopGoverningIVUtility::cloneConditionalCheckFor(
 
 std::vector<Instruction *> & LoopGoverningIVUtility::getConditionValueDerivation (void) {
   return conditionValueOrderedDerivation;
+}
+
+Value * LoopGoverningIVUtility::generateCodeToComputeTheTripCount (
+  IRBuilder<> &builder
+  ){
+
+  /*
+   * Fetch the start and last value.
+   */
+  auto IV = this->attribution.getInductionVariable();
+  auto startValue = IV.getStartValue();
+  auto lastValue = this->attribution.getHeaderCmpInstConditionValue();
+
+  /*
+   * Compute the delta.
+   */
+  Value *delta = nullptr;
+  if (IV.isStepValuePositive()){
+    delta = builder.CreateSub(lastValue, startValue);
+  } else {
+    delta = builder.CreateSub(startValue, lastValue);
+  }
+
+  /*
+   * Compute the number of steps to reach the delta.
+   */
+  auto tripCount = builder.CreateUDiv(delta, IV.getSingleComputedStepValue());
+
+  return tripCount;
 }
 
 }

@@ -71,6 +71,10 @@ namespace llvm::noelle {
           IRBuilder<> &cloneBuilder
           ) ;
 
+      Value * generateCodeToComputeTheTripCount (
+        IRBuilder<> &builder
+        );
+
     private:
       LoopGoverningIVAttribution &attribution;
       CmpInst *condition;

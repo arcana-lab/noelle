@@ -24,7 +24,7 @@ namespace llvm::noelle {
 
       InductionVariable & getInductionVariable (void) const;
 
-      CmpInst *getHeaderCmpInst(void) const;
+      CmpInst * getHeaderCmpInst(void) const;
 
       Value * getHeaderCmpInstConditionValue (void) const;
 
