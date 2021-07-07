@@ -4,6 +4,7 @@ set(Srcs
   InductionVariable.cpp
   LoopGoverningIVAttribution.cpp
   IVStepperUtility.cpp
+  LoopGoverningIVUtility.cpp
 )
 
 # Compilation flags
