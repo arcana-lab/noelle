@@ -22,9 +22,9 @@ RepoPath =
 
 # Define the output directories
 LogDir = $(RepoPath)/condor/log
-Output = $(LogDir)/condor.out
-Error = $(LogDir)/condor.err
-Log = $(LogDir)/condor.log
+Output = $(LogDir)/condor_performance.out
+Error = $(LogDir)/condor_performance.err
+Log = $(LogDir)/condor_performance.log
 
 # Each job requires access to the whole machine
 +IsWholeMachineJob      = true
