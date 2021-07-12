@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Lukas Gross, Simone Campanoni
+ * Copyright 2019 - 2021  Lukas Gross, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -8,10 +8,10 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "Utils.hpp"
 #include "LoopDistribution.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
  
 bool LoopDistribution::splitLoop (
   LoopDependenceInfo const &LDI, 
@@ -79,6 +79,7 @@ bool LoopDistribution::splitLoop (
       // errs () << "LoopDistribution: Branch instruction: " <<  *branch << "\n";
       instsToClone.insert(branch);
       this->recursivelyCollectDependencies(branch, instsToClone, LDI);
+
     } else {
       // errs() << "LoopDistribution: Abort: Non-branch terminator " << *BB->getTerminator() << "\n";
       return false;
@@ -228,16 +229,18 @@ bool LoopDistribution::splitWouldBeTrivial (
   std::set<Instruction *> const &instsToPullOut,
   std::set<Instruction *> const &instsToClone
   ){
-  bool result = true;
+  auto result = true;
   for (auto &BB : loopStructure->getBasicBlocks()) {
     for (auto &I : *BB) {
       if (true
           && instsToPullOut.find(&I) == instsToPullOut.end()
           && instsToClone.find(&I) == instsToClone.end()
           && (!isa<BranchInst>(&I))
+          && (Utils::isActualCode(&I))
         ) {
-        // errs() << "LoopDistribution: Not trivial because of " << I << "\n";
+        //errs() << "LoopDistribution: Not trivial because of " << I << "\n";
         result =  false;
+        break ;
       }
     }
   }
@@ -524,4 +527,6 @@ void LoopDistribution::doSplit (
 
   errs() << "LoopDistribution: Success: Finished split of " << *loopStructure->getFunction() << "\n";
   return ;
+}
+
 }
