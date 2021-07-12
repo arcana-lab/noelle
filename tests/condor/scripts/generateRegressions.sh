@@ -79,7 +79,7 @@ function generateCondorJobs {
 }
 
 function generateAllCondorJobs {
-  generateCondorJobs "0" ;
+  generateCondorJobs "8" ;
   generateCondorJobs "2" ;
 
   noelleOptions="-noelle-inliner-avoid-hoist-to-main -noelle-disable-helix" ;
