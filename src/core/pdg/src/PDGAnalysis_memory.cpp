@@ -13,9 +13,9 @@
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
 #include "IntegrationWithSVF.hpp"
+#include "Utils.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store) {
 
@@ -26,7 +26,7 @@ void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, Dat
      */
     if (auto otherStore = dyn_cast<StoreInst>(I)) {
       if (store != otherStore) {
-        addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg, F, AA, store, otherStore, DG_DATA_WAW);
+        this->addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg, F, AA, store, otherStore, DG_DATA_WAW);
       }
       continue ;
     }
@@ -35,7 +35,7 @@ void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, Dat
      * Check loads.
      */
     if (auto load = dyn_cast<LoadInst>(I)) {
-      addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg, F, AA, store, load, DG_DATA_RAW);
+      this->addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg, F, AA, store, load, DG_DATA_RAW);
       continue ;
     }
 
@@ -43,10 +43,10 @@ void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, Dat
      * Check calls.
      */
     if (auto call = dyn_cast<CallInst>(I)) {
-      if (!this->isActualCode(call)){
+      if (!Utils::isActualCode(call)){
         continue ;
       }
-      addEdgeFromFunctionModRef(pdg, F, AA, call, store, false);
+      this->addEdgeFromFunctionModRef(pdg, F, AA, call, store, false);
       continue ;
     }
   }
@@ -70,7 +70,7 @@ void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, Data
      * Check calls.
      */
     if (auto call = dyn_cast<CallInst>(I)) {
-      if (!this->isActualCode(call)){
+      if (!Utils::isActualCode(call)){
         continue ;
       }
       addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
@@ -588,4 +588,6 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
   pdg->addEdge(instI, instJ)->setMemMustType(true, must, dataDependenceType);
 
   return ;
+}
+
 }
