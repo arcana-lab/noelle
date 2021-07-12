@@ -269,3 +269,9 @@ regression_57/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -no
 regression_68/Whilifier -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
 regression_94/GlobalUsed -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
 regression_7/Recursive -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_33/Multiloops_list -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_39/Recursive -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_54/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_62/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main -noelle-disable-helix -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_65/Recursive -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_71/Streamcluster_pgain3 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
