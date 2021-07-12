@@ -163,7 +163,7 @@ namespace llvm::noelle {
         errs() << "Parallelizer: LoopSelector:      Loop nesting level: " << ls->getNestingLevel() << "\n";
         errs() << "Parallelizer: LoopSelector:      \"" << *loopHeader->getFirstNonPHI() << "\"\n";
         errs() << "Parallelizer: LoopSelector:      Whole-program savings = " << savedTimeTotal << "%\n";
-        errs() << "Parallelizer: LoopSelector:      Loop savings = " << savedTimeRelative << "%)\n";
+        errs() << "Parallelizer: LoopSelector:      Loop savings = " << savedTimeRelative << "%\n";
       }
       errs() << "Parallelizer: LoopSelector: End\n";
     }
