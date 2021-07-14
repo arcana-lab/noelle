@@ -46,7 +46,7 @@ bool Noelle::doInitialization (Module &M) {
   this->filterFileName = getenv("INDEX_FILE");
   this->hasReadFilterFile = false;
   this->verbose = static_cast<Verbosity>(Verbose.getValue());
-  this->minHot = ((double)(MinimumHotness.getValue())) / 100;
+  this->minHot = ((double)(MinimumHotness.getValue())) / 1000;
   auto optMaxCores = MaximumCores.getValue();
   if (optMaxCores == 0){
     optMaxCores = Architecture::getNumberOfPhysicalCores();
