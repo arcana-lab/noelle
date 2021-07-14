@@ -29,36 +29,6 @@ namespace llvm::noelle{
     auto AnyTransformed = false;
     errs() << this->outputPrefix << "Start\n";
 
-#if 0
-    if(const char *env_p = std::getenv("noelletest"))
-    {   
-      int test = std::atoi(env_p);
-      errs() << "Numerically: " << test << '\n';
-
-#if 1
-      if (test > NOELLE_TEST_WHILIFIER) { /* 6+ */
-        errs() << "LoopWhilifier: Cutting ...\n";
-        return AnyTransformed;
-      }
-#endif
-
-#if 1
-      if (test == NOELLE_TEST_WHILIFIER) { /* 5. */
-        errs() << "LoopWhilifier: Need to restrict NumHandled: currently ---"
-          << this->NumHandled << "\n";
-
-        if (this->NumHandled >= MAX_HANDLED_WHILIFIER) {
-          errs() << "LoopWhilifier: NumHandled greater than MAX_HANDLED_WHILIFIER --- cutting...\n"; 
-          return AnyTransformed;
-        }
-
-      }
-
-#endif
-
-    }   
-    else errs() << "noelletest is not found" << '\n';
-#endif
 
     /*
      * Handle subloops --- return if there is any
@@ -819,77 +789,16 @@ namespace llvm::noelle{
      * value from the "peeled" block
      * 
      * Resolve all latch-exit dependencies here  
-     * 
-     * NEEDS ENGINEERING FIX --- CODE REPETITION --- TODO
-     * 
      */ 
-    // F->print(errs());
     for (auto Edge : WC->ExitEdges) {
 
-#if 0
       for (PHINode &PHI : Edge.second->phis()) {
-
-        /*
-         * Need to determine if the incoming value
-         * must be removed 
-         */ 
-        auto NeedToRemoveIncoming = false;
-
-        Value *Incoming = PHI.getIncomingValueForBlock(Edge.first),
-              *Propagating = Incoming;
-
-        Instruction *IncomingInst = dyn_cast<Instruction>(Incoming);
-
-        if (IncomingInst 
-            && (this->containsInOriginalLoop(WC, IncomingInst->getParent()))) {
-
-          Propagating = (WC->BodyToPeelMap)[Incoming];
-
-          /*
-           * If the exit edge source is the OriginalLatch, the incoming
-           * value must be removed
-           */ 
-          if (Edge.first == OriginalLatch) {
-
-            /*
-             * If the incoming value itself is not defined in the 
-             * original latch --- it needs a dependency PHINode
-             * to be propagated to the exit block
-             * 
-             * For now --- mark this in the ExitDependencies map, 
-             * and add the Propagating value to the exit block PHI
-             * 
-             * This must be resolved post remapInstructionsInBlocks
-             */ 
-            if (IncomingInst->getParent() != OriginalLatch) {
-              (WC->ExitDependencies)[&PHI] = Incoming;
-            }
-
-            NeedToRemoveIncoming |= true;
-
-          }
-
-        }
-
-        PHI.addIncoming(Propagating, cast<BasicBlock>((WC->BodyToPeelMap)[Edge.first]));
-
-        if (NeedToRemoveIncoming) {
-          PHI.removeIncomingValue(Edge.first);
-        }
-
-      }
-#endif
-
-      for (PHINode &PHI : Edge.second->phis()) {
-
-        errs() << PHI << "\n";
 
         /*
          * If the exit edge source is the OriginalLatch, the incoming
          * value must be removed. 
          */
         bool NeedToRemoveIncoming = (Edge.first == OriginalLatch);
-        errs() << "NeedToRemoveIncoming: " << NeedToRemoveIncoming << "\n";
 
 
         /*
@@ -941,8 +850,6 @@ namespace llvm::noelle{
         if (NeedToRemoveIncoming) {
           PHI.removeIncomingValue(Edge.first);
         }
-
-        errs() << "PHI post if NeedToRemoveIncoming: " << PHI << "\n";
 
       }
   
