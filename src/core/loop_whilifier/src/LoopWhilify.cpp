@@ -826,6 +826,7 @@ namespace llvm::noelle{
     // F->print(errs());
     for (auto Edge : WC->ExitEdges) {
 
+#if 0
       for (PHINode &PHI : Edge.second->phis()) {
 
         /*
@@ -877,6 +878,74 @@ namespace llvm::noelle{
         }
 
       }
+#endif
+
+      for (PHINode &PHI : Edge.second->phis()) {
+
+        errs() << PHI << "\n";
+
+        /*
+         * If the exit edge source is the OriginalLatch, the incoming
+         * value must be removed. 
+         */
+        bool NeedToRemoveIncoming = (Edge.first == OriginalLatch);
+        errs() << "NeedToRemoveIncoming: " << NeedToRemoveIncoming << "\n";
+
+
+        /*
+         * Analyze the incoming value to the exit basic block PHI
+         */
+        Value *Incoming = PHI.getIncomingValueForBlock(Edge.first);
+        Value *Propagating = Incoming;
+        Instruction *IncomingInst = dyn_cast<Instruction>(Incoming);
+
+        if (true
+            && IncomingInst
+            && (this->containsInOriginalLoop(WC, IncomingInst->getParent()))) {
+          
+          /*
+           * Fetch the corresponding clone to the incoming value
+           * to propagate to the exit edge destination
+           */
+          Propagating = (WC->BodyToPeelMap)[Incoming];
+
+
+          /*
+           * If the incoming value itself is not defined in the 
+           * original latch --- it needs a dependency PHINode
+           * to be propagated to the exit block
+           * 
+           * For now --- mark this in the ExitDependencies map, 
+           * and add the Propagating value to the exit block PHI
+           * 
+           * This must be resolved post remapInstructionsInBlocks
+           */ 
+          if (true
+              && NeedToRemoveIncoming /* i.e. incoming block is OriginalLatch */
+              && (IncomingInst->getParent() != OriginalLatch)) {
+            (WC->ExitDependencies)[&PHI] = Incoming;
+          }
+
+        }
+
+
+        /*
+         * Add the propagating value and remove the incoming 
+         * value if necessary
+         */
+        PHI.addIncoming(
+          Propagating, 
+          cast<BasicBlock>((WC->BodyToPeelMap)[Edge.first])
+        );
+
+        if (NeedToRemoveIncoming) {
+          PHI.removeIncomingValue(Edge.first);
+        }
+
+        errs() << "PHI post if NeedToRemoveIncoming: " << PHI << "\n";
+
+      }
+  
 
     }
 
