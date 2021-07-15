@@ -5,6 +5,7 @@ set(Srcs
   ScalarEvolutionReferenceTreeExpander.cpp
   ScalarEvolutionDelinearization.cpp
   BitMatrix.cpp
+  Utils.cpp
 )
 
 # Compilation flags

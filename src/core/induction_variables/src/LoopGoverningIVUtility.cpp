@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,135 +10,48 @@
  */
 #include "IVStepperUtility.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle{
 
-PHINode *IVUtility::createChunkPHI (BasicBlock *preheaderB, BasicBlock *headerB, Type *chunkPHIType, Value *chunkSize) {
-
-  // TODO: Add asserts to ensure the basic blocks/terminators are well formed
-
-  std::vector<BasicBlock *> headerPreds(pred_begin(headerB), pred_end(headerB));
-  IRBuilder<> headerBuilder(headerB->getFirstNonPHIOrDbgOrLifetime());
-  auto chunkPHI = headerBuilder.CreatePHI(chunkPHIType, headerPreds.size());
-  auto zeroValueForChunking = ConstantInt::get(chunkPHIType, 0);
-  auto onesValueForChunking = ConstantInt::get(chunkPHIType, 1);
-
-  for (auto B : headerPreds) {
-    IRBuilder<> latchBuilder(B->getTerminator());
-
-    if (preheaderB == B) {
-      chunkPHI->addIncoming(zeroValueForChunking, B);
-    } else {
-      auto chunkIncrement = latchBuilder.CreateAdd(chunkPHI, onesValueForChunking);
-      auto isChunkCompleted = latchBuilder.CreateICmp(CmpInst::Predicate::ICMP_EQ, chunkIncrement, chunkSize);
-      auto chunkWrap = latchBuilder.CreateSelect(isChunkCompleted, zeroValueForChunking, chunkIncrement, "chunkWrap");
-      chunkPHI->addIncoming(chunkWrap, B);
-    }
-  }
-
-  return chunkPHI;
-}
-
-void IVUtility::chunkInductionVariablePHI(
-  BasicBlock *preheaderBlock,
-  PHINode *ivPHI,
-  PHINode *chunkPHI,
-  Value *chunkStepSize
-) {
-
-  for (auto i = 0; i < ivPHI->getNumIncomingValues(); ++i) {
-    auto B = ivPHI->getIncomingBlock(i);
-    IRBuilder<> latchBuilder(B->getTerminator());
-    if (preheaderBlock == B) continue;
-
-    auto chunkIncomingIdx = chunkPHI->getBasicBlockIndex(B);
-    Value *isChunkCompleted = cast<SelectInst>(chunkPHI->getIncomingValue(chunkIncomingIdx))->getCondition();
-
-    auto initialLatchValue = ivPHI->getIncomingValue(i);
-    auto ivOffsetByChunk = offsetIVPHI(B, ivPHI, initialLatchValue, chunkStepSize);
-
-    /*
-     * Iterate to next chunk if necessary
-     */
-    ivPHI->setIncomingValue(i, latchBuilder.CreateSelect(
-      isChunkCompleted,
-      ivOffsetByChunk,
-      initialLatchValue, 
-      "nextStepOrNextChunk"
-    ));
-
-  }
-}
-
-void IVUtility::stepInductionVariablePHI (
-  BasicBlock *preheaderBlock,
-  PHINode *ivPHI,
-  Value *additionalStepSize
-) {
-
-  for (auto i = 0; i < ivPHI->getNumIncomingValues(); ++i) {
-    auto B = ivPHI->getIncomingBlock(i);
-    if (preheaderBlock == B) continue;
-
-    auto prevStepRecurrence = ivPHI->getIncomingValue(i);
-    auto batchStepRecurrence = offsetIVPHI(B, ivPHI, prevStepRecurrence, additionalStepSize);
-    ivPHI->setIncomingValue(i, batchStepRecurrence);
-  }
-}
-
-Value *IVUtility::offsetIVPHI (
-  BasicBlock *insertBlock,
-  PHINode *ivPHI,
-  Value *startValue,
-  Value *offsetValue
-) {
-
-  IRBuilder<> insertBuilder(insertBlock->getTerminator());
-  Value *offsetStartValue = nullptr;
+LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attribution)
+  : attribution{attribution}
+  , conditionValueOrderedDerivation{}
+  , flipOperandsToUseNonStrictPredicate{false}
+  , flipBrSuccessorsToUseNonStrictPredicate{false} 
+{
 
   /*
-   * For pointer arithmetic, use ptrtoint - inttoptr paradigm
+   * Fetch the IV
    */
-  auto ivType = ivPHI->getType();
-  if (ivType->isPointerTy()) {
-    offsetStartValue = insertBuilder.CreateIntToPtr(
-      insertBuilder.CreateAdd(
-        insertBuilder.CreatePtrToInt(
-          startValue,
-          offsetValue->getType()
-        ),
-        offsetValue
-      ),
-      ivType
-    );
-  } else {
-    offsetStartValue = insertBuilder.CreateAdd(startValue, offsetValue);
-  }
+  auto IV = attribution.getInductionVariable();
 
-  return offsetStartValue;
-}
-
-/*
- * LoopGoverningIVUtility implementation
- */
-
-LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGoverningIVAttribution &attribution)
-  : attribution{attribution}, conditionValueOrderedDerivation{},
-    flipOperandsToUseNonStrictPredicate{false}, flipBrSuccessorsToUseNonStrictPredicate{false} {
-
-  condition = attribution.getHeaderCmpInst();
+  /*
+   * Fetch information about the condition to exit the loop.
+   *
+   * Check where the IV is in the comparison (left or right).
+   */
+  this->condition = attribution.getHeaderCmpInst();
   // TODO: Refer to whichever intermediate value is used in the comparison (known on attribution)
   this->doesOriginalCmpInstHaveIVAsLeftOperand = condition->getOperand(0) == attribution.getIntermediateValueUsedInCompare();
 
+  /*
+   * Collect the set of instructions that need to be executed to evaluate the loop exit condition for the subsequent iteration.
+   */
   auto conditionValueDerivationSet = attribution.getConditionValueDerivation();
   for (auto &I : *condition->getParent()) {
     if (conditionValueDerivationSet.find(&I) == conditionValueDerivationSet.end()) continue;
     conditionValueOrderedDerivation.push_back(&I);
   }
-
   assert(IV.getSingleComputedStepValue() && isa<ConstantInt>(IV.getSingleComputedStepValue()));
-  bool isStepValuePositive = cast<ConstantInt>(IV.getSingleComputedStepValue())->getValue().isStrictlyPositive();
-  bool conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == attribution.getExitBlockFromHeader();
+
+  /*
+   * Fetch information about the step value for the IV.
+   */
+  auto isStepValuePositive = IV.isStepValuePositive();
+
+  /*
+   * Fetch information about the predicate that when true the execution needs to leave the loop.
+   */
+  auto conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == attribution.getExitBlockFromHeader();
   // errs() << "Exit predicate before exit check: " << condition->getPredicate() << "\n";
   auto exitPredicate = conditionExitsOnTrue ? condition->getPredicate() : condition->getInversePredicate();
   // errs() << "Exit predicate before operand check: " << exitPredicate << "\n";
@@ -147,9 +60,7 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
   this->flipOperandsToUseNonStrictPredicate = !doesOriginalCmpInstHaveIVAsLeftOperand;
   this->flipBrSuccessorsToUseNonStrictPredicate = !conditionExitsOnTrue;
   // errs() << "Flips: " << flipOperandsToUseNonStrictPredicate << " " << flipBrSuccessorsToUseNonStrictPredicate << "\n";
-
   // condition->print(errs() << "Condition (exits on true: " << conditionExitsOnTrue << "): "); errs() << "\n";
-
   switch (exitPredicate) {
     case CmpInst::Predicate::ICMP_NE:
       // This predicate is non-strict and will result in either 0 or 1 iteration(s)
@@ -157,8 +68,7 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
       break;
     case CmpInst::Predicate::ICMP_EQ:
       // This predicate is strict and needs to be extended to LTE/GTE to catch jumping past the exiting value
-      this->nonStrictPredicate = isStepValuePositive
-        ? CmpInst::Predicate::ICMP_UGE : CmpInst::Predicate::ICMP_ULE;
+      this->nonStrictPredicate = isStepValuePositive ? CmpInst::Predicate::ICMP_UGE : CmpInst::Predicate::ICMP_ULE;
       break;
     case CmpInst::Predicate::ICMP_SLE:
     case CmpInst::Predicate::ICMP_SLT:
@@ -186,12 +96,14 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (InductionVariable &IV, LoopGover
       break;
   }
 
+  return ;
 }
 
 void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitValue(
   CmpInst *cmpToUpdate,
   BranchInst *branchInst,
-  BasicBlock *exitBlock) {
+  BasicBlock *exitBlock
+  ) {
 
   if (flipOperandsToUseNonStrictPredicate) {
     auto opL = cmpToUpdate->getOperand(0);
@@ -201,11 +113,11 @@ void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitVal
   }
   cmpToUpdate->setPredicate(nonStrictPredicate);
 
-  // branchInst->print(errs() << "Branch before: "); errs() << "\n";
   if (flipBrSuccessorsToUseNonStrictPredicate) {
     branchInst->swapSuccessors();
   }
-  // branchInst->print(errs() << "Branch after: "); errs() << "\n";
+
+  return ;
 }
 
 void LoopGoverningIVUtility::cloneConditionalCheckFor(
@@ -213,13 +125,53 @@ void LoopGoverningIVUtility::cloneConditionalCheckFor(
   Value *clonedCompareValue,
   BasicBlock *continueBlock,
   BasicBlock *exitBlock,
-  IRBuilder<> &cloneBuilder) {
+  IRBuilder<> &cloneBuilder
+  ) {
 
-  Value *cmpInst;
-  cmpInst = cloneBuilder.CreateICmp(nonStrictPredicate, recurrenceOfIV, clonedCompareValue);
+  /*
+   * Create the comparison instruction.
+   */
+  auto cmpInst = cloneBuilder.CreateICmp(nonStrictPredicate, recurrenceOfIV, clonedCompareValue);
+
+  /*
+   * Add the conditional branch
+   */
   cloneBuilder.CreateCondBr(cmpInst, exitBlock, continueBlock);
+
+  return ;
 }
 
-std::vector<Instruction *> &LoopGoverningIVUtility::getConditionValueDerivation (void) {
+std::vector<Instruction *> & LoopGoverningIVUtility::getConditionValueDerivation (void) {
   return conditionValueOrderedDerivation;
+}
+
+Value * LoopGoverningIVUtility::generateCodeToComputeTheTripCount (
+  IRBuilder<> &builder
+  ){
+
+  /*
+   * Fetch the start and last value.
+   */
+  auto IV = this->attribution.getInductionVariable();
+  auto startValue = IV.getStartValue();
+  auto lastValue = this->attribution.getHeaderCmpInstConditionValue();
+
+  /*
+   * Compute the delta.
+   */
+  Value *delta = nullptr;
+  if (IV.isStepValuePositive()){
+    delta = builder.CreateSub(lastValue, startValue);
+  } else {
+    delta = builder.CreateSub(startValue, lastValue);
+  }
+
+  /*
+   * Compute the number of steps to reach the delta.
+   */
+  auto tripCount = builder.CreateUDiv(delta, IV.getSingleComputedStepValue());
+
+  return tripCount;
+}
+
 }

@@ -173,7 +173,7 @@ bool DOALL::canBeAppliedToLoop (
    * Check if the final value of the induction variable is a loop invariant.
    */
   auto invariantManager = LDI->getInvariantManager();
-  LoopGoverningIVUtility ivUtility(loopGoverningIVAttr->getInductionVariable(), *loopGoverningIVAttr);
+  LoopGoverningIVUtility ivUtility(*loopGoverningIVAttr);
   auto &derivation = ivUtility.getConditionValueDerivation();
   for (auto I : derivation) {
     if (!invariantManager->isLoopInvariant(I)){

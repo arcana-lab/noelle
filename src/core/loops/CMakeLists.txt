@@ -34,10 +34,7 @@ install(PROGRAMS
     include/Variable.hpp
     include/ControlFlowEquivalence.hpp
     include/LoopDependenceInfo.hpp
-    include/InductionVariables.hpp
-    include/LoopGoverningIVAttribution.hpp
     include/LoopIterationDomainSpaceAnalysis.hpp
-    include/IVStepperUtility.hpp
     include/SCCDAGAttrs.hpp
     include/SCCDAGNormalizer.hpp
     include/SCCDAGPartition.hpp

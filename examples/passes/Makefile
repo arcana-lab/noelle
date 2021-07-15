@@ -9,5 +9,6 @@ clean:
 	cd dfa ; ./scripts/clean.sh
 	cd dfa2 ; ./scripts/clean.sh
 	cd dfa3 ; ./scripts/clean.sh
+	cd induction_variables ; ./scripts/clean.sh
 
 .PHONY: clean
