@@ -300,5 +300,16 @@ MetadataManager * Noelle::getMetadataManager (void) {
   }
   return this->mm;
 }
+      
+bool Noelle::verifyCode (void) const {
+  assert(this->program != nullptr);
+
+  /*
+   * Check the entire program.
+   */
+  auto incorrect = llvm::verifyModule(*this->program);
+
+  return !incorrect;
+}
 
 }
