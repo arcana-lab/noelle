@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -11,10 +11,9 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
-void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
+void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
 
   /*
    * Fetch loop and IV information.
@@ -150,15 +149,24 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     auto entryIntoBody = isTrueExiting ? headerSuccFalse : headerSuccTrue;
 
     /*
-     * Collect instructions that cannot be in the header
+     * Collect instructions that can stay in the new header.
      */
-    std::vector<Instruction *> originalInstsBeingDuplicated;
+    std::set<Instruction *> cloneInstsThatCanStayInTheNewHeader;
+    std::vector<Instruction *> originalInstsThatCanStayInTheNewHeader;
+    std::vector<Instruction *> originalInstsThatMustMove;
     for (auto &I : *loopHeader) {
+
+      /*
+       * Fetch the clone
+       */
+      auto cloneI = task->getCloneOfOriginalInstruction(&I);
+
+      /*
+       * Fetch the SCC that contains I (if it exists)
+       */
 		  auto scc = sccdag->sccOfValue(&I);
       auto sccInfo = sccManager->getSCCAttrs(scc);
       auto sccType = sccInfo->getType();
-
-      // I.print(errs() << "Investigating: "); errs() << "\n";
 
       /*
        * Ensure the original instruction was not independent, not a PHI, not clonable
@@ -167,22 +175,52 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
        * HACK: We don't have a way to ask if an instruction is repeatable, so to be safe,
        * anything that isn't belonging to an IV is duplicated
        */
-      if (isa<PHINode>(&I)) continue;
-      if (originalCmpInst == &I || originalBrInst == &I) continue;
-      if (sccInfo->isInductionVariableSCC()) continue;
+      if (isa<PHINode>(&I)) {
+        originalInstsThatCanStayInTheNewHeader.push_back(&I);
+        cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
+        continue;
+      }
+      if (  false
+            || (originalCmpInst == &I)
+            || (originalBrInst == &I)
+        ){
+        originalInstsThatCanStayInTheNewHeader.push_back(&I);
+        cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
+        continue;
+      }
+      if (sccInfo->isInductionVariableSCC()) {
+        originalInstsThatCanStayInTheNewHeader.push_back(&I);
+        cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
+        continue;
+      }
 
-      // I.print(errs() << "Duplicating: "); errs() << "\n";
+      /*
+       * The clone of this original instruction must move out from the new header.
+       */
+      originalInstsThatMustMove.push_back(&I);
+    }
 
-      originalInstsBeingDuplicated.push_back(&I);
+    /*
+     * Collect the instruction in the old header of the task that must move.
+     */
+    std::vector<Instruction *> cloneInstsThatMustMove;
+    for (auto &I : *headerClone){
+      if (cloneInstsThatCanStayInTheNewHeader.find(&I) != cloneInstsThatCanStayInTheNewHeader.end()){
+        continue ;
+      }
+
+      /*
+       * The instruction must move from the old header to the new one.
+       */
+      cloneInstsThatMustMove.push_back(&I);
     }
 
     /*
      * Move those instructions to the loop body (right at the beginning, in order)
      */
     auto firstBodyInst = entryIntoBody->getFirstNonPHIOrDbgOrLifetime();
-    for (auto iIter = originalInstsBeingDuplicated.rbegin(); iIter != originalInstsBeingDuplicated.rend(); ++iIter) {
-      auto originalI = *iIter;
-      auto cloneI = task->getCloneOfOriginalInstruction(originalI);
+    for (auto iIter = cloneInstsThatMustMove.rbegin(); iIter != cloneInstsThatMustMove.rend(); ++iIter) {
+      auto cloneI = *iIter;
       cloneI->moveBefore(firstBodyInst);
       firstBodyInst = cloneI;
     }
@@ -197,7 +235,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      * Clone these instructions and execute them after exiting the loop ONLY IF
      * the previous iteration's IV value passes the loop guard.
      */
-    for (auto originalI : originalInstsBeingDuplicated) {
+    for (auto originalI : originalInstsThatMustMove) {
       auto cloneI = task->getCloneOfOriginalInstruction(originalI);
       auto duplicateI = cloneI->clone();
       lastIterationExecutionBuilder.Insert(duplicateI);
@@ -207,9 +245,9 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     /*
      * Re-wire the cloned last execution instructions together
      */
-    for (auto originalI : originalInstsBeingDuplicated) {
+    for (auto originalI : originalInstsThatMustMove) {
       auto duplicateI = this->lastIterationExecutionDuplicateMap.at(originalI);
-      for (auto originalJ : originalInstsBeingDuplicated) {
+      for (auto originalJ : originalInstsThatMustMove) {
         if (originalI == originalJ) continue;
 
         auto cloneJ = task->getCloneOfOriginalInstruction(originalJ);
@@ -311,4 +349,6 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     }
 
   }
+}
+
 }
