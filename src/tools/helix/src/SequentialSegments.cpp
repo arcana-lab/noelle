@@ -149,7 +149,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   for (auto set : sets){
 
     /*
-     * Check if the current set of SCCs require a sequential segments.
+     * Check if the current set of SCCs require a sequential segment.
      */
     auto requireSS = false;
     for (auto scc : set->sccs){
@@ -159,7 +159,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
        * NOTE: If no original SCC mapping exists, default to analyzing the newly constructed SCC
        */
       auto sccToAnalyze = scc;
-      SCCAttrs *sccInfo = sccManager->getSCCAttrs(sccToAnalyze);
+      auto sccInfo = sccManager->getSCCAttrs(sccToAnalyze);
       if (taskToOriginalFunctionSCCMap.find(scc) != taskToOriginalFunctionSCCMap.end()) {
         sccToAnalyze = taskToOriginalFunctionSCCMap.at(scc);
         sccInfo = originalSCCManager->getSCCAttrs(sccToAnalyze);
