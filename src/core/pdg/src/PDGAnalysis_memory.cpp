@@ -119,6 +119,13 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   auto makeRefEdge = false, makeModEdge = false;
 
   /*
+   * We cannot have memory dependences from a call to a deallocator (e.g., free).
+   */
+  if (Utils::isDeallocator(call)){
+    return ;
+  }
+
+  /*
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(store))) {
@@ -201,15 +208,29 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   if (makeRefEdge) {
     if (addEdgeFromCall) {
       pdg->addEdge(call, store)->setMemMustType(true, false, DG_DATA_WAR);
+
     } else {
-      pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_RAW);
+
+      /*
+       * We cannot have memory dependences from a memory instruction to allocators as they always return new memory.
+       */
+      if (!Utils::isAllocator(call)){
+        pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_RAW);
+      }
     }
   }
   if (makeModEdge) {
     if (addEdgeFromCall) {
       pdg->addEdge(call, store)->setMemMustType(true, false, DG_DATA_WAW);
+
     } else {
-      pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_WAW);
+
+      /*
+       * We cannot have memory dependences from a memory instruction to allocators as they always return new memory.
+       */
+      if (!Utils::isAllocator(call)){
+        pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_WAW);
+      }
     }
   }
 
@@ -218,6 +239,13 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
 
 void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, LoadInst *load, bool addEdgeFromCall) {
   BitVector bv(3, false);
+
+  /*
+   * We cannot have memory dependences from a call to a deallocator (e.g., free).
+   */
+  if (Utils::isDeallocator(call)){
+    return ;
+  }
 
   /*
    * Query the LLVM alias analyses.
@@ -277,8 +305,15 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    */
   if (addEdgeFromCall) {
     pdg->addEdge(call, load)->setMemMustType(true, false, DG_DATA_RAW);
+
   } else {
-    pdg->addEdge(load, call)->setMemMustType(true, false, DG_DATA_WAR);
+
+    /*
+     * We cannot have memory dependences from a memory instruction to allocators as they always return new memory.
+     */
+    if (!Utils::isAllocator(call)){
+      pdg->addEdge(load, call)->setMemMustType(true, false, DG_DATA_WAR);
+    }
   }
 
   return ;
@@ -289,6 +324,13 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   BitVector rbv(3, false);
   auto makeRefEdge = false, makeModEdge = false, makeModRefEdge = false;
   auto reverseRefEdge = false, reverseModEdge = false, reverseModRefEdge = false;
+
+  /*
+   * We cannot have memory dependences from a call to a deallocator (e.g., free).
+   */
+  if (Utils::isDeallocator(call)){
+    return ;
+  }
 
   /*
    * Query the LLVM alias analyses.
