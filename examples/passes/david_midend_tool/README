@@ -1,0 +1,11 @@
+NOTE:
+
+TO COMPILE THIS TOOL:
+
+cd ../../../../baseline_10/scripts
+./build_compiler_rt_for_arm.sh
+
+RETURN TO THIS DIRECTORY
+
+source ../../../../baseline_10/enable
+./run_me.sh
