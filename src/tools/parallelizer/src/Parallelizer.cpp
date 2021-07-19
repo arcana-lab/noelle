@@ -10,46 +10,44 @@
  */
 #include "Parallelizer.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
-
 namespace llvm::noelle {
-  
+
   bool Parallelizer::parallelizeLoop (
-    LoopDependenceInfo *LDI, 
-    Noelle &par, 
-    DSWP &dswp, 
-    DOALL &doall, 
-    HELIX &helix, 
-    Heuristics *h
-    ){
+      LoopDependenceInfo *LDI, 
+      Noelle &par, 
+      DSWP &dswp, 
+      DOALL &doall, 
+      HELIX &helix, 
+      Heuristics *h
+      ){
 
     /*
-    * Assertions.
-    */
+     * Assertions.
+     */
     assert(LDI != nullptr);
     assert(h != nullptr);
 
     /*
-    * Fetch the verbosity level.
-    */
+     * Fetch the verbosity level.
+     */
     auto verbose = par.getVerbosity();
 
     /*
-    * Fetch the loop headers.
-    */
+     * Fetch the loop headers.
+     */
     auto loopStructure = LDI->getLoopStructure();
     auto loopHeader = loopStructure->getHeader();
     auto loopPreHeader = loopStructure->getPreHeader();
 
     /*
-    * Fetch the loop function.
-    */
+     * Fetch the loop function.
+     */
     auto loopFunction = loopStructure->getFunction();
+    assert(par.verifyCode());
 
     /*
-    * Print
-    */
+     * Print
+     */
     if (verbose != Verbosity::Disabled) {
       errs() << "Parallelizer: Start\n";
       errs() << "Parallelizer:  Function = \"" << loopFunction->getName() << "\"\n";
@@ -59,32 +57,32 @@ namespace llvm::noelle {
     }
 
     /*
-    * Parallelize the loop.
-    */
+     * Parallelize the loop.
+     */
     auto codeModified = false;
     ParallelizationTechnique *usedTechnique = nullptr;
     if (  true
-          && par.isTransformationEnabled(DOALL_ID)
-          && LDI->isTransformationEnabled(DOALL_ID)
-          && doall.canBeAppliedToLoop(LDI, par, h)
-      ){
+        && par.isTransformationEnabled(DOALL_ID)
+        && LDI->isTransformationEnabled(DOALL_ID)
+        && doall.canBeAppliedToLoop(LDI, par, h)
+       ){
 
       /*
-      * Apply DOALL.
-      */
+       * Apply DOALL.
+       */
       doall.reset();
       codeModified = doall.apply(LDI, par, h);
       usedTechnique = &doall;
 
     } else if ( true
-                && par.isTransformationEnabled(HELIX_ID)
-                && LDI->isTransformationEnabled(HELIX_ID)
-                && helix.canBeAppliedToLoop(LDI, par, h)   
-      ){
+        && par.isTransformationEnabled(HELIX_ID)
+        && LDI->isTransformationEnabled(HELIX_ID)
+        && helix.canBeAppliedToLoop(LDI, par, h)   
+        ){
 
       /*
-      * Apply HELIX
-      */
+       * Apply HELIX
+       */
       helix.reset();
       codeModified = helix.apply(LDI, par, h);
 
@@ -113,66 +111,67 @@ namespace llvm::noelle {
       usedTechnique = &helix;
 
     } else if ( true
-                && par.isTransformationEnabled(DSWP_ID)
-                && LDI->isTransformationEnabled(DSWP_ID)
-                && dswp.canBeAppliedToLoop(LDI, par, h)
-      ) {
+        && par.isTransformationEnabled(DSWP_ID)
+        && LDI->isTransformationEnabled(DSWP_ID)
+        && dswp.canBeAppliedToLoop(LDI, par, h)
+        ) {
 
       /*
-      * Apply DSWP.
-      */
+       * Apply DSWP.
+       */
       dswp.reset();
       codeModified = dswp.apply(LDI, par, h);
       usedTechnique = &dswp;
     }
 
     /*
-    * Check if the loop has been parallelized.
-    */
+     * Check if the loop has been parallelized.
+     */
     if (!codeModified){
       errs() << "Parallelizer: Exit (no code modified)\n";
       return false;
     }
 
     /*
-    * Fetch the environment array where the exit block ID has been stored.
-    */
+     * Fetch the environment array where the exit block ID has been stored.
+     */
     auto envArray = usedTechnique->getEnvArray();
     assert(envArray != nullptr);
 
     /*
-    * Fetch entry and exit point executed by the parallelized loop.
-    */
+     * Fetch entry and exit point executed by the parallelized loop.
+     */
     auto entryPoint = usedTechnique->getParLoopEntryPoint();
     auto exitPoint = usedTechnique->getParLoopExitPoint();
     assert(entryPoint != nullptr && exitPoint != nullptr);
 
     /*
-    * The loop has been parallelized.
-    *
-    * Link the parallelized loop within the original function that includes the sequential loop.
-    */
+     * The loop has been parallelized.
+     *
+     * Link the parallelized loop within the original function that includes the sequential loop.
+     */
     if (verbose != Verbosity::Disabled) {
       errs() << "Parallelizer:  Link the parallelize loop\n";
     }
     auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlockTaken()));
     auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
     par.linkTransformedLoopToOriginalFunction(
-      loopFunction->getParent(),
-      loopPreHeader,
-      entryPoint,
-      exitPoint, 
-      envArray,
-      exitIndex,
-      loopExitBlocks
-    );
+        loopFunction->getParent(),
+        loopPreHeader,
+        entryPoint,
+        exitPoint, 
+        envArray,
+        exitIndex,
+        loopExitBlocks
+        );
+    assert(par.verifyCode());
     // if (verbose >= Verbosity::Maximal) {
     //   loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
     // }
 
     /*
-    * Return
-    */
+     * Return
+     */
     if (verbose != Verbosity::Disabled) {
       errs() << "Parallelizer: Exit\n";
     }

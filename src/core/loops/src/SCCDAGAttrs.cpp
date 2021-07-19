@@ -428,25 +428,33 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
     /*
      * We do not handle reducibility of memory locations
      */
-    if (dependency->isMemoryDependence()) return false;
+    if (dependency->isMemoryDependence()) {
+      return false;
+    }
 
     /*
      * Ignore external control dependencies, do not allow internal ones
      */
     auto producer = dependency->getOutgoingT();
     if (dependency->isControlDependence()) {
-      if (scc->isInternal(producer)) return false;
+      if (scc->isInternal(producer)) {
+        return false;
+      }
       continue;
     }
 
+    /*
+     * Fetch the destination of the dependence.
+     */
     auto consumer = dependency->getIncomingT();
     if (!isa<PHINode>(consumer)) {
-      producer->print(errs() << "Producer of LCD: "); errs() << "\n";
-      consumer->print(errs() << "Consumer of LCD: "); errs() << "\n";
-      cast<Instruction>(producer)->getParent()->getParent()->print(errs() << "Function\n");
+
+      /*
+       * We do not handle SCCs with loop-carried data dependences with instructions that are not PHI.
+       */
+      return false;
     }
-    assert(isa<PHINode>(consumer)
-      && "All consumers of loop carried data dependencies must be PHIs");
+    assert(isa<PHINode>(consumer) && "All consumers of loop carried data dependencies must be PHIs");
     auto consumerPHI = cast<PHINode>(consumer);
 
     /*

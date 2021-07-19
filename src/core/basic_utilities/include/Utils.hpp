@@ -17,6 +17,10 @@ namespace llvm::noelle {
   class Utils {
     public:
       static bool isActualCode (Instruction *inst);
+
+      static bool isAllocator (CallInst *callInst);
+
+      static bool isDeallocator (CallInst *callInst);
   };
 
 }

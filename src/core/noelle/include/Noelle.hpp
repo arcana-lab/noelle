@@ -187,6 +187,8 @@ namespace llvm::noelle {
         std::vector<BasicBlock *> &loopExitBlocks
         );
 
+      bool verifyCode (void) const ;
+
       ~Noelle();
 
     private:

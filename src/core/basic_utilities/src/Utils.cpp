@@ -26,4 +26,80 @@ bool Utils::isActualCode (Instruction *inst){
   return true;
 }
 
+bool Utils::isAllocator (CallInst *callInst){
+
+  /*
+   * Check the instruction.
+   */
+  if (callInst == nullptr){
+    return false;
+  }
+
+  /*
+   * Fetch the callee.
+   */
+  auto callee = callInst->getCalledFunction();
+  if (callee == nullptr){
+    return false;
+  }
+
+  /*
+   * Check if it is a call to a library.
+   */
+  if (!callee->empty()){
+    return false;
+  }
+
+  /*
+   * Check if it is a call to a known library function.
+   */
+  auto calleeName = callee->getName();
+  if (  false
+        || (calleeName == "malloc")
+        || (calleeName == "calloc")
+        || (calleeName == "realloc")
+    ){
+    return true;
+  }
+
+  return false;
+}
+
+bool Utils::isDeallocator (CallInst *callInst){
+
+  /*
+   * Check the instruction.
+   */
+  if (callInst == nullptr){
+    return false;
+  }
+
+  /*
+   * Fetch the callee.
+   */
+  auto callee = callInst->getCalledFunction();
+  if (callee == nullptr){
+    return false;
+  }
+
+  /*
+   * Check if it is a call to a library.
+   */
+  if (!callee->empty()){
+    return false;
+  }
+
+  /*
+   * Check if it is a call to a known library function.
+   */
+  auto calleeName = callee->getName();
+  if (  false
+        || (calleeName == "free")
+    ){
+    return true;
+  }
+
+  return false;
+}
+
 }
