@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -27,7 +27,13 @@ namespace llvm::noelle {
      * know the sign of the step size at compile time. Extra overhead is necessary if this
      * is only known at runtime, and that enhancement has yet to be made
      */
+    errs() << "XAN: GOVERNING: SCC of IV\n";
+    for (auto i : iv.getAllInstructions()){
+      errs() << "XAN: GOVERNING:    " << *i << "\n";
+    }
+
     if (!iv.getSingleComputedStepValue() || !isa<ConstantInt>(iv.getSingleComputedStepValue())) {
+      errs() << "XAN: GOVERNING:    No 0\n";
       return;
     }
 
@@ -38,6 +44,7 @@ namespace llvm::noelle {
      * This attribution only understands integer typed induction variables
      */
     if (!headerPHI->getType()->isIntegerTy()) {
+      errs() << "XAN: GOVERNING:    No 1\n";
       return;
     }
 
@@ -83,9 +90,11 @@ namespace llvm::noelle {
      * Ensure the branch is in the header as this analysis does not understand do-while loops
      */
     if (!loopGoverningTerminator) {
+      errs() << "XAN: GOVERNING:    No 2\n";
       return;
     }
     if (loopGoverningTerminator->getParent() != headerPHI->getParent()) {
+      errs() << "XAN: GOVERNING:    No 3\n";
       return;
     }
     this->headerBr = loopGoverningTerminator;
@@ -95,6 +104,7 @@ namespace llvm::noelle {
      */
     auto headerCondition = headerBr->getCondition();
     if (!isa<CmpInst>(headerCondition)) {
+      errs() << "XAN: GOVERNING:    No 4\n";
       return;
     }
 
@@ -107,6 +117,7 @@ namespace llvm::noelle {
     auto isOpLHSLoopEntryPHI = isa<Instruction>(opL) && headerPHI == cast<Instruction>(opL);
     auto isOpRHSLoopEntryPHI = isa<Instruction>(opR) && headerPHI == cast<Instruction>(opR);
     if (!(isOpLHSLoopEntryPHI ^ isOpRHSLoopEntryPHI)) {
+      errs() << "XAN: GOVERNING:    No 5\n";
       return;
     }
     this->conditionValue = isOpLHSLoopEntryPHI ? opR : opL;
@@ -125,6 +136,7 @@ namespace llvm::noelle {
     } else if (exitBlockSet.find(headerBr->getSuccessor(1)) != exitBlockSet.end()) {
       this->exitBlock = headerBr->getSuccessor(1);
     } else {
+      errs() << "XAN: GOVERNING:    No 6\n";
       return ;
     }
 
@@ -154,6 +166,7 @@ namespace llvm::noelle {
            * The exit condition value cannot be itself derived from the induction variable 
            */
           if (ivInstructions.find(outgoingInst) != ivInstructions.end()) {
+      errs() << "XAN: GOVERNING:    No 7\n";
             return;
           }
 
@@ -175,6 +188,7 @@ namespace llvm::noelle {
     }
 
     isWellFormed = true;
+      errs() << "XAN: GOVERNING:    YAY\n";
 
     return ;
   }
@@ -183,11 +197,11 @@ namespace llvm::noelle {
     return IV;
   }
 
-  CmpInst *LoopGoverningIVAttribution::getHeaderCmpInst(void) const {
+  CmpInst * LoopGoverningIVAttribution::getHeaderCmpInst(void) const {
     return headerCmp;
   }
 
-  Value *LoopGoverningIVAttribution::getHeaderCmpInstConditionValue(void) const {
+  Value * LoopGoverningIVAttribution::getLastValue (void) const {
     return conditionValue;
   }
 
@@ -207,7 +221,7 @@ namespace llvm::noelle {
     return conditionValueDerivation;
   }
 
-  Instruction * LoopGoverningIVAttribution::getIntermediateValueUsedInCompare (void) const {
+  Instruction * LoopGoverningIVAttribution::getUpdatedIVValue (void) const {
     return intermediateValueUsedInCompare;
   }
 
