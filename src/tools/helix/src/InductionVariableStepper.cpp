@@ -273,20 +273,25 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
      * Guard against this previous iteration.
      * If the condition would have exited the loop, skip the last execution block
      * If not, this was the last execution of the header
+     *
+     * Clone the original compare instruction of the loop governing IV.
      */
-    auto prevIterGuard = updatedCmpInst->clone();
+    auto prevIterGuard = cast<CmpInst>(updatedCmpInst->clone());
+
+    /*
+     * Make the predicate strict of the comparison instruction.
+     *
+     * NOTE: This is important if the original comparison was "== N" and the loop governing IV was a decreasing IV that stopped at N.
+     * In this case, the comparison has been translated into "<= N" to catch past-last-iteration iterations. 
+     * So, if we want to know whether we are the thread that executed the last iteration, then the comparison instruction that we must use is "< N" and if this returns true, then we are not the thread that executed the last iteration.
+     */
+    ivUtility.updateConditionToCheckIfWeHavePastExitValue(prevIterGuard);
     prevIterGuard->replaceUsesOfWith(cloneGoverningPHI, prevIterIVValue);
     checkForLastExecutionBuilder.Insert(prevIterGuard);
     auto shortCircuitExit = task->getExit();
     auto prevIterGuardTrueSucc = isTrueExiting ? cloneHeaderExit : this->lastIterationExecutionBlock;
     auto prevIterGuardFalseSucc = isTrueExiting ? this->lastIterationExecutionBlock : cloneHeaderExit;
     checkForLastExecutionBuilder.CreateCondBr(prevIterGuard, prevIterGuardTrueSucc, prevIterGuardFalseSucc);
-
-    // cmpInst->printAsOperand(errs() << "Cmp inst: "); errs() << "\n";
-    // cloneHeaderExit->printAsOperand(errs() << "Header exit: "); errs() << "\n";
-    // lastHeaderSequentialExecutionBlock->printAsOperand(errs() << "Last exec exit: "); errs() << "\n";
-    // prevIterGuardTrueSucc->printAsOperand(errs() << "Block if prev guard is true: "); errs() << "\n";
-    // prevIterGuardFalseSucc->printAsOperand(errs() << "Block if prev guard is false: "); errs() << "\n";
 
     /*
      * Track duplicated live out values properly
@@ -345,10 +350,11 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
        */
       this->lastIterationExecutionDuplicateMap.erase(originalProducer);
       this->lastIterationExecutionDuplicateMap.insert(std::make_pair(originalProducer, phi));
-
     }
 
   }
+
+  return ;
 }
 
 }

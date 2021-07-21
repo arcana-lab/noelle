@@ -65,10 +65,17 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
     case CmpInst::Predicate::ICMP_NE:
       // This predicate is non-strict and will result in either 0 or 1 iteration(s)
       this->nonStrictPredicate = exitPredicate;
+      this->strictPredicate = exitPredicate;
       break;
     case CmpInst::Predicate::ICMP_EQ:
       // This predicate is strict and needs to be extended to LTE/GTE to catch jumping past the exiting value
-      this->nonStrictPredicate = isStepValuePositive ? CmpInst::Predicate::ICMP_UGE : CmpInst::Predicate::ICMP_ULE;
+      if (isStepValuePositive){
+        this->nonStrictPredicate = CmpInst::Predicate::ICMP_SGE;
+        this->strictPredicate = CmpInst::Predicate::ICMP_SGT;
+      } else {
+        this->nonStrictPredicate = CmpInst::Predicate::ICMP_SLE;
+        this->strictPredicate = CmpInst::Predicate::ICMP_SLT;
+      }
       break;
     case CmpInst::Predicate::ICMP_SLE:
     case CmpInst::Predicate::ICMP_SLT:
@@ -111,7 +118,7 @@ void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitVal
     cmpToUpdate->setOperand(0, opR);
     cmpToUpdate->setOperand(1, opL);
   }
-  cmpToUpdate->setPredicate(nonStrictPredicate);
+  cmpToUpdate->setPredicate(this->nonStrictPredicate);
 
   if (flipBrSuccessorsToUseNonStrictPredicate) {
     branchInst->swapSuccessors();
@@ -131,13 +138,20 @@ void LoopGoverningIVUtility::cloneConditionalCheckFor(
   /*
    * Create the comparison instruction.
    */
-  auto cmpInst = cloneBuilder.CreateICmp(nonStrictPredicate, recurrenceOfIV, clonedCompareValue);
+  auto cmpInst = cloneBuilder.CreateICmp(this->nonStrictPredicate, recurrenceOfIV, clonedCompareValue);
 
   /*
    * Add the conditional branch
    */
   cloneBuilder.CreateCondBr(cmpInst, exitBlock, continueBlock);
 
+  return ;
+}
+
+void LoopGoverningIVUtility::updateConditionToCheckIfWeHavePastExitValue(
+  CmpInst *cmpToUpdate
+  ){
+  cmpToUpdate->setPredicate(this->strictPredicate);
   return ;
 }
 

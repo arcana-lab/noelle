@@ -63,6 +63,10 @@ namespace llvm::noelle {
           BasicBlock *exitBlock
           ) ;
 
+      void updateConditionToCheckIfWeHavePastExitValue (
+          CmpInst *cmpToUpdate
+          ) ;
+
       void cloneConditionalCheckFor (
           Value *recurrenceOfIV,
           Value *clonedComparedValue,
@@ -100,6 +104,7 @@ namespace llvm::noelle {
       std::vector<Instruction *> conditionValueOrderedDerivation;
 
       CmpInst::Predicate nonStrictPredicate;
+      CmpInst::Predicate strictPredicate;
       bool doesOriginalCmpInstHaveIVAsLeftOperand;
       bool flipOperandsToUseNonStrictPredicate;
       bool flipBrSuccessorsToUseNonStrictPredicate;
