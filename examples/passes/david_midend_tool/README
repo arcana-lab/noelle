@@ -14,6 +14,9 @@ GCC_ROOT="/project/opt/cross_compilers/arm-2013.05" ;
 
 myCFLAGS="--gcc-toolchain=${GCC_ROOT} --sysroot=${GCC_ROOT}/arm-none-linux-gnueabi/libc -mfloat-abi=soft -mfpu=none -L${GCC_ROOT}/lib/gcc/arm-none-linux-gnueabi/4.7.3/ -B${GCC_ROOT}/lib/gcc/arm-none-linux-gnueabi/4.7.3/ -march=armv7a"
 
+replace the invocation of clang in the noelle-prof-coverage script with this line:
+clang $profBC -fprofile-instr-generate ${libs} -o $profExec --target=arm-none-linux-gnueabi -fno-vectorize -fno-slp-vectorize -static $myCFLAGS;
+
 RETURN TO THIS DIRECTORY
 
 cd ..
