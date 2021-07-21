@@ -117,7 +117,7 @@ void DOALL::rewireLoopToIterateChunks (
    * Instructions which the PDG states are independent can include PHI nodes
    * Assert that any PHIs are invariant. Hoist one of those values (if instructions) to the preheader.
    */
-  auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
+  auto exitConditionValue = fetchClone(loopGoverningIVAttr->getExitConditionValue());
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
     auto &derivation = ivUtility.getConditionValueDerivation();
     for (auto I : derivation) {
@@ -234,25 +234,38 @@ void DOALL::rewireLoopToIterateChunks (
   if (requiresConditionBeforeEnteringHeader) {
     auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
     auto loopGoverningPHI = task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI());
+    auto valueUsedToCompareAgainstExitConditionValue = loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue();
     auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
+    auto mappingFunction = [task] (Value *v) -> Value * {
+      auto i = dyn_cast<Instruction>(v);
+      if (i == nullptr){
+        return nullptr;
+      }
+      auto c = task->getCloneOfOriginalInstruction(i);
+      return c;
+    };
 
     /*
      * In each latch, assert that the previous iteration would have executed
      */
     for (auto latch : loopSummary->getLatches()) {
-      BasicBlock *cloneLatch = task->getCloneOfOriginalBasicBlock(latch);
+      auto cloneLatch = task->getCloneOfOriginalBasicBlock(latch);
       // cloneLatch->print(errs() << "Addressing latch:\n");
       auto latchTerminator = cloneLatch->getTerminator();
       latchTerminator->eraseFromParent();
       IRBuilder<> latchBuilder(cloneLatch);
 
-      auto currentIVValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(cloneLatch);
-      auto prevIterationValue = latchBuilder.CreateSub(currentIVValue, stepSize);
+      /*
+       * Compute the value of the loop governing IV that was used to compare against the loop exit value of the previous iteration.
+       */
+      auto prevIterationValue = ivUtility.generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue(latchBuilder, cloneLatch, stepSize, mappingFunction);
       auto clonedCmpInst = updatedCmpInst->clone();
       clonedCmpInst->replaceUsesOfWith(loopGoverningPHI, prevIterationValue);
       latchBuilder.Insert(clonedCmpInst);
       latchBuilder.CreateCondBr(clonedCmpInst, task->getLastBlock(0), headerClone);
     }
+    errs() << "XAN12\n";
+    errs() << *task->getTaskBody();
 
     /*
      * In the preheader, assert that either the first iteration is being executed OR
@@ -264,7 +277,9 @@ void DOALL::rewireLoopToIterateChunks (
     preheaderTerminator->eraseFromParent();
     IRBuilder<> preheaderBuilder(preheaderClone);
     auto offsetStartValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(preheaderClone);
-    auto prevIterationValue = preheaderBuilder.CreateSub(offsetStartValue, stepSize);
+    auto prevIterationValue = ivUtility.generateCodeToComputeValueOfAnIterationAgo(preheaderBuilder, offsetStartValue, stepSize, true, preheaderClone, mappingFunction);
+    errs() << "XAN13\n";
+    errs() << *task->getTaskBody();
 
     auto clonedExitCmpInst = updatedCmpInst->clone();
     clonedExitCmpInst->replaceUsesOfWith(loopGoverningPHI, prevIterationValue);
@@ -277,6 +292,11 @@ void DOALL::rewireLoopToIterateChunks (
       headerClone
     );
   }
+
+  errs() << "XAN15\n";
+  errs() << *task->getTaskBody();
+
+  return ;
 }
 
 }

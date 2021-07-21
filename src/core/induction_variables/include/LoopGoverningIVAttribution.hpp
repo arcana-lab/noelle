@@ -24,11 +24,11 @@ namespace llvm::noelle {
 
       InductionVariable & getInductionVariable (void) const;
 
-      CmpInst * getHeaderCmpInst(void) const;
+      CmpInst * getHeaderCmpInst (void) const;
 
-      Value * getLastValue (void) const;
+      Value * getExitConditionValue (void) const;
 
-      BranchInst *getHeaderBrInst (void) const;
+      BranchInst * getHeaderBrInst (void) const;
 
       BasicBlock * getExitBlockFromHeader (void) const;
 
@@ -36,7 +36,7 @@ namespace llvm::noelle {
 
       std::set<Instruction *> getConditionValueDerivation(void) const ;
 
-      Instruction * getUpdatedIVValue (void) const ;
+      Instruction * getValueToCompareAgainstExitConditionValue (void) const ;
 
     private:
       InductionVariable &IV;

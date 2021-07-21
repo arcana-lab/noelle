@@ -381,7 +381,7 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
     }
     containedInsts.insert(attribution.getHeaderCmpInst());
     containedInsts.insert(attribution.getHeaderBrInst());
-    auto conditionValue = attribution.getHeaderCmpInstConditionValue();
+    auto conditionValue = attribution.getExitConditionValue();
     if (isa<Instruction>(conditionValue)) containedInsts.insert(cast<Instruction>(conditionValue));
     auto conditionDerivation = attribution.getConditionValueDerivation();
     containedInsts.insert(conditionDerivation.begin(), conditionDerivation.end());
@@ -463,12 +463,16 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
      * NOTE: External consumers may be last-live out propagations of a reducible variable
      * or could disqualify this from reducibility: let the LoopCarriedVariable analysis determine this
      */
-    if (!scc->isInternal(consumerPHI)) continue;
+    if (!scc->isInternal(consumerPHI)) {
+      continue;
+    }
 
     /*
      * Ignore sub-loops as they do not need to be reduced
      */
-    if (rootLoopHeader != consumerPHI->getParent()) continue;
+    if (rootLoopHeader != consumerPHI->getParent()) {
+      continue;
+    }
 
     loopCarriedPHIs.insert(consumerPHI);
   }

@@ -109,27 +109,46 @@ namespace llvm::noelle {
     }
 
     /*
-     * HACK: We do not handle intermediate values being used in the comparison properly,
-     * so for now we will make this check more strict to ensure the loop entry PHI is used
+     * Find the last value and the updated value of the IV.
      */
     this->headerCmp = cast<CmpInst>(headerCondition);
     auto opL = headerCmp->getOperand(0), opR = headerCmp->getOperand(1);
     auto isOpLHSLoopEntryPHI = isa<Instruction>(opL) && headerPHI == cast<Instruction>(opL);
     auto isOpRHSLoopEntryPHI = isa<Instruction>(opR) && headerPHI == cast<Instruction>(opR);
     if (!(isOpLHSLoopEntryPHI ^ isOpRHSLoopEntryPHI)) {
-      errs() << "XAN: GOVERNING:    No 5\n";
-      return;
-    }
-    this->conditionValue = isOpLHSLoopEntryPHI ? opR : opL;
-    this->intermediateValueUsedInCompare = cast<Instruction>(isOpLHSLoopEntryPHI ? opL : opR);
-    // auto isOpLHSAnIntermediate = isa<Instruction>(opL)
-    //   && ivInstructions.find(cast<Instruction>(opL)) != ivInstructions.end();
-    // auto isOpRHSAnIntermediate = isa<Instruction>(opR)
-    //   && ivInstructions.find(cast<Instruction>(opR)) != ivInstructions.end();
-    // if (!(isOpLHSAnIntermediate ^ isOpRHSAnIntermediate)) return;
-    // this->conditionValue = isOpLHSAnIntermediate ? opR : opL;
-    // this->intermediateValueUsedInCompare = cast<Instruction>(isOpLHSAnIntermediate ? opL : opR);
+      
+      /*
+       * The value of the IV used to compare against the condition value is not the PHI, but it is the updated value.
+       *
+       * Find the updated value used in the compare.
+       */
+      return ;//FIXME
+      for (auto intermediateValue : iv.getNonPHIIntermediateValues()){
+        if (  false
+              || (intermediateValue == opR)
+              || (intermediateValue == opL)
+           ){
+          this->intermediateValueUsedInCompare = intermediateValue;
+          break ;
+        }
+      }
+      if (this->intermediateValueUsedInCompare == nullptr){
+        return ;
+      }
+      if (this->intermediateValueUsedInCompare == opR){
+        this->conditionValue = opL;
+      } else {
+        this->conditionValue = opR;
+      }
 
+    } else {
+      this->conditionValue = isOpLHSLoopEntryPHI ? opR : opL;
+      this->intermediateValueUsedInCompare = cast<Instruction>(isOpLHSLoopEntryPHI ? opL : opR);
+    }
+
+    /*
+     * Find the single exit basic block.
+     */
     std::set<BasicBlock *> exitBlockSet(exitBlocks.begin(), exitBlocks.end());
     if (exitBlockSet.find(headerBr->getSuccessor(0)) != exitBlockSet.end()) {
       this->exitBlock = headerBr->getSuccessor(0);
@@ -201,15 +220,15 @@ namespace llvm::noelle {
     return headerCmp;
   }
 
-  Value * LoopGoverningIVAttribution::getLastValue (void) const {
+  Value * LoopGoverningIVAttribution::getExitConditionValue (void) const {
     return conditionValue;
   }
 
-  BranchInst *LoopGoverningIVAttribution::getHeaderBrInst(void) const {
+  BranchInst * LoopGoverningIVAttribution::getHeaderBrInst(void) const {
     return headerBr;
   }
 
-  BasicBlock *LoopGoverningIVAttribution::getExitBlockFromHeader(void) const {
+  BasicBlock * LoopGoverningIVAttribution::getExitBlockFromHeader(void) const {
     return exitBlock;
   }
 
@@ -221,7 +240,7 @@ namespace llvm::noelle {
     return conditionValueDerivation;
   }
 
-  Instruction * LoopGoverningIVAttribution::getUpdatedIVValue (void) const {
+  Instruction * LoopGoverningIVAttribution::getValueToCompareAgainstExitConditionValue (void) const {
     return intermediateValueUsedInCompare;
   }
 

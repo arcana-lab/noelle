@@ -31,7 +31,7 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
    */
   this->condition = attribution.getHeaderCmpInst();
   // TODO: Refer to whichever intermediate value is used in the comparison (known on attribution)
-  this->doesOriginalCmpInstHaveIVAsLeftOperand = condition->getOperand(0) == attribution.getIntermediateValueUsedInCompare();
+  this->doesOriginalCmpInstHaveIVAsLeftOperand = condition->getOperand(0) == attribution.getValueToCompareAgainstExitConditionValue();
 
   /*
    * Collect the set of instructions that need to be executed to evaluate the loop exit condition for the subsequent iteration.
@@ -154,7 +154,7 @@ Value * LoopGoverningIVUtility::generateCodeToComputeTheTripCount (
    */
   auto IV = this->attribution.getInductionVariable();
   auto startValue = IV.getStartValue();
-  auto lastValue = this->attribution.getHeaderCmpInstConditionValue();
+  auto lastValue = this->attribution.getExitConditionValue();
 
   /*
    * Compute the delta.
@@ -172,6 +172,80 @@ Value * LoopGoverningIVUtility::generateCodeToComputeTheTripCount (
   auto tripCount = builder.CreateUDiv(delta, IV.getSingleComputedStepValue());
 
   return tripCount;
+}
+
+Value * LoopGoverningIVUtility::generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue (
+  IRBuilder<> &builder,
+  BasicBlock *latch,
+  Value *stepValue,
+  std::function<Value *(Value *)> fromLoopValueToValueToUse
+  ){
+
+  /*
+   * Assert that the builder is pointing to an instruction within the loop.
+   */
+  //TODO
+
+  /*
+   * Fetch the phi node of the loop governing IV.
+   */  
+  auto origLoopEntryPHIOfGoverningIV = this->attribution.getInductionVariable().getLoopEntryPHI();
+  auto loopEntryPHIOfGoverningIVValue = fromLoopValueToValueToUse(origLoopEntryPHIOfGoverningIV);
+  auto loopEntryPHIOfGoverningIV = cast<PHINode>(loopEntryPHIOfGoverningIVValue);
+
+  /*
+   * Check if the value used to compare against the exit condition value is the PHI of the loop governing IV.
+   */ 
+  auto currentIVValue = loopEntryPHIOfGoverningIV->getIncomingValueForBlock(latch);
+  auto prevIterationValue = this->generateCodeToComputeValueOfAnIterationAgo(builder, currentIVValue, stepValue, false, nullptr, fromLoopValueToValueToUse);
+
+  return prevIterationValue;
+}
+
+Value * LoopGoverningIVUtility::generateCodeToComputeValueOfAnIterationAgo (
+  IRBuilder<> &builder,
+  Value *currentIterationValue,
+  Value *stepValue,
+  bool generateCodeThatCanBeUsedBeforeLoop,
+  BasicBlock *preHeader,
+  std::function<Value *(Value *)> fromLoopInstToInst
+  ){
+
+  /*
+   * Check if the value used to compare against the exit condition value is the PHI of the loop governing IV.
+   */
+  Value *prevIterationValue = nullptr;
+  auto &IV = this->attribution.getInductionVariable();
+  if (this->attribution.getValueToCompareAgainstExitConditionValue() == IV.getLoopEntryPHI()){
+
+    /*
+     * The value used is the PHI.
+     * Hence, we must generate code to compute the value of the previous iteration.
+     */
+    auto prevIterationValue = builder.CreateSub(currentIterationValue, stepValue);
+
+  } else {
+
+    /*
+     * The value used is the updated value.
+     * Hence, the previous value is simply the phi.
+     */
+    auto origPrevIterationValue = IV.getLoopEntryPHI();
+    prevIterationValue = fromLoopInstToInst(origPrevIterationValue);
+
+    /*
+     * Check if we need to generate code that can be used before the loop.
+     * In this case, we cannot return a phi node, but the value that initialize the loop governing IV
+     */
+    if (generateCodeThatCanBeUsedBeforeLoop){
+      if (preHeader == nullptr){
+        abort();
+      }
+      prevIterationValue = cast<PHINode>(prevIterationValue)->getIncomingValueForBlock(preHeader);
+    }
+  }
+
+  return prevIterationValue;
 }
 
 }

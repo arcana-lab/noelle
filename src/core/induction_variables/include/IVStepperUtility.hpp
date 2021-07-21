@@ -75,6 +75,28 @@ namespace llvm::noelle {
         IRBuilder<> &builder
         );
 
+      /*
+       * @return Value of the IV that is used to compare against the exit condition value of the loop
+       */
+      Value * generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue (
+          IRBuilder<> &builder,
+          BasicBlock *latch,
+          Value *stepValue,
+          std::function<Value *(Value *)> fromLoopValueToValueToUse
+        );
+
+      /*
+       * @return Value of the IV that is used to compare against the exit condition value of the loop
+       */
+      Value * generateCodeToComputeValueOfAnIterationAgo (
+          IRBuilder<> &builder,
+          Value *currentIterationValue,
+          Value *stepValue,
+          bool generateCodeThatCanBeUsedBeforeLoop,
+          BasicBlock *preHeader,
+          std::function<Value *(Value *)> fromLoopValueToValueToUse
+        );
+
     private:
       LoopGoverningIVAttribution &attribution;
       CmpInst *condition;
