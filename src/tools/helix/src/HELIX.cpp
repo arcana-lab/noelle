@@ -216,7 +216,7 @@ void HELIX::createParallelizableTask (
         // errs() << "HELIX:     SCC:\n";
         // scc->printMinimal(errs(), "HELIX:       ") ;
         errs() << "HELIX:       Loop-carried dependences\n";
-        sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+        sccManager->iterateOverLoopCarriedDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
           errs() << "HELIX:       " << *fromInst << " ---> " << *toInst ;
