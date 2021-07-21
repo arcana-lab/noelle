@@ -80,21 +80,18 @@ namespace llvm::noelle {
        */
       Value * generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue (
           IRBuilder<> &builder,
+          Value *currentIterationValue,
           BasicBlock *latch,
-          Value *stepValue,
-          std::function<Value *(Value *)> fromLoopValueToValueToUse
+          Value *stepValue
         );
 
       /*
        * @return Value of the IV that is used to compare against the exit condition value of the loop
        */
-      Value * generateCodeToComputeValueOfAnIterationAgo (
+      Value * generateCodeToComputeValueToUseForAnIterationAgo (
           IRBuilder<> &builder,
           Value *currentIterationValue,
-          Value *stepValue,
-          bool generateCodeThatCanBeUsedBeforeLoop,
-          BasicBlock *preHeader,
-          std::function<Value *(Value *)> fromLoopValueToValueToUse
+          Value *stepValue
         );
 
     private:
