@@ -323,18 +323,11 @@ void DOALL::rewireLoopToIterateChunks (
   IRBuilder<> preheaderBuilder(preheaderClone);
   auto offsetStartValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(preheaderClone);
   auto prevIterationValue = ivUtility.generateCodeToComputeValueToUseForAnIterationAgo(preheaderBuilder, offsetStartValue, stepSize);
-  errs() << "XAN13\n";
-  errs() << *task->getTaskBody();
-  errs() << "AAAA prevIterationValue = " << *prevIterationValue << "\n";
-  errs() << "AAAA valueUsedToCompareAgainstExitConditionValue = " << *valueUsedToCompareAgainstExitConditionValue << "\n";
-  errs() << "AAAA updatedCmpInst = " << *updatedCmpInst << "\n";
 
   auto clonedExitCmpInst = updatedCmpInst->clone();
   clonedExitCmpInst->replaceUsesOfWith(valueUsedToCompareAgainstExitConditionValue, prevIterationValue);
   preheaderBuilder.Insert(clonedExitCmpInst);
 
-  errs() << "XAN14\n";
-  errs() << *task->getTaskBody();
   auto startValue = fetchClone(loopGoverningIV.getStartValue());
   auto isNotFirstIteration = preheaderBuilder.CreateICmpNE(offsetStartValue, startValue);
   preheaderBuilder.CreateCondBr(
