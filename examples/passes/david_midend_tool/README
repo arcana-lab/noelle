@@ -5,7 +5,21 @@ TO COMPILE THIS TOOL:
 cd ../../../../baseline_10/scripts
 ./build_compiler_rt_for_arm.sh
 
+cd ../../noelle/install/bin
+
+add the following to the noelle-prof-coverage script right before the "# Clean" line:
+
+# Set the GCC cross-compiler to use
+GCC_ROOT="/project/opt/cross_compilers/arm-2013.05" ;
+
+myCFLAGS="--gcc-toolchain=${GCC_ROOT} --sysroot=${GCC_ROOT}/arm-none-linux-gnueabi/libc -mfloat-abi=soft -mfpu=none -L${GCC_ROOT}/lib/gcc/arm-none-linux-gnueabi/4.7.3/ -B${GCC_ROOT}/lib/gcc/arm-none-linux-gnueabi/4.7.3/ -march=armv7a"
+
 RETURN TO THIS DIRECTORY
+
+cd ..
+rm -r profile
+cp -r david_midend_tool profile
+cd profile
 
 source ../../../../baseline_10/enable
 ./run_me.sh
