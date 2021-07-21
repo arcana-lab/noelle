@@ -235,13 +235,16 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
      * Check the SCC type.
      */
     auto sccInfo = this->getSCCAttrs(scc);
-    if (sccInfo->getType() == SCCAttrs::SCCType::INDEPENDENT) {
+    if (sccInfo->canExecuteReducibly()){
       continue ;
     }
-    if (sccInfo->getType() == SCCAttrs::SCCType::REDUCIBLE) {
+    if (sccInfo->canExecuteIndependently()) {
       continue ;
     }
 
+    /*
+     * We found a live-out variable that cannot be reduced.
+     */
     return false;
   }
 
@@ -645,7 +648,9 @@ bool SCCDAGAttrs::isClonableByInductionVars (SCC *scc) const {
    * FIXME: This check should not exist; instead, SCC where cloning
    * is trivial should be separated out by the parallelization scheme
    */
-  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
+  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0) {
+    return false;
+  }
 
   /*
    * Fetch the SCC metadata.
