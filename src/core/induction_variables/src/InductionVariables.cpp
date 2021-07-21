@@ -25,7 +25,6 @@ InductionVariableManager::InductionVariableManager (
    * Fetch the loop to analyze.
    */
   auto loopToAnalyze = LIS.getLoopNestingTreeRoot();
-  errs() << "XAN: " << *loopToAnalyze->getHeader()->getFirstNonPHI() << "\n";
 
   /*
    * Fetch the function that includes the loop.
@@ -48,13 +47,11 @@ InductionVariableManager::InductionVariableManager (
      * Iterate over all phis within the loop header.
      */
     for (auto &phi : header->phis()) {
-      errs() << "XAN:   PHI " << phi << "\n";
 
       /*
        * Check if the PHI node can be analyzed by the SCEV analysis.
        */
       if (!SE.isSCEVable(phi.getType())){
-        errs() << "XAN:     Not SCEVable\n";
         continue ;
       }
 
@@ -63,7 +60,6 @@ InductionVariableManager::InductionVariableManager (
        */
       auto scev = SE.getSCEV(&phi);
       if (!scev){
-        errs() << "XAN:     No SCEV\n";
         continue ;
       }
 
@@ -71,7 +67,6 @@ InductionVariableManager::InductionVariableManager (
        * Check if the SCEV suggests this is an induction variable.
        */
       if (scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
-        errs() << "XAN:     No allowed type\n";
         continue;
       }
 
@@ -86,7 +81,6 @@ InductionVariableManager::InductionVariableManager (
        */
       if (!IV->getStepSCEV()) {
         delete IV;
-        errs() << "XAN:     No getStepSCEV\n";
         continue;
       }
 

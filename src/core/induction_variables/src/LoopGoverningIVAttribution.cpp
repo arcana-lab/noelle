@@ -27,13 +27,7 @@ namespace llvm::noelle {
      * know the sign of the step size at compile time. Extra overhead is necessary if this
      * is only known at runtime, and that enhancement has yet to be made
      */
-    errs() << "XAN: GOVERNING: SCC of IV\n";
-    for (auto i : iv.getAllInstructions()){
-      errs() << "XAN: GOVERNING:    " << *i << "\n";
-    }
-
     if (!iv.getSingleComputedStepValue() || !isa<ConstantInt>(iv.getSingleComputedStepValue())) {
-      errs() << "XAN: GOVERNING:    No 0\n";
       return;
     }
 
@@ -44,7 +38,6 @@ namespace llvm::noelle {
      * This attribution only understands integer typed induction variables
      */
     if (!headerPHI->getType()->isIntegerTy()) {
-      errs() << "XAN: GOVERNING:    No 1\n";
       return;
     }
 
@@ -90,11 +83,9 @@ namespace llvm::noelle {
      * Ensure the branch is in the header as this analysis does not understand do-while loops
      */
     if (!loopGoverningTerminator) {
-      errs() << "XAN: GOVERNING:    No 2\n";
       return;
     }
     if (loopGoverningTerminator->getParent() != headerPHI->getParent()) {
-      errs() << "XAN: GOVERNING:    No 3\n";
       return;
     }
     this->headerBr = loopGoverningTerminator;
@@ -104,7 +95,6 @@ namespace llvm::noelle {
      */
     auto headerCondition = headerBr->getCondition();
     if (!isa<CmpInst>(headerCondition)) {
-      errs() << "XAN: GOVERNING:    No 4\n";
       return;
     }
 
@@ -154,7 +144,6 @@ namespace llvm::noelle {
     } else if (exitBlockSet.find(headerBr->getSuccessor(1)) != exitBlockSet.end()) {
       this->exitBlock = headerBr->getSuccessor(1);
     } else {
-      errs() << "XAN: GOVERNING:    No 6\n";
       return ;
     }
 
@@ -184,7 +173,6 @@ namespace llvm::noelle {
            * The exit condition value cannot be itself derived from the induction variable 
            */
           if (ivInstructions.find(outgoingInst) != ivInstructions.end()) {
-      errs() << "XAN: GOVERNING:    No 7\n";
             return;
           }
 
@@ -206,7 +194,6 @@ namespace llvm::noelle {
     }
 
     isWellFormed = true;
-      errs() << "XAN: GOVERNING:    YAY\n";
 
     return ;
   }
