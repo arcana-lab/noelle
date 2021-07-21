@@ -246,7 +246,9 @@ void DOALL::rewireLoopToIterateChunks (
    */
   auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
   auto loopGoverningPHI = task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI());
-  auto valueUsedToCompareAgainstExitConditionValue = loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue();
+  auto origValueUsedToCompareAgainstExitConditionValue = loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue();
+  auto valueUsedToCompareAgainstExitConditionValue = task->getCloneOfOriginalInstruction(origValueUsedToCompareAgainstExitConditionValue);
+  assert(valueUsedToCompareAgainstExitConditionValue != nullptr);
   auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
   auto mappingFunction = [task] (Value *v) -> Value * {
     auto i = dyn_cast<Instruction>(v);
@@ -294,7 +296,7 @@ void DOALL::rewireLoopToIterateChunks (
      *
      * Fetch the updated loop-governing IV (6 in the example above).
      */
-    auto currentIVValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(latch);
+    auto currentIVValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(cloneLatch);
 
     /*
      * Compute the value that this IV had at the iteration before (5 in the example above).
@@ -305,12 +307,10 @@ void DOALL::rewireLoopToIterateChunks (
      * Compare the previous-iteration IV value against the exit condition
      */
     auto clonedCmpInst = updatedCmpInst->clone();
-    clonedCmpInst->replaceUsesOfWith(loopGoverningPHI, prevIterationValue);
+    clonedCmpInst->replaceUsesOfWith(valueUsedToCompareAgainstExitConditionValue, prevIterationValue);
     latchBuilder.Insert(clonedCmpInst);
     latchBuilder.CreateCondBr(clonedCmpInst, task->getLastBlock(0), headerClone);
   }
-  errs() << "XAN12\n";
-  errs() << *task->getTaskBody();
 
   /*
    * In the preheader, assert that either the first iteration is being executed OR
@@ -325,10 +325,16 @@ void DOALL::rewireLoopToIterateChunks (
   auto prevIterationValue = ivUtility.generateCodeToComputeValueToUseForAnIterationAgo(preheaderBuilder, offsetStartValue, stepSize);
   errs() << "XAN13\n";
   errs() << *task->getTaskBody();
+  errs() << "AAAA prevIterationValue = " << *prevIterationValue << "\n";
+  errs() << "AAAA valueUsedToCompareAgainstExitConditionValue = " << *valueUsedToCompareAgainstExitConditionValue << "\n";
+  errs() << "AAAA updatedCmpInst = " << *updatedCmpInst << "\n";
 
   auto clonedExitCmpInst = updatedCmpInst->clone();
-  clonedExitCmpInst->replaceUsesOfWith(loopGoverningPHI, prevIterationValue);
+  clonedExitCmpInst->replaceUsesOfWith(valueUsedToCompareAgainstExitConditionValue, prevIterationValue);
   preheaderBuilder.Insert(clonedExitCmpInst);
+
+  errs() << "XAN14\n";
+  errs() << *task->getTaskBody();
   auto startValue = fetchClone(loopGoverningIV.getStartValue());
   auto isNotFirstIteration = preheaderBuilder.CreateICmpNE(offsetStartValue, startValue);
   preheaderBuilder.CreateCondBr(
