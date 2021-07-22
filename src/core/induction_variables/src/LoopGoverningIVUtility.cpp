@@ -52,20 +52,18 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
    * Fetch information about the predicate that when true the execution needs to leave the loop.
    */
   auto conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == attribution.getExitBlockFromHeader();
-  // errs() << "Exit predicate before exit check: " << condition->getPredicate() << "\n";
   auto exitPredicate = conditionExitsOnTrue ? condition->getPredicate() : condition->getInversePredicate();
-  // errs() << "Exit predicate before operand check: " << exitPredicate << "\n";
   exitPredicate = doesOriginalCmpInstHaveIVAsLeftOperand ? exitPredicate : CmpInst::getSwappedPredicate(exitPredicate);
-  // errs() << "Exit predicate after: " << exitPredicate << "\n";
   this->flipOperandsToUseNonStrictPredicate = !doesOriginalCmpInstHaveIVAsLeftOperand;
   this->flipBrSuccessorsToUseNonStrictPredicate = !conditionExitsOnTrue;
-  // errs() << "Flips: " << flipOperandsToUseNonStrictPredicate << " " << flipBrSuccessorsToUseNonStrictPredicate << "\n";
-  // condition->print(errs() << "Condition (exits on true: " << conditionExitsOnTrue << "): "); errs() << "\n";
+  this->nonStrictPredicate = exitPredicate;
+  this->strictPredicate = exitPredicate;
   switch (exitPredicate) {
     case CmpInst::Predicate::ICMP_NE:
-      // This predicate is non-strict and will result in either 0 or 1 iteration(s)
-      this->nonStrictPredicate = exitPredicate;
-      this->strictPredicate = exitPredicate;
+
+      /*
+       * This predicate is non-strict and will result in either 0 or 1 iteration(s)
+       */
       break;
     case CmpInst::Predicate::ICMP_EQ:
       // This predicate is strict and needs to be extended to LTE/GTE to catch jumping past the exiting value
@@ -87,7 +85,6 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
       // it would break under assumptions that further recurrences of the IV can be checked on this condition
       // Our parallelization schemes make that assumption, hence the assert here
       assert(!isStepValuePositive && "IV step value is not compatible with exit condition!");
-      this->nonStrictPredicate = exitPredicate;
       break;
     case CmpInst::Predicate::ICMP_UGT:
     case CmpInst::Predicate::ICMP_UGE:
@@ -99,7 +96,6 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
       // it would break under assumptions that further recurrences of the IV can be checked on this condition
       // Our parallelization schemes make that assumption, hence the assert here
       assert(isStepValuePositive && "IV step value is not compatible with exit condition!");
-      this->nonStrictPredicate = exitPredicate;
       break;
   }
 
