@@ -1,6 +1,6 @@
 # Project
-cmake_minimum_required(VERSION 3.4.3)
-project(CAT)
+cmake_minimum_required(VERSION 3.13)
+project(HELIX)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -32,4 +32,8 @@ include(AddLLVM)
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS include/HELIX.hpp include/SequentialSegment.hpp DESTINATION include)
+install(  PROGRAMS 
+          include/HELIX.hpp 
+          include/SequentialSegment.hpp 
+          DESTINATION 
+          include)
