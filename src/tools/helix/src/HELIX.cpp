@@ -83,8 +83,8 @@ void HELIX::reset () {
   }
   spills.clear();
 
-  if (lastIterationExecutionBlock) {
-    lastIterationExecutionBlock = nullptr;
+  if (this->lastIterationExecutionBlock) {
+    this->lastIterationExecutionBlock = nullptr;
   }
   lastIterationExecutionDuplicateMap.clear();
 
