@@ -250,14 +250,6 @@ void DOALL::rewireLoopToIterateChunks (
   auto valueUsedToCompareAgainstExitConditionValue = task->getCloneOfOriginalInstruction(origValueUsedToCompareAgainstExitConditionValue);
   assert(valueUsedToCompareAgainstExitConditionValue != nullptr);
   auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
-  auto mappingFunction = [task] (Value *v) -> Value * {
-    auto i = dyn_cast<Instruction>(v);
-    if (i == nullptr){
-      return nullptr;
-    }
-    auto c = task->getCloneOfOriginalInstruction(i);
-    return c;
-  };
 
   /*
    * In each latch, check whether we passed the last iteration.
