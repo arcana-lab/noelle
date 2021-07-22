@@ -77,12 +77,16 @@ void IVUtility::stepInductionVariablePHI (
 
   for (auto i = 0; i < ivPHI->getNumIncomingValues(); ++i) {
     auto B = ivPHI->getIncomingBlock(i);
-    if (preheaderBlock == B) continue;
+    if (preheaderBlock == B) {
+      continue;
+    }
 
     auto prevStepRecurrence = ivPHI->getIncomingValue(i);
     auto batchStepRecurrence = offsetIVPHI(B, ivPHI, prevStepRecurrence, additionalStepSize);
     ivPHI->setIncomingValue(i, batchStepRecurrence);
   }
+
+  return ;
 }
 
 Value *IVUtility::offsetIVPHI (
@@ -110,6 +114,7 @@ Value *IVUtility::offsetIVPHI (
       ),
       ivType
     );
+
   } else {
     offsetStartValue = insertBuilder.CreateAdd(startValue, offsetValue);
   }
