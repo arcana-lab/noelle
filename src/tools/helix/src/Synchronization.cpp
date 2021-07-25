@@ -79,7 +79,6 @@ void HELIX::addSynchronizations (
     }
     if (preambleSS != nullptr) break;
   }
-  errs() << "CUCU0: \n" << *helixTask->getTaskBody() << "\n";
 
   /*
    * Define a helper to fetch the appropriate ss entry in synchronization arrays
@@ -119,7 +118,6 @@ void HELIX::addSynchronizations (
     ssStateAlloca->moveBefore(helixTask->getEntry()->getFirstNonPHIOrDbgOrLifetime());
     ssStates.push_back(ssStateAlloca);
   }
-  errs() << "CUCU1: \n" << *helixTask->getTaskBody() << "\n";
 
   /*
    * Define the code that inject wait instructions.
@@ -217,7 +215,6 @@ void HELIX::addSynchronizations (
       helixTask->loopIsOverFlagArg
     );
   };
-  errs() << "CUCU2: \n" << *helixTask->getTaskBody() << "\n";
 
   /*
    * For each loop exit, ensure all other execution of all other sequential segments
@@ -235,7 +232,6 @@ void HELIX::addSynchronizations (
       injectSignal(ss, loopExitTerminator);
     }
   }
-  errs() << "CUCU3: \n" << *helixTask->getTaskBody() << "\n";
 
   /*
    * Inject a check for whether the loop-is-over flag is true
@@ -276,7 +272,6 @@ void HELIX::addSynchronizations (
     auto brToExit = failedCheckBuilder.CreateBr(helixTask->getExit());
     for (auto ss : *sss) injectSignal(ss, brToExit);
   };
-  errs() << "CUCU4: \n" << *helixTask->getTaskBody() << "\n";
 
   /*
    * Once the preamble has been synchronized, if that was necessary, synchronize each sequential segment
@@ -363,7 +358,6 @@ void HELIX::addSynchronizations (
       }
     }
   }
-  errs() << "CUCU5: \n" << *helixTask->getTaskBody() << "\n";
 
   return ;
 }
