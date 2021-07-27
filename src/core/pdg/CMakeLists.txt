@@ -1,6 +1,6 @@
 # Project
-cmake_minimum_required(VERSION 3.4.3)
-project(CAT)
+cmake_minimum_required(VERSION 3.13)
+project(PDG)
 
 # Programming languages to use
 enable_language(C CXX)
