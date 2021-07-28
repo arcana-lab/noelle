@@ -24,41 +24,16 @@ namespace llvm::noelle{
   bool LoopWhilifier::whilifyLoop (
     LoopDependenceInfo &LDI
   ) {
-
+    
+    /*
+     * Execute on target loop from @LDI
+     */ 
     auto AnyTransformed = false;
     errs() << outputPrefix << "Start\n";
+    errs() << outputPrefix << " Try to whilify the target loop\n";
 
-
-    /*
-     * Handle subloops --- return if there is any change to a subloop
-     */ 
-    errs() << outputPrefix << " Try to whilify sub-loops\n";
     auto LS = LDI.getLoopStructure();
-    auto SubLoops = LS->getChildren();
-    for (auto SL : SubLoops) {
-
-      /*
-       * Invoke the driver on any loop structure
-       */
-      AnyTransformed |= whilifyLoopDriver(SL);
-
-      /*
-       * Check if any sub-loop has been whilified.
-       */
-      if (AnyTransformed) {
-        break;
-      }
-
-    }
-
-
-    /*
-     * Execute on parent loop
-     */ 
-    if (!AnyTransformed) {
-      errs() << outputPrefix << " Try to whilify the target loop\n";
-      AnyTransformed |= whilifyLoopDriver(LS);
-    }
+    AnyTransformed |= whilifyLoopDriver(LS);
 
     errs() << outputPrefix << " Transformed = " << AnyTransformed << "\n";
     errs() << outputPrefix << "Exit\n";
