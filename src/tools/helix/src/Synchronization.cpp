@@ -12,8 +12,7 @@
 #include "HELIXTask.hpp"
 #include "Architecture.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void HELIX::addSynchronizations (
   LoopDependenceInfo *LDI,
@@ -291,14 +290,23 @@ void HELIX::addSynchronizations (
     /*
      * Inject waits.
      *
-     * NOTE: If this is the preamble, simply insert the wait at the entry to the loop
-     * Also inject an exit flag check for the preamble (AFTER the wait so the check is synchronized)
+     * NOTE: If this is the prologue, then we simply need to insert the wait at the entry to the loop.
+     * Also, we need to inject an exit flag check for the prologue (AFTER the wait so the check is synchronized) to understand whether the next iteration needs to be executed.
      */
     if (preambleSS != ss) {
+
+      /*
+       * This is not the prologue.
+       */
       ss->forEachEntry([preambleSS, ss, &injectWait, &injectExitFlagCheck](Instruction *justAfterEntry) -> void {
         injectWait(ss, justAfterEntry);
       });
+
     } else {
+
+      /*
+       * This is the prologue.
+       */
       injectWait(ss, firstLoopInst);
       injectExitFlagCheck(firstLoopInst);
     }
@@ -312,7 +320,10 @@ void HELIX::addSynchronizations (
     ss->forEachExit([&exits](Instruction *justBeforeExit) -> void {
       auto block = justBeforeExit->getParent();
       auto terminator = block->getTerminator();
-      if (terminator != justBeforeExit || terminator->getNumSuccessors() == 1) {
+      if (  false
+            || (terminator != justBeforeExit)
+            || (terminator->getNumSuccessors() == 1)
+        ){
         exits.insert(justBeforeExit);
         return ;
       }
@@ -324,7 +335,7 @@ void HELIX::addSynchronizations (
     });
 
     /*
-     * NOTE: If this is the preamble, also insert signals after all loop exits
+     * NOTE: If this is the prologue, then we also need to insert signals after all loop exits
      */
     if (preambleSS == ss) {
       for (auto exitBlock : loopStructure->getLoopExitBasicBlocks()) {
@@ -349,4 +360,6 @@ void HELIX::addSynchronizations (
   }
 
   return ;
+}
+
 }

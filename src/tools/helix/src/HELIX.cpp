@@ -154,7 +154,9 @@ bool HELIX::apply (
     return true;
   }
 
-  return this->synchronizeTask(LDI, par, h);
+  auto modified = this->synchronizeTask(LDI, par, h);
+
+  return modified;
 }
 
 void HELIX::createParallelizableTask (
@@ -213,11 +215,23 @@ void HELIX::createParallelizableTask (
       if (this->verbose >= Verbosity::Maximal) {
         // errs() << "HELIX:     SCC:\n";
         // scc->printMinimal(errs(), "HELIX:       ") ;
-        errs() << "HELIX:       Loop-carried data dependences\n";
+        errs() << "HELIX:       Loop-carried dependences\n";
         sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
           errs() << "HELIX:       " << *fromInst << " ---> " << *toInst ;
+
+          /*
+           * Control dependences.
+           */
+          if (dep->isControlDependence()){
+            errs() << " control\n";
+            return false;
+          }
+
+          /*
+           * Data dependences.
+           */
           if (dep->isMemoryDependence()){
             errs() << " via memory\n";
           } else {
@@ -328,7 +342,7 @@ void HELIX::createParallelizableTask (
    * Spill loop carried dependencies into a separate environment array
    */
   if (this->verbose >= Verbosity::Maximal) {
-    errs() << "HELIX:  Spilling loop carried dependencies\n";
+    errs() << "HELIX:  Check if we need to spill variables because they are part of loop carried data dependencies\n";
   }
   this->spillLoopCarriedDataDependencies(LDI, reachabilityDFR);
 

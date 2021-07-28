@@ -158,7 +158,7 @@ namespace llvm::noelle {
         /*
          * Print
          */
-        errs() << "Parallelizer: LoopSelector:    Loop " << l->getID() << " " << ls->getID() << "\n";
+        errs() << "Parallelizer: LoopSelector:    Loop " << l->getID() << "\n";
         errs() << "Parallelizer: LoopSelector:      Function: \"" << loopFunction->getName() << "\"\n";
         errs() << "Parallelizer: LoopSelector:      Loop nesting level: " << ls->getNestingLevel() << "\n";
         errs() << "Parallelizer: LoopSelector:      \"" << *loopHeader->getFirstNonPHI() << "\"\n";
