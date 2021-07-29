@@ -259,8 +259,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
 
   auto taskFunction = task->getTaskBody();
   auto &cxt = taskFunction->getContext();
-  auto checkForLastExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
-  this->lastIterationExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
+  auto checkForLastExecutionBlock = BasicBlock::Create(cxt, "check_if_last_iteration_is_missing", taskFunction);
+  this->lastIterationExecutionBlock = BasicBlock::Create(cxt, "last_iteration", taskFunction);
   IRBuilder<> lastIterationExecutionBuilder(this->lastIterationExecutionBlock);
 
   /*
@@ -288,6 +288,9 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
     }
   }
 
+  /*
+   * Fix the control flows
+   */
   lastIterationExecutionBuilder.CreateBr(cloneHeaderExit);
   updatedBrInst->replaceSuccessorWith(cloneHeaderExit, checkForLastExecutionBlock);
   IRBuilder<> checkForLastExecutionBuilder(checkForLastExecutionBlock);
