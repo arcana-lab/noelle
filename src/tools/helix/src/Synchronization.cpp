@@ -67,17 +67,17 @@ void HELIX::addSynchronizations (
   auto preambleSCCNodes = loopSCCDAG->getTopLevelNodes();
   assert(preambleSCCNodes.size() == 1 && "The loop internal SCCDAG should only have one preamble");
   auto preambleSCC = (*preambleSCCNodes.begin())->getT();
-  // preambleSCC->printMinimal(errs() << "Preamble SCC:\n");
   SequentialSegment *preambleSS = nullptr;
   for (auto ss : *sss){
     for (auto scc : ss->getSCCs()) {
       if (scc == preambleSCC) {
         preambleSS = ss;
         break;
-        // errs() << "Preamble is included\n";
       }
     }
-    if (preambleSS != nullptr) break;
+    if (preambleSS != nullptr) {
+      break;
+    }
   }
 
   /*
@@ -230,6 +230,16 @@ void HELIX::addSynchronizations (
     for (auto ss : *sss) {
       injectWait(ss, loopExitBlock->getFirstNonPHI());
       injectSignal(ss, loopExitTerminator);
+    }
+  }
+
+  /*
+   * Add wait and signal instructions to the last-iteration-body if it exists.
+   */
+  if (this->lastIterationExecutionBlock != nullptr){
+    auto loopExitTerminator = this->lastIterationExecutionBlock->getTerminator();
+    for (auto ss : *sss) {
+      injectWait(ss, this->lastIterationExecutionBlock->getFirstNonPHI());
     }
   }
 

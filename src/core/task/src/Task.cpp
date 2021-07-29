@@ -213,6 +213,7 @@ namespace llvm::noelle {
        */
       auto cloneI = builder.Insert(I.clone());
       this->instructionClones[&I] = cloneI;
+      this->instructionCloneToOriginal[cloneI] = &I;
     }
 
     return cloneBB;
@@ -266,6 +267,15 @@ namespace llvm::noelle {
     return this->instructionClones.at(o);
   }
 
+  Instruction * Task::getOriginalInstructionOfClone (Instruction *c) const {
+    if (this->instructionCloneToOriginal.find(c) == this->instructionCloneToOriginal.end()){
+      return nullptr;
+    }
+
+    auto o = this->instructionCloneToOriginal.at(c);
+    return o;
+  }
+
   bool Task::isAnOriginalInstruction (Instruction *i) const {
     if (this->instructionClones.find(i) == this->instructionClones.end()){
       return false;
@@ -278,13 +288,13 @@ namespace llvm::noelle {
     if (i->getFunction() != this->getTaskBody()){
       return false;
     }
-    assert(this->instructionClones.find(i) != this->instructionClones.end());
 
     return true;
   }
 
   void Task::addInstruction (Instruction *original, Instruction *internal) {
     this->instructionClones[original] = internal;
+    this->instructionCloneToOriginal[internal] = original;
 
     return ;
   }
@@ -308,6 +318,11 @@ namespace llvm::noelle {
 
   void Task::removeOriginalInstruction (Instruction *o) {
     this->instructionClones.erase(o);
+    for (auto pair : this->instructionCloneToOriginal){
+      if (pair.second == o){
+        pair.second = nullptr;
+      }
+    }
 
     return ;
   }

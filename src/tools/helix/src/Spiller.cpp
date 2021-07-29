@@ -53,7 +53,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
     if (sccInfo->isInductionVariableSCC()) {
       continue;
     }
-    errs() << "HELIX:   Spill " << phi << "\n";
+    errs() << "HELIX:    Spill " << phi << "\n";
     originalLoopCarriedPHIs.push_back(&phi);
     auto clonePHI = (PHINode *)(helixTask->getCloneOfOriginalInstruction(&phi));
     clonedLoopCarriedPHIs.push_back(clonePHI);
