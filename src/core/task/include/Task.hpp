@@ -70,6 +70,8 @@ namespace llvm::noelle {
 
       Instruction * getCloneOfOriginalInstruction (Instruction *o) const ;
 
+      Instruction * getOriginalInstructionOfClone (Instruction *c) const ;
+
       void addInstruction (Instruction *original, Instruction *internal) ;
 
       std::unordered_set<Instruction *> getOriginalInstructions (void) const ;
@@ -150,6 +152,7 @@ namespace llvm::noelle {
        */
       std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
       std::unordered_map<Instruction *, Instruction *> instructionClones;
+      std::unordered_map<Instruction *, Instruction *> instructionCloneToOriginal;
 
       Value *instanceIndexV;
       Value *envArg;
