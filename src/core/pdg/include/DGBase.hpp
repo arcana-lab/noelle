@@ -794,12 +794,22 @@ namespace llvm::noelle {
       for (auto edge : this->subEdges) ros << edge->toString();
       return ros.str();
     }
-    if (this->isControlDependence()) return "CTRL";
     std::string edgeStr;
     raw_string_ostream ros(edgeStr);
-    ros << this->dataDepToString();
-    ros << (must ? " (must)" : " (may)");
-    ros << (memory ? " from memory " : "");
+    ros << "Attributes: ";
+    if (this->isLoopCarried){
+      ros << "Loop-carried " ;
+    }
+    if (this->isControlDependence()) {
+      ros << "Control " ;
+
+    } else {
+      ros << "Data " ;
+      ros << this->dataDepToString();
+      ros << (must ? " (must)" : " (may)");
+      ros << (memory ? " from memory " : "");
+    }
+    ros << "\n";
     ros.flush();
     return edgeStr;
   }
