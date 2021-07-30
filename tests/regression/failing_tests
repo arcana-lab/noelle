@@ -290,3 +290,8 @@ regression_86/LICM -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noel
 regression_70/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
 regression_71/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
 regression_8/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_7/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_72/DependentIterations -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_72/IndependentIterations11 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
+regression_1/Recursive -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_66/IndependentIterations11 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-loop-invariant-code-motion -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1

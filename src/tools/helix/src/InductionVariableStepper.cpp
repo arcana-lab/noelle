@@ -192,6 +192,10 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
      * Fetch the clone
      */
     auto cloneI = task->getCloneOfOriginalInstruction(&I);
+    if (cloneI == nullptr){
+      originalInstsThatMustMove.push_back(&I);
+      continue ;
+    }
 
     /*
      * Fetch the SCC that contains I (if it exists)
@@ -267,24 +271,46 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
    * Clone these instructions and execute them after exiting the loop ONLY IF
    * the previous iteration's IV value passes the loop guard.
    */
-  for (auto originalI : originalInstsThatMustMove) {
-    auto cloneI = task->getCloneOfOriginalInstruction(originalI);
+  std::vector<Instruction *> duplicatesInLastIterationBlock;
+  std::map<Instruction *, Instruction *> duplicateOfTaskInst;
+  for (auto cloneI : cloneInstsThatMustMove){
+
+    /*
+     * Fetch the original instruction of the current instruction in the task (if it exists)
+     */
+    auto originalI = task->getOriginalInstructionOfClone(cloneI);
+
+    /*
+     * Clone the task instruction
+     */
     auto duplicateI = cloneI->clone();
+    duplicateOfTaskInst[cloneI] = duplicateI;
+
+    /*
+     * Add the clone to the last-iteration basic block
+     */
     lastIterationExecutionBuilder.Insert(duplicateI);
-    this->lastIterationExecutionDuplicateMap.insert(std::make_pair(originalI, duplicateI));
+
+    /*
+     * Keep track of the clone
+     */
+    duplicatesInLastIterationBlock.push_back(duplicateI);
+
+    /*
+     * Keep the map originalI <-> duplicate if originalI exists
+     */
+    if (originalI){
+      this->lastIterationExecutionDuplicateMap.insert(std::make_pair(originalI, duplicateI));
+    }
   }
 
   /*
    * Re-wire the cloned last execution instructions together
    */
-  for (auto originalI : originalInstsThatMustMove) {
-    auto duplicateI = this->lastIterationExecutionDuplicateMap.at(originalI);
-    for (auto originalJ : originalInstsThatMustMove) {
-      if (originalI == originalJ) continue;
-
-      auto cloneJ = task->getCloneOfOriginalInstruction(originalJ);
-      auto duplicateJ = this->lastIterationExecutionDuplicateMap.at(originalJ);
-      duplicateI->replaceUsesOfWith(cloneJ, duplicateJ);
+  for (auto duplicateInst : duplicatesInLastIterationBlock){
+    for (auto currentTaskInst : cloneInstsThatMustMove){
+      auto duplicateOfCurrentTaskInst = duplicateOfTaskInst[currentTaskInst];
+      duplicateInst->replaceUsesOfWith(currentTaskInst, duplicateOfCurrentTaskInst);
     }
   }
 
