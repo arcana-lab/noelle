@@ -147,7 +147,11 @@ void LoopGoverningIVUtility::cloneConditionalCheckFor(
 void LoopGoverningIVUtility::updateConditionToCheckIfWeHavePastExitValue(
   CmpInst *cmpToUpdate
   ){
-  cmpToUpdate->setPredicate(this->strictPredicate);
+  auto IV = this->attribution.getInductionVariable();
+  if (this->attribution.getValueToCompareAgainstExitConditionValue() != IV.getLoopEntryPHI()){
+    cmpToUpdate->setPredicate(this->strictPredicate);
+  }
+
   return ;
 }
 
