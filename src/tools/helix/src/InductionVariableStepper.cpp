@@ -344,7 +344,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
    * In this case, the comparison has been translated into "<= N" to catch past-last-iteration iterations. 
    * So, if we want to know whether we are the thread that executed the last iteration, then the comparison instruction that we must use is "< N" and if this returns true, then we are not the thread that executed the last iteration.
    */
-  auto useNewCode = false;
+  auto useNewCode = true;
   if (useNewCode){
     ivUtility.updateConditionToCheckIfWeHavePastExitValue(prevIterGuard);
     auto prevIterationValue = ivUtility.generateCodeToComputeValueToUseForAnIterationAgo(checkForLastExecutionBuilder, cloneGoverningPHI, stepSize);
