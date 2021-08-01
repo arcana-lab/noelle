@@ -114,10 +114,10 @@ void DOALL::rewireLoopToIterateChunks (
    * The exit condition value does not need to be computed each iteration
    * and so the value's derivation can be hoisted into the preheader
    * 
-   * Instructions which the PDG states are independent can include PHI nodes
+   * Instructions that the PDG states are independent can include PHI nodes
    * Assert that any PHIs are invariant. Hoist one of those values (if instructions) to the preheader.
    */
-  auto exitConditionValue = fetchClone(loopGoverningIVAttr->getHeaderCmpInstConditionValue());
+  auto exitConditionValue = fetchClone(loopGoverningIVAttr->getExitConditionValue());
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
     auto &derivation = ivUtility.getConditionValueDerivation();
     for (auto I : derivation) {
@@ -146,7 +146,7 @@ void DOALL::rewireLoopToIterateChunks (
   }
 
   /*
-   * NOTE: When loop governing IV attribution allows for any bther instructions in the header
+   * NOTE: When loop governing IV attribution allows for any other instructions in the header
    * other than those of the IV and its comparison, those unrelated instructions should be
    * copied into the body and the exit block (to preserve the number of times they execute)
    * 
@@ -223,60 +223,112 @@ void DOALL::rewireLoopToIterateChunks (
 		repeatableInstructions.insert(task->getCloneOfOriginalInstruction(&I));
 	}
 
-  bool requiresConditionBeforeEnteringHeader = false;
+  /*
+   * Check if we need to check whether we need to add a condition to execute instructions in the new header for tasks that are executing the header in iterations after the last one.
+   */
+  auto requiresConditionBeforeEnteringHeader = false;
   for (auto &I : *headerClone) {
     if (repeatableInstructions.find(&I) == repeatableInstructions.end()) {
       requiresConditionBeforeEnteringHeader = true;
       break;
     }
   }
-
-  if (requiresConditionBeforeEnteringHeader) {
-    auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
-    auto loopGoverningPHI = task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI());
-    auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
-
-    /*
-     * In each latch, assert that the previous iteration would have executed
-     */
-    for (auto latch : loopSummary->getLatches()) {
-      BasicBlock *cloneLatch = task->getCloneOfOriginalBasicBlock(latch);
-      // cloneLatch->print(errs() << "Addressing latch:\n");
-      auto latchTerminator = cloneLatch->getTerminator();
-      latchTerminator->eraseFromParent();
-      IRBuilder<> latchBuilder(cloneLatch);
-
-      auto currentIVValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(cloneLatch);
-      auto prevIterationValue = latchBuilder.CreateSub(currentIVValue, stepSize);
-      auto clonedCmpInst = updatedCmpInst->clone();
-      clonedCmpInst->replaceUsesOfWith(loopGoverningPHI, prevIterationValue);
-      latchBuilder.Insert(clonedCmpInst);
-      latchBuilder.CreateCondBr(clonedCmpInst, task->getLastBlock(0), headerClone);
-    }
-
-    /*
-     * In the preheader, assert that either the first iteration is being executed OR
-     * that the previous iteration would have executed. The reason we must also check
-     * if this is the first iteration is if the IV condition is such that <= 1
-     * iteration would ever occur
-     */
-    auto preheaderTerminator = preheaderClone->getTerminator();
-    preheaderTerminator->eraseFromParent();
-    IRBuilder<> preheaderBuilder(preheaderClone);
-    auto offsetStartValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(preheaderClone);
-    auto prevIterationValue = preheaderBuilder.CreateSub(offsetStartValue, stepSize);
-
-    auto clonedExitCmpInst = updatedCmpInst->clone();
-    clonedExitCmpInst->replaceUsesOfWith(loopGoverningPHI, prevIterationValue);
-    preheaderBuilder.Insert(clonedExitCmpInst);
-    auto startValue = fetchClone(loopGoverningIV.getStartValue());
-    auto isNotFirstIteration = preheaderBuilder.CreateICmpNE(offsetStartValue, startValue);
-    preheaderBuilder.CreateCondBr(
-      preheaderBuilder.CreateAnd(isNotFirstIteration, clonedExitCmpInst),
-      task->getExit(),
-      headerClone
-    );
+  if (!requiresConditionBeforeEnteringHeader) {
+    return ;
   }
+
+  /*
+   * The new header includes instructions that should be executed only if we know that we didn't pass the last iteration.
+   * Hence, we need to add code to check this condition before entering the header.
+   * Such code needs to be added for all predecessors of the header: pre-header and latches.
+   *
+   * Fetch the required information to generate the code.
+   */
+  auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
+  auto loopGoverningPHI = task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI());
+  auto origValueUsedToCompareAgainstExitConditionValue = loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue();
+  auto valueUsedToCompareAgainstExitConditionValue = task->getCloneOfOriginalInstruction(origValueUsedToCompareAgainstExitConditionValue);
+  assert(valueUsedToCompareAgainstExitConditionValue != nullptr);
+  auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
+
+  /*
+   * In each latch, check whether we passed the last iteration.
+   */
+  for (auto latch : loopSummary->getLatches()) {
+
+    /*
+     * Fetch the latch in the loop within the task.
+     */
+    auto cloneLatch = task->getCloneOfOriginalBasicBlock(latch);
+
+    /*
+     * Remove the old terminator because it will replace with the check.
+     */
+    auto latchTerminator = cloneLatch->getTerminator();
+    latchTerminator->eraseFromParent();
+    IRBuilder<> latchBuilder(cloneLatch);
+
+    /*
+     * Fetch the value of the loop governing IV that would have been used to check whether the previous iteration was the last one.
+     * To do so, we need to fetch the value of the loop-governing IV updated by the current iteration, which could be the IV value after updating it by adding the chunking size.
+     * So for example, if 
+     * - the current core excuted the iterations 0, 1, and 2 and 
+     * - the chunking size is 3 and 
+     * - there are 2 cores, then 
+     * at the end of the iteration 2 (i.e., at the latch) of core 0 the updated loop-governing IV is 
+     *   2 (the current value used in the compare instruction) 
+     * + 1 (the normal IV increment) 
+     * + 3 (the chunking size) * (2 - 1) (the other cores) 
+     * ----
+     *   6
+     * 
+     * The problem is that we don't know if the header of the iteration 6 should be executed at all as the loop might have ended at an earlier iteration (e.g., 4).
+     * So we need to check whether the previous iteration (5 in the example) was actually executed.
+     * To this end, we need to compare the previous iteration IV value (e.g., 5) against the exit condition.
+     *
+     * Fetch the updated loop-governing IV (6 in the example above).
+     */
+    auto currentIVValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(cloneLatch);
+
+    /*
+     * Compute the value that this IV had at the iteration before (5 in the example above).
+     */
+    auto prevIterationValue = ivUtility.generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue(latchBuilder, currentIVValue, cloneLatch, stepSize);
+
+    /*
+     * Compare the previous-iteration IV value against the exit condition
+     */
+    auto clonedCmpInst = updatedCmpInst->clone();
+    clonedCmpInst->replaceUsesOfWith(valueUsedToCompareAgainstExitConditionValue, prevIterationValue);
+    latchBuilder.Insert(clonedCmpInst);
+    latchBuilder.CreateCondBr(clonedCmpInst, task->getLastBlock(0), headerClone);
+  }
+
+  /*
+   * In the preheader, assert that either the first iteration is being executed OR
+   * that the previous iteration would have executed. The reason we must also check
+   * if this is the first iteration is if the IV condition is such that <= 1
+   * iteration would ever occur
+   */
+  auto preheaderTerminator = preheaderClone->getTerminator();
+  preheaderTerminator->eraseFromParent();
+  IRBuilder<> preheaderBuilder(preheaderClone);
+  auto offsetStartValue = cast<PHINode>(loopGoverningPHI)->getIncomingValueForBlock(preheaderClone);
+  auto prevIterationValue = ivUtility.generateCodeToComputeValueToUseForAnIterationAgo(preheaderBuilder, offsetStartValue, stepSize);
+
+  auto clonedExitCmpInst = updatedCmpInst->clone();
+  clonedExitCmpInst->replaceUsesOfWith(valueUsedToCompareAgainstExitConditionValue, prevIterationValue);
+  preheaderBuilder.Insert(clonedExitCmpInst);
+
+  auto startValue = fetchClone(loopGoverningIV.getStartValue());
+  auto isNotFirstIteration = preheaderBuilder.CreateICmpNE(offsetStartValue, startValue);
+  preheaderBuilder.CreateCondBr(
+    preheaderBuilder.CreateAnd(isNotFirstIteration, clonedExitCmpInst),
+    task->getExit(),
+    headerClone
+  );
+
+  return ;
 }
 
 }

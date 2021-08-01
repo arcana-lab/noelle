@@ -63,6 +63,10 @@ namespace llvm::noelle {
           BasicBlock *exitBlock
           ) ;
 
+      void updateConditionToCheckIfWeHavePastExitValue (
+          CmpInst *cmpToUpdate
+          ) ;
+
       void cloneConditionalCheckFor (
           Value *recurrenceOfIV,
           Value *clonedComparedValue,
@@ -75,12 +79,32 @@ namespace llvm::noelle {
         IRBuilder<> &builder
         );
 
+      /*
+       * @return Value of the IV that is used to compare against the exit condition value of the loop
+       */
+      Value * generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue (
+          IRBuilder<> &builder,
+          Value *currentIterationValue,
+          BasicBlock *latch,
+          Value *stepValue
+        );
+
+      /*
+       * @return Value of the IV that is used to compare against the exit condition value of the loop
+       */
+      Value * generateCodeToComputeValueToUseForAnIterationAgo (
+          IRBuilder<> &builder,
+          Value *currentIterationValue,
+          Value *stepValue
+        );
+
     private:
       LoopGoverningIVAttribution &attribution;
       CmpInst *condition;
       std::vector<Instruction *> conditionValueOrderedDerivation;
 
       CmpInst::Predicate nonStrictPredicate;
+      CmpInst::Predicate strictPredicate;
       bool doesOriginalCmpInstHaveIVAsLeftOperand;
       bool flipOperandsToUseNonStrictPredicate;
       bool flipBrSuccessorsToUseNonStrictPredicate;

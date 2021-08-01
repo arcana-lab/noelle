@@ -31,7 +31,7 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
    */
   this->condition = attribution.getHeaderCmpInst();
   // TODO: Refer to whichever intermediate value is used in the comparison (known on attribution)
-  this->doesOriginalCmpInstHaveIVAsLeftOperand = condition->getOperand(0) == attribution.getIntermediateValueUsedInCompare();
+  this->doesOriginalCmpInstHaveIVAsLeftOperand = condition->getOperand(0) == attribution.getValueToCompareAgainstExitConditionValue();
 
   /*
    * Collect the set of instructions that need to be executed to evaluate the loop exit condition for the subsequent iteration.
@@ -52,23 +52,28 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
    * Fetch information about the predicate that when true the execution needs to leave the loop.
    */
   auto conditionExitsOnTrue = attribution.getHeaderBrInst()->getSuccessor(0) == attribution.getExitBlockFromHeader();
-  // errs() << "Exit predicate before exit check: " << condition->getPredicate() << "\n";
   auto exitPredicate = conditionExitsOnTrue ? condition->getPredicate() : condition->getInversePredicate();
-  // errs() << "Exit predicate before operand check: " << exitPredicate << "\n";
   exitPredicate = doesOriginalCmpInstHaveIVAsLeftOperand ? exitPredicate : CmpInst::getSwappedPredicate(exitPredicate);
-  // errs() << "Exit predicate after: " << exitPredicate << "\n";
   this->flipOperandsToUseNonStrictPredicate = !doesOriginalCmpInstHaveIVAsLeftOperand;
   this->flipBrSuccessorsToUseNonStrictPredicate = !conditionExitsOnTrue;
-  // errs() << "Flips: " << flipOperandsToUseNonStrictPredicate << " " << flipBrSuccessorsToUseNonStrictPredicate << "\n";
-  // condition->print(errs() << "Condition (exits on true: " << conditionExitsOnTrue << "): "); errs() << "\n";
+  this->nonStrictPredicate = exitPredicate;
+  this->strictPredicate = exitPredicate;
   switch (exitPredicate) {
     case CmpInst::Predicate::ICMP_NE:
-      // This predicate is non-strict and will result in either 0 or 1 iteration(s)
-      this->nonStrictPredicate = exitPredicate;
+
+      /*
+       * This predicate is non-strict and will result in either 0 or 1 iteration(s)
+       */
       break;
     case CmpInst::Predicate::ICMP_EQ:
       // This predicate is strict and needs to be extended to LTE/GTE to catch jumping past the exiting value
-      this->nonStrictPredicate = isStepValuePositive ? CmpInst::Predicate::ICMP_UGE : CmpInst::Predicate::ICMP_ULE;
+      if (isStepValuePositive){
+        this->nonStrictPredicate = CmpInst::Predicate::ICMP_SGE;
+        this->strictPredicate = CmpInst::Predicate::ICMP_SGT;
+      } else {
+        this->nonStrictPredicate = CmpInst::Predicate::ICMP_SLE;
+        this->strictPredicate = CmpInst::Predicate::ICMP_SLT;
+      }
       break;
     case CmpInst::Predicate::ICMP_SLE:
     case CmpInst::Predicate::ICMP_SLT:
@@ -80,7 +85,6 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
       // it would break under assumptions that further recurrences of the IV can be checked on this condition
       // Our parallelization schemes make that assumption, hence the assert here
       assert(!isStepValuePositive && "IV step value is not compatible with exit condition!");
-      this->nonStrictPredicate = exitPredicate;
       break;
     case CmpInst::Predicate::ICMP_UGT:
     case CmpInst::Predicate::ICMP_UGE:
@@ -92,7 +96,6 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
       // it would break under assumptions that further recurrences of the IV can be checked on this condition
       // Our parallelization schemes make that assumption, hence the assert here
       assert(isStepValuePositive && "IV step value is not compatible with exit condition!");
-      this->nonStrictPredicate = exitPredicate;
       break;
   }
 
@@ -111,7 +114,7 @@ void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitVal
     cmpToUpdate->setOperand(0, opR);
     cmpToUpdate->setOperand(1, opL);
   }
-  cmpToUpdate->setPredicate(nonStrictPredicate);
+  cmpToUpdate->setPredicate(this->nonStrictPredicate);
 
   if (flipBrSuccessorsToUseNonStrictPredicate) {
     branchInst->swapSuccessors();
@@ -131,12 +134,23 @@ void LoopGoverningIVUtility::cloneConditionalCheckFor(
   /*
    * Create the comparison instruction.
    */
-  auto cmpInst = cloneBuilder.CreateICmp(nonStrictPredicate, recurrenceOfIV, clonedCompareValue);
+  auto cmpInst = cloneBuilder.CreateICmp(this->nonStrictPredicate, recurrenceOfIV, clonedCompareValue);
 
   /*
    * Add the conditional branch
    */
   cloneBuilder.CreateCondBr(cmpInst, exitBlock, continueBlock);
+
+  return ;
+}
+
+void LoopGoverningIVUtility::updateConditionToCheckIfWeHavePastExitValue(
+  CmpInst *cmpToUpdate
+  ){
+  auto IV = this->attribution.getInductionVariable();
+  if (this->attribution.getValueToCompareAgainstExitConditionValue() != IV.getLoopEntryPHI()){
+    cmpToUpdate->setPredicate(this->strictPredicate);
+  }
 
   return ;
 }
@@ -154,7 +168,7 @@ Value * LoopGoverningIVUtility::generateCodeToComputeTheTripCount (
    */
   auto IV = this->attribution.getInductionVariable();
   auto startValue = IV.getStartValue();
-  auto lastValue = this->attribution.getHeaderCmpInstConditionValue();
+  auto lastValue = this->attribution.getExitConditionValue();
 
   /*
    * Compute the delta.
@@ -172,6 +186,54 @@ Value * LoopGoverningIVUtility::generateCodeToComputeTheTripCount (
   auto tripCount = builder.CreateUDiv(delta, IV.getSingleComputedStepValue());
 
   return tripCount;
+}
+
+Value * LoopGoverningIVUtility::generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue (
+  IRBuilder<> &builder,
+  Value *currentIterationValue,
+  BasicBlock *latch,
+  Value *stepValue
+  ){
+
+  /*
+   * Assert that the builder is pointing to an instruction within the loop.
+   */
+  //TODO
+
+  /*
+   * Generate the value that was used to compare against the exit condition value in the last iteration.
+   */ 
+  auto prevIterationValue = this->generateCodeToComputeValueToUseForAnIterationAgo(builder, currentIterationValue, stepValue);
+
+  return prevIterationValue;
+}
+
+Value * LoopGoverningIVUtility::generateCodeToComputeValueToUseForAnIterationAgo (
+  IRBuilder<> &builder,
+  Value *currentIterationValue,
+  Value *stepValue
+  ){
+
+  /*
+   * Check if the value used to compare against the exit condition value is the PHI of the loop governing IV.
+   */
+  auto &IV = this->attribution.getInductionVariable();
+  if (this->attribution.getValueToCompareAgainstExitConditionValue() == IV.getLoopEntryPHI()){
+
+    /*
+     * The value used is the PHI.
+     * Hence, we must generate code to compute the value of the previous iteration.
+     */
+    auto prevIterationValue = builder.CreateSub(currentIterationValue, stepValue);
+
+    return prevIterationValue;
+  }
+
+  /*
+   * The value used to check whether we should exit the loop is the updated value.
+   * Hence, the previous value is simply the current updated one.
+   */
+  return currentIterationValue;
 }
 
 }

@@ -83,8 +83,8 @@ void HELIX::reset () {
   }
   spills.clear();
 
-  if (lastIterationExecutionBlock) {
-    lastIterationExecutionBlock = nullptr;
+  if (this->lastIterationExecutionBlock) {
+    this->lastIterationExecutionBlock = nullptr;
   }
   lastIterationExecutionDuplicateMap.clear();
 
@@ -216,7 +216,7 @@ void HELIX::createParallelizableTask (
         // errs() << "HELIX:     SCC:\n";
         // scc->printMinimal(errs(), "HELIX:       ") ;
         errs() << "HELIX:       Loop-carried dependences\n";
-        sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+        sccManager->iterateOverLoopCarriedDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
           errs() << "HELIX:       " << *fromInst << " ---> " << *toInst ;
@@ -272,11 +272,22 @@ void HELIX::createParallelizableTask (
   std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
   std::set<int> reducableVars{};
   for (auto liveOutIndex : liveOutVars) {
+
+    /*
+     * We have a live-out variable.
+     *
+     * Check if it can be reduced so we can generate more efficient code that does not require a sequential segment.
+     */
     auto producer = LDI->environment->producerAt(liveOutIndex);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (sccInfo->getType() == SCCAttrs::SCCType::REDUCIBLE) {
+    if (sccInfo->canExecuteReducibly()){
+
+      /*
+       * The live-out variable can be reduced so we can generate more efficient code that does not require a sequential segment.
+       */
       reducableVars.insert(liveOutIndex);
+
     } else {
       nonReducableVars.insert(liveOutIndex);
     }

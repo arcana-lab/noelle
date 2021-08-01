@@ -26,9 +26,9 @@ SCCAttrs::SCCAttrs (
     , controlFlowInsts{}
     , controlPairs{}
     , loopCarriedVariables{}
-    , isClonable{0}
-    , isSCCClonableIntoLocalMemory{0}
-    , hasIV{0}
+    , isClonable{false}
+    , isSCCClonableIntoLocalMemory{false}
+    , hasIV{false}
     , commutative{false}
   {
 

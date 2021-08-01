@@ -156,7 +156,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
   auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
   auto originalGoverningPHI = loopGoverningIV.getLoopEntryPHI();
   auto cloneGoverningPHI = task->getCloneOfOriginalInstruction(originalGoverningPHI);
-  auto origValueUsedToCompareAgainstExitConditionValue = loopGoverningIVAttr->getIntermediateValueUsedInCompare();
+  auto origValueUsedToCompareAgainstExitConditionValue = loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue();
   auto valueUsedToCompareAgainstExitConditionValue = task->getCloneOfOriginalInstruction(origValueUsedToCompareAgainstExitConditionValue);
   assert(valueUsedToCompareAgainstExitConditionValue != nullptr);
   auto updatedBrInst = brInst;
@@ -326,7 +326,6 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
    * (regardless of what core it would have executed on)
    */
   auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
-  auto prevIterIVValue = checkForLastExecutionBuilder.CreateSub(cloneGoverningPHI, stepSize);
 
   /*
    * Guard against this previous iteration.
@@ -344,7 +343,9 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
    * In this case, the comparison has been translated into "<= N" to catch past-last-iteration iterations. 
    * So, if we want to know whether we are the thread that executed the last iteration, then the comparison instruction that we must use is "< N" and if this returns true, then we are not the thread that executed the last iteration.
    */
-  prevIterGuard->replaceUsesOfWith(cloneGoverningPHI, prevIterIVValue);
+  ivUtility.updateConditionToCheckIfWeHavePastExitValue(prevIterGuard);
+  auto prevIterationValue = ivUtility.generateCodeToComputeValueToUseForAnIterationAgo(checkForLastExecutionBuilder, cloneGoverningPHI, stepSize);
+  prevIterGuard->replaceUsesOfWith(valueUsedToCompareAgainstExitConditionValue, prevIterationValue);
   checkForLastExecutionBuilder.Insert(prevIterGuard);
   auto prevIterGuardTrueSucc = isTrueExiting ? cloneHeaderExit : this->lastIterationExecutionBlock;
   auto prevIterGuardFalseSucc = isTrueExiting ? this->lastIterationExecutionBlock : cloneHeaderExit;
