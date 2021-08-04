@@ -103,8 +103,7 @@ namespace llvm::noelle{
      */ 
     if (WC.OriginalHeader == WC.OriginalLatch) { 
       errs() << outputPrefix << "       This is a single-block loop\n";
-      transformSingleBlockLoop(WC);
-      WC.IsSingleBlockLoop |= true;
+      return Transformed;
     }
 
 
