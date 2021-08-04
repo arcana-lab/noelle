@@ -51,7 +51,11 @@ namespace llvm::noelle {
   class LoopGoverningIVUtility {
     public:
 
-      LoopGoverningIVUtility (LoopGoverningIVAttribution &GIV) ;
+      LoopGoverningIVUtility (
+        LoopStructure *loopOfGIV, 
+        InductionVariableManager &IVM,
+        LoopGoverningIVAttribution &GIV
+        ) ;
 
       LoopGoverningIVUtility () = delete ;
 
@@ -99,6 +103,7 @@ namespace llvm::noelle {
         );
 
     private:
+      LoopStructure *loop;
       LoopGoverningIVAttribution &attribution;
       CmpInst *condition;
       std::vector<Instruction *> conditionValueOrderedDerivation;
@@ -108,6 +113,7 @@ namespace llvm::noelle {
       bool doesOriginalCmpInstHaveIVAsLeftOperand;
       bool flipOperandsToUseNonStrictPredicate;
       bool flipBrSuccessorsToUseNonStrictPredicate;
+      bool isWhile;
   };
 
 }

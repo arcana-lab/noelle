@@ -12,11 +12,17 @@
 
 namespace llvm::noelle{
 
-LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attribution)
-  : attribution{attribution}
+LoopGoverningIVUtility::LoopGoverningIVUtility (
+    LoopStructure *loopOfGIV,
+    InductionVariableManager &IVM,
+    LoopGoverningIVAttribution &attribution
+    )
+  : loop{loopOfGIV}
+  , attribution{attribution}
   , conditionValueOrderedDerivation{}
   , flipOperandsToUseNonStrictPredicate{false}
   , flipBrSuccessorsToUseNonStrictPredicate{false} 
+  , isWhile{false}
 {
 
   /*
@@ -99,6 +105,59 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (LoopGoverningIVAttribution &attr
       break;
   }
 
+  /*
+   * Check if the loop has a while form.
+   */
+  for (auto predecessorOfHeader : predecessors(this->loop->getHeader())){
+
+    /*
+     * Fetch the next predecessor of the header that is included in the loop.
+     */
+    if (!this->loop->isIncluded(predecessorOfHeader)){
+      continue ;
+    }
+
+    /*
+     * Check if the terminator of the current predecessor is an unconditional branch (necessary condition for a while loop)
+     */
+    auto terminatorOfPred = predecessorOfHeader->getTerminator();
+    if (!isa<BranchInst>(terminatorOfPred)){
+      continue ;
+    }
+    auto branch = cast<BranchInst>(terminatorOfPred);
+    if (branch->isConditional()){
+      continue ;
+    }
+
+    /*
+     * We found a predecessor of the loop's header that ends with an unconditional branch.
+     * Check if this basic block contains computation that isn't bitcasts or IV related (necessary condition for a while loop).
+     */
+    auto doesItContainComputation = false;
+    for (auto& inst : *predecessorOfHeader){
+      if (predecessorOfHeader->getTerminator() == &inst){
+        continue ;
+      }
+      if (isa<BitCastInst>(&inst)){
+        continue ;
+      }
+      if (IVM.doesContributeToComputeAnInductionVariable(&inst)){
+        continue ;
+      }
+      doesItContainComputation = true;
+      break ;
+    }
+    if (doesItContainComputation){
+
+      /*
+       * We found a non empty basic block.
+       * Hence, the loop is a while loop.
+       */
+      this->isWhile = true;
+      break ;
+    }
+  }
+
   return ;
 }
 
@@ -108,7 +167,7 @@ void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitVal
   BasicBlock *exitBlock
   ) {
 
-  if (flipOperandsToUseNonStrictPredicate) {
+  if (this->flipOperandsToUseNonStrictPredicate) {
     auto opL = cmpToUpdate->getOperand(0);
     auto opR = cmpToUpdate->getOperand(1);
     cmpToUpdate->setOperand(0, opR);
@@ -116,7 +175,7 @@ void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitVal
   }
   cmpToUpdate->setPredicate(this->nonStrictPredicate);
 
-  if (flipBrSuccessorsToUseNonStrictPredicate) {
+  if (this->flipBrSuccessorsToUseNonStrictPredicate) {
     branchInst->swapSuccessors();
   }
 
@@ -147,8 +206,11 @@ void LoopGoverningIVUtility::cloneConditionalCheckFor(
 void LoopGoverningIVUtility::updateConditionToCheckIfWeHavePastExitValue(
   CmpInst *cmpToUpdate
   ){
-  auto IV = this->attribution.getInductionVariable();
-  if (this->attribution.getValueToCompareAgainstExitConditionValue() != IV.getLoopEntryPHI()){
+
+  /*
+   * Check if the loop is a while one.
+   */
+  if (this->isWhile){
     cmpToUpdate->setPredicate(this->strictPredicate);
   }
 

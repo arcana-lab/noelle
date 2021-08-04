@@ -103,7 +103,7 @@ void DOALL::rewireLoopToIterateChunks (
    * The exit condition needs to be made non-strict to catch iterating past it
    */
   auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
-  LoopGoverningIVUtility ivUtility(*loopGoverningIVAttr);
+  LoopGoverningIVUtility ivUtility(loopSummary, *allIVInfo, *loopGoverningIVAttr);
   auto cmpInst = cast<CmpInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderCmpInst()));
   auto brInst = cast<BranchInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderBrInst()));
   auto basicBlockToJumpToWhenTheLoopEnds = task->getLastBlock(0);

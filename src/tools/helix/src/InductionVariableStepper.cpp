@@ -140,7 +140,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
    *
    * The exit condition needs to be made non-strict to catch iterating past it
    */
-  LoopGoverningIVUtility ivUtility(*loopGoverningIVAttr);
+  LoopGoverningIVUtility ivUtility(loopStructure, *ivManager, *loopGoverningIVAttr);
   auto originalCmpInst = loopGoverningIVAttr->getHeaderCmpInst();
   auto originalBrInst = loopGoverningIVAttr->getHeaderBrInst();
   auto cmpInst = cast<CmpInst>(task->getCloneOfOriginalInstruction(originalCmpInst));

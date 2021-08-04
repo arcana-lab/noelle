@@ -112,7 +112,6 @@ namespace llvm::noelle {
        *
        * Find the updated value used in the compare.
        */
-      return ; //FIXME
       for (auto intermediateValue : iv.getNonPHIIntermediateValues()){
         if (  false
               || (intermediateValue == opR)

@@ -64,6 +64,8 @@ namespace llvm::noelle {
       
       void addTree (StayConnectedNestedLoopForestNode *tree) ;
 
+      StayConnectedNestedLoopForestNode * getNode (LoopStructure *loop) const ;
+
       ~StayConnectedNestedLoopForest();
 
     private:
