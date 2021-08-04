@@ -168,7 +168,7 @@ Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass, TestSuite &suite)
 
     info.push_back(suite.valueToString(attr->getHeaderCmpInst()));
     info.push_back(suite.valueToString(attr->getHeaderBrInst()));
-    info.push_back(suite.valueToString(attr->getHeaderCmpInstConditionValue()));
+    info.push_back(suite.valueToString(attr->getExitConditionValue()));
 
     std::vector<std::string> derivation;
     for (auto value : attr->getConditionValueDerivation()) {
