@@ -167,7 +167,7 @@ void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitVal
   BasicBlock *exitBlock
   ) {
 
-  if (flipOperandsToUseNonStrictPredicate) {
+  if (this->flipOperandsToUseNonStrictPredicate) {
     auto opL = cmpToUpdate->getOperand(0);
     auto opR = cmpToUpdate->getOperand(1);
     cmpToUpdate->setOperand(0, opR);
@@ -175,7 +175,7 @@ void LoopGoverningIVUtility::updateConditionAndBranchToCatchIteratingPastExitVal
   }
   cmpToUpdate->setPredicate(this->nonStrictPredicate);
 
-  if (flipBrSuccessorsToUseNonStrictPredicate) {
+  if (this->flipBrSuccessorsToUseNonStrictPredicate) {
     branchInst->swapSuccessors();
   }
 
@@ -206,6 +206,10 @@ void LoopGoverningIVUtility::cloneConditionalCheckFor(
 void LoopGoverningIVUtility::updateConditionToCheckIfWeHavePastExitValue(
   CmpInst *cmpToUpdate
   ){
+
+  /*
+   * Check if the loop is a while one.
+   */
   if (this->isWhile){
     cmpToUpdate->setPredicate(this->strictPredicate);
   }
