@@ -24,20 +24,12 @@ bool EnablersManager::applyEnablers (
     ){
 
   /*
-   * Print the loop.
-   */
-  errs() << "EnablersManager:   Loop:\n";
-  errs() << "EnablersManager:     Function = \"" << LDI->getLoopStructure()->getFunction()->getName() << "\"\n";
-  errs() << "EnablersManager:     Loop ID  = " << LDI->getID() << "\n";
-  errs() << "EnablersManager:     Entry instruction = " << *LDI->getLoopStructure()->getHeader()->getFirstNonPHI() << "\n";
-
-  /*
    * Apply loop distribution.
    */
   if (par.isTransformationEnabled(Transformation::LOOP_DISTRIBUTION_ID)){
-    errs() << "EnablersManager:   Try to apply loop distribution\n";
+    errs() << "EnablersManager:     Try to apply loop distribution\n";
     if (this->applyLoopDistribution(LDI, par, loopDist)){
-      errs() << "EnablersManager:     Distributed loop\n";
+      errs() << "EnablersManager:       Distributed loop\n";
       return true;
     }
   }
@@ -46,9 +38,9 @@ bool EnablersManager::applyEnablers (
    * Try to devirtualize functions.
    */
   if (par.isTransformationEnabled(Transformation::DEVIRTUALIZER_ID)){
-    errs() << "EnablersManager:   Try to devirtualize indirect calls\n";
+    errs() << "EnablersManager:     Try to devirtualize indirect calls\n";
     if (this->applyDevirtualizer(LDI, par, loopUnroll)){
-      errs() << "EnablersManager:     Some calls have been devirtualized\n";
+      errs() << "EnablersManager:       Some calls have been devirtualized\n";
       return true;
     }
   }
@@ -57,9 +49,9 @@ bool EnablersManager::applyEnablers (
    * Run the whilifier.
    */
   if (par.isTransformationEnabled(Transformation::LOOP_WHILIFIER_ID)){
-    errs() << "EnablersManager:   Try to whilify loops\n";
+    errs() << "EnablersManager:    Try to whilify loops\n";
     if (this->applyLoopWhilifier(LDI, par, loopWhilifier)){
-      errs() << "EnablersManager:     The loop has been whilified\n";
+      errs() << "EnablersManager:      The loop has been whilified\n";
       return true;
     }
   }
@@ -68,9 +60,9 @@ bool EnablersManager::applyEnablers (
    * Run the extraction.
    */
   if (par.isTransformationEnabled(Transformation::LOOP_INVARIANT_CODE_MOTION_ID)){
-    errs() << "EnablersManager:   Try to extract invariants out of loops\n";
+    errs() << "EnablersManager:    Try to extract invariants out of loops\n";
     if (loopInvariantCodeMotion.extractInvariantsFromLoop(*LDI)){
-      errs() << "EnablersManager:     Loop invariants have been extracted\n";
+      errs() << "EnablersManager:      Loop invariants have been extracted\n";
       return true;
     }
   }
@@ -79,17 +71,17 @@ bool EnablersManager::applyEnablers (
    * Run the SCEV simplification pass
    */
   if (par.isTransformationEnabled(Transformation::SCEV_SIMPLIFICATION_ID)){
-    errs() << "EnablersManager:   Try to simplify IV related SCEVs and their corresponding instructions in loops\n";
+    errs() << "EnablersManager:    Try to simplify IV related SCEVs and their corresponding instructions in loops\n";
     if (scevSimplification.simplifyIVRelatedSCEVs(*LDI)){
       /*auto function = LDI->getLoopStructure()->getFunction();
         auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
         if (scevSimplification.simplifyLoopGoverningIVGuards(*LDI, SE)){*/
-      errs() << "EnablersManager:     Loop IV related SCEVs have been simplified\n";
+      errs() << "EnablersManager:      Loop IV related SCEVs have been simplified\n";
       return true;
     }
-    errs() << "EnablersManager:   Try to simplify constant SCEVs and their corresponding instructions in loops\n";
+    errs() << "EnablersManager:    Try to simplify constant SCEVs and their corresponding instructions in loops\n";
     if (scevSimplification.simplifyConstantPHIs(*LDI)){
-      errs() << "EnablersManager:     Loop constant PHIs have been simplified\n";
+      errs() << "EnablersManager:      Loop constant PHIs have been simplified\n";
       return true;
     }
     }
