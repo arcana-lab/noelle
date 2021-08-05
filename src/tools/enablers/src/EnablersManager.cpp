@@ -52,7 +52,7 @@ bool EnablersManager::runOnModule (Module &M) {
    * Fetch all the loops we want to parallelize.
    */
   auto loopsToParallelize = noelle.getLoops();
-  errs() << "EnablersManager:  Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
+  errs() << "EnablersManager:   Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
 
   /*
    * Parallelize the loops selected.
@@ -60,6 +60,14 @@ bool EnablersManager::runOnModule (Module &M) {
   auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
   for (auto loopToImprove : *loopsToParallelize){
+
+    /*
+     * Print the loop.
+     */
+    errs() << "EnablersManager:   Loop:\n";
+    errs() << "EnablersManager:     Function = \"" << loopToImprove->getLoopStructure()->getFunction()->getName() << "\"\n";
+    errs() << "EnablersManager:     Loop ID  = " << loopToImprove->getID() << "\n";
+    errs() << "EnablersManager:     Entry instruction = " << *loopToImprove->getLoopStructure()->getHeader()->getFirstNonPHI() << "\n";
 
     /*
      * Fetch the function that contains the current loop.
@@ -71,7 +79,7 @@ bool EnablersManager::runOnModule (Module &M) {
      * Check if we have already modified the function.
      */
     if (modifiedFunctions[f]){
-      errs() << "EnablersManager:   The current loop belongs to the function " << f->getName() << " , which has already been modified.\n" ;
+      errs() << "EnablersManager:     The current loop belongs to the function " << f->getName() << " , which has already been modified.\n" ;
       continue ;
     }
 
