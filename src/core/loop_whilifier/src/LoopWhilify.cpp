@@ -33,12 +33,10 @@ namespace llvm::noelle{
     errs() << outputPrefix << " Try to whilify the target loop\n";
 
     auto LS = LDI.getLoopStructure();
-    assert(verifyFunction(*LS->getFunction()));
     AnyTransformed |= whilifyLoopDriver(LS);
 
     errs() << outputPrefix << " Transformed = " << AnyTransformed << "\n";
     errs() << outputPrefix << "Exit\n";
-    assert(verifyFunction(*LS->getFunction()));
 
     return AnyTransformed;
 
@@ -105,7 +103,8 @@ namespace llvm::noelle{
      */ 
     if (WC.OriginalHeader == WC.OriginalLatch) { 
       errs() << outputPrefix << "       This is a single-block loop\n";
-      return Transformed;
+      this->transformSingleBlockLoop(WC);
+      WC.IsSingleBlockLoop |= true;
     }
 
 
