@@ -83,11 +83,27 @@ namespace llvm::noelle {
      * Ensure the branch is in the header as this analysis does not understand do-while loops
      */
     if (!loopGoverningTerminator) {
+
+      /*
+       * This is a do-while loop.
+       * We assume the loop has been normalized it to a while shape.
+       * We exit here as we do not support do-while loops.
+       */
       return;
     }
     if (loopGoverningTerminator->getParent() != headerPHI->getParent()) {
+
+      /*
+       * This is a do-while loop.
+       * We assume the loop has been normalized it to a while shape.
+       * We exit here as we do not support do-while loops.
+       */
       return;
     }
+
+    /*
+     * The loop is in a while shape.
+     */
     this->headerBr = loopGoverningTerminator;
 
     /*
@@ -159,7 +175,9 @@ namespace llvm::noelle {
 
         auto valueNodeInSCC = scc.fetchNode(value);
         for (auto edge : valueNodeInSCC->getIncomingEdges()) {
-          if (!edge->isDataDependence()) continue;
+          if (!edge->isDataDependence()) {
+            continue;
+          }
 
           auto outgoingValue = edge->getOutgoingT();
           if (!scc.isInternal(outgoingValue)) {
