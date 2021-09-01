@@ -16,20 +16,20 @@ using namespace llvm::noelle;
 namespace llvm::noelle {
 
   std::vector<LoopDependenceInfo *> Parallelizer::selectTheOrderOfLoopsToParallelize (
-    Noelle &noelle, 
-    Hot *profiles,
-    noelle::StayConnectedNestedLoopForestNode *tree
-    ) {
+      Noelle &noelle, 
+      Hot *profiles,
+      noelle::StayConnectedNestedLoopForestNode *tree
+      ) {
     std::vector<LoopDependenceInfo *> selectedLoops{};
 
     /*
-    * Fetch the verbosity.
-    */
+     * Fetch the verbosity.
+     */
     auto verbose = noelle.getVerbosity();
 
     /*
-    * Compute the amount of time that can be saved by a parallelization technique per loop.
-    */
+     * Compute the amount of time that can be saved by a parallelization technique per loop.
+     */
     std::map<LoopDependenceInfo *, uint64_t> timeSavedLoops;
     auto selector = [&noelle, &timeSavedLoops, profiles](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
 
@@ -96,7 +96,7 @@ namespace llvm::noelle {
        */
       auto savedTimeTotal = ((double)timeSavedLoops[ldi]) / ((double) profiles->getTotalInstructions());
       savedTimeTotal *= 100;
-      
+
       /*
        * Check if the time saved is enough.
        */
