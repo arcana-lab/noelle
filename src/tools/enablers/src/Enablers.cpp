@@ -48,9 +48,9 @@ namespace llvm::noelle {
      * Run the whilifier.
      */
     if (par.isTransformationEnabled(Transformation::LOOP_WHILIFIER_ID)){
-      errs() << "EnablersManager:    Try to whilify loops\n";
+      errs() << "EnablersManager:     Try to whilify loops\n";
       if (this->applyLoopWhilifier(LDI, par, loopWhilifier)){
-        errs() << "EnablersManager:      The loop has been whilified\n";
+        errs() << "EnablersManager:       The loop has been whilified\n";
         return true;
       }
     }
@@ -59,9 +59,9 @@ namespace llvm::noelle {
      * Run the extraction.
      */
     if (par.isTransformationEnabled(Transformation::LOOP_INVARIANT_CODE_MOTION_ID)){
-      errs() << "EnablersManager:    Try to extract invariants out of loops\n";
+      errs() << "EnablersManager:     Try to extract invariants out of loops\n";
       if (loopInvariantCodeMotion.extractInvariantsFromLoop(*LDI)){
-        errs() << "EnablersManager:      Loop invariants have been extracted\n";
+        errs() << "EnablersManager:       Loop invariants have been extracted\n";
         return true;
       }
     }
@@ -70,17 +70,17 @@ namespace llvm::noelle {
      * Run the SCEV simplification pass
      */
     if (par.isTransformationEnabled(Transformation::SCEV_SIMPLIFICATION_ID)){
-      errs() << "EnablersManager:    Try to simplify IV related SCEVs and their corresponding instructions in loops\n";
+      errs() << "EnablersManager:     Try to simplify IV related SCEVs and their corresponding instructions in loops\n";
       if (scevSimplification.simplifyIVRelatedSCEVs(*LDI)){
         /*auto function = LDI->getLoopStructure()->getFunction();
           auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
           if (scevSimplification.simplifyLoopGoverningIVGuards(*LDI, SE)){*/
-        errs() << "EnablersManager:      Loop IV related SCEVs have been simplified\n";
+        errs() << "EnablersManager:       Loop IV related SCEVs have been simplified\n";
         return true;
       }
-      errs() << "EnablersManager:    Try to simplify constant SCEVs and their corresponding instructions in loops\n";
+      errs() << "EnablersManager:     Try to simplify constant SCEVs and their corresponding instructions in loops\n";
       if (scevSimplification.simplifyConstantPHIs(*LDI)){
-        errs() << "EnablersManager:      Loop constant PHIs have been simplified\n";
+        errs() << "EnablersManager:       Loop constant PHIs have been simplified\n";
         return true;
       }
       }
