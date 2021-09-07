@@ -50,7 +50,7 @@ void DOALL::rewireLoopToIterateChunks (
    * Collect clones of step size deriving values for all induction variables
    * of the top level loop
    */
-  auto clonedStepSizeMap = cloneIVStepValueComputation(LDI, 0, entryBuilder);
+  auto clonedStepSizeMap = this->cloneIVStepValueComputation(LDI, 0, entryBuilder);
 
   /*
    * Determine start value of the IV for the task
@@ -111,10 +111,9 @@ void DOALL::rewireLoopToIterateChunks (
   auto updatedCmpInst = cmpInst;
 
   /*
-   * The exit condition value does not need to be computed each iteration
-   * and so the value's derivation can be hoisted into the preheader
+   * The exit condition value does not need to be computed each iteration and so the value's derivation can be hoisted into the preheader.
    * 
-   * Instructions that the PDG states are independent can include PHI nodes
+   * Instructions that the PDG states are independent can include PHI nodes.
    * Assert that any PHIs are invariant. Hoist one of those values (if instructions) to the preheader.
    */
   auto exitConditionValue = fetchClone(loopGoverningIVAttr->getExitConditionValue());
@@ -134,7 +133,9 @@ void DOALL::rewireLoopToIterateChunks (
         clonePHI->replaceAllUsesWith(usedValue);
         clonePHI->eraseFromParent();
         cloneI = dyn_cast<Instruction>(usedValue);
-        if (!cloneI) continue;
+        if (!cloneI) {
+          continue;
+        }
       }
 
       cloneI->removeFromParent();
