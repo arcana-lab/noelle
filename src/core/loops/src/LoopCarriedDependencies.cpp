@@ -129,9 +129,9 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
             && DS.DT.dominates(topLoopHeaderBranch, consumerI)
         ){
         if (auto phiConsumer = dyn_cast<PHINode>(consumerI)){
-          errs() << "AAAA: producer = " << *producerI << "\n";
-          errs() << "AAAA: consumer = " << *consumerI << "\n";
-          errs() << "AAAA: Loop = " << *producerLoop->getHeader()->getFirstNonPHIOrDbg() << "\n\n";
+          //errs() << "AAAA: producer = " << *producerI << "\n";
+          //errs() << "AAAA: consumer = " << *consumerI << "\n";
+          //errs() << "AAAA: Loop = " << *producerLoop->getHeader()->getFirstNonPHIOrDbg() << "\n\n";
           return nullptr;
         }
       }
