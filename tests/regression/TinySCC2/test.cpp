@@ -13,10 +13,9 @@ int main (int argc, char *argv[]){
     return -1;
   }
 
-  auto i = 100;
   int accumValue = 3004340340;
   for (auto j = 0; j < iterations * iterations; ++j) {
-    accumValue += sqrt(i + j);
+    accumValue += sqrt(j + 100);
   }
   printf("%d\n", accumValue);
   return 0;
