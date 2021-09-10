@@ -13,10 +13,10 @@ int main (int argc, char *argv[]){
     return -1;
   }
 
-  int accumValue = 3004340340;
+  float accumValue = 3004340340.0F;
   for (auto j = 0; j < iterations * iterations; ++j) {
     accumValue += sqrt(j + 100);
   }
-  printf("%d\n", accumValue);
+  printf("%.0f\n", accumValue);
   return 0;
 }
