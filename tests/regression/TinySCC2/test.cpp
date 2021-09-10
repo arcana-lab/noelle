@@ -18,7 +18,6 @@ int main (int argc, char *argv[]){
   for (auto j = 0; j < iterations * iterations; ++j) {
     auto inc = 0;
     accumValue += sqrt(i + j + inc++);
-    accumValue -= sqrt(i + j + inc++);
   }
   printf("%d\n", accumValue);
   return 0;
