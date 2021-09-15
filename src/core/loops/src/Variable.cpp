@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -11,8 +11,7 @@
 #include "Variable.hpp"
 #include "LoopCarriedDependencies.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 bool LoopCarriedCycle::isEvolutionReducibleAcrossLoopIterations (void) const {
   return false;
@@ -158,22 +157,15 @@ LoopCarriedVariable::~LoopCarriedVariable () {
 }
 
 bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const {
-
-  if (!isValid) return false;
-
-  // declarationValue->print(errs() << "Declaration: "); errs() << "\n";
-  // sccOfDataAndMemoryVariableValuesOnly->printMinimal(errs() << "Data and memory SCC\n");
-  // errs() << "Number of internal control values: " << controlValuesGoverningEvolution.size() << "\n";
-  // for (auto controlValue : controlValuesGoverningEvolution) {
-  //   controlValue->print(errs() << "Control value: "); errs() << "\n";
-  // }
-  // errs() << "Number of variable updates: " << variableUpdates.size() << "\n";
+  if (!this->isValid) {
+    return false;
+  }
 
   /*
    * No control values internal to the variable can be involved in the evolution
    * This would prevent partial computation and then reduction as the condition results might change
    */
-  for (auto controlValue : controlValuesGoverningEvolution) {
+  for (auto controlValue : this->controlValuesGoverningEvolution) {
     if (sccOfVariableOnly->isInternal(controlValue)) return false;
   }
 
@@ -181,12 +173,14 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
    * Collect updates that do not just propagate other updates
    */
   std::unordered_set<EvolutionUpdate *> arithmeticUpdates;
-  for (auto update : variableUpdates) {
+  for (auto update : this->variableUpdates) {
 
     /*
      * Overriding updates break reducibility
      */
-    if (update->mayUpdateBeOverride()) return false;
+    if (update->mayUpdateBeOverride()) {
+      return false;
+    }
 
     auto updateInstruction = update->getUpdateInstruction();
     if (isa<PHINode>(updateInstruction) || isa<SelectInst>(updateInstruction)) continue;
@@ -196,7 +190,9 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
   /*
    * Do not allow any casts to cause rounding error if the variable is reduced
    */
-  if (hasRoundingError(arithmeticUpdates)) return false;
+  if (hasRoundingError(arithmeticUpdates)) {
+    return false;
+  }
 
   /*
    * Ignore a value that does not evolve and is just propagated; its last execution is its current value
@@ -387,16 +383,35 @@ PHINode *LoopCarriedVariable::getLoopEntryPHIForValueOfVariable (Value *value) c
 bool LoopCarriedVariable::hasRoundingError (std::unordered_set<EvolutionUpdate *> &arithmeticUpdates) const {
 
   /*
-   * If casts to and from different precision types are present, further analysis is needed
+   * Casting might change the rounding error.
+   * Hence, if casts to and from different precision types are present, further analysis is needed
    */
-  bool isIntegerTypedCast = false;
-  bool isFloatingPointTypedCast = false;
-  for (auto cast : castsInternalToVariableComputation) {
+  errs() << "XAN: 0\n";
+  auto isIntegerTypedCast = false;
+  auto isFloatingPointTypedCast = false;
+  for (auto cast : this->castsInternalToVariableComputation) {
     auto castTy = cast->getType();
+    errs() << "XAN: CAST " << *cast << "\n";
     isIntegerTypedCast |= castTy->isIntegerTy();
     isFloatingPointTypedCast |= castTy->isFloatingPointTy();
+
+    /*
+     * Check if we are converting between floating point values.
+     * If we do, then we need an extra analysis to try to exclude the possibility of having rounding errors.
+     * We currently don't have such analysis, and therefore we need to be conservative and assume rounding errors will happen.
+     */
+    auto srcType = cast->getSrcTy();
+    if (  true
+          && (castTy->isFloatingPointTy())
+          && (srcType->isFloatingPointTy())
+       ){
+      return true;
+    }
   }
-  if (!isIntegerTypedCast || !isFloatingPointTypedCast) return false;
+  if (!isIntegerTypedCast || !isFloatingPointTypedCast) {
+    return false;
+  }
+  errs() << "XAN: 1\n";
 
   /*
    * Handle the simple case where the accumulation is additive and cast up from integer to floating point
@@ -404,11 +419,12 @@ bool LoopCarriedVariable::hasRoundingError (std::unordered_set<EvolutionUpdate *
    * each iteration and is not propagated iteration to iteration
    */
   auto accumulationType = declarationValue->getType();
-  bool onlyAddition = true;
+  auto onlyAddition = true;
   for (auto update : arithmeticUpdates) {
     onlyAddition &= update->isAdd() || update->isSubTransformableToAdd();
   }
   if (accumulationType->isIntegerTy() && onlyAddition) {
+    errs() << "XAN: NOOOO\n";
     return false;
   }
 
@@ -634,4 +650,6 @@ bool EvolutionUpdate::isBothUpdatesSameBitwiseLogicalOp (const EvolutionUpdate &
 
 Instruction *EvolutionUpdate::getUpdateInstruction (void) const {
   return updateInstruction;
+}
+
 }
