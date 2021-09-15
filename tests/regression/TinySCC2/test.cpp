@@ -17,16 +17,16 @@ int main (int argc, char *argv[]){
   int accumValue = sqrt(i);
   for (auto j = 0; j < iterations * iterations; ++j) {
     auto inc = 0;
-    accumValue += sqrt(i + j + inc++);
-    accumValue -= sqrt(i + j + inc++);
-    accumValue += sqrt(i + j + inc++);
-    accumValue -= sqrt(i + j + inc++);
-    accumValue += sqrt(i + j + inc++);
-    accumValue -= sqrt(i + j + inc++);
-    accumValue += sqrt(i + j + inc++);
-    accumValue -= sqrt(i + j + inc++);
-    accumValue += sqrt(i + j + inc++);
-    accumValue -= sqrt(i + j + inc++);
+    accumValue += sqrt(j + inc++);
+    accumValue -= sqrt(j + inc++);
+    accumValue += sqrt(j + inc++);
+    accumValue -= sqrt(j + inc++);
+    accumValue += sqrt(j + inc++);
+    accumValue -= sqrt(j + inc++);
+    accumValue += sqrt(j + inc++);
+    accumValue -= sqrt(j + inc++);
+    accumValue += sqrt(j + inc++);
+    accumValue -= sqrt(j + inc++);
   }
 
   printf("%d\n", accumValue);
