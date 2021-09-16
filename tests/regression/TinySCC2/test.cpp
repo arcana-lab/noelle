@@ -14,7 +14,7 @@ int main (int argc, char *argv[]){
   }
   auto i = atoi(argv[2]);
 
-  int accumValue = sqrt(i);
+  int accumValue = i;
   for (auto j = 0; j < iterations * iterations; ++j) {
     accumValue -= sqrt(j);
   }
