@@ -166,7 +166,9 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
    * This would prevent partial computation and then reduction as the condition results might change
    */
   for (auto controlValue : this->controlValuesGoverningEvolution) {
-    if (sccOfVariableOnly->isInternal(controlValue)) return false;
+    if (sccOfVariableOnly->isInternal(controlValue)) {
+      return false;
+    }
   }
 
   /*
@@ -197,7 +199,9 @@ bool LoopCarriedVariable::isEvolutionReducibleAcrossLoopIterations (void) const 
   /*
    * Ignore a value that does not evolve and is just propagated; its last execution is its current value
    */
-  if (arithmeticUpdates.size() == 0) return false;
+  if (arithmeticUpdates.size() == 0) {
+    return false;
+  }
 
   /*
    * All arithmetic updates must be mutually commutative and associative
@@ -629,8 +633,11 @@ bool EvolutionUpdate::isAssociativeWith (const EvolutionUpdate &otherUpdate) con
 }
 
 bool EvolutionUpdate::isBothUpdatesAddOrSub (const EvolutionUpdate &otherUpdate) const {
-  auto isThisAddOrSub = this->isAdd() || this->isSub();
-  auto isOtherAddOrSub = otherUpdate.isAdd() || otherUpdate.isSub();
+  //FIXME understand why this is necessary
+  //auto isThisAddOrSub = this->isAdd() || this->isSub();
+  //auto isOtherAddOrSub = otherUpdate.isAdd() || otherUpdate.isSub();
+  auto isThisAddOrSub = this->isAdd();
+  auto isOtherAddOrSub = otherUpdate.isAdd();
   return isThisAddOrSub && isOtherAddOrSub;
 }
 
