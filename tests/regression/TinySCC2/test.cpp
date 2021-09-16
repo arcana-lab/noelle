@@ -16,7 +16,6 @@ int main (int argc, char *argv[]){
 
   int accumValue = sqrt(i);
   for (auto j = 0; j < iterations * iterations; ++j) {
-    accumValue += sqrt(j);
     accumValue -= sqrt(j);
   }
 
