@@ -13,12 +13,18 @@
 #include "SystemHeaders.hpp"
 #include "Noelle.hpp"
 
-#define EXTRA_ANCHOR 0
-#define FIX_BLOCK_PLACEMENT 1
 
 namespace llvm::noelle {
 
-  typedef struct WhilifierContext {
+  class WhilifierContext {
+
+    /*
+     * WhilifierContext --- TOP
+     *
+     * A package to share whilifier information across LoopWhilifier 
+     * member functions --- this is a shortcut over better engineering 
+     * because the LoopWhilifier does not keep any internal state.
+     */
 
     public:
 
@@ -56,11 +62,11 @@ namespace llvm::noelle {
       /*
        * Analysis for whilification process
        */ 
-      bool IsDoWhile;
-      bool IsAppropriateToWhilify;
-      bool IsSingleBlockLoop;
-      bool ConsolidatedOriginalLatch;
-      bool ResolvedLatch;
+      bool IsDoWhile=false;
+      bool IsAppropriateToWhilify=false;
+      bool IsSingleBlockLoop=false;
+      bool ConsolidatedOriginalLatch=false;
+      bool ResolvedLatch=false;
       DenseMap<PHINode *, Value *> ExitDependencies;
       DenseMap<Value *, Value *> ResolvedDependencyMapping;
       DenseMap<Instruction *, 
@@ -68,7 +74,8 @@ namespace llvm::noelle {
                         uint32_t>> OriginalLatchDependencies;
 
 
-  } WhilifierContext;
+  } ;
+
 
   class LoopWhilifier {
 
@@ -83,14 +90,17 @@ namespace llvm::noelle {
         LoopDependenceInfo &LDI
       );
 
+      Verbosity verbosity;
+
+
     private:
 
       /*
        * Fields
        */
       Noelle &noelle;
-      uint32_t NumHandled;
       std::string outputPrefix;
+
 
       /*
        * Methods
@@ -100,79 +110,79 @@ namespace llvm::noelle {
       );
 
       bool containsInOriginalLoop(
-        WhilifierContext * const WC,
+        WhilifierContext const &WC,
         BasicBlock * const BB 
       );
 
       void compressStructuralLatch(
-        WhilifierContext *WC,
+        WhilifierContext &WC,
         BasicBlock *&SemanticLatch
       );
 
       bool isSemanticLatch(
-        WhilifierContext * const WC,
+        WhilifierContext const &WC,
         BasicBlock *&LatchPred
       );
 
       bool isAppropriateToWhilify(
-        WhilifierContext * const WC,
+        WhilifierContext &WC,
         BasicBlock * const SemanticLatch
       );
 
       bool isDoWhile(
-        WhilifierContext *WC
+        WhilifierContext &WC
       );
 
       bool canWhilify(
-        WhilifierContext *WC
+        WhilifierContext &WC
       );
 
       void transformSingleBlockLoop(
-        WhilifierContext *WC
+        WhilifierContext &WC
       );
 
       void buildAnchors(
-        WhilifierContext *WC
+        WhilifierContext &WC
       );
 
       void cloneLoopBlocksForWhilifying(
-        WhilifierContext *WC
+        WhilifierContext &WC
       );
 
       PHINode *buildNewHeaderDependencyPHI(
-        WhilifierContext *WC,
+        WhilifierContext &WC,
         Value *Dependency
       );
 
       void resolveExitEdgeDependencies(
-        WhilifierContext *WC,
+        WhilifierContext &WC,
         BasicBlock *NewHeader
       );
 
       void resolveNewHeaderPHIDependencies(
-        WhilifierContext *WC
+        WhilifierContext &WC
       );
 
       void findNonPHIOriginalLatchDependencies(
-        WhilifierContext *WC
+        WhilifierContext &WC
       );
 
       void resolveNewHeaderNonPHIDependencies(
-        WhilifierContext *WC,
+        WhilifierContext &WC,
         BasicBlock *NewHeader
       );
 
       void resolveNewHeaderDependencies(
-        WhilifierContext *WC,
+        WhilifierContext &WC,
         BasicBlock *NewHeader
       );
 
       void resolveOriginalHeaderPHIs(
-        WhilifierContext *WC
+        WhilifierContext &WC
       );
 
       void rerouteLoopBranches(
-        WhilifierContext *WC,
+        WhilifierContext &WC,
         BasicBlock *NewHeader
       );
 

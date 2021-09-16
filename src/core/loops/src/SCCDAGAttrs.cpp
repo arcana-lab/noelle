@@ -488,6 +488,9 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
   }
   auto singleLoopCarriedPHI = *loopCarriedPHIs.begin();
 
+  /*
+   * Analyze the loop-carried variable related to the SCC.
+   */
   auto variable = new LoopCarriedVariable(*rootLoop, LIS, *loopDG, *sccdag, *scc, singleLoopCarriedPHI);
   if (!variable->isEvolutionReducibleAcrossLoopIterations()) {
     delete variable;

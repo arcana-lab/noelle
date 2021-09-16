@@ -161,7 +161,7 @@ if test -f performance/speedups.txt ; then
     paste $tempSpeedups $tempOracle > $tempCompare ;
     awk '
       {
-        if (  ($2 < ($4 * 0.9)) && (($4 - $2) > 0.1)   ){
+        if (  ($2 < ($4 * 0.9)) && (($4 - $2) > 0.2)   ){
           printf("    Performance degradation for %s (from %.1fx to %.1fx)\n", $1, $4, $2);
         }
       }' $tempCompare > $tempOutput ;
