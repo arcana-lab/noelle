@@ -1,4 +1,4 @@
-UTILS=transformations basic_utilities task induction_variables loops architecture clean_metadata callgraph scheduler metadata_manager
+UTILS=transformations basic_utilities task induction_variables loops architecture clean_metadata callgraph scheduler metadata_manager loop_transformer
 ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure invariants
 ENABLERS=loop_distribution loop_unroll loop_whilifier outliner
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) hotprofiler unique_ir_marker noelle scripts
@@ -12,6 +12,9 @@ noelle:
 	cd $@ ; ../../scripts/run_me.sh
 
 metadata_manager:
+	cd $@ ; ../../scripts/run_me.sh
+
+loop_transformer:
 	cd $@ ; ../../scripts/run_me.sh
 
 invariants:
