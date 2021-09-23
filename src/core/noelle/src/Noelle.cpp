@@ -259,6 +259,10 @@ Scheduler Noelle::getScheduler (void) const {
   return Scheduler{};
 }
 
+LoopTransformer & Noelle::getLoopTransformer (Function &F) {
+  return getAnalysis<LoopTransformer>(F);
+}
+
 uint64_t Noelle::numberOfProgramInstructions (void) const {
   uint64_t t = 0;
   for (auto &F : *this->program){
@@ -299,6 +303,17 @@ MetadataManager * Noelle::getMetadataManager (void) {
     this->mm = new MetadataManager(*this->getProgram());
   }
   return this->mm;
+}
+      
+bool Noelle::verifyCode (void) const {
+  assert(this->program != nullptr);
+
+  /*
+   * Check the entire program.
+   */
+  auto incorrect = llvm::verifyModule(*this->program);
+
+  return !incorrect;
 }
 
 }

@@ -26,7 +26,7 @@ make clean ;
 echo "Machine = `hostname`" > node.txt ;
 
 # Compile
-timeout 2h make FRONTEND_OPTIONS="$frontendOptions" PRE_MIDDLEEND_OPTIONS="$meOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
+timeout 3h make FRONTEND_OPTIONS="$frontendOptions" PRE_MIDDLEEND_OPTIONS="$meOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
 if test $? -ne 0 ; then
   echo "ERROR: the following test did not pass because the compilation timed out" ;
   echo "  Test = `pwd`" ;
@@ -45,7 +45,7 @@ make input.txt
 for i in `seq 0 5` ; do
 
   # Run the parallelized binary
-  timeout 10m ./parallelized `cat input.txt` &> output_parallelized.txt ;
+  timeout 1h ./parallelized `cat input.txt` &> output_parallelized.txt ;
   if test $? -ne 0 ; then
     echo "ERROR: the following test did not pass because its parallel execution timed out" ;
     echo "  Test = `pwd`" ;

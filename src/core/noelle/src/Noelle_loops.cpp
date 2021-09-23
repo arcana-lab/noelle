@@ -198,7 +198,20 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
 LoopDependenceInfo * Noelle::getLoop (
     LoopStructure *loop
     ) {
-  return getLoop(loop, {});
+
+  /*
+   * Check if the loop is valid.
+   */
+  if (loop == nullptr){
+    return nullptr;
+  }
+
+  /*
+   * Compute the LDI abstraction.
+   */
+  auto ldi = this->getLoop(loop, {});
+
+  return ldi;
 }
 
 LoopDependenceInfo * Noelle::getLoop (
@@ -541,7 +554,8 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
 }
 
 std::unordered_map<BasicBlock *, LoopDependenceInfo *> Noelle::getInnermostLoopsThatContains (
-  const std::vector<LoopDependenceInfo *> &loops) {
+  const std::vector<LoopDependenceInfo *> &loops
+  ) {
   std::unordered_map<BasicBlock *, LoopDependenceInfo *> m{};
 
   /*
@@ -576,6 +590,13 @@ LoopDependenceInfo * Noelle::getInnermostLoopThatContains (
   ){
 
   /*
+   * Check if the basic block exists
+   */
+  if (bb == nullptr){
+    return nullptr;
+  }
+
+  /*
    * Fetch an instruction of @bb.
    */
   auto inst = &*bb->begin();
@@ -592,6 +613,13 @@ LoopDependenceInfo * Noelle::getInnermostLoopThatContains (
   const std::vector<LoopDependenceInfo *> &loops,
   Instruction *inst
   ){
+
+  /*
+   * Check the instruction exists.
+   */
+  if (inst == nullptr){
+    return nullptr;
+  }
 
   /*
    * Identify the innermost loop that contains @inst.

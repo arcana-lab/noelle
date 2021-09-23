@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -12,7 +12,6 @@
 
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "ScalarEvolutionReferencer.hpp"
-
 #include "SystemHeaders.hpp"
 #include "SCCDAG.hpp"
 #include "SCC.hpp"
@@ -23,67 +22,20 @@
 
 namespace llvm::noelle {
 
-  class InductionVariable;
   class LoopGoverningIVAttribution;
-
-  class InductionVariableManager {
-    public:
-
-      InductionVariableManager (
-        LoopsSummary &LIS,
-        InvariantManager &IVM,
-        ScalarEvolution &SE,
-        SCCDAG &sccdag,
-        LoopEnvironment &loopEnv
-      );
-
-      InductionVariableManager () = delete;
-
-      /*
-       * Return all induction variables including the loop-governing one of the outermost loop of the loop sub-tree related to @this.
-       */
-      std::unordered_set<InductionVariable *> getInductionVariables (void) const ;
-
-      /*
-       * Return all induction variables including the loop-governing one.
-       */
-      std::unordered_set<InductionVariable *> getInductionVariables (LoopStructure &LS) const ;
-
-      /*
-       * Return all induction variables that @i is involved in for any loop/sub-loop related to this manager.
-       */
-      std::unordered_set<InductionVariable *> getInductionVariables (Instruction *i) const ;
-
-      InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i) const ;
-
-      InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) const ;
-
-      bool doesContributeToComputeAnInductionVariable (Instruction *i) const ;
-
-      LoopGoverningIVAttribution * getLoopGoverningIVAttribution (LoopStructure &LS) const ;
-
-      InductionVariable * getDerivingInductionVariable (LoopStructure &LS, Instruction *derivedInstruction) const ;
-
-      ~InductionVariableManager ();
-
-    private:
-      LoopsSummary &LIS;
-      std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
-      std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *> loopToGoverningIVAttrMap;
-  };
 
   class InductionVariable {
     public:
 
       InductionVariable  (
-        LoopStructure *LS,
-        InvariantManager &IVM,
-        ScalarEvolution &SE,
-        PHINode *loopEntryPHI,
-        SCC &scc,
-        LoopEnvironment &loopEnvironment,
-        ScalarEvolutionReferentialExpander &referentialExpander
-      ) ;
+          LoopStructure *LS,
+          InvariantManager &IVM,
+          ScalarEvolution &SE,
+          PHINode *loopEntryPHI,
+          SCC &scc,
+          LoopEnvironment &loopEnvironment,
+          ScalarEvolutionReferentialExpander &referentialExpander
+          ) ;
 
       SCC * getSCC (void) const ;
 
@@ -93,9 +45,9 @@ namespace llvm::noelle {
 
       std::unordered_set<Instruction *> getNonPHIIntermediateValues (void) const ;
 
-      std::unordered_set<Instruction *> getAllInstructions(void) const ;
+      std::unordered_set<Instruction *> getAllInstructions (void) const ;
 
-      std::unordered_set<Instruction *> getDerivedSCEVInstructions(void) const ;
+      std::unordered_set<Instruction *> getDerivedSCEVInstructions (void) const ;
 
       Value * getStartValue (void) const;
 
@@ -104,6 +56,8 @@ namespace llvm::noelle {
       std::vector<Instruction *> getComputationOfStepValue (void) const;
 
       bool isStepValueLoopInvariant (void) const;
+
+      bool isStepValuePositive (void) const ;
 
       const SCEV * getStepSCEV (void) const;
 
@@ -186,33 +140,79 @@ namespace llvm::noelle {
       std::set<Value *> valuesToReferenceInComputingStepValue;
       std::set<Value *> valuesInScopeOfInductionVariable;
       void collectValuesInternalAndExternalToLoopAndSCC (
-        LoopStructure *LS,
-        LoopEnvironment &loopEnvironment
-      ) ;
+          LoopStructure *LS,
+          LoopEnvironment &loopEnvironment
+          ) ;
 
       void deriveStepValue (
-        LoopStructure *LS,
-        ScalarEvolution &SE,
-        ScalarEvolutionReferentialExpander &referentialExpander,
-        LoopEnvironment &loopEnv
-      ) ;
+          LoopStructure *LS,
+          ScalarEvolution &SE,
+          ScalarEvolutionReferentialExpander &referentialExpander,
+          LoopEnvironment &loopEnv
+          ) ;
 
       void deriveStepValueFromSCEVConstant (const SCEVConstant *scev) ;
       void deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev, LoopStructure *LS) ;
       bool deriveStepValueFromCompositeSCEV (
-        const SCEV *scev,
-        ScalarEvolutionReferentialExpander &referentialExpander,
-        LoopStructure *LS
-      ) ;
+          const SCEV *scev,
+          ScalarEvolutionReferentialExpander &referentialExpander,
+          LoopStructure *LS
+          ) ;
 
       void traverseCycleThroughLoopEntryPHIToGetAllIVInstructions () ;
 
       void traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions (
-        LoopStructure *LS,
-        InvariantManager &IVM,
-        ScalarEvolution &SE
-      ) ;
+          LoopStructure *LS,
+          InvariantManager &IVM,
+          ScalarEvolution &SE
+          ) ;
 
+  };
+
+  class InductionVariableManager {
+    public:
+
+      InductionVariableManager (
+          LoopsSummary &LIS,
+          InvariantManager &IVM,
+          ScalarEvolution &SE,
+          SCCDAG &sccdag,
+          LoopEnvironment &loopEnv
+          );
+
+      InductionVariableManager () = delete;
+
+      /*
+       * Return all induction variables including the loop-governing one of the outermost loop of the loop sub-tree related to @this.
+       */
+      std::unordered_set<InductionVariable *> getInductionVariables (void) const ;
+
+      /*
+       * Return all induction variables including the loop-governing one.
+       */
+      std::unordered_set<InductionVariable *> getInductionVariables (LoopStructure &LS) const ;
+
+      /*
+       * Return all induction variables that @i is involved in for any loop/sub-loop related to this manager.
+       */
+      std::unordered_set<InductionVariable *> getInductionVariables (Instruction *i) const ;
+
+      InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i) const ;
+
+      InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) const ;
+
+      bool doesContributeToComputeAnInductionVariable (Instruction *i) const ;
+
+      LoopGoverningIVAttribution * getLoopGoverningIVAttribution (LoopStructure &LS) const ;
+
+      InductionVariable * getDerivingInductionVariable (LoopStructure &LS, Instruction *derivedInstruction) const ;
+
+      ~InductionVariableManager ();
+
+    private:
+      LoopsSummary &LIS;
+      std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
+      std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *> loopToGoverningIVAttrMap;
   };
 
 }

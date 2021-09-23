@@ -517,7 +517,10 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
       user->replaceUsesOfWith(obsoleteCast, castedValue);
     }
 
-    if (isUsedOtherThanByGEP) continue;
+    if (isUsedOtherThanByGEP) {
+      continue;
+    }
+    ivCache.ivByInstruction.erase(obsoleteCast);
     obsoleteCast->eraseFromParent();
   }
 
@@ -740,6 +743,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   }
 
   for (auto oldInst : oldInstructionsToDelete) {
+    ivCache.ivByInstruction.erase(oldInst);
     oldInst->eraseFromParent();
   }
 

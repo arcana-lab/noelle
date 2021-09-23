@@ -22,6 +22,7 @@
 #include "TypesManager.hpp"
 #include "CompilationOptionsManager.hpp"
 #include "MetadataManager.hpp"
+#include "LoopTransformer.hpp"
 
 namespace llvm::noelle {
 
@@ -155,6 +156,8 @@ namespace llvm::noelle {
 
       Scheduler getScheduler (void) const ;
 
+      LoopTransformer & getLoopTransformer (Function &F) ;
+
       DominatorSummary * getDominators (Function *f) ;
 
       Verbosity getVerbosity (void) const ;
@@ -186,6 +189,8 @@ namespace llvm::noelle {
         Value *envIndexForExitVariable,
         std::vector<BasicBlock *> &loopExitBlocks
         );
+
+      bool verifyCode (void) const ;
 
       ~Noelle();
 

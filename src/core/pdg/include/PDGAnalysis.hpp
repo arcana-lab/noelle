@@ -45,6 +45,8 @@ namespace llvm::noelle {
 
       static bool isTheLibraryFunctionPure (Function *libraryFunction);
 
+      static bool isTheLibraryFunctionThreadSafe (Function *libraryFunction);
+
     private:
       Module *M;
       PDG *programDependenceGraph;
@@ -135,9 +137,9 @@ namespace llvm::noelle {
 
       bool isInIndependentRegion(Instruction *, Instruction *);
 
-      bool isActualCode (CallInst *call) const ;
-
       static const StringSet<> externalFuncsHaveNoSideEffectOrHandledBySVF;
+
+      static const StringSet<> externalThreadSafeFunctions;
   };
 
 }

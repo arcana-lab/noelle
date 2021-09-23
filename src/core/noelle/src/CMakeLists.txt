@@ -39,6 +39,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loops/include
   ../../callgraph/include
   ../../scheduler/include
+  ../../loop_transformer/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

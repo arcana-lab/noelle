@@ -12,8 +12,7 @@
 #include "HELIXTask.hpp"
 #include "Architecture.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void HELIX::addSynchronizations (
   LoopDependenceInfo *LDI,
@@ -68,17 +67,17 @@ void HELIX::addSynchronizations (
   auto preambleSCCNodes = loopSCCDAG->getTopLevelNodes();
   assert(preambleSCCNodes.size() == 1 && "The loop internal SCCDAG should only have one preamble");
   auto preambleSCC = (*preambleSCCNodes.begin())->getT();
-  // preambleSCC->printMinimal(errs() << "Preamble SCC:\n");
   SequentialSegment *preambleSS = nullptr;
   for (auto ss : *sss){
     for (auto scc : ss->getSCCs()) {
       if (scc == preambleSCC) {
         preambleSS = ss;
         break;
-        // errs() << "Preamble is included\n";
       }
     }
-    if (preambleSS != nullptr) break;
+    if (preambleSS != nullptr) {
+      break;
+    }
   }
 
   /*
@@ -235,6 +234,16 @@ void HELIX::addSynchronizations (
   }
 
   /*
+   * Add wait and signal instructions to the last-iteration-body if it exists.
+   */
+  if (this->lastIterationExecutionBlock != nullptr){
+    auto loopExitTerminator = this->lastIterationExecutionBlock->getTerminator();
+    for (auto ss : *sss) {
+      injectWait(ss, this->lastIterationExecutionBlock->getFirstNonPHI());
+    }
+  }
+
+  /*
    * Inject a check for whether the loop-is-over flag is true
    * Exit the loop if so, signaling preamble SS synchronization to avoid deadlock
    */
@@ -291,14 +300,23 @@ void HELIX::addSynchronizations (
     /*
      * Inject waits.
      *
-     * NOTE: If this is the preamble, simply insert the wait at the entry to the loop
-     * Also inject an exit flag check for the preamble (AFTER the wait so the check is synchronized)
+     * NOTE: If this is the prologue, then we simply need to insert the wait at the entry to the loop.
+     * Also, we need to inject an exit flag check for the prologue (AFTER the wait so the check is synchronized) to understand whether the next iteration needs to be executed.
      */
     if (preambleSS != ss) {
+
+      /*
+       * This is not the prologue.
+       */
       ss->forEachEntry([preambleSS, ss, &injectWait, &injectExitFlagCheck](Instruction *justAfterEntry) -> void {
         injectWait(ss, justAfterEntry);
       });
+
     } else {
+
+      /*
+       * This is the prologue.
+       */
       injectWait(ss, firstLoopInst);
       injectExitFlagCheck(firstLoopInst);
     }
@@ -312,7 +330,10 @@ void HELIX::addSynchronizations (
     ss->forEachExit([&exits](Instruction *justBeforeExit) -> void {
       auto block = justBeforeExit->getParent();
       auto terminator = block->getTerminator();
-      if (terminator != justBeforeExit || terminator->getNumSuccessors() == 1) {
+      if (  false
+            || (terminator != justBeforeExit)
+            || (terminator->getNumSuccessors() == 1)
+        ){
         exits.insert(justBeforeExit);
         return ;
       }
@@ -324,7 +345,7 @@ void HELIX::addSynchronizations (
     });
 
     /*
-     * NOTE: If this is the preamble, also insert signals after all loop exits
+     * NOTE: If this is the prologue, then we also need to insert signals after all loop exits
      */
     if (preambleSS == ss) {
       for (auto exitBlock : loopStructure->getLoopExitBasicBlocks()) {
@@ -349,4 +370,6 @@ void HELIX::addSynchronizations (
   }
 
   return ;
+}
+
 }

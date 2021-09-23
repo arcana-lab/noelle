@@ -4,13 +4,9 @@ set(Srcs
   Variable.cpp
   AccumulatorOpInfo.cpp
   ControlFlowEquivalence.cpp
-  InductionVariables.cpp
-  InductionVariable.cpp
   LoopAwareMemDepAnalysis.cpp
   LoopCarriedDependencies.cpp
-  LoopGoverningIVAttribution.cpp
   LoopIterationDomainSpaceAnalysis.cpp
-  IVStepperUtility.cpp
   SCCAttrs.cpp
   SCCDAGAttrs.cpp
   SCCDAGNormalizer.cpp
@@ -48,6 +44,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_structure/include 
   ../../talkdown/include
   ../../invariants/include
+  ../../induction_variables/include
   ../include 
   ${CMAKE_INSTALL_PREFIX}/include
   )

@@ -36,7 +36,7 @@ ANALYSES="${AA} ${LOOPAA} -scalar-evolution -loops -domtree -postdomtree -noelle
 
 
 ########### Transformations
-OPTPASSES="-load ${installDir}/lib/CallGraph.so  ${WPAPASS} ${SCAFPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/BasicUtilities.so -load ${installDir}/lib/Task.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/LoopStructure.so -load ${installDir}/lib/Invariants.so -load ${installDir}/lib/Loops.so -load ${installDir}/lib/Scheduler.so -load ${installDir}/lib/OutlinerPass.so -load ${installDir}/lib/MetadataManager.so -load ${installDir}/lib/Noelle.so"
+OPTPASSES="-load ${installDir}/lib/CallGraph.so  ${WPAPASS} ${SCAFPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/BasicUtilities.so -load ${installDir}/lib/Task.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/LoopStructure.so -load ${installDir}/lib/Invariants.so -load ${installDir}/lib/InductionVariables.so -load ${installDir}/lib/Loops.so -load ${installDir}/lib/Scheduler.so -load ${installDir}/lib/OutlinerPass.so -load ${installDir}/lib/MetadataManager.so -load ${installDir}/lib/Noelle.so -load ${installDir}/lib/LoopTransformer.so"
 
 
 # Set the command to execute

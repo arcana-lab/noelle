@@ -34,10 +34,10 @@ namespace {
       auto mainF = fm->getEntryFunction();
 
       /*
-       * Fetch the loops with all their abstractions 
-       * (e.g., Loop Dependence Graph, SCCDAG)
+       * fetch the loops with all their abstractions 
+       * (e.g., loop dependence graph, sccdag)
        */
-      auto loops = noelle.getLoops();
+      auto loops = noelle.getloops();
       //auto loops = noelle.getLoops(mainF);
 
       /*

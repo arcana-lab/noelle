@@ -180,7 +180,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
   auto SCCDAG = sccManager->getSCCDAG();
 
   /*
-   * Fetch the loop structure.
+   *inlineFunctionCall Fetch the loop structure.
    */
   auto loopStructure = LDI->getLoopStructure();
 
@@ -194,6 +194,17 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
 
     /*
      * Check every instruction within the sequential SCC.
+     *
+     * Do not inline a call that depends on itself because it is unlikely to make a difference.
+     * Most of the time such situation shows up as an SCC with a single node.
+     */
+    if (scc->numberOfInstructions() == 1){
+      continue ;
+    }
+
+    /*
+     * The SCC includes more than one instruction.
+     * Check its calls.
      */
     for (auto valNode : scc->getNodes()) {
 
@@ -296,7 +307,8 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
   /*
    * Inline the call instruction.
    */
-  auto inlined = inlineFunctionCall(F, inlineCall->getCalledFunction(), inlineCall);
+  auto hot = noelle.getProfiles();
+  auto inlined = inlineFunctionCall(hot, F, inlineCall->getCalledFunction(), inlineCall);
 
   return inlined;
 }

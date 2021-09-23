@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -12,8 +12,7 @@
 #include "SequentialSegment.hpp"
 #include "DataFlow.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 SequentialSegment::SequentialSegment (
   LoopDependenceInfo *LDI, 
@@ -59,7 +58,10 @@ SequentialSegment::SequentialSegment (
     printSCCInfo(LDI, ssInstructions);
   }
 
-  determineEntryAndExitFrontier(LDI, ds, reachabilityDFR, ssInstructions);
+  /*
+   * Identify all possible entry and exit points of the sequential segment.
+   */
+  this->determineEntryAndExitFrontier(LDI, ds, reachabilityDFR, ssInstructions);
 
   /* 
    * NOTE: Function-exiting blocks, even if in nested loops, are the exception to the rule that all
@@ -116,6 +118,9 @@ void SequentialSegment::determineEntryAndExitFrontier (
   std::unordered_set<Instruction *> &ssInstructions
 ) {
 
+  /*
+   * Fetch the loop
+   */
   auto rootLoop = LDI->getLoopStructure();
   auto beforeInstructionMap = computeBeforeInstructionMap(LDI, dfr);
 
@@ -314,6 +319,7 @@ void SequentialSegment::determineEntryAndExitFrontier (
     }
   }
 
+  return ;
 }
 
 /*
@@ -463,4 +469,6 @@ void SequentialSegment::printSCCInfo (LoopDependenceInfo *LDI, std::unordered_se
   }
 
   return;
+}
+
 }

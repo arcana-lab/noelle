@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Yian Su, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -12,9 +12,9 @@
 #include "TalkDown.hpp"
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
+#include "Utils.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 PDGAnalysis::PDGAnalysis()
   : ModulePass{ID}
@@ -558,32 +558,12 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
   delete dfr;
 }
 
-bool PDGAnalysis::isActualCode (CallInst *call) const {
-
-  /*
-   * Fetch the callee.
-   */
-  auto callee = call->getCalledFunction();
-  if (callee == nullptr){
-    return true;
-  }
-
-  /*
-   * Check if the callee is an intrinsic.
-   */
-  if (!callee->isIntrinsic()){
-    return true;
-  }
-
-  return true;
-}
-
 void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallInst *call) {
 
   /*
    * Check if the call instruction is not actual code.
    */
-  if (!this->isActualCode(call)){
+  if (!Utils::isActualCode(call)){
     return ;
   }
 
@@ -612,7 +592,7 @@ void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, Data
      * Check calls.
      */
     if (auto otherCall = dyn_cast<CallInst>(I)) {
-      if (!this->isActualCode(otherCall)){
+      if (!Utils::isActualCode(otherCall)){
         continue ;
       }
       addEdgeFromFunctionModRef(pdg, F, AA, call, otherCall);
@@ -935,6 +915,13 @@ bool PDGAnalysis::isTheLibraryFunctionPure (Function *libraryFunction){
   }
   return false;
 }
+      
+bool PDGAnalysis::isTheLibraryFunctionThreadSafe (Function *libraryFunction){
+  if (PDGAnalysis::externalThreadSafeFunctions.count(libraryFunction->getName())){
+    return true;
+  }
+  return false;
+}
 
 PDGAnalysis::~PDGAnalysis() {
   if (this->programDependenceGraph)
@@ -1031,10 +1018,6 @@ const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF {
   "islessgreater",
   "isunordered",
 
-  // stdlib.h
-  "rand",
-  "srand",
-  
   // time.h
   "clock",
   "difftime",
@@ -1058,8 +1041,20 @@ const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF {
   "towctrans",
 
   "atoi",
+  "atoll",
   "exit",
   "strcmp",
-  "strncmp"
+  "strncmp",
+  "rand_r"
 };
 
+const StringSet<> PDGAnalysis::externalThreadSafeFunctions {
+
+  "malloc",
+  "calloc",
+  "realloc",
+  "free"
+
+};
+
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -11,10 +11,9 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
-void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
+void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
 
   /*
    * Fetch loop and IV information.
@@ -128,187 +127,290 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
    * 2) all non-clonable instructions in the header instead execute in the body and after exiting the loop
    */
   auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
-  if (loopGoverningIVAttr) {
-    auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
-    LoopGoverningIVUtility ivUtility(loopGoverningIV, *loopGoverningIVAttr);
-
-    auto originalCmpInst = loopGoverningIVAttr->getHeaderCmpInst();
-    auto originalBrInst = loopGoverningIVAttr->getHeaderBrInst();
-    auto cmpInst = cast<CmpInst>(task->getCloneOfOriginalInstruction(originalCmpInst));
-    auto brInst = cast<BranchInst>(task->getCloneOfOriginalInstruction(originalBrInst));
-
-    auto originalHeaderExit = loopGoverningIVAttr->getExitBlockFromHeader();
-    auto cloneHeaderExit = task->getCloneOfOriginalBasicBlock(originalHeaderExit);
-
-    ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(cmpInst, brInst, cloneHeaderExit);
-    auto updatedCmpInst = cmpInst;
-    auto updatedBrInst = brInst;
-
-    auto headerSuccTrue = updatedBrInst->getSuccessor(0);
-    auto headerSuccFalse = updatedBrInst->getSuccessor(1);
-    auto isTrueExiting = headerSuccTrue == cloneHeaderExit;
-    auto entryIntoBody = isTrueExiting ? headerSuccFalse : headerSuccTrue;
+  if (!loopGoverningIVAttr) {
 
     /*
-     * Collect instructions that cannot be in the header
+     * The loop is not governed by an IV.
      */
-    std::vector<Instruction *> originalInstsBeingDuplicated;
-    for (auto &I : *loopHeader) {
-		  auto scc = sccdag->sccOfValue(&I);
-      auto sccInfo = sccManager->getSCCAttrs(scc);
-      auto sccType = sccInfo->getType();
+    return ;
+  }
 
-      // I.print(errs() << "Investigating: "); errs() << "\n";
+  /*
+   * The loop is governed by an IV.
+   *
+   * The exit condition needs to be made non-strict to catch iterating past it
+   */
+  LoopGoverningIVUtility ivUtility(loopStructure, *ivManager, *loopGoverningIVAttr);
+  auto originalCmpInst = loopGoverningIVAttr->getHeaderCmpInst();
+  auto originalBrInst = loopGoverningIVAttr->getHeaderBrInst();
+  auto cmpInst = cast<CmpInst>(task->getCloneOfOriginalInstruction(originalCmpInst));
+  auto brInst = cast<BranchInst>(task->getCloneOfOriginalInstruction(originalBrInst));
+  auto originalHeaderExit = loopGoverningIVAttr->getExitBlockFromHeader();
+  auto cloneHeaderExit = task->getCloneOfOriginalBasicBlock(originalHeaderExit);
+  ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(cmpInst, brInst, cloneHeaderExit);
+  auto updatedCmpInst = cmpInst;
 
-      /*
-       * Ensure the original instruction was not independent, not a PHI, not clonable
-       * and not part of this loop governing IV attribution
-       * 
-       * HACK: We don't have a way to ask if an instruction is repeatable, so to be safe,
-       * anything that isn't belonging to an IV is duplicated
-       */
-      if (isa<PHINode>(&I)) continue;
-      if (originalCmpInst == &I || originalBrInst == &I) continue;
-      if (sccInfo->isInductionVariableSCC()) continue;
+  /*
+   * TODO describe what the next code does
+   */
+  auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
+  auto originalGoverningPHI = loopGoverningIV.getLoopEntryPHI();
+  auto cloneGoverningPHI = task->getCloneOfOriginalInstruction(originalGoverningPHI);
+  auto origValueUsedToCompareAgainstExitConditionValue = loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue();
+  auto valueUsedToCompareAgainstExitConditionValue = task->getCloneOfOriginalInstruction(origValueUsedToCompareAgainstExitConditionValue);
+  assert(valueUsedToCompareAgainstExitConditionValue != nullptr);
+  auto updatedBrInst = brInst;
+  auto headerSuccTrue = updatedBrInst->getSuccessor(0);
+  auto headerSuccFalse = updatedBrInst->getSuccessor(1);
+  auto isTrueExiting = headerSuccTrue == cloneHeaderExit;
+  auto entryIntoBody = isTrueExiting ? headerSuccFalse : headerSuccTrue;
 
-      // I.print(errs() << "Duplicating: "); errs() << "\n";
+  /*
+   * NOTE: When loop governing IV attribution allows for any other instructions in the header
+   * other than those of the IV and its comparison, those unrelated instructions should be
+   * copied into the body and the exit block (to preserve the number of times they execute)
+   * 
+   * The logic in the exit block must be guarded so only the "last" iteration executes it,
+   * not any cores that pass the last iteration. This is further complicated because the mapping
+   * of live-out environment producing instructions might need to be updated with the peeled
+   * instructions in the exit block
+   * 
+   * A temporary mitigation is to transform loop latches with conditional branches that
+   * verify if the next iteration would ever occur. This still requires live outs to be propagated
+   * from both the header and the latches
+   */
 
-      originalInstsBeingDuplicated.push_back(&I);
+  /*
+   * Collect instructions that can stay in the new header.
+   */
+  std::set<Instruction *> cloneInstsThatCanStayInTheNewHeader;
+  std::vector<Instruction *> originalInstsThatCanStayInTheNewHeader;
+  std::vector<Instruction *> originalInstsThatMustMove;
+  for (auto &I : *loopHeader) {
+
+    /*
+     * Fetch the clone
+     */
+    auto cloneI = task->getCloneOfOriginalInstruction(&I);
+    if (cloneI == nullptr){
+      originalInstsThatMustMove.push_back(&I);
+      continue ;
     }
 
     /*
-     * Move those instructions to the loop body (right at the beginning, in order)
+     * Fetch the SCC that contains I (if it exists)
      */
-    auto firstBodyInst = entryIntoBody->getFirstNonPHIOrDbgOrLifetime();
-    for (auto iIter = originalInstsBeingDuplicated.rbegin(); iIter != originalInstsBeingDuplicated.rend(); ++iIter) {
-      auto originalI = *iIter;
-      auto cloneI = task->getCloneOfOriginalInstruction(originalI);
-      cloneI->moveBefore(firstBodyInst);
-      firstBodyInst = cloneI;
-    }
-
-    auto taskFunction = task->getTaskBody();
-    auto &cxt = taskFunction->getContext();
-    auto checkForLastExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
-    this->lastIterationExecutionBlock = BasicBlock::Create(cxt, "", taskFunction);
-    IRBuilder<> lastIterationExecutionBuilder(this->lastIterationExecutionBlock);
+    auto scc = sccdag->sccOfValue(&I);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
+    auto sccType = sccInfo->getType();
 
     /*
-     * Clone these instructions and execute them after exiting the loop ONLY IF
-     * the previous iteration's IV value passes the loop guard.
+     * Ensure the original instruction was not independent, not a PHI, not clonable
+     * and not part of this loop governing IV attribution
+     * 
+     * HACK: We don't have a way to ask if an instruction is repeatable, so to be safe,
+     * anything that isn't belonging to an IV is duplicated
      */
-    for (auto originalI : originalInstsBeingDuplicated) {
-      auto cloneI = task->getCloneOfOriginalInstruction(originalI);
-      auto duplicateI = cloneI->clone();
-      lastIterationExecutionBuilder.Insert(duplicateI);
+    if (isa<PHINode>(&I)) {
+      originalInstsThatCanStayInTheNewHeader.push_back(&I);
+      cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
+      continue;
+    }
+    if (  false
+          || (originalCmpInst == &I)
+          || (originalBrInst == &I)
+      ){
+      originalInstsThatCanStayInTheNewHeader.push_back(&I);
+      cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
+      continue;
+    }
+    if (sccInfo->isInductionVariableSCC()) {
+      originalInstsThatCanStayInTheNewHeader.push_back(&I);
+      cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
+      continue;
+    }
+
+    /*
+     * The clone of this original instruction must move out from the new header.
+     */
+    originalInstsThatMustMove.push_back(&I);
+  }
+
+  /*
+   * Collect the instruction in the old header of the task that must move.
+   */
+  std::vector<Instruction *> cloneInstsThatMustMove;
+  for (auto &I : *headerClone){
+    if (cloneInstsThatCanStayInTheNewHeader.find(&I) != cloneInstsThatCanStayInTheNewHeader.end()){
+      continue ;
+    }
+
+    /*
+     * The instruction must move from the old header to the new one.
+     */
+    cloneInstsThatMustMove.push_back(&I);
+  }
+
+  /*
+   * Move those instructions to the loop body (right at the beginning, in order)
+   */
+  auto firstBodyInst = entryIntoBody->getFirstNonPHIOrDbgOrLifetime();
+  for (auto iIter = cloneInstsThatMustMove.rbegin(); iIter != cloneInstsThatMustMove.rend(); ++iIter) {
+    auto cloneI = *iIter;
+    cloneI->moveBefore(firstBodyInst);
+    firstBodyInst = cloneI;
+  }
+
+  auto taskFunction = task->getTaskBody();
+  auto &cxt = taskFunction->getContext();
+  auto checkForLastExecutionBlock = BasicBlock::Create(cxt, "check_if_last_iteration_is_missing", taskFunction);
+  this->lastIterationExecutionBlock = BasicBlock::Create(cxt, "last_iteration", taskFunction);
+  IRBuilder<> lastIterationExecutionBuilder(this->lastIterationExecutionBlock);
+
+  /*
+   * Clone these instructions and execute them after exiting the loop ONLY IF
+   * the previous iteration's IV value passes the loop guard.
+   */
+  std::vector<Instruction *> duplicatesInLastIterationBlock;
+  std::map<Instruction *, Instruction *> duplicateOfTaskInst;
+  for (auto cloneI : cloneInstsThatMustMove){
+
+    /*
+     * Fetch the original instruction of the current instruction in the task (if it exists)
+     */
+    auto originalI = task->getOriginalInstructionOfClone(cloneI);
+
+    /*
+     * Clone the task instruction
+     */
+    auto duplicateI = cloneI->clone();
+    duplicateOfTaskInst[cloneI] = duplicateI;
+
+    /*
+     * Add the clone to the last-iteration basic block
+     */
+    lastIterationExecutionBuilder.Insert(duplicateI);
+
+    /*
+     * Keep track of the clone
+     */
+    duplicatesInLastIterationBlock.push_back(duplicateI);
+
+    /*
+     * Keep the map originalI <-> duplicate if originalI exists
+     */
+    if (originalI){
       this->lastIterationExecutionDuplicateMap.insert(std::make_pair(originalI, duplicateI));
     }
-
-    /*
-     * Re-wire the cloned last execution instructions together
-     */
-    for (auto originalI : originalInstsBeingDuplicated) {
-      auto duplicateI = this->lastIterationExecutionDuplicateMap.at(originalI);
-      for (auto originalJ : originalInstsBeingDuplicated) {
-        if (originalI == originalJ) continue;
-
-        auto cloneJ = task->getCloneOfOriginalInstruction(originalJ);
-        auto duplicateJ = this->lastIterationExecutionDuplicateMap.at(originalJ);
-        duplicateI->replaceUsesOfWith(cloneJ, duplicateJ);
-      }
-    }
-
-    lastIterationExecutionBuilder.CreateBr(cloneHeaderExit);
-    updatedBrInst->replaceSuccessorWith(cloneHeaderExit, checkForLastExecutionBlock);
-    IRBuilder<> checkForLastExecutionBuilder(checkForLastExecutionBlock);
-
-    /*
-     * Compute the loop governing IV's value the previous iteration
-     * (regardless of what core it would have executed on)
-     */
-    auto originalGoverningPHI = loopGoverningIV.getLoopEntryPHI();
-    auto cloneGoverningPHI = task->getCloneOfOriginalInstruction(originalGoverningPHI);
-    auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
-    auto prevIterIVValue = checkForLastExecutionBuilder.CreateSub(cloneGoverningPHI, stepSize);
-
-    /*
-     * Guard against this previous iteration.
-     * If the condition would have exited the loop, skip the last execution block
-     * If not, this was the last execution of the header
-     */
-    auto prevIterGuard = updatedCmpInst->clone();
-    prevIterGuard->replaceUsesOfWith(cloneGoverningPHI, prevIterIVValue);
-    checkForLastExecutionBuilder.Insert(prevIterGuard);
-    auto shortCircuitExit = task->getExit();
-    auto prevIterGuardTrueSucc = isTrueExiting ? cloneHeaderExit : this->lastIterationExecutionBlock;
-    auto prevIterGuardFalseSucc = isTrueExiting ? this->lastIterationExecutionBlock : cloneHeaderExit;
-    checkForLastExecutionBuilder.CreateCondBr(prevIterGuard, prevIterGuardTrueSucc, prevIterGuardFalseSucc);
-
-    // cmpInst->printAsOperand(errs() << "Cmp inst: "); errs() << "\n";
-    // cloneHeaderExit->printAsOperand(errs() << "Header exit: "); errs() << "\n";
-    // lastHeaderSequentialExecutionBlock->printAsOperand(errs() << "Last exec exit: "); errs() << "\n";
-    // prevIterGuardTrueSucc->printAsOperand(errs() << "Block if prev guard is true: "); errs() << "\n";
-    // prevIterGuardFalseSucc->printAsOperand(errs() << "Block if prev guard is false: "); errs() << "\n";
-
-    /*
-     * Track duplicated live out values properly
-     * This has to happen because we duplicated logic.
-     * 
-     * The correct live out for non-reducible live outs is simply the duplicated value
-     * The correct live out for reducible live outs is EITHER:
-     * 1) the duplicated value within the last iteration block
-     * 2) the original value moved to the body from the previous iteration executed on this core
-     * 
-     * NOTE: Helix only has one task, as each core executes the same task
-     */
-    IRBuilder<> cloneHeaderExitBuilder(cloneHeaderExit->getFirstNonPHI());
-    auto envUser = this->envBuilder->getUser(0);
-
-    for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
-
-      /*
-       * Only work with duplicated producers
-       */
-      auto originalProducer = (Instruction*)LDI->environment->producerAt(envIndex);
-      if (this->lastIterationExecutionDuplicateMap.find(originalProducer) == this->lastIterationExecutionDuplicateMap.end()) continue;
-
-      /*
-       * If the producer isn't reducible, simply mapping to the duplicated value is sufficient,
-       * which is already done (stored in lastIterationExecutionDuplicateMap)
-       */
-      auto isReduced = this->envBuilder->isReduced(envIndex);
-      if (!isReduced) {
-        continue;
-      }
-
-      /*
-       * We need a PHI after the last iteration block to track whether this core will
-       * store an intermediate of this reduced live out of the last iteration's value of it
-       */
-      auto originalIntermedateInHeader = this->fetchLoopEntryPHIOfProducer(LDI, originalProducer);
-      auto cloneIntermediateInHeader = task->getCloneOfOriginalInstruction(originalIntermedateInHeader);
-      auto duplicateProducerInLastIterationBlock = this->lastIterationExecutionDuplicateMap.at(originalProducer);
-      auto producerType = originalProducer->getType();
-
-      /*
-       * Create a PHI, recieving the propagated body value if the last iteration didn't execute on this core,
-       * and receiving the last iteration value if the last iteration did execute on this core
-       * 
-       * NOTE: We don't use the value moved to the body; that would not dominate this PHI. We use the
-       * PHI that propagates that value, for which there is one because this is a reducible live out
-       */
-      auto phi = cloneHeaderExitBuilder.CreatePHI(producerType, 2);
-      phi->addIncoming(cloneIntermediateInHeader, checkForLastExecutionBlock);
-      phi->addIncoming(duplicateProducerInLastIterationBlock, lastIterationExecutionBlock);
-
-      /*
-       * Map from the original value of this producer to the PHI tracking the last value of this producer
-       * NOTE: This is needed later when storing live outs
-       */
-      this->lastIterationExecutionDuplicateMap.erase(originalProducer);
-      this->lastIterationExecutionDuplicateMap.insert(std::make_pair(originalProducer, phi));
-
-    }
-
   }
+
+  /*
+   * Re-wire the cloned last execution instructions together
+   */
+  for (auto duplicateInst : duplicatesInLastIterationBlock){
+    for (auto currentTaskInst : cloneInstsThatMustMove){
+      auto duplicateOfCurrentTaskInst = duplicateOfTaskInst[currentTaskInst];
+      duplicateInst->replaceUsesOfWith(currentTaskInst, duplicateOfCurrentTaskInst);
+    }
+  }
+
+  /*
+   * Fix the control flows
+   */
+  lastIterationExecutionBuilder.CreateBr(cloneHeaderExit);
+  updatedBrInst->replaceSuccessorWith(cloneHeaderExit, checkForLastExecutionBlock);
+  IRBuilder<> checkForLastExecutionBuilder(checkForLastExecutionBlock);
+
+  /*
+   * Compute the loop governing IV's value the previous iteration
+   * (regardless of what core it would have executed on)
+   */
+  auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
+
+  /*
+   * Guard against this previous iteration.
+   * If the condition would have exited the loop, skip the last execution block
+   * If not, this was the last execution of the header
+   *
+   * Clone the original compare instruction of the loop governing IV.
+   */
+  auto prevIterGuard = cast<CmpInst>(updatedCmpInst->clone());
+
+  /*
+   * Make the predicate strict of the comparison instruction.
+   *
+   * NOTE: This is important if the original comparison was "== N" and the loop governing IV was a decreasing IV that stopped at N.
+   * In this case, the comparison has been translated into "<= N" to catch past-last-iteration iterations. 
+   * So, if we want to know whether we are the thread that executed the last iteration, then the comparison instruction that we must use is "< N" and if this returns true, then we are not the thread that executed the last iteration.
+   */
+  ivUtility.updateConditionToCheckIfWeHavePastExitValue(prevIterGuard);
+  auto prevIterationValue = ivUtility.generateCodeToComputeValueToUseForAnIterationAgo(checkForLastExecutionBuilder, cloneGoverningPHI, stepSize);
+  prevIterGuard->replaceUsesOfWith(valueUsedToCompareAgainstExitConditionValue, prevIterationValue);
+  checkForLastExecutionBuilder.Insert(prevIterGuard);
+  auto prevIterGuardTrueSucc = isTrueExiting ? cloneHeaderExit : this->lastIterationExecutionBlock;
+  auto prevIterGuardFalseSucc = isTrueExiting ? this->lastIterationExecutionBlock : cloneHeaderExit;
+  checkForLastExecutionBuilder.CreateCondBr(prevIterGuard, prevIterGuardTrueSucc, prevIterGuardFalseSucc);
+
+  /*
+   * Track duplicated live out values properly
+   * This has to happen because we duplicated logic.
+   * 
+   * The correct live out for non-reducible live outs is simply the duplicated value
+   * The correct live out for reducible live outs is EITHER:
+   * 1) the duplicated value within the last iteration block
+   * 2) the original value moved to the body from the previous iteration executed on this core
+   * 
+   * NOTE: Helix only has one task, as each core executes the same task
+   */
+  IRBuilder<> cloneHeaderExitBuilder(cloneHeaderExit->getFirstNonPHI());
+  auto envUser = this->envBuilder->getUser(0);
+
+  for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
+
+    /*
+     * Only work with duplicated producers
+     */
+    auto originalProducer = (Instruction*)LDI->environment->producerAt(envIndex);
+    if (this->lastIterationExecutionDuplicateMap.find(originalProducer) == this->lastIterationExecutionDuplicateMap.end()) continue;
+
+    /*
+     * If the producer isn't reducible, simply mapping to the duplicated value is sufficient,
+     * which is already done (stored in lastIterationExecutionDuplicateMap)
+     */
+    auto isReduced = this->envBuilder->isReduced(envIndex);
+    if (!isReduced) {
+      continue;
+    }
+
+    /*
+     * We need a PHI after the last iteration block to track whether this core will
+     * store an intermediate of this reduced live out of the last iteration's value of it
+     */
+    auto originalIntermedateInHeader = this->fetchLoopEntryPHIOfProducer(LDI, originalProducer);
+    auto cloneIntermediateInHeader = task->getCloneOfOriginalInstruction(originalIntermedateInHeader);
+    auto duplicateProducerInLastIterationBlock = this->lastIterationExecutionDuplicateMap.at(originalProducer);
+    auto producerType = originalProducer->getType();
+
+    /*
+     * Create a PHI, recieving the propagated body value if the last iteration didn't execute on this core,
+     * and receiving the last iteration value if the last iteration did execute on this core
+     * 
+     * NOTE: We don't use the value moved to the body; that would not dominate this PHI. We use the
+     * PHI that propagates that value, for which there is one because this is a reducible live out
+     */
+    auto phi = cloneHeaderExitBuilder.CreatePHI(producerType, 2);
+    phi->addIncoming(cloneIntermediateInHeader, checkForLastExecutionBlock);
+    phi->addIncoming(duplicateProducerInLastIterationBlock, lastIterationExecutionBlock);
+
+    /*
+     * Map from the original value of this producer to the PHI tracking the last value of this producer
+     * NOTE: This is needed later when storing live outs
+     */
+    this->lastIterationExecutionDuplicateMap.erase(originalProducer);
+    this->lastIterationExecutionDuplicateMap.insert(std::make_pair(originalProducer, phi));
+  }
+
+  return ;
+}
+
 }

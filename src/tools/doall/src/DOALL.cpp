@@ -64,7 +64,34 @@ bool DOALL::canBeAppliedToLoop (
   /*
    * The loop must have one single exit path.
    */
-  if (loopStructure->numberOfExitBasicBlocks() > 1){ 
+  auto numOfExits = 0;
+  for (auto bb : loopStructure->getLoopExitBasicBlocks()){
+
+    /*
+     * Fetch the last instruction before the terminator
+     */
+    auto terminator = bb->getTerminator();
+    auto prevInst = terminator->getPrevNode();
+
+    /*
+     * Check if the last instruction is a call to a function that cannot return (e.g., abort()).
+     */
+    if (prevInst == nullptr){
+      numOfExits++;
+      continue ;
+    }
+    if (auto callInst = dyn_cast<CallInst>(prevInst)){
+      auto callee = callInst->getCalledFunction();
+      if (  true
+            && (callee != nullptr)
+            && (callee->getName() == "exit")
+        ){
+        continue ;
+      }
+    }
+    numOfExits++;
+  }
+  if (numOfExits != 1){ 
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   More than 1 loop exit blocks\n";
     }
@@ -79,6 +106,39 @@ bool DOALL::canBeAppliedToLoop (
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   Some post environment value is not reducable\n";
     }
+    return false;
+  }
+
+  /*
+   * The compiler must be able to remove loop-carried data dependences of all SCCs with loop-carried data dependences.
+   */
+  auto nonDOALLSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, par);
+  if (nonDOALLSCCs.size() > 0){
+    if (this->verbose != Verbosity::Disabled) {
+      for (auto scc : nonDOALLSCCs) {
+        errs() << "DOALL:   We found an SCC of the loop that is non clonable and non commutative\n" ;
+        if (this->verbose >= Verbosity::Maximal) {
+          // scc->printMinimal(errs(), "DOALL:     ") ;
+          // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
+          errs() << "DOALL:     Loop-carried data dependences\n";
+          sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+            auto fromInst = dep->getOutgoingT();
+            auto toInst = dep->getIncomingT();
+            errs() << "DOALL:       " << *fromInst << " ---> " << *toInst ;
+            if (dep->isMemoryDependence()){
+              errs() << " via memory\n";
+            } else {
+              errs() << " via variable\n";
+            }
+            return false;
+              });
+        }
+      }
+    }
+
+    /*
+     * There is at least one SCC that blocks DOALL to be applicable.
+     */
     return false;
   }
 
@@ -113,7 +173,7 @@ bool DOALL::canBeAppliedToLoop (
    * Check if the final value of the induction variable is a loop invariant.
    */
   auto invariantManager = LDI->getInvariantManager();
-  LoopGoverningIVUtility ivUtility(loopGoverningIVAttr->getInductionVariable(), *loopGoverningIVAttr);
+  LoopGoverningIVUtility ivUtility(loopStructure, *IVManager, *loopGoverningIVAttr);
   auto &derivation = ivUtility.getConditionValueDerivation();
   for (auto I : derivation) {
     if (!invariantManager->isLoopInvariant(I)){
@@ -123,39 +183,6 @@ bool DOALL::canBeAppliedToLoop (
       }
       return false;
     }
-  }
-
-  /*
-   * The compiler must be able to remove loop-carried data dependences of all SCCs with loop-carried data dependences.
-   */
-  auto nonDOALLSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, par);
-  if (nonDOALLSCCs.size() > 0){
-    if (this->verbose != Verbosity::Disabled) {
-      for (auto scc : nonDOALLSCCs) {
-        errs() << "DOALL:   We found an SCC of the loop that is non clonable and non commutative\n" ;
-        if (this->verbose >= Verbosity::Maximal) {
-          // scc->printMinimal(errs(), "DOALL:     ") ;
-          // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
-          errs() << "DOALL:     Loop-carried data dependences\n";
-          sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
-            auto fromInst = dep->getOutgoingT();
-            auto toInst = dep->getIncomingT();
-            errs() << "DOALL:       " << *fromInst << " ---> " << *toInst ;
-            if (dep->isMemoryDependence()){
-              errs() << " via memory\n";
-            } else {
-              errs() << " via variable\n";
-            }
-            return false;
-              });
-        }
-      }
-    }
-
-    /*
-     * There is at least one SCC that blocks DOALL to be applicable.
-     */
-    return false;
   }
 
   /*

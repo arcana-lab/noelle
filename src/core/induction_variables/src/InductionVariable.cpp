@@ -11,8 +11,7 @@
 #include "InductionVariables.hpp"
 #include "LoopGoverningIVAttribution.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle{
 
 InductionVariable::InductionVariable  (
   LoopStructure *LS,
@@ -260,6 +259,9 @@ void InductionVariable::deriveStepValue (
   LoopEnvironment &loopEnv
 ) {
 
+  /*
+   * Fetch the SCEV for the step value.
+   */
   auto loopEntrySCEV = SE.getSCEV(loopEntryPHI);
   assert(loopEntrySCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
   this->stepSCEV = cast<SCEVAddRecExpr>(loopEntrySCEV)->getStepRecurrence(SE);
@@ -421,4 +423,22 @@ bool InductionVariable::isIVInstruction (Instruction *I) const {
 
 bool InductionVariable::isDerivedFromIVInstructions (Instruction *I) const {
   return derivedSCEVInstructions.find(I) != derivedSCEVInstructions.end();
+}
+
+bool InductionVariable::isStepValuePositive (void) const {
+
+  /*
+   * Fetch the step value.
+   */
+  assert(this->isComputedStepValueLoopInvariant);
+  auto stepValue = this->getSingleComputedStepValue();
+
+  /*
+   * Check if the step value is positive
+   */
+  auto p = cast<ConstantInt>(stepValue)->getValue().isStrictlyPositive();
+
+  return p;
+}
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,23 +10,26 @@
  */
 #include "LoopCarriedDependencies.hpp"
 
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void LoopCarriedDependencies::setLoopCarriedDependencies (
   const LoopsSummary &LIS,
   const DominatorSummary &DS,
   PDG &dgForLoops
 ) {
-
   for (auto edge : dgForLoops.getEdges()) {
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
 
   for (auto edge : dgForLoops.getEdges()) {
     auto loop = getLoopOfLCD(LIS, DS, edge);
-    if (!loop) continue;
+    if (!loop) {
+      continue;
+    }
     edge->setLoopCarried(true);
   }
+
+  return ;
 }
 
 /* Flags are already set from LoopDG
@@ -48,9 +51,24 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
 }
 */
 LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, const DominatorSummary &DS, DGEdge<Value> *edge) {
+
+  /*
+   * Fetch the loop.
+   */
+  auto topLoop = LIS.getLoopNestingTreeRoot();
+  assert(topLoop != nullptr);
+  auto topLoopHeader = topLoop->getHeader();
+  auto topLoopHeaderBranch = topLoopHeader->getTerminator();
+
+  /*
+   * Fetch the instructions involved in the dependence.
+   */
   auto producer = edge->getOutgoingT();
   auto consumer = edge->getIncomingT();
 
+  /*
+   * Only dependences between instructions can be loop-carried.
+   */
   if (!isa<Instruction>(producer)) {
     return nullptr ;
   }
@@ -58,10 +76,21 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
     return nullptr ;
   }
 
+  /*
+   * Fetch the instructions involved in the dependence.
+   */
   auto producerI = dyn_cast<Instruction>(producer);
   auto consumerI = dyn_cast<Instruction>(consumer);
+
+  /*
+   * Fetch the innermost loops that contain the two instructions.
+   */
   auto producerLoop = LIS.getLoop(*producerI);
   auto consumerLoop = LIS.getLoop(*consumerI);
+
+  /*
+   * If either of the instruction does not belong to a loop, then the dependence cannot be loop-carried.
+   */
   if (!producerLoop || !consumerLoop) {
     return nullptr ;
   }
@@ -73,17 +102,41 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
     auto isControlDependence = edge->isControlDependence();
 
     /*
-     * If a memory-less data dependence producer cannot reach the header of the loop without reaching the consumer, then this is a false positive match.
+     * Check if the dependence is data and via variable.
      */
     if (!edge->isMemoryDependence() && edge->isDataDependence()) {
+
+      /*
+       * The data dependence is variable based
+       *
+       * If the producer cannot reach the header of the loop without reaching the consumer, then the dependence cannot be loop-carried.
+       */
       auto producerB = producerI->getParent();
       auto consumerB = consumerI->getParent();
-      bool mustProducerReachConsumerBeforeHeader = !canBasicBlockReachHeaderBeforeOther(*consumerLoop, producerB, consumerB);
-
+      auto mustProducerReachConsumerBeforeHeader = !canBasicBlockReachHeaderBeforeOther(*consumerLoop, producerB, consumerB);
       if (mustProducerReachConsumerBeforeHeader) {
         return nullptr ;
       }
+
+      /*
+       * The data dependence is variable based.
+       * The producer can reach the header before reaching the consumer.
+       * 
+       * Check if the consumer will take the value from someone else when the execution comes from the header rather than the producer of the previous iteration
+       */
+      if (  true
+            && DS.DT.dominates(consumerI, producerI)
+            && DS.DT.dominates(topLoopHeaderBranch, consumerI)
+        ){
+        if (auto phiConsumer = dyn_cast<PHINode>(consumerI)){
+          //errs() << "AAAA: producer = " << *producerI << "\n";
+          //errs() << "AAAA: consumer = " << *consumerI << "\n";
+          //errs() << "AAAA: Loop = " << *producerLoop->getHeader()->getFirstNonPHIOrDbg() << "\n\n";
+          return nullptr;
+        }
+      }
     }
+
     return consumerLoop;
   }
 
@@ -201,4 +254,6 @@ bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther (
    */
   assert(isJReached);
   return false;
+}
+
 }

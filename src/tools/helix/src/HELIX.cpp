@@ -83,8 +83,8 @@ void HELIX::reset () {
   }
   spills.clear();
 
-  if (lastIterationExecutionBlock) {
-    lastIterationExecutionBlock = nullptr;
+  if (this->lastIterationExecutionBlock) {
+    this->lastIterationExecutionBlock = nullptr;
   }
   lastIterationExecutionDuplicateMap.clear();
 
@@ -154,7 +154,9 @@ bool HELIX::apply (
     return true;
   }
 
-  return this->synchronizeTask(LDI, par, h);
+  auto modified = this->synchronizeTask(LDI, par, h);
+
+  return modified;
 }
 
 void HELIX::createParallelizableTask (
@@ -213,11 +215,23 @@ void HELIX::createParallelizableTask (
       if (this->verbose >= Verbosity::Maximal) {
         // errs() << "HELIX:     SCC:\n";
         // scc->printMinimal(errs(), "HELIX:       ") ;
-        errs() << "HELIX:       Loop-carried data dependences\n";
-        sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
+        errs() << "HELIX:       Loop-carried dependences\n";
+        sccManager->iterateOverLoopCarriedDependences(scc, [](DGEdge<Value> *dep) -> bool {
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
           errs() << "HELIX:       " << *fromInst << " ---> " << *toInst ;
+
+          /*
+           * Control dependences.
+           */
+          if (dep->isControlDependence()){
+            errs() << " control\n";
+            return false;
+          }
+
+          /*
+           * Data dependences.
+           */
           if (dep->isMemoryDependence()){
             errs() << " via memory\n";
           } else {
@@ -258,11 +272,22 @@ void HELIX::createParallelizableTask (
   std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
   std::set<int> reducableVars{};
   for (auto liveOutIndex : liveOutVars) {
+
+    /*
+     * We have a live-out variable.
+     *
+     * Check if it can be reduced so we can generate more efficient code that does not require a sequential segment.
+     */
     auto producer = LDI->environment->producerAt(liveOutIndex);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (sccInfo->getType() == SCCAttrs::SCCType::REDUCIBLE) {
+    if (sccInfo->canExecuteReducibly()){
+
+      /*
+       * The live-out variable can be reduced so we can generate more efficient code that does not require a sequential segment.
+       */
       reducableVars.insert(liveOutIndex);
+
     } else {
       nonReducableVars.insert(liveOutIndex);
     }
@@ -328,7 +353,7 @@ void HELIX::createParallelizableTask (
    * Spill loop carried dependencies into a separate environment array
    */
   if (this->verbose >= Verbosity::Maximal) {
-    errs() << "HELIX:  Spilling loop carried dependencies\n";
+    errs() << "HELIX:  Check if we need to spill variables because they are part of loop carried data dependencies\n";
   }
   this->spillLoopCarriedDataDependencies(LDI, reachabilityDFR);
 

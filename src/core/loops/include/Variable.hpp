@@ -74,11 +74,11 @@ namespace llvm::noelle {
 
       bool isEvolutionReducibleAcrossLoopIterations (void) const override ;
 
-      PHINode *getLoopEntryPHIForValueOfVariable (Value *value) const ;
+      PHINode * getLoopEntryPHIForValueOfVariable (Value *value) const ;
 
     private:
 
-      PDG *produceDataAndMemoryOnlyDGFromVariableDG (PDG &variableDG) const ;
+      PDG * produceDataAndMemoryOnlyDGFromVariableDG (PDG &variableDG) const ;
 
       std::unordered_set<Value *> getConsumersOfVariable (void) const ;
 
@@ -163,7 +163,7 @@ namespace llvm::noelle {
 
       bool isTransformablyCommutativeWithSelf (void) const ;
 
-      Instruction *getUpdateInstruction (void) const ;
+      Instruction * getUpdateInstruction (void) const ;
 
       bool isAdd (void) const ;
       bool isMul (void) const ;

@@ -166,7 +166,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     auto binOpCode = firstAccumI->getOpcode();
     reducableBinaryOps[envInd] = sccManager->accumOpInfo.accumOpForType(binOpCode, producer->getType());
 
-    PHINode *loopEntryProducerPHI = fetchLoopEntryPHIOfProducer(LDI, producer);
+    PHINode *loopEntryProducerPHI = this->fetchLoopEntryPHIOfProducer(LDI, producer);
     auto initValPHIIndex = loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
     auto initialValue = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
     initialValues[envInd] = castToCorrectReducibleType(*builder, initialValue, producer->getType());
@@ -1044,7 +1044,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
      * location of the initial value that needs to be changed
      */
     auto producer = LDI->environment->producerAt(envInd);
-    PHINode *loopEntryProducerPHI = fetchLoopEntryPHIOfProducer(LDI, producer);
+    auto loopEntryProducerPHI = this->fetchLoopEntryPHIOfProducer(LDI, producer);
 
     /*
      * Fetch the related instruction of the producer that has been created (cloned) and stored in the parallelized version of the loop.
@@ -1089,7 +1089,7 @@ PHINode * ParallelizationTechnique::fetchLoopEntryPHIOfProducer (
   auto reducibleVariable = sccInfo->getSingleLoopCarriedVariable();
   assert(reducibleVariable != nullptr);
 
-  PHINode *headerProducerPHI = reducibleVariable->getLoopEntryPHIForValueOfVariable(producer);
+  auto headerProducerPHI = reducibleVariable->getLoopEntryPHIForValueOfVariable(producer);
   assert(headerProducerPHI != nullptr &&
     "The reducible variable should be described by a single PHI in the header");
   return headerProducerPHI;

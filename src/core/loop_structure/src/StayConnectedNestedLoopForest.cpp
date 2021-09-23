@@ -336,5 +336,22 @@ namespace llvm::noelle {
 
     return ;
   }
+      
+  StayConnectedNestedLoopForestNode * StayConnectedNestedLoopForest::getNode (LoopStructure *loop) const {
+
+    /*
+     * Fetch the header
+     */
+    auto h = loop->getHeader();
+
+    /*
+     * Fetch the node.
+     */
+    if (this->headerLoops.find(h) == this->headerLoops.end()){
+      return nullptr;
+    }
+    auto n = this->headerLoops.at(h);
+    return n;
+  }
  
 }

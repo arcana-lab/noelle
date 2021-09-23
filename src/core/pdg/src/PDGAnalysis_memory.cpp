@@ -13,9 +13,9 @@
 #include "PDGPrinter.hpp"
 #include "PDGAnalysis.hpp"
 #include "IntegrationWithSVF.hpp"
+#include "Utils.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store) {
 
@@ -26,7 +26,7 @@ void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, Dat
      */
     if (auto otherStore = dyn_cast<StoreInst>(I)) {
       if (store != otherStore) {
-        addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg, F, AA, store, otherStore, DG_DATA_WAW);
+        this->addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg, F, AA, store, otherStore, DG_DATA_WAW);
       }
       continue ;
     }
@@ -35,7 +35,7 @@ void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, Dat
      * Check loads.
      */
     if (auto load = dyn_cast<LoadInst>(I)) {
-      addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg, F, AA, store, load, DG_DATA_RAW);
+      this->addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg, F, AA, store, load, DG_DATA_RAW);
       continue ;
     }
 
@@ -43,10 +43,10 @@ void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, Dat
      * Check calls.
      */
     if (auto call = dyn_cast<CallInst>(I)) {
-      if (!this->isActualCode(call)){
+      if (!Utils::isActualCode(call)){
         continue ;
       }
-      addEdgeFromFunctionModRef(pdg, F, AA, call, store, false);
+      this->addEdgeFromFunctionModRef(pdg, F, AA, call, store, false);
       continue ;
     }
   }
@@ -70,7 +70,7 @@ void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, Data
      * Check calls.
      */
     if (auto call = dyn_cast<CallInst>(I)) {
-      if (!this->isActualCode(call)){
+      if (!Utils::isActualCode(call)){
         continue ;
       }
       addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
@@ -119,6 +119,13 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   auto makeRefEdge = false, makeModEdge = false;
 
   /*
+   * We cannot have memory dependences from a call to a deallocator (e.g., free).
+   */
+  if (Utils::isDeallocator(call)){
+    return ;
+  }
+
+  /*
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(store))) {
@@ -150,7 +157,16 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
 
     /*
      * SVF is enabled; let's use it.
-     *
+     */
+    auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
+    if (  true
+          && weCanRelyOnSVF 
+          && hasNoMemoryOperations(call)
+      ) {
+      return;
+    }
+
+    /*
      * Check if it is safe to use SVF.
      * This is due to a bug in SVF that doesn't model I/O library calls correctly.
      */
@@ -191,16 +207,30 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    */
   if (makeRefEdge) {
     if (addEdgeFromCall) {
-      pdg->addEdge((Value*)call, (Value*)store)->setMemMustType(true, false, DG_DATA_WAR);
+      pdg->addEdge(call, store)->setMemMustType(true, false, DG_DATA_WAR);
+
     } else {
-      pdg->addEdge((Value*)store, (Value*)call)->setMemMustType(true, false, DG_DATA_RAW);
+
+      /*
+       * We cannot have memory dependences from a memory instruction to allocators as they always return new memory.
+       */
+      if (!Utils::isAllocator(call)){
+        pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_RAW);
+      }
     }
   }
   if (makeModEdge) {
     if (addEdgeFromCall) {
-      pdg->addEdge((Value*)call, (Value*)store)->setMemMustType(true, false, DG_DATA_WAW);
+      pdg->addEdge(call, store)->setMemMustType(true, false, DG_DATA_WAW);
+
     } else {
-      pdg->addEdge((Value*)store, (Value*)call)->setMemMustType(true, false, DG_DATA_WAW);
+
+      /*
+       * We cannot have memory dependences from a memory instruction to allocators as they always return new memory.
+       */
+      if (!Utils::isAllocator(call)){
+        pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_WAW);
+      }
     }
   }
 
@@ -211,6 +241,13 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   BitVector bv(3, false);
 
   /*
+   * We cannot have memory dependences from a call to a deallocator (e.g., free).
+   */
+  if (Utils::isDeallocator(call)){
+    return ;
+  }
+
+  /*
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(load))) {
@@ -219,86 +256,6 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
       return;
     case ModRefInfo::Mod:
     case ModRefInfo::ModRef:
-      break;
-  }
-
-  /*
-   * Check other alias analyses
-   *
-   * Check if SVF is enabled.
-   */
-  if (this->disableSVF){
-
-    /*
-     * SVF is disabled.
-     */
-
-  } else {
-
-    /*
-     * SVF is enabled; let's use it.
-     *
-     * Check if it is safe to use SVF.
-     * This is due to a bug in SVF that doesn't model I/O library calls correctly.
-     */
-    if (isSafeToQueryModRefOfSVF(call, bv)) {
-      switch (NoelleSVFIntegration::getModRefInfo(call, MemoryLocation::get(load))) {
-        case ModRefInfo::NoModRef:
-        case ModRefInfo::Ref:
-          return;
-
-        case ModRefInfo::Mod:
-        case ModRefInfo::ModRef:
-          break;
-      }
-    }
-  }
-
-  /*
-   * There is a dependence.
-   */
-  if (addEdgeFromCall) {
-    pdg->addEdge((Value*)call, (Value*)load)->setMemMustType(true, false, DG_DATA_RAW);
-  } else {
-    pdg->addEdge((Value*)load, (Value*)call)->setMemMustType(true, false, DG_DATA_WAR);
-  }
-
-  return ;
-}
-
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, CallInst *otherCall) {
-  BitVector bv(3, false);
-  BitVector rbv(3, false);
-  auto makeRefEdge = false, makeModEdge = false, makeModRefEdge = false;
-  auto reverseRefEdge = false, reverseModEdge = false, reverseModRefEdge = false;
-
-  /*
-   * Query the LLVM alias analyses.
-   */
-  switch (AA.getModRefInfo(call, otherCall)) {
-    case ModRefInfo::NoModRef:
-      return;
-    case ModRefInfo::Ref:
-      bv[0] = true;
-      break;
-    case ModRefInfo::Mod:
-      bv[1] = true;
-      switch (AA.getModRefInfo(otherCall, call)) {
-        case ModRefInfo::NoModRef:
-          return;
-        case ModRefInfo::Ref:
-          rbv[0] = true;
-          break;
-        case ModRefInfo::Mod:
-          rbv[1] = true;
-          break;
-        case ModRefInfo::ModRef:
-          rbv[2] = true;
-          break;
-      }
-      break;
-    case ModRefInfo::ModRef:
-      bv[2] = true;
       break;
   }
 
@@ -330,6 +287,132 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
      * Check if it is safe to use SVF.
      * This is due to a bug in SVF that doesn't model I/O library calls correctly.
      */
+    if (isSafeToQueryModRefOfSVF(call, bv)) {
+      switch (NoelleSVFIntegration::getModRefInfo(call, MemoryLocation::get(load))) {
+        case ModRefInfo::NoModRef:
+        case ModRefInfo::Ref:
+          return;
+
+        case ModRefInfo::Mod:
+        case ModRefInfo::ModRef:
+          break;
+      }
+    }
+  }
+
+  /*
+   * There is a dependence.
+   */
+  if (addEdgeFromCall) {
+    pdg->addEdge(call, load)->setMemMustType(true, false, DG_DATA_RAW);
+
+  } else {
+
+    /*
+     * We cannot have memory dependences from a memory instruction to allocators as they always return new memory.
+     */
+    if (!Utils::isAllocator(call)){
+      pdg->addEdge(load, call)->setMemMustType(true, false, DG_DATA_WAR);
+    }
+  }
+
+  return ;
+}
+
+void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, CallInst *otherCall) {
+  BitVector bv(3, false);
+  BitVector rbv(3, false);
+  auto makeRefEdge = false, makeModEdge = false, makeModRefEdge = false;
+  auto reverseRefEdge = false, reverseModEdge = false, reverseModRefEdge = false;
+
+  /*
+   * We cannot have memory dependences from a call to a deallocator (e.g., free).
+   */
+  if (Utils::isDeallocator(call)){
+    return ;
+  }
+
+  /*
+   * Query the LLVM alias analyses.
+   */
+  switch (AA.getModRefInfo(call, otherCall)) {
+    case ModRefInfo::NoModRef:
+      return;
+
+    case ModRefInfo::Ref:
+
+      /*
+       * @call may read memory locations written by @otherCall
+       */
+      bv[0] = true;
+      break;
+
+    case ModRefInfo::Mod:
+
+      /*
+       * @call may write a memory location that can be read or written by @otherCall
+       */
+      bv[1] = true;
+
+      switch (AA.getModRefInfo(otherCall, call)) {
+        case ModRefInfo::NoModRef:
+          return;
+        case ModRefInfo::Ref:
+          rbv[0] = true;
+          break;
+        case ModRefInfo::Mod:
+          rbv[1] = true;
+          break;
+        case ModRefInfo::ModRef:
+          rbv[2] = true;
+          break;
+      }
+      break;
+
+    case ModRefInfo::ModRef:
+
+      /*
+       * @call may read or write a memory location that can be written by @otherCall
+       */
+      bv[2] = true;
+      break;
+  }
+
+  /*
+   * Check other alias analyses
+   *
+   * Check if SVF is enabled.
+   */
+  if (this->disableSVF){
+
+    /*
+     * SVF is disabled.
+     */
+
+  } else {
+
+    /*
+     * SVF is enabled; let's use it.
+     */
+    auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
+    if (  true
+          && weCanRelyOnSVF 
+          && hasNoMemoryOperations(call)
+      ) {
+      return;
+    }
+    weCanRelyOnSVF = cannotReachUnhandledExternalFunction(otherCall);
+    if (  true
+          && weCanRelyOnSVF 
+          && hasNoMemoryOperations(otherCall)
+      ) {
+      return;
+    }
+
+    /*
+     * Check if it is safe to use SVF.
+     * This is due to a bug in SVF that doesn't model I/O library calls correctly.
+     */
     if (  true
           && isSafeToQueryModRefOfSVF(call, bv) 
           && isSafeToQueryModRefOfSVF(otherCall, bv)
@@ -337,11 +420,14 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
       switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
         case ModRefInfo::NoModRef:
           return;
+
         case ModRefInfo::Ref:
           bv[0] = true;
           break;
+
         case ModRefInfo::Mod:
           bv[1] = true;
+
           switch (NoelleSVFIntegration::getModRefInfo(otherCall, call)) {
             case ModRefInfo::NoModRef:
               return;
@@ -356,6 +442,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
               break;
           }
           break;
+
         case ModRefInfo::ModRef:
           bv[2] = true;
           break;
@@ -391,27 +478,65 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    * There is a dependence.
    */
   if (makeRefEdge) {
-    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+
+    /*
+     * @call reads a memory location that @otherCall writes.
+     * The sequence of execution is @call and then @otherCall.
+     * Hence, there is a WAR memory dependence from @call to @otherCall
+     */
+    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+
+    /*
+     * Check the unique case that @call and @otherCall are the same. 
+     * In this case, there is also a RAW dependence between them.
+     */
+    if (call == otherCall){
+      pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_RAW);
+    }
 
   } else if (makeModEdge) {
 
     /*
-     * Dependency of Mod result between call and otherCall is depend on the reverse getModRefInfo result
+     * Dependency of a Mod-result between call and otherCall depends on the reverse getModRefInfo result
      */
     if (reverseRefEdge) {
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+
+      /*
+       * Check the unique case that @call and @otherCall are the same. 
+       * In this case, there is also a WAR dependence between them.
+       */
+      if (call == otherCall){
+        pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_WAR);
+      }
 
     } else if (reverseModEdge) {
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
 
     } else if (reverseModRefEdge) {
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_RAW);
-      pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+
+      /*
+       * Check the unique case that @call and @otherCall are the same. 
+       * In this case, there is also a WAR dependence between them.
+       */
+      if (call == otherCall){
+        pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_WAR);
+      }
     }
 
   } else if (makeModRefEdge) {
-    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAR);
-    pdg->addEdge((Value*)call, (Value*)otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+
+    /*
+     * Check the unique case that @call and @otherCall are the same. 
+     * In this case, there is also a RAW dependence between them.
+     */
+    if (call == otherCall){
+      pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_RAW);
+    }
   }
 
   return ;
@@ -467,7 +592,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
     case MayAlias:
       break;
     case MustAlias:
-      pdg->addEdge((Value*)instI, (Value*)instJ)->setMemMustType(true, true, dataDependenceType);
+      pdg->addEdge(instI, instJ)->setMemMustType(true, true, dataDependenceType);
       return ;
   }
 
@@ -502,7 +627,9 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
   /*
    * There is a dependence.
    */
-  pdg->addEdge((Value*)instI, (Value*)instJ)->setMemMustType(true, must, dataDependenceType);
+  pdg->addEdge(instI, instJ)->setMemMustType(true, must, dataDependenceType);
 
   return ;
+}
+
 }

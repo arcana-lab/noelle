@@ -79,18 +79,23 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
       memDeps;
   for (auto edge : make_range(loopDG->begin_edges(), loopDG->end_edges())) {
     if (!loopDG->isInternal(edge->getIncomingT()) ||
-        !loopDG->isInternal(edge->getOutgoingT()))
+        !loopDG->isInternal(edge->getOutgoingT())){
       continue;
+    }
 
-    if (!edge->isMemoryDependence())
+    /*
+     * If the dependence is not via memory, then SCAF cannot help.
+     */
+    if (!edge->isMemoryDependence()) {
       continue;
+    }
 
-    Value *pdgValueI = edge->getOutgoingT();
-    Instruction *i = dyn_cast<Instruction>(pdgValueI);
+    auto pdgValueI = edge->getOutgoingT();
+    auto i = dyn_cast<Instruction>(pdgValueI);
     assert(i && "Expecting an instruction as the value of a PDG node");
 
-    Value *pdgValueJ = edge->getIncomingT();
-    Instruction *j = dyn_cast<Instruction>(pdgValueJ);
+    auto pdgValueJ = edge->getIncomingT();
+    auto j = dyn_cast<Instruction>(pdgValueJ);
     assert(j && "Expecting an instruction as the value of a PDG node");
 
     if (!memDeps.count({i,j})) {
@@ -126,8 +131,7 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
       }
     }
     // Try to disprove all the reported loop-carried deps
-    uint8_t disprovedLCDepTypes =
-        disproveLoopCarriedMemoryDep(i, j, depTypes, l, NoelleSCAFAA);
+    uint8_t disprovedLCDepTypes = disproveLoopCarriedMemoryDep(i, j, depTypes, l, NoelleSCAFAA);
 
     // for every disproved loop-carried dependence
     // check if there is a intra-iteration dependence
