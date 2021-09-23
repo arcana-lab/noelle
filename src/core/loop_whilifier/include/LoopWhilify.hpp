@@ -13,7 +13,6 @@
 #include "SystemHeaders.hpp"
 #include "Noelle.hpp"
 
-
 namespace llvm::noelle {
 
   class WhilifierContext {
