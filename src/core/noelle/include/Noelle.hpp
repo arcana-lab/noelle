@@ -22,6 +22,7 @@
 #include "TypesManager.hpp"
 #include "CompilationOptionsManager.hpp"
 #include "MetadataManager.hpp"
+#include "LoopTransformer.hpp"
 
 namespace llvm::noelle {
 
@@ -154,6 +155,8 @@ namespace llvm::noelle {
       DataFlowEngine getDataFlowEngine (void) const ;
 
       Scheduler getScheduler (void) const ;
+
+      LoopTransformer & getLoopTransformer (Function &F) ;
 
       DominatorSummary * getDominators (Function *f) ;
 

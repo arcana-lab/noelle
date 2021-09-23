@@ -259,6 +259,10 @@ Scheduler Noelle::getScheduler (void) const {
   return Scheduler{};
 }
 
+LoopTransformer & Noelle::getLoopTransformer (Function &F) {
+  return getAnalysis<LoopTransformer>(F);
+}
+
 uint64_t Noelle::numberOfProgramInstructions (void) const {
   uint64_t t = 0;
   for (auto &F : *this->program){
