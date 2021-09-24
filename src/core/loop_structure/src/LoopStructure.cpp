@@ -98,6 +98,25 @@ Instruction * LoopStructure::getEntryInstruction (void) const {
   return firstInst;
 }
 
+BasicBlock * LoopStructure::getFirstLoopBasicBlockAfterTheHeader (void) const {
+
+  /*
+   * Fetch the header.
+   */
+  auto header = this->getHeader();
+
+  /*
+   * The successor of the header that belongs to the loop is the first loop basic block executed after executing the header.
+   */
+  for (auto succ : successors(header)){
+    if (this->isIncluded(succ)){
+      return succ;
+    }
+  }
+
+  return nullptr;
+}
+
 uint32_t LoopStructure::getNestingLevel (void) const {
   return this->depth;
 }

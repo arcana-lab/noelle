@@ -36,6 +36,8 @@ namespace llvm::noelle {
 
       Instruction * getEntryInstruction (void) const ;
 
+      BasicBlock * getFirstLoopBasicBlockAfterTheHeader (void) const ;
+
       /*
        * Return the nesting level of the loop.
        * 1 means outermost loop.
