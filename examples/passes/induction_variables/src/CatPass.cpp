@@ -65,7 +65,7 @@ namespace {
        * Fetch the governing IV
        */
       auto IVM = hottestLoop->getInductionVariableManager();
-      auto GIV_attr = IVM->getLoopGoverningIVAttribution(*hottestLoopLS);
+      auto GIV_attr = hottestLoop->getLoopGoverningIVAttribution();
       if (  false
             || (GIV_attr == nullptr)
             ){
