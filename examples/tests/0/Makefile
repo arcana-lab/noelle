@@ -3,11 +3,11 @@ LIBS=
 all: test_opt
 
 %.bc: %.cpp
-	clang++ -O0 -Xclang -disable-O0-optnone -emit-llvm -c $< -o $@
+	clang++ -O1 -Xclang -disable-llvm-passes -emit-llvm -c $< -o $@
 	llvm-dis $@
 
 %.bc: %.c
-	clang -O0 -Xclang -disable-O0-optnone -emit-llvm -c $< -o $@
+	clang -O1 -Xclang -disable-llvm-passes -emit-llvm -c $< -o $@
 	llvm-dis $@
 
 test_pre.bc: test.bc
