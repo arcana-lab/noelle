@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Simone Campanoni
+ * Copyright 2019 - 2021  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,10 +10,132 @@
  */
 #include "Parallelizer.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
-
 namespace llvm::noelle {
+
+  void Parallelizer::removeLoopsNotWorthParallelizing (
+    Noelle &noelle, 
+    Hot *profiles,
+    StayConnectedNestedLoopForest *forest
+    ){
+
+    /*
+     * Filter out loops that are not worth parallelizing.
+     */
+    errs() << "Parallelizer:  Filter out loops not worth considering\n";
+    auto filter = [this, forest, profiles](LoopStructure *ls) -> bool{
+
+      /*
+       * Fetch the loop ID.
+       */
+      auto loopID = ls->getID();
+
+      /*
+       * Check if the latency of each loop invocation is enough to justify the parallelization.
+       */
+      auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
+      auto averageInstsPerInvocationThreshold = 2000;
+      if (  true
+          && (!this->forceParallelization)
+          && (averageInstsPerInvocation < averageInstsPerInvocationThreshold)
+         ){
+        errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
+        errs() << "Parallelizer:      It is too low. The threshold is " << averageInstsPerInvocationThreshold << "\n";
+
+        /*
+         * Remove the loop.
+         */
+        return true;
+      }
+
+      /*
+       * Check the number of iterations per invocation.
+       */
+      auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
+      auto averageIterationThreshold = 12;
+      if (  true
+          && (!this->forceParallelization)
+          && (averageIterations < averageIterationThreshold)
+         ){
+        errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
+        errs() << "Parallelizer:      It is too low. The threshold is " << averageIterationThreshold << "\n";
+
+        /*
+         * Remove the loop.
+         */
+        return true;
+      }
+
+      return false;
+    };
+    noelle.filterOutLoops(forest, filter);
+
+    /*
+     * Print the loops.
+     */
+    auto trees = forest->getTrees();
+    errs() << "Parallelizer:  There are " << trees.size() << " loop nesting trees in the program\n";
+    for (auto tree : trees){
+
+      /*
+       * Print the root.
+       */
+      auto loopStructure = tree->getLoop();
+      auto loopID = loopStructure->getID();
+
+      /*
+       * Print the tree.
+       */
+      auto printTree = [profiles](noelle::StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) {
+
+        /*
+         * Fetch the loop information.
+         */
+        auto loopStructure = n->getLoop();
+        auto loopID = loopStructure->getID();
+        auto loopFunction = loopStructure->getFunction();
+        auto loopHeader = loopStructure->getHeader();
+
+        /*
+         * Compute the print prefix.
+         */
+        std::string prefix{"Parallelizer:    "};
+        for (auto i = 1 ; i < treeLevel; i++){
+          prefix.append("  ");
+        }
+
+        /*
+         * Print the loop.
+         */
+        errs() << prefix << "ID: " << loopID << " (" << treeLevel << ")\n";
+        errs() << prefix << "  Function: \"" << loopFunction->getName() << "\"\n";
+        errs() << prefix << "  Loop: \"" << *loopHeader->getFirstNonPHI() << "\"\n";
+        errs() << prefix << "  Loop nesting level: " << loopStructure->getNestingLevel() << "\n";
+
+        /*
+         * Check if there are profiles.
+         */
+        if (!profiles->isAvailable()){
+          return false;
+        }
+
+        /*
+         * Print the coverage of this loop.
+         */
+        auto hotness = profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100;
+        errs() << prefix << "  Hotness = " << hotness << " %\n"; 
+        auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(loopStructure);
+        errs() << prefix << "  Average instructions per invocation = " << averageInstsPerInvocation << " %\n"; 
+        auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(loopStructure);
+        errs() << prefix << "  Average iterations per invocation = " << averageIterations << " %\n"; 
+        errs() << prefix << "\n";
+
+        return false;
+      };
+      tree->visitPreOrder(printTree);
+    }
+
+    return ;
+  }
 
   std::vector<LoopDependenceInfo *> Parallelizer::selectTheOrderOfLoopsToParallelize (
       Noelle &noelle, 
