@@ -10,9 +10,7 @@
  */
 #include "Parallelizer.hpp"
 
-
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 /*
  * Options of the Parallelizer pass.
@@ -199,6 +197,8 @@ void Parallelizer::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<HeuristicsPass>();
 
   return ;
+}
+
 }
 
 // Next there is code to register your pass to "opt"

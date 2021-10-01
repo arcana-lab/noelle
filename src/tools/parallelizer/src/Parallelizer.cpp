@@ -153,7 +153,7 @@ namespace llvm::noelle {
     if (verbose != Verbosity::Disabled) {
       errs() << "Parallelizer:  Link the parallelize loop\n";
     }
-    auto exitIndex = cast<Value>(ConstantInt::get(par.int64, LDI->environment->indexOfExitBlockTaken()));
+    auto exitIndex = ConstantInt::get(par.int64, LDI->environment->indexOfExitBlockTaken());
     auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
     par.linkTransformedLoopToOriginalFunction(
         loopFunction->getParent(),
