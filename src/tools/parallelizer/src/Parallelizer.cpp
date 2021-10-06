@@ -135,6 +135,7 @@ namespace llvm::noelle {
     /*
      * Fetch the environment array where the exit block ID has been stored.
      */
+    assert(usedTechnique != nullptr);
     auto envArray = usedTechnique->getEnvArray();
     assert(envArray != nullptr);
 
