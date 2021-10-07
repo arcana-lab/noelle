@@ -558,14 +558,14 @@ extern "C" {
      * Allocate the arguments for the cores.
      */
     NOELLE_HELIX_args_t *argsForAllCores;
-    posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(NOELLE_HELIX_args_t) * numCores);
+    posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(NOELLE_HELIX_args_t) * (numCores - 1));
 
     /*
      * Launch threads
      */
     uint64_t loopIsOverFlag = 0;
     cpu_set_t cores;
-    for (auto i = 0; i < numCores; ++i) {
+    for (auto i = 0; i < (numCores - 1); ++i) {
       #ifdef RUNTIME_PRINT
       fprintf(stderr, "HelixDispatcher: Creating future for core %d\n", i);
       #endif
@@ -581,7 +581,6 @@ extern "C" {
        */
       auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
       auto ssArrayFuture = (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
-
       #ifdef RUNTIME_PRINT
       fprintf(stderr, "HelixDispatcher: defined ss past and future arrays: %ld %ld\n", (int *)ssArrayPast - (int *)mySSGlobal, (int *)ssArrayFuture - (int *)mySSGlobal);
       #endif
@@ -627,19 +626,26 @@ extern "C" {
         &loopIsOverFlag
       ));*/
     }
-
     #ifdef RUNTIME_PRINT
     std::cerr << "Submitted pool\n";
     int futureGotten = 0;
     #endif
 
     /*
-     * Wait for the threads to end
+     * Run a task.
      */
-    for (auto i = 0; i < numCores; ++i) {
+    auto pastID = (numCores - 1) % numOfSSArrays;
+    auto futureID = numCores % numOfSSArrays;
+    auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
+    auto ssArrayFuture = (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
+    parallelizedLoop(env, loopCarriedArray, ssArrayPast, ssArrayFuture, numCores - 1, numCores, &loopIsOverFlag);
+
+    /*
+     * Wait for the remaining HELIX tasks.
+     */
+    for (auto i = 0; i < (numCores - 1); ++i) {
       pthread_mutex_lock(&(argsForAllCores[i].endLock));
     }
-
     #ifdef RUNTIME_PRINT
     std::cerr << "Got all futures\n";
     #endif
