@@ -410,7 +410,7 @@ extern "C" {
     uint64_t coreID;
     uint64_t numCores;
     uint64_t *loopIsOverFlag;
-    pthread_mutex_t endLock;
+    pthread_spinlock_t endLock;
   } NOELLE_HELIX_args_t ;
 
   static void NOELLE_HELIXTrampoline (void *args){
@@ -433,7 +433,7 @@ extern "C" {
       HELIX_args->loopIsOverFlag
       );
 
-    pthread_mutex_unlock(&(HELIX_args->endLock));
+    pthread_spin_unlock(&(HELIX_args->endLock));
     return ;
   }
 
@@ -597,8 +597,8 @@ extern "C" {
       argsPerCore->coreID = i;
       argsPerCore->numCores = numCores;
       argsPerCore->loopIsOverFlag = &loopIsOverFlag;
-      pthread_mutex_init(&(argsPerCore->endLock), NULL);
-      pthread_mutex_lock(&(argsPerCore->endLock));
+      pthread_spin_init(&(argsPerCore->endLock), PTHREAD_PROCESS_PRIVATE);
+      pthread_spin_lock(&(argsPerCore->endLock));
 
       /*
        * Set the affinity for both the thread and its helper.
@@ -635,16 +635,16 @@ extern "C" {
      * Run a task.
      */
     auto pastID = (numCores - 1) % numOfSSArrays;
-    auto futureID = numCores % numOfSSArrays;
+    auto futureID = 0;
     auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
-    auto ssArrayFuture = (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
+    auto ssArrayFuture = ssArrays;
     parallelizedLoop(env, loopCarriedArray, ssArrayPast, ssArrayFuture, numCores - 1, numCores, &loopIsOverFlag);
 
     /*
      * Wait for the remaining HELIX tasks.
      */
     for (auto i = 0; i < (numCores - 1); ++i) {
-      pthread_mutex_lock(&(argsForAllCores[i].endLock));
+      pthread_spin_lock(&(argsForAllCores[i].endLock));
     }
     #ifdef RUNTIME_PRINT
     std::cerr << "Got all futures\n";
