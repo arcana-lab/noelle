@@ -122,6 +122,8 @@ namespace llvm::noelle {
 
       void removeEdgesNotUsedByParSchemes (PDG *pdg);
 
+      AliasResult doTheyAlias (PDG *pdg, Function &F, AAResults &AA, Value *instI, Value *instJ);
+
       bool edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge);
       bool isBackedgeOfLoadStoreIntoSameOffsetOfArray (
         DGEdge<Value> *edge,

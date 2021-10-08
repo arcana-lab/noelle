@@ -20,7 +20,13 @@ namespace llvm::noelle {
 
       static bool isAllocator (CallInst *callInst);
 
+      static bool isReallocator (CallInst *callInst);
+
       static bool isDeallocator (CallInst *callInst);
+
+      static Value * getAllocatedObject (CallInst *call);
+
+      static Value * getFreedObject (CallInst *call);
   };
 
 }

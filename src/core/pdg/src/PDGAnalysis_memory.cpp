@@ -326,10 +326,51 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   auto reverseRefEdge = false, reverseModEdge = false, reverseModRefEdge = false;
 
   /*
-   * We cannot have memory dependences from a call to a deallocator (e.g., free).
+   * There is no dependence between allocators
    */
-  if (Utils::isDeallocator(call)){
+  if (  true
+        && Utils::isAllocator(call)
+        && Utils::isAllocator(otherCall)
+        && (!Utils::isReallocator(call))
+        && (!Utils::isReallocator(otherCall))
+     ){
     return ;
+  }
+
+  /*
+   * Check if the call instructions are about an allocator and a deallocator.
+   */
+  CallInst *allocatorCall = nullptr;
+  CallInst *deallocatorCall = nullptr;
+  if (Utils::isAllocator(call)){
+    allocatorCall = call;
+  }
+  if (Utils::isAllocator(otherCall)){
+    allocatorCall = otherCall;
+  }
+  if (Utils::isDeallocator(call)){
+    deallocatorCall = call;
+  }
+  if (Utils::isDeallocator(otherCall)){
+    deallocatorCall = otherCall;
+  }
+  if (  true
+        && (allocatorCall != nullptr)
+        && (deallocatorCall != nullptr)
+     ){
+
+    /*
+     * The call instructions are one allocator and one deallocator.
+     * In this case, we only need to check if the pointer accessed by the deallocator can alias the pointer returned by the allocator.
+     */
+    auto objectAllocated = Utils::getAllocatedObject(allocatorCall);
+    assert(objectAllocated != nullptr);
+    auto objectFreed = Utils::getFreedObject(deallocatorCall);
+    assert(objectFreed != nullptr);
+    auto doesAlias = this->doTheyAlias(pdg, F, AA, objectAllocated, objectFreed);
+    if (doesAlias == NoAlias){
+      return ;
+    }
   }
 
   /*
@@ -630,6 +671,52 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
   pdg->addEdge(instI, instJ)->setMemMustType(true, must, dataDependenceType);
 
   return ;
+}
+
+AliasResult PDGAnalysis::doTheyAlias (PDG *pdg, Function &F, AAResults &AA, Value *instI, Value *instJ){
+  auto must = false;
+
+  /*
+   * Query the LLVM alias analyses.
+   */
+  switch (AA.alias(instI, instJ)) {
+    case NoAlias:
+      return NoAlias;
+    case PartialAlias:
+    case MayAlias:
+      break;
+    case MustAlias:
+      return MustAlias;
+  }
+
+  /*
+   * Check other alias analyses
+   *
+   * Check if SVF is enabled.
+   */
+  if (this->disableSVF){
+
+    /*
+     * SVF is disabled.
+     */
+
+  } else {
+
+    /*
+     * SVF is enabled, so let's use it.
+     */
+    switch (NoelleSVFIntegration::alias(instI, instJ)) {
+      case NoAlias:
+        return NoAlias;
+      case PartialAlias:
+      case MayAlias:
+        break;
+      case MustAlias:
+        return MustAlias;
+    }
+  }
+
+  return MayAlias;
 }
 
 }
