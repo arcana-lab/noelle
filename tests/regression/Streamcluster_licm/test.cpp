@@ -15,10 +15,9 @@ struct Points {
 void run(int num, int dim, Points *points) {
   float cost = 0.0;
   for (int i = 0; i < num; i++) {
-    Point p0 = points->p[0];
-    Point p1 = points->p[i];
+    Point p = points->p[i];
     for (int j = 0; j < dim; j++) {
-      cost += p0.coord[i] - p1.coord[j];
+      cost += p.coord[i];
     }
   }
 
@@ -28,19 +27,17 @@ void run(int num, int dim, Points *points) {
 int main(int argc, char **argv) {
   int num = atoi(argv[1]);
   int dim = atoi(argv[2]);
+  int value = atoi(argv[3]);
 
   Points points;
   points.p = (Point *)malloc(num * sizeof(Point));
-
-  float *coordValues = (float *)malloc(dim * sizeof(float)); // all point have the same coord, this ensures a determined program output
-  for (int i = 0; i < dim; i++) {
-    coordValues[i] = lrand48() / (float)INT_MAX;
-  }
-
+  
   float *coords = (float *)malloc(num * dim * sizeof(float));
   for (int i = 0; i < num; i++) {
-    memcpy(&coords[i * dim], coordValues, dim * sizeof(float));
     points.p[i].coord = &coords[i * dim];
+    for (int j = 0; j < dim; j++) {
+      points.p[i].coord[j] = value;
+    }
     points.p[i].weight = 1.0;
   }
 
