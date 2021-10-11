@@ -10,9 +10,9 @@
  */
 #include "Invariants.hpp"
 #include "PDGAnalysis.hpp"
+#include "Utils.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 InvariantManager::InvariantManager (
   LoopStructure *loop,
@@ -92,6 +92,20 @@ InvariantManager::InvarianceChecker::InvarianceChecker (
      */
     if (inst->isTerminator()) {
       continue;
+    }
+
+    /*
+     * Memory allocators and deallocators cannot be invariants.
+     */
+    if (auto callInst = dyn_cast<CallInst>(inst)){
+      if (  false
+            || Utils::isAllocator(callInst)
+            || Utils::isReallocator(callInst)
+            || Utils::isDeallocator(callInst)
+        ){
+        this->notInvariants.insert(inst);
+        continue ;
+      }
     }
 
     /*
@@ -194,6 +208,19 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue (Value *toValue, DGEdg
   /*
    * The instruction is included in the loop.
    *
+   * Memory allocators and deallocators cannot be invariants.
+   */
+  if (auto callInst = dyn_cast<CallInst>(toInst)){
+    if (  false
+          || Utils::isAllocator(callInst)
+          || Utils::isReallocator(callInst)
+          || Utils::isDeallocator(callInst)
+      ){
+      return true;
+    }
+  }
+
+  /*
    * If the instruction is a memory dependence, the value may evolve.
    */
   if (dep->isMemoryDependence()){
@@ -302,4 +329,6 @@ bool InvariantManager::InvarianceChecker::arePHIIncomingValuesEquivalent (PHINod
   if (singleGlobalLoaded != nullptr) return true;
 
   return false;
+}
+
 }
