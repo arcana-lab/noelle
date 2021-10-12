@@ -65,6 +65,43 @@ bool Utils::isAllocator (CallInst *callInst){
   return false;
 }
 
+bool Utils::isReallocator (CallInst *callInst){
+
+  /*
+   * Check the instruction.
+   */
+  if (callInst == nullptr){
+    return false;
+  }
+
+  /*
+   * Fetch the callee.
+   */
+  auto callee = callInst->getCalledFunction();
+  if (callee == nullptr){
+    return false;
+  }
+
+  /*
+   * Check if it is a call to a library.
+   */
+  if (!callee->empty()){
+    return false;
+  }
+
+  /*
+   * Check if it is a call to a known library function.
+   */
+  auto calleeName = callee->getName();
+  if (  false
+        || (calleeName == "realloc")
+    ){
+    return true;
+  }
+
+  return false;
+}
+
 bool Utils::isDeallocator (CallInst *callInst){
 
   /*
@@ -100,6 +137,50 @@ bool Utils::isDeallocator (CallInst *callInst){
   }
 
   return false;
+}
+
+Value * Utils::getAllocatedObject (CallInst *call){
+  if (!Utils::isAllocator(call)){
+    return nullptr;
+  }
+  auto callee = call->getCalledFunction();
+  if (callee == nullptr){
+    return nullptr;
+  }
+  auto calleeName = callee->getName();
+  if (  false
+        || (calleeName == "malloc")
+        || (calleeName == "calloc")
+        || (calleeName == "realloc")
+     ){
+    return call;
+  }
+
+  /*
+   * TODO: complete this function with other allocators (e.g., posix_memalign)
+   */
+  abort();
+}
+
+Value * Utils::getFreedObject (CallInst *call){
+  if (!Utils::isDeallocator(call)){
+      return nullptr;
+  }
+  auto callee = call->getCalledFunction();
+  if (callee == nullptr){
+    return nullptr;
+  }
+  auto calleeName = callee->getName();
+  if (  false
+        || (calleeName == "free")
+     ){
+    return call->getArgOperand(0);
+  }
+
+  /*
+   * TODO: complete this function with other deallocators
+   */
+  abort();
 }
 
 }

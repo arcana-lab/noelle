@@ -32,6 +32,7 @@ class NoelleSVFIntegration : public ModulePass {
     static ModRefInfo getModRefInfo (CallInst *i, const MemoryLocation &loc);
     static ModRefInfo getModRefInfo (CallInst *i, CallInst *j);
     static AliasResult alias (const MemoryLocation &loc1, const MemoryLocation &loc2);
+    static AliasResult alias (const Value *v1, const Value *v2);
 };
 
 }

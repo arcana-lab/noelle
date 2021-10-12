@@ -136,4 +136,12 @@ AliasResult NoelleSVFIntegration::alias (const MemoryLocation &loc1, const Memor
   #endif
 }
 
+AliasResult NoelleSVFIntegration::alias (const Value *v1, const Value *v2){
+  #ifdef ENABLE_SVF
+  return pta->alias(v1, v2);
+  #else
+  return AliasResult::MayAlias;
+  #endif
+}
+
 }
