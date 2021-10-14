@@ -30,6 +30,21 @@ namespace llvm::noelle {
       auto loopID = ls->getID();
 
       /*
+       * Check if the loop is executed at all.
+       */
+      if (  true
+          && (!this->forceParallelization)
+          && (profiles->getIterations(ls) == 0)
+         ){
+        errs() << "Parallelizer:    Loop " << loopID << " did not execute\n";
+
+        /*
+         * Remove the loop.
+         */
+        return true;
+      }
+
+      /*
        * Check if the latency of each loop invocation is enough to justify the parallelization.
        */
       auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
@@ -223,6 +238,7 @@ namespace llvm::noelle {
        * Check if the time saved is enough.
        */
       if (savedTimeTotal < 2){
+        errs() << "Parallelizer: LoopSelector:  Loop " << ldi->getID() << " saves only " << savedTimeTotal << " when parallelized. Skip it\n";
         continue ;
       }
 
