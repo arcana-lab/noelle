@@ -1,3 +1,3 @@
 clean:
-	cd passes ; make clean ; 
+	cd passes ; make uninstall ; 
 	cd tests ; make clean ; 
