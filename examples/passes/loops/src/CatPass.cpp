@@ -37,7 +37,7 @@ namespace {
        * fetch the loops with all their abstractions 
        * (e.g., loop dependence graph, sccdag)
        */
-      auto loops = noelle.getloops();
+      auto loops = noelle.getLoops();
       //auto loops = noelle.getLoops(mainF);
 
       /*

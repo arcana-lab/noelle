@@ -1,6 +1,10 @@
-all:
+all: links
+	../scripts/compileExamples.sh
 
-clean:
+links:
+	../scripts/links.sh
+
+clean: links
 	cd simple ; ./scripts/clean.sh
 	cd pdg ; ./scripts/clean.sh
 	cd callgraph ; ./scripts/clean.sh
@@ -11,4 +15,7 @@ clean:
 	cd dfa3 ; ./scripts/clean.sh
 	cd induction_variables ; ./scripts/clean.sh
 
-.PHONY: clean
+uninstall: clean
+	rm */scripts */*.txt ;
+
+.PHONY: clean links uninstall
