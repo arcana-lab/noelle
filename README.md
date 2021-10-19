@@ -5,9 +5,9 @@
 - [Description](#description)
 - [Version](#version)
 - [Prerequisites](#prerequisites)
-- [Build NOELLE](#build-noelle)
-- [Testing](#testing)
-- [Structure](#structure)
+- [Building NOELLE](#building-noelle)
+- [Testing NOELLE](#testing-noelle)
+- [Repository structure](#repository-structure)
 - [License](#license)
 
 
@@ -65,15 +65,15 @@ source /project/extra/llvm/9.0.0/enable
 The guide about the Zythos cluster can be downloaded here: 
 www.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf
 
-## Build NOELLE
-To build and install: run `make` from the repository root directory.
+## Building NOELLE
+To build and install NOELLE: run `make` from the repository root directory.
 
 Run `make clean` from the root directory to clean the repository.
 
 Run `make uninstall` from the root directory to uninstall the NOELLE installation.
 
 
-## Testing
+## Testing NOELLE
 To run all tests in parallel using Condor, invoke the following commands:
 ```
 make clean ; 
@@ -87,7 +87,7 @@ To find out if all tests passed: `cd tests ; make condor_check`
 To test NOELLE using condor to run all tests in parallel, go to "tests" and run "make condor".
 
 
-## Structure
+## Repository structure
 The directory `src` includes sources of the noelle framework.
 Within this directory, `src/core` includes the abstractions provided by NOELLE.
 Also, `src/tools` includes code transformations that rely on the NOELLE's abstractions to modify the code.
