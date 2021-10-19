@@ -8,6 +8,8 @@
 - [Building NOELLE](#building-noelle)
 - [Testing NOELLE](#testing-noelle)
 - [Repository structure](#repository-structure)
+- [Examples of using NOELLE](#examples-of-using-noelle)
+- [Contributions](#contributions)
 - [License](#license)
 
 
@@ -103,13 +105,13 @@ The directory `examples` includes examples of LLVM passes (and their tests) that
 Finally, the directory `doc` includes the documentation of noelle.
 
 
-### Examples of using NOELLE
+## Examples of using NOELLE
 LLVM passes in the directory `examples/passes` shows use cases of NOELLE.
 
 If you have any trouble using this framework feel free to reach out to us for help (contact simone.campanoni@northwestern.edu).
 
 
-### Contributions
+## Contributions
 We welcome contributions from the community to improve this framework and evolve it to cater for more users.
 
 
