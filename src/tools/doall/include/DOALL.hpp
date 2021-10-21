@@ -73,7 +73,7 @@ namespace llvm::noelle {
       /*
        * Helpers
        */
-      Value *fetchClone(Value *original) const ;
+      Value * fetchClone (Value *original) const ;
   };
 
 }

@@ -391,7 +391,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
 }
 
 Value * DOALL::fetchClone (Value *original) const {
-  auto task = (DOALLTask *)this->tasks[0];
+  auto task = this->tasks[0];
   if (isa<ConstantData>(original)) return original;
 
   if (task->isAnOriginalLiveIn(original)){
