@@ -280,7 +280,19 @@ bool DOALL::apply (
     errs() << "DOALL:  Adjusted data flow\n";
   }
 
+  /*
+   * Handle the reduction variables.
+   */
   this->setReducableVariablesToBeginAtIdentityValue(LDI, 0);
+
+  /*
+   * Add the jump to start the loop from within the task.
+   */
+  this->addJumpToLoop(LDI, chunkerTask);
+
+  /*
+   * Perform the iteration-chunking optimization
+   */
   this->rewireLoopToIterateChunks(LDI);
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DOALL:  Rewired induction variables and reducible variables\n";
@@ -390,6 +402,24 @@ Value * DOALL::fetchClone (Value *original) const {
   auto iClone = task->getCloneOfOriginalInstruction(cast<Instruction>(original));
   assert(iClone != nullptr);
   return iClone;
+}
+
+void DOALL::addJumpToLoop (LoopDependenceInfo *LDI, Task *t){
+
+  /*
+   * Fetch the header within the task.
+   */
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
+  auto headerClone = t->getCloneOfOriginalBasicBlock(loopHeader);
+
+  /*
+   * Add a jump to the loop within the task.
+   */
+  IRBuilder<> entryBuilder(t->getEntry());
+  entryBuilder.CreateBr(headerClone);
+
+  return ;
 }
 
 }

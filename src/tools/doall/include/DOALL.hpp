@@ -61,11 +61,14 @@ namespace llvm::noelle {
       void rewireLoopToIterateChunks (
         LoopDependenceInfo *LDI
       );
+
       void addChunkFunctionExecutionAsideOriginalLoop (
         LoopDependenceInfo *LDI,
         Function *loopFunction,
         Noelle &par
       );
+
+      void addJumpToLoop (LoopDependenceInfo *LDI, Task *t);
 
       /*
        * Helpers
