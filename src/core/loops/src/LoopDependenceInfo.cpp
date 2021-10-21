@@ -528,6 +528,10 @@ const LoopsSummary & LoopDependenceInfo::getLoopHierarchyStructures (void) const
 SCCDAGAttrs * LoopDependenceInfo::getSCCManager (void) const {
   return this->sccdagAttrs;
 }
+      
+LoopEnvironment * LoopDependenceInfo::getEnvironment (void) const {
+  return this->environment;
+}
 
 LoopDependenceInfo::~LoopDependenceInfo() {
   delete this->loopDG;

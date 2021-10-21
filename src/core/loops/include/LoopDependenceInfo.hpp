@@ -162,6 +162,8 @@ namespace llvm::noelle {
 
       InvariantManager * getInvariantManager (void) const ;
 
+      LoopEnvironment * getEnvironment (void) const ;
+
       LoopIterationDomainSpaceAnalysis * getLoopIterationDomainSpaceAnalysis (void) const ;
 
       MemoryCloningAnalysis * getMemoryCloningAnalysis (void) const ;
