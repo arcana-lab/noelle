@@ -13,5 +13,5 @@ install(
   FILES
   include/LoopStats.hpp
   DESTINATION 
-  include
+  include/noelle/tools
   )

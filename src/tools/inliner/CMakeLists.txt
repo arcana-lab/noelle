@@ -13,5 +13,5 @@ install(
   FILES
   include/Inliner.hpp 
   DESTINATION 
-  include
+  include/noelle/tools
   )

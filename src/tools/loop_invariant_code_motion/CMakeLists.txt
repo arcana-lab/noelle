@@ -13,5 +13,5 @@ install(
   FILES
   include/LoopInvariantCodeMotion.hpp
   DESTINATION 
-  include
+  include/noelle/tools
   )

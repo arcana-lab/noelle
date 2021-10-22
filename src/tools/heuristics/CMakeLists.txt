@@ -18,5 +18,5 @@ install(
   include/SmallestSizePartitionAnalysis.hpp
   include/MinMaxSizePartitionAnalysis.hpp
   DESTINATION 
-  include
+  include/noelle/tools
   )

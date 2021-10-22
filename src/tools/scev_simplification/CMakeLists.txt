@@ -13,5 +13,5 @@ install(
   FILES
   include/SCEVSimplification.hpp
   DESTINATION 
-  include
+  include/noelle/tools
   )

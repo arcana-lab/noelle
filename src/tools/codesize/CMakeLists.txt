@@ -13,5 +13,5 @@ install(
   FILES
   include/CodeSize.hpp
   DESTINATION
-  include
+  include/noelle/tools
   )

@@ -13,5 +13,5 @@ install(
   FILES
   include/DSWP.hpp 
   DESTINATION 
-  include
+  include/noelle/tools
   )

@@ -14,5 +14,5 @@ install(
   include/DOALL.hpp 
   include/DOALLTask.hpp
   DESTINATION 
-  include
+  include/noelle/tools
   )
