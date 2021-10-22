@@ -19,7 +19,7 @@
 #include "Scheduler.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
 #include "MetadataManager.hpp"
-#include "LoopTransformer.hpp"
+#include "noelle/core/LoopTransformer.hpp"
 #include "noelle/core/FunctionsManager.hpp"
 #include "noelle/core/TypesManager.hpp"
 #include "noelle/core/CompilationOptionsManager.hpp"

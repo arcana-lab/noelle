@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/LoopTransformer.hpp
+  include/noelle/core/LoopTransformer.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )
