@@ -14,7 +14,7 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "Heuristics.hpp"
 #include "Task.hpp"

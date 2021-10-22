@@ -17,7 +17,7 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"

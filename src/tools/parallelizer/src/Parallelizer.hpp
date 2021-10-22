@@ -34,7 +34,7 @@
 #include "PDG.hpp"
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 #include "HeuristicsPass.hpp"
 #include "DSWP.hpp"
 #include "DOALL.hpp"

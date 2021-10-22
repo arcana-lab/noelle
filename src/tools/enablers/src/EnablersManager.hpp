@@ -17,7 +17,7 @@
 #include "SCC.hpp"
 #include "SCCDAG.hpp"
 #include "PDGAnalysis.hpp"
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 #include "LoopDistribution.hpp"
 #include "LoopUnroll.hpp"
 #include "LoopWhilify.hpp"

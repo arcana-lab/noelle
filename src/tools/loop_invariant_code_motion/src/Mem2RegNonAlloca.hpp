@@ -13,7 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "LoopDependenceInfo.hpp"
 #include "Invariants.hpp"
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 
 #include "PDGPrinter.hpp"
 #include "SubCFGs.hpp"

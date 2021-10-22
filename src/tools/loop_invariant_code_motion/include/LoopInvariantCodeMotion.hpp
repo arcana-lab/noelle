@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 #include "PDGPrinter.hpp"
 #include "SubCFGs.hpp"
 

@@ -11,10 +11,10 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/Noelle.hpp
-  include/FunctionsManager.hpp
-  include/TypesManager.hpp
-  include/CompilationOptionsManager.hpp
+  include/noelle/core/Noelle.hpp
+  include/noelle/core/FunctionsManager.hpp
+  include/noelle/core/TypesManager.hpp
+  include/noelle/core/CompilationOptionsManager.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

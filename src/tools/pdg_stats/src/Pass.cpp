@@ -10,7 +10,6 @@
  */
 #include "SystemHeaders.hpp"
 #include "PDGStats.hpp"
-#include "Noelle.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

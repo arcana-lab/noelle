@@ -18,7 +18,7 @@
 #include "PDGAnalysis.hpp"
 #include "SCCDAG.hpp"
 #include "LoopDependenceInfo.hpp"
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 #include <fstream>
 
 using namespace llvm;

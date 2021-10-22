@@ -15,7 +15,7 @@
 #include "llvm/IR/Instructions.h"
 
 #include "SCCDAGPartition.hpp"
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 
 #include "InvocationLatency.hpp"
 #include "PartitionCostAnalysis.hpp"
