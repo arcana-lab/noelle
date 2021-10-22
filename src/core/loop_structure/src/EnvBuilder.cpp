@@ -38,6 +38,9 @@ void EnvUserBuilder::createEnvPtr (
     abort();
   }
 
+  /*
+   * Create the zero integer constant.
+   */
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
 
