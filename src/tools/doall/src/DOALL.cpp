@@ -18,17 +18,10 @@ DOALL::DOALL (
   Hot &p,
   Verbosity v
 ) :
-  ParallelizationTechnique{module, p, v}
+    ParallelizationTechnique{module, p, v}
+  , enabled{true}
+  , taskDispatcher{nullptr}
   {
-
-  /*
-   * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
-   */
-  this->taskDispatcher = this->module.getFunction("NOELLE_DOALLDispatcher");
-  if (this->taskDispatcher == nullptr){
-    errs() << "NOELLE: ERROR = function NOELLE_DOALLDispatcher couldn't be found\n";
-    abort();
-  }
 
   /*
    * Define the signature of the task, which will be invoked by the DOALL dispatcher.
@@ -44,6 +37,17 @@ DOALL::DOALL (
   });
   this->taskSignature = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
 
+  /*
+   * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
+   */
+  this->taskDispatcher = this->module.getFunction("NOELLE_DOALLDispatcher");
+  if (this->taskDispatcher == nullptr){
+    this->enabled = false;
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "DOALL: WARNING: function NOELLE_DOALLDispatcher couldn't be found. DOALL is disabled\n";
+    }
+  }
+
   return ;
 }
 
@@ -54,6 +58,13 @@ bool DOALL::canBeAppliedToLoop (
 ) const {
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Checking if the loop is DOALL\n";
+  }
+
+  /*
+   * Check if DOALL is enabled.
+   */
+  if (!this->enabled){
+    return false;
   }
 
   /*
@@ -199,6 +210,13 @@ bool DOALL::apply (
   Noelle &par,
   Heuristics *h
 ) {
+
+  /*
+   * Check if DOALL is enabled.
+   */
+  if (!this->enabled){
+    return false;
+  }
 
   /*
    * Fetch the headers.

@@ -53,6 +53,7 @@ namespace llvm::noelle {
       ) ;
 
     protected:
+      bool enabled;
       Function *taskDispatcher;
 
       /*
