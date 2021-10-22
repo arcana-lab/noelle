@@ -11,8 +11,8 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/MetadataEntry.hpp
-  include/MetadataManager.hpp
+  include/noelle/core/MetadataEntry.hpp
+  include/noelle/core/MetadataManager.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )
