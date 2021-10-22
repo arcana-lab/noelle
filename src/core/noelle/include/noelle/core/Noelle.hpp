@@ -18,11 +18,11 @@
 #include "DataFlow.hpp"
 #include "Scheduler.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
-#include "FunctionsManager.hpp"
-#include "TypesManager.hpp"
-#include "CompilationOptionsManager.hpp"
 #include "MetadataManager.hpp"
 #include "LoopTransformer.hpp"
+#include "noelle/core/FunctionsManager.hpp"
+#include "noelle/core/TypesManager.hpp"
+#include "noelle/core/CompilationOptionsManager.hpp"
 
 namespace llvm::noelle {
 
