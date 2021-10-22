@@ -4,7 +4,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 
 using namespace llvm::noelle ;
 
