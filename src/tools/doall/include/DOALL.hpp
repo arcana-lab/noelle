@@ -30,9 +30,7 @@ namespace llvm::noelle {
        * Methods
        */
       DOALL (
-        Module &module,
-        Hot &p,
-        Verbosity v
+        Noelle &noelle
       );
 
       bool apply (
@@ -55,6 +53,7 @@ namespace llvm::noelle {
     protected:
       bool enabled;
       Function *taskDispatcher;
+      Noelle &n;
 
       /*
        * DOALL specific generation

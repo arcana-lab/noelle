@@ -14,33 +14,30 @@
 namespace llvm::noelle{
 
 DOALL::DOALL (
-  Module &module,
-  Hot &p,
-  Verbosity v
+  Noelle &noelle
 ) :
-    ParallelizationTechnique{module, p, v}
+    ParallelizationTechnique{*noelle.getProgram(), *noelle.getProfiles(), noelle.getVerbosity()}
   , enabled{true}
   , taskDispatcher{nullptr}
+  , n{noelle}
   {
 
   /*
    * Define the signature of the task, which will be invoked by the DOALL dispatcher.
    */
-  auto &cxt = module.getContext();
-  auto int8 = IntegerType::get(cxt, 8);
-  auto int64 = IntegerType::get(cxt, 64);
+  auto tm = this->n.getTypesManager();
   auto funcArgTypes = ArrayRef<Type*>({
-    PointerType::getUnqual(int8),
-    int64,
-    int64,
-    int64
+    tm->getVoidPointerType(),
+    tm->getIntegerType(64),
+    tm->getIntegerType(64),
+    tm->getIntegerType(64)
   });
-  this->taskSignature = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
+  this->taskSignature = FunctionType::get(tm->getVoidType(), funcArgTypes, false);
 
   /*
    * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
    */
-  this->taskDispatcher = this->module.getFunction("NOELLE_DOALLDispatcher");
+  this->taskDispatcher = this->n.getProgram()->getFunction("NOELLE_DOALLDispatcher");
   if (this->taskDispatcher == nullptr){
     this->enabled = false;
     if (this->verbose != Verbosity::Disabled) {
