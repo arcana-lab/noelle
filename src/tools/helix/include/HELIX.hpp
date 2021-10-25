@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "LoopDependenceInfo.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 #include "SubCFGs.hpp"
 #include "PDG.hpp"
 #include "SCC.hpp"
@@ -21,7 +21,7 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"
-#include "ControlFlowEquivalence.hpp"
+#include "noelle/core/ControlFlowEquivalence.hpp"
 
 namespace llvm::noelle {
 

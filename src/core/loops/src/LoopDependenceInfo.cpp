@@ -12,7 +12,7 @@
 #include "PDGAnalysis.hpp"
 #include "SCCDAG.hpp"
 #include "Architecture.hpp"
-#include "LoopDependenceInfo.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
 namespace llvm::noelle {

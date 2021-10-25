@@ -19,7 +19,7 @@
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "DSWPTask.hpp"
-#include "LoopDependenceInfo.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 
 namespace llvm::noelle {
 

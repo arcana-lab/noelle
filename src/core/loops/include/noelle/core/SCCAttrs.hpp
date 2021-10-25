@@ -12,10 +12,10 @@
 
 #include "SystemHeaders.hpp"
 #include "LoopsSummary.hpp"
-#include "AccumulatorOpInfo.hpp"
+#include "noelle/core/AccumulatorOpInfo.hpp"
 #include "SCC.hpp"
-#include "Variable.hpp"
-#include "MemoryCloningAnalysis.hpp"
+#include "noelle/core/Variable.hpp"
+#include "noelle/core/MemoryCloningAnalysis.hpp"
 
 using namespace llvm;
 

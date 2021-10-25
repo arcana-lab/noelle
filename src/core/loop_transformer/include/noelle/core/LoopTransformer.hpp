@@ -14,7 +14,7 @@
 #include "llvm/Transforms/Utils/UnrollLoop.h"
 
 #include "SystemHeaders.hpp"
-#include "LoopDependenceInfo.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 
 namespace llvm::noelle {
 

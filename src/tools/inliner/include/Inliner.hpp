@@ -17,7 +17,7 @@
 #include "PDG.hpp"
 #include "PDGAnalysis.hpp"
 #include "SCCDAG.hpp"
-#include "LoopDependenceInfo.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/Noelle.hpp"
 #include <fstream>
 

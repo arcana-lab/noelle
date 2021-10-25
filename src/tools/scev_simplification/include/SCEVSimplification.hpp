@@ -12,7 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "LoopDependenceInfo.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 
 namespace llvm::noelle {
 

@@ -15,7 +15,7 @@
 #include "PDG.hpp"
 #include "LoopsSummary.hpp"
 #include "SCCDAG.hpp"
-#include "SCCDAGPartition.hpp"
+#include "noelle/core/SCCDAGPartition.hpp"
 
 namespace llvm::noelle {
 

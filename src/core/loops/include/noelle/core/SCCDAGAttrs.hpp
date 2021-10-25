@@ -11,16 +11,16 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "AccumulatorOpInfo.hpp"
+#include "noelle/core/AccumulatorOpInfo.hpp"
 #include "SCCDAG.hpp"
 #include "SCC.hpp"
-#include "SCCAttrs.hpp"
+#include "noelle/core/SCCAttrs.hpp"
 #include "LoopsSummary.hpp"
 #include "InductionVariables.hpp"
 #include "LoopGoverningIVAttribution.hpp"
 #include "LoopEnvironment.hpp"
-#include "Variable.hpp"
-#include "MemoryCloningAnalysis.hpp"
+#include "noelle/core/Variable.hpp"
+#include "noelle/core/MemoryCloningAnalysis.hpp"
 
   using namespace std;
   using namespace llvm;

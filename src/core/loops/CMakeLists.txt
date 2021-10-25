@@ -11,16 +11,16 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/MemoryCloningAnalysis.hpp
-  include/Variable.hpp
-  include/ControlFlowEquivalence.hpp
-  include/LoopDependenceInfo.hpp
-  include/LoopIterationDomainSpaceAnalysis.hpp
-  include/SCCDAGAttrs.hpp
-  include/SCCDAGNormalizer.hpp
-  include/SCCDAGPartition.hpp
-  include/SCCAttrs.hpp
-  include/AccumulatorOpInfo.hpp
+  include/noelle/core/MemoryCloningAnalysis.hpp
+  include/noelle/core/Variable.hpp
+  include/noelle/core/ControlFlowEquivalence.hpp
+  include/noelle/core/LoopDependenceInfo.hpp
+  include/noelle/core/LoopIterationDomainSpaceAnalysis.hpp
+  include/noelle/core/SCCDAGAttrs.hpp
+  include/noelle/core/SCCDAGNormalizer.hpp
+  include/noelle/core/SCCDAGPartition.hpp
+  include/noelle/core/SCCAttrs.hpp
+  include/noelle/core/AccumulatorOpInfo.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

@@ -12,10 +12,10 @@
 
 #include "SystemHeaders.hpp"
 #include "PDGAnalysis.hpp"
-#include "LoopDependenceInfo.hpp"
 #include "Queue.hpp"
 #include "DataFlow.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/HotProfiler.hpp"
 #include "noelle/core/Scheduler.hpp"
 #include "noelle/core/MetadataManager.hpp"

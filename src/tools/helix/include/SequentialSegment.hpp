@@ -11,7 +11,7 @@
 #pragma once
 
 #include "HELIX.hpp"
-#include "SCCDAGPartition.hpp"
+#include "noelle/core/SCCDAGPartition.hpp"
 #include "llvm/ADT/iterator_range.h"
 
 namespace llvm::noelle {
