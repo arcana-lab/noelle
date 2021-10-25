@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "Hot.hpp"
+#include "noelle/core/Hot.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

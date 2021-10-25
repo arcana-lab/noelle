@@ -10,7 +10,7 @@
  */
 #include "LoopUnroll.hpp"
 #include "PDGAnalysis.hpp"
-#include "HotProfiler.hpp"
+#include "noelle/core/HotProfiler.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

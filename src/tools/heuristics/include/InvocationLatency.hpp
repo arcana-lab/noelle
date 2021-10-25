@@ -14,7 +14,7 @@
 #include "SCC.hpp"
 #include "SCCDAGAttrs.hpp"
 #include "SCCDAGPartition.hpp"
-#include "Hot.hpp"
+#include "noelle/core/Hot.hpp"
 
 namespace llvm::noelle {
 

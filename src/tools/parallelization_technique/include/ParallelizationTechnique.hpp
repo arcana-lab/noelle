@@ -18,7 +18,7 @@
 #include "LoopDependenceInfo.hpp"
 #include "Heuristics.hpp"
 #include "Task.hpp"
-#include "Hot.hpp"
+#include "noelle/core/Hot.hpp"
 #include "PDGPrinter.hpp"
 #include "SubCFGs.hpp"
 

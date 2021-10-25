@@ -10,9 +10,9 @@
  */
 #include "noelle/core/Noelle.hpp"
 #include "PDGAnalysis.hpp"
-#include "HotProfiler.hpp"
 #include "Architecture.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/HotProfiler.hpp"
 
 namespace llvm::noelle {
 

@@ -11,8 +11,8 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/HotProfiler.hpp 
-  include/Hot.hpp 
+  include/noelle/core/HotProfiler.hpp 
+  include/noelle/core/Hot.hpp 
   DESTINATION 
-  include
+  include/noelle/core
   )
