@@ -17,10 +17,10 @@
 #include "InductionVariables.hpp"
 #include "Invariants.hpp"
 #include "LoopGoverningIVAttribution.hpp"
-#include "noelle/core/SCCDAGAttrs.hpp"
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
 #include "Transformations.hpp"
+#include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
 
 namespace llvm::noelle {
