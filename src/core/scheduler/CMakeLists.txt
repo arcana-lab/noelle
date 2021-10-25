@@ -11,8 +11,8 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/Scheduler.hpp
-  include/SCCPartitionScheduler.hpp
+  include/noelle/core/Scheduler.hpp
+  include/noelle/core/SCCPartitionScheduler.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )
