@@ -18,11 +18,11 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "LoopDistribution.hpp"
+#include "noelle/core/LoopDistribution.hpp"
 #include "LoopUnroll.hpp"
 #include "LoopWhilify.hpp"
-#include "LoopInvariantCodeMotion.hpp"
-#include "SCEVSimplification.hpp"
+#include "noelle/tools/LoopInvariantCodeMotion.hpp"
+#include "noelle/tools/SCEVSimplification.hpp"
 
 namespace llvm::noelle {
 

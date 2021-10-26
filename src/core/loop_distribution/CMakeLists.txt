@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/LoopDistribution.hpp
+  include/noelle/core/LoopDistribution.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

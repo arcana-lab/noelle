@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/SCEVSimplification.hpp
+  include/noelle/tools/SCEVSimplification.hpp
   DESTINATION 
   include/noelle/tools
   )

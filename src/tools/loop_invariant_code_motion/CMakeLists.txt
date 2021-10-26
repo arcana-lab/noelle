@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/LoopInvariantCodeMotion.hpp
+  include/noelle/tools/LoopInvariantCodeMotion.hpp
   DESTINATION 
   include/noelle/tools
   )

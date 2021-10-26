@@ -10,7 +10,7 @@
  */
 #include "EnablersManager.hpp"
 #include "noelle/core/HotProfiler.hpp"
-#include "LoopDistribution.hpp"
+#include "noelle/core/LoopDistribution.hpp"
 #include "LoopUnroll.hpp"
 #include <unordered_map>
 
