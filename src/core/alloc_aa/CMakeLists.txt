@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/AllocAA.hpp
+  include/noelle/core/AllocAA.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

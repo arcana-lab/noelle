@@ -11,8 +11,8 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/Outliner.hpp
-  include/OutlinerPass.hpp
+  include/noelle/core/Outliner.hpp
+  include/noelle/core/OutlinerPass.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

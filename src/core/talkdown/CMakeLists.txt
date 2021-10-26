@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/TalkDown.hpp 
+  include/noelle/core/TalkDown.hpp 
   DESTINATION 
-  include
+  include/noelle/core
   )
