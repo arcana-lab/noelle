@@ -10,7 +10,7 @@
  */
 #include "EnablersManager.hpp"
 #include "noelle/core/LoopDistribution.hpp"
-#include "LoopUnroll.hpp"
+#include "noelle/core/LoopUnroll.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

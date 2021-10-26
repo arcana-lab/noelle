@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/LoopUnroll.hpp
+  include/noelle/core/LoopUnroll.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

@@ -1,9 +1,7 @@
-
 #include <set>
-#include <UniqueIRMarker.hpp>
-#include <UniqueIRVerifier.hpp>
-
-#include "UniqueIRMarker.hpp"
+#include "noelle/core/UniqueIRMarker.hpp"
+#include "noelle/core/UniqueIRVerifier.hpp"
+#include "noelle/core/UniqueIRMarker.hpp"
 
 using std::addressof;
 using namespace llvm;

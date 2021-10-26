@@ -3,7 +3,7 @@
 #include "SystemHeaders.hpp"
 #include <optional>
 
-#include "UniqueIRConstants.hpp"
+#include "noelle/core/UniqueIRConstants.hpp"
 
 using std::optional;
 using std::nullopt;

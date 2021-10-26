@@ -2,8 +2,8 @@
 
 #include "SystemHeaders.hpp"
 
-#include "UniqueIRConstants.hpp"
-#include "UniqueIRMarkerReader.hpp"
+#include "noelle/core/UniqueIRConstants.hpp"
+#include "noelle/core/UniqueIRMarkerReader.hpp"
 
 using namespace llvm;
 

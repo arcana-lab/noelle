@@ -11,7 +11,7 @@
 #include "EnablersManager.hpp"
 #include "noelle/core/HotProfiler.hpp"
 #include "noelle/core/LoopDistribution.hpp"
-#include "LoopUnroll.hpp"
+#include "noelle/core/LoopUnroll.hpp"
 #include <unordered_map>
 
 using namespace llvm;

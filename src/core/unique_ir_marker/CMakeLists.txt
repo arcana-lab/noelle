@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/UniqueIRMarker.hpp
+  include/noelle/core/UniqueIRMarker.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/LoopWhilify.hpp
+  include/noelle/core/LoopWhilify.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

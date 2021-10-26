@@ -19,8 +19,8 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/LoopDistribution.hpp"
-#include "LoopUnroll.hpp"
-#include "LoopWhilify.hpp"
+#include "noelle/core/LoopUnroll.hpp"
+#include "noelle/core/LoopWhilify.hpp"
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
 #include "noelle/tools/SCEVSimplification.hpp"
 
