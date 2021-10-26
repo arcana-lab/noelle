@@ -19,8 +19,8 @@
 #include "Heuristics.hpp"
 #include "Task.hpp"
 #include "noelle/core/Hot.hpp"
-#include "PDGPrinter.hpp"
-#include "SubCFGs.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/SubCFGs.hpp"
 
 namespace llvm::noelle {
 

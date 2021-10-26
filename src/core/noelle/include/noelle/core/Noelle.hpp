@@ -11,9 +11,9 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "PDGAnalysis.hpp"
 #include "Queue.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/HotProfiler.hpp"

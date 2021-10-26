@@ -10,10 +10,10 @@
  */
 #pragma once
 
-#include "SCC.hpp"
-#include "SCCDAG.hpp"
-#include "DGGraphTraits.hpp"
 #include "LoopStructure.hpp"
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/DGGraphTraits.hpp"
 
 namespace llvm {
   namespace noelle {

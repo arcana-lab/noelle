@@ -14,7 +14,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "SCCDAG.hpp"
+#include "noelle/core/SCCDAG.hpp"
 #include "Parallelizer.hpp"
 
 using namespace llvm;

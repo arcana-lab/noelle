@@ -11,10 +11,10 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "DGBase.hpp"
-#include "SCC.hpp"
-#include "PDG.hpp"
 #include "BitMatrix.hpp"
+#include "noelle/core/DGBase.hpp"
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/PDG.hpp"
 
 namespace llvm::noelle {
 

@@ -10,7 +10,7 @@
  */
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/HotProfiler.hpp"
-#include "PDGAnalysis.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
 #include "Architecture.hpp"
 
 namespace llvm::noelle {

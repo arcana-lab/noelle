@@ -13,7 +13,7 @@
 #include "SystemHeaders.hpp"
 #include "LoopsSummary.hpp"
 #include "noelle/core/AccumulatorOpInfo.hpp"
-#include "SCC.hpp"
+#include "noelle/core/SCC.hpp"
 #include "noelle/core/Variable.hpp"
 #include "noelle/core/MemoryCloningAnalysis.hpp"
 

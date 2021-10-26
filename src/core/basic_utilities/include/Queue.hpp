@@ -10,13 +10,13 @@
  */
 #pragma once
 
-#include <vector>
+#include "SystemHeaders.hpp"
 
 namespace llvm {
 
   class Queue {
     public:
-      unordered_map<int, int> queueSizeToIndex;
+      std::unordered_map<int, int> queueSizeToIndex;
       std::vector<Type *> queueElementTypes;
       std::vector<Function *> queuePushes;
       std::vector<Function *> queuePops;

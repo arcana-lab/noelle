@@ -13,8 +13,8 @@
 
 #include "SystemHeaders.hpp"
 
-#include "PDG.hpp"
-#include "SCCDAG.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/SCCDAG.hpp"
 #include "LoopsSummary.hpp"
 #include "Invariants.hpp"
 #include "DominatorSummary.hpp"

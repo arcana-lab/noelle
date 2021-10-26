@@ -12,8 +12,8 @@
 
 #include "SystemHeaders.hpp"
 #include "noelle/core/AccumulatorOpInfo.hpp"
-#include "SCCDAG.hpp"
-#include "SCC.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCAttrs.hpp"
 #include "LoopsSummary.hpp"
 #include "InductionVariables.hpp"

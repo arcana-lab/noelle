@@ -18,7 +18,7 @@
 #include <set>
 #include <optional>
 
-#include "Assumptions.h"
+#include "noelle/core/Assumptions.hpp"
 
 using namespace std;
 using namespace llvm;

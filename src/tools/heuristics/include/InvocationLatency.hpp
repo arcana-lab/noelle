@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "SCC.hpp"
+#include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"
 #include "noelle/core/Hot.hpp"

@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "PDGAnalysis.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
 
 namespace llvm::noelle {
 

@@ -13,7 +13,7 @@
 
 #include "SystemHeaders.hpp"
 
-#include "PDG.hpp"
+#include "noelle/core/PDG.hpp"
 #include "LoopCarriedDependencies.hpp"
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
 #include "LoopsSummary.hpp"

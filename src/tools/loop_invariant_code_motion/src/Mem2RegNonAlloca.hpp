@@ -15,9 +15,9 @@
 #include "Invariants.hpp"
 #include "noelle/core/Noelle.hpp"
 
-#include "PDGPrinter.hpp"
-#include "SubCFGs.hpp"
-#include "SCCDAG.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/SubCFGs.hpp"
+#include "noelle/core/SCCDAG.hpp"
 
 namespace llvm::noelle {
 

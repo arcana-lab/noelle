@@ -11,10 +11,9 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-
-#include "PDG.hpp"
 #include "LoopsSummary.hpp"
-#include "SCCDAG.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"
 
 namespace llvm::noelle {

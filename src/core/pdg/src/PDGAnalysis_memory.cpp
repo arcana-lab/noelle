@@ -10,8 +10,8 @@
  */
 #include "SystemHeaders.hpp"
 #include "TalkDown.hpp"
-#include "PDGPrinter.hpp"
-#include "PDGAnalysis.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
 #include "IntegrationWithSVF.hpp"
 #include "Utils.hpp"
 

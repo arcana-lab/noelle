@@ -12,7 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "InductionVariables.hpp"
-#include "SCC.hpp"
+#include "noelle/core/SCC.hpp"
 
 namespace llvm::noelle {
 

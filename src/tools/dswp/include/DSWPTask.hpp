@@ -12,8 +12,8 @@
 
 #include "SystemHeaders.hpp"
 #include "Task.hpp"
-#include "PDG.hpp"
-#include "SCC.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/SCC.hpp"
 
 using namespace std;
 

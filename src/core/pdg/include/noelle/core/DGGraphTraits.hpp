@@ -10,11 +10,11 @@
  */
 #pragma once
 
-#include "DGBase.hpp"
-#include "SCC.hpp"
-#include "PDG.hpp"
-#include "SCCDAG.hpp"
-#include "SubCFGs.hpp"
+#include "noelle/core/DGBase.hpp"
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/SubCFGs.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

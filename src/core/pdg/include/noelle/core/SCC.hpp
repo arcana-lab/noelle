@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "DGBase.hpp"
+#include "noelle/core/DGBase.hpp"
 
 namespace llvm::noelle {
 

@@ -12,11 +12,11 @@
 
 #include "SystemHeaders.hpp"
 
-#include "DGBase.hpp"
-#include "DGGraphTraits.hpp"
-#include "PDG.hpp"
-#include "PDGAnalysis.hpp"
-#include "SCCDAG.hpp"
+#include "noelle/core/DGBase.hpp"
+#include "noelle/core/DGGraphTraits.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/Noelle.hpp"
 #include <fstream>

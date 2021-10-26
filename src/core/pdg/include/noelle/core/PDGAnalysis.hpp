@@ -11,11 +11,11 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "PDG.hpp"
 #include "AllocAA.hpp"
-#include "PDGPrinter.hpp"
 #include "TalkDown.hpp"
+#include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/DataFlow.hpp"
+#include "noelle/core/PDG.hpp"
 #include "CallGraph.hpp"
 
 namespace llvm::noelle {

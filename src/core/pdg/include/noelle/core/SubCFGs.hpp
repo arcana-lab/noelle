@@ -19,7 +19,7 @@
 #include "llvm/ADT/iterator_range.h"
 #include <set>
 
-#include "DGBase.hpp"
+#include "noelle/core/DGBase.hpp"
 
 using namespace std;
 using namespace llvm;

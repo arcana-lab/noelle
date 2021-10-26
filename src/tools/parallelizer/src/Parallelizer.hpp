@@ -31,9 +31,9 @@
 
 #include "SystemHeaders.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
-#include "PDG.hpp"
-#include "SCC.hpp"
-#include "SCCDAG.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/Noelle.hpp"
 #include "HeuristicsPass.hpp"
 #include "DSWP.hpp"

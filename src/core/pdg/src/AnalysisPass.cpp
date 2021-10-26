@@ -18,10 +18,9 @@
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/PostDominators.h"
-
 #include "llvm/ADT/iterator_range.h"
 
-#include "../include/PDGAnalysis.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

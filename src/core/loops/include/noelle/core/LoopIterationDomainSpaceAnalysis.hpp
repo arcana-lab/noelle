@@ -11,9 +11,9 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "SCCDAG.hpp"
-#include "SCC.hpp"
 #include "LoopsSummary.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/SCC.hpp"
 #include "InductionVariables.hpp"
 #include "ScalarEvolutionDelinearization.hpp"
 #include "LoopGoverningIVAttribution.hpp"

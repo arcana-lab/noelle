@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "PDG.hpp"
+#include "noelle/core/PDG.hpp"
 #include "LoopsSummary.hpp"
 
 namespace llvm::noelle {
