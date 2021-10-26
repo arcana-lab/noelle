@@ -11,9 +11,9 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "CallGraphNode.hpp"
-#include "CallGraphEdge.hpp"
-#include "SCCCAG.hpp"
+#include "noelle/core/CallGraphNode.hpp"
+#include "noelle/core/CallGraphEdge.hpp"
+#include "noelle/core/SCCCAG.hpp"
 
 namespace llvm::noelle {
   class SCCCAG;

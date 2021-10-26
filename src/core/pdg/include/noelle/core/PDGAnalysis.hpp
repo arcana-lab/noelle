@@ -16,7 +16,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/PDG.hpp"
-#include "CallGraph.hpp"
+#include "noelle/core/CallGraph.hpp"
 
 namespace llvm::noelle {
   enum class PDGVerbosity { Disabled, Minimal, Maximal, MaximalAndPDG };

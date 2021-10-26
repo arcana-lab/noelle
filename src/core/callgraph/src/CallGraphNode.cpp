@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "CallGraphNode.hpp"
+#include "noelle/core/CallGraphNode.hpp"
 
 namespace llvm::noelle {
 

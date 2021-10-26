@@ -8,7 +8,7 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "CleanMetadata.hpp"
+#include "noelle/core/CleanMetadata.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -21,7 +21,7 @@ CleanMetadata::CleanMetadata()
 }
 
 void CleanMetadata::cleanPDGMetadata(Module &M) {
-  errs() << "Clean PDG Metadata\n";
+  errs() << "noelle/core/Clean PDG Metadata\n";
 
   for (auto &F : M) {
     if (F.hasMetadata("noelle.pdg.args.id")) {
@@ -48,7 +48,7 @@ void CleanMetadata::cleanPDGMetadata(Module &M) {
 }
       
 void CleanMetadata::cleanProfMetadata (Module &M){
-  errs() << "Clean profiler metadata\n";
+  errs() << "noelle/core/Clean profiler metadata\n";
 
   for (auto &F : M) {
     if (F.hasMetadata("prof")) {

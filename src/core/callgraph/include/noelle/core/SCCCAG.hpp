@@ -11,8 +11,8 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "CallGraph.hpp"
-#include "CallGraphTraits.hpp"
+#include "noelle/core/CallGraph.hpp"
+#include "noelle/core/CallGraphTraits.hpp"
 
 namespace llvm::noelle {
   class CallGraph;

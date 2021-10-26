@@ -11,11 +11,11 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/CallGraph.hpp
-  include/CallGraphNode.hpp
-  include/CallGraphEdge.hpp
-  include/CallGraphTraits.hpp
-  include/SCCCAG.hpp
+  include/noelle/core/CallGraph.hpp
+  include/noelle/core/CallGraphNode.hpp
+  include/noelle/core/CallGraphEdge.hpp
+  include/noelle/core/CallGraphTraits.hpp
+  include/noelle/core/SCCCAG.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

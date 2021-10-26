@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/CleanMetadata.hpp 
+  include/noelle/core/CleanMetadata.hpp 
   DESTINATION 
-  include
+  include/noelle/core
   )
