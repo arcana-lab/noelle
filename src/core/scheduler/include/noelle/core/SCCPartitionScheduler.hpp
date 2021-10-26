@@ -11,9 +11,9 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
 #include "DominatorSummary.hpp"
-#include "DataFlowResult.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/DataFlowResult.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"
 
 namespace llvm::noelle {

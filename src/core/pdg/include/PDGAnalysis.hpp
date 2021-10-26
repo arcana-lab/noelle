@@ -15,7 +15,7 @@
 #include "AllocAA.hpp"
 #include "PDGPrinter.hpp"
 #include "TalkDown.hpp"
-#include "DataFlow.hpp"
+#include "noelle/core/DataFlow.hpp"
 #include "CallGraph.hpp"
 
 namespace llvm::noelle {

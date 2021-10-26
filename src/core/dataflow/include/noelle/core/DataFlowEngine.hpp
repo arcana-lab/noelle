@@ -12,7 +12,7 @@
 
 #include "SystemHeaders.hpp"
 
-#include "DataFlowResult.hpp"
+#include "noelle/core/DataFlowResult.hpp"
 
 namespace llvm::noelle {
 

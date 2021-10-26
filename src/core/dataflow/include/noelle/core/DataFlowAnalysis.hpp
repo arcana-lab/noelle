@@ -12,6 +12,23 @@
 
 #include "SystemHeaders.hpp"
 
-#include "DataFlowResult.hpp"
-#include "DataFlowEngine.hpp"
-#include "DataFlowAnalysis.hpp"
+#include "noelle/core/DataFlowResult.hpp"
+
+namespace llvm::noelle {
+
+  class DataFlowAnalysis {
+    public:
+
+      /*
+       * Methods
+       */
+      DataFlowAnalysis ();
+
+      DataFlowResult * runReachableAnalysis (Function *f);
+
+      DataFlowResult * runReachableAnalysis (Function *f, std::function<bool (Instruction *i)> filter);
+
+      DataFlowResult * getFullSets (Function *f);
+  };
+
+}

@@ -11,10 +11,10 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/DataFlow.hpp 
-  include/DataFlowAnalysis.hpp 
-  include/DataFlowEngine.hpp 
-  include/DataFlowResult.hpp 
+  include/noelle/core/DataFlow.hpp 
+  include/noelle/core/DataFlowAnalysis.hpp 
+  include/noelle/core/DataFlowEngine.hpp 
+  include/noelle/core/DataFlowResult.hpp 
   DESTINATION 
-  include
+  include/noelle/core
   )
