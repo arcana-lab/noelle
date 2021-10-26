@@ -24,7 +24,7 @@
 #include "TestSuite.hpp"
 #include "LoopsSummary.hpp"
 #include "DominatorSummary.hpp"
-#include "ControlFlowEquivalence.hpp"
+#include "noelle/core/ControlFlowEquivalence.hpp"
 
 #include <sstream>
 #include <vector>

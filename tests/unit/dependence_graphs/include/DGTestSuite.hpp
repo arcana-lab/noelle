@@ -15,11 +15,11 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 
-#include "PDGPrinter.hpp"
-#include "PDG.hpp"
-#include "SCC.hpp"
-#include "SCCDAG.hpp"
-#include "PDGAnalysis.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
 #include "TestSuite.hpp"
 
 #include <sstream>
