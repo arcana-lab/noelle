@@ -14,10 +14,10 @@
 #include "ScalarEvolutionReferencer.hpp"
 #include "SystemHeaders.hpp"
 #include "LoopsSummary.hpp"
-#include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/SCC.hpp"
 #include "LoopEnvironment.hpp"
 #include "DominatorSummary.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/SCC.hpp"
 #include "noelle/core/Invariants.hpp"
 
 namespace llvm::noelle {

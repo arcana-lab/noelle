@@ -11,8 +11,8 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "InductionVariables.hpp"
 #include "noelle/core/SCC.hpp"
+#include "noelle/core/InductionVariables.hpp"
 
 namespace llvm::noelle {
 

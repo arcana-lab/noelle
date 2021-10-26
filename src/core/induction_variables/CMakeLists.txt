@@ -11,9 +11,9 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/InductionVariables.hpp
-  include/LoopGoverningIVAttribution.hpp
-  include/IVStepperUtility.hpp
+  include/noelle/core/InductionVariables.hpp
+  include/noelle/core/LoopGoverningIVAttribution.hpp
+  include/noelle/core/IVStepperUtility.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

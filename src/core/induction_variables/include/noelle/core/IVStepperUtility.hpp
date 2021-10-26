@@ -11,8 +11,8 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "InductionVariables.hpp"
-#include "LoopGoverningIVAttribution.hpp"
+#include "noelle/core/InductionVariables.hpp"
+#include "noelle/core/LoopGoverningIVAttribution.hpp"
 
 namespace llvm::noelle {
 

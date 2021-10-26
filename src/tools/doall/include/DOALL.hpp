@@ -19,7 +19,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "HeuristicsPass.hpp"
 #include "ParallelizationTechnique.hpp"
-#include "IVStepperUtility.hpp"
+#include "noelle/core/IVStepperUtility.hpp"
 
 namespace llvm::noelle {
 

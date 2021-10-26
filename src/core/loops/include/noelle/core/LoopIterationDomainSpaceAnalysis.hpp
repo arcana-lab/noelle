@@ -14,10 +14,10 @@
 #include "LoopsSummary.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
-#include "InductionVariables.hpp"
+#include "noelle/core/InductionVariables.hpp"
 #include "ScalarEvolutionDelinearization.hpp"
-#include "LoopGoverningIVAttribution.hpp"
-#include "IVStepperUtility.hpp"
+#include "noelle/core/LoopGoverningIVAttribution.hpp"
+#include "noelle/core/IVStepperUtility.hpp"
 
 namespace llvm::noelle {
 
