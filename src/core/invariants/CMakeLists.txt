@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/Invariants.hpp
+  include/noelle/core/Invariants.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

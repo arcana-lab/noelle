@@ -15,7 +15,7 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "LoopsSummary.hpp"
 #include "InductionVariables.hpp"
-#include "Invariants.hpp"
+#include "noelle/core/Invariants.hpp"
 #include "LoopGoverningIVAttribution.hpp"
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"

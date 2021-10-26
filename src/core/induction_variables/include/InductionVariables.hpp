@@ -18,7 +18,7 @@
 #include "noelle/core/SCC.hpp"
 #include "LoopEnvironment.hpp"
 #include "DominatorSummary.hpp"
-#include "Invariants.hpp"
+#include "noelle/core/Invariants.hpp"
 
 namespace llvm::noelle {
 
