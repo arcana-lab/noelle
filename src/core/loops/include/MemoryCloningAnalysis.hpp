@@ -27,7 +27,7 @@ namespace llvm::noelle {
     public:
       MemoryCloningAnalysis (LoopStructure *loop, DominatorSummary &DS, PDG *ldg);
 
-      const ClonableMemoryLocation * getClonableMemoryLocationFor (Instruction *I) const ;
+      const std::unordered_set<ClonableMemoryLocation *> getClonableMemoryLocationsFor (Instruction *I) const ;
 
       std::unordered_set<ClonableMemoryLocation *> getClonableMemoryLocations (void) const ;
 

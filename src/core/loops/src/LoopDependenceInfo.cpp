@@ -376,21 +376,39 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
       continue;
     }
 
-    auto locationProducer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(producer);
-    auto locationConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(consumer);
-    if (!locationProducer || !locationConsumer) {
+    auto locationsProducer = this->memoryCloningAnalysis->getClonableMemoryLocationsFor(producer);
+    auto locationsConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationsFor(consumer);
+    if (locationsProducer.empty() || locationsConsumer.empty()) {
       continue;
     }
 
-    bool isRAW = edge->isRAWDependence()
-      && locationProducer->isInstructionStoringLocation(producer)
-      && locationConsumer->isInstructionLoadingLocation(consumer);
-    bool isWAR = edge->isWARDependence()
-      && locationConsumer->isInstructionLoadingLocation(producer)
-      && locationProducer->isInstructionStoringLocation(consumer);
-    bool isWAW = edge->isWAWDependence()
-      && locationConsumer->isInstructionStoringLocation(producer)
-      && locationProducer->isInstructionStoringLocation(consumer);
+    bool isRAW = false;
+    for (auto locationP : locationsProducer) {
+      for (auto locationC : locationsConsumer) {
+        if (edge->isRAWDependence() && 
+            locationP->isInstructionStoringLocation(producer) && 
+            locationC->isInstructionLoadingLocation(consumer))
+          isRAW = true;
+      }
+    }
+    bool isWAR = false;
+    for (auto locationP : locationsProducer) {
+      for (auto locationC : locationsConsumer) {
+        if (edge->isWARDependence() && 
+            locationP->isInstructionLoadingLocation(producer) && 
+            locationC->isInstructionStoringLocation(consumer))
+          isWAR = true;
+      }
+    }
+    bool isWAW = false;
+    for (auto locationP : locationsProducer) {
+      for (auto locationC : locationsConsumer) {
+        if (edge->isWAWDependence() && 
+            locationP->isInstructionStoringLocation(producer) && 
+            locationC->isInstructionStoringLocation(consumer))
+          isWAW = true;
+      }
+    }
 
     if (!isRAW && !isWAR && !isWAW) {
       continue;
