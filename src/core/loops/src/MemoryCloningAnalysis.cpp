@@ -92,36 +92,36 @@ std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClonableM
   return locations;
 }
 
-const ClonableMemoryLocation * MemoryCloningAnalysis::getClonableMemoryLocationFor (Instruction *I) const {
-
+const std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClonableMemoryLocationsFor (Instruction *I) const {
+  std::unordered_set<ClonableMemoryLocation *> locs = {};
   /*
    * TODO: Determine if it is worth mapping from instructions to locations
    */
   for (auto &location : this->clonableMemoryLocations) {
     if (location->getAllocation() == I) {
-      return location.get();
+      locs.insert(location.get());
     }
     if (location->isInstructionCastOrGEPOfLocation(I)) {
-      return location.get();
+      locs.insert(location.get());
     }
     if (location->isInstructionLoadingLocation(I)) {
-      return location.get();
+      locs.insert(location.get());
     }
     if (location->isInstructionStoringLocation(I)) {
-      return location.get();
+      locs.insert(location.get());
     }
     if (auto callInst = dyn_cast<CallInst>(I)){
       if (callInst->isLifetimeStartOrEnd()){
         auto ptr = callInst->getArgOperand(1);
         auto loc = location.get();
         if (loc->mustAliasAMemoryLocationWithinObject(ptr)){
-          return loc;
+          locs.insert(loc);
         }
       }
     }
   }
 
-  return nullptr;
+  return locs;
 }
 
 std::unordered_set<Instruction *> ClonableMemoryLocation::getInstructionsUsingLocationOutsideLoop (void) const {
@@ -399,8 +399,11 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
          */
         auto isMemCpy = ClonableMemoryLocation::isMemCpyInstrinsicCall(call);
         auto isUseTheDestinationOp = (call->getNumArgOperands() == 4) && (call->getArgOperand(0) == I);
+        auto isUseTheSourceOp = (call->getNumArgOperands() == 4) && (call->getArgOperand(1) == I);
         if (isMemCpy && isUseTheDestinationOp) {
           storingInstructions.insert(call);
+        } else if (isMemCpy && isUseTheSourceOp) {
+          loadInstructions.insert(call);
         } else {
           this->nonStoringInstructions.insert(call);
         }
