@@ -8,7 +8,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
 # Install
 install(
   FILES
-  include/Transformations.hpp
+  include/noelle/core/Transformations.hpp
   DESTINATION 
-  include
+  include/noelle/core
   )

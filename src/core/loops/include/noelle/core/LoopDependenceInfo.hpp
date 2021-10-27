@@ -19,7 +19,7 @@
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
 #include "LoopEnvironment.hpp"
 #include "EnvBuilder.hpp"
-#include "Transformations.hpp"
+#include "noelle/core/Transformations.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
 
