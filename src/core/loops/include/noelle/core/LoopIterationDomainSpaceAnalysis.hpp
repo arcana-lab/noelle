@@ -10,12 +10,12 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/InductionVariables.hpp"
-#include "ScalarEvolutionDelinearization.hpp"
+#include "noelle/core/ScalarEvolutionDelinearization.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
 #include "noelle/core/IVStepperUtility.hpp"
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SystemHeaders.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/UniqueIRConstants.hpp"
 #include "noelle/core/UniqueIRMarkerReader.hpp"
 

@@ -10,9 +10,9 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopsSummary.hpp"
-#include "DominatorSummary.hpp"
+#include "noelle/core/DominatorSummary.hpp"
 #include <memory>
 
 namespace llvm::noelle {

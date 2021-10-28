@@ -11,11 +11,11 @@
 #pragma once
 
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
-#include "ScalarEvolutionReferencer.hpp"
-#include "SystemHeaders.hpp"
+#include "noelle/core/ScalarEvolutionReferencer.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
-#include "DominatorSummary.hpp"
+#include "noelle/core/DominatorSummary.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/Invariants.hpp"

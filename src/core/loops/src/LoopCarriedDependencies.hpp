@@ -10,10 +10,10 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 #include "Assumptions.h"
 #include "noelle/core/LoopsSummary.hpp"
-#include "DominatorSummary.hpp"
+#include "noelle/core/DominatorSummary.hpp"
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"

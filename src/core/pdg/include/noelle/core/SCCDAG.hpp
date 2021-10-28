@@ -10,8 +10,8 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
-#include "BitMatrix.hpp"
+#include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/BitMatrix.hpp"
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/PDG.hpp"

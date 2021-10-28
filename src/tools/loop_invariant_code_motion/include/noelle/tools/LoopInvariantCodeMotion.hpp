@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SubCFGs.hpp"

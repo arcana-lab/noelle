@@ -10,8 +10,8 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
-#include "Queue.hpp"
+#include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/Queue.hpp"
 #include "noelle/core/StayConnectedNestedLoopForest.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"

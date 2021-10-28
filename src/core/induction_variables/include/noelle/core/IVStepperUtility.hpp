@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
 

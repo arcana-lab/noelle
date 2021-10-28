@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraphNode.hpp"
 #include "noelle/core/CallGraphEdge.hpp"
 #include "noelle/core/SCCCAG.hpp"
