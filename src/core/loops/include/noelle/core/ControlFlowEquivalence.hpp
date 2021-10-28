@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "LoopsSummary.hpp"
+#include "noelle/core/LoopsSummary.hpp"
 #include "DominatorSummary.hpp"
 #include <memory>
 

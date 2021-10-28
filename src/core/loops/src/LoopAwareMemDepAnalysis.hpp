@@ -16,7 +16,7 @@
 #include "noelle/core/PDG.hpp"
 #include "LoopCarriedDependencies.hpp"
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
-#include "LoopsSummary.hpp"
+#include "noelle/core/LoopsSummary.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

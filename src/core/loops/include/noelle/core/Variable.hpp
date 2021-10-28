@@ -11,8 +11,8 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "LoopStructure.hpp"
-#include "LoopsSummary.hpp"
+#include "noelle/core/LoopStructure.hpp"
+#include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"

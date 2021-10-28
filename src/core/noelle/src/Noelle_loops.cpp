@@ -11,7 +11,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Architecture.hpp"
-#include "StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/StayConnectedNestedLoopForest.hpp"
 #include "noelle/core/HotProfiler.hpp"
 
 namespace llvm::noelle {

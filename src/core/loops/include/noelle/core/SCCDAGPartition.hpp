@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "LoopStructure.hpp"
+#include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/DGGraphTraits.hpp"

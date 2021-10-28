@@ -11,7 +11,7 @@
 #pragma once
 
 #include "SystemHeaders.hpp"
-#include "LoopStructure.hpp"
+#include "noelle/core/LoopStructure.hpp"
 
 namespace llvm::noelle {
 

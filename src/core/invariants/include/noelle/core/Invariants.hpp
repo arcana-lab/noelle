@@ -11,7 +11,7 @@
 #pragma once
 
 #include "noelle/core/PDG.hpp"
-#include "LoopsSummary.hpp"
+#include "noelle/core/LoopsSummary.hpp"
 
 namespace llvm::noelle {
 

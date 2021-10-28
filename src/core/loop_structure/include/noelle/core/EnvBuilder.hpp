@@ -11,7 +11,7 @@
 #pragma once;
 
 #include "SystemHeaders.hpp"
-#include "LoopEnvironment.hpp"
+#include "noelle/core/LoopEnvironment.hpp"
 
 namespace llvm::noelle {
 

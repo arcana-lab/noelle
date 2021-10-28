@@ -15,10 +15,10 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCAttrs.hpp"
-#include "LoopsSummary.hpp"
+#include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
-#include "LoopEnvironment.hpp"
+#include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/Variable.hpp"
 #include "noelle/core/MemoryCloningAnalysis.hpp"
 

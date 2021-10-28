@@ -12,7 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "Assumptions.h"
-#include "LoopsSummary.hpp"
+#include "noelle/core/LoopsSummary.hpp"
 #include "DominatorSummary.hpp"
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/SCCDAG.hpp"

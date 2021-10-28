@@ -12,7 +12,7 @@
 
 #include "SystemHeaders.hpp"
 #include "Queue.hpp"
-#include "StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/StayConnectedNestedLoopForest.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
