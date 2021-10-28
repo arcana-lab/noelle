@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/Architecture.hpp 
+  include/noelle/core/Architecture.hpp 
   DESTINATION 
-  include
+  include/noelle/core
   )

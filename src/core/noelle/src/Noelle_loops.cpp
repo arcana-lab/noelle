@@ -10,7 +10,7 @@
  */
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
-#include "Architecture.hpp"
+#include "noelle/core/Architecture.hpp"
 #include "StayConnectedNestedLoopForest.hpp"
 #include "noelle/core/HotProfiler.hpp"
 
