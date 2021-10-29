@@ -10,7 +10,7 @@
  */
 #include "HELIX.hpp"
 #include "SequentialSegment.hpp"
-#include "DataFlow.hpp"
+#include "noelle/core/DataFlow.hpp"
 
 namespace llvm::noelle {
 

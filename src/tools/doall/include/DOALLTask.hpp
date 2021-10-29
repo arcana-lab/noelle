@@ -11,7 +11,7 @@
 #pragma once
 
 #include "Task.hpp"
-#include "SCCDAGAttrs.hpp"
+#include "noelle/core/SCCDAGAttrs.hpp"
 
 namespace llvm::noelle {
 

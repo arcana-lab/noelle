@@ -10,14 +10,14 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
-#include "LoopDependenceInfo.hpp"
-#include "Invariants.hpp"
-#include "Noelle.hpp"
+#include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/Invariants.hpp"
+#include "noelle/core/Noelle.hpp"
 
-#include "PDGPrinter.hpp"
-#include "SubCFGs.hpp"
-#include "SCCDAG.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/SubCFGs.hpp"
+#include "noelle/core/SCCDAG.hpp"
 
 namespace llvm::noelle {
 

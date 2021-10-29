@@ -65,9 +65,7 @@ bool Parallelizer::runOnModule (Module &M) {
       verbosity
   };
   DOALL doall{
-    M,
-      *profiles,
-      verbosity
+    noelle
   };
   HELIX helix{
     M,

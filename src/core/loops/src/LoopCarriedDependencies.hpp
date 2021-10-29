@@ -10,13 +10,13 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 #include "Assumptions.h"
-#include "LoopsSummary.hpp"
-#include "DominatorSummary.hpp"
-#include "DGBase.hpp"
-#include "SCCDAG.hpp"
-#include "SCC.hpp"
+#include "noelle/core/LoopsSummary.hpp"
+#include "noelle/core/DominatorSummary.hpp"
+#include "noelle/core/DGBase.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/SCC.hpp"
 
 namespace llvm::noelle {
 

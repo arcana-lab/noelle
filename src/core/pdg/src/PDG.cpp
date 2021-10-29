@@ -14,12 +14,11 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Support/raw_ostream.h"
 #include <set>
 #include <queue>
 
-#include "llvm/Support/raw_ostream.h"
-
-#include "../include/PDG.hpp"
+#include "noelle/core/PDG.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

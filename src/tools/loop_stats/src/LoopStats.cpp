@@ -10,7 +10,7 @@
  */
 #include "LoopStats.hpp"
 
-#include "PDGPrinter.hpp"
+#include "noelle/core/PDGPrinter.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

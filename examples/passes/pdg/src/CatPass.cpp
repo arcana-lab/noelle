@@ -5,7 +5,7 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include <algorithm>
 
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 
 using namespace llvm::noelle ;
 

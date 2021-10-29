@@ -1,7 +1,6 @@
-#include <IDToValueMapper.hpp>
-
-#include "UniqueIRMarkerReader.hpp"
-#include "IDToValueMapper.hpp"
+#include "noelle/core/IDToValueMapper.hpp"
+#include "noelle/core/UniqueIRMarkerReader.hpp"
+#include "noelle/core/IDToValueMapper.hpp"
 
 using std::addressof;
 

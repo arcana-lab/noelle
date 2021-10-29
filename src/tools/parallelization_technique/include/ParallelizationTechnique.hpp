@@ -14,13 +14,13 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
-#include "Noelle.hpp"
-#include "LoopDependenceInfo.hpp"
+#include "noelle/core/Noelle.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 #include "Heuristics.hpp"
 #include "Task.hpp"
-#include "Hot.hpp"
-#include "PDGPrinter.hpp"
-#include "SubCFGs.hpp"
+#include "noelle/core/Hot.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/SubCFGs.hpp"
 
 namespace llvm::noelle {
 

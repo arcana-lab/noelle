@@ -10,7 +10,7 @@
  */
 #include "HELIX.hpp"
 #include "llvm/IR/CFG.h"
-#include "SCCPartitionScheduler.hpp"
+#include "noelle/core/SCCPartitionScheduler.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

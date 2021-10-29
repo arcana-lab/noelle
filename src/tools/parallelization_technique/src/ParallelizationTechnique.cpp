@@ -33,7 +33,11 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   std::set<int> simpleVars,
   std::set<int> reducableVars
 ) {
-  if (tasks.size() == 0) {
+
+  /*
+   * Check the state of the parallelization technique 'this'.
+   */
+  if (this->tasks.size() == 0) {
     errs() << "ERROR: Parallelization technique tasks haven't been created yet!\n"
       << "\tTheir environment builders can't be initialized until they are.\n";
     abort();
@@ -51,7 +55,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   this->envBuilder->createEnvVariables(varTypes, simpleVars, reducableVars, this->numTaskInstances);
 
   this->envBuilder->createEnvUsers(tasks.size());
-  for (auto i = 0; i < tasks.size(); ++i) {
+  for (auto i = 0; i < this->tasks.size(); ++i) {
     auto task = tasks[i];
     auto envUser = envBuilder->getUser(i);
     auto entryBlock = task->getEntry();
@@ -645,12 +649,15 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
    * Fetch the requested task.
    */
   auto task = this->tasks[taskIndex];
+  assert(task != nullptr);
 
   /*
    * Create a builder that points to the entry point of the function executed by the task.
    */
   auto entryBlock = task->getEntry();
+  assert(entryBlock != nullptr);
   auto entryTerminator = entryBlock->getTerminator();
+  assert(entryTerminator != nullptr);
   IRBuilder<> entryBuilder(entryTerminator);
 
   auto &taskFunction = *task->getTaskBody();

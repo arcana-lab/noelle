@@ -14,35 +14,36 @@
 namespace llvm::noelle{
 
 DOALL::DOALL (
-  Module &module,
-  Hot &p,
-  Verbosity v
+  Noelle &noelle
 ) :
-  ParallelizationTechnique{module, p, v}
+    ParallelizationTechnique{*noelle.getProgram(), *noelle.getProfiles(), noelle.getVerbosity()}
+  , enabled{true}
+  , taskDispatcher{nullptr}
+  , n{noelle}
   {
-
-  /*
-   * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
-   */
-  this->taskDispatcher = this->module.getFunction("NOELLE_DOALLDispatcher");
-  if (this->taskDispatcher == nullptr){
-    errs() << "NOELLE: ERROR = function NOELLE_DOALLDispatcher couldn't be found\n";
-    abort();
-  }
 
   /*
    * Define the signature of the task, which will be invoked by the DOALL dispatcher.
    */
-  auto &cxt = module.getContext();
-  auto int8 = IntegerType::get(cxt, 8);
-  auto int64 = IntegerType::get(cxt, 64);
+  auto tm = this->n.getTypesManager();
   auto funcArgTypes = ArrayRef<Type*>({
-    PointerType::getUnqual(int8),
-    int64,
-    int64,
-    int64
+    tm->getVoidPointerType(),
+    tm->getIntegerType(64),
+    tm->getIntegerType(64),
+    tm->getIntegerType(64)
   });
-  this->taskSignature = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
+  this->taskSignature = FunctionType::get(tm->getVoidType(), funcArgTypes, false);
+
+  /*
+   * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
+   */
+  this->taskDispatcher = this->n.getProgram()->getFunction("NOELLE_DOALLDispatcher");
+  if (this->taskDispatcher == nullptr){
+    this->enabled = false;
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "DOALL: WARNING: function NOELLE_DOALLDispatcher couldn't be found. DOALL is disabled\n";
+    }
+  }
 
   return ;
 }
@@ -54,6 +55,13 @@ bool DOALL::canBeAppliedToLoop (
 ) const {
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Checking if the loop is DOALL\n";
+  }
+
+  /*
+   * Check if DOALL is enabled.
+   */
+  if (!this->enabled){
+    return false;
   }
 
   /*
@@ -201,6 +209,13 @@ bool DOALL::apply (
 ) {
 
   /*
+   * Check if DOALL is enabled.
+   */
+  if (!this->enabled){
+    return false;
+  }
+
+  /*
    * Fetch the headers.
    */
   auto loopStructure = LDI->getLoopStructure();
@@ -280,7 +295,19 @@ bool DOALL::apply (
     errs() << "DOALL:  Adjusted data flow\n";
   }
 
+  /*
+   * Handle the reduction variables.
+   */
   this->setReducableVariablesToBeginAtIdentityValue(LDI, 0);
+
+  /*
+   * Add the jump to start the loop from within the task.
+   */
+  this->addJumpToLoop(LDI, chunkerTask);
+
+  /*
+   * Perform the iteration-chunking optimization
+   */
   this->rewireLoopToIterateChunks(LDI);
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DOALL:  Rewired induction variables and reducible variables\n";
@@ -379,7 +406,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
 }
 
 Value * DOALL::fetchClone (Value *original) const {
-  auto task = (DOALLTask *)this->tasks[0];
+  auto task = this->tasks[0];
   if (isa<ConstantData>(original)) return original;
 
   if (task->isAnOriginalLiveIn(original)){
@@ -390,6 +417,24 @@ Value * DOALL::fetchClone (Value *original) const {
   auto iClone = task->getCloneOfOriginalInstruction(cast<Instruction>(original));
   assert(iClone != nullptr);
   return iClone;
+}
+
+void DOALL::addJumpToLoop (LoopDependenceInfo *LDI, Task *t){
+
+  /*
+   * Fetch the header within the task.
+   */
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
+  auto headerClone = t->getCloneOfOriginalBasicBlock(loopHeader);
+
+  /*
+   * Add a jump to the loop within the task.
+   */
+  IRBuilder<> entryBuilder(t->getEntry());
+  entryBuilder.CreateBr(headerClone);
+
+  return ;
 }
 
 }

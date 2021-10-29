@@ -8,13 +8,12 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "CleanMetadata.hpp"
+#include "noelle/core/CleanMetadata.hpp"
 
-static cl::opt<bool> CleanPDGMetadata("clean-pdg-metadata", cl::init(false), cl::desc("Clean metadata of pdg"));
-static cl::opt<bool> CleanProfileMetadata("clean-prof-metadata", cl::init(false), cl::desc("Clean metadata of profiles"));
+namespace llvm::noelle {
 
-using namespace llvm;
-using namespace llvm::noelle;
+static cl::opt<bool> CleanPDGMetadata("clean-pdg-metadata", cl::init(false), cl::desc("noelle/core/Clean metadata of pdg"));
+static cl::opt<bool> CleanProfileMetadata("clean-prof-metadata", cl::init(false), cl::desc("noelle/core/Clean metadata of profiles"));
 
 bool CleanMetadata::doInitialization(Module &M) {
   this->cleanPDG = CleanPDGMetadata.getNumOccurrences() > 0 ? true : false;
@@ -41,7 +40,7 @@ bool CleanMetadata::runOnModule(Module &M) {
 
 // Next there is code to register your pass to "opt"
 char CleanMetadata::ID = 0;
-static RegisterPass<CleanMetadata> X("CleanMetadata", "Clean the metadata embeded to the bitcode");
+static RegisterPass<CleanMetadata> X("noelle/core/CleanMetadata", "noelle/core/Clean the metadata embeded to the bitcode");
 
 // Next there is code to register your pass to "clang"
 static CleanMetadata * _PassMaker = NULL;
@@ -51,3 +50,5 @@ static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
 static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
         if(!_PassMaker){ PM.add(_PassMaker = new CleanMetadata()); }}); // ** for -O0
+
+}

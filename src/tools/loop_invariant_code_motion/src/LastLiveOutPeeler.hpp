@@ -10,12 +10,12 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
-#include "Noelle.hpp"
-#include "LoopDependenceInfo.hpp"
+#include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/Noelle.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 
-#include "PDGPrinter.hpp"
-#include "SubCFGs.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/SubCFGs.hpp"
 
 namespace llvm::noelle {
 

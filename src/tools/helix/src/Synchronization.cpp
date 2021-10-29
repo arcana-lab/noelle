@@ -10,7 +10,7 @@
  */
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
-#include "Architecture.hpp"
+#include "noelle/core/Architecture.hpp"
 
 namespace llvm::noelle {
 

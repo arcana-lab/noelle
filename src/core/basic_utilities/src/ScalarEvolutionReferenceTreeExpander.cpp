@@ -3,7 +3,7 @@
  * in an attempt to NOT expand values inline but rather at some arbitrary insertion block
  */
 
-#include "ScalarEvolutionReferencer.hpp"
+#include "noelle/core/ScalarEvolutionReferencer.hpp"
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallSet.h"
