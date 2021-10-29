@@ -22,8 +22,8 @@
 #include "llvm/Support/GenericDomTree.h"
 
 #include "TestSuite.hpp"
-#include "LoopsSummary.hpp"
-#include "DominatorSummary.hpp"
+#include "noelle/core/LoopsSummary.hpp"
+#include "noelle/core/DominatorSummary.hpp"
 #include "noelle/core/ControlFlowEquivalence.hpp"
 
 #include <sstream>

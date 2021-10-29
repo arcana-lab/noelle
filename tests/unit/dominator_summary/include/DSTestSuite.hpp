@@ -19,7 +19,7 @@
 #include "llvm/Support/GenericDomTree.h"
 
 #include "TestSuite.hpp"
-#include "DominatorSummary.hpp"
+#include "noelle/core/DominatorSummary.hpp"
 
 #include <sstream>
 #include <vector>
