@@ -246,6 +246,9 @@ namespace llvm::noelle {
         DominatorSummary &DS
       );
 
+      SCCDAG * computeSCCDAGWithOnlyVariableAndControlDependences (
+        PDG *loopDG
+        );
   };
 
 }

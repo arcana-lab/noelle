@@ -126,18 +126,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Then, we compute the SCCDAG of this sub-LDG.
    * And then, we can identify IVs from this new SCCDAG.
    */
-  std::vector<Value *> loopInternals;
-  for (auto internalNode : loopDG->internalNodePairs()) {
-      loopInternals.push_back(internalNode.first);
-  }
-  std::unordered_set<DGEdge<Value> *> memDeps{};
-  for (auto currentDependence : loopDG->getSortedDependences()){
-    if (currentDependence->isMemoryDependence()){
-      memDeps.insert(currentDependence);
-    }
-  }
-  auto loopDGWithoutMemoryDeps = loopDG->createSubgraphFromValues(loopInternals, false, memDeps);
-  auto loopSCCDAGWithoutMemoryDeps = new SCCDAG(loopDGWithoutMemoryDeps);
+  auto loopSCCDAGWithoutMemoryDeps = this->computeSCCDAGWithOnlyVariableAndControlDependences(loopDG);
   this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAGWithoutMemoryDeps, *environment);
 
   /*
@@ -242,9 +231,9 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto loopStructure = liSummary.getLoopNestingTreeRoot();
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto env = LoopEnvironment(loopDG, loopExitBlocks);
-  auto preRefinedSCCDAG = SCCDAG(loopInternalDG);
   auto invManager = InvariantManager(loopStructure, loopDG);
-  auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
+  auto loopSCCDAGWithoutMemoryDeps = this->computeSCCDAGWithOnlyVariableAndControlDependences(loopInternalDG);
+  auto ivManager = InductionVariableManager(liSummary, invManager, SE, *loopSCCDAGWithoutMemoryDeps, env);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
     refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, &domainSpace);
@@ -574,6 +563,41 @@ SCCDAGAttrs * LoopDependenceInfo::getSCCManager (void) const {
       
 LoopEnvironment * LoopDependenceInfo::getEnvironment (void) const {
   return this->environment;
+}
+
+SCCDAG * LoopDependenceInfo::computeSCCDAGWithOnlyVariableAndControlDependences (
+  PDG *loopDG
+  ){
+
+  /*
+   * Compute the set of internal instructions of the loop.
+   */
+  std::vector<Value *> loopInternals;
+  for (auto internalNode : loopDG->internalNodePairs()) {
+      loopInternals.push_back(internalNode.first);
+  }
+
+  /*
+   * Collect the dependences that we want to ignore.
+   */
+  std::unordered_set<DGEdge<Value> *> memDeps{};
+  for (auto currentDependence : loopDG->getSortedDependences()){
+    if (currentDependence->isMemoryDependence()){
+      memDeps.insert(currentDependence);
+    }
+  }
+
+  /*
+   * Compute the new loop dependence graph
+   */
+  auto loopDGWithoutMemoryDeps = loopDG->createSubgraphFromValues(loopInternals, false, memDeps);
+
+  /*
+   * Compute the SCCDAG
+   */
+  auto loopSCCDAGWithoutMemoryDeps = new SCCDAG(loopDGWithoutMemoryDeps);
+
+  return loopSCCDAGWithoutMemoryDeps;
 }
 
 LoopDependenceInfo::~LoopDependenceInfo() {
