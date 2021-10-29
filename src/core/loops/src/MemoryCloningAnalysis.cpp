@@ -94,6 +94,7 @@ std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClonableM
 
 const std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClonableMemoryLocationsFor (Instruction *I) const {
   std::unordered_set<ClonableMemoryLocation *> locs = {};
+
   /*
    * TODO: Determine if it is worth mapping from instructions to locations
    */
@@ -402,8 +403,10 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
         auto isUseTheSourceOp = (call->getNumArgOperands() == 4) && (call->getArgOperand(1) == I);
         if (isMemCpy && isUseTheDestinationOp) {
           storingInstructions.insert(call);
+
         } else if (isMemCpy && isUseTheSourceOp) {
           loadInstructions.insert(call);
+
         } else {
           this->nonStoringInstructions.insert(call);
         }
