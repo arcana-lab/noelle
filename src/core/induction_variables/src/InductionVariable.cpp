@@ -20,6 +20,24 @@ InductionVariable::InductionVariable  (
   PHINode *loopEntryPHI,
   SCC &scc,
   LoopEnvironment &loopEnv,
+  ScalarEvolutionReferentialExpander &referentialExpander,
+  InductionDescriptor &ID
+) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{ID.getStartValue()},
+    stepSCEV{ID.getStep()}, computationOfStepValue{}, singleStepValue{ID.getConstIntStepValue()}, isComputedStepValueLoopInvariant{false} {
+
+  traverseCycleThroughLoopEntryPHIToGetAllIVInstructions();
+  traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
+  collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
+  deriveStepValue(LS, SE, referentialExpander, loopEnv);
+}
+
+InductionVariable::InductionVariable  (
+  LoopStructure *LS,
+  InvariantManager &IVM,
+  ScalarEvolution &SE,
+  PHINode *loopEntryPHI,
+  SCC &scc,
+  LoopEnvironment &loopEnv,
   ScalarEvolutionReferentialExpander &referentialExpander
 ) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{nullptr},
     stepSCEV{nullptr}, computationOfStepValue{}, isComputedStepValueLoopInvariant{false} {
@@ -262,9 +280,11 @@ void InductionVariable::deriveStepValue (
   /*
    * Fetch the SCEV for the step value.
    */
-  auto loopEntrySCEV = SE.getSCEV(loopEntryPHI);
-  assert(loopEntrySCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
-  this->stepSCEV = cast<SCEVAddRecExpr>(loopEntrySCEV)->getStepRecurrence(SE);
+  if (!this->stepSCEV) {
+    auto loopEntrySCEV = SE.getSCEV(loopEntryPHI);
+    assert(loopEntrySCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
+    this->stepSCEV = cast<SCEVAddRecExpr>(loopEntrySCEV)->getStepRecurrence(SE);
+  }
 
   switch (stepSCEV->getSCEVType()) {
     case SCEVTypes::scConstant:
