@@ -356,3 +356,4 @@ regression_63/LICM_3 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -n
 regression_6/LICM_3 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
 regression_7/LICM_3 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
 regression_9/LICM_3 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-helix -noelle-disable-dswp -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_6/ReductionIterations6 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-dswp -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
