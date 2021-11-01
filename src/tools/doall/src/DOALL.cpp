@@ -112,7 +112,7 @@ bool DOALL::canBeAppliedToLoop (
   auto sccManager = LDI->getSCCManager();
   if (!sccManager->areAllLiveOutValuesReducable(LDI->environment)) {
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   Some post environment value is not reducable\n";
+      errs() << "DOALL:   Some live-out values are not reducable\n";
     }
     return false;
   }
