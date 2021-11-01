@@ -117,7 +117,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Calculate various attributes on SCCs
    */
-  this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAG, *environment);
+  this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAG, *environment, *l);
   this->sccdagAttrs = new SCCDAGAttrs(enableFloatAsReal, loopDG, loopSCCDAG, this->liSummary, SE, *inductionVariables, DS);
   this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(liSummary, *this->inductionVariables, SE);
 
@@ -219,7 +219,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto env = LoopEnvironment(loopDG, loopExitBlocks);
   auto preRefinedSCCDAG = SCCDAG(loopInternalDG);
   auto invManager = InvariantManager(loopStructure, loopDG);
-  auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env);
+  auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env, *l);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
     refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, &domainSpace);
