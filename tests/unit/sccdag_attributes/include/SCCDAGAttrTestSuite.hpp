@@ -18,14 +18,14 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
-#include "PDG.hpp"
-#include "SCC.hpp"
-#include "SCCDAG.hpp"
-#include "PDGAnalysis.hpp"
-#include "PDGPrinter.hpp"
-#include "SCCDAGAttrs.hpp"
-#include "Invariants.hpp"
-#include "InductionVariables.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/SCCDAGAttrs.hpp"
+#include "noelle/core/Invariants.hpp"
+#include "noelle/core/InductionVariables.hpp"
 
 #include "TestSuite.hpp"
 

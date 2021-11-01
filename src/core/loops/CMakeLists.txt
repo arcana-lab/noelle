@@ -2,42 +2,25 @@
 cmake_minimum_required(VERSION 3.13)
 project(Loops)
 
-# Programming languages to use
-enable_language(C CXX)
-
-# Find and link with LLVM
-find_package(LLVM REQUIRED CONFIG)
-
-add_definitions(${LLVM_DEFINITIONS})
-add_definitions(
--D__STDC_LIMIT_MACROS
--D__STDC_CONSTANT_MACROS
-)
-
-set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
-
-include_directories(${LLVM_INCLUDE_DIRS})
-link_directories(${LLVM_LIBRARY_DIRS})
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
-# Prepare the pass to be included in the source tree
-list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-include(AddLLVM)
+# Dependences
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
 
 # Pass
 add_subdirectory(src)
 
 # Install
-install(PROGRAMS 
-    include/MemoryCloningAnalysis.hpp
-    include/Variable.hpp
-    include/ControlFlowEquivalence.hpp
-    include/LoopDependenceInfo.hpp
-    include/LoopIterationDomainSpaceAnalysis.hpp
-    include/SCCDAGAttrs.hpp
-    include/SCCDAGNormalizer.hpp
-    include/SCCDAGPartition.hpp
-    include/SCCAttrs.hpp
-    include/AccumulatorOpInfo.hpp
-    DESTINATION include)
+install(
+  FILES
+  include/noelle/core/MemoryCloningAnalysis.hpp
+  include/noelle/core/Variable.hpp
+  include/noelle/core/ControlFlowEquivalence.hpp
+  include/noelle/core/LoopDependenceInfo.hpp
+  include/noelle/core/LoopIterationDomainSpaceAnalysis.hpp
+  include/noelle/core/SCCDAGAttrs.hpp
+  include/noelle/core/SCCDAGNormalizer.hpp
+  include/noelle/core/SCCDAGPartition.hpp
+  include/noelle/core/SCCAttrs.hpp
+  include/noelle/core/AccumulatorOpInfo.hpp
+  DESTINATION 
+  include/noelle/core
+  )

@@ -8,11 +8,11 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "PDG.hpp"
-#include "PDGAnalysis.hpp"
-#include "SCCDAG.hpp"
-#include "Architecture.hpp"
-#include "LoopDependenceInfo.hpp"
+#include "noelle/core/Architecture.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
 namespace llvm::noelle {
@@ -110,9 +110,35 @@ LoopDependenceInfo::LoopDependenceInfo(
 
   /*
    * Create the invariant manager.
+   *
+   * This step identifies instructions that are loop invariants.
    */
   auto topLoop = this->liSummary.getLoopNestingTreeRoot();
   this->invariantManager = new InvariantManager(topLoop, this->loopDG);
+
+  /*
+   * Create the induction variable manager.
+   *
+   * This step identifies IVs.
+   *
+   * First, we need to compute the LDG that doesn't include memory dependences.
+   * Memory dependences don't matter for the IV detection.
+   * Then, we compute the SCCDAG of this sub-LDG.
+   * And then, we can identify IVs from this new SCCDAG.
+   */
+  std::vector<Value *> loopInternals;
+  for (auto internalNode : loopDG->internalNodePairs()) {
+      loopInternals.push_back(internalNode.first);
+  }
+  std::unordered_set<DGEdge<Value> *> memDeps{};
+  for (auto currentDependence : loopDG->getSortedDependences()){
+    if (currentDependence->isMemoryDependence()){
+      memDeps.insert(currentDependence);
+    }
+  }
+  auto loopDGWithoutMemoryDeps = loopDG->createSubgraphFromValues(loopInternals, false, memDeps);
+  auto loopSCCDAGWithoutMemoryDeps = new SCCDAG(loopDGWithoutMemoryDeps);
+  this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAGWithoutMemoryDeps, *environment, *l);
 
   /*
    * Calculate various attributes on SCCs
@@ -527,6 +553,10 @@ const LoopsSummary & LoopDependenceInfo::getLoopHierarchyStructures (void) const
 
 SCCDAGAttrs * LoopDependenceInfo::getSCCManager (void) const {
   return this->sccdagAttrs;
+}
+      
+LoopEnvironment * LoopDependenceInfo::getEnvironment (void) const {
+  return this->environment;
 }
 
 LoopDependenceInfo::~LoopDependenceInfo() {

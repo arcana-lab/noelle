@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "Noelle.hpp"
+#include "noelle/core/Noelle.hpp"
 
 namespace llvm::noelle {
 

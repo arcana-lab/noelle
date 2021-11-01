@@ -34,15 +34,11 @@ void DOALL::rewireLoopToIterateChunks (
   auto allIVInfo = LDI->getInductionVariableManager();
 
   /*
-   * Hook up preheader to header to enable induction variable manipulation
-   */
-  IRBuilder<> entryBuilder(task->getEntry());
-  auto temporaryBrToLoop = entryBuilder.CreateBr(headerClone);
-  entryBuilder.SetInsertPoint(temporaryBrToLoop);
-
-  /*
    * Generate PHI to track progress on the current chunk
    */
+  IRBuilder<> entryBuilder(task->getEntry());
+  auto jumpToLoop = task->getEntry()->getTerminator();
+  entryBuilder.SetInsertPoint(jumpToLoop);
   auto chunkCounterType = task->chunkSizeArg->getType();
   auto chunkPHI = IVUtility::createChunkPHI(preheaderClone, headerClone, chunkCounterType, task->chunkSizeArg);
 

@@ -80,9 +80,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
        * If it is, then we disable all sub-loops to be considered because DOALL always takes priority and we don't parallelize nested loops at the moment.
        */
       DOALL doall{
-        *noelle.getProgram(),
-        *noelle.getProfiles(),
-        noelle.getVerbosity()
+        noelle
       };
       if (  true
             && (summary->getNumberOfSubLoops() >= 1)

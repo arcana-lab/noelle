@@ -24,7 +24,7 @@ clean:
 	cd examples ; make clean ; 
 	find ./ -name .clangd -exec rm -rv {} +
 
-uninstall:
+uninstall: clean
 	rm -f enable ;
 	rm -rf install ;
 	cd external ; make $@

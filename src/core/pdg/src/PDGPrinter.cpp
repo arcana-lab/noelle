@@ -26,8 +26,8 @@
 #include <set>
 #include <queue>
 
-#include "PDGPrinter.hpp"
-#include "PDGAnalysis.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
 
 using namespace llvm;
 

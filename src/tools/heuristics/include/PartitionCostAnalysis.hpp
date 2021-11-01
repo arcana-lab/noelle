@@ -14,9 +14,9 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 
-#include "SCC.hpp"
-#include "SCCDAGPartition.hpp"
-#include "Noelle.hpp"
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAGPartition.hpp"
+#include "noelle/core/Noelle.hpp"
 #include "InvocationLatency.hpp"
 
 using namespace std;

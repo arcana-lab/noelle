@@ -16,14 +16,14 @@
 #include "llvm/IR/Instructions.h"
 
 #include "TestSuite.hpp"
-#include "PDGPrinter.hpp"
-#include "PDG.hpp"
-#include "SCC.hpp"
-#include "SCCDAG.hpp"
-#include "PDGAnalysis.hpp"
-#include "LoopDependenceInfo.hpp"
-#include "LoopInvariantCodeMotion.hpp"
-#include "Noelle.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/Noelle.hpp"
+#include "noelle/tools/LoopInvariantCodeMotion.hpp"
 
 #include <sstream>
 #include <vector>

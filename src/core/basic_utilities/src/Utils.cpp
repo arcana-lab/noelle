@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "Utils.hpp"
+#include "noelle/core/Utils.hpp"
 
 namespace llvm::noelle {
 

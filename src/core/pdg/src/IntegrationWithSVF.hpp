@@ -10,8 +10,8 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
-#include "CallGraph.hpp"
+#include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/CallGraph.hpp"
 
 namespace llvm::noelle {
 

@@ -10,19 +10,19 @@
  */
 #pragma once
 
-#include "SystemHeaders.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 
-#include "LoopDependenceInfo.hpp"
-#include "PDG.hpp"
-#include "SCC.hpp"
-#include "SCCDAG.hpp"
-#include "PDGAnalysis.hpp"
-#include "Noelle.hpp"
-#include "LoopDistribution.hpp"
-#include "LoopUnroll.hpp"
-#include "LoopWhilify.hpp"
-#include "LoopInvariantCodeMotion.hpp"
-#include "SCEVSimplification.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/Noelle.hpp"
+#include "noelle/core/LoopDistribution.hpp"
+#include "noelle/core/LoopUnroll.hpp"
+#include "noelle/core/LoopWhilify.hpp"
+#include "noelle/tools/LoopInvariantCodeMotion.hpp"
+#include "noelle/tools/SCEVSimplification.hpp"
 
 namespace llvm::noelle {
 

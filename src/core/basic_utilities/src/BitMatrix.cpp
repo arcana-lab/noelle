@@ -1,4 +1,4 @@
-#include "BitMatrix.hpp"
+#include "noelle/core/BitMatrix.hpp"
 
 namespace llvm {
 
