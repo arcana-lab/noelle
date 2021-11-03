@@ -14,16 +14,21 @@ using namespace llvm;
 using namespace llvm::noelle;
 
 Inliner::Inliner ()
-  : ModulePass{ID}, fnsAffected{}, parentFns{}, childrenFns{}, loopsToCheck{}, depthOrderedFns{}, preOrderedLoops{}
+  : ModulePass{ID}
+  , maxNumberOfFunctionCallsToInlinePerLoop{10}
+  , maxProgramInstructions{50000}
+  , fnsAffected{}
+  , parentFns{}
+  , childrenFns{}
+  , loopsToCheck{}
+  , depthOrderedFns{}
+  , preOrderedLoops{}
 {
 
   return ;
 }
 
 bool Inliner::runOnModule (Module &M) {
-  if (this->verbose != Verbosity::Disabled) {
-    errs() << "Inliner: Start\n";
-  }
 
   /*
    * Fetch NOELLE.
@@ -38,12 +43,9 @@ bool Inliner::runOnModule (Module &M) {
     /*
      * The function inliner has been disabled.
      */
-    if (this->verbose != Verbosity::Disabled) {
-      errs() << "Inliner: Exit\n";
-    }
-
     return false;
   }
+  errs() << "Inliner: Start\n";
 
   /*
    * Fetch the entry point of the program.
@@ -53,6 +55,16 @@ bool Inliner::runOnModule (Module &M) {
   if (main == nullptr){
     errs() << "Inliner:   No entry function\n";
     errs() << "Inliner: Exit\n";
+    return false;
+  }
+
+  /*
+   * Check if the program is already too big
+   */
+  auto programInstructions = noelle.numberOfProgramInstructions();
+  errs() << "Inliner:   Number of program instructions = " << programInstructions << "\n";
+  if (programInstructions >= this->maxProgramInstructions){
+    errs() << "Inliner:     There are too many instructions. We'll not inline anything\n";
     return false;
   }
 
@@ -374,7 +386,21 @@ bool Inliner::inlineFunctionCall (
     CallInst *call
     ){
 
-  // NOTE(angelo): Prevent inlining a call within a function already altered by inlining
+  /*
+   * Handle corner cases
+   */
+  if (  false
+        || (F == nullptr)
+        || (childF == nullptr)
+        || (call == nullptr)
+     ){
+    return false;
+  }
+  assert(p != nullptr);
+
+  /*
+   * Prevent inlining a call within a function already altered by inlining
+   */
   if (fnsAffected.find(F) != fnsAffected.end()) {
     return false ;
   }
@@ -397,7 +423,7 @@ bool Inliner::inlineFunctionCall (
    * Try to inline the function.
    */
   if (this->verbose != Verbosity::Disabled) {
-    call->print(errs() << "Inliner:   Inlining in: " << F->getName() << " (" << p->getStaticInstructions(F) << " instructions ), ");
+    call->print(errs() << "Inliner:   Inlining in: " << F->getName() << " (" << p->getStaticInstructions(F) << " instructions. The inlining will add " << p->getStaticInstructions(childF) << " instructions), ");
     errs() << "\n";
   }
   int loopIndAfterCall = getNextPreorderLoopAfter(F, call);

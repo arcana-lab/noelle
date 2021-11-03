@@ -168,6 +168,11 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
   assert(LDI != nullptr);
 
   /*
+   * Fetch the profile
+   */
+  auto hot = noelle.getProfiles();
+
+  /*
    * Fetch the SCC manager.
    */
   auto sccManager = LDI->getSCCManager();
@@ -186,6 +191,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
    * Check every sequential SCC.
    */
   int64_t maxMemEdges = 0;
+  uint32_t numberOfFunctionCallsToInline = 0;
   CallInst *inlineCall = nullptr;
   auto nonDOALLSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, noelle);
   for (auto scc : nonDOALLSCCs) {
@@ -283,8 +289,13 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
 
       /*
        * Consider only the call instruction with the maximum number of memory edges.
+       * Also, consider only calls to functions that are smaller than the current loop size.
        */
-      if (memEdgeCount > maxMemEdges) {
+      numberOfFunctionCallsToInline++;
+      if (  true
+            && (memEdgeCount > maxMemEdges) 
+            && (hot->getStaticInstructions(callF) < hot->getStaticInstructions(loopStructure))
+        ){
         maxMemEdges = memEdgeCount;
         inlineCall = call;
       }
@@ -303,9 +314,16 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
   }
 
   /*
+   * Check if there are too many loop-carried data dependences related to function calls.
+   */
+  if (numberOfFunctionCallsToInline >= this->maxNumberOfFunctionCallsToInlinePerLoop){
+    errs() << "Inliner:   The loop " << *loopStructure->getHeader()->getFirstNonPHI() << " has too many function calls involved in loop-carried data dependences (there are " << numberOfFunctionCallsToInline << ")\n";
+    return false;
+  }
+
+  /*
    * Inline the call instruction.
    */
-  auto hot = noelle.getProfiles();
   auto inlined = inlineFunctionCall(hot, F, inlineCall->getCalledFunction(), inlineCall);
 
   return inlined;
