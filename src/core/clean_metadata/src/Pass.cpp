@@ -40,7 +40,7 @@ bool CleanMetadata::runOnModule(Module &M) {
 
 // Next there is code to register your pass to "opt"
 char CleanMetadata::ID = 0;
-static RegisterPass<CleanMetadata> X("noelle/core/CleanMetadata", "noelle/core/Clean the metadata embeded to the bitcode");
+static RegisterPass<CleanMetadata> X("CleanMetadata", "Clean the metadata embeded to the bitcode");
 
 // Next there is code to register your pass to "clang"
 static CleanMetadata * _PassMaker = NULL;
