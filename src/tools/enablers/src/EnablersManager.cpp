@@ -94,6 +94,8 @@ bool EnablersManager::runOnModule (Module &M) {
         loopInvariantCodeMotion,
         scevSimplification
         );
+    assert(noelle.verifyCode());
+
     modified |= modifiedFunctions[f];
   }
 
