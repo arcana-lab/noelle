@@ -27,10 +27,14 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
   LoopDependenceInfo const &LDI,
   ScalarEvolution &SE
 ) {
+  errs() << "SCEVSimplification: Start\n";
 
-  if (noelle.getVerbosity() >= Verbosity::Maximal) {
-    errs() << "SCEVSimplification:  Start\n";
-  }
+  /*
+   * Fetch the information about the loop.
+   */
+  auto rootLoop = LDI.getLoopStructure();
+  auto ivManager = LDI.getInductionVariableManager();
+  errs() << "SCEVSimplification:    Loop " << *rootLoop->getHeader()->getFirstNonPHI() << "\n";
 
   /*
    * Attempt to find a branch instruction contained within an IV's SCC
@@ -38,8 +42,6 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
    */
   InductionVariable *loopGoverningIV = nullptr;
   BranchInst *loopGoverningBranchInst = nullptr;
-  auto rootLoop = LDI.getLoopStructure();
-  auto ivManager = LDI.getInductionVariableManager();
   for (auto iv : ivManager->getInductionVariables(*rootLoop)) {
     auto stepValue = iv->getSingleComputedStepValue();
     if (!stepValue || !isa<ConstantInt>(stepValue)) continue;
@@ -79,9 +81,15 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
   /*
    * The branch condition must be a CmpInst on an intermediate value of the loop governing IV
    */
-  if (!loopGoverningIV) return false;
+  if (!loopGoverningIV) {
+    errs() << "SCEVSimplification: Exit\n";
+    return false;
+  }
   auto cmpInst = dyn_cast<CmpInst>(loopGoverningBranchInst->getCondition());
-  if (!cmpInst) return false;
+  if (!cmpInst) {
+    errs() << "SCEVSimplification: Exit\n";
+    return false;
+  }
 
   /*
    * Find the intermediate value used in the guard
@@ -93,14 +101,20 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
     && ivInstructions.find(cast<Instruction>(opL)) != ivInstructions.end();
   auto isOpRHSAnIntermediate = isa<Instruction>(opR)
     && ivInstructions.find(cast<Instruction>(opR)) != ivInstructions.end();
-  if (!(isOpLHSAnIntermediate ^ isOpRHSAnIntermediate)) return false;
+  if (!(isOpLHSAnIntermediate ^ isOpRHSAnIntermediate)) {
+    errs() << "SCEVSimplification: Exit\n";
+    return false;
+  }
 
   /*
    * If it is the loop entry PHI, there is no simplification to do
    */
   auto intermediateValueUsedInCompare = cast<Instruction>(isOpLHSAnIntermediate ? opL : opR);
   auto loopEntryPHI = loopGoverningIV->getLoopEntryPHI();
-  if (intermediateValueUsedInCompare == loopEntryPHI) return false;
+  if (intermediateValueUsedInCompare == loopEntryPHI) {
+    errs() << "SCEVSimplification: Exit\n";
+    return false;
+  }
 
   /*
    * Determine the step offset between the intermediate and the loop entry PHI
@@ -108,7 +122,10 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
   auto loopEntryPHIStartSCEV = cast<SCEVAddRecExpr>(SE.getSCEV(loopEntryPHI))->getStart();
   auto intermediateStartSCEV = cast<SCEVAddRecExpr>(SE.getSCEV(intermediateValueUsedInCompare))->getStart();
   auto offsetSCEV = getOffsetBetween(SE, loopEntryPHIStartSCEV, intermediateStartSCEV);
-  if (!offsetSCEV) return false;
+  if (!offsetSCEV) {
+    errs() << "SCEVSimplification: Exit\n";
+    return false;
+  }
 
   Value *offsetValue;
   if (auto constSCEV = dyn_cast<SCEVConstant>(offsetSCEV)) {
@@ -120,6 +137,7 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
     /*
      * TODO: Handle fetching values for cast and nary SCEVs
      */
+    errs() << "SCEVSimplification: Exit\n";
     return false;
   }
 
@@ -134,12 +152,10 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
   auto adjustedConditionValue = loopEntryBuilder.CreateSub(conditionValue, offsetValue);
   cmpInst->setOperand(ivOp, loopEntryPHI);
   cmpInst->setOperand(conditionValueOp, adjustedConditionValue);
+  cmpInst->print(errs() << "SCEVSimplification:  Simplified to use loop entry PHI: ");
+  errs() << "\n";
 
-  if (noelle.getVerbosity() >= Verbosity::Maximal) {
-    cmpInst->print(errs() << "SCEVSimplification:  Simplified to use loop entry PHI: ");
-    errs() << "\n";
-  }
-
+  errs() << "SCEVSimplification: Exit\n";
   return true;
 }
 
