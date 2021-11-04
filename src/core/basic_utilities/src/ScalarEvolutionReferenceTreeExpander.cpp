@@ -64,8 +64,9 @@ Value *ReferenceTreeExpander::visitSignExtendExpr (const SCEVSignExtendExpr *S) 
 
 std::pair<Value *, Value *> ReferenceTreeExpander::visitTwoOperands(const SCEVNAryExpr *S) {
   if (currentNode->getNumChildReferences() < 2) {
-    currentNode->getSCEV()->print(errs() << "ERROR: Failed to expand: "); errs() << "\n";
-    assert(false && "SCEV cannot be expanded");
+    //currentNode->getSCEV()->print(errs() << "ERROR: Failed to expand: "); errs() << "\n";
+    //assert(false && "SCEV cannot be expanded");
+    return std::make_pair(nullptr, nullptr);
   }
 
   auto currentNodeHolder = currentNode;
