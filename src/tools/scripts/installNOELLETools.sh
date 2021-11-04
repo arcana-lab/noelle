@@ -32,3 +32,4 @@ patchInstallDir "noelle-pre" ;
 patchInstallDir "noelle-deadcode" ;
 patchInstallDir "noelle-codesize" ;
 patchInstallDir "noelle-fixedpoint" ;
+patchInstallDir "noelle-pdg-stats" ;
