@@ -6,8 +6,6 @@ void computeSum (long long int *a, long long int iters, long long int seed, long
   long long int i=0;
   long long int z = (rand() + 1) %20;
   while (i < iters){
-    printf("Start iteration %lld\n", i);
- 
     for (auto k=0; k < innerIters; k++){
       a[i] /= z;
       z++;
@@ -19,9 +17,6 @@ void computeSum (long long int *a, long long int iters, long long int seed, long
       z++;
       a[i] += z;
     }
-
-    printf("End iteration %lld %lld\n", i, a[i]);
-
     i++;
   } 
 }
