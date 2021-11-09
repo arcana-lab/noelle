@@ -651,6 +651,47 @@ LoopDependenceInfo * Noelle::getInnermostLoopThatContains (
   return nullptr;
 }
 
+LoopStructure * Noelle::getInnermostLoopThatContains (
+  const std::vector<LoopStructure *> &loops,
+  Instruction *inst
+  ){
+
+  /*
+   * Check the instruction exists.
+   */
+  if (inst == nullptr){
+    return nullptr;
+  }
+
+  /*
+   * Identify the innermost loop that contains @inst.
+   */
+  for (auto ls : loops){
+
+    /*
+     * Check if @inst belongs to @ldi.
+     */
+    if (!ls->isIncluded(inst)){
+      continue ;
+    }
+
+    /*
+     * The instruction @inst belongs to @ldi.
+     * Check if @inst belongs to @ldi's sublops.
+     */
+    if (ls->isIncludedInItsSubLoops(inst)){
+      continue ;
+    }
+
+    /*
+     * This is the innermost loop that contains @inst.
+     */
+    return ls;
+  }
+
+  return nullptr;
+}
+
 uint32_t Noelle::getNumberOfProgramLoops (void) {
   return this->getNumberOfProgramLoops(this->minHot);
 }
