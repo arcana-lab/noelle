@@ -9,7 +9,6 @@ void computeSum (long long int *a, long long int iters, long long int seed, long
     printf("Start iteration %lld\n", i);
  
     for (auto k=0; k < innerIters; k++){
-      a[i] += 2;
       a[i] /= z;
       z++;
       a[i] /= z;
@@ -27,7 +26,6 @@ void computeSum (long long int *a, long long int iters, long long int seed, long
       a[i] /= z;
       z++;
       a[i] += z;
-      a[i] *= 1000;
     }
 
     printf("End iteration %lld %lld\n", i, a[i]);
