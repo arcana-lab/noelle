@@ -3,15 +3,13 @@
 #include <math.h>
 
 void computeSum (long long int *a, long long int iters, long long int seed, long long int innerIters){
-  long long int i=0;
   long long int z = (rand() + 1) %20;
-  while (i < iters){
+  for (long long int i=0; i < iters; i++){
     for (auto k=0; k < innerIters; k++){
       a[i] /= z;
       z++;
       a[i] += z;
     }
-    i++;
   } 
 }
 
