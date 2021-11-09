@@ -17,14 +17,6 @@ void computeSum (long long int *a, long long int iters, long long int seed, long
       z++;
       a[i] /= z;
       z++;
-      a[i] /= z;
-      z++;
-      a[i] /= z;
-      z++;
-      a[i] /= z;
-      z++;
-      a[i] /= z;
-      z++;
       a[i] += z;
     }
 
