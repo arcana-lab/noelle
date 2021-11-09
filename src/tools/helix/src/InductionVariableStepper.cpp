@@ -63,7 +63,9 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
     /*
      * If the instruction was spilled, it will not have a unique cloned instruction equivalent
      */
-    if (!task->isAnOriginalInstruction(loopEntryPHI)) continue;
+    if (!task->isAnOriginalInstruction(loopEntryPHI)) {
+      continue;
+    }
 
     ivInfos.insert(ivInfo);
   }
