@@ -9,8 +9,6 @@ void computeSum (long long int *a, long long int iters, long long int seed, long
     for (auto k=0; k < innerIters; k++){
       a[i] /= z;
       z++;
-      a[i] /= z;
-      z++;
       a[i] += z;
     }
     i++;
