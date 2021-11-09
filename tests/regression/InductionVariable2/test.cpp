@@ -36,11 +36,7 @@ int main (int argc, char *argv[]){
   }
 
   computeSum(array, iterations, seed, innerIters);
-  long long int t=0;
-  for (auto i=0; i < iterations; i++){
-    t += array[i];
-  }
-  printf("%lld %lld\n", t, array[iterations/2]);
+  printf("%lld\n", array[iterations/2]);
 
   return 0;
 }
