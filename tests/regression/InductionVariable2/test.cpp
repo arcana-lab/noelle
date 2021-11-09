@@ -31,10 +31,6 @@ int main (int argc, char *argv[]){
   auto innerIters = atoll(argv[3]);
 
   long long int *array = (long long int *) calloc(iterations, sizeof(long long int));
-  for (auto i=0; i < iterations; i++){
-    array[i] = i * 5;
-  }
-
   computeSum(array, iterations, seed, innerIters);
   printf("%lld\n", array[iterations/2]);
 
