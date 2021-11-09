@@ -549,13 +549,20 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   std::unordered_map<Value *, Value *> oldToNewTypedMap;
 
   /*
-   * Insert casts on invariants in the loop preheader and replace uses
+   * Insert casts on invariants and replace uses
    */
   auto preheaderBlock = rootLoop->getPreHeader();
   IRBuilder<> preheaderBuilder(preheaderBlock->getTerminator());
   const bool isSigned = true;
   for (auto invariant : loopInvariantsToConvert) {
-    auto castedInvariant = preheaderBuilder.CreateIntCast(invariant, this->intTypeForPtrSize, isSigned);
+    Value *castedInvariant;
+    if (auto invariantInst = dyn_cast<Instruction>(invariant)) {
+      IRBuilder<> builder(invariantInst->getNextNode());
+      castedInvariant = builder.CreateIntCast(invariant, this->intTypeForPtrSize, isSigned);
+    } else {
+      castedInvariant = preheaderBuilder.CreateIntCast(invariant, this->intTypeForPtrSize, isSigned);
+    }
+
     // invariant->print(errs() << "Invariant casted: "); errs() << "\n";
     oldToNewTypedMap.insert(std::make_pair(invariant, castedInvariant));
   }
