@@ -25,7 +25,9 @@ int main (int argc, char *argv[]){
     return -1;
   }
   auto iterations = atoll(argv[1]);
-  if (iterations == 0) return 0;
+  if (iterations == 0) {
+    iterations++;
+  }
   iterations *= 100;
   auto seed = atoll(argv[2]);
   auto innerIters = atoll(argv[3]);
