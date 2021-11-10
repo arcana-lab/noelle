@@ -899,30 +899,33 @@ bool SCEVSimplification::isUpCastPossible (
    * to no smaller than MIN_BIT_SIZE bits
    */
   const int MIN_BIT_SIZE = ptrSizeInBits < 32 ? ptrSizeInBits : 32;
-  const int MAX_BIT_SHIFT = ptrSizeInBits - MIN_BIT_SIZE;
   auto isValidOperationWhenUpCasted = [&](Instruction *inst) -> bool {
 
     // inst->print(errs() << "Checking validity of: "); errs() << "\n";
 
-    auto firstOp = inst->getOperand(0);
-    auto srcTy = firstOp->getType();
-    auto destTy = inst->getType();
-    assert(destTy->isIntegerTy() && srcTy->isIntegerTy());
-    if (srcTy->getIntegerBitWidth() < MIN_BIT_SIZE) return false;
-    if (destTy->getIntegerBitWidth() < MIN_BIT_SIZE) return false;
+    auto opCode = inst->getOpcode();
+    if (opCode != Instruction::Shl && opCode != Instruction::LShr && opCode != Instruction::AShr) {
 
-    /*
-     * Ensure the number of bits shifted doesn't reduce the value bit width below MIN_BIT_SIZE
-     */
-    if (isPartOfShlShrTruncationPair(inst)) {
+      /*
+       * Ensure non-shifting instructions do not operate on truncated bit widths < MIN_BIT_SIZE
+       */
+      return inst->getType()->getIntegerBitWidth() >= MIN_BIT_SIZE ;
+
+    } else if (isPartOfShlShrTruncationPair(inst)) {
+
+      /*
+       * Ensure the number of bits shifted doesn't reduce the bit width to < MIN_BIT_SIZE
+       */
       auto bitsShiftedValue = inst->getOperand(1);
       auto bitsShiftedConst = dyn_cast<ConstantInt>(bitsShiftedValue);
       if (!bitsShiftedConst) return false;
       auto bitsShifted = bitsShiftedConst->getValue().getSExtValue();
-      if (bitsShifted > MAX_BIT_SHIFT) return false;
+      if (inst->getType()->getIntegerBitWidth() - bitsShifted < MIN_BIT_SIZE) return false;
+
+      return true;
     }
 
-    return true;
+    return false;
   };
 
   for (auto inst : gepDerivation->ivDerivingInstructions) {
@@ -947,10 +950,12 @@ bool SCEVSimplification::isPartOfShlShrTruncationPair (Instruction *I) const {
     if (!I->hasOneUse()) return false;
     User *user = *(I->user_begin());
     shr = dyn_cast<Instruction>(user);
+    if (shr->getOpcode() != Instruction::LShr && shr->getOpcode() != Instruction::AShr) return false;
   } else if (opCode == Instruction::LShr || opCode == Instruction::AShr) {
     shr = I;
     auto opV = I->getOperand(0);
     shl = dyn_cast<Instruction>(opV);
+    if (shl->getOpcode() != Instruction::Shl) return false;
   }
 
   /*
