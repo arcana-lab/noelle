@@ -47,18 +47,28 @@ while true ; do
   fi
 
   # Check if the bitcode has been modified
+  # - Step 1: fetch the code size and loop code of the input bitcode
   noelle-codesize $IRFileInput > $codeSize ;
   inputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
+  noelle-loopsize $IRFileInput > $codeSize ;
+  inputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
+
+  # - Step 2: fetch the code size and loop code of the output bitcode
   noelle-codesize $IRFileOutput > $codeSize ;
   outputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
+  noelle-loopsize $IRFileOutput > $codeSize ;
+  outputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
+
+  # - Step 3: compare the results
   linesDifferent=`echo "$outputCodeLines - $inputCodeLines" | bc` ;
-  if test "$linesDifferent" == "0" ; then
+  loopLinesDifferent=`echo "$outputLoopLines - $inputLoopLines" | bc` ;
+  if test "$linesDifferent" == "0" -a "$loopLinesDifferent" == "0" ; then
 
     # Copy the final output
     cp $IRFileOutput $2 ;
     break ;
   fi
-  echo "NOELLE: FixedPoint:       There are $linesDifferent different lines of code" ;
+  echo "NOELLE: FixedPoint:       There are $linesDifferent different instructions and $loopLinesDifferent different loop instructions" ;
 
   # Normalize the code
   echo "NOELLE: FixedPoint:       Normalize the code" ;

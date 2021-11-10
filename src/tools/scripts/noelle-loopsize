@@ -1,0 +1,10 @@
+#!/bin/bash
+
+installDir
+
+# Set the command to execute
+cmdToExecute="noelle-load -load ${installDir}/lib/LoopSize.so -loopsize $@ -disable-output"
+echo $cmdToExecute ;
+
+# Execute the command
+eval $cmdToExecute 
