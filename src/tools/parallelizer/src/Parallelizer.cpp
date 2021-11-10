@@ -128,7 +128,6 @@ namespace llvm::noelle {
      * Check if the loop has been parallelized.
      */
     if (!codeModified){
-      errs() << "Parallelizer: Exit (no code modified)\n";
       return false;
     }
 
@@ -170,12 +169,6 @@ namespace llvm::noelle {
     //   loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
     // }
 
-    /*
-     * Return
-     */
-    if (verbose != Verbosity::Disabled) {
-      errs() << "Parallelizer: Exit\n";
-    }
     return true;
   }
 }
