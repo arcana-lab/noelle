@@ -1,6 +1,7 @@
 DOALL_almost_lbm      64.082
 DOALL_challenge        0.274
 DOALL_devirtualizer   31.833
+DOALL_IV               1
 DOALL_lbm	       5.59
 DOALL_limit	      20.118
 DOALL_object_cloning  22.170
