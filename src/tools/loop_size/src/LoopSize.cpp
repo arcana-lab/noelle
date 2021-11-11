@@ -33,6 +33,11 @@ bool LoopSize::runOnModule (Module &M) {
   auto loops = noelle.getLoopStructures();
 
   /*
+   * Organize loops in a forest.
+   */
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*loops);
+
+  /*
    * Compute the code size.
    */
   uint64_t s = 0;
@@ -55,14 +60,16 @@ bool LoopSize::runOnModule (Module &M) {
         /*
          * Fetch the innermost loop that contains the instruction.
          */
-        auto loop = noelle.getInnermostLoopThatContains(*loops, &I);
-        if (loop == nullptr){
+        auto loopNode = forest->getInnermostLoopThatContains(&I);
+        if (loopNode == nullptr){
 
           /*
            * The instruction isn't in any loop
            */
           continue ;
         }
+        auto loop = loopNode->getLoop();
+        assert(loop != nullptr);
         assert(loop->isIncluded(&I));
         assert(!loop->isIncludedInItsSubLoops(&I));
 
