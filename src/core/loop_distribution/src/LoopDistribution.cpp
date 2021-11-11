@@ -434,6 +434,7 @@ void LoopDistribution::doSplit (
     auto exitBranch = cast<BranchInst>(exitingBlock->getTerminator());
     auto newExitBlock = BasicBlock::Create(cxt, "", loopStructure->getFunction());
     auto newExitBlockBranch = BranchInst::Create(newPreHeader, newExitBlock);
+    bbMap[oldExitBlock] = newExitBlock;
     instructionsAdded.insert(newExitBlockBranch);
     for (unsigned idx = 0; idx < exitBranch->getNumSuccessors(); idx++) {
       if (exitBranch->getSuccessor(idx) == oldExitBlock) {
@@ -478,10 +479,10 @@ void LoopDistribution::doSplit (
   }
   // errs() << "LoopDistribution: Finished fixing instruction dependencies in the new loop\n";
 
-
   /*
    * Fix data flows for all instructions in exit blocks (only need to fix phi nodes)
    */
+  IRBuilder<> newPreHeaderBuilder(newPreHeader->getFirstNonPHI());
   for (auto loopExitBlock : loopStructure->getLoopExitBasicBlocks()) {
     for (auto &I : *loopExitBlock) {
       if (auto PHI = dyn_cast<PHINode>(&I)) {
@@ -495,8 +496,23 @@ void LoopDistribution::doSplit (
         PHI->setIncomingBlock(0, newBB);
         auto oldValue = PHI->getIncomingValue(0);
         auto oldInst = cast<Instruction>(oldValue);
+
+        /*
+         * IF the incoming value is not split:
+         *  Define an intermediate PHI in the new preheader.
+         *  Wire the old value into this PHI; use this PHI in the new loop's exit PHI
+         * OTHERWISE, directly use the split value (which is guaranteed to dominate the new loop's exit)
+         */
         auto it = instMap.find(oldInst);
-        if (it != instMap.end()) {
+        if (it == instMap.end()) {
+          auto intermediatePHI = newPreHeaderBuilder.CreatePHI(PHI->getType(), 0);
+          for (auto originalExitBlock : loopStructure->getLoopExitBasicBlocks()) {
+            auto incomingValue = originalExitBlock == loopExitBlock ? oldValue : UndefValue::get(oldValue->getType());
+            intermediatePHI->addIncoming(incomingValue, bbMap.at(originalExitBlock));
+          }
+
+          PHI->setOperand(0, intermediatePHI);
+        } else {
           PHI->setOperand(0, it->second);
         }
       }
