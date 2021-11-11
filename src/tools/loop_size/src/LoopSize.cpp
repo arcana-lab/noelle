@@ -63,11 +63,14 @@ bool LoopSize::runOnModule (Module &M) {
            */
           continue ;
         }
+        assert(loop->isIncluded(&I));
+        assert(!loop->isIncludedInItsSubLoops(&I));
 
         /*
          * Fetch the nesting level.
          */
         auto nl = loop->getNestingLevel();
+        assert(nl >= 1);
 
         /*
          * Compute the instruction cost.
