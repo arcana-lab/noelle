@@ -118,12 +118,46 @@ bool LoopDistribution::splitLoop (
   /*
    * Require that all instuctions that we will clone do not have side effects
    *   TODO(lukas): This is very, very conservative
+   * Require that all instructions to clone do not have memory dependencies
    */
+  auto pdg = LDI.getLoopDG();
   for (auto inst : instsToClone) {
     if (inst->mayHaveSideEffects()){
       // errs() << "LoopDistribution: Abort: Unclonable instruction " << *inst << "\n";
       return false;
     }
+
+    auto fn = [&loopBBs](Value *v, DGEdge<Value> *dependence) -> bool {
+      if (!isa<Instruction>(v)) {
+        return false;
+      }
+
+      /*
+       * Only memory dependencies inside the loop should interfere
+       */
+      auto i = cast<Instruction>(v);
+      auto bb = i->getParent();
+      return std::find(loopBBs.begin(), loopBBs.end(), bb) != loopBBs.end();
+    };
+
+    bool containsMemoryDependencyFrom = pdg->iterateOverDependencesFrom(
+      inst,
+      false, // Control
+      true,  // Memory
+      false,  // Register
+      fn
+    );
+    bool containsMemoryDependencyTo = pdg->iterateOverDependencesTo(
+      inst,
+      false, // Control
+      true,  // Memory
+      false,  // Register
+      fn
+    );
+    if (containsMemoryDependencyFrom || containsMemoryDependencyTo) {
+      return false;
+    }
+
     // errs () << "LoopDistribution: Will clone: " <<  *inst << "\n";
   }
 
