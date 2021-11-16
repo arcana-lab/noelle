@@ -151,7 +151,16 @@ bool AllocAA::isMemoryless (StringRef functionName) {
 }
 
 void AllocAA::collectCGUnderFunctionMain (Module &M, CallGraph &callGraph) {
+  
+  /*
+   * Fetch main
+   */
   auto main = M.getFunction("main");
+  assert(main != nullptr);
+
+  /*
+   * Traverse the functions
+   */
   std::queue<Function *> funcToTraverse;
   std::set<Function *> reached;
   funcToTraverse.push(main);
@@ -408,9 +417,9 @@ bool AllocAA::doesValueNotEscape (std::set<Instruction *> checked, Instruction *
 }
 
 void AllocAA::collectMemorylessFunctions (Module &M) {
-  for (auto F : CGUnderMain) {
+  for (auto F : this->CGUnderMain) {
 
-    bool isMemoryless = true;
+    auto isMemoryless = true;
     for (auto &B : *F) {
       for (auto &I : B) {
         if (isa<LoadInst>(I) || isa<StoreInst>(I) || isa<CallInst>(I)) {

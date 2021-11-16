@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/Task.hpp 
+  include/noelle/core/Task.hpp 
   DESTINATION 
-  include
+  include/noelle/core
   )

@@ -11,8 +11,7 @@
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   LoopDependenceInfo *LDI,
@@ -76,4 +75,6 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   afterCallBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
   return ;
+}
+
 }

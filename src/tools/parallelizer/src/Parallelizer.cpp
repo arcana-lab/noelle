@@ -20,6 +20,7 @@ namespace llvm::noelle {
       HELIX &helix, 
       Heuristics *h
       ){
+    auto prefix = "Parallelizer: parallelizerLoop: " ;
 
     /*
      * Assertions.
@@ -49,11 +50,11 @@ namespace llvm::noelle {
      * Print
      */
     if (verbose != Verbosity::Disabled) {
-      errs() << "Parallelizer: Start\n";
-      errs() << "Parallelizer:  Function = \"" << loopFunction->getName() << "\"\n";
-      errs() << "Parallelizer:  Loop " << LDI->getID() << " = \"" << *loopHeader->getFirstNonPHI() << "\"\n";
-      errs() << "Parallelizer:  Nesting level = " << loopStructure->getNestingLevel() << "\n";
-      errs() << "Parallelizer:  Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
+      errs() << prefix << "Start\n";
+      errs() << prefix << "  Function = \"" << loopFunction->getName() << "\"\n";
+      errs() << prefix << "  Loop " << LDI->getID() << " = \"" << *loopHeader->getFirstNonPHI() << "\"\n";
+      errs() << prefix << "  Nesting level = " << loopStructure->getNestingLevel() << "\n";
+      errs() << prefix << "  Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
     }
 
     /*
@@ -128,7 +129,8 @@ namespace llvm::noelle {
      * Check if the loop has been parallelized.
      */
     if (!codeModified){
-      errs() << "Parallelizer: Exit (no code modified)\n";
+      errs() << prefix << "  The loop has not been parallelized\n";
+      errs() << prefix << "Exit\n";
       return false;
     }
 
@@ -152,7 +154,7 @@ namespace llvm::noelle {
      * Link the parallelized loop within the original function that includes the sequential loop.
      */
     if (verbose != Verbosity::Disabled) {
-      errs() << "Parallelizer:  Link the parallelize loop\n";
+      errs() << prefix << "  Link the parallelize loop\n";
     }
     auto exitIndex = ConstantInt::get(par.int64, LDI->environment->indexOfExitBlockTaken());
     auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
@@ -169,13 +171,11 @@ namespace llvm::noelle {
     // if (verbose >= Verbosity::Maximal) {
     //   loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
     // }
-
-    /*
-     * Return
-     */
     if (verbose != Verbosity::Disabled) {
-      errs() << "Parallelizer: Exit\n";
+      errs() << prefix << "  The loop has been parallelized\n";
+      errs() << prefix << "Exit\n";
     }
+
     return true;
   }
 }

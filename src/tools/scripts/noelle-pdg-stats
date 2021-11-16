@@ -2,6 +2,12 @@
 
 installDir
 
+# Check the inputs
+if test $# -lt 1 ; then
+  echo "USAGE: `basename $0` IR_FILE [OPTION]" ;
+  exit 1;
+fi
+
 # Set the command to execute
 cmdToExecute="noelle-load -load ${installDir}/lib/PDGStats.so -PDGStats $@ -disable-output" 
 echo $cmdToExecute ;

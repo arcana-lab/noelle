@@ -54,13 +54,13 @@ InductionVariable::InductionVariable  (
     }
   }
 
-  traverseCycleThroughLoopEntryPHIToGetAllIVInstructions();
+  traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(LS);
   traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
   collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
   deriveStepValue(LS, SE, referentialExpander, loopEnv);
 }
 
-void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions () {
+void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions (LoopStructure *LS) {
 
   /*
    * Collect intermediate values of the IV within the loop (by traversing its strongly connected component)
@@ -81,9 +81,11 @@ void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions (
     /*
      * Classify the encountered value as either a PHI or a non-PHI intermediate instruction
      * If it is not an instruction, skip
+     * If it is not within the IV's loop, skip
      */
     if (!isa<Instruction>(value)) continue;
     auto instruction = cast<Instruction>(value);
+    if (!LS->isIncluded(instruction)) continue;
     this->allInstructions.insert(instruction);
     if (auto phi = dyn_cast<PHINode>(instruction)) {
       this->PHIs.insert(phi);

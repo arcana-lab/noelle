@@ -2,6 +2,7 @@
 Universe = vanilla
 
 # Describe the target machine
+#Requirements = (Machine != "fix.cs.northwestern.edu") && (Machine != "allagash.cs.northwestern.edu") && (Machine != "piraat.cs.northwestern.edu") 
 Requirements = 
 
 Rank = TARGET.Mips
