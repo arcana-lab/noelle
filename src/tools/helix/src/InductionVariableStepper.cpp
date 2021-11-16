@@ -10,6 +10,7 @@
  */
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
+#include "llvm/IR/Type.h"
 
 namespace llvm::noelle {
 
@@ -84,14 +85,34 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
     auto originalIVPHI = ivInfo->getLoopEntryPHI();
     auto ivPHI = cast<PHINode>(fetchClone(originalIVPHI));
 
-    auto nthCoreOffset = entryBuilder.CreateMul(
-      stepOfIV,
-      entryBuilder.CreateZExtOrTrunc(
-        task->coreArg,
-        stepOfIV->getType()
-      ),
-      "stepSize_X_coreIdx"
-    );
+    // Cast task->coreArg to the type of stepOfIV
+    // task->coreArg is always an integer
+    Value* cast = nullptr;
+    if (stepOfIV->getType()->isFloatingPointTy())
+      cast = entryBuilder.CreateSIToFP( 
+          task->coreArg,
+          stepOfIV->getType()
+          );
+    else
+      cast = entryBuilder.CreateZExtOrTrunc(
+          task->coreArg,
+          stepOfIV->getType()
+          );
+    
+    Value* nthCoreOffset = nullptr;
+    if (stepOfIV->getType()->isFloatingPointTy()) {
+      nthCoreOffset = entryBuilder.CreateFMul(
+        stepOfIV,
+        cast,
+        "stepSize_X_coreIdx"
+        );
+    } else {
+      nthCoreOffset = entryBuilder.CreateMul(
+        stepOfIV,
+        cast,
+        "stepSize_X_coreIdx"
+        );
+    }
 
     auto offsetStartValue = IVUtility::offsetIVPHI(preheaderClone, ivPHI, startOfIV, nthCoreOffset);
     ivPHI->setIncomingValueForBlock(preheaderClone, offsetStartValue);
@@ -106,17 +127,37 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
     auto originalIVPHI = ivInfo->getLoopEntryPHI();
     auto ivPHI = cast<PHINode>(fetchClone(originalIVPHI));
 
-    auto jumpStepSize = entryBuilder.CreateMul(
-      stepOfIV,
-      entryBuilder.CreateSub(
-        entryBuilder.CreateZExtOrTrunc(
+    Value* numCoresMinusOne = entryBuilder.CreateSub(
           task->numCoresArg,
+          ConstantInt::get(task->numCoresArg->getType(), 1)
+        );
+
+    Value* cast = nullptr;
+    if (stepOfIV->getType()->isFloatingPointTy())
+      cast = entryBuilder.CreateSIToFP( 
+          numCoresMinusOne,
           stepOfIV->getType()
-        ),
-        ConstantInt::get(stepOfIV->getType(), 1)
-      ),
-      "nCoresStepSize"
-    );
+          );
+    else
+      cast = entryBuilder.CreateZExtOrTrunc(
+          numCoresMinusOne,
+          stepOfIV->getType()
+          );
+
+    Value* jumpStepSize = nullptr;
+    if (stepOfIV->getType()->isFloatingPointTy()) {
+      jumpStepSize = entryBuilder.CreateFMul(
+        stepOfIV,
+        cast,
+        "nCoresStepSize"
+        );
+    } else {
+      jumpStepSize = entryBuilder.CreateMul(
+        stepOfIV,
+        cast,
+        "nCoresStepSize"
+        );
+    }    
 
     IVUtility::stepInductionVariablePHI(preheaderClone, ivPHI, jumpStepSize);
   }

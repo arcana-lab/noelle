@@ -116,7 +116,7 @@ Value *IVUtility::offsetIVPHI (
     );
 
   } else {
-    offsetStartValue = insertBuilder.CreateAdd(startValue, offsetValue);
+    offsetStartValue = offsetValue->getType()->isFloatingPointTy() ? insertBuilder.CreateFAdd(startValue, offsetValue) : insertBuilder.CreateAdd(startValue, offsetValue);
   }
 
   return offsetStartValue;
