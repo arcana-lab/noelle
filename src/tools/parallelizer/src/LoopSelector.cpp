@@ -67,12 +67,30 @@ namespace llvm::noelle {
        */
       auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
       auto averageIterationThreshold = 12;
-      if (  true
+      if (    true
           && (!this->forceParallelization)
           && (averageIterations < averageIterationThreshold)
          ){
         errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
         errs() << "Parallelizer:      It is too low. The threshold is " << averageIterationThreshold << "\n";
+
+        /*
+         * Remove the loop.
+         */
+        return true;
+      }
+
+      /*
+       * Check the minimum hotness
+       */
+      auto hotness = profiles->getDynamicTotalInstructionCoverage(ls) * 100;
+      auto minimumHotness = 2.0;
+      if (      true
+            &&  (!this->forceParallelization)
+            &&  (hotness < minimumHotness)
+         ){
+        errs() << "Parallelizer:    Loop " << loopID << " has only " << hotness << "\% coverage\n";
+        errs() << "Parallelizer:      It is too low. The threshold is " << minimumHotness << "\%\n";
 
         /*
          * Remove the loop.
@@ -251,6 +269,13 @@ namespace llvm::noelle {
     }
 
     /*
+     * Check if there are loops
+     */
+    if (selectedLoops.size() == 0){
+      return {};
+    }
+
+    /*
      * Sort the loops depending on the amount of time that can be saved by a parallelization technique.
      */
     auto compareOperator = [&timeSavedLoops](LoopDependenceInfo *l1, LoopDependenceInfo *l2){
@@ -294,12 +319,18 @@ namespace llvm::noelle {
         savedTimeTotal *= 100;
 
         /*
+         * Compute the coverage
+         */
+        auto hotness = profiles->getDynamicTotalInstructionCoverage(ls) * 100;
+
+        /*
          * Print
          */
         errs() << "Parallelizer: LoopSelector:    Loop " << l->getID() << "\n";
         errs() << "Parallelizer: LoopSelector:      Function: \"" << loopFunction->getName() << "\"\n";
         errs() << "Parallelizer: LoopSelector:      Loop nesting level: " << ls->getNestingLevel() << "\n";
         errs() << "Parallelizer: LoopSelector:      \"" << *loopHeader->getFirstNonPHI() << "\"\n";
+        errs() << "Parallelizer: LoopSelector:      Coverage: " << hotness << "\%\n";
         errs() << "Parallelizer: LoopSelector:      Whole-program savings = " << savedTimeTotal << "%\n";
         errs() << "Parallelizer: LoopSelector:      Loop savings = " << savedTimeRelative << "%\n";
       }

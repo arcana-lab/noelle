@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "Task.hpp"
+#include "noelle/core/Task.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"
 
 using namespace std;

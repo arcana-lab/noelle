@@ -118,10 +118,10 @@ bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Noelle &par, Heuristics
   auto loopStructure = LDI->getLoopStructure();
   auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(loopStructure);
   auto averageInstructionThreshold = 20;
-  bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
+  auto hasLittleExecution = averageInstructions < averageInstructionThreshold;
   auto maximumSequentialFraction = .2;
   auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI, par);
-  bool hasProportionallySignificantSequentialExecution = sequentialFraction >= maximumSequentialFraction;
+  auto hasProportionallySignificantSequentialExecution = sequentialFraction >= maximumSequentialFraction;
   if (hasLittleExecution && hasProportionallySignificantSequentialExecution) {
     errs() << "Parallelizer:    Loop " << loopID << " has "
       << averageInstructions << " number of sequential instructions on average per loop iteration\n";

@@ -172,7 +172,7 @@ namespace llvm::noelle {
           LoopStructure *LS
           ) ;
 
-      void traverseCycleThroughLoopEntryPHIToGetAllIVInstructions () ;
+      void traverseCycleThroughLoopEntryPHIToGetAllIVInstructions (LoopStructure *LS) ;
 
       void traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions (
           LoopStructure *LS,

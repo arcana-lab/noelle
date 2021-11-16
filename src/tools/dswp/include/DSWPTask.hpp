@@ -11,7 +11,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "Task.hpp"
+#include "noelle/core/Task.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
 

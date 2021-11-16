@@ -126,18 +126,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    * Then, we compute the SCCDAG of this sub-LDG.
    * And then, we can identify IVs from this new SCCDAG.
    */
-  std::vector<Value *> loopInternals;
-  for (auto internalNode : loopDG->internalNodePairs()) {
-      loopInternals.push_back(internalNode.first);
-  }
-  std::unordered_set<DGEdge<Value> *> memDeps{};
-  for (auto currentDependence : loopDG->getSortedDependences()){
-    if (currentDependence->isMemoryDependence()){
-      memDeps.insert(currentDependence);
-    }
-  }
-  auto loopDGWithoutMemoryDeps = loopDG->createSubgraphFromValues(loopInternals, false, memDeps);
-  auto loopSCCDAGWithoutMemoryDeps = new SCCDAG(loopDGWithoutMemoryDeps);
+  auto loopSCCDAGWithoutMemoryDeps = this->computeSCCDAGWithOnlyVariableAndControlDependences(loopDG);
   this->inductionVariables = new InductionVariableManager(liSummary, *invariantManager, SE, *loopSCCDAGWithoutMemoryDeps, *environment, *l);
 
   /*
@@ -243,9 +232,9 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto loopStructure = liSummary.getLoopNestingTreeRoot();
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto env = LoopEnvironment(loopDG, loopExitBlocks);
-  auto preRefinedSCCDAG = SCCDAG(loopInternalDG);
   auto invManager = InvariantManager(loopStructure, loopDG);
-  auto ivManager = InductionVariableManager(liSummary, invManager, SE, preRefinedSCCDAG, env, *l);
+  auto loopSCCDAGWithoutMemoryDeps = this->computeSCCDAGWithOnlyVariableAndControlDependences(loopInternalDG);
+  auto ivManager = InductionVariableManager(liSummary, invManager, SE, *loopSCCDAGWithoutMemoryDeps, env, *l);
   auto domainSpace = LoopIterationDomainSpaceAnalysis(liSummary, ivManager, SE);
   if (this->areLoopAwareAnalysesEnabled){
     refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, &liSummary, &domainSpace);
@@ -402,21 +391,39 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
       continue;
     }
 
-    auto locationProducer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(producer);
-    auto locationConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationFor(consumer);
-    if (!locationProducer || !locationConsumer) {
+    auto locationsProducer = this->memoryCloningAnalysis->getClonableMemoryLocationsFor(producer);
+    auto locationsConsumer = this->memoryCloningAnalysis->getClonableMemoryLocationsFor(consumer);
+    if (locationsProducer.empty() || locationsConsumer.empty()) {
       continue;
     }
 
-    bool isRAW = edge->isRAWDependence()
-      && locationProducer->isInstructionStoringLocation(producer)
-      && locationConsumer->isInstructionLoadingLocation(consumer);
-    bool isWAR = edge->isWARDependence()
-      && locationConsumer->isInstructionLoadingLocation(producer)
-      && locationProducer->isInstructionStoringLocation(consumer);
-    bool isWAW = edge->isWAWDependence()
-      && locationConsumer->isInstructionStoringLocation(producer)
-      && locationProducer->isInstructionStoringLocation(consumer);
+    bool isRAW = false;
+    for (auto locationP : locationsProducer) {
+      for (auto locationC : locationsConsumer) {
+        if (edge->isRAWDependence() && 
+            locationP->isInstructionStoringLocation(producer) && 
+            locationC->isInstructionLoadingLocation(consumer))
+          isRAW = true;
+      }
+    }
+    bool isWAR = false;
+    for (auto locationP : locationsProducer) {
+      for (auto locationC : locationsConsumer) {
+        if (edge->isWARDependence() && 
+            locationP->isInstructionLoadingLocation(producer) && 
+            locationC->isInstructionStoringLocation(consumer))
+          isWAR = true;
+      }
+    }
+    bool isWAW = false;
+    for (auto locationP : locationsProducer) {
+      for (auto locationC : locationsConsumer) {
+        if (edge->isWAWDependence() && 
+            locationP->isInstructionStoringLocation(producer) && 
+            locationC->isInstructionStoringLocation(consumer))
+          isWAW = true;
+      }
+    }
 
     if (!isRAW && !isWAR && !isWAW) {
       continue;
@@ -557,6 +564,41 @@ SCCDAGAttrs * LoopDependenceInfo::getSCCManager (void) const {
       
 LoopEnvironment * LoopDependenceInfo::getEnvironment (void) const {
   return this->environment;
+}
+
+SCCDAG * LoopDependenceInfo::computeSCCDAGWithOnlyVariableAndControlDependences (
+  PDG *loopDG
+  ){
+
+  /*
+   * Compute the set of internal instructions of the loop.
+   */
+  std::vector<Value *> loopInternals;
+  for (auto internalNode : loopDG->internalNodePairs()) {
+      loopInternals.push_back(internalNode.first);
+  }
+
+  /*
+   * Collect the dependences that we want to ignore.
+   */
+  std::unordered_set<DGEdge<Value> *> memDeps{};
+  for (auto currentDependence : loopDG->getSortedDependences()){
+    if (currentDependence->isMemoryDependence()){
+      memDeps.insert(currentDependence);
+    }
+  }
+
+  /*
+   * Compute the new loop dependence graph
+   */
+  auto loopDGWithoutMemoryDeps = loopDG->createSubgraphFromValues(loopInternals, false, memDeps);
+
+  /*
+   * Compute the SCCDAG
+   */
+  auto loopSCCDAGWithoutMemoryDeps = new SCCDAG(loopDGWithoutMemoryDeps);
+
+  return loopSCCDAGWithoutMemoryDeps;
 }
 
 LoopDependenceInfo::~LoopDependenceInfo() {

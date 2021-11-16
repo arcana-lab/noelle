@@ -164,7 +164,8 @@ void DOALL::rewireLoopToIterateChunks (
 	 * 3) Any PHIs of reducible variables
 	 * 4) Any loop invariant instructions that belong to independent-execution SCCs
    */
-  std::set<Instruction *> repeatableInstructions;
+  std::unordered_set<Instruction *> repeatableInstructions;
+  std::unordered_set<Instruction *> reducibleHeaderPHIsWithHeaderLogic;
 
 	/*
 	 * Collect (1) by iterating the InductionVariableManager
@@ -192,7 +193,10 @@ void DOALL::rewireLoopToIterateChunks (
     auto sccInfo = sccManager->getSCCAttrs(scc);
     if (!sccInfo->canExecuteReducibly()) continue;
 
-    // HACK:
+    auto headerPHI = sccInfo->getSingleHeaderPHI();
+    if (!headerPHI) continue;
+
+    bool hasInstsInHeader = false;
     for (auto nodePair : scc->internalNodePairs()) {
       auto value = nodePair.first;
       auto inst = cast<Instruction>(value);
@@ -200,10 +204,13 @@ void DOALL::rewireLoopToIterateChunks (
 
       auto instClone = task->getCloneOfOriginalInstruction(inst);
       repeatableInstructions.insert(instClone);
+      hasInstsInHeader = true;
     }
 
-    // assert(sccInfo->getSingleHeaderPHI());
-    // repeatableInstructions.insert(task->getCloneOfOriginalInstruction(sccInfo->getSingleHeaderPHI()));
+    if (hasInstsInHeader) {
+      auto headerPHIClone = task->getCloneOfOriginalInstruction(headerPHI);
+      reducibleHeaderPHIsWithHeaderLogic.insert(headerPHIClone);
+    }
   }
 
 	/*
@@ -221,6 +228,16 @@ void DOALL::rewireLoopToIterateChunks (
 	}
 
   /*
+   * Fetch the required information to generate any extra condition code needed.
+   */
+  auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
+  auto loopGoverningPHI = task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI());
+  auto origValueUsedToCompareAgainstExitConditionValue = loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue();
+  auto valueUsedToCompareAgainstExitConditionValue = task->getCloneOfOriginalInstruction(origValueUsedToCompareAgainstExitConditionValue);
+  assert(valueUsedToCompareAgainstExitConditionValue != nullptr);
+  auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
+
+  /*
    * Check if we need to check whether we need to add a condition to execute instructions in the new header for tasks that are executing the header in iterations after the last one.
    */
   auto requiresConditionBeforeEnteringHeader = false;
@@ -230,7 +247,80 @@ void DOALL::rewireLoopToIterateChunks (
       break;
     }
   }
+
   if (!requiresConditionBeforeEnteringHeader) {
+
+    /*
+     * If there are any reducible SCCs for which some of the (non-PHI) instructions
+     * are also contained in the header, an exit block SelectInst must be inserted to
+     * ensure that, if the header would NOT have executed its last iteration, the PHI
+     * is treated as the live out instead of the last (non-PHI) instruction.
+     */
+    auto envUser = this->envBuilder->getUser(0);
+    std::vector<std::pair<Instruction *, Instruction *>> headerPHICloneAndProducerPairs;
+    for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
+
+      /*
+       * Fetch the clone of the producer of the current live-out variable.
+       * Fetch the header PHI of the live-out variable.
+       * Check whether the header PHI is part of the set of PHIs we need to guard
+       */
+      auto producer = cast<Instruction>(LDI->environment->producerAt(envIndex));
+      auto scc = sccdag->sccOfValue(producer);
+      auto sccInfo = sccManager->getSCCAttrs(scc);
+      auto headerPHI = sccInfo->getSingleHeaderPHI();
+      auto clonePHI = task->getCloneOfOriginalInstruction(headerPHI);
+
+      if (reducibleHeaderPHIsWithHeaderLogic.find(clonePHI) != reducibleHeaderPHIsWithHeaderLogic.end()) {
+        headerPHICloneAndProducerPairs.push_back(std::make_pair(clonePHI, producer));
+      }
+    }
+
+    /*
+     * Produce exit block SelectInst for all reducible SCCs that have header logic
+     */
+    if (headerPHICloneAndProducerPairs.size() > 0) {
+      auto startValue = fetchClone(loopGoverningIV.getStartValue());
+
+      /*
+       * Piece together the condition for all the SelectInst:
+       * ((prev IV value triggers exit) && (IV header PHI != start value))
+       *  ? header phi // this will contain the pre-header value or the previous latch value
+       *  : original producer // this will be the live out value from the header
+       */
+      IRBuilder<> exitBuilder(task->getLastBlock(0)->getFirstNonPHIOrDbgOrLifetime());
+      auto prevIterationValue = ivUtility.generateCodeToComputeValueToUseForAnIterationAgo(exitBuilder, loopGoverningPHI, stepSize);
+      auto headerToExitCmp = updatedCmpInst->clone();
+      headerToExitCmp->replaceUsesOfWith(valueUsedToCompareAgainstExitConditionValue, prevIterationValue);
+      exitBuilder.Insert(headerToExitCmp);
+      auto wasNotFirstIteration = exitBuilder.CreateICmpNE(loopGoverningPHI, startValue);
+      auto skipLastHeader = exitBuilder.CreateAnd(wasNotFirstIteration, headerToExitCmp);
+
+      /*
+       * Use SelectInst created above to propagate the correct live out value for all reducible SCCs that have header logic
+       */
+      for (auto pair : headerPHICloneAndProducerPairs) {
+        auto headerPHIClone = pair.first;
+        auto producer = pair.second;
+        auto producerClone = task->getCloneOfOriginalInstruction(producer);
+        auto lastReducedInst = cast<Instruction>(exitBuilder.CreateSelect(skipLastHeader, headerPHIClone, producerClone));
+
+        /*
+         * HACK: Replace original producer clone entry with new SelectInst
+         * What would be cleaner is to invoke task->addLiveOut(producer, lastReducedInst) but
+         * this would require ParallelizationTechnique to support the possibility that its internal liveOutClones map
+         * could contain values with no equivalent in the original live out SCC.
+         * TODO: Update fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable to support finding
+         * potentially newly created values that are inserted into the liveOutClones map via the addLiveOut API
+         */
+        task->addInstruction(producer, lastReducedInst);
+      }
+    }
+
+    /*
+     * There is no need for pre-header / latch guards, so we return
+     * TODO: Isolate reducible live out guards and pre-header / latch guards to helper methods so this function's control flow is simpler
+     */
     return ;
   }
 
@@ -238,15 +328,7 @@ void DOALL::rewireLoopToIterateChunks (
    * The new header includes instructions that should be executed only if we know that we didn't pass the last iteration.
    * Hence, we need to add code to check this condition before entering the header.
    * Such code needs to be added for all predecessors of the header: pre-header and latches.
-   *
-   * Fetch the required information to generate the code.
    */
-  auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
-  auto loopGoverningPHI = task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI());
-  auto origValueUsedToCompareAgainstExitConditionValue = loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue();
-  auto valueUsedToCompareAgainstExitConditionValue = task->getCloneOfOriginalInstruction(origValueUsedToCompareAgainstExitConditionValue);
-  assert(valueUsedToCompareAgainstExitConditionValue != nullptr);
-  auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
 
   /*
    * In each latch, check whether we passed the last iteration.

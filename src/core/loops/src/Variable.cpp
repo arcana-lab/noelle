@@ -390,12 +390,10 @@ bool LoopCarriedVariable::hasRoundingError (std::unordered_set<EvolutionUpdate *
    * Casting might change the rounding error.
    * Hence, if casts to and from different precision types are present, further analysis is needed
    */
-  errs() << "XAN: 0\n";
   auto isIntegerTypedCast = false;
   auto isFloatingPointTypedCast = false;
   for (auto cast : this->castsInternalToVariableComputation) {
     auto castTy = cast->getType();
-    errs() << "XAN: CAST " << *cast << "\n";
     isIntegerTypedCast |= castTy->isIntegerTy();
     isFloatingPointTypedCast |= castTy->isFloatingPointTy();
 
@@ -415,7 +413,6 @@ bool LoopCarriedVariable::hasRoundingError (std::unordered_set<EvolutionUpdate *
   if (!isIntegerTypedCast || !isFloatingPointTypedCast) {
     return false;
   }
-  errs() << "XAN: 1\n";
 
   /*
    * Handle the simple case where the accumulation is additive and cast up from integer to floating point
@@ -428,7 +425,6 @@ bool LoopCarriedVariable::hasRoundingError (std::unordered_set<EvolutionUpdate *
     onlyAddition &= update->isAdd() || update->isSubTransformableToAdd();
   }
   if (accumulationType->isIntegerTy() && onlyAddition) {
-    errs() << "XAN: NOOOO\n";
     return false;
   }
 

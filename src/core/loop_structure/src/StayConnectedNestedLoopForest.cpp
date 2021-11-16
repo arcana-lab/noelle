@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Simone Campanoni
+ * Copyright 2019 - 2021 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -9,9 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/StayConnectedNestedLoopForest.hpp"
-
-using namespace llvm;
-using namespace llvm::noelle;
 
 namespace llvm::noelle {
 
@@ -278,7 +275,7 @@ namespace llvm::noelle {
      * Visit the children.
      */
     for (auto child : this->descendants){
-      if (child->visitPreOrder(funcToInvoke, treeLevel + 1)){
+      if (child->visitPostOrder(funcToInvoke, treeLevel + 1)){
         return true ;
       }
     }
@@ -354,4 +351,64 @@ namespace llvm::noelle {
     return n;
   }
  
+  StayConnectedNestedLoopForestNode * StayConnectedNestedLoopForest::getInnermostLoopThatContains (Instruction *i) const {
+    StayConnectedNestedLoopForestNode *n = nullptr;
+
+    /*
+     * Identify only the trees that are about the same function of the target instruction.
+     */
+    for (auto tree : this->getTrees()){
+      
+      /*
+       * Fetch the function of the tree
+       */
+      auto ls = tree->getLoop();
+      auto treeFunction = ls->getFunction();
+
+      /*
+       * Skip trees about functions that do not include the target instruction.
+       */
+      if (treeFunction != i->getFunction()){
+        continue ;
+      }
+
+      /*
+       * The current tree is of the same function of the target instruction.
+       *
+       * Check if the current tree includes the target instruction.
+       */
+      if (!ls->isIncluded(i)){
+
+        /*
+         * The current tree doesn't include the target instruction.
+         */
+        continue ;
+      }
+
+      /*
+       * The current tree includes the target instruction.
+       *
+       * Fetch the innermost loop that contains it.
+       */
+      StayConnectedNestedLoopForestNode *innermostLoop = nullptr;
+      auto finderFunction = [i, &innermostLoop](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
+
+        /*
+         * Fetch the loop
+         */
+        auto loop = n->getLoop();
+        if (loop->isIncluded(i)){
+          innermostLoop = n;
+          return true;
+        }
+        return false;
+      };
+      tree->visitPostOrder(finderFunction);
+      assert(innermostLoop != nullptr);
+      return innermostLoop;
+    }
+
+    return n;
+  }
+
 }

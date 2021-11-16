@@ -86,6 +86,11 @@ namespace llvm::noelle {
         BasicBlock *bb
         );
 
+      LoopStructure * getInnermostLoopThatContains (
+        const std::vector<LoopStructure *> &loops,
+        Instruction *inst
+        );
+
       std::vector<LoopStructure *> * getLoopStructures (void) ;
 
       std::vector<LoopStructure *> * getLoopStructures (

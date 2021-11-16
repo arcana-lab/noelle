@@ -32,8 +32,6 @@ patchInstallDir "noelle-meta-pdg-clean " ;
 patchInstallDir "noelle-meta-loop-embed" ;
 patchInstallDir "noelle-meta-pdg-embed" ;
 patchInstallDir "noelle-meta-prof-embed" ;
-patchInstallDir "noelle-pdg-stats" ;
-patchInstallDir "noelle-loop-stats" ;
 patchInstallDir "noelle-prof-coverage" ;
 patchInstallDir "noelle-config" ;
 patchInstallDir "noelle-simplification" ;

@@ -20,7 +20,7 @@ fi
 
 
 ########### Transformations
-NORMALIZATION_PASSES="${AA_BASE} ${WPAPASS} -mem2reg -simplifycfg-sink-common=false ${WPAPASSINV} -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars"
+NORMALIZATION_PASSES="${AA_BASE} ${WPAPASS} -mem2reg -simplifycfg-sink-common=false ${WPAPASSINV} -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars --functionattrs --rpo-functionattrs"
 
 cmdToExecute="${OPT} ${NORMALIZATION_PASSES} $@"
 echo $cmdToExecute ;

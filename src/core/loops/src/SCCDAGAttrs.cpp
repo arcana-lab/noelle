@@ -397,14 +397,6 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
     auto value = nodePair.first;
     if (auto inst = dyn_cast<Instruction>(value)) {
       if (containedInsts.find(inst) != containedInsts.end()) continue;
-
-      if (auto br = dyn_cast<BranchInst>(inst)) {
-        if (br->isUnconditional()) continue;
-      }
-
-      if (isa<GetElementPtrInst>(inst) || isa<PHINode>(inst) || isa<CastInst>(inst) || isa<CmpInst>(inst)) {
-        continue;
-      }
     }
 
     // value->print(errs() << "Suspect value: "); errs() << "\n";
@@ -582,13 +574,13 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS)
     /*
      * Attempt to locate the instruction's clonable memory location they store/load from
      */
-    auto location = this->memoryCloningAnalysis->getClonableMemoryLocationFor(inst);
+    auto locs = this->memoryCloningAnalysis->getClonableMemoryLocationsFor(inst);
     // inst->print(errs() << "Instruction: "); errs() << "\n";
     // if (!location) { 
     //   errs() << "No location\n";
     //   scc->print(errs() << "Getting close\n", "", 100); errs() << "\n";
     // }
-    if (!location) {
+    if (locs.empty()) {
 
       /*
        * The current loop-carried dependence cannot be removed by cloning.
@@ -600,7 +592,7 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS)
      * The current loop-carried dependence can be removed by cloning.
      */
     // location->getAllocation()->print(errs() << "Location found: "); errs() << "\n";
-    locations.insert(location);
+    locations.insert(locs.begin(), locs.end());
   }
 
   /*
