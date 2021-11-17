@@ -151,9 +151,13 @@ Value *ReferenceTreeExpander::visitUMinExpr (const SCEVUMinExpr *S) {
 }
 
 Value *ReferenceTreeExpander::visitUnknown (const SCEVUnknown *S) {
-  assert(valuesToReferenceAndNotExpand.find(currentNode->getValue()) != valuesToReferenceAndNotExpand.end()
-    && "Non SCEV value that cannot be expanded is not expected to be referenced either");
-  return currentNode->getValue();
+  // assert(valuesToReferenceAndNotExpand.find(currentNode->getValue()) != valuesToReferenceAndNotExpand.end()
+    // && "Non SCEV value that cannot be expanded is not expected to be referenced either");
+  auto unkValue = currentNode->getValue();
+  if (valuesToReferenceAndNotExpand.find(unkValue) != valuesToReferenceAndNotExpand.end()) {
+    return currentNode->getValue();
+  }
+  return nullptr;
 }
 
 Value *ReferenceTreeExpander::visitCouldNotCompute (const SCEVCouldNotCompute* S) {
