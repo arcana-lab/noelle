@@ -226,6 +226,7 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
          * 1) Ensure the indices are integer typed
          * 2) TODO, add more to make this enabler efficient
          */
+        if (!gep->hasIndices()) continue;
         auto index0 = gep->indices().begin()->get();
         auto indexType = index0->getType();
         if (!indexType->isIntegerTy()) continue;
