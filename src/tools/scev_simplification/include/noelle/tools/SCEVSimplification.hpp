@@ -72,14 +72,20 @@ namespace llvm::noelle {
 
       };
 
-      void cacheIVInfo (LoopStructure *rootLoop, InductionVariableManager *ivManager) ;
+      void cacheIVInfo (
+        IVCachedInfo &ivCache,
+        LoopStructure *rootLoop,
+        InductionVariableManager *ivManager
+      ) ;
 
       void searchForInstructionsDerivedFromMultipleIVs (
+        IVCachedInfo &ivCache,
         LoopStructure *rootLoop,
         InvariantManager *invariantManager
       ) ;
 
       bool upCastIVRelatedInstructionsDerivingGEP (
+        IVCachedInfo &ivCache,
         LoopStructure *rootLoop,
         InductionVariableManager *ivManager,
         InvariantManager *invariantManager,
@@ -100,7 +106,6 @@ namespace llvm::noelle {
       Noelle &noelle;
       unsigned ptrSizeInBits;
       IntegerType *intTypeForPtrSize;
-      IVCachedInfo ivCache;
 
   };
 

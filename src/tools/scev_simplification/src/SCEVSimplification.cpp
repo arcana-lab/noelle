@@ -201,8 +201,9 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
     errs() << "SCEVSimplification:  Start\n";
   }
 
-  cacheIVInfo(rootLoop, ivManager);
-  searchForInstructionsDerivedFromMultipleIVs(rootLoop, invariantManager);
+  IVCachedInfo ivCache;
+  cacheIVInfo(ivCache, rootLoop, ivManager);
+  searchForInstructionsDerivedFromMultipleIVs(ivCache, rootLoop, invariantManager);
 
   /*
   for (auto instIVPair : ivCache.ivByInstruction) {
@@ -250,7 +251,7 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
     validGepsToUpCast.insert(gepDerivation);
   }
 
-  bool modified = upCastIVRelatedInstructionsDerivingGEP(rootLoop, ivManager, invariantManager, validGepsToUpCast);
+  bool modified = upCastIVRelatedInstructionsDerivingGEP(ivCache, rootLoop, ivManager, invariantManager, validGepsToUpCast);
 
   for (auto gepDerivation : validGepsToUpCast) {
     delete gepDerivation;
@@ -259,7 +260,7 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
   return modified;
 }
 
-void SCEVSimplification::cacheIVInfo (LoopStructure *rootLoop, InductionVariableManager *ivManager) {
+void SCEVSimplification::cacheIVInfo (IVCachedInfo &ivCache, LoopStructure *rootLoop, InductionVariableManager *ivManager) {
 
   /*
    * Detect all loop governing IVs across the nested loop structure
@@ -291,6 +292,7 @@ void SCEVSimplification::cacheIVInfo (LoopStructure *rootLoop, InductionVariable
  * REFACTOR: Notice the similarity between this and the InductionVariable derived instruction search
  */
 void SCEVSimplification::searchForInstructionsDerivedFromMultipleIVs (
+  IVCachedInfo &ivCache,
   LoopStructure *rootLoop,
   InvariantManager *invariantManager
 ) {
@@ -399,6 +401,7 @@ void SCEVSimplification::searchForInstructionsDerivedFromMultipleIVs (
  * Remove any shl-ashr pairs that act as truncations
  */
 bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
+  IVCachedInfo &ivCache,
   LoopStructure *rootLoop,
   InductionVariableManager *ivManager,
   InvariantManager *invariantManager,
