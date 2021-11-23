@@ -298,7 +298,10 @@ void SequentialSegment::determineEntryAndExitFrontier (
   for (auto B : rootLoop->getBasicBlocks()) {
     auto I = &*B->begin();
 
+    // The condition ensuring I is not a member of SS is in case the SS only has 1 instruction,
+    // which then causes checkIfBeforeEntryFrontier and checkIfAfterExitFrontier to return true
     if (true
+      && (ssInstructions.find(I) == ssInstructions.end())
       && checkIfBeforeEntryFrontier(I)
       && checkIfAfterExitFrontier(I)
     ) {
