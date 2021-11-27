@@ -164,9 +164,9 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
     }
     if (hasExternalMemoryDependence) continue;
 
-    if (noelle.getVerbosity() >= Verbosity::Maximal) {
-      memoryLocation->print(errs() << "Mem2Reg:  Possible loop invariant memory location: "); errs() << "\n";
-    }
+    //if (noelle.getVerbosity() >= Verbosity::Maximal) {
+      // memoryLocation->print(errs() << "Mem2Reg:  Possible loop invariant memory location: "); errs() << "\n";
+    //}
 
     if (auto memoryInst = dyn_cast<Instruction>(memoryLocation)) {
       if (loopStructure->isIncluded(memoryInst)

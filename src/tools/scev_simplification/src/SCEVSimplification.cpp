@@ -27,14 +27,20 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
   LoopDependenceInfo const &LDI,
   ScalarEvolution &SE
 ) {
-  errs() << "SCEVSimplification: Start\n";
+
+  if (noelle.getVerbosity() != Verbosity::Disabled) {
+    errs() << "SCEVSimplification: Start trying to simplify loop governing IV condition\n";
+  }
 
   /*
    * Fetch the information about the loop.
    */
   auto rootLoop = LDI.getLoopStructure();
   auto ivManager = LDI.getInductionVariableManager();
-  errs() << "SCEVSimplification:    Loop " << *rootLoop->getHeader()->getFirstNonPHI() << "\n";
+
+  if (noelle.getVerbosity() != Verbosity::Disabled) {
+    errs() << "SCEVSimplification:    Loop " << *rootLoop->getHeader()->getFirstNonPHI() << "\n";
+  }
 
   /*
    * Attempt to find a branch instruction contained within an IV's SCC
@@ -82,12 +88,20 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
    * The branch condition must be a CmpInst on an intermediate value of the loop governing IV
    */
   if (!loopGoverningIV) {
-    errs() << "SCEVSimplification: Exit\n";
+
+    if (noelle.getVerbosity() != Verbosity::Disabled) {
+      errs() << "SCEVSimplification: Exit. Loop does not have a governing IV\n";
+    }
+
     return false;
   }
   auto cmpInst = dyn_cast<CmpInst>(loopGoverningBranchInst->getCondition());
   if (!cmpInst) {
-    errs() << "SCEVSimplification: Exit\n";
+
+    if (noelle.getVerbosity() != Verbosity::Disabled) {
+      errs() << "SCEVSimplification: Exit. Governing IV exit condition is not understood\n";
+    }
+
     return false;
   }
 
@@ -102,7 +116,11 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
   auto isOpRHSAnIntermediate = isa<Instruction>(opR)
     && ivInstructions.find(cast<Instruction>(opR)) != ivInstructions.end();
   if (!(isOpLHSAnIntermediate ^ isOpRHSAnIntermediate)) {
-    errs() << "SCEVSimplification: Exit\n";
+
+    if (noelle.getVerbosity() != Verbosity::Disabled) {
+      errs() << "SCEVSimplification: Exit. Governing IV exit CmpInst is not understood\n";
+    }
+
     return false;
   }
 
@@ -112,7 +130,11 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
   auto intermediateValueUsedInCompare = cast<Instruction>(isOpLHSAnIntermediate ? opL : opR);
   auto loopEntryPHI = loopGoverningIV->getLoopEntryPHI();
   if (intermediateValueUsedInCompare == loopEntryPHI) {
-    errs() << "SCEVSimplification: Exit\n";
+
+    if (noelle.getVerbosity() != Verbosity::Disabled) {
+      errs() << "SCEVSimplification: Exit. Governing IV exit CmpInst is already comparing against loop entry PHI\n";
+    }
+
     return false;
   }
 
@@ -123,7 +145,11 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
   auto intermediateStartSCEV = cast<SCEVAddRecExpr>(SE.getSCEV(intermediateValueUsedInCompare))->getStart();
   auto offsetSCEV = getOffsetBetween(SE, loopEntryPHIStartSCEV, intermediateStartSCEV);
   if (!offsetSCEV) {
-    errs() << "SCEVSimplification: Exit\n";
+
+    if (noelle.getVerbosity() != Verbosity::Disabled) {
+      errs() << "SCEVSimplification: Exit. Governing IV exit CmpInst offset value from loop entry PHI is not understood\n";
+    }
+
     return false;
   }
 
@@ -137,7 +163,11 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
     /*
      * TODO: Handle fetching values for cast and nary SCEVs
      */
-    errs() << "SCEVSimplification: Exit\n";
+
+    if (noelle.getVerbosity() != Verbosity::Disabled) {
+      errs() << "SCEVSimplification: Exit. Governing IV exit CmpInst offset SCEV from loop entry PHI is not understood\n";
+    }
+
     return false;
   }
 
@@ -152,10 +182,11 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards (
   auto adjustedConditionValue = loopEntryBuilder.CreateSub(conditionValue, offsetValue);
   cmpInst->setOperand(ivOp, loopEntryPHI);
   cmpInst->setOperand(conditionValueOp, adjustedConditionValue);
-  cmpInst->print(errs() << "SCEVSimplification:  Simplified to use loop entry PHI: ");
-  errs() << "\n";
 
-  errs() << "SCEVSimplification: Exit\n";
+  if (noelle.getVerbosity() != Verbosity::Disabled) {
+    cmpInst->print(errs() << "SCEVSimplification: Exit. Simplified CmpInst to use loop entry PHI: "); errs() << "\n";
+  }
+
   return true;
 }
 
@@ -197,7 +228,7 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
   InductionVariableManager *ivManager
 ) {
 
-  if (noelle.getVerbosity() >= Verbosity::Maximal) {
+  if (noelle.getVerbosity() != Verbosity::Disabled) {
     errs() << "SCEVSimplification:  Start\n";
   }
 
@@ -1034,9 +1065,11 @@ bool SCEVSimplification::simplifyConstantPHIs (
     }
     if (!isPHIPropagation) continue;
 
-    headerPHI->print(errs() << "PHI is part of PHI-only propagation: "); errs() << "\n";
-    for (auto phi : phiCycle) {
-      phi->print(errs() << "\tpart of PHI-only propagation: "); errs() << "\n";
+    if (noelle.getVerbosity() >= Verbosity::Maximal) {
+      headerPHI->print(errs() << "SCEVSimplification: Removing loop entry PHI (part of PHI-only propagation): "); errs() << "\n";
+      for (auto phi : phiCycle) {
+        phi->print(errs() << "SCEVSimplification: \tRemoving PHI (part of PHI-only propagation): "); errs() << "\n";
+      }
     }
 
     /*
@@ -1077,9 +1110,6 @@ bool SCEVSimplification::simplifyConstantPHIs (
     for (auto phi : phiCycle) {
       if (removedPHIs.find(phi) != removedPHIs.end()){
         continue ;
-      }
-      for (auto& use : phi->uses()){
-        use.set(UndefValue::get(phi->getType()));
       }
       phi->eraseFromParent();
       removedPHIs.insert(phi);
