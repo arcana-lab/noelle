@@ -46,7 +46,8 @@ std::vector<Function *> * Noelle::getModuleFunctionsReachableFrom (Module *modul
   /*
    * Fetch the call graph.
    */
-  auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
+  auto fm = this->getFunctionsManager();
+  auto callGraph = fm->getProgramCallGraph();
 
   /* 
    * Compute the set of functions reachable from the starting point.
@@ -60,9 +61,10 @@ std::vector<Function *> * Noelle::getModuleFunctionsReachableFrom (Module *modul
     if (funcSet.find(func) != funcSet.end()) continue;
     funcSet.insert(func);
 
-    auto funcCGNode = callGraph[func];
-    for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
-      auto F = callRecord.second->getFunction();
+    auto funcCGNode = callGraph->getFunctionNode(func);
+    for (auto outEdge : funcCGNode->getOutgoingEdges()){
+      auto calleeNode = outEdge->getCallee();
+      auto F = calleeNode->getFunction();
       if (!F) {
         continue ;
       }

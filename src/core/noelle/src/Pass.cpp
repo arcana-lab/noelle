@@ -105,7 +105,6 @@ bool Noelle::doInitialization (Module &M) {
 }
 
 void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<AssumptionCacheTracker>();
   AU.addRequired<DominatorTreeWrapperPass>();
