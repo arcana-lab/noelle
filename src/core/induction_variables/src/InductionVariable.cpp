@@ -115,8 +115,10 @@ void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions (
   std::set<CastInst *> castsToAdd{};
   for (auto intermediateValue : this->allInstructions) {
     for (auto user : intermediateValue->users()) {
-      if (!isa<CastInst>(user)) continue;
-      castsToAdd.insert(cast<CastInst>(user));
+      if (auto castInst = dyn_cast<CastInst>(user)) {
+        if (!LS->isIncluded(castInst)) continue;
+        castsToAdd.insert(castInst);
+      }
     }
   }
   this->allInstructions.insert(castsToAdd.begin(), castsToAdd.end());

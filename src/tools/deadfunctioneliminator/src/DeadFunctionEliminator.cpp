@@ -70,7 +70,7 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
     /*
       * We found a function that has only one other function that can invoke it.
       *
-      * Check how many callers this function includes.
+      * Check how many call instructions can invoke @node
       */
     auto callingEdge = *callerNodes.begin();
     auto callerEdges = callingEdge->getSubEdges();
@@ -117,12 +117,13 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
         * This is an indirect call.
         * Translate it to a direct call.
         */
+      errs() << "DeadFunctionEliminator: Found an opportunity to devirtualize\n";
       //TODO
       continue ;
     }
     assert(callInst->getCalledFunction() == nodeFunction);
-    InlineFunctionInfo IFI;
     errs() << "DeadFunctionEliminator: Inline " << *callInst << " into " << callInst->getFunction()->getName() << "\n";
+    InlineFunctionInfo IFI;
     modified |= InlineFunction(callInst, IFI);
   }
   if (modified) {

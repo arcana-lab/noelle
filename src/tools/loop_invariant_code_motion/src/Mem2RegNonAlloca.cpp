@@ -164,9 +164,9 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
     }
     if (hasExternalMemoryDependence) continue;
 
-    if (noelle.getVerbosity() >= Verbosity::Maximal) {
-      memoryLocation->print(errs() << "Mem2Reg:  Possible loop invariant memory location: "); errs() << "\n";
-    }
+    //if (noelle.getVerbosity() >= Verbosity::Maximal) {
+      // memoryLocation->print(errs() << "Mem2Reg:  Possible loop invariant memory location: "); errs() << "\n";
+    //}
 
     if (auto memoryInst = dyn_cast<Instruction>(memoryLocation)) {
       if (loopStructure->isIncluded(memoryInst)
@@ -237,7 +237,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
           B->printAsOperand(errs() << "Mem2Reg: placeholder PHI required: "); errs() << "\n";
         }
 
-        IRBuilder<> builder(B->getFirstNonPHIOrDbgOrLifetime());
+        IRBuilder<> builder(B->getFirstNonPHI());
         int32_t numPreds = pred_size(B);
         auto phi = builder.CreatePHI(initialLoad->getType(), numPreds);
         lastRegisterValueByBlock.insert(std::make_pair(B, phi));
@@ -272,7 +272,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
         lastValue = lastRegisterValueByBlock.at(singlePredBlock);
       } else {
 
-        IRBuilder<> builder(B->getFirstNonPHIOrDbgOrLifetime());
+        IRBuilder<> builder(B->getFirstNonPHI());
         auto numPreds = pred_size(B);
         auto phi = builder.CreatePHI(initialLoad->getType(), numPreds);
         allPHIs.insert(phi);
@@ -353,7 +353,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
        */
       if (prevValue == phi) {
         auto numPreds = pred_size(predBlock);
-        IRBuilder<> builder(predBlock->getFirstNonPHIOrDbgOrLifetime());
+        IRBuilder<> builder(predBlock->getFirstNonPHI());
         auto intermediatePHI = builder.CreatePHI(phi->getType(), numPreds);
         for (auto latchPredBlock : predecessors(predBlock)) {
           intermediatePHI->addIncoming(phi, latchPredBlock);
@@ -373,7 +373,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
    * This may require creating a PHI at the loop exit
    */
   for (auto exitBlock : loopStructure->getLoopExitBasicBlocks()) {
-    IRBuilder<> exitBuilder(exitBlock->getFirstNonPHIOrDbgOrLifetime());
+    IRBuilder<> exitBuilder(exitBlock);
 
     Value *lastValue = nullptr;
     auto singlePredBlock = exitBlock->getSinglePredecessor();
@@ -385,6 +385,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
     } else {
 
       auto numPreds = pred_size(exitBlock);
+      exitBuilder.SetInsertPoint(exitBlock->getFirstNonPHI());
       auto exitPHI = exitBuilder.CreatePHI(initialLoad->getType(), numPreds);
       for (auto exitPredBlock : predecessors(exitBlock)) {
         assertAndDumpLogsOnFailure(
@@ -396,6 +397,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
       lastValue = exitPHI;
     }
 
+    exitBuilder.SetInsertPoint(exitBlock->getFirstNonPHIOrDbgOrLifetime());
     exitBuilder.CreateStore(lastValue, memoryLocation);
   }
 

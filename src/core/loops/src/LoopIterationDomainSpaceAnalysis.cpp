@@ -579,10 +579,16 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
      * which might not use ScalarEvolution cache, we fetch the cached SCEV via the matched instruction
      */
     auto subscriptSCEV = SE.getSCEV(inst);
+    if (!subscriptSCEV) return false;
+
     if (isa<SCEVSignExtendExpr>(subscriptSCEV) || isa<SCEVTruncateExpr>(subscriptSCEV) || isa<SCEVZeroExtendExpr>(subscriptSCEV)) {
       subscriptSCEV = cast<SCEVCastExpr>(subscriptSCEV)->getOperand();
     }
-    auto zeroConstant = (ConstantInt *)ConstantInt::get(subscriptSCEV->getType(), (int64_t)0);
+
+    auto subscriptType = subscriptSCEV->getType();
+    if (!isa<IntegerType>(subscriptType)) return false;
+
+    auto zeroConstant = (ConstantInt *)ConstantInt::get(subscriptType, (int64_t)0);
     auto zeroSCEV = SE.getConstant(zeroConstant);
 
     // sizeSCEV->print(errs() << "Checking if bounded by 0 and ");
