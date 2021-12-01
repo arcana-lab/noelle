@@ -78,6 +78,8 @@ namespace llvm::noelle {
 
       bool isDerivedFromIVInstructions (Instruction *I) const;
 
+      Type * getIVType (void) const;
+
       ~InductionVariable ();
 
     private:
@@ -146,6 +148,11 @@ namespace llvm::noelle {
        * Whether the computed step value's uses are all loop invariant/external
        */
       bool isComputedStepValueLoopInvariant;
+
+      /*
+      * Type of the loopEntryPHI which represents the type of the whole IV
+      */
+      Type * loopEntryPHIType;
 
       /*
        * Helper functions and structures

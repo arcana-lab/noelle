@@ -122,4 +122,49 @@ Value *IVUtility::offsetIVPHI (
   return offsetStartValue;
 }
 
+Value *IVUtility::scaleInductionVariableStep (
+          BasicBlock *insertBlock,
+          PHINode *ivPhi,
+          Value *stepSize,
+          Value *scale
+) {
+  IRBuilder<> insertBuilder(insertBlock->getTerminator());
+
+  Value* stepXscale = nullptr;
+
+  auto ivType = ivPhi->getType();
+  if (ivType->isFloatingPointTy()) {
+    stepXscale = insertBuilder.CreateFMul(
+        stepSize,
+        insertBuilder.CreateSIToFP( 
+          scale,
+          stepSize->getType()
+          )
+      );
+  } else {
+    stepXscale = insertBuilder.CreateMul(
+        stepSize,
+        insertBuilder.CreateZExtOrTrunc(
+          scale,
+          stepSize->getType()
+          )
+      );    
+  }
+
+  return stepXscale;
+}
+
+Value *IVUtility::computeInductionVariableValueForIteration (
+          BasicBlock *insertBlock,
+          PHINode *ivPhi,
+          Value *startValue,
+          Value *stepSize,
+          Value *iteration
+) {
+  IRBuilder<> insertBuilder(insertBlock->getTerminator());
+  Value* stepXiteration = IVUtility::scaleInductionVariableStep(insertBlock, ivPhi, stepSize, iteration);
+  Value *valueAtIteration = IVUtility::offsetIVPHI(insertBlock, ivPhi, startValue, stepXiteration);
+  return valueAtIteration;
+}
+
 }

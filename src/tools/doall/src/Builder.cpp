@@ -57,14 +57,17 @@ void DOALL::rewireLoopToIterateChunks (
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getLoopEntryPHI()));
 
-    auto nthCoreOffset = entryBuilder.CreateMul(
-      stepOfIV,
-      entryBuilder.CreateZExtOrTrunc(
-        entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg, "coreIdx_X_chunkSize"),
-        stepOfIV->getType()
-      ),
-      "stepSize_X_coreIdx_X_chunkSize"
-    );
+// DANGER
+    // auto nthCoreOffset = entryBuilder.CreateMul(
+    //   stepOfIV,
+    //   entryBuilder.CreateZExtOrTrunc(
+    //     entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg, "coreIdx_X_chunkSize"),
+    //     stepOfIV->getType()
+    //   ),
+    //   "stepSize_X_coreIdx_X_chunkSize"
+    // );
+    auto nthCoreOffset = IVUtility::scaleInductionVariableStep(preheaderClone, ivPHI, stepOfIV,
+        entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg, "coreIdx_X_chunkSize"));
 
     auto offsetStartValue = IVUtility::offsetIVPHI(preheaderClone, ivPHI, startOfIV, nthCoreOffset);
     ivPHI->setIncomingValueForBlock(preheaderClone, offsetStartValue);
@@ -79,18 +82,25 @@ void DOALL::rewireLoopToIterateChunks (
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getLoopEntryPHI()));
     auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
-    auto chunkStepSize = entryBuilder.CreateMul(
-      stepOfIV,
-      entryBuilder.CreateZExtOrTrunc(
+    // auto chunkStepSize = entryBuilder.CreateMul(
+    //   stepOfIV,
+    //   entryBuilder.CreateZExtOrTrunc(
+    //     entryBuilder.CreateMul(
+    //       entryBuilder.CreateSub(task->numCoresArg, onesValueForChunking, "numCoresMinus1"),
+    //       task->chunkSizeArg,
+    //       "numCoresMinus1_X_chunkSize"
+    //     ),
+    //     stepOfIV->getType()
+    //   ),
+    //   "stepSizeToNextChunk"
+    // );
+
+    auto chunkStepSize = IVUtility::scaleInductionVariableStep(preheaderClone, ivPHI, stepOfIV, 
         entryBuilder.CreateMul(
           entryBuilder.CreateSub(task->numCoresArg, onesValueForChunking, "numCoresMinus1"),
           task->chunkSizeArg,
           "numCoresMinus1_X_chunkSize"
-        ),
-        stepOfIV->getType()
-      ),
-      "stepSizeToNextChunk"
-    );
+        ));
 
     IVUtility::chunkInductionVariablePHI(preheaderClone, ivPHI, chunkPHI, chunkStepSize);
   }

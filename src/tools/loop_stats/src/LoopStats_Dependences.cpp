@@ -29,7 +29,7 @@ void LoopStats::collectStatsOnLLVMSCCs (Hot *profiles, PDG *loopDG, Stats *stats
   return ;
 }
 
-void LoopStats::collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI, Stats *statsForLoop) {
+void LoopStats::collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI, Stats *statsForLoop, Loop &llvmLoop) {
 
   /*
    * HACK: we need to re-compute SCCDAGAttrs instead of using the one provided by LDI
@@ -57,7 +57,7 @@ void LoopStats::collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI
   auto environment = LoopEnvironment(loopDG, loopExitBlocks);
   auto invariantManager = LDI.getInvariantManager();
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*loopFunction).getSE();
-  auto inductionVariables = InductionVariableManager(loopHierarchy, *invariantManager, SE, loopInternalSCCDAG, environment);
+  auto inductionVariables = InductionVariableManager(loopHierarchy, *invariantManager, SE, loopInternalSCCDAG, environment, llvmLoop);
   auto sccdagAttrs = SCCDAGAttrs(true, loopDG, &loopInternalSCCDAG, loopHierarchy, SE, inductionVariables, DS);
 
   //DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-" + std::to_string(LDI.getID()) + ".dot", &loopInternalSCCDAG);

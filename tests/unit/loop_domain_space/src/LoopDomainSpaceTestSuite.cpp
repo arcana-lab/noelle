@@ -134,7 +134,7 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithoutSCEVSimplification (void) {
   errs() << "Constructing invariant manager\n";
   InvariantManager invariantManager(LIS->getLoopNestingTreeRoot(), loopDG);
   errs() << "Constructing IV manager\n";
-  this->IVM = new InductionVariableManager(*LIS, invariantManager, *SE, loopSCCDAG, environment);
+  this->IVM = new InductionVariableManager(*LIS, invariantManager, *SE, loopSCCDAG, environment, *topLoop);
   errs() << "Constructing loop iteration domain space analysis\n";
   this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(*LIS, *IVM, *SE);
   errs() << "Finished\n";
@@ -164,7 +164,7 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithSCEVSimplification (void) {
   errs() << "Constructing invariant manager\n";
   InvariantManager invariantManager(LIS->getLoopNestingTreeRoot(), loopDG);
   errs() << "Constructing IV manager\n";
-  this->IVM = new InductionVariableManager(*LIS, invariantManager, *SE, loopSCCDAG, environment);
+  this->IVM = new InductionVariableManager(*LIS, invariantManager, *SE, loopSCCDAG, environment, *topLoop);
 
   auto& noelle = getAnalysis<Noelle>();
   SCEVSimplification scevSimplify(noelle);

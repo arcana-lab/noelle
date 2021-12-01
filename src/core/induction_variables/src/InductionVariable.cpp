@@ -22,10 +22,10 @@ InductionVariable::InductionVariable  (
   LoopEnvironment &loopEnv,
   ScalarEvolutionReferentialExpander &referentialExpander,
   InductionDescriptor &ID
-) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{ID.getStartValue()},
+) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{ID.getStartValue()}, loopEntryPHIType{loopEntryPHI->getType()},
     stepSCEV{ID.getStep()}, computationOfStepValue{}, singleStepValue{ID.getConstIntStepValue()}, isComputedStepValueLoopInvariant{false} {
 
-  traverseCycleThroughLoopEntryPHIToGetAllIVInstructions();
+  traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(LS);
   traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
   collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
   deriveStepValue(LS, SE, referentialExpander, loopEnv);
@@ -39,7 +39,7 @@ InductionVariable::InductionVariable  (
   SCC &scc,
   LoopEnvironment &loopEnv,
   ScalarEvolutionReferentialExpander &referentialExpander
-) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{nullptr},
+) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{nullptr}, loopEntryPHIType{loopEntryPHI->getType()},
     stepSCEV{nullptr}, computationOfStepValue{}, isComputedStepValueLoopInvariant{false} {
 
   /*
@@ -461,6 +461,10 @@ bool InductionVariable::isStepValuePositive (void) const {
   auto p = cast<ConstantInt>(stepValue)->getValue().isStrictlyPositive();
 
   return p;
+}
+
+Type * InductionVariable::getIVType (void) const {
+  return loopEntryPHIType;
 }
 
 }

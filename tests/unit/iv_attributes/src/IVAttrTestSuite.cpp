@@ -71,7 +71,7 @@ bool IVAttrTestSuite::runOnModule (Module &M) {
   errs() << "IVAttrTestSuite: Running IV analysis\n";
   auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
   auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
-  this->IVs = new InductionVariableManager(*LIS, invariantManager, *SE, *sccdag, *environment);
+  this->IVs = new InductionVariableManager(*LIS, invariantManager, *SE, *sccdag, *environment, *topLoop);
   errs() << "IVAttrTestSuite: Finished IV analysis\n";
 
   suite->runTests((ModulePass &)*this);

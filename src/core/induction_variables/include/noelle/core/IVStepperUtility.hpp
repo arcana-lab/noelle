@@ -33,6 +33,9 @@ namespace llvm::noelle {
           Value *chunkStepSize
           ) ;
 
+      /*
+      * Inserts instruction to add offsetValue to startValue. Returns the result of this addition
+      */
       static Value *offsetIVPHI (
           BasicBlock *insertBlock,
           PHINode *ivPHI,
@@ -40,10 +43,34 @@ namespace llvm::noelle {
           Value *offsetValue
           );
 
+      /*
+      * Inserts add instructions to incoming blocks (besides preheader) to scale ivPHI incoming values by additionalStepSize
+      */
       static void stepInductionVariablePHI (
           BasicBlock *preheaderBlock,
           PHINode *ivPHI,
           Value *additionalStepSize
+          );
+
+      /*
+      * Inserts instructions to compute stepSize*scale
+      */
+      static Value *scaleInductionVariableStep (
+          BasicBlock *insertBlock,
+          PHINode *ivPhi,
+          Value *stepSize,
+          Value *scale
+          );
+
+      /*
+      * Inserts instructions to compute startValue + stepSize*iteration
+      */
+      static Value *computeInductionVariableValueForIteration (
+          BasicBlock *insertBlock,
+          PHINode *ivPhi,
+          Value *startValue,
+          Value *stepSize,
+          Value *iteration
           );
 
   };

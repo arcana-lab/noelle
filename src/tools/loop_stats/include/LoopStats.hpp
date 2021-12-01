@@ -66,14 +66,14 @@ namespace llvm::noelle {
       void collectStatsForLoops (Noelle &noelle, std::vector<LoopDependenceInfo *> const & loops);
 
       void collectStatsForLoop (Hot *profiles, int id, ScalarEvolution &SE, PDG *loopDG, Loop &llvmLoop);
-      void collectStatsForLoop (Hot *profiles, LoopDependenceInfo &LDI);
+      void collectStatsForLoop (Hot *profiles, LoopDependenceInfo &LDI, Loop &llvmLoop);
 
       void collectStatsOnLLVMSCCs (Hot *profiles, PDG *loopDG, Stats *statsForLoop);
       void collectStatsOnLLVMIVs (Hot *profiles, ScalarEvolution &SE, Loop &llvmLoop, Stats *stats);
       void collectStatsOnLLVMInvariants (Hot *profiles, Loop &llvmLoop, Stats *stats);
 
       void collectStatsOnNoelleIVs (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats);
-      void collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats);
+      void collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats, Loop &llvmLoop);
       void collectStatsOnNoelleInvariants (Hot *profiles, LoopDependenceInfo &LDI, Stats *stats);
 
       void collectStatsOnSCCDAG (Hot *profiles, SCCDAG *sccdag, SCCDAGAttrs *sccdagAttrs, LoopDependenceInfo *ldi, Stats *statsForLoop) ;

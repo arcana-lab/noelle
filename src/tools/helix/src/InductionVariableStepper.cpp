@@ -87,36 +87,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
     auto originalIVPHI = ivInfo->getLoopEntryPHI();
     auto ivPHI = cast<PHINode>(fetchClone(originalIVPHI));
 
-    // Cast task->coreArg to the type of stepOfIV
-    // task->coreArg is always an integer
-    Value* cast = nullptr;
-    if (stepOfIV->getType()->isFloatingPointTy())
-      cast = entryBuilder.CreateSIToFP( 
-          task->coreArg,
-          stepOfIV->getType()
-          );
-    else
-      cast = entryBuilder.CreateZExtOrTrunc(
-          task->coreArg,
-          stepOfIV->getType()
-          );
-    
-    Value* nthCoreOffset = nullptr;
-    if (stepOfIV->getType()->isFloatingPointTy()) {
-      nthCoreOffset = entryBuilder.CreateFMul(
-        stepOfIV,
-        cast,
-        "stepSize_X_coreIdx"
-        );
-    } else {
-      nthCoreOffset = entryBuilder.CreateMul(
-        stepOfIV,
-        cast,
-        "stepSize_X_coreIdx"
-        );
-    }
-
-    auto offsetStartValue = IVUtility::offsetIVPHI(preheaderClone, ivPHI, startOfIV, nthCoreOffset);
+    auto offsetStartValue = IVUtility::computeInductionVariableValueForIteration(preheaderClone, ivPHI, startOfIV, stepOfIV, task->coreArg);
     ivPHI->setIncomingValueForBlock(preheaderClone, offsetStartValue);
   }
 
@@ -133,33 +104,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
           task->numCoresArg,
           ConstantInt::get(task->numCoresArg->getType(), 1)
         );
-
-    Value* cast = nullptr;
-    if (stepOfIV->getType()->isFloatingPointTy())
-      cast = entryBuilder.CreateSIToFP( 
-          numCoresMinusOne,
-          stepOfIV->getType()
-          );
-    else
-      cast = entryBuilder.CreateZExtOrTrunc(
-          numCoresMinusOne,
-          stepOfIV->getType()
-          );
-
-    Value* jumpStepSize = nullptr;
-    if (stepOfIV->getType()->isFloatingPointTy()) {
-      jumpStepSize = entryBuilder.CreateFMul(
-        stepOfIV,
-        cast,
-        "nCoresStepSize"
-        );
-    } else {
-      jumpStepSize = entryBuilder.CreateMul(
-        stepOfIV,
-        cast,
-        "nCoresStepSize"
-        );
-    }    
+    Value* jumpStepSize = IVUtility::scaleInductionVariableStep(preheaderClone, ivPHI, stepOfIV, numCoresMinusOne);
 
     IVUtility::stepInductionVariablePHI(preheaderClone, ivPHI, jumpStepSize);
   }

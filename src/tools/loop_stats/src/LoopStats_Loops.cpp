@@ -34,14 +34,14 @@ void LoopStats::collectStatsForLoop (Hot *profiles, int id, ScalarEvolution &SE,
   return ;
 }
 
-void LoopStats::collectStatsForLoop (Hot *profiles, LoopDependenceInfo &LDI) {
+void LoopStats::collectStatsForLoop (Hot *profiles, LoopDependenceInfo &LDI, Loop &llvmLoop) {
   auto loopStructure = LDI.getLoopStructure();
   auto statsForLoop = new Stats();
   statsByLoopAccordingToNoelle.insert(std::make_pair(LDI.getID(), statsForLoop));
   statsForLoop->loopID = loopStructure->getID();
 
   collectStatsOnNoelleIVs(profiles, LDI, statsForLoop);
-  collectStatsOnNoelleSCCs(profiles, LDI, statsForLoop);
+  collectStatsOnNoelleSCCs(profiles, LDI, statsForLoop, llvmLoop);
   collectStatsOnNoelleInvariants(profiles, LDI, statsForLoop);
 
   /*

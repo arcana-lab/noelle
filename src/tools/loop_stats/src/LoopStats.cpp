@@ -32,7 +32,15 @@ void LoopStats::collectStatsForLoops (Noelle &noelle, std::vector<LoopDependence
     if (noelle.getVerbosity() > Verbosity::Disabled) {
       errs() << "LoopStats: Collecting stats for: \n";
     }
-    collectStatsForLoop(profiles, *loop);
+
+    auto loopStructure = loop->getLoopStructure();
+    auto loopHeader = loopStructure->getHeader();
+    auto loopFunction = loopStructure->getFunction();
+
+    auto &LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
+    auto llvmLoop = LI.getLoopFor(loopHeader);
+
+    collectStatsForLoop(profiles, *loop, *llvmLoop);
   }
 
   /*
