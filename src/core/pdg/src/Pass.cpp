@@ -79,14 +79,14 @@ bool PDGAnalysis::runOnModule (Module &M){
   identifyFunctionsThatInvokeUnhandledLibrary(M);
 
   /*
-   * Construct PDG.
-   */
-  auto currentPDG = this->getPDG();
-
-  /*
    * Check if we should dumpt the PDG
    */
   if (this->dumpPDG){
+
+    /*
+     * Construct PDG.
+     */
+    auto currentPDG = this->getPDG();
 
     /*
      * Dump the PDG
