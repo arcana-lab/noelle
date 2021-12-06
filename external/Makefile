@@ -1,7 +1,6 @@
 DEBUG?=0
 JOBS?=8
 SVF_BRANCH?=SVF-1.8
-SCAF_BRANCH?=v9.1.3
 
 all: compile
 
@@ -31,7 +30,7 @@ patch.tar: patch svf
 	cd $< ; tar cf $@ * ; mv $@ ../ ;
 
 scaf:
-	git clone -b $(SCAF_BRANCH) https://github.com/PrincetonUniversity/SCAF scaf
+	git clone https://github.com/PrincetonUniversity/SCAF scaf
 
 clean:
 	./scripts/clean.sh
