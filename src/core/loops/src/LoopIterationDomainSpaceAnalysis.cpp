@@ -680,7 +680,22 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
               // conditionSCEVBase->print(errs() << "Condition SCEV "); errs() << "\n";
               // sizeSCEVBase->print(errs() << "Size SCEV "); errs() << "\n";
 
+              // Check if the exit condition = dimension size, i.e. there is no spillover
               if (conditionSCEVBase == sizeSCEVBase) continue;
+
+              // Check if the exit condition < dimension size (allowed because the step size is positive)
+              if (auto conditionOffsetSCEV = dyn_cast<SCEVAddExpr>(conditionSCEVBase)) {
+                if (conditionOffsetSCEV->getNumOperands() == 2) {
+                  auto lhsSCEV = conditionOffsetSCEV->getOperand(0);
+                  auto rhsSCEV = conditionOffsetSCEV->getOperand(1);
+                  if (lhsSCEV == sizeSCEVBase ^ rhsSCEV == sizeSCEVBase) {
+                    auto otherHandSideSCEV = lhsSCEV == sizeSCEVBase ? rhsSCEV : lhsSCEV;
+                    if (auto constOffsetSCEV = dyn_cast<SCEVConstant>(otherHandSideSCEV)) {
+                      if (constOffsetSCEV->getValue()->isNegative()) continue;
+                    }
+                  }
+                }
+              }
             }
           }
         }
