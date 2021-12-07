@@ -23,7 +23,6 @@ PDG * Noelle::getProgramDependenceGraph (void) {
 PDG * Noelle::getFunctionDependenceGraph (Function *f) {
   auto pdg = this->getProgramDependenceGraph();
   auto fdg = pdg->createFunctionSubgraph(*f);
-  assert(fdg != nullptr);
   return fdg;
 }
 
