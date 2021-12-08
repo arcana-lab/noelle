@@ -530,10 +530,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
     if (isa<StoreInst>(i)){
       return true;
     }
-    if (isa<CallInst>(i)){
-      return true;
-    }
-    if (isa<InvokeInst>(i)){
+    if (isa<CallBase>(i)){
       return true;
     }
     return false;
@@ -546,7 +543,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
         iterateInstForStore(pdg, F, AA, dfr, store);
       } else if (auto load = dyn_cast<LoadInst>(&I)) {
         iterateInstForLoad(pdg, F, AA, dfr, load);
-      } else if (auto call = dyn_cast<CallInst>(&I)) {
+      } else if (auto call = dyn_cast<CallBase>(&I)) {
         iterateInstForCall(pdg, F, AA, dfr, call);
       }
     }
@@ -558,7 +555,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction (PDG *pdg, Function &F){
   delete dfr;
 }
 
-void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallInst *call) {
+void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, CallBase *call) {
 
   /*
    * Check if the call instruction is not actual code.
@@ -591,13 +588,20 @@ void PDGAnalysis::iterateInstForCall (PDG *pdg, Function &F, AAResults &AA, Data
     /*
      * Check calls.
      */
-    if (auto otherCall = dyn_cast<CallInst>(I)) {
-      if (!Utils::isActualCode(otherCall)){
-        continue ;
+    if (auto baseOtherCall = dyn_cast<CallBase>(I)) {
+
+      /*
+       * Check direct calls
+       */
+      if (auto otherCall = dyn_cast<CallInst>(baseOtherCall)) {
+        if (!Utils::isActualCode(otherCall)){
+          continue ;
+        }
       }
-      addEdgeFromFunctionModRef(pdg, F, AA, call, otherCall);
+      addEdgeFromFunctionModRef(pdg, F, AA, call, baseOtherCall);
       continue ;
     }
+
   }
 
   return ;
@@ -660,7 +664,7 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency (DGEdge<Value> *edge) {
   /*
    * Handle only memory instructions.
    */
-  if (isa<CallInst>(outgoingT) || isa<CallInst>(incomingT)) {
+  if (isa<CallBase>(outgoingT) || isa<CallBase>(incomingT)) {
     return false;
   }
 

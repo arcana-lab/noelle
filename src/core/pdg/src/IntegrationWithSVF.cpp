@@ -76,9 +76,12 @@ noelle::CallGraph * NoelleSVFIntegration::getProgramCallGraph (Module &M) {
   return cg;
 }
     
-bool NoelleSVFIntegration::hasIndCSCallees (CallInst *call) {
+bool NoelleSVFIntegration::hasIndCSCallees (CallBase *call) {
   #ifdef ENABLE_SVF
-  return svfCallGraph->hasIndCSCallees(call);
+  if (auto callInst = dyn_cast<CallInst>(call)){
+    return svfCallGraph->hasIndCSCallees(callInst);
+  }
+  return true;
   #else
   if (call->getCalledFunction() == nullptr){
     return true;
@@ -87,9 +90,13 @@ bool NoelleSVFIntegration::hasIndCSCallees (CallInst *call) {
   #endif
 }
     
-const std::set<const Function *> NoelleSVFIntegration::getIndCSCallees (CallInst *call){
+const std::set<const Function *> NoelleSVFIntegration::getIndCSCallees (CallBase *call){
   #ifdef ENABLE_SVF
-  return svfCallGraph->getIndCSCallees(call);
+  if (auto callInst = dyn_cast<CallInst>(call)){
+    return svfCallGraph->getIndCSCallees(callInst);
+  }
+  //TODO
+  return {};
   #else
   //TODO
   return {};
@@ -104,25 +111,39 @@ bool NoelleSVFIntegration::isReachableBetweenFunctions (const Function *from, co
   #endif
 }
     
-ModRefInfo NoelleSVFIntegration::getModRefInfo (CallInst *i){
+ModRefInfo NoelleSVFIntegration::getModRefInfo (CallBase *i){
   #ifdef ENABLE_SVF
-  return mssa->getMRGenerator()->getModRefInfo(i);
+  if (auto callInst = dyn_cast<CallInst>(i)){
+    return mssa->getMRGenerator()->getModRefInfo(callInst);
+  }
+  return ModRefInfo::ModRef;
   #else
   return ModRefInfo::ModRef;
   #endif
 }
     
-ModRefInfo NoelleSVFIntegration::getModRefInfo (CallInst *i, const MemoryLocation &loc){
+ModRefInfo NoelleSVFIntegration::getModRefInfo (CallBase *i, const MemoryLocation &loc){
   #ifdef ENABLE_SVF
-  return mssa->getMRGenerator()->getModRefInfo(i, loc);
+  if (auto callInst = dyn_cast<CallInst>(i)){
+    return mssa->getMRGenerator()->getModRefInfo(callInst, loc);
+  }
+  return ModRefInfo::ModRef;
   #else
   return ModRefInfo::ModRef;
   #endif
 }
     
-ModRefInfo NoelleSVFIntegration::getModRefInfo (CallInst *i, CallInst *j){
+ModRefInfo NoelleSVFIntegration::getModRefInfo (CallBase *i, CallBase *j){
   #ifdef ENABLE_SVF
-  return mssa->getMRGenerator()->getModRefInfo(i, j);
+  auto callInstI = dyn_cast<CallInst>(i);
+  auto callInstJ = dyn_cast<CallInst>(j);
+  if (  true
+        && (callInstI != nullptr)
+        && (callInstJ != nullptr)
+     ){
+    return mssa->getMRGenerator()->getModRefInfo(callInstI, callInstJ);
+  }
+  return ModRefInfo::ModRef;
   #else
   return ModRefInfo::ModRef;
   #endif
