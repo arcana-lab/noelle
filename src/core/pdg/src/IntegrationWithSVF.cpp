@@ -16,6 +16,7 @@
  */
 #define ENABLE_SVF
 #ifdef ENABLE_SVF
+#include "WPA/WPAPass.h"
 #include "Util/SVFModule.h"
 #include "Util/PTACallGraph.h"
 #include "WPA/Andersen.h"
@@ -26,6 +27,7 @@
 namespace llvm::noelle {
 
 #ifdef ENABLE_SVF
+static WPAPass *wpa = nullptr;
 static MemSSA *mssa = nullptr;
 static PointerAnalysis *pta = nullptr;
 static PTACallGraph *svfCallGraph = nullptr;
@@ -55,11 +57,16 @@ bool NoelleSVFIntegration::doInitialization (Module &M) {
 }
 
 void NoelleSVFIntegration::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<WPAPass>();
   return ;
 }
       
 bool NoelleSVFIntegration::runOnModule (Module &M) {
   #ifdef ENABLE_SVF
+  // get SVF's WPAPass analysis for all applicable pointer analysis
+  wpa = &getAnalysis<WPAPass>();
+
+  // run a single AndersenWaveDiff pointer analysis manually for querying ModRef info
   SVFModule svfModule{M};
   pta = new AndersenWaveDiff();
   pta->analyze(svfModule);
@@ -151,7 +158,7 @@ ModRefInfo NoelleSVFIntegration::getModRefInfo (CallBase *i, CallBase *j){
 
 AliasResult NoelleSVFIntegration::alias (const MemoryLocation &loc1, const MemoryLocation &loc2){
   #ifdef ENABLE_SVF
-  return pta->alias(loc1, loc2);
+  return wpa->alias(loc1, loc2);
   #else
   return AliasResult::MayAlias;
   #endif
@@ -159,7 +166,7 @@ AliasResult NoelleSVFIntegration::alias (const MemoryLocation &loc1, const Memor
 
 AliasResult NoelleSVFIntegration::alias (const Value *v1, const Value *v2){
   #ifdef ENABLE_SVF
-  return pta->alias(v1, v2);
+  return wpa->alias(v1, v2);
   #else
   return AliasResult::MayAlias;
   #endif
