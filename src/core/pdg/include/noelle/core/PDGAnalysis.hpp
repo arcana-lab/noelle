@@ -72,11 +72,11 @@ namespace llvm::noelle {
       void initializeSVF(Module &M);
       void identifyFunctionsThatInvokeUnhandledLibrary(Module &M);
       void printFunctionReachabilityResult();
-      bool isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv);
+      bool isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv);
       bool isUnhandledExternalFunction(const Function *F);
       bool isInternalFunctionThatReachUnhandledExternalFunction(const Function *F);
-      bool cannotReachUnhandledExternalFunction(CallInst *call);
-      bool hasNoMemoryOperations(CallInst *call);
+      bool cannotReachUnhandledExternalFunction(CallBase *call);
+      bool hasNoMemoryOperations(CallBase *call);
 
       bool comparePDGs (PDG *pdg1, PDG *pdg2);
       bool compareNodes (PDG *pdg1, PDG *pdg2);
@@ -112,13 +112,13 @@ namespace llvm::noelle {
 
       void iterateInstForStore(PDG *, Function &, AAResults &, DataFlowResult *, StoreInst *);
       void iterateInstForLoad(PDG *, Function &, AAResults &, DataFlowResult *, LoadInst *);
-      void iterateInstForCall(PDG *, Function &, AAResults &, DataFlowResult *, CallInst *);
+      void iterateInstForCall(PDG *, Function &, AAResults &, DataFlowResult *, CallBase *);
       
       template<class InstI, class InstJ>
       void addEdgeFromMemoryAlias(PDG *, Function &, AAResults &, InstI *, InstJ *, DataDependenceType);
-      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallInst *, StoreInst *, bool);
-      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallInst *, LoadInst *, bool);
-      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallInst *, CallInst *);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallBase *, StoreInst *, bool);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallBase *, LoadInst *, bool);
+      void addEdgeFromFunctionModRef(PDG *, Function &, AAResults &, CallBase *, CallBase *);
 
       void removeEdgesNotUsedByParSchemes (PDG *pdg);
 
