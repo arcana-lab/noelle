@@ -15,7 +15,7 @@
 namespace llvm::noelle {
 
 bool Utils::isActualCode (Instruction *inst){
-  auto callInst = dyn_cast<CallInst>(inst);
+  auto callInst = dyn_cast<CallBase>(inst);
   if (callInst == nullptr){
     return true;
   }
@@ -26,7 +26,7 @@ bool Utils::isActualCode (Instruction *inst){
   return true;
 }
 
-bool Utils::isAllocator (CallInst *callInst){
+bool Utils::isAllocator (CallBase *callInst){
 
   /*
    * Check the instruction.
@@ -65,7 +65,7 @@ bool Utils::isAllocator (CallInst *callInst){
   return false;
 }
 
-bool Utils::isReallocator (CallInst *callInst){
+bool Utils::isReallocator (CallBase *callInst){
 
   /*
    * Check the instruction.
@@ -102,7 +102,7 @@ bool Utils::isReallocator (CallInst *callInst){
   return false;
 }
 
-bool Utils::isDeallocator (CallInst *callInst){
+bool Utils::isDeallocator (CallBase *callInst){
 
   /*
    * Check the instruction.
@@ -139,7 +139,7 @@ bool Utils::isDeallocator (CallInst *callInst){
   return false;
 }
 
-Value * Utils::getAllocatedObject (CallInst *call){
+Value * Utils::getAllocatedObject (CallBase *call){
   if (!Utils::isAllocator(call)){
     return nullptr;
   }
@@ -162,7 +162,7 @@ Value * Utils::getAllocatedObject (CallInst *call){
   abort();
 }
 
-Value * Utils::getFreedObject (CallInst *call){
+Value * Utils::getFreedObject (CallBase *call){
   if (!Utils::isDeallocator(call)){
       return nullptr;
   }
