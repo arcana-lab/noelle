@@ -41,6 +41,13 @@ void PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function &F) {
   assert(pdg != nullptr);
 
   /*
+   * There is a control dependence from a basic block A to a basic block B iff
+   * 1) there is E such that E is a successor of A, and 
+   * 2) B post-dominates E, and
+   * 3) B doesn't strictly post-dominate A
+   */
+
+  /*
    * Fetch the post-dominator tree of the function.
    */
   auto &postDomTree = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
@@ -87,10 +94,17 @@ void PDGAnalysis::constructEdgesFromControlForFunction (PDG *pdg, Function &F) {
          * Check if B strictly post-dominates predBB.
          */
         if (postDomTree.properlyDominates(&B, predBB)) {
+
+          /*
+           * B strictly post-dominates predBB.
+           * Therefore, there is no control dependence from predBB to B
+           */
           continue;
         }
 
         /*
+         * There is a control dependence from predBB to B
+         *
          * Add the control dependences.
          */
         for (auto &I : B) {
