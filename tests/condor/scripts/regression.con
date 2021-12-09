@@ -28,9 +28,9 @@ TestsPath  =
 
 # Define the output directories
 LogDir = $(RepoPath)/condor/log
-OutputFileName = out_$(TestsPath).txt
-ErrorFileName = err_$(TestsPath).txt
-LogFileName = log_$(TestsPath).txt
+OutputFileName = out_$(TestsPath)_$(Test).txt
+ErrorFileName = err_$(TestsPath)_$(Test).txt
+LogFileName = log_$(TestsPath)_$(Test).txt
 Output = $(LogDir)/$(OutputFileName)
 Error = $(LogDir)/$(ErrorFileName)
 Log = $(LogDir)/$(LogFileName)
