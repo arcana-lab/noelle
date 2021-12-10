@@ -100,7 +100,7 @@ namespace llvm::noelle {
       };
       std::unordered_set<std::unique_ptr<OverrideSet>> overrideSets;
 
-      bool identifyInitialStoringInstructions (DominatorSummary &DS) ;
+      bool identifyInitialStoringInstructions (LoopStructure *loop, DominatorSummary &DS) ;
 
       bool areOverrideSetsFullyCoveringTheAllocationSpace (void) const ;
 

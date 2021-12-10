@@ -235,7 +235,7 @@ ClonableMemoryLocation::ClonableMemoryLocation (
    * 1) there is no RAW loop-carried data dependences that involve this stack object and
    * 2) there is no RAW from outside the loop to inside it.
    */
-  this->identifyInitialStoringInstructions(DS);
+  this->identifyInitialStoringInstructions(loop, DS);
   if (!this->isScopeWithinLoop){
     if (  false
           || (!this->areOverrideSetsFullyCoveringTheAllocationSpace())
@@ -539,7 +539,7 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (LoopStructu
   return false;
 }
 
-bool ClonableMemoryLocation::identifyInitialStoringInstructions (DominatorSummary &DS) {
+bool ClonableMemoryLocation::identifyInitialStoringInstructions (LoopStructure *loop, DominatorSummary &DS) {
 
   /*
    * Group non-storing instructions by sets of dominating basic blocks
@@ -595,6 +595,14 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (DominatorSummar
    * Find which storing instructions belong to which override sets
    */
   for (auto storingInstruction : storingInstructions) {
+
+    /*
+     * Only instructions in the loop can possibly override this memory every iteration
+     */
+    if (!loop->isIncluded(storingInstruction)) {
+      continue;
+    }
+
     auto storingBlock = storingInstruction->getParent();
 
     for (auto &overrideSet : overrideSets) {
