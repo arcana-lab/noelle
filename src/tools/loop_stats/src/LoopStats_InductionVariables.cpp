@@ -39,7 +39,8 @@ void LoopStats::collectStatsOnLLVMIVs (Hot *profiles, ScalarEvolution &SE, Loop 
    */
 
   for (auto &phi : llvmLoop.getHeader()->phis()) {
-    if (llvmLoop.isAuxiliaryInductionVariable(phi, SE)) {
+    bool llvmLoopValidForInductionAnalysis = phi.getBasicBlockIndex(llvmLoop.getLoopPreheader()) >= 0;
+    if (llvmLoopValidForInductionAnalysis && llvmLoop.isAuxiliaryInductionVariable(phi, SE)) {
       statsForLoop->numberOfIVs++;
     }
     statsForLoop->numberOfDynamicIVs = profiles->getTotalInstructions(&phi);

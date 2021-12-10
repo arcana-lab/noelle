@@ -10,6 +10,7 @@
  */
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
 namespace llvm::noelle {
 
@@ -53,7 +54,16 @@ InductionVariableManager::InductionVariableManager (
        * Check if LLVM considers this PHI to be an induction variable
        */
       InductionDescriptor ID = InductionDescriptor();
-      bool llvmDeterminedValidIV = InductionDescriptor::isInductionPHI(&phi, &LLVMLoop, &SE, ID) || InductionDescriptor::isFPInductionPHI(&phi, &LLVMLoop, &SE, ID);
+      bool llvmDeterminedValidIV;
+      bool llvmLoopValidForInductionAnalysis = phi.getBasicBlockIndex(LLVMLoop.getLoopPreheader()) >= 0;
+      
+      if (llvmLoopValidForInductionAnalysis && InductionDescriptor::isInductionPHI(&phi, &LLVMLoop, &SE, ID)) {
+        llvmDeterminedValidIV = true;
+      } else if (phi.getType()->isFloatingPointTy() && InductionDescriptor::isFPInductionPHI(&phi, &LLVMLoop, &SE, ID)) {
+        llvmDeterminedValidIV = true;
+      } else {
+        llvmDeterminedValidIV = false;
+      }
 
       bool noelleDeterminedValidIV = true;
       /*
