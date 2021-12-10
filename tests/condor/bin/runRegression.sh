@@ -25,6 +25,13 @@ make clean ;
 
 echo "Machine = `hostname`" > node.txt ;
 
+# Dump the script to run to re-produce the configuration
+echo "#!/bin/bash" > run_me.sh ; 
+echo "source ../../../enable ; " >> run_me.sh ;
+echo "make clean ; " >> run_me.sh ;
+echo "make FRONTEND_OPTIONS='$frontendOptions' PRE_MIDDLEEND_OPTIONS='$meOptions' NOELLE_OPTIONS='$noelleOptions' PARALLELIZATION_OPTIONS='$parallelizationOptions' ;" >> run_me.sh ;
+chmod 744 run_me.sh ;
+
 # Compile
 timeout 3h make FRONTEND_OPTIONS="$frontendOptions" PRE_MIDDLEEND_OPTIONS="$meOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
 if test $? -ne 0 ; then

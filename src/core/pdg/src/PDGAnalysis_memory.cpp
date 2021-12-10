@@ -42,7 +42,7 @@ void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, Dat
     /*
      * Check calls.
      */
-    if (auto call = dyn_cast<CallInst>(I)) {
+    if (auto call = dyn_cast<CallBase>(I)) {
       if (!Utils::isActualCode(call)){
         continue ;
       }
@@ -69,7 +69,7 @@ void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, Data
     /*
      * Check calls.
      */
-    if (auto call = dyn_cast<CallInst>(I)) {
+    if (auto call = dyn_cast<CallBase>(I)) {
       if (!Utils::isActualCode(call)){
         continue ;
       }
@@ -81,7 +81,7 @@ void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, Data
   return ;
 }
 
-bool PDGAnalysis::hasNoMemoryOperations (CallInst *call) {
+bool PDGAnalysis::hasNoMemoryOperations (CallBase *call) {
 
   /*
    * Check if SVF is enabled.
@@ -114,7 +114,7 @@ bool PDGAnalysis::hasNoMemoryOperations (CallInst *call) {
   return false;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, StoreInst *store, bool addEdgeFromCall) {
+void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallBase *call, StoreInst *store, bool addEdgeFromCall) {
   BitVector bv(3, false);
   auto makeRefEdge = false, makeModEdge = false;
 
@@ -237,7 +237,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   return ;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, LoadInst *load, bool addEdgeFromCall) {
+void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallBase *call, LoadInst *load, bool addEdgeFromCall) {
   BitVector bv(3, false);
 
   /*
@@ -319,7 +319,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   return ;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallInst *call, CallInst *otherCall) {
+void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallBase *call, CallBase *otherCall) {
   BitVector bv(3, false);
   BitVector rbv(3, false);
   auto makeRefEdge = false, makeModEdge = false, makeModRefEdge = false;
@@ -340,8 +340,8 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   /*
    * Check if the call instructions are about an allocator and a deallocator.
    */
-  CallInst *allocatorCall = nullptr;
-  CallInst *deallocatorCall = nullptr;
+  CallBase *allocatorCall = nullptr;
+  CallBase *deallocatorCall = nullptr;
   if (Utils::isAllocator(call)){
     allocatorCall = call;
   }
@@ -583,7 +583,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   return ;
 }
 
-bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallInst *call, BitVector &bv) {
+bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv) {
 
   /*
    * Check if SVF is enabled.

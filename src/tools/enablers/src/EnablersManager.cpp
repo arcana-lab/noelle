@@ -8,12 +8,12 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "EnablersManager.hpp"
+#include "noelle/core/Noelle.hpp"
 #include "noelle/core/LoopDistribution.hpp"
 #include "noelle/core/LoopUnroll.hpp"
+#include "EnablersManager.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 EnablersManager::EnablersManager()
   :
@@ -50,53 +50,74 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Fetch all the loops we want to parallelize.
    */
-  auto loopsToParallelize = noelle.getLoops();
+  auto loopsToParallelize = noelle.getLoopStructures();
   errs() << "EnablersManager:   Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
+
+  /*
+   * Organize loops in a forest.
+   */
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*loopsToParallelize);
 
   /*
    * Parallelize the loops selected.
    */
   auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
-  for (auto loopToImprove : *loopsToParallelize){
+  for (auto tree : forest->getTrees()){
 
     /*
-     * Print the loop.
+     * Parallelize all loops within this tree starting from the leafs.
      */
-    errs() << "EnablersManager:   Loop:\n";
-    errs() << "EnablersManager:     Function = \"" << loopToImprove->getLoopStructure()->getFunction()->getName() << "\"\n";
-    errs() << "EnablersManager:     Loop ID  = " << loopToImprove->getID() << "\n";
-    errs() << "EnablersManager:     Entry instruction = " << *loopToImprove->getLoopStructure()->getHeader()->getFirstNonPHI() << "\n";
+    auto f = [&loopDist, &loopUnroll, &loopWhilify, &loopInvariantCodeMotion, &scevSimplification, &noelle, &modifiedFunctions, this, &modified](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
 
-    /*
-     * Fetch the function that contains the current loop.
-     */
-    auto loopStructure = loopToImprove->getLoopStructure();
-    auto f = loopStructure->getFunction();
+      /*
+       * Fetch the loop
+       */
+      auto loopStructure = n->getLoop();
 
-    /*
-     * Check if we have already modified the function.
-     */
-    if (modifiedFunctions[f]){
-      errs() << "EnablersManager:     The current loop belongs to the function " << f->getName() << " , which has already been modified.\n" ;
-      continue ;
-    }
+      /*
+       * Print the loop.
+       */
+      errs() << "EnablersManager:   Loop:\n";
+      errs() << "EnablersManager:     Function = \"" << loopStructure->getFunction()->getName() << "\"\n";
+      errs() << "EnablersManager:     Loop ID  = " << loopStructure->getID() << "\n";
+      errs() << "EnablersManager:     Entry instruction = " << *loopStructure->getHeader()->getFirstNonPHI() << "\n";
 
-    /*
-     * Improve the current loop.
-     */
-    modifiedFunctions[f] |= this->applyEnablers(
-        &*loopToImprove,
-        noelle,
-        loopDist,
-        loopUnroll,
-        loopWhilify,
-        loopInvariantCodeMotion,
-        scevSimplification
-        );
-    assert(noelle.verifyCode());
+      /*
+       * Fetch the function that contains the current loop.
+       */
+      auto f = loopStructure->getFunction();
 
-    modified |= modifiedFunctions[f];
+      /*
+       * Check if we have already modified the function.
+       */
+      if (modifiedFunctions[f]){
+        errs() << "EnablersManager:     The current loop belongs to the function " << f->getName() << " , which has already been modified.\n" ;
+        return false;
+      }
+
+      /*
+       * Fetch the LoopDependenceInfo
+       */
+      auto loopToImprove = noelle.getLoop(loopStructure);
+
+      /*
+       * Improve the current loop.
+       */
+      modifiedFunctions[f] |= this->applyEnablers(
+          &*loopToImprove,
+          noelle,
+          loopDist,
+          loopUnroll,
+          loopWhilify,
+          loopInvariantCodeMotion,
+          scevSimplification
+          );
+      modified |= modifiedFunctions[f];
+
+      return false;
+    };
+    tree->visitPostOrder(f);
   }
 
   /*
@@ -106,4 +127,6 @@ bool EnablersManager::runOnModule (Module &M) {
 
   errs() << "EnablersManager: Exit\n";
   return modified;
+}
+
 }

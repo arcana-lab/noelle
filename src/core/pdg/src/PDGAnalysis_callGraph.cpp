@@ -56,7 +56,7 @@ void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
   return;
 }
 
-bool PDGAnalysis::cannotReachUnhandledExternalFunction(CallInst *call) {
+bool PDGAnalysis::cannotReachUnhandledExternalFunction(CallBase *call) {
   if (NoelleSVFIntegration::hasIndCSCallees(call)) {
     auto callees = NoelleSVFIntegration::getIndCSCallees(call);
     for (auto &callee : callees) {

@@ -21,7 +21,9 @@ PDG * Noelle::getProgramDependenceGraph (void) {
 }
 
 PDG * Noelle::getFunctionDependenceGraph (Function *f) {
-  return this->pdgAnalysis->getFunctionPDG(*f);
+  auto pdg = this->getProgramDependenceGraph();
+  auto fdg = pdg->createFunctionSubgraph(*f);
+  return fdg;
 }
 
 }

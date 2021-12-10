@@ -18,15 +18,15 @@ namespace llvm::noelle {
     public:
       static bool isActualCode (Instruction *inst);
 
-      static bool isAllocator (CallInst *callInst);
+      static bool isAllocator (CallBase *callInst);
 
-      static bool isReallocator (CallInst *callInst);
+      static bool isReallocator (CallBase *callInst);
 
-      static bool isDeallocator (CallInst *callInst);
+      static bool isDeallocator (CallBase *callInst);
 
-      static Value * getAllocatedObject (CallInst *call);
+      static Value * getAllocatedObject (CallBase *call);
 
-      static Value * getFreedObject (CallInst *call);
+      static Value * getFreedObject (CallBase *call);
   };
 
 }

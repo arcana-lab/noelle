@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Simone Campanoni
+ * Copyright 2019 - 2021  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,13 +10,13 @@
  */
 #include "DeadFunctionEliminator.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 DeadFunctionEliminator::DeadFunctionEliminator ()
   :
   ModulePass{ID}
   {
+
   return ;
 }
 
@@ -211,4 +211,6 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
   }
 
   return modified;
+}
+
 }
