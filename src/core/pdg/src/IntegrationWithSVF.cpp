@@ -57,7 +57,9 @@ bool NoelleSVFIntegration::doInitialization (Module &M) {
 }
 
 void NoelleSVFIntegration::getAnalysisUsage(AnalysisUsage &AU) const {
+  #ifdef ENABLE_SVF
   AU.addRequired<WPAPass>();
+  #endif
   return ;
 }
       
@@ -78,6 +80,10 @@ bool NoelleSVFIntegration::runOnModule (Module &M) {
 }
     
 noelle::CallGraph * NoelleSVFIntegration::getProgramCallGraph (Module &M) {
+
+  /*
+   * Compute the call graph using NOELLE
+   */
   auto cg = new noelle::CallGraph(M, NoelleSVFIntegration::hasIndCSCallees, NoelleSVFIntegration::getIndCSCallees);
 
   return cg;
