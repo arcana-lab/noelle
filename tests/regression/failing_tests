@@ -177,3 +177,10 @@ regression_95/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -n
 regression_95/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-disable-dswp -noelle-disable-doall -noelle-disable-helix -noelle-disable-inliner -noelle-disable-whilifier -noelle-disable-loop-distribution -noelle-disable-scev-simplification -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O1
 regression_9/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-helix -noelle-disable-dswp -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
 regression_9/RAWCallToCall -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-helix -noelle-disable-dswp -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_22/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_33/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_36/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_48/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-inliner-avoid-hoist-to-main -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_4/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=8 -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force -O0 -Xclang -disable-O0-optnone -O0
+regression_51/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-helix -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
+regression_54/LICM_2 -noelle-pdg-check -noelle-verbose=3 -noelle-max-cores=2 -noelle-disable-dswp -noelle-disable-inliner -noelle-parallelizer-force -O1 -Xclang -disable-llvm-passes -O0
