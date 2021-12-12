@@ -114,7 +114,8 @@ namespace llvm::noelle {
       /*
        * Whilify the loop
        */
-      auto modified = loopWhilifier.whilifyLoop(*LDI);
+      auto scheduler = par.getScheduler();
+      auto modified = loopWhilifier.whilifyLoop(*LDI, scheduler);
 
       return modified;
     }
