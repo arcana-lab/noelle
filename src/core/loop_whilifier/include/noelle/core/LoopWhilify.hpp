@@ -87,7 +87,8 @@ namespace llvm::noelle {
 
       bool whilifyLoop (
         LoopDependenceInfo &LDI,
-        Scheduler &scheduler
+        Scheduler &scheduler,
+        DominatorSummary *DS
       );
 
       Verbosity verbosity;
@@ -107,7 +108,8 @@ namespace llvm::noelle {
        */
       bool whilifyLoopDriver(
         LoopStructure * const LS,
-        Scheduler &scheduler
+        Scheduler &scheduler,
+        DominatorSummary *DS
       );
 
       bool containsInOriginalLoop(

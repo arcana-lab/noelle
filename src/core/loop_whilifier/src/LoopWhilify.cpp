@@ -23,7 +23,8 @@ namespace llvm::noelle{
 
   bool LoopWhilifier::whilifyLoop (
     LoopDependenceInfo &LDI,
-    Scheduler &scheduler
+    Scheduler &scheduler,
+    DominatorSummary *DS
   ) {
     
     /*
@@ -34,7 +35,7 @@ namespace llvm::noelle{
     errs() << outputPrefix << " Try to whilify the target loop\n";
 
     auto LS = LDI.getLoopStructure();
-    AnyTransformed |= whilifyLoopDriver(LS, scheduler);
+    AnyTransformed |= whilifyLoopDriver(LS, scheduler, DS);
 
     errs() << outputPrefix << " Transformed = " << AnyTransformed << "\n";
     errs() << outputPrefix << "Exit\n";
@@ -45,15 +46,19 @@ namespace llvm::noelle{
 
   bool LoopWhilifier::whilifyLoopDriver(
     LoopStructure * const LS,
-    Scheduler &scheduler
+    Scheduler &scheduler,
+    DominatorSummary *DS
   ) {
     auto Transformed = false;
 
     /*
+     * Fetch the function that contains the loop.
+     */
+    auto ParentFunc = LS->getFunction();
+
+    /*
      * Get necessary info to invoke scheduler
      */ 
-    auto ParentFunc = LS->getFunction();
-    auto DS = noelle.getDominators(ParentFunc);
     auto firstInst = LS->getEntryInstruction();
     errs() << outputPrefix << "   Loop: " << *firstInst << "\n";
 
