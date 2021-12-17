@@ -158,13 +158,13 @@ bool Inliner::runOnModule (Module &M) {
    * Inline functions containing targeted loops so the loop is in main
    */
   ifstream doHoistFile("dgsimplify_do_hoist.txt");
-  bool doHoist = doHoistFile.good();
+  auto doHoist = doHoistFile.good();
   doHoistFile.close();
   if (doHoist) {
     std::string filename = "dgsimplify_loop_hoisting.txt";
     getFunctionsToInline(filename);
 
-    auto inlined = inlineFnsOfLoopsToCGRoot(profiles);
+    auto inlined = this->inlineFnsOfLoopsToCGRoot(profiles);
     if (inlined) {
       errs() << "Inliner:   Inlined functions to hoist loops to the entry funtion of the program\n";
       getAnalysis<CallGraphWrapperPass>().runOnModule(M);

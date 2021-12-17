@@ -43,7 +43,7 @@ bool EnablersManager::runOnModule (Module &M) {
    */
   auto loopDist = LoopDistribution();
   auto loopUnroll = LoopUnroll();
-  auto loopWhilify = LoopWhilifier(noelle);
+  auto loopWhilify = LoopWhilifier(noelle.getVerbosity());
   auto loopInvariantCodeMotion = LoopInvariantCodeMotion(noelle);
   auto scevSimplification = SCEVSimplification(noelle);
 

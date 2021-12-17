@@ -12,9 +12,8 @@
 
 namespace llvm::noelle{
 
-  LoopWhilifier::LoopWhilifier(Noelle &noelle) :
-    noelle{noelle}, 
-    verbosity{noelle.getVerbosity()},
+  LoopWhilifier::LoopWhilifier (Verbosity v) :
+    verbosity{v},
     outputPrefix{"Whilifier: "}
   {
     return ;
@@ -24,7 +23,8 @@ namespace llvm::noelle{
   bool LoopWhilifier::whilifyLoop (
     LoopDependenceInfo &LDI,
     Scheduler &scheduler,
-    DominatorSummary *DS
+    DominatorSummary *DS,
+    PDG *FDG
   ) {
     
     /*
@@ -35,7 +35,7 @@ namespace llvm::noelle{
     errs() << outputPrefix << " Try to whilify the target loop\n";
 
     auto LS = LDI.getLoopStructure();
-    AnyTransformed |= whilifyLoopDriver(LS, scheduler, DS);
+    AnyTransformed |= whilifyLoopDriver(LS, scheduler, DS, FDG);
 
     errs() << outputPrefix << " Transformed = " << AnyTransformed << "\n";
     errs() << outputPrefix << "Exit\n";
@@ -47,7 +47,8 @@ namespace llvm::noelle{
   bool LoopWhilifier::whilifyLoopDriver(
     LoopStructure * const LS,
     Scheduler &scheduler,
-    DominatorSummary *DS
+    DominatorSummary *DS,
+    PDG *FDG
   ) {
     auto Transformed = false;
 
@@ -77,7 +78,7 @@ namespace llvm::noelle{
     auto LSched = scheduler.getNewLoopScheduler(
       LS,
       DS,
-      noelle.getFunctionDependenceGraph(ParentFunc)
+      FDG
     );
 
 

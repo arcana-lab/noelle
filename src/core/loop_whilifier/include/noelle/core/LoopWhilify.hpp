@@ -83,15 +83,14 @@ namespace llvm::noelle {
       /*
        * Methods
        */
-      LoopWhilifier(Noelle &noelle);
+      LoopWhilifier(Verbosity v);
 
       bool whilifyLoop (
         LoopDependenceInfo &LDI,
         Scheduler &scheduler,
-        DominatorSummary *DS
+        DominatorSummary *DS,
+        PDG *FDG
       );
-
-      Verbosity verbosity;
 
 
     private:
@@ -99,8 +98,8 @@ namespace llvm::noelle {
       /*
        * Fields
        */
-      Noelle &noelle;
       std::string outputPrefix;
+      Verbosity verbosity;
 
 
       /*
@@ -109,7 +108,8 @@ namespace llvm::noelle {
       bool whilifyLoopDriver(
         LoopStructure * const LS,
         Scheduler &scheduler,
-        DominatorSummary *DS
+        DominatorSummary *DS,
+        PDG *FDG
       );
 
       bool containsInOriginalLoop(

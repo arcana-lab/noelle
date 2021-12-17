@@ -117,7 +117,8 @@ namespace llvm::noelle {
       auto scheduler = par.getScheduler();
       auto func = loopStructure->getFunction();
       auto DS = par.getDominators(func);
-      auto modified = loopWhilifier.whilifyLoop(*LDI, scheduler, DS);
+      auto FDG = par.getFunctionDependenceGraph(func);
+      auto modified = loopWhilifier.whilifyLoop(*LDI, scheduler, DS, FDG);
 
       return modified;
     }
