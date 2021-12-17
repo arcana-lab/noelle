@@ -21,13 +21,11 @@ NOELLE is in active development so more tools, tests, and abstractions will be a
 We release NOELLE's source code in the hope of benefiting others. 
 You are kindly asked to acknowledge usage of the tool by citing the following paper:
 ```
-@misc{matni2021noelle,
-      title={{NOELLE} {O}ffers {E}mpowering {LL}VM {E}xtensions},
-      author={Angelo Matni and Enrico Armenio Deiana and Yian Su and Lukas Gross and Souradip Ghosh and Sotiris Apostolakis and Ziyang Xu and Zujun Tan and Ishita Chaturvedi and David I. August and Simone Campanoni},
-      year={2021},
-      eprint={2102.05081},
-      archivePrefix={arXiv},
-      primaryClass={cs.PL}
+@inproceedings{NOELLE,
+    title={{NOELLE} {O}ffers {E}mpowering {LL}VM {E}xtensions},
+    author={Angelo Matni and Enrico Armenio Deiana and Yian Su and Lukas Gross and Souradip Ghosh and Sotiris Apostolakis and Ziyang Xu and Zujun Tan and Ishita Chaturvedi and David I. August and Simone Campanoni},
+    booktitle={International Symposium on Code Generation and Optimization, 2022. CGO 2022.},
+    year={2022}
 }
 ```
 
@@ -39,7 +37,7 @@ The only documentation available for NOELLE is:
 
 
 ## Version
-The latest stable version is 9.4.0 (tag = `v9.4.0`).
+The latest stable version is 9.5.0 (tag = `v9.5.0`).
 
 ### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
