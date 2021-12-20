@@ -12,8 +12,7 @@
 
 namespace llvm::noelle{
 
-  LoopWhilifier::LoopWhilifier (Verbosity v) :
-    verbosity{v},
+  LoopWhilifier::LoopWhilifier () :
     outputPrefix{"Whilifier: "}
   {
     return ;
