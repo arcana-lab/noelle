@@ -9,13 +9,22 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/LoopTransformer.hpp"
+#include "noelle/core/Scheduler.hpp"
+#include "noelle/core/LoopWhilify.hpp"
 
 namespace llvm::noelle {
 
-LoopTransformer::LoopTransformer()
+LoopTransformer::LoopTransformer ()
   : FunctionPass{ID}
 {
   return;
+}
+
+void LoopTransformer::setPDG (PDG *programDependenceGraph){
+  this->pdg = programDependenceGraph;
+  assert(this->pdg != nullptr);
+
+  return ;
 }
 
 LoopUnrollResult LoopTransformer::unrollLoop (LoopDependenceInfo *loop, uint32_t unrollFactor){
@@ -67,6 +76,35 @@ LoopUnrollResult LoopTransformer::unrollLoop (LoopDependenceInfo *loop, uint32_t
     true);
 
   return unrolled;
+}
+
+bool LoopTransformer::whilifyLoop (
+  LoopDependenceInfo *loop
+  ){
+  assert(this->pdg != nullptr);
+
+  /*
+   * Allocate the whilifier
+   */
+  auto loopWhilify = LoopWhilifier();
+
+  /*
+   * Get the necessary information
+   */
+  auto scheduler = Scheduler();
+  auto loopStructure = loop->getLoopStructure();
+  auto func = loopStructure->getFunction();
+  auto& DT = getAnalysis<DominatorTreeWrapperPass>(*func).getDomTree();
+  auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*func).getPostDomTree();
+  auto DS = new DominatorSummary(DT, PDT);
+  auto FDG = this->pdg->createFunctionSubgraph(*func);
+
+  /*
+   * Whilify the loop.
+   */
+  auto modified = loopWhilify.whilifyLoop(*loop, scheduler, DS, FDG);
+
+  return modified;
 }
 
 LoopTransformer::~LoopTransformer() {

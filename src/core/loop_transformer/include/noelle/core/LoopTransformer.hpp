@@ -22,9 +22,15 @@ namespace llvm::noelle {
     public:
       static char ID;
 
-      LoopTransformer();
+      LoopTransformer ();
+
+      void setPDG (PDG *programDependenceGraph);
 
       LoopUnrollResult unrollLoop (LoopDependenceInfo *loop, uint32_t unrollFactor);
+
+      bool whilifyLoop (
+        LoopDependenceInfo *loop
+      );
 
       virtual ~LoopTransformer();
 
@@ -35,6 +41,7 @@ namespace llvm::noelle {
       bool runOnFunction(Function &F) override;
 
     private:
+      PDG *pdg;
   };
 
 }
