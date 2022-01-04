@@ -20,7 +20,6 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/LoopDistribution.hpp"
 #include "noelle/core/LoopUnroll.hpp"
-#include "noelle/core/LoopWhilify.hpp"
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
 #include "noelle/tools/SCEVSimplification.hpp"
 
@@ -60,9 +59,9 @@ namespace llvm::noelle {
       bool applyEnablers (
         LoopDependenceInfo *LDI,
         Noelle &par,
+        LoopTransformer &LoopTransformer,
         LoopDistribution &loopDist,
         LoopUnroll &loopUnroll,
-        LoopWhilifier &LoopWhilifier,
         LoopInvariantCodeMotion &loopInvariantCodeMotion,
         SCEVSimplification &scevSimplification
         );
@@ -70,7 +69,7 @@ namespace llvm::noelle {
       bool applyLoopWhilifier (
           LoopDependenceInfo *LDI,
           Noelle &par,
-          LoopWhilifier &loopWhilifier
+          LoopTransformer &LoopTransformer
         );
 
       bool applyLoopDistribution (

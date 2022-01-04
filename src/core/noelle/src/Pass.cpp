@@ -110,6 +110,7 @@ void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
+  AU.addRequired<LoopTransformer>();
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<HotProfiler>();
 

@@ -142,7 +142,7 @@ namespace llvm::noelle {
 
       Scheduler getScheduler (void) const ;
 
-      LoopTransformer & getLoopTransformer (Function &F) ;
+      LoopTransformer & getLoopTransformer (void) ;
 
       DominatorSummary * getDominators (Function *f) ;
 

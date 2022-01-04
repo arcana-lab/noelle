@@ -18,10 +18,16 @@ bool LoopTransformer::doInitialization(Module &M) {
 }
 
 void LoopTransformer::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<AssumptionCacheTracker>();
+  AU.addRequired<DominatorTreeWrapperPass>();
+  AU.addRequired<PostDominatorTreeWrapperPass>();
+  AU.addRequired<ScalarEvolutionWrapperPass>();
+
   return;
 }
 
-bool LoopTransformer::runOnFunction (Function &F) {
+bool LoopTransformer::runOnModule (Module &M){
   return false;
 }
 

@@ -15,9 +15,9 @@ namespace llvm::noelle {
   bool EnablersManager::applyEnablers (
       LoopDependenceInfo *LDI,
       Noelle &par,
+      LoopTransformer &LoopTransformer,
       LoopDistribution &loopDist,
       LoopUnroll &loopUnroll,
-      LoopWhilifier &loopWhilifier,
       LoopInvariantCodeMotion &loopInvariantCodeMotion,
       SCEVSimplification &scevSimplification
       ){
@@ -49,7 +49,7 @@ namespace llvm::noelle {
      */
     if (par.isTransformationEnabled(Transformation::LOOP_WHILIFIER_ID)){
       errs() << "EnablersManager:     Try to whilify loops\n";
-      if (this->applyLoopWhilifier(LDI, par, loopWhilifier)){
+      if (this->applyLoopWhilifier(LDI, par, LoopTransformer)){
         errs() << "EnablersManager:       The loop has been whilified\n";
         return true;
       }
@@ -91,7 +91,7 @@ namespace llvm::noelle {
     bool EnablersManager::applyLoopWhilifier (
         LoopDependenceInfo *LDI,
         Noelle &par,
-        LoopWhilifier &loopWhilifier
+        LoopTransformer &LoopTransformer
         ){
       assert(LDI != nullptr);
 
@@ -114,11 +114,7 @@ namespace llvm::noelle {
       /*
        * Whilify the loop
        */
-      auto scheduler = par.getScheduler();
-      auto func = loopStructure->getFunction();
-      auto DS = par.getDominators(func);
-      auto FDG = par.getFunctionDependenceGraph(func);
-      auto modified = loopWhilifier.whilifyLoop(*LDI, scheduler, DS, FDG);
+      auto modified = LoopTransformer.whilifyLoop(LDI);
 
       return modified;
     }

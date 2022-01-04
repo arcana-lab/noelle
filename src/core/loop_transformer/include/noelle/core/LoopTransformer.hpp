@@ -18,7 +18,7 @@
 
 namespace llvm::noelle {
 
-  class LoopTransformer : public FunctionPass {
+  class LoopTransformer : public ModulePass {
     public:
       static char ID;
 
@@ -38,7 +38,7 @@ namespace llvm::noelle {
 
       void getAnalysisUsage(AnalysisUsage &AU) const override;
 
-      bool runOnFunction(Function &F) override;
+      bool runOnModule (Module &M) override;
 
     private:
       PDG *pdg;

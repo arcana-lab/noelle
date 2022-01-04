@@ -43,7 +43,7 @@ bool EnablersManager::runOnModule (Module &M) {
    */
   auto loopDist = LoopDistribution();
   auto loopUnroll = LoopUnroll();
-  auto loopWhilify = LoopWhilifier();
+  auto& loopTransformer = noelle.getLoopTransformer();
   auto loopInvariantCodeMotion = LoopInvariantCodeMotion(noelle);
   auto scevSimplification = SCEVSimplification(noelle);
 
@@ -68,7 +68,7 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Parallelize all loops within this tree starting from the leafs.
      */
-    auto f = [&loopDist, &loopUnroll, &loopWhilify, &loopInvariantCodeMotion, &scevSimplification, &noelle, &modifiedFunctions, this, &modified](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
+    auto f = [&loopTransformer, &loopDist, &loopUnroll, &loopInvariantCodeMotion, &scevSimplification, &noelle, &modifiedFunctions, this, &modified](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
 
       /*
        * Fetch the loop
@@ -107,9 +107,9 @@ bool EnablersManager::runOnModule (Module &M) {
       modifiedFunctions[f] |= this->applyEnablers(
           &*loopToImprove,
           noelle,
+          loopTransformer,
           loopDist,
           loopUnroll,
-          loopWhilify,
           loopInvariantCodeMotion,
           scevSimplification
           );

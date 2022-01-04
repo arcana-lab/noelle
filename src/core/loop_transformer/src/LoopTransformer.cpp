@@ -15,7 +15,7 @@
 namespace llvm::noelle {
 
 LoopTransformer::LoopTransformer ()
-  : FunctionPass{ID}
+  : ModulePass{ID}
 {
   return;
 }
