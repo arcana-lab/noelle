@@ -26,7 +26,14 @@ namespace llvm::noelle {
 
       void setPDG (PDG *programDependenceGraph);
 
-      LoopUnrollResult unrollLoop (LoopDependenceInfo *loop, uint32_t unrollFactor);
+      LoopUnrollResult unrollLoop (
+        LoopDependenceInfo *loop, 
+        uint32_t unrollFactor
+      );
+
+      bool fullyUnrollLoop (
+        LoopDependenceInfo *loop
+      );
 
       bool whilifyLoop (
         LoopDependenceInfo *loop

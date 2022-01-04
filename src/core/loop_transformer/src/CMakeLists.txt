@@ -32,6 +32,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
            ../../loops/include
            ../../scheduler/include
            ../../loop_whilifier/include
+           ../../loop_unroll/include
 					 ../include
                      )
 

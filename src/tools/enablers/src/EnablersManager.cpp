@@ -10,7 +10,6 @@
  */
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/LoopDistribution.hpp"
-#include "noelle/core/LoopUnroll.hpp"
 #include "EnablersManager.hpp"
 
 namespace llvm::noelle {
@@ -42,7 +41,6 @@ bool EnablersManager::runOnModule (Module &M) {
    * Create the enablers.
    */
   auto loopDist = LoopDistribution();
-  auto loopUnroll = LoopUnroll();
   auto& loopTransformer = noelle.getLoopTransformer();
   auto loopInvariantCodeMotion = LoopInvariantCodeMotion(noelle);
   auto scevSimplification = SCEVSimplification(noelle);
@@ -68,7 +66,7 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Parallelize all loops within this tree starting from the leafs.
      */
-    auto f = [&loopTransformer, &loopDist, &loopUnroll, &loopInvariantCodeMotion, &scevSimplification, &noelle, &modifiedFunctions, this, &modified](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
+    auto f = [&loopTransformer, &loopDist, &loopInvariantCodeMotion, &scevSimplification, &noelle, &modifiedFunctions, this, &modified](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
 
       /*
        * Fetch the loop
@@ -109,7 +107,6 @@ bool EnablersManager::runOnModule (Module &M) {
           noelle,
           loopTransformer,
           loopDist,
-          loopUnroll,
           loopInvariantCodeMotion,
           scevSimplification
           );

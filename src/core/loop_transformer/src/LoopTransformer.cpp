@@ -11,6 +11,7 @@
 #include "noelle/core/LoopTransformer.hpp"
 #include "noelle/core/Scheduler.hpp"
 #include "noelle/core/LoopWhilify.hpp"
+#include "noelle/core/LoopUnroll.hpp"
 
 namespace llvm::noelle {
 
@@ -76,6 +77,27 @@ LoopUnrollResult LoopTransformer::unrollLoop (LoopDependenceInfo *loop, uint32_t
     true);
 
   return unrolled;
+}
+
+bool LoopTransformer::fullyUnrollLoop (LoopDependenceInfo *loop){
+
+  /*
+   * Fetch the unroller
+   */
+  auto loopUnroll = LoopUnroll();
+
+  /*
+   * Fetch the function
+   */
+  auto ls = loop->getLoopStructure();
+  auto &loopFunction = *ls->getFunction();
+  auto& LS = getAnalysis<LoopInfoWrapperPass>(loopFunction).getLoopInfo();
+  auto& DT = getAnalysis<DominatorTreeWrapperPass>(loopFunction).getDomTree();
+  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(loopFunction).getSE();
+  auto& AC = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(loopFunction);
+  auto modified = loopUnroll.fullyUnrollLoop(*loop, LS, DT, SE, AC);
+
+  return modified;
 }
 
 bool LoopTransformer::whilifyLoop (

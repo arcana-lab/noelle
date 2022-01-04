@@ -17,7 +17,6 @@ namespace llvm::noelle {
       Noelle &par,
       LoopTransformer &LoopTransformer,
       LoopDistribution &loopDist,
-      LoopUnroll &loopUnroll,
       LoopInvariantCodeMotion &loopInvariantCodeMotion,
       SCEVSimplification &scevSimplification
       ){
@@ -38,7 +37,7 @@ namespace llvm::noelle {
      */
     if (par.isTransformationEnabled(Transformation::DEVIRTUALIZER_ID)){
       errs() << "EnablersManager:     Try to devirtualize indirect calls\n";
-      if (this->applyDevirtualizer(LDI, par, loopUnroll)){
+      if (this->applyDevirtualizer(LDI, par, LoopTransformer)){
         errs() << "EnablersManager:       Some calls have been devirtualized\n";
         return true;
       }
@@ -200,7 +199,7 @@ namespace llvm::noelle {
     bool EnablersManager::applyDevirtualizer (
         LoopDependenceInfo *LDI,
         Noelle &par,
-        LoopUnroll &loopUnroll
+        LoopTransformer &lt
         ){
 
       /*
@@ -290,14 +289,9 @@ namespace llvm::noelle {
       /*
        * Fully unroll the loop.
        */
-      auto &loopFunction = *ls->getFunction();
-      auto& LS = getAnalysis<LoopInfoWrapperPass>(loopFunction).getLoopInfo();
-      auto& DT = getAnalysis<DominatorTreeWrapperPass>(loopFunction).getDomTree();
-      auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(loopFunction).getSE();
-      auto& AC = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(loopFunction);
-      auto modified = loopUnroll.fullyUnrollLoop(*LDI, LS, DT, SE, AC);
+      auto modified = lt.fullyUnrollLoop(LDI);
 
       return modified;
     }
 
-  }
+}

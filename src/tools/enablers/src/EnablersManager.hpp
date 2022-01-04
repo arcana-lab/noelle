@@ -61,7 +61,6 @@ namespace llvm::noelle {
         Noelle &par,
         LoopTransformer &LoopTransformer,
         LoopDistribution &loopDist,
-        LoopUnroll &loopUnroll,
         LoopInvariantCodeMotion &loopInvariantCodeMotion,
         SCEVSimplification &scevSimplification
         );
@@ -81,7 +80,7 @@ namespace llvm::noelle {
       bool applyDevirtualizer (
         LoopDependenceInfo *LDI,
         Noelle &par,
-        LoopUnroll &loopUnroll
+        LoopTransformer &lt
         );
   };
 
