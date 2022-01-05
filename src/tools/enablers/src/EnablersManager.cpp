@@ -9,7 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/LoopDistribution.hpp"
 #include "EnablersManager.hpp"
 
 namespace llvm::noelle {
@@ -40,7 +39,6 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Create the enablers.
    */
-  auto loopDist = LoopDistribution();
   auto& loopTransformer = noelle.getLoopTransformer();
   auto loopInvariantCodeMotion = LoopInvariantCodeMotion(noelle);
   auto scevSimplification = SCEVSimplification(noelle);
@@ -66,7 +64,7 @@ bool EnablersManager::runOnModule (Module &M) {
     /*
      * Parallelize all loops within this tree starting from the leafs.
      */
-    auto f = [&loopTransformer, &loopDist, &loopInvariantCodeMotion, &scevSimplification, &noelle, &modifiedFunctions, this, &modified](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
+    auto f = [&loopTransformer, &loopInvariantCodeMotion, &scevSimplification, &noelle, &modifiedFunctions, this, &modified](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
 
       /*
        * Fetch the loop
@@ -106,7 +104,6 @@ bool EnablersManager::runOnModule (Module &M) {
           &*loopToImprove,
           noelle,
           loopTransformer,
-          loopDist,
           loopInvariantCodeMotion,
           scevSimplification
           );

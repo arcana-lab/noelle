@@ -12,6 +12,7 @@
 #include "noelle/core/Scheduler.hpp"
 #include "noelle/core/LoopWhilify.hpp"
 #include "noelle/core/LoopUnroll.hpp"
+#include "noelle/core/LoopDistribution.hpp"
 
 namespace llvm::noelle {
 
@@ -131,6 +132,29 @@ bool LoopTransformer::whilifyLoop (
 
 LoopTransformer::~LoopTransformer() {
   return;
+}
+
+bool LoopTransformer::splitLoop (
+  LoopDependenceInfo *loop,
+  std::set<SCC *> const &SCCsToPullOut,
+  std::set<Instruction *> &instructionsRemoved,
+  std::set<Instruction *> &instructionsAdded
+  ){
+  
+  /*
+   * Check trivial cases
+   */
+  if (loop == nullptr){
+    return false;
+  }
+
+  /*
+   * Split the loop.
+   */
+  LoopDistribution ld;
+  auto modified = ld.splitLoop(*loop, SCCsToPullOut, instructionsRemoved, instructionsAdded);
+
+  return modified;
 }
 
 }

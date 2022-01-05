@@ -16,7 +16,6 @@ namespace llvm::noelle {
       LoopDependenceInfo *LDI,
       Noelle &par,
       LoopTransformer &LoopTransformer,
-      LoopDistribution &loopDist,
       LoopInvariantCodeMotion &loopInvariantCodeMotion,
       SCEVSimplification &scevSimplification
       ){
@@ -26,7 +25,7 @@ namespace llvm::noelle {
      */
     if (par.isTransformationEnabled(Transformation::LOOP_DISTRIBUTION_ID)){
       errs() << "EnablersManager:     Try to apply loop distribution\n";
-      if (this->applyLoopDistribution(LDI, par, loopDist)){
+      if (this->applyLoopDistribution(LDI, par, LoopTransformer)){
         errs() << "EnablersManager:       Distributed loop\n";
         return true;
       }
@@ -121,7 +120,7 @@ namespace llvm::noelle {
     bool EnablersManager::applyLoopDistribution (
         LoopDependenceInfo *LDI,
         Noelle &par,
-        LoopDistribution &loopDist
+        LoopTransformer &loopTransformer
         ){
 
       /*
@@ -180,7 +179,7 @@ namespace llvm::noelle {
          */
         std::set<Instruction *> instsRemoved;
         std::set<Instruction *> instsAdded;
-        auto splitted = loopDist.splitLoop(*LDI, SCC, instsRemoved, instsAdded);
+        auto splitted = loopTransformer.splitLoop(LDI, {SCC}, instsRemoved, instsAdded);
         if (!splitted){
           continue ;
         }

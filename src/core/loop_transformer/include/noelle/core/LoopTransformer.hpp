@@ -39,6 +39,13 @@ namespace llvm::noelle {
         LoopDependenceInfo *loop
       );
 
+      bool splitLoop (
+        LoopDependenceInfo *loop,
+        std::set<SCC *> const &SCCsToPullOut,
+        std::set<Instruction *> &instructionsRemoved,
+        std::set<Instruction *> &instructionsAdded
+        );
+
       virtual ~LoopTransformer();
 
       bool doInitialization(Module &M) override;

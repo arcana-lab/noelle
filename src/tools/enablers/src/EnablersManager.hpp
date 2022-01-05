@@ -10,16 +10,7 @@
  */
 #pragma once
 
-#include "noelle/core/SystemHeaders.hpp"
-
-#include "noelle/core/LoopDependenceInfo.hpp"
-#include "noelle/core/PDG.hpp"
-#include "noelle/core/SCC.hpp"
-#include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/LoopDistribution.hpp"
-#include "noelle/core/LoopUnroll.hpp"
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
 #include "noelle/tools/SCEVSimplification.hpp"
 
@@ -60,7 +51,6 @@ namespace llvm::noelle {
         LoopDependenceInfo *LDI,
         Noelle &par,
         LoopTransformer &LoopTransformer,
-        LoopDistribution &loopDist,
         LoopInvariantCodeMotion &loopInvariantCodeMotion,
         SCEVSimplification &scevSimplification
         );
@@ -74,7 +64,7 @@ namespace llvm::noelle {
       bool applyLoopDistribution (
           LoopDependenceInfo *LDI,
           Noelle &par,
-          LoopDistribution &loopDist
+          LoopTransformer &LoopTransformer
         );
 
       bool applyDevirtualizer (

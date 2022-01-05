@@ -9,13 +9,9 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "EnablersManager.hpp"
-#include "noelle/core/HotProfiler.hpp"
 #include "noelle/core/LoopDistribution.hpp"
-#include "noelle/core/LoopUnroll.hpp"
-#include <unordered_map>
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 static cl::opt<bool> DisableEnablers("noelle-disable-enablers", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable all enablers"));
 
@@ -55,3 +51,5 @@ static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
 static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
         if(!_PassMaker){ PM.add(_PassMaker = new EnablersManager());}});// ** for -O0
+
+}
