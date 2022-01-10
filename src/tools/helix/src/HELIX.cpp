@@ -406,7 +406,7 @@ bool HELIX::synchronizeTask (
    * aren't adjusted after squeezing. Delay computing entry and exit frontiers for identified
    * sequential segments until AFTER squeezing.
    */
-  auto sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
+  auto sequentialSegments = this->identifySequentialSegments(par, originalLDI, LDI, reachabilityDFR);
   this->squeezeSequentialSegments(LDI, &sequentialSegments, reachabilityDFR);
 
   /*
@@ -425,7 +425,7 @@ bool HELIX::synchronizeTask (
     errs() << "HELIX:  Identifying sequential segments\n";
   }
   reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
-  sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
+  sequentialSegments = this->identifySequentialSegments(par, originalLDI, LDI, reachabilityDFR);
 
   /*
    * Schedule the sequential segments to overlap parallel and sequential segments.

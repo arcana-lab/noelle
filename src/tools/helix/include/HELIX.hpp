@@ -119,6 +119,7 @@ namespace llvm::noelle {
       );
 
       std::vector<SequentialSegment *> identifySequentialSegments (
+        Noelle &noelle,
         LoopDependenceInfo *originalLDI,
         LoopDependenceInfo *LDI,
         DataFlowResult *reachabilityDFR

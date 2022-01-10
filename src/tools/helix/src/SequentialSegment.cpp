@@ -15,6 +15,7 @@
 namespace llvm::noelle {
 
 SequentialSegment::SequentialSegment (
+  Noelle &noelle,
   LoopDependenceInfo *LDI, 
   DataFlowResult *reachabilityDFR,
   SCCSet *sccs,
@@ -36,9 +37,7 @@ SequentialSegment::SequentialSegment (
   /*
    * Compute dominator information
    */
-  DominatorTree dt(*loopFunction);
-  PostDominatorTree pdt(*loopFunction);
-  DominatorSummary ds(dt, pdt);
+  auto ds = noelle.getDominators(loopFunction);
 
   /*
    * Identify all dependent instructions that require synchronization
@@ -113,7 +112,7 @@ int32_t SequentialSegment::getID (void){
 
 void SequentialSegment::determineEntryAndExitFrontier (
   LoopDependenceInfo *LDI,
-  DominatorSummary &DS,
+  DominatorSummary *DS,
   DataFlowResult *dfr,
   std::unordered_set<Instruction *> &ssInstructions
 ) {
@@ -155,7 +154,7 @@ void SequentialSegment::determineEntryAndExitFrontier (
    */
   auto isDominatedByOtherEntry = [&](Instruction *inst) -> bool {
     for (auto entry : this->entries) {
-      if (DS.DT.dominates(entry, inst)) return true;
+      if (DS->DT.dominates(entry, inst)) return true;
     }
     return false;
   };
