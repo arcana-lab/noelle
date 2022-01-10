@@ -44,7 +44,7 @@ SequentialSegment::SequentialSegment (
    * NOTE: Exclude PHINode instructions (TODO: determine other instructions
    * that do not have any influence on the defining of entry/exit frontiers)
    */
-  std::unordered_set<Instruction *> ssInstructions = getInstructions();
+  auto ssInstructions = this->getInstructions();
   std::unordered_set<Instruction *> excludedInstructions;
   for (auto I : ssInstructions) {
     if (!isa<PHINode>(I)) continue;
