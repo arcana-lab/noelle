@@ -39,13 +39,13 @@ namespace llvm::noelle {
     public:
       DG () : nodeIdCounter{0} {}
 
-      typedef typename std::unordered_set<DGNode<T> *>::iterator nodes_iterator;
-      typedef typename std::unordered_set<DGNode<T> *>::const_iterator nodes_const_iterator;
+      typedef typename std::set<DGNode<T> *>::iterator nodes_iterator;
+      typedef typename std::set<DGNode<T> *>::const_iterator nodes_const_iterator;
 
-      typedef typename std::unordered_set<DGEdge<T> *>::iterator edges_iterator;
-      typedef typename std::unordered_set<DGEdge<T> *>::const_iterator edges_const_iterator;
+      typedef typename std::set<DGEdge<T> *>::iterator edges_iterator;
+      typedef typename std::set<DGEdge<T> *>::const_iterator edges_const_iterator;
 
-      typedef typename unordered_map<T *, DGNode<T> *>::iterator node_map_iterator;
+      typedef typename std::map<T *, DGNode<T> *>::iterator node_map_iterator;
 
       /*
        * Node and Edge Iterators
@@ -160,18 +160,18 @@ namespace llvm::noelle {
       std::unordered_set<DGNode<T> *> getPreviousDepthNodes(DGNode<T> *node);
       void removeNode(DGNode<T> *node);
       void removeEdge(DGEdge<T> *edge);
-      void copyNodesIntoNewGraph(DG<T> &newGraph, std::unordered_set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode);
+      void copyNodesIntoNewGraph(DG<T> &newGraph, std::set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode);
       void clear();
 
       raw_ostream & print(raw_ostream &stream);
 
     protected:
       int32_t nodeIdCounter;
-      std::unordered_set<DGNode<T> *> allNodes;
-      std::unordered_set<DGEdge<T> *> allEdges;
+      std::set<DGNode<T> *> allNodes;
+      std::set<DGEdge<T> *> allEdges;
       DGNode<T> *entryNode;
-      std::unordered_map<T *, DGNode<T> *> internalNodeMap;
-      std::unordered_map<T *, DGNode<T> *> externalNodeMap;
+      std::map<T *, DGNode<T> *> internalNodeMap;
+      std::map<T *, DGNode<T> *> externalNodeMap;
   };
 
   template <class T>
@@ -363,8 +363,7 @@ namespace llvm::noelle {
    * DG<T> class method implementations
    */
   template <class T>
-  DGNode<T> *DG<T>::addNode(T *theT, bool inclusion)
-  {
+  DGNode<T> *DG<T>::addNode(T *theT, bool inclusion) {
     auto node = new DGNode<T>(nodeIdCounter++, theT);
     allNodes.insert(node);
     auto &map = inclusion ? internalNodeMap : externalNodeMap;
@@ -621,10 +620,13 @@ namespace llvm::noelle {
   }
 
   template <class T>
-  void DG<T>::copyNodesIntoNewGraph(DG<T> &newGraph, std::unordered_set<DGNode<T> *> nodesToPartition, DGNode<T> *entryNode)
-  {
-    for (auto node : nodesToPartition)
-    {
+  void DG<T>::copyNodesIntoNewGraph (
+      DG<T> &newGraph, 
+      std::set<DGNode<T> *> nodesToPartition, 
+      DGNode<T> *entryNode
+      ) {
+
+    for (auto node : nodesToPartition) {
       auto theT = node->getT();
       auto clonedNode = newGraph.addNode(theT, isInternal(theT));
       if (theT == entryNode->getT()) newGraph.setEntryNode(clonedNode);

@@ -82,7 +82,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
   return false;
 }
 
-std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (void) {
+std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (void) {
 
   /*
    * Identify SCC containing only loads/stores on a single memory location
@@ -91,7 +91,7 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
   auto loopStructure = LDI.getLoopStructure();
   auto sccManager = LDI.getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
-  std::unordered_map<Value *, SCC *> singleMemoryLocationsBySCC{};
+  std::map<Value *, SCC *> singleMemoryLocationsBySCC{};
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
     auto sccInfo = sccManager->getSCCAttrs(scc);
@@ -104,7 +104,7 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
     //   // }
     // }
 
-    bool isSingleMemoryLocation = false;
+    auto isSingleMemoryLocation = false;
     Value *memoryLocation = nullptr;
     for (auto nodePair : scc->internalNodePairs()) {
       auto value = nodePair.first;
@@ -117,7 +117,9 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
         || isa<BranchInst>(value)
         || isa<SelectInst>(value)
         || isa<CastInst>(value)
-        || isa<PHINode>(value)) continue;
+        || isa<PHINode>(value)) {
+        continue;
+      }
 
       Value *loadOrStoreLocation = nullptr;
       if (auto load = dyn_cast<LoadInst>(value)) {
@@ -141,12 +143,14 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
     /*
      * Memory location access must be the same across the loads/stores, and loop invariant
      */
-    if (!isSingleMemoryLocation) continue;
+    if (!isSingleMemoryLocation) {
+      continue;
+    }
 
     /*
      * Ensure no memory aliases with any SCC externals
      */
-    bool hasExternalMemoryDependence = false;
+    auto hasExternalMemoryDependence = false;
     for (auto nodePair : scc->internalNodePairs()) {
       auto node = nodePair.second;
 
