@@ -36,6 +36,13 @@ uint64_t Hot::getStaticInstructions (
 
   return t;
 }
+      
+bool Hot::hasBeenExecuted (LoopStructure *l) const {
+  if (this->getInvocations(l) == 0){
+    return false;
+  }
+  return true;
+}
 
 uint64_t Hot::getInvocations (LoopStructure *l) const {
 
