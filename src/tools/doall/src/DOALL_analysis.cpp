@@ -12,11 +12,11 @@
 
 namespace llvm::noelle {
 
-std::unordered_set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable (
+std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable (
    LoopDependenceInfo *LDI,
    Noelle &par
   ) {
-  std::unordered_set<SCC *> sccs;
+  std::set<SCC *> sccs;
 
   /*
    * Fetch the SCC manager of the loop given as input

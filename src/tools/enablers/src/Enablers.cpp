@@ -15,9 +15,7 @@ namespace llvm::noelle {
   bool EnablersManager::applyEnablers (
       LoopDependenceInfo *LDI,
       Noelle &par,
-      LoopDistribution &loopDist,
-      LoopUnroll &loopUnroll,
-      LoopWhilifier &loopWhilifier,
+      LoopTransformer &LoopTransformer,
       LoopInvariantCodeMotion &loopInvariantCodeMotion,
       SCEVSimplification &scevSimplification
       ){
@@ -27,7 +25,7 @@ namespace llvm::noelle {
      */
     if (par.isTransformationEnabled(Transformation::LOOP_DISTRIBUTION_ID)){
       errs() << "EnablersManager:     Try to apply loop distribution\n";
-      if (this->applyLoopDistribution(LDI, par, loopDist)){
+      if (this->applyLoopDistribution(LDI, par, LoopTransformer)){
         errs() << "EnablersManager:       Distributed loop\n";
         return true;
       }
@@ -38,7 +36,7 @@ namespace llvm::noelle {
      */
     if (par.isTransformationEnabled(Transformation::DEVIRTUALIZER_ID)){
       errs() << "EnablersManager:     Try to devirtualize indirect calls\n";
-      if (this->applyDevirtualizer(LDI, par, loopUnroll)){
+      if (this->applyDevirtualizer(LDI, par, LoopTransformer)){
         errs() << "EnablersManager:       Some calls have been devirtualized\n";
         return true;
       }
@@ -49,7 +47,7 @@ namespace llvm::noelle {
      */
     if (par.isTransformationEnabled(Transformation::LOOP_WHILIFIER_ID)){
       errs() << "EnablersManager:     Try to whilify loops\n";
-      if (this->applyLoopWhilifier(LDI, par, loopWhilifier)){
+      if (this->applyLoopWhilifier(LDI, par, LoopTransformer)){
         errs() << "EnablersManager:       The loop has been whilified\n";
         return true;
       }
@@ -91,7 +89,7 @@ namespace llvm::noelle {
     bool EnablersManager::applyLoopWhilifier (
         LoopDependenceInfo *LDI,
         Noelle &par,
-        LoopWhilifier &loopWhilifier
+        LoopTransformer &LoopTransformer
         ){
       assert(LDI != nullptr);
 
@@ -114,7 +112,7 @@ namespace llvm::noelle {
       /*
        * Whilify the loop
        */
-      auto modified = loopWhilifier.whilifyLoop(*LDI);
+      auto modified = LoopTransformer.whilifyLoop(LDI);
 
       return modified;
     }
@@ -122,7 +120,7 @@ namespace llvm::noelle {
     bool EnablersManager::applyLoopDistribution (
         LoopDependenceInfo *LDI,
         Noelle &par,
-        LoopDistribution &loopDist
+        LoopTransformer &loopTransformer
         ){
 
       /*
@@ -181,7 +179,7 @@ namespace llvm::noelle {
          */
         std::set<Instruction *> instsRemoved;
         std::set<Instruction *> instsAdded;
-        auto splitted = loopDist.splitLoop(*LDI, SCC, instsRemoved, instsAdded);
+        auto splitted = loopTransformer.splitLoop(LDI, {SCC}, instsRemoved, instsAdded);
         if (!splitted){
           continue ;
         }
@@ -200,7 +198,7 @@ namespace llvm::noelle {
     bool EnablersManager::applyDevirtualizer (
         LoopDependenceInfo *LDI,
         Noelle &par,
-        LoopUnroll &loopUnroll
+        LoopTransformer &lt
         ){
 
       /*
@@ -290,14 +288,9 @@ namespace llvm::noelle {
       /*
        * Fully unroll the loop.
        */
-      auto &loopFunction = *ls->getFunction();
-      auto& LS = getAnalysis<LoopInfoWrapperPass>(loopFunction).getLoopInfo();
-      auto& DT = getAnalysis<DominatorTreeWrapperPass>(loopFunction).getDomTree();
-      auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(loopFunction).getSE();
-      auto& AC = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(loopFunction);
-      auto modified = loopUnroll.fullyUnrollLoop(*LDI, LS, DT, SE, AC);
+      auto modified = lt.fullyUnrollLoop(LDI);
 
       return modified;
     }
 
-  }
+}

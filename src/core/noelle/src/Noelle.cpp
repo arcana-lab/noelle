@@ -261,8 +261,11 @@ Scheduler Noelle::getScheduler (void) const {
   return Scheduler{};
 }
 
-LoopTransformer & Noelle::getLoopTransformer (Function &F) {
-  return getAnalysis<LoopTransformer>(F);
+LoopTransformer & Noelle::getLoopTransformer (void) {
+  auto &lt = getAnalysis<LoopTransformer>();
+  auto pdg = this->getProgramDependenceGraph();
+  lt.setPDG(pdg);
+  return lt;
 }
 
 uint64_t Noelle::numberOfProgramInstructions (void) const {

@@ -170,7 +170,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
      * Check if it is safe to use SVF.
      * This is due to a bug in SVF that doesn't model I/O library calls correctly.
      */
-    if (isSafeToQueryModRefOfSVF(call, bv)) {
+    if (this->isSafeToQueryModRefOfSVF(call, bv)) {
       auto const &loc = MemoryLocation::get(store);
       switch (NoelleSVFIntegration::getModRefInfo(call, loc)) {
         case ModRefInfo::NoModRef:

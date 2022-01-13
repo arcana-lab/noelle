@@ -33,7 +33,7 @@ namespace llvm::noelle {
       Noelle &noelle;
       InvariantManager &invariants;
 
-      std::unordered_map<Value *, SCC *> findSCCsWithSingleMemoryLocations (void) ;
+      std::map<Value *, SCC *> findSCCsWithSingleMemoryLocations (void) ;
 
       bool hoistMemoryInstructionsRelyingOnExistingRegisterValues (SCC *scc, Value *memoryLocation) ;
       bool promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLocation) ;

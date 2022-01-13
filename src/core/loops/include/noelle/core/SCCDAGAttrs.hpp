@@ -50,7 +50,7 @@
         /*
          * Dependencies in graph
          */
-        std::unordered_map<SCC *, Criticisms> sccToLoopCarriedDependencies;
+        std::map<SCC *, Criticisms> sccToLoopCarriedDependencies;
 
         /*
          * Isolated clonable SCCs and resulting inherited parents

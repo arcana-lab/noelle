@@ -19,6 +19,7 @@ namespace llvm::noelle {
   class SequentialSegment {
     public:
       SequentialSegment (
+        Noelle &noelle,
         LoopDependenceInfo *LDI,
         DataFlowResult *reachabilityDFR,
         SCCSet *sccs,
@@ -32,7 +33,7 @@ namespace llvm::noelle {
 
       int32_t getID (void);
 
-      iterator_range<unordered_set<SCC *>::iterator> getSCCs(void) ; 
+      iterator_range<unordered_set<SCC *>::iterator> getSCCs (void) ; 
 
       std::unordered_set<Instruction *> getInstructions (void) ;
 
@@ -45,7 +46,7 @@ namespace llvm::noelle {
 
       void determineEntryAndExitFrontier (
         LoopDependenceInfo *LDI,
-        DominatorSummary &DS,
+        DominatorSummary *DS,
         DataFlowResult *dfr,
         std::unordered_set<Instruction *> &ssInstructions
       );

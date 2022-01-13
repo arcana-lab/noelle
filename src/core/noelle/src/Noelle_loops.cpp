@@ -782,12 +782,18 @@ void Noelle::sortByHotness (std::vector<LoopDependenceInfo *> & loops) {
    * Define the order between loops.
    */
   auto compareLoops = [hot] (LoopDependenceInfo *a, LoopDependenceInfo *b) -> bool {
+    assert(a != nullptr);
+    assert(b != nullptr);
+
+    /*
+     * Fetch the information.
+     */
     auto aLS = a->getLoopStructure();
     auto bLS = b->getLoopStructure();
     auto aInsts = hot->getTotalInstructions(aLS);
     auto bInsts = hot->getTotalInstructions(bLS);
 
-    return aInsts >= bInsts;
+    return aInsts > bInsts;
   };
 
   /*
@@ -811,7 +817,7 @@ void Noelle::sortByHotness (std::vector<LoopStructure *> & loops) {
   auto compareLoops = [hot] (LoopStructure *a, LoopStructure *b) -> bool {
     auto aInsts = hot->getTotalInstructions(a);
     auto bInsts = hot->getTotalInstructions(b);
-    return aInsts >= bInsts;
+    return aInsts > bInsts;
   };
 
   /*
@@ -822,6 +828,57 @@ void Noelle::sortByHotness (std::vector<LoopStructure *> & loops) {
   return;
 }
 
+std::vector<StayConnectedNestedLoopForestNode *> Noelle::sortByHotness (
+  const std::unordered_set<StayConnectedNestedLoopForestNode *> &loops
+  ){
+  std::vector<StayConnectedNestedLoopForestNode *> s;
+
+  /*
+   * Convert the loops into the vector
+   */
+  for (auto n : loops){
+    s.push_back(n);
+  }
+
+  /*
+   * Check if we need to sort
+   */
+  if (s.size() <= 1){
+    return s;
+  }
+
+  /*
+   * Fetch the profiles.
+   */
+  auto hot = this->getProfiles();
+
+  /*
+   * Define the order between loops.
+   */
+  auto compareLoops = [hot] (StayConnectedNestedLoopForestNode *n0, StayConnectedNestedLoopForestNode *n1) -> bool {
+    assert(n0 != nullptr);
+    assert(n1 != nullptr);
+
+    /*
+     * Fetch the information.
+     */
+    auto a = n0->getLoop();
+    auto b = n1->getLoop();
+    assert(a != nullptr);
+    assert(b != nullptr);
+    auto aInsts = hot->getTotalInstructions(a);
+    auto bInsts = hot->getTotalInstructions(b);
+
+    return aInsts > bInsts;
+  };
+
+  /*
+   * Sort the loops.
+   */
+  std::sort(s.begin(), s.end(), compareLoops);
+
+  return s;
+}
 
 void Noelle::sortByStaticNumberOfInstructions (std::vector<LoopDependenceInfo *> & loops) {
 

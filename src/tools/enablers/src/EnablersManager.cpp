@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Angelo Matni, Simone Campanoni
+ * Copyright 2019 - 2021 Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -9,8 +9,6 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/LoopDistribution.hpp"
-#include "noelle/core/LoopUnroll.hpp"
 #include "EnablersManager.hpp"
 
 namespace llvm::noelle {
@@ -41,9 +39,7 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Create the enablers.
    */
-  auto loopDist = LoopDistribution();
-  auto loopUnroll = LoopUnroll();
-  auto loopWhilify = LoopWhilifier(noelle);
+  auto& loopTransformer = noelle.getLoopTransformer();
   auto loopInvariantCodeMotion = LoopInvariantCodeMotion(noelle);
   auto scevSimplification = SCEVSimplification(noelle);
 
@@ -59,16 +55,26 @@ bool EnablersManager::runOnModule (Module &M) {
   auto forest = noelle.organizeLoopsInTheirNestingForest(*loopsToParallelize);
 
   /*
-   * Parallelize the loops selected.
+   * Fetch the trees.
+   */
+  auto trees = forest->getTrees();
+
+  /*
+   * Sort the trees by hotness
+   */
+  auto sortedTrees = noelle.sortByHotness(trees);
+
+  /*
+   * Transform the loops selected.
    */
   auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
-  for (auto tree : forest->getTrees()){
+  for (auto tree : sortedTrees){
 
     /*
      * Parallelize all loops within this tree starting from the leafs.
      */
-    auto f = [&loopDist, &loopUnroll, &loopWhilify, &loopInvariantCodeMotion, &scevSimplification, &noelle, &modifiedFunctions, this, &modified](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
+    auto f = [&loopTransformer, &loopInvariantCodeMotion, &scevSimplification, &noelle, &modifiedFunctions, this, &modified](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
 
       /*
        * Fetch the loop
@@ -107,9 +113,7 @@ bool EnablersManager::runOnModule (Module &M) {
       modifiedFunctions[f] |= this->applyEnablers(
           &*loopToImprove,
           noelle,
-          loopDist,
-          loopUnroll,
-          loopWhilify,
+          loopTransformer,
           loopInvariantCodeMotion,
           scevSimplification
           );

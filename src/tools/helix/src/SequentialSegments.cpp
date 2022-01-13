@@ -15,6 +15,7 @@ using namespace llvm;
 using namespace llvm::noelle;
 
 std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
+  Noelle &noelle,
   LoopDependenceInfo *originalLDI,
   LoopDependenceInfo *LDI,
   DataFlowResult *reachabilityDFR
@@ -203,7 +204,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
     /*
      * Allocate a sequential segment.
      */
-    auto ss = new SequentialSegment(LDI, reachabilityDFR, set, ssID, this->verbose);
+    auto ss = new SequentialSegment(noelle, LDI, reachabilityDFR, set, ssID, this->verbose);
 
     /*
      * Insert the new sequential segment to the list.

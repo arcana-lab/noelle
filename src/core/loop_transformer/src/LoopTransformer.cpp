@@ -9,13 +9,24 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/LoopTransformer.hpp"
+#include "noelle/core/Scheduler.hpp"
+#include "noelle/core/LoopWhilify.hpp"
+#include "noelle/core/LoopUnroll.hpp"
+#include "noelle/core/LoopDistribution.hpp"
 
 namespace llvm::noelle {
 
-LoopTransformer::LoopTransformer()
-  : FunctionPass{ID}
+LoopTransformer::LoopTransformer ()
+  : ModulePass{ID}
 {
   return;
+}
+
+void LoopTransformer::setPDG (PDG *programDependenceGraph){
+  this->pdg = programDependenceGraph;
+  assert(this->pdg != nullptr);
+
+  return ;
 }
 
 LoopUnrollResult LoopTransformer::unrollLoop (LoopDependenceInfo *loop, uint32_t unrollFactor){
@@ -69,8 +80,81 @@ LoopUnrollResult LoopTransformer::unrollLoop (LoopDependenceInfo *loop, uint32_t
   return unrolled;
 }
 
+bool LoopTransformer::fullyUnrollLoop (LoopDependenceInfo *loop){
+
+  /*
+   * Fetch the unroller
+   */
+  auto loopUnroll = LoopUnroll();
+
+  /*
+   * Fetch the function
+   */
+  auto ls = loop->getLoopStructure();
+  auto &loopFunction = *ls->getFunction();
+  auto& LS = getAnalysis<LoopInfoWrapperPass>(loopFunction).getLoopInfo();
+  auto& DT = getAnalysis<DominatorTreeWrapperPass>(loopFunction).getDomTree();
+  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(loopFunction).getSE();
+  auto& AC = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(loopFunction);
+  auto modified = loopUnroll.fullyUnrollLoop(*loop, LS, DT, SE, AC);
+
+  return modified;
+}
+
+bool LoopTransformer::whilifyLoop (
+  LoopDependenceInfo *loop
+  ){
+  assert(this->pdg != nullptr);
+
+  /*
+   * Allocate the whilifier
+   */
+  auto loopWhilify = LoopWhilifier();
+
+  /*
+   * Get the necessary information
+   */
+  auto scheduler = Scheduler();
+  auto loopStructure = loop->getLoopStructure();
+  auto func = loopStructure->getFunction();
+  auto& DT = getAnalysis<DominatorTreeWrapperPass>(*func).getDomTree();
+  auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*func).getPostDomTree();
+  auto DS = new DominatorSummary(DT, PDT);
+  auto FDG = this->pdg->createFunctionSubgraph(*func);
+
+  /*
+   * Whilify the loop.
+   */
+  auto modified = loopWhilify.whilifyLoop(*loop, scheduler, DS, FDG);
+
+  return modified;
+}
+
 LoopTransformer::~LoopTransformer() {
   return;
+}
+
+bool LoopTransformer::splitLoop (
+  LoopDependenceInfo *loop,
+  std::set<SCC *> const &SCCsToPullOut,
+  std::set<Instruction *> &instructionsRemoved,
+  std::set<Instruction *> &instructionsAdded
+  ){
+  
+  /*
+   * Check trivial cases
+   */
+  if (loop == nullptr){
+    return false;
+  }
+
+  /*
+   * Split the loop.
+   */
+  LoopDistribution ld;
+  auto modified = ld.splitLoop(*loop, SCCsToPullOut, instructionsRemoved, instructionsAdded);
+
+  return modified;
 }
 
 }

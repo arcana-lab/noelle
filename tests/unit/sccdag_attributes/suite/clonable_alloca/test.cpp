@@ -77,7 +77,9 @@ int main (int argc, char *argv[]){
     totalValue += mightNotBeResetEachIteration.justRightOne;
   }
 
-  printf("%d\n", totalValue);
-
-  return 0;
+  if (totalValue < 0) {
+    return 1;
+  } else {
+    return 0;
+  }
 }

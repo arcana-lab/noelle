@@ -15,6 +15,7 @@
 namespace llvm::noelle {
 
 SequentialSegment::SequentialSegment (
+  Noelle &noelle,
   LoopDependenceInfo *LDI, 
   DataFlowResult *reachabilityDFR,
   SCCSet *sccs,
@@ -36,16 +37,14 @@ SequentialSegment::SequentialSegment (
   /*
    * Compute dominator information
    */
-  DominatorTree dt(*loopFunction);
-  PostDominatorTree pdt(*loopFunction);
-  DominatorSummary ds(dt, pdt);
+  auto ds = noelle.getDominators(loopFunction);
 
   /*
    * Identify all dependent instructions that require synchronization
    * NOTE: Exclude PHINode instructions (TODO: determine other instructions
    * that do not have any influence on the defining of entry/exit frontiers)
    */
-  std::unordered_set<Instruction *> ssInstructions = getInstructions();
+  auto ssInstructions = this->getInstructions();
   std::unordered_set<Instruction *> excludedInstructions;
   for (auto I : ssInstructions) {
     if (!isa<PHINode>(I)) continue;
@@ -113,7 +112,7 @@ int32_t SequentialSegment::getID (void){
 
 void SequentialSegment::determineEntryAndExitFrontier (
   LoopDependenceInfo *LDI,
-  DominatorSummary &DS,
+  DominatorSummary *DS,
   DataFlowResult *dfr,
   std::unordered_set<Instruction *> &ssInstructions
 ) {
@@ -122,7 +121,7 @@ void SequentialSegment::determineEntryAndExitFrontier (
    * Fetch the loop
    */
   auto rootLoop = LDI->getLoopStructure();
-  auto beforeInstructionMap = computeBeforeInstructionMap(LDI, dfr);
+  auto beforeInstructionMap = this->computeBeforeInstructionMap(LDI, dfr);
 
   /*
    * Instructions from which no other instruction in the SS can reach them are before the entry frontier
@@ -155,7 +154,7 @@ void SequentialSegment::determineEntryAndExitFrontier (
    */
   auto isDominatedByOtherEntry = [&](Instruction *inst) -> bool {
     for (auto entry : this->entries) {
-      if (DS.DT.dominates(entry, inst)) return true;
+      if (DS->DT.dominates(entry, inst)) return true;
     }
     return false;
   };
@@ -340,15 +339,17 @@ Instruction * SequentialSegment::getFrontierInstructionThatDoesNotSplitPHIs (Ins
 }
 
 /*
- * For each instruction I in the loop, derive the set of instructions J "before" it,
- * where each instruction of J is in the reachable set from I
- * Alternatively, a second data flow analysis could be performed to achieve this
+ * For each instruction I in the loop, derive the set of instructions J that could have been executed before I.
+ * This is accomplished by considering each instruction in the OUT reachable set of I as instructions that could execute before J.
  */
 std::unordered_map<Instruction *, std::unordered_set<Instruction *>> SequentialSegment::computeBeforeInstructionMap (
   LoopDependenceInfo *LDI,
   DataFlowResult *dfr
 ) {
 
+  /*
+   * Initialize the output data structure.
+   */
   auto loopStructure = LDI->getLoopStructure();
   std::unordered_map<Instruction *, std::unordered_set<Instruction *>> beforeInstructionMap{};
   for (auto B : loopStructure->getBasicBlocks()) {
@@ -358,9 +359,20 @@ std::unordered_map<Instruction *, std::unordered_set<Instruction *>> SequentialS
     }
   }
 
+  /*
+   * Compute the output.
+   */
   for (auto B : loopStructure->getBasicBlocks()) {
     for (auto &I : *B) {
+
+      /*
+       * Fetch the instructions that are reachable starting from I.
+       */
       auto &afterInstructions = dfr->OUT(&I);
+
+      /*
+       * Use the reachable instruction-information to compute the output.
+       */
       for (auto afterV : afterInstructions) {
         auto afterI = cast<Instruction>(afterV);
         if (&I == afterI) continue;

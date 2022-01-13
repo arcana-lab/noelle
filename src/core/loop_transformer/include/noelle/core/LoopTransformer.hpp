@@ -18,13 +18,33 @@
 
 namespace llvm::noelle {
 
-  class LoopTransformer : public FunctionPass {
+  class LoopTransformer : public ModulePass {
     public:
       static char ID;
 
-      LoopTransformer();
+      LoopTransformer ();
 
-      LoopUnrollResult unrollLoop (LoopDependenceInfo *loop, uint32_t unrollFactor);
+      void setPDG (PDG *programDependenceGraph);
+
+      LoopUnrollResult unrollLoop (
+        LoopDependenceInfo *loop, 
+        uint32_t unrollFactor
+      );
+
+      bool fullyUnrollLoop (
+        LoopDependenceInfo *loop
+      );
+
+      bool whilifyLoop (
+        LoopDependenceInfo *loop
+      );
+
+      bool splitLoop (
+        LoopDependenceInfo *loop,
+        std::set<SCC *> const &SCCsToPullOut,
+        std::set<Instruction *> &instructionsRemoved,
+        std::set<Instruction *> &instructionsAdded
+        );
 
       virtual ~LoopTransformer();
 
@@ -32,9 +52,10 @@ namespace llvm::noelle {
 
       void getAnalysisUsage(AnalysisUsage &AU) const override;
 
-      bool runOnFunction(Function &F) override;
+      bool runOnModule (Module &M) override;
 
     private:
+      PDG *pdg;
   };
 
 }

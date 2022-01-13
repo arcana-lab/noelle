@@ -202,6 +202,8 @@ ClonableMemoryLocation::ClonableMemoryLocation (
     ,isScopeWithinLoop{false}
 {
 
+  // allocation->print(errs() << "Examining alloca: "); errs() << "\n";
+
   /*
    * Check if the current stack object's scope is the loop.
    */
@@ -233,7 +235,7 @@ ClonableMemoryLocation::ClonableMemoryLocation (
    * 1) there is no RAW loop-carried data dependences that involve this stack object and
    * 2) there is no RAW from outside the loop to inside it.
    */
-  this->identifyInitialStoringInstructions(DS);
+  this->identifyInitialStoringInstructions(loop, DS);
   if (!this->isScopeWithinLoop){
     if (  false
           || (!this->areOverrideSetsFullyCoveringTheAllocationSpace())
@@ -417,8 +419,6 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
 
       } else {
 
-        // user->print(errs() << "Unknown user: "); errs() << "\n";
-
         /*
          * All users must be instructions
          */
@@ -430,7 +430,6 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
        * TODO: Once clonable memory can characterize if it is live out, remove this check
        */
       auto inst = cast<Instruction>(user);
-      // if (!loop->isIncluded(inst)) { inst->print(errs() << "Outside loop!: "); errs() << "\n"; }
       if (!loop->isIncluded(inst)) {
         auto block = inst->getParent();
         auto header = loop->getHeader();
@@ -511,10 +510,11 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (
        */
       return true;
     };
-    if (ldg->iterateOverDependencesTo(inst, false, true, false, functor)){
+
+    if (ldg->iterateOverDependencesFrom(inst, false, true, false, functor)){
 
       /*
-       * We found a memory RAW from outside the loop to inside that is related to our stack object.
+       * We found a memory RAW from a store inside the loop to a load after the loop.
        */
       return true;
     }
@@ -529,7 +529,7 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (LoopStructu
    * Check every read of the stack object.
    */
   if (  false
-        || this->isThereRAWThroughMemoryFromOutsideLoop(loop, al, ldg, this->loadInstructions)
+        || this->isThereRAWThroughMemoryFromOutsideLoop(loop, al, ldg, this->storingInstructions)
         || this->isThereRAWThroughMemoryFromOutsideLoop(loop, al, ldg, this->nonStoringInstructions)
      ){
     return true;
@@ -539,26 +539,34 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (LoopStructu
   return false;
 }
 
-bool ClonableMemoryLocation::identifyInitialStoringInstructions (DominatorSummary &DS) {
+bool ClonableMemoryLocation::identifyInitialStoringInstructions (LoopStructure *loop, DominatorSummary &DS) {
 
   /*
    * Group non-storing instructions by sets of dominating basic blocks
    * for which any two sets do not dominate each other
    */
+  std::unordered_set<Instruction *> instructionsNeedingCoverage;
   for (auto nonStoringInstruction : this->nonStoringInstructions) {
+    instructionsNeedingCoverage.insert(nonStoringInstruction);
+  }
+  for (auto loadInstruction : this->loadInstructions) {
+    instructionsNeedingCoverage.insert(loadInstruction);
+  }
+
+  for (auto instToCover : instructionsNeedingCoverage) {
 
     /*
      * Fetch the basic block of the current instruction.
      */
-    auto nonStoringBlock = nonStoringInstruction->getParent();
+    auto instBlock = instToCover->getParent();
 
     // nonStoringInstruction->print(errs() << "Grouping non storing instruction: "); errs() << "\n";
 
     auto belongsToExistingSet = false;
     for (auto &overrideSet : overrideSets) {
       auto overrideSetDominatingBlock = overrideSet->dominatingBlockOfNonStoringInsts;
-      if (DS.DT.dominates(overrideSetDominatingBlock, nonStoringBlock)) {
-        overrideSet->subsequentNonStoringInstructions.insert(nonStoringInstruction);
+      if (DS.DT.dominates(overrideSetDominatingBlock, instBlock)) {
+        overrideSet->subsequentNonStoringInstructions.insert(instToCover);
         belongsToExistingSet = true;
 
         // overrideSet->dominatingBlockOfNonStoringInsts->printAsOperand(
@@ -578,8 +586,8 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (DominatorSummar
     // nonStoringBlock->printAsOperand(errs() << "\tCreating set: "); errs() << "\n";
 
     auto overrideSet = std::make_unique<ClonableMemoryLocation::OverrideSet>();
-    overrideSet->dominatingBlockOfNonStoringInsts = nonStoringBlock;
-    overrideSet->subsequentNonStoringInstructions.insert(nonStoringInstruction);
+    overrideSet->dominatingBlockOfNonStoringInsts = instBlock;
+    overrideSet->subsequentNonStoringInstructions.insert(instToCover);
     overrideSets.insert(std::move(overrideSet));
   }
 
@@ -587,6 +595,14 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (DominatorSummar
    * Find which storing instructions belong to which override sets
    */
   for (auto storingInstruction : storingInstructions) {
+
+    /*
+     * Only instructions in the loop can possibly override this memory every iteration
+     */
+    if (!loop->isIncluded(storingInstruction)) {
+      continue;
+    }
+
     auto storingBlock = storingInstruction->getParent();
 
     for (auto &overrideSet : overrideSets) {
@@ -622,6 +638,10 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (DominatorSummar
 }
 
 bool ClonableMemoryLocation::areOverrideSetsFullyCoveringTheAllocationSpace (void) const {
+  if (overrideSets.size() == 0) {
+    return false;
+  }
+
   for (auto &overrideSet : overrideSets) {
     if (!this->isOverrideSetFullyCoveringTheAllocationSpace(overrideSet.get())) {
       return false;
@@ -696,14 +716,15 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace (
       if (!bytesStoredConst) continue;
 
       auto bitsStored = bytesStoredConst->getValue().getSExtValue() * 8;
-      if (this->sizeInBits == bitsStored) return true;
+      if (this->sizeInBits == bitsStored) {
+        return true;
+      }
     }
   }
 
   if (this->allocation->getAllocatedType()->isStructTy()) {
 
-    // errs() << "Number of elements covered: " << structElementsStoredTo.size()
-      // << " versus struct element number: " << this->allocatedType->getStructNumElements() << "\n";
+    // errs() << "Number of elements covered: " << structElementsStoredTo.size() << " versus struct element number: " << this->allocatedType->getStructNumElements() << "\n";
 
     if (structElementsStoredTo.size() == this->allocatedType->getStructNumElements()) return true;
   }

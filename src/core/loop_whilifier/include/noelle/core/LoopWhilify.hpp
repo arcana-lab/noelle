@@ -11,7 +11,8 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Noelle.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/Scheduler.hpp"
 
 namespace llvm::noelle {
 
@@ -83,13 +84,14 @@ namespace llvm::noelle {
       /*
        * Methods
        */
-      LoopWhilifier(Noelle &noelle);
+      LoopWhilifier();
 
       bool whilifyLoop (
-        LoopDependenceInfo &LDI
+        LoopDependenceInfo &LDI,
+        Scheduler &scheduler,
+        DominatorSummary *DS,
+        PDG *FDG
       );
-
-      Verbosity verbosity;
 
 
     private:
@@ -97,7 +99,6 @@ namespace llvm::noelle {
       /*
        * Fields
        */
-      Noelle &noelle;
       std::string outputPrefix;
 
 
@@ -105,7 +106,10 @@ namespace llvm::noelle {
        * Methods
        */
       bool whilifyLoopDriver(
-        LoopStructure * const LS
+        LoopStructure * const LS,
+        Scheduler &scheduler,
+        DominatorSummary *DS,
+        PDG *FDG
       );
 
       bool containsInOriginalLoop(

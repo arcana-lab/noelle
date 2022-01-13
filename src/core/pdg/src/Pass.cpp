@@ -79,14 +79,23 @@ bool PDGAnalysis::runOnModule (Module &M){
   identifyFunctionsThatInvokeUnhandledLibrary(M);
 
   /*
+   * Check if we should compute the PDG.
+   */
+  if (  false
+        || (this->dumpPDG)
+        || (this->embedPDG)
+     ){
+
+    /*
+     * Construct PDG because this will trigger code that is needed by the options specified.
+     */
+    auto currentPDG = this->getPDG();
+  }
+
+  /*
    * Check if we should dumpt the PDG
    */
   if (this->dumpPDG){
-
-    /*
-     * Construct PDG.
-     */
-    auto currentPDG = this->getPDG();
 
     /*
      * Dump the PDG
@@ -97,6 +106,7 @@ bool PDGAnalysis::runOnModule (Module &M){
       auto& LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
       return LI;
     };
+    auto currentPDG = this->getPDG();
     localPDGPrinter->printPDG(M, callGraph, currentPDG, getLoopInfo);
   }
 

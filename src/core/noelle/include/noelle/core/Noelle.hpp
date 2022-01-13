@@ -110,6 +110,10 @@ namespace llvm::noelle {
         std::vector<LoopStructure *> & loops
         ) ;
 
+      std::vector<StayConnectedNestedLoopForestNode *> sortByHotness (
+        const std::unordered_set<StayConnectedNestedLoopForestNode *> &loops
+        );
+
       void sortByStaticNumberOfInstructions (
         std::vector<LoopDependenceInfo *> & loops
         ) ;
@@ -142,7 +146,7 @@ namespace llvm::noelle {
 
       Scheduler getScheduler (void) const ;
 
-      LoopTransformer & getLoopTransformer (Function &F) ;
+      LoopTransformer & getLoopTransformer (void) ;
 
       DominatorSummary * getDominators (Function *f) ;
 

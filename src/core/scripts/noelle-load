@@ -7,12 +7,14 @@ OPT="opt" ;
 
 ###########     LLVM alias analyses
 AA="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa"
+EXTRA_AA=""
 
 
 ###########     SCAF
 if test -f "${installDir}/lib/libSCAFUtilities.so" ; then
   SCAFPASS="-load ${installDir}/lib/libSCAFUtilities.so -load ${installDir}/lib/libMemoryAnalysisModules.so" ;
   LOOPAA=`loopaa`
+  EXTRA_AA="${EXTRA_AA} -noellescaf"
 else
   SCAFPASS="" ;
   LOOPAA=" " ;
@@ -22,6 +24,7 @@ fi
 ###########     SVF
 if test -f "${installDir}/lib/libSvf.so" ; then
   WPAPASS="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so -stat=false"
+  EXTRA_AA="${EXTRA_AA} -noellesvf"
 else
   WPAPASS="" ;
 fi
@@ -32,7 +35,7 @@ PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so 
 
 
 ########### All analyses
-ANALYSES="${AA} ${LOOPAA} -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf"
+ANALYSES="${AA} ${LOOPAA} -scalar-evolution -loops -domtree -postdomtree ${EXTRA_AA}"
 
 
 ########### Transformations

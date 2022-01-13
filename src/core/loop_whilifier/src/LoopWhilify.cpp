@@ -12,9 +12,7 @@
 
 namespace llvm::noelle{
 
-  LoopWhilifier::LoopWhilifier(Noelle &noelle) :   
-    noelle{noelle}, 
-    verbosity{noelle.getVerbosity()},
+  LoopWhilifier::LoopWhilifier () :
     outputPrefix{"Whilifier: "}
   {
     return ;
@@ -22,7 +20,10 @@ namespace llvm::noelle{
 
 
   bool LoopWhilifier::whilifyLoop (
-    LoopDependenceInfo &LDI
+    LoopDependenceInfo &LDI,
+    Scheduler &scheduler,
+    DominatorSummary *DS,
+    PDG *FDG
   ) {
     
     /*
@@ -33,28 +34,31 @@ namespace llvm::noelle{
     errs() << outputPrefix << " Try to whilify the target loop\n";
 
     auto LS = LDI.getLoopStructure();
-    AnyTransformed |= whilifyLoopDriver(LS);
+    AnyTransformed |= whilifyLoopDriver(LS, scheduler, DS, FDG);
 
     errs() << outputPrefix << " Transformed = " << AnyTransformed << "\n";
     errs() << outputPrefix << "Exit\n";
 
     return AnyTransformed;
-
   }
 
 
   bool LoopWhilifier::whilifyLoopDriver(
-    LoopStructure * const LS
+    LoopStructure * const LS,
+    Scheduler &scheduler,
+    DominatorSummary *DS,
+    PDG *FDG
   ) {
-
     auto Transformed = false;
+
+    /*
+     * Fetch the function that contains the loop.
+     */
+    auto ParentFunc = LS->getFunction();
 
     /*
      * Get necessary info to invoke scheduler
      */ 
-    auto ParentFunc = LS->getFunction();
-    auto Scheduler = noelle.getScheduler();
-    auto DS = noelle.getDominators(ParentFunc);
     auto firstInst = LS->getEntryInstruction();
     errs() << outputPrefix << "   Loop: " << *firstInst << "\n";
 
@@ -70,10 +74,10 @@ namespace llvm::noelle{
     /*
      * Set up the loop scheduler
      */ 
-    auto LSched = Scheduler.getNewLoopScheduler(
+    auto LSched = scheduler.getNewLoopScheduler(
       LS,
       DS,
-      noelle.getFunctionDependenceGraph(ParentFunc)
+      FDG
     );
 
 

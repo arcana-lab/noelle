@@ -24,10 +24,17 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
    * Fetch the loop structure.
    */
   auto loopStructure = LDI.getLoopStructure();
+
+  /*
+   * Make sure the loop has the shape we want.
+   */
+  auto terminator = loopStructure->getHeader()->getTerminator();
+  if (!terminator) {
+    return false;
+  }
   if (noelle.getVerbosity() >= Verbosity::Maximal) {
-    auto terminator = loopStructure->getHeader()->getTerminator();
-    if (!terminator) return false;
-    terminator->print(errs() << "Mem2Reg: Checking loop: "); errs() << "\n";
+    errs() << "Mem2Reg: Start\n";
+    terminator->print(errs() << "Mem2Reg:   Checking loop: "); errs() << "\n";
   }
 
   /*
@@ -37,9 +44,17 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
     auto terminator = B->getTerminator();
     assert(terminator != nullptr);
     if (isa<ReturnInst>(terminator)) {
+      if (noelle.getVerbosity() >= Verbosity::Maximal) {
+        errs() << "Mem2Reg:   The loop may return from within it\n";
+        errs() << "Mem2Reg: Exit\n";
+      }
       return false;
     }
     if (isa<InvokeInst>(terminator)){
+      if (noelle.getVerbosity() >= Verbosity::Maximal) {
+        errs() << "Mem2Reg:   The loop may return from within it\n";
+        errs() << "Mem2Reg: Exit\n";
+      }
       return false;
     }
   }
@@ -48,17 +63,24 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
    * Fetch the SCCs of interest.
    */
   auto singleMemoryLocationsBySCC = this->findSCCsWithSingleMemoryLocations();
+  if (noelle.getVerbosity() >= Verbosity::Maximal) {
+    errs() << "Mem2Reg:   The loop has " << singleMemoryLocationsBySCC.size() << "SCCs that each one access the same memory location\n";
+  }
 
   /*
    * Promote memory locations to variables.
    */
   for (auto memoryAndSCCPair : singleMemoryLocationsBySCC) {
+
+    /*
+     * Fetch the current SCC.
+     */
     auto memoryInst = memoryAndSCCPair.first;
     auto memorySCC = memoryAndSCCPair.second;
 
     if (noelle.getVerbosity() >= Verbosity::Maximal) {
-      memoryInst->print(errs() << "Mem2Reg:  Loop invariant memory location: "); errs() << "\n";
-      memorySCC->printMinimal(errs() << "Mem2Reg:  SCC:\n"); errs() << "\n";
+      memoryInst->print(errs() << "Mem2Reg:     Loop invariant memory location: "); errs() << "\n";
+      memorySCC->printMinimal(errs() << "Mem2Reg:     SCC:\n"); errs() << "\n";
     }
 
     // if (hoistMemoryInstructionsRelyingOnExistingRegisterValues(memorySCC, memoryInst)) {
@@ -70,19 +92,28 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
      * Promote the single memory location used in the current SCC to variables.
      */
     auto promoted = this->promoteMemoryToRegisterForSCC(memorySCC, memoryInst);
-    if (noelle.getVerbosity() >= Verbosity::Maximal) {
-      memoryInst->print(errs() << "Mem2Reg:  Loop invariant memory location loads/stores promoted: " << promoted << " ");
-      errs() << "\n";
-    }
     if (promoted) {
+
+      /*
+       * The stack location has been promoted to variables within the loop
+       */
+      if (noelle.getVerbosity() >= Verbosity::Maximal) {
+        errs() << "Mem2Reg:       The memory location has been promoted\n";
+        errs() << "Mem2Reg: Exit\n";
+      }
+
       return true;
     }
   }
 
+  if (noelle.getVerbosity() >= Verbosity::Maximal) {
+    errs() << "Mem2Reg:   No changes have been made\n";
+    errs() << "Mem2Reg: Exit\n";
+  }
   return false;
 }
 
-std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (void) {
+std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (void) {
 
   /*
    * Identify SCC containing only loads/stores on a single memory location
@@ -91,8 +122,12 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
   auto loopStructure = LDI.getLoopStructure();
   auto sccManager = LDI.getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
-  std::unordered_map<Value *, SCC *> singleMemoryLocationsBySCC{};
+  std::map<Value *, SCC *> singleMemoryLocationsBySCC{};
   for (auto sccNode : sccdag->getNodes()) {
+
+    /*
+     * Fetch the SCC to evaluate
+     */
     auto scc = sccNode->getT();
     auto sccInfo = sccManager->getSCCAttrs(scc);
 
@@ -104,12 +139,17 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
     //   // }
     // }
 
-    bool isSingleMemoryLocation = false;
+    /*
+     * Analyze the SCC to make sure all instructions within can only access the same memory location
+     */
+    auto isSingleMemoryLocation = false;
     Value *memoryLocation = nullptr;
     for (auto nodePair : scc->internalNodePairs()) {
       auto value = nodePair.first;
 
       /*
+       * Check if the current instruction cannot access memory and therefore it can be safely skipped
+       *
        * TODO: Expand understanding of instructions that won't interfere
        */
       if (isa<BinaryOperator>(value)
@@ -117,36 +157,52 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
         || isa<BranchInst>(value)
         || isa<SelectInst>(value)
         || isa<CastInst>(value)
-        || isa<PHINode>(value)) continue;
+        || isa<PHINode>(value)) {
+        continue;
+      }
 
+      /*
+       * We only handle load and store instructions
+       */
       Value *loadOrStoreLocation = nullptr;
       if (auto load = dyn_cast<LoadInst>(value)) {
         loadOrStoreLocation = load->getPointerOperand();
       } else if (auto store = dyn_cast<StoreInst>(value)) {
         loadOrStoreLocation = store->getPointerOperand();
       }
-
-      if (loadOrStoreLocation) {
-        if (!memoryLocation || loadOrStoreLocation == memoryLocation) {
-          isSingleMemoryLocation = true;
-          memoryLocation = loadOrStoreLocation;
-          continue;
-        }
+      if (!loadOrStoreLocation){
+        isSingleMemoryLocation = false;
+        break;
       }
 
+      /*
+       * Make sure the memory instruction access only the same memory location
+       */
+      if (!memoryLocation || loadOrStoreLocation == memoryLocation) {
+        isSingleMemoryLocation = true;
+        memoryLocation = loadOrStoreLocation;
+        continue;
+      }
+      
+      /*
+       * The current memory instruction may access another memory location.
+       * Hence, this SCC cannot be considered by the optimization
+       */
       isSingleMemoryLocation = false;
       break;
     }
 
     /*
-     * Memory location access must be the same across the loads/stores, and loop invariant
+     * Make sure the whole SCC can only access the same memory location
      */
-    if (!isSingleMemoryLocation) continue;
+    if (!isSingleMemoryLocation) {
+      continue;
+    }
 
     /*
-     * Ensure no memory aliases with any SCC externals
+     * Ensure no memory aliases with any loop instruction outside the current SCC.
      */
-    bool hasExternalMemoryDependence = false;
+    auto hasExternalMemoryDependence = false;
     for (auto nodePair : scc->internalNodePairs()) {
       auto node = nodePair.second;
 
@@ -168,11 +224,18 @@ std::unordered_map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLoc
       // memoryLocation->print(errs() << "Mem2Reg:  Possible loop invariant memory location: "); errs() << "\n";
     //}
 
+    /*
+     * The pointer to the memory location accessed by the SCC must be a loop invariant.
+     */
     if (auto memoryInst = dyn_cast<Instruction>(memoryLocation)) {
-      if (loopStructure->isIncluded(memoryInst)
-        && !invariants.isLoopInvariant(memoryInst)) continue;
+      if (!invariants.isLoopInvariant(memoryInst)) {
+        continue;
+      }
     }
 
+    /*
+     * We found an SCC that can be optimized
+     */
     singleMemoryLocationsBySCC.insert(std::make_pair(memoryLocation, scc));
   }
 
