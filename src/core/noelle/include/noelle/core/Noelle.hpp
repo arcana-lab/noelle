@@ -110,6 +110,10 @@ namespace llvm::noelle {
         std::vector<LoopStructure *> & loops
         ) ;
 
+      std::vector<StayConnectedNestedLoopForestNode *> sortByHotness (
+        const std::unordered_set<StayConnectedNestedLoopForestNode *> &loops
+        );
+
       void sortByStaticNumberOfInstructions (
         std::vector<LoopDependenceInfo *> & loops
         ) ;

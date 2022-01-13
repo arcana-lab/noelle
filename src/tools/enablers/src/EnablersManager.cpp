@@ -55,11 +55,21 @@ bool EnablersManager::runOnModule (Module &M) {
   auto forest = noelle.organizeLoopsInTheirNestingForest(*loopsToParallelize);
 
   /*
-   * Parallelize the loops selected.
+   * Fetch the trees.
+   */
+  auto trees = forest->getTrees();
+
+  /*
+   * Sort the trees by hotness
+   */
+  auto sortedTrees = noelle.sortByHotness(trees);
+
+  /*
+   * Transform the loops selected.
    */
   auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
-  for (auto tree : forest->getTrees()){
+  for (auto tree : sortedTrees){
 
     /*
      * Parallelize all loops within this tree starting from the leafs.
