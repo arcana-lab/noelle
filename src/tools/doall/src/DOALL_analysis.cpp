@@ -27,7 +27,8 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable (
    * Iterate over SCCs with loop-carried data dependences
    */
   auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
-  for (auto scc : nonDOALLSCCs) {
+  auto nonDOALLSCCsSorted = par.sortByHotness(nonDOALLSCCs);
+  for (auto scc : nonDOALLSCCsSorted) {
 
     /*
      * Fetch the SCC metadata.

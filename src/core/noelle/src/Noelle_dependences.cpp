@@ -26,4 +26,52 @@ PDG * Noelle::getFunctionDependenceGraph (Function *f) {
   return fdg;
 }
 
+std::vector<SCC *> Noelle::sortByHotness (
+  const std::set<SCC *> &SCCs
+  ){
+  std::vector<SCC *> s;
+
+  /*
+   * Convert the loops into the vector
+   */
+  for (auto scc : SCCs){
+    s.push_back(scc);
+  }
+
+  /*
+   * Check if we need to sort
+   */
+  if (s.size() <= 1){
+    return s;
+  }
+
+  /*
+   * Fetch the profiles.
+   */
+  auto hot = this->getProfiles();
+
+  /*
+   * Define the order between loops.
+   */
+  auto compareSCCs = [hot] (SCC *s0, SCC *s1) -> bool {
+    assert(s0 != nullptr);
+    assert(s1 != nullptr);
+
+    /*
+     * Fetch the information.
+     */
+    auto s0Insts = hot->getTotalInstructions(s0);
+    auto s1Insts = hot->getTotalInstructions(s1);
+
+    return s0Insts > s1Insts;
+  };
+
+  /*
+   * Sort the loops.
+   */
+  std::sort(s.begin(), s.end(), compareSCCs);
+
+  return s;
+}
+
 }
