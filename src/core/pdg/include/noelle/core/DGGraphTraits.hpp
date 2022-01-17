@@ -148,6 +148,11 @@ namespace llvm {
         ros << (edge->isControlDependence() ? cntColor : (edge->isMemoryDependence() ? memColor : varColor));
         if (edge->isLoopCarriedDependence()) ros << ", penwidth=2";
         if (dg->isExternal(edge->getOutgoingT()) || dg->isExternal(edge->getIncomingT())) ros << ",style=dotted";
+        // dump the edge id set by the map
+        int edgeId = dg->getEdgeId(edge);
+        if (edgeId != -1) {
+          ros << ",label=" << edgeId;
+        }
         return ros.str();
       }
     };
