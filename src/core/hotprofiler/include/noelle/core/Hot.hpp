@@ -78,6 +78,8 @@ namespace llvm::noelle {
         std::function<bool (Instruction *i)> canIConsiderIt
         ) const ;
 
+      bool hasBeenExecuted (LoopStructure *l) const ;
+
       /*
        * Return the number of times the loop @l has been executed.
        */

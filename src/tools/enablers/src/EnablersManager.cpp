@@ -50,6 +50,18 @@ bool EnablersManager::runOnModule (Module &M) {
   errs() << "EnablersManager:   Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
 
   /*
+   * Remove loops that have not been executed
+   */
+  auto hot = noelle.getProfiles();
+  auto filter = [hot](LoopStructure *l) -> bool {
+    if (!hot->hasBeenExecuted(l)){
+      return true;
+    }
+    return false;
+  };
+  noelle.filterOutLoops(*loopsToParallelize, filter);
+
+  /*
    * Organize loops in a forest.
    */
   auto forest = noelle.organizeLoopsInTheirNestingForest(*loopsToParallelize);
