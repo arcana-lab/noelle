@@ -57,4 +57,46 @@ bool FunctionsManager::isTheLibraryFunctionPure (Function *libraryFunction){
   return false;
 }
 
+std::set<Function *> FunctionsManager::getProgramConstructors (void) const {
+  std::set<Function *> s;
+
+  /*
+   * Fetch the list of global ctors of the module.
+   */
+  auto globalCtor = this->program.getGlobalVariable("llvm.global_ctors");
+  if (globalCtor == nullptr){
+    return s;
+  }
+
+  /* 
+   * Fetch the initializers.
+   */
+  auto init = globalCtor->getInitializer();
+  assert(init != nullptr);
+  auto initVector = cast<ConstantArray>(init);
+  assert(initVector != nullptr);
+  for (auto &V : initVector->operands()){
+
+    /*
+     * Fetch the next constructor.
+     */
+    if (isa<ConstantAggregateZero>(V)){
+      continue;
+    }
+    auto CS = cast<ConstantStruct>(V);
+    if (isa<ConstantPointerNull>(CS->getOperand(1))){
+      continue;
+    }
+    auto maybeFunction = CS->getOperand(1);
+    if (!isa<Function>(maybeFunction)){
+      continue ;
+    }
+    auto function = cast<Function>(maybeFunction);
+
+    s.insert(function);
+  }
+
+  return s;
+}
+
 }

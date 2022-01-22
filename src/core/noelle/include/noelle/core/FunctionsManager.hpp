@@ -21,6 +21,8 @@ namespace llvm::noelle {
 
       Function * getEntryFunction (void) const ;
 
+      std::set<Function *> getProgramConstructors (void) const ;
+
       bool isTheLibraryFunctionPure (Function *libraryFunction);
 
       CallGraph * getProgramCallGraph (void) ;
