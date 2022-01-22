@@ -145,38 +145,11 @@ bool DeadFunctionEliminator::runOnModule (Module &M) {
   /*
     * Fetch the islands of all constructors.
     */
-  auto globalCtor = M.getGlobalVariable("llvm.global_ctors");
-  if (globalCtor != nullptr){
-    auto init = globalCtor->getInitializer();
-    assert(init != nullptr);
-    auto initVector = cast<ConstantArray>(init);
-    assert(initVector != nullptr);
-    for (auto &V : initVector->operands()){
-
-      /*
-        * Fetch the next constructor.
-        */
-      if (isa<ConstantAggregateZero>(V)){
-        continue;
-      }
-      auto CS = cast<ConstantStruct>(V);
-      if (isa<ConstantPointerNull>(CS->getOperand(1))){
-        continue;
-      }
-      auto maybeFunction = CS->getOperand(1);
-      if (!isa<Function>(maybeFunction)){
-        continue ;
-      }
-      auto function = cast<Function>(maybeFunction);
-      errs() << "DeadFunctionEliminator:  Considering ctor " << function->getName() << " as entry function\n";
-
-      /*
-        * Fetch the island.
-        */
-      auto ctorIsland = islands[function];
-      assert(ctorIsland != nullptr);
-      liveIslands.insert(ctorIsland);
-    }
+  auto ctors = fm->getProgramConstructors();
+  for (auto ctor : ctors){
+    auto ctorIsland = islands[ctor];
+    assert(ctorIsland != nullptr);
+    liveIslands.insert(ctorIsland);
   }
 
   /*
