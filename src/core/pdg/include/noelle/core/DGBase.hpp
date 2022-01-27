@@ -44,6 +44,7 @@ namespace llvm::noelle {
 
       typedef typename std::set<DGEdge<T> *>::iterator edges_iterator;
       typedef typename std::set<DGEdge<T> *>::const_iterator edges_const_iterator;
+      typedef map<DGEdge<T> *, uint32_t> DepIdReverseMap_t;
 
       typedef typename std::map<T *, DGNode<T> *>::iterator node_map_iterator;
 
@@ -151,6 +152,20 @@ namespace llvm::noelle {
       DGEdge<T> *copyAddEdge(DGEdge<T> &edgeToCopy);
 
       /*
+       * Deal with the id for each edge and the corresponding map for debugging
+       */
+      optional<uint32_t> getEdgeID(DGEdge<T> *edge) {
+        if (depLookupMap && depLookupMap->find(edge) != depLookupMap->end())
+          return depLookupMap->at(edge);
+        else
+          return std::nullopt;
+      }
+
+      void setDepLookupMap(shared_ptr<DepIdReverseMap_t> depLookupMap) {
+        this->depLookupMap = depLookupMap;
+      }
+
+      /*
        * Merging/Extracting Graphs
        */
       std::unordered_set<DGNode<T> *> getTopLevelNodes(bool onlyInternal = false);
@@ -172,6 +187,7 @@ namespace llvm::noelle {
       DGNode<T> *entryNode;
       std::map<T *, DGNode<T> *> internalNodeMap;
       std::map<T *, DGNode<T> *> externalNodeMap;
+      shared_ptr<DepIdReverseMap_t> depLookupMap = nullptr;
   };
 
   template <class T>
