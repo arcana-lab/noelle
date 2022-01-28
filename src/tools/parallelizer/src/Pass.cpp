@@ -58,20 +58,16 @@ bool Parallelizer::runOnModule (Module &M) {
    * Allocate the parallelization techniques.
    */
   DSWP dswp{
-    M,
-      *profiles,
-      this->forceParallelization,
-      !this->forceNoSCCPartition,
-      verbosity
+    noelle,
+    this->forceParallelization,
+    !this->forceNoSCCPartition
   };
   DOALL doall{
     noelle
   };
   HELIX helix{
-    M,
-      *profiles,
-      this->forceParallelization,
-      verbosity
+    noelle,
+    this->forceParallelization
   };
 
   /*

@@ -82,7 +82,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
   /*
    * Register a new environment builder and the single HELIX task
    */
-  this->loopCarriedEnvBuilder = new EnvBuilder(module.getContext());
+  this->loopCarriedEnvBuilder = new EnvBuilder(this->noelle.getProgram()->getContext());
   this->loopCarriedEnvBuilder->createEnvVariables(phiTypes, nonReducablePHIs, cannotReduceLoopCarriedPHIs, 1);
   this->loopCarriedEnvBuilder->createEnvUsers(1);
 

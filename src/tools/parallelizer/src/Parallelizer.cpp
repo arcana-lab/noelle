@@ -65,27 +65,27 @@ namespace llvm::noelle {
     if (  true
         && par.isTransformationEnabled(DOALL_ID)
         && LDI->isTransformationEnabled(DOALL_ID)
-        && doall.canBeAppliedToLoop(LDI, par, h)
+        && doall.canBeAppliedToLoop(LDI, h)
        ){
 
       /*
        * Apply DOALL.
        */
       doall.reset();
-      codeModified = doall.apply(LDI, par, h);
+      codeModified = doall.apply(LDI, h);
       usedTechnique = &doall;
 
     } else if ( true
         && par.isTransformationEnabled(HELIX_ID)
         && LDI->isTransformationEnabled(HELIX_ID)
-        && helix.canBeAppliedToLoop(LDI, par, h)   
+        && helix.canBeAppliedToLoop(LDI, h)   
         ){
 
       /*
        * Apply HELIX
        */
       helix.reset();
-      codeModified = helix.apply(LDI, par, h);
+      codeModified = helix.apply(LDI, h);
 
       auto function = helix.getTaskFunction();
       auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
@@ -108,20 +108,20 @@ namespace llvm::noelle {
       auto newLDI = new LoopDependenceInfo(taskFunctionDG, l, DS, SE, par.getCompilationOptionsManager()->getMaximumNumberOfCores(), par.canFloatsBeConsideredRealNumbers());
       newLDI->copyParallelizationOptionsFrom(LDI);
 
-      codeModified = helix.apply(newLDI, par, h);
+      codeModified = helix.apply(newLDI, h);
       usedTechnique = &helix;
 
     } else if ( true
         && par.isTransformationEnabled(DSWP_ID)
         && LDI->isTransformationEnabled(DSWP_ID)
-        && dswp.canBeAppliedToLoop(LDI, par, h)
+        && dswp.canBeAppliedToLoop(LDI, h)
         ) {
 
       /*
        * Apply DSWP.
        */
       dswp.reset();
-      codeModified = dswp.apply(LDI, par, h);
+      codeModified = dswp.apply(LDI, h);
       usedTechnique = &dswp;
     }
 

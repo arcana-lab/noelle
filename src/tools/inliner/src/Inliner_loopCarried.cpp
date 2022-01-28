@@ -84,7 +84,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
       };
       if (  true
             && (summary->getNumberOfSubLoops() >= 1)
-            && doall.canBeAppliedToLoop(LDI, noelle, nullptr)
+            && doall.canBeAppliedToLoop(LDI, nullptr)
         ){
 
         /*

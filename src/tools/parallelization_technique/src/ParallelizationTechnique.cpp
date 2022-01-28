@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,16 +10,14 @@
  */
 #include "ParallelizationTechnique.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle { 
 
 ParallelizationTechnique::ParallelizationTechnique (
-  Module &module, 
-  Hot &p,
-  Verbosity v
+  Noelle &n
   )
-  : module{module}, verbose{v}, tasks{}, envBuilder{nullptr}, profile{p}
+  : noelle{n}, tasks{}, envBuilder{nullptr}
   {
+  this->verbose = n.getVerbosity();
 
   return ;
 }
@@ -33,6 +31,11 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   std::set<int> simpleVars,
   std::set<int> reducableVars
 ) {
+
+  /*
+   * Fetch the program.
+   */
+  auto program = this->noelle.getProgram();
 
   /*
    * Check the state of the parallelization technique 'this'.
@@ -51,7 +54,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
     varTypes.push_back(LDI->environment->typeOfEnvironmentLocation(i));
   }
 
-  this->envBuilder = new EnvBuilder(module.getContext());
+  this->envBuilder = new EnvBuilder(program->getContext());
   this->envBuilder->createEnvVariables(varTypes, simpleVars, reducableVars, this->numTaskInstances);
 
   this->envBuilder->createEnvUsers(tasks.size());
@@ -274,7 +277,6 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks (
     /*
      * Set the formal arguments of the task.
      */
-    auto &cxt = module.getContext();
     task->extractFuncArgs();
 
     /*
@@ -311,9 +313,14 @@ void ParallelizationTechnique::cloneSequentialLoop (
 ){
 
   /*
+   * Fetch the program.
+   */
+  auto program = this->noelle.getProgram();
+
+  /*
    * Fetch the task.
    */
-  auto &cxt = module.getContext();
+  auto &cxt = program->getContext();
   auto task = tasks[taskIndex];
 
   /*
@@ -349,7 +356,13 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
   int taskIndex,
   std::set<Instruction *> subset
 ){
-  auto &cxt = module.getContext();
+
+  /*
+   * Fetch the program.
+   */
+  auto program = this->noelle.getProgram();
+
+  auto &cxt = program->getContext();
   auto task = tasks[taskIndex];
 
   /*
@@ -1152,6 +1165,11 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
 ){
 
   /*
+   * Fetch the program.
+   */
+  auto program = this->noelle.getProgram();
+
+  /*
    * Check whether there are multiple exit blocks or not.
    * If there are more exit blocks, then we need to specify which one has been taken.
    */
@@ -1177,7 +1195,7 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
   /*
    * Add a store instruction to specify to the code outside the parallelized loop which exit block is taken.
    */
-  auto int32 = IntegerType::get(module.getContext(), 32);
+  auto int32 = IntegerType::get(program->getContext(), 32);
   for (int i = 0; i < task->getNumberOfLastBlocks(); ++i) {
     auto bb = task->getLastBlock(i);
     auto term = bb->getTerminator();
@@ -1312,6 +1330,11 @@ void ParallelizationTechnique::adjustStepValueOfPointerTypeIVToReflectPointerAri
 ) {
 
   /*
+   * Fetch the program.
+   */
+  auto program = this->noelle.getProgram();
+
+  /*
    * If the IV's type is pointer, then the SCEV of the step value for the IV is
    * pointer arithmetic and needs to be multiplied by the bit size of pointers to
    * reflect the exact change of the value
@@ -1319,7 +1342,7 @@ void ParallelizationTechnique::adjustStepValueOfPointerTypeIVToReflectPointerAri
    * This occurs because GEP information is lost to ScalarEvolution analysis when it
    * computes the step value as a SCEV
    */
-  auto &DL = this->module.getDataLayout();
+  auto &DL = program->getDataLayout();
   auto ptrSizeInBytes = DL.getPointerSize();
   for (auto ivAndStepValuePair : clonedStepValueMap) {
     auto iv = ivAndStepValuePair.first;
@@ -1436,4 +1459,6 @@ ParallelizationTechnique::~ParallelizationTechnique () {
   reset();
 
   return ;
+}
+
 }

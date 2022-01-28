@@ -10,16 +10,13 @@
  */
 #include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences (
-  Module &module, 
-  Hot &p,
-  bool forceParallelization,
-  Verbosity v
+  Noelle &n,
+  bool forceParallelization
   )
-  : ParallelizationTechnique{module, p, v}, partitioner{nullptr}, forceParallelization{forceParallelization}
+  : ParallelizationTechnique{n}, partitioner{nullptr}, forceParallelization{forceParallelization}
   {
 
   return ;
@@ -27,7 +24,6 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::ParallelizationT
 
 bool ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeAppliedToLoop (
   LoopDependenceInfo *LDI, 
-  Noelle &par, 
   Heuristics *h
   ) const {
 
@@ -140,4 +136,6 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
   }
 
   return ;
+}
+
 }

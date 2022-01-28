@@ -30,22 +30,18 @@ namespace llvm::noelle {
        * Methods
        */
       DSWP (
-        Module &module,
-        Hot &p,
+        Noelle &par,
         bool forceParallelization,
-        bool enableSCCMerging,
-        Verbosity v
+        bool enableSCCMerging
       );
 
       bool apply (
         LoopDependenceInfo *LDI,
-        Noelle &par,
         Heuristics *h
       ) override ;
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
-        Noelle &par,
         Heuristics *h
       ) const override ;
 

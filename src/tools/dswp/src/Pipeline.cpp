@@ -17,6 +17,11 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
   assert(LDI != nullptr);
 
   /*
+   * Fetch the program.
+   */
+  auto program = this->noelle.getProgram();
+
+  /*
    * Fetch the identified stages.
    */
   std::vector<Task *> techniqueTasks;
@@ -31,7 +36,7 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
     /*
      * Create task (stage), populating its SCCs
      */
-    auto task = new DSWPTask(taskID, this->taskSignature, this->module);
+    auto task = new DSWPTask(taskID, this->taskSignature, *program);
     taskID++;
     techniqueTasks.push_back(task);
     for (auto scc : subset->sccs) {

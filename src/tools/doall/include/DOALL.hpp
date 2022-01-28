@@ -35,13 +35,11 @@ namespace llvm::noelle {
 
       bool apply (
         LoopDependenceInfo *LDI,
-        Noelle &par,
         Heuristics *h
       ) override ;
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
-        Noelle &par,
         Heuristics *h
       ) const override ;
 

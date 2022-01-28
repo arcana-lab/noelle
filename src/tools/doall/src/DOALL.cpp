@@ -16,7 +16,7 @@ namespace llvm::noelle{
 DOALL::DOALL (
   Noelle &noelle
 ) :
-    ParallelizationTechnique{*noelle.getProgram(), *noelle.getProfiles(), noelle.getVerbosity()}
+    ParallelizationTechnique{noelle}
   , enabled{true}
   , taskDispatcher{nullptr}
   , n{noelle}
@@ -50,7 +50,6 @@ DOALL::DOALL (
 
 bool DOALL::canBeAppliedToLoop (
   LoopDependenceInfo *LDI,
-  Noelle &par,
   Heuristics *h
 ) const {
   if (this->verbose != Verbosity::Disabled) {
@@ -120,7 +119,7 @@ bool DOALL::canBeAppliedToLoop (
   /*
    * The compiler must be able to remove loop-carried data dependences of all SCCs with loop-carried data dependences.
    */
-  auto nonDOALLSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, par);
+  auto nonDOALLSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, this->n);
   if (nonDOALLSCCs.size() > 0){
     if (this->verbose != Verbosity::Disabled) {
       for (auto scc : nonDOALLSCCs) {
@@ -204,7 +203,6 @@ bool DOALL::canBeAppliedToLoop (
       
 bool DOALL::apply (
   LoopDependenceInfo *LDI,
-  Noelle &par,
   Heuristics *h
 ) {
 
@@ -244,7 +242,7 @@ bool DOALL::apply (
   /*
    * Generate an empty task for the parallel DOALL execution.
    */
-  auto chunkerTask = new DOALLTask(this->taskSignature, this->module);
+  auto chunkerTask = new DOALLTask(this->taskSignature, *this->n.getProgram());
   this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { chunkerTask });
   this->numTaskInstances = LDI->getMaximumNumberOfCores();
 
@@ -330,7 +328,7 @@ bool DOALL::apply (
     errs() << "DOALL:  Stored live outs\n";
   }
 
-  this->addChunkFunctionExecutionAsideOriginalLoop(LDI, loopFunction, par);
+  this->addChunkFunctionExecutionAsideOriginalLoop(LDI, loopFunction, this->n);
 
   /*
    * Final printing.

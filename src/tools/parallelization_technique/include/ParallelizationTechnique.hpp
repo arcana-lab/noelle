@@ -31,9 +31,7 @@ namespace llvm::noelle {
        * Constructor.
        */
       ParallelizationTechnique (
-        Module &module, 
-        Hot &p,
-        Verbosity v
+        Noelle &n
       );
 
       /*
@@ -41,7 +39,6 @@ namespace llvm::noelle {
        */
       virtual bool apply (
         LoopDependenceInfo *LDI,
-        Noelle &par,
         Heuristics *h
       ) = 0;
 
@@ -50,7 +47,6 @@ namespace llvm::noelle {
        */
       virtual bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
-        Noelle &par,
         Heuristics *h
       ) const = 0 ;
 
@@ -217,7 +213,7 @@ namespace llvm::noelle {
       /*
        * Fields
        */
-      Module& module;
+      Noelle &noelle;
       Verbosity verbose;
       EnvBuilder *envBuilder;
 
@@ -228,11 +224,6 @@ namespace llvm::noelle {
       BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
       std::vector<Task *> tasks;
       int numTaskInstances;
-
-      /*
-       * Profiles.
-       */
-      Hot &profile;
   };
 
 }

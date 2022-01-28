@@ -22,15 +22,12 @@ namespace llvm::noelle {
        * Constructor.
        */
       ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences (
-        Module &module, 
-        Hot &p,
-        bool forceParallelization,
-        Verbosity v
+        Noelle &n,
+        bool forceParallelization
       );
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI,
-        Noelle &par,
         Heuristics *h
       ) const override ;
 

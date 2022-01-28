@@ -34,21 +34,17 @@ namespace llvm::noelle {
        * Methods
        */
       HELIX (
-        Module &module,
-        Hot &p,
-        bool forceParallelization,
-        Verbosity v
+        Noelle &n,
+        bool forceParallelization
       );
 
       bool apply (
         LoopDependenceInfo *LDI, 
-        Noelle &par, 
         Heuristics *h
         ) override ;
 
       bool canBeAppliedToLoop (
         LoopDependenceInfo *LDI, 
-        Noelle &par, 
         Heuristics *h
         ) const override ;
 

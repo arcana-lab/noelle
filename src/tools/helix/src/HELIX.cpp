@@ -14,12 +14,10 @@
 namespace llvm::noelle{
 
 HELIX::HELIX (
-  Module &module, 
-  Hot &p,
-  bool forceParallelization,
-  Verbosity v
+  Noelle &n,
+  bool forceParallelization
   )
-  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, forceParallelization, v},
+  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{n, forceParallelization},
     loopCarriedEnvBuilder{nullptr}, 
     taskFunctionDG{nullptr},
     lastIterationExecutionBlock{nullptr},
@@ -29,17 +27,18 @@ HELIX::HELIX (
   /*
    * Fetch the LLVM context.
    */
-  auto &cxt = module.getContext();
+  auto program = this->noelle.getProgram();
+  auto &cxt = program->getContext();
 
   /*
    * Fetch the dispatcher to use to jump to a parallelized HELIX loop.
    */
-  this->taskDispatcherSS = this->module.getFunction("NOELLE_HELIX_dispatcher_sequentialSegments");
+  this->taskDispatcherSS = program->getFunction("NOELLE_HELIX_dispatcher_sequentialSegments");
   assert(this->taskDispatcherSS != nullptr);
-  this->taskDispatcherCS = this->module.getFunction("NOELLE_HELIX_dispatcher_criticalSections");
+  this->taskDispatcherCS = program->getFunction("NOELLE_HELIX_dispatcher_criticalSections");
   assert(this->taskDispatcherCS != nullptr);
-  this->waitSSCall = this->module.getFunction("HELIX_wait");
-  this->signalSSCall =  this->module.getFunction("HELIX_signal");
+  this->waitSSCall = program->getFunction("HELIX_wait");
+  this->signalSSCall = program->getFunction("HELIX_signal");
   if (!this->waitSSCall  || !this->signalSSCall) {
     errs() << "HELIX: ERROR = sync functions HELIX_wait, HELIX_signal were not both found.\n";
     abort();
@@ -90,12 +89,12 @@ void HELIX::reset () {
 
 }
 
-bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Noelle &par, Heuristics *h) const {
+bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Heuristics *h) const {
 
   /*
    * Check the parent class.
    */
-  if (!ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeAppliedToLoop(LDI, par, h)){
+  if (!ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeAppliedToLoop(LDI, h)){
     return false;
   }
 
@@ -113,14 +112,14 @@ bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Noelle &par, Heuristics
   /*
    * Ensure there is not too little execution that is too proportionally sequential for HELIX 
    */
-  auto profiles = par.getProfiles();
+  auto profiles = this->noelle.getProfiles();
   auto loopID = LDI->getID();
   auto loopStructure = LDI->getLoopStructure();
   auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(loopStructure);
   auto averageInstructionThreshold = 20;
   auto hasLittleExecution = averageInstructions < averageInstructionThreshold;
   auto maximumSequentialFraction = .2;
-  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI, par);
+  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI, this->noelle);
   auto hasProportionallySignificantSequentialExecution = sequentialFraction >= maximumSequentialFraction;
   if (hasLittleExecution && hasProportionallySignificantSequentialExecution) {
     errs() << "Parallelizer:    Loop " << loopID << " has "
@@ -139,7 +138,6 @@ bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Noelle &par, Heuristics
 
 bool HELIX::apply (
   LoopDependenceInfo *LDI,
-  Noelle &par,
   Heuristics *h
 ) {
 
@@ -150,11 +148,11 @@ bool HELIX::apply (
    * using the loop dependence info for that task
    */
   if (this->tasks.size() == 0) {
-    this->createParallelizableTask(LDI, par, h);
+    this->createParallelizableTask(LDI, this->noelle, h);
     return true;
   }
 
-  auto modified = this->synchronizeTask(LDI, par, h);
+  auto modified = this->synchronizeTask(LDI, this->noelle, h);
 
   return modified;
 }
@@ -255,7 +253,8 @@ void HELIX::createParallelizableTask (
   /*
    * Generate empty tasks for the HELIX execution.
    */
-  auto helixTask = new HELIXTask(this->taskSignature, this->module);
+  auto program = this->noelle.getProgram();
+  auto helixTask = new HELIXTask(this->taskSignature, *program);
   this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { helixTask });
   this->numTaskInstances = LDI->getMaximumNumberOfCores();
   assert(helixTask == this->tasks[0]);

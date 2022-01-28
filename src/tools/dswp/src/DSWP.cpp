@@ -14,13 +14,11 @@ using namespace llvm;
 using namespace llvm::noelle;
 
 DSWP::DSWP (
-  Module &module,
-  Hot &p,
+  Noelle &n,
   bool forceParallelization,
-  bool enableSCCMerging,
-  Verbosity v
+  bool enableSCCMerging
 ) :
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{module, p, forceParallelization, v},
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{n, forceParallelization},
   enableMergingSCC{enableSCCMerging},
   queues{}, queueArrayType{nullptr},
   sccToStage{}, stageArrayType{nullptr},
@@ -30,12 +28,13 @@ DSWP::DSWP (
   /*
    * Fetch the function that dispatch the parallelized loop.
    */
-  this->taskDispatcher = module.getFunction("NOELLE_DSWPDispatcher");
+  auto program = this->noelle.getProgram();
+  this->taskDispatcher = program->getFunction("NOELLE_DSWPDispatcher");
 
   /*
    * Fetch the function that executes a stage.
    */
-  auto taskExecuter = module.getFunction("stageExecuter");
+  auto taskExecuter = program->getFunction("stageExecuter");
 
   /*
    * Define its signature.
@@ -64,21 +63,20 @@ void DSWP::reset () {
 
 bool DSWP::canBeAppliedToLoop (
   LoopDependenceInfo *LDI,
-  Noelle &par,
   Heuristics *h
 ) const {
 
   /*
    * Check the parent class.
    */
-  if (!ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeAppliedToLoop(LDI, par, h)){
+  if (!ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeAppliedToLoop(LDI, h)){
     return false;
   }
 
   /*
    * Fetch the profiles
    */
-  auto profiles = par.getProfiles();
+  auto profiles = this->noelle.getProfiles();
 
   /*
    * Check if there is at least one sequential stage.
@@ -163,7 +161,7 @@ bool DSWP::canBeAppliedToLoop (
   auto averageInstructionThreshold = 20;
   bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
   auto minimumSequentialFraction = .5;
-  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI, par);
+  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI, this->noelle);
   bool hasProportionallyInsignificantSequentialExecution = sequentialFraction < minimumSequentialFraction;
   if (hasLittleExecution && hasProportionallyInsignificantSequentialExecution) {
     errs() << "Parallelizer:    Loop " << loopID << " has "
@@ -185,7 +183,6 @@ bool DSWP::canBeAppliedToLoop (
 
 bool DSWP::apply (
   LoopDependenceInfo *LDI,
-  Noelle &par,
   Heuristics *h
 ) {
 
@@ -202,7 +199,7 @@ bool DSWP::apply (
   auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto loopFunction = loopHeader->getParent();
-  this->originalFunctionDS = par.getDominators(loopFunction);
+  this->originalFunctionDS = this->noelle.getDominators(loopFunction);
 
   /*
    * Partition the SCCDAG.
@@ -244,8 +241,8 @@ bool DSWP::apply (
    *  optimization requires non-control queue information to be collected
    *  prior to its execution. Hence, its weird placement:
    */
-  collectDataAndMemoryQueueInfo(LDI, par);
-  collectControlQueueInfo(LDI, par);
+  collectDataAndMemoryQueueInfo(LDI, this->noelle);
+  collectControlQueueInfo(LDI, this->noelle);
   // assert(areQueuesAcyclical());
   // writeStageQueuesAsDot(*LDI);
 
@@ -283,9 +280,9 @@ bool DSWP::apply (
   /*
    * Helper declarations
    */
-  this->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(par.int64, 0));
-  this->queueArrayType = ArrayType::get(PointerType::getUnqual(par.int8), this->queues.size());
-  this->stageArrayType = ArrayType::get(PointerType::getUnqual(par.int8), this->tasks.size());
+  this->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(this->noelle.int64, 0));
+  this->queueArrayType = ArrayType::get(PointerType::getUnqual(this->noelle.int8), this->queues.size());
+  this->stageArrayType = ArrayType::get(PointerType::getUnqual(this->noelle.int8), this->tasks.size());
 
   /*
    * Create the pipeline stages (technique tasks)
@@ -304,7 +301,7 @@ bool DSWP::apply (
     /*
      * Load pointers of all queues for the current pipeline stage at the function's entry
      */
-    generateLoadsOfQueuePointers(par, i);
+    generateLoadsOfQueuePointers(this->noelle, i);
     if (this->verbose >= Verbosity::Maximal) {
       errs() << "DSWP:  Loaded queue pointers\n";
     }
@@ -312,8 +309,8 @@ bool DSWP::apply (
     /*
      * Add push/pop operations from queues between the current pipeline stage and the connected ones
      */
-    popValueQueues(LDI, par, i);
-    pushValueQueues(LDI, par, i);
+    popValueQueues(LDI, this->noelle, i);
+    pushValueQueues(LDI, this->noelle, i);
     if (this->verbose >= Verbosity::Maximal) {
       errs() << "DSWP:  Added queue pop and push instructions\n";
     }
@@ -389,7 +386,7 @@ bool DSWP::apply (
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DSWP:  Link pipeline stages\n";
   }
-  createPipelineFromStages(LDI, par);
+  createPipelineFromStages(LDI, this->noelle);
 
   delete this->originalFunctionDS;
 
