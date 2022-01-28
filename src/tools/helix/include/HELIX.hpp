@@ -58,19 +58,16 @@ namespace llvm::noelle {
     protected:
       void createParallelizableTask (
         LoopDependenceInfo *LDI,
-        Noelle &par, 
         Heuristics *h
       );
 
       bool synchronizeTask (
         LoopDependenceInfo *LDI,
-        Noelle &par, 
         Heuristics *h
       );
 
       void addChunkFunctionExecutionAsideOriginalLoop (
         LoopDependenceInfo *LDI,
-        Noelle &par,
         uint64_t numberOfSequentialSegments
       );
 
@@ -113,7 +110,6 @@ namespace llvm::noelle {
       );
 
       std::vector<SequentialSegment *> identifySequentialSegments (
-        Noelle &noelle,
         LoopDependenceInfo *originalLDI,
         LoopDependenceInfo *LDI,
         DataFlowResult *reachabilityDFR

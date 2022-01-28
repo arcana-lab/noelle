@@ -28,7 +28,6 @@ HELIX::HELIX (
    * Fetch the LLVM context.
    */
   auto program = this->noelle.getProgram();
-  auto &cxt = program->getContext();
 
   /*
    * Fetch the dispatcher to use to jump to a parallelized HELIX loop.
@@ -47,22 +46,25 @@ HELIX::HELIX (
   /*
    * Fetch the LLVM types of the HELIX_dispatcher arguments.
    */
-  auto int8 = IntegerType::get(cxt, 8);
-  auto int64 = IntegerType::get(cxt, 64);
+  auto tm = noelle.getTypesManager();
+  auto int8 = tm->getIntegerType(8);
+  auto int64 = tm->getIntegerType(64);
+  auto ptrType = tm->getVoidPointerType();
+  auto voidType = tm->getVoidType();
 
   /*
    * Create the LLVM signature of HELIX_dispatcher.
    */
   auto funcArgTypes = ArrayRef<Type*>({
-    PointerType::getUnqual(int8),
-    PointerType::getUnqual(int8),
-    PointerType::getUnqual(int8),
-    PointerType::getUnqual(int8),
+    ptrType,
+    ptrType,
+    ptrType,
+    ptrType,
     int64,
     int64,
     PointerType::getUnqual(int64)
   });
-  this->taskSignature = FunctionType::get(Type::getVoidTy(cxt), funcArgTypes, false);
+  this->taskSignature = FunctionType::get(voidType, funcArgTypes, false);
 
   return ;
 }
@@ -126,18 +128,17 @@ bool HELIX::apply (
    * using the loop dependence info for that task
    */
   if (this->tasks.size() == 0) {
-    this->createParallelizableTask(LDI, this->noelle, h);
+    this->createParallelizableTask(LDI, h);
     return true;
   }
 
-  auto modified = this->synchronizeTask(LDI, this->noelle, h);
+  auto modified = this->synchronizeTask(LDI, h);
 
   return modified;
 }
 
 void HELIX::createParallelizableTask (
   LoopDependenceInfo *LDI,
-  Noelle &par, 
   Heuristics *h
 ){
 
@@ -363,7 +364,6 @@ void HELIX::createParallelizableTask (
 
 bool HELIX::synchronizeTask (
   LoopDependenceInfo *LDI,
-  Noelle &par, 
   Heuristics *h
 ){
 
@@ -383,7 +383,7 @@ bool HELIX::synchronizeTask (
    * aren't adjusted after squeezing. Delay computing entry and exit frontiers for identified
    * sequential segments until AFTER squeezing.
    */
-  auto sequentialSegments = this->identifySequentialSegments(par, originalLDI, LDI, reachabilityDFR);
+  auto sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
   this->squeezeSequentialSegments(LDI, &sequentialSegments, reachabilityDFR);
 
   /*
@@ -402,7 +402,7 @@ bool HELIX::synchronizeTask (
     errs() << "HELIX:  Identifying sequential segments\n";
   }
   reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
-  sequentialSegments = this->identifySequentialSegments(par, originalLDI, LDI, reachabilityDFR);
+  sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
 
   /*
    * Schedule the sequential segments to overlap parallel and sequential segments.
@@ -527,7 +527,7 @@ bool HELIX::synchronizeTask (
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "HELIX:  Linking task function\n";
   }
-  this->addChunkFunctionExecutionAsideOriginalLoop(this->originalLDI, par, sequentialSegments.size());
+  this->addChunkFunctionExecutionAsideOriginalLoop(this->originalLDI, sequentialSegments.size());
 
   /*
    * Inline calls to HELIX functions.

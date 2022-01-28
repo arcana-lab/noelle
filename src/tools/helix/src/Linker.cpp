@@ -15,7 +15,6 @@ namespace llvm::noelle {
 
 void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   LoopDependenceInfo *LDI,
-  Noelle &par,
   uint64_t numberOfSequentialSegments
 ) {
 
@@ -46,12 +45,12 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Fetch the number of cores
    */
-  auto numCores = ConstantInt::get(par.int64, LDI->getMaximumNumberOfCores());
+  auto numCores = ConstantInt::get(this->noelle.int64, LDI->getMaximumNumberOfCores());
 
   /*
    * Fetch the chunk size.
    */
-  auto numOfSS = ConstantInt::get(par.int64, numberOfSequentialSegments);
+  auto numOfSS = ConstantInt::get(this->noelle.int64, numberOfSequentialSegments);
 
   /*
    * Call the function that incudes the parallelized loop.
