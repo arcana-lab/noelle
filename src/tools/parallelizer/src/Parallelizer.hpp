@@ -72,9 +72,6 @@ namespace llvm::noelle {
       bool parallelizeLoop (
         LoopDependenceInfo *LDI,
         Noelle &par,
-        DSWP &dswp,
-        DOALL &doall,
-        HELIX &helix,
         Heuristics *h
       );
 

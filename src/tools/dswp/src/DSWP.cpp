@@ -45,22 +45,6 @@ DSWP::DSWP (
   return ;
 }
 
-void DSWP::reset () {
-  ParallelizationTechnique::reset();
-
-  sccToStage.clear();
-
-  for (auto &queue : queues) {
-    queue.release();
-  }
-  queues.clear();
-
-  queueArrayType = nullptr;
-  stageArrayType = nullptr;
-  zeroIndexForBaseArray = nullptr;
-}
-
-
 bool DSWP::canBeAppliedToLoop (
   LoopDependenceInfo *LDI,
   Heuristics *h

@@ -15,9 +15,6 @@ namespace llvm::noelle {
   bool Parallelizer::parallelizeLoop (
       LoopDependenceInfo *LDI, 
       Noelle &par, 
-      DSWP &dswp, 
-      DOALL &doall, 
-      HELIX &helix, 
       Heuristics *h
       ){
     auto prefix = "Parallelizer: parallelizerLoop: " ;
@@ -27,6 +24,22 @@ namespace llvm::noelle {
      */
     assert(LDI != nullptr);
     assert(h != nullptr);
+
+    /*
+     * Allocate the parallelization techniques.
+     */
+    DSWP dswp{
+      par,
+      this->forceParallelization,
+      !this->forceNoSCCPartition
+    };
+    DOALL doall{
+      par
+    };
+    HELIX helix{
+      par,
+      this->forceParallelization
+    };
 
     /*
      * Fetch the verbosity level.
@@ -71,7 +84,6 @@ namespace llvm::noelle {
       /*
        * Apply DOALL.
        */
-      doall.reset();
       codeModified = doall.apply(LDI, h);
       usedTechnique = &doall;
 
@@ -84,12 +96,10 @@ namespace llvm::noelle {
       /*
        * Apply HELIX
        */
-      helix.reset();
       codeModified = helix.apply(LDI, h);
 
       auto function = helix.getTaskFunction();
       auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
-      auto& DT = getAnalysis<DominatorTreeWrapperPass>(*function).getDomTree();
       auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
       auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
@@ -103,9 +113,9 @@ namespace llvm::noelle {
         errs() << "HELIX:  Constructing task loop dependence info\n";
       }
 
-      DominatorSummary DS{DT, PDT};
+      auto DS = par.getDominators(function);
       auto l = LI.getLoopsInPreorder()[0];
-      auto newLDI = new LoopDependenceInfo(taskFunctionDG, l, DS, SE, par.getCompilationOptionsManager()->getMaximumNumberOfCores(), par.canFloatsBeConsideredRealNumbers());
+      auto newLDI = new LoopDependenceInfo(taskFunctionDG, l, *DS, SE, par.getCompilationOptionsManager()->getMaximumNumberOfCores(), par.canFloatsBeConsideredRealNumbers());
       newLDI->copyParallelizationOptionsFrom(LDI);
 
       codeModified = helix.apply(newLDI, h);
@@ -120,7 +130,6 @@ namespace llvm::noelle {
       /*
        * Apply DSWP.
        */
-      dswp.reset();
       codeModified = dswp.apply(LDI, h);
       usedTechnique = &dswp;
     }

@@ -40,19 +40,6 @@ bool ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeApplie
 }
 
 ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::~ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences () {
-  this->reset();
-
-  return ;
-}
-
-void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::reset () {
-  if (partitioner != nullptr){
-    delete partitioner;
-    partitioner = nullptr;
-  }
-
-  ParallelizationTechnique::reset();
-
   return ;
 }
 

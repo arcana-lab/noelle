@@ -45,8 +45,6 @@ namespace llvm::noelle {
         Heuristics *h
       ) const override ;
 
-      void reset () override ;
-
     private:
 
       /*

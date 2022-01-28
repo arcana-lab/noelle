@@ -240,11 +240,7 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks (
   LoopDependenceInfo *LDI,
   std::vector<Task *> taskStructs
 ) {
-  if (this->tasks.size() > 0) {
-    errs() << "The technique has been re-initialized without resetting!"
-       << " There are leftover tasks.\n";
-    abort();
-  }
+  assert(this->tasks.size() == 0);
 
   /*
    * Fetch the loop headers.
@@ -1442,22 +1438,7 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
   File.close();
 }
 
-void ParallelizationTechnique::reset () {
-  for (auto task : tasks) delete task;
-  tasks.clear();
-  numTaskInstances = 0;
-
-  if (envBuilder) {
-    delete envBuilder;
-    envBuilder = nullptr;
-  }
-
-  return ;
-}
-
 ParallelizationTechnique::~ParallelizationTechnique () {
-  reset();
-
   return ;
 }
       

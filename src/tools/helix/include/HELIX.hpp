@@ -55,8 +55,6 @@ namespace llvm::noelle {
 
       Function * getTaskFunction (void) const ;
 
-      void reset () override ;
-
     protected:
       void createParallelizableTask (
         LoopDependenceInfo *LDI,

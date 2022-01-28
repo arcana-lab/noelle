@@ -67,28 +67,6 @@ HELIX::HELIX (
   return ;
 }
 
-void HELIX::reset () {
-  ParallelizationTechnique::reset();
-  if (loopCarriedEnvBuilder) {
-    delete loopCarriedEnvBuilder;
-  }
-
-  if (taskFunctionDG) {
-    delete taskFunctionDG;
-  }
-
-  for (auto spill : spills) {
-    delete spill;
-  }
-  spills.clear();
-
-  if (this->lastIterationExecutionBlock) {
-    this->lastIterationExecutionBlock = nullptr;
-  }
-  lastIterationExecutionDuplicateMap.clear();
-
-}
-
 bool HELIX::canBeAppliedToLoop (LoopDependenceInfo *LDI, Heuristics *h) const {
 
   /*

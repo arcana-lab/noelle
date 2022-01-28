@@ -54,8 +54,6 @@ namespace llvm::noelle {
       BasicBlock * getParLoopEntryPoint (void) const ;
       BasicBlock * getParLoopExitPoint (void) const ;
 
-      virtual void reset () ;
-
       /*
        * Destructor.
        */
