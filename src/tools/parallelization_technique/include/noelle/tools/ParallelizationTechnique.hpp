@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,10 +10,9 @@
  */
 #pragma once
 
-#include "llvm/IR/Module.h"
+#include "noelle/core/SystemHeaders.hpp"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
-
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "Heuristics.hpp"
@@ -52,8 +51,8 @@ namespace llvm::noelle {
 
       Value * getEnvArray (void) const ;
 
-      BasicBlock *getParLoopEntryPoint () { return entryPointOfParallelizedLoop; }
-      BasicBlock *getParLoopExitPoint () { return exitPointOfParallelizedLoop; }
+      BasicBlock * getParLoopEntryPoint (void) const ;
+      BasicBlock * getParLoopExitPoint (void) const ;
 
       virtual void reset () ;
 
@@ -91,11 +90,18 @@ namespace llvm::noelle {
         std::set<int> reducableVars
       );
 
-      void allocateEnvironmentArray (LoopDependenceInfo *LDI);
+      void allocateEnvironmentArray (
+        LoopDependenceInfo *LDI
+        );
 
-      void populateLiveInEnvironment (LoopDependenceInfo *LDI);
+      void populateLiveInEnvironment (
+        LoopDependenceInfo *LDI
+        );
 
-      virtual BasicBlock * propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted);
+      virtual BasicBlock * propagateLiveOutEnvironment (
+        LoopDependenceInfo *LDI, 
+        Value *numberOfThreadsExecuted
+        );
 
       /*
        * Task helpers for manipulating loop body clones
@@ -186,19 +192,26 @@ namespace llvm::noelle {
         Type *typeForValue
       );
 
-      Value *castToCorrectReducibleType (IRBuilder<> &builder, Value *value, Type *targetType) ;
+      Value *castToCorrectReducibleType (
+        IRBuilder<> &builder, 
+        Value *value, 
+        Type *targetType
+        ) ;
 
       /*
        * Partition SCCDAG.
        */
       void partitionSCCDAG (
         LoopDependenceInfo *LDI
-      );
+        );
 
       /*
        * General purpose helpers (that should be moved to parallelization_utils)
        */
-      void doNestedInlineOfCalls (Function *F, std::set<CallInst *> &calls);
+      void doNestedInlineOfCalls (
+        Function *F, 
+        std::set<CallInst *> &calls
+        );
 
       float computeSequentialFractionOfExecution (
         LoopDependenceInfo *LDI,
@@ -208,7 +221,9 @@ namespace llvm::noelle {
       /*
        * Debug
        */
-      void dumpToFile (LoopDependenceInfo &LDI);
+      void dumpToFile (
+        LoopDependenceInfo &LDI
+        );
 
       /*
        * Fields
@@ -223,7 +238,7 @@ namespace llvm::noelle {
       FunctionType *taskSignature;
       BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
       std::vector<Task *> tasks;
-      int numTaskInstances;
+      uint32_t numTaskInstances;
   };
 
 }

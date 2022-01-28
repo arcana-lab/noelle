@@ -19,7 +19,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Noelle.hpp"
 #include "HeuristicsPass.hpp"
-#include "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
+#include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "SequentialSegment.hpp"
 #include "noelle/core/ControlFlowEquivalence.hpp"
 

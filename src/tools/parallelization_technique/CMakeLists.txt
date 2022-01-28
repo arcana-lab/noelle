@@ -11,8 +11,8 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/ParallelizationTechnique.hpp 
-  include/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp 
+  include/noelle/tools/ParallelizationTechnique.hpp 
+  include/noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp 
   DESTINATION 
   include/noelle/tools
   )
