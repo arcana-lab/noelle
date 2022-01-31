@@ -45,6 +45,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
   std::vector<PHINode *> clonedLoopCarriedPHIs;
   for (auto &phi : loopHeader->phis()) {
     auto phiSCC = sccdag->sccOfValue(cast<Value>(&phi));
+    assert(phiSCC != nullptr);
     auto sccInfo = sccManager->getSCCAttrs(phiSCC);
 
     if (sccInfo->canExecuteReducibly()) {
@@ -164,9 +165,7 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
   auto loopStructure = LDI->getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
   auto originalLoopFunction = loopHeader->getParent();
-  DominatorTree originalLoopDT(*originalLoopFunction);
-  PostDominatorTree originalLoopPDT(*originalLoopFunction);
-  DominatorSummary DS(originalLoopDT, originalLoopPDT);
+  auto DS = this->noelle.getDominators(originalLoopFunction);
 
   /*
    * Store loop carried dependencies into the spill environment
@@ -191,21 +190,21 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
    * can be propagated to the header for potential use in the live out environment
    */
   std::unordered_set<BasicBlock *> originalFrontierBlocks;
-  defineFrontierForLoadsToSpilledLCD(
+  this->defineFrontierForLoadsToSpilledLCD(
     LDI,
     reachabilityDFR,
     cloneToOriginalBlockMap,
     spill,
-    &DS,
+    DS,
     originalFrontierBlocks
   );
 
-  replaceUsesOfSpilledPHIWithLoads(
+  this->replaceUsesOfSpilledPHIWithLoads(
     LDI,
     cloneToOriginalBlockMap,
     spill,
     spillEnvPtr,
-    &DS,
+    DS,
     originalFrontierBlocks
   );
 
@@ -239,7 +238,9 @@ void HELIX::insertStoresToSpilledLCD (
    */
   for (auto inInd = 0; inInd < spill->loopCarriedPHI->getNumIncomingValues(); ++inInd) {
     auto incomingBB = spill->loopCarriedPHI->getIncomingBlock(inInd);
-    if (incomingBB == preHeaderClone) continue;
+    if (incomingBB == preHeaderClone) {
+      continue;
+    }
 
     /*
      * Determine the position of the incoming value's producer
@@ -310,7 +311,9 @@ void HELIX::defineFrontierForLoadsToSpilledLCD (
       auto terminator = successorToStoreBlock->getTerminator();
 
       for (auto reachableI : reachabilityDFR->OUT(terminator)) {
-        if (!isa<Instruction>(reachableI)) continue;
+        if (!isa<Instruction>(reachableI)) {
+          continue;
+        }
         auto reachableBlock = cast<Instruction>(reachableI)->getParent();
         invalidatedBlocks.insert(reachableBlock);
       }
