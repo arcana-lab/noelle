@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,7 +10,6 @@
  */
 #include "HELIX.hpp"
 #include "SequentialSegment.hpp"
-#include "noelle/core/DataFlow.hpp"
 
 namespace llvm::noelle {
 
@@ -386,7 +385,7 @@ std::unordered_map<Instruction *, std::unordered_set<Instruction *>> SequentialS
   return beforeInstructionMap;
 }
 
-DataFlowResult *HELIX::computeReachabilityFromInstructions (LoopDependenceInfo *LDI) {
+DataFlowResult * HELIX::computeReachabilityFromInstructions (LoopDependenceInfo *LDI) {
 
   auto loopStructure = LDI->getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
@@ -395,7 +394,7 @@ DataFlowResult *HELIX::computeReachabilityFromInstructions (LoopDependenceInfo *
   /*
    * Run the data flow analysis needed to identify the locations where signal instructions will be placed.
    */
-  auto dfa = DataFlowEngine{};
+  auto dfa = this->noelle.getDataFlowEngine();
   auto computeGEN = [](Instruction *i, DataFlowResult *df) {
     auto& gen = df->GEN(i);
     gen.insert(i);
