@@ -27,7 +27,7 @@ namespace llvm::noelle {
      * know the sign of the step size at compile time. Extra overhead is necessary if this
      * is only known at runtime, and that enhancement has yet to be made
      */
-    if (!iv.getSingleComputedStepValue() || !isa<ConstantInt>(iv.getSingleComputedStepValue())) {
+    if (!iv.getSingleComputedStepValue() || !(isa<ConstantInt>(iv.getSingleComputedStepValue()) || isa<ConstantFP>(iv.getSingleComputedStepValue()))) {
       return;
     }
 
@@ -35,9 +35,9 @@ namespace llvm::noelle {
     auto ivInstructions = iv.getAllInstructions();
 
     /*
-     * This attribution only understands integer typed induction variables
+     * This attribution only understands integer and floating point typed induction variables
      */
-    if (!headerPHI->getType()->isIntegerTy()) {
+    if (!headerPHI->getType()->isIntegerTy() && !headerPHI->getType()->isFloatingPointTy()) {
       return;
     }
 
