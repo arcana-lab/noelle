@@ -149,40 +149,35 @@ bool Inliner::runOnModule (Module &M) {
   /*
    * Inline functions containing targeted loops so the loop is in main
    */
-  ifstream doHoistFile("dgsimplify_do_hoist.txt");
-  auto doHoist = doHoistFile.good();
-  doHoistFile.close();
-  if (doHoist) {
-    std::string filename = "dgsimplify_loop_hoisting.txt";
-    getFunctionsToInline(filename);
+  std::string filename = "dgsimplify_loop_hoisting.txt";
+  getFunctionsToInline(filename);
 
-    auto inlined = this->inlineFnsOfLoopsToCGRoot(profiles);
-    if (inlined) {
-      errs() << "Inliner:   Inlined functions to hoist loops to the entry funtion of the program\n";
-      getAnalysis<CallGraphWrapperPass>().runOnModule(M);
-      parentFns.clear();
-      childrenFns.clear();
-      orderedCalled.clear();
-      orderedCalls.clear();
-      collectFnGraph(main);
-      collectInDepthOrderFns(main);
-      printFnOrder();
-    }
-
-    auto remaining = registerRemainingFunctions(filename);
-    printFnInfo();
-    if (!remaining && this->verbose != Verbosity::Disabled) {
-      errs() << "Inliner:   No remaining hoists\n";
-    }
-
-    /*
-     * Free the memory.
-     */
-    delete pcg;
-
-    errs() << "Inliner: Exit\n";
-    return inlined;
+  inlined = this->inlineFnsOfLoopsToCGRoot(profiles);
+  if (inlined) {
+    errs() << "Inliner:   Inlined functions to hoist loops to the entry funtion of the program\n";
+    getAnalysis<CallGraphWrapperPass>().runOnModule(M);
+    parentFns.clear();
+    childrenFns.clear();
+    orderedCalled.clear();
+    orderedCalls.clear();
+    collectFnGraph(main);
+    collectInDepthOrderFns(main);
+    printFnOrder();
   }
+
+  auto remaining = registerRemainingFunctions(filename);
+  printFnInfo();
+  if (!remaining && this->verbose != Verbosity::Disabled) {
+    errs() << "Inliner:   No remaining hoists\n";
+  }
+
+  /*
+   * Free the memory.
+   */
+  delete pcg;
+
+  errs() << "Inliner: Exit\n";
+  return inlined;
 
   /*
    * Free the memory.
