@@ -90,12 +90,6 @@ bool Inliner::runOnModule (Module &M) {
   };
   printFnInfo();
 
-  auto writeToContinueFile = []() -> void {
-    ofstream continuefile("dgsimplify_continue.txt");
-    continuefile << "1\n";
-    continuefile.close();
-  };
-
   /*
    * Fetch the profiles.
    */
@@ -119,7 +113,6 @@ bool Inliner::runOnModule (Module &M) {
   auto inlined = this->inlineCallsInvolvedInLoopCarriedDataDependences(noelle, pcg);
   if (inlined){
     errs() << "Inliner:   Inlined calls due to loop-carried data dependences\n";
-    writeToContinueFile();
 
     /*
      * Free the memory.
@@ -177,10 +170,6 @@ bool Inliner::runOnModule (Module &M) {
     }
 
     auto remaining = registerRemainingFunctions(filename);
-    if (remaining) {
-      writeToContinueFile();
-    }
-
     printFnInfo();
     if (!remaining && this->verbose != Verbosity::Disabled) {
       errs() << "Inliner:   No remaining hoists\n";

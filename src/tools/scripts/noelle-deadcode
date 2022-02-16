@@ -4,7 +4,7 @@ installDir
 
 # Delete dead functions until a fixed point is reached
 echo "NOELLE: DeadFunctions: Start" ;
-cmdToExecute="noelle-fixedpoint $1 $2 -load ${installDir}/lib/DeadFunction.so -noelle-dfe ${@:3}"
+cmdToExecute="noelle-fixedpoint $1 $2 \"noelle-load\" -load ${installDir}/lib/DeadFunction.so -noelle-dfe ${@:3}"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 echo "NOELLE: DeadFunctions: Exit" ;

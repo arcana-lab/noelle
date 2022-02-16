@@ -29,7 +29,7 @@ echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Inline functions
-cmdToExecute="noelle-inline \"-noelle-inliner-verbose=1 $options\" $notOptions"
+cmdToExecute="noelle-inline $notOptions \"-noelle-inliner-verbose=1 $options\""
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 

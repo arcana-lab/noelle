@@ -12,7 +12,7 @@ ENABLERS="-load ${installDir}/lib/LoopDistribution.so \
 
 # Run the enablers until a fixed point is reached
 echo "NOELLE: Enablers: Start" ;
-cmdToExecute="noelle-fixedpoint $1 $2 ${ENABLERS} -load ${installDir}/lib/Enablers.so -enablers ${@:3}"
+cmdToExecute="noelle-fixedpoint $1 $2 \"noelle-load\" ${ENABLERS} -load ${installDir}/lib/Enablers.so -enablers ${@:3}"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 echo "NOELLE: Enablers: Exit" ;

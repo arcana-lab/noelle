@@ -1,9 +1,16 @@
 #!/bin/bash
 
 # Invocation:
-# noelle-fixedpoint INPUT_BITCODE OUTPUT_BITCODE ALL_OPTIONS_TO_PASS_TO_NOELLE_LOAD
+# noelle-fixedpoint INPUT_BITCODE OUTPUT_BITCODE LOADER ALL_OPTIONS_TO_PASS_TO_NOELLE_LOAD
 
 installDir
+
+# Fetch the inputs
+if test $# -lt 3 ; then
+  echo "USAGE: `basename $0` INPUT_IR OUTPUT_IR [LOADERBIN]";
+  exit 1;
+fi
+loaderBin="$3" ;
 
 # Set the file names
 IRFileInput="`mktemp`" ;
@@ -14,6 +21,8 @@ codeSize="`mktemp`" ;
 
 # Print
 echo "NOELLE: FixedPoint: Start" ;
+echo "NOELLE: FixedPoint:   Loader: $loaderBin" ;
+echo "NOELLE: FixedPoint:   Options: ${@:4}" ;
 echo "NOELLE: FixedPoint:   Input: $1" ;
 echo "NOELLE: FixedPoint:   Output: $2" ;
 echo "NOELLE: FixedPoint:   Temporary input: $IRFileInput (.ll version is $IRFileInputLL)" ;
@@ -36,7 +45,7 @@ while true ; do
   echo "NOELLE: FixedPoint:     Invocation $c" ;
 
   # Set the command to execute the enablers
-  cmdToExecute="noelle-load ${@:3} $IRFileInput -o $IRFileOutput"
+  cmdToExecute="$loaderBin ${@:4} $IRFileInput -o $IRFileOutput"
   echo $cmdToExecute ;
   eval $cmdToExecute ;
 
