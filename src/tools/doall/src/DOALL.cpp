@@ -395,6 +395,11 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
     chunkSize
   }));
 
+  /*
+   * Synchronization: store call to dispatcherinst and use in Parallelizer to insert synchronization calls
+   */
+  dispatcherInst = doallCallInst;
+
   auto numThreadsUsed = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
 
   /*

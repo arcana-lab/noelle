@@ -15,7 +15,7 @@ namespace llvm::noelle {
 ParallelizationTechnique::ParallelizationTechnique (
   Noelle &n
   )
-  : noelle{n}, tasks{}, envBuilder{nullptr}, SyncFunctionInserted{false}
+  : noelle{n}, tasks{}, envBuilder{nullptr}, SyncFunctionInserted{false}, dispatcherInst(nullptr)
   {
   this->verbose = n.getVerbosity();
 

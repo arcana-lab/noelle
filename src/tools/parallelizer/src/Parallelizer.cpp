@@ -186,6 +186,8 @@ namespace llvm::noelle {
      * Synchronization: Insert sync function before the first use of live-out value if it wasn't inserted for reduction
      */
     //NOTE:> not tested in performance tests
+    if(usedTechnique == &doall){
+
     bool SyncFunctionInserted = usedTechnique->isSyncFunctionInserted();
     if(!SyncFunctionInserted){
       for(auto liveoutUse : usedTechnique->getLiveOutUses()){
@@ -233,6 +235,16 @@ namespace llvm::noelle {
         }
       }
     }
+
+    /*
+     * Synchronization: add sync function before dispatcher if no sync function added because of reduction/liveouts/dependences
+     */
+    if(!SyncFunctionInserted){
+        IRBuilder<> beforeDispatcherBuilder(usedTechnique->getDispatcherInst());
+        beforeDispatcherBuilder.CreateCall(SyncFunction, ArrayRef<Value *>());
+    }
+
+    } //end of adding sync function for doall
 
     if (verbose != Verbosity::Disabled) {
       errs() << prefix << "  The loop has been parallelized\n";

@@ -58,9 +58,11 @@ namespace llvm::noelle {
        * Synchronization:
        * 1. return whether a sync function has been inserted
        * 2. get liveoutuses
+       * 3. get dispatcher call
        */
-      bool isSyncFunctionInserted(){ return SyncFunctionInserted; };
-      std::vector<Value*> getLiveOutUses() {return LiveOutUses;}
+      bool isSyncFunctionInserted(){ return SyncFunctionInserted; }
+      std::vector<Value*> getLiveOutUses() { return LiveOutUses; }
+      Instruction* getDispatcherInst() { return dispatcherInst; }
 
       /*
        * Destructor.
@@ -252,6 +254,7 @@ namespace llvm::noelle {
       Function* SyncFunction; //initialized in DOALL constructor
       std::vector<Value*> LiveOutUses;
       bool SyncFunctionInserted;
+      Instruction* dispatcherInst;
   };
 
 }
