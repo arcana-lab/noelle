@@ -38,7 +38,7 @@ static int64_t numberOfPushes16 = 0;
 static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
-    
+
 typedef struct {
   void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
   void *env ;
@@ -57,6 +57,11 @@ class NoelleRuntime {
     void releaseCores (uint32_t coresReleased);
 
     DOALL_args_t * getDOALLArgs (uint32_t cores, uint32_t *index);
+
+    /*
+     * Synchronization: get args without initializing the memory
+     */
+    DOALL_args_t * getDOALLArgs (uint64_t index);
 
     void releaseDOALLArgs (uint32_t index);
 
@@ -102,32 +107,36 @@ extern "C" {
   class DispatcherInfo {
     public:
       int32_t numberOfThreadsUsed;
-      int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
+      //int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
+      /*
+       * Synchronization: remember the doallMemoryIndex
+       */
+      uint64_t doallMemoryIndex;
   };
 
   /*
    * Dispatch threads to run a DOALL loop.
    */
   DispatcherInfo NOELLE_DOALLDispatcher (
-    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), 
-    void *env, 
-    int64_t maxNumberOfCores, 
+    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t),
+    void *env,
+    int64_t maxNumberOfCores,
     int64_t chunkSize
     );
 
 
     #ifdef RUNTIME_PROFILE
     static __inline__ int64_t rdtsc_s(void) {
-      unsigned a, d; 
+      unsigned a, d;
       asm volatile("cpuid" ::: "%rax", "%rbx", "%rcx", "%rdx");
-      asm volatile("rdtsc" : "=a" (a), "=d" (d)); 
-      return ((unsigned long)a) | (((unsigned long)d) << 32); 
+      asm volatile("rdtsc" : "=a" (a), "=d" (d));
+      return ((unsigned long)a) | (((unsigned long)d) << 32);
     }
     static __inline__ int64_t rdtsc_e(void) {
-      unsigned a, d; 
-      asm volatile("rdtscp" : "=a" (a), "=d" (d)); 
+      unsigned a, d;
+      asm volatile("rdtscp" : "=a" (a), "=d" (d));
       asm volatile("cpuid" ::: "%rax", "%rbx", "%rcx", "%rdx");
-      return ((unsigned long)a) | (((unsigned long)d) << 32); 
+      return ((unsigned long)a) | (((unsigned long)d) << 32);
     }
     #endif
 
@@ -154,8 +163,8 @@ extern "C" {
     printf("Pulled: %p\n", p);
   }
 
-  void queuePush8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { 
-    queue->push(*val); 
+  void queuePush8(ThreadSafeQueue<int8_t> *queue, int8_t *val) {
+    queue->push(*val);
 
     #ifdef DSWP_STATS
     numberOfPushes8++;
@@ -164,13 +173,13 @@ extern "C" {
     return ;
   }
 
-  void queuePop8(ThreadSafeQueue<int8_t> *queue, int8_t *val) { 
-    queue->waitPop(*val); 
+  void queuePop8(ThreadSafeQueue<int8_t> *queue, int8_t *val) {
+    queue->waitPop(*val);
     return ;
   }
 
-  void queuePush16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { 
-    queue->push(*val); 
+  void queuePush16(ThreadSafeQueue<int16_t> *queue, int16_t *val) {
+    queue->push(*val);
 
     #ifdef DSWP_STATS
     numberOfPushes16++;
@@ -179,12 +188,12 @@ extern "C" {
     return ;
   }
 
-  void queuePop16(ThreadSafeQueue<int16_t> *queue, int16_t *val) { 
+  void queuePop16(ThreadSafeQueue<int16_t> *queue, int16_t *val) {
     queue->waitPop(*val);
   }
 
-  void queuePush32(ThreadSafeQueue<int32_t> *queue, int32_t *val) { 
-    queue->push(*val); 
+  void queuePush32(ThreadSafeQueue<int32_t> *queue, int32_t *val) {
+    queue->push(*val);
 
     #ifdef DSWP_STATS
     numberOfPushes32++;
@@ -193,12 +202,12 @@ extern "C" {
     return ;
   }
 
-  void queuePop32(ThreadSafeQueue<int32_t> *queue, int32_t *val) { 
+  void queuePop32(ThreadSafeQueue<int32_t> *queue, int32_t *val) {
     queue->waitPop(*val);
   }
 
-  void queuePush64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { 
-    queue->push(*val); 
+  void queuePush64(ThreadSafeQueue<int64_t> *queue, int64_t *val) {
+    queue->push(*val);
 
     #ifdef DSWP_STATS
     numberOfPushes64++;
@@ -207,12 +216,40 @@ extern "C" {
     return ;
   }
 
-  void queuePop64(ThreadSafeQueue<int64_t> *queue, int64_t *val) { 
-    queue->waitPop(*val); 
+  void queuePop64(ThreadSafeQueue<int64_t> *queue, int64_t *val) {
+    queue->waitPop(*val);
 
     return ;
   }
 
+  /*
+   * Synchronization: seperate synchronization from dispatcher
+   */
+  void NOELLE_SyncUpParallelWorkers(uint32_t numCores, uint64_t doallMemoryIndex){
+    auto argsForAllCores = runtime.getDOALLArgs(doallMemoryIndex);
+    /*
+     * Wait for the remaining DOALL tasks.
+     */
+    #ifdef RUNTIME_PROFILE
+    auto clocks_before_join = rdtsc_s();
+    #endif
+    for (auto i = 0; i < (numCores - 1); ++i) {
+      pthread_spin_lock(&(argsForAllCores[i].endLock));
+    }
+    #ifdef RUNTIME_PRINT
+    std::cerr << "All tasks completed" << std::endl;
+    #endif
+    #ifdef RUNTIME_PROFILE
+    auto clocks_after_join = rdtsc_e();
+    auto clocks_before_cleanup = rdtsc_s();
+    #endif
+
+    /*
+     * Free the cores and memory.
+     */
+    runtime.releaseCores(numCores);
+    runtime.releaseDOALLArgs(doallMemoryIndex);
+  }
 
   /**********************************************************************
    *                DOALL
@@ -242,9 +279,9 @@ extern "C" {
   }
 
   DispatcherInfo NOELLE_DOALLDispatcher (
-    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), 
-    void *env, 
-    int64_t maxNumberOfCores, 
+    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t),
+    void *env,
+    int64_t maxNumberOfCores,
     int64_t chunkSize
     ){
     #ifdef RUNTIME_PROFILE
@@ -313,33 +350,45 @@ extern "C" {
     parallelizedLoop(env, numCores - 1, numCores, chunkSize);
 
     /*
+     * Synchronization: disable synchronization in dispatcher
+     */
+    /*
      * Wait for the remaining DOALL tasks.
      */
-    #ifdef RUNTIME_PROFILE
-    auto clocks_before_join = rdtsc_s();
-    #endif
-    for (auto i = 0; i < (numCores - 1); ++i) {
-      pthread_spin_lock(&(argsForAllCores[i].endLock));
-    }
-    #ifdef RUNTIME_PRINT
-    std::cerr << "All tasks completed" << std::endl;
-    #endif
-    #ifdef RUNTIME_PROFILE
-    auto clocks_after_join = rdtsc_e();
-    auto clocks_before_cleanup = rdtsc_s();
-    #endif
+//    #ifdef RUNTIME_PROFILE
+//    auto clocks_before_join = rdtsc_s();
+//    #endif
+//    for (auto i = 0; i < (numCores - 1); ++i) {
+//      pthread_spin_lock(&(argsForAllCores[i].endLock));
+//    }
+//    #ifdef RUNTIME_PRINT
+//    std::cerr << "All tasks completed" << std::endl;
+//    #endif
+//    #ifdef RUNTIME_PROFILE
+//    auto clocks_after_join = rdtsc_e();
+//    auto clocks_before_cleanup = rdtsc_s();
+//    #endif
 
-    /*
-     * Free the cores and memory.
-     */
-    runtime.releaseCores(numCores);
-    runtime.releaseDOALLArgs(doallMemoryIndex);
+
+
+//    /*
+//     * Free the cores and memory.
+//     */
+//    runtime.releaseCores(numCores);
+//    runtime.releaseDOALLArgs(doallMemoryIndex);
+
 
     /*
      * Prepare the return value.
      */
-    DispatcherInfo dispatcherInfo;
+  DispatcherInfo dispatcherInfo;
     dispatcherInfo.numberOfThreadsUsed = numCores;
+
+    /*
+     * Synchronization: pass memory index to SyncFunction
+     */
+    dispatcherInfo.doallMemoryIndex = doallMemoryIndex;
+
     #ifdef RUNTIME_PROFILE
     auto clocks_after_cleanup = rdtsc_s();
     pthread_spin_lock(&printLock);
@@ -424,10 +473,10 @@ extern "C" {
      * Invoke
      */
     HELIX_args->parallelizedLoop(
-      HELIX_args->env, 
-      HELIX_args->loopCarriedArray, 
-      HELIX_args->ssArrayPast, 
-      HELIX_args->ssArrayFuture, 
+      HELIX_args->env,
+      HELIX_args->loopCarriedArray,
+      HELIX_args->ssArrayPast,
+      HELIX_args->ssArrayFuture,
       HELIX_args->coreID,
       HELIX_args->numCores,
       HELIX_args->loopIsOverFlag
@@ -462,10 +511,10 @@ extern "C" {
   }
 
   static DispatcherInfo NOELLE_HELIX_dispatcher (
-    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *),
     void *env,
     void *loopCarriedArray,
-    int64_t maxNumberOfCores, 
+    int64_t maxNumberOfCores,
     int64_t numOfsequentialSegments,
     bool LIO
     ){
@@ -620,7 +669,7 @@ extern "C" {
       continue ;
       /*localFutures.push_back(pool.submitToCores(
         cores,
-        HELIX_helperThread, 
+        HELIX_helperThread,
         ssArrayPast,
         numOfsequentialSegments,
         &loopIsOverFlag
@@ -667,20 +716,20 @@ extern "C" {
   }
 
   DispatcherInfo NOELLE_HELIX_dispatcher_sequentialSegments (
-    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *),
     void *env,
     void *loopCarriedArray,
-    int64_t numCores, 
+    int64_t numCores,
     int64_t numOfsequentialSegments
     ){
     return NOELLE_HELIX_dispatcher(parallelizedLoop, env, loopCarriedArray, numCores, numOfsequentialSegments, true);
   }
 
   DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections (
-    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *),
     void *env,
     void *loopCarriedArray,
-    int64_t numCores, 
+    int64_t numCores,
     int64_t numOfsequentialSegments
     ){
     return NOELLE_HELIX_dispatcher(parallelizedLoop, env, loopCarriedArray, numCores, numOfsequentialSegments, false);
@@ -749,7 +798,7 @@ extern "C" {
     pthread_mutex_t endLock;
   } NOELLE_DSWP_args_t ;
 
-  void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){ 
+  void stageExecuter(void (*stage)(void *, void *), void *env, void *queues){
     return stage(env, queues);
   }
 
@@ -770,10 +819,10 @@ extern "C" {
   }
 
   DispatcherInfo NOELLE_DSWPDispatcher (
-    void *env, 
-    int64_t *queueSizes, 
-    void *stages, 
-    int64_t numberOfStages, 
+    void *env,
+    int64_t *queueSizes,
+    void *stages,
+    int64_t numberOfStages,
     int64_t numberOfQueues
     ){
     #ifdef RUNTIME_PRINT
@@ -922,6 +971,10 @@ NoelleRuntime::NoelleRuntime() {
   return ;
 }
 
+DOALL_args_t * NoelleRuntime::getDOALLArgs (uint64_t index){
+  return this->doallMemory[index];
+}
+
 DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
   DOALL_args_t *argsForAllCores = nullptr;
 
@@ -971,7 +1024,7 @@ DOALL_args_t * NoelleRuntime::getDOALLArgs (uint32_t cores, uint32_t *index){
 
   /*
    * Initialize the memory.
-   */ 
+   */
   for (auto i = 0; i < cores; ++i) {
     auto argsPerCore = &argsForAllCores[i];
     argsPerCore->coreID = i;
@@ -990,7 +1043,7 @@ void NoelleRuntime::releaseDOALLArgs (uint32_t index){
 }
 
 uint32_t NoelleRuntime::reserveCores (uint32_t coresRequested){
- 
+
   /*
    * Reserve the number of cores available.
    */
@@ -1004,7 +1057,7 @@ uint32_t NoelleRuntime::reserveCores (uint32_t coresRequested){
 
   return numCores;
 }
-    
+
 void NoelleRuntime::releaseCores (uint32_t coresReleased){
   assert(coresReleased > 0);
 
@@ -1041,7 +1094,7 @@ uint32_t NoelleRuntime::getMaximumNumberOfCores (void){
 
   return cores;
 }
-    
+
 NoelleRuntime::~NoelleRuntime(void){
   delete this->virgil;
 }

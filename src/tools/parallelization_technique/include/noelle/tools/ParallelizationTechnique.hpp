@@ -5,7 +5,7 @@
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
@@ -70,7 +70,7 @@ namespace llvm::noelle {
        * - one basic block per loop exit, which will jump to the exit block
        */
       virtual void addPredecessorAndSuccessorsBasicBlocksToTasks (
-        LoopDependenceInfo *LDI, 
+        LoopDependenceInfo *LDI,
         std::vector<Task *> taskStructs
       );
 
@@ -97,7 +97,7 @@ namespace llvm::noelle {
         );
 
       virtual BasicBlock * propagateLiveOutEnvironment (
-        LoopDependenceInfo *LDI, 
+        LoopDependenceInfo *LDI,
         Value *numberOfThreadsExecuted
         );
 
@@ -134,17 +134,17 @@ namespace llvm::noelle {
        * Task helpers for environment usage
        */
       virtual void generateCodeToLoadLiveInVariables (
-        LoopDependenceInfo *LDI, 
+        LoopDependenceInfo *LDI,
         int taskIndex
       );
 
       virtual void generateCodeToStoreLiveOutVariables (
-        LoopDependenceInfo *LDI, 
+        LoopDependenceInfo *LDI,
         int taskIndex
       );
 
       Instruction * fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable (
-        LoopDependenceInfo *LDI, 
+        LoopDependenceInfo *LDI,
         int taskIndex,
         int envIndex,
         BasicBlock *insertBasicBlock,
@@ -152,7 +152,7 @@ namespace llvm::noelle {
       );
 
       PHINode * fetchLoopEntryPHIOfProducer (
-        LoopDependenceInfo *LDI, 
+        LoopDependenceInfo *LDI,
         Value *producer
       );
 
@@ -191,8 +191,8 @@ namespace llvm::noelle {
       );
 
       Value *castToCorrectReducibleType (
-        IRBuilder<> &builder, 
-        Value *value, 
+        IRBuilder<> &builder,
+        Value *value,
         Type *targetType
         ) ;
 
@@ -207,7 +207,7 @@ namespace llvm::noelle {
        * General purpose helpers (that should be moved to parallelization_utils)
        */
       void doNestedInlineOfCalls (
-        Function *F, 
+        Function *F,
         std::set<CallInst *> &calls
         );
 
@@ -237,6 +237,13 @@ namespace llvm::noelle {
       BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
       std::vector<Task *> tasks;
       uint32_t numTaskInstances;
+
+      /*
+       * Synchronization: related fields
+       */
+      Value* numThreadsUsed;
+      Value* doallIndex;
+      Function* SyncFunction; //initialized in DOALL constructor
   };
 
 }

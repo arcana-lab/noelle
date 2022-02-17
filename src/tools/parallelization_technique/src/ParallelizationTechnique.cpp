@@ -5,12 +5,12 @@
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/tools/ParallelizationTechnique.hpp"
 
-namespace llvm::noelle { 
+namespace llvm::noelle {
 
 ParallelizationTechnique::ParallelizationTechnique (
   Noelle &n
@@ -22,8 +22,8 @@ ParallelizationTechnique::ParallelizationTechnique (
   return ;
 }
 
-Value * ParallelizationTechnique::getEnvArray (void) const { 
-  return envBuilder->getEnvArray(); 
+Value * ParallelizationTechnique::getEnvArray (void) const {
+  return envBuilder->getEnvArray();
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder (
@@ -179,6 +179,14 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     initialValues[envInd] = castToCorrectReducibleType(*builder, initialValue, producer->getType());
   }
 
+  /*
+   * Synchronization: add SyncFunction before reduction
+   */
+  if(initialValues.size()){
+    builder->CreateCall(SyncFunction, ArrayRef<Value *>({numThreadsUsed, doallIndex}));
+    //LDI->SyncFunctionInserted = true;
+  }
+
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
     this->entryPointOfParallelizedLoop,
     *builder,
@@ -331,7 +339,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
 
     return true;
   };
- 
+
   /*
    * Clone all basic blocks of the original loop
    */
@@ -604,7 +612,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
 }
 
 void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
-  LoopDependenceInfo *LDI, 
+  LoopDependenceInfo *LDI,
   int taskIndex
 ){
 
@@ -650,7 +658,7 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
 }
 
 void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
-  LoopDependenceInfo *LDI, 
+  LoopDependenceInfo *LDI,
   int taskIndex
 ){
 
@@ -720,12 +728,12 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
 
     /*
      * Inject store instructions to propagate live-out values back to the caller of the parallelized loop.
-     * 
+     *
      * NOTE: To support storing live outs at exit blocks and not directly where the producer
      * is executed, produce a PHI node at each store point with the following incoming values:
      * the last executed intermediate of the producer that is post-dominated by that incoming block.
      * There should only be one such value assuming that store point is correctly chosen
-     * 
+     *
      * NOTE: This provides flexibility to parallelization schemes with modified prologues or latches
      * that have reducible live outs, and this flexibility is ONLY permitted for reducible live outs
      * as non-reducible live outs can never store intermediate values of the producer.
@@ -803,7 +811,7 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
 }
 
 Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable (
-  LoopDependenceInfo *LDI, 
+  LoopDependenceInfo *LDI,
   int taskIndex,
   int envIndex,
   BasicBlock *insertBasicBlock,
@@ -896,7 +904,7 @@ Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerV
     auto correctlyTypedValue = castToCorrectReducibleType(
       builderAtValue, lastDominatingIntermediateValue, producer->getType());
     phiNode->addIncoming(correctlyTypedValue, predecessor);
-  } 
+  }
 
   return phiNode;
 }
@@ -1294,7 +1302,7 @@ std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::clone
     /*
      * The step size is a composite SCEV. Fetch its instruction expansion,
      * cloning into the entry block of the function
-     * 
+     *
      * NOTE: The step size is expected to be loop invariant
      */
     auto expandedInsts = ivInfo->getComputationOfStepValue();
@@ -1334,7 +1342,7 @@ void ParallelizationTechnique::adjustStepValueOfPointerTypeIVToReflectPointerAri
    * If the IV's type is pointer, then the SCEV of the step value for the IV is
    * pointer arithmetic and needs to be multiplied by the bit size of pointers to
    * reflect the exact change of the value
-   * 
+   *
    * This occurs because GEP information is lost to ScalarEvolution analysis when it
    * computes the step value as a SCEV
    */
@@ -1441,13 +1449,13 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
 ParallelizationTechnique::~ParallelizationTechnique () {
   return ;
 }
-      
-BasicBlock * ParallelizationTechnique::getParLoopEntryPoint (void) const { 
-  return entryPointOfParallelizedLoop; 
+
+BasicBlock * ParallelizationTechnique::getParLoopEntryPoint (void) const {
+  return entryPointOfParallelizedLoop;
 }
 
-BasicBlock * ParallelizationTechnique::getParLoopExitPoint (void) const { 
-  return exitPointOfParallelizedLoop; 
+BasicBlock * ParallelizationTechnique::getParLoopExitPoint (void) const {
+  return exitPointOfParallelizedLoop;
 }
 
 }
