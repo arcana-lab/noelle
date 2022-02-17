@@ -184,8 +184,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
    */
   if(initialValues.size()){
     builder->CreateCall(SyncFunction, ArrayRef<Value *>());
-    //SyncFunctionInserted = true;
-    //SyncFunctionInserted = true;
+    SyncFunctionInserted = true;
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(

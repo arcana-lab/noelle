@@ -212,6 +212,28 @@ namespace llvm::noelle {
       }
     }
 
+    /*
+     * Synchronization: add sync function before mem/ctrl dependences.
+     * If a bb has multiple inserting points, insert at the earliest one
+     */
+    std::set<BasicBlock *> depBBs;
+    std::set<Value*> externalDeps = LDI->environment->getExternalDeps();
+    for(auto insertPt : externalDeps){
+      Instruction *depInst = dyn_cast<Instruction>(insertPt);
+      depBBs.insert(depInst->getParent());
+    }
+
+    for(auto bb : depBBs){
+      for(auto &I : *bb){
+        if(externalDeps.find(&I) != externalDeps.end()){
+          IRBuilder<> beforeDepBuilder(&I);
+          beforeDepBuilder.CreateCall(SyncFunction, ArrayRef<Value *>());
+          SyncFunctionInserted = true;
+          break;
+        }
+      }
+    }
+
     if (verbose != Verbosity::Disabled) {
       errs() << prefix << "  The loop has been parallelized\n";
       errs() << prefix << "Exit\n";
