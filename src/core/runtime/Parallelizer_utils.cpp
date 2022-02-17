@@ -59,9 +59,12 @@ class NoelleRuntime {
     DOALL_args_t * getDOALLArgs (uint32_t cores, uint32_t *index);
 
     /*
-     * Synchronization: get args without initializing the memory
+     * Synchronization:
+     * 1. API to get args without initializing the memory
+     * 2. a bit to prevent syncing multiple times
      */
     DOALL_args_t * getDOALLArgs (uint64_t index);
+    bool alreadySync;
 
     void releaseDOALLArgs (uint32_t index);
 
@@ -226,6 +229,10 @@ extern "C" {
    * Synchronization: seperate synchronization from dispatcher
    */
   void NOELLE_SyncUpParallelWorkers(uint32_t numCores, uint64_t doallMemoryIndex){
+    if(runtime.alreadySync)
+      return;
+
+    runtime.alreadySync = true;
     auto argsForAllCores = runtime.getDOALLArgs(doallMemoryIndex);
     /*
      * Wait for the remaining DOALL tasks.
@@ -287,6 +294,11 @@ extern "C" {
     #ifdef RUNTIME_PROFILE
     auto clocks_start = rdtsc_s();
     #endif
+
+    /*
+     * Synchronization: reset the alreadySync bit
+     */
+    runtime.alreadySync = false;
 
     /*
      * Fetch VIRGIL
