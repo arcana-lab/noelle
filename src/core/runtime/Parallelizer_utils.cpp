@@ -61,10 +61,14 @@ class NoelleRuntime {
     /*
      * Synchronization:
      * 1. API to get args without initializing the memory
-     * 2. a bit to prevent syncing multiple times
+     * 2. currently used thread count
+     * 3. memory index to args
+     * 4. A bit to prevent syncing multiple times
      */
     DOALL_args_t * getDOALLArgs (uint64_t index);
-    bool alreadySync;
+    int32_t currNumThreadsUsed;
+    uint64_t currMemoryIndex;
+    bool syncAlready;
 
     void releaseDOALLArgs (uint32_t index);
 
@@ -110,11 +114,7 @@ extern "C" {
   class DispatcherInfo {
     public:
       int32_t numberOfThreadsUsed;
-      //int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
-      /*
-       * Synchronization: remember the doallMemoryIndex
-       */
-      uint64_t doallMemoryIndex;
+      int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
   };
 
   /*
@@ -228,11 +228,14 @@ extern "C" {
   /*
    * Synchronization: seperate synchronization from dispatcher
    */
-  void NOELLE_SyncUpParallelWorkers(uint32_t numCores, uint64_t doallMemoryIndex){
-    if(runtime.alreadySync)
+  void NOELLE_SyncUpParallelWorkers(){
+    if(runtime.syncAlready)
       return;
 
-    runtime.alreadySync = true;
+    int32_t numCores = runtime.currNumThreadsUsed;
+    uint64_t doallMemoryIndex = runtime.currMemoryIndex;
+
+    runtime.syncAlready = true;
     auto argsForAllCores = runtime.getDOALLArgs(doallMemoryIndex);
     /*
      * Wait for the remaining DOALL tasks.
@@ -298,7 +301,7 @@ extern "C" {
     /*
      * Synchronization: reset the alreadySync bit
      */
-    runtime.alreadySync = false;
+    runtime.syncAlready = false;
 
     /*
      * Fetch VIRGIL
@@ -399,7 +402,8 @@ extern "C" {
     /*
      * Synchronization: pass memory index to SyncFunction
      */
-    dispatcherInfo.doallMemoryIndex = doallMemoryIndex;
+    runtime.currNumThreadsUsed = numCores;
+    runtime.currMemoryIndex = doallMemoryIndex;
 
     #ifdef RUNTIME_PROFILE
     auto clocks_after_cleanup = rdtsc_s();

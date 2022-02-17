@@ -5,7 +5,7 @@
 
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Parallelizer.hpp"
@@ -13,8 +13,8 @@
 namespace llvm::noelle {
 
   bool Parallelizer::parallelizeLoop (
-      LoopDependenceInfo *LDI, 
-      Noelle &par, 
+      LoopDependenceInfo *LDI,
+      Noelle &par,
       Heuristics *h
       ){
     auto prefix = "Parallelizer: parallelizerLoop: " ;
@@ -90,7 +90,7 @@ namespace llvm::noelle {
     } else if ( true
         && par.isTransformationEnabled(HELIX_ID)
         && LDI->isTransformationEnabled(HELIX_ID)
-        && helix.canBeAppliedToLoop(LDI, h)   
+        && helix.canBeAppliedToLoop(LDI, h)
         ){
 
       /*
@@ -171,7 +171,7 @@ namespace llvm::noelle {
         loopFunction->getParent(),
         loopPreHeader,
         entryPoint,
-        exitPoint, 
+        exitPoint,
         envArray,
         exitIndex,
         loopExitBlocks
@@ -180,6 +180,38 @@ namespace llvm::noelle {
     // if (verbose >= Verbosity::Maximal) {
     //   loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
     // }
+
+
+    /*
+     * Synchronization: Insert sync function before the first use of live-out value if it wasn't inserted for reduction
+     */
+    //NOTE:> not tested in performance tests
+    bool SyncFunctionInserted = usedTechnique->isSyncFunctionInserted();
+    if(!SyncFunctionInserted){
+      for(auto liveoutUse : usedTechnique->getLiveOutUses()){
+        // If the use is a PHINode, add sync function before the terminators of predecessor blocks
+        if(PHINode *use = dyn_cast<PHINode>(liveoutUse)){
+          BasicBlock *BB = use->getParent();
+          for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI){
+            BasicBlock *pred = *PI;
+            Instruction *term = pred->getTerminator();
+            IRBuilder<> beforeLiveOutUseBuilder(term);
+            beforeLiveOutUseBuilder.CreateCall(SyncFunction, ArrayRef<Value *>());
+          }
+          SyncFunctionInserted = true;
+        }
+        // else add the sync function before the use directly
+        else if(Instruction *use = dyn_cast<Instruction>(liveoutUse)){
+          BasicBlock *bb = use->getParent();
+          BasicBlock::iterator I;
+          for (I = bb->begin(); isa<PHINode>(I); ++I);
+            IRBuilder<> beforeLiveOutUseBuilder(&*I);
+          auto syncUpInst = beforeLiveOutUseBuilder.CreateCall(SyncFunction, ArrayRef<Value *>());
+          SyncFunctionInserted = true;
+        }
+      }
+    }
+
     if (verbose != Verbosity::Disabled) {
       errs() << prefix << "  The loop has been parallelized\n";
       errs() << prefix << "Exit\n";

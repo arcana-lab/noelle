@@ -395,11 +395,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
     chunkSize
   }));
 
-  /*
-   * Synchronization: arguments to pass into syncup function
-   */
-  numThreadsUsed = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
-  doallIndex = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)1);
+  auto numThreadsUsed = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
 
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.

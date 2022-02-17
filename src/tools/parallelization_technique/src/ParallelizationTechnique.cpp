@@ -15,7 +15,7 @@ namespace llvm::noelle {
 ParallelizationTechnique::ParallelizationTechnique (
   Noelle &n
   )
-  : noelle{n}, tasks{}, envBuilder{nullptr}
+  : noelle{n}, tasks{}, envBuilder{nullptr}, SyncFunctionInserted{false}
   {
   this->verbose = n.getVerbosity();
 
@@ -183,8 +183,9 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
    * Synchronization: add SyncFunction before reduction
    */
   if(initialValues.size()){
-    builder->CreateCall(SyncFunction, ArrayRef<Value *>({numThreadsUsed, doallIndex}));
-    //LDI->SyncFunctionInserted = true;
+    builder->CreateCall(SyncFunction, ArrayRef<Value *>());
+    //SyncFunctionInserted = true;
+    //SyncFunctionInserted = true;
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
@@ -234,7 +235,15 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
       errs() << "Loop not in LCSSA!\n";
       abort();
     }
+    /*
+    * Synchronization: store locations of first use of liveouts outside of the parallel region
+    */
+    for (auto consumer : LDI->environment->consumersOf(prod))
+          LiveOutUses.push_back(consumer);
   }
+
+
+
 
   /*
    * Free the memory.

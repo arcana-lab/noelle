@@ -55,6 +55,14 @@ namespace llvm::noelle {
       BasicBlock * getParLoopExitPoint (void) const ;
 
       /*
+       * Synchronization:
+       * 1. return whether a sync function has been inserted
+       * 2. get liveoutuses
+       */
+      bool isSyncFunctionInserted(){ return SyncFunctionInserted; };
+      std::vector<Value*> getLiveOutUses() {return LiveOutUses;}
+
+      /*
        * Destructor.
        */
       ~ParallelizationTechnique ();
@@ -241,9 +249,9 @@ namespace llvm::noelle {
       /*
        * Synchronization: related fields
        */
-      Value* numThreadsUsed;
-      Value* doallIndex;
       Function* SyncFunction; //initialized in DOALL constructor
+      std::vector<Value*> LiveOutUses;
+      bool SyncFunctionInserted;
   };
 
 }
