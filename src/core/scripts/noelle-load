@@ -6,7 +6,7 @@ OPT="opt" ;
 
 
 ###########     LLVM alias analyses
-AA="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basicaa"
+AA="-globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa -basicaa --objc-arc-aa"
 EXTRA_AA=""
 
 
