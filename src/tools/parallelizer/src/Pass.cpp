@@ -90,7 +90,9 @@ bool Parallelizer::runOnModule (Module &M) {
   /*
    * Filter out loops that are not worth parallelizing.
    */
-  this->removeLoopsNotWorthParallelizing(noelle, profiles, forest);
+  if (!this->forceParallelization){
+    this->removeLoopsNotWorthParallelizing(noelle, profiles, forest);
+  }
 
   /*
    * Parallelize the loops selected.

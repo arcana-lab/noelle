@@ -255,7 +255,10 @@ namespace llvm::noelle {
       /*
        * Check if the time saved is enough.
        */
-      if (savedTimeTotal < 2){
+      if (  true
+            && (!this->forceParallelization)
+            && (savedTimeTotal < 2)
+         ){
         errs() << "Parallelizer: LoopSelector:  Loop " << ldi->getID() << " saves only " << savedTimeTotal << " when parallelized. Skip it\n";
         continue ;
       }
