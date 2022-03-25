@@ -10,11 +10,11 @@ all: test_opt
 	clang -O1 -Xclang -disable-llvm-passes -emit-llvm -c $< -o $@
 	llvm-dis $@
 
-test_pre.bc: test.bc
+test_norm.bc: test.bc
 	noelle-norm $^ -o $@
 	llvm-dis $@
 
-test_pre_prof: test_pre.bc
+test_pre_prof: test_norm.bc
 	noelle-prof-coverage $^ $@ $(LIBS)
 
 default.profraw: test_pre_prof
@@ -23,7 +23,7 @@ default.profraw: test_pre_prof
 output.prof: default.profraw
 	llvm-profdata merge $^ -output=$@
 
-test_with_metadata.bc: output.prof test_pre.bc
+test_with_metadata.bc: output.prof test_norm.bc
 	noelle-meta-prof-embed $^ -o $@
 	noelle-meta-pdg-embed $@ -o $@
 	llvm-dis $@

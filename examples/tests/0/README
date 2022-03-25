@@ -1,21 +1,19 @@
 ---- Use NOELLE without profiles
 
-clang -O0 -Xclang -disable-O0-optnone -emit-llvm -c test.c -o test.bc
+clang -O1 -Xclang -disable-llvm-passes -emit-llvm -c test.c -o test.bc
 
-noelle-pre test.bc
+noelle-norm test.bc -o test_norm.bc
+llvm-dis test_norm.bc
 
-cp test.bc test_pre.bc
-llvm-dis test_pre.bc
-
-noelle-load -load ~/CAT/lib/CAT.so -CAT test_pre.bc -o test_opt.bc
+noelle-load -load ~/CAT/lib/CAT.so -CAT test_norm.bc -o test_opt.bc
 clang test_opt.bc -O3 -march=native -o test_opt
 
 ---- Use NOELLE with profiles
-noelle-prof-coverage test_pre.bc test_pre_prof
+noelle-prof-coverage test_norm.bc test_pre_prof
 
 ./test_pre_prof 100
 
-noelle-meta-prof-embed default.profraw test_pre.bc -o test_with_metadata.bc
+noelle-meta-prof-embed default.profraw test_norm.bc -o test_with_metadata.bc
 
 noelle-meta-pdg-embed test_with_metadata.bc -o test_with_metadata.bc
 
