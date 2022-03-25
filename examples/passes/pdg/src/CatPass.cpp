@@ -44,6 +44,11 @@ namespace {
        */
       auto iterF = [](Value *src, DGEdge<Value> *dep) -> bool {
         errs() << "   " << *src << " " ;
+        if (dep->isMustDependence()){
+          errs() << " MUST ";
+        } else {
+          errs() << " MAY ";
+        } 
         if (dep->isControlDependence()){
           errs() << " CONTROL " ;
         }

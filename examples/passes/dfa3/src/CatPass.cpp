@@ -38,16 +38,15 @@ namespace {
        *
        * Fetch the hottest loop.
        */
-      auto loops = noelle.getLoops();
+      auto loops = noelle.getLoopStructures();
       noelle.sortByHotness(*loops);
       auto loop = (*loops)[0];
-      auto loopStructure = loop->getLoopStructure();
-      auto entryInst = loopStructure->getEntryInstruction();
+      auto entryInst = loop->getEntryInstruction();
       errs() << "Loop:\n";
-      errs() << " Function: " << loopStructure->getFunction()->getName() << "\n";
+      errs() << " Function: " << loop->getFunction()->getName() << "\n";
       errs() << " Entry instruction: " << *entryInst << "\n";
-      auto loopHeader = loopStructure->getHeader();
-      auto loopFunction = loopStructure->getFunction();
+      auto loopHeader = loop->getHeader();
+      auto loopFunction = loop->getFunction();
 
       /*
        * Fetch the data flow engine.
@@ -57,8 +56,8 @@ namespace {
       /*
        * Define the data flow equations
        */
-      auto computeGEN = [loopStructure](Instruction *i, DataFlowResult *df) {
-        if (!loopStructure->isIncluded(i)){
+      auto computeGEN = [loop](Instruction *i, DataFlowResult *df) {
+        if (!loop->isIncluded(i)){
           return ;
         }
         auto& gen = df->GEN(i);
@@ -110,7 +109,7 @@ namespace {
       /*
        * Print
        */
-      for (auto bb : loopStructure->getBasicBlocks()){
+      for (auto bb : loop->getBasicBlocks()){
         for (auto &inst : *bb){
           auto reachableInstsWithinIteration = customDfr->OUT(&inst);
           errs() << " Next are the " << reachableInstsWithinIteration.size() << " loop instructions reachable from " << inst << "\n";
