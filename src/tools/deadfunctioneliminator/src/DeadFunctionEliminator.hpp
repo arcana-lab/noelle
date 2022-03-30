@@ -35,7 +35,7 @@ namespace llvm::noelle {
       /*
        * Fields
        */
-
+      bool enableTransformation;
   };
 
 }

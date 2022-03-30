@@ -2,12 +2,34 @@
 
 installDir
 
+# Configurations
+enableEnablers="1" ;
+enableDead="1" ;
+
 # Partition the arguments between options and not
 options="" ;
 notOptions="" ;
 for var in "$@" ; do
   if [[ $var == -* ]] ; then
+
+    # Handle custom options
+    if [[ $var == "-noelle-disable-enablers" ]] ; then
+      enableEnablers="0" ;
+      continue ;
+    fi
+    if [[ $var == "-noelle-disable-dead" ]] ; then
+      enableDead="0" ;
+      continue ;
+    fi
+    if [[ $var == -noelle-parallelizer-* ]] ; then
+
+      # Skip all parallelizer-specific options
+      continue ;
+    fi
+
+    # General options
     options="$options $var" ;
+
   else 
     notOptions="$notOptions $var" ;
   fi
@@ -19,9 +41,11 @@ echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Delete dead functions
-cmdToExecute="noelle-deadcode $notOptions $notOptions"
-echo $cmdToExecute ;
-eval $cmdToExecute ;
+if test "$enableDead" == "1" ; then
+  cmdToExecute="noelle-deadcode $notOptions $notOptions"
+  echo $cmdToExecute ;
+  eval $cmdToExecute ;
+fi
 
 # Normalize the code
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
@@ -39,9 +63,11 @@ echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Delete dead functions
-cmdToExecute="noelle-deadcode $notOptions $notOptions"
-echo $cmdToExecute ;
-eval $cmdToExecute ;
+if test "$enableDead" == "1" ; then
+  cmdToExecute="noelle-deadcode $notOptions $notOptions"
+  echo $cmdToExecute ;
+  eval $cmdToExecute ;
+fi
 
 # Normalize the code
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
@@ -49,9 +75,11 @@ echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Run the enablers
-cmdToExecute="noelle-enable $notOptions $notOptions $options"
-echo $cmdToExecute ;
-eval $cmdToExecute ;
+if test "$enableEnablers" == "1" ; then
+  cmdToExecute="noelle-enable $notOptions $notOptions $options"
+  echo $cmdToExecute ;
+  eval $cmdToExecute ;
+fi
 
 # Normalize the code
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"

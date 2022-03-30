@@ -13,6 +13,7 @@ RUNTIME_CFLAGS="-DDEBUG"
 # 	- To dump the PDG: -noelle-pdg-dump
 PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -noelle-parallelizer-force
 NOELLE_OPTIONS=-noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
+TOOLS_OPTIONS=
 OPT_LEVEL=-O3
 
 # Front-end
@@ -85,7 +86,7 @@ pre_profiles.profraw: baseline_with_runtime_prof input.txt
 
 baseline_pre.bc: pre_profiles.profraw baseline_with_runtime.bc
 	noelle-meta-prof-embed $^ -o $@
-	noelle-pre $@ $(NOELLE_OPTIONS)
+	noelle-pre $@ $(NOELLE_OPTIONS) $(TOOLS_OPTIONS)
 	noelle-meta-clean $@ $@
 	llvm-dis $@
 

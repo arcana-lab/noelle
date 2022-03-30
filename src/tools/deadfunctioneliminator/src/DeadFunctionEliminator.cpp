@@ -14,14 +14,23 @@ namespace llvm::noelle {
 
 DeadFunctionEliminator::DeadFunctionEliminator ()
   :
-  ModulePass{ID}
+    ModulePass{ID}
+  , enableTransformation{true}
   {
 
   return ;
 }
 
 bool DeadFunctionEliminator::runOnModule (Module &M) {
+
+  /*
+   * Check if the transformation is enabled.
+   */
+  if (!this->enableTransformation){
+    return false;
+  }
   auto modified = false;
+  errs() << "DeadFunctionEliminator: Start\n";
 
   /*
     * Fetch the outputs of the passes we rely on.
