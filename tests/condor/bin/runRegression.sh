@@ -11,7 +11,8 @@ noelleOptions="$3" ;
 parallelizationOptions="$4" ;
 frontendOptions="$5" ;
 meOptions="$6" ;
-errorFile="$7" ;
+toOptions="$7" ;
+errorFile="$8" ;
 
 # Setup the environment
 source ~/.bash_profile ;
@@ -29,16 +30,16 @@ echo "Machine = `hostname`" > node.txt ;
 echo "#!/bin/bash" > run_me.sh ; 
 echo "source ../../../enable ; " >> run_me.sh ;
 echo "make clean ; " >> run_me.sh ;
-echo "make FRONTEND_OPTIONS='$frontendOptions' PRE_MIDDLEEND_OPTIONS='$meOptions' NOELLE_OPTIONS='$noelleOptions' PARALLELIZATION_OPTIONS='$parallelizationOptions' ;" >> run_me.sh ;
+echo "make FRONTEND_OPTIONS='$frontendOptions' PRE_MIDDLEEND_OPTIONS='$meOptions' NOELLE_OPTIONS='$noelleOptions' TOOLS_OPTIONS='${toOptions}' PARALLELIZATION_OPTIONS='$parallelizationOptions' ;" >> run_me.sh ;
 chmod 744 run_me.sh ;
 
 # Compile
-timeout 6h make FRONTEND_OPTIONS="$frontendOptions" PRE_MIDDLEEND_OPTIONS="$meOptions" NOELLE_OPTIONS="$noelleOptions" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
+timeout 6h make FRONTEND_OPTIONS="$frontendOptions" PRE_MIDDLEEND_OPTIONS="$meOptions" NOELLE_OPTIONS="$noelleOptions" TOOLS_OPTIONS="${toOptions}" PARALLELIZATION_OPTIONS="$parallelizationOptions" >> compiler_output.txt 2>&1 ;
 if test $? -ne 0 ; then
   echo "ERROR: the following test did not pass because the compilation timed out" ;
   echo "  Test = `pwd`" ;
   echo "  Node = `hostname`" ;
-  echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
+  echo "$testDir $noelleOptions $toOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
   exit 0 ;
 fi
 
@@ -57,7 +58,7 @@ for i in `seq 0 5` ; do
     echo "ERROR: the following test did not pass because its parallel execution timed out" ;
     echo "  Test = `pwd`" ;
     echo "  Node = `hostname`" ;
-    echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
+    echo "$testDir $noelleOptions $toOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
     exit 0 ;
   fi
 
@@ -65,8 +66,12 @@ for i in `seq 0 5` ; do
   cmp output_baseline.txt output_parallelized.txt ;
   if test $? -ne 0 ; then
     echo "ERROR: the test didn't pass" ;
-    echo "$testDir $noelleOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
+    echo "$testDir $noelleOptions $toOptions $parallelizationOptions $frontendOptions $meOptions" >> $errorFile ;
     exit 0;
   fi
 
 done
+
+# Reaching this point means the test passed. We can delete the test directory
+cd ../ ;
+rm -r $testDir ;

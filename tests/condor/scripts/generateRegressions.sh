@@ -10,6 +10,7 @@ function generateCondor {
   local po="$3" ;
   local feo="$4" ;
   local meo="$5" ;
+  local to="$6" ;
 
   # Create the directory
   pushd ./ ;
@@ -17,7 +18,7 @@ function generateCondor {
   popd ;
 
   baseBf="`basename ${cf}`" ;
-  python2 scripts/generateCondorScript.py ${cf} ./${baseBf}_${idx}.con "regression_${idx}" "-noelle-pdg-check -noelle-verbose=3 ${no}" "${po}" "$feo" "$meo" ${email};
+  python2 scripts/generateCondorScript.py ${cf} ./${baseBf}_${idx}.con "regression_${idx}" "-noelle-pdg-check -noelle-verbose=3 ${no}" "${po}" "$feo" "$meo" "$to" ${email};
 	./scripts/appendTests.sh ./${baseBf}_${idx}.con ;
   let idx=idx+1 ;
 
@@ -26,6 +27,7 @@ function generateCondor {
 
 function generateCondorJobs {
   local cores="$1" ;
+  local toolOptions="$2" ;
   local coresStr="" ;
   if test "$cores" != "0" ; then
     coresStr="-noelle-max-cores=$cores" ;
@@ -33,54 +35,56 @@ function generateCondorJobs {
 
   # Default parallelization
   noelleOptions="${coresStr}" ;
-  generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
   noelleOptions2="${noelleOptions} -noelle-inliner-avoid-hoist-to-main" ;
-  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
   noelleOptions2="${noelleOptions} -noelle-disable-loop-invariant-code-motion" ;
-  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
 
   # No HELIX
   noelleOptions="${coresStr}" ;
   noelleOptions="${noelleOptions} -noelle-disable-helix" ;
-  generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
   noelleOptions2="${noelleOptions} -noelle-disable-inliner" ;
-  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
   noelleOptions2="${noelleOptions} -noelle-disable-loop-invariant-code-motion" ;
-  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
 
   # No DSWP
   noelleOptions="${coresStr}" ;
   noelleOptions="${noelleOptions} -noelle-disable-dswp" ;
-  generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
   noelleOptions2="${noelleOptions} -noelle-disable-inliner" ;
-  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
   noelleOptions2="${noelleOptions} -noelle-disable-loop-invariant-code-motion" ;
-  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
 
   # No HELIX and DSWP
   noelleOptions="${coresStr}" ;
   noelleOptions="${noelleOptions} -noelle-disable-helix -noelle-disable-dswp" ;
-  generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
   noelleOptions2="${noelleOptions} -noelle-disable-inliner" ;
-  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
   noelleOptions2="${noelleOptions} -noelle-disable-loop-invariant-code-motion" ;
-  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
 
   # No HELIX, DSWP, and DOALL
   noelleOptions="${coresStr}" ;
   noelleOptions="${noelleOptions} -noelle-disable-helix -noelle-disable-dswp -noelle-disable-doall" ;
-  generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
   noelleOptions2="${noelleOptions} -noelle-disable-inliner" ;
-  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
   noelleOptions2="${noelleOptions} -noelle-disable-loop-invariant-code-motion" ;
-  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions"
+  generateCondor "$condorFile" "$noelleOptions2" "$parOptions" "$feOptions" "$meOptions" "${toolOptions}"
 
   return ;
 }
 
 function generateAllCondorJobs {
-  generateCondorJobs "8" ;
-  generateCondorJobs "2" ;
+  generateCondorJobs "8" "" ;
+  generateCondorJobs "8" "-noelle-disable-enablers -noelle-disable-inliner -noelle-disable-dead" ;
+  generateCondorJobs "2" "" ;
+  generateCondorJobs "2" "-noelle-disable-enablers -noelle-disable-inliner -noelle-disable-dead" ;
 
   noelleOptions="-noelle-inliner-avoid-hoist-to-main -noelle-disable-helix" ;
   generateCondor "$condorFile" "$noelleOptions" "$parOptions" "$feOptions" "$meOptions"

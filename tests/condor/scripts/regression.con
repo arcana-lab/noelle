@@ -47,6 +47,7 @@ ParallelizationOptions =
 NoelleOptions = 
 FrontEndOptions =
 PreMiddleEndOptions =
-Arguments = "$(InitialDir) $(InitialDir)/$(TestsPath)/$(Test) '$(NoelleOptions)' '$(ParallelizationOptions)' '$(FrontEndOptions)' '$(PreMiddleEndOptions)' $(InitialDir)/$(TestsPath)/errors.txt"
+ToolOptions = 
+Arguments = "$(InitialDir) $(InitialDir)/$(TestsPath)/$(Test) '$(NoelleOptions)' '$(ParallelizationOptions)' '$(FrontEndOptions)' '$(PreMiddleEndOptions)' '$(ToolOptions)' $(InitialDir)/$(TestsPath)/errors.txt"
 
 # List the tests

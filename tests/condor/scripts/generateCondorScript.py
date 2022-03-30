@@ -16,10 +16,11 @@ def getArgs():
   args['parOptions'] = str(sys.argv[5])
   args['FrontEndOptions'] = str(sys.argv[6])
   args['PreMiddleEndOptions'] = str(sys.argv[7])
+  args['ToolOptions'] = str(sys.argv[8])
 
   args['email'] = str(getpass.getuser()) + '@eecs.northwestern.edu'
-  if (numOfArgs > 8):
-    args['email'] = str(sys.argv[8])
+  if (numOfArgs > 9):
+    args['email'] = str(sys.argv[9])
 
   repoPath = ''
   for elem in str(os.path.dirname(os.path.abspath(__file__))).split(os.sep)[1:-2]:
@@ -46,6 +47,8 @@ def getNewFile(args):
         newFileAsStr += 'FrontEndOptions = ' + args['FrontEndOptions'] + '\n'
       elif (line.startswith('PreMiddleEndOptions')):
         newFileAsStr += 'PreMiddleEndOptions = ' + args['PreMiddleEndOptions'] + '\n'
+      elif (line.startswith('ToolOptions')):
+        newFileAsStr += 'ToolOptions = ' + args['ToolOptions'] + '\n'
       else:
         newFileAsStr += str(line)
 
