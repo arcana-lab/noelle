@@ -27,6 +27,24 @@ function identifyElementsOutsideSet {
   return 0;
 }
 
+function printTestsThatDoNotFailAnymore {
+
+  tmpFileTests="`mktemp`" ;
+  tmpFileTests2="`mktemp`" ;
+  ./scripts/printUniqueTests.sh regression/failing_tests > $tmpFileTests ;
+  ./scripts/printUniqueTestsThatFailed.sh > $tmpFileTests2 ;
+  cmp $tmpFileTests $tmpFileTests2 &> /dev/null ;
+  if test $? -ne 0 ; then
+    echo "    There are new tests that now pass for all configurations. They are the next ones:" ;
+    identifyElementsOutsideSet $tmpFileTests2 $tmpFileTests ;
+    echo -e "$outsideElements" ;
+  fi
+  rm $tmpFileTests ;
+  rm $tmpFileTests2 ;
+
+  return 0;
+}
+
 echo "################################### REGRESSION TESTS:" ;
 echo "  Checking the regression test results" ;
 
@@ -92,6 +110,7 @@ elif test "$stillRunningRegressionTests" == "0" ; then
   newTestsNumber=`wc -l $currentResults | awk '{print $1}'` ;
   if test ${newTestsNumber} == ${oldTestsNumber} ; then
     echo "    All tests that failed before still fail" ;
+
   else
     lessTests=`echo "${oldTestsNumber} - ${newTestsNumber}" | bc` ;
     echo "    There are $lessTests less tests that fail now!" ;
@@ -100,6 +119,9 @@ elif test "$stillRunningRegressionTests" == "0" ; then
     echo "    These tests are the following ones:" ;
     identifyElementsOutsideSet $currentResults regression/failing_tests ;
     echo -e "$outsideElements" ;
+
+    # Print tests that completely pass for all configurations now
+    printTestsThatDoNotFailAnymore ;
   fi
 
   # Check if there are still running tests
@@ -110,6 +132,9 @@ elif test "$stillRunningRegressionTests" == "0" ; then
 
 else
   echo "    No new tests failed so far" ;
+  
+  # Print tests that completely pass for all configurations now
+  printTestsThatDoNotFailAnymore ;
 fi
 echo "" ;
 echo "" ;

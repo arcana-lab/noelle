@@ -13,6 +13,9 @@ condor_watch:
 condor_check: 
 	./scripts/condor_check.sh ;
 
+condor_regression_add:
+	./scripts/condor_regression_set.sh ;
+
 regression: download
 	./scripts/test_regression.sh ;
 
@@ -36,4 +39,4 @@ clean:
 	find ./ -name output_parallelized.txt.xz -delete
 	find ./ -name vgcore* -delete
 
-.PHONY: condor condor_check regression performance unit download clean 
+.PHONY: condor condor_check regression performance unit download clean condor_regression_add
