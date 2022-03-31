@@ -14,7 +14,9 @@ function generateCondor {
 
   # Create the directory
   pushd ./ ;
-	cd ../ ; cp -r regression regression_${idx} ;
+	cd ../ ; 
+  cp -r regression regression_${idx} ;
+  rm regression_${idx}/failing_tests ;
   popd ;
 
   baseBf="`basename ${cf}`" ;
