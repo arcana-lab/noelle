@@ -58,24 +58,19 @@ $(OPTIMIZED): test_parallelized.bc
 test_parallelized_unoptimized.bc: baseline_with_metadata.bc
 	noelle-parallelizer $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
 	noelle-meta-clean $@ $@
-	llvm-dis $@
 
 test_parallelized.bc: test_parallelized_unoptimized.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
-	llvm-dis $@
 
 baseline.bc: test.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
-	llvm-dis $@
 
 baseline_with_metadata.bc: default.profraw baseline_pre.bc
 	noelle-meta-prof-embed $^ -o $@
 	noelle-meta-pdg-embed $@ -o $@
-	llvm-dis $@
 
 baseline_with_runtime.bc: test.bc $(THREADER).bc
 	llvm-link $^ -o $@
-	llvm-dis $@
 
 baseline_with_runtime_prof: baseline_with_runtime.bc
 	noelle-prof-coverage $^ $@ $(LIBS)
@@ -88,7 +83,6 @@ baseline_pre.bc: pre_profiles.profraw baseline_with_runtime.bc
 	noelle-meta-prof-embed $^ -o $@
 	noelle-pre $@ $(NOELLE_OPTIONS) $(TOOLS_OPTIONS)
 	noelle-meta-clean $@ $@
-	llvm-dis $@
 
 default.profraw: baseline_pre_prof input.txt
 	./$< `cat input.txt` 
