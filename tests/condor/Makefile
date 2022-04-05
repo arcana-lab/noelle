@@ -19,6 +19,9 @@ clean:
 	find log -name 'out_*.txt' -type f -delete
 	find log -name 'err_*.txt' -type f -delete
 	find log -name 'log_*.txt' -type f -delete
+	find log -name 'condor*.err' -type f -delete
+	find log -name 'condor*.log' -type f -delete
+	find log -name 'condor*.out' -type f -delete
 	rm -rf *~ ./*.con log/*.txt 
 
 .PHONY: submit regression clean

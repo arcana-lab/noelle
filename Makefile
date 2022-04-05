@@ -23,6 +23,7 @@ clean:
 	cd tests ; make clean; 
 	cd examples ; make clean ; 
 	find ./ -name .clangd -exec rm -rv {} +
+	find ./ -name .cache -exec rm -rv {} +
 
 uninstall: clean
 	rm -f enable ;
