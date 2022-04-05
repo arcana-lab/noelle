@@ -30,10 +30,11 @@ You are kindly asked to acknowledge usage of the tool by citing the following pa
 ```
 
 The only documentation available for NOELLE is:
+- a [video](https://www.youtube.com/watch?v=whORNUUWIjI&t=7s) introducing NOELLE
 - the [paper](http://www.cs.northwestern.edu/~simonec/files/Research/papers/HELIX_CGO_2022.pdf)
 - the comments within the code
 - the slides we use in the class [Advanced Topics in Compilers](http://www.cs.northwestern.edu/~simonec/ATC.html)
-  (Projects students do in this class are built upon NOELLE)
+  (Projects that students do in this class are built upon NOELLE)
 
 
 ## Version
