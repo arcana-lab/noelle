@@ -59,7 +59,6 @@ void refinePDGWithLoopAwareMemDepAnalysis(
   LoopsSummary *liSummary,
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
-
   refinePDGWithSCAF(loopDG, l);
 
   if (LIDS) {
@@ -71,13 +70,18 @@ void refinePDGWithLoopAwareMemDepAnalysis(
 void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
   #ifdef ENABLE_SCAF
   assert(NoelleSCAFAA != nullptr);
-  // Iterate over all the edges of the loop PDG and
-  // collect memory deps to be queried.
-  // For each pair of instructions with a memory dependence map it to
-  // a small vector of found edges (0th element is for RAW, 1st for WAW, 2nd for WAR)
-  map<pair<Instruction *, Instruction *>, SmallVector<DGEdge<Value> *, 3>>
-      memDeps;
+
+  /*
+   * Iterate over all the edges of the loop PDG and collect memory deps to be queried.
+   * For each pair of instructions with a memory dependence map it to
+   * a small vector of found edges (0th element is for RAW, 1st for WAW, 2nd for WAR)
+   */
+  map<pair<Instruction *, Instruction *>, SmallVector<DGEdge<Value> *, 3>> memDeps;
   for (auto edge : make_range(loopDG->begin_edges(), loopDG->end_edges())) {
+
+    /*
+     * Skip dependences that are not between instructions of the target loop
+     */
     if (!loopDG->isInternal(edge->getIncomingT()) ||
         !loopDG->isInternal(edge->getOutgoingT())){
       continue;
@@ -90,6 +94,9 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
       continue;
     }
 
+    /*
+     * Fetch the instructions involved in the dependence.
+     */
     auto pdgValueI = edge->getOutgoingT();
     auto i = dyn_cast<Instruction>(pdgValueI);
     assert(i && "Expecting an instruction as the value of a PDG node");
@@ -113,13 +120,22 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
     }
   }
 
-  // For each memory depedence perform loop-aware dependence analysis to
-  // disprove it. Queries for loop-carried and intra-iteration deps.
+  /*
+   * For each memory depedence perform loop-aware dependence analysis to disprove it. 
+   * Queries for loop-carried and intra-iteration deps.
+   */
   for (auto memDep : memDeps) {
-    auto instPair = memDep.first;
-    Instruction *i = instPair.first;
-    Instruction *j = instPair.second;
 
+    /*
+     * Fetch the current pair of instructions
+     */
+    auto instPair = memDep.first;
+    auto i = instPair.first;
+    auto j = instPair.second;
+
+    /*
+     * Fetch the dependences.
+     */
     auto edges = memDep.second;
 
     // encode the found dependences in a bit vector.
@@ -137,8 +153,7 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
     // check if there is a intra-iteration dependence
     uint8_t disprovedIIDepTypes = 0;
     if (disprovedLCDepTypes) {
-      disprovedIIDepTypes = disproveIntraIterationMemoryDep(
-          i, j, disprovedLCDepTypes, l, NoelleSCAFAA);
+      disprovedIIDepTypes = disproveIntraIterationMemoryDep(i, j, disprovedLCDepTypes, l, NoelleSCAFAA);
 
       // remove any edge that SCAF disproved both its loop-carried and
       // intra-iteration version
