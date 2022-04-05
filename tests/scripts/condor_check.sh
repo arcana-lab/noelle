@@ -76,7 +76,7 @@ origDirLength=`echo "${#origDir} + 2" | bc` ;
 
 # Fetch the local results
 currentResultsToTrim="`mktemp`" ; 
-cat regression*/*.txt  | sort | cut -c ${origDirLength}- > $currentResultsToTrim ;
+cat regression*/*.txt 2>>/dev/null | sort | cut -c ${origDirLength}- > $currentResultsToTrim ;
 currentResults="`mktemp`" ; 
 while IFS= read -r line; do
   line=$(trim "$line") ;
