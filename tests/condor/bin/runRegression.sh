@@ -30,7 +30,7 @@ echo "Machine = `hostname`" > node.txt ;
 echo "#!/bin/bash" > run_me.sh ; 
 echo "source ../../../enable ; " >> run_me.sh ;
 echo "make clean ; " >> run_me.sh ;
-echo "make FRONTEND_OPTIONS='$frontendOptions' PRE_MIDDLEEND_OPTIONS='$meOptions' NOELLE_OPTIONS='$noelleOptions' TOOLS_OPTIONS='${toOptions}' PARALLELIZATION_OPTIONS='$parallelizationOptions' ;" >> run_me.sh ;
+echo "make FRONTEND_OPTIONS='$frontendOptions' PRE_MIDDLEEND_OPTIONS='$meOptions' NOELLE_OPTIONS='$noelleOptions' TOOLS_OPTIONS='${toOptions}' PARALLELIZATION_OPTIONS='$parallelizationOptions' test_correctness &> compiler_output.txt ;" >> run_me.sh ;
 chmod 744 run_me.sh ;
 
 # Compile
