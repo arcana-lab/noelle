@@ -143,8 +143,11 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
    */
   auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
   auto originalGoverningPHI = loopGoverningIV.getLoopEntryPHI();
+  assert(originalGoverningPHI != nullptr);
   auto cloneGoverningPHI = task->getCloneOfOriginalInstruction(originalGoverningPHI);
+  assert(cloneGoverningPHI != nullptr);
   auto origValueUsedToCompareAgainstExitConditionValue = loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue();
+  assert(origValueUsedToCompareAgainstExitConditionValue != nullptr);
   auto valueUsedToCompareAgainstExitConditionValue = task->getCloneOfOriginalInstruction(origValueUsedToCompareAgainstExitConditionValue);
   assert(valueUsedToCompareAgainstExitConditionValue != nullptr);
   auto updatedBrInst = brInst;
