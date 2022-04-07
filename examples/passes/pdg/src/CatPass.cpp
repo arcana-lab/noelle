@@ -43,6 +43,7 @@ namespace {
        * Iterate over the dependences
        */
       auto iterF = [](Value *src, DGEdge<Value> *dep) -> bool {
+
         errs() << "   " << *src << " " ;
         if (dep->isMustDependence()){
           errs() << " MUST ";
@@ -71,9 +72,25 @@ namespace {
         errs() << "\n";
         return false;
       };
+
       for (auto& inst : instructions(mainF)){
         errs() << "Instruction \"" << inst << "\" depends on\n";
         FDG->iterateOverDependencesTo(&inst, true, true, true, iterF);
+      }
+
+      for (auto& inst : instructions(mainF)){
+        errs() << "Instruction \"" << inst << "\" outgoing dependences\n";
+        FDG->iterateOverDependencesFrom(&inst, true, true, true, iterF);
+      }
+
+      for (auto& inst : instructions(mainF)){
+        for (auto& inst2 : instructions(mainF)){
+          for (auto dep : FDG->getDependences(&inst, &inst2)){
+         
+
+
+          }
+        }
       }
 
       return false;
