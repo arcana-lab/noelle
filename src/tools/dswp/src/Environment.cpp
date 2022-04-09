@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,16 +10,29 @@
  */
 #include "DSWP.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
+
+  /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
+   * Fetch the SCC manager
+   */
   auto sccManager = LDI->getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
-  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
-    auto producer = LDI->environment->producerAt(envIndex);
 
-    for (auto consumer : LDI->environment->consumersOf(producer)) {
+  /*
+   * Collect live-in information
+   */
+  for (auto envIndex : environment->getEnvIndicesOfLiveInVars()) {
+    auto producer = environment->producerAt(envIndex);
+
+    for (auto consumer : environment->consumersOf(producer)) {
 
       /*
        * Clonable consumers must be loaded into every task that uses them
@@ -48,10 +61,24 @@ void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
 }
 
 void DSWP::collectLiveOutEnvInfo (LoopDependenceInfo *LDI) {
+
+  /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
+   * Fetch the SCC manager
+   */
   auto sccManager = LDI->getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
-  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveOutVars()) {
-    auto producer = LDI->environment->producerAt(envIndex);
+
+  /*
+   * Collect live-out information
+   */
+  for (auto envIndex : environment->getEnvIndicesOfLiveOutVars()) {
+    auto producer = environment->producerAt(envIndex);
 
     /*
      * Clonable producers all produce the same live out value.
@@ -78,4 +105,6 @@ void DSWP::collectLiveOutEnvInfo (LoopDependenceInfo *LDI) {
     auto id = task->getID();
     envBuilder->getUser(id)->addLiveOutIndex(envIndex);
   }
+}
+
 }

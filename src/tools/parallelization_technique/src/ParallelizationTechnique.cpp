@@ -47,11 +47,17 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   }
 
   /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
    * Collect the Type of each environment variable
    */
   std::vector<Type *> varTypes;
-  for (int64_t i = 0; i < LDI->environment->size(); ++i) {
-    varTypes.push_back(LDI->environment->typeOfEnvironmentLocation(i));
+  for (int64_t i = 0; i < environment->size(); ++i) {
+    varTypes.push_back(environment->typeOfEnvironmentLocation(i));
   }
 
   this->envBuilder = new EnvBuilder(program->getContext());
@@ -112,7 +118,7 @@ void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LD
   /*
    * Fetch the loop environment.
    */
-  auto env = LDI->environment;
+  auto env = LDI->getEnvironment();
 
   /*
    * Store live-in values into the environment just before jumping to the parallelized loop.
@@ -154,15 +160,21 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
   auto sccManager = LDI->getSCCManager();
 
   /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
    * Collect reduction operation information needed to accumulate reducable variables after parallelization execution
    */
   std::unordered_map<int, int> reducableBinaryOps;
   std::unordered_map<int, Value *> initialValues;
-  for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+  for (auto envInd : environment->getEnvIndicesOfLiveOutVars()) {
     auto isReduced = envBuilder->isReduced(envInd);
     if (!isReduced) continue;
 
-    auto producer = LDI->environment->producerAt(envInd);
+    auto producer = environment->producerAt(envInd);
     auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
     auto producerSCCAttributes = sccManager->getSCCAttrs(producerSCC);
 
@@ -202,8 +214,8 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     afterReductionBuilder = new IRBuilder<>(afterReductionB);
   }
 
-  for (int envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
-    auto prod = LDI->environment->producerAt(envInd);
+  for (int envInd : environment->getEnvIndicesOfLiveOutVars()) {
+    auto prod = environment->producerAt(envInd);
 
     /*
      * NOTE(angelo): If the environment variable isn't reduced, it is held in allocated
@@ -217,7 +229,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
       envVar = afterReductionBuilder->CreateLoad(envBuilder->getEnvVar(envInd));
     }
 
-    for (auto consumer : LDI->environment->consumersOf(prod)) {
+    for (auto consumer : environment->consumersOf(prod)) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
         depPHI->addIncoming(envVar, this->exitPointOfParallelizedLoop);
         continue;
@@ -405,6 +417,12 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
   rootLoop->getFunction()->print(errs());
 
   /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
    * Check every stack object that can be safely cloned.
    */
   for (auto location : memoryCloningAnalysis->getClonableMemoryLocations()) {
@@ -547,7 +565,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
            */
           auto newLiveIn = true;
           for (auto envIndex : envUser->getEnvIndicesOfLiveInVars()) {
-            auto producer = LDI->environment->producerAt(envIndex);
+            auto producer = environment->producerAt(envIndex);
             if (producer == opJ){
               newLiveIn = false;
               break;
@@ -562,7 +580,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
            *
            * Make space in the environment for the new live-in.
            */
-          auto newLiveInEnvironmentIndex = LDI->environment->addLiveInValue(opJ, {opI});
+          auto newLiveInEnvironmentIndex = environment->addLiveInValue(opJ, {opI});
           this->envBuilder->addVariableToEnvironment(newLiveInEnvironmentIndex, opJ->getType());
 
           /*
@@ -627,7 +645,7 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
     /*
      * Fetch the current producer of the original code that generates the live-in value.
      */
-    auto producer = LDI->environment->producerAt(envIndex);
+    auto producer = LDI->getEnvironment()->producerAt(envIndex);
 
     /*
      * Create GEP access of the environment variable at the given index
@@ -686,7 +704,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      * assume the direct cloning of the producer is the only clone
      * TODO: Find a better place to map this single clone (perhaps when the original loop's values are cloned)
      */
-    auto producer = (Instruction*)LDI->environment->producerAt(envIndex);
+    auto producer = (Instruction*)LDI->getEnvironment()->producerAt(envIndex);
     if (!task->doesOriginalLiveOutHaveManyClones(producer)) {
       auto singleProducerClone = task->getCloneOfOriginalInstruction(producer);
       task->addLiveOut(producer, singleProducerClone);
@@ -822,7 +840,7 @@ Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerV
   /*
    * Fetch all clones of intermediate values of the producer
    */
-  auto producer = (Instruction*)LDI->environment->producerAt(envIndex);
+  auto producer = (Instruction*)LDI->getEnvironment()->producerAt(envIndex);
   auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
 
   std::set<Instruction *> intermediateValues{};
@@ -1041,9 +1059,15 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
   auto preheaderClone = task->getCloneOfOriginalBasicBlock(loopPreHeader);
 
   /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
    * Iterate over live-out variables.
    */
-  for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+  for (auto envInd : environment->getEnvIndicesOfLiveOutVars()) {
 
     /*
      * Check if the current live-out variable can be reduced.
@@ -1059,7 +1083,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
      * PHI node in the header. The incoming value from the preheader is the
      * location of the initial value that needs to be changed
      */
-    auto producer = LDI->environment->producerAt(envInd);
+    auto producer = environment->producerAt(envInd);
     auto loopEntryProducerPHI = this->fetchLoopEntryPHIOfProducer(LDI, producer);
 
     /*
@@ -1123,9 +1147,15 @@ Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
   auto sccManager = LDI->getSCCManager();
 
   /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
    * Fetch the producer of new values of the current environment variable.
    */
-  auto producer = LDI->environment->producerAt(environmentIndex);
+  auto producer = environment->producerAt(environmentIndex);
 
   /*
    * Fetch the SCC that this producer belongs to.
@@ -1175,17 +1205,23 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
   }
 
   /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
    * There are multiple exit blocks.
    *
    * Fetch the pointer of the location where the exit block ID taken will be stored.
    */
-  auto exitBlockEnvIndex = LDI->environment->indexOfExitBlockTaken();
+  auto exitBlockEnvIndex = environment->indexOfExitBlockTaken();
   assert(exitBlockEnvIndex != -1);
   auto envUser = this->envBuilder->getUser(taskIndex);
   auto entryTerminator = task->getEntry()->getTerminator();
   IRBuilder<> entryBuilder(entryTerminator);
 
-  auto envType = LDI->environment->typeOfEnvironmentLocation(exitBlockEnvIndex);
+  auto envType = environment->typeOfEnvironmentLocation(exitBlockEnvIndex);
   envUser->createEnvPtr(entryBuilder, exitBlockEnvIndex, envType);
 
   /*

@@ -231,10 +231,16 @@ bool DSWP::apply (
   // writeStageQueuesAsDot(*LDI);
 
   /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
    * Collect information on stages' environments
    */
-  auto liveInVars = LDI->environment->getEnvIndicesOfLiveInVars();
-  auto liveOutVars = LDI->environment->getEnvIndicesOfLiveOutVars();
+  auto liveInVars = environment->getEnvIndicesOfLiveInVars();
+  auto liveOutVars = environment->getEnvIndicesOfLiveOutVars();
   std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
   nonReducableVars.insert(liveOutVars.begin(), liveOutVars.end());
   std::set<int> reducableVars;
@@ -243,7 +249,7 @@ bool DSWP::apply (
    * Should an exit block environment variable be necessary, register one 
    */
   if (loopSummary->numberOfExitBasicBlocks() > 1){ 
-    nonReducableVars.insert(LDI->environment->indexOfExitBlockTaken());
+    nonReducableVars.insert(environment->indexOfExitBlockTaken());
   }
 
   initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);

@@ -29,11 +29,6 @@ namespace llvm::noelle {
     public:
 
       /*
-       * Environment
-       */
-      LoopEnvironment *environment;
-
-      /*
        * Parallelization options
        */
       uint32_t DOALLChunkSize;
@@ -184,6 +179,7 @@ namespace llvm::noelle {
       /*
        * Fields
        */
+      LoopEnvironment *environment;
       std::set<Transformation> enabledTransformations;  /* Transformations enabled. */
       std::unordered_set<LoopDependenceInfoOptimization> enabledOptimizations;  /* Optimizations enabled. */
       bool areLoopAwareAnalysesEnabled;

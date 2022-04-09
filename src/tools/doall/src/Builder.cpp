@@ -275,7 +275,7 @@ void DOALL::rewireLoopToIterateChunks (
        * Fetch the header PHI of the live-out variable.
        * Check whether the header PHI is part of the set of PHIs we need to guard
        */
-      auto producer = cast<Instruction>(LDI->environment->producerAt(envIndex));
+      auto producer = cast<Instruction>(LDI->getEnvironment()->producerAt(envIndex));
       auto scc = sccdag->sccOfValue(producer);
       auto sccInfo = sccManager->getSCCAttrs(scc);
       auto headerPHI = sccInfo->getSingleHeaderPHI();

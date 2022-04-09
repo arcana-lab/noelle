@@ -239,10 +239,16 @@ void HELIX::createParallelizableTask (
   assert(helixTask == this->tasks[0]);
 
   /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
    * Fetch the indices of live-in and live-out variables of the loop being parallelized.
    */
-  auto liveInVars = LDI->environment->getEnvIndicesOfLiveInVars();
-  auto liveOutVars = LDI->environment->getEnvIndicesOfLiveOutVars();
+  auto liveInVars = environment->getEnvIndicesOfLiveInVars();
+  auto liveOutVars = environment->getEnvIndicesOfLiveOutVars();
 
   /*
    * Add all live-in and live-out variables as variables to be included in the environment.
@@ -256,7 +262,7 @@ void HELIX::createParallelizableTask (
      *
      * Check if it can be reduced so we can generate more efficient code that does not require a sequential segment.
      */
-    auto producer = LDI->environment->producerAt(liveOutIndex);
+    auto producer = environment->producerAt(liveOutIndex);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->canExecuteReducibly()){
@@ -276,7 +282,7 @@ void HELIX::createParallelizableTask (
    * This location exists only if there is more than one loop exit.
    */
   if (loopStructure->numberOfExitBasicBlocks() > 1){ 
-    nonReducableVars.insert(LDI->environment->indexOfExitBlockTaken());
+    nonReducableVars.insert(environment->indexOfExitBlockTaken());
   }
 
   /*
@@ -297,10 +303,10 @@ void HELIX::createParallelizableTask (
    * Store final results to loop live-out variables.
    */
   auto envUser = this->envBuilder->getUser(0);
-  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveInVars()) {
+  for (auto envIndex : environment->getEnvIndicesOfLiveInVars()) {
     envUser->addLiveInIndex(envIndex);
   }
-  for (auto envIndex : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+  for (auto envIndex : environment->getEnvIndicesOfLiveOutVars()) {
     envUser->addLiveOutIndex(envIndex);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);

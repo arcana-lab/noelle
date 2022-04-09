@@ -109,7 +109,7 @@ bool DOALL::canBeAppliedToLoop (
    * The loop must have all live-out variables to be reducable.
    */
   auto sccManager = LDI->getSCCManager();
-  if (!sccManager->areAllLiveOutValuesReducable(LDI->environment)) {
+  if (!sccManager->areAllLiveOutValuesReducable(LDI->getEnvironment())) {
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   Some live-out values are not reducable\n";
     }
@@ -228,7 +228,8 @@ bool DOALL::apply (
   /*
    * Fetch the environment of the loop.
    */
-  auto loopEnvironment = LDI->environment;
+  auto loopEnvironment = LDI->getEnvironment();
+  assert(loopEnvironment != nullptr);
 
   /*
    * Print the parallelization request.
