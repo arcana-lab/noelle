@@ -42,10 +42,6 @@ SCCAttrs::SCCAttrs (
     }
   }
 
-  // Collect values actually contained in the strongly connected components,
-  // ignoring ancillary values merged into the SCC object
-  // collectSCCValues();
-
   /*
    * Collect the control flows of the SCC.
    */
@@ -234,84 +230,6 @@ const std::pair<Value *, Instruction *> * SCCAttrs::getSingleInstructionThatCont
   auto controlPair = &*this->controlPairs.begin();
 
   return controlPair;
-}
-
-// FIXME: Do not use
-void SCCAttrs::collectSCCValues () {
-  struct PathValue {
-    PathValue *prev;
-    Value *value;
-    PathValue (Value *V, PathValue *PV = nullptr) : value{V}, prev{PV} {};
-  };
-
-  /*
-   * Bookkeeping for later deletion and to avoid duplicate work
-   */
-  std::set<PathValue *> pathValues;
-  std::set<Value *> valuesSeen;
-
-  std::deque<PathValue *> toTraverse;
-  auto topLevelNodes = scc->getTopLevelNodes(true);
-  for (auto node : topLevelNodes) {
-    node->getT()->print(errs() << "TOP LEVEL V: "); errs() << "\n";
-    auto pathV = new PathValue(node->getT());
-    pathValues.insert(pathV);
-    toTraverse.push_front(pathV);
-  }
-
-  scc->print(errs(), "COLLECT: ", 0) << "\n";
-  while (!toTraverse.empty()) {
-    auto pathV = toTraverse.front();
-    toTraverse.pop_front();
-    // pathV->value->print(errs() << "Traversing V: "); errs() << "\n";
-
-    bool isCycle = false;
-    auto prevV = pathV->prev;
-    while (prevV) {
-      // prevV->value->print(errs() << "\t Prev V: "); errs() << "\n";
-      if (pathV->value == prevV->value) {
-        isCycle = true;
-        break;
-      }
-      prevV = prevV->prev;
-    }
-
-    if (isCycle) {
-      auto cycleV = pathV;
-      while (cycleV != prevV) {
-        stronglyConnectedDataValues.insert(cycleV->value);
-        cycleV = cycleV->prev;
-      }
-      continue;
-    }
-
-    auto node = scc->fetchNode(pathV->value);
-    for (auto edge : node->getOutgoingEdges()) {
-
-      // Only trace paths across data dependencies, starting
-      //  anew on newly encountered data values across control dependencies
-      auto nextV = edge->getIncomingT();
-      PathValue *nextPathV = nullptr;
-      if (edge->isControlDependence()) {
-        // nextV->print(errs() << "Control dependence traveling to: "); errs() << "\n";
-        nextPathV = new PathValue(nextV);
-      } else {
-        // nextV->print(errs() << "Data dependence traveling to: "); errs() << "\n";
-        nextPathV = new PathValue(nextV, pathV);
-      }
-
-      if (nextPathV) {
-        pathValues.insert(nextPathV);
-        toTraverse.push_front(nextPathV);
-      }
-    }
-  }
-
-  for (auto pathV : pathValues) delete pathV;
-
-  for (auto dataV : stronglyConnectedDataValues) {
-    dataV->print(errs() << "COLLECT: V: "); errs() << "\n";
-  }
 }
 
 void SCCAttrs::setSCCToBeInductionVariable (bool hasIV){

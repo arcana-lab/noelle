@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -16,8 +16,6 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/Variable.hpp"
 #include "noelle/core/MemoryCloningAnalysis.hpp"
-
-using namespace llvm;
 
 namespace llvm::noelle {
 
@@ -53,8 +51,6 @@ namespace llvm::noelle {
         );
 
       SCCAttrs () = delete ;
-
-      ~SCCAttrs () ;
 
       /*
        * Get the SCC.
@@ -161,6 +157,13 @@ namespace llvm::noelle {
        */
       LoopCarriedVariable * getSingleLoopCarriedVariable (void) const ;
 
+      const std::pair<Value *, Instruction *> * getSingleInstructionThatControlLoopExit (void);
+
+      /*
+       * Return the memory locations that can be safely clone to void reusing the same memory locations between invocations of this SCC.
+       */
+      std::unordered_set<AllocaInst *> getMemoryLocationsToClone (void) const ;
+
       /*
        * Add a loop carried cycle
        */
@@ -181,15 +184,11 @@ namespace llvm::noelle {
        */
       void setSCCToBeClonable (bool isClonable = true);
 
-      void collectSCCValues ();
-
-      const std::pair<Value *, Instruction *> * getSingleInstructionThatControlLoopExit (void);
-
       void setSCCToBeClonableUsingLocalMemory (void) ;
 
       void addClonableMemoryLocationsContainedInSCC (std::unordered_set<const ClonableMemoryLocation *> locations) ;
 
-      std::unordered_set<AllocaInst *> getMemoryLocationsToClone (void) const ;
+      ~SCCAttrs () ;
 
     private:
       SCC *scc;

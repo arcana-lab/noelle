@@ -1049,9 +1049,15 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
 ){
 
   /*
+   * Fetch the task.
+   */
+  assert(taskIndex < this->tasks.size());
+  auto task = this->tasks[taskIndex];
+  assert(task != nullptr);
+
+  /*
    * Fetch task information.
    */
-  auto task = this->tasks[taskIndex];
   auto loopSummary = LDI->getLoopStructure();
   auto loopHeader = loopSummary->getHeader();
   auto headerClone = task->getCloneOfOriginalBasicBlock(loopHeader);

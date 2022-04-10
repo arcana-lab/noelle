@@ -1,5 +1,5 @@
   /*
-   * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
+   * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni, Brian Homerding
    *
    * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -22,125 +22,121 @@
 #include "noelle/core/Variable.hpp"
 #include "noelle/core/MemoryCloningAnalysis.hpp"
 
-  using namespace std;
-  using namespace llvm;
+namespace llvm::noelle {
 
-  namespace llvm::noelle {
+  class SCCDAGAttrs {
+    public:
 
-    class SCCDAGAttrs {
-      public:
+      SCCDAGAttrs (
+        bool enableFloatAsReal,
+        PDG *loopDG,
+        SCCDAG *loopSCCDAG,
+        LoopsSummary &LIS,
+        ScalarEvolution &SE,
+        InductionVariableManager &IV,
+        DominatorSummary &DS
+      ) ;
+      
+      SCCDAGAttrs () = delete ;
 
-        SCCDAGAttrs (
-          bool enableFloatAsReal,
-          PDG *loopDG,
-          SCCDAG *loopSCCDAG,
-          LoopsSummary &LIS,
-          ScalarEvolution &SE,
-          InductionVariableManager &IV,
-          DominatorSummary &DS
+      /*
+       * Graph wide structures
+       */
+      AccumulatorOpInfo accumOpInfo;
+
+      /*
+       * Dependencies in graph
+       */
+      std::map<SCC *, Criticisms> sccToLoopCarriedDependencies;
+
+      /*
+       * Isolated clonable SCCs and resulting inherited parents
+       */
+      std::unordered_map<SCC *, std::unordered_set<SCC *>> parentsViaClones;
+      std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC> *>> edgesViaClones;
+
+      /*
+       * Methods on SCCDAG.
+       */
+      std::set<SCC *> getSCCsWithLoopCarriedDependencies (void) const ;
+      std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
+      std::set<SCC *> getSCCsWithLoopCarriedControlDependencies (void) const ;
+      std::unordered_set<SCCAttrs *> getSCCsOfType (SCCAttrs::SCCType sccType);
+      bool isLoopGovernedBySCC (SCC *scc) const ;
+      bool areAllLiveOutValuesReducable (LoopEnvironment *env) const ;
+
+      /*
+       * Methods on single SCC.
+       */
+      bool isSCCContainedInSubloop (const LoopsSummary &LIS, SCC *scc) const ;
+      SCCAttrs * getSCCAttrs (SCC *scc) const; 
+
+      /*
+       * Methods about single dependence.
+       */
+      bool isALoopCarriedDependence (SCC *scc, DGEdge<Value> *dependence) ;
+
+      /*
+       * Methods about multiple dependences.
+       */
+      void iterateOverLoopCarriedDataDependences (
+        SCC *scc, 
+        std::function<bool (DGEdge<Value> *dependence)> func
         ) ;
-        
-        SCCDAGAttrs () = delete ;
 
-        /*
-         * Graph wide structures
-         */
-        AccumulatorOpInfo accumOpInfo;
+      void iterateOverLoopCarriedControlDependences (
+        SCC *scc, 
+        std::function<bool (DGEdge<Value> *dependence)> func
+        ) ;
 
-        /*
-         * Dependencies in graph
-         */
-        std::map<SCC *, Criticisms> sccToLoopCarriedDependencies;
+      void iterateOverLoopCarriedDependences (
+        SCC *scc, 
+        std::function<bool (DGEdge<Value> *dependence)> func
+        ) ;
 
-        /*
-         * Isolated clonable SCCs and resulting inherited parents
-         */
-        std::unordered_map<SCC *, std::unordered_set<SCC *>> parentsViaClones;
-        std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC> *>> edgesViaClones;
+      /*
+       * Return the SCCDAG of the loop.
+       */
+      // TODO: Return const reference to SCCDAG, not a raw pointer
+       SCCDAG * getSCCDAG (void) const ;
 
-        /*
-         * Methods on SCCDAG.
-         */
-        std::set<SCC *> getSCCsWithLoopCarriedDependencies (void) const ;
-        std::set<SCC *> getSCCsWithLoopCarriedDataDependencies (void) const ;
-        std::set<SCC *> getSCCsWithLoopCarriedControlDependencies (void) const ;
-        std::unordered_set<SCCAttrs *> getSCCsOfType (SCCAttrs::SCCType sccType);
-        bool isLoopGovernedBySCC (SCC *scc) const ;
-        bool areAllLiveOutValuesReducable (LoopEnvironment *env) const ;
+      /*
+       * Debug methods
+       */
+      void dumpToFile (int id) ;
 
-        /*
-         * Methods on single SCC.
-         */
-        bool isSCCContainedInSubloop (const LoopsSummary &LIS, SCC *scc) const ;
-        SCCAttrs * getSCCAttrs (SCC *scc) const; 
+      ~SCCDAGAttrs ();
 
-        /*
-         * Methods about single dependence.
-         */
-        bool isALoopCarriedDependence (SCC *scc, DGEdge<Value> *dependence) ;
+    private:
+      bool enableFloatAsReal;
+      std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
+      PDG *loopDG;
+      SCCDAG *sccdag;     /* SCCDAG of the related loop.  */
+      MemoryCloningAnalysis *memoryCloningAnalysis;
 
-        /*
-         * Methods about multiple dependences.
-         */
-        void iterateOverLoopCarriedDataDependences (
-          SCC *scc, 
-          std::function<bool (DGEdge<Value> *dependence)> func
-          ) ;
+      /*
+       * Helper methods on SCCDAG
+       */
+      void collectSCCGraphAssumingDistributedClones ();
+      void collectLoopCarriedDependencies (LoopsSummary &LIS);
 
-        void iterateOverLoopCarriedControlDependences (
-          SCC *scc, 
-          std::function<bool (DGEdge<Value> *dependence)> func
-          ) ;
+      /*
+       * Helper methods on single SCC
+       */
+      bool checkIfReducible (SCC *scc, LoopsSummary &LIS);
+      bool checkIfIndependent (SCC *scc);
+      bool checkIfSCCOnlyContainsInductionVariables (
+        SCC *scc,
+        LoopsSummary &LIS,
+        std::set<InductionVariable *> &loopGoverningIVs,
+        std::set<InductionVariable *> &IVs
+      );
+      void checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);
+      void checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS) ;
+      bool isClonableByInductionVars (SCC *scc) const ;
+      bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;
+      bool isClonableByCmpBrInstrs (SCC *scc) const ;
+      bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(SCC *scc, LoopsSummary &LIS) const ;
+  };
 
-        void iterateOverLoopCarriedDependences (
-          SCC *scc, 
-          std::function<bool (DGEdge<Value> *dependence)> func
-          ) ;
-
-        /*
-         * Return the SCCDAG of the loop.
-         */
-        // TODO: Return const reference to SCCDAG, not a raw pointer
-         SCCDAG * getSCCDAG (void) const ;
-
-        /*
-         * Debug methods
-         */
-        void dumpToFile (int id) ;
-
-        ~SCCDAGAttrs ();
-
-      private:
-        bool enableFloatAsReal;
-        std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
-        PDG *loopDG;
-        SCCDAG *sccdag;     /* SCCDAG of the related loop.  */
-        MemoryCloningAnalysis *memoryCloningAnalysis;
-
-        /*
-         * Helper methods on SCCDAG
-         */
-        void collectSCCGraphAssumingDistributedClones ();
-        void collectLoopCarriedDependencies (LoopsSummary &LIS);
-
-        /*
-         * Helper methods on single SCC
-         */
-        bool checkIfReducible (SCC *scc, LoopsSummary &LIS);
-        bool checkIfIndependent (SCC *scc);
-        bool checkIfSCCOnlyContainsInductionVariables (
-          SCC *scc,
-          LoopsSummary &LIS,
-          std::set<InductionVariable *> &loopGoverningIVs,
-          std::set<InductionVariable *> &IVs
-        );
-        void checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);
-        void checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS) ;
-        bool isClonableByInductionVars (SCC *scc) const ;
-        bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;
-        bool isClonableByCmpBrInstrs (SCC *scc) const ;
-        bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(SCC *scc, LoopsSummary &LIS) const ;
-
-    };
-
-  }
+}
