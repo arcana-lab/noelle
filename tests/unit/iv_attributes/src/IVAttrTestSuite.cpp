@@ -166,7 +166,7 @@ Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass, TestSuite &suite)
     }
     info.push_back(suite.combineOrderedValues(startAndStep));
 
-    info.push_back(suite.valueToString(attr->getHeaderCmpInst()));
+    info.push_back(suite.valueToString(attr->getHeaderCompareInstructionToComputeExitCondition()));
     info.push_back(suite.valueToString(attr->getHeaderBrInst()));
     info.push_back(suite.valueToString(attr->getExitConditionValue()));
 
