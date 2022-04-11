@@ -382,7 +382,7 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
       // containedIV->getLoopEntryPHI()->print(errs() << "Not well formed SCC for loop governing IV!\n"); errs() << "\n";
       return false;
     }
-    containedInsts.insert(attribution.getHeaderCmpInst());
+    containedInsts.insert(attribution.getHeaderCompareInstructionToComputeExitCondition());
     containedInsts.insert(attribution.getHeaderBrInst());
     auto conditionValue = attribution.getExitConditionValue();
     if (isa<Instruction>(conditionValue)) containedInsts.insert(cast<Instruction>(conditionValue));

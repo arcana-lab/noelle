@@ -220,7 +220,7 @@ namespace llvm::noelle {
     return IV;
   }
 
-  CmpInst * LoopGoverningIVAttribution::getHeaderCmpInst(void) const {
+  CmpInst * LoopGoverningIVAttribution::getHeaderCompareInstructionToComputeExitCondition(void) const {
     return headerCmp;
   }
 

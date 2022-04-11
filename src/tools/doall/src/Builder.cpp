@@ -110,7 +110,7 @@ void DOALL::rewireLoopToIterateChunks (
    */
   auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
   LoopGoverningIVUtility ivUtility(loopSummary, *allIVInfo, *loopGoverningIVAttr);
-  auto cmpInst = cast<CmpInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderCmpInst()));
+  auto cmpInst = cast<CmpInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderCompareInstructionToComputeExitCondition()));
   auto brInst = cast<BranchInst>(task->getCloneOfOriginalInstruction(loopGoverningIVAttr->getHeaderBrInst()));
   auto basicBlockToJumpToWhenTheLoopEnds = task->getLastBlock(0);
   ivUtility.updateConditionAndBranchToCatchIteratingPastExitValue(cmpInst, brInst, basicBlockToJumpToWhenTheLoopEnds);

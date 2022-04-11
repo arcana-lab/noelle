@@ -35,7 +35,7 @@ LoopGoverningIVUtility::LoopGoverningIVUtility (
    *
    * Check where the IV is in the comparison (left or right).
    */
-  this->condition = attribution.getHeaderCmpInst();
+  this->condition = attribution.getHeaderCompareInstructionToComputeExitCondition();
   // TODO: Refer to whichever intermediate value is used in the comparison (known on attribution)
   this->doesOriginalCmpInstHaveIVAsLeftOperand = condition->getOperand(0) == attribution.getValueToCompareAgainstExitConditionValue();
 

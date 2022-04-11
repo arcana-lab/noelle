@@ -637,7 +637,7 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
           auto loopGoverningIV = &attr->getInductionVariable();
           if (constantStepSCEV && !constantStepSCEV->getValue()->isNegative()) {
             auto conditionValue = attr->getExitConditionValue();
-            auto cmpInst = attr->getHeaderCmpInst();
+            auto cmpInst = attr->getHeaderCompareInstructionToComputeExitCondition();
             auto predicate = cmpInst->getPredicate();
 
             auto exitBlock = attr->getExitBlockFromHeader();
