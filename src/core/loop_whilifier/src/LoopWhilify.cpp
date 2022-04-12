@@ -1218,7 +1218,7 @@ namespace llvm::noelle{
     /*
      * Record loop blocks
      */
-    for (auto NextBB : LS->orderedBBs) {
+    for (auto NextBB : LS->getBasicBlocks()){
       LoopBlocks.push_back(NextBB);
     }
 
