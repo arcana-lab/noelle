@@ -14,6 +14,7 @@ clean: links
 	cd dfa2 ; ./scripts/clean.sh
 	cd dfa3 ; ./scripts/clean.sh
 	cd induction_variables ; ./scripts/clean.sh
+	cd environment ; ./scripts/clean.sh
 
 uninstall: clean
 	rm */scripts */*.txt ;
