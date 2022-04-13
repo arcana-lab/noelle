@@ -55,7 +55,7 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
    * Create an empty basic block for all basic blocks in the loop to be potentially used in the task
    */
   auto &cxt = task->getTaskBody()->getContext();
-  for (auto B : loopSummary->orderedBBs) {
+  for (auto B : loopSummary->getBasicBlocks()) {
     if (!task->isAnOriginalBasicBlock(B)){
       task->addBasicBlockStub(B);
     }
@@ -103,7 +103,7 @@ void DSWP::generateLoopSubsetForStage (LoopDependenceInfo *LDI, int taskIndex) {
    * Remove remaining basic blocks created that have no terminator
    * TODO: This should not be necessary. Investigate the contents of loopBBs to determine the issue
    */
-  for (auto B : loopSummary->orderedBBs) {
+  for (auto B : loopSummary->getBasicBlocks()) {
     auto clonedB = task->getCloneOfOriginalBasicBlock(B);
     if (clonedB->getTerminator()) continue;
     clonedB->eraseFromParent();
