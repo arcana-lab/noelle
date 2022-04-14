@@ -84,8 +84,6 @@ namespace llvm::noelle {
 
       void print (raw_ostream &stream);
       
-      std::vector<BasicBlock *> orderedBBs;
-
     private:
       uint64_t ID;
       BasicBlock *header;

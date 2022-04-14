@@ -46,7 +46,6 @@ LoopStructure::LoopStructure (
    */
   for (auto bb : l->blocks()) {
     // NOTE: Unsure if this is program forward order
-    orderedBBs.push_back(bb);
     this->bbs.insert(bb);
     if (l->isLoopLatch(bb)) {
       latchBBs.insert(bb);

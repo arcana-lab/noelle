@@ -348,7 +348,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
    * Clone all basic blocks of the original loop
    */
   auto topLoop = LDI->getLoopStructure();
-  for (auto originBB : topLoop->orderedBBs) {
+  for (auto originBB : topLoop->getBasicBlocks()) {
 
     /*
      * Clone the basic block.
@@ -1441,7 +1441,8 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
    */
   auto sccManager = LDI.getSCCManager();
 
-  std::set<BasicBlock *> bbs(loopSummary->orderedBBs.begin(), loopSummary->orderedBBs.end());
+  auto allBBs = loopSummary->getBasicBlocks();
+  std::set<BasicBlock *> bbs(allBBs.begin(), allBBs.end());
   DGPrinter::writeGraph<SubCFGs, BasicBlock>("technique-original-loop-" + std::to_string(LDI.getID()) + ".dot", new SubCFGs(bbs));
   DGPrinter::writeGraph<SCCDAG, SCC>("technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot", sccManager->getSCCDAG());
 
