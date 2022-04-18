@@ -479,4 +479,9 @@ namespace llvm::noelle {
     return n;
   }
 
+  StayConnectedNestedLoopForestNode * StayConnectedNestedLoopForest::getInnermostLoopThatContains (BasicBlock *bb) const {
+    auto n = this->getInnermostLoopThatContains(&*bb->begin());
+    return n;
+  }
+
 }

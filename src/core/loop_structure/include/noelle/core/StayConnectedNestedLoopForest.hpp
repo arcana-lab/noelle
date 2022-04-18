@@ -83,6 +83,8 @@ namespace llvm::noelle {
 
       StayConnectedNestedLoopForestNode * getInnermostLoopThatContains (Instruction *i) const ;
 
+      StayConnectedNestedLoopForestNode * getInnermostLoopThatContains (BasicBlock *bb) const ;
+
       ~StayConnectedNestedLoopForest();
 
     private:
