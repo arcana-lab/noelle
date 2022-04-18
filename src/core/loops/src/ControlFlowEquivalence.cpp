@@ -15,7 +15,7 @@ using namespace llvm::noelle;
 
 ControlFlowEquivalence::ControlFlowEquivalence (
   const DominatorSummary *ds,
-  const LoopsSummary *loops,
+  StayConnectedNestedLoopForestNode *loops,
   Function &F
 ) {
   auto functionEntry = &F.getEntryBlock();
@@ -25,7 +25,7 @@ ControlFlowEquivalence::ControlFlowEquivalence (
 
 ControlFlowEquivalence::ControlFlowEquivalence (
   const DominatorSummary *ds,
-  const LoopsSummary *loops,
+  StayConnectedNestedLoopForestNode *loops,
   const LoopStructure *loopStructure
 ) {
   startBBs.insert(loopStructure->getHeader());
@@ -40,7 +40,7 @@ ControlFlowEquivalence::ControlFlowEquivalence (
  */
 void ControlFlowEquivalence::calculateControlFlowEquivalences (
   const DominatorSummary *DS,
-  const LoopsSummary *loops
+  StayConnectedNestedLoopForestNode *loops
 ) {
 
   /*
@@ -85,7 +85,7 @@ void ControlFlowEquivalence::calculateControlFlowEquivalences (
       dtChildrenBlocks.insert(dtChildNode->getBlock());
     }
 
-    auto dtBlockLoop = loops->getLoop(*dtBlock);
+    auto dtBlockLoop = loops->getInnermostLoopThatContains(dtBlock);
     auto dtBlockInLoop = dtBlockLoop != nullptr;
 
     /*
@@ -112,7 +112,7 @@ void ControlFlowEquivalence::calculateControlFlowEquivalences (
       /*
        * Check if A and B are in the same inner-most loop
        */
-      auto pdtBlockLoop = loops->getLoop(*pdtBlock);
+      auto pdtBlockLoop = loops->getInnermostLoopThatContains(pdtBlock);
       auto pdtBlockInLoop = pdtBlockLoop != nullptr;
       if (dtBlockInLoop ^ pdtBlockInLoop) continue;
       if (dtBlockInLoop && pdtBlockInLoop

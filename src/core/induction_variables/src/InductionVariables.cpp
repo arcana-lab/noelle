@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -15,18 +15,23 @@
 namespace llvm::noelle {
 
 InductionVariableManager::InductionVariableManager (
-  LoopsSummary &LIS,
+  StayConnectedNestedLoopForestNode *loopNode,
   InvariantManager &IVM,
   ScalarEvolution &SE,
   SCCDAG &sccdag,
   LoopEnvironment &loopEnv,
   Loop &LLVMLoop
-) : LIS{LIS}, loopToIVsMap{}, loopToGoverningIVAttrMap{} {
+) : loop{loopNode}, 
+    loopToIVsMap{}, 
+    loopToGoverningIVAttrMap{} 
+  {
+  assert(this->loop != nullptr);
 
   /*
    * Fetch the loop to analyze.
    */
-  auto loopToAnalyze = LIS.getLoopNestingTreeRoot();
+  auto loopToAnalyze = this->loop->getLoop();
+  assert(loopToAnalyze != nullptr);
 
   /*
    * Fetch the function that includes the loop.
@@ -37,8 +42,8 @@ InductionVariableManager::InductionVariableManager (
    * Identify the induction variables.
    */
   ScalarEvolutionReferentialExpander referentialExpander(SE, F);
-  for (auto &loop : LIS.loops) {
-    this->loopToIVsMap[loop.get()] = std::unordered_set<InductionVariable *>();
+  for (auto loop : this->loop->getLoops()) {
+    this->loopToIVsMap[loop] = std::unordered_set<InductionVariable *>();
 
     /*
      * Fetch the loop header.
@@ -87,10 +92,10 @@ InductionVariableManager::InductionVariableManager (
       InductionVariable* IV = nullptr;
       auto sccContainingIV = sccdag.sccOfValue(&phi);
       if (noelleDeterminedValidIV) {
-        IV = new InductionVariable(loop.get(), IVM, SE, &phi, *sccContainingIV, loopEnv, referentialExpander);
+        IV = new InductionVariable(loop, IVM, SE, &phi, *sccContainingIV, loopEnv, referentialExpander);
       } else if (llvmDeterminedValidIV) {
         // Construct from LLVM abstraction
-        IV = new InductionVariable(loop.get(), IVM, SE, &phi, *sccContainingIV, loopEnv, referentialExpander, ID);
+        IV = new InductionVariable(loop, IVM, SE, &phi, *sccContainingIV, loopEnv, referentialExpander, ID);
       } else {
         continue;
       }
@@ -106,11 +111,11 @@ InductionVariableManager::InductionVariableManager (
       /*
        * Save the IV.
        */
-      this->loopToIVsMap[loop.get()].insert(IV);
-      auto exitBlocks = LIS.getLoop(phi)->getLoopExitBasicBlocks();
+      this->loopToIVsMap[loop].insert(IV);
+      auto exitBlocks = loop->getLoopExitBasicBlocks();
       auto attribution = new LoopGoverningIVAttribution(*IV, *sccContainingIV, exitBlocks);
       if (attribution->isSCCContainingIVWellFormed()) {
-        loopToGoverningIVAttrMap[loop.get()] = attribution;
+        loopToGoverningIVAttrMap[loop] = attribution;
       } else {
         delete attribution;
       }
@@ -125,7 +130,7 @@ std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVa
   /*
    * Fetch the outermost loop of @this.
    */
-  auto loop = this->LIS.getLoopNestingTreeRoot();
+  auto loop = this->loop->getLoop();
 
   /*
    * Fetch the induction variables of the loop.

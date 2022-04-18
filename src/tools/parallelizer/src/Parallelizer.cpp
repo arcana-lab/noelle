@@ -115,7 +115,7 @@ namespace llvm::noelle {
 
       auto DS = par.getDominators(function);
       auto l = LI.getLoopsInPreorder()[0];
-      auto newLDI = new LoopDependenceInfo(taskFunctionDG, l, *DS, SE, par.getCompilationOptionsManager()->getMaximumNumberOfCores(), par.canFloatsBeConsideredRealNumbers());
+      auto newLDI = new LoopDependenceInfo(taskFunctionDG, LDI->getLoopHierarchyStructures(), l, *DS, SE, par.getCompilationOptionsManager()->getMaximumNumberOfCores(), par.canFloatsBeConsideredRealNumbers());
       newLDI->copyParallelizationOptionsFrom(LDI);
 
       codeModified = helix.apply(newLDI, h);

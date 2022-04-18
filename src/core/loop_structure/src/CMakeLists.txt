@@ -1,7 +1,6 @@
 # Sources
 set(Srcs 
   LoopStructure.cpp
-  LoopsSummary.cpp
   LoopEnvironment.cpp
   EnvBuilder.cpp
   StayConnectedNestedLoopForest.cpp

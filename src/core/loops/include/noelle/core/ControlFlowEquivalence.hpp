@@ -10,10 +10,10 @@
  */
 #pragma once
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopsSummary.hpp"
-#include "noelle/core/DominatorSummary.hpp"
 #include <memory>
+#include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/DominatorSummary.hpp"
+#include "noelle/core/StayConnectedNestedLoopForest.hpp"
 
 namespace llvm::noelle {
 
@@ -22,13 +22,13 @@ namespace llvm::noelle {
 
     ControlFlowEquivalence (
       const DominatorSummary *ds,
-      const LoopsSummary *loops,
+      StayConnectedNestedLoopForestNode *loops,
       Function &F
     );
 
     ControlFlowEquivalence (
       const DominatorSummary *ds,
-      const LoopsSummary *loops,
+      StayConnectedNestedLoopForestNode *loops,
       const LoopStructure *loopStructure
     );
 
@@ -38,7 +38,10 @@ namespace llvm::noelle {
 
    private:
 
-    void calculateControlFlowEquivalences (const DominatorSummary *DS, const LoopsSummary *loops);
+    void calculateControlFlowEquivalences (
+      const DominatorSummary *DS, 
+      StayConnectedNestedLoopForestNode *loops
+      );
 
     void createEquivalenceSet (BasicBlock *singleB);
 

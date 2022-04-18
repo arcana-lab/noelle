@@ -20,11 +20,26 @@ namespace llvm::noelle {
 
   class StayConnectedNestedLoopForestNode {
     public:
-      StayConnectedNestedLoopForestNode (StayConnectedNestedLoopForest *f, LoopStructure *l);
+      StayConnectedNestedLoopForestNode (
+        StayConnectedNestedLoopForest *f, 
+        LoopStructure *l
+        );
 
-      StayConnectedNestedLoopForestNode (StayConnectedNestedLoopForest *f, LoopStructure *l, StayConnectedNestedLoopForestNode *parent);
+      StayConnectedNestedLoopForestNode (
+        StayConnectedNestedLoopForest *f, 
+        LoopStructure *l, 
+        StayConnectedNestedLoopForestNode *parent
+        );
 
       LoopStructure * getLoop (void) const ;
+
+      LoopStructure * getInnermostLoopThatContains (Instruction *i) ;
+
+      LoopStructure * getInnermostLoopThatContains (BasicBlock *bb);
+
+      std::set<StayConnectedNestedLoopForestNode *> getNodes (void) ;
+
+      std::set<LoopStructure *> getLoops (void) ;
 
       StayConnectedNestedLoopForestNode * getParent (void) const ;
 

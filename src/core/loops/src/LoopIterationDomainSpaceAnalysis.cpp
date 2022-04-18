@@ -10,11 +10,10 @@
  */
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 LoopIterationDomainSpaceAnalysis::LoopIterationDomainSpaceAnalysis (
-  LoopsSummary &loops,
+  StayConnectedNestedLoopForestNode *loops,
   InductionVariableManager &ivManager,
   ScalarEvolution &SE
 ) : loops{loops}, ivManager{ivManager} {
@@ -80,7 +79,7 @@ bool LoopIterationDomainSpaceAnalysis::isMemoryAccessSpaceEquivalentForTopLoopIV
 
   auto getLoopForIV = [&](InductionVariable *iv) -> LoopStructure * {
     auto loopEntryPHI = iv->getLoopEntryPHI();
-    return loops.getLoop(*loopEntryPHI);
+    return this->loops->getInnermostLoopThatContains(loopEntryPHI);
   };
 
   /*
@@ -89,7 +88,7 @@ bool LoopIterationDomainSpaceAnalysis::isMemoryAccessSpaceEquivalentForTopLoopIV
    * the top loop's IV must be governed by that IV for BOTH spaces, and governed
    * by the same SCEV derived from that IV
    */
-  auto rootLoopStructure = loops.getLoopNestingTreeRoot();
+  auto rootLoopStructure = this->loops->getLoop();
   for (auto subscriptIdx = 0; subscriptIdx < space1->subscriptIVs.size(); ++subscriptIdx) {
     auto iv1 = space1->subscriptIVs[subscriptIdx].second;
     if (iv1 == nullptr){
@@ -113,8 +112,8 @@ bool LoopIterationDomainSpaceAnalysis::isMemoryAccessSpaceEquivalentForTopLoopIV
 }
 
 void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution &SE) {
-  for (auto loop : loops.loops) {
-    for (auto iv : ivManager.getInductionVariables(*loop.get())) {
+  for (auto loop : this->loops->getLoops()) {
+    for (auto iv : ivManager.getInductionVariables(*loop)) {
       for (auto inst : iv->getAllInstructions()) {
         if (!SE.isSCEVable(inst->getType())) continue;
         auto scev = SE.getSCEV(inst);
@@ -155,7 +154,7 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs (ScalarEvolution 
 void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace (ScalarEvolution &SE) {
 
   std::unordered_set<Instruction *> memoryAccessors{};
-  for (auto B : loops.getLoopNestingTreeRoot()->getBasicBlocks()) {
+  for (auto B : this->loops->getLoop()->getBasicBlocks()) {
     for (auto &I : *B) {
       Value *memoryAccessorValue; 
       if (auto store = dyn_cast<StoreInst>(&I)) {
@@ -321,7 +320,7 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
      * All dimension's subscripts must be governed by an IV and be bounded by the dimension's size
      */
     bool atLeastOneTopLevelNonOverlappingIV = false;
-    auto rootLoopStructure = loops.getLoopNestingTreeRoot();
+    auto rootLoopStructure = this->loops->getLoop();
     for (auto idx = 0; idx < memAccessSpace->subscriptIVs.size(); ++idx) {
       auto instIVPair = memAccessSpace->subscriptIVs[idx];
       auto inst = instIVPair.first;
@@ -332,7 +331,7 @@ void LoopIterationDomainSpaceAnalysis::identifyNonOverlappingAccessesBetweenIter
 
       auto loopEntryPHI = iv->getLoopEntryPHI();
       auto loopEntryPHISCEV = cast<SCEVAddRecExpr>(SE.getSCEV(loopEntryPHI));
-      auto loopStructure = loops.getLoop(*loopEntryPHI);
+      auto loopStructure = this->loops->getInnermostLoopThatContains(loopEntryPHI);
       bool isRootLoopIV = (rootLoopStructure == loopStructure);
       if (!isRootLoopIV) continue;
 
@@ -628,7 +627,7 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
       if (scevsMatch(subscriptRecSCEV->getStart(), loopEntryPHISCEV->getStart())
         && scevsMatch(subscriptRecSCEV->getStepRecurrence(SE), loopEntryPHISCEV->getStepRecurrence(SE))) {
         auto loopHeader = loopEntryPHI->getParent();
-        auto loopStructure = loops.getLoop(*loopHeader);
+        auto loopStructure = this->loops->getInnermostLoopThatContains(loopHeader);
         auto attr = ivManager.getLoopGoverningIVAttribution(*loopStructure);
 
         // attr->getInductionVariable().getLoopEntryPHI()->print(errs() << "ATTR PHI: "); errs() << "\n";
@@ -708,4 +707,6 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded (
   // errs() << "Is bounded\n";
 
   return true;
+}
+
 }

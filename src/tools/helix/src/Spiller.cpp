@@ -273,8 +273,6 @@ void HELIX::defineFrontierForLoadsToSpilledLCD (
   DominatorSummary *originalLoopDS,
   std::unordered_set<BasicBlock *> &originalFrontierBlocks
 ) {
-
-  auto &loopHierarchy = LDI->getLoopHierarchyStructures();
   auto loopStructure = LDI->getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
 

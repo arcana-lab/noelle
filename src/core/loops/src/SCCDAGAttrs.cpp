@@ -18,7 +18,7 @@ SCCDAGAttrs::SCCDAGAttrs (
   bool enableFloatAsReal,
   PDG *loopDG,
   SCCDAG *loopSCCDAG,
-  LoopsSummary &LIS,
+  StayConnectedNestedLoopForestNode *loopNode,
   ScalarEvolution &SE,
   InductionVariableManager &IV,
   DominatorSummary &DS
@@ -29,15 +29,14 @@ SCCDAGAttrs::SCCDAGAttrs (
   /*
    * Partition dependences between intra-iteration and iter-iteration ones.
    */
-  collectLoopCarriedDependencies(LIS);
+  this->collectLoopCarriedDependencies(loopNode);
 
   /*
    * Collect flattened list of all IVs at all loop levels
    */
   std::set<InductionVariable *> ivs;
   std::set<InductionVariable *> loopGoverningIVs;
-  for (auto &LS : LIS.loops) {
-    auto loop = LS.get();
+  for (auto loop : loopNode->getLoops()) {
     auto loopIVs = IV.getInductionVariables(*loop);
     ivs.insert(loopIVs.begin(), loopIVs.end());
     auto loopGoverningIV = IV.getLoopGoverningInductionVariable(*loop);
@@ -59,27 +58,27 @@ SCCDAGAttrs::SCCDAGAttrs (
   /*
    * Compute memory cloning location analysis
    */
-  auto rootLoop = LIS.getLoopNestingTreeRoot();
+  auto rootLoop = loopNode->getLoop();
   this->memoryCloningAnalysis = new MemoryCloningAnalysis(rootLoop, DS, loopDG);
 
   /*
    * Tag SCCs depending on their characteristics.
    */
-  loopSCCDAG->iterateOverSCCs([this, &SE, &LIS, &ivs, &loopGoverningIVs](SCC *scc) -> bool {
+  loopSCCDAG->iterateOverSCCs([this, &SE, loopNode, rootLoop,  &ivs, &loopGoverningIVs](SCC *scc) -> bool {
 
     /*
      * Allocate the metadata about this SCC.
      */
-    auto sccInfo = new SCCAttrs(scc, this->accumOpInfo, LIS);
+    auto sccInfo = new SCCAttrs(scc, this->accumOpInfo, rootLoop);
     this->sccToInfo[scc] = sccInfo;
 
     /*
      * Collect information about the current SCC.
      */
-    bool doesSCCOnlyContainIV = this->checkIfSCCOnlyContainsInductionVariables(scc, LIS, ivs, loopGoverningIVs);
+    bool doesSCCOnlyContainIV = this->checkIfSCCOnlyContainsInductionVariables(scc, loopNode, ivs, loopGoverningIVs);
     sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
 
-    this->checkIfClonable(scc, SE, LIS);
+    this->checkIfClonable(scc, SE, loopNode);
 
     /*
      * Categorize the current SCC.
@@ -87,7 +86,7 @@ SCCDAGAttrs::SCCDAGAttrs (
     if (this->checkIfIndependent(scc)) {
       sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
 
-    } else if (this->checkIfReducible(scc, LIS)) {
+    } else if (this->checkIfReducible(scc, loopNode)) {
       sccInfo->setType(SCCAttrs::SCCType::REDUCIBLE);
 
     } else {
@@ -251,12 +250,15 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
   return true;
 }
 
-bool SCCDAGAttrs::isSCCContainedInSubloop (const LoopsSummary &LIS, SCC *scc) const {
+bool SCCDAGAttrs::isSCCContainedInSubloop (
+  StayConnectedNestedLoopForestNode *loop,
+  SCC *scc
+  ) const {
   auto instInSubloops = true;
-  auto topLoop = LIS.getLoopNestingTreeRoot();
+  auto topLoop = loop->getLoop();
   for (auto iNodePair : scc->internalNodePairs()) {
     if (auto inst = dyn_cast<Instruction>(iNodePair.first)) {
-      instInSubloops &= (LIS.getLoop(*inst) != topLoop);
+      instInSubloops &= (loop->getInnermostLoopThatContains(inst) != topLoop);
     } else {
       instInSubloops = false;
     }
@@ -314,17 +316,17 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
   return ;
 }
 
-void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS) {
+void SCCDAGAttrs::collectLoopCarriedDependencies (StayConnectedNestedLoopForestNode *loopNode){
 
   /*
    * Iterate over all the loops contained within the one handled by @this
    */
-  for (auto &loop : LIS.loops) {
+  for (auto loop : loopNode->getLoops()){
 
     /*
      * Fetch the set of loop-carried data dependences of the current loop.
      */
-    auto loopCarriedEdges = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop.get(), LIS, *sccdag);
+    auto loopCarriedEdges = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop, loopNode, *sccdag);
 
     /*
      * Make the map from SCCs to loop-carried data dependences.
@@ -352,7 +354,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (LoopsSummary &LIS) {
 
 bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
   SCC *scc,
-  LoopsSummary &LIS,
+  StayConnectedNestedLoopForestNode *loopNode,
   std::set<InductionVariable *> &IVs,
   std::set<InductionVariable *> &loopGoverningIVs) {
 
@@ -376,7 +378,7 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
    */
   for (auto containedIV : containedIVs) {
     if (loopGoverningIVs.find(containedIV) == loopGoverningIVs.end()) continue;
-    auto exitBlocks = LIS.getLoop(*containedIV->getLoopEntryPHI()->getParent())->getLoopExitBasicBlocks();
+    auto exitBlocks = loopNode->getInnermostLoopThatContains(containedIV->getLoopEntryPHI())->getLoopExitBasicBlocks();
     LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
     if (!attribution.isSCCContainingIVWellFormed()) {
       // containedIV->getLoopEntryPHI()->print(errs() << "Not well formed SCC for loop governing IV!\n"); errs() << "\n";
@@ -409,13 +411,16 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
   return true;
 }
 
-bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
+bool SCCDAGAttrs::checkIfReducible (
+  SCC *scc,
+  StayConnectedNestedLoopForestNode *loopNode
+  ){
 
   /*
    * A reducible variable consists of one loop carried value
    * that tracks the evolution of the reducible value
    */
-  auto rootLoop = LIS.getLoopNestingTreeRoot();
+  auto rootLoop = loopNode->getLoop();
   auto rootLoopHeader = rootLoop->getHeader();
   std::unordered_set<PHINode *> loopCarriedPHIs{};
   for (auto dependency : this->sccToLoopCarriedDependencies.at(scc)) {
@@ -483,7 +488,7 @@ bool SCCDAGAttrs::checkIfReducible (SCC *scc, LoopsSummary &LIS) {
   /*
    * Analyze the loop-carried variable related to the SCC.
    */
-  auto variable = new LoopCarriedVariable(*rootLoop, LIS, *loopDG, *sccdag, *scc, singleLoopCarriedPHI);
+  auto variable = new LoopCarriedVariable(*rootLoop, loopNode, *loopDG, *sccdag, *scc, singleLoopCarriedPHI);
   if (!variable->isEvolutionReducibleAcrossLoopIterations()) {
     delete variable;
     return false;
@@ -521,7 +526,11 @@ bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
   return this->sccToLoopCarriedDependencies.find(scc) == this->sccToLoopCarriedDependencies.end();
 }
 
-void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS) {
+void SCCDAGAttrs::checkIfClonable (
+  SCC *scc, 
+  ScalarEvolution &SE,
+  StayConnectedNestedLoopForestNode *loopNode
+  ){
 
   /*
    * Check the simple cases.
@@ -531,7 +540,7 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &
        || isClonableByInductionVars(scc)
        || isClonableBySyntacticSugarInstrs(scc)
        || isClonableByCmpBrInstrs(scc)
-       || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc, LIS)
+       || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc, loopNode)
       ) {
     this->getSCCAttrs(scc)->setSCCToBeClonable();
     return ;
@@ -540,12 +549,15 @@ void SCCDAGAttrs::checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &
   /*
    * Check for memory cloning case
    */
-  checkIfClonableByUsingLocalMemory(scc, LIS) ;
+  checkIfClonableByUsingLocalMemory(scc, loopNode);
 
   return ;
 }
 
-void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS) {
+void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
+  SCC *scc,
+  StayConnectedNestedLoopForestNode *loopNode
+  ){
 
   /*
    * Ignore SCC without loop carried dependencies
@@ -609,7 +621,10 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS)
   return ;
 }
 
-bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies (SCC *scc, LoopsSummary &LIS) const {
+bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies (
+  SCC *scc,
+  StayConnectedNestedLoopForestNode *loopNode
+  ) const {
 
   /*
    * FIXME: This check should not exist; instead, SCC where cloning
@@ -623,13 +638,13 @@ bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies (SCC *
 
   if (sccToLoopCarriedDependencies.find(scc) == sccToLoopCarriedDependencies.end()) return true;
 
-  auto topLoop = LIS.getLoopNestingTreeRoot();
+  auto topLoop = loopNode->getLoop();
   for (auto loopCarriedDependency : sccToLoopCarriedDependencies.at(scc)) {
     auto valueFrom = loopCarriedDependency->getOutgoingT();
     auto valueTo = loopCarriedDependency->getIncomingT();
     assert(isa<Instruction>(valueFrom) && isa<Instruction>(valueTo));
-    if (LIS.getLoop(*cast<Instruction>(valueFrom)) == topLoop ||
-      LIS.getLoop(*cast<Instruction>(valueTo)) == topLoop) {
+    if (loopNode->getInnermostLoopThatContains(cast<Instruction>(valueFrom)) == topLoop ||
+        loopNode->getInnermostLoopThatContains(cast<Instruction>(valueTo)) == topLoop) {
         return false;
     }
   }

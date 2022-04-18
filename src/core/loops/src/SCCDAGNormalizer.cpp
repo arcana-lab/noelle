@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -11,11 +11,15 @@
 #include "noelle/core/SCCDAGNormalizer.hpp"
 #include "LoopCarriedDependencies.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
-SCCDAGNormalizer::SCCDAGNormalizer (SCCDAG &dag, LoopsSummary &lis)
-  : LIS{lis}, sccdag{dag} {
+SCCDAGNormalizer::SCCDAGNormalizer (
+  SCCDAG &dag, 
+  StayConnectedNestedLoopForestNode *loop
+  )
+  : loop{loop}, sccdag{dag} {
+
+  return ;
 }
 
 void SCCDAGNormalizer::normalizeInPlace (void) {
@@ -56,7 +60,7 @@ void SCCDAGNormalizer::mergeLCSSAPhis () {
     if (!isa<PHINode>(incomingI)) continue;
 
     auto incomingPHI = cast<PHINode>(incomingI);
-    auto incomingLoop = LIS.getLoop(*incomingPHI->getParent());
+    auto incomingLoop = this->loop->getInnermostLoopThatContains(incomingPHI->getParent());
     if (!incomingLoop || incomingLoop->getHeader() != incomingPHI->getParent()) continue;
 
     mergeGroups.merge(sccdag.fetchNode(sccdag.sccOfValue(incomingI)), sccNode);
@@ -80,9 +84,8 @@ void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies (void) {
   };
 
   MergeGroups mergeGroups{};
-  for (auto &loop : LIS.loops) {
-    auto &loopRef = *loop.get();
-    auto loopCarriedEdges = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop.get(), LIS, sccdag);
+  for (auto loop : this->loop->getLoops()) {
+    auto loopCarriedEdges = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop, this->loop, sccdag);
     for (auto edge : loopCarriedEdges) {
       if (!edge->isDataDependence()) continue;
 
@@ -313,3 +316,5 @@ void SCCDAGNormalizer::MergeGroups::merge(DGNode<SCC> *sccNode1, DGNode<SCC> *sc
 //     delete singleSCC;
 //   }
 // }
+
+}

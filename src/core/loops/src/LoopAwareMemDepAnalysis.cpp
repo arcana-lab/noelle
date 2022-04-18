@@ -56,13 +56,13 @@ void refinePDGWithLoopAwareMemDepAnalysis(
   PDG *loopDG,
   Loop *l,
   LoopStructure *loopStructure,
-  LoopsSummary *liSummary,
+  StayConnectedNestedLoopForestNode *loops,
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
   refinePDGWithSCAF(loopDG, l);
 
   if (LIDS) {
-    refinePDGWithLIDS(loopDG, loopStructure, liSummary, LIDS);
+    refinePDGWithLIDS(loopDG, loopStructure, loops, LIDS);
   }
 
 }
@@ -191,11 +191,15 @@ DataFlowResult * computeReachabilityFromInstructions (LoopStructure *loopStructu
    */
   auto dfa = DataFlowEngine{};
   auto computeGEN = [](Instruction *i, DataFlowResult *df) {
+    assert(i != nullptr);
+    assert(df != nullptr);
     auto& gen = df->GEN(i);
     gen.insert(i);
     return ;
   };
   auto computeOUT = [loopHeader](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
+    assert(succ != nullptr);
+    assert(df != nullptr);
 
     /*
     * Check if the successor is the header.
@@ -215,6 +219,9 @@ DataFlowResult * computeReachabilityFromInstructions (LoopStructure *loopStructu
     return ;
   } ;
   auto computeIN = [](std::set<Value *>& IN, Instruction *inst, DataFlowResult *df) {
+    assert(inst != nullptr);
+    assert(df != nullptr);
+
     auto& genI = df->GEN(inst);
     auto& outI = df->OUT(inst);
     IN.insert(outI.begin(), outI.end());
@@ -228,7 +235,7 @@ DataFlowResult * computeReachabilityFromInstructions (LoopStructure *loopStructu
 void refinePDGWithLIDS(
   PDG *loopDG,
   LoopStructure *loopStructure,
-  LoopsSummary *liSummary,
+  StayConnectedNestedLoopForestNode *loops,
   LoopIterationDomainSpaceAnalysis *LIDS
 ) {
 
@@ -238,7 +245,7 @@ void refinePDGWithLIDS(
   auto dfr = computeReachabilityFromInstructions(loopStructure);
 
   std::unordered_set<DGEdge<Value> *> edgesToRemove;
-  for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure, *liSummary, *loopDG)) {
+  for (auto dependency : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loopStructure, loops, *loopDG)) {
 
     /*
     * Do not waste time on edges that aren't memory dependencies

@@ -12,14 +12,10 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-
 #include "noelle/core/PDG.hpp"
 #include "LoopCarriedDependencies.hpp"
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
-#include "noelle/core/LoopsSummary.hpp"
-
-using namespace llvm;
-using namespace llvm::noelle;
+#include "noelle/core/StayConnectedNestedLoopForest.hpp"
 
 namespace llvm::noelle {
 
@@ -28,7 +24,7 @@ namespace llvm::noelle {
     PDG *loopDG,
     Loop *l,
     LoopStructure *loopStructure,
-    LoopsSummary *liSummary,
+    StayConnectedNestedLoopForestNode *loops,
     LoopIterationDomainSpaceAnalysis *LIDS
   );
 
@@ -41,7 +37,7 @@ namespace llvm::noelle {
   void refinePDGWithLIDS(
     PDG *loopDG,
     LoopStructure *loopStructure,
-    LoopsSummary *liSummary,
+    StayConnectedNestedLoopForestNode *loops,
     LoopIterationDomainSpaceAnalysis *LIDS
   );
 

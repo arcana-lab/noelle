@@ -30,14 +30,15 @@ void HELIX::squeezeSequentialSegment (
    * TODO: Move this to LDI
    */
   auto loops = LDI->getLoopHierarchyStructures();
-  auto rootLoop = loops.getLoopNestingTreeRoot();
+  auto rootLoop = loops->getLoop();
   auto taskFunction = rootLoop->getHeader()->getParent();
   auto taskDG = LDI->getLoopDG();
   DominatorTree taskDT(*taskFunction);
   PostDominatorTree taskPDT(*taskFunction);
   DominatorSummary taskDS(taskDT, taskPDT);
-  ControlFlowEquivalence cfe(&taskDS, &loops, rootLoop);
+  ControlFlowEquivalence cfe(&taskDS, loops, rootLoop);
 
+  return ;
 }
 
 void HELIX::squeezeSequentialSegments (

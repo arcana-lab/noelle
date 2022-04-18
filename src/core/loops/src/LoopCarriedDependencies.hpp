@@ -12,24 +12,23 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "Assumptions.h"
-#include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/DominatorSummary.hpp"
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
+#include "noelle/core/StayConnectedNestedLoopForest.hpp"
 
 namespace llvm::noelle {
 
   class LoopCarriedDependencies {
     public:
- //     static void setLoopCarriedDependencies (const LoopsSummary &LIS, const DominatorSummary &DS, SCCDAG &sccdagForLoops) ;
-      static void setLoopCarriedDependencies (const LoopsSummary &LIS, const DominatorSummary &DS, PDG &dgForLoops) ;
+      static void setLoopCarriedDependencies (StayConnectedNestedLoopForestNode *loopNode, const DominatorSummary &DS, PDG &dgForLoops) ;
 
-      static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, PDG &LoopDG) ;
-      static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, SCCDAG &sccdag);
+      static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop (const LoopStructure &LS, StayConnectedNestedLoopForestNode *loopNode, PDG &LoopDG) ;
+      static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop (const LoopStructure &LS, StayConnectedNestedLoopForestNode *loopNode, SCCDAG &sccdag);
 
     private:
-      static LoopStructure * getLoopOfLCD(const LoopsSummary &LIS, const DominatorSummary &DS, DGEdge<Value> *edge) ;
+      static LoopStructure * getLoopOfLCD(StayConnectedNestedLoopForestNode *loopNode, const DominatorSummary &DS, DGEdge<Value> *edge) ;
 
       static bool canBasicBlockReachHeaderBeforeOther (const LoopStructure &LS, BasicBlock *I, BasicBlock *J) ;
 

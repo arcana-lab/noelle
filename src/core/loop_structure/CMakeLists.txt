@@ -12,7 +12,6 @@ add_subdirectory(src)
 install(
   FILES
   include/noelle/core/LoopStructure.hpp 
-  include/noelle/core/LoopsSummary.hpp 
   include/noelle/core/LoopEnvironment.hpp
   include/noelle/core/EnvBuilder.hpp
   include/noelle/core/StayConnectedNestedLoopForest.hpp

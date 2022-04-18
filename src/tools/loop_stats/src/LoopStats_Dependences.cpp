@@ -46,8 +46,7 @@ void LoopStats::collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
   auto loopInternalSCCDAG = SCCDAG(loopInternalDG);
 
-  auto &loopHierarchyConst = LDI.getLoopHierarchyStructures();
-  auto &loopHierarchy = (LoopsSummary&)loopHierarchyConst;
+  auto loopHierarchy = LDI.getLoopHierarchyStructures();
   auto loopFunction = loopStructure->getFunction();
   DominatorTree DT(*loopFunction);
   PostDominatorTree PDT(*loopFunction);

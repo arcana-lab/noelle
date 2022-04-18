@@ -13,7 +13,6 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/Invariants.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
@@ -33,6 +32,7 @@ namespace llvm::noelle {
        */
       LoopDependenceInfo (
         PDG *fG,
+        StayConnectedNestedLoopForestNode *loopNode,
         Loop *l,
         DominatorSummary &DS,
         ScalarEvolution &SE
@@ -40,6 +40,7 @@ namespace llvm::noelle {
 
       LoopDependenceInfo (
         PDG *fG,
+        StayConnectedNestedLoopForestNode *loopNode,
         Loop *l,
         DominatorSummary &DS,
         ScalarEvolution &SE,
@@ -49,6 +50,7 @@ namespace llvm::noelle {
 
       LoopDependenceInfo (
         PDG *fG,
+        StayConnectedNestedLoopForestNode *loopNode,
         Loop *l,
         DominatorSummary &DS,
         ScalarEvolution &SE,
@@ -59,6 +61,7 @@ namespace llvm::noelle {
 
       LoopDependenceInfo (
         PDG *fG,
+        StayConnectedNestedLoopForestNode *loopNode,
         Loop *l,
         DominatorSummary &DS,
         ScalarEvolution &SE,
@@ -69,6 +72,7 @@ namespace llvm::noelle {
 
       LoopDependenceInfo (
         PDG *fG,
+        StayConnectedNestedLoopForestNode *loop,
         Loop *l,
         DominatorSummary &DS,
         ScalarEvolution &SE,
@@ -88,7 +92,7 @@ namespace llvm::noelle {
       /*
        * Return the object containing all loop structures at and nested within this loop
        */
-      const LoopsSummary & getLoopHierarchyStructures (void) const ;
+      StayConnectedNestedLoopForestNode * getLoopHierarchyStructures (void) const ;
 
       /*
        * Return the object that describes the loop in terms of induction variables, trip count, and control structure (e.g., latches, header)
@@ -176,6 +180,7 @@ namespace llvm::noelle {
       /*
        * Fields
        */
+      StayConnectedNestedLoopForestNode *loop;
       LoopEnvironment *environment;
       std::set<Transformation> enabledTransformations;  /* Transformations enabled. */
       std::unordered_set<LoopDependenceInfoOptimization> enabledOptimizations;  /* Optimizations enabled. */
@@ -186,10 +191,6 @@ namespace llvm::noelle {
                                                */
 
       uint32_t maximumNumberOfCoresForTheParallelization;
-
-      LoopsSummary liSummary;                 /* This field describes the loops with the current one as outermost.
-                                               * Each loop is described in terms of its control structure (e.g., latches, header).
-                                               */
 
       InductionVariableManager *inductionVariables;
 
@@ -219,6 +220,7 @@ namespace llvm::noelle {
 
       std::pair<PDG *, SCCDAG *> createDGsForLoop (
         Loop *l,
+        StayConnectedNestedLoopForestNode *loopNode,
         PDG *functionDG,
         DominatorSummary &DS,
         ScalarEvolution &SE
@@ -230,11 +232,13 @@ namespace llvm::noelle {
         );
 
       void removeUnnecessaryDependenciesThatCloningMemoryNegates (
+        StayConnectedNestedLoopForestNode *loopNode,
         PDG *loopInternalDG,
         DominatorSummary &DS
       ) ;
 
       void removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions (
+        StayConnectedNestedLoopForestNode *loopNode,
         PDG *loopDG,
         DominatorSummary &DS
       );

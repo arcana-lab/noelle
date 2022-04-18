@@ -88,11 +88,11 @@ namespace llvm::noelle {
       );
 
       LoopDependenceInfo * getLoop (
-        LoopStructure *loop
+        StayConnectedNestedLoopForestNode *loopNode
       );
 
       LoopDependenceInfo * getLoop (
-        LoopStructure *loop,
+        StayConnectedNestedLoopForestNode *loopNode,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations
       );
 
@@ -217,6 +217,7 @@ namespace llvm::noelle {
       bool checkToGetLoopFilteringInfo (void) ;
 
       LoopDependenceInfo * getLoopDependenceInfoForLoop (
+        StayConnectedNestedLoopForestNode *loopNode,
         Loop *loop,
         PDG *functionPDG,
         DominatorSummary *DS,

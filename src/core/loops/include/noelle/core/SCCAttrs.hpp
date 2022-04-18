@@ -11,7 +11,6 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/AccumulatorOpInfo.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/Variable.hpp"
@@ -47,7 +46,7 @@ namespace llvm::noelle {
       SCCAttrs (
         SCC *s, 
         AccumulatorOpInfo &opInfo,
-        LoopsSummary &LIS
+        LoopStructure *loop
         );
 
       SCCAttrs () = delete ;

@@ -11,7 +11,6 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/InductionVariables.hpp"
@@ -24,7 +23,7 @@ namespace llvm::noelle {
   class LoopIterationDomainSpaceAnalysis {
     public:
       LoopIterationDomainSpaceAnalysis (
-        LoopsSummary &loops,
+        StayConnectedNestedLoopForestNode *loops,
         InductionVariableManager &ivManager,
         ScalarEvolution &SE
       ) ;
@@ -49,7 +48,7 @@ namespace llvm::noelle {
       /*
        * Long-lived references
        */
-      LoopsSummary &loops;
+      StayConnectedNestedLoopForestNode *loops;
       InductionVariableManager &ivManager;
 
       /*

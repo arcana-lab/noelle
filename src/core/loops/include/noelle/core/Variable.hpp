@@ -12,10 +12,10 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
+#include "noelle/core/StayConnectedNestedLoopForest.hpp"
 
 namespace llvm::noelle {
 
@@ -61,7 +61,7 @@ namespace llvm::noelle {
     public:
       LoopCarriedVariable (
         const LoopStructure &loop,
-        LoopsSummary liSummary,
+        StayConnectedNestedLoopForestNode *loopNode,
         PDG &loopDG,
         SCCDAG &sccdag,
         SCC &variableSCC,

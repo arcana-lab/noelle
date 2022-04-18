@@ -13,7 +13,7 @@
 namespace llvm::noelle {
 
 void LoopCarriedDependencies::setLoopCarriedDependencies (
-  const LoopsSummary &LIS,
+  StayConnectedNestedLoopForestNode *loopNode,
   const DominatorSummary &DS,
   PDG &dgForLoops
 ) {
@@ -22,7 +22,7 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
   }
 
   for (auto edge : dgForLoops.getEdges()) {
-    auto loop = getLoopOfLCD(LIS, DS, edge);
+    auto loop = getLoopOfLCD(loopNode, DS, edge);
     if (!loop) {
       continue;
     }
@@ -32,30 +32,12 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
   return ;
 }
 
-/* Flags are already set from LoopDG
-void LoopCarriedDependencies::setLoopCarriedDependencies (
-  const LoopsSummary &LIS,
-  const DominatorSummary &DS,
-  SCCDAG &sccdagForLoops
-) {
-
-
-  for (auto sccNode : sccdagForLoops.getNodes()) {
-    auto scc = sccNode->getT();
-    for (auto edge : scc->getEdges()) {
-      auto loop = getLoopOfLCD(LIS, DS, edge);
-      if (!loop) continue;
-      edge->setLoopCarried(true);
-    }
-  }
-}
-*/
-LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, const DominatorSummary &DS, DGEdge<Value> *edge) {
+LoopStructure * LoopCarriedDependencies::getLoopOfLCD(StayConnectedNestedLoopForestNode *loopNode, const DominatorSummary &DS, DGEdge<Value> *edge) {
 
   /*
    * Fetch the loop.
    */
-  auto topLoop = LIS.getLoopNestingTreeRoot();
+  auto topLoop = loopNode->getLoop();
   assert(topLoop != nullptr);
   auto topLoopHeader = topLoop->getHeader();
   auto topLoopHeaderBranch = topLoopHeader->getTerminator();
@@ -85,8 +67,8 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
   /*
    * Fetch the innermost loops that contain the two instructions.
    */
-  auto producerLoop = LIS.getLoop(*producerI);
-  auto consumerLoop = LIS.getLoop(*consumerI);
+  auto producerLoop = loopNode->getInnermostLoopThatContains(producerI);
+  auto consumerLoop = loopNode->getInnermostLoopThatContains(consumerI);
 
   /*
    * If either of the instruction does not belong to a loop, then the dependence cannot be loop-carried.
@@ -143,7 +125,11 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(const LoopsSummary &LIS, c
   return nullptr ;
 }
 
-std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, PDG &LoopDG) {
+std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (
+  const LoopStructure &LS, 
+  StayConnectedNestedLoopForestNode *loopNode,
+  PDG &LoopDG
+  ) {
   
   std::set<DGEdge<Value> *> LCEdges;
   for (auto edge : LoopDG.getEdges()) {
@@ -153,7 +139,7 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesFor
 
     auto consumer = edge->getIncomingT();
     auto consumerI = cast<Instruction>(consumer);
-    auto consumerLoop = LIS.getLoop(*consumerI);
+    auto consumerLoop = loopNode->getInnermostLoopThatContains(consumerI);
     if (consumerLoop != &LS) {
       continue;
     }
@@ -164,7 +150,11 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesFor
   return LCEdges;
 }
 
-std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (const LoopStructure &LS, const LoopsSummary &LIS, SCCDAG &sccdag) {
+std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (
+  const LoopStructure &LS, 
+  StayConnectedNestedLoopForestNode *loopNode,
+  SCCDAG &sccdag
+  ) {
 
   std::set<DGEdge<Value> *> LCEdges;
 
@@ -177,7 +167,7 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesFor
 
       auto consumer = edge->getIncomingT();
       auto consumerI = cast<Instruction>(consumer);
-      auto consumerLoop = LIS.getLoop(*consumerI);
+      auto consumerLoop = loopNode->getInnermostLoopThatContains(consumerI);
       if (consumerLoop != &LS) {
         continue;
       }
@@ -186,7 +176,7 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesFor
       auto producerI = dyn_cast<Instruction>(producer);
       if(producerI == NULL) { continue; }
 
-      auto producerLoop = LIS.getLoop(*producerI);
+      auto producerLoop = loopNode->getInnermostLoopThatContains(producerI);
       if(!producerLoop) {continue;}
       LCEdges.insert(edge);
     }

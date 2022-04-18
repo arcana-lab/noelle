@@ -145,6 +145,7 @@ DataFlowResult * DataFlowEngine::applyBackward (
      * Fetch the last instruction of the current basic block.
      */
     auto inst = bb->getTerminator();
+    assert(inst != nullptr);
 
     /* 
      * Fetch IN[inst], OUT[inst], GEN[inst], and KILL[inst]

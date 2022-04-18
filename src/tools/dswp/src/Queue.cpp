@@ -207,7 +207,6 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks (
 void DSWP::collectDataAndMemoryQueueInfo (LoopDependenceInfo *LDI, Noelle &par) {
 
   auto sccManager = LDI->getSCCManager();
-  auto &allLoops = LDI->getLoopHierarchyStructures();
   for (auto techniqueTask : this->tasks) {
     auto toStage = (DSWPTask *)techniqueTask;
     std::set<SCC *> allSCCs(toStage->clonableSCCs.begin(), toStage->clonableSCCs.end());
@@ -320,7 +319,6 @@ void DSWP::generateLoadsOfQueuePointers (
 
 void DSWP::popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
-  auto &allLoops = LDI->getLoopHierarchyStructures();
 
   for (auto queueIndex : task->popValueQueues) {
     auto &queueInfo = this->queues[queueIndex];
@@ -349,7 +347,6 @@ void DSWP::popValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) 
 
 void DSWP::pushValueQueues (LoopDependenceInfo *LDI, Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
-  auto &allLoops = LDI->getLoopHierarchyStructures();
 
   for (auto queueIndex : task->pushValueQueues) {
     auto queueInstrs = task->queueInstrMap[queueIndex].get();

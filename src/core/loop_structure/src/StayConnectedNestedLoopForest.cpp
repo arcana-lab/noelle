@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2021 Simone Campanoni
+ * Copyright 2019 - 2022 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -226,12 +226,80 @@ namespace llvm::noelle {
     return this->loop;
   }
 
+  LoopStructure * StayConnectedNestedLoopForestNode::getInnermostLoopThatContains (Instruction *i) {
+    auto bb = i->getParent();
+    auto ls = this->getInnermostLoopThatContains(bb);
+    return ls;
+  }
+
+  LoopStructure * StayConnectedNestedLoopForestNode::getInnermostLoopThatContains (BasicBlock *bb) {
+
+    /*
+     * Check if the basic block is included in the current loop.
+     * If it isn't, then no inner loop can contains it.
+     */
+    if (!this->loop->isIncluded(bb)){
+      return nullptr;
+    }
+
+    /*
+     * The basic block @bb is included.
+     * We now need to find the innermost loop that contains it.
+     */
+    LoopStructure *innerLoop = nullptr;
+    uint32_t innerLoopLevel = 0;
+    auto f = [bb, &innerLoop, &innerLoopLevel](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
+      auto nl = n->getLoop();
+      if (!nl->isIncluded(bb)){
+        return false;
+      }
+      if (innerLoop == nullptr){
+        innerLoop = nl;
+        innerLoopLevel = treeLevel;
+        return false;
+      }
+      assert(treeLevel != innerLoopLevel);
+      if (treeLevel > innerLoopLevel){
+        innerLoop = nl;
+        innerLoopLevel = treeLevel;
+      }
+      return false;
+    };
+    this->visitPreOrder(f);
+
+    return innerLoop;
+  }
+
   StayConnectedNestedLoopForestNode * StayConnectedNestedLoopForestNode::getParent (void) const {
     return this->parent;
   }
 
   std::unordered_set<StayConnectedNestedLoopForestNode *> StayConnectedNestedLoopForestNode::getDescendants (void) const {
     return this->descendants;
+  } 
+
+  std::set<StayConnectedNestedLoopForestNode *> StayConnectedNestedLoopForestNode::getNodes (void) {
+    std::set<StayConnectedNestedLoopForestNode *> s;
+
+    auto f = [&s] (StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
+      s.insert(n);
+      return false;
+    };
+    this->visitPreOrder(f);
+
+    return s;
+  }
+      
+  std::set<LoopStructure *> StayConnectedNestedLoopForestNode::getLoops (void) {
+    std::set<LoopStructure *> s;
+
+    auto f = [&s] (StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
+      s.insert(n->getLoop());
+      return false;
+    };
+    this->visitPreOrder(f);
+
+    return s;
   }
       
   bool StayConnectedNestedLoopForestNode::visitPreOrder (std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke) {

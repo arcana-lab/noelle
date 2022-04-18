@@ -15,7 +15,7 @@ namespace llvm::noelle {
 SCCAttrs::SCCAttrs (
     SCC *s, 
     AccumulatorOpInfo &opInfo,
-    LoopsSummary &LIS
+    LoopStructure *loop
   ) : 
       scc{s}
     , sccType{SCCType::SEQUENTIAL}
@@ -50,7 +50,7 @@ SCCAttrs::SCCAttrs (
   /*
    * Collect PHIs and accumulators included in the SCC.
    */
-  this->collectPHIsAndAccumulators(*LIS.getLoopNestingTreeRoot());
+  this->collectPHIsAndAccumulators(*loop);
 
   return;
 }

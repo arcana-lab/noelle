@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -12,9 +12,9 @@
 
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/IVDescriptors.h"
-#include "noelle/core/ScalarEvolutionReferencer.hpp"
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopsSummary.hpp"
+#include "noelle/core/ScalarEvolutionReferencer.hpp"
+#include "noelle/core/StayConnectedNestedLoopForest.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/DominatorSummary.hpp"
 #include "noelle/core/SCCDAG.hpp"
@@ -193,7 +193,7 @@ namespace llvm::noelle {
     public:
 
       InductionVariableManager (
-          LoopsSummary &LIS,
+          StayConnectedNestedLoopForestNode *loop,
           InvariantManager &IVM,
           ScalarEvolution &SE,
           SCCDAG &sccdag,
@@ -231,7 +231,7 @@ namespace llvm::noelle {
       ~InductionVariableManager ();
 
     private:
-      LoopsSummary &LIS;
+      StayConnectedNestedLoopForestNode *loop;
       std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
       std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *> loopToGoverningIVAttrMap;
   };

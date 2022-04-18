@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -11,24 +11,27 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"
+#include "noelle/core/StayConnectedNestedLoopForest.hpp"
 
 namespace llvm::noelle {
 
   class SCCDAGNormalizer {
     public:
 
-      SCCDAGNormalizer (SCCDAG &dag, LoopsSummary &lis) ;
+      SCCDAGNormalizer (
+        SCCDAG &dag, 
+        StayConnectedNestedLoopForestNode *loop
+        );
 
       SCCDAGNormalizer () = delete ;
 
       void normalizeInPlace (void) ;
 
     private:
-      LoopsSummary &LIS;
+      StayConnectedNestedLoopForestNode *loop;
       SCCDAG &sccdag;
 
       void mergeLCSSAPhis (void) ;

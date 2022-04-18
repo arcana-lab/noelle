@@ -19,7 +19,7 @@ bool LoopCarriedCycle::isEvolutionReducibleAcrossLoopIterations (void) const {
 
 LoopCarriedVariable::LoopCarriedVariable (
   const LoopStructure &loop,
-  LoopsSummary liSummary,
+  StayConnectedNestedLoopForestNode *loopNode,
   PDG &loopDG,
   SCCDAG &sccdag,
   SCC &sccContainingVariable,
@@ -44,7 +44,7 @@ LoopCarriedVariable::LoopCarriedVariable (
    *  These will be ignored when constructing the variable's data/memory SCC
    */
   auto declarationNode = sccContainingVariable.fetchNode(declarationValue);
-  auto loopCarriedDependencies = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(loop, liSummary,  sccdag);
+  auto loopCarriedDependencies = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(loop, loopNode,  sccdag);
 
   std::unordered_set<DGEdge<Value> *> edgesThatExist;
   std::unordered_set<DGEdge<Value> *> edgesToRemove;

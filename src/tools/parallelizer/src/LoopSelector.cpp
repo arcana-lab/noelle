@@ -193,7 +193,7 @@ namespace llvm::noelle {
        */
       auto ls = n->getLoop();
       auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID, LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID};
-      auto ldi = noelle.getLoop(ls, optimizations);
+      auto ldi = noelle.getLoop(n, optimizations);
 
       /*
        * Fetch the set of sequential SCCs.

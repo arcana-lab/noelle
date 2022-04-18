@@ -15,7 +15,6 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCAttrs.hpp"
-#include "noelle/core/LoopsSummary.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
@@ -31,7 +30,7 @@ namespace llvm::noelle {
         bool enableFloatAsReal,
         PDG *loopDG,
         SCCDAG *loopSCCDAG,
-        LoopsSummary &LIS,
+        StayConnectedNestedLoopForestNode *loopNode,
         ScalarEvolution &SE,
         InductionVariableManager &IV,
         DominatorSummary &DS
@@ -68,7 +67,10 @@ namespace llvm::noelle {
       /*
        * Methods on single SCC.
        */
-      bool isSCCContainedInSubloop (const LoopsSummary &LIS, SCC *scc) const ;
+      bool isSCCContainedInSubloop (
+        StayConnectedNestedLoopForestNode *loop,
+        SCC *scc
+        ) const ;
       SCCAttrs * getSCCAttrs (SCC *scc) const; 
 
       /*
@@ -118,25 +120,38 @@ namespace llvm::noelle {
        * Helper methods on SCCDAG
        */
       void collectSCCGraphAssumingDistributedClones ();
-      void collectLoopCarriedDependencies (LoopsSummary &LIS);
+      void collectLoopCarriedDependencies (StayConnectedNestedLoopForestNode *loopNode);
 
       /*
        * Helper methods on single SCC
        */
-      bool checkIfReducible (SCC *scc, LoopsSummary &LIS);
+      bool checkIfReducible (
+        SCC *scc,
+        StayConnectedNestedLoopForestNode *loop
+        );
       bool checkIfIndependent (SCC *scc);
       bool checkIfSCCOnlyContainsInductionVariables (
         SCC *scc,
-        LoopsSummary &LIS,
+        StayConnectedNestedLoopForestNode *loop,
         std::set<InductionVariable *> &loopGoverningIVs,
         std::set<InductionVariable *> &IVs
       );
-      void checkIfClonable (SCC *scc, ScalarEvolution &SE, LoopsSummary &LIS);
-      void checkIfClonableByUsingLocalMemory(SCC *scc, LoopsSummary &LIS) ;
+      void checkIfClonable (
+        SCC *scc, 
+        ScalarEvolution &SE,
+        StayConnectedNestedLoopForestNode *loop
+        );
+      void checkIfClonableByUsingLocalMemory (
+        SCC *scc,
+        StayConnectedNestedLoopForestNode *loop
+        );
       bool isClonableByInductionVars (SCC *scc) const ;
       bool isClonableBySyntacticSugarInstrs (SCC *scc) const ;
       bool isClonableByCmpBrInstrs (SCC *scc) const ;
-      bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(SCC *scc, LoopsSummary &LIS) const ;
+      bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies (
+        SCC *scc,
+        StayConnectedNestedLoopForestNode *loop
+        ) const ;
   };
 
 }
