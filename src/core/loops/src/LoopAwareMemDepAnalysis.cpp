@@ -182,6 +182,7 @@ void refinePDGWithSCAF (PDG *loopDG, Loop *l) {
 
 // TODO: Refactor along with HELIX's exact same implementation of this method
 DataFlowResult * computeReachabilityFromInstructions (LoopStructure *loopStructure) {
+  assert(loopStructure != nullptr);
 
   auto loopHeader = loopStructure->getHeader();
   auto loopFunction = loopStructure->getFunction();

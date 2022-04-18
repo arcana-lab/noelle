@@ -46,9 +46,11 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
      * Check if the loop is hot enough.
      */
     auto loopStructure = new LoopStructure{loop};
-    if (!isLoopHot(loopStructure, minimumHotness)) {
-      delete loopStructure;
-      continue;
+    if (minimumHotness > 0){
+      if (!isLoopHot(loopStructure, minimumHotness)) {
+        delete loopStructure;
+        continue;
+      }
     }
 
     /*
