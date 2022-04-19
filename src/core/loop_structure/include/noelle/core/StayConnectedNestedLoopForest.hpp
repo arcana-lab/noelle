@@ -28,6 +28,8 @@ namespace llvm::noelle {
 
       StayConnectedNestedLoopForestNode * getParent (void) const ;
 
+      std::unordered_set<StayConnectedNestedLoopForestNode *> getChildren (void) const ;
+
       std::unordered_set<StayConnectedNestedLoopForestNode *> getDescendants (void) const ;
 
       bool visitPreOrder (
@@ -45,7 +47,7 @@ namespace llvm::noelle {
       StayConnectedNestedLoopForest *forest;
       LoopStructure *loop;
       StayConnectedNestedLoopForestNode *parent;
-      std::unordered_set<StayConnectedNestedLoopForestNode *> descendants;
+      std::unordered_set<StayConnectedNestedLoopForestNode *> children;
 
       bool visitPreOrder (std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke, uint32_t treeLevel) ;
       bool visitPostOrder (std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke, uint32_t treeLevel) ;
