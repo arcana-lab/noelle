@@ -25,7 +25,7 @@ namespace llvm::noelle {
       );
 
       bool simplifyIVRelatedSCEVs (
-        LoopStructure *rootLoop,
+        StayConnectedNestedLoopForestNode *rootLoopNode, 
         InvariantManager *invariantManager,
         InductionVariableManager *ivManager
       );
@@ -74,7 +74,7 @@ namespace llvm::noelle {
 
       void cacheIVInfo (
         IVCachedInfo &ivCache,
-        LoopStructure *rootLoop,
+        StayConnectedNestedLoopForestNode *rootLoopNode,
         InductionVariableManager *ivManager
       ) ;
 
@@ -86,7 +86,7 @@ namespace llvm::noelle {
 
       bool upCastIVRelatedInstructionsDerivingGEP (
         IVCachedInfo &ivCache,
-        LoopStructure *rootLoop,
+        StayConnectedNestedLoopForestNode *rootLoopNode, 
         InductionVariableManager *ivManager,
         InvariantManager *invariantManager,
         std::unordered_set<GEPIndexDerivation *> gepDerivations

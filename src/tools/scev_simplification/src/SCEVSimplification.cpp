@@ -216,24 +216,29 @@ const SCEV *SCEVSimplification::getOffsetBetween (ScalarEvolution &SE, const SCE
 bool SCEVSimplification::simplifyIVRelatedSCEVs (
   LoopDependenceInfo const &LDI
 ) {
-  auto rootLoop = LDI.getLoopStructure();
+  auto rootLoop = LDI.getLoopHierarchyStructures();
   auto invariantManager = LDI.getInvariantManager();
   auto ivManager = LDI.getInductionVariableManager();
   return simplifyIVRelatedSCEVs(rootLoop, invariantManager, ivManager);
 }
 
 bool SCEVSimplification::simplifyIVRelatedSCEVs (
-  LoopStructure *rootLoop,
+  StayConnectedNestedLoopForestNode *rootLoopNode, 
   InvariantManager *invariantManager,
   InductionVariableManager *ivManager
 ) {
-
   if (noelle.getVerbosity() != Verbosity::Disabled) {
     errs() << "SCEVSimplification:  Start\n";
   }
 
+  /*
+   * Fetch the loop
+   */
+  assert(rootLoopNode != nullptr);
+  auto rootLoop = rootLoopNode->getLoop();
+
   IVCachedInfo ivCache;
-  cacheIVInfo(ivCache, rootLoop, ivManager);
+  this->cacheIVInfo(ivCache, rootLoopNode, ivManager);
   searchForInstructionsDerivedFromMultipleIVs(ivCache, rootLoop, invariantManager);
 
   /*
@@ -282,7 +287,7 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
     validGepsToUpCast.insert(gepDerivation);
   }
 
-  bool modified = upCastIVRelatedInstructionsDerivingGEP(ivCache, rootLoop, ivManager, invariantManager, validGepsToUpCast);
+  bool modified = upCastIVRelatedInstructionsDerivingGEP(ivCache, rootLoopNode, ivManager, invariantManager, validGepsToUpCast);
 
   for (auto gepDerivation : validGepsToUpCast) {
     delete gepDerivation;
@@ -291,14 +296,23 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs (
   return modified;
 }
 
-void SCEVSimplification::cacheIVInfo (IVCachedInfo &ivCache, LoopStructure *rootLoop, InductionVariableManager *ivManager) {
+void SCEVSimplification::cacheIVInfo (
+  IVCachedInfo &ivCache, 
+  StayConnectedNestedLoopForestNode *rootLoopNode, 
+  InductionVariableManager *ivManager
+  ){
+  
+  /*
+   * Fetch the loop
+   */
+  assert(rootLoopNode != nullptr);
+  auto rootLoop = rootLoopNode->getLoop();
 
   /*
    * Detect all loop governing IVs across the nested loop structure
    * Cache IV information on them
    */
-  auto allLoops = rootLoop->getDescendants();
-  allLoops.insert(rootLoop);
+  auto allLoops = rootLoopNode->getLoops();
   for (auto loop : allLoops) {
     auto loopGoverningIVAttr = ivManager->getLoopGoverningIVAttribution(*loop);
     if (!loopGoverningIVAttr) continue;
@@ -433,16 +447,25 @@ void SCEVSimplification::searchForInstructionsDerivedFromMultipleIVs (
  */
 bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP (
   IVCachedInfo &ivCache,
-  LoopStructure *rootLoop,
+  StayConnectedNestedLoopForestNode *rootLoopNode, 
   InductionVariableManager *ivManager,
   InvariantManager *invariantManager,
   std::unordered_set<GEPIndexDerivation *> gepDerivations
 ) {
 
+  /*
+   * Fetch the loop.
+   */
+  assert(rootLoopNode != nullptr);
+  auto rootLoop = rootLoopNode->getLoop();
+
   std::unordered_map<BasicBlock *, LoopStructure *> headerToLoopMap;
   auto rootLoopHeader = rootLoop->getHeader();
   headerToLoopMap.insert(std::make_pair(rootLoopHeader, rootLoop));
-  for (auto subLoop : rootLoop->getDescendants()) {
+  for (auto subLoop : rootLoopNode->getLoops()){
+    if (subLoop == rootLoop){
+      continue ;
+    }
     auto subLoopHeader = subLoop->getHeader();
     headerToLoopMap.insert(std::make_pair(subLoopHeader, subLoop));
   }

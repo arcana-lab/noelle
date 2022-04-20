@@ -95,7 +95,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSC
     sccdag,
     initialSets,
     sccManager->parentsViaClones,
-    LDI->getLoopStructure()
+    LDI->getLoopHierarchyStructures()
   );
 
   /*
