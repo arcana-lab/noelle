@@ -279,12 +279,13 @@ SCCDAGPartitioner::SCCDAGPartitioner (
   SCCDAG *sccdag,
   std::unordered_set<SCCSet *> initialSets,
   std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap,
-  LoopStructure *loop
-) : rootLoop{loop} {
+  StayConnectedNestedLoopForestNode *loopNode
+) : rootLoop{loopNode} {
 
   this->partition = new SCCDAGPartition(sccdag, initialSets, sccToParentsMap);
-  this->allLoops = loop->getDescendants();
-  this->allLoops.insert(loop);
+  for (auto l : loopNode->getNodes()){
+    this->allLoops.insert(l);
+  }
 
   resetPartitioner();
 }
@@ -315,7 +316,7 @@ void SCCDAGPartitioner::resetPartitioner (void) {
   /*
    *  - Fetch the header basic block of the outermost loop. This will be the beginning of the traversal.
    */
-  auto const topLoop = this->rootLoop;
+  auto const topLoop = this->rootLoop->getLoop();
   auto bb = topLoop->getHeader();
 
   /*
@@ -619,8 +620,11 @@ void SCCDAGPartitioner::mergeLCSSAPhisWithTheValuesTheyPropagate (void) {
    * that propagate nested loop values
    */
   std::unordered_set<PHINode *> lcssaPHIs;
-  for (auto loop : allLoops) {
-    if (rootLoop == loop) continue;
+  for (auto loopNode : this->allLoops) {
+    if (this->rootLoop == loopNode) {
+      continue;
+    }
+    auto loop = loopNode->getLoop();
     for (auto exitBlock : loop->getLoopExitBasicBlocks()) {
       for (auto &phi : exitBlock->phis()) {
         lcssaPHIs.insert(&phi);
