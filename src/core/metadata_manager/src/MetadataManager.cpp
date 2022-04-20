@@ -21,7 +21,7 @@ MetadataManager::MetadataManager (Module &M)
 bool MetadataManager::doesHaveMetadata (
   LoopStructure *loop,
   const std::string &metadataName
-  ) const {
+  ) {
 
   /*
    * Check if we have already cached the metadata.
@@ -54,13 +54,20 @@ bool MetadataManager::doesHaveMetadata (
   if (!metaNode){
     return false;
   }
+
+  /*
+   * Cache the metadata since it exists.
+   */
+  auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
+  this->metadata[loop][metadataName] = new MetadataEntry(metadataName, metaString);
+
   return true;
 }
 
 std::string MetadataManager::getMetadata (
   LoopStructure *loop,
   const std::string &metadataName
-  ) const {
+  ) {
 
   /*
    * Check if the metadata exists.

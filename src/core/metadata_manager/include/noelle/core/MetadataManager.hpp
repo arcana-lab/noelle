@@ -43,7 +43,7 @@ namespace llvm::noelle {
       bool doesHaveMetadata (
         LoopStructure *loop,
         const std::string &metadataName
-        ) const ;
+        ) ;
 
       /*
        * Fetch the metadata attached to the loop.
@@ -51,7 +51,7 @@ namespace llvm::noelle {
       std::string getMetadata (
         LoopStructure *loop,
         const std::string &metadataName
-        ) const ;
+        ) ;
 
       /*
        * Add metadata to the loop.
