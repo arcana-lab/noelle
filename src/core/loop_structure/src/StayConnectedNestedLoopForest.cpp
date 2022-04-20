@@ -232,7 +232,15 @@ namespace llvm::noelle {
 
   std::unordered_set<StayConnectedNestedLoopForestNode *> StayConnectedNestedLoopForestNode::getDescendants (void) const {
     std::unordered_set<StayConnectedNestedLoopForestNode *> s;
-    abort();
+
+    auto f = [this, &s](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool{
+      if (n == this) {
+        return false;
+      }
+      s.insert(n);
+      return false;
+    };
+    this->visitPreOrder(f);
 
     return s;
   }
