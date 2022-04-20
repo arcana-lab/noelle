@@ -21,11 +21,6 @@ namespace llvm::noelle {
         Loop *l
         );
 
-      LoopStructure (
-        Loop *l,
-        LoopStructure *parentLoop
-        );
-
       uint64_t getID (void) const ;
 
       Function * getFunction (void) const ;
@@ -43,16 +38,6 @@ namespace llvm::noelle {
        * 1 means outermost loop.
        */
       uint32_t getNestingLevel (void) const ;
-
-      LoopStructure * getParentLoop (void) const ;
-      
-      void setParentLoop (LoopStructure *parentLoop) ;
-
-      std::unordered_set<LoopStructure *> getChildren (void) const ;
-
-      std::unordered_set<LoopStructure *> getDescendants (void) const ;
-
-      void addChild (LoopStructure *child) ;
 
       std::unordered_set<BasicBlock *> getLatches (void) const ;
 
@@ -74,14 +59,6 @@ namespace llvm::noelle {
 
       bool isIncluded (Instruction *inst) const ;
 
-      bool isIncludedInItsSubLoops (Instruction *inst) const ;
-
-      /*
-       * This function returns the total number of sub-loops contained by @this.
-       * This includes the sub-loops of sub-loops.
-       */
-      uint32_t getNumberOfSubLoops (void) const ;
-
       void print (raw_ostream &stream);
       
     private:
@@ -89,9 +66,7 @@ namespace llvm::noelle {
       BasicBlock *header;
       BasicBlock *preHeader;
       uint32_t depth;
-      LoopStructure *parent;
       std::unordered_set<Instruction *> invariants;
-      std::unordered_set<LoopStructure *> children;
       std::unordered_set<BasicBlock *> latchBBs;
       std::unordered_set<BasicBlock *> bbs;
 

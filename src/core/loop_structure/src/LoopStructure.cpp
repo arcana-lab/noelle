@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -16,19 +16,7 @@ uint64_t LoopStructure::globalID = 0;
 
 LoopStructure::LoopStructure (
   Loop *l
-  ) 
-  : LoopStructure(l, nullptr)
-  {
-
-  return ;
-}
-
-LoopStructure::LoopStructure (
-  Loop *l,
-  LoopStructure *parentLoop
-  ) 
-  : parent{parentLoop}
-  {
+  ) {
 
   /*
    * Set the nesting level
@@ -118,37 +106,6 @@ BasicBlock * LoopStructure::getFirstLoopBasicBlockAfterTheHeader (void) const {
 
 uint32_t LoopStructure::getNestingLevel (void) const {
   return this->depth;
-}
-      
-LoopStructure * LoopStructure::getParentLoop (void) const {
-  return this->parent;
-}
-      
-void LoopStructure::setParentLoop (LoopStructure *parentLoop) {
-  this->parent = parentLoop;
-
-  return ;
-}
-      
-std::unordered_set<LoopStructure *> LoopStructure::getChildren (void) const {
-  return this->children;
-}
-
-std::unordered_set<LoopStructure *> LoopStructure::getDescendants (void) const {
-  std::unordered_set<LoopStructure *> descendants;
-  for (auto child : this->children) {
-    descendants.insert(child);
-    auto childDescendants = child->getDescendants();
-    descendants.insert(childDescendants.begin(), childDescendants.end());
-  }
-
-  return descendants;
-}
-
-void LoopStructure::addChild (LoopStructure *child) {
-  this->children.insert(child);
-
-  return ;
 }
       
 std::unordered_set<BasicBlock *> LoopStructure::getLatches (void) const {
@@ -254,57 +211,6 @@ uint64_t LoopStructure::getID (void) const {
 Function * LoopStructure::getFunction (void) const {
   auto f = this->header->getParent();
   return f;
-}
-
-bool LoopStructure::isIncludedInItsSubLoops (Instruction *inst) const {
-
-  /*
-   * Check if the instruction is part of the loop.
-   */
-  if (!this->isIncluded(inst)){
-    return false;
-  }
-
-  /*
-   * Check its children.
-   */
-  for (auto subLoop : this->children){
-
-    /*
-     * Check if the instruction belongs to the current child.
-     */
-    if (subLoop->isIncluded(inst)){
-      return true;
-    }
-
-    /*
-     * The instruction does not belong to the current child.
-     */
-  }
-
-  return false;
-}
-
-uint32_t LoopStructure::getNumberOfSubLoops (void) const {
-
-  /*
-   * Check its children.
-   */
-  uint32_t subloops = 0;
-  for (auto subLoop : this->children){
-
-    /*
-     * Account for the current sub-loop.
-     */
-    subloops++;
-
-    /*
-     * Account for the sub-loops of the current sub-loop.
-     */
-    subloops += subLoop->getNumberOfSubLoops();
-  }
-
-  return subloops;
 }
 
 uint64_t LoopStructure::numberOfExitBasicBlocks (void) const {

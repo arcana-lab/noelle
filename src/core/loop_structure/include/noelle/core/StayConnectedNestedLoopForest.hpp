@@ -45,6 +45,14 @@ namespace llvm::noelle {
 
       std::unordered_set<StayConnectedNestedLoopForestNode *> getDescendants (void) const ;
 
+      bool isIncludedInItsSubLoops (Instruction *inst) const ;
+
+      /*
+       * This function returns the total number of sub-loops contained by @this.
+       * This includes the sub-loops of sub-loops.
+       */
+      uint32_t getNumberOfSubLoops (void) const ;
+
       bool visitPreOrder (
         std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke
         ) ;

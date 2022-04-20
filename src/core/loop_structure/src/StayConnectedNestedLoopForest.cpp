@@ -226,6 +226,59 @@ namespace llvm::noelle {
     return this->loop;
   }
 
+  bool StayConnectedNestedLoopForestNode::isIncludedInItsSubLoops (Instruction *inst) const {
+
+    /*
+     * Check if the instruction is part of the loop.
+     */
+    if (!this->loop->isIncluded(inst)){
+      return false;
+    }
+
+    /*
+     * Check its children.
+     */
+    for (auto subLoopNode : this->descendants){
+      auto subLoop = subLoopNode->getLoop();
+      assert(subLoop != nullptr);
+
+      /*
+       * Check if the instruction belongs to the current child.
+       */
+      if (subLoop->isIncluded(inst)){
+        return true;
+      }
+
+      /*
+       * The instruction does not belong to the current child.
+       */
+    }
+
+    return false;
+  }
+
+  uint32_t StayConnectedNestedLoopForestNode::getNumberOfSubLoops (void) const {
+
+    /*
+     * Check its children.
+     */
+    uint32_t subloops = 0;
+    for (auto subLoop : this->descendants){
+
+      /*
+       * Account for the current sub-loop.
+       */
+      subloops++;
+
+      /*
+       * Account for the sub-loops of the current sub-loop.
+       */
+      subloops += subLoop->getNumberOfSubLoops();
+    }
+
+    return subloops;
+  }
+
   LoopStructure * StayConnectedNestedLoopForestNode::getInnermostLoopThatContains (Instruction *i) {
     auto bb = i->getParent();
     auto ls = this->getInnermostLoopThatContains(bb);
