@@ -92,7 +92,7 @@ bool LoopDistribution::splitLoop (
    */
   std::set<BasicBlock *> subLoopBBs{};
   auto loopStructureNode = LDI.getLoopHierarchyStructures();
-  for (auto childLoopStructureNode : loopStructureNode->getDescendants()) {
+  for (auto childLoopStructureNode : loopStructureNode->getChildren()) {
     //errs() << "LoopDistribution: New sub loop\n";
     auto childLoopStructure = childLoopStructureNode->getLoop();
     for (auto &childBB : childLoopStructure->getBasicBlocks()) {
