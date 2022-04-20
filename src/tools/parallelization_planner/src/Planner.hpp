@@ -43,10 +43,10 @@
 
 namespace llvm::noelle {
 
-  struct Parallelizer : public ModulePass {
+  struct Planner : public ModulePass {
     public:
 
-      Parallelizer ();
+      Planner ();
 
       bool doInitialization (Module &M) override ;
 
@@ -65,25 +65,25 @@ namespace llvm::noelle {
        * Fields
        */
       bool forceParallelization;
-      bool forceNoSCCPartition;
 
       /*
        * Methods
        */
-      bool parallelizeLoop (
-        LoopDependenceInfo *LDI,
-        Noelle &par,
-        Heuristics *h
-      );
 
       std::vector<LoopDependenceInfo *> getLoopsToParallelize (Module &M, Noelle &par) ;
 
-      bool collectThreadPoolHelperFunctionsAndTypes (Module &M, Noelle &par) ;
+      void removeLoopsNotWorthParallelizing (
+        Noelle &noelle, 
+        Hot *profiles,
+        StayConnectedNestedLoopForest *f
+        );
 
-      /*
-       * Debug utilities
-       */
-      void printLoop (Loop *loop);
+      std::vector<LoopDependenceInfo *> selectTheOrderOfLoopsToParallelize (
+        Noelle &noelle, 
+        Hot *profiles,
+        noelle::StayConnectedNestedLoopForestNode *tree
+        ) ;
+
   };
 
 }

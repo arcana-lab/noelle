@@ -35,3 +35,4 @@ patchInstallDir "noelle-loopsize" ;
 patchInstallDir "noelle-fixedpoint" ;
 patchInstallDir "noelle-pdg-stats" ;
 patchInstallDir "noelle-loop-stats" ;
+patchInstallDir "noelle-parallelization-planner" ;

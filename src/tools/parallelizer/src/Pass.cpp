@@ -81,79 +81,77 @@ bool Parallelizer::runOnModule (Module &M) {
   }
   errs() << "Parallelizer:    There are " << programLoops->size() << " loops in the program we are going to consider\n";
 
-  /*
-   * Compute the nesting forest.
-   */
   auto forest = noelle.organizeLoopsInTheirNestingForest(*programLoops);
-  delete programLoops ;
+  delete programLoops;
 
   /*
-   * Filter out loops that are not worth parallelizing.
+   * Determine the parallelization order from the metadata.
    */
-  if (!this->forceParallelization){
-    this->removeLoopsNotWorthParallelizing(noelle, profiles, forest);
+  auto mm = noelle.getMetadataManager();
+  std::map<int, LoopDependenceInfo*> loopParallelizationOrder;
+  for (auto tree : forest->getTrees()) {
+    auto selector = [&noelle, &mm, &loopParallelizationOrder](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
+      auto ls = n->getLoop();
+      if (!mm->doesHaveMetadata(ls, "noelle.parallelizer.looporder")) {
+        return false;
+      }
+      int parallelizationOrderIndex = std::stoi(mm->getMetadata(ls, "noelle.parallelizer.looporder"));
+      auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID, LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID};
+      auto ldi = noelle.getLoop(n, optimizations);      
+      loopParallelizationOrder[parallelizationOrderIndex] = ldi;
+      return false;
+    };
+    tree->visitPreOrder(selector);
   }
 
   /*
-   * Parallelize the loops selected.
-   *
-   * Parallelize the loops starting from the outermost to the inner ones.
-   * This is accomplished by having sorted the loops above.
+   * Parallelize the loops in order.
    */
   auto modified = false;
   std::unordered_map<BasicBlock *, bool> modifiedBBs{};
-  for (auto tree : forest->getTrees()){
+  for (auto indexLoopPair : loopParallelizationOrder) {
+    auto ldi = indexLoopPair.second;
+    
+    /*
+     * Check if we can parallelize this loop.
+     */
+    auto ls = ldi->getLoopStructure();
+    auto safe = true;
+    for (auto bb : ls->getBasicBlocks()){
+      if (modifiedBBs[bb]){
+        safe = false;
+        break ;
+      }
+    }
+    auto loopID = ls->getID();
+    if (!safe){
+      errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
+      continue ;
+    }
 
     /*
-     * Select the loops to parallelize.
+     * Parallelize the current loop.
      */
-    auto loopsToParallelize = this->selectTheOrderOfLoopsToParallelize(noelle, profiles, tree);
+    auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, heuristics);
 
     /*
-     * Parallelize the loops.
+     * Keep track of the parallelization.
      */
-    for (auto ldi : loopsToParallelize){
-
-      /*
-       * Check if we can parallelize this loop.
-       */
-      auto ls = ldi->getLoopStructure();
-      auto safe = true;
+    if (loopIsParallelized){
+      errs() << "Parallelizer:    Loop " << loopID << " has been parallelized\n";
+      modified = true;
       for (auto bb : ls->getBasicBlocks()){
-        if (modifiedBBs[bb]){
-          safe = false;
-          break ;
-        }
-      }
-      auto loopID = ls->getID();
-      if (!safe){
-        errs() << "Parallelizer:    Loop " << loopID << " cannot be parallelized because one of its parent has been parallelized already\n";
-        continue ;
-      }
-
-      /*
-       * Parallelize the current loop.
-       */
-      auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, heuristics);
-
-      /*
-       * Keep track of the parallelization.
-       */
-      if (loopIsParallelized){
-        errs() << "Parallelizer:    Loop " << loopID << " has been parallelized\n";
-        modified = true;
-        for (auto bb : ls->getBasicBlocks()){
-          modifiedBBs[bb] = true;
-        }
+        modifiedBBs[bb] = true;
       }
     }
 
-    /*
-     * Free the memory.
-     */
-    for (auto loop : loopsToParallelize){
-      delete loop;
-    }
+  }
+
+  /*
+   * Free the memory.
+   */
+  for (auto indexLoopPair : loopParallelizationOrder){
+    delete indexLoopPair.second;
   }
 
   errs() << "Parallelizer: Exit\n";

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+installDir
+
+# Set the command to execute
+cmdToExecute="noelle-parallel-load -load ${installDir}/lib/Planner.so -planner ${@}"
+echo $cmdToExecute ;
+
+# Execute
+eval $cmdToExecute ;

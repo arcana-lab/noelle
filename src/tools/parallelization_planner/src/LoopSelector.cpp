@@ -8,11 +8,11 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "Parallelizer.hpp"
+#include "Planner.hpp"
 
 namespace llvm::noelle {
 
-  void Parallelizer::removeLoopsNotWorthParallelizing (
+  void Planner::removeLoopsNotWorthParallelizing (
     Noelle &noelle, 
     Hot *profiles,
     StayConnectedNestedLoopForest *forest
@@ -21,7 +21,7 @@ namespace llvm::noelle {
     /*
      * Filter out loops that are not worth parallelizing.
      */
-    errs() << "Parallelizer:  Filter out loops not worth considering\n";
+    errs() << "Planner:  Filter out loops not worth considering\n";
     auto filter = [this, forest, profiles](LoopStructure *ls) -> bool{
 
       /*
@@ -36,7 +36,7 @@ namespace llvm::noelle {
           && (!this->forceParallelization)
           && (profiles->getIterations(ls) == 0)
          ){
-        errs() << "Parallelizer:    Loop " << loopID << " did not execute\n";
+        errs() << "Planner:    Loop " << loopID << " did not execute\n";
 
         /*
          * Remove the loop.
@@ -53,8 +53,8 @@ namespace llvm::noelle {
           && (!this->forceParallelization)
           && (averageInstsPerInvocation < averageInstsPerInvocationThreshold)
          ){
-        errs() << "Parallelizer:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
-        errs() << "Parallelizer:      It is too low. The threshold is " << averageInstsPerInvocationThreshold << "\n";
+        errs() << "Planner:    Loop " << loopID << " has " << averageInstsPerInvocation << " number of instructions per loop invocation\n";
+        errs() << "Planner:      It is too low. The threshold is " << averageInstsPerInvocationThreshold << "\n";
 
         /*
          * Remove the loop.
@@ -71,8 +71,8 @@ namespace llvm::noelle {
           && (!this->forceParallelization)
           && (averageIterations < averageIterationThreshold)
          ){
-        errs() << "Parallelizer:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
-        errs() << "Parallelizer:      It is too low. The threshold is " << averageIterationThreshold << "\n";
+        errs() << "Planner:    Loop " << loopID << " has " << averageIterations << " number of iterations on average per loop invocation\n";
+        errs() << "Planner:      It is too low. The threshold is " << averageIterationThreshold << "\n";
 
         /*
          * Remove the loop.
@@ -89,8 +89,8 @@ namespace llvm::noelle {
             &&  (!this->forceParallelization)
             &&  (hotness < minimumHotness)
          ){
-        errs() << "Parallelizer:    Loop " << loopID << " has only " << hotness << "\% coverage\n";
-        errs() << "Parallelizer:      It is too low. The threshold is " << minimumHotness << "\%\n";
+        errs() << "Planner:    Loop " << loopID << " has only " << hotness << "\% coverage\n";
+        errs() << "Planner:      It is too low. The threshold is " << minimumHotness << "\%\n";
 
         /*
          * Remove the loop.
@@ -106,7 +106,7 @@ namespace llvm::noelle {
      * Print the loops.
      */
     auto trees = forest->getTrees();
-    errs() << "Parallelizer:  There are " << trees.size() << " loop nesting trees in the program\n";
+    errs() << "Planner:  There are " << trees.size() << " loop nesting trees in the program\n";
     for (auto tree : trees){
 
       /*
@@ -131,7 +131,7 @@ namespace llvm::noelle {
         /*
          * Compute the print prefix.
          */
-        std::string prefix{"Parallelizer:    "};
+        std::string prefix{"Planner:    "};
         for (auto i = 1 ; i < treeLevel; i++){
           prefix.append("  ");
         }
@@ -170,7 +170,7 @@ namespace llvm::noelle {
     return ;
   }
 
-  std::vector<LoopDependenceInfo *> Parallelizer::selectTheOrderOfLoopsToParallelize (
+  std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize (
       Noelle &noelle, 
       Hot *profiles,
       noelle::StayConnectedNestedLoopForestNode *tree
@@ -259,7 +259,7 @@ namespace llvm::noelle {
             && (!this->forceParallelization)
             && (savedTimeTotal < 2)
          ){
-        errs() << "Parallelizer: LoopSelector:  Loop " << ldi->getID() << " saves only " << savedTimeTotal << " when parallelized. Skip it\n";
+        errs() << "Planner: LoopSelector:  Loop " << ldi->getID() << " saves only " << savedTimeTotal << " when parallelized. Skip it\n";
         continue ;
       }
 
@@ -302,8 +302,8 @@ namespace llvm::noelle {
      * Print the order and the savings.
      */
     if (verbose != Verbosity::Disabled) {
-      errs() << "Parallelizer: LoopSelector: Start\n";
-      errs() << "Parallelizer: LoopSelector:   Order of loops and their maximum savings\n";
+      errs() << "Planner: LoopSelector: Start\n";
+      errs() << "Planner: LoopSelector:   Order of loops and their maximum savings\n";
       for (auto l : selectedLoops){
 
         /*
@@ -329,15 +329,15 @@ namespace llvm::noelle {
         /*
          * Print
          */
-        errs() << "Parallelizer: LoopSelector:    Loop " << l->getID() << "\n";
-        errs() << "Parallelizer: LoopSelector:      Function: \"" << loopFunction->getName() << "\"\n";
-        errs() << "Parallelizer: LoopSelector:      Loop nesting level: " << ls->getNestingLevel() << "\n";
-        errs() << "Parallelizer: LoopSelector:      \"" << *loopHeader->getFirstNonPHI() << "\"\n";
-        errs() << "Parallelizer: LoopSelector:      Coverage: " << hotness << "\%\n";
-        errs() << "Parallelizer: LoopSelector:      Whole-program savings = " << savedTimeTotal << "%\n";
-        errs() << "Parallelizer: LoopSelector:      Loop savings = " << savedTimeRelative << "%\n";
+        errs() << "Planner: LoopSelector:    Loop " << l->getID() << "\n";
+        errs() << "Planner: LoopSelector:      Function: \"" << loopFunction->getName() << "\"\n";
+        errs() << "Planner: LoopSelector:      Loop nesting level: " << ls->getNestingLevel() << "\n";
+        errs() << "Planner: LoopSelector:      \"" << *loopHeader->getFirstNonPHI() << "\"\n";
+        errs() << "Planner: LoopSelector:      Coverage: " << hotness << "\%\n";
+        errs() << "Planner: LoopSelector:      Whole-program savings = " << savedTimeTotal << "%\n";
+        errs() << "Planner: LoopSelector:      Loop savings = " << savedTimeRelative << "%\n";
       }
-      errs() << "Parallelizer: LoopSelector: End\n";
+      errs() << "Planner: LoopSelector: End\n";
     }
 
     return selectedLoops;

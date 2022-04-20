@@ -1,16 +1,14 @@
 # Sources
 set(Srcs 
   Pass.cpp
-  Parallelizer.cpp
-  Helper.cpp
-  Printer.cpp
+  LoopSelector.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Parallelizer")
+set(PassName "Planner")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
