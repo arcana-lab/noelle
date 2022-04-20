@@ -26,6 +26,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
            ../../basic_utilities/include
            ../../transformations/include
            ../../loop_structure/include 
+           ../../forest/include
            ../../pdg/include
            ../../invariants/include
            ../../induction_variables/include

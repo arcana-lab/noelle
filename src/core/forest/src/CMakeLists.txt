@@ -1,15 +1,14 @@
 # Sources
 set(Srcs 
-  LoopStructure.cpp
-  LoopEnvironment.cpp
-  EnvBuilder.cpp
+  Forest.cpp
+  ForestNode.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopStructure")
+set(PassName "Forest")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -27,10 +26,7 @@ include_directories(
   ${LLVM_INCLUDE_DIRS} 
   ../include 
   ../../basic_utilities/include 
-  ../../architecture/include 
-  ../../alloc_aa/include 
-  ../../pdg/include 
-  ../../hotprofiler/include 
+  ../../loop_structure/include 
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

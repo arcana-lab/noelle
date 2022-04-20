@@ -42,6 +42,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../pdg/include 
   ../../hotprofiler/include 
   ../../loop_structure/include 
+  ../../forest/include
   ../../talkdown/include
   ../../invariants/include
   ../../induction_variables/include
