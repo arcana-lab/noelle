@@ -238,7 +238,7 @@ namespace llvm::noelle {
     /*
      * Check its children.
      */
-    for (auto subLoopNode : this->descendants){
+    for (auto subLoopNode : this->children){
       auto subLoop = subLoopNode->getLoop();
       assert(subLoop != nullptr);
 
@@ -263,7 +263,7 @@ namespace llvm::noelle {
      * Check its children.
      */
     uint32_t subloops = 0;
-    for (auto subLoop : this->descendants){
+    for (auto subLoop : this->children){
 
       /*
        * Account for the current sub-loop.
@@ -327,7 +327,7 @@ namespace llvm::noelle {
     return this->parent;
   }
 
-  std::unordered_set<StayConnectedNestedLoopForestNode *> StayConnectedNestedLoopForestNode::getDescendants (void) const {
+  std::unordered_set<StayConnectedNestedLoopForestNode *> StayConnectedNestedLoopForestNode::getDescendants (void) {
     std::unordered_set<StayConnectedNestedLoopForestNode *> s;
 
     auto f = [this, &s](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool{

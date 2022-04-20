@@ -45,7 +45,7 @@ namespace llvm::noelle {
 
       std::unordered_set<StayConnectedNestedLoopForestNode *> getChildren (void) const ;
 
-      std::unordered_set<StayConnectedNestedLoopForestNode *> getDescendants (void) const ;
+      std::unordered_set<StayConnectedNestedLoopForestNode *> getDescendants (void) ;
 
       bool isIncludedInItsSubLoops (Instruction *inst) const ;
 
