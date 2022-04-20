@@ -71,7 +71,7 @@ bool LoopSize::runOnModule (Module &M) {
         auto loop = loopNode->getLoop();
         assert(loop != nullptr);
         assert(loop->isIncluded(&I));
-        assert(!loop->isIncludedInItsSubLoops(&I));
+        assert(!loopNode->isIncludedInItsSubLoops(&I));
 
         /*
          * Fetch the nesting level.
