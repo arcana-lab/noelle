@@ -168,7 +168,7 @@ namespace llvm::noelle {
        */
       auto c = this->nodes[functionLoop];
       assert(c != nullptr);
-      root->descendants.insert(c);
+      root->children.insert(c);
       c->parent = root;
       potentialTrees.erase(c);
 
@@ -328,9 +328,24 @@ namespace llvm::noelle {
   }
 
   std::unordered_set<StayConnectedNestedLoopForestNode *> StayConnectedNestedLoopForestNode::getDescendants (void) const {
-    return this->descendants;
-  } 
+    std::unordered_set<StayConnectedNestedLoopForestNode *> s;
 
+    auto f = [this, &s](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool{
+      if (n == this) {
+        return false;
+      }
+      s.insert(n);
+      return false;
+    };
+    this->visitPreOrder(f);
+
+    return s;
+  }
+
+  std::unordered_set<StayConnectedNestedLoopForestNode *> StayConnectedNestedLoopForestNode::getChildren (void) const {
+    return this->children;
+  }
+ 
   std::set<StayConnectedNestedLoopForestNode *> StayConnectedNestedLoopForestNode::getNodes (void) {
     std::set<StayConnectedNestedLoopForestNode *> s;
 
@@ -354,7 +369,7 @@ namespace llvm::noelle {
 
     return s;
   }
-      
+
   bool StayConnectedNestedLoopForestNode::visitPreOrder (std::function<bool (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel)> funcToInvoke) {
     return this->visitPreOrder(funcToInvoke, 1);
   }
@@ -378,7 +393,7 @@ namespace llvm::noelle {
     /*
      * Visit the children.
      */
-    for (auto child : this->descendants){
+    for (auto child : this->children){
       if (child->visitPreOrder(funcToInvoke, treeLevel + 1)){
         return true ;
       }
@@ -395,7 +410,7 @@ namespace llvm::noelle {
     /*
      * Visit the children.
      */
-    for (auto child : this->descendants){
+    for (auto child : this->children){
       if (child->visitPostOrder(funcToInvoke, treeLevel + 1)){
         return true ;
       }
@@ -423,15 +438,15 @@ namespace llvm::noelle {
        *
        * Remove the current node from the descendant of the parent.
        */
-      assert(this->parent->descendants.find(this) != this->parent->descendants.end());
-      this->parent->descendants.erase(this);
+      assert(this->parent->children.find(this) != this->parent->children.end());
+      this->parent->children.erase(this);
 
       /*
-       * Add the descendants of @this as immediate descendants to the parent.
+       * Add the children of @this as immediate children to the parent.
        */
-      for (auto child : this->descendants){
+      for (auto child : this->children){
         child->parent = this->parent;
-        this->parent->descendants.insert(child);
+        this->parent->children.insert(child);
       }
 
       return ;
@@ -447,7 +462,7 @@ namespace llvm::noelle {
     /*
      * Promote all children to trees of the forest.
      */
-    for (auto child : this->descendants){
+    for (auto child : this->children){
       child->parent = nullptr;
       this->forest->addTree(child);
     }
