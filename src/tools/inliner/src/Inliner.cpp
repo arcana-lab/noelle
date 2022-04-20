@@ -711,16 +711,6 @@ void Inliner::createPreOrderedLoopSummariesFor (Function *F) {
     summaryMap[loop] = summary;
   }
 
-  // Associate loop summaries with parent and children loop summaries
-  for (auto pair : summaryMap) {
-    auto parentLoop = pair.first->getParentLoop();
-    auto parentLoopStructure = parentLoop ? summaryMap[parentLoop] : nullptr;
-    pair.second->setParentLoop(parentLoopStructure);
-    for (auto childLoop : pair.first->getSubLoops()) {
-      pair.second->addChild(summaryMap[childLoop]);
-    }
-  }
-
   delete loops;
   preOrderedLoops[F] = &orderedLoops;
 }

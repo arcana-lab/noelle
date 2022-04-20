@@ -91,8 +91,10 @@ bool LoopDistribution::splitLoop (
    *   but those BBs should still be in the level 2 loops
    */
   std::set<BasicBlock *> subLoopBBs{};
-  for (auto childLoopStructure : loopStructure->getChildren()) {
-    // errs() << "LoopDistribution: New sub loop\n";
+  auto loopStructureNode = LDI.getLoopHierarchyStructures();
+  for (auto childLoopStructureNode : loopStructureNode->getDescendants()) {
+    //errs() << "LoopDistribution: New sub loop\n";
+    auto childLoopStructure = childLoopStructureNode->getLoop();
     for (auto &childBB : childLoopStructure->getBasicBlocks()) {
       subLoopBBs.insert(childBB);
       for (auto &childI : *childBB) {

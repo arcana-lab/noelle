@@ -64,10 +64,12 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
       /*
        * Check if the current loop has been enabled.
        */
+      StayConnectedNestedLoopForestNode *summaryNode = nullptr;
       LoopStructure *summary = nullptr;
       for (auto enabledLoop : toCheck){
         if (enabledLoop->getHeader() == LDI->getLoopStructure()->getHeader()){
           summary = enabledLoop;
+          summaryNode = LDI->getLoopHierarchyStructures();
           break ;
         }
       }
@@ -83,7 +85,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
         noelle
       };
       if (  true
-            && (summary->getNumberOfSubLoops() >= 1)
+            && (summaryNode->getNumberOfSubLoops() >= 1)
             && doall.canBeAppliedToLoop(LDI, nullptr)
         ){
 
@@ -186,6 +188,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
    *inlineFunctionCall Fetch the loop structure.
    */
   auto loopStructure = LDI->getLoopStructure();
+  auto loopStructureNode = LDI->getLoopHierarchyStructures();
 
   /*
    * Check every sequential SCC.
@@ -266,7 +269,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
       /*
        * If the call instruction belongs to a sub-loop, then its inlining is likely to be useless.
        */
-      if (loopStructure->isIncludedInItsSubLoops(call)){
+      if (loopStructureNode->isIncludedInItsSubLoops(call)){
         continue ;
       }
 
