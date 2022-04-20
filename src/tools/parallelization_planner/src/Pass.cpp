@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022 Kevin McAfee, Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -39,7 +39,6 @@ bool Planner::runOnModule (Module &M) {
    * Fetch the outputs of the passes we rely on.
    */
   auto& noelle = getAnalysis<Noelle>();
-  auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics(noelle);
 
   /*
    * Fetch the profiles.
@@ -90,7 +89,7 @@ bool Planner::runOnModule (Module &M) {
    * This is accomplished by having sorted the loops above.
    */
   auto modified = false;
-  int parallelizationOrderIndex = 0;
+  uint32_t parallelizationOrderIndex = 0;
   auto mm = noelle.getMetadataManager();
   for (auto tree : forest->getTrees()){
     /*
@@ -134,7 +133,6 @@ void Planner::getAnalysisUsage (AnalysisUsage &AU) const {
    * Noelle.
    */
   AU.addRequired<Noelle>();
-  AU.addRequired<HeuristicsPass>();
 
   return ;
 }

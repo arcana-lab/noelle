@@ -88,14 +88,14 @@ bool Parallelizer::runOnModule (Module &M) {
    * Determine the parallelization order from the metadata.
    */
   auto mm = noelle.getMetadataManager();
-  std::map<int, LoopDependenceInfo*> loopParallelizationOrder;
+  std::map<uint32_t, LoopDependenceInfo*> loopParallelizationOrder;
   for (auto tree : forest->getTrees()) {
     auto selector = [&noelle, &mm, &loopParallelizationOrder](StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
       auto ls = n->getLoop();
       if (!mm->doesHaveMetadata(ls, "noelle.parallelizer.looporder")) {
         return false;
       }
-      int parallelizationOrderIndex = std::stoi(mm->getMetadata(ls, "noelle.parallelizer.looporder"));
+      auto parallelizationOrderIndex = std::stoi(mm->getMetadata(ls, "noelle.parallelizer.looporder"));
       auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID, LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID};
       auto ldi = noelle.getLoop(n, optimizations);      
       loopParallelizationOrder[parallelizationOrderIndex] = ldi;

@@ -43,7 +43,7 @@
 
 namespace llvm::noelle {
 
-  struct Parallelizer : public ModulePass {
+  class Parallelizer : public ModulePass {
     public:
 
       Parallelizer ();
