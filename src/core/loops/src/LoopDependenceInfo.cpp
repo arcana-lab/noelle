@@ -138,7 +138,6 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Calculate various attributes on SCCs
    */
-  this->inductionVariables = new InductionVariableManager(this->loop, *invariantManager, SE, *loopSCCDAG, *environment, *l);
   this->sccdagAttrs = new SCCDAGAttrs(enableFloatAsReal, loopDG, loopSCCDAG, this->loop, SE, *inductionVariables, DS);
   this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(this->loop, *this->inductionVariables, SE);
 
