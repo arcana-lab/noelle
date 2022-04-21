@@ -319,6 +319,9 @@ void ParallelizationTechnique::cloneSequentialLoop (
   LoopDependenceInfo *LDI,
   int taskIndex
 ){
+  assert(LDI != nullptr);
+  assert(taskIndex < this->tasks.size());
+
 
   /*
    * Fetch the program.
@@ -329,7 +332,7 @@ void ParallelizationTechnique::cloneSequentialLoop (
    * Fetch the task.
    */
   auto &cxt = program->getContext();
-  auto task = tasks[taskIndex];
+  auto task = this->tasks[taskIndex];
 
   /*
    * Code to filter out instructions we don't want to clone.
