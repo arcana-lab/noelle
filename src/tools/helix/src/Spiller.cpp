@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -19,6 +19,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
    * Fetch the task
    */
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+  assert(helixTask != nullptr);
 
   /*
    * Fetch the header.
@@ -29,11 +30,12 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
   auto clonedPreheader = helixTask->getCloneOfOriginalBasicBlock(loopPreHeader);
 
   /*
-   * Fetch the loop function.
+   * Fetch the loop information.
    */
   auto loopFunction = loopSummary->getFunction();
   auto sccManager = LDI->getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
+  auto loopIVManager = LDI->getInductionVariableManager();
 
   /*
    * Collect all PHIs in the loop header; they are local variables
@@ -47,16 +49,20 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
     auto phiSCC = sccdag->sccOfValue(cast<Value>(&phi));
     assert(phiSCC != nullptr);
     auto sccInfo = sccManager->getSCCAttrs(phiSCC);
-
+    assert(sccInfo != nullptr);
     if (sccInfo->canExecuteReducibly()) {
       continue;
     }
     if (sccInfo->isInductionVariableSCC()) {
       continue;
     }
+    if (loopIVManager->doesContributeToComputeAnInductionVariable(&phi)){
+      continue ;
+    }
     errs() << "HELIX:    Spill " << phi << "\n";
     originalLoopCarriedPHIs.push_back(&phi);
     auto clonePHI = (PHINode *)(helixTask->getCloneOfOriginalInstruction(&phi));
+    assert(clonePHI != nullptr);
     clonedLoopCarriedPHIs.push_back(clonePHI);
   }
 
