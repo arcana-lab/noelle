@@ -16,7 +16,8 @@ void myF (Points *points) {
   long i, j;
   Point temp;
 
-  for (i=0;i<points->num-1;i++) {
+  int iters = points->num - 1;
+  for (i=0;i < iters; i++) {
     j=(lrand48()%(points->num - i)) + i;
     temp = points->p[i];
     points->p[i] = points->p[j];
