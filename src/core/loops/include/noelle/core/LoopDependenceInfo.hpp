@@ -18,9 +18,9 @@
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/EnvBuilder.hpp"
-#include "noelle/core/Transformations.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
+#include "noelle/core/LoopTransformationsOptions.hpp"
 
 namespace llvm::noelle {
 
@@ -80,6 +80,19 @@ namespace llvm::noelle {
         bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations,
         bool enableLoopAwareDependenceAnalyses
+      );
+
+      LoopDependenceInfo (
+        PDG *fG,
+        StayConnectedNestedLoopForestNode *loop,
+        Loop *l,
+        DominatorSummary &DS,
+        ScalarEvolution &SE,
+        uint32_t maxCores,
+        bool enableFloatAsReal,
+        std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+        bool enableLoopAwareDependenceAnalyses,
+        uint32_t DOALLChunkSize
       );
 
       LoopDependenceInfo () = delete ;
@@ -156,6 +169,8 @@ namespace llvm::noelle {
 
       InvariantManager * getInvariantManager (void) const ;
 
+      LoopTransformationsManager * getLoopTransformationsManager (void) const ;
+
       LoopEnvironment * getEnvironment (void) const ;
 
       LoopIterationDomainSpaceAnalysis * getLoopIterationDomainSpaceAnalysis (void) const ;
@@ -166,14 +181,10 @@ namespace llvm::noelle {
 
       uint64_t getCompileTimeTripCount (void) const ;
 
-      uint32_t getMaximumNumberOfCores (void) const ;
-
       /*
        * Deconstructor.
        */
       ~LoopDependenceInfo();
-
-      uint32_t DOALLChunkSize;
 
     private:
 
@@ -190,8 +201,6 @@ namespace llvm::noelle {
                                                * This graph does not include instructions outside the loop (i.e., no external dependences are included).
                                                */
 
-      uint32_t maximumNumberOfCoresForTheParallelization;
-
       InductionVariableManager *inductionVariables;
 
       InvariantManager *invariantManager;
@@ -207,6 +216,8 @@ namespace llvm::noelle {
       uint64_t tripCount;
 
       SCCDAGAttrs *sccdagAttrs;
+
+      LoopTransformationsManager *loopTransformationsManager;
 
       /*
        * Methods

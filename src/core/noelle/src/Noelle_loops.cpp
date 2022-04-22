@@ -1005,14 +1005,11 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
       maxCores,
       this->enableFloatAsReal, 
       optimizations, 
-      this->loopAwareDependenceAnalysis);
-
-  /*
-   * Set the loop constraints specified by INDEX_FILE.
-   *
-   * DOALL chunk size is the one defined by INDEX_FILE + 1. This is because chunk size must start from 1.
-   */
-  ldi->DOALLChunkSize = DOALLChunkSizeForLoop + 1;
+      this->loopAwareDependenceAnalysis,
+      DOALLChunkSizeForLoop + 1     /* DOALL chunk size is the one defined by INDEX_FILE + 1. 
+                                       This is because chunk size must start from 1. 
+                                       */
+      );
 
   /*
    * Set the techniques that are enabled.

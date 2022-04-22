@@ -45,12 +45,17 @@ void DSWP::partitionSCCDAG (LoopDependenceInfo *LDI, Heuristics *h) {
   if (this->enableMergingSCC) {
 
     /*
+     * Fetch the loop transformation manager
+     */
+    auto ltm = LDI->getLoopTransformationsManager();
+
+    /*
      * Decide the partition of the SCCDAG by merging the trivial partitions defined above.
      */
     h->adjustParallelizationPartitionForDSWP(
       partitioner,
       *LDI->getSCCManager(),
-      /*numThreads=*/LDI->getMaximumNumberOfCores(),
+      ltm->getMaximumNumberOfCores(),
       this->verbose
     );
   }

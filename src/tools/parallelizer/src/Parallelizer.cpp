@@ -67,7 +67,7 @@ namespace llvm::noelle {
       errs() << prefix << "  Function = \"" << loopFunction->getName() << "\"\n";
       errs() << prefix << "  Loop " << LDI->getID() << " = \"" << *loopHeader->getFirstNonPHI() << "\"\n";
       errs() << prefix << "  Nesting level = " << loopStructure->getNestingLevel() << "\n";
-      errs() << prefix << "  Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
+      errs() << prefix << "  Number of threads to extract = " << LDI->getLoopTransformationsManager()->getMaximumNumberOfCores() << "\n";
     }
 
     /*

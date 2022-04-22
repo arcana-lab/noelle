@@ -232,12 +232,18 @@ bool DOALL::apply (
   assert(loopEnvironment != nullptr);
 
   /*
+   * Fetch the maximum number of cores we can use for this loop.
+   */
+  auto ltm = LDI->getLoopTransformationsManager();
+  auto maxCores = ltm->getMaximumNumberOfCores();
+
+  /*
    * Print the parallelization request.
    */
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Start the parallelization\n";
-    errs() << "DOALL:   Number of threads to extract = " << LDI->getMaximumNumberOfCores() << "\n";
-    errs() << "DOALL:   Chunk size = " << LDI->DOALLChunkSize << "\n";
+    errs() << "DOALL:   Number of threads to extract = " << maxCores << "\n";
+    errs() << "DOALL:   Chunk size = " << ltm->getDOALLChunkSize() << "\n";
   }
 
   /*
@@ -245,7 +251,7 @@ bool DOALL::apply (
    */
   auto chunkerTask = new DOALLTask(this->taskSignature, *this->n.getProgram());
   this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { chunkerTask });
-  this->numTaskInstances = LDI->getMaximumNumberOfCores();
+  this->numTaskInstances = maxCores;
 
   /*
    * Allocate memory for all environment variables
@@ -371,12 +377,13 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Fetch the number of cores
    */
-  auto numCores = ConstantInt::get(par.int64, LDI->getMaximumNumberOfCores());
+  auto ltm = LDI->getLoopTransformationsManager();
+  auto numCores = ConstantInt::get(par.int64, ltm->getMaximumNumberOfCores());
 
   /*
    * Fetch the chunk size.
    */
-  auto chunkSize = ConstantInt::get(par.int64, LDI->DOALLChunkSize);
+  auto chunkSize = ConstantInt::get(par.int64, ltm->getDOALLChunkSize());
 
   /*
    * Call the function that incudes the parallelized loop.

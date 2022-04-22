@@ -79,9 +79,23 @@ LoopDependenceInfo::LoopDependenceInfo(
   bool enableFloatAsReal,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations,
   bool enableLoopAwareDependenceAnalyses
+) : LoopDependenceInfo(fG, loopNode, l, DS, SE, maxCores, enableFloatAsReal, optimizations, enableLoopAwareDependenceAnalyses, 8)
+{
+  return ;
+}
+
+LoopDependenceInfo::LoopDependenceInfo(
+  PDG *fG,
+  StayConnectedNestedLoopForestNode *loopNode,
+  Loop *l,
+  DominatorSummary &DS,
+  ScalarEvolution &SE,
+  uint32_t maxCores,
+  bool enableFloatAsReal,
+  std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+  bool enableLoopAwareDependenceAnalyses,
+  uint32_t DOALLChunkSize
 ) : loop{loopNode},
-    DOALLChunkSize{8},
-    maximumNumberOfCoresForTheParallelization{maxCores},
     enabledOptimizations{optimizations},
     areLoopAwareAnalysesEnabled{enableLoopAwareDependenceAnalyses}
   {
@@ -93,6 +107,11 @@ LoopDependenceInfo::LoopDependenceInfo(
   for (auto edge : fG->getEdges()) {
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
+
+  /*
+   * Create the loop transformations manager
+   */
+  this->loopTransformationsManager = new LoopTransformationsManager(maxCores, DOALLChunkSize);
 
   /*
    * Enable all transformations.
@@ -152,9 +171,20 @@ LoopDependenceInfo::LoopDependenceInfo(
 }
 
 void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) {
-  this->DOALLChunkSize = otherLDI->DOALLChunkSize;
+  auto otherLTM = otherLDI->getLoopTransformationsManager();
+  assert(otherLTM != nullptr);
+
+  /*
+   * Free the memory.
+   */
+  delete this->loopTransformationsManager ;
+
+  /*
+   * Clone the loop transformation manager
+   */
+  this->loopTransformationsManager = new LoopTransformationsManager(*otherLTM);
+
   this->enabledTransformations = otherLDI->enabledTransformations;
-  this->maximumNumberOfCoresForTheParallelization = otherLDI->maximumNumberOfCoresForTheParallelization;
   this->areLoopAwareAnalysesEnabled = otherLDI->areLoopAwareAnalysesEnabled;
 
   return ;
@@ -548,10 +578,6 @@ bool LoopDependenceInfo::doesHaveCompileTimeKnownTripCount (void) const {
 
 uint64_t LoopDependenceInfo::getCompileTimeTripCount (void) const {
   return this->tripCount;
-}
-
-uint32_t LoopDependenceInfo::getMaximumNumberOfCores (void) const {
-  return this->maximumNumberOfCoresForTheParallelization;
 }
 
 InvariantManager * LoopDependenceInfo::getInvariantManager (void) const {

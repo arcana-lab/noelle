@@ -235,7 +235,8 @@ void HELIX::createParallelizableTask (
   auto program = this->noelle.getProgram();
   auto helixTask = new HELIXTask(this->taskSignature, *program);
   this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { helixTask });
-  this->numTaskInstances = LDI->getMaximumNumberOfCores();
+  auto ltm = LDI->getLoopTransformationsManager();
+  this->numTaskInstances = ltm->getMaximumNumberOfCores();
   assert(helixTask == this->tasks[0]);
 
   /*

@@ -21,6 +21,7 @@ install(
   include/noelle/core/SCCDAGPartition.hpp
   include/noelle/core/SCCAttrs.hpp
   include/noelle/core/AccumulatorOpInfo.hpp
+  include/noelle/core/LoopTransformationsOptions.hpp
   DESTINATION 
   include/noelle/core
   )

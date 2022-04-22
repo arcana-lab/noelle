@@ -45,7 +45,8 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Fetch the number of cores
    */
-  auto numCores = ConstantInt::get(this->noelle.int64, LDI->getMaximumNumberOfCores());
+  auto ltm = LDI->getLoopTransformationsManager();
+  auto numCores = ConstantInt::get(this->noelle.int64, ltm->getMaximumNumberOfCores());
 
   /*
    * Fetch the chunk size.

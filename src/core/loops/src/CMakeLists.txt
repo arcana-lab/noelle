@@ -12,6 +12,7 @@ set(Srcs
   SCCDAGNormalizer.cpp
   LoopDependenceInfo.cpp
   SCCDAGPartition.cpp
+  LoopTransformationsOptions.cpp
 )
 
 # Compilation flags
