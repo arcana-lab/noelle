@@ -243,7 +243,7 @@ bool DOALL::apply (
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Start the parallelization\n";
     errs() << "DOALL:   Number of threads to extract = " << maxCores << "\n";
-    errs() << "DOALL:   Chunk size = " << ltm->getDOALLChunkSize() << "\n";
+    errs() << "DOALL:   Chunk size = " << ltm->getChunkSize() << "\n";
   }
 
   /*
@@ -383,7 +383,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Fetch the chunk size.
    */
-  auto chunkSize = ConstantInt::get(par.int64, ltm->getDOALLChunkSize());
+  auto chunkSize = ConstantInt::get(par.int64, ltm->getChunkSize());
 
   /*
    * Call the function that incudes the parallelized loop.

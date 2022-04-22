@@ -94,7 +94,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   bool enableFloatAsReal,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations,
   bool enableLoopAwareDependenceAnalyses,
-  uint32_t DOALLChunkSize
+  uint32_t chunkSize
 ) : loop{loopNode}
   {
   assert(this->loop != nullptr);
@@ -109,7 +109,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Create the loop transformations manager
    */
-  this->loopTransformationsManager = new LoopTransformationsManager(maxCores, DOALLChunkSize, optimizations, enableLoopAwareDependenceAnalyses);
+  this->loopTransformationsManager = new LoopTransformationsManager(maxCores, chunkSize, optimizations, enableLoopAwareDependenceAnalyses);
 
   /*
    * Enable all transformations.

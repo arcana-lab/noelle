@@ -14,10 +14,10 @@ namespace llvm::noelle {
 
 LoopTransformationsManager::LoopTransformationsManager (
   uint32_t maxNumberOfCores,
-  uint32_t DOALLChunkSize,
+  uint32_t chunkSize,
   std::unordered_set<LoopDependenceInfoOptimization> optimizations,
   bool enableLoopAwareDependenceAnalyses
-  ) :   DOALLChunkSize{DOALLChunkSize}
+  ) :   chunkSize{chunkSize}
       , maxCores{maxNumberOfCores}
       , _areLoopAwareAnalysesEnabled{enableLoopAwareDependenceAnalyses}
       , enabledOptimizations{optimizations}
@@ -29,7 +29,7 @@ LoopTransformationsManager::LoopTransformationsManager (
 LoopTransformationsManager::LoopTransformationsManager (
   const LoopTransformationsManager &other
   ){
-  this->DOALLChunkSize = other.DOALLChunkSize;
+  this->chunkSize = other.chunkSize;
   this->maxCores = other.maxCores;
   this->enabledTransformations = other.enabledTransformations;
   this->_areLoopAwareAnalysesEnabled = other._areLoopAwareAnalysesEnabled;
@@ -41,8 +41,8 @@ uint32_t LoopTransformationsManager::getMaximumNumberOfCores (void) const {
   return this->maxCores;
 }
 
-uint32_t LoopTransformationsManager::getDOALLChunkSize (void) const {
-  return this->DOALLChunkSize;
+uint32_t LoopTransformationsManager::getChunkSize (void) const {
+  return this->chunkSize;
 }
 
 bool LoopTransformationsManager::isTransformationEnabled (Transformation transformation){

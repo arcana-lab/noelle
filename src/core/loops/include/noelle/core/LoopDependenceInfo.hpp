@@ -92,7 +92,7 @@ namespace llvm::noelle {
         bool enableFloatAsReal,
         std::unordered_set<LoopDependenceInfoOptimization> optimizations,
         bool enableLoopAwareDependenceAnalyses,
-        uint32_t DOALLChunkSize
+        uint32_t chunkSize
       );
 
       LoopDependenceInfo () = delete ;
