@@ -14,9 +14,13 @@ namespace llvm::noelle {
 
 LoopTransformationsManager::LoopTransformationsManager (
   uint32_t maxNumberOfCores,
-  uint32_t DOALLChunkSize
+  uint32_t DOALLChunkSize,
+  std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+  bool enableLoopAwareDependenceAnalyses
   ) :   DOALLChunkSize{DOALLChunkSize}
       , maxCores{maxNumberOfCores}
+      , _areLoopAwareAnalysesEnabled{enableLoopAwareDependenceAnalyses}
+      , enabledOptimizations{optimizations}
   {
 
   return ;
@@ -27,6 +31,8 @@ LoopTransformationsManager::LoopTransformationsManager (
   ){
   this->DOALLChunkSize = other.DOALLChunkSize;
   this->maxCores = other.maxCores;
+  this->enabledTransformations = other.enabledTransformations;
+  this->_areLoopAwareAnalysesEnabled = other._areLoopAwareAnalysesEnabled;
 
   return ;
 }
@@ -37,6 +43,36 @@ uint32_t LoopTransformationsManager::getMaximumNumberOfCores (void) const {
 
 uint32_t LoopTransformationsManager::getDOALLChunkSize (void) const {
   return this->DOALLChunkSize;
+}
+
+bool LoopTransformationsManager::isTransformationEnabled (Transformation transformation){
+  auto exist = this->enabledTransformations.find(transformation) != this->enabledTransformations.end();
+
+  return exist;
+}
+
+void LoopTransformationsManager::enableAllTransformations (void){
+  for (int32_t i = Transformation::First; i <= Transformation::Last; i++){
+    auto t = static_cast<Transformation>(i);
+    this->enabledTransformations.insert(t);
+  }
+
+  return ;
+}
+
+void LoopTransformationsManager::disableTransformation (Transformation transformationToDisable){
+  this->enabledTransformations.erase(transformationToDisable);
+
+  return ;
+}
+
+bool LoopTransformationsManager::isOptimizationEnabled (LoopDependenceInfoOptimization optimization) const {
+  auto enabled = this->enabledOptimizations.find(optimization) != this->enabledOptimizations.end();
+  return enabled;
+}
+      
+bool LoopTransformationsManager::areLoopAwareAnalysesEnabled (void) const {
+  return this->_areLoopAwareAnalysesEnabled;
 }
 
 }

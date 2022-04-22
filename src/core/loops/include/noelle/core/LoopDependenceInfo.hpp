@@ -128,26 +128,6 @@ namespace llvm::noelle {
       void copyParallelizationOptionsFrom (LoopDependenceInfo *otherLDI) ;
 
       /*
-       * Check whether a transformation is enabled.
-       */
-      bool isTransformationEnabled (Transformation transformation);
-
-      /*
-       * Enable all transformations.
-       */
-      void enableAllTransformations (void);
-
-      /*
-       * Disable all transformations.
-       */
-      void disableTransformation (Transformation transformationToDisable);
-
-      /*
-       * Check whether an optimization is enabled
-       */
-      bool isOptimizationEnabled (LoopDependenceInfoOptimization optimization) const ;
-
-      /*
        * Iterate over children of "this" recursively following the loop nesting tree rooted by "this".
        * This will go through children of children etc...
        */
@@ -192,10 +172,8 @@ namespace llvm::noelle {
        * Fields
        */
       StayConnectedNestedLoopForestNode *loop;
+
       LoopEnvironment *environment;
-      std::set<Transformation> enabledTransformations;  /* Transformations enabled. */
-      std::unordered_set<LoopDependenceInfoOptimization> enabledOptimizations;  /* Optimizations enabled. */
-      bool areLoopAwareAnalysesEnabled;
 
       PDG *loopDG;                            /* Dependence graph of the loop.
                                                * This graph does not include instructions outside the loop (i.e., no external dependences are included).

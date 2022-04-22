@@ -1014,38 +1014,39 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
   /*
    * Set the techniques that are enabled.
    */
+  auto ltm = ldi->getLoopTransformationsManager();
   auto disableTransformations = techniquesToDisableForLoop;
   switch (disableTransformations){
 
     case 0:
-      ldi->enableAllTransformations();
+      ltm->enableAllTransformations();
       break ;
 
     case 1:
-      ldi->disableTransformation(DSWP_ID);
+      ltm->disableTransformation(DSWP_ID);
       break ;
 
     case 2:
-      ldi->disableTransformation(HELIX_ID);
+      ltm->disableTransformation(HELIX_ID);
       break ;
 
     case 3:
-      ldi->disableTransformation(DOALL_ID);
+      ltm->disableTransformation(DOALL_ID);
       break ;
 
     case 4:
-      ldi->disableTransformation(DSWP_ID);
-      ldi->disableTransformation(HELIX_ID);
+      ltm->disableTransformation(DSWP_ID);
+      ltm->disableTransformation(HELIX_ID);
       break ;
 
     case 5:
-      ldi->disableTransformation(DSWP_ID);
-      ldi->disableTransformation(DOALL_ID);
+      ltm->disableTransformation(DSWP_ID);
+      ltm->disableTransformation(DOALL_ID);
       break ;
 
     case 6:
-      ldi->disableTransformation(HELIX_ID);
-      ldi->disableTransformation(DOALL_ID);
+      ltm->disableTransformation(HELIX_ID);
+      ltm->disableTransformation(DOALL_ID);
       break ;
 
     default:

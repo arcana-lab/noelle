@@ -74,10 +74,11 @@ namespace llvm::noelle {
      * Parallelize the loop.
      */
     auto codeModified = false;
+    auto ltm = LDI->getLoopTransformationsManager();
     ParallelizationTechnique *usedTechnique = nullptr;
     if (  true
         && par.isTransformationEnabled(DOALL_ID)
-        && LDI->isTransformationEnabled(DOALL_ID)
+        && ltm->isTransformationEnabled(DOALL_ID)
         && doall.canBeAppliedToLoop(LDI, h)
        ){
 
@@ -89,7 +90,7 @@ namespace llvm::noelle {
 
     } else if ( true
         && par.isTransformationEnabled(HELIX_ID)
-        && LDI->isTransformationEnabled(HELIX_ID)
+        && ltm->isTransformationEnabled(HELIX_ID)
         && helix.canBeAppliedToLoop(LDI, h)   
         ){
 
@@ -127,7 +128,7 @@ namespace llvm::noelle {
 
     } else if ( true
         && par.isTransformationEnabled(DSWP_ID)
-        && LDI->isTransformationEnabled(DSWP_ID)
+        && ltm->isTransformationEnabled(DSWP_ID)
         && dswp.canBeAppliedToLoop(LDI, h)
         ) {
 

@@ -19,7 +19,9 @@ namespace llvm::noelle {
     public:
       LoopTransformationsManager (
         uint32_t maxNumberOfCores,
-        uint32_t DOALLChunkSize
+        uint32_t DOALLChunkSize,
+        std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+        bool enableLoopAwareDependenceAnalyses
         );
 
       LoopTransformationsManager (
@@ -30,9 +32,34 @@ namespace llvm::noelle {
 
       uint32_t getMaximumNumberOfCores (void) const ;
 
+      /*
+       * Check whether a transformation is enabled.
+       */
+      bool isTransformationEnabled (Transformation transformation);
+
+      /*
+       * Enable all transformations.
+       */
+      void enableAllTransformations (void);
+
+      /*
+       * Disable all transformations.
+       */
+      void disableTransformation (Transformation transformationToDisable);
+
+      /*
+       * Check whether an optimization is enabled
+       */
+      bool isOptimizationEnabled (LoopDependenceInfoOptimization optimization) const ;
+
+      bool areLoopAwareAnalysesEnabled (void) const ;
+
     private:
       uint32_t DOALLChunkSize;
       uint32_t maxCores;
+      std::set<Transformation> enabledTransformations;  /* Transformations enabled. */
+      std::unordered_set<LoopDependenceInfoOptimization> enabledOptimizations;  /* Optimizations enabled. */
+      bool _areLoopAwareAnalysesEnabled;
   };
 
 }

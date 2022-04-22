@@ -95,9 +95,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   std::unordered_set<LoopDependenceInfoOptimization> optimizations,
   bool enableLoopAwareDependenceAnalyses,
   uint32_t DOALLChunkSize
-) : loop{loopNode},
-    enabledOptimizations{optimizations},
-    areLoopAwareAnalysesEnabled{enableLoopAwareDependenceAnalyses}
+) : loop{loopNode}
   {
   assert(this->loop != nullptr);
 
@@ -111,12 +109,12 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Create the loop transformations manager
    */
-  this->loopTransformationsManager = new LoopTransformationsManager(maxCores, DOALLChunkSize);
+  this->loopTransformationsManager = new LoopTransformationsManager(maxCores, DOALLChunkSize, optimizations, enableLoopAwareDependenceAnalyses);
 
   /*
    * Enable all transformations.
    */
-  this->enableAllTransformations();
+  this->loopTransformationsManager->enableAllTransformations();
 
   /*
    * Fetch the loop dependence graph (i.e., the subset of the PDG that relates to the loop @l) and its SCCDAG.
@@ -183,9 +181,6 @@ void LoopDependenceInfo::copyParallelizationOptionsFrom (LoopDependenceInfo *oth
    * Clone the loop transformation manager
    */
   this->loopTransformationsManager = new LoopTransformationsManager(*otherLTM);
-
-  this->enabledTransformations = otherLDI->enabledTransformations;
-  this->areLoopAwareAnalysesEnabled = otherLDI->areLoopAwareAnalysesEnabled;
 
   return ;
 }
@@ -272,21 +267,21 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   auto loopSCCDAGWithoutMemoryDeps = this->computeSCCDAGWithOnlyVariableAndControlDependences(loopInternalDG);
   auto ivManager = InductionVariableManager(loopNode, invManager, SE, *loopSCCDAGWithoutMemoryDeps, env, *l); 
   auto domainSpace = LoopIterationDomainSpaceAnalysis(loopNode, ivManager, SE);
-  if (this->areLoopAwareAnalysesEnabled){
+  if (this->loopTransformationsManager->areLoopAwareAnalysesEnabled()){
     refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, loopNode, &domainSpace);
   }
 
   /*
    * Analyze the loop to identify opportunities of cloning stack objects.
    */
-  if (enabledOptimizations.find(LoopDependenceInfoOptimization::MEMORY_CLONING_ID) != enabledOptimizations.end()) {
+  if (this->loopTransformationsManager->isOptimizationEnabled(LoopDependenceInfoOptimization::MEMORY_CLONING_ID)){
     this->removeUnnecessaryDependenciesThatCloningMemoryNegates(loopNode, loopDG, DS);
   }
 
   /*
    * Remove memory dependences with known thread-safe library functions.
    */
-  if (enabledOptimizations.find(LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID) != enabledOptimizations.end()) {
+  if (this->loopTransformationsManager->isOptimizationEnabled(LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID)){
     this->removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(loopNode, loopDG, DS);
   }
 
@@ -485,32 +480,6 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates (
   return ;
 }
  
-bool LoopDependenceInfo::isTransformationEnabled (Transformation transformation){
-  auto exist = this->enabledTransformations.find(transformation) != this->enabledTransformations.end();
-
-  return exist;
-}
-
-void LoopDependenceInfo::enableAllTransformations (void){
-  for (int32_t i = Transformation::First; i <= Transformation::Last; i++){
-    auto t = static_cast<Transformation>(i);
-    this->enabledTransformations.insert(t);
-  }
-
-  return ;
-}
-
-void LoopDependenceInfo::disableTransformation (Transformation transformationToDisable){
-  this->enabledTransformations.erase(transformationToDisable);
-
-  return ;
-}
-
-bool LoopDependenceInfo::isOptimizationEnabled (LoopDependenceInfoOptimization optimization) const {
-  auto enabled = this->enabledOptimizations.find(optimization) != this->enabledOptimizations.end();
-  return enabled;
-}
-
 PDG * LoopDependenceInfo::getLoopDG (void) const {
   return this->loopDG;
 }
@@ -633,6 +602,10 @@ SCCDAG * LoopDependenceInfo::computeSCCDAGWithOnlyVariableAndControlDependences 
   auto loopSCCDAGWithoutMemoryDeps = new SCCDAG(loopDGWithoutMemoryDeps);
 
   return loopSCCDAGWithoutMemoryDeps;
+}
+      
+LoopTransformationsManager * LoopDependenceInfo::getLoopTransformationsManager (void) const {
+  return this->loopTransformationsManager;
 }
 
 LoopDependenceInfo::~LoopDependenceInfo() {
