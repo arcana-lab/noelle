@@ -202,8 +202,6 @@ namespace llvm::noelle {
 
       MemoryCloningAnalysis *memoryCloningAnalysis;
 
-      std::unordered_set<Value *> invariants;
-
       bool compileTimeKnownTripCount;
 
       uint64_t tripCount;
