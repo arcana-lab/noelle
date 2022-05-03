@@ -400,12 +400,17 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    */
   dispatcherInst = doallCallInst;
 
-  auto numThreadsUsed = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
+  numThreadsUsed = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
+
+  /*
+   * Synchronization: create extract value inst to extract memory index
+   */
+  memoryIndex = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)1);
 
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
    */
-  auto latestBBAfterDOALLCall = this->propagateLiveOutEnvironment(LDI, numThreadsUsed);
+  auto latestBBAfterDOALLCall = this->propagateLiveOutEnvironment(LDI, numThreadsUsed, memoryIndex);
 
   /*
    * Jump to the unique successor of the loop.

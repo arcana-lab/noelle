@@ -114,7 +114,8 @@ extern "C" {
   class DispatcherInfo {
     public:
       int32_t numberOfThreadsUsed;
-      int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
+      //int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
+      uint64_t memoryIndex;
   };
 
   /*
@@ -228,22 +229,17 @@ extern "C" {
   /*
    * Synchronization: seperate synchronization from dispatcher
    */
-  void NOELLE_SyncUpParallelWorkers(){
-    if(runtime.syncAlready)
-      return;
+  void NOELLE_SyncUpParallelWorkers(int32_t numThreadsUsed, uint64_t memoryIndex){
 
-    int32_t numCores = runtime.currNumThreadsUsed;
-    uint64_t doallMemoryIndex = runtime.currMemoryIndex;
-
-    runtime.syncAlready = true;
-    auto argsForAllCores = runtime.getDOALLArgs(doallMemoryIndex);
+    //TODO: statically guarantee that only sync once
+    auto argsForAllCores = runtime.getDOALLArgs(memoryIndex);
     /*
      * Wait for the remaining DOALL tasks.
      */
     #ifdef RUNTIME_PROFILE
     auto clocks_before_join = rdtsc_s();
     #endif
-    for (auto i = 0; i < (numCores - 1); ++i) {
+    for (auto i = 0; i < (numThreadsUsed - 1); ++i) {
       pthread_spin_lock(&(argsForAllCores[i].endLock));
     }
     #ifdef RUNTIME_PRINT
@@ -257,8 +253,8 @@ extern "C" {
     /*
      * Free the cores and memory.
      */
-    runtime.releaseCores(numCores);
-    runtime.releaseDOALLArgs(doallMemoryIndex);
+    runtime.releaseCores(numThreadsUsed);
+    runtime.releaseDOALLArgs(memoryIndex);
   }
 
   /**********************************************************************
@@ -398,6 +394,11 @@ extern "C" {
      */
   DispatcherInfo dispatcherInfo;
     dispatcherInfo.numberOfThreadsUsed = numCores;
+
+    /*
+     * Synchronization: return memory index
+     */
+    dispatcherInfo.memoryIndex = doallMemoryIndex;
 
     /*
      * Synchronization: pass memory index to SyncFunction

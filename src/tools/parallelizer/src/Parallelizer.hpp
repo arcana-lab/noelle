@@ -100,6 +100,7 @@ namespace llvm::noelle {
        * Synchronization: utils
        */
       Function *SyncFunction;
+
   };
 
 }

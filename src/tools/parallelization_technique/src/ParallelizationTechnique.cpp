@@ -139,7 +139,7 @@ void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LD
   return ;
 }
 
-BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
+BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted, Value *memoryIndex) {
   auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
 
   /*
@@ -183,7 +183,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
    * Synchronization: add SyncFunction before reduction
    */
   if(initialValues.size()){
-    builder->CreateCall(SyncFunction, ArrayRef<Value *>());
+    builder->CreateCall(SyncFunction, ArrayRef<Value *>({numberOfThreadsExecuted, memoryIndex}));
     SyncFunctionInserted = true;
   }
 

@@ -108,7 +108,8 @@ namespace llvm::noelle {
 
       virtual BasicBlock * propagateLiveOutEnvironment (
         LoopDependenceInfo *LDI,
-        Value *numberOfThreadsExecuted
+        Value *numberOfThreadsExecuted,
+        Value *memoryIndex = nullptr
         );
 
       /*
@@ -255,6 +256,8 @@ namespace llvm::noelle {
       std::vector<Value*> LiveOutUses;
       bool SyncFunctionInserted;
       Instruction* dispatcherInst;
+      Value *numThreadsUsed;
+      Value *memoryIndex;
   };
 
 }
