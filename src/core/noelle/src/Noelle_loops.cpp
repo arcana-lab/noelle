@@ -231,17 +231,25 @@ LoopDependenceInfo * Noelle::getLoop (
   auto DS = this->getDominators(function);
 
   /*
-   * Fetch the llvm loop corresponding to the loop structure
-   */
-  auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
-  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
-  auto llvmLoop = LI.getLoopFor(header);
-
-  /*
    * Check of loopIndex provided is within bounds
    */
   if (this->loopHeaderToLoopIndexMap.find(header) == this->loopHeaderToLoopIndexMap.end()){
-    auto ldi = new LoopDependenceInfo(funcPDG, loopNode, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, optimizations, this->loopAwareDependenceAnalysis);
+
+    /*
+     * Fetch the ForestNode of the loop
+     */
+    auto allLoopsOfFunction = this->getLoopStructures(header->getParent(), 0);
+    auto forest = this->organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+    auto newLoopNode = forest->getInnermostLoopThatContains(&*header->begin());
+
+    /*
+     * Fetch the llvm loop corresponding to the loop structure
+     */
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+    auto llvmLoop = LI.getLoopFor(header);
+
+    auto ldi = new LoopDependenceInfo(funcPDG, newLoopNode, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, optimizations, this->loopAwareDependenceAnalysis);
 
     delete DS;
     return ldi;
@@ -256,7 +264,18 @@ LoopDependenceInfo * Noelle::getLoop (
    * No filter file was provided. Construct LDI without profiler configurables
    */
   if (!this->hasReadFilterFile) {
-    auto ldi = new LoopDependenceInfo(funcPDG, loopNode, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, optimizations, this->loopAwareDependenceAnalysis);
+    auto allLoopsOfFunction = this->getLoopStructures(header->getParent(), 0);
+    auto forest = this->organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+    auto newLoopNode = forest->getInnermostLoopThatContains(&*header->begin());
+
+    /*
+     * Fetch the llvm loop corresponding to the loop structure
+     */
+    auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+    auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+    auto llvmLoop = LI.getLoopFor(header);
+
+    auto ldi = new LoopDependenceInfo(funcPDG, newLoopNode, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, optimizations, this->loopAwareDependenceAnalysis);
 
     delete DS;
     return ldi;
@@ -275,8 +294,19 @@ LoopDependenceInfo * Noelle::getLoop (
   assert(maximumNumberOfCoresForTheParallelization > 1
       && "Noelle: passed user a filtered loop yet it only has max cores <= 1");
 
+  auto allLoopsOfFunction = this->getLoopStructures(header->getParent(), 0);
+  auto forest = this->organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+  auto newLoopNode = forest->getInnermostLoopThatContains(&*header->begin());
+
+  /*
+   * Fetch the llvm loop corresponding to the loop structure
+   */
+  auto& LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+  auto llvmLoop = LI.getLoopFor(header);
+
   auto ldi = this->getLoopDependenceInfoForLoop(
-      loopNode,
+      newLoopNode,
       llvmLoop,
       funcPDG,
       DS,
