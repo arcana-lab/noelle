@@ -217,6 +217,16 @@ namespace llvm::noelle {
       bool checkToGetLoopFilteringInfo (void) ;
 
       LoopDependenceInfo * getLoopDependenceInfoForLoop (
+        BasicBlock *header,
+        PDG *functionPDG,
+        DominatorSummary *DS,
+        uint32_t techniquesToDisable,
+        uint32_t DOALLChunkSize,
+        uint32_t maxCores,
+        std::unordered_set<LoopDependenceInfoOptimization> optimizations
+      );
+
+      LoopDependenceInfo * getLoopDependenceInfoForLoop (
         StayConnectedNestedLoopForestNode *loopNode,
         Loop *loop,
         PDG *functionPDG,
