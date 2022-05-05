@@ -97,7 +97,7 @@ bool Parallelizer::runOnModule (Module &M) {
       }
       auto parallelizationOrderIndex = std::stoi(mm->getMetadata(ls, "noelle.parallelizer.looporder"));
       auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID, LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID};
-      auto ldi = noelle.getLoop(n, optimizations);      
+      auto ldi = noelle.getLoop(ls, optimizations);      
       loopParallelizationOrder[parallelizationOrderIndex] = ldi;
       return false;
     };

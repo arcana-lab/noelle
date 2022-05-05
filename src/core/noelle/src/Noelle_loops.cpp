@@ -198,33 +198,32 @@ std::vector<LoopStructure *> * Noelle::getLoopStructures (
 }
 
 LoopDependenceInfo * Noelle::getLoop (
-  StayConnectedNestedLoopForestNode *loopNode
+  LoopStructure *l
   ) {
 
   /*
    * Check if the loop is valid.
    */
-  if (loopNode == nullptr){
+  if (l == nullptr){
     return nullptr;
   }
 
   /*
    * Compute the LDI abstraction.
    */
-  auto ldi = this->getLoop(loopNode, {});
+  auto ldi = this->getLoop(l, {});
 
   return ldi;
 }
 
 LoopDependenceInfo * Noelle::getLoop (
-    StayConnectedNestedLoopForestNode *loopNode,
+    LoopStructure *loop,
     std::unordered_set<LoopDependenceInfoOptimization> optimizations
     ) {
 
   /*
    * Fetch the the function dependence graph, post dominators, and scalar evolution
    */
-  auto loop = loopNode->getLoop();
   auto header = loop->getHeader();
   auto function = header->getParent();
   auto funcPDG = this->getFunctionDependenceGraph(function);

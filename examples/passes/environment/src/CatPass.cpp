@@ -39,41 +39,46 @@ namespace {
        * (e.g., loop dependence graph, sccdag)
        */
       auto loopStructures = noelle.getLoopStructures();
+      auto forest = noelle.organizeLoopsInTheirNestingForest(*loopStructures);
+
 
       /*
        * Print loop induction variables and invariant.
        */
-      for (auto LS : *loopStructures){
+      for (auto tree : forest->getTrees()){
+        for (auto loopNode : tree->getNodes()){
+          auto LS = loopNode->getLoop();
 
-        /*
-         * Print the first instruction the loop executes.
-         */
-        auto entryInst = LS->getEntryInstruction();
-        errs() << "Loop " << *entryInst << "\n";
+          /*
+           * Print the first instruction the loop executes.
+           */
+          auto entryInst = LS->getEntryInstruction();
+          errs() << "Loop " << *entryInst << "\n";
 
-        /*
-         * Print some information about the loop.
-         */
-        errs() << " Function = " << LS->getFunction()->getName() << "\n";
-        errs() << " Nesting level = " << LS->getNestingLevel() << "\n";
-        errs() << " This loop has " << LS->getNumberOfSubLoops() << " sub-loops (including sub-loops of sub-loops)\n";
+          /*
+           * Print some information about the loop.
+           */
+          errs() << " Function = " << LS->getFunction()->getName() << "\n";
+          errs() << " Nesting level = " << LS->getNestingLevel() << "\n";
+          errs() << " This loop has " << loopNode->getNumberOfSubLoops() << " sub-loops (including sub-loops of sub-loops)\n";
 
-        /*
-         * Fetch the LoopDependenceInfo
-         */
-        auto loop = noelle.getLoop(LS);
+          /*
+           * Fetch the LoopDependenceInfo
+           */
+          auto loop = noelle.getLoop(LS);
 
-        /*
-         * Fetch the loop environment
-         */
-        auto loopEnv = loop->getEnvironment();
+          /*
+           * Fetch the loop environment
+           */
+          auto loopEnv = loop->getEnvironment();
 
-        /*
-         * Iterate over elements of the environment.
-         */
-        errs() << " Environment of the loop\n";
-        for (auto liveInOrOutValue : loopEnv->getProducers()){
-          errs() << "   " << *liveInOrOutValue << "\n";
+          /*
+           * Iterate over elements of the environment.
+           */
+          errs() << " Environment of the loop\n";
+          for (auto liveInOrOutValue : loopEnv->getProducers()){
+            errs() << "   " << *liveInOrOutValue << "\n";
+          }
         }
       }
    

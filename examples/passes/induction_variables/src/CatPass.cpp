@@ -52,6 +52,7 @@ namespace {
       auto hottestLoopLS = loops->front();
       auto hottestLoop = noelle.getLoop(hottestLoopLS);
       auto entryInst = hottestLoopLS->getEntryInstruction();
+      auto hottestLoopNode = hottestLoop->getLoopHierarchyStructures();
 
       /*
        * Print some information about the loop.
@@ -59,7 +60,7 @@ namespace {
       errs() << "Hottest loop " << *entryInst << "\n";
       errs() << " Function = " << hottestLoopLS->getFunction()->getName() << "\n";
       errs() << " Nesting level = " << hottestLoopLS->getNestingLevel() << "\n";
-      errs() << " This loop has " << hottestLoopLS->getNumberOfSubLoops() << " sub-loops (including sub-loops of sub-loops)\n";
+      errs() << " This loop has " << hottestLoopNode->getNumberOfSubLoops() << " sub-loops (including sub-loops of sub-loops)\n";
 
       /*
        * Fetch the governing IV
@@ -77,9 +78,9 @@ namespace {
       /*
        * Print the GIV information.
        */
-      auto cond = GIV_attr->getHeaderCmpInst();
+      auto cond = GIV_attr->getHeaderCompareInstructionToComputeExitCondition();
       auto IV = GIV_attr->getInductionVariable();
-      auto condValue = GIV_attr->getHeaderCmpInst();
+      auto condValue = GIV_attr->getHeaderCompareInstructionToComputeExitCondition();
       auto startValue = IV.getStartValue();
       errs() << " Governing induction variable\n";
       errs() << "   Condition = " << *cond << "\n";

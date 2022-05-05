@@ -117,7 +117,7 @@ bool EnablersManager::runOnModule (Module &M) {
       /*
        * Fetch the LoopDependenceInfo
        */
-      auto loopToImprove = noelle.getLoop(n);
+      auto loopToImprove = noelle.getLoop(loopStructure);
 
       /*
        * Improve the current loop.

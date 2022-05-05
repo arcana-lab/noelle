@@ -53,16 +53,17 @@ namespace {
         errs() << "Loop " << *entryInst << "\n";
 
         /*
+         * Fetch the LoopDependenceInfo
+         */
+        auto loop = noelle.getLoop(LS);
+        auto loopNode = loop->getLoopHierarchyStructures();
+
+        /*
          * Print some information about the loop.
          */
         errs() << " Function = " << LS->getFunction()->getName() << "\n";
         errs() << " Nesting level = " << LS->getNestingLevel() << "\n";
-        errs() << " This loop has " << LS->getNumberOfSubLoops() << " sub-loops (including sub-loops of sub-loops)\n";
-
-        /*
-         * Fetch the LoopDependenceInfo
-         */
-        auto loop = noelle.getLoop(LS);
+        errs() << " This loop has " << loopNode->getNumberOfSubLoops() << " sub-loops (including sub-loops of sub-loops)\n";
 
         /*
          * Induction variables.
