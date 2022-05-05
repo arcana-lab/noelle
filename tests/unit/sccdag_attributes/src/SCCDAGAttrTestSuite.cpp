@@ -8,7 +8,7 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/Noelle.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
 namespace llvm::noelle {
@@ -58,25 +58,35 @@ void SCCDAGAttrTestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
+  AU.addRequired<Noelle>();
 }
 
 bool SCCDAGAttrTestSuite::runOnModule (Module &M) {
   errs() << "SCCDAGAttrTestSuite: Start\n";
+  auto& noelle = getAnalysis<Noelle>();
+
   auto mainFunction = M.getFunction("main");
 
   this->LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
 
   // TODO: Grab first loop and produce attributes on it
-  Loop *topLoop = LI->getLoopsInPreorder()[0];
-  LoopsSummary LIS{topLoop};
+  auto topLoop = LI->getLoopsInPreorder()[0];
 
-  auto *DT = &getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
-  auto *PDT = &getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
-  DominatorSummary DS(*DT, *PDT);
+  /*
+   * Fetch the dominators
+   */
+  auto DS = noelle.getDominators(mainFunction);
+
+  /*
+   * Fetch the forest node of the loop
+   */
+  auto allLoopsOfFunction = noelle.getLoopStructures(mainFunction, 0);
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+  auto loopNode = forest->getInnermostLoopThatContains(&*topLoop->getHeader()->begin());
 
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
-  auto loopDI = new LoopDependenceInfo(fdg, topLoop, DS, *SE, 2, true, true);
+  auto loopDI = new LoopDependenceInfo(fdg, loopNode, topLoop, *DS, *SE, 2, true, true);
   auto sccManager = loopDI->getSCCManager();
 
   this->sccdag = sccManager->getSCCDAG();

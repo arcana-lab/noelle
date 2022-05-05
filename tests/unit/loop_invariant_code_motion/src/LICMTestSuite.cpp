@@ -61,11 +61,22 @@ bool LICMTestSuite::runOnModule (Module &M) {
   auto& PDT = getAnalysis<PostDominatorTreeWrapperPass>(*mainF).getPostDomTree();
   auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*mainF).getSE();
 
+  /*
+   * Fetch the LLVM loop
+   */
+  auto l = LI.getLoopsInPreorder()[0];
+
+  /*
+   * Fetch the forest node of the loop
+   */
+  auto allLoopsOfFunction = noelle.getLoopStructures(mainF, 0);
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+  auto loopNode = forest->getInnermostLoopThatContains(&*l->getHeader()->begin());
+
   errs() << "LICMTestSuite: Instantiating LDI and LoopInvariantCodeMotion components\n";
   DominatorSummary DS{DT, PDT};
-  auto l = LI.getLoopsInPreorder()[0];
   auto om = noelle.getCompilationOptionsManager();
-  this->ldi = new LoopDependenceInfo(fdg, l, DS, SE, om->getMaximumNumberOfCores(), true, false);
+  this->ldi = new LoopDependenceInfo(fdg, loopNode, l, DS, SE, om->getMaximumNumberOfCores(), true, false);
   this->licm = new LoopInvariantCodeMotion(noelle);
 
   // PDGPrinter pdgPrinter;

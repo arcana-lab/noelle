@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "CFETestSuite.hpp"
+#include "noelle/core/Noelle.hpp"
 
 namespace llvm::noelle {
 
@@ -44,17 +45,31 @@ void CFETestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<Noelle>();
 }
 
 bool CFETestSuite::runOnModule (Module &M) {
   errs() << "CFETestSuite: Start\n";
+  auto& noelle = getAnalysis<Noelle>();
   auto mainFunction = M.getFunction("main");
 
+  /*
+   * Fetch the LLVM loop
+   */
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
-  LoopsSummary LIS(LI.getLoopsInPreorder()[0]);
-  auto &DT = getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
-  auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction).getPostDomTree();
-  DominatorSummary DS(DT, PDT);
+  auto loop = LI.getLoopsInPreorder()[0];
+
+  /*
+   * Fetch the forest node of the loop
+   */
+  auto allLoopsOfFunction = noelle.getLoopStructures(mainFunction, 0);
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+  auto loopNode = forest->getInnermostLoopThatContains(&*loop->getHeader()->begin());
+
+  /*
+   * Fetch the dominators
+   */
+  auto DS = noelle.getDominators(mainFunction);
 
   /*
   std::queue<BasicBlock *> bbQ;
@@ -89,7 +104,7 @@ bool CFETestSuite::runOnModule (Module &M) {
   }
   */
 
-  this->CFE = new ControlFlowEquivalence(&DS, &LIS, *mainFunction);
+  this->CFE = new ControlFlowEquivalence(DS, loopNode, *mainFunction);
 
   suite->runTests((ModulePass &)*this);
 

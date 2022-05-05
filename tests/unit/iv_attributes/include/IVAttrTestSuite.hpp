@@ -63,7 +63,7 @@ namespace llvm::noelle {
       Module *M;
       ScalarEvolution *SE;
       LoopInfo *LI;
-      LoopsSummary *LIS;
+      StayConnectedNestedLoopForestNode *topLoop;
       PDG *fdg;
       SCCDAG *sccdag;
       InductionVariableManager *IVs;

@@ -57,7 +57,7 @@ bool LoopDomainSpaceTestSuite::runOnModule (Module &M) {
 
   suite->runTests((ModulePass &)*this);
 
-  if (this->LIS) { delete this->LIS; this->LIS = nullptr; }
+  if (this->loopNode) { delete this->loopNode; this->loopNode = nullptr; }
   if (this->IVM) { delete this->IVM; this->IVM = nullptr; }
   if (this->domainSpaceAnalysis) { delete this->domainSpaceAnalysis; this->domainSpaceAnalysis = nullptr; }
 
@@ -84,7 +84,7 @@ Values LoopDomainSpaceTestSuite::collectDisjointAccessesBetweenIterations (Modul
 
   Values disjointBetweenIterations;
   std::unordered_set<Instruction *> memoryAccesses;
-  for (auto B : attrPass.LIS->getLoopNestingTreeRoot()->getBasicBlocks()) {
+  for (auto B : attrPass.loopNode->getLoop()->getBasicBlocks()) {
     for (auto &I : *B) {
       if (isa<StoreInst>(&I) || isa<LoadInst>(&I)) {
         memoryAccesses.insert(&I);
@@ -113,7 +113,7 @@ Values LoopDomainSpaceTestSuite::collectDisjointAccessesBetweenIterations (Modul
 void LoopDomainSpaceTestSuite::computeAnalysisWithoutSCEVSimplification (void) {
   assert(!modifiedCodeWithSCEVSimplification && "Can't compute non-simplified analysis after simplifying!");
 
-  if (this->LIS) { delete this->LIS; this->LIS = nullptr; }
+  if (this->loopNode) { delete this->loopNode; this->loopNode = nullptr; }
   if (this->IVM) { delete this->IVM; this->IVM = nullptr; }
   if (this->domainSpaceAnalysis) { delete this->domainSpaceAnalysis; this->domainSpaceAnalysis = nullptr; }
 
@@ -122,28 +122,36 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithoutSCEVSimplification (void) {
   auto SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
   getAnalysis<PDGAnalysis>().releaseMemory();
   auto fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
-  Loop *topLoop = LI->getLoopsInPreorder()[0];
+  auto topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   SCCDAG loopSCCDAG(loopDG);
 
+  /*
+   * Fetch the forest node of the loop
+   */
   errs() << "Constructing Loops summary\n";
-  this->LIS = new LoopsSummary(topLoop);
-  auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+  auto& noelle = getAnalysis<Noelle>();
+  auto allLoopsOfFunction = noelle.getLoopStructures(mainFunction, 0);
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+  this->loopNode = forest->getInnermostLoopThatContains(&*topLoop->getHeader()->begin());
+
+  auto loopExitBlocks = loopNode->getLoop()->getLoopExitBasicBlocks();
   errs() << "Constructing environment\n";
   LoopEnvironment environment(loopDG, loopExitBlocks);
   errs() << "Constructing invariant manager\n";
-  InvariantManager invariantManager(LIS->getLoopNestingTreeRoot(), loopDG);
+  InvariantManager invariantManager(loopNode->getLoop(), loopDG);
   errs() << "Constructing IV manager\n";
-  this->IVM = new InductionVariableManager(*LIS, invariantManager, *SE, loopSCCDAG, environment, *topLoop);
+  this->IVM = new InductionVariableManager(loopNode, invariantManager, *SE, loopSCCDAG, environment, *topLoop);
   errs() << "Constructing loop iteration domain space analysis\n";
-  this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(*LIS, *IVM, *SE);
+  this->domainSpaceAnalysis = new LoopIterationDomainSpaceAnalysis(loopNode, *IVM, *SE);
   errs() << "Finished\n";
 }
 
 void LoopDomainSpaceTestSuite::computeAnalysisWithSCEVSimplification (void) {
   assert(!modifiedCodeWithSCEVSimplification && "Can only simplify once!");
+  auto& noelle = getAnalysis<Noelle>();
 
-  if (this->LIS) { delete this->LIS; this->LIS = nullptr; }
+  if (this->loopNode) { delete this->loopNode; this->loopNode = nullptr; }
   if (this->IVM) { delete this->IVM; this->IVM = nullptr; }
   if (this->domainSpaceAnalysis) { delete this->domainSpaceAnalysis; this->domainSpaceAnalysis = nullptr; }
 
@@ -156,20 +164,25 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithSCEVSimplification (void) {
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   SCCDAG loopSCCDAG(loopDG);
 
+  /*
+   * Fetch the forest node of the loop
+   */
+  auto allLoopsOfFunction = noelle.getLoopStructures(mainFunction, 0);
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+  this->loopNode = forest->getInnermostLoopThatContains(&*topLoop->getHeader()->begin());
+
   errs() << "Constructing Loops summary\n";
-  this->LIS = new LoopsSummary(topLoop);
-  auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+  auto loopExitBlocks = loopNode->getLoop()->getLoopExitBasicBlocks();
   errs() << "Constructing environment\n";
   LoopEnvironment environment(loopDG, loopExitBlocks);
   errs() << "Constructing invariant manager\n";
-  InvariantManager invariantManager(LIS->getLoopNestingTreeRoot(), loopDG);
+  InvariantManager invariantManager(loopNode->getLoop(), loopDG);
   errs() << "Constructing IV manager\n";
-  this->IVM = new InductionVariableManager(*LIS, invariantManager, *SE, loopSCCDAG, environment, *topLoop);
+  this->IVM = new InductionVariableManager(loopNode, invariantManager, *SE, loopSCCDAG, environment, *topLoop);
 
-  auto& noelle = getAnalysis<Noelle>();
   SCEVSimplification scevSimplify(noelle);
   errs() << "Running SCEVSimplification\n";
-  scevSimplify.simplifyIVRelatedSCEVs(LIS->getLoopNestingTreeRoot(), &invariantManager, IVM);
+  scevSimplify.simplifyIVRelatedSCEVs(loopNode, &invariantManager, IVM);
 
   computeAnalysisWithoutSCEVSimplification();
   errs() << "Finished with simplification\n";

@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "IVAttrTestSuite.hpp"
+#include "noelle/core/Noelle.hpp"
 
 namespace llvm::noelle {
 
@@ -51,33 +52,41 @@ void IVAttrTestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
+  AU.addRequired<Noelle>();
 }
 
 bool IVAttrTestSuite::runOnModule (Module &M) {
   errs() << "IVAttrTestSuite: Start\n";
+  auto& noelle = getAnalysis<Noelle>();
+
   auto mainFunction = M.getFunction("main");
 
   this->LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
 
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
-  Loop *topLoop = LI->getLoopsInPreorder()[0];
+  auto topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   this->sccdag = new SCCDAG(loopDG);
 
-  this->LIS = new LoopsSummary(topLoop);
-  InvariantManager invariantManager(LIS->getLoopNestingTreeRoot(), loopDG);
+  /*
+   * Fetch the forest node of the loop
+   */
+  auto allLoopsOfFunction = noelle.getLoopStructures(mainFunction, 0);
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+  auto loopNode = forest->getInnermostLoopThatContains(&*topLoop->getHeader()->begin());
+
+  InvariantManager invariantManager(loopNode->getLoop(), loopDG);
 
   errs() << "IVAttrTestSuite: Running IV analysis\n";
-  auto loopExitBlocks = LIS->getLoopNestingTreeRoot()->getLoopExitBasicBlocks();
+  auto loopExitBlocks = loopNode->getLoop()->getLoopExitBasicBlocks();
   auto environment = new LoopEnvironment(loopDG, loopExitBlocks);
-  this->IVs = new InductionVariableManager(*LIS, invariantManager, *SE, *sccdag, *environment, *topLoop);
+  this->IVs = new InductionVariableManager(loopNode, invariantManager, *SE, *sccdag, *environment, *topLoop);
   errs() << "IVAttrTestSuite: Finished IV analysis\n";
 
   suite->runTests((ModulePass &)*this);
 
   delete this->IVs;
-  delete this->LIS;
   delete sccdag;
   delete loopDG;
 
@@ -88,8 +97,8 @@ Values IVAttrTestSuite::verifyStartAndStepByLoop (ModulePass &pass, TestSuite &s
   IVAttrTestSuite &attrPass = static_cast<IVAttrTestSuite &>(pass);
 
   Values loopIVs;
-  for (auto &loop : attrPass.LIS->loops) {
-    for (auto IV : attrPass.IVs->getInductionVariables(*loop.get())) {
+  for (auto loop : attrPass.topLoop->getLoops()) {
+    for (auto IV : attrPass.IVs->getInductionVariables(*loop)) {
       std::vector<std::string> loopIVStartStep;
       loopIVStartStep.push_back(suite.printAsOperandToString(loop->getHeader()));
       loopIVStartStep.push_back(suite.valueToString(IV->getStartValue()));
@@ -118,10 +127,10 @@ Values IVAttrTestSuite::verifyIntermediateValues (ModulePass &pass, TestSuite &s
   IVAttrTestSuite &attrPass = static_cast<IVAttrTestSuite &>(pass);
 
   Values loopIVIntermediates;
-  for (auto &loop : attrPass.LIS->loops) {
+  for (auto &loop : attrPass.topLoop->getLoops()) {
     loopIVIntermediates.insert(suite.printAsOperandToString(loop->getHeader()));
 
-    for (auto IV : attrPass.IVs->getInductionVariables(*loop.get())) {
+    for (auto IV : attrPass.IVs->getInductionVariables(*loop)) {
       std::vector<std::string> intermediates;
       for (auto inst : IV->getAllInstructions()) {
         intermediates.push_back(suite.valueToString(inst));
@@ -139,8 +148,8 @@ Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass, TestSuite &suite)
   IVAttrTestSuite &attrPass = static_cast<IVAttrTestSuite &>(pass);
 
   Values loopGoverningInfos;
-  for (auto &loop : attrPass.LIS->loops) {
-    auto IV = attrPass.IVs->getLoopGoverningInductionVariable(*loop.get());
+  for (auto &loop : attrPass.topLoop->getLoops()) {
+    auto IV = attrPass.IVs->getLoopGoverningInductionVariable(*loop);
     if (!IV) continue;
 
     auto exitBlocks = loop->getLoopExitBasicBlocks();

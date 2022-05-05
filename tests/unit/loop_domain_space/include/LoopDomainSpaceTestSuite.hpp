@@ -40,7 +40,7 @@ namespace llvm::noelle {
     public:
 
       LoopDomainSpaceTestSuite() : ModulePass{ID},
-        modifiedCodeWithSCEVSimplification{false}, LIS{nullptr}, IVM{nullptr},
+        modifiedCodeWithSCEVSimplification{false}, IVM{nullptr},
         domainSpaceAnalysis{nullptr} {}
 
       /*
@@ -68,8 +68,8 @@ namespace llvm::noelle {
       Module *M;
 
       bool modifiedCodeWithSCEVSimplification;
-      LoopsSummary *LIS;
       InductionVariableManager *IVM;
       LoopIterationDomainSpaceAnalysis *domainSpaceAnalysis;
+      StayConnectedNestedLoopForestNode *loopNode;
   };
 }
