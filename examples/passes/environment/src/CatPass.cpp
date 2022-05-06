@@ -38,9 +38,7 @@ namespace {
        * fetch the loops with all their abstractions 
        * (e.g., loop dependence graph, sccdag)
        */
-      auto loopStructures = noelle.getLoopStructures();
-      auto forest = noelle.organizeLoopsInTheirNestingForest(*loopStructures);
-
+      auto forest = noelle.getProgramLoopsNestingForest();
 
       /*
        * Print loop induction variables and invariant.
