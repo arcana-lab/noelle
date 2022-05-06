@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -1157,8 +1157,23 @@ void Noelle::filterOutLoops (
 
   return ;
 }
+      
+StayConnectedNestedLoopForest * Noelle::getProgramLoopsNestingForest (void) {
 
-noelle::StayConnectedNestedLoopForest * Noelle::organizeLoopsInTheirNestingForest (
+  /*
+   * Fetch all the loops
+   */
+  auto allLoops = this->getLoopStructures();
+
+  /*
+   * Organize the loops into a forest
+   */
+  auto forest = this->organizeLoopsInTheirNestingForest(*allLoops);
+
+  return forest;
+}
+
+StayConnectedNestedLoopForest * Noelle::organizeLoopsInTheirNestingForest (
   std::vector<LoopStructure *> const & loops
   ) {
 

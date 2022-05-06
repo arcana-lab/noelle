@@ -122,6 +122,8 @@ namespace llvm::noelle {
         std::vector<LoopDependenceInfo *> & loops
         ) ;
 
+      StayConnectedNestedLoopForest * getProgramLoopsNestingForest (void);
+
       StayConnectedNestedLoopForest * organizeLoopsInTheirNestingForest (
         std::vector<LoopStructure *> const & loops
         ) ;

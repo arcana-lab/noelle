@@ -28,14 +28,9 @@ bool LoopSize::runOnModule (Module &M) {
   auto& noelle = getAnalysis<Noelle>();
 
   /*
-   * Fetch all program loops.
+   * Fetch the forest of loops of the program being compiled.
    */
-  auto loops = noelle.getLoopStructures();
-
-  /*
-   * Organize loops in a forest.
-   */
-  auto forest = noelle.organizeLoopsInTheirNestingForest(*loops);
+  auto forest = noelle.getProgramLoopsNestingForest();
 
   /*
    * Compute the code size.
