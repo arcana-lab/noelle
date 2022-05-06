@@ -57,13 +57,6 @@ bool DOALL::canBeAppliedToLoop (
   }
 
   /*
-   * Check if DOALL is enabled.
-   */
-  if (!this->enabled){
-    return false;
-  }
-
-  /*
    * Fetch the loop structure.
    */
   auto loopStructure = LDI->getLoopStructure();
