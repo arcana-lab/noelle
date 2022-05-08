@@ -242,7 +242,13 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   for (auto internalNode : loopDG->internalNodePairs()) {
       loopInternals.push_back(internalNode.first);
   }
+
+  /*
+   * Compute the SCCDAG using only variable-related dependences.
+   * This will be used to detect induction variables.
+   */
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
+  auto loopSCCDAGWithoutMemoryDeps = this->computeSCCDAGWithOnlyVariableAndControlDependences(loopInternalDG);
 
   /*
    * Detect the loop-carried data dependences.
@@ -258,14 +264,17 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
   LoopCarriedDependencies::setLoopCarriedDependencies(loopNode, DS, *loopDG);
 
   /*
-   * Perform loop-aware memory dependence analysis to refine the loop dependence graph.
+   * Detect loop invariants and induction variables.
    */
   auto loopStructure = loopNode->getLoop();
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto env = LoopEnvironment(loopDG, loopExitBlocks);
   auto invManager = InvariantManager(loopStructure, loopDG);
-  auto loopSCCDAGWithoutMemoryDeps = this->computeSCCDAGWithOnlyVariableAndControlDependences(loopInternalDG);
   auto ivManager = InductionVariableManager(loopNode, invManager, SE, *loopSCCDAGWithoutMemoryDeps, env, *l); 
+
+  /*
+   * Perform loop-aware memory dependence analysis to refine the loop dependence graph.
+   */
   auto domainSpace = LoopIterationDomainSpaceAnalysis(loopNode, ivManager, SE);
   if (this->loopTransformationsManager->areLoopAwareAnalysesEnabled()){
     refinePDGWithLoopAwareMemDepAnalysis(loopDG, l, loopStructure, loopNode, &domainSpace);
