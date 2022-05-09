@@ -393,7 +393,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
    */
-  auto latestBBAfterDOALLCall = this->propagateLiveOutEnvironment(LDI, numThreadsUsed);
+  auto latestBBAfterDOALLCall = this->performReductionToAllReducableLiveOutVariables(LDI, numThreadsUsed);
 
   /*
    * Jump to the unique successor of the loop.

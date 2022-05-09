@@ -10,8 +10,7 @@
  */
 #include "noelle/core/AccumulatorOpInfo.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 AccumulatorOpInfo::AccumulatorOpInfo () {
   this->sideEffectFreeOps = {
@@ -97,4 +96,6 @@ Value *AccumulatorOpInfo::generateIdentityFor (Instruction *accumulator, Type *c
   if (castType->isDoubleTy()) initVal = ConstantFP::get(castType, (double)opIdentity);
   assert(initVal != nullptr);
   return initVal;
+}
+
 }

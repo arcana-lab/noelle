@@ -69,7 +69,7 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
    */
-  auto latestBBAfterCall =  this->propagateLiveOutEnvironment(LDI, numThreadsUsed);
+  auto latestBBAfterCall =  this->performReductionToAllReducableLiveOutVariables(LDI, numThreadsUsed);
 
   IRBuilder<> afterCallBuilder{latestBBAfterCall};
   afterCallBuilder.CreateBr(this->exitPointOfParallelizedLoop);

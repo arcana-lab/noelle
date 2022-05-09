@@ -145,7 +145,7 @@ void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LD
   return ;
 }
 
-BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
+BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVariables (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
   auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
 
   /*
@@ -218,8 +218,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
     auto prod = environment->producerAt(envInd);
 
     /*
-     * NOTE(angelo): If the environment variable isn't reduced, it is held in allocated
-     * memory that needs to be loaded from in order to retrieve the value
+     * If the environment variable isn't reduced, it is held in allocated memory that needs to be loaded from in order to retrieve the value.
      */
     auto isReduced = envBuilder->isReduced(envInd);
     Value *envVar;
@@ -1061,11 +1060,13 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
   /*
    * Fetch task information.
    */
-  auto loopSummary = LDI->getLoopStructure();
-  auto loopHeader = loopSummary->getHeader();
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
   auto headerClone = task->getCloneOfOriginalBasicBlock(loopHeader);
-  auto loopPreHeader = loopSummary->getPreHeader();
+  assert(headerClone != nullptr);
+  auto loopPreHeader = loopStructure->getPreHeader();
   auto preheaderClone = task->getCloneOfOriginalBasicBlock(loopPreHeader);
+  assert(preheaderClone != nullptr);
 
   /*
    * Fetch the environment of the loop
@@ -1093,12 +1094,15 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
      * location of the initial value that needs to be changed
      */
     auto producer = environment->producerAt(envInd);
+    assert(producer != nullptr);
     auto loopEntryProducerPHI = this->fetchLoopEntryPHIOfProducer(LDI, producer);
+    assert(loopEntryProducerPHI != nullptr);
 
     /*
      * Fetch the related instruction of the producer that has been created (cloned) and stored in the parallelized version of the loop.
      */
     auto producerClone = cast<PHINode>(task->getCloneOfOriginalInstruction(loopEntryProducerPHI));
+    assert(producerClone != nullptr);
 
     /*
      * Fetch the cloned pre-header index

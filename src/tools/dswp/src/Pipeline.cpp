@@ -170,7 +170,7 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par) {
   /*
    * Propagate live-out values to the caller of the loop.
    */
-  auto latestBBAfterCall = this->propagateLiveOutEnvironment(LDI, numThreadsUsed);
+  auto latestBBAfterCall = this->performReductionToAllReducableLiveOutVariables(LDI, numThreadsUsed);
 
   IRBuilder<> afterCallBuilder{latestBBAfterCall};
   afterCallBuilder.CreateBr(this->exitPointOfParallelizedLoop);

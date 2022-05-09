@@ -96,7 +96,7 @@ namespace llvm::noelle {
         LoopDependenceInfo *LDI
         );
 
-      virtual BasicBlock * propagateLiveOutEnvironment (
+      virtual BasicBlock * performReductionToAllReducableLiveOutVariables (
         LoopDependenceInfo *LDI, 
         Value *numberOfThreadsExecuted
         );
