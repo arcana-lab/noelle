@@ -299,10 +299,10 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
     auto reduceArrType = ArrayType::get(int64, numReducers * valuesInCacheLine);
 
     /*
-     * Allocate the vectorized form of the reducable variable on the stack.
+     * Allocate the vectorized form of the current reducable variable on the stack.
      */
     auto reduceArrAlloca = builder.CreateAlloca(reduceArrType);
-    envIndexToVectorOfReducableVar[envIndex] = reduceArrAlloca;
+    this->envIndexToVectorOfReducableVar[envIndex] = reduceArrAlloca;
 
     /*
      * Store the pointer of the vector of the reducable variable inside the environment.
@@ -422,7 +422,7 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
     /*
      * Now, we compute the effective address.
      */
-    auto baseAddressOfReducedVar = envIndexToVectorOfReducableVar[envIndex];
+    auto baseAddressOfReducedVar = this->envIndexToVectorOfReducableVar[envIndex];
     auto zeroV = cast<Value>(ConstantInt::get(int32Type, 0));
     auto effectiveAddressOfReducedVar = loopBodyBuilder.CreateInBoundsGEP(baseAddressOfReducedVar, ArrayRef<Value*>({ zeroV, offsetValue}));
 

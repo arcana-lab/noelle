@@ -147,6 +147,7 @@ void Noelle::linkTransformedLoopToOriginalFunction (
    */
   if (loopExitBlocks.size() == 1) {
     endBuilder.CreateBr(loopExitBlocks[0]);
+
   } else {
 
     /*
