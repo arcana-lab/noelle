@@ -23,20 +23,21 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS}
-           ../../basic_utilities/include
-           ../../transformations/include
-           ../../loop_structure/include 
-           ../../forest/include
-           ../../pdg/include
-           ../../invariants/include
-           ../../induction_variables/include
-           ../../loops/include
-           ../../scheduler/include
-           ../../loop_whilifier/include
-           ../../loop_unroll/include
-           ../../loop_distribution/include
-					 ../include
-                     )
+  ../../basic_utilities/include
+  ../../transformations/include
+  ../../loop_structure/include 
+  ../../loop_environment/include 
+  ../../forest/include
+  ../../pdg/include
+  ../../invariants/include
+  ../../induction_variables/include
+  ../../loops/include
+  ../../scheduler/include
+  ../../loop_whilifier/include
+  ../../loop_unroll/include
+  ../../loop_distribution/include
+	../include
+)
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})

@@ -1,8 +1,6 @@
 # Sources
 set(Srcs 
   LoopStructure.cpp
-  LoopEnvironment.cpp
-  EnvBuilder.cpp
 )
 
 # Compilation flags

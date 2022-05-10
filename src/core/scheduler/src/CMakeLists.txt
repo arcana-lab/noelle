@@ -28,6 +28,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../pdg/include 
   ../../loop_structure/include
+  ../../loop_environment/include 
   ../../forest/include
   ../../loops/include 
   ../../hotprofiler/include 
