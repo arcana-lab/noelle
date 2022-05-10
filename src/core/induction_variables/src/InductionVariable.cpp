@@ -33,7 +33,7 @@ InductionVariable::InductionVariable  (
     this->singleStepValue = cast<SCEVUnknown>(stepSCEV)->getValue();
     this->isComputedStepValueLoopInvariant = true;
   } else {
-    deriveStepValue(LS, SE, referentialExpander, loopEnv);
+    deriveStepValue(LS, SE, referentialExpander);
   }
 }
 
@@ -63,7 +63,9 @@ InductionVariable::InductionVariable  (
   traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(LS);
   traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
   collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
-  deriveStepValue(LS, SE, referentialExpander, loopEnv);
+  deriveStepValue(LS, SE, referentialExpander);
+
+  return ;
 }
 
 void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions (LoopStructure *LS) {
@@ -283,8 +285,7 @@ void InductionVariable::collectValuesInternalAndExternalToLoopAndSCC (
 void InductionVariable::deriveStepValue (
   LoopStructure *LS,
   ScalarEvolution &SE,
-  ScalarEvolutionReferentialExpander &referentialExpander,
-  LoopEnvironment &loopEnv
+  ScalarEvolutionReferentialExpander &referentialExpander
 ) {
 
   /*

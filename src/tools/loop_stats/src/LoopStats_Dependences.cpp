@@ -53,7 +53,7 @@ void LoopStats::collectStatsOnNoelleSCCs (Hot *profiles, LoopDependenceInfo &LDI
   DominatorSummary DS(DT, PDT);
 
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
-  auto environment = LoopEnvironment(loopDG, loopExitBlocks);
+  auto environment = LoopEnvironment(loopDG, loopExitBlocks, {});
   auto invariantManager = LDI.getInvariantManager();
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*loopFunction).getSE();
   auto inductionVariables = InductionVariableManager(loopHierarchy, *invariantManager, SE, loopInternalSCCDAG, environment, llvmLoop);

@@ -10,12 +10,12 @@
  */
 #include "noelle/core/LoopEnvironment.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle { 
 
 LoopEnvironment::LoopEnvironment (
   PDG *loopDG, 
-  std::vector<BasicBlock *> &exitBlocks
+  std::vector<BasicBlock *> &exitBlocks,
+  const std::set<Value *> &excludeValues
   ) {
 
   /*
@@ -28,6 +28,13 @@ LoopEnvironment::LoopEnvironment (
      */
     auto externalNode = nodeI.second;
     auto externalValue = externalNode->getT();
+
+    /*
+     * Skip values that need to be excluded
+     */
+    if (excludeValues.find(externalValue) != excludeValues.end()){
+      continue ;
+    }
 
     /*
      * Determine whether the external value is a producer (i.e., live-in).
@@ -61,6 +68,10 @@ LoopEnvironment::LoopEnvironment (
       consumersOfLiveInValue.insert(consumerOfNewLiveIn_inst);
     }
     if (isProducer) {
+      errs() << "ENV: Live-In: " << *externalValue << "\n";
+      for (auto c : consumersOfLiveInValue){
+        errs() << "ENV: Live-In:  Consumer = " << *c << "\n";
+      }
       this->addLiveInValue(externalValue, consumersOfLiveInValue);
     }
 
@@ -73,6 +84,7 @@ LoopEnvironment::LoopEnvironment (
       }
       auto internalValue = edge->getOutgoingT();
       if (!this->isProducer(internalValue)) {
+        errs() << "ENV: Live-Out: " << *internalValue << "\n";
         this->addLiveOutProducer(internalValue);
       }
       this->prodConsumers[internalValue].insert(externalValue);
@@ -215,4 +227,6 @@ iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIndicesOfLiveOutV
 Value * LoopEnvironment::producerAt (uint64_t ind) const { 
   assert(ind < this->envProducers.size());
   return envProducers[ind];
+}
+
 }

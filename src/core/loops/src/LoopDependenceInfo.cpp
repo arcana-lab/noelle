@@ -95,7 +95,8 @@ LoopDependenceInfo::LoopDependenceInfo(
   std::unordered_set<LoopDependenceInfoOptimization> optimizations,
   bool enableLoopAwareDependenceAnalyses,
   uint32_t chunkSize
-) : loop{loopNode}
+) :   loop{loopNode}
+    , memoryCloningAnalysis{nullptr}
   {
   assert(this->loop != nullptr);
 
@@ -128,8 +129,17 @@ LoopDependenceInfo::LoopDependenceInfo(
 
   /*
    * Create the environment for the loop.
+   *
+   * Exclude stack objects that will be cloned. To do so, we need to collect this set of objects.
    */
-  this->environment = new LoopEnvironment(loopDG, loopExitBlocks);
+  std::set<Value *> stackObjectsThatWillBeCloned;
+  if (this->memoryCloningAnalysis != nullptr){
+    for (auto memObject : this->memoryCloningAnalysis->getClonableMemoryLocations()){
+      auto stackObject = memObject->getAllocation();
+      stackObjectsThatWillBeCloned.insert(stackObject);
+    }
+  }
+  this->environment = new LoopEnvironment(loopDG, loopExitBlocks, stackObjectsThatWillBeCloned);
 
   /*
    * Create the invariant manager.
@@ -268,7 +278,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop (
    */
   auto loopStructure = loopNode->getLoop();
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
-  auto env = LoopEnvironment(loopDG, loopExitBlocks);
+  auto env = LoopEnvironment(loopDG, loopExitBlocks, {});
   auto invManager = InvariantManager(loopStructure, loopDG);
   auto ivManager = InductionVariableManager(loopNode, invManager, SE, *loopSCCDAGWithoutMemoryDeps, env, *l); 
 

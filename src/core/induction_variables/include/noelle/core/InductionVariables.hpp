@@ -167,8 +167,7 @@ namespace llvm::noelle {
       void deriveStepValue (
           LoopStructure *LS,
           ScalarEvolution &SE,
-          ScalarEvolutionReferentialExpander &referentialExpander,
-          LoopEnvironment &loopEnv
+          ScalarEvolutionReferentialExpander &referentialExpander
           ) ;
 
       void deriveStepValueFromSCEVConstant (const SCEVConstant *scev) ;
