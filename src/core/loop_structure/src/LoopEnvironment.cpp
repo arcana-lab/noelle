@@ -14,6 +14,14 @@ namespace llvm::noelle {
 
 LoopEnvironment::LoopEnvironment (
   PDG *loopDG, 
+  std::vector<BasicBlock *> &exitBlocks
+  ) : LoopEnvironment(loopDG, exitBlocks, {})
+{
+  return ;
+}
+
+LoopEnvironment::LoopEnvironment (
+  PDG *loopDG, 
   std::vector<BasicBlock *> &exitBlocks,
   const std::set<Value *> &excludeValues
   ) {
