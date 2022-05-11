@@ -2,7 +2,7 @@
 set(Srcs 
   LoopEnvironment.cpp
   LoopEnvironmentUser.cpp
-  EnvBuilder.cpp
+  LoopEnvironmentBuilder.cpp
 )
 
 # Compilation flags

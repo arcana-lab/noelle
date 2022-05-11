@@ -228,7 +228,7 @@ namespace llvm::noelle {
        */
       Noelle &noelle;
       Verbosity verbose;
-      EnvBuilder *envBuilder;
+      LoopEnvironmentBuilder *envBuilder;
 
       /*
        * Parallel task related information.

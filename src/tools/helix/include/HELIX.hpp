@@ -145,7 +145,7 @@ namespace llvm::noelle {
       LoopDependenceInfo *originalLDI;
       PDG *taskFunctionDG;
 
-      EnvBuilder *loopCarriedEnvBuilder;
+      LoopEnvironmentBuilder *loopCarriedLoopEnvironmentBuilder;
       std::unordered_set<SpilledLoopCarriedDependency *> spills;
       std::unordered_map<Instruction *, Instruction *> lastIterationExecutionDuplicateMap;
       BasicBlock *lastIterationExecutionBlock;

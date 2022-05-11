@@ -13,7 +13,7 @@ install(
   FILES
   include/noelle/core/LoopEnvironment.hpp
   include/noelle/core/LoopEnvironmentUser.hpp
-  include/noelle/core/EnvBuilder.hpp
+  include/noelle/core/LoopEnvironmentBuilder.hpp
   DESTINATION 
   include/noelle/core
   )

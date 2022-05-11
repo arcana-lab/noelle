@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -8,13 +8,12 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/EnvBuilder.hpp"
+#include "noelle/core/LoopEnvironmentBuilder.hpp"
 #include "noelle/core/Architecture.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
-EnvBuilder::EnvBuilder (LLVMContext &cxt)
+LoopEnvironmentBuilder::LoopEnvironmentBuilder (LLVMContext &cxt)
   : CXT{cxt}, envTypes{}, envUsers{},
     envIndexToVar{}, envIndexToReducableVar{}, envIndexToVectorOfReducableVar{},
     numReducers{-1}, envSize{-1} {
@@ -28,11 +27,7 @@ EnvBuilder::EnvBuilder (LLVMContext &cxt)
   return ;
 }
 
-EnvBuilder::~EnvBuilder () {
-  for (auto user : envUsers) delete user;
-}
-
-void EnvBuilder::createEnvUsers (int numUsers) {
+void LoopEnvironmentBuilder::createEnvUsers (int numUsers) {
   for (int i = 0; i < numUsers; ++i) {
     this->envUsers.push_back(new LoopEnvironmentUser());
   }
@@ -40,7 +35,7 @@ void EnvBuilder::createEnvUsers (int numUsers) {
 }
 
 // TODO: Adjust users of createEnvVariables to pass the Type map
-void EnvBuilder::createEnvVariables (
+void LoopEnvironmentBuilder::createEnvVariables (
   std::vector<Type *> &varTypes,
   std::set<int> &singleVarIndices,
   std::set<int> &reducableVarIndices,
@@ -94,7 +89,7 @@ void EnvBuilder::createEnvVariables (
   return ;
 }
     
-void EnvBuilder::addVariableToEnvironment (uint64_t varIndex, Type *varType){
+void LoopEnvironmentBuilder::addVariableToEnvironment (uint64_t varIndex, Type *varType){
   this->envSize++;
   this->envTypes.push_back(varType);
 
@@ -117,14 +112,14 @@ void EnvBuilder::addVariableToEnvironment (uint64_t varIndex, Type *varType){
   return ;
 }
 
-void EnvBuilder::generateEnvArray (IRBuilder<> builder) {
+void LoopEnvironmentBuilder::generateEnvArray (IRBuilder<> builder) {
 
   /*
    * Check that we have an environment.
    */
   if(envSize == -1) {
     errs() << "Environment array variables must be specified!\n"
-      << "\tSee the EnvBuilder API call createEnvVariables\n";
+      << "\tSee the LoopEnvironmentBuilder API call createEnvVariables\n";
     abort();
   }
 
@@ -136,14 +131,14 @@ void EnvBuilder::generateEnvArray (IRBuilder<> builder) {
   return ;
 }
 
-void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
+void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
 
   /*
    * Check the environment array.
    */
   if (!this->envArray) {
     errs() << "An environment array has not been generated!\n"
-      << "\tSee the EnvBuilder API call generateEnvArray\n";
+      << "\tSee the LoopEnvironmentBuilder API call generateEnvArray\n";
     abort();
   }
 
@@ -237,7 +232,7 @@ void EnvBuilder::generateEnvVariables (IRBuilder<> builder) {
   return ;
 }
 
-BasicBlock * EnvBuilder::reduceLiveOutVariables (
+BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
   BasicBlock *bb,
   IRBuilder<> builder,
   std::unordered_map<int, int> &reducableBinaryOps,
@@ -430,37 +425,43 @@ BasicBlock * EnvBuilder::reduceLiveOutVariables (
   return afterReductionBB;
 }
 
-Value *EnvBuilder::getEnvArrayInt8Ptr () {
+Value *LoopEnvironmentBuilder::getEnvArrayInt8Ptr () {
   assert(envArrayInt8Ptr);
   return envArrayInt8Ptr;
 }
 
-Value *EnvBuilder::getEnvArray () {
+Value *LoopEnvironmentBuilder::getEnvArray () {
   assert(envArray);
   return envArray;
 }
 
-Value * EnvBuilder::getEnvVar (int ind) {
+Value * LoopEnvironmentBuilder::getEnvVar (int ind) {
   auto iter = envIndexToVar.find(ind);
   assert(iter != envIndexToVar.end());
   return (*iter).second;
 }
 
-Value *EnvBuilder::getAccumulatedReducableEnvVar (int ind) {
+Value *LoopEnvironmentBuilder::getAccumulatedReducableEnvVar (int ind) {
   auto iter = envIndexToAccumulatedReducableVar.find(ind);
   assert(iter != envIndexToAccumulatedReducableVar.end());
   return (*iter).second;
 }
 
-Value *EnvBuilder::getReducableEnvVar (int ind, int reducerInd) {
+Value *LoopEnvironmentBuilder::getReducableEnvVar (int ind, int reducerInd) {
   auto iter = envIndexToReducableVar.find(ind);
   assert(iter != envIndexToReducableVar.end());
   return (*iter).second[reducerInd];
 }
 
-bool EnvBuilder::isReduced (int ind) {
+bool LoopEnvironmentBuilder::isReduced (int ind) {
   auto isSingle = envIndexToVar.find(ind) != envIndexToVar.end();
   auto isReduce = envIndexToReducableVar.find(ind) != envIndexToReducableVar.end();
   assert(isSingle || isReduce);
   return isReduce;
+}
+
+LoopEnvironmentBuilder::~LoopEnvironmentBuilder () {
+  for (auto user : envUsers) delete user;
+}
+
 }

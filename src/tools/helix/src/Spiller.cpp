@@ -89,18 +89,18 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
   /*
    * Register a new environment builder and the single HELIX task
    */
-  this->loopCarriedEnvBuilder = new EnvBuilder(this->noelle.getProgram()->getContext());
-  this->loopCarriedEnvBuilder->createEnvVariables(phiTypes, nonReducablePHIs, cannotReduceLoopCarriedPHIs, 1);
-  this->loopCarriedEnvBuilder->createEnvUsers(1);
+  this->loopCarriedLoopEnvironmentBuilder = new LoopEnvironmentBuilder(this->noelle.getProgram()->getContext());
+  this->loopCarriedLoopEnvironmentBuilder->createEnvVariables(phiTypes, nonReducablePHIs, cannotReduceLoopCarriedPHIs, 1);
+  this->loopCarriedLoopEnvironmentBuilder->createEnvUsers(1);
 
   /*
    * Fetch the unique user of the environment builder dedicated to spilled variables.
    */
-  auto envUser = this->loopCarriedEnvBuilder->getUser(0);
+  auto envUser = this->loopCarriedLoopEnvironmentBuilder->getUser(0);
 
   envUser->setEnvArray(entryBuilder.CreateBitCast(
     helixTask->loopCarriedArrayArg,
-    PointerType::getUnqual(loopCarriedEnvBuilder->getEnvArrayTy())
+    PointerType::getUnqual(loopCarriedLoopEnvironmentBuilder->getEnvArrayTy())
   ));
 
   /*
@@ -108,15 +108,15 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
    * Load incoming values from the preheader
    */
   IRBuilder<> loopFunctionBuilder(&*loopFunction->begin()->begin());
-  loopCarriedEnvBuilder->generateEnvArray(loopFunctionBuilder);
-  loopCarriedEnvBuilder->generateEnvVariables(loopFunctionBuilder);
+  loopCarriedLoopEnvironmentBuilder->generateEnvArray(loopFunctionBuilder);
+  loopCarriedLoopEnvironmentBuilder->generateEnvVariables(loopFunctionBuilder);
 
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (auto envIndex = 0; envIndex < originalLoopCarriedPHIs.size(); ++envIndex) {
     auto phi = originalLoopCarriedPHIs[envIndex];
     auto preHeaderIndex = phi->getBasicBlockIndex(loopPreHeader);
     auto preHeaderV = phi->getIncomingValue(preHeaderIndex);
-    builder.CreateStore(preHeaderV, loopCarriedEnvBuilder->getEnvVar(envIndex));
+    builder.CreateStore(preHeaderV, loopCarriedLoopEnvironmentBuilder->getEnvVar(envIndex));
   }
 
   std::unordered_map<BasicBlock *, BasicBlock *> cloneToOriginalBlockMap;

@@ -16,9 +16,9 @@
 
 namespace llvm::noelle {
 
-  class EnvBuilder {
+  class LoopEnvironmentBuilder {
    public:
-    EnvBuilder (llvm::LLVMContext &CXT);
+    LoopEnvironmentBuilder (llvm::LLVMContext &CXT);
 
     /*
      * Create environment users and designate variable types
@@ -66,7 +66,7 @@ namespace llvm::noelle {
     Value *getReducableEnvVar (int ind, int reducerInd) ;
     bool isReduced (int ind) ;
 
-    ~EnvBuilder ();
+    ~LoopEnvironmentBuilder ();
 
    private:
 

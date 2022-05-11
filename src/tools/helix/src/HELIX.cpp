@@ -18,7 +18,7 @@ HELIX::HELIX (
   bool forceParallelization
   )
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{n, forceParallelization},
-    loopCarriedEnvBuilder{nullptr}, 
+    loopCarriedLoopEnvironmentBuilder{nullptr}, 
     taskFunctionDG{nullptr},
     lastIterationExecutionBlock{nullptr},
     enableInliner{true}

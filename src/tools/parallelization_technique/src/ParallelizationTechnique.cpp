@@ -60,7 +60,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
     varTypes.push_back(environment->typeOfEnvironmentLocation(i));
   }
 
-  this->envBuilder = new EnvBuilder(program->getContext());
+  this->envBuilder = new LoopEnvironmentBuilder(program->getContext());
   this->envBuilder->createEnvVariables(varTypes, simpleVars, reducableVars, this->numTaskInstances);
 
   this->envBuilder->createEnvUsers(tasks.size());

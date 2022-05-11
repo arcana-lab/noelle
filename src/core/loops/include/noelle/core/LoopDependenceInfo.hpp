@@ -17,7 +17,7 @@
 #include "noelle/core/Invariants.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
-#include "noelle/core/EnvBuilder.hpp"
+#include "noelle/core/LoopEnvironmentBuilder.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
 #include "noelle/core/LoopTransformationsOptions.hpp"
