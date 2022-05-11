@@ -12,6 +12,7 @@ add_subdirectory(src)
 install(
   FILES
   include/noelle/core/LoopEnvironment.hpp
+  include/noelle/core/LoopEnvironmentUser.hpp
   include/noelle/core/EnvBuilder.hpp
   DESTINATION 
   include/noelle/core
