@@ -14,9 +14,9 @@
 
 namespace llvm::noelle {
 
-  class EnvUserBuilder {
+  class LoopEnvironmentUser {
    public:
-    EnvUserBuilder ();
+    LoopEnvironmentUser ();
 
     void setEnvArray (Value *envArr) { this->envArray = envArr; }
 
@@ -42,7 +42,7 @@ namespace llvm::noelle {
 
     Instruction *getEnvPtr (int ind) { return envIndexToPtr[ind]; }
 
-    ~EnvUserBuilder ();
+    ~LoopEnvironmentUser ();
 
    private:
     Value *envArray;

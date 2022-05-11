@@ -58,7 +58,7 @@ namespace llvm::noelle {
     Value *getEnvArray () ;
     ArrayType *getEnvArrayTy () { return envArrayType; }
 
-    EnvUserBuilder *getUser (int user) { return envUsers[user]; }
+    LoopEnvironmentUser *getUser (int user) { return envUsers[user]; }
     int getNumUsers () { return envUsers.size(); }
 
     Value *getEnvVar (int ind) ;
@@ -92,7 +92,7 @@ namespace llvm::noelle {
     /*
      * Information on a specific user (a function, stage, chunk, etc...)
      */
-    std::vector<EnvUserBuilder *> envUsers;
+    std::vector<LoopEnvironmentUser *> envUsers;
   };
 
 }

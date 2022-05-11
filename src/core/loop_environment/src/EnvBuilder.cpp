@@ -34,7 +34,7 @@ EnvBuilder::~EnvBuilder () {
 
 void EnvBuilder::createEnvUsers (int numUsers) {
   for (int i = 0; i < numUsers; ++i) {
-    this->envUsers.push_back(new EnvUserBuilder());
+    this->envUsers.push_back(new LoopEnvironmentUser());
   }
   return ;
 }

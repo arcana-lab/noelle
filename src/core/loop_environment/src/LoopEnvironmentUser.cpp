@@ -13,7 +13,7 @@
 
 namespace llvm::noelle {
 
-EnvUserBuilder::EnvUserBuilder ()
+LoopEnvironmentUser::LoopEnvironmentUser ()
   :   envIndexToPtr{}
     , liveInInds{}
     , liveOutInds{} 
@@ -25,7 +25,7 @@ EnvUserBuilder::EnvUserBuilder ()
   return ;
 }
 
-void EnvUserBuilder::createEnvPtr (
+void LoopEnvironmentUser::createEnvPtr (
   IRBuilder<> builder,
   int envIndex,
   Type *type
@@ -61,7 +61,7 @@ void EnvUserBuilder::createEnvPtr (
   this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
 }
 
-void EnvUserBuilder::createReducableEnvPtr (
+void LoopEnvironmentUser::createReducableEnvPtr (
   IRBuilder<> builder,
   int envIndex,
   Type *type,
@@ -101,7 +101,7 @@ void EnvUserBuilder::createReducableEnvPtr (
   this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
 }
 
-EnvUserBuilder::~EnvUserBuilder () {
+LoopEnvironmentUser::~LoopEnvironmentUser () {
   return ;
 }
 
