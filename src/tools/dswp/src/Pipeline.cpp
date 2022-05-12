@@ -135,7 +135,7 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par) {
    */
   this->allocateEnvironmentArray(LDI);
   this->populateLiveInEnvironment(LDI);
-  auto envPtr = envBuilder->getEnvArrayInt8Ptr();
+  auto envPtr = envBuilder->getEnvironmentArrayVoidPtr();
 
   /*
    * Reference the stages in an array

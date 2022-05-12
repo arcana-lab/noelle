@@ -17,82 +17,92 @@
 namespace llvm::noelle {
 
   class LoopEnvironmentBuilder {
-   public:
-    LoopEnvironmentBuilder (llvm::LLVMContext &CXT);
+    public:
+      LoopEnvironmentBuilder (llvm::LLVMContext &CXT);
 
-    /*
-     * Create environment users and designate variable types
-     */
-    void createEnvUsers (int numUsers);
-    void createEnvVariables (
-      std::vector<Type *> &varTypes,
-      std::set<int> &singleVarIndices,
-      std::set<int> &reducableVarIndices,
-      int reducerCount
-    );
-    void addVariableToEnvironment (uint64_t varIndex, Type *varType);
+      /*
+       * Create environment users and designate variable types
+       */
+      void createUsers (
+        uint32_t numUsers
+        );
 
-    /*
-     * Generate code to create environment array/variable allocations
-     */
-    void generateEnvArray (IRBuilder<> builder);
-    void generateEnvVariables (IRBuilder<>);
+      void createVariables (
+        std::vector<Type *> &varTypes,
+        std::set<int> &singleVarIndices,
+        std::set<int> &reducableVarIndices,
+        int reducerCount
+        );
 
-    /*
-     * Reduce live out variables given binary operators to reduce
-     * with and initial values to start at
-     */
-    BasicBlock * reduceLiveOutVariables (
-      BasicBlock *bb,
-      IRBuilder<>,
-      std::unordered_map<int, int> &reducableBinaryOps,
-      std::unordered_map<int, Value *> &initialValues,
-      Value *numberOfThreadsExecuted
-    );
+      void addVariableToEnvironment (
+        uint64_t varIndex, 
+        Type *varType
+        );
 
-    /*
-     * As all users of the environment konw its structure,
-     *  pass around the equivalent of a void pointer
-     */
-    Value *getEnvArrayInt8Ptr () ;
-    Value *getEnvArray () ;
-    ArrayType *getEnvArrayTy () { return envArrayType; }
+      /*
+       * Generate code to create environment array/variable allocations
+       */
+      void generateEnvArray (
+        IRBuilder<> builder
+        );
+      void generateEnvVariables (
+        IRBuilder<> builder
+        );
 
-    LoopEnvironmentUser *getUser (int user) { return envUsers[user]; }
-    int getNumUsers () { return envUsers.size(); }
+      /*
+       * Reduce live out variables given binary operators to reduce
+       * with and initial values to start at
+       */
+      BasicBlock * reduceLiveOutVariables (
+        BasicBlock *bb,
+        IRBuilder<> builder,
+        std::unordered_map<int, int> &reducableBinaryOps,
+        std::unordered_map<int, Value *> &initialValues,
+        Value *numberOfThreadsExecuted
+      );
 
-    Value *getEnvVar (int ind) ;
-    Value *getAccumulatedReducableEnvVar (int ind) ;
-    Value *getReducableEnvVar (int ind, int reducerInd) ;
-    bool isReduced (int ind) ;
+      /*
+       * As all users of the environment know its structure, pass around the equivalent of a void pointer
+       */
+      Value * getEnvironmentArrayVoidPtr (void) ;
+      Value * getEnvironmentArray (void) ;
+      ArrayType *getEnvArrayTy (void) { return envArrayType; }
 
-    ~LoopEnvironmentBuilder ();
+      LoopEnvironmentUser *getUser (int user) { return envUsers[user]; }
+      int getNumUsers () { return envUsers.size(); }
 
-   private:
+      Value *getEnvVar (int ind) ;
+      Value *getAccumulatedReducableEnvVar (int ind) ;
+      Value *getReducableEnvVar (int ind, int reducerInd) ;
+      bool isReduced (int ind) ;
 
-    /*
-     * The environment array, owned by this builder
-     */
-    LLVMContext &CXT;
-    Value *envArray;
-    Value *envArrayInt8Ptr;
+      ~LoopEnvironmentBuilder ();
 
-    /*
-     * The environment variable types and their allocations
-     */
-    int envSize;
-    ArrayType *envArrayType;
-    std::vector<Type *> envTypes;
-    std::unordered_map<int, Value *> envIndexToVar;
-    std::unordered_map<int, Value *> envIndexToAccumulatedReducableVar;
-    std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
-    std::unordered_map<int, AllocaInst *> envIndexToVectorOfReducableVar;
-    int numReducers;
+    private:
 
-    /*
-     * Information on a specific user (a function, stage, chunk, etc...)
-     */
-    std::vector<LoopEnvironmentUser *> envUsers;
+      /*
+       * The environment array, owned by this builder
+       */
+      LLVMContext &CXT;
+      Value *envArray;
+      Value *envArrayInt8Ptr;
+
+      /*
+       * The environment variable types and their allocations
+       */
+      int envSize;
+      ArrayType *envArrayType;
+      std::vector<Type *> envTypes;
+      std::unordered_map<int, Value *> envIndexToVar;
+      std::unordered_map<int, Value *> envIndexToAccumulatedReducableVar;
+      std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
+      std::unordered_map<int, AllocaInst *> envIndexToVectorOfReducableVar;
+      int numReducers;
+
+      /*
+       * Information on a specific user (a function, stage, chunk, etc...)
+       */
+      std::vector<LoopEnvironmentUser *> envUsers;
   };
 
 }

@@ -23,7 +23,7 @@ ParallelizationTechnique::ParallelizationTechnique (
 }
 
 Value * ParallelizationTechnique::getEnvArray (void) const { 
-  return envBuilder->getEnvArray(); 
+  return envBuilder->getEnvironmentArray(); 
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder (
@@ -61,9 +61,9 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   }
 
   this->envBuilder = new LoopEnvironmentBuilder(program->getContext());
-  this->envBuilder->createEnvVariables(varTypes, simpleVars, reducableVars, this->numTaskInstances);
+  this->envBuilder->createVariables(varTypes, simpleVars, reducableVars, this->numTaskInstances);
 
-  this->envBuilder->createEnvUsers(tasks.size());
+  this->envBuilder->createUsers(tasks.size());
   for (auto i = 0; i < this->tasks.size(); ++i) {
     auto task = tasks[i];
     auto envUser = envBuilder->getUser(i);

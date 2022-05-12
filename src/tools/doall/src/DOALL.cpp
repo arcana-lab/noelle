@@ -365,7 +365,7 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Fetch the pointer to the environment.
    */
-  auto envPtr = envBuilder->getEnvArrayInt8Ptr();
+  auto envPtr = envBuilder->getEnvironmentArrayVoidPtr();
 
   /*
    * Fetch the number of cores

@@ -39,8 +39,8 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop (
   /*
    * Fetch the pointer to the environments
    */
-  auto envPtr = envBuilder->getEnvArrayInt8Ptr();
-  auto loopCarriedEnvPtr = this->loopCarriedLoopEnvironmentBuilder->getEnvArrayInt8Ptr();
+  auto envPtr = envBuilder->getEnvironmentArrayVoidPtr();
+  auto loopCarriedEnvPtr = this->loopCarriedLoopEnvironmentBuilder->getEnvironmentArrayVoidPtr();
 
   /*
    * Fetch the number of cores

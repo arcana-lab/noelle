@@ -8,6 +8,7 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopEnvironmentBuilder.hpp"
 #include "noelle/core/Architecture.hpp"
 
@@ -27,15 +28,16 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder (LLVMContext &cxt)
   return ;
 }
 
-void LoopEnvironmentBuilder::createEnvUsers (int numUsers) {
-  for (int i = 0; i < numUsers; ++i) {
+void LoopEnvironmentBuilder::createUsers (uint32_t numUsers) {
+  for (auto i = 0; i < numUsers; ++i) {
     this->envUsers.push_back(new LoopEnvironmentUser());
   }
+
   return ;
 }
 
-// TODO: Adjust users of createEnvVariables to pass the Type map
-void LoopEnvironmentBuilder::createEnvVariables (
+// TODO: Adjust users of createVariables to pass the Type map
+void LoopEnvironmentBuilder::createVariables (
   std::vector<Type *> &varTypes,
   std::set<int> &singleVarIndices,
   std::set<int> &reducableVarIndices,
@@ -119,7 +121,7 @@ void LoopEnvironmentBuilder::generateEnvArray (IRBuilder<> builder) {
    */
   if(envSize == -1) {
     errs() << "Environment array variables must be specified!\n"
-      << "\tSee the LoopEnvironmentBuilder API call createEnvVariables\n";
+      << "\tSee the LoopEnvironmentBuilder API call createVariables\n";
     abort();
   }
 
@@ -425,14 +427,16 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
   return afterReductionBB;
 }
 
-Value *LoopEnvironmentBuilder::getEnvArrayInt8Ptr () {
-  assert(envArrayInt8Ptr);
-  return envArrayInt8Ptr;
+Value *LoopEnvironmentBuilder::getEnvironmentArrayVoidPtr (void) {
+  assert(this->envArrayInt8Ptr != nullptr);
+
+  return this->envArrayInt8Ptr;
 }
 
-Value *LoopEnvironmentBuilder::getEnvArray () {
-  assert(envArray);
-  return envArray;
+Value *LoopEnvironmentBuilder::getEnvironmentArray (void) {
+  assert(this->envArray != nullptr);
+
+  return this->envArray;
 }
 
 Value * LoopEnvironmentBuilder::getEnvVar (int ind) {
