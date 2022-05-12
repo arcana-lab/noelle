@@ -66,14 +66,14 @@ namespace llvm::noelle {
        */
       Value * getEnvironmentArrayVoidPtr (void) ;
       Value * getEnvironmentArray (void) ;
-      ArrayType *getEnvArrayTy (void) { return envArrayType; }
+      ArrayType * getEnvironmentArrayType (void);
 
-      LoopEnvironmentUser *getUser (int user) { return envUsers[user]; }
-      int getNumUsers () { return envUsers.size(); }
+      LoopEnvironmentUser * getUser (uint32_t user);
+      uint32_t getNumberOfUsers (void);
 
-      Value *getEnvVar (int ind) ;
-      Value *getAccumulatedReducableEnvVar (int ind) ;
-      Value *getReducableEnvVar (int ind, int reducerInd) ;
+      Value * getEnvVar (int ind) ;
+      Value * getAccumulatedReducableEnvVar (int ind) ;
+      Value * getReducableEnvVar (int ind, int reducerInd) ;
       bool isReduced (int ind) ;
 
       ~LoopEnvironmentBuilder ();

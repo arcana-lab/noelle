@@ -71,7 +71,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
     IRBuilder<> entryBuilder(entryBlock);
     envUser->setEnvArray(entryBuilder.CreateBitCast(
       task->getEnvironment(),
-      PointerType::getUnqual(envBuilder->getEnvArrayTy())
+      PointerType::getUnqual(envBuilder->getEnvironmentArrayType())
     ));
   }
 

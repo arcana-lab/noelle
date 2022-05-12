@@ -100,7 +100,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
 
   envUser->setEnvArray(entryBuilder.CreateBitCast(
     helixTask->loopCarriedArrayArg,
-    PointerType::getUnqual(loopCarriedLoopEnvironmentBuilder->getEnvArrayTy())
+    PointerType::getUnqual(loopCarriedLoopEnvironmentBuilder->getEnvironmentArrayType())
   ));
 
   /*

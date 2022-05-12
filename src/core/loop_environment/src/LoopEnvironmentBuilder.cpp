@@ -463,6 +463,24 @@ bool LoopEnvironmentBuilder::isReduced (int ind) {
   assert(isSingle || isReduce);
   return isReduce;
 }
+      
+LoopEnvironmentUser * LoopEnvironmentBuilder::getUser (uint32_t user) { 
+  if (user >= this->getNumberOfUsers()){
+    abort();
+  }
+  auto u = this->envUsers[user]; 
+  assert(u != nullptr);
+
+  return u;
+}
+
+uint32_t LoopEnvironmentBuilder::getNumberOfUsers (void) { 
+  return envUsers.size(); 
+}
+      
+ArrayType * LoopEnvironmentBuilder::getEnvironmentArrayType (void) { 
+  return envArrayType; 
+}
 
 LoopEnvironmentBuilder::~LoopEnvironmentBuilder () {
   for (auto user : envUsers) delete user;
