@@ -100,6 +100,28 @@ void LoopEnvironmentUser::createReducableEnvPtr (
 
   this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
 }
+    
+void LoopEnvironmentUser::addLiveInIndex (uint32_t ind) { 
+  liveInInds.insert(ind); 
+
+  return ;
+}
+
+void LoopEnvironmentUser::addLiveOutIndex (uint32_t ind) { 
+  liveOutInds.insert(ind); 
+
+  return ;
+}
+    
+Instruction * LoopEnvironmentUser::getEnvPtr (uint32_t ind) { 
+  if (ind >= this->envIndexToPtr.size()){
+    abort();
+  }
+  auto ptr = this->envIndexToPtr[ind]; 
+  assert(ptr != nullptr);
+
+  return ptr;
+}
 
 LoopEnvironmentUser::~LoopEnvironmentUser () {
   return ;

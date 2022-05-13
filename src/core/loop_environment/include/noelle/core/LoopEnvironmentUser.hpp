@@ -30,8 +30,8 @@ namespace llvm::noelle {
       Value *reducerIndV
     );
 
-    void addLiveInIndex (int ind) { liveInInds.insert(ind); }
-    void addLiveOutIndex (int ind) { liveOutInds.insert(ind); }
+    void addLiveInIndex (uint32_t ind) ;
+    void addLiveOutIndex (uint32_t ind) ;
 
     iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveInVars() { 
       return make_range(liveInInds.begin(), liveInInds.end());
@@ -40,7 +40,7 @@ namespace llvm::noelle {
       return make_range(liveOutInds.begin(), liveOutInds.end());
     }
 
-    Instruction *getEnvPtr (int ind) { return envIndexToPtr[ind]; }
+    Instruction * getEnvPtr (uint32_t ind);
 
     ~LoopEnvironmentUser ();
 
