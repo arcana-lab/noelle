@@ -76,10 +76,6 @@ LoopEnvironment::LoopEnvironment (
       consumersOfLiveInValue.insert(consumerOfNewLiveIn_inst);
     }
     if (isProducer) {
-      errs() << "ENV: Live-In: " << *externalValue << "\n";
-      for (auto c : consumersOfLiveInValue){
-        errs() << "ENV: Live-In:  Consumer = " << *c << "\n";
-      }
       this->addLiveInValue(externalValue, consumersOfLiveInValue);
     }
 
@@ -92,7 +88,6 @@ LoopEnvironment::LoopEnvironment (
       }
       auto internalValue = edge->getOutgoingT();
       if (!this->isProducer(internalValue)) {
-        errs() << "ENV: Live-Out: " << *internalValue << "\n";
         this->addLiveOutProducer(internalValue);
       }
       this->prodConsumers[internalValue].insert(externalValue);
