@@ -116,7 +116,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
     auto phi = originalLoopCarriedPHIs[envIndex];
     auto preHeaderIndex = phi->getBasicBlockIndex(loopPreHeader);
     auto preHeaderV = phi->getIncomingValue(preHeaderIndex);
-    builder.CreateStore(preHeaderV, loopCarriedLoopEnvironmentBuilder->getEnvVar(envIndex));
+    builder.CreateStore(preHeaderV, loopCarriedLoopEnvironmentBuilder->getEnvironmentVariable(envIndex));
   }
 
   std::unordered_map<BasicBlock *, BasicBlock *> cloneToOriginalBlockMap;

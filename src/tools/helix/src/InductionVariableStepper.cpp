@@ -368,7 +368,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
      * If the producer isn't reducible, simply mapping to the duplicated value is sufficient,
      * which is already done (stored in lastIterationExecutionDuplicateMap)
      */
-    auto isReduced = this->envBuilder->isReduced(envIndex);
+    auto isReduced = this->envBuilder->isVariableReducable(envIndex);
     if (!isReduced) {
       continue;
     }

@@ -64,17 +64,17 @@ namespace llvm::noelle {
       /*
        * As all users of the environment know its structure, pass around the equivalent of a void pointer
        */
-      Value * getEnvironmentArrayVoidPtr (void) ;
-      Value * getEnvironmentArray (void) ;
-      ArrayType * getEnvironmentArrayType (void);
+      Value * getEnvironmentArrayVoidPtr (void) const ;
+      Value * getEnvironmentArray (void) const ;
+      ArrayType * getEnvironmentArrayType (void) const ;
 
       LoopEnvironmentUser * getUser (uint32_t user);
       uint32_t getNumberOfUsers (void);
 
-      Value * getEnvVar (int ind) ;
-      Value * getAccumulatedReducableEnvVar (int ind) ;
-      Value * getReducableEnvVar (int ind, int reducerInd) ;
-      bool isReduced (int ind) ;
+      Value * getEnvironmentVariable (uint32_t ind) const ;
+      Value * getAccumulatedReducableEnvironmentVariable (uint32_t ind) const ;
+      Value * getReducableEnvironmentVariable (uint32_t ind, uint32_t reducerInd) const ;
+      bool isVariableReducable (uint32_t ind) const ;
 
       ~LoopEnvironmentBuilder ();
 

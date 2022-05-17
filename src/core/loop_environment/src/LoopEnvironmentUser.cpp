@@ -114,9 +114,6 @@ void LoopEnvironmentUser::addLiveOutIndex (uint32_t ind) {
 }
     
 Instruction * LoopEnvironmentUser::getEnvPtr (uint32_t ind) { 
-  if (ind >= this->envIndexToPtr.size()){
-    abort();
-  }
   auto ptr = this->envIndexToPtr[ind]; 
   assert(ptr != nullptr);
 

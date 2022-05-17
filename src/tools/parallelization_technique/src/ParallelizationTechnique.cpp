@@ -60,13 +60,29 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
     varTypes.push_back(environment->typeOfEnvironmentLocation(i));
   }
 
+  /*
+   * Create the environment builder
+   */
   this->envBuilder = new LoopEnvironmentBuilder(program->getContext());
   this->envBuilder->createVariables(varTypes, simpleVars, reducableVars, this->numTaskInstances);
 
+  /*
+   * Create the users of the environment: one user per task.
+   */
   this->envBuilder->createUsers(tasks.size());
   for (auto i = 0; i < this->tasks.size(); ++i) {
-    auto task = tasks[i];
+
+    /*
+     * Fetch the current task and the related environment-user.
+     */
+    auto task = this->tasks[i];
+    assert(task != nullptr);
     auto envUser = envBuilder->getUser(i);
+    assert(envUser != nullptr);
+
+    /*
+     * Generate code within the current task to cast the generic pointer to the type of the environment it points to.
+     */
     auto entryBlock = task->getEntry();
     IRBuilder<> entryBuilder(entryBlock);
     envUser->setEnvArray(entryBuilder.CreateBitCast(
@@ -134,7 +150,7 @@ void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LD
     /*
      * Fetch the memory location inside the environment dedicated to the live-in value.
      */
-    auto environmentVariable = this->envBuilder->getEnvVar(envIndex);
+    auto environmentVariable = this->envBuilder->getEnvironmentVariable(envIndex);
 
     /*
      * Store the value inside the environment.
@@ -171,7 +187,7 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
   std::unordered_map<int, int> reducableBinaryOps;
   std::unordered_map<int, Value *> initialValues;
   for (auto envInd : environment->getEnvIndicesOfLiveOutVars()) {
-    auto isReduced = envBuilder->isReduced(envInd);
+    auto isReduced = envBuilder->isVariableReducable(envInd);
     if (!isReduced) continue;
 
     auto producer = environment->producerAt(envInd);
@@ -220,13 +236,14 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
     /*
      * If the environment variable isn't reduced, it is held in allocated memory that needs to be loaded from in order to retrieve the value.
      */
-    auto isReduced = envBuilder->isReduced(envInd);
+    auto isReduced = envBuilder->isVariableReducable(envInd);
     Value *envVar;
     if (isReduced) {
-      envVar = envBuilder->getAccumulatedReducableEnvVar(envInd);
+      envVar = envBuilder->getAccumulatedReducableEnvironmentVariable(envInd);
     } else {
-      envVar = afterReductionBuilder->CreateLoad(envBuilder->getEnvVar(envInd));
+      envVar = afterReductionBuilder->CreateLoad(envBuilder->getEnvironmentVariable(envInd));
     }
+    assert(envVar != nullptr);
 
     for (auto consumer : environment->consumersOf(prod)) {
       if (auto depPHI = dyn_cast<PHINode>(consumer)) {
@@ -707,17 +724,19 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      * TODO: Find a better place to map this single clone (perhaps when the original loop's values are cloned)
      */
     auto producer = (Instruction*)LDI->getEnvironment()->producerAt(envIndex);
+    assert(producer != nullptr);
     if (!task->doesOriginalLiveOutHaveManyClones(producer)) {
       auto singleProducerClone = task->getCloneOfOriginalInstruction(producer);
       task->addLiveOut(producer, singleProducerClone);
     }
+
     auto producerClones = task->getClonesOfOriginalLiveOut(producer);
 
     /*
      * Create GEP access of the single, or reducable, environment variable
      */
     auto envType = producer->getType();
-    auto isReduced = this->envBuilder->isReduced(envIndex);
+    auto isReduced = this->envBuilder->isVariableReducable(envIndex);
     if (isReduced) {
       envUser->createReducableEnvPtr(entryBuilder, envIndex, envType, numTaskInstances, task->getTaskInstanceID());
     } else {
@@ -734,7 +753,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
        * Fetch the operator of the accumulator instruction for this reducable variable
        * Store the identity value of the operator
        */
-      auto identityV = getIdentityValueForEnvironmentValue(LDI, envIndex, envType);
+      auto identityV = this->getIdentityValueForEnvironmentValue(LDI, envIndex, envType);
       entryBuilder.CreateStore(identityV, envPtr);
     }
 
@@ -1082,7 +1101,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
     /*
      * Check if the current live-out variable can be reduced.
      */
-    auto isThisLiveOutVarReducable = this->envBuilder->isReduced(envInd);
+    auto isThisLiveOutVarReducable = this->envBuilder->isVariableReducable(envInd);
     if (!isThisLiveOutVarReducable) {
       continue;
     }

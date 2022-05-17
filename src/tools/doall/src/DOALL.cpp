@@ -267,6 +267,7 @@ bool DOALL::apply (
    * Load all loop live-in values at the entry point of the task.
    */
   auto envUser = this->envBuilder->getUser(0);
+  assert(envUser != nullptr);
   for (auto envIndex : loopEnvironment->getEnvIndicesOfLiveInVars()) {
     envUser->addLiveInIndex(envIndex);
   }

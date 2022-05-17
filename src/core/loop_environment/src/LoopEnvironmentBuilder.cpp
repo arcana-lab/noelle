@@ -427,40 +427,41 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
   return afterReductionBB;
 }
 
-Value *LoopEnvironmentBuilder::getEnvironmentArrayVoidPtr (void) {
+Value *LoopEnvironmentBuilder::getEnvironmentArrayVoidPtr (void) const {
   assert(this->envArrayInt8Ptr != nullptr);
 
   return this->envArrayInt8Ptr;
 }
 
-Value *LoopEnvironmentBuilder::getEnvironmentArray (void) {
+Value *LoopEnvironmentBuilder::getEnvironmentArray (void) const {
   assert(this->envArray != nullptr);
 
   return this->envArray;
 }
 
-Value * LoopEnvironmentBuilder::getEnvVar (int ind) {
+Value * LoopEnvironmentBuilder::getEnvironmentVariable (uint32_t ind) const {
   auto iter = envIndexToVar.find(ind);
   assert(iter != envIndexToVar.end());
   return (*iter).second;
 }
 
-Value *LoopEnvironmentBuilder::getAccumulatedReducableEnvVar (int ind) {
+Value *LoopEnvironmentBuilder::getAccumulatedReducableEnvironmentVariable (uint32_t ind) const {
   auto iter = envIndexToAccumulatedReducableVar.find(ind);
   assert(iter != envIndexToAccumulatedReducableVar.end());
   return (*iter).second;
 }
 
-Value *LoopEnvironmentBuilder::getReducableEnvVar (int ind, int reducerInd) {
+Value *LoopEnvironmentBuilder::getReducableEnvironmentVariable (uint32_t ind, uint32_t reducerInd) const {
   auto iter = envIndexToReducableVar.find(ind);
   assert(iter != envIndexToReducableVar.end());
   return (*iter).second[reducerInd];
 }
 
-bool LoopEnvironmentBuilder::isReduced (int ind) {
+bool LoopEnvironmentBuilder::isVariableReducable (uint32_t ind) const {
   auto isSingle = envIndexToVar.find(ind) != envIndexToVar.end();
   auto isReduce = envIndexToReducableVar.find(ind) != envIndexToReducableVar.end();
   assert(isSingle || isReduce);
+
   return isReduce;
 }
       
@@ -478,7 +479,7 @@ uint32_t LoopEnvironmentBuilder::getNumberOfUsers (void) {
   return envUsers.size(); 
 }
       
-ArrayType * LoopEnvironmentBuilder::getEnvironmentArrayType (void) { 
+ArrayType * LoopEnvironmentBuilder::getEnvironmentArrayType (void) const { 
   return envArrayType; 
 }
 
