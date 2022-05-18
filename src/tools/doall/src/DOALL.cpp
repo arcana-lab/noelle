@@ -251,8 +251,8 @@ bool DOALL::apply (
    */
   auto preEnvRange = loopEnvironment->getEnvIndicesOfLiveInVars();
   auto postEnvRange = loopEnvironment->getEnvIndicesOfLiveOutVars();
-  std::set<int> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
-  std::set<int> reducableVars(postEnvRange.begin(), postEnvRange.end());
+  std::set<uint32_t> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
+  std::set<uint32_t> reducableVars(postEnvRange.begin(), postEnvRange.end());
   this->initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
 
   /*

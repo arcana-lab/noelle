@@ -28,8 +28,8 @@ Value * ParallelizationTechnique::getEnvArray (void) const {
 
 void ParallelizationTechnique::initializeEnvironmentBuilder (
   LoopDependenceInfo *LDI,
-  std::set<int> simpleVars,
-  std::set<int> reducableVars
+  std::set<uint32_t> simpleVars,
+  std::set<uint32_t> reducableVars
 ) {
 
   /*
@@ -63,13 +63,11 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   /*
    * Create the environment builder
    */
-  this->envBuilder = new LoopEnvironmentBuilder(program->getContext());
-  this->envBuilder->createVariables(varTypes, simpleVars, reducableVars, this->numTaskInstances);
+  this->envBuilder = new LoopEnvironmentBuilder(program->getContext(), varTypes, simpleVars, reducableVars, this->numTaskInstances, tasks.size());
 
   /*
    * Create the users of the environment: one user per task.
    */
-  this->envBuilder->createUsers(tasks.size());
   for (auto i = 0; i < this->tasks.size(); ++i) {
 
     /*
@@ -96,9 +94,9 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
 
 void ParallelizationTechnique::initializeEnvironmentBuilder (
   LoopDependenceInfo *LDI,
-  std::set<int> nonReducableVars
+  std::set<uint32_t> nonReducableVars
   ){
-  std::set<int> emptySet{};
+  std::set<uint32_t> emptySet{};
 
   this->initializeEnvironmentBuilder(LDI, nonReducableVars, emptySet);
 

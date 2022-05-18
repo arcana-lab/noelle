@@ -79,13 +79,13 @@ namespace llvm::noelle {
        */
       void initializeEnvironmentBuilder (
         LoopDependenceInfo *LDI,
-        std::set<int> nonReducableVars
+        std::set<uint32_t> nonReducableVars
       );
 
       void initializeEnvironmentBuilder (
         LoopDependenceInfo *LDI,
-        std::set<int> simpleVars,
-        std::set<int> reducableVars
+        std::set<uint32_t> simpleVars,
+        std::set<uint32_t> reducableVars
       );
 
       void allocateEnvironmentArray (

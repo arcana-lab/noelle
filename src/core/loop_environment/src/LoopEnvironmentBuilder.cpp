@@ -14,53 +14,31 @@
 
 namespace llvm::noelle {
 
-LoopEnvironmentBuilder::LoopEnvironmentBuilder (LLVMContext &cxt)
-  : CXT{cxt}, envTypes{}, envUsers{},
-    envIndexToVar{}, envIndexToReducableVar{}, envIndexToVectorOfReducableVar{},
-    numReducers{-1}, envSize{-1} {
-  envIndexToVar.clear();
-  envIndexToReducableVar.clear();
-  envIndexToVectorOfReducableVar.clear();
-  envUsers.clear();
-  envArrayType = nullptr;
-  envArray = envArrayInt8Ptr = nullptr;
-
-  return ;
-}
-
-void LoopEnvironmentBuilder::createUsers (uint32_t numUsers) {
-  for (auto i = 0; i < numUsers; ++i) {
-    this->envUsers.push_back(new LoopEnvironmentUser());
-  }
-
-  return ;
-}
-
-// TODO: Adjust users of createVariables to pass the Type map
-void LoopEnvironmentBuilder::createVariables (
+LoopEnvironmentBuilder::LoopEnvironmentBuilder (
+  LLVMContext &cxt,
   std::vector<Type *> &varTypes,
-  std::set<int> &singleVarIndices,
-  std::set<int> &reducableVarIndices,
-  int reducerCount
-) {
+  std::set<uint32_t> &singleVarIndices,
+  std::set<uint32_t> &reducableVarIndices,
+  uint64_t reducerCount,
+  uint64_t numberOfUsers
+  ) :   CXT{cxt}
+      , envArray{nullptr}
+      , envArrayInt8Ptr{nullptr}
+      , envSize{singleVarIndices.size() + reducableVarIndices.size()} 
+      , envArrayType{nullptr}
+      , envTypes{varTypes}
+      , envIndexToVar{}
+      , envIndexToAccumulatedReducableVar{}
+      , envIndexToReducableVar{}
+      , envIndexToVectorOfReducableVar{}
+      , numReducers{reducerCount} 
+      , envUsers{}
+  {
 
   /*
-   * Assertions.
+   * Assertions
    */
-  assert(envSize == -1 
-      && "Environment variables must be fully determined at once\n");
-
-  /*
-   * Compute the size of the environment.
-   */
-  this->envSize = singleVarIndices.size() + reducableVarIndices.size();
-  assert(this->envSize == varTypes.size()
-    && "Environment variables must either be singular or reducible\n");
-
-  /*
-   * Store the types of each environment value.
-   */
-  this->envTypes = std::vector<Type *>(varTypes.begin(), varTypes.end());
+  assert(this->envSize == this->envTypes.size() && "Environment variables must either be singular or reducible\n");
 
   /*
    * Compute how many values can fit in a cache line.
@@ -74,11 +52,6 @@ void LoopEnvironmentBuilder::createVariables (
   this->envArrayType = ArrayType::get(int64, this->envSize * valuesInCacheLine);
 
   /*
-   * Keep track of the number of variables that are reduced.
-   */
-  this->numReducers = reducerCount;
-
-  /*
    * Initialize the index-to-variable map.
    */
   for (auto envIndex : singleVarIndices) {
@@ -86,6 +59,19 @@ void LoopEnvironmentBuilder::createVariables (
   }
   for (auto envIndex : reducableVarIndices) {
     this->envIndexToReducableVar[envIndex] = std::vector<Value *>();
+  }
+
+  /*
+   * Create the users
+   */
+  this->createUsers(numberOfUsers);
+
+  return ;
+}
+
+void LoopEnvironmentBuilder::createUsers (uint32_t numUsers) {
+  for (auto i = 0; i < numUsers; ++i) {
+    this->envUsers.push_back(new LoopEnvironmentUser());
   }
 
   return ;
@@ -119,10 +105,8 @@ void LoopEnvironmentBuilder::generateEnvArray (IRBuilder<> builder) {
   /*
    * Check that we have an environment.
    */
-  if(envSize == -1) {
-    errs() << "Environment array variables must be specified!\n"
-      << "\tSee the LoopEnvironmentBuilder API call createVariables\n";
-    abort();
+  if(envSize < 1) {
+    //abort();
   }
 
   auto int8 = IntegerType::get(builder.getContext(), 8);
@@ -176,13 +160,13 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
    *
    * NOTE: Manipulation of the map cannot be done while iterating it
    */
-  std::set<int> singleIndices;
+  std::set<uint32_t> singleIndices;
   for (auto indexVarPair : this->envIndexToVar){
     singleIndices.insert(indexVarPair.first);
   }
   for (auto envIndex : singleIndices) {
-    auto ptrType = PointerType::getUnqual(envTypes[envIndex]);
-    envIndexToVar[envIndex] = fetchCastedEnvPtr(this->envArray, envIndex, ptrType);
+    auto ptrType = PointerType::getUnqual(this->envTypes[envIndex]);
+    this->envIndexToVar[envIndex] = fetchCastedEnvPtr(this->envArray, envIndex, ptrType);
   }
 
   /*
@@ -191,8 +175,8 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
    *
    * NOTE: No manipulation and iteration at the same time
    */
-  std::set<int> reducableIndices;
-  for (auto indexVarPair : envIndexToReducableVar){
+  std::set<uint32_t> reducableIndices;
+  for (auto indexVarPair : this->envIndexToReducableVar){
     reducableIndices.insert(indexVarPair.first);
   }
   for (auto envIndex : reducableIndices) {
@@ -200,7 +184,7 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
     /*
      * Fetch the type of the current reducable variable.
      */
-    auto varType = envTypes[envIndex];
+    auto varType = this->envTypes[envIndex];
     auto ptrType = PointerType::getUnqual(varType);
 
     /*
@@ -475,7 +459,7 @@ LoopEnvironmentUser * LoopEnvironmentBuilder::getUser (uint32_t user) {
   return u;
 }
 
-uint32_t LoopEnvironmentBuilder::getNumberOfUsers (void) { 
+uint32_t LoopEnvironmentBuilder::getNumberOfUsers (void) {
   return envUsers.size(); 
 }
       

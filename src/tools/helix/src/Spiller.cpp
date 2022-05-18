@@ -70,8 +70,8 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
    * Register each PHI as part of the loop carried environment
    */
   std::vector<Type *> phiTypes;
-  std::set<int> nonReducablePHIs;
-  std::set<int> cannotReduceLoopCarriedPHIs;
+  std::set<uint32_t> nonReducablePHIs;
+  std::set<uint32_t> cannotReduceLoopCarriedPHIs;
   for (auto i = 0; i < clonedLoopCarriedPHIs.size(); ++i) {
     auto phiType = clonedLoopCarriedPHIs[i]->getType();
     phiTypes.push_back(phiType);
@@ -89,9 +89,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
   /*
    * Register a new environment builder and the single HELIX task
    */
-  this->loopCarriedLoopEnvironmentBuilder = new LoopEnvironmentBuilder(this->noelle.getProgram()->getContext());
-  this->loopCarriedLoopEnvironmentBuilder->createVariables(phiTypes, nonReducablePHIs, cannotReduceLoopCarriedPHIs, 1);
-  this->loopCarriedLoopEnvironmentBuilder->createUsers(1);
+  this->loopCarriedLoopEnvironmentBuilder = new LoopEnvironmentBuilder(this->noelle.getProgram()->getContext(), phiTypes, nonReducablePHIs, cannotReduceLoopCarriedPHIs, 1, 1);
 
   /*
    * Fetch the unique user of the environment builder dedicated to spilled variables.

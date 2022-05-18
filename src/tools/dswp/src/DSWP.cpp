@@ -241,9 +241,9 @@ bool DSWP::apply (
    */
   auto liveInVars = environment->getEnvIndicesOfLiveInVars();
   auto liveOutVars = environment->getEnvIndicesOfLiveOutVars();
-  std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
+  std::set<uint32_t> nonReducableVars(liveInVars.begin(), liveInVars.end());
   nonReducableVars.insert(liveOutVars.begin(), liveOutVars.end());
-  std::set<int> reducableVars;
+  std::set<uint32_t> reducableVars;
 
   /*
    * Should an exit block environment variable be necessary, register one 

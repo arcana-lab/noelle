@@ -18,20 +18,13 @@ namespace llvm::noelle {
 
   class LoopEnvironmentBuilder {
     public:
-      LoopEnvironmentBuilder (llvm::LLVMContext &CXT);
-
-      /*
-       * Create environment users and designate variable types
-       */
-      void createUsers (
-        uint32_t numUsers
-        );
-
-      void createVariables (
+      LoopEnvironmentBuilder (
+        LLVMContext &CXT,
         std::vector<Type *> &varTypes,
-        std::set<int> &singleVarIndices,
-        std::set<int> &reducableVarIndices,
-        int reducerCount
+        std::set<uint32_t> &singleVarIndices,
+        std::set<uint32_t> &reducableVarIndices,
+        uint64_t reducerCount,
+        uint64_t numberOfUsers
         );
 
       void addVariableToEnvironment (
@@ -90,19 +83,23 @@ namespace llvm::noelle {
       /*
        * The environment variable types and their allocations
        */
-      int envSize;
+      uint64_t envSize;
       ArrayType *envArrayType;
       std::vector<Type *> envTypes;
-      std::unordered_map<int, Value *> envIndexToVar;
-      std::unordered_map<int, Value *> envIndexToAccumulatedReducableVar;
-      std::unordered_map<int, std::vector<Value *>> envIndexToReducableVar;
-      std::unordered_map<int, AllocaInst *> envIndexToVectorOfReducableVar;
-      int numReducers;
+      std::unordered_map<uint32_t, Value *> envIndexToVar;
+      std::unordered_map<uint32_t, Value *> envIndexToAccumulatedReducableVar;
+      std::unordered_map<uint32_t, std::vector<Value *>> envIndexToReducableVar;
+      std::unordered_map<uint32_t, AllocaInst *> envIndexToVectorOfReducableVar;
+      uint64_t numReducers;
 
       /*
        * Information on a specific user (a function, stage, chunk, etc...)
        */
       std::vector<LoopEnvironmentUser *> envUsers;
+
+      void createUsers (
+        uint32_t numUsers
+        );
   };
 
 }

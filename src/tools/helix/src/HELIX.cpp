@@ -254,8 +254,8 @@ void HELIX::createParallelizableTask (
   /*
    * Add all live-in and live-out variables as variables to be included in the environment.
    */
-  std::set<int> nonReducableVars(liveInVars.begin(), liveInVars.end());
-  std::set<int> reducableVars{};
+  std::set<uint32_t> nonReducableVars(liveInVars.begin(), liveInVars.end());
+  std::set<uint32_t> reducableVars{};
   for (auto liveOutIndex : liveOutVars) {
 
     /*
