@@ -19,13 +19,24 @@ namespace llvm::noelle {
   class LoopEnvironmentBuilder {
     public:
       LoopEnvironmentBuilder (
-        LLVMContext &CXT,
-        std::vector<Type *> &varTypes,
-        std::set<uint32_t> &singleVarIndices,
-        std::set<uint32_t> &reducableVarIndices,
+        LLVMContext &cxt,
+        LoopEnvironment *env,
+        const std::set<uint32_t> &singleVarIndices,
+        const std::set<uint32_t> &reducableVarIndices,
         uint64_t reducerCount,
         uint64_t numberOfUsers
         );
+
+      LoopEnvironmentBuilder (
+        LLVMContext &CXT,
+        const std::vector<Type *> &varTypes,
+        const std::set<uint32_t> &singleVarIndices,
+        const std::set<uint32_t> &reducableVarIndices,
+        uint64_t reducerCount,
+        uint64_t numberOfUsers
+        );
+
+      LoopEnvironmentBuilder () = delete;
 
       void addVariableToEnvironment (
         uint64_t varIndex, 
@@ -65,9 +76,9 @@ namespace llvm::noelle {
       uint32_t getNumberOfUsers (void);
 
       Value * getEnvironmentVariable (uint32_t ind) const ;
-      Value * getAccumulatedReducableEnvironmentVariable (uint32_t ind) const ;
-      Value * getReducableEnvironmentVariable (uint32_t ind, uint32_t reducerInd) const ;
-      bool isVariableReducable (uint32_t ind) const ;
+      Value * getAccumulatedReducedEnvironmentVariable (uint32_t ind) const ;
+      Value * getReducedEnvironmentVariable (uint32_t ind, uint32_t reducerInd) const ;
+      bool hasVariableBeenReduced (uint32_t ind) const ;
 
       ~LoopEnvironmentBuilder ();
 

@@ -53,17 +53,9 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   assert(environment != nullptr);
 
   /*
-   * Collect the Type of each environment variable
-   */
-  std::vector<Type *> varTypes;
-  for (int64_t i = 0; i < environment->size(); ++i) {
-    varTypes.push_back(environment->typeOfEnvironmentLocation(i));
-  }
-
-  /*
    * Create the environment builder
    */
-  this->envBuilder = new LoopEnvironmentBuilder(program->getContext(), varTypes, simpleVars, reducableVars, this->numTaskInstances, tasks.size());
+  this->envBuilder = new LoopEnvironmentBuilder(program->getContext(), environment, simpleVars, reducableVars, this->numTaskInstances, tasks.size());
 
   /*
    * Create the users of the environment: one user per task.
@@ -185,7 +177,7 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
   std::unordered_map<int, int> reducableBinaryOps;
   std::unordered_map<int, Value *> initialValues;
   for (auto envInd : environment->getEnvIndicesOfLiveOutVars()) {
-    auto isReduced = envBuilder->isVariableReducable(envInd);
+    auto isReduced = envBuilder->hasVariableBeenReduced(envInd);
     if (!isReduced) continue;
 
     auto producer = environment->producerAt(envInd);
@@ -234,10 +226,10 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
     /*
      * If the environment variable isn't reduced, it is held in allocated memory that needs to be loaded from in order to retrieve the value.
      */
-    auto isReduced = envBuilder->isVariableReducable(envInd);
+    auto isReduced = envBuilder->hasVariableBeenReduced(envInd);
     Value *envVar;
     if (isReduced) {
-      envVar = envBuilder->getAccumulatedReducableEnvironmentVariable(envInd);
+      envVar = envBuilder->getAccumulatedReducedEnvironmentVariable(envInd);
     } else {
       envVar = afterReductionBuilder->CreateLoad(envBuilder->getEnvironmentVariable(envInd));
     }
@@ -734,7 +726,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      * Create GEP access of the single, or reducable, environment variable
      */
     auto envType = producer->getType();
-    auto isReduced = this->envBuilder->isVariableReducable(envIndex);
+    auto isReduced = this->envBuilder->hasVariableBeenReduced(envIndex);
     if (isReduced) {
       envUser->createReducableEnvPtr(entryBuilder, envIndex, envType, numTaskInstances, task->getTaskInstanceID());
     } else {
@@ -1099,7 +1091,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
     /*
      * Check if the current live-out variable can be reduced.
      */
-    auto isThisLiveOutVarReducable = this->envBuilder->isVariableReducable(envInd);
+    auto isThisLiveOutVarReducable = this->envBuilder->hasVariableBeenReduced(envInd);
     if (!isThisLiveOutVarReducable) {
       continue;
     }

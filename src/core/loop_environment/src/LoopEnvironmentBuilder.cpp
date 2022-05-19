@@ -16,9 +16,22 @@ namespace llvm::noelle {
 
 LoopEnvironmentBuilder::LoopEnvironmentBuilder (
   LLVMContext &cxt,
-  std::vector<Type *> &varTypes,
-  std::set<uint32_t> &singleVarIndices,
-  std::set<uint32_t> &reducableVarIndices,
+  LoopEnvironment *env,
+  const std::set<uint32_t> &singleVarIndices,
+  const std::set<uint32_t> &reducableVarIndices,
+  uint64_t reducerCount,
+  uint64_t numberOfUsers
+  ) : LoopEnvironmentBuilder(cxt, env->getTypesOfEnvironmentLocations(), singleVarIndices, reducableVarIndices, reducerCount, numberOfUsers)
+  {
+
+  return ;
+}
+
+LoopEnvironmentBuilder::LoopEnvironmentBuilder (
+  LLVMContext &cxt,
+  const std::vector<Type *> &varTypes,
+  const std::set<uint32_t> &singleVarIndices,
+  const std::set<uint32_t> &reducableVarIndices,
   uint64_t reducerCount,
   uint64_t numberOfUsers
   ) :   CXT{cxt}
@@ -429,19 +442,19 @@ Value * LoopEnvironmentBuilder::getEnvironmentVariable (uint32_t ind) const {
   return (*iter).second;
 }
 
-Value *LoopEnvironmentBuilder::getAccumulatedReducableEnvironmentVariable (uint32_t ind) const {
+Value *LoopEnvironmentBuilder::getAccumulatedReducedEnvironmentVariable (uint32_t ind) const {
   auto iter = envIndexToAccumulatedReducableVar.find(ind);
   assert(iter != envIndexToAccumulatedReducableVar.end());
   return (*iter).second;
 }
 
-Value *LoopEnvironmentBuilder::getReducableEnvironmentVariable (uint32_t ind, uint32_t reducerInd) const {
+Value *LoopEnvironmentBuilder::getReducedEnvironmentVariable (uint32_t ind, uint32_t reducerInd) const {
   auto iter = envIndexToReducableVar.find(ind);
   assert(iter != envIndexToReducableVar.end());
   return (*iter).second[reducerInd];
 }
 
-bool LoopEnvironmentBuilder::isVariableReducable (uint32_t ind) const {
+bool LoopEnvironmentBuilder::hasVariableBeenReduced (uint32_t ind) const {
   auto isSingle = envIndexToVar.find(ind) != envIndexToVar.end();
   auto isReduce = envIndexToReducableVar.find(ind) != envIndexToReducableVar.end();
   assert(isSingle || isReduce);

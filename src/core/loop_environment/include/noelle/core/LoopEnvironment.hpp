@@ -44,6 +44,8 @@ namespace llvm::noelle {
       int64_t indexOfExitBlockTaken (void) const ;
 
       Type * typeOfEnvironmentLocation (uint64_t index) const ;
+      
+      std::vector<Type *> getTypesOfEnvironmentLocations (void) const ;
 
       bool isLiveIn (Value *val) const ;
 

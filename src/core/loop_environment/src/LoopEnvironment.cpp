@@ -115,6 +115,19 @@ Type * LoopEnvironment::typeOfEnvironmentLocation (uint64_t index) const {
   return exitBlockType;
 }
 
+std::vector<Type *> LoopEnvironment::getTypesOfEnvironmentLocations (void) const {
+
+  /*
+   * Collect the Type of each environment variable
+   */
+  std::vector<Type *> varTypes;
+  for (int64_t i = 0; i < this->size(); ++i) {
+    varTypes.push_back(this->typeOfEnvironmentLocation(i));
+  }
+
+  return varTypes;
+}
+
 uint64_t LoopEnvironment::addProducer (Value *producer, bool liveIn){
 
   /*
@@ -198,7 +211,7 @@ void LoopEnvironment::addLiveOutProducer (Value *producer) {
 }
 
 int64_t LoopEnvironment::indexOfExitBlockTaken (void) const {
-  return hasExitBlockEnv ? envProducers.size() : -1; 
+  return this->hasExitBlockEnv ? this->envProducers.size() : -1; 
 }
 
 uint64_t LoopEnvironment::size (void) const {
