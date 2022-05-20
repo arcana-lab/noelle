@@ -15,61 +15,17 @@ namespace llvm::noelle {
 ParallelizationTechnique::ParallelizationTechnique (
   Noelle &n
   )
-  : noelle{n}, tasks{}, envBuilder{nullptr}
-  {
+  :   noelle{n}
+    , tasks{}
+    , envBuilder{nullptr}
+    {
   this->verbose = n.getVerbosity();
 
   return ;
 }
 
 Value * ParallelizationTechnique::getEnvArray (void) const { 
-  return envBuilder->getEnvironmentArray(); 
-}
-
-void ParallelizationTechnique::initializeEnvironmentBuilder (
-  LoopDependenceInfo *LDI,
-  std::function<bool (uint32_t variableIndex, bool isLiveOut)> shouldThisVariableBeReduced
-  ){
-
-  /*
-   * Fetch the environment of the loop
-   */
-  auto environment = LDI->getEnvironment();
-  assert(environment != nullptr);
-
-  /*
-   * Group environment variables into reducable and not.
-   */
-  std::set<uint32_t> nonReducableVars;
-  std::set<uint32_t> reducableVars;
-  for (auto liveInVariableIndex: environment->getEnvIndicesOfLiveInVars()){
-    if (shouldThisVariableBeReduced(liveInVariableIndex, false)){
-      reducableVars.insert(liveInVariableIndex);
-    } else {
-      nonReducableVars.insert(liveInVariableIndex);
-    }
-  }
-  for (auto liveOutVariableIndex: environment->getEnvIndicesOfLiveOutVars()){
-    if (shouldThisVariableBeReduced(liveOutVariableIndex, true)){
-      reducableVars.insert(liveOutVariableIndex);
-    } else {
-      nonReducableVars.insert(liveOutVariableIndex);
-    }
-  }
-
-  /*
-   * Should an exit block environment variable be necessary, register one 
-   */
-  if (environment->indexOfExitBlockTaken() >= 0){ 
-    nonReducableVars.insert(environment->indexOfExitBlockTaken());
-  }
- 
-  /*
-   * Generate code to allocate and initialize the loop environment.
-   */
-  this->initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
-
-  return ;
+  return this->envBuilder->getEnvironmentArray(); 
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder (
@@ -77,11 +33,28 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
   std::set<uint32_t> simpleVars,
   std::set<uint32_t> reducableVars
 ) {
+  auto isReducable = [&reducableVars](uint32_t variableIndex, bool isLiveOut) -> bool {
+    if (reducableVars.find(variableIndex) != reducableVars.end()){
+      return true;
+    }
+    return false;
+  };
+  this->initializeEnvironmentBuilder(LDI, isReducable);
+
+  return ;
+}
+
+void ParallelizationTechnique::initializeEnvironmentBuilder (
+  LoopDependenceInfo *LDI,
+  std::function<bool (uint32_t variableIndex, bool isLiveOut)> shouldThisVariableBeReduced
+  ){
+  assert(LDI != nullptr);
 
   /*
-   * Fetch the program.
+   * Fetch the environment of the loop
    */
-  auto program = this->noelle.getProgram();
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
 
   /*
    * Check the state of the parallelization technique 'this'.
@@ -91,17 +64,22 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
       << "\tTheir environment builders can't be initialized until they are.\n";
     abort();
   }
+ 
+  /*
+   * Generate code to allocate and initialize the loop environment.
+   */
+  auto program = this->noelle.getProgram();
+  this->envBuilder = new LoopEnvironmentBuilder(program->getContext(), environment, shouldThisVariableBeReduced, this->numTaskInstances, tasks.size());
 
   /*
-   * Fetch the environment of the loop
+   * Create the users of the environment: one user per task.
    */
-  auto environment = LDI->getEnvironment();
-  assert(environment != nullptr);
+  this->initializeLoopEnvironmentUsers();
 
-  /*
-   * Create the environment builder
-   */
-  this->envBuilder = new LoopEnvironmentBuilder(program->getContext(), environment, simpleVars, reducableVars, this->numTaskInstances, tasks.size());
+  return ;
+}
+
+void ParallelizationTechnique::initializeLoopEnvironmentUsers (void){
 
   /*
    * Create the users of the environment: one user per task.
@@ -113,7 +91,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
      */
     auto task = this->tasks[i];
     assert(task != nullptr);
-    auto envUser = envBuilder->getUser(i);
+    auto envUser = this->envBuilder->getUser(i);
     assert(envUser != nullptr);
 
     /*

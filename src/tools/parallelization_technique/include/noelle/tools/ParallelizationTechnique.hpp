@@ -93,6 +93,8 @@ namespace llvm::noelle {
         std::set<uint32_t> reducableVars
         );
 
+      void initializeLoopEnvironmentUsers (void);
+
       void allocateEnvironmentArray (
         LoopDependenceInfo *LDI
         );

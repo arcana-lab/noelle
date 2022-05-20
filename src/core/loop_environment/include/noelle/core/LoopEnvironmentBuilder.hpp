@@ -21,8 +21,7 @@ namespace llvm::noelle {
       LoopEnvironmentBuilder (
         LLVMContext &cxt,
         LoopEnvironment *env,
-        const std::set<uint32_t> &singleVarIndices,
-        const std::set<uint32_t> &reducableVarIndices,
+        std::function<bool (uint32_t variableIndex, bool isLiveOut)> shouldThisVariableBeReduced,
         uint64_t reducerCount,
         uint64_t numberOfUsers
         );
@@ -107,6 +106,14 @@ namespace llvm::noelle {
        * Information on a specific user (a function, stage, chunk, etc...)
        */
       std::vector<LoopEnvironmentUser *> envUsers;
+
+      void initializeBuilder (
+        const std::vector<Type *> &varTypes,
+        const std::set<uint32_t> &singleVarIndices,
+        const std::set<uint32_t> &reducableVarIndices,
+        uint64_t reducerCount,
+        uint64_t numberOfUsers
+        );
 
       void createUsers (
         uint32_t numUsers

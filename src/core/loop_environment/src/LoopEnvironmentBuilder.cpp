@@ -16,13 +16,45 @@ namespace llvm::noelle {
 
 LoopEnvironmentBuilder::LoopEnvironmentBuilder (
   LLVMContext &cxt,
-  LoopEnvironment *env,
-  const std::set<uint32_t> &singleVarIndices,
-  const std::set<uint32_t> &reducableVarIndices,
+  LoopEnvironment *environment,
+  std::function<bool (uint32_t variableIndex, bool isLiveOut)> shouldThisVariableBeReduced,
   uint64_t reducerCount,
   uint64_t numberOfUsers
-  ) : LoopEnvironmentBuilder(cxt, env->getTypesOfEnvironmentLocations(), singleVarIndices, reducableVarIndices, reducerCount, numberOfUsers)
+  ) : CXT{cxt}
   {
+  assert(environment != nullptr);
+
+  /*
+   * Group environment variables into reducable and not.
+   */
+  std::set<uint32_t> nonReducableVars;
+  std::set<uint32_t> reducableVars;
+  for (auto liveInVariableIndex: environment->getEnvIndicesOfLiveInVars()){
+    if (shouldThisVariableBeReduced(liveInVariableIndex, false)){
+      reducableVars.insert(liveInVariableIndex);
+    } else {
+      nonReducableVars.insert(liveInVariableIndex);
+    }
+  }
+  for (auto liveOutVariableIndex: environment->getEnvIndicesOfLiveOutVars()){
+    if (shouldThisVariableBeReduced(liveOutVariableIndex, true)){
+      reducableVars.insert(liveOutVariableIndex);
+    } else {
+      nonReducableVars.insert(liveOutVariableIndex);
+    }
+  }
+
+  /*
+   * Should an exit block environment variable be necessary, register one 
+   */
+  if (environment->indexOfExitBlockTaken() >= 0){ 
+    nonReducableVars.insert(environment->indexOfExitBlockTaken());
+  }
+
+  /*
+   * Initialize the builder
+   */
+  this->initializeBuilder(environment->getTypesOfEnvironmentLocations(), nonReducableVars, reducableVars, reducerCount, numberOfUsers);
 
   return ;
 }
@@ -34,23 +66,34 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder (
   const std::set<uint32_t> &reducableVarIndices,
   uint64_t reducerCount,
   uint64_t numberOfUsers
-  ) :   CXT{cxt}
-      , envArray{nullptr}
-      , envArrayInt8Ptr{nullptr}
-      , envSize{singleVarIndices.size() + reducableVarIndices.size()} 
-      , envArrayType{nullptr}
-      , envTypes{varTypes}
-      , envIndexToVar{}
-      , envIndexToAccumulatedReducableVar{}
-      , envIndexToReducableVar{}
-      , envIndexToVectorOfReducableVar{}
-      , numReducers{reducerCount} 
-      , envUsers{}
-  {
+  ) : CXT{cxt}
+  { 
 
   /*
-   * Assertions
+   * Initialize the builder
    */
+  this->initializeBuilder(varTypes, singleVarIndices, reducableVarIndices, reducerCount, numberOfUsers);
+
+  return ;
+}
+
+void LoopEnvironmentBuilder::initializeBuilder (
+  const std::vector<Type *> &varTypes,
+  const std::set<uint32_t> &singleVarIndices,
+  const std::set<uint32_t> &reducableVarIndices,
+  uint64_t reducerCount,
+  uint64_t numberOfUsers
+  ){
+
+  /*
+   * Initialize fields
+   */
+  this->envArray = nullptr;
+  this->envArrayInt8Ptr = nullptr;
+  this->envSize = singleVarIndices.size() + reducableVarIndices.size();
+  this->envArrayType = nullptr;
+  this->envTypes = varTypes;
+  this->numReducers = reducerCount;
   assert(this->envSize == this->envTypes.size() && "Environment variables must either be singular or reducible\n");
 
   /*
