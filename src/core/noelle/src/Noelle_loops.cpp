@@ -332,10 +332,9 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
   auto funcPDG = this->getFunctionDependenceGraph(function);
 
   /*
-   * Fetch the post dominators and scalar evolutions
+   * Fetch the post dominators
    */
   auto DS = this->getDominators(function);
-  auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
   /*
    * Fetch all loops of the current function.
@@ -348,7 +347,6 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
    * Collect the loop structures.
    */
   std::vector<LoopStructure *> loopStructures;
-  std::map<LoopStructure *, Loop *> loopStructureToLLVMLoop;
   for (auto loop : loops){
 
     /*
@@ -367,7 +365,6 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
       assert(!edge->isLoopCarriedDependence() && "Flag set");
     }
     loopStructures.push_back(loopS);
-    loopStructureToLLVMLoop[loopS] = loop;
   }
 
   /*
@@ -382,8 +379,15 @@ std::vector<LoopDependenceInfo *> * Noelle::getLoops (
     for (auto loopNode : tree->getNodes()){
       auto ls = loopNode->getLoop();
       assert(ls != nullptr);
-      auto LLVMLoop = loopStructureToLLVMLoop[ls];
-      auto ldi = new LoopDependenceInfo(funcPDG, loopNode, LLVMLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, this->loopAwareDependenceAnalysis);
+      assert(ls->getFunction() == function);
+
+      /*
+      * Forest generation invalids the previous generated LoopInfo, we need to recompute them
+      */
+      auto& newLI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+      auto& SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+      auto llvmLoop = newLI.getLoopFor(ls->getHeader());
+      auto ldi = new LoopDependenceInfo(funcPDG, loopNode, llvmLoop, *DS, SE, this->om->getMaximumNumberOfCores(), this->enableFloatAsReal, this->loopAwareDependenceAnalysis);
       allLoops->push_back(ldi);
     }
   }
