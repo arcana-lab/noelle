@@ -247,13 +247,15 @@ bool DOALL::apply (
   this->numTaskInstances = maxCores;
 
   /*
-   * Allocate memory for all environment variables
+   * Generate code to allocate and initialize the loop environment.
    */
-  auto preEnvRange = loopEnvironment->getEnvIndicesOfLiveInVars();
-  auto postEnvRange = loopEnvironment->getEnvIndicesOfLiveOutVars();
-  std::set<uint32_t> nonReducableVars(preEnvRange.begin(), preEnvRange.end());
-  std::set<uint32_t> reducableVars(postEnvRange.begin(), postEnvRange.end());
-  this->initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
+  auto isReducible = [](uint32_t idx, bool isLiveOut) -> bool {
+    if (!isLiveOut){
+      return false;
+    }
+    return true;
+  };
+  this->initializeEnvironmentBuilder(LDI, isReducible);
 
   /*
    * Clone loop into the single task used by DOALL

@@ -246,50 +246,27 @@ void HELIX::createParallelizableTask (
   assert(environment != nullptr);
 
   /*
-   * Fetch the indices of live-in and live-out variables of the loop being parallelized.
+   * Generate code to allocate and initialize the loop environment.
    */
-  auto liveInVars = environment->getEnvIndicesOfLiveInVars();
-  auto liveOutVars = environment->getEnvIndicesOfLiveOutVars();
-
-  /*
-   * Add all live-in and live-out variables as variables to be included in the environment.
-   */
-  std::set<uint32_t> nonReducableVars(liveInVars.begin(), liveInVars.end());
-  std::set<uint32_t> reducableVars{};
-  for (auto liveOutIndex : liveOutVars) {
+  auto isReducible = [environment, sccManager](uint32_t idx, bool isLiveOut) -> bool {
+    if (!isLiveOut){
+      return false;
+    }
 
     /*
      * We have a live-out variable.
      *
      * Check if it can be reduced so we can generate more efficient code that does not require a sequential segment.
      */
-    auto producer = environment->producerAt(liveOutIndex);
+    auto producer = environment->producerAt(idx);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->canExecuteReducibly()){
-
-      /*
-       * The live-out variable can be reduced so we can generate more efficient code that does not require a sequential segment.
-       */
-      reducableVars.insert(liveOutIndex);
-
-    } else {
-      nonReducableVars.insert(liveOutIndex);
+      return true;
     }
-  }
-
-  /*
-   * Add the memory location of the environment used to store the exit block taken to leave the parallelized loop.
-   * This location exists only if there is more than one loop exit.
-   */
-  if (loopStructure->numberOfExitBasicBlocks() > 1){ 
-    nonReducableVars.insert(environment->indexOfExitBlockTaken());
-  }
-
-  /*
-   * Build the single environment that is shared between all instances of the HELIX task.
-   */
-  this->initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
+    return false;
+  };
+  this->initializeEnvironmentBuilder(LDI, isReducible);
 
   /*
    * Clone the sequential loop and store the cloned instructions/basic blocks within the single task of HELIX.

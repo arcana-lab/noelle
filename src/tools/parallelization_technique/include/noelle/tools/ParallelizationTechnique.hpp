@@ -79,14 +79,19 @@ namespace llvm::noelle {
        */
       void initializeEnvironmentBuilder (
         LoopDependenceInfo *LDI,
+        std::function<bool (uint32_t variableIndex, bool isLiveOut)> shouldThisVariableBeReduced
+        );
+
+      void initializeEnvironmentBuilder (
+        LoopDependenceInfo *LDI,
         std::set<uint32_t> nonReducableVars
-      );
+        );
 
       void initializeEnvironmentBuilder (
         LoopDependenceInfo *LDI,
         std::set<uint32_t> simpleVars,
         std::set<uint32_t> reducableVars
-      );
+        );
 
       void allocateEnvironmentArray (
         LoopDependenceInfo *LDI

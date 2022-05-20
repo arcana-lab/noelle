@@ -28,6 +28,52 @@ Value * ParallelizationTechnique::getEnvArray (void) const {
 
 void ParallelizationTechnique::initializeEnvironmentBuilder (
   LoopDependenceInfo *LDI,
+  std::function<bool (uint32_t variableIndex, bool isLiveOut)> shouldThisVariableBeReduced
+  ){
+
+  /*
+   * Fetch the environment of the loop
+   */
+  auto environment = LDI->getEnvironment();
+  assert(environment != nullptr);
+
+  /*
+   * Group environment variables into reducable and not.
+   */
+  std::set<uint32_t> nonReducableVars;
+  std::set<uint32_t> reducableVars;
+  for (auto liveInVariableIndex: environment->getEnvIndicesOfLiveInVars()){
+    if (shouldThisVariableBeReduced(liveInVariableIndex, false)){
+      reducableVars.insert(liveInVariableIndex);
+    } else {
+      nonReducableVars.insert(liveInVariableIndex);
+    }
+  }
+  for (auto liveOutVariableIndex: environment->getEnvIndicesOfLiveOutVars()){
+    if (shouldThisVariableBeReduced(liveOutVariableIndex, true)){
+      reducableVars.insert(liveOutVariableIndex);
+    } else {
+      nonReducableVars.insert(liveOutVariableIndex);
+    }
+  }
+
+  /*
+   * Should an exit block environment variable be necessary, register one 
+   */
+  if (environment->indexOfExitBlockTaken() >= 0){ 
+    nonReducableVars.insert(environment->indexOfExitBlockTaken());
+  }
+ 
+  /*
+   * Generate code to allocate and initialize the loop environment.
+   */
+  this->initializeEnvironmentBuilder(LDI, nonReducableVars, reducableVars);
+
+  return ;
+}
+
+void ParallelizationTechnique::initializeEnvironmentBuilder (
+  LoopDependenceInfo *LDI,
   std::set<uint32_t> simpleVars,
   std::set<uint32_t> reducableVars
 ) {
