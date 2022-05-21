@@ -34,7 +34,7 @@ The only documentation available for NOELLE is:
 - the [paper](http://www.cs.northwestern.edu/~simonec/files/Research/papers/HELIX_CGO_2022.pdf)
 - the comments within the code
 - the slides we use in the class [Advanced Topics in Compilers](http://www.cs.northwestern.edu/~simonec/ATC.html)
-  (Projects that students do in this class are built upon NOELLE)
+  (students of this class do compiler projects upon NOELLE)
 
 
 ## Version
