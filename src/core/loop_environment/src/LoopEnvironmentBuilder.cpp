@@ -156,7 +156,7 @@ void LoopEnvironmentBuilder::addVariableToEnvironment (uint64_t varIndex, Type *
   return ;
 }
 
-void LoopEnvironmentBuilder::generateEnvArray (IRBuilder<> builder) {
+void LoopEnvironmentBuilder::allocateEnvironmentArray (IRBuilder<> builder) {
 
   /*
    * Check that we have an environment.
@@ -180,7 +180,7 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
    */
   if (!this->envArray) {
     errs() << "An environment array has not been generated!\n"
-      << "\tSee the LoopEnvironmentBuilder API call generateEnvArray\n";
+      << "\tSee the LoopEnvironmentBuilder API call allocateEnvironmentArray\n";
     abort();
   }
 

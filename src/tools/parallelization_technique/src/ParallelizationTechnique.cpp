@@ -137,7 +137,7 @@ void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI
    * Generate the environment.
    */
   IRBuilder<> builder(&*firstI);
-  envBuilder->generateEnvArray(builder);
+  envBuilder->allocateEnvironmentArray(builder);
   envBuilder->generateEnvVariables(builder);
 
   return ;

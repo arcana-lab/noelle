@@ -45,7 +45,7 @@ namespace llvm::noelle {
       /*
        * Generate code to create environment array/variable allocations
        */
-      void generateEnvArray (
+      void allocateEnvironmentArray (
         IRBuilder<> builder
         );
       void generateEnvVariables (

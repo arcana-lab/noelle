@@ -106,7 +106,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
    * Load incoming values from the preheader
    */
   IRBuilder<> loopFunctionBuilder(&*loopFunction->begin()->begin());
-  loopCarriedLoopEnvironmentBuilder->generateEnvArray(loopFunctionBuilder);
+  loopCarriedLoopEnvironmentBuilder->allocateEnvironmentArray(loopFunctionBuilder);
   loopCarriedLoopEnvironmentBuilder->generateEnvVariables(loopFunctionBuilder);
 
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
