@@ -70,7 +70,7 @@ bool AccumulatorOpInfo::isAddOp (unsigned op) {
   return Instruction::Add == op || Instruction::FAdd == op;
 }
 
-unsigned AccumulatorOpInfo::accumOpForType (unsigned op, Type *type) {
+Instruction::BinaryOps AccumulatorOpInfo::accumOpForType (unsigned op, Type *type) {
   switch (type->getTypeID()) {
     case Type::IntegerTyID:
       assert(integerReducingOperators.find(op) != integerReducingOperators.end()

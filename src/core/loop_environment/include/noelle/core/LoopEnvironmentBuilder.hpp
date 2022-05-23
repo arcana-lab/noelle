@@ -59,7 +59,7 @@ namespace llvm::noelle {
       BasicBlock * reduceLiveOutVariables (
         BasicBlock *bb,
         IRBuilder<> builder,
-        std::unordered_map<int, int> &reducableBinaryOps,
+        std::unordered_map<int, Instruction::BinaryOps> &reducableBinaryOps,
         std::unordered_map<int, Value *> &initialValues,
         Value *numberOfThreadsExecuted
       );

@@ -21,13 +21,13 @@ namespace llvm::noelle {
       std::set<unsigned> sideEffectFreeOps;
       std::set<unsigned> accumOps;
       std::unordered_map<unsigned, unsigned> opIdentities;
-      std::unordered_map<unsigned, unsigned> integerReducingOperators;
-      std::unordered_map<unsigned, unsigned> floatingReducingOperators;
+      std::unordered_map<unsigned, Instruction::BinaryOps> integerReducingOperators;
+      std::unordered_map<unsigned, Instruction::BinaryOps> floatingReducingOperators;
 
       bool isMulOp (unsigned op);
       bool isAddOp (unsigned op);
       bool isSubOp (unsigned op);
-      unsigned accumOpForType (unsigned op, Type *type);
+      Instruction::BinaryOps accumOpForType (unsigned op, Type *type);
       Value *generateIdentityFor (Instruction *accumulator, Type *castType);
   };
 

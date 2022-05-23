@@ -198,12 +198,23 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
   /*
    * Collect reduction operation information needed to accumulate reducable variables after parallelization execution
    */
-  std::unordered_map<int, int> reducableBinaryOps;
+  std::unordered_map<int, Instruction::BinaryOps> reducableBinaryOps;
   std::unordered_map<int, Value *> initialValues;
   for (auto envInd : environment->getEnvIndicesOfLiveOutVars()) {
-    auto isReduced = envBuilder->hasVariableBeenReduced(envInd);
-    if (!isReduced) continue;
 
+    /*
+     * Check if the current live-out variable was reduced.
+     */
+    auto isReduced = envBuilder->hasVariableBeenReduced(envInd);
+    if (!isReduced) {
+      continue;
+    }
+
+    /*
+     * The current live-out variable has been reduced.
+     *
+     * Collect information about the reduction
+     */
     auto producer = environment->producerAt(envInd);
     auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
     auto producerSCCAttributes = sccManager->getSCCAttrs(producerSCC);
@@ -215,7 +226,7 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
     auto binOpCode = firstAccumI->getOpcode();
     reducableBinaryOps[envInd] = sccManager->accumOpInfo.accumOpForType(binOpCode, producer->getType());
 
-    PHINode *loopEntryProducerPHI = this->fetchLoopEntryPHIOfProducer(LDI, producer);
+    auto loopEntryProducerPHI = this->fetchLoopEntryPHIOfProducer(LDI, producer);
     auto initValPHIIndex = loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
     auto initialValue = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
     initialValues[envInd] = castToCorrectReducibleType(*builder, initialValue, producer->getType());
