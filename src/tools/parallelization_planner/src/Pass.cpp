@@ -50,7 +50,6 @@ bool Planner::runOnModule (Module &M) {
    */
   auto verbosity = noelle.getVerbosity();
 
-
   /*
    * Fetch all the loops we want to parallelize.
    */
@@ -92,6 +91,7 @@ bool Planner::runOnModule (Module &M) {
   uint32_t parallelizationOrderIndex = 0;
   auto mm = noelle.getMetadataManager();
   for (auto tree : forest->getTrees()){
+
     /*
      * Select the loops to parallelize.
      */
