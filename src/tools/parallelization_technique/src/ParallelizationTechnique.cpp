@@ -198,8 +198,8 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
   /*
    * Collect reduction operation information needed to accumulate reducable variables after parallelization execution
    */
-  std::unordered_map<int, Instruction::BinaryOps> reducableBinaryOps;
-  std::unordered_map<int, Value *> initialValues;
+  std::unordered_map<uint32_t, Instruction::BinaryOps> reducableBinaryOps;
+  std::unordered_map<uint32_t, Value *> initialValues;
   for (auto envInd : environment->getEnvIndicesOfLiveOutVars()) {
 
     /*

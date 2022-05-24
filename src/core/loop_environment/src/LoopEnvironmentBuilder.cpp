@@ -267,7 +267,7 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
      */
     for (auto i = 0; i < numReducers; ++i) {
       auto reducePtr = fetchCastedEnvPtr(reduceArrAlloca, i, ptrType);
-      envIndexToReducableVar[envIndex].push_back(reducePtr);
+      this->envIndexToReducableVar[envIndex].push_back(reducePtr);
     }
   }
 
@@ -277,8 +277,8 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
 BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
   BasicBlock *bb,
   IRBuilder<> builder,
-  std::unordered_map<int, Instruction::BinaryOps> &reducableBinaryOps,
-  std::unordered_map<int, Value *> &initialValues,
+  const std::unordered_map<uint32_t, Instruction::BinaryOps> &reducableBinaryOps,
+  const std::unordered_map<uint32_t, Value *> &initialValues,
   Value *numberOfThreadsExecuted
 ) {
 
@@ -401,7 +401,7 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
     /*
      * Fetch the information about the operation to perform to accumulate values.
      */
-    auto binOp = reducableBinaryOps[envIndex];
+    auto binOp = reducableBinaryOps.at(envIndex);
 
     /*
      * Fetch the accumulator, which is the PHI node related to the current reduced variable.
