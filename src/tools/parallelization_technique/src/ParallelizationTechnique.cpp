@@ -182,14 +182,39 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
   /*
    * Synchronization: add SyncFunction before reduction
    */
+  BasicBlock* reductionPt = this->entryPointOfParallelizedLoop;
   if(initialValues.size()){
     errs() << "SUSAN: adding syncfunction at ParallelizationTechnique.cpp 186\n";
-    builder->CreateCall(SyncFunction, ArrayRef<Value *>({numberOfThreadsExecuted, memoryIndex}));
+    auto LS = LDI->getLoopStructure();
+    auto f = LS->getFunction();
+
+    //create a sync BB
+    reductionPt = BasicBlock::Create(f->getContext(), "SyncBB", f);
+
+    //link current BB to syncBB
+    auto bbTerminator = this->entryPointOfParallelizedLoop->getTerminator();
+    if (bbTerminator != nullptr){
+      bbTerminator->eraseFromParent();
+    }
+    builder->CreateBr(reductionPt);
+
+    //call SyncFunction in syncBB
+    IRBuilder<> syncBBBuilder{reductionPt};
+    syncBBBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({numberOfThreadsExecuted, memoryIndex}));
+
+    //link syncBB to successors of current BB
+    for(auto succ = succ_begin(this->entryPointOfParallelizedLoop);
+        succ != succ_end(this->entryPointOfParallelizedLoop); ++succ){
+      BasicBlock *succBB = *succ;
+      syncBBBuilder.CreateBr(succBB);
+    }
+
     SyncFunctionInserted = true;
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
-    this->entryPointOfParallelizedLoop,
+    //this->entryPointOfParallelizedLoop,
+    reductionPt,
     *builder,
     reducableBinaryOps,
     initialValues,
