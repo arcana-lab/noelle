@@ -71,7 +71,6 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
    */
   std::vector<Type *> phiTypes;
   std::set<uint32_t> nonReducablePHIs;
-  std::set<uint32_t> cannotReduceLoopCarriedPHIs;
   for (auto i = 0; i < clonedLoopCarriedPHIs.size(); ++i) {
     auto phiType = clonedLoopCarriedPHIs[i]->getType();
     phiTypes.push_back(phiType);
@@ -89,7 +88,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
   /*
    * Register a new environment builder and the single HELIX task
    */
-  this->loopCarriedLoopEnvironmentBuilder = new LoopEnvironmentBuilder(this->noelle.getProgram()->getContext(), phiTypes, nonReducablePHIs, cannotReduceLoopCarriedPHIs, 1, 1);
+  this->loopCarriedLoopEnvironmentBuilder = new LoopEnvironmentBuilder(this->noelle.getProgram()->getContext(), phiTypes, nonReducablePHIs, {}, 1, 1);
 
   /*
    * Fetch the unique user of the environment builder dedicated to spilled variables.
@@ -148,7 +147,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
     envUser->createEnvPtr(entryBuilder, phiI, phiTypes[phiI]);
     auto envPtr = envUser->getEnvPtr(phiI);
 
-    createLoadsAndStoresToSpilledLCD(LDI, reachabilityDFR, cloneToOriginalBlockMap, spilled, envPtr);
+    this->createLoadsAndStoresToSpilledLCD(LDI, reachabilityDFR, cloneToOriginalBlockMap, spilled, envPtr);
   }
 
   return ;
@@ -175,7 +174,7 @@ void HELIX::createLoadsAndStoresToSpilledLCD (
    * Store loop carried dependencies into the spill environment
    * Identify the basic block dominating all stores to the spill environment
    */
-  insertStoresToSpilledLCD(
+  this->insertStoresToSpilledLCD(
     LDI,
     cloneToOriginalBlockMap,
     spill,
