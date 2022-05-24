@@ -10,6 +10,7 @@
  */
 #pragma once
 
+#include "noelle/core/LoopNestingGraph.hpp"
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Queue.hpp"
 #include "noelle/core/StayConnectedNestedLoopForest.hpp"
@@ -145,6 +146,8 @@ namespace llvm::noelle {
       PDG * getProgramDependenceGraph (void) ;
 
       PDG * getFunctionDependenceGraph (Function *f) ;
+
+      LoopNestingGraph* getLoopNestingGraphForProgram(void);
 
       DataFlowAnalysis getDataFlowAnalyses (void) const ;
 

@@ -11,6 +11,9 @@ add_subdirectory(src)
 # Install
 install(
   FILES
+  include/noelle/core/LoopNestingGraph.hpp
+  include/noelle/core/LoopNestingGraphEdge.hpp
+  include/noelle/core/LoopNestingGraphNode.hpp
   include/noelle/core/MemoryCloningAnalysis.hpp
   include/noelle/core/Variable.hpp
   include/noelle/core/ControlFlowEquivalence.hpp

@@ -13,6 +13,7 @@
 #include "noelle/core/Architecture.hpp"
 #include "noelle/core/StayConnectedNestedLoopForest.hpp"
 #include "noelle/core/HotProfiler.hpp"
+#include <algorithm>
 
 namespace llvm::noelle {
 
@@ -1011,6 +1012,107 @@ LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
 
   return ldi;
 }
+
+/* 
+ * Get the loop nesting graph of the whole program
+ * 1. Get all loops as nodes
+ *   1.1. Add edges to existing nesting relations
+ * 2. Traverse the call graph, if there is a call from function A to function B
+ *   2.1. Get the subedges from A to B
+ *   2.2. For each subedge E <call_inst -> function B> , get the most inner loop L of the call_inst
+ *   2.3. Add an edge from L to all outermost loops in function B (may or must based on the subedge type)
+ */
+LoopNestingGraph *Noelle::getLoopNestingGraphForProgram () {
+  /*
+   * Fetch the profiles.
+   */
+  auto profiles = this->getProfiles();
+
+  /*
+   * Fetch the list of functions of the module.
+   */
+  this->getFunctionsManager();
+  auto mainFunction = this->fm->getEntryFunction();
+  assert(mainFunction != nullptr);
+  auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
+
+  /*
+   * Check if we should filter out loops.
+   */
+  auto filterLoops = this->checkToGetLoopFilteringInfo();
+
+  //  add loops into the loop nesting graph
+  std::vector<LoopStructure *> allLoops;
+  for (auto function : *functions){
+    auto allLoopsOfFunction = this->getLoopStructures(function, filterLoops);
+    allLoops.insert(allLoops.end(), allLoopsOfFunction->begin(), allLoopsOfFunction->end());
+  }
+  // FIXME: is the module necessary?
+  auto loopNestingGraph = new LoopNestingGraph(*this->program, allLoops);
+
+  /*
+   * Fetch the call graph.
+   */
+  auto fm = this->getFunctionsManager();
+  auto callGraph = fm->getProgramCallGraph();
+
+  /*
+   * For each function A, get the loop forest
+   * From the call graph, get all edges going out of A
+   */
+  for (auto function : *functions){
+    auto allLoopsOfFunction = this->getLoopStructures(function, filterLoops);
+    auto forest = this->organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+
+    // Add existing loop nesting relation as must edges
+    auto f = [&loopNestingGraph] (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
+      if (n->getParent() == nullptr){
+        return false;
+      }
+      auto parentLoop = n->getParent()->getLoop();
+      auto childLoop = n->getLoop();
+      loopNestingGraph->createEdge(parentLoop, nullptr, childLoop, true);
+
+      return false;
+    };
+
+    for (auto tree : forest->getTrees()) {
+      // iterate through the tree and add each 
+      tree->visitPreOrder(f);
+    }
+
+    auto funcCGNode = callGraph->getFunctionNode(function);
+    for (auto outEdge : funcCGNode->getOutgoingEdges()) {
+      auto calleeNode = outEdge->getCallee();
+      auto calleeFunction = calleeNode->getFunction();
+      // get all outermost loops of the calledFunction
+      auto allLoopsOfCallee = this->getLoopStructures(calleeFunction, filterLoops);
+
+      // filter out all loops not outermost loop (if loop->getNestingLevel==1)
+      std::vector<LoopStructure*>outermostLoopsOfCallee;
+      for (auto loop : *allLoopsOfCallee) {
+        if (loop->getNestingLevel() == 1) {
+          outermostLoopsOfCallee.push_back(loop);
+        }
+      }
+
+      for (auto subEdge : outEdge->getSubEdges()) {
+        auto caller = subEdge->getCaller();
+        auto callingInst = cast<CallBase>(caller->getInstruction());
+        auto parentLoop = forest->getInnermostLoopThatContains(callingInst)->getLoop();
+
+        // add the edges
+        for (auto outermostLoop : outermostLoopsOfCallee) {
+          loopNestingGraph->createEdge(parentLoop, callingInst, outermostLoop, subEdge->isAMustCall());
+        }
+      }
+
+    }
+  }
+
+}
+
+
 
 LoopDependenceInfo * Noelle::getLoopDependenceInfoForLoop (
     StayConnectedNestedLoopForestNode *loopNode,
