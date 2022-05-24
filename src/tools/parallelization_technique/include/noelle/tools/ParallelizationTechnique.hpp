@@ -63,6 +63,8 @@ namespace llvm::noelle {
       bool isSyncFunctionInserted(){ return SyncFunctionInserted; }
       std::vector<Value*> getLiveOutUses() { return LiveOutUses; }
       Instruction* getDispatcherInst() { return dispatcherInst; }
+      Value* getNumOfThreads(){ return numThreadsUsed; }
+      Value* getMemoryIndex(){ return memoryIndex; }
 
       /*
        * Destructor.

@@ -183,6 +183,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
    * Synchronization: add SyncFunction before reduction
    */
   if(initialValues.size()){
+    errs() << "SUSAN: adding syncfunction at ParallelizationTechnique.cpp 186\n";
     builder->CreateCall(SyncFunction, ArrayRef<Value *>({numberOfThreadsExecuted, memoryIndex}));
     SyncFunctionInserted = true;
   }

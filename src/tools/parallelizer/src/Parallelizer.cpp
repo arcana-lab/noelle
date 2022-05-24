@@ -189,6 +189,9 @@ namespace llvm::noelle {
     if(usedTechnique == &doall){
 
     bool SyncFunctionInserted = usedTechnique->isSyncFunctionInserted();
+    Value* threadsUsed = usedTechnique->getNumOfThreads();
+    Value* memoryIndex = usedTechnique->getMemoryIndex();
+
     if(!SyncFunctionInserted){
       for(auto liveoutUse : usedTechnique->getLiveOutUses()){
         // If the use is a PHINode, add sync function before the terminators of predecessor blocks
@@ -198,7 +201,8 @@ namespace llvm::noelle {
             BasicBlock *pred = *PI;
             Instruction *term = pred->getTerminator();
             IRBuilder<> beforeLiveOutUseBuilder(term);
-            beforeLiveOutUseBuilder.CreateCall(SyncFunction, ArrayRef<Value *>());
+            errs() << "SUSAN: adding call at Parallelizer.cpp line 201";
+            beforeLiveOutUseBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({threadsUsed, memoryIndex}));
           }
           SyncFunctionInserted = true;
         }
@@ -208,7 +212,8 @@ namespace llvm::noelle {
           BasicBlock::iterator I;
           for (I = bb->begin(); isa<PHINode>(I); ++I);
             IRBuilder<> beforeLiveOutUseBuilder(&*I);
-          auto syncUpInst = beforeLiveOutUseBuilder.CreateCall(SyncFunction, ArrayRef<Value *>());
+            errs() << "SUSAN: adding call at Parallelizer.cpp line 212";
+          auto syncUpInst = beforeLiveOutUseBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({threadsUsed, memoryIndex}));
           SyncFunctionInserted = true;
         }
       }
@@ -229,7 +234,8 @@ namespace llvm::noelle {
       for(auto &I : *bb){
         if(externalDeps.find(&I) != externalDeps.end()){
           IRBuilder<> beforeDepBuilder(&I);
-          beforeDepBuilder.CreateCall(SyncFunction, ArrayRef<Value *>());
+          errs() << "SUSAN: adding call at Parallelizer.cpp line 234";
+          beforeDepBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({threadsUsed, memoryIndex}));
           SyncFunctionInserted = true;
           break;
         }
@@ -241,7 +247,7 @@ namespace llvm::noelle {
      */
     if(!SyncFunctionInserted){
         IRBuilder<> beforeDispatcherBuilder(usedTechnique->getDispatcherInst());
-        beforeDispatcherBuilder.CreateCall(SyncFunction, ArrayRef<Value *>());
+        beforeDispatcherBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({threadsUsed, memoryIndex}));
     }
 
     } //end of adding sync function for doall
