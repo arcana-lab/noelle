@@ -62,7 +62,7 @@ namespace llvm::noelle {
         const std::unordered_map<uint32_t, Instruction::BinaryOps> &reducableBinaryOps,
         const std::unordered_map<uint32_t, Value *> &initialValues,
         Value *numberOfThreadsExecuted
-      );
+      ) ;
 
       /*
        * As all users of the environment know its structure, pass around the equivalent of a void pointer
@@ -71,8 +71,8 @@ namespace llvm::noelle {
       Value * getEnvironmentArray (void) const ;
       ArrayType * getEnvironmentArrayType (void) const ;
 
-      LoopEnvironmentUser * getUser (uint32_t user);
-      uint32_t getNumberOfUsers (void);
+      LoopEnvironmentUser * getUser (uint32_t user) const ;
+      uint32_t getNumberOfUsers (void) const ;
 
       Value * getEnvironmentVariable (uint32_t ind) const ;
       Value * getAccumulatedReducedEnvironmentVariable (uint32_t ind) const ;

@@ -281,6 +281,7 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
   const std::unordered_map<uint32_t, Value *> &initialValues,
   Value *numberOfThreadsExecuted
 ) {
+  assert(bb != nullptr);
 
   /*
    * Check if there are any live-out variable that needs to be reduced.
@@ -293,6 +294,7 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
    * Fetch the function that "bb" belongs to.
    */
   auto f = bb->getParent();
+  assert(f != nullptr);
 
   /*
    * Create a new basic block that will include the loop body.
@@ -373,7 +375,7 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
     /*
      * Now, we compute the effective address.
      */
-    auto baseAddressOfReducedVar = this->envIndexToVectorOfReducableVar[envIndex];
+    auto baseAddressOfReducedVar = this->envIndexToVectorOfReducableVar.at(envIndex);
     auto zeroV = cast<Value>(ConstantInt::get(int32Type, 0));
     auto effectiveAddressOfReducedVar = loopBodyBuilder.CreateInBoundsGEP(baseAddressOfReducedVar, ArrayRef<Value*>({ zeroV, offsetValue}));
 
@@ -417,7 +419,7 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
     /*
      * Keep track of the new accumulator value.
      */
-    envIndexToAccumulatedReducableVar[envIndex] = newAccumulatorValue;
+    this->envIndexToAccumulatedReducableVar[envIndex] = newAccumulatorValue;
 
     count++;
   }
@@ -437,7 +439,7 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
     /*
      * Fetch the value computed by the previous iteration.
      */
-    auto previousIterationAccumulatorValue = envIndexToAccumulatedReducableVar[envIndex];
+    auto previousIterationAccumulatorValue = this->envIndexToAccumulatedReducableVar.at(envIndex);
 
     /*
      * Add the value related to the previous iteration of the reduction loop.
@@ -505,17 +507,17 @@ bool LoopEnvironmentBuilder::hasVariableBeenReduced (uint32_t ind) const {
   return isReduce;
 }
       
-LoopEnvironmentUser * LoopEnvironmentBuilder::getUser (uint32_t user) { 
+LoopEnvironmentUser * LoopEnvironmentBuilder::getUser (uint32_t user) const { 
   if (user >= this->getNumberOfUsers()){
     abort();
   }
-  auto u = this->envUsers[user]; 
+  auto u = this->envUsers.at(user);
   assert(u != nullptr);
 
   return u;
 }
 
-uint32_t LoopEnvironmentBuilder::getNumberOfUsers (void) {
+uint32_t LoopEnvironmentBuilder::getNumberOfUsers (void) const {
   return envUsers.size(); 
 }
       

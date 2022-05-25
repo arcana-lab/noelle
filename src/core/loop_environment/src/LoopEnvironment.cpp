@@ -109,7 +109,7 @@ LoopEnvironment::LoopEnvironment (
 
 Type * LoopEnvironment::typeOfEnvironmentLocation (uint64_t index) const {
   if (index < envProducers.size()) {
-    return envProducers[index]->getType();
+    return this->envProducers[index]->getType();
   }
 
   return exitBlockType;
