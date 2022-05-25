@@ -44,6 +44,7 @@ namespace {
         errs() << "The program has no loops\n";
         return false;
       }
+      auto forest = noelle.organizeLoopsInTheirNestingForest(*loops);
  
       /*
        * Fetch the hottest loop.
