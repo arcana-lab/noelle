@@ -243,12 +243,10 @@ namespace llvm::noelle {
     }
 
     /*
-     * Synchronization: add sync function before dispatcher if no sync function added because of reduction/liveouts/dependences
+     * Synchronization: add sync function before dispatcher
      */
-    if(!SyncFunctionInserted){
-        IRBuilder<> beforeDispatcherBuilder(usedTechnique->getDispatcherInst());
-        beforeDispatcherBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({threadsUsed, memoryIndex}));
-    }
+      IRBuilder<> beforeDispatcherBuilder(usedTechnique->getDispatcherInst());
+      beforeDispatcherBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({threadsUsed, memoryIndex}));
 
     } //end of adding sync function for doall
 

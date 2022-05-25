@@ -115,6 +115,11 @@ namespace llvm::noelle {
         );
 
       /*
+       * Synchronization: create synchronization logic
+       */
+       BasicBlock* CreateSynchronization (Function *f, IRBuilder<> builder, BasicBlock* bbBeforeSync, Value *numberOfThreadsExecuted, Value *memoryIndex);
+
+      /*
        * Task helpers for manipulating loop body clones
        */
       virtual void cloneSequentialLoop (
@@ -260,6 +265,7 @@ namespace llvm::noelle {
       Instruction* dispatcherInst;
       Value *numThreadsUsed;
       Value *memoryIndex;
+      Instruction *isSyncedAlloca;
   };
 
 }

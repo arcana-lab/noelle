@@ -107,6 +107,44 @@ void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI
   return ;
 }
 
+BasicBlock* ParallelizationTechnique::CreateSynchronization (Function *f, IRBuilder<> builder,
+    BasicBlock* bbBeforeSync, Value *numberOfThreadsExecuted, Value *memoryIndex) {
+
+    //unlink current BB
+    auto bbTerminator = bbBeforeSync->getTerminator();
+    if (bbTerminator != nullptr){
+      bbTerminator->eraseFromParent();
+    }
+
+    //create check for whether synced or not yet
+    auto int1Ty = IntegerType::get(builder.getContext(), 1);
+    auto constantOne = ConstantInt::get(int1Ty, 1);
+    auto loadedSyncBit = builder.CreateLoad(int1Ty, isSyncedAlloca);
+    auto cmpSync = builder.CreateICmpEQ(loadedSyncBit, constantOne);
+
+    //create a sync BB
+    auto syncBB = BasicBlock::Create(f->getContext(), "SyncBB", f);
+
+    //create a BB after syncBB
+    auto afterSyncBB = BasicBlock::Create(f->getContext(), "afterSyncBB", f, syncBB);
+
+    //create branch based on whether synced or not
+    builder.CreateCondBr(cmpSync, afterSyncBB, syncBB);
+
+    //call SyncFunction in syncBB
+    IRBuilder<> syncBBBuilder{syncBB};
+    syncBBBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({numberOfThreadsExecuted, memoryIndex}));
+
+    //store 1 to isSyncedSignal
+    int1Ty = IntegerType::get(syncBBBuilder.getContext(), 1);
+    syncBBBuilder.CreateStore(ConstantInt::get(int1Ty,1), isSyncedAlloca);
+
+    //link syncBB to afterSyncBB
+    syncBBBuilder.CreateBr(afterSyncBB);
+
+    return afterSyncBB;
+}
+
 void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LDI) {
 
   /*
@@ -142,11 +180,17 @@ void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LD
 BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted, Value *memoryIndex) {
   auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
 
+
+
   /*
    * Fetch the loop headers.
    */
   auto loopSummary = LDI->getLoopStructure();
   auto loopPreHeader = loopSummary->getPreHeader();
+  auto f = loopSummary->getFunction();
+
+
+
 
   /*
    * Fetch the SCC manager.
@@ -185,33 +229,15 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
   BasicBlock* reductionPt = this->entryPointOfParallelizedLoop;
   if(initialValues.size()){
     errs() << "SUSAN: adding syncfunction at ParallelizationTechnique.cpp 186\n";
-    auto LS = LDI->getLoopStructure();
-    auto f = LS->getFunction();
-
-    //create a sync BB
-    reductionPt = BasicBlock::Create(f->getContext(), "SyncBB", f);
-
-    //link current BB to syncBB
-    auto bbTerminator = this->entryPointOfParallelizedLoop->getTerminator();
-    if (bbTerminator != nullptr){
-      bbTerminator->eraseFromParent();
-    }
-    builder->CreateBr(reductionPt);
-
-    //call SyncFunction in syncBB
-    IRBuilder<> syncBBBuilder{reductionPt};
-    syncBBBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({numberOfThreadsExecuted, memoryIndex}));
-
-    //link syncBB to successors of current BB
-    for(auto succ = succ_begin(this->entryPointOfParallelizedLoop);
-        succ != succ_end(this->entryPointOfParallelizedLoop); ++succ){
-      BasicBlock *succBB = *succ;
-      syncBBBuilder.CreateBr(succBB);
-    }
-
+    reductionPt = CreateSynchronization(f, *builder, this->entryPointOfParallelizedLoop,
+        numberOfThreadsExecuted, memoryIndex);
     SyncFunctionInserted = true;
+    delete builder;
+    builder = new IRBuilder<>(reductionPt);
   }
 
+
+  errs() << "SUSAN: printing created function:" << *f << "\n";
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
     //this->entryPointOfParallelizedLoop,
     reductionPt,

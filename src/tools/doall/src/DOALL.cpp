@@ -396,15 +396,25 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   }));
 
   /*
+   * Synchronization: create a bit for this dispatch indicating whether it's synced
+   */
+  IRBuilder<> entryBuilder(loopFunction->getEntryBlock().getTerminator());
+  auto int1Ty = IntegerType::get(entryBuilder.getContext(), 1);
+  isSyncedAlloca = entryBuilder.CreateAlloca(int1Ty);
+  entryBuilder.CreateStore(ConstantInt::get(int1Ty, 1), isSyncedAlloca);
+
+  /*
+   * Synchronization: store 0 to isSynced after dispatch inst
+   */
+  doallBuilder.CreateStore(ConstantInt::get(int1Ty, 0), isSyncedAlloca);
+
+  /*
    * Synchronization: store call to dispatcherinst and use in Parallelizer to insert synchronization calls
    */
   dispatcherInst = doallCallInst;
 
   numThreadsUsed = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
 
-  /*
-   * Synchronization: create extract value inst to extract memory index
-   */
   memoryIndex = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)1);
 
   /*
