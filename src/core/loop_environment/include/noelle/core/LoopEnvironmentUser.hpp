@@ -18,9 +18,15 @@ namespace llvm::noelle {
    public:
     LoopEnvironmentUser ();
 
-    void setEnvArray (Value *envArr) { this->envArray = envArr; }
+    void setEnvironmentArray (
+      Value *envArr
+      ) ;
 
-    void createEnvPtr (IRBuilder<> b, int envIndex, Type *type);
+    Instruction * createEnvironmentVariablePointer (
+      IRBuilder<> b, 
+      uint32_t envIndex, 
+      Type *type
+      );
 
     void createReducableEnvPtr (
       IRBuilder<> b,

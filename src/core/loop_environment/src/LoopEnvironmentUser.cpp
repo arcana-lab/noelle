@@ -24,10 +24,14 @@ LoopEnvironmentUser::LoopEnvironmentUser ()
 
   return ;
 }
+    
+void LoopEnvironmentUser::setEnvironmentArray (Value *envArr) { 
+  this->envArray = envArr;
+}
 
-void LoopEnvironmentUser::createEnvPtr (
+Instruction * LoopEnvironmentUser::createEnvironmentVariablePointer (
   IRBuilder<> builder,
-  int envIndex,
+  uint32_t envIndex,
   Type *type
 ) {
 
@@ -50,15 +54,27 @@ void LoopEnvironmentUser::createEnvPtr (
    */
   auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
 
+  /*
+   * Compute the offset of the environment variable.
+   */
   auto envIndV = cast<Value>(ConstantInt::get(int64, envIndex * valuesInCacheLine));
 
+  /*
+   * Compute the address of the environment variable
+   */
   auto envGEP = builder.CreateInBoundsGEP(
     this->envArray,
     ArrayRef<Value*>({ zeroV, envIndV })
   );
   auto envPtr = builder.CreateBitCast(envGEP, PointerType::getUnqual(type));
 
-  this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
+  /*
+   * Cache the pointer of the environment variable.
+   */
+  auto ptrInst = cast<Instruction>(envPtr);
+  this->envIndexToPtr[envIndex] = ptrInst;
+
+  return ptrInst;
 }
 
 void LoopEnvironmentUser::createReducableEnvPtr (
