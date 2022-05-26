@@ -65,6 +65,7 @@ namespace llvm::noelle {
       Instruction* getDispatcherInst() { return dispatcherInst; }
       Value* getNumOfThreads(){ return numThreadsUsed; }
       Value* getMemoryIndex(){ return memoryIndex; }
+      BasicBlock* CreateSynchronization (Function *f, IRBuilder<> builder, BasicBlock* bbBeforeSync, BasicBlock* originalBBAfterSync, bool eraseTarget);
 
       /*
        * Destructor.
@@ -114,10 +115,7 @@ namespace llvm::noelle {
         Value *memoryIndex = nullptr
         );
 
-      /*
-       * Synchronization: create synchronization logic
-       */
-       BasicBlock* CreateSynchronization (Function *f, IRBuilder<> builder, BasicBlock* bbBeforeSync, Value *numberOfThreadsExecuted, Value *memoryIndex);
+
 
       /*
        * Task helpers for manipulating loop body clones
@@ -266,6 +264,8 @@ namespace llvm::noelle {
       Value *numThreadsUsed;
       Value *memoryIndex;
       Instruction *isSyncedAlloca;
+      Instruction *numCoresAlloca;
+      Instruction *memoryIdxAlloca;
   };
 
 }

@@ -245,8 +245,19 @@ namespace llvm::noelle {
     /*
      * Synchronization: add sync function before dispatcher
      */
-      IRBuilder<> beforeDispatcherBuilder(usedTechnique->getDispatcherInst());
-      beforeDispatcherBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({threadsUsed, memoryIndex}));
+    auto dispatcherInst = usedTechnique->getDispatcherInst();
+    auto dispatcherBB = dispatcherInst->getParent();
+    Function *f = dispatcherBB->getParent();
+    errs() << "SUSAN: function before transform: " << *f << "\n";
+    for (pred_iterator PI = pred_begin(dispatcherBB), E = pred_end(dispatcherBB); PI != E; ++PI){
+      BasicBlock *predBB = *PI;
+      auto builder = new IRBuilder<>(predBB);
+      auto afterSyncBB = usedTechnique->CreateSynchronization(f, *builder, predBB, dispatcherBB, 0);
+      delete builder;
+      //link afterSyncBB to dispatcherBB
+      IRBuilder <>afterSyncBuilder(afterSyncBB);
+      afterSyncBuilder.CreateBr(dispatcherBB);
+    }
 
     } //end of adding sync function for doall
 

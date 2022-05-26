@@ -397,11 +397,16 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
 
   /*
    * Synchronization: create a bit for this dispatch indicating whether it's synced
+   * create variable for numCores and memoryIdx
    */
   IRBuilder<> entryBuilder(loopFunction->getEntryBlock().getTerminator());
   auto int1Ty = IntegerType::get(entryBuilder.getContext(), 1);
   isSyncedAlloca = entryBuilder.CreateAlloca(int1Ty);
   entryBuilder.CreateStore(ConstantInt::get(int1Ty, 1), isSyncedAlloca);
+  auto int32Ty = IntegerType::get(entryBuilder.getContext(), 32);
+  numCoresAlloca = entryBuilder.CreateAlloca(int32Ty);
+  auto int64Ty = IntegerType::get(entryBuilder.getContext(), 64);
+  memoryIdxAlloca = entryBuilder.CreateAlloca(int64Ty);
 
   /*
    * Synchronization: store 0 to isSynced after dispatch inst
@@ -414,8 +419,10 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   dispatcherInst = doallCallInst;
 
   numThreadsUsed = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
+  doallBuilder.CreateStore(numThreadsUsed, numCoresAlloca);
 
   memoryIndex = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)1);
+  doallBuilder.CreateStore(memoryIndex, memoryIdxAlloca);
 
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
