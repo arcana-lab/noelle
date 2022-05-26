@@ -36,6 +36,16 @@ bool ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeApplie
     return false;
   }
 
+  /*
+   * We do not handle loops with invoke instructions.
+   * This is because one of the successor will be a landingpad, which cannot have normal basic blocks as predecessors; this breaks assumptions done for the parallelization.
+   */
+  for (auto i : ls->getInstructions()){
+    if (isa<InvokeInst>(i)){
+      return false;
+    }
+  }
+
   return true;
 }
 

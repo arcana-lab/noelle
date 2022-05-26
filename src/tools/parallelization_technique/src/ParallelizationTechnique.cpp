@@ -99,7 +99,7 @@ void ParallelizationTechnique::initializeLoopEnvironmentUsers (void){
      */
     auto entryBlock = task->getEntry();
     IRBuilder<> entryBuilder(entryBlock);
-    envUser->setEnvArray(entryBuilder.CreateBitCast(
+    envUser->setEnvironmentArray(entryBuilder.CreateBitCast(
       task->getEnvironment(),
       PointerType::getUnqual(envBuilder->getEnvironmentArrayType())
     ));
@@ -635,8 +635,8 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
           /*
            * Add the load inside the task to load from the environment the new live-in.
            */
-          envUser->createEnvPtr(entryBuilder, newLiveInEnvironmentIndex, opJ->getType());
-          auto environmentLocationLoad = entryBuilder.CreateLoad(envUser->getEnvPtr(newLiveInEnvironmentIndex));
+          auto envVarPtr = envUser->createEnvironmentVariablePointer(entryBuilder, newLiveInEnvironmentIndex, opJ->getType());
+          auto environmentLocationLoad = entryBuilder.CreateLoad(envVarPtr);
 
           /*
            * Make the task aware that the new load represents the live-in value.
@@ -676,6 +676,11 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
   auto task = this->tasks[taskIndex];
 
   /*
+   * Fetch the environment of the loop.
+   */
+  auto env = LDI->getEnvironment();
+
+  /*
    * Fetch the user of the environment attached to the task.
    */
   auto envUser = this->envBuilder->getUser(taskIndex);
@@ -689,13 +694,12 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
     /*
      * Fetch the current producer of the original code that generates the live-in value.
      */
-    auto producer = LDI->getEnvironment()->producerAt(envIndex);
+    auto producer = env->producerAt(envIndex);
 
     /*
      * Create GEP access of the environment variable at the given index
      */
-    envUser->createEnvPtr(builder, envIndex, producer->getType());
-    auto envPointer = envUser->getEnvPtr(envIndex);
+    auto envPointer = envUser->createEnvironmentVariablePointer(builder, envIndex, producer->getType());
 
     /*
      * Load the live-in value from the environment pointer.
@@ -765,7 +769,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     if (isReduced) {
       envUser->createReducableEnvPtr(entryBuilder, envIndex, envType, numTaskInstances, task->getTaskInstanceID());
     } else {
-      envUser->createEnvPtr(entryBuilder, envIndex, envType);
+      envUser->createEnvironmentVariablePointer(entryBuilder, envIndex, envType);
     }
     auto envPtr = envUser->getEnvPtr(envIndex);
 
@@ -1279,7 +1283,7 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
   IRBuilder<> entryBuilder(entryTerminator);
 
   auto envType = environment->typeOfEnvironmentLocation(exitBlockEnvIndex);
-  envUser->createEnvPtr(entryBuilder, exitBlockEnvIndex, envType);
+  envUser->createEnvironmentVariablePointer(entryBuilder, exitBlockEnvIndex, envType);
 
   /*
    * Add a store instruction to specify to the code outside the parallelized loop which exit block is taken.

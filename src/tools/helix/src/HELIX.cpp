@@ -471,9 +471,8 @@ bool HELIX::synchronizeTask (
   }
 
   /*
-   * NOTE: The assumption being made here is that if we have a last iteration execution block,
-   * it is because we have attributed a loop governing IV. Our attribution relies on there
-   * being only one loop exit that is controlled by an IV. Hence, we fetch the lone exit block
+   * The assumption being made here is that if we have a last iteration execution block, it is because the loop has a loop governing IV.
+   * Our attribution relies on there being only one loop exit that is controlled by an IV. Hence, we fetch the unique exit block.
    */
   auto originalExitBlocks = this->originalLDI->getLoopStructure()->getLoopExitBasicBlocks();
   auto originalSingleExitBlock = *originalExitBlocks.begin();

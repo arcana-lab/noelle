@@ -95,7 +95,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
    */
   auto envUser = this->loopCarriedLoopEnvironmentBuilder->getUser(0);
 
-  envUser->setEnvArray(entryBuilder.CreateBitCast(
+  envUser->setEnvironmentArray(entryBuilder.CreateBitCast(
     helixTask->loopCarriedArrayArg,
     PointerType::getUnqual(loopCarriedLoopEnvironmentBuilder->getEnvironmentArrayType())
   ));
@@ -144,8 +144,7 @@ void HELIX::spillLoopCarriedDataDependencies (LoopDependenceInfo *LDI, DataFlowR
     /*
      * Create GEP access of the environment variable at index i
      */
-    envUser->createEnvPtr(entryBuilder, phiI, phiTypes[phiI]);
-    auto envPtr = envUser->getEnvPtr(phiI);
+    auto envPtr = envUser->createEnvironmentVariablePointer(entryBuilder, phiI, phiTypes[phiI]);
 
     this->createLoadsAndStoresToSpilledLCD(LDI, reachabilityDFR, cloneToOriginalBlockMap, spilled, envPtr);
   }

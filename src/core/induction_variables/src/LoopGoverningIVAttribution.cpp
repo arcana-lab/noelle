@@ -55,6 +55,18 @@ namespace llvm::noelle {
       auto value = internalNodePair.first;
 
       /*
+       * Check whether the current instruction is an invoke
+       */
+      if (isa<InvokeInst>(value)){
+
+        /*
+         * An invoke might jump outside the loop if an exception will occur.
+         * Hence, we don't have a loop governing IV.
+         */
+        return ;
+      }
+
+      /*
        * Check whether the current instruction is a branch
        */
       if (!isa<BranchInst>(value)) {
