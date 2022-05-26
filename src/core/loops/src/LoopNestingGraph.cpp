@@ -57,8 +57,11 @@ namespace llvm::noelle {
   }
 
   void LoopNestingGraph::createEdge (LoopStructure *parent, CallBase *callInst, LoopStructure *child, bool isMust) {
-    assert(this->loops.find(parent) != this->loops.end());
-    auto fromNode = this->loops.at(child);
+    if (this->loops.find(parent) == this->loops.end()) {
+      errs() << "unrecognized loop" << parent->getFunction()->getName() << parent->getHeader()->getName() << "\n";
+      assert(false && "unrecognized loop");
+    }
+    auto fromNode = this->loops.at(parent);
     fetchOrCreateEdge(fromNode, callInst, child, isMust);
   }
 

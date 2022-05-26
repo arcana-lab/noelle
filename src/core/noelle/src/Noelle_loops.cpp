@@ -8,6 +8,7 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Architecture.hpp"
@@ -1060,56 +1061,57 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram () {
    * For each function A, get the loop forest
    * From the call graph, get all edges going out of A
    */
-  for (auto function : *functions){
-    auto allLoopsOfFunction = this->getLoopStructures(function, filterLoops);
-    auto forest = this->organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
-
-    // Add existing loop nesting relation as must edges
-    auto f = [&loopNestingGraph] (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
-      if (n->getParent() == nullptr){
-        return false;
-      }
-      auto parentLoop = n->getParent()->getLoop();
-      auto childLoop = n->getLoop();
-      loopNestingGraph->createEdge(parentLoop, nullptr, childLoop, true);
-
+  auto forest = this->organizeLoopsInTheirNestingForest(allLoops);
+  // Add existing loop nesting relation as must edges
+  auto f = [&loopNestingGraph] (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
+    if (n->getParent() == nullptr){
       return false;
-    };
-
-    for (auto tree : forest->getTrees()) {
-      // iterate through the tree and add each 
-      tree->visitPreOrder(f);
     }
+    auto parentLoop = n->getParent()->getLoop();
+    auto childLoop = n->getLoop();
+    loopNestingGraph->createEdge(parentLoop, nullptr, childLoop, true);
 
-    auto funcCGNode = callGraph->getFunctionNode(function);
-    for (auto outEdge : funcCGNode->getOutgoingEdges()) {
-      auto calleeNode = outEdge->getCallee();
-      auto calleeFunction = calleeNode->getFunction();
-      // get all outermost loops of the calledFunction
-      auto allLoopsOfCallee = this->getLoopStructures(calleeFunction, filterLoops);
+    return false;
+  };
 
-      // filter out all loops not outermost loop (if loop->getNestingLevel==1)
-      std::vector<LoopStructure*>outermostLoopsOfCallee;
-      for (auto loop : *allLoopsOfCallee) {
-        if (loop->getNestingLevel() == 1) {
-          outermostLoopsOfCallee.push_back(loop);
-        }
-      }
+  for (auto tree : forest->getTrees()) {
+    // iterate through the tree and add each 
+    tree->visitPreOrder(f);
+  }
 
-      for (auto subEdge : outEdge->getSubEdges()) {
-        auto caller = subEdge->getCaller();
-        auto callingInst = cast<CallBase>(caller->getInstruction());
-        auto parentLoop = forest->getInnermostLoopThatContains(callingInst)->getLoop();
-
-        // add the edges
-        for (auto outermostLoop : outermostLoopsOfCallee) {
-          loopNestingGraph->createEdge(parentLoop, callingInst, outermostLoop, subEdge->isAMustCall());
-        }
-      }
-
+  std::map<Function*, unordered_set<LoopStructure*>> outermostLoopsMap;
+  // filter out all loops not outermost loop (if loop->getNestingLevel==1)
+  for (auto loop : allLoops) {
+    if (loop->getNestingLevel() == 1) {
+      // get function
+      auto fcn = loop->getFunction();
+      outermostLoopsMap[fcn].insert(loop);
     }
   }
 
+  for (auto calleeNode: callGraph->getFunctionNodes()){
+    auto calleeFunction = calleeNode->getFunction();
+    if (outermostLoopsMap.find(calleeFunction) == outermostLoopsMap.end())
+      continue;
+
+    for (auto edge : calleeNode->getIncomingEdges()) {
+      for (auto subEdge : edge->getSubEdges()) {
+        auto caller = subEdge->getCaller();
+        auto callingInst = cast<CallBase>(caller->getInstruction());
+        if (auto loopNode = forest->getInnermostLoopThatContains(callingInst)) {
+          auto parentLoop = loopNode->getLoop();
+
+          // add the edges
+          for (auto outermostLoop : outermostLoopsMap[calleeFunction]) {
+            loopNestingGraph->createEdge(parentLoop, callingInst, outermostLoop,
+                                         subEdge->isAMustCall());
+          }
+        }
+      }
+    }
+  }
+
+  return loopNestingGraph;
 }
 
 

@@ -49,7 +49,10 @@ namespace llvm::noelle{
   }
 
   void LoopNestingGraphLoopLoopEdge::print (void) {
-    errs() << "TODO\n";
+    this->parent->print();
+    errs() << " -> ";
+    this->child->print();
+    errs() << "\n";
 
     return ;
   }
@@ -60,6 +63,9 @@ namespace llvm::noelle{
      * Fetch the caller.
      */
     auto instNode = subEdge->getCaller();
+    if (instNode == nullptr){
+      return ;
+    }
     auto inst = instNode->getInstruction();
 
     /*
