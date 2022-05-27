@@ -254,6 +254,14 @@ namespace llvm::noelle {
        */
       InsertSyncFunctionBefore(dispatcherBB, usedTechnique, f, addedSyncEdges);
 
+      /*
+       * Synchronization: add sync function before exiting functions
+       */
+      for(auto &BB : *f)
+        for(auto &I : BB)
+          if(isa<ReturnInst>(&I))
+            InsertSyncFunctionBefore(&BB, usedTechnique, f, addedSyncEdges);
+
     } //end of adding sync function for doall
 
     if (verbose != Verbosity::Disabled) {
