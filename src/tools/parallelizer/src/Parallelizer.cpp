@@ -227,13 +227,11 @@ namespace llvm::noelle {
       /*
        * Synchronization: Insert sync function before live-out
        */
-      errs() << "SUSAN: f before add sync to liveout" << *f << "\n";
       std::set<std::pair<BasicBlock*, BasicBlock*>> addedSyncEdges;
       for(auto liveoutUse : usedTechnique->getLiveOutUses()){
         Instruction* liveoutInst = dyn_cast<Instruction>(liveoutUse);
         if(!liveoutInst) continue;
         auto liveoutBB = liveoutInst->getParent();
-        errs() << "SUSAN: liveoutBB: " << *liveoutBB << "\n";
         InsertSyncFunctionBefore(liveoutBB, usedTechnique, f, addedSyncEdges);
       }
 
@@ -248,15 +246,12 @@ namespace llvm::noelle {
         depBBs.insert(depInst->getParent());
       }
 
-      for(auto bb : depBBs){
-        errs() << "SUSAN: memDepBB: " << *bb << "\n";
+      for(auto bb : depBBs)
         InsertSyncFunctionBefore(bb, usedTechnique, f, addedSyncEdges);
-      }
 
       /*
        * Synchronization: add sync function before dispatcher
        */
-      errs() << "SUSAN: function before transform: " << *f << "\n";
       InsertSyncFunctionBefore(dispatcherBB, usedTechnique, f, addedSyncEdges);
 
     } //end of adding sync function for doall

@@ -254,7 +254,6 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
    */
   BasicBlock* reductionPt = this->entryPointOfParallelizedLoop;
   if(initialValues.size()){
-    errs() << "SUSAN: adding syncfunction at ParallelizationTechnique.cpp 186\n";
     reductionPt = CreateSynchronization(f, *builder, this->entryPointOfParallelizedLoop, nullptr, 1);
     SyncFunctionInserted = true;
     delete builder;
@@ -262,9 +261,7 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
   }
 
 
-  errs() << "SUSAN: printing created function:" << *f << "\n";
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
-    //this->entryPointOfParallelizedLoop,
     reductionPt,
     *builder,
     reducableBinaryOps,
