@@ -117,17 +117,19 @@ BasicBlock* ParallelizationTechnique::CreateSynchronization (Function *f, IRBuil
     if(!eraseTarget){
       BranchInst *br = dyn_cast<BranchInst>(bbTerminator);
       assert(br && "synchronization added after a switch statement?\n");
+      if(!br->isConditional()) builder.CreateBr(beforeSyncBB);
+      else{
+        auto cond = br->getCondition();
+        auto succ0 = br->getSuccessor(0);
+        auto succ1 = br->getSuccessor(1);
+        Instruction* newBr = nullptr;
+        if(succ0 == originalBBAfterSync)
+          newBr = builder.CreateCondBr(cond, beforeSyncBB, succ1);
+        else if(succ1 == originalBBAfterSync)
+          newBr = builder.CreateCondBr(cond, succ0, beforeSyncBB);
 
-      auto cond = br->getCondition();
-      auto succ0 = br->getSuccessor(0);
-      auto succ1 = br->getSuccessor(1);
-      Instruction* newBr = nullptr;
-      if(succ0 == originalBBAfterSync)
-        newBr = builder.CreateCondBr(cond, beforeSyncBB, succ1);
-      else if(succ1 == originalBBAfterSync)
-        newBr = builder.CreateCondBr(cond, succ0, beforeSyncBB);
-
-      assert(newBr && "synchronization not linked properly\n");
+        assert(newBr && "synchronization not linked properly\n");
+      }
     } else builder.CreateBr(beforeSyncBB);
 
 

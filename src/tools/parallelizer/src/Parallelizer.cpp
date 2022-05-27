@@ -12,6 +12,38 @@
 
 namespace llvm::noelle {
 
+  void Parallelizer::InsertSyncFunctionBefore(BasicBlock* currBB, ParallelizationTechnique *usedTechnique, Function* f, std::set<std::pair<BasicBlock*, BasicBlock*>> &addedSyncEdges){
+        std::set<BasicBlock*> predBB2Remove;
+        for (pred_iterator PI = pred_begin(currBB), E = pred_end(currBB); PI != E; ++PI)
+        {
+          BasicBlock *predBB = *PI;
+          if(predBB->getParent() != f) continue;
+          bool alreadyInserted = false;
+          for(auto edge : addedSyncEdges)
+            if(edge.first == predBB && edge.second == currBB){
+              alreadyInserted = true;
+              break;
+            }
+          if(alreadyInserted) continue;
+          addedSyncEdges.insert(std::make_pair(currBB,predBB));
+          auto builder = new IRBuilder<>(predBB);
+          auto afterSyncBB = usedTechnique->CreateSynchronization(f, *builder, predBB, currBB, 0);
+          delete builder;
+          //link afterSyncBB to dispatcherBB
+          IRBuilder <>afterSyncBuilder(afterSyncBB);
+          afterSyncBuilder.CreateBr(currBB);
+
+          //adjust phis
+          for(auto &I : *currBB){
+            PHINode* phi = dyn_cast<PHINode>(&I);
+            if(!phi) break;
+            phi->replaceIncomingBlockWith(predBB, afterSyncBB);
+          }
+        }
+
+
+  }
+
   bool Parallelizer::parallelizeLoop (
       LoopDependenceInfo *LDI,
       Noelle &par,
@@ -182,82 +214,50 @@ namespace llvm::noelle {
     // }
 
 
-    /*
-     * Synchronization: Insert sync function before the first use of live-out value if it wasn't inserted for reduction
-     */
+
     //NOTE:> not tested in performance tests
     if(usedTechnique == &doall){
 
-    bool SyncFunctionInserted = usedTechnique->isSyncFunctionInserted();
-    Value* threadsUsed = usedTechnique->getNumOfThreads();
-    Value* memoryIndex = usedTechnique->getMemoryIndex();
+      Value* threadsUsed = usedTechnique->getNumOfThreads();
+      Value* memoryIndex = usedTechnique->getMemoryIndex();
+      auto dispatcherInst = usedTechnique->getDispatcherInst();
+      auto dispatcherBB = dispatcherInst->getParent();
+      Function *f = dispatcherBB->getParent();
 
-    if(!SyncFunctionInserted){
+      /*
+       * Synchronization: Insert sync function before live-out
+       */
+      errs() << "SUSAN: f before add sync to liveout" << *f << "\n";
+      std::set<std::pair<BasicBlock*, BasicBlock*>> addedSyncEdges;
       for(auto liveoutUse : usedTechnique->getLiveOutUses()){
-        // If the use is a PHINode, add sync function before the terminators of predecessor blocks
-        if(PHINode *use = dyn_cast<PHINode>(liveoutUse)){
-          BasicBlock *BB = use->getParent();
-          for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI){
-            BasicBlock *pred = *PI;
-            Instruction *term = pred->getTerminator();
-            IRBuilder<> beforeLiveOutUseBuilder(term);
-            errs() << "SUSAN: adding call at Parallelizer.cpp line 201";
-            beforeLiveOutUseBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({threadsUsed, memoryIndex}));
-          }
-          SyncFunctionInserted = true;
-        }
-        // else add the sync function before the use directly
-        else if(Instruction *use = dyn_cast<Instruction>(liveoutUse)){
-          BasicBlock *bb = use->getParent();
-          BasicBlock::iterator I;
-          for (I = bb->begin(); isa<PHINode>(I); ++I);
-            IRBuilder<> beforeLiveOutUseBuilder(&*I);
-            errs() << "SUSAN: adding call at Parallelizer.cpp line 212";
-          auto syncUpInst = beforeLiveOutUseBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({threadsUsed, memoryIndex}));
-          SyncFunctionInserted = true;
-        }
+        Instruction* liveoutInst = dyn_cast<Instruction>(liveoutUse);
+        if(!liveoutInst) continue;
+        auto liveoutBB = liveoutInst->getParent();
+        errs() << "SUSAN: liveoutBB: " << *liveoutBB << "\n";
+        InsertSyncFunctionBefore(liveoutBB, usedTechnique, f, addedSyncEdges);
       }
-    }
 
-    /*
-     * Synchronization: add sync function before mem/ctrl dependences.
-     * If a bb has multiple inserting points, insert at the earliest one
-     */
-    std::set<BasicBlock *> depBBs;
-    std::set<Value*> externalDeps = LDI->environment->getExternalDeps();
-    for(auto insertPt : externalDeps){
-      Instruction *depInst = dyn_cast<Instruction>(insertPt);
-      depBBs.insert(depInst->getParent());
-    }
-
-    for(auto bb : depBBs){
-      for(auto &I : *bb){
-        if(externalDeps.find(&I) != externalDeps.end()){
-          IRBuilder<> beforeDepBuilder(&I);
-          errs() << "SUSAN: adding call at Parallelizer.cpp line 234";
-          beforeDepBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({threadsUsed, memoryIndex}));
-          SyncFunctionInserted = true;
-          break;
-        }
+      /*
+       * Synchronization: add sync function before mem/ctrl dependences.
+       * If a bb has multiple inserting points, insert at the earliest one
+       */
+      std::set<BasicBlock *> depBBs;
+      std::set<Value*> externalDeps = LDI->environment->getExternalDeps();
+      for(auto insertPt : externalDeps){
+        Instruction *depInst = dyn_cast<Instruction>(insertPt);
+        depBBs.insert(depInst->getParent());
       }
-    }
 
-    /*
-     * Synchronization: add sync function before dispatcher
-     */
-    auto dispatcherInst = usedTechnique->getDispatcherInst();
-    auto dispatcherBB = dispatcherInst->getParent();
-    Function *f = dispatcherBB->getParent();
-    errs() << "SUSAN: function before transform: " << *f << "\n";
-    for (pred_iterator PI = pred_begin(dispatcherBB), E = pred_end(dispatcherBB); PI != E; ++PI){
-      BasicBlock *predBB = *PI;
-      auto builder = new IRBuilder<>(predBB);
-      auto afterSyncBB = usedTechnique->CreateSynchronization(f, *builder, predBB, dispatcherBB, 0);
-      delete builder;
-      //link afterSyncBB to dispatcherBB
-      IRBuilder <>afterSyncBuilder(afterSyncBB);
-      afterSyncBuilder.CreateBr(dispatcherBB);
-    }
+      for(auto bb : depBBs){
+        errs() << "SUSAN: memDepBB: " << *bb << "\n";
+        InsertSyncFunctionBefore(bb, usedTechnique, f, addedSyncEdges);
+      }
+
+      /*
+       * Synchronization: add sync function before dispatcher
+       */
+      errs() << "SUSAN: function before transform: " << *f << "\n";
+      InsertSyncFunctionBefore(dispatcherBB, usedTechnique, f, addedSyncEdges);
 
     } //end of adding sync function for doall
 

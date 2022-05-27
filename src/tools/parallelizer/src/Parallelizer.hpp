@@ -100,6 +100,7 @@ namespace llvm::noelle {
        * Synchronization: utils
        */
       Function *SyncFunction;
+      void InsertSyncFunctionBefore(BasicBlock* currBB, ParallelizationTechnique *usedTechnique, Function* f, std::set<std::pair<BasicBlock*, BasicBlock*>> &addedSyncEdges);
 
   };
 
