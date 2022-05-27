@@ -79,9 +79,9 @@ Instruction * LoopEnvironmentUser::createEnvironmentVariablePointer (
 
 void LoopEnvironmentUser::createReducableEnvPtr (
   IRBuilder<> builder,
-  int envIndex,
+  uint32_t envIndex,
   Type *type,
-  int reducerCount,
+  uint32_t reducerCount,
   Value *reducerIndV
 ) {
   if (!this->envArray) {
@@ -134,6 +134,14 @@ Instruction * LoopEnvironmentUser::getEnvPtr (uint32_t ind) {
   assert(ptr != nullptr);
 
   return ptr;
+}
+
+iterator_range<std::set<uint32_t>::iterator> LoopEnvironmentUser::getEnvIndicesOfLiveInVars (void) { 
+  return make_range(liveInInds.begin(), liveInInds.end());
+}
+
+iterator_range<std::set<uint32_t>::iterator> LoopEnvironmentUser::getEnvIndicesOfLiveOutVars (void) { 
+  return make_range(liveOutInds.begin(), liveOutInds.end());
 }
 
 LoopEnvironmentUser::~LoopEnvironmentUser () {

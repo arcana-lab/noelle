@@ -30,21 +30,19 @@ namespace llvm::noelle {
 
     void createReducableEnvPtr (
       IRBuilder<> b,
-      int envIndex,
+      uint32_t envIndex,
       Type *type,
-      int reducerCount,
+      uint32_t reducerCount,
       Value *reducerIndV
     );
 
     void addLiveInIndex (uint32_t ind) ;
+
     void addLiveOutIndex (uint32_t ind) ;
 
-    iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveInVars() { 
-      return make_range(liveInInds.begin(), liveInInds.end());
-    }
-    iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveOutVars() { 
-      return make_range(liveOutInds.begin(), liveOutInds.end());
-    }
+    iterator_range<std::set<uint32_t>::iterator> getEnvIndicesOfLiveInVars(void);
+
+    iterator_range<std::set<uint32_t>::iterator> getEnvIndicesOfLiveOutVars (void);
 
     Instruction * getEnvPtr (uint32_t ind);
 
@@ -56,9 +54,9 @@ namespace llvm::noelle {
 		/*
 		 * Maps from environment index to load/stores
 		 */
-    std::unordered_map<int, Instruction *> envIndexToPtr;
-    std::set<int> liveInInds;
-    std::set<int> liveOutInds;
+    std::unordered_map<uint32_t, Instruction *> envIndexToPtr;
+    std::set<uint32_t> liveInInds;
+    std::set<uint32_t> liveOutInds;
   };
 
 }
