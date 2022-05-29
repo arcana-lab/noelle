@@ -139,6 +139,18 @@ uint64_t LoopStructure::getNumberOfInstructions (void) const {
 std::vector<BasicBlock *> LoopStructure::getLoopExitBasicBlocks (void) const {
   return this->exitBlocks;
 }
+      
+bool LoopStructure::isALoopExit (Instruction *i) const {
+  for (auto p : this->getLoopExitEdges()){
+    auto exitingBB = p.first;
+    auto e = exitingBB->getTerminator();
+    if (exitingBB->getTerminator() == i){
+      return true;
+    }
+  }
+
+  return false;
+}
 
 std::vector<std::pair<BasicBlock *, BasicBlock *>> LoopStructure::getLoopExitEdges (void) const {
   return this->exitEdges;
