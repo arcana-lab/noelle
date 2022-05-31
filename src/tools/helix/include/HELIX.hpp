@@ -55,6 +55,10 @@ namespace llvm::noelle {
 
       Function * getTaskFunction (void) const ;
 
+      bool doesHaveASequentialPreamble (
+        LoopDependenceInfo *LDI
+        ) const ;
+
     protected:
       void createParallelizableTask (
         LoopDependenceInfo *LDI,

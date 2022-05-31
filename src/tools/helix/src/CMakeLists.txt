@@ -11,6 +11,7 @@ set(Srcs
   Scheduler.cpp
   Synchronization.cpp
   Inliner.cpp
+  HELIXPreamble.cpp
 )
 
 # Compilation flags
