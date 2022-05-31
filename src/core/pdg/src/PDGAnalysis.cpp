@@ -282,6 +282,9 @@ PDG *PDGAnalysis::constructPDGFromMetadata(Module &M) {
     constructEdgesFromMetadata(pdg, F, IDNodeMap);
   }
 
+  constructEdgesFromUseDefs(pdg);
+  constructEdgesFromControl(pdg, M);
+
   return pdg;
 }
 
@@ -294,6 +297,10 @@ PDG *PDGAnalysis::constructFunctionDGFromMetadata(Function &F) {
   std::unordered_map<MDNode *, Value *> IDNodeMap;
   constructNodesFromMetadata(pdg, F, IDNodeMap);
   constructEdgesFromMetadata(pdg, F, IDNodeMap);
+
+  constructEdgesFromUseDefs(pdg);
+  constructEdgesFromControlForFunction(pdg, F);
+
   return pdg;
 }
 
