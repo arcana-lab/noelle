@@ -123,13 +123,9 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSCCDAG(LDI);
 
   /*
-   * Identify the loop's preamble, and whether the original loop was IV governed
+   * Check whether the original loop was IV governed
    */
-  auto loopSCCDAG = sccManager->getSCCDAG();
-  auto preambleSCCNodes = loopSCCDAG->getTopLevelNodes();
-  assert(preambleSCCNodes.size() == 1 && "The loop internal SCCDAG should only have one preamble");
-  auto preambleSCC = (*preambleSCCNodes.begin())->getT();
-  bool wasOriginalLoopIVGoverned = originalLDI->getLoopGoverningIVAttribution() != nullptr;
+  auto wasOriginalLoopIVGoverned = originalLDI->getLoopGoverningIVAttribution() != nullptr;
 
   /*
    * Fetch the subsets.
