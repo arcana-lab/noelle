@@ -13,7 +13,35 @@
 
 namespace llvm::noelle{
       
-bool HELIX::doesHaveASequentialPreamble (
+bool HELIX::doesHaveASequentialPrologue (
+  LoopDependenceInfo *LDI
+  ) const {
+  
+  /*
+   * Fetch the loop governing IV.
+   */
+  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  if (!loopGoverningIVAttr){
+
+    /*
+     * The loop does not have a loop governing IV.
+     * Hence, this loop must have a sequential prologue.
+     */
+    return true;
+  }
+
+  /*
+   * Fetch the sequential SCC that creates the sequential prologue.
+   */
+  auto seqSCC = this->getTheSequentialSCCThatCreatesTheSequentialPrologue(LDI);
+  if (seqSCC == nullptr){
+    return false;
+  }
+
+  return true;
+}
+      
+SCC * HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue (
   LoopDependenceInfo *LDI
   ) const {
 
@@ -27,13 +55,14 @@ bool HELIX::doesHaveASequentialPreamble (
    * Fetch the source nodes in the loop SCCDAG
    */
   auto preambleSCCNodes = loopSCCDAG->getTopLevelNodes();
-  if (preambleSCCNodes.size() != 1){
+  if (preambleSCCNodes.size() == 0){
 
     /*
      * If we have more than one, then we don't have a preamble.
      */
-    return false;
+    return nullptr;
   }
+  assert(preambleSCCNodes.size() == 1);
 
   /*
    * Fetch the single source node.
@@ -59,10 +88,6 @@ bool HELIX::doesHaveASequentialPreamble (
     auto loopStructure = LDI->getLoopStructure();
     auto loopHeader = loopStructure->getHeader();
     auto foundHeader = false;
-    for (auto p : loopStructure->getLoopExitEdges()){
-      auto eN = p.first;
-      auto e = eN->getTerminator();
-    }
     for (auto instNode : preambleSCC->getNodes()){
       auto inst = cast<Instruction>(instNode->getT());
       if (loopStructure->isALoopExit(inst)){
@@ -70,7 +95,7 @@ bool HELIX::doesHaveASequentialPreamble (
         /*
          * This loop has a sequential preamble.
          */
-        return true;
+        return preambleSCC;
       }
     }
   }
@@ -78,7 +103,7 @@ bool HELIX::doesHaveASequentialPreamble (
   /*
    * This loop does not have a sequential preamble.
    */
-  return false;
+  return nullptr;
 }
 
 }

@@ -129,7 +129,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
    * 
    * Check if there is a preamble.
    */
-  if (this->doesHaveASequentialPreamble(LDI)){
+  if (this->doesHaveASequentialPrologue(LDI)){
 
     /*
      * The loop has a sequential preamble.

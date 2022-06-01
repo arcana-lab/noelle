@@ -55,7 +55,11 @@ namespace llvm::noelle {
 
       Function * getTaskFunction (void) const ;
 
-      bool doesHaveASequentialPreamble (
+      SCC * getTheSequentialSCCThatCreatesTheSequentialPrologue (
+        LoopDependenceInfo *LDI
+        ) const ;
+
+      bool doesHaveASequentialPrologue (
         LoopDependenceInfo *LDI
         ) const ;
 
