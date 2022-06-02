@@ -374,12 +374,13 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    * Fetch the number of cores
    */
   auto ltm = LDI->getLoopTransformationsManager();
-  auto numCores = ConstantInt::get(par.int64, ltm->getMaximumNumberOfCores());
+  auto cm = par.getConstantsManager();
+  auto numCores = cm->getIntegerConstant(ltm->getMaximumNumberOfCores(), 64);
 
   /*
    * Fetch the chunk size.
    */
-  auto chunkSize = ConstantInt::get(par.int64, ltm->getChunkSize());
+  auto chunkSize = cm->getIntegerConstant(ltm->getChunkSize(), 64);
 
   /*
    * Call the function that incudes the parallelized loop.

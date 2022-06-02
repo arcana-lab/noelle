@@ -26,6 +26,7 @@ Noelle::Noelle()
   , loopAwareDependenceAnalysis{false}
   , fm{nullptr}
   , tm{nullptr}
+  , cm{nullptr}
   , om{nullptr}
   , mm{nullptr}
 {
@@ -296,7 +297,17 @@ TypesManager * Noelle::getTypesManager (void) {
   if (!this->tm){
     this->tm = new TypesManager(*this->program);
   }
+
   return this->tm;
+}
+      
+ConstantsManager * Noelle::getConstantsManager (void) {
+  if (!this->cm){
+    auto typesManager = this->getTypesManager();
+    this->cm = new ConstantsManager(*this->program, typesManager);
+  }
+
+  return this->cm;
 }
       
 CompilationOptionsManager * Noelle::getCompilationOptionsManager (void) {

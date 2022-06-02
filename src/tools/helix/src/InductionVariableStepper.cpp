@@ -27,6 +27,9 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
   auto headerClone = task->getCloneOfOriginalBasicBlock(loopHeader);
   auto ivManager = LDI->getInductionVariableManager();
 
+  /*
+   * Prepare the builder for the entry point of the task.
+   */
   auto entryTerminator = task->getEntry()->getTerminator();
   IRBuilder<> entryBuilder(entryTerminator);
 
@@ -59,7 +62,9 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
      */ 
     auto scc = sccdag->sccOfValue(loopEntryPHI);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (sccInfo->canExecuteReducibly()) continue;
+    if (sccInfo->canExecuteReducibly()) {
+      continue;
+    }
 
     /*
      * If the instruction was spilled, it will not have a unique cloned instruction equivalent
@@ -100,11 +105,11 @@ void HELIX::rewireLoopForIVsToIterateNthIterations (LoopDependenceInfo *LDI) {
     auto originalIVPHI = ivInfo->getLoopEntryPHI();
     auto ivPHI = cast<PHINode>(fetchClone(originalIVPHI));
 
-    Value* numCoresMinusOne = entryBuilder.CreateSub(
+    auto numCoresMinusOne = entryBuilder.CreateSub(
           task->numCoresArg,
           ConstantInt::get(task->numCoresArg->getType(), 1)
         );
-    Value* jumpStepSize = IVUtility::scaleInductionVariableStep(preheaderClone, ivPHI, stepOfIV, numCoresMinusOne);
+    auto jumpStepSize = IVUtility::scaleInductionVariableStep(preheaderClone, ivPHI, stepOfIV, numCoresMinusOne);
 
     IVUtility::stepInductionVariablePHI(preheaderClone, ivPHI, jumpStepSize);
   }

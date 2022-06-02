@@ -22,6 +22,7 @@
 #include "noelle/core/LoopTransformer.hpp"
 #include "noelle/core/FunctionsManager.hpp"
 #include "noelle/core/TypesManager.hpp"
+#include "noelle/core/ConstantsManager.hpp"
 #include "noelle/core/CompilationOptionsManager.hpp"
 
 namespace llvm::noelle {
@@ -54,6 +55,8 @@ namespace llvm::noelle {
       CompilationOptionsManager * getCompilationOptionsManager (void) ;
       
       TypesManager * getTypesManager (void) ;
+
+      ConstantsManager * getConstantsManager (void) ;
 
       MetadataManager * getMetadataManager (void) ;
 
@@ -209,6 +212,7 @@ namespace llvm::noelle {
       std::unordered_map<BasicBlock *, uint32_t> loopHeaderToLoopIndexMap;
       FunctionsManager *fm;
       TypesManager *tm;
+      ConstantsManager *cm;
       CompilationOptionsManager *om;
       MetadataManager *mm;
 
