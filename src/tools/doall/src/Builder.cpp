@@ -21,6 +21,7 @@ void DOALL::rewireLoopToIterateChunks (
    * Fetch the task.
    */
   auto task = (DOALLTask *)tasks[0];
+  assert(task != nullptr);
 
   /*
    * Fetch loop and IV information.
@@ -53,7 +54,7 @@ void DOALL::rewireLoopToIterateChunks (
    * core_start: original_start + original_step_size * core_id * chunk_size
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
-    auto startOfIV = fetchClone(ivInfo->getStartValue());
+    auto startOfIV = this->fetchClone(ivInfo->getStartValue());
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getLoopEntryPHI()));
 
@@ -261,11 +262,35 @@ void DOALL::rewireLoopToIterateChunks (
   if (!requiresConditionBeforeEnteringHeader) {
 
     /*
-     * If there are any reducible SCCs for which some of the (non-PHI) instructions
-     * are also contained in the header, an exit block SelectInst must be inserted to
-     * ensure that, if the header would NOT have executed its last iteration, the PHI
-     * is treated as the live out instead of the last (non-PHI) instruction.
+     * We have to handle the special case where there are reducible SCCs (i.e., reducable variables at the source code level) for which some of the non-PHI instructions are also contained in the header.
+     * For example, consider the following code:
+     *
+     * BB0:
+     *   ...
+     *   br %BB1
+     *
+     * BB1: 
+     *  %v2 = PHI [%v1, BB1], [%v0, BB0]
+     *  ...
+     *  %v1 = add %v2, 1
+     *  ...
+     *  br %c %BB1, %BB2
+     *
+     * BB2:
+     *  return 
+     *
+     *
+     * This is a special case because there are two values that we could use to store into the reduction variable:
+     * 1) the PHI instruction (e.g., %v2)
+     * 2) the non-PHI instruction that does the accumulation (e.g., %v1)
+     * We need to use the right value depending on whether the header would NOT have executed its last iteration.
+     * If that is the case, then we need to use the PHI instruction.
+     * Otherwise, if the last instance of the header was meant to be executed, then we need to use the non-PHI instruction.
+     *
+     * To solve this problem, we are going to inject a new SelectInst that checks whether the last execution of the header was meant to be executed.
+     * This SelectInst will be inserted into the basic block that leaves the task, just before storing the right value into the reduction variable of the current task.
      */
+    auto env = LDI->getEnvironment();
     auto envUser = this->envBuilder->getUser(0);
     std::vector<std::pair<Instruction *, Instruction *>> headerPHICloneAndProducerPairs;
     for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
@@ -275,10 +300,14 @@ void DOALL::rewireLoopToIterateChunks (
        * Fetch the header PHI of the live-out variable.
        * Check whether the header PHI is part of the set of PHIs we need to guard
        */
-      auto producer = cast<Instruction>(LDI->getEnvironment()->producerAt(envIndex));
+      auto producer = cast<Instruction>(env->producerAt(envIndex));
+      assert(producer != nullptr);
       auto scc = sccdag->sccOfValue(producer);
+      assert(scc != nullptr);
       auto sccInfo = sccManager->getSCCAttrs(scc);
+      assert(sccInfo != nullptr);
       auto headerPHI = sccInfo->getSingleHeaderPHI();
+      assert(headerPHI != nullptr);
       auto clonePHI = task->getCloneOfOriginalInstruction(headerPHI);
 
       if (reducibleHeaderPHIsWithHeaderLogic.find(clonePHI) != reducibleHeaderPHIsWithHeaderLogic.end()) {
@@ -290,11 +319,11 @@ void DOALL::rewireLoopToIterateChunks (
      * Produce exit block SelectInst for all reducible SCCs that have header logic
      */
     if (headerPHICloneAndProducerPairs.size() > 0) {
-      auto startValue = fetchClone(loopGoverningIV.getStartValue());
+      auto startValue = this->fetchClone(loopGoverningIV.getStartValue());
 
       /*
        * Piece together the condition for all the SelectInst:
-       * ((prev IV value triggers exit) && (IV header PHI != start value))
+       * ((prev loop-governing IV's value triggered exiting the loop) && (IV header PHI != start value))
        *  ? header phi // this will contain the pre-header value or the previous latch value
        *  : original producer // this will be the live out value from the header
        */

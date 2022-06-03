@@ -205,7 +205,7 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
     /*
      * Check if the current live-out variable was reduced.
      */
-    auto isReduced = envBuilder->hasVariableBeenReduced(envInd);
+    auto isReduced = this->envBuilder->hasVariableBeenReduced(envInd);
     if (!isReduced) {
       continue;
     }
