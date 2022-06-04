@@ -69,7 +69,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
    * Generate code to allocate and initialize the loop environment.
    */
   auto program = this->noelle.getProgram();
-  this->envBuilder = new LoopEnvironmentBuilder(program->getContext(), environment, shouldThisVariableBeReduced, this->numTaskInstances, tasks.size());
+  this->envBuilder = new LoopEnvironmentBuilder(program->getContext(), environment, shouldThisVariableBeReduced, this->numTaskInstances, this->tasks.size());
 
   /*
    * Create the users of the environment: one user per task.

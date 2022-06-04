@@ -56,7 +56,8 @@ void DOALL::rewireLoopToIterateChunks (
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     auto startOfIV = this->fetchClone(ivInfo->getStartValue());
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
-    auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getLoopEntryPHI()));
+    auto loopEntryPHI = ivInfo->getLoopEntryPHI();
+    auto ivPHI = cast<PHINode>(this->fetchClone(loopEntryPHI));
 
 // DANGER
     // auto nthCoreOffset = entryBuilder.CreateMul(

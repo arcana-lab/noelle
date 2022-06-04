@@ -249,10 +249,33 @@ bool DOALL::apply (
   /*
    * Generate code to allocate and initialize the loop environment.
    */
-  auto isReducible = [](uint32_t idx, bool isLiveOut) -> bool {
+  auto sccManager = LDI->getSCCManager();
+  auto isReducible = [loopEnvironment, sccManager](uint32_t idx, bool isLiveOut) -> bool {
     if (!isLiveOut){
       return false;
     }
+
+    /*
+     * We have a live-out variable.
+     *
+     * Check if this is an IV.
+     * IVs are not reducable because they get re-computed locally by each thread.
+     */
+    auto producer = loopEnvironment->producerAt(idx);
+    auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
+    if (sccInfo->isInductionVariableSCC()){
+
+      /*
+       * The current live-out variable is an induction variable.
+       */
+      return false;
+    }
+
+    /*
+     * The current live-out variable is not an IV.
+     * Because this loop is a DOALL, then this live-out variable must be reducable (this is checked by the "canBeApplied" method).
+     */
     return true;
   };
   this->initializeEnvironmentBuilder(LDI, isReducible);
