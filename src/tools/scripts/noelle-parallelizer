@@ -2,9 +2,16 @@
 
 installDir
 
-# Set the command to execute
-cmdToExecute="noelle-parallel-load -load ${installDir}/lib/Parallelizer.so -parallelizer ${@}"
-echo $cmdToExecute ;
+inputIR=$1
+intermediateResult="baseline_with_parallel_plan.bc"
+outputIR=$3
 
-# Execute
+# Step 1: Run parallelization planner
+cmdToExecute="noelle-parallelization-planner ${inputIR} -o ${intermediateResult} ${@:4}" ;
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
+# Step 2: Run loop parallelization on bitcode with parallel plan
+cmdToExecute="noelle-parallelizer-loop ${intermediateResult} -o ${outputIR} ${@:4}" ;
+echo $cmdToExecute ;
 eval $cmdToExecute ;
