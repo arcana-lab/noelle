@@ -55,7 +55,7 @@ $(THREADER).bc: $(THREADER).cpp
 $(OPTIMIZED): test_parallelized.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
-test_parallelized_unoptimized.bc: baseline_with_parallel_plan.bc
+test_parallelized_unoptimized.bc: baseline_with_metadata.bc
 	noelle-parallelizer $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
 	noelle-meta-clean $@ $@
 
@@ -64,9 +64,6 @@ test_parallelized.bc: test_parallelized_unoptimized.bc
 
 baseline.bc: test.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
-
-baseline_with_parallel_plan.bc: baseline_with_metadata.bc
-	noelle-parallelization-planner $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
 
 baseline_with_metadata.bc: default.profraw baseline_pre.bc
 	noelle-meta-prof-embed $^ -o $@
