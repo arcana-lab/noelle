@@ -132,7 +132,6 @@ extern "C" {
     int64_t maxNumberOfCores, 
     int64_t chunkSize,
     ARG_TYPE argType,
-    void *parentPtr,
     SCHED_POLICY schedPolicy,
     int32_t stride
     );
@@ -279,7 +278,6 @@ extern "C" {
     int64_t maxNumberOfCores, 
     int64_t chunkSize,
     ARG_TYPE argType,
-    void *parentPtr,
     SCHED_POLICY schedPolicy,
     int32_t stride
     ){
@@ -292,7 +290,7 @@ extern "C" {
      */
     auto virgil = runtime.virgil;
     auto startIndex = 0;
-    auto parentQueueID = runtime.getParentQueueID(argType, parentPtr);
+    auto parentQueueID = virgil->getCurrentThreadQId();
 
 
     startIndex = parentQueueID + stride;
@@ -524,7 +522,6 @@ extern "C" {
     int64_t numOfsequentialSegments,
     bool LIO,
     ARG_TYPE argType,
-    void *parentPtr,
     SCHED_POLICY schedPolicy,
     int32_t stride
     ){
@@ -546,8 +543,8 @@ extern "C" {
      */
     auto virgil = runtime.virgil;
     auto startIndex = 0;
-    auto parentQueueID = runtime.getParentQueueID(argType, parentPtr);
 
+    auto parentQueueID = virgil->getCurrentThreadQId();
     startIndex = parentQueueID + stride;
 
     /*
@@ -749,12 +746,11 @@ extern "C" {
     int64_t numCores, 
     int64_t numOfsequentialSegments,
     ARG_TYPE argType,
-    void *parentPtr,
     SCHED_POLICY schedPolicy,
     int32_t stride
     ){
     return NOELLE_HELIX_dispatcher(parallelizedLoop, env, loopCarriedArray, numCores, numOfsequentialSegments, true,
-                                   argType, parentPtr, schedPolicy, stride);
+                                   argType, schedPolicy, stride);
   }
 
   DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections (
@@ -764,12 +760,11 @@ extern "C" {
     int64_t numCores, 
     int64_t numOfsequentialSegments,
     ARG_TYPE argType,
-    void *parentPtr,
     SCHED_POLICY schedPolicy,
     int32_t stride
     ){
     return NOELLE_HELIX_dispatcher(parallelizedLoop, env, loopCarriedArray, numCores, numOfsequentialSegments, false,
-                                   argType, parentPtr, schedPolicy, stride);
+                                   argType, schedPolicy, stride);
   }
 
   void HELIX_wait (
@@ -863,7 +858,6 @@ extern "C" {
     int64_t numberOfStages, 
     int64_t numberOfQueues,
     ARG_TYPE argType,
-    void *parentPtr,
     SCHED_POLICY schedPolicy,
     int32_t stride
     ){
