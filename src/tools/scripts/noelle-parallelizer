@@ -1,9 +1,10 @@
-#!/bin/bash
+#!/bin/bash -e
 
 installDir
 
 inputIR=$1
-intermediateResult="baseline_with_parallel_plan.bc"
+intermediateResult="baseline_with_parallel_plan.bc" ;
+intermediateResult_unoptimized="parallelized_unoptimized.bc" ;
 outputIR=$3
 
 # Step 1: Run parallelization planner
@@ -12,6 +13,16 @@ echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Step 2: Run loop parallelization on bitcode with parallel plan
-cmdToExecute="noelle-parallelizer-loop ${intermediateResult} -o ${outputIR} ${@:4}" ;
+cmdToExecute="noelle-parallelizer-loop ${intermediateResult} -o ${intermediateResult_unoptimized} ${@:4}" ;
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
+# Step 3: cleaning the metadata that are now disaligned with the code
+cmdToExecute="noelle-meta-clean ${intermediateResult_unoptimized} ${intermediateResult_unoptimized}" ;
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
+# Step 3: conventional optimizations
+cmdToExecute="clang -O3 -c -emit-llvm ${intermediateResult_unoptimized} -o ${outputIR}" ;
 echo $cmdToExecute ;
 eval $cmdToExecute ;
