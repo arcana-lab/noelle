@@ -121,6 +121,8 @@ extern "C" {
       int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
   };
 
+
+  uint32_t NOELLE_getCurrentThreadQId();
   /*
    * Dispatch threads to run a DOALL loop.
    */
@@ -260,6 +262,16 @@ extern "C" {
     pthread_spin_unlock(&(DOALLArgs->endLock));
     return ;
   }
+
+  uint32_t NOELLE_getCurrentThreadQId(){
+
+    /*
+     * Fetch VIRGIL
+     */
+    auto virgil = runtime.virgil;
+    return virgil->getCurrentThreadQId(); 
+  }
+
 
   DispatcherInfo NOELLE_DOALLDispatcher (
     void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t, int8_t, void *),
