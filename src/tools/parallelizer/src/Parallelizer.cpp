@@ -44,6 +44,21 @@ namespace llvm::noelle {
 
   }
 
+  BasicBlock* Parallelizer::findLatestInsertionPt(BasicBlock *originalInsertPt){
+    for(auto loops : treesToParallelize){
+      for(auto ldi : loops){
+        auto ls = ldi->getLoopStructure();
+        if(ls->getNestingLevel() > 1) continue;
+        for(auto bb: ls->getBasicBlocks()){
+          if(bb == originalInsertPt){
+            return(ls->getHeader());
+          }
+        }
+      }
+    }
+    return originalInsertPt;
+  }
+
   bool Parallelizer::parallelizeLoop (
       LoopDependenceInfo *LDI,
       Noelle &par,
@@ -65,9 +80,10 @@ namespace llvm::noelle {
       this->forceParallelization,
       !this->forceNoSCCPartition
     };
-    DOALL doall{
-      par
-    };
+    auto doall = new DOALL(par);
+    //DOALL doall{
+    //  par
+    //};
     HELIX helix{
       par,
       this->forceParallelization
@@ -110,14 +126,14 @@ namespace llvm::noelle {
     if (  true
         && par.isTransformationEnabled(DOALL_ID)
         && LDI->isTransformationEnabled(DOALL_ID)
-        && doall.canBeAppliedToLoop(LDI, h)
+        && doall->canBeAppliedToLoop(LDI, h)
        ){
 
       /*
        * Apply DOALL.
        */
-      codeModified = doall.apply(LDI, h);
-      usedTechnique = &doall;
+      codeModified = doall->apply(LDI, h);
+      usedTechnique = doall;
 
     } else if ( true
         && par.isTransformationEnabled(HELIX_ID)
@@ -216,7 +232,7 @@ namespace llvm::noelle {
 
 
     //NOTE:> not tested in performance tests
-    if(usedTechnique == &doall){
+    if(usedTechnique == doall){
 
       Value* threadsUsed = usedTechnique->getNumOfThreads();
       Value* memoryIndex = usedTechnique->getMemoryIndex();
@@ -227,40 +243,42 @@ namespace llvm::noelle {
       /*
        * Synchronization: Insert sync function before live-out
        */
-      std::set<std::pair<BasicBlock*, BasicBlock*>> addedSyncEdges;
       for(auto liveoutUse : usedTechnique->getLiveOutUses()){
         Instruction* liveoutInst = dyn_cast<Instruction>(liveoutUse);
         if(!liveoutInst) continue;
         auto liveoutBB = liveoutInst->getParent();
-        InsertSyncFunctionBefore(liveoutBB, usedTechnique, f, addedSyncEdges);
+        BasicBlock *newInsertPt = findLatestInsertionPt(liveoutBB);
+        techniques[newInsertPt] = usedTechnique;
       }
 
       /*
        * Synchronization: add sync function before mem/ctrl dependences.
        * If a bb has multiple inserting points, insert at the earliest one
        */
-      std::set<BasicBlock *> depBBs;
       std::set<Value*> externalDeps = LDI->environment->getExternalDeps();
       for(auto insertPt : externalDeps){
         Instruction *depInst = dyn_cast<Instruction>(insertPt);
-        depBBs.insert(depInst->getParent());
+        BasicBlock *newInsertPt = findLatestInsertionPt(depInst->getParent());
+        techniques[newInsertPt] = usedTechnique;
       }
-
-      for(auto bb : depBBs)
-        InsertSyncFunctionBefore(bb, usedTechnique, f, addedSyncEdges);
 
       /*
        * Synchronization: add sync function before dispatcher
        */
-      InsertSyncFunctionBefore(dispatcherBB, usedTechnique, f, addedSyncEdges);
+      techniques[dispatcherBB] = usedTechnique;
 
       /*
-       * Synchronization: add sync function before exiting functions
+       * Synchronization: add sync function before exiting functions only for last
+       * parallel region
        */
-      for(auto &BB : *f)
-        for(auto &I : BB)
-          if(isa<ReturnInst>(&I))
-            InsertSyncFunctionBefore(&BB, usedTechnique, f, addedSyncEdges);
+      for(auto ldi : treesToParallelize.back())
+        if(LDI == ldi)
+          for(auto &BB : *f)
+            for(auto &I : BB)
+              if(isa<ReturnInst>(&I)){
+                 BasicBlock *newInsertPt = findLatestInsertionPt(&BB);
+                 techniques[dispatcherBB] = usedTechnique;
+              }
 
     } //end of adding sync function for doall
 

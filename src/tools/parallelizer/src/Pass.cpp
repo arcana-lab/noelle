@@ -106,11 +106,15 @@ bool Parallelizer::runOnModule (Module &M) {
   auto modified = false;
   std::unordered_map<BasicBlock *, bool> modifiedBBs{};
   for (auto tree : forest->getTrees()){
+    auto loopsToParallelize = this->selectTheOrderOfLoopsToParallelize(noelle, profiles, tree);
+    treesToParallelize.push_back(loopsToParallelize);
+  }
+  for (auto loopsToParallelize : treesToParallelize){
 
     /*
      * Select the loops to parallelize.
      */
-    auto loopsToParallelize = this->selectTheOrderOfLoopsToParallelize(noelle, profiles, tree);
+    //auto loopsToParallelize = this->selectTheOrderOfLoopsToParallelize(noelle, profiles, tree);
 
     /*
      * Parallelize the loops.
@@ -158,6 +162,17 @@ bool Parallelizer::runOnModule (Module &M) {
       delete loop;
     }
   }
+
+  std::set<std::pair<BasicBlock*, BasicBlock*>> addedSyncEdges;
+  std::set<ParallelizationTechnique*> freeTechnique;
+  for(auto [bb, usedTechnique] : techniques){
+    auto f = bb->getParent();
+    InsertSyncFunctionBefore(bb, usedTechnique, f, addedSyncEdges);
+    freeTechnique.insert(usedTechnique);
+  }
+
+  for(auto technique : freeTechnique)
+    delete technique;
 
   errs() << "Parallelizer: Exit\n";
   return modified;

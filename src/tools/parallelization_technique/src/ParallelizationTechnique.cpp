@@ -253,12 +253,12 @@ BasicBlock * ParallelizationTechnique::propagateLiveOutEnvironment (LoopDependen
    * Synchronization: add SyncFunction before reduction
    */
   BasicBlock* reductionPt = this->entryPointOfParallelizedLoop;
-  if(initialValues.size()){
-    reductionPt = CreateSynchronization(f, *builder, this->entryPointOfParallelizedLoop, nullptr, 1);
-    SyncFunctionInserted = true;
-    delete builder;
-    builder = new IRBuilder<>(reductionPt);
-  }
+  //if(initialValues.size()){
+  //  reductionPt = CreateSynchronization(f, *builder, this->entryPointOfParallelizedLoop, nullptr, 1);
+  //  SyncFunctionInserted = true;
+  //  delete builder;
+  //  builder = new IRBuilder<>(reductionPt);
+  //}
 
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
