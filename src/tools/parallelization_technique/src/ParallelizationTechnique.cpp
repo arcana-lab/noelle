@@ -735,10 +735,11 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
   assert(entryTerminator != nullptr);
   IRBuilder<> entryBuilder(entryTerminator);
 
+  /*
+   * Compute the dominators.
+   */
   auto &taskFunction = *task->getTaskBody();
-  DominatorTree taskDT(taskFunction);
-  PostDominatorTree taskPDT(taskFunction);
-  DominatorSummary taskDS(taskDT, taskPDT);
+  auto taskDS = this->noelle.getDominators(&taskFunction);
 
   /*
    * Iterate over live-out variables and inject stores at the end of the execution of the function of the task to propagate the new live-out values back to the caller of the parallelized loop.
@@ -752,7 +753,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      * assume the direct cloning of the producer is the only clone
      * TODO: Find a better place to map this single clone (perhaps when the original loop's values are cloned)
      */
-    auto producer = (Instruction*)LDI->getEnvironment()->producerAt(envIndex);
+    auto producer = cast<Instruction>(LDI->getEnvironment()->producerAt(envIndex));
     assert(producer != nullptr);
     if (!task->doesOriginalLiveOutHaveManyClones(producer)) {
       auto singleProducerClone = task->getCloneOfOriginalInstruction(producer);
@@ -800,20 +801,34 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      */
     for (auto producerClone : producerClones) {
 
-      auto insertBBs = this->determineLatestPointsToInsertLiveOutStore(LDI, taskIndex, producerClone, isReduced, taskDS);
+      /*
+       * Fetch all points in the CFG where we need to insert the store instruction.
+       */
+      auto insertBBs = this->determineLatestPointsToInsertLiveOutStore(LDI, taskIndex, producerClone, isReduced, *taskDS);
       for (auto BB : insertBBs) {
 
+        /*
+         * Fetch the value we need to store.
+         */
         auto producerValueToStore = isReduced
-          ? fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(LDI, taskIndex, envIndex, BB, taskDS)
+          ? this->fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(LDI, taskIndex, envIndex, BB, *taskDS)
           : producerClone;
 
+        /*
+         * Generate the store instruction to store the value to the live-out variable, which is allocated on the stack of the caller.
+         */
         IRBuilder<> liveOutBuilder(BB);
-        auto store = (StoreInst*)liveOutBuilder.CreateStore(producerValueToStore, envPtr);
+        auto store = cast<StoreInst>(liveOutBuilder.CreateStore(producerValueToStore, envPtr));
         store->removeFromParent();
         store->insertBefore(BB->getTerminator());
       }
     }
   }
+
+  /*
+   * Free the memory
+   */
+  delete taskDS ;
 
   return ;
 }
