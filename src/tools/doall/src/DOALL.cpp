@@ -249,8 +249,11 @@ bool DOALL::apply (
   /*
    * Generate code to allocate and initialize the loop environment.
    */
+  if (this->verbose != Verbosity::Disabled) {
+    errs() << "DOALL:   Reduced variables:\n";
+  }
   auto sccManager = LDI->getSCCManager();
-  auto isReducible = [loopEnvironment, sccManager](uint32_t idx, bool isLiveOut) -> bool {
+  auto isReducible = [this, loopEnvironment, sccManager](uint32_t idx, bool isLiveOut) -> bool {
     if (!isLiveOut){
       return false;
     }
@@ -276,6 +279,10 @@ bool DOALL::apply (
      * The current live-out variable is not an IV.
      * Because this loop is a DOALL, then this live-out variable must be reducable (this is checked by the "canBeApplied" method).
      */
+    if (this->verbose != Verbosity::Disabled) {
+      errs() << "DOALL:     " << *producer << "\n";
+    }
+
     return true;
   };
   this->initializeEnvironmentBuilder(LDI, isReducible);
