@@ -412,7 +412,7 @@ void DOALL::rewireLoopToIterateChunks (
     /*
      * Compute the value that this IV had at the iteration before (5 in the example above).
      */
-    auto prevIterationValue = ivUtility.generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue(latchBuilder, currentIVValue, cloneLatch, stepSize);
+    auto prevIterationValue = ivUtility.generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue(latchBuilder, currentIVValue, stepSize);
 
     /*
      * Compare the previous-iteration IV value against the exit condition

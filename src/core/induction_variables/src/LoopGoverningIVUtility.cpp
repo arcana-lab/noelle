@@ -254,7 +254,6 @@ Value * LoopGoverningIVUtility::generateCodeToComputeTheTripCount (
 Value * LoopGoverningIVUtility::generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue (
   IRBuilder<> &builder,
   Value *currentIterationValue,
-  BasicBlock *latch,
   Value *stepValue
   ){
 

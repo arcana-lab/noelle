@@ -116,7 +116,6 @@ namespace llvm::noelle {
       Value * generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue (
           IRBuilder<> &builder,
           Value *currentIterationValue,
-          BasicBlock *latch,
           Value *stepValue
         );
 
