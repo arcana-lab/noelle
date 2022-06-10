@@ -24,6 +24,11 @@ ParallelizationTechnique::ParallelizationTechnique (
   return ;
 }
 
+BasicBlock * ParallelizationTechnique::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI) {
+  return nullptr;
+  abort();
+}
+
 Value * ParallelizationTechnique::getEnvArray (void) const { 
   return this->envBuilder->getEnvironmentArray(); 
 }
@@ -820,7 +825,34 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
         IRBuilder<> liveOutBuilder(BB);
         auto store = cast<StoreInst>(liveOutBuilder.CreateStore(producerValueToStore, envPtr));
         store->removeFromParent();
-        store->insertBefore(BB->getTerminator());
+
+        /*
+         * Decide the condition for which the store needs to be executed.
+         *
+         * If the live-out variable is reduced, then the store needs to always execute. This is because threads have their own private copy.
+         *
+         * If the live-out variable is not reduced, then the store needs to be executed only by the thread that executed the last iteration.
+         */
+        if (isReduced){
+
+          /*
+           * The live-out variable is reduced.
+           */
+          store->insertBefore(BB->getTerminator());
+
+        } else {
+
+          /*
+           * The live-out variable is not reduced.
+           * So we need to store the live-out variable only if the current task has executed the last iteration of the loop.
+           */
+          auto lastIterationBB = this->getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(LDI);
+          if (lastIterationBB == nullptr){
+            lastIterationBB = BB;
+          }
+          assert(lastIterationBB != nullptr);
+          store->insertBefore(lastIterationBB->getTerminator());
+        }
       }
     }
   }
@@ -1370,14 +1402,23 @@ std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::clone
   IRBuilder<> &insertBlock
 ) {
 
-  auto task = tasks[taskIndex];
+  /*
+   * Fetch the task
+   */
+  assert(taskIndex < tasks.size());
+  auto task = tasks.at(taskIndex);
+  assert(task != nullptr);
+
+  /*
+   * Fetch the information about the loop
+   */
   auto loopSummary = LDI->getLoopStructure();
   auto allIVInfo = LDI->getInductionVariableManager();
-  std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
 
   /*
    * Clone each IV's step value described by the InductionVariable class
    */
+  std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
 
     /*

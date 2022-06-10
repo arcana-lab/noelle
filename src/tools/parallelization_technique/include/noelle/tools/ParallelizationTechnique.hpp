@@ -52,7 +52,10 @@ namespace llvm::noelle {
       Value * getEnvArray (void) const ;
 
       BasicBlock * getParLoopEntryPoint (void) const ;
+
       BasicBlock * getParLoopExitPoint (void) const ;
+
+      virtual BasicBlock * getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI) ;
 
       /*
        * Destructor.
