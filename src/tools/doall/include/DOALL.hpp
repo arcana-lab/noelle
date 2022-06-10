@@ -43,8 +43,6 @@ namespace llvm::noelle {
         Heuristics *h
       ) const override ;
       
-      BasicBlock * getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI) override ;
-
       static std::set<SCC *> getSCCsThatBlockDOALLToBeApplicable (
         LoopDependenceInfo *LDI,
         Noelle &par
@@ -74,6 +72,14 @@ namespace llvm::noelle {
        * Helpers
        */
       Value * fetchClone (Value *original) const ;
+
+      /*
+       * Interface
+       */
+      BasicBlock * getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (
+        LoopDependenceInfo *LDI, 
+        uint32_t taskIndex
+        ) override ;
   };
 
 }

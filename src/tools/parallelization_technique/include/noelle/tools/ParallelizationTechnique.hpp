@@ -55,8 +55,6 @@ namespace llvm::noelle {
 
       BasicBlock * getParLoopExitPoint (void) const ;
 
-      virtual BasicBlock * getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI) ;
-
       /*
        * Destructor.
        */
@@ -204,6 +202,11 @@ namespace llvm::noelle {
         IRBuilder<> &builder, 
         Value *value, 
         Type *targetType
+        ) ;
+
+      virtual BasicBlock * getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (
+        LoopDependenceInfo *LDI,
+        uint32_t taskIndex
         ) ;
 
       /*

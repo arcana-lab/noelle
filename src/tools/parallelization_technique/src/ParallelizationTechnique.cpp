@@ -24,7 +24,7 @@ ParallelizationTechnique::ParallelizationTechnique (
   return ;
 }
 
-BasicBlock * ParallelizationTechnique::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI) {
+BasicBlock * ParallelizationTechnique::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI, uint32_t taskIndex) {
   return nullptr;
   abort();
 }
@@ -846,7 +846,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
            * The live-out variable is not reduced.
            * So we need to store the live-out variable only if the current task has executed the last iteration of the loop.
            */
-          auto lastIterationBB = this->getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(LDI);
+          auto lastIterationBB = this->getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(LDI, taskIndex);
           if (lastIterationBB == nullptr){
             lastIterationBB = BB;
           }

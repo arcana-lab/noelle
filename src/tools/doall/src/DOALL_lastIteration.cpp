@@ -13,13 +13,15 @@
 
 namespace llvm::noelle{
 
-BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI) {
+BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI, uint32_t taskIndex) {
   assert(LDI != nullptr);
+  assert(taskIndex == 0);
+  assert(this->tasks.size() > 0);
 
   /*
    * Fetch the task.
    */
-  auto task = (DOALLTask *)this->tasks[0];
+  auto task = (DOALLTask *)this->tasks[taskIndex];
   assert(task != nullptr);
   auto taskFunction = task->getTaskBody();
 
