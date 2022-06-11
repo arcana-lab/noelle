@@ -379,7 +379,7 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
   for (auto containedIV : containedIVs) {
     if (loopGoverningIVs.find(containedIV) == loopGoverningIVs.end()) continue;
     auto exitBlocks = loopNode->getInnermostLoopThatContains(containedIV->getLoopEntryPHI())->getLoopExitBasicBlocks();
-    LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
+    LoopGoverningIVAttribution attribution(loopNode->getLoop(), *containedIV, *scc, exitBlocks);
     if (!attribution.isSCCContainingIVWellFormed()) {
       // containedIV->getLoopEntryPHI()->print(errs() << "Not well formed SCC for loop governing IV!\n"); errs() << "\n";
       return false;

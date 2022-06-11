@@ -18,7 +18,12 @@ namespace llvm::noelle {
 
   class LoopGoverningIVAttribution {
     public:
-      LoopGoverningIVAttribution (InductionVariable &IV, SCC &scc, std::vector<BasicBlock *> &exitBlocks) ;
+      LoopGoverningIVAttribution (
+        LoopStructure *l,
+        InductionVariable &IV, 
+        SCC &scc, 
+        std::vector<BasicBlock *> &exitBlocks
+        ) ;
 
       LoopGoverningIVAttribution () = delete ;
 
@@ -32,6 +37,8 @@ namespace llvm::noelle {
 
       BasicBlock * getExitBlockFromHeader (void) const;
 
+      bool valueOfExitConditionToJumpToTheLoopBody (void) const ;
+
       bool isSCCContainingIVWellFormed (void) const;
 
       std::set<Instruction *> getConditionValueDerivation(void) const ;
@@ -39,6 +46,7 @@ namespace llvm::noelle {
       Instruction * getValueToCompareAgainstExitConditionValue (void) const ;
 
     private:
+      LoopStructure *loop;
       InductionVariable &IV;
       SCC &scc;
       std::set<Instruction *> conditionValueDerivation;

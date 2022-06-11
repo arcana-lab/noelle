@@ -113,7 +113,7 @@ InductionVariableManager::InductionVariableManager (
        */
       this->loopToIVsMap[loop].insert(IV);
       auto exitBlocks = loop->getLoopExitBasicBlocks();
-      auto attribution = new LoopGoverningIVAttribution(*IV, *sccContainingIV, exitBlocks);
+      auto attribution = new LoopGoverningIVAttribution(loopToAnalyze, *IV, *sccContainingIV, exitBlocks);
       if (attribution->isSCCContainingIVWellFormed()) {
         loopToGoverningIVAttrMap[loop] = attribution;
       } else {

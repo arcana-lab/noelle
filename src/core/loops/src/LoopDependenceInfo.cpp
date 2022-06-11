@@ -173,7 +173,7 @@ LoopDependenceInfo::LoopDependenceInfo(
    */
   auto iv = this->inductionVariables->getLoopGoverningInductionVariable(*topLoop);
   loopGoverningIVAttribution = iv == nullptr ? nullptr
-    : new LoopGoverningIVAttribution(*iv, *loopSCCDAG->sccOfValue(iv->getLoopEntryPHI()), loopExitBlocks);
+    : new LoopGoverningIVAttribution(topLoop, *iv, *loopSCCDAG->sccOfValue(iv->getLoopEntryPHI()), loopExitBlocks);
 
   return ;
 }

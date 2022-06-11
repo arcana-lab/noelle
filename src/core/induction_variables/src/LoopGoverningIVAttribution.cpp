@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -12,15 +12,20 @@
 
 namespace llvm::noelle {
 
-  LoopGoverningIVAttribution::LoopGoverningIVAttribution (InductionVariable &iv, SCC &scc, std::vector<BasicBlock *> &exitBlocks)
-    : 
-      IV{iv}
-  , scc{scc}
-  , headerCmp{nullptr}
-  , conditionValueDerivation{}
-  , intermediateValueUsedInCompare{nullptr}
-  , isWellFormed{false} 
+  LoopGoverningIVAttribution::LoopGoverningIVAttribution (
+    LoopStructure *l,
+    InductionVariable &iv, 
+    SCC &scc, 
+    std::vector<BasicBlock *> &exitBlocks
+    ) :   loop{l}
+        , IV{iv}
+        , scc{scc}
+        , headerCmp{nullptr}
+        , conditionValueDerivation{}
+        , intermediateValueUsedInCompare{nullptr}
+        , isWellFormed{false} 
   {
+    assert(l != nullptr);
 
     /*
      * To understand how to transform the loop governing condition, it is far simpler to
@@ -228,6 +233,28 @@ namespace llvm::noelle {
     return ;
   }
 
+  bool LoopGoverningIVAttribution::valueOfExitConditionToJumpToTheLoopBody (void) const {
+    assert(this->headerBr != nullptr);
+    assert(this->headerBr->isConditional());
+
+    /*
+     * Fetch the successor for when the condition is true.
+     */
+    auto succTrue = this->headerBr->getSuccessor(0);
+    assert(succTrue != nullptr);
+
+    /*
+     * Check if the true successor belongs to the loop.
+     * If it does, then the condition to jump into the loop is true.
+     * Otherwise, it is false.
+     */
+    if (this->loop->isIncluded(succTrue)){
+      return true;
+    }
+
+    return false;
+  }
+
   InductionVariable &LoopGoverningIVAttribution::getInductionVariable(void) const {
     return IV;
   }
@@ -259,5 +286,5 @@ namespace llvm::noelle {
   Instruction * LoopGoverningIVAttribution::getValueToCompareAgainstExitConditionValue (void) const {
     return intermediateValueUsedInCompare;
   }
-
+  
 }
