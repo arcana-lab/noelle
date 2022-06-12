@@ -796,13 +796,11 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      * Inject store instructions to propagate live-out values back to the caller of the parallelized loop.
      * 
      * NOTE: To support storing live outs at exit blocks and not directly where the producer
-     * is executed, produce a PHI node at each store point with the following incoming values:
-     * the last executed intermediate of the producer that is post-dominated by that incoming block.
+     * is executed, produce a PHI node at each store point with the following incoming values: the last executed intermediate of the producer that is post-dominated by that incoming block.
      * There should only be one such value assuming that store point is correctly chosen
      * 
-     * NOTE: This provides flexibility to parallelization schemes with modified prologues or latches
-     * that have reducible live outs, and this flexibility is ONLY permitted for reducible live outs
-     * as non-reducible live outs can never store intermediate values of the producer.
+     * NOTE: This provides flexibility to parallelization schemes with modified prologues or latches that have reducible live outs.
+     * Furthermore, this flexibility is ONLY permitted for reducible or IV live outs as other live outs can never store intermediate values of the producer.
      */
     for (auto producerClone : producerClones) {
 
@@ -882,8 +880,7 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
 
   /*
    * Insert stores in loop exit blocks
-   * If the live out is reducible, it is fine that the live out value does not dominate the exit
-   * as some other intermediate is guaranteed to
+   * If the live out is reducible, it is fine that the live out value does not dominate the exit as some other intermediate is guaranteed to.
    */
   std::set<BasicBlock *> insertPoints;
   for (auto BB : loopSummary->getLoopExitBasicBlocks()) {
