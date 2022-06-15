@@ -470,4 +470,128 @@ void DOALL::addJumpToLoop (LoopDependenceInfo *LDI, Task *t){
   return ;
 }
 
+BasicBlock * DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted, Value *memoryIndex) {
+  auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
+
+
+
+  /*
+   * Fetch the loop headers.
+   */
+  auto loopSummary = LDI->getLoopStructure();
+  auto loopPreHeader = loopSummary->getPreHeader();
+  auto f = loopSummary->getFunction();
+
+
+
+
+  /*
+   * Fetch the SCC manager.
+   */
+  auto sccManager = LDI->getSCCManager();
+
+  /*
+   * Collect reduction operation information needed to accumulate reducable variables after parallelization execution
+   */
+  std::unordered_map<int, int> reducableBinaryOps;
+  std::unordered_map<int, Value *> initialValues;
+  for (auto envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+    auto isReduced = envBuilder->isReduced(envInd);
+    if (!isReduced) continue;
+
+    auto producer = LDI->environment->producerAt(envInd);
+    auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
+    auto producerSCCAttributes = sccManager->getSCCAttrs(producerSCC);
+
+    /*
+     * HACK: Need to get accumulator that feeds directly into producer PHI, not any intermediate one
+     */
+    auto firstAccumI = *(producerSCCAttributes->getAccumulators().begin());
+    auto binOpCode = firstAccumI->getOpcode();
+    reducableBinaryOps[envInd] = sccManager->accumOpInfo.accumOpForType(binOpCode, producer->getType());
+
+    PHINode *loopEntryProducerPHI = this->fetchLoopEntryPHIOfProducer(LDI, producer);
+    auto initValPHIIndex = loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
+    auto initialValue = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
+    initialValues[envInd] = castToCorrectReducibleType(*builder, initialValue, producer->getType());
+  }
+
+  /*
+   * Synchronization: add SyncFunction before reduction
+   */
+  BasicBlock* reductionPt = this->entryPointOfParallelizedLoop;
+  if(initialValues.size()){
+    reductionPt = CreateSynchronization(f, *builder, this->entryPointOfParallelizedLoop, nullptr, 1);
+    SyncFunctionInserted = true;
+    delete builder;
+    builder = new IRBuilder<>(reductionPt);
+  }
+
+
+  auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
+    reductionPt,
+    *builder,
+    reducableBinaryOps,
+    initialValues,
+    numberOfThreadsExecuted);
+
+  /*
+   * Free the memory.
+   */
+  delete builder;
+
+  /*
+   * If reduction occurred, then all environment loads to propagate live outs need to be
+   * inserted after the reduction loop
+   */
+  IRBuilder<> *afterReductionBuilder;
+  if (afterReductionB->getTerminator()) {
+    afterReductionBuilder->SetInsertPoint(afterReductionB->getTerminator());
+  } else {
+    afterReductionBuilder = new IRBuilder<>(afterReductionB);
+  }
+
+  for (int envInd : LDI->environment->getEnvIndicesOfLiveOutVars()) {
+    auto prod = LDI->environment->producerAt(envInd);
+
+    /*
+     * NOTE(angelo): If the environment variable isn't reduced, it is held in allocated
+     * memory that needs to be loaded from in order to retrieve the value
+     */
+    auto isReduced = envBuilder->isReduced(envInd);
+    Value *envVar;
+    if (isReduced) {
+      envVar = envBuilder->getAccumulatedReducableEnvVar(envInd);
+    } else {
+      envVar = afterReductionBuilder->CreateLoad(envBuilder->getEnvVar(envInd));
+    }
+
+    for (auto consumer : LDI->environment->consumersOf(prod)) {
+      if (auto depPHI = dyn_cast<PHINode>(consumer)) {
+        depPHI->addIncoming(envVar, this->exitPointOfParallelizedLoop);
+        continue;
+      }
+      prod->print(errs() << "Producer of environment variable:\t"); errs() << "\n";
+      errs() << "Loop not in LCSSA!\n";
+      abort();
+    }
+    /*
+    * Synchronization: store locations of first use of liveouts outside of the parallel region
+    */
+    for (auto consumer : LDI->environment->consumersOf(prod))
+          LiveOutUses.push_back(consumer);
+  }
+
+
+
+
+  /*
+   * Free the memory.
+   */
+  delete afterReductionBuilder;
+
+  return afterReductionB;
+}
+
+
 }

@@ -48,12 +48,10 @@ namespace llvm::noelle {
     for(auto loops : treesToParallelize){
       for(auto ldi : loops){
         auto ls = ldi->getLoopStructure();
-        if(ls->getNestingLevel() > 1) continue;
-        for(auto bb: ls->getBasicBlocks()){
-          if(bb == originalInsertPt){
+        if(!ls) continue;
+        if(ls->getNestingLevel() != 1) continue;
+        if(ls->isIncluded(originalInsertPt))
             return(ls->getHeader());
-          }
-        }
       }
     }
     return originalInsertPt;

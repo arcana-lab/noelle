@@ -69,6 +69,11 @@ namespace llvm::noelle {
 
       void addJumpToLoop (LoopDependenceInfo *LDI, Task *t);
 
+      BasicBlock * propagateLiveOutEnvironment (
+        LoopDependenceInfo *LDI,
+        Value *numberOfThreadsExecuted,
+        Value *memoryIndex = nullptr
+      ) override;
       /*
        * Helpers
        */
