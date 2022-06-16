@@ -171,6 +171,7 @@ void HELIX::createParallelizableTask (
        * Fetch the SCC metadata.
        */
       auto sccInfo = sccManager->getSCCAttrs(scc);
+      assert(sccInfo != nullptr);
 
       /*
        * Check the SCC.
