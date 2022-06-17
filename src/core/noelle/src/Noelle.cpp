@@ -254,6 +254,10 @@ Hot * Noelle::getProfiles (void) {
 DataFlowAnalysis Noelle::getDataFlowAnalyses (void) const {
   return DataFlowAnalysis{};
 }
+      
+CFGAnalysis Noelle::getCFGAnalysis (void) const {
+  return CFGAnalysis{};
+}
 
 DataFlowEngine Noelle::getDataFlowEngine (void) const {
   return DataFlowEngine{};

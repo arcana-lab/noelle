@@ -24,6 +24,7 @@
 #include "noelle/core/TypesManager.hpp"
 #include "noelle/core/ConstantsManager.hpp"
 #include "noelle/core/CompilationOptionsManager.hpp"
+#include "noelle/core/CFGAnalysis.hpp"
 
 namespace llvm::noelle {
 
@@ -150,6 +151,8 @@ namespace llvm::noelle {
       PDG * getFunctionDependenceGraph (Function *f) ;
 
       DataFlowAnalysis getDataFlowAnalyses (void) const ;
+      
+      CFGAnalysis getCFGAnalysis (void) const ;
 
       DataFlowEngine getDataFlowEngine (void) const ;
 
