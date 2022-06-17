@@ -206,8 +206,9 @@ namespace llvm::noelle {
 
       virtual BasicBlock * getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (
         LoopDependenceInfo *LDI,
-        uint32_t taskIndex
-        ) ;
+        uint32_t taskIndex,
+        BasicBlock &bb
+        ) = 0;
 
       /*
        * Partition SCCDAG.

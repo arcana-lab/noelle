@@ -9,6 +9,7 @@ set(Srcs
   Printer.cpp
   Queue.cpp
   DSWPTask.cpp
+  DSWP_lastIteration.cpp
 )
 
 # Compilation flags

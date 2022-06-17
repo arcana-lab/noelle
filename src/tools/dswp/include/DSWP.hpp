@@ -45,6 +45,13 @@ namespace llvm::noelle {
         Heuristics *h
       ) const override ;
 
+    protected:
+      BasicBlock * getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (
+        LoopDependenceInfo *LDI, 
+        uint32_t taskIndex,
+        BasicBlock &bb
+        ) override ;
+
     private:
 
       /*

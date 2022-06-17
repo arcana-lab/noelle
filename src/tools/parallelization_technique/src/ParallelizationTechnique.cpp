@@ -24,11 +24,6 @@ ParallelizationTechnique::ParallelizationTechnique (
   return ;
 }
 
-BasicBlock * ParallelizationTechnique::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI, uint32_t taskIndex) {
-  return nullptr;
-  abort();
-}
-
 Value * ParallelizationTechnique::getEnvArray (void) const { 
   return this->envBuilder->getEnvironmentArray(); 
 }
@@ -726,6 +721,11 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
 ){
 
   /*
+   * Fetch the environment of the loop
+   */
+  auto env = LDI->getEnvironment();
+
+  /*
    * Fetch the requested task.
    */
   auto task = this->tasks[taskIndex];
@@ -741,10 +741,14 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
   IRBuilder<> entryBuilder(entryTerminator);
 
   /*
-   * Compute the dominators.
+   * Fetch the function executed by the task.
    */
   auto &taskFunction = *task->getTaskBody();
-  auto taskDS = this->noelle.getDominators(&taskFunction);
+
+  /*
+   * Fetch the CFG analysis
+   */
+  auto cfgAnalysis = this->noelle.getCFGAnalysis();
 
   /*
    * Iterate over live-out variables and inject stores at the end of the execution of the function of the task to propagate the new live-out values back to the caller of the parallelized loop.
@@ -758,7 +762,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
      * assume the direct cloning of the producer is the only clone
      * TODO: Find a better place to map this single clone (perhaps when the original loop's values are cloned)
      */
-    auto producer = cast<Instruction>(LDI->getEnvironment()->producerAt(envIndex));
+    auto producer = cast<Instruction>(env->producerAt(envIndex));
     assert(producer != nullptr);
     if (!task->doesOriginalLiveOutHaveManyClones(producer)) {
       auto singleProducerClone = task->getCloneOfOriginalInstruction(producer);
@@ -805,6 +809,11 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     for (auto producerClone : producerClones) {
 
       /*
+       * Compute the dominators.
+       */
+      auto taskDS = this->noelle.getDominators(&taskFunction);
+
+      /*
        * Fetch all points in the CFG where we need to insert the store instruction.
        */
       auto insertBBs = this->determineLatestPointsToInsertLiveOutStore(LDI, taskIndex, producerClone, isReduced, *taskDS);
@@ -842,23 +851,37 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
 
           /*
            * The live-out variable is not reduced.
-           * So we need to store the live-out variable only if the current task has executed the last iteration of the loop.
+           *
+           * Check if the place to inject the store is included in a cycle in the CFG (hence, it can run multiple times).
+           * If that is the case, then we need to store the live-out variable only if the current task has executed the last iteration of the loop.
+           * Otherwise, the store will happen within the loop body and we assume to be synchronized correctly by the parallelization technique.
            */
-          auto lastIterationBB = this->getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(LDI, taskIndex);
-          if (lastIterationBB == nullptr){
-            lastIterationBB = BB;
+          if (!cfgAnalysis.isIncludedInACycle(*BB)){
+
+            /*
+             * The place to insert the store is the last basic block executed before leaving the task.
+             */
+            auto lastIterationBB = this->getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(LDI, taskIndex, *BB);
+            assert(lastIterationBB != nullptr);
+            auto lastIterationBBTerminator = lastIterationBB->getTerminator();
+            if (lastIterationBBTerminator != nullptr){
+              store->insertBefore(lastIterationBBTerminator);
+            } else {
+              lastIterationBB->getInstList().push_back(store);
+            }
+
+          } else {
+            store->insertBefore(BB->getTerminator());
           }
-          assert(lastIterationBB != nullptr);
-          store->insertBefore(lastIterationBB->getTerminator());
         }
       }
+
+      /*
+       * Free the memory
+       */
+      delete taskDS ;
     }
   }
-
-  /*
-   * Free the memory
-   */
-  delete taskDS ;
 
   return ;
 }
@@ -882,7 +905,7 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
    * Insert stores in loop exit blocks
    * If the live out is reducible, it is fine that the live out value does not dominate the exit as some other intermediate is guaranteed to.
    */
-  std::set<BasicBlock *> insertPoints;
+  std::set<BasicBlock *> insertPoints{};
   for (auto BB : loopSummary->getLoopExitBasicBlocks()) {
     auto cloneBB = task->getCloneOfOriginalBasicBlock(BB);
     auto liveOutDominatesExit = taskDS.DT.dominates(liveOutBlock, cloneBB);

@@ -148,6 +148,12 @@ namespace llvm::noelle {
         LoopDependenceInfo *LDI
       );
 
+      BasicBlock * getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (
+        LoopDependenceInfo *LDI, 
+        uint32_t taskIndex,
+        BasicBlock &bb
+        ) override ;
+
     private:
       Function *waitSSCall, *signalSSCall;
       LoopDependenceInfo *originalLDI;

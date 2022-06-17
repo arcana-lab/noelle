@@ -78,7 +78,8 @@ namespace llvm::noelle {
        */
       BasicBlock * getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (
         LoopDependenceInfo *LDI, 
-        uint32_t taskIndex
+        uint32_t taskIndex,
+        BasicBlock &bb
         ) override ;
   };
 

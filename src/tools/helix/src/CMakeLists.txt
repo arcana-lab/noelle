@@ -12,6 +12,7 @@ set(Srcs
   Synchronization.cpp
   Inliner.cpp
   HELIXPreamble.cpp
+  HELIXLastIteration.cpp
 )
 
 # Compilation flags

@@ -8,12 +8,12 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DOALL.hpp"
-#include "DOALLTask.hpp"
+#include "HELIX.hpp"
+#include "HELIXTask.hpp"
 
 namespace llvm::noelle{
 
-BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI, uint32_t taskIndex, BasicBlock &bb) {
+BasicBlock * HELIX::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI, uint32_t taskIndex, BasicBlock &bb) {
   assert(LDI != nullptr);
   assert(taskIndex == 0);
   assert(this->tasks.size() > 0);
@@ -21,15 +21,20 @@ BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (L
   /*
    * Fetch the task.
    */
-  auto task = (DOALLTask *)this->tasks[taskIndex];
+  auto task = (HELIXTask *)this->tasks[taskIndex];
   assert(task != nullptr);
   auto taskFunction = task->getTaskBody();
 
   /*
-   * Fetch the last basic block executed before leaving the task.
+   * Check if we have a sequential prologue
    */
-  auto lastBB = task->getExit();
-  assert(lastBB != nullptr);
+  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  if (  false
+        || (loopGoverningIVAttr == nullptr)
+        || (this->doesHaveASequentialPrologue(LDI))
+      ){
+    return &bb;
+  }
 
   /*
    * Collect clones of step size deriving values for all induction variables
@@ -50,14 +55,14 @@ BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (L
   /*
    * Split the last basic block to inject the condition to jump to the new basic block
    */
-  assert(lastBB->size() > 0);
-  auto splitPoint = lastBB->getTerminator();
-  auto newLastBB = lastBB->splitBasicBlock(splitPoint, "very_last_bb_before_exiting_task");
+  assert(bb.size() > 0);
+  auto splitPoint = bb.getTerminator();
+  auto newLastBB = bb.splitBasicBlock(splitPoint, "very_last_bb_before_exiting_task");
   assert(newLastBB != nullptr);
   newBBBuilder.CreateBr(newLastBB);
-  auto newTerm = lastBB->getTerminator();
+  auto newTerm = bb.getTerminator();
   newTerm->eraseFromParent();
-  IRBuilder<> lastBBBuilder(lastBB);
+  IRBuilder<> lastBBBuilder(&bb);
 
   /*
    * Generate the code to identify whether we have executed the last loop iteration.
@@ -65,7 +70,6 @@ BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (L
    * Step 0: create the IV utility for the loop governing IV.
    */
   auto allIVInfo = LDI->getInductionVariableManager();
-  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
   LoopGoverningIVUtility ivUtility(loopStructure, *allIVInfo, *loopGoverningIVAttr);
 
   /*
@@ -77,7 +81,21 @@ BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (L
   auto prevIterationValue = ivUtility.generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue(lastBBBuilder, loopGoverningPHI, stepSize);
 
   /*
-   * Step 2: Add the conditional branch to jump to the new basic block
+   * Step 2: understand whether the true successor of the header branch jumps into the loop or not.
+   */
+  auto originalBrInst = loopGoverningIVAttr->getHeaderBrInst();
+  auto brInst = task->getCloneOfOriginalInstruction(originalBrInst);
+  assert(brInst != nullptr);
+  auto trueSucc = brInst->getSuccessor(0);
+  bool jumpInLoopCondition ;
+  if (trueSucc == &bb){
+    jumpInLoopCondition = false;
+  } else {
+    jumpInLoopCondition = true;
+  }
+
+  /*
+   * Step 3: Add the conditional branch to jump to the new basic block
    *         To this end, compare the previous-iteration IV value against the exit condition
    */
   auto originalCmpInst = loopGoverningIVAttr->getHeaderCompareInstructionToComputeExitCondition();
@@ -87,7 +105,11 @@ BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (L
   auto valueUsedToCompareAgainstExitConditionValue = task->getCloneOfOriginalInstruction(origValueUsedToCompareAgainstExitConditionValue);
   clonedCmpInst->replaceUsesOfWith(valueUsedToCompareAgainstExitConditionValue, prevIterationValue);
   lastBBBuilder.Insert(clonedCmpInst);
-  lastBBBuilder.CreateCondBr(clonedCmpInst, newLastBB, newBB);
+  if (jumpInLoopCondition){
+    lastBBBuilder.CreateCondBr(clonedCmpInst, newLastBB, newBB);
+  } else {
+    lastBBBuilder.CreateCondBr(clonedCmpInst, newBB, newLastBB);
+  }
 
   return newBB;
 }
