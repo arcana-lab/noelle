@@ -13,7 +13,11 @@
 
 namespace llvm::noelle{
 
-BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (LoopDependenceInfo *LDI, uint32_t taskIndex, BasicBlock &bb) {
+BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (
+  LoopDependenceInfo *LDI, 
+  uint32_t taskIndex, 
+  BasicBlock &bb
+  ) {
   assert(LDI != nullptr);
   assert(taskIndex == 0);
   assert(this->tasks.size() > 0);
@@ -24,12 +28,6 @@ BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (L
   auto task = (DOALLTask *)this->tasks[taskIndex];
   assert(task != nullptr);
   auto taskFunction = task->getTaskBody();
-
-  /*
-   * Fetch the last basic block executed before leaving the task.
-   */
-  auto lastBB = task->getExit();
-  assert(lastBB != nullptr);
 
   /*
    * Collect clones of step size deriving values for all induction variables
@@ -50,14 +48,14 @@ BasicBlock * DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask (L
   /*
    * Split the last basic block to inject the condition to jump to the new basic block
    */
-  assert(lastBB->size() > 0);
-  auto splitPoint = lastBB->getTerminator();
-  auto newLastBB = lastBB->splitBasicBlock(splitPoint, "very_last_bb_before_exiting_task");
+  assert(bb.size() > 0);
+  auto splitPoint = bb.getTerminator();
+  auto newLastBB = bb.splitBasicBlock(splitPoint, "very_last_bb_before_exiting_task");
   assert(newLastBB != nullptr);
   newBBBuilder.CreateBr(newLastBB);
-  auto newTerm = lastBB->getTerminator();
+  auto newTerm = bb.getTerminator();
   newTerm->eraseFromParent();
-  IRBuilder<> lastBBBuilder(lastBB);
+  IRBuilder<> lastBBBuilder(&bb);
 
   /*
    * Generate the code to identify whether we have executed the last loop iteration.

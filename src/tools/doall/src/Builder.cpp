@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -59,15 +59,6 @@ void DOALL::rewireLoopToIterateChunks (
     auto loopEntryPHI = ivInfo->getLoopEntryPHI();
     auto ivPHI = cast<PHINode>(this->fetchClone(loopEntryPHI));
 
-// DANGER
-    // auto nthCoreOffset = entryBuilder.CreateMul(
-    //   stepOfIV,
-    //   entryBuilder.CreateZExtOrTrunc(
-    //     entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg, "coreIdx_X_chunkSize"),
-    //     stepOfIV->getType()
-    //   ),
-    //   "stepSize_X_coreIdx_X_chunkSize"
-    // );
     auto nthCoreOffset = IVUtility::scaleInductionVariableStep(preheaderClone, ivPHI, stepOfIV,
         entryBuilder.CreateMul(task->coreArg, task->chunkSizeArg, "coreIdx_X_chunkSize"));
 
@@ -84,19 +75,6 @@ void DOALL::rewireLoopToIterateChunks (
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getLoopEntryPHI()));
     auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
-    // auto chunkStepSize = entryBuilder.CreateMul(
-    //   stepOfIV,
-    //   entryBuilder.CreateZExtOrTrunc(
-    //     entryBuilder.CreateMul(
-    //       entryBuilder.CreateSub(task->numCoresArg, onesValueForChunking, "numCoresMinus1"),
-    //       task->chunkSizeArg,
-    //       "numCoresMinus1_X_chunkSize"
-    //     ),
-    //     stepOfIV->getType()
-    //   ),
-    //   "stepSizeToNextChunk"
-    // );
-
     auto chunkStepSize = IVUtility::scaleInductionVariableStep(preheaderClone, ivPHI, stepOfIV, 
         entryBuilder.CreateMul(
           entryBuilder.CreateSub(task->numCoresArg, onesValueForChunking, "numCoresMinus1"),
@@ -208,7 +186,7 @@ void DOALL::rewireLoopToIterateChunks (
     auto headerPHI = sccInfo->getSingleHeaderPHI();
     if (!headerPHI) continue;
 
-    bool hasInstsInHeader = false;
+    auto hasInstsInHeader = false;
     for (auto nodePair : scc->internalNodePairs()) {
       auto value = nodePair.first;
       auto inst = cast<Instruction>(value);
