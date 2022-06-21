@@ -177,6 +177,7 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const
       sccs.insert(SCC);
     }
   }
+
   return sccs;
 }
 
