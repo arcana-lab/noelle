@@ -154,7 +154,7 @@ Values IVAttrTestSuite::verifyLoopGoverning (ModulePass &pass, TestSuite &suite)
 
     auto exitBlocks = loop->getLoopExitBasicBlocks();
     auto scc = attrPass.sccdag->sccOfValue(IV->getLoopEntryPHI());
-    auto attr = new LoopGoverningIVAttribution(*IV, *scc, exitBlocks);
+    auto attr = new LoopGoverningIVAttribution(loop, *IV, *scc, exitBlocks);
     if (!attr->isSCCContainingIVWellFormed()) continue;
 
     std::vector<std::string> info;
