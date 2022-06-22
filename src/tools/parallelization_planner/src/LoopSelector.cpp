@@ -84,7 +84,7 @@ namespace llvm::noelle {
        * Check the minimum hotness
        */
       auto hotness = profiles->getDynamicTotalInstructionCoverage(ls) * 100;
-      auto minimumHotness = 2.0;
+      auto minimumHotness = 0.0;
       if (      true
             &&  (!this->forceParallelization)
             &&  (hotness < minimumHotness)
