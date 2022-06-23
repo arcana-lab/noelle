@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,6 +10,7 @@
  */
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
+#include "DOALL.hpp"
 
 namespace llvm::noelle {
 
@@ -27,9 +28,8 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   /*
    * Map from old to new SCCs (for use in determining what SCC can be left out of sequential segments)
    *
-   * NOTE: Account for spilled PHIs in particular, because their instruction mapping in the task
-   * is to the load in the pre-header. All stores to the spill environment are in the loop and contained
-   * in the task's loop SCCDAG, so use one of them
+   * NOTE: Account for spilled PHIs in particular, because their instruction mapping in the task is to the load in the pre-header. 
+   * All stores to the spill environment are in the loop and contained in the task's loop SCCDAG, so use one of them.
    */
   std::unordered_map<SCC *, SCC*> taskToOriginalFunctionSCCMap;
   std::unordered_set<SCC *> spillSCCs;
@@ -37,7 +37,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   auto originalSCCDAG = originalSCCManager->getSCCDAG();
   auto sccManager = LDI->getSCCManager();
   auto taskSCCDAG = sccManager->getSCCDAG();
-  for (auto spill : spills) {
+  for (auto spill : this->spills) {
     auto originalSpillSCC = originalSCCDAG->sccOfValue(spill->originalLoopCarriedPHI);
     auto clonedInstructionInLoop = *spill->environmentStores.begin();
     auto clonedSpillSCC = taskSCCDAG->sccOfValue(clonedInstructionInLoop);
@@ -51,7 +51,9 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
      * Skip already mapped spill SCCs
      */
     auto originalSCC = originalNode->getT();
-    if (spillSCCs.find(originalSCC) != spillSCCs.end()) continue;
+    if (spillSCCs.find(originalSCC) != spillSCCs.end()) {
+      continue;
+    }
 
     /*
      * Get clones of original instructions for the given SCC
@@ -77,13 +79,13 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
         continue ;
       }
       assert(clonedInst != nullptr);
+      if (!clonedLoop->isIncluded(clonedInst)) {
+        continue;
+      }
 
       /*
        * There is a cloned instruction, so we must consider it.
        */
-      if (!clonedLoop->isIncluded(clonedInst)) {
-        continue;
-      }
       anyClonedInstInLoop = clonedInst;
       break;
     }
@@ -99,7 +101,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
     SCC *singleMappingSCC = nullptr;
     for (auto taskNode : taskSCCDAG->getNodes()) {
       auto taskSCC = taskNode->getT();
-      bool hasOverlappingInstruction = taskSCC->isInternal(anyClonedInstInLoop);
+      auto hasOverlappingInstruction = taskSCC->isInternal(anyClonedInstInLoop);
       if (!hasOverlappingInstruction) continue;
 
       assert(singleMappingSCC == nullptr);
@@ -114,8 +116,6 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
     assert(singleMappingSCC != nullptr);
     taskToOriginalFunctionSCCMap.insert(std::make_pair(singleMappingSCC, originalSCC));
   }
-
-  std::vector<SequentialSegment *> sss;
 
   /*
    * Prepare the initial partition.
@@ -141,6 +141,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
    * Allocate the sequential segments, one per partition.
    */
   int32_t ssID = 0;
+  std::vector<SequentialSegment *> sss;
   for (auto set : sets){
 
     /*
@@ -178,15 +179,10 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
       }
 
       /*
-       * Fetch the type of the SCC.
-       */
-      auto sccType = sccInfo->getType();
-
-      /*
        * Only sequential SCC can generate a sequential segment.
        * FIXME: A reducible SCC should not be sequential in nature
        */
-      if (sccType == SCCAttrs::SEQUENTIAL) {
+      if (sccInfo->mustExecuteSequentially()){
         requireSS = true;
         break ;
       }

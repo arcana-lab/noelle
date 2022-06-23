@@ -36,6 +36,7 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../../heuristics/include 
   ../../parallelization_technique/include 
+  ../../doall/include
   ../include 
   ./ 
   ${CMAKE_INSTALL_PREFIX}/include

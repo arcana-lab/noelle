@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,6 +10,7 @@
  */
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
+#include "DOALL.hpp"
 
 namespace llvm::noelle{
 
@@ -164,33 +165,24 @@ void HELIX::createParallelizableTask (
    */
   if (this->verbose != Verbosity::Disabled) {
     errs() << "HELIX: Start the parallelization\n";
-    auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDependencies();
-    for (auto scc : nonDOALLSCCs) {
 
-      /*
-       * Fetch the SCC metadata.
-       */
-      auto sccInfo = sccManager->getSCCAttrs(scc);
-      assert(sccInfo != nullptr);
+    /*
+     * Print the sequential SCCs that will create sequential segments.
+     */
+    auto nonDOALLSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, this->noelle);
+    errs() << "HELIX:   There are " << nonDOALLSCCs.size() << " SCCs that have loop-carried dependences that cannot be broken\n";
+    if (this->verbose >= Verbosity::Maximal) {
+      for (auto scc : nonDOALLSCCs) {
 
-      /*
-       * Check the SCC.
-       */
-      if (sccInfo->canExecuteReducibly()){
-        continue ;
-      }
-      if (sccInfo->canBeCloned()){
-        continue ;
-      }
-      if (LDI->isSCCContainedInSubloop(scc)) {
-        continue ;
-      }
+        /*
+         * Fetch the SCC metadata.
+         */
+        auto sccInfo = sccManager->getSCCAttrs(scc);
+        assert(sccInfo != nullptr);
 
-      /*
-       * The current SCC needs to create a sequential segment.
-       */
-      errs() << "HELIX:   We found an SCC of type " << sccInfo->getType() << " of the loop that is non clonable and non commutative\n" ;
-      if (this->verbose >= Verbosity::Maximal) {
+        /*
+         * The current SCC needs to create a sequential segment.
+         */
         // errs() << "HELIX:     SCC:\n";
         // scc->printMinimal(errs(), "HELIX:       ") ;
         errs() << "HELIX:       Loop-carried dependences\n";
@@ -218,6 +210,13 @@ void HELIX::createParallelizableTask (
           return false;
             });
       }
+    }
+
+    /*
+     * Print the prologue
+     */
+    if (this->doesHaveASequentialPrologue(LDI)){
+      errs() << "HELIX:   The loop will have a sequential prologue\n";
     }
   }
 
@@ -351,6 +350,8 @@ bool HELIX::synchronizeTask (
   LoopDependenceInfo *LDI,
   Heuristics *h
 ){
+  assert(LDI != nullptr);
+  assert(h != nullptr);
 
   /*
    * Fetch the HELIX task.
@@ -368,7 +369,7 @@ bool HELIX::synchronizeTask (
    * aren't adjusted after squeezing. Delay computing entry and exit frontiers for identified
    * sequential segments until AFTER squeezing.
    */
-  auto sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
+  auto sequentialSegments = this->identifySequentialSegments(this->originalLDI, LDI, reachabilityDFR);
   this->squeezeSequentialSegments(LDI, &sequentialSegments, reachabilityDFR);
 
   /*
@@ -387,7 +388,7 @@ bool HELIX::synchronizeTask (
     errs() << "HELIX:  Identifying sequential segments\n";
   }
   reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
-  sequentialSegments = this->identifySequentialSegments(originalLDI, LDI, reachabilityDFR);
+  sequentialSegments = this->identifySequentialSegments(this->originalLDI, LDI, reachabilityDFR);
 
   /*
    * Schedule the sequential segments to overlap parallel and sequential segments.
