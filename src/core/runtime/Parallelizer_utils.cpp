@@ -39,12 +39,24 @@ static int64_t numberOfPushes32 = 0;
 static int64_t numberOfPushes64 = 0;
 #endif
     
+enum ARG_TYPE {
+    DOALL = 0,
+    HELIX,
+    DSWP
+};
+
+enum SCHED_POLICY {
+    STRIDE = 0,
+    SMT_STRIDE
+};
+
 typedef struct {
-  void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t) ;
+  void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t, int8_t, void *) ;
   void *env ;
   int64_t coreID ;
   int64_t numCores;
   int64_t chunkSize ;
+  uint32_t queueID;
   pthread_spinlock_t endLock;
 } DOALL_args_t ;
 
@@ -60,7 +72,10 @@ class NoelleRuntime {
 
     void releaseDOALLArgs (uint32_t index);
 
-    ThreadPoolForCSingleQueue *virgil;
+    //ThreadPoolForCSingleQueue *virgil;
+    ThreadPoolForCMultiQueues *virgil;
+
+    uint32_t getParentQueueID(ARG_TYPE argType, void *parentPtr);
 
     ~NoelleRuntime(void);
 
@@ -71,6 +86,7 @@ class NoelleRuntime {
     std::vector<DOALL_args_t *> doallMemory;
 
     uint32_t getMaximumNumberOfCores (void);
+
 
     /*
      * Current number of idle cores.
@@ -105,14 +121,19 @@ extern "C" {
       int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
   };
 
+
+  uint32_t NOELLE_getCurrentThreadQId();
   /*
    * Dispatch threads to run a DOALL loop.
    */
   DispatcherInfo NOELLE_DOALLDispatcher (
-    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), 
+    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t, int8_t, void *),
     void *env, 
     int64_t maxNumberOfCores, 
-    int64_t chunkSize
+    int64_t chunkSize,
+    ARG_TYPE argType,
+    SCHED_POLICY schedPolicy,
+    int32_t stride
     );
 
 
@@ -134,7 +155,7 @@ extern "C" {
 
   /******************************************** NOELLE API implementations ***********************************************/
 
-  typedef void (*stageFunctionPtr_t)(void *, void*);
+  typedef void (*stageFunctionPtr_t)(void *, void*, int8_t, void *);
 
   void printReachedS(std::string s)
   {
@@ -230,7 +251,7 @@ extern "C" {
     /*
      * Invoke
      */
-    DOALLArgs->parallelizedLoop(DOALLArgs->env, DOALLArgs->coreID, DOALLArgs->numCores, DOALLArgs->chunkSize);
+    DOALLArgs->parallelizedLoop(DOALLArgs->env, DOALLArgs->coreID, DOALLArgs->numCores, DOALLArgs->chunkSize, ARG_TYPE::DOALL, args);
     #ifdef RUNTIME_PROFILE
     auto clocks_end = rdtsc_e();
     clocks_starts[DOALLArgs->coreID] = clocks_start;
@@ -241,11 +262,24 @@ extern "C" {
     return ;
   }
 
+  uint32_t NOELLE_getCurrentThreadQId(){
+
+    /*
+     * Fetch VIRGIL
+     */
+    auto virgil = runtime.virgil;
+    return virgil->getCurrentThreadQId(); 
+  }
+
+
   DispatcherInfo NOELLE_DOALLDispatcher (
-    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t), 
+    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t, int8_t, void *),
     void *env, 
     int64_t maxNumberOfCores, 
-    int64_t chunkSize
+    int64_t chunkSize,
+    ARG_TYPE argType,
+    SCHED_POLICY schedPolicy,
+    int32_t stride
     ){
     #ifdef RUNTIME_PROFILE
     auto clocks_start = rdtsc_s();
@@ -255,6 +289,11 @@ extern "C" {
      * Fetch VIRGIL
      */
     auto virgil = runtime.virgil;
+    auto startIndex = 0;
+    auto parentQueueID = virgil->getCurrentThreadQId();
+
+
+    startIndex = parentQueueID + stride;
 
     /*
      * Set the number of cores to use.
@@ -268,12 +307,12 @@ extern "C" {
      * Allocate the memory to store the arguments.
      */
     uint32_t doallMemoryIndex;
-    auto argsForAllCores = runtime.getDOALLArgs(numCores - 1, &doallMemoryIndex);
+    auto argsForAllCores = runtime.getDOALLArgs(numCores, &doallMemoryIndex);
 
     /*
      * Submit DOALL tasks.
      */
-    for (auto i = 0; i < (numCores - 1); ++i) {
+    for (auto i = 1; i < (numCores); i+=1) {
 
       /*
        * Prepare the arguments.
@@ -283,6 +322,7 @@ extern "C" {
       argsPerCore->env = env;
       argsPerCore->numCores = numCores;
       argsPerCore->chunkSize = chunkSize;
+      argsPerCore->queueID = i*(stride) + parentQueueID;
 
       #ifdef RUNTIME_PROFILE
       clocks_dispatch_starts[i] = rdtsc_s();
@@ -291,7 +331,7 @@ extern "C" {
       /*
        * Submit
        */
-      virgil->submitAndDetach(NOELLE_DOALLTrampoline, argsPerCore);
+      virgil->submitAndDetach(NOELLE_DOALLTrampoline, argsPerCore, argsPerCore->queueID);
 
       #ifdef RUNTIME_PROFILE
       clocks_dispatch_ends[i] = rdtsc_s();
@@ -307,10 +347,21 @@ extern "C" {
     auto clocks_after_fork = rdtsc_e();
     #endif
 
+
+    /*
+     * Initalize argsPerCore for task 0 which will
+     * be executed by the main thread
+     */
+    auto argsPerCore = &argsForAllCores[0];
+    argsPerCore->parallelizedLoop = parallelizedLoop;
+    argsPerCore->env = env;
+    argsPerCore->numCores = numCores;
+    argsPerCore->chunkSize = chunkSize;
+    argsPerCore->queueID = parentQueueID;
     /*
      * Run a task.
      */
-    parallelizedLoop(env, numCores - 1, numCores, chunkSize);
+    parallelizedLoop(env, 0, numCores, chunkSize, ARG_TYPE::DOALL, &argsForAllCores[0]);
 
     /*
      * Wait for the remaining DOALL tasks.
@@ -318,7 +369,7 @@ extern "C" {
     #ifdef RUNTIME_PROFILE
     auto clocks_before_join = rdtsc_s();
     #endif
-    for (auto i = 0; i < (numCores - 1); ++i) {
+    for (auto i = 1; i < (numCores); ++i) {
       pthread_spin_lock(&(argsForAllCores[i].endLock));
     }
     #ifdef RUNTIME_PRINT
@@ -346,12 +397,12 @@ extern "C" {
     std::cerr << "XAN: Start         = " << clocks_start << "\n";
     std::cerr << "XAN: Setup overhead         = " << clocks_after_fork - clocks_start << " clocks\n";
     uint64_t totalDispatch = 0;
-    for (auto i=0; i < (numCores - 1); i++){
+    for (auto i=1; i < (numCores); i++){
       totalDispatch += (clocks_dispatch_ends[i] - clocks_dispatch_starts[i]);
     }
     std::cerr << "XAN:    Dispatch overhead         = " << totalDispatch << " clocks\n";
     std::cerr << "XAN: Start joining = " << clocks_after_fork << "\n";
-    for (auto i=0; i < (numCores - 1); i++){
+    for (auto i=1; i < (numCores); i++){
       std::cerr << "Thread " << i << ": Start = " << clocks_starts[i] << "\n";
       std::cerr << "Thread " << i << ": End   = " << clocks_ends[i] << "\n";
       std::cerr << "Thread " << i << ": Delta = " << clocks_ends[i] - clocks_starts[i] << "\n";
@@ -361,7 +412,7 @@ extern "C" {
 
     uint64_t start_min = 0;
     uint64_t start_max = 0;
-    for (auto i=0; i < (numCores - 1); i++){
+    for (auto i=1; i < (numCores); i++){
       if (  false
             || (start_min == 0)
             || (clocks_starts[i] < start_min)
@@ -378,7 +429,7 @@ extern "C" {
 
     uint64_t end_max = 0;
     uint64_t lastThreadID = 0;
-    for (auto i=0; i < (numCores - 1); i++){
+    for (auto i=1; i < (numCores); i++){
       if (clocks_ends[i] > end_max){
         lastThreadID = i;
         end_max = clocks_ends[i];
@@ -402,7 +453,7 @@ extern "C" {
    *                HELIX
    **********************************************************************/
   typedef struct {
-    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *);
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *, int8_t, void *);
     void *env ;
     void *loopCarriedArray;
     void *ssArrayPast;
@@ -410,6 +461,7 @@ extern "C" {
     uint64_t coreID;
     uint64_t numCores;
     uint64_t *loopIsOverFlag;
+    uint32_t queueID;
     pthread_spinlock_t endLock;
   } NOELLE_HELIX_args_t ;
 
@@ -430,8 +482,9 @@ extern "C" {
       HELIX_args->ssArrayFuture, 
       HELIX_args->coreID,
       HELIX_args->numCores,
-      HELIX_args->loopIsOverFlag
-      );
+      HELIX_args->loopIsOverFlag,
+      ARG_TYPE::HELIX,
+      args);
 
     pthread_spin_unlock(&(HELIX_args->endLock));
     return ;
@@ -462,12 +515,15 @@ extern "C" {
   }
 
   static DispatcherInfo NOELLE_HELIX_dispatcher (
-    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *, int8_t, void *), 
     void *env,
     void *loopCarriedArray,
     int64_t maxNumberOfCores, 
     int64_t numOfsequentialSegments,
-    bool LIO
+    bool LIO,
+    ARG_TYPE argType,
+    SCHED_POLICY schedPolicy,
+    int32_t stride
     ){
     #ifdef RUNTIME_PRINT
     std::cerr << "HELIX: dispatcher: Start" << std::endl;
@@ -486,6 +542,10 @@ extern "C" {
      * Fetch VIRGIL
      */
     auto virgil = runtime.virgil;
+    auto startIndex = 0;
+
+    auto parentQueueID = virgil->getCurrentThreadQId();
+    startIndex = parentQueueID + stride;
 
     /*
      * Reserve the cores.
@@ -558,14 +618,14 @@ extern "C" {
      * Allocate the arguments for the cores.
      */
     NOELLE_HELIX_args_t *argsForAllCores;
-    posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(NOELLE_HELIX_args_t) * (numCores - 1));
+    posix_memalign((void **)&argsForAllCores, CACHE_LINE_SIZE, sizeof(NOELLE_HELIX_args_t) * (numCores));
 
     /*
      * Launch threads
      */
     uint64_t loopIsOverFlag = 0;
     cpu_set_t cores;
-    for (auto i = 0; i < (numCores - 1); ++i) {
+    for (auto i = 1; i < (numCores); ++i) {
       #ifdef RUNTIME_PRINT
       fprintf(stderr, "HelixDispatcher: Creating future for core %d\n", i);
       #endif
@@ -597,6 +657,7 @@ extern "C" {
       argsPerCore->coreID = i;
       argsPerCore->numCores = numCores;
       argsPerCore->loopIsOverFlag = &loopIsOverFlag;
+      argsPerCore->queueID = i*(stride) + parentQueueID;
       pthread_spin_init(&(argsPerCore->endLock), PTHREAD_PROCESS_PRIVATE);
       pthread_spin_lock(&(argsPerCore->endLock));
 
@@ -612,7 +673,7 @@ extern "C" {
       /*
        * Launch the thread.
        */
-      virgil->submitAndDetach(NOELLE_HELIXTrampoline, argsPerCore);
+      virgil->submitAndDetach(NOELLE_HELIXTrampoline, argsPerCore, argsPerCore->queueID);
 
       /*
        * Launch the helper thread.
@@ -634,16 +695,28 @@ extern "C" {
     /*
      * Run a task.
      */
-    auto pastID = (numCores - 1) % numOfSSArrays;
-    auto futureID = 0;
+    auto pastID = 0;
+    auto futureID = 1;
     auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
     auto ssArrayFuture = ssArrays;
-    parallelizedLoop(env, loopCarriedArray, ssArrayPast, ssArrayFuture, numCores - 1, numCores, &loopIsOverFlag);
+
+    auto argsPerCore = &argsForAllCores[0];
+    argsPerCore->parallelizedLoop = parallelizedLoop;
+    argsPerCore->env = env;
+    argsPerCore->loopCarriedArray = loopCarriedArray;
+    argsPerCore->ssArrayPast = ssArrayPast;
+    argsPerCore->ssArrayFuture = ssArrayFuture;
+    argsPerCore->coreID = 0;
+    argsPerCore->numCores = numCores;
+    argsPerCore->loopIsOverFlag = &loopIsOverFlag;
+    argsPerCore->queueID = parentQueueID;
+
+    parallelizedLoop(env, loopCarriedArray, ssArrayPast, ssArrayFuture, 0, numCores, &loopIsOverFlag, ARG_TYPE::HELIX, &argsForAllCores[0]);
 
     /*
      * Wait for the remaining HELIX tasks.
      */
-    for (auto i = 0; i < (numCores - 1); ++i) {
+    for (auto i = 1; i < (numCores); ++i) {
       pthread_spin_lock(&(argsForAllCores[i].endLock));
     }
     #ifdef RUNTIME_PRINT
@@ -667,23 +740,31 @@ extern "C" {
   }
 
   DispatcherInfo NOELLE_HELIX_dispatcher_sequentialSegments (
-    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *, int8_t, void *), 
     void *env,
     void *loopCarriedArray,
     int64_t numCores, 
-    int64_t numOfsequentialSegments
+    int64_t numOfsequentialSegments,
+    ARG_TYPE argType,
+    SCHED_POLICY schedPolicy,
+    int32_t stride
     ){
-    return NOELLE_HELIX_dispatcher(parallelizedLoop, env, loopCarriedArray, numCores, numOfsequentialSegments, true);
+    return NOELLE_HELIX_dispatcher(parallelizedLoop, env, loopCarriedArray, numCores, numOfsequentialSegments, true,
+                                   argType, schedPolicy, stride);
   }
 
   DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections (
-    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *), 
+    void (*parallelizedLoop)(void *, void *, void *, void *, int64_t, int64_t, uint64_t *, int8_t, void *), 
     void *env,
     void *loopCarriedArray,
     int64_t numCores, 
-    int64_t numOfsequentialSegments
+    int64_t numOfsequentialSegments,
+    ARG_TYPE argType,
+    SCHED_POLICY schedPolicy,
+    int32_t stride
     ){
-    return NOELLE_HELIX_dispatcher(parallelizedLoop, env, loopCarriedArray, numCores, numOfsequentialSegments, false);
+    return NOELLE_HELIX_dispatcher(parallelizedLoop, env, loopCarriedArray, numCores, numOfsequentialSegments, false,
+                                   argType, schedPolicy, stride);
   }
 
   void HELIX_wait (
@@ -746,6 +827,7 @@ extern "C" {
     stageFunctionPtr_t funcToInvoke;
     void *env;
     void *localQueues;
+    uint32_t queueID;
     pthread_mutex_t endLock;
   } NOELLE_DSWP_args_t ;
 
@@ -763,7 +845,7 @@ extern "C" {
     /*
      * Invoke
      */
-    DSWPArgs->funcToInvoke(DSWPArgs->env, DSWPArgs->localQueues);
+    DSWPArgs->funcToInvoke(DSWPArgs->env, DSWPArgs->localQueues, ARG_TYPE::DSWP, args);
 
     pthread_mutex_unlock(&(DSWPArgs->endLock));
     return ;
@@ -774,7 +856,10 @@ extern "C" {
     int64_t *queueSizes, 
     void *stages, 
     int64_t numberOfStages, 
-    int64_t numberOfQueues
+    int64_t numberOfQueues,
+    ARG_TYPE argType,
+    SCHED_POLICY schedPolicy,
+    int32_t stride
     ){
     #ifdef RUNTIME_PRINT
     std::cerr << "Starting dispatcher: num stages " << numberOfStages << ", num queues: " << numberOfQueues << std::endl;
@@ -917,7 +1002,8 @@ NoelleRuntime::NoelleRuntime() {
   /*
    * Allocate VIRGIL
    */
-  this->virgil = new ThreadPoolForCSingleQueue(false, maxCores);
+  //this->virgil = new ThreadPoolForCSingleQueue(false, maxCores);
+  this->virgil = new ThreadPoolForCMultiQueues(false, maxCores);
 
   return ;
 }
@@ -1041,6 +1127,46 @@ uint32_t NoelleRuntime::getMaximumNumberOfCores (void){
 
   return cores;
 }
+
+uint32_t NoelleRuntime::getParentQueueID(ARG_TYPE argType, void *parentPtr){
+
+  if (!parentPtr){
+    return 0;
+  }
+
+  switch(argType){
+    case DOALL : {
+
+        auto parentCoreArgs = reinterpret_cast<DOALL_args_t *>(parentPtr);
+        auto parentQueueID = parentCoreArgs->queueID;
+
+        return parentQueueID;
+
+        break;
+      }
+    case HELIX : {
+
+        auto parentCoreArgs = reinterpret_cast<NOELLE_HELIX_args_t *>(parentPtr);
+        auto parentQueueID = parentCoreArgs->queueID;
+
+        return parentQueueID;
+
+        break;
+      }
+    case DSWP : {
+
+        auto parentCoreArgs = reinterpret_cast<NOELLE_DSWP_args_t *>(parentPtr);
+        auto parentQueueID = parentCoreArgs->queueID;
+
+        return parentQueueID;
+
+        break;
+      }
+  }
+
+  return 0;
+}
+
     
 NoelleRuntime::~NoelleRuntime(void){
   delete this->virgil;
