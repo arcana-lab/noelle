@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int nestb(int) ;
-int nestc(int) ;
-int nestd(int) ;
-int neste(int) ;
+int nestb(int);
+int nestc(int);
+int nestd(int);
+int neste(int);
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
   /*
    * Check the inputs.
    */
-  if (argc < 2){
+  if (argc < 2) {
     fprintf(stderr, "USAGE: %s LOOP_ITERATIONS\n", argv[0]);
     return -1;
   }
@@ -25,8 +25,9 @@ int main (int argc, char *argv[]){
   return 0;
 }
 
-int nestb (int iters) {
-  if (iters <= 0) return 0;
+int nestb(int iters) {
+  if (iters <= 0)
+    return 0;
   int x = 0;
   for (int i = 0; i < iters; i++) {
     for (int j = 0; j < i; j++) {
@@ -55,20 +56,23 @@ int nestb (int iters) {
   return x;
 }
 
-int nestc (int iters) {
-  if (iters <= 0) return 0;
+int nestc(int iters) {
+  if (iters <= 0)
+    return 0;
   int x = nestd(iters - 1);
   return x + 1;
 }
 
-int nestd (int iters) {
-  if (iters <= 0) return 0;
+int nestd(int iters) {
+  if (iters <= 0)
+    return 0;
   int x = neste(iters - 1);
   return x + 1;
 }
 
-int neste (int iters) {
-  if (iters <= 0) return 0;
+int neste(int iters) {
+  if (iters <= 0)
+    return 0;
   int x = nestc(iters - 1);
   return x + 1;
 }

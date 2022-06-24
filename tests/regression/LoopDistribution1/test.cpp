@@ -1,11 +1,11 @@
 #include <stdio.h>
 
-int main (){
+int main() {
   int x;
 
   for (int i = 0; i < 1000; ++i) {
     if (i != 0 && i % 70 == 0) {
-      printf("Failed"); 
+      printf("Failed");
       return 0;
     }
     x = i % 30;
@@ -15,4 +15,3 @@ int main (){
 
   return 0;
 }
-

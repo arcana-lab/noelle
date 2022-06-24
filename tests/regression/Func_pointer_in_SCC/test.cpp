@@ -17,7 +17,7 @@ int g(int printVar, int v1, int v2, int (*f_f)(int)) {
   return 0;
 }
 
-int main (){
+int main() {
   int v1, v2;
   int printVar;
   v1 = 111;

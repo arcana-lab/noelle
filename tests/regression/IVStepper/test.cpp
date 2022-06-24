@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main (int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   int step;
   if (argc < 2) {
     step = 1;
@@ -19,4 +19,3 @@ int main (int argc, char* argv[]) {
   printf("%d\n", v1);
   return 0;
 }
-

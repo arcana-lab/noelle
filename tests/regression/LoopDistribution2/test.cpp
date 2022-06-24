@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-int main (){
+int main() {
   int x;
 
   for (int i = 0; i < 1000; ++i) {
@@ -20,4 +20,3 @@ int main (){
 
   return 0;
 }
-

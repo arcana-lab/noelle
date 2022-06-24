@@ -1,7 +1,7 @@
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
   int v1, v2;
   long v1_temp;
   double v3;

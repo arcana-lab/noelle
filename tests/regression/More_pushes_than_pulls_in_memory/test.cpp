@@ -1,12 +1,12 @@
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
-void f (double *v1, double v2){
+void f(double *v1, double v2) {
 
   for (uint32_t i = 0; i < 100; ++i) {
 
     // SCC 1
-    for (uint32_t j = 0; j < 10; j++){
+    for (uint32_t j = 0; j < 10; j++) {
       double temp = (((double)j) * 25.210);
       *v1 += temp;
     }
@@ -16,10 +16,10 @@ void f (double *v1, double v2){
   }
 
   printf("%f, %f\n", *v1, v2);
-  return ;
+  return;
 }
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
   double v1, v2;
   v1 = argc + 0.31;
   v2 = ((argc * 5) / 2) + 1.5324;

@@ -1,6 +1,6 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 typedef struct {
   int randomVariableInTheWay;
@@ -13,28 +13,29 @@ typedef struct {
   Point *p;
 } Points;
 
-float readOnly (Point &p, Point &q, int dim) {
-  float result=0.0;
+float readOnly(Point &p, Point &q, int dim) {
+  float result = 0.0;
   for (auto i = 0; i < dim; i++)
-    result += (p.array[i] - q.array[i])*(p.array[i] - q.array[i]);
+    result += (p.array[i] - q.array[i]) * (p.array[i] - q.array[i]);
   return result;
 }
 
-void doPrint (Points *p) {
+void doPrint(Points *p) {
   printf("%d\n", p->dim);
 }
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
   /*
    * Check the inputs.
    */
-  if (argc < 2){
+  if (argc < 2) {
     fprintf(stderr, "USAGE: %s LOOP_ITERATIONS\n", argv[0]);
     return -1;
   }
   auto iterations = atoll(argv[1]);
-  if (iterations < 1) return -1;
+  if (iterations < 1)
+    return -1;
 
   Points points;
   points.dim = 1000;
@@ -44,14 +45,14 @@ int main (int argc, char *argv[]){
   pointsTest->dim = iterations;
   doPrint(pointsTest);
 
-  float* block = (float*)malloc(iterations*points.dim*sizeof(float));
-  points.p = (Point *)malloc(iterations*sizeof(Point));
+  float *block = (float *)malloc(iterations * points.dim * sizeof(float));
+  points.p = (Point *)malloc(iterations * sizeof(Point));
 
   for (int i = 0; i < iterations * points.dim; ++i) {
     block[i] = i * 1.6;
   }
   for (int i = 0; i < iterations; ++i) {
-    points.p[i].array = &block[i*points.dim];
+    points.p[i].array = &block[i * points.dim];
   }
 
   auto is_valid = (bool *)calloc(iterations, sizeof(bool));
@@ -59,7 +60,7 @@ int main (int argc, char *argv[]){
 
   Point startPoint = points.p[0];
   float accumulation = 0;
-  for (auto i=0; i < iterations; ++i) {
+  for (auto i = 0; i < iterations; ++i) {
     float someValue = readOnly(points.p[i], startPoint, points.dim);
     float otherValue = startPoint.array[0];
     if (someValue < otherValue) {
@@ -70,7 +71,10 @@ int main (int argc, char *argv[]){
     }
   }
 
-  printf("%.2f, %d\n", accumulation, is_valid[iterations/2], values[iterations/2]);
+  printf("%.2f, %d\n",
+         accumulation,
+         is_valid[iterations / 2],
+         values[iterations / 2]);
 
   return 0;
 }

@@ -1,6 +1,6 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 typedef struct {
   float *coord;
@@ -9,9 +9,9 @@ typedef struct {
   unsigned long long int w;
 } Point;
 
-float computeDist (Point p1, Point p2, int dim){
+float computeDist(Point p1, Point p2, int dim) {
   float result = 0.0;
-  for (auto i=0; i < dim; i++){
+  for (auto i = 0; i < dim; i++) {
     auto toAdd = (p1.coord[i] - p2.coord[i]) * (p1.coord[i] - p2.coord[i]);
     result += toAdd;
   }
@@ -19,12 +19,12 @@ float computeDist (Point p1, Point p2, int dim){
   return result;
 }
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
   /*
    * Check the inputs.
    */
-  if (argc < 2){
+  if (argc < 2) {
     fprintf(stderr, "USAGE: %s DIMS\n", argv[0]);
     return -1;
   }
@@ -37,7 +37,7 @@ int main (int argc, char *argv[]){
   Point p2;
   p1.coord = (float *)malloc(sizeof(float) * dims);
   p2.coord = (float *)malloc(sizeof(float) * dims);
-  for (auto j=0; j < dims; j++){
+  for (auto j = 0; j < dims; j++) {
     p1.coord[j] = j + dims + 1;
     p2.coord[j] = j + 1;
   }

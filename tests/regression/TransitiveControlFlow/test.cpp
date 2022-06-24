@@ -1,9 +1,9 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
-int main (int argc, char *argv[]) {
-  if (argc < 2){
+int main(int argc, char *argv[]) {
+  if (argc < 2) {
     fprintf(stderr, "USAGE: %s SCC1_CONTROL_FLOW SCC2_CONTROL_FLOW\n", argv[0]);
     return -1;
   }

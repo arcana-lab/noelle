@@ -1,8 +1,8 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
-int multiExits (int count) {
+int multiExits(int count) {
   int v1, v2, v1_temp, v3;
   v1 = count;
   v2 = ((count * 5) / 2) + 1;
@@ -33,7 +33,7 @@ int multiExits (int count) {
   return 0;
 }
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
   multiExits(argc);
 
   return 0;

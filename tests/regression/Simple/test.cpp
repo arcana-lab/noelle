@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-int main (){
+int main() {
   int v1, v2;
   v1 = 0;
   v2 = 0;
@@ -13,4 +13,3 @@ int main (){
   printf("%d, %d\n", v1, v2);
   return 0;
 }
-

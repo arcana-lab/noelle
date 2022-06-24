@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-int main (){
+int main() {
   int v1, v2, v3, v4;
   v1 = 111;
   v2 = 3;

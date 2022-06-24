@@ -1,14 +1,16 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
   /*
    * Check the inputs.
    */
-  if (argc < 4){
-    fprintf(stderr, "USAGE: %s LOOP_ITERATIONS SCC1_ITERATIONS SCC2_ITERATIONS\n", argv[0]);
+  if (argc < 4) {
+    fprintf(stderr,
+            "USAGE: %s LOOP_ITERATIONS SCC1_ITERATIONS SCC2_ITERATIONS\n",
+            argv[0]);
     return -1;
   }
   auto iterations = atoll(argv[1]);
@@ -25,14 +27,14 @@ int main (int argc, char *argv[]){
 
     // SCC 1
     v1_temp = v1;
-    for (auto iter = 0; iter < scc1Iterations; iter++){
+    for (auto iter = 0; iter < scc1Iterations; iter++) {
       v1 = v1 * 3;
       v1 = v1 / 2;
     }
 
     // SCC 2
     v2 = v2 - v1_temp;
-    for (auto iter = 0; iter < scc2Iterations; iter++){
+    for (auto iter = 0; iter < scc2Iterations; iter++) {
       v2 = v2 * 3;
       v2 = v2 / 2;
     }

@@ -1,8 +1,11 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 
-int myFunction (int argc, long long int scc1Iterations, long long int scc2Iterations, long long int iterations){
+int myFunction(int argc,
+               long long int scc1Iterations,
+               long long int scc2Iterations,
+               long long int iterations) {
   int v1, v2;
   v1 = argc;
   v2 = ((argc * 5) / 2) + 1;
@@ -12,7 +15,7 @@ int myFunction (int argc, long long int scc1Iterations, long long int scc2Iterat
     v1 = v1 * 3;
     v1 = v1 / 2;
 
-    if (v1 > 100){
+    if (v1 > 100) {
       printf("%d, %d\n", v1, v2);
       return v1;
     }
@@ -26,13 +29,15 @@ int myFunction (int argc, long long int scc1Iterations, long long int scc2Iterat
   return v1;
 }
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
   /*
    * Check the inputs.
    */
-  if (argc < 4){
-    fprintf(stderr, "USAGE: %s LOOP_ITERATIONS SCC1_ITERATIONS SCC2_ITERATIONS\n", argv[0]);
+  if (argc < 4) {
+    fprintf(stderr,
+            "USAGE: %s LOOP_ITERATIONS SCC1_ITERATIONS SCC2_ITERATIONS\n",
+            argv[0]);
     return -1;
   }
   auto iterations = atoll(argv[1]);

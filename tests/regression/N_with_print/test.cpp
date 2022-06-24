@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-int main (){
+int main() {
   double v1, v2;
   int v3, v4;
   int printVar;

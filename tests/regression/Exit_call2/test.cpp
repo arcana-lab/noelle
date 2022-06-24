@@ -1,12 +1,12 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 
 #include <functional>
 
-std::function<void (int)> fetchF (void){
-  auto myF = [](int n){
-    if (n >= 1){
+std::function<void(int)> fetchF(void) {
+  auto myF = [](int n) {
+    if (n >= 1) {
       exit(0);
     }
   };
@@ -14,7 +14,7 @@ std::function<void (int)> fetchF (void){
   return myF;
 }
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
   int v1, v2;
   v1 = argc;
   v2 = ((argc * 5) / 2) + 1;

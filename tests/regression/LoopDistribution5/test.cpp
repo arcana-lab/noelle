@@ -7,31 +7,31 @@ typedef struct _N {
   _N *next;
 } N;
 
+N *appendNode(N *tail, int newValue, int howManyMore) {
 
-N* appendNode (N* tail, int newValue, int howManyMore){
-
-  N *newNode = (N *) malloc(sizeof(N));
+  N *newNode = (N *)malloc(sizeof(N));
   newNode->v = newValue;
   newNode->z = newValue + 1;
   newNode->next = NULL;
 
-  tail->next = newNode ;
+  tail->next = newNode;
 
-  if (howManyMore > 0){
-    return appendNode(newNode, newValue+1, howManyMore - 1);
+  if (howManyMore > 0) {
+    return appendNode(newNode, newValue + 1, howManyMore - 1);
   }
 
-  return newNode;;
+  return newNode;
+  ;
 }
 
-int main (int argc, char *argv[]){
-  N *first = (N *) malloc(sizeof(N));
+int main(int argc, char *argv[]) {
+  N *first = (N *)malloc(sizeof(N));
   first->v = 3;
   first->z = 4;
   first->next = NULL;
 
   N *last = appendNode(first, 4, argc);
-  N *new_next = (N *) malloc(sizeof(N));
+  N *new_next = (N *)malloc(sizeof(N));
   new_next->v = 10;
   new_next->z = 11;
   new_next->next = NULL;
@@ -61,4 +61,3 @@ int main (int argc, char *argv[]){
   printf("%d\n", sum);
   return 0;
 }
-

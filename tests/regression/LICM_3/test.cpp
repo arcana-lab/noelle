@@ -2,7 +2,9 @@
 #include <stdlib.h>
 
 struct Point {
-  float weight; // the existence of this field triggers a bug inside SCAF and causes a mem dependece to be removed, which finally leads to a seg fault due to loading from uninitialized memory
+  float weight; // the existence of this field triggers a bug inside SCAF and
+                // causes a mem dependece to be removed, which finally leads to
+                // a seg fault due to loading from uninitialized memory
   float *coord;
 };
 
@@ -12,12 +14,12 @@ struct Points {
 
 int main(int argc, char **argv) {
   int value = atoi(argv[1]);
-  
+
   Points points;
   points.p = (Point *)malloc(sizeof(Point));
   points.p[0].coord = (float *)malloc(sizeof(float));
-  points.p[0].coord[0] = value;  
-  
+  points.p[0].coord[0] = value;
+
   float cost = 0.0;
   for (int i = 0; i < 1; i++) {
     Point p = points.p[i];

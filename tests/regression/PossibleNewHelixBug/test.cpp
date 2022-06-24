@@ -2,8 +2,8 @@
 #include <stdlib.h>
 
 struct S {
-   int x;
-   int y;
+  int x;
+  int y;
 };
 
 int test(S *opaque, int tripcount) {
@@ -21,13 +21,11 @@ int test(S *opaque, int tripcount) {
   return result1 + result2 + opaque->y;
 }
 
-
-int main (int argc, char *argv[]){
-  S *opaque = (S *) malloc(sizeof(S));
+int main(int argc, char *argv[]) {
+  S *opaque = (S *)malloc(sizeof(S));
   opaque->x = argc;
   opaque->y = argc * 2;
   int result = test(opaque, argc + 20);
   printf("%d\n", result);
   return 0;
 }
-

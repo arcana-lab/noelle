@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 struct _NODE {
   int i1;
@@ -10,7 +10,7 @@ struct _NODE {
 };
 typedef struct _NODE NODE;
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
   auto NUM_NODES = 10 * argc;
   NODE nodes[NUM_NODES];
@@ -31,5 +31,3 @@ int main (int argc, char *argv[]){
 
   return 0;
 }
-
-

@@ -1,9 +1,9 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
-int main (int argc, char *argv[]){
-  if (argc < 1){
+int main(int argc, char *argv[]) {
+  if (argc < 1) {
     fprintf(stderr, "USAGE: %s LOOP_ITERATIONS\n", argv[0]);
     return -1;
   }
@@ -24,7 +24,7 @@ int main (int argc, char *argv[]){
     }
 
     for (auto j = 0; j < iterations; ++j) {
-      accumValue += (someValue - j)/2;
+      accumValue += (someValue - j) / 2;
     }
   }
 

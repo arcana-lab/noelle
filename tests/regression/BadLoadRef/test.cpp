@@ -18,10 +18,9 @@ void copycenters(Points *points, Points* centers, long* centerIDs, long offset)
 
   for ( i = 0; i < points->num; i++ ) {
     if ( is_a_median[i] ) {
-      memcpy( centers->p[k].coord, points->p[i].coord, points->dim * sizeof(float));
-      centers->p[k].weight = points->p[i].weight;
-      centerIDs[k] = i + offset;
-      k++;
+      memcpy( centers->p[k].coord, points->p[i].coord, points->dim *
+sizeof(float)); centers->p[k].weight = points->p[i].weight; centerIDs[k] = i +
+offset; k++;
     }
   }
 
@@ -34,16 +33,16 @@ void copycenters(Points *points, Points* centers, long* centerIDs, long offset)
 struct Point {
   float val;
   int index;
-  Point(float v, int i) : val{v}, index{i} {};
+  Point(float v, int i) : val{ v }, index{ i } {};
 };
 
 struct Points {
   Point *p;
-}; 
+};
 
-int main (){
+int main() {
   Points points;
-  points.p = (Point *) malloc(3 * sizeof(Point));
+  points.p = (Point *)malloc(3 * sizeof(Point));
 
   for (int i = 0; i < 3; ++i) {
     points.p[i].index = i;
@@ -54,4 +53,3 @@ int main (){
   free(points.p);
   return 0;
 }
-

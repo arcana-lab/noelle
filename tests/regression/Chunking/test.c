@@ -1,12 +1,15 @@
 #include <stdio.h>
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
   /*
    * Fetch the inputs.
    */
-  if (argc <= 2){
-    fprintf(stderr, "USAGE: %s ITERATIONS INNER_ITERATIONS\n", argv[0], argv[1]);
+  if (argc <= 2) {
+    fprintf(stderr,
+            "USAGE: %s ITERATIONS INNER_ITERATIONS\n",
+            argv[0],
+            argv[1]);
     return 1;
   }
   auto iterations = atoll(argv[1]);
@@ -16,17 +19,17 @@ int main (int argc, char *argv[]){
    * Allocate space.
    */
   int *ptr = (int *)calloc(iterations, sizeof(int));
-  if (ptr == NULL){
+  if (ptr == NULL) {
     fprintf(stderr, "ERROR: %d integers couldn't be allocated\n", iterations);
     return 1;
   }
-  
+
   /*
    * Hot code.
    */
-  for (auto i=0; i < iterations; i++){
-    for (auto j=0; j < innerIterations; j++){
-      (*ptr) += (j * 42) ;
+  for (auto i = 0; i < iterations; i++) {
+    for (auto j = 0; j < innerIterations; j++) {
+      (*ptr) += (j * 42);
     }
     ptr++;
   }
