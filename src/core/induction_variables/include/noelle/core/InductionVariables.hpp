@@ -1,238 +1,247 @@
 /*
  * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
 
-#include "llvm/Analysis/ScalarEvolutionExpander.h"
-#include "llvm/Analysis/IVDescriptors.h"
-#include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/DominatorSummary.hpp"
+#include "noelle/core/Invariants.hpp"
+#include "noelle/core/LoopEnvironment.hpp"
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/ScalarEvolutionReferencer.hpp"
 #include "noelle/core/StayConnectedNestedLoopForest.hpp"
-#include "noelle/core/LoopEnvironment.hpp"
-#include "noelle/core/DominatorSummary.hpp"
-#include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/SCC.hpp"
-#include "noelle/core/Invariants.hpp"
+#include "noelle/core/SystemHeaders.hpp"
+#include "llvm/Analysis/IVDescriptors.h"
+#include "llvm/Analysis/ScalarEvolutionExpander.h"
 
 namespace llvm::noelle {
 
-  class LoopGoverningIVAttribution;
+class LoopGoverningIVAttribution;
 
-  class InductionVariable {
-    public:
+class InductionVariable {
+public:
+  InductionVariable(LoopStructure *LS,
+                    InvariantManager &IVM,
+                    ScalarEvolution &SE,
+                    PHINode *loopEntryPHI,
+                    SCC &scc,
+                    LoopEnvironment &loopEnvironment,
+                    ScalarEvolutionReferentialExpander &referentialExpander);
 
-      InductionVariable  (
-          LoopStructure *LS,
-          InvariantManager &IVM,
-          ScalarEvolution &SE,
-          PHINode *loopEntryPHI,
-          SCC &scc,
-          LoopEnvironment &loopEnvironment,
-          ScalarEvolutionReferentialExpander &referentialExpander
-          ) ;
+  // For LLVM IVs
+  InductionVariable(LoopStructure *LS,
+                    InvariantManager &IVM,
+                    ScalarEvolution &SE,
+                    PHINode *loopEntryPHI,
+                    SCC &scc,
+                    LoopEnvironment &loopEnvironment,
+                    ScalarEvolutionReferentialExpander &referentialExpander,
+                    InductionDescriptor &ID);
 
-          // For LLVM IVs
-          InductionVariable  (
-          LoopStructure *LS,
-          InvariantManager &IVM,
-          ScalarEvolution &SE,
-          PHINode *loopEntryPHI,
-          SCC &scc,
-          LoopEnvironment &loopEnvironment,
-          ScalarEvolutionReferentialExpander &referentialExpander,
-          InductionDescriptor &ID
-          ) ;
+  SCC *getSCC(void) const;
 
-      SCC * getSCC (void) const ;
+  PHINode *getLoopEntryPHI(void) const;
 
-      PHINode * getLoopEntryPHI (void) const ;
+  std::unordered_set<PHINode *> getPHIs(void) const;
 
-      std::unordered_set<PHINode *> getPHIs (void) const ;
+  std::unordered_set<Instruction *> getNonPHIIntermediateValues(void) const;
 
-      std::unordered_set<Instruction *> getNonPHIIntermediateValues (void) const ;
+  std::unordered_set<Instruction *> getAllInstructions(void) const;
 
-      std::unordered_set<Instruction *> getAllInstructions (void) const ;
+  std::unordered_set<Instruction *> getDerivedSCEVInstructions(void) const;
 
-      std::unordered_set<Instruction *> getDerivedSCEVInstructions (void) const ;
+  Value *getStartValue(void) const;
 
-      Value * getStartValue (void) const;
+  Value *getSingleComputedStepValue(void) const;
 
-      Value * getSingleComputedStepValue (void) const;
+  std::vector<Instruction *> getComputationOfStepValue(void) const;
 
-      std::vector<Instruction *> getComputationOfStepValue (void) const;
+  bool isStepValueLoopInvariant(void) const;
 
-      bool isStepValueLoopInvariant (void) const;
+  bool isStepValuePositive(void) const;
 
-      bool isStepValuePositive (void) const ;
+  const SCEV *getStepSCEV(void) const;
 
-      const SCEV * getStepSCEV (void) const;
+  bool isIVInstruction(Instruction *I) const;
 
-      bool isIVInstruction (Instruction *I) const;
+  bool isDerivedFromIVInstructions(Instruction *I) const;
 
-      bool isDerivedFromIVInstructions (Instruction *I) const;
+  Type *getIVType(void) const;
 
-      Type * getIVType (void) const;
+  ~InductionVariable();
 
-      ~InductionVariable ();
+private:
+  /*
+   * The SCC that contains the induction variable
+   */
+  SCC &scc;
 
-    private:
+  /*
+   * The loop entry PHI node. For normalized loops with a single header,
+   * this PHI is the destination of all loop carried dependencies for the IV
+   */
+  PHINode *loopEntryPHI;
 
-      /*
-       * The SCC that contains the induction variable
-       */
-      SCC &scc;
+  /*
+   * All PHIs, whether intermediate or the loop entry PHI
+   */
+  std::unordered_set<PHINode *> PHIs;
 
-      /*
-       * The loop entry PHI node. For normalized loops with a single header,
-       * this PHI is the destination of all loop carried dependencies for the IV
-       */
-      PHINode *loopEntryPHI;
+  /*
+   * All non-PHI intermediate values of the IV
+   */
+  std::unordered_set<Instruction *> nonPHIIntermediateValues;
 
-      /*
-       * All PHIs, whether intermediate or the loop entry PHI
-       */
-      std::unordered_set<PHINode *> PHIs;
+  /*
+   * All PHI/non-PHI intermediate values AND all casts of the IV
+   */
+  std::unordered_set<Instruction *> allInstructions;
 
-      /*
-       * All non-PHI intermediate values of the IV
-       */
-      std::unordered_set<Instruction *> nonPHIIntermediateValues;
+  /*
+   * Derived SCEV instructions relying solely on loop invariants, constants, and
+   * this IV
+   */
+  std::unordered_set<Instruction *> derivedSCEVInstructions;
 
-      /*
-       * All PHI/non-PHI intermediate values AND all casts of the IV
-       */
-      std::unordered_set<Instruction *> allInstructions;
+  /*
+   * Start value (the incoming value to the loop entry PHI from the preheader)
+   */
+  Value *startValue;
 
-      /*
-       * Derived SCEV instructions relying solely on loop invariants, constants, and this IV
-       */
-      std::unordered_set<Instruction *> derivedSCEVInstructions;
+  /*
+   * The SCEV representing the step recurrence
+   */
+  const SCEV *stepSCEV;
 
-      /*
-       * Start value (the incoming value to the loop entry PHI from the preheader)
-       */
-      Value *startValue;
+  /*
+   * A single constant or loop external value representing the step recurrence
+   */
+  Value *singleStepValue;
 
-      /*
-       * The SCEV representing the step recurrence
-       */
-      const SCEV *stepSCEV;
+  /*
+   * The values, in order of execution, used to compute the step recurrence
+   * The last value is the step value between iterations
+   * NOTE: these values expand the step SCEV so that all uses in the values are
+   * 1) loop invariant and loop external
+   * OR
+   * 2) derived from another induction variable in the loop
+   *
+   * TODO: Imply in name that this computation is a list of instructions, and
+   * that if the value need not be computed and can instead be referenced, this
+   * list will be empty
+   */
+  std::vector<Instruction *> computationOfStepValue;
 
-      /*
-       * A single constant or loop external value representing the step recurrence
-       */
-      Value *singleStepValue;
+  /*
+   * Whether the computed step value's uses are all loop invariant/external
+   */
+  bool isComputedStepValueLoopInvariant;
 
-      /*
-       * The values, in order of execution, used to compute the step recurrence
-       * The last value is the step value between iterations
-       * NOTE: these values expand the step SCEV so that all uses in the values are
-       * 1) loop invariant and loop external
-       * OR
-       * 2) derived from another induction variable in the loop
-       * 
-       * TODO: Imply in name that this computation is a list of instructions, and
-       * that if the value need not be computed and can instead be referenced, this
-       * list will be empty
-       */
-      std::vector<Instruction *> computationOfStepValue;
+  /*
+   * Type of the loopEntryPHI which represents the type of the whole IV
+   */
+  Type *loopEntryPHIType;
 
-      /*
-       * Whether the computed step value's uses are all loop invariant/external
-       */
-      bool isComputedStepValueLoopInvariant;
+  /*
+   * Helper functions and structures
+   */
+  std::set<Value *> valuesToReferenceInComputingStepValue;
+  std::set<Value *> valuesInScopeOfInductionVariable;
+  void collectValuesInternalAndExternalToLoopAndSCC(
+      LoopStructure *LS,
+      LoopEnvironment &loopEnvironment);
 
-      /*
-      * Type of the loopEntryPHI which represents the type of the whole IV
-      */
-      Type * loopEntryPHIType;
+  void deriveStepValue(LoopStructure *LS,
+                       ScalarEvolution &SE,
+                       ScalarEvolutionReferentialExpander &referentialExpander);
 
-      /*
-       * Helper functions and structures
-       */ 
-      std::set<Value *> valuesToReferenceInComputingStepValue;
-      std::set<Value *> valuesInScopeOfInductionVariable;
-      void collectValuesInternalAndExternalToLoopAndSCC (
-          LoopStructure *LS,
-          LoopEnvironment &loopEnvironment
-          ) ;
+  void deriveStepValueFromSCEVConstant(const SCEVConstant *scev);
+  void deriveStepValueFromSCEVUnknown(const SCEVUnknown *scev,
+                                      LoopStructure *LS);
+  bool deriveStepValueFromCompositeSCEV(
+      const SCEV *scev,
+      ScalarEvolutionReferentialExpander &referentialExpander,
+      LoopStructure *LS);
 
-      void deriveStepValue (
-          LoopStructure *LS,
-          ScalarEvolution &SE,
-          ScalarEvolutionReferentialExpander &referentialExpander
-          ) ;
+  void traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(
+      LoopStructure *LS);
 
-      void deriveStepValueFromSCEVConstant (const SCEVConstant *scev) ;
-      void deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev, LoopStructure *LS) ;
-      bool deriveStepValueFromCompositeSCEV (
-          const SCEV *scev,
-          ScalarEvolutionReferentialExpander &referentialExpander,
-          LoopStructure *LS
-          ) ;
+  void traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(
+      LoopStructure *LS,
+      InvariantManager &IVM,
+      ScalarEvolution &SE);
+};
 
-      void traverseCycleThroughLoopEntryPHIToGetAllIVInstructions (LoopStructure *LS) ;
+class InductionVariableManager {
+public:
+  InductionVariableManager(StayConnectedNestedLoopForestNode *loop,
+                           InvariantManager &IVM,
+                           ScalarEvolution &SE,
+                           SCCDAG &sccdag,
+                           LoopEnvironment &loopEnv,
+                           Loop &LLVMLoop);
 
-      void traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions (
-          LoopStructure *LS,
-          InvariantManager &IVM,
-          ScalarEvolution &SE
-          ) ;
+  InductionVariableManager() = delete;
 
-  };
+  /*
+   * Return all induction variables including the loop-governing one of the
+   * outermost loop of the loop sub-tree related to @this.
+   */
+  std::unordered_set<InductionVariable *> getInductionVariables(void) const;
 
-  class InductionVariableManager {
-    public:
+  /*
+   * Return all induction variables including the loop-governing one.
+   */
+  std::unordered_set<InductionVariable *> getInductionVariables(
+      LoopStructure &LS) const;
 
-      InductionVariableManager (
-          StayConnectedNestedLoopForestNode *loop,
-          InvariantManager &IVM,
-          ScalarEvolution &SE,
-          SCCDAG &sccdag,
-          LoopEnvironment &loopEnv,
-          Loop &LLVMLoop
-          );
+  /*
+   * Return all induction variables that @i is involved in for any loop/sub-loop
+   * related to this manager.
+   */
+  std::unordered_set<InductionVariable *> getInductionVariables(
+      Instruction *i) const;
 
-      InductionVariableManager () = delete;
+  InductionVariable *getInductionVariable(LoopStructure &LS,
+                                          Instruction *i) const;
 
-      /*
-       * Return all induction variables including the loop-governing one of the outermost loop of the loop sub-tree related to @this.
-       */
-      std::unordered_set<InductionVariable *> getInductionVariables (void) const ;
+  InductionVariable *getLoopGoverningInductionVariable(LoopStructure &LS) const;
 
-      /*
-       * Return all induction variables including the loop-governing one.
-       */
-      std::unordered_set<InductionVariable *> getInductionVariables (LoopStructure &LS) const ;
+  bool doesContributeToComputeAnInductionVariable(Instruction *i) const;
 
-      /*
-       * Return all induction variables that @i is involved in for any loop/sub-loop related to this manager.
-       */
-      std::unordered_set<InductionVariable *> getInductionVariables (Instruction *i) const ;
+  LoopGoverningIVAttribution *getLoopGoverningIVAttribution(
+      LoopStructure &LS) const;
 
-      InductionVariable * getInductionVariable (LoopStructure &LS, Instruction *i) const ;
+  InductionVariable *getDerivingInductionVariable(
+      LoopStructure &LS,
+      Instruction *derivedInstruction) const;
 
-      InductionVariable * getLoopGoverningInductionVariable (LoopStructure &LS) const ;
+  ~InductionVariableManager();
 
-      bool doesContributeToComputeAnInductionVariable (Instruction *i) const ;
+private:
+  StayConnectedNestedLoopForestNode *loop;
+  std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>>
+      loopToIVsMap;
+  std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *>
+      loopToGoverningIVAttrMap;
+};
 
-      LoopGoverningIVAttribution * getLoopGoverningIVAttribution (LoopStructure &LS) const ;
-
-      InductionVariable * getDerivingInductionVariable (LoopStructure &LS, Instruction *derivedInstruction) const ;
-
-      ~InductionVariableManager ();
-
-    private:
-      StayConnectedNestedLoopForestNode *loop;
-      std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>> loopToIVsMap;
-      std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *> loopToGoverningIVAttrMap;
-  };
-
-}
+} // namespace llvm::noelle

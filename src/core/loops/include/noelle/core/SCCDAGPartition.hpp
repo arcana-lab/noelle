@@ -1,149 +1,159 @@
 /*
  * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
 
+#include "noelle/core/DGGraphTraits.hpp"
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/DGGraphTraits.hpp"
 #include "noelle/core/StayConnectedNestedLoopForest.hpp"
 
 namespace llvm {
-  namespace noelle {
+namespace noelle {
 
-    struct SCCSet {
-      std::unordered_set<SCC *> sccs;
+struct SCCSet {
+  std::unordered_set<SCC *> sccs;
 
-      raw_ostream &print (raw_ostream &stream) ;
-    };
+  raw_ostream &print(raw_ostream &stream);
+};
 
-    class SCCDAGPartition : public DG<SCCSet> {
-      public:
+class SCCDAGPartition : public DG<SCCSet> {
+public:
+  /*
+   * sccToParentsMap: A custom relation mapping that allows certain SCC to be
+   * ignored during partitioning (i.e. SCC which are not to be partitioned such
+   * as clonable SCC simply aren't mentioned in this relation and are not given
+   * a node in this graph)
+   */
+  SCCDAGPartition(
+      SCCDAG *sccdag,
+      std::unordered_set<SCCSet *> initialSets,
+      std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap);
 
-        /*
-        * sccToParentsMap: A custom relation mapping that allows certain SCC to be ignored during
-        * partitioning (i.e. SCC which are not to be partitioned such as clonable SCC simply aren't
-        * mentioned in this relation and are not given a node in this graph)
-        */
-        SCCDAGPartition (
-          SCCDAG *sccdag,
-          std::unordered_set<SCCSet *> initialSets,
-          std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap
-        ) ;
+  ~SCCDAGPartition();
 
-        ~SCCDAGPartition () ;
+  SCC *sccOfValue(Value *V);
 
-        SCC *sccOfValue (Value *V) ;
+  bool isIncludedInPartitioning(SCC *scc);
 
-        bool isIncludedInPartitioning (SCC *scc) ;
+  SCCSet *setOfSCC(SCC *scc);
 
-        SCCSet *setOfSCC (SCC *scc) ;
+  void mergeSetsAndCollapseResultingCycles(std::unordered_set<SCCSet *> sets);
 
-        void mergeSetsAndCollapseResultingCycles (std::unordered_set<SCCSet *> sets) ;
+  std::vector<SCCSet *> getDepthOrderedSets(void);
 
-        std::vector<SCCSet *> getDepthOrderedSets (void) ;
+  SCCDAG *getSCCDAG(void) const;
 
-        SCCDAG *getSCCDAG (void) const ;
+private:
+  void mergeSets(std::unordered_set<SCCSet *> sets);
+  void collapseCycles(void);
 
-      private:
+  /*
+   * The SCCDAG being partitioned
+   */
+  SCCDAG *sccdag;
 
-        void mergeSets (std::unordered_set<SCCSet *> sets) ;
-        void collapseCycles (void) ;
+  /*
+   * A mapping from SCC to its set in the partitioning
+   */
+  std::unordered_map<SCC *, SCCSet *> sccToSetMap;
+};
 
-        /*
-        * The SCCDAG being partitioned
-        */
-        SCCDAG *sccdag;
+class SCCDAGPartitioner {
+public:
+  SCCDAGPartitioner(
+      SCCDAG *sccdag,
+      std::unordered_set<SCCSet *> initialSets,
+      std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap,
+      StayConnectedNestedLoopForestNode *loopNode);
 
-        /*
-        * A mapping from SCC to its set in the partitioning
-        */
-        std::unordered_map<SCC *, SCCSet *> sccToSetMap;
+  SCCDAGPartitioner() = delete;
 
-    };
+  ~SCCDAGPartitioner();
 
-    class SCCDAGPartitioner {
-      public:
-        SCCDAGPartitioner (
-          SCCDAG *sccdag,
-          std::unordered_set<SCCSet *> initialSets,
-          std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap,
-          StayConnectedNestedLoopForestNode *loopNode
-        );
+  uint64_t numberOfPartitions(void);
 
-        SCCDAGPartitioner () = delete ;
+  SCCDAGPartition *getPartitionGraph(void);
+  std::unordered_set<SCCSet *> getParents(SCCSet *set);
+  std::unordered_set<SCCSet *> getChildren(SCCSet *set);
+  std::unordered_set<SCCSet *> getSets(void);
+  std::unordered_set<SCCSet *> getRoots(void);
+  std::vector<SCCSet *> getDepthOrderedSets(void);
 
-        ~SCCDAGPartitioner () ;
+  bool isMergeIntroducingCycle(SCCSet *setA, SCCSet *setB);
 
-        uint64_t numberOfPartitions (void);
+  std::unordered_set<SCCSet *> getCycleIntroducedByMerging(SCCSet *setA,
+                                                           SCCSet *setB);
 
-        SCCDAGPartition *getPartitionGraph (void) ;
-        std::unordered_set<SCCSet *> getParents (SCCSet *set) ;
-        std::unordered_set<SCCSet *> getChildren (SCCSet *set) ;
-        std::unordered_set<SCCSet *> getSets (void) ;
-        std::unordered_set<SCCSet *> getRoots (void) ;
-        std::vector<SCCSet *> getDepthOrderedSets (void) ;
+  bool isAncestor(SCCSet *parentTarget, SCCSet *target);
 
-        bool isMergeIntroducingCycle (SCCSet *setA, SCCSet *setB) ;
+  std::pair<SCCSet *, SCCSet *> getParentChildPair(SCCSet *setA, SCCSet *setB);
 
-        std::unordered_set<SCCSet *> getCycleIntroducedByMerging (SCCSet *setA, SCCSet *setB) ;
+  std::unordered_set<SCCSet *> getDescendants(SCCSet *set);
+  std::unordered_set<SCCSet *> getAncestors(SCCSet *set);
+  std::unordered_set<SCCSet *> getOverlap(std::unordered_set<SCCSet *> setsA,
+                                          std::unordered_set<SCCSet *> setsB);
 
-        bool isAncestor (SCCSet *parentTarget, SCCSet *target) ;
+  SCCSet *mergePair(SCCSet *setA, SCCSet *setB);
 
-        std::pair<SCCSet *, SCCSet *> getParentChildPair (SCCSet *setA, SCCSet *setB) ;
+  //      void mergeLoopCarriedDependencies (LoopCarriedDependencies *LCD) ;
 
-        std::unordered_set<SCCSet *> getDescendants (SCCSet *set) ;
-        std::unordered_set<SCCSet *> getAncestors (SCCSet *set) ;
-        std::unordered_set<SCCSet *> getOverlap(std::unordered_set<SCCSet *> setsA, std::unordered_set<SCCSet *> setsB) ;
+  void mergeLCSSAPhisWithTheValuesTheyPropagate(void);
 
-        SCCSet *mergePair (SCCSet *setA, SCCSet *setB) ;
+  void mergeAlongMemoryEdges(void);
 
-//      void mergeLoopCarriedDependencies (LoopCarriedDependencies *LCD) ;
+  raw_ostream &printSet(raw_ostream &stream, SCCSet *set);
 
-        void mergeLCSSAPhisWithTheValuesTheyPropagate (void) ;
+  // raw_ostream &print (raw_ostream &stream, std::string prefix) ;
+  // std::string subsetStr (SCCset *subset);
+  // raw_ostream &printSCCIndices (raw_ostream &stream, std::string prefix);
+  // raw_ostream &printNodeInGraph (raw_ostream &stream, std::string prefix,
+  // SCCset *subset); raw_ostream &printGraph (raw_ostream &stream, std::string
+  // prefix);
 
-        void mergeAlongMemoryEdges (void) ;
+private:
+  void resetPartitioner(void);
 
-        raw_ostream &printSet (raw_ostream &stream, SCCSet *set) ;
+  void mergeAllPairs(std::set<std::pair<SCC *, SCC *>> pairs);
 
-        // raw_ostream &print (raw_ostream &stream, std::string prefix) ;
-        // std::string subsetStr (SCCset *subset);
-        // raw_ostream &printSCCIndices (raw_ostream &stream, std::string prefix);
-        // raw_ostream &printNodeInGraph (raw_ostream &stream, std::string prefix, SCCset *subset);
-        // raw_ostream &printGraph (raw_ostream &stream, std::string prefix);
+  /*
+   * Debug information at the SCC level
+   */
+  std::vector<SCC *> SCCDebugOrder;
+  std::unordered_map<SCC *, int> SCCDebugIndex;
 
-      private:
+  SCCDAGPartition *partition;
+  StayConnectedNestedLoopForestNode *rootLoop;
+  std::unordered_set<StayConnectedNestedLoopForestNode *> allLoops;
+};
 
-        void resetPartitioner (void);
+} // namespace noelle
 
-        void mergeAllPairs (std::set<std::pair<SCC *, SCC *>> pairs) ;
+template <>
+struct GraphTraits<
+    DGGraphWrapper<llvm::noelle::SCCDAGPartition, llvm::noelle::SCCSet> *>
+  : public GraphTraitsBase<
+        DGGraphWrapper<llvm::noelle::SCCDAGPartition, llvm::noelle::SCCSet>,
+        DGNodeWrapper<llvm::noelle::SCCSet>,
+        llvm::noelle::SCCSet> {};
 
-        /*
-        * Debug information at the SCC level
-        */
-        std::vector<SCC *> SCCDebugOrder;
-        std::unordered_map<SCC *, int> SCCDebugIndex;
-
-        SCCDAGPartition *partition;
-        StayConnectedNestedLoopForestNode *rootLoop;
-        std::unordered_set<StayConnectedNestedLoopForestNode *> allLoops;
-    };
-
-  }
-
-  template<> struct GraphTraits<DGGraphWrapper<llvm::noelle::SCCDAGPartition, llvm::noelle::SCCSet> *> : 
-    public GraphTraitsBase<
-      DGGraphWrapper<llvm::noelle::SCCDAGPartition, llvm::noelle::SCCSet>,
-      DGNodeWrapper<llvm::noelle::SCCSet>,
-      llvm::noelle::SCCSet
-    > {};
-
-}
+} // namespace llvm

@@ -14,7 +14,9 @@ uint32_t BitMatrix::idx(uint32_t row, uint32_t col) const {
   return row * N + col;
 }
 
-uint32_t BitMatrix::count() const { return bv.count(); }
+uint32_t BitMatrix::count() const {
+  return bv.count();
+}
 
 void BitMatrix::set(uint32_t row, uint32_t col, bool v) {
   const uint32_t i = idx(row, col);
@@ -102,8 +104,8 @@ void BitMatrix::transitiveClosure() {
     if (changedI) {
       for (uint32_t p = 0; p < N; ++p) {
         if (test(p, i)) {
-          if (std::find(worklist.begin(), worklist.end(), p) ==
-              worklist.end()) {
+          if (std::find(worklist.begin(), worklist.end(), p)
+              == worklist.end()) {
             worklist.push_back(p);
           }
         }

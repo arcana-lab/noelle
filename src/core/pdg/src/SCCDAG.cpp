@@ -1,16 +1,27 @@
 /*
  * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/DGGraphTraits.hpp"
 #include "noelle/core/SCCDAG.hpp"
+#include "noelle/core/DGGraphTraits.hpp"
+#include "noelle/core/SystemHeaders.hpp"
 #include "llvm/InitializePasses.h"
 
 using namespace llvm;
@@ -21,19 +32,22 @@ SCCDAG::SCCDAG(PDG *pdg) {
   /*
    * Create nodes of the SCCDAG.
    *
-   * Iterate over all nodes in the PDG to calculate strongly connected components (see Tarjan's DFS algo).
+   * Iterate over all nodes in the PDG to calculate strongly connected
+   * components (see Tarjan's DFS algo).
    */
   std::set<DGNode<Value> *> visited;
   DGNode<Value> *originalEntryNode = pdg->getEntryNode();
 
   for (auto nodeToVisit : pdg->getNodes()) {
-    if (visited.find(nodeToVisit) != visited.end()) continue;
+    if (visited.find(nodeToVisit) != visited.end())
+      continue;
 
     pdg->setEntryNode(nodeToVisit);
 
     DGGraphWrapper<PDG, Value> pdgWrapper(pdg);
 
-    for (auto pdgI = scc_begin(&pdgWrapper); pdgI != scc_end(&pdgWrapper); ++pdgI) {
+    for (auto pdgI = scc_begin(&pdgWrapper); pdgI != scc_end(&pdgWrapper);
+         ++pdgI) {
 
       /*
        * Identify a new SCC.
@@ -60,7 +74,7 @@ SCCDAG::SCCDAG(PDG *pdg) {
         isInternal |= pdg->isInternal(node->getT());
       }
 
-      this->addNode(scc, /*inclusion=*/ isInternal);
+      this->addNode(scc, /*inclusion=*/isInternal);
     }
   }
 
@@ -82,10 +96,10 @@ SCCDAG::SCCDAG(PDG *pdg) {
   orderedDirty = true;
   this->computeReachabilityAmongSCCs();
 
-  return ;
+  return;
 }
 
-bool SCCDAG::doesItContain (Instruction *inst) const {
+bool SCCDAG::doesItContain(Instruction *inst) const {
 
   /*
    * Fetch the SCC that contains the instruction given as input.
@@ -95,7 +109,7 @@ bool SCCDAG::doesItContain (Instruction *inst) const {
   return SCC != nullptr;
 }
 
-void SCCDAG::markValuesInSCC (void) {
+void SCCDAG::markValuesInSCC(void) {
 
   /*
    * Maintain association of each SCC's node value to its SCC
@@ -109,7 +123,7 @@ void SCCDAG::markValuesInSCC (void) {
   }
 }
 
-void SCCDAG::markEdgesAndSubEdges (void) {
+void SCCDAG::markEdgesAndSubEdges(void) {
 
   /*
    * Add edges between SCCs by looking at each SCC's outgoing edges
@@ -117,7 +131,7 @@ void SCCDAG::markEdgesAndSubEdges (void) {
    * Iterate across SCCs.
    */
   std::set<DGEdge<SCC> *> clearedEdges;
-  for (auto outgoingSCCNode : this->getNodes()){
+  for (auto outgoingSCCNode : this->getNodes()) {
 
     /*
      * Fetch the current SCC.
@@ -129,7 +143,8 @@ void SCCDAG::markEdgesAndSubEdges (void) {
      */
     for (auto externalNodePair : outgoingSCC->externalNodePairs()) {
       auto incomingNode = externalNodePair.second;
-      if (incomingNode->numIncomingEdges() == 0) continue;
+      if (incomingNode->numIncomingEdges() == 0)
+        continue;
 
       auto incomingSCCNode = this->valueToSCCNode[externalNodePair.first];
       auto incomingSCC = incomingSCCNode->getT();
@@ -139,46 +154,49 @@ void SCCDAG::markEdgesAndSubEdges (void) {
        */
       std::unordered_set<DGEdge<SCC> *> edgeSet;
       for (auto edge : outgoingSCCNode->getOutgoingEdges()) {
-        if (edge->getIncomingNode() != incomingSCCNode) continue;
+        if (edge->getIncomingNode() != incomingSCCNode)
+          continue;
         edgeSet.insert(edge);
       }
       for (auto edge : outgoingSCCNode->getIncomingEdges()) {
-        if (edge->getOutgoingNode() != incomingSCCNode) continue;
+        if (edge->getOutgoingNode() != incomingSCCNode)
+          continue;
         edgeSet.insert(edge);
       }
-      auto sccEdge = edgeSet.empty() ? this->addEdge(outgoingSCC, incomingSCC) : (*edgeSet.begin());
+      auto sccEdge = edgeSet.empty() ? this->addEdge(outgoingSCC, incomingSCC)
+                                     : (*edgeSet.begin());
 
       /*
-       * Clear out subedges if not already done once; add all currently existing subedges
+       * Clear out subedges if not already done once; add all currently existing
+       * subedges
        */
-      if (clearedEdges.find(sccEdge) == clearedEdges.end())
-      {
+      if (clearedEdges.find(sccEdge) == clearedEdges.end()) {
         sccEdge->clearSubEdges();
         clearedEdges.insert(sccEdge);
       }
-      for (auto edge : incomingNode->getIncomingEdges()) sccEdge->addSubEdge(edge);
+      for (auto edge : incomingNode->getIncomingEdges())
+        sccEdge->addSubEdge(edge);
     }
   }
 }
 
-void SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
-{
-  if (sccSet.size() < 2) return;
+void SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet) {
+  if (sccSet.size() < 2)
+    return;
 
   std::set<DGNode<Value> *> mergeNodes;
-  for (auto sccNode : sccSet)
-  {
-    for (auto internalNodePair : sccNode->getT()->internalNodePairs())
-    {
+  for (auto sccNode : sccSet) {
+    for (auto internalNodePair : sccNode->getT()->internalNodePairs()) {
       mergeNodes.insert(internalNodePair.second);
     }
   }
 
   /*
-   * Note: nodes are from 2 contexts; internal nodes will point to external nodes,
-   *  some of whose values are in nodes in this list, and some of whose values are NOT in nodes in this list.
-   *  However, SCC's constructor accounts for that context mismatch and properly copies edges WITHOUT
-   *  duplicating any nodes or edges.
+   * Note: nodes are from 2 contexts; internal nodes will point to external
+   * nodes, some of whose values are in nodes in this list, and some of whose
+   * values are NOT in nodes in this list. However, SCC's constructor accounts
+   * for that context mismatch and properly copies edges WITHOUT duplicating any
+   * nodes or edges.
    */
   auto mergeSCC = new SCC(mergeNodes);
 
@@ -187,24 +205,25 @@ void SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet)
    * Reassign values to the SCC they are now in
    * Recreate all edges from SCCs to the newly merged SCC
    */
-  auto mergeSCCNode = this->addNode(mergeSCC, /*inclusion=*/ true);
-  for (auto sccNode : sccSet) this->removeNode(sccNode);
+  auto mergeSCCNode = this->addNode(mergeSCC, /*inclusion=*/true);
+  for (auto sccNode : sccSet)
+    this->removeNode(sccNode);
   this->markValuesInSCC();
   this->markEdgesAndSubEdges();
 }
 
-SCC * SCCDAG::sccOfValue (Value *val) const {
+SCC *SCCDAG::sccOfValue(Value *val) const {
   auto sccIter = valueToSCCNode.find(val);
   return sccIter == valueToSCCNode.end() ? nullptr : sccIter->second->getT();
 }
 
-int64_t SCCDAG::numberOfInstructions (void) {
+int64_t SCCDAG::numberOfInstructions(void) {
 
   /*
    * Iterate over SCCs.
    */
   int64_t n = 0;
-  for (auto SCCPair : this->internalNodePairs()){
+  for (auto SCCPair : this->internalNodePairs()) {
     auto SCC = SCCPair.first;
     n += SCC->numberOfInstructions();
   }
@@ -212,101 +231,104 @@ int64_t SCCDAG::numberOfInstructions (void) {
   return n;
 }
 
-bool SCCDAG::iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke){
+bool SCCDAG::iterateOverInstructions(
+    std::function<bool(Instruction *)> funcToInvoke) {
 
   /*
    * Iterate over SCC.
    */
-  for (auto sccNodePair : this->internalNodePairs()){
+  for (auto sccNodePair : this->internalNodePairs()) {
 
     /*
      * Iterate over instructions contained in the SCC.
      */
     auto SCC = sccNodePair.first;
-    if (SCC->iterateOverInstructions(funcToInvoke)){
+    if (SCC->iterateOverInstructions(funcToInvoke)) {
       return true;
     }
   }
 
-  return false ;
+  return false;
 }
 
-bool SCCDAG::iterateOverLiveInAndLiveOut (std::function<bool (Value *)> funcToInvoke){
+bool SCCDAG::iterateOverLiveInAndLiveOut(
+    std::function<bool(Value *)> funcToInvoke) {
 
   /*
    * Iterate over live-ins and live-outs of SCCs.
    *
    * A live-in/live-out is an SCC, which in the simplest case, it is a Value
    */
-  for (auto sccNodePair : this->externalNodePairs()){
+  for (auto sccNodePair : this->externalNodePairs()) {
 
     /*
      * Iterate over internal nodes of the current SCC.
      */
     auto SCC = sccNodePair.first;
-    if (SCC->iterateOverValues(funcToInvoke)){
+    if (SCC->iterateOverValues(funcToInvoke)) {
       return true;
     }
   }
 
-  return false ;
+  return false;
 }
 
-bool SCCDAG::iterateOverAllInstructions (std::function<bool (Instruction *)> funcToInvoke){
+bool SCCDAG::iterateOverAllInstructions(
+    std::function<bool(Instruction *)> funcToInvoke) {
 
   /*
    * Iterate over SCC.
    */
-  for (auto sccNode : this->getNodes()){
+  for (auto sccNode : this->getNodes()) {
 
     /*
      * Iterate over instructions contained in the SCC.
      */
     auto SCC = sccNode->getT();
-    if (SCC->iterateOverAllInstructions(funcToInvoke)){
+    if (SCC->iterateOverAllInstructions(funcToInvoke)) {
       return true;
     }
   }
 
-  return false ;
+  return false;
 }
 
-bool SCCDAG::iterateOverAllValues (std::function<bool (Value *)> funcToInvoke){
+bool SCCDAG::iterateOverAllValues(std::function<bool(Value *)> funcToInvoke) {
 
   /*
    * Iterate over SCC.
    */
-  for (auto sccNode : this->getNodes()){
+  for (auto sccNode : this->getNodes()) {
 
     /*
      * Iterate over instructions contained in the SCC.
      */
     auto SCC = sccNode->getT();
-    if (SCC->iterateOverAllValues(funcToInvoke)){
+    if (SCC->iterateOverAllValues(funcToInvoke)) {
       return true;
     }
   }
 
-  return false ;
+  return false;
 }
 
-bool SCCDAG::iterateOverSCCs (std::function<bool (SCC *)> funcToInvoke){
+bool SCCDAG::iterateOverSCCs(std::function<bool(SCC *)> funcToInvoke) {
 
   /*
    * Iterate over SCC.
    */
-  for (auto sccNode : this->getNodes()){
-    if (funcToInvoke(sccNode->getT())){
+  for (auto sccNode : this->getNodes()) {
+    if (funcToInvoke(sccNode->getT())) {
       return true;
     }
   }
 
-  return false ;
+  return false;
 }
 
-std::unordered_set<SCC *> SCCDAG::getSCCs (void) {
+std::unordered_set<SCC *> SCCDAG::getSCCs(void) {
   std::unordered_set<SCC *> s;
-  for (auto sccNode : this->getNodes()){
+  for (auto sccNode : this->getNodes()) {
     s.insert(sccNode->getT());
   }
 
@@ -314,13 +336,13 @@ std::unordered_set<SCC *> SCCDAG::getSCCs (void) {
 }
 
 SCCDAG::~SCCDAG() {
-  for (auto *edge : allEdges){
+  for (auto *edge : allEdges) {
     if (edge) {
       delete edge;
     }
   }
 
-  for (auto *node : allNodes){
+  for (auto *node : allNodes) {
     if (node) {
       delete node;
     }
@@ -328,7 +350,7 @@ SCCDAG::~SCCDAG() {
 
   this->clear();
 
-  return ;
+  return;
 }
 
 bool SCCDAG::orderedBefore(const SCC *earlySCC, const SCCSet &lates) const {
@@ -360,7 +382,7 @@ bool SCCDAG::orderedBefore(const SCC *earlySCC, const SCC *lateSCC) const {
   return ordered.test(earlySCCid, lateSCCid);
 }
 
-void SCCDAG::computeReachabilityAmongSCCs (void) {
+void SCCDAG::computeReachabilityAmongSCCs(void) {
   orderedDirty = false;
   const uint32_t Nscc = this->numNodes();
 
