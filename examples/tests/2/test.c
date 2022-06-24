@@ -1,19 +1,17 @@
 #include <stdio.h>
 
-void myG (void){
+void myG(void) {}
 
-}
-
-void myF (int v){
-  if (v == 0){
-    return ;
+void myF(int v) {
+  if (v == 0) {
+    return;
   }
-  myF(v-1);
+  myF(v - 1);
   myG();
   myG();
 }
 
-int main (){
+int main() {
   printf("Start\n");
   myF(5);
   printf("End\n");
