@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 struct ThingOfPrimitives {
   char charOne;
@@ -14,12 +14,14 @@ void writeTo(int &i, int v) {
   i = v + 1;
 }
 
-int main (int argc, char *argv[]){
-  if (argc < 1) return 0;
+int main(int argc, char *argv[]) {
+  if (argc < 1)
+    return 0;
 
   int iterations = 10 * std::fmax(argc, 3);
   int iterations2 = (iterations / 2);
-  // ThingOfPrimitives * matrix = (ThingOfPrimitives *)calloc(iterations * iterations2, sizeof(ThingOfPrimitives));
+  // ThingOfPrimitives * matrix = (ThingOfPrimitives *)calloc(iterations *
+  // iterations2, sizeof(ThingOfPrimitives));
 
   /*
    * Clonable
@@ -45,7 +47,8 @@ int main (int argc, char *argv[]){
       mightNotBeResetEachIteration.charOne = (char)i;
       mightNotBeResetEachIteration.shortOne = i + j;
       mightNotBeResetEachIteration.justRightOne = i * i + j * j;
-      mightNotBeResetEachIteration.reallyBigOne = i * i + j * (i - 1) + i * j * (i - 2) * (j - 2);
+      mightNotBeResetEachIteration.reallyBigOne =
+          i * i + j * (i - 1) + i * j * (i - 2) * (j - 2);
     }
 
     for (int j = 0; j < iterations2; ++j) {
@@ -62,7 +65,8 @@ int main (int argc, char *argv[]){
       thingWrittenToElementByElement.charOne = (char)i;
       thingWrittenToElementByElement.shortOne = i + j;
       thingWrittenToElementByElement.justRightOne = i * i + j * j + myV;
-      thingWrittenToElementByElement.reallyBigOne = i * i + j * (i - 1) + i * j * (i - 2) * (j - 2);
+      thingWrittenToElementByElement.reallyBigOne =
+          i * i + j * (i - 1) + i * j * (i - 2) * (j - 2);
 
       /*
        * This fully stores a struct into thing, hence it is clonable

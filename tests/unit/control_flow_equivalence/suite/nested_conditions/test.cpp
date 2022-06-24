@@ -1,7 +1,7 @@
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
   int v1, v2;
   v1 = argc;
   for (uint32_t i = 0; i < 10000; ++i) {

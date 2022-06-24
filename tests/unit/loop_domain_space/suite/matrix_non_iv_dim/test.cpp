@@ -1,16 +1,17 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 using namespace std;
 
-int main (int argc, char *argv[]){
-  if (argc < 1) return 0;
+int main(int argc, char *argv[]) {
+  if (argc < 1)
+    return 0;
 
   int64_t iterations = 10 * std::fmax(argc, 3);
   int64_t iterations2 = (iterations / 2);
-  int * matrix = (int *)calloc(iterations * iterations2, sizeof(int));
+  int *matrix = (int *)calloc(iterations * iterations2, sizeof(int));
 
   for (int64_t i = 0; i < iterations; ++i) {
 

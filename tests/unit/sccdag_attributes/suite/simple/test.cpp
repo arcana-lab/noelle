@@ -1,7 +1,7 @@
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
   int v1, v2;
   v1 = argc;
   v2 = ((argc * 5) / 2) + 1;
@@ -20,4 +20,3 @@ int main (int argc, char *argv[]){
   printf("%d, %d\n", v1, v2);
   return 0;
 }
-

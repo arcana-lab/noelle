@@ -1,21 +1,23 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-int main (int argc, char *argv[]){
-  if (argc < 1) return 0;
+int main(int argc, char *argv[]) {
+  if (argc < 1)
+    return 0;
 
   int iterations = 10 * std::fmax(argc, 3);
   int iterations2 = (iterations / 2);
-  int * matrix = (int *)calloc(iterations * iterations2, sizeof(int));
+  int *matrix = (int *)calloc(iterations * iterations2, sizeof(int));
 
   for (int64_t i = 1; i < iterations - 1; ++i) {
     for (int64_t j = 2; j < iterations2; ++j) {
 
       /*
        * Index truncation is NOT understood and is conservatively not allowed
-       * Index modulo wrapping is NOT understood and is conservatively not allowed
+       * Index modulo wrapping is NOT understood and is conservatively not
+       * allowed
        */
       // Allowed: truncation/sign extension never goes below 32 bits
       int32_t ijIdx = (i * iterations2 + j);

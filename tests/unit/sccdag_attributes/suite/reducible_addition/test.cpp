@@ -1,11 +1,11 @@
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
   int v1 = 7;
 
   int i, j = 4;
-  int arr[] = {1,6,2,8,-4};
+  int arr[] = { 1, 6, 2, 8, -4 };
   for (i = 0; i < argc * 10000; ++i) {
     j += i;
 

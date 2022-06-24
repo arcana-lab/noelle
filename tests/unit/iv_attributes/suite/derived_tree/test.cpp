@@ -1,7 +1,7 @@
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
   int j = argc;
   int k = 0;
   int nonIV = ((argc * 5) / 2) + 1;

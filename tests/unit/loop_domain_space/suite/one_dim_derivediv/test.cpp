@@ -1,10 +1,11 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-int main (int argc, char *argv[]){
-  if (argc < 1) return 0;
+int main(int argc, char *argv[]) {
+  if (argc < 1)
+    return 0;
 
   int iterations = 100 * argc;
   int arr[iterations];
@@ -18,7 +19,7 @@ int main (int argc, char *argv[]){
     }
   }
 
-  printf("%d, %d\n", arr[0], arr[iterations/2]);
+  printf("%d, %d\n", arr[0], arr[iterations / 2]);
 
   return 0;
 }

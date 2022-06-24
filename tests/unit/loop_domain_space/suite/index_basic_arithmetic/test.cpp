@@ -1,13 +1,13 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
   int oneOrTwo = argc % 2 == 0 ? 1 : 2;
   int64_t iterations = 30 * oneOrTwo;
   int64_t iterations2 = iterations / 2;
-  int * matrix = (int *)calloc(iterations * iterations2, sizeof(int));
+  int *matrix = (int *)calloc(iterations * iterations2, sizeof(int));
 
   for (int64_t i = 1; i < iterations - 1; ++i) {
     for (int64_t j = 0; j < iterations2; ++j) {
@@ -52,7 +52,6 @@ int main (int argc, char *argv[]){
       // matrix[ij_3]--;
       // matrix[ij_4]++;
       // matrix[ij_5]--;
-
     }
   }
 

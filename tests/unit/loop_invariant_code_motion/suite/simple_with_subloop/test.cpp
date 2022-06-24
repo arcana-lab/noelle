@@ -1,18 +1,20 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-int main (int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
-  if (argc < 2){
+  if (argc < 2) {
     fprintf(stderr, "USAGE: %s LOOP_ITERATIONS\n", argv[0]);
     return -1;
   }
   auto iterations = atoll(argv[1]);
-  if (iterations == 0) return 0;
+  if (iterations == 0)
+    return 0;
 
-  long long int *oneElement = (long long int *) calloc(0, sizeof(long long int) * 1);
+  long long int *oneElement =
+      (long long int *)calloc(0, sizeof(long long int) * 1);
 
   int v1;
   v1 = argc;
@@ -28,7 +30,6 @@ int main (int argc, char *argv[]){
     if (i % 10000 == 0) {
       (*oneElement) = iterations;
     }
-
   }
 
   printf("%d, %lld\n", v1, *oneElement);
