@@ -1,12 +1,23 @@
 /*
  * Copyright 2019 - 2020  Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "LastLiveOutPeeler.hpp"
 
@@ -25,17 +36,18 @@ using namespace llvm;
   Exit from the original loop entry to the cloned loop entry
     If no loop body iteration ever executed, then route to the loop exit
     Otherwise, route to the cloned loop body
-    The cloned latches route to a 2nd cloned entry that unconditionally branches to the loop exit
+    The cloned latches route to a 2nd cloned entry that unconditionally branches
+ to the loop exit
 
-  Clone IV sccs, branches/conditions on IVs in dependent SCCs, last live out SCCs with computation and their dependent SCCs
-  Step loop governing IV back one iteration
-  Wire instructions together as follows:
-    Any instructions from original loop governing IV to cloned, stepped-back IV
-    Any instructions from other IVs to cloned IVs
-    Any instructions from original loop entry to trailing/latch PHI pairs
-      A trailing PHI at the loop entry consumes the PHI's previous iteration value at each latch
-    Any instructions from original loop body to PHIs on the cloned loop body values
-      The cloned body values only need PHIs since they do not dominate the last iteration's execution
+  Clone IV sccs, branches/conditions on IVs in dependent SCCs, last live out
+ SCCs with computation and their dependent SCCs Step loop governing IV back one
+ iteration Wire instructions together as follows: Any instructions from original
+ loop governing IV to cloned, stepped-back IV Any instructions from other IVs to
+ cloned IVs Any instructions from original loop entry to trailing/latch PHI
+ pairs A trailing PHI at the loop entry consumes the PHI's previous iteration
+ value at each latch Any instructions from original loop body to PHIs on the
+ cloned loop body values The cloned body values only need PHIs since they do not
+ dominate the last iteration's execution
 
 */
 
@@ -44,9 +56,10 @@ using namespace llvm;
 using namespace llvm;
 using namespace llvm::noelle;
 
-LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noelle)
-  : LDI{LDI}, noelle{noelle} {
-}
+LastLiveOutPeeler::LastLiveOutPeeler(LoopDependenceInfo const &LDI,
+                                     Noelle &noelle)
+  : LDI{ LDI },
+    noelle{ noelle } {}
 
 // bool LastLiveOutPeeler::peelLastLiveOutComputation () {
 
@@ -54,7 +67,7 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 //    * Ensure the loop entry is the only block to exit the loop
 //    */
 //   auto loopStructure = LDI.getLoopStructure();
-//   auto loopHeader = loopStructure->getHeader(); 
+//   auto loopHeader = loopStructure->getHeader();
 //   auto exitBlocks = loopStructure->getLoopExitBasicBlocks();
 //   if (exitBlocks.size() != 1) return false;
 
@@ -63,7 +76,8 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 //   bool exitsFromHeader = false;
 //   for (auto exitPred : predecessors(singleExitBlock)) {
 //     exitsFromHeader |= exitPred == loopHeader;
-//     onlyExitsFromHeader = !loopStructure->isIncluded(exitPred) || exitPred == loopHeader;
+//     onlyExitsFromHeader = !loopStructure->isIncluded(exitPred) || exitPred ==
+//     loopHeader;
 //   }
 //   if (!exitsFromHeader || !onlyExitsFromHeader) return false;
 
@@ -80,10 +94,12 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 //   if (this->sccsOfLastLiveOuts.size() == 0) return false;
 
 //   /*
-//    * Ensure that the control flow of the loop is governed by IVs and fully understood
+//    * Ensure that the control flow of the loop is governed by IVs and fully
+//    understood
 //    */
-//   auto controlFlowGovernedByIVs = fetchNormalizedSCCsGoverningControlFlowOfLoop();
-//   if (!controlFlowGovernedByIVs) return false;
+//   auto controlFlowGovernedByIVs =
+//   fetchNormalizedSCCsGoverningControlFlowOfLoop(); if
+//   (!controlFlowGovernedByIVs) return false;
 
 //   /*
 //    * Identify induction variable SCCs in all sub-loops
@@ -104,7 +120,8 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 //   return true;
 // }
 
-// bool LastLiveOutPeeler::fetchNormalizedSCCsGoverningControlFlowOfLoop (void) {
+// bool LastLiveOutPeeler::fetchNormalizedSCCsGoverningControlFlowOfLoop (void)
+// {
 
 //   auto loopStructure = LDI.getLoopStructure();
 //   auto normalizedSCCDAG = LDI.sccdagAttrs.getSCCDAG();
@@ -113,10 +130,12 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 //   for (auto loopBlock : loopStructure->getBasicBlocks()) {
 //     auto terminator = loopBlock->getTerminator();
 //     assert(terminator != nullptr
-//       && "LastLiveOutPeeler: Loop is not well formed, having an un-terminated basic block");
+//       && "LastLiveOutPeeler: Loop is not well formed, having an un-terminated
+//       basic block");
 
 //     /*
-//      * Currently, we only support un-conditional or conditional branches w/conditions that are
+//      * Currently, we only support un-conditional or conditional branches
+//      w/conditions that are
 //      * loop invariants OR instructions using IVs and loop invariants only
 //      */
 //     if (!isa<BranchInst>(terminator)) return false;
@@ -131,7 +150,8 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 //     }
 
 //     /*
-//      * The condition must be loop invariant or an instruction using IVs and loop invariants only
+//      * The condition must be loop invariant or an instruction using IVs and
+//      loop invariants only
 //      */
 //     auto condition = brInst->getCondition();
 //     if (!isa<Instruction>(condition)) {
@@ -162,7 +182,8 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 // }
 
 // /*
-//  * We are interested in any last live outs with meaningful computation contained in the chain (excludes PHIs, casts)
+//  * We are interested in any last live outs with meaningful computation
+//  contained in the chain (excludes PHIs, casts)
 //  */
 // void LastLiveOutPeeler::fetchSCCsOfLastLiveOuts (void) {
 
@@ -172,7 +193,8 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 //   auto normalizedSCCDAG = LDI.sccdagAttrs.getSCCDAG();
 
 //   auto loopCarriedDependencies = LDI.getLoopCarriedDependencies();
-//   auto outermostLoopCarriedDependencies = loopCarriedDependencies->getLoopCarriedDependenciesForLoop(*loopStructure);
+//   auto outermostLoopCarriedDependencies =
+//   loopCarriedDependencies->getLoopCarriedDependenciesForLoop(*loopStructure);
 //   std::unordered_set<Value *> loopCarriedConsumers{};
 //   for (auto dependency : outermostLoopCarriedDependencies) {
 //     auto consumer = dependency->getIncomingT();
@@ -181,9 +203,11 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 
 //   /*
 //    * Last live outs can only result in leaf nodes
-//    * Their computation CAN span a chain of SCCs though, all of which must only produce last live out loop carried dependencies
-//    * 
-//    * To be sure the parent SCCs/instructions up that chain we collect ONLY contain last live outs,
+//    * Their computation CAN span a chain of SCCs though, all of which must
+//    only produce last live out loop carried dependencies
+//    *
+//    * To be sure the parent SCCs/instructions up that chain we collect ONLY
+//    contain last live outs,
 //    * we use the strict SCCDAG, not the normalized SCCDAG
 //    */
 //   for (auto leafSCCNode : loopSCCDAG->getLeafNodes()) {
@@ -205,11 +229,15 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 //   return;
 // }
 
-// std::unordered_set<SCC *> LastLiveOutPeeler::fetchChainOfSCCsForLastLiveOutLeafSCC (DGNode<SCC> *sccNode) {
+// std::unordered_set<SCC *>
+// LastLiveOutPeeler::fetchChainOfSCCsForLastLiveOutLeafSCC (DGNode<SCC>
+// *sccNode) {
 
 //   /*
-//    * Traverse up the graph, collecting as many SCC nodes that ONLY contribute loop carried
-//    * dependencies to last live out values. Keep track if any of those SCCs contain meaningful computation
+//    * Traverse up the graph, collecting as many SCC nodes that ONLY contribute
+//    loop carried
+//    * dependencies to last live out values. Keep track if any of those SCCs
+//    contain meaningful computation
 //    */
 //   bool hasMeaningfulComputation = false;
 //   std::unordered_set<SCC *> computationOfLastLiveOut{};
@@ -217,7 +245,8 @@ LastLiveOutPeeler::LastLiveOutPeeler (LoopDependenceInfo const &LDI, Noelle &noe
 //   queueOfLastLiveOutComputation.push(sccNode);
 
 //   /*
-//    * For the sake of efficiency, even if the SCCDAG is acyclic, don't re-process SCCs
+//    * For the sake of efficiency, even if the SCCDAG is acyclic, don't
+//    re-process SCCs
 //    */
 //   std::unordered_set<DGNode<SCC> *> visited{};
 //   visited.insert(sccNode);

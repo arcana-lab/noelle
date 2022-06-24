@@ -1,19 +1,32 @@
 /*
  * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "Inliner.hpp"
 #include "DOALL.hpp"
+#include "Inliner.hpp"
 
 namespace llvm::noelle {
 
-bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, noelle::CallGraph *pcg) {
+bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences(
+    Noelle &noelle,
+    noelle::CallGraph *pcg) {
   auto anyInlined = false;
 
   /*
@@ -27,9 +40,10 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
 
   std::set<Function *> fnsToAvoid;
   for (auto F : orderedFns) {
-    
+
     /*
-     * If we avoid this function until next pass, we do the same with its parents
+     * If we avoid this function until next pass, we do the same with its
+     * parents
      */
     if (fnsToAvoid.find(F) != fnsToAvoid.end()) {
       for (auto parentF : parentFns[F]) {
@@ -55,51 +69,50 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
     auto &toCheck = loopsToCheck[F];
 
     /*
-     * Inline calls that are involved in loop-carried data dependences for the enabled loops.
+     * Inline calls that are involved in loop-carried data dependences for the
+     * enabled loops.
      */
     auto inlined = false;
     std::set<LoopStructure *> removeSummaries;
-    for (auto LDI : *allLoops){
+    for (auto LDI : *allLoops) {
 
       /*
        * Check if the current loop has been enabled.
        */
       StayConnectedNestedLoopForestNode *summaryNode = nullptr;
       LoopStructure *summary = nullptr;
-      for (auto enabledLoop : toCheck){
-        if (enabledLoop->getHeader() == LDI->getLoopStructure()->getHeader()){
+      for (auto enabledLoop : toCheck) {
+        if (enabledLoop->getHeader() == LDI->getLoopStructure()->getHeader()) {
           summary = enabledLoop;
           summaryNode = LDI->getLoopHierarchyStructures();
-          break ;
+          break;
         }
       }
-      if (summary == nullptr){
-        continue ;
+      if (summary == nullptr) {
+        continue;
       }
 
       /*
        * Check if the current loop is a DOALL.
-       * If it is, then we disable all sub-loops to be considered because DOALL always takes priority and we don't parallelize nested loops at the moment.
+       * If it is, then we disable all sub-loops to be considered because DOALL
+       * always takes priority and we don't parallelize nested loops at the
+       * moment.
        */
-      DOALL doall{
-        noelle
-      };
-      if (  true
-            && (summaryNode->getNumberOfSubLoops() >= 1)
-            && doall.canBeAppliedToLoop(LDI, nullptr)
-        ){
+      DOALL doall{ noelle };
+      if (true && (summaryNode->getNumberOfSubLoops() >= 1)
+          && doall.canBeAppliedToLoop(LDI, nullptr)) {
 
         /*
          * The loop is a doall.
          *
          * Disable all sub-loops
          */
-        auto disableSubLoop = [&toCheck] (const LoopStructure &child) -> bool{
-
+        auto disableSubLoop = [&toCheck](const LoopStructure &child) -> bool {
           /*
            * Check if the sub-loop is enabled.
            */
-          if (std::find(toCheck.begin(), toCheck.end(), &child) == toCheck.end()){
+          if (std::find(toCheck.begin(), toCheck.end(), &child)
+              == toCheck.end()) {
             return false;
           }
 
@@ -114,13 +127,18 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
         };
         LDI->iterateOverSubLoopsRecursively(disableSubLoop);
 
-        continue ;
+        continue;
       }
 
       /*
        * Inline the call.
        */
-      auto inlinedCall = this->inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(F, LDI, pcg, noelle);
+      auto inlinedCall =
+          this->inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
+              F,
+              LDI,
+              pcg,
+              noelle);
       inlined |= inlinedCall;
       if (inlined) {
         break;
@@ -130,10 +148,10 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
     /*
      * Free the memory.
      */
-    for (auto tempLDI : *allLoops){
+    for (auto tempLDI : *allLoops) {
       delete tempLDI;
     }
-    delete allLoops ;
+    delete allLoops;
 
     /*
      * Keep track of the inlining.
@@ -150,7 +168,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
       }
     }
   }
-    
+
   return anyInlined;
 }
 
@@ -160,12 +178,11 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences (Noelle &noelle, n
  * try inlining the function call in that SCC with the
  * most memory edges to other internal/external values
  */
-bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
-    Function *F, 
-    LoopDependenceInfo *LDI, 
+bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
+    Function *F,
+    LoopDependenceInfo *LDI,
     noelle::CallGraph *pcg,
-    Noelle &noelle
-    ) {
+    Noelle &noelle) {
   assert(pcg != nullptr);
   assert(LDI != nullptr);
 
@@ -202,11 +219,12 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
     /*
      * Check every instruction within the sequential SCC.
      *
-     * Do not inline a call that depends on itself because it is unlikely to make a difference.
-     * Most of the time such situation shows up as an SCC with a single node.
+     * Do not inline a call that depends on itself because it is unlikely to
+     * make a difference. Most of the time such situation shows up as an SCC
+     * with a single node.
      */
-    if (scc->numberOfInstructions() == 1){
-      continue ;
+    if (scc->numberOfInstructions() == 1) {
+      continue;
     }
 
     /*
@@ -220,7 +238,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
        */
       auto val = valNode->getT();
       if (!isa<CallInst>(val)) {
-        continue ;
+        continue;
       }
       auto call = cast<CallInst>(val);
 
@@ -228,13 +246,13 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
        * Fetch the callee.
        */
       auto callF = call->getCalledFunction();
-      if (!callF){
+      if (!callF) {
 
         /*
          * The callee is unknown.
          * So we cannot inline this call.
          */
-        continue ;
+        continue;
       }
       if (callF->empty()) {
 
@@ -248,8 +266,8 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
       /*
        * Check if the callee is an intrinsic.
        */
-      if (callF->isIntrinsic()){
-        continue ;
+      if (callF->isIntrinsic()) {
+        continue;
       }
 
       /*
@@ -267,17 +285,19 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
       }
 
       /*
-       * If the call instruction belongs to a sub-loop, then its inlining is likely to be useless.
+       * If the call instruction belongs to a sub-loop, then its inlining is
+       * likely to be useless.
        */
-      if (loopStructureNode->isIncludedInItsSubLoops(call)){
-        continue ;
+      if (loopStructureNode->isIncludedInItsSubLoops(call)) {
+        continue;
       }
 
       /*
-       * Do not consider inlining calls that are in a cycle within the program call graph.
+       * Do not consider inlining calls that are in a cycle within the program
+       * call graph.
        */
-      if (pcg->doesItBelongToASCC(callF)){
-        continue ;
+      if (pcg->doesItBelongToASCC(callF)) {
+        continue;
       }
 
       /*
@@ -291,14 +311,14 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
       }
 
       /*
-       * Consider only the call instruction with the maximum number of memory edges.
-       * Also, consider only calls to functions that are smaller than the current loop size.
+       * Consider only the call instruction with the maximum number of memory
+       * edges. Also, consider only calls to functions that are smaller than the
+       * current loop size.
        */
       numberOfFunctionCallsToInline++;
-      if (  true
-            && (memEdgeCount > maxMemEdges) 
-            && (hot->getStaticInstructions(callF) < hot->getStaticInstructions(loopStructure))
-        ){
+      if (true && (memEdgeCount > maxMemEdges)
+          && (hot->getStaticInstructions(callF)
+              < hot->getStaticInstructions(loopStructure))) {
         maxMemEdges = memEdgeCount;
         inlineCall = call;
       }
@@ -308,7 +328,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
   /*
    * Check if there is a function to inline.
    */
-  if (inlineCall == nullptr){
+  if (inlineCall == nullptr) {
 
     /*
      * No call needs to be inlined.
@@ -317,19 +337,26 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop (
   }
 
   /*
-   * Check if there are too many loop-carried data dependences related to function calls.
+   * Check if there are too many loop-carried data dependences related to
+   * function calls.
    */
-  if (numberOfFunctionCallsToInline >= this->maxNumberOfFunctionCallsToInlinePerLoop){
-    errs() << "Inliner:   The loop " << *loopStructure->getHeader()->getFirstNonPHI() << " has too many function calls involved in loop-carried data dependences (there are " << numberOfFunctionCallsToInline << ")\n";
+  if (numberOfFunctionCallsToInline
+      >= this->maxNumberOfFunctionCallsToInlinePerLoop) {
+    errs()
+        << "Inliner:   The loop "
+        << *loopStructure->getHeader()->getFirstNonPHI()
+        << " has too many function calls involved in loop-carried data dependences (there are "
+        << numberOfFunctionCallsToInline << ")\n";
     return false;
   }
 
   /*
    * Inline the call instruction.
    */
-  auto inlined = inlineFunctionCall(hot, F, inlineCall->getCalledFunction(), inlineCall);
+  auto inlined =
+      inlineFunctionCall(hot, F, inlineCall->getCalledFunction(), inlineCall);
 
   return inlined;
 }
 
-}
+} // namespace llvm::noelle

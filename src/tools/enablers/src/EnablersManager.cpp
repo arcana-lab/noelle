@@ -1,32 +1,40 @@
 /*
  * Copyright 2019 - 2021 Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/Noelle.hpp"
 #include "EnablersManager.hpp"
+#include "noelle/core/Noelle.hpp"
 
 namespace llvm::noelle {
 
-EnablersManager::EnablersManager()
-  :
-    ModulePass{ID}
-{
+EnablersManager::EnablersManager() : ModulePass{ ID } {
 
-  return ;
+  return;
 }
 
-bool EnablersManager::runOnModule (Module &M) {
+bool EnablersManager::runOnModule(Module &M) {
 
   /*
    * Check if enablers have been enabled.
    */
-  if (!this->enableEnablers){
+  if (!this->enableEnablers) {
     return false;
   }
   errs() << "EnablersManager: Start\n";
@@ -34,12 +42,12 @@ bool EnablersManager::runOnModule (Module &M) {
   /*
    * Fetch the outputs of the passes we rely on.
    */
-  auto& noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<Noelle>();
 
   /*
    * Create the enablers.
    */
-  auto& loopTransformer = noelle.getLoopTransformer();
+  auto &loopTransformer = noelle.getLoopTransformer();
   auto loopInvariantCodeMotion = LoopInvariantCodeMotion(noelle);
   auto scevSimplification = SCEVSimplification(noelle);
 
@@ -47,14 +55,15 @@ bool EnablersManager::runOnModule (Module &M) {
    * Fetch all the loops we want to parallelize.
    */
   auto loopsToParallelize = noelle.getLoopStructures();
-  errs() << "EnablersManager:   Try to improve all " << loopsToParallelize->size() << " loops, one at a time\n";
+  errs() << "EnablersManager:   Try to improve all "
+         << loopsToParallelize->size() << " loops, one at a time\n";
 
   /*
    * Remove loops that have not been executed
    */
   auto hot = noelle.getProfiles();
   auto filter = [hot](LoopStructure *l) -> bool {
-    if (!hot->hasBeenExecuted(l)){
+    if (!hot->hasBeenExecuted(l)) {
       return true;
     }
     return false;
@@ -81,13 +90,19 @@ bool EnablersManager::runOnModule (Module &M) {
    */
   auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
-  for (auto tree : sortedTrees){
+  for (auto tree : sortedTrees) {
 
     /*
      * Parallelize all loops within this tree starting from the leafs.
      */
-    auto f = [&loopTransformer, &loopInvariantCodeMotion, &scevSimplification, &noelle, &modifiedFunctions, this, &modified](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
-
+    auto f = [&loopTransformer,
+              &loopInvariantCodeMotion,
+              &scevSimplification,
+              &noelle,
+              &modifiedFunctions,
+              this,
+              &modified](StayConnectedNestedLoopForestNode *n,
+                         uint32_t l) -> bool {
       /*
        * Fetch the loop
        */
@@ -97,9 +112,12 @@ bool EnablersManager::runOnModule (Module &M) {
        * Print the loop.
        */
       errs() << "EnablersManager:   Loop:\n";
-      errs() << "EnablersManager:     Function = \"" << loopStructure->getFunction()->getName() << "\"\n";
-      errs() << "EnablersManager:     Loop ID  = " << loopStructure->getID() << "\n";
-      errs() << "EnablersManager:     Entry instruction = " << *loopStructure->getHeader()->getFirstNonPHI() << "\n";
+      errs() << "EnablersManager:     Function = \""
+             << loopStructure->getFunction()->getName() << "\"\n";
+      errs() << "EnablersManager:     Loop ID  = " << loopStructure->getID()
+             << "\n";
+      errs() << "EnablersManager:     Entry instruction = "
+             << *loopStructure->getHeader()->getFirstNonPHI() << "\n";
 
       /*
        * Fetch the function that contains the current loop.
@@ -109,8 +127,10 @@ bool EnablersManager::runOnModule (Module &M) {
       /*
        * Check if we have already modified the function.
        */
-      if (modifiedFunctions[f]){
-        errs() << "EnablersManager:     The current loop belongs to the function " << f->getName() << " , which has already been modified.\n" ;
+      if (modifiedFunctions[f]) {
+        errs()
+            << "EnablersManager:     The current loop belongs to the function "
+            << f->getName() << " , which has already been modified.\n";
         return false;
       }
 
@@ -122,13 +142,11 @@ bool EnablersManager::runOnModule (Module &M) {
       /*
        * Improve the current loop.
        */
-      modifiedFunctions[f] |= this->applyEnablers(
-          &*loopToImprove,
-          noelle,
-          loopTransformer,
-          loopInvariantCodeMotion,
-          scevSimplification
-          );
+      modifiedFunctions[f] |= this->applyEnablers(&*loopToImprove,
+                                                  noelle,
+                                                  loopTransformer,
+                                                  loopInvariantCodeMotion,
+                                                  scevSimplification);
       modified |= modifiedFunctions[f];
 
       return false;
@@ -145,4 +163,4 @@ bool EnablersManager::runOnModule (Module &M) {
   return modified;
 }
 
-}
+} // namespace llvm::noelle
