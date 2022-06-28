@@ -104,7 +104,7 @@ public:
   PDGPrinter();
 
   void printPDG(Module &module,
-                CallGraph &callGraph,
+                llvm::CallGraph &callGraph,
                 PDG *graph,
                 std::function<LoopInfo &(Function *f)> getLoopInfo);
 
@@ -112,7 +112,7 @@ public:
 
 private:
   void collectAllFunctionsInCallGraph(Module &M,
-                                      CallGraph &callGraph,
+                                      llvm::CallGraph &callGraph,
                                       std::set<Function *> &funcSet);
 };
 
