@@ -691,15 +691,13 @@ namespace llvm::noelle {
   template <class T>
   void DGNode<T>::addIncomingEdge(DGEdge<T> *edge)
   {
-    incomingEdges.insert(edge);
-    auto node = edge->getOutgoingNode();
+    this->incomingEdges.insert(edge);
   }
 
   template <class T>
   void DGNode<T>::addOutgoingEdge(DGEdge<T> *edge)
   {
-    outgoingEdges.insert(edge);
-    auto node = edge->getIncomingNode();
+    this->outgoingEdges.insert(edge);
   }
 
   template <class T>
