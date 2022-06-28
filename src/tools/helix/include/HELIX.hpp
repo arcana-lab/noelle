@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_HELIX_HELIX_H
+#define NOELLE_HELIX_HELIX_H
 #pragma once
 
 #include "HeuristicsPass.hpp"
@@ -34,9 +36,13 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 
+using namespace llvm;
+
 namespace llvm::noelle {
 
 class SpilledLoopCarriedDependency;
+
+class SequentialSegment;
 
 class HELIX
   : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
@@ -159,3 +165,4 @@ public:
 };
 
 } // namespace llvm::noelle
+#endif

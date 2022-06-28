@@ -22,6 +22,8 @@
 #include "SequentialSegment.hpp"
 #include "HELIX.hpp"
 
+using namespace llvm;
+
 namespace llvm::noelle {
 
 SequentialSegment::SequentialSegment(Noelle &noelle,
