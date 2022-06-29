@@ -121,7 +121,7 @@ std::vector<Type *> LoopEnvironment::getTypesOfEnvironmentLocations (void) const
    * Collect the Type of each environment variable
    */
   std::vector<Type *> varTypes;
-  for (int64_t i = 0; i < this->size(); ++i) {
+  for (auto i = 0u; i < this->size(); ++i) {
     varTypes.push_back(this->typeOfEnvironmentLocation(i));
   }
 
@@ -179,6 +179,7 @@ bool LoopEnvironment::isProducer (Value *producer) const {
 }
 
 bool LoopEnvironment::isLiveIn (Value *val) const {
+  assert(val != nullptr);
 
   /*
    * Check if @val belongs to the environment.
