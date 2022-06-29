@@ -258,9 +258,18 @@ namespace llvm::noelle {
   {
    public:
      DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
-         : from(src), to(dst), memory(false), must(false),
-           dataDepType(DG_DATA_NONE), isControl(false), isLoopCarried(false),
-           isRemovable(false), remeds(nullptr) {}
+         :  from(src)
+          , to(dst)
+          , subEdges{}
+          , memory{false}
+          , must{false}
+          , isControl(false)
+          , isLoopCarried(false)
+          , isRemovable(false)
+          , dataDepType{DG_DATA_NONE}
+          , remeds(nullptr) {
+        return ;
+      }
      DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
      typedef typename std::unordered_set<DGEdge<SubT> *>::iterator edges_iterator;
@@ -691,15 +700,13 @@ namespace llvm::noelle {
   template <class T>
   void DGNode<T>::addIncomingEdge(DGEdge<T> *edge)
   {
-    incomingEdges.insert(edge);
-    auto node = edge->getOutgoingNode();
+    this->incomingEdges.insert(edge);
   }
 
   template <class T>
   void DGNode<T>::addOutgoingEdge(DGEdge<T> *edge)
   {
-    outgoingEdges.insert(edge);
-    auto node = edge->getIncomingNode();
+    this->outgoingEdges.insert(edge);
   }
 
   template <class T>

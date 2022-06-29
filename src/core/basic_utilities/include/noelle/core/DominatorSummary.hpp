@@ -35,7 +35,7 @@ namespace llvm::noelle {
 
    private:
     BasicBlock *B;
-    unsigned level;
+    uint32_t level;
 
     DomNodeSummary *parent;
     std::vector<DomNodeSummary *> children;

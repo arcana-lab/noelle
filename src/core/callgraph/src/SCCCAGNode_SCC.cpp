@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2019 - 2022 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -9,32 +9,22 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Hot.hpp"
+#include "noelle/core/SCCCAG.hpp"
 
 namespace llvm::noelle {
 
-uint64_t Hot::getSelfInstructions (void) const {
-  return this->moduleNumberOfInstructionsExecuted;
-}
-      
-bool Hot::hasBeenExecuted (void) const {
-  if (this->getSelfInstructions() > 0){
+  SCCCAGNode_SCC::SCCCAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes)
+    : nodes{nodes}
+    {
+    return ;
+  }
+          
+  bool SCCCAGNode_SCC::isAnSCC (void) const {
     return true;
   }
 
-  return false;
-}
-      
-bool Hot::getInvocations (void) const {
-  if (this->hasBeenExecuted()){
-    return 1;
+  SCCCAGNode_SCC::~SCCCAGNode_SCC (){
+    return ;
   }
-
-  return 0;
-}
-
-uint64_t Hot::getTotalInstructions (void) const {
-  return this->getSelfInstructions();
-}
 
 }

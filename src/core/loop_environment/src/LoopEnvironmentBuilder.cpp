@@ -126,7 +126,7 @@ void LoopEnvironmentBuilder::initializeBuilder (
 }
 
 void LoopEnvironmentBuilder::createUsers (uint32_t numUsers) {
-  for (auto i = 0; i < numUsers; ++i) {
+  for (auto i = 0u; i < numUsers; ++i) {
     this->envUsers.push_back(new LoopEnvironmentUser());
   }
 
@@ -167,7 +167,7 @@ void LoopEnvironmentBuilder::allocateEnvironmentArray (IRBuilder<> builder) {
 
   auto int8 = IntegerType::get(builder.getContext(), 8);
   auto ptrTy_int8 = PointerType::getUnqual(int8);
-  this->envArray = builder.CreateAlloca(this->envArrayType);
+  this->envArray = builder.CreateAlloca(this->envArrayType, nullptr, "loop_environment");
   this->envArrayInt8Ptr = cast<Value>(builder.CreateBitCast(this->envArray, ptrTy_int8));
 
   return ;
@@ -184,8 +184,6 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
     abort();
   }
 
-  auto int8 = IntegerType::get(builder.getContext(), 8);
-  auto ptrTy_int8 = PointerType::getUnqual(int8);
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
   auto fetchCastedEnvPtr = [&](Value *arr, int envIndex, Type *ptrType) -> Value * {
@@ -247,12 +245,12 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
      * Define the type of the vectorized form of the reducable variable.
      */
     auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
-    auto reduceArrType = ArrayType::get(int64, numReducers * valuesInCacheLine);
+    auto reduceArrType = ArrayType::get(int64, this->numReducers * valuesInCacheLine);
 
     /*
      * Allocate the vectorized form of the current reducable variable on the stack.
      */
-    auto reduceArrAlloca = builder.CreateAlloca(reduceArrType);
+    auto reduceArrAlloca = builder.CreateAlloca(reduceArrType, nullptr, "reduction_variable_array");
     this->envIndexToVectorOfReducableVar[envIndex] = reduceArrAlloca;
 
     /*
@@ -265,7 +263,7 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
     /*
      * Compute and cache the pointer of each element of the vectorized variable.
      */
-    for (auto i = 0; i < numReducers; ++i) {
+    for (auto i = 0u; i < this->numReducers; ++i) {
       auto reducePtr = fetchCastedEnvPtr(reduceArrAlloca, i, ptrType);
       this->envIndexToReducableVar[envIndex].push_back(reducePtr);
     }

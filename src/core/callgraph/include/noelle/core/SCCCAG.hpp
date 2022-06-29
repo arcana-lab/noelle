@@ -22,6 +22,8 @@ namespace llvm::noelle {
       SCCCAGNode() = default;
 
       virtual bool isAnSCC (void) const = 0;
+
+      virtual ~SCCCAGNode ();
   };
 
   class SCCCAGNode_SCC : public SCCCAGNode {
@@ -30,18 +32,24 @@ namespace llvm::noelle {
 
       bool isAnSCC (void) const override ;
 
+      virtual ~SCCCAGNode_SCC ();
+
     private:
       std::unordered_set<CallGraphNode *> nodes;
   };
 
   class SCCCAGNode_Function : public SCCCAGNode {
     public:
-      SCCCAGNode_Function (Function &F) ;
+      SCCCAGNode_Function (CallGraphNode *n) ;
 
       bool isAnSCC (void) const override ;
 
+      CallGraphNode * getNode (void) const ;
+
+      virtual ~SCCCAGNode_Function();
+
     private:
-      Function &func;
+      CallGraphNode *node;
   };
 
   class SCCCAG {

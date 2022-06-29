@@ -325,4 +325,8 @@ namespace llvm::noelle {
 
     return ;
   }
+
+  Task::~Task (){
+    return ;
+  }
 }

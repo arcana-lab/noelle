@@ -94,8 +94,6 @@ void LoopEnvironmentUser::createReducableEnvPtr (
    */
   auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
 
-  auto int8 = IntegerType::get(builder.getContext(), 8);
-  auto ptrTy_int8 = PointerType::getUnqual(int8);
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
   auto envIndV = cast<Value>(ConstantInt::get(int64, envIndex * valuesInCacheLine));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -18,9 +18,6 @@
 #include "llvm/ADT/iterator_range.h"
 #include <set>
 #include <unordered_map>
-
-using namespace llvm;
-using namespace std;
 
 namespace llvm::noelle {
 
@@ -44,7 +41,6 @@ namespace llvm::noelle {
       AllocAAResult doesAlias (Value *V1, Value *V2);
 
     private:
-      MemoryLayout *memoryLayout;
       std::unordered_map<CallInst *, MemorySite *> allocCallSites;
       std::unordered_map<AllocaInst *, MemorySite *> allocaSites;
       std::unordered_map<Value *, MemorySite *> referenceSites;
@@ -58,7 +54,7 @@ namespace llvm::noelle {
 
   struct MemorySite {
     Value *allocation;
-    int sizeInBits;
+    uint32_t sizeInBits;
 
     std::unordered_map<Argument *, MemoryReference *> argumentReferences;
     std::unordered_map<Instruction *, MemoryReference *> instructionReferences;
@@ -71,6 +67,6 @@ namespace llvm::noelle {
     Value *offsetValue;
 
     bool offsetDetermined;
-    int offsetInBits;
+    int32_t offsetInBits;
   };
 }

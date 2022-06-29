@@ -63,6 +63,8 @@ namespace llvm::noelle {
         LoopDependenceInfo *LDI
         ) const ;
 
+      virtual ~HELIX ();
+
     protected:
       void createParallelizableTask (
         LoopDependenceInfo *LDI,
