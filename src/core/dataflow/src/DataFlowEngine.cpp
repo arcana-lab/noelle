@@ -152,8 +152,6 @@ DataFlowResult * DataFlowEngine::applyBackward (
      */
     auto& inSetOfInst = df->IN(inst);
     auto& outSetOfInst = df->OUT(inst);
-    auto& genSetOfInst = df->GEN(inst);
-    auto& killSetOfInst = df->KILL(inst);
 
     /* 
      * Compute OUT[inst]
@@ -328,8 +326,6 @@ DataFlowResult * DataFlowEngine::applyCustomizableForwardAnalysis (
      */
     auto& inSetOfInst = df->IN(inst);
     auto& outSetOfInst = df->OUT(inst);
-    auto& genSetOfInst = df->GEN(inst);
-    auto& killSetOfInst = df->KILL(inst);
 
     /* 
      * Compute the IN of the first instruction of the current basic block.

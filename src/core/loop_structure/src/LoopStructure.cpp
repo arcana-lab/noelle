@@ -144,7 +144,7 @@ bool LoopStructure::isALoopExit (Instruction *i) const {
   for (auto p : this->getLoopExitEdges()){
     auto exitingBB = p.first;
     auto e = exitingBB->getTerminator();
-    if (exitingBB->getTerminator() == i){
+    if (e == i){
       return true;
     }
   }
