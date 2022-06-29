@@ -67,7 +67,11 @@ LoopStructure::LoopStructure (
    * Hence, we assign an arbitrary ID.
    */
   this->ID = LoopStructure::globalID++;
-
+  // Set IDs before planner, using a new pass inside the noelle-parallelizer
+  // in the pass if the metadata (noelle.looporder ... follow the structure) exists, abort, otherwise create it
+  // here check if we have metadata for id, if there isn't set a flag to false. Check the flag in getID()
+  // TODO: remove ID from LDI, only LS should have a loop ID.
+  
   return ;
 }
 
