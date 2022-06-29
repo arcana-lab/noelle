@@ -184,7 +184,6 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
     abort();
   }
 
-  auto int8 = IntegerType::get(builder.getContext(), 8);
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
   auto fetchCastedEnvPtr = [&](Value *arr, int envIndex, Type *ptrType) -> Value * {
