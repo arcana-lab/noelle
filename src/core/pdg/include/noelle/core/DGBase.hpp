@@ -258,9 +258,18 @@ namespace llvm::noelle {
   {
    public:
      DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
-         : from(src), to(dst), memory(false), must(false),
-           dataDepType(DG_DATA_NONE), isControl(false), isLoopCarried(false),
-           isRemovable(false), remeds(nullptr) {}
+         :  from(src)
+          , to(dst)
+          , subEdges{}
+          , memory{false}
+          , must{false}
+          , isControl(false)
+          , isLoopCarried(false)
+          , isRemovable(false)
+          , dataDepType{DG_DATA_NONE}
+          , remeds(nullptr) {
+        return ;
+      }
      DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
      typedef typename std::unordered_set<DGEdge<SubT> *>::iterator edges_iterator;

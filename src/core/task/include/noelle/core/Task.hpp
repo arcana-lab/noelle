@@ -26,7 +26,6 @@ namespace llvm::noelle {
       /*
        * IDs
        */
-
       uint32_t getID (void) const ;
 
       Value * getTaskInstanceID (void) const ;
@@ -60,7 +59,6 @@ namespace llvm::noelle {
       /*
        * Instructions
        */
-
       bool isAnOriginalInstruction (Instruction *i) const ;
 
       bool isAClonedInstruction (Instruction *i) const ;
@@ -81,7 +79,6 @@ namespace llvm::noelle {
       /*
        * Basic blocks
        */
-
       bool isAnOriginalBasicBlock (BasicBlock *o) const ;
 
       BasicBlock * getCloneOfOriginalBasicBlock (BasicBlock *o) const ;
@@ -112,7 +109,6 @@ namespace llvm::noelle {
       /*
        * Body
        */
-
       Function * getTaskBody (void) const ;
 
 
@@ -123,6 +119,7 @@ namespace llvm::noelle {
 
       virtual void extractFuncArgs (void) = 0;
 
+      virtual ~Task ();
 
     protected:
       uint32_t ID;

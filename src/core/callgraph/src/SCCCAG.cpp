@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Simone Campanoni
+ * Copyright 2019 - 2022 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -12,26 +12,6 @@
 #include "noelle/core/SCCCAG.hpp"
 
 namespace llvm::noelle {
-
-  SCCCAGNode_SCC::SCCCAGNode_SCC (std::unordered_set<CallGraphNode *> const &nodes)
-    : nodes{nodes}
-    {
-    return ;
-  }
-          
-  bool SCCCAGNode_SCC::isAnSCC (void) const {
-    return true;
-  }
-
-  SCCCAGNode_Function::SCCCAGNode_Function (Function & F) 
-    : func{F}
-    {
-    return ;
-  }
-
-  bool SCCCAGNode_Function::isAnSCC (void) const {
-    return false;
-  }
 
   SCCCAG::SCCCAG (CallGraph *cg){
 
@@ -102,7 +82,7 @@ namespace llvm::noelle {
          * Possible nodes are an SCC or a single Function.
          */
         if (!thisIsAnSCC){
-          auto sccNode = new SCCCAGNode_Function(*singleCGNode->getFunction());
+          auto sccNode = new SCCCAGNode_Function(singleCGNode);
           this->nodes[singleCGNode] = sccNode;
           continue;
         }

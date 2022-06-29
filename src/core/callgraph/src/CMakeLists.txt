@@ -5,6 +5,9 @@ set(Srcs
   CallGraphEdge.cpp
   CallGraphTraits.cpp
   SCCCAG.cpp
+  SCCCAGNode.cpp
+  SCCCAGNode_SCC.cpp
+  SCCCAGNode_Function.cpp
 )
 
 # Compilation flags
