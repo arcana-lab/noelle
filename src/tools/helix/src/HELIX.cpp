@@ -543,4 +543,8 @@ Function * HELIX::getTaskFunction (void) const {
   return tasks[0]->getTaskBody();
 }
 
+HELIX::~HELIX () {
+  return ;
+}
+
 }

@@ -58,7 +58,7 @@ namespace llvm::noelle {
       /*
        * Destructor.
        */
-      ~ParallelizationTechnique ();
+      virtual ~ParallelizationTechnique ();
 
     protected:
 
