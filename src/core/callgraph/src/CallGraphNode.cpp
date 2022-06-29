@@ -95,6 +95,10 @@ namespace llvm::noelle {
     return ;
   }
 
+  CallGraphFunctionNode::~CallGraphFunctionNode(){
+    return;
+  }
+
   CallGraphInstructionNode::CallGraphInstructionNode (Instruction *i)
     :i{i}
     {
@@ -108,6 +112,14 @@ namespace llvm::noelle {
   void CallGraphInstructionNode::print (void) {
     errs() << *this->i << "\n";
 
+    return ;
+  }
+      
+  CallGraphInstructionNode::~CallGraphInstructionNode(){
+    return ;
+  }
+
+  CallGraphNode::~CallGraphNode (){
     return ;
   }
 
