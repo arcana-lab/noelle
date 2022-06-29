@@ -93,4 +93,16 @@ namespace llvm::noelle{
     return ;
   }
 
+  CallGraphEdge::~CallGraphEdge (){
+    return ;
+  }
+
+  CallGraphInstructionFunctionEdge::~CallGraphInstructionFunctionEdge (){
+    return ;
+  }
+
+  CallGraphFunctionFunctionEdge::~CallGraphFunctionFunctionEdge (){
+    return ;
+  }
+
 }

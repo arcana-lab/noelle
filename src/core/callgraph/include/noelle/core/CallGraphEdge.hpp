@@ -31,6 +31,8 @@ namespace llvm::noelle {
 
       virtual void print (void) = 0;
 
+      virtual ~CallGraphEdge ();
+
     protected:
       bool isMust;
       CallGraphFunctionNode *callee;
@@ -43,6 +45,8 @@ namespace llvm::noelle {
       CallGraphInstructionNode * getCaller (void) const ;
 
       void print (void) override ;
+
+      virtual ~CallGraphInstructionFunctionEdge ();
 
     private:
       CallGraphInstructionNode *caller;
@@ -59,6 +63,8 @@ namespace llvm::noelle {
       void addSubEdge (CallGraphInstructionFunctionEdge *subEdge);
 
       void print (void) override ;
+
+      virtual ~CallGraphFunctionFunctionEdge () ;
 
     private:
       CallGraphFunctionNode *caller;
