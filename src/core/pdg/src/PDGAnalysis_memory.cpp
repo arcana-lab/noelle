@@ -1,12 +1,23 @@
 /*
  * Copyright 2016 - 2020  Angelo Matni, Yian Su, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
@@ -17,7 +28,11 @@
 
 namespace llvm::noelle {
 
-void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, StoreInst *store) {
+void PDGAnalysis::iterateInstForStore(PDG *pdg,
+                                      Function &F,
+                                      AAResults &AA,
+                                      DataFlowResult *dfr,
+                                      StoreInst *store) {
 
   for (auto I : dfr->OUT(store)) {
 
@@ -26,35 +41,49 @@ void PDGAnalysis::iterateInstForStore (PDG *pdg, Function &F, AAResults &AA, Dat
      */
     if (auto otherStore = dyn_cast<StoreInst>(I)) {
       if (store != otherStore) {
-        this->addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg, F, AA, store, otherStore, DG_DATA_WAW);
+        this->addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg,
+                                                           F,
+                                                           AA,
+                                                           store,
+                                                           otherStore,
+                                                           DG_DATA_WAW);
       }
-      continue ;
+      continue;
     }
 
-    /* 
+    /*
      * Check loads.
      */
     if (auto load = dyn_cast<LoadInst>(I)) {
-      this->addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg, F, AA, store, load, DG_DATA_RAW);
-      continue ;
+      this->addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg,
+                                                        F,
+                                                        AA,
+                                                        store,
+                                                        load,
+                                                        DG_DATA_RAW);
+      continue;
     }
 
     /*
      * Check calls.
      */
     if (auto call = dyn_cast<CallBase>(I)) {
-      if (!Utils::isActualCode(call)){
-        continue ;
+      if (!Utils::isActualCode(call)) {
+        continue;
       }
       this->addEdgeFromFunctionModRef(pdg, F, AA, call, store, false);
-      continue ;
+      continue;
     }
   }
 
-  return ;
+  return;
 }
 
-void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, DataFlowResult *dfr, LoadInst *load) {
+void PDGAnalysis::iterateInstForLoad(PDG *pdg,
+                                     Function &F,
+                                     AAResults &AA,
+                                     DataFlowResult *dfr,
+                                     LoadInst *load) {
 
   for (auto I : dfr->OUT(load)) {
 
@@ -62,31 +91,36 @@ void PDGAnalysis::iterateInstForLoad (PDG *pdg, Function &F, AAResults &AA, Data
      * Check stores.
      */
     if (auto store = dyn_cast<StoreInst>(I)) {
-      addEdgeFromMemoryAlias<LoadInst, StoreInst>(pdg, F, AA, load, store, DG_DATA_WAR);
-      continue ;
+      addEdgeFromMemoryAlias<LoadInst, StoreInst>(pdg,
+                                                  F,
+                                                  AA,
+                                                  load,
+                                                  store,
+                                                  DG_DATA_WAR);
+      continue;
     }
 
     /*
      * Check calls.
      */
     if (auto call = dyn_cast<CallBase>(I)) {
-      if (!Utils::isActualCode(call)){
-        continue ;
+      if (!Utils::isActualCode(call)) {
+        continue;
       }
       addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
-      continue ;
+      continue;
     }
   }
 
-  return ;
+  return;
 }
 
-bool PDGAnalysis::hasNoMemoryOperations (CallBase *call) {
+bool PDGAnalysis::hasNoMemoryOperations(CallBase *call) {
 
   /*
    * Check if SVF is enabled.
    */
-  if (this->disableSVF){
+  if (this->disableSVF) {
     return false;
   }
 
@@ -94,12 +128,10 @@ bool PDGAnalysis::hasNoMemoryOperations (CallBase *call) {
    * Check if the callee is a library function.
    */
   auto calleeFunction = call->getCalledFunction();
-  if (calleeFunction != nullptr){
-    if (  true
-          && calleeFunction->empty()
-          && this->isTheLibraryFunctionPure(calleeFunction)
-       ){
-      return true ;
+  if (calleeFunction != nullptr) {
+    if (true && calleeFunction->empty()
+        && this->isTheLibraryFunctionPure(calleeFunction)) {
+      return true;
     }
   }
 
@@ -114,15 +146,21 @@ bool PDGAnalysis::hasNoMemoryOperations (CallBase *call) {
   return false;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallBase *call, StoreInst *store, bool addEdgeFromCall) {
+void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
+                                            Function &F,
+                                            AAResults &AA,
+                                            CallBase *call,
+                                            StoreInst *store,
+                                            bool addEdgeFromCall) {
   BitVector bv(3, false);
   auto makeRefEdge = false, makeModEdge = false;
 
   /*
-   * We cannot have memory dependences from a call to a deallocator (e.g., free).
+   * We cannot have memory dependences from a call to a deallocator (e.g.,
+   * free).
    */
-  if (Utils::isDeallocator(call)){
-    return ;
+  if (Utils::isDeallocator(call)) {
+    return;
   }
 
   /*
@@ -147,7 +185,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    *
    * Check if SVF is enabled.
    */
-  if (this->disableSVF){
+  if (this->disableSVF) {
 
     /*
      * SVF is disabled.
@@ -159,16 +197,14 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
      * SVF is enabled; let's use it.
      */
     auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
-    if (  true
-          && weCanRelyOnSVF 
-          && hasNoMemoryOperations(call)
-      ) {
+    if (true && weCanRelyOnSVF && hasNoMemoryOperations(call)) {
       return;
     }
 
     /*
      * Check if it is safe to use SVF.
-     * This is due to a bug in SVF that doesn't model I/O library calls correctly.
+     * This is due to a bug in SVF that doesn't model I/O library calls
+     * correctly.
      */
     if (this->isSafeToQueryModRefOfSVF(call, bv)) {
       auto const &loc = MemoryLocation::get(store);
@@ -192,8 +228,8 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    * NoModRef when one says Mod and another says Ref
    */
   if (bv[0] && bv[1]) {
-    return; 
-  } 
+    return;
+  }
   if (bv[0]) {
     makeRefEdge = true;
   } else if (bv[1]) {
@@ -212,9 +248,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
     } else {
 
       /*
-       * We cannot have memory dependences from a memory instruction to allocators as they always return new memory.
+       * We cannot have memory dependences from a memory instruction to
+       * allocators as they always return new memory.
        */
-      if (!Utils::isAllocator(call)){
+      if (!Utils::isAllocator(call)) {
         pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_RAW);
       }
     }
@@ -226,25 +263,32 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
     } else {
 
       /*
-       * We cannot have memory dependences from a memory instruction to allocators as they always return new memory.
+       * We cannot have memory dependences from a memory instruction to
+       * allocators as they always return new memory.
        */
-      if (!Utils::isAllocator(call)){
+      if (!Utils::isAllocator(call)) {
         pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_WAW);
       }
     }
   }
 
-  return ;
+  return;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallBase *call, LoadInst *load, bool addEdgeFromCall) {
+void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
+                                            Function &F,
+                                            AAResults &AA,
+                                            CallBase *call,
+                                            LoadInst *load,
+                                            bool addEdgeFromCall) {
   BitVector bv(3, false);
 
   /*
-   * We cannot have memory dependences from a call to a deallocator (e.g., free).
+   * We cannot have memory dependences from a call to a deallocator (e.g.,
+   * free).
    */
-  if (Utils::isDeallocator(call)){
-    return ;
+  if (Utils::isDeallocator(call)) {
+    return;
   }
 
   /*
@@ -264,7 +308,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    *
    * Check if SVF is enabled.
    */
-  if (this->disableSVF){
+  if (this->disableSVF) {
 
     /*
      * SVF is disabled.
@@ -276,19 +320,18 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
      * SVF is enabled; let's use it.
      */
     auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
-    if (  true
-          && weCanRelyOnSVF 
-          && hasNoMemoryOperations(call)
-      ) {
+    if (true && weCanRelyOnSVF && hasNoMemoryOperations(call)) {
       return;
     }
 
     /*
      * Check if it is safe to use SVF.
-     * This is due to a bug in SVF that doesn't model I/O library calls correctly.
+     * This is due to a bug in SVF that doesn't model I/O library calls
+     * correctly.
      */
     if (isSafeToQueryModRefOfSVF(call, bv)) {
-      switch (NoelleSVFIntegration::getModRefInfo(call, MemoryLocation::get(load))) {
+      switch (NoelleSVFIntegration::getModRefInfo(call,
+                                                  MemoryLocation::get(load))) {
         case ModRefInfo::NoModRef:
         case ModRefInfo::Ref:
           return;
@@ -309,32 +352,34 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
   } else {
 
     /*
-     * We cannot have memory dependences from a memory instruction to allocators as they always return new memory.
+     * We cannot have memory dependences from a memory instruction to allocators
+     * as they always return new memory.
      */
-    if (!Utils::isAllocator(call)){
+    if (!Utils::isAllocator(call)) {
       pdg->addEdge(load, call)->setMemMustType(true, false, DG_DATA_WAR);
     }
   }
 
-  return ;
+  return;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &AA, CallBase *call, CallBase *otherCall) {
+void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
+                                            Function &F,
+                                            AAResults &AA,
+                                            CallBase *call,
+                                            CallBase *otherCall) {
   BitVector bv(3, false);
   BitVector rbv(3, false);
   auto makeRefEdge = false, makeModEdge = false, makeModRefEdge = false;
-  auto reverseRefEdge = false, reverseModEdge = false, reverseModRefEdge = false;
+  auto reverseRefEdge = false, reverseModEdge = false,
+       reverseModRefEdge = false;
 
   /*
    * There is no dependence between allocators
    */
-  if (  true
-        && Utils::isAllocator(call)
-        && Utils::isAllocator(otherCall)
-        && (!Utils::isReallocator(call))
-        && (!Utils::isReallocator(otherCall))
-     ){
-    return ;
+  if (true && Utils::isAllocator(call) && Utils::isAllocator(otherCall)
+      && (!Utils::isReallocator(call)) && (!Utils::isReallocator(otherCall))) {
+    return;
   }
 
   /*
@@ -342,34 +387,33 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    */
   CallBase *allocatorCall = nullptr;
   CallBase *deallocatorCall = nullptr;
-  if (Utils::isAllocator(call)){
+  if (Utils::isAllocator(call)) {
     allocatorCall = call;
   }
-  if (Utils::isAllocator(otherCall)){
+  if (Utils::isAllocator(otherCall)) {
     allocatorCall = otherCall;
   }
-  if (Utils::isDeallocator(call)){
+  if (Utils::isDeallocator(call)) {
     deallocatorCall = call;
   }
-  if (Utils::isDeallocator(otherCall)){
+  if (Utils::isDeallocator(otherCall)) {
     deallocatorCall = otherCall;
   }
-  if (  true
-        && (allocatorCall != nullptr)
-        && (deallocatorCall != nullptr)
-     ){
+  if (true && (allocatorCall != nullptr) && (deallocatorCall != nullptr)) {
 
     /*
      * The call instructions are one allocator and one deallocator.
-     * In this case, we only need to check if the pointer accessed by the deallocator can alias the pointer returned by the allocator.
+     * In this case, we only need to check if the pointer accessed by the
+     * deallocator can alias the pointer returned by the allocator.
      */
     auto objectAllocated = Utils::getAllocatedObject(allocatorCall);
     assert(objectAllocated != nullptr);
     auto objectFreed = Utils::getFreedObject(deallocatorCall);
     assert(objectFreed != nullptr);
-    auto doesAlias = this->doTheyAlias(pdg, F, AA, objectAllocated, objectFreed);
-    if (doesAlias == NoAlias){
-      return ;
+    auto doesAlias =
+        this->doTheyAlias(pdg, F, AA, objectAllocated, objectFreed);
+    if (doesAlias == NoAlias) {
+      return;
     }
   }
 
@@ -391,7 +435,8 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
     case ModRefInfo::Mod:
 
       /*
-       * @call may write a memory location that can be read or written by @otherCall
+       * @call may write a memory location that can be read or written by
+       * @otherCall
        */
       bv[1] = true;
 
@@ -413,7 +458,8 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
     case ModRefInfo::ModRef:
 
       /*
-       * @call may read or write a memory location that can be written by @otherCall
+       * @call may read or write a memory location that can be written by
+       * @otherCall
        */
       bv[2] = true;
       break;
@@ -424,7 +470,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
    *
    * Check if SVF is enabled.
    */
-  if (this->disableSVF){
+  if (this->disableSVF) {
 
     /*
      * SVF is disabled.
@@ -436,28 +482,21 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
      * SVF is enabled; let's use it.
      */
     auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
-    if (  true
-          && weCanRelyOnSVF 
-          && hasNoMemoryOperations(call)
-      ) {
+    if (true && weCanRelyOnSVF && hasNoMemoryOperations(call)) {
       return;
     }
     weCanRelyOnSVF = cannotReachUnhandledExternalFunction(otherCall);
-    if (  true
-          && weCanRelyOnSVF 
-          && hasNoMemoryOperations(otherCall)
-      ) {
+    if (true && weCanRelyOnSVF && hasNoMemoryOperations(otherCall)) {
       return;
     }
 
     /*
      * Check if it is safe to use SVF.
-     * This is due to a bug in SVF that doesn't model I/O library calls correctly.
+     * This is due to a bug in SVF that doesn't model I/O library calls
+     * correctly.
      */
-    if (  true
-          && isSafeToQueryModRefOfSVF(call, bv) 
-          && isSafeToQueryModRefOfSVF(otherCall, bv)
-      ) {
+    if (true && isSafeToQueryModRefOfSVF(call, bv)
+        && isSafeToQueryModRefOfSVF(otherCall, bv)) {
       switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
         case ModRefInfo::NoModRef:
           return;
@@ -498,9 +537,9 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
     makeRefEdge = true;
 
   } else if (bv[1]) {
-    makeModEdge = true ;
+    makeModEdge = true;
     if (rbv[0] && rbv[1]) {
-      return ;
+      return;
     }
 
     if (rbv[0]) {
@@ -528,26 +567,27 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
     pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
 
     /*
-     * Check the unique case that @call and @otherCall are the same. 
+     * Check the unique case that @call and @otherCall are the same.
      * In this case, there is also a RAW dependence between them.
      */
-    if (call == otherCall){
+    if (call == otherCall) {
       pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_RAW);
     }
 
   } else if (makeModEdge) {
 
     /*
-     * Dependency of a Mod-result between call and otherCall depends on the reverse getModRefInfo result
+     * Dependency of a Mod-result between call and otherCall depends on the
+     * reverse getModRefInfo result
      */
     if (reverseRefEdge) {
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
 
       /*
-       * Check the unique case that @call and @otherCall are the same. 
+       * Check the unique case that @call and @otherCall are the same.
        * In this case, there is also a WAR dependence between them.
        */
-      if (call == otherCall){
+      if (call == otherCall) {
         pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_WAR);
       }
 
@@ -559,10 +599,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
 
       /*
-       * Check the unique case that @call and @otherCall are the same. 
+       * Check the unique case that @call and @otherCall are the same.
        * In this case, there is also a WAR dependence between them.
        */
-      if (call == otherCall){
+      if (call == otherCall) {
         pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_WAR);
       }
     }
@@ -572,15 +612,15 @@ void PDGAnalysis::addEdgeFromFunctionModRef (PDG *pdg, Function &F, AAResults &A
     pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
 
     /*
-     * Check the unique case that @call and @otherCall are the same. 
+     * Check the unique case that @call and @otherCall are the same.
      * In this case, there is also a RAW dependence between them.
      */
-    if (call == otherCall){
+    if (call == otherCall) {
       pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_RAW);
     }
   }
 
-  return ;
+  return;
 }
 
 bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv) {
@@ -588,7 +628,7 @@ bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv) {
   /*
    * Check if SVF is enabled.
    */
-  if (this->disableSVF){
+  if (this->disableSVF) {
 
     /*
      * SVF is disabled.
@@ -599,7 +639,8 @@ bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv) {
   if (NoelleSVFIntegration::hasIndCSCallees(call)) {
     auto callees = NoelleSVFIntegration::getIndCSCallees(call);
     for (auto &callee : callees) {
-      if (this->isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
+      if (this->isUnhandledExternalFunction(callee)
+          || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
         return false;
       }
     }
@@ -611,7 +652,8 @@ bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv) {
       return false;
     }
 
-    if (this->isUnhandledExternalFunction(callee) || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
+    if (this->isUnhandledExternalFunction(callee)
+        || isInternalFunctionThatReachUnhandledExternalFunction(callee)) {
       return false;
     }
   }
@@ -619,8 +661,14 @@ bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv) {
   return true;
 }
 
-template<class InstI, class InstJ>
-void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, InstI *instI, InstJ *instJ, DataDependenceType dataDependenceType) {
+template <class InstI, class InstJ>
+void PDGAnalysis::addEdgeFromMemoryAlias(
+    PDG *pdg,
+    Function &F,
+    AAResults &AA,
+    InstI *instI,
+    InstJ *instJ,
+    DataDependenceType dataDependenceType) {
   auto must = false;
 
   /*
@@ -628,13 +676,14 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
    */
   switch (AA.alias(MemoryLocation::get(instI), MemoryLocation::get(instJ))) {
     case NoAlias:
-      return ;
+      return;
     case PartialAlias:
     case MayAlias:
       break;
     case MustAlias:
-      pdg->addEdge(instI, instJ)->setMemMustType(true, true, dataDependenceType);
-      return ;
+      pdg->addEdge(instI, instJ)
+          ->setMemMustType(true, true, dataDependenceType);
+      return;
   }
 
   /*
@@ -642,7 +691,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
    *
    * Check if SVF is enabled.
    */
-  if (this->disableSVF){
+  if (this->disableSVF) {
 
     /*
      * SVF is disabled.
@@ -653,7 +702,8 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
     /*
      * SVF is enabled, so let's use it.
      */
-    switch (NoelleSVFIntegration::alias(MemoryLocation::get(instI), MemoryLocation::get(instJ))) {
+    switch (NoelleSVFIntegration::alias(MemoryLocation::get(instI),
+                                        MemoryLocation::get(instJ))) {
       case NoAlias:
         return;
       case PartialAlias:
@@ -670,10 +720,14 @@ void PDGAnalysis::addEdgeFromMemoryAlias (PDG *pdg, Function &F, AAResults &AA, 
    */
   pdg->addEdge(instI, instJ)->setMemMustType(true, must, dataDependenceType);
 
-  return ;
+  return;
 }
 
-AliasResult PDGAnalysis::doTheyAlias (PDG *pdg, Function &F, AAResults &AA, Value *instI, Value *instJ){
+AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
+                                     Function &F,
+                                     AAResults &AA,
+                                     Value *instI,
+                                     Value *instJ) {
   auto must = false;
 
   /*
@@ -694,7 +748,7 @@ AliasResult PDGAnalysis::doTheyAlias (PDG *pdg, Function &F, AAResults &AA, Valu
    *
    * Check if SVF is enabled.
    */
-  if (this->disableSVF){
+  if (this->disableSVF) {
 
     /*
      * SVF is disabled.
@@ -719,4 +773,4 @@ AliasResult PDGAnalysis::doTheyAlias (PDG *pdg, Function &F, AAResults &AA, Valu
   return MayAlias;
 }
 
-}
+} // namespace llvm::noelle

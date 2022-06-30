@@ -1,12 +1,23 @@
 /*
  * Copyright 2016 - 2021  Yian Su, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SystemHeaders.hpp"
@@ -20,13 +31,15 @@ bool PDGStats::runOnModule(Module &M) {
   /*
    * Fetch the NOELLE framework.
    */
-  auto& noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<Noelle>();
 
   /*
    * Compute the loops for all functions.
    */
-  std::unordered_map<Function *, StayConnectedNestedLoopForest *> programLoopForests;
-  std::unordered_map<Function *, std::vector<LoopDependenceInfo *> *> programLoops;
+  std::unordered_map<Function *, StayConnectedNestedLoopForest *>
+      programLoopForests;
+  std::unordered_map<Function *, std::vector<LoopDependenceInfo *> *>
+      programLoops;
   std::unordered_map<LoopStructure *, LoopDependenceInfo *> lsToLDI;
   for (auto &F : M) {
 
@@ -34,16 +47,17 @@ bool PDGStats::runOnModule(Module &M) {
      * Fetch all loops within the current function.
      */
     programLoops[&F] = noelle.getLoops(&F);
-    if (programLoops[&F] == nullptr){
-      continue ;
+    if (programLoops[&F] == nullptr) {
+      continue;
     }
 
     /*
      * Create the map from loop structure to LDI.
      */
-    std::unordered_map<Function *, std::vector<LoopStructure *>> programLoopStructures;
+    std::unordered_map<Function *, std::vector<LoopStructure *>>
+        programLoopStructures;
     auto &loopStructures = programLoopStructures[&F];
-    for (auto LDI : *programLoops[&F]){
+    for (auto LDI : *programLoops[&F]) {
       auto ls = LDI->getLoopStructure();
       lsToLDI[ls] = LDI;
       loopStructures.push_back(ls);
@@ -52,15 +66,16 @@ bool PDGStats::runOnModule(Module &M) {
     /*
      * Organize the loops in a forest.
      */
-    programLoopForests[&F] = noelle.organizeLoopsInTheirNestingForest(loopStructures);
+    programLoopForests[&F] =
+        noelle.organizeLoopsInTheirNestingForest(loopStructures);
   }
 
   /*
    * Compute the memory edges in the PDG.
    */
   auto PDG = noelle.getProgramDependenceGraph();
-  for (auto edge : PDG->getEdges()){
-        
+  for (auto edge : PDG->getEdges()) {
+
     /*
      * Handle dependence.
      */
@@ -76,9 +91,11 @@ bool PDGStats::runOnModule(Module &M) {
     this->collectStatsForLoopEdges(noelle, programLoopForests, lsToLDI, F);
 
     if (this->dumpLoopDG) {
-      this->printRefinedLoopGraphsForFunction(noelle, programLoopForests, lsToLDI, F);
+      this->printRefinedLoopGraphsForFunction(noelle,
+                                              programLoopForests,
+                                              lsToLDI,
+                                              F);
     }
-      
   }
 
   /*
@@ -90,7 +107,7 @@ bool PDGStats::runOnModule(Module &M) {
 }
 
 void PDGStats::collectStatsForNodes(Function &F) {
-  for (auto &arg : F.args()){
+  for (auto &arg : F.args()) {
     this->numberOfNodes++;
   }
   for (auto &B : F) {
@@ -100,7 +117,10 @@ void PDGStats::collectStatsForNodes(Function &F) {
   return;
 }
 
-void PDGStats::collectStatsForPotentialEdges (std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, Function &F) {
+void PDGStats::collectStatsForPotentialEdges(
+    std::unordered_map<Function *, StayConnectedNestedLoopForest *>
+        &programLoops,
+    Function &F) {
 
   /*
    * Compute the total number of instructions that could access memory.
@@ -108,51 +128,49 @@ void PDGStats::collectStatsForPotentialEdges (std::unordered_map<Function *, Sta
   uint64_t totLoads = 0;
   uint64_t totStores = 0;
   uint64_t totCalls = 0;
-  for (auto& inst : instructions(F)){
-    if (isa<LoadInst>(&inst)){
+  for (auto &inst : instructions(F)) {
+    if (isa<LoadInst>(&inst)) {
       totLoads++;
-      continue ;
+      continue;
     }
-    if (isa<StoreInst>(&inst)){
+    if (isa<StoreInst>(&inst)) {
       totStores++;
-      continue ;
+      continue;
     }
-    if (  false
-          || isa<CallInst>(&inst)
-          || isa<InvokeInst>(&inst)
-      ){
+    if (false || isa<CallInst>(&inst) || isa<InvokeInst>(&inst)) {
       totCalls++;
-      continue ;
+      continue;
     }
   }
-  this->numberOfPotentialMemoryDependences += this->computePotentialEdges(totLoads, totStores, totCalls);
+  this->numberOfPotentialMemoryDependences +=
+      this->computePotentialEdges(totLoads, totStores, totCalls);
 
   /*
-   * Compute the total number of memory dependences between instructions within the context of loops.
+   * Compute the total number of memory dependences between instructions within
+   * the context of loops.
    */
   totLoads = 0;
   totStores = 0;
   totCalls = 0;
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
-    for (auto loopTree : loopForest->getTrees()){
-      auto visitor = [&totLoads, &totStores, &totCalls](StayConnectedNestedLoopForestNode *n, uint32_t level) -> bool {
+    for (auto loopTree : loopForest->getTrees()) {
+      auto visitor = [&totLoads, &totStores, &totCalls](
+                         StayConnectedNestedLoopForestNode *n,
+                         uint32_t level) -> bool {
         auto currentLoop = n->getLoop();
-        for (auto inst : currentLoop->getInstructions()){
-          if (isa<LoadInst>(inst)){
+        for (auto inst : currentLoop->getInstructions()) {
+          if (isa<LoadInst>(inst)) {
             totLoads++;
-            continue ;
+            continue;
           }
-          if (isa<StoreInst>(inst)){
+          if (isa<StoreInst>(inst)) {
             totStores++;
-            continue ;
+            continue;
           }
-          if (  false
-                || isa<CallInst>(inst)
-                || isa<InvokeInst>(inst)
-            ){
+          if (false || isa<CallInst>(inst) || isa<InvokeInst>(inst)) {
             totCalls++;
-            continue ;
+            continue;
           }
         }
         return false;
@@ -160,26 +178,28 @@ void PDGStats::collectStatsForPotentialEdges (std::unordered_map<Function *, Sta
       loopTree->visitPreOrder(visitor);
     }
   }
-  this->numberOfPotentialMemoryDependences += this->computePotentialEdges(totLoads, totStores, totCalls);
+  this->numberOfPotentialMemoryDependences +=
+      this->computePotentialEdges(totLoads, totStores, totCalls);
 
-  return ;
+  return;
 }
 
 void PDGStats::printRefinedLoopGraphsForFunction(
-  Noelle &noelle, 
-  std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, 
-  std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
-  Function &F
-  ){
+    Noelle &noelle,
+    std::unordered_map<Function *, StayConnectedNestedLoopForest *>
+        &programLoops,
+    std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+    Function &F) {
   auto loopCount = 0;
   /*
    * Check every loop of the program.
    */
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
-    for (auto loopTree : loopForest->getTrees()){
-      auto visitor = [this, &lsToLDI, &loopCount, &F](StayConnectedNestedLoopForestNode *n, uint32_t level) -> bool {
-
+    for (auto loopTree : loopForest->getTrees()) {
+      auto visitor = [this, &lsToLDI, &loopCount, &F](
+                         StayConnectedNestedLoopForestNode *n,
+                         uint32_t level) -> bool {
         /*
          * Fetch the loop.
          */
@@ -194,7 +214,8 @@ void PDGStats::printRefinedLoopGraphsForFunction(
 
         std::string filename;
         raw_string_ostream ros(filename);
-        ros << "pdg-function-" << F.getName() << "-loop" << loopCount << "-refined.dot";
+        ros << "pdg-function-" << F.getName() << "-loop" << loopCount
+            << "-refined.dot";
         DGPrinter::writeClusteredGraph<PDG, Value>(ros.str(), loopDG);
 
         loopCount++;
@@ -208,22 +229,21 @@ void PDGStats::printRefinedLoopGraphsForFunction(
   return;
 }
 
-
-void PDGStats::collectStatsForLoopEdges (
-  Noelle &noelle, 
-  std::unordered_map<Function *, StayConnectedNestedLoopForest *> &programLoops, 
-  std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
-  Function &F
-  ){
+void PDGStats::collectStatsForLoopEdges(
+    Noelle &noelle,
+    std::unordered_map<Function *, StayConnectedNestedLoopForest *>
+        &programLoops,
+    std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+    Function &F) {
 
   /*
    * Check every loop of the program.
    */
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
-    for (auto loopTree : loopForest->getTrees()){
-      auto visitor = [this, &lsToLDI](StayConnectedNestedLoopForestNode *n, uint32_t level) -> bool {
-
+    for (auto loopTree : loopForest->getTrees()) {
+      auto visitor = [this, &lsToLDI](StayConnectedNestedLoopForestNode *n,
+                                      uint32_t level) -> bool {
         /*
          * Fetch the loop.
          */
@@ -239,7 +259,7 @@ void PDGStats::collectStatsForLoopEdges (
         /*
          * Iterate over the dependences.
          */
-        for (auto edge : loopDG->getEdges()){
+        for (auto edge : loopDG->getEdges()) {
           this->analyzeDependence(edge);
         }
 
@@ -252,7 +272,8 @@ void PDGStats::collectStatsForLoopEdges (
   return;
 }
 
-bool PDGStats::edgeIsDependenceOf(MDNode *edgeM, const EDGE_ATTRIBUTE edgeAttribute) {
+bool PDGStats::edgeIsDependenceOf(MDNode *edgeM,
+                                  const EDGE_ATTRIBUTE edgeAttribute) {
   if (MDNode *m = dyn_cast<MDNode>(edgeM->getOperand(edgeAttribute))) {
     if (MDString *s = dyn_cast<MDString>(m->getOperand(0))) {
       return s->getString() == "true" ? true : false;
@@ -264,35 +285,49 @@ bool PDGStats::edgeIsDependenceOf(MDNode *edgeM, const EDGE_ATTRIBUTE edgeAttrib
 
 void PDGStats::printStats() {
   errs() << "Number of Nodes: " << this->numberOfNodes << "\n";
-  errs() << "Number of Edges (a.k.a. dependences): " << this->numberOfEdges << "\n";
-  errs() << " Number of control dependences: " << this->numberOfControlDependence << "\n";
-  errs() << " Number of data dependences: " << this->numberOfEdges - this->numberOfControlDependence << "\n";
-  errs() << "   Number of variable dependences: " << this->numberOfVariableDependence << "\n";
-  errs() << "   Number of memory dependences: " << this->numberOfMemoryDependence << "\n";
-  errs() << "     Number of memory must dependences: " << this->numberOfMemoryMustDependence << "\n";
-  errs() << "     Number of memory may dependences: " << this->numberOfMemoryDependence - this->numberOfMemoryMustDependence << "\n";
-  errs() << "     Number of potential memory dependences: " << this->numberOfPotentialMemoryDependences << "\n";
+  errs() << "Number of Edges (a.k.a. dependences): " << this->numberOfEdges
+         << "\n";
+  errs()
+      << " Number of control dependences: " << this->numberOfControlDependence
+      << "\n";
+  errs() << " Number of data dependences: "
+         << this->numberOfEdges - this->numberOfControlDependence << "\n";
+  errs() << "   Number of variable dependences: "
+         << this->numberOfVariableDependence << "\n";
+  errs()
+      << "   Number of memory dependences: " << this->numberOfMemoryDependence
+      << "\n";
+  errs() << "     Number of memory must dependences: "
+         << this->numberOfMemoryMustDependence << "\n";
+  errs() << "     Number of memory may dependences: "
+         << this->numberOfMemoryDependence - this->numberOfMemoryMustDependence
+         << "\n";
+  errs() << "     Number of potential memory dependences: "
+         << this->numberOfPotentialMemoryDependences << "\n";
 
   return;
 }
 
-PDGStats::PDGStats()
-  : ModulePass{ID} {
+PDGStats::PDGStats() : ModulePass{ ID } {
   return;
 }
-      
-uint64_t PDGStats::computePotentialEdges (uint64_t totLoads, uint64_t totStores, uint64_t totCalls){
+
+uint64_t PDGStats::computePotentialEdges(uint64_t totLoads,
+                                         uint64_t totStores,
+                                         uint64_t totCalls) {
   uint64_t tot = 0;
 
   /*
-   * Add the total number of dependences that could exist between memory instructions.
+   * Add the total number of dependences that could exist between memory
+   * instructions.
    */
   tot += (totStores * totStores);
   tot += (totLoads * totStores * 2);
 
   /*
-   * Add the total number of dependences that could exist between the call instructions.
-   * Notice that two call instructions could have RAW, WAW, and WAR. This is why each pair could have 3 dependences.
+   * Add the total number of dependences that could exist between the call
+   * instructions. Notice that two call instructions could have RAW, WAW, and
+   * WAR. This is why each pair could have 3 dependences.
    */
   tot += (totCalls * totCalls * 3);
 
@@ -305,37 +340,37 @@ uint64_t PDGStats::computePotentialEdges (uint64_t totLoads, uint64_t totStores,
   return tot;
 }
 
-void PDGStats::analyzeDependence (DGEdge<Value> *edge){
+void PDGStats::analyzeDependence(DGEdge<Value> *edge) {
   this->numberOfEdges++;
 
   /*
    * Handle memory dependences.
    */
-  if (edge->isMemoryDependence()){
+  if (edge->isMemoryDependence()) {
     this->numberOfMemoryDependence++;
-    if (edge->isMustDependence()){
+    if (edge->isMustDependence()) {
       this->numberOfMemoryMustDependence++;
     }
-    return ;
+    return;
   }
 
   /*
    * Handle variable dependences.
    */
-  if (edge->isDataDependence()){
+  if (edge->isDataDependence()) {
     this->numberOfVariableDependence++;
-    return ;
+    return;
   }
 
   /*
    * Handle control dependences.
    */
-  if (edge->isControlDependence()){
+  if (edge->isControlDependence()) {
     this->numberOfControlDependence++;
-    return ;
+    return;
   }
 
-  return ;
+  return;
 }
 
 PDGStats::~PDGStats() {

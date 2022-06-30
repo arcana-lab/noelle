@@ -1,12 +1,23 @@
 /*
  * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
 
@@ -14,147 +25,143 @@
 
 namespace llvm::noelle {
 
-  class Task {
-    public:
+class Task {
+public:
+  Task(uint32_t ID, FunctionType *taskSignature, Module &M);
 
-      Task (
-        uint32_t ID,
-        FunctionType *taskSignature,
-        Module &M
-        );
+  /*
+   * IDs
+   */
+  uint32_t getID(void) const;
 
-      /*
-       * IDs
-       */
-      uint32_t getID (void) const ;
+  Value *getTaskInstanceID(void) const;
 
-      Value * getTaskInstanceID (void) const ;
+  /*
+   * Live-in values.
+   */
+  bool isAnOriginalLiveIn(Value *v) const;
 
+  Value *getCloneOfOriginalLiveIn(Value *o) const;
 
-      /*
-       * Live-in values.
-       */
-      bool isAnOriginalLiveIn (Value *v) const ;
+  std::unordered_set<Value *> getOriginalLiveIns(void) const;
 
-      Value * getCloneOfOriginalLiveIn (Value *o) const ;
+  void addLiveIn(Value *original, Value *internal);
 
-      std::unordered_set<Value *> getOriginalLiveIns (void) const ;
+  void removeLiveIn(Instruction *original);
 
-      void addLiveIn (Value *original, Value *internal) ;
+  /*
+   * Live-out instructions
+   */
+  bool doesOriginalLiveOutHaveManyClones(Instruction *I) const;
 
-      void removeLiveIn (Instruction *original);
+  std::unordered_set<Instruction *> getClonesOfOriginalLiveOut(
+      Instruction *I) const;
 
+  void addLiveOut(Instruction *original, Instruction *internal);
 
-      /*
-       * Live-out instructions
-       */
-      bool doesOriginalLiveOutHaveManyClones (Instruction *I) const ;
+  void removeLiveOut(Instruction *original, Instruction *removed);
 
-      std::unordered_set<Instruction *> getClonesOfOriginalLiveOut (Instruction *I) const ;
+  /*
+   * Instructions
+   */
+  bool isAnOriginalInstruction(Instruction *i) const;
 
-      void addLiveOut (Instruction *original, Instruction *internal) ;
+  bool isAClonedInstruction(Instruction *i) const;
 
-      void removeLiveOut (Instruction *original, Instruction *removed) ;
+  Instruction *getCloneOfOriginalInstruction(Instruction *o) const;
 
-      /*
-       * Instructions
-       */
-      bool isAnOriginalInstruction (Instruction *i) const ;
+  Instruction *getOriginalInstructionOfClone(Instruction *c) const;
 
-      bool isAClonedInstruction (Instruction *i) const ;
+  void addInstruction(Instruction *original, Instruction *internal);
 
-      Instruction * getCloneOfOriginalInstruction (Instruction *o) const ;
+  std::unordered_set<Instruction *> getOriginalInstructions(void) const;
 
-      Instruction * getOriginalInstructionOfClone (Instruction *c) const ;
+  Instruction *cloneAndAddInstruction(Instruction *original);
 
-      void addInstruction (Instruction *original, Instruction *internal) ;
+  void removeOriginalInstruction(Instruction *o);
 
-      std::unordered_set<Instruction *> getOriginalInstructions (void) const ;
+  /*
+   * Basic blocks
+   */
+  bool isAnOriginalBasicBlock(BasicBlock *o) const;
 
-      Instruction * cloneAndAddInstruction (Instruction *original);
+  BasicBlock *getCloneOfOriginalBasicBlock(BasicBlock *o) const;
 
-      void removeOriginalInstruction (Instruction *o);
+  std::unordered_set<BasicBlock *> getOriginalBasicBlocks(void) const;
 
+  void addBasicBlock(BasicBlock *original, BasicBlock *internal);
 
-      /*
-       * Basic blocks
-       */
-      bool isAnOriginalBasicBlock (BasicBlock *o) const ;
+  BasicBlock *addBasicBlockStub(BasicBlock *original);
 
-      BasicBlock * getCloneOfOriginalBasicBlock (BasicBlock *o) const ;
+  BasicBlock *cloneAndAddBasicBlock(BasicBlock *original);
 
-      std::unordered_set<BasicBlock *> getOriginalBasicBlocks (void) const ;
+  BasicBlock *cloneAndAddBasicBlock(
+      BasicBlock *original,
+      std::function<bool(Instruction *origInst)> filter);
 
-      void addBasicBlock (BasicBlock *original, BasicBlock *internal) ;
+  void removeOriginalBasicBlock(BasicBlock *b);
 
-      BasicBlock * addBasicBlockStub (BasicBlock *original);
+  BasicBlock *getEntry(void) const;
 
-      BasicBlock * cloneAndAddBasicBlock (BasicBlock *original);
+  BasicBlock *getExit(void) const;
 
-      BasicBlock * cloneAndAddBasicBlock (BasicBlock *original, std::function<bool (Instruction *origInst)> filter);
+  uint32_t getNumberOfLastBlocks(void) const;
 
-      void removeOriginalBasicBlock (BasicBlock *b);
+  BasicBlock *getLastBlock(uint32_t blockID) const;
 
-      BasicBlock * getEntry (void) const ;
+  void tagBasicBlockAsLastBlock(BasicBlock *b);
 
-      BasicBlock * getExit (void) const ;
+  /*
+   * Body
+   */
+  Function *getTaskBody(void) const;
 
-      uint32_t getNumberOfLastBlocks (void) const ;
+  /*
+   * Dependences with the outside code
+   */
+  Value *getEnvironment(void) const;
 
-      BasicBlock * getLastBlock (uint32_t blockID) const ;
+  virtual void extractFuncArgs(void) = 0;
 
-      void tagBasicBlockAsLastBlock (BasicBlock *b) ;
+  virtual ~Task();
 
+protected:
+  uint32_t ID;
+  Function *F;
 
-      /*
-       * Body
-       */
-      Function * getTaskBody (void) const ;
+  /*
+   * There is a one-to-one mapping between the original live in value and a
+   * pointer to the environment where that original live in value is stored for
+   * use by the task
+   */
+  std::unordered_map<Value *, Value *> liveInClones;
 
+  /*
+   * With few exceptions, the clone of the live out value is used directly,
+   * stored into the environment for use after the task executes. When that
+   * value is duplicated by tasks doing more complicated transformations, this
+   * structure holds the mapping between the original live out instruction and
+   * all its duplicates
+   */
+  std::unordered_map<Instruction *, std::unordered_set<Instruction *>>
+      liveOutClones;
 
-      /*
-       * Dependences with the outside code
-       */
-      Value * getEnvironment (void) const ;
+  /*
+   * This is a one-to-one mapping between the original loop's structure and the
+   * task's cloned loop structure
+   * TODO: Provide a one-to-many mapping for use by more complex transformations
+   */
+  std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
+  std::unordered_map<Instruction *, Instruction *> instructionClones;
+  std::unordered_map<Instruction *, Instruction *> instructionCloneToOriginal;
 
-      virtual void extractFuncArgs (void) = 0;
+  Value *instanceIndexV;
+  Value *envArg;
+  BasicBlock *entryBlock;
+  BasicBlock *exitBlock;
+  std::vector<BasicBlock *> lastBlocks;
 
-      virtual ~Task ();
+  LLVMContext &getLLVMContext(void) const;
+};
 
-    protected:
-      uint32_t ID;
-      Function *F;
-
-      /*
-       * There is a one-to-one mapping between the original live in value and a pointer
-       * to the environment where that original live in value is stored for use by the task
-       */
-      std::unordered_map<Value *, Value *> liveInClones;
-
-      /*
-       * With few exceptions, the clone of the live out value is used directly, stored
-       * into the environment for use after the task executes. When that value is duplicated
-       * by tasks doing more complicated transformations, this structure holds the mapping
-       * between the original live out instruction and all its duplicates
-       */
-      std::unordered_map<Instruction *, std::unordered_set<Instruction *>> liveOutClones;
-
-      /*
-       * This is a one-to-one mapping between the original loop's structure and the
-       * task's cloned loop structure
-       * TODO: Provide a one-to-many mapping for use by more complex transformations
-       */
-      std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
-      std::unordered_map<Instruction *, Instruction *> instructionClones;
-      std::unordered_map<Instruction *, Instruction *> instructionCloneToOriginal;
-
-      Value *instanceIndexV;
-      Value *envArg;
-      BasicBlock *entryBlock;
-      BasicBlock *exitBlock;
-      std::vector<BasicBlock *> lastBlocks;
-
-      LLVMContext & getLLVMContext (void) const ;
-  };
-
-}
+} // namespace llvm::noelle

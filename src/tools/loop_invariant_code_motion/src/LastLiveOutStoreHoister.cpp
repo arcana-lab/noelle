@@ -1,21 +1,31 @@
 /*
  * Copyright 2019 - 2020  Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
 
-bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut (
-  LoopDependenceInfo const &LDI
-){
+bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
+    LoopDependenceInfo const &LDI) {
 
   bool modified = false;
 
@@ -25,7 +35,8 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut (
   std::unordered_set<BasicBlock *> loopEntrySuccessors{};
   for (auto bIter = succ_begin(header); bIter != succ_end(header); ++bIter) {
     auto B = *bIter;
-    if (!loopSummary->isIncluded(B)) continue;
+    if (!loopSummary->isIncluded(B))
+      continue;
     loopEntrySuccessors.insert(B);
   }
 
@@ -40,7 +51,8 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut (
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (!sccInfo->canExecuteIndependently()) continue;
+    if (!sccInfo->canExecuteIndependently())
+      continue;
 
     /*
      * Determine if an independent SCC contains 1+ store instructions
@@ -59,7 +71,7 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut (
 
     /*
      * Alias-ing stores require further analysis to hoist
-     * 
+     *
      * For now, as long as the pointer operand is the same
      * and one store post dominates the rest, hoist that one
      */
@@ -74,7 +86,8 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut (
       }
 
       if (pointerOp == singlePointerOperand) {
-        if (DS.PDT.dominates(singleLastStore, store)) continue;
+        if (DS.PDT.dominates(singleLastStore, store))
+          continue;
         if (DS.PDT.dominates(store, singleLastStore)) {
           singleLastStore = store;
           continue;
@@ -84,21 +97,24 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut (
       singleLastStore = nullptr;
       break;
     }
-    if (!singleLastStore) continue;
+    if (!singleLastStore)
+      continue;
 
     /*
      * Determine if the store is executed every iteration
      * This is true if the store basic block post dominates
      * all loop-internal successor blocks of the loop entry block
      */
-    singleLastStore->print(errs() << "ENABLERS:  Might hoist"); errs() << "\n";
+    singleLastStore->print(errs() << "ENABLERS:  Might hoist");
+    errs() << "\n";
     auto storeBlock = singleLastStore->getParent();
     bool postDominatesAll = true;
 
     for (auto B : loopEntrySuccessors) {
       postDominatesAll &= DS.PDT.dominates(storeBlock, B);
     }
-    if (!postDominatesAll) continue;
+    if (!postDominatesAll)
+      continue;
 
     independentStoresExecutedEveryIteration.insert(singleLastStore);
   }
@@ -128,7 +144,9 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut (
      */
     auto latches = loopSummary->getLatches();
     auto numPredecessors = latches.size() + 1;
-    PHINode *phi = headerBuilder.CreatePHI(initialValue->getType(), numPredecessors, "lastValueToStore");
+    PHINode *phi = headerBuilder.CreatePHI(initialValue->getType(),
+                                           numPredecessors,
+                                           "lastValueToStore");
     phi->addIncoming(initialValue, preHeader);
     for (auto latch : latches) {
       phi->addIncoming(storedValue, latch);

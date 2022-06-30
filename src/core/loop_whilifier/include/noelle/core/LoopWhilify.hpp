@@ -1,12 +1,23 @@
 /*
  * Copyright 2019 - 2021  Souradip Ghosh, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
 
@@ -16,179 +27,121 @@
 
 namespace llvm::noelle {
 
-  class WhilifierContext {
+class WhilifierContext {
 
-    /*
-     * WhilifierContext --- TOP
-     *
-     * A package to share whilifier information across LoopWhilifier 
-     * member functions --- this is a shortcut over better engineering 
-     * because the LoopWhilifier does not keep any internal state.
-     */
+  /*
+   * WhilifierContext --- TOP
+   *
+   * A package to share whilifier information across LoopWhilifier
+   * member functions --- this is a shortcut over better engineering
+   * because the LoopWhilifier does not keep any internal state.
+   */
 
-    public:
+public:
+  /*
+   * Methods
+   */
+  WhilifierContext(LoopStructure *const LS);
 
-      /*
-       * Methods
-       */ 
-      WhilifierContext (
-        LoopStructure * const LS
-      );
+  void Dump(void);
 
-      void Dump(void);
+  /*
+   * Context for loop body to whlify
+   */
+  BasicBlock *OriginalHeader;
+  BasicBlock *OriginalPreHeader;
+  BasicBlock *OriginalLatch;
+  uint32_t NumLatches;
+  std::vector<std::pair<BasicBlock *, BasicBlock *>> ExitEdges;
+  std::vector<BasicBlock *> LoopBlocks;
+  Function *F;
 
+  /*
+   * Context for whilification process
+   */
+  BasicBlock *TopAnchor;
+  BasicBlock *BottomAnchor;
+  ValueToValueMapTy BodyToPeelMap;
+  SmallVector<BasicBlock *, 16> NewBlocks;
 
-      /*
-       * Context for loop body to whlify
-       */
-      BasicBlock *OriginalHeader;
-      BasicBlock *OriginalPreHeader;
-      BasicBlock *OriginalLatch;
-      uint32_t NumLatches;
-      std::vector<std::pair<BasicBlock *, BasicBlock *>> ExitEdges;
-      std::vector<BasicBlock *> LoopBlocks;
-      Function *F;
+  /*
+   * Analysis for whilification process
+   */
+  bool IsDoWhile = false;
+  bool IsAppropriateToWhilify = false;
+  bool IsSingleBlockLoop = false;
+  bool ConsolidatedOriginalLatch = false;
+  bool ResolvedLatch = false;
+  DenseMap<PHINode *, Value *> ExitDependencies;
+  DenseMap<Value *, Value *> ResolvedDependencyMapping;
+  DenseMap<Instruction *, DenseMap<Instruction *, uint32_t>>
+      OriginalLatchDependencies;
+};
 
+class LoopWhilifier {
 
-      /*
-       * Context for whilification process
-       */ 
-      BasicBlock *TopAnchor;
-      BasicBlock *BottomAnchor;
-      ValueToValueMapTy BodyToPeelMap;
-      SmallVector<BasicBlock *, 16> NewBlocks;
+public:
+  /*
+   * Methods
+   */
+  LoopWhilifier();
 
+  bool whilifyLoop(LoopDependenceInfo &LDI,
+                   Scheduler &scheduler,
+                   DominatorSummary *DS,
+                   PDG *FDG);
 
-      /*
-       * Analysis for whilification process
-       */ 
-      bool IsDoWhile=false;
-      bool IsAppropriateToWhilify=false;
-      bool IsSingleBlockLoop=false;
-      bool ConsolidatedOriginalLatch=false;
-      bool ResolvedLatch=false;
-      DenseMap<PHINode *, Value *> ExitDependencies;
-      DenseMap<Value *, Value *> ResolvedDependencyMapping;
-      DenseMap<Instruction *, 
-               DenseMap<Instruction *, 
-                        uint32_t>> OriginalLatchDependencies;
+private:
+  /*
+   * Fields
+   */
+  std::string outputPrefix;
 
+  /*
+   * Methods
+   */
+  bool whilifyLoopDriver(LoopStructure *const LS,
+                         Scheduler &scheduler,
+                         DominatorSummary *DS,
+                         PDG *FDG);
 
-  } ;
+  bool containsInOriginalLoop(WhilifierContext const &WC, BasicBlock *const BB);
 
+  void compressStructuralLatch(WhilifierContext &WC,
+                               BasicBlock *&SemanticLatch);
 
-  class LoopWhilifier {
+  bool isSemanticLatch(WhilifierContext const &WC, BasicBlock *&LatchPred);
 
-    public:
+  bool isAppropriateToWhilify(WhilifierContext &WC,
+                              BasicBlock *const SemanticLatch);
 
-      /*
-       * Methods
-       */
-      LoopWhilifier();
+  bool isDoWhile(WhilifierContext &WC);
 
-      bool whilifyLoop (
-        LoopDependenceInfo &LDI,
-        Scheduler &scheduler,
-        DominatorSummary *DS,
-        PDG *FDG
-      );
+  bool canWhilify(WhilifierContext &WC);
 
+  void transformSingleBlockLoop(WhilifierContext &WC);
 
-    private:
+  void buildAnchors(WhilifierContext &WC);
 
-      /*
-       * Fields
-       */
-      std::string outputPrefix;
+  void cloneLoopBlocksForWhilifying(WhilifierContext &WC);
 
+  PHINode *buildNewHeaderDependencyPHI(WhilifierContext &WC, Value *Dependency);
 
-      /*
-       * Methods
-       */
-      bool whilifyLoopDriver(
-        LoopStructure * const LS,
-        Scheduler &scheduler,
-        DominatorSummary *DS,
-        PDG *FDG
-      );
+  void resolveExitEdgeDependencies(WhilifierContext &WC, BasicBlock *NewHeader);
 
-      bool containsInOriginalLoop(
-        WhilifierContext const &WC,
-        BasicBlock * const BB 
-      );
+  void resolveNewHeaderPHIDependencies(WhilifierContext &WC);
 
-      void compressStructuralLatch(
-        WhilifierContext &WC,
-        BasicBlock *&SemanticLatch
-      );
+  void findNonPHIOriginalLatchDependencies(WhilifierContext &WC);
 
-      bool isSemanticLatch(
-        WhilifierContext const &WC,
-        BasicBlock *&LatchPred
-      );
+  void resolveNewHeaderNonPHIDependencies(WhilifierContext &WC,
+                                          BasicBlock *NewHeader);
 
-      bool isAppropriateToWhilify(
-        WhilifierContext &WC,
-        BasicBlock * const SemanticLatch
-      );
+  void resolveNewHeaderDependencies(WhilifierContext &WC,
+                                    BasicBlock *NewHeader);
 
-      bool isDoWhile(
-        WhilifierContext &WC
-      );
+  void resolveOriginalHeaderPHIs(WhilifierContext &WC);
 
-      bool canWhilify(
-        WhilifierContext &WC
-      );
+  void rerouteLoopBranches(WhilifierContext &WC, BasicBlock *NewHeader);
+};
 
-      void transformSingleBlockLoop(
-        WhilifierContext &WC
-      );
-
-      void buildAnchors(
-        WhilifierContext &WC
-      );
-
-      void cloneLoopBlocksForWhilifying(
-        WhilifierContext &WC
-      );
-
-      PHINode *buildNewHeaderDependencyPHI(
-        WhilifierContext &WC,
-        Value *Dependency
-      );
-
-      void resolveExitEdgeDependencies(
-        WhilifierContext &WC,
-        BasicBlock *NewHeader
-      );
-
-      void resolveNewHeaderPHIDependencies(
-        WhilifierContext &WC
-      );
-
-      void findNonPHIOriginalLatchDependencies(
-        WhilifierContext &WC
-      );
-
-      void resolveNewHeaderNonPHIDependencies(
-        WhilifierContext &WC,
-        BasicBlock *NewHeader
-      );
-
-      void resolveNewHeaderDependencies(
-        WhilifierContext &WC,
-        BasicBlock *NewHeader
-      );
-
-      void resolveOriginalHeaderPHIs(
-        WhilifierContext &WC
-      );
-
-      void rerouteLoopBranches(
-        WhilifierContext &WC,
-        BasicBlock *NewHeader
-      );
-
-  };
-
-}
+} // namespace llvm::noelle

@@ -1,57 +1,64 @@
 /*
  * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "DOALL.hpp"
 #include "DOALLTask.hpp"
 
-namespace llvm::noelle{
+namespace llvm::noelle {
 
-DOALL::DOALL (
-  Noelle &noelle
-) :
-    ParallelizationTechnique{noelle}
-  , enabled{true}
-  , taskDispatcher{nullptr}
-  , n{noelle}
-  {
+DOALL::DOALL(Noelle &noelle)
+  : ParallelizationTechnique{ noelle },
+    enabled{ true },
+    taskDispatcher{ nullptr },
+    n{ noelle } {
 
   /*
-   * Define the signature of the task, which will be invoked by the DOALL dispatcher.
+   * Define the signature of the task, which will be invoked by the DOALL
+   * dispatcher.
    */
   auto tm = this->n.getTypesManager();
-  auto funcArgTypes = ArrayRef<Type*>({
-    tm->getVoidPointerType(),
-    tm->getIntegerType(64),
-    tm->getIntegerType(64),
-    tm->getIntegerType(64)
-  });
-  this->taskSignature = FunctionType::get(tm->getVoidType(), funcArgTypes, false);
+  auto funcArgTypes = ArrayRef<Type *>({ tm->getVoidPointerType(),
+                                         tm->getIntegerType(64),
+                                         tm->getIntegerType(64),
+                                         tm->getIntegerType(64) });
+  this->taskSignature =
+      FunctionType::get(tm->getVoidType(), funcArgTypes, false);
 
   /*
    * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
    */
-  this->taskDispatcher = this->n.getProgram()->getFunction("NOELLE_DOALLDispatcher");
-  if (this->taskDispatcher == nullptr){
+  this->taskDispatcher =
+      this->n.getProgram()->getFunction("NOELLE_DOALLDispatcher");
+  if (this->taskDispatcher == nullptr) {
     this->enabled = false;
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL: WARNING: function NOELLE_DOALLDispatcher couldn't be found. DOALL is disabled\n";
+      errs()
+          << "DOALL: WARNING: function NOELLE_DOALLDispatcher couldn't be found. DOALL is disabled\n";
     }
   }
 
-  return ;
+  return;
 }
 
-bool DOALL::canBeAppliedToLoop (
-  LoopDependenceInfo *LDI,
-  Heuristics *h
-) const {
+bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Checking if the loop is DOALL\n";
   }
@@ -65,7 +72,7 @@ bool DOALL::canBeAppliedToLoop (
    * The loop must have one single exit path.
    */
   auto numOfExits = 0;
-  for (auto bb : loopStructure->getLoopExitBasicBlocks()){
+  for (auto bb : loopStructure->getLoopExitBasicBlocks()) {
 
     /*
      * Fetch the last instruction before the terminator
@@ -74,24 +81,22 @@ bool DOALL::canBeAppliedToLoop (
     auto prevInst = terminator->getPrevNode();
 
     /*
-     * Check if the last instruction is a call to a function that cannot return (e.g., abort()).
+     * Check if the last instruction is a call to a function that cannot return
+     * (e.g., abort()).
      */
-    if (prevInst == nullptr){
+    if (prevInst == nullptr) {
       numOfExits++;
-      continue ;
+      continue;
     }
-    if (auto callInst = dyn_cast<CallInst>(prevInst)){
+    if (auto callInst = dyn_cast<CallInst>(prevInst)) {
       auto callee = callInst->getCalledFunction();
-      if (  true
-            && (callee != nullptr)
-            && (callee->getName() == "exit")
-        ){
-        continue ;
+      if (true && (callee != nullptr) && (callee->getName() == "exit")) {
+        continue;
       }
     }
     numOfExits++;
   }
-  if (numOfExits != 1){ 
+  if (numOfExits != 1) {
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   More than 1 loop exit blocks\n";
     }
@@ -110,27 +115,32 @@ bool DOALL::canBeAppliedToLoop (
   }
 
   /*
-   * The compiler must be able to remove loop-carried data dependences of all SCCs with loop-carried data dependences.
+   * The compiler must be able to remove loop-carried data dependences of all
+   * SCCs with loop-carried data dependences.
    */
   auto nonDOALLSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, this->n);
-  if (nonDOALLSCCs.size() > 0){
+  if (nonDOALLSCCs.size() > 0) {
     if (this->verbose != Verbosity::Disabled) {
       for (auto scc : nonDOALLSCCs) {
-        errs() << "DOALL:   We found an SCC of the loop that is non clonable and non commutative\n" ;
+        errs()
+            << "DOALL:   We found an SCC of the loop that is non clonable and non commutative\n";
         if (this->verbose >= Verbosity::Maximal) {
           // scc->printMinimal(errs(), "DOALL:     ") ;
-          // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" + std::to_string(LDI->getID()) + ".dot", scc);
+          // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" +
+          // std::to_string(LDI->getID()) + ".dot", scc);
           errs() << "DOALL:     Loop-carried data dependences\n";
-          sccManager->iterateOverLoopCarriedDataDependences(scc, [](DGEdge<Value> *dep) -> bool {
-            auto fromInst = dep->getOutgoingT();
-            auto toInst = dep->getIncomingT();
-            errs() << "DOALL:       " << *fromInst << " ---> " << *toInst ;
-            if (dep->isMemoryDependence()){
-              errs() << " via memory\n";
-            } else {
-              errs() << " via variable\n";
-            }
-            return false;
+          sccManager->iterateOverLoopCarriedDataDependences(
+              scc,
+              [](DGEdge<Value> *dep) -> bool {
+                auto fromInst = dep->getOutgoingT();
+                auto toInst = dep->getIncomingT();
+                errs() << "DOALL:       " << *fromInst << " ---> " << *toInst;
+                if (dep->isMemoryDependence()) {
+                  errs() << " via memory\n";
+                } else {
+                  errs() << " via variable\n";
+                }
+                return false;
               });
         }
       }
@@ -147,9 +157,10 @@ bool DOALL::canBeAppliedToLoop (
    * This is because the trip count must be controlled by an induction variable.
    */
   auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
-  if (!loopGoverningIVAttr){
+  if (!loopGoverningIVAttr) {
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   Loop does not have an induction variable to control the number of iterations\n";
+      errs()
+          << "DOALL:   Loop does not have an induction variable to control the number of iterations\n";
     }
     return false;
   }
@@ -164,7 +175,8 @@ bool DOALL::canBeAppliedToLoop (
       continue;
     }
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:  Loop has an induction variable with step size that is not loop invariant\n";
+      errs()
+          << "DOALL:  Loop has an induction variable with step size that is not loop invariant\n";
     }
     return false;
   }
@@ -173,12 +185,15 @@ bool DOALL::canBeAppliedToLoop (
    * Check if the final value of the induction variable is a loop invariant.
    */
   auto invariantManager = LDI->getInvariantManager();
-  LoopGoverningIVUtility ivUtility(loopStructure, *IVManager, *loopGoverningIVAttr);
+  LoopGoverningIVUtility ivUtility(loopStructure,
+                                   *IVManager,
+                                   *loopGoverningIVAttr);
   auto &derivation = ivUtility.getConditionValueDerivation();
   for (auto I : derivation) {
-    if (!invariantManager->isLoopInvariant(I)){
+    if (!invariantManager->isLoopInvariant(I)) {
       if (this->verbose != Verbosity::Disabled) {
-        errs() << "DOALL:  Loop has the governing induction variable that is compared against a non-invariant\n";
+        errs()
+            << "DOALL:  Loop has the governing induction variable that is compared against a non-invariant\n";
         errs() << "DOALL:     The non-invariant is = " << *I << "\n";
       }
       return false;
@@ -189,20 +204,17 @@ bool DOALL::canBeAppliedToLoop (
    * The loop is a DOALL one.
    */
   if (this->verbose != Verbosity::Disabled) {
-    errs() << "DOALL:   The loop can be parallelized with DOALL\n" ;
+    errs() << "DOALL:   The loop can be parallelized with DOALL\n";
   }
   return true;
 }
-      
-bool DOALL::apply (
-  LoopDependenceInfo *LDI,
-  Heuristics *h
-) {
+
+bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
 
   /*
    * Check if DOALL is enabled.
    */
-  if (!this->enabled){
+  if (!this->enabled) {
     return false;
   }
 
@@ -253,8 +265,10 @@ bool DOALL::apply (
     errs() << "DOALL:   Reduced variables:\n";
   }
   auto sccManager = LDI->getSCCManager();
-  auto isReducible = [this, loopEnvironment, sccManager](uint32_t idx, bool isLiveOut) -> bool {
-    if (!isLiveOut){
+  auto isReducible = [this,
+                      loopEnvironment,
+                      sccManager](uint32_t idx, bool isLiveOut) -> bool {
+    if (!isLiveOut) {
       return false;
     }
 
@@ -262,12 +276,13 @@ bool DOALL::apply (
      * We have a live-out variable.
      *
      * Check if this is an IV.
-     * IVs are not reducable because they get re-computed locally by each thread.
+     * IVs are not reducable because they get re-computed locally by each
+     * thread.
      */
     auto producer = loopEnvironment->producerAt(idx);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (sccInfo->isInductionVariableSCC()){
+    if (sccInfo->isInductionVariableSCC()) {
 
       /*
        * The current live-out variable is an induction variable.
@@ -277,7 +292,8 @@ bool DOALL::apply (
 
     /*
      * The current live-out variable is not an IV.
-     * Because this loop is a DOALL, then this live-out variable must be reducable (this is checked by the "canBeApplied" method).
+     * Because this loop is a DOALL, then this live-out variable must be
+     * reducable (this is checked by the "canBeApplied" method).
      */
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:     " << *producer << "\n";
@@ -309,10 +325,12 @@ bool DOALL::apply (
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 
   /*
-   * HACK: For now, this must follow loading live-ins as this re-wiring overrides
-   * the live-in mapping to use locally cloned memory instructions that are live-in to the loop
+   * HACK: For now, this must follow loading live-ins as this re-wiring
+   * overrides the live-in mapping to use locally cloned memory instructions
+   * that are live-in to the loop
    */
-  if (ltm->isOptimizationEnabled(LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
+  if (ltm->isOptimizationEnabled(
+          LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
     this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, 0);
   }
 
@@ -369,12 +387,15 @@ bool DOALL::apply (
   if (this->verbose >= Verbosity::Maximal) {
     // loopFunction->print(errs() << "DOALL:  Final outside-loop code:\n" );
     // errs() << "\n";
-    tasks[0]->getTaskBody()->print(errs() << "DOALL:  Final parallelized loop:\n"); 
+    tasks[0]->getTaskBody()->print(errs()
+                                   << "DOALL:  Final parallelized loop:\n");
     errs() << "\n";
     // SubCFGs execGraph(*chunkerTask->getTaskBody());
-    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("doalltask-loop" + std::to_string(LDI->getID()) + ".dot", &execGraph);
-    // SubCFGs execGraph2(*loopFunction);
-    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("doall-loop-" + std::to_string(LDI->getID()) + "-function.dot", &execGraph);
+    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("doalltask-loop" +
+    // std::to_string(LDI->getID()) + ".dot", &execGraph); SubCFGs
+    // execGraph2(*loopFunction); DGPrinter::writeGraph<SubCFGs,
+    // BasicBlock>("doall-loop-" + std::to_string(LDI->getID()) +
+    // "-function.dot", &execGraph);
   }
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Exit\n";
@@ -383,11 +404,9 @@ bool DOALL::apply (
   return true;
 }
 
-void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
-  LoopDependenceInfo *LDI,
-  Function *loopFunction,
-  Noelle &par
-) {
+void DOALL::addChunkFunctionExecutionAsideOriginalLoop(LoopDependenceInfo *LDI,
+                                                       Function *loopFunction,
+                                                       Noelle &par) {
 
   /*
    * Create the environment.
@@ -416,43 +435,46 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    * Call the function that incudes the parallelized loop.
    */
   IRBuilder<> doallBuilder(this->entryPointOfParallelizedLoop);
-  auto doallCallInst = doallBuilder.CreateCall(this->taskDispatcher, ArrayRef<Value *>({
-    tasks[0]->getTaskBody(),
-    envPtr,
-    numCores,
-    chunkSize
-  }));
-  auto numThreadsUsed = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
+  auto doallCallInst = doallBuilder.CreateCall(
+      this->taskDispatcher,
+      ArrayRef<Value *>(
+          { tasks[0]->getTaskBody(), envPtr, numCores, chunkSize }));
+  auto numThreadsUsed =
+      doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
 
   /*
-   * Propagate the last value of live-out variables to the code outside the parallelized loop.
+   * Propagate the last value of live-out variables to the code outside the
+   * parallelized loop.
    */
-  auto latestBBAfterDOALLCall = this->performReductionToAllReducableLiveOutVariables(LDI, numThreadsUsed);
+  auto latestBBAfterDOALLCall =
+      this->performReductionToAllReducableLiveOutVariables(LDI, numThreadsUsed);
 
   /*
    * Jump to the unique successor of the loop.
    */
-  IRBuilder<> afterDOALLBuilder{latestBBAfterDOALLCall};
+  IRBuilder<> afterDOALLBuilder{ latestBBAfterDOALLCall };
   afterDOALLBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
-  return ;
+  return;
 }
 
-Value * DOALL::fetchClone (Value *original) const {
+Value *DOALL::fetchClone(Value *original) const {
   auto task = this->tasks[0];
-  if (isa<ConstantData>(original)) return original;
+  if (isa<ConstantData>(original))
+    return original;
 
-  if (task->isAnOriginalLiveIn(original)){
+  if (task->isAnOriginalLiveIn(original)) {
     return task->getCloneOfOriginalLiveIn(original);
   }
 
   assert(isa<Instruction>(original));
-  auto iClone = task->getCloneOfOriginalInstruction(cast<Instruction>(original));
+  auto iClone =
+      task->getCloneOfOriginalInstruction(cast<Instruction>(original));
   assert(iClone != nullptr);
   return iClone;
 }
 
-void DOALL::addJumpToLoop (LoopDependenceInfo *LDI, Task *t){
+void DOALL::addJumpToLoop(LoopDependenceInfo *LDI, Task *t) {
 
   /*
    * Fetch the header within the task.
@@ -467,7 +489,7 @@ void DOALL::addJumpToLoop (LoopDependenceInfo *LDI, Task *t){
   IRBuilder<> entryBuilder(t->getEntry());
   entryBuilder.CreateBr(headerClone);
 
-  return ;
+  return;
 }
 
-}
+} // namespace llvm::noelle

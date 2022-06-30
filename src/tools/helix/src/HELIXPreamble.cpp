@@ -1,27 +1,36 @@
 /*
  * Copyright 2021 - 2022  Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 
-namespace llvm::noelle{
-      
-bool HELIX::doesHaveASequentialPrologue (
-  LoopDependenceInfo *LDI
-  ) const {
-  
+namespace llvm::noelle {
+
+bool HELIX::doesHaveASequentialPrologue(LoopDependenceInfo *LDI) const {
+
   /*
    * Fetch the loop governing IV.
    */
   auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
-  if (!loopGoverningIVAttr){
+  if (!loopGoverningIVAttr) {
 
     /*
      * The loop does not have a loop governing IV.
@@ -34,16 +43,15 @@ bool HELIX::doesHaveASequentialPrologue (
    * Fetch the sequential SCC that creates the sequential prologue.
    */
   auto seqSCC = this->getTheSequentialSCCThatCreatesTheSequentialPrologue(LDI);
-  if (seqSCC == nullptr){
+  if (seqSCC == nullptr) {
     return false;
   }
 
   return true;
 }
-      
-SCC * HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue (
-  LoopDependenceInfo *LDI
-  ) const {
+
+SCC *HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue(
+    LoopDependenceInfo *LDI) const {
 
   /*
    * Fetch the loop SCCDAG
@@ -55,7 +63,7 @@ SCC * HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue (
    * Fetch the source nodes in the loop SCCDAG
    */
   auto preambleSCCNodes = loopSCCDAG->getTopLevelNodes();
-  if (preambleSCCNodes.size() == 0){
+  if (preambleSCCNodes.size() == 0) {
 
     /*
      * If we have more than one, then we don't have a preamble.
@@ -74,10 +82,8 @@ SCC * HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue (
    * Check the SCC to see if it has to run sequentially
    */
   auto sccInfo = sccManager->getSCCAttrs(preambleSCC);
-  if (     true
-        && (!sccInfo->isInductionVariableSCC())
-        && sccInfo->mustExecuteSequentially()
-      ){
+  if (true && (!sccInfo->isInductionVariableSCC())
+      && sccInfo->mustExecuteSequentially()) {
 
     /*
      * The SCC must execute sequentially.
@@ -88,9 +94,9 @@ SCC * HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue (
     auto loopStructure = LDI->getLoopStructure();
     auto loopHeader = loopStructure->getHeader();
     auto foundHeader = false;
-    for (auto instNode : preambleSCC->getNodes()){
+    for (auto instNode : preambleSCC->getNodes()) {
       auto inst = cast<Instruction>(instNode->getT());
-      if (loopStructure->isALoopExit(inst)){
+      if (loopStructure->isALoopExit(inst)) {
 
         /*
          * This loop has a sequential preamble.
@@ -99,11 +105,11 @@ SCC * HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue (
       }
     }
   }
- 
+
   /*
    * This loop does not have a sequential preamble.
    */
   return nullptr;
 }
 
-}
+} // namespace llvm::noelle

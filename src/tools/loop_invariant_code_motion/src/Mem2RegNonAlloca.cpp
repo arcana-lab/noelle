@@ -1,24 +1,38 @@
 /*
  * Copyright 2019 - 2020  Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Mem2RegNonAlloca.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
 
-Mem2RegNonAlloca::Mem2RegNonAlloca (LoopDependenceInfo const &LDI, Noelle &noelle)
-  : LDI{LDI}, invariants{*LDI.getInvariantManager()}, noelle{noelle} {
-  return ;
+Mem2RegNonAlloca::Mem2RegNonAlloca(LoopDependenceInfo const &LDI,
+                                   Noelle &noelle)
+  : LDI{ LDI },
+    invariants{ *LDI.getInvariantManager() },
+    noelle{ noelle } {
+  return;
 }
 
-bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
+bool Mem2RegNonAlloca::promoteMemoryToRegister(void) {
 
   /*
    * Fetch the loop structure.
@@ -34,7 +48,8 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
   }
   if (noelle.getVerbosity() >= Verbosity::Maximal) {
     errs() << "Mem2Reg: Start\n";
-    terminator->print(errs() << "Mem2Reg:   Checking loop: "); errs() << "\n";
+    terminator->print(errs() << "Mem2Reg:   Checking loop: ");
+    errs() << "\n";
   }
 
   /*
@@ -50,7 +65,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
       }
       return false;
     }
-    if (isa<InvokeInst>(terminator)){
+    if (isa<InvokeInst>(terminator)) {
       if (noelle.getVerbosity() >= Verbosity::Maximal) {
         errs() << "Mem2Reg:   The loop may return from within it\n";
         errs() << "Mem2Reg: Exit\n";
@@ -64,7 +79,8 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
    */
   auto singleMemoryLocationsBySCC = this->findSCCsWithSingleMemoryLocations();
   if (noelle.getVerbosity() >= Verbosity::Maximal) {
-    errs() << "Mem2Reg:   The loop has " << singleMemoryLocationsBySCC.size() << "SCCs that each one access the same memory location\n";
+    errs() << "Mem2Reg:   The loop has " << singleMemoryLocationsBySCC.size()
+           << "SCCs that each one access the same memory location\n";
   }
 
   /*
@@ -79,11 +95,15 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
     auto memorySCC = memoryAndSCCPair.second;
 
     if (noelle.getVerbosity() >= Verbosity::Maximal) {
-      memoryInst->print(errs() << "Mem2Reg:     Loop invariant memory location: "); errs() << "\n";
-      memorySCC->printMinimal(errs() << "Mem2Reg:     SCC:\n"); errs() << "\n";
+      memoryInst->print(errs()
+                        << "Mem2Reg:     Loop invariant memory location: ");
+      errs() << "\n";
+      memorySCC->printMinimal(errs() << "Mem2Reg:     SCC:\n");
+      errs() << "\n";
     }
 
-    // if (hoistMemoryInstructionsRelyingOnExistingRegisterValues(memorySCC, memoryInst)) {
+    // if (hoistMemoryInstructionsRelyingOnExistingRegisterValues(memorySCC,
+    // memoryInst)) {
     //   modified = true;
     //   continue;
     // }
@@ -113,7 +133,8 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister (void) {
   return false;
 }
 
-std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (void) {
+std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
+    void) {
 
   /*
    * Identify SCC containing only loads/stores on a single memory location
@@ -134,13 +155,15 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (vo
     // scc->printMinimal(errs() << "SCC: \n"); errs() << "\n";
     // for (auto edge : scc->getEdges()) {
     //   auto value = edge->getOutgoingT();
-    //   // if (isa<GetElementPtrInst>(value) || isa<StoreInst>(value) || isa<LoadInst>(value)) {
+    //   // if (isa<GetElementPtrInst>(value) || isa<StoreInst>(value) ||
+    //   isa<LoadInst>(value)) {
     //   //   edge->print(errs() << "Edge:\n"); errs() << "\n";
     //   // }
     // }
 
     /*
-     * Analyze the SCC to make sure all instructions within can only access the same memory location
+     * Analyze the SCC to make sure all instructions within can only access the
+     * same memory location
      */
     auto isSingleMemoryLocation = false;
     Value *memoryLocation = nullptr;
@@ -148,16 +171,14 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (vo
       auto value = nodePair.first;
 
       /*
-       * Check if the current instruction cannot access memory and therefore it can be safely skipped
+       * Check if the current instruction cannot access memory and therefore it
+       * can be safely skipped
        *
        * TODO: Expand understanding of instructions that won't interfere
        */
-      if (isa<BinaryOperator>(value)
-        || isa<CmpInst>(value)
-        || isa<BranchInst>(value)
-        || isa<SelectInst>(value)
-        || isa<CastInst>(value)
-        || isa<PHINode>(value)) {
+      if (isa<BinaryOperator>(value) || isa<CmpInst>(value)
+          || isa<BranchInst>(value) || isa<SelectInst>(value)
+          || isa<CastInst>(value) || isa<PHINode>(value)) {
         continue;
       }
 
@@ -170,7 +191,7 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (vo
       } else if (auto store = dyn_cast<StoreInst>(value)) {
         loadOrStoreLocation = store->getPointerOperand();
       }
-      if (!loadOrStoreLocation){
+      if (!loadOrStoreLocation) {
         isSingleMemoryLocation = false;
         break;
       }
@@ -183,7 +204,7 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (vo
         memoryLocation = loadOrStoreLocation;
         continue;
       }
-      
+
       /*
        * The current memory instruction may access another memory location.
        * Hence, this SCC cannot be considered by the optimization
@@ -200,7 +221,8 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (vo
     }
 
     /*
-     * Ensure no memory aliases with any loop instruction outside the current SCC.
+     * Ensure no memory aliases with any loop instruction outside the current
+     * SCC.
      */
     auto hasExternalMemoryDependence = false;
     for (auto nodePair : scc->internalNodePairs()) {
@@ -209,23 +231,29 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (vo
       for (auto edge : node->getAllConnectedEdges()) {
         auto producer = edge->getOutgoingT();
         auto consumer = edge->getIncomingT();
-        if (scc->isInternal(consumer) && scc->isInternal(producer)) continue;
-        if (!edge->isMemoryDependence()) continue;
+        if (scc->isInternal(consumer) && scc->isInternal(producer))
+          continue;
+        if (!edge->isMemoryDependence())
+          continue;
 
         hasExternalMemoryDependence = true;
         break;
       }
 
-      if (hasExternalMemoryDependence) break;
+      if (hasExternalMemoryDependence)
+        break;
     }
-    if (hasExternalMemoryDependence) continue;
+    if (hasExternalMemoryDependence)
+      continue;
 
-    //if (noelle.getVerbosity() >= Verbosity::Maximal) {
-      // memoryLocation->print(errs() << "Mem2Reg:  Possible loop invariant memory location: "); errs() << "\n";
+    // if (noelle.getVerbosity() >= Verbosity::Maximal) {
+    // memoryLocation->print(errs() << "Mem2Reg:  Possible loop invariant memory
+    // location: "); errs() << "\n";
     //}
 
     /*
-     * The pointer to the memory location accessed by the SCC must be a loop invariant.
+     * The pointer to the memory location accessed by the SCC must be a loop
+     * invariant.
      */
     if (auto memoryInst = dyn_cast<Instruction>(memoryLocation)) {
       if (!invariants.isLoopInvariant(memoryInst)) {
@@ -242,7 +270,8 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations (vo
   return singleMemoryLocationsBySCC;
 }
 
-bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLocation) {
+bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC(SCC *scc,
+                                                     Value *memoryLocation) {
 
   auto orderedMemoryInstsByBlock = collectOrderedMemoryInstsByBlock(scc);
 
@@ -271,15 +300,16 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
   lastRegisterValueByBlock.insert(std::make_pair(loopPreHeader, initialLoad));
 
   /*
-   * This list will track placeholder PHIs at all entries where predecessors weren't visited first
-   * Their incoming values will be determined after the end of the entire traversal
-   * Also track every phi for pruning afterwards
-   */ 
+   * This list will track placeholder PHIs at all entries where predecessors
+   * weren't visited first Their incoming values will be determined after the
+   * end of the entire traversal Also track every phi for pruning afterwards
+   */
   std::unordered_set<PHINode *> placeholderPHIs{};
   std::unordered_set<PHINode *> allPHIs{};
 
   if (noelle.getVerbosity() >= Verbosity::Maximal) {
-    errs() << "Mem2Reg: Iterating basic blocks to determine last stored values\n";
+    errs()
+        << "Mem2Reg: Iterating basic blocks to determine last stored values\n";
   }
 
   while (!queue.empty()) {
@@ -287,17 +317,21 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
     queue.pop();
 
     /*
-     * If this block as well as 1+ predecessors do not have a last register value,
-     * add a placeholder PHI. It's incoming values will be determined after the traversal
+     * If this block as well as 1+ predecessors do not have a last register
+     * value, add a placeholder PHI. It's incoming values will be determined
+     * after the traversal
      */
     if (lastRegisterValueByBlock.find(B) == lastRegisterValueByBlock.end()) {
 
       bool pushOffExecutionUntilPredecessorsAreTraversed = false;
       for (auto predBlock : predecessors(B)) {
-        if (lastRegisterValueByBlock.find(predBlock) != lastRegisterValueByBlock.end()) continue;
+        if (lastRegisterValueByBlock.find(predBlock)
+            != lastRegisterValueByBlock.end())
+          continue;
 
         if (noelle.getVerbosity() >= Verbosity::Maximal) {
-          B->printAsOperand(errs() << "Mem2Reg: placeholder PHI required: "); errs() << "\n";
+          B->printAsOperand(errs() << "Mem2Reg: placeholder PHI required: ");
+          errs() << "\n";
         }
 
         IRBuilder<> builder(B->getFirstNonPHI());
@@ -312,15 +346,19 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
     }
 
     if (noelle.getVerbosity() >= Verbosity::Maximal) {
-      B->printAsOperand(errs() << "Mem2Reg:  checking for last value entering block: "); errs() << "\n";
+      B->printAsOperand(
+          errs() << "Mem2Reg:  checking for last value entering block: ");
+      errs() << "\n";
     }
 
     /*
      * Fetch the current register value that would be in the memory location
-     * If the last register value for the block is ALREADY set, it will be the loop/sub-loop entry
-     * 
-     * For all other blocks, their already-traversed predecessors will have last register values
-     * If there is more than 1 predecessor, create a PHI to collect those predecessor's last values
+     * If the last register value for the block is ALREADY set, it will be the
+     * loop/sub-loop entry
+     *
+     * For all other blocks, their already-traversed predecessors will have last
+     * register values If there is more than 1 predecessor, create a PHI to
+     * collect those predecessor's last values
      */
     Value *lastValue = nullptr;
     if (lastRegisterValueByBlock.find(B) != lastRegisterValueByBlock.end()) {
@@ -330,8 +368,11 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
       auto singlePredBlock = B->getSinglePredecessor();
       if (singlePredBlock) {
         assertAndDumpLogsOnFailure(
-          [&]() -> bool { return lastRegisterValueByBlock.find(singlePredBlock) != lastRegisterValueByBlock.end(); },
-          "Mem2Reg: can't identify last value of the single predecessor to the block");
+            [&]() -> bool {
+              return lastRegisterValueByBlock.find(singlePredBlock)
+                     != lastRegisterValueByBlock.end();
+            },
+            "Mem2Reg: can't identify last value of the single predecessor to the block");
         lastValue = lastRegisterValueByBlock.at(singlePredBlock);
       } else {
 
@@ -343,8 +384,11 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
 
         for (auto predBlock : predecessors(B)) {
           assertAndDumpLogsOnFailure(
-            [&]() -> bool { return lastRegisterValueByBlock.find(predBlock) != lastRegisterValueByBlock.end(); },
-            "Mem2Reg: can't identify last value of one of the predecessors to the block");
+              [&]() -> bool {
+                return lastRegisterValueByBlock.find(predBlock)
+                       != lastRegisterValueByBlock.end();
+              },
+              "Mem2Reg: can't identify last value of one of the predecessors to the block");
           auto predV = lastRegisterValueByBlock.at(predBlock);
           phi->addIncoming(predV, predBlock);
         }
@@ -354,16 +398,20 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
     }
 
     if (noelle.getVerbosity() >= Verbosity::Maximal) {
-      B->printAsOperand(errs() << "Mem2Reg:  Last value entering block: "); errs() << "\t";
-      lastValue->print(errs()); errs() << "\n";
+      B->printAsOperand(errs() << "Mem2Reg:  Last value entering block: ");
+      errs() << "\t";
+      lastValue->print(errs());
+      errs() << "\n";
     }
 
     /*
      * Traverse to successors of current block that are within the loop
      */
     for (auto succBlock : successors(B)) {
-      if (!loopStructure->isIncluded(succBlock)) continue;
-      if (visited.find(succBlock) != visited.end()) continue;
+      if (!loopStructure->isIncluded(succBlock))
+        continue;
+      if (visited.find(succBlock) != visited.end())
+        continue;
       queue.push(succBlock);
       visited.insert(succBlock);
     }
@@ -372,14 +420,17 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
      * For each load in the block, replace it with the current register value
      * For each store in the block, update the current register value
      */
-    if (orderedMemoryInstsByBlock.find(B) == orderedMemoryInstsByBlock.end()) continue;
+    if (orderedMemoryInstsByBlock.find(B) == orderedMemoryInstsByBlock.end())
+      continue;
     for (auto memInst : orderedMemoryInstsByBlock.at(B)) {
       if (auto loadInst = dyn_cast<LoadInst>(memInst)) {
 
         /*
-         * NOTE: We cannot replace users as we traverse the users list, so we cache users of the load
+         * NOTE: We cannot replace users as we traverse the users list, so we
+         * cache users of the load
          */
-        std::unordered_set<User *> usersOfLoad{loadInst->user_begin(), loadInst->user_end()};
+        std::unordered_set<User *> usersOfLoad{ loadInst->user_begin(),
+                                                loadInst->user_end() };
         for (auto user : usersOfLoad) {
           user->replaceUsesOfWith(loadInst, lastValue);
         }
@@ -388,31 +439,40 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
         lastValue = storeInst->getValueOperand();
 
         if (noelle.getVerbosity() >= Verbosity::Maximal) {
-          lastValue->print(errs() << "Mem2Reg:  Value updated: "); errs() << "\n";
+          lastValue->print(errs() << "Mem2Reg:  Value updated: ");
+          errs() << "\n";
         }
 
-      } else assert(false && "Mem2Reg: corrupt internal memory instruction map data structure");
+      } else
+        assert(
+            false
+            && "Mem2Reg: corrupt internal memory instruction map data structure");
     }
     lastRegisterValueByBlock.insert_or_assign(B, lastValue);
-
   }
 
   /*
-   * For each placeholder, wire up the PHI with the last register values from all predecessors
-   */ 
+   * For each placeholder, wire up the PHI with the last register values from
+   * all predecessors
+   */
   for (auto phi : placeholderPHIs) {
     auto phiBlock = phi->getParent();
     for (auto predBlock : predecessors(phiBlock)) {
       assertAndDumpLogsOnFailure(
-        [&]() -> bool { return lastRegisterValueByBlock.find(predBlock) != lastRegisterValueByBlock.end(); },
-        "Mem2Reg: can't identify last value of predecessor to placeholder PHI block");
+          [&]() -> bool {
+            return lastRegisterValueByBlock.find(predBlock)
+                   != lastRegisterValueByBlock.end();
+          },
+          "Mem2Reg: can't identify last value of predecessor to placeholder PHI block");
       auto prevValue = lastRegisterValueByBlock.at(predBlock);
 
       /*
-       * To prevent a PHI from referencing itself, add an intermediate in the predecessor block
-       * that references the PHI, and then use that intermediate
-       * 
-       * TODO: Determine if we need to handle the case where the block is its own predecessor differently
+       * To prevent a PHI from referencing itself, add an intermediate in the
+       * predecessor block that references the PHI, and then use that
+       * intermediate
+       *
+       * TODO: Determine if we need to handle the case where the block is its
+       * own predecessor differently
        */
       if (prevValue == phi) {
         auto numPreds = pred_size(predBlock);
@@ -422,7 +482,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
           intermediatePHI->addIncoming(phi, latchPredBlock);
         }
         prevValue = intermediatePHI;
-        
+
         allPHIs.insert(intermediatePHI);
         lastRegisterValueByBlock.insert_or_assign(predBlock, intermediatePHI);
       }
@@ -442,8 +502,11 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
     auto singlePredBlock = exitBlock->getSinglePredecessor();
     if (singlePredBlock) {
       assertAndDumpLogsOnFailure(
-        [&]() -> bool { return lastRegisterValueByBlock.find(singlePredBlock) != lastRegisterValueByBlock.end(); },
-        "Mem2Reg: can't identify last value of predecessor to loop exit block");
+          [&]() -> bool {
+            return lastRegisterValueByBlock.find(singlePredBlock)
+                   != lastRegisterValueByBlock.end();
+          },
+          "Mem2Reg: can't identify last value of predecessor to loop exit block");
       lastValue = lastRegisterValueByBlock.at(singlePredBlock);
     } else {
 
@@ -452,8 +515,11 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
       auto exitPHI = exitBuilder.CreatePHI(initialLoad->getType(), numPreds);
       for (auto exitPredBlock : predecessors(exitBlock)) {
         assertAndDumpLogsOnFailure(
-          [&]() -> bool { return lastRegisterValueByBlock.find(exitPredBlock) != lastRegisterValueByBlock.end(); },
-          "Mem2Reg: can't identify last value of predecessor to loop exit block");
+            [&]() -> bool {
+              return lastRegisterValueByBlock.find(exitPredBlock)
+                     != lastRegisterValueByBlock.end();
+            },
+            "Mem2Reg: can't identify last value of predecessor to loop exit block");
         auto exitPredValue = lastRegisterValueByBlock.at(exitPredBlock);
         exitPHI->addIncoming(exitPredValue, exitPredBlock);
       }
@@ -472,30 +538,37 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC (SCC *scc, Value *memoryLoc
     for (auto I : insts) {
 
       if (noelle.getVerbosity() >= Verbosity::Maximal) {
-        I->print(errs() << "Mem2Reg:  Removing\n"); errs() << "\n";
+        I->print(errs() << "Mem2Reg:  Removing\n");
+        errs() << "\n";
       }
 
-      assert(I->user_empty() && "Mem2Reg: Removing instruction but failed to replace all its uses");
+      assert(
+          I->user_empty()
+          && "Mem2Reg: Removing instruction but failed to replace all its uses");
       I->eraseFromParent();
     }
   }
 
   /*
-   * Primary goal: prevent any extra PHI loop carried dependencies that already exist from being re-stated
+   * Primary goal: prevent any extra PHI loop carried dependencies that already
+   * exist from being re-stated
    */
   removeRedundantPHIs(allPHIs, lastRegisterValueByBlock);
 
   return true;
 }
 
-bool Mem2RegNonAlloca::hoistMemoryInstructionsRelyingOnExistingRegisterValues (SCC *scc, Value *memoryLocation) {
+bool Mem2RegNonAlloca::hoistMemoryInstructionsRelyingOnExistingRegisterValues(
+    SCC *scc,
+    Value *memoryLocation) {
 
   auto orderedMemoryInstsByBlock = collectOrderedMemoryInstsByBlock(scc);
 
   auto loopStructure = LDI.getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
 
-  // Build a list of basic blocks that collect 2+ unique stored values (store merging blocks)
+  // Build a list of basic blocks that collect 2+ unique stored values (store
+  // merging blocks)
   std::unordered_map<BasicBlock *, StoreInst *> blockToLastStoreMap;
   std::queue<BasicBlock *> blocksToTraverse;
   std::unordered_set<BasicBlock *> blocksMergingStores;
@@ -505,7 +578,8 @@ bool Mem2RegNonAlloca::hoistMemoryInstructionsRelyingOnExistingRegisterValues (S
     auto memoryInsts = memoryInstsByBlock.second;
 
     StoreInst *lastStore = nullptr;
-    for (auto instIter = memoryInsts.rbegin(); instIter != memoryInsts.rend(); --instIter) {
+    for (auto instIter = memoryInsts.rbegin(); instIter != memoryInsts.rend();
+         --instIter) {
       auto inst = *instIter;
       if (auto store = dyn_cast<StoreInst>(inst)) {
         lastStore = store;
@@ -513,7 +587,8 @@ bool Mem2RegNonAlloca::hoistMemoryInstructionsRelyingOnExistingRegisterValues (S
       }
     }
 
-    if (!lastStore) continue;
+    if (!lastStore)
+      continue;
     blockToLastStoreMap.insert(std::make_pair(block, lastStore));
     blocksToTraverse.push(block);
   }
@@ -529,55 +604,60 @@ bool Mem2RegNonAlloca::hoistMemoryInstructionsRelyingOnExistingRegisterValues (S
       }
 
       /*
-       * This check is needed, even if the only way a block points to itself in our traversal
-       * is if our traversal started in that block
+       * This check is needed, even if the only way a block points to itself in
+       * our traversal is if our traversal started in that block
        */
-      if (succBlock == block) continue;
+      if (succBlock == block)
+        continue;
       blocksToTraverse.push(succBlock);
     }
   }
 
-  // Locate candidate SCCs that have single header PHIs and consume stored values
+  // Locate candidate SCCs that have single header PHIs and consume stored
+  // values
   // TODO:
 
   // Filter candidates:
-  // The header PHI's pre-header incoming value must be the initial value at the memory location
-  // PHIs must exist at all store merging blocks and propagate all last-stored values
-  // Only and all last-stored values and store merging PHIs must propagate to the header
+  // The header PHI's pre-header incoming value must be the initial value at the
+  // memory location PHIs must exist at all store merging blocks and propagate
+  // all last-stored values Only and all last-stored values and store merging
+  // PHIs must propagate to the header
 
   return false;
 }
 
-void Mem2RegNonAlloca::removeRedundantPHIs (
-  std::unordered_set<PHINode *> phis,
-  std::unordered_map<BasicBlock *, Value *> lastRegisterValueByBlock
-) {
+void Mem2RegNonAlloca::removeRedundantPHIs(
+    std::unordered_set<PHINode *> phis,
+    std::unordered_map<BasicBlock *, Value *> lastRegisterValueByBlock) {
 
   /*
    * For each PHI, determine if all incoming values are the same.
    * If so, replace this PHI's uses with that incoming value
    */
   // TODO:
-
 }
 
-std::unordered_map<BasicBlock *, std::vector<Instruction *>> Mem2RegNonAlloca::collectOrderedMemoryInstsByBlock (SCC *scc) {
+std::unordered_map<BasicBlock *, std::vector<Instruction *>> Mem2RegNonAlloca::
+    collectOrderedMemoryInstsByBlock(SCC *scc) {
 
   if (noelle.getVerbosity() >= Verbosity::Maximal) {
-    errs() << "Mem2Reg:  Collecting and ordering memory loads/stores by basic block\n";
+    errs()
+        << "Mem2Reg:  Collecting and ordering memory loads/stores by basic block\n";
   }
 
   /*
    * Index memory values by their basic block
    */
-  std::unordered_map<BasicBlock *, std::unordered_set<Instruction *>> memoryInstsByBlock;
+  std::unordered_map<BasicBlock *, std::unordered_set<Instruction *>>
+      memoryInstsByBlock;
   for (auto nodePair : scc->internalNodePairs()) {
     auto value = nodePair.first;
     Instruction *memoryInst = nullptr;
     if (isa<LoadInst>(value) || isa<StoreInst>(value)) {
       memoryInst = cast<Instruction>(value);
     }
-    if (!memoryInst) continue;
+    if (!memoryInst)
+      continue;
 
     auto B = memoryInst->getParent();
     if (memoryInstsByBlock.find(B) == memoryInstsByBlock.end()) {
@@ -592,16 +672,19 @@ std::unordered_map<BasicBlock *, std::vector<Instruction *>> Mem2RegNonAlloca::c
   /*
    * Sort memory values in execution order for each basic block
    */
-  std::unordered_map<BasicBlock *, std::vector<Instruction *>> orderedMemoryInstsByBlock;
+  std::unordered_map<BasicBlock *, std::vector<Instruction *>>
+      orderedMemoryInstsByBlock;
   for (auto blockAndInstsPair : memoryInstsByBlock) {
     auto B = blockAndInstsPair.first;
     auto memoryInsts = blockAndInstsPair.second;
     std::vector<Instruction *> orderedInstsInit{};
-    auto result = orderedMemoryInstsByBlock.insert(std::make_pair(B, orderedInstsInit));
+    auto result =
+        orderedMemoryInstsByBlock.insert(std::make_pair(B, orderedInstsInit));
     auto &orderedInsts = (*result.first).second;
 
     for (auto &I : *B) {
-      if (memoryInsts.find(&I) == memoryInsts.end()) continue;
+      if (memoryInsts.find(&I) == memoryInsts.end())
+        continue;
       orderedInsts.push_back(&I);
     }
   }
@@ -609,7 +692,9 @@ std::unordered_map<BasicBlock *, std::vector<Instruction *>> Mem2RegNonAlloca::c
   return orderedMemoryInstsByBlock;
 }
 
-void Mem2RegNonAlloca::assertAndDumpLogsOnFailure (std::function<bool(void)> assertion, std::string errorString) {
+void Mem2RegNonAlloca::assertAndDumpLogsOnFailure(
+    std::function<bool(void)> assertion,
+    std::string errorString) {
   if (!assertion()) {
     errs() << errorString << "\n";
     if (noelle.getVerbosity() >= Verbosity::Maximal) {
@@ -619,16 +704,18 @@ void Mem2RegNonAlloca::assertAndDumpLogsOnFailure (std::function<bool(void)> ass
   }
 }
 
-void Mem2RegNonAlloca::dumpLogs (void) {
+void Mem2RegNonAlloca::dumpLogs(void) {
   auto loop = LDI.getLoopStructure();
   auto basicBlocks = loop->getBasicBlocks();
 
   /*
    * Identify loop
    */
-  std::string loopId{std::to_string(loop->getID())};
+  std::string loopId{ std::to_string(loop->getID()) };
 
-  // DGPrinter::writeGraph<SCCDAG, SCC>("mem2reg-sccdag-loop-" + loopId + ".dot", sccManager->getSCCDAG());
-  // std::set<BasicBlock *> basicBlocksSet(basicBlocks.begin(), basicBlocks.end());
-  // DGPrinter::writeGraph<SubCFGs, BasicBlock>("mem2reg-current-loop-" + loopId + ".dot", new SubCFGs(basicBlocksSet));
+  // DGPrinter::writeGraph<SCCDAG, SCC>("mem2reg-sccdag-loop-" + loopId +
+  // ".dot", sccManager->getSCCDAG()); std::set<BasicBlock *>
+  // basicBlocksSet(basicBlocks.begin(), basicBlocks.end());
+  // DGPrinter::writeGraph<SubCFGs, BasicBlock>("mem2reg-current-loop-" + loopId
+  // + ".dot", new SubCFGs(basicBlocksSet));
 }
