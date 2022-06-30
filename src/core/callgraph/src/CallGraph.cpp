@@ -515,7 +515,7 @@ namespace llvm::noelle {
          * Check what the reference of @f is used for.
          */
         auto canEscape = false;
-        for (auto argID = 0; argID < callInst->getNumArgOperands(); argID++){
+        for (auto argID = 0u; argID < callInst->getNumArgOperands(); argID++){
           auto arg = callInst->getArgOperand(argID);
           if (arg == f){
             canEscape = true;

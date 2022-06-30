@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Simone Campanoni
+ * Copyright 2019 - 2022 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -21,6 +21,8 @@ namespace llvm::noelle {
       CallGraphNode() = default;
 
       virtual void print (void) = 0;
+
+      virtual ~CallGraphNode ();
   };
 
   class CallGraphInstructionNode : public CallGraphNode {
@@ -30,6 +32,8 @@ namespace llvm::noelle {
       Instruction * getInstruction (void) const ;
 
       void print (void) override ;
+
+      virtual ~CallGraphInstructionNode();
 
     private:
       Instruction *i;
@@ -56,6 +60,8 @@ namespace llvm::noelle {
       std::unordered_set<CallGraphFunctionFunctionEdge *> getEdges (void) const ;
 
       void print (void) override ;
+
+      virtual ~CallGraphFunctionNode();
 
     private:
       Function &f;

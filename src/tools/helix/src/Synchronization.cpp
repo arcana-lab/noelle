@@ -220,7 +220,7 @@ void HELIX::addSynchronizations (
    * before being stored in the live out environment. Since we do not store to the live out
    * environment every iteration of the loop, this synchronization upon exiting is necessary
    */
-  for (auto i = 0; i < helixTask->getNumberOfLastBlocks(); ++i) {
+  for (auto i = 0u; i < helixTask->getNumberOfLastBlocks(); ++i) {
     auto loopExitBlock = helixTask->getLastBlock(i);
     auto loopExitTerminator = loopExitBlock->getTerminator();
     for (auto ss : *sss) {
@@ -233,7 +233,6 @@ void HELIX::addSynchronizations (
    * Add wait and signal instructions to the last-iteration-body if it exists.
    */
   if (this->lastIterationExecutionBlock != nullptr){
-    auto loopExitTerminator = this->lastIterationExecutionBlock->getTerminator();
     for (auto ss : *sss) {
       injectWait(ss, this->lastIterationExecutionBlock->getFirstNonPHI());
     }
@@ -304,7 +303,7 @@ void HELIX::addSynchronizations (
       /*
        * This is not the prologue.
        */
-      ss->forEachEntry([preambleSS, ss, &injectWait, &injectExitFlagCheck](Instruction *justAfterEntry) -> void {
+      ss->forEachEntry([ss, &injectWait](Instruction *justAfterEntry) -> void {
         injectWait(ss, justAfterEntry);
       });
 

@@ -17,13 +17,27 @@ namespace llvm::noelle {
  * Dominator Node Summary implementation
  */
 
-DomNodeSummary::DomNodeSummary (const DTAliases::Node &node) :
-  B{node.getBlock()}, level{node.getLevel()},
-  parent{nullptr}, iDom{nullptr}, children{} {}
+DomNodeSummary::DomNodeSummary (const DTAliases::Node &node) 
+  :   B{node.getBlock()}
+    , level{node.getLevel()}
+    , parent{nullptr}
+    , children{}
+    , iDom{nullptr} 
+    {
 
-DomNodeSummary::DomNodeSummary (const DomNodeSummary &node) :
-  B{node.getBlock()}, level{node.getLevel()},
-  parent{nullptr}, iDom{nullptr}, children{} {}
+  return ;
+}
+
+DomNodeSummary::DomNodeSummary (const DomNodeSummary &node) 
+  :   B{node.getBlock()}
+    , level{node.getLevel()}
+    , parent{nullptr}
+    , children{}
+    , iDom{nullptr} 
+    {
+
+  return ;
+}
 
 raw_ostream &DomNodeSummary::print (raw_ostream &stream, std::string prefix) {
   stream << prefix << "Block: ";
