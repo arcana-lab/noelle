@@ -64,6 +64,7 @@ namespace llvm::noelle {
       void print (raw_ostream &stream);
       
     private:
+      uint64_t metadataLoopID;
       uint64_t ID;
       BasicBlock *header;
       BasicBlock *preHeader;

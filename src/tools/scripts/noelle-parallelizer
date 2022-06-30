@@ -7,6 +7,11 @@ intermediateResult="baseline_with_parallel_plan.bc" ;
 intermediateResult_unoptimized="parallelized_unoptimized.bc" ;
 outputIR=$3
 
+# Add loop id to every header-terminator instruction (i.e., every LoopStructure)
+cmdToExecute="noelle-parallel-load -load ${installDir}/lib/LoopID.so -loopid ${inputIR} -o ${inputIR}" ;
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Step 1: Run parallelization planner
 cmdToExecute="noelle-parallelization-planner ${inputIR} -o ${intermediateResult} ${@:4}" ;
 echo $cmdToExecute ;

@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/LoopStructure.hpp"
+#include "noelle/core/MetadataManager.hpp"
 
 namespace llvm::noelle{ 
 
@@ -63,10 +64,19 @@ LoopStructure::LoopStructure (
   this->exitEdges = std::vector<std::pair<BasicBlock *, BasicBlock *>>(exitEdges.begin(), exitEdges.end());
 
   /*
-   * There is no metadata.
-   * Hence, we assign an arbitrary ID.
+   * Get noelle.loop_id.loopid metadata
    */
-  this->ID = LoopStructure::globalID++;
+  Module *M = this->header->getModule();
+  MetadataManager metadataManager{*M};
+  if (!metadataManager.doesHaveMetadata(this, "noelle.loop_id.loopid")){
+    this->ID = LoopStructure::globalID++;
+    this->metadataLoopID = false;
+  } else {
+    std::string idAsString = metadataManager.getMetadata(this, "noelle.loop_id.loopid");
+    this->ID = std::stoi(idAsString);
+    this->metadataLoopID = true;
+  }
+  
   // Set IDs before planner, using a new pass inside the noelle-parallelizer
   // in the pass if the metadata (noelle.looporder ... follow the structure) exists, abort, otherwise create it
   // here check if we have metadata for id, if there isn't set a flag to false. Check the flag in getID()
@@ -221,6 +231,11 @@ void LoopStructure::print (raw_ostream &stream) {
 }
 
 uint64_t LoopStructure::getID (void) const {
+  if (this->metadataLoopID == false){
+    errs() << "LoopStructure does not have ID. Abort.\n";
+    abort();
+  }
+  
   return this->ID;
 }
    

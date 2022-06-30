@@ -58,6 +58,9 @@ loop_stats:
 parallelization_planner:
 	cd $@ ; ../../scripts/run_me.sh
 
+loop_id:
+	cd $@ ; ../../scripts/run_me.sh
+
 clean:
 	rm -rf */build */*.json ; 
 	rm -rf */build */*/*.json ; 
