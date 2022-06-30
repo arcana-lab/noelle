@@ -70,11 +70,11 @@ LoopStructure::LoopStructure (
   MetadataManager metadataManager{*M};
   if (!metadataManager.doesHaveMetadata(this, "noelle.loop_id.loopid")){
     this->ID = LoopStructure::globalID++;
-    this->metadataLoopID = false;
+    this->hasLoopIDMetadata = false;
   } else {
     std::string idAsString = metadataManager.getMetadata(this, "noelle.loop_id.loopid");
     this->ID = std::stoi(idAsString);
-    this->metadataLoopID = true;
+    this->hasLoopIDMetadata = true;
   }
   
   // Set IDs before planner, using a new pass inside the noelle-parallelizer
