@@ -2,7 +2,7 @@ EXTERNAL_OPTIONS=
 DEBUG?=0
 JOBS?=8
 
-all: src
+all: hooks src
 
 external:
 	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS) $(EXTERNAL_OPTIONS);
@@ -13,9 +13,12 @@ src: external
 src-fast: external
 	cd src ; make core-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
 	cd src ; make tools-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
-	
+
 tests: src
 	cd tests ; make ;
+
+hooks:
+	make -C .githooks
 
 clean:
 	cd external ; make clean ; 
