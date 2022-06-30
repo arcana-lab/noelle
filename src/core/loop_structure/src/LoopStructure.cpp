@@ -68,13 +68,13 @@ LoopStructure::LoopStructure (
    */
   Module *M = this->header->getModule();
   MetadataManager metadataManager{*M};
-  if (!metadataManager.doesHaveMetadata(this, "noelle.loop_id.loopid")){
-    this->ID = LoopStructure::globalID++;
-    this->hasLoopIDMetadata = false;
-  } else {
+  this->hasLoopIDMetadata = metadataManager.doesHaveMetadata(this, "noelle.loop_id.loopid");
+  if (this->hasLoopIDMetadata){
     std::string idAsString = metadataManager.getMetadata(this, "noelle.loop_id.loopid");
     this->ID = std::stoi(idAsString);
-    this->hasLoopIDMetadata = true;
+
+  } else {
+    this->ID = LoopStructure::globalID++;
   }
   
   // Set IDs before planner, using a new pass inside the noelle-parallelizer
@@ -231,7 +231,7 @@ void LoopStructure::print (raw_ostream &stream) {
 }
 
 uint64_t LoopStructure::getID (void) const {
-  if (this->metadataLoopID == false){
+  if (!this->hasLoopIDMetadata){
     errs() << "LoopStructure does not have ID. Abort.\n";
     abort();
   }
