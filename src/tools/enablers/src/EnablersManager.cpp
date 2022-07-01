@@ -98,7 +98,7 @@ bool EnablersManager::runOnModule (Module &M) {
        */
       errs() << "EnablersManager:   Loop:\n";
       errs() << "EnablersManager:     Function = \"" << loopStructure->getFunction()->getName() << "\"\n";
-      errs() << "EnablersManager:     Loop ID  = " << loopStructure->getID() << "\n";
+      //errs() << "EnablersManager:     Loop ID  = " << loopStructure->getID() << "\n"; // ED
       errs() << "EnablersManager:     Entry instruction = " << *loopStructure->getHeader()->getFirstNonPHI() << "\n";
 
       /*
