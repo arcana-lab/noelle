@@ -1,12 +1,23 @@
 /*
  * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
@@ -14,17 +25,16 @@
 
 namespace llvm::noelle {
 
-InductionVariableManager::InductionVariableManager (
-  StayConnectedNestedLoopForestNode *loopNode,
-  InvariantManager &IVM,
-  ScalarEvolution &SE,
-  SCCDAG &sccdag,
-  LoopEnvironment &loopEnv,
-  Loop &LLVMLoop
-) : loop{loopNode}, 
-    loopToIVsMap{}, 
-    loopToGoverningIVAttrMap{} 
-  {
+InductionVariableManager::InductionVariableManager(
+    StayConnectedNestedLoopForestNode *loopNode,
+    InvariantManager &IVM,
+    ScalarEvolution &SE,
+    SCCDAG &sccdag,
+    LoopEnvironment &loopEnv,
+    Loop &LLVMLoop)
+  : loop{ loopNode },
+    loopToIVsMap{},
+    loopToGoverningIVAttrMap{} {
   assert(this->loop != nullptr);
 
   /*
@@ -60,11 +70,17 @@ InductionVariableManager::InductionVariableManager (
        */
       InductionDescriptor ID = InductionDescriptor();
       bool llvmDeterminedValidIV;
-      bool llvmLoopValidForInductionAnalysis = phi.getBasicBlockIndex(LLVMLoop.getLoopPreheader()) >= 0;
-      
-      if (llvmLoopValidForInductionAnalysis && InductionDescriptor::isInductionPHI(&phi, &LLVMLoop, &SE, ID)) {
+      bool llvmLoopValidForInductionAnalysis =
+          phi.getBasicBlockIndex(LLVMLoop.getLoopPreheader()) >= 0;
+
+      if (llvmLoopValidForInductionAnalysis
+          && InductionDescriptor::isInductionPHI(&phi, &LLVMLoop, &SE, ID)) {
         llvmDeterminedValidIV = true;
-      } else if (phi.getType()->isFloatingPointTy() && InductionDescriptor::isFPInductionPHI(&phi, &LLVMLoop, &SE, ID)) {
+      } else if (phi.getType()->isFloatingPointTy()
+                 && InductionDescriptor::isFPInductionPHI(&phi,
+                                                          &LLVMLoop,
+                                                          &SE,
+                                                          ID)) {
         llvmDeterminedValidIV = true;
       } else {
         llvmDeterminedValidIV = false;
@@ -78,7 +94,8 @@ InductionVariableManager::InductionVariableManager (
         noelleDeterminedValidIV = false;
       } else {
         /*
-         * Fetch the SCEV and check if it suggests this is an induction variable.
+         * Fetch the SCEV and check if it suggests this is an induction
+         * variable.
          */
         auto scev = SE.getSCEV(&phi);
         if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
@@ -89,13 +106,26 @@ InductionVariableManager::InductionVariableManager (
       /*
        * Allocate the induction variable.
        */
-      InductionVariable* IV = nullptr;
+      InductionVariable *IV = nullptr;
       auto sccContainingIV = sccdag.sccOfValue(&phi);
       if (noelleDeterminedValidIV) {
-        IV = new InductionVariable(loop, IVM, SE, &phi, *sccContainingIV, loopEnv, referentialExpander);
+        IV = new InductionVariable(loop,
+                                   IVM,
+                                   SE,
+                                   &phi,
+                                   *sccContainingIV,
+                                   loopEnv,
+                                   referentialExpander);
       } else if (llvmDeterminedValidIV) {
         // Construct from LLVM abstraction
-        IV = new InductionVariable(loop, IVM, SE, &phi, *sccContainingIV, loopEnv, referentialExpander, ID);
+        IV = new InductionVariable(loop,
+                                   IVM,
+                                   SE,
+                                   &phi,
+                                   *sccContainingIV,
+                                   loopEnv,
+                                   referentialExpander,
+                                   ID);
       } else {
         continue;
       }
@@ -113,7 +143,10 @@ InductionVariableManager::InductionVariableManager (
        */
       this->loopToIVsMap[loop].insert(IV);
       auto exitBlocks = loop->getLoopExitBasicBlocks();
-      auto attribution = new LoopGoverningIVAttribution(loopToAnalyze, *IV, *sccContainingIV, exitBlocks);
+      auto attribution = new LoopGoverningIVAttribution(loopToAnalyze,
+                                                        *IV,
+                                                        *sccContainingIV,
+                                                        exitBlocks);
       if (attribution->isSCCContainingIVWellFormed()) {
         loopToGoverningIVAttrMap[loop] = attribution;
       } else {
@@ -122,11 +155,12 @@ InductionVariableManager::InductionVariableManager (
     }
   }
 
-  return ;
+  return;
 }
 
-std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVariables (void) const {
-  
+std::unordered_set<InductionVariable *> InductionVariableManager::
+    getInductionVariables(void) const {
+
   /*
    * Fetch the outermost loop of @this.
    */
@@ -140,13 +174,14 @@ std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVa
   return IVs;
 }
 
-std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVariables (Instruction *i) const {
+std::unordered_set<InductionVariable *> InductionVariableManager::
+    getInductionVariables(Instruction *i) const {
   std::unordered_set<InductionVariable *> s{};
 
   /*
    * Iterate over every loop and their induction variables.
    */
-  for (auto loopIVPair : this->loopToIVsMap){
+  for (auto loopIVPair : this->loopToIVsMap) {
 
     /*
      * Fetch the set of induction variables of the current loop.
@@ -156,9 +191,9 @@ std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVa
     /*
      * Check each induction variable.
      */
-    for (auto IV : IVs){
+    for (auto IV : IVs) {
       auto insts = IV->getAllInstructions();
-      if (insts.find(i) != insts.end()){
+      if (insts.find(i) != insts.end()) {
         s.insert(IV);
       }
     }
@@ -167,20 +202,21 @@ std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVa
   return s;
 }
 
-bool InductionVariableManager::doesContributeToComputeAnInductionVariable (Instruction *i) const {
+bool InductionVariableManager::doesContributeToComputeAnInductionVariable(
+    Instruction *i) const {
 
   /*
    * Fetch the induction variable that @i contributes to.
    */
   auto IVs = this->getInductionVariables(i);
-  if (IVs.size() == 0){
+  if (IVs.size() == 0) {
     return false;
   }
 
   return true;
 }
 
-InductionVariableManager::~InductionVariableManager () {
+InductionVariableManager::~InductionVariableManager() {
   for (auto ivAttributions : loopToGoverningIVAttrMap) {
     delete ivAttributions.second;
   }
@@ -193,10 +229,12 @@ InductionVariableManager::~InductionVariableManager () {
   }
   loopToIVsMap.clear();
 
-  return ;
+  return;
 }
 
-InductionVariable * InductionVariableManager::getInductionVariable (LoopStructure &LS, Instruction *i) const {
+InductionVariable *InductionVariableManager::getInductionVariable(
+    LoopStructure &LS,
+    Instruction *i) const {
 
   /*
    * Fetch all induction variables.
@@ -206,11 +244,12 @@ InductionVariable * InductionVariableManager::getInductionVariable (LoopStructur
   /*
    * Check each induction variable.
    */
-  for (auto IV : IVs){
-    if (IV->isIVInstruction(i)){
+  for (auto IV : IVs) {
+    if (IV->isIVInstruction(i)) {
 
       /*
-       * We found an induction variable that involves the instruction given as input.
+       * We found an induction variable that involves the instruction given as
+       * input.
        */
       return IV;
     }
@@ -219,20 +258,21 @@ InductionVariable * InductionVariableManager::getInductionVariable (LoopStructur
   return nullptr;
 }
 
-std::unordered_set<InductionVariable *> InductionVariableManager::getInductionVariables (LoopStructure &LS) const {
+std::unordered_set<InductionVariable *> InductionVariableManager::
+    getInductionVariables(LoopStructure &LS) const {
   return this->loopToIVsMap.at(&LS);
 }
 
-InductionVariable * InductionVariableManager::getDerivingInductionVariable (
-  LoopStructure &LS,
-  Instruction *derivedInstruction
-) const {
+InductionVariable *InductionVariableManager::getDerivingInductionVariable(
+    LoopStructure &LS,
+    Instruction *derivedInstruction) const {
 
-  for (auto IV : this->getInductionVariables(LS)){
-    if (IV->isDerivedFromIVInstructions(derivedInstruction)){
+  for (auto IV : this->getInductionVariables(LS)) {
+    if (IV->isDerivedFromIVInstructions(derivedInstruction)) {
 
       /*
-       * We found an induction variable that derives the instruction given as input.
+       * We found an induction variable that derives the instruction given as
+       * input.
        */
       return IV;
     }
@@ -241,7 +281,8 @@ InductionVariable * InductionVariableManager::getDerivingInductionVariable (
   return nullptr;
 }
 
-InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable (LoopStructure &LS) const {
+InductionVariable *InductionVariableManager::getLoopGoverningInductionVariable(
+    LoopStructure &LS) const {
 
   /*
    * Check if the loop has the governing IV.
@@ -258,7 +299,8 @@ InductionVariable * InductionVariableManager::getLoopGoverningInductionVariable 
   return &attribution->getInductionVariable();
 }
 
-LoopGoverningIVAttribution * InductionVariableManager::getLoopGoverningIVAttribution (LoopStructure &LS) const {
+LoopGoverningIVAttribution *InductionVariableManager::
+    getLoopGoverningIVAttribution(LoopStructure &LS) const {
   if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) {
     return nullptr;
   }
@@ -266,4 +308,4 @@ LoopGoverningIVAttribution * InductionVariableManager::getLoopGoverningIVAttribu
   return loopToGoverningIVAttrMap.at(&LS);
 }
 
-}
+} // namespace llvm::noelle

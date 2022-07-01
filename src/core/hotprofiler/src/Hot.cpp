@@ -1,34 +1,43 @@
 /*
  * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
 namespace llvm::noelle {
 
-Hot::Hot ()
-  : moduleNumberOfInstructionsExecuted{0}
-  {
-  return ;
+Hot::Hot() : moduleNumberOfInstructionsExecuted{ 0 } {
+  return;
 }
-      
-bool Hot::isAvailable (void) const {
+
+bool Hot::isAvailable(void) const {
   return this->hasBeenExecuted();
 }
-   
-void Hot::computeProgramInvocations (Module &M){
+
+void Hot::computeProgramInvocations(Module &M) {
 
   /*
    * Compute the total number of instructions executed.
    */
-  for (auto pairs : this->bbInvocations){
+  for (auto pairs : this->bbInvocations) {
 
     /*
      * Fetch the current basic block
@@ -50,20 +59,21 @@ void Hot::computeProgramInvocations (Module &M){
 
   /*
    * Compute the total number of instructions executed by each function.
-   * Each call instructions is considered one; so callee instructions are not considered.
+   * Each call instructions is considered one; so callee instructions are not
+   * considered.
    */
-  for (auto pairs : this->functionInvocations){
+  for (auto pairs : this->functionInvocations) {
 
     /*
      * Fetch the function.
      */
     auto f = pairs.first;
-    
+
     /*
      * Consider all basic blocks.
      */
     uint64_t c = 0;
-    for (auto& bb : *f){
+    for (auto &bb : *f) {
       c += this->getStaticInstructions(&bb);
     }
     this->functionSelfInstructions[f] = c;
@@ -74,23 +84,24 @@ void Hot::computeProgramInvocations (Module &M){
    */
   this->computeTotalInstructions(M);
 
-  return ;
+  return;
 }
 
-void Hot::computeTotalInstructions (Module &moduleToAnalyze){
+void Hot::computeTotalInstructions(Module &moduleToAnalyze) {
 
   /*
-   * Analyze every function included in M and compute their total instructions executed.
+   * Analyze every function included in M and compute their total instructions
+   * executed.
    *
    * To do so, we iterate over all functions of M.
    */
-  for (auto &F : moduleToAnalyze){
+  for (auto &F : moduleToAnalyze) {
 
     /*
      * Fetch the next function defined within the module.
      */
-    if (F.empty()){
-      continue ;
+    if (F.empty()) {
+      continue;
     }
 
     /*
@@ -99,26 +110,26 @@ void Hot::computeTotalInstructions (Module &moduleToAnalyze){
     std::unordered_map<Function *, bool> evaluationStack;
     this->computeTotalInstructions(F, evaluationStack);
   }
-   
+
   /*
    * Analyze every call instruction.
    *
    * To do so, we iterate over all functions and check all of their callers.
    */
-  for (auto &F : moduleToAnalyze){
+  for (auto &F : moduleToAnalyze) {
 
     /*
      * Fetch the next function defined within the module.
      */
-    if (F.empty()){
-      continue ;
+    if (F.empty()) {
+      continue;
     }
 
     /*
      * Check if the function has been executed at all.
      */
-    if (!this->hasBeenExecuted(&F)){
-      continue ;
+    if (!this->hasBeenExecuted(&F)) {
+      continue;
     }
 
     /*
@@ -133,14 +144,14 @@ void Hot::computeTotalInstructions (Module &moduleToAnalyze){
      * Fetch all callers of the function.
      */
     Instruction *callerOfF = nullptr;
-    for (auto &useOfF : F.uses()){
+    for (auto &useOfF : F.uses()) {
 
       /*
        * Fetch the next call instruction to F.
        */
       auto userOfF = useOfF.getUser();
-      if (!isa<Instruction>(userOfF)){
-        continue ;
+      if (!isa<Instruction>(userOfF)) {
+        continue;
       }
       callerOfF = cast<Instruction>(userOfF);
 
@@ -149,77 +160,86 @@ void Hot::computeTotalInstructions (Module &moduleToAnalyze){
        *
        * Check if the caller has been executed at all.
        */
-      if (!this->hasBeenExecuted(callerOfF)){
-        continue ;
+      if (!this->hasBeenExecuted(callerOfF)) {
+        continue;
       }
 
       /*
-       * Compute the fraction of the callee that is associated to the specific call instruction we are analyzying.
-       * To this end, we make the assumption that the distribution of total instructions of the callee is uniform among its invocations.
+       * Compute the fraction of the callee that is associated to the specific
+       * call instruction we are analyzying. To this end, we make the assumption
+       * that the distribution of total instructions of the callee is uniform
+       * among its invocations.
        *
-       * The total number of instructions executed by this call is the call itself plus the total instructions executed by the callee divided by its invocations due to this call.
+       * The total number of instructions executed by this call is the call
+       * itself plus the total instructions executed by the callee divided by
+       * its invocations due to this call.
        */
       auto instructionInvocations = this->getInvocations(callerOfF);
-      auto calleeTotalInstsFraction = totalInstsOfFPerInvocation * instructionInvocations;
-      this->instructionTotalInstructions[callerOfF] = calleeTotalInstsFraction + 1;
+      auto calleeTotalInstsFraction =
+          totalInstsOfFPerInvocation * instructionInvocations;
+      this->instructionTotalInstructions[callerOfF] =
+          calleeTotalInstsFraction + 1;
 
       /*
        * Remove the current fraction used of the callee.
-       * This is needed to make sure the whole set of instructions of the callee will be distributed among the callers.
+       * This is needed to make sure the whole set of instructions of the callee
+       * will be distributed among the callers.
        */
       totalInstsOfFLeftover -= calleeTotalInstsFraction;
     }
 
     /*
-     * Check if all the total instructions have been distributed among the callers.
+     * Check if all the total instructions have been distributed among the
+     * callers.
      */
-    if (  true
-          && (totalInstsOfFLeftover > 0)
-          && (callerOfF != nullptr) /* This handle the case where a function has not known callers  */
-      ){
+    if (true && (totalInstsOfFLeftover > 0)
+        && (callerOfF != nullptr) /* This handle the case where a function has
+                                     not known callers  */
+    ) {
 
       /*
        * There is some leftover to still distribute.
-       * This happen when the total instructions of the callee is not a multiple of the number of the callers.
+       * This happen when the total instructions of the callee is not a multiple
+       * of the number of the callers.
        *
-       * Our heuristic is to give the leftover to the last caller (this is completely arbitrary).
+       * Our heuristic is to give the leftover to the last caller (this is
+       * completely arbitrary).
        */
       this->instructionTotalInstructions[callerOfF] += totalInstsOfFLeftover;
     }
   }
 
-  return ;
+  return;
 }
 
-void Hot::computeTotalInstructions (
-  Function &F, 
-  std::unordered_map<Function *, bool> &evaluationStack
-  ){
+void Hot::computeTotalInstructions(
+    Function &F,
+    std::unordered_map<Function *, bool> &evaluationStack) {
 
   /*
    * Keep track we are evaluating the input function.
    */
   evaluationStack[&F] = true;
 
-  /* 
+  /*
    * Check if the callee has been executed at all.
    */
-  if (!this->hasBeenExecuted(&F)){
+  if (!this->hasBeenExecuted(&F)) {
     this->setFunctionTotalInstructions(&F, 0);
-    return ;
+    return;
   }
 
   /*
    * Iterate over all instructions.
    */
   double t = 0;
-  for (auto& inst : instructions(&F)){
+  for (auto &inst : instructions(&F)) {
 
     /*
      * Check if the instruction has been executed at all.
      */
-    if (!this->hasBeenExecuted(&inst)){
-      continue ;
+    if (!this->hasBeenExecuted(&inst)) {
+      continue;
     }
 
     /*
@@ -237,8 +257,8 @@ void Hot::computeTotalInstructions (
     /*
      * Check if the instruction can invoke another function.
      */
-    if (!isa<CallBase>(&inst)){
-      continue ;
+    if (!isa<CallBase>(&inst)) {
+      continue;
     }
     auto callInst = dyn_cast<CallBase>(&inst);
 
@@ -253,11 +273,8 @@ void Hot::computeTotalInstructions (
     /*
      * Check if the callee is known and we can inspect its body.
      */
-    if (  false
-          || (callee == nullptr)
-          || (callee->empty())
-       ){
-      continue ;
+    if (false || (callee == nullptr) || (callee->empty())) {
+      continue;
     }
     assert(this->hasBeenExecuted(callee));
     assert(this->getInvocations(callee) >= this->getInvocations(callInst));
@@ -268,18 +285,18 @@ void Hot::computeTotalInstructions (
      * Check if we have already analyzed the callee.
      */
     uint64_t calleeTotalInsts = 0;
-    if (!this->isFunctionTotalInstructionsAvailable(*callee)){
+    if (!this->isFunctionTotalInstructionsAvailable(*callee)) {
 
       /*
        * We have not analyzed the callee.
        *
        * Check if we are in the process of evaluating it.
        */
-      if (evaluationStack[callee]){
+      if (evaluationStack[callee]) {
 
         /*
          * We are in the middle of evaluating the callee.
-         * We have to break this evaluation cycle to converge. 
+         * We have to break this evaluation cycle to converge.
          * For now, we consider the cost of the callee to be 1.
          */
         calleeTotalInsts = 1;
@@ -295,7 +312,8 @@ void Hot::computeTotalInstructions (
         assert(this->isFunctionTotalInstructionsAvailable(*callee));
 
         /*
-         * Now that the callee has been evaluated, we can fetch that information.
+         * Now that the callee has been evaluated, we can fetch that
+         * information.
          */
         calleeTotalInsts = this->getTotalInstructions(callee);
       }
@@ -310,13 +328,17 @@ void Hot::computeTotalInstructions (
     assert(calleeTotalInsts > 0);
 
     /*
-     * Compute the fraction of the callee that is associated to the specific call instruction we are analyzying.
-     * To this end, we make the assumption that the distribution of total instructions per callee invocation is uniform among its dynamic callers.
+     * Compute the fraction of the callee that is associated to the specific
+     * call instruction we are analyzying. To this end, we make the assumption
+     * that the distribution of total instructions per callee invocation is
+     * uniform among its dynamic callers.
      */
-    auto calleeTotalInstsPerInvocation = ((double)calleeTotalInsts) / ((double)this->getInvocations(callee));
+    auto calleeTotalInstsPerInvocation =
+        ((double)calleeTotalInsts) / ((double)this->getInvocations(callee));
 
     /*
-     * Add the fraction of the total of the callee associated to the current instruction.
+     * Add the fraction of the total of the callee associated to the current
+     * instruction.
      */
     t += (calleeTotalInstsPerInvocation * ((double)instructionInvocations));
   }
@@ -326,7 +348,7 @@ void Hot::computeTotalInstructions (
    */
   this->setFunctionTotalInstructions(&F, (uint64_t)t);
 
-  return ;
+  return;
 }
 
-}
+} // namespace llvm::noelle

@@ -1,19 +1,30 @@
 /*
  * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "DSWP.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
 
-void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
+void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
   assert(LDI != nullptr);
 
   /*
@@ -48,10 +59,10 @@ void DSWP::generateStagesFromPartitionedSCCs (LoopDependenceInfo *LDI) {
   this->numTaskInstances = techniqueTasks.size();
   assert(this->numTaskInstances == this->partitioner->numberOfPartitions());
 
-  return ;
+  return;
 }
 
-void DSWP::addClonableSCCsToStages (LoopDependenceInfo *LDI) {
+void DSWP::addClonableSCCsToStages(LoopDependenceInfo *LDI) {
   auto sccManager = LDI->getSCCManager();
   for (auto techniqueTask : this->tasks) {
     auto task = (DSWPTask *)techniqueTask;
@@ -72,7 +83,8 @@ void DSWP::addClonableSCCsToStages (LoopDependenceInfo *LDI) {
       for (auto sccEdge : depSCCNode->getIncomingEdges()) {
         auto fromSCCNode = sccEdge->getOutgoingNode();
         auto fromSCC = fromSCCNode->getT();
-        if (visitedNodes.find(fromSCCNode) != visitedNodes.end()) continue;
+        if (visitedNodes.find(fromSCCNode) != visitedNodes.end())
+          continue;
         auto fromSCCInfo = sccManager->getSCCAttrs(fromSCC);
         if (fromSCCInfo->canBeCloned()) {
           task->clonableSCCs.insert(fromSCC);
@@ -85,13 +97,14 @@ void DSWP::addClonableSCCsToStages (LoopDependenceInfo *LDI) {
   }
 }
 
-bool DSWP::isCompleteAndValidStageStructure (LoopDependenceInfo *LDI) const {
+bool DSWP::isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const {
   std::set<SCC *> allSCCs;
   for (auto techniqueTask : this->tasks) {
     auto task = (DSWPTask *)techniqueTask;
     for (auto scc : task->stageSCCs) {
       if (allSCCs.find(scc) != allSCCs.end()) {
-        errs() << "DSWP:  ERROR! A non-clonable SCC is present in more than one DSWP stage";
+        errs()
+            << "DSWP:  ERROR! A non-clonable SCC is present in more than one DSWP stage";
         return false;
       }
       allSCCs.insert(scc);
@@ -105,7 +118,7 @@ bool DSWP::isCompleteAndValidStageStructure (LoopDependenceInfo *LDI) const {
   auto sccManager = LDI->getSCCManager();
   for (auto node : sccManager->getSCCDAG()->getNodes()) {
     if (sccManager->getSCCAttrs(node->getT())->canBeCloned()) {
-      continue ;
+      continue;
     }
 
     if (allSCCs.find(node->getT()) == allSCCs.end()) {
@@ -117,7 +130,7 @@ bool DSWP::isCompleteAndValidStageStructure (LoopDependenceInfo *LDI) const {
   return true;
 }
 
-void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par) {
+void DSWP::createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par) {
 
   /*
    * Fetch the loop function.
@@ -145,76 +158,81 @@ void DSWP::createPipelineFromStages (LoopDependenceInfo *LDI, Noelle &par) {
 
   /*
    * Allocate an array of integers.
-   * Each integer represents the bitwidth of each queue that connects pipeline stages.
+   * Each integer represents the bitwidth of each queue that connects pipeline
+   * stages.
    */
   auto queueSizesPtr = createQueueSizesArrayFromStages(LDI, builder, par);
 
   /*
-   * Call the stage dispatcher with the environment, queues array, and stages array
+   * Call the stage dispatcher with the environment, queues array, and stages
+   * array
    */
-  auto queuesCount = cast<Value>(ConstantInt::get(par.int64, this->queues.size()));
-  auto stagesCount = cast<Value>(ConstantInt::get(par.int64, this->numTaskInstances));
+  auto queuesCount =
+      cast<Value>(ConstantInt::get(par.int64, this->queues.size()));
+  auto stagesCount =
+      cast<Value>(ConstantInt::get(par.int64, this->numTaskInstances));
 
   /*
    * Add the call to the task dispatcher
    */
-  auto runtimeCall = builder.CreateCall(taskDispatcher, ArrayRef<Value*>({
-    envPtr,
-    queueSizesPtr,
-    stagesPtr,
-    stagesCount,
-    queuesCount
-  }));
+  auto runtimeCall = builder.CreateCall(
+      taskDispatcher,
+      ArrayRef<Value *>(
+          { envPtr, queueSizesPtr, stagesPtr, stagesCount, queuesCount }));
   auto numThreadsUsed = builder.CreateExtractValue(runtimeCall, (uint64_t)0);
 
   /*
    * Propagate live-out values to the caller of the loop.
    */
-  auto latestBBAfterCall = this->performReductionToAllReducableLiveOutVariables(LDI, numThreadsUsed);
+  auto latestBBAfterCall =
+      this->performReductionToAllReducableLiveOutVariables(LDI, numThreadsUsed);
 
-  IRBuilder<> afterCallBuilder{latestBBAfterCall};
+  IRBuilder<> afterCallBuilder{ latestBBAfterCall };
   afterCallBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 
-  return ;
+  return;
 }
 
-Value * DSWP::createStagesArrayFromStages (
-  LoopDependenceInfo *LDI,
-  IRBuilder<> funcBuilder,
-  Noelle &par
-) {
-  auto stagesAlloca = cast<Value>(funcBuilder.CreateAlloca(this->stageArrayType));
-  auto stageCastType = PointerType::getUnqual(this->tasks[0]->getTaskBody()->getType());
+Value *DSWP::createStagesArrayFromStages(LoopDependenceInfo *LDI,
+                                         IRBuilder<> funcBuilder,
+                                         Noelle &par) {
+  auto stagesAlloca =
+      cast<Value>(funcBuilder.CreateAlloca(this->stageArrayType));
+  auto stageCastType =
+      PointerType::getUnqual(this->tasks[0]->getTaskBody()->getType());
   for (int i = 0; i < this->numTaskInstances; ++i) {
     auto stage = this->tasks[i];
     auto stageIndex = cast<Value>(ConstantInt::get(par.int64, i));
-    auto stagePtr = funcBuilder.CreateInBoundsGEP(stagesAlloca, ArrayRef<Value*>({
-      this->zeroIndexForBaseArray,
-      stageIndex
-    }));
+    auto stagePtr = funcBuilder.CreateInBoundsGEP(
+        stagesAlloca,
+        ArrayRef<Value *>({ this->zeroIndexForBaseArray, stageIndex }));
     auto stageCast = funcBuilder.CreateBitCast(stagePtr, stageCastType);
     funcBuilder.CreateStore(stage->getTaskBody(), stageCast);
   }
 
-  return cast<Value>(funcBuilder.CreateBitCast(stagesAlloca, PointerType::getUnqual(par.int8)));
+  return cast<Value>(
+      funcBuilder.CreateBitCast(stagesAlloca,
+                                PointerType::getUnqual(par.int8)));
 }
 
-Value * DSWP::createQueueSizesArrayFromStages (
-  LoopDependenceInfo *LDI,
-  IRBuilder<> funcBuilder,
-  Noelle &par
-) {
-  auto queuesAlloca = cast<Value>(funcBuilder.CreateAlloca(ArrayType::get(par.int64, this->queues.size())));
+Value *DSWP::createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
+                                             IRBuilder<> funcBuilder,
+                                             Noelle &par) {
+  auto queuesAlloca = cast<Value>(
+      funcBuilder.CreateAlloca(ArrayType::get(par.int64, this->queues.size())));
   for (int i = 0; i < this->queues.size(); ++i) {
     auto &queue = this->queues[i];
     auto queueIndex = cast<Value>(ConstantInt::get(par.int64, i));
-    auto queuePtr = funcBuilder.CreateInBoundsGEP(queuesAlloca, ArrayRef<Value*>({
-      this->zeroIndexForBaseArray,
-      queueIndex
-    }));
-    auto queueCast = funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(par.int64));
-    funcBuilder.CreateStore(ConstantInt::get(par.int64, queue->bitLength), queueCast);
+    auto queuePtr = funcBuilder.CreateInBoundsGEP(
+        queuesAlloca,
+        ArrayRef<Value *>({ this->zeroIndexForBaseArray, queueIndex }));
+    auto queueCast =
+        funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(par.int64));
+    funcBuilder.CreateStore(ConstantInt::get(par.int64, queue->bitLength),
+                            queueCast);
   }
 
-  return cast<Value>(funcBuilder.CreateBitCast(queuesAlloca, PointerType::getUnqual(par.int64)));
+  return cast<Value>(
+      funcBuilder.CreateBitCast(queuesAlloca,
+                                PointerType::getUnqual(par.int64)));
 }

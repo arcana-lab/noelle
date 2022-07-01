@@ -97,6 +97,15 @@ cd THE_TEST_YOU_ARE_INTERESTED ;
 where `regression_42` is the sub-directory of the configuration you are interested and `THE_TEST_YOU_ARE_INTERESTED` is the test you care.
 
 
+## Contributing to NOELLE
+NOELLE uses `clang-format` to ensure uniform styling across the project's source code.
+`clang-format` is run automatically as a pre-commit git hook, meaning that when you commit a file `clang-format` is automatically run on the file in-place.
+
+Since git doesn't allow for git hooks to be installed when you clone the repository we manage this with our top-level Makefile.
+To install the NOELLE git hooks, run `make hooks` at the root of the directory.
+This make rule is run at the start of the `make all` rule as well for ease of use.
+
+
 ## Repository structure
 The directory `src` includes sources of the noelle framework.
 Within this directory, `src/core` includes the abstractions provided by NOELLE.

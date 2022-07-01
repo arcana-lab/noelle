@@ -1,36 +1,42 @@
 /*
  * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SCCAttrs.hpp"
 
 namespace llvm::noelle {
 
-SCCAttrs::SCCAttrs (
-    SCC *s, 
-    AccumulatorOpInfo &opInfo,
-    LoopStructure *loop
-  ) : 
-      scc{s}
-    , sccType{SCCType::SEQUENTIAL}
-    , accumOpInfo{opInfo}
-    , PHINodes{}
-    , headerPHINodes{}
-    , accumulators{}
-    , controlFlowInsts{}
-    , controlPairs{}
-    , loopCarriedVariables{}
-    , isClonable{false}
-    , isSCCClonableIntoLocalMemory{false}
-    , hasIV{false}
-    , commutative{false}
-  {
+SCCAttrs::SCCAttrs(SCC *s, AccumulatorOpInfo &opInfo, LoopStructure *loop)
+  : scc{ s },
+    sccType{ SCCType::SEQUENTIAL },
+    accumOpInfo{ opInfo },
+    PHINodes{},
+    headerPHINodes{},
+    accumulators{},
+    controlFlowInsts{},
+    controlPairs{},
+    loopCarriedVariables{},
+    isClonable{ false },
+    isSCCClonableIntoLocalMemory{ false },
+    hasIV{ false },
+    commutative{ false } {
 
   /*
    * Collect the basic blocks of the instructions contained within SCC.
@@ -55,45 +61,45 @@ SCCAttrs::SCCAttrs (
   return;
 }
 
-SCCAttrs::SCCType SCCAttrs::getType (void) const {
+SCCAttrs::SCCType SCCAttrs::getType(void) const {
   return this->sccType;
 }
 
-void SCCAttrs::setType (SCCAttrs::SCCType t) {
+void SCCAttrs::setType(SCCAttrs::SCCType t) {
   this->sccType = t;
 
-  return ;
+  return;
 }
 
-iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs (void){
-  return make_range(this->PHINodes.begin(), this->PHINodes.end()); 
+iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs(void) {
+  return make_range(this->PHINodes.begin(), this->PHINodes.end());
 }
 
-iterator_range<SCCAttrs::instruction_iterator> SCCAttrs::getAccumulators (void){
-  return make_range(this->accumulators.begin(), this->accumulators.end()); 
+iterator_range<SCCAttrs::instruction_iterator> SCCAttrs::getAccumulators(void) {
+  return make_range(this->accumulators.begin(), this->accumulators.end());
 }
-      
-bool SCCAttrs::doesItContainThisPHI (PHINode *phi){
+
+bool SCCAttrs::doesItContainThisPHI(PHINode *phi) {
   return this->PHINodes.find(phi) != this->PHINodes.end();
 }
 
-bool SCCAttrs::doesItContainThisInstructionAsAccumulator (Instruction *inst){
+bool SCCAttrs::doesItContainThisInstructionAsAccumulator(Instruction *inst) {
   return this->accumulators.find(inst) != this->accumulators.end();
 }
-      
-bool SCCAttrs::isCommutative (void) const {
+
+bool SCCAttrs::isCommutative(void) const {
   return this->commutative;
 }
 
-uint32_t SCCAttrs::numberOfPHIs (void){
+uint32_t SCCAttrs::numberOfPHIs(void) {
   return this->PHINodes.size();
 }
 
-uint32_t SCCAttrs::numberOfAccumulators (void){
+uint32_t SCCAttrs::numberOfAccumulators(void) {
   return this->accumulators.size();
 }
-      
-PHINode * SCCAttrs::getSinglePHI (void){
+
+PHINode *SCCAttrs::getSinglePHI(void) {
   if (this->PHINodes.size() != 1) {
     return nullptr;
   }
@@ -101,22 +107,22 @@ PHINode * SCCAttrs::getSinglePHI (void){
   auto singlePHI = *this->PHINodes.begin();
   return singlePHI;
 }
-      
-PHINode * SCCAttrs::getSingleHeaderPHI (void){
-  return this->headerPHINodes.size() != 1
-    ? nullptr : *this->headerPHINodes.begin();
+
+PHINode *SCCAttrs::getSingleHeaderPHI(void) {
+  return this->headerPHINodes.size() != 1 ? nullptr
+                                          : *this->headerPHINodes.begin();
 }
 
-Instruction * SCCAttrs::getSingleAccumulator (void){
+Instruction *SCCAttrs::getSingleAccumulator(void) {
   if (this->accumulators.size() != 1) {
     return nullptr;
   }
-  
+
   auto singleAccumulator = *this->accumulators.begin();
   return singleAccumulator;
 }
 
-void SCCAttrs::collectPHIsAndAccumulators (LoopStructure &LS) {
+void SCCAttrs::collectPHIsAndAccumulators(LoopStructure &LS) {
 
   /*
    * Iterate over elements of the SCC to collect PHIs and accumulators.
@@ -159,10 +165,10 @@ void SCCAttrs::collectPHIsAndAccumulators (LoopStructure &LS) {
     }
   }
 
-  return ;
+  return;
 }
 
-void SCCAttrs::collectControlFlowInstructions (void){
+void SCCAttrs::collectControlFlowInstructions(void) {
 
   /*
    * Collect the terminators of the SCC that are involved in dependences.
@@ -182,20 +188,21 @@ void SCCAttrs::collectControlFlowInstructions (void){
      * Check if the current SCC node is an instruction.
      */
     auto currentValue = sccValue;
-    if (!isa<Instruction>(currentValue)){
-      continue ;
+    if (!isa<Instruction>(currentValue)) {
+      continue;
     }
     auto currentInst = cast<Instruction>(currentValue);
 
     /*
      * Check if the instruction is a terminator.
      */
-    if (!currentInst->isTerminator()){
-      continue ;
+    if (!currentInst->isTerminator()) {
+      continue;
     }
 
     /*
-     * The instruction is a terminator that have a dependence that leaves its SCC.
+     * The instruction is a terminator that have a dependence that leaves its
+     * SCC.
      */
     this->controlFlowInsts.insert(currentInst);
   }
@@ -206,24 +213,27 @@ void SCCAttrs::collectControlFlowInstructions (void){
   for (auto term : this->controlFlowInsts) {
     assert(term->isTerminator());
     if (auto br = dyn_cast<BranchInst>(term)) {
-      assert(br->isConditional()
-        && "BranchInst with outgoing edges in an SCC must be conditional!");
+      assert(
+          br->isConditional()
+          && "BranchInst with outgoing edges in an SCC must be conditional!");
       this->controlPairs.insert(std::make_pair(br->getCondition(), br));
     }
     if (auto switchI = dyn_cast<SwitchInst>(term)) {
-      this->controlPairs.insert(std::make_pair(switchI->getCondition(), switchI));
+      this->controlPairs.insert(
+          std::make_pair(switchI->getCondition(), switchI));
     }
   }
 
-  return ;
+  return;
 }
 
-SCC * SCCAttrs::getSCC (void){
+SCC *SCCAttrs::getSCC(void) {
   return this->scc;
 }
 
-const std::pair<Value *, Instruction *> * SCCAttrs::getSingleInstructionThatControlLoopExit (void){
-  if (this->controlPairs.size() != 1){
+const std::pair<Value *, Instruction *>
+    *SCCAttrs::getSingleInstructionThatControlLoopExit(void) {
+  if (this->controlPairs.size() != 1) {
     return nullptr;
   }
 
@@ -232,38 +242,41 @@ const std::pair<Value *, Instruction *> * SCCAttrs::getSingleInstructionThatCont
   return controlPair;
 }
 
-void SCCAttrs::setSCCToBeInductionVariable (bool hasIV){
+void SCCAttrs::setSCCToBeInductionVariable(bool hasIV) {
   this->hasIV = hasIV;
   return;
 }
 
-void SCCAttrs::setSCCToBeClonable (bool isClonable){
+void SCCAttrs::setSCCToBeClonable(bool isClonable) {
   this->isClonable = isClonable;
   return;
 }
 
-void SCCAttrs::addLoopCarriedVariable (LoopCarriedVariable *variable) {
+void SCCAttrs::addLoopCarriedVariable(LoopCarriedVariable *variable) {
   loopCarriedVariables.insert(variable);
 }
 
-LoopCarriedVariable * SCCAttrs::getSingleLoopCarriedVariable (void) const {
-  if (loopCarriedVariables.size() != 1) return nullptr;
+LoopCarriedVariable *SCCAttrs::getSingleLoopCarriedVariable(void) const {
+  if (loopCarriedVariables.size() != 1)
+    return nullptr;
   return *loopCarriedVariables.begin();
 }
 
-void SCCAttrs::setSCCToBeClonableUsingLocalMemory (void) {
+void SCCAttrs::setSCCToBeClonableUsingLocalMemory(void) {
   this->isSCCClonableIntoLocalMemory = true;
 }
 
-bool SCCAttrs::canBeClonedUsingLocalMemoryLocations (void) const {
+bool SCCAttrs::canBeClonedUsingLocalMemoryLocations(void) const {
   return this->isSCCClonableIntoLocalMemory;
 }
 
-void SCCAttrs::addClonableMemoryLocationsContainedInSCC (std::unordered_set<const ClonableMemoryLocation *> locations) {
+void SCCAttrs::addClonableMemoryLocationsContainedInSCC(
+    std::unordered_set<const ClonableMemoryLocation *> locations) {
   this->clonableMemoryLocations = locations;
 }
 
-std::unordered_set<AllocaInst *> SCCAttrs::getMemoryLocationsToClone (void) const {
+std::unordered_set<AllocaInst *> SCCAttrs::getMemoryLocationsToClone(
+    void) const {
   std::unordered_set<AllocaInst *> allocations;
   for (auto location : clonableMemoryLocations) {
     allocations.insert(location->getAllocation());
@@ -271,30 +284,30 @@ std::unordered_set<AllocaInst *> SCCAttrs::getMemoryLocationsToClone (void) cons
   return allocations;
 }
 
-bool SCCAttrs::mustExecuteSequentially (void) const {
+bool SCCAttrs::mustExecuteSequentially(void) const {
   return this->getType() == SCCAttrs::SCCType::SEQUENTIAL;
 }
 
-bool SCCAttrs::canExecuteReducibly (void) const {
+bool SCCAttrs::canExecuteReducibly(void) const {
   return this->getType() == SCCAttrs::SCCType::REDUCIBLE;
 }
 
-bool SCCAttrs::canExecuteIndependently (void) const {
+bool SCCAttrs::canExecuteIndependently(void) const {
   return this->getType() == SCCAttrs::SCCType::INDEPENDENT;
 }
 
-bool SCCAttrs::canBeCloned (void) const {
+bool SCCAttrs::canBeCloned(void) const {
   return this->isClonable;
 }
 
-bool SCCAttrs::isInductionVariableSCC (void) const {
+bool SCCAttrs::isInductionVariableSCC(void) const {
   return this->hasIV;
 }
 
-SCCAttrs::~SCCAttrs () {
+SCCAttrs::~SCCAttrs() {
   for (auto var : loopCarriedVariables) {
     delete var;
   }
 }
 
-}
+} // namespace llvm::noelle

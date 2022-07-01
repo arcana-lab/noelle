@@ -1,35 +1,46 @@
 /*
  * Copyright 2019 - 2022  Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/Utils.hpp"
 
 namespace llvm::noelle {
 
-bool Utils::isActualCode (Instruction *inst){
+bool Utils::isActualCode(Instruction *inst) {
   auto callInst = dyn_cast<CallBase>(inst);
-  if (callInst == nullptr){
+  if (callInst == nullptr) {
     return true;
   }
-  if (callInst->isLifetimeStartOrEnd()){
+  if (callInst->isLifetimeStartOrEnd()) {
     return false;
   }
 
   return true;
 }
 
-bool Utils::isAllocator (CallBase *callInst){
+bool Utils::isAllocator(CallBase *callInst) {
 
   /*
    * Check the instruction.
    */
-  if (callInst == nullptr){
+  if (callInst == nullptr) {
     return false;
   }
 
@@ -37,14 +48,14 @@ bool Utils::isAllocator (CallBase *callInst){
    * Fetch the callee.
    */
   auto callee = callInst->getCalledFunction();
-  if (callee == nullptr){
+  if (callee == nullptr) {
     return false;
   }
 
   /*
    * Check if it is a call to a library.
    */
-  if (!callee->empty()){
+  if (!callee->empty()) {
     return false;
   }
 
@@ -52,23 +63,20 @@ bool Utils::isAllocator (CallBase *callInst){
    * Check if it is a call to a known library function.
    */
   auto calleeName = callee->getName();
-  if (  false
-        || (calleeName == "malloc")
-        || (calleeName == "calloc")
-        || (calleeName == "realloc")
-    ){
+  if (false || (calleeName == "malloc") || (calleeName == "calloc")
+      || (calleeName == "realloc")) {
     return true;
   }
 
   return false;
 }
 
-bool Utils::isReallocator (CallBase *callInst){
+bool Utils::isReallocator(CallBase *callInst) {
 
   /*
    * Check the instruction.
    */
-  if (callInst == nullptr){
+  if (callInst == nullptr) {
     return false;
   }
 
@@ -76,14 +84,14 @@ bool Utils::isReallocator (CallBase *callInst){
    * Fetch the callee.
    */
   auto callee = callInst->getCalledFunction();
-  if (callee == nullptr){
+  if (callee == nullptr) {
     return false;
   }
 
   /*
    * Check if it is a call to a library.
    */
-  if (!callee->empty()){
+  if (!callee->empty()) {
     return false;
   }
 
@@ -91,21 +99,19 @@ bool Utils::isReallocator (CallBase *callInst){
    * Check if it is a call to a known library function.
    */
   auto calleeName = callee->getName();
-  if (  false
-        || (calleeName == "realloc")
-    ){
+  if (false || (calleeName == "realloc")) {
     return true;
   }
 
   return false;
 }
 
-bool Utils::isDeallocator (CallBase *callInst){
+bool Utils::isDeallocator(CallBase *callInst) {
 
   /*
    * Check the instruction.
    */
-  if (callInst == nullptr){
+  if (callInst == nullptr) {
     return false;
   }
 
@@ -113,14 +119,14 @@ bool Utils::isDeallocator (CallBase *callInst){
    * Fetch the callee.
    */
   auto callee = callInst->getCalledFunction();
-  if (callee == nullptr){
+  if (callee == nullptr) {
     return false;
   }
 
   /*
    * Check if it is a call to a library.
    */
-  if (!callee->empty()){
+  if (!callee->empty()) {
     return false;
   }
 
@@ -128,29 +134,24 @@ bool Utils::isDeallocator (CallBase *callInst){
    * Check if it is a call to a known library function.
    */
   auto calleeName = callee->getName();
-  if (  false
-        || (calleeName == "free")
-    ){
+  if (false || (calleeName == "free")) {
     return true;
   }
 
   return false;
 }
 
-Value * Utils::getAllocatedObject (CallBase *call){
-  if (!Utils::isAllocator(call)){
+Value *Utils::getAllocatedObject(CallBase *call) {
+  if (!Utils::isAllocator(call)) {
     return nullptr;
   }
   auto callee = call->getCalledFunction();
-  if (callee == nullptr){
+  if (callee == nullptr) {
     return nullptr;
   }
   auto calleeName = callee->getName();
-  if (  false
-        || (calleeName == "malloc")
-        || (calleeName == "calloc")
-        || (calleeName == "realloc")
-     ){
+  if (false || (calleeName == "malloc") || (calleeName == "calloc")
+      || (calleeName == "realloc")) {
     return call;
   }
 
@@ -160,18 +161,16 @@ Value * Utils::getAllocatedObject (CallBase *call){
   abort();
 }
 
-Value * Utils::getFreedObject (CallBase *call){
-  if (!Utils::isDeallocator(call)){
-      return nullptr;
+Value *Utils::getFreedObject(CallBase *call) {
+  if (!Utils::isDeallocator(call)) {
+    return nullptr;
   }
   auto callee = call->getCalledFunction();
-  if (callee == nullptr){
+  if (callee == nullptr) {
     return nullptr;
   }
   auto calleeName = callee->getName();
-  if (  false
-        || (calleeName == "free")
-     ){
+  if (false || (calleeName == "free")) {
     return call->getArgOperand(0);
   }
 
@@ -181,4 +180,4 @@ Value * Utils::getFreedObject (CallBase *call){
   abort();
 }
 
-}
+} // namespace llvm::noelle

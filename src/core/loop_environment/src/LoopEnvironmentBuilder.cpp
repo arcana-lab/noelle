@@ -1,12 +1,23 @@
 /*
  * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopEnvironmentBuilder.hpp"
@@ -14,14 +25,14 @@
 
 namespace llvm::noelle {
 
-LoopEnvironmentBuilder::LoopEnvironmentBuilder (
-  LLVMContext &cxt,
-  LoopEnvironment *environment,
-  std::function<bool (uint32_t variableIndex, bool isLiveOut)> shouldThisVariableBeReduced,
-  uint64_t reducerCount,
-  uint64_t numberOfUsers
-  ) : CXT{cxt}
-  {
+LoopEnvironmentBuilder::LoopEnvironmentBuilder(
+    LLVMContext &cxt,
+    LoopEnvironment *environment,
+    std::function<bool(uint32_t variableIndex, bool isLiveOut)>
+        shouldThisVariableBeReduced,
+    uint64_t reducerCount,
+    uint64_t numberOfUsers)
+  : CXT{ cxt } {
   assert(environment != nullptr);
 
   /*
@@ -29,15 +40,15 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder (
    */
   std::set<uint32_t> nonReducableVars;
   std::set<uint32_t> reducableVars;
-  for (auto liveInVariableIndex: environment->getEnvIndicesOfLiveInVars()){
-    if (shouldThisVariableBeReduced(liveInVariableIndex, false)){
+  for (auto liveInVariableIndex : environment->getEnvIndicesOfLiveInVars()) {
+    if (shouldThisVariableBeReduced(liveInVariableIndex, false)) {
       reducableVars.insert(liveInVariableIndex);
     } else {
       nonReducableVars.insert(liveInVariableIndex);
     }
   }
-  for (auto liveOutVariableIndex: environment->getEnvIndicesOfLiveOutVars()){
-    if (shouldThisVariableBeReduced(liveOutVariableIndex, true)){
+  for (auto liveOutVariableIndex : environment->getEnvIndicesOfLiveOutVars()) {
+    if (shouldThisVariableBeReduced(liveOutVariableIndex, true)) {
       reducableVars.insert(liveOutVariableIndex);
     } else {
       nonReducableVars.insert(liveOutVariableIndex);
@@ -45,45 +56,51 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder (
   }
 
   /*
-   * Should an exit block environment variable be necessary, register one 
+   * Should an exit block environment variable be necessary, register one
    */
-  if (environment->indexOfExitBlockTaken() >= 0){ 
+  if (environment->indexOfExitBlockTaken() >= 0) {
     nonReducableVars.insert(environment->indexOfExitBlockTaken());
   }
 
   /*
    * Initialize the builder
    */
-  this->initializeBuilder(environment->getTypesOfEnvironmentLocations(), nonReducableVars, reducableVars, reducerCount, numberOfUsers);
+  this->initializeBuilder(environment->getTypesOfEnvironmentLocations(),
+                          nonReducableVars,
+                          reducableVars,
+                          reducerCount,
+                          numberOfUsers);
 
-  return ;
+  return;
 }
 
-LoopEnvironmentBuilder::LoopEnvironmentBuilder (
-  LLVMContext &cxt,
-  const std::vector<Type *> &varTypes,
-  const std::set<uint32_t> &singleVarIndices,
-  const std::set<uint32_t> &reducableVarIndices,
-  uint64_t reducerCount,
-  uint64_t numberOfUsers
-  ) : CXT{cxt}
-  { 
+LoopEnvironmentBuilder::LoopEnvironmentBuilder(
+    LLVMContext &cxt,
+    const std::vector<Type *> &varTypes,
+    const std::set<uint32_t> &singleVarIndices,
+    const std::set<uint32_t> &reducableVarIndices,
+    uint64_t reducerCount,
+    uint64_t numberOfUsers)
+  : CXT{ cxt } {
 
   /*
    * Initialize the builder
    */
-  this->initializeBuilder(varTypes, singleVarIndices, reducableVarIndices, reducerCount, numberOfUsers);
+  this->initializeBuilder(varTypes,
+                          singleVarIndices,
+                          reducableVarIndices,
+                          reducerCount,
+                          numberOfUsers);
 
-  return ;
+  return;
 }
 
-void LoopEnvironmentBuilder::initializeBuilder (
-  const std::vector<Type *> &varTypes,
-  const std::set<uint32_t> &singleVarIndices,
-  const std::set<uint32_t> &reducableVarIndices,
-  uint64_t reducerCount,
-  uint64_t numberOfUsers
-  ){
+void LoopEnvironmentBuilder::initializeBuilder(
+    const std::vector<Type *> &varTypes,
+    const std::set<uint32_t> &singleVarIndices,
+    const std::set<uint32_t> &reducableVarIndices,
+    uint64_t reducerCount,
+    uint64_t numberOfUsers) {
 
   /*
    * Initialize fields
@@ -94,7 +111,8 @@ void LoopEnvironmentBuilder::initializeBuilder (
   this->envArrayType = nullptr;
   this->envTypes = varTypes;
   this->numReducers = reducerCount;
-  assert(this->envSize == this->envTypes.size() && "Environment variables must either be singular or reducible\n");
+  assert(this->envSize == this->envTypes.size()
+         && "Environment variables must either be singular or reducible\n");
 
   /*
    * Compute how many values can fit in a cache line.
@@ -122,18 +140,19 @@ void LoopEnvironmentBuilder::initializeBuilder (
    */
   this->createUsers(numberOfUsers);
 
-  return ;
+  return;
 }
 
-void LoopEnvironmentBuilder::createUsers (uint32_t numUsers) {
+void LoopEnvironmentBuilder::createUsers(uint32_t numUsers) {
   for (auto i = 0u; i < numUsers; ++i) {
     this->envUsers.push_back(new LoopEnvironmentUser());
   }
 
-  return ;
+  return;
 }
-    
-void LoopEnvironmentBuilder::addVariableToEnvironment (uint64_t varIndex, Type *varType){
+
+void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varIndex,
+                                                      Type *varType) {
   this->envSize++;
   this->envTypes.push_back(varType);
 
@@ -153,53 +172,60 @@ void LoopEnvironmentBuilder::addVariableToEnvironment (uint64_t varIndex, Type *
    */
   this->envIndexToVar[varIndex] = nullptr;
 
-  return ;
+  return;
 }
 
-void LoopEnvironmentBuilder::allocateEnvironmentArray (IRBuilder<> builder) {
+void LoopEnvironmentBuilder::allocateEnvironmentArray(IRBuilder<> builder) {
 
   /*
    * Check that we have an environment.
    */
-  if(envSize < 1) {
-    //abort();
+  if (envSize < 1) {
+    // abort();
   }
 
   auto int8 = IntegerType::get(builder.getContext(), 8);
   auto ptrTy_int8 = PointerType::getUnqual(int8);
-  this->envArray = builder.CreateAlloca(this->envArrayType, nullptr, "loop_environment");
-  this->envArrayInt8Ptr = cast<Value>(builder.CreateBitCast(this->envArray, ptrTy_int8));
+  this->envArray =
+      builder.CreateAlloca(this->envArrayType, nullptr, "loop_environment");
+  this->envArrayInt8Ptr =
+      cast<Value>(builder.CreateBitCast(this->envArray, ptrTy_int8));
 
-  return ;
+  return;
 }
 
-void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
+void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> builder) {
 
   /*
    * Check the environment array.
    */
   if (!this->envArray) {
-    errs() << "An environment array has not been generated!\n"
-      << "\tSee the LoopEnvironmentBuilder API call allocateEnvironmentArray\n";
+    errs()
+        << "An environment array has not been generated!\n"
+        << "\tSee the LoopEnvironmentBuilder API call allocateEnvironmentArray\n";
     abort();
   }
 
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
-  auto fetchCastedEnvPtr = [&](Value *arr, int envIndex, Type *ptrType) -> Value * {
-
+  auto fetchCastedEnvPtr =
+      [&](Value *arr, int envIndex, Type *ptrType) -> Value * {
     /*
-     * Compute the offset of the variable with index "envIndex" that is stored inside the environment.
+     * Compute the offset of the variable with index "envIndex" that is stored
+     * inside the environment.
      *
      * Compute how many values can fit in a cache line.
      */
-    auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
-    auto indValue = cast<Value>(ConstantInt::get(int64, envIndex * valuesInCacheLine));
+    auto valuesInCacheLine =
+        Architecture::getCacheLineBytes() / sizeof(int64_t);
+    auto indValue =
+        cast<Value>(ConstantInt::get(int64, envIndex * valuesInCacheLine));
 
     /*
      * Compute the address of the variable with index "envIndex".
      */
-    auto envPtr = builder.CreateInBoundsGEP(arr, ArrayRef<Value*>({ zeroV, indValue }));
+    auto envPtr =
+        builder.CreateInBoundsGEP(arr, ArrayRef<Value *>({ zeroV, indValue }));
 
     /*
      * Cast the pointer to the proper data type.
@@ -210,27 +236,30 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
   };
 
   /*
-   * Compute and cache the pointer of each variable that cannot be reduced and that are stored inside the environment.
+   * Compute and cache the pointer of each variable that cannot be reduced and
+   * that are stored inside the environment.
    *
    * NOTE: Manipulation of the map cannot be done while iterating it
    */
   std::set<uint32_t> singleIndices;
-  for (auto indexVarPair : this->envIndexToVar){
+  for (auto indexVarPair : this->envIndexToVar) {
     singleIndices.insert(indexVarPair.first);
   }
   for (auto envIndex : singleIndices) {
     auto ptrType = PointerType::getUnqual(this->envTypes[envIndex]);
-    this->envIndexToVar[envIndex] = fetchCastedEnvPtr(this->envArray, envIndex, ptrType);
+    this->envIndexToVar[envIndex] =
+        fetchCastedEnvPtr(this->envArray, envIndex, ptrType);
   }
 
   /*
    * Vectorize reducable variables.
-   * Moreover, compute and cache the pointer of each reducable variable that are stored inside the environment.
+   * Moreover, compute and cache the pointer of each reducable variable that are
+   * stored inside the environment.
    *
    * NOTE: No manipulation and iteration at the same time
    */
   std::set<uint32_t> reducableIndices;
-  for (auto indexVarPair : this->envIndexToReducableVar){
+  for (auto indexVarPair : this->envIndexToReducableVar) {
     reducableIndices.insert(indexVarPair.first);
   }
   for (auto envIndex : reducableIndices) {
@@ -244,17 +273,23 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
     /*
      * Define the type of the vectorized form of the reducable variable.
      */
-    auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
-    auto reduceArrType = ArrayType::get(int64, this->numReducers * valuesInCacheLine);
+    auto valuesInCacheLine =
+        Architecture::getCacheLineBytes() / sizeof(int64_t);
+    auto reduceArrType =
+        ArrayType::get(int64, this->numReducers * valuesInCacheLine);
 
     /*
-     * Allocate the vectorized form of the current reducable variable on the stack.
+     * Allocate the vectorized form of the current reducable variable on the
+     * stack.
      */
-    auto reduceArrAlloca = builder.CreateAlloca(reduceArrType, nullptr, "reduction_variable_array");
+    auto reduceArrAlloca = builder.CreateAlloca(reduceArrType,
+                                                nullptr,
+                                                "reduction_variable_array");
     this->envIndexToVectorOfReducableVar[envIndex] = reduceArrAlloca;
 
     /*
-     * Store the pointer of the vector of the reducable variable inside the environment.
+     * Store the pointer of the vector of the reducable variable inside the
+     * environment.
      */
     auto reduceArrPtrType = PointerType::getUnqual(reduceArrAlloca->getType());
     auto envPtr = fetchCastedEnvPtr(this->envArray, envIndex, reduceArrPtrType);
@@ -269,22 +304,22 @@ void LoopEnvironmentBuilder::generateEnvVariables (IRBuilder<> builder) {
     }
   }
 
-  return ;
+  return;
 }
 
-BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
-  BasicBlock *bb,
-  IRBuilder<> builder,
-  const std::unordered_map<uint32_t, Instruction::BinaryOps> &reducableBinaryOps,
-  const std::unordered_map<uint32_t, Value *> &initialValues,
-  Value *numberOfThreadsExecuted
-) {
+BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
+    BasicBlock *bb,
+    IRBuilder<> builder,
+    const std::unordered_map<uint32_t, Instruction::BinaryOps>
+        &reducableBinaryOps,
+    const std::unordered_map<uint32_t, Value *> &initialValues,
+    Value *numberOfThreadsExecuted) {
   assert(bb != nullptr);
 
   /*
    * Check if there are any live-out variable that needs to be reduced.
    */
-  if (initialValues.size() == 0){
+  if (initialValues.size() == 0) {
     return bb;
   }
 
@@ -300,24 +335,26 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
   auto loopBodyBB = BasicBlock::Create(this->CXT, "ReductionLoopBody", f);
 
   /*
-   * Create a new basic block that will include the code after the reduction loop.
+   * Create a new basic block that will include the code after the reduction
+   * loop.
    */
-  auto afterReductionBB = BasicBlock::Create(this->CXT, "AfterReduction", f, loopBodyBB);
+  auto afterReductionBB =
+      BasicBlock::Create(this->CXT, "AfterReduction", f, loopBodyBB);
 
   /*
    * Change the successor of "bb" to be "loopBodyBB".
    */
   auto bbTerminator = bb->getTerminator();
-  if (bbTerminator != nullptr){
+  if (bbTerminator != nullptr) {
     bbTerminator->eraseFromParent();
   }
-  IRBuilder<> bbBuilder{bb};
+  IRBuilder<> bbBuilder{ bb };
   bbBuilder.CreateBr(loopBodyBB);
 
   /*
    * Add the PHI node about the induction variable of the reduction loop.
    */
-  IRBuilder<> loopBodyBuilder{loopBodyBB};
+  IRBuilder<> loopBodyBuilder{ loopBodyBB };
   auto int32Type = IntegerType::get(builder.getContext(), 32);
   auto IVReductionLoop = loopBodyBuilder.CreatePHI(int32Type, 2);
   auto constantZero = ConstantInt::get(int32Type, 0);
@@ -365,7 +402,8 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
     /*
      * Compute the pointer of the private copy of the current thread.
      *
-     * First, we compute the offset, which is "index" times 8 because environment values are 64 byte aligned.
+     * First, we compute the offset, which is "index" times 8 because
+     * environment values are 64 byte aligned.
      */
     auto eightValue = ConstantInt::get(int32Type, valuesInCacheLine);
     auto offsetValue = loopBodyBuilder.CreateMul(IVReductionLoop, eightValue);
@@ -373,21 +411,26 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
     /*
      * Now, we compute the effective address.
      */
-    auto baseAddressOfReducedVar = this->envIndexToVectorOfReducableVar.at(envIndex);
+    auto baseAddressOfReducedVar =
+        this->envIndexToVectorOfReducableVar.at(envIndex);
     auto zeroV = cast<Value>(ConstantInt::get(int32Type, 0));
-    auto effectiveAddressOfReducedVar = loopBodyBuilder.CreateInBoundsGEP(baseAddressOfReducedVar, ArrayRef<Value*>({ zeroV, offsetValue}));
+    auto effectiveAddressOfReducedVar = loopBodyBuilder.CreateInBoundsGEP(
+        baseAddressOfReducedVar,
+        ArrayRef<Value *>({ zeroV, offsetValue }));
 
     /*
      * Finally, cast the effective address to the correct LLVM type.
      */
     auto varType = envTypes[envIndex];
     auto ptrType = PointerType::getUnqual(varType);
-    auto effectiveAddressOfReducedVarProperlyCasted = loopBodyBuilder.CreateBitCast(effectiveAddressOfReducedVar, ptrType);
+    auto effectiveAddressOfReducedVarProperlyCasted =
+        loopBodyBuilder.CreateBitCast(effectiveAddressOfReducedVar, ptrType);
 
     /*
      * Load the next value that needs to be accumulated.
      */
-    auto envVar = loopBodyBuilder.CreateLoad(effectiveAddressOfReducedVarProperlyCasted);
+    auto envVar =
+        loopBodyBuilder.CreateLoad(effectiveAddressOfReducedVarProperlyCasted);
     loadedValues.push_back(envVar);
   }
 
@@ -399,12 +442,14 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
     auto envIndex = envIndexInitValue.first;
 
     /*
-     * Fetch the information about the operation to perform to accumulate values.
+     * Fetch the information about the operation to perform to accumulate
+     * values.
      */
     auto binOp = reducableBinaryOps.at(envIndex);
 
     /*
-     * Fetch the accumulator, which is the PHI node related to the current reduced variable.
+     * Fetch the accumulator, which is the PHI node related to the current
+     * reduced variable.
      */
     auto accumVal = phiNodes[count];
 
@@ -412,7 +457,8 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
      * Accumulate values to the accumulator of the current reduced variable.
      */
     auto privateCurrentCopy = loadedValues[count];
-    auto newAccumulatorValue = loopBodyBuilder.CreateBinOp(binOp, accumVal, privateCurrentCopy);
+    auto newAccumulatorValue =
+        loopBodyBuilder.CreateBinOp(binOp, accumVal, privateCurrentCopy);
 
     /*
      * Keep track of the new accumulator value.
@@ -437,7 +483,8 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
     /*
      * Fetch the value computed by the previous iteration.
      */
-    auto previousIterationAccumulatorValue = this->envIndexToAccumulatedReducableVar.at(envIndex);
+    auto previousIterationAccumulatorValue =
+        this->envIndexToAccumulatedReducableVar.at(envIndex);
 
     /*
      * Add the value related to the previous iteration of the reduction loop.
@@ -451,62 +498,72 @@ BasicBlock * LoopEnvironmentBuilder::reduceLiveOutVariables (
    * Update the induction variable for the reduction loop.
    */
   auto constantOne = ConstantInt::get(int32Type, 1);
-  auto updatedIVReductionLoop = loopBodyBuilder.CreateAdd(IVReductionLoop, constantOne);
+  auto updatedIVReductionLoop =
+      loopBodyBuilder.CreateAdd(IVReductionLoop, constantOne);
   IVReductionLoop->addIncoming(updatedIVReductionLoop, loopBodyBB);
 
   /*
    * Compute the condition to jump back to the reduction loop body.
    */
-  auto continueToReduceVariables = loopBodyBuilder.CreateICmpSLT(updatedIVReductionLoop, numberOfThreadsExecuted);
+  auto continueToReduceVariables =
+      loopBodyBuilder.CreateICmpSLT(updatedIVReductionLoop,
+                                    numberOfThreadsExecuted);
 
   /*
-   * Add the successors of "loopBodyBB" to be either back to "loopBodyBB" or "afterReductionBB".
+   * Add the successors of "loopBodyBB" to be either back to "loopBodyBB" or
+   * "afterReductionBB".
    */
-  loopBodyBuilder.CreateCondBr(continueToReduceVariables, loopBodyBB, afterReductionBB);
+  loopBodyBuilder.CreateCondBr(continueToReduceVariables,
+                               loopBodyBB,
+                               afterReductionBB);
 
   return afterReductionBB;
 }
 
-Value *LoopEnvironmentBuilder::getEnvironmentArrayVoidPtr (void) const {
+Value *LoopEnvironmentBuilder::getEnvironmentArrayVoidPtr(void) const {
   assert(this->envArrayInt8Ptr != nullptr);
 
   return this->envArrayInt8Ptr;
 }
 
-Value *LoopEnvironmentBuilder::getEnvironmentArray (void) const {
+Value *LoopEnvironmentBuilder::getEnvironmentArray(void) const {
   assert(this->envArray != nullptr);
 
   return this->envArray;
 }
 
-Value * LoopEnvironmentBuilder::getEnvironmentVariable (uint32_t ind) const {
+Value *LoopEnvironmentBuilder::getEnvironmentVariable(uint32_t ind) const {
   auto iter = envIndexToVar.find(ind);
   assert(iter != envIndexToVar.end());
   return (*iter).second;
 }
 
-Value *LoopEnvironmentBuilder::getAccumulatedReducedEnvironmentVariable (uint32_t ind) const {
+Value *LoopEnvironmentBuilder::getAccumulatedReducedEnvironmentVariable(
+    uint32_t ind) const {
   auto iter = envIndexToAccumulatedReducableVar.find(ind);
   assert(iter != envIndexToAccumulatedReducableVar.end());
   return (*iter).second;
 }
 
-Value *LoopEnvironmentBuilder::getReducedEnvironmentVariable (uint32_t ind, uint32_t reducerInd) const {
+Value *LoopEnvironmentBuilder::getReducedEnvironmentVariable(
+    uint32_t ind,
+    uint32_t reducerInd) const {
   auto iter = envIndexToReducableVar.find(ind);
   assert(iter != envIndexToReducableVar.end());
   return (*iter).second[reducerInd];
 }
 
-bool LoopEnvironmentBuilder::hasVariableBeenReduced (uint32_t ind) const {
+bool LoopEnvironmentBuilder::hasVariableBeenReduced(uint32_t ind) const {
   auto isSingle = envIndexToVar.find(ind) != envIndexToVar.end();
-  auto isReduce = envIndexToReducableVar.find(ind) != envIndexToReducableVar.end();
+  auto isReduce =
+      envIndexToReducableVar.find(ind) != envIndexToReducableVar.end();
   assert(isSingle || isReduce);
 
   return isReduce;
 }
-      
-LoopEnvironmentUser * LoopEnvironmentBuilder::getUser (uint32_t user) const { 
-  if (user >= this->getNumberOfUsers()){
+
+LoopEnvironmentUser *LoopEnvironmentBuilder::getUser(uint32_t user) const {
+  if (user >= this->getNumberOfUsers()) {
     abort();
   }
   auto u = this->envUsers.at(user);
@@ -515,16 +572,17 @@ LoopEnvironmentUser * LoopEnvironmentBuilder::getUser (uint32_t user) const {
   return u;
 }
 
-uint32_t LoopEnvironmentBuilder::getNumberOfUsers (void) const {
-  return envUsers.size(); 
-}
-      
-ArrayType * LoopEnvironmentBuilder::getEnvironmentArrayType (void) const { 
-  return envArrayType; 
+uint32_t LoopEnvironmentBuilder::getNumberOfUsers(void) const {
+  return envUsers.size();
 }
 
-LoopEnvironmentBuilder::~LoopEnvironmentBuilder () {
-  for (auto user : envUsers) delete user;
+ArrayType *LoopEnvironmentBuilder::getEnvironmentArrayType(void) const {
+  return envArrayType;
 }
 
+LoopEnvironmentBuilder::~LoopEnvironmentBuilder() {
+  for (auto user : envUsers)
+    delete user;
 }
+
+} // namespace llvm::noelle

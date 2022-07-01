@@ -1,12 +1,23 @@
 /*
  * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
@@ -14,11 +25,10 @@
 
 namespace llvm::noelle {
 
-std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
-  LoopDependenceInfo *originalLDI,
-  LoopDependenceInfo *LDI,
-  DataFlowResult *reachabilityDFR
-){
+std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
+    LoopDependenceInfo *originalLDI,
+    LoopDependenceInfo *LDI,
+    DataFlowResult *reachabilityDFR) {
 
   /*
    * Fetch the task.
@@ -26,24 +36,29 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
 
   /*
-   * Map from old to new SCCs (for use in determining what SCC can be left out of sequential segments)
+   * Map from old to new SCCs (for use in determining what SCC can be left out
+   * of sequential segments)
    *
-   * NOTE: Account for spilled PHIs in particular, because their instruction mapping in the task is to the load in the pre-header. 
-   * All stores to the spill environment are in the loop and contained in the task's loop SCCDAG, so use one of them.
+   * NOTE: Account for spilled PHIs in particular, because their instruction
+   * mapping in the task is to the load in the pre-header. All stores to the
+   * spill environment are in the loop and contained in the task's loop SCCDAG,
+   * so use one of them.
    */
-  std::unordered_map<SCC *, SCC*> taskToOriginalFunctionSCCMap;
+  std::unordered_map<SCC *, SCC *> taskToOriginalFunctionSCCMap;
   std::unordered_set<SCC *> spillSCCs;
   auto originalSCCManager = originalLDI->getSCCManager();
   auto originalSCCDAG = originalSCCManager->getSCCDAG();
   auto sccManager = LDI->getSCCManager();
   auto taskSCCDAG = sccManager->getSCCDAG();
   for (auto spill : this->spills) {
-    auto originalSpillSCC = originalSCCDAG->sccOfValue(spill->originalLoopCarriedPHI);
+    auto originalSpillSCC =
+        originalSCCDAG->sccOfValue(spill->originalLoopCarriedPHI);
     auto clonedInstructionInLoop = *spill->environmentStores.begin();
     auto clonedSpillSCC = taskSCCDAG->sccOfValue(clonedInstructionInLoop);
     assert(originalSpillSCC && clonedSpillSCC);
     spillSCCs.insert(originalSpillSCC);
-    taskToOriginalFunctionSCCMap.insert(std::make_pair(clonedSpillSCC, originalSpillSCC));
+    taskToOriginalFunctionSCCMap.insert(
+        std::make_pair(clonedSpillSCC, originalSpillSCC));
   }
   for (auto originalNode : originalSCCDAG->getNodes()) {
 
@@ -75,8 +90,8 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
       /*
        * If there is no clone, then this instruction can be skipped.
        */
-      if (clonedInst == nullptr){
-        continue ;
+      if (clonedInst == nullptr) {
+        continue;
       }
       assert(clonedInst != nullptr);
       if (!clonedLoop->isIncluded(clonedInst)) {
@@ -91,18 +106,20 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
     }
 
     /*
-     * If there are no cloned instructions of the current SCC in the task, then it means this SCC doesn't need to exist
-     * in the parallelized version of the loop (e.g., a call to lifetime.start)
+     * If there are no cloned instructions of the current SCC in the task, then
+     * it means this SCC doesn't need to exist in the parallelized version of
+     * the loop (e.g., a call to lifetime.start)
      */
-    if (!anyClonedInstInLoop){
-      continue ;
+    if (!anyClonedInstInLoop) {
+      continue;
     }
 
     SCC *singleMappingSCC = nullptr;
     for (auto taskNode : taskSCCDAG->getNodes()) {
       auto taskSCC = taskNode->getT();
       auto hasOverlappingInstruction = taskSCC->isInternal(anyClonedInstInLoop);
-      if (!hasOverlappingInstruction) continue;
+      if (!hasOverlappingInstruction)
+        continue;
 
       assert(singleMappingSCC == nullptr);
       singleMappingSCC = taskSCC;
@@ -110,22 +127,26 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
 
     // if (singleMappingSCC == nullptr) {
     //   originalSCC->print(errs() << "Original SCC:\n");
-    //   anyClonedInstInLoop->print(errs() << "Any cloned INST: "); errs() << "\n";
+    //   anyClonedInstInLoop->print(errs() << "Any cloned INST: "); errs() <<
+    //   "\n";
     // }
 
     assert(singleMappingSCC != nullptr);
-    taskToOriginalFunctionSCCMap.insert(std::make_pair(singleMappingSCC, originalSCC));
+    taskToOriginalFunctionSCCMap.insert(
+        std::make_pair(singleMappingSCC, originalSCC));
   }
 
   /*
    * Prepare the initial partition.
    */
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::partitionSCCDAG(LDI);
+  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
+      partitionSCCDAG(LDI);
 
   /*
    * Check whether the original loop was IV governed
    */
-  auto wasOriginalLoopIVGoverned = originalLDI->getLoopGoverningIVAttribution() != nullptr;
+  auto wasOriginalLoopIVGoverned =
+      originalLDI->getLoopGoverningIVAttribution() != nullptr;
 
   /*
    * Fetch the subsets.
@@ -142,21 +163,23 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
    */
   int32_t ssID = 0;
   std::vector<SequentialSegment *> sss;
-  for (auto set : sets){
+  for (auto set : sets) {
 
     /*
      * Check if the current set of SCCs require a sequential segment.
      */
     auto requireSS = false;
-    for (auto scc : set->sccs){
+    for (auto scc : set->sccs) {
 
       /*
        * Fetch the SCC metadata.
-       * NOTE: If no original SCC mapping exists, default to analyzing the newly constructed SCC
+       * NOTE: If no original SCC mapping exists, default to analyzing the newly
+       * constructed SCC
        */
       auto sccToAnalyze = scc;
       auto sccInfo = sccManager->getSCCAttrs(sccToAnalyze);
-      if (taskToOriginalFunctionSCCMap.find(scc) != taskToOriginalFunctionSCCMap.end()) {
+      if (taskToOriginalFunctionSCCMap.find(scc)
+          != taskToOriginalFunctionSCCMap.end()) {
         sccToAnalyze = taskToOriginalFunctionSCCMap.at(scc);
         sccInfo = originalSCCManager->getSCCAttrs(sccToAnalyze);
       }
@@ -169,32 +192,36 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
       }
 
       /*
-       * If the SCC is due to a control dependence, but the number of iterations can be computed just before executing the loop, then we can skip it.
+       * If the SCC is due to a control dependence, but the number of iterations
+       * can be computed just before executing the loop, then we can skip it.
        */
-      if (  true
-            && wasOriginalLoopIVGoverned
-            && (depsSCCs.find(scc) == depsSCCs.end())
-         ){
-        continue ;
+      if (true && wasOriginalLoopIVGoverned
+          && (depsSCCs.find(scc) == depsSCCs.end())) {
+        continue;
       }
 
       /*
        * Only sequential SCC can generate a sequential segment.
        * FIXME: A reducible SCC should not be sequential in nature
        */
-      if (sccInfo->mustExecuteSequentially()){
+      if (sccInfo->mustExecuteSequentially()) {
         requireSS = true;
-        break ;
+        break;
       }
     }
-    if (!requireSS){
-      continue ;
+    if (!requireSS) {
+      continue;
     }
 
     /*
      * Allocate a sequential segment.
      */
-    auto ss = new SequentialSegment(this->noelle, LDI, reachabilityDFR, set, ssID, this->verbose);
+    auto ss = new SequentialSegment(this->noelle,
+                                    LDI,
+                                    reachabilityDFR,
+                                    set,
+                                    ssID,
+                                    this->verbose);
 
     /*
      * Insert the new sequential segment to the list.
@@ -206,4 +233,4 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments (
   return sss;
 }
 
-}
+} // namespace llvm::noelle

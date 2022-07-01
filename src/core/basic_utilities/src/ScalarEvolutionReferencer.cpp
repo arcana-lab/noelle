@@ -1,12 +1,23 @@
 /*
  * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/ScalarEvolutionReferencer.hpp"
 
@@ -16,28 +27,30 @@ using namespace llvm;
  * ScalarEvolutionReferentialExpander
  */
 
-ScalarEvolutionReferentialExpander::ScalarEvolutionReferentialExpander (ScalarEvolution &SE, Function &F) {
+ScalarEvolutionReferentialExpander::ScalarEvolutionReferentialExpander(
+    ScalarEvolution &SE,
+    Function &F) {
   scevValueMapper = new SCEVValueMapper(SE, F);
 }
 
-ScalarEvolutionReferentialExpander::~ScalarEvolutionReferentialExpander () {
+ScalarEvolutionReferentialExpander::~ScalarEvolutionReferentialExpander() {
   delete scevValueMapper;
 }
 
-SCEVReference *ScalarEvolutionReferentialExpander::createReferenceTree (
-  const SCEV *scev,
-  std::set<Value *> valuesInScope
-) {
+SCEVReference *ScalarEvolutionReferentialExpander::createReferenceTree(
+    const SCEV *scev,
+    std::set<Value *> valuesInScope) {
   ReferenceTreeBuilder builder(scev, *scevValueMapper, valuesInScope);
   return builder.getTree();
 }
 
-Value *ScalarEvolutionReferentialExpander::expandUsingReferenceValues (
-  SCEVReference *tree,
-  std::set<Value *> valuesToReferenceAndNotExpand,
-  IRBuilder<> &expansionBuilder
-) {
-  ReferenceTreeExpander expander(tree, valuesToReferenceAndNotExpand, expansionBuilder);
+Value *ScalarEvolutionReferentialExpander::expandUsingReferenceValues(
+    SCEVReference *tree,
+    std::set<Value *> valuesToReferenceAndNotExpand,
+    IRBuilder<> &expansionBuilder) {
+  ReferenceTreeExpander expander(tree,
+                                 valuesToReferenceAndNotExpand,
+                                 expansionBuilder);
   return expander.getRootOfTree();
 }
 
@@ -45,23 +58,27 @@ Value *ScalarEvolutionReferentialExpander::expandUsingReferenceValues (
  * ReferenceTreeBuilder
  */
 
-ReferenceTreeBuilder::ReferenceTreeBuilder(const SCEV *scev, SCEVValueMapper &scevValueMapper, std::set<Value *> &valuesInScope)
-  : valuesInScope{valuesInScope}, scevValueMapper{scevValueMapper} {
+ReferenceTreeBuilder::ReferenceTreeBuilder(const SCEV *scev,
+                                           SCEVValueMapper &scevValueMapper,
+                                           std::set<Value *> &valuesInScope)
+  : valuesInScope{ valuesInScope },
+    scevValueMapper{ scevValueMapper } {
 
   tree = visit(scev);
-
 }
 
-SCEVReference *ReferenceTreeBuilder::getTree(){
+SCEVReference *ReferenceTreeBuilder::getTree() {
   return tree;
 }
 
-Value * ReferenceTreeBuilder::mapToSingleInScopeValue(const SCEV *S) {
+Value *ReferenceTreeBuilder::mapToSingleInScopeValue(const SCEV *S) {
   auto values = scevValueMapper.getValuesOf(S);
   Value *singleV = nullptr;
   for (auto V : values) {
-    if (valuesInScope.find(V) == valuesInScope.end()) continue;
-    if (singleV) return nullptr;
+    if (valuesInScope.find(V) == valuesInScope.end())
+      continue;
+    if (singleV)
+      return nullptr;
 
     singleV = V;
   }
@@ -69,12 +86,14 @@ Value * ReferenceTreeBuilder::mapToSingleInScopeValue(const SCEV *S) {
   return singleV;
 }
 
-SCEVReference *ReferenceTreeBuilder::createReferenceOfSingleInScopeValue(const SCEV *S) {
+SCEVReference *ReferenceTreeBuilder::createReferenceOfSingleInScopeValue(
+    const SCEV *S) {
   auto singleValue = mapToSingleInScopeValue(S);
   return singleValue ? new SCEVReference(singleValue, S) : nullptr;
 }
 
-SCEVReference *ReferenceTreeBuilder::createReferenceOfNArySCEV (const SCEVNAryExpr *S) {
+SCEVReference *ReferenceTreeBuilder::createReferenceOfNArySCEV(
+    const SCEVNAryExpr *S) {
   auto compositeReference = new SCEVReference(mapToSingleInScopeValue(S), S);
 
   for (auto opS : S->operands()) {
@@ -87,8 +106,8 @@ SCEVReference *ReferenceTreeBuilder::createReferenceOfNArySCEV (const SCEVNAryEx
   }
 
   /*
-   * If references of composed SCEVs could not be found, only return this reference
-   * if its value is within scope
+   * If references of composed SCEVs could not be found, only return this
+   * reference if its value is within scope
    */
   if (compositeReference->getNumChildReferences() != S->getNumOperands()) {
     if (!compositeReference->getValue()) {
@@ -107,18 +126,22 @@ SCEVReference *ReferenceTreeBuilder::visitConstant(const SCEVConstant *S) {
 SCEVReference *ReferenceTreeBuilder::visitUnknown(const SCEVUnknown *S) {
   auto value = S->getValue();
   return valuesInScope.find(value) == valuesInScope.end()
-    ? nullptr : new SCEVReference(value, S);
+             ? nullptr
+             : new SCEVReference(value, S);
 }
 
-SCEVReference *ReferenceTreeBuilder::visitTruncateExpr(const SCEVTruncateExpr *S) {
+SCEVReference *ReferenceTreeBuilder::visitTruncateExpr(
+    const SCEVTruncateExpr *S) {
   return createReferenceOfSingleInScopeValue(S);
 }
 
-SCEVReference *ReferenceTreeBuilder::visitZeroExtendExpr(const SCEVZeroExtendExpr *S) {
+SCEVReference *ReferenceTreeBuilder::visitZeroExtendExpr(
+    const SCEVZeroExtendExpr *S) {
   return createReferenceOfSingleInScopeValue(S);
 }
 
-SCEVReference *ReferenceTreeBuilder::visitSignExtendExpr(const SCEVSignExtendExpr *S) {
+SCEVReference *ReferenceTreeBuilder::visitSignExtendExpr(
+    const SCEVSignExtendExpr *S) {
   return createReferenceOfSingleInScopeValue(S);
 }
 
@@ -146,8 +169,10 @@ SCEVReference *ReferenceTreeBuilder::visitUDivExpr(const SCEVUDivExpr *S) {
    * References of composed SCEVs could not be found
    * Only return this reference if its value is within scope
    */
-  if (LHS) delete LHS;
-  if (RHS) delete RHS;
+  if (LHS)
+    delete LHS;
+  if (RHS)
+    delete RHS;
   if (!selfValue) {
     delete uDivReference;
     return nullptr;
@@ -175,7 +200,7 @@ SCEVReference *ReferenceTreeBuilder::visitUMinExpr(const SCEVUMinExpr *S) {
   return createReferenceOfNArySCEV(S);
 }
 
-SCEVReference *visitCouldNotCompute (const SCEVCouldNotCompute* S) {
+SCEVReference *visitCouldNotCompute(const SCEVCouldNotCompute *S) {
   return nullptr;
 }
 
@@ -183,9 +208,10 @@ SCEVReference *visitCouldNotCompute (const SCEVCouldNotCompute* S) {
  * SCEVValueMapper
  */
 
-SCEVValueMapper::SCEVValueMapper (ScalarEvolution &SE, Function &F) {
+SCEVValueMapper::SCEVValueMapper(ScalarEvolution &SE, Function &F) {
   for (auto &A : F.args()) {
-    if (!SE.isSCEVable(A.getType())) continue;
+    if (!SE.isSCEVable(A.getType()))
+      continue;
     auto scev = SE.getSCEV(&A);
     scevToValues[scev].insert(&A);
     valueToSCEV[&A] = scev;
@@ -193,7 +219,8 @@ SCEVValueMapper::SCEVValueMapper (ScalarEvolution &SE, Function &F) {
 
   for (auto &B : F) {
     for (auto &I : B) {
-      if (!SE.isSCEVable(I.getType())) continue;
+      if (!SE.isSCEVable(I.getType()))
+        continue;
       auto scev = SE.getSCEV(&I);
       scevToValues[scev].insert(&I);
       valueToSCEV[&I] = scev;
@@ -207,13 +234,13 @@ Value *SCEVValueMapper::getSingleValueOf(const SCEV *scev) const {
 }
 
 const std::set<Value *> SCEVValueMapper::getValuesOf(const SCEV *scev) const {
-  return scevToValues.find(scev) != scevToValues.end()
-    ? scevToValues.at(scev) : std::set<Value *>{};
+  return scevToValues.find(scev) != scevToValues.end() ? scevToValues.at(scev)
+                                                       : std::set<Value *>{};
 }
 
 const SCEV *SCEVValueMapper::getSCEVOf(Value *value) const {
-  return valueToSCEV.find(value) != valueToSCEV.end()
-    ? valueToSCEV.at(value) : nullptr;
+  return valueToSCEV.find(value) != valueToSCEV.end() ? valueToSCEV.at(value)
+                                                      : nullptr;
 }
 
 /*******************************
@@ -221,11 +248,13 @@ const SCEV *SCEVValueMapper::getSCEVOf(Value *value) const {
  */
 
 SCEVReference::SCEVReference(Value *v, const SCEV *scev)
-    : value{v}, scev{scev}, childReferences{} {
-}
+  : value{ v },
+    scev{ scev },
+    childReferences{} {}
 
 SCEVReference::~SCEVReference() {
-  for (auto child : childReferences) delete child;
+  for (auto child : childReferences)
+    delete child;
 }
 
 Value *SCEVReference::getValue() const {
@@ -236,11 +265,12 @@ const SCEV *SCEVReference::getSCEV() const {
   return scev;
 }
 
-iterator_range<std::vector<SCEVReference *>::iterator> SCEVReference::getChildReferences() {
+iterator_range<std::vector<SCEVReference *>::iterator> SCEVReference::
+    getChildReferences() {
   return make_range(childReferences.begin(), childReferences.end());
 }
 
-SCEVReference *SCEVReference::getChildReference (int32_t idx) {
+SCEVReference *SCEVReference::getChildReference(int32_t idx) {
   return childReferences.at(idx);
 }
 
@@ -252,7 +282,7 @@ void SCEVReference::addChildReference(SCEVReference *scevReference) {
   childReferences.push_back(scevReference);
 }
 
-std::set<SCEVReference *> SCEVReference::collectAllReferences () {
+std::set<SCEVReference *> SCEVReference::collectAllReferences() {
   std::set<SCEVReference *> references;
   references.insert(this);
   for (auto child : childReferences) {
