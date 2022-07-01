@@ -38,24 +38,24 @@ public:
 
   iterator_range<std::vector<Value *>::iterator> getProducers(void);
 
-  iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveInVars(void);
+  iterator_range<std::set<int>::iterator> getEnvIDsOfLiveInVars(void);
 
-  iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveOutVars(void);
+  iterator_range<std::set<int>::iterator> getEnvIDsOfLiveOutVars(void);
 
   /*
    * One per external dependent + one to track exit block
    */
   uint64_t size(void) const;
 
-  int64_t indexOfExitBlockTaken(void) const;
+  int64_t getExitBlockID(void) const;
 
-  Type *typeOfEnvironmentLocation(uint64_t index) const;
+  Type *typeOfEnvironmentLocation(uint64_t id) const;
 
   std::vector<Type *> getTypesOfEnvironmentLocations(void) const;
 
   bool isLiveIn(Value *val) const;
 
-  Value *producerAt(uint64_t ind) const;
+  Value *getProducerOfID(uint64_t id) const;
 
   std::set<Value *> consumersOf(Value *prod) const;
 
@@ -74,15 +74,15 @@ private:
    * algorithm, as all producers should just be iterated over for
    * any arbitrary operation
    */
-  int indexOfProducer(Value *producer) {
-    return producerIndexMap[producer];
+  int getProducerID(Value *producer) {
+    return producerIDMap[producer];
   }
 
   std::vector<Value *> envProducers;
-  std::unordered_map<Value *, int> producerIndexMap;
+  std::unordered_map<Value *, int> producerIDMap;
 
-  std::set<int> liveInInds;
-  std::set<int> liveOutInds;
+  std::set<int> liveInIDs;
+  std::set<int> liveOutIDs;
 
   std::unordered_map<Value *, std::set<Value *>> prodConsumers;
 

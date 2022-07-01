@@ -265,9 +265,8 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
     errs() << "DOALL:   Reduced variables:\n";
   }
   auto sccManager = LDI->getSCCManager();
-  auto isReducible = [this,
-                      loopEnvironment,
-                      sccManager](uint32_t idx, bool isLiveOut) -> bool {
+  auto isReducible =
+      [this, loopEnvironment, sccManager](uint32_t id, bool isLiveOut) -> bool {
     if (!isLiveOut) {
       return false;
     }
@@ -279,7 +278,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
      * IVs are not reducable because they get re-computed locally by each
      * thread.
      */
-    auto producer = loopEnvironment->producerAt(idx);
+    auto producer = loopEnvironment->getProducerOfID(id);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->isInductionVariableSCC()) {
@@ -316,11 +315,11 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
    */
   auto envUser = this->envBuilder->getUser(0);
   assert(envUser != nullptr);
-  for (auto envIndex : loopEnvironment->getEnvIndicesOfLiveInVars()) {
-    envUser->addLiveInIndex(envIndex);
+  for (auto envID : loopEnvironment->getEnvIDsOfLiveInVars()) {
+    envUser->addLiveInIndex(envID);
   }
-  for (auto envIndex : loopEnvironment->getEnvIndicesOfLiveOutVars()) {
-    envUser->addLiveOutIndex(envIndex);
+  for (auto envID : loopEnvironment->getEnvIDsOfLiveOutVars()) {
+    envUser->addLiveOutIndex(envID);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 

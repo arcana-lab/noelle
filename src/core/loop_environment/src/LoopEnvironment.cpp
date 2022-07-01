@@ -117,9 +117,9 @@ LoopEnvironment::LoopEnvironment(PDG *loopDG,
   return;
 }
 
-Type *LoopEnvironment::typeOfEnvironmentLocation(uint64_t index) const {
-  if (index < envProducers.size()) {
-    return this->envProducers[index]->getType();
+Type *LoopEnvironment::typeOfEnvironmentLocation(uint64_t id) const {
+  if (id < envProducers.size()) {
+    return this->envProducers[id]->getType();
   }
 
   return exitBlockType;
@@ -156,16 +156,16 @@ uint64_t LoopEnvironment::addProducer(Value *producer, bool liveIn) {
   /*
    * Add @producer to the environment.
    */
-  auto envIndex = this->envProducers.size();
+  auto nextEnvID = this->envProducers.size();
   this->envProducers.push_back(producer);
-  producerIndexMap[producer] = envIndex;
+  producerIDMap[producer] = nextEnvID;
   if (liveIn) {
-    liveInInds.insert(envIndex);
+    liveInIDs.insert(nextEnvID);
   } else {
-    liveOutInds.insert(envIndex);
+    liveOutIDs.insert(nextEnvID);
   }
 
-  return envIndex;
+  return nextEnvID;
 }
 
 uint64_t LoopEnvironment::addLiveInValue(
@@ -175,7 +175,7 @@ uint64_t LoopEnvironment::addLiveInValue(
   /*
    * Add the live-in value.
    */
-  auto newIndex = this->addLiveInProducer(newLiveInValue);
+  auto newID = this->addLiveInProducer(newLiveInValue);
 
   /*
    * Add the consumers.
@@ -184,11 +184,11 @@ uint64_t LoopEnvironment::addLiveInValue(
     this->prodConsumers[newLiveInValue].insert(consumerOfNewLiveIn);
   }
 
-  return newIndex;
+  return newID;
 }
 
 bool LoopEnvironment::isProducer(Value *producer) const {
-  return producerIndexMap.find(producer) != producerIndexMap.end();
+  return producerIDMap.find(producer) != producerIDMap.end();
 }
 
 bool LoopEnvironment::isLiveIn(Value *val) const {
@@ -197,27 +197,27 @@ bool LoopEnvironment::isLiveIn(Value *val) const {
   /*
    * Check if @val belongs to the environment.
    */
-  if (producerIndexMap.find(val) == producerIndexMap.end()) {
+  if (producerIDMap.find(val) == producerIDMap.end()) {
     return false;
   }
 
   /*
-   * Fetch the index of @val.
+   * Fetch the id of @val.
    */
-  auto indexOfVal = producerIndexMap.at(val);
+  auto producerID = producerIDMap.at(val);
 
   /*
    * Check if @val is a live-in.
    */
   auto isLiveIn =
-      isProducer(val) && liveInInds.find(indexOfVal) != liveInInds.end();
+      isProducer(val) && liveInIDs.find(producerID) != liveInIDs.end();
 
   return isLiveIn;
 }
 
 uint64_t LoopEnvironment::addLiveInProducer(Value *producer) {
-  auto newIndex = addProducer(producer, true);
-  return newIndex;
+  auto newID = addProducer(producer, true);
+  return newID;
 }
 
 void LoopEnvironment::addLiveOutProducer(Value *producer) {
@@ -225,7 +225,7 @@ void LoopEnvironment::addLiveOutProducer(Value *producer) {
   return;
 }
 
-int64_t LoopEnvironment::indexOfExitBlockTaken(void) const {
+int64_t LoopEnvironment::getExitBlockID(void) const {
   return this->hasExitBlockEnv ? this->envProducers.size() : -1;
 }
 
@@ -248,19 +248,19 @@ iterator_range<std::vector<Value *>::iterator> LoopEnvironment::getProducers(
   return make_range(envProducers.begin(), envProducers.end());
 }
 
-iterator_range<std::set<int>::iterator> LoopEnvironment::
-    getEnvIndicesOfLiveInVars(void) {
-  return make_range(liveInInds.begin(), liveInInds.end());
+iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIDsOfLiveInVars(
+    void) {
+  return make_range(liveInIDs.begin(), liveInIDs.end());
 }
 
-iterator_range<std::set<int>::iterator> LoopEnvironment::
-    getEnvIndicesOfLiveOutVars(void) {
-  return make_range(liveOutInds.begin(), liveOutInds.end());
+iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIDsOfLiveOutVars(
+    void) {
+  return make_range(liveOutIDs.begin(), liveOutIDs.end());
 }
 
-Value *LoopEnvironment::producerAt(uint64_t ind) const {
-  assert(ind < this->envProducers.size());
-  return envProducers[ind];
+Value *LoopEnvironment::getProducerOfID(uint64_t id) const {
+  assert(id < this->envProducers.size());
+  return envProducers[id];
 }
 
 } // namespace llvm::noelle

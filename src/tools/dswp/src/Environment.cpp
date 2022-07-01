@@ -40,8 +40,8 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
   /*
    * Collect live-in information
    */
-  for (auto envIndex : environment->getEnvIndicesOfLiveInVars()) {
-    auto producer = environment->producerAt(envIndex);
+  for (auto envID : environment->getEnvIDsOfLiveInVars()) {
+    auto producer = environment->getProducerOfID(envID);
 
     for (auto consumer : environment->consumersOf(producer)) {
 
@@ -55,7 +55,7 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
           auto task = (DSWPTask *)tasks[i];
           if (task->clonableSCCs.find(consumerSCC) == task->clonableSCCs.end())
             continue;
-          envBuilder->getUser(i)->addLiveInIndex(envIndex);
+          envBuilder->getUser(i)->addLiveInIndex(envID);
         }
 
         continue;
@@ -67,7 +67,7 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
       assert(this->sccToStage.find(consumerSCC) != this->sccToStage.end());
       auto task = this->sccToStage.at(consumerSCC);
       auto id = task->getID();
-      envBuilder->getUser(id)->addLiveInIndex(envIndex);
+      envBuilder->getUser(id)->addLiveInIndex(envID);
     }
   }
 }
@@ -89,8 +89,8 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
   /*
    * Collect live-out information
    */
-  for (auto envIndex : environment->getEnvIndicesOfLiveOutVars()) {
-    auto producer = environment->producerAt(envIndex);
+  for (auto envID : environment->getEnvIDsOfLiveOutVars()) {
+    auto producer = environment->getProducerOfID(envID);
 
     /*
      * Clonable producers all produce the same live out value.
@@ -104,7 +104,7 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
         auto task = (DSWPTask *)tasks[i];
         if (task->clonableSCCs.find(producerSCC) == task->clonableSCCs.end())
           continue;
-        envBuilder->getUser(i)->addLiveOutIndex(envIndex);
+        envBuilder->getUser(i)->addLiveOutIndex(envID);
         break;
       }
 
@@ -118,7 +118,7 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
     assert(this->sccToStage.find(producerSCC) != this->sccToStage.end());
     auto task = this->sccToStage.at(producerSCC);
     auto id = task->getID();
-    envBuilder->getUser(id)->addLiveOutIndex(envIndex);
+    envBuilder->getUser(id)->addLiveOutIndex(envID);
   }
 }
 

@@ -40,26 +40,26 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
    */
   std::set<uint32_t> nonReducableVars;
   std::set<uint32_t> reducableVars;
-  for (auto liveInVariableIndex : environment->getEnvIndicesOfLiveInVars()) {
-    if (shouldThisVariableBeReduced(liveInVariableIndex, false)) {
-      reducableVars.insert(liveInVariableIndex);
+  for (auto liveInVariableID : environment->getEnvIDsOfLiveInVars()) {
+    if (shouldThisVariableBeReduced(liveInVariableID, false)) {
+      reducableVars.insert(liveInVariableID);
     } else {
-      nonReducableVars.insert(liveInVariableIndex);
+      nonReducableVars.insert(liveInVariableID);
     }
   }
-  for (auto liveOutVariableIndex : environment->getEnvIndicesOfLiveOutVars()) {
-    if (shouldThisVariableBeReduced(liveOutVariableIndex, true)) {
-      reducableVars.insert(liveOutVariableIndex);
+  for (auto liveOutVariableID : environment->getEnvIDsOfLiveOutVars()) {
+    if (shouldThisVariableBeReduced(liveOutVariableID, true)) {
+      reducableVars.insert(liveOutVariableID);
     } else {
-      nonReducableVars.insert(liveOutVariableIndex);
+      nonReducableVars.insert(liveOutVariableID);
     }
   }
 
   /*
    * Should an exit block environment variable be necessary, register one
    */
-  if (environment->indexOfExitBlockTaken() >= 0) {
-    nonReducableVars.insert(environment->indexOfExitBlockTaken());
+  if (environment->getExitBlockID() >= 0) {
+    nonReducableVars.insert(environment->getExitBlockID());
   }
 
   /*

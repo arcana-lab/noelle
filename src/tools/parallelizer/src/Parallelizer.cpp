@@ -187,8 +187,7 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     errs() << prefix << "  Link the parallelize loop\n";
   }
   auto exitIndex =
-      ConstantInt::get(par.int64,
-                       LDI->getEnvironment()->indexOfExitBlockTaken());
+      ConstantInt::get(par.int64, LDI->getEnvironment()->getExitBlockID());
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   par.linkTransformedLoopToOriginalFunction(loopFunction->getParent(),
                                             loopPreHeader,

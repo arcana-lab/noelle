@@ -278,7 +278,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    * Generate code to allocate and initialize the loop environment.
    */
   errs() << this->prefixString << "  Initialize the environment of the loop\n";
-  auto isReducible = [this, environment, sccManager](uint32_t idx,
+  auto isReducible = [this, environment, sccManager](uint32_t id,
                                                      bool isLiveOut) -> bool {
     if (!isLiveOut) {
       return false;
@@ -290,7 +290,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
      * Check if it can be reduced so we can generate more efficient code that
      * does not require a sequential segment.
      */
-    auto producer = environment->producerAt(idx);
+    auto producer = environment->getProducer(id);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->canExecuteReducibly()) {
@@ -320,11 +320,11 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    * Store final results to loop live-out variables.
    */
   auto envUser = this->envBuilder->getUser(0);
-  for (auto envIndex : environment->getEnvIndicesOfLiveInVars()) {
-    envUser->addLiveInIndex(envIndex);
+  for (auto envID : environment->getEnvIDsOfLiveInVars()) {
+    envUser->addLiveInIndex(envID);
   }
-  for (auto envIndex : environment->getEnvIndicesOfLiveOutVars()) {
-    envUser->addLiveOutIndex(envIndex);
+  for (auto envID : environment->getEnvIDsOfLiveOutVars()) {
+    envUser->addLiveOutIndex(envID);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 

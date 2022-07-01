@@ -113,13 +113,13 @@ void DSWP::printEnv(LoopDependenceInfo *LDI) const {
    */
   errs() << "DSWP:  Environment\n";
   int count = 1;
-  for (auto envIndex : environment->getEnvIndicesOfLiveInVars()) {
-    environment->producerAt(envIndex)->print(
+  for (auto envID : environment->getEnvIDsOfLiveInVars()) {
+    environment->getProducerOfID(envID)->print(
         errs() << "DSWP:    Pre loop env " << count++ << ", producer:\t");
     errs() << "\n";
   }
-  for (auto envIndex : environment->getEnvIndicesOfLiveOutVars()) {
-    environment->producerAt(envIndex)->print(
+  for (auto envID : environment->getEnvIDsOfLiveOutVars()) {
+    environment->getProducerOfID(envID)->print(
         errs() << "DSWP:    Post loop env " << count++ << ", producer:\t");
     errs() << "\n";
   }

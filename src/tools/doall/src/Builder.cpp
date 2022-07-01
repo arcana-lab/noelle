@@ -338,7 +338,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
        * Check whether the header PHI is part of the set of PHIs we need to
        * guard
        */
-      auto producer = cast<Instruction>(env->producerAt(envIndex));
+      auto producer = cast<Instruction>(env->getProducerOfID(envIndex));
       assert(producer != nullptr);
       auto scc = sccdag->sccOfValue(producer);
       assert(scc != nullptr);
