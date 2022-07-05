@@ -244,16 +244,12 @@ void LoopStructure::print(raw_ostream &stream) {
   return;
 }
 
-<<<<<<< HEAD
 uint64_t LoopStructure::getID(void) const {
   if (!this->hasLoopIDMetadata) {
     errs() << "LoopStructure does not have ID. Abort.\n";
     abort();
   }
-  
-=======
-uint64_t LoopStructure::getID(void) const {
->>>>>>> origin/master
+
   return this->ID;
 }
 
