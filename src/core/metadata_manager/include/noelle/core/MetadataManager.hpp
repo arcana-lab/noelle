@@ -45,6 +45,11 @@ public:
                    const std::string &metadataValue);
 
   /*
+   *************** Loop APIs
+   ***************************************************************
+   */
+
+  /*
    * Return true if the loop has the metadata requested.
    */
   bool doesHaveMetadata(LoopStructure *loop, const std::string &metadataName);
@@ -78,6 +83,48 @@ public:
    * Warning: this modifies the IR code.
    */
   void deleteMetadata(LoopStructure *loop,
+                      const std::string &metadataName,
+                      const std::string &metadataValue);
+
+  /*
+   *************** Instruction APIs
+   **********************************************************
+   */
+
+  /*
+   * Return true if the instruction has the metadata requested.
+   */
+  bool doesHaveMetadata(Instruction *inst, const std::string &metadataName);
+
+  /*
+   * Fetch the metadata attached to an instruction
+   */
+  std::string getMetadata(Instruction *inst, const std::string &metadataName);
+
+  /*
+   * Add metadata to an instruction
+   *
+   * Warning: this modifies the IR code.
+   */
+  void addMetadata(Instruction *inst,
+                   const std::string &metadataName,
+                   const std::string &metadataValue);
+
+  /*
+   * Set an existing metadata of an instruction
+   *
+   * Warning: this modifies the IR code.
+   */
+  void setMetadata(Instruction *inst,
+                   const std::string &metadataName,
+                   const std::string &metadataValue);
+
+  /*
+   * Delete metadata of an instruction
+   *
+   * Warning: this modifies the IR code.
+   */
+  void deleteMetadata(Instruction *inst,
                       const std::string &metadataName,
                       const std::string &metadataValue);
 

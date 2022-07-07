@@ -32,6 +32,7 @@ bool MetadataManager::doesHaveMetadata(const std::string &metadataName) const {
   if (!metaNode) {
     return false;
   }
+
   return true;
 }
 

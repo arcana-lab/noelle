@@ -3,6 +3,7 @@ set(Srcs
   MetadataEntry.cpp
   MetadataManager.cpp
   MetadataManager_Module.cpp
+  MetadataManager_Instruction.cpp
 )
 
 # Compilation flags

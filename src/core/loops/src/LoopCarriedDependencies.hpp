@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,6 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "Assumptions.h"
 #include "noelle/core/DominatorSummary.hpp"
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/SCCDAG.hpp"
