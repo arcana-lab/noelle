@@ -123,7 +123,7 @@ bool PDGAnalysis::runOnModule(Module &M) {
      * Construct PDG because this will trigger code that is needed by the
      * options specified.
      */
-    auto currentPDG = this->getPDG();
+    this->getPDG();
   }
 
   /*

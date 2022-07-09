@@ -215,8 +215,8 @@ void PDG::copyEdgesInto(
     /*
      * Create appropriate external nodes and associate edge to them
      */
-    auto newFromNode = newPDG->fetchOrAddNode(fromT, fromInclusion);
-    auto newToNode = newPDG->fetchOrAddNode(toT, toInclusion);
+    newPDG->fetchOrAddNode(fromT, fromInclusion);
+    newPDG->fetchOrAddNode(toT, toInclusion);
 
     /*
      * Copy edge to match properties (mem/var, must/may, RAW/WAW/WAR/control)

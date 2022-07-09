@@ -83,7 +83,6 @@ void SCC::copyNodesAndEdges(std::set<DGNode<Value> *> internalNodes,
    * (they were considered in outgoing edges)
    */
   for (auto node : internalNodes) {
-    auto theT = node->getT();
     for (auto edge : node->getOutgoingEdges()) {
       auto incomingT = edge->getIncomingT();
       if (isExternal(incomingT))
@@ -96,7 +95,6 @@ void SCC::copyNodesAndEdges(std::set<DGNode<Value> *> internalNodes,
    * Add external edges on this SCC's instructions
    */
   for (auto node : internalNodes) {
-    auto theT = node->getT();
     for (auto edge : node->getOutgoingEdges()) {
       auto incomingT = edge->getIncomingNode()->getT();
       if (isInternal(incomingT))
