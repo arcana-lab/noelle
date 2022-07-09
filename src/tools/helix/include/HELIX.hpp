@@ -143,7 +143,7 @@ private:
   bool enableInliner;
   Function *taskDispatcherSS;
   Function *taskDispatcherCS;
-
+  std::string prefixString;
   void squeezeSequentialSegment(LoopDependenceInfo *LDI,
                                 DataFlowResult *reachabilityDFR,
                                 SequentialSegment *ss);

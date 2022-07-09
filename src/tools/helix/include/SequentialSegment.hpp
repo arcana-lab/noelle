@@ -34,7 +34,8 @@ public:
                     DataFlowResult *reachabilityDFR,
                     SCCSet *sccs,
                     int32_t ID,
-                    Verbosity verbosity);
+                    Verbosity verbosity,
+                    const std::string &prefixString);
 
   void forEachEntry(std::function<void(Instruction *justAfterEntry)> whatToDo);
 
@@ -75,7 +76,8 @@ private:
   computeBeforeInstructionMap(LoopDependenceInfo *LDI, DataFlowResult *dfr);
 
   void printSCCInfo(LoopDependenceInfo *LDI,
-                    std::unordered_set<Instruction *> &ssInstructions);
+                    std::unordered_set<Instruction *> &ssInstructions,
+                    const std::string &prefixString);
 
   void classifyEntriesAndExitsUsingReachabilityResults(
       LoopStructure *loopContainingSSInstructions,

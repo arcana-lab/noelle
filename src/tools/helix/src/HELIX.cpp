@@ -31,7 +31,8 @@ HELIX::HELIX(Noelle &n, bool forceParallelization)
     loopCarriedLoopEnvironmentBuilder{ nullptr },
     taskFunctionDG{ nullptr },
     lastIterationExecutionBlock{ nullptr },
-    enableInliner{ true } {
+    enableInliner{ true },
+    prefixString{ "HELIX: " } {
 
   /*
    * Fetch the LLVM context.
@@ -51,7 +52,8 @@ HELIX::HELIX(Noelle &n, bool forceParallelization)
   this->signalSSCall = program->getFunction("HELIX_signal");
   if (!this->waitSSCall || !this->signalSSCall) {
     errs()
-        << "HELIX: ERROR = sync functions HELIX_wait, HELIX_signal were not both found.\n";
+        << this->prefixString
+        << "ERROR = sync functions HELIX_wait, HELIX_signal were not both found.\n";
     abort();
   }
 
@@ -177,17 +179,20 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    * Print the parallelization request.
    */
   if (this->verbose != Verbosity::Disabled) {
-    errs() << "HELIX: Start the parallelization\n";
+    errs() << this->prefixString << "Start the parallelization\n";
 
     /*
      * Print the sequential SCCs that will create sequential segments.
      */
     auto nonDOALLSCCs =
         DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, this->noelle);
-    errs()
-        << "HELIX:   There are " << nonDOALLSCCs.size()
-        << " SCCs that have loop-carried dependences that cannot be broken\n";
     if (this->verbose >= Verbosity::Maximal) {
+      if (nonDOALLSCCs.size() > 0) {
+        errs()
+            << this->prefixString << "  There are " << nonDOALLSCCs.size()
+            << " SCCs that have loop-carried dependences that cannot be broken\n";
+      }
+
       for (auto scc : nonDOALLSCCs) {
 
         /*
@@ -201,13 +206,14 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
          */
         // errs() << "HELIX:     SCC:\n";
         // scc->printMinimal(errs(), "HELIX:       ") ;
-        errs() << "HELIX:       Loop-carried dependences\n";
+        errs() << this->prefixString << "    Loop-carried dependences\n";
         sccManager->iterateOverLoopCarriedDependences(
             scc,
-            [](DGEdge<Value> *dep) -> bool {
+            [this](DGEdge<Value> *dep) -> bool {
               auto fromInst = dep->getOutgoingT();
               auto toInst = dep->getIncomingT();
-              errs() << "HELIX:       " << *fromInst << " ---> " << *toInst;
+              errs() << this->prefixString << "      " << *fromInst << " ---> "
+                     << *toInst;
 
               /*
                * Control dependences.
@@ -234,7 +240,8 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
      * Print the prologue
      */
     if (this->doesHaveASequentialPrologue(LDI)) {
-      errs() << "HELIX:   The loop will have a sequential prologue\n";
+      errs() << this->prefixString
+             << "    The loop will have a sequential prologue\n";
     }
   }
 
@@ -267,8 +274,9 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Generate code to allocate and initialize the loop environment.
    */
-  auto isReducible = [environment, sccManager](uint32_t idx,
-                                               bool isLiveOut) -> bool {
+  errs() << this->prefixString << "  Initialize the environment of the loop\n";
+  auto isReducible = [this, environment, sccManager](uint32_t idx,
+                                                     bool isLiveOut) -> bool {
     if (!isLiveOut) {
       return false;
     }
@@ -283,6 +291,12 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->canExecuteReducibly()) {
+      errs()
+          << this->prefixString
+          << "    The following variable is reducable: " << *producer << "\n";
+      auto s = this->prefixString;
+      s.append("      ");
+      scc->print(errs(), s);
       return true;
     }
     return false;
@@ -294,7 +308,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    * within the single task of HELIX.
    */
   if (this->verbose >= Verbosity::Maximal) {
-    errs() << "HELIX:  Cloning loop in task\n";
+    errs() << this->prefixString << "  Cloning loop in task\n";
   }
   this->cloneSequentialLoop(LDI, 0);
 
@@ -342,7 +356,8 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    */
   if (this->verbose >= Verbosity::Maximal) {
     errs()
-        << "HELIX:  Check if we need to spill variables because they are part of loop carried data dependencies\n";
+        << this->prefixString
+        << "  Check if we need to spill variables because they are part of loop carried data dependencies\n";
   }
   this->spillLoopCarriedDataDependencies(LDI, reachabilityDFR);
 
@@ -350,7 +365,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    * For IVs that were not spilled, adjust their step size appropriately
    */
   if (this->verbose >= Verbosity::Maximal) {
-    errs() << "HELIX:  Adjusting loop IVs\n";
+    errs() << this->prefixString << "  Adjusting loop IVs\n";
   }
   this->rewireLoopForIVsToIterateNthIterations(LDI);
 
@@ -413,7 +428,7 @@ bool HELIX::synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h) {
    * Identify the sequential segments.
    */
   if (this->verbose >= Verbosity::Maximal) {
-    errs() << "HELIX:  Identifying sequential segments\n";
+    errs() << this->prefixString << "  Identifying sequential segments\n";
   }
   reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
   sequentialSegments =

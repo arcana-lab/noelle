@@ -216,12 +216,15 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
     /*
      * Allocate a sequential segment.
      */
+    auto s = std::string(this->prefixString);
+    s.append("    ");
     auto ss = new SequentialSegment(this->noelle,
                                     LDI,
                                     reachabilityDFR,
                                     set,
                                     ssID,
-                                    this->verbose);
+                                    this->verbose,
+                                    s);
 
     /*
      * Insert the new sequential segment to the list.
