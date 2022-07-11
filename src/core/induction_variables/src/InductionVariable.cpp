@@ -515,14 +515,22 @@ bool InductionVariable::isStepValuePositive(void) const {
 
   /*
    * Check if the step value is positive
+   *
+   * Check if the value is an integer
    */
   if (this->loopEntryPHIType->isIntegerTy()) {
-    return cast<ConstantInt>(stepValue)->getValue().isStrictlyPositive();
-  } else {
-    assert(this->loopEntryPHIType->isFloatingPointTy());
-    auto fpValue = cast<ConstantFP>(stepValue)->getValueAPF();
-    return fpValue.isNonZero() && !fpValue.isNegative();
+    auto constant = cast<ConstantInt>(stepValue);
+    auto constantValue = constant->getValue();
+    auto isPositive = constantValue.isStrictlyPositive();
+    return isPositive;
   }
+
+  /*
+   * The value is a floating point one
+   */
+  assert(this->loopEntryPHIType->isFloatingPointTy());
+  auto fpValue = cast<ConstantFP>(stepValue)->getValueAPF();
+  return fpValue.isNonZero() && !fpValue.isNegative();
 }
 
 Type *InductionVariable::getIVType(void) const {
