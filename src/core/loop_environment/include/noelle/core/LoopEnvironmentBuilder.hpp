@@ -32,15 +32,15 @@ public:
   LoopEnvironmentBuilder(
       LLVMContext &cxt,
       LoopEnvironment *env,
-      std::function<bool(uint32_t variableIndex, bool isLiveOut)>
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
           shouldThisVariableBeReduced,
       uint64_t reducerCount,
       uint64_t numberOfUsers);
 
   LoopEnvironmentBuilder(LLVMContext &CXT,
                          const std::vector<Type *> &varTypes,
-                         const std::set<uint32_t> &singleVarIndices,
-                         const std::set<uint32_t> &reducableVarIndices,
+                         const std::set<uint32_t> &singleVarIDs,
+                         const std::set<uint32_t> &reducableVarIDs,
                          uint64_t reducerCount,
                          uint64_t numberOfUsers);
 
@@ -110,8 +110,8 @@ private:
   std::vector<LoopEnvironmentUser *> envUsers;
 
   void initializeBuilder(const std::vector<Type *> &varTypes,
-                         const std::set<uint32_t> &singleVarIndices,
-                         const std::set<uint32_t> &reducableVarIndices,
+                         const std::set<uint32_t> &singleVarIDs,
+                         const std::set<uint32_t> &reducableVarIDs,
                          uint64_t reducerCount,
                          uint64_t numberOfUsers);
 

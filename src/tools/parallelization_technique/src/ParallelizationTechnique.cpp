@@ -40,9 +40,9 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
     LoopDependenceInfo *LDI,
     std::set<uint32_t> simpleVars,
     std::set<uint32_t> reducableVars) {
-  auto isReducable = [&reducableVars](uint32_t variableIndex,
+  auto isReducable = [&reducableVars](uint32_t variableID,
                                       bool isLiveOut) -> bool {
-    if (reducableVars.find(variableIndex) != reducableVars.end()) {
+    if (reducableVars.find(variableID) != reducableVars.end()) {
       return true;
     }
     return false;
@@ -54,7 +54,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
     LoopDependenceInfo *LDI,
-    std::function<bool(uint32_t variableIndex, bool isLiveOut)>
+    std::function<bool(uint32_t variableID, bool isLiveOut)>
         shouldThisVariableBeReduced) {
   assert(LDI != nullptr);
 

@@ -82,7 +82,7 @@ protected:
    */
   void initializeEnvironmentBuilder(
       LoopDependenceInfo *LDI,
-      std::function<bool(uint32_t variableIndex, bool isLiveOut)>
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
           shouldThisVariableBeReduced);
 
   void initializeEnvironmentBuilder(LoopDependenceInfo *LDI,

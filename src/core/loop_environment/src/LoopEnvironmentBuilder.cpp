@@ -28,7 +28,7 @@ namespace llvm::noelle {
 LoopEnvironmentBuilder::LoopEnvironmentBuilder(
     LLVMContext &cxt,
     LoopEnvironment *environment,
-    std::function<bool(uint32_t variableIndex, bool isLiveOut)>
+    std::function<bool(uint32_t variableID, bool isLiveOut)>
         shouldThisVariableBeReduced,
     uint64_t reducerCount,
     uint64_t numberOfUsers)
@@ -77,8 +77,8 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
 LoopEnvironmentBuilder::LoopEnvironmentBuilder(
     LLVMContext &cxt,
     const std::vector<Type *> &varTypes,
-    const std::set<uint32_t> &singleVarIndices,
-    const std::set<uint32_t> &reducableVarIndices,
+    const std::set<uint32_t> &singleVarIDs,
+    const std::set<uint32_t> &reducableVarIDs,
     uint64_t reducerCount,
     uint64_t numberOfUsers)
   : CXT{ cxt } {
@@ -87,8 +87,8 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
    * Initialize the builder
    */
   this->initializeBuilder(varTypes,
-                          singleVarIndices,
-                          reducableVarIndices,
+                          singleVarIDs,
+                          reducableVarIDs,
                           reducerCount,
                           numberOfUsers);
 
@@ -97,8 +97,8 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
 
 void LoopEnvironmentBuilder::initializeBuilder(
     const std::vector<Type *> &varTypes,
-    const std::set<uint32_t> &singleVarIndices,
-    const std::set<uint32_t> &reducableVarIndices,
+    const std::set<uint32_t> &singleVarIDs,
+    const std::set<uint32_t> &reducableVarIDs,
     uint64_t reducerCount,
     uint64_t numberOfUsers) {
 
@@ -107,7 +107,7 @@ void LoopEnvironmentBuilder::initializeBuilder(
    */
   this->envArray = nullptr;
   this->envArrayInt8Ptr = nullptr;
-  this->envSize = singleVarIndices.size() + reducableVarIndices.size();
+  this->envSize = singleVarIDs.size() + reducableVarIDs.size();
   this->envArrayType = nullptr;
   this->envTypes = varTypes;
   this->numReducers = reducerCount;
@@ -128,11 +128,11 @@ void LoopEnvironmentBuilder::initializeBuilder(
   /*
    * Initialize the index-to-variable map.
    */
-  for (auto envIndex : singleVarIndices) {
-    this->envIndexToVar[envIndex] = nullptr;
+  for (auto envID : singleVarIDs) {
+    this->envIndexToVar[envID] = nullptr;
   }
-  for (auto envIndex : reducableVarIndices) {
-    this->envIndexToReducableVar[envIndex] = std::vector<Value *>();
+  for (auto envID : reducableVarIDs) {
+    this->envIndexToReducableVar[envID] = std::vector<Value *>();
   }
 
   /*
