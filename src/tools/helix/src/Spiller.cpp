@@ -72,7 +72,7 @@ void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
     if (loopIVManager->doesContributeToComputeAnInductionVariable(&phi)) {
       continue;
     }
-    errs() << "HELIX:    Spill " << phi << "\n";
+    errs() << this->prefixString << "    Spill " << phi << "\n";
     originalLoopCarriedPHIs.push_back(&phi);
     auto clonePHI = (PHINode *)(helixTask->getCloneOfOriginalInstruction(&phi));
     assert(clonePHI != nullptr);

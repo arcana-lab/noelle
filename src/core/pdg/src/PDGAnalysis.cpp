@@ -746,23 +746,15 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(DGEdge<Value> *edge) {
   /*
    * Assert: must be a WAR load-store OR a RAW store-load
    */
-  LoadInst *load = nullptr;
-  StoreInst *store = nullptr;
   if (edge->isWARDependence()) {
     assert(isa<StoreInst>(incomingT) && isa<LoadInst>(outgoingT));
-    load = (LoadInst *)outgoingT;
-    store = (StoreInst *)incomingT;
   } else if (edge->isRAWDependence()) {
     assert(isa<LoadInst>(incomingT) && isa<StoreInst>(outgoingT));
-    store = (StoreInst *)outgoingT;
-    load = (LoadInst *)incomingT;
   }
 
   bool loopCarried = true;
-  if (isMemoryAccessIntoDifferentArrays(edge) ||
-      // (store && load && isBackedgeOfLoadStoreIntoSameOffsetOfArray(edge,
-      // load, store)) ||
-      isBackedgeIntoSameGlobal(edge)) {
+  if (isMemoryAccessIntoDifferentArrays(edge)
+      || isBackedgeIntoSameGlobal(edge)) {
     loopCarried = false;
   }
 
@@ -947,11 +939,19 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(DGEdge<Value> *edge) {
     return false;
   };
   auto getCallFnName = [&](CallInst *call) -> StringRef {
+    /*
+     * Fetch the function being called
+     */
     auto func = call->getCalledFunction();
-    if (func && !func->empty()) {
-      return func->getName();
+    if (!func) {
+      return "";
     }
-    return call->getCalledValue()->getName();
+    assert(func != nullptr);
+
+    /*
+     * Get the name of the callee
+     */
+    return func->getName();
   };
 
   /*

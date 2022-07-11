@@ -113,9 +113,11 @@ void ParallelizationTechnique::initializeLoopEnvironmentUsers(void) {
      */
     auto entryBlock = task->getEntry();
     IRBuilder<> entryBuilder(entryBlock);
-    envUser->setEnvironmentArray(entryBuilder.CreateBitCast(
+    auto bitcastInst = entryBuilder.CreateBitCast(
         task->getEnvironment(),
-        PointerType::getUnqual(envBuilder->getEnvironmentArrayType())));
+        PointerType::getUnqual(envBuilder->getEnvironmentArrayType()),
+        "noelle.environment_variable.pointer");
+    envUser->setEnvironmentArray(bitcastInst);
   }
 
   return;
@@ -161,6 +163,11 @@ void ParallelizationTechnique::populateLiveInEnvironment(
     LoopDependenceInfo *LDI) {
 
   /*
+   * Fetch the metadata manager
+   */
+  auto mm = this->noelle.getMetadataManager();
+
+  /*
    * Fetch the loop environment.
    */
   auto env = LDI->getEnvironment();
@@ -187,7 +194,14 @@ void ParallelizationTechnique::populateLiveInEnvironment(
     /*
      * Store the value inside the environment.
      */
-    builder.CreateStore(producerOfLiveIn, environmentVariable);
+    auto newStore = builder.CreateStore(producerOfLiveIn, environmentVariable);
+
+    /*
+     * Attach the metadata to the new store
+     */
+    mm->addMetadata(newStore,
+                    "noelle.environment_variable.live_in.store_pointer",
+                    std::to_string(envIndex));
   }
 
   return;
@@ -747,7 +761,9 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
     /*
      * Load the live-in value from the environment pointer.
      */
-    auto envLoad = builder.CreateLoad(envPointer);
+    auto metaString = std::string{ "noelle_environment_variable_" };
+    metaString.append(std::to_string(envIndex));
+    auto envLoad = builder.CreateLoad(envPointer, metaString);
 
     /*
      * Register the load as a "clone" of the original producer
@@ -761,6 +777,11 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
 void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
     LoopDependenceInfo *LDI,
     int taskIndex) {
+
+  /*
+   * Fetch the metadata manager
+   */
+  auto mm = this->noelle.getMetadataManager();
 
   /*
    * Fetch the environment of the loop
@@ -847,7 +868,15 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
        */
       auto identityV =
           this->getIdentityValueForEnvironmentValue(LDI, envIndex, envType);
-      entryBuilder.CreateStore(identityV, envPtr);
+      auto newStore = entryBuilder.CreateStore(identityV, envPtr);
+
+      /*
+       * Attach the metadata to the new store
+       */
+      mm->addMetadata(
+          newStore,
+          "noelle.environment_variable.live_out.reducable.initialize_private_copy",
+          std::to_string(envIndex));
     }
 
     /*
@@ -902,8 +931,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
          * variable, which is allocated on the stack of the caller.
          */
         IRBuilder<> liveOutBuilder(BB);
-        auto store = cast<StoreInst>(
-            liveOutBuilder.CreateStore(producerValueToStore, envPtr));
+        auto store = liveOutBuilder.CreateStore(producerValueToStore, envPtr);
         store->removeFromParent();
 
         /*
@@ -922,11 +950,26 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
            */
           store->insertBefore(BB->getTerminator());
 
+          /*
+           * Attach the metadata to the new store
+           */
+          mm->addMetadata(
+              store,
+              "noelle.environment_variable.live_out.reducable.update_private_copy",
+              std::to_string(envIndex));
+
         } else {
 
           /*
            * The live-out variable is not reduced.
            *
+           * Attach the metadata to the new store
+           */
+          mm->addMetadata(store,
+                          "noelle.environment_variable.live_out.store",
+                          std::to_string(envIndex));
+
+          /*
            * Check if the place to inject the store is included in a cycle in
            * the CFG (hence, it can run multiple times). If that is the case,
            * then we need to store the live-out variable only if the current
@@ -1435,6 +1478,11 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
     int taskIndex) {
 
   /*
+   * Fetch the metadata manager
+   */
+  auto mm = this->noelle.getMetadataManager();
+
+  /*
    * Fetch the program.
    */
   auto program = this->noelle.getProgram();
@@ -1480,9 +1528,19 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
   for (int i = 0; i < task->getNumberOfLastBlocks(); ++i) {
     auto bb = task->getLastBlock(i);
     auto term = bb->getTerminator();
+
+    /*
+     * Create the store instruction
+     */
     IRBuilder<> builder(bb);
     auto envPtr = envUser->getEnvPtr(exitBlockEnvIndex);
-    builder.CreateStore(ConstantInt::get(int32, i), envPtr);
+    auto newStore = builder.CreateStore(ConstantInt::get(int32, i), envPtr);
+
+    /*
+     * Attach the metadata to the new store
+     */
+    mm->addMetadata(newStore, "noelle.exit_block", std::to_string(i));
+
     term->removeFromParent();
     builder.Insert(term);
   }

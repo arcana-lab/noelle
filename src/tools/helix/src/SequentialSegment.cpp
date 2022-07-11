@@ -29,7 +29,8 @@ SequentialSegment::SequentialSegment(Noelle &noelle,
                                      DataFlowResult *reachabilityDFR,
                                      SCCSet *sccs,
                                      int32_t ID,
-                                     Verbosity verbosity)
+                                     Verbosity verbosity,
+                                     const std::string &prefixString)
   : verbosity{ verbosity } {
 
   /*
@@ -62,7 +63,7 @@ SequentialSegment::SequentialSegment(Noelle &noelle,
     ssInstructions.erase(excludedI);
   }
   if (this->verbosity >= Verbosity::Maximal) {
-    printSCCInfo(LDI, ssInstructions);
+    printSCCInfo(LDI, ssInstructions, prefixString);
   }
 
   /*
@@ -489,32 +490,34 @@ std::unordered_set<Instruction *> SequentialSegment::getInstructions(void) {
 
 void SequentialSegment::printSCCInfo(
     LoopDependenceInfo *LDI,
-    std::unordered_set<Instruction *> &ssInstructions) {
+    std::unordered_set<Instruction *> &ssInstructions,
+    const std::string &prefixString) {
 
-  errs() << "HELIX:   Sequential segment " << ID << "\n";
-  errs() << "HELIX:     SCCs included in the current sequential segment\n";
+  errs() << prefixString << "Sequential segment " << ID << "\n";
+  errs()
+      << prefixString << "  SCCs included in the current sequential segment\n";
 
   auto sccManager = LDI->getSCCManager();
   for (auto scc : sccs->sccs) {
 
     auto sccInfo = sccManager->getSCCAttrs(scc);
 
-    errs() << "HELIX:       Type = " << sccInfo->getType() << "\n";
-    errs() << "HELIX:       Loop-carried data dependences\n";
-    auto lcIterFunc = [scc](DGEdge<Value> *dep) -> bool {
+    errs() << prefixString << "    Type = " << sccInfo->getType() << "\n";
+    errs() << prefixString << "    Loop-carried data dependences\n";
+    auto lcIterFunc = [scc, &prefixString](DGEdge<Value> *dep) -> bool {
       auto fromInst = dep->getOutgoingT();
       auto toInst = dep->getIncomingT();
       assert(scc->isInternal(fromInst) || scc->isInternal(toInst));
       errs()
-          << "HELIX:        \"" << *fromInst << "\" -> \"" << *toInst << "\"\n";
+          << prefixString << "      " << *fromInst << " -> " << *toInst << "\n";
       return false;
     };
     sccManager->iterateOverLoopCarriedDataDependences(scc, lcIterFunc);
   }
 
-  errs() << "HELIX:     Instructions that belong to the SS\n";
+  errs() << prefixString << "    Instructions that belong to the SS\n";
   for (auto ssInst : ssInstructions) {
-    errs() << "HELIX:       " << *ssInst << "\n";
+    errs() << prefixString << "      " << *ssInst << "\n";
   }
 
   return;

@@ -728,7 +728,6 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
                                      AAResults &AA,
                                      Value *instI,
                                      Value *instJ) {
-  auto must = false;
 
   /*
    * Query the LLVM alias analyses.
