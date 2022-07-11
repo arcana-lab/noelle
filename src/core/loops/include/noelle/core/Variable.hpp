@@ -43,6 +43,8 @@ class EvolutionUpdate;
 class LoopCarriedCycle {
 public:
   virtual bool isEvolutionReducibleAcrossLoopIterations(void) const;
+
+  virtual ~LoopCarriedCycle();
 };
 
 class LoopCarriedMemoryLocation : public LoopCarriedCycle {
@@ -61,6 +63,8 @@ public:
    * TODO: Implement
    */
   bool isEvolutionReducibleAcrossLoopIterations(void) const override;
+
+  virtual ~LoopCarriedMemoryLocation();
 };
 
 class LoopCarriedVariable : public LoopCarriedCycle {
@@ -74,11 +78,11 @@ public:
 
   LoopCarriedVariable() = delete;
 
-  ~LoopCarriedVariable();
-
   bool isEvolutionReducibleAcrossLoopIterations(void) const override;
 
   PHINode *getLoopEntryPHIForValueOfVariable(Value *value) const;
+
+  virtual ~LoopCarriedVariable();
 
 private:
   PDG *produceDataAndMemoryOnlyDGFromVariableDG(PDG &variableDG) const;
