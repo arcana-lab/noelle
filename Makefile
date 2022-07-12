@@ -20,6 +20,9 @@ tests: src
 hooks:
 	make -C .githooks
 
+format:
+	cd src ; ./scripts/format_source_code.sh
+
 clean:
 	cd external ; make clean ; 
 	cd src ; make clean ; 
@@ -33,4 +36,4 @@ uninstall: clean
 	rm -rf install ;
 	cd external ; make $@
 
-.PHONY: src tests clean uninstall external
+.PHONY: src src-fast tests hooks format clean uninstall external
