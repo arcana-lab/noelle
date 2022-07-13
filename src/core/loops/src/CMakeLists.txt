@@ -2,6 +2,8 @@
 set(Srcs 
   MemoryCloningAnalysis.cpp
   Variable.cpp
+  LoopCarriedCycle.cpp
+  LoopCarriedVariable.cpp
   AccumulatorOpInfo.cpp
   ControlFlowEquivalence.cpp
   LoopAwareMemDepAnalysis.cpp

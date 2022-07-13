@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -46,8 +46,6 @@ LoopGoverningIVUtility::LoopGoverningIVUtility(
    */
   this->condition =
       attribution.getHeaderCompareInstructionToComputeExitCondition();
-  // TODO: Refer to whichever intermediate value is used in the comparison
-  // (known on attribution)
   this->doesOriginalCmpInstHaveIVAsLeftOperand =
       condition->getOperand(0)
       == attribution.getValueToCompareAgainstExitConditionValue();
