@@ -245,7 +245,7 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable(LoopEnvironment *env) const {
     /*
      * Fetch the SCC that contains the producer of the environment variable.
      */
-    auto producer = env->getProducerOfID(envID);
+    auto producer = env->getProducer(envID);
     auto scc = this->sccdag->sccOfValue(producer);
 
     /*

@@ -55,7 +55,7 @@ public:
 
   bool isLiveIn(Value *val) const;
 
-  Value *getProducerOfID(uint64_t id) const;
+  Value *getProducer(uint64_t id) const;
 
   std::set<Value *> consumersOf(Value *prod) const;
 

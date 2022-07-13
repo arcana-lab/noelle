@@ -205,13 +205,6 @@ void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varID,
   auto varIndex = this->envIDToIndex[varID];
   this->envIndexToVar[varIndex] = nullptr;
 
-  /*
-   * Now the envIDToIndex map is changed, need to update all user's map as well
-   */
-  for (auto user : this->envUsers) {
-    user->setEnvIDToIndex(this->envIDToIndex);
-  }
-
   return;
 }
 

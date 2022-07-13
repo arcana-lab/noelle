@@ -43,21 +43,15 @@ public:
                              uint32_t reducerCount,
                              Value *reducerIndV);
 
-  void addLiveInOfID(uint32_t id);
+  void addLiveIn(uint32_t id);
 
-  void addLiveOutOfID(uint32_t id);
-
-  iterator_range<std::set<uint32_t>::iterator> getEnvIndicesOfLiveInVars(void);
-
-  iterator_range<std::set<uint32_t>::iterator> getEnvIndicesOfLiveOutVars(void);
+  void addLiveOut(uint32_t id);
 
   iterator_range<std::set<uint32_t>::iterator> getEnvIDsOfLiveInVars(void);
 
   iterator_range<std::set<uint32_t>::iterator> getEnvIDsOfLiveOutVars(void);
 
   Instruction *getEnvPtr(uint32_t id);
-
-  void setEnvIDToIndex(std::unordered_map<uint32_t, uint32_t> &envIDToIndex);
 
   ~LoopEnvironmentUser();
 
@@ -68,11 +62,9 @@ private:
    * Maps from environment index to load/stores
    */
   std::unordered_map<uint32_t, Instruction *> envIndexToPtr;
-  std::set<uint32_t> liveInInds;
-  std::set<uint32_t> liveOutInds;
   std::set<uint32_t> liveInIDs;
   std::set<uint32_t> liveOutIDs;
-  std::unordered_map<uint32_t, uint32_t> envIDToIndex;
+  std::unordered_map<uint32_t, uint32_t> &envIDToIndex;
 };
 
 } // namespace llvm::noelle

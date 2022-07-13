@@ -41,7 +41,7 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
    * Collect live-in information
    */
   for (auto envID : environment->getEnvIDsOfLiveInVars()) {
-    auto producer = environment->getProducerOfID(envID);
+    auto producer = environment->getProducer(envID);
 
     for (auto consumer : environment->consumersOf(producer)) {
 
@@ -55,7 +55,7 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
           auto task = (DSWPTask *)tasks[i];
           if (task->clonableSCCs.find(consumerSCC) == task->clonableSCCs.end())
             continue;
-          envBuilder->getUser(i)->addLiveInOfID(envID);
+          envBuilder->getUser(i)->addLiveIn(envID);
         }
 
         continue;
@@ -67,7 +67,7 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
       assert(this->sccToStage.find(consumerSCC) != this->sccToStage.end());
       auto task = this->sccToStage.at(consumerSCC);
       auto id = task->getID();
-      envBuilder->getUser(id)->addLiveInOfID(envID);
+      envBuilder->getUser(id)->addLiveIn(envID);
     }
   }
 }
@@ -90,7 +90,7 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
    * Collect live-out information
    */
   for (auto envID : environment->getEnvIDsOfLiveOutVars()) {
-    auto producer = environment->getProducerOfID(envID);
+    auto producer = environment->getProducer(envID);
 
     /*
      * Clonable producers all produce the same live out value.
@@ -104,7 +104,7 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
         auto task = (DSWPTask *)tasks[i];
         if (task->clonableSCCs.find(producerSCC) == task->clonableSCCs.end())
           continue;
-        envBuilder->getUser(i)->addLiveOutOfID(envID);
+        envBuilder->getUser(i)->addLiveOut(envID);
         break;
       }
 
@@ -118,7 +118,7 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
     assert(this->sccToStage.find(producerSCC) != this->sccToStage.end());
     auto task = this->sccToStage.at(producerSCC);
     auto id = task->getID();
-    envBuilder->getUser(id)->addLiveOutOfID(envID);
+    envBuilder->getUser(id)->addLiveOut(envID);
   }
 }
 

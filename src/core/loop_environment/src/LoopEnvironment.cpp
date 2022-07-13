@@ -258,7 +258,7 @@ iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIDsOfLiveOutVars(
   return make_range(liveOutIDs.begin(), liveOutIDs.end());
 }
 
-Value *LoopEnvironment::getProducerOfID(uint64_t id) const {
+Value *LoopEnvironment::getProducer(uint64_t id) const {
   assert(id < this->envProducers.size());
   return envProducers[id];
 }

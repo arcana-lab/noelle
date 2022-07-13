@@ -442,7 +442,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      * Only work with duplicated producers
      */
     auto originalProducer =
-        (Instruction *)LDI->getEnvironment()->getProducerOfID(envID);
+        (Instruction *)LDI->getEnvironment()->getProducer(envID);
     if (this->lastIterationExecutionDuplicateMap.find(originalProducer)
         == this->lastIterationExecutionDuplicateMap.end())
       continue;

@@ -27,14 +27,10 @@ namespace llvm::noelle {
 LoopEnvironmentUser::LoopEnvironmentUser(
     std::unordered_map<uint32_t, uint32_t> &envIDToIndex)
   : envIndexToPtr{},
-    liveInInds{},
-    liveOutInds{},
     liveInIDs{},
     liveOutIDs{},
     envIDToIndex{ envIDToIndex } {
   envIndexToPtr.clear();
-  liveInInds.clear();
-  liveOutInds.clear();
   liveInIDs.clear();
   liveOutIDs.clear();
 
@@ -147,20 +143,18 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> builder,
   this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
 }
 
-void LoopEnvironmentUser::addLiveInOfID(uint32_t id) {
+void LoopEnvironmentUser::addLiveIn(uint32_t id) {
   if (this->envIDToIndex.find(id) != this->envIDToIndex.end()) {
     auto ind = this->envIDToIndex[id];
-    liveInInds.insert(ind);
     liveInIDs.insert(id);
   }
 
   return;
 }
 
-void LoopEnvironmentUser::addLiveOutOfID(uint32_t id) {
+void LoopEnvironmentUser::addLiveOut(uint32_t id) {
   if (this->envIDToIndex.find(id) != this->envIDToIndex.end()) {
     auto ind = this->envIDToIndex[id];
-    liveOutInds.insert(ind);
     liveOutIDs.insert(id);
   }
 
@@ -182,16 +176,6 @@ Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t id) {
 }
 
 iterator_range<std::set<uint32_t>::iterator> LoopEnvironmentUser::
-    getEnvIndicesOfLiveInVars(void) {
-  return make_range(liveInInds.begin(), liveInInds.end());
-}
-
-iterator_range<std::set<uint32_t>::iterator> LoopEnvironmentUser::
-    getEnvIndicesOfLiveOutVars(void) {
-  return make_range(liveOutInds.begin(), liveOutInds.end());
-}
-
-iterator_range<std::set<uint32_t>::iterator> LoopEnvironmentUser::
     getEnvIDsOfLiveInVars(void) {
   return make_range(liveInIDs.begin(), liveInIDs.end());
 }
@@ -199,11 +183,6 @@ iterator_range<std::set<uint32_t>::iterator> LoopEnvironmentUser::
 iterator_range<std::set<uint32_t>::iterator> LoopEnvironmentUser::
     getEnvIDsOfLiveOutVars(void) {
   return make_range(liveOutIDs.begin(), liveOutIDs.end());
-}
-
-void LoopEnvironmentUser::setEnvIDToIndex(
-    std::unordered_map<uint32_t, uint32_t> &envIDToIndex) {
-  this->envIDToIndex = envIDToIndex;
 }
 
 LoopEnvironmentUser::~LoopEnvironmentUser() {

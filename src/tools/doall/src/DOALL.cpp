@@ -278,7 +278,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
      * IVs are not reducable because they get re-computed locally by each
      * thread.
      */
-    auto producer = loopEnvironment->getProducerOfID(id);
+    auto producer = loopEnvironment->getProducer(id);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->isInductionVariableSCC()) {
@@ -316,10 +316,10 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   auto envUser = this->envBuilder->getUser(0);
   assert(envUser != nullptr);
   for (auto envID : loopEnvironment->getEnvIDsOfLiveInVars()) {
-    envUser->addLiveInOfID(envID);
+    envUser->addLiveIn(envID);
   }
   for (auto envID : loopEnvironment->getEnvIDsOfLiveOutVars()) {
-    envUser->addLiveOutOfID(envID);
+    envUser->addLiveOut(envID);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 
