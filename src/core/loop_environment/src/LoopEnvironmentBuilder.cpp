@@ -593,7 +593,14 @@ Value *LoopEnvironmentBuilder::getReducedEnvironmentVariable(
   return (*iter).second[reducerInd];
 }
 
-bool LoopEnvironmentBuilder::hasVariableBeenReduced(uint32_t ind) const {
+bool LoopEnvironmentBuilder::hasVariableBeenReduced(uint32_t id) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  auto ind = this->envIDToIndex.at(id);
+
   auto isSingle = envIndexToVar.find(ind) != envIndexToVar.end();
   auto isReduce =
       envIndexToReducableVar.find(ind) != envIndexToReducableVar.end();

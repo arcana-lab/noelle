@@ -436,13 +436,13 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
   IRBuilder<> cloneHeaderExitBuilder(cloneHeaderExit->getFirstNonPHI());
   auto envUser = this->envBuilder->getUser(0);
 
-  for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
+  for (auto envID : envUser->getEnvIDsOfLiveOutVars()) {
 
     /*
      * Only work with duplicated producers
      */
     auto originalProducer =
-        (Instruction *)LDI->getEnvironment()->getProducerOfID(envIndex);
+        (Instruction *)LDI->getEnvironment()->getProducerOfID(envID);
     if (this->lastIterationExecutionDuplicateMap.find(originalProducer)
         == this->lastIterationExecutionDuplicateMap.end())
       continue;
@@ -452,7 +452,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      * is sufficient, which is already done (stored in
      * lastIterationExecutionDuplicateMap)
      */
-    auto isReduced = this->envBuilder->hasVariableBeenReduced(envIndex);
+    auto isReduced = this->envBuilder->hasVariableBeenReduced(envID);
     if (!isReduced) {
       continue;
     }

@@ -47,7 +47,7 @@ void LoopEnvironmentUser::setEnvironmentArray(Value *envArr) {
 
 Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
     IRBuilder<> builder,
-    uint32_t envIndex,
+    uint32_t envID,
     Type *type) {
 
   /*
@@ -58,6 +58,13 @@ Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
         << "A reference to the environment array has not been set for this user!\n";
     abort();
   }
+
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(envID) != this->envIDToIndex.end()
+         && "The environment variable is not included in the user\n");
+  auto envIndex = this->envIDToIndex[envID];
 
   /*
    * Create the zero integer constant.
@@ -94,7 +101,7 @@ Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
 }
 
 void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> builder,
-                                                uint32_t envIndex,
+                                                uint32_t envID,
                                                 Type *type,
                                                 uint32_t reducerCount,
                                                 Value *reducerIndV) {
@@ -103,6 +110,13 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> builder,
         << "A reference to the environment array has not been set for this user!\n";
     abort();
   }
+
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(envID) != this->envIDToIndex.end()
+         && "The environment variable is not included in the user\n");
+  auto envIndex = this->envIDToIndex[envID];
 
   /*
    * Compute how many values can fit in a cache line.
@@ -153,7 +167,14 @@ void LoopEnvironmentUser::addLiveOutOfID(uint32_t id) {
   return;
 }
 
-Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t ind) {
+Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t id) {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the user\n");
+  auto ind = this->envIDToIndex[id];
+
   auto ptr = this->envIndexToPtr[ind];
   assert(ptr != nullptr);
 

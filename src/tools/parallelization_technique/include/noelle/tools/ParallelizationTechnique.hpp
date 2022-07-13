@@ -135,7 +135,7 @@ protected:
   fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(
       LoopDependenceInfo *LDI,
       int taskIndex,
-      int envIndex,
+      int envID,
       BasicBlock *insertBasicBlock,
       DominatorSummary &taskDS);
 
@@ -160,7 +160,7 @@ protected:
                                                    int taskIndex);
 
   Value *getIdentityValueForEnvironmentValue(LoopDependenceInfo *LDI,
-                                             int environmentIndex,
+                                             int environmentID,
                                              Type *typeForValue);
 
   Value *castToCorrectReducibleType(IRBuilder<> &builder,

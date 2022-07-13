@@ -34,11 +34,11 @@ public:
   void setEnvironmentArray(Value *envArr);
 
   Instruction *createEnvironmentVariablePointer(IRBuilder<> b,
-                                                uint32_t envIndex,
+                                                uint32_t envID,
                                                 Type *type);
 
   void createReducableEnvPtr(IRBuilder<> b,
-                             uint32_t envIndex,
+                             uint32_t envID,
                              Type *type,
                              uint32_t reducerCount,
                              Value *reducerIndV);
@@ -55,7 +55,7 @@ public:
 
   iterator_range<std::set<uint32_t>::iterator> getEnvIDsOfLiveOutVars(void);
 
-  Instruction *getEnvPtr(uint32_t ind);
+  Instruction *getEnvPtr(uint32_t id);
 
   void setEnvIDToIndex(std::unordered_map<uint32_t, uint32_t> &envIDToIndex);
 

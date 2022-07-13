@@ -80,7 +80,7 @@ public:
   Value *getEnvironmentVariable(uint32_t ind) const;
   Value *getAccumulatedReducedEnvironmentVariable(uint32_t ind) const;
   Value *getReducedEnvironmentVariable(uint32_t ind, uint32_t reducerInd) const;
-  bool hasVariableBeenReduced(uint32_t ind) const;
+  bool hasVariableBeenReduced(uint32_t id) const;
 
   ~LoopEnvironmentBuilder();
 
