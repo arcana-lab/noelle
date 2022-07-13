@@ -29,7 +29,11 @@ class LoopStructure {
 public:
   LoopStructure(Loop *l);
 
-  uint64_t getID(void) const;
+  std::optional<uint64_t> getID(void);
+
+  void addID(uint64_t ID);
+
+  void setID(uint64_t ID);
 
   Function *getFunction(void) const;
 
@@ -73,8 +77,6 @@ public:
   void print(raw_ostream &stream);
 
 private:
-  bool hasLoopIDMetadata;
-  uint64_t ID;
   BasicBlock *header;
   BasicBlock *preHeader;
   uint32_t depth;
@@ -92,7 +94,7 @@ private:
   std::vector<BasicBlock *> exitBlocks;
   std::vector<std::pair<BasicBlock *, BasicBlock *>> exitEdges;
 
-  static uint64_t globalID;
+  static const std::string metadataKeyID;
 
   void instantiateIDsAndBasicBlocks(Loop *llvmLoop);
 

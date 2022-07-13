@@ -708,10 +708,15 @@ void Mem2RegNonAlloca::dumpLogs(void) {
   auto loop = LDI.getLoopStructure();
   auto basicBlocks = loop->getBasicBlocks();
 
+  auto loopIDOpt = loop->getID();
+  assert(loopIDOpt); // ED: we are dumping a log, loops should have IDs to be
+                     // meaningful.
+  auto loopID = loopIDOpt.value();
+
   /*
    * Identify loop
    */
-  std::string loopId{ std::to_string(loop->getID()) };
+  std::string loopId{ std::to_string(loopID) };
 
   // DGPrinter::writeGraph<SCCDAG, SCC>("mem2reg-sccdag-loop-" + loopId +
   // ".dot", sccManager->getSCCDAG()); std::set<BasicBlock *>

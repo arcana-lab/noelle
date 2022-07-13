@@ -99,11 +99,6 @@ public:
   LoopDependenceInfo() = delete;
 
   /*
-   * Return the ID of the loop.
-   */
-  uint64_t getID(void) const;
-
-  /*
    * Return the object containing all loop structures at and nested within this
    * loop
    */

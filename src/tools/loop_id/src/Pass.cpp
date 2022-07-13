@@ -63,15 +63,7 @@ bool LoopID::runOnModule(Module &M) {
   uint64_t loopID = 0;
   auto metadataManager = noelle.getMetadataManager();
   for (auto loopStructure : *programLoops) {
-    if (metadataManager->doesHaveMetadata(loopStructure,
-                                          "noelle.loop_id.loopid")) {
-      errs() << "LoopID: loop already has metadata. Abort.\n";
-      abort();
-    }
-
-    metadataManager->addMetadata(loopStructure,
-                                 "noelle.loop_id.loopid",
-                                 std::to_string(loopID));
+    loopStructure->addID(loopID);
     loopID += 1;
   }
 

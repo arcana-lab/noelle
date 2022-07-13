@@ -63,9 +63,17 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
    * Print
    */
   if (verbose != Verbosity::Disabled) {
+    /*
+     * Get loop ID.
+     */
+    auto loopIDOpt = loopStructure->getID();
+    assert(loopIDOpt); // ED: we are parallelizing a loop, we are supposed to
+                       // have a loop ID.
+    auto loopID = loopIDOpt.value();
+
     errs() << prefix << "Start\n";
     errs() << prefix << "  Function = \"" << loopFunction->getName() << "\"\n";
-    errs() << prefix << "  Loop " << LDI->getID() << " = \""
+    errs() << prefix << "  Loop " << loopID << " = \""
            << *loopHeader->getFirstNonPHI() << "\"\n";
     errs() << prefix << "  Nesting level = " << loopStructure->getNestingLevel()
            << "\n";

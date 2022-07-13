@@ -53,10 +53,14 @@ void LoopStats::collectStatsForLoop(Hot *profiles,
                                     LoopDependenceInfo &LDI,
                                     Loop &llvmLoop) {
   auto loopStructure = LDI.getLoopStructure();
+  auto loopIDOpt = loopStructure->getID();
+  assert(loopIDOpt); // ED: we are collecting loop statistics, loops should have
+                     // IDs so we can distinguish them.
+  auto loopID = loopIDOpt.value();
+
   auto statsForLoop = new Stats();
-  statsByLoopAccordingToNoelle.insert(
-      std::make_pair(LDI.getID(), statsForLoop));
-  statsForLoop->loopID = loopStructure->getID();
+  statsByLoopAccordingToNoelle.insert(std::make_pair(loopID, statsForLoop));
+  statsForLoop->loopID = loopID;
 
   collectStatsOnNoelleIVs(profiles, LDI, statsForLoop);
   collectStatsOnNoelleSCCs(profiles, LDI, statsForLoop, llvmLoop);
