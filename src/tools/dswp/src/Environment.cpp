@@ -55,7 +55,7 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
           auto task = (DSWPTask *)tasks[i];
           if (task->clonableSCCs.find(consumerSCC) == task->clonableSCCs.end())
             continue;
-          envBuilder->getUser(i)->addLiveInIndex(envID);
+          envBuilder->getUser(i)->addLiveInOfID(envID);
         }
 
         continue;
@@ -67,7 +67,7 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
       assert(this->sccToStage.find(consumerSCC) != this->sccToStage.end());
       auto task = this->sccToStage.at(consumerSCC);
       auto id = task->getID();
-      envBuilder->getUser(id)->addLiveInIndex(envID);
+      envBuilder->getUser(id)->addLiveInOfID(envID);
     }
   }
 }
@@ -104,7 +104,7 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
         auto task = (DSWPTask *)tasks[i];
         if (task->clonableSCCs.find(producerSCC) == task->clonableSCCs.end())
           continue;
-        envBuilder->getUser(i)->addLiveOutIndex(envID);
+        envBuilder->getUser(i)->addLiveOutOfID(envID);
         break;
       }
 
@@ -118,7 +118,7 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
     assert(this->sccToStage.find(producerSCC) != this->sccToStage.end());
     auto task = this->sccToStage.at(producerSCC);
     auto id = task->getID();
-    envBuilder->getUser(id)->addLiveOutIndex(envID);
+    envBuilder->getUser(id)->addLiveOutOfID(envID);
   }
 }
 

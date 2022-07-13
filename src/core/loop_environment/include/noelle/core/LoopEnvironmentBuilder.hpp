@@ -46,7 +46,7 @@ public:
 
   LoopEnvironmentBuilder() = delete;
 
-  void addVariableToEnvironment(uint64_t varIndex, Type *varType);
+  void addVariableToEnvironment(uint64_t varID, Type *varType);
 
   /*
    * Generate code to create environment array/variable allocations
@@ -91,6 +91,12 @@ private:
   LLVMContext &CXT;
   Value *envArray;
   Value *envArrayInt8Ptr;
+
+  /*
+   * Map and reverse map from envID to index
+   */
+  std::unordered_map<uint32_t, uint32_t> envIDToIndex;
+  std::unordered_map<uint32_t, uint32_t> indexToEnvID;
 
   /*
    * The environment variable types and their allocations

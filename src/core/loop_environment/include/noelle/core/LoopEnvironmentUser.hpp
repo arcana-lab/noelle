@@ -27,7 +27,9 @@ namespace llvm::noelle {
 
 class LoopEnvironmentUser {
 public:
-  LoopEnvironmentUser();
+  LoopEnvironmentUser(std::unordered_map<uint32_t, uint32_t> &envIDToIndex);
+
+  LoopEnvironmentUser() = delete;
 
   void setEnvironmentArray(Value *envArr);
 
@@ -41,15 +43,21 @@ public:
                              uint32_t reducerCount,
                              Value *reducerIndV);
 
-  void addLiveInIndex(uint32_t ind);
+  void addLiveInOfID(uint32_t id);
 
-  void addLiveOutIndex(uint32_t ind);
+  void addLiveOutOfID(uint32_t id);
 
   iterator_range<std::set<uint32_t>::iterator> getEnvIndicesOfLiveInVars(void);
 
   iterator_range<std::set<uint32_t>::iterator> getEnvIndicesOfLiveOutVars(void);
 
+  iterator_range<std::set<uint32_t>::iterator> getEnvIDsOfLiveInVars(void);
+
+  iterator_range<std::set<uint32_t>::iterator> getEnvIDsOfLiveOutVars(void);
+
   Instruction *getEnvPtr(uint32_t ind);
+
+  void setEnvIDToIndex(std::unordered_map<uint32_t, uint32_t> &envIDToIndex);
 
   ~LoopEnvironmentUser();
 
@@ -62,6 +70,9 @@ private:
   std::unordered_map<uint32_t, Instruction *> envIndexToPtr;
   std::set<uint32_t> liveInInds;
   std::set<uint32_t> liveOutInds;
+  std::set<uint32_t> liveInIDs;
+  std::set<uint32_t> liveOutIDs;
+  std::unordered_map<uint32_t, uint32_t> envIDToIndex;
 };
 
 } // namespace llvm::noelle

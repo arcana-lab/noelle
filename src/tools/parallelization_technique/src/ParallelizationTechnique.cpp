@@ -669,9 +669,9 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
            *
            * Make space in the environment for the new live-in.
            */
-          auto newLiveInEnvironmentIndex =
+          auto newLiveInEnvironmentID =
               environment->addLiveInValue(opJ, { opI });
-          this->envBuilder->addVariableToEnvironment(newLiveInEnvironmentIndex,
+          this->envBuilder->addVariableToEnvironment(newLiveInEnvironmentID,
                                                      opJ->getType());
 
           /*
@@ -679,16 +679,16 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
            * user (i.e., task) of the environment specified bt the input (i.e.,
            * taskIndex).
            */
-          envUser->addLiveInIndex(newLiveInEnvironmentIndex);
+          envUser->addLiveInOfID(newLiveInEnvironmentID);
 
           /*
            * Add the load inside the task to load from the environment the new
            * live-in.
            */
-          auto envVarPtr = envUser->createEnvironmentVariablePointer(
-              entryBuilder,
-              newLiveInEnvironmentIndex,
-              opJ->getType());
+          auto envVarPtr =
+              envUser->createEnvironmentVariablePointer(entryBuilder,
+                                                        newLiveInEnvironmentID,
+                                                        opJ->getType());
           auto environmentLocationLoad = entryBuilder.CreateLoad(envVarPtr);
 
           /*

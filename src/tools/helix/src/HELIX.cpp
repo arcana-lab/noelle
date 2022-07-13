@@ -321,10 +321,10 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    */
   auto envUser = this->envBuilder->getUser(0);
   for (auto envID : environment->getEnvIDsOfLiveInVars()) {
-    envUser->addLiveInIndex(envID);
+    envUser->addLiveInOfID(envID);
   }
   for (auto envID : environment->getEnvIDsOfLiveOutVars()) {
-    envUser->addLiveOutIndex(envID);
+    envUser->addLiveOutOfID(envID);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 

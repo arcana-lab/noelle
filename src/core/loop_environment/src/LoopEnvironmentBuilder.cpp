@@ -103,14 +103,37 @@ void LoopEnvironmentBuilder::initializeBuilder(
     uint64_t numberOfUsers) {
 
   /*
+   * Build up envID to index map and reverse map
+   */
+  uint32_t index = 0;
+  for (auto singleVarID : singleVarIDs) {
+    this->envIDToIndex[singleVarID] = index;
+    this->indexToEnvID[index] = singleVarID;
+    index++;
+  }
+  for (auto reducableVarID : reducableVarIDs) {
+    this->envIDToIndex[reducableVarID] = index;
+    this->indexToEnvID[index] = reducableVarID;
+    index++;
+  }
+
+  /*
    * Initialize fields
    */
   this->envArray = nullptr;
   this->envArrayInt8Ptr = nullptr;
   this->envSize = singleVarIDs.size() + reducableVarIDs.size();
   this->envArrayType = nullptr;
-  this->envTypes = varTypes;
   this->numReducers = reducerCount;
+
+  /*
+   * Build up partial/all environment types array based on envSize
+   */
+  for (uint32_t i = 0; i < this->envSize; i++) {
+    auto varID = this->indexToEnvID[i];
+    this->envTypes.push_back(varTypes.at(varID));
+  }
+
   assert(this->envSize == this->envTypes.size()
          && "Environment variables must either be singular or reducible\n");
 
@@ -129,10 +152,12 @@ void LoopEnvironmentBuilder::initializeBuilder(
    * Initialize the index-to-variable map.
    */
   for (auto envID : singleVarIDs) {
-    this->envIndexToVar[envID] = nullptr;
+    uint32_t envIndex = this->envIDToIndex[envID];
+    this->envIndexToVar[envIndex] = nullptr;
   }
   for (auto envID : reducableVarIDs) {
-    this->envIndexToReducableVar[envID] = std::vector<Value *>();
+    uint32_t envIndex = this->envIDToIndex[envID];
+    this->envIndexToReducableVar[envIndex] = std::vector<Value *>();
   }
 
   /*
@@ -145,14 +170,21 @@ void LoopEnvironmentBuilder::initializeBuilder(
 
 void LoopEnvironmentBuilder::createUsers(uint32_t numUsers) {
   for (auto i = 0u; i < numUsers; ++i) {
-    this->envUsers.push_back(new LoopEnvironmentUser());
+    this->envUsers.push_back(new LoopEnvironmentUser(this->envIDToIndex));
   }
 
   return;
 }
 
-void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varIndex,
+void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varID,
                                                       Type *varType) {
+  /*
+   * Register the new variable in both maps
+   */
+  assert(this->envIDToIndex.find(varID) == this->envIDToIndex.end()
+         && "This variable is already in of the environment\n");
+  this->envIDToIndex[varID] = this->envSize;
+  this->indexToEnvID[this->envSize] = varID;
   this->envSize++;
   this->envTypes.push_back(varType);
 
@@ -170,7 +202,15 @@ void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varIndex,
   /*
    * Set the index-to-var map for the new variable.
    */
+  auto varIndex = this->envIDToIndex[varID];
   this->envIndexToVar[varIndex] = nullptr;
+
+  /*
+   * Now the envIDToIndex map is changed, need to update all user's map as well
+   */
+  for (auto user : this->envUsers) {
+    user->setEnvIDToIndex(this->envIDToIndex);
+  }
 
   return;
 }

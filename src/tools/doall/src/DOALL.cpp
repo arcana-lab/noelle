@@ -316,10 +316,10 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   auto envUser = this->envBuilder->getUser(0);
   assert(envUser != nullptr);
   for (auto envID : loopEnvironment->getEnvIDsOfLiveInVars()) {
-    envUser->addLiveInIndex(envID);
+    envUser->addLiveInOfID(envID);
   }
   for (auto envID : loopEnvironment->getEnvIDsOfLiveOutVars()) {
-    envUser->addLiveOutIndex(envID);
+    envUser->addLiveOutOfID(envID);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 
