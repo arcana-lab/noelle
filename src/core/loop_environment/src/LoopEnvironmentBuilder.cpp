@@ -572,22 +572,43 @@ Value *LoopEnvironmentBuilder::getEnvironmentArray(void) const {
   return this->envArray;
 }
 
-Value *LoopEnvironmentBuilder::getEnvironmentVariable(uint32_t ind) const {
+Value *LoopEnvironmentBuilder::getEnvironmentVariable(uint32_t id) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  auto ind = this->envIDToIndex.at(id);
+
   auto iter = envIndexToVar.find(ind);
   assert(iter != envIndexToVar.end());
   return (*iter).second;
 }
 
 Value *LoopEnvironmentBuilder::getAccumulatedReducedEnvironmentVariable(
-    uint32_t ind) const {
+    uint32_t id) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  auto ind = this->envIDToIndex.at(id);
+
   auto iter = envIndexToAccumulatedReducableVar.find(ind);
   assert(iter != envIndexToAccumulatedReducableVar.end());
   return (*iter).second;
 }
 
 Value *LoopEnvironmentBuilder::getReducedEnvironmentVariable(
-    uint32_t ind,
+    uint32_t id,
     uint32_t reducerInd) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  auto ind = this->envIDToIndex.at(id);
+
   auto iter = envIndexToReducableVar.find(ind);
   assert(iter != envIndexToReducableVar.end());
   return (*iter).second[reducerInd];

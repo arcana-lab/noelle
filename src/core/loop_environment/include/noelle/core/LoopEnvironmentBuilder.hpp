@@ -77,9 +77,9 @@ public:
   LoopEnvironmentUser *getUser(uint32_t user) const;
   uint32_t getNumberOfUsers(void) const;
 
-  Value *getEnvironmentVariable(uint32_t ind) const;
-  Value *getAccumulatedReducedEnvironmentVariable(uint32_t ind) const;
-  Value *getReducedEnvironmentVariable(uint32_t ind, uint32_t reducerInd) const;
+  Value *getEnvironmentVariable(uint32_t id) const;
+  Value *getAccumulatedReducedEnvironmentVariable(uint32_t id) const;
+  Value *getReducedEnvironmentVariable(uint32_t id, uint32_t reducerInd) const;
   bool hasVariableBeenReduced(uint32_t id) const;
 
   ~LoopEnvironmentBuilder();
