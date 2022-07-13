@@ -139,7 +139,6 @@ std::pair<Value *, GetElementPtrInst *> AllocAA::getPrimitiveArrayAccess(
  */
 bool AllocAA::areGEPIndicesConstantOrIV(GetElementPtrInst *gep) {
   Function *gepFunc = gep->getFunction();
-  auto &LI = getAnalysis<LoopInfoWrapperPass>(*gepFunc).getLoopInfo();
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*gepFunc).getSE();
 
   for (auto &indexV : gep->indices()) {
