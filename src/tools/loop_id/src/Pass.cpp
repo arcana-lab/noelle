@@ -61,9 +61,19 @@ bool LoopID::runOnModule(Module &M) {
          << " loops in the program we are going to consider\n";
 
   uint64_t loopID = 0;
-  auto metadataManager = noelle.getMetadataManager();
   for (auto loopStructure : *programLoops) {
-    loopStructure->addID(loopID);
+    if (loopStructure->doesHaveID()) {
+      errs()
+          << "LoopID: loop " << *(loopStructure->getHeader()->getTerminator())
+          << " already has ID ";
+      auto loopID = loopStructure->getID();
+      if (loopID) {
+        errs() << loopID.value();
+      }
+      errs() << ". Abort.\n";
+      abort();
+    }
+    loopStructure->setID(loopID);
     loopID += 1;
   }
 

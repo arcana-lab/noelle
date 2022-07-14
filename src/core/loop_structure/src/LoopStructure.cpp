@@ -258,22 +258,24 @@ std::optional<uint64_t> LoopStructure::getID(void) {
   return std::nullopt;
 }
 
-void LoopStructure::addID(uint64_t ID) {
+bool LoopStructure::doesHaveID(void) {
   Module *M = this->header->getModule();
   MetadataManager metadataManager{ *M };
-  metadataManager.addMetadata(this,
-                              LoopStructure::metadataKeyID,
-                              std::to_string(ID));
-
-  return;
+  return metadataManager.doesHaveMetadata(this, LoopStructure::metadataKeyID);
 }
 
 void LoopStructure::setID(uint64_t ID) {
   Module *M = this->header->getModule();
   MetadataManager metadataManager{ *M };
-  metadataManager.setMetadata(this,
-                              LoopStructure::metadataKeyID,
-                              std::to_string(ID));
+  if (this->doesHaveID()) {
+    metadataManager.setMetadata(this,
+                                LoopStructure::metadataKeyID,
+                                std::to_string(ID));
+  } else {
+    metadataManager.addMetadata(this,
+                                LoopStructure::metadataKeyID,
+                                std::to_string(ID));
+  }
 
   return;
 }
