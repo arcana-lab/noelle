@@ -1,29 +1,37 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "DSWP.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
-DSWP::DSWP (
-  Noelle &n,
-  bool forceParallelization,
-  bool enableSCCMerging
-) :
-  ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{n, forceParallelization},
-  enableMergingSCC{enableSCCMerging},
-  queues{}, queueArrayType{nullptr},
-  sccToStage{}, stageArrayType{nullptr},
-  zeroIndexForBaseArray{nullptr}
-  {
+DSWP::DSWP(Noelle &n, bool forceParallelization, bool enableSCCMerging)
+  : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{ n,
+                                                                    forceParallelization },
+    enableMergingSCC{ enableSCCMerging },
+    queues{},
+    queueArrayType{ nullptr },
+    sccToStage{},
+    stageArrayType{ nullptr },
+    zeroIndexForBaseArray{ nullptr } {
 
   /*
    * Fetch the function that dispatch the parallelized loop.
@@ -40,20 +48,19 @@ DSWP::DSWP (
    * Define its signature.
    */
   auto taskArgType = taskExecuter->arg_begin()->getType();
-  this->taskSignature = cast<FunctionType>(cast<PointerType>(taskArgType)->getElementType());
+  this->taskSignature =
+      cast<FunctionType>(cast<PointerType>(taskArgType)->getElementType());
 
-  return ;
+  return;
 }
 
-bool DSWP::canBeAppliedToLoop (
-  LoopDependenceInfo *LDI,
-  Heuristics *h
-) const {
+bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
 
   /*
    * Check the parent class.
    */
-  if (!ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::canBeAppliedToLoop(LDI, h)){
+  if (!ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
+          canBeAppliedToLoop(LDI, h)) {
     return false;
   }
 
@@ -84,17 +91,18 @@ bool DSWP::canBeAppliedToLoop (
      * Check the coverage of the SCC.
      */
     auto currentSCCTotalInsts = profiles->getTotalInstructions(currentSCC);
-    if (currentSCCTotalInsts > biggestSCC){
+    if (currentSCCTotalInsts > biggestSCC) {
       biggestSCC = currentSCCTotalInsts;
     }
     assert(biggestSCC >= currentSCCTotalInsts);
 
     /*
-     * Check if the current SCC can be removed (e.g., because it is due to induction variables).
-     * If it is, then this SCC has already been assigned to every dependent partition.
+     * Check if the current SCC can be removed (e.g., because it is due to
+     * induction variables). If it is, then this SCC has already been assigned
+     * to every dependent partition.
      */
     if (currentSCCInfo->canBeCloned()) {
-      continue ;
+      continue;
     }
 
     /*
@@ -104,17 +112,19 @@ bool DSWP::canBeAppliedToLoop (
   }
 
   /*
-   * If there isn't a sequential SCC, then this loop is a DOALL. Hence, DSWP is not applicable.
+   * If there isn't a sequential SCC, then this loop is a DOALL. Hence, DSWP is
+   * not applicable.
    */
-  if (!doesSequentialSCCExist){
-    errs() << "DSWP: It is not applicable because the loop doesn't have a sequential SCC\n";
+  if (!doesSequentialSCCExist) {
+    errs()
+        << "DSWP: It is not applicable because the loop doesn't have a sequential SCC\n";
     return false;
   }
 
   /*
    * Check if we are forced to parallelize
    */
-  if (this->forceParallelization){
+  if (this->forceParallelization) {
 
     /*
      * DSWP is applicable.
@@ -127,34 +137,45 @@ bool DSWP::canBeAppliedToLoop (
    */
   auto loopTotalInsts = profiles->getTotalInstructions(LDI->getLoopStructure());
   auto biggestSCCCoverage = ((double)biggestSCC) / ((double)loopTotalInsts);
-  if (biggestSCCCoverage >= 0.8){
+  if (biggestSCCCoverage >= 0.8) {
 
     /*
      * The pipeline would be too imbalance.
      */
-    errs() << "DSWP: It is not applicable because the coverage of the biggest SCC is " << biggestSCCCoverage << "\n";
+    errs()
+        << "DSWP: It is not applicable because the coverage of the biggest SCC is "
+        << biggestSCCCoverage << "\n";
     return false;
   }
 
   /*
-   * Ensure there is not too little execution that is too proportionally iteration-independent for DSWP
+   * Ensure there is not too little execution that is too proportionally
+   * iteration-independent for DSWP
    */
   auto loopID = LDI->getID();
   auto loopStructure = LDI->getLoopStructure();
-  auto averageInstructions = profiles->getAverageTotalInstructionsPerIteration(loopStructure);
+  auto averageInstructions =
+      profiles->getAverageTotalInstructionsPerIteration(loopStructure);
   auto averageInstructionThreshold = 20;
   bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
   auto minimumSequentialFraction = .5;
-  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI, this->noelle);
-  bool hasProportionallyInsignificantSequentialExecution = sequentialFraction < minimumSequentialFraction;
+  auto sequentialFraction =
+      this->computeSequentialFractionOfExecution(LDI, this->noelle);
+  bool hasProportionallyInsignificantSequentialExecution =
+      sequentialFraction < minimumSequentialFraction;
   if (hasLittleExecution && hasProportionallyInsignificantSequentialExecution) {
-    errs() << "Parallelizer:    Loop " << loopID << " has "
-      << averageInstructions << " number of sequential instructions on average per loop iteration\n";
-    errs() << "Parallelizer:    Loop " << loopID << " has "
-      << sequentialFraction << " % sequential execution per loop iteration\n";
-    errs() << "Parallelizer:      It will not be partitioned enough for DSWP. The thresholds are at least "
-      << averageInstructionThreshold << " instructions per iteration or at least "
-      << minimumSequentialFraction << " % sequential execution." << "\n";
+    errs()
+        << "Parallelizer:    Loop " << loopID << " has " << averageInstructions
+        << " number of sequential instructions on average per loop iteration\n";
+    errs()
+        << "Parallelizer:    Loop " << loopID << " has " << sequentialFraction
+        << " % sequential execution per loop iteration\n";
+    errs()
+        << "Parallelizer:      It will not be partitioned enough for DSWP. The thresholds are at least "
+        << averageInstructionThreshold
+        << " instructions per iteration or at least "
+        << minimumSequentialFraction << " % sequential execution."
+        << "\n";
 
     return false;
   }
@@ -162,13 +183,10 @@ bool DSWP::canBeAppliedToLoop (
   /*
    * DSWP is applicable.
    */
-  return true ;
+  return true;
 }
 
-bool DSWP::apply (
-  LoopDependenceInfo *LDI,
-  Heuristics *h
-) {
+bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
 
   /*
    * Start.
@@ -193,19 +211,22 @@ bool DSWP::apply (
   /*
    * Check if the parallelization is worth it.
    */
-  if (!this->forceParallelization && this->partitioner->numberOfPartitions() == 1){
+  if (!this->forceParallelization
+      && this->partitioner->numberOfPartitions() == 1) {
 
     /*
      * The parallelization isn't worth it as there is only one pipeline stage.
      */
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DSWP:  There is only 1 partition and therefore the parallelization isn't worth it.\n";
+      errs()
+          << "DSWP:  There is only 1 partition and therefore the parallelization isn't worth it.\n";
     }
 
     return false;
   }
   if (this->verbose != Verbosity::Disabled) {
-    errs() << "DSWP:  There are " << this->partitioner->numberOfPartitions() << " partitions in the SCCDAG\n";
+    errs() << "DSWP:  There are " << this->partitioner->numberOfPartitions()
+           << " partitions in the SCCDAG\n";
   }
 
   /*
@@ -233,9 +254,7 @@ bool DSWP::apply (
   /*
    * Generate code to allocate and initialize the loop environment.
    */
-  auto isReducible = [](uint32_t idx, bool isLiveOut) -> bool {
-    return false;
-  };
+  auto isReducible = [](uint32_t idx, bool isLiveOut) -> bool { return false; };
   this->initializeEnvironmentBuilder(LDI, isReducible);
   collectLiveInEnvInfo(LDI);
   collectLiveOutEnvInfo(LDI);
@@ -254,9 +273,14 @@ bool DSWP::apply (
   /*
    * Helper declarations
    */
-  this->zeroIndexForBaseArray = cast<Value>(ConstantInt::get(this->noelle.int64, 0));
-  this->queueArrayType = ArrayType::get(PointerType::getUnqual(this->noelle.int8), this->queues.size());
-  this->stageArrayType = ArrayType::get(PointerType::getUnqual(this->noelle.int8), this->tasks.size());
+  this->zeroIndexForBaseArray =
+      cast<Value>(ConstantInt::get(this->noelle.int64, 0));
+  this->queueArrayType =
+      ArrayType::get(PointerType::getUnqual(this->noelle.int8),
+                     this->queues.size());
+  this->stageArrayType =
+      ArrayType::get(PointerType::getUnqual(this->noelle.int8),
+                     this->tasks.size());
 
   /*
    * Create the pipeline stages (technique tasks)
@@ -269,11 +293,12 @@ bool DSWP::apply (
      */
     generateLoopSubsetForStage(LDI, i);
     // if (this->verbose >= Verbosity::Maximal) {
-      // printStageClonedValues(*LDI, i);
+    // printStageClonedValues(*LDI, i);
     // }
 
     /*
-     * Load pointers of all queues for the current pipeline stage at the function's entry
+     * Load pointers of all queues for the current pipeline stage at the
+     * function's entry
      */
     generateLoadsOfQueuePointers(this->noelle, i);
     if (this->verbose >= Verbosity::Maximal) {
@@ -281,7 +306,8 @@ bool DSWP::apply (
     }
 
     /*
-     * Add push/pop operations from queues between the current pipeline stage and the connected ones
+     * Add push/pop operations from queues between the current pipeline stage
+     * and the connected ones
      */
     popValueQueues(LDI, this->noelle, i);
     pushValueQueues(LDI, this->noelle, i);
@@ -298,15 +324,18 @@ bool DSWP::apply (
     }
 
     // SubCFGs execGraph(*task->getTaskBody());
-    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("dswp-loop-" + std::to_string(LDI->getID()) + "-task-" + std::to_string(i) + ".dot", &execGraph);
-    // dumpToFile(*LDI);
+    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("dswp-loop-" +
+    // std::to_string(LDI->getID()) + "-task-" + std::to_string(i) + ".dot",
+    // &execGraph); dumpToFile(*LDI);
 
     /*
-     * HACK: For now, this must follow loading live-ins as this re-wiring overrides
-     * the live-in mapping to use locally cloned memory instructions that are live-in to the loop
+     * HACK: For now, this must follow loading live-ins as this re-wiring
+     * overrides the live-in mapping to use locally cloned memory instructions
+     * that are live-in to the loop
      */
     auto ltm = LDI->getLoopTransformationsManager();
-    if (ltm->isOptimizationEnabled(LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
+    if (ltm->isOptimizationEnabled(
+            LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
       this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, i);
     }
 
@@ -321,7 +350,8 @@ bool DSWP::apply (
     }
 
     /*
-     * Add the unconditional branch from the entry basic block to the header of the loop.
+     * Add the unconditional branch from the entry basic block to the header of
+     * the loop.
      */
     IRBuilder<> entryBuilder(task->getEntry());
     entryBuilder.CreateBr(task->getCloneOfOriginalBasicBlock(loopHeader));
@@ -334,7 +364,8 @@ bool DSWP::apply (
 
     /*
      * Store final results to loop live-out variables.
-     * Generate a store to propagate the information about which exit block has been taken from the parallelized loop to the code outside it.
+     * Generate a store to propagate the information about which exit block has
+     * been taken from the parallelized loop to the code outside it.
      */
     generateCodeToStoreLiveOutVariables(LDI, i);
     generateCodeToStoreExitBlockIndex(LDI, i);
@@ -348,9 +379,11 @@ bool DSWP::apply (
     inlineQueueCalls(i);
 
     if (this->verbose >= Verbosity::Maximal) {
-      task->getTaskBody()->print(errs() << "Pipeline stage " << i << ":\n"); errs() << "\n";
+      task->getTaskBody()->print(errs() << "Pipeline stage " << i << ":\n");
+      errs() << "\n";
       // SubCFGs execGraph(*task->getTaskBody());
-      // std::string name = "dswp-task-" + std::to_string(task->getID()) + "-loop-" + std::to_string(LDI->getID()) + ".dot";
+      // std::string name = "dswp-task-" + std::to_string(task->getID()) +
+      // "-loop-" + std::to_string(LDI->getID()) + ".dot";
       // DGPrinter::writeGraph<SubCFGs, BasicBlock>(name , &execGraph);
     }
   }
@@ -373,3 +406,5 @@ bool DSWP::apply (
   }
   return true;
 }
+
+} // namespace llvm::noelle

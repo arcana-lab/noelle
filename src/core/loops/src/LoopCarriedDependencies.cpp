@@ -1,22 +1,32 @@
 /*
  * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni, Brian Homerding
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
 
-void LoopCarriedDependencies::setLoopCarriedDependencies (
-  StayConnectedNestedLoopForestNode *loopNode,
-  const DominatorSummary &DS,
-  PDG &dgForLoops
-) {
+void LoopCarriedDependencies::setLoopCarriedDependencies(
+    StayConnectedNestedLoopForestNode *loopNode,
+    const DominatorSummary &DS,
+    PDG &dgForLoops) {
   for (auto edge : dgForLoops.getEdges()) {
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
@@ -29,10 +39,13 @@ void LoopCarriedDependencies::setLoopCarriedDependencies (
     edge->setLoopCarried(true);
   }
 
-  return ;
+  return;
 }
 
-LoopStructure * LoopCarriedDependencies::getLoopOfLCD(StayConnectedNestedLoopForestNode *loopNode, const DominatorSummary &DS, DGEdge<Value> *edge) {
+LoopStructure *LoopCarriedDependencies::getLoopOfLCD(
+    StayConnectedNestedLoopForestNode *loopNode,
+    const DominatorSummary &DS,
+    DGEdge<Value> *edge) {
 
   /*
    * Fetch the loop.
@@ -52,10 +65,10 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(StayConnectedNestedLoopFor
    * Only dependences between instructions can be loop-carried.
    */
   if (!isa<Instruction>(producer)) {
-    return nullptr ;
+    return nullptr;
   }
   if (!isa<Instruction>(consumer)) {
-    return nullptr ;
+    return nullptr;
   }
 
   /*
@@ -71,10 +84,11 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(StayConnectedNestedLoopFor
   auto consumerLoop = loopNode->getInnermostLoopThatContains(consumerI);
 
   /*
-   * If either of the instruction does not belong to a loop, then the dependence cannot be loop-carried.
+   * If either of the instruction does not belong to a loop, then the dependence
+   * cannot be loop-carried.
    */
   if (!producerLoop || !consumerLoop) {
-    return nullptr ;
+    return nullptr;
   }
 
   if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
@@ -91,29 +105,34 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(StayConnectedNestedLoopFor
       /*
        * The data dependence is variable based
        *
-       * If the producer cannot reach the header of the loop without reaching the consumer, then the dependence cannot be loop-carried.
+       * If the producer cannot reach the header of the loop without reaching
+       * the consumer, then the dependence cannot be loop-carried.
        */
       auto producerB = producerI->getParent();
       auto consumerB = consumerI->getParent();
-      auto mustProducerReachConsumerBeforeHeader = !canBasicBlockReachHeaderBeforeOther(*consumerLoop, producerB, consumerB);
+      auto mustProducerReachConsumerBeforeHeader =
+          !canBasicBlockReachHeaderBeforeOther(*consumerLoop,
+                                               producerB,
+                                               consumerB);
       if (mustProducerReachConsumerBeforeHeader) {
-        return nullptr ;
+        return nullptr;
       }
 
       /*
        * The data dependence is variable based.
        * The producer can reach the header before reaching the consumer.
-       * 
-       * Check if the consumer will take the value from someone else when the execution comes from the header rather than the producer of the previous iteration
+       *
+       * Check if the consumer will take the value from someone else when the
+       * execution comes from the header rather than the producer of the
+       * previous iteration
        */
-      if (  true
-            && DS.DT.dominates(consumerI, producerI)
-            && DS.DT.dominates(topLoopHeaderBranch, consumerI)
-        ){
-        if (auto phiConsumer = dyn_cast<PHINode>(consumerI)){
-          //errs() << "AAAA: producer = " << *producerI << "\n";
-          //errs() << "AAAA: consumer = " << *consumerI << "\n";
-          //errs() << "AAAA: Loop = " << *producerLoop->getHeader()->getFirstNonPHIOrDbg() << "\n\n";
+      if (true && DS.DT.dominates(consumerI, producerI)
+          && DS.DT.dominates(topLoopHeaderBranch, consumerI)) {
+        if (auto phiConsumer = dyn_cast<PHINode>(consumerI)) {
+          // errs() << "AAAA: producer = " << *producerI << "\n";
+          // errs() << "AAAA: consumer = " << *consumerI << "\n";
+          // errs() << "AAAA: Loop = " <<
+          // *producerLoop->getHeader()->getFirstNonPHIOrDbg() << "\n\n";
           return nullptr;
         }
       }
@@ -122,19 +141,19 @@ LoopStructure * LoopCarriedDependencies::getLoopOfLCD(StayConnectedNestedLoopFor
     return consumerLoop;
   }
 
-  return nullptr ;
+  return nullptr;
 }
 
-std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (
-  const LoopStructure &LS, 
-  StayConnectedNestedLoopForestNode *loopNode,
-  PDG &LoopDG
-  ) {
-  
+std::set<DGEdge<Value> *> LoopCarriedDependencies::
+    getLoopCarriedDependenciesForLoop(
+        const LoopStructure &LS,
+        StayConnectedNestedLoopForestNode *loopNode,
+        PDG &LoopDG) {
+
   std::set<DGEdge<Value> *> LCEdges;
   for (auto edge : LoopDG.getEdges()) {
-    if (!edge->isLoopCarriedDependence()) { 
-      continue; 
+    if (!edge->isLoopCarriedDependence()) {
+      continue;
     }
 
     auto consumer = edge->getIncomingT();
@@ -150,11 +169,11 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesFor
   return LCEdges;
 }
 
-std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesForLoop (
-  const LoopStructure &LS, 
-  StayConnectedNestedLoopForestNode *loopNode,
-  SCCDAG &sccdag
-  ) {
+std::set<DGEdge<Value> *> LoopCarriedDependencies::
+    getLoopCarriedDependenciesForLoop(
+        const LoopStructure &LS,
+        StayConnectedNestedLoopForestNode *loopNode,
+        SCCDAG &sccdag) {
 
   std::set<DGEdge<Value> *> LCEdges;
 
@@ -174,21 +193,24 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::getLoopCarriedDependenciesFor
 
       auto producer = edge->getOutgoingT();
       auto producerI = dyn_cast<Instruction>(producer);
-      if(producerI == NULL) { continue; }
+      if (producerI == NULL) {
+        continue;
+      }
 
       auto producerLoop = loopNode->getInnermostLoopThatContains(producerI);
-      if(!producerLoop) {continue;}
+      if (!producerLoop) {
+        continue;
+      }
       LCEdges.insert(edge);
     }
   }
   return LCEdges;
 }
 
-bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther (
-  const LoopStructure &LS,
-  BasicBlock *I,
-  BasicBlock *J
-) {
+bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther(
+    const LoopStructure &LS,
+    BasicBlock *I,
+    BasicBlock *J) {
 
   assert(LS.isIncluded(I) && LS.isIncluded(J));
 
@@ -220,8 +242,10 @@ bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther (
      * Check if the successor is an exit block; if so, do not traverse further
      * Check if the destination is reached; if so, do not traverse further
      */
-    if (B == header) return true;
-    if (exits.find(B) != exits.end()) continue;
+    if (B == header)
+      return true;
+    if (exits.find(B) != exits.end())
+      continue;
     if (B == J) {
       isJReached = true;
       continue;
@@ -233,7 +257,8 @@ bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther (
       /*
        * Do not re-traverse enqueued blocks
        */
-      if (enqueued.find(succ) != enqueued.end()) continue;
+      if (enqueued.find(succ) != enqueued.end())
+        continue;
       queue.push(succ);
       enqueued.insert(succ);
     }
@@ -246,4 +271,4 @@ bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther (
   return false;
 }
 
-}
+} // namespace llvm::noelle

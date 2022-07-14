@@ -1,50 +1,57 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
-uint64_t Hot::getStaticInstructions (LoopStructure *l) const {
+uint64_t Hot::getStaticInstructions(LoopStructure *l) const {
   uint64_t t = 0;
-  for (auto bb : l->getBasicBlocks()){
+  for (auto bb : l->getBasicBlocks()) {
     t += this->getStaticInstructions(bb);
   }
 
   return t;
 }
 
-uint64_t Hot::getStaticInstructions (
-  LoopStructure *l,
-  std::function<bool (Instruction *i)> canIConsiderIt
-  ) const {
+uint64_t Hot::getStaticInstructions(
+    LoopStructure *l,
+    std::function<bool(Instruction *i)> canIConsiderIt) const {
   uint64_t t = 0;
-  for (auto bb : l->getBasicBlocks()){
+  for (auto bb : l->getBasicBlocks()) {
     t += this->getStaticInstructions(bb, canIConsiderIt);
   }
 
   return t;
 }
-      
-bool Hot::hasBeenExecuted (LoopStructure *l) const {
-  if (this->getInvocations(l) == 0){
+
+bool Hot::hasBeenExecuted(LoopStructure *l) const {
+  if (this->getInvocations(l) == 0) {
     return false;
   }
   return true;
 }
 
-uint64_t Hot::getInvocations (LoopStructure *l) const {
+uint64_t Hot::getInvocations(LoopStructure *l) const {
 
   /*
    * Fetch the pre-header.
@@ -52,7 +59,7 @@ uint64_t Hot::getInvocations (LoopStructure *l) const {
   auto preH = l->getPreHeader();
 
   /*
-   * Fetch the number of invocations of the preheader. 
+   * Fetch the number of invocations of the preheader.
    * This is the same as the invocations of the loop.
    */
   auto preHInvocations = this->getInvocations(preH);
@@ -60,41 +67,41 @@ uint64_t Hot::getInvocations (LoopStructure *l) const {
   return preHInvocations;
 }
 
-uint64_t Hot::getSelfInstructions (LoopStructure *loop) const {
+uint64_t Hot::getSelfInstructions(LoopStructure *loop) const {
   uint64_t insts = 0;
 
-  for (auto bb : loop->getBasicBlocks()){
+  for (auto bb : loop->getBasicBlocks()) {
     insts += this->getStaticInstructions(bb);
   }
 
   return insts;
 }
 
-uint64_t Hot::getTotalInstructions (LoopStructure *loop) const {
+uint64_t Hot::getTotalInstructions(LoopStructure *loop) const {
   uint64_t insts = 0;
 
-  for (auto bb : loop->getBasicBlocks()){
+  for (auto bb : loop->getBasicBlocks()) {
     insts += this->getTotalInstructions(bb);
   }
 
   return insts;
 }
 
-double Hot::getDynamicTotalInstructionCoverage (LoopStructure *loop) const {
+double Hot::getDynamicTotalInstructionCoverage(LoopStructure *loop) const {
   auto mInsts = this->getTotalInstructions();
   auto lInsts = this->getTotalInstructions(loop);
   auto hotness = ((double)lInsts) / ((double)mInsts);
 
   return hotness;
 }
-      
-double Hot::getAverageLoopIterationsPerInvocation (LoopStructure *loop) const {
+
+double Hot::getAverageLoopIterationsPerInvocation(LoopStructure *loop) const {
 
   /*
    * Fetch the number of times the loop is invoked.
    */
   auto loopInvocations = this->getInvocations(loop);
-  if (loopInvocations == 0){
+  if (loopInvocations == 0) {
     return 0;
   }
 
@@ -111,13 +118,14 @@ double Hot::getAverageLoopIterationsPerInvocation (LoopStructure *loop) const {
   return stats;
 }
 
-double Hot::getAverageTotalInstructionsPerInvocation (LoopStructure *loop) const {
+double Hot::getAverageTotalInstructionsPerInvocation(
+    LoopStructure *loop) const {
 
   /*
    * Fetch the number of times the loop is invoked.
    */
   auto loopInvocations = this->getInvocations(loop);
-  if (loopInvocations == 0){
+  if (loopInvocations == 0) {
     return 0;
   }
 
@@ -125,18 +133,20 @@ double Hot::getAverageTotalInstructionsPerInvocation (LoopStructure *loop) const
    * Compute the stats.
    */
   auto loopTotal = this->getTotalInstructions(loop);
-  auto averageInstsPerInvocation = ((double)loopTotal) / ((double)loopInvocations);
+  auto averageInstsPerInvocation =
+      ((double)loopTotal) / ((double)loopInvocations);
 
   return averageInstsPerInvocation;
 }
 
-double Hot::getAverageTotalInstructionsPerIteration (LoopStructure *loop) const {
+double Hot::getAverageTotalInstructionsPerIteration(LoopStructure *loop) const {
 
   /*
    * Fetch the average number of instructions per invocation.
    */
-  auto instsPerInvocation = this->getAverageTotalInstructionsPerInvocation(loop);
-  if (instsPerInvocation == 0){
+  auto instsPerInvocation =
+      this->getAverageTotalInstructionsPerInvocation(loop);
+  if (instsPerInvocation == 0) {
     return 0;
   }
 
@@ -153,7 +163,7 @@ double Hot::getAverageTotalInstructionsPerIteration (LoopStructure *loop) const 
   return instsPerIteration;
 }
 
-uint64_t Hot::getIterations (LoopStructure *l) const {
+uint64_t Hot::getIterations(LoopStructure *l) const {
 
   /*
    * Fetch the header.
@@ -165,9 +175,9 @@ uint64_t Hot::getIterations (LoopStructure *l) const {
    */
   auto headerInvocations = this->getInvocations(loopHeader);
   uint64_t succInvocations = 0;
-  for (auto succBB : successors(loopHeader)){
-    if (!l->isIncluded(succBB)){
-      continue ;
+  for (auto succBB : successors(loopHeader)) {
+    if (!l->isIncluded(succBB)) {
+      continue;
     }
     succInvocations += this->getInvocations(succBB);
   }
@@ -176,7 +186,7 @@ uint64_t Hot::getIterations (LoopStructure *l) const {
    * Compute the total number of iterations executed.
    */
   uint64_t loopIterations = 0;
-  if (headerInvocations == succInvocations){
+  if (headerInvocations == succInvocations) {
     loopIterations = headerInvocations;
 
   } else {
@@ -185,3 +195,5 @@ uint64_t Hot::getIterations (LoopStructure *l) const {
 
   return loopIterations;
 }
+
+} // namespace llvm::noelle

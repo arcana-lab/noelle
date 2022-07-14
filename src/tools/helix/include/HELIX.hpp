@@ -1,12 +1,23 @@
 /*
  * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
 
@@ -25,151 +36,128 @@
 
 namespace llvm::noelle {
 
-  class SpilledLoopCarriedDependency;
+class SpilledLoopCarriedDependency;
 
-  class HELIX : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
-    public:
+class HELIX
+  : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
+public:
+  /*
+   * Methods
+   */
+  HELIX(Noelle &n, bool forceParallelization);
 
-      /*
-       * Methods
-       */
-      HELIX (
-        Noelle &n,
-        bool forceParallelization
-      );
+  bool apply(LoopDependenceInfo *LDI, Heuristics *h) override;
 
-      bool apply (
-        LoopDependenceInfo *LDI, 
-        Heuristics *h
-        ) override ;
+  bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
+                          Heuristics *h) const override;
 
-      bool canBeAppliedToLoop (
-        LoopDependenceInfo *LDI, 
-        Heuristics *h
-        ) const override ;
+  PDG *constructTaskInternalDependenceGraphFromOriginalLoopDG(
+      LoopDependenceInfo *LDI,
+      PostDominatorTree &postDomTreeOfTaskFunction);
 
-      PDG * constructTaskInternalDependenceGraphFromOriginalLoopDG (
-        LoopDependenceInfo *LDI,
-        PostDominatorTree &postDomTreeOfTaskFunction
-      );
+  Function *getTaskFunction(void) const;
 
-      Function * getTaskFunction (void) const ;
+  SCC *getTheSequentialSCCThatCreatesTheSequentialPrologue(
+      LoopDependenceInfo *LDI) const;
 
-    protected:
-      void createParallelizableTask (
-        LoopDependenceInfo *LDI,
-        Heuristics *h
-      );
+  bool doesHaveASequentialPrologue(LoopDependenceInfo *LDI) const;
 
-      bool synchronizeTask (
-        LoopDependenceInfo *LDI,
-        Heuristics *h
-      );
+  virtual ~HELIX();
 
-      void addChunkFunctionExecutionAsideOriginalLoop (
-        LoopDependenceInfo *LDI,
-        uint64_t numberOfSequentialSegments
-      );
+protected:
+  void createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h);
 
-      void spillLoopCarriedDataDependencies (
-        LoopDependenceInfo *LDI,
-        DataFlowResult *reachabilityDFR
-      );
+  bool synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h);
 
-      void createLoadsAndStoresToSpilledLCD (
-        LoopDependenceInfo *LDI,
-        DataFlowResult *reachabilityDFR,
-        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-        SpilledLoopCarriedDependency *spill,
-        Value *spillEnvPtr
-      );
+  void addChunkFunctionExecutionAsideOriginalLoop(
+      LoopDependenceInfo *LDI,
+      uint64_t numberOfSequentialSegments);
 
-      void insertStoresToSpilledLCD (
-        LoopDependenceInfo *LDI,
-        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-        SpilledLoopCarriedDependency *spill,
-        Value *spillEnvPtr
-      );
+  void spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
+                                        DataFlowResult *reachabilityDFR);
 
-      void defineFrontierForLoadsToSpilledLCD (
-        LoopDependenceInfo *LDI,
-        DataFlowResult *reachabilityDFR,
-        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-        SpilledLoopCarriedDependency *spill,
-        DominatorSummary *originalLoopDS,
-        std::unordered_set<BasicBlock *> &originalFrontierBlocks
-      );
+  void createLoadsAndStoresToSpilledLCD(
+      LoopDependenceInfo *LDI,
+      DataFlowResult *reachabilityDFR,
+      std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+      SpilledLoopCarriedDependency *spill,
+      Value *spillEnvPtr);
 
-      void replaceUsesOfSpilledPHIWithLoads (
-        LoopDependenceInfo *LDI,
-        std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-        SpilledLoopCarriedDependency *spill,
-        Value *spillEnvPtr,
-        DominatorSummary *originalLoopDS,
-        std::unordered_set<BasicBlock *> &originalFrontierBlocks
-      );
+  void insertStoresToSpilledLCD(
+      LoopDependenceInfo *LDI,
+      std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+      SpilledLoopCarriedDependency *spill,
+      Value *spillEnvPtr);
 
-      std::vector<SequentialSegment *> identifySequentialSegments (
-        LoopDependenceInfo *originalLDI,
-        LoopDependenceInfo *LDI,
-        DataFlowResult *reachabilityDFR
-      );
- 
-      void squeezeSequentialSegments (
-        LoopDependenceInfo *LDI,
-        std::vector<SequentialSegment *> *sss,
-        DataFlowResult *reachabilityDFR
-      );
+  void defineFrontierForLoadsToSpilledLCD(
+      LoopDependenceInfo *LDI,
+      DataFlowResult *reachabilityDFR,
+      std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+      SpilledLoopCarriedDependency *spill,
+      DominatorSummary *originalLoopDS,
+      std::unordered_set<BasicBlock *> &originalFrontierBlocks);
 
-      void scheduleSequentialSegments (
-        LoopDependenceInfo *LDI,
-        std::vector<SequentialSegment *> *sss,
-        DataFlowResult *reachabilityDFR
-      );
+  void replaceUsesOfSpilledPHIWithLoads(
+      LoopDependenceInfo *LDI,
+      std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
+      SpilledLoopCarriedDependency *spill,
+      Value *spillEnvPtr,
+      DominatorSummary *originalLoopDS,
+      std::unordered_set<BasicBlock *> &originalFrontierBlocks);
 
-      void addSynchronizations (
-        LoopDependenceInfo *LDI,
-        std::vector<SequentialSegment *> *sss
-      );
+  std::vector<SequentialSegment *> identifySequentialSegments(
+      LoopDependenceInfo *originalLDI,
+      LoopDependenceInfo *LDI,
+      DataFlowResult *reachabilityDFR);
 
-      void inlineCalls (
-        Task *task
-      );
+  void squeezeSequentialSegments(LoopDependenceInfo *LDI,
+                                 std::vector<SequentialSegment *> *sss,
+                                 DataFlowResult *reachabilityDFR);
 
-      void rewireLoopForIVsToIterateNthIterations (
-        LoopDependenceInfo *LDI
-      );
+  void scheduleSequentialSegments(LoopDependenceInfo *LDI,
+                                  std::vector<SequentialSegment *> *sss,
+                                  DataFlowResult *reachabilityDFR);
 
-    private:
-      Function *waitSSCall, *signalSSCall;
-      LoopDependenceInfo *originalLDI;
-      PDG *taskFunctionDG;
+  void addSynchronizations(LoopDependenceInfo *LDI,
+                           std::vector<SequentialSegment *> *sss);
 
-      LoopEnvironmentBuilder *loopCarriedLoopEnvironmentBuilder;
-      std::unordered_set<SpilledLoopCarriedDependency *> spills;
-      std::unordered_map<Instruction *, Instruction *> lastIterationExecutionDuplicateMap;
-      BasicBlock *lastIterationExecutionBlock;
-      bool enableInliner;
-      Function *taskDispatcherSS;
-      Function *taskDispatcherCS;
+  void inlineCalls(Task *task);
 
-      void squeezeSequentialSegment (
-        LoopDependenceInfo *LDI,
-        DataFlowResult *reachabilityDFR,
-        SequentialSegment *ss
-      );
+  void rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI);
 
-      DataFlowResult *computeReachabilityFromInstructions (LoopDependenceInfo *LDI) ;
+  BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
+      LoopDependenceInfo *LDI,
+      uint32_t taskIndex,
+      BasicBlock &bb) override;
 
-  };
+private:
+  Function *waitSSCall, *signalSSCall;
+  LoopDependenceInfo *originalLDI;
+  PDG *taskFunctionDG;
 
-  class SpilledLoopCarriedDependency {
-    public:
-      PHINode *originalLoopCarriedPHI;
-      PHINode *loopCarriedPHI;
-      Value *clonedInitialValue;
-      std::unordered_set<LoadInst *> environmentLoads;
-      std::unordered_set<StoreInst *> environmentStores;
-  };
+  LoopEnvironmentBuilder *loopCarriedLoopEnvironmentBuilder;
+  std::unordered_set<SpilledLoopCarriedDependency *> spills;
+  std::unordered_map<Instruction *, Instruction *>
+      lastIterationExecutionDuplicateMap;
+  BasicBlock *lastIterationExecutionBlock;
+  bool enableInliner;
+  Function *taskDispatcherSS;
+  Function *taskDispatcherCS;
+  std::string prefixString;
+  void squeezeSequentialSegment(LoopDependenceInfo *LDI,
+                                DataFlowResult *reachabilityDFR,
+                                SequentialSegment *ss);
 
-}
+  DataFlowResult *computeReachabilityFromInstructions(LoopDependenceInfo *LDI);
+};
+
+class SpilledLoopCarriedDependency {
+public:
+  PHINode *originalLoopCarriedPHI;
+  PHINode *loopCarriedPHI;
+  Value *clonedInitialValue;
+  std::unordered_set<LoadInst *> environmentLoads;
+  std::unordered_set<StoreInst *> environmentStores;
+};
+
+} // namespace llvm::noelle

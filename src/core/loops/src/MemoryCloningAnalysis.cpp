@@ -1,49 +1,60 @@
 /*
  * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/MemoryCloningAnalysis.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
 
-MemoryCloningAnalysis::MemoryCloningAnalysis (
-    LoopStructure *loop, 
-    DominatorSummary &DS,
-    PDG *ldg
-    ){ 
+MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
+                                             DominatorSummary &DS,
+                                             PDG *ldg) {
   assert(loop != nullptr);
   assert(ldg != nullptr);
 
   /*
    * Collect allocations at the top of the function
    *
-   * NOTE: The assumption is that all AllocaInst are stated before any other instructions
+   * NOTE: The assumption is that all AllocaInst are stated before any other
+   * instructions
    */
   std::unordered_set<AllocaInst *> allocations;
   auto function = loop->getFunction();
-  auto& entryBlock = function->getEntryBlock();
+  auto &entryBlock = function->getEntryBlock();
   for (auto &I : entryBlock) {
 
     /*
      * We only handle stack objects.
      */
     auto alloca = dyn_cast<AllocaInst>(&I);
-    if (alloca == nullptr){
-      continue ;
+    if (alloca == nullptr) {
+      continue;
     }
 
     allocations.insert(alloca);
   }
 
   /*
-   * Now we need to check whether we can determine at compile time the size of the stack objects.
+   * Now we need to check whether we can determine at compile time the size of
+   * the stack objects.
    *
    * To do this, we first need to fetch the data layout.
    */
@@ -70,7 +81,11 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (
     /*
      * Check if the stack object is clonable.
      */
-    auto location = std::make_unique<ClonableMemoryLocation>(allocation, sizeInBits, loop, DS, ldg);
+    auto location = std::make_unique<ClonableMemoryLocation>(allocation,
+                                                             sizeInBits,
+                                                             loop,
+                                                             DS,
+                                                             ldg);
     if (!location->isClonableLocation()) {
       continue;
     }
@@ -81,10 +96,11 @@ MemoryCloningAnalysis::MemoryCloningAnalysis (
     this->clonableMemoryLocations.insert(std::move(location));
   }
 
-  return ;
+  return;
 }
 
-std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClonableMemoryLocations (void) const {
+std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::
+    getClonableMemoryLocations(void) const {
   std::unordered_set<ClonableMemoryLocation *> locations{};
   for (auto &location : this->clonableMemoryLocations) {
     locations.insert(location.get());
@@ -92,7 +108,8 @@ std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClonableM
   return locations;
 }
 
-const std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClonableMemoryLocationsFor (Instruction *I) const {
+const std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::
+    getClonableMemoryLocationsFor(Instruction *I) const {
   std::unordered_set<ClonableMemoryLocation *> locs = {};
 
   /*
@@ -111,11 +128,11 @@ const std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClo
     if (location->isInstructionStoringLocation(I)) {
       locs.insert(location.get());
     }
-    if (auto callInst = dyn_cast<CallInst>(I)){
-      if (callInst->isLifetimeStartOrEnd()){
+    if (auto callInst = dyn_cast<CallInst>(I)) {
+      if (callInst->isLifetimeStartOrEnd()) {
         auto ptr = callInst->getArgOperand(1);
         auto loc = location.get();
-        if (loc->mustAliasAMemoryLocationWithinObject(ptr)){
+        if (loc->mustAliasAMemoryLocationWithinObject(ptr)) {
           locs.insert(loc);
         }
       }
@@ -125,42 +142,48 @@ const std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::getClo
   return locs;
 }
 
-std::unordered_set<Instruction *> ClonableMemoryLocation::getInstructionsUsingLocationOutsideLoop (void) const {
+std::unordered_set<Instruction *> ClonableMemoryLocation::
+    getInstructionsUsingLocationOutsideLoop(void) const {
   std::unordered_set<Instruction *> instructions;
   for (auto I : this->castsAndGEPs) {
-    if (loop->isIncluded(I)) continue;
+    if (loop->isIncluded(I))
+      continue;
     instructions.insert(I);
   }
   for (auto I : this->storingInstructions) {
-    if (loop->isIncluded(I)) continue;
+    if (loop->isIncluded(I))
+      continue;
     instructions.insert(I);
   }
   for (auto I : this->loadInstructions) {
-    if (loop->isIncluded(I)) continue;
+    if (loop->isIncluded(I))
+      continue;
     instructions.insert(I);
   }
   for (auto I : this->nonStoringInstructions) {
-    if (loop->isIncluded(I)) continue;
+    if (loop->isIncluded(I))
+      continue;
     instructions.insert(I);
   }
 
   return instructions;
 }
-      
-bool ClonableMemoryLocation::mustAliasAMemoryLocationWithinObject (Value *ptr) const {
+
+bool ClonableMemoryLocation::mustAliasAMemoryLocationWithinObject(
+    Value *ptr) const {
 
   /*
    * Same value.
    */
-  if (ptr == this->allocation){
+  if (ptr == this->allocation) {
     return true;
   }
 
   /*
    * Aliases.
    */
-  for (auto aliasPtr : this->castsAndGEPs){
-    if (aliasPtr == ptr){
+  for (auto aliasPtr : this->castsAndGEPs) {
+    if (aliasPtr == ptr) {
       return true;
     }
   }
@@ -168,39 +191,42 @@ bool ClonableMemoryLocation::mustAliasAMemoryLocationWithinObject (Value *ptr) c
   return false;
 }
 
-std::unordered_set<Instruction *> ClonableMemoryLocation::getLoopInstructionsUsingLocation (void) const {
+std::unordered_set<Instruction *> ClonableMemoryLocation::
+    getLoopInstructionsUsingLocation(void) const {
   std::unordered_set<Instruction *> instructions;
   for (auto I : this->castsAndGEPs) {
-    if (!loop->isIncluded(I)) continue;
+    if (!loop->isIncluded(I))
+      continue;
     instructions.insert(I);
   }
   for (auto I : this->storingInstructions) {
-    if (!loop->isIncluded(I)) continue;
+    if (!loop->isIncluded(I))
+      continue;
     instructions.insert(I);
   }
   for (auto I : this->loadInstructions) {
-    if (!loop->isIncluded(I)) continue;
+    if (!loop->isIncluded(I))
+      continue;
     instructions.insert(I);
   }
   for (auto I : this->nonStoringInstructions) {
-    if (!loop->isIncluded(I)) continue;
+    if (!loop->isIncluded(I))
+      continue;
     instructions.insert(I);
   }
   return instructions;
 }
 
-ClonableMemoryLocation::ClonableMemoryLocation (
-  AllocaInst *allocation,
-  uint64_t sizeInBits,
-  LoopStructure *loop,
-  DominatorSummary &DS,
-  PDG *ldg
-) : allocation{allocation}
-    ,sizeInBits{sizeInBits}
-    ,loop{loop}
-    ,isClonable{false}
-    ,isScopeWithinLoop{false}
-{
+ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
+                                               uint64_t sizeInBits,
+                                               LoopStructure *loop,
+                                               DominatorSummary &DS,
+                                               PDG *ldg)
+  : allocation{ allocation },
+    sizeInBits{ sizeInBits },
+    loop{ loop },
+    isClonable{ false },
+    isScopeWithinLoop{ false } {
 
   // allocation->print(errs() << "Examining alloca: "); errs() << "\n";
 
@@ -210,15 +236,13 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   this->setObjectScope(allocation, loop, DS);
 
   /*
-   * Only consider struct and integer types for objects that has scope outside the loop.
+   * Only consider struct and integer types for objects that has scope outside
+   * the loop.
    * TODO: Remove this when array/vector types are supported
    */
   this->allocatedType = allocation->getAllocatedType();
-  if (  true
-        && (!this->isScopeWithinLoop)
-        && (!allocatedType->isStructTy())
-        && (!allocatedType->isIntegerTy()) 
-     ){
+  if (true && (!this->isScopeWithinLoop) && (!allocatedType->isStructTy())
+      && (!allocatedType->isIntegerTy())) {
     return;
   }
 
@@ -230,17 +254,18 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   }
 
   /*
-   * For stack objects that have scope not fully contained within the target loop, we need to check if the stack object is completely initialized for every iteration.
-   * In other words, 
-   * 1) there is no RAW loop-carried data dependences that involve this stack object and
-   * 2) there is no RAW from outside the loop to inside it.
+   * For stack objects that have scope not fully contained within the target
+   * loop, we need to check if the stack object is completely initialized for
+   * every iteration. In other words, 1) there is no RAW loop-carried data
+   * dependences that involve this stack object and 2) there is no RAW from
+   * outside the loop to inside it.
    */
   this->identifyInitialStoringInstructions(loop, DS);
-  if (!this->isScopeWithinLoop){
-    if (  false
-          || (!this->areOverrideSetsFullyCoveringTheAllocationSpace())
-          || (this->isThereRAWThroughMemoryFromOutsideLoop(loop, allocation, ldg))
-      ){
+  if (!this->isScopeWithinLoop) {
+    if (false || (!this->areOverrideSetsFullyCoveringTheAllocationSpace())
+        || (this->isThereRAWThroughMemoryFromOutsideLoop(loop,
+                                                         allocation,
+                                                         ldg))) {
       return;
     }
   }
@@ -253,25 +278,23 @@ ClonableMemoryLocation::ClonableMemoryLocation (
   return;
 }
 
-void ClonableMemoryLocation::setObjectScope (
-  AllocaInst *allocation,
-  LoopStructure *loop,
-  DominatorSummary &ds
-  ) {
+void ClonableMemoryLocation::setObjectScope(AllocaInst *allocation,
+                                            LoopStructure *loop,
+                                            DominatorSummary &ds) {
 
   /*
    * Look for lifetime calls in the loop.
    */
-  for (auto inst : loop->getInstructions()){
+  for (auto inst : loop->getInstructions()) {
 
     /*
      * Check if the current instruction is a call to lifetime intrinsics.
      */
     auto call = dyn_cast<CallInst>(inst);
-    if (call == nullptr){
-      continue ;
+    if (call == nullptr) {
+      continue;
     }
-    if (!call->isLifetimeStartOrEnd()){
+    if (!call->isLifetimeStartOrEnd()) {
       continue;
     }
 
@@ -281,55 +304,64 @@ void ClonableMemoryLocation::setObjectScope (
      * Check if it is about the stack object we care.
      */
     auto objectUsed = call->getArgOperand(1);
-    if (auto castInst = dyn_cast<CastInst>(objectUsed)){
+    if (auto castInst = dyn_cast<CastInst>(objectUsed)) {
       objectUsed = castInst->getOperand(0);
     }
-    if (objectUsed == allocation){
+    if (objectUsed == allocation) {
 
       /*
        * We found a lifetime call about our stack object.
        */
       this->isScopeWithinLoop = true;
-      return ;
+      return;
     }
   }
 
-  return ;
+  return;
 }
 
-AllocaInst * ClonableMemoryLocation::getAllocation (void) const {
+AllocaInst *ClonableMemoryLocation::getAllocation(void) const {
   return this->allocation;
 }
 
-bool ClonableMemoryLocation::isClonableLocation (void) const {
+bool ClonableMemoryLocation::isClonableLocation(void) const {
   return this->isClonable;
 }
 
-bool ClonableMemoryLocation::isInstructionCastOrGEPOfLocation (Instruction *I) const {
-  if (castsAndGEPs.find(I) != castsAndGEPs.end()) return true;
+bool ClonableMemoryLocation::isInstructionCastOrGEPOfLocation(
+    Instruction *I) const {
+  if (castsAndGEPs.find(I) != castsAndGEPs.end())
+    return true;
   return false;
 }
 
-bool ClonableMemoryLocation::isInstructionStoringLocation (Instruction *I) const {
-  if (storingInstructions.find(I) != storingInstructions.end()) return true;
+bool ClonableMemoryLocation::isInstructionStoringLocation(
+    Instruction *I) const {
+  if (storingInstructions.find(I) != storingInstructions.end())
+    return true;
   return false;
 }
 
-bool ClonableMemoryLocation::isInstructionLoadingLocation (Instruction *I) const {
-  if (nonStoringInstructions.find(I) != nonStoringInstructions.end()) return true;
-  if (loadInstructions.find(I) != loadInstructions.end()) return true;
+bool ClonableMemoryLocation::isInstructionLoadingLocation(
+    Instruction *I) const {
+  if (nonStoringInstructions.find(I) != nonStoringInstructions.end())
+    return true;
+  if (loadInstructions.find(I) != loadInstructions.end())
+    return true;
   return false;
 }
 
-bool ClonableMemoryLocation::isMemCpyInstrinsicCall (CallInst *call) {
+bool ClonableMemoryLocation::isMemCpyInstrinsicCall(CallInst *call) {
   auto calledFn = call->getCalledFunction();
-  if (!calledFn || !calledFn->hasName()) return false;
+  if (!calledFn || !calledFn->hasName())
+    return false;
   auto name = calledFn->getName();
   std::string nameString = std::string(name.bytes_begin(), name.bytes_end());
   return nameString.find("llvm.memcpy") != std::string::npos;
 }
 
-bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, DominatorSummary &DS) {
+bool ClonableMemoryLocation::identifyStoresAndOtherUsers(LoopStructure *loop,
+                                                         DominatorSummary &DS) {
 
   /*
    * Determine all uses of the stack location.
@@ -372,7 +404,7 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
         allocationUses.push(gep);
         this->castsAndGEPs.insert(gep);
         continue;
-      } 
+      }
       if (auto store = dyn_cast<StoreInst>(user)) {
 
         /*
@@ -380,7 +412,7 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
          */
         this->storingInstructions.insert(store);
 
-      } else if (auto load = dyn_cast<LoadInst>(user)){
+      } else if (auto load = dyn_cast<LoadInst>(user)) {
 
         /*
          * This instruction reads from the stack object.
@@ -398,11 +430,14 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
         }
 
         /*
-         * We consider llvm.memcpy as a storing instruction if the use is the dest (first operand) 
+         * We consider llvm.memcpy as a storing instruction if the use is the
+         * dest (first operand)
          */
         auto isMemCpy = ClonableMemoryLocation::isMemCpyInstrinsicCall(call);
-        auto isUseTheDestinationOp = (call->getNumArgOperands() == 4) && (call->getArgOperand(0) == I);
-        auto isUseTheSourceOp = (call->getNumArgOperands() == 4) && (call->getArgOperand(1) == I);
+        auto isUseTheDestinationOp =
+            (call->getNumArgOperands() == 4) && (call->getArgOperand(0) == I);
+        auto isUseTheSourceOp =
+            (call->getNumArgOperands() == 4) && (call->getArgOperand(1) == I);
         if (isMemCpy && isUseTheDestinationOp) {
           storingInstructions.insert(call);
 
@@ -427,7 +462,8 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
 
       /*
        * All users must be within the loop or dominate the loop
-       * TODO: Once clonable memory can characterize if it is live out, remove this check
+       * TODO: Once clonable memory can characterize if it is live out, remove
+       * this check
        */
       auto inst = cast<Instruction>(user);
       if (!loop->isIncluded(inst)) {
@@ -450,34 +486,33 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers (LoopStructure *loop, D
   return true;
 }
 
-bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (
-  LoopStructure *loop, 
-  AllocaInst *al, 
-  PDG *ldg, 
-  std::unordered_set<Instruction *> insts
-  ) const {
+bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop(
+    LoopStructure *loop,
+    AllocaInst *al,
+    PDG *ldg,
+    std::unordered_set<Instruction *> insts) const {
 
-  for (auto inst : insts){
+  for (auto inst : insts) {
 
     /*
      * Check if the inst is within the loop.
      */
-    if (!loop->isIncluded(inst)){
-      continue ;
+    if (!loop->isIncluded(inst)) {
+      continue;
     }
 
     /*
      * The inst is within the loop.
      *
-     * Check if there is a memory dependence from an instruction outside the loop to this inst.
+     * Check if there is a memory dependence from an instruction outside the
+     * loop to this inst.
      */
-    auto functor = [loop](Value *fromValue, DGEdge<Value> *d) -> bool{
-
+    auto functor = [loop](Value *fromValue, DGEdge<Value> *d) -> bool {
       /*
        * Check if the source of the dependence is with an instruction.
        */
       auto inst = dyn_cast<Instruction>(fromValue);
-      if (inst == nullptr){
+      if (inst == nullptr) {
         return false;
       }
 
@@ -486,7 +521,7 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (
        *
        * Check if the source of the dependence is outside the loop.
        */
-      if (loop->isIncluded(inst)){
+      if (loop->isIncluded(inst)) {
 
         /*
          * The source is within the loop.
@@ -495,26 +530,29 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (
       }
 
       /*
-       * The source of the dependence is with an instruction that is outside the loop.
+       * The source of the dependence is with an instruction that is outside the
+       * loop.
        *
        * Check if the dependence is a RAW.
        */
-      if (!d->isRAWDependence()){
+      if (!d->isRAWDependence()) {
         return false;
       }
 
       /*
-       * We found a memory RAW from an instruction outside the loop to an instruction inside the loop.
+       * We found a memory RAW from an instruction outside the loop to an
+       * instruction inside the loop.
        *
        * We can stop the iteration.
        */
       return true;
     };
 
-    if (ldg->iterateOverDependencesFrom(inst, false, true, false, functor)){
+    if (ldg->iterateOverDependencesFrom(inst, false, true, false, functor)) {
 
       /*
-       * We found a memory RAW from a store inside the loop to a load after the loop.
+       * We found a memory RAW from a store inside the loop to a load after the
+       * loop.
        */
       return true;
     }
@@ -522,24 +560,34 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (
 
   return false;
 }
-        
-bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop (LoopStructure *loop, AllocaInst *al, PDG *ldg) const {
+
+bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop(
+    LoopStructure *loop,
+    AllocaInst *al,
+    PDG *ldg) const {
 
   /*
    * Check every read of the stack object.
    */
-  if (  false
-        || this->isThereRAWThroughMemoryFromOutsideLoop(loop, al, ldg, this->storingInstructions)
-        || this->isThereRAWThroughMemoryFromOutsideLoop(loop, al, ldg, this->nonStoringInstructions)
-     ){
+  if (false
+      || this->isThereRAWThroughMemoryFromOutsideLoop(loop,
+                                                      al,
+                                                      ldg,
+                                                      this->storingInstructions)
+      || this->isThereRAWThroughMemoryFromOutsideLoop(
+          loop,
+          al,
+          ldg,
+          this->nonStoringInstructions)) {
     return true;
   }
-
 
   return false;
 }
 
-bool ClonableMemoryLocation::identifyInitialStoringInstructions (LoopStructure *loop, DominatorSummary &DS) {
+bool ClonableMemoryLocation::identifyInitialStoringInstructions(
+    LoopStructure *loop,
+    DominatorSummary &DS) {
 
   /*
    * Group non-storing instructions by sets of dominating basic blocks
@@ -560,11 +608,13 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (LoopStructure *
      */
     auto instBlock = instToCover->getParent();
 
-    // nonStoringInstruction->print(errs() << "Grouping non storing instruction: "); errs() << "\n";
+    // nonStoringInstruction->print(errs() << "Grouping non storing instruction:
+    // "); errs() << "\n";
 
     auto belongsToExistingSet = false;
     for (auto &overrideSet : overrideSets) {
-      auto overrideSetDominatingBlock = overrideSet->dominatingBlockOfNonStoringInsts;
+      auto overrideSetDominatingBlock =
+          overrideSet->dominatingBlockOfNonStoringInsts;
       if (DS.DT.dominates(overrideSetDominatingBlock, instBlock)) {
         overrideSet->subsequentNonStoringInstructions.insert(instToCover);
         belongsToExistingSet = true;
@@ -580,10 +630,12 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (LoopStructure *
     /*
      * If the instruction hasn't been added to a set, create a new set
      */
-    if (belongsToExistingSet) continue;
+    if (belongsToExistingSet)
+      continue;
 
     // errs() << "\tIs not dominated by current override set\n";
-    // nonStoringBlock->printAsOperand(errs() << "\tCreating set: "); errs() << "\n";
+    // nonStoringBlock->printAsOperand(errs() << "\tCreating set: "); errs() <<
+    // "\n";
 
     auto overrideSet = std::make_unique<ClonableMemoryLocation::OverrideSet>();
     overrideSet->dominatingBlockOfNonStoringInsts = instBlock;
@@ -597,7 +649,8 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (LoopStructure *
   for (auto storingInstruction : storingInstructions) {
 
     /*
-     * Only instructions in the loop can possibly override this memory every iteration
+     * Only instructions in the loop can possibly override this memory every
+     * iteration
      */
     if (!loop->isIncluded(storingInstruction)) {
       continue;
@@ -606,7 +659,8 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (LoopStructure *
     auto storingBlock = storingInstruction->getParent();
 
     for (auto &overrideSet : overrideSets) {
-      auto overrideSetDominatingBlock = overrideSet->dominatingBlockOfNonStoringInsts;
+      auto overrideSetDominatingBlock =
+          overrideSet->dominatingBlockOfNonStoringInsts;
       if (DS.DT.dominates(storingBlock, overrideSetDominatingBlock)) {
         overrideSet->initialStoringInstructions.insert(storingInstruction);
 
@@ -614,7 +668,6 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (LoopStructure *
         //   errs() << "Belongs to override set: "
         // );
         // storingInstruction->print(errs() << "\t"); errs() << "\n";
-
       }
     }
   }
@@ -637,13 +690,15 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions (LoopStructure *
   return true;
 }
 
-bool ClonableMemoryLocation::areOverrideSetsFullyCoveringTheAllocationSpace (void) const {
+bool ClonableMemoryLocation::areOverrideSetsFullyCoveringTheAllocationSpace(
+    void) const {
   if (overrideSets.size() == 0) {
     return false;
   }
 
   for (auto &overrideSet : overrideSets) {
-    if (!this->isOverrideSetFullyCoveringTheAllocationSpace(overrideSet.get())) {
+    if (!this->isOverrideSetFullyCoveringTheAllocationSpace(
+            overrideSet.get())) {
       return false;
     }
   }
@@ -651,9 +706,8 @@ bool ClonableMemoryLocation::areOverrideSetsFullyCoveringTheAllocationSpace (voi
   return true;
 }
 
-bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace (
-  ClonableMemoryLocation::OverrideSet *overrideSet
-) const {
+bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace(
+    ClonableMemoryLocation::OverrideSet *overrideSet) const {
   std::unordered_set<int64_t> structElementsStoredTo;
   for (auto storingInstruction : overrideSet->initialStoringInstructions) {
     if (auto store = dyn_cast<StoreInst>(storingInstruction)) {
@@ -664,7 +718,8 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace (
       auto pointerOperand = store->getPointerOperand();
 
       /*
-       * If the pointer is the returned value of an alloca, then @store is initializing the whole memory object.
+       * If the pointer is the returned value of an alloca, then @store is
+       * initializing the whole memory object.
        */
       if (dyn_cast<AllocaInst>(pointerOperand)) {
 
@@ -672,18 +727,21 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace (
          * The allocation is stored directly to and is completely overriden
          */
         return true;
-      } 
+      }
 
       if (auto gep = dyn_cast<GetElementPtrInst>(pointerOperand)) {
 
         // gep->print(errs() << "Examining GEP for coverage: "); errs() << "\n";
 
         /*
-         * Only supporting struct GEP accesses that match the allocation's struct type
+         * Only supporting struct GEP accesses that match the allocation's
+         * struct type
          */
         auto sourceElementTy = gep->getSourceElementType();
-        if (!sourceElementTy->isStructTy()) continue;
-        if (sourceElementTy != this->allocatedType) continue;
+        if (!sourceElementTy->isStructTy())
+          continue;
+        if (sourceElementTy != this->allocatedType)
+          continue;
 
         /*
          * Ensure the struct itself is accessed (base idx 0)
@@ -693,14 +751,15 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace (
         auto elementIdxIter = baseIdxIter + 1;
         auto baseIdxValue = dyn_cast<ConstantInt>(baseIdxIter->get());
         auto elementIdxValue = dyn_cast<ConstantInt>(elementIdxIter->get());
-        if (!baseIdxValue || !elementIdxValue) continue;
-        if (baseIdxValue->getValue().getSExtValue() != 0) continue;
+        if (!baseIdxValue || !elementIdxValue)
+          continue;
+        if (baseIdxValue->getValue().getSExtValue() != 0)
+          continue;
 
         auto elementIdx = elementIdxValue->getValue().getSExtValue();
         structElementsStoredTo.insert(elementIdx);
 
         // errs() << "\tElement: " << elementIdx << "\n";
-
       }
 
     } else if (auto call = dyn_cast<CallInst>(storingInstruction)) {
@@ -713,7 +772,8 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace (
        */
       auto bytesStoredValue = call->getOperand(2);
       auto bytesStoredConst = dyn_cast<ConstantInt>(bytesStoredValue);
-      if (!bytesStoredConst) continue;
+      if (!bytesStoredConst)
+        continue;
 
       auto bitsStored = bytesStoredConst->getValue().getSExtValue() * 8;
       if (this->sizeInBits == bitsStored) {
@@ -724,9 +784,13 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace (
 
   if (this->allocation->getAllocatedType()->isStructTy()) {
 
-    // errs() << "Number of elements covered: " << structElementsStoredTo.size() << " versus struct element number: " << this->allocatedType->getStructNumElements() << "\n";
+    // errs() << "Number of elements covered: " << structElementsStoredTo.size()
+    // << " versus struct element number: " <<
+    // this->allocatedType->getStructNumElements() << "\n";
 
-    if (structElementsStoredTo.size() == this->allocatedType->getStructNumElements()) return true;
+    if (structElementsStoredTo.size()
+        == this->allocatedType->getStructNumElements())
+      return true;
   }
 
   return false;

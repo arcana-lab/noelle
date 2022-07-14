@@ -3,6 +3,7 @@ set(Srcs
   DOALL.cpp
   DOALLTask.cpp
   DOALL_analysis.cpp
+  DOALL_lastIteration.cpp
   Builder.cpp
 )
 

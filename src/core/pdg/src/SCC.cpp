@@ -1,12 +1,23 @@
 /*
  * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "llvm/Support/raw_ostream.h"
 #include "noelle/core/SCC.hpp"
@@ -46,63 +57,66 @@ SCC::SCC(std::set<DGNode<Value> *> internalNodes) {
   copyNodesAndEdges(internalNodes, externalNodes);
 }
 
-SCC::SCC(std::set<DGNode<Value> *> internalNodes, std::set<DGNode<Value> *> externalNodes) {
+SCC::SCC(std::set<DGNode<Value> *> internalNodes,
+         std::set<DGNode<Value> *> externalNodes) {
   copyNodesAndEdges(internalNodes, externalNodes);
 }
 
-void SCC::copyNodesAndEdges(std::set<DGNode<Value> *> internalNodes, std::set<DGNode<Value> *> externalNodes) {
+void SCC::copyNodesAndEdges(std::set<DGNode<Value> *> internalNodes,
+                            std::set<DGNode<Value> *> externalNodes) {
 
-	/*
-	 * Add all nodes by classification. Arbitrarily choose entry node from all nodes
-	 */
-	for (auto node : internalNodes) {
-    addNode(node->getT(), /*internal=*/ true);
+  /*
+   * Add all nodes by classification. Arbitrarily choose entry node from all
+   * nodes
+   */
+  for (auto node : internalNodes) {
+    addNode(node->getT(), /*internal=*/true);
   }
   for (auto node : externalNodes) {
-    addNode(node->getT(), /*internal=*/ false);
+    addNode(node->getT(), /*internal=*/false);
   }
-	entryNode = (*allNodes.begin());
+  entryNode = (*allNodes.begin());
 
-	/*
-	 * Add internal edges on this SCC's instructions 
-	 * Note: to avoid edge duplication, ignore incoming edges from internal nodes (they were considered in outgoing edges)
-	 */
-  for (auto node : internalNodes) {
-		auto theT = node->getT();
-		for (auto edge : node->getOutgoingEdges())
-		{
-			auto incomingT = edge->getIncomingT();
-      if (isExternal(incomingT)) continue ;
-			copyAddEdge(*edge);
-		}
-  }
-
-	/*
-	 * Add external edges on this SCC's instructions 
+  /*
+   * Add internal edges on this SCC's instructions
+   * Note: to avoid edge duplication, ignore incoming edges from internal nodes
+   * (they were considered in outgoing edges)
    */
-	for (auto node : internalNodes)
-	{
-		auto theT = node->getT();
-		for (auto edge : node->getOutgoingEdges())
-		{
-			auto incomingT = edge->getIncomingNode()->getT();
-      if (isInternal(incomingT)) continue ;
-			copyAddEdge(*edge);
-		}
-		for (auto edge : node->getIncomingEdges())
-		{
-			auto outgoingT = edge->getOutgoingNode()->getT();
-			if (isInternal(outgoingT)) continue;
-			copyAddEdge(*edge);
-		}
-	}
+  for (auto node : internalNodes) {
+    for (auto edge : node->getOutgoingEdges()) {
+      auto incomingT = edge->getIncomingT();
+      if (isExternal(incomingT))
+        continue;
+      copyAddEdge(*edge);
+    }
+  }
+
+  /*
+   * Add external edges on this SCC's instructions
+   */
+  for (auto node : internalNodes) {
+    for (auto edge : node->getOutgoingEdges()) {
+      auto incomingT = edge->getIncomingNode()->getT();
+      if (isInternal(incomingT))
+        continue;
+      copyAddEdge(*edge);
+    }
+    for (auto edge : node->getIncomingEdges()) {
+      auto outgoingT = edge->getOutgoingNode()->getT();
+      if (isInternal(outgoingT))
+        continue;
+      copyAddEdge(*edge);
+    }
+  }
 }
 
-int64_t SCC::numberOfInstructions (void) const {
+int64_t SCC::numberOfInstructions(void) const {
   return this->numInternalNodes();
 }
 
-raw_ostream &SCC::print (raw_ostream &stream, std::string prefixToUse, int maxEdges) {
+raw_ostream &SCC::print(raw_ostream &stream,
+                        std::string prefixToUse,
+                        int maxEdges) {
 
   /*
    * Print instructions that compose the SCC.
@@ -136,56 +150,63 @@ raw_ostream &SCC::print (raw_ostream &stream, std::string prefixToUse, int maxEd
   return stream;
 }
 
-raw_ostream &SCC::printMinimal (raw_ostream &stream, std::string prefixToUse) {
+raw_ostream &SCC::printMinimal(raw_ostream &stream, std::string prefixToUse) {
   stream << prefixToUse << "Internal nodes: " << internalNodeMap.size() << "\n";
-  for (auto nodePair : internalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+  for (auto nodePair : internalNodePairs())
+    nodePair.second->print(stream << prefixToUse << "\t") << "\n";
   stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
-  for (auto nodePair : externalNodePairs()) nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+  for (auto nodePair : externalNodePairs())
+    nodePair.second->print(stream << prefixToUse << "\t") << "\n";
   stream << prefixToUse << "Edges: " << allEdges.size() << "\n";
   return stream;
 }
 
-bool SCC::hasCycle (bool ignoreControlDep) {
-	std::set<DGNode<Value> *> nodesChecked;
-	for (auto nodePair : this->internalNodePairs()) {
+bool SCC::hasCycle(bool ignoreControlDep) {
+  std::set<DGNode<Value> *> nodesChecked;
+  for (auto nodePair : this->internalNodePairs()) {
     auto node = nodePair.second;
-		if (nodesChecked.find(node) != nodesChecked.end()) continue;
+    if (nodesChecked.find(node) != nodesChecked.end())
+      continue;
 
-		std::set<DGNode<Value> *> nodesSeen;
-		std::queue<DGNode<Value> *> nodesToVisit;
-		nodesChecked.insert(node);
-		nodesSeen.insert(node);
-		nodesToVisit.push(node);
+    std::set<DGNode<Value> *> nodesSeen;
+    std::queue<DGNode<Value> *> nodesToVisit;
+    nodesChecked.insert(node);
+    nodesSeen.insert(node);
+    nodesToVisit.push(node);
 
-		while (!nodesToVisit.empty()) {
-			auto node = nodesToVisit.front();
-			nodesToVisit.pop();
-			for (auto edge : node->getOutgoingEdges()) {
-        if (ignoreControlDep && edge->isControlDependence()) continue;
+    while (!nodesToVisit.empty()) {
+      auto node = nodesToVisit.front();
+      nodesToVisit.pop();
+      for (auto edge : node->getOutgoingEdges()) {
+        if (ignoreControlDep && edge->isControlDependence())
+          continue;
 
-				auto otherNode = edge->getIncomingNode();
-				if (nodesSeen.find(otherNode) != nodesSeen.end()) return true;
-				if (nodesChecked.find(otherNode) != nodesChecked.end()) continue;
+        auto otherNode = edge->getIncomingNode();
+        if (nodesSeen.find(otherNode) != nodesSeen.end())
+          return true;
+        if (nodesChecked.find(otherNode) != nodesChecked.end())
+          continue;
 
-				nodesChecked.insert(otherNode);
-				nodesSeen.insert(otherNode);
-				nodesToVisit.push(otherNode);
-			}
-		}
-	}
+        nodesChecked.insert(otherNode);
+        nodesSeen.insert(otherNode);
+        nodesToVisit.push(otherNode);
+      }
+    }
+  }
 
-	return false;
+  return false;
 }
 
-bool SCC::iterateOverInstructions (std::function<bool (Instruction *)> funcToInvoke){
+bool SCC::iterateOverInstructions(
+    std::function<bool(Instruction *)> funcToInvoke) {
 
   /*
    * Iterate over the internal instructions of the SCC.
    */
-  for (auto nodePair : this->internalNodePairs()){
+  for (auto nodePair : this->internalNodePairs()) {
     auto v = nodePair.first;
-    if (auto i = dyn_cast<Instruction>(v)){
-      if (funcToInvoke(i)){
+    if (auto i = dyn_cast<Instruction>(v)) {
+      if (funcToInvoke(i)) {
         return true;
       }
     }
@@ -194,15 +215,16 @@ bool SCC::iterateOverInstructions (std::function<bool (Instruction *)> funcToInv
   return false;
 }
 
-bool SCC::iterateOverAllInstructions (std::function<bool (Instruction *)> funcToInvoke){
+bool SCC::iterateOverAllInstructions(
+    std::function<bool(Instruction *)> funcToInvoke) {
 
   /*
    * Iterate over the nodes of the SCC.
    */
-  for (auto node : this->getNodes()){
+  for (auto node : this->getNodes()) {
     auto v = node->getT();
-    if (auto i = dyn_cast<Instruction>(v)){
-      if (funcToInvoke(i)){
+    if (auto i = dyn_cast<Instruction>(v)) {
+      if (funcToInvoke(i)) {
         return true;
       }
     }
@@ -211,14 +233,14 @@ bool SCC::iterateOverAllInstructions (std::function<bool (Instruction *)> funcTo
   return false;
 }
 
-bool SCC::iterateOverValues (std::function<bool (Value *)> funcToInvoke){
+bool SCC::iterateOverValues(std::function<bool(Value *)> funcToInvoke) {
 
   /*
    * Iterate over the internal instructions of the SCC.
    */
-  for (auto nodePair : this->internalNodePairs()){
+  for (auto nodePair : this->internalNodePairs()) {
     auto v = nodePair.first;
-    if (funcToInvoke(v)){
+    if (funcToInvoke(v)) {
       return true;
     }
   }
@@ -226,14 +248,14 @@ bool SCC::iterateOverValues (std::function<bool (Value *)> funcToInvoke){
   return false;
 }
 
-bool SCC::iterateOverAllValues (std::function<bool (Value *)> funcToInvoke){
+bool SCC::iterateOverAllValues(std::function<bool(Value *)> funcToInvoke) {
 
   /*
    * Iterate over the nodes of the SCC.
    */
-  for (auto node : this->getNodes()){
+  for (auto node : this->getNodes()) {
     auto v = node->getT();
-    if (funcToInvoke(v)){
+    if (funcToInvoke(v)) {
       return true;
     }
   }
@@ -242,5 +264,5 @@ bool SCC::iterateOverAllValues (std::function<bool (Value *)> funcToInvoke){
 }
 
 SCC::~SCC() {
-  return ;
+  return;
 }

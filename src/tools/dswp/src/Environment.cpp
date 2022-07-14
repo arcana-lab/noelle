@@ -1,18 +1,29 @@
 /*
  * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "DSWP.hpp"
 
 namespace llvm::noelle {
 
-void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
+void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
 
   /*
    * Fetch the environment of the loop
@@ -42,7 +53,8 @@ void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
       if (consumerSCCAttrs->canBeCloned()) {
         for (auto i = 0; i < tasks.size(); ++i) {
           auto task = (DSWPTask *)tasks[i];
-          if (task->clonableSCCs.find(consumerSCC) == task->clonableSCCs.end()) continue;
+          if (task->clonableSCCs.find(consumerSCC) == task->clonableSCCs.end())
+            continue;
           envBuilder->getUser(i)->addLiveInIndex(envIndex);
         }
 
@@ -60,7 +72,7 @@ void DSWP::collectLiveInEnvInfo (LoopDependenceInfo *LDI) {
   }
 }
 
-void DSWP::collectLiveOutEnvInfo (LoopDependenceInfo *LDI) {
+void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
 
   /*
    * Fetch the environment of the loop
@@ -82,14 +94,16 @@ void DSWP::collectLiveOutEnvInfo (LoopDependenceInfo *LDI) {
 
     /*
      * Clonable producers all produce the same live out value.
-     * Arbitrarily choose the first task that clones the producer to store it live out
+     * Arbitrarily choose the first task that clones the producer to store it
+     * live out
      */
     auto producerSCC = sccdag->sccOfValue(producer);
     auto producerSCCAttrs = sccManager->getSCCAttrs(producerSCC);
     if (producerSCCAttrs->canBeCloned()) {
       for (auto i = 0; i < tasks.size(); ++i) {
         auto task = (DSWPTask *)tasks[i];
-        if (task->clonableSCCs.find(producerSCC) == task->clonableSCCs.end()) continue;
+        if (task->clonableSCCs.find(producerSCC) == task->clonableSCCs.end())
+          continue;
         envBuilder->getUser(i)->addLiveOutIndex(envIndex);
         break;
       }
@@ -98,7 +112,8 @@ void DSWP::collectLiveOutEnvInfo (LoopDependenceInfo *LDI) {
     }
 
     /*
-     * If not clonable, one and only task produces the value and must store it live out
+     * If not clonable, one and only task produces the value and must store it
+     * live out
      */
     assert(this->sccToStage.find(producerSCC) != this->sccToStage.end());
     auto task = this->sccToStage.at(producerSCC);
@@ -107,4 +122,4 @@ void DSWP::collectLiveOutEnvInfo (LoopDependenceInfo *LDI) {
   }
 }
 
-}
+} // namespace llvm::noelle

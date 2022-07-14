@@ -1,30 +1,41 @@
 /*
  * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "LoopCarriedDependencies.hpp"
 
-namespace llvm::noelle{
+namespace llvm::noelle {
 
-SCCDAGAttrs::SCCDAGAttrs (
-  bool enableFloatAsReal,
-  PDG *loopDG,
-  SCCDAG *loopSCCDAG,
-  StayConnectedNestedLoopForestNode *loopNode,
-  ScalarEvolution &SE,
-  InductionVariableManager &IV,
-  DominatorSummary &DS
-) : 
-  enableFloatAsReal{enableFloatAsReal}, loopDG{loopDG}, sccdag{loopSCCDAG}, memoryCloningAnalysis{nullptr} 
-  {
+SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
+                         PDG *loopDG,
+                         SCCDAG *loopSCCDAG,
+                         StayConnectedNestedLoopForestNode *loopNode,
+                         ScalarEvolution &SE,
+                         InductionVariableManager &IV,
+                         DominatorSummary &DS)
+  : enableFloatAsReal{ enableFloatAsReal },
+    loopDG{ loopDG },
+    sccdag{ loopSCCDAG },
+    memoryCloningAnalysis{ nullptr } {
 
   /*
    * Partition dependences between intra-iteration and iter-iteration ones.
@@ -40,7 +51,8 @@ SCCDAGAttrs::SCCDAGAttrs (
     auto loopIVs = IV.getInductionVariables(*loop);
     ivs.insert(loopIVs.begin(), loopIVs.end());
     auto loopGoverningIV = IV.getLoopGoverningInductionVariable(*loop);
-    if (loopGoverningIV) loopGoverningIVs.insert(loopGoverningIV);
+    if (loopGoverningIV)
+      loopGoverningIVs.insert(loopGoverningIV);
   }
 
   // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag.dot", sccdag);
@@ -64,52 +76,58 @@ SCCDAGAttrs::SCCDAGAttrs (
   /*
    * Tag SCCs depending on their characteristics.
    */
-  loopSCCDAG->iterateOverSCCs([this, &SE, loopNode, rootLoop,  &ivs, &loopGoverningIVs](SCC *scc) -> bool {
+  loopSCCDAG->iterateOverSCCs(
+      [this, &SE, loopNode, rootLoop, &ivs, &loopGoverningIVs](
+          SCC *scc) -> bool {
+        /*
+         * Allocate the metadata about this SCC.
+         */
+        auto sccInfo = new SCCAttrs(scc, this->accumOpInfo, rootLoop);
+        this->sccToInfo[scc] = sccInfo;
 
-    /*
-     * Allocate the metadata about this SCC.
-     */
-    auto sccInfo = new SCCAttrs(scc, this->accumOpInfo, rootLoop);
-    this->sccToInfo[scc] = sccInfo;
+        /*
+         * Collect information about the current SCC.
+         */
+        bool doesSCCOnlyContainIV =
+            this->checkIfSCCOnlyContainsInductionVariables(scc,
+                                                           loopNode,
+                                                           ivs,
+                                                           loopGoverningIVs);
+        sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
 
-    /*
-     * Collect information about the current SCC.
-     */
-    bool doesSCCOnlyContainIV = this->checkIfSCCOnlyContainsInductionVariables(scc, loopNode, ivs, loopGoverningIVs);
-    sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
+        this->checkIfClonable(scc, SE, loopNode);
 
-    this->checkIfClonable(scc, SE, loopNode);
+        /*
+         * Categorize the current SCC.
+         */
+        if (this->checkIfIndependent(scc)) {
+          sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
 
-    /*
-     * Categorize the current SCC.
-     */
-    if (this->checkIfIndependent(scc)) {
-      sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
+        } else if (this->checkIfReducible(scc, loopNode)) {
+          sccInfo->setType(SCCAttrs::SCCType::REDUCIBLE);
 
-    } else if (this->checkIfReducible(scc, loopNode)) {
-      sccInfo->setType(SCCAttrs::SCCType::REDUCIBLE);
+        } else {
+          sccInfo->setType(SCCAttrs::SCCType::SEQUENTIAL);
+        }
 
-    } else {
-      sccInfo->setType(SCCAttrs::SCCType::SEQUENTIAL);
-    }
-
-    return false;
-  });
+        return false;
+      });
 
   collectSCCGraphAssumingDistributedClones();
 
-  return ;
+  return;
 }
 
-std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDependencies (void) const {
+std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDependencies(void) const {
   std::set<SCC *> sccs;
   for (auto &sccDependencies : this->sccToLoopCarriedDependencies) {
     sccs.insert(sccDependencies.first);
   }
   return sccs;
 }
-      
-std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies (void) const {
+
+std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies(
+    void) const {
   std::set<SCC *> sccs;
 
   /*
@@ -131,13 +149,13 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies (void) co
      * Check if this SCC has a control loop-carried data dependence.
      */
     auto isControl = false;
-    for (auto dep : deps){
-      if (dep->isControlDependence()){
+    for (auto dep : deps) {
+      if (dep->isControlDependence()) {
         isControl = true;
-        break ;
+        break;
       }
     }
-    if (isControl){
+    if (isControl) {
       sccs.insert(sccDependencies.first);
     }
   }
@@ -145,7 +163,8 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies (void) co
   return sccs;
 }
 
-std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const {
+std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies(
+    void) const {
   std::set<SCC *> sccs;
 
   /*
@@ -167,24 +186,26 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies (void) const
      * Check if this SCC has data loop-carried data dependence.
      */
     auto isData = false;
-    for (auto dep : deps){
-      if (dep->isDataDependence()){
+    for (auto dep : deps) {
+      if (dep->isDataDependence()) {
         isData = true;
-        break ;
+        break;
       }
     }
-    if (isData){
+    if (isData) {
       sccs.insert(SCC);
     }
   }
+
   return sccs;
 }
 
-bool SCCDAGAttrs::isLoopGovernedBySCC (SCC *governingSCC) const {
+bool SCCDAGAttrs::isLoopGovernedBySCC(SCC *governingSCC) const {
   auto topLevelNodes = this->sccdag->getTopLevelNodes();
 
   /*
-   * Step 1: Isolate top level SCCs (excluding independent instructions in SCCDAG)
+   * Step 1: Isolate top level SCCs (excluding independent instructions in
+   * SCCDAG)
    */
   std::queue<DGNode<SCC> *> toTraverse;
   for (auto node : topLevelNodes) {
@@ -203,7 +224,8 @@ bool SCCDAGAttrs::isLoopGovernedBySCC (SCC *governingSCC) const {
 
     if (sccInfo->canExecuteIndependently()) {
       auto nextDepth = this->sccdag->getNextDepthNodes(node);
-      for (auto next : nextDepth) toTraverse.push(next);
+      for (auto next : nextDepth)
+        toTraverse.push(next);
       continue;
     }
     topLevelSCCs.insert(scc);
@@ -212,12 +234,13 @@ bool SCCDAGAttrs::isLoopGovernedBySCC (SCC *governingSCC) const {
   /*
    * Step 2: Ensure there is only 1, and that it is the target SCC
    */
-  if (topLevelSCCs.size() != 1) return false;
+  if (topLevelSCCs.size() != 1)
+    return false;
   auto topLevelSCC = *topLevelSCCs.begin();
   return topLevelSCC == governingSCC;
 }
 
-bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
+bool SCCDAGAttrs::areAllLiveOutValuesReducable(LoopEnvironment *env) const {
 
   /*
    * Iterate over live-out variables.
@@ -234,11 +257,11 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
      * Check the SCC type.
      */
     auto sccInfo = this->getSCCAttrs(scc);
-    if (sccInfo->canExecuteReducibly()){
-      continue ;
+    if (sccInfo->canExecuteReducibly()) {
+      continue;
     }
     if (sccInfo->canExecuteIndependently()) {
-      continue ;
+      continue;
     }
 
     /*
@@ -250,10 +273,9 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable (LoopEnvironment *env) const {
   return true;
 }
 
-bool SCCDAGAttrs::isSCCContainedInSubloop (
-  StayConnectedNestedLoopForestNode *loop,
-  SCC *scc
-  ) const {
+bool SCCDAGAttrs::isSCCContainedInSubloop(
+    StayConnectedNestedLoopForestNode *loop,
+    SCC *scc) const {
   auto instInSubloops = true;
   auto topLoop = loop->getLoop();
   for (auto iNodePair : scc->internalNodePairs()) {
@@ -267,16 +289,17 @@ bool SCCDAGAttrs::isSCCContainedInSubloop (
   return instInSubloops;
 }
 
-SCCAttrs * SCCDAGAttrs::getSCCAttrs (SCC *scc) const {
+SCCAttrs *SCCDAGAttrs::getSCCAttrs(SCC *scc) const {
   auto sccInfo = this->sccToInfo.find(scc);
-  if (sccInfo == this->sccToInfo.end()){
+  if (sccInfo == this->sccToInfo.end()) {
     return nullptr;
   }
   return sccInfo->second;
 }
 
-void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
-  auto addIncomingNodes = [&](std::queue<DGNode<SCC> *> &queue, DGNode<SCC> *node) -> void {
+void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones() {
+  auto addIncomingNodes = [&](std::queue<DGNode<SCC> *> &queue,
+                              DGNode<SCC> *node) -> void {
     std::set<DGNode<SCC> *> nodes;
     auto scc = node->getT();
     for (auto edge : node->getIncomingEdges()) {
@@ -295,7 +318,7 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
 
     analyzed[childSCCNode] = true;
     addIncomingNodes(nodesToCheck, childSCCNode);
-    
+
     while (!nodesToCheck.empty()) {
       auto node = nodesToCheck.front();
       nodesToCheck.pop();
@@ -303,30 +326,34 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones () {
       auto sccInfo = this->getSCCAttrs(scc);
       this->parentsViaClones[childSCC].insert(scc);
       if (!sccInfo->canBeCloned()) {
-        continue ;
+        continue;
       }
-      if (analyzed[node]){
-        continue ;
+      if (analyzed[node]) {
+        continue;
       }
       addIncomingNodes(nodesToCheck, node);
       analyzed[node] = true;
     }
   }
 
-  return ;
+  return;
 }
 
-void SCCDAGAttrs::collectLoopCarriedDependencies (StayConnectedNestedLoopForestNode *loopNode){
+void SCCDAGAttrs::collectLoopCarriedDependencies(
+    StayConnectedNestedLoopForestNode *loopNode) {
 
   /*
    * Iterate over all the loops contained within the one handled by @this
    */
-  for (auto loop : loopNode->getLoops()){
+  for (auto loop : loopNode->getLoops()) {
 
     /*
      * Fetch the set of loop-carried data dependences of the current loop.
      */
-    auto loopCarriedEdges = LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop, loopNode, *sccdag);
+    auto loopCarriedEdges =
+        LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*loop,
+                                                                   loopNode,
+                                                                   *sccdag);
 
     /*
      * Make the map from SCCs to loop-carried data dependences.
@@ -334,7 +361,8 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (StayConnectedNestedLoopForestN
     for (auto edge : loopCarriedEdges) {
 
       /*
-       * Fetch the SCCs that contain the source and destination of the current loop-carried data dependence.
+       * Fetch the SCCs that contain the source and destination of the current
+       * loop-carried data dependence.
        */
       auto producer = edge->getOutgoingT();
       auto consumer = edge->getIncomingT();
@@ -349,14 +377,14 @@ void SCCDAGAttrs::collectLoopCarriedDependencies (StayConnectedNestedLoopForestN
     }
   }
 
-  return ;
+  return;
 }
 
-bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
-  SCC *scc,
-  StayConnectedNestedLoopForestNode *loopNode,
-  std::set<InductionVariable *> &IVs,
-  std::set<InductionVariable *> &loopGoverningIVs) {
+bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables(
+    SCC *scc,
+    StayConnectedNestedLoopForestNode *loopNode,
+    std::set<InductionVariable *> &IVs,
+    std::set<InductionVariable *> &loopGoverningIVs) {
 
   /*
    * Identify contained induction variables
@@ -370,35 +398,49 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
       containedInsts.insert(allInsts.begin(), allInsts.end());
     }
   }
-  if (containedIVs.size() == 0) return false;
+  if (containedIVs.size() == 0)
+    return false;
 
   /*
    * If a contained IV is loop governing, ensure loop governance is well formed
-   * TODO: Remove this, as this loop governing attribution isn't necessary for all users of SCCDAGAttrs 
+   * TODO: Remove this, as this loop governing attribution isn't necessary for
+   * all users of SCCDAGAttrs
    */
   for (auto containedIV : containedIVs) {
-    if (loopGoverningIVs.find(containedIV) == loopGoverningIVs.end()) continue;
-    auto exitBlocks = loopNode->getInnermostLoopThatContains(containedIV->getLoopEntryPHI())->getLoopExitBasicBlocks();
-    LoopGoverningIVAttribution attribution(*containedIV, *scc, exitBlocks);
+    if (loopGoverningIVs.find(containedIV) == loopGoverningIVs.end())
+      continue;
+    auto exitBlocks =
+        loopNode->getInnermostLoopThatContains(containedIV->getLoopEntryPHI())
+            ->getLoopExitBasicBlocks();
+    LoopGoverningIVAttribution attribution(loopNode->getLoop(),
+                                           *containedIV,
+                                           *scc,
+                                           exitBlocks);
     if (!attribution.isSCCContainingIVWellFormed()) {
-      // containedIV->getLoopEntryPHI()->print(errs() << "Not well formed SCC for loop governing IV!\n"); errs() << "\n";
+      // containedIV->getLoopEntryPHI()->print(errs() << "Not well formed SCC
+      // for loop governing IV!\n"); errs() << "\n";
       return false;
     }
-    containedInsts.insert(attribution.getHeaderCompareInstructionToComputeExitCondition());
+    containedInsts.insert(
+        attribution.getHeaderCompareInstructionToComputeExitCondition());
     containedInsts.insert(attribution.getHeaderBrInst());
     auto conditionValue = attribution.getExitConditionValue();
-    if (isa<Instruction>(conditionValue)) containedInsts.insert(cast<Instruction>(conditionValue));
+    if (isa<Instruction>(conditionValue))
+      containedInsts.insert(cast<Instruction>(conditionValue));
     auto conditionDerivation = attribution.getConditionValueDerivation();
-    containedInsts.insert(conditionDerivation.begin(), conditionDerivation.end());
+    containedInsts.insert(conditionDerivation.begin(),
+                          conditionDerivation.end());
   }
 
   /*
-   * NOTE: No side effects can be contained in the SCC; only instructions of the IVs
+   * NOTE: No side effects can be contained in the SCC; only instructions of the
+   * IVs
    */
   for (auto nodePair : scc->internalNodePairs()) {
     auto value = nodePair.first;
     if (auto inst = dyn_cast<Instruction>(value)) {
-      if (containedInsts.find(inst) != containedInsts.end()) continue;
+      if (containedInsts.find(inst) != containedInsts.end())
+        continue;
     }
 
     // value->print(errs() << "Suspect value: "); errs() << "\n";
@@ -411,10 +453,9 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables (
   return true;
 }
 
-bool SCCDAGAttrs::checkIfReducible (
-  SCC *scc,
-  StayConnectedNestedLoopForestNode *loopNode
-  ){
+bool SCCDAGAttrs::checkIfReducible(
+    SCC *scc,
+    StayConnectedNestedLoopForestNode *loopNode) {
 
   /*
    * A reducible variable consists of one loop carried value
@@ -450,18 +491,21 @@ bool SCCDAGAttrs::checkIfReducible (
     if (!isa<PHINode>(consumer)) {
 
       /*
-       * We do not handle SCCs with loop-carried data dependences with instructions that are not PHI.
+       * We do not handle SCCs with loop-carried data dependences with
+       * instructions that are not PHI.
        */
       return false;
     }
-    assert(isa<PHINode>(consumer) && "All consumers of loop carried data dependencies must be PHIs");
+    assert(isa<PHINode>(consumer)
+           && "All consumers of loop carried data dependencies must be PHIs");
     auto consumerPHI = cast<PHINode>(consumer);
 
     /*
      * Look for an internal consumer of a loop carried dependence
      *
-     * NOTE: External consumers may be last-live out propagations of a reducible variable
-     * or could disqualify this from reducibility: let the LoopCarriedVariable analysis determine this
+     * NOTE: External consumers may be last-live out propagations of a reducible
+     * variable or could disqualify this from reducibility: let the
+     * LoopCarriedVariable analysis determine this
      */
     if (!scc->isInternal(consumerPHI)) {
       continue;
@@ -488,7 +532,12 @@ bool SCCDAGAttrs::checkIfReducible (
   /*
    * Analyze the loop-carried variable related to the SCC.
    */
-  auto variable = new LoopCarriedVariable(*rootLoop, loopNode, *loopDG, *sccdag, *scc, singleLoopCarriedPHI);
+  auto variable = new LoopCarriedVariable(*rootLoop,
+                                          loopNode,
+                                          *loopDG,
+                                          *sccdag,
+                                          *scc,
+                                          singleLoopCarriedPHI);
   if (!variable->isEvolutionReducibleAcrossLoopIterations()) {
     delete variable;
     return false;
@@ -497,16 +546,16 @@ bool SCCDAGAttrs::checkIfReducible (
   /*
    * The SCC can be reduced.
    *
-   * Check if the reducable variable is a floating point and check if floating point variables can be considered as real numbers.
+   * Check if the reducable variable is a floating point and check if floating
+   * point variables can be considered as real numbers.
    */
   auto variableType = singleLoopCarriedPHI->getType();
-  if (  true
-        && (variableType->isFloatTy() || variableType->isDoubleTy())
-        && (!this->enableFloatAsReal)
-    ){
+  if (true && (variableType->isFloatTy() || variableType->isDoubleTy())
+      && (!this->enableFloatAsReal)) {
 
     /*
-     * Floating point values cannot be considered real numbers and therefore floating point variables cannot be reduced.
+     * Floating point values cannot be considered real numbers and therefore
+     * floating point variables cannot be reduced.
      */
     return false;
   }
@@ -522,28 +571,25 @@ bool SCCDAGAttrs::checkIfReducible (
 /*
  * The SCC is independent if it doesn't have loop carried data dependencies
  */
-bool SCCDAGAttrs::checkIfIndependent (SCC *scc) {
-  return this->sccToLoopCarriedDependencies.find(scc) == this->sccToLoopCarriedDependencies.end();
+bool SCCDAGAttrs::checkIfIndependent(SCC *scc) {
+  return this->sccToLoopCarriedDependencies.find(scc)
+         == this->sccToLoopCarriedDependencies.end();
 }
 
-void SCCDAGAttrs::checkIfClonable (
-  SCC *scc, 
-  ScalarEvolution &SE,
-  StayConnectedNestedLoopForestNode *loopNode
-  ){
+void SCCDAGAttrs::checkIfClonable(SCC *scc,
+                                  ScalarEvolution &SE,
+                                  StayConnectedNestedLoopForestNode *loopNode) {
 
   /*
    * Check the simple cases.
    * TODO: Separate out cases and catalog SCCs by those cases
    */
-  if ( false
-       || isClonableByInductionVars(scc)
-       || isClonableBySyntacticSugarInstrs(scc)
-       || isClonableByCmpBrInstrs(scc)
-       || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc, loopNode)
-      ) {
+  if (false || isClonableByInductionVars(scc)
+      || isClonableBySyntacticSugarInstrs(scc) || isClonableByCmpBrInstrs(scc)
+      || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
+                                                                 loopNode)) {
     this->getSCCAttrs(scc)->setSCCToBeClonable();
-    return ;
+    return;
   }
 
   /*
@@ -551,18 +597,18 @@ void SCCDAGAttrs::checkIfClonable (
    */
   checkIfClonableByUsingLocalMemory(scc, loopNode);
 
-  return ;
+  return;
 }
 
 void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
-  SCC *scc,
-  StayConnectedNestedLoopForestNode *loopNode
-  ){
+    SCC *scc,
+    StayConnectedNestedLoopForestNode *loopNode) {
 
   /*
    * Ignore SCC without loop carried dependencies
    */
-  if (this->sccToLoopCarriedDependencies.find(scc) == this->sccToLoopCarriedDependencies.end()) {
+  if (this->sccToLoopCarriedDependencies.find(scc)
+      == this->sccToLoopCarriedDependencies.end()) {
     return;
   }
 
@@ -584,11 +630,13 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
     }
 
     /*
-     * Attempt to locate the instruction's clonable memory location they store/load from
+     * Attempt to locate the instruction's clonable memory location they
+     * store/load from
      */
-    auto locs = this->memoryCloningAnalysis->getClonableMemoryLocationsFor(inst);
+    auto locs =
+        this->memoryCloningAnalysis->getClonableMemoryLocationsFor(inst);
     // inst->print(errs() << "Instruction: "); errs() << "\n";
-    // if (!location) { 
+    // if (!location) {
     //   errs() << "No location\n";
     //   scc->print(errs() << "Getting close\n", "", 100); errs() << "\n";
     // }
@@ -597,13 +645,14 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
       /*
        * The current loop-carried dependence cannot be removed by cloning.
        */
-      return ;
+      return;
     }
 
     /*
      * The current loop-carried dependence can be removed by cloning.
      */
-    // location->getAllocation()->print(errs() << "Location found: "); errs() << "\n";
+    // location->getAllocation()->print(errs() << "Location found: "); errs() <<
+    // "\n";
     locations.insert(locs.begin(), locs.end());
   }
 
@@ -618,41 +667,46 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
   sccInfo->setSCCToBeClonableUsingLocalMemory();
   sccInfo->addClonableMemoryLocationsContainedInSCC(locations);
 
-  return ;
+  return;
 }
 
-bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies (
-  SCC *scc,
-  StayConnectedNestedLoopForestNode *loopNode
-  ) const {
+bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
+    SCC *scc,
+    StayConnectedNestedLoopForestNode *loopNode) const {
 
   /*
    * FIXME: This check should not exist; instead, SCC where cloning
    * is trivial should be separated out by the parallelization scheme
    */
-  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
+  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0)
+    return false;
 
   for (auto edge : scc->getEdges()) {
-    if (edge->isMemoryDependence()) return false;
+    if (edge->isMemoryDependence())
+      return false;
   }
 
-  if (sccToLoopCarriedDependencies.find(scc) == sccToLoopCarriedDependencies.end()) return true;
+  if (sccToLoopCarriedDependencies.find(scc)
+      == sccToLoopCarriedDependencies.end())
+    return true;
 
   auto topLoop = loopNode->getLoop();
   for (auto loopCarriedDependency : sccToLoopCarriedDependencies.at(scc)) {
     auto valueFrom = loopCarriedDependency->getOutgoingT();
     auto valueTo = loopCarriedDependency->getIncomingT();
     assert(isa<Instruction>(valueFrom) && isa<Instruction>(valueTo));
-    if (loopNode->getInnermostLoopThatContains(cast<Instruction>(valueFrom)) == topLoop ||
-        loopNode->getInnermostLoopThatContains(cast<Instruction>(valueTo)) == topLoop) {
-        return false;
+    if (loopNode->getInnermostLoopThatContains(cast<Instruction>(valueFrom))
+            == topLoop
+        || loopNode->getInnermostLoopThatContains(cast<Instruction>(valueTo))
+               == topLoop) {
+      return false;
     }
   }
 
   return true;
 }
 
-bool SCCDAGAttrs::isClonableByInductionVars (SCC *scc) const {
+bool SCCDAGAttrs::isClonableByInductionVars(SCC *scc) const {
 
   /*
    * FIXME: This check should not exist; instead, SCC where cloning
@@ -670,15 +724,17 @@ bool SCCDAGAttrs::isClonableByInductionVars (SCC *scc) const {
   return sccInfo->isInductionVariableSCC();
 }
 
-bool SCCDAGAttrs::isClonableBySyntacticSugarInstrs (SCC *scc) const {
+bool SCCDAGAttrs::isClonableBySyntacticSugarInstrs(SCC *scc) const {
 
   /*
    * FIXME: This check should not exist; instead, SCC where cloning
    * is trivial should be separated out by the parallelization scheme
    */
-  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0) return false;
+  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0)
+    return false;
 
-  if (scc->numInternalNodes() > 1) return false;
+  if (scc->numInternalNodes() > 1)
+    return false;
   auto I = scc->begin_internal_node_map()->first;
   if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
     return true;
@@ -686,10 +742,10 @@ bool SCCDAGAttrs::isClonableBySyntacticSugarInstrs (SCC *scc) const {
   return false;
 }
 
-bool SCCDAGAttrs::isClonableByCmpBrInstrs (SCC *scc) const {
+bool SCCDAGAttrs::isClonableByCmpBrInstrs(SCC *scc) const {
   for (auto iNodePair : scc->internalNodePairs()) {
     auto V = iNodePair.first;
-    if (auto inst = dyn_cast<Instruction>(V)){
+    if (auto inst = dyn_cast<Instruction>(V)) {
       if (isa<CmpInst>(inst) || inst->isTerminator()) {
         continue;
       }
@@ -699,12 +755,14 @@ bool SCCDAGAttrs::isClonableByCmpBrInstrs (SCC *scc) const {
   return true;
 }
 
-bool SCCDAGAttrs::isALoopCarriedDependence (SCC *scc, DGEdge<Value> *dependence) {
+bool SCCDAGAttrs::isALoopCarriedDependence(SCC *scc,
+                                           DGEdge<Value> *dependence) {
 
   /*
    * Fetch the set of loop-carried data dependences of a SCC.
    */
-  if (this->sccToLoopCarriedDependencies.find(scc) == this->sccToLoopCarriedDependencies.end()){
+  if (this->sccToLoopCarriedDependencies.find(scc)
+      == this->sccToLoopCarriedDependencies.end()) {
     return false;
   }
   auto lcDeps = this->sccToLoopCarriedDependencies[scc];
@@ -715,30 +773,29 @@ bool SCCDAGAttrs::isALoopCarriedDependence (SCC *scc, DGEdge<Value> *dependence)
   return lcDeps.find(dependence) != lcDeps.end();
 }
 
-void SCCDAGAttrs::iterateOverLoopCarriedDataDependences (
-  SCC *scc, 
-  std::function<bool (DGEdge<Value> *dependence)> func
-  ){
+void SCCDAGAttrs::iterateOverLoopCarriedDataDependences(
+    SCC *scc,
+    std::function<bool(DGEdge<Value> *dependence)> func) {
 
   /*
    * Iterate over internal edges of the SCC.
    */
   for (auto valuePair : scc->internalNodePairs()) {
-    auto sccInternalNode = valuePair.second; 
+    auto sccInternalNode = valuePair.second;
     for (auto edge : sccInternalNode->getIncomingEdges()) {
 
       /*
        * Check if the current edge is a loop-carried data dependence.
        */
-      if (!this->isALoopCarriedDependence(scc, edge)){
-        continue ;
+      if (!this->isALoopCarriedDependence(scc, edge)) {
+        continue;
       }
 
       /*
        * Check if it is a data dependence.
        */
-      if (!edge->isDataDependence()){
-        continue ;
+      if (!edge->isDataDependence()) {
+        continue;
       }
 
       /*
@@ -749,39 +806,38 @@ void SCCDAGAttrs::iterateOverLoopCarriedDataDependences (
       /*
        * Check if the caller wants us to stop iterating.
        */
-      if (result){
-        return ;
+      if (result) {
+        return;
       }
     }
   }
 
-  return ;
+  return;
 }
 
-void SCCDAGAttrs::iterateOverLoopCarriedControlDependences (
-  SCC *scc, 
-  std::function<bool (DGEdge<Value> *dependence)> func
-  ){
+void SCCDAGAttrs::iterateOverLoopCarriedControlDependences(
+    SCC *scc,
+    std::function<bool(DGEdge<Value> *dependence)> func) {
 
   /*
    * Iterate over internal edges of the SCC.
    */
   for (auto valuePair : scc->internalNodePairs()) {
-    auto sccInternalNode = valuePair.second; 
+    auto sccInternalNode = valuePair.second;
     for (auto edge : sccInternalNode->getIncomingEdges()) {
 
       /*
        * Check if the current edge is a loop-carried data dependence.
        */
-      if (!this->isALoopCarriedDependence(scc, edge)){
-        continue ;
+      if (!this->isALoopCarriedDependence(scc, edge)) {
+        continue;
       }
 
       /*
        * Check if it is a data dependence.
        */
-      if (edge->isDataDependence()){
-        continue ;
+      if (edge->isDataDependence()) {
+        continue;
       }
 
       /*
@@ -792,32 +848,31 @@ void SCCDAGAttrs::iterateOverLoopCarriedControlDependences (
       /*
        * Check if the caller wants us to stop iterating.
        */
-      if (result){
-        return ;
+      if (result) {
+        return;
       }
     }
   }
 
-  return ;
+  return;
 }
 
-void SCCDAGAttrs::iterateOverLoopCarriedDependences (
-  SCC *scc, 
-  std::function<bool (DGEdge<Value> *dependence)> func
-  ){
+void SCCDAGAttrs::iterateOverLoopCarriedDependences(
+    SCC *scc,
+    std::function<bool(DGEdge<Value> *dependence)> func) {
 
   /*
    * Iterate over internal edges of the SCC.
    */
   for (auto valuePair : scc->internalNodePairs()) {
-    auto sccInternalNode = valuePair.second; 
+    auto sccInternalNode = valuePair.second;
     for (auto edge : sccInternalNode->getIncomingEdges()) {
 
       /*
        * Check if the current edge is a loop-carried data dependence.
        */
-      if (!this->isALoopCarriedDependence(scc, edge)){
-        continue ;
+      if (!this->isALoopCarriedDependence(scc, edge)) {
+        continue;
       }
 
       /*
@@ -828,26 +883,26 @@ void SCCDAGAttrs::iterateOverLoopCarriedDependences (
       /*
        * Check if the caller wants us to stop iterating.
        */
-      if (result){
-        return ;
+      if (result) {
+        return;
       }
     }
   }
 
-  return ;
+  return;
 }
 
-SCCDAG * SCCDAGAttrs::getSCCDAG (void) const {
+SCCDAG *SCCDAGAttrs::getSCCDAG(void) const {
   return this->sccdag;
 }
 
-void SCCDAGAttrs::dumpToFile (int id) {
+void SCCDAGAttrs::dumpToFile(int id) {
   std::error_code EC;
   std::string filename = "sccdag-attrs-loop-" + std::to_string(id) + ".dot";
 
   if (EC) {
     errs() << "ERROR: Could not dump debug logs to file!";
-    return ;
+    return;
   }
 
   DG<DGString> stageGraph;
@@ -866,10 +921,14 @@ void SCCDAGAttrs::dumpToFile (int id) {
 
     auto sccInfo = getSCCAttrs(sccNode->getT());
     ros << "Type: ";
-    if (sccInfo->canExecuteIndependently()) ros << "Independent ";
-    if (sccInfo->canBeCloned()) ros << "Clonable ";
-    if (sccInfo->canExecuteReducibly()) ros << "Reducible ";
-    if (sccInfo->isInductionVariableSCC()) ros << "IV ";
+    if (sccInfo->canExecuteIndependently())
+      ros << "Independent ";
+    if (sccInfo->canBeCloned())
+      ros << "Clonable ";
+    if (sccInfo->canExecuteReducibly())
+      ros << "Reducible ";
+    if (sccInfo->isInductionVariableSCC())
+      ros << "IV ";
     ros << "\n";
 
     for (auto iNodePair : sccNode->getT()->internalNodePairs()) {
@@ -878,12 +937,15 @@ void SCCDAGAttrs::dumpToFile (int id) {
     }
 
     ros.flush();
-    sccToDescriptionMap.insert(std::make_pair(sccNode, addNode(sccDescription, true)));
+    sccToDescriptionMap.insert(
+        std::make_pair(sccNode, addNode(sccDescription, true)));
   }
 
   for (auto sccEdge : sccdag->getEdges()) {
-    auto outgoingDesc = sccToDescriptionMap.at(sccEdge->getOutgoingNode())->getT();
-    auto incomingDesc = sccToDescriptionMap.at(sccEdge->getIncomingNode())->getT();
+    auto outgoingDesc =
+        sccToDescriptionMap.at(sccEdge->getOutgoingNode())->getT();
+    auto incomingDesc =
+        sccToDescriptionMap.at(sccEdge->getIncomingNode())->getT();
     stageGraph.addEdge(outgoingDesc, incomingDesc);
   }
 
@@ -892,15 +954,16 @@ void SCCDAGAttrs::dumpToFile (int id) {
     delete elem;
   }
 
-  return ;
+  return;
 }
 
-std::unordered_set<SCCAttrs *> SCCDAGAttrs::getSCCsOfType (SCCAttrs::SCCType sccType){
+std::unordered_set<SCCAttrs *> SCCDAGAttrs::getSCCsOfType(
+    SCCAttrs::SCCType sccType) {
   std::unordered_set<SCCAttrs *> SCCs{};
 
-  for (auto pair : this->sccToInfo){
+  for (auto pair : this->sccToInfo) {
     auto sccAttrs = pair.second;
-    if (sccAttrs->mustExecuteSequentially()){
+    if (sccAttrs->mustExecuteSequentially()) {
       SCCs.insert(sccAttrs);
     }
   }
@@ -908,8 +971,8 @@ std::unordered_set<SCCAttrs *> SCCDAGAttrs::getSCCsOfType (SCCAttrs::SCCType scc
   return SCCs;
 }
 
-SCCDAGAttrs::~SCCDAGAttrs (){
-  return ;
+SCCDAGAttrs::~SCCDAGAttrs() {
+  return;
 }
 
-}
+} // namespace llvm::noelle

@@ -1,29 +1,46 @@
 /*
  * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
 
-namespace llvm::noelle{
+namespace llvm::noelle {
 
-InductionVariable::InductionVariable  (
-  LoopStructure *LS,
-  InvariantManager &IVM,
-  ScalarEvolution &SE,
-  PHINode *loopEntryPHI,
-  SCC &scc,
-  LoopEnvironment &loopEnv,
-  ScalarEvolutionReferentialExpander &referentialExpander,
-  InductionDescriptor &ID
-) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{ID.getStartValue()}, loopEntryPHIType{loopEntryPHI->getType()},
-    stepSCEV{ID.getStep()}, computationOfStepValue{}, singleStepValue{ID.getConstIntStepValue()}, isComputedStepValueLoopInvariant{false} {
+InductionVariable::InductionVariable(
+    LoopStructure *LS,
+    InvariantManager &IVM,
+    ScalarEvolution &SE,
+    PHINode *loopEntryPHI,
+    SCC &scc,
+    LoopEnvironment &loopEnv,
+    ScalarEvolutionReferentialExpander &referentialExpander,
+    InductionDescriptor &ID)
+  : scc{ scc },
+    loopEntryPHI{ loopEntryPHI },
+    startValue{ ID.getStartValue() },
+    loopEntryPHIType{ loopEntryPHI->getType() },
+    stepSCEV{ ID.getStep() },
+    computationOfStepValue{},
+    singleStepValue{ ID.getConstIntStepValue() },
+    isComputedStepValueLoopInvariant{ false } {
 
   traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(LS);
   traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
@@ -37,16 +54,21 @@ InductionVariable::InductionVariable  (
   }
 }
 
-InductionVariable::InductionVariable  (
-  LoopStructure *LS,
-  InvariantManager &IVM,
-  ScalarEvolution &SE,
-  PHINode *loopEntryPHI,
-  SCC &scc,
-  LoopEnvironment &loopEnv,
-  ScalarEvolutionReferentialExpander &referentialExpander
-) : scc{scc}, loopEntryPHI{loopEntryPHI}, startValue{nullptr}, loopEntryPHIType{loopEntryPHI->getType()},
-    stepSCEV{nullptr}, computationOfStepValue{}, isComputedStepValueLoopInvariant{false} {
+InductionVariable::InductionVariable(
+    LoopStructure *LS,
+    InvariantManager &IVM,
+    ScalarEvolution &SE,
+    PHINode *loopEntryPHI,
+    SCC &scc,
+    LoopEnvironment &loopEnv,
+    ScalarEvolutionReferentialExpander &referentialExpander)
+  : scc{ scc },
+    loopEntryPHI{ loopEntryPHI },
+    startValue{ nullptr },
+    loopEntryPHIType{ loopEntryPHI->getType() },
+    stepSCEV{ nullptr },
+    computationOfStepValue{},
+    isComputedStepValueLoopInvariant{ false } {
 
   /*
    * Fetch initial value of induction variable
@@ -65,14 +87,16 @@ InductionVariable::InductionVariable  (
   collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
   deriveStepValue(LS, SE, referentialExpander);
 
-  return ;
+  return;
 }
 
-void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions (LoopStructure *LS) {
+void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(
+    LoopStructure *LS) {
 
   /*
-   * Collect intermediate values of the IV within the loop (by traversing its strongly connected component)
-   * Traverse data dependencies the header PHI has.
+   * Collect intermediate values of the IV within the loop (by traversing its
+   * strongly connected component) Traverse data dependencies the header PHI
+   * has.
    */
   std::queue<DGNode<Value> *> ivIntermediateValues;
   std::set<Value *> valuesVisited;
@@ -83,17 +107,20 @@ void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions (
     auto value = node->getT();
     ivIntermediateValues.pop();
 
-    if (valuesVisited.find(value) != valuesVisited.end()) continue;
+    if (valuesVisited.find(value) != valuesVisited.end())
+      continue;
     valuesVisited.insert(value);
 
     /*
-     * Classify the encountered value as either a PHI or a non-PHI intermediate instruction
-     * If it is not an instruction, skip
-     * If it is not within the IV's loop, skip
+     * Classify the encountered value as either a PHI or a non-PHI intermediate
+     * instruction If it is not an instruction, skip If it is not within the
+     * IV's loop, skip
      */
-    if (!isa<Instruction>(value)) continue;
+    if (!isa<Instruction>(value))
+      continue;
     auto instruction = cast<Instruction>(value);
-    if (!LS->isIncluded(instruction)) continue;
+    if (!LS->isIncluded(instruction))
+      continue;
     this->allInstructions.insert(instruction);
     if (auto phi = dyn_cast<PHINode>(instruction)) {
       this->PHIs.insert(phi);
@@ -107,24 +134,27 @@ void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions (
      * and thus must be intermediate values
      */
     for (auto edge : node->getIncomingEdges()) {
-      if (!edge->isDataDependence() || edge->isMemoryDependence()) continue;
+      if (!edge->isDataDependence() || edge->isMemoryDependence())
+        continue;
       auto otherNode = edge->getOutgoingNode();
       auto otherValue = otherNode->getT();
-      if (!scc.isInternal(otherValue)) continue;
+      if (!scc.isInternal(otherValue))
+        continue;
       ivIntermediateValues.push(otherNode);
     }
   }
 
   /*
    * Include any casts on intermediate values
-   * TODO: Determine what other instructions could still represent the induction variable
-   * but not necessarily appear in the SCC for that induction variable
+   * TODO: Determine what other instructions could still represent the induction
+   * variable but not necessarily appear in the SCC for that induction variable
    */
   std::set<CastInst *> castsToAdd{};
   for (auto intermediateValue : this->allInstructions) {
     for (auto user : intermediateValue->users()) {
       if (auto castInst = dyn_cast<CastInst>(user)) {
-        if (!LS->isIncluded(castInst)) continue;
+        if (!LS->isIncluded(castInst))
+          continue;
         castsToAdd.insert(castInst);
       }
     }
@@ -134,11 +164,11 @@ void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions (
   return;
 }
 
-void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions (
-  LoopStructure *LS,
-  InvariantManager &IVM,
-  ScalarEvolution &SE
-) {
+void InductionVariable::
+    traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(
+        LoopStructure *LS,
+        InvariantManager &IVM,
+        ScalarEvolution &SE) {
 
   /*
    * Recursive search up uses of an instruction to determine if derived
@@ -148,7 +178,6 @@ void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInst
   std::unordered_set<Instruction *> checked;
   std::function<bool(Instruction *)> checkIfDerived;
   checkIfDerived = [&](Instruction *I) -> bool {
-
     /*
      * Check the cache of confirmed derived values,
      * and then what we have already traversed to prevent traversing a cycle
@@ -164,14 +193,18 @@ void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInst
     /*
      * Only check SCEVable values in the loop
      */
-    if (!SE.isSCEVable(I->getType())) return false;
-    if (!LS->isIncluded(I)) return false;
+    if (!SE.isSCEVable(I->getType()))
+      return false;
+    if (!LS->isIncluded(I))
+      return false;
 
     /*
      * We only handle unary/binary operations on IV instructions.
      */
     auto scev = SE.getSCEV(I);
-    if (!isa<SCEVCastExpr>(scev) && !isa<SCEVNAryExpr>(scev) && !isa<SCEVUDivExpr>(scev)) return false;
+    if (!isa<SCEVCastExpr>(scev) && !isa<SCEVNAryExpr>(scev)
+        && !isa<SCEVUDivExpr>(scev))
+      return false;
 
     /*
      * Ensure the instruction uses the IV at least once, and only this IV,
@@ -181,11 +214,14 @@ void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInst
     for (auto &use : I->operands()) {
       auto usedValue = use.get();
 
-      if (isa<ConstantInt>(usedValue)) continue;
-      if (IVM.isLoopInvariant(usedValue)) continue;
+      if (isa<ConstantInt>(usedValue))
+        continue;
+      if (IVM.isLoopInvariant(usedValue))
+        continue;
 
       if (auto usedInst = dyn_cast<Instruction>(usedValue)) {
-        if (!LS->isIncluded(usedInst)) continue;
+        if (!LS->isIncluded(usedInst))
+          continue;
         auto isIVUse = this->isIVInstruction(usedInst);
         auto isDerivedUse = checkIfDerived(usedInst);
         if (isIVUse || isDerivedUse) {
@@ -197,7 +233,8 @@ void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInst
       return false;
     }
 
-    if (!usesAtLeastOneIVInstruction) return false;
+    if (!usesAtLeastOneIVInstruction)
+      return false;
 
     /*
      * Cache the result
@@ -208,7 +245,8 @@ void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInst
   };
 
   /*
-   * Queue traversal through users of IV instructions to find all derived instructions
+   * Queue traversal through users of IV instructions to find all derived
+   * instructions
    */
   std::queue<Instruction *> intermediates;
   std::unordered_set<Instruction *> visited;
@@ -223,13 +261,15 @@ void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInst
 
     for (auto user : I->users()) {
       if (auto userInst = dyn_cast<Instruction>(user)) {
-        if (visited.find(userInst) != visited.end()) continue;
+        if (visited.find(userInst) != visited.end())
+          continue;
         visited.insert(userInst);
 
         /*
          * If the user isn't derived, do not continue traversing users
          */
-        if (!checkIfDerived(userInst)) continue;
+        if (!checkIfDerived(userInst))
+          continue;
         intermediates.push(userInst);
       }
     }
@@ -238,10 +278,9 @@ void InductionVariable::traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInst
   return;
 }
 
-void InductionVariable::collectValuesInternalAndExternalToLoopAndSCC (
-  LoopStructure *LS,
-  LoopEnvironment &loopEnvironment
-) {
+void InductionVariable::collectValuesInternalAndExternalToLoopAndSCC(
+    LoopStructure *LS,
+    LoopEnvironment &loopEnvironment) {
 
   auto bbs = LS->getBasicBlocks();
 
@@ -256,7 +295,7 @@ void InductionVariable::collectValuesInternalAndExternalToLoopAndSCC (
 
   /*
    * Values external to the IV's SCC are in scope
-   * 
+   *
    * HACK: they should be referenced when computing the IV's step value
    * even if they aren't loop external, but that would require a more
    * powerful way to distinguish instructions in the loop that are
@@ -282,11 +321,10 @@ void InductionVariable::collectValuesInternalAndExternalToLoopAndSCC (
  * Examine the step recurrence SCEV and either retrieve the single value
  * representing the SCEV or expand values to represent it
  */
-void InductionVariable::deriveStepValue (
-  LoopStructure *LS,
-  ScalarEvolution &SE,
-  ScalarEvolutionReferentialExpander &referentialExpander
-) {
+void InductionVariable::deriveStepValue(
+    LoopStructure *LS,
+    ScalarEvolution &SE,
+    ScalarEvolutionReferentialExpander &referentialExpander) {
 
   /*
    * Fetch the SCEV for the step value.
@@ -320,31 +358,34 @@ void InductionVariable::deriveStepValue (
        * Not all composite SCEVs are handled, so if the derivation fails,
        * do not claim understanding of the step recurrence
        */
-      if (!deriveStepValueFromCompositeSCEV(stepSCEV, referentialExpander, LS)) {
+      if (!deriveStepValueFromCompositeSCEV(stepSCEV,
+                                            referentialExpander,
+                                            LS)) {
         this->stepSCEV = nullptr;
       }
       break;
     case SCEVTypes::scCouldNotCompute:
       break;
   }
-
 }
 
-void InductionVariable::deriveStepValueFromSCEVConstant (const SCEVConstant *scev) {
+void InductionVariable::deriveStepValueFromSCEVConstant(
+    const SCEVConstant *scev) {
   this->singleStepValue = scev->getValue();
   this->isComputedStepValueLoopInvariant = true;
 }
 
-void InductionVariable::deriveStepValueFromSCEVUnknown (const SCEVUnknown *scev, LoopStructure *LS) {
+void InductionVariable::deriveStepValueFromSCEVUnknown(const SCEVUnknown *scev,
+                                                       LoopStructure *LS) {
   this->singleStepValue = scev->getValue();
-  this->isComputedStepValueLoopInvariant = LS->isLoopInvariant(this->singleStepValue);
+  this->isComputedStepValueLoopInvariant =
+      LS->isLoopInvariant(this->singleStepValue);
 }
 
-bool InductionVariable::deriveStepValueFromCompositeSCEV (
-  const SCEV *scev,
-  ScalarEvolutionReferentialExpander &referentialExpander,
-  LoopStructure *LS
-) {
+bool InductionVariable::deriveStepValueFromCompositeSCEV(
+    const SCEV *scev,
+    ScalarEvolutionReferentialExpander &referentialExpander,
+    LoopStructure *LS) {
 
   // auto M = headerPHI->getFunction()->getParent();
   // DataLayout DL(M);
@@ -352,18 +393,22 @@ bool InductionVariable::deriveStepValueFromCompositeSCEV (
   // SCEVExpander *expander = new SCEVExpander(SE, DL, &name);
 
   // stepSCEV->print(errs() << "Referencing: "); errs() << "\n";
-  auto stepSizeReferenceTree = referentialExpander.createReferenceTree(scev, valuesInScopeOfInductionVariable);
-  if (!stepSizeReferenceTree) return false;
+  auto stepSizeReferenceTree =
+      referentialExpander.createReferenceTree(scev,
+                                              valuesInScopeOfInductionVariable);
+  if (!stepSizeReferenceTree)
+    return false;
 
-  // stepSizeReferenceTree->getSCEV()->print(errs() << "Expanding: "); errs() << "\n";
+  // stepSizeReferenceTree->getSCEV()->print(errs() << "Expanding: "); errs() <<
+  // "\n";
   auto tempBlock = BasicBlock::Create(loopEntryPHI->getContext());
   IRBuilder<> tempBuilder(tempBlock);
   auto finalValue = referentialExpander.expandUsingReferenceValues(
-    stepSizeReferenceTree,
-    valuesToReferenceInComputingStepValue,
-    tempBuilder
-  );
-  if (!finalValue) return false;
+      stepSizeReferenceTree,
+      valuesToReferenceInComputingStepValue,
+      tempBuilder);
+  if (!finalValue)
+    return false;
 
   this->isComputedStepValueLoopInvariant = true;
   auto references = stepSizeReferenceTree->collectAllReferences();
@@ -388,8 +433,8 @@ bool InductionVariable::deriveStepValueFromCompositeSCEV (
   }
 
   /*
-    * Save expanded values that compute the step recurrence
-    */
+   * Save expanded values that compute the step recurrence
+   */
   for (auto &I : *tempBlock) {
     computationOfStepValue.push_back(&I);
   }
@@ -397,66 +442,70 @@ bool InductionVariable::deriveStepValueFromCompositeSCEV (
   return true;
 }
 
-InductionVariable::~InductionVariable () {
+InductionVariable::~InductionVariable() {
   BasicBlock *tempBlock = nullptr;
   if (tempBlock) {
     tempBlock->deleteValue();
   }
 }
 
-SCC *InductionVariable::getSCC (void) const {
+SCC *InductionVariable::getSCC(void) const {
   return &scc;
 }
 
-PHINode * InductionVariable::getLoopEntryPHI (void) const {
+PHINode *InductionVariable::getLoopEntryPHI(void) const {
   return loopEntryPHI;
 }
 
-std::unordered_set<PHINode *> InductionVariable::getPHIs (void) const {
+std::unordered_set<PHINode *> InductionVariable::getPHIs(void) const {
   return PHIs;
 }
 
-std::unordered_set<Instruction *> InductionVariable::getNonPHIIntermediateValues (void) const {
+std::unordered_set<Instruction *> InductionVariable::
+    getNonPHIIntermediateValues(void) const {
   return nonPHIIntermediateValues;
 }
 
-std::unordered_set<Instruction *> InductionVariable::getAllInstructions(void) const {
+std::unordered_set<Instruction *> InductionVariable::getAllInstructions(
+    void) const {
   return allInstructions;
 }
 
-std::unordered_set<Instruction *> InductionVariable::getDerivedSCEVInstructions(void) const {
+std::unordered_set<Instruction *> InductionVariable::getDerivedSCEVInstructions(
+    void) const {
   return derivedSCEVInstructions;
 }
 
-Value *InductionVariable::getStartValue (void) const {
+Value *InductionVariable::getStartValue(void) const {
   return startValue;
 }
 
-Value *InductionVariable::getSingleComputedStepValue (void) const {
+Value *InductionVariable::getSingleComputedStepValue(void) const {
   return singleStepValue;
 }
 
-const SCEV * InductionVariable::getStepSCEV (void) const {
+const SCEV *InductionVariable::getStepSCEV(void) const {
   return stepSCEV;
 }
 
-std::vector<Instruction *> InductionVariable::getComputationOfStepValue(void) const {
+std::vector<Instruction *> InductionVariable::getComputationOfStepValue(
+    void) const {
   return computationOfStepValue;
 }
 
-bool InductionVariable::isStepValueLoopInvariant (void) const {
+bool InductionVariable::isStepValueLoopInvariant(void) const {
   return isComputedStepValueLoopInvariant;
 }
 
-bool InductionVariable::isIVInstruction (Instruction *I) const {
+bool InductionVariable::isIVInstruction(Instruction *I) const {
   return allInstructions.find(I) != allInstructions.end();
 }
 
-bool InductionVariable::isDerivedFromIVInstructions (Instruction *I) const {
+bool InductionVariable::isDerivedFromIVInstructions(Instruction *I) const {
   return derivedSCEVInstructions.find(I) != derivedSCEVInstructions.end();
 }
 
-bool InductionVariable::isStepValuePositive (void) const {
+bool InductionVariable::isStepValuePositive(void) const {
 
   /*
    * Fetch the step value.
@@ -466,19 +515,26 @@ bool InductionVariable::isStepValuePositive (void) const {
 
   /*
    * Check if the step value is positive
+   *
+   * Check if the value is an integer
    */
   if (this->loopEntryPHIType->isIntegerTy()) {
-    return cast<ConstantInt>(stepValue)->getValue().isStrictlyPositive();
-  } else {
-    assert(this->loopEntryPHIType->isFloatingPointTy());
-    auto fpValue = cast<ConstantFP>(stepValue)->getValueAPF();
-    return fpValue.isNonZero() && !fpValue.isNegative();
+    auto constant = cast<ConstantInt>(stepValue);
+    auto constantValue = constant->getValue();
+    auto isPositive = constantValue.isStrictlyPositive();
+    return isPositive;
   }
 
+  /*
+   * The value is a floating point one
+   */
+  assert(this->loopEntryPHIType->isFloatingPointTy());
+  auto fpValue = cast<ConstantFP>(stepValue)->getValueAPF();
+  return fpValue.isNonZero() && !fpValue.isNegative();
 }
 
-Type * InductionVariable::getIVType (void) const {
+Type *InductionVariable::getIVType(void) const {
   return loopEntryPHIType;
 }
 
-}
+} // namespace llvm::noelle

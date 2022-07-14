@@ -37,7 +37,7 @@ int main (int argc, char *argv[]){
   auto inner_iterations = atoll(argv[2]);
 
   arraySize = 1024;
-  array = (long long int *) malloc(sizeof(long long int) * arraySize);
+  array = (long long int *) calloc(arraySize, sizeof(long long int));
   auto s = hotFunction(iterations, inner_iterations, computeSum);
   printf("%lld\n", (long long int)s);
 

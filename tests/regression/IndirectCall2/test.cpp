@@ -4,7 +4,7 @@
 #include <time.h>
 #include <float.h>
 
-#define FUNCS  96
+#define FUNCS  105
 
 static int bit_shifter(long int x) {
   int i, n;
@@ -133,8 +133,16 @@ int main(int argc, char *argv[]) {
     bit_shifter,
     bit_count,
     bitcount,
+    bit_shifter,
+    bit_count,
+    bitcount,
+    bit_shifter,
+    bit_count,
+    bitcount,
+    bit_shifter,
+    bit_count,
+    bitcount,
     bit_shifter
-
   };
   if (argc<2) {
     fprintf(stderr,"Usage: program <iterations>\n");

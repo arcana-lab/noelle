@@ -1,12 +1,23 @@
 /*
  * Copyright 2021 - 2022  Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
 
@@ -14,45 +25,43 @@
 
 namespace llvm::noelle {
 
-  class LoopEnvironmentUser {
-   public:
-    LoopEnvironmentUser ();
+class LoopEnvironmentUser {
+public:
+  LoopEnvironmentUser();
 
-    void setEnvArray (Value *envArr) { this->envArray = envArr; }
+  void setEnvironmentArray(Value *envArr);
 
-    void createEnvPtr (IRBuilder<> b, int envIndex, Type *type);
+  Instruction *createEnvironmentVariablePointer(IRBuilder<> b,
+                                                uint32_t envIndex,
+                                                Type *type);
 
-    void createReducableEnvPtr (
-      IRBuilder<> b,
-      int envIndex,
-      Type *type,
-      int reducerCount,
-      Value *reducerIndV
-    );
+  void createReducableEnvPtr(IRBuilder<> b,
+                             uint32_t envIndex,
+                             Type *type,
+                             uint32_t reducerCount,
+                             Value *reducerIndV);
 
-    void addLiveInIndex (uint32_t ind) ;
-    void addLiveOutIndex (uint32_t ind) ;
+  void addLiveInIndex(uint32_t ind);
 
-    iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveInVars() { 
-      return make_range(liveInInds.begin(), liveInInds.end());
-    }
-    iterator_range<std::set<int>::iterator> getEnvIndicesOfLiveOutVars() { 
-      return make_range(liveOutInds.begin(), liveOutInds.end());
-    }
+  void addLiveOutIndex(uint32_t ind);
 
-    Instruction * getEnvPtr (uint32_t ind);
+  iterator_range<std::set<uint32_t>::iterator> getEnvIndicesOfLiveInVars(void);
 
-    ~LoopEnvironmentUser ();
+  iterator_range<std::set<uint32_t>::iterator> getEnvIndicesOfLiveOutVars(void);
 
-   private:
-    Value *envArray;
+  Instruction *getEnvPtr(uint32_t ind);
 
-		/*
-		 * Maps from environment index to load/stores
-		 */
-    std::unordered_map<int, Instruction *> envIndexToPtr;
-    std::set<int> liveInInds;
-    std::set<int> liveOutInds;
-  };
+  ~LoopEnvironmentUser();
 
-}
+private:
+  Value *envArray;
+
+  /*
+   * Maps from environment index to load/stores
+   */
+  std::unordered_map<uint32_t, Instruction *> envIndexToPtr;
+  std::set<uint32_t> liveInInds;
+  std::set<uint32_t> liveOutInds;
+};
+
+} // namespace llvm::noelle

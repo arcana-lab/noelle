@@ -5,6 +5,8 @@ set(Srcs
   LoopNestingGraphNode.cpp
   MemoryCloningAnalysis.cpp
   Variable.cpp
+  LoopCarriedCycle.cpp
+  LoopCarriedVariable.cpp
   AccumulatorOpInfo.cpp
   ControlFlowEquivalence.cpp
   LoopAwareMemDepAnalysis.cpp

@@ -118,6 +118,14 @@ LLVM passes in the directory `examples/passes` shows use cases of NOELLE.
 
 If you have any trouble using this framework feel free to reach out to us for help (contact simone.campanoni@northwestern.edu).
 
+### Contributing to NOELLE
+NOELLE uses `clang-format` to ensure uniform styling across the project's source code.
+`clang-format` is run automatically as a pre-commit git hook, meaning that when you commit a file `clang-format` is automatically run on the file in-place.
+
+Since git doesn't allow for git hooks to be installed when you clone the repository we manage this with our top-level Makefile.
+To install the NOELLE git hooks, run `make hooks` at the root of the directory.
+This make rule is run at the start of the `make all` rule as well for ease of use.
+
 
 ## Contributions
 We welcome contributions from the community to improve this framework and evolve it to cater for more users.

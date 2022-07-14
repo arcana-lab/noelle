@@ -1,53 +1,61 @@
 /*
  * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/tools/ParallelizationTechnique.hpp"
 
-namespace llvm::noelle { 
+namespace llvm::noelle {
 
-ParallelizationTechnique::ParallelizationTechnique (
-  Noelle &n
-  )
-  :   noelle{n}
-    , tasks{}
-    , envBuilder{nullptr}
-    {
+ParallelizationTechnique::ParallelizationTechnique(Noelle &n)
+  : noelle{ n },
+    tasks{},
+    envBuilder{ nullptr } {
   this->verbose = n.getVerbosity();
 
-  return ;
+  return;
 }
 
-Value * ParallelizationTechnique::getEnvArray (void) const { 
-  return this->envBuilder->getEnvironmentArray(); 
+Value *ParallelizationTechnique::getEnvArray(void) const {
+  return this->envBuilder->getEnvironmentArray();
 }
 
-void ParallelizationTechnique::initializeEnvironmentBuilder (
-  LoopDependenceInfo *LDI,
-  std::set<uint32_t> simpleVars,
-  std::set<uint32_t> reducableVars
-) {
-  auto isReducable = [&reducableVars](uint32_t variableIndex, bool isLiveOut) -> bool {
-    if (reducableVars.find(variableIndex) != reducableVars.end()){
+void ParallelizationTechnique::initializeEnvironmentBuilder(
+    LoopDependenceInfo *LDI,
+    std::set<uint32_t> simpleVars,
+    std::set<uint32_t> reducableVars) {
+  auto isReducable = [&reducableVars](uint32_t variableIndex,
+                                      bool isLiveOut) -> bool {
+    if (reducableVars.find(variableIndex) != reducableVars.end()) {
       return true;
     }
     return false;
   };
   this->initializeEnvironmentBuilder(LDI, isReducable);
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::initializeEnvironmentBuilder (
-  LoopDependenceInfo *LDI,
-  std::function<bool (uint32_t variableIndex, bool isLiveOut)> shouldThisVariableBeReduced
-  ){
+void ParallelizationTechnique::initializeEnvironmentBuilder(
+    LoopDependenceInfo *LDI,
+    std::function<bool(uint32_t variableIndex, bool isLiveOut)>
+        shouldThisVariableBeReduced) {
   assert(LDI != nullptr);
 
   /*
@@ -60,26 +68,31 @@ void ParallelizationTechnique::initializeEnvironmentBuilder (
    * Check the state of the parallelization technique 'this'.
    */
   if (this->tasks.size() == 0) {
-    errs() << "ERROR: Parallelization technique tasks haven't been created yet!\n"
-      << "\tTheir environment builders can't be initialized until they are.\n";
+    errs()
+        << "ERROR: Parallelization technique tasks haven't been created yet!\n"
+        << "\tTheir environment builders can't be initialized until they are.\n";
     abort();
   }
- 
+
   /*
    * Generate code to allocate and initialize the loop environment.
    */
   auto program = this->noelle.getProgram();
-  this->envBuilder = new LoopEnvironmentBuilder(program->getContext(), environment, shouldThisVariableBeReduced, this->numTaskInstances, tasks.size());
+  this->envBuilder = new LoopEnvironmentBuilder(program->getContext(),
+                                                environment,
+                                                shouldThisVariableBeReduced,
+                                                this->numTaskInstances,
+                                                this->tasks.size());
 
   /*
    * Create the users of the environment: one user per task.
    */
   this->initializeLoopEnvironmentUsers();
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::initializeLoopEnvironmentUsers (void){
+void ParallelizationTechnique::initializeLoopEnvironmentUsers(void) {
 
   /*
    * Create the users of the environment: one user per task.
@@ -95,31 +108,33 @@ void ParallelizationTechnique::initializeLoopEnvironmentUsers (void){
     assert(envUser != nullptr);
 
     /*
-     * Generate code within the current task to cast the generic pointer to the type of the environment it points to.
+     * Generate code within the current task to cast the generic pointer to the
+     * type of the environment it points to.
      */
     auto entryBlock = task->getEntry();
     IRBuilder<> entryBuilder(entryBlock);
-    envUser->setEnvArray(entryBuilder.CreateBitCast(
-      task->getEnvironment(),
-      PointerType::getUnqual(envBuilder->getEnvironmentArrayType())
-    ));
+    auto bitcastInst = entryBuilder.CreateBitCast(
+        task->getEnvironment(),
+        PointerType::getUnqual(envBuilder->getEnvironmentArrayType()),
+        "noelle.environment_variable.pointer");
+    envUser->setEnvironmentArray(bitcastInst);
   }
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::initializeEnvironmentBuilder (
-  LoopDependenceInfo *LDI,
-  std::set<uint32_t> nonReducableVars
-  ){
+void ParallelizationTechnique::initializeEnvironmentBuilder(
+    LoopDependenceInfo *LDI,
+    std::set<uint32_t> nonReducableVars) {
   std::set<uint32_t> emptySet{};
 
   this->initializeEnvironmentBuilder(LDI, nonReducableVars, emptySet);
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI) {
+void ParallelizationTechnique::allocateEnvironmentArray(
+    LoopDependenceInfo *LDI) {
 
   /*
    * Fetch the loop function.
@@ -128,7 +143,8 @@ void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI
   auto loopFunction = loopStructure->getFunction();
 
   /*
-   * Fetch the first instruction of the first basic block of the function that includes the loop we want to parallelized.
+   * Fetch the first instruction of the first basic block of the function that
+   * includes the loop we want to parallelized.
    */
   auto firstBB = loopFunction->begin();
   auto firstI = firstBB->begin();
@@ -140,10 +156,16 @@ void ParallelizationTechnique::allocateEnvironmentArray (LoopDependenceInfo *LDI
   envBuilder->allocateEnvironmentArray(builder);
   envBuilder->generateEnvVariables(builder);
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LDI) {
+void ParallelizationTechnique::populateLiveInEnvironment(
+    LoopDependenceInfo *LDI) {
+
+  /*
+   * Fetch the metadata manager
+   */
+  auto mm = this->noelle.getMetadataManager();
 
   /*
    * Fetch the loop environment.
@@ -151,7 +173,8 @@ void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LD
   auto env = LDI->getEnvironment();
 
   /*
-   * Store live-in values into the environment just before jumping to the parallelized loop.
+   * Store live-in values into the environment just before jumping to the
+   * parallelized loop.
    */
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (auto envIndex : env->getEnvIndicesOfLiveInVars()) {
@@ -162,20 +185,32 @@ void ParallelizationTechnique::populateLiveInEnvironment (LoopDependenceInfo *LD
     auto producerOfLiveIn = env->producerAt(envIndex);
 
     /*
-     * Fetch the memory location inside the environment dedicated to the live-in value.
+     * Fetch the memory location inside the environment dedicated to the live-in
+     * value.
      */
-    auto environmentVariable = this->envBuilder->getEnvironmentVariable(envIndex);
+    auto environmentVariable =
+        this->envBuilder->getEnvironmentVariable(envIndex);
 
     /*
      * Store the value inside the environment.
      */
-    builder.CreateStore(producerOfLiveIn, environmentVariable);
+    auto newStore = builder.CreateStore(producerOfLiveIn, environmentVariable);
+
+    /*
+     * Attach the metadata to the new store
+     */
+    mm->addMetadata(newStore,
+                    "noelle.environment_variable.live_in.store_pointer",
+                    std::to_string(envIndex));
   }
 
-  return ;
+  return;
 }
 
-BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVariables (LoopDependenceInfo *LDI, Value *numberOfThreadsExecuted) {
+BasicBlock *ParallelizationTechnique::
+    performReductionToAllReducableLiveOutVariables(
+        LoopDependenceInfo *LDI,
+        Value *numberOfThreadsExecuted) {
   auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
 
   /*
@@ -196,16 +231,17 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
   assert(environment != nullptr);
 
   /*
-   * Collect reduction operation information needed to accumulate reducable variables after parallelization execution
+   * Collect reduction operation information needed to accumulate reducable
+   * variables after parallelization execution
    */
-  std::unordered_map<int, Instruction::BinaryOps> reducableBinaryOps;
-  std::unordered_map<int, Value *> initialValues;
+  std::unordered_map<uint32_t, Instruction::BinaryOps> reducableBinaryOps;
+  std::unordered_map<uint32_t, Value *> initialValues;
   for (auto envInd : environment->getEnvIndicesOfLiveOutVars()) {
 
     /*
      * Check if the current live-out variable was reduced.
      */
-    auto isReduced = envBuilder->hasVariableBeenReduced(envInd);
+    auto isReduced = this->envBuilder->hasVariableBeenReduced(envInd);
     if (!isReduced) {
       continue;
     }
@@ -220,24 +256,29 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
     auto producerSCCAttributes = sccManager->getSCCAttrs(producerSCC);
 
     /*
-     * HACK: Need to get accumulator that feeds directly into producer PHI, not any intermediate one
+     * HACK: Need to get accumulator that feeds directly into producer PHI, not
+     * any intermediate one
      */
     auto firstAccumI = *(producerSCCAttributes->getAccumulators().begin());
     auto binOpCode = firstAccumI->getOpcode();
-    reducableBinaryOps[envInd] = sccManager->accumOpInfo.accumOpForType(binOpCode, producer->getType());
+    reducableBinaryOps[envInd] =
+        sccManager->accumOpInfo.accumOpForType(binOpCode, producer->getType());
 
-    auto loopEntryProducerPHI = this->fetchLoopEntryPHIOfProducer(LDI, producer);
-    auto initValPHIIndex = loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
+    auto loopEntryProducerPHI =
+        this->fetchLoopEntryPHIOfProducer(LDI, producer);
+    auto initValPHIIndex =
+        loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
     auto initialValue = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
-    initialValues[envInd] = castToCorrectReducibleType(*builder, initialValue, producer->getType());
+    initialValues[envInd] =
+        castToCorrectReducibleType(*builder, initialValue, producer->getType());
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
-    this->entryPointOfParallelizedLoop,
-    *builder,
-    reducableBinaryOps,
-    initialValues,
-    numberOfThreadsExecuted);
+      this->entryPointOfParallelizedLoop,
+      *builder,
+      reducableBinaryOps,
+      initialValues,
+      numberOfThreadsExecuted);
 
   /*
    * Free the memory.
@@ -245,8 +286,8 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
   delete builder;
 
   /*
-   * If reduction occurred, then all environment loads to propagate live outs need to be
-   * inserted after the reduction loop
+   * If reduction occurred, then all environment loads to propagate live outs
+   * need to be inserted after the reduction loop
    */
   IRBuilder<> *afterReductionBuilder;
   if (afterReductionB->getTerminator()) {
@@ -259,14 +300,16 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
     auto prod = environment->producerAt(envInd);
 
     /*
-     * If the environment variable isn't reduced, it is held in allocated memory that needs to be loaded from in order to retrieve the value.
+     * If the environment variable isn't reduced, it is held in allocated memory
+     * that needs to be loaded from in order to retrieve the value.
      */
     auto isReduced = envBuilder->hasVariableBeenReduced(envInd);
     Value *envVar;
     if (isReduced) {
       envVar = envBuilder->getAccumulatedReducedEnvironmentVariable(envInd);
     } else {
-      envVar = afterReductionBuilder->CreateLoad(envBuilder->getEnvironmentVariable(envInd));
+      envVar = afterReductionBuilder->CreateLoad(
+          envBuilder->getEnvironmentVariable(envInd));
     }
     assert(envVar != nullptr);
 
@@ -275,7 +318,8 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
         depPHI->addIncoming(envVar, this->exitPointOfParallelizedLoop);
         continue;
       }
-      prod->print(errs() << "Producer of environment variable:\t"); errs() << "\n";
+      prod->print(errs() << "Producer of environment variable:\t");
+      errs() << "\n";
       errs() << "Loop not in LCSSA!\n";
       abort();
     }
@@ -289,10 +333,9 @@ BasicBlock * ParallelizationTechnique::performReductionToAllReducableLiveOutVari
   return afterReductionB;
 }
 
-void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks (
-  LoopDependenceInfo *LDI,
-  std::vector<Task *> taskStructs
-) {
+void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
+    LoopDependenceInfo *LDI,
+    std::vector<Task *> taskStructs) {
   assert(this->tasks.size() == 0);
 
   /*
@@ -315,7 +358,8 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks (
    * Setup original loop and task with functions and basic blocks for wiring
    */
   auto &cxt = loopFunction->getContext();
-  this->entryPointOfParallelizedLoop = BasicBlock::Create(cxt, "", loopFunction);
+  this->entryPointOfParallelizedLoop =
+      BasicBlock::Create(cxt, "", loopFunction);
   this->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", loopFunction);
 
   this->numTaskInstances = taskStructs.size();
@@ -342,8 +386,8 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks (
     task->addBasicBlock(loopPreHeader, task->getEntry());
 
     /*
-     * Create one basic block per loop exit, mapping between originals and clones,
-     * and branching from them to the function exit block
+     * Create one basic block per loop exit, mapping between originals and
+     * clones, and branching from them to the function exit block
      */
     for (auto exitBB : loopStructure->getLoopExitBasicBlocks()) {
       auto newExitBB = task->addBasicBlockStub(exitBB);
@@ -353,16 +397,13 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks (
     }
   }
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::cloneSequentialLoop (
-  LoopDependenceInfo *LDI,
-  int taskIndex
-){
+void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
+                                                   int taskIndex) {
   assert(LDI != nullptr);
   assert(taskIndex < this->tasks.size());
-
 
   /*
    * Fetch the program.
@@ -378,16 +419,16 @@ void ParallelizationTechnique::cloneSequentialLoop (
   /*
    * Code to filter out instructions we don't want to clone.
    */
-  auto filter = [](Instruction *inst) -> bool{
-    if (auto call = dyn_cast<CallInst>(inst)){
-      if (call->isLifetimeStartOrEnd()){
+  auto filter = [](Instruction *inst) -> bool {
+    if (auto call = dyn_cast<CallInst>(inst)) {
+      if (call->isLifetimeStartOrEnd()) {
         return false;
       }
     }
 
     return true;
   };
- 
+
   /*
    * Clone all basic blocks of the original loop
    */
@@ -400,14 +441,13 @@ void ParallelizationTechnique::cloneSequentialLoop (
     task->cloneAndAddBasicBlock(originBB, filter);
   }
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::cloneSequentialLoopSubset (
-  LoopDependenceInfo *LDI,
-  int taskIndex,
-  std::set<Instruction *> subset
-){
+void ParallelizationTechnique::cloneSequentialLoopSubset(
+    LoopDependenceInfo *LDI,
+    int taskIndex,
+    std::set<Instruction *> subset) {
 
   /*
    * Fetch the program.
@@ -443,10 +483,9 @@ void ParallelizationTechnique::cloneSequentialLoopSubset (
   }
 }
 
-void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
-  LoopDependenceInfo *LDI,
-  int taskIndex
-){
+void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
+    LoopDependenceInfo *LDI,
+    int taskIndex) {
 
   /*
    * Fetch the task and other loop-specific abstractions.
@@ -479,7 +518,8 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
     /*
      * Check if this is an allocation used by this task
      */
-    auto loopInstructionsRequiringClonedOperands = location->getLoopInstructionsUsingLocation();
+    auto loopInstructionsRequiringClonedOperands =
+        location->getLoopInstructionsUsingLocation();
     std::unordered_set<Instruction *> taskInstructions;
     for (auto I : loopInstructionsRequiringClonedOperands) {
       if (!task->isAnOriginalInstruction(I)) {
@@ -497,7 +537,8 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
 
     /*
      *
-     * The stack object can be safely cloned (thanks to the object-cloning analysis) and it is used by our loop.
+     * The stack object can be safely cloned (thanks to the object-cloning
+     * analysis) and it is used by our loop.
      *
      * First, we need to remove the alloca instruction to be a live-in.
      */
@@ -506,7 +547,8 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
     /*
      * Now we need to traverse operands of loop instructions to clone
      * all live-in references (casts and GEPs) of the allocation to clone
-     * State all cloned instructions in the task's instruction map for data flow adjustment later
+     * State all cloned instructions in the task's instruction map for data flow
+     * adjustment later
      */
     auto &entryBlock = (*task->getTaskBody()->begin());
     auto firstInstruction = &*entryBlock.begin();
@@ -515,7 +557,8 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
     for (auto I : taskInstructions) {
       instructionsToConvertOperandsOf.push(I);
     }
-    auto locationOutsideUses = location->getInstructionsUsingLocationOutsideLoop();
+    auto locationOutsideUses =
+        location->getInstructionsUsingLocationOutsideLoop();
     for (auto I : locationOutsideUses) {
       instructionsToConvertOperandsOf.push(I);
     }
@@ -533,8 +576,9 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         /*
          * Ensure the instruction is outside the loop and not already cloned
          *
-         * FIXME: Checking task's instruction map would be mis-leading, as live-in values
-         * could be listed as clones to these values. Find a way to ensure that wouldn't happen
+         * FIXME: Checking task's instruction map would be mis-leading, as
+         * live-in values could be listed as clones to these values. Find a way
+         * to ensure that wouldn't happen
          */
         auto opI = dyn_cast<Instruction>(op);
         if (!opI || rootLoop->isIncluded(opI)) {
@@ -560,8 +604,8 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
          * Clone operand and then add to queue
          *
          * NOTE: The operand clone is inserted before the insert point which
-         * then gets set to itself. This ensures that any operand using it that has
-         * already been traversed will come after
+         * then gets set to itself. This ensures that any operand using it that
+         * has already been traversed will come after
          */
         auto opCloneI = opI->clone();
         entryBuilder.Insert(opCloneI);
@@ -569,11 +613,12 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
         instructionsToConvertOperandsOf.push(opI);
 
         /*
-         * Swap the operand's live in mapping with this clone so the live-in allocation from
-         * the caller of the dispatcher is NOT used; instead, we want the cloned allocation to be used
+         * Swap the operand's live in mapping with this clone so the live-in
+         * allocation from the caller of the dispatcher is NOT used; instead, we
+         * want the cloned allocation to be used
          *
-         * NOTE: Add the instruction to the loop instruction map for data flow adjusting
-         * to re-wire operands correctly
+         * NOTE: Add the instruction to the loop instruction map for data flow
+         * adjusting to re-wire operands correctly
          */
         task->addLiveIn(opI, opCloneI);
         task->addInstruction(opI, opCloneI);
@@ -587,21 +632,22 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
            * Fetch the current operand.
            */
           auto opJ = opI->getOperand(j);
-          if (dyn_cast<Constant>(opJ)){
+          if (dyn_cast<Constant>(opJ)) {
 
             /*
              * The current operand is a constant.
              * There is no need for a live-in.
              */
-            continue ;
+            continue;
           }
 
           /*
-           * Check if the current operand is the alloca instruction that will be cloned.
+           * Check if the current operand is the alloca instruction that will be
+           * cloned.
            */
-          if (opJ == alloca){
+          if (opJ == alloca) {
             assert(!task->isAnOriginalLiveIn(opJ));
-            continue ;
+            continue;
           }
 
           /*
@@ -610,13 +656,13 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
           auto newLiveIn = true;
           for (auto envIndex : envUser->getEnvIndicesOfLiveInVars()) {
             auto producer = environment->producerAt(envIndex);
-            if (producer == opJ){
+            if (producer == opJ) {
               newLiveIn = false;
               break;
             }
           }
-          if (!newLiveIn){
-            continue ;
+          if (!newLiveIn) {
+            continue;
           }
 
           /*
@@ -624,19 +670,27 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
            *
            * Make space in the environment for the new live-in.
            */
-          auto newLiveInEnvironmentIndex = environment->addLiveInValue(opJ, {opI});
-          this->envBuilder->addVariableToEnvironment(newLiveInEnvironmentIndex, opJ->getType());
+          auto newLiveInEnvironmentIndex =
+              environment->addLiveInValue(opJ, { opI });
+          this->envBuilder->addVariableToEnvironment(newLiveInEnvironmentIndex,
+                                                     opJ->getType());
 
           /*
-           * Declare the new live-in of the loop is also a new live-in for the user (i.e., task) of the environment specified bt the input (i.e., taskIndex).
+           * Declare the new live-in of the loop is also a new live-in for the
+           * user (i.e., task) of the environment specified bt the input (i.e.,
+           * taskIndex).
            */
           envUser->addLiveInIndex(newLiveInEnvironmentIndex);
 
           /*
-           * Add the load inside the task to load from the environment the new live-in.
+           * Add the load inside the task to load from the environment the new
+           * live-in.
            */
-          envUser->createEnvPtr(entryBuilder, newLiveInEnvironmentIndex, opJ->getType());
-          auto environmentLocationLoad = entryBuilder.CreateLoad(envUser->getEnvPtr(newLiveInEnvironmentIndex));
+          auto envVarPtr = envUser->createEnvironmentVariablePointer(
+              entryBuilder,
+              newLiveInEnvironmentIndex,
+              opJ->getType());
+          auto environmentLocationLoad = entryBuilder.CreateLoad(envVarPtr);
 
           /*
            * Make the task aware that the new load represents the live-in value.
@@ -662,18 +716,22 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop (
   task->getTaskBody()->print(errs());
   rootLoop->getFunction()->print(errs());
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
-  LoopDependenceInfo *LDI, 
-  int taskIndex
-){
+void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
+    LoopDependenceInfo *LDI,
+    int taskIndex) {
 
   /*
    * Fetch the task.
    */
   auto task = this->tasks[taskIndex];
+
+  /*
+   * Fetch the environment of the loop.
+   */
+  auto env = LDI->getEnvironment();
 
   /*
    * Fetch the user of the environment attached to the task.
@@ -687,20 +745,25 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
   for (auto envIndex : envUser->getEnvIndicesOfLiveInVars()) {
 
     /*
-     * Fetch the current producer of the original code that generates the live-in value.
+     * Fetch the current producer of the original code that generates the
+     * live-in value.
      */
-    auto producer = LDI->getEnvironment()->producerAt(envIndex);
+    auto producer = env->producerAt(envIndex);
 
     /*
      * Create GEP access of the environment variable at the given index
      */
-    envUser->createEnvPtr(builder, envIndex, producer->getType());
-    auto envPointer = envUser->getEnvPtr(envIndex);
+    auto envPointer =
+        envUser->createEnvironmentVariablePointer(builder,
+                                                  envIndex,
+                                                  producer->getType());
 
     /*
      * Load the live-in value from the environment pointer.
      */
-    auto envLoad = builder.CreateLoad(envPointer);
+    auto metaString = std::string{ "noelle_environment_variable_" };
+    metaString.append(std::to_string(envIndex));
+    auto envLoad = builder.CreateLoad(envPointer, metaString);
 
     /*
      * Register the load as a "clone" of the original producer
@@ -708,13 +771,22 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables (
     task->addLiveIn(producer, envLoad);
   }
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
-  LoopDependenceInfo *LDI, 
-  int taskIndex
-){
+void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
+    LoopDependenceInfo *LDI,
+    int taskIndex) {
+
+  /*
+   * Fetch the metadata manager
+   */
+  auto mm = this->noelle.getMetadataManager();
+
+  /*
+   * Fetch the environment of the loop
+   */
+  auto env = LDI->getEnvironment();
 
   /*
    * Fetch the requested task.
@@ -723,7 +795,8 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
   assert(task != nullptr);
 
   /*
-   * Create a builder that points to the entry point of the function executed by the task.
+   * Create a builder that points to the entry point of the function executed by
+   * the task.
    */
   auto entryBlock = task->getEntry();
   assert(entryBlock != nullptr);
@@ -731,24 +804,33 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
   assert(entryTerminator != nullptr);
   IRBuilder<> entryBuilder(entryTerminator);
 
+  /*
+   * Fetch the function executed by the task.
+   */
   auto &taskFunction = *task->getTaskBody();
-  DominatorTree taskDT(taskFunction);
-  PostDominatorTree taskPDT(taskFunction);
-  DominatorSummary taskDS(taskDT, taskPDT);
 
   /*
-   * Iterate over live-out variables and inject stores at the end of the execution of the function of the task to propagate the new live-out values back to the caller of the parallelized loop.
+   * Fetch the CFG analysis
+   */
+  auto cfgAnalysis = this->noelle.getCFGAnalysis();
+
+  /*
+   * Iterate over live-out variables and inject stores at the end of the
+   * execution of the function of the task to propagate the new live-out values
+   * back to the caller of the parallelized loop.
    */
   auto envUser = this->envBuilder->getUser(taskIndex);
   for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
 
     /*
      * Fetch the producer of the current live-out variable.
-     * Fetch the clones of the producer. If none are specified in the one-to-many mapping,
-     * assume the direct cloning of the producer is the only clone
-     * TODO: Find a better place to map this single clone (perhaps when the original loop's values are cloned)
+     * Fetch the clones of the producer. If none are specified in the
+     * one-to-many mapping, assume the direct cloning of the producer is the
+     * only clone
+     * TODO: Find a better place to map this single clone (perhaps when the
+     * original loop's values are cloned)
      */
-    auto producer = (Instruction*)LDI->getEnvironment()->producerAt(envIndex);
+    auto producer = cast<Instruction>(env->producerAt(envIndex));
     assert(producer != nullptr);
     if (!task->doesOriginalLiveOutHaveManyClones(producer)) {
       auto singleProducerClone = task->getCloneOfOriginalInstruction(producer);
@@ -763,9 +845,15 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     auto envType = producer->getType();
     auto isReduced = this->envBuilder->hasVariableBeenReduced(envIndex);
     if (isReduced) {
-      envUser->createReducableEnvPtr(entryBuilder, envIndex, envType, numTaskInstances, task->getTaskInstanceID());
+      envUser->createReducableEnvPtr(entryBuilder,
+                                     envIndex,
+                                     envType,
+                                     numTaskInstances,
+                                     task->getTaskInstanceID());
     } else {
-      envUser->createEnvPtr(entryBuilder, envIndex, envType);
+      envUser->createEnvironmentVariablePointer(entryBuilder,
+                                                envIndex,
+                                                envType);
     }
     auto envPtr = envUser->getEnvPtr(envIndex);
 
@@ -775,52 +863,161 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables (
     if (isReduced) {
 
       /*
-       * Fetch the operator of the accumulator instruction for this reducable variable
-       * Store the identity value of the operator
+       * Fetch the operator of the accumulator instruction for this reducable
+       * variable Store the identity value of the operator
        */
-      auto identityV = this->getIdentityValueForEnvironmentValue(LDI, envIndex, envType);
-      entryBuilder.CreateStore(identityV, envPtr);
+      auto identityV =
+          this->getIdentityValueForEnvironmentValue(LDI, envIndex, envType);
+      auto newStore = entryBuilder.CreateStore(identityV, envPtr);
+
+      /*
+       * Attach the metadata to the new store
+       */
+      mm->addMetadata(
+          newStore,
+          "noelle.environment_variable.live_out.reducable.initialize_private_copy",
+          std::to_string(envIndex));
     }
 
     /*
-     * Inject store instructions to propagate live-out values back to the caller of the parallelized loop.
-     * 
-     * NOTE: To support storing live outs at exit blocks and not directly where the producer
-     * is executed, produce a PHI node at each store point with the following incoming values:
-     * the last executed intermediate of the producer that is post-dominated by that incoming block.
-     * There should only be one such value assuming that store point is correctly chosen
-     * 
-     * NOTE: This provides flexibility to parallelization schemes with modified prologues or latches
-     * that have reducible live outs, and this flexibility is ONLY permitted for reducible live outs
-     * as non-reducible live outs can never store intermediate values of the producer.
+     * Inject store instructions to propagate live-out values back to the caller
+     * of the parallelized loop.
+     *
+     * NOTE: To support storing live outs at exit blocks and not directly where
+     * the producer is executed, produce a PHI node at each store point with the
+     * following incoming values: the last executed intermediate of the producer
+     * that is post-dominated by that incoming block. There should only be one
+     * such value assuming that store point is correctly chosen
+     *
+     * NOTE: This provides flexibility to parallelization schemes with modified
+     * prologues or latches that have reducible live outs. Furthermore, this
+     * flexibility is ONLY permitted for reducible or IV live outs as other live
+     * outs can never store intermediate values of the producer.
      */
     for (auto producerClone : producerClones) {
 
-      auto insertBBs = this->determineLatestPointsToInsertLiveOutStore(LDI, taskIndex, producerClone, isReduced, taskDS);
+      /*
+       * Compute the dominators.
+       */
+      auto taskDS = this->noelle.getDominators(&taskFunction);
+
+      /*
+       * Fetch all points in the CFG where we need to insert the store
+       * instruction.
+       */
+      auto insertBBs =
+          this->determineLatestPointsToInsertLiveOutStore(LDI,
+                                                          taskIndex,
+                                                          producerClone,
+                                                          isReduced,
+                                                          *taskDS);
       for (auto BB : insertBBs) {
 
-        auto producerValueToStore = isReduced
-          ? fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(LDI, taskIndex, envIndex, BB, taskDS)
-          : producerClone;
+        /*
+         * Fetch the value we need to store.
+         */
+        auto producerValueToStore =
+            isReduced
+                ? this->fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(
+                    LDI,
+                    taskIndex,
+                    envIndex,
+                    BB,
+                    *taskDS)
+                : producerClone;
 
+        /*
+         * Generate the store instruction to store the value to the live-out
+         * variable, which is allocated on the stack of the caller.
+         */
         IRBuilder<> liveOutBuilder(BB);
-        auto store = (StoreInst*)liveOutBuilder.CreateStore(producerValueToStore, envPtr);
+        auto store = liveOutBuilder.CreateStore(producerValueToStore, envPtr);
         store->removeFromParent();
-        store->insertBefore(BB->getTerminator());
+
+        /*
+         * Decide the condition for which the store needs to be executed.
+         *
+         * If the live-out variable is reduced, then the store needs to always
+         * execute. This is because threads have their own private copy.
+         *
+         * If the live-out variable is not reduced, then the store needs to be
+         * executed only by the thread that executed the last iteration.
+         */
+        if (isReduced) {
+
+          /*
+           * The live-out variable is reduced.
+           */
+          store->insertBefore(BB->getTerminator());
+
+          /*
+           * Attach the metadata to the new store
+           */
+          mm->addMetadata(
+              store,
+              "noelle.environment_variable.live_out.reducable.update_private_copy",
+              std::to_string(envIndex));
+
+        } else {
+
+          /*
+           * The live-out variable is not reduced.
+           *
+           * Attach the metadata to the new store
+           */
+          mm->addMetadata(store,
+                          "noelle.environment_variable.live_out.store",
+                          std::to_string(envIndex));
+
+          /*
+           * Check if the place to inject the store is included in a cycle in
+           * the CFG (hence, it can run multiple times). If that is the case,
+           * then we need to store the live-out variable only if the current
+           * task has executed the last iteration of the loop. Otherwise, the
+           * store will happen within the loop body and we assume to be
+           * synchronized correctly by the parallelization technique.
+           */
+          if (!cfgAnalysis.isIncludedInACycle(*BB)) {
+
+            /*
+             * The place to insert the store is the last basic block executed
+             * before leaving the task.
+             */
+            auto lastIterationBB =
+                this->getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
+                    LDI,
+                    taskIndex,
+                    *BB);
+            assert(lastIterationBB != nullptr);
+            auto lastIterationBBTerminator = lastIterationBB->getTerminator();
+            if (lastIterationBBTerminator != nullptr) {
+              store->insertBefore(lastIterationBBTerminator);
+            } else {
+              lastIterationBB->getInstList().push_back(store);
+            }
+
+          } else {
+            store->insertBefore(BB->getTerminator());
+          }
+        }
       }
+
+      /*
+       * Free the memory
+       */
+      delete taskDS;
     }
   }
 
-  return ;
+  return;
 }
 
-std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLiveOutStore (
-  LoopDependenceInfo *LDI,
-  int taskIndex,
-  Instruction *liveOut,
-  bool isReduced,
-  DominatorSummary &taskDS
-){
+std::set<BasicBlock *> ParallelizationTechnique::
+    determineLatestPointsToInsertLiveOutStore(LoopDependenceInfo *LDI,
+                                              int taskIndex,
+                                              Instruction *liveOut,
+                                              bool isReduced,
+                                              DominatorSummary &taskDS) {
   auto task = this->tasks[taskIndex];
 
   /*
@@ -831,33 +1028,37 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
 
   /*
    * Insert stores in loop exit blocks
-   * If the live out is reducible, it is fine that the live out value does not dominate the exit
-   * as some other intermediate is guaranteed to
+   * If the live out is reducible, it is fine that the live out value does not
+   * dominate the exit as some other intermediate is guaranteed to.
    */
-  std::set<BasicBlock *> insertPoints;
+  std::set<BasicBlock *> insertPoints{};
   for (auto BB : loopSummary->getLoopExitBasicBlocks()) {
     auto cloneBB = task->getCloneOfOriginalBasicBlock(BB);
     auto liveOutDominatesExit = taskDS.DT.dominates(liveOutBlock, cloneBB);
-    if (!isReduced && !liveOutDominatesExit) continue;
+    if (!isReduced && !liveOutDominatesExit)
+      continue;
     insertPoints.insert(cloneBB);
   }
 
   /*
    * If the parallelization scheme introduced other loop exiting blocks,
-   * and this live out is reducible, we must store the latest intermediate value for them
+   * and this live out is reducible, we must store the latest intermediate value
+   * for them
    */
   if (isReduced) {
     for (auto predecessor : predecessors(task->getExit())) {
-      if (predecessor == task->getEntry()) continue;
+      if (predecessor == task->getEntry())
+        continue;
       insertPoints.insert(predecessor);
     }
   }
 
   /*
    * HACK: If no exit block is dominated by the live out, the scheme is doing
-   * short-circuiting logic of some sort on the loop's execution. State the live out's
-   * block itself as a safe-guard.
-   * TODO: Provide a way for each scheme to provide such an override instead of this blanket catch
+   * short-circuiting logic of some sort on the loop's execution. State the live
+   * out's block itself as a safe-guard.
+   * TODO: Provide a way for each scheme to provide such an override instead of
+   * this blanket catch
    */
   if (insertPoints.empty()) {
     insertPoints.insert(liveOut->getParent());
@@ -866,13 +1067,13 @@ std::set<BasicBlock *> ParallelizationTechnique::determineLatestPointsToInsertLi
   return insertPoints;
 }
 
-Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable (
-  LoopDependenceInfo *LDI, 
-  int taskIndex,
-  int envIndex,
-  BasicBlock *insertBasicBlock,
-  DominatorSummary &taskDS
-) {
+Instruction *ParallelizationTechnique::
+    fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(
+        LoopDependenceInfo *LDI,
+        int taskIndex,
+        int envIndex,
+        BasicBlock *insertBasicBlock,
+        DominatorSummary &taskDS) {
 
   /*
    * Fetch the SCC manager.
@@ -886,14 +1087,15 @@ Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerV
   /*
    * Fetch all clones of intermediate values of the producer
    */
-  auto producer = (Instruction*)LDI->getEnvironment()->producerAt(envIndex);
+  auto producer = (Instruction *)LDI->getEnvironment()->producerAt(envIndex);
   auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
 
   std::set<Instruction *> intermediateValues{};
   for (auto originalPHI : sccManager->getSCCAttrs(producerSCC)->getPHIs()) {
     intermediateValues.insert(task->getCloneOfOriginalInstruction(originalPHI));
   }
-  for (auto originalI : sccManager->getSCCAttrs(producerSCC)->getAccumulators()) {
+  for (auto originalI :
+       sccManager->getSCCAttrs(producerSCC)->getAccumulators()) {
     intermediateValues.insert(task->getCloneOfOriginalInstruction(originalI));
   }
 
@@ -903,12 +1105,15 @@ Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerV
    */
   Instruction *lastIntermediateAtInsertBlock = nullptr;
   for (auto intermediateValue : intermediateValues) {
-    if (intermediateValue->getParent() != insertBasicBlock) continue;
-    if (lastIntermediateAtInsertBlock &&
-      DT.dominates(intermediateValue, lastIntermediateAtInsertBlock)) continue;
+    if (intermediateValue->getParent() != insertBasicBlock)
+      continue;
+    if (lastIntermediateAtInsertBlock
+        && DT.dominates(intermediateValue, lastIntermediateAtInsertBlock))
+      continue;
     lastIntermediateAtInsertBlock = intermediateValue;
   }
-  if (lastIntermediateAtInsertBlock) return lastIntermediateAtInsertBlock;
+  if (lastIntermediateAtInsertBlock)
+    return lastIntermediateAtInsertBlock;
 
   /*
    * Produce PHI at the insert point
@@ -920,9 +1125,12 @@ Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerV
   /*
    * Fetch all PHI node basic block predecessors
    * Determine all intermediate values dominating each predecessor
-   * Determine the intermediate value of this set that dominates no other intermediates in the set
+   * Determine the intermediate value of this set that dominates no other
+   * intermediates in the set
    */
-  for (auto predIter = pred_begin(insertBasicBlock); predIter != pred_end(insertBasicBlock); ++predIter) {
+  for (auto predIter = pred_begin(insertBasicBlock);
+       predIter != pred_end(insertBasicBlock);
+       ++predIter) {
     auto predecessor = *predIter;
 
     std::unordered_set<Instruction *> dominatingValues{};
@@ -933,41 +1141,52 @@ Instruction * ParallelizationTechnique::fetchOrCreatePHIForIntermediateProducerV
       }
     }
 
-    assert(dominatingValues.size() > 0
-      && "Cannot store reducible live out where no producer value dominates the point");
+    assert(
+        dominatingValues.size() > 0
+        && "Cannot store reducible live out where no producer value dominates the point");
 
     std::unordered_set<Instruction *> lastDominatingValues{};
     for (auto value : dominatingValues) {
       bool isDominatingOthers = false;
       for (auto otherValue : dominatingValues) {
-        if (value == otherValue) continue;
-        if (!DT.dominates(value, otherValue)) continue;
+        if (value == otherValue)
+          continue;
+        if (!DT.dominates(value, otherValue))
+          continue;
         isDominatingOthers = true;
         break;
       }
 
-      if (isDominatingOthers) continue;
+      if (isDominatingOthers)
+        continue;
       lastDominatingValues.insert(value);
     }
 
-    assert(lastDominatingValues.size() == 1
-      && "Cannot store reducible live out where no last produced value is known");
+    assert(
+        lastDominatingValues.size() == 1
+        && "Cannot store reducible live out where no last produced value is known");
     auto lastDominatingIntermediateValue = *lastDominatingValues.begin();
 
     auto predecessorTerminator = predecessor->getTerminator();
     IRBuilder<> builderAtValue(predecessorTerminator);
 
-    auto correctlyTypedValue = castToCorrectReducibleType(
-      builderAtValue, lastDominatingIntermediateValue, producer->getType());
+    auto correctlyTypedValue =
+        castToCorrectReducibleType(builderAtValue,
+                                   lastDominatingIntermediateValue,
+                                   producer->getType());
     phiNode->addIncoming(correctlyTypedValue, predecessor);
-  } 
+  }
 
   return phiNode;
 }
 
-Value *ParallelizationTechnique::castToCorrectReducibleType (IRBuilder<> &builder, Value *value, Type *targetType) {
+Value *ParallelizationTechnique::castToCorrectReducibleType(
+    IRBuilder<> &builder,
+    Value *value,
+    Type *targetType) {
   auto valueTy = value->getType();
-  if (valueTy == targetType) return value;
+  if (valueTy == targetType)
+    return value;
 
   if (valueTy->isIntegerTy() && targetType->isIntegerTy()) {
     return builder.CreateBitCast(value, targetType);
@@ -977,15 +1196,15 @@ Value *ParallelizationTechnique::castToCorrectReducibleType (IRBuilder<> &builde
     return builder.CreateFPToSI(value, targetType);
   } else if (valueTy->isFloatingPointTy() && targetType->isFloatingPointTy()) {
     return builder.CreateFPCast(value, targetType);
-  } else assert(false && "Cannot cast to non-reducible type");
+  } else
+    assert(false && "Cannot cast to non-reducible type");
 
   return nullptr;
 }
 
-void ParallelizationTechnique::adjustDataFlowToUseClones (
-  LoopDependenceInfo *LDI,
-  int taskIndex
-){
+void ParallelizationTechnique::adjustDataFlowToUseClones(
+    LoopDependenceInfo *LDI,
+    int taskIndex) {
 
   /*
    * Fetch the task.
@@ -1000,13 +1219,11 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     this->adjustDataFlowToUseClones(cloneI, taskIndex);
   }
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::adjustDataFlowToUseClones (
-  Instruction *cloneI,
-  int taskIndex
-){
+void ParallelizationTechnique::adjustDataFlowToUseClones(Instruction *cloneI,
+                                                         int taskIndex) {
 
   /*
    * Fetch the task.
@@ -1019,7 +1236,8 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
   if (cloneI->isTerminator()) {
     for (int i = 0; i < cloneI->getNumSuccessors(); ++i) {
       auto succBB = cloneI->getSuccessor(i);
-      if (succBB->getParent() == task->getTaskBody()) continue;
+      if (succBB->getParent() == task->getTaskBody())
+        continue;
       assert(task->isAnOriginalBasicBlock(succBB));
       cloneI->setSuccessor(i, task->getCloneOfOriginalBasicBlock(succBB));
     }
@@ -1031,7 +1249,8 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
   if (auto phi = dyn_cast<PHINode>(cloneI)) {
     for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
       auto incomingBB = phi->getIncomingBlock(i);
-      if (incomingBB->getParent() == task->getTaskBody()) continue;
+      if (incomingBB->getParent() == task->getTaskBody())
+        continue;
       assert(task->isAnOriginalBasicBlock(incomingBB));
       auto cloneBB = task->getCloneOfOriginalBasicBlock(incomingBB);
       phi->setIncomingBlock(i, cloneBB);
@@ -1051,33 +1270,38 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     /*
      * If the value is a constant, then there is nothing we need to do.
      */
-    if (dyn_cast<Constant>(opV)){
-      continue ;
+    if (dyn_cast<Constant>(opV)) {
+      continue;
     }
 
     /*
-     * If the value is a loop live-in one, set it to the value loaded from the loop environment passed to the task.
+     * If the value is a loop live-in one, set it to the value loaded from the
+     * loop environment passed to the task.
      */
-    if (task->isAnOriginalLiveIn(opV)){
+    if (task->isAnOriginalLiveIn(opV)) {
       auto internalValue = task->getCloneOfOriginalLiveIn(opV);
       op.set(internalValue);
-      continue ;
+      continue;
     }
 
     /*
      * The value is not a live-in.
      *
-     * If the value is generated by another instruction within the task, then set it to the equivalent cloned instruction.
+     * If the value is generated by another instruction within the task, then
+     * set it to the equivalent cloned instruction.
      */
     if (auto opI = dyn_cast<Instruction>(opV)) {
-      if (task->isAnOriginalInstruction(opI)){
+      if (task->isAnOriginalInstruction(opI)) {
         auto cloneOpI = task->getCloneOfOriginalInstruction(opI);
         op.set(cloneOpI);
 
       } else {
         if (opI->getFunction() != task->getTaskBody()) {
-          cloneI->print(errs() << "ERROR:   Instruction has op from another function: "); errs() << "\n";
-          opI->print(errs() << "ERROR:   Op: "); errs() << "\n";
+          cloneI->print(
+              errs() << "ERROR:   Instruction has op from another function: ");
+          errs() << "\n";
+          opI->print(errs() << "ERROR:   Op: ");
+          errs() << "\n";
           task->getTaskBody()->print(errs() << "ERROR: Task body ");
           opI->getFunction()->print(errs());
           abort();
@@ -1086,13 +1310,12 @@ void ParallelizationTechnique::adjustDataFlowToUseClones (
     }
   }
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
-  LoopDependenceInfo *LDI,
-  int taskIndex
-){
+void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
+    LoopDependenceInfo *LDI,
+    int taskIndex) {
 
   /*
    * Fetch the task.
@@ -1126,7 +1349,8 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
     /*
      * Check if the current live-out variable can be reduced.
      */
-    auto isThisLiveOutVarReducable = this->envBuilder->hasVariableBeenReduced(envInd);
+    auto isThisLiveOutVarReducable =
+        this->envBuilder->hasVariableBeenReduced(envInd);
     if (!isThisLiveOutVarReducable) {
       continue;
     }
@@ -1139,13 +1363,16 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
      */
     auto producer = environment->producerAt(envInd);
     assert(producer != nullptr);
-    auto loopEntryProducerPHI = this->fetchLoopEntryPHIOfProducer(LDI, producer);
+    auto loopEntryProducerPHI =
+        this->fetchLoopEntryPHIOfProducer(LDI, producer);
     assert(loopEntryProducerPHI != nullptr);
 
     /*
-     * Fetch the related instruction of the producer that has been created (cloned) and stored in the parallelized version of the loop.
+     * Fetch the related instruction of the producer that has been created
+     * (cloned) and stored in the parallelized version of the loop.
      */
-    auto producerClone = cast<PHINode>(task->getCloneOfOriginalInstruction(loopEntryProducerPHI));
+    auto producerClone = cast<PHINode>(
+        task->getCloneOfOriginalInstruction(loopEntryProducerPHI));
     assert(producerClone != nullptr);
 
     /*
@@ -1156,9 +1383,13 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
 
     /*
      * Fetch the identity constant for the operation reduced.
-     * For example, if the variable reduced is an accumulator where "+" is used to accumulate values, then "0" is the identity.
+     * For example, if the variable reduced is an accumulator where "+" is used
+     * to accumulate values, then "0" is the identity.
      */
-    auto identityV = this->getIdentityValueForEnvironmentValue(LDI, envInd, loopEntryProducerPHI->getType());
+    auto identityV = this->getIdentityValueForEnvironmentValue(
+        LDI,
+        envInd,
+        loopEntryProducerPHI->getType());
 
     /*
      * Set the initial value for the private variable.
@@ -1166,13 +1397,12 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue (
     producerClone->setIncomingValue(incomingIndex, identityV);
   }
 
-  return ;
+  return;
 }
 
-PHINode * ParallelizationTechnique::fetchLoopEntryPHIOfProducer (
-  LoopDependenceInfo *LDI,
-  Value *producer
-){
+PHINode *ParallelizationTechnique::fetchLoopEntryPHIOfProducer(
+    LoopDependenceInfo *LDI,
+    Value *producer) {
 
   /*
    * Fetch the SCC manager.
@@ -1186,17 +1416,18 @@ PHINode * ParallelizationTechnique::fetchLoopEntryPHIOfProducer (
   auto reducibleVariable = sccInfo->getSingleLoopCarriedVariable();
   assert(reducibleVariable != nullptr);
 
-  auto headerProducerPHI = reducibleVariable->getLoopEntryPHIForValueOfVariable(producer);
-  assert(headerProducerPHI != nullptr &&
-    "The reducible variable should be described by a single PHI in the header");
+  auto headerProducerPHI =
+      reducibleVariable->getLoopEntryPHIForValueOfVariable(producer);
+  assert(
+      headerProducerPHI != nullptr
+      && "The reducible variable should be described by a single PHI in the header");
   return headerProducerPHI;
 }
 
-Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
-  LoopDependenceInfo *LDI,
-  int environmentIndex,
-  Type *typeForValue
-){
+Value *ParallelizationTechnique::getIdentityValueForEnvironmentValue(
+    LoopDependenceInfo *LDI,
+    int environmentIndex,
+    Type *typeForValue) {
 
   /*
    * Fetch the SCC manager.
@@ -1218,13 +1449,15 @@ Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
    * Fetch the SCC that this producer belongs to.
    */
   auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
-  assert(producerSCC != nullptr && "The environment value doesn't belong to a loop SCC");
+  assert(producerSCC != nullptr
+         && "The environment value doesn't belong to a loop SCC");
 
   /*
    * Fetch the attributes about the producer SCC.
    */
   auto sccAttrs = sccManager->getSCCAttrs(producerSCC);
-  assert(sccAttrs->numberOfAccumulators() > 0 && "The environment value isn't accumulated!");
+  assert(sccAttrs->numberOfAccumulators() > 0
+         && "The environment value isn't accumulated!");
 
   /*
    * Fetch the accumulator.
@@ -1234,18 +1467,20 @@ Value * ParallelizationTechnique::getIdentityValueForEnvironmentValue (
   /*
    * Fetch the identity.
    */
-  auto identityValue = sccManager->accumOpInfo.generateIdentityFor(
-    firstAccumI,
-    typeForValue
-  );
+  auto identityValue =
+      sccManager->accumOpInfo.generateIdentityFor(firstAccumI, typeForValue);
 
   return identityValue;
 }
 
-void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
-  LoopDependenceInfo *LDI,
-  int taskIndex
-){
+void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
+    LoopDependenceInfo *LDI,
+    int taskIndex) {
+
+  /*
+   * Fetch the metadata manager
+   */
+  auto mm = this->noelle.getMetadataManager();
 
   /*
    * Fetch the program.
@@ -1254,11 +1489,12 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
 
   /*
    * Check whether there are multiple exit blocks or not.
-   * If there are more exit blocks, then we need to specify which one has been taken.
+   * If there are more exit blocks, then we need to specify which one has been
+   * taken.
    */
   auto task = this->tasks[taskIndex];
   if (task->getNumberOfLastBlocks() == 1) {
-    return ;
+    return;
   }
 
   /*
@@ -1270,7 +1506,8 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
   /*
    * There are multiple exit blocks.
    *
-   * Fetch the pointer of the location where the exit block ID taken will be stored.
+   * Fetch the pointer of the location where the exit block ID taken will be
+   * stored.
    */
   auto exitBlockEnvIndex = environment->indexOfExitBlockTaken();
   assert(exitBlockEnvIndex != -1);
@@ -1279,31 +1516,44 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex (
   IRBuilder<> entryBuilder(entryTerminator);
 
   auto envType = environment->typeOfEnvironmentLocation(exitBlockEnvIndex);
-  envUser->createEnvPtr(entryBuilder, exitBlockEnvIndex, envType);
+  envUser->createEnvironmentVariablePointer(entryBuilder,
+                                            exitBlockEnvIndex,
+                                            envType);
 
   /*
-   * Add a store instruction to specify to the code outside the parallelized loop which exit block is taken.
+   * Add a store instruction to specify to the code outside the parallelized
+   * loop which exit block is taken.
    */
   auto int32 = IntegerType::get(program->getContext(), 32);
   for (int i = 0; i < task->getNumberOfLastBlocks(); ++i) {
     auto bb = task->getLastBlock(i);
     auto term = bb->getTerminator();
+
+    /*
+     * Create the store instruction
+     */
     IRBuilder<> builder(bb);
     auto envPtr = envUser->getEnvPtr(exitBlockEnvIndex);
-    builder.CreateStore(ConstantInt::get(int32, i), envPtr);
+    auto newStore = builder.CreateStore(ConstantInt::get(int32, i), envPtr);
+
+    /*
+     * Attach the metadata to the new store
+     */
+    mm->addMetadata(newStore, "noelle.exit_block", std::to_string(i));
+
     term->removeFromParent();
     builder.Insert(term);
   }
 
-  return ;
+  return;
 }
 
-void ParallelizationTechnique::doNestedInlineOfCalls (
-  Function *function,
-  std::set<CallInst *> &calls
-){
+void ParallelizationTechnique::doNestedInlineOfCalls(
+    Function *function,
+    std::set<CallInst *> &calls) {
   std::queue<CallInst *> callsToInline;
-  for (auto call : calls) callsToInline.push(call);
+  for (auto call : calls)
+    callsToInline.push(call);
 
   while (!callsToInline.empty()) {
 
@@ -1320,7 +1570,8 @@ void ParallelizationTechnique::doNestedInlineOfCalls (
         for (auto &I : B) {
           if (auto call = dyn_cast<CallInst>(&I)) {
             auto func = call->getCalledFunction();
-            if (func == nullptr || func->empty()) continue;
+            if (func == nullptr || func->empty())
+              continue;
             funcToInline.insert(func);
           }
         }
@@ -1336,7 +1587,8 @@ void ParallelizationTechnique::doNestedInlineOfCalls (
     for (auto &B : *function) {
       for (auto &I : B) {
         if (auto call = dyn_cast<CallInst>(&I)) {
-          if (funcToInline.find(call->getCalledFunction()) != funcToInline.end()) {
+          if (funcToInline.find(call->getCalledFunction())
+              != funcToInline.end()) {
             callsToInline.push(call);
           }
         }
@@ -1345,37 +1597,50 @@ void ParallelizationTechnique::doNestedInlineOfCalls (
   }
 }
 
-std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::cloneIVStepValueComputation (
-  LoopDependenceInfo *LDI,
-  int taskIndex,
-  IRBuilder<> &insertBlock
-) {
+std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::
+    cloneIVStepValueComputation(LoopDependenceInfo *LDI,
+                                int taskIndex,
+                                IRBuilder<> &insertBlock) {
 
-  auto task = tasks[taskIndex];
+  /*
+   * Fetch the task
+   */
+  assert(taskIndex < tasks.size());
+  auto task = tasks.at(taskIndex);
+  assert(task != nullptr);
+
+  /*
+   * Fetch the information about the loop
+   */
   auto loopSummary = LDI->getLoopStructure();
   auto allIVInfo = LDI->getInductionVariableManager();
-  std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
 
   /*
    * Clone each IV's step value described by the InductionVariable class
    */
+  std::unordered_map<InductionVariable *, Value *> clonedStepSizeMap;
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
 
     /*
-     * If the step value is constant or a value present in the original loop, use its clone
-     * TODO: Refactor this logic as a helper: tryAndFetchClone that doesn't assert a clone must exist
+     * If the step value is constant or a value present in the original loop,
+     * use its clone
+     * TODO: Refactor this logic as a helper: tryAndFetchClone that doesn't
+     * assert a clone must exist
      */
     auto singleComputedStepValue = ivInfo->getSingleComputedStepValue();
     if (singleComputedStepValue) {
       Value *clonedStepValue = nullptr;
-      if (isa<ConstantData>(singleComputedStepValue)){
+      if (isa<ConstantData>(singleComputedStepValue)) {
         clonedStepValue = singleComputedStepValue;
 
-      } else if (task->isAnOriginalLiveIn(singleComputedStepValue)){
-        clonedStepValue = task->getCloneOfOriginalLiveIn(singleComputedStepValue);
+      } else if (task->isAnOriginalLiveIn(singleComputedStepValue)) {
+        clonedStepValue =
+            task->getCloneOfOriginalLiveIn(singleComputedStepValue);
 
-      } else if (auto singleComputedStepInst = dyn_cast<Instruction>(singleComputedStepValue)) {
-        clonedStepValue = task->getCloneOfOriginalInstruction(singleComputedStepInst);
+      } else if (auto singleComputedStepInst =
+                     dyn_cast<Instruction>(singleComputedStepValue)) {
+        clonedStepValue =
+            task->getCloneOfOriginalInstruction(singleComputedStepInst);
       }
 
       if (clonedStepValue) {
@@ -1387,7 +1652,7 @@ std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::clone
     /*
      * The step size is a composite SCEV. Fetch its instruction expansion,
      * cloning into the entry block of the function
-     * 
+     *
      * NOTE: The step size is expected to be loop invariant
      */
     auto expandedInsts = ivInfo->getComputationOfStepValue();
@@ -1402,21 +1667,26 @@ std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::clone
      * Wire the instructions in the expansion to use the cloned values
      */
     for (auto expandedInst : expandedInsts) {
-      adjustDataFlowToUseClones(task->getCloneOfOriginalInstruction(expandedInst), 0);
+      adjustDataFlowToUseClones(
+          task->getCloneOfOriginalInstruction(expandedInst),
+          0);
     }
-    auto clonedStepValue = task->getCloneOfOriginalInstruction(expandedInsts.back());
+    auto clonedStepValue =
+        task->getCloneOfOriginalInstruction(expandedInsts.back());
     clonedStepSizeMap.insert(std::make_pair(ivInfo, clonedStepValue));
   }
 
-  this->adjustStepValueOfPointerTypeIVToReflectPointerArithmetic(clonedStepSizeMap, insertBlock);
+  this->adjustStepValueOfPointerTypeIVToReflectPointerArithmetic(
+      clonedStepSizeMap,
+      insertBlock);
 
   return clonedStepSizeMap;
 }
 
-void ParallelizationTechnique::adjustStepValueOfPointerTypeIVToReflectPointerArithmetic (
-  std::unordered_map<InductionVariable *, Value *> clonedStepValueMap,
-  IRBuilder<> &insertBlock
-) {
+void ParallelizationTechnique::
+    adjustStepValueOfPointerTypeIVToReflectPointerArithmetic(
+        std::unordered_map<InductionVariable *, Value *> clonedStepValueMap,
+        IRBuilder<> &insertBlock) {
 
   /*
    * Fetch the program.
@@ -1425,11 +1695,11 @@ void ParallelizationTechnique::adjustStepValueOfPointerTypeIVToReflectPointerAri
 
   /*
    * If the IV's type is pointer, then the SCEV of the step value for the IV is
-   * pointer arithmetic and needs to be multiplied by the bit size of pointers to
-   * reflect the exact change of the value
-   * 
-   * This occurs because GEP information is lost to ScalarEvolution analysis when it
-   * computes the step value as a SCEV
+   * pointer arithmetic and needs to be multiplied by the bit size of pointers
+   * to reflect the exact change of the value
+   *
+   * This occurs because GEP information is lost to ScalarEvolution analysis
+   * when it computes the step value as a SCEV
    */
   auto &DL = program->getDataLayout();
   auto ptrSizeInBytes = DL.getPointerSize();
@@ -1438,20 +1708,21 @@ void ParallelizationTechnique::adjustStepValueOfPointerTypeIVToReflectPointerAri
     auto value = ivAndStepValuePair.second;
 
     auto loopEntryPHI = iv->getLoopEntryPHI();
-    if (!loopEntryPHI->getType()->isPointerTy()) continue;
+    if (!loopEntryPHI->getType()->isPointerTy())
+      continue;
 
-    auto ptrSizeValue = ConstantInt::get(value->getType(), ptrSizeInBytes, false);
+    auto ptrSizeValue =
+        ConstantInt::get(value->getType(), ptrSizeInBytes, false);
     auto adjustedStepValue = insertBlock.CreateMul(value, ptrSizeValue);
     clonedStepValueMap[iv] = adjustedStepValue;
   }
 
-  return ;
+  return;
 }
 
-float ParallelizationTechnique::computeSequentialFractionOfExecution (
-  LoopDependenceInfo *LDI,
-  Noelle &par
-) const {
+float ParallelizationTechnique::computeSequentialFractionOfExecution(
+    LoopDependenceInfo *LDI,
+    Noelle &par) const {
 
   auto sccManager = LDI->getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
@@ -1463,8 +1734,8 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution (
 
     auto numInstructionsInSCC = scc->numInternalNodes();
     totalInstructionCount += numInstructionsInSCC;
-    bool mustBeSynchronized = sccType == SCCAttrs::SCCType::SEQUENTIAL
-      && !sccInfo->canBeCloned();
+    bool mustBeSynchronized =
+        sccType == SCCAttrs::SCCType::SEQUENTIAL && !sccInfo->canBeCloned();
     if (mustBeSynchronized) {
       sequentialInstructionCount += numInstructionsInSCC;
     }
@@ -1473,13 +1744,16 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution (
   return sequentialInstructionCount / totalInstructionCount;
 }
 
-void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
+void ParallelizationTechnique::dumpToFile(LoopDependenceInfo &LDI) {
   std::error_code EC;
-  raw_fd_ostream File("technique-dump-loop-" + std::to_string(LDI.getID()) + ".txt", EC, sys::fs::F_Text);
+  raw_fd_ostream File(
+      "technique-dump-loop-" + std::to_string(LDI.getID()) + ".txt",
+      EC,
+      sys::fs::F_Text);
 
   if (EC) {
     errs() << "ERROR: Could not dump debug logs to file!";
-    return ;
+    return;
   }
 
   /*
@@ -1494,37 +1768,51 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
 
   auto allBBs = loopSummary->getBasicBlocks();
   std::set<BasicBlock *> bbs(allBBs.begin(), allBBs.end());
-  DGPrinter::writeGraph<SubCFGs, BasicBlock>("technique-original-loop-" + std::to_string(LDI.getID()) + ".dot", new SubCFGs(bbs));
-  DGPrinter::writeGraph<SCCDAG, SCC>("technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot", sccManager->getSCCDAG());
+  DGPrinter::writeGraph<SubCFGs, BasicBlock>(
+      "technique-original-loop-" + std::to_string(LDI.getID()) + ".dot",
+      new SubCFGs(bbs));
+  DGPrinter::writeGraph<SCCDAG, SCC>(
+      "technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot",
+      sccManager->getSCCDAG());
 
   for (int i = 0; i < tasks.size(); ++i) {
     auto task = tasks[i];
     File << "===========\n";
     std::string taskName = "Task " + std::to_string(i) + ": ";
-    task->getTaskBody()->print(File << taskName << "function" << "\n");
+    task->getTaskBody()->print(File << taskName << "function"
+                                    << "\n");
     File << "\n";
 
-    File << taskName << "instruction clones" << "\n";
-    for (auto origI : task->getOriginalInstructions()){
-      origI->print(File << "Original: "); File << "\n\t";
+    File << taskName << "instruction clones"
+         << "\n";
+    for (auto origI : task->getOriginalInstructions()) {
+      origI->print(File << "Original: ");
+      File << "\n\t";
       auto cloneI = task->getCloneOfOriginalInstruction(origI);
-      cloneI->print(File << "Cloned: "); File << "\n";
+      cloneI->print(File << "Cloned: ");
+      File << "\n";
     }
     File << "\n";
 
-    File << taskName << "basic block clones" << "\n";
-    for (auto origBB : task->getOriginalBasicBlocks()){
-      origBB->printAsOperand(File << "Original: "); File << "\n\t";
+    File << taskName << "basic block clones"
+         << "\n";
+    for (auto origBB : task->getOriginalBasicBlocks()) {
+      origBB->printAsOperand(File << "Original: ");
+      File << "\n\t";
       auto cloneBB = task->getCloneOfOriginalBasicBlock(origBB);
-      cloneBB->printAsOperand(File << "Cloned: "); File << "\n";
+      cloneBB->printAsOperand(File << "Cloned: ");
+      File << "\n";
     }
     File << "\n";
 
-    File << taskName << "live in clones" << "\n";
+    File << taskName << "live in clones"
+         << "\n";
     for (auto origLiveIn : task->getOriginalLiveIns()) {
-      origLiveIn->print(File << "Original: "); File << "\n\t";
+      origLiveIn->print(File << "Original: ");
+      File << "\n\t";
       auto cloneLiveIn = task->getCloneOfOriginalLiveIn(origLiveIn);
-      cloneLiveIn->print(File << "Cloned: "); File << "\n";
+      cloneLiveIn->print(File << "Cloned: ");
+      File << "\n";
     }
     File << "\n";
   }
@@ -1532,16 +1820,16 @@ void ParallelizationTechnique::dumpToFile (LoopDependenceInfo &LDI) {
   File.close();
 }
 
-ParallelizationTechnique::~ParallelizationTechnique () {
-  return ;
-}
-      
-BasicBlock * ParallelizationTechnique::getParLoopEntryPoint (void) const { 
-  return entryPointOfParallelizedLoop; 
+ParallelizationTechnique::~ParallelizationTechnique() {
+  return;
 }
 
-BasicBlock * ParallelizationTechnique::getParLoopExitPoint (void) const { 
-  return exitPointOfParallelizedLoop; 
+BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {
+  return entryPointOfParallelizedLoop;
 }
 
+BasicBlock *ParallelizationTechnique::getParLoopExitPoint(void) const {
+  return exitPointOfParallelizedLoop;
 }
+
+} // namespace llvm::noelle

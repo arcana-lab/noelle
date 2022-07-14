@@ -8,6 +8,7 @@ set(Srcs
   Noelle_transformations.cpp
   FunctionsManager.cpp
   TypesManager.cpp
+  ConstantsManager.cpp
   CompilationOptionsManager.cpp
 )
 
@@ -39,6 +40,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loops/include
   ../../callgraph/include
   ../../scheduler/include
+  ../../cfg_analysis/include
+  ../../cfg_transformer/include
   ../../loop_transformer/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
