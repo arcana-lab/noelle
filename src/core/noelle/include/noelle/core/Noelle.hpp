@@ -21,6 +21,7 @@
  */
 #pragma once
 
+#include "noelle/core/LoopNestingGraph.hpp"
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Queue.hpp"
 #include "noelle/core/StayConnectedNestedLoopForest.hpp"
@@ -62,6 +63,8 @@ public:
   bool runOnModule(Module &M) override;
 
   FunctionsManager *getFunctionsManager(void);
+
+  LoopNestingGraph *getLoopNestingGraphForProgram(void);
 
   CompilationOptionsManager *getCompilationOptionsManager(void);
 
