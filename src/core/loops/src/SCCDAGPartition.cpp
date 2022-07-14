@@ -462,8 +462,6 @@ bool SCCDAGPartitioner::isAncestor(SCCSet *parentTarget, SCCSet *target) {
 std::pair<SCCSet *, SCCSet *> SCCDAGPartitioner::getParentChildPair(
     SCCSet *setA,
     SCCSet *setB) {
-  SCCSet *parent;
-  SCCSet *child;
   if (isAncestor(setA, setB)) {
     return std::make_pair(setA, setB);
   } else if (isAncestor(setB, setA)) {
@@ -631,39 +629,7 @@ void SCCDAGPartitioner::mergeAllPairs(std::set<std::pair<SCC *, SCC *>> pairs) {
         { setProducer, setConsumer });
   }
 }
-/*
-void SCCDAGPartitioner::mergeLoopCarriedDependencies (LoopCarriedDependencies
-*LCD) {
 
-  /*
-   * Collect all pairs of SCC that need to be merged into the same set
-   */
-/*  std::set<std::pair<SCC *, SCC *>> lcdPairs{};
-  for (auto loop : allLoops) {
-    auto loopCarriedEdges = LCD->getLoopCarriedDependenciesForLoop(*loop);
-    for (auto edge : loopCarriedEdges) {
-      if (!edge->isMemoryDependence()) continue;
-
-      auto producer = edge->getOutgoingT();
-      auto consumer = edge->getIncomingT();
-
-      /*
-       * NOTE: All SCC with a loop carried dependency must be partition-able
-       * if this API is being called to merge them together
-       */
-/*      auto producerSCC = this->partition->sccOfValue(producer);
-      auto consumerSCC = this->partition->sccOfValue(consumer);
-      if (!this->partition->isIncludedInPartitioning(producerSCC)) continue;
-      if (!this->partition->isIncludedInPartitioning(consumerSCC)) continue;
-      if (producerSCC == consumerSCC) continue;
-
-      lcdPairs.insert(std::make_pair(producerSCC, consumerSCC));
-    }
-  }
-
-  mergeAllPairs(lcdPairs);
-}
-*/
 void SCCDAGPartitioner::mergeLCSSAPhisWithTheValuesTheyPropagate(void) {
 
   /*

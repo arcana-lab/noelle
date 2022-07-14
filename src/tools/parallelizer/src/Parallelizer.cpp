@@ -190,6 +190,7 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
                                             exitIndex,
                                             loopExitBlocks);
   assert(par.verifyCode());
+
   // if (verbose >= Verbosity::Maximal) {
   //   loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
   // }

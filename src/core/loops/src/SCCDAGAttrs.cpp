@@ -136,11 +136,6 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies(
   for (auto &sccDependencies : this->sccToLoopCarriedDependencies) {
 
     /*
-     * Fetch the SCC.
-     */
-    auto SCC = sccDependencies.first;
-
-    /*
      * Fetch the set of loop-carried data dependences of the current SCC.
      */
     auto &deps = sccDependencies.second;

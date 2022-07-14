@@ -112,9 +112,6 @@ private:
    * variable This removes loop carried dependencies to other variables
    * contained within the provided SCC
    */
-  PDG *dataDGOfVariable;
-  SCCDAG *sccdagOfVariable;
-  SCCDAG *dataSCCDAGOfVariable;
   SCC *sccOfVariableOnly;
   SCC *sccOfDataAndMemoryVariableValuesOnly;
 
