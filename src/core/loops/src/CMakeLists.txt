@@ -1,8 +1,5 @@
 # Sources
 set(Srcs 
-  LoopNestingGraph.cpp
-  LoopNestingGraphEdge.cpp
-  LoopNestingGraphNode.cpp
   MemoryCloningAnalysis.cpp
   Variable.cpp
   LoopCarriedCycle.cpp

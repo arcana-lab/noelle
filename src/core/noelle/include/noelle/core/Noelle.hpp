@@ -64,6 +64,8 @@ public:
 
   FunctionsManager *getFunctionsManager(void);
 
+  LoopNestingGraph *getLoopNestingGraphForProgram(void);
+
   CompilationOptionsManager *getCompilationOptionsManager(void);
 
   TypesManager *getTypesManager(void);

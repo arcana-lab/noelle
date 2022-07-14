@@ -1068,17 +1068,17 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
   return ldi;
 }
 
-<<<<<<< HEAD
-/* 
+/*
  * Get the loop nesting graph of the whole program
  * 1. Get all loops as nodes
  *   1.1. Add edges to existing nesting relations
  * 2. Traverse the call graph, if there is a call from function A to function B
  *   2.1. Get the subedges from A to B
- *   2.2. For each subedge E <call_inst -> function B> , get the most inner loop L of the call_inst
- *   2.3. Add an edge from L to all outermost loops in function B (may or must based on the subedge type)
+ *   2.2. For each subedge E <call_inst -> function B> , get the most inner loop
+ * L of the call_inst 2.3. Add an edge from L to all outermost loops in function
+ * B (may or must based on the subedge type)
  */
-LoopNestingGraph *Noelle::getLoopNestingGraphForProgram () {
+LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
   /*
    * Fetch the profiles.
    */
@@ -1090,7 +1090,8 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram () {
   this->getFunctionsManager();
   auto mainFunction = this->fm->getEntryFunction();
   assert(mainFunction != nullptr);
-  auto functions = this->getModuleFunctionsReachableFrom(this->program, mainFunction);
+  auto functions =
+      this->getModuleFunctionsReachableFrom(this->program, mainFunction);
 
   /*
    * Check if we should filter out loops.
@@ -1099,9 +1100,11 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram () {
 
   //  add loops into the loop nesting graph
   std::vector<LoopStructure *> allLoops;
-  for (auto function : *functions){
+  for (auto function : *functions) {
     auto allLoopsOfFunction = this->getLoopStructures(function, filterLoops);
-    allLoops.insert(allLoops.end(), allLoopsOfFunction->begin(), allLoopsOfFunction->end());
+    allLoops.insert(allLoops.end(),
+                    allLoopsOfFunction->begin(),
+                    allLoopsOfFunction->end());
   }
   // FIXME: is the module necessary?
   auto loopNestingGraph = new LoopNestingGraph(*this->program, allLoops);
@@ -1118,8 +1121,9 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram () {
    */
   auto forest = this->organizeLoopsInTheirNestingForest(allLoops);
   // Add existing loop nesting relation as must edges
-  auto f = [&loopNestingGraph] (StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
-    if (n->getParent() == nullptr){
+  auto f = [&loopNestingGraph](StayConnectedNestedLoopForestNode *n,
+                               uint32_t treeLevel) -> bool {
+    if (n->getParent() == nullptr) {
       return false;
     }
     auto parentLoop = n->getParent()->getLoop();
@@ -1130,11 +1134,11 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram () {
   };
 
   for (auto tree : forest->getTrees()) {
-    // iterate through the tree and add each 
+    // iterate through the tree and add each
     tree->visitPreOrder(f);
   }
 
-  std::map<Function*, unordered_set<LoopStructure*>> outermostLoopsMap;
+  std::map<Function *, unordered_set<LoopStructure *>> outermostLoopsMap;
   // filter out all loops not outermost loop (if loop->getNestingLevel==1)
   for (auto loop : allLoops) {
     if (loop->getNestingLevel() == 1) {
@@ -1144,7 +1148,7 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram () {
     }
   }
 
-  for (auto calleeNode: callGraph->getFunctionNodes()){
+  for (auto calleeNode : callGraph->getFunctionNodes()) {
     auto calleeFunction = calleeNode->getFunction();
     if (outermostLoopsMap.find(calleeFunction) == outermostLoopsMap.end())
       continue;
@@ -1158,7 +1162,9 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram () {
 
           // add the edges
           for (auto outermostLoop : outermostLoopsMap[calleeFunction]) {
-            loopNestingGraph->createEdge(parentLoop, callingInst, outermostLoop,
+            loopNestingGraph->createEdge(parentLoop,
+                                         callingInst,
+                                         outermostLoop,
                                          subEdge->isAMustCall());
           }
         }
@@ -1168,8 +1174,6 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram () {
 
   return loopNestingGraph;
 }
-
-
 
 LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
     StayConnectedNestedLoopForestNode *loopNode,
