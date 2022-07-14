@@ -39,7 +39,7 @@ struct CAT : public ModulePass {
     auto LS = node->getLoop();
     auto LDI = noelle->getLoop(LS);
     bool doallable = doall.canBeAppliedToLoop(LDI, nullptr);
-    bool isOMP = LDI->isOMPLoop();
+    // bool isOMP = LDI->isOMPLoop();
 
     // Iterate through the header BB until an instruction has debug information.
     // Use that instruction to print source code info.
@@ -61,9 +61,11 @@ struct CAT : public ModulePass {
     }
 
     errs() << indent << ' ';
-    if (isOMP) {
-      errs() << "\033[0;33m !!OMP!!  \033[m";
-    }
+    /*
+     * if (isOMP) {
+     *   errs() << "\033[0;33m !!OMP!!  \033[m";
+     * }
+     */
     if (doallable) {
       errs() << "\033[0;32m !!DOALL!!  \033[m";
     }
