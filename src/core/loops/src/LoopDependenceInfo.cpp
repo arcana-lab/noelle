@@ -603,21 +603,6 @@ bool LoopDependenceInfo::iterateOverSubLoopsRecursively(
   return false;
 }
 
-uint64_t LoopDependenceInfo::getID(void) const {
-
-  /*
-   * Fetch the loop structure.
-   */
-  auto ls = this->getLoopStructure();
-
-  /*
-   * Fetch the ID.
-   */
-  auto ID = ls->getID();
-
-  return ID;
-}
-
 LoopStructure *LoopDependenceInfo::getLoopStructure(void) const {
   return this->loop->getLoop();
 }

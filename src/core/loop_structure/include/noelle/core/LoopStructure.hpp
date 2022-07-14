@@ -29,7 +29,16 @@ class LoopStructure {
 public:
   LoopStructure(Loop *l);
 
-  uint64_t getID(void) const;
+  std::optional<uint64_t> getID(void);
+
+  /*
+   * setID() behaves in this way:
+   * if ID doesn't exist in the metadata, then add it
+   * if ID does exist, then reset it to the parameter value
+   */
+  void setID(uint64_t ID);
+
+  bool doesHaveID(void);
 
   Function *getFunction(void) const;
 
@@ -73,7 +82,6 @@ public:
   void print(raw_ostream &stream);
 
 private:
-  uint64_t ID;
   BasicBlock *header;
   BasicBlock *preHeader;
   uint32_t depth;
@@ -91,7 +99,7 @@ private:
   std::vector<BasicBlock *> exitBlocks;
   std::vector<std::pair<BasicBlock *, BasicBlock *>> exitEdges;
 
-  static uint64_t globalID;
+  static const std::string metadataKeyID;
 
   void instantiateIDsAndBasicBlocks(Loop *llvmLoop);
 
