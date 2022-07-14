@@ -34,7 +34,7 @@ struct CAT : public ModulePass {
     if (!must) {
       ic = '?';
     }
-    std::string indent = std::string(level * 3, '-');
+    std::string indent = std::string(level * 3, ic);
     std::string spacedent = std::string(level * 3, ' ');
     auto LS = node->getLoop();
     auto LDI = noelle->getLoop(LS);
