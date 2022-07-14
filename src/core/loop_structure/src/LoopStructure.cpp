@@ -20,10 +20,15 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/LoopStructure.hpp"
+#include "noelle/core/MetadataManager.hpp"
 
 namespace llvm::noelle {
 
-uint64_t LoopStructure::globalID = 0;
+/*
+ * Set the string for loop ID that we use as key to get the corresponding
+ * metadata
+ */
+const std::string LoopStructure::metadataKeyID = "noelle.loop_id.loopid";
 
 LoopStructure::LoopStructure(Loop *l) {
 
@@ -74,10 +79,16 @@ LoopStructure::LoopStructure(Loop *l) {
                                                          exitEdges.end());
 
   /*
-   * There is no metadata.
-   * Hence, we assign an arbitrary ID.
+   * Get noelle.loop_id.loopid metadata
+   * TODO: put this code in a private method "retrieve ID", call the private
+   * ethod in setID and getID. the metadata key string needs to be a private
+   * static const std::string of LoopStructure and must be set in the
+   * LoopStructure constructor. Remove getID from LoopDependenceInfo. Kill
+   * tools/loop_metadata pass, remove it from CMake as well, then do make clean
+   * ; make uninstall ;  make to make sure everything still works. After run the
+   * tests with make (not make condor), if the first 3 tests pass, create pull
+   * request.
    */
-  this->ID = LoopStructure::globalID++;
 
   return;
 }
@@ -226,15 +237,47 @@ bool LoopStructure::isIncluded(Instruction *i) const {
 }
 
 void LoopStructure::print(raw_ostream &stream) {
-  stream << "Loop summary: " << this->ID << ", depth: " << depth << "\n";
+  stream << "Loop summary: " << this->getID().value_or(0)
+         << ", depth: " << depth << "\n";
   header->begin()->print(stream);
   stream << "\n";
 
   return;
 }
 
-uint64_t LoopStructure::getID(void) const {
-  return this->ID;
+std::optional<uint64_t> LoopStructure::getID(void) {
+  Module *M = this->header->getModule();
+  MetadataManager metadataManager{ *M };
+  if (metadataManager.doesHaveMetadata(this, LoopStructure::metadataKeyID)) {
+    std::string idAsString =
+        metadataManager.getMetadata(this, LoopStructure::metadataKeyID);
+    uint64_t ID = std::stoi(idAsString);
+    return ID;
+  }
+
+  return std::nullopt;
+}
+
+bool LoopStructure::doesHaveID(void) {
+  Module *M = this->header->getModule();
+  MetadataManager metadataManager{ *M };
+  return metadataManager.doesHaveMetadata(this, LoopStructure::metadataKeyID);
+}
+
+void LoopStructure::setID(uint64_t ID) {
+  Module *M = this->header->getModule();
+  MetadataManager metadataManager{ *M };
+  if (this->doesHaveID()) {
+    metadataManager.setMetadata(this,
+                                LoopStructure::metadataKeyID,
+                                std::to_string(ID));
+  } else {
+    metadataManager.addMetadata(this,
+                                LoopStructure::metadataKeyID,
+                                std::to_string(ID));
+  }
+
+  return;
 }
 
 Function *LoopStructure::getFunction(void) const {

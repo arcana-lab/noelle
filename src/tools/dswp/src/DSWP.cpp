@@ -152,8 +152,11 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
    * Ensure there is not too little execution that is too proportionally
    * iteration-independent for DSWP
    */
-  auto loopID = LDI->getID();
   auto loopStructure = LDI->getLoopStructure();
+  auto loopIDOpt = loopStructure->getID();
+  assert(loopIDOpt); // ED: we are potentially parallelizing with DSWP, loops
+                     // should have IDs.
+  auto loopID = loopIDOpt.value();
   auto averageInstructions =
       profiles->getAverageTotalInstructionsPerIteration(loopStructure);
   auto averageInstructionThreshold = 20;

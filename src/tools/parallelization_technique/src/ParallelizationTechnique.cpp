@@ -1745,11 +1745,19 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
 }
 
 void ParallelizationTechnique::dumpToFile(LoopDependenceInfo &LDI) {
+  auto LS = LDI.getLoopStructure();
+
+  /*
+   * Get loop ID.
+   */
+  auto loopIDOpt = LS->getID();
+  assert(loopIDOpt); // ED: we are differentiating files based on loop ID.
+  auto loopID = loopIDOpt.value();
+
   std::error_code EC;
-  raw_fd_ostream File(
-      "technique-dump-loop-" + std::to_string(LDI.getID()) + ".txt",
-      EC,
-      sys::fs::F_Text);
+  raw_fd_ostream File("technique-dump-loop-" + std::to_string(loopID) + ".txt",
+                      EC,
+                      sys::fs::F_Text);
 
   if (EC) {
     errs() << "ERROR: Could not dump debug logs to file!";
@@ -1757,22 +1765,17 @@ void ParallelizationTechnique::dumpToFile(LoopDependenceInfo &LDI) {
   }
 
   /*
-   * Fetch the loop structure.
-   */
-  auto loopSummary = LDI.getLoopStructure();
-
-  /*
    * Fetch the SCC manager.
    */
   auto sccManager = LDI.getSCCManager();
 
-  auto allBBs = loopSummary->getBasicBlocks();
+  auto allBBs = LS->getBasicBlocks();
   std::set<BasicBlock *> bbs(allBBs.begin(), allBBs.end());
   DGPrinter::writeGraph<SubCFGs, BasicBlock>(
-      "technique-original-loop-" + std::to_string(LDI.getID()) + ".dot",
+      "technique-original-loop-" + std::to_string(loopID) + ".dot",
       new SubCFGs(bbs));
   DGPrinter::writeGraph<SCCDAG, SCC>(
-      "technique-sccdag-loop-" + std::to_string(LDI.getID()) + ".dot",
+      "technique-sccdag-loop-" + std::to_string(loopID) + ".dot",
       sccManager->getSCCDAG());
 
   for (int i = 0; i < tasks.size(); ++i) {

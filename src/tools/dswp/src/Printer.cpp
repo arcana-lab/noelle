@@ -192,8 +192,13 @@ void DSWP::writeStageGraphsAsDot(LoopDependenceInfo &LDI) const {
     stageGraph.addEdge(outgoingDesc, incomingDesc);
   }
 
+  auto loopStructure = LDI.getLoopStructure();
+  auto loopIDOpt = loopStructure->getID();
+  assert(loopIDOpt); // ED: we are writing files differentiating based on loop
+                     // ID, loops should have IDs.
+  auto loopID = loopIDOpt.value();
   DGPrinter::writeGraph<DG<DGString>, DGString>(
-      "dswpStagesForLoop_" + std::to_string(LDI.getID()) + ".dot",
+      "dswpStagesForLoop_" + std::to_string(loopID) + ".dot",
       &stageGraph);
   for (auto elem : elements)
     delete elem;
@@ -225,8 +230,13 @@ void DSWP::writeStageQueuesAsDot(const LoopDependenceInfo &LDI) const {
     }
   }
 
+  auto loopStructure = LDI.getLoopStructure();
+  auto loopIDOpt = loopStructure->getID();
+  assert(loopIDOpt); // ED: we are writing files differentiating based on loop
+                     // ID, loops should have IDs.
+  auto loopID = loopIDOpt.value();
   DGPrinter::writeGraph<DG<DGString>, DGString>(
-      "dswpQueuesForLoop_" + std::to_string(LDI.getID()) + ".dot",
+      "dswpQueuesForLoop_" + std::to_string(loopID) + ".dot",
       &queueGraph);
   for (auto elem : elements)
     delete elem;

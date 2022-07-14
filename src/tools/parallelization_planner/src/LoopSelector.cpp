@@ -36,7 +36,10 @@ void Planner::removeLoopsNotWorthParallelizing(
     /*
      * Fetch the loop ID.
      */
-    auto loopID = ls->getID();
+    auto loopIDOpt = ls->getID();
+    assert(loopIDOpt); // ED: we are removing loops that we do not parallelize,
+                       // loops should have IDs to give meaningful information.
+    auto loopID = loopIDOpt.value();
 
     /*
      * Check if the loop is executed at all.
@@ -121,12 +124,6 @@ void Planner::removeLoopsNotWorthParallelizing(
   for (auto tree : trees) {
 
     /*
-     * Print the root.
-     */
-    auto loopStructure = tree->getLoop();
-    auto loopID = loopStructure->getID();
-
-    /*
      * Print the tree.
      */
     auto printTree = [profiles](noelle::StayConnectedNestedLoopForestNode *n,
@@ -135,9 +132,17 @@ void Planner::removeLoopsNotWorthParallelizing(
        * Fetch the loop information.
        */
       auto loopStructure = n->getLoop();
-      auto loopID = loopStructure->getID();
       auto loopFunction = loopStructure->getFunction();
       auto loopHeader = loopStructure->getHeader();
+
+      /*
+       * Fetch the loop ID.
+       */
+      auto loopIDOpt = loopStructure->getID();
+      assert(
+          loopIDOpt); // ED: we are printing the loops we want to parallelize,
+                      // loops should have IDs to give meaningful information.
+      auto loopID = loopIDOpt.value();
 
       /*
        * Compute the print prefix.
@@ -274,6 +279,15 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
      * Fetch the loop.
      */
     auto ldi = loopPair.first;
+    auto ls = ldi->getLoopStructure();
+
+    /*
+     * Get loop ID.
+     */
+    auto loopIDOpt = ls->getID();
+    assert(loopIDOpt); // ED: we are selecting loops to parallelize, loops
+                       // should have IDs.
+    auto loopID = loopIDOpt.value();
 
     /*
      * Compute the total amount of time saved by parallelizing this loop.
@@ -286,9 +300,8 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
      * Check if the time saved is enough.
      */
     if (true && (!this->forceParallelization) && (savedTimeTotal < 2)) {
-      errs()
-          << "Planner: LoopSelector:  Loop " << ldi->getID() << " saves only "
-          << savedTimeTotal << " when parallelized. Skip it\n";
+      errs() << "Planner: LoopSelector:  Loop " << loopID << " saves only "
+             << savedTimeTotal << " when parallelized. Skip it\n";
       continue;
     }
 
@@ -346,6 +359,14 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
       auto loopFunction = ls->getFunction();
 
       /*
+       * Get loop ID.
+       */
+      auto loopIDOpt = ls->getID();
+      assert(loopIDOpt); // ED: we are selecting loops to parallelize, loops
+                         // should have IDs.
+      auto loopID = loopIDOpt.value();
+
+      /*
        * Compute the savings
        */
       auto savedTimeRelative = ((double)timeSavedLoops[l])
@@ -363,7 +384,7 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
       /*
        * Print
        */
-      errs() << "Planner: LoopSelector:    Loop " << l->getID() << "\n";
+      errs() << "Planner: LoopSelector:    Loop " << loopID << "\n";
       errs() << "Planner: LoopSelector:      Function: \""
              << loopFunction->getName() << "\"\n";
       errs() << "Planner: LoopSelector:      Loop nesting level: "

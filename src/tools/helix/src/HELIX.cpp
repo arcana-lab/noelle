@@ -107,8 +107,11 @@ bool HELIX::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
    * sequential for HELIX
    */
   auto profiles = this->noelle.getProfiles();
-  auto loopID = LDI->getID();
   auto loopStructure = LDI->getLoopStructure();
+  auto loopIDOpt = loopStructure->getID();
+  assert(loopIDOpt); // ED: we are potentially parallelizing with HELIX, loops
+                     // should have IDs.
+  auto loopID = loopIDOpt.value();
   auto averageInstructions =
       profiles->getAverageTotalInstructionsPerIteration(loopStructure);
   auto averageInstructionThreshold = 20;

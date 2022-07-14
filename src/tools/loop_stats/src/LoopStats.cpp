@@ -64,13 +64,16 @@ void LoopStats::collectStatsForLoops(
     auto loopHeader = loopStructure->getHeader();
     auto loopFunction = loopStructure->getFunction();
 
-    auto id = loopStructure->getID();
+    auto loopIDOpt = loopStructure->getID();
+    assert(loopIDOpt); // ED: we are collecting loop statistics, loops should
+                       // have IDs so we can distinguish them.
+    auto loopID = loopIDOpt.value();
     auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*loopFunction).getSE();
     auto &LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
     auto llvmLoop = LI.getLoopFor(loopHeader);
     auto loopDG = LDI->getLoopDG();
 
-    collectStatsForLoop(profiles, id, SE, loopDG, *llvmLoop);
+    collectStatsForLoop(profiles, loopID, SE, loopDG, *llvmLoop);
   }
 
   /*
