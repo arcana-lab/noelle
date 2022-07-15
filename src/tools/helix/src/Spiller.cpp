@@ -130,14 +130,15 @@ void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
   loopCarriedLoopEnvironmentBuilder->generateEnvVariables(loopFunctionBuilder);
 
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
-  for (auto envIndex = 0; envIndex < originalLoopCarriedPHIs.size();
-       ++envIndex) {
-    auto phi = originalLoopCarriedPHIs[envIndex];
+  for (auto envVariableID = 0; envVariableID < originalLoopCarriedPHIs.size();
+       ++envVariableID) {
+    auto phi = originalLoopCarriedPHIs[envVariableID];
     auto preHeaderIndex = phi->getBasicBlockIndex(loopPreHeader);
     auto preHeaderV = phi->getIncomingValue(preHeaderIndex);
     builder.CreateStore(
         preHeaderV,
-        loopCarriedLoopEnvironmentBuilder->getEnvironmentVariable(envIndex));
+        loopCarriedLoopEnvironmentBuilder->getEnvironmentVariable(
+            envVariableID));
   }
 
   std::unordered_map<BasicBlock *, BasicBlock *> cloneToOriginalBlockMap;
