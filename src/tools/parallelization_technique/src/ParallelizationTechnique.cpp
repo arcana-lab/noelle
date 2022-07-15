@@ -36,6 +36,11 @@ Value *ParallelizationTechnique::getEnvArray(void) const {
   return this->envBuilder->getEnvironmentArray();
 }
 
+uint32_t ParallelizationTechnique::getIndexOfEnvironmentVariable(
+    uint32_t id) const {
+  return this->envBuilder->getIndexOfEnvironmentVariable(id);
+}
+
 void ParallelizationTechnique::initializeEnvironmentBuilder(
     LoopDependenceInfo *LDI,
     std::set<uint32_t> simpleVars,

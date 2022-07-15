@@ -78,6 +78,7 @@ public:
   uint32_t getNumberOfUsers(void) const;
 
   Value *getEnvironmentVariable(uint32_t id) const;
+  uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
   Value *getAccumulatedReducedEnvironmentVariable(uint32_t id) const;
   Value *getReducedEnvironmentVariable(uint32_t id, uint32_t reducerInd) const;
   bool hasVariableBeenReduced(uint32_t id) const;

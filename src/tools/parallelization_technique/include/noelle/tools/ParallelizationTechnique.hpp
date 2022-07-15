@@ -55,6 +55,8 @@ public:
 
   Value *getEnvArray(void) const;
 
+  uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
+
   BasicBlock *getParLoopEntryPoint(void) const;
 
   BasicBlock *getParLoopExitPoint(void) const;

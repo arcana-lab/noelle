@@ -582,6 +582,16 @@ Value *LoopEnvironmentBuilder::getEnvironmentVariable(uint32_t id) const {
   return (*iter).second;
 }
 
+uint32_t LoopEnvironmentBuilder::getIndexOfEnvironmentVariable(
+    uint32_t id) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  return this->envIDToIndex.at(id);
+}
+
 Value *LoopEnvironmentBuilder::getAccumulatedReducedEnvironmentVariable(
     uint32_t id) const {
   /*

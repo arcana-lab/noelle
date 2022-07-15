@@ -186,8 +186,12 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
   if (verbose != Verbosity::Disabled) {
     errs() << prefix << "  Link the parallelize loop\n";
   }
-  auto exitIndex =
-      ConstantInt::get(par.int64, LDI->getEnvironment()->getExitBlockID());
+  auto exitBlockID = LDI->getEnvironment()->getExitBlockID();
+  auto exitIndex = ConstantInt::get(
+      par.int64,
+      exitBlockID >= 0
+          ? usedTechnique->getIndexOfEnvironmentVariable(exitBlockID)
+          : -1);
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   par.linkTransformedLoopToOriginalFunction(loopFunction->getParent(),
                                             loopPreHeader,
