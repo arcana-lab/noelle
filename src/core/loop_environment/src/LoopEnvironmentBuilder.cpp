@@ -398,9 +398,10 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    */
   std::vector<PHINode *> phiNodes;
   auto count = 0;
-  for (auto envIndexInitValue : initialValues) {
-    auto envIndex = envIndexInitValue.first;
-    auto initialValue = envIndexInitValue.second;
+  for (auto envIDInitValue : initialValues) {
+    auto envID = envIDInitValue.first;
+    auto envIndex = this->envIDToIndex[envID];
+    auto initialValue = envIDInitValue.second;
 
     /*
      * Create a PHI node for the current reduced variable.
@@ -429,8 +430,9 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    */
   count = 0;
   std::vector<Value *> loadedValues;
-  for (auto envIndexInitValue : initialValues) {
-    auto envIndex = envIndexInitValue.first;
+  for (auto envIDInitValue : initialValues) {
+    auto envID = envIDInitValue.first;
+    auto envIndex = this->envIDToIndex[envID];
 
     /*
      * Compute the pointer of the private copy of the current thread.
@@ -471,14 +473,15 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    * Accumulate values to the appropriate accumulators.
    */
   count = 0;
-  for (auto envIndexInitValue : initialValues) {
-    auto envIndex = envIndexInitValue.first;
+  for (auto envIDInitValue : initialValues) {
+    auto envID = envIDInitValue.first;
+    auto envIndex = this->envIDToIndex[envID];
 
     /*
      * Fetch the information about the operation to perform to accumulate
      * values.
      */
-    auto binOp = reducableBinaryOps.at(envIndex);
+    auto binOp = reducableBinaryOps.at(envID);
 
     /*
      * Fetch the accumulator, which is the PHI node related to the current
@@ -505,8 +508,9 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    * Fix the PHI nodes of the accumulators.
    */
   count = 0;
-  for (auto envIndexInitValue : initialValues) {
-    auto envIndex = envIndexInitValue.first;
+  for (auto envIDInitValue : initialValues) {
+    auto envID = envIDInitValue.first;
+    auto envIndex = this->envIDToIndex[envID];
 
     /*
      * Fetch the PHI node of the accumulator of the current reduced variable.
