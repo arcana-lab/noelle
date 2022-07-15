@@ -151,12 +151,16 @@ bool Parallelizer::runOnModule(Module &M) {
 
     /*
      * Get loop ID.
+     *
+     * We are parallelizing a loop.
+     * Therefore, this loop must have an ID.
      */
     auto loopIDOpt = ls->getID();
-    assert(loopIDOpt); // ED: we are parallelizing a loop, we are supposed to
-                       // have a loop ID.
-    auto loopID = loopIDOpt.value();
-
+    uint64_t loopID = 42434232423;
+    if (loopIDOpt) {
+      assert(loopIDOpt);
+      loopID = loopIDOpt.value();
+    }
     if (!safe) {
       errs()
           << "Parallelizer:    Loop " << loopID
