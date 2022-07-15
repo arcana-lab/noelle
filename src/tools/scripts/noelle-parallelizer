@@ -7,7 +7,7 @@ intermediateResult="baseline_with_parallel_plan.bc" ;
 intermediateResult_unoptimized="parallelized_unoptimized.bc" ;
 outputIR=$3
 
-# Add loop id to every header-terminator instruction (i.e., every LoopStructure)
+# Step 0: Add loop ID to all loops
 cmdToExecute="noelle-load -load ${installDir}/lib/LoopID.so -loopid ${inputIR} -o ${inputIR}" ;
 echo $cmdToExecute ;
 eval $cmdToExecute ;
@@ -27,7 +27,7 @@ cmdToExecute="noelle-meta-clean ${intermediateResult_unoptimized} ${intermediate
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
-# Step 3: conventional optimizations
+# Step 4: conventional optimizations
 cmdToExecute="clang -O3 -c -emit-llvm ${intermediateResult_unoptimized} -o ${outputIR}" ;
 echo $cmdToExecute ;
 eval $cmdToExecute ;
