@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_DGBASE_H
+#define NOELLE_SRC_CORE_DGBASE_H
 #pragma once
 
 #include "llvm/IR/Instructions.h"
@@ -967,4 +969,7 @@ raw_ostream &DGEdgeBase<T, SubT>::print(raw_ostream &stream,
   stream << linePrefix << this->toString();
   return stream;
 }
+
 } // namespace llvm::noelle
+
+#endif
