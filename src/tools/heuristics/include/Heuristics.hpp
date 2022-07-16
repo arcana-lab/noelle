@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_TOOLS_HEURISTICS_H
+#define NOELLE_SRC_TOOLS_HEURISTICS_H
 #pragma once
 
 #include "llvm/IR/Function.h"
@@ -64,3 +66,5 @@ private:
 };
 
 } // namespace llvm::noelle
+
+#endif

@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_TOOLS_HEURISTICPASS_H
+#define NOELLE_SRC_TOOLS_HEURISTICPASS_H
 #pragma once
 
 #include "llvm/IR/Module.h"
@@ -30,6 +32,7 @@
 using namespace llvm;
 
 namespace llvm::noelle {
+
 struct HeuristicsPass : public ModulePass {
 public:
   static char ID;
@@ -44,4 +47,7 @@ public:
 
   Heuristics *getHeuristics(Noelle &noelle);
 };
+
 } // namespace llvm::noelle
+
+#endif
