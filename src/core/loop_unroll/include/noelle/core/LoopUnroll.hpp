@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_LOOPUNROLL_H
+#define NOELLE_SRC_CORE_LOOPUNROLL_H
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -54,3 +56,5 @@ private:
 };
 
 } // namespace llvm::noelle
+
+#endif
